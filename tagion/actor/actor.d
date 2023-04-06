@@ -7,9 +7,9 @@ import std.typecons;
 import core.thread;
 import std.exception;
 
-/** 
+/**
  * Message "Atomic" type
- * Examples: 
+ * Examples:
  * ---
  * // As a type
  * Msg!"hi";
@@ -59,21 +59,21 @@ struct ActorTask {
 /**
  * A "reference" to an actor that may or may not be spawned, we will never know
  * Params:
- *  Actor = an actor type
- *  Tid = the tid of the spawned task
- *  taskName = the name of the possibly running task
+ *  A = an actor type
  */
 struct ActorHandle(A : Actor) if (isActor!A) {
     import concurrency = std.concurrency;
 
+    /// the tid of the spawned task
     Tid tid;
+    /// the name of the possibly running task
     string taskName;
 
     void send(T...)(T vals) {
         concurrency.send(tid, vals);
     }
 
-    /// use 
+    /// use
     void opDispatch(string method, Args...)(Args args) {
         send(actor.Msg!method, args);
     }
@@ -83,10 +83,10 @@ struct ActorHandle(A : Actor) if (isActor!A) {
 /**
  * Create an actorHandle
  * Params:
- *   actor = The type of actor you want to create a handle for
+ *   A = The type of actor you want to create a handle for
  *   taskName = the task name to search for
  * Returns: Actorhandle with type A
- * Examples: 
+ * Examples:
  * ---
  * actorHandle!MyActor("my_task_name");
  * ---
@@ -98,11 +98,11 @@ ActorHandle!A actorHandle(A : Actor)(string taskName) {
 
 /**
  * Params:
- *   actor = The type of actor you want to create a handle for
+ *   A = The type of actor you want to create a handle for
  *   taskName = the name it should be started as
  *   args = list of arguments to pass to the task function
  * Returns: An actorHandle with type A
- * Examples: 
+ * Examples:
  * ---
  * spawnActor!MyActor("my_task_name", 42);
  * ---
@@ -189,7 +189,7 @@ Tid[] spawnChildren(F)(F[] fns) /* if ( */ {
  * Base class for actor
  * All members should be static
  * Descendants should implement task and it should be nothrow
- * Examples: See [Actor examples]($(DOC_ROOT_OBJECTS)tagion.actor.example$(DOC_EXTENSION)))
+ * Examples: See [Actor examples]($(DOC_ROOT_OBJECTS)tagion.actor.example$(DOC_EXTENSION))
  */
 abstract class Actor {
     // We need to be certain that anything the task inherits from outside scope
