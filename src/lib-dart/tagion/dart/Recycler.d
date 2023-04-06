@@ -208,6 +208,11 @@ struct Recycler {
             .map!(slice => overlaps(slice))
             .any;
     }
+
+    const(ulong) length() const pure nothrow @nogc {
+        return indices.length;
+    
+    }
     /** 
      * Dumps the segments in the recycler.
      */
@@ -753,14 +758,17 @@ unittest {
         // writefln("after recycleDump");
         // blockfile.recycleDump;
         // writefln("entire blockfile dump");
-        // blockfile.dump;
+        blockfile.dump;
 
         assert(blockfile.recycler.to_be_recycled.length == 0);
-        assert(blockfile.recycler.indices.length == 2, "should contain one segment for middle blocks and one for statistic");
+        // the reason why this becomes one is because the middle gap is filled with the recycler and statistic block.
+        // |D index(1) size(1)|S index(2) size(1)|S index(3) size(1)|D index(4) size(1)|R index(5) size(2)|M index(7) size(1)|
+
+        assert(blockfile.recycler.indices.length == 1, "should contain one recycler segment for the new statistic blocks. ");
 
         blockfile.close();
         blockfile = BlockFile(filename);
-        assert(blockfile.recycler.indices.length == 2, "should be the same after loading");
+        assert(blockfile.recycler.indices.length == 1, "should be the same after loading");
 
         // writeln("recycle dump");
         // blockfile.recycler.dump;
@@ -931,46 +939,10 @@ unittest {
     }
 
     blockfile.store;
-
+    blockfile.recycleStatisticDump;
     blockfile.close;
     // writefln("dump after");
     // blockfile.dump;
 
 }
 
-// future for snap back of recycler.
-// @safe 
-// unittest {
-//     Recycler.print = true;
-//     scope (exit) {
-//         Recycler.print = false;
-//     }
-
-//     immutable filename = fileId("recycle").fullpath;
-//     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
-//     auto blockfile = BlockFile(filename);
-//     scope (exit) {
-//         blockfile.close;
-//     }
-
-//     Data[] datas = [
-//         Data("abc"),
-//         Data("1234"),
-//         Data("wowo"),
-//         Data("hugo"),
-//     ];
-
-//     Index[] data_indexes;
-//     foreach (data; datas) {
-//         data_indexes ~= blockfile.save(data).index;
-//     }
-
-//     blockfile.store();
-
-//     // remove the last segment and check that the recycler is snapped back.
-//     blockfile.dispose(data_indexes[$-1]);
-//     blockfile.store();
-
-//     assert(blockfile.recycler.indices.length == 0, format("should be 0 but was %s", blockfile.recycler.indices.length));
-
-// }

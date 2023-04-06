@@ -62,6 +62,7 @@ void truncate(ref File file, long length) {
 }
 
 alias check = Check!BlockFileException;
+alias BlockChain = RedBlackTree!(const(BlockSegment*), (a, b) => a.index < b.index); 
 
 /// Block file operation
 @safe
@@ -71,11 +72,14 @@ class BlockFile {
     immutable uint BLOCK_SIZE;
     //immutable uint DATA_SIZE;
     alias BlockFileStatistic = Statistic!(uint, Yes.histogram);
+    alias RecyclerFileStatistic = Statistic!(ulong, Yes.histogram);
+
     static bool do_not_write;
     package {
         File file;
         Index _last_block_index;
         Recycler recycler;
+        BlockChain block_chains = new BlockChain; // the cache
     }
 
     protected {
@@ -83,6 +87,7 @@ class BlockFile {
         HeaderBlock headerblock;
         bool hasheader;
         BlockFileStatistic _statistic;
+        RecyclerFileStatistic _recycler_statistic;
     }
 
     Index last_block_index() const pure nothrow @nogc {
@@ -93,27 +98,15 @@ class BlockFile {
         return _statistic;
     }
 
+    const(RecyclerFileStatistic) recyclerStatistic() const pure nothrow @nogc {
+        return _recycler_statistic;
+    }
+
     // bool isRecyclable(const Index index) const pure nothrow {
     //     return recycler.isRecyclable(index);
     // }
 
-    void recycleDump() {
-        import tagion.dart.Recycler : Segment;
 
-        // writefln("recycle dump from blockfile");
-
-        Index index = masterblock.recycle_header_index;
-
-        if (index == Index(0)) {
-            return;
-        }
-        while (index != Index.init) {
-            auto add_segment = Segment(this, index);
-            writefln("Index(%s), size(%s), next(%s)", add_segment.index, add_segment
-                    .size, add_segment.next);
-            index = add_segment.next;
-        }
-    }
 
     protected this() {
         BLOCK_SIZE = DEFAULT_BLOCK_SIZE;
@@ -220,6 +213,7 @@ class BlockFile {
         auto blockfile = new BlockFile(_file, old_blockfile.headerblock.block_size);
         blockfile.headerblock = old_blockfile.headerblock;
         blockfile._statistic = old_blockfile._statistic;
+        blockfile._recycler_statistic = old_blockfile._recycler_statistic;
         blockfile.headerblock.write(_file);
         blockfile._last_block_index = 1;
         blockfile.masterblock.write(_file, blockfile.BLOCK_SIZE);
@@ -283,6 +277,7 @@ class BlockFile {
             _last_block_index--;
             readMasterBlock;
             readStatistic;
+            readRecyclerStatistic;
             recycler.read(masterblock.recycle_header_index);
         }
     }
@@ -400,10 +395,11 @@ class BlockFile {
 
     @safe @recordType("M")
     static struct MasterBlock {
-        Index recycle_header_index; /// Points to the root of recycle block list
+        @label("head") Index recycle_header_index; /// Points to the root of recycle block list
         //Index first_index; /// Points to the first block of data
-        Index root_index; /// Point the root of the database
-        Index statistic_index; /// Points to the statistic data
+        @label("root") Index root_index; /// Point the root of the database
+        @label("block_s") Index statistic_index; /// Points to the statistic data
+        @label("recycle_s") Index recycler_statistic_index; /// Points to the recycler statistic data
 
         mixin HiBONRecord;
 
@@ -492,6 +488,16 @@ class BlockFile {
 
     }
 
+    protected void writeRecyclerStatistic() {
+        immutable old_recycler_index = masterblock.recycler_statistic_index;
+
+        if (old_recycler_index !is Index.init) {
+            dispose(old_recycler_index);
+        }
+        auto recycler_stat_allocate = save(_recycler_statistic.toDoc);
+        masterblock.recycler_statistic_index = Index(recycler_stat_allocate.index);
+    }
+
     ref const(MasterBlock) masterBlock() pure const nothrow {
         return masterblock;
     }
@@ -533,6 +539,13 @@ class BlockFile {
         }
     }
 
+    private void readRecyclerStatistic() @safe {
+        if (masterblock.recycler_statistic_index !is INDEX_NULL) {
+            immutable buffer = load(masterblock.recycler_statistic_index);
+            _recycler_statistic = RecyclerFileStatistic(Document(buffer));
+        }
+    }
+
     /++
      + Loads a chain of blocks from the filesystem starting from index
      + This function will not load data in BlockSegment list
@@ -570,9 +583,9 @@ class BlockFile {
         if (index == 0) {
             return Document.init;
         }
-        auto allocated_range = allocated_chains.filter!(a => a.index == index);
-        if (!allocated_range.empty) {
-            return allocated_range.front.doc;
+        auto equal_chain = block_chains.equalRange(new const(BlockSegment)(Document.init, index));
+        if (!equal_chain.empty) {
+            return equal_chain.front.doc;
         }
 
         return assumeWontThrow(load(index));
@@ -611,8 +624,8 @@ class BlockFile {
     void dispose(const Index index) {
         import LEB128 = tagion.utils.LEB128;
 
-        auto allocated_range = allocated_chains.filter!(a => a.index == index);
-        assert(allocated_range.empty, "We should dispose cached blocks");
+        auto equal_chain = block_chains.equalRange(new const(BlockSegment)(Document.init, index));
+        assert(equal_chain.empty, "We should dispose cached blocks");
         seek(index);
         ubyte[LEB128.DataSize!ulong] _buf;
         ubyte[] buf = _buf;
@@ -635,9 +648,6 @@ class BlockFile {
         return Index(recycler.claim(nblocks));
     }
 
-    /// Cache to be stored
-    protected const(BlockSegment)*[] allocated_chains;
-
     /++
      + Allocates new document
      + Does not acctually update the BlockFile just reserves new block's
@@ -648,7 +658,7 @@ class BlockFile {
     const(BlockSegment*) save(const(Document) doc) {
         auto result = new const(BlockSegment)(doc, claim(doc.full_size));
 
-        allocated_chains ~= result;
+        block_chains.stableInsert(result);
         return result;
 
     }
@@ -665,16 +675,18 @@ class BlockFile {
      +/
     void store() {
         writeStatistic;
+        _recycler_statistic(recycler.length());
+        writeRecyclerStatistic;
 
         scope (success) {
-            allocated_chains = null;
+            block_chains.clear;
 
             masterblock.recycle_header_index = recycler.write();
             writeMasterBlock;
 
         }
-        foreach (block_segment; sort!(q{a.index < b.index}, SwapStrategy.unstable)(
-                allocated_chains)) {
+
+        foreach(block_segment; block_chains) {
             block_segment.write(this);
         }
     }
@@ -847,6 +859,29 @@ class BlockFile {
         }
         writef("|");
         writeln;
+    }
+    
+    void recycleDump() {
+        import tagion.dart.Recycler : Segment;
+
+        // writefln("recycle dump from blockfile");
+
+        Index index = masterblock.recycle_header_index;
+
+        if (index == Index(0)) {
+            return;
+        }
+        while (index != Index.init) {
+            auto add_segment = Segment(this, index);
+            writefln("Index(%s), size(%s), next(%s)", add_segment.index, add_segment
+                    .size, add_segment.next);
+            index = add_segment.next;
+        }
+    }
+
+    void recycleStatisticDump() const {
+        writeln(_recycler_statistic.toString);        
+        writeln(_recycler_statistic.histogramString);
     }
 
     // Block index 0 is means null
