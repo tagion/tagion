@@ -41,6 +41,11 @@ bool checkCtrl(Ctrl msg) {
     return r[1] is msg;
 }
 
+struct ActorTask {
+    Tid tid;
+    string taskName;
+}
+
 /**
  * A "reference" to an actor that may or may not be spawned, we will never know
  * Params:
@@ -48,7 +53,7 @@ bool checkCtrl(Ctrl msg) {
  *  Tid = the tid of the spawned task
  *  taskName = the name of the possibly running task
  */
-struct ActorHandle(Actor) {
+struct ActorHandle(A) if(isActor!A) {
     import concurrency = std.concurrency;
 
     Tid tid;
@@ -73,9 +78,9 @@ struct ActorHandle(Actor) {
  * Returns: Actorhandler with type A
  * Examples: actorHandle!MyActor("my_task_name");
  */
-ActorHandle!A actorHandle(A)(A actor, string taskName) {
+ActorHandle!A actorHandle(A)(string taskName) {
     Tid tid = locate(taskName);
-    return ActorHandle(tid, taskName);
+    return ActorHandle!A(tid, taskName);
 }
 
 /**
@@ -168,12 +173,13 @@ Tid[] spawnChildren(F)(F[] fns) /* if ( */
 
 /*
  * Base class for actor
- * Shouldn't be instantiated, neither should descendants
+ * All members should be static
+ * task should be nothrow
  */
-nothrow
-static class Actor {
-    static Tid[] children; // A list of children that the actor supervises
-    static Tid[Tid] failChildren; // An associative array of children that have recently send a fail message
+interface Actor {
+    static:
+      Tid[] children; // A list of children that the actor supervises
+      Tid[Tid] failChildren; // An associative array of children that have recently send a fail message
     static Tid[Tid] startChildren; // An associative array of children that should be start
     /// Static ActorHandle[] children;
     static bool stop;
@@ -247,7 +253,7 @@ static class Actor {
      * Params:
      *   opts = A list of message handlers similar to @std.concurrency.receive()
      */
-    nothrow void actorTask(T...)(T opts) {
+    static nothrow void actorTask(T...)(T opts) {
         try {
             stop = false;
 
@@ -279,5 +285,20 @@ static class Actor {
 
     // We need to be certain that anything the task inherits from outside scope
     // is maintained as a copy and not a reference.
+    /** 
+     * The running task function your actor should implement
+     */
     nothrow void task(A...)(A args);
 }
+
+
+import std.traits;
+/// Checks if the actor is implemented correctly
+private template isActor(A) {
+    /* static assert(hasMember!(A, "task"), "Actor does not implement a task function"); */
+    /* static foreach(F; Fields!A) { */
+    /* } */
+    
+    enum isActor = true;
+}
+
