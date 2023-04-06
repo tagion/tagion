@@ -9,6 +9,8 @@ import std.algorithm;
 import std.typecons;
 import std.conv : to;
 import std.traits;
+import std.utf;
+import std.exception : assumeWontThrow;
 
 import tagion.tools.revision;
 
@@ -59,13 +61,28 @@ struct ProfInfo {
     }
 }
 
-ProfInfo loadProf(ref File fin) {
+ProfInfo loadProf(ref File fin, const bool verbose) {
     ProfInfo result;
-    auto prof_file = fin.byLine;
+    bool validUTF(Line)(Line line) nothrow {
+        try {
+            line.value.validate;
+        }
+        catch (Exception e) {
+            if (verbose) {
+                assumeWontThrow({ writeln(e.msg); writefln("%d:%s", line.index, line.value); }());
+            }
+            return false;
+        }
+        return true;
+    }
+
+    auto prof_file = fin.byLine // .map!(l => l.filter!(c => c.isValidDchar))
+        .enumerate(1)
+        .filter!(l => validUTF(l))
+        .map!(l => l.value.toUTF8);
     prof_file
         .find!(l => l.startsWith("========")); //, "==")); //, "======"));
     result.head = prof_file.take(4).map!(l => l.idup).array;
-    //.find!(l => (l.length > 0) && (l[0]=='=')); //, "======"));
     result.proflines = prof_file
         .map!(l => tuple(
                 l.split.take(3).map!(n => n.to!uint).array,
@@ -83,12 +100,14 @@ int _main(string[] args) {
     uint number_tobe_listed = 10;
     string trace_file = "trace.log";
     ProfSort prof_sort = ProfSort.tree;
+    bool verbose_switch;
     auto main_args = getopt(args,
             std.getopt.config.caseSensitive,
             std.getopt.config.bundling,
             "version", "display the version", &version_switch,
             "l", format("Number to be listed (default %d)", number_tobe_listed), &number_tobe_listed,
             "s", format("Sort flag %s (default %s)", [EnumMembers!ProfSort], prof_sort), &prof_sort,
+    "v|verbose", "verbose switch", &verbose_switch,
     );
 
     if (version_switch) {
@@ -120,7 +139,7 @@ int _main(string[] args) {
         scope (exit) {
             fin.close;
         }
-        const prof_list = loadProf(fin);
+        const prof_list = loadProf(fin, verbose_switch);
         prof_list.display(prof_sort, number_tobe_listed);
     }
     catch (Exception e) {
