@@ -879,10 +879,17 @@ class BlockFile {
         }
     }
 
+
+    void statisticDump() const {
+        writeln(_statistic.toString);
+        writeln(_statistic.histogramString);
+    }
     void recycleStatisticDump() const {
         writeln(_recycler_statistic.toString);        
         writeln(_recycler_statistic.histogramString);
     }
+
+    
 
     // Block index 0 is means null
     // The first block is use as BlockFile header
