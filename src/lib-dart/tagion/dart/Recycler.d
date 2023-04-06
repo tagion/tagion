@@ -208,6 +208,11 @@ struct Recycler {
             .map!(slice => overlaps(slice))
             .any;
     }
+
+    const(ulong) length() const pure nothrow @nogc {
+        return indices.length;
+    
+    }
     /** 
      * Dumps the segments in the recycler.
      */
@@ -753,14 +758,18 @@ unittest {
         // writefln("after recycleDump");
         // blockfile.recycleDump;
         // writefln("entire blockfile dump");
-        // blockfile.dump;
+        writefln("assert test");
+        blockfile.dump;
 
         assert(blockfile.recycler.to_be_recycled.length == 0);
-        assert(blockfile.recycler.indices.length == 2, "should contain one segment for middle blocks and one for statistic");
+        // the reason why this becomes one is because the middle gap is filled with the recycler and statistic block.
+        // |D index(1) size(1)|S index(2) size(1)|S index(3) size(1)|D index(4) size(1)|R index(5) size(2)|M index(7) size(1)|
+
+        assert(blockfile.recycler.indices.length == 1, "should contain one recycler segment for the new statistic blocks. ");
 
         blockfile.close();
         blockfile = BlockFile(filename);
-        assert(blockfile.recycler.indices.length == 2, "should be the same after loading");
+        assert(blockfile.recycler.indices.length == 1, "should be the same after loading");
 
         // writeln("recycle dump");
         // blockfile.recycler.dump;

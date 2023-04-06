@@ -72,6 +72,8 @@ class BlockFile {
     immutable uint BLOCK_SIZE;
     //immutable uint DATA_SIZE;
     alias BlockFileStatistic = Statistic!(uint, Yes.histogram);
+    alias RecyclerFileStatistic = Statistic!(ulong, Yes.histogram);
+
     static bool do_not_write;
     package {
         File file;
@@ -85,6 +87,7 @@ class BlockFile {
         HeaderBlock headerblock;
         bool hasheader;
         BlockFileStatistic _statistic;
+        RecyclerFileStatistic _recycler_statistic;
     }
 
     Index last_block_index() const pure nothrow @nogc {
@@ -93,6 +96,10 @@ class BlockFile {
 
     const(BlockFileStatistic) statistic() const pure nothrow @nogc {
         return _statistic;
+    }
+
+    const(RecyclerFileStatistic) recyclerStatistic() const pure nothrow @nogc {
+        return _recycler_statistic;
     }
 
     // bool isRecyclable(const Index index) const pure nothrow {
@@ -222,6 +229,7 @@ class BlockFile {
         auto blockfile = new BlockFile(_file, old_blockfile.headerblock.block_size);
         blockfile.headerblock = old_blockfile.headerblock;
         blockfile._statistic = old_blockfile._statistic;
+        blockfile._recycler_statistic = old_blockfile._recycler_statistic;
         blockfile.headerblock.write(_file);
         blockfile._last_block_index = 1;
         blockfile.masterblock.write(_file, blockfile.BLOCK_SIZE);
@@ -285,6 +293,7 @@ class BlockFile {
             _last_block_index--;
             readMasterBlock;
             readStatistic;
+            readRecyclerStatistic;
             recycler.read(masterblock.recycle_header_index);
         }
     }
@@ -402,10 +411,11 @@ class BlockFile {
 
     @safe @recordType("M")
     static struct MasterBlock {
-        Index recycle_header_index; /// Points to the root of recycle block list
+        @label("head") Index recycle_header_index; /// Points to the root of recycle block list
         //Index first_index; /// Points to the first block of data
-        Index root_index; /// Point the root of the database
-        Index statistic_index; /// Points to the statistic data
+        @label("root") Index root_index; /// Point the root of the database
+        @label("block_s") Index statistic_index; /// Points to the statistic data
+        @label("recycle_s") Index recycler_statistic_index; /// Points to the recycler statistic data
 
         mixin HiBONRecord;
 
@@ -494,6 +504,16 @@ class BlockFile {
 
     }
 
+    protected void writeRecyclerStatistic() {
+        immutable old_recycler_index = masterblock.recycler_statistic_index;
+
+        if (old_recycler_index !is Index.init) {
+            dispose(old_recycler_index);
+        }
+        auto recycler_stat_allocate = save(_recycler_statistic.toDoc);
+        masterblock.recycler_statistic_index = Index(recycler_stat_allocate.index);
+    }
+
     ref const(MasterBlock) masterBlock() pure const nothrow {
         return masterblock;
     }
@@ -532,6 +552,13 @@ class BlockFile {
         if (masterblock.statistic_index !is INDEX_NULL) {
             immutable buffer = load(masterblock.statistic_index);
             _statistic = BlockFileStatistic(Document(buffer));
+        }
+    }
+
+    private void readRecyclerStatistic() @safe {
+        if (masterblock.recycler_statistic_index !is INDEX_NULL) {
+            immutable buffer = load(masterblock.recycler_statistic_index);
+            _recycler_statistic = RecyclerFileStatistic(Document(buffer));
         }
     }
 
@@ -664,6 +691,8 @@ class BlockFile {
      +/
     void store() {
         writeStatistic;
+        _recycler_statistic(recycler.length());
+        writeRecyclerStatistic;
 
         scope (success) {
             block_chains.clear;
