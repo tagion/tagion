@@ -8,7 +8,7 @@ import core.thread;
 import std.exception;
 
 /**
- * Message "Atomic" type
+ * Message "Atom" type
  * Examples:
  * ---
  * // As a type
@@ -52,16 +52,18 @@ bool checkCtrl(Ctrl msg) {
 
 /// Used by supervisor to represent a running task
 struct ActorTask {
-    Tid tid;
     string taskName;
+    Actor actor;
 }
+
+/* alias ActorTask(A, taskName) = Actor!A; */
 
 /**
  * A "reference" to an actor that may or may not be spawned, we will never know
  * Params:
  *  A = an actor type
  */
-struct ActorHandle(A : Actor) if (isActor!A) {
+struct ActorHandle(A : Actor) if(isActor!A) {
     import concurrency = std.concurrency;
 
     /// the tid of the spawned task
@@ -171,8 +173,7 @@ nothrow void setState(Ctrl ctrl) {
     }
 }
 
-import std.algorithm.iteration;
-
+version(none)
 Tid[] spawnChildren(F)(F[] fns) /* if ( */ {
     Tid[] tids;
     foreach (f; fns) {
@@ -192,8 +193,6 @@ Tid[] spawnChildren(F)(F[] fns) /* if ( */ {
  * Examples: See [Actor examples]($(DOC_ROOT_OBJECTS)tagion.actor.example$(DOC_EXTENSION))
  */
 abstract class Actor {
-    // We need to be certain that anything the task inherits from outside scope
-    // is maintained as a copy and not a reference.
     /**
      * The running task function your actor should implement
      */
@@ -202,10 +201,9 @@ abstract class Actor {
     void task(A...)(A args) nothrow;
 
 static:
-    Tid[] children; // A list of children that the actor supervises
+    /* ActorTask[string] children; // A list of children that the actor supervises */
     Tid[Tid] failChildren; // An associative array of children that have recently send a fail message
     Tid[Tid] startChildren; // An associative array of children that should be start
-    /// Static ActorHandle[] children;
     bool stop;
 
     void signal(Sig s) {
@@ -222,6 +220,7 @@ static:
         case STARTING:
             debug writeln(msg);
             startChildren[msg.tid] = msg.tid;
+            writeln("Is starting: ", startChildren);
             break;
 
         case ALIVE:
@@ -257,7 +256,7 @@ static:
 
     /// Stops the actor if the supervisor stops
     void ownerTerminated(OwnerTerminated) {
-        writefln("%s, Owner stopped... nothing to life for... stoping self", thisTid);
+        writefln("%s, Owner stopped... nothing to life for... stopping self", thisTid);
         stop = true;
     }
 
@@ -272,7 +271,7 @@ static:
     }
 
     /**
-     * A General actor task
+     * A General actor task function
      *
      * Params:
      *   opts = A list of message handlers similar to @std.concurrency.receive()
@@ -284,6 +283,13 @@ static:
             setState(Ctrl.STARTING); // Tell the owner that you are starting.
             scope (exit)
                 setState(Ctrl.END); // Tell the owner that you have finished.
+
+            // check that children have started
+            receiveTimeout(
+                1000.msecs,
+                &control,
+                &unknown,
+            );
 
             setState(Ctrl.ALIVE); // Tell the owner that you running
             while (!stop) {

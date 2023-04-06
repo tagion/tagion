@@ -1,5 +1,5 @@
 /**
- * Examples for the actor based concurrency
+ * Examples for the actor library
  */
 
 
@@ -10,10 +10,14 @@ import tagion.actor.actor;
 import std.concurrency;
 import std.stdio;
 import std.format;
+import std.typecons;
+import std.exception;
 
 class SuperVisor : Actor {
 static:
-    void task() nothrow {
+   void task() nothrow {
+        assumeWontThrow(spawnActor!Logger("log"));
+
         actorTask;
     }
 }
@@ -108,5 +112,11 @@ void main() {
     logger.send(Sig.STOP);
 
     assert(checkCtrl(Ctrl.END));
+    assert(checkCtrl(Ctrl.END));
+
+    spawnActor!SuperVisor("super");
+    assert(checkCtrl(Ctrl.STARTING));
+    assert(checkCtrl(Ctrl.ALIVE));
+    logger.send(Sig.STOP);
     assert(checkCtrl(Ctrl.END));
 }
