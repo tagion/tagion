@@ -2401,3 +2401,11 @@ unittest {
     }
 
 }
+
+///
+@safe
+unittest {
+    auto net = new DARTFakeNet;
+    auto manufactor = RecordFactory(net);
+    immutable filename = fileId!DARTFile.fullpath;
+}
