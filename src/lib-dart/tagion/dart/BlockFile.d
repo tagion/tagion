@@ -106,23 +106,7 @@ class BlockFile {
     //     return recycler.isRecyclable(index);
     // }
 
-    void recycleDump() {
-        import tagion.dart.Recycler : Segment;
 
-        // writefln("recycle dump from blockfile");
-
-        Index index = masterblock.recycle_header_index;
-
-        if (index == Index(0)) {
-            return;
-        }
-        while (index != Index.init) {
-            auto add_segment = Segment(this, index);
-            writefln("Index(%s), size(%s), next(%s)", add_segment.index, add_segment
-                    .size, add_segment.next);
-            index = add_segment.next;
-        }
-    }
 
     protected this() {
         BLOCK_SIZE = DEFAULT_BLOCK_SIZE;
@@ -875,6 +859,29 @@ class BlockFile {
         }
         writef("|");
         writeln;
+    }
+    
+    void recycleDump() {
+        import tagion.dart.Recycler : Segment;
+
+        // writefln("recycle dump from blockfile");
+
+        Index index = masterblock.recycle_header_index;
+
+        if (index == Index(0)) {
+            return;
+        }
+        while (index != Index.init) {
+            auto add_segment = Segment(this, index);
+            writefln("Index(%s), size(%s), next(%s)", add_segment.index, add_segment
+                    .size, add_segment.next);
+            index = add_segment.next;
+        }
+    }
+
+    void recycleStatisticDump() const {
+        writeln(_recycler_statistic.toString);        
+        writeln(_recycler_statistic.histogramString);
     }
 
     // Block index 0 is means null

@@ -758,7 +758,6 @@ unittest {
         // writefln("after recycleDump");
         // blockfile.recycleDump;
         // writefln("entire blockfile dump");
-        writefln("assert test");
         blockfile.dump;
 
         assert(blockfile.recycler.to_be_recycled.length == 0);
@@ -940,46 +939,10 @@ unittest {
     }
 
     blockfile.store;
-
+    blockfile.recycleStatisticDump;
     blockfile.close;
     // writefln("dump after");
     // blockfile.dump;
 
 }
 
-// future for snap back of recycler.
-// @safe 
-// unittest {
-//     Recycler.print = true;
-//     scope (exit) {
-//         Recycler.print = false;
-//     }
-
-//     immutable filename = fileId("recycle").fullpath;
-//     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
-//     auto blockfile = BlockFile(filename);
-//     scope (exit) {
-//         blockfile.close;
-//     }
-
-//     Data[] datas = [
-//         Data("abc"),
-//         Data("1234"),
-//         Data("wowo"),
-//         Data("hugo"),
-//     ];
-
-//     Index[] data_indexes;
-//     foreach (data; datas) {
-//         data_indexes ~= blockfile.save(data).index;
-//     }
-
-//     blockfile.store();
-
-//     // remove the last segment and check that the recycler is snapped back.
-//     blockfile.dispose(data_indexes[$-1]);
-//     blockfile.store();
-
-//     assert(blockfile.recycler.indices.length == 0, format("should be 0 but was %s", blockfile.recycler.indices.length));
-
-// }
