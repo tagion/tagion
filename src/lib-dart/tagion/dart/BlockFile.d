@@ -137,16 +137,13 @@ class BlockFile {
         recycler = Recycler(this);
     }
 
-    /++
-     Creates and empty BlockFile
-
-     Params:
-     $(LREF finename)    = File name of the BlockFile.
-     If file exists with the same name this file will be overwritten
-     $(LREF description) = This text will be written into the header
-     $(LREF BLOCK_SIZE)  = Set the block size of the underlining BlockFile
-
-     +/
+    /** 
+     * Creates an empty BlockFile
+     * Params:
+     *   filename = File name of the blockfile
+     *   description = this text will be written to the header
+     *   BLOCK_SIZE = set the block size of the underlying BlockFile.
+     */
     static void create(string filename, string description, immutable uint BLOCK_SIZE) {
         auto _file = File(filename, "w+");
         auto blockfile = new BlockFile(_file, BLOCK_SIZE);
@@ -175,13 +172,14 @@ class BlockFile {
         blockfile.store;
         return blockfile;
     }
-    /++
-     + Opens an existing file which previously was created by BlockFile.create
-     +
-     + Params:
-     +     filename  = Name of the blockfile
-     +     read_only = If `true` the file is opened as read-only
-     +/
+
+    /** 
+     * Opens an existing file which previously was created by BlockFile.create
+     * Params:
+     *   filename = Name of the blockfile
+     *   read_only = If `true` the file is opened as read-only
+     * Returns: 
+     */
     static BlockFile opCall(string filename, const bool read_only = false) {
         auto temp_file = new BlockFile();
         temp_file.file = File(filename, "r");
@@ -201,7 +199,11 @@ class BlockFile {
     ~this() {
         file.close;
     }
-
+    /** 
+     * Creates the header block.
+     * Params:
+     *   name = name of the header
+     */
     protected void createHeader(string name) {
         check(!hasheader, "Header is already created");
         check(file.size == 0, "Header can not be created the file is not empty");
@@ -217,10 +219,10 @@ class BlockFile {
         hasheader = true;
     }
 
-    /++
-     + Returns:
-     +     `true` of the file blockfile has a header
-     +/
+    /** 
+     * 
+     * Returns: `true` if the blockfile has a header.
+     */
     bool hasHeader() const pure nothrow {
         return hasheader;
     }
@@ -236,9 +238,9 @@ class BlockFile {
         }
     }
 
-    /++
-     + The HeaderBlock is the first block in the BlockFile
-     +/
+    /**
+     * The HeaderBlock is the first block in the BlockFile
+    */
     @safe
     struct HeaderBlock {
         enum ID_SIZE = 32;
@@ -428,14 +430,14 @@ class BlockFile {
         return masterblock;
     }
 
-    // Write the master block to the filesystem and truncate the file
+    /// Write the master block to the filesystem and truncate the file
     protected void writeMasterBlock() {
         seek(_last_block_index);
         masterblock.write(file, BLOCK_SIZE);
     }
 
     private void readMasterBlock() {
-        // The masterblock is locate as the lastblock in the file
+        // The masterblock is located at the last_block_index in the file
         seek(_last_block_index);
         masterblock.read(file, BLOCK_SIZE);
     }
@@ -458,13 +460,18 @@ class BlockFile {
         hasheader = true;
     }
 
+    /** 
+     * Read the statistic into the blockfile.
+     */
     private void readStatistic() @safe {
         if (masterblock.statistic_index !is INDEX_NULL) {
             immutable buffer = load(masterblock.statistic_index);
             _statistic = BlockFileStatistic(Document(buffer));
         }
     }
-
+    /** 
+     * Read the recycler statistic into the blockfile.
+     */
     private void readRecyclerStatistic() @safe {
         if (masterblock.recycler_statistic_index !is INDEX_NULL) {
             immutable buffer = load(masterblock.recycler_statistic_index);
@@ -472,22 +479,13 @@ class BlockFile {
         }
     }
 
-    /++
-     + Loads a chain of blocks from the filesystem starting from index
-     + This function will not load data in BlockSegment list
-     + The allocated chain list has to be stored first
-     +
-     + Params:
-     +     index = Points to an start block in the chain of blocks
-     +
-     + Returns:
-     +     Buffer of all data in the chain of blocks
-     +
-     + Throws:
-     +     BlockFileException if this not first block in a chain or
-     +     some because of some other failures in the blockfile system
-     +/
-    const(Document) load(const Index index, const bool check_format = true) {
+    /** 
+     * Loads a document at an index. If the document is not valid it throws an exception.
+     * Params:
+     *   index = Points to the start of a block in the chain of blocks.
+     * Returns: Document of a blocksegment
+     */
+    const(Document) load(const Index index) {
         return BlockSegment(this, index).doc;
     }
 
@@ -531,22 +529,15 @@ class BlockFile {
         return T(doc);
     }
 
-    /++
-     + Marks a chain for blocks as erased
-     + This function does actually erease the block before the store method is called
-     + The list of recyclable block also be update after the store method has been called
-     +
-     + This prevents it from danaging the BlockFile until a sequency of operations has been performed
-     +
-     + Params:
-     +     index = Points to an start block in the chain of blocks
-     +
-     + Returns:
-     +     Begin to the next block sequency in the
-     + Throws:
-     +     BlockFileException
-     +
-     +/
+    /** 
+     * Marks a block for the recycler as erased
+     * This function ereases the block before the store method is called
+     * The list of recyclable blocks is also updated after the store method has been called.
+     * 
+     * This prevents it from damaging the BlockFile until a sequency of operations has been performed,
+     * Params:
+     *   index = Points to an start of a block in the chain of blocks.
+     */
     void dispose(const Index index) {
         import LEB128 = tagion.utils.LEB128;
 
@@ -574,13 +565,13 @@ class BlockFile {
         return Index(recycler.claim(nblocks));
     }
 
-    /++
-     + Allocates new document
-     + Does not acctually update the BlockFile just reserves new block's
-     +
-     + Params:
-     +     doc = Document to be reserved and allocated
-     +/
+    /** 
+     * Allocates new document
+     * Does not acctually update the BlockFile just reserves new block's
+     * Params:
+     *   doc = Document to be reserved and allocated
+     * Returns: a pointer to the blocksegment.
+     */
     const(BlockSegment*) save(const(Document) doc) {
         auto result = new const(BlockSegment)(doc, claim(doc.full_size));
 
@@ -592,13 +583,12 @@ class BlockFile {
     const(BlockSegment*) save(T)(const T rec) if (isHiBONRecord!T) {
         return save(rec.toDoc);
     }
-    /++
-     +
-     + This function will erase, write, update the BlockFile and update the recyle bin
-     + Stores the list of BlockSegment to the disk
-     + If this function throws an Exception the Blockfile has not been updated
-     +
-     +/
+
+    /** 
+     * This function will erase, write, update the BlockFile and update the recyle bin
+     * Stores the list of BlockSegment to the disk
+     * If this function throws an Exception the Blockfile has not been updated
+     */
     void store() {
         writeStatistic;
         _recycler_statistic(recycler.length());
