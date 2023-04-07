@@ -8,7 +8,6 @@ import std.bitmanip : binwrite = write, binread = read;
 import std.stdio;
 import std.file : remove, rename;
 import std.typecons;
-import std.algorithm.sorting : sort;
 import std.algorithm.searching : until;
 import std.algorithm.iteration : filter, each, map;
 
@@ -18,11 +17,10 @@ import std.datetime;
 import std.format;
 import std.conv : to;
 import std.traits;
-import std.exception : assumeUnique, assumeWontThrow;
+import std.exception : assumeWontThrow;
 import std.container.rbtree : RedBlackTree, redBlackTree;
 
 import tagion.basic.Types : Buffer, FileExtension;
-import tagion.basic.basic : basename, log2, assumeTrusted;
 import tagion.basic.tagionexceptions : Check;
 
 import tagion.hibon.HiBON : HiBON;
@@ -33,10 +31,6 @@ import tagion.dart.DARTException : BlockFileException;
 import tagion.dart.Recycler : Recycler;
 import tagion.dart.BlockSegment;
 
-import tagion.basic.Debug : __write;
-import tagion.hibon.HiBONJSON : toPretty;
-
-//import tagion.dart.BlockSegmentAllocator;
 
 alias Index = Typedef!(ulong, ulong.init, "BlockIndex");
 enum INDEX_NULL = Index.init;
