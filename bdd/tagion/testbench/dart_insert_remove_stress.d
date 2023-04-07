@@ -31,7 +31,7 @@ mixin Main!(_main);
 
 int _main(string[] args) {
 
-    if (env.stage == Stage.commit) {
+    if (env.stage == Stage.performance) {
         BDDOptions bdd_options;
         setDefaultBDDOptions(bdd_options);
         bdd_options.scenario_name = __MODULE__;
@@ -48,7 +48,7 @@ int _main(string[] args) {
         const ulong samples = 10;
 
         auto dart_ADD_REMOVE_stress_feature = automation!(insert_remove_stress)();
-        dart_ADD_REMOVE_stress_feature.AddRemoveAndReadTheResult(dart_info);
+        dart_ADD_REMOVE_stress_feature.AddRemoveAndReadTheResult(dart_info, 100_000, 10_00, 1000);
 
         auto dart_ADD_REMOVE_stress_context = dart_ADD_REMOVE_stress_feature.run();
 

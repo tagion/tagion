@@ -52,13 +52,19 @@ class AddRemoveAndReadTheResult {
     auto gen = Mt19937(1234);
     auto insert_watch = StopWatch(AutoStart.no);
     auto read_watch = StopWatch(AutoStart.no);
-    const number_of_seeds = 1000;
+    uint number_of_seeds;
+    uint number_of_rounds;
+    uint number_of_samples;
 
     uint operations;
 
 
-    this(DartInfo info) {
+    this(DartInfo info, const uint number_of_seeds, const uint number_of_rounds, const uint number_of_samples) {
+        check(number_of_samples < number_of_seeds, "number of samples must be smaller than number of seeds");
         this.info = info;
+        this.number_of_rounds = number_of_rounds;
+        this.number_of_samples = number_of_samples;
+        this.number_of_seeds = number_of_seeds;
     }
 
     @Given("i have a dartfile")
@@ -87,12 +93,11 @@ class AddRemoveAndReadTheResult {
     Document instructions() {
 
 
-        foreach(i; 0..100) {
+        foreach(i; 0..number_of_rounds) {
             writefln("running %s", i);
             auto rnd = MinstdRand0(gen.front);
             gen.popFront;
-            auto sample_numbers = iota(random_archives.length).randomSample(100, rnd).array;
-            sample_numbers.map!(i => random_archives[i]).each!writeln;
+            auto sample_numbers = iota(random_archives.length).randomSample(number_of_samples, rnd).array;
             auto recorder = db1.recorder();
 
 
@@ -138,7 +143,7 @@ class AddRemoveAndReadTheResult {
         read_watch.stop();
         writeln(read_recorder[].walkLength);
 
-        assert(read_recorder[].walkLength == fingerprints.length);
+        check(read_recorder[].walkLength == fingerprints.length, "the length of the read archives is not the same as the expected");
         
         auto expected_read_docs = random_archives
             .filter!(s => s.in_dart == true)
@@ -150,15 +155,15 @@ class AddRemoveAndReadTheResult {
         auto expected_recorder = db1.recorder();
         expected_recorder.insert(expected_read_docs);
 
-        assert(equal(expected_recorder[].map!(a => a.filed), read_recorder[].map!(a => a.filed)), "data not the same");
-
-
+        check(equal(expected_recorder[].map!(a => a.filed), read_recorder[].map!(a => a.filed)), "data not the same");
 
 
         const long insert_time = insert_watch.peek.total!"msecs";
         const long read_time = read_watch.peek.total!"msecs";
-        writefln("Total number of operations %d, add and remove time: %d, \nread (%s) time: %d", operations+fingerprints.length, insert_time, fingerprints.length, read_time);
-        writefln("ADD REMOVE READ pr. sec: %.1f", operations+fingerprints.length/double(insert_time+read_time)*1000);
+        
+        writefln("Total number of operations: %d", operations+fingerprints.length);
+        writefln("ADD and REMOVE operations: %d. pr. sec: %s", operations, operations/double(insert_time)*1000);
+        writefln("READ operations: %s. pr.sec %s", fingerprints.length, fingerprints.length/double(read_time)*1000);
 
         db1.close;
         return result_ok;
