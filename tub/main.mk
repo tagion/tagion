@@ -124,6 +124,7 @@ include $(DTUB)/compile.mk
 # Profile setting
 #
 include $(TARGETS)/profile.mk
+include $(TARGETS)/valdgrind.mk
 
 include $(TARGETS)/ldc-build-runtime.mk
 
