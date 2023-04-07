@@ -66,14 +66,27 @@ UNITTEST_DOBJ=$(DOBJ)/unittest
 UNITTEST_BIN?=$(DBIN)/unittest
 UNITTEST_LOG?=$(DLOG)/unittest.log
 
+TMP_UNITTEST:=$(TMP_FILE)
+
+ifdef VALGRIND
+proto-unittest-run: PRETOOL_FLAGS+=--callgrind-out-file=$(CALLGRIND_UNITTEST_OUT)
+proto-unittest-run: INFO+=Callgrind file stored in $(CALLGRIND_UNITTEST_OUT)
+endif
+
 proto-unittest-run: $(DLOG)/.way
-proto-unittest-run: proto-unittest-build
+proto-unittest-run: proto-unittest-build 
 	$(PRECMD)
-	$(SCRIPT_LOG) $(UNITTEST_BIN) $(UNITTEST_LOG)
+	$(CHEXE) $(TMP_UNITTEST)
+	echo $(PRETOOL) $(PRETOOL_FLAGS) $(UNITTEST_BIN) > $(TMP_UNITTEST) 
+	echo $(TMP_UNITTEST)
+	$(SCRIPT_LOG) $(TMP_UNITTEST) $(UNITTEST_LOG)
+	echo $(INFO)
+
 
 proto-unittest-build: $(UNITTEST_BIN)
 
-$(UNITTEST_BIN):DFLAGS+=$(DIP25) $(DIP1000)
+
+$(UNITTEST_BIN): DFLAGS+=$(DIP25) $(DIP1000)
 $(UNITTEST_BIN): $(COVWAY) $$(DFILES)
 	$(PRECMD)
 	echo deps $?
@@ -116,7 +129,6 @@ env-unittest:
 	${call log.env, UNITTEST_FLAGS, $(UNITTEST_FLAGS)}
 	${call log.env, UNITTEST_BIN, $(UNITTEST_BIN)}
 	${call log.close}
-
 
 env: env-unittest
 
