@@ -90,10 +90,6 @@ class BlockFile {
         RecyclerFileStatistic _recycler_statistic;
     }
 
-    Index last_block_index() const pure nothrow @nogc {
-        return _last_block_index;
-    }
-
     const(BlockFileStatistic) statistic() const pure nothrow @nogc {
         return _statistic;
     }
@@ -101,11 +97,6 @@ class BlockFile {
     const(RecyclerFileStatistic) recyclerStatistic() const pure nothrow @nogc {
         return _recycler_statistic;
     }
-
-    // bool isRecyclable(const Index index) const pure nothrow {
-    //     return recycler.isRecyclable(index);
-    // }
-
 
 
     protected this() {
@@ -146,43 +137,6 @@ class BlockFile {
         recycler = Recycler(this);
     }
 
-    static BlockFile Inspect(
-        string filename,
-        void delegate(string msg) @safe report,
-        const uint max_iteration = uint.max) {
-        BlockFile result;
-        void try_it(void delegate() @safe dg) {
-            try {
-                dg();
-            }
-            catch (BlockFileException e) {
-                report(e.msg);
-            }
-        }
-
-        try_it({
-            File _file;
-            _file.open(filename, "r");
-            BlockFile.HeaderBlock _headerblock;
-            _file.seek(0);
-            _headerblock.read(_file, DEFAULT_BLOCK_SIZE);
-            result = new BlockFile(_headerblock.block_size);
-            result.file = _file;
-        });
-        if (result.file.size == 0) {
-            report(format("BlockFile %s size is 0", filename));
-        }
-        if (result) {
-            try_it(&result.readHeaderBlock);
-            result._last_block_index--;
-            try_it(&result.readMasterBlock);
-            try_it(&result.readStatistic);
-            result.recycler = Recycler(result);
-            //result.recycle_indices.max_iteration = max_iteration;
-            //try_it(&result.recycle_indices.read);
-        }
-        return result;
-    }
     /++
      Creates and empty BlockFile
 
