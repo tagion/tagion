@@ -198,3 +198,31 @@ unittest {
     }
 
 }
+
+
+
+struct RandomArchives {
+    import std.random;
+    import std.random : Random;
+
+    uint seed;
+    bool in_dart;
+    uint number_of_archives;
+
+    this(uint _seed, uint from = 1, uint to = 10) {
+        seed = _seed;
+        auto rnd = Random(_seed);
+        number_of_archives = uniform(from, to, rnd);
+    }
+
+    auto getValues() {
+        auto gen = Mt19937_64(seed);
+        return gen.front();
+    }
+
+
+}
+
+// unittest {
+
+// }
