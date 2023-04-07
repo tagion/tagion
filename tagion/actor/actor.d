@@ -7,6 +7,18 @@ import std.typecons;
 import core.thread;
 import std.exception;
 
+/* AssociativeArray; */
+bool all(Ctrl[Tid] AA, Ctrl ctrl) 
+/* if(unaryFun!Pred) */
+{
+    foreach(val; AA) {
+        if ( val != ctrl ) {
+            return false;
+        }
+    }
+    return true;
+}
+
 /**
  * Message "Atom" type
  * Examples:
@@ -195,14 +207,17 @@ static:
      */
     void task() nothrow;
 
-    TaskHandle[] children;
+    immutable void function()[string] children;
     /* ActorTask[string] children; // A list of children that the actor supervises */
-    Tid[Tid] failChildren; // An associative array of children that have recently send a fail message
-    Tid[Tid] startChildren; // An associative array of children that should be start
+    Ctrl[Tid] childrenState; // An
+    ///Deprecated: startChildren
+    bool[Tid] startChildren; // An associative array of children that should be start
+    bool[Tid] runChildren; // A list of children
+    bool[Tid] failChildren; // An associative array of children that have recently send a fail message
     bool stop;
 
-    void signal(Sig s) {
-        with (Sig) final switch (s) {
+    void signal(Sig signal) {
+        with (Sig) final switch (signal) {
         case STOP:
             stop = true;
             break;
@@ -214,37 +229,37 @@ static:
         with (Ctrl) final switch (msg.ctrl) {
         case STARTING:
             debug writeln(msg);
-            startChildren[msg.tid] = msg.tid;
+            /* startChildren[msg.tid] = msg.tid; */
             writeln("Is starting: ", startChildren);
             break;
 
         case ALIVE:
             debug writeln(msg);
-            if (msg.tid in failChildren) {
-                startChildren.remove(msg.tid);
-            }
+            /* if (msg.tid in failChildren) { */
+            /*     startChildren.remove(msg.tid); */
+            /* } */
             else {
                 throw new Exception("%s: never started".format(msg.tid));
             }
 
-            if (msg.tid in failChildren) {
-                failChildren.remove(msg.tid);
-            }
+            /* if (msg.tid in failChildren) { */
+            /*     failChildren.remove(msg.tid); */
+            /* } */
             break;
 
         case FAIL:
             debug writeln(msg);
             /// Add the failing child to the AA of children to restart
-            failChildren[msg.tid] = msg.tid;
+            /* failChildren[msg.tid] = msg.tid; */
             break;
 
         case END:
             debug writeln(msg);
-            if (msg.tid in failChildren) {
-                Thread.sleep(100.msecs);
-                writeln("Respawning actor");
-                // Uh respawn the actor, would be easier if we had a proper actor handle instead of a tid
-            }
+            /* if (msg.tid in failChildren) { */
+            /*     Thread.sleep(100.msecs); */
+            /*     writeln("Respawning actor"); */
+            /*     // Uh respawn the actor, would be easier if we had a proper actor handle instead of a tid */
+            /* } */
             break;
         }
     }
@@ -276,15 +291,20 @@ static:
             stop = false;
 
             setState(Ctrl.STARTING); // Tell the owner that you are starting.
-            scope (exit)
-                setState(Ctrl.END); // Tell the owner that you have finished.
+            scope (exit) setState(Ctrl.END); // Tell the owner that you have finished.
 
-            // check that children have started
-            receiveTimeout(
-                    1000.msecs,
-                    &control,
-                    &unknown,
-            );
+            /// Try to start all the child tasks
+            foreach(taskName, fn; children) {
+                Tid tid = spawn(fn);
+                register(taskName, tid);
+            }
+
+            // Check that the children have started goes through STARTING, until all are ALIVE
+            // TODO: add a timeout incase they don't start
+            while(!childrenState.all(Ctrl.ALIVE)) {
+                CtrlMsg startup = receiveOnly!CtrlMsg;
+                childrenState[startup.tid] = Ctrl.ALIVE;
+            }
 
             setState(Ctrl.ALIVE); // Tell the owner that you running
             while (!stop) {

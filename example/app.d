@@ -2,7 +2,6 @@
  * Examples for the actor library
  */
 
-
 module tagion.actor.example;
 
 import tagion.actor.actor;
@@ -14,9 +13,15 @@ import std.typecons;
 import std.exception;
 
 class SuperVisor : Actor {
+
+    /* static alias ta = Logger.task; */
+    /* const void function()[string] children = [ */
+    /*     "logger" : &ta, */
+    /*     /1* "counter" : &(Counter.task), *1/ */
+    /* ]; */
 static:
-   void task() nothrow {
-        assumeWontThrow(spawnActor!Logger("log"));
+
+    void task() nothrow {
 
         genActorTask;
     }
@@ -39,7 +44,6 @@ static:
 
     alias decrease = Msg!"decrease";
     alias increase = Msg!"increase";
-
 
     int count = 0;
 
@@ -94,26 +98,26 @@ alias LoggerHandle = ActorHandle!Logger;
 /// Running through flow of top-level actors
 void main() {
 
-    LoggerHandle logger = spawnActor!Logger("logger_task");
-    assert(checkCtrl(Ctrl.STARTING));
-    assert(checkCtrl(Ctrl.ALIVE));
+    /* LoggerHandle logger = spawnActor!Logger("logger_task"); */
+    /* assert(checkCtrl(Ctrl.STARTING)); */
+    /* assert(checkCtrl(Ctrl.ALIVE)); */
 
-    CounterHandle counter = spawnActor!Counter("counter_task");
-    assert(checkCtrl(Ctrl.STARTING));
-    assert(checkCtrl(Ctrl.ALIVE));
+    /* CounterHandle counter = spawnActor!Counter("counter_task"); */
+    /* assert(checkCtrl(Ctrl.STARTING)); */
+    /* assert(checkCtrl(Ctrl.ALIVE)); */
 
-    counter.send(Counter.increase());
-    logger.send(Logger.fatal(), "plana");
-    counter.send(Counter.decrease());
-    logger.send(Logger.hell(), "tuna");
-    counter.send(Counter.increase());
-    logger.send(Logger.info(), "plana");
+    /* counter.send(Counter.increase()); */
+    /* logger.send(Logger.fatal(), "plana"); */
+    /* counter.send(Counter.decrease()); */
+    /* logger.send(Logger.hell(), "tuna"); */
+    /* counter.send(Counter.increase()); */
+    /* logger.send(Logger.info(), "plana"); */
 
-    counter.send(Sig.STOP);
-    logger.send(Sig.STOP);
+    /* counter.send(Sig.STOP); */
+    /* logger.send(Sig.STOP); */
 
-    assert(checkCtrl(Ctrl.END));
-    assert(checkCtrl(Ctrl.END));
+    /* assert(checkCtrl(Ctrl.END)); */
+    /* assert(checkCtrl(Ctrl.END)); */
 
     /* spawnActor!SuperVisor("super"); */
     /* assert(checkCtrl(Ctrl.STARTING)); */
@@ -122,14 +126,45 @@ void main() {
     /* assert(checkCtrl(Ctrl.END)); */
     /* import std.typecons; */
 
-    import std.typetuple;
-    /* auto log = new Logger; */
-    void function()[string] tasks = ["logger" : &Logger.task];
-    nothrow void delegate()[string] actors = ["logger" : delegate { Logger.task(); } ];
-    Actor[string] objects = ["logger": new Logger(), "counter" : new Counter()];
-    /* TypeTuple!(TypeInfo_Class!Logger, TypeInfo_Class!Counter) types; */
-    import std.algorithm;
-    pragma(msg, typeof(["log" : &Logger.task, "count": &Counter.task]));
+    import std.meta;
+
+    // AA may cause GC allocation, however static initialisation should be possible in the future
+    void function()[string] tasks = [
+        "logger": &Logger.task,
+        "counter": &Counter.task,
+    ];
+
+    foreach (i, A; tasks) {
+        spawn(A);
+        assert(checkCtrl(Ctrl.STARTING));
+        assert(checkCtrl(Ctrl.ALIVE));
+    }
+
+    // pretty much the same as before
+    immutable nothrow void delegate()[string] tasks2 = [
+        "logger": delegate { Logger.task(); },
+        "counter": delegate { Counter.task(); },
+    ];
+
+    Actor[string] objects = [
+        "logger": new Logger(), // Unnecesarry gc allocation
+        "counter": new Counter() // Unnecesarry gc allocation
+    ];
+
+    // Compile time only, no additional allocation
+    alias Act = AliasSeq!(Logger, Counter); //
+
+    version(none)
+    foreach (i, A; Act) {
+        spawnActor!A(format("%s", i));
+        assert(checkCtrl(Ctrl.STARTING));
+        assert(checkCtrl(Ctrl.ALIVE));
+    }
+
+    foreach (i, A; Act) {
+    }
+
+    pragma(msg, typeof(["log": &Logger.task, "count": &Counter.task]));
     alias task = Logger.task;
     pragma(msg, typeof(&task));
 }
