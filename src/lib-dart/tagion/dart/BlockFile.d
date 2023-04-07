@@ -680,84 +680,10 @@ class BlockFile {
         return BlockSegmentRange(this);
     }
 
-    /++
-     + Fail type for the inspect function
-     +/
-    enum Fail {
-        NON = 0, /// No error detected in this Block
-        RECURSIVE, /// Block links is recursive
-        INCREASING, /// The next pointer should be greater than the block index
-        SEQUENCY, /**
-                     Block size in a sequency should be decreased by Block.DATA_SIZE
-                     between the current and the next block in a sequency
-                  */
-        LINK, /// Blocks should be double linked
-        ZERO_SIZE, /// The size of Recycled block should be zero
-        BAD_SIZE, /** Bad size means that a block is not allowed to have a size larger than DATA_SIZE
-                       if the next block is a head block
-                   */
-        RECYCLE_HEADER, /// Recycle block should not contain a header mask
-        RECYCLE_NON_ZERO, /// The size of an recycle block should be zero
 
-    }
-
-    /++
-     + Check the BlockFile
-     +
-     + Params:
-     +     fail  = is callback delegate which will be call when a Fail is detected
-     +     index  = Point to the block in the BlockFile
-     +     f      = is the Fail code
-     +     block  = is the failed block
-     +     data_flag = Set to `false` if block is a resycled block and `true` if it a data block
-     +/
-    bool inspect(bool delegate(
-            const Index index,
-            const Fail f,
-            const bool recycle_chain) @safe trace) {
-        scope bool[Index] visited;
-        scope bool end;
-        bool failed;
-        version (none) @safe
-        void check_data(bool check_recycle_mode)(ref BlockRange r) {
-            Block previous;
-            while (!r.empty && !end) {
-                auto current = r.front;
-                if ((r.index in visited) && (r.index !is INDEX_NULL)) {
-                    failed = true;
-                    end |= trace(r.index, Fail.RECURSIVE, current, check_recycle_mode);
-                }
-                visited[r.index] = true;
-                static if (!check_recycle_mode) {
-                    if (current.size == 0) {
-                        failed = true;
-                        end |= trace(r.index, Fail.ZERO_SIZE, current, check_recycle_mode);
-                    }
-                }
-                if (!failed) {
-                    end |= trace(r.index, Fail.NON, current, check_recycle_mode);
-                }
-                previous = r.front;
-                r.popFront;
-            }
-        }
-
-        return failed;
-    }
-
-    enum BlockSymbol {
-        file_header = 'H',
-        header = 'h',
-        empty = '_',
-        recycle = 'X',
-        data = '#',
-        none_existing = 'Z',
-
-    }
-
-    /++
-     + Used for debuging only to dump the Block's
-     +/
+    /**
+     * Used for debuging only to dump the Block's
+     */
     void dump(const uint segments_per_line = 6) {
 
         BlockSegmentRange seg_range = opSlice();
