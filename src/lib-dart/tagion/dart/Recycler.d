@@ -867,7 +867,7 @@ unittest {
 @safe
 unittest {
     // save claim save on same segment.
-    writefln("save claim save on same segment");
+    // writefln("save claim save on same segment");
     Recycler.print = false;
     scope (exit) {
         Recycler.print = false;
@@ -946,3 +946,43 @@ unittest {
 
 }
 
+@safe
+unittest {
+    // blocksegment range test.
+    scope (exit) {
+        Recycler.print = false;
+    }
+
+    immutable filename = fileId("recycle").fullpath;
+    BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
+    auto blockfile = BlockFile(filename);
+    scope (exit) {
+        blockfile.close;
+    }
+
+    Data[] datas = [
+        Data("abc"),
+        Data("1234"),
+        Data("wowo"),
+        Data("hugo"),
+    ];
+
+    foreach (data; datas) {
+        blockfile.save(data);
+    }
+    blockfile.store;
+
+    blockfile.dump;
+    blockfile.recycleDump;
+    blockfile.statisticDump;
+    blockfile.recycleStatisticDump;
+
+    auto block_segment_range = blockfile.opSlice();
+    assert(block_segment_range.walkLength == 7, "should contain 2 statistic, 1 master and 4 archives");
+    
+    foreach(i; 0..datas.length) {
+        assert(block_segment_range.front.type == "D");
+        block_segment_range.popFront;
+    }
+    assert(block_segment_range.walkLength == 3);
+}
