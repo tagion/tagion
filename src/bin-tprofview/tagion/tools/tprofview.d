@@ -22,10 +22,19 @@ struct ProfLine {
     uint num_calls;
     uint tree_time;
     uint func_time;
+    double per_calls;
     string func_name;
+    this(const uint num_calls, const uint tree_time, const uint func_time, string func_name) pure @nogc {
+        this.num_calls = num_calls;
+        this.tree_time = tree_time;
+        this.func_time = func_time;
+        per_calls = double(tree_time) / double(num_calls);
+        this.func_name = func_name;
+    }
+
     string toString() const {
         return format("%8d   %8d   %8d   %8.3f    %s", num_calls, tree_time, func_time,
-                double(tree_time) / double(num_calls),
+                per_calls,
                 func_name);
     }
 
@@ -35,6 +44,7 @@ enum ProfSort {
     calls,
     tree,
     func,
+    percalls,
 }
 
 struct ProfInfo {

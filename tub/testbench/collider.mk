@@ -35,7 +35,7 @@ bddrun: $(BDDTESTS)
 run-%: bddfiles bddinit 
 	$(PRECMD)
 	${call log.header, $* :: run bdd}
-	$(DBIN)/$* $(RUNFLAGS)
+	$(PRETOOL) $(DBIN)/$* $(RUNFLAGS)
 
 test-%: run-%
 	$(PRECMD)
