@@ -32,22 +32,6 @@ struct BlockSegment {
         this.index = index;
     }
 
-    uint size(BlockFile blockfile) const pure nothrow @nogc {
-        return blockfile.numberOfBlocks(doc.full_size);
-    }
-
-    Index next(BlockFile blockfile) const {
-        import std.stdio;
-
-        const _size = size(blockfile);
-
-        if (index >= blockfile.numberOfBlocks(blockfile.file.size)) {
-            return Index.init;
-        }
-
-        return Index(_size + index);
-    }
-
 }
 
 version (unittest) {
