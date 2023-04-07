@@ -121,14 +121,6 @@ class BlockFile {
         readInitial;
     }
 
-    /**
-       Used by the Inspect
-    */
-    protected this(immutable uint SIZE) pure nothrow {
-        this.BLOCK_SIZE = SIZE;
-        //  DATA_SIZE = BLOCK_SIZE - Block.HEADER_SIZE;
-        recycler = Recycler(this);
-    }
 
     /** 
      * Creates an empty BlockFile
@@ -677,25 +669,25 @@ class BlockFile {
     /**
      * Used for debuging only to dump the Block's
      */
-    void dump(const uint segments_per_line = 6) {
-        writefln("|TYPE [INDEX]SIZE");
+    void dump(const uint segments_per_line = 6, File fout = stdout) {
+        fout.writefln("|TYPE [INDEX]SIZE");
 
         BlockSegmentRange seg_range = opSlice();
         uint pos = 0;
         foreach (seg; seg_range) {
             if (pos == segments_per_line) {
-                writef("|");
-                writeln;
+                fout.writef("|");
+                fout.writeln;
                 pos = 0;
             }
-            writef("|%s [%s]%s", seg.type, seg.index, seg.size);
+            fout.writef("|%s [%s]%s", seg.type, seg.index, seg.size);
             pos++;
         }
-        writef("|");
-        writeln;
+        fout.writef("|");
+        fout.writeln;
     }
     
-    void recycleDump() {
+    void recycleDump(File fout = stdout) {
         import tagion.dart.Recycler : Segment;
 
         // writefln("recycle dump from blockfile");
@@ -707,20 +699,20 @@ class BlockFile {
         }
         while (index != Index.init) {
             auto add_segment = Segment(this, index);
-            writefln("Index(%s), size(%s), next(%s)", add_segment.index, add_segment
+            fout.writefln("Index(%s), size(%s), next(%s)", add_segment.index, add_segment
                     .size, add_segment.next);
             index = add_segment.next;
         }
     }
 
 
-    void statisticDump() const {
-        writeln(_statistic.toString);
-        writeln(_statistic.histogramString);
+    void statisticDump(File fout = stdout) const {
+        fout.writeln(_statistic.toString);
+        fout.writeln(_statistic.histogramString);
     }
-    void recycleStatisticDump() const {
-        writeln(_recycler_statistic.toString);        
-        writeln(_recycler_statistic.histogramString);
+    void recycleStatisticDump(File fout = stdout) const {
+        fout.writeln(_recycler_statistic.toString);        
+        fout.writeln(_recycler_statistic.histogramString);
     }
 
     

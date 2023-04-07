@@ -216,39 +216,38 @@ struct Recycler {
     /** 
      * Dumps the segments in the recycler.
      */
-    void dump() {
-        import std.stdio;
+    void dump(File fout = stdout) {
 
         if (indices.empty) {
-            writefln("indices empty");
+            fout.writefln("indices empty");
             return;
         }
 
         foreach (segment; indices) {
-            writef("INDEX: %s |", segment
+            fout.writef("INDEX: %s |", segment
                     .index);
-            writef("END: %s |", segment
+            fout.writef("END: %s |", segment
                     .end);
-            writefln("NEXT: %s ", segment.next);
+            fout.writefln("NEXT: %s ", segment.next);
         }
     }
     /** 
      * Dumps the segments in the to_be_recycled array.
      */
-    void dumpToBeRecycled() {
+    void dumpToBeRecycled(File fout = stdout) {
         import std.stdio;
 
         if (to_be_recycled.empty) {
-            writefln("indices empty");
+            fout.writefln("indices empty");
             return;
         }
 
         foreach (segment; to_be_recycled) {
-            writef("INDEX: %s |", segment
+            fout.writef("INDEX: %s |", segment
                     .index);
-            writef("END: %s |", segment
+            fout.writef("END: %s |", segment
                     .end);
-            writefln("NEXT: %s ", segment.next);
+            fout.writefln("NEXT: %s ", segment.next);
         }
     }
 
@@ -867,7 +866,7 @@ unittest {
 @safe
 unittest {
     // save claim save on same segment.
-    writefln("save claim save on same segment");
+    // writefln("save claim save on same segment");
     Recycler.print = false;
     scope (exit) {
         Recycler.print = false;
@@ -946,3 +945,51 @@ unittest {
 
 }
 
+@safe
+unittest {
+    // blocksegment range test.
+    scope (exit) {
+        Recycler.print = false;
+    }
+
+    immutable filename = fileId("recycle").fullpath;
+    BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
+    auto blockfile = BlockFile(filename);
+    scope (exit) {
+        blockfile.close;
+    }
+
+    Data[] datas = [
+        Data("abc"),
+        Data("1234"),
+        Data("wowo"),
+        Data("hugo"),
+    ];
+
+    foreach (data; datas) {
+        blockfile.save(data);
+    }
+    blockfile.store;
+    
+    import std.file;
+
+    auto fout = File(deleteme, "w");
+    scope(exit) {
+        fout.close;
+        deleteme.remove;
+    }
+
+    blockfile.dump(6, fout);
+    blockfile.recycleDump(fout);
+    blockfile.statisticDump(fout);
+    blockfile.recycleStatisticDump(fout);
+
+    auto block_segment_range = blockfile.opSlice();
+    assert(block_segment_range.walkLength == 7, "should contain 2 statistic, 1 master and 4 archives");
+    
+    foreach(i; 0..datas.length) {
+        assert(block_segment_range.front.type == "D");
+        block_segment_range.popFront;
+    }
+    assert(block_segment_range.walkLength == 3);
+}
