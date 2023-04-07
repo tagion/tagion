@@ -1,6 +1,7 @@
 /// Pseudo random range
 module tagion.utils.Random;
 import std.format;
+import std.range;
 
 
 /// Generates a pseudo random sequence
@@ -209,20 +210,26 @@ struct RandomArchives {
     bool in_dart;
     uint number_of_archives;
 
-    this(uint _seed, uint from = 1, uint to = 10) {
+    this(const uint _seed, const uint from = 1, const uint to = 10) pure const {
         seed = _seed;
-        auto rnd = Random(_seed);
+        auto rnd = Random(seed);
         number_of_archives = uniform(from, to, rnd);
     }
 
-    auto getValues() {
+    auto getValues() pure nothrow @nogc {
         auto gen = Mt19937_64(seed);
-        return gen.front();
+        return gen.take(number_of_archives);
     }
 
 
 }
 
-// unittest {
+unittest {
+    import std.stdio;
+    import std.algorithm;
+    const seed = 12345UL;
+    auto r = RandomArchives(seed, 1, 10);
+    auto t = RandomArchives(seed, 1, 10);
 
-// }
+    assert(r.getValues == t.getValues);
+}
