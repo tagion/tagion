@@ -236,34 +236,6 @@ class BlockFile {
         }
     }
 
-    pragma(msg, "fixme(cbr): The Statistic here should use tagion.utils.Statistic");
-    enum Limits : double {
-        MEAN = 10,
-        SUM = 100
-    }
-
-    protected bool check_statistic(const uint total_blocks, const uint blocks) pure const {
-        if (blocks > total_blocks) {
-            return false;
-        }
-        else if (_statistic.contains(blocks) || (total_blocks >= 2 * blocks)) {
-            return true;
-        }
-        else {
-            auto r = _statistic.result;
-            if (r.mean > Limits.MEAN) {
-                immutable limit = (r.mean - r.sigma);
-                if (blocks > limit) {
-                    immutable remain_blocks = total_blocks - blocks;
-                    if (_statistic.contains(remain_blocks) || (remain_blocks > r.mean)) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
     /++
      + The HeaderBlock is the first block in the BlockFile
      +/
