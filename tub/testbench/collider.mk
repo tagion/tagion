@@ -32,10 +32,16 @@ bddrun: $(BDDTESTS)
 
 .PHONY: bddrun
 
+ifdef VALGRIND
+run-%: PRETOOL_FLAGS+=--callgrind-out-file=$(DLOG)/callgrind.$*.log
+run-%: INFO+=Callgrind file stored in $(DLOG)/callgrind.$*.log
+endif
+
 run-%: bddfiles bddinit 
 	$(PRECMD)
 	${call log.header, $* :: run bdd}
-	$(PRETOOL) $(DBIN)/$* $(RUNFLAGS)
+	$(PRETOOL) $(PRETOOL_FLAGS) $(DBIN)/$* $(RUNFLAGS)
+	echo $(INFO)
 
 test-%: run-%
 	$(PRECMD)
