@@ -758,6 +758,14 @@ class BlockFile {
             }
             return cast(Buffer) text;
         }
+        {
+            import std.exception : assertThrown, ErrnoException;
+            // try to load an index that is out of bounds of the blockfile. 
+            File _file = File(fileId.fullpath, "w");
+            auto blockfile = new BlockFile(_file, SMALL_BLOCK_SIZE);
+            assertThrown!ErrnoException(blockfile.load(Index(5)));
+        }
+
 
         /// Create BlockFile
         {
