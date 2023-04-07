@@ -8,3 +8,4 @@ public import dart_pseudo_random=tagion.testbench.dart.dart_pseudo_random;
 public import dart_stress_test=tagion.testbench.dart.dart_stress_test;
 public import dart_sync_snap_back=tagion.testbench.dart.dart_sync_snap_back;
 public import dart_two_archives_deep_rim=tagion.testbench.dart.dart_two_archives_deep_rim;
+public import insert_remove_stress=tagion.testbench.dart.insert_remove_stress;

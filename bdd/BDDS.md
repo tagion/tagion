@@ -50,6 +50,8 @@
 
 [dart_two_archives_deep_rim.md](bdd/tagion/testbench/dart/dart_two_archives_deep_rim.md)
 
+[insert_remove_stress.md](bdd/tagion/testbench/dart/insert_remove_stress.md)
+
 [create_dart.md](bdd/tagion/testbench/functional/create_dart.md)
 
 [create_double_spend.md](bdd/tagion/testbench/functional/create_double_spend.md)
