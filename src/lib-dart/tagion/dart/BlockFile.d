@@ -121,14 +121,6 @@ class BlockFile {
         readInitial;
     }
 
-    // /**
-    //    Used by the Inspect
-    // */
-    // protected this(immutable uint SIZE) pure nothrow {
-    //     this.BLOCK_SIZE = SIZE;
-    //     //  DATA_SIZE = BLOCK_SIZE - Block.HEADER_SIZE;
-    //     recycler = Recycler(this);
-    // }
 
     /** 
      * Creates an empty BlockFile
