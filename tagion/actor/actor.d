@@ -50,20 +50,12 @@ bool checkCtrl(Ctrl msg) {
     return r[1] is msg;
 }
 
-/// Used by supervisor to represent a running task
-struct ActorTask {
-    string taskName;
-    Actor actor;
-}
-
-/* alias ActorTask(A, taskName) = Actor!A; */
-
 /**
  * A "reference" to an actor that may or may not be spawned, we will never know
  * Params:
  *  A = an actor type
  */
-struct ActorHandle(A : Actor) if(isActor!A) {
+struct ActorHandle(A : Actor) if (isActor!A) {
     import concurrency = std.concurrency;
 
     /// the tid of the spawned task
@@ -116,6 +108,10 @@ ActorHandle!A spawnActor(A : Actor, Args...)(string taskName, Args args) if (isA
 
     return ActorHandle!A(tid, taskName);
 }
+
+import std.meta;
+alias TaskHandle = AliasSeq!(Actor, string);
+
 
 // Delegate for dealing with exceptions sent from children
 version (none) void exceptionHandler(Exception e) {
@@ -173,13 +169,12 @@ nothrow void setState(Ctrl ctrl) {
     }
 }
 
-version(none)
-Tid[] spawnChildren(F)(F[] fns) /* if ( */ {
+version (none) Tid[] spawnChildren(A)(A[] fns)  {
     Tid[] tids;
     foreach (f; fns) {
-        // Starting and checking the children sequentially :(
+        // Starting and checking the children sequentially 🤮
         // Also bootstrapping
-        tids ~= spawn(f);
+        tids ~= spawn(A);
         assert(checkCtrl(Ctrl.STARTING));
         assert(checkCtrl(Ctrl.ALIVE));
     }
@@ -193,13 +188,14 @@ Tid[] spawnChildren(F)(F[] fns) /* if ( */ {
  * Examples: See [Actor examples]($(DOC_ROOT_OBJECTS)tagion.actor.example$(DOC_EXTENSION))
  */
 abstract class Actor {
+static:
 
     /**
      * The running task function your actor should implement
      */
-    nothrow void task();
-static:
+    void task() nothrow;
 
+    TaskHandle[] children;
     /* ActorTask[string] children; // A list of children that the actor supervises */
     Tid[Tid] failChildren; // An associative array of children that have recently send a fail message
     Tid[Tid] startChildren; // An associative array of children that should be start
@@ -275,7 +271,7 @@ static:
      * Params:
      *   opts = A list of message handlers similar to @std.concurrency.receive()
      */
-    nothrow void actorTask(T...)(T opts) {
+    nothrow void genActorTask(T...)(T opts) {
         try {
             stop = false;
 
@@ -285,9 +281,9 @@ static:
 
             // check that children have started
             receiveTimeout(
-                1000.msecs,
-                &control,
-                &unknown,
+                    1000.msecs,
+                    &control,
+                    &unknown,
             );
 
             setState(Ctrl.ALIVE); // Tell the owner that you running

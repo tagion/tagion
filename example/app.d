@@ -18,7 +18,7 @@ static:
    void task() nothrow {
         assumeWontThrow(spawnActor!Logger("log"));
 
-        actorTask;
+        genActorTask;
     }
 }
 
@@ -31,7 +31,7 @@ alias SuperVisorHandle = ActorHandle!SuperVisor;
 class Counter : Actor {
 static:
     void task() nothrow {
-        actorTask(
+        genActorTask(
                 &_decrease,
                 &_increase,
         );
@@ -79,7 +79,7 @@ static:
     }
 
     nothrow void task() {
-        actorTask(
+        genActorTask(
                 &_info,
                 &_hell,
                 &_fatal,
@@ -120,4 +120,16 @@ void main() {
     /* assert(checkCtrl(Ctrl.ALIVE)); */
     /* logger.send(Sig.STOP); */
     /* assert(checkCtrl(Ctrl.END)); */
+    /* import std.typecons; */
+
+    import std.typetuple;
+    /* auto log = new Logger; */
+    void function()[string] tasks = ["logger" : &Logger.task];
+    nothrow void delegate()[string] actors = ["logger" : delegate { Logger.task(); } ];
+    Actor[string] objects = ["logger": new Logger(), "counter" : new Counter()];
+    /* TypeTuple!(TypeInfo_Class!Logger, TypeInfo_Class!Counter) types; */
+    import std.algorithm;
+    pragma(msg, typeof(["log" : &Logger.task, "count": &Counter.task]));
+    alias task = Logger.task;
+    pragma(msg, typeof(&task));
 }
