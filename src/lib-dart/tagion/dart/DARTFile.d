@@ -2264,7 +2264,7 @@ unittest {
         {
             // add two of the same archives and remove it. The bullseye should be null.
 
-            writefln("two same archives");
+            // writefln("two same archives");
             DARTFile.create(filename_A);
             auto dart_A = new DARTFile(net, filename_A);
 
@@ -2285,7 +2285,7 @@ unittest {
             // dart_A.dump();
 
             auto dart_blockfile = BlockFile(filename_A);
-            dart_blockfile.dump;
+            // dart_blockfile.dump;
             dart_blockfile.close;
 
             auto remove_recorder = dart_A.recorder();
@@ -2295,7 +2295,7 @@ unittest {
             // dart_A.dump();
 
             dart_blockfile = BlockFile(filename_A);
-            dart_blockfile.dump;
+            // dart_blockfile.dump;
             dart_blockfile.close;
 
             assert(dart_A.bullseye == null);
@@ -2303,47 +2303,6 @@ unittest {
         }
 
         {
-            writefln("one archive and remove");
-            // add one archive and remove it. The bullseye should be null.
-            DARTFile.create(filename_A);
-            auto dart_A = new DARTFile(net, filename_A);
-
-            const ulong[] deep_table = [
-                0xABCD_EF0b_11ef_0923,
-                0x1234_EF0b_11ef_0923
-            ];
-
-            auto docs = deep_table.map!(a => DARTFakeNet.fake_doc(a));
-            auto recorder = dart_A.recorder();
-            foreach (doc; docs) {
-                recorder.add(doc);
-            }
-            auto remove_fingerprint = DARTIndex(recorder[].front.fingerprint);
-            // writefln("%s", remove_fingerprint);
-
-            dart_A.modify(recorder);
-            dart_A.dump();
-
-            auto dart_blockfile = BlockFile(filename_A);
-            dart_blockfile.dump;
-            dart_blockfile.close;
-
-            auto remove_recorder = dart_A.recorder();
-            remove_recorder.remove(remove_fingerprint);
-            dart_A.modify(remove_recorder);
-            // writefln("after remove");
-            dart_A.dump();
-
-            dart_blockfile = BlockFile(filename_A);
-            dart_blockfile.dump;
-            dart_blockfile.close;
-
-            // assert(dart_A.bullseye == null);
-
-        }
-
-        version (none) {
-            writefln("different archives top rim snapback?");
             DARTFile.create(filename_A);
             auto dart_A = new DARTFile(net, filename_A);
 
@@ -2364,7 +2323,7 @@ unittest {
             // dart_A.dump();
 
             auto dart_blockfile = BlockFile(filename_A);
-            dart_blockfile.dump;
+            // dart_blockfile.dump;
             dart_blockfile.close;
 
             auto remove_recorder = dart_A.recorder();
@@ -2374,7 +2333,7 @@ unittest {
             // dart_A.dump();
 
             dart_blockfile = BlockFile(filename_A);
-            dart_blockfile.dump;
+            // dart_blockfile.dump;
             dart_blockfile.close;
 
             ubyte[] rim_path = [0xAB];
@@ -2384,13 +2343,12 @@ unittest {
 
         }
 
-        version (none) {
-            writefln("open dart and close");
+        {
             DARTFile.create(filename_A);
             auto dart_A = new DARTFile(net, filename_A);
             dart_A.close;
             auto blockfile = BlockFile(filename_A);
-            blockfile.dump;
+            // blockfile.dump;
             blockfile.close;
 
             dart_A = new DARTFile(net, filename_A);

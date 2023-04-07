@@ -758,7 +758,7 @@ unittest {
         // writefln("after recycleDump");
         // blockfile.recycleDump;
         // writefln("entire blockfile dump");
-        blockfile.dump;
+        // blockfile.dump;
 
         assert(blockfile.recycler.to_be_recycled.length == 0);
         // the reason why this becomes one is because the middle gap is filled with the recycler and statistic block.
@@ -814,7 +814,7 @@ unittest {
 
 @safe
 unittest {
-    Recycler.print = true;
+    Recycler.print = false;
     scope (exit) {
         Recycler.print = false;
     }
@@ -852,13 +852,13 @@ unittest {
         new Segment(Index(25UL), 5),
     ];
 
-    recycler.indices[].array
-        .sort!((a, b) => a < b)
-        .each!writeln;
+    // recycler.indices[].array
+    //     .sort!((a, b) => a < b)
+    //     .each!writeln;
 
-    recycler.segments[].array
-        .sort!((a, b) => a < b)
-        .each!writeln;
+    // recycler.segments[].array
+    //     .sort!((a, b) => a < b)
+    //     .each!writeln;
 
     assert(equal(recycler.indices[].array.sort!((a, b) => a < b), recycler.segments[].array.sort!((a, b) => a < b)));
 
@@ -883,20 +883,20 @@ unittest {
     const data = Data("abc");
     const index = blockfile.save(data).index;
     blockfile.store();
-    blockfile.dump;
+    // blockfile.dump;
     assert(blockfile.recycler.indices.length == 0, "Should be empty");
 
     blockfile.dispose(index);
     blockfile.save(data);
     blockfile.store();
-    blockfile.dump;
+    // blockfile.dump;
 
 }
 
 @safe
 unittest {
     // pseudo random add remove blocks.
-    writefln("pseudo random add");
+    // writefln("pseudo random add");
     Recycler.print = false;
     scope (exit) {
         Recycler.print = false;
@@ -939,7 +939,7 @@ unittest {
     }
 
     blockfile.store;
-    blockfile.recycleStatisticDump;
+    // blockfile.recycleStatisticDump;
     blockfile.close;
     // writefln("dump after");
     // blockfile.dump;

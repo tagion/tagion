@@ -8,9 +8,7 @@ import std.bitmanip : binwrite = write, binread = read;
 import std.stdio;
 import std.file : remove, rename;
 import std.typecons;
-import std.algorithm.sorting : sort;
 import std.algorithm.searching : until;
-import std.algorithm.mutation : SwapStrategy;
 import std.algorithm.iteration : filter, each, map;
 
 import std.range : isForwardRange, isInputRange;
@@ -19,11 +17,10 @@ import std.datetime;
 import std.format;
 import std.conv : to;
 import std.traits;
-import std.exception : assumeUnique, assumeWontThrow;
+import std.exception : assumeWontThrow;
 import std.container.rbtree : RedBlackTree, redBlackTree;
 
 import tagion.basic.Types : Buffer, FileExtension;
-import tagion.basic.basic : basename, log2, assumeTrusted;
 import tagion.basic.tagionexceptions : Check;
 
 import tagion.hibon.HiBON : HiBON;
@@ -34,10 +31,6 @@ import tagion.dart.DARTException : BlockFileException;
 import tagion.dart.Recycler : Recycler;
 import tagion.dart.BlockSegment;
 
-import tagion.basic.Debug : __write;
-import tagion.hibon.HiBONJSON : toPretty;
-
-//import tagion.dart.BlockSegmentAllocator;
 
 alias Index = Typedef!(ulong, ulong.init, "BlockIndex");
 enum INDEX_NULL = Index.init;
@@ -90,10 +83,6 @@ class BlockFile {
         RecyclerFileStatistic _recycler_statistic;
     }
 
-    Index last_block_index() const pure nothrow @nogc {
-        return _last_block_index;
-    }
-
     const(BlockFileStatistic) statistic() const pure nothrow @nogc {
         return _statistic;
     }
@@ -101,11 +90,6 @@ class BlockFile {
     const(RecyclerFileStatistic) recyclerStatistic() const pure nothrow @nogc {
         return _recycler_statistic;
     }
-
-    // bool isRecyclable(const Index index) const pure nothrow {
-    //     return recycler.isRecyclable(index);
-    // }
-
 
 
     protected this() {
@@ -146,53 +130,13 @@ class BlockFile {
         recycler = Recycler(this);
     }
 
-    static BlockFile Inspect(
-        string filename,
-        void delegate(string msg) @safe report,
-        const uint max_iteration = uint.max) {
-        BlockFile result;
-        void try_it(void delegate() @safe dg) {
-            try {
-                dg();
-            }
-            catch (BlockFileException e) {
-                report(e.msg);
-            }
-        }
-
-        try_it({
-            File _file;
-            _file.open(filename, "r");
-            BlockFile.HeaderBlock _headerblock;
-            _file.seek(0);
-            _headerblock.read(_file, DEFAULT_BLOCK_SIZE);
-            result = new BlockFile(_headerblock.block_size);
-            result.file = _file;
-        });
-        if (result.file.size == 0) {
-            report(format("BlockFile %s size is 0", filename));
-        }
-        if (result) {
-            try_it(&result.readHeaderBlock);
-            result._last_block_index--;
-            try_it(&result.readMasterBlock);
-            try_it(&result.readStatistic);
-            result.recycler = Recycler(result);
-            //result.recycle_indices.max_iteration = max_iteration;
-            //try_it(&result.recycle_indices.read);
-        }
-        return result;
-    }
-    /++
-     Creates and empty BlockFile
-
-     Params:
-     $(LREF finename)    = File name of the BlockFile.
-     If file exists with the same name this file will be overwritten
-     $(LREF description) = This text will be written into the header
-     $(LREF BLOCK_SIZE)  = Set the block size of the underlining BlockFile
-
-     +/
+    /** 
+     * Creates an empty BlockFile
+     * Params:
+     *   filename = File name of the blockfile
+     *   description = this text will be written to the header
+     *   BLOCK_SIZE = set the block size of the underlying BlockFile.
+     */
     static void create(string filename, string description, immutable uint BLOCK_SIZE) {
         auto _file = File(filename, "w+");
         auto blockfile = new BlockFile(_file, BLOCK_SIZE);
@@ -221,13 +165,14 @@ class BlockFile {
         blockfile.store;
         return blockfile;
     }
-    /++
-     + Opens an existing file which previously was created by BlockFile.create
-     +
-     + Params:
-     +     filename  = Name of the blockfile
-     +     read_only = If `true` the file is opened as read-only
-     +/
+
+    /** 
+     * Opens an existing file which previously was created by BlockFile.create
+     * Params:
+     *   filename = Name of the blockfile
+     *   read_only = If `true` the file is opened as read-only
+     * Returns: 
+     */
     static BlockFile opCall(string filename, const bool read_only = false) {
         auto temp_file = new BlockFile();
         temp_file.file = File(filename, "r");
@@ -247,7 +192,11 @@ class BlockFile {
     ~this() {
         file.close;
     }
-
+    /** 
+     * Creates the header block.
+     * Params:
+     *   name = name of the header
+     */
     protected void createHeader(string name) {
         check(!hasheader, "Header is already created");
         check(file.size == 0, "Header can not be created the file is not empty");
@@ -263,10 +212,10 @@ class BlockFile {
         hasheader = true;
     }
 
-    /++
-     + Returns:
-     +     `true` of the file blockfile has a header
-     +/
+    /** 
+     * 
+     * Returns: `true` if the blockfile has a header.
+     */
     bool hasHeader() const pure nothrow {
         return hasheader;
     }
@@ -282,37 +231,9 @@ class BlockFile {
         }
     }
 
-    pragma(msg, "fixme(cbr): The Statistic here should use tagion.utils.Statistic");
-    enum Limits : double {
-        MEAN = 10,
-        SUM = 100
-    }
-
-    protected bool check_statistic(const uint total_blocks, const uint blocks) pure const {
-        if (blocks > total_blocks) {
-            return false;
-        }
-        else if (_statistic.contains(blocks) || (total_blocks >= 2 * blocks)) {
-            return true;
-        }
-        else {
-            auto r = _statistic.result;
-            if (r.mean > Limits.MEAN) {
-                immutable limit = (r.mean - r.sigma);
-                if (blocks > limit) {
-                    immutable remain_blocks = total_blocks - blocks;
-                    if (_statistic.contains(remain_blocks) || (remain_blocks > r.mean)) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
-    /++
-     + The HeaderBlock is the first block in the BlockFile
-     +/
+    /**
+     * The HeaderBlock is the first block in the BlockFile
+    */
     @safe
     struct HeaderBlock {
         enum ID_SIZE = 32;
@@ -502,14 +423,14 @@ class BlockFile {
         return masterblock;
     }
 
-    // Write the master block to the filesystem and truncate the file
+    /// Write the master block to the filesystem and truncate the file
     protected void writeMasterBlock() {
         seek(_last_block_index);
         masterblock.write(file, BLOCK_SIZE);
     }
 
     private void readMasterBlock() {
-        // The masterblock is locate as the lastblock in the file
+        // The masterblock is located at the last_block_index in the file
         seek(_last_block_index);
         masterblock.read(file, BLOCK_SIZE);
     }
@@ -532,13 +453,18 @@ class BlockFile {
         hasheader = true;
     }
 
+    /** 
+     * Read the statistic into the blockfile.
+     */
     private void readStatistic() @safe {
         if (masterblock.statistic_index !is INDEX_NULL) {
             immutable buffer = load(masterblock.statistic_index);
             _statistic = BlockFileStatistic(Document(buffer));
         }
     }
-
+    /** 
+     * Read the recycler statistic into the blockfile.
+     */
     private void readRecyclerStatistic() @safe {
         if (masterblock.recycler_statistic_index !is INDEX_NULL) {
             immutable buffer = load(masterblock.recycler_statistic_index);
@@ -546,22 +472,13 @@ class BlockFile {
         }
     }
 
-    /++
-     + Loads a chain of blocks from the filesystem starting from index
-     + This function will not load data in BlockSegment list
-     + The allocated chain list has to be stored first
-     +
-     + Params:
-     +     index = Points to an start block in the chain of blocks
-     +
-     + Returns:
-     +     Buffer of all data in the chain of blocks
-     +
-     + Throws:
-     +     BlockFileException if this not first block in a chain or
-     +     some because of some other failures in the blockfile system
-     +/
-    const(Document) load(const Index index, const bool check_format = true) {
+    /** 
+     * Loads a document at an index. If the document is not valid it throws an exception.
+     * Params:
+     *   index = Points to the start of a block in the chain of blocks.
+     * Returns: Document of a blocksegment
+     */
+    const(Document) load(const Index index) {
         return BlockSegment(this, index).doc;
     }
 
@@ -605,22 +522,15 @@ class BlockFile {
         return T(doc);
     }
 
-    /++
-     + Marks a chain for blocks as erased
-     + This function does actually erease the block before the store method is called
-     + The list of recyclable block also be update after the store method has been called
-     +
-     + This prevents it from danaging the BlockFile until a sequency of operations has been performed
-     +
-     + Params:
-     +     index = Points to an start block in the chain of blocks
-     +
-     + Returns:
-     +     Begin to the next block sequency in the
-     + Throws:
-     +     BlockFileException
-     +
-     +/
+    /** 
+     * Marks a block for the recycler as erased
+     * This function ereases the block before the store method is called
+     * The list of recyclable blocks is also updated after the store method has been called.
+     * 
+     * This prevents it from damaging the BlockFile until a sequency of operations has been performed,
+     * Params:
+     *   index = Points to an start of a block in the chain of blocks.
+     */
     void dispose(const Index index) {
         import LEB128 = tagion.utils.LEB128;
 
@@ -648,13 +558,13 @@ class BlockFile {
         return Index(recycler.claim(nblocks));
     }
 
-    /++
-     + Allocates new document
-     + Does not acctually update the BlockFile just reserves new block's
-     +
-     + Params:
-     +     doc = Document to be reserved and allocated
-     +/
+    /** 
+     * Allocates new document
+     * Does not acctually update the BlockFile just reserves new block's
+     * Params:
+     *   doc = Document to be reserved and allocated
+     * Returns: a pointer to the blocksegment.
+     */
     const(BlockSegment*) save(const(Document) doc) {
         auto result = new const(BlockSegment)(doc, claim(doc.full_size));
 
@@ -666,13 +576,12 @@ class BlockFile {
     const(BlockSegment*) save(T)(const T rec) if (isHiBONRecord!T) {
         return save(rec.toDoc);
     }
-    /++
-     +
-     + This function will erase, write, update the BlockFile and update the recyle bin
-     + Stores the list of BlockSegment to the disk
-     + If this function throws an Exception the Blockfile has not been updated
-     +
-     +/
+
+    /** 
+     * This function will erase, write, update the BlockFile and update the recyle bin
+     * Stores the list of BlockSegment to the disk
+     * If this function throws an Exception the Blockfile has not been updated
+     */
     void store() {
         writeStatistic;
         _recycler_statistic(recycler.length());
@@ -764,88 +673,14 @@ class BlockFile {
         return BlockSegmentRange(this);
     }
 
-    /++
-     + Fail type for the inspect function
-     +/
-    enum Fail {
-        NON = 0, /// No error detected in this Block
-        RECURSIVE, /// Block links is recursive
-        INCREASING, /// The next pointer should be greater than the block index
-        SEQUENCY, /**
-                     Block size in a sequency should be decreased by Block.DATA_SIZE
-                     between the current and the next block in a sequency
-                  */
-        LINK, /// Blocks should be double linked
-        ZERO_SIZE, /// The size of Recycled block should be zero
-        BAD_SIZE, /** Bad size means that a block is not allowed to have a size larger than DATA_SIZE
-                       if the next block is a head block
-                   */
-        RECYCLE_HEADER, /// Recycle block should not contain a header mask
-        RECYCLE_NON_ZERO, /// The size of an recycle block should be zero
 
-    }
-
-    /++
-     + Check the BlockFile
-     +
-     + Params:
-     +     fail  = is callback delegate which will be call when a Fail is detected
-     +     index  = Point to the block in the BlockFile
-     +     f      = is the Fail code
-     +     block  = is the failed block
-     +     data_flag = Set to `false` if block is a resycled block and `true` if it a data block
-     +/
-    bool inspect(bool delegate(
-            const Index index,
-            const Fail f,
-            const bool recycle_chain) @safe trace) {
-        scope bool[Index] visited;
-        scope bool end;
-        bool failed;
-        version (none) @safe
-        void check_data(bool check_recycle_mode)(ref BlockRange r) {
-            Block previous;
-            while (!r.empty && !end) {
-                auto current = r.front;
-                if ((r.index in visited) && (r.index !is INDEX_NULL)) {
-                    failed = true;
-                    end |= trace(r.index, Fail.RECURSIVE, current, check_recycle_mode);
-                }
-                visited[r.index] = true;
-                static if (!check_recycle_mode) {
-                    if (current.size == 0) {
-                        failed = true;
-                        end |= trace(r.index, Fail.ZERO_SIZE, current, check_recycle_mode);
-                    }
-                }
-                if (!failed) {
-                    end |= trace(r.index, Fail.NON, current, check_recycle_mode);
-                }
-                previous = r.front;
-                r.popFront;
-            }
-        }
-
-        return failed;
-    }
-
-    enum BlockSymbol {
-        file_header = 'H',
-        header = 'h',
-        empty = '_',
-        recycle = 'X',
-        data = '#',
-        none_existing = 'Z',
-
-    }
-
-    /++
-     + Used for debuging only to dump the Block's
-     +/
+    /**
+     * Used for debuging only to dump the Block's
+     */
     void dump(const uint segments_per_line = 6) {
+        writefln("|TYPE [INDEX]SIZE");
 
         BlockSegmentRange seg_range = opSlice();
-
         uint pos = 0;
         foreach (seg; seg_range) {
             if (pos == segments_per_line) {
@@ -853,9 +688,8 @@ class BlockFile {
                 writeln;
                 pos = 0;
             }
-            writef("|%s index(%s) size(%s)", seg.type, seg.index, seg.size);
+            writef("|%s [%s]%s", seg.type, seg.index, seg.size);
             pos++;
-
         }
         writef("|");
         writeln;
@@ -879,10 +713,17 @@ class BlockFile {
         }
     }
 
+
+    void statisticDump() const {
+        writeln(_statistic.toString);
+        writeln(_statistic.histogramString);
+    }
     void recycleStatisticDump() const {
         writeln(_recycler_statistic.toString);        
         writeln(_recycler_statistic.histogramString);
     }
+
+    
 
     // Block index 0 is means null
     // The first block is use as BlockFile header
@@ -909,6 +750,14 @@ class BlockFile {
             }
             return cast(Buffer) text;
         }
+        {
+            import std.exception : assertThrown, ErrnoException;
+            // try to load an index that is out of bounds of the blockfile. 
+            File _file = File(fileId.fullpath, "w");
+            auto blockfile = new BlockFile(_file, SMALL_BLOCK_SIZE);
+            assertThrown!ErrnoException(blockfile.load(Index(5)));
+        }
+
 
         /// Create BlockFile
         {

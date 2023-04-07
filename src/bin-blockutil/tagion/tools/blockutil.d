@@ -50,6 +50,10 @@ struct BlockFileAnalyzer {
         blockfile.recycleStatisticDump;
     }
 
+    void dumpStatistic() {
+        blockfile.statisticDump;
+    }
+
     // static string blockType(const bool recycle_block) {
     //     return recycle_block ? "Recycle" : "Data";
     // }
@@ -165,6 +169,8 @@ int _main(string[] args) {
     bool sequency; /// Prints the sequency on the next header
     bool dump_recycler;
     bool dump_recycler_statistic;
+    bool dump_statistic;
+
     string output_filename;
     enum logo = import("logo.txt");
     void report(string msg) {
@@ -179,6 +185,7 @@ int _main(string[] args) {
         "dump", "Dumps the entire blockfile", &dump,
         "dumprecycler", "Dumps the recycler", &dump_recycler,
         "rs|recyclerstatistic", "Dumps the recycler statistic block", &dump_recycler_statistic,
+        "s|statistic", "Dumps the statistic block", &dump_statistic,
         "inspect|c", "Inspect the blockfile format", &inspect,
         "ignore|i", "Ignore blockfile format error", &ignore, //        "iter", "Set the max number of iterations do by the inspect", &analyzer.inspect_iterations,
         //       "max", format(
@@ -256,6 +263,10 @@ int _main(string[] args) {
 
     if (dump_recycler_statistic) {
         analyzer.recycleStatisticDump;
+    }
+
+    if (dump_statistic) {
+        analyzer.dumpStatistic;
     }
 
     // if (block_number !is 0) {
