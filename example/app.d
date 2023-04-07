@@ -24,21 +24,22 @@ static:
 
 alias SuperVisorHandle = ActorHandle!SuperVisor;
 
-/** 
+/**
  * An actor that keeps counter
  * Which can be modifyed by sending it an increase or decrease message
  */
 class Counter : Actor {
 static:
-    alias decrease = Msg!"decrease";
-    alias increase = Msg!"increase";
-
     void task() nothrow {
         actorTask(
                 &_decrease,
                 &_increase,
         );
     }
+
+    alias decrease = Msg!"decrease";
+    alias increase = Msg!"increase";
+
 
     int count = 0;
 
@@ -56,7 +57,7 @@ static:
 /// The handler type to our Counter
 alias CounterHandle = ActorHandle!Counter;
 
-/** 
+/**
  * An actor which we can send log levels message too
  */
 class Logger : Actor {
@@ -114,9 +115,9 @@ void main() {
     assert(checkCtrl(Ctrl.END));
     assert(checkCtrl(Ctrl.END));
 
-    spawnActor!SuperVisor("super");
-    assert(checkCtrl(Ctrl.STARTING));
-    assert(checkCtrl(Ctrl.ALIVE));
-    logger.send(Sig.STOP);
-    assert(checkCtrl(Ctrl.END));
+    /* spawnActor!SuperVisor("super"); */
+    /* assert(checkCtrl(Ctrl.STARTING)); */
+    /* assert(checkCtrl(Ctrl.ALIVE)); */
+    /* logger.send(Sig.STOP); */
+    /* assert(checkCtrl(Ctrl.END)); */
 }

@@ -193,14 +193,13 @@ Tid[] spawnChildren(F)(F[] fns) /* if ( */ {
  * Examples: See [Actor examples]($(DOC_ROOT_OBJECTS)tagion.actor.example$(DOC_EXTENSION))
  */
 abstract class Actor {
+
     /**
      * The running task function your actor should implement
      */
-    // Isn't the compiler supposed to warn you if you don't implement an interface function?
-    // It doesn't seem to be the case in D.
-    void task(A...)(A args) nothrow;
-
+    nothrow void task();
 static:
+
     /* ActorTask[string] children; // A list of children that the actor supervises */
     Tid[Tid] failChildren; // An associative array of children that have recently send a fail message
     Tid[Tid] startChildren; // An associative array of children that should be start
