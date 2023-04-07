@@ -48,7 +48,7 @@ int _main(string[] args) {
         const ulong samples = 10;
 
         auto dart_ADD_REMOVE_stress_feature = automation!(insert_remove_stress)();
-
+        dart_ADD_REMOVE_stress_feature.AddRemoveAndReadTheResult(dart_info);
 
         auto dart_ADD_REMOVE_stress_context = dart_ADD_REMOVE_stress_feature.run();
 

@@ -5,6 +5,20 @@ import tagion.hibon.Document;
 import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
 
+import std.file : mkdirRecurse;
+import std.stdio;
+import std.format;
+
+
+// dart
+import tagion.dart.DARTFakeNet;
+import tagion.testbench.dart.dartinfo;
+
+import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
+import tagion.dart.DART : DART;
+import tagion.dart.DARTFile : DARTFile;
+import tagion.dart.Recorder : Archive, RecordFactory;
+
 enum feature = Feature(
         "insert random stress test",
         [
@@ -20,9 +34,23 @@ alias FeatureContext = Tuple!(
     [])
 class AddRemoveAndReadTheResult {
 
+    DartInfo info;
+    DART db1;
+
+    this(DartInfo info) {
+        this.info = info;
+    }
+
     @Given("i have a dartfile")
     Document dartfile() {
-        return Document();
+        mkdirRecurse(info.module_path);
+        // create the dartfile
+        DART.create(info.dartfilename);
+
+        Exception dart_exception;
+        db1 = new DART(info.net, info.dartfilename, dart_exception);
+        check(dart_exception is null, format("Failed to open DART %s", dart_exception.msg));
+        return result_ok;
     }
 
     @Given("i have an array of randomarchives")
