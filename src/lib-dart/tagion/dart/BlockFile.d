@@ -10,7 +10,6 @@ import std.file : remove, rename;
 import std.typecons;
 import std.algorithm.sorting : sort;
 import std.algorithm.searching : until;
-import std.algorithm.mutation : SwapStrategy;
 import std.algorithm.iteration : filter, each, map;
 
 import std.range : isForwardRange, isInputRange;
@@ -685,9 +684,9 @@ class BlockFile {
      * Used for debuging only to dump the Block's
      */
     void dump(const uint segments_per_line = 6) {
+        writefln("|TYPE [INDEX]SIZE");
 
         BlockSegmentRange seg_range = opSlice();
-
         uint pos = 0;
         foreach (seg; seg_range) {
             if (pos == segments_per_line) {
@@ -695,9 +694,8 @@ class BlockFile {
                 writeln;
                 pos = 0;
             }
-            writef("|%s index(%s) size(%s)", seg.type, seg.index, seg.size);
+            writef("|%s [%s]%s", seg.type, seg.index, seg.size);
             pos++;
-
         }
         writef("|");
         writeln;
