@@ -210,13 +210,13 @@ struct RandomArchives {
     bool in_dart;
     uint number_of_archives;
 
-    this(const uint _seed, const uint from = 1, const uint to = 10) pure const {
+    this(const uint _seed, const uint from = 1, const uint to = 10) pure const @safe {
         seed = _seed;
         auto rnd = Random(seed);
         number_of_archives = uniform(from, to, rnd);
     }
 
-    auto getValues() pure nothrow @nogc {
+    auto values() pure nothrow @nogc @safe {
         auto gen = Mt19937_64(seed);
         return gen.take(number_of_archives);
     }
@@ -232,5 +232,5 @@ unittest {
     auto r = RandomArchives(seed, 1, 10);
     auto t = RandomArchives(seed, 1, 10);
 
-    assert(r.getValues == t.getValues);
+    assert(r.values == t.values);
 }
