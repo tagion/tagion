@@ -1,5 +1,7 @@
 
-test: unittest bddreport
+test: bddreport
+
+bddreport: unittest
 
 .PHONY: test
 
