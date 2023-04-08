@@ -55,7 +55,7 @@ ddd-%:
 
 bddenv: $(TESTENV)
 
-$(TESTENV):
+$(TESTENV): $(DBIN)
 	$(PRECMD)
 	$(SCRIPTS)/genenv.sh $@
 	chmod 750 $@
