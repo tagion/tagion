@@ -20,6 +20,7 @@ private {
     import core.thread : Fiber;
     import std.range.primitives : isInputRange, ElementType;
 
+    import tagion.basic.Debug : __write;
     import tagion.basic.Types : Buffer, isBufferType, isTypedef;
     import tagion.basic.basic : EnumText, assumeTrusted;
     import tagion.Keywords;
@@ -40,7 +41,7 @@ private {
     import tagion.basic.tagionexceptions : Check;
     import tagion.utils.Miscellaneous : toHex = toHexString;
 
-    import std.stdio : writefln;
+    import std.stdio : writeln, writefln;
     import tagion.hibon.HiBONRecord;
     import tagion.hibon.HiBONJSON : toPretty;
 }
@@ -62,7 +63,10 @@ shared static this() @trusted {
  +     fingerprint[rim]
  +/
 @safe
-ubyte rim_key(F)(F rim_keys, const uint rim) pure @nogc if (isBufferType!F) {
+ubyte rim_key(F)(F rim_keys, const uint rim) pure if (isBufferType!F) {
+    if (rim >= rim_keys.length) {
+        debug __write("%s rim=%d", rim_keys.hex, rim);
+    }
     return rim_keys[rim];
 }
 
@@ -101,7 +105,6 @@ enum SECTOR_MAX_SIZE = 1 << (ushort.sizeof * 8);
 import std.algorithm;
 
 alias check = Check!DARTException;
-
 
 /++
  + DART File system
@@ -921,7 +924,6 @@ alias check = Check!DARTException;
 
     }
 
-
     enum RIMS_IN_SECTOR = 2;
     /**
      * $(SMALL_TABLE
@@ -966,7 +968,7 @@ alias check = Check!DARTException;
                 Branches branches;
                 if (rim < RIMS_IN_SECTOR) {
                     if (branch_index !is INDEX_NULL) {
-                        
+
                         branches = blockfile.load!Branches(branch_index);
 
                         
@@ -1045,7 +1047,7 @@ alias check = Check!DARTException;
                             // DART does not store a branch this means that it contains a leave.
                             // Leave means and archive
                             // The new Archives is constructed to include the archive which is already in the DART
-                            auto archive_in_dart = new Archive(manufactor.net, doc);
+                            auto archive_in_dart = new Archive(manufactor.net, doc, Archive.Type.ADD);
                             scope (success) {
                                 // The archive is erased and it will be added again to the DART
                                 // if it not removed by and action in the record
@@ -1054,7 +1056,7 @@ alias check = Check!DARTException;
                             }
                             pragma(msg, "fixme(pr): review this for refactor of dart.");
                             if (range.oneLeft) {
-                                auto one_archive = range.front;
+                                const one_archive = range.front;
                                 if (!one_archive.done) {
                                     range.popFront;
 
@@ -1062,6 +1064,7 @@ alias check = Check!DARTException;
                                     if (one_archive.fingerprint == archive_in_dart.fingerprint) {
                                         // if only one archive left in database
                                         if (one_archive.isRemove(get_type)) {
+                                            writefln("Archive remove %s", one_archive.fingerprint.toHex);
                                             one_archive.doit;
                                             return Leave.init;
                                         }
@@ -1075,6 +1078,10 @@ alias check = Check!DARTException;
                                     auto recorder = manufactor.recorder;
                                     recorder.insert(archive_in_dart);
                                     recorder.insert(one_archive);
+                                    writefln("%s",
+                                            one_archive.fingerprint == archive_in_dart.fingerprint);
+                                    writefln("-- insert inner recorder %s %s", rim, one_archive.isRemove(get_type));
+                                    recorder.dump;
                                     auto archives_range = recorder.archives[];
                                     do {
                                         auto sub_range = RimKeyRange(archives_range, rim);
@@ -1125,12 +1132,12 @@ alias check = Check!DARTException;
                             auto one_archive = range.front;
                             if (!one_archive.done) {
                                 range.popFront;
+                                one_archive.doit;
                                 pragma(msg, "This line is never called");
                                 if (one_archive.isRemove(get_type)) {
                                     return Leave.init;
                                 }
 
-                                one_archive.doit;
                                 lonely_rim_key = one_archive.fingerprint.rim_key(rim);
                                 if (rim == RIMS_IN_SECTOR) {
                                     // Return a branch with as single leave when the leave is on the on
@@ -1151,6 +1158,12 @@ alias check = Check!DARTException;
                                 const sub_archive = range.front;
                                 immutable rim_key = sub_archive.fingerprint.rim_key(rim);
                                 auto sub_range = RimKeyRange(range, rim);
+                                if (rim_key == 0) {
+                                    writefln("rim_key=%d", rim_key);
+                                    sub_range.save.each!(a => writefln("%s %s %s", a.fingerprint.toHex, a.type, (
+                                            () @trusted => cast(void*) a.fingerprint)()));
+                                }
+
                                 if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
                                     branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key), rim + 1);
                                 }
@@ -1768,6 +1781,7 @@ unittest {
                     }
                 }
                 // dart_A.blockfile.dump;
+                recorder.dump;
                 dart_A.modify(recorder);
                 saved_archives |= added_archives;
                 saved_archives &= ~removed_archives;
@@ -1782,7 +1796,6 @@ unittest {
             assert(dart_A.fingerprint == dart_B.fingerprint);
         })();
     }
-    
 
     {
         // The bug we want to find
