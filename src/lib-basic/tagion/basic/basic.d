@@ -15,24 +15,19 @@ import std.conv;
  Returns:
  a immuatble do
 +/
-immutable(BUF) buf_idup(BUF)(immutable(Buffer) buffer)
-{
+immutable(BUF) buf_idup(BUF)(immutable(Buffer) buffer) {
     pragma(msg, "fixme(cbr): looks redundent");
     return cast(BUF)(buffer.idup);
 }
 
-template suffix(string name, size_t index)
-{
-    static if (index is 0)
-    {
+template suffix(string name, size_t index) {
+    static if (index is 0) {
         alias suffix = name;
     }
-    else static if (name[index - 1]!is '.')
-    {
+    else static if (name[index - 1]!is '.') {
         alias suffix = suffix!(name, index - 1);
     }
-    else
-    {
+    else {
         enum cut_name = name[index .. $];
         alias suffix = cut_name;
     }
@@ -41,14 +36,11 @@ template suffix(string name, size_t index)
 /++
  Template function returns the suffux name after the last '.'
  +/
-template basename(alias K)
-{
-    static if (is(K == string))
-    {
+template basename(alias K) {
+    static if (is(K == string)) {
         enum name = K;
     }
-    else
-    {
+    else {
         enum name = K.stringof;
     }
     enum basename = suffix!(name, name.length);
@@ -60,24 +52,20 @@ enum NameOf(alias nameType) = __traits(identifier, nameType);
  Returns:
  function name of the current function
 +/
-mixin template FUNCTION_NAME()
-{
+mixin template FUNCTION_NAME() {
     import tagion.basic.basic : basename;
 
     enum __FUNCTION_NAME__ = basename!(__FUNCTION__)[0 .. $ - 1];
 }
 
 ///
-unittest
-{
+unittest {
     enum name_another = "another";
     import std.algorithm.searching : countUntil;
 
-    struct Something
-    {
+    struct Something {
         mixin("int " ~ name_another ~ ";");
-        void check()
-        {
+        void check() {
             // Check that basename removes (this.) from the scope name space
             static assert(this.another.stringof.countUntil('.') == this_dot.countUntil('.'));
             static assert(basename!(this.another) == name_another);
@@ -92,29 +80,24 @@ unittest
 /++
  Builds and enum string out of a string array
 +/
-template EnumText(string name, string[] list, bool first = true)
-{
-    static if (first)
-    {
+template EnumText(string name, string[] list, bool first = true) {
+    static if (first) {
         enum begin = "enum " ~ name ~ "{";
         alias EnumText = EnumText!(begin, list, false);
     }
-    else static if (list.length > 0)
-    {
+    else static if (list.length > 0) {
         enum k = list[0];
         enum code = name ~ k ~ " = " ~ '"' ~ k ~ '"' ~ ',';
         alias EnumText = EnumText!(code, list[1 .. $], false);
     }
-    else
-    {
+    else {
         enum code = name ~ "}";
         alias EnumText = code;
     }
 }
 
 ///
-unittest
-{
+unittest {
     enum list = ["red", "green", "blue"];
     mixin(EnumText!("Colour", list));
     static assert(Colour.red == list[0]);
@@ -128,10 +111,8 @@ unittest
  Returns:
  log2(n)
  +/
-@trusted int log2(ulong n)
-{
-    if (n == 0)
-    {
+@trusted int log2(ulong n) {
+    if (n == 0) {
         return -1;
     }
     import core.bitop : bsr;
@@ -140,8 +121,7 @@ unittest
 }
 
 ///
-unittest
-{
+unittest {
     // Undefined value returns -1
     assert(log2(0) == -1);
     assert(log2(17) == 4);
@@ -154,8 +134,7 @@ unittest
  Generate a temporary file name
 +/
 @trusted
-string tempfile()
-{
+string tempfile() {
     import std.file : deleteme;
 
     int dummy;
@@ -166,25 +145,20 @@ string tempfile()
  Returns:
  true if the type T is one of types in the list TList
 +/
-template isOneOf(T, TList...)
-{
-    static if (TList.length == 0)
-    {
+template isOneOf(T, TList...) {
+    static if (TList.length == 0) {
         enum isOneOf = false;
     }
-    else static if (is(T == TList[0]))
-    {
+    else static if (is(T == TList[0])) {
         enum isOneOf = true;
     }
-    else
-    {
+    else {
         alias isOneOf = isOneOf!(T, TList[1 .. $]);
     }
 }
 
 ///
-static unittest
-{
+static unittest {
     import std.meta;
 
     alias Seq = AliasSeq!(long, int, ubyte);
@@ -197,29 +171,23 @@ static unittest
    Returns:
    void if not type is found
  +/
-template CastTo(T, TList...)
-{
-    static if (TList.length is 0)
-    {
+template CastTo(T, TList...) {
+    static if (TList.length is 0) {
         alias CastTo = void;
     }
-    else
-    {
+    else {
         alias castT = TList[0];
-        static if (is(T : castT))
-        {
+        static if (is(T : castT)) {
             alias CastTo = castT;
         }
-        else
-        {
+        else {
             alias CastTo = CastTo!(T, TList[1 .. $]);
         }
     }
 }
 
 ///
-static unittest
-{
+static unittest {
     static assert(is(void == CastTo!(string, AliasSeq!(int, long, double))));
     static assert(is(double == CastTo!(float, AliasSeq!(int, long, double))));
     static assert(is(string == CastTo!(string, AliasSeq!(uint, string))));
@@ -231,8 +199,7 @@ static unittest
 import std.typecons : Tuple;
 
 alias FileNames = Tuple!(string, "tempdir", string, "filename", string, "fullpath");
-const(FileNames) fileId(T)(string ext, string prefix = null) @safe
-{
+const(FileNames) fileId(T)(string ext, string prefix = null) @safe {
     import std.process : environment, thisProcessID;
     import std.file;
     import std.path;
@@ -247,20 +214,15 @@ const(FileNames) fileId(T)(string ext, string prefix = null) @safe
     return names;
 }
 
-template EnumContinuousSequency(Enum) if (is(Enum == enum))
-{
-    template Sequency(EList...)
-    {
-        static if (EList.length is 1)
-        {
+template EnumContinuousSequency(Enum) if (is(Enum == enum)) {
+    template Sequency(EList...) {
+        static if (EList.length is 1) {
             enum Sequency = true;
         }
-        else static if (EList[0] + 1 is EList[1])
-        {
+        else static if (EList[0] + 1 is EList[1]) {
             enum Sequency = Sequency!(EList[1 .. $]);
         }
-        else
-        {
+        else {
             enum Sequency = false;
         }
     }
@@ -269,10 +231,8 @@ template EnumContinuousSequency(Enum) if (is(Enum == enum))
 }
 
 ///
-static unittest
-{
-    enum Count
-    {
+static unittest {
+    enum Count {
         zero,
         one,
         two,
@@ -281,8 +241,7 @@ static unittest
 
     static assert(EnumContinuousSequency!Count);
 
-    enum NoCount
-    {
+    enum NoCount {
         zero,
         one,
         three = 3
@@ -290,8 +249,7 @@ static unittest
 
     static assert(!EnumContinuousSequency!NoCount);
 
-    enum OffsetCount
-    {
+    enum OffsetCount {
         one = 1,
         two,
         three
@@ -304,8 +262,7 @@ static unittest
 enum isEqual(T1, T2) = is(T1 == T2);
 //enum isUnqualEqual(T1, T2) = is(Unqual!T1 == T2);
 
-unittest
-{
+unittest {
     import std.traits : Unqual;
     import std.meta : ApplyLeft, ApplyRight;
 
@@ -318,24 +275,20 @@ unittest
 }
 
 /// Calling any system functions.
-template assumeTrusted(alias F)
-{
+template assumeTrusted(alias F) {
     import std.traits;
 
     static assert(isUnsafe!F);
 
-    auto assumeTrusted(Args...)(Args args) @trusted
-    {
+    auto assumeTrusted(Args...)(Args args) @trusted {
         return F(args);
     }
 }
 
 ///
 @safe
-unittest
-{
-    auto bar(int b) @system
-    {
+unittest {
+    auto bar(int b) @system {
         return b + 1;
     }
 
@@ -343,8 +296,7 @@ unittest
     assert(b == 6);
 
     // applicable to 0-ary function
-    static auto foo() @system
-    {
+    static auto foo() @system {
         return 3;
     }
 
@@ -372,8 +324,7 @@ unittest
     {
         import std.concurrency;
 
-        static void task() @safe
-        {
+        static void task() @safe {
             const result = 2 * assumeTrusted!(receiveOnly!int);
             assumeTrusted!({ ownerTid.send(result); });
             alias trusted_owner = assumeTrusted!(ownerTid);
@@ -388,29 +339,22 @@ unittest
     }
 }
 
-protected template _staticSearchIndexOf(int index, alias find, L...)
-{
+protected template _staticSearchIndexOf(int index, alias find, L...) {
     import std.meta : staticIndexOf;
 
-    static if (isType!find)
-    {
+    static if (isType!find) {
         enum _staticSearchIndexOf = staticIndexOf!(find, L);
     }
-    else
-    {
-        static if (L.length is index)
-        {
+    else {
+        static if (L.length is index) {
             enum _staticSearchIndexOf = -1;
         }
-        else
-        {
+        else {
             enum found = find!(L[index]);
-            static if (found)
-            {
+            static if (found) {
                 enum _staticSearchIndexOf = index;
             }
-            else
-            {
+            else {
                 enum _staticSearchIndexOf = _staticSearchIndexOf!(index + 1, find, L);
             }
         }
@@ -426,13 +370,11 @@ First index where find has been found
 If nothing has been found the template returns -1
  */
 
-template staticSearchIndexOf(alias find, L...)
-{
+template staticSearchIndexOf(alias find, L...) {
     enum staticSearchIndexOf = _staticSearchIndexOf!(0, find, L);
 }
 
-static unittest
-{
+static unittest {
     import std.traits : isIntegral, isFloatingPoint;
 
     alias seq = AliasSeq!(string, int, long, char);
@@ -451,8 +393,7 @@ enum unitdata = "unitdata";
 * Returns:
 *   unittest data filename
  */
-string unitfile(string filename, string file = __FILE__) @safe
-{
+string unitfile(string filename, string file = __FILE__) @safe {
     import std.path;
 
     return buildPath(file.dirName, unitdata, filename);
@@ -465,70 +406,57 @@ string unitfile(string filename, string file = __FILE__) @safe
  * Returns:
  *   mangle of callable T
  */
-template mangleFunc(alias T) if (isCallable!T)
-{
+template mangleFunc(alias T) if (isCallable!T) {
     import core.demangle : mangle;
 
     alias mangleFunc = mangle!(FunctionTypeOf!(T));
 }
 
 pragma(msg, "fixme(ib): replace template with functions like sendTrusted");
-@safe mixin template TrustedConcurrency()
-{
-    private
-    {
+@safe mixin template TrustedConcurrency() {
+    private {
         import concurrency = std.concurrency;
         import core.time : Duration;
 
         alias Tid = concurrency.Tid;
 
-        static void send(Args...)(Tid tid, Args args) @trusted
-        {
+        static void send(Args...)(Tid tid, Args args) @trusted {
             concurrency.send(tid, args);
         }
 
-        static void prioritySend(Args...)(Tid tid, Args args) @trusted
-        {
+        static void prioritySend(Args...)(Tid tid, Args args) @trusted {
             concurrency.prioritySend(tid, args);
         }
 
-        static void receive(Args...)(Args args) @trusted
-        {
+        static void receive(Args...)(Args args) @trusted {
             concurrency.receive(args);
         }
 
-        static auto receiveOnly(T...)() @trusted
-        {
+        static auto receiveOnly(T...)() @trusted {
             return concurrency.receiveOnly!T;
         }
 
-        static bool receiveTimeout(T...)(Duration duration, T ops) @trusted
-        {
+        static bool receiveTimeout(T...)(Duration duration, T ops) @trusted {
             return concurrency.receiveTimeout!T(duration, ops);
         }
 
-        static Tid ownerTid() @trusted
-        {
+        static Tid ownerTid() @trusted {
             return concurrency.ownerTid;
         }
 
-        static Tid thisTid() @safe
-        {
+        static Tid thisTid() @safe {
             return concurrency.thisTid;
         }
 
-        static Tid spawn(F, Args...)(F fn, Args args) @trusted
-        {
+        static Tid spawn(F, Args...)(F fn, Args args) @trusted {
             return concurrency.spawn(fn, args);
         }
 
-        static Tid locate(string name) @trusted
-        {
+        static Tid locate(string name) @trusted {
             return concurrency.locate(name);
         }
 
-        static bool register(string name, Tid tid) @trusted
-        {
+        static bool register(string name, Tid tid) @trusted {
             return concurrency.register(name, tid);
         }
     }
