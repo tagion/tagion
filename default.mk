@@ -8,7 +8,6 @@ export TEST_STAGE?=commit
 
 DFLAGS+=$(DVERSION)=REDBLACKTREE_SAFE_PROBLEM
 DFLAGS+=$(DVERSION)=SYNC_BLOCKFILE_WORKING #this is the version for debugging the recycler segments has overlaps. recorder: a < a
-DFLAGS+=$(DVERSION)=SYNC_BLOCKFILE_PROBLEM #disabled unittests
 
 # Extra DFLAGS for the testbench 
 BDDDFLAGS+=$(DDEBUG_SYMBOLS)
