@@ -1727,7 +1727,7 @@ unittest {
     version (SYNC_BLOCKFILE_PROBLEM) {
         { // Large random test
             auto rand = Random!ulong(1234_5678_9012_345UL);
-            enum N = 500;
+            enum N = 1000;
             auto random_table = new ulong[N];
             foreach (ref r; random_table) {
                 r = rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
