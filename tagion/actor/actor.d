@@ -408,23 +408,24 @@ mixin template ActorTask(T...) {
             setState(Ctrl.STARTING); // Tell the owner that you are starting.
             scope (exit) setState(Ctrl.END); // Tell the owner that you have finished.
 
-            foreach(c; children) {
-                Tid tid = spawn(&c.task); // use spawnActor;
-                childrenState[tid] = Ctrl.STARTING;
+            foreach(child; children) {
+                alias Child = typeof(child);
+                auto childhandle = spawnActor!Child(child.toString);
+                childrenState[childhandle.tid] = Ctrl.STARTING;
             }
             debug writeln("CHILDSTATE:", childrenState);
 
-            // Should have a timeout incase the children don't commit alive;
+            // TODO: Should have a timeout incase the children don't commit alive;
             while(!childrenState.all(Ctrl.ALIVE)) {
-                CtrlMsg msg = receiveOnly!CtrlMsg;
+                CtrlMsg msg = receiveOnly!CtrlMsg; // TODO: don't use receiveOnly
                 childrenState[msg.tid] = msg.ctrl;
-                writeln("STARTSEQUENCE: ", msg);
+                debug writeln("STARTSEQUENCE: ", msg);
             }
 
             setState(Ctrl.ALIVE); // Tell the owner that you running
             while (!stop) {
                 receive(
-                        T, // That messages that you pass to your templates
+                        T, // The message handler you pass to your Actor template
                         &signal,
                         &control,
                         &ownerTerminated,

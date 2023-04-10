@@ -185,4 +185,5 @@ void main() {
     assert(checkCtrl(Ctrl.ALIVE));
 
     Super.send(Sig.STOP);
+    assert(checkCtrl(Ctrl.END));
 }
