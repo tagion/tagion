@@ -157,27 +157,37 @@ struct Recycler {
      * Recycles the segments. Goes over the list of recycle_segments. 
      * First it takes the lowerbound. If there is a element in the 
      * lowerbound, the index of the current segment is changed to the one
-     * of the lowerbound.back and the lowerbound.back is removed.
+     * of the lowerbound.back and the `lower_range.back` is removed.
      * The same step is used for the upperbound using the front of the elements.
+     * We go over all the new segments that needs to be recycled.
+     * First we get `lowerBound` in the `indices`. The `indices` are sorted by
+     * index meaning we get all sgements by indexes as a range
+     * that are smaller or equal to our segment. If the segments connext
+     * we add remove it and create a new one. The same procedure is used for
+     * the upperrange.
+     *
      * Params:
      *   recycle_segments = newly disposed segments
      */
     void recycle(Segment*[] recycle_segments) {
 
         foreach (insert_segment; recycle_segments) {
-
             auto lower_range = indices.lowerBound(insert_segment);
             if (!lower_range.empty && lower_range.back.end == insert_segment.index) {
+
                 insert_segment.index = lower_range.back.index;
                 insert_segment.size = lower_range.back.size + insert_segment.size;
+                // remove the lowerrange segment since we have created a new segment 
+                // that incorporates this segment.
                 remove(lower_range.back);
             }
+
             auto upper_range = indices.upperBound(insert_segment);
             if (!upper_range.empty && upper_range.front.index == insert_segment.end) {
                 insert_segment.size = upper_range.front.size + insert_segment.size;
                 remove(upper_range.front);
             }
-
+            // lastly we insert the new segment.
             insert(insert_segment);
 
         }

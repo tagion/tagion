@@ -281,23 +281,22 @@ alias check = Check!DARTException;
 
         Index index;
         Buffer fingerprint;
-        string return_pos;
 
         bool empty() pure const nothrow {
             return (index is INDEX_NULL) && (fingerprint is null);
         }
 
         mixin HiBONRecord!(q{ 
-            this(const Index index, Buffer fingerprint, string return_pos = null) {
+            this(const Index index, Buffer fingerprint) {
                 this.index = index;
                 this.fingerprint = fingerprint;
-                this.return_pos = return_pos;
+
             }
 
-            this(const Index index, DARTIndex hash_pointer, string return_pos = null) {
+            this(const Index index, DARTIndex hash_pointer) {
                 this.index = index;
                 this.fingerprint = cast(Buffer) hash_pointer;
-                this.return_pos = return_pos;
+
             }
         });
     }
@@ -956,19 +955,7 @@ alias check = Check!DARTException;
         Leave traverse_dart(R)(
                 ref R range,
                 const Index branch_index,
-                immutable uint rim = 0) @safe
-
-        out (result) {
-            if (rim <= 2) {
-                const doc = cacheLoad(result.index);
-                if (!Branches.isRecord(doc) && result.index != Index.init) {
-                    writefln("ERROR OUT: index %s rim %s, empty: %s, Document: %s", result.index, rim, doc.empty, doc
-                            .toPretty);
-                }
-            }
-        }
-
-        do {
+                immutable uint rim = 0) @safe {
             if (!range.empty) {
                 auto archive = range.front;
                 Index erase_block_index;
@@ -1737,65 +1724,65 @@ unittest {
         auto read_dart_A = new DARTFile(net, filename_A);
         assert(dart_A.fingerprint == read_dart_A.fingerprint);
     }
-    version (SYNC_BLOCKFILE_PROBLEM) {
-        { // Large random test
-            auto rand = Random!ulong(1234_5678_9012_345UL);
-            enum N = 500;
-            auto random_table = new ulong[N];
-            foreach (ref r; random_table) {
-                r = rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
-            }
-            DARTFile.create(filename_A);
-            DARTFile.create(filename_B);
-            // Recorder recorder_B;
-            auto dart_A = new DARTFile(net, filename_A);
-            auto dart_B = new DARTFile(net, filename_B);
 
-            BitArray saved_archives;
-            (() @trusted { saved_archives.length = N; })();
-            auto rand_index = Random!uint(1234);
-            enum ITERATIONS = 7;
-            enum SELECT_ITER = 35;
-            (() @trusted {
-                foreach (i; 0 .. ITERATIONS) {
-                    auto recorder = dart_A.recorder;
-                    BitArray check_archives;
-                    BitArray added_archives;
-                    BitArray removed_archives;
-                    check_archives.length = N;
-                    added_archives.length = N;
-                    removed_archives.length = N;
-                    foreach (j; 0 .. SELECT_ITER) {
-                        immutable index = rand_index.value(N);
-                        if (!check_archives[index]) {
-                            const doc = net.fake_doc(random_table[index]);
-                            if (saved_archives[index]) {
-                                recorder.remove(doc);
-                                removed_archives[index] = true;
-                            }
-    else {
-                                recorder.add(doc);
-                                added_archives[index] = true;
-                            }
-                            check_archives[index] = true;
-                        }
-                    }
-                    // dart_A.blockfile.dump;
-                    dart_A.modify(recorder);
-                    saved_archives |= added_archives;
-                    saved_archives &= ~removed_archives;
-                    // dart_A.dump;
-                }
-                auto recorder_B = dart_B.recorder;
-
-                saved_archives.bitsSet.each!(
-                    n => recorder_B.add(net.fake_doc(random_table[n])));
-                dart_B.modify(recorder_B);
-                // dart_B.dump;
-                assert(dart_A.fingerprint == dart_B.fingerprint);
-            })();
+    { // Large random test
+        auto rand = Random!ulong(1234_5678_9012_345UL);
+        enum N = 1000;
+        auto random_table = new ulong[N];
+        foreach (ref r; random_table) {
+            r = rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
         }
+        DARTFile.create(filename_A);
+        DARTFile.create(filename_B);
+        // Recorder recorder_B;
+        auto dart_A = new DARTFile(net, filename_A);
+        auto dart_B = new DARTFile(net, filename_B);
+
+        BitArray saved_archives;
+        (() @trusted { saved_archives.length = N; })();
+        auto rand_index = Random!uint(1234);
+        enum ITERATIONS = 7;
+        enum SELECT_ITER = 35;
+        (() @trusted {
+            foreach (i; 0 .. ITERATIONS) {
+                auto recorder = dart_A.recorder;
+                BitArray check_archives;
+                BitArray added_archives;
+                BitArray removed_archives;
+                check_archives.length = N;
+                added_archives.length = N;
+                removed_archives.length = N;
+                foreach (j; 0 .. SELECT_ITER) {
+                    immutable index = rand_index.value(N);
+                    if (!check_archives[index]) {
+                        const doc = net.fake_doc(random_table[index]);
+                        if (saved_archives[index]) {
+                            recorder.remove(doc);
+                            removed_archives[index] = true;
+                        }
+                        else {
+                            recorder.add(doc);
+                            added_archives[index] = true;
+                        }
+                        check_archives[index] = true;
+                    }
+                }
+                // dart_A.blockfile.dump;
+                dart_A.modify(recorder);
+                saved_archives |= added_archives;
+                saved_archives &= ~removed_archives;
+                // dart_A.dump;
+            }
+            auto recorder_B = dart_B.recorder;
+
+            saved_archives.bitsSet.each!(
+                n => recorder_B.add(net.fake_doc(random_table[n])));
+            dart_B.modify(recorder_B);
+            // dart_B.dump;
+            assert(dart_A.fingerprint == dart_B.fingerprint);
+        })();
     }
+    
 
     {
         // The bug we want to find
