@@ -33,19 +33,15 @@ alias TaskPtr = void delegate();
 
 struct TemplateActor {
 static:
-    BBB b;
-    AAA a;
-    alias children = AliasSeq!(a, b);
-    /* void ini() { */
-    /*     children = tuple(a, b); */
-    /* } */
+    Logger logger;
+    Counter count;
+    alias children = AliasSeq!(logger);
 
     void message(Msg!"msg", string str) {writeln(str);}
     mixin ActorTask!(&message);
 }
 
 class SuperVisor : Actor {
-
 static:
 
     void task() nothrow {
@@ -95,7 +91,7 @@ alias CounterHandle = ActorHandle!Counter;
 /**
  * An actor which we can send log levels message too
  */
-struct Logger  {
+class Logger : Actor {
 static:
     alias hell = Msg!"hell";
     alias info = Msg!"info";
@@ -114,12 +110,11 @@ static:
     }
 
     nothrow void task() {
-        /* genActorTask( */
-        /*         &_info, */
-        /*         &_hell, */
-        /*         &_fatal, */
-        /* ); */
-        assumeWontThrow(writeln("logger"));
+        genActorTask(
+                &_info,
+                &_hell,
+                &_fatal,
+        );
     }
 
 }
@@ -184,10 +179,10 @@ void main() {
     /* assert(checkCtrl(Ctrl.STARTING)); */
     /* assert(checkCtrl(Ctrl.ALIVE)); */
 
-    auto t = spawnActor!TemplateActor("Hello");
-    t.send("aa");
-    t.send(6);
+    auto Super = spawnActor!TemplateActor("Super");
 
     assert(checkCtrl(Ctrl.STARTING));
     assert(checkCtrl(Ctrl.ALIVE));
+
+    Super.send(Sig.STOP);
 }
