@@ -281,23 +281,22 @@ alias check = Check!DARTException;
 
         Index index;
         Buffer fingerprint;
-        string return_pos;
 
         bool empty() pure const nothrow {
             return (index is INDEX_NULL) && (fingerprint is null);
         }
 
         mixin HiBONRecord!(q{ 
-            this(const Index index, Buffer fingerprint, string return_pos = null) {
+            this(const Index index, Buffer fingerprint) {
                 this.index = index;
                 this.fingerprint = fingerprint;
-                this.return_pos = return_pos;
+
             }
 
-            this(const Index index, DARTIndex hash_pointer, string return_pos = null) {
+            this(const Index index, DARTIndex hash_pointer) {
                 this.index = index;
                 this.fingerprint = cast(Buffer) hash_pointer;
-                this.return_pos = return_pos;
+
             }
         });
     }
