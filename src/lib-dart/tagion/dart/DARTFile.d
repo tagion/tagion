@@ -955,19 +955,7 @@ alias check = Check!DARTException;
         Leave traverse_dart(R)(
                 ref R range,
                 const Index branch_index,
-                immutable uint rim = 0) @safe
-
-        out (result) {
-            if (rim <= 2) {
-                const doc = cacheLoad(result.index);
-                if (!Branches.isRecord(doc) && result.index != Index.init) {
-                    writefln("ERROR OUT: index %s rim %s, empty: %s, Document: %s", result.index, rim, doc.empty, doc
-                            .toPretty);
-                }
-            }
-        }
-
-        do {
+                immutable uint rim = 0) @safe {
             if (!range.empty) {
                 auto archive = range.front;
                 Index erase_block_index;
