@@ -336,6 +336,7 @@ private template isActor(A) {
 
 mixin template ActorTask(T...) {
     bool stop = false;
+    Ctrl[Tid] childrenState;
 
     void signal(Sig signal) {
         with (Sig) final switch (signal) {
@@ -406,8 +407,22 @@ mixin template ActorTask(T...) {
 
             setState(Ctrl.STARTING); // Tell the owner that you are starting.
             scope (exit) setState(Ctrl.END); // Tell the owner that you have finished.
+
+            foreach(c; children) {
+                /* immutable task = cast(immutable) c.task; */
+                Tid tid = spawn(&c.task);
+                childrenState[tid] = Ctrl.STARTING;
+            }
+            /* spawn(&a.task); */
+
+            // Should have a timeout incase the don't alive themselves;
+            /* while(!childrenState.all(Ctrl.ALIVE)) { */
+            /*     CtrlMsg msg = receiveOnly!CtrlMsg; */
+            /*     childrenState[msg.tid] = msg.ctrl; */
+            /* } */
+            writeln("started all the chldren");
+
             setState(Ctrl.ALIVE); // Tell the owner that you running
-            /* writeln(messages[0 .. $]); */
             while (!stop) {
                 receive(
                         T,

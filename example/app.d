@@ -11,12 +11,37 @@ import std.stdio;
 import std.format;
 import std.typecons;
 import std.exception;
+import std.meta;
+
+struct AAA {
+static:
+    void task() {
+    writeln("I am the child");
+    }
+}
+
+
+struct BBB {
+static:
+    nothrow void task() {
+    assumeWontThrow(writeln("I am the child"));
+    }
+}
+
+
+alias TaskPtr = void delegate();
 
 struct TemplateActor {
-    void message(int) {writeln("This is message");};
-    void str(string) {writeln("This is str");};
-    /* auto messages = [(int) {}]; */
-    mixin ActorTask!(&message, &str);
+static:
+    BBB b;
+    AAA a;
+    alias children = AliasSeq!(a, b);
+    /* void ini() { */
+    /*     children = tuple(a, b); */
+    /* } */
+
+    void message(Msg!"msg", string str) {writeln(str);}
+    mixin ActorTask!(&message);
 }
 
 class SuperVisor : Actor {
@@ -70,7 +95,7 @@ alias CounterHandle = ActorHandle!Counter;
 /**
  * An actor which we can send log levels message too
  */
-class Logger : Actor {
+struct Logger  {
 static:
     alias hell = Msg!"hell";
     alias info = Msg!"info";
@@ -89,11 +114,12 @@ static:
     }
 
     nothrow void task() {
-        genActorTask(
-                &_info,
-                &_hell,
-                &_fatal,
-        );
+        /* genActorTask( */
+        /*         &_info, */
+        /*         &_hell, */
+        /*         &_fatal, */
+        /* ); */
+        assumeWontThrow(writeln("logger"));
     }
 
 }
