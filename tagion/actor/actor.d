@@ -8,7 +8,7 @@ import core.thread;
 import std.exception;
 
 /* AssociativeArray; */
-bool all(Ctrl[Tid] AA, Ctrl ctrl) 
+bool all(Ctrl[Tid] AA, Ctrl ctrl)
 /* if(unaryFun!Pred) */
 {
     foreach(val; AA) {
@@ -67,7 +67,7 @@ bool checkCtrl(Ctrl msg) {
  * Params:
  *  A = an actor type
  */
-struct ActorHandle(A : Actor) if (isActor!A) {
+struct ActorHandle(A) if (isActor!A) {
     import concurrency = std.concurrency;
 
     /// the tid of the spawned task
@@ -97,7 +97,7 @@ struct ActorHandle(A : Actor) if (isActor!A) {
  * actorHandle!MyActor("my_task_name");
  * ---
  */
-ActorHandle!A actorHandle(A : Actor)(string taskName) {
+ActorHandle!A actorHandle(A)(string taskName) {
     Tid tid = locate(taskName);
     return ActorHandle!A(tid, taskName);
 }
@@ -113,10 +113,11 @@ ActorHandle!A actorHandle(A : Actor)(string taskName) {
  * spawnActor!MyActor("my_task_name", 42);
  * ---
  */
-ActorHandle!A spawnActor(A : Actor, Args...)(string taskName, Args args) if (isActor!A) {
+nothrow ActorHandle!A spawnActor(A, Args...)(string taskName, Args args)
+if (isActor!A) {
     alias task = A.task;
-    Tid tid = spawn(&task, args);
-    register(taskName, tid);
+    Tid tid = assumeWontThrow(spawn(&task, args));
+    assumeWontThrow(register(taskName, tid));
 
     return ActorHandle!A(tid, taskName);
 }
@@ -201,13 +202,11 @@ version (none) Tid[] spawnChildren(A)(A[] fns)  {
  */
 abstract class Actor {
 static:
-
     /**
      * The running task function your actor should implement
      */
     void task() nothrow;
 
-    immutable void function()[string] children;
     /* ActorTask[string] children; // A list of children that the actor supervises */
     Ctrl[Tid] childrenState; // An
     ///Deprecated: startChildren
@@ -286,26 +285,13 @@ static:
      * Params:
      *   opts = A list of message handlers similar to @std.concurrency.receive()
      */
+    // Would probably be better as a template mixin, then we wouln't create a new scope, which causes some problems
     nothrow void genActorTask(T...)(T opts) {
         try {
             stop = false;
 
             setState(Ctrl.STARTING); // Tell the owner that you are starting.
             scope (exit) setState(Ctrl.END); // Tell the owner that you have finished.
-
-            /// Try to start all the child tasks
-            foreach(taskName, fn; children) {
-                Tid tid = spawn(fn);
-                register(taskName, tid);
-            }
-
-            // Check that the children have started goes through STARTING, until all are ALIVE
-            // TODO: add a timeout incase they don't start
-            while(!childrenState.all(Ctrl.ALIVE)) {
-                CtrlMsg startup = receiveOnly!CtrlMsg;
-                childrenState[startup.tid] = Ctrl.ALIVE;
-            }
-
             setState(Ctrl.ALIVE); // Tell the owner that you running
             while (!stop) {
                 receive(
@@ -345,4 +331,101 @@ private template isActor(A) {
     }
 
     enum isActor = isTaskNothrow!A;
+}
+
+
+mixin template ActorTask(T...) {
+    bool stop = false;
+
+    void signal(Sig signal) {
+        with (Sig) final switch (signal) {
+        case STOP:
+            stop = true;
+            break;
+        }
+    }
+
+    /// Controls message sent from the children.
+    void control(CtrlMsg msg) {
+        with (Ctrl) final switch (msg.ctrl) {
+        case STARTING:
+            debug writeln(msg);
+            /* startChildren[msg.tid] = msg.tid; */
+            /* writeln("Is starting: ", startChildren); */
+            break;
+
+        case ALIVE:
+            debug writeln(msg);
+            /* if (msg.tid in failChildren) { */
+            /*     startChildren.remove(msg.tid); */
+            /* } */
+            else {
+                throw new Exception("%s: never started".format(msg.tid));
+            }
+
+            /* if (msg.tid in failChildren) { */
+            /*     failChildren.remove(msg.tid); */
+            /* } */
+            break;
+
+        case FAIL:
+            debug writeln(msg);
+            /// Add the failing child to the AA of children to restart
+            /* failChildren[msg.tid] = msg.tid; */
+            break;
+
+        case END:
+            debug writeln(msg);
+            /* if (msg.tid in failChildren) { */
+            /*     Thread.sleep(100.msecs); */
+            /*     writeln("Respawning actor"); */
+            /*     // Uh respawn the actor, would be easier if we had a proper actor handle instead of a tid */
+            /* } */
+            break;
+        }
+    }
+
+    /// Stops the actor if the supervisor stops
+    void ownerTerminated(OwnerTerminated) {
+        writefln("%s, Owner stopped... nothing to life for... stopping self", thisTid);
+        stop = true;
+    }
+
+    /**
+     * The default message handler, if it's an unknown messages it will send a FAIL to the owner.
+     * Params:
+     *   message = literally any message
+     */
+    void unknown(Variant message) {
+        setState(Ctrl.FAIL);
+        assert(0, "No delegate to deal with message: %s".format(message));
+    }
+
+    nothrow void task() {
+        try {
+
+            setState(Ctrl.STARTING); // Tell the owner that you are starting.
+            scope (exit) setState(Ctrl.END); // Tell the owner that you have finished.
+            setState(Ctrl.ALIVE); // Tell the owner that you running
+            /* writeln(messages[0 .. $]); */
+            while (!stop) {
+                receive(
+                        T,
+                        &signal,
+                        &control,
+                        &ownerTerminated,
+                        &unknown,
+                );
+            }
+        }
+        // If we catch an exception we send it back to owner for them to deal with it.
+        catch (Exception e) {
+            // FAIL message should be able to carry the exception with it
+            // Use tagion taskexception when it part of the tree
+            immutable exception = cast(immutable) e;
+            assumeWontThrow(ownerTid.prioritySend(exception));
+            setState(Ctrl.FAIL);
+            stop = true;
+        }
+    }
 }

@@ -12,16 +12,22 @@ import std.format;
 import std.typecons;
 import std.exception;
 
+struct TemplateActor {
+    void message(int) {writeln("This is message");};
+    void str(string) {writeln("This is str");};
+    /* auto messages = [(int) {}]; */
+    mixin ActorTask!(&message, &str);
+}
+
 class SuperVisor : Actor {
 
-    /* static alias ta = Logger.task; */
-    /* const void function()[string] children = [ */
-    /*     "logger" : &ta, */
-    /*     /1* "counter" : &(Counter.task), *1/ */
-    /* ]; */
 static:
 
     void task() nothrow {
+        setState(Ctrl.STARTING);
+
+        spawnActor!Logger("logger");
+        spawnActor!Counter("counter");
 
         genActorTask;
     }
@@ -95,9 +101,18 @@ static:
 /// The handler type to our Logger
 alias LoggerHandle = ActorHandle!Logger;
 
+template ListOf(T) {
+    struct List {
+        T[] items;
+        void add(U)(U item) if (is(T : U)) {
+            items ~= cast(T) item;
+        }
+    }
+}
 /// Running through flow of top-level actors
 void main() {
 
+    writeln(":asaghiuysguyiw");
     /* LoggerHandle logger = spawnActor!Logger("logger_task"); */
     /* assert(checkCtrl(Ctrl.STARTING)); */
     /* assert(checkCtrl(Ctrl.ALIVE)); */
@@ -126,45 +141,27 @@ void main() {
     /* assert(checkCtrl(Ctrl.END)); */
     /* import std.typecons; */
 
-    import std.meta;
+    import std.typecons;
+    import std.range;
 
-    // AA may cause GC allocation, however static initialisation should be possible in the future
-    void function()[string] tasks = [
-        "logger": &Logger.task,
-        "counter": &Counter.task,
-    ];
+    /* alias children = Tuple!(Counter, "count", Logger, "logger"); */
 
-    foreach (i, A; tasks) {
-        spawn(A);
-        assert(checkCtrl(Ctrl.STARTING));
-        assert(checkCtrl(Ctrl.ALIVE));
-    }
+    /* /1* pragma(msg, ts); *1/ */
+    /* foreach(A; children.Types) { */
+    /*     spawn(&A.task); */
+    /*     /1* writeln(k,v); *1/ */
+    /*     assert(checkCtrl(Ctrl.STARTING)); */
+    /*     assert(checkCtrl(Ctrl.ALIVE)); */
+    /* } */
 
-    // pretty much the same as before
-    immutable nothrow void delegate()[string] tasks2 = [
-        "logger": delegate { Logger.task(); },
-        "counter": delegate { Counter.task(); },
-    ];
+    /* spawnActor!SuperVisor("supervisor"); */
+    /* assert(checkCtrl(Ctrl.STARTING)); */
+    /* assert(checkCtrl(Ctrl.ALIVE)); */
 
-    Actor[string] objects = [
-        "logger": new Logger(), // Unnecesarry gc allocation
-        "counter": new Counter() // Unnecesarry gc allocation
-    ];
+    auto t = spawnActor!TemplateActor("Hello");
+    t.send("aa");
+    t.send(6);
 
-    // Compile time only, no additional allocation
-    alias Act = AliasSeq!(Logger, Counter); //
-
-    version(none)
-    foreach (i, A; Act) {
-        spawnActor!A(format("%s", i));
-        assert(checkCtrl(Ctrl.STARTING));
-        assert(checkCtrl(Ctrl.ALIVE));
-    }
-
-    foreach (i, A; Act) {
-    }
-
-    pragma(msg, typeof(["log": &Logger.task, "count": &Counter.task]));
-    alias task = Logger.task;
-    pragma(msg, typeof(&task));
+    assert(checkCtrl(Ctrl.STARTING));
+    assert(checkCtrl(Ctrl.ALIVE));
 }
