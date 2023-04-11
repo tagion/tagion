@@ -100,11 +100,11 @@ class MonitorCallBacks : EventMonitorCallbacks {
             with (FileExtension) {
                 switch (ext) {
                 case json:
-                    log("SENDING JSON: %s", doc.toJSON.toString);
+                    // log("SENDING JSON: %s", doc.toJSON.toString);
                     _socket_thread_id.send(doc.toJSON.toString);
                     break;
                 case hibon:
-                    log("SENDING HIBON");
+                    // log("SENDING HIBON");
                     _socket_thread_id.send(doc);
                     break;
                 default:
