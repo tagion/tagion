@@ -33,17 +33,12 @@ wget https://dl.google.com/android/repository/android-ndk-r21b-linux-x86_64.zip
 unzip android-ndk-r21b-linux-x86_64.zip
 ```
 
-Configure ldc to use the target libraries and android tool
-```
-
-```
-
-or copy a preconfigured file
+Copy ldc2 configuration
 ```
 cp /path/to/tagion_source/tub/ldc2.conf ldc2-1.29.0-linux-x86_64/etc/ldc2.conf
 ```
 
-Compile the mobile library
+Compile the mobile library in the root of the tagion source repo
 ```
 make -f noconf.android.mk DC=ldc2 PLATFORM=aarch64-linux-android libmobile
 ```
