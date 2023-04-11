@@ -1,5 +1,9 @@
 # Should be general condition for linux-android independent of arch
-ifeq ($(TARGET), aarch64-linux-android)
+ifeq ($(PLATFORM), aarch64-android-linux)
+
+# DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
+TARGET=aarch64-linux-android)
+
 ANDROID_API?=21
 
 ANDROID_TOOLCHAIN?=$(ANDROID_NDK)/toolchains/llvm/prebuilt/$(OS)-$(ARCH)
@@ -17,6 +21,15 @@ STRIP=$(ANDROID_TOOLCHAIN)/bin/$(TARGET)-strip
 ANDROID_LDC_LIBS=$(ANDROID_LDC)
 
 CROSS_ENABLED=1
+CROSS_OS=android
+CROSS_GO_ARCH=aarch64
+CROSS_ARCH=aarch64
+
+MTRIPLE:=aarch64-linux
+TRIPLET:=$(MTRIPLE)-android
+
+ANDROID_ARCH=$(ANDROID_AARCH64)
+DFLAGS+=-mtriple=$(PLATFORM)
 
 env-android:
 	$(PRECMD)
@@ -69,3 +82,7 @@ help: help-android
 
 .PHONY: env-android help-android
 endif
+
+PREBUILD=1 # Disable the dependency thingy 🤮
+export REPOROOT?=${shell git rev-parse --show-toplevel}
+include tub/main.mk

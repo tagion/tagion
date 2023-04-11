@@ -44,5 +44,5 @@ cp /path/to/tagion_source/tub/ldc2.conf ldc2-1.29.0-linux-x86_64/etc/ldc2.conf
 
 Compile the mobile library
 ```
-make PLATFORM=aarch64-linux-android libmobile
+make DC=ldc2 PLATFORM=aarch64-linux-android libmobile
 ```

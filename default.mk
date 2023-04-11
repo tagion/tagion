@@ -1,6 +1,6 @@
 #DC?=dmd
 export GODEBUG=cgocheck=0
-WOLFSSL?=1
+# WOLFSSL?=1
 OLD?=1
 ONETOOL?=1
 DEBUGGER?=ddd
