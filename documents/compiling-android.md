@@ -25,9 +25,6 @@ Download the target compiler files (We need the precompiled runtime and std libr
 ```
 wget https://github.com/ldc-developers/ldc/releases/download/v1.29.0/ldc2-1.29.0-android-aarch64.tar.xz
 tar xf ldc2-1.29.0-android-aarch64.tar.xz
-# or
-wget https://github.com/ldc-developers/ldc/releases/download/v1.29.0/ldc2-1.29.0-android-armv7a.tar.xz
-tar xf ldc2-1.29.0-android-armv7a.tar.xz
 ```
 
 Download the android NDK toolchains
@@ -44,5 +41,5 @@ cp /path/to/tagion_source/tub/ldc2.conf ldc2-1.29.0-linux-x86_64/etc/ldc2.conf
 
 Compile the mobile library
 ```
-make DC=ldc2 PLATFORM=aarch64-linux-android libmobile
+make -f noconf.android.mk DC=ldc2 PLATFORM=aarch64-linux-android libmobile
 ```
