@@ -808,48 +808,45 @@ alias check = Check!DARTException;
     // Range over a Range with the same key in the a specific rim
     @safe
     struct RimKeyRange {
-        private RecordFactory.Recorder readd_recorder;
         protected Archive[] current;
         @disable this();
         protected this(Archive[] current) pure nothrow @nogc {
             this.current = current;
         }
 
-        this(ref RimKeyRange range, const uint rim) {
-            if (!range.empty) {
-                immutable key = range.front.fingerprint.rim_key(rim);
-                auto reuse_current = range.current;
-                void build(ref RimKeyRange range, const uint no = 0) @safe {
-                    if (!range.empty && (range.front.fingerprint.rim_key(rim) is key)) {
-                        range.popFront;
-                        build(range, no + 1);
-                    }
-                    else {
-                        // Reuse the parent current
-                        current = reuse_current[0 .. no];
-                    }
-                }
-
-                build(range);
-            }
-        }
-
         this(Range)(ref Range range, const uint rim) {
             if (!range.empty) {
                 immutable key = range.front.fingerprint.rim_key(rim);
-                void build(ref Range range, const uint no = 0) @safe {
-                    if (!range.empty && (range.front.fingerprint.rim_key(rim) is key)) {
-                        auto a = range.front;
-                        range.popFront;
-                        build(range, no + 1);
-                        (() @trusted { current[no] = cast(Archive) a; })();
+                static if (is(Range == RimKeyRange)) {
+                    auto reuse_current = range.current;
+                    void build(ref Range range, const uint no = 0) @safe {
+                        if (!range.empty && (range.front.fingerprint.rim_key(rim) is key)) {
+                            range.popFront;
+                            build(range, no + 1);
+                        }
+                        else {
+                            // Reuse the parent current
+                            current = reuse_current[0 .. no];
+                        }
                     }
-                    else {
-                        current = new Archive[no];
-                    }
-                }
 
-                build(range);
+                    build(range);
+                }
+                else {
+                    void build(ref Range range, const uint no = 0) @safe {
+                        if (!range.empty && (range.front.fingerprint.rim_key(rim) is key)) {
+                            auto a = range.front;
+                            range.popFront;
+                            build(range, no + 1);
+                            (() @trusted { current[no] = cast(Archive) a; })();
+                        }
+                        else {
+                            current = new Archive[no];
+                        }
+                    }
+
+                    build(range);
+                }
             }
         }
 
@@ -920,7 +917,7 @@ alias check = Check!DARTException;
          *  Creates new range at the current position
          * Returns: copy of this range
          */
-        RimKeyRange save() pure nothrow @nogc {
+        version (none) RimKeyRange save() pure nothrow @nogc {
             return RimKeyRange(current);
         }
 
@@ -970,16 +967,13 @@ alias check = Check!DARTException;
                 Branches branches;
                 if (rim < RIMS_IN_SECTOR) {
                     if (branch_index !is INDEX_NULL) {
-
                         branches = blockfile.load!Branches(branch_index);
-
-                        
-
                         .check(branches.hasIndices,
                                 "DART failure within the sector rims the DART should contain a branch");
                     }
 
                     while (!range.empty) {
+                        pragma(msg, "sub_range ", typeof(range));
                         auto sub_range = RimKeyRange(range, rim);
                         immutable rim_key = sub_range.front.fingerprint.rim_key(rim);
                         if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
@@ -1162,11 +1156,6 @@ alias check = Check!DARTException;
                                 const sub_archive = range.front;
                                 immutable rim_key = sub_archive.fingerprint.rim_key(rim);
                                 auto sub_range = RimKeyRange(range, rim);
-                                if (rim_key == 0) {
-                                    writefln("rim_key=%d", rim_key);
-                                    sub_range.save.each!(a => writefln("%s %s %s", a.fingerprint.toHex, a.type, (
-                                            () @trusted => cast(void*) a.fingerprint)()));
-                                }
 
                                 if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
                                     branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key), rim + 1);
@@ -1193,12 +1182,13 @@ alias check = Check!DARTException;
         if (modify_records.empty) {
             return _fingerprint;
         }
+   
         auto range = modify_records.archives[];
 
         (() @trusted {
-            RecordFactory.Recorder check_modify = cast(RecordFactory.Recorder) modify_records;
+            RecordFactory.Recorder check_modify=cast(RecordFactory.Recorder)modify_records;    
             assert(check_modify.checkSorted);
-        }());
+    }());
         immutable new_root = traverse_dart(range, blockfile.masterBlock.root_index);
 
         scope (success) {
