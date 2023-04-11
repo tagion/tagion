@@ -821,7 +821,6 @@ alias check = Check!DARTException;
                     auto reuse_current = range.current;
                     void build(ref Range range, const uint no = 0) @safe {
                         if (!range.empty && (range.front.fingerprint.rim_key(rim) is key)) {
-                            auto a = range.front;
                             range.popFront;
                             build(range, no + 1);
                         }
@@ -1054,6 +1053,7 @@ alias check = Check!DARTException;
                                 blockfile.dispose(branch_index);
 
                             }
+
                             pragma(msg, "fixme(pr): review this for refactor of dart.");
                             if (range.oneLeft) {
                                 const one_archive = range.front;
@@ -1102,7 +1102,9 @@ alias check = Check!DARTException;
                                 scope archives = manufactor.recorder(range).archives;
                                 range.force_empty;
                                 scope equal_range = archives.equalRange(archive_in_dart);
+        
                                 if (!equal_range.empty) {
+                                    //assert(equal_range.length == 1);
                                     const equal_archive = equal_range.front;
                                     if (!equal_archive.done) {
                                         if (equal_archive.isRemove(get_type)) {
@@ -1191,6 +1193,10 @@ alias check = Check!DARTException;
         }
         auto range = modify_records.archives[];
 
+        (() @trusted {
+            RecordFactory.Recorder check_modify=cast(RecordFactory.Recorder)modify_records;    
+            assert(check_modify.checkSorted);
+    }());
         immutable new_root = traverse_dart(range, blockfile.masterBlock.root_index);
 
         scope (success) {
