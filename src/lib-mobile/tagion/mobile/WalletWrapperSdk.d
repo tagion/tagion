@@ -71,9 +71,9 @@ const uint32_t pincodeLen, const uint8_t* mnemonicPtr, const uint32_t mnemonicLe
            cast(immutable(ubyte)[]) mnemonic, cast(immutable(char)[]) pincode);
 
     // Data to write in a file.
-    wallet.wallet.toHiBON.serialize;
-    wallet.pin.toHiBON.serialize;
-    wallet.account.toHiBON.serialize;
+    auto result = new HiBON();
+    result["pin"] =  wallet.pin.toHiBON;
+    result["account"] = wallet.account.toHiBON;
     
     // TODO: extract to a separate WalletVault service.
     // Create a file.
@@ -82,13 +82,13 @@ const uint32_t pincodeLen, const uint8_t* mnemonicPtr, const uint32_t mnemonicLe
         
         auto walletFileName = "twallet.bin";
         // Open the file for writing
-        auto walletFile = File("/" ~ walletFileName, "w");
+        auto walletFile = File(walletFileName, "w");
 
         // Write some text to the file
-        walletFile.write("Hello, world!");
+        walletFile.write(result.serialize);
 
         // Close the file
-        file.close();
+        walletFile.close();
 
         return 1;
     }catch(Exception e){
