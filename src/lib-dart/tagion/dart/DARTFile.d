@@ -808,45 +808,48 @@ alias check = Check!DARTException;
     // Range over a Range with the same key in the a specific rim
     @safe
     struct RimKeyRange {
+        private RecordFactory.Recorder readd_recorder;
         protected Archive[] current;
         @disable this();
         protected this(Archive[] current) pure nothrow @nogc {
             this.current = current;
         }
 
+        this(ref RimKeyRange range, const uint rim) {
+            if (!range.empty) {
+                immutable key = range.front.fingerprint.rim_key(rim);
+                auto reuse_current = range.current;
+                void build(ref RimKeyRange range, const uint no = 0) @safe {
+                    if (!range.empty && (range.front.fingerprint.rim_key(rim) is key)) {
+                        range.popFront;
+                        build(range, no + 1);
+                    }
+                    else {
+                        // Reuse the parent current
+                        current = reuse_current[0 .. no];
+                    }
+                }
+
+                build(range);
+            }
+        }
+
         this(Range)(ref Range range, const uint rim) {
             if (!range.empty) {
                 immutable key = range.front.fingerprint.rim_key(rim);
-                static if (is(Range == RimKeyRange)) {
-                    auto reuse_current = range.current;
-                    void build(ref Range range, const uint no = 0) @safe {
-                        if (!range.empty && (range.front.fingerprint.rim_key(rim) is key)) {
-                            range.popFront;
-                            build(range, no + 1);
-                        }
-                        else {
-                            // Reuse the parent current
-                            current = reuse_current[0 .. no];
-                        }
+                void build(ref Range range, const uint no = 0) @safe {
+                    if (!range.empty && (range.front.fingerprint.rim_key(rim) is key)) {
+                        auto a = range.front;
+                        range.popFront;
+                        build(range, no + 1);
+                        (() @trusted { current[no] = cast(Archive) a; })();
                     }
-
-                    build(range);
-                }
-                else {
-                    void build(ref Range range, const uint no = 0) @safe {
-                        if (!range.empty && (range.front.fingerprint.rim_key(rim) is key)) {
-                            auto a = range.front;
-                            range.popFront;
-                            build(range, no + 1);
-                            (() @trusted { current[no] = cast(Archive) a; })();
-                        }
-                        else {
-                            current = new Archive[no];
-                        }
+                    else {
+                        current = new Archive[no];
                     }
-
-                    build(range);
                 }
+
+                build(range);
             }
         }
 
@@ -1102,7 +1105,7 @@ alias check = Check!DARTException;
                                 scope archives = manufactor.recorder(range).archives;
                                 range.force_empty;
                                 scope equal_range = archives.equalRange(archive_in_dart);
-        
+
                                 if (!equal_range.empty) {
                                     //assert(equal_range.length == 1);
                                     const equal_archive = equal_range.front;
@@ -1194,9 +1197,9 @@ alias check = Check!DARTException;
         auto range = modify_records.archives[];
 
         (() @trusted {
-            RecordFactory.Recorder check_modify=cast(RecordFactory.Recorder)modify_records;    
+            RecordFactory.Recorder check_modify = cast(RecordFactory.Recorder) modify_records;
             assert(check_modify.checkSorted);
-    }());
+        }());
         immutable new_root = traverse_dart(range, blockfile.masterBlock.root_index);
 
         scope (success) {
