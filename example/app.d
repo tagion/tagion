@@ -21,7 +21,7 @@ static:
 
     void message(Msg!"msg", string str) {writeln(str);}
 
-    mixin ActorTask!(&message);
+    mixin Actor!(&message);
 }
 
 alias SuperVisorHandle = ActorHandle!SuperVisor;
@@ -47,7 +47,7 @@ static:
         writeln("Count is: ", count);
     }
     /* mixin ActorTask!(&_increase, _decrease); */
-    mixin ActorTask;
+    mixin Actor;
 }
 
 /// The handler type to our Counter
@@ -74,7 +74,7 @@ static:
         writeln("Fatal: ", str);
     }
 
-    mixin ActorTask;
+    mixin Actor;
     /* mixin ActorTask!(&_fatal, &_info, &_hell); */
 
 }

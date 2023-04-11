@@ -200,7 +200,7 @@ private template isActor(A) {
  * All members should be static
  * Examples: See [Actor examples]($(DOC_ROOT_OBJECTS)tagion.actor.example$(DOC_EXTENSION))
  */
-mixin template ActorTask(T...) {
+mixin template Actor(T...) {
     bool stop = false;
     Ctrl[Tid] childrenState; // An AA to keep a copy of the state of the children
 
