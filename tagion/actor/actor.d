@@ -7,11 +7,9 @@ import std.typecons;
 import core.thread;
 import std.exception;
 
-/* AssociativeArray; */
-bool all(Ctrl[Tid] AA, Ctrl ctrl)
-/* if(unaryFun!Pred) */
+bool all(Ctrl[Tid] aa, Ctrl ctrl)
 {
-    foreach(val; AA) {
+    foreach(val; aa) {
         if ( val != ctrl ) {
             return false;
         }
@@ -336,7 +334,9 @@ private template isActor(A) {
 
 mixin template ActorTask(T...) {
     bool stop = false;
-    Ctrl[Tid] childrenState;
+    Ctrl[Tid] childrenState; // An AA to keep a copy of the state of the children
+
+    alias This = typeof(this);
 
     void signal(Sig signal) {
         with (Sig) final switch (signal) {
@@ -348,6 +348,7 @@ mixin template ActorTask(T...) {
 
     /// Controls message sent from the children.
     void control(CtrlMsg msg) {
+        childrenState[msg.tid] = msg.ctrl;
         with (Ctrl) final switch (msg.ctrl) {
         case STARTING:
             debug writeln(msg);
@@ -408,24 +409,27 @@ mixin template ActorTask(T...) {
             setState(Ctrl.STARTING); // Tell the owner that you are starting.
             scope (exit) setState(Ctrl.END); // Tell the owner that you have finished.
 
-            foreach(child; children) {
-                alias Child = typeof(child);
-                auto childhandle = spawnActor!Child(child.toString);
-                childrenState[childhandle.tid] = Ctrl.STARTING;
-            }
-            debug writeln("CHILDSTATE:", childrenState);
+            import std.traits;
+            static if(__traits(hasMember, This, "children")) {
+                debug writeln("STARTING CHILDREN");
+                foreach(i, child; children) {
+                    alias Child = typeof(child);
+                    debug writefln("STARTING: %", i);
+                    auto childhandle = spawnActor!Child(format("%s", i));
+                    childrenState[childhandle.tid] = Ctrl.STARTING; // Assume that they are trying to start
+                }
 
-            // TODO: Should have a timeout incase the children don't commit alive;
-            while(!childrenState.all(Ctrl.ALIVE)) {
-                CtrlMsg msg = receiveOnly!CtrlMsg; // TODO: don't use receiveOnly
-                childrenState[msg.tid] = msg.ctrl;
-                debug writeln("STARTSEQUENCE: ", msg);
+                // TODO: Should have a timeout incase the children don't commit alive;
+                while(!childrenState.all(Ctrl.ALIVE)) {
+                    CtrlMsg msg = receiveOnly!CtrlMsg; // HACK: don't use receiveOnly
+                    childrenState[msg.tid] = msg.ctrl;
+                }
             }
 
             setState(Ctrl.ALIVE); // Tell the owner that you running
             while (!stop) {
                 receive(
-                        T, // The message handler you pass to your Actor template
+                        T, // The message handlers you pass to your Actor template
                         &signal,
                         &control,
                         &ownerTerminated,
