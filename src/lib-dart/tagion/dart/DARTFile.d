@@ -1071,7 +1071,6 @@ alias check = Check!DARTException;
                                             one_archive.doit;
                                             return Leave.init;
                                         }
-                                        pragma(msg, "fixme(pr): This scenario is never called. Why is it here?");
                                         return Leave(blockfile.save(one_archive.store)
                                                 .index,
                                                 one_archive.fingerprint);
