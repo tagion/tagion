@@ -449,6 +449,7 @@ alias GetType = Archive.Type delegate(const(Archive)) pure @safe;
 
 enum Add = (const(Archive) a) => Archive.Type.ADD;
 enum Remove = (const(Archive) a) => Archive.Type.REMOVE;
+enum Flip = (const(Archive) a) => -a.type;
 
 /**
  * Archive element used in the DART Recorder

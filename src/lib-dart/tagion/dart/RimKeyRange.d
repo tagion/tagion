@@ -36,6 +36,7 @@ struct RimKeyRange(Range) if (isInputeRange!Range && isImplicitlyConvertible!(El
     protected Range range;
     const ubyte rim_key;
     const uint rim;
+    const GetType get_type;
     @disable this();
     version (none) protected this(Archive[] current) pure nothrow @nogc {
         this.current = current;
@@ -67,8 +68,9 @@ struct RimKeyRange(Range) if (isInputeRange!Range && isImplicitlyConvertible!(El
         added_archives.insert(archive);
     }
 
-    this(Range)(Range _range, const uint rim) {
+    this(Range)(Range _range, const uint rim, const GetType get_type) {
         added_archives = new Archives;
+        this.get_type = get_type;
         this.rim = rim;
         range = _range;
         if (!range.empty) {
@@ -205,4 +207,9 @@ struct RimKeyRange(Range) if (isInputeRange!Range && isImplicitlyConvertible!(El
         return RimKeyRange(current);
     }
 
+}
+
+@safe 
+unittest {
+    
 }
