@@ -73,7 +73,7 @@ jobs:
       - name: Build
         run: |
           source ~/.bashrc
-          make tagion -j ${{ env.PARALEL }}
+          make tagion ${{ env.PARALEL }}
           make bddenv          
       
       - name: Create passed tag
