@@ -3,7 +3,8 @@ Cross compiling mobile library for android from Ubuntu 22.10 x86_64
 Install the following tools
 
 ```console
-# apt-get install make screen autoconf libtool
+# apt-get update
+# apt-get install make screen autoconf libtool wget xz-utils unzip
 ```
 
 Create a working directory to house your files
@@ -40,5 +41,5 @@ cp /path/to/tagion_source/tub/ldc2.conf ldc2-1.29.0-linux-x86_64/etc/ldc2.conf
 
 Compile the mobile library in the root of the tagion source repo
 ```
-make -f noconf.android.mk DC=ldc2 PLATFORM=aarch64-linux-android libmobile
+make -f noconf.android.mk DC=ldc2 ANDROID_NDK=/path/to/android-ndk-r21b/ PLATFORM=aarch64-linux-android libmobile
 ```
