@@ -414,16 +414,20 @@ mixin template ActorTask(T...) {
                 debug writeln("STARTING CHILDREN");
                 foreach(i, child; children) {
                     alias Child = typeof(child);
-                    debug writefln("STARTING: %", i);
+                    debug writefln("STARTING: %s", i);
                     auto childhandle = spawnActor!Child(format("%s", i));
-                    childrenState[childhandle.tid] = Ctrl.STARTING; // Assume that they are trying to start
+                    childrenState[childhandle.tid] = Ctrl.STARTING; // assume that the child is starting
                 }
 
                 // TODO: Should have a timeout incase the children don't commit alive;
-                while(!childrenState.all(Ctrl.ALIVE)) {
+                debug writeln((childrenState.all(Ctrl.ALIVE)));
+                while(!(childrenState.all(Ctrl.ALIVE))) {
                     CtrlMsg msg = receiveOnly!CtrlMsg; // HACK: don't use receiveOnly
                     childrenState[msg.tid] = msg.ctrl;
                 }
+
+                debug writeln((childrenState.all(Ctrl.ALIVE)));
+                debug writeln("STARTED all the children");
             }
 
             setState(Ctrl.ALIVE); // Tell the owner that you running

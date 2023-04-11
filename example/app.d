@@ -15,27 +15,23 @@ import std.meta;
 
 struct AAA {
 static:
-    void task() {
-    writeln("I am the child");
-    }
+    void message(Msg!"msg", string str) {writeln(str);}
+    mixin ActorTask!(&message);
 }
 
 
 struct BBB {
 static:
-    nothrow void task() {
-    assumeWontThrow(writeln("I am the child"));
-    }
+    void message(Msg!"msg", string str) {writeln(str);}
+
+    mixin ActorTask!(&message);
 }
-
-
-alias TaskPtr = void delegate();
 
 struct TemplateActor {
 static:
-    Logger logger;
-    Counter count;
-    alias children = AliasSeq!(logger);
+    AAA logger;
+    BBB count;
+    alias children = AliasSeq!(logger, count);
 
     void message(Msg!"msg", string str) {writeln(str);}
     mixin ActorTask!(&message);
@@ -133,7 +129,6 @@ template ListOf(T) {
 /// Running through flow of top-level actors
 void main() {
 
-    writeln(":asaghiuysguyiw");
     /* LoggerHandle logger = spawnActor!Logger("logger_task"); */
     /* assert(checkCtrl(Ctrl.STARTING)); */
     /* assert(checkCtrl(Ctrl.ALIVE)); */
@@ -180,10 +175,16 @@ void main() {
     /* assert(checkCtrl(Ctrl.ALIVE)); */
 
     auto Super = spawnActor!TemplateActor("Super");
+    /* auto bbb = spawnActor!BBB("bbb"); */
 
     assert(checkCtrl(Ctrl.STARTING));
     assert(checkCtrl(Ctrl.ALIVE));
+    Super.send(Msg!"msg"(), "hello");
+    Super.send(Msg!"msg"(), "hello");
+    Super.send(Msg!"msg"(), "hello");
 
-    Super.send(Sig.STOP);
-    assert(checkCtrl(Ctrl.END));
+    /* Super.send(Sig.STOP); */
+    /* assert(checkCtrl(Ctrl.END)); */
+    /* while(true) { */
+    /* } */
 }
