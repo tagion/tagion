@@ -37,7 +37,7 @@ jobs:
       - name: Run unittests
         run: |
           source ~/.bashrc
-          make unittest ${{ env.PARALEL }}
+          make unittest -j ${{ env.PARALEL }}
 
       - name: Check unittests
         run: cat logs/${{ env.TARGET_BUILD }}/unittest.log | grep -E "^[0-9]+ modules passed unittests"
@@ -73,7 +73,7 @@ jobs:
       - name: Build
         run: |
           source ~/.bashrc
-          make tagion ${{ env.PARALEL }}
+          make tagion -j ${{ env.PARALEL }}
           make bddenv          
       
       - name: Create passed tag
