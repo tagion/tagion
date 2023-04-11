@@ -3,11 +3,13 @@ module tagion.dart.RimKeyRange;
 import std.stdio;
 import std.algorithm;
 import std.range;
+import std.traits;
 
 import tagion.dart.Recorder;
-import tagion.basic.Types :  isBufferType;
+import tagion.basic.Types : isBufferType;
 import tagion.utils.Miscellaneous : hex;
 import tagion.basic.Debug;
+
 /++
  + Gets the rim key from a buffer
  +
@@ -23,27 +25,28 @@ ubyte rim_key(F)(F rim_keys, const uint rim) pure if (isBufferType!F) {
 }
 
 @safe
-Range RimKeyRange(Range)(Range range, const uint rim) {
+Range rimKeyRange(Range)(Range range, const uint rim) {
     return RimKeyRangeT!Range(range, rim);
 }
+
 // Range over a Range with the same key in the a specific rim
 @safe
-struct RimKeyRangeT(Range) {
-    private Range re_add_archives;
-    protected Archive[] current;
+struct RimKeyRange(Range) if (isInputeRange!Range && isImplicitlyConvertible!(ElementType!Range, Archive)) {
+    protected Archives added_archives;
+    protected Range range;
     const ubyte rim_key;
     const uint rim;
-        @disable this();
+    @disable this();
     version (none) protected this(Archive[] current) pure nothrow @nogc {
         this.current = current;
     }
 
-    this(ref RimKeyRangeT range, const uint rim) {
+    version (none) this(ref RimKeyRange range, const uint rim) {
         this.rim = rim;
         if (!range.empty) {
             rim_key = range.front.fingerprint.rim_key(rim);
             auto reuse_current = range.current;
-            void build(ref RimKeyRangeT range, const uint no = 0) @safe {
+            void build(ref RimKeyRange range, const uint no = 0) @safe {
                 if (!range.empty && (range.front.fingerprint.rim_key(rim) is rim_key)) {
                     range.popFront;
                     build(range, no + 1);
@@ -58,11 +61,20 @@ struct RimKeyRangeT(Range) {
         }
     }
 
-    this(Range)(ref Range range, const uint rim) @trusted {
+    void add(Archive archive)
+    in (rim_key == archive.front.fingerprint(rim))
+    do {
+        added_archives.insert(archive);
+    }
+
+    this(Range)(Range _range, const uint rim) {
+        added_archives = new Archives;
         this.rim = rim;
+        range = _range;
         if (!range.empty) {
             rim_key = range.front.fingerprint.rim_key(rim);
-
+        }
+        /+ 
             Archive[] _current;
             void build(ref Range range, const uint no = 0) @safe {
                 if (!range.empty && (range.front.fingerprint.rim_key(rim) is rim_key)) {
@@ -97,6 +109,7 @@ struct RimKeyRangeT(Range) {
             //                range=_range;
 
         }
+        +/
     }
 
     /**
@@ -124,15 +137,27 @@ struct RimKeyRangeT(Range) {
              * Returns: true if empty
              */
         bool empty() const {
-            return current.length == 0;
+            return range.empty && added_archives.empty;
         }
 
+        alias archive_less = RecordFactory.Recorder.archive_sorted;
         /**
              *  Progress one archive
              */
         void popFront() {
-            if (!empty) {
-                current = current[1 .. $];
+            if (!added_archives.empty && !range.empty) {
+                if (archive_less(added_archives.front, range.front)) {
+                    added_archive.popFront;
+                }
+                else {
+                    range.popFront;
+                }
+            }
+            else if (!range.empty) {
+                range.popFront;
+            }
+            else if (!added_archives.empty) {
+                added_archive.popFront;
             }
         }
 
@@ -141,11 +166,20 @@ struct RimKeyRangeT(Range) {
              * Returns: current archive and return null if the range is empty
              */
         inout(Archive) front() inout {
-            if (empty) {
-                return null;
+            if (!added_archives.empty && !range.empty) {
+                if (archive_less(added_archives.front, range.front)) {
+                    return added_archive.front;
+                }
+                    return range.front;
             }
-            return current[0];
-        }
+            if (!range.empty) {
+                return range.front;
+            }
+            else if (!added_archives.empty) {
+                return added_archive.front;
+            }
+            return Archive.init;
+       }
 
         /**
              * Force the range to be empty
@@ -167,6 +201,7 @@ struct RimKeyRangeT(Range) {
          * Returns: copy of this range
          */
     version (none) RimKeyRange save() pure nothrow @nogc {
+
         return RimKeyRange(current);
     }
 
