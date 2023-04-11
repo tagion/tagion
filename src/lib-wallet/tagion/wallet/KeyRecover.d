@@ -107,6 +107,15 @@ struct KeyRecover {
         return results;
     }
 
+    Buffer[] mnemonicHash(scope const(ubyte[]) mnemonic, scope const(char[]) deviceId) const @trusted
+    do {
+        scope strip_down = cast(ubyte[]) deviceId.strip_down;
+        scope deviceId_hash = net.rawCalcHash(strip_down);
+        scope mnemonic_hash = net.rawCalcHash(mnemonic);
+        auto result = net.rawCalcHash(deviceId_hash ~ mnemonic_hash);
+        return result;
+    }
+
     /**
      * Total number of combination of possible seed value
      * Params:

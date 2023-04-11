@@ -146,6 +146,40 @@ alias check = Check!(WalletException);
         return result;
     }
 
+    /**
+     * Creates a wallet from a mnemonic
+     * Params:
+     *   deviceId = unique value for a device
+     *   mnemonic = generated deterministic key 
+     *   pincode = Devices pin code
+     * Returns: 
+     *   Create an new wallet with the input
+     */
+    static SecureWallet createWalletWithMnemonic(const(char[]) deviceId, const(ubyte[]) mnemonic, const(ubyte[]) pincode)
+    in {
+        assert(deviceId.length > 0, "Minimal amount of answers is 4");
+    }
+    do {
+        auto net = new Net;
+        auto recover = KeyRecover(net);
+
+        //TODO: createKey with mnemonic and device id.
+        //recover.createKey(mnemonic, deviceId, null);
+        SecureWallet result;
+        {
+            scope (exit) {
+                scramble(mnemonic);
+            }
+            
+            net.createKeyPair(mnemonic);
+            auto wallet = RecoverGenerator(recover.toDoc);
+            result = SecureWallet(DevicePIN.init, wallet);
+            result.set_pincode(recover, mnemonic, pincode, net);
+
+        }
+        return result;
+    }
+
     protected void set_pincode(
             const KeyRecover recover,
             scope const(ubyte[]) R,
