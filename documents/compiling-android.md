@@ -27,7 +27,11 @@ wget https://github.com/ldc-developers/ldc/releases/download/v1.29.0/ldc2-1.29.0
 tar xf ldc2-1.29.0-android-aarch64.tar.xz
 ```
 
-Download the android NDK toolchains
+Download the android NDK toolchain
+```
+wget https://dl.google.com/android/repository/android-ndk-r21b-linux-x86_64.zip
+unzip android-ndk-r21b-linux-x86_64.zip
+```
 
 Configure ldc to use the target libraries and android tool
 ```
