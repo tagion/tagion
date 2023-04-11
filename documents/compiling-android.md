@@ -3,7 +3,7 @@ Cross compiling mobile library for android from Ubuntu 22.10 x86_64
 Install the following tools
 
 ```console
- # apt-get install make screen autoconf libtool # clang libclang-dev
+# apt-get install make screen autoconf libtool
 ```
 
 Create a working directory to house your files
