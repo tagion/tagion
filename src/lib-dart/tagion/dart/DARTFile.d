@@ -810,18 +810,20 @@ alias check = Check!DARTException;
     struct RimKeyRange {
         private RecordFactory.Recorder.Archives re_add_archives;
         protected Archive[] current;
+        const ubyte rim_key;
+        const uint rim;
         @disable this();
-        version(none)
-        protected this(Archive[] current) pure nothrow @nogc {
+        version (none) protected this(Archive[] current) pure nothrow @nogc {
             this.current = current;
         }
 
         this(ref RimKeyRange range, const uint rim) {
+            this.rim = rim;
             if (!range.empty) {
-                immutable key = range.front.fingerprint.rim_key(rim);
+                rim_key = range.front.fingerprint.rim_key(rim);
                 auto reuse_current = range.current;
                 void build(ref RimKeyRange range, const uint no = 0) @safe {
-                    if (!range.empty && (range.front.fingerprint.rim_key(rim) is key)) {
+                    if (!range.empty && (range.front.fingerprint.rim_key(rim) is rim_key)) {
                         range.popFront;
                         build(range, no + 1);
                     }
@@ -835,11 +837,13 @@ alias check = Check!DARTException;
             }
         }
 
-        this(Range)(ref Range range, const uint rim) {
+        this(Range)(ref Range range, const uint rim) @trusted {
+            this.rim = rim;
             if (!range.empty) {
-                immutable key = range.front.fingerprint.rim_key(rim);
+                rim_key = range.front.fingerprint.rim_key(rim);
+
                 void build(ref Range range, const uint no = 0) @safe {
-                    if (!range.empty && (range.front.fingerprint.rim_key(rim) is key)) {
+                    if (!range.empty && (range.front.fingerprint.rim_key(rim) is rim_key)) {
                         auto a = range.front;
                         range.popFront;
                         build(range, no + 1);
@@ -850,7 +854,24 @@ alias check = Check!DARTException;
                     }
                 }
 
+                auto _range = range;
                 build(range);
+                writefln("Rim key before %02X", _range.front.fingerprint.rim_key(rim));
+                auto _current = _range
+                    .until!(a => a.fingerprint.rim_key(rim) !is rim_key)
+                    .map!(a => cast(Archive) a)
+                    .array;
+                if (_range.empty) {
+                    writefln("Rim key after %02X", _range.front.fingerprint.rim_key(rim));
+                }
+                writefln("current");
+
+                writefln("rim_key=%02X rim=%d", rim_key, rim);
+                current.each!(a => writeln(a.fingerprint.toHex));
+                writefln("_current");
+                _current.each!(a => writeln(a.fingerprint.toHex));
+                assert(equal(current, _current));
+                current = _current;
             }
         }
 
@@ -921,8 +942,7 @@ alias check = Check!DARTException;
          *  Creates new range at the current position
          * Returns: copy of this range
          */
-        version(none)
-        RimKeyRange save() pure nothrow @nogc {
+        version (none) RimKeyRange save() pure nothrow @nogc {
             return RimKeyRange(current);
         }
 
