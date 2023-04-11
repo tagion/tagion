@@ -841,37 +841,38 @@ alias check = Check!DARTException;
             this.rim = rim;
             if (!range.empty) {
                 rim_key = range.front.fingerprint.rim_key(rim);
-
-                void build(ref Range range, const uint no = 0) @safe {
+                     
+                Archive[] _current;
+        void build(ref Range range, const uint no = 0) @safe {
                     if (!range.empty && (range.front.fingerprint.rim_key(rim) is rim_key)) {
                         auto a = range.front;
                         range.popFront;
                         build(range, no + 1);
-                        (() @trusted { current[no] = cast(Archive) a; })();
+                        (() @trusted { _current[no] = cast(Archive) a; })();
                     }
                     else {
-                        current = new Archive[no];
+                        _current = new Archive[no];
                     }
                 }
 
                 auto _range = range;
-                build(range);
+                    build(range);
                 writefln("Rim key before %02X", _range.front.fingerprint.rim_key(rim));
-                auto _current = _range
+                 current = _range
                     .until!(a => a.fingerprint.rim_key(rim) !is rim_key)
                     .map!(a => cast(Archive) a)
                     .array;
-                if (_range.empty) {
-                    writefln("Rim key after %02X", _range.front.fingerprint.rim_key(rim));
-                }
-                writefln("current");
+               if (_range.empty) { 
+         writefln("Rim key after %02X", _range.front.fingerprint.rim_key(rim));
+        }
+            writefln("current");
 
                 writefln("rim_key=%02X rim=%d", rim_key, rim);
                 current.each!(a => writeln(a.fingerprint.toHex));
                 writefln("_current");
                 _current.each!(a => writeln(a.fingerprint.toHex));
                 assert(equal(current, _current));
-                current = _current;
+
             }
         }
 
