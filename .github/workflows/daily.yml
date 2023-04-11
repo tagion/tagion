@@ -37,7 +37,7 @@ jobs:
       - name: Run unittests
         run: |
           source ~/.bashrc
-          make unittest -j ${{ env.PARALEL }}
+          make unittest ${{ env.PARALEL }}
 
       - name: Check unittests
         run: cat logs/${{ env.TARGET_BUILD }}/unittest.log | grep -E "^[0-9]+ modules passed unittests"
