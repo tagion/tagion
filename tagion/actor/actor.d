@@ -116,13 +116,9 @@ if (isActor!A) {
     alias task = A.task;
     Tid tid = assumeWontThrow(spawn(&task, args));
     assumeWontThrow(register(taskName, tid));
-
+    
     return ActorHandle!A(tid, taskName);
 }
-
-import std.meta;
-alias TaskHandle = AliasSeq!(Actor, string);
-
 
 // Delegate for dealing with exceptions sent from children
 version (none) void exceptionHandler(Exception e) {
@@ -352,37 +348,19 @@ mixin template ActorTask(T...) {
         with (Ctrl) final switch (msg.ctrl) {
         case STARTING:
             debug writeln(msg);
-            /* startChildren[msg.tid] = msg.tid; */
-            /* writeln("Is starting: ", startChildren); */
             break;
 
         case ALIVE:
             debug writeln(msg);
-            /* if (msg.tid in failChildren) { */
-            /*     startChildren.remove(msg.tid); */
-            /* } */
-            else {
-                throw new Exception("%s: never started".format(msg.tid));
-            }
-
-            /* if (msg.tid in failChildren) { */
-            /*     failChildren.remove(msg.tid); */
-            /* } */
             break;
 
         case FAIL:
             debug writeln(msg);
-            /// Add the failing child to the AA of children to restart
-            /* failChildren[msg.tid] = msg.tid; */
+            // Handle the exception
             break;
 
         case END:
             debug writeln(msg);
-            /* if (msg.tid in failChildren) { */
-            /*     Thread.sleep(100.msecs); */
-            /*     writeln("Respawning actor"); */
-            /*     // Uh respawn the actor, would be easier if we had a proper actor handle instead of a tid */
-            /* } */
             break;
         }
     }
@@ -409,15 +387,14 @@ mixin template ActorTask(T...) {
             setState(Ctrl.STARTING); // Tell the owner that you are starting.
             scope (exit) setState(Ctrl.END); // Tell the owner that you have finished.
 
-            import std.traits;
             static if(__traits(hasMember, This, "children")) {
-                debug writeln("STARTING CHILDREN");
-                foreach(i, child; children) {
+                debug writeln("STARTING CHILDREN", children);
+                static foreach(i, child; children) {{
                     alias Child = typeof(child);
                     debug writefln("STARTING: %s", i);
                     auto childhandle = spawnActor!Child(format("%s", i));
                     childrenState[childhandle.tid] = Ctrl.STARTING; // assume that the child is starting
-                }
+                }}
 
                 // TODO: Should have a timeout incase the children don't commit alive;
                 debug writeln((childrenState.all(Ctrl.ALIVE)));

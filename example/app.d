@@ -13,41 +13,15 @@ import std.typecons;
 import std.exception;
 import std.meta;
 
-struct AAA {
+struct SuperVisor {
 static:
-    void message(Msg!"msg", string str) {writeln(str);}
-    mixin ActorTask!(&message);
-}
-
-
-struct BBB {
-static:
-    void message(Msg!"msg", string str) {writeln(str);}
-
-    mixin ActorTask!(&message);
-}
-
-struct TemplateActor {
-static:
-    AAA logger;
-    BBB count;
+    Logger logger;
+    Counter count;
     alias children = AliasSeq!(logger, count);
 
     void message(Msg!"msg", string str) {writeln(str);}
+
     mixin ActorTask!(&message);
-}
-
-class SuperVisor : Actor {
-static:
-
-    void task() nothrow {
-        setState(Ctrl.STARTING);
-
-        spawnActor!Logger("logger");
-        spawnActor!Counter("counter");
-
-        genActorTask;
-    }
 }
 
 alias SuperVisorHandle = ActorHandle!SuperVisor;
@@ -56,15 +30,8 @@ alias SuperVisorHandle = ActorHandle!SuperVisor;
  * An actor that keeps counter
  * Which can be modifyed by sending it an increase or decrease message
  */
-class Counter : Actor {
+struct Counter {
 static:
-    void task() nothrow {
-        genActorTask(
-                &_decrease,
-                &_increase,
-        );
-    }
-
     alias decrease = Msg!"decrease";
     alias increase = Msg!"increase";
 
@@ -79,6 +46,8 @@ static:
         count++;
         writeln("Count is: ", count);
     }
+    /* mixin ActorTask!(&_increase, _decrease); */
+    mixin ActorTask;
 }
 
 /// The handler type to our Counter
@@ -87,7 +56,7 @@ alias CounterHandle = ActorHandle!Counter;
 /**
  * An actor which we can send log levels message too
  */
-class Logger : Actor {
+struct Logger  {
 static:
     alias hell = Msg!"hell";
     alias info = Msg!"info";
@@ -105,18 +74,12 @@ static:
         writeln("Fatal: ", str);
     }
 
-    nothrow void task() {
-        genActorTask(
-                &_info,
-                &_hell,
-                &_fatal,
-        );
-    }
+    mixin ActorTask;
+    /* mixin ActorTask!(&_fatal, &_info, &_hell); */
 
 }
 
-/// The handler type to our Logger
-alias LoggerHandle = ActorHandle!Logger;
+/// The handler type to our Logger alias LoggerHandle = ActorHandle!Logger;
 
 template ListOf(T) {
     struct List {
@@ -174,7 +137,7 @@ void main() {
     /* assert(checkCtrl(Ctrl.STARTING)); */
     /* assert(checkCtrl(Ctrl.ALIVE)); */
 
-    auto Super = spawnActor!TemplateActor("Super");
+    auto Super = spawnActor!SuperVisor("Super");
     /* auto bbb = spawnActor!BBB("bbb"); */
 
     assert(checkCtrl(Ctrl.STARTING));
