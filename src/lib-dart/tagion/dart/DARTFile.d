@@ -808,9 +808,10 @@ alias check = Check!DARTException;
     // Range over a Range with the same key in the a specific rim
     @safe
     struct RimKeyRange {
-        private RecordFactory.Recorder readd_recorder;
+        private RecordFactory.Recorder.Archives re_add_archives;
         protected Archive[] current;
         @disable this();
+        version(none)
         protected this(Archive[] current) pure nothrow @nogc {
             this.current = current;
         }
@@ -920,6 +921,7 @@ alias check = Check!DARTException;
          *  Creates new range at the current position
          * Returns: copy of this range
          */
+        version(none)
         RimKeyRange save() pure nothrow @nogc {
             return RimKeyRange(current);
         }
@@ -1163,11 +1165,6 @@ alias check = Check!DARTException;
                                 const sub_archive = range.front;
                                 immutable rim_key = sub_archive.fingerprint.rim_key(rim);
                                 auto sub_range = RimKeyRange(range, rim);
-                                if (rim_key == 0) {
-                                    writefln("rim_key=%d", rim_key);
-                                    sub_range.save.each!(a => writefln("%s %s %s", a.fingerprint.toHex, a.type, (
-                                            () @trusted => cast(void*) a.fingerprint)()));
-                                }
 
                                 if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
                                     branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key), rim + 1);
