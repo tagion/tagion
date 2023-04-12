@@ -74,7 +74,7 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
     void add(Archive archive)
     in (rim_key == archive.fingerprint.rim_key(rim))
     do {
-        added_archives.insertFront(archive);
+        added_archives.insertBack(archive);
     }
 
     private this(RimKeyRange rhs) {
@@ -245,18 +245,61 @@ unittest {
         0xABCD_1335_5678_9ABCUL,
         0xABCD_1336_5678_9ABCUL,
 
+        0xABCD_1335_5678_AABCUL,
+        0xABCD_1335_5678_BABCUL,
+        0xABCD_1335_5678_CABCUL,
+
+        // Archives which add added in to the RimKeyRange
+        0xABCD_1334_AAAA_AAAAUL,
+        0xABCD_1335_5678_AAAAUL,
+
     ];
     const documents = table
         .map!(t => DARTFakeNet.fake_doc(t))
         .array;
 
-    { //
+    { // Test with ADD's only
         writefln("--- RimKeyRange");
-        auto rec = factory.recorder(documents, Archive.Type.ADD);
-        rec.dump;
-        auto rim_key_range = rimKeyRange(rec);
-writeln("-- --- ");
-        rim_key_range.each!q{a.dump};
-    }
+        // Create a recorder from the first 9 documents 
+        auto rec = factory.recorder(documents.take(9), Archive.Type.ADD);
+        { // Check the the rim-key range is the same as the recorder
+            auto rim_key_range = rimKeyRange(rec);
+            rec.dump;
+            writeln("-- --- ");
+            rim_key_range.each!q{a.dump};
+            writeln("-- --- ");
+            rim_key_range.each!q{a.dump};
 
+            assert(equal(rec[].map!q{a.fingerprint}, rim_key_range.map!q{a.fingerprint}));
+        }
+        { // Add one to the rim_key range and check if it is range is ordered correctly
+            auto rim_key_range = rimKeyRange(rec);
+            auto rec_copy = rec.dup;
+            rec_copy.insert(documents[9], Archive.Type.ADD);
+            writefln("Recorder add 10");
+            rec_copy.dump;
+            rim_key_range.add(rec.archive(documents[9], Archive.Type.ADD));
+
+            writefln("Recorder add 10");
+            rim_key_range.save.each!q{a.dump};
+            assert(equal(rec_copy[].map!q{a.fingerprint}, rim_key_range.map!q{a.fingerprint}));
+
+        }
+
+        { //  Add two to the rim_key range and check if it is range is ordered correctly
+            auto rim_key_range = rimKeyRange(rec);
+            auto rec_copy = rec.dup;
+
+            rec_copy.insert(documents[9..11], Archive.Type.ADD);
+            writefln("Recorder add 11");
+            rec_copy.dump;
+            rim_key_range.add(rec.archive(documents[9], Archive.Type.ADD));
+            rim_key_range.add(rec.archive(documents[10], Archive.Type.ADD));
+
+            writefln("Recorder add 11");
+            rim_key_range.save.each!q{a.dump};
+            assert(equal(rec_copy[].map!q{a.fingerprint}, rim_key_range.map!q{a.fingerprint}));
+
+        }
+    }
 }

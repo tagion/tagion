@@ -171,6 +171,10 @@ class RecordFactory {
             }
         }
 
+        Recorder dup() pure nothrow {
+            return new Recorder(archives.dup);
+        }
+
         Archives.ConstRange opSlice() const pure nothrow {
             return archives[];
         }
@@ -296,15 +300,7 @@ class RecordFactory {
         void insert(Archive archive) //, const Archive.Type type = Archive.Type.NONE)
         in (!archive.fingerprint.empty)
         do {
-            /* 
-            if (archive.fingerprint.empty) {
-                auto a = new Archive(net, archive.filed, type);
-            }
-            else {
-*/
-
             archives.insert(archive);
-            //          }
         }
 
         const(Archive) add(T)(T pack) {
@@ -329,8 +325,14 @@ class RecordFactory {
 
         void insert(Recorder r) {
             archives.insert(r.archives[]);
-            //            if (isInputRange!R && (is(ElemetType!R : const(Document))))  {
+        }
 
+        Archive archive(const Document doc, const Archive.Type type = Archive.Type.NONE) const {
+            return new Archive(net, doc, type);
+        }
+
+        Archive archive(T)(T pack, const Archive.Type type = Archive.Type.NONE) const {
+            return archive(pack.toDoc, type);
         }
         //        alias add(T) = insert!T(
         // const(Archive) add(const(Document) doc) {
