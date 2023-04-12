@@ -128,8 +128,7 @@ struct Recycler {
      * Params:
      *   segment_range = Range of segments. Must be ElementType = Segment*
      */
-    protected void insert(R)(R segment_range)
-        if (isInputRange!R && isImplicitlyConvertible!(ElementType!R, Segment*)) {
+    protected void insert(R)(R segment_range) if (isInputRange!R && isImplicitlyConvertible!(ElementType!R, Segment*)) {
         indices.stableInsert(segment_range);
         segments ~= segment_range;
     }
@@ -221,7 +220,7 @@ struct Recycler {
 
     const(ulong) length() const pure nothrow @nogc {
         return indices.length;
-    
+
     }
     /** 
      * Dumps the segments in the recycler.
@@ -447,15 +446,15 @@ unittest {
 unittest {
     // add extra test
     immutable filename = fileId(
-        "recycle").fullpath;
+            "recycle").fullpath;
     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
     auto blockfile = BlockFile(
-        filename);
+            filename);
     scope (exit) {
         blockfile.close;
     }
     auto recycler = Recycler(
-        blockfile);
+            blockfile);
 
     Segment*[] dispose_segments = [
         new Segment(Index(1UL), 5),
@@ -483,25 +482,23 @@ unittest {
     Indices expected_indices = new Indices(expected_segments);
 
     assert(expected_indices.length == recycler.indices.length, "Got other indices than expected");
-    (() @trusted {
-        assert(expected_indices.opEquals(
-            recycler.indices), "elements should be the same");
-    }());
+    (() @trusted { assert(expected_indices.opEquals(
+            recycler.indices), "elements should be the same"); }());
 }
 
 @safe
 unittest {
     // middle add segment
     immutable filename = fileId(
-        "recycle").fullpath;
+            "recycle").fullpath;
     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
     auto blockfile = BlockFile(
-        filename);
+            filename);
     scope (exit) {
         blockfile.close;
     }
     auto recycler = Recycler(
-        blockfile);
+            blockfile);
 
     Segment*[] dispose_segments = [
         new Segment(Index(1UL), 5),
@@ -526,27 +523,27 @@ unittest {
 unittest {
     // empty lowerrange connecting
     immutable filename = fileId(
-        "recycle").fullpath;
+            "recycle").fullpath;
     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
     auto blockfile = BlockFile(
-        filename);
+            filename);
     scope (exit) {
         blockfile.close;
     }
     auto recycler = Recycler(
-        blockfile);
+            blockfile);
 
     Segment*[] add_indices;
     add_indices =
         [
             new Segment(Index(10UL), 5)
-    ];
+        ];
     recycler.recycle(add_indices);
     // recycler.dump;
     add_indices =
         [
             new Segment(Index(2UL), 8)
-    ];
+        ];
     recycler.recycle(add_indices);
 
     assert(recycler.indices.length == 1, "should have merged segments");
@@ -557,13 +554,13 @@ unittest {
     add_indices =
         [
             new Segment(Index(15UL), 5)
-    ];
+        ];
     recycler.recycle(add_indices);
     assert(recycler.indices.length == 1, "should have merged segments");
     assert(recycler.indices.front.index == Index(
             2UL));
     assert(
-        recycler.indices.front.end == Index(
+            recycler.indices.front.end == Index(
             20UL));
     // recycler.dump;    
 }
@@ -571,28 +568,28 @@ unittest {
 unittest {
     // empty lowerrange NOT connecting
     immutable filename = fileId(
-        "recycle").fullpath;
+            "recycle").fullpath;
     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
     auto blockfile = BlockFile(
-        filename);
+            filename);
     scope (exit) {
         blockfile.close;
     }
     auto recycler = Recycler(
-        blockfile);
+            blockfile);
     Segment*[] add_indices;
     add_indices =
         [
             new Segment(Index(10UL), 5)
-    ];
+        ];
     recycler.recycle(add_indices);
     // recycler.dump;
     add_indices =
         [
             new Segment(Index(2UL), 5)
-    ];
+        ];
     recycler.recycle(
-        add_indices);
+            add_indices);
 
     assert(recycler.indices.length == 2, "should NOT have merged types");
     assert(recycler.indices.front.index == Index(
@@ -603,9 +600,9 @@ unittest {
     add_indices =
         [
             new Segment(Index(25UL), 5)
-    ];
+        ];
     recycler.recycle(
-        add_indices[]);
+            add_indices[]);
     assert(recycler.indices.length == 3, "Should not have merged");
     assert(recycler.indices.back.index == Index(
             25UL), "Should not have merged");
@@ -616,27 +613,27 @@ unittest {
     // NOT empty upperrange and lowerrange connecting
     // empty lowerrange connecting
     immutable filename = fileId(
-        "recycle").fullpath;
+            "recycle").fullpath;
     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
     auto blockfile = BlockFile(
-        filename);
+            filename);
     scope (exit) {
         blockfile.close;
     }
     auto recycler = Recycler(
-        blockfile);
+            blockfile);
 
     Segment*[] add_indices =
         [
             new Segment(Index(10UL), 5),
             new Segment(Index(1UL), 1)
-    ];
+        ];
     recycler.recycle(add_indices);
     // recycler.dump;
     add_indices =
         [
             new Segment(Index(5UL), 5)
-    ];
+        ];
     recycler.recycle(add_indices);
     // recycler.dump;
     assert(recycler.indices.length == 2, "should have merged segments");
@@ -645,34 +642,34 @@ unittest {
     add_indices =
         [
             new Segment(Index(25UL), 5)
-    ];
+        ];
     recycler.recycle(add_indices);
     add_indices =
         [
             new Segment(Index(17UL), 2)
-    ];
+        ];
     recycler.recycle(
-        add_indices);
+            add_indices);
     assert(
-        recycler.indices.length == 4);
+            recycler.indices.length == 4);
 }
 
 unittest {
     immutable filename = fileId(
-        "recycle").fullpath;
+            "recycle").fullpath;
     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
     auto blockfile = BlockFile(
-        filename);
+            filename);
     scope (exit) {
         blockfile.close;
     }
     auto recycler = Recycler(
-        blockfile);
+            blockfile);
 
     Segment*[] add_indices =
         [
             new Segment(Index(10UL), 5),
-    ];
+        ];
     recycler.recycle(add_indices);
 
     recycler.claim(5);
@@ -980,11 +977,11 @@ unittest {
         blockfile.save(data);
     }
     blockfile.store;
-    
+
     import std.file;
 
     auto fout = File(deleteme, "w");
-    scope(exit) {
+    scope (exit) {
         fout.close;
         deleteme.remove;
     }
@@ -996,8 +993,8 @@ unittest {
 
     auto block_segment_range = blockfile.opSlice();
     assert(block_segment_range.walkLength == 7, "should contain 2 statistic, 1 master and 4 archives");
-    
-    foreach(i; 0..datas.length) {
+
+    foreach (i; 0 .. datas.length) {
         assert(block_segment_range.front.type == "D");
         block_segment_range.popFront;
     }

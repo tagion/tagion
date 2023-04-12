@@ -59,5 +59,3 @@ struct EventView {
         });
 
 }
-
-

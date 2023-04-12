@@ -808,7 +808,7 @@ struct Document {
                                 immutable binary_len = LEB128.decode!uint(data[value_pos .. $]);
                                 immutable buffer_pos = value_pos + binary_len.size;
                                 immutable buffer = (cast(immutable(U)*)(data[buffer_pos .. $].ptr))[0 .. binary_len
-                                        .value];
+                                    .value];
                                 return Value(buffer);
                             }
                             else static if (E is BIGINT) {

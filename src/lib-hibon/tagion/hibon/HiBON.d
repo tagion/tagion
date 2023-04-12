@@ -221,6 +221,7 @@ static size_t size(U)(const(U[]) array) pure {
                     return T(doc);
                     break;
                 default:
+                    
                         .check(0, message("Expected HiBON type %s but apply type (%s) which is not supported",
                                 type, T.stringof));
                 }
@@ -230,26 +231,28 @@ static size_t size(U)(const(U[]) array) pure {
 
         const(T) get(T)() const if (!isHiBONRecord!T && !isHiBON!T && !isTypedef!T) {
             enum E = Value.asType!T;
+            
             .check(E is type, message("Expected HiBON type %s but apply type %s (%s)",
                     type, E, T.stringof));
             return value.by!E;
         }
 
-        inout(T) get(T)() inout  if (Document.isDocTypedef!T) {
+        inout(T) get(T)() inout if (Document.isDocTypedef!T) {
             alias BaseType = TypedefType!T;
-        const ret = get!BaseType;
+            const ret = get!BaseType;
             return T(ret);
         }
 
         unittest {
-    import std.typecons : Typedef;
-                alias BUF=immutable(ubyte)[];
-                alias Tdef=Typedef!(BUF, null, "SPECIAL");
-                      auto h=new HiBON;
-                Tdef buf=[0x17, 0x42];
-                h["b"]=buf;
-                assert(Document(h)["b"].get!Tdef == buf);
-       }
+            import std.typecons : Typedef;
+
+            alias BUF = immutable(ubyte)[];
+            alias Tdef = Typedef!(BUF, null, "SPECIAL");
+            auto h = new HiBON;
+            Tdef buf = [0x17, 0x42];
+            h["b"] = buf;
+            assert(Document(h)["b"].get!Tdef == buf);
+        }
         /++
          Returns:
          The value as HiBON Type E
@@ -718,8 +721,8 @@ static size_t size(U)(const(U[]) array) pure {
         // Note that the keys are in alphabetic order
         // Because the HiBON keys must be ordered
         alias TabelArray = Tuple!(immutable(ubyte)[], Type.BINARY.stringof, // Credential,          Type.CREDENTIAL.stringof,
-            // CryptDoc,            Type.CRYPTDOC.stringof,
-            DataBlock, Type.HASHDOC.stringof, string, Type.STRING.stringof,);
+                // CryptDoc,            Type.CRYPTDOC.stringof,
+                DataBlock, Type.HASHDOC.stringof, string, Type.STRING.stringof,);
 
         TabelArray test_tabel_array;
         test_tabel_array.BINARY = [1, 2, 3];
@@ -1064,7 +1067,7 @@ static size_t size(U)(const(U[]) array) pure {
         h[time] = sdt_t(1_100_100_101);
 
         const doc = Document(h);
-        assert(doc[time].type is Type.TIME); 
+        assert(doc[time].type is Type.TIME);
         assert(doc[time].get!sdt_t == 1_100_100_101);
     }
 

@@ -12,7 +12,7 @@ import tagion.prior_services.Options;
 import tagion.utils.Random;
 
 import tagion.GlobalSignals : abort;
-import tagion.basic.Types :  Control;
+import tagion.basic.Types : Control;
 import tagion.crypto.Types : Pubkey;
 import tagion.logger.Logger;
 

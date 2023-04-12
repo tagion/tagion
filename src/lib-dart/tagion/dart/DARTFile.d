@@ -251,7 +251,7 @@ alias check = Check!DARTException;
         // }
         immutable(Buffer) merkletree(
                 const(Buffer[]) left,
-        const(Buffer[]) right) {
+                const(Buffer[]) right) {
             Buffer _left_fingerprint;
             Buffer _right_fingerprint;
             if ((left.length == 1) && (right.length == 1)) {
@@ -422,7 +422,7 @@ alias check = Check!DARTException;
                         
 
                         .check(_fingerprints[key]!is null,
-                        format("Fingerprint key=%02X at index=%d is not defined", key, index));
+                                format("Fingerprint key=%02X at index=%d is not defined", key, index));
                         indices_set = true;
                     }
                 }
@@ -786,7 +786,7 @@ alias check = Check!DARTException;
                 }
                 else {
                     // Loads the Archives into the archives
-                        .check(ordered_fingerprints.length == 1,
+                    .check(ordered_fingerprints.length == 1,
                                 format("Data base is broken at rim=%d fingerprint=%s",
                                 rim, ordered_fingerprints[0].toHex));
                     // The archive is set in erase mode so it can be easily be erased later
@@ -968,6 +968,7 @@ alias check = Check!DARTException;
                 if (rim < RIMS_IN_SECTOR) {
                     if (branch_index !is INDEX_NULL) {
                         branches = blockfile.load!Branches(branch_index);
+                        
                         .check(branches.hasIndices,
                                 "DART failure within the sector rims the DART should contain a branch");
                     }
@@ -1182,13 +1183,13 @@ alias check = Check!DARTException;
         if (modify_records.empty) {
             return _fingerprint;
         }
-   
+
         auto range = modify_records.archives[];
 
         (() @trusted {
-            RecordFactory.Recorder check_modify=cast(RecordFactory.Recorder)modify_records;    
+            RecordFactory.Recorder check_modify = cast(RecordFactory.Recorder) modify_records;
             assert(check_modify.checkSorted);
-    }());
+        }());
         immutable new_root = traverse_dart(range, blockfile.masterBlock.root_index);
 
         scope (success) {

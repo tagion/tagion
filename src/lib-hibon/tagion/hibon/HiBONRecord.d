@@ -19,11 +19,11 @@ alias DocResult = Tuple!(Document.Element.ErrorCode, "error", string, "key");
 
 ///  Returns: true if struct or class supports toHiBON
 enum isHiBON(T) = (is(T == struct) || is(T == class)) && hasMember!(T,
-        "toHiBON") && (is(ReturnType!(T.toHiBON) : const(HiBON)));
+            "toHiBON") && (is(ReturnType!(T.toHiBON) : const(HiBON)));
 
 ///  Returns: true if struct or class supports toDoc
 enum isHiBONRecord(T) = (is(T == struct) || is(T == class)) && hasMember!(T,
-        "toDoc") && (is(ReturnType!(T.toDoc) : const(Document)));
+            "toDoc") && (is(ReturnType!(T.toDoc) : const(Document)));
 
 enum isHiBONTypeArray(T) = isArray!T && isHiBONRecord!(ForeachType!T);
 
@@ -394,7 +394,7 @@ mixin template HiBONRecord(string CTOR = "") {
                         static if (isInputRange!UnqualT) {
                             alias ElementT = ForeachType!UnqualT;
                             static assert((HiBON.Value.hasType!ElementT) || isHiBON!ElementT,
-                                format("The sub element '%s' of type %s is not supported",
+                                    format("The sub element '%s' of type %s is not supported",
                                     name, BaseT.stringof));
 
                             hibon[name] = toList(cast(UnqualT) m);
@@ -508,8 +508,8 @@ mixin template HiBONRecord(string CTOR = "") {
                     alias ValueT = ForeachType!R;
                     alias KeyT = KeyType!R;
                     R result = assocArray(
-                        doc.keys.map!(key => key.to!KeyT),
-                        doc[].map!(e => e.get!ValueT));
+                            doc.keys.map!(key => key.to!KeyT),
+                            doc[].map!(e => e.get!ValueT));
                     enum do_foreach = false;
 
                 }
@@ -554,7 +554,7 @@ mixin template HiBONRecord(string CTOR = "") {
                             }
                             else {
                                 static assert(0,
-                                    format("Can not convert %s to Document", R.stringof));
+                                        format("Can not convert %s to Document", R.stringof));
                             }
                         }
                         static if (isAssociativeArray!R) {
@@ -578,7 +578,7 @@ mixin template HiBONRecord(string CTOR = "") {
                 && isCallable!(valid) && __traits(compiles, valid(doc));
             static if (do_valid) {
                 check(valid(doc),
-                    format("Document verification faild for HiBONRecord %s",
+                        format("Document verification faild for HiBONRecord %s",
                         ThisType.stringof));
             }
 
@@ -588,7 +588,7 @@ mixin template HiBONRecord(string CTOR = "") {
             static if (do_verify) {
                 scope (exit) {
                     check(this.verify(),
-                        format("Document verification faild for HiBONRecord %s",
+                            format("Document verification faild for HiBONRecord %s",
                             ThisType.stringof));
                 }
             }
@@ -608,7 +608,7 @@ mixin template HiBONRecord(string CTOR = "") {
                         }
                         static if (HAS_TYPE) {
                             static assert(TYPENAME != label.name,
-                                format("Fixed %s is already definded to %s but is redefined for %s.%s",
+                                    format("Fixed %s is already definded to %s but is redefined for %s.%s",
                                     TYPENAME, TYPE, ThisType.stringof,
                                     basename!(this.tupleof[i])));
                         }
@@ -621,7 +621,7 @@ mixin template HiBONRecord(string CTOR = "") {
                         static if (hasUDA!(this.tupleof[i], fixed)) {
                             alias assigns = getUDAs!(this.tupleof[i], fixed);
                             static assert(assigns.length is 1,
-                                "Only one fixed UDA allowed per member");
+                                    "Only one fixed UDA allowed per member");
                             static assert(!optional, "The optional parameter in label can not be used in connection with the fixed attribute");
                             enum code = format(q{this.tupleof[i]=%s;}, assigns[0].code);
                             if (!doc.hasMember(name)) {
@@ -646,7 +646,7 @@ mixin template HiBONRecord(string CTOR = "") {
                                     {
                                         alias inspectFun = unaryFun!(F.code);
                                         check(inspectFun(m),
-                                            message("Member %s faild on inspection %s with %s",
+                                                message("Member %s faild on inspection %s with %s",
                                                 name, F.code, m));
                                     }
                                 }
@@ -688,7 +688,7 @@ mixin template HiBONRecord(string CTOR = "") {
                         }
                         else {
                             static assert(0,
-                                format("Convering for member '%s' of type %s is not supported by default",
+                                    format("Convering for member '%s' of type %s is not supported by default",
                                     name, MemberT.stringof));
 
                         }
@@ -812,7 +812,7 @@ mixin template HiBONRecord(string CTOR = "") {
 
         {
             const s = BasicData(-42, 42, -42_000_000_000UL, 42_000_000_000L,
-                42.42e-9, -42.42e-300, "text", true);
+                    42.42e-9, -42.42e-300, "text", true);
             const docS = s.toDoc;
 
             const s_check = BasicData(docS);
@@ -1312,12 +1312,9 @@ mixin template HiBONRecord(string CTOR = "") {
             const result = StructBytes(s_doc);
 
             assert(
-                equal(
+                    equal(
                     list
-                    .map!((i) {
-                        binwrite(buffer, i, 0);
-                        return tuple(buffer.idup, i);
-                    })
+                    .map!((i) { binwrite(buffer, i, 0); return tuple(buffer.idup, i); })
                     .array
                     .sort,
                     s_doc["tabel"]
@@ -1359,7 +1356,7 @@ mixin template HiBONRecord(string CTOR = "") {
 
             // Checks that the key is ordered in the tabel
             assert(s_doc["tabel"].get!Document[].map!(
-                a => a.get!Document[0].get!Document.serialize).array.isStrictlyMonotonic);
+                    a => a.get!Document[0].get!Document.serialize).array.isStrictlyMonotonic);
 
             const result = StructKeys(s_doc);
             //assert(result == s);

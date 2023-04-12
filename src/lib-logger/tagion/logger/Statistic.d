@@ -7,7 +7,6 @@ import std.format;
 import tagion.hibon.HiBONRecord;
 import std.exception : assumeWontThrow;
 
-
 @safe @recordType("S")
 struct Statistic(T, Flag!"histogram" flag = No.histogram) {
     protected {
@@ -32,9 +31,9 @@ struct Statistic(T, Flag!"histogram" flag = No.histogram) {
         N++;
         static if (flag) {
             _histogram.update(
-                value,
-                () => 1,
-                (ref uint a) => a += 1);
+                    value,
+                    () => 1,
+                    (ref uint a) => a += 1);
         }
     }
 
@@ -65,19 +64,15 @@ struct Statistic(T, Flag!"histogram" flag = No.histogram) {
         return assumeWontThrow(format("N=%d sum2=%s sum=%s min=%s max=%s", N, sum2, sum, _min, _max));
     }
 
-
-
     static if (flag == Yes.histogram) {
-        
 
         string histogramString() pure const nothrow {
             import std.range : repeat;
             import std.algorithm : sort, min;
             import std.format;
 
-
             string[] result;
-            foreach(keypair; _histogram.byKeyValue.array.sort!((a, b) => a.key < b.key)) {
+            foreach (keypair; _histogram.byKeyValue.array.sort!((a, b) => a.key < b.key)) {
                 const number = keypair.key;
                 const size = keypair.value;
                 result ~= assumeWontThrow(format("%4d|%4d| %s", number, size, "#".repeat(min(size, 100)).join));

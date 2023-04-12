@@ -57,7 +57,7 @@ struct SecureWallet(Net) {
     }
 
     static SecureWallet createWallet(scope const(string[]) questions,
-    scope const(char[][]) answers, uint confidence, const(char[]) pincode)
+            scope const(char[][]) answers, uint confidence, const(char[]) pincode)
     in {
         assert(questions.length > 3, "Minimal amount of answers is 3");
         assert(questions.length is answers.length, "Amount of questions should be same as answers");

@@ -130,27 +130,27 @@ import tagion.utils.LEB128;
                                 break;
                             }
                         }
-            else if (source[_end_pos .. _end_pos + 2] == "(;") {
+                        else if (source[_end_pos .. _end_pos + 2] == "(;") {
                             _end_pos += 2;
                             level++;
                         }
-            else {
+                        else {
                             _end_pos++;
                         }
                     }
                 }
-            else if ((_end_pos + 1 < source.length) && (source[_end_pos .. _end_pos + 2] == ";;")) {
+                else if ((_end_pos + 1 < source.length) && (source[_end_pos .. _end_pos + 2] == ";;")) {
                     type = Token.Type.COMMENT;
                     _end_pos += 2;
                     while ((_end_pos < source.length) && (!is_newline(source[_end_pos .. $]))) {
                         _end_pos++;
                     }
                 }
-            else if ((source[_end_pos] is '(') || (source[_end_pos] is ')')) {
+                else if ((source[_end_pos] is '(') || (source[_end_pos] is ')')) {
                     type = Token.Type.BRACKET;
                     _end_pos++;
                 }
-            else if (source[_end_pos] is '"' || source[_end_pos] is '\'') {
+                else if (source[_end_pos] is '"' || source[_end_pos] is '\'') {
                     type = Token.Type.TEXT;
                     const quote = source[_begin_pos];
                     _end_pos++;
@@ -177,7 +177,7 @@ import tagion.utils.LEB128;
                         }
                     }
                 }
-            else {
+                else {
                     while ((_end_pos < source.length)
                             && is_none_white(source[_end_pos]) && (source[_end_pos]!is ')')) {
                         _end_pos++;
@@ -528,7 +528,7 @@ unittest {
         {line: 69, pos: 0, symbol: `;;(custom_section "producers"`, type: Token.Type.COMMENT},
         {line: 70, pos: 0, symbol: ";;  (after code)", type: Token.Type.COMMENT},
         {line: 71, pos: 0, symbol: `;;  "\01\0cprocessed-by\01\03ldc\061.20.1")`, type: Token
-            .Type.COMMENT},
+        .Type.COMMENT},
         {line: 73, pos: 0, symbol: ")", type: Token.Type.BRACKET},
     ];
 

@@ -148,14 +148,14 @@ else {
 
         alias strain = AliasSeq!(
                 KeyStrain(KeyCode.UP, [27, 91, 65]),
-        KeyStrain(KeyCode.DOWN, [27, 91, 66]),
-        KeyStrain(KeyCode.RIGHT, [27, 91, 67]),
-        KeyStrain(KeyCode.LEFT, [27, 91, 68]),
-        KeyStrain(KeyCode.HOME, [27, 91, 49, 59, 50, 72]),
-        KeyStrain(KeyCode.END, [27, 91, 49, 59, 50, 70]),
-        KeyStrain(KeyCode.PAGEDOWN, [27, 91, 54, 126]),
-        KeyStrain(KeyCode.PAGEUP, [27, 91, 53, 126]),
-        KeyStrain(KeyCode.ENTER, [13]),
+                KeyStrain(KeyCode.DOWN, [27, 91, 66]),
+                KeyStrain(KeyCode.RIGHT, [27, 91, 67]),
+                KeyStrain(KeyCode.LEFT, [27, 91, 68]),
+                KeyStrain(KeyCode.HOME, [27, 91, 49, 59, 50, 72]),
+                KeyStrain(KeyCode.END, [27, 91, 49, 59, 50, 70]),
+                KeyStrain(KeyCode.PAGEDOWN, [27, 91, 54, 126]),
+                KeyStrain(KeyCode.PAGEUP, [27, 91, 53, 126]),
+                KeyStrain(KeyCode.ENTER, [13]),
         );
 
         KeyCode getKey(ref int ch) {
@@ -168,15 +168,15 @@ else {
                             static if (pos + 1 is sorted_strain[index].branch.length) {
                                 return sorted_strain[index].code;
                             }
-                else {
+                            else {
                                 ch = get;
                                 return select!(index, pos + 1)(ch);
                             }
                         }
-                else if (ch > sorted_strain[index].branch[pos]) {
+                        else if (ch > sorted_strain[index].branch[pos]) {
                             return select!(index + 1, pos)(ch);
                         }
-                else {
+                        else {
                             return KeyCode.NONE;
                         }
                     }

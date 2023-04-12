@@ -3,7 +3,6 @@ module tagion.utils.Random;
 import std.format;
 import std.range;
 
-
 /// Generates a pseudo random sequence
 @safe @nogc
 struct Random(T = uint) {
@@ -19,7 +18,7 @@ struct Random(T = uint) {
             this.m_w = m_w;
         }
 
-    /**
+        /**
      * 
      * Params:
      *   seed_value = is the seend of the pseudo random
@@ -106,7 +105,6 @@ struct Random(T = uint) {
     }
 
 }
-
 
 ///
 @safe
@@ -200,8 +198,6 @@ unittest {
 
 }
 
-
-
 struct RandomArchives {
     import std.random;
     import std.random : Random;
@@ -221,13 +217,12 @@ struct RandomArchives {
         return gen.take(number_of_archives);
     }
 
-
-
 }
 
 unittest {
     import std.stdio;
     import std.algorithm;
+
     const seed = 12345UL;
     auto r = RandomArchives(seed, 1, 10);
     auto t = RandomArchives(seed, 1, 10);

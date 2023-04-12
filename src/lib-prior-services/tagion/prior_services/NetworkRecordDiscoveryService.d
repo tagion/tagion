@@ -7,7 +7,7 @@ import std.format;
 
 import tagion.prior_services.Options;
 import tagion.basic.Types : Buffer, Control;
-import tagion.crypto.Types :   Pubkey;
+import tagion.crypto.Types : Pubkey;
 import tagion.logger.Logger;
 import tagion.utils.StdTime;
 

@@ -13,7 +13,7 @@ import tagion.options.CommonOptions : commonOptions;
 import tagion.basic.Types : Control;
 import tagion.basic.basic : basename;
 import tagion.basic.tagionexceptions : TagionException;
-import tagion.crypto.Types :  Pubkey;
+import tagion.crypto.Types : Pubkey;
 
 import tagion.hibon.Document;
 import tagion.network.ListenerSocket;
@@ -66,8 +66,8 @@ void monitorServiceTask(immutable(Options) opts) nothrow {
                     &handleState,
                     (string json) { listener_socket.broadcast(json); },
                     (immutable(ubyte)[] hibon_bytes) { listener_socket.broadcast(hibon_bytes); },
-            (Document doc) { listener_socket.broadcast(doc); },
-            &taskfailure
+                    (Document doc) { listener_socket.broadcast(doc); },
+                    &taskfailure
             );
         }
     }

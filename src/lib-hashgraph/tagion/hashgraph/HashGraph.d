@@ -20,7 +20,7 @@ import tagion.communication.HiRPC;
 import tagion.utils.StdTime;
 
 import tagion.basic.Debug : __format;
-import tagion.basic.Types :  Buffer;
+import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Pubkey, Signature, Privkey;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.utils.BitMask;
@@ -520,8 +520,8 @@ class HashGraph {
 
         const contain_all =
             _nodes
-                .byValue
-                .all!((n) => n._event !is null);
+            .byValue
+            .all!((n) => n._event !is null);
 
         const state = (_nodes.length is node_size && contain_all) ? ExchangeState.COHERENT : ExchangeState.RIPPLE;
 
@@ -846,9 +846,10 @@ class HashGraph {
                     ChannelQueue[Pubkey] channel_queues;
                     sdt_t _current_time;
                 }
-                void start_listening()  {
+                void start_listening() {
                     // empty
                 }
+
                 @property
                 void time(const(sdt_t) t) {
                     _current_time = sdt_t(t);

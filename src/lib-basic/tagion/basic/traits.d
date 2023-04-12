@@ -96,5 +96,3 @@ static unittest {
     enum s_special = getMemberUDAs!(S.func, special)[0];
     static assert(s_special == special("text"));
 }
-
-

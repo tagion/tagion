@@ -5,7 +5,7 @@ import std.array : array;
 import std.range : iota;
 
 import tagion.basic.Types : Buffer;
-import tagion.crypto.Types :  Pubkey, Signature;
+import tagion.crypto.Types : Pubkey, Signature;
 import tagion.utils.StdTime : sdt_t;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBON : HiBON;
@@ -87,8 +87,8 @@ struct HashGraphRecorver {
 
         auto epacks =
             events
-                .map!((e) => event_body_compact(e))
-                .array;
+            .map!((e) => event_body_compact(e))
+            .array;
         return (() @trusted { return cast(immutable) EventEpochChunk(epacks, chain); })();
     }
 

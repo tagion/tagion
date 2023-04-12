@@ -20,11 +20,11 @@ import tagion.behaviour.BehaviourException;
 import tagion.behaviour.BehaviourFeature : ActionProperties;
 
 enum feature_regex = regex([
-    `^\W*(feature)\W`, /// Feature
-    `^\W*(scenario)\W`, /// Scenario
-    r"^\W*(given|when|then|but)\W", /// Action
-    r"`((?:\w+\.?)+)`", /// Name
-], "i");
+        `^\W*(feature)\W`, /// Feature
+        `^\W*(scenario)\W`, /// Scenario
+        r"^\W*(given|when|then|but)\W", /// Action
+        r"`((?:\w+\.?)+)`", /// Name
+    ], "i");
 
 unittest {
     /// regex_given
@@ -171,7 +171,7 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                     break TokenSwitch;
                 case State.Scenario:
                     check_error(match[1].validAction,
-                    format("Not a valid action name %s,  '.' is not allowed", match[1]));
+                            format("Not a valid action name %s,  '.' is not allowed", match[1]));
                     scenario_group.info.name = match[1].idup;
                     break TokenSwitch;
                 case State.Action:
@@ -180,8 +180,8 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                             if (current_action_index is index) {
                                 with (scenario_group.tupleof[index]) {
                                     check_error(infos[$ - 1].name.length == 0,
-                                    format("Action name '%s' has already been defined for %s", match[0],
-                                    infos[$ - 1].name));
+                                            format("Action name '%s' has already been defined for %s", match[0],
+                                            infos[$ - 1].name));
                                     infos[$ - 1].name = match[1].strip.idup;
                                 }
                                 break TokenSwitch;

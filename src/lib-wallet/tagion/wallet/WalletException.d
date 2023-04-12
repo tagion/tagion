@@ -24,5 +24,3 @@ class KeyRecoverException : WalletException {
         super(msg, file, line);
     }
 }
-
-
