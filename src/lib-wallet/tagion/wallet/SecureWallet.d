@@ -110,10 +110,10 @@ alias check = Check!(WalletException);
      */
     static SecureWallet createWallet(
             scope const(string[]) questions,
-    scope const(char[][]) answers,
-    uint confidence,
-    const(char[]) pincode,
-    scope const(ubyte[]) seed = null)
+            scope const(char[][]) answers,
+            uint confidence,
+            const(char[]) pincode,
+            scope const(ubyte[]) seed = null)
     in {
         assert(questions.length > 3, "Minimal amount of answers is 4");
         assert(questions.length is answers.length, "Amount of questions should be same as answers");
@@ -149,8 +149,8 @@ alias check = Check!(WalletException);
     protected void set_pincode(
             const KeyRecover recover,
             scope const(ubyte[]) R,
-    scope const(char[]) pincode,
-    Net _net = null) {
+            scope const(char[]) pincode,
+            Net _net = null) {
         const hash_size = ((net) ? net : _net).hashSize;
         auto seed = new ubyte[hash_size];
         scramble(seed);
@@ -611,7 +611,7 @@ alias check = Check!(WalletException);
             // Add the bulls to the account with the derive keys
             with (sender_wallet.account) {
                 bills = zip(bill_amounts, derives.byKey).map!(bill_derive => StandardBill(bill_derive[0],
-                epoch, bill_derive[1], gene)).array;
+                        epoch, bill_derive[1], gene)).array;
             }
 
             assert(sender_wallet.available_balance == bill_amounts.sum);

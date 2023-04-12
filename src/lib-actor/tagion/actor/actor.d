@@ -7,10 +7,9 @@ import std.typecons;
 import core.thread;
 import std.exception;
 
-bool all(Ctrl[Tid] aa, Ctrl ctrl)
-{
-    foreach(val; aa) {
-        if ( val != ctrl ) {
+bool all(Ctrl[Tid] aa, Ctrl ctrl) {
+    foreach (val; aa) {
+        if (val != ctrl) {
             return false;
         }
     }
@@ -111,8 +110,7 @@ ActorHandle!A actorHandle(A)(string taskName) {
  * spawnActor!MyActor("my_task_name", 42);
  * ---
  */
-nothrow ActorHandle!A spawnActor(A, Args...)(string taskName, Args args)
-if (isActor!A) {
+nothrow ActorHandle!A spawnActor(A, Args...)(string taskName, Args args) if (isActor!A) {
     alias task = A.task;
     Tid tid = assumeWontThrow(spawn(&task, args));
     assumeWontThrow(register(taskName, tid));
@@ -194,7 +192,6 @@ private template isActor(A) {
     enum isActor = isTaskNothrow!A;
 }
 
-
 /**
  * Base template
  * All members should be static
@@ -257,20 +254,23 @@ mixin template Actor(T...) {
         try {
 
             setState(Ctrl.STARTING); // Tell the owner that you are starting.
-            scope (exit) setState(Ctrl.END); // Tell the owner that you have finished.
+            scope (exit)
+                setState(Ctrl.END); // Tell the owner that you have finished.
 
-            static if(__traits(hasMember, This, "children")) {
+            static if (__traits(hasMember, This, "children")) {
                 debug writeln("STARTING CHILDREN", children);
-                static foreach(i, child; children) {{
-                    alias Child = typeof(child);
-                    debug writefln("STARTING: %s", i);
-                    auto childhandle = spawnActor!Child(format("%s", i));
-                    childrenState[childhandle.tid] = Ctrl.STARTING; // assume that the child is starting
-                }}
+                static foreach (i, child; children) {
+                    {
+                        alias Child = typeof(child);
+                        debug writefln("STARTING: %s", i);
+                        auto childhandle = spawnActor!Child(format("%s", i));
+                        childrenState[childhandle.tid] = Ctrl.STARTING; // assume that the child is starting
+                    }
+                }
 
                 // TODO: Should have a timeout incase the children don't commit alive;
                 debug writeln((childrenState.all(Ctrl.ALIVE)));
-                while(!(childrenState.all(Ctrl.ALIVE))) {
+                while (!(childrenState.all(Ctrl.ALIVE))) {
                     CtrlMsg msg = receiveOnly!CtrlMsg; // HACK: don't use receiveOnly
                     childrenState[msg.tid] = msg.ctrl;
                 }

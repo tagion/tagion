@@ -29,7 +29,8 @@ enum task;
 
 /// UDA to enable emulation of an Actor
 @safe
-struct emulate(Actor) {};
+struct emulate(Actor) {
+};
 
 /**
 * Defines a unique actor ID

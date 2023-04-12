@@ -10,14 +10,12 @@ import tagion.crypto.Types : Pubkey;
 
 import tagion.hibon.Document : Document;
 
-
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.gossip.InterfaceNet;
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.Event;
 import tagion.basic.ConsensusExceptions;
 import tagion.hashgraph.HashGraphBasic;
-
 
 @safe
 abstract class StdGossipNet : StdSecureNet, GossipNet {
@@ -61,7 +59,6 @@ abstract class StdGossipNet : StdSecureNet, GossipNet {
         ulong _current_time;
         //        HashGraphI _hashgraph;
     }
-
 
     protected Tid _transcript_tid;
     @property void transcript_tid(Tid tid)

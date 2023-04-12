@@ -3,7 +3,7 @@ module tagion.wasm.WasmWriter;
 import std.outbuffer;
 import std.bitmanip : nativeToLittleEndian;
 import std.traits : isIntegral, isFloatingPoint, EnumMembers, hasMember, Unqual,
-    TemplateArgsOf, PointerTarget, getUDAs,  isPointer, ConstOf, ForeachType, FieldNameTuple;
+    TemplateArgsOf, PointerTarget, getUDAs, isPointer, ConstOf, ForeachType, FieldNameTuple;
 import std.typecons : Tuple;
 import std.format;
 import std.algorithm.iteration : each, map, sum, fold, filter;
@@ -225,7 +225,7 @@ import tagion.wasm.WasmException;
                                         format("Array type %s is not supported", T.stringof));
                             }
                         }
-                    else {
+                        else {
                             static assert(0, format("Type %s is not supported", T.stringof));
                         }
                     }

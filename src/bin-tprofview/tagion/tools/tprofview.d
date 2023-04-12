@@ -87,7 +87,7 @@ ProfInfo loadProf(ref File fin, const bool verbose) {
     }
 
     auto prof_file = fin.byLine // .map!(l => l.filter!(c => c.isValidDchar))
-        .enumerate(1)
+    .enumerate(1)
         .filter!(l => validUTF(l))
         .map!(l => l.value.toUTF8);
     prof_file
@@ -117,7 +117,7 @@ int _main(string[] args) {
             "version", "display the version", &version_switch,
             "l", format("Number to be listed (default %d)", number_tobe_listed), &number_tobe_listed,
             "s", format("Sort flag %s (default %s)", [EnumMembers!ProfSort], prof_sort), &prof_sort,
-    "v|verbose", "verbose switch", &verbose_switch,
+            "v|verbose", "verbose switch", &verbose_switch,
     );
 
     if (version_switch) {
@@ -128,16 +128,16 @@ int _main(string[] args) {
     if (main_args.helpWanted) {
         defaultGetoptPrinter(
                 [
-                revision_text,
-                "Documentation: https://tagion.org/",
-                "",
-                "Usage:",
-                format("%s [<option>...] <trace-file> ", program),
-                "",
-                "<option>:",
+            revision_text,
+            "Documentation: https://tagion.org/",
+            "",
+            "Usage:",
+            format("%s [<option>...] <trace-file> ", program),
+            "",
+            "<option>:",
 
-                ].join("\n"),
-                main_args.options);
+        ].join("\n"),
+        main_args.options);
         return 0;
     }
     if (args.length > 1) {

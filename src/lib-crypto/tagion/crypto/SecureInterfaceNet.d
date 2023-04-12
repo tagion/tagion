@@ -47,8 +47,9 @@ interface SecureNet : HashNet {
     @nogc Pubkey pubkey() pure const nothrow;
     bool verify(const Fingerprint message, const Signature signature, const Pubkey pubkey) const;
     final bool verify(const Document doc, const Signature signature, const Pubkey pubkey) const {
+        
             .check(doc.keys.front[0]!is HiBONPrefix.HASH, ConsensusFailCode
-            .SECURITY_MESSAGE_HASH_KEY);
+                    .SECURITY_MESSAGE_HASH_KEY);
         immutable message = calcHash(doc);
         return verify(message, signature, pubkey);
     }
@@ -63,8 +64,9 @@ interface SecureNet : HashNet {
     Signature sign(const Fingerprint message) const;
 
     final Signed sign(const Document doc) const {
+        
             .check(doc.keys.front[0]!is HiBONPrefix.HASH, ConsensusFailCode
-            .SECURITY_MESSAGE_HASH_KEY);
+                    .SECURITY_MESSAGE_HASH_KEY);
         const fingerprint = calcHash(doc);
         return Signed(sign(fingerprint), fingerprint);
     }
@@ -80,7 +82,7 @@ interface SecureNet : HashNet {
 
     immutable(ubyte[]) ECDHSecret(
             scope const(ubyte[]) seckey,
-scope const(Pubkey) pubkey) const;
+            scope const(Pubkey) pubkey) const;
 
     immutable(ubyte[]) ECDHSecret(scope const(Pubkey) pubkey) const;
 

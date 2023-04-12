@@ -8,7 +8,7 @@ import std.format;
 class SSLSocketException : SocketException {
     immutable SSLErrorCodes error_code;
     this(immutable(char)[] msg, const SSLErrorCodes error_code = SSLErrorCodes.SSL_ERROR_NONE,
-    string file = __FILE__, size_t line = __LINE__) pure nothrow {
+            string file = __FILE__, size_t line = __LINE__) pure nothrow {
         this.error_code = error_code;
         import std.exception : assumeWontThrow;
 

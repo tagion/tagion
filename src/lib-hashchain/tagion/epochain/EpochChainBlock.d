@@ -71,7 +71,8 @@ import tagion.crypto.Types : Fingerprint;
 
 unittest {
     import tagion.crypto.SecureNet : StdHashNet;
-import std.range : empty;
+    import std.range : empty;
+
     /// EpochChainBlock_check_getters
     {
         import tagion.crypto.SecureNet : StdHashNet;
