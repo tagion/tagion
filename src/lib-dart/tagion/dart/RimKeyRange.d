@@ -25,23 +25,22 @@ ubyte rim_key(F)(F rim_keys, const uint rim) pure if (isBufferType!F) {
 }
 
 @safe
-RimKeyRange!Range rimKeyRange(Range)(Range range, const uint rim, const GetType get_type=Neutral) 
-if (isInputRange!Range && isImplicitlyConvertible!(ElementType!Range, Archive)) {
+RimKeyRange!Range rimKeyRange(Range)(Range range, const uint rim, const GetType get_type = Neutral)
+        if (isInputRange!Range && isImplicitlyConvertible!(ElementType!Range, Archive)) {
     return RimKeyRange!Range(range, rim, get_type);
 }
 
 @safe
-auto rimKeyRange(Rec)(Rec rec, const GetType get_type=Neutral) 
-if (isImplicitlyConvertible!(Rec, const(RecordFactory.Recorder))) {
+auto rimKeyRange(Rec)(Rec rec, const GetType get_type = Neutral)
+        if (isImplicitlyConvertible!(Rec, const(RecordFactory.Recorder))) {
     return rimKeyRange(rec[], 0, get_type);
 }
-
 
 // Range over a Range with the same key in the a specific rim
 @safe
 struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(ElementType!Range, Archive)) {
- 
-//alias Archives=RecordFactory.Recorder.Archives;
+
+    //alias Archives=RecordFactory.Recorder.Archives;
     protected DList!Archive added_archives;
     protected Range range;
     const ubyte rim_key;
@@ -137,8 +136,7 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
      *   get_type = archive type get function
      * Returns: true if all the archives are removes
      */
-    version(none)
-    bool onlyRemove(const GetType get_type) const pure {
+    version (none) bool onlyRemove(const GetType get_type) const pure {
         return current
             .all!(a => get_type(a) is Archive.Type.REMOVE);
     }
@@ -148,8 +146,7 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
              * Checks if the range only contains one archive 
              * Returns: true range if single
              */
-    version(none)
-        bool oneLeft() const @nogc {
+        version (none) bool oneLeft() const @nogc {
             return length == 1;
         }
 
@@ -205,8 +202,7 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
         /**
              * Force the range to be empty
              */
-        version(none)
-        void force_empty() {
+        version (none) void force_empty() {
             current = null;
         }
 
@@ -214,9 +210,8 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
              * Number of archive left in the range
              * Returns: size of the range
              */
-        version(none)
-        size_t length() const {
-            return range.length+added_archives.length;
+        version (none) size_t length() const {
+            return range.length + added_archives.length;
         }
     }
     /**
@@ -260,7 +255,8 @@ unittest {
         auto rec = factory.recorder(documents, Archive.Type.ADD);
         rec.dump;
         auto rim_key_range = rimKeyRange(rec);
-
+writeln("-- --- ");
+        rim_key_range.each!q{a.dump};
     }
 
 }

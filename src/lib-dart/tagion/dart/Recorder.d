@@ -31,6 +31,7 @@ import tagion.dart.DARTBasic;
 import tagion.basic.tagionexceptions : Check;
 
 import tagion.utils.Miscellaneous : toHexString;
+import std.stdio : stdout, File;
 
 alias hex = toHexString;
 
@@ -380,12 +381,10 @@ class RecordFactory {
             stub(DARTIndex(fingerprint));
         }
 
-        void dump() const {
-            import std.stdio;
+        void dump(File fout = stdout) const {
 
             foreach (a; archives) {
-                writefln("Archive %s %s %s", a.fingerprint.hex, a.type,
-                        (() @trusted => cast(void*) a)());
+                a.dump(fout);
             }
         }
 
@@ -414,10 +413,10 @@ class RecordFactory {
 
 alias GetType = Archive.Type delegate(const(Archive)) pure @safe;
 
-const Add = delegate (const(Archive) a) => Archive.Type.ADD;
-const Remove = delegate (const(Archive) a) => Archive.Type.REMOVE;
-const Flip = delegate (const(Archive) a) => -a.type;
-const Neutral = delegate (const(Archive) a) => a.type;
+const Add = delegate(const(Archive) a) => Archive.Type.ADD;
+const Remove = delegate(const(Archive) a) => Archive.Type.REMOVE;
+const Flip = delegate(const(Archive) a) => -a.type;
+const Neutral = delegate(const(Archive) a) => a.type;
 
 /**
  * Archive element used in the DART Recorder
@@ -474,6 +473,10 @@ const Neutral = delegate (const(Archive) a) => a.type;
 
     }
 
+    void dump(File fout = stdout) const {
+        fout.writefln("Archive %s %s %s", fingerprint.hex, type,
+                (() @trusted => cast(void*) this)());
+    }
     /**
      * Construct an archive from a Document
      * Params:
@@ -810,7 +813,7 @@ unittest {
         rec.insert(archs[3], Archive.Type.REMOVE);
         rec.insert(archs[2], Archive.Type.ADD);
 
-        rec.dump;
+        //rec.//dump;
         assert(rec.checkSorted);
 
         writeln("Passed");
