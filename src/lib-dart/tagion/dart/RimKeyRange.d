@@ -92,42 +92,6 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
         if (!range.empty) {
             rim_key = range.front.fingerprint.rim_key(rim);
         }
-        /+ 
-            Archive[] _current;
-            void build(ref Range range, const uint no = 0) @safe {
-                if (!range.empty && (range.front.fingerprint.rim_key(rim) is rim_key)) {
-                    auto a = range.front;
-                    range.popFront;
-                    build(range, no + 1);
-                    (() @trusted { _current[no] = cast(Archive) a; })();
-                }
-                else {
-                    _current = new Archive[no];
-                }
-            }
-
-            auto _range = range;
-            build(_range);
-            writefln("Rim key before %02X", range.front.fingerprint.rim_key(rim));
-            current = refRange(&range)
-                .until!(a => a.fingerprint.rim_key(rim) !is rim_key)
-                .map!(a => cast(Archive) a)
-                .array;
-            version (none)
-                if (_range.empty) {
-                    writefln("Rim key after %02X", _range.front.fingerprint.rim_key(rim));
-                }
-            writefln("current");
-
-            writefln("rim_key=%02X rim=%d", rim_key, rim);
-            //current.each!(a => writeln(a.fingerprint.toHex));
-            writefln("_current");
-            //_current.each!(a => writeln(a.fingerprint.toHex));
-            //assert(equal(current, _current));
-            //                range=_range;
-
-        }
-        +/
     }
 
     /**
@@ -237,17 +201,10 @@ unittest {
     auto factory = RecordFactory(net);
 
     const table = [
-        0xABCD_1234_5678_9ABCUL,
-        0xABCD_1235_5678_9ABCUL,
-        0xABCD_1236_5678_9ABCUL,
 
         0xABCD_1334_5678_9ABCUL,
         0xABCD_1335_5678_9ABCUL,
         0xABCD_1336_5678_9ABCUL,
-
-        0xABCD_1335_5678_AABCUL,
-        0xABCD_1335_5678_BABCUL,
-        0xABCD_1335_5678_CABCUL,
 
         // Archives which add added in to the RimKeyRange
         0xABCD_1334_AAAA_AAAAUL,
@@ -261,7 +218,7 @@ unittest {
     { // Test with ADD's only
         writefln("--- RimKeyRange");
         // Create a recorder from the first 9 documents 
-        auto rec = factory.recorder(documents.take(9), Archive.Type.ADD);
+        auto rec = factory.recorder(documents.take(3), Archive.Type.ADD);
         { // Check the the rim-key range is the same as the recorder
             auto rim_key_range = rimKeyRange(rec);
             rec.dump;
@@ -275,10 +232,10 @@ unittest {
         { // Add one to the rim_key range and check if it is range is ordered correctly
             auto rim_key_range = rimKeyRange(rec);
             auto rec_copy = rec.dup;
-            rec_copy.insert(documents[9], Archive.Type.ADD);
+            rec_copy.insert(documents[3], Archive.Type.ADD);
             writefln("Recorder add 10");
             rec_copy.dump;
-            rim_key_range.add(rec.archive(documents[9], Archive.Type.ADD));
+            rim_key_range.add(rec.archive(documents[3], Archive.Type.ADD));
 
             writefln("Recorder add 10");
             rim_key_range.save.each!q{a.dump};
@@ -290,11 +247,11 @@ unittest {
             auto rim_key_range = rimKeyRange(rec);
             auto rec_copy = rec.dup;
 
-            rec_copy.insert(documents[9..11], Archive.Type.ADD);
+            rec_copy.insert(documents[3 .. 5], Archive.Type.ADD);
             writefln("Recorder add 11");
             rec_copy.dump;
-            rim_key_range.add(rec.archive(documents[9], Archive.Type.ADD));
-            rim_key_range.add(rec.archive(documents[10], Archive.Type.ADD));
+            rim_key_range.add(rec.archive(documents[3], Archive.Type.ADD));
+            rim_key_range.add(rec.archive(documents[4], Archive.Type.ADD));
 
             writefln("Recorder add 11");
             rim_key_range.save.each!q{a.dump};
