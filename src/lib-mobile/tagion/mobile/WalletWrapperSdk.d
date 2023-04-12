@@ -61,9 +61,9 @@ export static int64_t stop_rt() {
     }
     return -1;
 }
-//const uint8_t* data_ptr, const uint32_t len                                                  /// Not used
+
 export uint wallet_create(const uint32_t deviceId, const uint8_t* pincodePtr,
-const uint32_t pincodeLen, const uint8_t* mnemonicPtr, const uint32_t mnemonicLen) {
+    const uint32_t pincodeLen, const uint8_t* mnemonicPtr, const uint32_t mnemonicLen) {
     immutable pincode = cast(immutable)(pincodePtr[0 .. pincodeLen]);
     immutable mnemonic = cast(immutable)(mnemonicPtr[0 .. mnemonicLen]);
 
@@ -95,3 +95,41 @@ const uint32_t pincodeLen, const uint8_t* mnemonicPtr, const uint32_t mnemonicLe
         return -1;
     }
 }
+
+export uint login_wallet(uint32_t walletId, uint32_t deviceId, uint8_t* pinCode, uint32_t pinLen){}
+
+export uint logout_wallet(){}
+
+export uint delete_wallet(uint32_t walletId){}
+
+export uint validate_pin(uint8_t* pinCode, uint32_t pinLen){}
+
+export uint change_pin(uint8_t* newPinCodePtr){}
+
+export uint create_contract(uint8_t* result, uint8_t* invoice, uint64_t amount){}
+
+export uint create_invoice(uint8_t* result, uint64_t amount, char* label, labelLen){}
+
+export uint request_update(uint8_t* result){}
+
+export uint update_response(uint8_t* response, uint32_t responseLen){}
+
+export ulong get_locked_balance(){}
+
+export ulong get_balance(){}
+
+export uint get_public_key(){}
+
+export uint get_derivers(uint8_t* result){}
+
+export uint set_derivers(uint8_t* derivers){}
+
+export uint add_bills(uint8_t* bills, uint32_t billsLen){}
+
+export uint remove_bills(uint8_t* contract){}
+
+export uint ulock_bills(uint8_t* contract){}
+
+export uint check_contract_payment(uint8_t* contract, uint8_t* status, uint64_t* amount){}
+
+export uint check_invoice_payment(uint8_t* invoice, uint8_t* status, uint64_t* amount){}
