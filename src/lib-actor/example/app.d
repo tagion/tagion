@@ -19,7 +19,9 @@ static:
     Counter count;
     alias children = AliasSeq!(logger, count);
 
-    void message(Msg!"msg", string str) {writeln(str);}
+    void message(Msg!"msg", string str) {
+        writeln(str);
+    }
 
     mixin Actor!(&message);
 }
@@ -56,7 +58,7 @@ alias CounterHandle = ActorHandle!Counter;
 /**
  * An actor which we can send log levels message too
  */
-struct Logger  {
+struct Logger {
 static:
     alias hell = Msg!"hell";
     alias info = Msg!"info";
@@ -90,7 +92,7 @@ template ListOf(T) {
     }
 }
 /// Running through flow of top-level actors
-void main() {
+void _main() {
 
     /* LoggerHandle logger = spawnActor!Logger("logger_task"); */
     /* assert(checkCtrl(Ctrl.STARTING)); */
