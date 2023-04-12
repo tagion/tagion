@@ -34,10 +34,10 @@ jobs:
             ./build/${{ env.TARGET_BUILD }}/tmp
             ./build/${{ env.TARGET_BUILD }}/lib
           key: ${{ runner.os }}-${{ hashFiles('./src/wrap-**') }}
-      - name: Run commit tests
+      - name: Run unittests
         run: |
           source ~/.bashrc
-          make test -j TEST_STAGE=commit | tail -n 3 | sed 's/\x1B\[[0-9;]*[a-zA-Z]//g' > bddconsole.log
+          make unittest -j ${{ env.PARALEL }}
 
       - name: Check unittests
         run: cat logs/${{ env.TARGET_BUILD }}/unittest.log | grep -E "^[0-9]+ modules passed unittests"
@@ -53,6 +53,11 @@ jobs:
         run: |
           RESULT=$(cat logs/${{ env.TARGET_BUILD }}/unittest.log | grep FAILED)
           echo -e "### :heavy_exclamation_mark: Unittests passed \n $RESULT" >> $GITHUB_STEP_SUMMARY
+
+      - name: Run Bdd tests
+        run: |
+          source ~/.bashrc
+          make bddtest TEST_STAGE=commit | tail -n 3 | sed 's/\x1B\[[0-9;]*[a-zA-Z]//g' > bddconsole.log
 
       - name: Create bdd result
         run: |
