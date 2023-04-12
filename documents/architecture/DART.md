@@ -1,4 +1,28 @@
 # DART Service
+## General structure of the DART modules
+
+```graphviz
+digraph module_diagram {
+    rankdir="TB"; // Top to Bottom direction
+    node [shape="rectangle", fontsize=12, fontname="Helvetica"];
+    edge [fontsize=10, fontname="Helvetica"];
+
+    DART -> Dartutil [dir="none", weight=100];
+    DART -> DARTFile [dir="none", weight=100];
+    DARTFile -> BlockFile [dir="none", weight=100];
+    BlockFile -> Blockutil [dir="none", weight=100];
+    BlockFile -> Recycler [dir="none", weight=100];
+    BlockFile -> BlockSegment [dir="none", weight=100];
+    Recycler -> RecycleSegment [dir="none", weight=100];
+    BlockSegment -> Blocks [dir="none", weight=100];
+
+    {rank=same; DART Dartutil}
+    {rank=same; Blockutil Recycler BlockSegment}
+    {rank=same; Blocks RecycleSegment}
+}
+```
+
+## CRUD
 
 This service is reponsible for executing data-base instruction and read/write to the physical file system.
 
