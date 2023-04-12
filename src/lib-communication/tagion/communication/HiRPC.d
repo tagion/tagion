@@ -13,7 +13,7 @@ import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONJSON;
 
 import tagion.basic.Types : Buffer;
-import tagion.crypto.Types :  Pubkey, Signature;
+import tagion.crypto.Types : Pubkey, Signature;
 import tagion.basic.tagionexceptions : Check;
 import tagion.Keywords;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
@@ -199,7 +199,8 @@ struct HiRPC {
         bool supports(T)() const {
             import std.traits : isCallable;
             import std.algorithm.searching : canFind;
-          return (type is Type.method) &&
+
+            return (type is Type.method) &&
                 Callers!T.canFind(method.name);
         }
 

@@ -163,7 +163,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                         case "search":
                             ssl_relay.requestResponse();
                             search(params, ssl_relay.id);
-                            if(!ssl_relay.available) {
+                            if (!ssl_relay.available) {
                                 log.warning("connection closed to no response");
                                 return true;
                             }
@@ -175,7 +175,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                             log("sending healthcheck request");
                             ssl_relay.requestResponse();
                             areWeInGraph(ssl_relay.id);
-                            if(!ssl_relay.available) {
+                            if (!ssl_relay.available) {
                                 log.warning("connection closed to no response");
                                 return true;
                             }
@@ -198,7 +198,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                                     auto inputs = signed_contract.contract.inputs;
                                     ssl_relay.requestResponse();
                                     requestInputs(inputs, ssl_relay.id);
-                                    if(!ssl_relay.available) {
+                                    if (!ssl_relay.available) {
                                         log.warning("connection closed to no response");
                                         return true;
                                     }

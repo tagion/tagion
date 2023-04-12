@@ -12,7 +12,7 @@ import tagion.logger.Logger;
 import tagion.basic.Types : Buffer, Control;
 import tagion.basic.basic : NameOf;
 import tagion.basic.tagionexceptions : TagionException, fatal;
-import tagion.crypto.Types :  Pubkey;
+import tagion.crypto.Types : Pubkey;
 import tagion.prior_services.MdnsDiscoveryService;
 
 import tagion.prior_services.NetworkRecordDiscoveryService : DiscoveryRequestCommand, DiscoveryControl;

@@ -10,6 +10,7 @@ import tagion.crypto.Types : Pubkey;
 import tagion.script.TagionCurrency;
 import tagion.script.StandardRecords : StandardBill, OwnerKey;
 import tagion.hibon.Document : Document;
+
 /// Contains the quiz question
 @safe
 @recordType("Quiz")
@@ -122,8 +123,6 @@ struct AccountDetails {
     mixin HiBONRecord;
 }
 
-
-
 @safe
 @recordType("Invoice")
 struct Invoice {
@@ -139,5 +138,3 @@ struct Invoices {
     Invoice[] list; /// List of invoice (store in the wallet)
     mixin HiBONRecord;
 }
-
-

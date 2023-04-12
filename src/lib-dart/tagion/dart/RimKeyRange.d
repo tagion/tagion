@@ -172,7 +172,7 @@ struct RimKeyRange(Range) if (isInputeRange!Range && isImplicitlyConvertible!(El
                 if (archive_less(added_archives.front, range.front)) {
                     return added_archive.front;
                 }
-                    return range.front;
+                return range.front;
             }
             if (!range.empty) {
                 return range.front;
@@ -181,7 +181,7 @@ struct RimKeyRange(Range) if (isInputeRange!Range && isImplicitlyConvertible!(El
                 return added_archive.front;
             }
             return Archive.init;
-       }
+        }
 
         /**
              * Force the range to be empty
@@ -209,7 +209,7 @@ struct RimKeyRange(Range) if (isInputeRange!Range && isImplicitlyConvertible!(El
 
 }
 
-@safe 
+@safe
 unittest {
-    
+
 }

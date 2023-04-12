@@ -24,8 +24,8 @@ struct AESCrypto(int KEY_LENGTH) {
         enum KEY_SIZE = AES.KEY_SIZE;
         static void crypt_parse(bool ENCRYPT = true)(
                 const(ubyte[]) key,
-        ubyte[BLOCK_SIZE] iv,
-        ref ubyte[] data) nothrow
+                ubyte[BLOCK_SIZE] iv,
+                ref ubyte[] data) nothrow
         in {
             assert(data);
             assert(data.length % BLOCK_SIZE == 0, __format("Data must be an equal number of %d bytes but is %d", BLOCK_SIZE, data
@@ -58,7 +58,7 @@ struct AESCrypto(int KEY_LENGTH) {
             if (outdata.length < indata.length) {
                 outdata = indata.dup;
             }
-            else if (&outdata[0] !is &indata[0]) {  
+            else if (&outdata[0]!is &indata[0]) {
                 outdata[0 .. $] = indata[0 .. $];
             }
             size_t old_length;

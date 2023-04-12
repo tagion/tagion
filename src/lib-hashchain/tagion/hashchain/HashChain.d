@@ -330,7 +330,7 @@ unittest {
 
         // Replay from block with specified index
         chain.replayFrom((DummyBlock b) @safe { hashes ~= b.getHash; }, (b) => b.getHash == blocks[some_block_index]
-            .getHash);
+                .getHash);
 
         // Check array with hashes
         assert(hashes.length == blocks_count - some_block_index - 1);

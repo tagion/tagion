@@ -61,7 +61,6 @@ unittest {
     assert(eatOne(a) == 3);
 }
 
-
 /** 
  * Returns the first element in the range r and pops the element. 
  * If the range is empty then it returns T.init.

@@ -64,7 +64,7 @@ mixin template JSONCommon() {
                 else static if (is(type : immutable(ubyte[]))) {
                     result[name] = m.toHexString;
                 }
-            else {
+                else {
                     result[name] = m;
                 }
             }

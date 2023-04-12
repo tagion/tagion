@@ -24,7 +24,7 @@ import tagion.dart.Recorder;
 
 import tagion.dart.DARTOptions : DARTOptions;
 import tagion.basic.Types : Buffer, Control;
-import tagion.crypto.Types :  Pubkey;
+import tagion.crypto.Types : Pubkey;
 import tagion.Keywords;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 import tagion.hibon.HiBONJSON;
@@ -286,8 +286,8 @@ class P2pSynchronizationFactory : SynchronizationFactory {
                     return synchronizing[node_address.address];
                 }
                 auto stream = node.connect(node_address.address, node_address.is_marshal, [
-                    dart_opts.sync.protocol_id
-                ]);
+                        dart_opts.sync.protocol_id
+                        ]);
                 connection_pool.add(stream.identifier, stream, true);
                 stream.listen(&StdHandlerCallback,
                         dart_opts.sync.task_name, dart_opts.sync.host.timeout.msecs, dart_opts
@@ -326,7 +326,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
                     continue;
                 auto response = syncWith(node_addr.value);
                 if (response[1] is null)
-                continue;
+                    continue;
                 return response;
             }
         }
@@ -623,7 +623,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
             if (result[1] is null) {
                 onFailure(root); //TODO: or just ignore?
             }
-        else {
+            else {
                 handlerPool.add(result[0], result[1], true);
                 sync_sectors[root] = true;
             }
@@ -636,7 +636,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
                 if (result[1] is null) {
                     onFailure(sector); //TODO: or just ignore?
                 }
-        else {
+                else {
                     sync_sectors[sector] = true;
                     handlerPool.add(result[0], result[1], true);
                 }
