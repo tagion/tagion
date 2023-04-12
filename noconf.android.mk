@@ -5,6 +5,7 @@ ifeq ($(PLATFORM), aarch64-android-linux)
 TARGET=aarch64-linux-android)
 
 ANDROID_API?=21
+ANDROID_ABI?=aarch64
 
 ANDROID_TOOLCHAIN?=$(ANDROID_NDK)/toolchains/llvm/prebuilt/$(OS)-$(ARCH)
 
@@ -37,17 +38,14 @@ env-android:
 	${call log.kvp, ANDROID_NDK, $(ANDROID_NDK)}
 	${call log.kvp, ANDROID_API, $(ANDROID_API)}
 	${call log.kvp, ANDROID_ABI, $(ANDROID_ABI)}
-	${call log.kvp, ANDROID_ROOT, $(ANDROID_ROOT)}
 	${call log.kvp, ANDROID_TOOLCHAIN, $(ANDROID_TOOLCHAIN)}
-	${call log.kvp, ANDROID_LD, $(ANDROID_LD)}
-	${call log.kvp, ANDROID_CC, $(ANDROID_CC)}
-	${call log.kvp, ANDROID_CPP, $(ANDROID_CPP)}
-	${call log.kvp, ANDROID_SYSROOT, $(ANDROID_SYSROOT)}
-	${call log.kvp, ANDROID_LIBPATH, $(ANDROID_LIBPATH)}
-	${call log.kvp, ANDROID_USRLIB, $(ANDROID_USRLIB)}
-	${call log.kvp, ANDROID_CLANG_VER, $(ANDROID_CLANG_VER)}
-	${call log.env, ANDROID_CMAKE, $(ANDROID_CMAKE)}
-	${call log.env, ANDROID_LDFLAGS, $(ANDROID_LDFLAGS)}
+	${call log.kvp, ANDROID_LD, $(LD)}
+	${call log.kvp, ANDROID_CC, $(CC)}
+	${call log.kvp, ANDROID_CXX, $(CXX)}
+	${call log.kvp, ANDROID_STRIP, $(STRIP)}
+	${call log.kvp, ANDROID_AR, $(AR)}
+	${call log.kvp, ANDROID_RANLIB, $(RANLIB)}
+	${call log.kvp, ANDROID_AS, $(AS)}
 	${call log.close}
 
 env: env-android

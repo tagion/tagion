@@ -1,5 +1,6 @@
 ifdef CROSS_ENABLED
 
+ # To keep it as simple as possible what we call TARGET is what autotools call HOST
 CONFIGUREFLAGS_SECP256K1 += --host=$(TRIPLET)
 # CONFIGUREFLAGS_SECP256K1 += --with-sysroot=$(CROSS_SYSROOT)
 
