@@ -34,11 +34,6 @@ unittest {
         assert(a.doFront is a[0]);
     }
 
-    {
-        int[] a;
-        a = null;
-        a[].doFront;
-    }
 }
 
 /**

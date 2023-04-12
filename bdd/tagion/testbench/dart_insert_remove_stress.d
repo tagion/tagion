@@ -45,10 +45,8 @@ int _main(string[] args) {
         DartInfo dart_info = DartInfo(dartfilename, module_path, net, hirpc);
        
 
-        const ulong samples = 10;
-
         auto dart_ADD_REMOVE_stress_feature = automation!(insert_remove_stress)();
-        dart_ADD_REMOVE_stress_feature.AddRemoveAndReadTheResult(dart_info, 100_000, 10_00, 1000);
+        dart_ADD_REMOVE_stress_feature.AddRemoveAndReadTheResult(dart_info, 100_000, 1000, 1000);
 
         auto dart_ADD_REMOVE_stress_context = dart_ADD_REMOVE_stress_feature.run();
 
