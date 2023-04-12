@@ -1,5 +1,5 @@
 [![codecov](https://codecov.io/gh/tagion/tagion/branch/current/graph/badge.svg?token=TM12EX8GSB)](https://codecov.io/gh/tagion/tagion)
-[![https://img.shields.io/badge/dynamic/json?label=uptime&query=$.age&url=http://devnet-status.tagion.org/tagion/api/v1/data]](http://devnet-status.tagion.org/tagion/)
+[![devnet uptime](https://img.shields.io/badge/dynamic/json?label=uptime&query=$.age&url=http://devnet-status.tagion.org/tagion/api/v1/data)](http://devnet-status.tagion.org/tagion/)
 
 # Tagion
 
