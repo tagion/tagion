@@ -4,7 +4,7 @@ import std.stdio;
 import std.algorithm;
 import std.range;
 import std.traits;
-
+import std.container.dlist;
 import tagion.dart.Recorder;
 import tagion.basic.Types : isBufferType;
 import tagion.utils.Miscellaneous : hex;
@@ -25,14 +25,24 @@ ubyte rim_key(F)(F rim_keys, const uint rim) pure if (isBufferType!F) {
 }
 
 @safe
-Range rimKeyRange(Range)(Range range, const uint rim) {
-    return RimKeyRangeT!Range(range, rim);
+RimKeyRange!Range rimKeyRange(Range)(Range range, const uint rim, const GetType get_type=Neutral) 
+if (isInputRange!Range && isImplicitlyConvertible!(ElementType!Range, Archive)) {
+    return RimKeyRange!Range(range, rim, get_type);
 }
+
+@safe
+auto rimKeyRange(Rec)(Rec rec, const GetType get_type=Neutral) 
+if (isImplicitlyConvertible!(Rec, const(RecordFactory.Recorder))) {
+    return rimKeyRange(rec[], 0, get_type);
+}
+
 
 // Range over a Range with the same key in the a specific rim
 @safe
-struct RimKeyRange(Range) if (isInputeRange!Range && isImplicitlyConvertible!(ElementType!Range, Archive)) {
-    protected Archives added_archives;
+struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(ElementType!Range, Archive)) {
+ 
+//alias Archives=RecordFactory.Recorder.Archives;
+    protected DList!Archive added_archives;
     protected Range range;
     const ubyte rim_key;
     const uint rim;
@@ -63,13 +73,20 @@ struct RimKeyRange(Range) if (isInputeRange!Range && isImplicitlyConvertible!(El
     }
 
     void add(Archive archive)
-    in (rim_key == archive.front.fingerprint(rim))
+    in (rim_key == archive.fingerprint.rim_key(rim))
     do {
-        added_archives.insert(archive);
+        added_archives.insertFront(archive);
+    }
+
+    private this(RimKeyRange rhs) {
+        added_archives = rhs.added_archives.dup;
+        range = rhs.range;
+        rim_key = rhs.rim_key;
+        rim = rhs.rim;
+        get_type = rhs.get_type;
     }
 
     this(Range)(Range _range, const uint rim, const GetType get_type) {
-        added_archives = new Archives;
         this.get_type = get_type;
         this.rim = rim;
         range = _range;
@@ -120,25 +137,27 @@ struct RimKeyRange(Range) if (isInputeRange!Range && isImplicitlyConvertible!(El
      *   get_type = archive type get function
      * Returns: true if all the archives are removes
      */
+    version(none)
     bool onlyRemove(const GetType get_type) const pure {
         return current
             .all!(a => get_type(a) is Archive.Type.REMOVE);
     }
 
-    @nogc pure nothrow {
+    pure nothrow {
         /** 
              * Checks if the range only contains one archive 
              * Returns: true range if single
              */
-        bool oneLeft() const {
-            return current.length == 1;
+    version(none)
+        bool oneLeft() const @nogc {
+            return length == 1;
         }
 
         /**
              * Checks if the range is empty
              * Returns: true if empty
              */
-        bool empty() const {
+        bool empty() const @nogc {
             return range.empty && added_archives.empty;
         }
 
@@ -149,7 +168,7 @@ struct RimKeyRange(Range) if (isInputeRange!Range && isImplicitlyConvertible!(El
         void popFront() {
             if (!added_archives.empty && !range.empty) {
                 if (archive_less(added_archives.front, range.front)) {
-                    added_archive.popFront;
+                    added_archives.removeFront;
                 }
                 else {
                     range.popFront;
@@ -159,7 +178,7 @@ struct RimKeyRange(Range) if (isInputeRange!Range && isImplicitlyConvertible!(El
                 range.popFront;
             }
             else if (!added_archives.empty) {
-                added_archive.popFront;
+                added_archives.removeFront;
             }
         }
 
@@ -167,25 +186,26 @@ struct RimKeyRange(Range) if (isInputeRange!Range && isImplicitlyConvertible!(El
              * Gets the current archive in the range
              * Returns: current archive and return null if the range is empty
              */
-        inout(Archive) front() inout {
+        const(Archive) front() @nogc {
             if (!added_archives.empty && !range.empty) {
                 if (archive_less(added_archives.front, range.front)) {
-                    return added_archive.front;
+                    return added_archives.front;
                 }
-                    return range.front;
+                return range.front;
             }
             if (!range.empty) {
                 return range.front;
             }
             else if (!added_archives.empty) {
-                return added_archive.front;
+                return added_archives.front;
             }
             return Archive.init;
-       }
+        }
 
         /**
              * Force the range to be empty
              */
+        version(none)
         void force_empty() {
             current = null;
         }
@@ -194,22 +214,53 @@ struct RimKeyRange(Range) if (isInputeRange!Range && isImplicitlyConvertible!(El
              * Number of archive left in the range
              * Returns: size of the range
              */
+        version(none)
         size_t length() const {
-            return current.length;
+            return range.length+added_archives.length;
         }
     }
     /**
          *  Creates new range at the current position
          * Returns: copy of this range
          */
-    version (none) RimKeyRange save() pure nothrow @nogc {
+    RimKeyRange save() pure nothrow {
 
-        return RimKeyRange(current);
+        return RimKeyRange(this);
     }
+
+    static assert(isInputRange!RimKeyRange);
+    static assert(isForwardRange!RimKeyRange);
 
 }
 
-@safe 
+@safe
 unittest {
-    
+    import std.stdio;
+    import tagion.dart.DARTFakeNet;
+
+    const net = new DARTFakeNet;
+    auto factory = RecordFactory(net);
+
+    const table = [
+        0xABCD_1234_5678_9ABCUL,
+        0xABCD_1235_5678_9ABCUL,
+        0xABCD_1236_5678_9ABCUL,
+
+        0xABCD_1334_5678_9ABCUL,
+        0xABCD_1335_5678_9ABCUL,
+        0xABCD_1336_5678_9ABCUL,
+
+    ];
+    const documents = table
+        .map!(t => DARTFakeNet.fake_doc(t))
+        .array;
+
+    { //
+        writefln("--- RimKeyRange");
+        auto rec = factory.recorder(documents, Archive.Type.ADD);
+        rec.dump;
+        auto rim_key_range = rimKeyRange(rec);
+
+    }
+
 }

@@ -15,6 +15,8 @@ import std.range.primitives : isInputRange, ElementType;
 import std.algorithm.iteration : map;
 import std.format;
 import std.range : empty;
+import std.traits : FunctionTypeOf;
+import std.functional : toDelegate;
 
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.hibon.Document : Document;
@@ -33,38 +35,6 @@ import tagion.utils.Miscellaneous : toHexString;
 alias hex = toHexString;
 
 private alias check = Check!DARTRecorderException;
-
-/**
- * Calculates the hash-pointer of the document 
- * Params:
- *   net = the hash function interface
- *   doc = input to the hash function
- * Returns: 
- *   hash value of doc
- */
-version (none) @safe
-Buffer dartIndex(const(HashNet) net, const(Document) doc) {
-    return net.dartIndex(doc);
-    version (none) {
-        import tagion.hibon.HiBONRecord : HiBONPrefix, STUB;
-
-        if (!doc.empty && (doc.keys.front[0] is HiBONPrefix.HASH)) {
-            //if (doc.hasHashKey) {
-            if (doc.keys.front == STUB) {
-                return doc[STUB].get!DARTIndex;
-            }
-            auto first = doc[].front;
-            immutable value_data = first.data[first.dataPos .. first.dataPos + first.dataSize];
-            return DARTIndex(net.rawCalcHash(value_data));
-        }
-        return DARTIndex(net.rawCalcHash(doc.serialize));
-    }
-}
-
-version (none) @safe
-Buffer dartIndex(T)(T value) if (isHiBONRecord) {
-    return dartIndex(value.toDoc);
-}
 
 /**
  * Record factory
@@ -132,8 +102,8 @@ class RecordFactory {
         return new Recorder(archives);
     }
 
-    Recorder recorder(R)(R range) if (isInputRange!R) {
-        return new Recorder(range);
+    Recorder recorder(R)(R range, const Archive.Type type = Archive.Type.NONE) if (isInputRange!R) {
+        return new Recorder(range, type);
     }
 
     /**
@@ -147,15 +117,12 @@ class RecordFactory {
         version (SYNC_BLOCKFILE_WORKING) {
 
             alias archive_sorted = (a, b) @safe => (a.fingerprint < b.fingerprint);
-
         }
         else {
             alias archive_sorted = (a, b) @safe => (a.fingerprint < b.fingerprint) || (
                     a.fingerprint == b.fingerprint) && (a._type < b._type);
-
         }
         alias Archives = RedBlackTree!(Archive, archive_sorted);
-
         package Archives archives;
 
         import tagion.hibon.HiBONJSON : JSONString;
@@ -447,9 +414,10 @@ class RecordFactory {
 
 alias GetType = Archive.Type delegate(const(Archive)) pure @safe;
 
-enum Add = (const(Archive) a) => Archive.Type.ADD;
-enum Remove = (const(Archive) a) => Archive.Type.REMOVE;
-enum Flip = (const(Archive) a) => -a.type;
+const Add = delegate (const(Archive) a) => Archive.Type.ADD;
+const Remove = delegate (const(Archive) a) => Archive.Type.REMOVE;
+const Flip = delegate (const(Archive) a) => -a.type;
+const Neutral = delegate (const(Archive) a) => a.type;
 
 /**
  * Archive element used in the DART Recorder
