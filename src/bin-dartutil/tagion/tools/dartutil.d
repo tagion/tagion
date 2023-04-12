@@ -163,20 +163,20 @@ int _main(string[] args) {
         writeln(logo);
         defaultGetoptPrinter(
                 [
-                // format("%s version %s", program, REVNO),
-                "Documentation: https://tagion.org/",
-                "",
-                "Usage:",
-                format("%s <command> [<option>...]", program),
-                "",
-                "Where:",
-                "<command>           one of [--read, --rim, --modify, --rpc]",
-                "",
+            // format("%s version %s", program, REVNO),
+            "Documentation: https://tagion.org/",
+            "",
+            "Usage:",
+            format("%s <command> [<option>...]", program),
+            "",
+            "Where:",
+            "<command>           one of [--read, --rim, --modify, --rpc]",
+            "",
 
-                "<option>:",
+            "<option>:",
 
-                ].join("\n"),
-                main_args.options);
+        ].join("\n"),
+        main_args.options);
         return 0;
     }
 
@@ -184,7 +184,8 @@ int _main(string[] args) {
 
     if (fake) {
         net = new DARTFakeNet("very_secret");
-    } else {
+    }
+    else {
         net = new StdSecureNet;
         net.generateKeyPair(passphrase);
     }

@@ -7,13 +7,13 @@ import tagion.network.ListenerSocket;
 import tagion.hashgraph.Event : Event, Round;
 import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.hashgraph.HashGraphBasic : Tides;
-import tagion.hashgraphview.EventMonitorCallbacks:  EventMonitorCallbacks;
+import tagion.hashgraphview.EventMonitorCallbacks : EventMonitorCallbacks;
 
 //import tagion.hashg : EventMonitorCallbacks; //NetCallbacks;
 //import tagion.gossip.GossipNet : StdGossipNet;
 import tagion.basic.ConsensusExceptions : ConsensusException;
 
-import tagion.basic.Types :  FileExtension;
+import tagion.basic.Types : FileExtension;
 import tagion.basic.basic : basename, EnumText;
 import tagion.basic.Message;
 
@@ -118,7 +118,6 @@ class MonitorCallBacks : EventMonitorCallbacks {
 
     static HiBON createHiBON(const(Event) e) nothrow {
         auto hibon = new HiBON;
- 
 
         try {
             hibon[basename!(e.id)] = e.id;
@@ -128,10 +127,11 @@ class MonitorCallBacks : EventMonitorCallbacks {
                 hibon[Params.mother] = e.mother.id;
             }
             if (e.father !is null) {
-               hibon[Params.father] = e.father.id;
+                hibon[Params.father] = e.father.id;
             }
 
-        } catch (Exception excp) {
+        }
+        catch (Exception excp) {
             // empty
         }
         return hibon;
@@ -144,6 +144,7 @@ class MonitorCallBacks : EventMonitorCallbacks {
     nothrow {
         import tagion.basic.Debug;
         import tagion.hibon.HiBONJSON;
+
         void connect(const(Event) e) {
 
             immutable _witness = e.witness !is null;
@@ -165,10 +166,10 @@ class MonitorCallBacks : EventMonitorCallbacks {
                 if (!e.payload.empty) {
                     hibon[Params.payload] = e.payload;
                 }
-            } catch ( Exception excp) {
+            }
+            catch (Exception excp) {
                 //empty
             }
-
 
             socket_send(hibon);
         }
@@ -178,7 +179,8 @@ class MonitorCallBacks : EventMonitorCallbacks {
             auto hibon = createHiBON(e);
             try {
                 hibon[Params.witness] = _witness;
-            } catch(Exception excp) {
+            }
+            catch (Exception excp) {
                 // empty
             }
             socket_send(hibon);
@@ -190,20 +192,22 @@ class MonitorCallBacks : EventMonitorCallbacks {
             try {
                 const string mask = getBitMaskString(e.witness_mask, e.round.node_size);
                 hibon[Params.witness_mask] = mask;
-            } catch (Exception excp) {
+            }
+            catch (Exception excp) {
                 //empty
             }
-            
+
             socket_send(hibon);
         }
 
         void round_seen(const(Event) e) @trusted {
             // check if working
-            
-            auto hibon=createHiBON(e);
+
+            auto hibon = createHiBON(e);
             try {
-                hibon[Keywords.round_seen] = getBitMaskString(e.round_seen_mask, e.round.node_size); 
-            } catch(Exception excp) {
+                hibon[Keywords.round_seen] = getBitMaskString(e.round_seen_mask, e.round.node_size);
+            }
+            catch (Exception excp) {
                 // empty
             }
             socket_send(hibon);
@@ -213,7 +217,8 @@ class MonitorCallBacks : EventMonitorCallbacks {
             auto hibon = createHiBON(e);
             try {
                 hibon[Params.received_number] = e.round_received.number;
-            } catch(Exception excp) {
+            }
+            catch (Exception excp) {
                 //empty
             }
 
@@ -256,12 +261,13 @@ class MonitorCallBacks : EventMonitorCallbacks {
         }
 
         void strongly_seeing(const(Event) e) {
-            auto hibon=createHiBON(e);
+            auto hibon = createHiBON(e);
 
             try {
                 // hibon[Keywords.strongly_seeing]=e.strongly_seeing;
-                hibon[Keywords.strong_mask]=getBitMaskString(e.witness.strong_seeing_mask, e.round.node_size);
-            } catch(Exception excp) {
+                hibon[Keywords.strong_mask] = getBitMaskString(e.witness.strong_seeing_mask, e.round.node_size);
+            }
+            catch (Exception excp) {
                 // empty
             }
 
@@ -269,11 +275,12 @@ class MonitorCallBacks : EventMonitorCallbacks {
         }
 
         void famous(const(Event) e) {
-            auto hibon=createHiBON(e);
+            auto hibon = createHiBON(e);
 
             try {
                 hibon[Params.famous] = e.witness.famous;
-            } catch (Exception excp) {
+            }
+            catch (Exception excp) {
                 // empty
             }
             socket_send(hibon);
@@ -291,21 +298,19 @@ class MonitorCallBacks : EventMonitorCallbacks {
             // socket_send(hibon);
         }
 
-
-        void round(const(Event) e)
-        {
+        void round(const(Event) e) {
             auto hibon = createHiBON(e);
             auto round = new HiBON;
             try {
                 round[Params.number] = e.round.number;
-                round[Keywords.completed]=e.round.decided;
-                hibon[Keywords.round]=round;
-            } catch(Exception excp) {
+                round[Keywords.completed] = e.round.decided;
+                hibon[Keywords.round] = round;
+            }
+            catch (Exception excp) {
                 //empty
             }
             socket_send(hibon);
         }
-
 
         void forked(const(Event) e) {
             // auto hibon=createHiBON(e);
@@ -320,7 +325,8 @@ class MonitorCallBacks : EventMonitorCallbacks {
             auto hibon = createHiBON(e);
             try {
                 hibon[Params.remove] = true;
-            } catch (Exception excp) {
+            }
+            catch (Exception excp) {
                 // empty
             }
             // assumeWontThrow({ hibon[Params.remove] = true; });
@@ -374,7 +380,6 @@ class MonitorCallBacks : EventMonitorCallbacks {
             // });
             // socket_send(epoch);
         }
-
 
         void receive(lazy const(Document) doc) {
 

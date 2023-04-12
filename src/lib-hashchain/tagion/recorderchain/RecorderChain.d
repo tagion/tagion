@@ -81,8 +81,8 @@ unittest {
 
             auto last_block = recorder_chain.getLastBlock;
             auto previous_hash = last_block is null ? Fingerprint.init : last_block.getHash;
-            recorder_chain.append(new RecorderChainBlock(bills_recorder.toDoc, 
-            previous_hash, Fingerprint(dart.fingerprint), net));
+            recorder_chain.append(new RecorderChainBlock(bills_recorder.toDoc,
+                    previous_hash, Fingerprint(dart.fingerprint), net));
         }
 
         assert(recorder_chain.isValidChain);
@@ -144,9 +144,9 @@ unittest {
 
             auto last_block = recorder_chain.getLastBlock;
             auto previous_hash = last_block is null ? Fingerprint.init : last_block.getHash;
-            recorder_chain.append(new RecorderChainBlock(bills_recorder.toDoc, 
-            previous_hash, 
-            Fingerprint(dart.fingerprint), net));
+            recorder_chain.append(new RecorderChainBlock(bills_recorder.toDoc,
+                    previous_hash,
+                    Fingerprint(dart.fingerprint), net));
         }
 
         assert(recorder_chain.isValidChain);
@@ -206,10 +206,10 @@ unittest {
             auto last_block = recorder_chain.getLastBlock;
             auto previous_hash = last_block is null ? Fingerprint.init : last_block.getHash;
             recorder_chain.append(new RecorderChainBlock(
-            bills_recorder.toDoc, 
-            previous_hash, 
-            Fingerprint(dart.fingerprint), 
-            net));
+                    bills_recorder.toDoc,
+                    previous_hash,
+                    Fingerprint(dart.fingerprint),
+                    net));
 
             // In the middle of the chain copy dart that will be "outdated"
             if (i == some_block_index) {
@@ -276,10 +276,10 @@ unittest {
             auto last_block = recorder_chain.getLastBlock;
             auto previous_hash = last_block is null ? Fingerprint.init : last_block.getHash;
             recorder_chain.append(new RecorderChainBlock(
-            bills_recorder.toDoc, 
-                previous_hash, 
-            Fingerprint(dart.fingerprint), 
-            net));
+                    bills_recorder.toDoc,
+                    previous_hash,
+                    Fingerprint(dart.fingerprint),
+                    net));
         }
 
         assert(recorder_chain.isValidChain);

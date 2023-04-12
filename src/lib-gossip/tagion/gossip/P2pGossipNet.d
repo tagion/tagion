@@ -16,7 +16,7 @@ import tagion.dart.DARTOptions;
 import tagion.basic.Types : Buffer, isBufferType, Control;
 
 import tagion.basic.basic : EnumText, buf_idup, basename, assumeTrusted;
-import tagion.crypto.Types :  Pubkey;
+import tagion.crypto.Types : Pubkey;
 
 import tagion.utils.Miscellaneous : cutHex;
 
@@ -284,8 +284,7 @@ class StdP2pNet : P2pNet {
     }
 
     @safe
-    void start_listening()
-    {
+    void start_listening() {
         @trusted
         void spawn_sender() {
             this.sender_tid = concurrency.spawn(
@@ -295,8 +294,9 @@ class StdP2pNet : P2pNet {
                     host,
                     node);
         }
+
         assert(!listening);
-        spawn_sender();        
+        spawn_sender();
         listening = true;
     }
 

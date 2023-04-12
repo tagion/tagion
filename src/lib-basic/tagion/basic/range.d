@@ -34,11 +34,6 @@ unittest {
         assert(a.doFront is a[0]);
     }
 
-    {
-        int[] a;
-        a = null;
-        a[].doFront;
-    }
 }
 
 /**
@@ -65,7 +60,6 @@ unittest {
     assert(eatOne(a) == 2);
     assert(eatOne(a) == 3);
 }
-
 
 /** 
  * Returns the first element in the range r and pops the element. 

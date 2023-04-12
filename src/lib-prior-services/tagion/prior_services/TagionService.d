@@ -427,10 +427,10 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         HiRPC empty_hirpc;
         gossip_net.start_listening();
 
-        const startup_duration = dur!"hnsecs"(Clock.currTime().stdTime-startup_timestamp);
-        if (opts.startup_delay.msecs > startup_duration){
+        const startup_duration = dur!"hnsecs"(Clock.currTime().stdTime - startup_timestamp);
+        if (opts.startup_delay.msecs > startup_duration) {
             Thread.sleep(opts.startup_delay.msecs - startup_duration);
-        } 
+        }
         while (!stop && !abort) {
             immutable message_received = receiveTimeout(
                     opts.timeout.msecs,

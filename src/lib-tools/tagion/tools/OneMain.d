@@ -113,16 +113,16 @@ mixin template doOneMain(alltools...) {
             if (main_args.helpWanted) {
                 defaultGetoptPrinter(
                         [
-                        revision_text,
-                        "Documentation: https://tagion.org/",
-                        "Usage:",
-                        format("%s <program> [<option>...]", program),
-                        format("Tool programs %-(%s, %)", toolnames),
-                        "",
-                        "<option>:",
+                    revision_text,
+                    "Documentation: https://tagion.org/",
+                    "Usage:",
+                    format("%s <program> [<option>...]", program),
+                    format("Tool programs %-(%s, %)", toolnames),
+                    "",
+                    "<option>:",
 
-                        ].join("\n"),
-                        main_args.options);
+                ].join("\n"),
+                main_args.options);
                 return Result(0, true);
             }
         }

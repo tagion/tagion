@@ -10,8 +10,8 @@ import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 import tagion.basic.ConsensusExceptions : SmartScriptException, ConsensusFailCode, Check;
 import tagion.basic.tagionexceptions : TagionException;
 import tagion.script.StandardRecords : SignedContract, StandardBill, PayContract, OwnerKey, Contract, Script, Globals, globals;
-import tagion.basic.Types :  Buffer;
-import tagion.crypto.Types : Pubkey,  Signature, Fingerprint;
+import tagion.basic.Types : Buffer;
+import tagion.crypto.Types : Pubkey, Signature, Fingerprint;
 import tagion.script.TagionCurrency;
 import tagion.dart.Recorder : RecordFactory;
 import tagion.dart.DARTBasic;
@@ -91,10 +91,10 @@ version (OLD_TRANSACTION) {
         }
 
         void run(
-const uint epoch, 
-ref uint index_in_epoch, 
-const Fingerprint bullseye, 
-    const HashNet net) {
+                const uint epoch,
+                ref uint index_in_epoch,
+                const Fingerprint bullseye,
+                const HashNet net) {
             enum transactions_name = "#trans";
             const total_input = calcTotal(signed_contract.inputs);
             TagionCurrency total_output;
@@ -111,8 +111,9 @@ const Fingerprint bullseye,
                 _output_bills ~= bill;
                 index_in_epoch++;
             }
-            .check(total_output <= total_input - globals.fees(), 
-            ConsensusFailCode.SMARTSCRIPT_NOT_ENOUGH_MONEY);
+            
+            .check(total_output <= total_input - globals.fees(),
+                    ConsensusFailCode.SMARTSCRIPT_NOT_ENOUGH_MONEY);
         }
     }
 }

@@ -31,7 +31,6 @@ import tagion.dart.DARTException : BlockFileException;
 import tagion.dart.Recycler : Recycler;
 import tagion.dart.BlockSegment;
 
-
 alias Index = Typedef!(ulong, ulong.init, "BlockIndex");
 enum INDEX_NULL = Index.init;
 enum BLOCK_SIZE = 0x80;
@@ -55,7 +54,7 @@ void truncate(ref File file, long length) {
 }
 
 alias check = Check!BlockFileException;
-alias BlockChain = RedBlackTree!(const(BlockSegment*), (a, b) => a.index < b.index); 
+alias BlockChain = RedBlackTree!(const(BlockSegment*), (a, b) => a.index < b.index);
 
 /// Block file operation
 @safe
@@ -91,7 +90,6 @@ class BlockFile {
         return _recycler_statistic;
     }
 
-
     protected this() {
         BLOCK_SIZE = DEFAULT_BLOCK_SIZE;
         recycler = Recycler(this);
@@ -99,9 +97,9 @@ class BlockFile {
     }
 
     protected this(
-        string filename,
-        immutable uint SIZE,
-        const bool read_only = false) {
+            string filename,
+            immutable uint SIZE,
+            const bool read_only = false) {
         File _file;
 
         if (read_only) {
@@ -120,7 +118,6 @@ class BlockFile {
         recycler = Recycler(this);
         readInitial;
     }
-
 
     /** 
      * Creates an empty BlockFile
@@ -317,8 +314,8 @@ class BlockFile {
         mixin HiBONRecord;
 
         void write(
-            ref File file,
-            immutable uint BLOCK_SIZE) const @trusted {
+                ref File file,
+                immutable uint BLOCK_SIZE) const @trusted {
 
             auto buffer = new ubyte[BLOCK_SIZE];
 
@@ -433,7 +430,7 @@ class BlockFile {
 
     private void readHeaderBlock() {
         check(file.size % BLOCK_SIZE == 0,
-            format("BlockFile should be sized in equal number of blocks of the size of %d but the size is %d", BLOCK_SIZE, file
+                format("BlockFile should be sized in equal number of blocks of the size of %d but the size is %d", BLOCK_SIZE, file
                 .size));
         _last_block_index = Index(file.size / BLOCK_SIZE);
         check(_last_block_index > 1, format(
@@ -587,7 +584,7 @@ class BlockFile {
 
         }
 
-        foreach(block_segment; block_chains) {
+        foreach (block_segment; block_chains) {
             block_segment.write(this);
         }
     }
@@ -665,7 +662,6 @@ class BlockFile {
         return BlockSegmentRange(this);
     }
 
-
     /**
      * Used for debuging only to dump the Block's
      */
@@ -686,7 +682,7 @@ class BlockFile {
         fout.writef("|");
         fout.writeln;
     }
-    
+
     void recycleDump(File fout = stdout) {
         import tagion.dart.Recycler : Segment;
 
@@ -705,17 +701,15 @@ class BlockFile {
         }
     }
 
-
     void statisticDump(File fout = stdout) const {
         fout.writeln(_statistic.toString);
         fout.writeln(_statistic.histogramString);
     }
+
     void recycleStatisticDump(File fout = stdout) const {
-        fout.writeln(_recycler_statistic.toString);        
+        fout.writeln(_recycler_statistic.toString);
         fout.writeln(_recycler_statistic.histogramString);
     }
-
-    
 
     // Block index 0 is means null
     // The first block is use as BlockFile header
@@ -742,14 +736,15 @@ class BlockFile {
             }
             return cast(Buffer) text;
         }
+
         {
             import std.exception : assertThrown, ErrnoException;
+
             // try to load an index that is out of bounds of the blockfile. 
             File _file = File(fileId.fullpath, "w");
             auto blockfile = new BlockFile(_file, SMALL_BLOCK_SIZE);
             assertThrown!ErrnoException(blockfile.load(Index(5)));
         }
-
 
         /// Create BlockFile
         {

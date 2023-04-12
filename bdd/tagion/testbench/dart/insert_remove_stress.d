@@ -8,7 +8,6 @@ import tagion.testbench.tools.Environment;
 import std.file : mkdirRecurse;
 import std.stdio;
 import std.format;
-import tagion.utils.Random : RandomArchives;
 import std.random;
 import std.range;
 import std.algorithm;
@@ -165,8 +164,11 @@ class AddRemoveAndReadTheResult {
         writefln("ADD and REMOVE operations: %d. pr. sec: %s", operations, operations/double(insert_time)*1000);
         writefln("READ operations: %s. pr.sec %s", fingerprints.length, fingerprints.length/double(read_time)*1000);
 
+        // the total time
+        writefln("Total operations pr. sec: %d", (operations+fingerprints.length)/double(insert_time + read_time)*1000);
         db1.close;
         return result_ok;
     }
 
 }
+

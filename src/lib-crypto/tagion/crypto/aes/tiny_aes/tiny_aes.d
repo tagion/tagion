@@ -171,8 +171,8 @@ struct Tiny_AES(int KEY_LENGTH, Mode mode = Mode.CBC) {
         // The round constant word array, Rcon[i], contains the values given by
         // x to the power (i-1) being powers of x (x is denoted as {02}) in the field GF(2^8)
         enum Rcon = cast(ubyte[11])[
-            0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36
-        ];
+                0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36
+            ];
 
         /*
  * Jordan Goulder points out in PR #12 (https://github.com/kokke/tiny-AES-C/pull/12),
