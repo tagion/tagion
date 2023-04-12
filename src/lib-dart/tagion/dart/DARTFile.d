@@ -1786,7 +1786,7 @@ unittest {
                     }
                 }
                 // dart_A.blockfile.dump;
-                recorder.dump;
+                //recorder.dump;
                 dart_A.modify(recorder);
                 saved_archives |= added_archives;
                 saved_archives &= ~removed_archives;
