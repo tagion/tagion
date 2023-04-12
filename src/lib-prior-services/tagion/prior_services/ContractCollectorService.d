@@ -4,7 +4,7 @@ module tagion.prior_services.ContactCollectorService;
 import std.concurrency;
 import std.range : chain;
 
-import tagion.basic.TagionExceptions;
+import tagion.basic.tagionexceptions;
 import tagion.basic.Types : Control;
 import tagion.logger.Logger;
 import tagion.prior_services.Options;

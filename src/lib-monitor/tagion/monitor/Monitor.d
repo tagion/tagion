@@ -14,7 +14,7 @@ import tagion.hashgraphview.EventMonitorCallbacks:  EventMonitorCallbacks;
 import tagion.basic.ConsensusExceptions : ConsensusException;
 
 import tagion.basic.Types :  FileExtension;
-import tagion.basic.Basic : basename, EnumText;
+import tagion.basic.basic : basename, EnumText;
 import tagion.basic.Message;
 
 import tagion.crypto.Types : Pubkey;
@@ -22,7 +22,7 @@ import tagion.crypto.Types : Pubkey;
 import tagion.hibon.HiBON;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
-import tagion.basic.TagionExceptions : TagionException;
+import tagion.basic.tagionexceptions : TagionException;
 import tagion.utils.BitMask;
 import tagion.logger.Logger;
 
@@ -100,11 +100,11 @@ class MonitorCallBacks : EventMonitorCallbacks {
             with (FileExtension) {
                 switch (ext) {
                 case json:
-                    log("SENDING JSON: %s", doc.toJSON.toString);
+                    // log("SENDING JSON: %s", doc.toJSON.toString);
                     _socket_thread_id.send(doc.toJSON.toString);
                     break;
                 case hibon:
-                    log("SENDING HIBON");
+                    // log("SENDING HIBON");
                     _socket_thread_id.send(doc);
                     break;
                 default:

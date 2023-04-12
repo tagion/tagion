@@ -1132,12 +1132,12 @@ class HashGraph {
 }
 
 version (unittest) {
-    import Basic = tagion.basic.Basic;
+    import basic = tagion.basic.basic;
     import std.range : dropExactly;
     import tagion.utils.Miscellaneous : cutHex;
 
-    const(Basic.FileNames) fileId(T = HashGraph)(string prefix = null) @safe {
-        import basic = tagion.basic.Basic;
+    const(basic.FileNames) fileId(T = HashGraph)(string prefix = null) @safe {
+        import basic = tagion.basic.basic;
 
         return basic.fileId!T("hibon", prefix);
     }

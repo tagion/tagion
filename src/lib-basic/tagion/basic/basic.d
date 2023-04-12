@@ -1,5 +1,5 @@
 /// Basic functions used in the tagion project
-module tagion.basic.Basic;
+module tagion.basic.basic;
 
 private import std.string : format, join, strip;
 private import std.traits;
@@ -53,7 +53,7 @@ enum NameOf(alias nameType) = __traits(identifier, nameType);
  function name of the current function
 +/
 mixin template FUNCTION_NAME() {
-    import tagion.basic.Basic : basename;
+    import tagion.basic.basic : basename;
 
     enum __FUNCTION_NAME__ = basename!(__FUNCTION__)[0 .. $ - 1];
 }
@@ -258,39 +258,6 @@ static unittest {
     static assert(EnumContinuousSequency!OffsetCount);
 }
 
-/**
-* Tries to do a front but it is empty it return T.init 
-* Returns:
-* If the range is not empty the first element is return
-* else the .init value of the range element type is return
-* The first element is returned
-*/
-template doFront(Range) if (isInputRange!Range) {
-    alias T = ForeachType!Range;
-    import std.range;
-
-    T doFront(Range r) @safe {
-        if (r.empty) {
-            return T.init;
-        }
-        return r.front;
-    }
-}
-
-///
-@safe
-unittest {
-    {
-        int[] a;
-        static assert(isInputRange!(typeof(a)));
-        assert(a.doFront is int.init);
-    }
-    {
-        const a = [1, 2, 3];
-        assert(a.doFront is a[0]);
-    }
-}
-
 /// isEqual is the same as `is()` function which can be used in template filters 
 enum isEqual(T1, T2) = is(T1 == T2);
 //enum isUnqualEqual(T1, T2) = is(Unqual!T1 == T2);
@@ -305,31 +272,6 @@ unittest {
     static assert(isEqual!(int, Unqual!U));
     alias Left = ApplyLeft!(isEqual, int);
     static assert(Left!(Unqual!U));
-}
-
-/* 
- * Returns the first element in the range r and pops then next
- * Params:
- *   r = 
- * Returns: r.front
- */
-auto eatOne(R)(ref R r) if (isInputRange!R) {
-    import std.range;
-
-    scope (exit) {
-        if (!r.empty) {
-            r.popFront;
-        }
-    }
-    return r.front;
-}
-
-///
-unittest {
-    const(int)[] a = [1, 2, 3];
-    assert(eatOne(a) == 1);
-    assert(eatOne(a) == 2);
-    assert(eatOne(a) == 3);
 }
 
 /// Calling any system functions.

@@ -125,6 +125,7 @@ class RemovePseudoRandomData {
         check(dart_exception is null, format("Failed to open DART %s", dart_exception.msg));
 
         // since the finger
+        remove_fingerprints = db1_fingerprints.randomSample(db1_fingerprints.length/2, MinstdRand0(40)).array;
         return result_ok;
     }
 

@@ -236,7 +236,7 @@ alias ConnectionPoolT = ConnectionPool!(shared p2plib.StreamI, ulong);
 @safe
 class P2pSynchronizationFactory : SynchronizationFactory {
     import tagion.dart.DARTOptions;
-    import tagion.basic.Basic : tempfile;
+    import tagion.basic.basic : tempfile;
 
     protected {
         DART dart;

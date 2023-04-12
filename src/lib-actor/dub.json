@@ -1,0 +1,19 @@
+{
+	"authors": [
+		"lucas"
+	],
+	"copyright": "Copyright © 2023, lucas",
+	"description": "Structured actor library in dlang",
+	"license": "proprietary",
+	"name": "actor",
+
+    "sourcePaths": ["tagion/"],
+
+    "configurations" : [
+        {
+            "name": "example",
+            "targetType": "executable",
+            "mainSourceFile" : "example/app.d"
+        }
+    ]
+}

@@ -25,6 +25,11 @@ PREBUILD=1
 endif
 
 #
+# Used for temp scripts
+#
+TMP_FILE=${shell mktemp -q /tmp/make.XXXXXXXX.sh}
+
+#
 # Local config, ignored by git
 #
 -include $(REPOROOT)/local.*.mk
@@ -124,12 +129,14 @@ include $(DTUB)/compile.mk
 # Profile setting
 #
 include $(TARGETS)/profile.mk
+include $(TARGETS)/valgrind.mk
 
 include $(TARGETS)/ldc-build-runtime.mk
 
 #
 # Testbench
 #
+include $(DTUB)/testbench/unittest.mk
 include $(DTUB)/testbench/wallets.mk
 include $(DTUB)/testbench/mode0.mk
 include $(DTUB)/testbench/mode1.mk

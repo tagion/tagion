@@ -12,7 +12,7 @@ import std.range : StoppingPolicy, lockstep, enumerate;
 import tagion.wasm.WasmReader;
 import tagion.wasm.WasmBase;
 import tagion.wasm.WasmException;
-import tagion.basic.TagionExceptions;
+import tagion.basic.tagionexceptions;
 
 @safe class WastException : WasmException {
     this(string msg, string file = __FILE__, size_t line = __LINE__) pure nothrow {

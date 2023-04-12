@@ -12,7 +12,7 @@ import core.demangle : mangle;
 alias Tid = concurrency.Tid;
 import concurrency = std.concurrency;
 import tagion.basic.Types : Control;
-import tagion.basic.TagionExceptions : fatal; //, Check, TagionException;
+import tagion.basic.tagionexceptions : fatal; //, Check, TagionException;
 import tagion.logger.Logger;
 import tagion.actor.ActorException;
 
@@ -29,7 +29,7 @@ enum task;
 
 /// UDA to enable emulation of an Actor
 @safe
-struct emulate(Actor);
+struct emulate(Actor) {};
 
 /**
 * Defines a unique actor ID
@@ -43,7 +43,6 @@ struct ActorID {
 alias ActorFlag = Flag!"action"; /// Used as bool result flag for the response
 
 /**
-*
 * Params:
 *   Actor = is the actor object
 *   task_name = The name of the of the actor type task

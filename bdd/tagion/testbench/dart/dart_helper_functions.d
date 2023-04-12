@@ -16,7 +16,7 @@ import std.random : randomShuffle, MinstdRand0;
 import tagion.utils.Random;
 import tagion.dart.DARTFakeNet;
 import std.algorithm : each;
-import tagion.basic.Basic : tempfile;
+import tagion.basic.basic : tempfile;
 import tagion.utils.Miscellaneous : toHexString;
 import std.stdio : writefln, writeln;
 import std.format;
@@ -156,7 +156,6 @@ void randomRemove(const DARTIndex[] fingerprints, MinstdRand0 rnd, DART db) @saf
         writefln("removing %s", fingerprint.toHexString);
         recorder.remove(fingerprint);
     }
-    writefln("WOWOWO");
     db.modify(recorder);
 }
 

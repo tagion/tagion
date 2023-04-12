@@ -139,7 +139,7 @@ enum OwnerKey = "$Y";
         enum State {
             PROSPECT,
             STANDBY,
-            locked,
+            LOCKED,
             STERILE
         }
 

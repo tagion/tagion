@@ -372,7 +372,7 @@ class SSLSocket : Socket {
         import std.string;
         import std.file;
         import std.exception : assertNotThrown, assertThrown, collectException;
-        import tagion.basic.Basic : fileId;
+        import tagion.basic.basic : fileId;
         import std.stdio;
 
         import tagion.basic.Debug : testfile;

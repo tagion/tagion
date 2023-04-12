@@ -1,3 +1,5 @@
+[![codecov](https://codecov.io/gh/tagion/tagion/branch/current/graph/badge.svg?token=TM12EX8GSB)](https://codecov.io/gh/tagion/tagion)
+
 # Tagion
 
 > 🚧 This document is still in development.

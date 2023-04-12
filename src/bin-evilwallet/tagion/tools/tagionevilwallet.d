@@ -23,7 +23,7 @@ import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONJSON;
 
 import tagion.basic.Types : Buffer;
-import tagion.basic.TagionExceptions;
+import tagion.basic.tagionexceptions;
 import tagion.script.StandardRecords;
 import tagion.script.TagionCurrency;
 import tagion.crypto.SecureNet : StdSecureNet, StdHashNet, scramble;
@@ -768,7 +768,7 @@ int _main(string[] args) {
 
     if (create_invoice_command.length) {
         scope invoice_args = create_invoice_command.splitter(":");
-        import tagion.basic.Basic : eatOne;
+        import tagion.basic.basic : eatOne;
 
         //            writefln("invoice_args=%s create_invoice_command=%s", invoice_args, create_invoice_command);
         auto new_invoice = WalletInterface.StdEvilWallet.createInvoice(

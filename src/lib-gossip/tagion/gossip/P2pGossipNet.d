@@ -9,13 +9,13 @@ import std.file;
 import std.file : fwrite = write;
 import std.typecons;
 
-import tagion.basic.TagionExceptions : fatal;
+import tagion.basic.tagionexceptions : fatal;
 import tagion.options.HostOptions;
 import tagion.dart.DARTOptions;
 
 import tagion.basic.Types : Buffer, isBufferType, Control;
 
-import tagion.basic.Basic : EnumText, buf_idup, basename, assumeTrusted;
+import tagion.basic.basic : EnumText, buf_idup, basename, assumeTrusted;
 import tagion.crypto.Types :  Pubkey;
 
 import tagion.utils.Miscellaneous : cutHex;

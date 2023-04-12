@@ -26,7 +26,7 @@ import tagion.basic.Message;
 import tagion.dart.DARTException : DARTRecorderException;
 import tagion.dart.DARTBasic;
 
-import tagion.basic.TagionExceptions : Check;
+import tagion.basic.tagionexceptions : Check;
 
 import tagion.utils.Miscellaneous : toHexString;
 
@@ -145,13 +145,16 @@ class RecordFactory {
     class Recorder {
         /// This will order REMOVE before add
         version (SYNC_BLOCKFILE_WORKING) {
-            alias Archives = RedBlackTree!(Archive, (a, b) @safe => (a.fingerprint < b.fingerprint) || (
-                    a.fingerprint == b.fingerprint) && (a._type < a._type));
+
+            alias archive_sorted = (a, b) @safe => (a.fingerprint < b.fingerprint);
+
         }
         else {
-            alias Archives = RedBlackTree!(Archive, (a, b) @safe => (a.fingerprint < b.fingerprint) || (
-                    a.fingerprint == b.fingerprint) && (a._type < b._type));
+            alias archive_sorted = (a, b) @safe => (a.fingerprint < b.fingerprint) || (
+                    a.fingerprint == b.fingerprint) && (a._type < b._type);
+
         }
+        alias Archives = RedBlackTree!(Archive, archive_sorted);
 
         package Archives archives;
 
@@ -180,8 +183,7 @@ class RecordFactory {
             this.archives = archives;
         }
 
-        private this(R)(R range, const Archive.Type type = Archive.Type.NONE)
-            if (isInputRange!R) {
+        private this(R)(R range, const Archive.Type type = Archive.Type.NONE) if (isInputRange!R) {
             archives = new Archives;
             insert(range, type);
         }
@@ -319,17 +321,22 @@ class RecordFactory {
         }
 
         const(Archive) insert(T)(T pack, const Archive.Type type = Archive.Type.NONE)
-            if ((isHiBONRecord!T) && !is(T : const(Recorder))) {
+                if ((isHiBONRecord!T) && !is(T : const(Recorder))) {
             return insert(pack.toDoc, type);
         }
 
-        void insert(Archive archive, const Archive.Type type = Archive.Type.NONE) {
+        void insert(Archive archive) //, const Archive.Type type = Archive.Type.NONE)
+        in (!archive.fingerprint.empty)
+        do {
+            /* 
             if (archive.fingerprint.empty) {
                 auto a = new Archive(net, archive.filed, type);
             }
             else {
-                archives.insert(archive);
-            }
+*/
+
+            archives.insert(archive);
+            //          }
         }
 
         const(Archive) add(T)(T pack) {
@@ -341,8 +348,8 @@ class RecordFactory {
         }
 
         @trusted void insert(R)(R range, const Archive.Type type = Archive.Type.NONE)
-            if ((isInputRange!R) && (is(ElementType!R : const(Document)) || isHiBONRecord!(
-                ElementType!R))) {
+                if ((isInputRange!R) && (is(ElementType!R : const(Document)) || isHiBONRecord!(
+                    ElementType!R))) {
             alias FiledType = ElementType!R;
             static if (isHiBONRecord!FiledType) {
                 archives.insert(range.map!(a => new Archive(net, a.toDoc, type)));
@@ -379,7 +386,7 @@ class RecordFactory {
         void remove(const(DARTIndex) fingerprint)
         in {
             assert(fingerprint.length is net.hashSize,
-                format("Length of the fingerprint must be %d but is %d", net.hashSize, fingerprint
+                    format("Length of the fingerprint must be %d but is %d", net.hashSize, fingerprint
                     .length));
         }
         do {
@@ -394,7 +401,7 @@ class RecordFactory {
         void stub(const(DARTIndex) fingerprint)
         in {
             assert(fingerprint.length is net.hashSize,
-                format("Length of the fingerprint must be %d but is %d", net.hashSize, fingerprint
+                    format("Length of the fingerprint must be %d but is %d", net.hashSize, fingerprint
                     .length));
         }
         do {
@@ -410,7 +417,8 @@ class RecordFactory {
             import std.stdio;
 
             foreach (a; archives) {
-                writefln("Archive %s %s", a.fingerprint.hex, a.type);
+                writefln("Archive %s %s %s", a.fingerprint.hex, a.type,
+                        (() @trusted => cast(void*) a)());
             }
         }
 
@@ -424,6 +432,16 @@ class RecordFactory {
             result[TYPENAME] = type_name;
             return Document(result);
         }
+
+        // version (unittest)
+        // {
+        import std.algorithm.sorting;
+
+        bool checkSorted() pure {
+            return opSlice
+                .isSorted!(archive_sorted);
+        }
+        // }
     }
 }
 
@@ -431,6 +449,7 @@ alias GetType = Archive.Type delegate(const(Archive)) pure @safe;
 
 enum Add = (const(Archive) a) => Archive.Type.ADD;
 enum Remove = (const(Archive) a) => Archive.Type.REMOVE;
+enum Flip = (const(Archive) a) => -a.type;
 
 /**
  * Archive element used in the DART Recorder
@@ -458,11 +477,13 @@ enum Remove = (const(Archive) a) => Archive.Type.REMOVE;
     *   doc = document of an archive or filed doc
     *   t = archive type
     */
-    private this(const HashNet net, const(Document) doc, const Type t = Type.NONE)
+    this(const HashNet net, const(Document) doc, const Type t = Type.NONE)
     in {
-        if (net is null) {
-            assert(!.isStub(doc), "A stub needs a HashNet");
-        }
+        assert(net !is null);
+        version (none)
+            if (net is null) {
+                assert(!.isStub(doc), "A stub needs a HashNet");
+            }
         assert(!doc.empty, "Archive can not be empty");
     }
     do {
@@ -476,12 +497,7 @@ enum Remove = (const(Archive) a) => Archive.Type.REMOVE;
             else {
                 filed = doc;
             }
-            if (net) {
-                fingerprint = net.dartIndex(filed);
-            }
-            else {
-                fingerprint = null;
-            }
+            fingerprint = net.dartIndex(filed);
         }
         _type = t;
         if (_type is Type.NONE && doc.hasMember(typeLabel)) {
@@ -496,7 +512,7 @@ enum Remove = (const(Archive) a) => Archive.Type.REMOVE;
      *   doc = documnet of the filed data
      *   t = archve type
      */
-    this(const(Document) doc, const Type t = Type.NONE) {
+    version (none) this(const(Document) doc, const Type t = Type.NONE) {
         this(null, doc, t);
     }
 
@@ -748,7 +764,7 @@ unittest { /// RecordFactory.Recorder.insert range
     static struct Filed {
         int x;
         mixin HiBONRecord!(
-            q{
+                q{
                 this(int x) {
                     this.x = x;
                 }
@@ -784,5 +800,51 @@ unittest { /// RecordFactory.Recorder.insert range
         assert(equal(
                 recorder_sorted(recorder_base),
                 iota(0, 6).map!(i => Filed(i))));
+    }
+
+}
+
+@safe
+unittest {
+    immutable(ulong[]) table = [
+        //  RIM 2 test (rim=2)
+        0x20_21_10_30_40_50_80_90,
+        0x20_21_11_30_40_50_80_90,
+        0x20_21_12_30_40_50_80_90,
+        0x20_21_0a_30_40_50_80_90, // Insert before in rim 2
+
+    ];
+
+    import std.array : array;
+    import tagion.dart.DARTFakeNet;
+
+    const net = new DARTFakeNet;
+    auto manufactor = RecordFactory(net);
+    { /// Remove must come before two archive with the same fingerprint
+
+        const doc = DARTFakeNet.fake_doc(0x1234_5678_0000_0000);
+        auto rec = manufactor.recorder;
+        rec.insert(doc, Archive.Type.ADD);
+        rec.insert(doc, Archive.Type.REMOVE);
+
+        import std.stdio;
+
+        writeln(" ------------------------------ ");
+        //rec.dump;
+
+        const archs = table.map!(t => DARTFakeNet.fake_doc(t)).array;
+
+        rec.insert(archs[0], Archive.Type.ADD);
+        rec.insert(archs[1], Archive.Type.REMOVE);
+        rec.insert(archs[3], Archive.Type.ADD);
+        rec.insert(archs[1], Archive.Type.ADD);
+        rec.insert(archs[1], Archive.Type.ADD);
+        rec.insert(archs[3], Archive.Type.REMOVE);
+        rec.insert(archs[2], Archive.Type.ADD);
+
+        rec.dump;
+        assert(rec.checkSorted);
+
+        writeln("Passed");
     }
 }

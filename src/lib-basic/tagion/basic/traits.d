@@ -1,6 +1,7 @@
 /// Extension of std.traist used in the tagion project
 module tagion.basic.traits;
 import std.traits : getUDAs, hasUDA;
+import std.range.primitives : isInputRange;
 
 import std.meta : ApplyRight, Filter, staticMap;
 
@@ -95,3 +96,5 @@ static unittest {
     enum s_special = getMemberUDAs!(S.func, special)[0];
     static assert(s_special == special("text"));
 }
+
+

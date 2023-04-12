@@ -15,7 +15,7 @@ import std.array;
 
 import tagion.logger.Logger;
 import tagion.basic.Types : Buffer, Control;
-import tagion.basic.TagionExceptions;
+import tagion.basic.tagionexceptions;
 
 import tagion.utils.Miscellaneous : toHexString, cutHex;
 import tagion.dart.DARTFile;
@@ -24,7 +24,7 @@ import tagion.dart.DART;
 version (unittest) {
     import tagion.dart.BlockFile : fileId;
 }
-import tagion.basic.Basic;
+import tagion.basic.basic;
 import tagion.Keywords;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 import tagion.crypto.SecureInterfaceNet : SecureNet;

@@ -5,6 +5,8 @@ import std.meta : AliasSeq;
 import std.format;
 
 import tagion.hibon.HiBONRecord;
+import std.exception : assumeWontThrow;
+
 
 @safe @recordType("S")
 struct Statistic(T, Flag!"histogram" flag = No.histogram) {
@@ -59,8 +61,32 @@ struct Statistic(T, Flag!"histogram" flag = No.histogram) {
             }
         }
     }
-    string toString() const {
-        return format("N=%d sum2=%s sum=%s min=%s max=%s", N, sum2, sum, _min, _max);
+    string toString() pure const nothrow {
+        return assumeWontThrow(format("N=%d sum2=%s sum=%s min=%s max=%s", N, sum2, sum, _min, _max));
+    }
+
+
+
+    static if (flag == Yes.histogram) {
+        
+
+        string histogramString() pure const nothrow {
+            import std.range : repeat;
+            import std.algorithm : sort, min;
+            import std.format;
+
+
+            string[] result;
+            foreach(keypair; _histogram.byKeyValue.array.sort!((a, b) => a.key < b.key)) {
+                const number = keypair.key;
+                const size = keypair.value;
+                result ~= assumeWontThrow(format("%4d|%4d| %s", number, size, "#".repeat(min(size, 100)).join));
+            }
+
+            return result.join("\n");
+
+        }
+
     }
 
 }
