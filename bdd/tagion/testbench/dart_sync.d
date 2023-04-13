@@ -24,7 +24,6 @@ import tagion.testbench.dart.dartinfo;
 
 mixin Main!(_main);
 
-
 int _main(string[] args) {
     if (env.stage == Stage.commit || env.stage == Stage.acceptance) {
         BDDOptions bdd_options;
