@@ -13,6 +13,8 @@ import tagion.testbench.tools.Environment;
     
 import tagion.dart.DARTFakeNet : DARTFakeNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
+import tagion.crypto.SecureNet : StdSecureNet;
+
 import tagion.communication.HiRPC : HiRPC;
 
 import std.path : setExtension, buildPath;
@@ -39,7 +41,16 @@ int _main(string[] args) {
         const string module_path = env.bdd_log.buildPath(bdd_options.scenario_name);
         const string dartfilename = buildPath(module_path, "dart_insert_remove_stress_test".setExtension(FileExtension.dart));
 
-        const SecureNet net = new DARTFakeNet("very_secret");
+        
+        SecureNet net;
+        bool real_hashes;
+
+        if (real_hashes) {
+            net = new DARTFakeNet("very secret");
+        } else {
+            net = new StdSecureNet();
+        }
+        
         const hirpc = HiRPC(net);
 
         DartInfo dart_info = DartInfo(dartfilename, module_path, net, hirpc);

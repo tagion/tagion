@@ -165,7 +165,7 @@ class AddRemoveAndReadTheResult {
         writefln("READ operations: %s. pr.sec %s", fingerprints.length, fingerprints.length/double(read_time)*1000);
 
         // the total time
-        writefln("Total operations pr. sec: %d", (operations+fingerprints.length)/double(insert_time + read_time)*1000);
+        writefln("Total operations pr. sec: %1.f", (operations+fingerprints.length)/double(insert_time + read_time)*1000);
         db1.close;
         return result_ok;
     }
