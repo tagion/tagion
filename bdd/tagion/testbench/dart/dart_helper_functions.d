@@ -231,6 +231,7 @@ void syncDarts(DART db1, DART db2, const ushort from, const ushort to) @safe {
     string[] journal_filenames;
 
     foreach (sector; DART.SectorRange(from, to)) {
+        writeln(secor);
         immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
         journal_filenames ~= journal_filename;
         BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
