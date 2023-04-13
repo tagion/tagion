@@ -306,7 +306,6 @@ class BlockFile {
     @safe @recordType("M")
     static struct MasterBlock {
         @label("head") Index recycle_header_index; /// Points to the root of recycle block list
-        //Index first_index; /// Points to the first block of data
         @label("root") Index root_index; /// Point the root of the database
         @label("block_s") Index statistic_index; /// Points to the statistic data
         @label("recycle_s") Index recycler_statistic_index; /// Points to the recycler statistic data
