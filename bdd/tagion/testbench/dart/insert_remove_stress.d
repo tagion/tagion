@@ -48,7 +48,7 @@ class AddRemoveAndReadTheResult {
     DartInfo info;
     DART db1;
     RandomArchives[] random_archives;
-    auto gen = Mt19937(1234);
+    Mt19937 gen;
     auto insert_watch = StopWatch(AutoStart.no);
     auto read_watch = StopWatch(AutoStart.no);
     uint number_of_seeds;
@@ -58,9 +58,10 @@ class AddRemoveAndReadTheResult {
     uint operations;
 
 
-    this(DartInfo info, const uint number_of_seeds, const uint number_of_rounds, const uint number_of_samples) {
+    this(DartInfo info, const uint seed, const uint number_of_seeds, const uint number_of_rounds, const uint number_of_samples) {
         check(number_of_samples < number_of_seeds, "number of samples must be smaller than number of seeds");
         this.info = info;
+        gen = Mt19937(seed);
         this.number_of_rounds = number_of_rounds;
         this.number_of_samples = number_of_samples;
         this.number_of_seeds = number_of_seeds;
