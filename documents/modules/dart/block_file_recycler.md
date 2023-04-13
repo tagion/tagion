@@ -43,7 +43,7 @@ The reason we subtract 1 is to get the Index of where the masterblock begins. Th
 
 The MasterBlock has pointers to all other different important blocks in the BlockFile. It contains the following information:
 
-| Variable Name                 | Type   | Label        | Description                                  |
+| Variable Name              | Type   | Label        | Description                                  |
 | -------------------------- | ------ | ------------ | -------------------------------------------- |
 | `recycle_header_index`     | `Index`| `"head"`     | Points to the root of the recycle block list |
 | `root_index`               | `Index`| `"root"`     | Points to the root of the database           |
@@ -52,8 +52,16 @@ The MasterBlock has pointers to all other different important blocks in the Bloc
 
 The labels indicate the names that are used in the Document stored in the MasterBlock.
 
+### RecycleSegments
 
-
+### Statistic Blocks
+Statistic segments are used for analyzing the amount of blocks and how well they are used, and how many recycle segments. 
+They use the underlying `logger/Statistic` module, and are Type Definitions.
+```d
+alias BlockFileStatistic = Statistic!(uint, Yes.histogram);
+alias RecyclerFileStatistic = Statistic!(ulong, Yes.histogram);
+```
+The Yes.histogram indicates that we are keeping track each time `blockfile.store` is called. This means that we can see how the number of ex. `RecycleSegments` grows over time.
 
 
 <!-- ```graphviz
