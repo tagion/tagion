@@ -57,7 +57,7 @@ string getType(const Document doc) pure {
 }
 
 enum STUB = HiBONPrefix.HASH ~ "";
-@safe bool isStub(const Document doc) {
+@safe bool isStub(const Document doc) pure {
     return !doc.empty && doc.keys.front == STUB;
 }
 
@@ -613,7 +613,7 @@ mixin template HiBONRecord(string CTOR = "") {
                                     basename!(this.tupleof[i])));
                         }
                     }
-                    else {
+                else {
                         enum name = default_name;
                         enum optional = false;
                     }

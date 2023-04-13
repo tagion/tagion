@@ -4,7 +4,7 @@ import std.stdio;
 import std.algorithm;
 import std.range;
 import std.traits;
-
+import std.container.dlist;
 import tagion.dart.Recorder;
 import tagion.basic.Types : isBufferType;
 import tagion.utils.Miscellaneous : hex;
@@ -25,14 +25,23 @@ ubyte rim_key(F)(F rim_keys, const uint rim) pure if (isBufferType!F) {
 }
 
 @safe
-Range rimKeyRange(Range)(Range range, const uint rim) {
-    return RimKeyRangeT!Range(range, rim);
+RimKeyRange!Range rimKeyRange(Range)(Range range, const uint rim, const GetType get_type = Neutral)
+        if (isInputRange!Range && isImplicitlyConvertible!(ElementType!Range, Archive)) {
+    return RimKeyRange!Range(range, rim, get_type);
+}
+
+@safe
+auto rimKeyRange(Rec)(Rec rec, const GetType get_type = Neutral)
+        if (isImplicitlyConvertible!(Rec, const(RecordFactory.Recorder))) {
+    return rimKeyRange(rec[], 0, get_type);
 }
 
 // Range over a Range with the same key in the a specific rim
 @safe
-struct RimKeyRange(Range) if (isInputeRange!Range && isImplicitlyConvertible!(ElementType!Range, Archive)) {
-    protected Archives added_archives;
+struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(ElementType!Range, Archive)) {
+
+    //alias Archives=RecordFactory.Recorder.Archives;
+    protected DList!Archive added_archives;
     protected Range range;
     const ubyte rim_key;
     const uint rim;
@@ -63,55 +72,26 @@ struct RimKeyRange(Range) if (isInputeRange!Range && isImplicitlyConvertible!(El
     }
 
     void add(Archive archive)
-    in (rim_key == archive.front.fingerprint(rim))
+    in (rim_key == archive.fingerprint.rim_key(rim))
     do {
-        added_archives.insert(archive);
+        added_archives.insertBack(archive);
+    }
+
+    private this(RimKeyRange rhs) {
+        added_archives = rhs.added_archives.dup;
+        range = rhs.range;
+        rim_key = rhs.rim_key;
+        rim = rhs.rim;
+        get_type = rhs.get_type;
     }
 
     this(Range)(Range _range, const uint rim, const GetType get_type) {
-        added_archives = new Archives;
         this.get_type = get_type;
         this.rim = rim;
         range = _range;
         if (!range.empty) {
             rim_key = range.front.fingerprint.rim_key(rim);
         }
-        /+ 
-            Archive[] _current;
-            void build(ref Range range, const uint no = 0) @safe {
-                if (!range.empty && (range.front.fingerprint.rim_key(rim) is rim_key)) {
-                    auto a = range.front;
-                    range.popFront;
-                    build(range, no + 1);
-                    (() @trusted { _current[no] = cast(Archive) a; })();
-                }
-                else {
-                    _current = new Archive[no];
-                }
-            }
-
-            auto _range = range;
-            build(_range);
-            writefln("Rim key before %02X", range.front.fingerprint.rim_key(rim));
-            current = refRange(&range)
-                .until!(a => a.fingerprint.rim_key(rim) !is rim_key)
-                .map!(a => cast(Archive) a)
-                .array;
-            version (none)
-                if (_range.empty) {
-                    writefln("Rim key after %02X", _range.front.fingerprint.rim_key(rim));
-                }
-            writefln("current");
-
-            writefln("rim_key=%02X rim=%d", rim_key, rim);
-            //current.each!(a => writeln(a.fingerprint.toHex));
-            writefln("_current");
-            //_current.each!(a => writeln(a.fingerprint.toHex));
-            //assert(equal(current, _current));
-            //                range=_range;
-
-        }
-        +/
     }
 
     /**
@@ -120,25 +100,25 @@ struct RimKeyRange(Range) if (isInputeRange!Range && isImplicitlyConvertible!(El
      *   get_type = archive type get function
      * Returns: true if all the archives are removes
      */
-    bool onlyRemove(const GetType get_type) const pure {
+    version (none) bool onlyRemove(const GetType get_type) const pure {
         return current
             .all!(a => get_type(a) is Archive.Type.REMOVE);
     }
 
-    @nogc pure nothrow {
+    pure nothrow {
         /** 
              * Checks if the range only contains one archive 
              * Returns: true range if single
              */
-        bool oneLeft() const {
-            return current.length == 1;
+        version (none) bool oneLeft() const @nogc {
+            return length == 1;
         }
 
         /**
              * Checks if the range is empty
              * Returns: true if empty
              */
-        bool empty() const {
+        bool empty() const @nogc {
             return range.empty && added_archives.empty;
         }
 
@@ -149,7 +129,7 @@ struct RimKeyRange(Range) if (isInputeRange!Range && isImplicitlyConvertible!(El
         void popFront() {
             if (!added_archives.empty && !range.empty) {
                 if (archive_less(added_archives.front, range.front)) {
-                    added_archive.popFront;
+                    added_archives.removeFront;
                 }
                 else {
                     range.popFront;
@@ -159,7 +139,7 @@ struct RimKeyRange(Range) if (isInputeRange!Range && isImplicitlyConvertible!(El
                 range.popFront;
             }
             else if (!added_archives.empty) {
-                added_archive.popFront;
+                added_archives.removeFront;
             }
         }
 
@@ -167,10 +147,10 @@ struct RimKeyRange(Range) if (isInputeRange!Range && isImplicitlyConvertible!(El
              * Gets the current archive in the range
              * Returns: current archive and return null if the range is empty
              */
-        inout(Archive) front() inout {
+        const(Archive) front() @nogc {
             if (!added_archives.empty && !range.empty) {
                 if (archive_less(added_archives.front, range.front)) {
-                    return added_archive.front;
+                    return added_archives.front;
                 }
                 return range.front;
             }
@@ -178,7 +158,7 @@ struct RimKeyRange(Range) if (isInputeRange!Range && isImplicitlyConvertible!(El
                 return range.front;
             }
             else if (!added_archives.empty) {
-                return added_archive.front;
+                return added_archives.front;
             }
             return Archive.init;
         }
@@ -186,7 +166,7 @@ struct RimKeyRange(Range) if (isInputeRange!Range && isImplicitlyConvertible!(El
         /**
              * Force the range to be empty
              */
-        void force_empty() {
+        version (none) void force_empty() {
             current = null;
         }
 
@@ -194,22 +174,89 @@ struct RimKeyRange(Range) if (isInputeRange!Range && isImplicitlyConvertible!(El
              * Number of archive left in the range
              * Returns: size of the range
              */
-        size_t length() const {
-            return current.length;
+        version (none) size_t length() const {
+            return range.length + added_archives.length;
         }
     }
     /**
          *  Creates new range at the current position
          * Returns: copy of this range
          */
-    version (none) RimKeyRange save() pure nothrow @nogc {
+    RimKeyRange save() pure nothrow {
 
-        return RimKeyRange(current);
+        return RimKeyRange(this);
     }
+
+    static assert(isInputRange!RimKeyRange);
+    static assert(isForwardRange!RimKeyRange);
 
 }
 
 @safe
 unittest {
+    import std.stdio;
+    import tagion.dart.DARTFakeNet;
 
+    const net = new DARTFakeNet;
+    auto factory = RecordFactory(net);
+
+    const table = [
+
+        0xABCD_1334_5678_9ABCUL,
+        0xABCD_1335_5678_9ABCUL,
+        0xABCD_1336_5678_9ABCUL,
+
+        // Archives which add added in to the RimKeyRange
+        0xABCD_1334_AAAA_AAAAUL,
+        0xABCD_1335_5678_AAAAUL,
+
+    ];
+    const documents = table
+        .map!(t => DARTFakeNet.fake_doc(t))
+        .array;
+
+    { // Test with ADD's only
+        writefln("--- RimKeyRange");
+        // Create a recorder from the first 9 documents 
+        auto rec = factory.recorder(documents.take(3), Archive.Type.ADD);
+        { // Check the the rim-key range is the same as the recorder
+            auto rim_key_range = rimKeyRange(rec);
+            rec.dump;
+            writeln("-- --- ");
+            rim_key_range.each!q{a.dump};
+            writeln("-- --- ");
+            rim_key_range.each!q{a.dump};
+
+            assert(equal(rec[].map!q{a.fingerprint}, rim_key_range.map!q{a.fingerprint}));
+        }
+        { // Add one to the rim_key range and check if it is range is ordered correctly
+            auto rim_key_range = rimKeyRange(rec);
+            auto rec_copy = rec.dup;
+            rec_copy.insert(documents[3], Archive.Type.ADD);
+            writefln("Recorder add 10");
+            rec_copy.dump;
+            rim_key_range.add(rec.archive(documents[3], Archive.Type.ADD));
+
+            writefln("Recorder add 10");
+            rim_key_range.save.each!q{a.dump};
+            assert(equal(rec_copy[].map!q{a.fingerprint}, rim_key_range.map!q{a.fingerprint}));
+
+        }
+
+        { //  Add two to the rim_key range and check if it is range is ordered correctly
+            auto rim_key_range = rimKeyRange(rec);
+            auto rec_copy = rec.dup;
+
+            rec_copy.insert(documents[3 .. 5], Archive.Type.ADD);
+            writefln("Recorder add 11");
+            rec_copy.dump;
+            rim_key_range.add(rec.archive(documents[3], Archive.Type.ADD));
+            rim_key_range.add(rec.archive(documents[4], Archive.Type.ADD));
+
+            writefln("Recorder add 11");
+            rim_key_range.save.each!q{a.dump};
+            assert(equal(rec_copy[].map!q{a.fingerprint}, rim_key_range.map!q{a.fingerprint}));
+
+        }
+    }
 }

@@ -73,7 +73,7 @@ unittest {
         auto dart = new DART(net, dart_filename, dart_exception);
         assert(dart_exception is null);
 
-        // In loop fill DART and add blocks
+        // In loop fill DART and Add blocks
         enum blocks_count = 10;
         foreach (i; 0 .. blocks_count) {
             const bills_recorder = factory.recorder(makeBills(i));
@@ -136,7 +136,7 @@ unittest {
         dart.modify(genesis_recorder, Add);
         dart_filename.copy(dart_genesis_filename);
 
-        // In loop fill DART and add blocks
+        // In loop fill DART and Add blocks
         enum blocks_count = 10;
         foreach (i; 0 .. blocks_count) {
             const bills_recorder = factory.recorder(makeBills(i));
@@ -196,7 +196,7 @@ unittest {
         auto dart = new DART(net, dart_filename, dart_exception);
         assert(dart_exception is null);
 
-        // In loop fill DART and add blocks
+        // In loop fill DART and Add blocks
         enum blocks_count = 10;
         enum some_block_index = 4;
         foreach (i; 0 .. blocks_count) {
@@ -267,7 +267,7 @@ unittest {
         auto dart = new DART(net, dart_filename, dart_exception);
         assert(dart_exception is null);
 
-        // In loop fill DART and add blocks
+        // In loop fill DART and Add blocks
         enum blocks_count = 10;
         foreach (i; 0 .. blocks_count) {
             const bills_recorder = factory.recorder(makeBills(i));
