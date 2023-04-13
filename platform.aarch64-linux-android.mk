@@ -19,6 +19,4 @@ CROSS_ARCH=aarch64
 ANDROID_ARCH=$(ANDROID_AARCH64)
 DFLAGS+=-mtriple=$(PLATFORM)
 
-${call DDEPS,$(DBUILD),$(DFILES)}
-
 endif

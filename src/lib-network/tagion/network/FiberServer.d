@@ -19,7 +19,7 @@ import tagion.basic.Message;
 import tagion.basic.Types : Buffer, Control;
 import tagion.logger.Logger;
 import tagion.basic.ConsensusExceptions;
-import tagion.basic.TagionExceptions : taskfailure, fatal;
+import tagion.basic.tagionexceptions : taskfailure, fatal;
 import tagion.communication.HiRPC : HiRPC;
 import LEB128 = tagion.utils.LEB128;
 
@@ -192,7 +192,7 @@ class FiberServer {
                         fiber.reset;
                     }
                 }
-                else if(fiber.waitingForResponse && fiber.available && fiber.locked) {
+                else if (fiber.waitingForResponse && fiber.available && fiber.locked) {
                     fiber.call;
                 }
                 else if (!fiber.waitingForResponse && socket_set.isSet(fiber.client)) {
@@ -433,7 +433,7 @@ class FiberServer {
          +/
         package void shutdown() nothrow {
             import std.socket : SocketShutdown;
-            
+
             _waitforresponse = false;
             if (client) {
                 client.shutdown(SocketShutdown.BOTH);
@@ -502,7 +502,7 @@ class FiberServer {
             void serviceResponse(Buffer data) {
                 const doc = Document(data);
                 const hirpc_received = hirpc.receive(doc);
-                log("received for service: %d",hirpc_received.response.id);
+                log("received for service: %d", hirpc_received.response.id);
                 handler.set(hirpc_received.response.id, data);
             }
 

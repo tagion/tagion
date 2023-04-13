@@ -16,7 +16,7 @@ import tagion.behaviour.BehaviourResult;
 import tagion.behaviour.BehaviourReporter;
 import tagion.basic.Types : FileExtension;
 import tagion.hibon.HiBONRecord;
-import tagion.basic.Basic : isOneOf;
+import tagion.basic.basic : isOneOf;
 
 /**
    Runs the scenario in Given, When, Then, But order
@@ -58,13 +58,13 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T) {
         
 
         .check(scenario !is null,
-            format("The constructor must be called for %s before it's runned", T.stringof));
+                format("The constructor must be called for %s before it's runned", T.stringof));
         static foreach (_Property; ActionProperties) {
             {
                 alias all_actions = getActions!(T, _Property);
                 static if (is(all_actions == void)) {
                     static assert(!isOneOf!(_Property, MandatoryActionProperties),
-                        format("%s is missing a @%s action", T.stringof, _Property.stringof));
+                            format("%s is missing a @%s action", T.stringof, _Property.stringof));
                 }
                 else {
                     // Traverse all the actions the scenario
@@ -74,10 +74,10 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T) {
                             // The action is the lower case of Action type (ex. Given is given)
                             // See the definition of ScenarioGroup
                             enum action_name = __traits(identifier,
-                                    typeof(getProperty!(behaviour))).toLower;
+                                        typeof(getProperty!(behaviour))).toLower;
                             enum code = memberCode(
-                                    scenario_group.stringof, action_name, i,
-                                    scenario.stringof, __traits(identifier, behaviour));
+                                        scenario_group.stringof, action_name, i,
+                                        scenario.stringof, __traits(identifier, behaviour));
                             // The memberCode is used here
                             mixin(code);
                         }
@@ -104,13 +104,13 @@ unittest {
     auto awesome = new Some_awesome_feature;
     const runner_result = run(awesome);
     auto expected = only(
-        "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.is_valid",
-        "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.in_credit",
-        "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.contains_cash",
-        "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.request_cash",
-        "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.is_debited",
-        "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.is_dispensed",
-        "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.swollow_the_card",
+            "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.is_valid",
+            "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.in_credit",
+            "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.contains_cash",
+            "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.request_cash",
+            "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.is_debited",
+            "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.is_dispensed",
+            "tagion.behaviour.BehaviourUnittest.Some_awesome_feature.swollow_the_card",
     )
         .map!(a => result(a));
     assert(awesome.count == 7);
@@ -175,7 +175,7 @@ FeatureGroup getFeature(alias M)() if (isFeature!M) {
 @safe
 unittest { //
     import tagion.hibon.HiBONRecord;
-    import tagion.basic.Basic : unitfile;
+    import tagion.basic.basic : unitfile;
     import core.demangle : mangle;
 
     import Module = tagion.behaviour.BehaviourUnittest;
@@ -206,7 +206,7 @@ auto automation(alias M)() if (isFeature!M) {
             enum tuple_index = [FeatureContext.fieldNames]
                     .countUntil(scenario_name);
             static assert(tuple_index >= 0,
-                format("Scenarion '%s' does not exists. Possible scenarions is\n%s",
+                    format("Scenarion '%s' does not exists. Possible scenarions is\n%s",
                     scenario_name, [FeatureContext.fieldNames[0 .. $ - 1]].join(",\n")));
             alias _Scenario = FeatureContext.Types[tuple_index];
             context[tuple_index] = new _Scenario(args);
@@ -223,14 +223,14 @@ auto automation(alias M)() if (isFeature!M) {
                     enum scenario_property = getScenario!_Scenario;
                     enum compiles = __traits(compiles, new _Scenario(args));
                     if (!scenario_property.description.matchFirst(search_regex).empty ||
-                        scenario_property.comments.any!(c => !c.matchFirst(search_regex).empty)) {
+                            scenario_property.comments.any!(c => !c.matchFirst(search_regex).empty)) {
                         static if (compiles) {
                             context[tuple_index] = new _Scenario(args);
                             return true;
                         }
                         else {
                             check(false,
-                                format("Arguments %s does not match construct of %s",
+                                    format("Arguments %s does not match construct of %s",
                                     Args.stringof, _Scenario.stringof));
                         }
                     }
@@ -267,9 +267,9 @@ auto automation(alias M)() if (isFeature!M) {
                     }
                     else {
                         check(context[i]!is null,
-                        format("Scenario '%s' must be constructed before can be executed in '%s' feature",
-                            FeatureContext.fieldNames[i],
-                            moduleName!M));
+                                format("Scenario '%s' must be constructed before can be executed in '%s' feature",
+                                FeatureContext.fieldNames[i],
+                                moduleName!M));
                     }
                     context.result.scenarios[i] = .run(context[i]);
                 }
@@ -428,18 +428,18 @@ bool hasPassed(ref const ScenarioGroup scenario_group) nothrow {
     static foreach (i, Type; Fields!ScenarioGroup) {
         static if (isActionGroup!Type) {
             if (scenario_group
-                .tupleof[i].infos
-                .any!(info => !info
-                    .result
-                    .isRecord!Result)) {
+                    .tupleof[i].infos
+                    .any!(info => !info
+                        .result
+                        .isRecord!Result)) {
                 return false;
             }
         }
         else static if (isInfo!Type) {
             if (!scenario_group
-                .tupleof[i]
-                .result
-                .isRecord!Result) {
+                    .tupleof[i]
+                    .result
+                    .isRecord!Result) {
                 return false;
             }
         }
@@ -452,10 +452,10 @@ bool hasStarted(ref const ScenarioGroup scenario_group) nothrow {
     static foreach (i, Type; Fields!ScenarioGroup) {
         static if (isActionGroup!Type) {
             if (!scenario_group
-                .tupleof[i].infos
-                .any!(info => !info
-                    .result
-                    .empty)) {
+                    .tupleof[i].infos
+                    .any!(info => !info
+                        .result
+                        .empty)) {
                 return true;
             }
         }

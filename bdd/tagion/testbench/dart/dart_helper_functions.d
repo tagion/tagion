@@ -16,7 +16,7 @@ import std.random : randomShuffle, MinstdRand0;
 import tagion.utils.Random;
 import tagion.dart.DARTFakeNet;
 import std.algorithm : each;
-import tagion.basic.Basic : tempfile;
+import tagion.basic.basic : tempfile;
 import tagion.utils.Miscellaneous : toHexString;
 import std.stdio : writefln, writeln;
 import std.format;
@@ -156,7 +156,6 @@ void randomRemove(const DARTIndex[] fingerprints, MinstdRand0 rnd, DART db) @saf
         writefln("removing %s", fingerprint.toHexString);
         recorder.remove(fingerprint);
     }
-    writefln("WOWOWO");
     db.modify(recorder);
 }
 
@@ -247,4 +246,37 @@ void syncDarts(DART db1, DART db2, const ushort from, const ushort to) @safe {
         db2.replay(journal_filename);
     }
 
+}
+
+
+
+struct RandomArchives {
+    import std.random;
+    import std.random : Random;
+
+    uint seed;
+    bool in_dart;
+    uint number_of_archives;
+
+    this(const uint _seed, const uint from = 1, const uint to = 10) pure const @safe {
+        seed = _seed;
+        auto rnd = Random(seed);
+        number_of_archives = uniform(from, to, rnd);
+    }
+
+    auto values() pure nothrow @nogc @safe {
+        auto gen = Mt19937_64(seed);
+        return gen.take(number_of_archives);
+    }
+}
+
+unittest {
+    import std.stdio;
+    import std.algorithm;
+
+    const seed = 12345UL;
+    auto r = RandomArchives(seed, 1, 10);
+    auto t = RandomArchives(seed, 1, 10);
+
+    assert(r.values == t.values);
 }

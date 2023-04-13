@@ -13,7 +13,7 @@ import std.datetime : Clock;
 import p2plib = p2p.node;
 
 import tagion.basic.Types : Control, Buffer;
-import tagion.basic.TagionExceptions : taskfailure, fatal;
+import tagion.basic.tagionexceptions : taskfailure, fatal;
 import tagion.crypto.Types : Pubkey;
 import tagion.communication.HiRPC;
 import tagion.crypto.SecureNet : StdSecureNet;
@@ -427,10 +427,10 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         HiRPC empty_hirpc;
         gossip_net.start_listening();
 
-        const startup_duration = dur!"hnsecs"(Clock.currTime().stdTime-startup_timestamp);
-        if (opts.startup_delay.msecs > startup_duration){
+        const startup_duration = dur!"hnsecs"(Clock.currTime().stdTime - startup_timestamp);
+        if (opts.startup_delay.msecs > startup_duration) {
             Thread.sleep(opts.startup_delay.msecs - startup_duration);
-        } 
+        }
         while (!stop && !abort) {
             immutable message_received = receiveTimeout(
                     opts.timeout.msecs,

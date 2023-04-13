@@ -32,30 +32,14 @@ struct BlockSegment {
         this.index = index;
     }
 
-    uint size(BlockFile blockfile) const pure nothrow @nogc {
-        return blockfile.numberOfBlocks(doc.full_size);
-    }
-
-    Index next(BlockFile blockfile) const {
-        import std.stdio;
-
-        const _size = size(blockfile);
-
-        if (index >= blockfile.numberOfBlocks(blockfile.file.size)) {
-            return Index.init;
-        }
-
-        return Index(_size + index);
-    }
-
 }
 
 version (unittest) {
-    import Basic = tagion.basic.Basic;
+    import basic = tagion.basic.basic;
     import tagion.basic.Types : FileExtension;
 
-    const(Basic.FileNames) fileId(T = BlockSegment)(string prefix = null) @safe {
-        return Basic.fileId!T(FileExtension.block, prefix);
+    const(basic.FileNames) fileId(T = BlockSegment)(string prefix = null) @safe {
+        return basic.fileId!T(FileExtension.block, prefix);
     }
 
     enum SMALL_BLOCK_SIZE = 0x40;

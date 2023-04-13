@@ -23,7 +23,7 @@ unittest {
     import std.path;
     import std.range : empty;
 
-    import tagion.basic.Basic : tempfile, fileId;
+    import tagion.basic.basic : tempfile, fileId;
     import tagion.basic.Types : FileExtension;
     import tagion.crypto.SecureNet : StdSecureNet;
     import tagion.crypto.SecureInterfaceNet : SecureNet;
@@ -73,7 +73,7 @@ unittest {
         auto dart = new DART(net, dart_filename, dart_exception);
         assert(dart_exception is null);
 
-        // In loop fill DART and add blocks
+        // In loop fill DART and Add blocks
         enum blocks_count = 10;
         foreach (i; 0 .. blocks_count) {
             const bills_recorder = factory.recorder(makeBills(i));
@@ -81,8 +81,8 @@ unittest {
 
             auto last_block = recorder_chain.getLastBlock;
             auto previous_hash = last_block is null ? Fingerprint.init : last_block.getHash;
-            recorder_chain.append(new RecorderChainBlock(bills_recorder.toDoc, 
-            previous_hash, Fingerprint(dart.fingerprint), net));
+            recorder_chain.append(new RecorderChainBlock(bills_recorder.toDoc,
+                    previous_hash, Fingerprint(dart.fingerprint), net));
         }
 
         assert(recorder_chain.isValidChain);
@@ -136,7 +136,7 @@ unittest {
         dart.modify(genesis_recorder, Add);
         dart_filename.copy(dart_genesis_filename);
 
-        // In loop fill DART and add blocks
+        // In loop fill DART and Add blocks
         enum blocks_count = 10;
         foreach (i; 0 .. blocks_count) {
             const bills_recorder = factory.recorder(makeBills(i));
@@ -144,9 +144,9 @@ unittest {
 
             auto last_block = recorder_chain.getLastBlock;
             auto previous_hash = last_block is null ? Fingerprint.init : last_block.getHash;
-            recorder_chain.append(new RecorderChainBlock(bills_recorder.toDoc, 
-            previous_hash, 
-            Fingerprint(dart.fingerprint), net));
+            recorder_chain.append(new RecorderChainBlock(bills_recorder.toDoc,
+                    previous_hash,
+                    Fingerprint(dart.fingerprint), net));
         }
 
         assert(recorder_chain.isValidChain);
@@ -196,7 +196,7 @@ unittest {
         auto dart = new DART(net, dart_filename, dart_exception);
         assert(dart_exception is null);
 
-        // In loop fill DART and add blocks
+        // In loop fill DART and Add blocks
         enum blocks_count = 10;
         enum some_block_index = 4;
         foreach (i; 0 .. blocks_count) {
@@ -206,10 +206,10 @@ unittest {
             auto last_block = recorder_chain.getLastBlock;
             auto previous_hash = last_block is null ? Fingerprint.init : last_block.getHash;
             recorder_chain.append(new RecorderChainBlock(
-            bills_recorder.toDoc, 
-            previous_hash, 
-            Fingerprint(dart.fingerprint), 
-            net));
+                    bills_recorder.toDoc,
+                    previous_hash,
+                    Fingerprint(dart.fingerprint),
+                    net));
 
             // In the middle of the chain copy dart that will be "outdated"
             if (i == some_block_index) {
@@ -267,7 +267,7 @@ unittest {
         auto dart = new DART(net, dart_filename, dart_exception);
         assert(dart_exception is null);
 
-        // In loop fill DART and add blocks
+        // In loop fill DART and Add blocks
         enum blocks_count = 10;
         foreach (i; 0 .. blocks_count) {
             const bills_recorder = factory.recorder(makeBills(i));
@@ -276,10 +276,10 @@ unittest {
             auto last_block = recorder_chain.getLastBlock;
             auto previous_hash = last_block is null ? Fingerprint.init : last_block.getHash;
             recorder_chain.append(new RecorderChainBlock(
-            bills_recorder.toDoc, 
-                previous_hash, 
-            Fingerprint(dart.fingerprint), 
-            net));
+                    bills_recorder.toDoc,
+                    previous_hash,
+                    Fingerprint(dart.fingerprint),
+                    net));
         }
 
         assert(recorder_chain.isValidChain);

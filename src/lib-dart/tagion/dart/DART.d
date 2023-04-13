@@ -15,7 +15,7 @@ import std.range : isInputRange, ElementType;
 import std.algorithm.iteration : filter, map;
 
 import tagion.basic.Debug : __format;
-import tagion.basic.Basic : FUNCTION_NAME;
+import tagion.basic.basic : FUNCTION_NAME;
 import tagion.basic.Types : Buffer;
 import tagion.Keywords;
 import tagion.hibon.HiBON : HiBON;
@@ -25,12 +25,12 @@ import tagion.hibon.HiBONJSON;
 
 import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
 import tagion.communication.HiRPC : HiRPC, HiRPCMethod, Callers;
-import tagion.basic.Basic : EnumText;
+import tagion.basic.basic : EnumText;
 
 import tagion.utils.Miscellaneous : toHexString, cutHex;
 import tagion.Keywords : isValid;
 
-import tagion.basic.TagionExceptions : Check;
+import tagion.basic.tagionexceptions : Check;
 import tagion.dart.BlockFile : BlockFile;
 import tagion.dart.Recorder : RecordFactory, Archive;
 import tagion.dart.DARTFile;
@@ -107,9 +107,9 @@ class DART : DARTFile {
     *   to_sector = Represents to angle for DART sharding. In development.
     */
     this(const SecureNet net,
-        string filename,
-        const ushort from_sector = 0,
-        const ushort to_sector = 0) @safe {
+            string filename,
+            const ushort from_sector = 0,
+            const ushort to_sector = 0) @safe {
         super(net, filename);
         this.from_sector = from_sector;
         this.to_sector = to_sector;
@@ -126,10 +126,10 @@ class DART : DARTFile {
     *       to_sector = Represents to angle for DART sharding. In development.
     */
     this(const SecureNet net,
-        string filename,
-        out Exception exception,
-        const ushort from_sector = 0,
-        const ushort to_sector = 0) @safe {
+            string filename,
+            out Exception exception,
+            const ushort from_sector = 0,
+            const ushort to_sector = 0) @safe {
         try {
             this(net, filename, from_sector, to_sector);
         }
@@ -227,9 +227,9 @@ class DART : DARTFile {
          * Returns: true if the sector is within the angle-span 
          */
         static bool sectorInRange(
-            const ushort sector,
-            const ushort from_sector,
-            const ushort to_sector) pure nothrow {
+                const ushort sector,
+                const ushort from_sector,
+                const ushort to_sector) pure nothrow {
             if (to_sector == from_sector) {
                 return true;
             }
@@ -332,7 +332,7 @@ class DART : DARTFile {
             pragma(msg, "fixme(vp) have to be check: rims is root_rim");
 
             assert(rims.length >= ushort.sizeof || rims.length == 0,
-                __format("Rims size must be %d or more ubytes contain a sector but contains %d", ushort.sizeof, rims
+                    __format("Rims size must be %d or more ubytes contain a sector but contains %d", ushort.sizeof, rims
                     .length));
         }
         do {
@@ -343,7 +343,7 @@ class DART : DARTFile {
         }
 
         mixin HiBONRecord!(
-            q{
+                q{
                 this(Buffer r) {
                     rims=r;
                 }
@@ -381,8 +381,8 @@ received = the HiRPC received package
      * @return HiRPC result that contains current database bullseye
      */
     @HiRPCMethod private const(HiRPC.Sender) dartBullseye(
-        ref const(HiRPC.Receiver) received,
-        const bool read_only)
+            ref const(HiRPC.Receiver) received,
+            const bool read_only)
     in {
         mixin FUNCTION_NAME;
         assert(received.method.name == __FUNCTION_NAME__);
@@ -435,8 +435,8 @@ received = the HiRPC received package
      * ---
      */
     @HiRPCMethod private const(HiRPC.Sender) dartRead(
-        ref const(HiRPC.Receiver) received,
-        const bool read_only)
+            ref const(HiRPC.Receiver) received,
+            const bool read_only)
     in {
         mixin FUNCTION_NAME;
         assert(received.method.name == __FUNCTION_NAME__);
@@ -486,8 +486,8 @@ received = the HiRPC received package
      * ----
      */
     @HiRPCMethod private const(HiRPC.Sender) dartRim(
-        ref const(HiRPC.Receiver) received,
-        const bool read_only)
+            ref const(HiRPC.Receiver) received,
+            const bool read_only)
     in {
         mixin FUNCTION_NAME;
         assert(received.method.name == __FUNCTION_NAME__);
@@ -560,8 +560,8 @@ received = the HiRPC received package
      */
 
     @HiRPCMethod private const(HiRPC.Sender) dartModify(
-        ref const(HiRPC.Receiver) received,
-        const bool read_only)
+            ref const(HiRPC.Receiver) received,
+            const bool read_only)
     in {
         mixin FUNCTION_NAME;
         assert(received.method.name == __FUNCTION_NAME__);
@@ -588,8 +588,8 @@ received = the HiRPC received package
      *     else the response return is marked empty
      */
     const(HiRPC.Sender) opCall(
-        ref const(HiRPC.Receiver) received,
-        const bool read_only = true) {
+            ref const(HiRPC.Receiver) received,
+            const bool read_only = true) {
         import std.conv : to;
 
         const method = received.method;
@@ -762,9 +762,9 @@ received = the HiRPC received package
          *   hirpc = remote credential used 
          */
         void set(
-            DART owner,
-            SynchronizationFiber fiber,
-            HiRPC hirpc) nothrow @trusted {
+                DART owner,
+                SynchronizationFiber fiber,
+                HiRPC hirpc) nothrow @trusted {
             import std.conv : emplace;
 
             this.fiber = fiber;
@@ -875,7 +875,7 @@ received = the HiRPC received package
                     // Read all the archives from the foreign DART
                     //
                     const request_archives = CRUD.dartRead(
-                        foreign_branches
+                            foreign_branches
                             .fingerprints.map!(f => DARTIndex(f)), hirpc, id);
                     const result_archives = sync.query(request_archives);
                     auto foreign_recoder = manufactor.recorder(result_archives.response.result);
@@ -952,8 +952,6 @@ received = the HiRPC received package
         void local_replay(bool remove)() @safe {
             for (Index index = journalfile.masterBlock.root_index; index != INDEX_NULL;
 
-                
-
                 ) {
                 immutable data = journalfile.load(index);
                 const doc = Document(data);
@@ -1029,7 +1027,7 @@ received = the HiRPC received package
     unittest {
         import tagion.utils.Random;
         import tagion.dart.BlockFile;
-        import tagion.basic.Basic : tempfile, assumeTrusted;
+        import tagion.basic.basic : tempfile, assumeTrusted;
         import tagion.dart.DARTFakeNet : DARTFakeNet;
 
         enum TEST_BLOCK_SIZE = 0x80;
@@ -1050,7 +1048,7 @@ received = the HiRPC received package
             auto random_tabel = new ulong[N];
             foreach (ref r; random_tabel) {
                 immutable sector = rand.value(0x0000_0000_0000_ABBAUL, 0x0000_0000_0000_ABBDUL) << (
-                    8 * 6);
+                        8 * 6);
                 r = rand.value(0x0000_1234_5678_0000UL | sector, 0x0000_1334_FFFF_0000UL | sector);
             }
 
@@ -1062,87 +1060,85 @@ received = the HiRPC received package
 
             //            import std.stdio;
 
-            version (SYNC_BLOCKFILE_PROBLEM) {
-                { // Single element same sector sectors
-                    const ulong[] same_sector_tabel = [
-                        0xABB9_13ab_cdef_1234,
-                        0xABB9_14ab_cdef_1234,
-                        0xABB9_15ab_cdef_1234
+            { // Single element same sector sectors
+                const ulong[] same_sector_tabel = [
+                    0xABB9_13ab_cdef_1234,
+                    0xABB9_14ab_cdef_1234,
+                    0xABB9_15ab_cdef_1234
 
-                    ];
-                    // writefln("Test 0.0");
-                    foreach (test_no; 0 .. 3) {
-                        DARTFile.create(filename_A);
-                        DARTFile.create(filename_B);
-                        RecordFactory.Recorder recorder_B;
-                        RecordFactory.Recorder recorder_A;
-                        // Recorder recorder_B;
-                        auto dart_A = new DART(net, filename_A, from, to);
-                        auto dart_B = new DART(net, filename_B, from, to);
-                        string[] journal_filenames;
-                        scope (success) {
-                            // writefln("Exit scope");
-                            dart_A.close;
-                            dart_B.close;
-                            filename_A.remove;
-                            filename_B.remove;
-                            foreach (journal_filename; journal_filenames) {
-                                journal_filename.remove;
-                            }
-                        }
-
-                        switch (test_no) {
-                        case 0:
-                            write(dart_A, same_sector_tabel[0 .. 1], recorder_A);
-                            write(dart_B, same_sector_tabel[0 .. 0], recorder_B);
-                            break;
-                        case 1:
-                            write(dart_A, same_sector_tabel[0 .. 1], recorder_A);
-                            write(dart_B, same_sector_tabel[1 .. 2], recorder_B);
-                            break;
-                        case 2:
-                            write(dart_A, same_sector_tabel[0 .. 2], recorder_A);
-                            write(dart_B, same_sector_tabel[1 .. 3], recorder_B);
-                            break;
-                        default:
-                            assert(0);
-                        }
-                        // writefln("\n------ %d ------", test_no);
-                        // writefln("dart_A.dump");
-                        // dart_A.dump;
-                        // writefln("dart_B.dump");
-                        // dart_B.dump;
-                        // writefln("dart_A.fingerprint=%s", dart_A.fingerprint.cutHex);
-                        // writefln("dart_B.fingerprint=%s", dart_B.fingerprint.cutHex);
-
-                        foreach (sector; dart_A.sectors) {
-                            immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
-                            journal_filenames ~= journal_filename;
-                            BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
-                            auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
-                            auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
-                            // D!(sector, "%x");
-                            while (!dart_A_synchronizer.empty) {
-                                (() @trusted => dart_A_synchronizer.call)();
-                            }
-                        }
+                ];
+                // writefln("Test 0.0");
+                foreach (test_no; 0 .. 3) {
+                    DARTFile.create(filename_A);
+                    DARTFile.create(filename_B);
+                    RecordFactory.Recorder recorder_B;
+                    RecordFactory.Recorder recorder_A;
+                    // Recorder recorder_B;
+                    auto dart_A = new DART(net, filename_A, from, to);
+                    auto dart_B = new DART(net, filename_B, from, to);
+                    string[] journal_filenames;
+                    scope (success) {
+                        // writefln("Exit scope");
+                        dart_A.close;
+                        dart_B.close;
+                        filename_A.remove;
+                        filename_B.remove;
                         foreach (journal_filename; journal_filenames) {
-                            dart_A.replay(journal_filename);
+                            journal_filename.remove;
                         }
-                        // writefln("dart_A.dump");
-                        // dart_A.dump;
-                        // writefln("dart_B.dump");
-                        // dart_B.dump;
-                        // writefln("dart_A.fingerprint=%s", dart_A.fingerprint.cutHex);
-                        // writefln("dart_B.fingerprint=%s", dart_B.fingerprint.cutHex);
+                    }
 
-                        assert(dart_A.fingerprint == dart_B.fingerprint);
-                        if (test_no == 0) {
-                            assert(dart_A.fingerprint is null);
+                    switch (test_no) {
+                    case 0:
+                        write(dart_A, same_sector_tabel[0 .. 1], recorder_A);
+                        write(dart_B, same_sector_tabel[0 .. 0], recorder_B);
+                        break;
+                    case 1:
+                        write(dart_A, same_sector_tabel[0 .. 1], recorder_A);
+                        write(dart_B, same_sector_tabel[1 .. 2], recorder_B);
+                        break;
+                    case 2:
+                        write(dart_A, same_sector_tabel[0 .. 2], recorder_A);
+                        write(dart_B, same_sector_tabel[1 .. 3], recorder_B);
+                        break;
+                    default:
+                        assert(0);
+                    }
+                    // writefln("\n------ %d ------", test_no);
+                    // writefln("dart_A.dump");
+                    // dart_A.dump;
+                    // writefln("dart_B.dump");
+                    // dart_B.dump;
+                    // writefln("dart_A.fingerprint=%s", dart_A.fingerprint.cutHex);
+                    // writefln("dart_B.fingerprint=%s", dart_B.fingerprint.cutHex);
+
+                    foreach (sector; dart_A.sectors) {
+                        immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
+                        journal_filenames ~= journal_filename;
+                        BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
+                        auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
+                        auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
+                        // D!(sector, "%x");
+                        while (!dart_A_synchronizer.empty) {
+                            (() @trusted => dart_A_synchronizer.call)();
                         }
-                        else {
-                            assert(dart_A.fingerprint !is null);
-                        }
+                    }
+                    foreach (journal_filename; journal_filenames) {
+                        dart_A.replay(journal_filename);
+                    }
+                    // writefln("dart_A.dump");
+                    // dart_A.dump;
+                    // writefln("dart_B.dump");
+                    // dart_B.dump;
+                    // writefln("dart_A.fingerprint=%s", dart_A.fingerprint.cutHex);
+                    // writefln("dart_B.fingerprint=%s", dart_B.fingerprint.cutHex);
+
+                    assert(dart_A.fingerprint == dart_B.fingerprint);
+                    if (test_no == 0) {
+                        assert(dart_A.fingerprint is null);
+                    }
+                    else {
+                        assert(dart_A.fingerprint !is null);
                     }
                 }
             }
@@ -1359,220 +1355,216 @@ received = the HiRPC received package
 
             }
 
-            version (SYNC_BLOCKFILE_PROBLEM) {
-                { // Synchronization of a DART A where DART A is a superset of DART B
-                    // writefln("Test 3");
-                    DARTFile.create(filename_A);
-                    DARTFile.create(filename_B);
-                    RecordFactory.Recorder recorder_A;
-                    RecordFactory.Recorder recorder_B;
-                    auto dart_A = new DART(net, filename_A, from, to);
-                    auto dart_B = new DART(net, filename_B, from, to);
-                    //
-                    string[] journal_filenames;
-                    scope (success) {
-                        // writefln("Exit scope");
-                        dart_A.close;
-                        dart_B.close;
-                        filename_A.remove;
-                        filename_B.remove;
-                    }
-
-                    write(dart_A, random_tabel[0 .. 27], recorder_A);
-                    write(dart_B, random_tabel[0 .. 17], recorder_B);
-                    //                write(dart_B, random_table[0..17], recorder_B);
-                    // writefln("bulleye_A=%s bulleye_B=%s", dart_A.fingerprint.cutHex,  dart_B.fingerprint.cutHex);
-                    // writefln("dart_A.dump");
-                    // dart_A.dump;
-                    // writefln("dart_B.dump");
-                    // dart_B.dump;
-                    assert(dart_A.fingerprint !is null);
-                    assert(dart_A.fingerprint != dart_B.fingerprint);
-
-                    foreach (sector; dart_A.sectors) {
-                        immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
-                        journal_filenames ~= journal_filename;
-                        BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
-                        auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
-                        auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
-                        // D!(sector, "%x");
-                        while (!dart_A_synchronizer.empty) {
-                            (() @trusted { dart_A_synchronizer.call; })();
-                        }
-                    }
-
-                    foreach (journal_filename; journal_filenames) {
-                        dart_A.replay(journal_filename);
-                    }
-                    // writefln("dart_A.dump");
-                    // dart_A.dump;
-                    // writefln("dart_B.dump");
-                    // dart_B.dump;
-                    assert(dart_A.fingerprint !is null);
-                    assert(dart_A.fingerprint == dart_B.fingerprint);
-
+            { // Synchronization of a DART A where DART A is a superset of DART B
+                // writefln("Test 3");
+                DARTFile.create(filename_A);
+                DARTFile.create(filename_B);
+                RecordFactory.Recorder recorder_A;
+                RecordFactory.Recorder recorder_B;
+                auto dart_A = new DART(net, filename_A, from, to);
+                auto dart_B = new DART(net, filename_B, from, to);
+                //
+                string[] journal_filenames;
+                scope (success) {
+                    // writefln("Exit scope");
+                    dart_A.close;
+                    dart_B.close;
+                    filename_A.remove;
+                    filename_B.remove;
                 }
+
+                write(dart_A, random_tabel[0 .. 27], recorder_A);
+                write(dart_B, random_tabel[0 .. 17], recorder_B);
+                //                write(dart_B, random_table[0..17], recorder_B);
+                // writefln("bulleye_A=%s bulleye_B=%s", dart_A.fingerprint.cutHex,  dart_B.fingerprint.cutHex);
+                // writefln("dart_A.dump");
+                // dart_A.dump;
+                // writefln("dart_B.dump");
+                // dart_B.dump;
+                assert(dart_A.fingerprint !is null);
+                assert(dart_A.fingerprint != dart_B.fingerprint);
+
+                foreach (sector; dart_A.sectors) {
+                    immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
+                    journal_filenames ~= journal_filename;
+                    BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
+                    auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
+                    auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
+                    // D!(sector, "%x");
+                    while (!dart_A_synchronizer.empty) {
+                        (() @trusted { dart_A_synchronizer.call; })();
+                    }
+                }
+
+                foreach (journal_filename; journal_filenames) {
+                    dart_A.replay(journal_filename);
+                }
+                // writefln("dart_A.dump");
+                // dart_A.dump;
+                // writefln("dart_B.dump");
+                // dart_B.dump;
+                assert(dart_A.fingerprint !is null);
+                assert(dart_A.fingerprint == dart_B.fingerprint);
+
             }
 
-            version (SYNC_BLOCKFILE_PROBLEM) {
-                { // Synchronization of a DART A where DART A is complementary of DART B
-                    // writefln("Test 4");
-                    DARTFile.create(filename_A);
-                    DARTFile.create(filename_B);
-                    RecordFactory.Recorder recorder_A;
-                    RecordFactory.Recorder recorder_B;
-                    auto dart_A = new DART(net, filename_A, from, to);
-                    auto dart_B = new DART(net, filename_B, from, to);
-                    //
-                    string[] journal_filenames;
-                    scope (success) {
-                        // writefln("Exit scope");
-                        dart_A.close;
-                        dart_B.close;
-                        filename_A.remove;
-                        filename_B.remove;
-                    }
-
-                    write(dart_A, random_tabel[0 .. 27], recorder_A);
-                    write(dart_B, random_tabel[28 .. 54], recorder_B);
-                    //                write(dart_B, random_table[0..17], recorder_B);
-                    // writefln("bulleye_A=%s bulleye_B=%s", dart_A.fingerprint.cutHex,  dart_B.fingerprint.cutHex);
-                    // writefln("dart_A.dump");
-                    // dart_A.dump;
-                    // writefln("dart_B.dump");
-                    // dart_B.dump;
-                    assert(dart_A.fingerprint !is null);
-                    assert(dart_A.fingerprint != dart_B.fingerprint);
-
-                    foreach (sector; dart_A.sectors) {
-                        immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
-                        journal_filenames ~= journal_filename;
-                        BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
-                        auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
-                        auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
-                        // D!(sector, "%x");
-                        while (!dart_A_synchronizer.empty) {
-                            (() @trusted { dart_A_synchronizer.call; })();
-                        }
-                    }
-
-                    foreach (journal_filename; journal_filenames) {
-                        // writefln("JOURNAL_FILENAME=%s", journal_filename);
-                        dart_A.replay(journal_filename);
-                    }
-                    // writefln("dart_A.dump");
-                    // dart_A.dump;
-                    // writefln("dart_B.dump");
-                    // dart_B.dump;
-                    assert(dart_A.fingerprint !is null);
-                    assert(dart_A.fingerprint == dart_B.fingerprint);
-
+            { // Synchronization of a DART A where DART A is complementary of DART B
+                // writefln("Test 4");
+                DARTFile.create(filename_A);
+                DARTFile.create(filename_B);
+                RecordFactory.Recorder recorder_A;
+                RecordFactory.Recorder recorder_B;
+                auto dart_A = new DART(net, filename_A, from, to);
+                auto dart_B = new DART(net, filename_B, from, to);
+                //
+                string[] journal_filenames;
+                scope (success) {
+                    // writefln("Exit scope");
+                    dart_A.close;
+                    dart_B.close;
+                    filename_A.remove;
+                    filename_B.remove;
                 }
+
+                write(dart_A, random_tabel[0 .. 27], recorder_A);
+                write(dart_B, random_tabel[28 .. 54], recorder_B);
+                //                write(dart_B, random_table[0..17], recorder_B);
+                // writefln("bulleye_A=%s bulleye_B=%s", dart_A.fingerprint.cutHex,  dart_B.fingerprint.cutHex);
+                // writefln("dart_A.dump");
+                // dart_A.dump;
+                // writefln("dart_B.dump");
+                // dart_B.dump;
+                assert(dart_A.fingerprint !is null);
+                assert(dart_A.fingerprint != dart_B.fingerprint);
+
+                foreach (sector; dart_A.sectors) {
+                    immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
+                    journal_filenames ~= journal_filename;
+                    BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
+                    auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
+                    auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
+                    // D!(sector, "%x");
+                    while (!dart_A_synchronizer.empty) {
+                        (() @trusted { dart_A_synchronizer.call; })();
+                    }
+                }
+
+                foreach (journal_filename; journal_filenames) {
+                    // writefln("JOURNAL_FILENAME=%s", journal_filename);
+                    dart_A.replay(journal_filename);
+                }
+                // writefln("dart_A.dump");
+                // dart_A.dump;
+                // writefln("dart_B.dump");
+                // dart_B.dump;
+                assert(dart_A.fingerprint !is null);
+                assert(dart_A.fingerprint == dart_B.fingerprint);
+
             }
-            version (SYNC_BLOCKFILE_PROBLEM) {
-                { // Synchronization of a DART A where DART A of DART B has common data
-                    // writefln("Test 5");
-                    DARTFile.create(filename_A);
-                    DARTFile.create(filename_B);
-                    RecordFactory.Recorder recorder_A;
-                    RecordFactory.Recorder recorder_B;
-                    auto dart_A = new DART(net, filename_A, from, to);
-                    auto dart_B = new DART(net, filename_B, from, to);
-                    //
-                    string[] journal_filenames;
-                    scope (success) {
-                        // writefln("Exit scope");
-                        dart_A.close;
-                        dart_B.close;
-                        filename_A.remove;
-                        filename_B.remove;
-                    }
 
-                    write(dart_A, random_tabel[0 .. 54], recorder_A);
-                    write(dart_B, random_tabel[28 .. 81], recorder_B);
-                    //                write(dart_B, random_table[0..17], recorder_B);
-                    // writefln("bulleye_A=%s bulleye_B=%s", dart_A.fingerprint.cutHex,  dart_B.fingerprint.cutHex);
-                    // writefln("dart_A.dump");
-                    // dart_A.dump;
-                    // writefln("dart_B.dump");
-                    // dart_B.dump;
-                    assert(dart_A.fingerprint !is null);
-                    assert(dart_A.fingerprint != dart_B.fingerprint);
-
-                    foreach (sector; dart_A.sectors) {
-                        immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
-                        journal_filenames ~= journal_filename;
-                        BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
-                        auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
-                        auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
-                        while (!dart_A_synchronizer.empty) {
-                            (() @trusted { dart_A_synchronizer.call; })();
-                        }
-                    }
-
-                    foreach (journal_filename; journal_filenames) {
-                        dart_A.replay(journal_filename);
-                    }
-                    // writefln("dart_A.dump");
-                    // dart_A.dump;
-                    // writefln("dart_B.dump");
-                    // dart_B.dump;
-                    assert(dart_A.fingerprint !is null);
-                    assert(dart_A.fingerprint == dart_B.fingerprint);
-
+            { // Synchronization of a DART A where DART A of DART B has common data
+                // writefln("Test 5");
+                DARTFile.create(filename_A);
+                DARTFile.create(filename_B);
+                RecordFactory.Recorder recorder_A;
+                RecordFactory.Recorder recorder_B;
+                auto dart_A = new DART(net, filename_A, from, to);
+                auto dart_B = new DART(net, filename_B, from, to);
+                //
+                string[] journal_filenames;
+                scope (success) {
+                    // writefln("Exit scope");
+                    dart_A.close;
+                    dart_B.close;
+                    filename_A.remove;
+                    filename_B.remove;
                 }
 
-                { // Synchronization of a Large DART A where DART A of DART B has common data
-                    // writefln("Test 6");
-                    DARTFile.create(filename_A);
-                    DARTFile.create(filename_B);
-                    RecordFactory.Recorder recorder_A;
-                    RecordFactory.Recorder recorder_B;
-                    auto dart_A = new DART(net, filename_A, from, to);
-                    auto dart_B = new DART(net, filename_B, from, to);
-                    //
-                    string[] journal_filenames;
-                    scope (success) {
-                        // writefln("Exit scope");
-                        dart_A.close;
-                        dart_B.close;
-                        filename_A.remove;
-                        filename_B.remove;
-                    }
+                write(dart_A, random_tabel[0 .. 54], recorder_A);
+                write(dart_B, random_tabel[28 .. 81], recorder_B);
+                //                write(dart_B, random_table[0..17], recorder_B);
+                // writefln("bulleye_A=%s bulleye_B=%s", dart_A.fingerprint.cutHex,  dart_B.fingerprint.cutHex);
+                // writefln("dart_A.dump");
+                // dart_A.dump;
+                // writefln("dart_B.dump");
+                // dart_B.dump;
+                assert(dart_A.fingerprint !is null);
+                assert(dart_A.fingerprint != dart_B.fingerprint);
 
-                    write(dart_A, random_tabel[0 .. 544], recorder_A);
-                    write(dart_B, random_tabel[288 .. 811], recorder_B);
-                    //                write(dart_B, random_table[0..17], recorder_B);
-                    // writefln("bulleye_A=%s bulleye_B=%s", dart_A.fingerprint.cutHex,  dart_B.fingerprint.cutHex);
-                    // writefln("dart_A.dump");
-                    // dart_A.dump;
-                    // writefln("dart_B.dump");
-                    // dart_B.dump;
-                    assert(dart_A.fingerprint !is null);
-                    assert(dart_A.fingerprint != dart_B.fingerprint);
-
-                    foreach (sector; dart_A.sectors) {
-                        immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
-                        journal_filenames ~= journal_filename;
-                        BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
-                        auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
-                        auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
-                        while (!dart_A_synchronizer.empty) {
-                            (() @trusted { dart_A_synchronizer.call; })();
-                        }
+                foreach (sector; dart_A.sectors) {
+                    immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
+                    journal_filenames ~= journal_filename;
+                    BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
+                    auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
+                    auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
+                    while (!dart_A_synchronizer.empty) {
+                        (() @trusted { dart_A_synchronizer.call; })();
                     }
-
-                    foreach (journal_filename; journal_filenames) {
-                        dart_A.replay(journal_filename);
-                    }
-                    // writefln("dart_A.dump");
-                    // dart_A.dump;
-                    // writefln("dart_B.dump");
-                    //dart_B.dump;
-                    assert(dart_A.fingerprint !is null);
-                    assert(dart_A.fingerprint == dart_B.fingerprint);
                 }
+
+                foreach (journal_filename; journal_filenames) {
+                    dart_A.replay(journal_filename);
+                }
+                // writefln("dart_A.dump");
+                // dart_A.dump;
+                // writefln("dart_B.dump");
+                // dart_B.dump;
+                assert(dart_A.fingerprint !is null);
+                assert(dart_A.fingerprint == dart_B.fingerprint);
+
             }
+
+            { // Synchronization of a Large DART A where DART A of DART B has common data
+                // writefln("Test 6");
+                DARTFile.create(filename_A);
+                DARTFile.create(filename_B);
+                RecordFactory.Recorder recorder_A;
+                RecordFactory.Recorder recorder_B;
+                auto dart_A = new DART(net, filename_A, from, to);
+                auto dart_B = new DART(net, filename_B, from, to);
+                //
+                string[] journal_filenames;
+                scope (success) {
+                    // writefln("Exit scope");
+                    dart_A.close;
+                    dart_B.close;
+                    filename_A.remove;
+                    filename_B.remove;
+                }
+
+                write(dart_A, random_tabel[0 .. 544], recorder_A);
+                write(dart_B, random_tabel[288 .. 811], recorder_B);
+                //                write(dart_B, random_table[0..17], recorder_B);
+                // writefln("bulleye_A=%s bulleye_B=%s", dart_A.fingerprint.cutHex,  dart_B.fingerprint.cutHex);
+                // writefln("dart_A.dump");
+                // dart_A.dump;
+                // writefln("dart_B.dump");
+                // dart_B.dump;
+                assert(dart_A.fingerprint !is null);
+                assert(dart_A.fingerprint != dart_B.fingerprint);
+
+                foreach (sector; dart_A.sectors) {
+                    immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
+                    journal_filenames ~= journal_filename;
+                    BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
+                    auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
+                    auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
+                    while (!dart_A_synchronizer.empty) {
+                        (() @trusted { dart_A_synchronizer.call; })();
+                    }
+                }
+
+                foreach (journal_filename; journal_filenames) {
+                    dart_A.replay(journal_filename);
+                }
+                // writefln("dart_A.dump");
+                // dart_A.dump;
+                // writefln("dart_B.dump");
+                //dart_B.dump;
+                assert(dart_A.fingerprint !is null);
+                assert(dart_A.fingerprint == dart_B.fingerprint);
+            }
+
         }
     }
 }

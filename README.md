@@ -1,3 +1,7 @@
+[![codecov](https://codecov.io/gh/tagion/tagion/branch/current/graph/badge.svg?token=TM12EX8GSB)](https://codecov.io/gh/tagion/tagion)
+[![Unittest and BDD build](https://github.com/tagion/tagion/actions/workflows/daily.yml/badge.svg?branch=current)](https://github.com/tagion/tagion/actions/workflows/daily.yml)
+[![devnet uptime](https://img.shields.io/badge/dynamic/json?label=uptime&query=$.age&url=http://devnet-status.tagion.org/tagion/api/v1/data)](http://devnet-status.tagion.org/tagion/)
+
 # Tagion
 
 > 🚧 This document is still in development.
@@ -117,6 +121,30 @@ DC=       # D compiler to use, default will try to pick between dmd and ldc2
 CC=       # C compiler to use, default will try to pick between gcc and clang
 ```
 
+### Profiling 
+
+Profiling can be enabled in two way.
+
+#### Buildin profiler
+Enable the dmd build profiler with the `PROFILE` environment.
+```bash
+make PROFILE=1 DC=dmd <target>
+```
+The result of the profile can be sorted and displayed with the `tprofile` (onetool).
+
+
+#### Profiling Valgrind
+Valgrind profiler can be started with the `VALGRIND` environment.
+
+Run the unittest with [valgrind](https://valgrind.org) and [callgrind](https://valgrind.org/docs/manual/cl-manual.html).
+```bash
+make VALGRIND=1 unittest
+```
+Any of the test/bdd target can be executed with the `VALGRIND=1`.
+
+Note. The result from the `callgrind` viewed with [Kcachegrind](https://kcachegrind.github.io/html/Home.html).
+
+
 ## Overview
 
 ```bash
@@ -144,7 +172,7 @@ To build the docs use the command:
 make ddoc
 ```
 
-### Runnning the document servers
+### Running the document servers
 
 ```
 make servedocs
@@ -155,28 +183,11 @@ This will start two servers ( default 3000 and 3001 ), with each of them running
 [See tools](src/bin-tools/tagion/tools/README.md)
 
 ### Tagion Node Architecture
-The [Tagion Node Architecture](documents/architecture/Network_Architecture.md)
+The [Tagion Node Architecture](https://docs.tagion.org)
 
 ### BDD-test tools
 [BDD-tool](src/bin-collider/tagion/tools/README.md)
 
-
-### Unit types
-
-#### Library
-**Prefix:** `lib`
-
-Contains business logic covered by unit tests, compiles to the static or shared library;
-
-#### Binary
-**Prefix:** `bin`
-
-Contains CLI interface to libraries, compiles to executable;
-
-#### Wrapper
-**Prefix:** `wrap`
-
-Contains external libraries integrated in Tagion build system compiles to the static or shared library.
 
 ## Maintainers
 

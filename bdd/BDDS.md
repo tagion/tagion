@@ -48,7 +48,11 @@
 
 [dart_sync_snap_back.md](bdd/tagion/testbench/dart/dart_sync_snap_back.md)
 
+[dart_sync_stress.md](bdd/tagion/testbench/dart/dart_sync_stress.md)
+
 [dart_two_archives_deep_rim.md](bdd/tagion/testbench/dart/dart_two_archives_deep_rim.md)
+
+[insert_remove_stress.md](bdd/tagion/testbench/dart/insert_remove_stress.md)
 
 [create_dart.md](bdd/tagion/testbench/functional/create_dart.md)
 

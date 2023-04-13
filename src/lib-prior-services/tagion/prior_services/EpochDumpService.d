@@ -8,9 +8,9 @@ import tagion.hashchain.HashChainStorage : HashChainStorage;
 import tagion.hashchain.HashChainFileStorage : HashChainFileStorage;
 import tagion.epochain.EpochChainBlock;
 import tagion.epochain.EpochChain;
-import tagion.crypto.Types : Fingerprint; 
+import tagion.crypto.Types : Fingerprint;
 import tagion.basic.Types : Control, Buffer;
-import tagion.basic.Basic : TrustedConcurrency;
+import tagion.basic.basic : TrustedConcurrency;
 import tagion.hibon.Document;
 import tagion.taskwrapper.TaskWrapper;
 import tagion.crypto.SecureNet : StdHashNet;
@@ -59,10 +59,8 @@ struct EpochDumpTask {
     }
 }
 
-
 /// test hashes dump creating
-version(none)
-unittest {
+version (none) unittest {
     pragma(msg, "fixme(cbr): This unittest never ends (But the services is not used anyway)");
     import std.file;
     import core.thread;

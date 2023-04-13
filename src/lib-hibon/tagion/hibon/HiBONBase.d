@@ -1,6 +1,6 @@
 module tagion.hibon.HiBONBase;
 
-import tagion.basic.Basic : isOneOf;
+import tagion.basic.basic : isOneOf;
 
 import tagion.utils.StdTime;
 
@@ -416,7 +416,7 @@ enum isBasicValueType(T) = isBasicType!T || is(T : decimal_t);
             else static if (is(T : U[], U) && isBasicValueType!U) {
                 return cast(uint)(by!(E).length * U.sizeof);
             }
-        else {
+            else {
                 static assert(0, format("Type %s of %s is not defined", E, T.stringof));
             }
         }

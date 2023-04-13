@@ -230,7 +230,7 @@ struct DlangT(Stream) {
         auto feature_tuple = chain(
                 feature_group.scenarios
                 .map!(scenario => [scenario.info.name, scenario.info.name]),
-        [["FeatureGroup*", "result"]])
+                [["FeatureGroup*", "result"]])
             .map!(ctx_type => format(`%s, "%s"`, ctx_type[0], ctx_type[1]))
             .join(",\n");
 
@@ -296,7 +296,7 @@ version (unittest) {
     import std.path;
     import std.outbuffer;
 
-    import tagion.basic.Basic : mangleFunc, unitfile;
+    import tagion.basic.basic : mangleFunc, unitfile;
     import tagion.basic.Types : FileExtension;
     import tagion.behaviour.BehaviourUnittest;
     import tagion.behaviour.Behaviour;

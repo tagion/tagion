@@ -208,7 +208,7 @@ unittest {
     import std.path : extension, stripExtension;
     import std.range.primitives : back;
 
-    import tagion.basic.Basic : tempfile;
+    import tagion.basic.basic : tempfile;
     import tagion.basic.Types : Buffer, FileExtension, withDot;
     import tagion.communication.HiRPC : HiRPC;
     import tagion.crypto.SecureNet : StdHashNet;
@@ -330,7 +330,7 @@ unittest {
 
         // Replay from block with specified index
         chain.replayFrom((DummyBlock b) @safe { hashes ~= b.getHash; }, (b) => b.getHash == blocks[some_block_index]
-            .getHash);
+                .getHash);
 
         // Check array with hashes
         assert(hashes.length == blocks_count - some_block_index - 1);

@@ -10,9 +10,9 @@ import tagion.utils.Miscellaneous : cutHex;
 import tagion.prior_services.Options;
 import tagion.logger.Logger;
 import tagion.basic.Types : Buffer, Control;
-import tagion.basic.Basic : NameOf;
-import tagion.basic.TagionExceptions : TagionException, fatal;
-import tagion.crypto.Types :  Pubkey;
+import tagion.basic.basic : NameOf;
+import tagion.basic.tagionexceptions : TagionException, fatal;
+import tagion.crypto.Types : Pubkey;
 import tagion.prior_services.MdnsDiscoveryService;
 
 import tagion.prior_services.NetworkRecordDiscoveryService : DiscoveryRequestCommand, DiscoveryControl;

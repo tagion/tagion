@@ -1,6 +1,6 @@
 module tagion.utils.Result;
 
-import tagion.basic.TagionExceptions;
+import tagion.basic.tagionexceptions;
 
 @safe class UtilException : TagionException {
     this(string msg, string file = __FILE__, size_t line = __LINE__) pure nothrow {

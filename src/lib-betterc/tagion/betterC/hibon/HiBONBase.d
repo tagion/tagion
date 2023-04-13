@@ -220,7 +220,7 @@ version (none) struct Key {
                     static if (is(T : const(char)[])) {
                         const leb128_len = LEB128.decode!uint(data);
                         return (cast(immutable(char)*) data.ptr)[leb128_len.size .. leb128_len.size + leb128_len
-                                .value];
+                            .value];
                     }
                 }
                 break;
@@ -376,6 +376,7 @@ union ValueT(bool NATIVE = false, HiBON, Document) {
       */
     @trusted @nogc auto by(Type type)() pure const {
         import std.format;
+
         static foreach (i, name; FieldNameTuple!ValueT) {
             {
                 enum member_code = format(q{alias member = ValueT.%s;}, name);
@@ -532,7 +533,7 @@ union ValueT(bool NATIVE = false, HiBON, Document) {
             else static if (is(T : U[], U) && isBasicValueType!U) {
                 return cast(uint)(by!(E).length * U.sizeof);
             }
-        else {
+            else {
                 static assert(0, "Type " ~ E.stringof ~ " of " ~ T.stringof ~ " is not defined");
             }
         }

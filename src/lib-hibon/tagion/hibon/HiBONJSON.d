@@ -24,7 +24,7 @@ import tagion.basic.Message : message;
 // import tagion.utils.JSONOutStream;
 // import tagion.utils.JSONInStream : JSONType;
 
-import tagion.basic.TagionExceptions : Check;
+import tagion.basic.tagionexceptions : Check;
 import tagion.utils.StdTime;
 
 /**
@@ -51,30 +51,30 @@ protected Type[string] generateLabelMap(const(string[Type]) typemap) {
 }
 
 enum typeMap = [
-    Type.NONE: NotSupported,
-    Type.VER: NotSupported,
-    Type.FLOAT32: "f32",
-    Type.FLOAT64: "f64",
-    Type.STRING: "$",
-    Type.BINARY: "*",
-    Type.DOCUMENT: "{}",
-    Type.BOOLEAN: "bool",
-    Type.TIME: "sdt",
-    Type.INT32: "i32",
-    Type.INT64: "i64",
-    Type.UINT32: "u32",
-    Type.UINT64: "u64",
-    Type.BIGINT: "big",
-    Type.HASHDOC: "#",
+        Type.NONE: NotSupported,
+        Type.VER: NotSupported,
+        Type.FLOAT32: "f32",
+        Type.FLOAT64: "f64",
+        Type.STRING: "$",
+        Type.BINARY: "*",
+        Type.DOCUMENT: "{}",
+        Type.BOOLEAN: "bool",
+        Type.TIME: "sdt",
+        Type.INT32: "i32",
+        Type.INT64: "i64",
+        Type.UINT32: "u32",
+        Type.UINT64: "u64",
+        Type.BIGINT: "big",
+        Type.HASHDOC: "#",
 
-    Type.DEFINED_NATIVE: NotSupported,
+        Type.DEFINED_NATIVE: NotSupported,
 
-    Type.DEFINED_ARRAY: NotSupported,
-    Type.NATIVE_DOCUMENT: NotSupported,
-    Type.NATIVE_HIBON_ARRAY: NotSupported,
-    Type.NATIVE_DOCUMENT_ARRAY: NotSupported,
-    Type.NATIVE_STRING_ARRAY: NotSupported
-];
+        Type.DEFINED_ARRAY: NotSupported,
+        Type.NATIVE_DOCUMENT: NotSupported,
+        Type.NATIVE_HIBON_ARRAY: NotSupported,
+        Type.NATIVE_DOCUMENT_ARRAY: NotSupported,
+        Type.NATIVE_STRING_ARRAY: NotSupported
+    ];
 
 static unittest {
     static foreach (E; EnumMembers!Type) {
@@ -112,7 +112,7 @@ mixin template JSONString() {
     import std.conv : to;
 
     @trusted void toString(scope void delegate(scope const(char)[]) @system sink,
-    const FormatSpec!char fmt) const {
+            const FormatSpec!char fmt) const {
         alias ThisT = typeof(this);
         import tagion.hibon.Document;
         import tagion.hibon.HiBON;
@@ -451,15 +451,15 @@ mixin template JSONString() {
     import std.typecons : Tuple;
 
     alias Tabel = Tuple!(
-        float, Type.FLOAT32.stringof,
-        double, Type.FLOAT64.stringof,
-        bool, Type.BOOLEAN.stringof,
-        int, Type.INT32.stringof,
-        long, Type.INT64.stringof,
-        uint, Type.UINT32.stringof,
-        ulong, Type.UINT64.stringof,
-        BigNumber, Type.BIGINT.stringof,
-        sdt_t, Type.TIME.stringof);
+            float, Type.FLOAT32.stringof,
+            double, Type.FLOAT64.stringof,
+            bool, Type.BOOLEAN.stringof,
+            int, Type.INT32.stringof,
+            long, Type.INT64.stringof,
+            uint, Type.UINT32.stringof,
+            ulong, Type.UINT64.stringof,
+            BigNumber, Type.BIGINT.stringof,
+            sdt_t, Type.TIME.stringof);
 
     Tabel test_tabel;
     test_tabel.FLOAT32 = 1.23;
@@ -473,10 +473,10 @@ mixin template JSONString() {
     test_tabel.TIME = sdt_t(1001);
 
     alias TabelArray = Tuple!(immutable(ubyte)[], Type.BINARY.stringof, string,
-    Type.STRING.stringof, DataBlock, Type.HASHDOC.stringof, // Credential,          Type.CREDENTIAL.stringof,
-        // CryptDoc,            Type.CRYPTDOC.stringof,
+            Type.STRING.stringof, DataBlock, Type.HASHDOC.stringof, // Credential,          Type.CREDENTIAL.stringof,
+            // CryptDoc,            Type.CRYPTDOC.stringof,
 
-        
+            
 
     );
     TabelArray test_tabel_array;
@@ -511,7 +511,7 @@ mixin template JSONString() {
         const doc = Document(hibon);
 
         pragma(msg, "fixme(cbr): For some unknown reason toString (mixin JSONString)",
-            " is not @safe for Document and HiBON");
+                " is not @safe for Document and HiBON");
 
         assert(doc.toJSON.toPrettyString == doc.toPretty);
         assert(doc.toJSON.toPrettyString == hibon.toPretty);

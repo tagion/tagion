@@ -46,6 +46,66 @@ struct BlockFileAnalyzer {
         blockfile.recycleDump;
     }
 
+    void recycleStatisticDump() {
+        blockfile.recycleStatisticDump;
+    }
+
+    void dumpStatistic() {
+        blockfile.statisticDump;
+    }
+
+    void dumpGraph() {
+        import std.range;
+        import std.algorithm;
+
+        auto text = [
+            "```graphviz",
+            "digraph {",
+            `e [shape=record label="{`,
+        ];
+
+        BlockFile.BlockSegmentRange seg_range = blockfile.opSlice();
+        const uint segments_per_line = 16;
+        uint pos = 0;
+        string[] line = ["{"];
+
+        foreach (seg; seg_range) {
+
+            if (pos == segments_per_line) {
+                scope (exit) {
+                    line = ["{"];
+                    pos = 0;
+                }
+                line ~= "}|";
+                text ~= line.join;
+                // go to the next
+            }
+
+            string repeat_char;
+            if (seg.type.length == 0) {
+                repeat_char = "A";
+            }
+            else {
+                repeat_char = seg.type[0 .. 1];
+            }
+
+            line ~= repeat(repeat_char, seg.size).array.join;
+            line ~= ["|"];
+
+            pos += 1;
+        }
+        if (seg_range.walkLength % segments_per_line != 0) {
+            line ~= "}|";
+            text ~= line.join;
+        }
+
+        text ~= `}"]`;
+        text ~= "}";
+        text ~= "```";
+        // add the end
+        text.each!writeln;
+    }
+
     // static string blockType(const bool recycle_block) {
     //     return recycle_block ? "Recycle" : "Data";
     // }
@@ -160,6 +220,10 @@ int _main(string[] args) {
     ulong block_number; /// Block number to read (block_number > 0)
     bool sequency; /// Prints the sequency on the next header
     bool dump_recycler;
+    bool dump_recycler_statistic;
+    bool dump_statistic;
+    bool dump_graph;
+
     string output_filename;
     enum logo = import("logo.txt");
     void report(string msg) {
@@ -167,19 +231,22 @@ int _main(string[] args) {
     }
 
     auto main_args = getopt(args,
-        std.getopt.config.caseSensitive,
-        std.getopt.config.bundling,
-        "version", "Display the version", &version_switch,
-        "info", "Display blockfile metadata", &display_meta,
-        "dump", "Dumps the entire blockfile", &dump,
-        "dumprecycler", "Dumps the recycler", &dump_recycler,
-        "inspect|c", "Inspect the blockfile format", &inspect,
-        "ignore|i", "Ignore blockfile format error", &ignore, //        "iter", "Set the max number of iterations do by the inspect", &analyzer.inspect_iterations,
-        //       "max", format(
-        //     "Max block iteration Default : %d", analyzer.max_block_iteration), &analyzer.max_block_iteration,
-        "block|b", "Read from block number", &block_number,
-        "seq", "Display the block sequency starting from the block-number", &sequency,
-        "o", "Output filename", &output_filename,
+            std.getopt.config.caseSensitive,
+            std.getopt.config.bundling,
+            "version", "Display the version", &version_switch,
+            "info", "Display blockfile metadata", &display_meta,
+            "dump", "Dumps the entire blockfile", &dump,
+            "dumprecycler", "Dumps the recycler", &dump_recycler,
+            "rs|recyclerstatistic", "Dumps the recycler statistic block", &dump_recycler_statistic,
+            "s|statistic", "Dumps the statistic block", &dump_statistic,
+            "dg|dumpgraph", "Dump the blockfile in graphviz format", &dump_graph,
+            "inspect|c", "Inspect the blockfile format", &inspect,
+            "ignore|i", "Ignore blockfile format error", &ignore, //        "iter", "Set the max number of iterations do by the inspect", &analyzer.inspect_iterations,
+            //       "max", format(
+            //     "Max block iteration Default : %d", analyzer.max_block_iteration), &analyzer.max_block_iteration,
+            "block|b", "Read from block number", &block_number,
+            "seq", "Display the block sequency starting from the block-number", &sequency,
+            "o", "Output filename", &output_filename,
     );
 
     if (version_switch) {
@@ -190,7 +257,7 @@ int _main(string[] args) {
     if (main_args.helpWanted) {
         writeln(logo);
         defaultGetoptPrinter(
-            [
+                [
             // format("%s version %s", program, REVNO),
             "Documentation: https://tagion.org/",
             "",
@@ -204,7 +271,7 @@ int _main(string[] args) {
             "<option>:",
 
         ].join("\n"),
-            main_args.options);
+                main_args.options);
         return ExitCode.NOERROR;
     }
 
@@ -231,7 +298,7 @@ int _main(string[] args) {
         stderr.writefln("Error: Bad blockfile format for %s", filename);
         stderr.writeln(e.msg);
         stderr.writefln(
-            "Try to use the --inspect or --ignore switch to analyze the blockfile format");
+                "Try to use the --inspect or --ignore switch to analyze the blockfile format");
         return ExitCode.BAD_BLOCKFILE;
     }
     catch (Exception e) {
@@ -246,6 +313,18 @@ int _main(string[] args) {
 
     if (dump_recycler) {
         analyzer.recycleDump;
+    }
+
+    if (dump_recycler_statistic) {
+        analyzer.recycleStatisticDump;
+    }
+
+    if (dump_statistic) {
+        analyzer.dumpStatistic;
+    }
+
+    if (dump_graph) {
+        analyzer.dumpGraph;
     }
 
     // if (block_number !is 0) {

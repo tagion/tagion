@@ -11,7 +11,7 @@ import std.json;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
-import tagion.basic.Basic : basename;
+import tagion.basic.basic : basename;
 import tagion.basic.Types : Buffer;
 import tagion.hibon.HiBONJSON;
 import tagion.wasm.Wast;
@@ -62,23 +62,23 @@ int main(string[] args) {
     void help() {
         defaultGetoptPrinter(
                 [
-                // format("%s version %s", program, REVNO),
-                "Documentation: https://tagion.org/",
-                "",
-                "Usage:",
-                format("%s [<option>...] <in-file> <out-file>", program),
-                format("%s [<option>...] <in-file>", program),
-                "",
-                "Where:",
-                "<in-file>           Is an input file in .json or .hibon format",
-                // "<out-file>          Is an output file in .json or .hibon format",
-                "                    stdout is used of the output is not specifed the",
-                "",
+            // format("%s version %s", program, REVNO),
+            "Documentation: https://tagion.org/",
+            "",
+            "Usage:",
+            format("%s [<option>...] <in-file> <out-file>", program),
+            format("%s [<option>...] <in-file>", program),
+            "",
+            "Where:",
+            "<in-file>           Is an input file in .json or .hibon format",
+            // "<out-file>          Is an output file in .json or .hibon format",
+            "                    stdout is used of the output is not specifed the",
+            "",
 
-                "<option>:",
+            "<option>:",
 
-                ].join("\n"),
-                main_args.options);
+        ].join("\n"),
+        main_args.options);
     }
 
     if (version_switch) {

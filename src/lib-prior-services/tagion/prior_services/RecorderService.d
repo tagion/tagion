@@ -2,7 +2,7 @@
 
 module tagion.prior_services.RecorderService;
 
-import tagion.basic.Basic : TrustedConcurrency;
+import tagion.basic.basic : TrustedConcurrency;
 import tagion.basic.Types : Control;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.crypto.SecureNet : StdHashNet;
@@ -69,7 +69,7 @@ mixin TrustedConcurrency;
 /// RecorderService_add_many_blocks
 unittest {
     log.silent = true;
-    import tagion.basic.Basic : tempfile;
+    import tagion.basic.basic : tempfile;
     import tagion.prior_services.Options : setDefaultOption;
     import tagion.crypto.Types : Fingerprint;
 

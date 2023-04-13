@@ -33,6 +33,8 @@ MV ?= mv
 LN ?= ln -fs
 TOUCH ?= touch
 SCRIPT_LOG ?= script -c
+CHEXE ?= chmod 750
+
 DLLEXT ?= so
 STAEXT ?= a
 OBJEXT ?= o

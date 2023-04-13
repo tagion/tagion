@@ -12,7 +12,7 @@ import std.file : copy, exists;
 import std.array;
 import std.format;
 
-import tagion.basic.TagionExceptions;
+import tagion.basic.tagionexceptions;
 import tagion.basic.Types : FileExtension, withDot;
 import tagion.crypto.SecureNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
@@ -69,20 +69,20 @@ int _main(string[] args) {
             writeln(logo);
             defaultGetoptPrinter(
                     [
-                    // format("%s version %s", program, REVNO),
-                    "Documentation: https://tagion.org/",
-                    "",
-                    "Usage:",
-                    format("%s [<option>...]", program),
-                    "",
-                    "Examples:",
-                    "# To run recorer chain specify 2 required parameters",
-                    format("%s -с chain_directory -d DART_directory -i true", program),
-                    "",
-                    "<option>:",
+                // format("%s version %s", program, REVNO),
+                "Documentation: https://tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...]", program),
+                "",
+                "Examples:",
+                "# To run recorer chain specify 2 required parameters",
+                format("%s -с chain_directory -d DART_directory -i true", program),
+                "",
+                "<option>:",
 
-                    ].join("\n"),
-                    main_args.options);
+            ].join("\n"),
+            main_args.options);
             return 0;
         }
     }

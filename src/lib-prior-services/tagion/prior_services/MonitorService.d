@@ -11,13 +11,13 @@ import tagion.logger.Logger;
 import tagion.prior_services.Options : Options, setOptions, options;
 import tagion.options.CommonOptions : commonOptions;
 import tagion.basic.Types : Control;
-import tagion.basic.Basic : basename;
-import tagion.basic.TagionExceptions : TagionException;
-import tagion.crypto.Types :  Pubkey;
+import tagion.basic.basic : basename;
+import tagion.basic.tagionexceptions : TagionException;
+import tagion.crypto.Types : Pubkey;
 
 import tagion.hibon.Document;
 import tagion.network.ListenerSocket;
-import tagion.basic.TagionExceptions;
+import tagion.basic.tagionexceptions;
 
 //Create flat webserver start class function - create Backend class.
 void monitorServiceTask(immutable(Options) opts) nothrow {
@@ -66,8 +66,8 @@ void monitorServiceTask(immutable(Options) opts) nothrow {
                     &handleState,
                     (string json) { listener_socket.broadcast(json); },
                     (immutable(ubyte)[] hibon_bytes) { listener_socket.broadcast(hibon_bytes); },
-            (Document doc) { listener_socket.broadcast(doc); },
-            &taskfailure
+                    (Document doc) { listener_socket.broadcast(doc); },
+                    &taskfailure
             );
         }
     }

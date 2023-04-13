@@ -28,7 +28,7 @@ import tagion.betterC.funnel.TagionCurrency;
 // import tagion.hibon.HiBON;
 // import std.stdio;
 // import tagion.hibon.HiBONJSON;
-import tagion.basic.Types :  Buffer;
+import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Pubkey;
 
 // // import tagion.crypto.aes.AESCrypto;

@@ -11,8 +11,9 @@ int main(string[] args) {
     import tagionwallet = tagion.tools.tagionwallet;
     import tagionboot = tagion.tools.tagionboot;
     import blockutil = tagion.tools.blockutil;
+    import tprofview = tagion.tools.tprofview;
 
-    alias alltools = AliasSeq!(tagionwave, dartutil, hibonutil, tagionwallet, tagionboot, blockutil);
+    alias alltools = AliasSeq!(tagionwave, dartutil, hibonutil, tagionwallet, tagionboot, blockutil, tprofview);
     mixin doOneMain!(alltools);
     return do_main(args);
 }

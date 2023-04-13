@@ -12,7 +12,7 @@ import std.array : join;
 import std.json : JSONException;
 
 import tagion.basic.Types : Control;
-import tagion.basic.Basic : TrustedConcurrency;
+import tagion.basic.basic : TrustedConcurrency;
 import tagion.logger.Logger;
 import tagion.prior_services.Options;
 import tagion.options.CommonOptions : setCommonOptions;
@@ -100,13 +100,13 @@ int _main(string[] args) {
             writeln(logo);
             defaultGetoptPrinter(
                     [
-                    "Documentation: https://tagion.org/",
-                    "",
-                    "Usage:",
-                    format("%s [<option>...] ", program),
-                    format("%s <config.json>", program),
-                    ].join("\n"),
-                    main_args.options);
+                "Documentation: https://tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...] ", program),
+                format("%s <config.json>", program),
+            ].join("\n"),
+            main_args.options);
             return 0;
         }
 

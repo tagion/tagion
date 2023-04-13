@@ -8,9 +8,10 @@ ALL_BDD_REPORTS=${shell find $(BDD_RESULTS) -name "*.hibon" -printf "%p "}
 
 BDD_MD_FILES=${shell find $(BDD) -name "*.md" -a -not -name "*.gen.md"}
 
-bbdtest: DFLAGS+=$(BDDDFLAGS)
-bddtest: | bddtagion bddfiles bddinit bddrun bddreport
+bbdinit: DFLAGS+=$(BDDDFLAGS)
+bddtest: bddreport
 
+bddreport: | bddtagion bddfiles bddinit bddrun  
 
 .PHONY: bddtest bddfiles bddtagion
 
@@ -32,10 +33,16 @@ bddrun: $(BDDTESTS)
 
 .PHONY: bddrun
 
+ifdef VALGRIND
+run-%: PRETOOL_FLAGS+=--callgrind-out-file=$(DLOG)/callgrind.$*.log
+run-%: INFO+=Callgrind file stored in $(DLOG)/callgrind.$*.log
+endif
+
 run-%: bddfiles bddinit 
 	$(PRECMD)
 	${call log.header, $* :: run bdd}
-	$(DBIN)/$* $(RUNFLAGS)
+	$(PRETOOL) $(PRETOOL_FLAGS) $(DBIN)/$* $(RUNFLAGS)
+	echo $(INFO)
 
 test-%: run-%
 	$(PRECMD)
@@ -49,7 +56,7 @@ ddd-%:
 
 bddenv: $(TESTENV)
 
-$(TESTENV):
+$(TESTENV): $(DBIN)
 	$(PRECMD)
 	$(SCRIPTS)/genenv.sh $@
 	chmod 750 $@

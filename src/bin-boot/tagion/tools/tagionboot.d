@@ -16,9 +16,9 @@ import tagion.gossip.AddressBook;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.basic.Types : Buffer;
-import tagion.crypto.Types :  Pubkey;
+import tagion.crypto.Types : Pubkey;
 import tagion.dart.DARTBasic : DARTIndex;
-import tagion.basic.Basic : basename;
+import tagion.basic.basic : basename;
 import tagion.script.StandardRecords;
 import tagion.crypto.SecureNet;
 import tagion.crypto.SecureInterfaceNet;
@@ -111,20 +111,20 @@ int _main(string[] args) {
         writeln(logo);
         defaultGetoptPrinter(
                 [
-                format("%s version %s", program, REVNO),
-                "Documentation: https://tagion.org/",
-                "",
-                "Usage:",
-                format("%s [<option>...] <invoice-file0> <invoice-file1>...", program),
-                "",
-                "Where:",
-                format("<file>           hibon outfile (Default %s)", outputfile),
-                "",
+            format("%s version %s", program, REVNO),
+            "Documentation: https://tagion.org/",
+            "",
+            "Usage:",
+            format("%s [<option>...] <invoice-file0> <invoice-file1>...", program),
+            "",
+            "Where:",
+            format("<file>           hibon outfile (Default %s)", outputfile),
+            "",
 
-                "<option>:",
+            "<option>:",
 
-                ].join("\n"),
-                main_args.options);
+        ].join("\n"),
+        main_args.options);
         return 0;
     }
     //writefln("args=%s", args);

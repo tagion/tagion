@@ -25,8 +25,8 @@ import tagion.hibon.HiBONRecord;
 import tagion.utils.Miscellaneous;
 import tagion.utils.StdTime;
 
-import tagion.basic.Types :  Buffer;
-import tagion.basic.Basic : this_dot, basename, EnumText, buf_idup;
+import tagion.basic.Types : Buffer;
+import tagion.basic.basic : this_dot, basename, EnumText, buf_idup;
 import tagion.crypto.Types : Pubkey;
 import tagion.Keywords : Keywords;
 
@@ -138,7 +138,7 @@ class Round {
     private void remove(const(Event) event) nothrow
     in {
         assert(event.isEva || _events[event.node_id] is event,
-        "This event does not exist in round at the current node so it can not be remove from this round");
+                "This event does not exist in round at the current node so it can not be remove from this round");
         assert(event.isEva || !empty, "No events exists in this round");
     }
     do {
@@ -245,7 +245,7 @@ class Round {
             local_erase(last_round);
         }
 
-    /**
+        /**
      * Cleans up old round and events if they are no-longer needed
      */
         package
@@ -273,7 +273,7 @@ class Round {
             }
         }
 
- /**
+        /**
   * Number of round epoch in the rounder queue
   * Returns: size of the queue
    */
@@ -282,7 +282,7 @@ class Round {
             return this[].walkLength;
         }
 
-    /**
+        /**
      * Number of the same as hashgraph
      * Returns: number of nodes
      */
@@ -295,7 +295,7 @@ class Round {
 
         }
 
-    /**
+        /**
      * Sets the round for an event and creates an new round if needed
      * Params:
      *   e = event
@@ -325,7 +325,7 @@ class Round {
             }
         }
 
-    /**
+        /**
      * Check of a round has been decided
      * Params:
      *   test_round = round to be tested
@@ -346,7 +346,7 @@ class Round {
             return _decided(last_decided_round);
         }
 
-    /**
+        /**
      * Calculates the number of rounds since the last decided round
      * Returns: number of undecided roundes 
      */
@@ -355,8 +355,7 @@ class Round {
             return last_round.number - last_decided_round.number;
         }
 
-
-    /**
+        /**
      * Number of decided round in cached in memory
      * Returns: Number of cached dicided rounds
      */
@@ -372,7 +371,7 @@ class Round {
             return _cached_decided_count(last_round);
         }
 
-    /**
+        /**
      * Check the coin round limit
      * Returns: true if the coin round has beed exceeded 
      */
@@ -381,7 +380,7 @@ class Round {
             return cached_decided_count > total_limit;
         }
 
-    /**
+        /**
      * Call to collect and order the epoch
      * Params:
      *   r = decided round to collect events to produce the epoch
@@ -406,8 +405,8 @@ class Round {
             r._events
                 .filter!((e) => (e !is null))
                 .each!((e) => e[]
-                .until!((e) => (e._round_received !is null))
-                .each!((ref e) => e._round_received_mask.clear));
+                        .until!((e) => (e._round_received !is null))
+                        .each!((ref e) => e._round_received_mask.clear));
 
             void mark_received_events(const size_t voting_node_id, Event e) {
                 mark_received_iteration_count++;
@@ -425,8 +424,8 @@ class Round {
             auto event_filter = r._events
                 .filter!((e) => (e !is null))
                 .map!((ref e) => e[]
-                .until!((e) => (e._round_received !is null))
-                .filter!((e) => (e._round_received_mask.isMajority(hashgraph))))
+                        .until!((e) => (e._round_received !is null))
+                        .filter!((e) => (e._round_received_mask.isMajority(hashgraph))))
                 .joiner
                 .tee!((e) => e._round_received = r)
                 .map!((e) => e);
@@ -477,8 +476,7 @@ class Round {
             hashgraph.epoch(event_collection, times[mid], r);
         }
 
-    
-    /**
+        /**
      * Called to check of the round can be decided
      * Params:
      *   hashgraph = hashgraph which owns the round 
@@ -489,11 +487,11 @@ class Round {
             if (hashgraph.can_round_be_decided(round_to_be_decided)) {
                 const votes_mask = BitMask(round_to_be_decided.events
                         .filter!((e) => (e) && !hashgraph.excluded_nodes_mask[e.node_id])
-                    .map!((e) => e.node_id));
+                        .map!((e) => e.node_id));
                 if (votes_mask.isMajority(hashgraph)) {
                     const round_decided = votes_mask[]
                         .all!((vote_node_id) => round_to_be_decided._events[vote_node_id]._witness.famous(
-                            hashgraph));
+                                hashgraph));
                     if (round_decided) {
                         collect_received_round(round_to_be_decided, hashgraph);
                         round_to_be_decided._decided = true;
@@ -505,7 +503,7 @@ class Round {
             }
         }
 
-    /**
+        /**
      * Range from this round and down
      * Returns: range of rounds 
      */
@@ -514,13 +512,13 @@ class Round {
             return Range!false(last_round);
         }
 
-    /// Ditto
+        /// Ditto
         @nogc
         Range!true opSlice() const pure nothrow {
             return Range!true(last_round);
         }
 
-    /**
+        /**
      * Range of rounds 
      */
         @nogc
@@ -586,7 +584,6 @@ class Event {
         return _count;
     }
 
-
     /**
      * Builds an event from an eventpackage
      * Params:
@@ -643,7 +640,7 @@ class Event {
             bool _famous; /// True if the witness is voted famous
         }
 
-/**
+        /**
  * Contsruct a witness of an event
  * Params:
  *   owner_event = the event which is voted to be a witness
@@ -651,8 +648,8 @@ class Event {
  */
         @trusted
         this(
-            Event owner_event, 
-            ref const(BitMask) seeing_witness_in_previous_round_mask) nothrow
+                Event owner_event,
+                ref const(BitMask) seeing_witness_in_previous_round_mask) nothrow
         in {
             assert(owner_event);
         }
@@ -667,7 +664,7 @@ class Event {
         }
 
         pure nothrow final {
-/**
+            /**
  * Nodes which see this witness as strogly seen
  * Returns: strogly seening mask 
  */
@@ -676,8 +673,7 @@ class Event {
                 return _strong_seeing_mask;
             }
 
-
-    /**
+            /**
      * Strongly seen witness from the previous round 
      * Returns: previous stongly seen witness
      */
@@ -686,7 +682,7 @@ class Event {
                 return _seeing_witness_in_previous_round_mask;
             }
 
-    /**
+            /**
      * Checks if the witness is famous
      * Returns: ture if famous
      */
@@ -694,7 +690,7 @@ class Event {
                 return _famous;
             }
 
-    /**
+            /**
      *  Checks and set if the event has been voted famous
      * Params:
      *   hashgraph = hashgraph owning the event 
@@ -730,7 +726,7 @@ class Event {
         BitMask _round_seen_mask;
     }
 
- /**
+    /**
   * The rounds see forward from this event
   * Returns:  round seen mask
   */
@@ -912,7 +908,7 @@ class Event {
         return local_calc_witness_mask(this, BitMask(), BitMask());
     }
 
-     /**
+    /**
       * Connect the event to the hashgraph
       * Params:
       *   hashgraph = event owner 
@@ -1028,13 +1024,13 @@ class Event {
      * Throws: EventException if the mother has been grounded
      * Returns: mother event 
      */
-     final const(Event) father() const pure {
+    final const(Event) father() const pure {
         Event.check(!isGrounded, ConsensusFailCode.EVENT_FATHER_GROUNDED);
         return _father;
     }
 
     @nogc pure nothrow const final {
- /**
+        /**
   * The event-body from this event 
   * Returns: event-body
   */
@@ -1042,7 +1038,7 @@ class Event {
             return event_package.event_body;
         }
 
-    /**
+        /**
      * The recived round for this event
      * Returns: received round
      */
@@ -1050,7 +1046,7 @@ class Event {
             return _round_received;
         }
 
-    /**
+        /**
      * Channel from which this event has received
      * Returns: channel
      */
@@ -1058,7 +1054,7 @@ class Event {
             return event_package.pubkey;
         }
 
-    /**
+        /**
      * Get the mask of the received rounds
      * Returns: received round mask 
      */
@@ -1066,7 +1062,7 @@ class Event {
             return _round_received_mask;
         }
 
-    /**
+        /**
      * Checks if this event is the last one on this node
      * Returns: true if the event is in front
      */
@@ -1074,7 +1070,7 @@ class Event {
             return _daughter is null;
         }
 
-    /**
+        /**
      * Check if an evnet has around 
      * Returns: true if an round exist for this event
      */
@@ -1083,7 +1079,7 @@ class Event {
             return (_round !is null);
         }
 
-    /**
+        /**
      * Round of this event
      * Returns: round
      */
@@ -1095,7 +1091,7 @@ class Event {
             return _round;
         }
 
-       /**
+        /**
         * The witness seen from this event 
         * Returns: witness mask
         */
@@ -1103,7 +1099,7 @@ class Event {
             return _witness_mask;
         }
 
-    /**
+        /**
      * Gets the witness infomatioin of the event
      * Returns: 
      * if this event is a witness the witness is returned
@@ -1113,7 +1109,7 @@ class Event {
             return _witness;
         }
 
-    /**
+        /**
      * Get the altitude of the event
      * Returns: altitude
      */
@@ -1121,7 +1117,7 @@ class Event {
             return event_package.event_body.altitude;
         }
 
-    /**
+        /**
      *  Calculates the order of this event
      * Returns: order
      */
@@ -1133,7 +1129,7 @@ class Event {
             result = (result is int.init) ? int.init + 1 : result;
             return result;
         }
-     /**
+        /**
       * Is this event owner but this node 
       * Returns: true if the evnet is owned
       */
@@ -1141,7 +1137,7 @@ class Event {
             return node_id is 0;
         }
 
-    /**
+        /**
      * Gets the event order number 
      * Returns: order
      */
@@ -1153,7 +1149,7 @@ class Event {
             return _received_order;
         }
 
-      /**
+        /**
        * Checks if the event is connected in the graph 
        * Returns: true if the event is corrected 
        */
@@ -1161,7 +1157,7 @@ class Event {
             return (_mother !is null);
         }
 
-      /**
+        /**
        * Gets the daughter event
        * Returns: the daughter
        */
@@ -1170,14 +1166,14 @@ class Event {
             return _daughter;
         }
 
-      /**
+        /**
        * Gets the son of this event
        * Returns: the son
        */
         const(Event) son() {
             return _son;
         }
-      /**
+        /**
        * Get 
        * Returns: 
        */

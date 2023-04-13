@@ -1,7 +1,7 @@
 module tagion.crypto.Cipher;
 
 import tagion.basic.Types : Buffer;
-import tagion.crypto.Types :  Pubkey;
+import tagion.crypto.Types : Pubkey;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
 import std.exception : assumeUnique;
@@ -117,7 +117,7 @@ struct Cipher {
         import tagion.crypto.SecureNet : StdSecureNet;
         import tagion.hibon.HiBON : HiBON;
         import tagion.hibon.Document : Document;
-        import tagion.basic.Basic : fileId;
+        import tagion.basic.basic : fileId;
         import tagion.basic.Types : FileExtension;
 
         import std.algorithm.searching : all, any;

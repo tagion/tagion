@@ -6,7 +6,7 @@ module tagion.hibon.Document;
 
 //import std.format;
 import std.meta : AliasSeq, Filter;
-import std.traits : isBasicType, isSomeString, isNumeric,  EnumMembers, Unqual, ForeachType,
+import std.traits : isBasicType, isSomeString, isNumeric, EnumMembers, Unqual, ForeachType,
     isIntegral, hasMember, isArrayT = isArray, isAssociativeArray, OriginalType, isCallable;
 import std.conv : to, emplace;
 import std.algorithm.iteration : map;
@@ -20,7 +20,7 @@ import core.exception : RangeError;
 //import std.stdio;
 
 import tagion.utils.StdTime;
-import tagion.basic.Basic : isOneOf, EnumContinuousSequency;
+import tagion.basic.basic : isOneOf, EnumContinuousSequency;
 import tagion.basic.Message : message;
 import tagion.hibon.BigNumber;
 import tagion.hibon.HiBONBase;
@@ -213,7 +213,7 @@ static assert(uint.sizeof == 4);
     Element.ErrorCode valid(ErrorCallback error_callback = null) const nothrow {
         Element.ErrorCode inner_valid(const Document sub_doc,
                 ErrorCallback error_callback = null) const nothrow {
-            import tagion.basic.TagionExceptions : TagionException;
+            import tagion.basic.tagionexceptions : TagionException;
 
             auto previous = sub_doc[];
             bool not_first;
@@ -555,7 +555,7 @@ static assert(uint.sizeof == 4);
      index = is offset index in side the buffer and index with be progressed
      +/
     @trusted static void build(T, Key)(ref ubyte[] buffer, Type type, Key key,
-    const(T) x, ref size_t index) pure
+            const(T) x, ref size_t index) pure
     if (is(Key : const(char[])) || is(Key == uint)) {
         buildKey(buffer, type, key, index);
         alias BaseT = TypedefType!T;
@@ -708,8 +708,8 @@ static assert(uint.sizeof == 4);
         test_tabel.TIME = 1001;
 
         alias TabelArray = Tuple!(immutable(ubyte)[], Type.BINARY.stringof, // Credential,          Type.CREDENTIAL.stringof,
-            // CryptDoc,            Type.CRYPTDOC.stringof,
-            DataBlock, Type.HASHDOC.stringof, string, Type.STRING.stringof,);
+                // CryptDoc,            Type.CRYPTDOC.stringof,
+                DataBlock, Type.HASHDOC.stringof, string, Type.STRING.stringof,);
 
         TabelArray test_tabel_array;
         test_tabel_array.BINARY = [1, 2, 3];
@@ -975,7 +975,7 @@ static assert(uint.sizeof == 4);
                                 }
                                 static if (isIntegral!T) {
                                     auto result = new Value(LEB128.decode!T(data[value_pos .. $])
-                                        .value);
+                                            .value);
                                     return result;
                                 }
                                 else {
@@ -1133,8 +1133,8 @@ static assert(uint.sizeof == 4);
                 
 
                     .check(isIndex, [
-                    "Key '", key.to!string, "' is not an index", key
-                ].join);
+                            "Key '", key.to!string, "' is not an index", key
+                            ].join);
                 return LEB128.decode!uint(data[keyPos .. $]).value;
             }
 

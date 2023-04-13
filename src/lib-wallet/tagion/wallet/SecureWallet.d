@@ -20,7 +20,7 @@ import tagion.hibon.HiBONException : HiBONRecordException;
 
 import tagion.dart.DARTBasic;
 
-import tagion.basic.Basic : basename;
+import tagion.basic.basic : basename;
 import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Pubkey;
 import tagion.script.StandardRecords : SignedContract, StandardBill, Invoice, globals, Script;
@@ -36,7 +36,7 @@ import tagion.communication.HiRPC;
 import tagion.wallet.KeyRecover;
 import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN, AccountDetails;
 import tagion.wallet.WalletException : WalletException;
-import tagion.basic.TagionExceptions : Check;
+import tagion.basic.tagionexceptions : Check;
 
 alias check = Check!(WalletException);
 
@@ -183,10 +183,10 @@ alias check = Check!(WalletException);
     }
 
     protected void set_pincode(
-        const KeyRecover recover,
-        scope const(ubyte[]) R,
-        scope const(char[]) pincode,
-        Net _net = null) {
+            const KeyRecover recover,
+            scope const(ubyte[]) R,
+            scope const(char[]) pincode,
+            Net _net = null) {
         const hash_size = ((net) ? net : _net).hashSize;
         auto seed = new ubyte[hash_size];
         scramble(seed);

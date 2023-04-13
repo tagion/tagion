@@ -7,8 +7,8 @@ import std.array : join;
 import std.conv : to;
 
 import tagion.basic.Types : Buffer, isBufferType;
-import tagion.basic.Basic : EnumText, buf_idup, basename;
-import tagion.crypto.Types :  Pubkey;
+import tagion.basic.basic : EnumText, buf_idup, basename;
+import tagion.crypto.Types : Pubkey;
 
 //import tagion.TagionExceptions : convertEnum, consensusCheck, consensusCheckArguments;
 import tagion.utils.Miscellaneous : cutHex;
@@ -158,8 +158,8 @@ class EmulatorGossipNet : GossipNet {
         log.trace("Successfully sent to %s (Node_%s) %d bytes", channel.cutHex, _pkeys.countUntil(channel), sender
                 .toDoc.serialize.length);
     }
-    
-    void start_listening(){
+
+    void start_listening() {
         // NO IMPLEMENTATION NEEDED
     }
 }

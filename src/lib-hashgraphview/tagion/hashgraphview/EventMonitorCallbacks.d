@@ -6,7 +6,6 @@ import tagion.hashgraph.Event;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document : Document;
 
-
 /// HashGraph monitor call-back interface
 @safe
 interface EventMonitorCallbacks {
@@ -35,4 +34,3 @@ interface EventMonitorCallbacks {
         }
     }
 }
-

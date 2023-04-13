@@ -11,6 +11,8 @@ BDDS+=dart_pseudo_random_archives # commit
 BDDS+=dart_sync # commit
 BDDS+=dart_partial_sync # commit
 BDDS+=dart_stress # performance
+BDDS+=dart_insert_remove_stress # performance
+BDDS+=dart_sync_stress
 # BDDS+=actor_tests; # commit
 
 run-ssl_echo_server: sslextras

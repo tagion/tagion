@@ -7,7 +7,7 @@ import std.format;
 
 import tagion.prior_services.Options;
 import tagion.basic.Types : Buffer, Control;
-import tagion.crypto.Types :   Pubkey;
+import tagion.crypto.Types : Pubkey;
 import tagion.logger.Logger;
 import tagion.utils.StdTime;
 
@@ -18,7 +18,7 @@ import tagion.prior_services.ServerFileDiscoveryService;
 import tagion.prior_services.FileDiscoveryService;
 import tagion.prior_services.MdnsDiscoveryService;
 
-import tagion.basic.TagionExceptions : fatal;
+import tagion.basic.tagionexceptions : fatal;
 import tagion.crypto.SecureNet;
 
 enum DiscoveryRequestCommand {

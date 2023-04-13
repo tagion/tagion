@@ -1,7 +1,7 @@
 /// Pseudo random range
 module tagion.utils.Random;
 import std.format;
-
+import std.range;
 
 /// Generates a pseudo random sequence
 @safe @nogc
@@ -18,7 +18,7 @@ struct Random(T = uint) {
             this.m_w = m_w;
         }
 
-    /**
+        /**
      * 
      * Params:
      *   seed_value = is the seend of the pseudo random
@@ -105,7 +105,6 @@ struct Random(T = uint) {
     }
 
 }
-
 
 ///
 @safe
