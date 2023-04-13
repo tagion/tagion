@@ -33,7 +33,7 @@ mixin Main!(_main);
 
 int _main(string[] args) {
 
-    if (env.stage == Stage.commit) {
+    if (env.stage == Stage.performance) {
         BDDOptions bdd_options;
         setDefaultBDDOptions(bdd_options);
         bdd_options.scenario_name = __MODULE__;
@@ -59,7 +59,7 @@ int _main(string[] args) {
        
 
         auto dart_sync_stress_feature = automation!(dart_sync_stress)();
-        dart_sync_stress_feature.AddRemoveAndReadTheResult(dart_info, 100_000, 10, 1000);
+        dart_sync_stress_feature.AddRemoveAndReadTheResult(dart_info, 100_000, 1000, 1000);
 
         auto dart_sync_context = dart_sync_stress_feature.run();
 

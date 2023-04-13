@@ -117,7 +117,7 @@ class AddRemoveAndReadTheResult {
             db1.modify(recorder);
             insert_watch.stop();
 
-            if (i % 5 == 0) {
+            if (i % 250 == 0) {
                 syncDarts(db1, db2, 0, 0);
                 check(db1.bullseye == db2.bullseye, "bullseyes not the same after sync");
             }
@@ -131,7 +131,8 @@ class AddRemoveAndReadTheResult {
 
     @When("i sync the new database with another and check the bullseyes of the two databases.")
     Document databases() {
-        return Document();
+        // empty since the bullseye is checked above
+        return result_ok;
     }
 
     @Then("i read all the elements of both darts.")
