@@ -11,7 +11,12 @@ Since the Document might fill 1.5 blocks a function is needed in order to get th
 
 $$ \text{numberOfBlocks} = \lfloor \frac{\text{size}}{\text{BLOCK\_SIZE}} \rfloor + (\text{size mod BLOCK\_SIZE = 0} \text{ ? 0 : 1})$$
 
-Where the size refers to the `size_t` of the Document.
+Where the size refers to the `size_t` of the Document. Therefore the `BlockSegment` contains the following:
+
+| Variable Name | Type      | Label       | Description                                           |
+| ------------- | --------- | ----------- | ------------------------------------------------------ |
+| `index`       | `Index`   | `"index"`   | Block index where the document is stored or should be stored |
+| `doc`         | `Document`| `"Document"`| Document stored in the segment                        |
 
 
 ## General BlockFile structure
@@ -56,7 +61,7 @@ The labels indicate the names that are used in the Document stored in the Master
 RecycleSegments are special, because they do not point to the next `BlockSegment` in the `BlockFile`, but instead points to the next `RecycleSegment`. 
 This allows us to get a list of all the segments that are "recycled. They contain the following:
 
-| Field Name | Type   | Label    | Description           |
+| Variable Name | Type   | Label    | Description           |
 | ---------- | ------ | -------- | --------------------- |
 | `index`    | `Index`| `VOID`   | Current field's index |
 | `next`     | `Index`| `"next"` | Points to next index  |
