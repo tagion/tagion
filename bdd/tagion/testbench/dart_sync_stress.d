@@ -59,7 +59,7 @@ int _main(string[] args) {
        
 
         auto dart_sync_stress_feature = automation!(dart_sync_stress)();
-        dart_sync_stress_feature.AddRemoveAndReadTheResult(dart_info, 100_000, 1000, 1000);
+        dart_sync_stress_feature.AddRemoveAndReadTheResult(dart_info, env.getSeed, 100_000, 1000, 1000);
 
         auto dart_sync_context = dart_sync_stress_feature.run();
 
