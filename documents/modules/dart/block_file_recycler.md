@@ -62,10 +62,11 @@ RecycleSegments are special, because they do not point to the next `BlockSegment
 This allows us to get a list of all the segments that are "recycled. They contain the following:
 
 | Variable Name | Type   | Label    | Description           |
-| ---------- | ------ | -------- | --------------------- |
-| `index`    | `Index`| `VOID`   | Current field's index |
-| `next`     | `Index`| `"next"` | Points to next index  |
-| `size`     | `uint` | `"size"` | Size of the field     |
+| ------------- | ------ | -------- | --------------------- |
+| `index`       | `Index`| `VOID`   | Current field's index |
+| `next`        | `Index`| `"next"` | Points to next index  |
+| `size`        | `uint` | `"size"` | Size of the field     |
+
 As it can be seen the `index` is not saved in the `HiBONRecord`. This is because it is not neccesary in order to produce the list of RecycleSegments.
 
 
