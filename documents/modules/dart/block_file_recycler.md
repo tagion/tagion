@@ -28,7 +28,15 @@ digraph {
    }"]
 }
 ```
-The `HeaderBlock` is always the first block and specifies how to read the file. The MasterBlock is always the last block and is the only one with references backwards in the blockfile.
+The `HeaderBlock` is always the first block and specifies how to read the file. The MasterBlock is always the last block and is the only one with references backwards in the blockfile. The following is what a blockfile with data might look like.
+```graphviz
+digraph {
+   e [shape=record label="{
+   {Header|Data|RecycleSegment|Data|RecycleStatistic|Statistic|MasterBlock}
+   }"]
+}
+```
+The following sections describe what the different segments are.
 
 ### HeaderBlock
 The HeaderBlock contains the following information:
@@ -67,7 +75,22 @@ This allows us to get a list of all the segments that are "recycled. They contai
 | `next`        | `Index`| `"next"` | Points to next index  |
 | `size`        | `uint` | `"size"` | Size of the field     |
 
-As it can be seen the `index` is not saved in the `HiBONRecord`. This is because it is not neccesary in order to produce the list of RecycleSegments.
+As it can be seen the `index` is not saved in the `HiBONRecord`. This is because it is not neccesary in order to produce the list of RecycleSegments. 
+
+The RecycleSegments are stored in a RedBlackTree in memory. The reason they are stored in memory is in order to quickly find a segment that fits.
+The read is instantiated from the `recycler_header_index` which is a part of the [MasterBlock](#masterblock). The last segment in the recyclersegments points to nothing: `Index.init`. 
+The code for reading all the recyclersegments are as follows.
+
+```d
+// The last element points to a Index.init. 
+// Therefore we continue until we reach this.
+while (index != Index.init) {
+   auto add_segment = new RecycleSegment(owner, index);
+   insert(add_segment);
+   index = add_segment.next;
+}
+```
+
 
 
 ### Statistic Blocks
@@ -88,6 +111,5 @@ digraph {
    d [shape=record label="XXX|XXX|XXXX|XX|XXXXX"]
 }
 ```
-
 
 
