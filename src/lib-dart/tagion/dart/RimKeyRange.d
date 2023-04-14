@@ -25,16 +25,16 @@ ubyte rim_key(F)(F rim_keys, const uint rim) pure if (isBufferType!F) {
 }
 
 @safe
-RimKeyRange!Range rimKeyRange(Range)(Range range, const uint rim, const GetType get_type = Neutral)
+RimKeyRange!Range rimKeyRange(Range)(Range range, const GetType get_type = Neutral)
         if (isInputRange!Range && isImplicitlyConvertible!(ElementType!Range, Archive)) {
-    return RimKeyRange!Range(range, rim, get_type);
+    return RimKeyRange!Range(range, get_type);
 }
 
 @safe
 auto rimKeyRange(Rec)(Rec rec, const GetType get_type = Neutral)
         if (isImplicitlyConvertible!(Rec, const(RecordFactory.Recorder))) {
 
-    return rimKeyRange(rec[], 0, get_type);
+    return rimKeyRange(rec[], get_type);
 }
 
 // Range over a Range with the same key in the a specific rim
@@ -45,16 +45,19 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
     //alias Archives=RecordFactory.Recorder.Archives;
     @safe
     final class RangeContext {
+        int count;
         Range range;
-        Archive[] added_archives;
+        Archive[] _added_archives;
         AdderRange added_range;
         this(Range range) pure nothrow {
+            count = 5;
             this.range = range;
             added_range = new AdderRange(0);
         }
 
         protected this(RangeContext rhs) {
-            added_archives = rhs.added_archives;
+            count = 5;
+            _added_archives = rhs._added_archives;
             range = rhs.range;
             added_range = new AdderRange(added_range.index);
         }
@@ -65,13 +68,18 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
              * Returns: true if empty
              */
             bool empty() const @nogc {
-                return range.empty && added_archives.empty;
+                __write("range.empty=%s added_range.empty=%s count=%d", range.empty, added_range.empty, count);
+                if (count < 0)
+                    return true;
+                return range.empty && added_range.empty;
             }
 
             /**
              *  Progress one archive
              */
             void popFront() {
+                count--;
+                __write("popFront %d", count);
                 if (!added_range.empty && !range.empty) {
                     if (archive_less(added_range.front, range.front)) {
                         added_range.popFront;
@@ -92,17 +100,18 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
              * Returns: current archive and return null if the range is empty
              */
             Archive front() {
-                if (!added_archives.empty && !range.empty) {
-                    if (archive_less(added_archives.front, range.front)) {
-                        return added_archives.front;
+                if (!added_range.empty && !range.empty) {
+                    if (archive_less(added_range.front, range.front)) {
+                        return added_range.front;
                     }
                     return range.front;
                 }
                 if (!range.empty) {
+                    __write("front !range.empty");
                     return range.front;
                 }
-                else if (!added_archives.empty) {
-                    return added_archives.front;
+                else if (!added_range.empty) {
+                    return added_range.front;
                 }
                 return Archive.init;
             }
@@ -119,11 +128,11 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
             }
 
             bool empty() pure const nothrow @nogc {
-                return index >= added_archives.length;
+                return index >= _added_archives.length;
             }
 
-            const(Archive) front() const pure nothrow @nogc {
-                return added_archives[index];
+            Archive front() pure nothrow @nogc {
+                return _added_archives[index];
             }
 
             void popFront() pure nothrow @nogc {
@@ -136,17 +145,17 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
 
     protected RangeContext ctx;
     const ubyte rim_key;
-    const uint rim;
+    const int rim;
     const GetType get_type;
     @disable this();
 
     void add(Archive archive)
     in (rim_key == archive.fingerprint.rim_key(rim))
     do {
-        ctx.added_archives ~= (archive);
+        ctx._added_archives ~= (archive);
     }
 
-    private this(RimKeyRange rhs, const uint rim) {
+    private this(RimKeyRange rhs, const int rim) {
         ctx = rhs.ctx;
         rim_key = rhs.rim_key;
         this.rim = rim;
@@ -154,15 +163,13 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
 
     }
 
-    private this(Range range, const uint rim, const GetType get_type) {
+    private this(Range range, const GetType get_type) {
 
         this.get_type = get_type;
-        this.rim = rim;
+        rim = -1;
         //auto range_save=_range.save;
         ctx = new RangeContext(range);
-        if (!range.empty) {
-            rim_key = range.front.fingerprint.rim_key(rim);
-        }
+        rim_key = 0;
     }
 
     /**
@@ -190,19 +197,26 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
              * Returns: true if empty
              */
         bool empty() @nogc {
+            __write("...empty ctx.empty=%s count=%d", ctx.empty, ctx.count);
             if (ctx.empty) {
-                return false;
+                return true;
             }
-            return rim_key == front.fingerprint.rim_key(rim);
+            __write("rim_key %s", (rim >= 0) && (rim_key != ctx.front.fingerprint.rim_key(rim)));
+
+            return (rim >= 0) && (rim_key != ctx.front.fingerprint.rim_key(rim));
         }
 
         void popFront() {
+            __write("...popFront");
             if (!empty) {
                 ctx.popFront;
             }
         }
 
         Archive front() {
+            __write("... ... front ctx.empty %s", ctx.empty);
+            __write("... ... front empty %s", empty);
+            __write("... ... ctx.front %s", ctx.front is null);
             return ctx.front;
         }
 
@@ -269,6 +283,8 @@ unittest {
             */
             auto rim_key_range = rimKeyRange(rec);
             rec[].each!q{a.dump};
+            writefln("xxxx ");
+            rim_key_range.each!q{a.dump};
             writefln("xxxx ");
             rim_key_range.each!q{a.dump};
             writefln("xxxx ");
