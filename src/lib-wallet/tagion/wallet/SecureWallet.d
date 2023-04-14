@@ -155,6 +155,11 @@ alias check = Check!(WalletException);
      * Returns: 
      *   Create an new wallet with the input
      */
+
+
+    // review createWalletWithMnemonic function
+    // what device id is used for?
+    // what should be rewritten in KeyRecover.createKey to support the mnemonic?
     static SecureWallet createWalletWithMnemonic(const(char[]) deviceId,
         const(ubyte[]) pincode, const(ubyte[]) mnemonic)
     in {
@@ -168,16 +173,17 @@ alias check = Check!(WalletException);
         //TODO: createKey with mnemonic and device id.
         // recover.createKey(mnemonic, deviceId, null);
         SecureWallet result;
-        {
+        {   
+            auto R = new ubyte[net.hashSize];
             scope (exit) {
-                scramble(mnemonic);
+                scramble(R);
             }
+            recover.findSecret(R, mnemonic);
+            net.createKeyPair(R);
 
-            net.createKeyPair(mnemonic);
             auto wallet = RecoverGenerator(recover.toDoc);
             result = SecureWallet(DevicePIN.init, wallet);
-            result.set_pincode(recover, mnemonic, pincode, net);
-
+            result.set_pincode(recover, R, pincode, net);
         }
         return result;
     }
