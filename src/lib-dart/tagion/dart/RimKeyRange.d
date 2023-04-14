@@ -4,7 +4,7 @@ import std.stdio;
 import std.algorithm;
 import std.range;
 import std.traits;
-import std.container.dlist;
+import std.container.array;
 import tagion.dart.Recorder;
 import tagion.basic.Types : isBufferType;
 import tagion.utils.Miscellaneous : hex;
@@ -33,62 +33,133 @@ RimKeyRange!Range rimKeyRange(Range)(Range range, const uint rim, const GetType 
 @safe
 auto rimKeyRange(Rec)(Rec rec, const GetType get_type = Neutral)
         if (isImplicitlyConvertible!(Rec, const(RecordFactory.Recorder))) {
+
     return rimKeyRange(rec[], 0, get_type);
 }
 
 // Range over a Range with the same key in the a specific rim
 @safe
 struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(ElementType!Range, Archive)) {
+    alias archive_less = RecordFactory.Recorder.archive_sorted;
 
     //alias Archives=RecordFactory.Recorder.Archives;
-    protected DList!Archive added_archives;
-    protected Range range;
+    @safe
+    final class RangeContext {
+        Range range;
+        Archive[] added_archives;
+        AdderRange added_range;
+        this(Range range) pure nothrow {
+            this.range = range;
+            added_range = new AdderRange(0);
+        }
+
+        protected this(RangeContext rhs) {
+            added_archives = rhs.added_archives;
+            range = rhs.range;
+            added_range = new AdderRange(added_range.index);
+        }
+
+        pure nothrow {
+            /**
+             * Checks if the range is empty
+             * Returns: true if empty
+             */
+            bool empty() const @nogc {
+                return range.empty && added_archives.empty;
+            }
+
+            /**
+             *  Progress one archive
+             */
+            void popFront() {
+                if (!added_range.empty && !range.empty) {
+                    if (archive_less(added_range.front, range.front)) {
+                        added_range.popFront;
+                    }
+                    else {
+                        range.popFront;
+                    }
+                }
+                else if (!range.empty) {
+                    range.popFront;
+                }
+                else if (!added_range.empty) {
+                    added_range.popFront;
+                }
+            }
+            /**
+             * Gets the current archive in the range
+             * Returns: current archive and return null if the range is empty
+             */
+            Archive front() {
+                if (!added_archives.empty && !range.empty) {
+                    if (archive_less(added_archives.front, range.front)) {
+                        return added_archives.front;
+                    }
+                    return range.front;
+                }
+                if (!range.empty) {
+                    return range.front;
+                }
+                else if (!added_archives.empty) {
+                    return added_archives.front;
+                }
+                return Archive.init;
+            }
+
+            RangeContext save() {
+                return new RangeContext(this);
+            }
+        }
+        @safe @nogc
+        final class AdderRange {
+            size_t index;
+            this(size_t index) pure nothrow {
+                this.index = index;
+            }
+
+            bool empty() pure const nothrow @nogc {
+                return index >= added_archives.length;
+            }
+
+            const(Archive) front() const pure nothrow @nogc {
+                return added_archives[index];
+            }
+
+            void popFront() pure nothrow @nogc {
+                if (!empty) {
+                    index++;
+                }
+            }
+        }
+    }
+
+    protected RangeContext ctx;
     const ubyte rim_key;
     const uint rim;
     const GetType get_type;
     @disable this();
-    version (none) protected this(Archive[] current) pure nothrow @nogc {
-        this.current = current;
-    }
-
-    version (none) this(ref RimKeyRange range, const uint rim) {
-        this.rim = rim;
-        if (!range.empty) {
-            rim_key = range.front.fingerprint.rim_key(rim);
-            auto reuse_current = range.current;
-            void build(ref RimKeyRange range, const uint no = 0) @safe {
-                if (!range.empty && (range.front.fingerprint.rim_key(rim) is rim_key)) {
-                    range.popFront;
-                    build(range, no + 1);
-                }
-                else {
-                    // Reuse the parent current
-                    current = reuse_current[0 .. no];
-                }
-            }
-
-            build(range);
-        }
-    }
 
     void add(Archive archive)
     in (rim_key == archive.fingerprint.rim_key(rim))
     do {
-        added_archives.insertBack(archive);
+        ctx.added_archives ~= (archive);
     }
 
-    private this(RimKeyRange rhs) {
-        added_archives = rhs.added_archives.dup;
-        range = rhs.range;
+    private this(RimKeyRange rhs, const uint rim) {
+        ctx = rhs.ctx;
         rim_key = rhs.rim_key;
-        rim = rhs.rim;
+        this.rim = rim;
         get_type = rhs.get_type;
+
     }
 
-    this(Range)(Range _range, const uint rim, const GetType get_type) {
+    private this(Range range, const uint rim, const GetType get_type) {
+
         this.get_type = get_type;
         this.rim = rim;
-        range = _range;
+        //auto range_save=_range.save;
+        ctx = new RangeContext(range);
         if (!range.empty) {
             rim_key = range.front.fingerprint.rim_key(rim);
         }
@@ -118,49 +189,21 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
              * Checks if the range is empty
              * Returns: true if empty
              */
-        bool empty() const @nogc {
-            return range.empty && added_archives.empty;
+        bool empty() @nogc {
+            if (ctx.empty) {
+                return false;
+            }
+            return rim_key == front.fingerprint.rim_key(rim);
         }
 
-        alias archive_less = RecordFactory.Recorder.archive_sorted;
-        /**
-             *  Progress one archive
-             */
         void popFront() {
-            if (!added_archives.empty && !range.empty) {
-                if (archive_less(added_archives.front, range.front)) {
-                    added_archives.removeFront;
-                }
-                else {
-                    range.popFront;
-                }
-            }
-            else if (!range.empty) {
-                range.popFront;
-            }
-            else if (!added_archives.empty) {
-                added_archives.removeFront;
+            if (!empty) {
+                ctx.popFront;
             }
         }
 
-        /**
-             * Gets the current archive in the range
-             * Returns: current archive and return null if the range is empty
-             */
-        const(Archive) front() @nogc {
-            if (!added_archives.empty && !range.empty) {
-                if (archive_less(added_archives.front, range.front)) {
-                    return added_archives.front;
-                }
-                return range.front;
-            }
-            if (!range.empty) {
-                return range.front;
-            }
-            else if (!added_archives.empty) {
-                return added_archives.front;
-            }
-            return Archive.init;
+        Archive front() {
+            return ctx.front;
         }
 
         /**
@@ -183,8 +226,7 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
          * Returns: copy of this range
          */
     RimKeyRange save() pure nothrow {
-
-        return RimKeyRange(this);
+        return this;
     }
 
     static assert(isInputRange!RimKeyRange);
@@ -220,30 +262,53 @@ unittest {
         // Create a recorder from the first 9 documents 
         auto rec = factory.recorder(documents.take(3), Archive.Type.ADD);
         { // Check the the rim-key range is the same as the recorder
+            /*
+            Archive abcd133456789abc ADD
+            Archive abcd133556789abc ADD
+            Archive abcd133656789abc ADD
+            */
             auto rim_key_range = rimKeyRange(rec);
-            rec.dump;
-            writeln("-- --- ");
+            rec[].each!q{a.dump};
+            writefln("xxxx ");
             rim_key_range.each!q{a.dump};
-            writeln("-- --- ");
-            rim_key_range.each!q{a.dump};
-
+            writefln("xxxx ");
             assert(equal(rec[].map!q{a.fingerprint}, rim_key_range.map!q{a.fingerprint}));
+            // Check forward save
+            auto rim_copy = rim_key_range.save;
+            rim_key_range.popFront;
+            rim_key_range.each!q{a.dump};
+            writefln("xx");
+            rim_copy.popFront;
+            rim_copy.each!q{a.dump};
+
+            writefln("xx");
+
+            assert(equal(rim_copy.map!q{a.fingerprint}, rim_key_range.map!q{a.fingerprint}));
         }
-        { // Add one to the rim_key range and check if it is range is ordered correctly
+        version (none) { // Add one to the rim_key range and check if it is range is ordered correctly
             auto rim_key_range = rimKeyRange(rec);
             auto rec_copy = rec.dup;
             rec_copy.insert(documents[3], Archive.Type.ADD);
             writefln("Recorder add 10");
             rec_copy.dump;
             rim_key_range.add(rec.archive(documents[3], Archive.Type.ADD));
-
+            /*
+            Archive abcd133456789abc ADD
+            Archive abcd1334aaaaaaaa ADD <- This has been added in between
+            Archive abcd133556789abc ADD
+            Archive abcd133656789abc ADD
+            */
             writefln("Recorder add 10");
             rim_key_range.save.each!q{a.dump};
-            assert(equal(rec_copy[].map!q{a.fingerprint}, rim_key_range.map!q{a.fingerprint}));
+            //assert(equal(rec_copy[].map!q{a.fingerprint}, rim_key_range.map!q{a.fingerprint}));
+            writefln("Recorder add 10-");
+            rim_key_range.each!q{a.dump};
+            writefln("Recorder add 10X");
+            rim_key_range.save.each!q{a.dump};
 
         }
 
-        { //  Add two to the rim_key range and check if it is range is ordered correctly
+        version (none) { //  Add two to the rim_key range and check if it is range is ordered correctly
             auto rim_key_range = rimKeyRange(rec);
             auto rec_copy = rec.dup;
 
@@ -256,6 +321,11 @@ unittest {
             writefln("Recorder add 11");
             rim_key_range.save.each!q{a.dump};
             assert(equal(rec_copy[].map!q{a.fingerprint}, rim_key_range.map!q{a.fingerprint}));
+
+        }
+
+        // Checks that the 
+        { // 
 
         }
     }

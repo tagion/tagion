@@ -286,13 +286,13 @@ class RecordFactory {
             archives.clear;
         }
 
-        const(Archive) insert(const Document doc, const Archive.Type type = Archive.Type.NONE) {
+        final const(Archive) insert(const Document doc, const Archive.Type type = Archive.Type.NONE) {
             auto archive = new Archive(net, doc, type);
             archives.insert(archive);
             return archive;
         }
 
-        const(Archive) insert(T)(T pack, const Archive.Type type = Archive.Type.NONE)
+        final const(Archive) insert(T)(T pack, const Archive.Type type = Archive.Type.NONE)
                 if ((isHiBONRecord!T) && !is(T : const(Recorder))) {
             return insert(pack.toDoc, type);
         }
@@ -311,7 +311,7 @@ class RecordFactory {
             return insert(pack, Archive.Type.REMOVE);
         }
 
-        @trusted void insert(R)(R range, const Archive.Type type = Archive.Type.NONE)
+        void insert(R)(R range, const Archive.Type type = Archive.Type.NONE) @trusted
                 if ((isInputRange!R) && (is(ElementType!R : const(Document)) || isHiBONRecord!(
                     ElementType!R))) {
             alias FiledType = ElementType!R;
@@ -323,37 +323,19 @@ class RecordFactory {
             }
         }
 
-        void insert(Recorder r) {
+        final void insert(Recorder r) {
             archives.insert(r.archives[]);
         }
 
-        Archive archive(const Document doc, const Archive.Type type = Archive.Type.NONE) const {
+        final Archive archive(const Document doc, const Archive.Type type = Archive.Type.NONE) const {
             return new Archive(net, doc, type);
         }
 
         Archive archive(T)(T pack, const Archive.Type type = Archive.Type.NONE) const {
             return archive(pack.toDoc, type);
         }
-        //        alias add(T) = insert!T(
-        // const(Archive) add(const(Document) doc) {
-        //     auto archive = new Archive(net, doc, Archive.Type.ADD);
-        //     archives.insert(archive);
-        //     return archive;
-        // }
 
-        // const(Archive) add(T)(T pack) if (isHiBONRecord!T) {
-        //     auto archive = new Archive(net, doc, Archive.Type.ADD);
-        //     archives.insert(archive);
-        //     return archive;
-        // }
-
-        // const(Archive) remove(const(Document) doc) {
-        //     auto archive = new Archive(net, doc, Archive.Type.REMOVE);
-        //     archives.insert(archive);
-        //     return archive;
-        // }
-
-        void remove(const(DARTIndex) fingerprint)
+        final void remove(const(DARTIndex) fingerprint)
         in {
             assert(fingerprint.length is net.hashSize,
                     format("Length of the fingerprint must be %d but is %d", net.hashSize, fingerprint
@@ -364,11 +346,11 @@ class RecordFactory {
             archives.insert(archive);
         }
 
-        void remove(const(Buffer) fingerprint) {
+        final void remove(const(Buffer) fingerprint) {
             remove(DARTIndex(fingerprint));
         }
 
-        void stub(const(DARTIndex) fingerprint)
+        final void stub(const(DARTIndex) fingerprint)
         in {
             assert(fingerprint.length is net.hashSize,
                     format("Length of the fingerprint must be %d but is %d", net.hashSize, fingerprint
@@ -379,7 +361,7 @@ class RecordFactory {
             insert(archive);
         }
 
-        void stub(const(Buffer) fingerprint) {
+        final void stub(const(Buffer) fingerprint) {
             stub(DARTIndex(fingerprint));
         }
 
@@ -390,7 +372,7 @@ class RecordFactory {
             }
         }
 
-        const(Document) toDoc() const {
+        final const(Document) toDoc() const {
             auto result = new HiBON;
             uint i;
             foreach (a; archives) {
