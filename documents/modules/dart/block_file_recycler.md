@@ -1,4 +1,6 @@
 # BlockFile 
+See the [ddoc documentation](https://ddoc.tagion.org/tagion.dart.BlockFile.html).
+
 
 The BlockFile, utilized under our DART, functions as a block-based storage system, where data is segregated into fixed-size blocks, typically a few kilobytes, and assigned a unique index, which the file system uses to track the location of the stored data. When a file is saved or modified, the file system writes the data to one or more available blocks and updates its index accordingly. 
 
@@ -28,7 +30,7 @@ digraph {
    }"]
 }
 ```
-The `HeaderBlock` is always the first block and specifies how to read the file. The MasterBlock is always the last block and is the only one with references backwards in the blockfile. The following is what a blockfile with data might look like.
+The `HeaderBlock` is always the first block and specifies how to read the file. The [MasterBlock](https://ddoc.tagion.org/tagion.dart.BlockFile.BlockFile.MasterBlock.html) is always the last block and is the only one with references backwards in the blockfile. The following is what a blockfile with data might look like.
 ```graphviz
 digraph {
    e [shape=record label="{
@@ -49,12 +51,12 @@ The HeaderBlock contains the following information:
 | `id`         | `char[ID_SIZE]`  | Short description string          |
 
 The HeaderBlock is not a Document since it needs to be compatible with standard file lookups. 
-### MasterBlock
-When the HeaderBlock is read, it sets the variable used by the masterblock called `last_block_index`. This is because we know that the MasterBlock is always the last block.
+### [MasterBlock](https://ddoc.tagion.org/tagion.dart.BlockFile.BlockFile.MasterBlock.html)
+When the HeaderBlock is read, it sets the variable used by the masterblock called `last_block_index`. This is because we know that the [MasterBlock](https://ddoc.tagion.org/tagion.dart.BlockFile.BlockFile.MasterBlock.html) is always the last block.
 $$ \text{last\_block\_index} = \frac{\text{file.size}}{\text{BLOCK\_SIZE}} -1 $$
 The reason we subtract 1 is to get the Index of where the masterblock begins. The masterblock is **always one block**.
 
-The MasterBlock has pointers to all other different important blocks in the BlockFile. It contains the following information:
+The [MasterBlock](https://ddoc.tagion.org/tagion.dart.BlockFile.BlockFile.MasterBlock.html) has pointers to all other different important blocks in the BlockFile. It contains the following information:
 
 | Variable Name              | Type   | Label        | Description                                  |
 | -------------------------- | ------ | ------------ | -------------------------------------------- |
@@ -63,10 +65,12 @@ The MasterBlock has pointers to all other different important blocks in the Bloc
 | `statistic_index`          | `Index`| `"block_s"`  | Points to the statistic data                 |
 | `recycler_statistic_index` | `Index`| `recycle_s"` | Points to the recycler statistic data        |
 
-The labels indicate the names that are used in the Document stored in the MasterBlock.
+The labels indicate the names that are used in the Document stored in the [MasterBlock](https://ddoc.tagion.org/tagion.dart.BlockFile.BlockFile.MasterBlock.html).
 
-### RecycleSegments
-RecycleSegments are special, because they point to the next `RecycleSegment` instead of pointing to the next BlockSegment.
+### [RecycleSegments](https://ddoc.tagion.org/tagion.dart.Recycler.RecycleSegment.html)
+
+[RecycleSegments](https://ddoc.tagion.org/tagion.dart.Recycler.RecycleSegment.html)
+ are special, because they point to the next `RecycleSegment` instead of pointing to the next BlockSegment.
 This allows us to get a list of all the segments that are "recycled. They contain the following:
 
 | Variable Name | Type   | Label    | Description           |
@@ -75,9 +79,10 @@ This allows us to get a list of all the segments that are "recycled. They contai
 | `next`        | `Index`| `"next"` | Points to next index  |
 | `size`        | `uint` | `"size"` | Size of the field     |
 
-As it can be seen the `index` is not saved in the `HiBONRecord`. This is because it is not neccesary in order to produce the list of RecycleSegments. 
+As it can be seen the `index` is not saved in the `HiBONRecord`. This is because it is not neccesary in order to produce the list of [RecycleSegments](https://ddoc.tagion.org/tagion.dart.Recycler.RecycleSegment.html)
+. 
 
-The RecycleSegments are stored in a RedBlackTree in memory. The reason they are stored in memory is in order to quickly find a segment that fits.
+The RecycleSegments are stored in a [RedBlackTree](https://dlang.org/phobos/std_container_rbtree.html) in memory called [indices](https://ddoc.tagion.org/tagion.dart.Recycler.Indices.html). The reason they are stored in memory is in order to quickly find a segment that fits.
 The read is instantiated from the `recycler_header_index` which is a part of the [MasterBlock](#masterblock). The last segment in the recyclersegments points to nothing: `Index.init`. 
 The code for reading all the recyclersegments are as follows.
 
@@ -119,9 +124,9 @@ The `save` function is responsible for saving the document to the blockfile.
 It calls the claim function in the `Recycler` with the amount of blocks it needs in order to save the data. The `Recycler` responds with a Index where the data should be stored.
 
 
-### Dispose in recycler
-The dispose in the recycler simply creates a new `RecycleSegment` and adds it to the list called `to_be_recycled`. 
-### Claim in recycler
+### [Dispose](https://ddoc.tagion.org/tagion.dart.Recycler.Recycler.dispose.html) in recycler
+The dispose in the recycler simply creates a new `RecycleSegment` and adds it to the list called [`to_be_recycled`](https://ddoc.tagion.org/tagion.dart.Recycler.Recycler.to_be_recycled.html). 
+### [Claim](https://ddoc.tagion.org/tagion.dart.Recycler.Recycler.claim.html) in recycler
 The claim in the recycler first checks a internal list called `to_be_recycled`. This list contains all the disposed segments that are going to be added to the recycler when the `blockfile.store` function is called. If it finds a segment in the `to_be_recycled`, which is the same size amount of blocks neccesary to store the document, it returns the index.
 
 If no segment in the `to_be_recycled` is found, we do the following:
@@ -133,7 +138,7 @@ If no segment in the `to_be_recycled` is found, we do the following:
 5. If the `upperRange` is not empty. We take the `front` element giving us the one that fits the best.
 6. If the `upperRange` is empty. We return `blockfile.last_block_index`, and on scope exit add the `blockfile.last_block_index += segment_size`.
 
-### Recycle (recycle)
+### Recycle ([recycle](https://ddoc.tagion.org/tagion.dart.Recycler.Recycler.recycle.html))
 Every time `blockfile.store` is called we call the function `recycle(to_be_recycled)`. This function is responsible for amalgamating segments in the recycler that are touching each other. Lets say we have the following structure.
 
 The segments are `TYPE [INDEX]SIZE`. Using shorthand for the names were `D` is data, `R` is recyclesegment.
