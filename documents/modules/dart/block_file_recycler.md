@@ -91,8 +91,6 @@ while (index != Index.init) {
 }
 ```
 
-
-
 ### Statistic Blocks
 Statistic segments are used for analyzing the amount of blocks and how well they are used, and how many recycle segments. 
 They use the underlying `logger/Statistic` module, and are Type Definitions.
@@ -102,14 +100,16 @@ alias RecyclerFileStatistic = Statistic!(ulong, Yes.histogram);
 ```
 The Yes.histogram indicates that we are keeping track each time `blockfile.store` is called. This means that we can see how the number of ex. `RecycleSegments` grows over time.
 
+The following is an example of the command: `blockutil test.drt --recyclerstatistic`.
 
-<!-- ```graphviz
-digraph {
-   a [shape=record label="left | {above|middle|below} | <f1>right"]
-   b [shape=record label="{row1\l|row2\r|{row3\nleft|<f2>row3\nright}|row4}"]
-   c [shape=record label="left | above|middle|below | right"]
-   d [shape=record label="XXX|XXX|XXXX|XX|XXXXX"]
-}
+```
+N=101 sum2=704 sum=240 min=0 max=5
+   0|   8| ########
+   1|  12| ############
+   2|  32| ################################
+   3|  34| ##################################
+   4|  13| #############
+   5|   2| ##
 ```
 
 
