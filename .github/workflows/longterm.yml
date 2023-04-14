@@ -45,6 +45,7 @@ jobs:
           export FUND=$PWD/bins-logs/fundamental
           export REPOROOT=$PWD
           export TEST_STAGE=commit
+          export SEED=7684a848a2e3d070270976be1b70a7c186db9450
           PATH=$DBIN:$PATH
           setup_env () {
             export TEST_STAGE=$1
