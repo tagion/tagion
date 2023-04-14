@@ -306,7 +306,6 @@ class BlockFile {
     @safe @recordType("M")
     static struct MasterBlock {
         @label("head") Index recycle_header_index; /// Points to the root of recycle block list
-        //Index first_index; /// Points to the first block of data
         @label("root") Index root_index; /// Point the root of the database
         @label("block_s") Index statistic_index; /// Points to the statistic data
         @label("recycle_s") Index recycler_statistic_index; /// Points to the recycler statistic data
@@ -605,7 +604,7 @@ class BlockFile {
         private void initFront() @trusted {
             import std.format;
             import core.exception : ArraySliceError;
-            import tagion.dart.Recycler : Segment;
+            import tagion.dart.Recycler : RecycleSegment;
             import tagion.utils.Term;
 
             const doc = owner.load(index);
@@ -613,8 +612,8 @@ class BlockFile {
 
             try {
 
-                if (isRecord!Segment(doc)) {
-                    const segment = Segment(doc, index);
+                if (isRecord!RecycleSegment(doc)) {
+                    const segment = RecycleSegment(doc, index);
                     size = segment.size;
                 }
                 else {
@@ -684,7 +683,7 @@ class BlockFile {
     }
 
     void recycleDump(File fout = stdout) {
-        import tagion.dart.Recycler : Segment;
+        import tagion.dart.Recycler : RecycleSegment;
 
         // writefln("recycle dump from blockfile");
 
@@ -694,7 +693,7 @@ class BlockFile {
             return;
         }
         while (index != Index.init) {
-            auto add_segment = Segment(this, index);
+            auto add_segment = RecycleSegment(this, index);
             fout.writefln("Index(%s), size(%s), next(%s)", add_segment.index, add_segment
                     .size, add_segment.next);
             index = add_segment.next;

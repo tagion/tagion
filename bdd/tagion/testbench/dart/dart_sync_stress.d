@@ -1,4 +1,4 @@
-module tagion.testbench.dart.insert_remove_stress;
+module tagion.testbench.dart.dart_sync_stress;
 // Default import list for bdd
 import tagion.behaviour;
 import tagion.hibon.Document;
@@ -31,7 +31,7 @@ import tagion.utils.Miscellaneous : toHexString;
 import tagion.testbench.dart.dart_helper_functions;
 
 enum feature = Feature(
-        "insert random stress test",
+        "Sync insert random stress test",
         [
         "This test uses dartfakenet to randomly add and remove archives in the same recorder."
 ]);
@@ -44,9 +44,9 @@ alias FeatureContext = Tuple!(
 @safe @Scenario("add remove and read the result",
     [])
 class AddRemoveAndReadTheResult {
-
     DartInfo info;
     DART db1;
+    DART db2;
     RandomArchives[] random_archives;
     Mt19937 gen;
     auto insert_watch = StopWatch(AutoStart.no);
@@ -57,7 +57,6 @@ class AddRemoveAndReadTheResult {
 
     uint operations;
 
-
     this(DartInfo info, const uint seed, const uint number_of_seeds, const uint number_of_rounds, const uint number_of_samples) {
         check(number_of_samples < number_of_seeds, "number of samples must be smaller than number of seeds");
         this.info = info;
@@ -67,46 +66,46 @@ class AddRemoveAndReadTheResult {
         this.number_of_seeds = number_of_seeds;
     }
 
-    @Given("i have a dartfile")
-    Document dartfile() {
+    @Given("i two dartfiles.")
+    Document dartfiles() {
         mkdirRecurse(info.module_path);
         // create the dartfile
         DART.create(info.dartfilename);
+        DART.create(info.dartfilename2);
 
         Exception dart_exception;
         db1 = new DART(info.net, info.dartfilename, dart_exception);
+        check(dart_exception is null, format("Failed to open DART %s", dart_exception.msg));
+        db2 = new DART(info.net, info.dartfilename2, dart_exception);
         check(dart_exception is null, format("Failed to open DART %s", dart_exception.msg));
         return result_ok;
     }
 
     @Given("i have an array of randomarchives")
     Document randomarchives() {
-    
-        // first we generate the array of random archives
-     
         random_archives = gen.take(number_of_seeds).map!(s => RandomArchives(s)).array;
-
         return result_ok;
     }
 
     @When("i select n amount of elements in the randomarchives and add them to the dart and flip their bool. And count the number of instructions.")
     Document instructions() {
 
-
-        foreach(i; 0..number_of_rounds) {
+        foreach (i; 0 .. number_of_rounds) {
             writefln("running %s", i);
             auto rnd = MinstdRand0(gen.front);
             gen.popFront;
-            auto sample_numbers = iota(random_archives.length).randomSample(number_of_samples, rnd).array;
+            auto sample_numbers = iota(random_archives.length).randomSample(number_of_samples, rnd)
+                .array;
             auto recorder = db1.recorder();
 
-
-            foreach(sample_number; sample_numbers) {
-                auto docs = random_archives[sample_number].values.map!(a => DARTFakeNet.fake_doc(a));
+            foreach (sample_number; sample_numbers) {
+                auto docs = random_archives[sample_number].values.map!(
+                    a => DARTFakeNet.fake_doc(a));
 
                 if (!random_archives[sample_number].in_dart) {
                     recorder.insert(docs, Archive.Type.ADD);
-                } else {
+                }
+                else {
 
                     recorder.insert(docs, Archive.Type.REMOVE);
                 }
@@ -118,14 +117,27 @@ class AddRemoveAndReadTheResult {
             insert_watch.start();
             db1.modify(recorder);
             insert_watch.stop();
+
+            if (i % 250 == 0) {
+                syncDarts(db1, db2, 0, 0);
+                check(db1.bullseye == db2.bullseye, "bullseyes not the same after sync");
+            }
+            
+
+            // sync and compare bullseyes
         }
 
         return result_ok;
     }
 
-    @Then("i read all the elements.")
-    Document elements() {
+    @When("i sync the new database with another and check the bullseyes of the two databases.")
+    Document databases() {
+        // empty since the bullseye is checked above
+        return result_ok;
+    }
 
+    @Then("i read all the elements of both darts.")
+    Document darts() {
         auto fingerprints = random_archives
             .filter!(s => s.in_dart == true)
             .map!(d => d.values)
@@ -135,8 +147,6 @@ class AddRemoveAndReadTheResult {
             .map!(b => cast(Buffer) b)
             .array;
 
-
-
         writefln("###");
         read_watch.start();
         auto read_recorder = db1.loads(fingerprints, Archive.Type.NONE);
@@ -144,7 +154,7 @@ class AddRemoveAndReadTheResult {
         writeln(read_recorder[].walkLength);
 
         check(read_recorder[].walkLength == fingerprints.length, "the length of the read archives is not the same as the expected");
-        
+
         auto expected_read_docs = random_archives
             .filter!(s => s.in_dart == true)
             .map!(d => d.values)
@@ -157,19 +167,20 @@ class AddRemoveAndReadTheResult {
 
         check(equal(expected_recorder[].map!(a => a.filed), read_recorder[].map!(a => a.filed)), "data not the same");
 
-
         const long insert_time = insert_watch.peek.total!"msecs";
         const long read_time = read_watch.peek.total!"msecs";
-        
-        writefln("Total number of operations: %d", operations+fingerprints.length);
-        writefln("ADD and REMOVE operations: %d. pr. sec: %s", operations, operations/double(insert_time)*1000);
-        writefln("READ operations: %s. pr.sec %s", fingerprints.length, fingerprints.length/double(read_time)*1000);
+
+        writefln("Total number of operations: %d", operations + fingerprints.length);
+        writefln("ADD and REMOVE operations: %d. pr. sec: %s", operations, operations / double(
+                insert_time) * 1000);
+        writefln("READ operations: %s. pr.sec %s", fingerprints.length, fingerprints.length / double(
+                read_time) * 1000);
 
         // the total time
-        writefln("Total operations pr. sec: %1.f", (operations+fingerprints.length)/double(insert_time + read_time)*1000);
+        writefln("Total operations pr. sec: %1.f", (operations + fingerprints.length) / double(
+                insert_time + read_time) * 1000);
         db1.close;
         return result_ok;
     }
 
 }
-

@@ -5,6 +5,7 @@ OLD?=1
 ONETOOL?=1
 DEBUGGER?=ddd
 export TEST_STAGE?=commit
+export SEED?=$(shell git rev-parse HEAD)
 
 DFLAGS+=$(DVERSION)=REDBLACKTREE_SAFE_PROBLEM
 DFLAGS+=$(DVERSION)=SYNC_BLOCKFILE_WORKING #this is the version for debugging the recycler segments has overlaps. recorder: a < a

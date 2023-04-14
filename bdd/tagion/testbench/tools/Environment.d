@@ -74,6 +74,15 @@ struct Environment {
     string reporoot;
     string fund;
     string test_stage;
+    string seed;
+
+    uint getSeed() const pure {
+        import tagion.utils.Miscellaneous;
+        import std.bitmanip : binread = read;
+
+        auto buf = decode(seed).dup;
+        return buf.binread!uint;
+    }
 
     Stage stage() const pure {
         switch (test_stage) {

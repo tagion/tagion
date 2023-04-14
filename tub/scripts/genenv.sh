@@ -11,6 +11,7 @@ export FUND=$FUND
 export REPOROOT=$REPOROOT
 export FUND=$FUND
 export TEST_STAGE=$TEST_STAGE
+export SEED=$SEED
 PATH=\$DBIN:\$PATH
 \$*
 EOF
