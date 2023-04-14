@@ -66,7 +66,7 @@ The MasterBlock has pointers to all other different important blocks in the Bloc
 The labels indicate the names that are used in the Document stored in the MasterBlock.
 
 ### RecycleSegments
-RecycleSegments are special, because they do not point to the next `BlockSegment` in the `BlockFile`, but instead points to the next `RecycleSegment`. 
+RecycleSegments are special, because they point to the next `RecycleSegment` instead of pointing to the next BlockSegment.
 This allows us to get a list of all the segments that are "recycled. They contain the following:
 
 | Variable Name | Type   | Label    | Description           |
