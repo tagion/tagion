@@ -113,3 +113,23 @@ N=101 sum2=704 sum=240 min=0 max=5
 ```
 
 
+## Save and dispose functions
+The two most important functions in the blockfile is the `save` and `dispose` functions.
+The `save` function is responsible for saving the document to the blockfile.
+It calls the claim function in the `Recycler` with the amount of blocks it needs in order to save the data. The `Recycler` responds with a Index where the data should be stored.
+
+
+### Dispose in recycler
+The dispose in the recycler simply creates a new `RecycleSegment` and adds it to the list called `to_be_recycled`. 
+### Claim in recycler
+The claim in the recycler first checks a internal list called `to_be_recycled`. This list contains all the disposed segments that are going to be added to the recycler when the `blockfile.store` function is called. If it finds a segment in the `to_be_recycled`, which is the same size amount of blocks neccesary to store the document, it returns the index.
+
+If no segment in the `to_be_recycled` is found, we do the following:
+
+1. Create a search segment of the segment_size.
+2. Get the `equalRange` meaning all the segments in the `indices` that are equal by the segment_size.
+3. If the `equalRange` is not empty. Remove the found segment from the indices and return its index.
+4. If the `equalRange` is empty. We perform the same on the `upperRange` giving us all segments that are greater than us.
+5. If the `upperRange` is not empty. We take the `front` element giving us the one that fits the best.
+6. If the `upperRange` is empty. We return `blockfile.last_block_index`, and on scope exit add the `blockfile.last_block_index += segment_size`.
+
