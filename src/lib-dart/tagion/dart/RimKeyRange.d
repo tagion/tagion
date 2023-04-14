@@ -45,18 +45,15 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
     //alias Archives=RecordFactory.Recorder.Archives;
     @safe
     final class RangeContext {
-        int count;
         Range range;
         Archive[] _added_archives;
         AdderRange added_range;
         this(Range range) pure nothrow {
-            count = 5;
             this.range = range;
             added_range = new AdderRange(0);
         }
 
         protected this(RangeContext rhs) {
-            count = 5;
             _added_archives = rhs._added_archives;
             range = rhs.range;
             added_range = new AdderRange(rhs.added_range.index);
@@ -68,8 +65,6 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
              * Returns: true if empty
              */
             bool empty() const @nogc {
-                if (count < 0)
-                    return true;
                 return range.empty && added_range.empty;
             }
 
@@ -77,7 +72,6 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
              *  Progress one archive
              */
             void popFront() {
-                count--;
                 if (!added_range.empty && !range.empty) {
                     if (archive_less(added_range.front, range.front)) {
                         added_range.popFront;
@@ -152,10 +146,10 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
         ctx._added_archives ~= (archive);
     }
 
-    private this(RimKeyRange rhs, const int rim) {
+    private this(RimKeyRange rhs, const uint rim) {
         ctx = rhs.ctx;
         rim_key = rhs.rim_key;
-        this.rim = rim;
+        this.rim = rim & int.max;
         get_type = rhs.get_type;
 
     }
@@ -169,6 +163,9 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
         rim_key = 0;
     }
 
+    RimKeyRange opCall(const uint rim) pure nothrow {
+        return RimKeyRange(this, rim);
+    }
     /**
      * Checks if all the archives in the range are of the type REMOVE
      * Params:
@@ -243,28 +240,29 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
 @safe
 unittest {
     import std.stdio;
+    import std.typecons;
+    import std.algorithm.searching : until;
     import tagion.dart.DARTFakeNet;
 
     const net = new DARTFakeNet;
     auto factory = RecordFactory(net);
 
-    const table = [
+    { // Test with ADD's only in the RimKeyRange root (rim == -1)
+        const table = [
 
-        0xABCD_1334_5678_9ABCUL,
-        0xABCD_1335_5678_9ABCUL,
-        0xABCD_1336_5678_9ABCUL,
+            0xABCD_1334_5678_9ABCUL,
+            0xABCD_1335_5678_9ABCUL,
+            0xABCD_1336_5678_9ABCUL,
 
-        // Archives which add added in to the RimKeyRange
-        0xABCD_1334_AAAA_AAAAUL,
-        0xABCD_1335_5678_AAAAUL,
+            // Archives which add added in to the RimKeyRange
+            0xABCD_1334_AAAA_AAAAUL,
+            0xABCD_1335_5678_AAAAUL,
 
-    ];
-    const documents = table
-        .map!(t => DARTFakeNet.fake_doc(t))
-        .array;
+        ];
+        const documents = table
+            .map!(t => DARTFakeNet.fake_doc(t))
+            .array;
 
-    { // Test with ADD's only
-        writefln("--- RimKeyRange");
         // Create a recorder from the first 9 documents 
         auto rec = factory.recorder(documents.take(3), Archive.Type.ADD);
         { // Check the the rim-key range is the same as the recorder
@@ -305,24 +303,75 @@ unittest {
 
         }
 
-        version (none) { //  Add two to the rim_key range and check if it is range is ordered correctly
+        { // Add two to the rim_key range and check if it is range is ordered correctly
             auto rim_key_range = rimKeyRange(rec);
             auto rec_copy = rec.dup;
-
-            rec_copy.insert(documents[3 .. 5], Archive.Type.ADD);
-            writefln("Recorder add 11");
-            rec_copy.dump;
             rim_key_range.add(rec.archive(documents[3], Archive.Type.ADD));
             rim_key_range.add(rec.archive(documents[4], Archive.Type.ADD));
+            /*
+            Archive abcd133456789abc ADD 
+            Archive abcd1334aaaaaaaa ADD <- This has beend added
+            Archive abcd133556789abc ADD 
+            Archive abcd13355678aaaa ADD <- This has been added
+            Archive abcd133656789abc ADD 
+            */
+            rec_copy.insert(documents[3 .. 5], Archive.Type.ADD);
+            rec_copy.dump;
 
             writefln("Recorder add 11");
             rim_key_range.save.each!q{a.dump};
+            auto rim_key_range_saved = rim_key_range.save;
             assert(equal(rec_copy[].map!q{a.fingerprint}, rim_key_range.map!q{a.fingerprint}));
+            // Check save in forward-range
+            assert(equal(rec_copy[].map!q{a.fingerprint}, rim_key_range_saved.map!q{a.fingerprint}));
 
         }
+    }
+    {
+        const table = [
 
+            ulong.min, // 0
+
+            0xABCD_1334_5678_9ABCUL, // 1
+            0xABCD_1335_5678_9ABCUL, // 2
+            0xABCD_1336_5678_9ABCUL, // 3
+
+            0xABCD_1337_5678_9ABCUL, // 1
+            0xABCD_1337_5878_9ABCUL, // 2
+            0xABCD_1337_6078_9ABCUL, // 3
+
+            0xABCD_1337_6078_9BBCUL, // 1
+            0xABCD_1337_6078_9CBCUL, // 2
+            0xABCD_1337_6078_9DBCUL, // 3
+
+            ulong.max,
+
+            // Archives which add added in to the RimKeyRange
+            0xABCD_1334_AAAA_AAAAUL,
+            0xABCD_1335_5678_AAAAUL,
+
+        ];
+        const documents = table
+            .map!(t => DARTFakeNet.fake_doc(t))
+            .array;
+
+        auto rec = factory.recorder(
+                documents
+                .until!(doc => doc == DARTFakeNet.fake_doc(ulong.max))(No.openRight),
+                Archive.Type.ADD);
+
+        const rec_len = rec.length;
         // Checks that the 
         { // 
+            writefln("---- %d", rec_len);
+            rec.dump;
+            writefln("----");
+            auto rim_key_range = rimKeyRange(rec);
+            rim_key_range.save.each!q{a.dump};
+            auto rim_key_range_saved = rim_key_range.save;
+            assert(equal(rec[].map!q{a.fingerprint}, rim_key_range.map!q{a.fingerprint}));
+            // Check save in forward-range
+            assert(equal(rec[].map!q{a.fingerprint}, rim_key_range_saved.map!q{a.fingerprint}));
 
         }
     }
