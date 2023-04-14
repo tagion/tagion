@@ -59,7 +59,7 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
             count = 5;
             _added_archives = rhs._added_archives;
             range = rhs.range;
-            added_range = new AdderRange(added_range.index);
+            added_range = new AdderRange(rhs.added_range.index);
         }
 
         pure nothrow {
@@ -68,7 +68,6 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
              * Returns: true if empty
              */
             bool empty() const @nogc {
-                __write("range.empty=%s added_range.empty=%s count=%d", range.empty, added_range.empty, count);
                 if (count < 0)
                     return true;
                 return range.empty && added_range.empty;
@@ -79,7 +78,6 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
              */
             void popFront() {
                 count--;
-                __write("popFront %d", count);
                 if (!added_range.empty && !range.empty) {
                     if (archive_less(added_range.front, range.front)) {
                         added_range.popFront;
@@ -107,7 +105,6 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
                     return range.front;
                 }
                 if (!range.empty) {
-                    __write("front !range.empty");
                     return range.front;
                 }
                 else if (!added_range.empty) {
@@ -150,7 +147,7 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
     @disable this();
 
     void add(Archive archive)
-    in (rim_key == archive.fingerprint.rim_key(rim))
+    in ((rim < 0) || (rim_key == archive.fingerprint.rim_key(rim)))
     do {
         ctx._added_archives ~= (archive);
     }
@@ -197,26 +194,19 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
              * Returns: true if empty
              */
         bool empty() @nogc {
-            __write("...empty ctx.empty=%s count=%d", ctx.empty, ctx.count);
             if (ctx.empty) {
                 return true;
             }
-            __write("rim_key %s", (rim >= 0) && (rim_key != ctx.front.fingerprint.rim_key(rim)));
-
             return (rim >= 0) && (rim_key != ctx.front.fingerprint.rim_key(rim));
         }
 
         void popFront() {
-            __write("...popFront");
             if (!empty) {
                 ctx.popFront;
             }
         }
 
         Archive front() {
-            __write("... ... front ctx.empty %s", ctx.empty);
-            __write("... ... front empty %s", empty);
-            __write("... ... ctx.front %s", ctx.front is null);
             return ctx.front;
         }
 
@@ -240,7 +230,9 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
          * Returns: copy of this range
          */
     RimKeyRange save() pure nothrow {
-        return this;
+        RimKeyRange result = this;
+        result.ctx = this.ctx.save;
+        return result;
     }
 
     static assert(isInputRange!RimKeyRange);
@@ -283,25 +275,15 @@ unittest {
             */
             auto rim_key_range = rimKeyRange(rec);
             rec[].each!q{a.dump};
+            rim_key_range.save.each!q{a.dump};
             writefln("xxxx ");
-            rim_key_range.each!q{a.dump};
-            writefln("xxxx ");
-            rim_key_range.each!q{a.dump};
-            writefln("xxxx ");
+            auto rim_key_range_saved = rim_key_range.save;
             assert(equal(rec[].map!q{a.fingerprint}, rim_key_range.map!q{a.fingerprint}));
-            // Check forward save
-            auto rim_copy = rim_key_range.save;
-            rim_key_range.popFront;
-            rim_key_range.each!q{a.dump};
-            writefln("xx");
-            rim_copy.popFront;
-            rim_copy.each!q{a.dump};
-
-            writefln("xx");
-
-            assert(equal(rim_copy.map!q{a.fingerprint}, rim_key_range.map!q{a.fingerprint}));
+            // Check save in forward-range
+            assert(equal(rec[].map!q{a.fingerprint}, rim_key_range_saved.map!q{a.fingerprint}));
         }
-        version (none) { // Add one to the rim_key range and check if it is range is ordered correctly
+
+        { // Add one to the rim_key range and check if it is range is ordered correctly
             auto rim_key_range = rimKeyRange(rec);
             auto rec_copy = rec.dup;
             rec_copy.insert(documents[3], Archive.Type.ADD);
@@ -314,13 +296,12 @@ unittest {
             Archive abcd133556789abc ADD
             Archive abcd133656789abc ADD
             */
-            writefln("Recorder add 10");
             rim_key_range.save.each!q{a.dump};
-            //assert(equal(rec_copy[].map!q{a.fingerprint}, rim_key_range.map!q{a.fingerprint}));
-            writefln("Recorder add 10-");
-            rim_key_range.each!q{a.dump};
-            writefln("Recorder add 10X");
-            rim_key_range.save.each!q{a.dump};
+            writefln("xxxx ");
+            auto rim_key_range_saved = rim_key_range.save;
+            assert(equal(rec_copy[].map!q{a.fingerprint}, rim_key_range.map!q{a.fingerprint}));
+            // Check save in forward-range
+            assert(equal(rec_copy[].map!q{a.fingerprint}, rim_key_range_saved.map!q{a.fingerprint}));
 
         }
 
