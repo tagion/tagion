@@ -133,3 +133,59 @@ If no segment in the `to_be_recycled` is found, we do the following:
 5. If the `upperRange` is not empty. We take the `front` element giving us the one that fits the best.
 6. If the `upperRange` is empty. We return `blockfile.last_block_index`, and on scope exit add the `blockfile.last_block_index += segment_size`.
 
+### Recycle (recycle)
+Every time `blockfile.store` is called we call the function `recycle(to_be_recycled)`. This function is responsible for amalgamating segments in the recycler that are touching each other. Lets say we have the following structure.
+
+The segments are `TYPE [INDEX]SIZE`. Using shorthand for the names were `D` is data, `R` is recyclesegment.
+```graphviz
+digraph {
+   e [shape=record label="{
+   {Header|D [1]2|R [3]2|D [5]1|R [6]2|D [8]2|MasterBlock}
+   }"]
+}
+```
+
+Now lets say that we have the list `to_be_recycled`, and it contains one segment with `Index(5), size=1`. This means we need to add this segment to the recycler.
+If we add it directly we would get the following:
+```graphviz
+digraph {
+   e [shape=record label="{
+   {Header|D [1]2|R [3]2|R [5]1|R [6]2|D [8]2|MasterBlock}
+   }"]
+}
+```
+This leads to problems further down the line. Because now if i want to claim a segment (*Remove a segment from the recycler*) that was `size=5`, then i would not be able to do so other than adding a segment at the last_block_index even though we have enough space. Therefore we merge the segments in the recycle function so that we produce the following:
+```graphviz
+digraph {
+   e [shape=record label="{
+   {Header|D [1]2|R [3]5|D [8]2|MasterBlock}
+   }"]
+}
+```
+The algorithm for doing this is the following.
+
+```
+foreach (insert_segment; to_be_recycled) {
+   auto lower_range = indices.lowerBound(insert_segment);
+   if (!lower_range.empty && lower_range.back.end == insert_segment.index) {
+
+         insert_segment.index = lower_range.back.index;
+         insert_segment.size = lower_range.back.size + insert_segment.size;
+         // remove the lowerrange segment since we have created a new segment 
+         // that incorporates this segment.
+         remove(lower_range.back);
+   }
+
+   auto upper_range = indices.upperBound(insert_segment);
+   if (!upper_range.empty && upper_range.front.index == insert_segment.end) {
+         insert_segment.size = upper_range.front.size + insert_segment.size;
+         remove(upper_range.front);
+   }
+   // lastly we insert the new segment.
+   insert(insert_segment);
+
+}
+```
+The code loops through the `to_be_recycled` and performs a sequence of operations on `indices`. It first finds the first element in `indices` that is less than or equal to `insert_segment` using `lowerBound`. If the `end` property of the found element matches `insert_segment`'s `index`, it merges the two segments, removes the previous element from `indices`, and updates `insert_segment`. 
+
+Then, using `upperBound`, the code finds the first element in `indices` that is greater than `insert_segment`. If the `index` property of the found element matches `insert_segment`'s `end`, it merges the two segments, removes the element from `indices`, and updates `insert_segment`. Finally, `insert_segment` is added to `indices`.
