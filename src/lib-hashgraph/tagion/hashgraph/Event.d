@@ -162,6 +162,9 @@ class Round {
         void scrap_events(Event e) {
             if (e !is null) {
                 count++;
+                if (Event.callbacks) {
+                   Event.callbacks.remove(e);
+                }
                 scrap_events(e._mother);
                 e.disconnect(hashgraph);
                 e.destroy;
