@@ -27,8 +27,8 @@ alias FeatureContext = Tuple!(
 );
 
 enum supervisor_task_name = "supervisor";
-enum child1_task_name = "1";
-enum child2_task_name = "2";
+enum child1_task_name = "0";
+enum child2_task_name = "1";
 
 // Child actor
 struct MyActor {
@@ -44,7 +44,7 @@ static:
         sendOwner(Msg!"response"(), counter);
     }
 
-    mixin Actor!(&increase); /// Turns the struct into an Actor
+    mixin Actor!(&increase, &decrease); /// Turns the struct into an Actor
 }
 
 alias ChildHandle = ActorHandle!MyActor;
@@ -110,7 +110,7 @@ class MessageBetweenSupervisorAndChild {
 
     @Then("send a message to #child2")
     Document aMessageToChild2() @trusted {
-        childHandleDos.send(Msg!"increase"());
+        childHandleDos.send(Msg!"decrease"());
         return result_ok;
     }
 
