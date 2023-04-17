@@ -6,7 +6,8 @@ import std.format : format;
 import std.typecons;
 import core.thread;
 import std.exception;
-import tagion.basic.tagionexceptions : TagionException, Check;
+
+// import tagion.basic.tagionexceptions : TagionException, Check;
 
 bool all(Ctrl[Tid] aa, Ctrl ctrl) {
     foreach (val; aa) {
@@ -17,11 +18,11 @@ bool all(Ctrl[Tid] aa, Ctrl ctrl) {
     return true;
 }
 
-class UnknownMessage : TagionException {
-    this(immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__) pure {
-        super(msg, file, line);
-    }
-}
+//class UnknownMessage : TagionException {
+//    this(immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__) pure {
+//        super(msg, file, line);
+//    }
+//}
 
 /**
  * Message "Atom" type
@@ -48,7 +49,7 @@ enum Sig {
     STOP,
 }
 
-debug enum DebugSig {
+debug (actor) enum DebugSig {
     /* STARTING = Msg!"STARTING", */
     FAIL, // Artificially make the actor fail
 }
@@ -70,7 +71,7 @@ bool checkCtrl(Ctrl msg) {
  * Params:
  *  A = an actor type
  */
-struct ActorHandle(A) if (isActor!A) {
+struct ActorHandle(A) {
     import concurrency = std.concurrency;
 
     /// the tid of the spawned task
@@ -116,7 +117,7 @@ ActorHandle!A actorHandle(A)(string taskName) {
  * spawnActor!MyActor("my_task_name", 42);
  * ---
  */
-nothrow ActorHandle!A spawnActor(A, Args...)(string taskName, Args args) if (isActor!A) {
+nothrow ActorHandle!A spawnActor(A, Args...)(string taskName, Args args) {
     alias task = A.task;
     Tid tid = assumeWontThrow(spawn(&task, args));
     assumeWontThrow(register(taskName, tid));
@@ -182,22 +183,6 @@ nothrow void setState(Ctrl ctrl) {
 
 import std.traits;
 
-/// Checks if the actor is implemented correctly
-private template isActor(A) {
-    /* template areMembersStatic(A) { */
-    /*     static foreach(F; Fields!A) { */
-    /*     } */
-    /* } */
-
-    template isTaskNothrow(A) {
-        alias task = __traits(getMember, A, "task");
-        enum isTaskNothrow =
-            (functionAttributes!task & FunctionAttribute.nothrow_);
-    }
-
-    enum isActor = isTaskNothrow!A;
-}
-
 /**
  * Base template
  * All members should be static
@@ -205,6 +190,10 @@ private template isActor(A) {
  */
 mixin template Actor(T...) {
 static:
+    import std.exception : assumeWontThrow;
+    import std.variant : Variant;
+    import std.concurrency : OwnerTerminated;
+
     bool stop = false;
     Ctrl[Tid] childrenState; // An AA to keep a copy of the state of the children
 
@@ -231,7 +220,8 @@ static:
 
     /// Default fail handler. When overriding this, unknown exceptions should always be sent to the owner
     void failHandler(Exception e) {
-        assumeWontThrow(ownerTid.prioritySend(e));
+        immutable exception = cast(immutable) e;
+        assumeWontThrow(ownerTid.prioritySend(exception));
     }
 
     /**
