@@ -5,24 +5,30 @@ See the [ddoc documentation](https://ddoc.tagion.org/tagion.dart.BlockFile.html)
 The BlockFile, utilized under our DART, functions as a block-based storage system, where data is segregated into fixed-size blocks, typically a few kilobytes, and assigned a unique index, which the file system uses to track the location of the stored data. When a file is saved or modified, the file system writes the data to one or more available blocks and updates its index accordingly. 
 
 The BlockFile has a wrapper on the blocks in order to make development easier. This is called BlockSegment.
+
 ## BlockSegment
 The BlockSegment is a `Document` (immutable HiBON) and a `Index`. All data stored in the BlockFile is stored using Documents (except the headerblock).
 One BlockSegment equals one Document. Therefore a Document can span multiple blocks. The Index specifies where the Document is written to in the BlockFile.
 Since the Document might fill 1.5 blocks a function is needed in order to get the correct number of blocks. In order to get the number of blocks we do the following:
 * Get the size of the Document. (LEB128)
 
+<br>
+
 $$ \text{numberOfBlocks} = \lfloor \frac{\text{size}}{\text{BLOCK\_SIZE}} \rfloor + (\text{size mod BLOCK\_SIZE = 0} \text{ ? 0 : 1})$$
+
+<br>
 
 Where the size refers to the `size_t` of the Document. Therefore the `BlockSegment` contains the following:
 
-| Variable Name | Type      | Label       | Description                                           |
-| ------------- | --------- | ----------- | ------------------------------------------------------ |
-| `index`       | `Index`   | `"index"`   | Block index where the document is stored or should be stored |
-| `doc`         | `Document`| `"Document"`| Document stored in the segment                        |
+| Variable Name | Type       | Label        | Description                                                  |
+|---------------|------------|--------------|--------------------------------------------------------------|
+| `index`       | `Index`    | `"index"`    | Block index where the document is stored or should be stored |
+| `doc`         | `Document` | `"Document"` | Document stored in the segment                               |
 
 
 ## General BlockFile structure
 An empty blockfile without any archives in it has the following structure:
+
 ```graphviz
 digraph {
    e [shape=record label="{
@@ -30,7 +36,9 @@ digraph {
    }"]
 }
 ```
+
 The `HeaderBlock` is always the first block and specifies how to read the file. The [MasterBlock](https://ddoc.tagion.org/tagion.dart.BlockFile.BlockFile.MasterBlock.html) is always the last block and is the only one with references backwards in the blockfile. The following is what a blockfile with data might look like.
+
 ```graphviz
 digraph {
    e [shape=record label="{
@@ -38,19 +46,21 @@ digraph {
    }"]
 }
 ```
+
 The following sections describe what the different segments are.
 
 ### HeaderBlock
 The HeaderBlock contains the following information:
 
-| Variable Name   | Type  | Description                       |
-| ------------ | ----- | --------------------------------- |
-| `label`      | `char[LABEL_SIZE]` | Label to set the `BlockFile` type |
-| `block_size` | `uint` | Size of the block's               |
-| `create_time`| `long` | Time of creation                  |
-| `id`         | `char[ID_SIZE]`  | Short description string          |
+| Variable Name | Type               | Description                       |
+|---------------|--------------------|-----------------------------------|
+| `label`       | `char[LABEL_SIZE]` | Label to set the `BlockFile` type |
+| `block_size`  | `uint`             | Size of the block's               |
+| `create_time` | `long`             | Time of creation                  |
+| `id`          | `char[ID_SIZE]`    | Short description string          |
 
 The HeaderBlock is not a Document since it needs to be compatible with standard file lookups. 
+
 ### [MasterBlock](https://ddoc.tagion.org/tagion.dart.BlockFile.BlockFile.MasterBlock.html)
 When the HeaderBlock is read, it sets the variable used by the masterblock called `last_block_index`. This is because we know that the [MasterBlock](https://ddoc.tagion.org/tagion.dart.BlockFile.BlockFile.MasterBlock.html) is always the last block.
 $$ \text{last\_block\_index} = \frac{\text{file.size}}{\text{BLOCK\_SIZE}} -1 $$
@@ -58,31 +68,31 @@ The reason we subtract 1 is to get the Index of where the masterblock begins. Th
 
 The [MasterBlock](https://ddoc.tagion.org/tagion.dart.BlockFile.BlockFile.MasterBlock.html) has pointers to all other different important blocks in the BlockFile. It contains the following information:
 
-| Variable Name              | Type   | Label        | Description                                  |
-| -------------------------- | ------ | ------------ | -------------------------------------------- |
-| `recycle_header_index`     | `Index`| `"head"`     | Points to the root of the recycle block list |
-| `root_index`               | `Index`| `"root"`     | Points to the root of the database           |
-| `statistic_index`          | `Index`| `"block_s"`  | Points to the statistic data                 |
-| `recycler_statistic_index` | `Index`| `recycle_s"` | Points to the recycler statistic data        |
+| Variable Name              | Type    | Label        | Description                                  |
+|----------------------------|---------|--------------|----------------------------------------------|
+| `recycle_header_index`     | `Index` | `"head"`     | Points to the root of the recycle block list |
+| `root_index`               | `Index` | `"root"`     | Points to the root of the database           |
+| `statistic_index`          | `Index` | `"block_s"`  | Points to the statistic data                 |
+| `recycler_statistic_index` | `Index` | `recycle_s"` | Points to the recycler statistic data        |
 
 The labels indicate the names that are used in the Document stored in the [MasterBlock](https://ddoc.tagion.org/tagion.dart.BlockFile.BlockFile.MasterBlock.html).
 
 ### [RecycleSegments](https://ddoc.tagion.org/tagion.dart.Recycler.RecycleSegment.html)
-
 [RecycleSegments](https://ddoc.tagion.org/tagion.dart.Recycler.RecycleSegment.html)
  are special, because they point to the next `RecycleSegment` instead of pointing to the next BlockSegment.
 This allows us to get a list of all the segments that are "recycled. They contain the following:
 
-| Variable Name | Type   | Label    | Description           |
-| ------------- | ------ | -------- | --------------------- |
-| `index`       | `Index`| `VOID`   | Current field's index |
-| `next`        | `Index`| `"next"` | Points to next index  |
-| `size`        | `uint` | `"size"` | Size of the field     |
+| Variable Name | Type    | Label    | Description           |
+|---------------|---------|----------|-----------------------|
+| `index`       | `Index` | `VOID`   | Current field's index |
+| `next`        | `Index` | `"next"` | Points to next index  |
+| `size`        | `uint`  | `"size"` | Size of the field     |
 
 As it can be seen the `index` is not saved in the `HiBONRecord`. This is because it is not neccesary in order to produce the list of [RecycleSegments](https://ddoc.tagion.org/tagion.dart.Recycler.RecycleSegment.html)
 . 
 
-The RecycleSegments are stored in a [RedBlackTree](https://dlang.org/phobos/std_container_rbtree.html) in memory called [indices](https://ddoc.tagion.org/tagion.dart.Recycler.Indices.html). The reason they are stored in memory is in order to quickly find a segment that fits.
+The RecycleSegments are stored in a [RedBlackTree](https://dlang.org/phobos/std_container_rbtree.html) in memory called [indices](https://ddoc.tagion.org/tagion.dart.Recycler.Indices.html).
+The reason they are stored in memory is in order to quickly find a segment that fits.
 The read is instantiated from the `recycler_header_index` which is a part of the [MasterBlock](#masterblock). The last segment in the recyclersegments points to nothing: `Index.init`. 
 The code for reading all the recyclersegments are as follows.
 
@@ -99,10 +109,12 @@ while (index != Index.init) {
 ### Statistic Blocks
 Statistic segments are used for analyzing the amount of blocks and how well they are used, and how many recycle segments. 
 They use the underlying `logger/Statistic` module, and are Type Definitions.
+
 ```d
 alias BlockFileStatistic = Statistic!(uint, Yes.histogram);
 alias RecyclerFileStatistic = Statistic!(ulong, Yes.histogram);
 ```
+
 The Yes.histogram indicates that we are keeping track each time `blockfile.store` is called. This means that we can see how the number of ex. `RecycleSegments` grows over time.
 
 The following is an example of the command: `blockutil test.drt --recyclerstatistic`.
@@ -126,6 +138,7 @@ It calls the claim function in the `Recycler` with the amount of blocks it needs
 
 ### [Dispose](https://ddoc.tagion.org/tagion.dart.Recycler.Recycler.dispose.html) in recycler
 The dispose in the recycler simply creates a new `RecycleSegment` and adds it to the list called [`to_be_recycled`](https://ddoc.tagion.org/tagion.dart.Recycler.Recycler.to_be_recycled.html). 
+
 ### [Claim](https://ddoc.tagion.org/tagion.dart.Recycler.Recycler.claim.html) in recycler
 The claim in the recycler first checks a internal list called `to_be_recycled`. This list contains all the disposed segments that are going to be added to the recycler when the `blockfile.store` function is called. If it finds a segment in the `to_be_recycled`, which is the same size amount of blocks neccesary to store the document, it returns the index.
 
@@ -191,6 +204,7 @@ foreach (insert_segment; to_be_recycled) {
 
 }
 ```
+
 The code loops through the `to_be_recycled` and performs a sequence of operations on `indices`. It first finds the first element in `indices` that is less than or equal to `insert_segment` using `lowerBound`. If the `end` property of the found element matches `insert_segment`'s `index`, it merges the two segments, removes the previous element from `indices`, and updates `insert_segment`. 
 
 Then, using `upperBound`, the code finds the first element in `indices` that is greater than `insert_segment`. If the `index` property of the found element matches `insert_segment`'s `end`, it merges the two segments, removes the element from `indices`, and updates `insert_segment`. Finally, `insert_segment` is added to `indices`.
