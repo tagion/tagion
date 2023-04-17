@@ -262,30 +262,38 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
 version (unittest) {
     import std.stdio;
 
-    static bool _reverse_order; /// Used to check undo rim_key_range
     @safe
-    void traverse(Range)(Range rim_key_range) if (__traits(isSame, TemplateOf!Range, RimKeyRange)) {
-        writefln("range rim %d %s", rim_key_range.rim, rim_key_range.rim_keys.hex);
-        while (!rim_key_range.empty) {
-            if (rim_key_range.identical) {
-                assert(!rim_key_range.empty);
-                writefln("Identical %d", rim_key_range.save.walkLength);
-                rim_key_range.save.each!q{a.dump};
-                const first = rim_key_range.front;
-                rim_key_range.popFront;
-                if (!rim_key_range.empty) {
-                    const second = rim_key_range.front;
-                    assert(first.fingerprint == second.fingerprint,
-                            "First and second idenitical fingerprints should be the same");
-                    assert(_reverse_order ^ (first.type < second.type), "Type order not correct");
+    void traverse(RecordFactoryT!true.Recorder recorder, const bool undo = false) {
+        void inner_traverse(RimRange)(RimRange rim_key_range) {
+            writefln("range rim %d %s", rim_key_range.rim, rim_key_range.rim_keys.hex);
+            while (!rim_key_range.empty) {
+                if (rim_key_range.identical) {
+                    assert(!rim_key_range.empty);
+                    writefln("Identical %d", rim_key_range.save.walkLength);
+                    rim_key_range.save.each!q{a.dump};
+                    const first = rim_key_range.front;
                     rim_key_range.popFront;
+                    if (!rim_key_range.empty) {
+                        const second = rim_key_range.front;
+                        assert(first.fingerprint == second.fingerprint,
+                                "First and second idenitical fingerprints should be the same");
+                        assert(_reverse_order ^ (first.type < second.type), "Type order not correct");
+                        rim_key_range.popFront;
+                    }
+                    assert(rim_key_range.empty);
+                    writefln("after %d", rim_key_range.save.walkLength);
+                    writefln("selectRim %d", rim_key_range.save.selectRim(rim_key_range.rim + 1).walkLength);
                 }
-                assert(rim_key_range.empty);
-                writefln("after %d", rim_key_range.save.walkLength);
-                writefln("selectRim %d", rim_key_range.save.selectRim(rim_key_range.rim + 1).walkLength);
+                else {
+                    traverse(rim_key_range.nextRim);
+                }
+            }
+            if (undo) {
+                write("UNDO");
+                inner_traverse(RimKeyRange(recorder.retro));
             }
             else {
-                traverse(rim_key_range.nextRim);
+                inner_traverse(RimKeyRange(recorder));
             }
         }
     }
@@ -466,7 +474,10 @@ unittest {
         const rec_len = rec.length;
         // Checks that the 
         writeln("###################### #######################");
-        { // 
+        rec.insert(documents[3], Archive.Type.REMOVE);
+        rec.insert(documents[5], Archive.Type.REMOVE);
+
+        {
             writefln("---- %d", rec_len);
             rec.dump;
             writefln("----");
@@ -480,19 +491,16 @@ unittest {
             rim_key_range.selectRim(0).save.take(3).each!q{a.dump};
             writeln("---- xxx ---");
 
-            traverse(rim_key_range);
+            traverse(rec);
         }
 
         { //
-            pragma(msg, "typeof(rec[])) ", typeof(rec[]));
-            pragma(msg, "typeof(rec[].retro)", typeof(rec[].retro));
-            auto rim_key_range = rimKeyRange(rec[].retro);
+            auto rim_key_range = rimKeyRange(rec[]);
             writeln("rec reverse");
             rec[].retro.each!q{a.dump};
             writeln("rim key reverse");
             rim_key_range.save.each!q{a.dump};
-            traverse(rim_key_range);
-
+            traverse(rec, true);
         }
 
     }
