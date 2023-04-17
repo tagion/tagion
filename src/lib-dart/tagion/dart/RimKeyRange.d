@@ -1,6 +1,6 @@
 module tagion.dart.RimKeyRange;
 
-import std.stdio;
+//import std.stdio;
 import std.algorithm;
 import std.range;
 import std.traits;
@@ -260,16 +260,14 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
 }
 
 version (unittest) {
-    import std.stdio;
+    //   import std.stdio;
 
     @safe
     void traverse(RecordFactoryT!true.Recorder recorder, const bool undo = false) {
         void inner_traverse(RimRange)(RimRange rim_key_range) {
-            writefln("range rim %d %s", rim_key_range.rim, rim_key_range.rim_keys.hex);
             while (!rim_key_range.empty) {
                 if (rim_key_range.identical) {
                     assert(!rim_key_range.empty);
-                    writefln("Identical %d", rim_key_range.save.walkLength);
                     rim_key_range.save.each!q{a.dump};
                     const first = rim_key_range.front;
                     rim_key_range.popFront;
@@ -281,15 +279,12 @@ version (unittest) {
                         rim_key_range.popFront;
                     }
                     assert(rim_key_range.empty);
-                    writefln("after %d", rim_key_range.save.walkLength);
-                    writefln("selectRim %d", rim_key_range.save.selectRim(rim_key_range.rim + 1).walkLength);
                 }
                 else {
                     traverse(rim_key_range.nextRim);
                 }
             }
             if (undo) {
-                write("UNDO");
                 inner_traverse(RimKeyRange(recorder.retro));
             }
             else {
@@ -336,7 +331,6 @@ unittest {
                 assert(!rim_key_range.identical);
                 assert(rim_key_range.selectRim(00).identical);
             }
-            writefln("REMOVE");
             rec_identical.insert(documents[1], Archive.Type.REMOVE);
             { // with two archives one ADD and one REMOVE with same fingerprint should be identical
                 auto rim_key_range = rimKeyRange(rec_identical);
@@ -365,7 +359,6 @@ unittest {
             auto rim_key_range = rimKeyRange(rec);
             rec[].each!q{a.dump};
             rim_key_range.save.each!q{a.dump};
-            writefln("xxxx ");
             auto rim_key_range_saved = rim_key_range.save;
             assert(equal(rec[].map!q{a.fingerprint}, rim_key_range.map!q{a.fingerprint}));
             // Check save in forward-range
@@ -376,7 +369,6 @@ unittest {
             auto rim_key_range = rimKeyRange(rec);
             auto rec_copy = rec.dup;
             rec_copy.insert(documents[3], Archive.Type.ADD);
-            writefln("Recorder add 10");
             rec_copy.dump;
             rim_key_range.add(rec.archive(documents[3], Archive.Type.ADD));
             /*
@@ -386,7 +378,6 @@ unittest {
             Archive abcd133656789abc ADD
             */
             rim_key_range.save.each!q{a.dump};
-            writefln("xxxx ");
             auto rim_key_range_saved = rim_key_range.save;
             assert(equal(rec_copy[].map!q{a.fingerprint}, rim_key_range.map!q{a.fingerprint}));
             // Check save in forward-range
@@ -409,7 +400,6 @@ unittest {
             rec_copy.insert(documents[3 .. 5], Archive.Type.ADD);
             rec_copy.dump;
 
-            writefln("Recorder add 11");
             rim_key_range.save.each!q{a.dump};
             auto rim_key_range_saved = rim_key_range.save;
             assert(equal(rec_copy[].map!q{a.fingerprint}, rim_key_range.map!q{a.fingerprint}));
@@ -473,32 +463,23 @@ unittest {
         }
         const rec_len = rec.length;
         // Checks that the 
-        writeln("###################### #######################");
         rec.insert(documents[3], Archive.Type.REMOVE);
         rec.insert(documents[5], Archive.Type.REMOVE);
 
         {
-            writefln("---- %d", rec_len);
-            rec.dump;
-            writefln("----");
             auto rim_key_range = rimKeyRange(rec);
             rim_key_range.save.each!q{a.dump};
             assert(equal(rec[].map!q{a.fingerprint}, rim_key_range.save.map!q{a.fingerprint}));
 
             auto rec_range = rec[];
-            writefln("traverse identical %s", rim_key_range.identical);
-            writefln("traverse identical selectRim %s", rim_key_range.selectRim(0).identical);
             rim_key_range.selectRim(0).save.take(3).each!q{a.dump};
-            writeln("---- xxx ---");
 
             traverse(rec);
         }
 
         { //
             auto rim_key_range = rimKeyRange(rec[]);
-            writeln("rec reverse");
             rec[].retro.each!q{a.dump};
-            writeln("rim key reverse");
             rim_key_range.save.each!q{a.dump};
             traverse(rec, true);
         }
