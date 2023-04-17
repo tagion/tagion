@@ -44,7 +44,11 @@ static:
         sendOwner(Msg!"response"(), counter);
     }
 
-    mixin Actor!(&increase, &decrease); /// Turns the struct into an Actor
+    void relay(Msg!"relay", string message) {
+        sendOwner(Msg!"relay"(), message);
+    }
+
+    mixin Actor!(&increase, &decrease, &relay); /// Turns the struct into an Actor
 }
 
 alias ChildHandle = ActorHandle!MyActor;
@@ -59,7 +63,16 @@ static:
         sendOwner(status);
     }
 
-    mixin Actor!(&receiveStatus); /// Turns the struct into an Actor
+    void roundtrip(Msg!"roundtrip", string message) {
+        ChildHandle child = actorHandle!MyActor(child1_task_name);
+        child.send(Msg!"relay"(), message);
+    }
+
+    void relay(Msg!"relay", string message) {
+        sendOwner(message);
+    }
+
+    mixin Actor!(&receiveStatus, &roundtrip, &relay); /// Turns the struct into an Actor
 }
 
 alias SupervisorHandle = ActorHandle!MySuperActor;
@@ -163,6 +176,11 @@ class SendMessageBetweenTwoChildren {
 
     @When("send a message from #super to #child1 and from #child1 to #child2 and back to the #super")
     Document backToTheSuper() @trusted {
+
+        string message = "Hello Tagion";
+        supervisorHandle.send(Msg!"roundtrip"(), message);
+        check(receiveOnly!string == message, "Did not get the same message back");
+
         return result_ok;
     }
 
