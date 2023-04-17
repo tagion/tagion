@@ -137,7 +137,7 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
 
     //bool identical() pure nothrow {
     bool identical() {
-        if (ctx.empty) {
+        if (rim < 0 || ctx.empty) {
             return false;
         }
         const _index = ctx.added_range.index;
@@ -164,7 +164,7 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
 
     private this(RimKeyRange rhs, const uint rim) {
         ctx = rhs.ctx;
-        rim_key = rhs.front.fingerprint[rim];
+        rim_key = (rhs.empty) ? 0 : rhs.front.fingerprint[rim];
         this.rim = rim & int.max;
         get_type = rhs.get_type;
 
@@ -260,7 +260,19 @@ version (unittest) {
 
     @safe
     void traverse(Range)(Range rim_key_range, const uint rim) if (__traits(isSame, TemplateOf!Range, RimKeyRange)) {
-        writefln("range rim %d", rim);
+        writefln("range rim %d %02X", rim, rim_key_range.rim_key);
+        while (!rim_key_range.empty) {
+            if (rim_key_range.identical) {
+                writefln("Identical %d", rim_key_range.save.walkLength);
+                rim_key_range.each!q{a.dump};
+                writefln("after %d", rim_key_range.save.walkLength);
+                writefln("nextRim %d", rim_key_range.nextRim(rim + 1).save.walkLength);
+            }
+            else {
+                traverse(rim_key_range.nextRim(rim + 1), rim + 1);
+            }
+        }
+        return;
         if (rim_key_range.empty) {
             return;
         }
@@ -276,7 +288,7 @@ version (unittest) {
             rim_key_range.popFront;
             //    return;
         }
-        rim_key_range.nextRim(rim).each!q{a.dump};
+        rim_key_range.save.nextRim(rim).each!q{a.dump};
         writefln("---< rim %d", rim);
         pragma(msg, "******************************** rim_key ", typeof(rim_key_range.nextRim(rim)));
         while (!rim_key_range.empty) {
@@ -323,7 +335,7 @@ unittest {
             { // with one archive rim_key_range should be identical
                 auto rim_key_range = rimKeyRange(rec_identical);
                 assert(!rim_key_range.empty);
-                assert(rim_key_range.identical);
+                assert(!rim_key_range.identical);
                 assert(rim_key_range.nextRim(00).identical);
             }
             writefln("REMOVE");
@@ -331,7 +343,7 @@ unittest {
             { // with two archives one ADD and one REMOVE with same fingerprint should be identical
                 auto rim_key_range = rimKeyRange(rec_identical);
                 assert(!rim_key_range.empty);
-                assert(rim_key_range.identical);
+                assert(!rim_key_range.identical);
                 assert(rim_key_range.nextRim(00).identical);
             }
 
@@ -478,7 +490,7 @@ unittest {
             rim_key_range.nextRim(0).save.take(3).each!q{a.dump};
             writeln("---- xxx ---");
 
-            traverse(rim_key_range.nextRim(0), 0);
+            traverse(rim_key_range, 0);
         }
     }
 }
