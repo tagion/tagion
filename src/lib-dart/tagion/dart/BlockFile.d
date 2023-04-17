@@ -726,16 +726,6 @@ class BlockFile {
             }
         }
 
-        alias B = Tuple!(string, "label", uint, "blocks");
-        version (none) Document generate_block(const BlockFile blockfile, const B b) {
-            enum filler = " !---- ;-) -----! ";
-            string text = b.label;
-            while ((text.length / blockfile.DATA_SIZE) < b.blocks) {
-                text ~= filler;
-            }
-            return cast(Buffer) text;
-        }
-
         {
             import std.exception : assertThrown, ErrnoException;
 
