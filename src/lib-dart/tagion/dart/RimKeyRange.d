@@ -5,11 +5,12 @@ import std.algorithm;
 import std.range;
 import std.traits;
 import std.container.array;
-import tagion.dart.Recorder;
+import tagion.dart.Recorder : RecordFactoryT, Archive, GetType, Neutral;
 import tagion.basic.Types : isBufferType;
 import tagion.utils.Miscellaneous : hex;
 import tagion.basic.Debug;
 
+alias RecordFactoryX =RecordFactoryT!true;
 /++
  + Gets the rim key from a buffer
  +
@@ -31,8 +32,7 @@ RimKeyRange!Range rimKeyRange(Range)(Range range, const GetType get_type = Neutr
 }
 
 @safe
-auto rimKeyRange(Rec)(Rec rec, const GetType get_type = Neutral)
-        if (isImplicitlyConvertible!(Rec, const(RecordFactory.Recorder))) {
+auto rimKeyRange(RecordFactoryX.Recorder rec, const GetType get_type = Neutral) {
 
     return rimKeyRange(rec[], get_type);
 }
@@ -40,7 +40,7 @@ auto rimKeyRange(Rec)(Rec rec, const GetType get_type = Neutral)
 // Range over a Range with the same key in the a specific rim
 @safe
 struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(ElementType!Range, Archive)) {
-    alias archive_less = RecordFactory.Recorder.archive_sorted;
+    alias archive_less = RecordFactoryX.Recorder.archive_sorted;
 
     //alias Archives=RecordFactory.Recorder.Archives;
     @safe
@@ -110,6 +110,7 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
             RangeContext save() {
                 return new RangeContext(this);
             }
+
         }
         @safe @nogc
         final class AdderRange {
@@ -134,6 +135,34 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
         }
     }
 
+    //bool identical() pure nothrow {
+    bool identical() {
+        if (ctx.empty) {
+            return false;
+        }
+        const _index = ctx.added_range.index;
+        auto _range = ctx.range;
+        bool result=true;
+    scope(exit) {
+            ctx.added_range.index = _index;
+            ctx.range =_range;
+            __write("End identical %s", result);
+        }
+        __write("identical %d len=%d", rim, ctx.save.walkLength);
+        const first = ctx.front;
+        foreach(a; this.save) {
+            //result&=first.fingerprint == a.fingerprint;
+            __write("identical %s rim_key=%02x rim=%d --rim_key=%04X", 
+        first.fingerprint == a.fingerprint, 
+        rim_key, rim,
+(rim < 0)?-1:int(a.fingerprint.rim_key(rim)));
+        a.dump;
+         }
+        //const first = ctx.front;
+        result =this.all!(a => first.fingerprint == a.fingerprint);
+        return result;
+    }
+
     protected RangeContext ctx;
     const ubyte rim_key;
     const int rim;
@@ -148,10 +177,17 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
 
     private this(RimKeyRange rhs, const uint rim) {
         ctx = rhs.ctx;
-        rim_key = rhs.rim_key;
+        rim_key = rhs.front.fingerprint[rim];
         this.rim = rim & int.max;
         get_type = rhs.get_type;
 
+    }
+
+    private this(RimKeyRange rhs) pure nothrow {
+        ctx = rhs.ctx.save;
+        rim_key = rhs.rim_key;
+        rim = rhs.rim;
+        get_type = rhs.get_type;
     }
 
     private this(Range range, const GetType get_type) {
@@ -163,7 +199,7 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
         rim_key = 0;
     }
 
-    RimKeyRange opCall(const uint rim) pure nothrow {
+    RimKeyRange nextRim(const uint rim) pure nothrow {
         return RimKeyRange(this, rim);
     }
     /**
@@ -191,10 +227,7 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
              * Returns: true if empty
              */
         bool empty() @nogc {
-            if (ctx.empty) {
-                return true;
-            }
-            return (rim >= 0) && (rim_key != ctx.front.fingerprint.rim_key(rim));
+            return ctx.empty || (rim >= 0) && (rim_key != ctx.front.fingerprint.rim_key(rim));
         }
 
         void popFront() {
@@ -227,9 +260,7 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
          * Returns: copy of this range
          */
     RimKeyRange save() pure nothrow {
-        RimKeyRange result = this;
-        result.ctx = this.ctx.save;
-        return result;
+        return RimKeyRange(this);
     }
 
     static assert(isInputRange!RimKeyRange);
@@ -237,24 +268,54 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
 
 }
 
+version (unittest) {
+    import std.stdio;
+
+    @safe
+    void traverse(Range)(Range rim_key_range, const uint rim) if (__traits(isSame, TemplateOf!Range, RimKeyRange)) {
+        writefln("range rim %d", rim);
+        if (rim_key_range.empty) {
+            return;
+        }
+        writefln("rim_key_range.identical=%s %d rim_key=%04X", 
+    rim_key_range.identical,
+    rim_key_range.save.walkLength,
+(rim < 0)?-1:int(rim_key_range.front.fingerprint.rim_key(rim)));
+        if (rim_key_range.identical) {
+            writefln("Identical!!");
+            rim_key_range.each!q{a.dump};
+            writefln("is it empty? %s", rim_key_range.empty);
+            rim_key_range.popFront;
+            return;
+        }
+        rim_key_range.nextRim(rim).each!q{a.dump};
+        writefln("---< rim %d", rim);
+        pragma(msg, "******************************** rim_key ", typeof(rim_key_range.nextRim(rim)));
+        while (!rim_key_range.empty) {
+            //foreach (r; rim_key_range.nextRim(rim)) {
+            writefln("***");
+            traverse(rim_key_range.nextRim(rim), rim + 1);
+
+            //          rim_key_range.nextRim(rim).each!q{a.dump};
+        }
+    }
+}
+
 @safe
 unittest {
-    import std.stdio;
     import std.typecons;
     import std.algorithm.searching : until;
     import tagion.dart.DARTFakeNet;
 
     const net = new DARTFakeNet;
-    auto factory = RecordFactory(net);
+    auto factory = RecordFactoryX(net);
 
     { // Test with ADD's only in the RimKeyRange root (rim == -1)
         const table = [
 
             0xABCD_1334_5678_9ABCUL,
             0xABCD_1335_5678_9ABCUL,
-            0xABCD_1336_5678_9ABCUL,
-
-            // Archives which add added in to the RimKeyRange
+            0xABCD_1336_5678_9ABCUL, // Archives which add added in to the RimKeyRange
             0xABCD_1334_AAAA_AAAAUL,
             0xABCD_1335_5678_AAAAUL,
 
@@ -263,6 +324,38 @@ unittest {
             .map!(t => DARTFakeNet.fake_doc(t))
             .array;
 
+        { /// identical 
+            auto rec_identical = factory.recorder;
+            { // empty rim_key_range should not be identical
+                auto rim_key_range = rimKeyRange(rec_identical);
+                assert(rim_key_range.empty);
+                assert(!rim_key_range.identical);
+            }
+            rec_identical.insert(documents[1], Archive.Type.ADD);
+            { // with one archive rim_key_range should be identical
+                auto rim_key_range = rimKeyRange(rec_identical);
+                assert(!rim_key_range.empty);
+                assert(rim_key_range.identical);
+                assert(rim_key_range.nextRim(00).identical);
+            }
+            writefln("REMOVE");
+            rec_identical.insert(documents[1], Archive.Type.REMOVE);
+            { // with two archives one ADD and one REMOVE with same fingerprint should be identical
+                auto rim_key_range = rimKeyRange(rec_identical);
+                assert(!rim_key_range.empty);
+                assert(rim_key_range.identical);
+                assert(rim_key_range.nextRim(00).identical);
+            }
+
+            rec_identical.insert(documents[2], Archive.Type.ADD);
+            { // If not all the archives have the with same fingerprint should be identical
+                auto rim_key_range = rimKeyRange(rec_identical);
+                assert(!rim_key_range.empty);
+                assert(!rim_key_range.identical);
+                assert(!rim_key_range.nextRim(00).identical);
+            }
+
+        }
         // Create a recorder from the first 9 documents 
         auto rec = factory.recorder(documents.take(3), Archive.Type.ADD);
         { // Check the the rim-key range is the same as the recorder
@@ -330,25 +423,24 @@ unittest {
     {
         const table = [
 
-            ulong.min, // 0
+            ulong.min, // 0                      |00|..
+            //00 01 02  03   ........
+            0xAB_CC_13_34_56789ABCUL, // 1    |AB|CC|..
+            0xAB_CD_13_35_56789ABCUL, // 2    |AB|CD|13|..
+            0xAB_CD_13_36_56789ABCUL, // 3    |AB|CD|14|..
+            //00 01 02 03  04  ........           00 01 02 03 04  
+            0xAB_CD_13_37_56_789ABCUL, // 4    |AB|CD|13|37|56|..
+            0xAB_CD_13_37_58_789ABCUL, // 5    |AB|CD|13|37|58|..
+            0xAB_CD_13_37_60_789ABCUL, // 6    |AB|CD|13|37|60|..
+            //00 01 02 03 04 05  06  ...          00 01 02 03 04 05 06  
+            0xAB_CD_13_37_69_78_9B_BCUL, // 7  |AB|CD|13|37|69|78|9B|..
+            0xAB_CD_13_37_69_78_9C_BEUL, // 8  |AB|CD|13|37|69|78|9C|.. 
+            0xAB_CD_13_37_69_78_9D_BFUL, // 9  |AB|CD|13|37|69|78|9D|.. 
 
-            0xABCD_1334_5678_9ABCUL, // 1
-            0xABCD_1335_5678_9ABCUL, // 2
-            0xABCD_1336_5678_9ABCUL, // 3
-
-            0xABCD_1337_5678_9ABCUL, // 1
-            0xABCD_1337_5878_9ABCUL, // 2
-            0xABCD_1337_6078_9ABCUL, // 3
-
-            0xABCD_1337_6078_9BBCUL, // 1
-            0xABCD_1337_6078_9CBCUL, // 2
-            0xABCD_1337_6078_9DBCUL, // 3
-
-            ulong.max,
-
+            ulong.max,                     // 11 |FF|..
             // Archives which add added in to the RimKeyRange
-            0xABCD_1334_AAAA_AAAAUL,
-            0xABCD_1335_5678_AAAAUL,
+            0xAB_CD_1334_AAAA_AAAAUL,
+            0xAB_CD_1335_5678_AAAAUL,
 
         ];
         const documents = table
@@ -360,19 +452,46 @@ unittest {
                 .until!(doc => doc == DARTFakeNet.fake_doc(ulong.max))(No.openRight),
                 Archive.Type.ADD);
 
+        version(none)
+        { /// Check nextRim
+            auto rim_key_range = rimKeyRange(rec);
+            { // Check the range lengths of rim = 00 
+                auto rim_key_copy = rim_key_range.save;
+                const rim = 00;
+                assert(rim_key_copy.nextRim(rim).identical);
+                assert(rim_key_copy.nextRim(rim).walkLength == 1);
+                assert(rim_key_copy.nextRim(rim).walkLength == 9);
+                assert(rim_key_copy.nextRim(rim).walkLength == 1);
+            }
+
+            { // Check the range lengths of rim = 01 
+                auto rim_key_copy = rim_key_range.save;
+                const rim = 01;
+                assert(rim_key_copy.nextRim(rim).walkLength == 1); 
+                assert(rim_key_copy.nextRim(rim).walkLength == 1);
+                assert(rim_key_copy.nextRim(rim).walkLength == 8);
+                assert(rim_key_copy.nextRim(rim).walkLength == 1);
+            }
+
+        }
         const rec_len = rec.length;
         // Checks that the 
+        writeln("###################### #######################");
         { // 
             writefln("---- %d", rec_len);
             rec.dump;
             writefln("----");
             auto rim_key_range = rimKeyRange(rec);
             rim_key_range.save.each!q{a.dump};
-            auto rim_key_range_saved = rim_key_range.save;
-            assert(equal(rec[].map!q{a.fingerprint}, rim_key_range.map!q{a.fingerprint}));
-            // Check save in forward-range
-            assert(equal(rec[].map!q{a.fingerprint}, rim_key_range_saved.map!q{a.fingerprint}));
+            assert(equal(rec[].map!q{a.fingerprint}, rim_key_range.save.map!q{a.fingerprint}));
 
+            auto rec_range = rec[];
+            writefln("traverse identical %s", rim_key_range.identical);
+            writefln("traverse identical nextRim %s", rim_key_range.nextRim(0).identical);
+            rim_key_range.nextRim(0).save.take(3).each!q{a.dump};
+            writeln("---- xxx ---");
+            
+            traverse(rim_key_range.nextRim(0), 0);
         }
     }
 }

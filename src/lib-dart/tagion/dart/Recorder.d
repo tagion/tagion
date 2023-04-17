@@ -31,18 +31,27 @@ import tagion.dart.DARTBasic;
 import tagion.basic.tagionexceptions : Check;
 
 import tagion.utils.Miscellaneous : toHexString;
+import tagion.basic.Version : ver;
+
 import std.stdio : stdout, File;
 
 alias hex = toHexString;
 
 private alias check = Check!DARTRecorderException;
 
+version (SYNC_BLOCKFILE_WORKING) {
+    alias RecordFactory = RecordFactoryT!false;
+}
+else {
+    alias RecordFactory = RecordFactoryT!true;
+}
+
 /**
  * Record factory
  * Used to construct and handle DART recorder
  */
 @safe
-class RecordFactory {
+class RecordFactoryT(bool order_remove_add) {
 
     const HashNet net;
     @disable this();
@@ -50,8 +59,8 @@ class RecordFactory {
         this.net = net;
     }
 
-    static RecordFactory opCall(const HashNet net) {
-        return new RecordFactory(net);
+    static RecordFactoryT opCall(const HashNet net) {
+        return new RecordFactoryT(net);
     }
     /**
      * Creates an empty Recorder
@@ -115,7 +124,7 @@ class RecordFactory {
     @recordType("Recorder")
     class Recorder {
         /// This will order REMOVE before add
-        version (SYNC_BLOCKFILE_WORKING) {
+        static if (ver.SYNC_BLOCKFILE_WORKING && !order_remove_add) {
 
             alias archive_sorted = (a, b) @safe => (a.fingerprint < b.fingerprint);
         }
