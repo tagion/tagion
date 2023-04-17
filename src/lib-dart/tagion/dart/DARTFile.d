@@ -1219,6 +1219,253 @@ alias check = Check!DARTException;
         return new_root.fingerprint;
     }
 
+/+
+    Buffer modify(const(RecordFactoryT!true.Recorder) modify_records, const(bool) undo = false) {
+
+        Leave traverse_dart(RimKeyRange range, const Index branch_index) @safe {
+            if (!range.empty) {
+                auto archive = range.front;
+                Index erase_block_index;
+                scope (success) {
+                    blockfile.dispose(erase_block_index);
+                }
+                // immutable sector = sector(archive.fingerprint);
+                Branches branches;
+                if (rim < RIMS_IN_SECTOR) {
+                    if (branch_index !is INDEX_NULL) {
+                        branches = blockfile.load!Branches(branch_index);
+                        .check(branches.hasIndices,
+                                "DART failure within the sector rims the DART should contain a branch");
+                    }
+
+                    while (!range.empty) {
+                        auto sub_range = RimKeyRange(range, rim);
+                        immutable rim_key = sub_range.front.fingerprint.rim_key(rim);
+                        if (!branches[rim_key].empty) {
+                            const leave = traverse_dart(sub_range.nextRim, branches.index(rim_key));
+
+                            branches[rim_key] = leave;
+                        }
+                    }
+                    erase_block_index = Index(branch_index);
+
+                    if (branches.empty) {
+                        return Leave.init;
+                    }
+
+                    return Leave(blockfile.save(branches).index,
+                            branches.fingerprint(this));
+
+                }
+                else {
+                    uint lonely_rim_key;
+                    if (branch_index !is INDEX_NULL) {
+                        const doc = blockfile.load(branch_index);
+                        if (Branches.isRecord(doc)) {
+                            branches = Branches(doc);
+                            do {
+                                auto sub_range = RimKeyRange(range, rim);
+                                const sub_archive = sub_range.front;
+                                immutable rim_key = sub_archive.fingerprint.rim_key(rim);
+                                if (!branches[rim_key].empty) {
+                                    branches[rim_key] = traverse_dart(
+                                            sub_range.nextRim, branches.index(rim_key));
+                                }
+                            }
+                            // if the range is empty then we return a null leave.
+                            while (!range.empty);
+                            if (branches.empty) {
+                                return Leave.init;
+                            }
+
+                            if (branches.isSingle && rim > RIMS_IN_SECTOR) {
+                                const single_leave = branches[].front;
+                                const buf = cacheLoad(single_leave.index);
+                                const single_doc = Document(buf);
+
+                                if (!Branches.isRecord(single_doc)) {
+                                    return single_leave;
+                                }
+
+                            }
+
+                        }
+                        else {
+                            // This is a standalone archive ("single").
+                            // DART does not store a branch this means that it contains a leave.
+                            // Leave means and archive
+                            // The new Archives is constructed to include the archive which is already in the DART
+                            range.add(recorder.archive(doc), Archive.Type.ADD);
+
+                            scope (success) {
+                                // The archive is erased and it will be added again to the DART
+                                // if it not removed by and action in the record
+                                blockfile.dispose(branch_index);
+
+                            }
+
+                            while(!range.empty) {
+                                if (range.identical) {
+                                    // either an ADD or Leave.init.
+                                    const first = range.front;
+                                    const rim_key = range.front.fingerprint.rim_key(range.rim);
+                                    
+                                    
+                                    
+                                    if (first.type == Archive.Type.REMOVE) {
+                                        range.popFront;
+                                        if (!range.empty) {
+                                            branches[rim_key] = Leave.init;
+
+                                        }
+                                        
+                                    } 
+                                    else {
+                                        check(first.type == Archive.Type.ADD, "Should be add");
+                                        const result_leave = Leave(blockfile.save(first.filed).index, 
+                                            first.fingerprint);
+                                        range.popFront;
+                                        branches[rim_key] = result_leave; 
+                                    }
+
+
+
+
+                                }
+                                else {
+                                    // traverse the dart to nextrim.
+                                    const rim_key = range.front.fingerpint.rim_key(range.rim);
+                                    branches[rim_key] = traverse_dart(range.nextRim, branches.index(rim_key));
+                                }
+                            }
+                            
+                            version(none) {
+                                scope archives = manufactor.recorder(range).archives;
+                                range.force_empty;
+                                scope equal_range = archives.equalRange(archive_in_dart);
+
+                                if (!equal_range.empty) {
+                                    //assert(equal_range.length == 1);
+                                    const equal_archive = equal_range.front;
+                                    if (!equal_archive.done) {
+                                        if (equal_archive.isRemove(get_type)) {
+                                            equal_archive.doit;
+                                        }
+                                    }
+                                }
+                                else {
+                                    archives.insert(archive_in_dart);
+                                }
+                                auto archive_range = archives[];
+                                do {
+                                    auto sub_range = RimKeyRange(archive_range, rim);
+                                    const sub_archive = sub_range.front;
+                                    immutable rim_key = sub_archive.fingerprint.rim_key(rim);
+                                    if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
+                                        branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key), rim + 1);
+                                    }
+                                }
+                                while (!archive_range.empty);
+                            }
+                        }
+                    }
+                    else {
+                        // Adds archives in new branch which has not been created yet
+                        if (range.oneLeft) {
+                            auto one_archive = range.front;
+                            if (!one_archive.done) {
+                                range.popFront;
+                                one_archive.doit;
+                                pragma(msg, "This line is never called");
+                                if (one_archive.isRemove(get_type)) {
+                                    return Leave.init;
+                                }
+
+                                lonely_rim_key = one_archive.fingerprint.rim_key(rim);
+                                if (rim == RIMS_IN_SECTOR) {
+                                    // Return a branch with as single leave when the leave is on the on
+                                    // the edge between the sector
+                                    branches[lonely_rim_key] = Leave(blockfile.save(one_archive.store)
+                                            .index,
+                                            one_archive.fingerprint);
+                                    return Leave(blockfile.save(branches)
+                                            .index,
+                                            branches.fingerprint(this));
+                                }
+                                return Leave(blockfile.save(one_archive.store)
+                                        .index,
+                                        one_archive.fingerprint);
+
+                            }
+                        }
+                        else {
+                            do {
+                                const sub_archive = range.front;
+                                immutable rim_key = sub_archive.fingerprint.rim_key(rim);
+                                auto sub_range = RimKeyRange(range, rim);
+
+                                if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
+                                    branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key), rim + 1);
+                                }
+                            }
+                            while (!range.empty);
+                        }
+                    }
+                    if (branches.empty) {
+                        return Leave.init;
+                    }
+                    return Leave(blockfile.save(branches)
+                            .index, branches.fingerprint(this));
+
+                }
+                else {
+                    assert(0, format("Range %s not expected", R.stringof));
+                }
+            }
+            return Leave.init;
+        }
+
+        if (modify_records.empty) {
+            return _fingerprint;
+        }
+
+        auto range = modify_records.archives[];
+
+        
+        immutable new_root = (() {
+            if (undo) {
+                return traverse_dart(RimKeyRange(range), blockfile.masterBlock.root_index);
+            } 
+            else {
+                return traverse_dart(RimKeyRange(range.retro), blockfile.masterBlock.root_index);
+            }
+        })();
+
+
+
+
+        scope (success) {
+            // On success the new root_index is set and the DART is updated
+            _fingerprint = new_root.fingerprint;
+            if ((new_root.fingerprint is null) || (new_root.index is INDEX_NULL)) {
+                // All data has been delete so a new blockfile is created
+                blockfile.close;
+                blockfile = BlockFile.reset(filename);
+            }
+            else {
+                blockfile.root_index = new_root.index;
+                blockfile.store;
+            }
+        }
+        scope (failure) {
+            // On failure drop the BlockFile and reopen it
+            blockfile.close;
+            blockfile = BlockFile(filename);
+        }
+        return new_root.fingerprint;
+    }
++/
+
     RecordFactory.Recorder readStubs() { //RIMS_IN_SECTOR
         RecordFactory.Recorder rec = manufactor.recorder();
         void iterate(const Index branch_index, immutable uint rim = 0) @safe {

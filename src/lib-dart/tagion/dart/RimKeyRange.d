@@ -147,7 +147,8 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
             ctx.range = _range;
         }
         const first = ctx.front;
-        return this.all!(a => first.fingerprint == a.fingerprint);
+        popFront;
+        return !empty && this.all!((a) => first.fingerprint == a.fingerprint);
     }
 
     protected RangeContext ctx;
@@ -328,7 +329,7 @@ unittest {
                 auto rim_key_range = rimKeyRange(rec_identical);
                 assert(!rim_key_range.empty);
                 assert(!rim_key_range.identical);
-                assert(rim_key_range.selectRim(00).identical);
+                assert(!rim_key_range.selectRim(00).identical);
             }
             rec_identical.insert(documents[1], Archive.Type.REMOVE);
             { // with two archives one ADD and one REMOVE with same fingerprint should be identical
