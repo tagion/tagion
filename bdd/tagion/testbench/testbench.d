@@ -19,6 +19,7 @@ int main(string[] args) {
     import dart_stress = tagion.testbench.dart_stress;
     import actor_tests = tagion.testbench.actor_tests;
     import dart_insert_remove_stress = tagion.testbench.dart_insert_remove_stress;
+    import dart_sync_stress = tagion.testbench.dart_sync_stress;
 
     alias alltools = AliasSeq!(
             ssl_server,
@@ -35,6 +36,7 @@ int main(string[] args) {
             dart_stress,
             actor_tests,
             dart_insert_remove_stress,
+            dart_sync_stress,
     );
     mixin doOneMain!(alltools);
     return do_main(args);

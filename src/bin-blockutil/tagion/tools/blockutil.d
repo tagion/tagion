@@ -54,6 +54,58 @@ struct BlockFileAnalyzer {
         blockfile.statisticDump;
     }
 
+    void dumpGraph() {
+        import std.range;
+        import std.algorithm;
+
+        auto text = [
+            "```graphviz",
+            "digraph {",
+            `e [shape=record label="{`,
+        ];
+
+        BlockFile.BlockSegmentRange seg_range = blockfile.opSlice();
+        const uint segments_per_line = 16;
+        uint pos = 0;
+        string[] line = ["{"];
+
+        foreach (seg; seg_range) {
+
+            if (pos == segments_per_line) {
+                scope (exit) {
+                    line = ["{"];
+                    pos = 0;
+                }
+                line ~= "}|";
+                text ~= line.join;
+                // go to the next
+            }
+
+            string repeat_char;
+            if (seg.type.length == 0) {
+                repeat_char = "A";
+            }
+            else {
+                repeat_char = seg.type[0 .. 1];
+            }
+
+            line ~= repeat(repeat_char, seg.size).array.join;
+            line ~= ["|"];
+
+            pos += 1;
+        }
+        if (seg_range.walkLength % segments_per_line != 0) {
+            line ~= "}|";
+            text ~= line.join;
+        }
+
+        text ~= `}"]`;
+        text ~= "}";
+        text ~= "```";
+        // add the end
+        text.each!writeln;
+    }
+
     // static string blockType(const bool recycle_block) {
     //     return recycle_block ? "Recycle" : "Data";
     // }
@@ -170,6 +222,7 @@ int _main(string[] args) {
     bool dump_recycler;
     bool dump_recycler_statistic;
     bool dump_statistic;
+    bool dump_graph;
 
     string output_filename;
     enum logo = import("logo.txt");
@@ -186,6 +239,7 @@ int _main(string[] args) {
             "dumprecycler", "Dumps the recycler", &dump_recycler,
             "rs|recyclerstatistic", "Dumps the recycler statistic block", &dump_recycler_statistic,
             "s|statistic", "Dumps the statistic block", &dump_statistic,
+            "dg|dumpgraph", "Dump the blockfile in graphviz format", &dump_graph,
             "inspect|c", "Inspect the blockfile format", &inspect,
             "ignore|i", "Ignore blockfile format error", &ignore, //        "iter", "Set the max number of iterations do by the inspect", &analyzer.inspect_iterations,
             //       "max", format(
@@ -217,7 +271,7 @@ int _main(string[] args) {
             "<option>:",
 
         ].join("\n"),
-        main_args.options);
+                main_args.options);
         return ExitCode.NOERROR;
     }
 
@@ -267,6 +321,10 @@ int _main(string[] args) {
 
     if (dump_statistic) {
         analyzer.dumpStatistic;
+    }
+
+    if (dump_graph) {
+        analyzer.dumpGraph;
     }
 
     // if (block_number !is 0) {

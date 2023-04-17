@@ -41,7 +41,7 @@ private {
     import tagion.basic.tagionexceptions : Check;
     import tagion.utils.Miscellaneous : toHex = toHexString;
 
-    import std.stdio : writeln, writefln;
+    version (none) import std.stdio : writeln, writefln;
     import tagion.hibon.HiBONRecord;
     import tagion.hibon.HiBONJSON : toPretty;
 }
@@ -251,7 +251,7 @@ alias check = Check!DARTException;
         // }
         immutable(Buffer) merkletree(
                 const(Buffer[]) left,
-                const(Buffer[]) right) {
+        const(Buffer[]) right) {
             Buffer _left_fingerprint;
             Buffer _right_fingerprint;
             if ((left.length == 1) && (right.length == 1)) {
@@ -422,7 +422,7 @@ alias check = Check!DARTException;
                         
 
                         .check(_fingerprints[key]!is null,
-                                format("Fingerprint key=%02X at index=%d is not defined", key, index));
+                        format("Fingerprint key=%02X at index=%d is not defined", key, index));
                         indices_set = true;
                     }
                 }
@@ -786,7 +786,7 @@ alias check = Check!DARTException;
                 }
                 else {
                     // Loads the Archives into the archives
-                    .check(ordered_fingerprints.length == 1,
+                        .check(ordered_fingerprints.length == 1,
                                 format("Data base is broken at rim=%d fingerprint=%s",
                                 rim, ordered_fingerprints[0].toHex));
                     // The archive is set in erase mode so it can be easily be erased later
@@ -968,7 +968,9 @@ alias check = Check!DARTException;
                 if (rim < RIMS_IN_SECTOR) {
                     if (branch_index !is INDEX_NULL) {
                         branches = blockfile.load!Branches(branch_index);
+
                         
+
                         .check(branches.hasIndices,
                                 "DART failure within the sector rims the DART should contain a branch");
                     }
@@ -1044,7 +1046,8 @@ alias check = Check!DARTException;
                             // DART does not store a branch this means that it contains a leave.
                             // Leave means and archive
                             // The new Archives is constructed to include the archive which is already in the DART
-                            auto archive_in_dart = new Archive(manufactor.net, doc, Archive.Type.ADD);
+                            auto archive_in_dart = new Archive(manufactor.net, doc, Archive
+                                    .Type.ADD);
                             scope (success) {
                                 // The archive is erased and it will be added again to the DART
                                 // if it not removed by and action in the record
@@ -1062,7 +1065,7 @@ alias check = Check!DARTException;
                                     if (one_archive.fingerprint == archive_in_dart.fingerprint) {
                                         // if only one archive left in database
                                         if (one_archive.isRemove(get_type)) {
-                                            writefln("Archive remove %s", one_archive.fingerprint.toHex);
+                                            //   writefln("Archive remove %s", one_archive.fingerprint.toHex);
                                             one_archive.doit;
                                             return Leave.init;
                                         }
@@ -1075,10 +1078,11 @@ alias check = Check!DARTException;
                                     auto recorder = manufactor.recorder;
                                     recorder.insert(archive_in_dart);
                                     recorder.insert(one_archive);
-                                    writefln("%s",
-                                            one_archive.fingerprint == archive_in_dart.fingerprint);
-                                    writefln("-- insert inner recorder %s %s", rim, one_archive.isRemove(get_type));
-                                    recorder.dump;
+                                    version (none)
+                                        writefln("%s",
+                                                one_archive.fingerprint == archive_in_dart.fingerprint);
+                                    // writefln("-- insert inner recorder %s %s", rim, one_archive.isRemove(get_type));
+                                    //recorder.dump;
                                     auto archives_range = recorder.archives[];
                                     do {
                                         auto sub_range = RimKeyRange(archives_range, rim);
@@ -1144,10 +1148,12 @@ alias check = Check!DARTException;
                                     branches[lonely_rim_key] = Leave(blockfile.save(one_archive.store)
                                             .index,
                                             one_archive.fingerprint);
-                                    return Leave(blockfile.save(branches).index,
+                                    return Leave(blockfile.save(branches)
+                                            .index,
                                             branches.fingerprint(this));
                                 }
-                                return Leave(blockfile.save(one_archive.store).index,
+                                return Leave(blockfile.save(one_archive.store)
+                                        .index,
                                         one_archive.fingerprint);
 
                             }
@@ -1780,7 +1786,7 @@ unittest {
                     }
                 }
                 // dart_A.blockfile.dump;
-                recorder.dump;
+                //recorder.dump;
                 dart_A.modify(recorder);
                 saved_archives |= added_archives;
                 saved_archives &= ~removed_archives;
@@ -2357,12 +2363,4 @@ unittest {
 
     }
 
-}
-
-///
-@safe
-unittest {
-    auto net = new DARTFakeNet;
-    auto manufactor = RecordFactory(net);
-    immutable filename = fileId!DARTFile.fullpath;
 }

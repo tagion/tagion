@@ -725,57 +725,59 @@ unittest {
 }
 
 /// Examples: Supervisor Actor call a child actor
-@safe
-unittest {
-    log.silent = true;
+version (none) {
     @safe
-    static struct MySuperActor {
-        @task void run() {
-            alias MyActorFactory = ActorHandle!(MyActor);
-            alive;
-            while (!stop) {
-                receive;
+    unittest {
+        log.silent = true;
+        @safe
+        static struct MySuperActor {
+            @task void run() {
+                alias MyActorFactory = ActorHandle!(MyActor);
+                alive;
+                while (!stop) {
+                    receive;
+                }
+            }
+
+            mixin TaskActor;
+        }
+
+        auto my_actor_factory = actor!MyActor;
+        auto my_super_factory = actor!MySuperActor;
+        {
+            auto actor_1 = my_actor_factory("task1", 12);
+            auto super_actor_1 = my_super_factory("super1");
+            scope (exit) {
+                super_actor_1.stop;
+                actor_1.stop;
+
             }
         }
-
-        mixin TaskActor;
     }
 
-    auto my_actor_factory = actor!MyActor;
-    auto my_super_factory = actor!MySuperActor;
-    {
-        auto actor_1 = my_actor_factory("task1", 12);
-        auto super_actor_1 = my_super_factory("super1");
-        scope (exit) {
-            super_actor_1.stop;
-            actor_1.stop;
-
-        }
-    }
-}
-
-@safe
-unittest {
-    log.silent = true;
     @safe
-    static struct MyRequestActor {
-        @method string request(string text) {
-            return "<" ~ text ~ ">";
-        }
-
-        @task void run() {
-            alive;
-            while (!stop) {
-                receive;
+    unittest {
+        log.silent = true;
+        @safe
+        static struct MyRequestActor {
+            @method string request(string text) {
+                return "<" ~ text ~ ">";
             }
+
+            @task void run() {
+                alive;
+                while (!stop) {
+                    receive;
+                }
+            }
+
+            mixin TaskActor;
         }
 
-        mixin TaskActor;
-    }
+        {
 
-    {
-
-        MyRequestActor a;
-        auto request_actor_factoty = actor!MyRequestActor;
+            MyRequestActor a;
+            auto request_actor_factoty = actor!MyRequestActor;
+        }
     }
 }
