@@ -15,6 +15,7 @@ import tagion.communication.HiRPC;
 import tagion.hibon.HiBON;
 import std.stdio;
 import tagion.hibon.HiBONJSON;
+import tagion.hibon.HiBONRecord : fwrite;
 import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Pubkey;
 import tagion.crypto.aes.AESCrypto;
@@ -54,18 +55,17 @@ extern (C) {
         return -1;
     }
 
-    export uint wallet_create(uint8_t* deviceIdPtr, const uint32_t deviceIdLen, const uint8_t* pincodePtr,
-        const uint32_t pincodeLen, const uint8_t* mnemonicPtr, const uint32_t mnemonicLen) {
+    export uint wallet_create(const uint8_t* pincodePtr,
+            const uint32_t pincodeLen, const uint16_t* mnemonicPtr, const uint32_t mnemonicLen) {
         // Restore data from pointers.  
-        immutable deviceId = cast(immutable)(deviceIdPtr[0 .. deviceIdLen]);
-        immutable pincode = cast(immutable)(pincodePtr[0 .. pincodeLen]);
-        immutable mnemonic = cast(immutable)(mnemonicPtr[0 .. mnemonicLen]);
+        const pincode = cast(char[])(pincodePtr[0 .. pincodeLen]);
+        const mnemonic = mnemonicPtr[0 .. mnemonicLen];
 
         // Create a wallet from inputs.
-        auto wallet = SecureWallet!(StdSecureNet).createWalletWithMnemonic(
-            cast(immutable(char)[]) deviceId,
-            cast(immutable(char)[]) pincode,
-            cast(immutable(ubyte)[]) mnemonic);
+        auto wallet = SecureWallet!(StdSecureNet).createWallet(
+                mnemonic,
+                pincode
+        );
 
         // Create a hibon for wallet data.
         auto result = new HiBON();
@@ -77,19 +77,12 @@ extern (C) {
         auto walletFileName = "twallet.bin";
 
         try {
-            // Open the file for writing.
-            auto walletFile = File(walletFileName, "w");
-
-            // Write some text to the file
-            walletFile.write(result.serialize);
-
+            // Write to the file
+            walletFileName.fwrite(result);
             return 1;
         }
         catch (Exception e) {
             return -1;
-        }
-        finally {
-            walletFile.close();
         }
     }
 
