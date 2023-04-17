@@ -1,14 +1,19 @@
 name "tagion"
-description "It would probably be faster than light, if it was finished"
+description "It's lighter than MS teams"
 targetType "executable"
 authors "decard"
 copyright "Copyright © 2023, decard"
 license "proprietary"
-mainSourcePath "/src/bin-tools/tagion/tools/tools.d"
 excludedSourceFiles "src/lib-behaviour/tagion/behaviour/unitdata/*"
-sourceFiles "@tub/dheaders.txt" "build/x86_64-linux/tmp/secp256k1/.libs/libsecp256k1.a" 
-platform "linux-x86_64"
+sourceFiles "@tub/dub/dheaders.txt" "build/x86_64-linux/tmp/secp256k1/.libs/libsecp256k1.a" platform="linux-x86_64"
 libs "secp256k1"
 dflags "-dip25" "-dip1000" "-preview=inclusiveincontracts"
 versions "REDBLACKTREE_SAFE_PROBLEM" "SYNC_BLOCKFILE_WORKING" "TINY_AES" "WOLFSSL" "OLD_TRANSACTION" "ONETOOL" 
 stringImportPaths "tub/logos/" "/home/lucas/wrk/tagion/build/x86_64-linux"
+configuration "bin" {
+    mainSourcePath "/src/bin-tools/tagion/tools/tools.d"
+}
+configuration "test" {
+    sourcePaths "bdd/"
+    mainSourcePath "bdd/tagion/testbench/testbench.d"
+}

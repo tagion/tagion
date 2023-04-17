@@ -107,14 +107,6 @@ struct KeyRecover {
         return results;
     }
 
-    version (none) Buffer[] mnemonicHash(scope const(ubyte[]) mnemonic, scope const(char[]) deviceId) const @trusteddo {
-        scope strip_down = cast(ubyte[]) deviceId.strip_down;
-        scope deviceId_hash = net.rawCalcHash(strip_down);
-        scope mnemonic_hash = net.rawCalcHash(mnemonic);
-        auto result = net.rawCalcHash(deviceId_hash ~ mnemonic_hash);
-        return result;
-    }
-
     /**
      * Total number of combination of possible seed value
      * Params:
@@ -162,7 +154,7 @@ struct KeyRecover {
                     include[index]++;
                     local_search(index, size);
                 }
-            else if (index > 0) {
+                else if (index > 0) {
                     include[index - 1]++;
                     local_search(index - 1, size - 1);
                 }
@@ -182,9 +174,9 @@ struct KeyRecover {
      */
     void createKey(
             scope const(string[]) questions,
-    scope const(char[][]) answers,
-    const uint confidence,
-    scope const(ubyte[]) seed = null) {
+            scope const(char[][]) answers,
+            const uint confidence,
+            scope const(ubyte[]) seed = null) {
         createKey(quiz(questions, answers), confidence, seed);
     }
 
@@ -219,8 +211,8 @@ struct KeyRecover {
      *   confidence = number of minimum correct answern
      */
     void quizSeed(scope ref const(ubyte[]) R,
-    scope Buffer[] A,
-    const uint confidence) {
+            scope Buffer[] A,
+            const uint confidence) {
         scope (success) {
             generator.confidence = confidence;
             generator.S = checkHash(R);
@@ -266,7 +258,7 @@ struct KeyRecover {
     bool findSecret(
             scope ref ubyte[] R,
             scope const(string[]) questions,
-    scope const(char[][]) answers) const {
+            scope const(char[][]) answers) const {
         return findSecret(R, quiz(questions, answers));
     }
 

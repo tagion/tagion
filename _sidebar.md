@@ -35,7 +35,7 @@
 	- [Contract](/documents/protocols/contract/Contract.md)
 	- DART
 		- [Recorder](/documents/modules/dart/recorder.md)
-		- [Block file](/documents/modules/dart/block_file_recycler.md)
+		- [BlockFile and Recycler](/documents/modules/dart/block_file_recycler.md)
 	- Wallet
 		- [Wallet](/documents/modules/wallet/wallet.md)
 	- Actors
