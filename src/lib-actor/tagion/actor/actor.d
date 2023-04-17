@@ -240,6 +240,11 @@ mixin template Actor(T...) {
         stop = true;
     }
 
+    /// Default fail handler. When overriding this, unknown exceptions should always be sent to the owner
+    void failHandler(Exception e) {
+        assumeWontThrow(ownerTid.prioritySend(e));
+    }
+
     /**
      * The default message handler, if it's an unknown messages it will send a FAIL to the owner.
      * Params:
@@ -286,6 +291,7 @@ mixin template Actor(T...) {
                         &signal,
                         &control,
                         &ownerTerminated,
+                        &failHandler,
                         &unknown,
                 );
             }
