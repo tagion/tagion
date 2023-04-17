@@ -1224,221 +1224,178 @@ alias check = Check!DARTException;
         import tagion.dart.RimKeyRange : RimKeyRange;
 
         Leave traverse_dart(RimKeyRange range, const Index branch_index) @safe {
-            if (!range.empty) {
-                auto archive = range.front;
-                Index erase_block_index;
-                scope (success) {
-                    blockfile.dispose(erase_block_index);
+            if (range.empty) {
+                return Leave.init;
+            }
+
+            Index erase_block_index;
+            scope (success) {
+                blockfile.dispose(erase_block_index);
+            }
+            // immutable sector = sector(archive.fingerprint);
+            Branches branches;
+            if (range.rim < RIMS_IN_SECTOR) {
+                if (branch_index !is INDEX_NULL) {
+                    branches = blockfile.load!Branches(branch_index);
+
+                    
+
+                    .check(branches.hasIndices,
+                            "DART failure within the sector rims the DART should contain a branch");
                 }
-                // immutable sector = sector(archive.fingerprint);
-                Branches branches;
-                if (range.rim < RIMS_IN_SECTOR) {
-                    if (branch_index !is INDEX_NULL) {
-                        branches = blockfile.load!Branches(branch_index);
 
-                        
+                while (!range.empty) {
+                    immutable rim_key = range.front.fingerprint.rim_key(rim);
+                    if (!branches[rim_key].empty) {
+                        const leave = traverse_dart(range.nextRim, branches.index(rim_key));
 
-                        .check(branches.hasIndices,
-                                "DART failure within the sector rims the DART should contain a branch");
+                        branches[rim_key] = leave;
                     }
-
-                    while (!range.empty) {
-                        immutable rim_key = range.front.fingerprint.rim_key(rim);
-                        if (!branches[rim_key].empty) {
-                            const leave = traverse_dart(range.nextRim, branches.index(rim_key));
-
-                            branches[rim_key] = leave;
-                        }
-                    }
-                    erase_block_index = Index(branch_index);
-
-                    if (branches.empty) {
-                        return Leave.init;
-                    }
-
-                    return Leave(blockfile.save(branches).index,
-                            branches.fingerprint(this));
-
                 }
-                else {
-                    uint lonely_rim_key;
-                    if (branch_index !is INDEX_NULL) {
-                        const doc = blockfile.load(branch_index);
-                        if (Branches.isRecord(doc)) {
-                            branches = Branches(doc);
-                            do {
-                                auto sub_range = RimKeyRange(range, rim);
-                                const sub_archive = sub_range.front;
-                                immutable rim_key = sub_archive.fingerprint.rim_key(rim);
-                                if (!branches[rim_key].empty) {
-                                    branches[rim_key] = traverse_dart(
-                                            sub_range.nextRim, branches.index(rim_key));
-                                }
-                            }
-                            // if the range is empty then we return a null leave.
-                            while (!range.empty);
-                            if (branches.empty) {
-                                return Leave.init;
-                            }
+                erase_block_index = Index(branch_index);
 
-                            if (branches.isSingle && rim > RIMS_IN_SECTOR) {
-                                const single_leave = branches[].front;
-                                const buf = cacheLoad(single_leave.index);
-                                const single_doc = Document(buf);
-
-                                if (!Branches.isRecord(single_doc)) {
-                                    return single_leave;
-                                }
-
-                            }
-
-                        }
-                        else {
-                            // This is a standalone archive ("single").
-                            // DART does not store a branch this means that it contains a leave.
-                            // Leave means and archive
-                            // The new Archives is constructed to include the archive which is already in the DART
-                            range.add(recorder.archive(doc), Archive.Type.ADD);
-
-                            scope (success) {
-                                // The archive is erased and it will be added again to the DART
-                                // if it not removed by and action in the record
-                                blockfile.dispose(branch_index);
-
-                            }
-
-                            while (!range.empty) {
-                                if (range.identical) {
-                                    // either an ADD or Leave.init.
-                                    const first = range.front;
-                                    check(first.type == Archive.Type.REMOVE, "The first archive if identical should be of type REMOVE");
-
-                                    const rim_key = range.front.fingerprint.rim_key(range.rim);
-                                    const load_leave = branches[rim_key];
-                                    if (load_leave.fingerprint == first.fingerprint) {
-                                        blockfile.dispose(load_leave.index);
-                                    }
-                                    range.popFront;
-                                    const second = range.front;
-                                    check(second.type == Archive.Type.ADD, "The second archive if identical should be of type ADD");
-
-                                    branches[rim_key] = Leave(blockfile.save(second.filed).index,
-                                            second.fingerprint);
-
-                                    range.popFront;
-                                }
-                                else {
-                                    const rim_key = range.front.fingerpint.rim_key(range.rim);
-
-                                    const current_archive = range.front;
-                                    final switch (current_archive.type) {
-                                    case Archive.Type.ADD:
-                                        const load_leave = branches[rim_key];
-                                        if (load_leave.fingerprint != current_archive.fingerprint) {
-                                            branches[rim_key] = Leave(blockfile.save(current_archive.filed).index, current_archive
-                                                    .fingerprint);
-                                        }
-                                        else {
-
-                                        }
-                                        break;
-                                    case Archive.Type.REMOVE:
-                                        const load_leave = branches[rim_key];
-                                        if (load_leave.fingerprint == current_archive.fingerprint) {
-                                            blockfile.dispose(load_leave.index);
-                                        }
-                                        break;
-                                    case Archive.Type.NONE:
-                                        check(0, "modify should never receive recorder with Archive.Type.NONE");
-                                        break;
-                                    }
-                                    // traverse the dart to nextrim.
-                                    branches[rim_key] = traverse_dart(range.nextRim, branches.index(rim_key));
-                                }
-                            }
-
-                            version (none) {
-                                scope archives = manufactor.recorder(range).archives;
-                                range.force_empty;
-                                scope equal_range = archives.equalRange(archive_in_dart);
-
-                                if (!equal_range.empty) {
-                                    //assert(equal_range.length == 1);
-                                    const equal_archive = equal_range.front;
-                                    if (!equal_archive.done) {
-                                        if (equal_archive.isRemove(get_type)) {
-                                            equal_archive.doit;
-                                        }
-                                    }
-                                }
-                                else {
-                                    archives.insert(archive_in_dart);
-                                }
-                                auto archive_range = archives[];
-                                do {
-                                    auto sub_range = RimKeyRange(archive_range, rim);
-                                    const sub_archive = sub_range.front;
-                                    immutable rim_key = sub_archive.fingerprint.rim_key(rim);
-                                    if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
-                                        branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key), rim + 1);
-                                    }
-                                }
-                                while (!archive_range.empty);
-                            }
-                        }
-                    }
-                    else {
-                        // Adds archives in new branch which has not been created yet
-                        if (range.oneLeft) {
-                            auto one_archive = range.front;
-                            if (!one_archive.done) {
-                                range.popFront;
-                                one_archive.doit;
-                                pragma(msg, "This line is never called");
-                                if (one_archive.isRemove(get_type)) {
-                                    return Leave.init;
-                                }
-
-                                lonely_rim_key = one_archive.fingerprint.rim_key(rim);
-                                if (rim == RIMS_IN_SECTOR) {
-                                    // Return a branch with as single leave when the leave is on the on
-                                    // the edge between the sector
-                                    branches[lonely_rim_key] = Leave(blockfile.save(one_archive.store)
-                                            .index,
-                                            one_archive.fingerprint);
-                                    return Leave(blockfile.save(branches)
-                                            .index,
-                                            branches.fingerprint(this));
-                                }
-                                return Leave(blockfile.save(one_archive.store)
-                                        .index,
-                                        one_archive.fingerprint);
-
-                            }
-                        }
-                        else {
-                            do {
-                                const sub_archive = range.front;
-                                immutable rim_key = sub_archive.fingerprint.rim_key(rim);
-                                auto sub_range = RimKeyRange(range, rim);
-
-                                if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
-                                    branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key), rim + 1);
-                                }
-                            }
-                            while (!range.empty);
-                        }
-                    }
-                    if (branches.empty) {
-                        return Leave.init;
-                    }
-                    return Leave(blockfile.save(branches)
-                            .index, branches.fingerprint(this));
-
+                if (branches.empty) {
+                    return Leave.init;
                 }
+
+                return Leave(blockfile.save(branches).index,
+                        branches.fingerprint(this));
 
             }
-            return Leave.init;
+            else {
+                if (branch_index !is INDEX_NULL) {
+                    const doc = blockfile.load(branch_index);
+                    if (Branches.isRecord(doc)) {
+                        branches = Branches(doc);
+                        do {
+                            auto sub_range = RimKeyRange(range, rim);
+                            const sub_archive = sub_range.front;
+                            immutable rim_key = sub_archive.fingerprint.rim_key(rim);
+                            if (!branches[rim_key].empty) {
+                                branches[rim_key] = traverse_dart(
+                                        sub_range.nextRim, branches.index(rim_key));
+                            }
+                        }
+                        // if the range is empty then we return a null leave.
+                        while (!range.empty);
+                        if (branches.empty) {
+                            return Leave.init;
+                        }
+
+                        if (branches.isSingle && rim > RIMS_IN_SECTOR) {
+                            const single_leave = branches[].front;
+                            const buf = cacheLoad(single_leave.index);
+                            const single_doc = Document(buf);
+
+                            if (!Branches.isRecord(single_doc)) {
+                                return single_leave;
+                            }
+
+                        }
+
+                    }
+                    else {
+                        // This is a standalone archive ("single").
+                        // DART does not store a branch this means that it contains a leave.
+                        // Leave means and archive
+                        // The new Archives is constructed to include the archive which is already in the DART
+                        range.add(recorder.archive(doc), Archive.Type.ADD);
+
+                        scope (success) {
+                            // The archive is erased and it will be added again to the DART
+                            // if it not removed by and action in the record
+                            blockfile.dispose(branch_index);
+
+                        }
+
+                        while (!range.empty) {
+                            if (range.identical) {
+                                // either an ADD or Leave.init.
+                                const first = range.front;
+                                check(first.type == Archive.Type.REMOVE, "The first archive if identical should be of type REMOVE");
+
+                                const rim_key = range.front.fingerprint.rim_key(range.rim);
+                                const load_leave = branches[rim_key];
+                                if (load_leave.fingerprint == first.fingerprint) {
+                                    blockfile.dispose(load_leave.index);
+                                }
+                                range.popFront;
+                                const second = range.front;
+                                check(second.type == Archive.Type.ADD, "The second archive if identical should be of type ADD");
+
+                                branches[rim_key] = Leave(blockfile.save(second.filed)
+                                        .index,
+                                        second.fingerprint);
+
+                                range.popFront;
+                            }
+                            else {
+                                const rim_key = range.front.fingerpint.rim_key(range.rim);
+
+                                const current_archive = range.front;
+                                final switch (current_archive.type) {
+                                case Archive.Type.ADD:
+                                    if (range.moreThanOneADD) {
+                                        branches[rim_key] = traverse_dart(range.nextRim, branches.index(
+                                                rim_key));
+                                    }
+                                    else {
+                                        const load_leave = branches[rim_key];
+                                        if (load_leave.fingerprint != current_archive.fingerprint) {
+                                            branches[rim_key] = Leave(blockfile.save(current_archive.filed)
+                                                    .index,
+                                                    current_archive.fingerprint);
+                                        }
+                                    }
+                                    break;
+                                case Archive.Type.REMOVE:
+                                    const load_leave = branches[rim_key];
+                                    if (load_leave.fingerprint == current_archive.fingerprint) {
+                                        blockfile.dispose(load_leave.index);
+                                        branches[rim_key] = Leave.init;
+                                    }
+                                    break;
+                                case Archive.Type.NONE:
+                                    check(0, "modify should never receive recorder with Archive.Type.NONE");
+                                    break;
+                                }
+
+                                assert(branches.indices.filter!(leave => leave != Leave.init)
+                                        .take(2).walkLength > 1);
+                                // traverse the dart to nextrim.
+                            }
+                        }
+
+                    }
+                }
+                else {
+                    // Adds archives in new branch which has not been created yet
+
+                    if (range.moreThanOneADD) {
+
+                        while (!range.empty) {
+                            const rim_key = range.front.fingerprint.rim_key(range.rim);
+                            branches[rim_key] = traverse_dart(range.nextRim, branches.index(
+                                    rim_key));
+                        }
+
+                    }
+                    else {
+                        auto sub_range = range.filter!(a => a.type == Archive.Type.ADD);
+                        if (!sub_range.empty) {
+                            branches[rim_key] = Leave(blockfile.save(sub_range.front)
+                                    .index, sub_range.front.fingerprint);
+                        }
+                    }
+                }
+                if (branches.empty) {
+                    return Leave.init;
+                }
+                return Leave(blockfile.save(branches)
+                        .index, branches.fingerprint(this));
+
+            }
+
         }
 
         if (modify_records.empty) {

@@ -151,6 +151,19 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
         return !empty && this.all!((a) => first.fingerprint == a.fingerprint);
     }
 
+    bool moreThanOneADD() {
+        if (rim < 0 || ctx.empty) {
+            return false;
+        }
+        const _index = ctx.added_range.index;
+        auto _range = ctx.range;
+        scope (exit) {
+            ctx.added_range.index = _index;
+            ctx.range = _range;
+        }
+        return this.filter!((a) => a.type == Archive.Type.ADD).take(2).walkLength > 1;
+    }
+
     protected RangeContext ctx;
     const Buffer rim_keys;
     const int rim;
