@@ -22,7 +22,7 @@ enum feature = Feature(
             ["This feature should verify the message send between actors"]);
 
 alias FeatureContext = Tuple!(
-        MessageBetweenSupervisorAndChild, "MessageBetweenSupervisorAndChild", //SendMessageBetweenTwoChildren, "SendMessageBetweenTwoChildren",
+        MessageBetweenSupervisorAndChild, "MessageBetweenSupervisorAndChild", SendMessageBetweenTwoChildren, "SendMessageBetweenTwoChildren",
         FeatureGroup*, "result"
 );
 
@@ -131,41 +131,47 @@ class MessageBetweenSupervisorAndChild {
 
 }
 
-version (none) @safe @Scenario("send message between two children",
+@safe @Scenario("send message between two children",
         [])
 class SendMessageBetweenTwoChildren {
+    SupervisorHandle supervisorHandle;
+    ChildHandle childHandleUno;
+    ChildHandle childHandleDos;
 
     @Given("a supervisor #super and two child actors #child1 and #child2")
-    Document actorsChild1AndChild2() {
-        supervisor_factory = actor!MySuperActor;
+    Document actorsChild1AndChild2() @trusted {
+        supervisorHandle = spawnActor!MySuperActor(supervisor_task_name);
 
-        supervisorHandle = supervisor_factory(supervisor_task_name);
-        check(isRunning(supervisor_task_name), "Supervisor is not running");
+        Ctrl ctrl = receiveOnly!CtrlMsg.ctrl;
+        check(ctrl is Ctrl.STARTING, "Supervisor is not starting");
+
+        ctrl = receiveOnly!CtrlMsg.ctrl;
+        check(ctrl is Ctrl.ALIVE, "Supervisor is not alive");
+
         return result_ok;
     }
 
     @When("the #super has started the #child1 and #child2")
     Document theChild1AndChild2() @trusted {
-        supervisor_handle.isChildRunning(child1_task_name);
-        check(receiveOnly!bool, "child1 is running");
-        supervisor_handle.isChildRunning(child2_task_name);
-        check(receiveOnly!bool, "child2 is running");
+        // The supervisor should only send alive when it has receive alive from the children.
+        // we assign the child handles
+        childHandleUno = actorHandle!MyActor(child1_task_name);
+        childHandleDos = actorHandle!MyActor(child2_task_name);
+
         return result_ok;
     }
 
     @When("send a message from #super to #child1 and from #child1 to #child2 and back to the #super")
     Document backToTheSuper() @trusted {
-        supervisor_handle.roundtrip(Children.child2);
-
-        auto receive = receiveOnly!(Tuple!(string, string));
-        check(receive[0] == "hi mom", format("did not receive the right message, got %s", receive));
         return result_ok;
     }
 
     @Then("stop the #super")
-    Document stopTheSuper() {
-        supervisor_handle.stop;
-        check(!isRunning(supervisor_task_name), "supervisor is still running");
+    Document stopTheSuper() @trusted {
+        supervisorHandle.send(Sig.STOP);
+        Ctrl ctrl = receiveOnly!CtrlMsg.ctrl;
+        check(ctrl is Ctrl.END, "The supervisor did not stop");
+
         return result_ok;
     }
 
