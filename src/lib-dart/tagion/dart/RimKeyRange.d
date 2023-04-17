@@ -186,8 +186,12 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
         rim_key = 0;
     }
 
-    RimKeyRange nextRim(const uint rim) pure nothrow {
+    RimKeyRange selectRim(const uint rim) pure nothrow {
         return RimKeyRange(this, rim);
+    }
+
+    RimKeyRange nextRim() pure nothrow {
+        return RimKeyRange(this, rim + 1);
     }
     /**
      * Checks if all the archives in the range are of the type REMOVE
@@ -259,44 +263,18 @@ version (unittest) {
     import std.stdio;
 
     @safe
-    void traverse(Range)(Range rim_key_range, const uint rim) if (__traits(isSame, TemplateOf!Range, RimKeyRange)) {
-        writefln("range rim %d %02X", rim, rim_key_range.rim_key);
+    void traverse(Range)(Range rim_key_range) if (__traits(isSame, TemplateOf!Range, RimKeyRange)) {
+        writefln("range rim %d %02X", rim_key_range.rim, rim_key_range.rim_key);
         while (!rim_key_range.empty) {
             if (rim_key_range.identical) {
                 writefln("Identical %d", rim_key_range.save.walkLength);
                 rim_key_range.each!q{a.dump};
                 writefln("after %d", rim_key_range.save.walkLength);
-                writefln("nextRim %d", rim_key_range.nextRim(rim + 1).save.walkLength);
+                writefln("selectRim %d", rim_key_range.selectRim(rim_key_range.rim + 1).save.walkLength);
             }
             else {
-                traverse(rim_key_range.nextRim(rim + 1), rim + 1);
+                traverse(rim_key_range.nextRim);
             }
-        }
-        return;
-        if (rim_key_range.empty) {
-            return;
-        }
-
-        writefln("rim_key_range.identical=%s %d rim_key=%04X",
-                rim_key_range.identical,
-                rim_key_range.save.walkLength,
-                (rim < 0) ? -1 : int(rim_key_range.front.fingerprint.rim_key(rim)));
-        if (rim_key_range.identical) {
-            writefln("Identical!!");
-            rim_key_range.each!q{a.dump};
-            writefln("is it empty? %s", rim_key_range.empty);
-            rim_key_range.popFront;
-            //    return;
-        }
-        rim_key_range.save.nextRim(rim).each!q{a.dump};
-        writefln("---< rim %d", rim);
-        pragma(msg, "******************************** rim_key ", typeof(rim_key_range.nextRim(rim)));
-        while (!rim_key_range.empty) {
-            //foreach (r; rim_key_range.nextRim(rim)) {
-            writefln("***");
-            traverse(rim_key_range.nextRim(rim), rim + 1);
-
-            //          rim_key_range.nextRim(rim).each!q{a.dump};
         }
     }
 }
@@ -336,7 +314,7 @@ unittest {
                 auto rim_key_range = rimKeyRange(rec_identical);
                 assert(!rim_key_range.empty);
                 assert(!rim_key_range.identical);
-                assert(rim_key_range.nextRim(00).identical);
+                assert(rim_key_range.selectRim(00).identical);
             }
             writefln("REMOVE");
             rec_identical.insert(documents[1], Archive.Type.REMOVE);
@@ -344,7 +322,7 @@ unittest {
                 auto rim_key_range = rimKeyRange(rec_identical);
                 assert(!rim_key_range.empty);
                 assert(!rim_key_range.identical);
-                assert(rim_key_range.nextRim(00).identical);
+                assert(rim_key_range.selectRim(00).identical);
             }
 
             rec_identical.insert(documents[2], Archive.Type.ADD);
@@ -352,7 +330,7 @@ unittest {
                 auto rim_key_range = rimKeyRange(rec_identical);
                 assert(!rim_key_range.empty);
                 assert(!rim_key_range.identical);
-                assert(!rim_key_range.nextRim(00).identical);
+                assert(!rim_key_range.selectRim(00).identical);
             }
 
         }
@@ -452,24 +430,24 @@ unittest {
                 .until!(doc => doc == DARTFakeNet.fake_doc(ulong.max))(No.openRight),
                 Archive.Type.ADD);
 
-        version (none) { /// Check nextRim
+        version (none) { /// Check selectRim
             auto rim_key_range = rimKeyRange(rec);
             { // Check the range lengths of rim = 00 
                 auto rim_key_copy = rim_key_range.save;
                 const rim = 00;
-                assert(rim_key_copy.nextRim(rim).identical);
-                assert(rim_key_copy.nextRim(rim).walkLength == 1);
-                assert(rim_key_copy.nextRim(rim).walkLength == 9);
-                assert(rim_key_copy.nextRim(rim).walkLength == 1);
+                assert(rim_key_copy.selectRim(rim).identical);
+                assert(rim_key_copy.selectRim(rim).walkLength == 1);
+                assert(rim_key_copy.selectRim(rim).walkLength == 9);
+                assert(rim_key_copy.selectRim(rim).walkLength == 1);
             }
 
             { // Check the range lengths of rim = 01 
                 auto rim_key_copy = rim_key_range.save;
                 const rim = 01;
-                assert(rim_key_copy.nextRim(rim).walkLength == 1);
-                assert(rim_key_copy.nextRim(rim).walkLength == 1);
-                assert(rim_key_copy.nextRim(rim).walkLength == 8);
-                assert(rim_key_copy.nextRim(rim).walkLength == 1);
+                assert(rim_key_copy.selectRim(rim).walkLength == 1);
+                assert(rim_key_copy.selectRim(rim).walkLength == 1);
+                assert(rim_key_copy.selectRim(rim).walkLength == 8);
+                assert(rim_key_copy.selectRim(rim).walkLength == 1);
             }
 
         }
@@ -486,11 +464,11 @@ unittest {
 
             auto rec_range = rec[];
             writefln("traverse identical %s", rim_key_range.identical);
-            writefln("traverse identical nextRim %s", rim_key_range.nextRim(0).identical);
-            rim_key_range.nextRim(0).save.take(3).each!q{a.dump};
+            writefln("traverse identical selectRim %s", rim_key_range.selectRim(0).identical);
+            rim_key_range.selectRim(0).save.take(3).each!q{a.dump};
             writeln("---- xxx ---");
 
-            traverse(rim_key_range, 0);
+            traverse(rim_key_range);
         }
     }
 }
