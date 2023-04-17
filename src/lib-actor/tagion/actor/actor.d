@@ -7,7 +7,7 @@ import std.typecons;
 import core.thread;
 import std.exception;
 
-// import tagion.basic.tagionexceptions : TagionException, Check;
+import tagion.basic.tagionexceptions : TagionException, Check;
 
 bool all(Ctrl[Tid] aa, Ctrl ctrl) {
     foreach (val; aa) {
@@ -18,11 +18,11 @@ bool all(Ctrl[Tid] aa, Ctrl ctrl) {
     return true;
 }
 
-//class UnknownMessage : TagionException {
-//    this(immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__) pure {
-//        super(msg, file, line);
-//    }
-//}
+class UnknownMessage : TagionException {
+    this(immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__) pure {
+        super(msg, file, line);
+    }
+}
 
 /**
  * Message "Atom" type
@@ -230,7 +230,7 @@ static:
      *   message = literally any message
      */
     void unknown(Variant message) {
-        assert(0, "No delegate to deal with message: %s".format(message));
+        throw new UnknownMessage("No delegate to deal with message: %s".format(message));
     }
 
     nothrow void task() {
