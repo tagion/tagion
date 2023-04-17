@@ -6,6 +6,7 @@ import std.format : format;
 import std.typecons;
 import core.thread;
 import std.exception;
+import tagion.basic.tagionexceptions : TagionException, Check;
 
 bool all(Ctrl[Tid] aa, Ctrl ctrl) {
     foreach (val; aa) {
@@ -14,6 +15,12 @@ bool all(Ctrl[Tid] aa, Ctrl ctrl) {
         }
     }
     return true;
+}
+
+class UnknownMessage : TagionException {
+    this(immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__) pure {
+        super(msg, file, line);
+    }
 }
 
 /**
@@ -33,7 +40,6 @@ struct Msg(string name) {
 enum Ctrl {
     STARTING, // The actors is lively
     ALIVE, /// Send to the ownerTid when the task has been started
-    FAIL, /// This if a something failed other than an exception
     END, /// Send for the child to the ownerTid when the task ends
 }
 
@@ -214,24 +220,6 @@ mixin template Actor(T...) {
     /// Controls message sent from the children.
     void control(CtrlMsg msg) {
         childrenState[msg.tid] = msg.ctrl;
-        with (Ctrl) final switch (msg.ctrl) {
-        case STARTING:
-            debug writeln(msg);
-            break;
-
-        case ALIVE:
-            debug writeln(msg);
-            break;
-
-        case FAIL:
-            debug writeln(msg);
-            // Handle the exception
-            break;
-
-        case END:
-            debug writeln(msg);
-            break;
-        }
     }
 
     /// Stops the actor if the supervisor stops
@@ -251,7 +239,6 @@ mixin template Actor(T...) {
      *   message = literally any message
      */
     void unknown(Variant message) {
-        setState(Ctrl.FAIL);
         assert(0, "No delegate to deal with message: %s".format(message));
     }
 
@@ -296,13 +283,12 @@ mixin template Actor(T...) {
                 );
             }
         }
+
         // If we catch an exception we send it back to owner for them to deal with it.
         catch (Exception e) {
-            // FAIL message should be able to carry the exception with it
             // Use tagion taskexception when it part of the tree
             immutable exception = cast(immutable) e;
             assumeWontThrow(ownerTid.prioritySend(exception));
-            setState(Ctrl.FAIL);
         }
     }
 }
