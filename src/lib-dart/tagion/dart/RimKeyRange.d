@@ -6,7 +6,7 @@ import std.range;
 import std.traits;
 import std.container.array;
 import tagion.dart.Recorder : RecordFactoryT, Archive, GetType, Neutral;
-import tagion.basic.Types : isBufferType;
+import tagion.basic.Types : isBufferType, Buffer;
 import tagion.utils.Miscellaneous : hex;
 import tagion.basic.Debug;
 
@@ -64,7 +64,7 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
              * Checks if the range is empty
              * Returns: true if empty
              */
-            bool empty() const @nogc {
+            bool empty() @nogc {
                 return range.empty && added_range.empty;
             }
 
@@ -151,20 +151,20 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
     }
 
     protected RangeContext ctx;
-    const ubyte rim_key;
+    const Buffer rim_keys;
     const int rim;
     const GetType get_type;
     @disable this();
 
     void add(Archive archive)
-    in ((rim < 0) || (rim_key == archive.fingerprint.rim_key(rim)))
+    in ((rim < 0) || (rim_keys == archive.fingerprint[0 .. rim + 1]))
     do {
         ctx._added_archives ~= (archive);
     }
 
     private this(RimKeyRange rhs, const uint rim) {
         ctx = rhs.ctx;
-        rim_key = (rhs.empty) ? 0 : rhs.front.fingerprint[rim];
+        rim_keys = (rhs.empty) ? Buffer.init : rhs.front.fingerprint[0 .. rim + 1];
         this.rim = rim & int.max;
         get_type = rhs.get_type;
 
@@ -172,7 +172,7 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
 
     private this(RimKeyRange rhs) pure nothrow {
         ctx = rhs.ctx.save;
-        rim_key = rhs.rim_key;
+        rim_keys = rhs.rim_keys;
         rim = rhs.rim;
         get_type = rhs.get_type;
     }
@@ -183,7 +183,7 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
         rim = -1;
         //auto range_save=_range.save;
         ctx = new RangeContext(range);
-        rim_key = 0;
+        rim_keys = null;
     }
 
     RimKeyRange selectRim(const uint rim) pure nothrow {
@@ -218,7 +218,7 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
              * Returns: true if empty
              */
         bool empty() @nogc {
-            return ctx.empty || (rim >= 0) && (rim_key != ctx.front.fingerprint.rim_key(rim));
+            return ctx.empty || (rim >= 0) && (rim_keys != ctx.front.fingerprint[0 .. rim + 1]);
         }
 
         void popFront() {
@@ -262,15 +262,27 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
 version (unittest) {
     import std.stdio;
 
+    static bool _reverse_order; /// Used to check undo rim_key_range
     @safe
     void traverse(Range)(Range rim_key_range) if (__traits(isSame, TemplateOf!Range, RimKeyRange)) {
-        writefln("range rim %d %02X", rim_key_range.rim, rim_key_range.rim_key);
+        writefln("range rim %d %s", rim_key_range.rim, rim_key_range.rim_keys.hex);
         while (!rim_key_range.empty) {
             if (rim_key_range.identical) {
+                assert(!rim_key_range.empty);
                 writefln("Identical %d", rim_key_range.save.walkLength);
-                rim_key_range.each!q{a.dump};
+                rim_key_range.save.each!q{a.dump};
+                const first = rim_key_range.front;
+                rim_key_range.popFront;
+                if (!rim_key_range.empty) {
+                    const second = rim_key_range.front;
+                    assert(first.fingerprint == second.fingerprint,
+                            "First and second idenitical fingerprints should be the same");
+                    assert(_reverse_order ^ (first.type < second.type), "Type order not correct");
+                    rim_key_range.popFront;
+                }
+                assert(rim_key_range.empty);
                 writefln("after %d", rim_key_range.save.walkLength);
-                writefln("selectRim %d", rim_key_range.selectRim(rim_key_range.rim + 1).save.walkLength);
+                writefln("selectRim %d", rim_key_range.save.selectRim(rim_key_range.rim + 1).walkLength);
             }
             else {
                 traverse(rim_key_range.nextRim);
@@ -470,5 +482,18 @@ unittest {
 
             traverse(rim_key_range);
         }
+
+        { //
+            pragma(msg, "typeof(rec[])) ", typeof(rec[]));
+            pragma(msg, "typeof(rec[].retro)", typeof(rec[].retro));
+            auto rim_key_range = rimKeyRange(rec[].retro);
+            writeln("rec reverse");
+            rec[].retro.each!q{a.dump};
+            writeln("rim key reverse");
+            rim_key_range.save.each!q{a.dump};
+            traverse(rim_key_range);
+
+        }
+
     }
 }
