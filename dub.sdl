@@ -15,5 +15,5 @@ configuration "bin" {
 }
 configuration "test" {
     sourcePaths "bdd/"
-    mainSourcePath "/home/lucas/wrk/tagion/bdd/tagion/testbench/testbench.d"
+    mainSourcePath "bdd/tagion/testbench/testbench.d"
 }
