@@ -4,6 +4,7 @@ import tagion.actor.actor;
 import core.time;
 import std.stdio;
 import std.format : format;
+import std.meta;
 
 // Default import list for bdd
 import tagion.behaviour;
@@ -11,8 +12,6 @@ import tagion.hibon.Document;
 import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
 import tagion.basic.basic : TrustedConcurrency;
-
-//import std.variant;
 
 mixin TrustedConcurrency;
 
@@ -28,8 +27,8 @@ alias FeatureContext = Tuple!(
 );
 
 enum supervisor_task_name = "supervisor";
-enum child1_task_name = "child1";
-enum child2_task_name = "child2";
+enum child1_task_name = "1";
+enum child2_task_name = "2";
 
 // Child actor
 struct MyActor {
@@ -37,6 +36,12 @@ static:
     int counter = 0;
     void increase(Msg!"increase") {
         counter++;
+        sendOwner(Msg!"response"(), counter);
+    }
+
+    void decrease(Msg!"decrease") {
+        counter--;
+        sendOwner(Msg!"response"(), counter);
     }
 
     mixin Actor!(&increase); /// Turns the struct into an Actor
@@ -46,10 +51,15 @@ alias ChildHandle = ActorHandle!MyActor;
 
 struct MySuperActor {
 static:
-    void increase(Msg!"increase") {
+    MyActor child1;
+    MyActor child2;
+    alias children = AliasSeq!(child1, child2);
+
+    void receiveStatus(Msg!"response", int status) {
+        sendOwner(status);
     }
 
-    mixin Actor!(&increase); /// Turns the struct into an Actor
+    mixin Actor!(&receiveStatus); /// Turns the struct into an Actor
 }
 
 alias SupervisorHandle = ActorHandle!MySuperActor;
@@ -87,21 +97,26 @@ class MessageBetweenSupervisorAndChild {
     @Then("send a message to #child1")
     Document aMessageToChild1() @trusted {
         childHandleUno.send(Msg!"increase"());
+
         return result_ok;
     }
 
     @Then("send this message back from #child1 to #super")
     Document fromChild1ToSuper() @trusted {
+        check(receiveOnly!int == 1, "Child 1 did not send back the expected value of 1");
+
         return result_ok;
     }
 
     @Then("send a message to #child2")
-    Document aMessageToChild2() {
+    Document aMessageToChild2() @trusted {
+        childHandleDos.send(Msg!"increase"());
         return result_ok;
     }
 
     @Then("send thus message back from #child2 to #super")
     Document fromChild2ToSuper() @trusted {
+        check(receiveOnly!int == -1, "Child 2 did not send back the expected value of 1");
         return result_ok;
     }
 
