@@ -131,9 +131,9 @@ alias check = Check!DARTException;
     }
 
     protected enum _params = [
-            "fingerprints",
-            "bullseye",
-        ];
+        "fingerprints",
+        "bullseye",
+    ];
 
     mixin(EnumText!("Params", _params));
 
@@ -1091,7 +1091,7 @@ alias check = Check!DARTException;
                                                 rim);
 
                                         if (!branches[rim_key].empty || !sub_range.onlyRemove(
-                                                get_type)) {
+                                                    get_type)) {
                                             branches[rim_key] = traverse_dart(sub_range, INDEX_NULL, rim + 1);
                                         }
                                     }
@@ -1219,8 +1219,9 @@ alias check = Check!DARTException;
         return new_root.fingerprint;
     }
 
-/+
-    Buffer modify(const(RecordFactoryT!true.Recorder) modify_records, const(bool) undo = false) {
+    Buffer modify(Range)(Range modify_records, const(bool) undo = false)
+            if (isInputRange!Range && isImplicitlyConvertible!(ElementType!Range, Archive)) {
+        import tagion.dart.RimKeyRange : RimKeyRange;
 
         Leave traverse_dart(RimKeyRange range, const Index branch_index) @safe {
             if (!range.empty) {
@@ -1231,18 +1232,18 @@ alias check = Check!DARTException;
                 }
                 // immutable sector = sector(archive.fingerprint);
                 Branches branches;
-                if (rim < RIMS_IN_SECTOR) {
+                if (range.rim < RIMS_IN_SECTOR) {
                     if (branch_index !is INDEX_NULL) {
                         branches = blockfile.load!Branches(branch_index);
+                        
                         .check(branches.hasIndices,
                                 "DART failure within the sector rims the DART should contain a branch");
                     }
 
                     while (!range.empty) {
-                        auto sub_range = RimKeyRange(range, rim);
-                        immutable rim_key = sub_range.front.fingerprint.rim_key(rim);
+                        immutable rim_key = range.front.fingerprint.rim_key(rim);
                         if (!branches[rim_key].empty) {
-                            const leave = traverse_dart(sub_range.nextRim, branches.index(rim_key));
+                            const leave = traverse_dart(range.nextRim, branches.index(rim_key));
 
                             branches[rim_key] = leave;
                         }
@@ -1304,32 +1305,27 @@ alias check = Check!DARTException;
 
                             }
 
-                            while(!range.empty) {
+                            while (!range.empty) {
                                 if (range.identical) {
                                     // either an ADD or Leave.init.
                                     const first = range.front;
                                     const rim_key = range.front.fingerprint.rim_key(range.rim);
-                                    
-                                    
-                                    
+
                                     if (first.type == Archive.Type.REMOVE) {
                                         range.popFront;
                                         if (!range.empty) {
                                             branches[rim_key] = Leave.init;
 
                                         }
-                                        
-                                    } 
+
+                                    }
                                     else {
                                         check(first.type == Archive.Type.ADD, "Should be add");
-                                        const result_leave = Leave(blockfile.save(first.filed).index, 
-                                            first.fingerprint);
+                                        const result_leave = Leave(blockfile.save(first.filed).index,
+                                                first.fingerprint);
                                         range.popFront;
-                                        branches[rim_key] = result_leave; 
+                                        branches[rim_key] = result_leave;
                                     }
-
-
-
 
                                 }
                                 else {
@@ -1338,8 +1334,8 @@ alias check = Check!DARTException;
                                     branches[rim_key] = traverse_dart(range.nextRim, branches.index(rim_key));
                                 }
                             }
-                            
-                            version(none) {
+
+                            version (none) {
                                 scope archives = manufactor.recorder(range).archives;
                                 range.force_empty;
                                 scope equal_range = archives.equalRange(archive_in_dart);
@@ -1418,9 +1414,7 @@ alias check = Check!DARTException;
                             .index, branches.fingerprint(this));
 
                 }
-                else {
-                    assert(0, format("Range %s not expected", R.stringof));
-                }
+
             }
             return Leave.init;
         }
@@ -1431,18 +1425,14 @@ alias check = Check!DARTException;
 
         auto range = modify_records.archives[];
 
-        
         immutable new_root = (() {
             if (undo) {
                 return traverse_dart(RimKeyRange(range), blockfile.masterBlock.root_index);
-            } 
+            }
             else {
                 return traverse_dart(RimKeyRange(range.retro), blockfile.masterBlock.root_index);
             }
         })();
-
-
-
 
         scope (success) {
             // On success the new root_index is set and the DART is updated
@@ -1464,7 +1454,6 @@ alias check = Check!DARTException;
         }
         return new_root.fingerprint;
     }
-+/
 
     RecordFactory.Recorder readStubs() { //RIMS_IN_SECTOR
         RecordFactory.Recorder rec = manufactor.recorder();
