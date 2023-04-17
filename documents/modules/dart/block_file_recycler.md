@@ -182,7 +182,7 @@ digraph {
 ```
 The algorithm for doing this is the following.
 
-```
+```d
 foreach (insert_segment; to_be_recycled) {
    auto lower_range = indices.lowerBound(insert_segment);
    if (!lower_range.empty && lower_range.back.end == insert_segment.index) {
