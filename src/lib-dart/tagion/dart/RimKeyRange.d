@@ -268,7 +268,6 @@ version (unittest) {
             while (!rim_key_range.empty) {
                 if (rim_key_range.identical) {
                     assert(!rim_key_range.empty);
-                    rim_key_range.save.each!q{a.dump};
                     const first = rim_key_range.front;
                     rim_key_range.popFront;
                     if (!rim_key_range.empty) {
@@ -357,8 +356,6 @@ unittest {
             Archive abcd133656789abc ADD
             */
             auto rim_key_range = rimKeyRange(rec);
-            rec[].each!q{a.dump};
-            rim_key_range.save.each!q{a.dump};
             auto rim_key_range_saved = rim_key_range.save;
             assert(equal(rec[].map!q{a.fingerprint}, rim_key_range.map!q{a.fingerprint}));
             // Check save in forward-range
@@ -369,7 +366,6 @@ unittest {
             auto rim_key_range = rimKeyRange(rec);
             auto rec_copy = rec.dup;
             rec_copy.insert(documents[3], Archive.Type.ADD);
-            rec_copy.dump;
             rim_key_range.add(rec.archive(documents[3], Archive.Type.ADD));
             /*
             Archive abcd133456789abc ADD
@@ -377,7 +373,6 @@ unittest {
             Archive abcd133556789abc ADD
             Archive abcd133656789abc ADD
             */
-            rim_key_range.save.each!q{a.dump};
             auto rim_key_range_saved = rim_key_range.save;
             assert(equal(rec_copy[].map!q{a.fingerprint}, rim_key_range.map!q{a.fingerprint}));
             // Check save in forward-range
@@ -398,9 +393,7 @@ unittest {
             Archive abcd133656789abc ADD 
             */
             rec_copy.insert(documents[3 .. 5], Archive.Type.ADD);
-            rec_copy.dump;
 
-            rim_key_range.save.each!q{a.dump};
             auto rim_key_range_saved = rim_key_range.save;
             assert(equal(rec_copy[].map!q{a.fingerprint}, rim_key_range.map!q{a.fingerprint}));
             // Check save in forward-range
@@ -468,19 +461,11 @@ unittest {
 
         {
             auto rim_key_range = rimKeyRange(rec);
-            rim_key_range.save.each!q{a.dump};
-            assert(equal(rec[].map!q{a.fingerprint}, rim_key_range.save.map!q{a.fingerprint}));
-
-            auto rec_range = rec[];
-            rim_key_range.selectRim(0).save.take(3).each!q{a.dump};
-
             traverse(rec);
         }
 
         { //
             auto rim_key_range = rimKeyRange(rec[]);
-            rec[].retro.each!q{a.dump};
-            rim_key_range.save.each!q{a.dump};
             traverse(rec, true);
         }
 
