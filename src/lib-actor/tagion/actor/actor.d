@@ -297,7 +297,6 @@ mixin template Actor(T...) {
             immutable exception = cast(immutable) e;
             assumeWontThrow(ownerTid.prioritySend(exception));
             setState(Ctrl.FAIL);
-            stop = true;
         }
     }
 }
