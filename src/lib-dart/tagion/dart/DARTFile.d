@@ -1235,7 +1235,9 @@ alias check = Check!DARTException;
                 if (range.rim < RIMS_IN_SECTOR) {
                     if (branch_index !is INDEX_NULL) {
                         branches = blockfile.load!Branches(branch_index);
+
                         
+
                         .check(branches.hasIndices,
                                 "DART failure within the sector rims the DART should contain a branch");
                     }
@@ -1309,28 +1311,48 @@ alias check = Check!DARTException;
                                 if (range.identical) {
                                     // either an ADD or Leave.init.
                                     const first = range.front;
+                                    check(first.type == Archive.Type.REMOVE, "The first archive if identical should be of type REMOVE");
+
                                     const rim_key = range.front.fingerprint.rim_key(range.rim);
-
-                                    if (first.type == Archive.Type.REMOVE) {
-                                        range.popFront;
-                                        if (!range.empty) {
-                                            branches[rim_key] = Leave.init;
-
-                                        }
-
+                                    const load_leave = branches[rim_key];
+                                    if (load_leave.fingerprint == first.fingerprint) {
+                                        blockfile.dispose(load_leave.index);
                                     }
-                                    else {
-                                        check(first.type == Archive.Type.ADD, "Should be add");
-                                        const result_leave = Leave(blockfile.save(first.filed).index,
-                                                first.fingerprint);
-                                        range.popFront;
-                                        branches[rim_key] = result_leave;
-                                    }
+                                    range.popFront;
+                                    const second = range.front;
+                                    check(second.type == Archive.Type.ADD, "The second archive if identical should be of type ADD");
 
+                                    branches[rim_key] = Leave(blockfile.save(second.filed).index,
+                                            second.fingerprint);
+
+                                    range.popFront;
                                 }
                                 else {
-                                    // traverse the dart to nextrim.
                                     const rim_key = range.front.fingerpint.rim_key(range.rim);
+
+                                    const current_archive = range.front;
+                                    final switch (current_archive.type) {
+                                    case Archive.Type.ADD:
+                                        const load_leave = branches[rim_key];
+                                        if (load_leave.fingerprint != current_archive.fingerprint) {
+                                            branches[rim_key] = Leave(blockfile.save(current_archive.filed).index, current_archive
+                                                    .fingerprint);
+                                        }
+                                        else {
+
+                                        }
+                                        break;
+                                    case Archive.Type.REMOVE:
+                                        const load_leave = branches[rim_key];
+                                        if (load_leave.fingerprint == current_archive.fingerprint) {
+                                            blockfile.dispose(load_leave.index);
+                                        }
+                                        break;
+                                    case Archive.Type.NONE:
+                                        check(0, "modify should never receive recorder with Archive.Type.NONE");
+                                        break;
+                                    }
+                                    // traverse the dart to nextrim.
                                     branches[rim_key] = traverse_dart(range.nextRim, branches.index(rim_key));
                                 }
                             }
