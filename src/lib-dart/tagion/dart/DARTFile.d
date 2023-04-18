@@ -1334,6 +1334,8 @@ alias check = Check!DARTException;
                         while (!range.empty) {
                             auto sub_range = range.nextRim;
                             immutable rim_key = sub_range.front.fingerprint.rim_key(sub_range.rim);
+                            writefln("BRANCH while: %s rim_key=%02x, branch_index=%s", range.rim, rim_key, branch_index);
+
                             branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key));
                         }
                         // if the range is empty then we return a null leave.
@@ -1353,7 +1355,7 @@ alias check = Check!DARTException;
                         // DART does not store a branch this means that it contains a leave.
                         // Leave means and archive
                         // The new Archives is constructed to include the archive which is already in the DART
-                        auto current_archive = recorder.archive(doc);
+                        auto current_archive = recorder.archive(doc, Archive.Type.ADD);
                         scope (success) {
                             // The archive is erased and it will be added again to the DART
                             // if it not removed by and action in the record
@@ -1859,14 +1861,11 @@ unittest {
     }
 
     { // Remove two archives and check the bulleye
-        writeln("remove two archives and check the bullseye");
         immutable file_A = fileId!DARTFile("XA").fullpath;
         immutable file_B = fileId!DARTFile("XB").fullpath;
 
         DARTFile.create(file_A);
-        writefln("dartfilename_A=%s", file_A);
         DARTFile.create(file_B);
-        writefln("dartfilename_B=%s", file_B);
 
         RecordFactoryT!true.Recorder recorder_A;
         RecordFactoryT!true.Recorder recorder_B;
@@ -1911,9 +1910,38 @@ unittest {
         // The bull eye of the two DART must be the same
         assert(bulleye_A == bulleye_B);
     }
+    { // DARTFile.write on to an existing DART and the bulleye is check
+        writeln("DARTFile.write on to an existing DART and the bullseye is checked");
+        const from_random_table = [
+            0xABBA_1234_DF92_7BA7UL, // add first time
+            0xABBA_1234_62BD_7814UL, // add first time
+            0xABBA_1234_DFA5_2B29UL,
+        ];
+        DARTFile.create(filename_A);
+        DARTFile.create(filename_B);
+        RecordFactoryT!true.Recorder recorder_A;
+        RecordFactoryT!true.Recorder recorder_B;
+        auto dart_A = new DARTFile(net, filename_A);
+        auto dart_B = new DARTFile(net, filename_B);
+        //
+
+        DARTFile.write(dart_A, from_random_table[0 .. 2], recorder_A);
+        writeln("0->2");
+        dart_A.dump;
+        auto bulleye_A = DARTFile.write(dart_A, from_random_table[2 .. 3], recorder_A);
+        writeln("4->5");
+        dart_A.dump;
+        //assert(0);
+        auto bulleye_B = DARTFile.write(dart_B, from_random_table, recorder_B);
+        writeln("DART B: 0->2 & 4->5");
+        dart_B.dump;
+
+        // The bull eye of the two DART must be the same
+        assert(bulleye_A == bulleye_B);
+    }
     version (none) {
         { // Random DARTFile.write on to an existing DART and the bulleye is check
-
+            writeln("Random DARTFile.write on to an existing DART and the bullseye is checked");
             auto rand = Random!ulong(1234_5678_9012_345UL);
             enum N = 1000;
             auto random_table = new ulong[N];
@@ -1922,22 +1950,26 @@ unittest {
             }
             DARTFile.create(filename_A);
             DARTFile.create(filename_B);
-            RecordFactory.Recorder recorder_A;
-            RecordFactory.Recorder recorder_B;
+            RecordFactoryT!true.Recorder recorder_A;
+            RecordFactoryT!true.Recorder recorder_B;
             auto dart_A = new DARTFile(net, filename_A);
             auto dart_B = new DARTFile(net, filename_B);
             //
 
             DARTFile.write(dart_A, random_table[27 .. 29], recorder_A);
-            // dart_A.dump;
+            writeln("27->29");
+            dart_A.dump;
             auto bulleye_A = DARTFile.write(dart_A, random_table[34 .. 35], recorder_A);
-            // dart_A.dump;
+            writeln("34->35");
+            dart_A.dump;
             //assert(0);
             auto bulleye_B = DARTFile.write(dart_B, random_table[27 .. 29] ~ random_table[34 .. 35], recorder_B);
-
-            // dart_B.dump;
+            writeln("DART B: 27->29 & 34->35");
+            dart_B.dump;
 
             // The bull eye of the two DART must be the same
+            (random_table[27 .. 29] ~ random_table[34 .. 35]).each!(a => writefln("%016x", a));
+
             assert(bulleye_A == bulleye_B);
         }
 
