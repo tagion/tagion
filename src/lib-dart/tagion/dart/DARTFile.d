@@ -844,9 +844,14 @@ alias check = Check!DARTException;
                 }
                 else {
                     // Loads the Archives into the archives
-                        .check(ordered_fingerprints.length == 1,
-                                format("Data base is broken at rim=%d fingerprint=%s",
-                                rim, ordered_fingerprints[0].toHex));
+                    writeln("loads ordered fingerprints");
+                    ordered_fingerprints.map!(f => f.toHex)
+                        .each!writeln;
+                    writeln("------");
+                    
+                    .check(ordered_fingerprints.length == 1,
+                            format("Data base is broken at rim=%d fingerprint=%s",
+                            rim, ordered_fingerprints[0].toHex));
                     // The archive is set in erase mode so it can be easily be erased later
                     auto archive = new Archive(manufactor.net, doc, type);
                     if (ordered_fingerprints[0] == archive.fingerprint) {
@@ -1370,26 +1375,42 @@ alias check = Check!DARTException;
                     }
                 }
                 if (range.oneLeft) {
+                    writefln("oneleft fingerprint=%s", range.front.fingerprint.toHex);
                     scope (exit) {
                         range.popFront;
                     }
                     if (range.front.type == Archive.Type.ADD) {
-                        return Leave(blockfile.save(range.front.filed).index, range
+                        return Leave(blockfile.save(range.front.store).index, range
                                 .front.fingerprint);
                     }
                     return Leave.init;
                 }
 
                 while (!range.empty) {
-                    const rim_key = range.front.fingerprint.rim_key(range.rim);
-                    branches[rim_key] = traverse_dart(range.nextRim, branches.index(rim_key));
+                    const rim_key = range.front.fingerprint.rim_key(range.rim + 1);
+                    writefln("!range.empty, rim=%d, rim_key=%02x", range.rim, rim_key);
+                    range.save.each!q{a.dump};
+                    writefln("----- next rim");
+                    range.save.nextRim.each!q{a.dump};
+                    const leave = traverse_dart(range.nextRim, INDEX_NULL);
+                    writefln("rim_key=%02x, doc: %s", rim_key, leave.toPretty);
+                    branches[rim_key] = leave;
                 }
 
                 if (branches.empty) {
+                    writeln("empty branches");
                     return Leave.init;
                 }
 
                 if (branches.isSingle) {
+                    writeln("branches.isSingle");
+                    branches[].map!(a => a.fingerprint.toHex)
+                        .each!writeln;
+                    branches.indices
+                        .filter!(f => f !is INDEX_NULL)
+                        .each!writeln;
+                    writeln("-------");
+
                     return branches[]
                         .filter!(a => a.fingerprint !is null)
                         .front;
@@ -1714,8 +1735,6 @@ unittest {
 
     { // Test RimKeyRange
         auto recorder = _manufactor.recorder;
-        pragma(msg, "XXXXXXX ", typeof(recorder));
-        pragma(msg, "XXXXXXX ", ReturnType!(_manufactor.recorder));
 
         auto test_tabel = table[0 .. 8].dup;
         foreach (t; test_tabel) {
@@ -1769,16 +1788,16 @@ unittest {
         DARTFile.create(filename);
         auto dart = new DARTFile(net, filename);
         RecordFactoryT!true.Recorder recorder;
-        writeln("unittest dartfilename=%s", filename);
         assert(DARTFile.validate(dart, table[0 .. 4], recorder));
     }
 
     { // Rim 3 test
+        writeln("Rim 3 test --------");
         DARTFile.create(filename);
         auto dart = new DARTFile(net, filename);
-        RecordFactory.Recorder recorder;
+        RecordFactoryT!true.Recorder recorder;
         //=Recorder(net);
-
+        writeln(filename);
         assert(DARTFile.validate(dart, table[4 .. 9], recorder));
         // dart.dump;
     }
