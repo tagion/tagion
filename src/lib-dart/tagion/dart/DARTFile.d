@@ -2164,81 +2164,81 @@ unittest {
             assert(numberOfArchives(branches, dart_A) == 1, "Branch not snapped back to rim 2");
 
         }
-        version (none) {
-            {
-                // this test is just a support to see how the real result should be of the previous test.
-                DARTFile.create(filename_A);
-                auto dart_A = new DARTFile(net, filename_A);
 
-                const ulong archive = 0xABB9_13ab_11ef_0234;
+        {
+            // this test is just a support to see how the real result should be of the previous test.
+            DARTFile.create(filename_A);
+            auto dart_A = new DARTFile(net, filename_A);
 
-                auto doc = DARTFakeNet.fake_doc(archive);
-                auto recorder = dart_A.recorder();
+            const ulong archive = 0xABB9_13ab_11ef_0234;
 
+            auto doc = DARTFakeNet.fake_doc(archive);
+            auto recorder = dart_A._recorder();
+
+            recorder.add(doc);
+
+            auto fingerprint = DARTIndex(recorder[].front.fingerprint);
+            dart_A._modify(recorder);
+
+            // dart_A.dump();
+            assert(dart_A.bullseye == fingerprint);
+
+            auto branches = dart_A.branches([0xAB, 0xB9]);
+
+            assert(numberOfArchives(branches, dart_A) == 1, "Branch not snapped back to rim 2");
+        }
+        {
+            // middle branch test.
+            // we start by creating the following archive structure.
+            // EYE: 88aed312de6a292c4f3c80267b9272b32e39af749ceef8723e66c91c1872e056
+            // | AB [9]
+            // | .. | B9 [8]
+            // | .. | .. | 13 [7]
+            // | .. | .. | .. | AB [6]
+            // | .. | .. | .. | .. | 11 [4]
+            // | .. | .. | .. | .. | .. | EF [3]
+            // | .. | .. | .. | .. | .. | .. abb913ab11ef0923 [1]
+            // | .. | .. | .. | .. | .. | .. abb913ab11ef1234 [2]
+            // | .. | .. | .. | .. abb913ab1213 [5]
+
+            // now we remove one of the archives located in EF [3]. Then we should get the following.
+            // EYE: 9428892e35b550187e8ff0a0d612bbd94029dbf6d7780cf29b66a8d5f8d10f58
+            // | AB [15]
+            // | .. | B9 [14]
+            // | .. | .. | 13 [13]
+            // | .. | .. | .. | AB [12]
+            // | .. | .. | .. | .. abb913ab11ef [2]
+            // | .. | .. | .. | .. abb913ab1213 [5]
+            DARTFile.create(filename_A);
+            auto dart_A = new DARTFile(net, filename_A);
+
+            const ulong[] deep_table = [
+                0xABB9_13ab_11ef_0923,
+                0xABB9_13ab_11ef_1234,
+                0xABB9_13ab_1213_5678,
+            ];
+
+            auto docs = deep_table.map!(a => DARTFakeNet.fake_doc(a));
+            auto recorder = dart_A._recorder();
+            foreach (doc; docs) {
                 recorder.add(doc);
-
-                auto fingerprint = DARTIndex(recorder[].front.fingerprint);
-                dart_A.modify(recorder);
-
-                // dart_A.dump();
-                assert(dart_A.bullseye == fingerprint);
-
-                auto branches = dart_A.branches([0xAB, 0xB9]);
-
-                assert(numberOfArchives(branches, dart_A) == 1, "Branch not snapped back to rim 2");
             }
-            {
-                // middle branch test.
-                // we start by creating the following archive structure.
-                // EYE: 88aed312de6a292c4f3c80267b9272b32e39af749ceef8723e66c91c1872e056
-                // | AB [9]
-                // | .. | B9 [8]
-                // | .. | .. | 13 [7]
-                // | .. | .. | .. | AB [6]
-                // | .. | .. | .. | .. | 11 [4]
-                // | .. | .. | .. | .. | .. | EF [3]
-                // | .. | .. | .. | .. | .. | .. abb913ab11ef0923 [1]
-                // | .. | .. | .. | .. | .. | .. abb913ab11ef1234 [2]
-                // | .. | .. | .. | .. abb913ab1213 [5]
+            auto remove_fingerprint = DARTIndex(recorder[].front.fingerprint);
+            dart_A._modify(recorder);
+            // dart_A.dump();
 
-                // now we remove one of the archives located in EF [3]. Then we should get the following.
-                // EYE: 9428892e35b550187e8ff0a0d612bbd94029dbf6d7780cf29b66a8d5f8d10f58
-                // | AB [15]
-                // | .. | B9 [14]
-                // | .. | .. | 13 [13]
-                // | .. | .. | .. | AB [12]
-                // | .. | .. | .. | .. abb913ab11ef [2]
-                // | .. | .. | .. | .. abb913ab1213 [5]
-                DARTFile.create(filename_A);
-                auto dart_A = new DARTFile(net, filename_A);
+            auto remove_recorder = dart_A._recorder();
+            remove_recorder.remove(remove_fingerprint);
+            dart_A._modify(remove_recorder);
 
-                const ulong[] deep_table = [
-                    0xABB9_13ab_11ef_0923,
-                    0xABB9_13ab_11ef_1234,
-                    0xABB9_13ab_1213_5678,
-                ];
+            ubyte[] rim_path = [0xAB, 0xB9, 0x13, 0xab];
+            auto branches = dart_A.branches(rim_path);
 
-                auto docs = deep_table.map!(a => DARTFakeNet.fake_doc(a));
-                auto recorder = dart_A.recorder();
-                foreach (doc; docs) {
-                    recorder.add(doc);
-                }
-                auto remove_fingerprint = DARTIndex(recorder[].front.fingerprint);
-                dart_A.modify(recorder);
-                // dart_A.dump();
+            assert(numberOfArchives(branches, dart_A) == 2, "Branch not snapped back");
 
-                auto remove_recorder = dart_A.recorder();
-                remove_recorder.remove(remove_fingerprint);
-                dart_A.modify(remove_recorder);
-
-                ubyte[] rim_path = [0xAB, 0xB9, 0x13, 0xab];
-                auto branches = dart_A.branches(rim_path);
-
-                assert(numberOfArchives(branches, dart_A) == 2, "Branch not snapped back");
-
-                // dart_A.dump();
-            }
-
+            // dart_A.dump();
+        }
+        version (none) {
             {
                 // ADD ADD REMOVE
                 // we start by creating the following archive structure.
