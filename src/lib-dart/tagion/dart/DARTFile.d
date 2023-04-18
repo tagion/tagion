@@ -42,7 +42,7 @@ private {
     import tagion.basic.tagionexceptions : Check;
     import tagion.utils.Miscellaneous : toHex = toHexString;
 
-    version (none) import std.stdio : writeln, writefln;
+    import std.stdio : writeln, writefln;
     import tagion.hibon.HiBONRecord;
     import tagion.hibon.HiBONJSON : toPretty;
 }
@@ -125,6 +125,7 @@ alias check = Check!DARTException;
     immutable(string) filename;
 
     protected RecordFactory manufactor;
+    protected RecordFactoryT!true _manufactor;
 
     protected {
         BlockFile blockfile;
@@ -168,6 +169,7 @@ alias check = Check!DARTException;
     this(const HashNet net, string filename) {
         blockfile = BlockFile(filename);
         this.manufactor = RecordFactory(net);
+        this._manufactor = RecordFactoryT!true(net);
         this.filename = filename;
         if (blockfile.root_index) {
             const data = blockfile.load(blockfile.root_index);
@@ -205,7 +207,9 @@ alias check = Check!DARTException;
     RecordFactory.Recorder recorder() nothrow {
         return manufactor.recorder;
     }
-
+    RecordFactoryT!true.Recorder _recorder() nothrow {
+        return _manufactor.recorder;
+    }
     /** 
      * Creates a recorder from a document using the RecorderFactory used by the DART
      * Params:
@@ -805,6 +809,55 @@ alias check = Check!DARTException;
         traverse_dart(blockfile.masterBlock.root_index, sorted_fingerprints);
         return result;
     }
+    RecordFactoryT!true.Recorder _loads(Range)(
+            Range fingerprints,
+            Archive.Type type = Archive.Type.REMOVE) if (isInputRange!Range && is(ElementType!Range : Buffer)) {
+
+        import std.algorithm.comparison : min;
+
+        auto result = _recorder;
+        void traverse_dart(
+                const Index branch_index,
+                Buffer[] ordered_fingerprints,
+                immutable uint rim = 0) @safe {
+            if ((ordered_fingerprints) && (branch_index !is INDEX_NULL)) {
+                immutable data = blockfile.load(branch_index);
+                const doc = Document(data);
+                if (Branches.isRecord(doc)) {
+                    const branches = Branches(doc);
+                    auto selected_fingerprints = ordered_fingerprints;
+                    foreach (rim_key, index; branches._indices) {
+                        uint pos;
+                        while ((pos < selected_fingerprints.length) &&
+                                (rim_key is selected_fingerprints[pos].rim_key(rim))) {
+                            pos++;
+                        }
+                        if (pos > 0) {
+                            traverse_dart(index, selected_fingerprints[0 .. pos], rim + 1);
+                            selected_fingerprints = selected_fingerprints[pos .. $];
+                        }
+                    }
+                }
+                else {
+                    // Loads the Archives into the archives
+                        .check(ordered_fingerprints.length == 1,
+                                format("Data base is broken at rim=%d fingerprint=%s",
+                                rim, ordered_fingerprints[0].toHex));
+                    // The archive is set in erase mode so it can be easily be erased later
+                    auto archive = new Archive(manufactor.net, doc, type);
+                    if (ordered_fingerprints[0] == archive.fingerprint) {
+                        result.insert(archive);
+                    }
+
+                }
+            }
+        }
+
+        auto sorted_fingerprints = fingerprints.filter!(a => a.length !is 0).array.dup;
+        sorted_fingerprints.sort;
+        traverse_dart(blockfile.masterBlock.root_index, sorted_fingerprints);
+        return result;
+    }
 
     // Range over a Range with the same key in the a specific rim
     @safe
@@ -1220,11 +1273,10 @@ alias check = Check!DARTException;
         return new_root.fingerprint;
     }
 
-    Buffer _modify(Range)(Range modify_records, const Flag!"undo" undo = No.undo)
-            if (isInputRange!Range && isImplicitlyConvertible!(ElementType!Range, Archive)) {
+    Buffer _modify(RecordFactoryT!true.Recorder modify_records, const Flag!"undo" undo = No.undo) {
         import tagion.dart.RimKeyRange : RimKeyRange;
 
-        Leave traverse_dart(RimKeyRange range, const Index branch_index) @safe {
+        Leave traverse_dart(Range)(Range range, const Index branch_index) @safe if (isInputRange!Range) {
             if (range.empty) {
                 return Leave.init;
             }
@@ -1236,6 +1288,7 @@ alias check = Check!DARTException;
             // immutable sector = sector(archive.fingerprint);
             Branches branches;
             if (range.rim < RIMS_IN_SECTOR) {
+                writefln("range.rim < RIMS_IN_SECTOR =%s rim_key=%s, branch_index=%s", range.rim, range.rim_keys.toHex, branch_index);
                 if (branch_index !is INDEX_NULL) {
                     branches = blockfile.load!Branches(branch_index);
 
@@ -1261,8 +1314,10 @@ alias check = Check!DARTException;
 
             }
             else {
+                writefln("not in sectors: %s rim_keys=%s, branch_index=%s", range.rim, range.rim_keys.toHex, branch_index);
                 if (branch_index !is INDEX_NULL) {
                     const doc = blockfile.load(branch_index);
+                    writefln("loaded doc=%s", doc.toPretty);
                     if (Branches.isRecord(doc)) {
                         branches = Branches(doc);
                         while (!range.empty) {
@@ -1287,7 +1342,7 @@ alias check = Check!DARTException;
                         // DART does not store a branch this means that it contains a leave.
                         // Leave means and archive
                         // The new Archives is constructed to include the archive which is already in the DART
-                        const current_archive = recorder.archive(doc);
+                        auto current_archive = recorder.archive(doc);
                         scope (success) {
                             // The archive is erased and it will be added again to the DART
                             // if it not removed by and action in the record
@@ -1296,17 +1351,24 @@ alias check = Check!DARTException;
                         }
 
                         auto sub_range = range.save;
+
                         if (sub_range
                                 .filter!(a => a.type == Archive.Type.REMOVE)
                                 .filter!(a => a.fingerprint == current_archive.fingerprint)
                                 .empty) {
-                            range.add(current_archive, Archive.Type.ADD);
+                            writefln("current_archive =%s", current_archive.fingerprint.toHex);
+                            writefln("rim_key in range=%s", range.rim_keys.toHex);
+                            writefln("current_archive_doc = %s", current_archive.filed.toPretty);
+                            range.add(current_archive);
 
                         }
 
                     }
                 }
                 if (range.oneLeft) {
+                    scope(exit) {
+                        range.popFront;
+                    }
                     if (range.front.type == Archive.Type.ADD) {
                         return Leave(blockfile.save(range.front.filed).index, range
                                 .front.fingerprint);
@@ -1338,8 +1400,8 @@ alias check = Check!DARTException;
             return _fingerprint;
         }
 
-        auto range = RimKeyRange(modify_records, undo);
-
+        auto range = rimKeyRange(modify_records, undo);
+        writefln("masterblock root index=%s", blockfile.masterBlock.root_index);
         immutable new_root = traverse_dart(range, blockfile.masterBlock.root_index);
 
         scope (success) {
@@ -1478,15 +1540,32 @@ alias check = Check!DARTException;
                 return equal!(q{a.fingerprint == b.fingerprint})(A.archives[], B.archives[]);
             }
 
+            bool check(const(RecordFactoryT!true.Recorder) A, const(RecordFactoryT!true.Recorder) B) {
+                return equal!(q{a.fingerprint == b.fingerprint})(A.archives[], B.archives[]);
+            }
+
             Buffer write(DARTFile dart, const(ulong[]) table, out RecordFactory.Recorder rec, bool isStubs = false) {
                 rec = isStubs ? stubs(dart.manufactor, table) : records(dart.manufactor, table);
                 return dart.modify(rec);
+            }
+            Buffer write(DARTFile dart, const(ulong[]) table, out RecordFactoryT!true.Recorder rec, bool isStubs = false) {
+                rec = isStubs ? _stubs(dart._manufactor, table) : _records(dart._manufactor, table);
+                return dart._modify(rec);
             }
 
             Buffer[] fingerprints(RecordFactory.Recorder recorder) {
                 Buffer[] results;
                 foreach (a; recorder.archives) {
                     assert(a.done);
+                    results ~= cast(Buffer) a.fingerprint;
+                }
+                return results;
+
+            }
+            Buffer[] fingerprints(RecordFactoryT!true.Recorder recorder) {
+                Buffer[] results;
+                foreach (a; recorder.archives) {
+                    version(none) assert(a.done);
                     results ~= cast(Buffer) a.fingerprint;
                 }
                 return results;
@@ -1500,6 +1579,13 @@ alias check = Check!DARTException;
                 auto find_recorder = dart.loads(_fingerprints);
                 return check(recorder, find_recorder);
             }
+            bool validate(DARTFile dart, const(ulong[]) table, out RecordFactoryT!true.Recorder recorder) {
+                write(dart, table, recorder);
+                auto _fingerprints = fingerprints(recorder);
+
+                auto find_recorder = dart._loads(_fingerprints);
+                return check(recorder, find_recorder);
+            }
 
             RecordFactory.Recorder records(RecordFactory factory, const(ulong[]) table) {
                 auto rec = factory.recorder;
@@ -1509,8 +1595,26 @@ alias check = Check!DARTException;
                 }
                 return rec;
             }
+            RecordFactoryT!true.Recorder _records(RecordFactoryT!true factory, const(ulong[]) table) {
+                auto rec = factory.recorder;
+                foreach (t; table) {
+                    const doc = DARTFakeNet.fake_doc(t);
+                    rec.add(doc);
+                }
+                return rec;
+            }
 
             RecordFactory.Recorder stubs(RecordFactory factory, const(ulong[]) table) {
+                auto rec = factory.recorder;
+                foreach (t; table) {
+                    import std.bitmanip;
+
+                    immutable fp = nativeToBigEndian(t).idup;
+                    rec.stub(fp);
+                }
+                return rec;
+            }
+            RecordFactoryT!true.Recorder _stubs(RecordFactoryT!true factory, const(ulong[]) table) {
                 auto rec = factory.recorder;
                 foreach (t; table) {
                     import std.bitmanip;
@@ -1600,6 +1704,9 @@ unittest {
 
     { // Test RimKeyRange
         auto recorder = _manufactor.recorder;
+        pragma(msg, "XXXXXXX ", typeof(recorder));
+        pragma(msg, "XXXXXXX ", ReturnType!(_manufactor.recorder));
+
         auto test_tabel = table[0 .. 8].dup;
         foreach (t; test_tabel) {
             const doc = DARTFakeNet.fake_doc(t);
@@ -1651,7 +1758,8 @@ unittest {
     { // Rim 2 test
         DARTFile.create(filename);
         auto dart = new DARTFile(net, filename);
-        RecordFactory.Recorder recorder;
+        RecordFactoryT!true.Recorder recorder;
+        writeln("unittest dartfilename=%s", filename);
         assert(DARTFile.validate(dart, table[0 .. 4], recorder));
     }
 
