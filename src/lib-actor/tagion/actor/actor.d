@@ -192,7 +192,8 @@ mixin template Actor(T...) {
 static:
     import std.exception : assumeWontThrow;
     import std.variant : Variant;
-    import std.concurrency : OwnerTerminated;
+    import std.concurrency : OwnerTerminated, Tid, thisTid, ownerTid, receive, prioritySend;
+    import std.format : format;
 
     bool stop = false;
     Ctrl[Tid] childrenState; // An AA to keep a copy of the state of the children
