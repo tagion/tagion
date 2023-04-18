@@ -4,134 +4,159 @@ import tagion.behaviour;
 import tagion.hibon.Document;
 import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
+import tagion.actor.actor;
+import std.concurrency;
+import tagion.basic.tagionexceptions : TagionException;
 
-import core.time;
-import core.thread;
-import concurrency = std.concurrency;
-import std.format : format;
-import tagion.actor.Actor;
-
+import std.meta;
 import std.stdio;
 
 enum feature = Feature(
             "Actor supervisor test",
-            ["This feature should check the supervisor fail and restart"]);
+            [
+            "This feature should check that when a child catches an exception is sends it up as a failure.",
+            "The supervisour has the abillity to decide whether or not to restart i depending on the exception."
+            ]);
 
 alias FeatureContext = Tuple!(
         SupervisorWithFailingChild, "SupervisorWithFailingChild",
         FeatureGroup*, "result"
 );
 
-enum sleep_time = 100.msecs;
+class Recoverable : TagionException {
+    this(immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__) pure {
+        super(msg, file, line);
+    }
+}
+
+class Fatal : TagionException {
+    this(immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__) pure {
+        super(msg, file, line);
+    }
+}
 
 /// Child Actor
 struct SetUpForFailure {
-
-    @method void exceptionalMethod(int _i) {
-        debug writeln("child is failing");
-        fail(new Exception("Child: I am a failure"));
+static:
+    void exceptional1(Msg!"recoverable") {
+        throw new Recoverable("I am fail");
     }
 
-    @task void run() {
-        alive; // Actor is now alive
-
-        /* Thread.sleep(300.msecs); */
-        /* fail(Exception("Child: i am a failure")); */
-        /* throw new Exception("Child: I am a failure"); */
-        while (!stop) {
-            receiveTimeout(100.msecs);
-        }
+    void exceptional2(Msg!"fatal") {
+        throw new Fatal("I am big fail");
     }
 
-    mixin TaskActor; /// Turns the struct into an Actor
+    mixin Actor!(&exceptional1, &exceptional2); /// Turns the struct into an Actor
 }
 
-static assert(isActor!SetUpForFailure);
+alias ChildHandle = ActorHandle!SetUpForFailure;
 
-/// Supervisor Actor
-struct SetUpForDissapointment {
-
-    ActorHandle!SetUpForFailure child_handle;
-
-    @method void isChildRunning(string task_name) {
-        Thread.sleep(sleep_time);
-        sendSupervisor(isRunning(task_name));
-    }
-
-    @task void run() {
-        auto actor_factory = actor!SetUpForFailure;
-        child_handle = actor_factory(child_task_name);
-        alive; // Actor is now alive
-        while (!stop) {
-            receiveTimeout(100.msecs);
-        }
-    }
-
-    mixin TaskActor; /// Turns the struct into an Actor
+// How big is the oof.
+enum Oof {
+    big, // so big the actor should restart
+    small, // small enought the actor can keep running
 }
-
-static assert(isActor!SetUpForDissapointment);
 
 enum supervisor_task_name = "supervisor";
 enum child_task_name = "child";
 
+/// Supervisor Actor
+struct SetUpForDisappointment {
+static:
+    SetUpForFailure child;
+    ChildHandle childHandle;
+
+    void starting() {
+        childHandle = spawnActor!SetUpForFailure(child_task_name);
+        childrenState[childHandle.tid] = Ctrl.STARTING;
+
+        while (!(childrenState.all(Ctrl.ALIVE))) {
+            CtrlMsg msg = receiveOnly!CtrlMsg; // HACK: don't use receiveOnly
+            childrenState[msg.tid] = msg.ctrl;
+        }
+    }
+
+    //void failHandler(Exception e) {
+    //    writeln("Received Exce: ", e);
+    //    immutable exception = cast(immutable) e;
+    //    assumeWontThrow(ownerTid.prioritySend(exception));
+    //}
+
+    void disappoint(Msg!"disappoint", Oof disappointment) {
+        final switch (disappointment) {
+        case Oof.big:
+            childHandle.send(Msg!"fatal"());
+            break;
+        case Oof.small:
+            childHandle.send(Msg!"recoverable"());
+            break;
+        }
+    }
+
+    mixin Actor!(&disappoint); /// Turns the struct into an Actor
+}
+
+alias SupervisorHandle = ActorHandle!SetUpForDisappointment;
+
 @safe @Scenario("Supervisor with failing child",
         [])
 class SupervisorWithFailingChild {
-    ActorHandle!SetUpForDissapointment supervisor_handle;
+    SupervisorHandle supervisorHandle;
+    ChildHandle childHandle;
 
     @Given("a actor #super")
-    Document aActorSuper() {
-        auto supervisor_factory = actor!SetUpForDissapointment;
-        supervisor_handle = supervisor_factory(supervisor_task_name);
+    Document aActorSuper() @trusted {
+        supervisorHandle = spawnActor!SetUpForDisappointment(supervisor_task_name);
+        Ctrl ctrl = receiveOnly!CtrlMsg.ctrl;
+        check(ctrl is Ctrl.STARTING, "Supervisor is not starting");
 
         return result_ok;
     }
 
-    @Given("a actor #child")
-    Document aActorChild() {
-        return result_ok;
-    }
-
-    @When("the actor #super start it should start the #child.")
-    Document startTheChild() @trusted {
-        check(isRunning(supervisor_task_name), "Supervisor is not running");
-        supervisor_handle.isChildRunning(child_task_name);
-        check(concurrency.receiveOnly!bool, "child has started");
-        return result_ok;
-    }
-
-    @When("the #child has started then the #child should fail with an exception")
-    Document withAnException() {
-        alias DissapointmentFactory = ActorFactory!SetUpForFailure;
-        auto child_handler = DissapointmentFactory.handler(child_task_name);
-        check(child_handler !is child_handler.init, "The child handler failed to initialise");
-
-        child_handler.exceptionalMethod(42);
+    @When("the #super and the #child has started")
+    Document hasStarted() @trusted {
+        auto ctrl = receiveOnly!CtrlMsg.ctrl;
+        check(ctrl is Ctrl.ALIVE, "Supervisor is not running");
 
         return result_ok;
     }
 
-    @Then("the #super actor should catch the #child which failed")
-    Document childWhichFailed() @trusted {
-        concurrency.receiveTimeout(
-                1.seconds,
-                (immutable(Exception) e) { writefln("%s", e); });
+    version (none) @Then("the #super should send a message to the #child which results in a fail")
+    Document aFail() @trusted {
+        supervisorHandle.send(Msg!"disappoint"(), Oof.big);
         return result_ok;
     }
 
-    @Then("the #super actor should restart the child")
-    Document restartTheChild() @trusted {
-        supervisor_handle.isChildRunning(
-                child_task_name);
-        check(concurrency.receiveOnly!bool, "child is running again");
+    version (none) @Then("the #super actor should catch the #child which failed")
+    Document whichFailed() {
+        return Document();
+    }
+
+    version (none) @Then("the #super actor should stop #child and restart it")
+    Document restartIt() {
+        return Document();
+    }
+
+    @Then("the #super should send a message to the #child which results in a different fail")
+    Document differentFail() @trusted {
+        supervisorHandle.send(Msg!"disappoint"(), Oof.small);
+        return result_ok;
+    }
+
+    @Then("the #super actor should let the #child keep running")
+    Document keepRunning() @trusted {
+        //writeln(receiveOnly!CtrlMsg);
+        writeln(receiveOnly!Recoverable);
         return result_ok;
     }
 
     @Then("the #super should stop")
-    Document superShouldStop() {
-        supervisor_handle.stop;
-        check(!isRunning(supervisor_task_name), "Supervisor is still running");
+    Document superShouldStop() @trusted {
+        supervisorHandle.send(Sig.STOP);
+        auto ctrl = receiveOnly!CtrlMsg;
+        check(ctrl.ctrl is Ctrl.END, "Supervisor did not stop");
+
         return result_ok;
     }
+
 }
