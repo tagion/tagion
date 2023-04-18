@@ -2108,62 +2108,63 @@ unittest {
             assert(dart_A.fingerprint == dart_B.fingerprint);
         })();
     }
-    version (none) {
+
+    {
+        // The bug we want to find
+        //  EYE: abb913ab11ef1234000000000000000000000000000000000000000000000000
+        //  | AB [17]
+        //  | .. | B9 [16]
+        //  | .. | .. | 13 [15]
+        //  | .. | .. | .. | AB [14]
+        //  | .. | .. | .. | .. abb913ab11ef1234000000000000000000000000000000000000000000000000 [7]
+        // As it can be seen the branch has not snapped back to the first rim. The database should instead look like 
+        // this:
+        //  | AB [17]
+        //  | .. | .. abb913ab11ef1234000000000000000000000000000000000000000000000000 [7]
+
+        import std.algorithm : map;
+        import std.range : empty;
+        import std.format;
+
+        size_t numberOfArchives(DARTFile.Branches branches, DARTFile db) {
+            return branches.indices
+                .filter!(i => i !is INDEX_NULL)
+                .map!(i => DARTFile.Branches.isRecord(db.cacheLoad(i)))
+                .walkLength;
+
+        }
+
         {
-            // The bug we want to find
-            //  EYE: abb913ab11ef1234000000000000000000000000000000000000000000000000
-            //  | AB [17]
-            //  | .. | B9 [16]
-            //  | .. | .. | 13 [15]
-            //  | .. | .. | .. | AB [14]
-            //  | .. | .. | .. | .. abb913ab11ef1234000000000000000000000000000000000000000000000000 [7]
-            // As it can be seen the branch has not snapped back to the first rim. The database should instead look like 
-            // this:
-            //  | AB [17]
-            //  | .. | .. abb913ab11ef1234000000000000000000000000000000000000000000000000 [7]
+            DARTFile.create(filename_A);
+            auto dart_A = new DARTFile(net, filename_A);
 
-            import std.algorithm : map;
-            import std.range : empty;
-            import std.format;
+            const ulong[] deep_table = [
+                0xABB9_13ab_11ef_0923,
+                0xABB9_13ab_11ef_1234,
+            ];
 
-            size_t numberOfArchives(DARTFile.Branches branches, DARTFile db) {
-                return branches.indices
-                    .filter!(i => i !is INDEX_NULL)
-                    .map!(i => DARTFile.Branches.isRecord(db.cacheLoad(i)))
-                    .walkLength;
-
+            auto docs = deep_table.map!(a => DARTFakeNet.fake_doc(a));
+            auto recorder = dart_A._recorder();
+            foreach (doc; docs) {
+                recorder.add(doc);
             }
+            auto remove_fingerprint = DARTIndex(recorder[].front.fingerprint);
+            // writefln("%s", remove_fingerprint);
 
-            {
-                DARTFile.create(filename_A);
-                auto dart_A = new DARTFile(net, filename_A);
+            dart_A._modify(recorder);
+            // dart_A.dump();
 
-                const ulong[] deep_table = [
-                    0xABB9_13ab_11ef_0923,
-                    0xABB9_13ab_11ef_1234,
-                ];
+            auto remove_recorder = dart_A._recorder();
+            remove_recorder.remove(remove_fingerprint);
+            dart_A._modify(remove_recorder);
+            // dart_A.dump();
 
-                auto docs = deep_table.map!(a => DARTFakeNet.fake_doc(a));
-                auto recorder = dart_A.recorder();
-                foreach (doc; docs) {
-                    recorder.add(doc);
-                }
-                auto remove_fingerprint = DARTIndex(recorder[].front.fingerprint);
-                // writefln("%s", remove_fingerprint);
+            auto branches = dart_A.branches([0xAB, 0xB9]);
 
-                dart_A.modify(recorder);
-                // dart_A.dump();
+            assert(numberOfArchives(branches, dart_A) == 1, "Branch not snapped back to rim 2");
 
-                auto remove_recorder = dart_A.recorder();
-                remove_recorder.remove(remove_fingerprint);
-                dart_A.modify(remove_recorder);
-                // dart_A.dump();
-
-                auto branches = dart_A.branches([0xAB, 0xB9]);
-
-                assert(numberOfArchives(branches, dart_A) == 1, "Branch not snapped back to rim 2");
-
-            }
+        }
+        version (none) {
             {
                 // this test is just a support to see how the real result should be of the previous test.
                 DARTFile.create(filename_A);
