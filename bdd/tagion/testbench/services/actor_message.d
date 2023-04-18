@@ -5,6 +5,7 @@ import core.time;
 import std.stdio;
 import std.format : format;
 import std.meta;
+import std.variant : Variant;
 
 // Default import list for bdd
 import tagion.behaviour;
@@ -177,9 +178,13 @@ class SendMessageBetweenTwoChildren {
     @When("send a message from #super to #child1 and from #child1 to #child2 and back to the #super")
     Document backToTheSuper() @trusted {
 
-        string message = "Hello Tagion";
+        enum message = "Hello Tagion";
         supervisorHandle.send(Msg!"roundtrip"(), message);
-        check(receiveOnly!string == message, "Did not get the same message back");
+        receiveTimeout(
+                1.seconds,
+                (string str) { check(str == message, "Did not get the same message back"); },
+                (Variant var) { check(0, "Unexpected Message: %s".format(var)); }
+        );
 
         return result_ok;
     }
