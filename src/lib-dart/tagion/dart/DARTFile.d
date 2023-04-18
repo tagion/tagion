@@ -45,6 +45,8 @@ private {
     import std.stdio : writeln, writefln;
     import tagion.hibon.HiBONRecord;
     import tagion.hibon.HiBONJSON : toPretty;
+
+    import tagion.dart.RimKeyRange : rimKeyRange;
 }
 
 /// Hash null definition (all zero values)
@@ -207,6 +209,7 @@ alias check = Check!DARTException;
     RecordFactory.Recorder recorder() nothrow {
         return manufactor.recorder;
     }
+
     RecordFactoryT!true.Recorder _recorder() nothrow {
         return _manufactor.recorder;
     }
@@ -809,6 +812,7 @@ alias check = Check!DARTException;
         traverse_dart(blockfile.masterBlock.root_index, sorted_fingerprints);
         return result;
     }
+
     RecordFactoryT!true.Recorder _loads(Range)(
             Range fingerprints,
             Archive.Type type = Archive.Type.REMOVE) if (isInputRange!Range && is(ElementType!Range : Buffer)) {
@@ -1366,7 +1370,7 @@ alias check = Check!DARTException;
                     }
                 }
                 if (range.oneLeft) {
-                    scope(exit) {
+                    scope (exit) {
                         range.popFront;
                     }
                     if (range.front.type == Archive.Type.ADD) {
@@ -1548,6 +1552,7 @@ alias check = Check!DARTException;
                 rec = isStubs ? stubs(dart.manufactor, table) : records(dart.manufactor, table);
                 return dart.modify(rec);
             }
+
             Buffer write(DARTFile dart, const(ulong[]) table, out RecordFactoryT!true.Recorder rec, bool isStubs = false) {
                 rec = isStubs ? _stubs(dart._manufactor, table) : _records(dart._manufactor, table);
                 return dart._modify(rec);
@@ -1562,10 +1567,12 @@ alias check = Check!DARTException;
                 return results;
 
             }
+
             Buffer[] fingerprints(RecordFactoryT!true.Recorder recorder) {
                 Buffer[] results;
                 foreach (a; recorder.archives) {
-                    version(none) assert(a.done);
+                    version (none)
+                        assert(a.done);
                     results ~= cast(Buffer) a.fingerprint;
                 }
                 return results;
@@ -1579,6 +1586,7 @@ alias check = Check!DARTException;
                 auto find_recorder = dart.loads(_fingerprints);
                 return check(recorder, find_recorder);
             }
+
             bool validate(DARTFile dart, const(ulong[]) table, out RecordFactoryT!true.Recorder recorder) {
                 write(dart, table, recorder);
                 auto _fingerprints = fingerprints(recorder);
@@ -1595,6 +1603,7 @@ alias check = Check!DARTException;
                 }
                 return rec;
             }
+
             RecordFactoryT!true.Recorder _records(RecordFactoryT!true factory, const(ulong[]) table) {
                 auto rec = factory.recorder;
                 foreach (t; table) {
@@ -1614,6 +1623,7 @@ alias check = Check!DARTException;
                 }
                 return rec;
             }
+
             RecordFactoryT!true.Recorder _stubs(RecordFactoryT!true factory, const(ulong[]) table) {
                 auto rec = factory.recorder;
                 foreach (t; table) {
