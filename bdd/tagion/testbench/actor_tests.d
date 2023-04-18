@@ -21,10 +21,8 @@ mixin Main!(_main);
 int _main(string[] args) {
     if (env.stage == Stage.commit) {
         // Sending messages between supervisor & children
-        version (lr282) {
-            auto actor_supervisor_message_feature = automation!(actor_message)();
-            auto actor_supervisor_message_context = actor_supervisor_message_feature.run();
-        }
+        auto actor_supervisor_message_feature = automation!(actor_message)();
+        auto actor_supervisor_message_context = actor_supervisor_message_feature.run();
 
         // Supervisor with failing child
         version (lr269) {
@@ -32,8 +30,8 @@ int _main(string[] args) {
             auto actor_supervisor_context = actor_supervisor_feature.run();
         }
 
-        auto actor_handler_feature = automation!(actor_handler)();
-        auto actor_handler_context = actor_handler_feature.run();
+        //auto actor_handler_feature = automation!(actor_handler)();
+        //auto actor_handler_context = actor_handler_feature.run();
     }
 
     return 0;
