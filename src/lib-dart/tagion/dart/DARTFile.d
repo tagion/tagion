@@ -1599,7 +1599,7 @@ unittest {
     }
 
     { // Test RimKeyRange
-        auto recorder = manufactor.recorder;
+        auto recorder = _manufactor.recorder;
         auto test_tabel = table[0 .. 8].dup;
         foreach (t; test_tabel) {
             const doc = DARTFakeNet.fake_doc(t);
@@ -1616,8 +1616,9 @@ unittest {
 
         immutable rim = 3;
         {
-            auto range = recorder.archives[];
-            auto rim_range = DARTFile.RimKeyRange(range, rim);
+            auto root_range = rimKeyRange(recorder);
+            auto rim_range = root_range.selectRim(3);
+
             i = 0;
             immutable key = rim_range.front.fingerprint.rim_key(rim);
             foreach (a; rim_range) {
