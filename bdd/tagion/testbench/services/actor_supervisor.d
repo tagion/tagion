@@ -38,18 +38,27 @@ class Fatal : TagionException {
 /// Child Actor
 struct SetUpForFailure {
 static:
-    void exceptional(Msg!"recoverable") {
+    void exceptional1(Msg!"recoverable") {
         throw new Recoverable("I am fail");
     }
 
-    void exceptional(Msg!"fatal") {
+    void exceptional2(Msg!"fatal") {
         throw new Fatal("I am big fail");
     }
 
-    mixin Actor!(&exceptional); /// Turns the struct into an Actor
+    mixin Actor!(&exceptional1, &exceptional2); /// Turns the struct into an Actor
 }
 
 alias ChildHandle = ActorHandle!SetUpForFailure;
+
+// How big is the oof.
+enum Oof {
+    big, // so big the actor should restart
+    small, // small enought the actor can keep running
+}
+
+enum supervisor_task_name = "supervisor";
+enum child_task_name = "child";
 
 /// Supervisor Actor
 struct SetUpForDisappointment {
@@ -67,23 +76,27 @@ static:
         }
     }
 
-    void failHandler(Exception e) {
-        immutable exception = cast(immutable) e;
-        assumeWontThrow(ownerTid.prioritySend(exception));
-    }
+    //void failHandler(Exception e) {
+    //    writeln("Received Exce: ", e);
+    //    immutable exception = cast(immutable) e;
+    //    assumeWontThrow(ownerTid.prioritySend(exception));
+    //}
 
-    void disappoint(Msg!"disappoint") {
-        ChildHandle dissapointee = actorHandle!SetUpForFailure(child_task_name);
-        dissapointee.send(Msg!"fatal"());
+    void disappoint(Msg!"disappoint", Oof disappointment) {
+        final switch (disappointment) {
+        case Oof.big:
+            childHandle.send(Msg!"fatal"());
+            break;
+        case Oof.small:
+            childHandle.send(Msg!"recoverable"());
+            break;
+        }
     }
 
     mixin Actor!(&disappoint); /// Turns the struct into an Actor
 }
 
 alias SupervisorHandle = ActorHandle!SetUpForDisappointment;
-
-enum supervisor_task_name = "supervisor";
-enum child_task_name = "0";
 
 @safe @Scenario("Supervisor with failing child",
         [])
@@ -108,30 +121,33 @@ class SupervisorWithFailingChild {
         return result_ok;
     }
 
-    @Then("the #super should send a message to the #child which results in a fail")
+    version (none) @Then("the #super should send a message to the #child which results in a fail")
     Document aFail() @trusted {
-        supervisorHandle.send(Msg!"disappoint"());
+        supervisorHandle.send(Msg!"disappoint"(), Oof.big);
         return result_ok;
     }
 
-    @Then("the #super actor should catch the #child which failed")
+    version (none) @Then("the #super actor should catch the #child which failed")
     Document whichFailed() {
         return Document();
     }
 
-    @Then("the #super actor should stop #child and restart it")
+    version (none) @Then("the #super actor should stop #child and restart it")
     Document restartIt() {
         return Document();
     }
 
     @Then("the #super should send a message to the #child which results in a different fail")
-    Document differentFail() {
-        return Document();
+    Document differentFail() @trusted {
+        supervisorHandle.send(Msg!"disappoint"(), Oof.small);
+        return result_ok;
     }
 
     @Then("the #super actor should let the #child keep running")
-    Document keepRunning() {
-        return Document();
+    Document keepRunning() @trusted {
+        //writeln(receiveOnly!CtrlMsg);
+        writeln(receiveOnly!Recoverable);
+        return result_ok;
     }
 
     @Then("the #super should stop")
