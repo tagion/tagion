@@ -6,6 +6,7 @@ import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
 import tagion.actor.actor;
 import std.concurrency;
+import tagion.basic.tagionexceptions : TagionException;
 
 import std.meta;
 import std.stdio;
@@ -22,11 +23,27 @@ alias FeatureContext = Tuple!(
         FeatureGroup*, "result"
 );
 
+class Recoverable : TagionException {
+    this(immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__) pure {
+        super(msg, file, line);
+    }
+}
+
+class Fatal : TagionException {
+    this(immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__) pure {
+        super(msg, file, line);
+    }
+}
+
 /// Child Actor
 struct SetUpForFailure {
 static:
-    void exceptional(Msg!"exceptional") {
-        throw new Exception("I am fail");
+    void exceptional(Msg!"recoverable") {
+        throw new Recoverable("I am fail");
+    }
+
+    void exceptional(Msg!"fatal") {
+        throw new Fatal("I am big fail");
     }
 
     mixin Actor!(&exceptional); /// Turns the struct into an Actor
@@ -35,21 +52,35 @@ static:
 alias ChildHandle = ActorHandle!SetUpForFailure;
 
 /// Supervisor Actor
-struct SetUpForDisapointment {
+struct SetUpForDisappointment {
 static:
     SetUpForFailure child;
+    ChildHandle childHandle;
 
-    alias children = AliasSeq!(child);
+    void starting() {
+        childHandle = spawnActor!SetUpForFailure(child_task_name);
+        childrenState[childHandle.tid] = Ctrl.STARTING;
 
-    void disapoint(Msg!"issapoint") {
-        ChildHandle dissapointee = actorHandle!SetUpForFailure(child_task_name);
-        dissapointee.send(Msg!"exceptional"());
+        while (!(childrenState.all(Ctrl.ALIVE))) {
+            CtrlMsg msg = receiveOnly!CtrlMsg; // HACK: don't use receiveOnly
+            childrenState[msg.tid] = msg.ctrl;
+        }
     }
 
-    mixin Actor!(&disapoint); /// Turns the struct into an Actor
+    void failHandler(Exception e) {
+        immutable exception = cast(immutable) e;
+        assumeWontThrow(ownerTid.prioritySend(exception));
+    }
+
+    void disappoint(Msg!"disappoint") {
+        ChildHandle dissapointee = actorHandle!SetUpForFailure(child_task_name);
+        dissapointee.send(Msg!"fatal"());
+    }
+
+    mixin Actor!(&disappoint); /// Turns the struct into an Actor
 }
 
-alias SupervisorHandle = ActorHandle!SetUpForDisapointment;
+alias SupervisorHandle = ActorHandle!SetUpForDisappointment;
 
 enum supervisor_task_name = "supervisor";
 enum child_task_name = "0";
@@ -62,24 +93,25 @@ class SupervisorWithFailingChild {
 
     @Given("a actor #super")
     Document aActorSuper() @trusted {
-        supervisorHandle = spawnActor!SetUpForDisapointment(supervisor_task_name);
+        supervisorHandle = spawnActor!SetUpForDisappointment(supervisor_task_name);
         Ctrl ctrl = receiveOnly!CtrlMsg.ctrl;
         check(ctrl is Ctrl.STARTING, "Supervisor is not starting");
-
-        ctrl = receiveOnly!CtrlMsg.ctrl;
-        check(ctrl is Ctrl.ALIVE, "Supervisor is not alive");
 
         return result_ok;
     }
 
     @When("the #super and the #child has started")
-    Document hasStarted() {
-        return Document();
+    Document hasStarted() @trusted {
+        auto ctrl = receiveOnly!CtrlMsg.ctrl;
+        check(ctrl is Ctrl.ALIVE, "Supervisor is not running");
+
+        return result_ok;
     }
 
     @Then("the #super should send a message to the #child which results in a fail")
-    Document aFail() {
-        return Document();
+    Document aFail() @trusted {
+        supervisorHandle.send(Msg!"disappoint"());
+        return result_ok;
     }
 
     @Then("the #super actor should catch the #child which failed")
