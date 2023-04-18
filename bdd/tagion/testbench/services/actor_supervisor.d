@@ -12,7 +12,10 @@ import std.stdio;
 
 enum feature = Feature(
             "Actor supervisor test",
-            ["This feature should check the supervisor fail and restart"]);
+            [
+            "This feature should check that when a child catches an exception is sends it up as a failure.",
+            "The supervisour has the abillity to decide whether or not to restart i depending on the exception."
+            ]);
 
 alias FeatureContext = Tuple!(
         SupervisorWithFailingChild, "SupervisorWithFailingChild",
@@ -60,7 +63,6 @@ class SupervisorWithFailingChild {
     @Given("a actor #super")
     Document aActorSuper() @trusted {
         supervisorHandle = spawnActor!SetUpForDisapointment(supervisor_task_name);
-
         Ctrl ctrl = receiveOnly!CtrlMsg.ctrl;
         check(ctrl is Ctrl.STARTING, "Supervisor is not starting");
 
@@ -70,28 +72,33 @@ class SupervisorWithFailingChild {
         return result_ok;
     }
 
-    @Given("a actor #child")
-    Document aActorChild() {
+    @When("the #super and the #child has started")
+    Document hasStarted() {
         return Document();
     }
 
-    @When("the actor #super start it should start the #child.")
-    Document startTheChild() @trusted {
-        return Document();
-    }
-
-    @When("the #child has started then the #child should fail with an exception")
-    Document withAnException() {
+    @Then("the #super should send a message to the #child which results in a fail")
+    Document aFail() {
         return Document();
     }
 
     @Then("the #super actor should catch the #child which failed")
-    Document childWhichFailed() @trusted {
+    Document whichFailed() {
         return Document();
     }
 
-    @Then("the #super actor should restart the child")
-    Document restartTheChild() @trusted {
+    @Then("the #super actor should stop #child and restart it")
+    Document restartIt() {
+        return Document();
+    }
+
+    @Then("the #super should send a message to the #child which results in a different fail")
+    Document differentFail() {
+        return Document();
+    }
+
+    @Then("the #super actor should let the #child keep running")
+    Document keepRunning() {
         return Document();
     }
 
@@ -103,4 +110,5 @@ class SupervisorWithFailingChild {
 
         return result_ok;
     }
+
 }

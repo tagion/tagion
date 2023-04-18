@@ -13,12 +13,12 @@ The supervisour has the abillity to decide whether or not to restart i depending
 
 *Then* the #super actor should catch the #child which failed 
 
-*Then* the #super actor should stop child and restart it
+*Then* the #super actor should stop #child and restart it
 	It should be checked that child has been restarted successfully
 
 *Then* the #super should send a message to the #child which results in a different fail
 
-*Then* the #super actor should let the child keep running
+*Then* the #super actor should let the #child keep running
 	It should be checked that child keeps running successfully
 
 *Then* the #super should stop
