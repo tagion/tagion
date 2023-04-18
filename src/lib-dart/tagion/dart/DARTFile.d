@@ -1991,30 +1991,29 @@ unittest {
         assert(bulleye_A == bulleye_B);
     }
 
-    version (none) {
-        { // Random DARTFile.write and then bulleye is check
-            auto rand = Random!ulong(1234_5678_9012_345UL);
-            enum N = 1000;
-            auto random_table = new ulong[N];
-            foreach (ref r; random_table) {
-                r = rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
-            }
-            DARTFile.create(filename_A);
-            DARTFile.create(filename_B);
-            RecordFactory.Recorder recorder_A;
-            RecordFactory.Recorder recorder_B;
-            auto dart_A = new DARTFile(net, filename_A);
-            auto dart_B = new DARTFile(net, filename_B);
-
-            DARTFile.write(dart_A, random_table[0 .. 333], recorder_A);
-            DARTFile.write(dart_B, random_table[0 .. 777], recorder_B);
-            auto bulleye_A = DARTFile.write(dart_A, random_table[333 .. $], recorder_A);
-            auto bulleye_B = DARTFile.write(dart_B, random_table[777 .. $], recorder_B);
-
-            // The bull eye of the two DART must be the same
-            assert(bulleye_A == bulleye_B);
+    { // Random DARTFile.write and then bullseye is checked
+        auto rand = Random!ulong(1234_5678_9012_345UL);
+        enum N = 1000;
+        auto random_table = new ulong[N];
+        foreach (ref r; random_table) {
+            r = rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
         }
+        DARTFile.create(filename_A);
+        DARTFile.create(filename_B);
+        RecordFactoryT!true.Recorder recorder_A;
+        RecordFactoryT!true.Recorder recorder_B;
+        auto dart_A = new DARTFile(net, filename_A);
+        auto dart_B = new DARTFile(net, filename_B);
 
+        DARTFile.write(dart_A, random_table[0 .. 333], recorder_A);
+        DARTFile.write(dart_B, random_table[0 .. 777], recorder_B);
+        auto bulleye_A = DARTFile.write(dart_A, random_table[333 .. $], recorder_A);
+        auto bulleye_B = DARTFile.write(dart_B, random_table[777 .. $], recorder_B);
+
+        // The bull eye of the two DART must be the same
+        assert(bulleye_A == bulleye_B);
+    }
+    version (none) {
         { // Try to remove a nonexisting archive
             auto rand = Random!ulong(1234_5678_9012_345UL);
             enum N = 50;
