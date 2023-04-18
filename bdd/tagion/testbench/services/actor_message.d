@@ -6,6 +6,7 @@ import std.stdio;
 import std.format : format;
 import std.meta;
 import std.variant : Variant;
+import std.concurrency;
 
 // Default import list for bdd
 import tagion.behaviour;
@@ -14,7 +15,23 @@ import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
 import tagion.basic.basic : TrustedConcurrency;
 
-mixin TrustedConcurrency;
+T receiveOnlyTimeout(T)() {
+    Duration dur = 1.seconds;
+    T ret;
+    receiveTimeout(
+            dur,
+            (T t) { ret = t; },
+            (Variant var) {
+        check(0, "Unexpected message got %s of type %s, expected %s".format(var, var.type.toString, T.stringof));
+    }
+    );
+
+    if (ret is T.init) {
+        check(0, "Timed out never received message expected message type: %s".format(T.stringof));
+    }
+
+    return ret;
+}
 
 import core.thread;
 
@@ -89,10 +106,10 @@ class MessageBetweenSupervisorAndChild {
     Document actorsChild1AndChild2() @trusted {
         supervisorHandle = spawnActor!MySuperActor(supervisor_task_name);
 
-        Ctrl ctrl = receiveOnly!CtrlMsg.ctrl;
+        Ctrl ctrl = receiveOnlyTimeout!CtrlMsg.ctrl;
         check(ctrl is Ctrl.STARTING, "Supervisor is not starting");
 
-        ctrl = receiveOnly!CtrlMsg.ctrl;
+        ctrl = receiveOnlyTimeout!CtrlMsg.ctrl;
         check(ctrl is Ctrl.ALIVE, "Supervisor is not alive");
 
         return result_ok;
@@ -117,7 +134,7 @@ class MessageBetweenSupervisorAndChild {
 
     @Then("send this message back from #child1 to #super")
     Document fromChild1ToSuper() @trusted {
-        check(receiveOnly!int == 1, "Child 1 did not send back the expected value of 1");
+        check(receiveOnlyTimeout!int == 1, "Child 1 did not send back the expected value of 1");
 
         return result_ok;
     }
@@ -130,14 +147,14 @@ class MessageBetweenSupervisorAndChild {
 
     @Then("send thus message back from #child2 to #super")
     Document fromChild2ToSuper() @trusted {
-        check(receiveOnly!int == -1, "Child 2 did not send back the expected value of 1");
+        check(receiveOnlyTimeout!int == -1, "Child 2 did not send back the expected value of 1");
         return result_ok;
     }
 
     @Then("stop the #super")
     Document stopTheSuper() @trusted {
         supervisorHandle.send(Sig.STOP);
-        Ctrl ctrl = receiveOnly!CtrlMsg.ctrl;
+        Ctrl ctrl = receiveOnlyTimeout!CtrlMsg.ctrl;
         check(ctrl is Ctrl.END, "The supervisor did not stop");
 
         return result_ok;
@@ -156,11 +173,11 @@ class SendMessageBetweenTwoChildren {
     Document actorsChild1AndChild2() @trusted {
         supervisorHandle = spawnActor!MySuperActor(supervisor_task_name);
 
-        Ctrl ctrl = receiveOnly!CtrlMsg.ctrl;
-        check(ctrl is Ctrl.STARTING, "Supervisor is not starting");
+        CtrlMsg ctrl = receiveOnlyTimeout!CtrlMsg;
+        check(ctrl.ctrl is Ctrl.STARTING, "Supervisor is not starting");
 
-        ctrl = receiveOnly!CtrlMsg.ctrl;
-        check(ctrl is Ctrl.ALIVE, "Supervisor is not alive");
+        ctrl = receiveOnlyTimeout!CtrlMsg;
+        check(ctrl.ctrl is Ctrl.ALIVE, "Supervisor is not alive");
 
         return result_ok;
     }
@@ -180,11 +197,7 @@ class SendMessageBetweenTwoChildren {
 
         enum message = "Hello Tagion";
         supervisorHandle.send(Msg!"roundtrip"(), message);
-        receiveTimeout(
-                1.seconds,
-                (string str) { check(str == message, "Did not get the same message back"); },
-                (Variant var) { check(0, "Unexpected Message: %s".format(var)); }
-        );
+        check(receiveOnlyTimeout!string == message, "Did not get the same message back");
 
         return result_ok;
     }
@@ -192,8 +205,8 @@ class SendMessageBetweenTwoChildren {
     @Then("stop the #super")
     Document stopTheSuper() @trusted {
         supervisorHandle.send(Sig.STOP);
-        Ctrl ctrl = receiveOnly!CtrlMsg.ctrl;
-        check(ctrl is Ctrl.END, "The supervisor did not stop");
+        CtrlMsg ctrl = receiveOnlyTimeout!CtrlMsg;
+        check(ctrl.ctrl is Ctrl.END, "The supervisor did not stop");
 
         return result_ok;
     }
