@@ -1990,28 +1990,8 @@ unittest {
         // The bull eye of the two DART must be the same
         assert(bulleye_A == bulleye_B);
     }
+
     version (none) {
-        { // Random DARTFile.write on to an existing DART and the bulleye is check
-            immutable(ulong[]) selected_table = [
-                0xABBA_1234_DF92_7BA7,
-                0xABBA_1234_62BD_7814,
-                0xABBA_1234_DFA5_2B29
-            ];
-            DARTFile.create(filename_A);
-            DARTFile.create(filename_B);
-            RecordFactory.Recorder recorder_A;
-            RecordFactory.Recorder recorder_B;
-            auto dart_A = new DARTFile(net, filename_A);
-            auto dart_B = new DARTFile(net, filename_B);
-            //
-
-            DARTFile.write(dart_A, selected_table[0 .. 2], recorder_A);
-            auto bulleye_A = DARTFile.write(dart_A, selected_table[2 .. $], recorder_A);
-            auto bulleye_B = DARTFile.write(dart_B, selected_table, recorder_B);
-            // The bull eye of the two DART must be the same
-            assert(bulleye_A == bulleye_B);
-        }
-
         { // Random DARTFile.write and then bulleye is check
             auto rand = Random!ulong(1234_5678_9012_345UL);
             enum N = 1000;
