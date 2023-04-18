@@ -1645,6 +1645,15 @@ alias check = Check!DARTException;
                 return rec;
             }
 
+            RecordFactoryT!true.Recorder _recordsRemove(RecordFactoryT!true factory, const(ulong[]) table) {
+                auto rec = factory.recorder;
+                foreach (t; table) {
+                    const doc = DARTFakeNet.fake_doc(t);
+                    rec.remove(doc);
+                }
+                return rec;
+            }
+
             RecordFactory.Recorder stubs(RecordFactory factory, const(ulong[]) table) {
                 auto rec = factory.recorder;
                 foreach (t; table) {
@@ -1840,9 +1849,7 @@ unittest {
     }
 
     { // Rim all
-        writeln("rim all test");
         DARTFile.create(filename);
-        writefln("dartfilename=%s", filename);
         auto dart = new DARTFile(net, filename);
         RecordFactoryT!true.Recorder recorder;
 
@@ -1851,12 +1858,19 @@ unittest {
     }
 
     { // Remove two archives and check the bulleye
-        DARTFile.create(filename_A);
-        DARTFile.create(filename_B);
-        RecordFactory.Recorder recorder_A;
-        RecordFactory.Recorder recorder_B;
-        auto dart_A = new DARTFile(net, filename_A);
-        auto dart_B = new DARTFile(net, filename_B);
+        writeln("remove two archives and check the bullseye");
+        immutable file_A = fileId!DARTFile("XA").fullpath;
+        immutable file_B = fileId!DARTFile("XB").fullpath;
+
+        DARTFile.create(file_A);
+        writefln("dartfilename_A=%s", file_A);
+        DARTFile.create(file_B);
+        writefln("dartfilename_B=%s", file_B);
+
+        RecordFactoryT!true.Recorder recorder_A;
+        RecordFactoryT!true.Recorder recorder_B;
+        auto dart_A = new DARTFile(net, file_A);
+        auto dart_B = new DARTFile(net, file_B);
         //
         DARTFile.write(dart_A, table, recorder_A);
         // table 8 and 9 is left out
@@ -1864,9 +1878,9 @@ unittest {
 
         //dart_A.dump;
         //dart_B.dump;
-        auto remove_recorder = DARTFile.records(manufactor, table[8 .. 10]);
+        auto remove_recorder = DARTFile._recordsRemove(_manufactor, table[8 .. 10]);
 
-        auto bulleye_A = dart_A.modify(remove_recorder, (a) => Archive.Type.REMOVE);
+        auto bulleye_A = dart_A._modify(remove_recorder);
         //dart_A.dump;
         assert(bulleye_A == bulleye_B);
     }
