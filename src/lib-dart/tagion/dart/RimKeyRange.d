@@ -29,7 +29,7 @@ ubyte rim_key(F)(F rim_keys, const uint rim) pure if (isBufferType!F) {
 
 @safe
 RimKeyRange!Range rimKeyRange(Range)(Range range, const Flag!"undo" undo = Yes.undo)
-        if (isInputRange!Range && isImplicitlyConvertible!(ElementType!Range, Archive)) {
+        if (isInputRange!Range && isImplicitlyConvertible!(ElementType!Range, Archive) && !isImplicitlyConvertible!(Range, RecordFactoryT!true.Recorder)) {
     return RimKeyRange!Range(range, undo);
 }
 
@@ -150,6 +150,20 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
         const first = ctx.front;
         popFront;
         return !empty && this.all!((a) => first.fingerprint == a.fingerprint);
+    }
+
+    bool oneLeft() {
+        if (rim < 0 || ctx.empty) {
+            return false;
+        }
+        const _index = ctx.added_range.index;
+        auto _range = ctx.range;
+        scope (exit) {
+            ctx.added_range.index = _index;
+            ctx.range = _range;
+        }
+
+        return this.take(2).walkLength == 1;        
     }
 
     bool moreThanOneADD() {
