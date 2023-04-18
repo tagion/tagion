@@ -125,12 +125,6 @@ nothrow ActorHandle!A spawnActor(A, Args...)(string taskName, Args args) {
     return ActorHandle!A(tid, taskName);
 }
 
-// Delegate for dealing with exceptions sent from children
-version (none) void exceptionHandler(Exception e) {
-    // logger.fatal(e);
-    writeln(e);
-}
-
 /// Nullable and nothrow wrapper around ownerTid
 nothrow Nullable!Tid tidOwner() {
     // tid is "null"
@@ -227,6 +221,7 @@ static:
 
     /// Default fail handler. When overriding this, unknown exceptions should always be sent to the owner
     void failHandler(Exception e) {
+        writeln("Received Exce: ", e);
         immutable exception = cast(immutable) e;
         assumeWontThrow(ownerTid.prioritySend(exception));
     }
@@ -240,6 +235,7 @@ static:
         throw new UnknownMessage("No delegate to deal with message: %s".format(message));
     }
 
+    /// The tasks that get run when you call spawnActor!
     nothrow void task() {
         try {
 
@@ -269,28 +265,36 @@ static:
                 debug writeln("STARTED all the children");
             }
 
+            // Call starting() if it exists
             static if (__traits(hasMember, This, "starting")) {
                 alias startingCall = __traits(getMember, This, "starting");
-                static assert(isCallable!startingCall, "Starting callback is not callable");
+                static assert(isCallable!startingCall, "the starting callback is not callable");
                 startingCall();
             }
 
             setState(Ctrl.ALIVE); // Tell the owner that you running
             while (!stop) {
-                receive(
-                        T, // The message handlers you pass to your Actor template
-                        &signal,
-                        &control,
-                        &ownerTerminated,
-                        &failHandler,
-                        &unknown,
-                );
+                try {
+                    receive(
+                            T, // The message handlers you pass to your Actor template
+                            &signal,
+                            &control,
+                            &ownerTerminated,
+                            &failHandler,
+                            &unknown,
+                    );
+                }
+                catch (Exception e) {
+                    immutable exception = cast(immutable) e;
+                    assumeWontThrow(ownerTid.prioritySend(exception));
+                }
             }
         }
 
         // If we catch an exception we send it back to owner for them to deal with it.
         catch (Exception e) {
             // Use tagion taskexception when it part of the tree
+            // TODO: send a custom startup exception instead.
             immutable exception = cast(immutable) e;
             assumeWontThrow(ownerTid.prioritySend(exception));
         }
