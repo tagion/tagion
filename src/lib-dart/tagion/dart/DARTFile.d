@@ -848,7 +848,9 @@ alias check = Check!DARTException;
                     ordered_fingerprints.map!(f => f.toHex)
                         .each!writeln;
                     writeln("------");
+
                     
+
                     .check(ordered_fingerprints.length == 1,
                             format("Data base is broken at rim=%d fingerprint=%s",
                             rim, ordered_fingerprints[0].toHex));
@@ -1404,16 +1406,25 @@ alias check = Check!DARTException;
 
                 if (branches.isSingle) {
                     writeln("branches.isSingle");
-                    branches[].map!(a => a.fingerprint.toHex)
-                        .each!writeln;
-                    branches.indices
-                        .filter!(f => f !is INDEX_NULL)
-                        .each!writeln;
-                    writeln("-------");
 
-                    return branches[]
-                        .filter!(a => a.fingerprint !is null)
-                        .front;
+                    const single_leave = branches[].front;
+                    const buf = cacheLoad(single_leave.index);
+                    const single_doc = Document(buf);
+
+                    if (!Branches.isRecord(single_doc)) {
+                        return single_leave;
+                    }
+
+                    // branches[].map!(a => a.fingerprint.toHex)
+                    //     .each!writeln;
+                    // branches.indices
+                    //     .filter!(f => f !is INDEX_NULL)
+                    //     .each!writeln;
+                    // writeln("-------");
+
+                    // return branches[]
+                    //     .filter!(a => a.fingerprint !is null)
+                    //     .front;
                 }
                 return Leave(blockfile.save(branches)
                         .index, branches.fingerprint(this));
@@ -1705,9 +1716,10 @@ unittest {
         0x20_21_22_32_40_50_80_90, // Insert between in rim 3
 
         // Add in first rim again
-        0x20_21_11_33_40_50_80_90, // Rim 4 test
+        0x20_21_11_33_40_50_80_90,
         0x20_21_20_32_30_40_50_80,
-        0x20_21_20_32_31_40_50_80,
+
+        0x20_21_20_32_31_40_50_80, // rim 4 test
         0x20_21_20_32_34_40_50_80,
         0x20_21_20_32_20_40_50_80, // Insert before the first in rim 4
 
@@ -1792,29 +1804,20 @@ unittest {
     }
 
     { // Rim 3 test
-        writeln("Rim 3 test --------");
         DARTFile.create(filename);
         auto dart = new DARTFile(net, filename);
         RecordFactoryT!true.Recorder recorder;
         //=Recorder(net);
-        writeln(filename);
-        assert(DARTFile.validate(dart, table[4 .. 9], recorder));
-        // dart.dump;
-    }
-
-    { // Rim 3 test
-        DARTFile.create(filename);
-        auto dart = new DARTFile(net, filename);
-        RecordFactory.Recorder recorder;
-
         assert(DARTFile.validate(dart, table[4 .. 9], recorder));
         // dart.dump;
     }
 
     { // Rim 4 test
+        writeln("rim 4 test");
         DARTFile.create(filename);
+        writefln("dartfilename=%s", filename);
         auto dart = new DARTFile(net, filename);
-        RecordFactory.Recorder recorder;
+        RecordFactoryT!true.Recorder recorder;
 
         assert(DARTFile.validate(dart, table[17 .. $], recorder));
         // dart.dump;
