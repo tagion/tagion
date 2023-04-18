@@ -1941,7 +1941,6 @@ unittest {
     }
 
     { // Random DARTFile.write on to an existing DART and the bulleye is check
-        writeln("Random DARTFile.write on to an existing DART and the bullseye is checked");
         auto rand = Random!ulong(1234_5678_9012_345UL);
         enum N = 100;
         auto random_table = new ulong[N];
@@ -1964,34 +1963,34 @@ unittest {
         auto bulleye_B = DARTFile.write(dart_B, random_table[0 .. 29] ~ random_table[34 .. 100], recorder_B);
         dart_B.dump;
 
+        // The bullseye of the two DART must be the same
+        assert(bulleye_A == bulleye_B);
+    }
+
+    { // Random remove and the bullseye is checked
+        auto rand = Random!ulong(1234_5678_9012_345UL);
+        enum N = 1000;
+        auto random_table = new ulong[N];
+        foreach (ref r; random_table) {
+            r = rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
+        }
+        DARTFile.create(filename_A);
+        DARTFile.create(filename_B);
+        RecordFactoryT!true.Recorder recorder_A;
+        RecordFactoryT!true.Recorder recorder_B;
+        auto dart_A = new DARTFile(net, filename_A);
+        auto dart_B = new DARTFile(net, filename_B);
+        //
+
+        auto bulleye_A = DARTFile.write(dart_A, random_table, recorder_A);
+        auto bulleye_B = DARTFile.write(dart_B, random_table[0 .. N - 100], recorder_B);
+        auto remove_recorder = DARTFile._recordsRemove(_manufactor, random_table[N - 100 .. N]);
+        bulleye_A = dart_A._modify(remove_recorder);
+        // dart_A.dump;
         // The bull eye of the two DART must be the same
         assert(bulleye_A == bulleye_B);
     }
     version (none) {
-        { // Random remove and the bulleye is check
-            auto rand = Random!ulong(1234_5678_9012_345UL);
-            enum N = 1000;
-            auto random_table = new ulong[N];
-            foreach (ref r; random_table) {
-                r = rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
-            }
-            DARTFile.create(filename_A);
-            DARTFile.create(filename_B);
-            RecordFactory.Recorder recorder_A;
-            RecordFactory.Recorder recorder_B;
-            auto dart_A = new DARTFile(net, filename_A);
-            auto dart_B = new DARTFile(net, filename_B);
-            //
-
-            auto bulleye_A = DARTFile.write(dart_A, random_table, recorder_A);
-            auto bulleye_B = DARTFile.write(dart_B, random_table[0 .. N - 100], recorder_B);
-            auto remove_recorder = DARTFile.records(manufactor, random_table[N - 100 .. N]);
-            bulleye_A = dart_A.modify(remove_recorder, (a) => Archive.Type.REMOVE);
-            // dart_A.dump;
-            // The bull eye of the two DART must be the same
-            assert(bulleye_A == bulleye_B);
-        }
-
         { // Random DARTFile.write on to an existing DART and the bulleye is check
             immutable(ulong[]) selected_table = [
                 0xABBA_1234_DF92_7BA7,
