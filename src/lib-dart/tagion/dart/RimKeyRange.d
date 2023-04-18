@@ -5,6 +5,8 @@ import std.algorithm;
 import std.range;
 import std.traits;
 import std.container.array;
+import std.typecons : Flag, Yes, No;
+
 import tagion.dart.Recorder : RecordFactoryT, Archive, GetType, Neutral;
 import tagion.basic.Types : isBufferType, Buffer;
 import tagion.utils.Miscellaneous : hex;
@@ -26,15 +28,15 @@ ubyte rim_key(F)(F rim_keys, const uint rim) pure if (isBufferType!F) {
 }
 
 @safe
-RimKeyRange!Range rimKeyRange(Range)(Range range, const GetType get_type = Neutral)
+RimKeyRange!Range rimKeyRange(Range)(Range range, const Flag!"undo" undo = Yes.undo)
         if (isInputRange!Range && isImplicitlyConvertible!(ElementType!Range, Archive)) {
-    return RimKeyRange!Range(range, get_type);
+    return RimKeyRange!Range(range, undo);
 }
 
 @safe
-auto rimKeyRange(RecordFactoryX.Recorder rec, const GetType get_type = Neutral) {
+auto rimKeyRange(RecordFactoryX.Recorder rec, const Flag!"undo" undo = Yes.undo) {
 
-    return rimKeyRange(rec[], get_type);
+    return rimKeyRange(rec[], undo);
 }
 
 // Range over a Range with the same key in the a specific rim
@@ -42,7 +44,6 @@ auto rimKeyRange(RecordFactoryX.Recorder rec, const GetType get_type = Neutral) 
 struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(ElementType!Range, Archive)) {
     alias archive_less = RecordFactoryX.Recorder.archive_sorted;
 
-    //alias Archives=RecordFactory.Recorder.Archives;
     @safe
     final class RangeContext {
         Range range;
@@ -167,7 +168,7 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
     protected RangeContext ctx;
     const Buffer rim_keys;
     const int rim;
-    const GetType get_type;
+    const Flag!"undo" undo;
     @disable this();
 
     void add(Archive archive)
@@ -180,7 +181,7 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
         ctx = rhs.ctx;
         rim_keys = (rhs.empty) ? Buffer.init : rhs.front.fingerprint[0 .. rim + 1];
         this.rim = rim & int.max;
-        get_type = rhs.get_type;
+        undo = rhs.undo;
 
     }
 
@@ -188,12 +189,11 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
         ctx = rhs.ctx.save;
         rim_keys = rhs.rim_keys;
         rim = rhs.rim;
-        get_type = rhs.get_type;
+        undo = rhs.undo;
     }
 
-    private this(Range range, const GetType get_type) {
-
-        this.get_type = get_type;
+    private this(Range range, const Flag!"undo" undo) {
+        this.undo = undo;
         rim = -1;
         //auto range_save=_range.save;
         ctx = new RangeContext(range);
