@@ -1831,9 +1831,7 @@ unittest {
     }
 
     { // Rim 2 & 3 & 4
-        writeln("rim 2/3/4 test");
         DARTFile.create(filename);
-        writefln("dartfilename=%s", filename);
         auto dart = new DARTFile(net, filename);
         RecordFactoryT!true.Recorder recorder;
 
@@ -1842,9 +1840,11 @@ unittest {
     }
 
     { // Rim all
+        writeln("rim all test");
         DARTFile.create(filename);
+        writefln("dartfilename=%s", filename);
         auto dart = new DARTFile(net, filename);
-        RecordFactory.Recorder recorder;
+        RecordFactoryT!true.Recorder recorder;
 
         assert(DARTFile.validate(dart, table, recorder));
         // dart.dump;
