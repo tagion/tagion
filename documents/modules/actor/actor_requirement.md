@@ -7,14 +7,16 @@ When an actor fails the error should be sent to the supervisor and the supervis
 A supervisor should able to stop one or all children and if the actor requested to be stopped then it should safely stop all children owned by this actor.
 
 
-And actor can have in 4 stages
+And actor can have 3 Control stages
 
-| Mode | Stage | Description |
-| --- | --- | --- |
-| 1. |STARING | When actor is starting and initializing the actor |
-| 2. |ALIVE   | When the actor has started a LIVE signal is send to the supervisor |
-| 3. |ERROR   | Error (Exception) is send to the supervisor |
-| 4. |STOP    | When the actor stops a END signal is send to the supervisor |
+| Mode | Stage    | Description                                                        |
+| ---- | -------- | ------------------------------------------------------------------ |
+|  1.  | STARTING | When actor is starting and initializing the actor                  |
+|  2.  | ALIVE    | When the actor has started a LIVE signal is send to the supervisor |
+|  4.  | END      | When the actor stops a END signal is send to the supervisor        |
+
+
+Additionally a FAIL is sent when the running task catches an exception. Containing the taskname and the exception.
 
 child stops when a supervisor sends a STOP signal to the child and the child sends an END when it stops if an error occurs in the child the error (Exception) should be sent to the supervisor.
 
