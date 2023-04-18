@@ -2013,43 +2013,43 @@ unittest {
         // The bull eye of the two DART must be the same
         assert(bulleye_A == bulleye_B);
     }
-    version (none) {
-        { // Try to remove a nonexisting archive
-            auto rand = Random!ulong(1234_5678_9012_345UL);
-            enum N = 50;
-            auto random_table = new ulong[N];
-            foreach (ref r; random_table) {
-                r = rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
-            }
-            DARTFile.create(filename_A);
-            DARTFile.create(filename_B);
 
-            auto dart_A = new DARTFile(net, filename_A);
-            auto dart_B = new DARTFile(net, filename_B);
-            RecordFactory.Recorder recorder_A;
-            RecordFactory.Recorder recorder_B;
-
-            DARTFile.write(dart_A, random_table, recorder_A);
-            DARTFile.write(dart_B, random_table, recorder_B);
-            assert(dart_A.fingerprint == dart_B.fingerprint);
-
-            auto recorder = dart_A.recorder;
-            const archive_1 = new Archive(net, net.fake_doc(0xABB7_1111_1111_0000UL), Archive
-                    .Type.NONE);
-            recorder.remove(archive_1.fingerprint);
-            const archive_2 = new Archive(net, net.fake_doc(0xABB7_1112_1111_0000UL), Archive
-                    .Type.NONE);
-            recorder.remove(archive_2.fingerprint);
-            dart_B.modify(recorder);
-            // dart_B.dump;
-            // dart_A.dump;
-            assert(dart_A.fingerprint == dart_B.fingerprint);
-
-            // Check fingerprint on load
-            auto read_dart_A = new DARTFile(net, filename_A);
-            assert(dart_A.fingerprint == read_dart_A.fingerprint);
+    { // Try to remove a nonexisting archive
+        auto rand = Random!ulong(1234_5678_9012_345UL);
+        enum N = 50;
+        auto random_table = new ulong[N];
+        foreach (ref r; random_table) {
+            r = rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
         }
+        DARTFile.create(filename_A);
+        DARTFile.create(filename_B);
 
+        auto dart_A = new DARTFile(net, filename_A);
+        auto dart_B = new DARTFile(net, filename_B);
+        RecordFactoryT!true.Recorder recorder_A;
+        RecordFactoryT!true.Recorder recorder_B;
+
+        DARTFile.write(dart_A, random_table, recorder_A);
+        DARTFile.write(dart_B, random_table, recorder_B);
+        assert(dart_A.fingerprint == dart_B.fingerprint);
+
+        auto recorder = dart_A._recorder;
+        const archive_1 = new Archive(net, net.fake_doc(0xABB7_1111_1111_0000UL), Archive
+                .Type.NONE);
+        recorder.remove(archive_1.fingerprint);
+        const archive_2 = new Archive(net, net.fake_doc(0xABB7_1112_1111_0000UL), Archive
+                .Type.NONE);
+        recorder.remove(archive_2.fingerprint);
+        dart_B._modify(recorder);
+        // dart_B.dump;
+        // dart_A.dump;
+        assert(dart_A.fingerprint == dart_B.fingerprint);
+
+        // Check fingerprint on load
+        auto read_dart_A = new DARTFile(net, filename_A);
+        assert(dart_A.fingerprint == read_dart_A.fingerprint);
+    }
+    version (none) {
         { // Large random test
             auto rand = Random!ulong(1234_5678_9012_345UL);
             enum N = 1000;
