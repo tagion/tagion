@@ -187,6 +187,11 @@ import std.traits;
  * Base template
  * All members should be static
  * Examples: See [Actor examples]($(DOC_ROOT_OBJECTS)tagion.actor.example$(DOC_EXTENSION))
+ * 
+ * Struct may implement starting callback that gets called after the actor sends Ctrl.STARTING
+ * ---
+ * void starting() {...};
+ * ---
  */
 mixin template Actor(T...) {
 static:
@@ -194,6 +199,7 @@ static:
     import std.variant : Variant;
     import std.concurrency : OwnerTerminated, Tid, thisTid, ownerTid, receive, prioritySend;
     import std.format : format;
+    import std.traits : isCallable;
 
     bool stop = false;
     Ctrl[Tid] childrenState; // An AA to keep a copy of the state of the children
@@ -261,6 +267,12 @@ static:
 
                 debug writeln((childrenState.all(Ctrl.ALIVE)));
                 debug writeln("STARTED all the children");
+            }
+
+            static if (__traits(hasMember, This, "starting")) {
+                alias startingCall = __traits(getMember, This, "starting");
+                static assert(isCallable!startingCall, "Starting callback is not callable");
+                startingCall();
             }
 
             setState(Ctrl.ALIVE); // Tell the owner that you running
