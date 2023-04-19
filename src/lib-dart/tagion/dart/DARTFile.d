@@ -1116,7 +1116,6 @@ alias check = Check!DARTException;
                     return Leave.init;
                 }
 
-                pragma(msg, "fixme(pr): branch never becomes single");
                 if (branches.isSingle) {
                     const single_leave = branches[].front;
                     const buf = cacheLoad(single_leave.index);
