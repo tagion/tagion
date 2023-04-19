@@ -1351,7 +1351,7 @@ alias check = Check!DARTException;
                             return Leave.init;
                         }
 
-                        if (branches.isSingle && range.rim > RIMS_IN_SECTOR) {
+                        if (branches.isSingle && range.rim >= RIMS_IN_SECTOR) {
                             const single_leave = branches[].front;
                             const buf = cacheLoad(single_leave.index);
                             const single_doc = Document(buf);

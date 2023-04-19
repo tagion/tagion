@@ -69,7 +69,7 @@ class AddOneArchiveAndSnap {
 
 
         check(bullseye == doc_bullseye, "Bullseye not equal to doc");
-
+        db.dump;
         return result_ok;
     }
 
@@ -82,7 +82,7 @@ class AddOneArchiveAndSnap {
         bullseye = db.modify(recorder);
 
         check(doc_fingerprint != bullseye, "Bullseye not updated");
-
+        db.dump();
         return result_ok;
     }
 
@@ -108,6 +108,7 @@ class AddOneArchiveAndSnap {
         foreach(i; 0..2) {
             const rim = Rims(rim_fingerprints[i][0..3]);
             const rim_doc = getRim(rim, info.hirpc, db);
+            writefln("rim_doc=%s", rim_doc.toPretty);
             check(RecordFactory.Recorder.isRecord(rim_doc), format("branch %s not snapped back", rim));
         }
 
