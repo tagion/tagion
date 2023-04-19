@@ -123,11 +123,12 @@ class AddPseudoRandomData {
             check(equal(recorder_read[].map!(a => a.filed), recorder[].map!(a => a.filed)), "data not the same");
 
         }
+        import tagion.dart.Recorder : Remove;
 
         foreach (i, recorder; recorders.enumerate) {
             writefln("remove %s", i);
             remove_watch.start();
-            db1.modify(recorder);
+            db1.modify(recorder.changeTypes(Remove));
             remove_watch.stop();
             data[i] ~= remove_watch.peek.total!"msecs";
 
