@@ -69,7 +69,7 @@ class AddOneArchiveAndSnap {
 
 
         check(bullseye == doc_bullseye, "Bullseye not equal to doc");
-        db.dump;
+        // db.dump;
         return result_ok;
     }
 
@@ -82,7 +82,7 @@ class AddOneArchiveAndSnap {
         bullseye = db.modify(recorder);
 
         check(doc_fingerprint != bullseye, "Bullseye not updated");
-        db.dump();
+        // db.dump();
         return result_ok;
     }
 
