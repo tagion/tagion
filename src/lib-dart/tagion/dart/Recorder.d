@@ -451,15 +451,6 @@ const Neutral = delegate(const(Archive) a) => a.type;
         return format("Archive %s %s %s", fingerprint.hex, type,
                 (() @trusted => cast(void*) this)());
     }
-    /**
-     * Construct an archive from a Document
-     * Params:
-     *   doc = documnet of the filed data
-     *   t = archve type
-     */
-    version (none) this(const(Document) doc, const Type t = Type.NONE) {
-        this(null, doc, t);
-    }
 
     /**
      * Convert archive to a Document 
@@ -605,7 +596,6 @@ unittest { // Archive
     Archive a;
     { // Simple archive
         a = new Archive(net, filed_doc);
-        assert(!a.isStub);
         assert(a.fingerprint == filed_doc_fingerprint);
         assert(a.filed == filed_doc);
         assert(a.type is Archive.Type.NONE);
@@ -616,7 +606,6 @@ unittest { // Archive
         assert(result_a.fingerprint == a.fingerprint);
         assert(result_a.filed == a.filed);
         assert(result_a.type == a.type);
-        assert(!result_a.isStub);
         assert(result_a.store == filed_doc);
 
     }
@@ -624,7 +613,6 @@ unittest { // Archive
     a._type = Archive.Type.ADD;
     { // Simple archive with ADD/REMOVE Type
         // a=new Archive(net, filed_doc);
-        assert(!a.isStub);
         assert(a.fingerprint == filed_doc_fingerprint);
         const archived_doc = a.toDoc;
 
@@ -633,7 +621,6 @@ unittest { // Archive
             assert(result_a.fingerprint == a.fingerprint);
             assert(result_a.filed == a.filed);
             assert(result_a.type == a.type);
-            assert(!result_a.isStub);
             assert(result_a.store == filed_doc);
         }
 
