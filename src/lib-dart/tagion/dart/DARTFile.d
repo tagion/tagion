@@ -124,14 +124,6 @@ alias check = Check!DARTException;
 
     enum KEY_SPAN = ubyte.max + 1;
 
-    static bool PRINT;
-
-    static void __write(Args...)(const string fmt, Args args) {
-        if (PRINT) {
-            writefln(fmt, args);
-        }
-    }
-
     import tagion.dart.BlockFile : INDEX_NULL;
 
     immutable(string) filename;
@@ -1033,7 +1025,6 @@ alias check = Check!DARTException;
             // immutable sector = sector(archive.fingerprint);
             Branches branches;
             if (range.rim < RIMS_IN_SECTOR) {
-                __write("range.rim < RIMS_IN_SECTOR =%s rim_key=%s, branch_index=%s", range.rim, range.rim_keys.toHex, branch_index);
                 if (branch_index !is INDEX_NULL) {
                     branches = blockfile.load!Branches(branch_index);
 
@@ -1059,17 +1050,13 @@ alias check = Check!DARTException;
 
             }
             else {
-                __write("not in sectors: %s rim_keys=%s, branch_index=%s", range.rim, range.rim_keys.toHex, branch_index);
                 if (branch_index !is INDEX_NULL) {
                     const doc = blockfile.cacheLoad(branch_index);
-                    __write("loaded doc=%s", doc.toPretty);
                     if (Branches.isRecord(doc)) {
                         branches = Branches(doc);
                         while (!range.empty) {
                             auto sub_range = range.nextRim;
                             immutable rim_key = sub_range.front.fingerprint.rim_key(sub_range.rim);
-                            __write("BRANCH while: %s rim_key=%02x, branch_index=%s", range.rim, rim_key, branch_index);
-                            __write("BRANCH: branches.index(rim_key)=%s", branches.index(rim_key));
                             branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key));
                         }
                         // if the range is empty then we return a null leave.
@@ -1101,75 +1088,48 @@ alias check = Check!DARTException;
                             blockfile.dispose(branch_index);
 
                         }
-                        // __write("single_archive=%s", current_archive.fingerprint.toHex);
-                        if (PRINT) {
-                            current_archive.dump;
-                        }
-
                         auto sub_range = range.save;
 
                         if (sub_range
                                 .filter!(a => a.type == Archive.Type.REMOVE)
                                 .filter!(a => a.fingerprint == current_archive.fingerprint)
                                 .empty) {
-                            __write("current_archive =%s", current_archive.fingerprint.toHex);
-                            __write("rim_key in range=%s", range.rim_keys.toHex);
-                            __write("current_archive_doc = %s", current_archive.filed.toPretty);
+
                             range.add(current_archive);
 
                         }
 
                     }
                 }
-                __write("number of elements in iterator: %d", range.save.walkLength);
                 if (range.oneLeft) {
-                    __write("oneleft fingerprint=%s", range.front.fingerprint.toHex);
                     scope (exit) {
                         range.popFront;
                     }
                     if (range.front.type == Archive.Type.ADD) {
-                        __write("branch size=%s", branches.fingerprints.filter!(f => f !is null)
-                                .walkLength);
                         return Leave(blockfile.save(range.front.store).index, range
                                 .front.fingerprint);
                     }
-                    __write("oneleft removing fingerprint=%s", range.front.fingerprint.toHex);
                     return Leave.init;
                 }
 
                 while (!range.empty) {
                     const rim_key = range.front.fingerprint.rim_key(range.rim + 1);
-                    __write("!range.empty, rim=%d, rim_key=%02x", range.rim, rim_key);
-                    if (PRINT) {
-                        range.save.each!q{a.dump};
-                    }
 
-                    __write("----- next rim");
-                    if (PRINT) {
-                        range.save.nextRim.each!q{a.dump};
-                    }
                     const leave = traverse_dart(range.nextRim, INDEX_NULL);
-                    __write("rim_key=%02x, doc: %s", rim_key, leave.toPretty);
                     branches[rim_key] = leave;
                 }
 
                 if (branches.empty) {
-                    __write("empty branches");
                     return Leave.init;
                 }
 
                 pragma(msg, "fixme(pr): branch never becomes single");
                 if (branches.isSingle) {
-                    __write("branches.isSingle");
-
                     const single_leave = branches[].front;
                     const buf = cacheLoad(single_leave.index);
                     const single_doc = Document(buf);
 
                     if (!Branches.isRecord(single_doc)) {
-                        __write("single_leave: index=%s, fingerprint=%s", single_leave.index, single_leave
-                                .fingerprint
-                                .toHex);
                         return single_leave;
                     }
 
@@ -1185,7 +1145,6 @@ alias check = Check!DARTException;
         }
 
         auto range = rimKeyRange(modifyrecords, undo);
-        __write("masterblock root index=%s", blockfile.masterBlock.root_index);
         immutable new_root = traverse_dart(range, blockfile.masterBlock.root_index);
 
         scope (success) {
