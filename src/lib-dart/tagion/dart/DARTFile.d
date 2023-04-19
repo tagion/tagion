@@ -136,8 +136,7 @@ alias check = Check!DARTException;
 
     immutable(string) filename;
 
-    protected RecordFactory manufactor;
-    protected RecordFactoryT!true _manufactor;
+    protected RecordFactoryT!true manufactor;
 
     protected {
         BlockFile blockfile;
@@ -181,7 +180,6 @@ alias check = Check!DARTException;
     this(const HashNet net, string filename) {
         blockfile = BlockFile(filename);
         this.manufactor = RecordFactory(net);
-        this._manufactor = RecordFactoryT!true(net);
         this.filename = filename;
         if (blockfile.root_index) {
             const data = blockfile.load(blockfile.root_index);
@@ -220,9 +218,6 @@ alias check = Check!DARTException;
         return manufactor.recorder;
     }
 
-    RecordFactoryT!true.Recorder _recorder() nothrow {
-        return _manufactor.recorder;
-    }
     /** 
      * Creates a recorder from a document using the RecorderFactory used by the DART
      * Params:
@@ -773,6 +768,8 @@ alias check = Check!DARTException;
  * Returns: 
 *   recorder of the read archives
  */
+    alias loads = _loads;
+    version(none)
     RecordFactory.Recorder loads(Range)(
             Range fingerprints,
             Archive.Type type = Archive.Type.REMOVE) if (isInputRange!Range && is(ElementType!Range : Buffer)) {
@@ -829,7 +826,7 @@ alias check = Check!DARTException;
 
         import std.algorithm.comparison : min;
 
-        auto result = _recorder;
+        auto result = recorder;
         void traverse_dart(
                 const Index branch_index,
                 Buffer[] ordered_fingerprints,
@@ -1016,8 +1013,8 @@ alias check = Check!DARTException;
      * If the function executes succesfully then the DART is update or else it does not affect the DART
      * The function returns the bullseye of the dart
      */
-    // alias modify = _modify;
-    // version(none)
+    alias modify = _modify;
+    version(none)
     Buffer modify(const(RecordFactory.Recorder) modifyrecords,
             GetType get_type = null) {
 
@@ -1601,7 +1598,7 @@ alias check = Check!DARTException;
             }
 
             Buffer write(DARTFile dart, const(ulong[]) table, out RecordFactoryT!true.Recorder rec, bool isStubs = false) {
-                rec = isStubs ? stubs(dart._manufactor, table) : records(dart._manufactor, table);
+                rec = isStubs ? stubs(dart.manufactor, table) : records(dart.manufactor, table);
                 return dart._modify(rec);
             }
 
@@ -1676,7 +1673,6 @@ unittest {
 
     auto net = new DARTFakeNet;
     auto manufactor = RecordFactory(net);
-    auto _manufactor = RecordFactoryT!true(net);
 
     immutable(ulong[]) table = [
         //  RIM 2 test (rim=2)
@@ -1723,17 +1719,17 @@ unittest {
         auto a_in = new Archive(net, doc_in, Archive.Type.ADD);
 
         // Test recorder
-        auto recorder = _manufactor.recorder;
+        auto recorder = manufactor.recorder;
         recorder.insert(a_in);
         auto recorder_doc_out = recorder.toDoc;
-        auto recorder_out = _manufactor.recorder(recorder_doc_out);
+        auto recorder_out = manufactor.recorder(recorder_doc_out);
         auto recorder_archive = recorder_out.archives[].front;
         assert(recorder_archive.fingerprint == a_in.fingerprint);
 
     }
 
     { // Test RimKeyRange
-        auto recorder = _manufactor.recorder;
+        auto recorder = manufactor.recorder;
 
         auto test_tabel = table[0 .. 8].dup;
         foreach (t; test_tabel) {
@@ -1853,7 +1849,7 @@ unittest {
 
         //dart_A.dump;
         //dart_B.dump;
-        auto remove_recorder = DARTFile.recordsRemove(_manufactor, table[8 .. 10]);
+        auto remove_recorder = DARTFile.recordsRemove(manufactor, table[8 .. 10]);
 
         auto bulleye_A = dart_A._modify(remove_recorder);
         //dart_A.dump;
@@ -1877,7 +1873,7 @@ unittest {
 
         auto bulleye_A = DARTFile.write(dart_A, random_table, recorder_A);
         auto bulleye_B = DARTFile.write(dart_B, random_table[0 .. N - 100], recorder_B);
-        auto remove_recorder = DARTFile.recordsRemove(_manufactor, random_table[N - 100 .. N]);
+        auto remove_recorder = DARTFile.recordsRemove(manufactor, random_table[N - 100 .. N]);
 
         bulleye_A = dart_A._modify(remove_recorder);
         // dart_A.dump;
@@ -1959,7 +1955,7 @@ unittest {
 
         auto bulleye_A = DARTFile.write(dart_A, random_table, recorder_A);
         auto bulleye_B = DARTFile.write(dart_B, random_table[0 .. N - 100], recorder_B);
-        auto remove_recorder = DARTFile.recordsRemove(_manufactor, random_table[N - 100 .. N]);
+        auto remove_recorder = DARTFile.recordsRemove(manufactor, random_table[N - 100 .. N]);
         bulleye_A = dart_A._modify(remove_recorder);
         // dart_A.dump;
         // The bull eye of the two DART must be the same
@@ -2008,7 +2004,7 @@ unittest {
         DARTFile.write(dart_B, random_table, recorder_B);
         assert(dart_A.fingerprint == dart_B.fingerprint);
 
-        auto recorder = dart_A._recorder;
+        auto recorder = dart_A.recorder;
         const archive_1 = new Archive(net, net.fake_doc(0xABB7_1111_1111_0000UL), Archive
                 .Type.NONE);
         recorder.remove(archive_1.fingerprint);
@@ -2045,7 +2041,7 @@ unittest {
         enum SELECT_ITER = 35;
         (() @trusted {
             foreach (i; 0 .. ITERATIONS) {
-                auto recorder = dart_A._recorder;
+                auto recorder = dart_A.recorder;
                 BitArray check_archives;
                 BitArray added_archives;
                 BitArray removed_archives;
@@ -2074,7 +2070,7 @@ unittest {
                 saved_archives &= ~removed_archives;
                 // dart_A.dump;
             }
-            auto recorder_B = dart_B._recorder;
+            auto recorder_B = dart_B.recorder;
 
             saved_archives.bitsSet.each!(
                 n => recorder_B.add(net.fake_doc(random_table[n])));
@@ -2119,7 +2115,7 @@ unittest {
             ];
 
             auto docs = deep_table.map!(a => DARTFakeNet.fake_doc(a));
-            auto recorder = dart_A._recorder();
+            auto recorder = dart_A.recorder();
             foreach (doc; docs) {
                 recorder.add(doc);
             }
@@ -2129,7 +2125,7 @@ unittest {
             dart_A._modify(recorder);
             // dart_A.dump();
 
-            auto remove_recorder = dart_A._recorder();
+            auto remove_recorder = dart_A.recorder();
             remove_recorder.remove(remove_fingerprint);
             dart_A._modify(remove_recorder);
             // dart_A.dump();
@@ -2148,7 +2144,7 @@ unittest {
             const ulong archive = 0xABB9_13ab_11ef_0234;
 
             auto doc = DARTFakeNet.fake_doc(archive);
-            auto recorder = dart_A._recorder();
+            auto recorder = dart_A.recorder();
 
             recorder.add(doc);
 
@@ -2194,7 +2190,7 @@ unittest {
             ];
 
             auto docs = deep_table.map!(a => DARTFakeNet.fake_doc(a));
-            auto recorder = dart_A._recorder();
+            auto recorder = dart_A.recorder();
             foreach (doc; docs) {
                 recorder.add(doc);
             }
@@ -2202,7 +2198,7 @@ unittest {
             dart_A._modify(recorder);
             // dart_A.dump();
 
-            auto remove_recorder = dart_A._recorder();
+            auto remove_recorder = dart_A.recorder();
             remove_recorder.remove(remove_fingerprint);
             dart_A._modify(remove_recorder);
 
@@ -2247,7 +2243,7 @@ unittest {
             ];
 
             auto docs = deep_table.map!(a => DARTFakeNet.fake_doc(a)).array;
-            auto recorder = dart_A._recorder();
+            auto recorder = dart_A.recorder();
 
             assert(docs.length == 3);
             recorder.add(docs[0]);
@@ -2257,7 +2253,7 @@ unittest {
             dart_A._modify(recorder);
             // dart_A.dump();
 
-            auto next_recorder = dart_A._recorder();
+            auto next_recorder = dart_A.recorder();
             next_recorder.remove(remove_fingerprint);
             next_recorder.add(docs[2]);
             next_recorder[].each!q{a.dump};
@@ -2304,7 +2300,7 @@ unittest {
             ];
 
             auto docs = deep_table.map!(a => DARTFakeNet.fake_doc(a));
-            auto recorder = dart_A._recorder();
+            auto recorder = dart_A.recorder();
             foreach (doc; docs) {
                 recorder.add(doc);
             }
@@ -2314,7 +2310,7 @@ unittest {
             dart_A._modify(recorder);
             // dart_A.dump();
 
-            auto remove_recorder = dart_A._recorder();
+            auto remove_recorder = dart_A.recorder();
             remove_recorder.remove(fingerprints[0]);
             remove_recorder.remove(fingerprints[2]);
             dart_A._modify(remove_recorder);
@@ -2368,7 +2364,7 @@ unittest {
             ];
 
             auto docs = deep_table.map!(a => DARTFakeNet.fake_doc(a));
-            auto recorder = dart_A._recorder();
+            auto recorder = dart_A.recorder();
             foreach (doc; docs) {
                 recorder.add(doc);
             }
@@ -2376,7 +2372,7 @@ unittest {
             dart_A._modify(recorder);
             // dart_A.dump();
 
-            auto remove_recorder = dart_A._recorder();
+            auto remove_recorder = dart_A.recorder();
             remove_recorder.remove(fingerprints[$ - 1]);
 
             dart_A._modify(remove_recorder);
@@ -2419,7 +2415,7 @@ unittest {
             ];
 
             auto docs = deep_table.map!(a => DARTFakeNet.fake_doc(a));
-            auto recorder = dart_A._recorder();
+            auto recorder = dart_A.recorder();
             foreach (doc; docs) {
                 recorder.add(doc);
             }
@@ -2427,7 +2423,7 @@ unittest {
             dart_A._modify(recorder);
             // dart_A.dump();
 
-            auto remove_recorder = dart_A._recorder();
+            auto remove_recorder = dart_A.recorder();
             remove_recorder.remove(fingerprints[4]);
 
             dart_A._modify(remove_recorder);
@@ -2456,7 +2452,7 @@ unittest {
             ];
 
             auto docs = deep_table.map!(a => DARTFakeNet.fake_doc(a));
-            auto recorder = dart_A._recorder();
+            auto recorder = dart_A.recorder();
             foreach (doc; docs) {
                 recorder.add(doc);
             }
@@ -2464,7 +2460,7 @@ unittest {
             dart_A._modify(recorder);
             // dart_A.dump();
 
-            auto remove_recorder = dart_A._recorder();
+            auto remove_recorder = dart_A.recorder();
             remove_recorder.remove(fingerprints[4]);
             remove_recorder.remove(fingerprints[3]);
 
@@ -2491,7 +2487,7 @@ unittest {
             ];
 
             auto docs = deep_table.map!(a => DARTFakeNet.fake_doc(a));
-            auto recorder = dart_A._recorder();
+            auto recorder = dart_A.recorder();
             foreach (doc; docs) {
                 recorder.add(doc);
             }
@@ -2499,7 +2495,7 @@ unittest {
             dart_A._modify(recorder);
             // dart_A.dump();
 
-            auto remove_recorder = dart_A._recorder();
+            auto remove_recorder = dart_A.recorder();
             remove_recorder.remove(fingerprints[1]);
             remove_recorder.remove(fingerprints[2]);
 
@@ -2525,7 +2521,7 @@ unittest {
             ];
 
             auto docs = deep_table.map!(a => DARTFakeNet.fake_doc(a));
-            auto recorder = dart_A._recorder();
+            auto recorder = dart_A.recorder();
             foreach (doc; docs) {
                 recorder.add(doc);
             }
@@ -2533,7 +2529,7 @@ unittest {
             dart_A._modify(recorder);
             // dart_A.dump();
 
-            auto remove_recorder = dart_A._recorder();
+            auto remove_recorder = dart_A.recorder();
             remove_recorder.remove(fingerprints[0]);
             remove_recorder.remove(fingerprints[1]);
 
@@ -2561,7 +2557,7 @@ unittest {
             ];
 
             auto docs = deep_table.map!(a => DARTFakeNet.fake_doc(a));
-            auto recorder = dart_A._recorder();
+            auto recorder = dart_A.recorder();
             foreach (doc; docs) {
                 recorder.add(doc);
             }
@@ -2575,7 +2571,7 @@ unittest {
             // dart_blockfile.dump;
             dart_blockfile.close;
 
-            auto remove_recorder = dart_A._recorder();
+            auto remove_recorder = dart_A.recorder();
             remove_recorder.remove(remove_fingerprint);
             dart_A._modify(remove_recorder);
             // writefln("after remove");
@@ -2599,7 +2595,7 @@ unittest {
             ];
 
             auto docs = deep_table.map!(a => DARTFakeNet.fake_doc(a));
-            auto recorder = dart_A._recorder();
+            auto recorder = dart_A.recorder();
             foreach (doc; docs) {
                 recorder.add(doc);
             }
@@ -2613,7 +2609,7 @@ unittest {
             // dart_blockfile.dump;
             dart_blockfile.close;
 
-            auto remove_recorder = dart_A._recorder();
+            auto remove_recorder = dart_A.recorder();
             remove_recorder.remove(remove_fingerprint);
             dart_A._modify(remove_recorder);
             // writefln("after remove");

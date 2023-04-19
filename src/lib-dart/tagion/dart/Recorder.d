@@ -40,7 +40,7 @@ alias hex = toHexString;
 private alias check = Check!DARTRecorderException;
 
 version (SYNC_BLOCKFILE_WORKING) {
-    alias RecordFactory = RecordFactoryT!false;
+    alias RecordFactory = RecordFactoryT!true;
 }
 else {
     alias RecordFactory = RecordFactoryT!true;
