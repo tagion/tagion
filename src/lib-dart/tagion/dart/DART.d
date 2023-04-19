@@ -1032,8 +1032,6 @@ received = the HiRPC received package
         import tagion.dart.DARTFakeNet : DARTFakeNet;
         import tagion.dart.Recorder;
 
-        alias RecordFactory = RecordFactoryT!true;
-
         enum TEST_BLOCK_SIZE = 0x80;
 
         auto net = new DARTFakeNet("very_secret");

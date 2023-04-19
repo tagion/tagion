@@ -7,12 +7,11 @@ import std.traits;
 import std.container.array;
 import std.typecons : Flag, Yes, No;
 
-import tagion.dart.Recorder : RecordFactoryT, Archive, GetType, Neutral;
+import tagion.dart.Recorder : RecordFactory, Archive, GetType, Neutral;
 import tagion.basic.Types : isBufferType, Buffer;
 import tagion.utils.Miscellaneous : hex;
 import tagion.basic.Debug;
 
-alias RecordFactoryX = RecordFactoryT!true;
 /++
  + Gets the rim key from a buffer
  +
@@ -34,7 +33,7 @@ RimKeyRange!Range rimKeyRange(Range)(Range range, const Flag!"undo" undo = Yes.u
 }
 
 @safe
-auto rimKeyRange(const(RecordFactoryX.Recorder) rec, const Flag!"undo" undo = Yes.undo) {
+auto rimKeyRange(const(RecordFactory.Recorder) rec, const Flag!"undo" undo = Yes.undo) {
 
     return rimKeyRange(rec[], undo);
 }
@@ -42,7 +41,7 @@ auto rimKeyRange(const(RecordFactoryX.Recorder) rec, const Flag!"undo" undo = Ye
 // Range over a Range with the same key in the a specific rim
 @safe
 struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(ElementType!Range, const(Archive))) {
-    alias archive_less = RecordFactoryX.Recorder.archive_sorted;
+    alias archive_less = RecordFactory.Recorder.archive_sorted;
 
     @safe
     final class RangeContext {
@@ -291,7 +290,7 @@ version (unittest) {
     //   import std.stdio;
 
     @safe
-    void traverse(RecordFactoryT!true.Recorder recorder, const bool undo = false) {
+    void traverse(RecordFactory.Recorder recorder, const bool undo = false) {
         void inner_traverse(RimRange)(RimRange rim_key_range) {
             while (!rim_key_range.empty) {
                 if (rim_key_range.identical) {
@@ -328,7 +327,7 @@ unittest {
     import tagion.dart.DARTFakeNet;
 
     const net = new DARTFakeNet;
-    auto factory = RecordFactoryX(net);
+    auto factory = RecordFactory(net);
 
     { // Test with ADD's only in the RimKeyRange root (rim == -1)
         const table = [

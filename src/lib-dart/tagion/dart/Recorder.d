@@ -39,28 +39,21 @@ alias hex = toHexString;
 
 private alias check = Check!DARTRecorderException;
 
-version (SYNC_BLOCKFILE_WORKING) {
-    alias RecordFactory = RecordFactoryT!true;
-}
-else {
-    alias RecordFactory = RecordFactoryT!true;
-}
-
 /**
  * Record factory
  * Used to construct and handle DART recorder
  */
 @safe
-class RecordFactoryT(bool order_remove_add) {
-
+class RecordFactory {
+    enum order_remove_add = true;
     const HashNet net;
     @disable this();
     protected this(const HashNet net) {
         this.net = net;
     }
 
-    static RecordFactoryT opCall(const HashNet net) {
-        return new RecordFactoryT(net);
+    static RecordFactory opCall(const HashNet net) {
+        return new RecordFactory(net);
     }
     /**
      * Creates an empty Recorder

@@ -136,7 +136,7 @@ alias check = Check!DARTException;
 
     immutable(string) filename;
 
-    protected RecordFactoryT!true manufactor;
+    protected RecordFactory manufactor;
 
     protected {
         BlockFile blockfile;
@@ -820,7 +820,7 @@ alias check = Check!DARTException;
         return result;
     }
 
-    RecordFactoryT!true.Recorder _loads(Range)(
+    RecordFactory.Recorder _loads(Range)(
             Range fingerprints,
             Archive.Type type = Archive.Type.REMOVE) if (isInputRange!Range && is(ElementType!Range : Buffer)) {
 
@@ -1287,7 +1287,7 @@ alias check = Check!DARTException;
         return new_root.fingerprint;
     }
 
-    Buffer _modify(const(RecordFactoryT!true.Recorder) modifyrecords, const Flag!"undo" undo = No.undo) {
+    Buffer _modify(const(RecordFactory.Recorder) modifyrecords, const Flag!"undo" undo = No.undo) {
         import tagion.dart.RimKeyRange : RimKeyRange;
 
         Leave traverse_dart(Range)(Range range, const Index branch_index) @safe if (isInputRange!Range)
@@ -1593,16 +1593,16 @@ alias check = Check!DARTException;
     version (unittest) {
 
         static {
-            bool check(const(RecordFactoryT!true.Recorder) A, const(RecordFactoryT!true.Recorder) B) {
+            bool check(const(RecordFactory.Recorder) A, const(RecordFactory.Recorder) B) {
                 return equal!(q{a.fingerprint == b.fingerprint})(A.archives[], B.archives[]);
             }
 
-            Buffer write(DARTFile dart, const(ulong[]) table, out RecordFactoryT!true.Recorder rec, bool isStubs = false) {
+            Buffer write(DARTFile dart, const(ulong[]) table, out RecordFactory.Recorder rec, bool isStubs = false) {
                 rec = isStubs ? stubs(dart.manufactor, table) : records(dart.manufactor, table);
                 return dart._modify(rec);
             }
 
-            Buffer[] fingerprints(RecordFactoryT!true.Recorder recorder) {
+            Buffer[] fingerprints(RecordFactory.Recorder recorder) {
                 Buffer[] results;
                 foreach (a; recorder.archives) {
                     version (none)
@@ -1613,7 +1613,7 @@ alias check = Check!DARTException;
 
             }
 
-            bool validate(DARTFile dart, const(ulong[]) table, out RecordFactoryT!true
+            bool validate(DARTFile dart, const(ulong[]) table, out RecordFactory
                 .Recorder recorder) {
                 write(dart, table, recorder);
                 auto _fingerprints = fingerprints(recorder);
@@ -1622,7 +1622,7 @@ alias check = Check!DARTException;
                 return check(recorder, find_recorder);
             }
 
-            RecordFactoryT!true.Recorder records(RecordFactoryT!true factory, const(ulong[]) table) {
+            RecordFactory.Recorder records(RecordFactory factory, const(ulong[]) table) {
                 auto rec = factory.recorder;
                 foreach (t; table) {
                     const doc = DARTFakeNet.fake_doc(t);
@@ -1631,7 +1631,7 @@ alias check = Check!DARTException;
                 return rec;
             }
 
-            RecordFactoryT!true.Recorder recordsRemove(RecordFactoryT!true factory, const(ulong[]) table) {
+            RecordFactory.Recorder recordsRemove(RecordFactory factory, const(ulong[]) table) {
                 auto rec = factory.recorder;
                 foreach (t; table) {
                     const doc = DARTFakeNet.fake_doc(t);
@@ -1640,7 +1640,7 @@ alias check = Check!DARTException;
                 return rec;
             }
 
-            RecordFactoryT!true.Recorder stubs(RecordFactoryT!true factory, const(ulong[]) table) {
+            RecordFactory.Recorder stubs(RecordFactory factory, const(ulong[]) table) {
                 auto rec = factory.recorder;
                 foreach (t; table) {
                     import std.bitmanip;
@@ -1782,14 +1782,14 @@ unittest {
     { // Rim 2 test
         DARTFile.create(filename);
         auto dart = new DARTFile(net, filename);
-        RecordFactoryT!true.Recorder recorder;
+        RecordFactory.Recorder recorder;
         assert(DARTFile.validate(dart, table[0 .. 4], recorder));
     }
 
     { // Rim 3 test
         DARTFile.create(filename);
         auto dart = new DARTFile(net, filename);
-        RecordFactoryT!true.Recorder recorder;
+        RecordFactory.Recorder recorder;
         //=Recorder(net);
         assert(DARTFile.validate(dart, table[4 .. 9], recorder));
         // dart.dump;
@@ -1798,7 +1798,7 @@ unittest {
     { // Rim 4 test
         DARTFile.create(filename);
         auto dart = new DARTFile(net, filename);
-        RecordFactoryT!true.Recorder recorder;
+        RecordFactory.Recorder recorder;
 
         assert(DARTFile.validate(dart, table[17 .. $], recorder));
         // dart.dump;
@@ -1807,7 +1807,7 @@ unittest {
     { // Rim 2 & 3
         DARTFile.create(filename);
         auto dart = new DARTFile(net, filename);
-        RecordFactoryT!true.Recorder recorder;
+        RecordFactory.Recorder recorder;
 
         assert(DARTFile.validate(dart, table[0 .. 9], recorder));
         // dart.dump;
@@ -1816,7 +1816,7 @@ unittest {
     { // Rim 2 & 3 & 4
         DARTFile.create(filename);
         auto dart = new DARTFile(net, filename);
-        RecordFactoryT!true.Recorder recorder;
+        RecordFactory.Recorder recorder;
 
         assert(DARTFile.validate(dart, table[0 .. 9] ~ table[17 .. $], recorder));
         // dart.dump;
@@ -1825,7 +1825,7 @@ unittest {
     { // Rim all
         DARTFile.create(filename);
         auto dart = new DARTFile(net, filename);
-        RecordFactoryT!true.Recorder recorder;
+        RecordFactory.Recorder recorder;
 
         assert(DARTFile.validate(dart, table, recorder));
         // dart.dump;
@@ -1838,8 +1838,8 @@ unittest {
         DARTFile.create(file_A);
         DARTFile.create(file_B);
 
-        RecordFactoryT!true.Recorder recorder_A;
-        RecordFactoryT!true.Recorder recorder_B;
+        RecordFactory.Recorder recorder_A;
+        RecordFactory.Recorder recorder_B;
         auto dart_A = new DARTFile(net, file_A);
         auto dart_B = new DARTFile(net, file_B);
         //
@@ -1865,8 +1865,8 @@ unittest {
         }
         DARTFile.create(filename_A);
         DARTFile.create(filename_B);
-        RecordFactoryT!true.Recorder recorder_A;
-        RecordFactoryT!true.Recorder recorder_B;
+        RecordFactory.Recorder recorder_A;
+        RecordFactory.Recorder recorder_B;
         auto dart_A = new DARTFile(net, filename_A);
         auto dart_B = new DARTFile(net, filename_B);
         //
@@ -1890,8 +1890,8 @@ unittest {
         ];
         DARTFile.create(filename_A);
         DARTFile.create(filename_B);
-        RecordFactoryT!true.Recorder recorder_A;
-        RecordFactoryT!true.Recorder recorder_B;
+        RecordFactory.Recorder recorder_A;
+        RecordFactory.Recorder recorder_B;
         auto dart_A = new DARTFile(net, filename_A);
         auto dart_B = new DARTFile(net, filename_B);
         //
@@ -1920,8 +1920,8 @@ unittest {
         }
         DARTFile.create(filename_A);
         DARTFile.create(filename_B);
-        RecordFactoryT!true.Recorder recorder_A;
-        RecordFactoryT!true.Recorder recorder_B;
+        RecordFactory.Recorder recorder_A;
+        RecordFactory.Recorder recorder_B;
         auto dart_A = new DARTFile(net, filename_A);
         auto dart_B = new DARTFile(net, filename_B);
         //
@@ -1947,8 +1947,8 @@ unittest {
         }
         DARTFile.create(filename_A);
         DARTFile.create(filename_B);
-        RecordFactoryT!true.Recorder recorder_A;
-        RecordFactoryT!true.Recorder recorder_B;
+        RecordFactory.Recorder recorder_A;
+        RecordFactory.Recorder recorder_B;
         auto dart_A = new DARTFile(net, filename_A);
         auto dart_B = new DARTFile(net, filename_B);
         //
@@ -1971,8 +1971,8 @@ unittest {
         }
         DARTFile.create(filename_A);
         DARTFile.create(filename_B);
-        RecordFactoryT!true.Recorder recorder_A;
-        RecordFactoryT!true.Recorder recorder_B;
+        RecordFactory.Recorder recorder_A;
+        RecordFactory.Recorder recorder_B;
         auto dart_A = new DARTFile(net, filename_A);
         auto dart_B = new DARTFile(net, filename_B);
 
@@ -1997,8 +1997,8 @@ unittest {
 
         auto dart_A = new DARTFile(net, filename_A);
         auto dart_B = new DARTFile(net, filename_B);
-        RecordFactoryT!true.Recorder recorder_A;
-        RecordFactoryT!true.Recorder recorder_B;
+        RecordFactory.Recorder recorder_A;
+        RecordFactory.Recorder recorder_B;
 
         DARTFile.write(dart_A, random_table, recorder_A);
         DARTFile.write(dart_B, random_table, recorder_B);
