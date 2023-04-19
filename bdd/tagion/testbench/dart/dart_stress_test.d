@@ -34,6 +34,7 @@ import std.datetime.stopwatch;
 import tagion.hibon.HiBONRecord;
 
 import tagion.testbench.dart.dart_helper_functions;
+import tagion.hibon.HiBONJSON : toPretty;
 
 enum feature = Feature(
             "Dart pseudo random stress test",
@@ -98,9 +99,6 @@ class AddPseudoRandomData {
                 .map!(a => DARTFakeNet.fake_doc(a));
 
             auto recorder = db1.recorder();
-            scope (failure) {
-                recorder[].each!(a => a.dump);
-            }
 
             recorders ~= recorder;
 
@@ -113,7 +111,6 @@ class AddPseudoRandomData {
             db1.modify(recorder);
             insert_watch.stop();
             insert_add_single_time ~= insert_watch.peek.total!"msecs";
-
             read_watch.start();
             auto sender = dartRead(fingerprints, info.hirpc);
             auto receiver = info.hirpc.receive(sender.toDoc);
@@ -124,8 +121,7 @@ class AddPseudoRandomData {
             data ~= insert_add_single_time;
 
             auto recorder_read = db1.recorder(doc);
-            check(equal(recorder_read[].map!(a => a.filed), recorder[].map!(a => a.filed)), "data not the same");
-
+            check(equal(recorder_read[].map!(a => a.filed.data), recorder[].map!(a => a.filed.data)), "data not the same");
         }
         import tagion.dart.Recorder : Remove;
 

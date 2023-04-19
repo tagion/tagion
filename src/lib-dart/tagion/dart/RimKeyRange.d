@@ -158,6 +158,14 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
     void add(Archive archive)
     in ((rim < 0) || (rim_keys == archive.fingerprint[0 .. rim + 1]))
     do {
+        import std.stdio;
+
+        if (archive.fingerprint.hex == "00000000eca47f6c000000000000000000000000000000000000000000000000") {
+            writefln("ADD SPECIAL CASE");
+            archive.dump;
+            writefln("ALREADY ADDED AS FRONT: %s", front.fingerprint == archive.fingerprint);
+            writefln("================");
+        }
         ctx._added_archives ~= (archive);
     }
 

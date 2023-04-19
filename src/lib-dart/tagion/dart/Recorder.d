@@ -117,14 +117,10 @@ class RecordFactory {
     @recordType("Recorder")
     class Recorder {
         /// This will order REMOVE before add
-        static if (ver.SYNC_BLOCKFILE_WORKING && !order_remove_add) {
 
-            alias archive_sorted = (a, b) @safe => (a.fingerprint < b.fingerprint);
-        }
-        else {
-            alias archive_sorted = (a, b) @safe => (a.fingerprint < b.fingerprint) || (
-                    a.fingerprint == b.fingerprint) && (a._type < b._type);
-        }
+        alias archive_sorted = (a, b) @safe => (a.fingerprint < b.fingerprint) || (
+                a.fingerprint == b.fingerprint) && (a._type < b._type);
+
         alias Archives = RedBlackTree!(Archive, archive_sorted);
         package Archives archives;
 
@@ -472,6 +468,11 @@ const Neutral = delegate(const(Archive) a) => a.type;
         fout.writefln("Archive %s %s %s", fingerprint.hex, type,
                 (() @trusted => cast(void*) this)());
     }
+
+    override string toString() const {
+        return format("Archive %s %s %s", fingerprint.hex, type,
+                (() @trusted => cast(void*) this)());
+    }
     /**
      * Construct an archive from a Document
      * Params:
@@ -811,6 +812,5 @@ unittest {
         //rec.//dump;
         assert(rec.checkSorted);
 
-        writeln("Passed");
     }
 }
