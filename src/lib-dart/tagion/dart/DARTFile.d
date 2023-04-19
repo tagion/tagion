@@ -769,8 +769,7 @@ alias check = Check!DARTException;
 *   recorder of the read archives
  */
     alias loads = _loads;
-    version(none)
-    RecordFactory.Recorder loads(Range)(
+    version (none) RecordFactory.Recorder loads(Range)(
             Range fingerprints,
             Archive.Type type = Archive.Type.REMOVE) if (isInputRange!Range && is(ElementType!Range : Buffer)) {
 
@@ -1013,281 +1012,8 @@ alias check = Check!DARTException;
      * If the function executes succesfully then the DART is update or else it does not affect the DART
      * The function returns the bullseye of the dart
      */
-    alias modify = _modify;
-    version(none)
-    Buffer modify(const(RecordFactory.Recorder) modifyrecords,
-            GetType get_type = null) {
 
-        if (get_type is null) {
-            get_type = (a) => a.type;
-        }
-        Leave traverse_dart(R)(
-                ref R range,
-                const Index branch_index,
-                immutable uint rim = 0) @safe {
-            if (!range.empty) {
-                auto archive = range.front;
-                Index erase_block_index;
-                scope (success) {
-                    blockfile.dispose(erase_block_index);
-                }
-                immutable sector = sector(archive.fingerprint);
-                Branches branches;
-                if (rim < RIMS_IN_SECTOR) {
-                    if (branch_index !is INDEX_NULL) {
-                        branches = blockfile.load!Branches(branch_index);
-
-                        
-
-                        .check(branches.hasIndices,
-                                "DART failure within the sector rims the DART should contain a branch");
-                    }
-
-                    while (!range.empty) {
-                        pragma(msg, "sub_range ", typeof(range));
-                        auto sub_range = RimKeyRange(range, rim);
-                        immutable rim_key = sub_range.front.fingerprint.rim_key(rim);
-                        if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
-                            const leave = traverse_dart(sub_range,
-                                    branches.index(rim_key), rim + 1);
-
-                            branches[rim_key] = leave;
-                        }
-                    }
-                    erase_block_index = Index(branch_index);
-
-                    if (branches.empty) {
-                        return Leave.init;
-                    }
-
-                    return Leave(blockfile.save(branches).index,
-                            branches.fingerprint(this));
-
-                }
-                else static if (is(R == RimKeyRange)) {
-                    uint lonely_rim_key;
-                    if (branch_index !is INDEX_NULL) {
-                        const doc = blockfile.load(branch_index);
-
-                        
-
-                        .check(!doc.isStub, "DART failure a stub is not allowed within the sector angle");
-                        if (Branches.isRecord(doc)) {
-                            branches = Branches(doc);
-                            Leave last_leave;
-                            do {
-                                auto sub_range = RimKeyRange(range, rim);
-                                const sub_archive = sub_range.front;
-                                immutable rim_key = sub_archive.fingerprint.rim_key(rim);
-                                if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
-                                    Leave current_leave;
-
-                                    branches[rim_key] = current_leave = traverse_dart(
-                                            sub_range, branches.index(rim_key),
-                                            rim + 1);
-                                    if (current_leave !is Leave.init) {
-                                        last_leave = current_leave;
-                                    }
-                                }
-                            }
-                            while (!range.empty);
-                            // if the range is empty then we return a null leave.
-                            if (branches.empty) {
-                                return Leave.init;
-                            }
-
-                            if (branches.isSingle && rim > RIMS_IN_SECTOR) {
-
-                                const single_leave = branches[].front;
-                                const buf = cacheLoad(single_leave.index);
-                                const single_doc = Document(buf);
-
-                                if (!Branches.isRecord(single_doc)) {
-                                    return single_leave;
-                                }
-
-                            }
-
-                        }
-                        else {
-                            // This is a standalone archive ("single").
-                            // DART does not store a branch this means that it contains a leave.
-                            // Leave means and archive
-                            // The new Archives is constructed to include the archive which is already in the DART
-                            auto archive_in_dart = new Archive(manufactor.net, doc, Archive
-                                    .Type.ADD);
-                            scope (success) {
-                                // The archive is erased and it will be added again to the DART
-                                // if it not removed by and action in the record
-                                blockfile.dispose(branch_index);
-
-                            }
-
-                            pragma(msg, "fixme(pr): review this for refactor of dart.");
-                            if (range.oneLeft) {
-                                const one_archive = range.front;
-                                if (!one_archive.done) {
-                                    range.popFront;
-
-                                    // if (!Branch.isRecord(one_archive.filed))
-                                    if (one_archive.fingerprint == archive_in_dart.fingerprint) {
-                                        // if only one archive left in database
-                                        if (one_archive.isRemove(get_type)) {
-                                            //   writefln("Archive remove %s", one_archive.fingerprint.toHex);
-                                            one_archive.doit;
-                                            return Leave.init;
-                                        }
-                                        return Leave(blockfile.save(one_archive.store)
-                                                .index,
-                                                one_archive.fingerprint);
-
-                                    }
-                                    // multiple archives left in the database
-                                    auto recorder = manufactor.recorder;
-                                    recorder.insert(archive_in_dart);
-                                    recorder.insert(one_archive);
-                                    version (none)
-                                        writefln("%s",
-                                                one_archive.fingerprint == archive_in_dart.fingerprint);
-                                    // writefln("-- insert inner recorder %s %s", rim, one_archive.isRemove(get_type));
-                                    //recorder.dump;
-                                    auto archives_range = recorder.archives[];
-                                    do {
-                                        auto sub_range = RimKeyRange(archives_range, rim);
-                                        const sub_archive = sub_range.front;
-                                        immutable rim_key = sub_archive.fingerprint.rim_key(
-                                                rim);
-
-                                        if (!branches[rim_key].empty || !sub_range.onlyRemove(
-                                                    get_type)) {
-                                            branches[rim_key] = traverse_dart(sub_range, INDEX_NULL, rim + 1);
-                                        }
-                                    }
-                                    while (!archives_range.empty);
-
-                                }
-                            }
-                            else {
-                                scope archives = manufactor.recorder(range).archives;
-                                range.force_empty;
-                                scope equal_range = archives.equalRange(archive_in_dart);
-
-                                if (!equal_range.empty) {
-                                    //assert(equal_range.length == 1);
-                                    const equal_archive = equal_range.front;
-                                    if (!equal_archive.done) {
-                                        if (equal_archive.isRemove(get_type)) {
-                                            equal_archive.doit;
-                                        }
-                                    }
-                                }
-                                else {
-                                    archives.insert(archive_in_dart);
-                                }
-                                auto archive_range = archives[];
-                                do {
-                                    auto sub_range = RimKeyRange(archive_range, rim);
-                                    const sub_archive = sub_range.front;
-                                    immutable rim_key = sub_archive.fingerprint.rim_key(rim);
-                                    if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
-                                        branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key), rim + 1);
-                                    }
-                                }
-                                while (!archive_range.empty);
-                            }
-                        }
-                    }
-                    else {
-                        // Adds archives in new branch which has not been created yet
-                        if (range.oneLeft) {
-                            auto one_archive = range.front;
-                            if (!one_archive.done) {
-                                range.popFront;
-                                one_archive.doit;
-                                pragma(msg, "This line is never called");
-                                if (one_archive.isRemove(get_type)) {
-                                    return Leave.init;
-                                }
-
-                                lonely_rim_key = one_archive.fingerprint.rim_key(rim);
-                                if (rim == RIMS_IN_SECTOR) {
-                                    // Return a branch with as single leave when the leave is on the on
-                                    // the edge between the sector
-                                    branches[lonely_rim_key] = Leave(blockfile.save(one_archive.store)
-                                            .index,
-                                            one_archive.fingerprint);
-                                    return Leave(blockfile.save(branches)
-                                            .index,
-                                            branches.fingerprint(this));
-                                }
-                                return Leave(blockfile.save(one_archive.store)
-                                        .index,
-                                        one_archive.fingerprint);
-
-                            }
-                        }
-                        else {
-                            do {
-                                const sub_archive = range.front;
-                                immutable rim_key = sub_archive.fingerprint.rim_key(rim);
-                                auto sub_range = RimKeyRange(range, rim);
-
-                                if (!branches[rim_key].empty || !sub_range.onlyRemove(get_type)) {
-                                    branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key), rim + 1);
-                                }
-                            }
-                            while (!range.empty);
-                        }
-                    }
-                    if (branches.empty) {
-                        return Leave.init;
-                    }
-                    return Leave(blockfile.save(branches)
-                            .index, branches.fingerprint(this));
-
-                }
-                else {
-                    assert(0, format("Range %s not expected", R.stringof));
-                }
-            }
-            pragma(msg, "fixme(pr): create test for empty range (recorder)");
-            return Leave.init;
-        }
-
-        if (modifyrecords.empty) {
-            return _fingerprint;
-        }
-
-        auto range = modifyrecords.archives[];
-
-        (() @trusted {
-            RecordFactory.Recorder check_modify = cast(RecordFactory.Recorder) modifyrecords;
-            assert(check_modify.checkSorted);
-        }());
-        immutable new_root = traverse_dart(range, blockfile.masterBlock.root_index);
-
-        scope (success) {
-            // On success the new root_index is set and the DART is updated
-            _fingerprint = new_root.fingerprint;
-            if ((new_root.fingerprint is null) || (new_root.index is INDEX_NULL)) {
-                // All data has been delete so a new blockfile is created
-                blockfile.close;
-                blockfile = BlockFile.reset(filename);
-            }
-            else {
-                blockfile.root_index = new_root.index;
-                blockfile.store;
-            }
-        }
-        scope (failure) {
-            // On failure drop the BlockFile and reopen it
-            blockfile.close;
-            blockfile = BlockFile(filename);
-        }
-        return new_root.fingerprint;
-    }
-
-    Buffer _modify(const(RecordFactory.Recorder) modifyrecords, const Flag!"undo" undo = No.undo) {
+    Buffer modify(const(RecordFactory.Recorder) modifyrecords, const Flag!"undo" undo = No.undo) {
         import tagion.dart.RimKeyRange : RimKeyRange;
 
         Leave traverse_dart(Range)(Range range, const Index branch_index) @safe if (isInputRange!Range)
@@ -1599,7 +1325,7 @@ alias check = Check!DARTException;
 
             Buffer write(DARTFile dart, const(ulong[]) table, out RecordFactory.Recorder rec, bool isStubs = false) {
                 rec = isStubs ? stubs(dart.manufactor, table) : records(dart.manufactor, table);
-                return dart._modify(rec);
+                return dart.modify(rec);
             }
 
             Buffer[] fingerprints(RecordFactory.Recorder recorder) {
@@ -1851,7 +1577,7 @@ unittest {
         //dart_B.dump;
         auto remove_recorder = DARTFile.recordsRemove(manufactor, table[8 .. 10]);
 
-        auto bulleye_A = dart_A._modify(remove_recorder);
+        auto bulleye_A = dart_A.modify(remove_recorder);
         //dart_A.dump;
         assert(bulleye_A == bulleye_B);
     }
@@ -1875,7 +1601,7 @@ unittest {
         auto bulleye_B = DARTFile.write(dart_B, random_table[0 .. N - 100], recorder_B);
         auto remove_recorder = DARTFile.recordsRemove(manufactor, random_table[N - 100 .. N]);
 
-        bulleye_A = dart_A._modify(remove_recorder);
+        bulleye_A = dart_A.modify(remove_recorder);
         // dart_A.dump;
 
         // The bull eye of the two DART must be the same
@@ -1956,7 +1682,7 @@ unittest {
         auto bulleye_A = DARTFile.write(dart_A, random_table, recorder_A);
         auto bulleye_B = DARTFile.write(dart_B, random_table[0 .. N - 100], recorder_B);
         auto remove_recorder = DARTFile.recordsRemove(manufactor, random_table[N - 100 .. N]);
-        bulleye_A = dart_A._modify(remove_recorder);
+        bulleye_A = dart_A.modify(remove_recorder);
         // dart_A.dump;
         // The bull eye of the two DART must be the same
         assert(bulleye_A == bulleye_B);
@@ -2011,7 +1737,7 @@ unittest {
         const archive_2 = new Archive(net, net.fake_doc(0xABB7_1112_1111_0000UL), Archive
                 .Type.NONE);
         recorder.remove(archive_2.fingerprint);
-        dart_B._modify(recorder);
+        dart_B.modify(recorder);
         // dart_B.dump;
         // dart_A.dump;
         assert(dart_A.fingerprint == dart_B.fingerprint);
@@ -2065,7 +1791,7 @@ unittest {
                 }
                 // dart_A.blockfile.dump;
                 //recorder.dump;
-                dart_A._modify(recorder);
+                dart_A.modify(recorder);
                 saved_archives |= added_archives;
                 saved_archives &= ~removed_archives;
                 // dart_A.dump;
@@ -2074,7 +1800,7 @@ unittest {
 
             saved_archives.bitsSet.each!(
                 n => recorder_B.add(net.fake_doc(random_table[n])));
-            dart_B._modify(recorder_B);
+            dart_B.modify(recorder_B);
             // dart_B.dump;
             assert(dart_A.fingerprint == dart_B.fingerprint);
         })();
@@ -2122,12 +1848,12 @@ unittest {
             auto remove_fingerprint = DARTIndex(recorder[].front.fingerprint);
             // writefln("%s", remove_fingerprint);
 
-            dart_A._modify(recorder);
+            dart_A.modify(recorder);
             // dart_A.dump();
 
             auto remove_recorder = dart_A.recorder();
             remove_recorder.remove(remove_fingerprint);
-            dart_A._modify(remove_recorder);
+            dart_A.modify(remove_recorder);
             // dart_A.dump();
 
             auto branches = dart_A.branches([0xAB, 0xB9]);
@@ -2149,7 +1875,7 @@ unittest {
             recorder.add(doc);
 
             auto fingerprint = DARTIndex(recorder[].front.fingerprint);
-            dart_A._modify(recorder);
+            dart_A.modify(recorder);
 
             // dart_A.dump();
             assert(dart_A.bullseye == fingerprint);
@@ -2195,12 +1921,12 @@ unittest {
                 recorder.add(doc);
             }
             auto remove_fingerprint = DARTIndex(recorder[].front.fingerprint);
-            dart_A._modify(recorder);
+            dart_A.modify(recorder);
             // dart_A.dump();
 
             auto remove_recorder = dart_A.recorder();
             remove_recorder.remove(remove_fingerprint);
-            dart_A._modify(remove_recorder);
+            dart_A.modify(remove_recorder);
 
             ubyte[] rim_path = [0xAB, 0xB9, 0x13, 0xab];
             auto branches = dart_A.branches(rim_path);
@@ -2250,14 +1976,14 @@ unittest {
             recorder.add(docs[1]);
             auto remove_fingerprint = DARTIndex(recorder[].front.fingerprint);
 
-            dart_A._modify(recorder);
+            dart_A.modify(recorder);
             // dart_A.dump();
 
             auto next_recorder = dart_A.recorder();
             next_recorder.remove(remove_fingerprint);
             next_recorder.add(docs[2]);
             next_recorder[].each!q{a.dump};
-            dart_A._modify(next_recorder);
+            dart_A.modify(next_recorder);
             // dart_A.dump();
 
             ubyte[] rim_path = [0xAB, 0xB9, 0x13, 0xab, 0x11, 0xef];
@@ -2307,13 +2033,13 @@ unittest {
 
             auto fingerprints = recorder[].map!(r => r.fingerprint).array;
             assert(fingerprints.length == 4);
-            dart_A._modify(recorder);
+            dart_A.modify(recorder);
             // dart_A.dump();
 
             auto remove_recorder = dart_A.recorder();
             remove_recorder.remove(fingerprints[0]);
             remove_recorder.remove(fingerprints[2]);
-            dart_A._modify(remove_recorder);
+            dart_A.modify(remove_recorder);
             // dart_A.dump();
 
             ubyte[] rim_path = [0xAB, 0xB9, 0x13, 0xab];
@@ -2369,13 +2095,13 @@ unittest {
                 recorder.add(doc);
             }
             auto fingerprints = recorder[].map!(r => r.fingerprint).array;
-            dart_A._modify(recorder);
+            dart_A.modify(recorder);
             // dart_A.dump();
 
             auto remove_recorder = dart_A.recorder();
             remove_recorder.remove(fingerprints[$ - 1]);
 
-            dart_A._modify(remove_recorder);
+            dart_A.modify(remove_recorder);
             // dart_A.dump();
 
             ubyte[] rim_path = [0xAB, 0xB9, 0x13, 0xab, 0x12, 0xef];
@@ -2420,13 +2146,13 @@ unittest {
                 recorder.add(doc);
             }
             auto fingerprints = recorder[].map!(r => r.fingerprint).array;
-            dart_A._modify(recorder);
+            dart_A.modify(recorder);
             // dart_A.dump();
 
             auto remove_recorder = dart_A.recorder();
             remove_recorder.remove(fingerprints[4]);
 
-            dart_A._modify(remove_recorder);
+            dart_A.modify(remove_recorder);
             // dart_A.dump();
 
             ubyte[] rim_path = [0xAB, 0xB9, 0x13, 0xab, 0x12, 0xef];
@@ -2457,14 +2183,14 @@ unittest {
                 recorder.add(doc);
             }
             auto fingerprints = recorder[].map!(r => r.fingerprint).array;
-            dart_A._modify(recorder);
+            dart_A.modify(recorder);
             // dart_A.dump();
 
             auto remove_recorder = dart_A.recorder();
             remove_recorder.remove(fingerprints[4]);
             remove_recorder.remove(fingerprints[3]);
 
-            dart_A._modify(remove_recorder);
+            dart_A.modify(remove_recorder);
             // dart_A.dump();
 
             ubyte[] rim_path = [0xAB, 0xB9, 0x13, 0xab, 0x12];
@@ -2492,14 +2218,14 @@ unittest {
                 recorder.add(doc);
             }
             auto fingerprints = recorder[].map!(r => r.fingerprint).array;
-            dart_A._modify(recorder);
+            dart_A.modify(recorder);
             // dart_A.dump();
 
             auto remove_recorder = dart_A.recorder();
             remove_recorder.remove(fingerprints[1]);
             remove_recorder.remove(fingerprints[2]);
 
-            dart_A._modify(remove_recorder);
+            dart_A.modify(remove_recorder);
             // dart_A.dump();
 
             ubyte[] rim_path = [0xAB, 0xB9];
@@ -2526,14 +2252,14 @@ unittest {
                 recorder.add(doc);
             }
             auto fingerprints = recorder[].map!(r => r.fingerprint).array;
-            dart_A._modify(recorder);
+            dart_A.modify(recorder);
             // dart_A.dump();
 
             auto remove_recorder = dart_A.recorder();
             remove_recorder.remove(fingerprints[0]);
             remove_recorder.remove(fingerprints[1]);
 
-            dart_A._modify(remove_recorder);
+            dart_A.modify(remove_recorder);
             // dart_A.dump();
 
             ubyte[] rim_path = [0xAB, 0xB9];
@@ -2564,7 +2290,7 @@ unittest {
             auto remove_fingerprint = DARTIndex(recorder[].front.fingerprint);
             // writefln("%s", remove_fingerprint);
 
-            dart_A._modify(recorder);
+            dart_A.modify(recorder);
             // dart_A.dump();
 
             auto dart_blockfile = BlockFile(filename_A);
@@ -2573,7 +2299,7 @@ unittest {
 
             auto remove_recorder = dart_A.recorder();
             remove_recorder.remove(remove_fingerprint);
-            dart_A._modify(remove_recorder);
+            dart_A.modify(remove_recorder);
             // writefln("after remove");
             // dart_A.dump();
 
@@ -2602,7 +2328,7 @@ unittest {
             auto remove_fingerprint = DARTIndex(recorder[].front.fingerprint);
             // writefln("%s", remove_fingerprint);
 
-            dart_A._modify(recorder);
+            dart_A.modify(recorder);
             // dart_A.dump();
 
             auto dart_blockfile = BlockFile(filename_A);
@@ -2611,7 +2337,7 @@ unittest {
 
             auto remove_recorder = dart_A.recorder();
             remove_recorder.remove(remove_fingerprint);
-            dart_A._modify(remove_recorder);
+            dart_A.modify(remove_recorder);
             // writefln("after remove");
             // dart_A.dump();
 
