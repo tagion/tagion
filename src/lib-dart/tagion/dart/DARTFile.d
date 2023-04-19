@@ -28,7 +28,7 @@ private {
 
     import tagion.hibon.HiBON : HiBON;
 
-    import tagion.hibon.HiBONRecord : isStub, label, record_filter = filter, GetLabel, recordType;
+    import tagion.hibon.HiBONRecord : label, record_filter = filter, GetLabel, recordType;
     import tagion.hibon.Document : Document;
 
     import tagion.dart.BlockFile;
@@ -135,9 +135,9 @@ alias check = Check!DARTException;
     }
 
     protected enum _params = [
-        "fingerprints",
-        "bullseye",
-    ];
+            "fingerprints",
+            "bullseye",
+        ];
 
     mixin(EnumText!("Params", _params));
 
@@ -731,7 +731,7 @@ alias check = Check!DARTException;
                         }
                     }
                 }
-                    recorder.insert(doc, type);
+                recorder.insert(doc, type);
             }
         }
 
@@ -1005,7 +1005,7 @@ alias check = Check!DARTException;
             assert(range.empty, "Must have been through the whole range and therefore empty on return");
         }
         do {
-            
+
             if (range.empty) {
                 return Leave.init;
             }
@@ -1238,8 +1238,7 @@ alias check = Check!DARTException;
             }
 
             Buffer write(DARTFile dart, const(ulong[]) table, out RecordFactory.Recorder rec) {
-                const isStubs=false;
-                rec = isStubs ? stubs(dart.manufactor, table) : records(dart.manufactor, table);
+                rec = records(dart.manufactor, table);
                 return dart.modify(rec);
             }
 
@@ -1281,16 +1280,6 @@ alias check = Check!DARTException;
                 return rec;
             }
 
-            RecordFactory.Recorder stubs(RecordFactory factory, const(ulong[]) table) {
-                auto rec = factory.recorder;
-                foreach (t; table) {
-                    import std.bitmanip;
-
-                    immutable fp = nativeToBigEndian(t).idup;
-                    rec.stub(fp);
-                }
-                return rec;
-            }
         }
 
     }
