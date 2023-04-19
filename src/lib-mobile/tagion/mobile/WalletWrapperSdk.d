@@ -22,6 +22,7 @@ import tagion.crypto.aes.AESCrypto;
 import tagion.crypto.SecureNet : StdSecureNet, BadSecureNet;
 import tagion.crypto.SecureNet;
 import tagion.wallet.KeyRecover;
+import std.file : fread = read, exists;
 
 import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN, AccountDetails;
 
@@ -56,38 +57,67 @@ extern (C) {
     }
 
     export uint wallet_create(const uint8_t* pincodePtr,
-            const uint32_t pincodeLen, const uint16_t* mnemonicPtr, const uint32_t mnemonicLen) {
+        const uint32_t pincodeLen, const uint16_t* mnemonicPtr, const uint32_t mnemonicLen,
+        const uint8_t* pathPtr, uint32_t pathLen) {
         // Restore data from pointers.  
         const pincode = cast(char[])(pincodePtr[0 .. pincodeLen]);
         const mnemonic = mnemonicPtr[0 .. mnemonicLen];
+        const directoryPath = cast(char[])(pathPtr[0 .. pathLen]);
 
         // Create a wallet from inputs.
         auto wallet = SecureWallet!(StdSecureNet).createWallet(
-                mnemonic,
-                pincode
+            mnemonic,
+            pincode
         );
 
+        // TODO: add encryption for a file content.
         // Create a hibon for wallet data.
         auto result = new HiBON();
         result["pin"] = wallet.pin.toHiBON;
         result["account"] = wallet.account.toHiBON;
 
-        // TODO: extract to a separate WalletVault service.
-        // Create a file for wallet data.
-        auto walletFileName = "twallet.bin";
+        // TODO: extract to a separate StorageProvider service.
+        // Full path to stored wallet data.
+        auto walletDataPath = directoryPath ~ "/twallet.hibon";
 
         try {
             // Write to the file
-            walletFileName.fwrite(result);
+            walletDataPath.fwrite(result);
             return 1;
         }
         catch (Exception e) {
-            return -1;
+            return 0;
         }
     }
 
-    // export uint login_wallet(uint32_t walletId, uint32_t deviceId, uint8_t* pinCode, uint32_t pinLen) {
-    // }
+    export uint wallet_login(const uint8_t* pincodePtr, const uint32_t pincodeLen,
+        const uint8_t* pathPtr, uint32_t pathLen) {
+
+        // Restore data from ponters.
+        const pincode = cast(char[])(pincodePtr[0 .. pincodeLen]);
+        const directoryPath = cast(char[])(pathPtr[0 .. pathLen]);
+
+        // Full path to stored wallet data.
+        auto walletDataPath = directoryPath ~ "/twallet.hibon";
+
+        if (exists(walletDataPath)) {
+            immutable walletDataFile = cast(immutable(ubyte)[]) fread(walletDataPath);
+            // TODO: add decryption for a file content.
+            // Wallet data in HiBON format.
+            auto parentHibon = Document(walletDataFile);
+            auto devicePin = parentHibon["pin"].get!Document;
+            auto account = parentHibon["account"].get!Document;
+
+            auto secure_wallet = SecureWallet!(StdSecureNet)(DevicePIN(devicePin),
+                RecoverGenerator.init, AccountDetails(account));
+
+            if (secure_wallet.login(pincode)) {
+                return 1;
+            }
+        }
+
+        return 0;
+    }
 
     // export uint logout_wallet() {
     // }
