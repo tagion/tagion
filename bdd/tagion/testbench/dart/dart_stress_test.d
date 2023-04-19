@@ -98,6 +98,10 @@ class AddPseudoRandomData {
                 .map!(a => DARTFakeNet.fake_doc(a));
 
             auto recorder = db1.recorder();
+            scope (failure) {
+                recorder[].each!(a => a.dump);
+            }
+
             recorders ~= recorder;
 
             recorder.insert(docs, Archive.Type.ADD);
