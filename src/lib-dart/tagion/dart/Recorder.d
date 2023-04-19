@@ -356,21 +356,6 @@ class RecordFactory {
             remove(DARTIndex(fingerprint));
         }
 
-        version (none) final void stub(const(DARTIndex) fingerprint)
-        in {
-            assert(fingerprint.length is net.hashSize,
-                    format("Length of the fingerprint must be %d but is %d", net.hashSize, fingerprint
-                    .length));
-        }
-        do {
-            auto archive = new Archive(fingerprint, Archive.Type.NONE);
-            insert(archive);
-        }
-
-        version (none) final void stub(const(Buffer) fingerprint) {
-            stub(DARTIndex(fingerprint));
-        }
-
         void dump(File fout = stdout) const {
 
             foreach (a; archives) {
