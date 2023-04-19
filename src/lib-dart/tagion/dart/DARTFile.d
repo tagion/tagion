@@ -1594,35 +1594,13 @@ alias check = Check!DARTException;
     version (unittest) {
 
         static {
-            version(none)
-            bool check(const(RecordFactory.Recorder) A, const(RecordFactory.Recorder) B) {
-                return equal!(q{a.fingerprint == b.fingerprint})(A.archives[], B.archives[]);
-            }
-
             bool check(const(RecordFactoryT!true.Recorder) A, const(RecordFactoryT!true.Recorder) B) {
                 return equal!(q{a.fingerprint == b.fingerprint})(A.archives[], B.archives[]);
-            }
-
-            version(none)
-            Buffer write(DARTFile dart, const(ulong[]) table, out RecordFactory.Recorder rec, bool isStubs = false) {
-                rec = isStubs ? stubs(dart.manufactor, table) : records(dart.manufactor, table);
-                return dart.modify(rec);
             }
 
             Buffer write(DARTFile dart, const(ulong[]) table, out RecordFactoryT!true.Recorder rec, bool isStubs = false) {
                 rec = isStubs ? stubs(dart._manufactor, table) : records(dart._manufactor, table);
                 return dart._modify(rec);
-            }
-
-            version(none)
-            Buffer[] fingerprints(RecordFactory.Recorder recorder) {
-                Buffer[] results;
-                foreach (a; recorder.archives) {
-                    assert(a.done);
-                    results ~= cast(Buffer) a.fingerprint;
-                }
-                return results;
-
             }
 
             Buffer[] fingerprints(RecordFactoryT!true.Recorder recorder) {
@@ -1636,15 +1614,6 @@ alias check = Check!DARTException;
 
             }
 
-            version(none)
-            bool validate(DARTFile dart, const(ulong[]) table, out RecordFactory.Recorder recorder) {
-                write(dart, table, recorder);
-                auto _fingerprints = fingerprints(recorder);
-
-                auto find_recorder = dart.loads(_fingerprints);
-                return check(recorder, find_recorder);
-            }
-
             bool validate(DARTFile dart, const(ulong[]) table, out RecordFactoryT!true
                 .Recorder recorder) {
                 write(dart, table, recorder);
@@ -1652,16 +1621,6 @@ alias check = Check!DARTException;
 
                 auto find_recorder = dart._loads(_fingerprints);
                 return check(recorder, find_recorder);
-            }
-
-            version(none)
-            RecordFactory.Recorder records(RecordFactory factory, const(ulong[]) table) {
-                auto rec = factory.recorder;
-                foreach (t; table) {
-                    const doc = DARTFakeNet.fake_doc(t);
-                    rec.add(doc);
-                }
-                return rec;
             }
 
             RecordFactoryT!true.Recorder records(RecordFactoryT!true factory, const(ulong[]) table) {
@@ -1678,18 +1637,6 @@ alias check = Check!DARTException;
                 foreach (t; table) {
                     const doc = DARTFakeNet.fake_doc(t);
                     rec.remove(doc);
-                }
-                return rec;
-            }
-
-            version(none)
-            RecordFactory.Recorder stubs(RecordFactory factory, const(ulong[]) table) {
-                auto rec = factory.recorder;
-                foreach (t; table) {
-                    import std.bitmanip;
-
-                    immutable fp = nativeToBigEndian(t).idup;
-                    rec.stub(fp);
                 }
                 return rec;
             }
