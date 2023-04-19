@@ -188,7 +188,6 @@ class RecordFactory {
             foreach (archive; archives) {
                 if (archive.type != Archive.Type.REMOVE) {
                     short archiveSector = archive.fingerprint[0] | archive.fingerprint[1];
-                    // writeln("CHECK STUBS: arcive fp:%s sector: %d", archive.fingerprint, archiveSector);
                     ushort sector_origin = (archiveSector - from) & ushort.max;
                     if (sector_origin >= to_origin) {
                         archives.removeKey(archive);
@@ -390,8 +389,6 @@ class RecordFactory {
             return Document(result);
         }
 
-        // version (unittest)
-        // {
         import std.algorithm.sorting;
 
         bool checkSorted() pure {
@@ -438,10 +435,6 @@ const Neutral = delegate(const(Archive) a) => a.type;
     this(const HashNet net, const(Document) doc, const Type t = Type.NONE)
     in {
         assert(net !is null);
-        version (none)
-            if (net is null) {
-                assert(!.isStub(doc), "A stub needs a HashNet");
-            }
         assert(!doc.empty, "Archive can not be empty");
     }
     do {
@@ -659,45 +652,6 @@ unittest { // Archive
             assert(result_a.store == filed_doc);
         }
 
-        { // Chnage type
-            const result_a = new Archive(net, archived_doc, Archive.Type.REMOVE);
-            assert(result_a.fingerprint == a.fingerprint);
-            assert(result_a.filed == a.filed);
-            assert(result_a.type == Archive.Type.REMOVE);
-            assert(!result_a.isStub);
-            assert(result_a.store == filed_doc);
-        }
-    }
-
-    { // Create Stub
-        auto stub = new Archive(a.fingerprint);
-        assert(stub.isStub);
-        assert(stub.fingerprint == a.fingerprint);
-        assert(stub.filed.empty);
-        const filed_stub = stub.toDoc;
-        assert(filed_stub[STUB].get!Buffer == a.fingerprint);
-        assert(isStub(filed_stub));
-
-        {
-            const result_stub = new Archive(net, filed_stub, Archive.Type.NONE);
-            assert(result_stub.isStub);
-            assert(result_stub.fingerprint == stub.fingerprint);
-            assert(result_stub.type == stub.type);
-            assert(result_stub.filed.empty);
-            assert(result_stub.toDoc == stub.toDoc);
-            assert(result_stub.store == stub.store);
-            assert(isStub(result_stub.store));
-        }
-
-        { // Stub with type
-            stub._type = Archive.Type.REMOVE;
-            const result_stub = new Archive(net, stub.toDoc, Archive.Type.NONE);
-            assert(result_stub.fingerprint == stub.fingerprint);
-            assert(result_stub.type == stub.type);
-            assert(result_stub.type == Archive.Type.REMOVE);
-            assert(result_stub.store == stub.store);
-            assert(isStub(result_stub.store));
-        }
     }
 
     { // Filed archive with hash-key

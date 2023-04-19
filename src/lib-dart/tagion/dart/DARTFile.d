@@ -28,8 +28,7 @@ private {
 
     import tagion.hibon.HiBON : HiBON;
 
-    //    import tagion.hibon.HiBONRecord : GetLabel, label, HiBONPrefix, isStub, STUB;
-    import tagion.hibon.HiBONRecord : isStub, label, record_filter = filter, GetLabel, recordType;
+    import tagion.hibon.HiBONRecord : label, record_filter = filter, GetLabel, recordType;
     import tagion.hibon.Document : Document;
 
     import tagion.dart.BlockFile;
@@ -136,9 +135,9 @@ alias check = Check!DARTException;
     }
 
     protected enum _params = [
-        "fingerprints",
-        "bullseye",
-    ];
+            "fingerprints",
+            "bullseye",
+        ];
 
     mixin(EnumText!("Params", _params));
 
@@ -732,13 +731,7 @@ alias check = Check!DARTException;
                         }
                     }
                 }
-                else if (isStub(doc)) {
-                    //                        writeln("stub");
-
-                }
-                else {
-                    recorder.insert(doc, type);
-                }
+                recorder.insert(doc, type);
             }
         }
 
@@ -1109,37 +1102,6 @@ alias check = Check!DARTException;
         return new_root.fingerprint;
     }
 
-    RecordFactory.Recorder readStubs() { //RIMS_IN_SECTOR
-        RecordFactory.Recorder rec = manufactor.recorder();
-        void iterate(const Index branch_index, immutable uint rim = 0) @safe {
-            if (branch_index !is Index.init) {
-                pragma(msg, "fixme(pr): Should use a DARTFile.load member for feature use");
-                immutable data = blockfile.load(branch_index);
-                const doc = Document(data);
-                if (Branches.isRecord(doc)) {
-                    auto branches = Branches(doc);
-                    if (rim == RIMS_IN_SECTOR) {
-                        // writeln("ADD BRANCH FP", branches.fingerprint(this).toHex);
-                        rec.stub(branches.fingerprint(this));
-                    }
-                    else {
-                        foreach (rim_key, index; branches._indices) {
-                            iterate(index, rim + 1);
-                        }
-                    }
-                }
-                else {
-                    rec.stub(manufactor.net.dartIndex(doc));
-                }
-            }
-        }
-
-        auto root_index = blockfile.masterBlock.root_index;
-
-        iterate(root_index);
-        return rec;
-    }
-
     /** 
      * Loads the branches from the DART at rim_path
      * Params:
@@ -1223,8 +1185,8 @@ alias check = Check!DARTException;
                 return equal!(q{a.fingerprint == b.fingerprint})(A.archives[], B.archives[]);
             }
 
-            Buffer write(DARTFile dart, const(ulong[]) table, out RecordFactory.Recorder rec, bool isStubs = false) {
-                rec = isStubs ? stubs(dart.manufactor, table) : records(dart.manufactor, table);
+            Buffer write(DARTFile dart, const(ulong[]) table, out RecordFactory.Recorder rec) {
+                rec = records(dart.manufactor, table);
                 return dart.modify(rec);
             }
 
@@ -1266,16 +1228,6 @@ alias check = Check!DARTException;
                 return rec;
             }
 
-            RecordFactory.Recorder stubs(RecordFactory factory, const(ulong[]) table) {
-                auto rec = factory.recorder;
-                foreach (t; table) {
-                    import std.bitmanip;
-
-                    immutable fp = nativeToBigEndian(t).idup;
-                    rec.stub(fp);
-                }
-                return rec;
-            }
         }
 
     }
