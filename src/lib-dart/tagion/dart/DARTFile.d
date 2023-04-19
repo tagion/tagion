@@ -1095,14 +1095,8 @@ alias check = Check!DARTException;
 
                         }
                         auto sub_range = range.save.filter!(a => a.fingerprint == current_archive.fingerprint);
-
                         if (sub_range.empty) {
                             range.add(current_archive);
-
-                        }
-                        else if (sub_range.front.type == Archive.Type.ADD) {
-                            range.add(current_archive);
-                            range.popFront;
                         }
 
                     }

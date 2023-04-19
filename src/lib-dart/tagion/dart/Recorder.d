@@ -812,6 +812,5 @@ unittest {
         //rec.//dump;
         assert(rec.checkSorted);
 
-        writeln("Passed");
     }
 }

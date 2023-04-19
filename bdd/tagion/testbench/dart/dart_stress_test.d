@@ -111,8 +111,6 @@ class AddPseudoRandomData {
             db1.modify(recorder);
             insert_watch.stop();
             insert_add_single_time ~= insert_watch.peek.total!"msecs";
-            writefln("before read dump");
-            db1.dump;
             read_watch.start();
             auto sender = dartRead(fingerprints, info.hirpc);
             auto receiver = info.hirpc.receive(sender.toDoc);
@@ -122,23 +120,8 @@ class AddPseudoRandomData {
             insert_add_single_time ~= read_watch.peek.total!"msecs";
             data ~= insert_add_single_time;
 
-            writefln("recorder_read document: %s", doc.toPretty);
             auto recorder_read = db1.recorder(doc);
-            writefln("after read dump");
-            db1.dump;
-            writefln("recorder_read length=%s, recorder modify length=%s", recorder_read[].walkLength, recorder[].walkLength);
-            // writefln("recorder modify dump");
-            // recorder[].each!q{a.dump};
-            // writefln("recorder_read dump");
-            // recorder_read[].each!q{a.dump};
-            
-            foreach(j,a,b; zip(recorder_read[], recorder[]).enumerate) {
-                writefln("%d |%s|%s|%s", j, a, b, a.fingerprint == b.fingerprint);
-            }
-            writefln("===================");
             check(equal(recorder_read[].map!(a => a.filed.data), recorder[].map!(a => a.filed.data)), "data not the same");
-
-
         }
         import tagion.dart.Recorder : Remove;
 
