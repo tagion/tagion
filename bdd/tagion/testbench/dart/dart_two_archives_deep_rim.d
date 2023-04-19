@@ -215,7 +215,7 @@ class RemoveArchive {
         auto data = recorder[].front;
         const(ulong) archive = data.filed[info.FAKE].get!ulong;
         check(archive == info.deep_table[1], "Data is not correct");
-        db.dump;
+        // db.dump;
         return result_ok;
     }
 

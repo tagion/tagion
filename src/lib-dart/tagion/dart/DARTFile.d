@@ -1013,13 +1013,6 @@ alias check = Check!DARTException;
         }
         do {
             
-            if (range.front.fingerprint.toHex == "00000000eca47f6c000000000000000000000000000000000000000000000000") {
-                writefln("ARCHIVE SPECIAL CASE");
-                writefln("rim=%d, rim_keys=%s", range.rim, range.rim_keys.toHex);
-                range.save.each!q{a.dump};
-                writefln("AFTER ARCHIVE DUMP SPECIAL");
-            }
-
             if (range.empty) {
                 return Leave.init;
             }
