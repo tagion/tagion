@@ -6,7 +6,7 @@ import std.format : format;
 import std.typecons;
 import core.thread;
 import std.exception;
-import tagion.basic.tagionexceptions : TagionException, TaskFailure;
+import tagion.actor.exceptions;
 
 bool all(Ctrl[Tid] aa, Ctrl ctrl) {
     foreach (val; aa) {
@@ -17,23 +17,14 @@ bool all(Ctrl[Tid] aa, Ctrl ctrl) {
     return true;
 }
 
-/// Exception sent when the actor gets a message that it doesn't handle
-class UnknownMessage : TagionException {
-    this(immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__) pure {
-        super(msg, file, line);
-    }
-}
-
-// Exception when the actor fails to start or stop
-class RunFailure : TagionException {
-    this(immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__) pure {
-        super(msg, file, line);
-    }
-}
+// @trusted
+// static immutable(TaskFailure) taskFailure(Throwable e, string taskName) @nogc nothrow { //if (is(T:Throwable) && !is(T:TagionExceptionInterface)) {
+//     return immutable(TaskFailure)(cast(immutable) e, taskName);
+// }
 
 @trusted
-static immutable(TaskFailure) taskFailure(Throwable e, string taskName) @nogc nothrow { //if (is(T:Throwable) && !is(T:TagionExceptionInterface)) {
-    return immutable(TaskFailure)(cast(immutable) e, taskName);
+static TaskFailure taskFailure(Throwable e, string taskName) @nogc nothrow { //if (is(T:Throwable) && !is(T:TagionExceptionInterface)) {
+    return TaskFailure(cast(immutable) e, taskName);
 }
 
 /**
@@ -103,8 +94,7 @@ struct ActorHandle(A) {
 }
 
 /**
- * Create an actorHandle
- * Params:
+ * Create an actorHandle Params:
  *   A = The type of actor you want to create a handle for
  *   taskName = the task name to search for
  * Returns: Actorhandle with type A
@@ -206,7 +196,7 @@ static:
     import std.concurrency : OwnerTerminated, Tid, thisTid, ownerTid, receive, prioritySend;
     import std.format : format;
     import std.traits : isCallable;
-    import tagion.basic.tagionexceptions : TagionException, TaskFailure, taskException;
+    import tagion.actor.exceptions : TaskFailure, taskException, UnknownMessage, RunFailure;
 
     bool stop = false;
     Ctrl[Tid] childrenState; // An AA to keep a copy of the state of the children
@@ -232,16 +222,13 @@ static:
         stop = true;
     }
 
-    /// Default fail handler. When overriding this, unknown exceptions should always be sent to the owner
-    version (none) void failHandler(TaskFailure t) {
-        writeln("Received Exce: ", t);
-        immutable exception = cast(immutable) t;
-        assumeWontThrow(ownerTid.prioritySend(exception));
-    }
+    /// Default failhandler
+    void failHandler(TaskFailure t) nothrow {
+        // send fail upwards
+        import std.stdio;
 
-    @trusted
-    void taskfailure(immutable(TaskFailure) t) nothrow {
         assumeWontThrow({
+            writeln("Up sending taskfailure");
             if (ownerTid != Tid.init) {
                 ownerTid.send(t);
             }
@@ -260,7 +247,6 @@ static:
     /// The tasks that get run when you call spawnActor!
     nothrow void task() {
         try {
-
             setState(Ctrl.STARTING); // Tell the owner that you are starting.
             scope (exit)
                 setState(Ctrl.END); // Tell the owner that you have finished.
@@ -302,11 +288,11 @@ static:
                             &signal,
                             &control,
                             &ownerTerminated,
-                            &taskfailure,
+                            &failHandler,
                             &unknown,
                     );
                 }
-                catch (Throwable e) {
+                catch (Exception e) {
                     immutable failure = taskFailure(e, "some_unknown_task");
                     assumeWontThrow(ownerTid.prioritySend(failure));
                 }
@@ -314,7 +300,7 @@ static:
         }
 
         // If we catch an exception we send it back to owner for them to deal with it.
-        catch (Throwable e) {
+        catch (Exception e) {
             immutable failure = taskFailure(e, "some_unknown_task");
             assumeWontThrow(ownerTid.prioritySend(failure));
         }
