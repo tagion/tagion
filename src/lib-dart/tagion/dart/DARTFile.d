@@ -1011,12 +1011,12 @@ alias check = Check!DARTException;
      * ### Note ** means the same value as above
      * The first two rims is set the sector and the following is rims
      * represents the key index into the Branches incices
-     * The modify_records contains the archives which is going to be added or deleted
+     * The modifyrecords contains the archives which is going to be added or deleted
      * The type of archive tells which actions are going to be performed by the modifier
      * If the function executes succesfully then the DART is update or else it does not affect the DART
      * The function returns the bullseye of the dart
      */
-    Buffer modify(const(RecordFactory.Recorder) modify_records,
+    Buffer modify(const(RecordFactory.Recorder) modifyrecords,
             GetType get_type = null) {
 
         if (get_type is null) {
@@ -1255,14 +1255,14 @@ alias check = Check!DARTException;
             return Leave.init;
         }
 
-        if (modify_records.empty) {
+        if (modifyrecords.empty) {
             return _fingerprint;
         }
 
-        auto range = modify_records.archives[];
+        auto range = modifyrecords.archives[];
 
         (() @trusted {
-            RecordFactory.Recorder check_modify = cast(RecordFactory.Recorder) modify_records;
+            RecordFactory.Recorder check_modify = cast(RecordFactory.Recorder) modifyrecords;
             assert(check_modify.checkSorted);
         }());
         immutable new_root = traverse_dart(range, blockfile.masterBlock.root_index);
@@ -1288,7 +1288,7 @@ alias check = Check!DARTException;
         return new_root.fingerprint;
     }
 
-    Buffer _modify(RecordFactoryT!true.Recorder modify_records, const Flag!"undo" undo = No.undo) {
+    Buffer _modify(RecordFactoryT!true.Recorder modifyrecords, const Flag!"undo" undo = No.undo) {
         import tagion.dart.RimKeyRange : RimKeyRange;
 
         Leave traverse_dart(Range)(Range range, const Index branch_index) @safe if (isInputRange!Range)
@@ -1455,11 +1455,11 @@ alias check = Check!DARTException;
 
         }
 
-        if (modify_records.empty) {
+        if (modifyrecords.empty) {
             return _fingerprint;
         }
 
-        auto range = rimKeyRange(modify_records, undo);
+        auto range = rimKeyRange(modifyrecords, undo);
         __write("masterblock root index=%s", blockfile.masterBlock.root_index);
         immutable new_root = traverse_dart(range, blockfile.masterBlock.root_index);
 
@@ -1594,7 +1594,7 @@ alias check = Check!DARTException;
     version (unittest) {
 
         static {
-
+            version(none)
             bool check(const(RecordFactory.Recorder) A, const(RecordFactory.Recorder) B) {
                 return equal!(q{a.fingerprint == b.fingerprint})(A.archives[], B.archives[]);
             }
@@ -1603,16 +1603,18 @@ alias check = Check!DARTException;
                 return equal!(q{a.fingerprint == b.fingerprint})(A.archives[], B.archives[]);
             }
 
+            version(none)
             Buffer write(DARTFile dart, const(ulong[]) table, out RecordFactory.Recorder rec, bool isStubs = false) {
                 rec = isStubs ? stubs(dart.manufactor, table) : records(dart.manufactor, table);
                 return dart.modify(rec);
             }
 
             Buffer write(DARTFile dart, const(ulong[]) table, out RecordFactoryT!true.Recorder rec, bool isStubs = false) {
-                rec = isStubs ? _stubs(dart._manufactor, table) : _records(dart._manufactor, table);
+                rec = isStubs ? stubs(dart._manufactor, table) : records(dart._manufactor, table);
                 return dart._modify(rec);
             }
 
+            version(none)
             Buffer[] fingerprints(RecordFactory.Recorder recorder) {
                 Buffer[] results;
                 foreach (a; recorder.archives) {
@@ -1634,6 +1636,7 @@ alias check = Check!DARTException;
 
             }
 
+            version(none)
             bool validate(DARTFile dart, const(ulong[]) table, out RecordFactory.Recorder recorder) {
                 write(dart, table, recorder);
                 auto _fingerprints = fingerprints(recorder);
@@ -1651,6 +1654,7 @@ alias check = Check!DARTException;
                 return check(recorder, find_recorder);
             }
 
+            version(none)
             RecordFactory.Recorder records(RecordFactory factory, const(ulong[]) table) {
                 auto rec = factory.recorder;
                 foreach (t; table) {
@@ -1660,7 +1664,7 @@ alias check = Check!DARTException;
                 return rec;
             }
 
-            RecordFactoryT!true.Recorder _records(RecordFactoryT!true factory, const(ulong[]) table) {
+            RecordFactoryT!true.Recorder records(RecordFactoryT!true factory, const(ulong[]) table) {
                 auto rec = factory.recorder;
                 foreach (t; table) {
                     const doc = DARTFakeNet.fake_doc(t);
@@ -1669,7 +1673,7 @@ alias check = Check!DARTException;
                 return rec;
             }
 
-            RecordFactoryT!true.Recorder _recordsRemove(RecordFactoryT!true factory, const(ulong[]) table) {
+            RecordFactoryT!true.Recorder recordsRemove(RecordFactoryT!true factory, const(ulong[]) table) {
                 auto rec = factory.recorder;
                 foreach (t; table) {
                     const doc = DARTFakeNet.fake_doc(t);
@@ -1678,6 +1682,7 @@ alias check = Check!DARTException;
                 return rec;
             }
 
+            version(none)
             RecordFactory.Recorder stubs(RecordFactory factory, const(ulong[]) table) {
                 auto rec = factory.recorder;
                 foreach (t; table) {
@@ -1689,7 +1694,7 @@ alias check = Check!DARTException;
                 return rec;
             }
 
-            RecordFactoryT!true.Recorder _stubs(RecordFactoryT!true factory, const(ulong[]) table) {
+            RecordFactoryT!true.Recorder stubs(RecordFactoryT!true factory, const(ulong[]) table) {
                 auto rec = factory.recorder;
                 foreach (t; table) {
                     import std.bitmanip;
@@ -1899,7 +1904,7 @@ unittest {
 
         //dart_A.dump;
         //dart_B.dump;
-        auto remove_recorder = DARTFile._recordsRemove(_manufactor, table[8 .. 10]);
+        auto remove_recorder = DARTFile.recordsRemove(_manufactor, table[8 .. 10]);
 
         auto bulleye_A = dart_A._modify(remove_recorder);
         //dart_A.dump;
@@ -1923,7 +1928,7 @@ unittest {
 
         auto bulleye_A = DARTFile.write(dart_A, random_table, recorder_A);
         auto bulleye_B = DARTFile.write(dart_B, random_table[0 .. N - 100], recorder_B);
-        auto remove_recorder = DARTFile._recordsRemove(_manufactor, random_table[N - 100 .. N]);
+        auto remove_recorder = DARTFile.recordsRemove(_manufactor, random_table[N - 100 .. N]);
 
         bulleye_A = dart_A._modify(remove_recorder);
         // dart_A.dump;
@@ -2005,7 +2010,7 @@ unittest {
 
         auto bulleye_A = DARTFile.write(dart_A, random_table, recorder_A);
         auto bulleye_B = DARTFile.write(dart_B, random_table[0 .. N - 100], recorder_B);
-        auto remove_recorder = DARTFile._recordsRemove(_manufactor, random_table[N - 100 .. N]);
+        auto remove_recorder = DARTFile.recordsRemove(_manufactor, random_table[N - 100 .. N]);
         bulleye_A = dart_A._modify(remove_recorder);
         // dart_A.dump;
         // The bull eye of the two DART must be the same
