@@ -36,7 +36,7 @@ import tagion.dart.Recorder : RecordFactory, Archive;
 import tagion.dart.DARTFile;
 import tagion.dart.DARTBasic : DARTIndex;
 import CRUD = tagion.dart.DARTcrud;
-import tagion.dart.BlockFile : Index, INDEX_NULL;
+import tagion.dart.BlockFile : Index;
 
 /**
  * Calculates the to-angle on the angle circle 
@@ -509,7 +509,7 @@ received = the HiRPC received package
             const super_branches = branches(params.rims[0 .. $ - 1]);
             if (!super_branches.empty) {
                 const index = super_branches.indices[key];
-                if (index != INDEX_NULL) {
+                if (index != Index.init) {
                     // The archive is added to a recorder
                     immutable data = blockfile.load(index);
                     const doc = Document(data);
@@ -950,7 +950,7 @@ received = the HiRPC received package
         }
         // Adding and Removing archives
         void local_replay(bool remove)() @safe {
-            for (Index index = journalfile.masterBlock.root_index; index != INDEX_NULL;
+            for (Index index = journalfile.masterBlock.root_index; index != Index.init;
 
                 ) {
                 immutable data = journalfile.load(index);

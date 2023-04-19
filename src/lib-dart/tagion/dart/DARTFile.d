@@ -124,7 +124,7 @@ alias check = Check!DARTException;
 
     enum KEY_SPAN = ubyte.max + 1;
 
-    import tagion.dart.BlockFile : INDEX_NULL;
+    import tagion.dart.BlockFile : Index;
 
     immutable(string) filename;
 
@@ -291,7 +291,7 @@ alias check = Check!DARTException;
         Buffer fingerprint;
 
         bool empty() pure const nothrow {
-            return (index is INDEX_NULL) && (fingerprint is null);
+            return (index is Index.init) && (fingerprint is null);
         }
 
         mixin HiBONRecord!(q{ 
@@ -421,7 +421,7 @@ alias check = Check!DARTException;
                 auto hibon_indices = new HiBON;
                 bool indices_set;
                 foreach (key, index; _indices) {
-                    if (index !is INDEX_NULL) {
+                    if (index !is Index.init) {
                         hibon_indices[key] = index;
 
                         
@@ -471,7 +471,7 @@ alias check = Check!DARTException;
          */
         Index index(const uint key) pure const {
             if (empty) {
-                return INDEX_NULL;
+                return Index.init;
             }
             else {
                 return _indices[key];
@@ -506,7 +506,7 @@ alias check = Check!DARTException;
          */
         Leave opIndex(const uint key) {
             if (empty) {
-                return Leave(INDEX_NULL, null);
+                return Leave(Index.init, null);
             }
             else {
                 return Leave(_indices[key], _fingerprints[key]);
@@ -545,7 +545,7 @@ alias check = Check!DARTException;
             import std.stdio;
 
             foreach (key, index; _indices) {
-                if (index !is INDEX_NULL) {
+                if (index !is Index.init) {
                     writefln("branches[%02X]=%s", key, _fingerprints[key].toHex);
                 }
             }
@@ -575,7 +575,7 @@ alias check = Check!DARTException;
     Document load(ref const(Branches) b, const uint key) {
         if ((key < KEY_SPAN) && (b.indices)) {
             immutable index = b.indices[key];
-            if (index !is INDEX_NULL) {
+            if (index !is Index.init) {
                 return blockfile.load(index);
             }
         }
@@ -627,7 +627,7 @@ alias check = Check!DARTException;
             void traverse(
                     immutable Index index,
                     immutable uint rim = 0) @safe {
-                if (index !is INDEX_NULL) {
+                if (index !is Index.init) {
                     doc = this.outer.blockfile.load(index);
                     assert(!doc.empty, "Loaded document should not be empty");
                     //const doc = Document(data);
@@ -721,7 +721,7 @@ alias check = Check!DARTException;
                 const Index branch_index,
                 const ubyte rim_key = 0,
                 const uint rim = 0) @safe {
-            if (branch_index !is INDEX_NULL) {
+            if (branch_index !is Index.init) {
                 immutable data = blockfile.load(branch_index);
                 const doc = Document(data);
                 if (Branches.isRecord(doc)) {
@@ -772,7 +772,7 @@ alias check = Check!DARTException;
                 const Index branch_index,
                 Buffer[] ordered_fingerprints,
                 immutable uint rim = 0) @safe {
-            if ((ordered_fingerprints) && (branch_index !is INDEX_NULL)) {
+            if ((ordered_fingerprints) && (branch_index !is Index.init)) {
                 immutable data = blockfile.load(branch_index);
                 const doc = Document(data);
                 if (Branches.isRecord(doc)) {
@@ -822,7 +822,7 @@ alias check = Check!DARTException;
                 const Index branch_index,
                 Buffer[] ordered_fingerprints,
                 immutable uint rim = 0) @safe {
-            if ((ordered_fingerprints) && (branch_index !is INDEX_NULL)) {
+            if ((ordered_fingerprints) && (branch_index !is Index.init)) {
                 immutable data = blockfile.load(branch_index);
                 const doc = Document(data);
                 if (Branches.isRecord(doc)) {
@@ -1006,9 +1006,10 @@ alias check = Check!DARTException;
      */
 
     Buffer modify(const(RecordFactory.Recorder) modifyrecords, const Flag!"undo" undo = No.undo) {
+
         Leave traverse_dart(Range)(Range range, const Index branch_index) @safe if (isInputRange!Range)
         out {
-            assert(range.empty, "must be empty on return");
+            assert(range.empty, "Must have been through the whole range and therefore empty on return");
         }
         do {
 
@@ -1023,7 +1024,7 @@ alias check = Check!DARTException;
             // immutable sector = sector(archive.fingerprint);
             Branches branches;
             if (range.rim < RIMS_IN_SECTOR) {
-                if (branch_index !is INDEX_NULL) {
+                if (branch_index !is Index.init) {
                     branches = blockfile.load!Branches(branch_index);
 
                     
@@ -1048,7 +1049,7 @@ alias check = Check!DARTException;
 
             }
             else {
-                if (branch_index !is INDEX_NULL) {
+                if (branch_index !is Index.init) {
                     const doc = blockfile.cacheLoad(branch_index);
                     if (Branches.isRecord(doc)) {
                         branches = Branches(doc);
@@ -1113,7 +1114,7 @@ alias check = Check!DARTException;
                 while (!range.empty) {
                     const rim_key = range.front.fingerprint.rim_key(range.rim + 1);
 
-                    const leave = traverse_dart(range.nextRim, INDEX_NULL);
+                    const leave = traverse_dart(range.nextRim, Index.init);
                     branches[rim_key] = leave;
                 }
 
@@ -1148,7 +1149,7 @@ alias check = Check!DARTException;
         scope (success) {
             // On success the new root_index is set and the DART is updated
             _fingerprint = new_root.fingerprint;
-            if ((new_root.fingerprint is null) || (new_root.index is INDEX_NULL)) {
+            if ((new_root.fingerprint is null) || (new_root.index is Index.init)) {
                 // All data has been delete so a new blockfile is created
                 blockfile.close;
                 blockfile = BlockFile.reset(filename);
@@ -1169,7 +1170,7 @@ alias check = Check!DARTException;
     RecordFactory.Recorder readStubs() { //RIMS_IN_SECTOR
         RecordFactory.Recorder rec = manufactor.recorder();
         void iterate(const Index branch_index, immutable uint rim = 0) @safe {
-            if (branch_index !is INDEX_NULL) {
+            if (branch_index !is Index.init) {
                 pragma(msg, "fixme(pr): Should use a DARTFile.load member for feature use");
                 immutable data = blockfile.load(branch_index);
                 const doc = Document(data);
@@ -1212,7 +1213,7 @@ alias check = Check!DARTException;
                 if (rim < rim_path.length) {
                     immutable rim_key = rim_path.rim_key(rim);
                     immutable sub_index = branches._indices[rim_key];
-                    if (sub_index !is INDEX_NULL) {
+                    if (sub_index !is Index.init) {
                         return search(rim_path, sub_index, rim + 1);
                     }
                 }
@@ -1224,7 +1225,7 @@ alias check = Check!DARTException;
             return Branches();
         }
 
-        if (blockfile.masterBlock.root_index is INDEX_NULL) {
+        if (blockfile.masterBlock.root_index is Index.init) {
             return Branches();
         }
         return search(rim_path, blockfile.masterBlock.root_index);
@@ -1244,7 +1245,7 @@ alias check = Check!DARTException;
                 const ubyte rim_key = 0,
                 const uint rim = 0,
                 string indent = null) @safe {
-            if (branch_index !is INDEX_NULL) {
+            if (branch_index !is Index.init) {
                 immutable data = blockfile.load(branch_index);
                 const doc = Document(data);
                 if (Branches.isRecord(doc)) {
@@ -1782,7 +1783,7 @@ unittest {
 
         size_t numberOfArchives(DARTFile.Branches branches, DARTFile db) {
             return branches.indices
-                .filter!(i => i !is INDEX_NULL)
+                .filter!(i => i !is Index.init)
                 .map!(i => DARTFile.Branches.isRecord(db.cacheLoad(i)))
                 .walkLength;
 
