@@ -287,37 +287,32 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
 }
 
 version (unittest) {
-    //   import std.stdio;
+    import std.stdio;
 
     @safe
-    void traverse(RecordFactory.Recorder recorder, const bool undo = false) {
+    void traverse(const(RecordFactory.Recorder) recorder, const bool undo = false) {
         void inner_traverse(RimRange)(RimRange rim_key_range) {
             while (!rim_key_range.empty) {
-                if (rim_key_range.identical) {
-                    assert(!rim_key_range.empty);
+                if (rim_key_range.oneLeft) {
                     const first = rim_key_range.front;
                     rim_key_range.popFront;
-                    if (!rim_key_range.empty) {
-                        const second = rim_key_range.front;
-                        assert(first.fingerprint == second.fingerprint,
-                                "First and second idenitical fingerprints should be the same");
-                        assert(_reverse_order ^ (first.type < second.type), "Type order not correct");
-                        rim_key_range.popFront;
-                    }
-                    assert(rim_key_range.empty);
+                }
+                else if (rim_key_range.front.type == Archive.Type.REMOVE) {
+                    writefln("Remove");
+                    rim_key_range.front.dump;
+                    rim_key_range.popFront;
                 }
                 else {
-                    traverse(rim_key_range.nextRim);
+                    writefln("Range rim=%d rim_keys=%s", rim_key_range.rim, rim_key_range.rim_keys.hex);
+                    rim_key_range.save.each!q{a.dump};
+                    inner_traverse(rim_key_range.nextRim);
                 }
             }
-            if (undo) {
-                inner_traverse(RimKeyRange(recorder.retro));
-            }
-            else {
-                inner_traverse(RimKeyRange(recorder));
-            }
         }
+
+        inner_traverse(rimKeyRange(recorder));
     }
+
 }
 
 @safe
@@ -497,4 +492,18 @@ unittest {
         }
 
     }
+
 }
+
+/*
+Archive 00000000eca47f6c000000000000000000000000000000000000000000000000 ADD 7FB6D8B0BF40
+Archive 0000857d724359c0000000000000000000000000000000000000000000000000 ADD 7FB6D8B0BFC0
+Archive 226b8f02cdf58b17000000000000000000000000000000000000000000000000 ADD 7FB6D8B183C0
+Archive 264462670b047457000000000000000000000000000000000000000000000000 ADD 7FB6D8B181C0
+Archive 3a4b19acadb38259000000000000000000000000000000000000000000000000 ADD 7FB6D8B18340
+Archive 4b4d46990ab7aeff000000000000000000000000000000000000000000000000 ADD 7FB6D8B18040
+Archive 57a0159df5522c06000000000000000000000000000000000000000000000000 ADD 7FB6D8B180C0
+Archive 8715fb635891de6d000000000000000000000000000000000000000000000000 ADD 7FB6D8B18140
+Archive 9efb5341ed4f7037000000000000000000000000000000000000000000000000 ADD 7FB6D8B18240
+Archive df2dede8a0350f3d000000000000000000000000000000000000000000000000 ADD 7FB6D8B182C0
+*/
