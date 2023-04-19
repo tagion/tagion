@@ -201,6 +201,15 @@ class RecordFactory {
             }
         }
 
+        Recorder changeTypes(const GetType get_type) {
+            import std.algorithm;
+
+            auto result_archives = new Archives;
+            result_archives.insert(
+                    archives[].map!(a => new Archive(net, a.filed, get_type(a)))
+            );
+            return new Recorder(result_archives);
+        }
         /** 
         * Length of the archives
         * Returns: number of archives 
@@ -393,7 +402,7 @@ class RecordFactory {
             return opSlice
                 .isSorted!(archive_sorted);
         }
-        // }
+
     }
 }
 
