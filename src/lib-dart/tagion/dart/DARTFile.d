@@ -1012,6 +1012,13 @@ alias check = Check!DARTException;
             assert(range.empty, "Must have been through the whole range and therefore empty on return");
         }
         do {
+            
+            if (range.front.fingerprint.toHex == "00000000eca47f6c000000000000000000000000000000000000000000000000") {
+                writefln("ARCHIVE SPECIAL CASE");
+                writefln("rim=%d, rim_keys=%s", range.rim, range.rim_keys.toHex);
+                range.save.each!q{a.dump};
+                writefln("AFTER ARCHIVE DUMP SPECIAL");
+            }
 
             if (range.empty) {
                 return Leave.init;
@@ -1087,15 +1094,15 @@ alias check = Check!DARTException;
                             blockfile.dispose(branch_index);
 
                         }
-                        auto sub_range = range.save;
+                        auto sub_range = range.save.filter!(a => a.fingerprint == current_archive.fingerprint);
 
-                        if (sub_range
-                                .filter!(a => a.type == Archive.Type.REMOVE)
-                                .filter!(a => a.fingerprint == current_archive.fingerprint)
-                                .empty) {
-
+                        if (sub_range.empty) {
                             range.add(current_archive);
 
+                        }
+                        else if (sub_range.front.type == Archive.Type.ADD) {
+                            range.add(current_archive);
+                            range.popFront;
                         }
 
                     }
@@ -1940,7 +1947,7 @@ unittest {
             auto next_recorder = dart_A.recorder();
             next_recorder.remove(remove_fingerprint);
             next_recorder.add(docs[2]);
-            next_recorder[].each!q{a.dump};
+            // next_recorder[].each!q{a.dump};
             dart_A.modify(next_recorder);
             // dart_A.dump();
 

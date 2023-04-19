@@ -472,6 +472,11 @@ const Neutral = delegate(const(Archive) a) => a.type;
         fout.writefln("Archive %s %s %s", fingerprint.hex, type,
                 (() @trusted => cast(void*) this)());
     }
+
+    override string toString() const {
+        return format("Archive %s %s %s", fingerprint.hex, type,
+                (() @trusted => cast(void*) this)());
+    }
     /**
      * Construct an archive from a Document
      * Params:
