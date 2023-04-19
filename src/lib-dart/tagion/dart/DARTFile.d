@@ -2434,59 +2434,59 @@ unittest {
             assert(numberOfArchives(branches, dart_A) == 2, "Should contain two archives after remove");
 
         }
-        version (none) {
-            {
-                // we start with the following structure.
-                // EYE: 96443dfcd4959c2698f1553976e18d7a7ab99b9c914967d9e0e6cd7bb3db5852
-                // | AB [13]
-                // | .. | B9 [12]
-                // | .. | .. | 13 [11]
-                // | .. | .. | .. abb9130b11 [1]
-                // | .. | .. | .. | AB [10]
-                // | .. | .. | .. | .. abb913ab11ef [2]
-                // | .. | .. | .. | .. | 12 [9]
-                // | .. | .. | .. | .. | .. abb913ab12de56 [3]
-                // | .. | .. | .. | .. | .. | EF [8]
-                // | .. | .. | .. | .. | .. | .. abb913ab12ef1354 [4]
-                // | .. | .. | .. | .. | .. | .. | 56 [7]
-                // | .. | .. | .. | .. | .. | .. | .. abb913ab12ef565600 [5]
-                // | .. | .. | .. | .. | .. | .. | .. abb913ab12ef567800 [6]
-                // now we remove the middle branch located at EF.
-                DARTFile.create(filename_A);
-                auto dart_A = new DARTFile(net, filename_A);
 
-                const ulong[] deep_table = [
-                    0xABB9_13ab_11ef_0923,
-                    0xABB9_130b_11ef_1234,
-                    0xABB9_13ab_12ef_5678,
-                    0xABB9_13ab_12ef_1354,
-                    0xABB9_13ab_12ef_5656,
-                    0xABB9_13ab_12de_5678,
-                ];
+        {
+            // we start with the following structure.
+            // EYE: 96443dfcd4959c2698f1553976e18d7a7ab99b9c914967d9e0e6cd7bb3db5852
+            // | AB [13]
+            // | .. | B9 [12]
+            // | .. | .. | 13 [11]
+            // | .. | .. | .. abb9130b11 [1]
+            // | .. | .. | .. | AB [10]
+            // | .. | .. | .. | .. abb913ab11ef [2]
+            // | .. | .. | .. | .. | 12 [9]
+            // | .. | .. | .. | .. | .. abb913ab12de56 [3]
+            // | .. | .. | .. | .. | .. | EF [8]
+            // | .. | .. | .. | .. | .. | .. abb913ab12ef1354 [4]
+            // | .. | .. | .. | .. | .. | .. | 56 [7]
+            // | .. | .. | .. | .. | .. | .. | .. abb913ab12ef565600 [5]
+            // | .. | .. | .. | .. | .. | .. | .. abb913ab12ef567800 [6]
+            // now we remove the middle branch located at EF.
+            DARTFile.create(filename_A);
+            auto dart_A = new DARTFile(net, filename_A);
 
-                auto docs = deep_table.map!(a => DARTFakeNet.fake_doc(a));
-                auto recorder = dart_A._recorder();
-                foreach (doc; docs) {
-                    recorder.add(doc);
-                }
-                auto fingerprints = recorder[].map!(r => r.fingerprint).array;
-                dart_A._modify(recorder);
-                // dart_A.dump();
+            const ulong[] deep_table = [
+                0xABB9_13ab_11ef_0923,
+                0xABB9_130b_11ef_1234,
+                0xABB9_13ab_12ef_5678,
+                0xABB9_13ab_12ef_1354,
+                0xABB9_13ab_12ef_5656,
+                0xABB9_13ab_12de_5678,
+            ];
 
-                auto remove_recorder = dart_A._recorder();
-                remove_recorder.remove(fingerprints[4]);
-
-                dart_A._modify(remove_recorder);
-                // dart_A.dump();
-
-                ubyte[] rim_path = [0xAB, 0xB9, 0x13, 0xab, 0x12, 0xef];
-
-                auto branches = dart_A.branches(rim_path);
-                // writefln("XXX %s", numberOfArchives(branches, dart_A));
-                assert(numberOfArchives(branches, dart_A) == 2, "Should contain two archives after remove");
-
+            auto docs = deep_table.map!(a => DARTFakeNet.fake_doc(a));
+            auto recorder = dart_A._recorder();
+            foreach (doc; docs) {
+                recorder.add(doc);
             }
+            auto fingerprints = recorder[].map!(r => r.fingerprint).array;
+            dart_A._modify(recorder);
+            // dart_A.dump();
 
+            auto remove_recorder = dart_A._recorder();
+            remove_recorder.remove(fingerprints[4]);
+
+            dart_A._modify(remove_recorder);
+            // dart_A.dump();
+
+            ubyte[] rim_path = [0xAB, 0xB9, 0x13, 0xab, 0x12, 0xef];
+
+            auto branches = dart_A.branches(rim_path);
+            // writefln("XXX %s", numberOfArchives(branches, dart_A));
+            assert(numberOfArchives(branches, dart_A) == 2, "Should contain two archives after remove");
+
+        }
+        version (none) {
             {
 
                 DARTFile.create(filename_A);
