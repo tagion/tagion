@@ -1,15 +1,52 @@
 name "tagion"
-description "It's lighter than MS teams"
+description "Configuration exists to allow language server to do proper static analasys, compilation is not supported"
 targetType "executable"
 authors "decard"
 copyright "Copyright © 2023, decard"
 license "proprietary"
-excludedSourceFiles "src/lib-behaviour/tagion/behaviour/unitdata/*"
-sourceFiles "@tub/dub/dheaders.txt" "build/x86_64-linux/tmp/secp256k1/.libs/libsecp256k1.a" platform="linux-x86_64"
-libs "secp256k1"
+excludedSourceFiles "src/lib-behaviour/tagion/behaviour/unitdata/*" "src/lib-betterc/*" "src/lib-wasm/*"
+buildRequirements "allowWarnings" "silenceWarnings"
+sourceFiles "@tub/dub/dheaders.txt" \
+  "build/x86_64-linux/tmp/secp256k1/.libs/libsecp256k1.a" \
+  "build/x86_64-linux/tmp/libcrypto.a" \
+  "build/x86_64-linux/tmp/libssl.a" \
+  "build/x86_64-linux/tmp/libp2pgowrapper.a" \
+  platform="linux-x86_64"
+
+libs "secp256k1" "crypto" "ssl" "p2pgowrapper"
 dflags "-dip25" "-dip1000" "-preview=inclusiveincontracts"
 versions "REDBLACKTREE_SAFE_PROBLEM" "SYNC_BLOCKFILE_WORKING" "TINY_AES" "WOLFSSL" "OLD_TRANSACTION" "ONETOOL" 
 stringImportPaths "tub/logos/" "/home/lucas/wrk/tagion/build/x86_64-linux"
+
+sourcePaths \
+    "src/lib-actor/" \
+    "src/lib-basic/" \
+    "src/lib-behaviour/" \
+    "src/lib-betterc/" \
+    "src/lib-communication/" \
+    "src/lib-crypto/" \
+    "src/lib-dart/" \
+    "src/lib-funnel/" \
+    "src/lib-gossip/" \
+    "src/lib-hashchain/" \
+    "src/lib-hashgraph/" \
+    "src/lib-hashgraphview/" \
+    "src/lib-hibon/" \
+    "src/lib-logger/" \
+    "src/lib-mobile/" \
+    "src/lib-monitor/" \
+    "src/lib-network/" \
+    "src/lib-options/" \
+    "src/lib-p2pgowrapper/" \
+    "src/lib-phobos/" \
+    "src/lib-prior-actor/" \
+    "src/lib-prior-services/" \
+    "src/lib-services/" \
+    "src/lib-taskwrapper/" \
+    "src/lib-tools/" \
+    "src/lib-utils/" \
+    "src/lib-wallet/" \
+    "src/lib-wasm/"
 configuration "bin" {
     mainSourcePath "/src/bin-tools/tagion/tools/tools.d"
 }
