@@ -1006,8 +1006,6 @@ alias check = Check!DARTException;
      */
 
     Buffer modify(const(RecordFactory.Recorder) modifyrecords, const Flag!"undo" undo = No.undo) {
-        import tagion.dart.RimKeyRange : RimKeyRange;
-
         Leave traverse_dart(Range)(Range range, const Index branch_index) @safe if (isInputRange!Range)
         out {
             assert(range.empty, "must be empty on return");
