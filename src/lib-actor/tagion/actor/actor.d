@@ -6,8 +6,7 @@ import std.format : format;
 import std.typecons;
 import core.thread;
 import std.exception;
-
-import tagion.basic.tagionexceptions : TagionException, Check;
+import tagion.basic.tagionexceptions : TagionException, TaskFailure;
 
 bool all(Ctrl[Tid] aa, Ctrl ctrl) {
     foreach (val; aa) {
@@ -18,10 +17,23 @@ bool all(Ctrl[Tid] aa, Ctrl ctrl) {
     return true;
 }
 
+/// Exception sent when the actor gets a message that it doesn't handle
 class UnknownMessage : TagionException {
     this(immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__) pure {
         super(msg, file, line);
     }
+}
+
+// Exception when the actor fails to start or stop
+class RunFailure : TagionException {
+    this(immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__) pure {
+        super(msg, file, line);
+    }
+}
+
+@trusted
+static immutable(TaskFailure) taskFailure(Throwable e, string taskName) @nogc nothrow { //if (is(T:Throwable) && !is(T:TagionExceptionInterface)) {
+    return immutable(TaskFailure)(cast(immutable) e, taskName);
 }
 
 /**
@@ -181,7 +193,7 @@ import std.traits;
  * Base template
  * All members should be static
  * Examples: See [Actor examples]($(DOC_ROOT_OBJECTS)tagion.actor.example$(DOC_EXTENSION))
- * 
+ *
  * Struct may implement starting callback that gets called after the actor sends Ctrl.STARTING
  * ---
  * void starting() {...};
@@ -194,6 +206,7 @@ static:
     import std.concurrency : OwnerTerminated, Tid, thisTid, ownerTid, receive, prioritySend;
     import std.format : format;
     import std.traits : isCallable;
+    import tagion.basic.tagionexceptions : TagionException, TaskFailure, taskException;
 
     bool stop = false;
     Ctrl[Tid] childrenState; // An AA to keep a copy of the state of the children
@@ -220,10 +233,19 @@ static:
     }
 
     /// Default fail handler. When overriding this, unknown exceptions should always be sent to the owner
-    void failHandler(Exception e) {
-        writeln("Received Exce: ", e);
-        immutable exception = cast(immutable) e;
+    version (none) void failHandler(TaskFailure t) {
+        writeln("Received Exce: ", t);
+        immutable exception = cast(immutable) t;
         assumeWontThrow(ownerTid.prioritySend(exception));
+    }
+
+    @trusted
+    void taskfailure(immutable(TaskFailure) t) nothrow {
+        assumeWontThrow({
+            if (ownerTid != Tid.init) {
+                ownerTid.send(t);
+            }
+        });
     }
 
     /**
@@ -265,7 +287,7 @@ static:
                 debug writeln("STARTED all the children");
             }
 
-            // Call starting() if it exists
+            // Call starting() if it's implemented
             static if (__traits(hasMember, This, "starting")) {
                 alias startingCall = __traits(getMember, This, "starting");
                 static assert(isCallable!startingCall, "the starting callback is not callable");
@@ -280,23 +302,21 @@ static:
                             &signal,
                             &control,
                             &ownerTerminated,
-                            &failHandler,
+                            &taskfailure,
                             &unknown,
                     );
                 }
-                catch (Exception e) {
-                    immutable exception = cast(immutable) e;
-                    assumeWontThrow(ownerTid.prioritySend(exception));
+                catch (Throwable e) {
+                    immutable failure = taskFailure(e, "some_unknown_task");
+                    assumeWontThrow(ownerTid.prioritySend(failure));
                 }
             }
         }
 
         // If we catch an exception we send it back to owner for them to deal with it.
-        catch (Exception e) {
-            // Use tagion taskexception when it part of the tree
-            // TODO: send a custom startup exception instead.
-            immutable exception = cast(immutable) e;
-            assumeWontThrow(ownerTid.prioritySend(exception));
+        catch (Throwable e) {
+            immutable failure = taskFailure(e, "some_unknown_task");
+            assumeWontThrow(ownerTid.prioritySend(failure));
         }
     }
 }
