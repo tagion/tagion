@@ -29,7 +29,7 @@ ubyte rim_key(F)(F rim_keys, const uint rim) pure if (isBufferType!F) {
 
 @safe
 RimKeyRange!Range rimKeyRange(Range)(Range range, const Flag!"undo" undo = Yes.undo)
-        if (isInputRange!Range && isImplicitlyConvertible!(ElementType!Range, Archive) && !isImplicitlyConvertible!(Range, RecordFactoryT!true.Recorder)) {
+        if (isInputRange!Range && is(ElementType!Range : const(Archive))) {
     return RimKeyRange!Range(range, undo);
 }
 
@@ -41,7 +41,7 @@ auto rimKeyRange(RecordFactoryX.Recorder rec, const Flag!"undo" undo = Yes.undo)
 
 // Range over a Range with the same key in the a specific rim
 @safe
-struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(ElementType!Range, Archive)) {
+struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(ElementType!Range, const(Archive))) {
     alias archive_less = RecordFactoryX.Recorder.archive_sorted;
 
     @safe
@@ -92,7 +92,7 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
              * Gets the current archive in the range
              * Returns: current archive and return null if the range is empty
              */
-            Archive front() {
+            const(Archive) front() {
                 if (!added_range.empty && !range.empty) {
                     if (archive_less(added_range.front, range.front)) {
                         return added_range.front;
@@ -163,7 +163,7 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
             ctx.range = _range;
         }
 
-        return this.take(2).walkLength == 1;        
+        return this.take(2).walkLength == 1;
     }
 
     bool moreThanOneADD() {
@@ -255,7 +255,7 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
             }
         }
 
-        Archive front() {
+        const(Archive) front() {
             return ctx.front;
         }
 
