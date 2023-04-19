@@ -114,7 +114,7 @@ class AddAnotherArchive {
         const doc = DARTFakeNet.fake_doc(info.deep_table[0]);
         const doc_bullseye = dartIndex(info.net, doc);
         check(bullseye == doc_bullseye, "Bullseye not equal to doc");
-        db.dump;
+        // db.dump;
         return result_ok;
     }
 
@@ -129,7 +129,7 @@ class AddAnotherArchive {
         check(doc_fingerprint != bullseye, "Bullseye not updated");
 
         fingerprints ~= doc_fingerprint;
-        db.dump;
+        // db.dump;
         return result_ok;
     }
 
@@ -199,7 +199,7 @@ class RemoveArchive {
         auto recorder = db.recorder();
         recorder.remove(fingerprints[0]);
         bullseye = db.modify(recorder);
-        db.dump;
+        // db.dump;
         return result_ok;
     }
 

@@ -108,7 +108,7 @@ class AddOneArchiveAndSnap {
         foreach(i; 0..2) {
             const rim = Rims(rim_fingerprints[i][0..3]);
             const rim_doc = getRim(rim, info.hirpc, db);
-            writefln("rim_doc=%s", rim_doc.toPretty);
+            
             check(RecordFactory.Recorder.isRecord(rim_doc), format("branch %s not snapped back", rim));
         }
 
