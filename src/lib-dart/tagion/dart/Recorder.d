@@ -21,7 +21,7 @@ import std.functional : toDelegate;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.HiBONRecord : label, isHiBONRecord, GetLabel, isStub, recordType;
+import tagion.hibon.HiBONRecord : label, STUB, isHiBONRecord, GetLabel, isStub, recordType;
 import tagion.basic.Types : Buffer;
 import tagion.basic.Message;
 
@@ -188,7 +188,6 @@ class RecordFactory {
             foreach (archive; archives) {
                 if (archive.type != Archive.Type.REMOVE) {
                     short archiveSector = archive.fingerprint[0] | archive.fingerprint[1];
-                    // writeln("CHECK STUBS: arcive fp:%s sector: %d", archive.fingerprint, archiveSector);
                     ushort sector_origin = (archiveSector - from) & ushort.max;
                     if (sector_origin >= to_origin) {
                         archives.removeKey(archive);
@@ -390,8 +389,6 @@ class RecordFactory {
             return Document(result);
         }
 
-        // version (unittest)
-        // {
         import std.algorithm.sorting;
 
         bool checkSorted() pure {
@@ -419,7 +416,7 @@ const Neutral = delegate(const(Archive) a) => a.type;
         ADD = 1, /// Archive marked as add instrunction
     }
 
-    @label("") const(DARTIndex) fingerprint; /// hash-pointer 
+    @label(STUB, true) const(DARTIndex) fingerprint; /// Stub hash-pointer used in sharding
     @label("$a", true) const Document filed; /// The actual data strute stored 
     enum archiveLabel = GetLabel!(this.filed).name;
     enum fingerprintLabel = GetLabel!(this.fingerprint).name;
@@ -438,10 +435,6 @@ const Neutral = delegate(const(Archive) a) => a.type;
     this(const HashNet net, const(Document) doc, const Type t = Type.NONE)
     in {
         assert(net !is null);
-        version (none)
-            if (net is null) {
-                assert(!.isStub(doc), "A stub needs a HashNet");
-            }
         assert(!doc.empty, "Archive can not be empty");
     }
     do {

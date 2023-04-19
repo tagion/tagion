@@ -8,7 +8,6 @@ import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Signature, Fingerprint;
 import tagion.hibon.Document : Document;
 import tagion.basic.ConsensusExceptions;
-import tagion.hibon.HiBONRecord : STUB;
 
 void scramble(T, B = T[])(scope ref T[] data, scope const(B) xor = null) @safe if (T.sizeof is ubyte.sizeof) {
     import std.random;
@@ -428,16 +427,6 @@ unittest { // StdHashNet
         assert(net.binaryHash(null, doc_fingerprint) == doc_fingerprint);
     }
 
-    immutable stub_fingerprint = net.binaryHash(doc_fingerprint, doc_fingerprint);
-    Document stub;
-    {
-        auto hibon = new HiBON;
-        hibon[STUB] = stub_fingerprint;
-        stub = Document(hibon);
-    }
-
-    assert(isStub(stub));
-    assert(!hasHashKey(stub));
 }
 
 class BadSecureNet : StdSecureNet {
