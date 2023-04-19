@@ -135,9 +135,9 @@ alias check = Check!DARTException;
     }
 
     protected enum _params = [
-            "fingerprints",
-            "bullseye",
-        ];
+        "fingerprints",
+        "bullseye",
+    ];
 
     mixin(EnumText!("Params", _params));
 
@@ -2263,8 +2263,13 @@ unittest {
                 auto fingerprint = recorder[].front.fingerprint;
 
                 auto read_recorder = dart_A.loads([DARTIndex(fingerprint)]);
-                writefln("read_document=%s", read_recorder[].front.filed.toPretty);
 
+                auto read_name_record = NameRecord(read_recorder[].front.filed);
+                assert(read_name_record == name_record, "should be the same after reading");
+
+                // we try to insert a namerecord with the same name
+                // but since we have not removed it yet, it should 
+                // not ch                              
             }
 
         }
