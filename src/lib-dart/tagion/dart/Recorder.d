@@ -21,7 +21,7 @@ import std.functional : toDelegate;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.HiBONRecord : label, STUB, isHiBONRecord, GetLabel, isStub, recordType;
+import tagion.hibon.HiBONRecord : label, isHiBONRecord, GetLabel, isStub, recordType;
 import tagion.basic.Types : Buffer;
 import tagion.basic.Message;
 
@@ -419,7 +419,7 @@ const Neutral = delegate(const(Archive) a) => a.type;
         ADD = 1, /// Archive marked as add instrunction
     }
 
-    @label(STUB, true) const(DARTIndex) fingerprint; /// Stub hash-pointer used in sharding
+    @label("") const(DARTIndex) fingerprint; /// hash-pointer 
     @label("$a", true) const Document filed; /// The actual data strute stored 
     enum archiveLabel = GetLabel!(this.filed).name;
     enum fingerprintLabel = GetLabel!(this.fingerprint).name;
@@ -669,7 +669,7 @@ unittest { // Archive
         }
     }
 
-    { // Create Stub
+    version (none) { // Create Stub
         auto stub = new Archive(a.fingerprint);
         assert(stub.isStub);
         assert(stub.fingerprint == a.fingerprint);
