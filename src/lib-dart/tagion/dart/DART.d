@@ -859,17 +859,7 @@ received = the HiRPC received package
                 const local_branches = branches(params.rims);
                 const request_branches = CRUD.dartRim(params, hirpc, id);
                 const result_branches = sync.query(request_branches);
-                if (!Branches.isRecord(result_branches.response.result)) {
-                    if (result_branches.isRecord!(RecordFactory.Recorder)) {
-                        auto foreign_recoder = manufactor.recorder(result_branches.response.result);
-                        sync.record(foreign_recoder);
-                    }
-                    //
-                    // The foreign DART does not contain data at the rims
-                    //
-                    sync.remove_recursive(params);
-                }
-                else {
+                if (Branches.isRecord(result_branches.response.result)) {
                     const foreign_branches = result_branches.result!Branches;
                     //
                     // Read all the archives from the foreign DART
@@ -915,6 +905,16 @@ received = the HiRPC received package
                             sync.remove_recursive(sub_rims);
                         }
                     }
+                }
+                else {
+                    if (result_branches.isRecord!(RecordFactory.Recorder)) {
+                        auto foreign_recoder = manufactor.recorder(result_branches.response.result);
+                        sync.record(foreign_recoder);
+                    }
+                    //
+                    // The foreign DART does not contain data at the rims
+                    //
+                    sync.remove_recursive(params);
                 }
             }
 
