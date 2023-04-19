@@ -135,8 +135,7 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
         }
     }
 
-    //bool identical() pure nothrow {
-    bool identical() {
+    version (none) bool identical() {
         if (rim < 0 || ctx.empty) {
             return false;
         }
@@ -151,7 +150,7 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
         return !empty && this.all!((a) => first.fingerprint == a.fingerprint);
     }
 
-    bool oneLeft() {
+    bool oneLeft() pure nothrow {
         if (rim < 0 || ctx.empty) {
             return false;
         }
@@ -165,7 +164,7 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
         return this.take(2).walkLength == 1;
     }
 
-    bool moreThanOneADD() {
+    version (none) bool moreThanOneADD() {
         if (rim < 0 || ctx.empty) {
             return false;
         }
@@ -338,7 +337,7 @@ unittest {
             .map!(t => DARTFakeNet.fake_doc(t))
             .array;
 
-        { /// identical 
+        version (none) { /// identical 
             auto rec_identical = factory.recorder;
             { // empty rim_key_range should not be identical
                 auto rim_key_range = rimKeyRange(rec_identical);
