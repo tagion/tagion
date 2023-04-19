@@ -1016,6 +1016,8 @@ alias check = Check!DARTException;
      * If the function executes succesfully then the DART is update or else it does not affect the DART
      * The function returns the bullseye of the dart
      */
+    // alias modify = _modify;
+    // version(none)
     Buffer modify(const(RecordFactory.Recorder) modifyrecords,
             GetType get_type = null) {
 
