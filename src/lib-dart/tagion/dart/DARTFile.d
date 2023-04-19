@@ -2593,103 +2593,100 @@ unittest {
             assert(numberOfArchives(branches, dart_A) == 1, "Should contain one archives after remove");
 
         }
-        version (none) {
 
-            {
-                // add two of the same archives and remove it. The bullseye should be null.
+        {
+            // add two of the same archives and remove it. The bullseye should be null.
 
-                // writefln("two same archives");
-                DARTFile.create(filename_A);
-                auto dart_A = new DARTFile(net, filename_A);
+            // writefln("two same archives");
+            DARTFile.create(filename_A);
+            auto dart_A = new DARTFile(net, filename_A);
 
-                const ulong[] deep_table = [
-                    0xABB9_130b_11ef_0923,
-                    0xABB9_130b_11ef_0923,
-                ];
+            const ulong[] deep_table = [
+                0xABB9_130b_11ef_0923,
+                0xABB9_130b_11ef_0923,
+            ];
 
-                auto docs = deep_table.map!(a => DARTFakeNet.fake_doc(a));
-                auto recorder = dart_A.recorder();
-                foreach (doc; docs) {
-                    recorder.add(doc);
-                }
-                auto remove_fingerprint = DARTIndex(recorder[].front.fingerprint);
-                // writefln("%s", remove_fingerprint);
-
-                dart_A.modify(recorder);
-                // dart_A.dump();
-
-                auto dart_blockfile = BlockFile(filename_A);
-                // dart_blockfile.dump;
-                dart_blockfile.close;
-
-                auto remove_recorder = dart_A.recorder();
-                remove_recorder.remove(remove_fingerprint);
-                dart_A.modify(remove_recorder);
-                // writefln("after remove");
-                // dart_A.dump();
-
-                dart_blockfile = BlockFile(filename_A);
-                // dart_blockfile.dump;
-                dart_blockfile.close;
-
-                assert(dart_A.bullseye == null);
-
+            auto docs = deep_table.map!(a => DARTFakeNet.fake_doc(a));
+            auto recorder = dart_A._recorder();
+            foreach (doc; docs) {
+                recorder.add(doc);
             }
+            auto remove_fingerprint = DARTIndex(recorder[].front.fingerprint);
+            // writefln("%s", remove_fingerprint);
 
-            {
-                DARTFile.create(filename_A);
-                auto dart_A = new DARTFile(net, filename_A);
+            dart_A._modify(recorder);
+            // dart_A.dump();
 
-                const ulong[] deep_table = [
-                    0xABB9_130b_11ef_0923,
-                    0xAB10_130b_11ef_0923,
-                ];
+            auto dart_blockfile = BlockFile(filename_A);
+            // dart_blockfile.dump;
+            dart_blockfile.close;
 
-                auto docs = deep_table.map!(a => DARTFakeNet.fake_doc(a));
-                auto recorder = dart_A.recorder();
-                foreach (doc; docs) {
-                    recorder.add(doc);
-                }
-                auto remove_fingerprint = DARTIndex(recorder[].front.fingerprint);
-                // writefln("%s", remove_fingerprint);
+            auto remove_recorder = dart_A._recorder();
+            remove_recorder.remove(remove_fingerprint);
+            dart_A._modify(remove_recorder);
+            // writefln("after remove");
+            // dart_A.dump();
 
-                dart_A.modify(recorder);
-                // dart_A.dump();
+            dart_blockfile = BlockFile(filename_A);
+            // dart_blockfile.dump;
+            dart_blockfile.close;
 
-                auto dart_blockfile = BlockFile(filename_A);
-                // dart_blockfile.dump;
-                dart_blockfile.close;
-
-                auto remove_recorder = dart_A.recorder();
-                remove_recorder.remove(remove_fingerprint);
-                dart_A.modify(remove_recorder);
-                // writefln("after remove");
-                // dart_A.dump();
-
-                dart_blockfile = BlockFile(filename_A);
-                // dart_blockfile.dump;
-                dart_blockfile.close;
-
-                ubyte[] rim_path = [0xAB];
-
-                auto branches = dart_A.branches(rim_path);
-                assert(numberOfArchives(branches, dart_A) == 1, "Should contain one archives after remove");
-
-            }
-
-            {
-                DARTFile.create(filename_A);
-                auto dart_A = new DARTFile(net, filename_A);
-                dart_A.close;
-                auto blockfile = BlockFile(filename_A);
-                // blockfile.dump;
-                blockfile.close;
-
-                dart_A = new DARTFile(net, filename_A);
-                assert(dart_A.bullseye == null);
-
-            }
+            assert(dart_A.bullseye == null);
 
         }
+
+        {
+            DARTFile.create(filename_A);
+            auto dart_A = new DARTFile(net, filename_A);
+
+            const ulong[] deep_table = [
+                0xABB9_130b_11ef_0923,
+                0xAB10_130b_11ef_0923,
+            ];
+
+            auto docs = deep_table.map!(a => DARTFakeNet.fake_doc(a));
+            auto recorder = dart_A._recorder();
+            foreach (doc; docs) {
+                recorder.add(doc);
+            }
+            auto remove_fingerprint = DARTIndex(recorder[].front.fingerprint);
+            // writefln("%s", remove_fingerprint);
+
+            dart_A._modify(recorder);
+            // dart_A.dump();
+
+            auto dart_blockfile = BlockFile(filename_A);
+            // dart_blockfile.dump;
+            dart_blockfile.close;
+
+            auto remove_recorder = dart_A._recorder();
+            remove_recorder.remove(remove_fingerprint);
+            dart_A._modify(remove_recorder);
+            // writefln("after remove");
+            // dart_A.dump();
+
+            dart_blockfile = BlockFile(filename_A);
+            // dart_blockfile.dump;
+            dart_blockfile.close;
+
+            ubyte[] rim_path = [0xAB];
+
+            auto branches = dart_A.branches(rim_path);
+            assert(numberOfArchives(branches, dart_A) == 1, "Should contain one archives after remove");
+
+        }
+        {
+            DARTFile.create(filename_A);
+            auto dart_A = new DARTFile(net, filename_A);
+            dart_A.close;
+            auto blockfile = BlockFile(filename_A);
+            // blockfile.dump;
+            blockfile.close;
+
+            dart_A = new DARTFile(net, filename_A);
+            assert(dart_A.bullseye == null);
+
+        }
+
     }
 }
