@@ -1290,7 +1290,7 @@ alias check = Check!DARTException;
         return new_root.fingerprint;
     }
 
-    Buffer _modify(RecordFactoryT!true.Recorder modifyrecords, const Flag!"undo" undo = No.undo) {
+    Buffer _modify(const(RecordFactoryT!true.Recorder) modifyrecords, const Flag!"undo" undo = No.undo) {
         import tagion.dart.RimKeyRange : RimKeyRange;
 
         Leave traverse_dart(Range)(Range range, const Index branch_index) @safe if (isInputRange!Range)
