@@ -760,58 +760,7 @@ alias check = Check!DARTException;
  * Returns: 
 *   recorder of the read archives
  */
-    alias loads = _loads;
-    version (none) RecordFactory.Recorder loads(Range)(
-            Range fingerprints,
-            Archive.Type type = Archive.Type.REMOVE) if (isInputRange!Range && is(ElementType!Range : Buffer)) {
-
-        import std.algorithm.comparison : min;
-
-        auto result = recorder;
-        void traverse_dart(
-                const Index branch_index,
-                Buffer[] ordered_fingerprints,
-                immutable uint rim = 0) @safe {
-            if ((ordered_fingerprints) && (branch_index !is Index.init)) {
-                immutable data = blockfile.load(branch_index);
-                const doc = Document(data);
-                if (Branches.isRecord(doc)) {
-                    const branches = Branches(doc);
-                    auto selected_fingerprints = ordered_fingerprints;
-                    foreach (rim_key, index; branches._indices) {
-                        uint pos;
-                        while ((pos < selected_fingerprints.length) &&
-                                (rim_key is selected_fingerprints[pos].rim_key(rim))) {
-                            pos++;
-                        }
-                        if (pos > 0) {
-                            traverse_dart(index, selected_fingerprints[0 .. pos], rim + 1);
-                            selected_fingerprints = selected_fingerprints[pos .. $];
-                        }
-                    }
-                }
-                else {
-                    // Loads the Archives into the archives
-                        .check(ordered_fingerprints.length == 1,
-                                format("Data base is broken at rim=%d fingerprint=%s",
-                                rim, ordered_fingerprints[0].toHex));
-                    // The archive is set in erase mode so it can be easily be erased later
-                    auto archive = new Archive(manufactor.net, doc, type);
-                    if (ordered_fingerprints[0] == archive.fingerprint) {
-                        result.insert(archive);
-                    }
-
-                }
-            }
-        }
-
-        auto sorted_fingerprints = fingerprints.filter!(a => a.length !is 0).array.dup;
-        sorted_fingerprints.sort;
-        traverse_dart(blockfile.masterBlock.root_index, sorted_fingerprints);
-        return result;
-    }
-
-    RecordFactory.Recorder _loads(Range)(
+    RecordFactory.Recorder loads(Range)(
             Range fingerprints,
             Archive.Type type = Archive.Type.REMOVE) if (isInputRange!Range && is(ElementType!Range : Buffer)) {
 
@@ -1295,7 +1244,7 @@ alias check = Check!DARTException;
                 write(dart, table, recorder);
                 auto _fingerprints = fingerprints(recorder);
 
-                auto find_recorder = dart._loads(_fingerprints);
+                auto find_recorder = dart.loads(_fingerprints);
                 return check(recorder, find_recorder);
             }
 
@@ -2328,6 +2277,39 @@ unittest {
 
             dart_A = new DARTFile(net, filename_A);
             assert(dart_A.bullseye == null);
+
+        }
+        { // name record unittests
+            static struct NameRecord {
+                @label("#name") string name;
+                uint data;
+
+                mixin HiBONRecord!(q{
+                    this(const string name, const uint data) {
+                        this.name = name;
+                        this.data = data;
+                    }
+                });
+            }
+
+            {
+                DARTFile.create(filename_A);
+                auto dart_A = new DARTFile(net, filename_A);
+
+                auto recorder = dart_A.recorder();
+
+                auto name_record = NameRecord("hugo", 10);
+
+                recorder.add(name_record);
+
+                dart_A.modify(recorder);
+
+                auto fingerprint = recorder[].front.fingerprint;
+
+                auto read_recorder = dart_A.loads([DARTIndex(fingerprint)]);
+                writefln("read_document=%s", read_recorder[].front.filed.toPretty);
+
+            }
 
         }
 
