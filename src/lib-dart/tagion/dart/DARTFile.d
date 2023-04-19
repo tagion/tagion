@@ -755,7 +755,7 @@ alias check = Check!DARTException;
  */
     RecordFactory.Recorder loads(Range)(
             Range fingerprints,
-            Archive.Type type = Archive.Type.REMOVE) if (isInputRange!Range && is(ElementType!Range : Buffer)) {
+            Archive.Type type = Archive.Type.REMOVE) if (isInputRange!Range && isBufferType!(ElementType!Range)) {
 
         import std.algorithm.comparison : min;
 
@@ -798,7 +798,11 @@ alias check = Check!DARTException;
             }
         }
 
-        auto sorted_fingerprints = fingerprints.filter!(a => a.length !is 0).array.dup;
+        auto sorted_fingerprints = fingerprints
+            .filter!(a => a.length !is 0)
+            .map!(a => cast(Buffer) a)
+            .array
+            .dup;
         sorted_fingerprints.sort;
         traverse_dart(blockfile.masterBlock.root_index, sorted_fingerprints);
         return result;

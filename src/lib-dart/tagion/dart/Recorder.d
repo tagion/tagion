@@ -356,7 +356,7 @@ class RecordFactory {
             remove(DARTIndex(fingerprint));
         }
 
-        final void stub(const(DARTIndex) fingerprint)
+        version (none) final void stub(const(DARTIndex) fingerprint)
         in {
             assert(fingerprint.length is net.hashSize,
                     format("Length of the fingerprint must be %d but is %d", net.hashSize, fingerprint
@@ -367,7 +367,7 @@ class RecordFactory {
             insert(archive);
         }
 
-        final void stub(const(Buffer) fingerprint) {
+        version (none) final void stub(const(Buffer) fingerprint) {
             stub(DARTIndex(fingerprint));
         }
 
