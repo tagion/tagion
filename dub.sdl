@@ -49,12 +49,38 @@ subPackage {
     dependency "tagion:utils" version="*"
 }
 
+subPackage {
+    name "dart"
+    sourcePaths "src/lib-dart/"
+    importPaths "src/lib-dart/"
+    dependency "tagion:basic" version="*"
+    dependency "tagion:hibon" version="*"
+    dependency "tagion:logger" version="*"
+    dependency "tagion:crypto" version="*"
+    dependency "tagion:communication" version="*"
+    dependency "tagion:options" version="*"
+}
+
+subPackage {
+    name "crypto"
+    sourcePaths "src/lib-crypto/"
+    importPaths "src/lib-crypto/"
+}
+
+subPackage {
+    name "communication"
+    sourcePaths "src/lib-communication/"
+    importPaths "src/lib-communication/"
+}
+
+subPackage {
+    name "options"
+    sourcePaths "src/lib-options/"
+    importPaths "src/lib-options/"
+}
+
+
 sourcePaths \
-    "src/lib-behaviour/" \
-    "src/lib-betterc/" \
-    "src/lib-communication/" \
-    "src/lib-crypto/" \
-    "src/lib-dart/" \
     "src/lib-funnel/" \
     "src/lib-gossip/" \
     "src/lib-hashchain/" \
@@ -65,7 +91,6 @@ sourcePaths \
     "src/lib-network/" \
     "src/lib-options/" \
     "src/lib-p2pgowrapper/" \
-    "src/lib-phobos/" \
     "src/lib-prior-actor/" \
     "src/lib-prior-services/" \
     "src/lib-services/" \
