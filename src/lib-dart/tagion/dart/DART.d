@@ -14,7 +14,7 @@ import std.format : format;
 import std.range : isInputRange, ElementType;
 import std.algorithm.iteration : filter, map;
 
-import tagion.basic.Debug : __format;
+import tagion.basic.Debug : debugwrite = __write, __format;
 import tagion.basic.basic : FUNCTION_NAME;
 import tagion.basic.Types : Buffer;
 import tagion.Keywords;
@@ -861,7 +861,7 @@ received = the HiRPC received package
                 const result_branches = sync.query(request_branches);
                 if (!Branches.isRecord(result_branches.response.result)) {
                     if (result_branches.isRecord!(RecordFactory.Recorder)) {
-                        auto foreign_recoder = manufactor.recorder(result_branches.method.params);
+                        auto foreign_recoder = manufactor.recorder(result_branches.response.result);
                         sync.record(foreign_recoder);
                     }
                     //
