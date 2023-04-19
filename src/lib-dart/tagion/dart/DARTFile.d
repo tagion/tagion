@@ -1012,7 +1012,7 @@ alias check = Check!DARTException;
             assert(range.empty, "Must have been through the whole range and therefore empty on return");
         }
         do {
-            
+
             if (range.empty) {
                 return Leave.init;
             }
@@ -2261,6 +2261,22 @@ unittest {
 
             assert(dart_A.bullseye == null);
 
+        }
+
+        { // add the same archive in different modifies. Should only contain one archive afterwards.
+            // Test was created due to error were if the same archive was added it would remove the 
+            // archive in the database.
+            DARTFile.create(filename_A);
+            auto dart_A = new DARTFile(net, filename_A);
+
+            auto doc = DARTFakeNet.fake_doc(0xABB9_130b_11ef_0923);
+            auto recorder = dart_A.recorder();
+            recorder.add(doc);
+            dart_A.modify(recorder);
+            assert(dart_A.bullseye == recorder[].front.fingerprint);
+            dart_A.modify(recorder);
+
+            assert(dart_A.bullseye == recorder[].front.fingerprint);
         }
 
         {
