@@ -135,21 +135,6 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
         }
     }
 
-    version (none) bool identical() {
-        if (rim < 0 || ctx.empty) {
-            return false;
-        }
-        const _index = ctx.added_range.index;
-        auto _range = ctx.range;
-        scope (exit) {
-            ctx.added_range.index = _index;
-            ctx.range = _range;
-        }
-        const first = ctx.front;
-        popFront;
-        return !empty && this.all!((a) => first.fingerprint == a.fingerprint);
-    }
-
     bool oneLeft() pure nothrow {
         if (rim < 0 || ctx.empty) {
             return false;
@@ -162,19 +147,6 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
         }
 
         return this.take(2).walkLength == 1;
-    }
-
-    version (none) bool moreThanOneADD() {
-        if (rim < 0 || ctx.empty) {
-            return false;
-        }
-        const _index = ctx.added_range.index;
-        auto _range = ctx.range;
-        scope (exit) {
-            ctx.added_range.index = _index;
-            ctx.range = _range;
-        }
-        return this.filter!((a) => a.type == Archive.Type.ADD).take(2).walkLength > 1;
     }
 
     protected RangeContext ctx;
@@ -218,16 +190,6 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
 
     RimKeyRange nextRim() pure nothrow {
         return RimKeyRange(this, rim + 1);
-    }
-    /**
-     * Checks if all the archives in the range are of the type REMOVE
-     * Params:
-     *   get_type = archive type get function
-     * Returns: true if all the archives are removes
-     */
-    version (none) bool onlyRemove(const GetType get_type) const pure {
-        return current
-            .all!(a => get_type(a) is Archive.Type.REMOVE);
     }
 
     pure nothrow {
@@ -297,13 +259,13 @@ version (unittest) {
                     rim_key_range.popFront;
                 }
                 else if (rim_key_range.front.type == Archive.Type.REMOVE) {
-                    writefln("Remove");
-                    rim_key_range.front.dump;
+                    //writefln("Remove");
+                    //rim_key_range.front.dump;
                     rim_key_range.popFront;
                 }
                 else {
-                    writefln("Range rim=%d rim_keys=%s", rim_key_range.rim, rim_key_range.rim_keys.hex);
-                    rim_key_range.save.each!q{a.dump};
+                    //writefln("Range rim=%d rim_keys=%s", rim_key_range.rim, rim_key_range.rim_keys.hex);
+                    //rim_key_range.save.each!q{a.dump};
                     inner_traverse(rim_key_range.nextRim);
                 }
             }
