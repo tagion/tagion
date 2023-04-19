@@ -22,7 +22,7 @@ Where the size refers to the `size_t` of the Document. Therefore the `BlockSegme
 
 | Variable Name | Type       | Label        | Description                                                  |
 |---------------|------------|--------------|--------------------------------------------------------------|
-| `index`       | `Index`    | `"index"`    | Block index where the document is stored or should be stored |
+| `index`       | `Index`    | `"index"`    | Index where the document is stored or should be stored. |
 | `doc`         | `Document` | `"Document"` | Document stored in the segment                               |
 
 

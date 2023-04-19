@@ -36,16 +36,16 @@ import tagion.hibon.HiBONRecord;
 import tagion.testbench.dart.dart_helper_functions;
 
 enum feature = Feature(
-        "Dart pseudo random stress test",
-        ["All test in this bdd should use dart fakenet."]);
+            "Dart pseudo random stress test",
+            ["All test in this bdd should use dart fakenet."]);
 
 alias FeatureContext = Tuple!(
-    AddPseudoRandomData, "AddPseudoRandomData",
-    FeatureGroup*, "result"
+        AddPseudoRandomData, "AddPseudoRandomData",
+        FeatureGroup*, "result"
 );
 
 @safe @Scenario("Add pseudo random data.",
-    [])
+        [])
 class AddPseudoRandomData {
     DART db1;
 
@@ -57,7 +57,7 @@ class AddPseudoRandomData {
 
     this(DartInfo info, const ulong samples, const ulong number_of_records) {
         check(samples % number_of_records == 0,
-            format("Number of samples %s and records %s each time does not match.", samples, number_of_records));
+                format("Number of samples %s and records %s each time does not match.", samples, number_of_records));
         this.info = info;
         this.samples = samples;
         this.number_of_records = number_of_records;
@@ -123,12 +123,11 @@ class AddPseudoRandomData {
             check(equal(recorder_read[].map!(a => a.filed), recorder[].map!(a => a.filed)), "data not the same");
 
         }
-        import tagion.dart.Recorder : Remove;
 
         foreach (i, recorder; recorders.enumerate) {
             writefln("remove %s", i);
             remove_watch.start();
-            db1.modify(recorder, Remove);
+            db1.modify(recorder);
             remove_watch.stop();
             data[i] ~= remove_watch.peek.total!"msecs";
 
