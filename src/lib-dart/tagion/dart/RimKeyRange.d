@@ -34,7 +34,7 @@ RimKeyRange!Range rimKeyRange(Range)(Range range, const Flag!"undo" undo = Yes.u
 }
 
 @safe
-auto rimKeyRange(RecordFactoryX.Recorder rec, const Flag!"undo" undo = Yes.undo) {
+auto rimKeyRange(const(RecordFactoryX.Recorder) rec, const Flag!"undo" undo = Yes.undo) {
 
     return rimKeyRange(rec[], undo);
 }
