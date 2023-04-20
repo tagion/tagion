@@ -1033,9 +1033,28 @@ alias check = Check!DARTException;
                             blockfile.dispose(branch_index);
 
                         }
+                        if (range.front.filed.getType == "name") {
+                            writefln("name record: %s \n type=%s", range.front.filed.toPretty, range.front.type);
+                            writefln("length of range: %s", range.save.walkLength);
+
+                        }
                         auto sub_range = range.save.filter!(a => a.fingerprint == current_archive.fingerprint);
+
                         if (sub_range.empty) {
                             range.add(current_archive);
+                        }
+                        else {
+                            auto remove_add_range = sub_range.save.take(2);
+                            const first = remove_add_range.front;
+                            remove_add_range.popFront;
+                            if (!remove_add_range.empty) {
+                                const second = remove_add_range.front;
+
+                                if (first.fingerprint == second.fingerprint) {
+                                    range.popFront;
+                                }
+                            }
+
                         }
 
                     }
@@ -1240,6 +1259,7 @@ alias check = Check!DARTException;
 version (unittest) {
     import tagion.dart.DARTFakeNet;
     import tagion.dart.RimKeyRange;
+    import std.internal.math.biguintx86;
 }
 ///
 @safe
@@ -2236,12 +2256,13 @@ unittest {
 
         }
         { // name record unittests
+            @recordType("name")
             static struct NameRecord {
                 @label("#name") string name;
-                uint data;
+                string data;
 
                 mixin HiBONRecord!(q{
-                    this(const string name, const uint data) {
+                    this(const string name, const string data) {
                         this.name = name;
                         this.data = data;
                     }
@@ -2254,7 +2275,7 @@ unittest {
 
                 auto recorder = dart_A.recorder();
 
-                auto name_record = NameRecord("hugo", 10);
+                auto name_record = NameRecord("jens", "10");
 
                 recorder.add(name_record);
 
@@ -2265,11 +2286,68 @@ unittest {
                 auto read_recorder = dart_A.loads([DARTIndex(fingerprint)]);
 
                 auto read_name_record = NameRecord(read_recorder[].front.filed);
+                // writefln(read_name_record.toPretty);
+                // dart_A.dump;
+                // auto blockfile = BlockFile(filename_A);
+                // blockfile.dump;
+                // blockfile.close;
                 assert(read_name_record == name_record, "should be the same after reading");
 
-                // we try to insert a namerecord with the same name
-                // but since we have not removed it yet, it should 
-                // not ch                              
+                // we try to insert a namerecord with the same name. 
+                // This should overwrite the namerecord in the database.
+                // We insert a long string in order to see if we are not using the same
+                // index afterwards.
+
+                auto new_recorder = dart_A.recorder();
+
+                auto new_name = NameRecord("jens", 'x'.repeat(200).array);
+                new_recorder.add(new_name);
+                dart_A.modify(new_recorder);
+                auto new_fingerprint = new_recorder[].front.fingerprint;
+
+                auto new_read_recorder = dart_A.loads([DARTIndex(new_fingerprint)]);
+                auto new_read_name = NameRecord(new_read_recorder[].front.filed);
+                // writefln(new_read_name.toPretty);
+                // dart_A.dump;
+                // auto new_blockfile = BlockFile(filename_A);
+                // new_blockfile.dump;
+                // new_blockfile.close;
+                assert(new_read_name == new_name, "Should not be updated, since the previous name record was not removed");
+
+            }
+            {
+                // Namerecord. add the name to the DART
+                // Then perform a manual REMOVE ADD with a different add data.
+                writefln("Name Record ADD REMOVE ADD same");
+                DARTFile.create(filename_B);
+                auto dart_A = new DARTFile(net, filename_B);
+
+                auto recorder = dart_A.recorder();
+
+                auto name_record = NameRecord("hugo", "10");
+
+                recorder.add(name_record);
+
+                dart_A.modify(recorder);
+                writefln("==============================");
+                auto fingerprint = recorder[].front.fingerprint;
+                auto read_recorder = dart_A.loads([DARTIndex(fingerprint)]);
+                auto read_name_record = NameRecord(read_recorder[].front.filed);
+                assert(read_name_record == name_record, "should be the same after reading");
+
+                auto new_recorder = dart_A.recorder();
+                auto new_name_record = NameRecord("hugo", 'x'.repeat(200).array);
+                new_recorder.remove(name_record);
+                new_recorder.add(new_name_record);
+
+                dart_A.modify(new_recorder);
+                dart_A.dump;
+
+                auto new_fingerprint = new_recorder[].front.fingerprint;
+                auto new_read_recorder = dart_A.loads([DARTIndex(new_fingerprint)]);
+                auto new_read_name_record = NameRecord(new_read_recorder[].front.filed);
+                assert(new_read_name_record == new_name_record, "should have been updated after REMOVE ADD");
+
             }
 
         }
