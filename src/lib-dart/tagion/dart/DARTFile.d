@@ -1033,11 +1033,6 @@ alias check = Check!DARTException;
                             blockfile.dispose(branch_index);
 
                         }
-                        if (range.front.filed.getType == "name") {
-                            writefln("name record: %s \n type=%s", range.front.filed.toPretty, range.front.type);
-                            writefln("length of range: %s", range.save.walkLength);
-
-                        }
                         auto sub_range = range.save.filter!(a => a.fingerprint == current_archive.fingerprint);
 
                         if (sub_range.empty) {
@@ -2318,7 +2313,7 @@ unittest {
             {
                 // Namerecord. add the name to the DART
                 // Then perform a manual REMOVE ADD with a different add data.
-                writefln("Name Record ADD REMOVE ADD same");
+                // writefln("Name Record ADD REMOVE ADD same");
                 DARTFile.create(filename_B);
                 auto dart_A = new DARTFile(net, filename_B);
 
@@ -2329,7 +2324,6 @@ unittest {
                 recorder.add(name_record);
 
                 dart_A.modify(recorder);
-                writefln("==============================");
                 auto fingerprint = recorder[].front.fingerprint;
                 auto read_recorder = dart_A.loads([DARTIndex(fingerprint)]);
                 auto read_name_record = NameRecord(read_recorder[].front.filed);
@@ -2341,7 +2335,7 @@ unittest {
                 new_recorder.add(new_name_record);
 
                 dart_A.modify(new_recorder);
-                dart_A.dump;
+                // dart_A.dump;
 
                 auto new_fingerprint = new_recorder[].front.fingerprint;
                 auto new_read_recorder = dart_A.loads([DARTIndex(new_fingerprint)]);
