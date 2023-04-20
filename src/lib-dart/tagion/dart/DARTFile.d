@@ -2330,14 +2330,41 @@ unittest {
                 auto new_name_record = NameRecord("hugo", 'x'.repeat(200).array);
                 new_recorder.remove(name_record);
                 new_recorder.add(new_name_record);
-                new_recorder.each!q{a.dump};
+                // new_recorder.each!q{a.dump};
                 auto rim_key_range = rimKeyRange(new_recorder);
-                writefln("rim key dump");
+                // writefln("rim key dump");
                 rim_key_range.each!q{a.dump};
                 assertThrown!DARTException(dart_A.modify(new_recorder));
 
             }
 
+        }
+
+        { // undo test
+            DARTFile.create(filename_A);
+            auto dart_A = new DARTFile(net, filename_A);
+            RecordFactory.Recorder recorder;
+
+            auto doc = DARTFakeNet.fake_doc(0xABB9_130b_11ef_0923);
+            recorder = dart_A.recorder();
+            recorder.add(doc);
+            dart_A.modify(recorder);
+
+            const bullseye = dart_A.bullseye;
+            writefln("bullseye %s and dump", bullseye);
+            dart_A.dump;
+            auto new_doc = DARTFakeNet.fake_doc(0x2345_130b_1234_1234);
+            recorder = dart_A.recorder();
+            recorder.add(new_doc);
+            dart_A.modify(recorder);
+            const new_bullseye = dart_A.bullseye;
+            writefln("new bullseye %s and dump", new_bullseye);
+            dart_A.dump;
+            dart_A.modify(recorder, Yes.undo);
+            writefln("should be old bullseye %s", dart_A.bullseye);
+            dart_A.dump;
+            assert(dart_A.bullseye != new_bullseye, "Should not be the same as the new bullseye after undo");
+            assert(dart_A.bullseye == bullseye, "should have been reverted to previoius bullseye");
         }
 
     }
