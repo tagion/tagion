@@ -1,6 +1,6 @@
+/// This module handels the rim selector used in the DART modify function
 module tagion.dart.RimKeyRange;
 
-//import std.stdio;
 import std.algorithm;
 import std.range;
 import std.traits;
@@ -12,12 +12,12 @@ import tagion.basic.Types : isBufferType, Buffer;
 import tagion.utils.Miscellaneous : hex;
 import tagion.basic.Debug;
 
-/++
- + Gets the rim key from a buffer
- +
- + Returns;
- +     fingerprint[rim]
- +/
+/**
+ * Gets the rim key from a buffer
+ *
+ * Returns;
+ *     fingerprint[rim]
+ */
 @safe
 ubyte rim_key(F)(F rim_keys, const uint rim) pure if (isBufferType!F) {
     if (rim >= rim_keys.length) {
@@ -26,19 +26,32 @@ ubyte rim_key(F)(F rim_keys, const uint rim) pure if (isBufferType!F) {
     return rim_keys[rim];
 }
 
+/**
+ * Creates a rim selector from a range
+ * Params:
+ *   range = range to be used
+ *   undo = Yes if the range should be undone
+ * Returns: 
+ */
 @safe
 RimKeyRange!Range rimKeyRange(Range)(Range range, const Flag!"undo" undo = Yes.undo)
         if (isInputRange!Range && is(ElementType!Range : const(Archive))) {
     return RimKeyRange!Range(range, undo);
 }
 
+/**
+ * Creates a rim selector range from a Recorder
+ * Params:
+ *   rec = recorder 
+ *   undo = Yes of the recorder should be undone
+ */
 @safe
 auto rimKeyRange(const(RecordFactory.Recorder) rec, const Flag!"undo" undo = Yes.undo) {
 
     return rimKeyRange(rec[], undo);
 }
 
-// Range over a Range with the same key in the a specific rim
+/// Range over a Range with the same key in the a specific rim
 @safe
 struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(ElementType!Range, const(Archive))) {
     alias archive_less = RecordFactory.Recorder.archive_sorted;
@@ -48,20 +61,20 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
         const(Archive)[] _added_archives;
         AdderRange added_range;
         const GetType get_type;
-        this(Range range, const GetType _get_type = null) pure nothrow {
-            this.range = range;
-            added_range = new AdderRange(0);
-            get_type = (_get_type) ? _get_type : Neutral;
-        }
-
-        protected this(RangeContext rhs, const GetType _get_type = null) {
-            _added_archives = rhs._added_archives;
-            range = rhs.range;
-            added_range = new AdderRange(rhs.added_range.index);
-            get_type = (_get_type) ? _get_type : rhs.get_type;
-        }
-
         pure nothrow {
+            this(Range range, const GetType _get_type = null) {
+                this.range = range;
+                added_range = new AdderRange(0);
+                get_type = (_get_type) ? _get_type : Neutral;
+            }
+
+            protected this(RangeContext rhs, const GetType _get_type = null) {
+                _added_archives = rhs._added_archives;
+                range = rhs.range;
+                added_range = new AdderRange(rhs.added_range.index);
+                get_type = (_get_type) ? _get_type : rhs.get_type;
+            }
+
             /**
              * Checks if the range is empty
              * Returns: true if empty
@@ -133,21 +146,23 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
         @safe @nogc
         final class AdderRange {
             size_t index;
-            this(size_t index) pure nothrow {
-                this.index = index;
-            }
+            pure nothrow {
+                this(size_t index) {
+                    this.index = index;
+                }
 
-            bool empty() pure const nothrow @nogc {
-                return index >= _added_archives.length;
-            }
+                bool empty() {
+                    return index >= _added_archives.length;
+                }
 
-            const(Archive) front() const pure nothrow @nogc {
-                return _added_archives[index];
-            }
+                const(Archive) front() {
+                    return _added_archives[index];
+                }
 
-            void popFront() pure nothrow @nogc {
-                if (!empty) {
-                    index++;
+                void popFront() {
+                    if (!empty) {
+                        index++;
+                    }
                 }
             }
         }
@@ -160,6 +175,12 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
     const Flag!"undo" undo;
 
     pure nothrow {
+        /**
+         * Construct an copy of an existing range
+         * Params:
+         *   rhs = Range to be copied
+         *   rim = Sets the rim for the new copy
+         */
         private this(RimKeyRange rhs, const uint rim) {
             ctx = rhs.ctx;
             rim_keys = (rhs.empty) ? Buffer.init : rhs.front.fingerprint[0 .. rim + 1];
@@ -167,13 +188,24 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
             undo = rhs.undo;
         }
 
+        /**
+         * Construct an copy of an existing range
+         * Params:
+         *   rhs = Range to be copied
+         */
         private this(RimKeyRange rhs) {
             ctx = rhs.ctx.save;
             rim_keys = rhs.rim_keys;
             rim = rhs.rim;
             undo = rhs.undo;
         }
-
+        /**
+         * 
+         * Params:
+         *   range = Range to be selected from 
+         *   undo = if Yes it will revert the range
+         *   get_type = set the archive type set function
+         */
         private this(Range range, const Flag!"undo" undo, const GetType get_type = null) {
             this.undo = undo;
             rim = -1;
@@ -182,6 +214,10 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
             rim_keys = null;
         }
 
+        /**
+         * Checks if only one archives are left in the range
+         * Returns: 
+         */
         bool oneLeft() {
             if (rim < 0 || ctx.empty) {
                 return false;
@@ -196,6 +232,12 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
             return this.take(2).walkLength == 1;
         }
 
+        /**
+         * Adds an archive to the current range
+         * The archives should be in the same rim
+         * Params:
+         *   archive = the added element
+         */
         void add(const(Archive) archive)
         in ((rim < 0) || (rim_keys == archive.fingerprint[0 .. rim + 1]))
         do {
@@ -203,39 +245,51 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
         }
 
         /**
-         * Select
+         * Create a new range from this range at the rim
          * Params:
-         *   rim = 
+         *   rim = the rim to be use in the new range
          * Returns: Range for the selected rim 
          */
         RimKeyRange selectRim(const uint rim) {
             return RimKeyRange(this, rim);
         }
 
+        /**
+         * Create a new range from this range at the next rim 
+         * 
+         * Returns: Next range an the rim+1 
+         */
         RimKeyRange nextRim() {
             return RimKeyRange(this, rim + 1);
         }
 
         /**
-             * Checks if the range is empty
-             * Returns: true if empty
-             */
+         * Checks if the range is empty
+         * Returns: true if empty
+         */
         bool empty() @nogc {
             return ctx.empty || (rim >= 0) && (rim_keys != ctx.front.fingerprint[0 .. rim + 1]);
         }
 
+        /**
+         * Progress to the next archive in the list 
+         */
         void popFront() {
             if (!empty) {
                 ctx.popFront;
             }
         }
 
+        /**
+         * 
+         * Returns: first archive in the range
+         */
         const(Archive) front() {
             return ctx.front;
         }
 
         /**
-         *  Creates new range at the current position
+         * Creates new range at the current position
          * Returns: copy of this range
          */
         RimKeyRange save() {
@@ -299,37 +353,6 @@ unittest {
             .map!(t => DARTFakeNet.fake_doc(t))
             .array;
 
-        version (none) { /// identical 
-            auto rec_identical = factory.recorder;
-            { // empty rim_key_range should not be identical
-                auto rim_key_range = rimKeyRange(rec_identical);
-                assert(rim_key_range.empty);
-                assert(!rim_key_range.identical);
-            }
-            rec_identical.insert(documents[1], Archive.Type.ADD);
-            { // with one archive rim_key_range should be identical
-                auto rim_key_range = rimKeyRange(rec_identical);
-                assert(!rim_key_range.empty);
-                assert(!rim_key_range.identical);
-                assert(!rim_key_range.selectRim(00).identical);
-            }
-            rec_identical.insert(documents[1], Archive.Type.REMOVE);
-            { // with two archives one ADD and one REMOVE with same fingerprint should be identical
-                auto rim_key_range = rimKeyRange(rec_identical);
-                assert(!rim_key_range.empty);
-                assert(!rim_key_range.identical);
-                assert(rim_key_range.selectRim(00).identical);
-            }
-
-            rec_identical.insert(documents[2], Archive.Type.ADD);
-            { // If not all the archives have the with same fingerprint should be identical
-                auto rim_key_range = rimKeyRange(rec_identical);
-                assert(!rim_key_range.empty);
-                assert(!rim_key_range.identical);
-                assert(!rim_key_range.selectRim(00).identical);
-            }
-
-        }
         // Create a recorder from the first 9 documents 
         auto rec = factory.recorder(documents.take(3), Archive.Type.ADD);
         { // Check the the rim-key range is the same as the recorder
@@ -443,28 +466,13 @@ unittest {
         rec.insert(documents[5], Archive.Type.REMOVE);
 
         {
-            auto rim_key_range = rimKeyRange(rec);
             traverse(rec);
         }
 
         { //
-            auto rim_key_range = rimKeyRange(rec[]);
             traverse(rec, true);
         }
 
     }
 
 }
-
-/*
-Archive 00000000eca47f6c000000000000000000000000000000000000000000000000 ADD 7FB6D8B0BF40
-Archive 0000857d724359c0000000000000000000000000000000000000000000000000 ADD 7FB6D8B0BFC0
-Archive 226b8f02cdf58b17000000000000000000000000000000000000000000000000 ADD 7FB6D8B183C0
-Archive 264462670b047457000000000000000000000000000000000000000000000000 ADD 7FB6D8B181C0
-Archive 3a4b19acadb38259000000000000000000000000000000000000000000000000 ADD 7FB6D8B18340
-Archive 4b4d46990ab7aeff000000000000000000000000000000000000000000000000 ADD 7FB6D8B18040
-Archive 57a0159df5522c06000000000000000000000000000000000000000000000000 ADD 7FB6D8B180C0
-Archive 8715fb635891de6d000000000000000000000000000000000000000000000000 ADD 7FB6D8B18140
-Archive 9efb5341ed4f7037000000000000000000000000000000000000000000000000 ADD 7FB6D8B18240
-Archive df2dede8a0350f3d000000000000000000000000000000000000000000000000 ADD 7FB6D8B182C0
-*/
