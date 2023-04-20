@@ -34,9 +34,9 @@ ubyte rim_key(F)(F rim_keys, const uint rim) pure if (isBufferType!F) {
  * Returns: 
  */
 @safe
-RimKeyRange!Range rimKeyRange(Range)(Range range, const Flag!"undo" undo = Yes.undo)
+RimKeyRange!Range rimKeyRange(Range)(Range range, const Flag!"undo" undo = Yes.undo, const GetType get_type = null)
         if (isInputRange!Range && is(ElementType!Range : const(Archive))) {
-    return RimKeyRange!Range(range, undo);
+    return RimKeyRange!Range(range, undo, get_type);
 }
 
 /**
@@ -47,7 +47,6 @@ RimKeyRange!Range rimKeyRange(Range)(Range range, const Flag!"undo" undo = Yes.u
  */
 @safe
 auto rimKeyRange(const(RecordFactory.Recorder) rec, const Flag!"undo" undo = Yes.undo) {
-
     return rimKeyRange(rec[], undo);
 }
 
@@ -87,6 +86,7 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
              *  Progress one archive
              */
             void popFront() {
+                const previous = front;
                 if (!added_range.empty && !range.empty) {
                     if (archive_less(added_range.front, range.front)) {
                         added_range.popFront;
@@ -100,6 +100,9 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
                 }
                 else if (!added_range.empty) {
                     added_range.popFront;
+                }
+                if (!empty && (previous.fingerprint == front.fingerprint)) {
+                    popFront;
                 }
             }
             /**
@@ -288,6 +291,9 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
             return ctx.front;
         }
 
+        const(Archive.Type) type() {
+            return ctx.type;
+        }
         /**
          * Creates new range at the current position
          * Returns: copy of this range
@@ -305,7 +311,7 @@ version (unittest) {
     import std.stdio;
 
     @safe
-    void traverse(const(RecordFactory.Recorder) recorder, const bool undo = false) {
+    void traverse(const(RecordFactory.Recorder) recorder, const Flag!"undo" = Yes.undo) {
         void inner_traverse(RimRange)(RimRange rim_key_range) {
             while (!rim_key_range.empty) {
                 if (rim_key_range.oneLeft) {
@@ -313,13 +319,17 @@ version (unittest) {
                     rim_key_range.popFront;
                 }
                 else if (rim_key_range.front.type == Archive.Type.REMOVE) {
-                    //writefln("Remove");
-                    //rim_key_range.front.dump;
+                    writefln("Remove");
+                    rim_key_range.front.dump;
                     rim_key_range.popFront;
                 }
                 else {
-                    //writefln("Range rim=%d rim_keys=%s", rim_key_range.rim, rim_key_range.rim_keys.hex);
-                    //rim_key_range.save.each!q{a.dump};
+                    writefln("Range rim=%d rim_keys=%s", rim_key_range.rim, rim_key_range.rim_keys.hex);
+                    auto r = rim_key_range.save;
+                    while (!r.empty) {
+                        writefln("%s get_type=%s", r.front, r.type);
+                        r.popFront;
+                    }
                     inner_traverse(rim_key_range.nextRim);
                 }
             }
@@ -439,38 +449,37 @@ unittest {
                 .until!(doc => doc == DARTFakeNet.fake_doc(ulong.max))(No.openRight),
                 Archive.Type.ADD);
 
-        version (none) { /// Check selectRim
-            auto rim_key_range = rimKeyRange(rec);
-            { // Check the range lengths of rim = 00 
-                auto rim_key_copy = rim_key_range.save;
-                const rim = 00;
-                assert(rim_key_copy.selectRim(rim).identical);
-                assert(rim_key_copy.selectRim(rim).walkLength == 1);
-                assert(rim_key_copy.selectRim(rim).walkLength == 9);
-                assert(rim_key_copy.selectRim(rim).walkLength == 1);
-            }
-
-            { // Check the range lengths of rim = 01 
-                auto rim_key_copy = rim_key_range.save;
-                const rim = 01;
-                assert(rim_key_copy.selectRim(rim).walkLength == 1);
-                assert(rim_key_copy.selectRim(rim).walkLength == 1);
-                assert(rim_key_copy.selectRim(rim).walkLength == 8);
-                assert(rim_key_copy.selectRim(rim).walkLength == 1);
-            }
-
+        auto rim_key_range = rimKeyRange(rec);
+        { // Check the range lengths of rim = 00 
+            auto rim_key_copy = rim_key_range.save;
+            const rim = 00;
+            assert(rim_key_copy.selectRim(rim).walkLength == 1);
+            assert(rim_key_copy.selectRim(rim).walkLength == 9);
+            assert(rim_key_copy.selectRim(rim).walkLength == 1);
         }
+
+        { // Check the range lengths of rim = 01 
+            auto rim_key_copy = rim_key_range.save;
+            const rim = 01;
+            assert(rim_key_copy.selectRim(rim).walkLength == 1);
+            assert(rim_key_copy.selectRim(rim).walkLength == 1);
+            assert(rim_key_copy.selectRim(rim).walkLength == 8);
+            assert(rim_key_copy.selectRim(rim).walkLength == 1);
+        }
+
         const rec_len = rec.length;
         // Checks that the 
         rec.insert(documents[3], Archive.Type.REMOVE);
         rec.insert(documents[5], Archive.Type.REMOVE);
 
         {
+            writeln("DODODODOODOD");
             traverse(rec);
         }
 
-        { //
-            traverse(rec, true);
+        version (none) { //
+            writefln("UNDOOOO");
+            traverse(rec, Yes.undo);
         }
 
     }
