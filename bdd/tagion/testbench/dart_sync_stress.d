@@ -40,15 +40,14 @@ int _main(string[] args) {
         const string dartfilename2 = buildPath(module_path, "dart_sync_start_slave".setExtension(FileExtension.dart));
 
         SecureNet net;
-        bool real_hashes;
 
-        if (!real_hashes) {
-            net = new DARTFakeNet("very secret");
-        }
-        else {
+        version(REAL_HASHES) {
             net = new StdSecureNet();
             net.generateKeyPair("very secret");
+        } else {
+            net = new DARTFakeNet("very secret");
         }
+
 
         const hirpc = HiRPC(net);
 

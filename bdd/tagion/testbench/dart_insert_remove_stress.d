@@ -42,14 +42,13 @@ int _main(string[] args) {
                 .dart));
 
         SecureNet net;
-        bool real_hashes;
 
-        if (!real_hashes) {
-            net = new DARTFakeNet("very secret");
-        }
-        else {
+        version(REAL_HASHES) {
             net = new StdSecureNet();
             net.generateKeyPair("very secret");
+        }
+        else {
+            net = new DARTFakeNet("very secret");
         }
 
         const hirpc = HiRPC(net);
