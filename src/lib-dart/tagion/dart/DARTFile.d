@@ -2343,7 +2343,7 @@ unittest {
                 // new_recorder.each!q{a.dump};
                 auto rim_key_range = rimKeyRange(new_recorder);
                 // writefln("rim key dump");
-                rim_key_range.each!q{a.dump};
+                // rim_key_range.each!q{a.dump};
                 assertThrown!DARTException(dart_A.modify(new_recorder));
 
             }
