@@ -1038,19 +1038,6 @@ alias check = Check!DARTException;
                         if (sub_range.empty) {
                             range.add(current_archive);
                         }
-                        version (none) {
-                            auto remove_add_range = sub_range.save.take(2);
-                            const first = remove_add_range.front;
-                            remove_add_range.popFront;
-                            if (!remove_add_range.empty) {
-                                const second = remove_add_range.front;
-
-                                if (first.fingerprint == second.fingerprint) {
-                                    range.popFront;
-                                }
-                            }
-
-                        }
 
                     }
                 }
@@ -1095,6 +1082,13 @@ alias check = Check!DARTException;
         if (modifyrecords.empty) {
             return _fingerprint;
         }
+
+        
+
+        .check(modifyrecords.length <= 1 ||
+                !modifyrecords[].slide(2).map!(a => a.front.fingerprint == a.dropOne.front.fingerprint)
+                    .any,
+                "cannot have multiple operations on same fingerprint in one modify");
 
         auto range = rimKeyRange(modifyrecords, undo);
         immutable new_root = traverse_dart(range, blockfile.masterBlock.root_index);
@@ -2312,8 +2306,11 @@ unittest {
             }
             {
                 // Namerecord. add the name to the DART
-                // Then perform a manual REMOVE ADD with a different add data.
-                // writefln("Name Record ADD REMOVE ADD same");
+                // Then perform a manual REMOVE ADD with a different add data in the same recorder
+                // should throw an exception since we cannot have multiple adds
+                // and removes in same recorder
+                import std.exception : assertThrown;
+
                 DARTFile.create(filename_B);
                 auto dart_A = new DARTFile(net, filename_B);
 
@@ -2337,13 +2334,7 @@ unittest {
                 auto rim_key_range = rimKeyRange(new_recorder);
                 writefln("rim key dump");
                 rim_key_range.each!q{a.dump};
-                dart_A.modify(new_recorder);
-                dart_A.dump;
-
-                auto new_fingerprint = new_recorder[].front.fingerprint;
-                auto new_read_recorder = dart_A.loads([DARTIndex(new_fingerprint)]);
-                auto new_read_name_record = NameRecord(new_read_recorder[].front.filed);
-                assert(new_read_name_record == new_name_record, "should have been updated after REMOVE ADD");
+                assertThrown!DARTException(dart_A.modify(new_recorder));
 
             }
 
