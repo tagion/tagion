@@ -513,9 +513,9 @@ alias check = Check!DARTException;
         }
 
         /** 
-    * Check if the branches has indices
-    * Returns: true if no indices
-    */
+        * Check if the branches has indices
+        * Returns: true if no indices
+        */
         bool empty() pure const {
             if (_indices !is null) {
                 import std.algorithm.searching : any;
@@ -526,9 +526,9 @@ alias check = Check!DARTException;
         }
 
         /**
-     * Merkle root of the branches
-     * Returns: fingerprint
-     */
+         * Merkle root of the branches
+         * Returns: fingerprint
+         */
         private immutable(Buffer) fingerprint(
                 DARTFile dartfile) {
             if (merkleroot is null) {
@@ -658,8 +658,8 @@ alias check = Check!DARTException;
         }
 
         /* 
-     * Move to next data element in the range
-     */
+         * Move to next data element in the range
+         */
         @trusted
         final void popFront() {
             call;
