@@ -403,11 +403,10 @@ const Neutral = delegate(const(Archive) a) => a.type;
 
     @label(STUB, true) const(DARTIndex) fingerprint; /// Stub hash-pointer used in sharding
     @label("$a", true) const Document filed; /// The actual data strute stored 
+    private @label("$t", true) Type _type; /// Acrhive type
     enum archiveLabel = GetLabel!(this.filed).name;
     enum fingerprintLabel = GetLabel!(this.fingerprint).name;
     enum typeLabel = GetLabel!(this._type).name;
-    private @label("$t", true) Type _type; /// Acrhive type
-    protected @label("") bool _done; /// Marks if the operation was done on the archive
 
     mixin JSONString;
     /* 
@@ -529,28 +528,12 @@ const Neutral = delegate(const(Archive) a) => a.type;
         return T.isRecord(filed);
     }
 
-    final bool done() const pure nothrow @nogc {
-        return _done;
-    }
-
-    /* 
+    /**
      * Type of the archive
      * Returns: type 
      */
     final Type type() const pure nothrow @nogc {
         return _type;
-    }
-
-    /**
-     * An Archive is only allowed to be done once
-     */
-    package final void doit() const pure nothrow @trusted
-    in {
-        assert(!_done, "An Archive can only be done once");
-    }
-    do {
-        auto force_done = cast(bool*)(&_done);
-        *force_done = true;
     }
 
     /**
