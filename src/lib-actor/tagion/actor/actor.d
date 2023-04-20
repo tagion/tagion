@@ -6,6 +6,8 @@ import std.format : format;
 import std.typecons;
 import core.thread;
 import std.exception;
+import std.traits;
+
 import tagion.basic.tagionexceptions : TagionException, TaskFailure;
 
 bool all(Ctrl[Tid] aa, Ctrl ctrl) {
@@ -187,8 +189,6 @@ nothrow void setState(Ctrl ctrl) {
     }
 }
 
-import std.traits;
-
 /**
  * Base template
  * All members should be static
@@ -232,15 +232,8 @@ static:
         stop = true;
     }
 
-    /// Default fail handler. When overriding this, unknown exceptions should always be sent to the owner
-    version (none) void failHandler(TaskFailure t) {
-        writeln("Received Exce: ", t);
-        immutable exception = cast(immutable) t;
-        assumeWontThrow(ownerTid.prioritySend(exception));
-    }
-
     @trusted
-    void taskfailure(immutable(TaskFailure) t) nothrow {
+    void failHandler(immutable(TaskFailure) t) nothrow {
         assumeWontThrow({
             if (ownerTid != Tid.init) {
                 ownerTid.send(t);
@@ -255,6 +248,10 @@ static:
      */
     void unknown(Variant message) {
         throw new UnknownMessage("No delegate to deal with message: %s".format(message));
+    }
+
+    void fail(Msg!"fail") {
+        throw new TagionException("Big fail");
     }
 
     /// The tasks that get run when you call spawnActor!
@@ -301,13 +298,13 @@ static:
                             T, // The message handlers you pass to your Actor template
                             &signal,
                             &control,
+                            &failHandler,
                             &ownerTerminated,
-                            &taskfailure,
                             &unknown,
                     );
                 }
                 catch (Throwable e) {
-                    immutable failure = taskFailure(e, "some_unknown_task");
+                    immutable failure = TaskFailure(cast(immutable) e, "some_unknown_task");
                     assumeWontThrow(ownerTid.prioritySend(failure));
                 }
             }
