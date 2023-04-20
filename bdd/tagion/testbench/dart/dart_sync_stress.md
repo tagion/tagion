@@ -1,5 +1,4 @@
 Feature Sync insert random stress test
-This test uses dartfakenet to randomly add and remove archives in the same recorder. 
 
 Scenario add remove and read the result
 Given i two dartfiles.

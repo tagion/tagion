@@ -31,9 +31,7 @@ import tagion.testbench.dart.dart_helper_functions;
 
 enum feature = Feature(
             "Sync insert random stress test",
-            [
-        "This test uses dartfakenet to randomly add and remove archives in the same recorder."
-]);
+            []);
 
 alias FeatureContext = Tuple!(
         AddRemoveAndReadTheResult, "AddRemoveAndReadTheResult",
