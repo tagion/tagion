@@ -45,7 +45,7 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
     @safe
     final class RangeContext {
         Range range;
-        Archive[] _added_archives;
+        const(Archive)[] _added_archives;
         AdderRange added_range;
         const GetType get_type;
         this(Range range, const GetType _get_type = null) pure nothrow {
@@ -141,7 +141,7 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
                 return index >= _added_archives.length;
             }
 
-            Archive front() pure nothrow @nogc {
+            const(Archive) front() const pure nothrow @nogc {
                 return _added_archives[index];
             }
 
@@ -196,12 +196,18 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
             return this.take(2).walkLength == 1;
         }
 
-        void add(Archive archive)
+        void add(const(Archive) archive)
         in ((rim < 0) || (rim_keys == archive.fingerprint[0 .. rim + 1]))
         do {
-            ctx._added_archives ~= (archive);
+            ctx._added_archives ~= archive;
         }
 
+        /**
+         * Select
+         * Params:
+         *   rim = 
+         * Returns: Range for the selected rim 
+         */
         RimKeyRange selectRim(const uint rim) {
             return RimKeyRange(this, rim);
         }
