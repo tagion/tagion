@@ -34,7 +34,7 @@ ubyte rim_key(F)(F rim_keys, const uint rim) pure if (isBufferType!F) {
  * Returns: 
  */
 @safe
-RimKeyRange!Range rimKeyRange(Range)(Range range, const Flag!"undo" undo = Yes.undo)
+RimKeyRange!Range rimKeyRange(Range)(Range range, const Flag!"undo" undo = No.undo)
         if (isInputRange!Range && is(ElementType!Range : const(Archive))) {
     return RimKeyRange!Range(range, undo);
 }
@@ -46,7 +46,7 @@ RimKeyRange!Range rimKeyRange(Range)(Range range, const Flag!"undo" undo = Yes.u
  *   undo = Yes of the recorder should be undone
  */
 @safe
-auto rimKeyRange(const(RecordFactory.Recorder) rec, const Flag!"undo" undo = Yes.undo) {
+auto rimKeyRange(const(RecordFactory.Recorder) rec, const Flag!"undo" undo = No.undo) {
 
     return rimKeyRange(rec[], undo);
 }
@@ -313,7 +313,7 @@ version (unittest) {
     import std.stdio;
 
     @safe
-    void traverse(const(RecordFactory.Recorder) recorder, const bool undo = false) {
+    void traverse(const(RecordFactory.Recorder) recorder, const Flag!"undo" = No.undo) {
         void inner_traverse(RimRange)(RimRange rim_key_range) {
             while (!rim_key_range.empty) {
                 if (rim_key_range.oneLeft) {
@@ -478,7 +478,7 @@ unittest {
         }
 
         { //
-            traverse(rec, true);
+            traverse(rec, Yes.undo);
         }
 
     }
