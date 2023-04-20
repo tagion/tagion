@@ -6,7 +6,8 @@ import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
 import tagion.actor.actor;
 import std.concurrency;
-import tagion.basic.tagionexceptions : TagionException;
+import tagion.basic.tagionexceptions : TagionException, TaskFailure;
+import tagion.testbench.services.actor_message : receiveOnlyTimeout;
 
 import std.meta;
 import std.stdio;
@@ -39,10 +40,13 @@ class Fatal : TagionException {
 struct SetUpForFailure {
 static:
     void exceptional1(Msg!"recoverable") {
+        writeln("oh noes");
         throw new Recoverable("I am fail");
     }
 
     void exceptional2(Msg!"fatal") {
+        writeln("oh noes");
+        //assert(0, "big oof");
         throw new Fatal("I am big fail");
     }
 
@@ -71,7 +75,7 @@ static:
         childrenState[childHandle.tid] = Ctrl.STARTING;
 
         while (!(childrenState.all(Ctrl.ALIVE))) {
-            CtrlMsg msg = receiveOnly!CtrlMsg; // HACK: don't use receiveOnly
+            CtrlMsg msg = receiveOnlyTimeout!CtrlMsg; // HACK: don't use receiveOnly
             childrenState[msg.tid] = msg.ctrl;
         }
     }
@@ -82,15 +86,7 @@ static:
     //    assumeWontThrow(ownerTid.prioritySend(exception));
     //}
 
-    void disappoint(Msg!"disappoint", Oof disappointment) {
-        final switch (disappointment) {
-        case Oof.big:
-            childHandle.send(Msg!"fatal"());
-            break;
-        case Oof.small:
-            childHandle.send(Msg!"recoverable"());
-            break;
-        }
+    void disappoint(Msg!"disappoint") {
     }
 
     mixin Actor!(&disappoint); /// Turns the struct into an Actor
@@ -107,7 +103,7 @@ class SupervisorWithFailingChild {
     @Given("a actor #super")
     Document aActorSuper() @trusted {
         supervisorHandle = spawnActor!SetUpForDisappointment(supervisor_task_name);
-        Ctrl ctrl = receiveOnly!CtrlMsg.ctrl;
+        Ctrl ctrl = receiveOnlyTimeout!CtrlMsg.ctrl;
         check(ctrl is Ctrl.STARTING, "Supervisor is not starting");
 
         return result_ok;
@@ -115,38 +111,50 @@ class SupervisorWithFailingChild {
 
     @When("the #super and the #child has started")
     Document hasStarted() @trusted {
-        auto ctrl = receiveOnly!CtrlMsg.ctrl;
+        auto ctrl = receiveOnlyTimeout!CtrlMsg.ctrl;
         check(ctrl is Ctrl.ALIVE, "Supervisor is not running");
 
+        Tid childTid = locate(child_task_name);
+        check(childTid !is Tid.init, "Child is not running");
+
         return result_ok;
     }
 
-    version (none) @Then("the #super should send a message to the #child which results in a fail")
+    @Then("the #super should send a message to the #child which results in a fail")
     Document aFail() @trusted {
-        supervisorHandle.send(Msg!"disappoint"(), Oof.big);
+        //supervisorHandle.send(Msg!"disappoint"(), Oof.big);
+        //supervisorHandle.send(Msg!"fatal"());
+        childHandle.send(Msg!"fatal"());
         return result_ok;
     }
 
-    version (none) @Then("the #super actor should catch the #child which failed")
-    Document whichFailed() {
-        return Document();
+    @Then("the #super actor should catch the #child which failed")
+    Document whichFailed() @trusted {
+        immutable TaskFailure tf = receiveOnly!(immutable(TaskFailure));
+        Tid childTid = locate(child_task_name);
+        check(childTid !is Tid.init, "Child is not running anymore");
+        return result_ok;
     }
 
-    version (none) @Then("the #super actor should stop #child and restart it")
+    @Then("the #super actor should stop #child and restart it")
     Document restartIt() {
         return Document();
     }
 
     @Then("the #super should send a message to the #child which results in a different fail")
     Document differentFail() @trusted {
-        supervisorHandle.send(Msg!"disappoint"(), Oof.small);
+        /// supervisorHandle.send(Msg!"disappoint"(), Oof.small);
+        childHandle.send("hej", "dig");
+        //childHandle.send(Msg!"Recoverable"());
         return result_ok;
     }
 
     @Then("the #super actor should let the #child keep running")
     Document keepRunning() @trusted {
-        //writeln(receiveOnly!CtrlMsg);
-        writeln(receiveOnly!Recoverable);
+        immutable TaskFailure tf = receiveOnly!(immutable(TaskFailure));
+        //writeln(typeof(tc));
+        ///check((tf.throwable is MessageMismatch), "Failure was not of type MessageMismatch");
+
         return result_ok;
     }
 
@@ -155,6 +163,9 @@ class SupervisorWithFailingChild {
         supervisorHandle.send(Sig.STOP);
         auto ctrl = receiveOnly!CtrlMsg;
         check(ctrl.ctrl is Ctrl.END, "Supervisor did not stop");
+
+        Tid childTid = locate(child_task_name);
+        check(childTid is Tid.init, "Child is still running");
 
         return result_ok;
     }
