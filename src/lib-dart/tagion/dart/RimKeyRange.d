@@ -314,7 +314,6 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
 }
 
 version (unittest) {
-    import std.stdio;
     import std.typecons : Tuple;
     import tagion.dart.DARTBasic : DARTIndex;
 
@@ -328,12 +327,10 @@ version (unittest) {
         void inner_traverse(RimRange)(RimRange rim_key_range) {
             while (!rim_key_range.empty) {
                 if (rim_key_range.oneLeft) {
-                    rim_key_range.front.dump;
                     result ~= TraverseData(rim_key_range.front.fingerprint, rim_key_range.type);
                     rim_key_range.popFront;
                 }
                 else if (rim_key_range.front.type == Archive.Type.REMOVE) {
-                    rim_key_range.front.dump;
                     result ~= TraverseData(rim_key_range.front.fingerprint, rim_key_range.type);
                     rim_key_range.popFront;
                 }
@@ -491,7 +488,6 @@ unittest {
 
         { // Check that the order of the archives are the same in the rim-key-range
             const result = traverse(rec);
-            result.each!(a => writefln("%s %s", a.fingerprint.hex, a.type));
             assert(equal(rec[].map!q{a.fingerprint}, result.map!q{a.fingerprint}));
             assert(equal(rec[].map!q{a.type}, result.map!q{a.type}));
 
@@ -500,7 +496,6 @@ unittest {
         { // Checks the undo
             // The order should be reversed and the type should be flipped ADD<->REMOVE
             const result = traverse(rec, Yes.undo);
-            result.each!(a => writefln("%s %s", a.fingerprint.hex, a.type));
             assert(equal(rec[].retro.map!q{a.fingerprint}, result.map!q{a.fingerprint}));
             assert(equal(rec[].retro.map!(a => Flip(a)), result.map!q{a.type}));
         }
