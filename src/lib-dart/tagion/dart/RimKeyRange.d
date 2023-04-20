@@ -42,21 +42,23 @@ auto rimKeyRange(const(RecordFactory.Recorder) rec, const Flag!"undo" undo = Yes
 @safe
 struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(ElementType!Range, const(Archive))) {
     alias archive_less = RecordFactory.Recorder.archive_sorted;
-
     @safe
     final class RangeContext {
         Range range;
         Archive[] _added_archives;
         AdderRange added_range;
-        this(Range range) pure nothrow {
+        const GetType get_type;
+        this(Range range, const GetType _get_type=null) pure nothrow {
             this.range = range;
             added_range = new AdderRange(0);
+            get_type=(_get_type)?_get_type:Neutral;
         }
 
-        protected this(RangeContext rhs) {
+        protected this(RangeContext rhs, const GetType _get_type=null) {
             _added_archives = rhs._added_archives;
             range = rhs.range;
             added_range = new AdderRange(rhs.added_range.index);
+            get_type=(_get_type)?_get_type:rhs.get_type;
         }
 
         pure nothrow {
@@ -111,6 +113,22 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
                 return new RangeContext(this);
             }
 
+            Archive.Type type() {
+                if (!added_range.empty && !range.empty) {
+                    if (archive_less(added_range.front, range.front)) {
+                        return added_range.front.type;
+                    }
+                    return get_type(range.front);
+                }
+                if (!range.empty) {
+                    return get_type(range.front);
+                }
+                else if (!added_range.empty) {
+                    return get_type(added_range.front);
+                }
+                return Archive.Type.NONE;
+                 
+            }
         }
         @safe @nogc
         final class AdderRange {
@@ -169,26 +187,25 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
         ctx._added_archives ~= (archive);
     }
 
-    private this(RimKeyRange rhs, const uint rim) {
+    private this(RimKeyRange rhs, const uint rim) pure nothrow {
         ctx = rhs.ctx;
         rim_keys = (rhs.empty) ? Buffer.init : rhs.front.fingerprint[0 .. rim + 1];
         this.rim = rim & int.max;
         undo = rhs.undo;
-
     }
 
-    private this(RimKeyRange rhs) pure nothrow {
+    private this(RimKeyRange rhs)  pure nothrow {
         ctx = rhs.ctx.save;
         rim_keys = rhs.rim_keys;
         rim = rhs.rim;
         undo = rhs.undo;
     }
 
-    private this(Range range, const Flag!"undo" undo) {
+    private this(Range range, const Flag!"undo" undo, const GetType get_type=null) {
         this.undo = undo;
         rim = -1;
         //auto range_save=_range.save;
-        ctx = new RangeContext(range);
+        ctx = new RangeContext(range, get_type);
         rim_keys = null;
     }
 

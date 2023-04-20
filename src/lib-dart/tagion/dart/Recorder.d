@@ -384,7 +384,7 @@ class RecordFactory {
     }
 }
 
-alias GetType = Archive.Type delegate(const(Archive)) pure @safe;
+alias GetType = Archive.Type delegate(const(Archive)) pure nothrow @safe;
 
 const Add = delegate(const(Archive) a) => Archive.Type.ADD;
 const Remove = delegate(const(Archive) a) => Archive.Type.REMOVE;
