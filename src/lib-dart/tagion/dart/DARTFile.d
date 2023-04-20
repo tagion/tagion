@@ -2361,7 +2361,7 @@ unittest {
             dart_A.modify(recorder);
 
             const bullseye = dart_A.bullseye;
-            dart_A.dump;
+            // dart_A.dump;
             auto new_doc = DARTFakeNet.fake_doc(0x2345_130b_1234_1234);
             recorder = dart_A.recorder();
             recorder.add(new_doc);
@@ -2373,4 +2373,42 @@ unittest {
         }
 
     }
+
+    { // undo test both with remove and adds
+        DARTFile.create(filename_A);
+        auto dart_A = new DARTFile(net, filename_A);
+        RecordFactory.Recorder recorder;
+
+        const ulong[] datas = [
+            0xABB9_130b_11ef_0923,
+            0x1234_5678_9120_1234,
+            0xABCD_1234_0000_0000,
+        ];
+        auto docs = datas.map!(a => DARTFakeNet.fake_doc(a));
+
+        recorder = dart_A.recorder();
+
+        foreach (doc; docs) {
+            recorder.add(doc);
+        }
+
+        dart_A.modify(recorder);
+
+        const bullseye = dart_A.bullseye;
+        const fingerprints = recorder[].map!(a => a.fingerprint).array;
+
+        auto new_doc = DARTFakeNet.fake_doc(0x2345_130b_1234_1234);
+        recorder = dart_A.recorder();
+        recorder.add(new_doc);
+        foreach (fingerprint; fingerprints) {
+            recorder.remove(fingerprint);
+        }
+        dart_A.modify(recorder);
+        const new_bullseye = dart_A.bullseye;
+        dart_A.modify(recorder, Yes.undo);
+        assert(dart_A.bullseye != new_bullseye, "Should not be the same as the new bullseye after undo");
+        assert(dart_A.bullseye == bullseye, "should have been reverted to previoius bullseye");
+
+    }
+
 }
