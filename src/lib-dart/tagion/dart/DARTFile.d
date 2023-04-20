@@ -135,9 +135,9 @@ alias check = Check!DARTException;
     }
 
     protected enum _params = [
-            "fingerprints",
-            "bullseye",
-        ];
+        "fingerprints",
+        "bullseye",
+    ];
 
     mixin(EnumText!("Params", _params));
 
@@ -513,9 +513,9 @@ alias check = Check!DARTException;
         }
 
         /** 
-    * Check if the branches has indices
-    * Returns: true if no indices
-    */
+        * Check if the branches has indices
+        * Returns: true if no indices
+        */
         bool empty() pure const {
             if (_indices !is null) {
                 import std.algorithm.searching : any;
@@ -526,9 +526,9 @@ alias check = Check!DARTException;
         }
 
         /**
-     * Merkle root of the branches
-     * Returns: fingerprint
-     */
+         * Merkle root of the branches
+         * Returns: fingerprint
+         */
         private immutable(Buffer) fingerprint(
                 DARTFile dartfile) {
             if (merkleroot is null) {
@@ -658,8 +658,8 @@ alias check = Check!DARTException;
         }
 
         /* 
-     * Move to next data element in the range
-     */
+         * Move to next data element in the range
+         */
         @trusted
         final void popFront() {
             call;
@@ -1098,7 +1098,7 @@ alias check = Check!DARTException;
         .check(modifyrecords.length <= 1 ||
                 !modifyrecords[].slide(2).map!(a => a.front.fingerprint == a.dropOne.front.fingerprint)
                     .any,
-                    "cannot have multiple operations on same fingerprint in one modify");
+                "cannot have multiple operations on same fingerprint in one modify");
 
         auto range = rimKeyRange!undo(modifyrecords);
         immutable new_root = traverse_dart(range, blockfile.masterBlock.root_index);
@@ -2340,15 +2340,75 @@ unittest {
                 auto new_name_record = NameRecord("hugo", 'x'.repeat(200).array);
                 new_recorder.remove(name_record);
                 new_recorder.add(new_name_record);
-                new_recorder.each!q{a.dump};
+                // new_recorder.each!q{a.dump};
                 auto rim_key_range = rimKeyRange(new_recorder);
-                writefln("rim key dump");
-                rim_key_range.each!q{a.dump};
+                // writefln("rim key dump");
+                // rim_key_range.each!q{a.dump};
                 assertThrown!DARTException(dart_A.modify(new_recorder));
 
             }
 
         }
 
+        { // undo test
+            DARTFile.create(filename_A);
+            auto dart_A = new DARTFile(net, filename_A);
+            RecordFactory.Recorder recorder;
+
+            auto doc = DARTFakeNet.fake_doc(0xABB9_130b_11ef_0923);
+            recorder = dart_A.recorder();
+            recorder.add(doc);
+            dart_A.modify(recorder);
+
+            const bullseye = dart_A.bullseye;
+            // dart_A.dump;
+            auto new_doc = DARTFakeNet.fake_doc(0x2345_130b_1234_1234);
+            recorder = dart_A.recorder();
+            recorder.add(new_doc);
+            dart_A.modify(recorder);
+            const new_bullseye = dart_A.bullseye;
+            dart_A.modify(recorder, Yes.undo);
+            assert(dart_A.bullseye != new_bullseye, "Should not be the same as the new bullseye after undo");
+            assert(dart_A.bullseye == bullseye, "should have been reverted to previoius bullseye");
+        }
+
     }
+
+    { // undo test both with remove and adds
+        DARTFile.create(filename_A);
+        auto dart_A = new DARTFile(net, filename_A);
+        RecordFactory.Recorder recorder;
+
+        const ulong[] datas = [
+            0xABB9_130b_11ef_0923,
+            0x1234_5678_9120_1234,
+            0xABCD_1234_0000_0000,
+        ];
+        auto docs = datas.map!(a => DARTFakeNet.fake_doc(a));
+
+        recorder = dart_A.recorder();
+
+        foreach (doc; docs) {
+            recorder.add(doc);
+        }
+
+        dart_A.modify(recorder);
+
+        const bullseye = dart_A.bullseye;
+        const fingerprints = recorder[].map!(a => a.fingerprint).array;
+
+        auto new_doc = DARTFakeNet.fake_doc(0x2345_130b_1234_1234);
+        recorder = dart_A.recorder();
+        recorder.add(new_doc);
+        foreach (fingerprint; fingerprints) {
+            recorder.remove(fingerprint);
+        }
+        dart_A.modify(recorder);
+        const new_bullseye = dart_A.bullseye;
+        dart_A.modify(recorder, Yes.undo);
+        assert(dart_A.bullseye != new_bullseye, "Should not be the same as the new bullseye after undo");
+        assert(dart_A.bullseye == bullseye, "should have been reverted to previoius bullseye");
+
+    }
+
 }
