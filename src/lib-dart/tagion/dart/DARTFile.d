@@ -135,9 +135,9 @@ alias check = Check!DARTException;
     }
 
     protected enum _params = [
-        "fingerprints",
-        "bullseye",
-    ];
+            "fingerprints",
+            "bullseye",
+        ];
 
     mixin(EnumText!("Params", _params));
 
@@ -952,6 +952,16 @@ alias check = Check!DARTException;
      */
 
     Buffer modify(const(RecordFactory.Recorder) modifyrecords, const Flag!"undo" undo = No.undo) {
+        if (undo) {
+            return modify!(Yes.undo)(modifyrecords);
+        }
+        else {
+            return modify!(No.undo)(modifyrecords);
+
+        }
+    }
+
+    Buffer modify(Flag!"undo" undo)(const(RecordFactory.Recorder) modifyrecords) {
 
         Leave traverse_dart(Range)(Range range, const Index branch_index) @safe if (isInputRange!Range)
         out {
@@ -1088,9 +1098,9 @@ alias check = Check!DARTException;
         .check(modifyrecords.length <= 1 ||
                 !modifyrecords[].slide(2).map!(a => a.front.fingerprint == a.dropOne.front.fingerprint)
                     .any,
-                "cannot have multiple operations on same fingerprint in one modify");
+                    "cannot have multiple operations on same fingerprint in one modify");
 
-        auto range = rimKeyRange(modifyrecords, undo);
+        auto range = rimKeyRange!undo(modifyrecords);
         immutable new_root = traverse_dart(range, blockfile.masterBlock.root_index);
 
         scope (success) {
