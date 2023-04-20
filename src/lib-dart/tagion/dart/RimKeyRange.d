@@ -7,7 +7,7 @@ import std.traits;
 import std.container.array;
 import std.typecons : Flag, Yes, No;
 
-import tagion.dart.Recorder : RecordFactory, Archive, GetType, Neutral;
+import tagion.dart.Recorder : RecordFactory, Archive, GetType, Neutral, Flip;
 import tagion.basic.Types : isBufferType, Buffer;
 import tagion.utils.Miscellaneous : hex;
 import tagion.basic.Debug;
@@ -34,9 +34,9 @@ ubyte rim_key(F)(F rim_keys, const uint rim) pure if (isBufferType!F) {
  * Returns: 
  */
 @safe
-RimKeyRange!Range rimKeyRange(Range)(Range range, const Flag!"undo" undo = Yes.undo)
+RimKeyRange!Range rimKeyRange(Range)(Range range, const Flag!"undo" undo = No.undo, const GetType get_type = null)
         if (isInputRange!Range && is(ElementType!Range : const(Archive))) {
-    return RimKeyRange!Range(range, undo);
+    return RimKeyRange!Range(range, undo, get_type);
 }
 
 /**
@@ -46,9 +46,13 @@ RimKeyRange!Range rimKeyRange(Range)(Range range, const Flag!"undo" undo = Yes.u
  *   undo = Yes of the recorder should be undone
  */
 @safe
-auto rimKeyRange(const(RecordFactory.Recorder) rec, const Flag!"undo" undo = Yes.undo) {
-
-    return rimKeyRange(rec[], undo);
+auto rimKeyRange(Flag!"undo" undo = No.undo)(const(RecordFactory.Recorder) rec) {
+    static if (undo) {
+        return rimKeyRange(rec[].retro, undo, Flip);
+    }
+    else {
+        return rimKeyRange(rec[], undo);
+    }
 }
 
 /// Range over a Range with the same key in the a specific rim
@@ -313,7 +317,7 @@ version (unittest) {
     import std.stdio;
 
     @safe
-    void traverse(const(RecordFactory.Recorder) recorder, const bool undo = false) {
+    void traverse(const(RecordFactory.Recorder) recorder, const Flag!"undo" undo = No.undo) {
         void inner_traverse(RimRange)(RimRange rim_key_range) {
             while (!rim_key_range.empty) {
                 if (rim_key_range.oneLeft) {
@@ -321,19 +325,19 @@ version (unittest) {
                     rim_key_range.popFront;
                 }
                 else if (rim_key_range.front.type == Archive.Type.REMOVE) {
-                    //writefln("Remove");
-                    //rim_key_range.front.dump;
+                    writefln("Remove");
+                    rim_key_range.front.dump;
                     rim_key_range.popFront;
                 }
                 else {
-                    //writefln("Range rim=%d rim_keys=%s", rim_key_range.rim, rim_key_range.rim_keys.hex);
-                    //rim_key_range.save.each!q{a.dump};
+                    writefln("Range rim=%d rim_keys=%s", rim_key_range.rim, rim_key_range.rim_keys.hex);
+                    rim_key_range.save.each!q{a.dump};
                     inner_traverse(rim_key_range.nextRim);
                 }
             }
         }
 
-        inner_traverse(rimKeyRange(recorder));
+//        inner_traverse(rimKeyRange(recorder, undo));
     }
 
 }
@@ -380,6 +384,7 @@ unittest {
             auto rim_key_range = rimKeyRange(rec);
             auto rec_copy = rec.dup;
             rec_copy.insert(documents[3], Archive.Type.ADD);
+
             rim_key_range.add(rec.archive(documents[3], Archive.Type.ADD));
             /*
             Archive abcd133456789abc ADD
@@ -478,7 +483,7 @@ unittest {
         }
 
         { //
-            traverse(rec, true);
+            traverse(rec, Yes.undo);
         }
 
     }
