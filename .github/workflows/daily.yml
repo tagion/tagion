@@ -61,7 +61,7 @@ jobs:
 
       - name: Create bdd result
         run: |
-          for i in ./logs/${{ env.TARGET_BUILD }}/bdd/results/*.json; do cat $i | jq '.info.name,.info.result.outcome."$@",.info.result.outcome.msg?'; done  | sed 'N;N;s/\n/ - /g' |  tr -d '"' | sed s/"- null"// > ./bddresult.log
+          for i in ./logs/${{ env.TARGET_BUILD }}/bdd/commit/results/*.json; do cat $i | jq '.info.name,.info.result.outcome."$@",.info.result.outcome.msg?'; done  | sed 'N;N;s/\n/ - /g' |  tr -d '"' | sed s/"- null"// > ./bddresult.log
       
       - name: Report Bdd result
         run: |

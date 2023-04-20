@@ -314,32 +314,41 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
 }
 
 version (unittest) {
-    import std.stdio;
+    import std.typecons : Tuple;
+    import tagion.dart.DARTBasic : DARTIndex;
 
+    alias TraverseData = Tuple!(DARTIndex, "fingerprint", Archive.Type, "type");
     @safe
-    void traverse(const(RecordFactory.Recorder) recorder, const Flag!"undo" undo = No.undo) {
+    TraverseData[] traverse(
+            const(RecordFactory.Recorder) recorder,
+            const Flag!"undo" undo = No.undo) {
+        TraverseData[] result;
+
         void inner_traverse(RimRange)(RimRange rim_key_range) {
             while (!rim_key_range.empty) {
                 if (rim_key_range.oneLeft) {
-                    const first = rim_key_range.front;
+                    result ~= TraverseData(rim_key_range.front.fingerprint, rim_key_range.type);
                     rim_key_range.popFront;
                 }
                 else if (rim_key_range.front.type == Archive.Type.REMOVE) {
-                    writefln("Remove");
-                    rim_key_range.front.dump;
+                    result ~= TraverseData(rim_key_range.front.fingerprint, rim_key_range.type);
                     rim_key_range.popFront;
                 }
                 else {
-                    writefln("Range rim=%d rim_keys=%s", rim_key_range.rim, rim_key_range.rim_keys.hex);
-                    rim_key_range.save.each!q{a.dump};
                     inner_traverse(rim_key_range.nextRim);
                 }
             }
         }
 
-//        inner_traverse(rimKeyRange(recorder, undo));
-    }
+        if (undo) {
+            inner_traverse(rimKeyRange!(Yes.undo)(recorder));
+        }
+        else {
+            inner_traverse(rimKeyRange(recorder));
 
+        }
+        return result;
+    }
 }
 
 @safe
@@ -452,12 +461,11 @@ unittest {
                 .until!(doc => doc == DARTFakeNet.fake_doc(ulong.max))(No.openRight),
                 Archive.Type.ADD);
 
-        version (none) { /// Check selectRim
+        { /// Check selectRim
             auto rim_key_range = rimKeyRange(rec);
             { // Check the range lengths of rim = 00 
                 auto rim_key_copy = rim_key_range.save;
                 const rim = 00;
-                assert(rim_key_copy.selectRim(rim).identical);
                 assert(rim_key_copy.selectRim(rim).walkLength == 1);
                 assert(rim_key_copy.selectRim(rim).walkLength == 9);
                 assert(rim_key_copy.selectRim(rim).walkLength == 1);
@@ -475,15 +483,21 @@ unittest {
         }
         const rec_len = rec.length;
         // Checks that the 
-        rec.insert(documents[3], Archive.Type.REMOVE);
-        rec.insert(documents[5], Archive.Type.REMOVE);
+        rec.insert(documents[rec_len], Archive.Type.REMOVE);
+        rec.insert(documents[rec_len + 1], Archive.Type.REMOVE);
 
-        {
-            traverse(rec);
+        { // Check that the order of the archives are the same in the rim-key-range
+            const result = traverse(rec);
+            assert(equal(rec[].map!q{a.fingerprint}, result.map!q{a.fingerprint}));
+            assert(equal(rec[].map!q{a.type}, result.map!q{a.type}));
+
         }
 
-        { //
-            traverse(rec, Yes.undo);
+        { // Checks the undo
+            // The order should be reversed and the type should be flipped ADD<->REMOVE
+            const result = traverse(rec, Yes.undo);
+            assert(equal(rec[].retro.map!q{a.fingerprint}, result.map!q{a.fingerprint}));
+            assert(equal(rec[].retro.map!(a => Flip(a)), result.map!q{a.type}));
         }
 
     }
