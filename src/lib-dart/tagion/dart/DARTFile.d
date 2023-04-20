@@ -1038,7 +1038,7 @@ alias check = Check!DARTException;
                         if (sub_range.empty) {
                             range.add(current_archive);
                         }
-                        else {
+                        version (none) {
                             auto remove_add_range = sub_range.save.take(2);
                             const first = remove_add_range.front;
                             remove_add_range.popFront;
@@ -2333,9 +2333,12 @@ unittest {
                 auto new_name_record = NameRecord("hugo", 'x'.repeat(200).array);
                 new_recorder.remove(name_record);
                 new_recorder.add(new_name_record);
-
+                new_recorder.each!q{a.dump};
+                auto rim_key_range = rimKeyRange(new_recorder);
+                writefln("rim key dump");
+                rim_key_range.each!q{a.dump};
                 dart_A.modify(new_recorder);
-                // dart_A.dump;
+                dart_A.dump;
 
                 auto new_fingerprint = new_recorder[].front.fingerprint;
                 auto new_read_recorder = dart_A.loads([DARTIndex(new_fingerprint)]);
