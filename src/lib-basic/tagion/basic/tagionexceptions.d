@@ -29,9 +29,9 @@ void Check(E)(bool flag, lazy string msg, string file = __FILE__, size_t line = 
     }
 }
 
-struct TaskFailure {
-    Throwable throwable;
-    string task_name;
+immutable struct TaskFailure {
+    immutable(Throwable) throwable;
+    immutable(string) task_name;
 }
 
 /++
