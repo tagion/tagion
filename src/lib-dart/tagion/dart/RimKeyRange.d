@@ -210,14 +210,6 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
             return RimKeyRange(this, rim + 1);
         }
 
-        /** 
-             * Checks if the range only contains one archive 
-             * Returns: true range if single
-             */
-        version (none) bool oneLeft() const @nogc {
-            return length == 1;
-        }
-
         /**
              * Checks if the range is empty
              * Returns: true if empty
