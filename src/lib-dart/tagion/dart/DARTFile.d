@@ -1045,7 +1045,7 @@ alias check = Check!DARTException;
                     scope (exit) {
                         range.popFront;
                     }
-                    if (range.front.type == Archive.Type.ADD) {
+                    if (range.type == Archive.Type.ADD) {
                         return Leave(blockfile.save(range.front.store).index, range
                                 .front.fingerprint);
                     }
