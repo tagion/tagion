@@ -289,6 +289,14 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
         }
 
         /**
+         * 
+         * Returns: first archive in the range
+         */
+        const(Archive.Type) type() {
+            return ctx.type;
+        }
+
+        /**
          * Creates new range at the current position
          * Returns: copy of this range
          */
