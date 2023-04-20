@@ -42,21 +42,23 @@ auto rimKeyRange(const(RecordFactory.Recorder) rec, const Flag!"undo" undo = Yes
 @safe
 struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(ElementType!Range, const(Archive))) {
     alias archive_less = RecordFactory.Recorder.archive_sorted;
-
     @safe
     final class RangeContext {
         Range range;
-        Archive[] _added_archives;
+        const(Archive)[] _added_archives;
         AdderRange added_range;
-        this(Range range) pure nothrow {
+        const GetType get_type;
+        this(Range range, const GetType _get_type = null) pure nothrow {
             this.range = range;
             added_range = new AdderRange(0);
+            get_type = (_get_type) ? _get_type : Neutral;
         }
 
-        protected this(RangeContext rhs) {
+        protected this(RangeContext rhs, const GetType _get_type = null) {
             _added_archives = rhs._added_archives;
             range = rhs.range;
             added_range = new AdderRange(rhs.added_range.index);
+            get_type = (_get_type) ? _get_type : rhs.get_type;
         }
 
         pure nothrow {
@@ -111,6 +113,22 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
                 return new RangeContext(this);
             }
 
+            Archive.Type type() {
+                if (!added_range.empty && !range.empty) {
+                    if (archive_less(added_range.front, range.front)) {
+                        return added_range.front.type;
+                    }
+                    return get_type(range.front);
+                }
+                if (!range.empty) {
+                    return get_type(range.front);
+                }
+                else if (!added_range.empty) {
+                    return get_type(added_range.front);
+                }
+                return Archive.Type.NONE;
+
+            }
         }
         @safe @nogc
         final class AdderRange {
@@ -123,7 +141,7 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
                 return index >= _added_archives.length;
             }
 
-            Archive front() pure nothrow @nogc {
+            const(Archive) front() const pure nothrow @nogc {
                 return _added_archives[index];
             }
 
@@ -135,78 +153,67 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
         }
     }
 
-    bool oneLeft() pure nothrow {
-        if (rim < 0 || ctx.empty) {
-            return false;
-        }
-        const _index = ctx.added_range.index;
-        auto _range = ctx.range;
-        scope (exit) {
-            ctx.added_range.index = _index;
-            ctx.range = _range;
-        }
-
-        return this.take(2).walkLength == 1;
-    }
-
+    @disable this();
     protected RangeContext ctx;
     const Buffer rim_keys;
     const int rim;
     const Flag!"undo" undo;
-    @disable this();
-
-    void add(Archive archive)
-    in ((rim < 0) || (rim_keys == archive.fingerprint[0 .. rim + 1]))
-    do {
-        import std.stdio;
-
-        if (archive.fingerprint.hex == "00000000eca47f6c000000000000000000000000000000000000000000000000") {
-            writefln("ADD SPECIAL CASE");
-            archive.dump;
-            writefln("ALREADY ADDED AS FRONT: %s", front.fingerprint == archive.fingerprint);
-            writefln("================");
-        }
-        ctx._added_archives ~= (archive);
-    }
-
-    private this(RimKeyRange rhs, const uint rim) {
-        ctx = rhs.ctx;
-        rim_keys = (rhs.empty) ? Buffer.init : rhs.front.fingerprint[0 .. rim + 1];
-        this.rim = rim & int.max;
-        undo = rhs.undo;
-
-    }
-
-    private this(RimKeyRange rhs) pure nothrow {
-        ctx = rhs.ctx.save;
-        rim_keys = rhs.rim_keys;
-        rim = rhs.rim;
-        undo = rhs.undo;
-    }
-
-    private this(Range range, const Flag!"undo" undo) {
-        this.undo = undo;
-        rim = -1;
-        //auto range_save=_range.save;
-        ctx = new RangeContext(range);
-        rim_keys = null;
-    }
-
-    RimKeyRange selectRim(const uint rim) pure nothrow {
-        return RimKeyRange(this, rim);
-    }
-
-    RimKeyRange nextRim() pure nothrow {
-        return RimKeyRange(this, rim + 1);
-    }
 
     pure nothrow {
-        /** 
-             * Checks if the range only contains one archive 
-             * Returns: true range if single
-             */
-        version (none) bool oneLeft() const @nogc {
-            return length == 1;
+        private this(RimKeyRange rhs, const uint rim) {
+            ctx = rhs.ctx;
+            rim_keys = (rhs.empty) ? Buffer.init : rhs.front.fingerprint[0 .. rim + 1];
+            this.rim = rim & int.max;
+            undo = rhs.undo;
+        }
+
+        private this(RimKeyRange rhs) {
+            ctx = rhs.ctx.save;
+            rim_keys = rhs.rim_keys;
+            rim = rhs.rim;
+            undo = rhs.undo;
+        }
+
+        private this(Range range, const Flag!"undo" undo, const GetType get_type = null) {
+            this.undo = undo;
+            rim = -1;
+            //auto range_save=_range.save;
+            ctx = new RangeContext(range, get_type);
+            rim_keys = null;
+        }
+
+        bool oneLeft() {
+            if (rim < 0 || ctx.empty) {
+                return false;
+            }
+            const _index = ctx.added_range.index;
+            auto _range = ctx.range;
+            scope (exit) {
+                ctx.added_range.index = _index;
+                ctx.range = _range;
+            }
+
+            return this.take(2).walkLength == 1;
+        }
+
+        void add(const(Archive) archive)
+        in ((rim < 0) || (rim_keys == archive.fingerprint[0 .. rim + 1]))
+        do {
+            ctx._added_archives ~= archive;
+        }
+
+        /**
+         * Select
+         * Params:
+         *   rim = 
+         * Returns: Range for the selected rim 
+         */
+        RimKeyRange selectRim(const uint rim) {
+            return RimKeyRange(this, rim);
+        }
+
+        RimKeyRange nextRim() {
+            return RimKeyRange(this, rim + 1);
         }
 
         /**
@@ -228,28 +235,13 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
         }
 
         /**
-             * Force the range to be empty
-             */
-        version (none) void force_empty() {
-            current = null;
-        }
-
-        /**
-             * Number of archive left in the range
-             * Returns: size of the range
-             */
-        version (none) size_t length() const {
-            return range.length + added_archives.length;
-        }
-    }
-    /**
          *  Creates new range at the current position
          * Returns: copy of this range
          */
-    RimKeyRange save() pure nothrow {
-        return RimKeyRange(this);
+        RimKeyRange save() {
+            return RimKeyRange(this);
+        }
     }
-
     static assert(isInputRange!RimKeyRange);
     static assert(isForwardRange!RimKeyRange);
 

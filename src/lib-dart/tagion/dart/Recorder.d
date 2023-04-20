@@ -119,7 +119,7 @@ class RecordFactory {
         /// This will order REMOVE before add
 
         alias archive_sorted = (a, b) @safe => (a.fingerprint < b.fingerprint) || (
-                a.fingerprint == b.fingerprint) && (a._type < b._type);
+                a.fingerprint == b.fingerprint) && (a.type < b.type);
 
         alias Archives = RedBlackTree!(Archive, archive_sorted);
         package Archives archives;
@@ -384,7 +384,7 @@ class RecordFactory {
     }
 }
 
-alias GetType = Archive.Type delegate(const(Archive)) pure @safe;
+alias GetType = Archive.Type delegate(const(Archive)) pure nothrow @safe;
 
 const Add = delegate(const(Archive) a) => Archive.Type.ADD;
 const Remove = delegate(const(Archive) a) => Archive.Type.REMOVE;
@@ -403,11 +403,10 @@ const Neutral = delegate(const(Archive) a) => a.type;
 
     @label(STUB, true) const(DARTIndex) fingerprint; /// Stub hash-pointer used in sharding
     @label("$a", true) const Document filed; /// The actual data strute stored 
+    @label("$t", true) const(Type) type; /// Acrhive type
     enum archiveLabel = GetLabel!(this.filed).name;
     enum fingerprintLabel = GetLabel!(this.fingerprint).name;
-    enum typeLabel = GetLabel!(this._type).name;
-    private @label("$t", true) Type _type; /// Acrhive type
-    protected @label("") bool _done; /// Marks if the operation was done on the archive
+    enum typeLabel = GetLabel!(this.type).name;
 
     mixin JSONString;
     /* 
@@ -435,16 +434,16 @@ const Neutral = delegate(const(Archive) a) => a.type;
             }
             fingerprint = net.dartIndex(filed);
         }
-        _type = t;
+        Type _type = t;
         if (_type is Type.NONE && doc.hasMember(typeLabel)) {
             _type = doc[typeLabel].get!Type;
         }
+        type = _type;
 
     }
 
     void dump(File fout = stdout) const {
-        fout.writefln("Archive %s %s %s", fingerprint.hex, type,
-                (() @trusted => cast(void*) this)());
+        fout.writeln(toString);
     }
 
     override string toString() const {
@@ -452,6 +451,12 @@ const Neutral = delegate(const(Archive) a) => a.type;
                 (() @trusted => cast(void*) this)());
     }
 
+    version (unittest) {
+        private void changeType(const Type _type) @trusted {
+            auto type_p = cast(Type*)(&type);
+            *type_p = _type;
+        }
+    }
     /**
      * Convert archive to a Document 
      * Returns: documnet of the archive
@@ -464,8 +469,8 @@ const Neutral = delegate(const(Archive) a) => a.type;
         else {
             hibon[archiveLabel] = filed;
         }
-        if (_type !is Type.NONE) {
-            hibon[typeLabel] = _type;
+        if (type !is Type.NONE) {
+            hibon[typeLabel] = type;
         }
         return Document(hibon);
     }
@@ -481,7 +486,7 @@ const Neutral = delegate(const(Archive) a) => a.type;
     in (!fingerprint.empty)
     in (t !is Type.ADD)
     do {
-        _type = t;
+        type = t;
         filed = Document();
         this.fingerprint = fingerprint;
     }
@@ -527,30 +532,6 @@ const Neutral = delegate(const(Archive) a) => a.type;
      */
     final bool isRecord(T)() const {
         return T.isRecord(filed);
-    }
-
-    final bool done() const pure nothrow @nogc {
-        return _done;
-    }
-
-    /* 
-     * Type of the archive
-     * Returns: type 
-     */
-    final Type type() const pure nothrow @nogc {
-        return _type;
-    }
-
-    /**
-     * An Archive is only allowed to be done once
-     */
-    package final void doit() const pure nothrow @trusted
-    in {
-        assert(!_done, "An Archive can only be done once");
-    }
-    do {
-        auto force_done = cast(bool*)(&_done);
-        *force_done = true;
     }
 
     /**
@@ -610,7 +591,7 @@ unittest { // Archive
 
     }
 
-    a._type = Archive.Type.ADD;
+    a.changeType(Archive.Type.ADD);
     { // Simple archive with ADD/REMOVE Type
         // a=new Archive(net, filed_doc);
         assert(a.fingerprint == filed_doc_fingerprint);
