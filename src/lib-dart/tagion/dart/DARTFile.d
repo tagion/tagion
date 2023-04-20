@@ -135,9 +135,9 @@ alias check = Check!DARTException;
     }
 
     protected enum _params = [
-            "fingerprints",
-            "bullseye",
-        ];
+        "fingerprints",
+        "bullseye",
+    ];
 
     mixin(EnumText!("Params", _params));
 
@@ -1098,7 +1098,7 @@ alias check = Check!DARTException;
         .check(modifyrecords.length <= 1 ||
                 !modifyrecords[].slide(2).map!(a => a.front.fingerprint == a.dropOne.front.fingerprint)
                     .any,
-                    "cannot have multiple operations on same fingerprint in one modify");
+                "cannot have multiple operations on same fingerprint in one modify");
 
         auto range = rimKeyRange!undo(modifyrecords);
         immutable new_root = traverse_dart(range, blockfile.masterBlock.root_index);
@@ -2361,18 +2361,13 @@ unittest {
             dart_A.modify(recorder);
 
             const bullseye = dart_A.bullseye;
-            writefln("bullseye %s and dump", bullseye);
             dart_A.dump;
             auto new_doc = DARTFakeNet.fake_doc(0x2345_130b_1234_1234);
             recorder = dart_A.recorder();
             recorder.add(new_doc);
             dart_A.modify(recorder);
             const new_bullseye = dart_A.bullseye;
-            writefln("new bullseye %s and dump", new_bullseye);
-            dart_A.dump;
             dart_A.modify(recorder, Yes.undo);
-            writefln("should be old bullseye %s", dart_A.bullseye);
-            dart_A.dump;
             assert(dart_A.bullseye != new_bullseye, "Should not be the same as the new bullseye after undo");
             assert(dart_A.bullseye == bullseye, "should have been reverted to previoius bullseye");
         }
