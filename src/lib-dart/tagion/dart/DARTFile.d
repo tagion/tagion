@@ -4,7 +4,6 @@ module tagion.dart.DARTFile;
 private {
     import std.format;
     import std.exception : assumeWontThrow;
-    import std.stdio : File;
 
     import std.algorithm.sorting : sort;
     import std.algorithm.iteration : filter, each;
@@ -41,7 +40,7 @@ private {
     import tagion.basic.tagionexceptions : Check;
     import tagion.utils.Miscellaneous : toHex = toHexString;
 
-    import std.stdio :  File, stdout;
+    import std.stdio : File, stdout;
     import tagion.hibon.HiBONRecord;
     import tagion.hibon.HiBONJSON : toPretty;
 
@@ -1045,7 +1044,7 @@ alias check = Check!DARTException;
      * Params:
      *   full = true for full DART
      */
-    void dump(File fout=stdout, bool full = false) {
+    void dump(File fout = stdout, bool full = false) {
 
         fout.writeln("EYE: ", _fingerprint.hex);
         void local_dump(const Index branch_index,
