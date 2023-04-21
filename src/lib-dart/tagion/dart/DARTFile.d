@@ -57,25 +57,11 @@ shared static this() @trusted {
     hash_null = assumeUnique(_null);
 }
 
-/++
- + Gets the rim key from a buffer
- +
- + Returns;
- +     fingerprint[rim]
- +/
-@safe
-ubyte rim_key(F)(F rim_keys, const uint rim) pure if (isBufferType!F) {
-    if (rim >= rim_keys.length) {
-        debug __write("%s rim=%d", rim_keys.hex, rim);
-    }
-    return rim_keys[rim];
-}
-
-/++
- + Sector is the little ending value the first two bytes of an fingerprint
- + Returns:
- +     Sector number of a fingerpint
- +/
+/**
+ * Sector is the little ending value the first two bytes of an fingerprint
+ * Returns:
+ *     Sector number of a fingerpint
+ */
 @safe
 ushort sector(F)(const(F) fingerprint) pure nothrow @nogc if (isBufferType!F)
 in (fingerprint.length >= ubyte.sizeof)
@@ -107,17 +93,17 @@ import std.algorithm;
 
 alias check = Check!DARTException;
 
-/++
- + DART File system
- + Distribute Achive of Random Transction
- + This class handels the CRUD Database
- +
- + The archive is hashed and store in structure similar to merkle trees datastruct.
- + Which here is called at sparsed merkle tree the sparse merkle is section in to rims
- + in  hierarchy which is where each rim contains a sub-tree called Branches. If a rim
- + Doens't branche out it contais a Leave which contains a Archive
- +
- +/
+/**
+ * DART File system
+ * Distribute Achive of Random Transction
+ * This class handels the CRUD Database
+ *
+ * The archive is hashed and store in structure similar to merkle trees datastruct.
+ * Which here is called at sparsed merkle tree the sparse merkle is section in to rims
+ * in  hierarchy which is where each rim contains a sub-tree called Branches. If a rim
+ * Doens't branche out it contais a Leave which contains a Archive
+ *
+ */
 @safe class DARTFile {
 
     enum KEY_SPAN = ubyte.max + 1;
@@ -149,15 +135,15 @@ alias check = Check!DARTException;
     do {
         BlockFile.create(filename, DARTFile.stringof, block_size);
     }
-    /++
-     + A file set by filename should be create by the BlockFile
-     + before it can be used as a DARTFile
+    /**
+     * A file set by filename should be create by the BlockFile
+     * before it can be used as a DARTFile
 
-     + Params:
-     +   net       = Is the network object is for Hashing etc..
-     +   filename = File name of the dart which much be created via the BlockFile.create method
+     * Params:
+     *   net       = Is the network object is for Hashing etc..
+     *   filename = File name of the dart which much be created via the BlockFile.create method
 
-     + Examples:
+     * Examples:
      ---
      enum BLOCK_SIZE=0x80; // Block size use in the BlockFile
      enum filename="some_filename.DART";
@@ -166,7 +152,7 @@ alias check = Check!DARTException;
      // Open the DART File
      auto dartfile=new DARTFile(net, filename);
      ---
-     +/
+     */
     this(const HashNet net, string filename) {
         blockfile = BlockFile(filename);
         this.manufactor = RecordFactory(net);
@@ -188,7 +174,7 @@ alias check = Check!DARTException;
         blockfile = null;
     }
 
-    /* 
+    /**
      * The Merkle root of the DARTFile
      * Returns: the `bullseye` of the DARTFile
      */
@@ -220,25 +206,25 @@ alias check = Check!DARTException;
     }
 
     /**
- * Ditto
- * Params:
- *   archives = Archive data which contails an ordred list of archives 
- * Returns: 
- * recorder of the list of archives
- */
+     * Ditto
+     * Params:
+     *   archives = Archive data which contails an ordred list of archives 
+     * Returns: 
+     * recorder of the list of archives
+     */
     RecordFactory.Recorder recorder(RecordFactory.Recorder.Archives archives) nothrow {
         return manufactor.recorder(archives);
     }
     /**
- * Calculates the sparsed Merkle root from the branch-table list
-* The size of the table must be KEY_SPAN
-* Leaves in the branch table which doen't exist should have the value null
- * Params:
- *   net = The hash object/function used to calculate the hashs
- *   table = List if hash-value(fingerprint) in the branch
- * Returns: 
- *  The Merkle root
- */
+     * Calculates the sparsed Merkle root from the branch-table list
+     * The size of the table must be KEY_SPAN
+     * Leaves in the branch table which doen't exist should have the value null
+     * Params:
+     *   net = The hash object/function used to calculate the hashs
+     *   table = List if hash-value(fingerprint) in the branch
+     * Returns: 
+     *  The Merkle root
+     */
     static immutable(Buffer) sparsed_merkletree(const HashNet net, const(Buffer[]) table)
     in {
         import std.stdio;
@@ -308,8 +294,8 @@ alias check = Check!DARTException;
     }
 
     /**
- * Data struct which contains the branches in sub-tree
- */
+     * Data struct which contains the branches in sub-tree
+     */
     @recordType("Branches") struct Branches {
         import std.stdio;
         import tagion.hibon.HiBONJSON;
@@ -350,9 +336,9 @@ alias check = Check!DARTException;
         }
 
         /* 
-     * Check if the Branches has storage indices
-     * Returns: true if the branch has BlockFile indices
-     */
+         * Check if the Branches has storage indices
+         * Returns: true if the branch has BlockFile indices
+         */
         @nogc
         bool hasIndices() const pure nothrow {
             return _indices.length !is 0;
@@ -444,10 +430,10 @@ alias check = Check!DARTException;
             return hibon;
         }
 
-        /* 
-     * Convert the Branches to a Document
-     * Returns: document
-     */
+        /**
+         * Convert the Branches to a Document
+         * Returns: document
+         */
         const(Document) toDoc() const {
             return Document(toHiBON);
         }
@@ -512,9 +498,9 @@ alias check = Check!DARTException;
         }
 
         /** 
-        * Check if the branches has indices
-        * Returns: true if no indices
-        */
+         * Check if the branches has indices
+         * Returns: true if no indices
+         */
         bool empty() pure const {
             if (_indices !is null) {
                 import std.algorithm.searching : any;
@@ -564,12 +550,12 @@ alias check = Check!DARTException;
     }
 
     /** 
-    * Reads the data at branch key  
-    * Params: 
-    *    b = branches to read from
-    *    key = key in the branch to read from 
-    * Returns: the data a key
-    */
+     * Reads the data at branch key  
+     * Params: 
+     *    b = branches to read from
+     *    key = key in the branch to read from 
+     * Returns: the data a key
+     */
     Document load(ref const(Branches) b, const uint key) {
         if ((key < KEY_SPAN) && (b.indices)) {
             immutable index = b.indices[key];
@@ -665,17 +651,17 @@ alias check = Check!DARTException;
         }
 
         /** 
-     * Range empty 
-     * Returns: true if empty
-     */
+         * Range empty 
+         * Returns: true if empty
+         */
         final bool empty() const pure nothrow {
             return _finished;
         }
 
         /** 
-     * Front for the range
-     * Returns: the data at the range position
-     */
+         * Front for the range
+         * Returns: the data at the range position
+         */
         final const(Document) front() const pure nothrow {
             return doc;
         }
@@ -744,14 +730,14 @@ alias check = Check!DARTException;
         return result;
     }
     /**
- * Loads all the archives in the list of fingerprints
- * 
- * Params:
- *   fingerprints = range of fingerprints
- *   type = types of archives
- * Returns: 
-*   recorder of the read archives
- */
+     * Loads all the archives in the list of fingerprints
+     * 
+     * Params:
+     *   fingerprints = range of fingerprints
+     *   type = types of archives
+     * Returns: 
+     *   recorder of the read archives
+     */
     RecordFactory.Recorder loads(Range)(
             Range fingerprints,
             Archive.Type type = Archive.Type.REMOVE) if (isInputRange!Range && isBufferType!(ElementType!Range)) {
