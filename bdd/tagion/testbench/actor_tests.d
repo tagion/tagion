@@ -24,6 +24,9 @@ int _main(string[] args) {
         auto actor_supervisor_message_feature = automation!(actor_message)();
         auto actor_supervisor_message_context = actor_supervisor_message_feature.run();
 
+        auto actor_taskfailure_feature = automation!(actor_taskfailure)();
+        auto actor_taskfailure_context = actor_taskfailure_feature.run();
+
         // Supervisor with failing child
         version (lr269) {
             auto actor_supervisor_feature = automation!(actor_supervisor)();
