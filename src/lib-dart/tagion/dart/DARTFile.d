@@ -2311,7 +2311,8 @@ unittest {
                 // auto new_blockfile = BlockFile(filename_A);
                 // new_blockfile.dump;
                 // new_blockfile.close;
-                assert(new_read_name == new_name, "Should not be updated, since the previous name record was not removed");
+                assert(new_read_name == new_name, 
+                    "Should not be updated, since the previous name record was not removed");
 
             }
             {
@@ -2368,7 +2369,8 @@ unittest {
             dart_A.modify(recorder);
             const new_bullseye = dart_A.bullseye;
             dart_A.modify(recorder, Yes.undo);
-            assert(dart_A.bullseye != new_bullseye, "Should not be the same as the new bullseye after undo");
+            assert(dart_A.bullseye != new_bullseye, 
+            "Should not be the same as the new bullseye after undo");
             assert(dart_A.bullseye == bullseye, "should have been reverted to previoius bullseye");
         }
 

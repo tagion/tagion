@@ -20,9 +20,6 @@ import tagion.basic.Debug;
  */
 @safe
 ubyte rim_key(F)(F rim_keys, const uint rim) pure if (isBufferType!F) {
-    if (rim >= rim_keys.length) {
-        debug __write("%s rim=%d", rim_keys.hex, rim);
-    }
     return rim_keys[rim];
 }
 
