@@ -41,7 +41,7 @@ private {
     import tagion.basic.tagionexceptions : Check;
     import tagion.utils.Miscellaneous : toHex = toHexString;
 
-    import std.stdio : writeln, writefln;
+    import std.stdio :  File, stdout;
     import tagion.hibon.HiBONRecord;
     import tagion.hibon.HiBONJSON : toPretty;
 
@@ -1045,10 +1045,9 @@ alias check = Check!DARTException;
      * Params:
      *   full = true for full DART
      */
-    void dump(bool full = false) {
-        import std.stdio;
+    void dump(File fout=stdout, bool full = false) {
 
-        writeln("EYE: ", _fingerprint.hex);
+        fout.writeln("EYE: ", _fingerprint.hex);
         void local_dump(const Index branch_index,
                 const ubyte rim_key = 0,
                 const uint rim = 0,
@@ -1060,7 +1059,7 @@ alias check = Check!DARTException;
                     auto branches = Branches(doc);
                     string _indent;
                     if (rim > 0) {
-                        writefln("%s| %02X [%d]", indent, rim_key, branch_index);
+                        fout.writefln("%s| %02X [%d]", indent, rim_key, branch_index);
                         _indent = indent ~ indent_tab;
                     }
                     foreach (key, index; branches._indices) {
@@ -1070,7 +1069,7 @@ alias check = Check!DARTException;
                 else {
                     immutable fingerprint = manufactor.net.dartIndex(doc);
                     auto lastRing = full ? fingerprint.length : rim + 1;
-                    writefln("%s%s [%d]", indent, fingerprint[0 .. lastRing].hex, branch_index);
+                    fout.writefln("%s%s [%d]", indent, fingerprint[0 .. lastRing].hex, branch_index);
                 }
             }
         }

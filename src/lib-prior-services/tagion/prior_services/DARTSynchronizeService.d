@@ -360,7 +360,6 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
                 else {
                     subscription.stop();
                     recorderReplayFiber.clear();
-                    dart.dump(true);
                     log("DART generated: bullseye: %s", dart.fingerprint.toHexString);
                     state.setState(DARTSynchronizeState.READY);
                 }
