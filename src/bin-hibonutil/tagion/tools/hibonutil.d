@@ -9,6 +9,7 @@ import std.format;
 import std.exception : assumeUnique, assumeWontThrow;
 import std.json;
 import std.range : only;
+import std.conv;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
@@ -16,6 +17,7 @@ import tagion.basic.Types : FileExtension, fileExtension;
 import tagion.hibon.HiBONJSON;
 import std.utf : toUTF8;
 import std.encoding : BOMSeq, BOM;
+import tagion.basic.Types : Buffer;
 
 import std.array : join;
 
@@ -55,6 +57,7 @@ int _main(string[] args) {
     //    string outputfilename;
     bool pretty;
     // bool verbose;
+    string outputfilename;
     auto logo = import("logo.txt");
 
     GetoptResult main_args;
@@ -66,6 +69,7 @@ int _main(string[] args) {
                 "c|stdout", "Print to standard output", &standard_output,
                 "pretty|p", format("JSON Pretty print: Default: %s", pretty), &pretty,
                 "v|verbose", "Print more debug information", &verbose,
+                "o|output", "outputfilename only for stdin", &outputfilename,
         );
     }
     catch (std.getopt.GetOptException e) {
@@ -94,11 +98,91 @@ int _main(string[] args) {
             "<option>:",
 
         ].join("\n"),
-        main_args.options);
+                main_args.options);
         return 0;
     }
 
     if (args.length == 1) {
+        auto fin = stdin;
+        ubyte[1024] buf;
+        Buffer data;
+
+        for (;;) {
+            const read_buffer = fin.rawRead(buf);
+            if (read_buffer.length is 0) {
+                break;
+            }
+            data ~= read_buffer;
+        }
+
+        const doc = Document(data);
+
+        const error_code = doc.valid(
+                (
+                const(Document) sub_doc,
+                const Document.Element.ErrorCode error_code,
+                const(Document.Element) current, const(
+                Document.Element) previous) nothrow{ assumeWontThrow(writefln("%s", current)); return true; });
+        if (error_code is Document.Element.ErrorCode.NONE) {
+            auto json = doc.toJSON;
+            auto json_stringify = (pretty) ? json.toPrettyString : json.toString;
+            if (standard_output) {
+                writefln("%s", json_stringify);
+                return 1;
+            }
+            if (outputfilename) {
+                outputfilename.setExtension(FileExtension.json).fwrite(json_stringify);
+                return 1;
+            }
+            json_stringify.writeln;
+
+            return 1;
+        }
+        else {
+            writefln("HIBON DETECTED");
+            HiBON hibon;
+            const text = cast(string) data;
+            try {
+                auto parse = text.parseJSON;
+                writefln("%s", text);
+                hibon = parse.toHiBON;
+            }
+            catch (HiBON2JSONException e) {
+                stderr.writefln("Error: HiBON-JSON format in the %s file", outputfilename);
+                printError(e);
+                return 1;
+            }
+            catch (JSONException e) {
+                stderr.writeln("Error: JSON syntax");
+                stderr.writefln("Error: HiBONError Document errorcode %s", error_code);
+                printError(e);
+                return 1;
+            }
+            catch (Exception e) {
+                stderr.writeln(e.msg);
+                stderr.writefln("Error: HiBONError Document errorcode %s", error_code);
+
+                return 1;
+            }
+            if (standard_output) {
+                stdout.rawWrite(hibon.serialize);
+            }
+            else {
+                try {
+                    if (standard_output) {
+                        stdout.rawWrite(hibon.serialize);
+                    }
+                    else {
+                        outputfilename.setExtension(FileExtension.hibon).fwrite(hibon.serialize);
+                    }
+                }
+                catch (Exception e) {
+                    printError(e);
+                    return 1;
+                }
+            }
+        }
+
         stderr.writefln("Input file missing");
         return 1;
     }
@@ -174,12 +258,12 @@ int _main(string[] args) {
                 return 1;
             }
             if (standard_output) {
-                write(hibon.serialize);
+                stdout.rawWrite(hibon.serialize);
             }
             else {
                 try {
                     if (standard_output) {
-                        writefln("%s", hibon.serialize);
+                        stdout.rawWrite(hibon.serialize);
                     }
                     else {
                         inputfilename.setExtension(FileExtension.hibon).fwrite(hibon.serialize);
