@@ -135,9 +135,9 @@ alias check = Check!DARTException;
     }
 
     protected enum _params = [
-        "fingerprints",
-        "bullseye",
-    ];
+            "fingerprints",
+            "bullseye",
+        ];
 
     mixin(EnumText!("Params", _params));
 
@@ -808,124 +808,6 @@ alias check = Check!DARTException;
         return result;
     }
 
-    // Range over a Range with the same key in the a specific rim
-    @safe
-    struct RimKeyRange {
-        protected Archive[] current;
-        @disable this();
-        protected this(Archive[] current) pure nothrow @nogc {
-            this.current = current;
-        }
-
-        this(Range)(ref Range range, const uint rim) {
-            if (!range.empty) {
-                immutable key = range.front.fingerprint.rim_key(rim);
-                static if (is(Range == RimKeyRange)) {
-                    auto reuse_current = range.current;
-                    void build(ref Range range, const uint no = 0) @safe {
-                        if (!range.empty && (range.front.fingerprint.rim_key(rim) is key)) {
-                            range.popFront;
-                            build(range, no + 1);
-                        }
-                        else {
-                            // Reuse the parent current
-                            current = reuse_current[0 .. no];
-                        }
-                    }
-
-                    build(range);
-                }
-                else {
-                    void build(ref Range range, const uint no = 0) @safe {
-                        if (!range.empty && (range.front.fingerprint.rim_key(rim) is key)) {
-                            auto a = range.front;
-                            range.popFront;
-                            build(range, no + 1);
-                            (() @trusted { current[no] = cast(Archive) a; })();
-                        }
-                        else {
-                            current = new Archive[no];
-                        }
-                    }
-
-                    build(range);
-                }
-            }
-        }
-
-        /**
-     * Checks if all the archives in the range are of the type REMOVE
-     * Params:
-     *   get_type = archive type get function
-     * Returns: true if all the archives are removes
-     */
-        bool onlyRemove(const GetType get_type) const pure {
-            return current
-                .all!(a => get_type(a) is Archive.Type.REMOVE);
-        }
-
-        @nogc pure nothrow {
-            /** 
-             * Checks if the range only contains one archive 
-             * Returns: true range if single
-             */
-            bool oneLeft() const {
-                return current.length == 1;
-            }
-
-            /**
-             * Checks if the range is empty
-             * Returns: true if empty
-             */
-            bool empty() const {
-                return current.length == 0;
-            }
-
-            /**
-             *  Progress one archive
-             */
-            void popFront() {
-                if (!empty) {
-                    current = current[1 .. $];
-                }
-            }
-
-            /**
-             * Gets the current archive in the range
-             * Returns: current archive and return null if the range is empty
-             */
-            inout(Archive) front() inout {
-                if (empty) {
-                    return null;
-                }
-                return current[0];
-            }
-
-            /**
-             * Force the range to be empty
-             */
-            void force_empty() {
-                current = null;
-            }
-
-            /**
-             * Number of archive left in the range
-             * Returns: size of the range
-             */
-            size_t length() const {
-                return current.length;
-            }
-        }
-        /**
-         *  Creates new range at the current position
-         * Returns: copy of this range
-         */
-        version (none) RimKeyRange save() pure nothrow @nogc {
-            return RimKeyRange(current);
-        }
-
-    }
-
     enum RIMS_IN_SECTOR = 2;
     /**
      * $(SMALL_TABLE
@@ -1098,7 +980,7 @@ alias check = Check!DARTException;
         .check(modifyrecords.length <= 1 ||
                 !modifyrecords[].slide(2).map!(a => a.front.fingerprint == a.dropOne.front.fingerprint)
                     .any,
-                "cannot have multiple operations on same fingerprint in one modify");
+                    "cannot have multiple operations on same fingerprint in one modify");
 
         auto range = rimKeyRange!undo(modifyrecords);
         immutable new_root = traverse_dart(range, blockfile.masterBlock.root_index);
@@ -1361,23 +1243,6 @@ unittest {
             }
         }
 
-        {
-            auto range = recorder.archives[];
-            auto rim_range = DARTFile.RimKeyRange(range, rim);
-            assert(!rim_range.empty);
-            assert(!rim_range.oneLeft);
-            rim_range.popFront;
-            assert(!rim_range.empty);
-            assert(!rim_range.oneLeft);
-            rim_range.popFront;
-            assert(!rim_range.empty);
-            assert(!rim_range.oneLeft);
-            rim_range.popFront;
-            assert(!rim_range.empty);
-            rim_range.popFront;
-            assert(rim_range.empty);
-            assert(!rim_range.oneLeft);
-        }
     }
 
     { // Rim 2 test
