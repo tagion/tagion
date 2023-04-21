@@ -8,7 +8,28 @@ import core.thread;
 import std.exception;
 import std.traits;
 
+import tagion.actor.exceptions;
 import tagion.basic.tagionexceptions : TagionException, TaskFailure;
+
+T receiveOnlyTimeout(T)() {
+    T ret;
+    receiveTimeout(
+            1.seconds,
+            (T val) { ret = val; },
+            (Variant val) {
+        throw new MessageMismatch(
+            format("Unexpected message got %s of type %s, expected %s", val, val.type.toString(), T.stringof));
+    }
+    );
+
+    if (ret is T.init) {
+        throw new MessageTimeout(
+                format("Timed out never received message expected message type: %s".format(T.stringof))
+        );
+    }
+
+    return ret;
+}
 
 bool all(Ctrl[Tid] aa, Ctrl ctrl) {
     foreach (val; aa) {
@@ -17,20 +38,6 @@ bool all(Ctrl[Tid] aa, Ctrl ctrl) {
         }
     }
     return true;
-}
-
-/// Exception sent when the actor gets a message that it doesn't handle
-class UnknownMessage : TagionException {
-    this(immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__) pure {
-        super(msg, file, line);
-    }
-}
-
-// Exception when the actor fails to start or stop
-class RunFailure : TagionException {
-    this(immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__) pure {
-        super(msg, file, line);
-    }
 }
 
 @trusted
@@ -206,7 +213,9 @@ static:
     import std.concurrency : OwnerTerminated, Tid, thisTid, ownerTid, receive, prioritySend;
     import std.format : format;
     import std.traits : isCallable;
-    import tagion.basic.tagionexceptions : TagionException, TaskFailure, taskException;
+    import tagion.basic.tagionexceptions : TaskFailure, taskException;
+    import std.stdio : writefln;
+    import tagion.actor.exceptions : ActorException, UnknownMessage;
 
     bool stop = false;
     Ctrl[Tid] childrenState; // An AA to keep a copy of the state of the children
@@ -232,12 +241,12 @@ static:
         stop = true;
     }
 
-    @trusted
-    void failHandler(immutable(TaskFailure) t) nothrow {
+    void failHandler(TaskFailure tf) {
         assumeWontThrow({
-            if (ownerTid != Tid.init) {
-                ownerTid.send(t);
-            }
+            writeln("received exeption");
+            //if (ownerTid != Tid.init) {
+            ownerTid.send(tf);
+            //}
         });
     }
 
@@ -248,10 +257,6 @@ static:
      */
     void unknown(Variant message) {
         throw new UnknownMessage("No delegate to deal with message: %s".format(message));
-    }
-
-    void fail(Msg!"fail") {
-        throw new TagionException("Big fail");
     }
 
     /// The tasks that get run when you call spawnActor!
@@ -296,14 +301,20 @@ static:
                 try {
                     receive(
                             T, // The message handlers you pass to your Actor template
+                            (TaskFailure tf) {
+                        writeln("received exeption");
+                        if (ownerTid != Tid.init) {
+                            ownerTid.send(tf);
+                        }
+                    },
                             &signal,
                             &control,
-                            &failHandler,
                             &ownerTerminated,
                             &unknown,
                     );
                 }
-                catch (Throwable e) {
+                catch (Exception e) {
+                    assumeWontThrow(writefln("caught exeption"));
                     immutable failure = TaskFailure(cast(immutable) e, "some_unknown_task");
                     assumeWontThrow(ownerTid.prioritySend(failure));
                 }
@@ -311,7 +322,7 @@ static:
         }
 
         // If we catch an exception we send it back to owner for them to deal with it.
-        catch (Throwable e) {
+        catch (Exception e) {
             immutable failure = taskFailure(e, "some_unknown_task");
             assumeWontThrow(ownerTid.prioritySend(failure));
         }
