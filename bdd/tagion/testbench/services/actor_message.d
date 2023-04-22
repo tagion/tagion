@@ -15,24 +15,6 @@ import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
 import tagion.basic.basic : TrustedConcurrency;
 
-T receiveOnlyTimeout(T)() {
-    Duration dur = 1.seconds;
-    T ret;
-    receiveTimeout(
-            dur,
-            (T t) { ret = t; },
-            (Variant var) {
-        check(0, "Unexpected message got %s of type %s, expected %s".format(var, var.type.toString, T.stringof));
-    }
-    );
-
-    if (ret is T.init) {
-        check(0, "Timed out never received message expected message type: %s".format(T.stringof));
-    }
-
-    return ret;
-}
-
 import core.thread;
 
 enum feature = Feature(
