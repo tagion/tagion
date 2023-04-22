@@ -241,7 +241,7 @@ static:
         stop = true;
     }
 
-    void failHandler(TaskFailure tf) {
+    version (none) void failHandler(TaskFailure tf) {
         assumeWontThrow({
             writeln("received exeption");
             //if (ownerTid != Tid.init) {
@@ -296,17 +296,24 @@ static:
                 startingCall();
             }
 
+            static if (__traits(hasMember, This, "fail")) {
+                auto failhandler = __traits(getMember, This, "fail");
+            }
+            else {
+                auto failhandler = (TaskFailure tf) {
+                    writeln("received exeption");
+                    if (ownerTid != Tid.init) {
+                        ownerTid.send(tf);
+                    }
+                };
+            }
+
             setState(Ctrl.ALIVE); // Tell the owner that you running
             while (!stop) {
                 try {
                     receive(
                             T, // The message handlers you pass to your Actor template
-                            (TaskFailure tf) {
-                        writeln("received exeption");
-                        if (ownerTid != Tid.init) {
-                            ownerTid.send(tf);
-                        }
-                    },
+                            failhandler,
                             &signal,
                             &control,
                             &ownerTerminated,
