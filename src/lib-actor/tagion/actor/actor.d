@@ -142,10 +142,12 @@ nothrow ActorHandle!A spawnActor(A, Args...)(string taskName, Args args) {
     alias task = A.task;
     Tid tid;
 
-    if (assumeWontThrow(locate(taskName)) !is Tid.init) {
+    Tid isSpawnedTid = assumeWontThrow(locate(taskName));
+    if (isSpawnedTid is Tid.init) {
         tid = assumeWontThrow(spawn(&task, taskName, args));
         /// TODO: set oncrowding to exception;
         assumeWontThrow(register(taskName, tid));
+        assumeWontThrow(writefln("%s registered", taskName));
     }
 
     return ActorHandle!A(tid, taskName);
