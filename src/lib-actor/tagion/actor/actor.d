@@ -265,8 +265,7 @@ static:
     }
 
     /// The tasks that get run when you call spawnActor!
-    nothrow void task(string _taskName) {
-        string taskName = _taskName;
+    nothrow void task(string taskName) {
         try {
 
             setState(Ctrl.STARTING); // Tell the owner that you are starting.
@@ -306,6 +305,7 @@ static:
                 auto failhandler = __traits(getMember, This, "fail");
             }
             else {
+                // default failhandler
                 auto failhandler = (TaskFailure tf) {
                     writeln("received exeption");
                     if (ownerTid != Tid.init) {
@@ -320,11 +320,6 @@ static:
                     receive(
                             T, // The message handlers you pass to your Actor template
                             failhandler,
-                            (immutable Exception t) {
-                        if (ownerTid != Tid.init) {
-                            ownerTid.prioritySend(t);
-                        }
-                    },
                             &signal,
                             &control,
                             &ownerTerminated,
