@@ -140,8 +140,13 @@ ActorHandle!A actorHandle(A)(string taskName) {
  */
 nothrow ActorHandle!A spawnActor(A, Args...)(string taskName, Args args) {
     alias task = A.task;
-    Tid tid = assumeWontThrow(spawn(&task, args));
-    assumeWontThrow(register(taskName, tid));
+    Tid tid;
+
+    if (assumeWontThrow(locate(taskName)) !is Tid.init) {
+        tid = assumeWontThrow(spawn(&task, taskName, args));
+        /// TODO: set oncrowding to exception;
+        assumeWontThrow(register(taskName, tid));
+    }
 
     return ActorHandle!A(tid, taskName);
 }
@@ -260,7 +265,8 @@ static:
     }
 
     /// The tasks that get run when you call spawnActor!
-    nothrow void task() {
+    nothrow void task(string _taskName) {
+        string taskName = _taskName;
         try {
 
             setState(Ctrl.STARTING); // Tell the owner that you are starting.
@@ -328,16 +334,18 @@ static:
                 catch (Exception t) {
                     assumeWontThrow(writefln("caught exeption"));
                     if (ownerTid != Tid.init) {
-                        ownerTid.prioritySend(TaskFailure(cast(immutable) t, "sometask"));
+                        ownerTid.prioritySend(TaskFailure(cast(immutable) t, taskName));
                     }
                 }
             }
         }
 
         // If we catch an exception we send it back to owner for them to deal with it.
-        catch (Exception e) {
-            immutable failure = taskFailure(e, "some_unknown_task");
-            assumeWontThrow(ownerTid.prioritySend(failure));
+        catch (Exception t) {
+            assumeWontThrow(writefln("caught running exeption"));
+            if (tidOwner.get !is Tid.init) {
+                assumeWontThrow(ownerTid.prioritySend(TaskFailure(cast(immutable) t, taskName)));
+            }
         }
     }
 }
