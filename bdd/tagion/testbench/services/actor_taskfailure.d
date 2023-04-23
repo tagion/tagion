@@ -62,7 +62,9 @@ class SendATaskFailureToAnActor {
     Document theMainThread() @trusted {
         bool received = receiveTimeout(
                 1.seconds,
-                (TaskFailure tf) { writefln("Task failed succesfully with: %s", tf.throwable.msg); },
+                (TaskFailure tf) {
+            writefln("Task failed succesfully with: %s, %s", typeid(tf.throwable), tf.throwable.msg);
+        },
                 (Variant val) { check(0, format("Unexpected value: %s", val)); }
         );
         check(received, "Timed out before receiving taskfailure");
