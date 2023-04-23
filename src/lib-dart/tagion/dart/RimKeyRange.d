@@ -1,66 +1,81 @@
+/// This module handels the rim selector used in the DART modify function
 module tagion.dart.RimKeyRange;
 
-//import std.stdio;
 import std.algorithm;
 import std.range;
 import std.traits;
 import std.container.array;
 import std.typecons : Flag, Yes, No;
 
-import tagion.dart.Recorder : RecordFactoryT, Archive, GetType, Neutral;
+import tagion.dart.Recorder : RecordFactory, Archive, GetType, Neutral, Flip;
 import tagion.basic.Types : isBufferType, Buffer;
 import tagion.utils.Miscellaneous : hex;
 import tagion.basic.Debug;
 
-alias RecordFactoryX = RecordFactoryT!true;
-/++
- + Gets the rim key from a buffer
- +
- + Returns;
- +     fingerprint[rim]
- +/
+/**
+ * Gets the rim key from a buffer
+ *
+ * Returns;
+ *     fingerprint[rim]
+ */
 @safe
 ubyte rim_key(F)(F rim_keys, const uint rim) pure if (isBufferType!F) {
-    if (rim >= rim_keys.length) {
-        debug __write("%s rim=%d", rim_keys.hex, rim);
-    }
     return rim_keys[rim];
 }
 
+/**
+ * Creates a rim selector from a range
+ * Params:
+ *   range = range to be used
+ *   undo = Yes if the range should be undone
+ * Returns: 
+ */
 @safe
-RimKeyRange!Range rimKeyRange(Range)(Range range, const Flag!"undo" undo = Yes.undo)
-        if (isInputRange!Range && isImplicitlyConvertible!(ElementType!Range, Archive) && !isImplicitlyConvertible!(Range, RecordFactoryT!true.Recorder)) {
-    return RimKeyRange!Range(range, undo);
+RimKeyRange!Range rimKeyRange(Range)(Range range, const Flag!"undo" undo = No.undo, const GetType get_type = null)
+        if (isInputRange!Range && is(ElementType!Range : const(Archive))) {
+    return RimKeyRange!Range(range, undo, get_type);
 }
 
+/**
+ * Creates a rim selector range from a Recorder
+ * Params:
+ *   rec = recorder 
+ *   undo = Yes of the recorder should be undone
+ */
 @safe
-auto rimKeyRange(RecordFactoryX.Recorder rec, const Flag!"undo" undo = Yes.undo) {
-
-    return rimKeyRange(rec[], undo);
+auto rimKeyRange(Flag!"undo" undo = No.undo)(const(RecordFactory.Recorder) rec) {
+    static if (undo) {
+        return rimKeyRange(rec[].retro, undo, Flip);
+    }
+    else {
+        return rimKeyRange(rec[], undo);
+    }
 }
 
-// Range over a Range with the same key in the a specific rim
+/// Range over a Range with the same key in the a specific rim
 @safe
-struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(ElementType!Range, Archive)) {
-    alias archive_less = RecordFactoryX.Recorder.archive_sorted;
-
+struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(ElementType!Range, const(Archive))) {
+    alias archive_less = RecordFactory.Recorder.archive_sorted;
     @safe
     final class RangeContext {
         Range range;
-        Archive[] _added_archives;
+        const(Archive)[] _added_archives;
         AdderRange added_range;
-        this(Range range) pure nothrow {
-            this.range = range;
-            added_range = new AdderRange(0);
-        }
-
-        protected this(RangeContext rhs) {
-            _added_archives = rhs._added_archives;
-            range = rhs.range;
-            added_range = new AdderRange(rhs.added_range.index);
-        }
-
+        const GetType get_type;
         pure nothrow {
+            this(Range range, const GetType _get_type = null) {
+                this.range = range;
+                added_range = new AdderRange(0);
+                get_type = (_get_type) ? _get_type : Neutral;
+            }
+
+            protected this(RangeContext rhs, const GetType _get_type = null) {
+                _added_archives = rhs._added_archives;
+                range = rhs.range;
+                added_range = new AdderRange(rhs.added_range.index);
+                get_type = (_get_type) ? _get_type : rhs.get_type;
+            }
+
             /**
              * Checks if the range is empty
              * Returns: true if empty
@@ -92,7 +107,7 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
              * Gets the current archive in the range
              * Returns: current archive and return null if the range is empty
              */
-            Archive front() {
+            const(Archive) front() {
                 if (!added_range.empty && !range.empty) {
                     if (archive_less(added_range.front, range.front)) {
                         return added_range.front;
@@ -112,212 +127,224 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
                 return new RangeContext(this);
             }
 
+            Archive.Type type() {
+                if (!added_range.empty && !range.empty) {
+                    if (archive_less(added_range.front, range.front)) {
+                        return added_range.front.type;
+                    }
+                    return get_type(range.front);
+                }
+                if (!range.empty) {
+                    return get_type(range.front);
+                }
+                else if (!added_range.empty) {
+                    return get_type(added_range.front);
+                }
+                return Archive.Type.NONE;
+
+            }
         }
         @safe @nogc
         final class AdderRange {
             size_t index;
-            this(size_t index) pure nothrow {
-                this.index = index;
-            }
+            pure nothrow {
+                this(size_t index) {
+                    this.index = index;
+                }
 
-            bool empty() pure const nothrow @nogc {
-                return index >= _added_archives.length;
-            }
+                bool empty() {
+                    return index >= _added_archives.length;
+                }
 
-            Archive front() pure nothrow @nogc {
-                return _added_archives[index];
-            }
+                const(Archive) front() {
+                    return _added_archives[index];
+                }
 
-            void popFront() pure nothrow @nogc {
-                if (!empty) {
-                    index++;
+                void popFront() {
+                    if (!empty) {
+                        index++;
+                    }
                 }
             }
         }
     }
 
-    //bool identical() pure nothrow {
-    bool identical() {
-        if (rim < 0 || ctx.empty) {
-            return false;
-        }
-        const _index = ctx.added_range.index;
-        auto _range = ctx.range;
-        scope (exit) {
-            ctx.added_range.index = _index;
-            ctx.range = _range;
-        }
-        const first = ctx.front;
-        popFront;
-        return !empty && this.all!((a) => first.fingerprint == a.fingerprint);
-    }
-
-    bool oneLeft() {
-        if (rim < 0 || ctx.empty) {
-            return false;
-        }
-        const _index = ctx.added_range.index;
-        auto _range = ctx.range;
-        scope (exit) {
-            ctx.added_range.index = _index;
-            ctx.range = _range;
-        }
-
-        return this.take(2).walkLength == 1;        
-    }
-
-    bool moreThanOneADD() {
-        if (rim < 0 || ctx.empty) {
-            return false;
-        }
-        const _index = ctx.added_range.index;
-        auto _range = ctx.range;
-        scope (exit) {
-            ctx.added_range.index = _index;
-            ctx.range = _range;
-        }
-        return this.filter!((a) => a.type == Archive.Type.ADD).take(2).walkLength > 1;
-    }
-
+    @disable this();
     protected RangeContext ctx;
     const Buffer rim_keys;
     const int rim;
     const Flag!"undo" undo;
-    @disable this();
-
-    void add(Archive archive)
-    in ((rim < 0) || (rim_keys == archive.fingerprint[0 .. rim + 1]))
-    do {
-        ctx._added_archives ~= (archive);
-    }
-
-    private this(RimKeyRange rhs, const uint rim) {
-        ctx = rhs.ctx;
-        rim_keys = (rhs.empty) ? Buffer.init : rhs.front.fingerprint[0 .. rim + 1];
-        this.rim = rim & int.max;
-        undo = rhs.undo;
-
-    }
-
-    private this(RimKeyRange rhs) pure nothrow {
-        ctx = rhs.ctx.save;
-        rim_keys = rhs.rim_keys;
-        rim = rhs.rim;
-        undo = rhs.undo;
-    }
-
-    private this(Range range, const Flag!"undo" undo) {
-        this.undo = undo;
-        rim = -1;
-        //auto range_save=_range.save;
-        ctx = new RangeContext(range);
-        rim_keys = null;
-    }
-
-    RimKeyRange selectRim(const uint rim) pure nothrow {
-        return RimKeyRange(this, rim);
-    }
-
-    RimKeyRange nextRim() pure nothrow {
-        return RimKeyRange(this, rim + 1);
-    }
-    /**
-     * Checks if all the archives in the range are of the type REMOVE
-     * Params:
-     *   get_type = archive type get function
-     * Returns: true if all the archives are removes
-     */
-    version (none) bool onlyRemove(const GetType get_type) const pure {
-        return current
-            .all!(a => get_type(a) is Archive.Type.REMOVE);
-    }
 
     pure nothrow {
-        /** 
-             * Checks if the range only contains one archive 
-             * Returns: true range if single
-             */
-        version (none) bool oneLeft() const @nogc {
-            return length == 1;
+        /**
+         * Construct an copy of an existing range
+         * Params:
+         *   rhs = Range to be copied
+         *   rim = Sets the rim for the new copy
+         */
+        private this(RimKeyRange rhs, const uint rim) {
+            ctx = rhs.ctx;
+            rim_keys = (rhs.empty) ? Buffer.init : rhs.front.fingerprint[0 .. rim + 1];
+            this.rim = rim & int.max;
+            undo = rhs.undo;
         }
 
         /**
-             * Checks if the range is empty
-             * Returns: true if empty
-             */
+         * Construct an copy of an existing range
+         * Params:
+         *   rhs = Range to be copied
+         */
+        private this(RimKeyRange rhs) {
+            ctx = rhs.ctx.save;
+            rim_keys = rhs.rim_keys;
+            rim = rhs.rim;
+            undo = rhs.undo;
+        }
+        /**
+         * 
+         * Params:
+         *   range = Range to be selected from 
+         *   undo = if Yes it will revert the range
+         *   get_type = set the archive type set function
+         */
+        private this(Range range, const Flag!"undo" undo, const GetType get_type = null) {
+            this.undo = undo;
+            rim = -1;
+            //auto range_save=_range.save;
+            ctx = new RangeContext(range, get_type);
+            rim_keys = null;
+        }
+
+        /**
+         * Checks if only one archives are left in the range
+         * Returns: 
+         */
+        bool oneLeft() {
+            if (rim < 0 || ctx.empty) {
+                return false;
+            }
+            const _index = ctx.added_range.index;
+            auto _range = ctx.range;
+            scope (exit) {
+                ctx.added_range.index = _index;
+                ctx.range = _range;
+            }
+
+            return this.take(2).walkLength == 1;
+        }
+
+        /**
+         * Adds an archive to the current range
+         * The archives should be in the same rim
+         * Params:
+         *   archive = the added element
+         */
+        void add(const(Archive) archive)
+        in ((rim < 0) || (rim_keys == archive.fingerprint[0 .. rim + 1]))
+        do {
+            ctx._added_archives ~= archive;
+        }
+
+        /**
+         * Create a new range from this range at the rim
+         * Params:
+         *   rim = the rim to be use in the new range
+         * Returns: Range for the selected rim 
+         */
+        RimKeyRange selectRim(const uint rim) {
+            return RimKeyRange(this, rim);
+        }
+
+        /**
+         * Create a new range from this range at the next rim 
+         * 
+         * Returns: Next range an the rim+1 
+         */
+        RimKeyRange nextRim() {
+            return RimKeyRange(this, rim + 1);
+        }
+
+        /**
+         * Checks if the range is empty
+         * Returns: true if empty
+         */
         bool empty() @nogc {
             return ctx.empty || (rim >= 0) && (rim_keys != ctx.front.fingerprint[0 .. rim + 1]);
         }
 
+        /**
+         * Progress to the next archive in the list 
+         */
         void popFront() {
             if (!empty) {
                 ctx.popFront;
             }
         }
 
-        Archive front() {
+        /**
+         * 
+         * Returns: first archive in the range
+         */
+        const(Archive) front() {
             return ctx.front;
         }
 
         /**
-             * Force the range to be empty
-             */
-        version (none) void force_empty() {
-            current = null;
+         * 
+         * Returns: first archive in the range
+         */
+        const(Archive.Type) type() {
+            return ctx.type;
         }
 
         /**
-             * Number of archive left in the range
-             * Returns: size of the range
-             */
-        version (none) size_t length() const {
-            return range.length + added_archives.length;
-        }
-    }
-    /**
-         *  Creates new range at the current position
+         * Creates new range at the current position
          * Returns: copy of this range
          */
-    RimKeyRange save() pure nothrow {
-        return RimKeyRange(this);
+        RimKeyRange save() {
+            return RimKeyRange(this);
+        }
     }
-
     static assert(isInputRange!RimKeyRange);
     static assert(isForwardRange!RimKeyRange);
 
 }
 
 version (unittest) {
-    //   import std.stdio;
+    import std.typecons : Tuple;
+    import tagion.dart.DARTBasic : DARTIndex;
 
+    alias TraverseData = Tuple!(DARTIndex, "fingerprint", Archive.Type, "type");
     @safe
-    void traverse(RecordFactoryT!true.Recorder recorder, const bool undo = false) {
+    TraverseData[] traverse(
+            const(RecordFactory.Recorder) recorder,
+            const Flag!"undo" undo = No.undo) {
+        TraverseData[] result;
+
         void inner_traverse(RimRange)(RimRange rim_key_range) {
             while (!rim_key_range.empty) {
-                if (rim_key_range.identical) {
-                    assert(!rim_key_range.empty);
-                    const first = rim_key_range.front;
+                if (rim_key_range.oneLeft) {
+                    result ~= TraverseData(rim_key_range.front.fingerprint, rim_key_range.type);
                     rim_key_range.popFront;
-                    if (!rim_key_range.empty) {
-                        const second = rim_key_range.front;
-                        assert(first.fingerprint == second.fingerprint,
-                                "First and second idenitical fingerprints should be the same");
-                        assert(_reverse_order ^ (first.type < second.type), "Type order not correct");
-                        rim_key_range.popFront;
-                    }
-                    assert(rim_key_range.empty);
+                }
+                else if (rim_key_range.front.type == Archive.Type.REMOVE) {
+                    result ~= TraverseData(rim_key_range.front.fingerprint, rim_key_range.type);
+                    rim_key_range.popFront;
                 }
                 else {
-                    traverse(rim_key_range.nextRim);
+                    inner_traverse(rim_key_range.nextRim);
                 }
             }
-            if (undo) {
-                inner_traverse(RimKeyRange(recorder.retro));
-            }
-            else {
-                inner_traverse(RimKeyRange(recorder));
-            }
         }
+
+        if (undo) {
+            inner_traverse(rimKeyRange!(Yes.undo)(recorder));
+        }
+        else {
+            inner_traverse(rimKeyRange(recorder));
+
+        }
+        return result;
     }
 }
 
@@ -328,7 +355,7 @@ unittest {
     import tagion.dart.DARTFakeNet;
 
     const net = new DARTFakeNet;
-    auto factory = RecordFactoryX(net);
+    auto factory = RecordFactory(net);
 
     { // Test with ADD's only in the RimKeyRange root (rim == -1)
         const table = [
@@ -344,37 +371,6 @@ unittest {
             .map!(t => DARTFakeNet.fake_doc(t))
             .array;
 
-        { /// identical 
-            auto rec_identical = factory.recorder;
-            { // empty rim_key_range should not be identical
-                auto rim_key_range = rimKeyRange(rec_identical);
-                assert(rim_key_range.empty);
-                assert(!rim_key_range.identical);
-            }
-            rec_identical.insert(documents[1], Archive.Type.ADD);
-            { // with one archive rim_key_range should be identical
-                auto rim_key_range = rimKeyRange(rec_identical);
-                assert(!rim_key_range.empty);
-                assert(!rim_key_range.identical);
-                assert(!rim_key_range.selectRim(00).identical);
-            }
-            rec_identical.insert(documents[1], Archive.Type.REMOVE);
-            { // with two archives one ADD and one REMOVE with same fingerprint should be identical
-                auto rim_key_range = rimKeyRange(rec_identical);
-                assert(!rim_key_range.empty);
-                assert(!rim_key_range.identical);
-                assert(rim_key_range.selectRim(00).identical);
-            }
-
-            rec_identical.insert(documents[2], Archive.Type.ADD);
-            { // If not all the archives have the with same fingerprint should be identical
-                auto rim_key_range = rimKeyRange(rec_identical);
-                assert(!rim_key_range.empty);
-                assert(!rim_key_range.identical);
-                assert(!rim_key_range.selectRim(00).identical);
-            }
-
-        }
         // Create a recorder from the first 9 documents 
         auto rec = factory.recorder(documents.take(3), Archive.Type.ADD);
         { // Check the the rim-key range is the same as the recorder
@@ -394,6 +390,7 @@ unittest {
             auto rim_key_range = rimKeyRange(rec);
             auto rec_copy = rec.dup;
             rec_copy.insert(documents[3], Archive.Type.ADD);
+
             rim_key_range.add(rec.archive(documents[3], Archive.Type.ADD));
             /*
             Archive abcd133456789abc ADD
@@ -461,12 +458,11 @@ unittest {
                 .until!(doc => doc == DARTFakeNet.fake_doc(ulong.max))(No.openRight),
                 Archive.Type.ADD);
 
-        version (none) { /// Check selectRim
+        { /// Check selectRim
             auto rim_key_range = rimKeyRange(rec);
             { // Check the range lengths of rim = 00 
                 auto rim_key_copy = rim_key_range.save;
                 const rim = 00;
-                assert(rim_key_copy.selectRim(rim).identical);
                 assert(rim_key_copy.selectRim(rim).walkLength == 1);
                 assert(rim_key_copy.selectRim(rim).walkLength == 9);
                 assert(rim_key_copy.selectRim(rim).walkLength == 1);
@@ -484,18 +480,23 @@ unittest {
         }
         const rec_len = rec.length;
         // Checks that the 
-        rec.insert(documents[3], Archive.Type.REMOVE);
-        rec.insert(documents[5], Archive.Type.REMOVE);
+        rec.insert(documents[rec_len], Archive.Type.REMOVE);
+        rec.insert(documents[rec_len + 1], Archive.Type.REMOVE);
 
-        {
-            auto rim_key_range = rimKeyRange(rec);
-            traverse(rec);
+        { // Check that the order of the archives are the same in the rim-key-range
+            const result = traverse(rec);
+            assert(equal(rec[].map!q{a.fingerprint}, result.map!q{a.fingerprint}));
+            assert(equal(rec[].map!q{a.type}, result.map!q{a.type}));
+
         }
 
-        { //
-            auto rim_key_range = rimKeyRange(rec[]);
-            traverse(rec, true);
+        { // Checks the undo
+            // The order should be reversed and the type should be flipped ADD<->REMOVE
+            const result = traverse(rec, Yes.undo);
+            assert(equal(rec[].retro.map!q{a.fingerprint}, result.map!q{a.fingerprint}));
+            assert(equal(rec[].retro.map!(a => Flip(a)), result.map!q{a.type}));
         }
 
     }
+
 }

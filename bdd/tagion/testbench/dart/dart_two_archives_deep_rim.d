@@ -114,7 +114,7 @@ class AddAnotherArchive {
         const doc = DARTFakeNet.fake_doc(info.deep_table[0]);
         const doc_bullseye = dartIndex(info.net, doc);
         check(bullseye == doc_bullseye, "Bullseye not equal to doc");
-
+        // db.dump;
         return result_ok;
     }
 
@@ -129,7 +129,7 @@ class AddAnotherArchive {
         check(doc_fingerprint != bullseye, "Bullseye not updated");
 
         fingerprints ~= doc_fingerprint;
-
+        // db.dump;
         return result_ok;
     }
 
@@ -190,7 +190,7 @@ class RemoveArchive {
         Exception dart_exception;
         db = new DART(info.net, info.dartfilename, dart_exception);
         check(dart_exception is null, format("Failed to open DART %s", dart_exception.msg));
-
+        
         return result_ok;
     }
 
@@ -199,6 +199,7 @@ class RemoveArchive {
         auto recorder = db.recorder();
         recorder.remove(fingerprints[0]);
         bullseye = db.modify(recorder);
+        // db.dump;
         return result_ok;
     }
 
@@ -214,7 +215,7 @@ class RemoveArchive {
         auto data = recorder[].front;
         const(ulong) archive = data.filed[info.FAKE].get!ulong;
         check(archive == info.deep_table[1], "Data is not correct");
-
+        // db.dump;
         return result_ok;
     }
 

@@ -27,22 +27,19 @@ import tagion.dart.DARTBasic;
 import std.digest;
 import tagion.utils.Miscellaneous : toHexString;
 
-
 import tagion.testbench.dart.dart_helper_functions;
 
 enum feature = Feature(
-        "Sync insert random stress test",
-        [
-        "This test uses dartfakenet to randomly add and remove archives in the same recorder."
-]);
+            "Sync insert random stress test",
+            []);
 
 alias FeatureContext = Tuple!(
-    AddRemoveAndReadTheResult, "AddRemoveAndReadTheResult",
-    FeatureGroup*, "result"
+        AddRemoveAndReadTheResult, "AddRemoveAndReadTheResult",
+        FeatureGroup*, "result"
 );
 
 @safe @Scenario("add remove and read the result",
-    [])
+        [])
 class AddRemoveAndReadTheResult {
     DartInfo info;
     DART db1;
@@ -54,6 +51,7 @@ class AddRemoveAndReadTheResult {
     uint number_of_seeds;
     uint number_of_rounds;
     uint number_of_samples;
+    bool bullseyes_not_the_same;
 
     uint operations;
 
@@ -100,7 +98,7 @@ class AddRemoveAndReadTheResult {
 
             foreach (sample_number; sample_numbers) {
                 auto docs = random_archives[sample_number].values.map!(
-                    a => DARTFakeNet.fake_doc(a));
+                        a => DARTFakeNet.fake_doc(a));
 
                 if (!random_archives[sample_number].in_dart) {
                     recorder.insert(docs, Archive.Type.ADD);
@@ -121,8 +119,10 @@ class AddRemoveAndReadTheResult {
             if (i % 250 == 0) {
                 syncDarts(db1, db2, 0, 0);
                 check(db1.bullseye == db2.bullseye, "bullseyes not the same after sync");
+                if (db1.bullseye != db2.bullseye) {
+                    bullseyes_not_the_same = true;
+                }
             }
-            
 
             // sync and compare bullseyes
         }
@@ -132,7 +132,7 @@ class AddRemoveAndReadTheResult {
 
     @When("i sync the new database with another and check the bullseyes of the two databases.")
     Document databases() {
-        // empty since the bullseye is checked above
+        check(!bullseyes_not_the_same, "bullseyes not the same");
         return result_ok;
     }
 
