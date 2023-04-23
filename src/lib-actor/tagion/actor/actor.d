@@ -303,7 +303,7 @@ static:
                 auto failhandler = (TaskFailure tf) {
                     writeln("received exeption");
                     if (ownerTid != Tid.init) {
-                        ownerTid.send(tf);
+                        ownerTid.prioritySend(tf);
                     }
                 };
             }
@@ -314,16 +314,22 @@ static:
                     receive(
                             T, // The message handlers you pass to your Actor template
                             failhandler,
+                            (immutable Exception t) {
+                        if (ownerTid != Tid.init) {
+                            ownerTid.prioritySend(t);
+                        }
+                    },
                             &signal,
                             &control,
                             &ownerTerminated,
                             &unknown,
                     );
                 }
-                catch (Exception e) {
+                catch (Exception t) {
                     assumeWontThrow(writefln("caught exeption"));
-                    immutable failure = TaskFailure(cast(immutable) e, "some_unknown_task");
-                    assumeWontThrow(ownerTid.prioritySend(failure));
+                    if (ownerTid != Tid.init) {
+                        ownerTid.prioritySend(TaskFailure(cast(immutable) t, "sometask"));
+                    }
                 }
             }
         }
