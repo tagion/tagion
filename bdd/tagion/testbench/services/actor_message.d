@@ -27,8 +27,8 @@ alias FeatureContext = Tuple!(
 );
 
 enum supervisor_task_name = "supervisor";
-enum child1_task_name = "0";
-enum child2_task_name = "1";
+enum child1_task_name = "child0";
+enum child2_task_name = "child1";
 
 // Child actor
 struct MyActor {
@@ -55,9 +55,21 @@ alias ChildHandle = ActorHandle!MyActor;
 
 struct MySuperActor {
 static:
-    MyActor child1;
-    MyActor child2;
-    alias children = AliasSeq!(child1, child2);
+    ChildHandle child1Handle;
+    ChildHandle child2Handle;
+
+    void starting() {
+        child1Handle = spawnActor!MyActor(child1_task_name);
+        child2Handle = spawnActor!MyActor(child2_task_name);
+
+        childrenState[child1Handle.tid] = Ctrl.STARTING;
+        childrenState[child2Handle.tid] = Ctrl.STARTING;
+
+        while (!(childrenState.all(Ctrl.ALIVE))) {
+            CtrlMsg msg = receiveOnlyTimeout!CtrlMsg;
+            childrenState[msg.tid] = msg.ctrl;
+        }
+    }
 
     void receiveStatus(Msg!"response", int status) {
         sendOwner(status);

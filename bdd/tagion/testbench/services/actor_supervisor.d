@@ -56,19 +56,13 @@ static:
 
 alias ChildHandle = ActorHandle!SetUpForFailure;
 
-// How big is the oof.
-enum Oof {
-    big, // so big the actor should restart
-    small, // small enought the actor can keep running
-}
-
 enum supervisor_task_name = "supervisor";
 enum child_task_name = "child";
 
 /// Supervisor Actor
 struct SetUpForDisappointment {
 static:
-    SetUpForFailure child;
+    //SetUpForFailure child;
     ChildHandle childHandle;
 
     void starting() {
@@ -83,8 +77,8 @@ static:
 
     // Override the default fail handler
     auto fail = (TaskFailure tf) {
-        writeln("Received the taskfailure from overrid taskfail");
         try {
+            writefln("Received the taskfailure from overrid taskfail type: %s", typeid(tf.throwable));
             throw tf.throwable;
         }
         catch (Fatal e) {
