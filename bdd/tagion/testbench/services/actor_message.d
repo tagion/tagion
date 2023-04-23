@@ -27,7 +27,7 @@ alias FeatureContext = Tuple!(
 );
 
 enum supervisor_task_name = "supervisor";
-enum child1_task_name = "child0";
+enum child1_task_name = "child1";
 enum child2_task_name = "child1";
 
 // Child actor
@@ -100,6 +100,7 @@ class MessageBetweenSupervisorAndChild {
     Document actorsChild1AndChild2() @trusted {
         supervisorHandle = spawnActor!MySuperActor(supervisor_task_name);
 
+        check(supervisorHandle.tid !is Tid.init, "Supervisor thread is not running");
         Ctrl ctrl = receiveOnlyTimeout!CtrlMsg.ctrl;
         check(ctrl is Ctrl.STARTING, "Supervisor is not starting");
 
