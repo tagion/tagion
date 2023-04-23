@@ -14,7 +14,7 @@ import tagion.basic.tagionexceptions : TagionException, TaskFailure;
 T receiveOnlyTimeout(T)() {
     T ret;
     receiveTimeout(
-            1.seconds,
+            2.seconds,
             (T val) { ret = val; },
             (Variant val) {
         throw new MessageMismatch(
@@ -142,13 +142,13 @@ nothrow ActorHandle!A spawnActor(A, Args...)(string taskName, Args args) {
     alias task = A.task;
     Tid tid;
 
-    Tid isSpawnedTid = assumeWontThrow(locate(taskName));
-    if (isSpawnedTid is Tid.init) {
-        tid = assumeWontThrow(spawn(&task, taskName, args));
-        /// TODO: set oncrowding to exception;
-        assumeWontThrow(register(taskName, tid));
-        assumeWontThrow(writefln("%s registered", taskName));
-    }
+    //Tid isSpawnedTid = assumeWontThrow(locate(taskName));
+    //if (isSpawnedTid is Tid.init) {
+    tid = assumeWontThrow(spawn(&task, taskName, args));
+    /// TODO: set oncrowding to exception;
+    assumeWontThrow(register(taskName, tid));
+    assumeWontThrow(writefln("%s registered", taskName));
+    //}
 
     return ActorHandle!A(tid, taskName);
 }
@@ -273,28 +273,6 @@ static:
             setState(Ctrl.STARTING); // Tell the owner that you are starting.
             scope (exit)
                 setState(Ctrl.END); // Tell the owner that you have finished.
-
-            static if (__traits(hasMember, This, "children")) {
-                debug writeln("STARTING CHILDREN", children);
-                static foreach (i, child; children) {
-                    {
-                        alias Child = typeof(child);
-                        debug writefln("STARTING: %s", i);
-                        auto childhandle = spawnActor!Child(format("%s", i));
-                        childrenState[childhandle.tid] = Ctrl.STARTING; // assume that the child is starting
-                    }
-                }
-
-                // TODO: Should have a timeout incase the children don't commit alive;
-                debug writeln((childrenState.all(Ctrl.ALIVE)));
-                while (!(childrenState.all(Ctrl.ALIVE))) {
-                    CtrlMsg msg = receiveOnly!CtrlMsg; // HACK: don't use receiveOnly
-                    childrenState[msg.tid] = msg.ctrl;
-                }
-
-                debug writeln((childrenState.all(Ctrl.ALIVE)));
-                debug writeln("STARTED all the children");
-            }
 
             // Call starting() if it's implemented
             static if (__traits(hasMember, This, "starting")) {
