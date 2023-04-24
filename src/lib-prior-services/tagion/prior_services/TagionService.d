@@ -13,7 +13,7 @@ import std.datetime : Clock;
 import p2plib = p2p.node;
 
 import tagion.basic.Types : Control, Buffer;
-import tagion.basic.tagionexceptions : taskfailure, fatal;
+import tagion.actor.exceptions : taskfailure, fatal;
 import tagion.crypto.Types : Pubkey;
 import tagion.communication.HiRPC;
 import tagion.crypto.SecureNet : StdSecureNet;

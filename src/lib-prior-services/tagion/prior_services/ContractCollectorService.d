@@ -5,6 +5,7 @@ import std.concurrency;
 import std.range : chain;
 
 import tagion.basic.tagionexceptions;
+import tagion.actor.exceptions;
 import tagion.basic.Types : Control;
 import tagion.logger.Logger;
 import tagion.prior_services.Options;

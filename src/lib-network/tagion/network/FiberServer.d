@@ -19,7 +19,7 @@ import tagion.basic.Message;
 import tagion.basic.Types : Buffer, Control;
 import tagion.logger.Logger;
 import tagion.basic.ConsensusExceptions;
-import tagion.basic.tagionexceptions : taskfailure, fatal;
+import tagion.actor.exceptions : taskfailure, fatal;
 import tagion.communication.HiRPC : HiRPC;
 import LEB128 = tagion.utils.LEB128;
 

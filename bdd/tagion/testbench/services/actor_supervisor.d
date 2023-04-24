@@ -6,7 +6,8 @@ import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
 import tagion.actor.actor;
 import std.concurrency;
-import tagion.basic.tagionexceptions : TagionException, TaskFailure;
+import tagion.basic.tagionexceptions : TagionException;
+import tagion.actor.exceptions : TaskFailure;
 import core.time;
 import std.format : format;
 import std.exception : assumeWontThrow;
@@ -146,13 +147,6 @@ class SupervisorWithFailingChild {
 
     @Then("the #super actor should catch the #child which failed")
     Document whichFailed() @trusted {
-        //Tid childTid = locate(child_task_name);
-        //bool received = receiveTimeout(
-        //        1.seconds,
-        //        (TaskFailure tf) { writefln("Task failed succesfully with: %s", tf.throwable.msg); },
-        //        (Variant val) { check(0, format("Unexpected value: %s", val)); }
-        //);
-        //check(received, "Timed out before receiving taskfailure");
         return result_ok;
     }
 
@@ -170,13 +164,6 @@ class SupervisorWithFailingChild {
 
     @Then("the #super actor should let the #child keep running")
     Document keepRunning() @trusted {
-        //bool received = receiveTimeout(
-        //        1.seconds,
-        //        (TaskFailure tf) { writefln("Task failed succesfully with: %s", tf.throwable.msg); },
-        //        (Variant val) { check(0, format("Unexpected value: %s", val)); }
-        //);
-        //check(received, "Timed out before receiving taskfailure");
-
         check(childHandle.tid !is Tid.init, "Child thread is not running");
 
         return result_ok;

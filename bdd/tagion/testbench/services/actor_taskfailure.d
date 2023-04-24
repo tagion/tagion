@@ -10,8 +10,9 @@ import std.stdio;
 import core.time;
 import std.format : format;
 
-import tagion.actor.actor;
 import tagion.basic.tagionexceptions;
+import tagion.actor.actor;
+import tagion.actor.exceptions;
 
 enum feature = Feature(
             "Actor TaskFailure",

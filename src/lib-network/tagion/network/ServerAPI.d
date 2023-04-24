@@ -20,7 +20,7 @@ import tagion.GlobalSignals : abort;
 
 import tagion.logger.Logger;
 import tagion.basic.Types : Control;
-import tagion.basic.tagionexceptions : fatal;
+import tagion.actor.exceptions : fatal;
 
 @safe
 struct ServerAPI {

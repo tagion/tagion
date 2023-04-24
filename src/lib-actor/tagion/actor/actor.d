@@ -9,7 +9,8 @@ import std.exception;
 import std.traits;
 
 import tagion.actor.exceptions;
-import tagion.basic.tagionexceptions : TagionException, TaskFailure;
+import tagion.actor.exceptions : TaskFailure;
+import tagion.basic.tagionexceptions : TagionException;
 
 T receiveOnlyTimeout(T)() {
     T ret;
@@ -234,9 +235,8 @@ static:
     import std.concurrency : OwnerTerminated, Tid, thisTid, ownerTid, receive, prioritySend;
     import std.format : format;
     import std.traits : isCallable;
-    import tagion.basic.tagionexceptions : TaskFailure, taskException;
+    import tagion.actor.exceptions : TaskFailure, taskException, ActorException, UnknownMessage;
     import std.stdio : writefln;
-    import tagion.actor.exceptions : ActorException, UnknownMessage;
 
     bool stop = false;
     Ctrl[Tid] childrenState; // An AA to keep a copy of the state of the children

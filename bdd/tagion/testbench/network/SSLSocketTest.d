@@ -77,7 +77,7 @@ import tagion.network.FiberServer;
 import tagion.network.SSLServiceOptions;
 import tagion.network.ServerAPI;
 
-import tagion.basic.tagionexceptions : fatal;
+import tagion.actor.exceptions : fatal;
 import tagion.logger.Logger;
 import tagion.basic.Types : Control;
 import tagion.GlobalSignals : abort;

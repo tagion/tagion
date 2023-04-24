@@ -12,7 +12,7 @@ import core.demangle : mangle;
 alias Tid = concurrency.Tid;
 import concurrency = std.concurrency;
 import tagion.basic.Types : Control;
-import tagion.basic.tagionexceptions : fatal; //, Check, TagionException;
+import tagion.actor.exceptions : fatal; //, Check, TagionException;
 import tagion.logger.Logger;
 import tagion.actor.ActorException;
 
