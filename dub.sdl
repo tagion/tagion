@@ -25,8 +25,10 @@ subPackage {
 }
 subPackage {
     name "utils"
+    buildRequirements "allowWarnings" "silenceWarnings"
     sourcePaths "src/lib-utils/"
     importPaths "src/lib-utils/"
+    dependency "tagion:basic" version="*"
 }
 subPackage {
     name "logger"
@@ -44,6 +46,7 @@ subPackage {
 }
 subPackage {
     name "hibon"
+    buildRequirements "allowWarnings" "silenceWarnings"
     sourcePaths "src/lib-hibon/"
     importPaths "src/lib-hibon/"
     dependency "tagion:utils" version="*"
@@ -79,30 +82,77 @@ subPackage {
     importPaths "src/lib-options/"
 }
 
+subPackage {
+    name "tools"
+    sourcePaths "src/lib-tools"
+    importPaths "src/lib-tools"
+}
 
-sourcePaths \
-    "src/lib-funnel/" \
-    "src/lib-gossip/" \
-    "src/lib-hashchain/" \
-    "src/lib-hashgraph/" \
-    "src/lib-hashgraphview/" \
-    "src/lib-mobile/" \
-    "src/lib-monitor/" \
-    "src/lib-network/" \
-    "src/lib-options/" \
-    "src/lib-p2pgowrapper/" \
-    "src/lib-prior-actor/" \
-    "src/lib-prior-services/" \
-    "src/lib-services/" \
-    "src/lib-taskwrapper/" \
-    "src/lib-tools/" \
-    "src/lib-wallet/" \
-    "src/lib-wasm/"
+
+subPackage {
+    name "behaviour"
+    sourcePaths "src/lib-behaviour/"
+    importPaths "src/lib-behaviour/"
+    dependency "tagion:hibon" version="*"
+}
+
+subPackage {
+    name "hashgraph"
+    sourcePaths "src/lib-hashgraph/"
+    importPaths "src/lib-hashgraph/"
+    dependency "tagion:hashgraphview" version="*"
+    dependency "tagion:gossip" version="*"
+}
+
+subPackage {
+    name "hashgraphview"
+    sourcePaths "src/lib-hashgraphview/"
+    importPaths "src/lib-hashgraphview/"
+}
+
+subPackage {
+    name "gossip"
+    sourcePaths "src/lib-gossip/"
+    importPaths "src/lib-gossip/"
+}
+
+subPackage {
+    name "network"
+    sourcePaths "src/lib-network/"
+    importPaths "src/lib-network/"
+}
+
+subPackage {
+    name "prior_services"
+    sourcePaths "src/lib-prior-services/"
+    importPaths "src/lib-prior-services/"
+}
+
+subPackage {
+    name "tests"
+    sourcePaths "bdd/"
+    importPaths "bdd/"
+    mainSourcePath "bdd/tagion/testbench/testbench.d"
+    excludedSourceFiles "bdd/**.gen.d"
+
+    dependency "tagion:basic" version="*"
+    dependency "tagion:behaviour" version="*"
+    dependency "tagion:tools" version="*"
+    dependency "tagion:actor" version="*"
+    dependency "tagion:crypto" version="*"
+    dependency "tagion:dart" version="*"
+    dependency "tagion:hashgraph" version="*"
+    dependency "tagion:network" version="*"
+}
 
 configuration "bin" {
-    mainSourcePath "/src/bin-tools/tagion/tools/tools.d"
-}
-configuration "test" {
-    sourcePaths "bdd/"
-    mainSourcePath "bdd/tagion/testbench/testbench.d"
+    sourcePath "src/bin-tools"
+    mainSourcePath "src/bin-tools/tagion/tools/tools.d"
+    dependency "tagion:basic" version="*"
+    dependency "tagion:behaviour" version="*"
+    dependency "tagion:actor" version="*"
+    dependency "tagion:crypto" version="*"
+    dependency "tagion:dart" version="*"
+    dependency "tagion:hashgraph" version="*"
+    dependency "tagion:network" version="*"
 }
