@@ -27,8 +27,8 @@ alias FeatureContext = Tuple!(
 );
 
 enum supervisor_task_name = "supervisor";
-enum child1_task_name = "child1";
-enum child2_task_name = "child2";
+enum child1_task_name = "ch1ld";
+enum child2_task_name = "ch2ld";
 
 // Child actor
 struct MyActor {
