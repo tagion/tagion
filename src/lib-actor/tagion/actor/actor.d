@@ -271,8 +271,10 @@ static:
         try {
 
             setState(Ctrl.STARTING); // Tell the owner that you are starting.
-            scope (exit)
+            scope (exit) {
+                ThreadInfo.thisInfo.cleanup;
                 setState(Ctrl.END); // Tell the owner that you have finished.
+            }
 
             // Call starting() if it's implemented
             static if (__traits(hasMember, This, "starting")) {
