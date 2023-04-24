@@ -68,7 +68,7 @@ jobs:
           cat ./bddresult.log >> $GITHUB_STEP_SUMMARY
 
       - name: Check bdd result
-        run: cat ./bddconsole.log | tail -n 1 | grep -E "Test result success!"
+        run: cat ./bddconsole.log | tail -n 20 | grep -E "Test result success!"
 
       - name: Build
         run: |
