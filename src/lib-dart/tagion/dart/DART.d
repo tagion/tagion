@@ -982,7 +982,6 @@ received = the HiRPC received package
 
     }
 
-    // version (none) {
     version (unittest) {
         static class TestSynchronizer : StdSynchronizer {
             protected DART foreign_dart;

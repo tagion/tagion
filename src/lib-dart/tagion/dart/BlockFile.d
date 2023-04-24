@@ -32,7 +32,6 @@ import tagion.dart.Recycler : Recycler;
 import tagion.dart.BlockSegment;
 
 alias Index = Typedef!(ulong, ulong.init, "BlockIndex");
-// enum Index.init = Index.init;
 enum BLOCK_SIZE = 0x80;
 
 version (unittest) {
