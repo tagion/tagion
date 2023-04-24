@@ -308,7 +308,7 @@ static:
                             &unknown,
                     );
                 }
-                catch (Exception t) {
+                catch (Throwable t) {
                     assumeWontThrow(writefln("caught exeption"));
                     if (ownerTid != Tid.init) {
                         ownerTid.prioritySend(TaskFailure(cast(immutable) t, taskName));
@@ -318,7 +318,7 @@ static:
         }
 
         // If we catch an exception we send it back to owner for them to deal with it.
-        catch (Exception t) {
+        catch (Throwable t) {
             assumeWontThrow(writefln("caught running exeption"));
             if (tidOwner.get !is Tid.init) {
                 assumeWontThrow(ownerTid.prioritySend(TaskFailure(cast(immutable) t, taskName)));
