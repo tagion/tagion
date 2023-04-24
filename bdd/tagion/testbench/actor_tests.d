@@ -28,10 +28,8 @@ int _main(string[] args) {
         auto actor_taskfailure_context = actor_taskfailure_feature.run();
 
         // Supervisor with failing child
-        version (lr269) {
-            auto actor_supervisor_feature = automation!(actor_supervisor)();
-            auto actor_supervisor_context = actor_supervisor_feature.run();
-        }
+        auto actor_supervisor_feature = automation!(actor_supervisor)();
+        auto actor_supervisor_context = actor_supervisor_feature.run();
     }
 
     return 0;
