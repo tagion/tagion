@@ -215,6 +215,8 @@ class SendMessageBetweenTwoChildren {
         while (locate(child1_task_name) !is Tid.init) {
         }
         check(locate(child1_task_name) is Tid.init, "Child 1 thread is still running");
+        while (locate(child2_task_name) !is Tid.init) {
+        }
         check(locate(child2_task_name) is Tid.init, "Child 2 thread is still running");
         return result_ok;
     }
