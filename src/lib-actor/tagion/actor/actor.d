@@ -248,15 +248,6 @@ static:
         stop = true;
     }
 
-    version (none) void failHandler(TaskFailure tf) {
-        assumeWontThrow({
-            writeln("received exeption");
-            //if (ownerTid != Tid.init) {
-            ownerTid.send(tf);
-            //}
-        });
-    }
-
     /**
      * The default message handler, if it's an unknown messages it will send a FAIL to the owner.
      * Params:
@@ -283,6 +274,7 @@ static:
                 startingCall();
             }
 
+            // Asign the failhandler if a custom one is defined override the default one
             static if (__traits(hasMember, This, "fail")) {
                 auto failhandler = __traits(getMember, This, "fail");
             }
