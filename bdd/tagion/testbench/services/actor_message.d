@@ -28,7 +28,7 @@ alias FeatureContext = Tuple!(
 
 enum supervisor_task_name = "supervisor";
 enum child1_task_name = "child1";
-enum child2_task_name = "child1";
+enum child2_task_name = "child2";
 
 // Child actor
 struct MyActor {
@@ -167,6 +167,7 @@ class SendMessageBetweenTwoChildren {
     @Given("a supervisor #super and two child actors #child1 and #child2")
     Document actorsChild1AndChild2() @trusted {
         supervisorHandle = spawnActor!MySuperActor(supervisor_task_name);
+        check(supervisorHandle.tid !is Tid.init, "Supervisor thread is not running");
 
         CtrlMsg ctrl = receiveOnlyTimeout!CtrlMsg;
         check(ctrl.ctrl is Ctrl.STARTING, "Supervisor is not starting");
