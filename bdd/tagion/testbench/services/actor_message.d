@@ -22,7 +22,8 @@ enum feature = Feature(
             ["This feature should verify the message send between actors"]);
 
 alias FeatureContext = Tuple!(
-        MessageBetweenSupervisorAndChild, "MessageBetweenSupervisorAndChild", SendMessageBetweenTwoChildren, "SendMessageBetweenTwoChildren",
+        MessageBetweenSupervisorAndChild, "MessageBetweenSupervisorAndChild",
+        SendMessageBetweenTwoChildren, "SendMessageBetweenTwoChildren",
         FeatureGroup*, "result"
 );
 
@@ -205,6 +206,11 @@ class SendMessageBetweenTwoChildren {
         check(ctrl.ctrl is Ctrl.END, "The supervisor did not stop");
 
         return result_ok;
+    }
+
+    @Then("check the #child1 and #child2 threads are stopped")
+    Document child2ThreadsAreStopped() {
+        return Document();
     }
 
 }
