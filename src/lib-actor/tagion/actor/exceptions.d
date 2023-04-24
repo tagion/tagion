@@ -3,8 +3,8 @@ module tagion.actor.exceptions;
 import tagion.basic.tagionexceptions : TagionException;
 import std.exception;
 
-struct TaskFailure {
-    immutable(Throwable) throwable;
+immutable struct TaskFailure {
+    Throwable throwable;
     string task_name;
 }
 
@@ -76,6 +76,3 @@ static void taskfailure(immutable(TaskFailure) t) nothrow {
         super(msg, file, line);
     }
 }
-
-/// check function used in the behaviour package
-alias check = Check!(ActorException);
