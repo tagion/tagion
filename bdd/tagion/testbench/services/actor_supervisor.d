@@ -43,12 +43,12 @@ struct SetUpForFailure {
 static:
     void exceptional1(Msg!"recoverable") {
         writeln("oh nose");
-        throw new Exception("I am fail");
+        throw new Recoverable("I am fail");
     }
 
     void exceptional2(Msg!"fatal") {
         writeln("oh noes");
-        throw new Exception("I am big fail");
+        throw new Fatal("I am big fail");
     }
 
     mixin Actor!(&exceptional1, &exceptional2); /// Turns the struct into an Actor
