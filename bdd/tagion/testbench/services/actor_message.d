@@ -204,13 +204,19 @@ class SendMessageBetweenTwoChildren {
         supervisorHandle.send(Sig.STOP);
         CtrlMsg ctrl = receiveOnlyTimeout!CtrlMsg;
         check(ctrl.ctrl is Ctrl.END, "The supervisor did not stop");
-
+        while (locate(supervisor_task_name) !is Tid.init) {
+        }
+        check(locate(supervisor_task_name) is Tid.init, "SuperVisor thread is still running");
         return result_ok;
     }
 
     @Then("check the #child1 and #child2 threads are stopped")
-    Document child2ThreadsAreStopped() {
-        return Document();
+    Document child2ThreadsAreStopped() @trusted {
+        while (locate(child1_task_name) !is Tid.init) {
+        }
+        check(locate(child1_task_name) is Tid.init, "Child 1 thread is still running");
+        check(locate(child2_task_name) is Tid.init, "Child 2 thread is still running");
+        return result_ok;
     }
 
 }
