@@ -31,6 +31,8 @@ import tagion.dart.DARTBasic;
 import tagion.basic.tagionexceptions : Check;
 
 import tagion.utils.Miscellaneous : toHexString;
+import tagion.basic.Version : ver;
+
 import std.stdio : stdout, File;
 
 alias hex = toHexString;
@@ -43,7 +45,7 @@ private alias check = Check!DARTRecorderException;
  */
 @safe
 class RecordFactory {
-
+    enum order_remove_add = true;
     const HashNet net;
     @disable this();
     protected this(const HashNet net) {
@@ -115,14 +117,10 @@ class RecordFactory {
     @recordType("Recorder")
     class Recorder {
         /// This will order REMOVE before add
-        version (SYNC_BLOCKFILE_WORKING) {
 
-            alias archive_sorted = (a, b) @safe => (a.fingerprint < b.fingerprint);
-        }
-        else {
-            alias archive_sorted = (a, b) @safe => (a.fingerprint < b.fingerprint) || (
-                    a.fingerprint == b.fingerprint) && (a._type < b._type);
-        }
+        alias archive_sorted = (a, b) @safe => (a.fingerprint < b.fingerprint) || (
+                a.fingerprint == b.fingerprint) && (a.type < b.type);
+
         alias Archives = RedBlackTree!(Archive, archive_sorted);
         package Archives archives;
 
@@ -190,7 +188,6 @@ class RecordFactory {
             foreach (archive; archives) {
                 if (archive.type != Archive.Type.REMOVE) {
                     short archiveSector = archive.fingerprint[0] | archive.fingerprint[1];
-                    // writeln("CHECK STUBS: arcive fp:%s sector: %d", archive.fingerprint, archiveSector);
                     ushort sector_origin = (archiveSector - from) & ushort.max;
                     if (sector_origin >= to_origin) {
                         archives.removeKey(archive);
@@ -199,6 +196,15 @@ class RecordFactory {
             }
         }
 
+        Recorder changeTypes(const GetType get_type) {
+            import std.algorithm;
+
+            auto result_archives = new Archives;
+            result_archives.insert(
+                    archives[].map!(a => new Archive(net, a.filed, get_type(a)))
+            );
+            return new Recorder(result_archives);
+        }
         /** 
         * Length of the archives
         * Returns: number of archives 
@@ -350,21 +356,6 @@ class RecordFactory {
             remove(DARTIndex(fingerprint));
         }
 
-        final void stub(const(DARTIndex) fingerprint)
-        in {
-            assert(fingerprint.length is net.hashSize,
-                    format("Length of the fingerprint must be %d but is %d", net.hashSize, fingerprint
-                    .length));
-        }
-        do {
-            auto archive = new Archive(fingerprint, Archive.Type.NONE);
-            insert(archive);
-        }
-
-        final void stub(const(Buffer) fingerprint) {
-            stub(DARTIndex(fingerprint));
-        }
-
         void dump(File fout = stdout) const {
 
             foreach (a; archives) {
@@ -383,19 +374,17 @@ class RecordFactory {
             return Document(result);
         }
 
-        // version (unittest)
-        // {
         import std.algorithm.sorting;
 
         bool checkSorted() pure {
             return opSlice
                 .isSorted!(archive_sorted);
         }
-        // }
+
     }
 }
 
-alias GetType = Archive.Type delegate(const(Archive)) pure @safe;
+alias GetType = Archive.Type delegate(const(Archive)) pure nothrow @safe;
 
 const Add = delegate(const(Archive) a) => Archive.Type.ADD;
 const Remove = delegate(const(Archive) a) => Archive.Type.REMOVE;
@@ -414,11 +403,10 @@ const Neutral = delegate(const(Archive) a) => a.type;
 
     @label(STUB, true) const(DARTIndex) fingerprint; /// Stub hash-pointer used in sharding
     @label("$a", true) const Document filed; /// The actual data strute stored 
+    @label("$t", true) const(Type) type; /// Acrhive type
     enum archiveLabel = GetLabel!(this.filed).name;
     enum fingerprintLabel = GetLabel!(this.fingerprint).name;
-    enum typeLabel = GetLabel!(this._type).name;
-    private @label("$t", true) Type _type; /// Acrhive type
-    protected @label("") bool _done; /// Marks if the operation was done on the archive
+    enum typeLabel = GetLabel!(this.type).name;
 
     mixin JSONString;
     /* 
@@ -431,10 +419,6 @@ const Neutral = delegate(const(Archive) a) => a.type;
     this(const HashNet net, const(Document) doc, const Type t = Type.NONE)
     in {
         assert(net !is null);
-        version (none)
-            if (net is null) {
-                assert(!.isStub(doc), "A stub needs a HashNet");
-            }
         assert(!doc.empty, "Archive can not be empty");
     }
     do {
@@ -450,27 +434,29 @@ const Neutral = delegate(const(Archive) a) => a.type;
             }
             fingerprint = net.dartIndex(filed);
         }
-        _type = t;
+        Type _type = t;
         if (_type is Type.NONE && doc.hasMember(typeLabel)) {
             _type = doc[typeLabel].get!Type;
         }
+        type = _type;
 
     }
 
     void dump(File fout = stdout) const {
-        fout.writefln("Archive %s %s %s", fingerprint.hex, type,
-                (() @trusted => cast(void*) this)());
-    }
-    /**
-     * Construct an archive from a Document
-     * Params:
-     *   doc = documnet of the filed data
-     *   t = archve type
-     */
-    version (none) this(const(Document) doc, const Type t = Type.NONE) {
-        this(null, doc, t);
+        fout.writeln(toString);
     }
 
+    override string toString() const {
+        return format("Archive %s %s %s", fingerprint.hex, type,
+                (() @trusted => cast(void*) this)());
+    }
+
+    version (unittest) {
+        private void changeType(const Type _type) @trusted {
+            auto type_p = cast(Type*)(&type);
+            *type_p = _type;
+        }
+    }
     /**
      * Convert archive to a Document 
      * Returns: documnet of the archive
@@ -483,8 +469,8 @@ const Neutral = delegate(const(Archive) a) => a.type;
         else {
             hibon[archiveLabel] = filed;
         }
-        if (_type !is Type.NONE) {
-            hibon[typeLabel] = _type;
+        if (type !is Type.NONE) {
+            hibon[typeLabel] = type;
         }
         return Document(hibon);
     }
@@ -500,7 +486,7 @@ const Neutral = delegate(const(Archive) a) => a.type;
     in (!fingerprint.empty)
     in (t !is Type.ADD)
     do {
-        _type = t;
+        type = t;
         filed = Document();
         this.fingerprint = fingerprint;
     }
@@ -548,30 +534,6 @@ const Neutral = delegate(const(Archive) a) => a.type;
         return T.isRecord(filed);
     }
 
-    final bool done() const pure nothrow @nogc {
-        return _done;
-    }
-
-    /* 
-     * Type of the archive
-     * Returns: type 
-     */
-    final Type type() const pure nothrow @nogc {
-        return _type;
-    }
-
-    /**
-     * An Archive is only allowed to be done once
-     */
-    package final void doit() const pure nothrow @trusted
-    in {
-        assert(!_done, "An Archive can only be done once");
-    }
-    do {
-        auto force_done = cast(bool*)(&_done);
-        *force_done = true;
-    }
-
     /**
      * Generates Document to be store in the BlockFile
      * Returns: the document to be stored
@@ -615,7 +577,6 @@ unittest { // Archive
     Archive a;
     { // Simple archive
         a = new Archive(net, filed_doc);
-        assert(!a.isStub);
         assert(a.fingerprint == filed_doc_fingerprint);
         assert(a.filed == filed_doc);
         assert(a.type is Archive.Type.NONE);
@@ -626,15 +587,13 @@ unittest { // Archive
         assert(result_a.fingerprint == a.fingerprint);
         assert(result_a.filed == a.filed);
         assert(result_a.type == a.type);
-        assert(!result_a.isStub);
         assert(result_a.store == filed_doc);
 
     }
 
-    a._type = Archive.Type.ADD;
+    a.changeType(Archive.Type.ADD);
     { // Simple archive with ADD/REMOVE Type
         // a=new Archive(net, filed_doc);
-        assert(!a.isStub);
         assert(a.fingerprint == filed_doc_fingerprint);
         const archived_doc = a.toDoc;
 
@@ -643,49 +602,9 @@ unittest { // Archive
             assert(result_a.fingerprint == a.fingerprint);
             assert(result_a.filed == a.filed);
             assert(result_a.type == a.type);
-            assert(!result_a.isStub);
             assert(result_a.store == filed_doc);
         }
 
-        { // Chnage type
-            const result_a = new Archive(net, archived_doc, Archive.Type.REMOVE);
-            assert(result_a.fingerprint == a.fingerprint);
-            assert(result_a.filed == a.filed);
-            assert(result_a.type == Archive.Type.REMOVE);
-            assert(!result_a.isStub);
-            assert(result_a.store == filed_doc);
-        }
-    }
-
-    { // Create Stub
-        auto stub = new Archive(a.fingerprint);
-        assert(stub.isStub);
-        assert(stub.fingerprint == a.fingerprint);
-        assert(stub.filed.empty);
-        const filed_stub = stub.toDoc;
-        assert(filed_stub[STUB].get!Buffer == a.fingerprint);
-        assert(isStub(filed_stub));
-
-        {
-            const result_stub = new Archive(net, filed_stub, Archive.Type.NONE);
-            assert(result_stub.isStub);
-            assert(result_stub.fingerprint == stub.fingerprint);
-            assert(result_stub.type == stub.type);
-            assert(result_stub.filed.empty);
-            assert(result_stub.toDoc == stub.toDoc);
-            assert(result_stub.store == stub.store);
-            assert(isStub(result_stub.store));
-        }
-
-        { // Stub with type
-            stub._type = Archive.Type.REMOVE;
-            const result_stub = new Archive(net, stub.toDoc, Archive.Type.NONE);
-            assert(result_stub.fingerprint == stub.fingerprint);
-            assert(result_stub.type == stub.type);
-            assert(result_stub.type == Archive.Type.REMOVE);
-            assert(result_stub.store == stub.store);
-            assert(isStub(result_stub.store));
-        }
     }
 
     { // Filed archive with hash-key
@@ -800,6 +719,5 @@ unittest {
         //rec.//dump;
         assert(rec.checkSorted);
 
-        writeln("Passed");
     }
 }

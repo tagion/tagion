@@ -40,6 +40,7 @@ import tagion.gossip.P2pGossipNet : ConnectionPool; //, ActiveNodeAddressBook;
 import tagion.gossip.AddressBook : NodeAddress, addressbook;
 
 import tagion.basic.tagionexceptions;
+import tagion.actor.exceptions;
 
 alias HiRPCSender = HiRPC.HiRPCSender;
 alias HiRPCReceiver = HiRPC.HiRPCReceiver;

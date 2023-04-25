@@ -6,6 +6,31 @@ import std.format : format;
 import std.typecons;
 import core.thread;
 import std.exception;
+import std.traits;
+
+import tagion.actor.exceptions;
+import tagion.actor.exceptions : TaskFailure;
+import tagion.basic.tagionexceptions : TagionException;
+
+T receiveOnlyTimeout(T)() {
+    T ret;
+    receiveTimeout(
+            2.seconds,
+            (T val) { ret = val; },
+            (Variant val) {
+        throw new MessageMismatch(
+            format("Unexpected message got %s of type %s, expected %s", val, val.type.toString(), T.stringof));
+    }
+    );
+
+    if (ret is T.init) {
+        throw new MessageTimeout(
+                format("Timed out never received message expected message type: %s".format(T.stringof))
+        );
+    }
+
+    return ret;
+}
 
 bool all(Ctrl[Tid] aa, Ctrl ctrl) {
     foreach (val; aa) {
@@ -14,6 +39,25 @@ bool all(Ctrl[Tid] aa, Ctrl ctrl) {
         }
     }
     return true;
+}
+
+/// Exception sent when the actor gets a message that it doesn't handle
+class UnknownMessage : TagionException {
+    this(immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__) pure {
+        super(msg, file, line);
+    }
+}
+
+// Exception when the actor fails to start or stop
+class RunFailure : TagionException {
+    this(immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__) pure {
+        super(msg, file, line);
+    }
+}
+
+@trusted
+static immutable(TaskFailure) taskFailure(Throwable e, string taskName) @nogc nothrow { //if (is(T:Throwable) && !is(T:TagionExceptionInterface)) {
+    return immutable(TaskFailure)(cast(immutable) e, taskName);
 }
 
 /**
@@ -33,7 +77,6 @@ struct Msg(string name) {
 enum Ctrl {
     STARTING, // The actors is lively
     ALIVE, /// Send to the ownerTid when the task has been started
-    FAIL, /// This if a something failed other than an exception
     END, /// Send for the child to the ownerTid when the task ends
 }
 
@@ -42,7 +85,7 @@ enum Sig {
     STOP,
 }
 
-debug enum DebugSig {
+debug (actor) enum DebugSig {
     /* STARTING = Msg!"STARTING", */
     FAIL, // Artificially make the actor fail
 }
@@ -64,7 +107,7 @@ bool checkCtrl(Ctrl msg) {
  * Params:
  *  A = an actor type
  */
-struct ActorHandle(A) if (isActor!A) {
+struct ActorHandle(A) {
     import concurrency = std.concurrency;
 
     /// the tid of the spawned task
@@ -110,22 +153,23 @@ ActorHandle!A actorHandle(A)(string taskName) {
  * spawnActor!MyActor("my_task_name", 42);
  * ---
  */
-nothrow ActorHandle!A spawnActor(A, Args...)(string taskName, Args args) if (isActor!A) {
+ActorHandle!A spawnActor(A, Args...)(string taskName, Args args) nothrow {
     alias task = A.task;
-    Tid tid = assumeWontThrow(spawn(&task, args));
+    Tid tid;
+
+    //Tid isSpawnedTid = assumeWontThrow(locate(taskName));
+    //if (isSpawnedTid is Tid.init) {
+    tid = assumeWontThrow(spawn(&task, taskName, args));
+    /// TODO: set oncrowding to exception;
     assumeWontThrow(register(taskName, tid));
+    assumeWontThrow(writefln("%s registered", taskName));
+    //}
 
     return ActorHandle!A(tid, taskName);
 }
 
-// Delegate for dealing with exceptions sent from children
-version (none) void exceptionHandler(Exception e) {
-    // logger.fatal(e);
-    writeln(e);
-}
-
 /// Nullable and nothrow wrapper around ownerTid
-nothrow Nullable!Tid tidOwner() {
+Nullable!Tid tidOwner() nothrow {
     // tid is "null"
     Nullable!Tid tid;
     try {
@@ -156,7 +200,7 @@ void sendOwner(T...)(T vals) {
 }
 
 /// send your state to your owner
-nothrow void setState(Ctrl ctrl) {
+void setState(Ctrl ctrl) nothrow {
     try {
         if (!tidOwner.isNull) {
             tidOwner.get.prioritySend(CtrlMsg(thisTid, ctrl));
@@ -174,30 +218,26 @@ nothrow void setState(Ctrl ctrl) {
     }
 }
 
-import std.traits;
-
-/// Checks if the actor is implemented correctly
-private template isActor(A) {
-    /* template areMembersStatic(A) { */
-    /*     static foreach(F; Fields!A) { */
-    /*     } */
-    /* } */
-
-    template isTaskNothrow(A) {
-        alias task = __traits(getMember, A, "task");
-        enum isTaskNothrow =
-            (functionAttributes!task & FunctionAttribute.nothrow_);
-    }
-
-    enum isActor = isTaskNothrow!A;
-}
-
 /**
  * Base template
  * All members should be static
  * Examples: See [Actor examples]($(DOC_ROOT_OBJECTS)tagion.actor.example$(DOC_EXTENSION))
+ *
+ * Struct may implement starting callback that gets called after the actor sends Ctrl.STARTING
+ * ---
+ * void starting() {...};
+ * ---
  */
 mixin template Actor(T...) {
+static:
+    import std.exception : assumeWontThrow;
+    import std.variant : Variant;
+    import std.concurrency : OwnerTerminated, Tid, thisTid, ownerTid, receive, prioritySend;
+    import std.format : format;
+    import std.traits : isCallable;
+    import tagion.actor.exceptions : TaskFailure, taskException, ActorException, UnknownMessage;
+    import std.stdio : writefln;
+
     bool stop = false;
     Ctrl[Tid] childrenState; // An AA to keep a copy of the state of the children
 
@@ -214,24 +254,6 @@ mixin template Actor(T...) {
     /// Controls message sent from the children.
     void control(CtrlMsg msg) {
         childrenState[msg.tid] = msg.ctrl;
-        with (Ctrl) final switch (msg.ctrl) {
-        case STARTING:
-            debug writeln(msg);
-            break;
-
-        case ALIVE:
-            debug writeln(msg);
-            break;
-
-        case FAIL:
-            debug writeln(msg);
-            // Handle the exception
-            break;
-
-        case END:
-            debug writeln(msg);
-            break;
-        }
     }
 
     /// Stops the actor if the supervisor stops
@@ -246,58 +268,67 @@ mixin template Actor(T...) {
      *   message = literally any message
      */
     void unknown(Variant message) {
-        setState(Ctrl.FAIL);
-        assert(0, "No delegate to deal with message: %s".format(message));
+        throw new UnknownMessage("No delegate to deal with message: %s".format(message));
     }
 
-    nothrow void task() {
+    /// The tasks that get run when you call spawnActor!
+    void task(string taskName) nothrow {
         try {
 
             setState(Ctrl.STARTING); // Tell the owner that you are starting.
-            scope (exit)
+            scope (exit) {
+                ThreadInfo.thisInfo.cleanup;
                 setState(Ctrl.END); // Tell the owner that you have finished.
+            }
 
-            static if (__traits(hasMember, This, "children")) {
-                debug writeln("STARTING CHILDREN", children);
-                static foreach (i, child; children) {
-                    {
-                        alias Child = typeof(child);
-                        debug writefln("STARTING: %s", i);
-                        auto childhandle = spawnActor!Child(format("%s", i));
-                        childrenState[childhandle.tid] = Ctrl.STARTING; // assume that the child is starting
+            // Call starting() if it's implemented
+            static if (__traits(hasMember, This, "starting")) {
+                alias startingCall = __traits(getMember, This, "starting");
+                static assert(isCallable!startingCall, "the starting callback is not callable");
+                startingCall();
+            }
+
+            // Asign the failhandler if a custom one is defined override the default one
+            static if (__traits(hasMember, This, "fail")) {
+                auto failhandler = __traits(getMember, This, "fail");
+            }
+            else {
+                // default failhandler
+                auto failhandler = (TaskFailure tf) {
+                    writeln("received exeption");
+                    if (ownerTid != Tid.init) {
+                        ownerTid.prioritySend(tf);
                     }
-                }
-
-                // TODO: Should have a timeout incase the children don't commit alive;
-                debug writeln((childrenState.all(Ctrl.ALIVE)));
-                while (!(childrenState.all(Ctrl.ALIVE))) {
-                    CtrlMsg msg = receiveOnly!CtrlMsg; // HACK: don't use receiveOnly
-                    childrenState[msg.tid] = msg.ctrl;
-                }
-
-                debug writeln((childrenState.all(Ctrl.ALIVE)));
-                debug writeln("STARTED all the children");
+                };
             }
 
             setState(Ctrl.ALIVE); // Tell the owner that you running
             while (!stop) {
-                receive(
-                        T, // The message handlers you pass to your Actor template
-                        &signal,
-                        &control,
-                        &ownerTerminated,
-                        &unknown,
-                );
+                try {
+                    receive(
+                            T, // The message handlers you pass to your Actor template
+                            failhandler,
+                            &signal,
+                            &control,
+                            &ownerTerminated,
+                            &unknown,
+                    );
+                }
+                catch (Throwable t) {
+                    assumeWontThrow(writefln("caught exeption"));
+                    if (ownerTid != Tid.init) {
+                        ownerTid.prioritySend(TaskFailure(cast(immutable) t, taskName));
+                    }
+                }
             }
         }
+
         // If we catch an exception we send it back to owner for them to deal with it.
-        catch (Exception e) {
-            // FAIL message should be able to carry the exception with it
-            // Use tagion taskexception when it part of the tree
-            immutable exception = cast(immutable) e;
-            assumeWontThrow(ownerTid.prioritySend(exception));
-            setState(Ctrl.FAIL);
-            stop = true;
+        catch (Throwable t) {
+            assumeWontThrow(writefln("caught running exeption"));
+            if (tidOwner.get !is Tid.init) {
+                assumeWontThrow(ownerTid.prioritySend(TaskFailure(cast(immutable) t, taskName)));
+            }
         }
     }
 }

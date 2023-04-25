@@ -9,7 +9,7 @@ import std.file;
 import std.file : fwrite = write;
 import std.typecons;
 
-import tagion.basic.tagionexceptions : fatal;
+import tagion.actor.exceptions : fatal;
 import tagion.options.HostOptions;
 import tagion.dart.DARTOptions;
 

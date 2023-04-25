@@ -12,6 +12,9 @@ import tagion.tools.Basic;
 import tagion.tools.revision;
 import tagion.dart.BlockFile;
 import tagion.dart.DARTException : BlockFileException;
+import std.algorithm;
+import std.range;
+import tagion.hibon.HiBONJSON : toPretty;
 
 mixin Main!_main;
 
@@ -104,6 +107,18 @@ struct BlockFileAnalyzer {
         text ~= "```";
         // add the end
         text.each!writeln;
+    }
+
+    void dumpIndexDoc(const(Index) index) {
+        auto seg_range = blockfile.opSlice();
+        auto segment_on_index_range = seg_range.filter!(segment => segment.index == index);
+        if (segment_on_index_range.empty) {
+            writefln("Error: No segment with Index %s found", index);
+            writefln("aborting");
+            return;
+        }
+        auto segment_on_index = segment_on_index_range.front;
+        writefln(segment_on_index.doc.toPretty);
     }
 
     // static string blockType(const bool recycle_block) {
@@ -223,6 +238,8 @@ int _main(string[] args) {
     bool dump_recycler_statistic;
     bool dump_statistic;
     bool dump_graph;
+    bool dump_doc;
+    ulong dump_index;
 
     string output_filename;
     enum logo = import("logo.txt");
@@ -240,6 +257,8 @@ int _main(string[] args) {
             "rs|recyclerstatistic", "Dumps the recycler statistic block", &dump_recycler_statistic,
             "s|statistic", "Dumps the statistic block", &dump_statistic,
             "dg|dumpgraph", "Dump the blockfile in graphviz format", &dump_graph,
+            "doc|dumpdoc", "Dump the document located at an specific index", &dump_doc,
+            "idx|index", "the index to dump the document from", &dump_index,
             "inspect|c", "Inspect the blockfile format", &inspect,
             "ignore|i", "Ignore blockfile format error", &ignore, //        "iter", "Set the max number of iterations do by the inspect", &analyzer.inspect_iterations,
             //       "max", format(
@@ -325,6 +344,12 @@ int _main(string[] args) {
 
     if (dump_graph) {
         analyzer.dumpGraph;
+    }
+
+    if (dump_index !is 0) {
+        if (dump_doc) {
+            analyzer.dumpIndexDoc(Index(dump_index));
+        }
     }
 
     // if (block_number !is 0) {

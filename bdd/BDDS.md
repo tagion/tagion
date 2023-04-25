@@ -90,3 +90,5 @@
 
 [actor_supervisor.md](bdd/tagion/testbench/services/actor_supervisor.md)
 
+[actor_taskfailure.md](bdd/tagion/testbench/services/actor_taskfailure.md)
+

@@ -14,7 +14,7 @@ import std.format : format;
 import std.range : isInputRange, ElementType;
 import std.algorithm.iteration : filter, map;
 
-import tagion.basic.Debug : __format;
+import tagion.basic.Debug : debugwrite = __write, __format;
 import tagion.basic.basic : FUNCTION_NAME;
 import tagion.basic.Types : Buffer;
 import tagion.Keywords;
@@ -36,7 +36,7 @@ import tagion.dart.Recorder : RecordFactory, Archive;
 import tagion.dart.DARTFile;
 import tagion.dart.DARTBasic : DARTIndex;
 import CRUD = tagion.dart.DARTcrud;
-import tagion.dart.BlockFile : Index, INDEX_NULL;
+import tagion.dart.BlockFile : Index;
 
 /**
  * Calculates the to-angle on the angle circle 
@@ -509,7 +509,7 @@ received = the HiRPC received package
             const super_branches = branches(params.rims[0 .. $ - 1]);
             if (!super_branches.empty) {
                 const index = super_branches.indices[key];
-                if (index != INDEX_NULL) {
+                if (index != Index.init) {
                     // The archive is added to a recorder
                     immutable data = blockfile.load(index);
                     const doc = Document(data);
@@ -859,17 +859,7 @@ received = the HiRPC received package
                 const local_branches = branches(params.rims);
                 const request_branches = CRUD.dartRim(params, hirpc, id);
                 const result_branches = sync.query(request_branches);
-                if (!Branches.isRecord(result_branches.response.result)) {
-                    if (result_branches.isRecord!(RecordFactory.Recorder)) {
-                        auto foreign_recoder = manufactor.recorder(result_branches.method.params);
-                        sync.record(foreign_recoder);
-                    }
-                    //
-                    // The foreign DART does not contain data at the rims
-                    //
-                    sync.remove_recursive(params);
-                }
-                else {
+                if (Branches.isRecord(result_branches.response.result)) {
                     const foreign_branches = result_branches.result!Branches;
                     //
                     // Read all the archives from the foreign DART
@@ -916,6 +906,16 @@ received = the HiRPC received package
                         }
                     }
                 }
+                else {
+                    if (result_branches.isRecord!(RecordFactory.Recorder)) {
+                        auto foreign_recoder = manufactor.recorder(result_branches.response.result);
+                        sync.record(foreign_recoder);
+                    }
+                    //
+                    // The foreign DART does not contain data at the rims
+                    //
+                    sync.remove_recursive(params);
+                }
             }
 
             iterate(root_rims);
@@ -950,7 +950,7 @@ received = the HiRPC received package
         }
         // Adding and Removing archives
         void local_replay(bool remove)() @safe {
-            for (Index index = journalfile.masterBlock.root_index; index != INDEX_NULL;
+            for (Index index = journalfile.masterBlock.root_index; index != Index.init;
 
                 ) {
                 immutable data = journalfile.load(index);
@@ -1029,6 +1029,7 @@ received = the HiRPC received package
         import tagion.dart.BlockFile;
         import tagion.basic.basic : tempfile, assumeTrusted;
         import tagion.dart.DARTFakeNet : DARTFakeNet;
+        import tagion.dart.Recorder;
 
         enum TEST_BLOCK_SIZE = 0x80;
 
@@ -1567,4 +1568,5 @@ received = the HiRPC received package
 
         }
     }
+
 }

@@ -10,7 +10,7 @@ The BlockFile has a wrapper on the blocks in order to make development easier. T
 The BlockSegment is a `Document` (immutable HiBON) and a `Index`. All data stored in the BlockFile is stored using Documents (except the headerblock).
 One BlockSegment equals one Document. Therefore a Document can span multiple blocks. The Index specifies where the Document is written to in the BlockFile.
 Since the Document might fill 1.5 blocks a function is needed in order to get the correct number of blocks. In order to get the number of blocks we do the following:
-* Get the size of the Document. (LEB128)
+* Get the size of the Document. (LEB128) encoding of the size in order to save space.
 
 <br>
 
@@ -22,7 +22,7 @@ Where the size refers to the `size_t` of the Document. Therefore the `BlockSegme
 
 | Variable Name | Type       | Label        | Description                                                  |
 |---------------|------------|--------------|--------------------------------------------------------------|
-| `index`       | `Index`    | `"index"`    | Block index where the document is stored or should be stored |
+| `index`       | `Index`    | `"index"`    | Index where the document is stored or should be stored. |
 | `doc`         | `Document` | `"Document"` | Document stored in the segment                               |
 
 
@@ -130,11 +130,11 @@ N=101 sum2=704 sum=240 min=0 max=5
 ```
 
 
-## Save and dispose functions
+## Save and dispose functions (Recycler)
 The two most important functions in the blockfile is the `save` and `dispose` functions.
 The `save` function is responsible for saving the document to the blockfile.
 It calls the claim function in the `Recycler` with the amount of blocks it needs in order to save the data. The `Recycler` responds with a Index where the data should be stored.
-
+The purpose of the recycler is to keep track of erased blocks. This is important in order for the file not to continue growing even though that data is deleted. 
 
 ### [Dispose](https://ddoc.tagion.org/tagion.dart.Recycler.Recycler.dispose.html) in recycler
 The dispose in the recycler simply creates a new `RecycleSegment` and adds it to the list called [`to_be_recycled`](https://ddoc.tagion.org/tagion.dart.Recycler.Recycler.to_be_recycled.html). 
@@ -182,7 +182,7 @@ digraph {
 ```
 The algorithm for doing this is the following.
 
-```
+```d
 foreach (insert_segment; to_be_recycled) {
    auto lower_range = indices.lowerBound(insert_segment);
    if (!lower_range.empty && lower_range.back.end == insert_segment.index) {

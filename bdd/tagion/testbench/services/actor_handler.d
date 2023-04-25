@@ -5,8 +5,8 @@ import tagion.hibon.Document;
 import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
 
-import concurrency = std.concurrency;
-import tagion.actor.Actor;
+import std.concurrency;
+import tagion.actor.actor;
 import std.stdio;
 import core.time;
 
@@ -19,84 +19,77 @@ alias FeatureContext = Tuple!(
         FeatureGroup*, "result"
 );
 
+enum child_task_name = "child_task";
+enum super_task_name = "super_task";
 
 struct MyActor {
     int status = 0;
 
-    @method void setstatus(int i, Tid returnTid) {
+    void setstatus(Msg!"setstatus", int i, Tid returnTid) {
         status = i;
-        concurrency.send(returnTid, "hey we received that number");
+        send(returnTid, "hey we received that number");
     }
 
-    @task void run() {
-        alive; // Actor is now alive
-        while (!stop) {
-            receiveTimeout(100.msecs);
-        }
-    }
-    mixin TaskActor; /// Turns the struct into an Actor
+    mixin Actor!(&setstatus); /// Turns the struct into an Actor
 }
-static assert(isActor!MyActor);
 
-enum child_task_name = "child_task";
-enum super_task_name = "super_task";
+alias MyActorHandle = ActorHandle!MyActor;
 
 struct MySuperActor {
-    ActorHandle!MyActor child_handle;
+static:
+    MyActorHandle childHandle;
 
-    @task void run() {
-        auto actor_factory = actor!MyActor;
+    void starting() {
+        childHandle = spawnActor!MyActor(child_task_name);
 
-        child_handle = actor_factory(child_task_name);
-        check(isRunning(child_task_name), "Child did not start");
+        childrenState[childHandle.tid] = Ctrl.STARTING;
 
-        alive; // Actor is now alive
-        while (!stop) {
-            receiveTimeout(100.msecs);
+        while (!(childrenState.all(Ctrl.ALIVE))) {
+            CtrlMsg msg = receiveOnlyTimeout!CtrlMsg;
+            childrenState[msg.tid] = msg.ctrl;
         }
     }
-    mixin TaskActor; /// Turns the struct into an Actor
-}
-static assert(isActor!MySuperActor);
 
+    mixin Actor!(); /// Turns the struct into an Actor
+}
+
+alias MySuperHandle = ActorHandle!MySuperActor;
 
 @safe @Scenario("send a message to an actor you don't own",
         [])
 class SendAMessageToAnActorYouDontOwn {
-    ActorHandle!MySuperActor super_actor_handler;
-    ActorHandle!MyActor child_handler;
+    MySuperHandle super_actor_handler;
+    MyActorHandle child_handler;
 
     @Given("a supervisor #super and one child actor #child")
-    Document actorChild() {
-        auto super_factory = actor!MySuperActor;
-        super_actor_handler = super_factory(super_task_name);
-        check(isRunning(super_task_name), "Supervisour did not start");
+    Document actorChild() @trusted {
+        super_actor_handler = spawnActor!MySuperActor(super_task_name);
+
+        Ctrl ctrl = receiveOnlyTimeout!CtrlMsg.ctrl;
+        check(ctrl is Ctrl.STARTING, "Supervisor is not starting");
+
+        ctrl = receiveOnlyTimeout!CtrlMsg.ctrl;
+        check(ctrl is Ctrl.ALIVE, "Supervisor is not running");
 
         return result_ok;
     }
 
     @When("#we request the handler for #child")
-    Document forChild() {
-        alias ChildFactory = ActorFactory!MyActor;
-        child_handler = ChildFactory.handler(child_task_name);
-        check(child_handler !is child_handler.init, "The child handler failed to initialise");
-
+    Document forChild() @trusted {
+        child_handler = actorHandle!MyActor(child_task_name);
+        check(child_handler.tid !is Tid.init, "Child task was not running");
         return result_ok;
     }
 
     @When("#we send a message to #child")
-    Document toChild() {
-        child_handler.setstatus(42, concurrency.thisTid);
+    Document toChild() @trusted {
+        child_handler.send(Msg!"setstatus"(), 42, thisTid);
         return result_ok;
     }
 
     @When("#we receive confirmation that shild has received the message.")
     Document theMessage() @trusted {
-        string message;
-        concurrency.receiveTimeout(1.seconds,
-            (string str) {
-                message = str;
-        });
+        string message = receiveOnlyTimeout!string;
 
         check(message !is string.init, "Never got the confirmation from the child");
         writeln(message);
@@ -104,9 +97,8 @@ class SendAMessageToAnActorYouDontOwn {
     }
 
     @Then("stop the #super")
-    Document theSuper() {
-        super_actor_handler.stop;
-        check(!isRunning(super_task_name), "#super is stil running");
+    Document theSuper() @trusted {
+        super_actor_handler.send(Sig.STOP);
         return result_ok;
     }
 

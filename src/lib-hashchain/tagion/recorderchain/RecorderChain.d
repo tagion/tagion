@@ -76,8 +76,8 @@ unittest {
         // In loop fill DART and Add blocks
         enum blocks_count = 10;
         foreach (i; 0 .. blocks_count) {
-            const bills_recorder = factory.recorder(makeBills(i));
-            dart.modify(bills_recorder, Add);
+            const bills_recorder = factory.recorder(makeBills(i), Archive.Type.ADD);
+            dart.modify(bills_recorder);
 
             auto last_block = recorder_chain.getLastBlock;
             auto previous_hash = last_block is null ? Fingerprint.init : last_block.getHash;
@@ -132,15 +132,15 @@ unittest {
         assert(dart_exception is null);
 
         // Add something to DART and make genesis
-        const genesis_recorder = factory.recorder(makeBills(11));
-        dart.modify(genesis_recorder, Add);
+        const genesis_recorder = factory.recorder(makeBills(11), Archive.Type.ADD);
+        dart.modify(genesis_recorder);
         dart_filename.copy(dart_genesis_filename);
 
         // In loop fill DART and Add blocks
         enum blocks_count = 10;
         foreach (i; 0 .. blocks_count) {
-            const bills_recorder = factory.recorder(makeBills(i));
-            dart.modify(bills_recorder, Add);
+            const bills_recorder = factory.recorder(makeBills(i), Archive.Type.ADD);
+            dart.modify(bills_recorder);
 
             auto last_block = recorder_chain.getLastBlock;
             auto previous_hash = last_block is null ? Fingerprint.init : last_block.getHash;
@@ -200,8 +200,8 @@ unittest {
         enum blocks_count = 10;
         enum some_block_index = 4;
         foreach (i; 0 .. blocks_count) {
-            const bills_recorder = factory.recorder(makeBills(i));
-            dart.modify(bills_recorder, Add);
+            const bills_recorder = factory.recorder(makeBills(i), Archive.Type.ADD);
+            dart.modify(bills_recorder);
 
             auto last_block = recorder_chain.getLastBlock;
             auto previous_hash = last_block is null ? Fingerprint.init : last_block.getHash;
@@ -270,8 +270,8 @@ unittest {
         // In loop fill DART and Add blocks
         enum blocks_count = 10;
         foreach (i; 0 .. blocks_count) {
-            const bills_recorder = factory.recorder(makeBills(i));
-            dart.modify(bills_recorder, Add);
+            const bills_recorder = factory.recorder(makeBills(i), Archive.Type.ADD);
+            dart.modify(bills_recorder);
 
             auto last_block = recorder_chain.getLastBlock;
             auto previous_hash = last_block is null ? Fingerprint.init : last_block.getHash;

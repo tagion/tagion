@@ -146,6 +146,44 @@ alias check = Check!(WalletException);
         return result;
     }
 
+    /**
+     * Creates a wallet from a mnemonic
+     * Params:
+     *   mnemonic = generated deterministic key 
+     *   pincode = Devices pin code
+     * Returns: 
+     *   Create an new wallet with the input
+     */
+    static SecureWallet createWallet(
+            const(ushort[]) mnemonic,
+    const(char[]) pincode)
+    in {
+        assert(mnemonic.length >= 12, "Mnemonic is empty");
+    }
+    do {
+        import tagion.wallet.BIP39;
+
+        auto net = new Net;
+        //auto recover = KeyRecover(net);
+
+        //TODO: createKey with mnemonic and device id.
+        // recover.createKey(mnemonic, deviceId, null);
+        SecureWallet result;
+        {
+            auto R = bip39(mnemonic);
+            scope (exit) {
+                scramble(R);
+            }
+            //recover.findSecret(R, mnemonic);
+            net.createKeyPair(R);
+
+            auto wallet = RecoverGenerator.init; //(recover.toDoc);
+            result = SecureWallet(DevicePIN.init, wallet);
+            result.set_pincode(KeyRecover.init, R, pincode, net);
+        }
+        return result;
+    }
+
     protected void set_pincode(
             const KeyRecover recover,
             scope const(ubyte[]) R,

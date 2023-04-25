@@ -32,7 +32,6 @@ import tagion.dart.Recycler : Recycler;
 import tagion.dart.BlockSegment;
 
 alias Index = Typedef!(ulong, ulong.init, "BlockIndex");
-enum INDEX_NULL = Index.init;
 enum BLOCK_SIZE = 0x80;
 
 version (unittest) {
@@ -436,7 +435,7 @@ class BlockFile {
                 "The BlockFile should at least have a size of two block of %d but is %d", BLOCK_SIZE, file
                 .size));
         // The headerblock is locate in the start of the file
-        seek(INDEX_NULL);
+        seek(Index.init);
         headerblock.read(file, BLOCK_SIZE);
         hasheader = true;
     }
@@ -445,7 +444,7 @@ class BlockFile {
      * Read the statistic into the blockfile.
      */
     private void readStatistic() @safe {
-        if (masterblock.statistic_index !is INDEX_NULL) {
+        if (masterblock.statistic_index !is Index.init) {
             immutable buffer = load(masterblock.statistic_index);
             _statistic = BlockFileStatistic(Document(buffer));
         }
@@ -454,7 +453,7 @@ class BlockFile {
      * Read the recycler statistic into the blockfile.
      */
     private void readRecyclerStatistic() @safe {
-        if (masterblock.recycler_statistic_index !is INDEX_NULL) {
+        if (masterblock.recycler_statistic_index !is Index.init) {
             immutable buffer = load(masterblock.recycler_statistic_index);
             _recycler_statistic = RecyclerFileStatistic(Document(buffer));
         }
