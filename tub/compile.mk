@@ -26,6 +26,7 @@ $(DOBJ)/%.$(OBJEXT): $(DSRC)/%.d
 	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $< $(DCOMPILE_ONLY) $(OUTPUT)$@
 
 
+
 #
 # Compile and link or split link
 #

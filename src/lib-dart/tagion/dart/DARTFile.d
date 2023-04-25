@@ -809,6 +809,17 @@ alias check = Check!DARTException;
     }
 
     enum RIMS_IN_SECTOR = 2;
+
+    /// Wrapper function for the modify function.
+    Buffer modify(const(RecordFactory.Recorder) modifyrecords, const Flag!"undo" undo = No.undo) {
+        if (undo) {
+            return modify!(Yes.undo)(modifyrecords);
+        }
+        else {
+            return modify!(No.undo)(modifyrecords);
+
+        }
+    }
     /**
      * $(SMALL_TABLE
      * Sample of the DART Map
@@ -832,25 +843,22 @@ alias check = Check!DARTException;
      * If the function executes succesfully then the DART is updated or else it does not affect the DART
      * The function returns the bullseye of the dart
      */
-
-    Buffer modify(const(RecordFactory.Recorder) modifyrecords, const Flag!"undo" undo = No.undo) {
-        if (undo) {
-            return modify!(Yes.undo)(modifyrecords);
-        }
-        else {
-            return modify!(No.undo)(modifyrecords);
-
-        }
-    }
-
     Buffer modify(Flag!"undo" undo)(const(RecordFactory.Recorder) modifyrecords) {
 
+        /** 
+         * Inner function for the modify function.
+         * Note that this function is recursice and called from itself. 
+         * Params:
+         *   range = RimKeyRange to traverse with.
+         *   branch_index = The branch index to modify.
+         * Returns: 
+         */
         Leave traverse_dart(Range)(Range range, const Index branch_index) @safe if (isInputRange!Range)
         out {
             assert(range.empty, "Must have been through the whole range and therefore empty on return");
         }
         do {
-
+            // if the range is empty that means that nothing is located in it now. 
             if (range.empty) {
                 return Leave.init;
             }
@@ -859,7 +867,6 @@ alias check = Check!DARTException;
             scope (success) {
                 blockfile.dispose(erase_block_index);
             }
-            // immutable sector = sector(archive.fingerprint);
             Branches branches;
             if (range.rim < RIMS_IN_SECTOR) {
                 if (branch_index !is Index.init) {

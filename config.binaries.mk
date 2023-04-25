@@ -123,3 +123,39 @@ target-collider: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
 target-collider: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-collider/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
 ${call DO_BIN,collider,}
 
+target-libtagion: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+target-libtagion: DFILES:=${shell find $(DSRC) -name "*.d" -a -path "*/src/lib-*" -a -not -path "*/unitdata/*" -a -not -path "*/tests/*" -a -not -path "*/lib-betterc/*" $(NO_WOLFSSL) }
+target-libtagion: DFLAGS+=-lib
+${call DO_BIN,libtagion,}
+
+
+
+
+# target-libtagion: DFILES+=${shell find $(DSRC)/lib-behaviour -name "*.d" $(NO_WOLFSSL) }
+# target-libtagion: DFILES+=${shell find $(DSRC)/lib-betterc -name "*.d" $(NO_WOLFSSL) }
+# target-libtagion: DFILES+=${shell find $(DSRC)/lib-tools -name "*.d" $(NO_WOLFSSL) }
+# target-libtagion: DFILES+=${shell find $(DSRC)/lib-wasm -name "*.d" $(NO_WOLFSSL) }
+# target-libtagion: DFILES+=${shell find $(DSRC)/lib-wallet -name "*.d" $(NO_WOLFSSL) }
+# target-libtagion: DFILES+=${shell find $(DSRC)/lib-phobos -name "*.d" $(NO_WOLFSSL) }
+# target-libtagion: DFILES+=${shell find $(DSRC)/lib-options -name "*.d" $(NO_WOLFSSL) }
+# target-libtagion: DFILES+=${shell find $(DSRC)/lib-p2pgowrapper -name "*.d" $(NO_WOLFSSL) }
+# target-libtagion: DFILES+=${shell find $(DSRC)/lib-monitor -name "*.d" $(NO_WOLFSSL) }
+# target-libtagion: DFILES+=${shell find $(DSRC)/lib-hibon -name "*.d" $(NO_WOLFSSL) }
+# target-libtagion: DFILES+=${shell find $(DSRC)/lib-hashchain -name "*.d" $(NO_WOLFSSL) }
+# target-libtagion: DFILES+=${shell find $(DSRC)/lib-crypto -name "*.d" $(NO_WOLFSSL) }
+# target-libtagion: DFILES+=${shell find $(DSRC)/lib-actor -name "*.d" $(NO_WOLFSSL) }
+# target-libtagion: DFILES+=${shell find $(DSRC)/lib-hashgraph -name "*.d" $(NO_WOLFSSL) }
+# target-libtagion: DFILES+=${shell find $(DSRC)/lib-basic -name "*.d" $(NO_WOLFSSL) }
+# target-libtagion: DFILES+=${shell find $(DSRC)/lib-utils -name "*.d" $(NO_WOLFSSL) }
+# target-libtagion: DFILES+=${shell find $(DSRC)/lib-dart -name "*.d" $(NO_WOLFSSL) }
+# target-libtagion: DFILES+=${shell find $(DSRC)/lib-network -name "*.d" $(NO_WOLFSSL) }
+# target-libtagion: DFILES+=${shell find $(DSRC)/lib-funnel -name "*.d" $(NO_WOLFSSL) }
+# target-libtagion: DFILES+=${shell find $(DSRC)/lib-logger -name "*.d" $(NO_WOLFSSL) }
+# target-libtagion: DFILES+=${shell find $(DSRC)/lib-gossip -name "*.d" $(NO_WOLFSSL) }
+# target-libtagion: DFILES+=${shell find $(DSRC)/lib-communication -name "*.d" $(NO_WOLFSSL) }
+# target-libtagion: DFILES+=${shell find $(DSRC)/lib-services -name "*.d" $(NO_WOLFSSL) }
+# target-libtagion: DFILES+=${shell find $(DSRC)/lib-mobile -name "*.d" $(NO_WOLFSSL) }
+# target-libtagion: DFILES+=${shell find $(DSRC)/lib-taskwrapper -name "*.d" $(NO_WOLFSSL) }
+# target-libtagion: DFILES+=${shell find $(DSRC)/lib-hashgraphview -name "*.d" $(NO_WOLFSSL) }
+# target-libtagion: DFILES+=${shell find $(DSRC)/lib-prior-actor -name "*.d" $(NO_WOLFSSL) }
+# target-libtagion: DFILES+=${shell find $(DSRC)/lib-prior-services -name "*.d" $(NO_WOLFSSL) }
