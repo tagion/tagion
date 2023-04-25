@@ -153,7 +153,7 @@ ActorHandle!A actorHandle(A)(string taskName) {
  * spawnActor!MyActor("my_task_name", 42);
  * ---
  */
-nothrow ActorHandle!A spawnActor(A, Args...)(string taskName, Args args) {
+ActorHandle!A spawnActor(A, Args...)(string taskName, Args args) nothrow {
     alias task = A.task;
     Tid tid;
 
@@ -169,7 +169,7 @@ nothrow ActorHandle!A spawnActor(A, Args...)(string taskName, Args args) {
 }
 
 /// Nullable and nothrow wrapper around ownerTid
-nothrow Nullable!Tid tidOwner() {
+Nullable!Tid tidOwner() nothrow {
     // tid is "null"
     Nullable!Tid tid;
     try {
@@ -200,7 +200,7 @@ void sendOwner(T...)(T vals) {
 }
 
 /// send your state to your owner
-nothrow void setState(Ctrl ctrl) {
+void setState(Ctrl ctrl) nothrow {
     try {
         if (!tidOwner.isNull) {
             tidOwner.get.prioritySend(CtrlMsg(thisTid, ctrl));
@@ -272,7 +272,7 @@ static:
     }
 
     /// The tasks that get run when you call spawnActor!
-    nothrow void task(string taskName) {
+    void task(string taskName) nothrow {
         try {
 
             setState(Ctrl.STARTING); // Tell the owner that you are starting.
