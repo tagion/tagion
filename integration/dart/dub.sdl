@@ -3,8 +3,20 @@ description "Vibe.d service for DART"
 authors "decard"
 copyright "Copyright © 2023, decard"
 license "proprietary"
-dependency "vibe-d" version="~>0.9.6"
+// dependency "vibe-d" version="~>0.9.6"
+sourceFiles "../../build/x86_64-linux/bin/libtagion.a" platform="linux-x86_64"
 importPaths \
-    "../../src/lib-dart/"
-
-sourceFiles "../../src/build/x86_64-linux/lib/libtagion.a" platform="linux-x86_64"
+    "../../src/lib-options" \
+    "../../src/lib-hibon" \
+    "../../src/lib-hashchain" \
+    "../../src/lib-crypto" \
+    "../../src/lib-actor" \
+    "../../src/lib-hashgraph" \
+    "../../src/lib-basic" \
+    "../../src/lib-utils" \
+    "../../src/lib-dart" \
+    "../../src/lib-network" \
+    "../../src/lib-gossip" \
+    "../../src/lib-logger" \
+    "../../src/lib-communication" \
+    "../../src/lib-hashgraphview"
