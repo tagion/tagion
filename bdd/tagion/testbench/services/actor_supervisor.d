@@ -139,7 +139,7 @@ class SupervisorWithFailingChild {
         return result_ok;
     }
 
-    version (none) @Then("the #super should send a message to the #child which results in a fail")
+    @Then("the #super should send a message to the #child which results in a fail")
     Document aFail() @trusted {
         childHandle.send(Msg!"fatal"());
         return result_ok;
