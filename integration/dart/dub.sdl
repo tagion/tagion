@@ -1,0 +1,10 @@
+name "dart-service"
+description "Vibe.d service for DART"
+authors "decard"
+copyright "Copyright © 2023, decard"
+license "proprietary"
+dependency "vibe-d" version="~>0.9.6"
+importPaths \
+    "../../src/lib-dart/"
+
+sourceFiles "../../src/build/x86_64-linux/lib/libtagion.a" platform="linux-x86_64"
