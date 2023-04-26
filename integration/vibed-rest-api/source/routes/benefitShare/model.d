@@ -15,7 +15,11 @@ version (unittest) struct TestStruct {
     import tagion.hibon.HiBONRecord;
 
     string name;
-    mixin HiBONRecord;
+    mixin HiBONRecord!(q{
+        this(const(string) _name) {
+            name = _name;
+        }
+    });
 }
 
 unittest {
@@ -33,4 +37,9 @@ unittest {
     auto dart_A = new DARTFile(net, filename);
     recorder = dart_A.recorder();
 
+    auto test_archive = TestStruct("somestring");
+    recorder.add(test_archive);
+    auto bullseye = dart_A.modify(recorder);
+
+    assert(bullseye == net.calcHash(test_archive.toDoc));
 }
