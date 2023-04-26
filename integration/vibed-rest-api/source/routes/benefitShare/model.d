@@ -13,12 +13,9 @@ struct BenefitShare {
 
 version (unittest) struct TestStruct {
     import tagion.hibon.HiBONRecord;
+
     string name;
-    mixin HiBONRecord!(q{
-        this(const string _name) {
-            name = _name;
-        }
-    });
+    mixin HiBONRecord;
 }
 
 unittest {
