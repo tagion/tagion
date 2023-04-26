@@ -38,8 +38,9 @@ bool isRecord(T)(const Document doc) nothrow pure {
     static if (hasUDA!(T, recordType)) {
         enum record_type = getUDAs!(T, recordType)[0].name;
         return doc.hasMember(TYPENAME) && assumeWontThrow(doc[TYPENAME] == record_type);
+    } else {
+        return false;
     }
-    return false;
 }
 
 /** 

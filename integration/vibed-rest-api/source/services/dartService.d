@@ -9,6 +9,8 @@ import tagion.hibon.Document;
 import tagion.dart.DARTFakeNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 import tagion.crypto.SecureNet : StdSecureNet;
+import std.algorithm : map;
+import std.array;
 
 
 struct DartService {
@@ -28,12 +30,19 @@ struct DartService {
         db.close;
     }
 
-    const(DARTIndex) dartModify(const(Document) doc) {
+    const(DARTIndex) modify(const(Document) doc) {
         auto recorder = db.recorder();
         recorder.add(doc);
         const fingerprint = recorder[].front.fingerprint;
         db.modify(recorder);
         return fingerprint;
+    }
+
+    const(Document)[] read(const(DARTIndex)[] fingerprints) {
+        auto read_recorder = db.loads(fingerprints);
+
+        auto docs = read_recorder[].map!(a => a.filed).array;
+        return docs;
     }
 }
 
