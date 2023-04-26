@@ -124,7 +124,7 @@ target-collider: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-co
 ${call DO_BIN,collider,}
 
 target-libtagion: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+target-libtagion: DFLAGS+=$(DSTATICLIB)
 target-libtagion: DFILES:=${shell find $(DSRC) -name "*.d" -a -path "*/src/lib-*" -a -not -path "*/unitdata/*" -a -not -path "*/tests/*" -a -not -path "*/lib-betterc/*" $(NO_WOLFSSL) }
-target-libtagion: DFLAGS+=-lib
 ${call DO_BIN,libtagion,}
 
