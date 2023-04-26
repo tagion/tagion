@@ -29,34 +29,30 @@ import tagion.hibon.HiBONRecord;
 public Json[] projectList;
 public string filePath = "./source/routes/project/data.json";
 
-struct Controller
-{
+struct Controller {
     DartService dart_service;
-    this(const(string) dart_filename, const(string) password)
-    {
+    this(const(string) dart_filename, const(string) password) {
         dart_service = DartService(dart_filename, password);
     }
 
-    void getAllProjects(HTTPServerRequest req, HTTPServerResponse res)
-    {
+    void getAllProjects(HTTPServerRequest req, HTTPServerResponse res) {
         getAll(req, res, projectList, filePath);
     }
 
-    void getOneProject(HTTPServerRequest req, HTTPServerResponse res)
-    {
+    void getOneProject(HTTPServerRequest req, HTTPServerResponse res) {
         string id = req.params.get("entityId");
 
         const fingerprint = DARTIndex(decode(id));
         const doc = dart_service.read([fingerprint]);
         if (doc.empty) {
-          res.statusCode = HTTPStatus.badRequest;
-          res.writeBody(format("Archive with fingerprint=%s, not found in database", id));
-          return;
+            res.statusCode = HTTPStatus.badRequest;
+            res.writeBody(format("Archive with fingerprint=%s, not found in database", id));
+            return;
         }
         // cannot use compile time for some reason.
         if (!isRecord!Project(doc.front)) {
-          res.statusCode = HTTPStatus.badRequest;
-          res.writeBody(format("Read document not of type=Project"));
+            res.statusCode = HTTPStatus.badRequest;
+            res.writeBody(format("Read document not of type=Project"));
         }
 
         Project project_data = Project(doc.front);
@@ -65,47 +61,26 @@ struct Controller
         res.writeJsonBody(project_json);
         res.statusCode = HTTPStatus.ok;
 
-        // getOne(req, res, projectList, filePath, "projectUUID");
     }
 
-    void postProject(HTTPServerRequest req, HTTPServerResponse res)
-    {
-        struct PostResponse
-        {
+    void postProject(HTTPServerRequest req, HTTPServerResponse res) {
+        struct PostResponse {
             string id;
         }
 
         Project project_data;
 
         // check that user submits correct body
-        try
-        {
+        try {
             project_data = deserializeJson!Project(req.json);
         }
-        catch (JSONException e)
-        {
+        catch (JSONException e) {
             res.statusCode = HTTPStatus.badRequest;
             res.writeBody(format("Request body does not match JSON struct error, %s", e.msg));
             return;
         }
 
         writefln("document received: %s", project_data.toDoc.toPretty);
-
-        // projectList = readFromFile(filePath);
-        // // throw error if object with provided ID already exists
-        // if (projectList.length > 0)
-        // {
-        //     foreach (key, value; projectList)
-        //     {
-        //         if (value["projectUUID"] == req.json["projectUUID"])
-        //         {
-        //             res.writeBody("Object with this ID exists");
-        //             return;
-        //         }
-        //     }
-        // }
-        // projectList ~= req.json;
-        // writeToFile(projectList, filePath);
 
         const fingerprint = dart_service.modify(project_data.toDoc);
 
@@ -118,8 +93,7 @@ struct Controller
         res.writeJsonBody(postResponse);
     }
 
-    void deleteOneProject(HTTPServerRequest req, HTTPServerResponse res)
-    {
+    void deleteOneProject(HTTPServerRequest req, HTTPServerResponse res) {
         deleteOne(req, res, projectList, filePath, "projectUUID");
     }
 }
