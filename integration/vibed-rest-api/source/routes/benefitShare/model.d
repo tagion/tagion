@@ -1,4 +1,6 @@
 module routes.benefitShare.model;
+// import tagion.hibon.HiBONRecord;
+import tagion.std.container.rbtree;
 
 struct BenefitShare {
     string benefitShareUUID; // System UUID - "df51e3a0-d48a-41a7-8960-8534e154e5e6"
@@ -9,4 +11,6 @@ struct BenefitShare {
     int benefitShareLocationSizeUnitCount; // 1
     string benefitSharePriceCurrency; // "DKK"
     int benefitSharePrice; // 1
+
+    // mixin HiBONRecord!();
 }
