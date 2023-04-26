@@ -61,7 +61,6 @@ struct Controller {
     }
 
     void postProject(HTTPServerRequest req, HTTPServerResponse res) {
-        // handle bullseye change in order to make sure that an archive was added.
         struct PostResponse {
             string id;
         }
@@ -82,8 +81,8 @@ struct Controller {
         const fingerprint = dart_service.modify(project_data.toDoc);
         const new_bullseye = dart_service.bullseye;
         if (new_bullseye == prev_bullseye) {
-          res.statusCode = HTTPStatus.badRequest;
-          res.writeBody(format("Project with fingerprint=%s not added to DART", fingerprint.toHexString));
+            res.statusCode = HTTPStatus.badRequest;
+            res.writeBody(format("Project with fingerprint=%s not added to DART", fingerprint.toHexString));
         }
 
         PostResponse postResponse;
@@ -101,9 +100,9 @@ struct Controller {
         const new_bullseye = dart_service.bullseye;
 
         if (prev_bullseye == new_bullseye) {
-          res.statusCode = HTTPStatus.badRequest;
-          res.writeBody(format("Project with fingerprint=%s, not found", fingerprint.toHexString));
-          return;
+            res.statusCode = HTTPStatus.badRequest;
+            res.writeBody(format("Project with fingerprint=%s, not found", fingerprint.toHexString));
+            return;
         }
         res.statusCode = HTTPStatus.ok;
         res.writeBody(format("Project with fingerprint=%s deleted", fingerprint.toHexString));
