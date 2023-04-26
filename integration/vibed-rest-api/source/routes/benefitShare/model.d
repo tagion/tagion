@@ -1,5 +1,4 @@
 module routes.benefitShare.model;
-import tagion.hibon.HiBONRecord;
 
 struct BenefitShare {
     string benefitShareUUID; // System UUID - "df51e3a0-d48a-41a7-8960-8534e154e5e6"
@@ -10,10 +9,10 @@ struct BenefitShare {
     int benefitShareLocationSizeUnitCount; // 1
     string benefitSharePriceCurrency; // "DKK"
     int benefitSharePrice; // 1
-
 }
 
 version (unittest) struct TestStruct {
+    import tagion.hibon.HiBONRecord;
     string name;
     mixin HiBONRecord!(q{
         this(const string _name) {
