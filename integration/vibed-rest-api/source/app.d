@@ -28,7 +28,7 @@ void main() {
   Controller controller = Controller(filename, "very_secret");
   // Define routes
   router.get("/project/:entityId", &controller.getProject);
-  router.delete_("/project/:entityId", &controller.deleteOneProject);
+  router.delete_("/project/:entityId", &controller.deleteProject);
   router.post("/project", &controller.postProject);
 
   // Create a vibe.d HTTP server

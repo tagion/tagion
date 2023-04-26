@@ -25,6 +25,7 @@ import tagion.hibon.HiBONJSON : toPretty;
 import tagion.utils.Miscellaneous : toHexString, decode;
 import tagion.dart.DARTBasic : DARTIndex, dartIndex;
 import tagion.hibon.HiBONRecord;
+import std.digest;
 
 public Json[] projectList;
 public string filePath = "./source/routes/project/data.json";
@@ -60,6 +61,7 @@ struct Controller {
     }
 
     void postProject(HTTPServerRequest req, HTTPServerResponse res) {
+        // handle bullseye change in order to make sure that an archive was added.
         struct PostResponse {
             string id;
         }
@@ -72,16 +74,18 @@ struct Controller {
         }
         catch (JSONException e) {
             res.statusCode = HTTPStatus.badRequest;
-            res.writeBody(format("Request body does not match JSON struct error, %s", e.msg));
+            res.writeBody(format("Request body does not match. JSON struct error, %s", e.msg));
             return;
         }
 
-        writefln("document received: %s", project_data.toDoc.toPretty);
-
+        const prev_bullseye = dart_service.bullseye;
         const fingerprint = dart_service.modify(project_data.toDoc);
+        const new_bullseye = dart_service.bullseye;
+        if (new_bullseye == prev_bullseye) {
+          res.statusCode = HTTPStatus.badRequest;
+          res.writeBody(format("Project with fingerprint=%s not added to DART", fingerprint.toHexString));
+        }
 
-        // TODO: return GUID representing data entry in DART db
-        // return fingeprint of the archive
         PostResponse postResponse;
         postResponse.id = fingerprint.toHexString;
 
@@ -89,7 +93,19 @@ struct Controller {
         res.writeJsonBody(postResponse);
     }
 
-    void deleteOneProject(HTTPServerRequest req, HTTPServerResponse res) {
-        deleteOne(req, res, projectList, filePath, "projectUUID");
+    void deleteProject(HTTPServerRequest req, HTTPServerResponse res) {
+        string id = req.params.get("entityId");
+        const prev_bullseye = dart_service.bullseye;
+        const fingerprint = DARTIndex(decode(id));
+        dart_service.remove([fingerprint]);
+        const new_bullseye = dart_service.bullseye;
+
+        if (prev_bullseye == new_bullseye) {
+          res.statusCode = HTTPStatus.badRequest;
+          res.writeBody(format("Project with fingerprint=%s, not found", fingerprint.toHexString));
+          return;
+        }
+        res.statusCode = HTTPStatus.ok;
+        res.writeBody(format("Project with fingerprint=%s deleted", fingerprint.toHexString));
     }
 }

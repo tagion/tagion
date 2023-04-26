@@ -44,6 +44,18 @@ struct DartService {
         auto docs = read_recorder[].map!(a => a.filed).array;
         return docs;
     }
+
+    void remove(const(DARTIndex)[] fingerprints) {
+        auto recorder = db.recorder();
+        foreach(fingerprint; fingerprints) {
+            recorder.remove(fingerprint);
+        }
+        db.modify(recorder);
+    }
+
+    const(DARTIndex) bullseye() {
+        return DARTIndex(db.bullseye);
+    }
 }
 
 
