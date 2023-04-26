@@ -16,9 +16,10 @@ import std.file : exists;
 import services.dartService;
 import tagion.dart.DARTFile;
 import routes.project.model;
-
+import routes.benefitShareCredit.model;
 
 import routes.project.controller : Controller;
+import routes.benefitShareCredit.model;
 
 void main() {
   auto router = new URLRouter;
@@ -27,8 +28,14 @@ void main() {
     DARTFile.create(filename);
   }   
 
-  Controller!Project controller = Controller!Project("Project", router, filename, "very_secret");
+  DartService dart_service = DartService(filename, "very_secret");
+
+  auto controller_project = Controller!Project("project", router, dart_service);
+  auto controller_benefit_share_credit = Controller!BenefitShareCredit("benefit_share_credit", router, dart_service);
+  // Controller!BenefitShareCredit 
   // Define routes
+
+
 
 
   // Create a vibe.d HTTP server

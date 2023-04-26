@@ -35,9 +35,9 @@ struct Controller(T) {
 
     string name;
     DartService dart_service;
-    this(const(string) name, ref URLRouter router, const(string) dart_filename, const(string) password) {
+    this(const(string) name, ref URLRouter router, ref DartService dart_service) {
         this.name = name;
-        dart_service = DartService(dart_filename, password);
+          this.dart_service = dart_service;
 
           router.get(format("/%s/:entityId", name), &getT);
           router.delete_(format("/%s/:entityId", name), &deleteT);
@@ -62,8 +62,8 @@ struct Controller(T) {
         }
         
 
-        T project_data = T(doc.front);
-        const(Json) project_json = serializeToJson(project_data);
+        T data = T(doc.front);
+        const(Json) project_json = serializeToJson(data);
 
         res.writeJsonBody(project_json);
         res.statusCode = HTTPStatus.ok;
@@ -75,11 +75,11 @@ struct Controller(T) {
             string id;
         }
 
-        Project project_data;
+        T data;
 
         // check that user submits correct body
         try {
-            project_data = deserializeJson!T(req.json);
+            data = deserializeJson!T(req.json);
         }
         catch (JSONException e) {
             res.statusCode = HTTPStatus.badRequest;
@@ -88,7 +88,7 @@ struct Controller(T) {
         }
 
         const prev_bullseye = dart_service.bullseye;
-        const fingerprint = dart_service.modify(project_data.toDoc);
+        const fingerprint = dart_service.modify(data.toDoc);
         const new_bullseye = dart_service.bullseye;
         if (new_bullseye == prev_bullseye) {
             res.statusCode = HTTPStatus.badRequest;
