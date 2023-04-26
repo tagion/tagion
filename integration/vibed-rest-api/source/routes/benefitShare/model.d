@@ -1,6 +1,5 @@
 module routes.benefitShare.model;
-// import tagion.hibon.HiBONRecord;
-// import tagion.std.container.rbtree;
+import tagion.hibon.HiBONRecord;
 
 struct BenefitShare {
     string benefitShareUUID; // System UUID - "df51e3a0-d48a-41a7-8960-8534e154e5e6"
@@ -12,5 +11,30 @@ struct BenefitShare {
     string benefitSharePriceCurrency; // "DKK"
     int benefitSharePrice; // 1
 
-    // mixin HiBONRecord!();
+}
+
+version (unittest) struct TestStruct {
+    string name;
+    mixin HiBONRecord!(q{
+        this(const string _name) {
+            name = _name;
+        }
+    });
+}
+
+unittest {
+    import tagion.dart.DARTFile;
+    import tagion.dart.DARTFakeNet;
+    import tagion.dart.Recorder;
+    import tagion.hibon.HiBON;
+    import tagion.hibon.HiBONRecord;
+
+    auto net = new DARTFakeNet;
+    RecordFactory.Recorder recorder;
+
+    const filename = "/tmp/dartA.drt";
+    DARTFile.create(filename);
+    auto dart_A = new DARTFile(net, filename);
+    recorder = dart_A.recorder();
+
 }
