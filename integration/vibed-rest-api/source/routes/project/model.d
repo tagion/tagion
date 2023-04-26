@@ -1,4 +1,5 @@
 module routes.project.model;
+import tagion.hibon.HiBONRecord;
 
 struct Project {
     string projectUUID; // SystemId UUID - "e98fc703-9334-46d1-93c9-5675656c050f"
@@ -15,4 +16,6 @@ struct Project {
     string projectStartTime; // Time CET - "12:25:53"
     string projectEndDate; // "24-12-2024" || null
     string projectEndTime; // Time CET - "17:25:43" || null
+
+    mixin HiBONRecord;
 }
