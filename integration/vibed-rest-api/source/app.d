@@ -15,6 +15,8 @@ import std.file : exists;
 
 import services.dartService;
 import tagion.dart.DARTFile;
+import routes.project.model;
+
 
 import routes.project.controller : Controller;
 
@@ -25,11 +27,9 @@ void main() {
     DARTFile.create(filename);
   }   
 
-  Controller controller = Controller(filename, "very_secret");
+  Controller!Project controller = Controller!Project("Project", router, filename, "very_secret");
   // Define routes
-  router.get("/project/:entityId", &controller.getProject);
-  router.delete_("/project/:entityId", &controller.deleteProject);
-  router.post("/project", &controller.postProject);
+
 
   // Create a vibe.d HTTP server
 	auto settings = new HTTPServerSettings;

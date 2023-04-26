@@ -26,17 +26,25 @@ import tagion.utils.Miscellaneous : toHexString, decode;
 import tagion.dart.DARTBasic : DARTIndex, dartIndex;
 import tagion.hibon.HiBONRecord;
 import std.digest;
+import std.typecons;
 
 public Json[] projectList;
 public string filePath = "./source/routes/project/data.json";
 
-struct Controller {
+struct Controller(T) {
+
+    string name;
     DartService dart_service;
-    this(const(string) dart_filename, const(string) password) {
+    this(const(string) name, ref URLRouter router, const(string) dart_filename, const(string) password) {
+        this.name = name;
         dart_service = DartService(dart_filename, password);
+
+          router.get(format("/%s/:entityId", name), &getT);
+          router.delete_(format("/%s/:entityId", name), &deleteT);
+          router.post(format("/%s", name), &postT);
     }
 
-    void getProject(HTTPServerRequest req, HTTPServerResponse res) {
+    void getT(HTTPServerRequest req, HTTPServerResponse res) {
         string id = req.params.get("entityId");
 
         const fingerprint = DARTIndex(decode(id));
@@ -47,12 +55,14 @@ struct Controller {
             return;
         }
         // cannot use compile time for some reason.
-        if (!isRecord!Project(doc.front)) {
+        if (!isRecord!T(doc.front)) {
             res.statusCode = HTTPStatus.badRequest;
-            res.writeBody(format("Read document not of type=Project"));
-        }
 
-        Project project_data = Project(doc.front);
+            res.writeBody(format("Read document not of type=%s", name));
+        }
+        
+
+        T project_data = T(doc.front);
         const(Json) project_json = serializeToJson(project_data);
 
         res.writeJsonBody(project_json);
@@ -60,7 +70,7 @@ struct Controller {
 
     }
 
-    void postProject(HTTPServerRequest req, HTTPServerResponse res) {
+    void postT(HTTPServerRequest req, HTTPServerResponse res) {
         struct PostResponse {
             string id;
         }
@@ -69,7 +79,7 @@ struct Controller {
 
         // check that user submits correct body
         try {
-            project_data = deserializeJson!Project(req.json);
+            project_data = deserializeJson!T(req.json);
         }
         catch (JSONException e) {
             res.statusCode = HTTPStatus.badRequest;
@@ -92,7 +102,7 @@ struct Controller {
         res.writeJsonBody(postResponse);
     }
 
-    void deleteProject(HTTPServerRequest req, HTTPServerResponse res) {
+    void deleteT(HTTPServerRequest req, HTTPServerResponse res) {
         string id = req.params.get("entityId");
         const prev_bullseye = dart_service.bullseye;
         const fingerprint = DARTIndex(decode(id));
