@@ -23,12 +23,11 @@ void main() {
   const filename = "/tmp/dart.drt";
   if (!filename.exists) {
     DARTFile.create(filename);
-  } 
+  }   
 
   Controller controller = Controller(filename, "very_secret");
   // Define routes
-  router.get("/project", &controller.getAllProjects);
-  router.get("/project/:entityId", &controller.getOneProject);
+  router.get("/project/:entityId", &controller.getProject);
   router.delete_("/project/:entityId", &controller.deleteOneProject);
   router.post("/project", &controller.postProject);
 

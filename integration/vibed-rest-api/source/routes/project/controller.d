@@ -35,11 +35,7 @@ struct Controller {
         dart_service = DartService(dart_filename, password);
     }
 
-    void getAllProjects(HTTPServerRequest req, HTTPServerResponse res) {
-        getAll(req, res, projectList, filePath);
-    }
-
-    void getOneProject(HTTPServerRequest req, HTTPServerResponse res) {
+    void getProject(HTTPServerRequest req, HTTPServerResponse res) {
         string id = req.params.get("entityId");
 
         const fingerprint = DARTIndex(decode(id));
