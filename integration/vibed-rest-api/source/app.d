@@ -22,30 +22,27 @@ import routes.project.controller : Controller;
 import routes.benefitShareCredit.model;
 
 void main() {
-  auto router = new URLRouter;
-  const filename = "/tmp/dart.drt";
-  if (!filename.exists) {
-    DARTFile.create(filename);
-  }   
+    auto router = new URLRouter;
+    const filename = "/tmp/dart.drt";
+    if (!filename.exists) {
+        DARTFile.create(filename);
+    }
 
-  DartService dart_service = DartService(filename, "very_secret");
+    DartService dart_service = DartService(filename, "very_secret");
 
-  auto controller_project = Controller!Project("project", router, dart_service);
-  auto controller_benefit_share_credit = Controller!BenefitShareCredit("benefit_share_credit", router, dart_service);
-  // Controller!BenefitShareCredit 
-  // Define routes
+    auto controller_project = Controller!Project("project", router, dart_service);
+    auto controller_benefit_share_credit = Controller!BenefitShareCredit("benefit_share_credit", router, dart_service);
 
+    // Controller!BenefitShareCredit 
+    // Define routes
 
+    // Create a vibe.d HTTP server
+    auto settings = new HTTPServerSettings;
+    settings.port = 8081;
+    settings.bindAddresses = ["::1", "127.0.0.1"];
 
-
-  // Create a vibe.d HTTP server
-	auto settings = new HTTPServerSettings;
-	settings.port = 8081;
-	settings.bindAddresses = ["::1", "127.0.0.1"];
-  
-
-  // listen to server
-	listenHTTP(settings, router);
-	logInfo("Open http://127.0.0.1:8081/ in your browser.");
-	runApplication();
+    // listen to server
+    listenHTTP(settings, router);
+    logInfo("Open http://127.0.0.1:8081/ in your browser.");
+    runApplication();
 }
