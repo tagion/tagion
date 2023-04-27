@@ -43,13 +43,13 @@ struct Controller(T) {
      *   router = Reference to the router. For inserting the routes for the POST READ DELETE
      *   dart_service = Reference to the dart_service containing the DART.
      */
-    this(const(string) name, ref URLRouter router, ref DartService dart_service) {
+    this(const(string) access_token, const(string) name, ref URLRouter router, ref DartService dart_service) {
         this.name = name;
         this.dart_service = dart_service;
 
-        router.get(format("/%s/:entityId", name), &getT);
-        router.delete_(format("/%s/:entityId", name), &deleteT);
-        router.post(format("/%s", name), &postT);
+        router.get(format("/%s/%s/:entityId", access_token, name), &getT);
+        router.delete_(format("/%s/%s/:entityId", access_token, name), &deleteT);
+        router.post(format("/%s/%s", access_token, name), &postT);
     }
     /** 
      * Get request for reading specific document. 
@@ -125,7 +125,7 @@ struct Controller(T) {
      * Deletes the fingerprint
      * Params:
      *   req = :entityID. Fingerprint of the Archive stored in the DART.
-     *   res = httpresponse
+     *   res = httpresponse.
      */
     void deleteT(HTTPServerRequest req, HTTPServerResponse res) {
         string id = req.params.get("entityId");

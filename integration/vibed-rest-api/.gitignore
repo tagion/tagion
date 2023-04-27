@@ -13,3 +13,4 @@ dart-service-test-*
 *.o
 *.obj
 *.lst
+*.drt

@@ -26,27 +26,51 @@ import routes.benefit.model;
 import routes.documentDocument.model;
 import std.file;
 
-void main() {
+void main()
+{
     auto router = new URLRouter;
-    const filename = "/tmp/dart.drt";
-    if (!filename.exists) {
-        DARTFile.create(filename);
+    // const filename = "/tmp/dart.drt";
+
+    const string[] access_tokens = [
+        "test", "VENZOtar2ns4teitc4cxn39tsdei9mdt95eitars890354mvst9dn44",
+    ];
+
+    const test_token = access_tokens[0];
+    const test_filename = format("/tmp/%s-dart.drt", test_token);
+
+    if (!test_filename.exists)
+    {
+        DARTFile.create(test_filename);
     }
 
-    DartService dart_service = DartService(filename, "very_secret");
+    auto test_dart_service = DartService(test_filename, test_token);
+    auto test_project = Controller!Project(test_token, "project", router, test_dart_service);
+    auto test_benefit_share_credit = Controller!BenefitShareCredit(test_token, "benefit_share_credit", router, test_dart_service);
+    auto test_benefit_share = Controller!BenefitShare(test_token, "benefit_share", router, test_dart_service);
+    auto test_project_document = Controller!ProjectDocument(test_token, "project_document", router, test_dart_service);
+    auto test_document = Controller!DocumentDocument(test_token, "document", router, test_dart_service);
+    auto test_benefit = Controller!Benefit(test_token, "benefit", router, test_dart_service);
 
-    auto controller_project = Controller!Project("project", router, dart_service);
-    auto controller_benefit_share_credit = Controller!BenefitShareCredit("benefit_share_credit", router, dart_service);
-    auto controller_benefit_share = Controller!BenefitShare("benefit_share", router, dart_service);
-    auto controller_project_document = Controller!ProjectDocument("project_document", router, dart_service);
-    auto controller_document = Controller!DocumentDocument("document", router, dart_service);
-    auto controller_benefit = Controller!Benefit("benefit", router, dart_service);
+    const venzo_token = access_tokens[1];
+    const venzo_filename = format("%s-dart.drt", venzo_token);
 
-    foreach(route; router.getAllRoutes) {
+    if (!venzo_filename.exists)
+    {
+        DARTFile.create(venzo_filename);
+    }
+
+    auto venzo_dart_service = DartService(test_filename, venzo_token);
+    auto venzo_project = Controller!Project(venzo_token, "project", router, venzo_dart_service);
+    auto venzo_benefit_share_credit = Controller!BenefitShareCredit(venzo_token, "benefit_share_credit", router, venzo_dart_service);
+    auto venzo_benefit_share = Controller!BenefitShare(venzo_token, "benefit_share", router, venzo_dart_service);
+    auto venzo_project_document = Controller!ProjectDocument(venzo_token, "project_document", router, venzo_dart_service);
+    auto venzo_document = Controller!DocumentDocument(venzo_token, "document", router, venzo_dart_service);
+    auto venzo_benefit = Controller!Benefit(venzo_token, "benefit", router, venzo_dart_service);
+
+    foreach (route; router.getAllRoutes)
+    {
         writeln(route);
     }
-
-
 
     // Controller!BenefitShareCredit 
     // Define routes
