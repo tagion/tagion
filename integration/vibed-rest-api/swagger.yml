@@ -1,0 +1,598 @@
+openapi: 3.0.3
+info:
+  title: NFT REST API
+  description: REST API documentation
+  version: 1.0.1
+servers:
+  - url: https://api.decard.io/VENZOtar2ns4teitc4cxn39tsdei9mdt95eitars890354mvst9dn44
+tags:
+  - name: Project
+  - name: ProjectDocument
+  - name: DocumentDocument
+  - name: Benefit
+  - name: BenefitShare
+  - name: BenefitShareCredit
+paths:
+  /project:
+    post:
+      tags:
+        - Project
+      summary: Create new project
+      operationId: addProject
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Project'   
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostResponse'
+        '400':
+          description: Bad request
+  /project/{projectID}:
+    get:
+      tags:
+        - Project
+      summary: Get project info by ID
+      operationId: getProjectById
+      parameters:
+        - name: projectID
+          in: path
+          description: ID of project to return
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '400':
+          description: Bad request
+    delete:
+      tags:
+        - Project
+      summary: Delete project by ID
+      operationId: deleteProjectById
+      parameters:
+        - name: projectID
+          in: path
+          description: ID of project to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+        '400':
+          description: Bad request
+  /project-document:
+    post:
+      tags:
+        - ProjectDocument
+      summary: Create new project document
+      operationId: addProjectDocument
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectDocument'   
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostResponse'
+        '400':
+          description: Bad request
+  /project-document/{projectDocumentID}:
+    get:
+      tags:
+        - ProjectDocument
+      summary: Get project document info by ID
+      operationId: getProjectDocumentById
+      parameters:
+        - name: projectDocumentID
+          in: path
+          description: ID of project document to return
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectDocument'
+        '400':
+          description: Bad request
+    delete:
+      tags:
+        - ProjectDocument
+      summary: Delete project document by ID
+      operationId: deleteProjectDocumentById
+      parameters:
+        - name: projectDocumentID
+          in: path
+          description: ID of project document to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+        '400':
+          description: Bad request
+  /document-document:
+    post:
+      tags:
+        - DocumentDocument
+      summary: Create new document document
+      operationId: addDocumentDocument
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentDocument'   
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostResponse'
+        '400':
+          description: Bad request
+  /document-document/{documentDocumentID}:
+    get:
+      tags:
+        - DocumentDocument
+      summary: Get document document info by ID
+      operationId: getDocumentDocumentById
+      parameters:
+        - name: documentDocumentID
+          in: path
+          description: ID of document document to return
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentDocument'
+        '400':
+          description: Bad request
+    delete:
+      tags:
+        - DocumentDocument
+      summary: Delete document document by ID
+      operationId: deleteDocumentDocumentById
+      parameters:
+        - name: documentDocumentID
+          in: path
+          description: ID of document document to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+        '400':
+          description: Bad request
+  /benefit:
+    post:
+      tags:
+        - Benefit
+      summary: Create new benefit
+      operationId: addBenefit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Benefit'   
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostResponse'
+        '400':
+          description: Bad request
+  /benefit/{benefitID}:
+    get:
+      tags:
+        - Benefit
+      summary: Get benefit info by ID
+      operationId: getBenefitById
+      parameters:
+        - name: benefitID
+          in: path
+          description: ID of benefit to return
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Benefit'
+        '400':
+          description: Bad request
+    delete:
+      tags:
+        - Benefit
+      summary: Delete benefit by ID
+      operationId: deleteBenefitById
+      parameters:
+        - name: benefitID
+          in: path
+          description: ID of benefit to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+        '400':
+          description: Bad request
+  /benefit-share:
+    post:
+      tags:
+        - BenefitShare
+      summary: Create new benefit share
+      operationId: addBenefitShare
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BenefitShare'   
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostResponse'
+        '400':
+          description: Bad request
+  /benefit-share/{benefitShareID}:
+    get:
+      tags:
+        - BenefitShare
+      summary: Get benefit share info by ID
+      operationId: getBenefitShareById
+      parameters:
+        - name: benefitShareID
+          in: path
+          description: ID of benefit share to return
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BenefitShare'
+        '400':
+          description: Bad request
+    delete:
+      tags:
+        - BenefitShare
+      summary: Delete benefit share by ID
+      operationId: deleteBenefitShareById
+      parameters:
+        - name: benefitShareID
+          in: path
+          description: ID of benefit share to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+        '400':
+          description: Bad request
+  /benefit-share-credit:
+    post:
+      tags:
+        - BenefitShareCredit
+      summary: Create new benefit share credit
+      operationId: addBenefitShareCredit
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BenefitShareCredit'   
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostResponse'
+        '400':
+          description: Bad request
+  /benefit-share-credit/{benefitShareCreditID}:
+    get:
+      tags:
+        - BenefitShareCredit
+      summary: Get benefit share credit info by ID
+      operationId: getBenefitShareCreditById
+      parameters:
+        - name: benefitShareCreditID
+          in: path
+          description: ID of benefit share credit to return
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BenefitShareCredit'
+        '400':
+          description: Bad request
+    delete:
+      tags:
+        - BenefitShareCredit
+      summary: Delete benefit share credit by ID
+      operationId: deleteBenefitShareCreditById
+      parameters:
+        - name: benefitShareCreditID
+          in: path
+          description: ID of benefit share credit to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+        '400':
+          description: Bad request
+components:
+  schemas:
+    Project:
+      type: object
+      properties:
+        projectUUID:
+          type: string
+          example: "e98fc703-9334-46d1-93c9-5675656c050f"
+        projectId:
+          type: integer
+          example: 1
+        supplierUUID:
+          type: string
+          example: "cffe947a-0add-41a5-a59e-4f35fe18cb3b"
+        projectTitle:
+          type: string
+          example: "Title 1"
+        projectDescription:
+          type: string
+          example: "Title 1 Description of project"
+        projectTags:
+          type: array
+          items:
+            type: string
+          example: ["CO2", "H2O"]
+        projectGeolocation:
+          type: string
+          example: "123.3256.212 321.2445.256"
+        projectUnitType:
+          type: string
+          example: "Hectar"
+        projectUnitCount:
+          type: number
+          example: 117
+        projectState:
+          type: string
+          example: "Active"
+        projectStartDate:
+          type: string
+          example: "01-01-2023"
+        projectStartTime:
+          type: string
+          example: "12:25:53"
+        projectEndDate:
+          type: string
+          example: "24-12-2024"
+        projectEndTime:
+          type: string
+          example: "17:25:43"
+    ProjectDocument:
+      type: object
+      properties:
+        projectDocumentUUID:
+          type: string
+          example: "e5ba99a7-f0ed-444f-ac43-07064aa1df80"
+        documentUUID:
+          type: string
+          example: "1aa84542-c1b5-4fd6-8354-7dbcfe3d16d0"
+        projectDocumentType:
+          type: string
+          example: "Contract"
+        projectDocumentAuthor:
+          type: string
+          example: "Rambøl"
+        projectUUID:
+          type: string
+          example: "e98fc703-9334-46d1-93c9-5675656c050f"
+    DocumentDocument:
+      type: object
+      properties:
+        documentUUID:
+          type: string
+          example: "1aa84542-c1b5-4fd6-8354-7dbcfe3d16d0"
+        documentId:
+          type: integer
+          example: 1
+        documentFileType:
+          type: string
+          example: "pdf"
+        documentBinary:
+          type: string
+          example: "aswsftrs123casd=="
+        documentTitle:
+          type: string
+          example: "Test.pdf"
+        documentSizeKb:
+          type: integer
+          example: 123456
+        documentUploadTime:
+          type: string
+          example: "29-03-2023 16:51:42"
+        documentUploadAdminUserUUID:
+          type: string
+          example: "ca5a0c33-febe-49ca-84d9-e27fbf2f3d16"
+        supplierUUID:
+          type: string
+          example: "24afdb9f-49c5-4784-b2f2-2b4f135f5d5f"
+        projectUUID:
+          type: string
+          example: "e98fc703-9334-46d1-93c9-5675656c050f"
+        investorUUID:
+          type: string
+          example: "16f0654e-f18d-48cd-bfc0-55e5979f3d00"
+    Benefit:
+      type: object
+      properties:
+        benefitUuid:
+          type: string
+          example: "dd02c019-1050-421a-955f-afa28c6423f8"
+        projectUuid:
+          type: string
+          example: "e98fc703-9334-46d1-93c9-5675656c050f"
+        benefitId:
+          type: integer
+          example: 1
+        benefitType:
+          type: string
+          example: "Afforestation"
+        benefitDescription:
+          type: string
+          example: "Afforestation of 1"
+        benefitLocationSizeUnit:
+          type: string
+          example: "Hectar"
+        benefitLocationSizeUnitCount:
+          type: integer
+          example: 10
+        benefitPrice:
+          type: integer
+          example: 125
+        benefitPriceCurrency:
+          type: string
+          example: "DKK"
+        benefitSharesTotalAmount:
+          type: integer
+          example: 15
+    BenefitShare:
+      type: object
+      properties:
+        benefitShareUUID:
+          type: string
+          example: "df51e3a0-d48a-41a7-8960-8534e154e5e6"
+        benefitShareId:
+          type: integer
+          example: 1
+        benefitUUID:
+          type: string
+          example: "dd02c019-1050-421a-955f-afa28c6423f8"
+        benefitShareNumber:
+          type: integer
+          example: 1
+        benefitShareLocationSizeUnit:
+          type: string
+          example: "Hectar"
+        benefitShareLocationSizeUnitCount:
+          type: integer
+          example: 1
+        benefitSharePriceCurrency:
+          type: string
+          example: "DKK"
+        benefitSharePrice:
+          type: integer
+          example: 1 
+    BenefitShareCredit:
+      type: object
+      properties:
+        benefitShareCreditUUID:
+          type: string
+          example: "0de6c792-f3ca-49a3-89a7-892117383956"
+        benefitShareCreditId:
+          type: integer
+          example: 1
+        benefitShareUUID:
+          type: string
+          example: "df51e3a0-d48a-41a7-8960-8534e154e5e6"
+        benefitShareCreditType:
+          type: string
+          example: "CarbonCredit"
+        benefitShareCreditUnit:
+          type: string
+          example: "Hectar"
+        benefitShareCreditUnitProductionCount:
+          type: integer
+          example: 2
+        benefitShareCreditUnitProductionYear:
+          type: integer
+          example: 2023
+    PostResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "dd02c019-1050-421a-955f-afa28c6423f8"
+    DeleteResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Succesfully deleted"

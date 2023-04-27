@@ -76,9 +76,9 @@ struct Controller(T) {
         }
 
         T data = T(doc.front);
-        const(Json) project_json = serializeToJson(data);
+        const(Json) entity_json = serializeToJson(data);
 
-        res.writeJsonBody(project_json);
+        res.writeJsonBody(entity_json);
         res.statusCode = HTTPStatus.ok;
 
     }
@@ -112,7 +112,7 @@ struct Controller(T) {
         const new_bullseye = dart_service.bullseye;
         if (new_bullseye == prev_bullseye) {
             res.statusCode = HTTPStatus.badRequest;
-            res.writeBody(format("Project with fingerprint=%s not added to DART", fingerprint.toHexString));
+            res.writeBody(format("Entity with fingerprint=%s not added to DART", fingerprint.toHexString));
         }
 
         PostResponse postResponse;
@@ -128,6 +128,10 @@ struct Controller(T) {
      *   res = httpresponse.
      */
     void deleteT(HTTPServerRequest req, HTTPServerResponse res) {
+        struct DeleteResponse {
+            string message;
+        }
+
         string id = req.params.get("entityId");
         const prev_bullseye = dart_service.bullseye;
         const fingerprint = DARTIndex(decode(id));
@@ -136,10 +140,15 @@ struct Controller(T) {
 
         if (prev_bullseye == new_bullseye) {
             res.statusCode = HTTPStatus.badRequest;
-            res.writeBody(format("Project with fingerprint=%s, not found", fingerprint.toHexString));
+            res.writeBody(format("Entity with fingerprint=%s, not found", fingerprint.toHexString));
             return;
         }
+
+        DeleteResponse deleteResponse;
+        deleteResponse.message = "Succesfully deleted";
+
         res.statusCode = HTTPStatus.ok;
-        res.writeBody(format("Project with fingerprint=%s deleted", fingerprint.toHexString));
+        // res.writeBody(format("Entity with fingerprint=%s deleted", fingerprint.toHexString));
+        res.writeJsonBody(deleteResponse);
     }
 }
