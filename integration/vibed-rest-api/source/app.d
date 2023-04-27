@@ -26,8 +26,7 @@ import routes.benefit.model;
 import routes.documentDocument.model;
 import std.file;
 
-void main()
-{
+void main() {
     auto router = new URLRouter;
     // const filename = "/tmp/dart.drt";
 
@@ -36,10 +35,9 @@ void main()
     ];
 
     const test_token = access_tokens[0];
-    const test_filename = format("/tmp/%s-dart.drt", test_token);
+    const test_filename = format("%s-dart.drt", test_token);
 
-    if (!test_filename.exists)
-    {
+    if (!test_filename.exists) {
         DARTFile.create(test_filename);
     }
 
@@ -54,8 +52,7 @@ void main()
     const venzo_token = access_tokens[1];
     const venzo_filename = format("%s-dart.drt", venzo_token);
 
-    if (!venzo_filename.exists)
-    {
+    if (!venzo_filename.exists) {
         DARTFile.create(venzo_filename);
     }
 
@@ -67,8 +64,7 @@ void main()
     auto venzo_document = Controller!DocumentDocument(venzo_token, "document", router, venzo_dart_service);
     auto venzo_benefit = Controller!Benefit(venzo_token, "benefit", router, venzo_dart_service);
 
-    foreach (route; router.getAllRoutes)
-    {
+    foreach (route; router.getAllRoutes) {
         writeln(route);
     }
 
