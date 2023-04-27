@@ -31,19 +31,33 @@ import std.typecons;
 public Json[] projectList;
 public string filePath = "./source/routes/project/data.json";
 
+/// General Template controller for generating POST, READ and DELETE routes.
 struct Controller(T) {
 
     string name;
     DartService dart_service;
+    /** 
+     * 
+     * Params:
+     *   name = name of the type. Used for the routing and fail-handling
+     *   router = Reference to the router. For inserting the routes for the POST READ DELETE
+     *   dart_service = Reference to the dart_service containing the DART.
+     */
     this(const(string) name, ref URLRouter router, ref DartService dart_service) {
         this.name = name;
-          this.dart_service = dart_service;
+        this.dart_service = dart_service;
 
-          router.get(format("/%s/:entityId", name), &getT);
-          router.delete_(format("/%s/:entityId", name), &deleteT);
-          router.post(format("/%s", name), &postT);
+        router.get(format("/%s/:entityId", name), &getT);
+        router.delete_(format("/%s/:entityId", name), &deleteT);
+        router.post(format("/%s", name), &postT);
     }
-
+    /** 
+     * Get request for reading specific document. 
+     * If the request is not valid according to the recordType we return an error.
+     * Params:
+     *   req = :entityID. Fingerprint of the Archive stored in the DART.
+     *   res = returns the Document
+     */
     void getT(HTTPServerRequest req, HTTPServerResponse res) {
         string id = req.params.get("entityId");
 
@@ -54,13 +68,12 @@ struct Controller(T) {
             res.writeBody(format("Archive with fingerprint=%s, not found in database", id));
             return;
         }
-        // cannot use compile time for some reason.
+        // Check that the document is the Type that was requested.
         if (!isRecord!T(doc.front)) {
             res.statusCode = HTTPStatus.badRequest;
 
             res.writeBody(format("Read document not of type=%s", name));
         }
-        
 
         T data = T(doc.front);
         const(Json) project_json = serializeToJson(data);
@@ -69,7 +82,14 @@ struct Controller(T) {
         res.statusCode = HTTPStatus.ok;
 
     }
-
+    /** 
+     * Post the document for the specific type.
+     * Takes a json request and converts it to a struct.
+     * If the data cannot be converted it throws a json error.
+     * Params:
+     *   req = json document
+     *   res = httpserverresponse
+     */
     void postT(HTTPServerRequest req, HTTPServerResponse res) {
         struct PostResponse {
             string id;
@@ -101,7 +121,12 @@ struct Controller(T) {
         res.statusCode = HTTPStatus.created;
         res.writeJsonBody(postResponse);
     }
-
+    /** 
+     * Deletes the fingerprint
+     * Params:
+     *   req = :entityID. Fingerprint of the Archive stored in the DART.
+     *   res = httpresponse
+     */
     void deleteT(HTTPServerRequest req, HTTPServerResponse res) {
         string id = req.params.get("entityId");
         const prev_bullseye = dart_service.bullseye;
