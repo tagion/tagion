@@ -85,3 +85,5 @@ bdd/tagion/testbench/services/Logger_subscription_service_with_parameter.d
 bdd/tagion/testbench/services/Recorder_chain_service.d
 bdd/tagion/testbench/services/Transcript_service.d
 tagionwave.json
+
+.dub
