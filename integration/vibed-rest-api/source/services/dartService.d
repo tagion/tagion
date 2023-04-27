@@ -17,13 +17,13 @@ struct DartService {
     SecureNet net;
     DART db;
 
-    this(const(string) filename, const(string) password) {
+    this(const(string) dart_filename, const(string) password) {
         net = new StdSecureNet();
         net.generateKeyPair(password);
         // net = new DARTFakeNet;
 
 
-        db = new DART(net, filename);
+        db = new DART(net, dart_filename);
     }
 
     ~this() {
