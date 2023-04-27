@@ -42,17 +42,17 @@ class Fatal : TagionException {
 /// Child Actor
 struct SetUpForFailure {
 static:
-    void exceptional(Msg!"recoverable") {
+    void recoverable(Msg!"recoverable") {
         writeln("oh nose");
         throw new Recoverable("I am fail");
     }
 
-    void exceptional(Msg!"fatal") {
+    void fatal(Msg!"fatal") {
         writeln("oh noes");
         throw new Fatal("I am big fail");
     }
 
-    mixin Actor!(&exceptional); /// Turns the struct into an Actor
+    mixin Actor!(&recoverable, &fatal); /// Turns the struct into an Actor
 }
 
 alias ChildHandle = ActorHandle!SetUpForFailure;
