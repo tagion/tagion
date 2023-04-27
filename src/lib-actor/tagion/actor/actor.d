@@ -115,7 +115,7 @@ struct ActorHandle(A) {
     /// the name of the possibly running task
     string taskName;
 
-    void send(T...)(T vals) {
+    @trusted void send(T...)(T vals) {
         concurrency.send(tid, vals);
     }
 
@@ -153,7 +153,7 @@ ActorHandle!A actorHandle(A)(string taskName) {
  * spawnActor!MyActor("my_task_name", 42);
  * ---
  */
-ActorHandle!A spawnActor(A)(string taskName) nothrow {
+ActorHandle!A spawnActor(A)(string taskName) @trusted nothrow {
     alias task = A.task;
     Tid tid;
 
