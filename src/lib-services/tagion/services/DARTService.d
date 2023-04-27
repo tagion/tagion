@@ -1,4 +1,4 @@
-module tagion.services.DARTService;
+module tagion.services.DartService;
 
 import std.path : isValidPath;
 import std.format : format;
@@ -10,10 +10,11 @@ import tagion.dart.DART;
 import tagion.dart.Recorder;
 
 struct DartService {
+static:
     DART db;
     StdSecureNet net;
 
-    this(const(string) dart_path, const(string) password)
+    void starting(const(string) dart_path, const(string) password)
     in {
         assert(dart_path.isValidPath, format("%s is not a valid path"));
     }
@@ -23,12 +24,6 @@ struct DartService {
 
         db = new DART(net, dart_path);
     }
-
-    ~this() {
-        db.close;
-    }
-
-static:
 
     void _(Msg!"dartRead", Fingerprint fingerprint) {
     }
@@ -42,5 +37,7 @@ static:
     void _(Msg!"dartBullseye") {
     }
 
-    // mixin Actor!(&_);
+    mixin Actor!(&_);
 }
+
+alias DartServiceHandle = ActorHandle!DartService;
