@@ -847,7 +847,10 @@ alias check = Check!DARTException;
 
         /** 
          * Inner function for the modify function.
-         * Note that this function is recursice and called from itself. 
+         * Note that this function is recursive and called from itself. 
+         * Can be broken up into 3 sections. The first is for going through the branches
+         * In the sectors. Next section is for going through branches deeper than the sectors.
+         * The last section is responsible for acutally doing the work with the archives.
          * Params:
          *   range = RimKeyRange to traverse with.
          *   branch_index = The branch index to modify.
@@ -863,6 +866,7 @@ alias check = Check!DARTException;
                 return Leave.init;
             }
 
+            /// First section for going through the Branches in the sectors.
             Index erase_block_index;
             scope (success) {
                 blockfile.dispose(erase_block_index);
@@ -893,6 +897,7 @@ alias check = Check!DARTException;
                         branches.fingerprint(this));
 
             }
+            // Section for going through branches that are not in the sectors.
             else {
                 if (branch_index !is Index.init) {
                     const doc = blockfile.cacheLoad(branch_index);
@@ -940,6 +945,8 @@ alias check = Check!DARTException;
 
                     }
                 }
+                // If there is only one archive left, it means we have traversed to the bottom of the tree
+                // Therefore we must return the leave if it is an ADD.
                 if (range.oneLeft) {
                     scope (exit) {
                         range.popFront;
@@ -950,18 +957,19 @@ alias check = Check!DARTException;
                     }
                     return Leave.init;
                 }
-
+                /// More than one archive is present. Meaning we have to traverse
+                /// Deeper into the tree.
                 while (!range.empty) {
                     const rim_key = range.front.fingerprint.rim_key(range.rim + 1);
 
                     const leave = traverse_dart(range.nextRim, Index.init);
                     branches[rim_key] = leave;
                 }
-
+                /// If the branch is empty we return a NULL leave.
                 if (branches.empty) {
                     return Leave.init;
                 }
-
+                // If the branch isSingle then we have to move the branch / archives located in it upwards.
                 if (branches.isSingle) {
                     const single_leave = branches[].front;
                     const buf = cacheLoad(single_leave.index);
@@ -978,12 +986,14 @@ alias check = Check!DARTException;
 
         }
 
+        /// If our records is empty we return the previous fingerprint
         if (modifyrecords.empty) {
             return _fingerprint;
         }
 
         
-
+        // This check ensures us that we never have multiple add and deletes on the
+        // same archive in the same recorder.
         .check(modifyrecords.length <= 1 ||
                 !modifyrecords[].slide(2).map!(a => a.front.fingerprint == a.dropOne.front.fingerprint)
                     .any,

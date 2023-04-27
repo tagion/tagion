@@ -24,7 +24,7 @@ import routes.benefitShareCredit.model;
 import routes.benefitShare.model;
 import routes.benefit.model;
 import routes.documentDocument.model;
-
+import std.file;
 
 void main() {
     auto router = new URLRouter;
@@ -41,6 +41,12 @@ void main() {
     auto controller_project_document = Controller!ProjectDocument("project_document", router, dart_service);
     auto controller_document = Controller!DocumentDocument("document", router, dart_service);
     auto controller_benefit = Controller!Benefit("benefit", router, dart_service);
+
+    foreach(route; router.getAllRoutes) {
+        writeln(route);
+    }
+
+
 
     // Controller!BenefitShareCredit 
     // Define routes
