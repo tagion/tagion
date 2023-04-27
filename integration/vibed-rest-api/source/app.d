@@ -16,7 +16,7 @@ import std.file : exists;
 import services.dartService;
 import tagion.dart.DARTFile;
 
-import routes.project.controller : Controller;
+import routes.controller : Controller;
 
 import routes.project.model;
 import routes.projectDocument.model;

@@ -1,4 +1,4 @@
-module routes.project.controller;
+module routes.controller;
 
 import vibe.vibe;
 import vibe.d;
