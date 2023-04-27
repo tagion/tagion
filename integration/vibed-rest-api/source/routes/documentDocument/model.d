@@ -1,6 +1,8 @@
-module routes.document.model;
+module routes.documentDocument.model;
+import tagion.hibon.HiBONRecord;
 
-struct Document {
+@recordType("DocumentDocument")
+struct DocumentDocument {
     string documentUUID; // System UUID - "1aa84542-c1b5-4fd6-8354-7dbcfe3d16d0"
     int documentId; // License public ID - 1
     string documentFileType; // "doc" / "pdf"
@@ -12,4 +14,6 @@ struct Document {
     string supplierUUID; // "24afdb9f-49c5-4784-b2f2-2b4f135f5d5f"
     string projectUUID; // "e98fc703-9334-46d1-93c9-5675656c050f"
     string investorUUID; // "16f0654e-f18d-48cd-bfc0-55e5979f3d00"
+
+    mixin HiBONRecord;
 }

@@ -15,11 +15,16 @@ import std.file : exists;
 
 import services.dartService;
 import tagion.dart.DARTFile;
-import routes.project.model;
-import routes.benefitShareCredit.model;
 
 import routes.project.controller : Controller;
+
+import routes.project.model;
+import routes.projectDocument.model;
 import routes.benefitShareCredit.model;
+import routes.benefitShare.model;
+import routes.benefit.model;
+import routes.documentDocument.model;
+
 
 void main() {
     auto router = new URLRouter;
@@ -32,6 +37,10 @@ void main() {
 
     auto controller_project = Controller!Project("project", router, dart_service);
     auto controller_benefit_share_credit = Controller!BenefitShareCredit("benefit_share_credit", router, dart_service);
+    auto controller_benefit_share = Controller!BenefitShare("benefit_share", router, dart_service);
+    auto controller_project_document = Controller!ProjectDocument("project_document", router, dart_service);
+    auto controller_document = Controller!DocumentDocument("document", router, dart_service);
+    auto controller_benefit = Controller!Benefit("benefit", router, dart_service);
 
     // Controller!BenefitShareCredit 
     // Define routes
