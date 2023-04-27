@@ -311,7 +311,6 @@ static:
             else {
                 // default failhandler
                 auto failhandler = (TaskFailure tf) {
-                    writeln("received exeption");
                     if (ownerTid != Tid.init) {
                         ownerTid.prioritySend(tf);
                     }
@@ -331,7 +330,6 @@ static:
                     );
                 }
                 catch (Throwable t) {
-                    assumeWontThrow(writefln("caught exeption"));
                     if (ownerTid != Tid.init) {
                         ownerTid.prioritySend(TaskFailure(cast(immutable) t, taskName));
                     }
@@ -341,7 +339,6 @@ static:
 
         // If we catch an exception we send it back to owner for them to deal with it.
         catch (Throwable t) {
-            assumeWontThrow(writefln("caught running exeption"));
             if (tidOwner.get !is Tid.init) {
                 assumeWontThrow(ownerTid.prioritySend(TaskFailure(cast(immutable) t, taskName)));
             }
