@@ -26,6 +26,11 @@ import routes.benefit.model;
 import routes.documentDocument.model;
 import std.file;
 
+// void index(HTTPServerRequest req, HTTPServerResponse res)
+// {
+// 	res.render!("index.html", req);
+// }
+
 void main() {
     auto router = new URLRouter;
     // const filename = "/tmp/dart.drt";
@@ -64,6 +69,8 @@ void main() {
     auto venzo_document = Controller!DocumentDocument(venzo_token, "document", router, venzo_dart_service);
     auto venzo_benefit = Controller!Benefit(venzo_token, "benefit", router, venzo_dart_service);
 
+    // router.get("/", &index);
+    // Add a route to serve the index.html file
     foreach (route; router.getAllRoutes) {
         writeln(route);
     }
