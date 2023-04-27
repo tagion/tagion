@@ -153,14 +153,13 @@ ActorHandle!A actorHandle(A)(string taskName) {
  * spawnActor!MyActor("my_task_name", 42);
  * ---
  */
-ActorHandle!A spawnActor(A, Args...)(string taskName, Args args) nothrow {
+ActorHandle!A spawnActor(A)(string taskName) nothrow {
     alias task = A.task;
     Tid tid;
 
     //Tid isSpawnedTid = assumeWontThrow(locate(taskName));
     //if (isSpawnedTid is Tid.init) {
-    tid = assumeWontThrow(spawn(&task, taskName, args));
-    /// TODO: set oncrowding to exception;
+    tid = assumeWontThrow(spawn(&task, taskName)); /// TODO: set oncrowding to exception;
     assumeWontThrow(register(taskName, tid));
     assumeWontThrow(writefln("%s registered", taskName));
     //}
@@ -277,6 +276,23 @@ static:
 
             setState(Ctrl.STARTING); // Tell the owner that you are starting.
             scope (exit) {
+                version (none)
+                    if (childrenState.length != 0) {
+                        foreach (tid, ctrl; childrenState) {
+                            if (ctrl is Ctrl.ALIVE) {
+                                tid.send(Sig.STOP);
+                            }
+                        }
+
+                        while (!(childrenState.all(Ctrl.END))) {
+                            CtrlMsg msg;
+                            receive(
+                                    (CtrlMsg ctrl) { msg = ctrl; }
+                            );
+                            childrenState[msg.tid] = msg.ctrl;
+                        }
+                    }
+
                 ThreadInfo.thisInfo.cleanup;
                 setState(Ctrl.END); // Tell the owner that you have finished.
             }
