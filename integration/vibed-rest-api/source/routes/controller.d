@@ -174,7 +174,7 @@ struct Controller(T) {
         if (id.length != 64) {
             Json dataIdWrongLength = Json.emptyObject;
             dataIdWrongLength["errorCode"] = "31";
-            dataIdWrongLength["errorDescription"] = format("Fingerprint=%s length is broken", fingerprint.toHexString);
+            dataIdWrongLength["errorDescription"] = format("Provided fingerprint=%s is not valid", fingerprint.toHexString);
 
             ResponseModel responseIdWrongLength = ResponseModel(false, dataIdWrongLength);
             const(Json) responseIdWrongLengthJson = serializeToJson(responseIdWrongLength);
