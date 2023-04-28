@@ -34,7 +34,7 @@ public string filePath = "./source/routes/project/data.json";
 
 struct ResponseModel {
 	bool isSucceeded;
-  JSON data;
+  Json data;
 }
 
 /// General Template controller for generating POST, READ and DELETE routes.
@@ -71,7 +71,7 @@ struct Controller(T) {
         const fingerprint = DARTIndex(decode(id));
         const doc = dart_service.read([fingerprint]);
         if (doc.empty) {
-            JSON dataNotFound = JsonValue();
+            Json dataNotFound = JsonValue();
             dataNotFound["errorCode"] = "11";
             dataNotFound["errorDescription"] = format("Archive with fingerprint=%s, not found in database", id);
 
@@ -85,7 +85,7 @@ struct Controller(T) {
         }
         // Check that the document is the Type that was requested.
         if (!isRecord!T(doc.front)) {
-            JSON dataNotCorrectType = JsonValue();
+            Json dataNotCorrectType = JsonValue();
             dataNotCorrectType["errorCode"] = "12";
             dataNotCorrectType["errorDescription"] = format("Read document not of type=%s", name);
 
@@ -123,7 +123,7 @@ struct Controller(T) {
             data = deserializeJson!T(req.json);
         }
         catch (JSONException e) {
-            JSON dataBodyNoMatch = JsonValue();
+            Json dataBodyNoMatch = JsonValue();
             dataBodyNoMatch["errorCode"] = "21";
             dataBodyNoMatch["errorDescription"] = format("Request body does not match. JSON struct error, %s", e.msg);
 
@@ -139,7 +139,7 @@ struct Controller(T) {
         const fingerprint = dart_service.modify(data.toDoc);
         const new_bullseye = dart_service.bullseye;
         if (new_bullseye == prev_bullseye) {
-            JSON dataFingerprintNotAdded = JsonValue();
+            Json dataFingerprintNotAdded = JsonValue();
             dataFingerprintNotAdded["errorCode"] = "22";
             dataFingerprintNotAdded["errorDescription"] = format("Entity with fingerprint=%s not added to DART", fingerprint.toHexString);
 
@@ -150,7 +150,7 @@ struct Controller(T) {
             res.writeBody(responseFingerprintNotAddedJson);
         }
 
-        JSON dataSuccess = JsonValue();
+        Json dataSuccess = JsonValue();
         dataSuccess["fingerprint"] = fingerprint.toHexString;
 
         ResponseModel responseSuccess = ResponseModel(true, dataSuccess);
@@ -174,7 +174,7 @@ struct Controller(T) {
         const new_bullseye = dart_service.bullseye;
 
         if (prev_bullseye == new_bullseye) {
-            JSON dataBodyFingerprintNotFound = JsonValue();
+            Json dataBodyFingerprintNotFound = JsonValue();
             dataBodyFingerprintNotFound["errorCode"] = "31";
             dataBodyFingerprintNotFound["errorDescription"] = format("Entity with fingerprint=%s, not found", fingerprint.toHexString);
 
@@ -186,7 +186,7 @@ struct Controller(T) {
             return;
         }
 
-        JSON dataSuccess = JsonValue();
+        Json dataSuccess = JsonValue();
         dataSuccess["message"] = "Succesfully deleted";
 
         ResponseModel responseSuccess = ResponseModel(true, dataSuccess);
