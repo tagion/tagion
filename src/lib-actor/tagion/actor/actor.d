@@ -278,24 +278,25 @@ static:
 
             setState(Ctrl.STARTING); // Tell the owner that you are starting.
             scope (exit) {
-                if (childrenState.length != 0) {
-                    foreach (tid, ctrl; childrenState) {
-                        if (ctrl is Ctrl.ALIVE) {
-                            tid.send(Sig.STOP);
+                version (none)
+                    if (childrenState.length != 0) {
+                        foreach (tid, ctrl; childrenState) {
+                            if (ctrl is Ctrl.ALIVE) {
+                                tid.send(Sig.STOP);
+                            }
                         }
-                    }
 
-                    while (!(childrenState.all(Ctrl.END))) {
-                        CtrlMsg msg;
-                        receive(
-                                (CtrlMsg ctrl) { msg = ctrl; },
-                                (TaskFailure tf) {
-                            writefln("While stopping `%s` received taskfailure: %s", taskName, tf.throwable.msg);
+                        while (!(childrenState.all(Ctrl.END))) {
+                            CtrlMsg msg;
+                            receive(
+                                    (CtrlMsg ctrl) { msg = ctrl; },
+                                    (TaskFailure tf) {
+                                writefln("While stopping `%s` received taskfailure: %s", taskName, tf.throwable.msg);
+                            }
+                            );
+                            childrenState[msg.tid] = msg.ctrl;
                         }
-                        );
-                        childrenState[msg.tid] = msg.ctrl;
                     }
-                }
 
                 ThreadInfo.thisInfo.cleanup;
                 setState(Ctrl.END); // Tell the owner that you have finished.
