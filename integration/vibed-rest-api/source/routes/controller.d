@@ -6,7 +6,6 @@ import vibe.core.core : runApplication;
 import vibe.http.server;
 import vibe.data.json;
 
-import std.json;
 import std.array;
 import std.stdio;
 import std.conv;
@@ -33,8 +32,8 @@ public Json[] projectList;
 public string filePath = "./source/routes/project/data.json";
 
 struct ResponseModel {
-	bool isSucceeded;
-  Json data;
+    bool isSucceeded;
+    Json data;
 }
 
 /// General Template controller for generating POST, READ and DELETE routes.
@@ -71,7 +70,7 @@ struct Controller(T) {
         const fingerprint = DARTIndex(decode(id));
         const doc = dart_service.read([fingerprint]);
         if (doc.empty) {
-            Json dataNotFound = JSONValue();
+            Json dataNotFound = Json.emptyObject;
             dataNotFound["errorCode"] = "11";
             dataNotFound["errorDescription"] = format("Archive with fingerprint=%s, not found in database", id);
 
@@ -85,7 +84,7 @@ struct Controller(T) {
         }
         // Check that the document is the Type that was requested.
         if (!isRecord!T(doc.front)) {
-            Json dataNotCorrectType = JSONValue();
+            Json dataNotCorrectType = Json.emptyObject;
             dataNotCorrectType["errorCode"] = "12";
             dataNotCorrectType["errorDescription"] = format("Read document not of type=%s", name);
 
@@ -123,7 +122,7 @@ struct Controller(T) {
             data = deserializeJson!T(req.json);
         }
         catch (JSONException e) {
-            Json dataBodyNoMatch = JSONValue();
+            Json dataBodyNoMatch = Json.emptyObject;
             dataBodyNoMatch["errorCode"] = "21";
             dataBodyNoMatch["errorDescription"] = format("Request body does not match. JSON struct error, %s", e.msg);
 
@@ -139,9 +138,10 @@ struct Controller(T) {
         const fingerprint = dart_service.modify(data.toDoc);
         const new_bullseye = dart_service.bullseye;
         if (new_bullseye == prev_bullseye) {
-            Json dataFingerprintNotAdded = JSONValue();
+            Json dataFingerprintNotAdded = Json.emptyObject;
             dataFingerprintNotAdded["errorCode"] = "22";
-            dataFingerprintNotAdded["errorDescription"] = format("Entity with fingerprint=%s not added to DART", fingerprint.toHexString);
+            dataFingerprintNotAdded["errorDescription"] = format("Entity with fingerprint=%s not added to DART", fingerprint
+                    .toHexString);
 
             ResponseModel responseFingerprintNotAdded = ResponseModel(false, dataFingerprintNotAdded);
             const(Json) responseFingerprintNotAddedJson = serializeToJson(responseFingerprintNotAdded);
@@ -150,7 +150,7 @@ struct Controller(T) {
             res.writeJsonBody(responseFingerprintNotAddedJson);
         }
 
-        Json dataSuccess = JSONValue();
+        Json dataSuccess = Json.emptyObject;
         dataSuccess["fingerprint"] = fingerprint.toHexString;
 
         ResponseModel responseSuccess = ResponseModel(true, dataSuccess);
@@ -174,9 +174,10 @@ struct Controller(T) {
         const new_bullseye = dart_service.bullseye;
 
         if (prev_bullseye == new_bullseye) {
-            Json dataBodyFingerprintNotFound = JSONValue();
+            Json dataBodyFingerprintNotFound = Json.emptyObject;
             dataBodyFingerprintNotFound["errorCode"] = "31";
-            dataBodyFingerprintNotFound["errorDescription"] = format("Entity with fingerprint=%s, not found", fingerprint.toHexString);
+            dataBodyFingerprintNotFound["errorDescription"] = format("Entity with fingerprint=%s, not found", fingerprint
+                    .toHexString);
 
             ResponseModel responseBodyFingerprintNotFound = ResponseModel(false, dataBodyFingerprintNotFound);
             const(Json) responseBodyFingerprintNotFoundJson = serializeToJson(responseBodyFingerprintNotFound);
@@ -186,7 +187,7 @@ struct Controller(T) {
             return;
         }
 
-        Json dataSuccess = JSONValue();
+        Json dataSuccess = Json.emptyObject;
         dataSuccess["message"] = "Succesfully deleted";
 
         ResponseModel responseSuccess = ResponseModel(true, dataSuccess);
