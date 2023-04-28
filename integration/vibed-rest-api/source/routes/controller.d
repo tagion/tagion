@@ -71,7 +71,7 @@ struct Controller(T) {
         const fingerprint = DARTIndex(decode(id));
         const doc = dart_service.read([fingerprint]);
         if (doc.empty) {
-            Json dataNotFound = JsonValue();
+            Json dataNotFound = JSONValue();
             dataNotFound["errorCode"] = "11";
             dataNotFound["errorDescription"] = format("Archive with fingerprint=%s, not found in database", id);
 
@@ -85,7 +85,7 @@ struct Controller(T) {
         }
         // Check that the document is the Type that was requested.
         if (!isRecord!T(doc.front)) {
-            Json dataNotCorrectType = JsonValue();
+            Json dataNotCorrectType = JSONValue();
             dataNotCorrectType["errorCode"] = "12";
             dataNotCorrectType["errorDescription"] = format("Read document not of type=%s", name);
 
@@ -123,7 +123,7 @@ struct Controller(T) {
             data = deserializeJson!T(req.json);
         }
         catch (JSONException e) {
-            Json dataBodyNoMatch = JsonValue();
+            Json dataBodyNoMatch = JSONValue();
             dataBodyNoMatch["errorCode"] = "21";
             dataBodyNoMatch["errorDescription"] = format("Request body does not match. JSON struct error, %s", e.msg);
 
@@ -139,7 +139,7 @@ struct Controller(T) {
         const fingerprint = dart_service.modify(data.toDoc);
         const new_bullseye = dart_service.bullseye;
         if (new_bullseye == prev_bullseye) {
-            Json dataFingerprintNotAdded = JsonValue();
+            Json dataFingerprintNotAdded = JSONValue();
             dataFingerprintNotAdded["errorCode"] = "22";
             dataFingerprintNotAdded["errorDescription"] = format("Entity with fingerprint=%s not added to DART", fingerprint.toHexString);
 
@@ -150,7 +150,7 @@ struct Controller(T) {
             res.writeBody(responseFingerprintNotAddedJson);
         }
 
-        Json dataSuccess = JsonValue();
+        Json dataSuccess = JSONValue();
         dataSuccess["fingerprint"] = fingerprint.toHexString;
 
         ResponseModel responseSuccess = ResponseModel(true, dataSuccess);
@@ -174,7 +174,7 @@ struct Controller(T) {
         const new_bullseye = dart_service.bullseye;
 
         if (prev_bullseye == new_bullseye) {
-            Json dataBodyFingerprintNotFound = JsonValue();
+            Json dataBodyFingerprintNotFound = JSONValue();
             dataBodyFingerprintNotFound["errorCode"] = "31";
             dataBodyFingerprintNotFound["errorDescription"] = format("Entity with fingerprint=%s, not found", fingerprint.toHexString);
 
@@ -186,7 +186,7 @@ struct Controller(T) {
             return;
         }
 
-        Json dataSuccess = JsonValue();
+        Json dataSuccess = JSONValue();
         dataSuccess["message"] = "Succesfully deleted";
 
         ResponseModel responseSuccess = ResponseModel(true, dataSuccess);
