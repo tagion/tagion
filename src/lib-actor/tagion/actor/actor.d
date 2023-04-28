@@ -19,13 +19,15 @@ T receiveOnlyTimeout(T)() {
             (T val) { ret = val; },
             (Variant val) {
         throw new MessageMismatch(
-            format("Unexpected message got %s of type %s, expected %s", val, val.type.toString(), T.stringof));
+            format("Unexpected message got %s of type %s, expected %s", val, val.type.toString(), T
+            .stringof));
     }
     );
 
     if (ret is T.init) {
         throw new MessageTimeout(
-                format("Timed out never received message expected message type: %s".format(T.stringof))
+                format(
+                "Timed out never received message expected message type: %s".format(T.stringof))
         );
     }
 
@@ -231,7 +233,7 @@ mixin template Actor(T...) {
 static:
     import std.exception : assumeWontThrow;
     import std.variant : Variant;
-    import std.concurrency : OwnerTerminated, Tid, thisTid, ownerTid, receive, prioritySend, ThreadInfo;
+    import std.concurrency : OwnerTerminated, Tid, thisTid, ownerTid, receive, prioritySend, ThreadInfo, send;
     import std.format : format;
     import std.traits : isCallable;
     import tagion.actor.exceptions : TaskFailure, taskException, ActorException, UnknownMessage;
@@ -276,22 +278,24 @@ static:
 
             setState(Ctrl.STARTING); // Tell the owner that you are starting.
             scope (exit) {
-                version (none)
-                    if (childrenState.length != 0) {
-                        foreach (tid, ctrl; childrenState) {
-                            if (ctrl is Ctrl.ALIVE) {
-                                tid.send(Sig.STOP);
-                            }
-                        }
-
-                        while (!(childrenState.all(Ctrl.END))) {
-                            CtrlMsg msg;
-                            receive(
-                                    (CtrlMsg ctrl) { msg = ctrl; }
-                            );
-                            childrenState[msg.tid] = msg.ctrl;
+                if (childrenState.length != 0) {
+                    foreach (tid, ctrl; childrenState) {
+                        if (ctrl is Ctrl.ALIVE) {
+                            tid.send(Sig.STOP);
                         }
                     }
+
+                    while (!(childrenState.all(Ctrl.END))) {
+                        CtrlMsg msg;
+                        receive(
+                                (CtrlMsg ctrl) { msg = ctrl; },
+                                (TaskFailure tf) {
+                            writefln("While stopping `%s` received taskfailure: %s", taskName, tf.throwable.msg);
+                        }
+                        );
+                        childrenState[msg.tid] = msg.ctrl;
+                    }
+                }
 
                 ThreadInfo.thisInfo.cleanup;
                 setState(Ctrl.END); // Tell the owner that you have finished.
