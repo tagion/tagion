@@ -169,12 +169,11 @@ struct Controller(T) {
     void deleteT(HTTPServerRequest req, HTTPServerResponse res) {
         string id = req.params.get("entityId");
 
-        const fingerprint = DARTIndex(decode(id));
         // handle fingerprint exactly 32 characters
         if (id.length != 64) {
             Json dataIdWrongLength = Json.emptyObject;
             dataIdWrongLength["errorCode"] = "31";
-            dataIdWrongLength["errorDescription"] = format("Provided fingerprint=%s is not valid", fingerprint.toHexString);
+            dataIdWrongLength["errorDescription"] = "Provided fingerprint is not valid";
 
             ResponseModel responseIdWrongLength = ResponseModel(false, dataIdWrongLength);
             const(Json) responseIdWrongLengthJson = serializeToJson(responseIdWrongLength);
@@ -184,6 +183,7 @@ struct Controller(T) {
             return;
         }
 
+        const fingerprint = DARTIndex(decode(id));
         const prev_bullseye = dart_service.bullseye;
         dart_service.remove([fingerprint]);
         const new_bullseye = dart_service.bullseye;
