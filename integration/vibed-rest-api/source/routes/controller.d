@@ -171,7 +171,7 @@ struct Controller(T) {
 
         const fingerprint = DARTIndex(decode(id));
         // handle fingerprint exactly 32 characters
-        if (id.length != 32) {
+        if (id.length != 64) {
             Json dataIdWrongLength = Json.emptyObject;
             dataIdWrongLength["errorCode"] = "31";
             dataIdWrongLength["errorDescription"] = format("Fingerprint=%s length is broken", fingerprint.toHexString);
