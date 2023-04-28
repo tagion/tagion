@@ -10,11 +10,10 @@ import tagion.dart.DART;
 import tagion.dart.Recorder;
 
 struct DartService {
-static:
     DART db;
     StdSecureNet net;
 
-    void starting(const(string) dart_path, const(string) password)
+    this(const(string) dart_path, const(string) password)
     in {
         assert(dart_path.isValidPath, format("%s is not a valid path"));
     }
@@ -25,6 +24,7 @@ static:
         db = new DART(net, dart_path);
     }
 
+static:
     void _(Msg!"dartRead", Fingerprint fingerprint) {
     }
 
