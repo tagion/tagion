@@ -19,6 +19,7 @@ import services.routerService;
 import services.fsService;
 import services.dartService;
 
+// structs
 import routes.project.model;
 
 import tagion.hibon.HiBONJSON : toPretty;
@@ -30,6 +31,11 @@ import std.typecons;
 
 public Json[] projectList;
 public string filePath = "./source/routes/project/data.json";
+
+struct ResponseModel {
+	bool isSucceeded;
+  JSON data;
+}
 
 /// General Template controller for generating POST, READ and DELETE routes.
 struct Controller(T) {
@@ -51,6 +57,7 @@ struct Controller(T) {
         router.delete_(format("/%s/%s/:entityId", access_token, name), &deleteT);
         router.post(format("/%s/%s", access_token, name), &postT);
     }
+
     /** 
      * Get request for reading specific document. 
      * If the request is not valid according to the recordType we return an error.
@@ -64,24 +71,42 @@ struct Controller(T) {
         const fingerprint = DARTIndex(decode(id));
         const doc = dart_service.read([fingerprint]);
         if (doc.empty) {
+            JSON dataNotFound = JsonValue();
+            dataNotFound["errorCode"] = "11";
+            dataNotFound["errorDescription"] = format("Archive with fingerprint=%s, not found in database", id);
+
+            ResponseModel responseNotFound = ResponseModel(false, dataNotFound);
+            const(Json) responseNotFoundJson = serializeToJson(responseNotFound);
+
+            // res.writeBody(format("Archive with fingerprint=%s, not found in database", id));
             res.statusCode = HTTPStatus.badRequest;
-            res.writeBody(format("Archive with fingerprint=%s, not found in database", id));
+            res.writeJsonBody(responseNotFoundJson);
             return;
         }
         // Check that the document is the Type that was requested.
         if (!isRecord!T(doc.front)) {
-            res.statusCode = HTTPStatus.badRequest;
+            JSON dataNotCorrectType = JsonValue();
+            dataNotCorrectType["errorCode"] = "12";
+            dataNotCorrectType["errorDescription"] = format("Read document not of type=%s", name);
 
-            res.writeBody(format("Read document not of type=%s", name));
+            ResponseModel responseNotCorrectType = ResponseModel(false, dataNotCorrectType);
+            const(Json) responseNotCorrectTypeJson = serializeToJson(responseNotCorrectType);
+
+            // res.writeBody(format("Read document not of type=%s", name));
+            res.statusCode = HTTPStatus.badRequest;
+            res.writeJsonBody(responseNotCorrectTypeJson);
         }
 
         T data = T(doc.front);
+
         const(Json) entity_json = serializeToJson(data);
+        ResponseModel responseSuccess = ResponseModel(true, entity_json);
+        const(Json) responseSuccessJson = serializeToJson(responseSuccess);
 
-        res.writeJsonBody(entity_json);
         res.statusCode = HTTPStatus.ok;
-
+        res.writeJsonBody(responseSuccessJson);
     }
+
     /** 
      * Post the document for the specific type.
      * Takes a json request and converts it to a struct.
@@ -91,10 +116,6 @@ struct Controller(T) {
      *   res = httpserverresponse
      */
     void postT(HTTPServerRequest req, HTTPServerResponse res) {
-        struct PostResponse {
-            string id;
-        }
-
         T data;
 
         // check that user submits correct body
@@ -102,8 +123,15 @@ struct Controller(T) {
             data = deserializeJson!T(req.json);
         }
         catch (JSONException e) {
+            JSON dataBodyNoMatch = JsonValue();
+            dataBodyNoMatch["errorCode"] = "21";
+            dataBodyNoMatch["errorDescription"] = format("Request body does not match. JSON struct error, %s", e.msg);
+
+            ResponseModel responseBodyNoMatch = ResponseModel(false, dataBodyNoMatch);
+            const(Json) responseBodyNoMatchJson = serializeToJson(responseBodyNoMatch);
+
             res.statusCode = HTTPStatus.badRequest;
-            res.writeBody(format("Request body does not match. JSON struct error, %s", e.msg));
+            res.writeBody(responseBodyNoMatchJson);
             return;
         }
 
@@ -111,16 +139,27 @@ struct Controller(T) {
         const fingerprint = dart_service.modify(data.toDoc);
         const new_bullseye = dart_service.bullseye;
         if (new_bullseye == prev_bullseye) {
+            JSON dataFingerprintNotAdded = JsonValue();
+            dataFingerprintNotAdded["errorCode"] = "22";
+            dataFingerprintNotAdded["errorDescription"] = format("Entity with fingerprint=%s not added to DART", fingerprint.toHexString);
+
+            ResponseModel responseFingerprintNotAdded = ResponseModel(false, dataFingerprintNotAdded);
+            const(Json) responseFingerprintNotAddedJson = serializeToJson(responseFingerprintNotAdded);
+
             res.statusCode = HTTPStatus.badRequest;
-            res.writeBody(format("Entity with fingerprint=%s not added to DART", fingerprint.toHexString));
+            res.writeBody(responseFingerprintNotAddedJson);
         }
 
-        PostResponse postResponse;
-        postResponse.id = fingerprint.toHexString;
+        JSON dataSuccess = JsonValue();
+        dataSuccess["fingerprint"] = fingerprint.toHexString;
+
+        ResponseModel responseSuccess = ResponseModel(true, dataSuccess);
+        const(Json) responseSuccessJson = serializeToJson(responseSuccess);
 
         res.statusCode = HTTPStatus.created;
-        res.writeJsonBody(postResponse);
+        res.writeJsonBody(responseSuccessJson);
     }
+
     /** 
      * Deletes the fingerprint
      * Params:
@@ -128,10 +167,6 @@ struct Controller(T) {
      *   res = httpresponse.
      */
     void deleteT(HTTPServerRequest req, HTTPServerResponse res) {
-        struct DeleteResponse {
-            string message;
-        }
-
         string id = req.params.get("entityId");
         const prev_bullseye = dart_service.bullseye;
         const fingerprint = DARTIndex(decode(id));
@@ -139,16 +174,26 @@ struct Controller(T) {
         const new_bullseye = dart_service.bullseye;
 
         if (prev_bullseye == new_bullseye) {
+            JSON dataBodyFingerprintNotFound = JsonValue();
+            dataBodyFingerprintNotFound["errorCode"] = "31";
+            dataBodyFingerprintNotFound["errorDescription"] = format("Entity with fingerprint=%s, not found", fingerprint.toHexString);
+
+            ResponseModel responseBodyFingerprintNotFound = ResponseModel(false, dataBodyFingerprintNotFound);
+            const(Json) responseBodyFingerprintNotFoundJson = serializeToJson(responseBodyFingerprintNotFound);
+
             res.statusCode = HTTPStatus.badRequest;
-            res.writeBody(format("Entity with fingerprint=%s, not found", fingerprint.toHexString));
+            res.writeBody(responseBodyFingerprintNotFoundJson);
             return;
         }
 
-        DeleteResponse deleteResponse;
-        deleteResponse.message = "Succesfully deleted";
+        JSON dataSuccess = JsonValue();
+        dataSuccess["message"] = "Succesfully deleted";
 
-        res.statusCode = HTTPStatus.ok;
+        ResponseModel responseSuccess = ResponseModel(true, dataSuccess);
+        const(Json) responseSuccessJson = serializeToJson(responseSuccess);
+
         // res.writeBody(format("Entity with fingerprint=%s deleted", fingerprint.toHexString));
-        res.writeJsonBody(deleteResponse);
+        res.statusCode = HTTPStatus.ok;
+        res.writeJsonBody(responseSuccessJson);
     }
 }
