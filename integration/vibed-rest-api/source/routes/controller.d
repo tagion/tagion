@@ -168,22 +168,37 @@ struct Controller(T) {
      */
     void deleteT(HTTPServerRequest req, HTTPServerResponse res) {
         string id = req.params.get("entityId");
+
+        // handle fingerprint exactly 32 characters
+        if (id.length != 32) {
+          Json dataIdWrongLength = Json.emptyObject;
+          dataIdWrongLength["errorCode"] = "31";
+          dataIdWrongLength["errorDescription"] = format("Fingerprint=%s length is broken", fingerprint.toHexString);
+
+          ResponseModel responseIdWrongLength = ResponseModel(false, dataIdWrongLength);
+          const(Json) responseIdWrongLengthJson = serializeToJson(responseIdWrongLength);
+
+          res.statusCode = HTTPStatus.badRequest;
+          res.writeJsonBody(responseIdWrongLengthJson);
+          return;
+        }
+
         const prev_bullseye = dart_service.bullseye;
         const fingerprint = DARTIndex(decode(id));
         dart_service.remove([fingerprint]);
         const new_bullseye = dart_service.bullseye;
 
         if (prev_bullseye == new_bullseye) {
-            Json dataBodyFingerprintNotFound = Json.emptyObject;
-            dataBodyFingerprintNotFound["errorCode"] = "31";
-            dataBodyFingerprintNotFound["errorDescription"] = format("Entity with fingerprint=%s, not found", fingerprint
+            Json dataFingerprintNotFound = Json.emptyObject;
+            dataFingerprintNotFound["errorCode"] = "32";
+            dataFingerprintNotFound["errorDescription"] = format("Entity with fingerprint=%s, not found", fingerprint
                     .toHexString);
 
-            ResponseModel responseBodyFingerprintNotFound = ResponseModel(false, dataBodyFingerprintNotFound);
-            const(Json) responseBodyFingerprintNotFoundJson = serializeToJson(responseBodyFingerprintNotFound);
+            ResponseModel responseFingerprintNotFound = ResponseModel(false, dataFingerprintNotFound);
+            const(Json) responseFingerprintNotFoundJson = serializeToJson(responseFingerprintNotFound);
 
             res.statusCode = HTTPStatus.badRequest;
-            res.writeJsonBody(responseBodyFingerprintNotFoundJson);
+            res.writeJsonBody(responseFingerprintNotFoundJson);
             return;
         }
 
