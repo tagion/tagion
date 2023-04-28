@@ -131,7 +131,7 @@ struct Controller(T) {
             const(Json) responseBodyNoMatchJson = serializeToJson(responseBodyNoMatch);
 
             res.statusCode = HTTPStatus.badRequest;
-            res.writeBody(responseBodyNoMatchJson);
+            res.writeJsonBody(responseBodyNoMatchJson);
             return;
         }
 
@@ -147,7 +147,7 @@ struct Controller(T) {
             const(Json) responseFingerprintNotAddedJson = serializeToJson(responseFingerprintNotAdded);
 
             res.statusCode = HTTPStatus.badRequest;
-            res.writeBody(responseFingerprintNotAddedJson);
+            res.writeJsonBody(responseFingerprintNotAddedJson);
         }
 
         Json dataSuccess = JSONValue();
@@ -182,7 +182,7 @@ struct Controller(T) {
             const(Json) responseBodyFingerprintNotFoundJson = serializeToJson(responseBodyFingerprintNotFound);
 
             res.statusCode = HTTPStatus.badRequest;
-            res.writeBody(responseBodyFingerprintNotFoundJson);
+            res.writeJsonBody(responseBodyFingerprintNotFoundJson);
             return;
         }
 
