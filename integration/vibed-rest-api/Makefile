@@ -2,7 +2,7 @@ INSTALLDIR?=$(HOME)/.local/share/dart_api/
 DC?=dmd
 
 install:
-	# dub build --compiler=$(DC)
+	dub build --compiler=$(DC)
 	systemctl stop --user dart_api
 	mkdir -p $(INSTALLDIR) 
 	mkdir -p $(HOME)/.config/systemd/user
