@@ -62,8 +62,8 @@ struct Controller(T) {
 
     string name;
     DartService dart_service;
-    /** 
-     * 
+    /**
+     *
      * Params:
      *   name = name of the type. Used for the routing and fail-handling
      *   router = Reference to the router. For inserting the routes for the POST READ DELETE
@@ -78,8 +78,8 @@ struct Controller(T) {
         router.post(format("/%s/%s", access_token, name), &postT);
     }
 
-    /** 
-     * Get request for reading specific document. 
+    /**
+     * Get request for reading specific document.
      * If the request is not valid according to the recordType we return an error.
      * Params:
      *   req = :entityID. Fingerprint of the Archive stored in the DART.
@@ -120,7 +120,7 @@ struct Controller(T) {
         res.writeJsonBody(responseSuccessJson);
     }
 
-    /** 
+    /**
      * Post the document for the specific type.
      * Takes a json request and converts it to a struct.
      * If the data cannot be converted it throws a json error.
@@ -163,7 +163,7 @@ struct Controller(T) {
         res.writeJsonBody(responseSuccessJson);
     }
 
-    /** 
+    /**
      * Deletes the fingerprint
      * Params:
      *   req = :entityID. Fingerprint of the Archive stored in the DART.
