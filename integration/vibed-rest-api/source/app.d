@@ -37,13 +37,17 @@ void main() {
 
     // Handle CORS
     router.any("*", delegate void(scope HTTPServerRequest req, scope HTTPServerResponse res) {
+      if (req.method == HTTPMethod.OPTIONS) {
+        res.statusCode = HTTPStatus.ok;
+      }
+
       res.headers["Access-Control-Allow-Origin"] = "*";
       // res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io, https://docs.decard.io";
       // res.headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept";
       res.headers["Access-Control-Allow-Headers"] = "*";
       // res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
       res.headers["Access-Control-Allow-Methods"] = "*";
-      // res.headers["Access-Control-Max-Age"] = "86400";
+      res.headers["Access-Control-Max-Age"] = "86400";
     });
 
     const string[] access_tokens = [
