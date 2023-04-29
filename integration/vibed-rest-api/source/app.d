@@ -82,9 +82,14 @@ void main() {
         writeln(route);
     }
 
+    // Create a vibe.d HTTP server
+    auto settings = new HTTPServerSettings;
+    settings.port = 8081;
+    settings.bindAddresses = ["::1", "127.0.0.1"];
+
     // middlewares
     void handleCORS(HTTPServerRequest req, HTTPServerResponse res, scope void delegate() next) {
-      res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io", "https://docs.decard.io";
+      res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io, https://docs.decard.io";
       // res.headers["Access-Control-Allow-Origin"] = "*";
       res.headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept";
       res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
@@ -92,14 +97,8 @@ void main() {
       next();
     }
 
-    // Create a vibe.d HTTP server
-    auto settings = new HTTPServerSettings;
-    settings.port = 8081;
-    settings.bindAddresses = ["::1", "127.0.0.1"];
-    settings.requestHandlers = [&handleCORS];
-
     // listen to server
-    listenHTTP(settings, router);
+    listenHTTP(settings, router, &handleCORS);
     logInfo("Open http://127.0.0.1:8081/ in your browser.");
     runApplication();
 }
