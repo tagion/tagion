@@ -54,8 +54,8 @@ enum ErrorDescription {
 }
 
 struct ErrorResponse {
-    int code;
-    string description;
+    int errorCode;
+    string errorDescription;
 }
 
 void respond(HTTPServerResponse res, ErrorResponse err) {
