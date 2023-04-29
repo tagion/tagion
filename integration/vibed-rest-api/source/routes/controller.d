@@ -128,7 +128,7 @@ struct Controller(T) {
             // res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
             res.headers["Access-Control-Allow-Methods"] = "*";
             res.headers["Access-Control-Max-Age"] = "86400";
-            res.statusCode = HTTPStatus.ok;
+            res.statusCode = HTTPStatus.noContent;
         }
 
         router.match(HTTPMethod.OPTIONS, "*", &optionsHandler);
