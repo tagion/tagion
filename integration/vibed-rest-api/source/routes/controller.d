@@ -30,8 +30,6 @@ import std.typecons;
 import std.random;
 import std.range : take;
 
-auto rnd = rndGen;
-
 struct ResponseModel {
     bool isSucceeded;
     Json data;
@@ -51,7 +49,7 @@ struct ErrorResp {
     string description;
 }
 
-void respond(ErrorResp err, HTTPServerResponse res) {
+void respond(HTTPServerResponse res, ErrorResp err) {
     const responseModelError = ResponseModel(false, serializeToJson(err));
 
     res.statusCode = HTTPStatus.badRequest;
@@ -59,9 +57,11 @@ void respond(ErrorResp err, HTTPServerResponse res) {
 }
 
 void respondServerError(HTTPServerResponse res) {
-    const errorId = rnd.take(64);
+    auto rnd = rndGen;
 
-    const err = ErrorResp(HTTPStatus.internalServerError, "Internal Server Error, id: %s".format(errorId.toHexString));
+    const errorId = rnd.take(64).sum;
+
+    const err = ErrorResp(HTTPStatus.internalServerError, "Internal Server Error, id: %s".format(errorId));
     const errJson = serializeToJson(err);
     writeln(errJson);
     const responseModelErr = ResponseModel(false, errJson);
@@ -110,7 +110,7 @@ struct Controller(T) {
         // handle fingerprint exactly 64 characters
         if (id.length != 64) {
             const err = ErrorResp(ErrorCode.dataIdWrongLength, "Provided fingerprint is not valid");
-            err.respond(res);
+            res.respond(err);
             return;
         }
 
@@ -119,13 +119,13 @@ struct Controller(T) {
         if (doc.empty) {
             const err = ErrorResp(ErrorCode.dataNotFound, format("Archive with fingerprint=%s, not found in database", id));
 
-            err.respond(res);
+            res.respond(err);
             return;
         }
         // Check that the document is the Type that was requested.
         if (!isRecord!T(doc.front)) {
             const err = ErrorResp(ErrorCode.dataNotCorrectType, format("Read document not of type=%s", name));
-            err.respond(res);
+            res.respond(err);
         }
 
         T data = T(doc.front);
@@ -163,7 +163,7 @@ struct Controller(T) {
             const err = ErrorResp(ErrorCode.dataBodyNoMatch, format("Request body does not match. JSON struct error, %s", e
                     .msg));
 
-            err.respond(res);
+            res.respond(err);
             return;
         }
 
@@ -173,7 +173,7 @@ struct Controller(T) {
         if (new_bullseye == prev_bullseye) {
             const err = ErrorResp(ErrorCode.dataFingerprintNotAdded, format(
                     "Entity with fingerprint=%s not added to DART", fingerprint.toHexString));
-            err.respond(res);
+            res.respond(err);
             return;
         }
 
@@ -205,7 +205,7 @@ struct Controller(T) {
         // handle fingerprint exactly 64 characters
         if (id.length != 64) {
             const err = ErrorResp(ErrorCode.dataIdWrongLength, "Provided fingerprint is not valid");
-            err.respond(res);
+            res.respond(err);
             return;
         }
 
@@ -218,7 +218,7 @@ struct Controller(T) {
             const err = ErrorResp(ErrorCode.dataFingerprintNotFound, format("Entity with fingerprint=%s, not found", fingerprint
                     .toHexString));
 
-            err.respond(res);
+            res.respond(err);
             return;
         }
 
