@@ -11,3 +11,10 @@ Either compile the project and run it:
 
 Otherwise compile and run the project directly:
 `dub run --compiler=dmd`
+
+# Using the user service
+In this directory running make will build the server install and start the user service.
+
+```
+make
+```
