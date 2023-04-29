@@ -53,6 +53,13 @@ enum ErrorDescription {
     dataFingerprintNotFound = "Entity with fingerprint not found",
 }
 
+void respond(HTTPServerResponse res, ErrorResponse err) {
+    const responseModelError = ResponseModel(false, serializeToJson(err));
+
+    res.statusCode = HTTPStatus.badRequest;
+    res.writeJsonBody(serializeToJson(responseModelError));
+}
+
 struct ErrorResponse {
     int errorCode;
     string errorDescription;
@@ -64,19 +71,12 @@ auto tryReqHandler(void delegate(HTTPServerRequest, HTTPServerResponse) fn) {
             fn(req, res);
         }
         catch (Exception e) {
-            res.handleServerError(e);
+            res.handleServerError(req, e);
         }
     };
 }
 
-void respond(HTTPServerResponse res, ErrorResponse err) {
-    const responseModelError = ResponseModel(false, serializeToJson(err));
-
-    res.statusCode = HTTPStatus.badRequest;
-    res.writeJsonBody(serializeToJson(responseModelError));
-}
-
-void handleServerError(HTTPServerResponse res, Exception exception) {
+void handleServerError(HTTPServerResponse res, HTTPServerRequest req, Exception exception) {
     auto rnd = rndGen;
 
     const errorId = rnd.take(64).sum;
@@ -85,6 +85,7 @@ void handleServerError(HTTPServerResponse res, Exception exception) {
     const errJson = serializeToJson(err);
 
     stderr.writeln(err);
+    stderr.writeln(req);
     stderr.writeln(exception);
 
     const responseModelErr = ResponseModel(false, errJson);
