@@ -35,6 +35,15 @@ void main() {
     auto router = new URLRouter;
     // const filename = "/tmp/dart.drt";
 
+    // Handle CORS
+    router.any("", delegate void(scope HTTPServerRequest req, scope HTTPServerResponse res) {
+      // res.headers["Access-Control-Allow-Origin"] = "*";
+      res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io, https://docs.decard.io";
+      res.headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept";
+      res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
+      // res.headers["Access-Control-Max-Age"] = "86400";
+    });
+
     const string[] access_tokens = [
         "test", "VENZOtar2ns4teitc4cxn39tsdei9mdt95eitars890354mvst9dn44",
     ];
@@ -86,18 +95,6 @@ void main() {
     auto settings = new HTTPServerSettings;
     settings.port = 8081;
     settings.bindAddresses = ["::1", "127.0.0.1"];
-
-    // middlewares
-    void handleCORS(HTTPServerRequest req, HTTPServerResponse res, scope void delegate() next) {
-      res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io, https://docs.decard.io";
-      // res.headers["Access-Control-Allow-Origin"] = "*";
-      res.headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept";
-      res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
-      // res.headers["Access-Control-Max-Age"] = "86400";
-      next();
-    }
-
-    router.handleRequest(&handleCORS);
 
     // listen to server
     listenHTTP(settings, router);
