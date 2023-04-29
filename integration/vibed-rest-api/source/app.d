@@ -59,15 +59,10 @@ void main() {
         res.statusCode = HTTPStatus.ok;
       }
 
-      if (req.method == "OPTIONS") {
-        writeln("here3");
-        res.statusCode = HTTPStatus.ok;
-      }
-
-      if (req.method == "OPTIONS") {
-        writeln("here4");
-        res.statusCode = HTTPStatus.ok;
-      }
+      // if (req.method == "OPTIONS") {
+      //   writeln("here3");
+      //   res.statusCode = HTTPStatus.ok;
+      // }
 
       writeln("here7");
       
