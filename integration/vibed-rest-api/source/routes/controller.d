@@ -83,6 +83,17 @@ void respondServerError(HTTPServerResponse res) {
 struct Controller(T) {
     string name;
     DartService dart_service;
+
+    void setCORSHeaders() {
+      res.headers["Access-Control-Allow-Origin"] = "*";
+      // res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io, https://docs.decard.io";
+      res.headers["Access-Control-Allow-Headers"] = "*";
+      // res.headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept";
+      res.headers["Access-Control-Allow-Methods"] = "*";
+      // res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
+      res.headers["Access-Control-Max-Age"] = "86400";
+    }
+
     /**
      *
      * Params:
@@ -121,16 +132,9 @@ struct Controller(T) {
               res.statusCode = HTTPStatus.ok;
             }
 
-            res.headers["Access-Control-Allow-Origin"] = "*";
-            // res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io, https://docs.decard.io";
-            // res.headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept";
-            res.headers["Access-Control-Allow-Headers"] = "*";
-            // res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
-            res.headers["Access-Control-Allow-Methods"] = "*";
-            res.headers["Access-Control-Max-Age"] = "86400";
+            setCORSHeaders();
             res.statusCode = HTTPStatus.noContent;
             res.writeBody("smth!");
-            writeln("res: ", res);
         }
 
         router.match(HTTPMethod.OPTIONS, "*", &optionsHandler);
@@ -166,9 +170,9 @@ struct Controller(T) {
      */
     void getT(HTTPServerRequest req, HTTPServerResponse res) {
 
-        // scope (failure) {
-        //     res.respondServerError;
-        // }
+        scope (failure) {
+            res.respondServerError;
+        }
 
         writeln("GET");
         string id = req.params.get("entityId");
@@ -200,14 +204,7 @@ struct Controller(T) {
         ResponseModel responseSuccess = ResponseModel(true, entity_json);
         const(Json) responseSuccessJson = serializeToJson(responseSuccess);
 
-         res.headers["Access-Control-Allow-Origin"] = "*";
-            // res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io, https://docs.decard.io";
-            // res.headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept";
-            res.headers["Access-Control-Allow-Headers"] = "*";
-            // res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
-            res.headers["Access-Control-Allow-Methods"] = "*";
-            res.headers["Access-Control-Max-Age"] = "86400";
-
+        setCORSHeaders();
         res.statusCode = HTTPStatus.ok;
         res.writeJsonBody(responseSuccessJson);
     }
@@ -223,9 +220,9 @@ struct Controller(T) {
     void postT(HTTPServerRequest req, HTTPServerResponse res) {
         writeln("POST");
 
-        // scope (failure) {
-        //     res.respondServerError;
-        // }
+        scope (failure) {
+            res.respondServerError;
+        }
 
         T data;
 
@@ -255,14 +252,7 @@ struct Controller(T) {
         ResponseModel responseSuccess = ResponseModel(true, dataSuccess);
         const(Json) responseSuccessJson = serializeToJson(responseSuccess);
 
-         res.headers["Access-Control-Allow-Origin"] = "*";
-            // res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io, https://docs.decard.io";
-            // res.headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept";
-            res.headers["Access-Control-Allow-Headers"] = "*";
-            // res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
-            res.headers["Access-Control-Allow-Methods"] = "*";
-            res.headers["Access-Control-Max-Age"] = "86400";
-
+        setCORSHeaders();
         res.statusCode = HTTPStatus.created;
         res.writeJsonBody(responseSuccessJson);
     }
@@ -276,9 +266,9 @@ struct Controller(T) {
     void deleteT(HTTPServerRequest req, HTTPServerResponse res) {
         writeln("DELETE");
 
-        // scope (failure) {
-        //     res.respondServerError;
-        // }
+        scope (failure) {
+            res.respondServerError;
+        }
 
         string id = req.params.get("entityId");
 
@@ -307,14 +297,7 @@ struct Controller(T) {
         ResponseModel responseSuccess = ResponseModel(true, dataSuccess);
         const(Json) responseSuccessJson = serializeToJson(responseSuccess);
 
-         res.headers["Access-Control-Allow-Origin"] = "*";
-            // res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io, https://docs.decard.io";
-            // res.headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept";
-            res.headers["Access-Control-Allow-Headers"] = "*";
-            // res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
-            res.headers["Access-Control-Allow-Methods"] = "*";
-            res.headers["Access-Control-Max-Age"] = "86400";
-
+        setCORSHeaders();
         // res.writeBody(format("Entity with fingerprint=%s deleted", fingerprint.toHexString));
         res.statusCode = HTTPStatus.ok;
         res.writeJsonBody(responseSuccessJson);
