@@ -81,7 +81,6 @@ void respondServerError(HTTPServerResponse res) {
 
 /// General Template controller for generating POST, READ and DELETE routes.
 struct Controller(T) {
-
     string name;
     DartService dart_service;
     /**
@@ -100,14 +99,9 @@ struct Controller(T) {
           writeln("req.method: ", req.method);
 
           if (req.method == HTTPRequest.method.OPTIONS) {
-            writeln("here1");
+            writeln("req.method == HTTPRequest.method.OPTIONS");
             res.statusCode = HTTPStatus.ok;
           }
-
-          // if (req.method == HTTPMethod.OPTIONS) {
-          //   writeln("here2");
-          //   res.statusCode = HTTPStatus.ok;
-          // }
           
           res.headers["Access-Control-Allow-Origin"] = "*";
           // res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io, https://docs.decard.io";
@@ -117,6 +111,7 @@ struct Controller(T) {
           res.headers["Access-Control-Allow-Methods"] = "*";
           res.headers["Access-Control-Max-Age"] = "86400";
           res.statusCode = HTTPStatus.ok;
+          next();
         });
         router.get(format("/%s/%s/:entityId", access_token, name), &getT);
         router.delete_(format("/%s/%s/:entityId", access_token, name), &deleteT);
