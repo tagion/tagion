@@ -58,6 +58,17 @@ struct ErrorResponse {
     string errorDescription;
 }
 
+auto tryReqHandler(void delegate(HTTPServerRequest, HTTPServerResponse) fn) {
+    return (HTTPServerRequest req, HTTPServerResponse res) {
+        try {
+            fn(req, res);
+        }
+        catch (Exception e) {
+            res.handleServerError(e);
+        }
+    };
+}
+
 void respond(HTTPServerResponse res, ErrorResponse err) {
     const responseModelError = ResponseModel(false, serializeToJson(err));
 
@@ -65,14 +76,17 @@ void respond(HTTPServerResponse res, ErrorResponse err) {
     res.writeJsonBody(serializeToJson(responseModelError));
 }
 
-void respondServerError(HTTPServerResponse res) {
+void handleServerError(HTTPServerResponse res, Exception exception) {
     auto rnd = rndGen;
 
     const errorId = rnd.take(64).sum;
 
     const err = ErrorResponse(HTTPStatus.internalServerError, "Internal Server Error, id: %s".format(errorId));
     const errJson = serializeToJson(err);
-    writeln(errJson);
+
+    stderr.writeln(err);
+    stderr.writeln(exception);
+
     const responseModelErr = ResponseModel(false, errJson);
 
     res.statusCode = HTTPStatus.internalServerError;
@@ -85,13 +99,13 @@ struct Controller(T) {
     DartService dart_service;
 
     void setCORSHeaders(HTTPServerResponse res) {
-      res.headers["Access-Control-Allow-Origin"] = "*";
-      // res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io, https://docs.decard.io";
-      res.headers["Access-Control-Allow-Headers"] = "*";
-      // res.headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept";
-      res.headers["Access-Control-Allow-Methods"] = "*";
-      // res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
-      res.headers["Access-Control-Max-Age"] = "86400";
+        res.headers["Access-Control-Allow-Origin"] = "*";
+        // res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io, https://docs.decard.io";
+        res.headers["Access-Control-Allow-Headers"] = "*";
+        // res.headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept";
+        res.headers["Access-Control-Allow-Methods"] = "*";
+        // res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
+        res.headers["Access-Control-Max-Age"] = "86400";
     }
 
     /**
@@ -113,7 +127,7 @@ struct Controller(T) {
         //     writeln("req.method == HTTPRequest.method.OPTIONS");
         //     res.statusCode = HTTPStatus.ok;
         //   }
-          
+
         //   res.headers["Access-Control-Allow-Origin"] = "*";
         //   // res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io, https://docs.decard.io";
         //   // res.headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept";
@@ -125,11 +139,11 @@ struct Controller(T) {
         // });
 
         void optionsHandler(HTTPServerRequest req, HTTPServerResponse res) {
-              writeln("req.method: ", req.method);
+            writeln("req.method: ", req.method);
 
             if (req.method == HTTPRequest.method.OPTIONS) {
-              writeln("req.method == HTTPRequest.method.OPTIONS");
-              res.statusCode = HTTPStatus.ok;
+                writeln("req.method == HTTPRequest.method.OPTIONS");
+                res.statusCode = HTTPStatus.ok;
             }
 
             setCORSHeaders(res);
@@ -137,12 +151,11 @@ struct Controller(T) {
             res.writeBody("smth!");
         }
 
-        router.match(HTTPMethod.OPTIONS, "*", &optionsHandler);
-        router.get(format("/%s/%s/:entityId", access_token, name), &getT);
-        router.delete_(format("/%s/%s/:entityId", access_token, name), &deleteT);
-        router.post(format("/%s/%s", access_token, name), &postT);
+        router.match(HTTPMethod.OPTIONS, "*", tryReqHandler(&optionsHandler));
+        router.get(format("/%s/%s/:entityId", access_token, name), tryReqHandler(&getT));
+        router.delete_(format("/%s/%s/:entityId", access_token, name), tryReqHandler(&deleteT));
+        router.post(format("/%s/%s", access_token, name), tryReqHandler(&postT));
     }
-
 
     // void optionsHandler(HTTPServerRequest req, HTTPServerResponse res) {
     //   if (req.method == HTTPRequest.method.OPTIONS) {
@@ -155,7 +168,7 @@ struct Controller(T) {
     //   res.headers["Access-Control-Max-Age"] = "86400";
     //   res.statusCode = HTTPStatus.ok;
     // }
-    
+
     // router.match(HTTPMethod.OPTIONS, "*", &optionsHandler);
     // router.get("/items", getHandler);
     // router.post("/items", getHandler);
@@ -169,10 +182,6 @@ struct Controller(T) {
      *   res = returns the Document
      */
     void getT(HTTPServerRequest req, HTTPServerResponse res) {
-
-        scope (failure) {
-            res.respondServerError;
-        }
 
         writeln("GET");
         string id = req.params.get("entityId");
@@ -220,10 +229,6 @@ struct Controller(T) {
     void postT(HTTPServerRequest req, HTTPServerResponse res) {
         writeln("POST");
 
-        scope (failure) {
-            res.respondServerError;
-        }
-
         T data;
 
         // check that user submits correct body
@@ -265,10 +270,6 @@ struct Controller(T) {
      */
     void deleteT(HTTPServerRequest req, HTTPServerResponse res) {
         writeln("DELETE");
-
-        scope (failure) {
-            res.respondServerError;
-        }
 
         string id = req.params.get("entityId");
 
