@@ -84,6 +84,16 @@ struct Controller(T) {
     string name;
     DartService dart_service;
 
+    void setCORSHeaders(HTTPServerResponse res) {
+      res.headers["Access-Control-Allow-Origin"] = "*";
+      // res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io, https://docs.decard.io";
+      res.headers["Access-Control-Allow-Headers"] = "*";
+      // res.headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept";
+      res.headers["Access-Control-Allow-Methods"] = "*";
+      // res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
+      res.headers["Access-Control-Max-Age"] = "86400";
+    }
+
     /**
      *
      * Params:
@@ -122,7 +132,7 @@ struct Controller(T) {
               res.statusCode = HTTPStatus.ok;
             }
 
-            setCORSHeaders();
+            setCORSHeaders(res);
             res.statusCode = HTTPStatus.noContent;
             res.writeBody("smth!");
         }
@@ -150,16 +160,6 @@ struct Controller(T) {
     // router.get("/items", getHandler);
     // router.post("/items", getHandler);
     // router.delete("/items", getHandler);
-
-    void setCORSHeaders() {
-      res.headers["Access-Control-Allow-Origin"] = "*";
-      // res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io, https://docs.decard.io";
-      res.headers["Access-Control-Allow-Headers"] = "*";
-      // res.headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept";
-      res.headers["Access-Control-Allow-Methods"] = "*";
-      // res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
-      res.headers["Access-Control-Max-Age"] = "86400";
-    }
 
     /**
      * Get request for reading specific document.
@@ -204,7 +204,7 @@ struct Controller(T) {
         ResponseModel responseSuccess = ResponseModel(true, entity_json);
         const(Json) responseSuccessJson = serializeToJson(responseSuccess);
 
-        setCORSHeaders();
+        setCORSHeaders(res);
         res.statusCode = HTTPStatus.ok;
         res.writeJsonBody(responseSuccessJson);
     }
@@ -252,7 +252,7 @@ struct Controller(T) {
         ResponseModel responseSuccess = ResponseModel(true, dataSuccess);
         const(Json) responseSuccessJson = serializeToJson(responseSuccess);
 
-        setCORSHeaders();
+        setCORSHeaders(res);
         res.statusCode = HTTPStatus.created;
         res.writeJsonBody(responseSuccessJson);
     }
@@ -297,7 +297,7 @@ struct Controller(T) {
         ResponseModel responseSuccess = ResponseModel(true, dataSuccess);
         const(Json) responseSuccessJson = serializeToJson(responseSuccess);
 
-        setCORSHeaders();
+        setCORSHeaders(res);
         // res.writeBody(format("Entity with fingerprint=%s deleted", fingerprint.toHexString));
         res.statusCode = HTTPStatus.ok;
         res.writeJsonBody(responseSuccessJson);
