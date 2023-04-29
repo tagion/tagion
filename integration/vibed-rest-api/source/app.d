@@ -59,7 +59,7 @@ void main() {
     //   //   writeln("here2");
     //   //   res.statusCode = HTTPStatus.ok;
     //   // }
-      
+
     //   res.headers["Access-Control-Allow-Origin"] = "*";
     //   // res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io, https://docs.decard.io";
     //   // res.headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept";
@@ -71,10 +71,6 @@ void main() {
     // });
 
     // router.post("/project", &createItem);
-
-
-
-    
 
     // void createItem(HTTPServerRequest req, HTTPServerResponse res) {
     //   writeln("Inside createItem");
@@ -134,7 +130,7 @@ void main() {
 
     // Add a route to serve the index.html file
     foreach (route; router.getAllRoutes) {
-        writeln(route);
+        writefln("(%s) %s", route.method, route.pattern);
     }
 
     // Create a vibe.d HTTP server
