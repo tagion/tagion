@@ -35,8 +35,13 @@ void main() {
     auto router = new URLRouter;
     // const filename = "/tmp/dart.drt";
 
-    router.OPTIONS("*", delegate void(scope HTTPServerRequest req, scope HTTPServerResponse res) {
-      writeln("here4");
+    // router.OPTIONS("*", delegate void(scope HTTPServerRequest req, scope HTTPServerResponse res) {
+    //   writeln("here4");
+    //   res.statusCode = HTTPStatus.ok;
+    // });
+
+    router.match(HTTPMethod.OPTIONS, "*", delegate void(scope HTTPServerRequest req, scope HTTPServerResponse res) {
+      writeln("here5");
       res.statusCode = HTTPStatus.ok;
     });
 
