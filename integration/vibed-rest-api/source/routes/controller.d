@@ -84,16 +84,6 @@ struct Controller(T) {
     string name;
     DartService dart_service;
 
-    void setCORSHeaders() {
-      res.headers["Access-Control-Allow-Origin"] = "*";
-      // res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io, https://docs.decard.io";
-      res.headers["Access-Control-Allow-Headers"] = "*";
-      // res.headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept";
-      res.headers["Access-Control-Allow-Methods"] = "*";
-      // res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
-      res.headers["Access-Control-Max-Age"] = "86400";
-    }
-
     /**
      *
      * Params:
@@ -160,6 +150,16 @@ struct Controller(T) {
     // router.get("/items", getHandler);
     // router.post("/items", getHandler);
     // router.delete("/items", getHandler);
+
+    void setCORSHeaders() {
+      res.headers["Access-Control-Allow-Origin"] = "*";
+      // res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io, https://docs.decard.io";
+      res.headers["Access-Control-Allow-Headers"] = "*";
+      // res.headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept";
+      res.headers["Access-Control-Allow-Methods"] = "*";
+      // res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
+      res.headers["Access-Control-Max-Age"] = "86400";
+    }
 
     /**
      * Get request for reading specific document.
