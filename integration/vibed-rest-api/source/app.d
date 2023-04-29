@@ -83,13 +83,21 @@ void main() {
         writeln(route);
     }
 
-    // Controller!BenefitShareCredit 
-    // Define routes
+    // middlewares
+    middleware handleCORS(Request req, Response res, scope void delegate() next) {
+      res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io", "https://docs.decard.io";
+      // res.headers["Access-Control-Allow-Origin"] = "*";
+      res.headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept";
+      res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
+      // res.headers["Access-Control-Max-Age"] = "86400";
+      next();
+    }
 
     // Create a vibe.d HTTP server
     auto settings = new HTTPServerSettings;
     settings.port = 8081;
     settings.bindAddresses = ["::1", "127.0.0.1"];
+    settings.requestHandlers = [handleCORS];
 
     // listen to server
     listenHTTP(settings, router);
