@@ -37,7 +37,7 @@ void main() {
 
     // Handle CORS
     router.any("*", delegate void(scope HTTPServerRequest req, scope HTTPServerResponse res) {
-      if (req.method == "OPTIONS") {
+      if (req.method == HTTPMethod.OPTIONS) {
         res.statusCode = HTTPStatus.ok;
       }
 
