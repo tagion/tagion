@@ -41,7 +41,7 @@ void main() {
     // });
 
     router.match(HTTPMethod.OPTIONS, "*", delegate void(scope HTTPServerRequest req, scope HTTPServerResponse res) {
-      writeln("here5");
+      writeln("here6");
       res.statusCode = HTTPStatus.ok;
     });
 
@@ -69,7 +69,7 @@ void main() {
         res.statusCode = HTTPStatus.ok;
       }
 
-      writeln("here5");
+      writeln("here7");
       
       res.headers["Access-Control-Allow-Origin"] = "*";
       // res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io, https://docs.decard.io";
