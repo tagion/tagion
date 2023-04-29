@@ -146,7 +146,7 @@ struct Controller(T) {
         }
         catch (JSONException e) {
             Json dataBodyNoMatch = Json.emptyObject;
-            dataBodyNoMatch["errorCode"] = "21";
+            dataBodyNoMatch["errorCode"] = ErrorCode.dataBodyNoMatch;
             dataBodyNoMatch["errorDescription"] = format("Request body does not match. JSON struct error, %s", e.msg);
 
             ResponseModel responseBodyNoMatch = ResponseModel(false, dataBodyNoMatch);
