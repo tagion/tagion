@@ -28,9 +28,6 @@ import tagion.hibon.HiBONRecord;
 import std.digest;
 import std.typecons;
 
-public Json[] projectList;
-public string filePath = "./source/routes/project/data.json";
-
 struct ResponseModel {
     bool isSucceeded;
     Json data;
