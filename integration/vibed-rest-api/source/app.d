@@ -84,7 +84,7 @@ void main() {
 
     // middlewares
     void handleCORS(HTTPServerRequest req, HTTPServerResponse res, scope void delegate() next) {
-      res.headers["Access-Control-Allow-Origin"] = ["https://editor.swagger.io", "https://docs.decard.io"];
+      res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io", "https://docs.decard.io";
       // res.headers["Access-Control-Allow-Origin"] = "*";
       res.headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept";
       res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
