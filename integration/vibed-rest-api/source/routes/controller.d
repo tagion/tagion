@@ -36,6 +36,15 @@ struct ResponseModel {
     Json data;
 }
 
+enum ErrorCode {
+    dataNotFound = 11,
+    dataNotCorrectType = 12,
+    dataBodyNoMatch = 21,
+    dataFingerprintNotAdded = 22,
+    dataIdWrongLength = 31,
+    dataFingerprintNotFound = 32,
+}
+
 /// General Template controller for generating POST, READ and DELETE routes.
 struct Controller(T) {
 
@@ -70,7 +79,7 @@ struct Controller(T) {
         // handle fingerprint exactly 64 characters
         if (id.length != 64) {
             Json dataIdWrongLength = Json.emptyObject;
-            dataIdWrongLength["errorCode"] = "11";
+            dataIdWrongLength["errorCode"] = ErrorCode.dataIdWrongLength;
             dataIdWrongLength["errorDescription"] = "Provided fingerprint is not valid";
 
             ResponseModel responseIdWrongLength = ResponseModel(false, dataIdWrongLength);
@@ -85,7 +94,7 @@ struct Controller(T) {
         const doc = dart_service.read([fingerprint]);
         if (doc.empty) {
             Json dataNotFound = Json.emptyObject;
-            dataNotFound["errorCode"] = "12";
+            dataNotFound["errorCode"] = ErrorCode.dataNotFound;
             dataNotFound["errorDescription"] = format("Archive with fingerprint=%s, not found in database", id);
 
             ResponseModel responseNotFound = ResponseModel(false, dataNotFound);
@@ -99,7 +108,7 @@ struct Controller(T) {
         // Check that the document is the Type that was requested.
         if (!isRecord!T(doc.front)) {
             Json dataNotCorrectType = Json.emptyObject;
-            dataNotCorrectType["errorCode"] = "13";
+            dataNotCorrectType["errorCode"] = ErrorCode.dataNotCorrectType;
             dataNotCorrectType["errorDescription"] = format("Read document not of type=%s", name);
 
             ResponseModel responseNotCorrectType = ResponseModel(false, dataNotCorrectType);
@@ -153,7 +162,7 @@ struct Controller(T) {
         const new_bullseye = dart_service.bullseye;
         if (new_bullseye == prev_bullseye) {
             Json dataFingerprintNotAdded = Json.emptyObject;
-            dataFingerprintNotAdded["errorCode"] = "22";
+            dataFingerprintNotAdded["errorCode"] = ErrorCode.dataFingerprintNotAdded;
             dataFingerprintNotAdded["errorDescription"] = format("Entity with fingerprint=%s not added to DART", fingerprint
                     .toHexString);
 
@@ -186,7 +195,7 @@ struct Controller(T) {
         // handle fingerprint exactly 64 characters
         if (id.length != 64) {
             Json dataIdWrongLength = Json.emptyObject;
-            dataIdWrongLength["errorCode"] = "11";
+            dataIdWrongLength["errorCode"] = ErrorCode.dataIdWrongLength;
             dataIdWrongLength["errorDescription"] = "Provided fingerprint is not valid";
 
             ResponseModel responseIdWrongLength = ResponseModel(false, dataIdWrongLength);
@@ -204,7 +213,7 @@ struct Controller(T) {
 
         if (prev_bullseye == new_bullseye) {
             Json dataFingerprintNotFound = Json.emptyObject;
-            dataFingerprintNotFound["errorCode"] = "31";
+            dataFingerprintNotFound["errorCode"] = ErrorCode.dataFingerprintNotFound;
             dataFingerprintNotFound["errorDescription"] = format("Entity with fingerprint=%s, not found", fingerprint
                     .toHexString);
 
