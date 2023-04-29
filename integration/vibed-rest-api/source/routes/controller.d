@@ -27,6 +27,10 @@ import tagion.dart.DARTBasic : DARTIndex, dartIndex;
 import tagion.hibon.HiBONRecord;
 import std.digest;
 import std.typecons;
+import std.random;
+import std.range : take;
+
+auto rnd = rndGen;
 
 struct ResponseModel {
     bool isSucceeded;
@@ -43,7 +47,7 @@ enum ErrorCode {
 }
 
 struct ErrorResp {
-    ErrorCode code;
+    int code;
     string description;
 }
 
@@ -52,6 +56,18 @@ void respond(ErrorResp err, HTTPServerResponse res) {
 
     res.statusCode = HTTPStatus.badRequest;
     res.writeJsonBody(serializeToJson(responseModelError));
+}
+
+void respondServerError(HTTPServerResponse res) {
+    const errorId = rnd.take(64);
+
+    const err = ErrorResp(HTTPStatus.internalServerError, "Internal Server Error, id: %s".format(errorId.toHexString));
+    const errJson = serializeToJson(err);
+    writeln(errJson);
+    const responseModelErr = ResponseModel(false, errJson);
+
+    res.statusCode = HTTPStatus.internalServerError;
+    res.writeJsonBody(serializeToJson(responseModelErr));
 }
 
 /// General Template controller for generating POST, READ and DELETE routes.
@@ -83,6 +99,11 @@ struct Controller(T) {
      *   res = returns the Document
      */
     void getT(HTTPServerRequest req, HTTPServerResponse res) {
+
+        scope (failure) {
+            res.respondServerError;
+        }
+
         writeln("!!! GET");
         string id = req.params.get("entityId");
 
@@ -128,6 +149,10 @@ struct Controller(T) {
     void postT(HTTPServerRequest req, HTTPServerResponse res) {
         writeln("!!! POST");
 
+        scope (failure) {
+            res.respondServerError;
+        }
+
         T data;
 
         // check that user submits correct body
@@ -170,6 +195,10 @@ struct Controller(T) {
      */
     void deleteT(HTTPServerRequest req, HTTPServerResponse res) {
         writeln("!!! DELETE");
+
+        scope (failure) {
+            res.respondServerError;
+        }
 
         string id = req.params.get("entityId");
 
