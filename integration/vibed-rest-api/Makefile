@@ -1,5 +1,5 @@
 INSTALLDIR?=$(HOME)/.local/share/dart_api/
-DC?=dmd
+export DC?=dmd
 
 install:
 	dub build --compiler=$(DC)
