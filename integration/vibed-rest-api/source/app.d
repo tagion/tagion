@@ -47,28 +47,47 @@ void main() {
     // });
 
     // Handle CORS
-    router.any("*", delegate void(scope HTTPServerRequest req, scope HTTPServerResponse res) {
-      writeln("req.method: ", req.method);
+    // router.any("*", delegate void(scope HTTPServerRequest req, scope HTTPServerResponse res) {
+    //   writeln("req.method: ", req.method);
 
-      if (req.method == HTTPRequest.method.OPTIONS) {
-        writeln("here1");
-        res.statusCode = HTTPStatus.ok;
-      }
+    //   if (req.method == HTTPRequest.method.OPTIONS) {
+    //     writeln("here1");
+    //     res.statusCode = HTTPStatus.ok;
+    //   }
 
-      // if (req.method == HTTPMethod.OPTIONS) {
-      //   writeln("here2");
-      //   res.statusCode = HTTPStatus.ok;
-      // }
+    //   // if (req.method == HTTPMethod.OPTIONS) {
+    //   //   writeln("here2");
+    //   //   res.statusCode = HTTPStatus.ok;
+    //   // }
       
-      res.headers["Access-Control-Allow-Origin"] = "*";
-      // res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io, https://docs.decard.io";
-      // res.headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept";
-      res.headers["Access-Control-Allow-Headers"] = "*";
-      // res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
-      res.headers["Access-Control-Allow-Methods"] = "*";
-      res.headers["Access-Control-Max-Age"] = "86400";
-      res.statusCode = HTTPStatus.ok;
-    });
+    //   res.headers["Access-Control-Allow-Origin"] = "*";
+    //   // res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io, https://docs.decard.io";
+    //   // res.headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept";
+    //   res.headers["Access-Control-Allow-Headers"] = "*";
+    //   // res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
+    //   res.headers["Access-Control-Allow-Methods"] = "*";
+    //   res.headers["Access-Control-Max-Age"] = "86400";
+    //   res.statusCode = HTTPStatus.ok;
+    // });
+
+    // router.post("/project", &createItem);
+
+
+
+    
+
+    // void createItem(HTTPServerRequest req, HTTPServerResponse res) {
+    //   writeln("Inside createItem");
+
+    //   Json dataSuccess = Json.emptyObject;
+    //   dataSuccess["fingerprint"] = fingerprint.toHexString;
+
+    //   ResponseModel responseSuccess = ResponseModel(true, dataSuccess);
+    //   const(Json) responseSuccessJson = serializeToJson(responseSuccess);
+
+    //   res.statusCode = HTTPStatus.created;
+    //   res.writeJsonBody(responseSuccessJson);
+    // }
 
     // routes
     string project = "project";

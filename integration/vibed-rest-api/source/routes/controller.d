@@ -95,6 +95,29 @@ struct Controller(T) {
         this.name = name;
         this.dart_service = dart_service;
 
+        // Handle CORS
+        router.any("*", delegate void(scope HTTPServerRequest req, scope HTTPServerResponse res) {
+          writeln("req.method: ", req.method);
+
+          if (req.method == HTTPRequest.method.OPTIONS) {
+            writeln("here1");
+            res.statusCode = HTTPStatus.ok;
+          }
+
+          // if (req.method == HTTPMethod.OPTIONS) {
+          //   writeln("here2");
+          //   res.statusCode = HTTPStatus.ok;
+          // }
+          
+          res.headers["Access-Control-Allow-Origin"] = "*";
+          // res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io, https://docs.decard.io";
+          // res.headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept";
+          res.headers["Access-Control-Allow-Headers"] = "*";
+          // res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
+          res.headers["Access-Control-Allow-Methods"] = "*";
+          res.headers["Access-Control-Max-Age"] = "86400";
+          res.statusCode = HTTPStatus.ok;
+        });
         router.get(format("/%s/%s/:entityId", access_token, name), &getT);
         router.delete_(format("/%s/%s/:entityId", access_token, name), &deleteT);
         router.post(format("/%s/%s", access_token, name), &postT);
