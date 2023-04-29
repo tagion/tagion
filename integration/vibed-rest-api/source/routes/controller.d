@@ -50,14 +50,9 @@ struct ErrorResp {
     string description;
 }
 
-Json toJson(ErrorResp err) {
-    return serializeToJson(err);
-}
-
 void respond(ErrorResp err, HTTPServerResponse res) {
     const responseModelError = ResponseModel(false, serializeToJson(err));
 
-    writeln(serializeToJson(err));
     res.statusCode = HTTPStatus.badRequest;
     res.writeJsonBody(serializeToJson(responseModelError));
 }
