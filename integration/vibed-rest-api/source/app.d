@@ -97,8 +97,10 @@ void main() {
       next();
     }
 
+    router.handleRequest(&handleCORS);
+
     // listen to server
-    listenHTTP(settings, router, &handleCORS);
+    listenHTTP(settings, router);
     logInfo("Open http://127.0.0.1:8081/ in your browser.");
     runApplication();
 }
