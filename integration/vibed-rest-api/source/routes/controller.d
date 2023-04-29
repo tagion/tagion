@@ -111,7 +111,6 @@ struct Controller(T) {
           res.headers["Access-Control-Allow-Methods"] = "*";
           res.headers["Access-Control-Max-Age"] = "86400";
           res.statusCode = HTTPStatus.ok;
-          next();
         });
         router.get(format("/%s/%s/:entityId", access_token, name), &getT);
         router.delete_(format("/%s/%s/:entityId", access_token, name), &deleteT);
