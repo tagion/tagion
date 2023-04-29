@@ -139,6 +139,8 @@ struct Controller(T) {
      *   res = httpserverresponse
      */
     void postT(HTTPServerRequest req, HTTPServerResponse res) {
+        writeln("!!! POST");
+
         T data;
 
         // check that user submits correct body
@@ -191,6 +193,8 @@ struct Controller(T) {
      *   res = httpresponse.
      */
     void deleteT(HTTPServerRequest req, HTTPServerResponse res) {
+        writeln("!!! DELETE");
+
         string id = req.params.get("entityId");
 
         // handle fingerprint exactly 64 characters

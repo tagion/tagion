@@ -43,6 +43,7 @@ void main() {
     router.match(HTTPMethod.OPTIONS, "*", delegate void(scope HTTPServerRequest req, scope HTTPServerResponse res) {
       writeln("here6");
       res.statusCode = HTTPStatus.ok;
+      res.writeBody("!!!! OK");
     });
 
     // Handle CORS
@@ -54,17 +55,10 @@ void main() {
         res.statusCode = HTTPStatus.ok;
       }
 
-      if (req.method == HTTPMethod.OPTIONS) {
-        writeln("here2");
-        res.statusCode = HTTPStatus.ok;
-      }
-
-      // if (req.method == "OPTIONS") {
-      //   writeln("here3");
+      // if (req.method == HTTPMethod.OPTIONS) {
+      //   writeln("here2");
       //   res.statusCode = HTTPStatus.ok;
       // }
-
-      writeln("here7");
       
       res.headers["Access-Control-Allow-Origin"] = "*";
       // res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io, https://docs.decard.io";
