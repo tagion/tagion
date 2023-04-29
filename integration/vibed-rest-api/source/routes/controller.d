@@ -54,7 +54,7 @@ Json toJson(ErrorResp err) {
     return serializeToJson(err);
 }
 
-void respond(ErrorResp err) {
+void respond(ErrorResp err, HTTPServerResponse res) {
     const responseModelError = ResponseModel(false, err.toJson);
 
     res.statusCode = HTTPStatus.badRequest;
@@ -96,8 +96,7 @@ struct Controller(T) {
         // handle fingerprint exactly 64 characters
         if (id.length != 64) {
             const err = ErrorResp(ErrorCode.dataIdWrongLength, "Provided fingerprint is not valid");
-            err.respond;
-
+            err.respond(res);
             return;
         }
 
@@ -105,14 +104,14 @@ struct Controller(T) {
         const doc = dart_service.read([fingerprint]);
         if (doc.empty) {
             const err = ErrorResp(ErrorCode.dataNotFound, format("Archive with fingerprint=%s, not found in database", id));
-            err.respond;
 
+            err.respond(res);
             return;
         }
         // Check that the document is the Type that was requested.
         if (!isRecord!T(doc.front)) {
             const err = ErrorResp(ErrorCode.dataNotCorrectType, format("Read document not of type=%s", name));
-            err.respond;
+            err.respond(res);
         }
 
         T data = T(doc.front);
@@ -144,7 +143,7 @@ struct Controller(T) {
             const err = ErrorResp(ErrorCode.dataBodyNoMatch, format("Request body does not match. JSON struct error, %s", e
                     .msg));
 
-            err.respond;
+            err.respond(res);
             return;
         }
 
@@ -154,7 +153,7 @@ struct Controller(T) {
         if (new_bullseye == prev_bullseye) {
             const err = ErrorResp(ErrorCode.dataFingerprintNotAdded, format(
                     "Entity with fingerprint=%s not added to DART", fingerprint.toHexString));
-            err.respond;
+            err.respond(res);
             return;
         }
 
@@ -180,7 +179,7 @@ struct Controller(T) {
         // handle fingerprint exactly 64 characters
         if (id.length != 64) {
             const err = ErrorResp(ErrorCode.dataIdWrongLength, "Provided fingerprint is not valid");
-            err.respond;
+            err.respond(res);
             return;
         }
 
@@ -193,7 +192,7 @@ struct Controller(T) {
             const err = ErrorResp(ErrorCode.dataFingerprintNotFound, format("Entity with fingerprint=%s, not found", fingerprint
                     .toHexString));
 
-            err.respond;
+            err.respond(res);
             return;
         }
 
