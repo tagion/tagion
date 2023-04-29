@@ -77,15 +77,14 @@ void main() {
     auto venzo_document = Controller!DocumentDocument(venzo_token, document, router, venzo_dart_service);
     auto venzo_benefit = Controller!Benefit(venzo_token, benefit, router, venzo_dart_service);
 
-    // router.get("/", &index);
     // Add a route to serve the index.html file
     foreach (route; router.getAllRoutes) {
         writeln(route);
     }
 
     // middlewares
-    middleware handleCORS(Request req, Response res, scope void delegate() next) {
-      res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io", "https://docs.decard.io";
+    void handleCORS(HTTPServerRequest req, HTTPServerResponse res, scope void delegate() next) {
+      res.headers["Access-Control-Allow-Origin"] = ["https://editor.swagger.io", "https://docs.decard.io"];
       // res.headers["Access-Control-Allow-Origin"] = "*";
       res.headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept";
       res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
@@ -97,7 +96,7 @@ void main() {
     auto settings = new HTTPServerSettings;
     settings.port = 8081;
     settings.bindAddresses = ["::1", "127.0.0.1"];
-    settings.requestHandlers = [handleCORS];
+    settings.requestHandlers = [&handleCORS];
 
     // listen to server
     listenHTTP(settings, router);
