@@ -45,6 +45,15 @@ enum ErrorCode {
     dataFingerprintNotFound = 32,
 }
 
+const struct ErrorResp {
+    ErrorCode code;
+    string description;
+}
+
+Json toJson(ErrorResp err) {
+    return serializeToJson(err);
+}
+
 /// General Template controller for generating POST, READ and DELETE routes.
 struct Controller(T) {
 
@@ -79,11 +88,9 @@ struct Controller(T) {
 
         // handle fingerprint exactly 64 characters
         if (id.length != 64) {
-            Json dataIdWrongLength = Json.emptyObject;
-            dataIdWrongLength["errorCode"] = ErrorCode.dataIdWrongLength;
-            dataIdWrongLength["errorDescription"] = "Provided fingerprint is not valid";
+            const err = ErrorResp(ErrorCode.dataIdWrongLength, "Provided fingerprint is not valid");
 
-            ResponseModel responseIdWrongLength = ResponseModel(false, dataIdWrongLength);
+            ResponseModel responseIdWrongLength = ResponseModel(false, err.toJson);
             const(Json) responseIdWrongLengthJson = serializeToJson(responseIdWrongLength);
 
             res.statusCode = HTTPStatus.badRequest;
@@ -94,11 +101,9 @@ struct Controller(T) {
         const fingerprint = DARTIndex(decode(id));
         const doc = dart_service.read([fingerprint]);
         if (doc.empty) {
-            Json dataNotFound = Json.emptyObject;
-            dataNotFound["errorCode"] = ErrorCode.dataNotFound;
-            dataNotFound["errorDescription"] = format("Archive with fingerprint=%s, not found in database", id);
+            const err = ErrorResp(ErrorCode.dataNotFound, format("Archive with fingerprint=%s, not found in database", id));
 
-            ResponseModel responseNotFound = ResponseModel(false, dataNotFound);
+            ResponseModel responseNotFound = ResponseModel(false, err.toJson);
             const(Json) responseNotFoundJson = serializeToJson(responseNotFound);
 
             // res.writeBody(format("Archive with fingerprint=%s, not found in database", id));
@@ -108,11 +113,9 @@ struct Controller(T) {
         }
         // Check that the document is the Type that was requested.
         if (!isRecord!T(doc.front)) {
-            Json dataNotCorrectType = Json.emptyObject;
-            dataNotCorrectType["errorCode"] = ErrorCode.dataNotCorrectType;
-            dataNotCorrectType["errorDescription"] = format("Read document not of type=%s", name);
+            const err = ErrorResp(ErrorCode.dataNotCorrectType, format("Read document not of type=%s", name));
 
-            ResponseModel responseNotCorrectType = ResponseModel(false, dataNotCorrectType);
+            ResponseModel responseNotCorrectType = ResponseModel(false, err.toJson);
             const(Json) responseNotCorrectTypeJson = serializeToJson(responseNotCorrectType);
 
             // res.writeBody(format("Read document not of type=%s", name));
@@ -146,11 +149,10 @@ struct Controller(T) {
             data = deserializeJson!T(req.json);
         }
         catch (JSONException e) {
-            Json dataBodyNoMatch = Json.emptyObject;
-            dataBodyNoMatch["errorCode"] = ErrorCode.dataBodyNoMatch;
-            dataBodyNoMatch["errorDescription"] = format("Request body does not match. JSON struct error, %s", e.msg);
+            const err = ErrorResp(ErrorCode.dataBodyNoMatch, format("Request body does not match. JSON struct error, %s", e
+                    .msg));
 
-            ResponseModel responseBodyNoMatch = ResponseModel(false, dataBodyNoMatch);
+            ResponseModel responseBodyNoMatch = ResponseModel(false, err.toJson);
             const(Json) responseBodyNoMatchJson = serializeToJson(responseBodyNoMatch);
 
             res.statusCode = HTTPStatus.badRequest;
@@ -162,12 +164,10 @@ struct Controller(T) {
         const fingerprint = dart_service.modify(data.toDoc);
         const new_bullseye = dart_service.bullseye;
         if (new_bullseye == prev_bullseye) {
-            Json dataFingerprintNotAdded = Json.emptyObject;
-            dataFingerprintNotAdded["errorCode"] = ErrorCode.dataFingerprintNotAdded;
-            dataFingerprintNotAdded["errorDescription"] = format("Entity with fingerprint=%s not added to DART", fingerprint
-                    .toHexString);
+            const err = ErrorResp(ErrorCode.dataFingerprintNotAdded, format(
+                    "Entity with fingerprint=%s not added to DART", fingerprint.toHexString));
 
-            ResponseModel responseFingerprintNotAdded = ResponseModel(false, dataFingerprintNotAdded);
+            ResponseModel responseFingerprintNotAdded = ResponseModel(false, err.toJson);
             const(Json) responseFingerprintNotAddedJson = serializeToJson(responseFingerprintNotAdded);
 
             res.statusCode = HTTPStatus.badRequest;
