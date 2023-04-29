@@ -54,6 +54,13 @@ Json toJson(ErrorResp err) {
     return serializeToJson(err);
 }
 
+void respond(ErrorResp err) {
+    const responseModelError = ResponseModel(false, err.toJson);
+
+    res.statusCode = HTTPStatus.badRequest;
+    res.writeJsonBody(serializeToJson(responseModelError));
+}
+
 /// General Template controller for generating POST, READ and DELETE routes.
 struct Controller(T) {
 
@@ -89,12 +96,8 @@ struct Controller(T) {
         // handle fingerprint exactly 64 characters
         if (id.length != 64) {
             const err = ErrorResp(ErrorCode.dataIdWrongLength, "Provided fingerprint is not valid");
+            err.respond;
 
-            ResponseModel responseIdWrongLength = ResponseModel(false, err.toJson);
-            const(Json) responseIdWrongLengthJson = serializeToJson(responseIdWrongLength);
-
-            res.statusCode = HTTPStatus.badRequest;
-            res.writeJsonBody(responseIdWrongLengthJson);
             return;
         }
 
@@ -102,25 +105,14 @@ struct Controller(T) {
         const doc = dart_service.read([fingerprint]);
         if (doc.empty) {
             const err = ErrorResp(ErrorCode.dataNotFound, format("Archive with fingerprint=%s, not found in database", id));
+            err.respond;
 
-            ResponseModel responseNotFound = ResponseModel(false, err.toJson);
-            const(Json) responseNotFoundJson = serializeToJson(responseNotFound);
-
-            // res.writeBody(format("Archive with fingerprint=%s, not found in database", id));
-            res.statusCode = HTTPStatus.badRequest;
-            res.writeJsonBody(responseNotFoundJson);
             return;
         }
         // Check that the document is the Type that was requested.
         if (!isRecord!T(doc.front)) {
             const err = ErrorResp(ErrorCode.dataNotCorrectType, format("Read document not of type=%s", name));
-
-            ResponseModel responseNotCorrectType = ResponseModel(false, err.toJson);
-            const(Json) responseNotCorrectTypeJson = serializeToJson(responseNotCorrectType);
-
-            // res.writeBody(format("Read document not of type=%s", name));
-            res.statusCode = HTTPStatus.badRequest;
-            res.writeJsonBody(responseNotCorrectTypeJson);
+            err.respond;
         }
 
         T data = T(doc.front);
@@ -152,11 +144,7 @@ struct Controller(T) {
             const err = ErrorResp(ErrorCode.dataBodyNoMatch, format("Request body does not match. JSON struct error, %s", e
                     .msg));
 
-            ResponseModel responseBodyNoMatch = ResponseModel(false, err.toJson);
-            const(Json) responseBodyNoMatchJson = serializeToJson(responseBodyNoMatch);
-
-            res.statusCode = HTTPStatus.badRequest;
-            res.writeJsonBody(responseBodyNoMatchJson);
+            err.respond;
             return;
         }
 
@@ -166,12 +154,8 @@ struct Controller(T) {
         if (new_bullseye == prev_bullseye) {
             const err = ErrorResp(ErrorCode.dataFingerprintNotAdded, format(
                     "Entity with fingerprint=%s not added to DART", fingerprint.toHexString));
-
-            ResponseModel responseFingerprintNotAdded = ResponseModel(false, err.toJson);
-            const(Json) responseFingerprintNotAddedJson = serializeToJson(responseFingerprintNotAdded);
-
-            res.statusCode = HTTPStatus.badRequest;
-            res.writeJsonBody(responseFingerprintNotAddedJson);
+            err.respond;
+            return;
         }
 
         Json dataSuccess = Json.emptyObject;
@@ -195,15 +179,8 @@ struct Controller(T) {
 
         // handle fingerprint exactly 64 characters
         if (id.length != 64) {
-            Json dataIdWrongLength = Json.emptyObject;
-            dataIdWrongLength["errorCode"] = ErrorCode.dataIdWrongLength;
-            dataIdWrongLength["errorDescription"] = "Provided fingerprint is not valid";
-
-            ResponseModel responseIdWrongLength = ResponseModel(false, dataIdWrongLength);
-            const(Json) responseIdWrongLengthJson = serializeToJson(responseIdWrongLength);
-
-            res.statusCode = HTTPStatus.badRequest;
-            res.writeJsonBody(responseIdWrongLengthJson);
+            const err = ErrorResp(ErrorCode.dataIdWrongLength, "Provided fingerprint is not valid");
+            err.respond;
             return;
         }
 
@@ -213,16 +190,10 @@ struct Controller(T) {
         const new_bullseye = dart_service.bullseye;
 
         if (prev_bullseye == new_bullseye) {
-            Json dataFingerprintNotFound = Json.emptyObject;
-            dataFingerprintNotFound["errorCode"] = ErrorCode.dataFingerprintNotFound;
-            dataFingerprintNotFound["errorDescription"] = format("Entity with fingerprint=%s, not found", fingerprint
-                    .toHexString);
+            const err = ErrorResp(ErrorCode.dataFingerprintNotFound, format("Entity with fingerprint=%s, not found", fingerprint
+                    .toHexString));
 
-            ResponseModel responseFingerprintNotFound = ResponseModel(false, dataFingerprintNotFound);
-            const(Json) responseFingerprintNotFoundJson = serializeToJson(responseFingerprintNotFound);
-
-            res.statusCode = HTTPStatus.badRequest;
-            res.writeJsonBody(responseFingerprintNotFoundJson);
+            err.respond;
             return;
         }
 
