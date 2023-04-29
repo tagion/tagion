@@ -166,9 +166,9 @@ struct Controller(T) {
      */
     void getT(HTTPServerRequest req, HTTPServerResponse res) {
 
-        scope (failure) {
-            res.respondServerError;
-        }
+        // scope (failure) {
+        //     res.respondServerError;
+        // }
 
         writeln("GET");
         string id = req.params.get("entityId");
@@ -223,9 +223,9 @@ struct Controller(T) {
     void postT(HTTPServerRequest req, HTTPServerResponse res) {
         writeln("POST");
 
-        scope (failure) {
-            res.respondServerError;
-        }
+        // scope (failure) {
+        //     res.respondServerError;
+        // }
 
         T data;
 
@@ -276,9 +276,9 @@ struct Controller(T) {
     void deleteT(HTTPServerRequest req, HTTPServerResponse res) {
         writeln("DELETE");
 
-        scope (failure) {
-            res.respondServerError;
-        }
+        // scope (failure) {
+        //     res.respondServerError;
+        // }
 
         string id = req.params.get("entityId");
 
