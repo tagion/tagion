@@ -45,7 +45,7 @@ enum ErrorCode {
     dataFingerprintNotFound = 32,
 }
 
-const struct ErrorResp {
+struct ErrorResp {
     ErrorCode code;
     string description;
 }
@@ -55,8 +55,9 @@ Json toJson(ErrorResp err) {
 }
 
 void respond(ErrorResp err, HTTPServerResponse res) {
-    const responseModelError = ResponseModel(false, err.toJson);
+    const responseModelError = ResponseModel(false, serializeToJson(err));
 
+    writeln(serializeToJson(err));
     res.statusCode = HTTPStatus.badRequest;
     res.writeJsonBody(serializeToJson(responseModelError));
 }
