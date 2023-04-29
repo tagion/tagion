@@ -37,10 +37,18 @@ void main() {
 
     // Handle CORS
     router.any("*", delegate void(scope HTTPServerRequest req, scope HTTPServerResponse res) {
-      if (req.method == HTTPMethod.OPTIONS) {
+      if (req.method == HTTPRequest.method.OPTIONS) {
+        writeln("here1");
         res.statusCode = HTTPStatus.ok;
       }
 
+      if (req.method == HTTPMethod.OPTIONS) {
+        writeln("here2");
+        res.statusCode = HTTPStatus.ok;
+      }
+
+      writeln("here3");
+      
       res.headers["Access-Control-Allow-Origin"] = "*";
       // res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io, https://docs.decard.io";
       // res.headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept";

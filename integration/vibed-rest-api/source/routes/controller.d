@@ -74,6 +74,7 @@ struct Controller(T) {
      *   res = returns the Document
      */
     void getT(HTTPServerRequest req, HTTPServerResponse res) {
+        writeln("!!! GET");
         string id = req.params.get("entityId");
 
         // handle fingerprint exactly 64 characters
