@@ -35,6 +35,11 @@ void main() {
     auto router = new URLRouter;
     // const filename = "/tmp/dart.drt";
 
+    router.OPTIONS("*", delegate void(scope HTTPServerRequest req, scope HTTPServerResponse res) {
+      writeln("here4");
+      res.statusCode = HTTPStatus.ok;
+    });
+
     // Handle CORS
     router.any("*", delegate void(scope HTTPServerRequest req, scope HTTPServerResponse res) {
       if (req.method == HTTPRequest.method.OPTIONS) {
