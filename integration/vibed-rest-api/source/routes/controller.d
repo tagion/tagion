@@ -122,26 +122,35 @@ struct Controller(T) {
             }
 
             res.headers["Access-Control-Allow-Origin"] = "*";
-          // res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io, https://docs.decard.io";
-          // res.headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept";
-          res.headers["Access-Control-Allow-Headers"] = "*";
-          // res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
-          res.headers["Access-Control-Allow-Methods"] = "*";
-          res.headers["Access-Control-Max-Age"] = "86400";
-          res.statusCode = HTTPStatus.ok;
+            // res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io, https://docs.decard.io";
+            // res.headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept";
+            res.headers["Access-Control-Allow-Headers"] = "*";
+            // res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
+            res.headers["Access-Control-Allow-Methods"] = "*";
+            res.headers["Access-Control-Max-Age"] = "86400";
+            res.statusCode = HTTPStatus.ok;
         }
 
         router.match(HTTPMethod.OPTIONS, "*", &optionsHandler);
-
         router.get(format("/%s/%s/:entityId", access_token, name), &getT);
         router.delete_(format("/%s/%s/:entityId", access_token, name), &deleteT);
         router.post(format("/%s/%s", access_token, name), &postT);
     }
 
 
+    // void optionsHandler(HTTPServerRequest req, HTTPServerResponse res) {
+    //   if (req.method == HTTPRequest.method.OPTIONS) {
+    //     res.statusCode = HTTPStatus.ok;
+    //   }
 
+    //   res.headers["Access-Control-Allow-Origin"] = "*";
+    //   res.headers["Access-Control-Allow-Headers"] = "*";
+    //   res.headers["Access-Control-Allow-Methods"] = "*";
+    //   res.headers["Access-Control-Max-Age"] = "86400";
+    //   res.statusCode = HTTPStatus.ok;
+    // }
     
-    // router.any("/items", getHandler);
+    // router.match(HTTPMethod.OPTIONS, "*", &optionsHandler);
     // router.get("/items", getHandler);
     // router.post("/items", getHandler);
     // router.delete("/items", getHandler);
