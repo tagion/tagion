@@ -40,11 +40,11 @@ void main() {
     //   res.statusCode = HTTPStatus.ok;
     // });
 
-    router.match(HTTPMethod.OPTIONS, "*", delegate void(scope HTTPServerRequest req, scope HTTPServerResponse res) {
-      writeln("here6");
-      res.statusCode = HTTPStatus.ok;
-      res.writeBody("!!!! OK");
-    });
+    // router.match(HTTPMethod.OPTIONS, "*", delegate void(scope HTTPServerRequest req, scope HTTPServerResponse res) {
+    //   writeln("here6");
+    //   res.statusCode = HTTPStatus.ok;
+    //   res.writeBody("!!!! OK");
+    // });
 
     // Handle CORS
     router.any("*", delegate void(scope HTTPServerRequest req, scope HTTPServerResponse res) {
@@ -67,6 +67,7 @@ void main() {
       // res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
       res.headers["Access-Control-Allow-Methods"] = "*";
       res.headers["Access-Control-Max-Age"] = "86400";
+      res.statusCode = HTTPStatus.ok;
     });
 
     const string[] access_tokens = [
