@@ -1,10 +1,10 @@
 module app;
 
-import vibe.vibe;
-import vibe.d;
 import vibe.core.core : runApplication;
 import vibe.http.server;
+import vibe.http.router;
 import vibe.data.json;
+import vibe.core.log;
 
 import std.json;
 import std.array;
@@ -12,6 +12,7 @@ import std.stdio;
 import std.conv;
 import std.algorithm;
 import std.file : exists;
+import std.format;
 
 import services.dartService;
 import tagion.dart.DARTFile;
@@ -130,7 +131,7 @@ void main() {
 
     // Add a route to serve the index.html file
     foreach (route; router.getAllRoutes) {
-        writefln("(%s) %s", route.method, route.pattern);
+        logInfo(format("(%s) %s", route.method, route.pattern));
     }
 
     // Create a vibe.d HTTP server

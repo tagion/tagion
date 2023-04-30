@@ -1,8 +1,5 @@
 module services.routerService;
 
-import vibe.vibe;
-import vibe.d;
-import vibe.core.core : runApplication;
 import vibe.http.server;
 import vibe.data.json;
 
@@ -11,6 +8,7 @@ import std.array;
 import std.stdio;
 import std.conv;
 import std.algorithm;
+import std.format;
 
 import services.fsService;
 
@@ -28,25 +26,26 @@ void getOne(HTTPServerRequest req, HTTPServerResponse res, Json[] entityList, st
     string messageNotFound = format("Object with ID %s not found", id);
 
     if (entityList.length > 0) {
-      foreach(key, value; entityList) {
-        if (value[entityId] == id) {
-          writeln("Object with specific ID found");
-          res.writeJsonBody(value);
-          return;
+        foreach (key, value; entityList) {
+            if (value[entityId] == id) {
+                writeln("Object with specific ID found");
+                res.writeJsonBody(value);
+                return;
+            }
         }
-      }
 
-      res.statusCode = HTTPStatus.notFound;
-      res.writeBody(messageNotFound);
-    } else {
-      res.statusCode = HTTPStatus.notFound;
-      res.writeBody(messageNotFound);
-      return;
+        res.statusCode = HTTPStatus.notFound;
+        res.writeBody(messageNotFound);
+    }
+    else {
+        res.statusCode = HTTPStatus.notFound;
+        res.writeBody(messageNotFound);
+        return;
     }
 }
 
 // void post(HTTPServerRequest req, HTTPServerResponse res, Json[] entityList, string filePath) {
-  // TODO: pass struct as function parameter
+// TODO: pass struct as function parameter
 // }
 
 // void deleteOne(HTTPServerRequest req, HTTPServerResponse res, Json[] entityList, string filePath, string entityId) {
