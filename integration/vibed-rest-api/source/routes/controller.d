@@ -12,7 +12,6 @@ import std.conv;
 import std.algorithm;
 import std.stdio : writefln;
 import std.format;
-import std.json : JSONException;
 
 import services.routerService;
 import services.fsService;
@@ -238,7 +237,7 @@ struct Controller(T) {
 
             writeln("data: ", data);
         }
-        catch (JSONException e) {
+        catch (Exception e) {
             const err = ErrorResponse(ErrorCode.dataBodyNoMatch, ErrorDescription.dataBodyNoMatch);
 
             writeln("err: ", err);
