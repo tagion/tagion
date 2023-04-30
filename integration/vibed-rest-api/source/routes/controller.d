@@ -52,11 +52,28 @@ enum ErrorDescription {
     dataFingerprintNotFound = "Entity with fingerprint not found",
 }
 
+void setCORSHeaders(HTTPServerResponse res) {
+    res.headers["Access-Control-Allow-Origin"] = "*";
+    // res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io, https://docs.decard.io";
+    res.headers["Access-Control-Allow-Headers"] = "*";
+    // res.headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept";
+    res.headers["Access-Control-Allow-Methods"] = "*";
+    // res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
+    res.headers["Access-Control-Max-Age"] = "86400";
+}
+
 void respond(HTTPServerResponse res, ErrorResponse err) {
     const responseModelError = ResponseModel(false, serializeToJson(err));
 
+    writeln("responseModelError: ", responseModelError);
+
+    const(Json) responseModelErrorJson = serializeToJson(responseModelError);
+
+    writeln("responseModelErrorJson: ", responseModelErrorJson);
+
+    setCORSHeaders(res);
     res.statusCode = HTTPStatus.badRequest;
-    res.writeJsonBody(serializeToJson(responseModelError));
+    res.writeJsonBody(responseModelErrorJson);
 }
 
 struct ErrorResponse {
@@ -97,16 +114,6 @@ void handleServerError(HTTPServerResponse res, HTTPServerRequest req, Exception 
 struct Controller(T) {
     string name;
     DartService dart_service;
-
-    void setCORSHeaders(HTTPServerResponse res) {
-        res.headers["Access-Control-Allow-Origin"] = "*";
-        // res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io, https://docs.decard.io";
-        res.headers["Access-Control-Allow-Headers"] = "*";
-        // res.headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept";
-        res.headers["Access-Control-Allow-Methods"] = "*";
-        // res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
-        res.headers["Access-Control-Max-Age"] = "86400";
-    }
 
     /**
      *
@@ -182,14 +189,14 @@ struct Controller(T) {
      *   res = returns the Document
      */
     void getT(HTTPServerRequest req, HTTPServerResponse res) {
-
         writeln("GET");
+        
         string id = req.params.get("entityId");
 
         // handle fingerprint exactly 64 characters
         if (id.length != 64) {
             const err = ErrorResponse(ErrorCode.dataIdWrongLength, ErrorDescription.dataIdWrongLength);
-            res.respond(err);
+            respond(res, err);
             return;
         }
 
@@ -198,13 +205,13 @@ struct Controller(T) {
         if (doc.empty) {
             const err = ErrorResponse(ErrorCode.dataNotFound, ErrorDescription.dataNotFound);
 
-            res.respond(err);
+            respond(res, err);
             return;
         }
         // Check that the document is the Type that was requested.
         if (!isRecord!T(doc.front)) {
             const err = ErrorResponse(ErrorCode.dataNotCorrectType, ErrorDescription.dataNotCorrectType);
-            res.respond(err);
+            respond(res, err);
         }
 
         T data = T(doc.front);
@@ -242,7 +249,7 @@ struct Controller(T) {
 
             writeln("err: ", err);
 
-            res.respond(err);
+            respond(res, err);
             return;
         }
 
@@ -253,7 +260,7 @@ struct Controller(T) {
             writeln("new_bullseye == prev_bullseye: ", new_bullseye == prev_bullseye);
             const err = ErrorResponse(ErrorCode.dataFingerprintNotAdded, ErrorDescription.dataFingerprintNotAdded);
             writeln("err: ", err);
-            res.respond(err);
+            respond(res, err);
             return;
         }
 
@@ -289,7 +296,7 @@ struct Controller(T) {
     //     // handle fingerprint exactly 64 characters
     //     if (id.length != 64) {
     //         const err = ErrorResponse(ErrorCode.dataIdWrongLength, ErrorDescription.dataIdWrongLength);
-    //         res.respond(err);
+    //         respond(res, err);
     //         return;
     //     }
 
@@ -301,7 +308,7 @@ struct Controller(T) {
     //     if (prev_bullseye == new_bullseye) {
     //         const err = ErrorResponse(ErrorCode.dataFingerprintNotFound, ErrorDescription.dataFingerprintNotFound);
 
-    //         res.respond(err);
+    //         respond(res, err);
     //         return;
     //     }
 
