@@ -56,6 +56,8 @@ enum ErrorDescription {
 void respond(HTTPServerResponse res, ErrorResponse err) {
     const responseModelError = ResponseModel(false, serializeToJson(err));
 
+    writeln("responseModelError: ", responseModelError);
+
     res.statusCode = HTTPStatus.badRequest;
     res.writeJsonBody(serializeToJson(responseModelError));
 }
@@ -190,7 +192,7 @@ struct Controller(T) {
         // handle fingerprint exactly 64 characters
         if (id.length != 64) {
             const err = ErrorResponse(ErrorCode.dataIdWrongLength, ErrorDescription.dataIdWrongLength);
-            res.respond(err);
+            respond(res, err);
             return;
         }
 
@@ -199,13 +201,13 @@ struct Controller(T) {
         if (doc.empty) {
             const err = ErrorResponse(ErrorCode.dataNotFound, ErrorDescription.dataNotFound);
 
-            res.respond(err);
+            respond(res, err);
             return;
         }
         // Check that the document is the Type that was requested.
         if (!isRecord!T(doc.front)) {
             const err = ErrorResponse(ErrorCode.dataNotCorrectType, ErrorDescription.dataNotCorrectType);
-            res.respond(err);
+            respond(res, err);
         }
 
         T data = T(doc.front);
@@ -243,7 +245,7 @@ struct Controller(T) {
 
             writeln("err: ", err);
 
-            res.respond(err);
+            respond(res, err);
             return;
         }
 
@@ -254,7 +256,7 @@ struct Controller(T) {
             writeln("new_bullseye == prev_bullseye: ", new_bullseye == prev_bullseye);
             const err = ErrorResponse(ErrorCode.dataFingerprintNotAdded, ErrorDescription.dataFingerprintNotAdded);
             writeln("err: ", err);
-            res.respond(err);
+            respond(res, err);
             return;
         }
 
@@ -290,7 +292,7 @@ struct Controller(T) {
     //     // handle fingerprint exactly 64 characters
     //     if (id.length != 64) {
     //         const err = ErrorResponse(ErrorCode.dataIdWrongLength, ErrorDescription.dataIdWrongLength);
-    //         res.respond(err);
+    //         respond(res, err);
     //         return;
     //     }
 
@@ -302,7 +304,7 @@ struct Controller(T) {
     //     if (prev_bullseye == new_bullseye) {
     //         const err = ErrorResponse(ErrorCode.dataFingerprintNotFound, ErrorDescription.dataFingerprintNotFound);
 
-    //         res.respond(err);
+    //         respond(res, err);
     //         return;
     //     }
 
