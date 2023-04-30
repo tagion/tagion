@@ -53,6 +53,16 @@ enum ErrorDescription {
     dataFingerprintNotFound = "Entity with fingerprint not found",
 }
 
+void setCORSHeaders(HTTPServerResponse res) {
+    res.headers["Access-Control-Allow-Origin"] = "*";
+    // res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io, https://docs.decard.io";
+    res.headers["Access-Control-Allow-Headers"] = "*";
+    // res.headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept";
+    res.headers["Access-Control-Allow-Methods"] = "*";
+    // res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
+    res.headers["Access-Control-Max-Age"] = "86400";
+}
+
 void respond(HTTPServerResponse res, ErrorResponse err) {
     const responseModelError = ResponseModel(false, serializeToJson(err));
 
@@ -105,16 +115,6 @@ void handleServerError(HTTPServerResponse res, HTTPServerRequest req, Exception 
 struct Controller(T) {
     string name;
     DartService dart_service;
-
-    void setCORSHeaders(HTTPServerResponse res) {
-        res.headers["Access-Control-Allow-Origin"] = "*";
-        // res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io, https://docs.decard.io";
-        res.headers["Access-Control-Allow-Headers"] = "*";
-        // res.headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept";
-        res.headers["Access-Control-Allow-Methods"] = "*";
-        // res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
-        res.headers["Access-Control-Max-Age"] = "86400";
-    }
 
     /**
      *
@@ -190,8 +190,8 @@ struct Controller(T) {
      *   res = returns the Document
      */
     void getT(HTTPServerRequest req, HTTPServerResponse res) {
-
         writeln("GET");
+        
         string id = req.params.get("entityId");
 
         // handle fingerprint exactly 64 characters
