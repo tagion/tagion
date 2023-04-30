@@ -240,6 +240,8 @@ struct Controller(T) {
         catch (JSONException e) {
             const err = ErrorResponse(ErrorCode.dataBodyNoMatch, ErrorDescription.dataBodyNoMatch);
 
+            writeln("err: ", err);
+
             res.respond(err);
             return;
         }
@@ -248,7 +250,9 @@ struct Controller(T) {
         const fingerprint = dart_service.modify(data.toDoc);
         const new_bullseye = dart_service.bullseye;
         if (new_bullseye == prev_bullseye) {
+            writeln("new_bullseye == prev_bullseye: ", new_bullseye == prev_bullseye);
             const err = ErrorResponse(ErrorCode.dataFingerprintNotAdded, ErrorDescription.dataFingerprintNotAdded);
+            writeln("err: ", err);
             res.respond(err);
             return;
         }
@@ -256,8 +260,15 @@ struct Controller(T) {
         Json dataSuccess = Json.emptyObject;
         dataSuccess["fingerprint"] = fingerprint.toHexString;
 
+        writeln("dataSuccess: ", dataSuccess);
+
         ResponseModel responseSuccess = ResponseModel(true, dataSuccess);
+
+        writeln("responseSuccess: ", responseSuccess);
+
         const(Json) responseSuccessJson = serializeToJson(responseSuccess);
+
+        writeln("responseSuccessJson: ", responseSuccessJson);
 
         setCORSHeaders(res);
         res.statusCode = HTTPStatus.created;
