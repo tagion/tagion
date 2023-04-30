@@ -63,10 +63,8 @@ void setCORSHeaders(HTTPServerResponse res) {
     res.headers["Access-Control-Max-Age"] = "86400";
 }
 
-void respond(HTTPServerResponse res, ErrorResponse err) {
+void respondWithError(HTTPServerResponse res, ErrorResponse err) {
     const responseModelError = ResponseModel(false, serializeToJson(err));
-
-    writeln("responseModelError: ", responseModelError);
 
     const(Json) responseModelErrorJson = serializeToJson(responseModelError);
 
@@ -127,28 +125,7 @@ struct Controller(T) {
         this.name = name;
         this.dart_service = dart_service;
 
-        // // Handle CORS
-        // router.any("*", delegate void(scope HTTPServerRequest req, scope HTTPServerResponse res) {
-        //   writeln("req.method: ", req.method);
-
-        //   if (req.method == HTTPRequest.method.OPTIONS) {
-        //     writeln("req.method == HTTPRequest.method.OPTIONS");
-        //     res.statusCode = HTTPStatus.ok;
-        //   }
-
-        //   res.headers["Access-Control-Allow-Origin"] = "*";
-        //   // res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io, https://docs.decard.io";
-        //   // res.headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept";
-        //   res.headers["Access-Control-Allow-Headers"] = "*";
-        //   // res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
-        //   res.headers["Access-Control-Allow-Methods"] = "*";
-        //   res.headers["Access-Control-Max-Age"] = "86400";
-        //   res.statusCode = HTTPStatus.ok;
-        // });
-
         void optionsHandler(HTTPServerRequest req, HTTPServerResponse res) {
-            writeln("req.method: ", req.method);
-
             if (req.method == HTTPRequest.method.OPTIONS) {
                 writeln("req.method == HTTPRequest.method.OPTIONS");
                 res.statusCode = HTTPStatus.ok;
@@ -156,7 +133,6 @@ struct Controller(T) {
 
             setCORSHeaders(res);
             res.statusCode = HTTPStatus.noContent;
-            res.writeBody("smth!");
         }
 
         router.match(HTTPMethod.OPTIONS, "*", tryReqHandler(&optionsHandler));
@@ -164,23 +140,6 @@ struct Controller(T) {
         // router.delete_(format("/%s/%s/:entityId", access_token, name), tryReqHandler(&deleteT));
         router.post(format("/%s/%s", access_token, name), tryReqHandler(&postT));
     }
-
-    // void optionsHandler(HTTPServerRequest req, HTTPServerResponse res) {
-    //   if (req.method == HTTPRequest.method.OPTIONS) {
-    //     res.statusCode = HTTPStatus.ok;
-    //   }
-
-    //   res.headers["Access-Control-Allow-Origin"] = "*";
-    //   res.headers["Access-Control-Allow-Headers"] = "*";
-    //   res.headers["Access-Control-Allow-Methods"] = "*";
-    //   res.headers["Access-Control-Max-Age"] = "86400";
-    //   res.statusCode = HTTPStatus.ok;
-    // }
-
-    // router.match(HTTPMethod.OPTIONS, "*", &optionsHandler);
-    // router.get("/items", getHandler);
-    // router.post("/items", getHandler);
-    // router.delete("/items", getHandler);
 
     /**
      * Get request for reading specific document.
@@ -191,13 +150,13 @@ struct Controller(T) {
      */
     void getT(HTTPServerRequest req, HTTPServerResponse res) {
         writeln("GET");
-        
+
         string id = req.params.get("entityId");
 
         // handle fingerprint exactly 64 characters
         if (id.length != 64) {
             const err = ErrorResponse(ErrorCode.dataIdWrongLength, ErrorDescription.dataIdWrongLength);
-            respond(res, err);
+            respondWithError(res, err);
             return;
         }
 
@@ -206,13 +165,13 @@ struct Controller(T) {
         if (doc.empty) {
             const err = ErrorResponse(ErrorCode.dataNotFound, ErrorDescription.dataNotFound);
 
-            respond(res, err);
+            respondWithError(res, err);
             return;
         }
         // Check that the document is the Type that was requested.
         if (!isRecord!T(doc.front)) {
             const err = ErrorResponse(ErrorCode.dataNotCorrectType, ErrorDescription.dataNotCorrectType);
-            respond(res, err);
+            respondWithError(res, err);
         }
 
         T data = T(doc.front);
@@ -220,6 +179,8 @@ struct Controller(T) {
         const(Json) entity_json = serializeToJson(data);
         ResponseModel responseSuccess = ResponseModel(true, entity_json);
         const(Json) responseSuccessJson = serializeToJson(responseSuccess);
+
+        writeln("responseSuccessJson: ", responseSuccessJson);
 
         setCORSHeaders(res);
         res.statusCode = HTTPStatus.ok;
@@ -242,15 +203,11 @@ struct Controller(T) {
         // check that user submits correct body
         try {
             data = deserializeJson!T(req.json);
-
-            writeln("data: ", data);
         }
         catch (JSONException e) {
             const err = ErrorResponse(ErrorCode.dataBodyNoMatch, ErrorDescription.dataBodyNoMatch);
 
-            writeln("err: ", err);
-
-            respond(res, err);
+            respondWithError(res, err);
             return;
         }
 
@@ -258,21 +215,15 @@ struct Controller(T) {
         const fingerprint = dart_service.modify(data.toDoc);
         const new_bullseye = dart_service.bullseye;
         if (new_bullseye == prev_bullseye) {
-            writeln("new_bullseye == prev_bullseye: ", new_bullseye == prev_bullseye);
             const err = ErrorResponse(ErrorCode.dataFingerprintNotAdded, ErrorDescription.dataFingerprintNotAdded);
-            writeln("err: ", err);
-            respond(res, err);
+            respondWithError(res, err);
             return;
         }
 
         Json dataSuccess = Json.emptyObject;
         dataSuccess["fingerprint"] = fingerprint.toHexString;
 
-        writeln("dataSuccess: ", dataSuccess);
-
         ResponseModel responseSuccess = ResponseModel(true, dataSuccess);
-
-        writeln("responseSuccess: ", responseSuccess);
 
         const(Json) responseSuccessJson = serializeToJson(responseSuccess);
 
@@ -297,7 +248,7 @@ struct Controller(T) {
     //     // handle fingerprint exactly 64 characters
     //     if (id.length != 64) {
     //         const err = ErrorResponse(ErrorCode.dataIdWrongLength, ErrorDescription.dataIdWrongLength);
-    //         respond(res, err);
+    //         respondWithError(res, err);
     //         return;
     //     }
 
@@ -309,7 +260,7 @@ struct Controller(T) {
     //     if (prev_bullseye == new_bullseye) {
     //         const err = ErrorResponse(ErrorCode.dataFingerprintNotFound, ErrorDescription.dataFingerprintNotFound);
 
-    //         respond(res, err);
+    //         respondWithError(res, err);
     //         return;
     //     }
 
