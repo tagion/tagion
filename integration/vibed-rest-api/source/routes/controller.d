@@ -154,7 +154,7 @@ struct Controller(T) {
 
         router.match(HTTPMethod.OPTIONS, "*", tryReqHandler(&optionsHandler));
         router.get(format("/%s/%s/:entityId", access_token, name), tryReqHandler(&getT));
-        router.delete_(format("/%s/%s/:entityId", access_token, name), tryReqHandler(&deleteT));
+        // router.delete_(format("/%s/%s/:entityId", access_token, name), tryReqHandler(&deleteT));
         router.post(format("/%s/%s", access_token, name), tryReqHandler(&postT));
     }
 
@@ -235,9 +235,13 @@ struct Controller(T) {
         // check that user submits correct body
         try {
             data = deserializeJson!T(req.json);
+
+            writeln("data: ", data);
         }
         catch (JSONException e) {
             const err = ErrorResponse(ErrorCode.dataBodyNoMatch, ErrorDescription.dataBodyNoMatch);
+
+            writeln("err: ", err);
 
             res.respond(err);
             return;
@@ -247,7 +251,9 @@ struct Controller(T) {
         const fingerprint = dart_service.modify(data.toDoc);
         const new_bullseye = dart_service.bullseye;
         if (new_bullseye == prev_bullseye) {
+            writeln("new_bullseye == prev_bullseye: ", new_bullseye == prev_bullseye);
             const err = ErrorResponse(ErrorCode.dataFingerprintNotAdded, ErrorDescription.dataFingerprintNotAdded);
+            writeln("err: ", err);
             res.respond(err);
             return;
         }
@@ -255,8 +261,15 @@ struct Controller(T) {
         Json dataSuccess = Json.emptyObject;
         dataSuccess["fingerprint"] = fingerprint.toHexString;
 
+        writeln("dataSuccess: ", dataSuccess);
+
         ResponseModel responseSuccess = ResponseModel(true, dataSuccess);
+
+        writeln("responseSuccess: ", responseSuccess);
+
         const(Json) responseSuccessJson = serializeToJson(responseSuccess);
+
+        writeln("responseSuccessJson: ", responseSuccessJson);
 
         setCORSHeaders(res);
         res.statusCode = HTTPStatus.created;
@@ -269,39 +282,39 @@ struct Controller(T) {
      *   req = :entityID. Fingerprint of the Archive stored in the DART.
      *   res = httpresponse.
      */
-    void deleteT(HTTPServerRequest req, HTTPServerResponse res) {
-        writeln("DELETE");
+    // void deleteT(HTTPServerRequest req, HTTPServerResponse res) {
+    //     writeln("DELETE");
 
-        string id = req.params.get("entityId");
+    //     string id = req.params.get("entityId");
 
-        // handle fingerprint exactly 64 characters
-        if (id.length != 64) {
-            const err = ErrorResponse(ErrorCode.dataIdWrongLength, ErrorDescription.dataIdWrongLength);
-            res.respond(err);
-            return;
-        }
+    //     // handle fingerprint exactly 64 characters
+    //     if (id.length != 64) {
+    //         const err = ErrorResponse(ErrorCode.dataIdWrongLength, ErrorDescription.dataIdWrongLength);
+    //         res.respond(err);
+    //         return;
+    //     }
 
-        const fingerprint = DARTIndex(decode(id));
-        const prev_bullseye = dart_service.bullseye;
-        dart_service.remove([fingerprint]);
-        const new_bullseye = dart_service.bullseye;
+    //     const fingerprint = DARTIndex(decode(id));
+    //     const prev_bullseye = dart_service.bullseye;
+    //     dart_service.remove([fingerprint]);
+    //     const new_bullseye = dart_service.bullseye;
 
-        if (prev_bullseye == new_bullseye) {
-            const err = ErrorResponse(ErrorCode.dataFingerprintNotFound, ErrorDescription.dataFingerprintNotFound);
+    //     if (prev_bullseye == new_bullseye) {
+    //         const err = ErrorResponse(ErrorCode.dataFingerprintNotFound, ErrorDescription.dataFingerprintNotFound);
 
-            res.respond(err);
-            return;
-        }
+    //         res.respond(err);
+    //         return;
+    //     }
 
-        Json dataSuccess = Json.emptyObject;
-        dataSuccess["message"] = "Succesfully deleted";
+    //     Json dataSuccess = Json.emptyObject;
+    //     dataSuccess["message"] = "Succesfully deleted";
 
-        ResponseModel responseSuccess = ResponseModel(true, dataSuccess);
-        const(Json) responseSuccessJson = serializeToJson(responseSuccess);
+    //     ResponseModel responseSuccess = ResponseModel(true, dataSuccess);
+    //     const(Json) responseSuccessJson = serializeToJson(responseSuccess);
 
-        setCORSHeaders(res);
-        // res.writeBody(format("Entity with fingerprint=%s deleted", fingerprint.toHexString));
-        res.statusCode = HTTPStatus.ok;
-        res.writeJsonBody(responseSuccessJson);
-    }
+    //     setCORSHeaders(res);
+    //     // res.writeBody(format("Entity with fingerprint=%s deleted", fingerprint.toHexString));
+    //     res.statusCode = HTTPStatus.ok;
+    //     res.writeJsonBody(responseSuccessJson);
+    // }
 }
