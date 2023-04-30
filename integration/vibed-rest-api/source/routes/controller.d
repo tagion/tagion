@@ -27,6 +27,7 @@ import std.digest;
 import std.typecons;
 import std.random;
 import std.range : take;
+import tagion.hibon.Document;
 
 struct ResponseModel {
     bool isSucceeded;
@@ -200,10 +201,13 @@ struct Controller(T) {
         writeln("POST");
 
         T data;
-
+        Document doc;
         // check that user submits correct body
         try {
             data = deserializeJson!T(req.json);
+            writefln("data before conversion JSON: %s", data);
+
+            doc = data.toDoc;
         }
         catch (Exception e) {
             const err = ErrorResponse(ErrorCode.dataBodyNoMatch, ErrorDescription.dataBodyNoMatch);
@@ -212,8 +216,10 @@ struct Controller(T) {
             return;
         }
 
+        writefln("data converted document=%s", doc.toPretty);
         const prev_bullseye = dart_service.bullseye;
-        const fingerprint = dart_service.modify(data.toDoc);
+
+        const fingerprint = dart_service.modify(doc);
         const new_bullseye = dart_service.bullseye;
         if (new_bullseye == prev_bullseye) {
             const err = ErrorResponse(ErrorCode.dataFingerprintNotAdded, ErrorDescription.dataFingerprintNotAdded);
