@@ -123,7 +123,7 @@ void main() {
     auto test_document = Controller!DocumentDocument(test_token, document, router, test_dart_service);
     auto test_benefit = Controller!Benefit(test_token, benefit, router, test_dart_service);
 
-    auto venzo_dart_service = DartService(test_filename, venzo_token);
+    auto venzo_dart_service = DartService(venzo_filename, venzo_token);
     auto venzo_project = Controller!Project(venzo_token, project, router, venzo_dart_service);
     auto venzo_benefit_share_credit = Controller!BenefitShareCredit(venzo_token, benefit_share_credit, router, venzo_dart_service);
     auto venzo_benefit_share = Controller!BenefitShare(venzo_token, benefit_share, router, venzo_dart_service);
