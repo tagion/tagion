@@ -15,5 +15,7 @@ dart-service-test-*
 *.lst
 *.drt
 
+texts/revision.txt
+
 libcrypto-1_1-x64.dll
 libssl-1_1-x64.dll

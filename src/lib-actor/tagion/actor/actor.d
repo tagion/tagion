@@ -232,11 +232,11 @@ mixin template Actor(T...) {
 static:
     import std.exception : assumeWontThrow;
     import std.variant : Variant;
-    import std.concurrency : OwnerTerminated, Tid, thisTid, ownerTid, receive, prioritySend;
+    import std.concurrency : OwnerTerminated, Tid, thisTid, ownerTid, receive, prioritySend, ThreadInfo;
     import std.format : format;
     import std.traits : isCallable;
     import tagion.actor.exceptions : TaskFailure, taskException, ActorException, UnknownMessage;
-    import std.stdio : writefln;
+    import std.stdio : writefln, writeln;
 
     bool stop = false;
     Ctrl[Tid] childrenState; // An AA to keep a copy of the state of the children
