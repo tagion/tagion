@@ -171,10 +171,10 @@ struct Controller(T) {
             return;
         }
         // Check that the document is the Type that was requested.
-        if (!isRecord!T(doc.front)) {
-            const err = ErrorResponse(ErrorCode.dataNotCorrectType, ErrorDescription.dataNotCorrectType);
-            respondWithError(res, err);
-        }
+        // if (!isRecord!T(doc.front)) {
+        //     const err = ErrorResponse(ErrorCode.dataNotCorrectType, ErrorDescription.dataNotCorrectType);
+        //     respondWithError(res, err);
+        // }
 
         T data = T(doc.front);
 

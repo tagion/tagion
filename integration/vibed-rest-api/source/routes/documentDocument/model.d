@@ -1,7 +1,7 @@
 module routes.documentDocument.model;
 import tagion.hibon.HiBONRecord;
 
-@recordType("DocumentDocument")
+// @recordType("DocumentDocument")
 struct DocumentDocument {
     string documentUUID; // System UUID - "1aa84542-c1b5-4fd6-8354-7dbcfe3d16d0"
     int documentId; // License public ID - 1

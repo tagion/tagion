@@ -1,7 +1,7 @@
 module routes.project.model;
 import tagion.hibon.HiBONRecord;
 
-@recordType("Project")
+// @recordType("Project")
 struct Project {
     string projectUUID; // SystemId UUID - "e98fc703-9334-46d1-93c9-5675656c050f"
     int projectId; // Public ID - 1
