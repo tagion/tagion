@@ -204,8 +204,8 @@ struct Controller(T) {
         Document doc;
         // check that user submits correct body
         try {
+            writefln("data before conversion JSON: %s", req.json);
             data = deserializeJson!T(req.json);
-            writefln("data before conversion JSON: %s", data);
 
             doc = data.toDoc;
         }
