@@ -58,8 +58,13 @@ void respond(HTTPServerResponse res, ErrorResponse err) {
 
     writeln("responseModelError: ", responseModelError);
 
+    const(Json) responseModelErrorJson = serializeToJson(responseModelError);
+
+    writeln("responseModelErrorJson: ", responseModelErrorJson);
+
+    setCORSHeaders(res);
     res.statusCode = HTTPStatus.badRequest;
-    res.writeJsonBody(serializeToJson(responseModelError));
+    res.writeJsonBody(responseModelErrorJson);
 }
 
 struct ErrorResponse {
