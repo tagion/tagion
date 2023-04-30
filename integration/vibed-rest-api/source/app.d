@@ -27,6 +27,8 @@ import routes.benefit.model;
 import routes.documentDocument.model;
 import std.file;
 
+const revision = import("revision.txt");
+
 // void index(HTTPServerRequest req, HTTPServerResponse res)
 // {
 // 	res.render!("index.html", req);
@@ -139,8 +141,10 @@ void main() {
     settings.port = 8081;
     settings.bindAddresses = ["::1", "127.0.0.1"];
 
+    logInfo("Running revision: %s", revision);
     // listen to server
     listenHTTP(settings, router);
     logInfo("Open http://127.0.0.1:8081/ in your browser.");
+
     runApplication();
 }
