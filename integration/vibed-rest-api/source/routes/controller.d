@@ -3,6 +3,7 @@ module routes.controller;
 import vibe.http.server;
 import vibe.http.router;
 import vibe.data.json;
+import vibe.core.log;
 
 import std.array;
 import std.stdio;
@@ -96,9 +97,9 @@ void handleServerError(HTTPServerResponse res, HTTPServerRequest req, Exception 
     const err = ErrorResponse(HTTPStatus.internalServerError, "Internal Server Error, id: %s".format(errorId));
     const errJson = serializeToJson(err);
 
-    stderr.writeln(err);
-    stderr.writeln(req);
-    stderr.writeln(exception);
+    logError(format("%s", err));
+    logError(req.toString);
+    logError(exception.toString);
 
     const responseModelErr = ResponseModel(false, errJson);
 

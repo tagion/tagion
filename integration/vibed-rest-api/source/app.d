@@ -131,7 +131,7 @@ void main() {
 
     // Add a route to serve the index.html file
     foreach (route; router.getAllRoutes) {
-        writefln("(%s) %s", route.method, route.pattern);
+        logInfo(format("(%s) %s", route.method, route.pattern));
     }
 
     // Create a vibe.d HTTP server
