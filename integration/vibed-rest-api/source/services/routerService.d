@@ -49,30 +49,30 @@ void getOne(HTTPServerRequest req, HTTPServerResponse res, Json[] entityList, st
   // TODO: pass struct as function parameter
 // }
 
-void deleteOne(HTTPServerRequest req, HTTPServerResponse res, Json[] entityList, string filePath, string entityId) {
-    string id = req.params.get("entityId");
-    string messageNotFound = format("Object with ID %s not found", id);
+// void deleteOne(HTTPServerRequest req, HTTPServerResponse res, Json[] entityList, string filePath, string entityId) {
+//     string id = req.params.get("entityId");
+//     string messageNotFound = format("Object with ID %s not found", id);
 
-    entityList = readFromFile(filePath);
+//     entityList = readFromFile(filePath);
 
-    if (entityList.length > 0) {
-      foreach(key, value; entityList) {
-        if (value[entityId] == id) {
-          entityList = entityList.filter!(entityJson => entityJson[entityId] != value[entityId]).array;
+//     if (entityList.length > 0) {
+//       foreach(key, value; entityList) {
+//         if (value[entityId] == id) {
+//           entityList = entityList.filter!(entityJson => entityJson[entityId] != value[entityId]).array;
 
-          writeToFile(entityList, filePath);
+//           writeToFile(entityList, filePath);
 
-          writeln("Object with specific ID deleted");
-          res.writeJsonBody(value);
-          return;
-        }
-      }
+//           writeln("Object with specific ID deleted");
+//           res.writeJsonBody(value);
+//           return;
+//         }
+//       }
 
-      res.statusCode = HTTPStatus.notFound;
-      res.writeBody(messageNotFound);
-    } else {
-      res.statusCode = HTTPStatus.notFound;
-      res.writeBody(messageNotFound);
-      return;
-    }
-}
+//       res.statusCode = HTTPStatus.notFound;
+//       res.writeBody(messageNotFound);
+//     } else {
+//       res.statusCode = HTTPStatus.notFound;
+//       res.writeBody(messageNotFound);
+//       return;
+//     }
+// }
