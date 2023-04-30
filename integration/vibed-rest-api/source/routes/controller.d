@@ -234,6 +234,8 @@ struct Controller(T) {
         // check that user submits correct body
         try {
             data = deserializeJson!T(req.json);
+
+            writeln("data: ", data);
         }
         catch (JSONException e) {
             const err = ErrorResponse(ErrorCode.dataBodyNoMatch, ErrorDescription.dataBodyNoMatch);
