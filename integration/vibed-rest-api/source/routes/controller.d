@@ -132,7 +132,8 @@ struct Controller(T) {
             setCORSHeaders(res);
             res.statusCode = HTTPStatus.noContent;
             writeln("res.statusCode", res.statusCode);
-            writeln("res", res);
+            writeln("res.headers", res.headers);
+            res.writeBody("no content");
         }
 
         router.match(HTTPMethod.OPTIONS, "*", tryReqHandler(&optionsHandler));
