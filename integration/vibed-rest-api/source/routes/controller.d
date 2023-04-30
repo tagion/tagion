@@ -1,9 +1,7 @@
 module routes.controller;
 
-import vibe.vibe;
-import vibe.d;
-import vibe.core.core : runApplication;
 import vibe.http.server;
+import vibe.http.router;
 import vibe.data.json;
 
 import std.array;

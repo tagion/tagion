@@ -1,6 +1,5 @@
 module services.fsService;
 
-import vibe.d;
 import std.stdio;
 import std.file;
 import std.algorithm;
@@ -21,17 +20,16 @@ public Json[] readFromFile(string filePath) {
 
     // if file does not exist, create file with empty array
     if (!exists(filePath)) {
-      File file = File(filePath, "w");
-      file.writeln("[]");
-      file.close();
+        File file = File(filePath, "w");
+        file.writeln("[]");
+        file.close();
     }
 
     string data = readText(filePath) ? readText(filePath) : "[]";
 
     Json jsonData = parseJson(data);
 
-    Json[] jsonArray = cast(Json[])jsonData;
+    Json[] jsonArray = cast(Json[]) jsonData;
 
     return jsonArray;
 }
-
