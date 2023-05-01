@@ -26,7 +26,6 @@ subPackage {
 }
 subPackage {
     name "utils"
-    buildRequirements "allowWarnings" "silenceWarnings"
     sourcePaths "src/lib-utils/"
     importPaths "src/lib-utils/"
     dependency "tagion:basic" version="*"
@@ -48,7 +47,6 @@ subPackage {
 
 subPackage {
     name "hibon"
-    buildRequirements "allowWarnings" "silenceWarnings"
     sourcePaths "src/lib-hibon/"
     importPaths "src/lib-hibon/"
     dependency "tagion:utils" version="*"
