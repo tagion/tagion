@@ -83,7 +83,7 @@ ${call DO_BIN,tagionsubscription,}
 #
 target-recorderchain: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
 target-recorderchain: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-recorderchain/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
-${call DO_BIN,recorderchain,}
+${call DO_BIN,recorderchain,tagion}
 
 #
 # Boot utility
@@ -112,6 +112,7 @@ target-tagion: DFILES+=${shell find $(DSRC)/bin-wallet/tagion -name "*.d"  $(NO_
 target-tagion: DFILES+=${shell find $(DSRC)/bin-tools/tagion -name "*.d"  $(NO_WOLFSSL) }
 target-tagion: DFILES+=${shell find $(DSRC)/bin-boot/tagion -name "*.d"  $(NO_WOLFSSL) }
 target-tagion: DFILES+=${shell find $(DSRC)/bin-tprofview/tagion -name "*.d"  $(NO_WOLFSSL) }
+target-tagion: DFILES+=${shell find $(DSRC)/bin-recorderchain/tagion -name "*.d" $(NO_WOLFSSL)}
 
 target-tagion:
 ${call DO_BIN,tagion,}
@@ -122,4 +123,9 @@ ${call DO_BIN,tagion,}
 target-collider: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
 target-collider: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-collider/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
 ${call DO_BIN,collider,}
+
+target-libtagion: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+target-libtagion: DFLAGS+=$(DSTATICLIB)
+target-libtagion: DFILES:=${shell find $(DSRC) -name "*.d" -a -path "*/src/lib-*" -a -not -path "*/unitdata/*" -a -not -path "*/tests/*" -a -not -path "*/lib-betterc/*" $(NO_WOLFSSL) }
+${call DO_BIN,libtagion,}
 
