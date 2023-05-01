@@ -222,7 +222,7 @@ void setState(Ctrl ctrl) nothrow {
 /**
  * Base template
  * All members should be static
- * Examples: See [Actor examples]($(DOC_ROOT_OBJECTS)tagion.actor.example$(DOC_EXTENSION))
+ * Examples: See [tagion.testbench.services]
  *
  * Struct may implement starting callback that gets called after the actor sends Ctrl.STARTING
  * ---
