@@ -211,7 +211,7 @@ struct Controller(T) {
         }
         catch (Exception e) {
             const err = ErrorResponse(ErrorCode.dataBodyNoMatch, ErrorDescription.dataBodyNoMatch);
-
+            writeln("ErrorDescription.dataBodyNoMatch");
             respondWithError(res, err);
             return;
         }
@@ -223,6 +223,7 @@ struct Controller(T) {
         const new_bullseye = dart_service.bullseye;
         if (new_bullseye == prev_bullseye) {
             const err = ErrorResponse(ErrorCode.dataFingerprintNotAdded, ErrorDescription.dataFingerprintNotAdded);
+            writeln("ErrorDescription.dataFingerprintNotAdded");
             respondWithError(res, err);
             return;
         }
