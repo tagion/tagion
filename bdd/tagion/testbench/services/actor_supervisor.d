@@ -94,14 +94,9 @@ static:
             writeln(typeof(e).stringof, tf.task_name);
             writefln("This is fatal, we need to restart %s", tf.task_name);
             childHandle.send(Sig.STOP);
-            //while(locate(child_task_name) is Tid.init) { }
-            // check(receiveOnly!string is "hello", "Child did not end");
-            CtrlMsg end = receiveOnly!CtrlMsg;
-            check(end.ctrl is Ctrl.END, "Child did not end");
-            writeln(end);
-            // while(locate(child_task_name) !is Tid.init) { }
-            // childHandle = spawnActor!SetUpForFailure(child_task_name);
-
+            while (locate(child_task_name) !is Tid.init) {
+            }
+            writeln("C ", locate(child_task_name));
             sendOwner(reFatal());
         }
         catch (MessageMismatch e) {
