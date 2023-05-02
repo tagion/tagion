@@ -204,7 +204,7 @@ struct Controller(T) {
         Document doc;
         // check that user submits correct body
         try {
-            writefln("data before conversion JSON: %s", req.json);
+            // writefln("data before conversion JSON: %s", req.json);
             data = deserializeJson!T(req.json);
 
             doc = data.toDoc;
@@ -216,7 +216,7 @@ struct Controller(T) {
             return;
         }
 
-        writefln("data converted document=%s", doc.toPretty);
+        // writefln("data converted document=%s", doc.toPretty);
         const prev_bullseye = dart_service.bullseye;
 
         const fingerprint = dart_service.modify(doc);

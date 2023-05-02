@@ -38,63 +38,14 @@ void main() {
     auto router = new URLRouter;
     // const filename = "/tmp/dart.drt";
 
-    // router.OPTIONS("*", delegate void(scope HTTPServerRequest req, scope HTTPServerResponse res) {
-    //   writeln("here4");
-    //   res.statusCode = HTTPStatus.ok;
-    // });
-
-    // router.match(HTTPMethod.OPTIONS, "*", delegate void(scope HTTPServerRequest req, scope HTTPServerResponse res) {
-    //   writeln("here6");
-    //   res.statusCode = HTTPStatus.ok;
-    //   res.writeBody("!!!! OK");
-    // });
-
-    // Handle CORS
-    // router.any("*", delegate void(scope HTTPServerRequest req, scope HTTPServerResponse res) {
-    //   writeln("req.method: ", req.method);
-
-    //   if (req.method == HTTPRequest.method.OPTIONS) {
-    //     writeln("here1");
-    //     res.statusCode = HTTPStatus.ok;
-    //   }
-
-    //   // if (req.method == HTTPMethod.OPTIONS) {
-    //   //   writeln("here2");
-    //   //   res.statusCode = HTTPStatus.ok;
-    //   // }
-
-    //   res.headers["Access-Control-Allow-Origin"] = "*";
-    //   // res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io, https://docs.decard.io";
-    //   // res.headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept";
-    //   res.headers["Access-Control-Allow-Headers"] = "*";
-    //   // res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
-    //   res.headers["Access-Control-Allow-Methods"] = "*";
-    //   res.headers["Access-Control-Max-Age"] = "86400";
-    //   res.statusCode = HTTPStatus.ok;
-    // });
-
-    // router.post("/project", &createItem);
-
-    // void createItem(HTTPServerRequest req, HTTPServerResponse res) {
-    //   writeln("Inside createItem");
-
-    //   Json dataSuccess = Json.emptyObject;
-    //   dataSuccess["fingerprint"] = fingerprint.toHexString;
-
-    //   ResponseModel responseSuccess = ResponseModel(true, dataSuccess);
-    //   const(Json) responseSuccessJson = serializeToJson(responseSuccess);
-
-    //   res.statusCode = HTTPStatus.created;
-    //   res.writeJsonBody(responseSuccessJson);
-    // }
-
-    // routes
-    string project = "project";
-    string benefit_share_credit = "benefit-share-credit";
-    string benefit_share = "benefit-share";
-    string project_document = "project-document";
-    string document = "document";
-    string benefit = "benefit";
+    enum Route {
+      project = "project",
+      benefit_share_credit = "benefit-share-credit",
+      benefit_share = "benefit-share",
+      project_document = "project-document",
+      document = "document",
+      benefit = "benefit",
+    }
 
     // access tokens
     const string[] access_tokens = [
@@ -116,20 +67,20 @@ void main() {
     }
 
     auto test_dart_service = DartService(test_filename, test_token);
-    auto test_project = Controller!Project(test_token, project, router, test_dart_service);
-    auto test_benefit_share_credit = Controller!BenefitShareCredit(test_token, benefit_share_credit, router, test_dart_service);
-    auto test_benefit_share = Controller!BenefitShare(test_token, benefit_share, router, test_dart_service);
-    auto test_project_document = Controller!ProjectDocument(test_token, project_document, router, test_dart_service);
-    auto test_document = Controller!DocumentDocument(test_token, document, router, test_dart_service);
-    auto test_benefit = Controller!Benefit(test_token, benefit, router, test_dart_service);
+    auto test_project = Controller!Project(test_token, Route.project, router, test_dart_service);
+    auto test_benefit_share_credit = Controller!BenefitShareCredit(test_token, Route.benefit_share_credit, router, test_dart_service);
+    auto test_benefit_share = Controller!BenefitShare(test_token, Route.benefit_share, router, test_dart_service);
+    auto test_project_document = Controller!ProjectDocument(test_token, Route.project_document, router, test_dart_service);
+    auto test_document = Controller!DocumentDocument(test_token, Route.document, router, test_dart_service);
+    auto test_benefit = Controller!Benefit(test_token, benefit, Route.router, test_dart_service);
 
     auto venzo_dart_service = DartService(venzo_filename, venzo_token);
-    auto venzo_project = Controller!Project(venzo_token, project, router, venzo_dart_service);
-    auto venzo_benefit_share_credit = Controller!BenefitShareCredit(venzo_token, benefit_share_credit, router, venzo_dart_service);
-    auto venzo_benefit_share = Controller!BenefitShare(venzo_token, benefit_share, router, venzo_dart_service);
-    auto venzo_project_document = Controller!ProjectDocument(venzo_token, project_document, router, venzo_dart_service);
-    auto venzo_document = Controller!DocumentDocument(venzo_token, document, router, venzo_dart_service);
-    auto venzo_benefit = Controller!Benefit(venzo_token, benefit, router, venzo_dart_service);
+    auto venzo_project = Controller!Project(venzo_token, Route.project, router, venzo_dart_service);
+    auto venzo_benefit_share_credit = Controller!BenefitShareCredit(venzo_token, Route.benefit_share_credit, router, venzo_dart_service);
+    auto venzo_benefit_share = Controller!BenefitShare(venzo_token, Route.benefit_share, router, venzo_dart_service);
+    auto venzo_project_document = Controller!ProjectDocument(venzo_token, Route.project_document, router, venzo_dart_service);
+    auto venzo_document = Controller!DocumentDocument(venzo_token, Route.document, router, venzo_dart_service);
+    auto venzo_benefit = Controller!Benefit(venzo_token, Route.benefit, router, venzo_dart_service);
 
     // Add a route to serve the index.html file
     foreach (route; router.getAllRoutes) {
