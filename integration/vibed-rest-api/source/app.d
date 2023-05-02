@@ -38,7 +38,7 @@ void main() {
     auto router = new URLRouter;
     // const filename = "/tmp/dart.drt";
 
-    enum Route {
+    enum Routes {
       project = "project",
       benefit_share_credit = "benefit-share-credit",
       benefit_share = "benefit-share",
@@ -67,20 +67,20 @@ void main() {
     }
 
     auto test_dart_service = DartService(test_filename, test_token);
-    auto test_project = Controller!Project(test_token, Route.project, router, test_dart_service);
-    auto test_benefit_share_credit = Controller!BenefitShareCredit(test_token, Route.benefit_share_credit, router, test_dart_service);
-    auto test_benefit_share = Controller!BenefitShare(test_token, Route.benefit_share, router, test_dart_service);
-    auto test_project_document = Controller!ProjectDocument(test_token, Route.project_document, router, test_dart_service);
-    auto test_document = Controller!DocumentDocument(test_token, Route.document, router, test_dart_service);
-    auto test_benefit = Controller!Benefit(test_token, benefit, Route.router, test_dart_service);
+    auto test_project = Controller!Project(test_token, Routes.project, router, test_dart_service);
+    auto test_benefit_share_credit = Controller!BenefitShareCredit(test_token, Routes.benefit_share_credit, router, test_dart_service);
+    auto test_benefit_share = Controller!BenefitShare(test_token, Routes.benefit_share, router, test_dart_service);
+    auto test_project_document = Controller!ProjectDocument(test_token, Routes.project_document, router, test_dart_service);
+    auto test_document = Controller!DocumentDocument(test_token, Routes.document, router, test_dart_service);
+    auto test_benefit = Controller!Benefit(test_token, benefit, Routes.router, test_dart_service);
 
     auto venzo_dart_service = DartService(venzo_filename, venzo_token);
-    auto venzo_project = Controller!Project(venzo_token, Route.project, router, venzo_dart_service);
-    auto venzo_benefit_share_credit = Controller!BenefitShareCredit(venzo_token, Route.benefit_share_credit, router, venzo_dart_service);
-    auto venzo_benefit_share = Controller!BenefitShare(venzo_token, Route.benefit_share, router, venzo_dart_service);
-    auto venzo_project_document = Controller!ProjectDocument(venzo_token, Route.project_document, router, venzo_dart_service);
-    auto venzo_document = Controller!DocumentDocument(venzo_token, Route.document, router, venzo_dart_service);
-    auto venzo_benefit = Controller!Benefit(venzo_token, Route.benefit, router, venzo_dart_service);
+    auto venzo_project = Controller!Project(venzo_token, Routes.project, router, venzo_dart_service);
+    auto venzo_benefit_share_credit = Controller!BenefitShareCredit(venzo_token, Routes.benefit_share_credit, router, venzo_dart_service);
+    auto venzo_benefit_share = Controller!BenefitShare(venzo_token, Routes.benefit_share, router, venzo_dart_service);
+    auto venzo_project_document = Controller!ProjectDocument(venzo_token, Routes.project_document, router, venzo_dart_service);
+    auto venzo_document = Controller!DocumentDocument(venzo_token, Routes.document, router, venzo_dart_service);
+    auto venzo_benefit = Controller!Benefit(venzo_token, Routes.benefit, router, venzo_dart_service);
 
     // Add a route to serve the index.html file
     foreach (route; router.getAllRoutes) {
