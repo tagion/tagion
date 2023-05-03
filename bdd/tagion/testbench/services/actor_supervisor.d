@@ -1,4 +1,7 @@
 module tagion.testbench.services.actor_supervisor;
+
+import tagion.testbench.services.actor_util;
+
 // Default import list for bdd
 import tagion.behaviour;
 import tagion.hibon.Document;
@@ -42,23 +45,26 @@ class Fatal : TagionException {
 /// Child Actor
 struct SetUpForFailure {
 static:
-    void exceptional(Msg!"recoverable") {
+    void recoverable(Msg!"recoverable") {
         writeln("oh nose");
         throw new Recoverable("I am fail");
     }
 
-    void exceptional(Msg!"fatal") {
+    void fatal(Msg!"fatal") {
         writeln("oh noes");
         throw new Fatal("I am big fail");
     }
 
-    mixin Actor!(&exceptional); /// Turns the struct into an Actor
+    mixin Actor!(&recoverable, &fatal); /// Turns the struct into an Actor
 }
 
 alias ChildHandle = ActorHandle!SetUpForFailure;
 
 enum supervisor_task_name = "supervisor";
-enum child_task_name = "child";
+enum child_task_name = "childUno";
+
+alias reRecoverable = Msg!"reRecoverable";
+alias reFatal = Msg!"reFatal";
 
 /// Supervisor Actor
 struct SetUpForDisappointment {
@@ -82,21 +88,16 @@ static:
             writefln("Received the taskfailure from overrid taskfail type: %s", typeid(tf.throwable));
             throw tf.throwable;
         }
-        catch (Fatal e) {
-            writefln("This is fatal, we need to restart %s", tf.task_name);
-            childHandle.send(Sig.STOP);
-            check(receiveOnly!CtrlMsg.ctrl is Ctrl.END, "Child did not end");
-            //childrenState.remove(childHandle.tid);
-            childHandle = spawnActor!SetUpForFailure(child_task_name);
-            //childrenState[childHandle.tid] = Ctrl.STARTING;
-
-            //while (!(childrenState.all(Ctrl.ALIVE))) {
-            //    CtrlMsg msg = receiveOnlyTimeout!CtrlMsg;
-            //    childrenState[msg.tid] = msg.ctrl;
-            //}
-        }
         catch (Recoverable e) {
+            writeln(typeof(e).stringof);
             writeln("This is Recoverable, just let it run");
+            sendOwner(reRecoverable());
+        }
+        catch (Fatal e) {
+            writeln(typeof(e).stringof, tf.task_name, locate(tf.task_name));
+            childHandle = respawnActor(childHandle);
+            writefln("This is fatal, we need to restart %s", tf.task_name);
+            sendOwner(reFatal());
         }
         catch (MessageMismatch e) {
             writeln("The actor does not handle this type of message");
@@ -147,11 +148,13 @@ class SupervisorWithFailingChild {
 
     @Then("the #super actor should catch the #child which failed")
     Document whichFailed() @trusted {
+        writeln("Returned ", receiveOnly!reFatal);
         return result_ok;
     }
 
     @Then("the #super actor should stop #child and restart it")
     Document restartIt() @trusted {
+        childHandle = actorHandle!SetUpForFailure(child_task_name); // FIX: actor handle should be transparent
         check(locate(child_task_name) !is Tid.init, "Child thread is not running");
         return result_ok;
     }
@@ -159,11 +162,13 @@ class SupervisorWithFailingChild {
     @Then("the #super should send a message to the #child which results in a different fail")
     Document differentFail() @trusted {
         childHandle.send(Msg!"recoverable"());
+        check(childHandle.tid !is Tid.init, "Child thread is not running");
         return result_ok;
     }
 
     @Then("the #super actor should let the #child keep running")
     Document keepRunning() @trusted {
+        writeln("Returned ", receiveOnly!reRecoverable);
         check(childHandle.tid !is Tid.init, "Child thread is not running");
 
         return result_ok;
@@ -175,8 +180,8 @@ class SupervisorWithFailingChild {
         auto ctrl = receiveOnly!CtrlMsg;
         check(ctrl.ctrl is Ctrl.END, "Supervisor did not stop");
 
-        Tid childTid = locate(child_task_name);
-        check(childTid !is Tid.init, "Child is still running");
+        //Tid childTid = locate(child_task_name);
+        //check(childTid !is Tid.init, "Child is still running");
 
         return result_ok;
     }

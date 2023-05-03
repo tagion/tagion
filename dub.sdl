@@ -1,6 +1,7 @@
 name "tagion"
 description "Configuration exists to allow language server to do proper static analasys, compilation is not supported"
 targetType "executable"
+targetPath "build/dub/"
 authors "decard"
 copyright "Copyright © 2023, decard"
 license "proprietary"
@@ -25,7 +26,6 @@ subPackage {
 }
 subPackage {
     name "utils"
-    buildRequirements "allowWarnings" "silenceWarnings"
     sourcePaths "src/lib-utils/"
     importPaths "src/lib-utils/"
     dependency "tagion:basic" version="*"
@@ -44,9 +44,9 @@ subPackage {
     dependency "tagion:basic" version="*"
     dependency "tagion:logger" version="*"
 }
+
 subPackage {
     name "hibon"
-    buildRequirements "allowWarnings" "silenceWarnings"
     sourcePaths "src/lib-hibon/"
     importPaths "src/lib-hibon/"
     dependency "tagion:utils" version="*"

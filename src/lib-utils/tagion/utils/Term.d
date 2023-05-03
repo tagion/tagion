@@ -180,21 +180,17 @@ else {
                             return KeyCode.NONE;
                         }
                     }
-                    return select!(index + 1, pos)(ch);
+                    else {
+                        return select!(index + 1, pos)(ch);
+                    }
                 }
-                return KeyCode.NONE;
+                else {
+                    return KeyCode.NONE;
+                }
             }
 
             ch = get;
             return select(ch);
         }
-
-        //enum strain = test;
-
-        // char opCall(ref KeyCode code) {
-        //     do {
-
-        //     }
-        // }
     }
 }

@@ -12,25 +12,7 @@ import tagion.actor.exceptions;
 import tagion.actor.exceptions : TaskFailure;
 import tagion.basic.tagionexceptions : TagionException;
 
-T receiveOnlyTimeout(T)() {
-    T ret;
-    receiveTimeout(
-            2.seconds,
-            (T val) { ret = val; },
-            (Variant val) {
-        throw new MessageMismatch(
-            format("Unexpected message got %s of type %s, expected %s", val, val.type.toString(), T.stringof));
-    }
-    );
-
-    if (ret is T.init) {
-        throw new MessageTimeout(
-                format("Timed out never received message expected message type: %s".format(T.stringof))
-        );
-    }
-
-    return ret;
-}
+alias TaskName = const string;
 
 bool all(Ctrl[Tid] aa, Ctrl ctrl) {
     foreach (val; aa) {
@@ -56,8 +38,8 @@ class RunFailure : TagionException {
 }
 
 @trusted
-static immutable(TaskFailure) taskFailure(Throwable e, string taskName) @nogc nothrow { //if (is(T:Throwable) && !is(T:TagionExceptionInterface)) {
-    return immutable(TaskFailure)(cast(immutable) e, taskName);
+static immutable(TaskFailure) taskFailure(Throwable e, string task_name) @nogc nothrow { //if (is(T:Throwable) && !is(T:TagionExceptionInterface)) {
+    return immutable(TaskFailure)(cast(immutable) e, task_name);
 }
 
 /**
@@ -113,16 +95,21 @@ struct ActorHandle(A) {
     /// the tid of the spawned task
     Tid tid;
     /// the name of the possibly running task
-    string taskName;
+    string task_name;
 
-    void send(T...)(T vals) {
+    alias actor = A;
+    // A actor() {
+    //     return A a;
+    // }
+
+    @trusted void send(T...)(T vals) {
         concurrency.send(tid, vals);
     }
 
     /// use
-    void opDispatch(string method, Args...)(Args args) {
-        send(actor.Msg!method, args);
-    }
+    // void opDispatch(string method, Args...)(Args args) {
+    //     send(actor.Msg!method, args);
+    // }
 
 }
 
@@ -130,22 +117,22 @@ struct ActorHandle(A) {
  * Create an actorHandle
  * Params:
  *   A = The type of actor you want to create a handle for
- *   taskName = the task name to search for
+ *   task_name = the task name to search for
  * Returns: Actorhandle with type A
  * Examples:
  * ---
  * actorHandle!MyActor("my_task_name");
  * ---
  */
-ActorHandle!A actorHandle(A)(string taskName) {
-    Tid tid = locate(taskName);
-    return ActorHandle!A(tid, taskName);
+ActorHandle!A actorHandle(A)(string task_name) {
+    Tid tid = locate(task_name);
+    return ActorHandle!A(tid, task_name);
 }
 
 /**
  * Params:
  *   A = The type of actor you want to create a handle for
- *   taskName = the name it should be started as
+ *   task_name = the name it should be started as
  *   args = list of arguments to pass to the task function
  * Returns: An actorHandle with type A
  * Examples:
@@ -153,19 +140,31 @@ ActorHandle!A actorHandle(A)(string taskName) {
  * spawnActor!MyActor("my_task_name", 42);
  * ---
  */
-ActorHandle!A spawnActor(A, Args...)(string taskName, Args args) nothrow {
+ActorHandle!A spawnActor(A)(string task_name) @trusted nothrow {
     alias task = A.task;
     Tid tid;
 
-    //Tid isSpawnedTid = assumeWontThrow(locate(taskName));
+    //Tid isSpawnedTid = assumeWontThrow(locate(task_name));
     //if (isSpawnedTid is Tid.init) {
-    tid = assumeWontThrow(spawn(&task, taskName, args));
-    /// TODO: set oncrowding to exception;
-    assumeWontThrow(register(taskName, tid));
-    assumeWontThrow(writefln("%s registered", taskName));
+    tid = assumeWontThrow(spawn(&task, task_name)); /// TODO: set oncrowding to exception;
+    assumeWontThrow(register(task_name, tid));
+    assumeWontThrow(writefln("%s registered", task_name));
     //}
 
-    return ActorHandle!A(tid, taskName);
+    return ActorHandle!A(tid, task_name);
+}
+
+/*
+ *
+ * Params:
+ *   a = an active actorhandle
+ */
+A respawnActor(A)(A actor_handle) {
+    writefln("%s", typeid(actor_handle.actor));
+    actor_handle.send(Sig.STOP);
+    unregister(actor_handle.task_name);
+
+    return spawnActor!(A.actor)(actor_handle.task_name);
 }
 
 /// Nullable and nothrow wrapper around ownerTid
@@ -221,7 +220,10 @@ void setState(Ctrl ctrl) nothrow {
 /**
  * Base template
  * All members should be static
- * Examples: See [Actor examples]($(DOC_ROOT_OBJECTS)tagion.actor.example$(DOC_EXTENSION))
+ * Examples: See [tagion.testbench.services]
+ *
+ * Params:
+ *  T... = a list of message handlers passed to the receive function
  *
  * Struct may implement starting callback that gets called after the actor sends Ctrl.STARTING
  * ---
@@ -232,7 +234,7 @@ mixin template Actor(T...) {
 static:
     import std.exception : assumeWontThrow;
     import std.variant : Variant;
-    import std.concurrency : OwnerTerminated, Tid, thisTid, ownerTid, receive, prioritySend, ThreadInfo;
+    import std.concurrency : OwnerTerminated, Tid, thisTid, ownerTid, receive, prioritySend, ThreadInfo, send;
     import std.format : format;
     import std.traits : isCallable;
     import tagion.actor.exceptions : TaskFailure, taskException, ActorException, UnknownMessage;
@@ -272,11 +274,30 @@ static:
     }
 
     /// The tasks that get run when you call spawnActor!
-    void task(string taskName) nothrow {
+    void task(string task_name /* , Ctrl* state */ ) nothrow {
         try {
 
             setState(Ctrl.STARTING); // Tell the owner that you are starting.
             scope (exit) {
+                if (childrenState.length != 0) {
+                    foreach (tid, ctrl; childrenState) {
+                        if (ctrl is Ctrl.ALIVE) {
+                            tid.send(Sig.STOP);
+                        }
+                    }
+
+                    while (!(childrenState.all(Ctrl.END))) {
+                        CtrlMsg msg;
+                        receive(
+                                (CtrlMsg ctrl) { msg = ctrl; },
+                                (TaskFailure tf) {
+                            writefln("While stopping `%s` received taskfailure: %s", task_name, tf.throwable.msg);
+                        }
+                        );
+                        childrenState[msg.tid] = msg.ctrl;
+                    }
+                }
+
                 ThreadInfo.thisInfo.cleanup;
                 setState(Ctrl.END); // Tell the owner that you have finished.
             }
@@ -295,7 +316,6 @@ static:
             else {
                 // default failhandler
                 auto failhandler = (TaskFailure tf) {
-                    writeln("received exeption");
                     if (ownerTid != Tid.init) {
                         ownerTid.prioritySend(tf);
                     }
@@ -315,9 +335,8 @@ static:
                     );
                 }
                 catch (Throwable t) {
-                    assumeWontThrow(writefln("caught exeption"));
                     if (ownerTid != Tid.init) {
-                        ownerTid.prioritySend(TaskFailure(cast(immutable) t, taskName));
+                        ownerTid.prioritySend(TaskFailure(cast(immutable) t, task_name));
                     }
                 }
             }
@@ -325,9 +344,8 @@ static:
 
         // If we catch an exception we send it back to owner for them to deal with it.
         catch (Throwable t) {
-            assumeWontThrow(writefln("caught running exeption"));
             if (tidOwner.get !is Tid.init) {
-                assumeWontThrow(ownerTid.prioritySend(TaskFailure(cast(immutable) t, taskName)));
+                assumeWontThrow(ownerTid.prioritySend(TaskFailure(cast(immutable) t, task_name)));
             }
         }
     }

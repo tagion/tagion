@@ -69,10 +69,3 @@ static void taskfailure(immutable(TaskFailure) t) nothrow {
         super(msg, file, line);
     }
 }
-
-/// Exception sent when the actor gets a message that it doesn't handle
-@safe class MessageTimeout : ActorException {
-    this(immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__) pure {
-        super(msg, file, line);
-    }
-}
