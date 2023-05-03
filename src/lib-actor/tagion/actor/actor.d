@@ -129,9 +129,9 @@ struct ActorHandle(A) {
     }
 
     /// use
-    void opDispatch(string method, Args...)(Args args) {
-        send(actor.Msg!method, args);
-    }
+    // void opDispatch(string method, Args...)(Args args) {
+    //     send(actor.Msg!method, args);
+    // }
 
 }
 
@@ -181,12 +181,12 @@ ActorHandle!A spawnActor(A)(string task_name) @trusted nothrow {
  * Params:
  *   a = an active actorhandle
  */
-ActorHandle!A respawnActor(A)(A actor_handle) {
-    writefln("%s", typeid(a.actor));
+A respawnActor(A)(A actor_handle) {
+    writefln("%s", typeid(actor_handle.actor));
     actor_handle.send(Sig.STOP);
-    unregister(a.task_name);
+    unregister(actor_handle.task_name);
 
-    return spawnActor!A(a, a.task_name);
+    return spawnActor!(A.actor)(actor_handle.task_name);
 }
 
 /// Nullable and nothrow wrapper around ownerTid
@@ -243,7 +243,10 @@ void setState(Ctrl ctrl) nothrow {
  * Base template
  * All members should be static
  * Examples: See [tagion.testbench.services]
- *
+ * 
+ * Params: 
+ *  T... = a list of message handlers passed to the receive function
+ * 
  * Struct may implement starting callback that gets called after the actor sends Ctrl.STARTING
  * ---
  * void starting() {...};
