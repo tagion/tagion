@@ -97,6 +97,10 @@ static:
             while (locate(child_task_name) !is Tid.init) {
             }
             writeln("C ", locate(child_task_name));
+            childHandle = spawnActor!SetUpForFailure(child_task_name);
+            while (locate(child_task_name) is Tid.init) {
+            }
+            writeln("child restarted");
             sendOwner(reFatal());
         }
         catch (MessageMismatch e) {
@@ -161,16 +165,13 @@ class SupervisorWithFailingChild {
     @Then("the #super should send a message to the #child which results in a different fail")
     Document differentFail() @trusted {
         childHandle.send(Msg!"recoverable"());
+        check(childHandle.tid !is Tid.init, "Child thread is not running");
         return result_ok;
     }
 
     @Then("the #super actor should let the #child keep running")
     Document keepRunning() @trusted {
         writeln("Returned ", receiveOnly!reRecoverable);
-        version (none)
-            receiveTimeout(1.seconds,
-                    (reRecoverable re) { writefln("RECEIVED RE: %s", re); },
-                    (Variant var) { writeln(var); });
         check(childHandle.tid !is Tid.init, "Child thread is not running");
 
         return result_ok;
