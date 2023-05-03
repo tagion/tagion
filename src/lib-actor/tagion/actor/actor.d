@@ -118,6 +118,9 @@ struct ActorHandle(A) {
     string taskName;
 
     alias actor = A;
+    // A actor() {
+    //     return A a;
+    // }
 
     @trusted void send(T...)(T vals) {
         concurrency.send(tid, vals);
@@ -171,9 +174,14 @@ ActorHandle!A spawnActor(A)(string taskName) @trusted nothrow {
     return ActorHandle!A(tid, taskName);
 }
 
-// A an Actorhandle
-void respawnActor(A)(ref A a) {
-    writeln(A.actor.task);
+/* 
+ * 
+ * Params:
+ *   a = an active actorhandle
+ */
+ActorHandle!A respawnActor(A)(A a) {
+    a.send(Sig.STOP);
+    writefln("%s", typeid(&a.actor.task));
 }
 
 /// Nullable and nothrow wrapper around ownerTid
@@ -280,7 +288,7 @@ static:
     }
 
     /// The tasks that get run when you call spawnActor!
-    void task(string taskName, Ctrl* state) nothrow {
+    void task(string taskName /* , Ctrl* state */ ) nothrow {
         try {
 
             setState(Ctrl.STARTING); // Tell the owner that you are starting.
