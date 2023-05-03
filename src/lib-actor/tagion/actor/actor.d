@@ -117,6 +117,8 @@ struct ActorHandle(A) {
     /// the name of the possibly running task
     string taskName;
 
+    alias actor = A;
+
     @trusted void send(T...)(T vals) {
         concurrency.send(tid, vals);
     }
@@ -167,6 +169,11 @@ ActorHandle!A spawnActor(A)(string taskName) @trusted nothrow {
     //}
 
     return ActorHandle!A(tid, taskName);
+}
+
+// A an Actorhandle
+void respawnActor(A)(ref A a) {
+    writeln(A.actor.task);
 }
 
 /// Nullable and nothrow wrapper around ownerTid
@@ -273,30 +280,29 @@ static:
     }
 
     /// The tasks that get run when you call spawnActor!
-    void task(string taskName) nothrow {
+    void task(string taskName, Ctrl* state) nothrow {
         try {
 
             setState(Ctrl.STARTING); // Tell the owner that you are starting.
             scope (exit) {
-                version (none)
-                    if (childrenState.length != 0) {
-                        foreach (tid, ctrl; childrenState) {
-                            if (ctrl is Ctrl.ALIVE) {
-                                tid.send(Sig.STOP);
-                            }
-                        }
-
-                        while (!(childrenState.all(Ctrl.END))) {
-                            CtrlMsg msg;
-                            receive(
-                                    (CtrlMsg ctrl) { msg = ctrl; },
-                                    (TaskFailure tf) {
-                                writefln("While stopping `%s` received taskfailure: %s", taskName, tf.throwable.msg);
-                            }
-                            );
-                            childrenState[msg.tid] = msg.ctrl;
+                if (childrenState.length != 0) {
+                    foreach (tid, ctrl; childrenState) {
+                        if (ctrl is Ctrl.ALIVE) {
+                            tid.send(Sig.STOP);
                         }
                     }
+
+                    while (!(childrenState.all(Ctrl.END))) {
+                        CtrlMsg msg;
+                        receive(
+                                (CtrlMsg ctrl) { msg = ctrl; },
+                                (TaskFailure tf) {
+                            writefln("While stopping `%s` received taskfailure: %s", taskName, tf.throwable.msg);
+                        }
+                        );
+                        childrenState[msg.tid] = msg.ctrl;
+                    }
+                }
 
                 ThreadInfo.thisInfo.cleanup;
                 setState(Ctrl.END); // Tell the owner that you have finished.
