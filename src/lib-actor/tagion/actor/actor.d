@@ -14,28 +14,6 @@ import tagion.basic.tagionexceptions : TagionException;
 
 alias TaskName = const string;
 
-T receiveOnlyTimeout(T)() {
-    T ret;
-    receiveTimeout(
-            2.seconds,
-            (T val) { ret = val; },
-            (Variant val) {
-        throw new MessageMismatch(
-            format("Unexpected message got %s of type %s, expected %s", val, val.type.toString(), T
-            .stringof));
-    }
-    );
-
-    if (ret is T.init) {
-        throw new MessageTimeout(
-                format(
-                "Timed out never received message expected message type: %s".format(T.stringof))
-        );
-    }
-
-    return ret;
-}
-
 bool all(Ctrl[Tid] aa, Ctrl ctrl) {
     foreach (val; aa) {
         if (val != ctrl) {
@@ -176,8 +154,8 @@ ActorHandle!A spawnActor(A)(string task_name) @trusted nothrow {
     return ActorHandle!A(tid, task_name);
 }
 
-/* 
- * 
+/*
+ *
  * Params:
  *   a = an active actorhandle
  */
@@ -243,10 +221,10 @@ void setState(Ctrl ctrl) nothrow {
  * Base template
  * All members should be static
  * Examples: See [tagion.testbench.services]
- * 
- * Params: 
+ *
+ * Params:
  *  T... = a list of message handlers passed to the receive function
- * 
+ *
  * Struct may implement starting callback that gets called after the actor sends Ctrl.STARTING
  * ---
  * void starting() {...};

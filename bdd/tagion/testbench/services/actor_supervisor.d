@@ -1,4 +1,7 @@
 module tagion.testbench.services.actor_supervisor;
+
+import tagion.testbench.services.actor_util;
+
 // Default import list for bdd
 import tagion.behaviour;
 import tagion.hibon.Document;
@@ -91,16 +94,9 @@ static:
             sendOwner(reRecoverable());
         }
         catch (Fatal e) {
-            writeln(typeof(e).stringof, tf.task_name);
+            writeln(typeof(e).stringof, tf.task_name, locate(tf.task_name));
+            childHandle = respawnActor(childHandle);
             writefln("This is fatal, we need to restart %s", tf.task_name);
-            childHandle.send(Sig.STOP);
-            while (locate(child_task_name) !is Tid.init) {
-            }
-            writeln("C ", locate(child_task_name));
-            childHandle = spawnActor!SetUpForFailure(child_task_name);
-            while (locate(child_task_name) is Tid.init) {
-            }
-            writeln("child restarted");
             sendOwner(reFatal());
         }
         catch (MessageMismatch e) {
@@ -158,6 +154,7 @@ class SupervisorWithFailingChild {
 
     @Then("the #super actor should stop #child and restart it")
     Document restartIt() @trusted {
+        childHandle = actorHandle!SetUpForFailure(child_task_name); // FIX: actor handle should be transparent
         check(locate(child_task_name) !is Tid.init, "Child thread is not running");
         return result_ok;
     }

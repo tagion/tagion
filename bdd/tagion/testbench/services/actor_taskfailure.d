@@ -1,5 +1,7 @@
 module tagion.testbench.services.actor_taskfailure;
 
+import tagion.testbench.services.actor_util;
+
 // Default import list for bdd
 import tagion.behaviour;
 import tagion.hibon.Document;
