@@ -104,6 +104,7 @@ void handleServerError(HTTPServerResponse res, HTTPServerRequest req, Exception 
 
     const responseModelErr = ResponseModel(false, errJson);
 
+    setCORSHeaders(res);
     res.statusCode = HTTPStatus.internalServerError;
     res.writeJsonBody(serializeToJson(responseModelErr));
 }
@@ -127,6 +128,7 @@ struct Controller(T) {
         void optionsHandler(HTTPServerRequest req, HTTPServerResponse res) {
             if (req.method == HTTPRequest.method.OPTIONS) {
                 writeln("req.method == HTTPRequest.method.OPTIONS");
+                setCORSHeaders(res);
                 res.statusCode = HTTPStatus.ok;
             }
 
