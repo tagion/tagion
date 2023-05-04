@@ -158,14 +158,6 @@ struct Controller(T) {
 
         string id = req.params.get("entityId");
 
-        // handle fingerprint exactly 64 characters
-        // if (id.length != 64) {
-        //     const err = ErrorResponse(ErrorCode.dataIdnotValid, ErrorDescription
-        //             .dataIdnotValid);
-        //     respondWithError(res, err);
-        //     return;
-        // }
-
         DARTIndex fingerprint;
         try {
             if (id.length != 64) {
@@ -189,10 +181,11 @@ struct Controller(T) {
             return;
         }
         // Check that the document is the Type that was requested.
-        // if (!isRecord!T(doc.front)) {
-        //     const err = ErrorResponse(ErrorCode.dataNotCorrectType, ErrorDescription.dataNotCorrectType);
-        //     respondWithError(res, err);
-        // }
+        if (!isRecord!T(doc.front)) {
+            const err = ErrorResponse(ErrorCode.dataNotCorrectType, ErrorDescription.dataNotCorrectType);
+            respondWithError(res, err);
+            return;
+        }
 
         T data = T(doc.front);
 
@@ -303,3 +296,16 @@ struct Controller(T) {
     //     res.writeJsonBody(responseSuccessJson);
     // }
 }
+
+
+// post as normal to ex: /project/blabla
+// take the route name and add it to the json called hibontype
+// deserialize the struct including the hibontype
+// store it in the dart.
+
+
+// read generic
+// take the hibontype from the hibon file. if there is no type but there is a document return the hibonjson format
+// use the name to get the struct and deserialize accordingly.
+
+// read project
