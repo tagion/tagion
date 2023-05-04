@@ -1,6 +1,5 @@
 module tagion.testbench.services;
 
-public import Dartservice = tagion.testbench.services.Dartservice;
 public import actor_handler = tagion.testbench.services.actor_handler;
 public import actor_message = tagion.testbench.services.actor_message;
 public import actor_supervisor = tagion.testbench.services.actor_supervisor;
