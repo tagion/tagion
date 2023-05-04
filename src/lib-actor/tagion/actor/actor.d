@@ -1,3 +1,4 @@
+/// Main implementation of actor framework
 module tagion.actor.actor;
 
 import std.concurrency;
@@ -182,7 +183,6 @@ void setState(Ctrl ctrl, TaskName task_name) nothrow {
 /**
  * Base template
  * All members should be static
- * Examples: See [tagion.testbench.services]
  *
  * Params:
  *  T... = a list of message handlers passed to the receive function

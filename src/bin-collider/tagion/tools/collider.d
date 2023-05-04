@@ -247,7 +247,7 @@ void generate_packages(const(ModuleInfo[]) list_of_modules) {
             .map!(mod => mod.name.idup)
             .array
             .sort
-            .each!(module_name => fout.writefln(q{public import %s=%s;},
+            .each!(module_name => fout.writefln(q{public import %s = %s;},
                     module_name.split(DOT).tail(1).front, // Module identifier
                     module_name));
     }
