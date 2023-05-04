@@ -64,12 +64,12 @@ static:
         child1Handle = spawnActor!MyActor(child1_task_name);
         child2Handle = spawnActor!MyActor(child2_task_name);
 
-        childrenState[child1Handle.tid] = Ctrl.STARTING;
-        childrenState[child2Handle.tid] = Ctrl.STARTING;
+        childrenState[child1Handle.task_name] = Ctrl.STARTING;
+        childrenState[child2Handle.task_name] = Ctrl.STARTING;
 
         while (!(childrenState.all(Ctrl.ALIVE))) {
             CtrlMsg msg = receiveOnlyTimeout!CtrlMsg;
-            childrenState[msg.tid] = msg.ctrl;
+            childrenState[msg.task_name] = msg.ctrl;
         }
     }
 

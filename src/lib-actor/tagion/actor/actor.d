@@ -12,7 +12,7 @@ import tagion.actor.exceptions;
 import tagion.actor.exceptions : TaskFailure;
 import tagion.basic.tagionexceptions : TagionException;
 
-alias TaskName = const string;
+alias TaskName = string;
 
 /**
  * Message "Atom" type

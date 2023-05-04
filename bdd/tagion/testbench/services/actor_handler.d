@@ -45,11 +45,11 @@ static:
     void starting() {
         childHandle = spawnActor!MyActor(child_task_name);
 
-        childrenState[childHandle.tid] = Ctrl.STARTING;
+        childrenState[childHandle.task_name] = Ctrl.STARTING;
 
         while (!(childrenState.all(Ctrl.ALIVE))) {
             CtrlMsg msg = receiveOnlyTimeout!CtrlMsg;
-            childrenState[msg.tid] = msg.ctrl;
+            childrenState[msg.task_name] = msg.ctrl;
         }
     }
 
