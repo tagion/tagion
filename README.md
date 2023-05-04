@@ -11,6 +11,7 @@
 This repository is a home for all core units, also containing scripts for cross-compilation, testing and docs generation.
 
 [Documentation](https://docs.tagion.org)
+[DDOC](https://ddoc.tagion.org)
 
 ## Installation
 *Installation tested on ubuntu 20.04, 22.10, archlinux from 16-13-23*
