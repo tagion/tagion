@@ -14,7 +14,7 @@ import tagion.basic.tagionexceptions : TagionException;
 
 alias TaskName = const string;
 
-bool all(Ctrl[Tid] aa, Ctrl ctrl) {
+bool all(Ctrl[TaskName] aa, Ctrl ctrl) {
     foreach (val; aa) {
         if (val != ctrl) {
             return false;
@@ -55,15 +55,7 @@ debug (actor) enum DebugSig {
 
 /// Control message sent to a supervisor
 /// contains the Tid of the actor which send it and the state
-alias CtrlMsg = Tuple!(Tid, "tid", Ctrl, "ctrl");
-
-/// Don't use this
-bool checkCtrl(Ctrl msg) {
-    // Never use receiveOnly
-    auto r = receiveOnly!(CtrlMsg);
-    debug writeln(r);
-    return r[1] is msg;
-}
+alias CtrlMsg = Tuple!(TaskName, "task_name", Ctrl, "ctrl");
 
 /**
  * A "reference" to an actor that may or may not be spawned, we will never know
@@ -180,10 +172,10 @@ void sendOwner(T...)(T vals) {
 }
 
 /// send your state to your owner
-void setState(Ctrl ctrl) nothrow {
+void setState(Ctrl ctrl, TaskName task_name) nothrow {
     try {
         if (!tidOwner.isNull) {
-            tidOwner.get.prioritySend(CtrlMsg(thisTid, ctrl));
+            tidOwner.get.prioritySend(CtrlMsg(task_name, ctrl));
         }
         else {
             /* write("No owner, writing message to stdout instead: "); */
@@ -205,24 +197,30 @@ void setState(Ctrl ctrl) nothrow {
  *
  * Params:
  *  T... = a list of message handlers passed to the receive function
- *
- * Struct may implement starting callback that gets called after the actor sends Ctrl.STARTING
- * ---
- * void starting() {...};
- * ---
+ * 
+ * Implemnt:
+ *  Struct may implement starting callback that gets called after the actor sends Ctrl.STARTING
+ *  ---
+ *  void starting() {...}
+ *  ---
+ * 
+ *  fail a callable to override the default failhandler
+ *  ---
+ *  auto fail = (TaskFailure tf) {,,,};
+ *  ---
  */
 mixin template Actor(T...) {
 static:
     import std.exception : assumeWontThrow;
     import std.variant : Variant;
-    import std.concurrency : OwnerTerminated, Tid, thisTid, ownerTid, receive, prioritySend, ThreadInfo, send;
+    import std.concurrency : OwnerTerminated, Tid, thisTid, ownerTid, receive, prioritySend, ThreadInfo, send, locate;
     import std.format : format;
     import std.traits : isCallable;
     import tagion.actor.exceptions : TaskFailure, taskException, ActorException, UnknownMessage;
     import std.stdio : writefln, writeln;
 
     bool stop = false;
-    Ctrl[Tid] childrenState; // An AA to keep a copy of the state of the children
+    Ctrl[TaskName] childrenState; // An AA to keep a copy of the state of the children
 
     alias This = typeof(this);
 
@@ -236,7 +234,7 @@ static:
 
     /// Controls message sent from the children.
     void control(CtrlMsg msg) {
-        childrenState[msg.tid] = msg.ctrl;
+        childrenState[msg.task_name] = msg.ctrl;
     }
 
     /// Stops the actor if the supervisor stops
@@ -258,29 +256,27 @@ static:
     void task(string task_name /* , Ctrl* state */ ) nothrow {
         try {
 
-            setState(Ctrl.STARTING); // Tell the owner that you are starting.
+            setState(Ctrl.STARTING, task_name); // Tell the owner that you are starting.
             scope (exit) {
                 if (childrenState.length != 0) {
-                    foreach (tid, ctrl; childrenState) {
+                    foreach (child_task_name, ctrl; childrenState) {
                         if (ctrl is Ctrl.ALIVE) {
-                            tid.send(Sig.STOP);
+                            locate(child_task_name).send(Sig.STOP);
                         }
                     }
 
                     while (!(childrenState.all(Ctrl.END))) {
-                        CtrlMsg msg;
                         receive(
-                                (CtrlMsg ctrl) { msg = ctrl; },
+                                (CtrlMsg ctrl) { childrenState[ctrl.task_name] = ctrl.ctrl; },
                                 (TaskFailure tf) {
                             writefln("While stopping `%s` received taskfailure: %s", task_name, tf.throwable.msg);
                         }
                         );
-                        childrenState[msg.tid] = msg.ctrl;
                     }
                 }
 
                 ThreadInfo.thisInfo.cleanup;
-                setState(Ctrl.END); // Tell the owner that you have finished.
+                setState(Ctrl.END, task_name); // Tell the owner that you have finished.
             }
 
             // Call starting() if it's implemented
@@ -303,7 +299,7 @@ static:
                 };
             }
 
-            setState(Ctrl.ALIVE); // Tell the owner that you running
+            setState(Ctrl.ALIVE, task_name); // Tell the owner that you running
             while (!stop) {
                 try {
                     receive(
