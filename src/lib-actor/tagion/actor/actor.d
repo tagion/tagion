@@ -23,25 +23,6 @@ bool all(Ctrl[Tid] aa, Ctrl ctrl) {
     return true;
 }
 
-/// Exception sent when the actor gets a message that it doesn't handle
-class UnknownMessage : TagionException {
-    this(immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__) pure {
-        super(msg, file, line);
-    }
-}
-
-// Exception when the actor fails to start or stop
-class RunFailure : TagionException {
-    this(immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__) pure {
-        super(msg, file, line);
-    }
-}
-
-@trusted
-static immutable(TaskFailure) taskFailure(Throwable e, string task_name) @nogc nothrow { //if (is(T:Throwable) && !is(T:TagionExceptionInterface)) {
-    return immutable(TaskFailure)(cast(immutable) e, task_name);
-}
-
 /**
  * Message "Atom" type
  * Examples:
