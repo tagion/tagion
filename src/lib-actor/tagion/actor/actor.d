@@ -14,15 +14,6 @@ import tagion.basic.tagionexceptions : TagionException;
 
 alias TaskName = const string;
 
-bool all(Ctrl[TaskName] aa, Ctrl ctrl) {
-    foreach (val; aa) {
-        if (val != ctrl) {
-            return false;
-        }
-    }
-    return true;
-}
-
 /**
  * Message "Atom" type
  * Examples:
@@ -48,14 +39,18 @@ enum Sig {
     STOP,
 }
 
-debug (actor) enum DebugSig {
-    /* STARTING = Msg!"STARTING", */
-    FAIL, // Artificially make the actor fail
-}
-
 /// Control message sent to a supervisor
 /// contains the Tid of the actor which send it and the state
 alias CtrlMsg = Tuple!(TaskName, "task_name", Ctrl, "ctrl");
+
+bool all(Ctrl[TaskName] aa, Ctrl ctrl) {
+    foreach (val; aa) {
+        if (val != ctrl) {
+            return false;
+        }
+    }
+    return true;
+}
 
 /**
  * A "reference" to an actor that may or may not be spawned, we will never know
@@ -71,9 +66,6 @@ struct ActorHandle(A) {
     string task_name;
 
     alias actor = A;
-    // A actor() {
-    //     return A a;
-    // }
 
     @trusted void send(T...)(T vals) {
         concurrency.send(tid, vals);
@@ -117,12 +109,9 @@ ActorHandle!A spawnActor(A)(string task_name) @trusted nothrow {
     alias task = A.task;
     Tid tid;
 
-    //Tid isSpawnedTid = assumeWontThrow(locate(task_name));
-    //if (isSpawnedTid is Tid.init) {
     tid = assumeWontThrow(spawn(&task, task_name)); /// TODO: set oncrowding to exception;
     assumeWontThrow(register(task_name, tid));
     assumeWontThrow(writefln("%s registered", task_name));
-    //}
 
     return ActorHandle!A(tid, task_name);
 }
