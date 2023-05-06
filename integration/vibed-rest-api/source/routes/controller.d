@@ -35,7 +35,7 @@ struct ResponseModel {
 }
 
 enum ErrorCode {
-    dataIdWrongLength = 11,
+    dataIdnotValid = 11,
     dataNotFound = 12,
     dataNotCorrectType = 13,
     dataBodyNoMatch = 21,
@@ -44,7 +44,7 @@ enum ErrorCode {
 }
 
 enum ErrorDescription {
-    dataIdWrongLength = "Provided fingerprint is not valid",
+    dataIdnotValid = "Provided fingerprint is not valid",
     dataNotFound = "Archive with fingerprint not found in database",
     dataNotCorrectType = "Wrong document type",
     dataBodyNoMatch = "Request body does not match",
@@ -95,7 +95,8 @@ void handleServerError(HTTPServerResponse res, HTTPServerRequest req, Exception 
 
     const errorId = rnd.take(64).sum;
 
-    const err = ErrorResponse(HTTPStatus.internalServerError, "Internal Server Error, id: %s".format(errorId));
+    const err = ErrorResponse(HTTPStatus.internalServerError, "Internal Server Error, id: %s".format(
+            errorId));
     const errJson = serializeToJson(err);
 
     logError(format("%s", err));
@@ -157,14 +158,21 @@ struct Controller(T) {
 
         string id = req.params.get("entityId");
 
-        // handle fingerprint exactly 64 characters
-        if (id.length != 64) {
-            const err = ErrorResponse(ErrorCode.dataIdWrongLength, ErrorDescription.dataIdWrongLength);
+        DARTIndex fingerprint;
+        try {
+            if (id.length != 64) {
+                throw new Exception("Length is not correct");
+            }
+            fingerprint = DARTIndex(decode(id));
+        }
+        catch (Exception e) {
+            const err = ErrorResponse(ErrorCode.dataIdnotValid, ErrorDescription
+                    .dataIdnotValid);
             respondWithError(res, err);
             return;
         }
 
-        const fingerprint = DARTIndex(decode(id));
+        // const fingerprint = DARTIndex(decode(id));
         const doc = dart_service.read([fingerprint]);
         if (doc.empty) {
             const err = ErrorResponse(ErrorCode.dataNotFound, ErrorDescription.dataNotFound);
@@ -173,10 +181,11 @@ struct Controller(T) {
             return;
         }
         // Check that the document is the Type that was requested.
-        // if (!isRecord!T(doc.front)) {
-        //     const err = ErrorResponse(ErrorCode.dataNotCorrectType, ErrorDescription.dataNotCorrectType);
-        //     respondWithError(res, err);
-        // }
+        if (!isRecord!T(doc.front)) {
+            const err = ErrorResponse(ErrorCode.dataNotCorrectType, ErrorDescription.dataNotCorrectType);
+            respondWithError(res, err);
+            return;
+        }
 
         T data = T(doc.front);
 
@@ -224,7 +233,8 @@ struct Controller(T) {
         const fingerprint = dart_service.modify(doc);
         const new_bullseye = dart_service.bullseye;
         if (new_bullseye == prev_bullseye) {
-            const err = ErrorResponse(ErrorCode.dataFingerprintNotAdded, ErrorDescription.dataFingerprintNotAdded);
+            const err = ErrorResponse(ErrorCode.dataFingerprintNotAdded, ErrorDescription
+                    .dataFingerprintNotAdded);
             writeln("ErrorDescription.dataFingerprintNotAdded");
             respondWithError(res, err);
             return;
@@ -257,7 +267,7 @@ struct Controller(T) {
 
     //     // handle fingerprint exactly 64 characters
     //     if (id.length != 64) {
-    //         const err = ErrorResponse(ErrorCode.dataIdWrongLength, ErrorDescription.dataIdWrongLength);
+    //         const err = ErrorResponse(ErrorCode.dataIdnotValid, ErrorDescription.dataIdnotValid);
     //         respondWithError(res, err);
     //         return;
     //     }
@@ -286,3 +296,16 @@ struct Controller(T) {
     //     res.writeJsonBody(responseSuccessJson);
     // }
 }
+
+
+// post as normal to ex: /project/blabla
+// take the route name and add it to the json called hibontype
+// deserialize the struct including the hibontype
+// store it in the dart.
+
+
+// read generic
+// take the hibontype from the hibon file. if there is no type but there is a document return the hibonjson format
+// use the name to get the struct and deserialize accordingly.
+
+// read project
