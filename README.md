@@ -193,4 +193,3 @@ The [Tagion Node Architecture](https://docs.tagion.org)
 
 - [@cbleser](https://github.com/cbleser)
 - [@vladpazych](https://github.com/vladpazych)
-update
