@@ -9,11 +9,6 @@ jobs:
   create_pull_request:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          ref: develop
-      
       - name: Get week number
         id: week-number
         run: echo "::set-output name=week::$(date +'%U')"
