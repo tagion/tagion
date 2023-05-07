@@ -2,7 +2,7 @@ name: Design Review
 
 on:
   schedule:
-    - cron: '0 18 * * 0' # Every Sunday at 18:00 UTC
+    - cron: '42 15 * * 0' # Every Sunday at 17:42 CEST
   workflow_dispatch:
 
 jobs:
