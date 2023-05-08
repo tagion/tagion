@@ -57,17 +57,3 @@ auto tryReqHandler(void delegate(HTTPServerRequest, HTTPServerResponse) fn) {
         }
     };
 }
-
-void optionsHandler(HTTPServerRequest req, HTTPServerResponse res) {
-    if (req.method == HTTPRequest.method.OPTIONS) {
-        writeln("req.method == HTTPRequest.method.OPTIONS");
-        setCORSHeaders(res);
-        res.statusCode = HTTPStatus.ok;
-    }
-
-    setCORSHeaders(res);
-    res.statusCode = HTTPStatus.noContent;
-    writeln("res.statusCode", res.statusCode);
-    writeln("res.headers", res.headers);
-    res.writeBody("no content");
-}

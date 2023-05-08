@@ -28,7 +28,7 @@ import services.dartService;
 // models
 import source.models.other : ResponseModel, ErrorResponse, ErrorCode, ErrorDescription;
 
-import source.helpers : setCORSHeaders, respondWithError, handleServerError, tryReqHandler, optionsHandler;
+import source.helpers : setCORSHeaders, respondWithError, handleServerError, tryReqHandler;
 
 /// General Template controller for generating POST, GET and DELETE routes.
 struct Controller(T) {
@@ -201,6 +201,20 @@ struct Controller(T) {
     //     res.statusCode = HTTPStatus.ok;
     //     res.writeJsonBody(responseSuccessJson);
     // }
+
+    void optionsHandler(HTTPServerRequest req, HTTPServerResponse res) {
+      if (req.method == HTTPRequest.method.OPTIONS) {
+        writeln("req.method == HTTPRequest.method.OPTIONS");
+        setCORSHeaders(res);
+        res.statusCode = HTTPStatus.ok;
+      }
+
+      setCORSHeaders(res);
+      res.statusCode = HTTPStatus.noContent;
+      writeln("res.statusCode", res.statusCode);
+      writeln("res.headers", res.headers);
+      res.writeBody("no content");
+    }
 }
 
 
