@@ -28,57 +28,9 @@ import services.dartService;
 // models
 import source.models.other : ResponseModel, ErrorResponse, ErrorCode, ErrorDescription;
 
-void setCORSHeaders(HTTPServerResponse res) {
-    res.headers["Access-Control-Allow-Origin"] = "*"; // "https://editor.swagger.io, https://docs.decard.io"
-    res.headers["Access-Control-Allow-Headers"] = "*"; // "Origin, X-Requested-With, Content-Type, Accept";
-    res.headers["Access-Control-Allow-Methods"] = "*"; // "GET, POST, PUT, DELETE, OPTIONS";
-    res.headers["Access-Control-Max-Age"] = "86400";
-}
+import source.helpers : setCORSHeaders, respondWithError, handleServerError, tryReqHandler, optionsHandler;
 
-void respondWithError(HTTPServerResponse res, ErrorResponse err) {
-    const responseModelError = ResponseModel(false, serializeToJson(err));
-
-    const(Json) responseModelErrorJson = serializeToJson(responseModelError);
-
-    writeln("responseModelErrorJson: ", responseModelErrorJson);
-
-    setCORSHeaders(res);
-    res.statusCode = HTTPStatus.badRequest;
-    res.writeJsonBody(responseModelErrorJson);
-}
-
-auto tryReqHandler(void delegate(HTTPServerRequest, HTTPServerResponse) fn) {
-    return (HTTPServerRequest req, HTTPServerResponse res) {
-        try {
-            fn(req, res);
-        }
-        catch (Exception e) {
-            res.handleServerError(req, e);
-        }
-    };
-}
-
-void handleServerError(HTTPServerResponse res, HTTPServerRequest req, Exception exception) {
-    auto rnd = rndGen;
-
-    const errorId = rnd.take(64).sum;
-
-    const err = ErrorResponse(HTTPStatus.internalServerError, "Internal Server Error, id: %s".format(
-            errorId));
-    const errJson = serializeToJson(err);
-
-    logError(format("%s", err));
-    logError(req.toString);
-    logError(exception.toString);
-
-    const responseModelErr = ResponseModel(false, errJson);
-
-    setCORSHeaders(res);
-    res.statusCode = HTTPStatus.internalServerError;
-    res.writeJsonBody(serializeToJson(responseModelErr));
-}
-
-/// General Template controller for generating POST, READ and DELETE routes.
+/// General Template controller for generating POST, GET and DELETE routes.
 struct Controller(T) {
     string name;
     DartService dart_service;
@@ -93,20 +45,6 @@ struct Controller(T) {
     this(const(string) access_token, const(string) name, ref URLRouter router, ref DartService dart_service) {
         this.name = name;
         this.dart_service = dart_service;
-
-        void optionsHandler(HTTPServerRequest req, HTTPServerResponse res) {
-            if (req.method == HTTPRequest.method.OPTIONS) {
-                writeln("req.method == HTTPRequest.method.OPTIONS");
-                setCORSHeaders(res);
-                res.statusCode = HTTPStatus.ok;
-            }
-
-            setCORSHeaders(res);
-            res.statusCode = HTTPStatus.noContent;
-            writeln("res.statusCode", res.statusCode);
-            writeln("res.headers", res.headers);
-            res.writeBody("no content");
-        }
 
         router.match(HTTPMethod.OPTIONS, "*", tryReqHandler(&optionsHandler));
         router.get(format("/%s/%s/:entityId", access_token, name), tryReqHandler(&getT));
@@ -264,6 +202,7 @@ struct Controller(T) {
     //     res.writeJsonBody(responseSuccessJson);
     // }
 }
+
 
 
 // post as normal to ex: /project/blabla
