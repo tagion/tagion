@@ -1,8 +1,12 @@
 module source.helpers;
 
-import vibe.data.json;
 import std.random;
 import std.conv;
+import std.stdio;
+import std.format;
+import std.range;
+
+import vibe.data.json;
 import vibe.http.server;
 import vibe.http.router;
 
