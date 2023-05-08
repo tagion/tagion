@@ -1,4 +1,5 @@
 module source.models.documentDocument;
+
 import tagion.hibon.HiBONRecord;
 
 @recordType("DocumentDocument")

@@ -3,9 +3,8 @@ module services.fsService;
 import std.stdio;
 import std.file;
 import std.algorithm;
-
-import vibe.data.json;
 import std.conv;
+import vibe.data.json;
 
 public void writeToFile(Json[] entityList, string filePath) {
     import std.file : write;

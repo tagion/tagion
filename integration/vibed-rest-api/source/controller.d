@@ -11,51 +11,27 @@ import std.conv;
 import std.algorithm;
 import std.stdio : writefln;
 import std.format;
-
-import services.routerService;
-import services.fsService;
-import services.dartService;
-
-import tagion.hibon.HiBONJSON : toPretty;
-import tagion.utils.Miscellaneous : toHexString, decode;
-import tagion.dart.DARTBasic : DARTIndex, dartIndex;
-import tagion.hibon.HiBONRecord;
 import std.digest;
 import std.typecons;
 import std.random;
 import std.range : take;
+
+import tagion.hibon.HiBONJSON : toPretty;
+import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
+import tagion.utils.Miscellaneous : toHexString, decode;
+import tagion.dart.DARTBasic : DARTIndex, dartIndex;
 
-struct ResponseModel {
-    bool isSucceeded;
-    Json data;
-}
+// services
+import services.dartService;
 
-enum ErrorCode {
-    dataIdnotValid = 11,
-    dataNotFound = 12,
-    dataNotCorrectType = 13,
-    dataBodyNoMatch = 21,
-    dataFingerprintNotAdded = 22,
-    dataFingerprintNotFound = 31,
-}
-
-enum ErrorDescription {
-    dataIdnotValid = "Provided fingerprint is not valid",
-    dataNotFound = "Archive with fingerprint not found in database",
-    dataNotCorrectType = "Wrong document type",
-    dataBodyNoMatch = "Request body does not match",
-    dataFingerprintNotAdded = "Entity with fingerprint not added to DART",
-    dataFingerprintNotFound = "Entity with fingerprint not found",
-}
+// models
+import source.models.other : ResponseModel, ErrorResponse, ErrorCode, ErrorDescription;
 
 void setCORSHeaders(HTTPServerResponse res) {
-    res.headers["Access-Control-Allow-Origin"] = "*";
-    // res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io, https://docs.decard.io";
-    res.headers["Access-Control-Allow-Headers"] = "*";
-    // res.headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept";
-    res.headers["Access-Control-Allow-Methods"] = "*";
-    // res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
+    res.headers["Access-Control-Allow-Origin"] = "*"; // "https://editor.swagger.io, https://docs.decard.io"
+    res.headers["Access-Control-Allow-Headers"] = "*"; // "Origin, X-Requested-With, Content-Type, Accept";
+    res.headers["Access-Control-Allow-Methods"] = "*"; // "GET, POST, PUT, DELETE, OPTIONS";
     res.headers["Access-Control-Max-Age"] = "86400";
 }
 
@@ -69,11 +45,6 @@ void respondWithError(HTTPServerResponse res, ErrorResponse err) {
     setCORSHeaders(res);
     res.statusCode = HTTPStatus.badRequest;
     res.writeJsonBody(responseModelErrorJson);
-}
-
-struct ErrorResponse {
-    int errorCode;
-    string errorDescription;
 }
 
 auto tryReqHandler(void delegate(HTTPServerRequest, HTTPServerResponse) fn) {
