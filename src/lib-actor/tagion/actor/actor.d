@@ -66,7 +66,7 @@ struct ActorHandle(A) {
     /// the name of the possibly running task
     string task_name;
 
-    alias actor = A;
+    alias Actor = A;
 
     @trusted void send(T...)(T vals) {
         concurrency.send(tid, vals);
