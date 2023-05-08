@@ -14,6 +14,7 @@ import std.range : take;
 import vibe.data.json;
 import vibe.http.server;
 import vibe.http.router;
+import vibe.core.log;
 
 import source.models.other : ResponseModel, ErrorResponse;
 
