@@ -4,7 +4,12 @@ import std.random;
 import std.conv;
 import std.stdio;
 import std.format;
-import std.range;
+import std.algorithm;
+import std.stdio : writefln;
+import std.format;
+import std.digest;
+import std.typecons;
+import std.range : take;
 
 import vibe.data.json;
 import vibe.http.server;
