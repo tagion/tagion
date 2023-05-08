@@ -1,4 +1,4 @@
-module routes.project.model;
+module source.models.project;
 import tagion.hibon.HiBONRecord;
 
 @recordType("Project")

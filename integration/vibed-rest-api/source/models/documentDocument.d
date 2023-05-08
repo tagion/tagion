@@ -1,4 +1,4 @@
-module routes.documentDocument.model;
+module source.models.documentDocument;
 import tagion.hibon.HiBONRecord;
 
 @recordType("DocumentDocument")

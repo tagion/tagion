@@ -1,4 +1,4 @@
-module routes.controller;
+module source.controller;
 
 import vibe.http.server;
 import vibe.http.router;
@@ -15,9 +15,6 @@ import std.format;
 import services.routerService;
 import services.fsService;
 import services.dartService;
-
-// structs
-import routes.project.model;
 
 import tagion.hibon.HiBONJSON : toPretty;
 import tagion.utils.Miscellaneous : toHexString, decode;

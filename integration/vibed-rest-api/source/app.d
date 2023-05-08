@@ -17,14 +17,17 @@ import std.format;
 import services.dartService;
 import tagion.dart.DARTFile;
 
-import routes.controller : Controller;
+// controllers
+import source.controller : Controller;
 
-import routes.project.model;
-import routes.projectDocument.model;
-import routes.benefitShareCredit.model;
-import routes.benefitShare.model;
-import routes.benefit.model;
-import routes.documentDocument.model;
+// models
+import source.models.project;
+import source.models.projectDocument;
+import source.models.benefit;
+import source.models.benefitShare;
+import source.models.benefitShareCredit;
+import source.models.documentDocument;
+
 import std.file;
 
 const revision = import("revision.txt");

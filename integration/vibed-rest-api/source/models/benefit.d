@@ -1,4 +1,5 @@
-module routes.benefit.model;
+module source.models.benefit;
+
 import tagion.hibon.HiBONRecord;
 
 @recordType("Benefit")
