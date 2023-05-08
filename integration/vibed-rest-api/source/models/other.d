@@ -29,3 +29,12 @@ enum ErrorDescription {
     dataFingerprintNotAdded = "Entity with fingerprint not added to DART",
     dataFingerprintNotFound = "Entity with fingerprint not found",
 }
+
+enum Route {
+    project = "project",
+    benefit_share_credit = "benefit-share-credit",
+    benefit_share = "benefit-share",
+    project_document = "project-document",
+    document = "document",
+    benefit = "benefit",
+}

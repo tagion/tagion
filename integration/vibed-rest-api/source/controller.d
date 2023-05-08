@@ -203,6 +203,7 @@ struct Controller(T) {
     // }
 
     void optionsHandler(HTTPServerRequest req, HTTPServerResponse res) {
+      // handle CORS and response for preflight requests
       if (req.method == HTTPRequest.method.OPTIONS) {
         writeln("req.method == HTTPRequest.method.OPTIONS");
         setCORSHeaders(res);
