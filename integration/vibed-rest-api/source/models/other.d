@@ -1,5 +1,7 @@
 module source.models.other;
 
+import vibe.data.json;
+
 struct ResponseModel {
     bool isSucceeded;
     Json data;
