@@ -30,19 +30,19 @@ jobs:
           echo $RESULT | grep "Test result success!"
           echo -e "\n $RESULT" >> $GITHUB_STEP_SUMMARY
       
-      - name: Create passed tag
-        if: success() && (github.ref == 'refs/heads/current')
-        uses: rickstaa/action-create-tag@v1
-        with:
-          tag: "passed"
-          force_push_tag: true
+      # - name: Create passed tag
+      #   if: success() && (github.ref == 'refs/heads/current')
+      #   uses: rickstaa/action-create-tag@v1
+      #   with:
+      #     tag: "passed"
+      #     force_push_tag: true
 
-      - name: Create failed tag
-        if: failure() && (github.ref == 'refs/heads/current')
-        uses: rickstaa/action-create-tag@v1
-        with:
-          tag: "failed"
-          force_push_tag: true
+      # - name: Create failed tag
+      #   if: failure() && (github.ref == 'refs/heads/current')
+      #   uses: rickstaa/action-create-tag@v1
+      #   with:
+      #     tag: "failed"
+      #     force_push_tag: true
 
       - name: Create tar ball
         run: tar -czvf my_balls.tar.gz --exclude='*.o' logs/ build/
