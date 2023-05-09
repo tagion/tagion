@@ -125,7 +125,14 @@ target-collider: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-co
 ${call DO_BIN,collider,}
 
 target-libtagion: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-target-libtagion: DFLAGS+=$(DSTATICLIB)
+target-libtagion: DLIBTYPE?=$(DSTATICLIB)
+target-libtagion: DFLAGS+=$(DLIBTYPE)
 target-libtagion: DFILES:=${shell find $(DSRC) -name "*.d" -a -path "*/src/lib-*" -a -not -path "*/unitdata/*" -a -not -path "*/tests/*" -a -not -path "*/lib-betterc/*" $(NO_WOLFSSL) }
 ${call DO_BIN,libtagion,}
 
+# target-libmobile: LIBS+=$(LIBSECP256K1)
+# target-libmobile: DLIBTYPE+=$(DSHAREDLIB)
+# target-libmobile: DFLAGS+=$(DLIBTYPE)
+# target-libmobile: DFLAGS+=$(DDEFAULTLIBSTATIC)
+# target-libmobile: DFILES:=${shell find $(DSRC)/lib-mobile -name "*.d"}
+# ${call DO_BIN,libmobile,}

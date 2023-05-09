@@ -1,7 +1,8 @@
-module routes.benefitShareCredit.model;
+module source.models.benefitShareCredit;
+
 import tagion.hibon.HiBONRecord;
 
-// @recordType("BenefitShareCredit")
+@recordType("BenefitShareCredit")
 struct BenefitShareCredit {
     string benefitShareCreditUUID; // System UUID - "0de6c792-f3ca-49a3-89a7-892117383956"
     int benefitShareCreditId; // Public ID - 1

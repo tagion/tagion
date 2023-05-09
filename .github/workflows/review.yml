@@ -1,0 +1,22 @@
+name: Design Review
+
+on:
+  schedule:
+    - cron: '42 15 * * 0' # Every Sunday at 17:42 CEST
+  workflow_dispatch:
+
+jobs:
+  create_pull_request:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get week number
+        id: week-number
+        run: echo "::set-output name=week::$(date +'%U')"
+      
+      - name: Create Pull Request
+        run: |
+          gh pr create --title "Review week ${{ steps.week-number.outputs.week }}" \
+                       --body "Changes since week: ${{ steps.week-number.outputs.week }}" \
+                       --base master --head current
+        env:
+          GITHUB_TOKEN: ${{ secrets.BOT_TOKEN }}

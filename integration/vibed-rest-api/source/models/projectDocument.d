@@ -1,7 +1,8 @@
-module routes.projectDocument.model;
+module source.models.projectDocument;
+
 import tagion.hibon.HiBONRecord;
 
-// @recordType("ProjectDocument")
+@recordType("ProjectDocument")
 struct ProjectDocument {
     string projectDocumentUUID; // "e5ba99a7-f0ed-444f-ac43-07064aa1df80"
     string documentUUID; // "1aa84542-c1b5-4fd6-8354-7dbcfe3d16d0"

@@ -1,4 +1,4 @@
-module routes.controller;
+module source.controller;
 
 import vibe.http.server;
 import vibe.http.router;
@@ -11,104 +11,26 @@ import std.conv;
 import std.algorithm;
 import std.stdio : writefln;
 import std.format;
-
-import services.routerService;
-import services.fsService;
-import services.dartService;
-
-// structs
-import routes.project.model;
-
-import tagion.hibon.HiBONJSON : toPretty;
-import tagion.utils.Miscellaneous : toHexString, decode;
-import tagion.dart.DARTBasic : DARTIndex, dartIndex;
-import tagion.hibon.HiBONRecord;
 import std.digest;
 import std.typecons;
 import std.random;
 import std.range : take;
+
+import tagion.hibon.HiBONJSON : toPretty;
+import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
+import tagion.utils.Miscellaneous : toHexString, decode;
+import tagion.dart.DARTBasic : DARTIndex, dartIndex;
 
-struct ResponseModel {
-    bool isSucceeded;
-    Json data;
-}
+// services
+import services.dartService;
 
-enum ErrorCode {
-    dataIdWrongLength = 11,
-    dataNotFound = 12,
-    dataNotCorrectType = 13,
-    dataBodyNoMatch = 21,
-    dataFingerprintNotAdded = 22,
-    dataFingerprintNotFound = 31,
-}
+// models
+import source.models.other : ResponseModel, ErrorResponse, ErrorCode, ErrorDescription;
 
-enum ErrorDescription {
-    dataIdWrongLength = "Provided fingerprint is not valid",
-    dataNotFound = "Archive with fingerprint not found in database",
-    dataNotCorrectType = "Wrong document type",
-    dataBodyNoMatch = "Request body does not match",
-    dataFingerprintNotAdded = "Entity with fingerprint not added to DART",
-    dataFingerprintNotFound = "Entity with fingerprint not found",
-}
+import source.helpers : setCORSHeaders, respondWithError, handleServerError, tryReqHandler;
 
-void setCORSHeaders(HTTPServerResponse res) {
-    res.headers["Access-Control-Allow-Origin"] = "*";
-    // res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io, https://docs.decard.io";
-    res.headers["Access-Control-Allow-Headers"] = "*";
-    // res.headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept";
-    res.headers["Access-Control-Allow-Methods"] = "*";
-    // res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
-    res.headers["Access-Control-Max-Age"] = "86400";
-}
-
-void respondWithError(HTTPServerResponse res, ErrorResponse err) {
-    const responseModelError = ResponseModel(false, serializeToJson(err));
-
-    const(Json) responseModelErrorJson = serializeToJson(responseModelError);
-
-    writeln("responseModelErrorJson: ", responseModelErrorJson);
-
-    setCORSHeaders(res);
-    res.statusCode = HTTPStatus.badRequest;
-    res.writeJsonBody(responseModelErrorJson);
-}
-
-struct ErrorResponse {
-    int errorCode;
-    string errorDescription;
-}
-
-auto tryReqHandler(void delegate(HTTPServerRequest, HTTPServerResponse) fn) {
-    return (HTTPServerRequest req, HTTPServerResponse res) {
-        try {
-            fn(req, res);
-        }
-        catch (Exception e) {
-            res.handleServerError(req, e);
-        }
-    };
-}
-
-void handleServerError(HTTPServerResponse res, HTTPServerRequest req, Exception exception) {
-    auto rnd = rndGen;
-
-    const errorId = rnd.take(64).sum;
-
-    const err = ErrorResponse(HTTPStatus.internalServerError, "Internal Server Error, id: %s".format(errorId));
-    const errJson = serializeToJson(err);
-
-    logError(format("%s", err));
-    logError(req.toString);
-    logError(exception.toString);
-
-    const responseModelErr = ResponseModel(false, errJson);
-
-    res.statusCode = HTTPStatus.internalServerError;
-    res.writeJsonBody(serializeToJson(responseModelErr));
-}
-
-/// General Template controller for generating POST, READ and DELETE routes.
+/// General Template controller for generating POST, GET and DELETE routes.
 struct Controller(T) {
     string name;
     DartService dart_service;
@@ -123,19 +45,6 @@ struct Controller(T) {
     this(const(string) access_token, const(string) name, ref URLRouter router, ref DartService dart_service) {
         this.name = name;
         this.dart_service = dart_service;
-
-        void optionsHandler(HTTPServerRequest req, HTTPServerResponse res) {
-            if (req.method == HTTPRequest.method.OPTIONS) {
-                writeln("req.method == HTTPRequest.method.OPTIONS");
-                res.statusCode = HTTPStatus.ok;
-            }
-
-            setCORSHeaders(res);
-            res.statusCode = HTTPStatus.noContent;
-            writeln("res.statusCode", res.statusCode);
-            writeln("res.headers", res.headers);
-            res.writeBody("no content");
-        }
 
         router.match(HTTPMethod.OPTIONS, "*", tryReqHandler(&optionsHandler));
         router.get(format("/%s/%s/:entityId", access_token, name), tryReqHandler(&getT));
@@ -155,14 +64,21 @@ struct Controller(T) {
 
         string id = req.params.get("entityId");
 
-        // handle fingerprint exactly 64 characters
-        if (id.length != 64) {
-            const err = ErrorResponse(ErrorCode.dataIdWrongLength, ErrorDescription.dataIdWrongLength);
+        DARTIndex fingerprint;
+        try {
+            if (id.length != 64) {
+                throw new Exception("Length is not correct");
+            }
+            fingerprint = DARTIndex(decode(id));
+        }
+        catch (Exception e) {
+            const err = ErrorResponse(ErrorCode.dataIdnotValid, ErrorDescription
+                    .dataIdnotValid);
             respondWithError(res, err);
             return;
         }
 
-        const fingerprint = DARTIndex(decode(id));
+        // const fingerprint = DARTIndex(decode(id));
         const doc = dart_service.read([fingerprint]);
         if (doc.empty) {
             const err = ErrorResponse(ErrorCode.dataNotFound, ErrorDescription.dataNotFound);
@@ -171,10 +87,11 @@ struct Controller(T) {
             return;
         }
         // Check that the document is the Type that was requested.
-        // if (!isRecord!T(doc.front)) {
-        //     const err = ErrorResponse(ErrorCode.dataNotCorrectType, ErrorDescription.dataNotCorrectType);
-        //     respondWithError(res, err);
-        // }
+        if (!isRecord!T(doc.front)) {
+            const err = ErrorResponse(ErrorCode.dataNotCorrectType, ErrorDescription.dataNotCorrectType);
+            respondWithError(res, err);
+            return;
+        }
 
         T data = T(doc.front);
 
@@ -204,25 +121,27 @@ struct Controller(T) {
         Document doc;
         // check that user submits correct body
         try {
-            writefln("data before conversion JSON: %s", req.json);
+            // writefln("data before conversion JSON: %s", req.json);
             data = deserializeJson!T(req.json);
 
             doc = data.toDoc;
         }
         catch (Exception e) {
             const err = ErrorResponse(ErrorCode.dataBodyNoMatch, ErrorDescription.dataBodyNoMatch);
-
+            writeln("ErrorDescription.dataBodyNoMatch");
             respondWithError(res, err);
             return;
         }
 
-        writefln("data converted document=%s", doc.toPretty);
+        // writefln("data converted document=%s", doc.toPretty);
         const prev_bullseye = dart_service.bullseye;
 
         const fingerprint = dart_service.modify(doc);
         const new_bullseye = dart_service.bullseye;
         if (new_bullseye == prev_bullseye) {
-            const err = ErrorResponse(ErrorCode.dataFingerprintNotAdded, ErrorDescription.dataFingerprintNotAdded);
+            const err = ErrorResponse(ErrorCode.dataFingerprintNotAdded, ErrorDescription
+                    .dataFingerprintNotAdded);
+            writeln("ErrorDescription.dataFingerprintNotAdded");
             respondWithError(res, err);
             return;
         }
@@ -254,7 +173,7 @@ struct Controller(T) {
 
     //     // handle fingerprint exactly 64 characters
     //     if (id.length != 64) {
-    //         const err = ErrorResponse(ErrorCode.dataIdWrongLength, ErrorDescription.dataIdWrongLength);
+    //         const err = ErrorResponse(ErrorCode.dataIdnotValid, ErrorDescription.dataIdnotValid);
     //         respondWithError(res, err);
     //         return;
     //     }
@@ -282,4 +201,33 @@ struct Controller(T) {
     //     res.statusCode = HTTPStatus.ok;
     //     res.writeJsonBody(responseSuccessJson);
     // }
+
+    void optionsHandler(HTTPServerRequest req, HTTPServerResponse res) {
+      // handle CORS and response for preflight requests
+      if (req.method == HTTPRequest.method.OPTIONS) {
+        writeln("req.method == HTTPRequest.method.OPTIONS");
+        setCORSHeaders(res);
+        res.statusCode = HTTPStatus.ok;
+      }
+
+      setCORSHeaders(res);
+      res.statusCode = HTTPStatus.noContent;
+      writeln("res.statusCode", res.statusCode);
+      writeln("res.headers", res.headers);
+      res.writeBody("no content");
+    }
 }
+
+
+
+// post as normal to ex: /project/blabla
+// take the route name and add it to the json called hibontype
+// deserialize the struct including the hibontype
+// store it in the dart.
+
+
+// read generic
+// take the hibontype from the hibon file. if there is no type but there is a document return the hibonjson format
+// use the name to get the struct and deserialize accordingly.
+
+// read project

@@ -68,6 +68,7 @@ DCOV=--cov
 DIMPORTFILE=-J
 DDEFAULTLIBSTATIC=-link-defaultlib-shared=false
 DSTATICLIB=--lib
+DSHAREDLIB=--shared
 else ifeq ($(COMPILER),gdc)
 DVERSION := -fversion
 SONAME_FLAG := $(LINKERFLAG)-soname
@@ -82,6 +83,7 @@ DPREVIEW :=-preview
 NO_OBJ ?= -o-
 DCOV ?=-cov
 DSTATICLIB=-lib
+DSHAREDLIB=-shared
 else
 DVERSION = -version
 SONAME_FLAG = $(LINKERFLAG)-soname
@@ -100,6 +102,7 @@ DCOV ?=-cov
 DIMPORTFILE=-J
 DINCIMPORT= -i
 DSTATICLIB=-lib
+DSHAREDLIB=-shared
 endif
 
 DIP25 := $(DIP)25
