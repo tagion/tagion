@@ -16,8 +16,10 @@ jobs:
 
       - name: pull
         run: |
-          git pull
           git checkout current-commit
+          git pull
+          git submodule update --recursive --remote
+          
 
       - name: Run tests
         run: |
