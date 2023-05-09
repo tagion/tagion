@@ -16,10 +16,7 @@ jobs:
         run: |
           git pull
           git checkout current-commit
-          make clean
-          make clean-dstep
-          make dstep -j
-          make test -j
+          make clean test DC=dmd
       
       - name: Report unittests
         if: success()
