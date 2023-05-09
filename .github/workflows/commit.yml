@@ -21,7 +21,7 @@ jobs:
 
       - name: Run tests
         run: |
-          make clean test -j ${{env.PARALLEL}} DC=dmd || make clean proper test -j ${{env.PARALLEL}} DC=dmd
+          make clean test -j ${{env.PARALLEL}} DC=${{env.DC}} || make clean proper test -j ${{env.PARALLEL}} DC=${{env.DC}}
           
       - name: Report unittests
         run: |
