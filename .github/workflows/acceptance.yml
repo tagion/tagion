@@ -1,0 +1,16 @@
+name: Acceptance tests
+on:
+  workflow_run:
+    workflows: ["Commit Build and Test"]
+    branches: [current-commit]
+    types:
+      - completed
+
+jobs:
+  trigger:
+    runs-on: self-hosted
+    steps:
+      - name: Testing
+        run: echo "it works!"
+      # Additional steps here
+
