@@ -18,7 +18,7 @@ jobs:
         run: |
           git checkout current-commit
           git pull
-          git submodule update --recursive --remote
+          git pull --recurse-submodules
           
 
       - name: Run tests
