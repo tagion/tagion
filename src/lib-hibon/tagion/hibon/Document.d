@@ -200,8 +200,11 @@ static assert(uint.sizeof == 4);
     /++
      The deligate used by the valid function to report errors
      +/
-    alias ErrorCallback = bool delegate(const Document main_doc,
-            const Element.ErrorCode error_code, const(Element) current, const(Element) previous) nothrow @safe;
+    alias ErrorCallback = bool delegate(
+            const Document main_doc,
+            const Element.ErrorCode error_code,
+            const(Element) current,
+            const(Element) previous) nothrow @safe;
 
     /++
      This function check's if the Document is a valid HiBON format
@@ -555,7 +558,7 @@ static assert(uint.sizeof == 4);
      index = is offset index in side the buffer and index with be progressed
      +/
     @trusted static void build(T, Key)(ref ubyte[] buffer, Type type, Key key,
-            const(T) x, ref size_t index) pure
+    const(T) x, ref size_t index) pure
     if (is(Key : const(char[])) || is(Key == uint)) {
         buildKey(buffer, type, key, index);
         alias BaseT = TypedefType!T;
@@ -708,8 +711,8 @@ static assert(uint.sizeof == 4);
         test_tabel.TIME = 1001;
 
         alias TabelArray = Tuple!(immutable(ubyte)[], Type.BINARY.stringof, // Credential,          Type.CREDENTIAL.stringof,
-                // CryptDoc,            Type.CRYPTDOC.stringof,
-                DataBlock, Type.HASHDOC.stringof, string, Type.STRING.stringof,);
+            // CryptDoc,            Type.CRYPTDOC.stringof,
+            DataBlock, Type.HASHDOC.stringof, string, Type.STRING.stringof,);
 
         TabelArray test_tabel_array;
         test_tabel_array.BINARY = [1, 2, 3];
@@ -975,7 +978,7 @@ static assert(uint.sizeof == 4);
                                 }
                                 static if (isIntegral!T) {
                                     auto result = new Value(LEB128.decode!T(data[value_pos .. $])
-                                            .value);
+                                        .value);
                                     return result;
                                 }
                                 else {
@@ -1133,8 +1136,8 @@ static assert(uint.sizeof == 4);
                 
 
                     .check(isIndex, [
-                            "Key '", key.to!string, "' is not an index", key
-                            ].join);
+                    "Key '", key.to!string, "' is not an index", key
+                ].join);
                 return LEB128.decode!uint(data[keyPos .. $]).value;
             }
 

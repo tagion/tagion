@@ -1,4 +1,4 @@
-module routes.controller;
+module source.controller;
 
 import vibe.http.server;
 import vibe.http.router;
@@ -11,106 +11,26 @@ import std.conv;
 import std.algorithm;
 import std.stdio : writefln;
 import std.format;
-
-import services.routerService;
-import services.fsService;
-import services.dartService;
-
-// structs
-import routes.project.model;
-
-import tagion.hibon.HiBONJSON : toPretty;
-import tagion.utils.Miscellaneous : toHexString, decode;
-import tagion.dart.DARTBasic : DARTIndex, dartIndex;
-import tagion.hibon.HiBONRecord;
 import std.digest;
 import std.typecons;
 import std.random;
 import std.range : take;
+
+import tagion.hibon.HiBONJSON : toPretty;
+import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
+import tagion.utils.Miscellaneous : toHexString, decode;
+import tagion.dart.DARTBasic : DARTIndex, dartIndex;
 
-struct ResponseModel {
-    bool isSucceeded;
-    Json data;
-}
+// services
+import services.dartService;
 
-enum ErrorCode {
-    dataIdnotValid = 11,
-    dataNotFound = 12,
-    dataNotCorrectType = 13,
-    dataBodyNoMatch = 21,
-    dataFingerprintNotAdded = 22,
-    dataFingerprintNotFound = 31,
-}
+// models
+import source.models.other : ResponseModel, ErrorResponse, ErrorCode, ErrorDescription;
 
-enum ErrorDescription {
-    dataIdnotValid = "Provided fingerprint is not valid",
-    dataNotFound = "Archive with fingerprint not found in database",
-    dataNotCorrectType = "Wrong document type",
-    dataBodyNoMatch = "Request body does not match",
-    dataFingerprintNotAdded = "Entity with fingerprint not added to DART",
-    dataFingerprintNotFound = "Entity with fingerprint not found",
-}
+import source.helpers : setCORSHeaders, respondWithError, handleServerError, tryReqHandler;
 
-void setCORSHeaders(HTTPServerResponse res) {
-    res.headers["Access-Control-Allow-Origin"] = "*";
-    // res.headers["Access-Control-Allow-Origin"] = "https://editor.swagger.io, https://docs.decard.io";
-    res.headers["Access-Control-Allow-Headers"] = "*";
-    // res.headers["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept";
-    res.headers["Access-Control-Allow-Methods"] = "*";
-    // res.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
-    res.headers["Access-Control-Max-Age"] = "86400";
-}
-
-void respondWithError(HTTPServerResponse res, ErrorResponse err) {
-    const responseModelError = ResponseModel(false, serializeToJson(err));
-
-    const(Json) responseModelErrorJson = serializeToJson(responseModelError);
-
-    writeln("responseModelErrorJson: ", responseModelErrorJson);
-
-    setCORSHeaders(res);
-    res.statusCode = HTTPStatus.badRequest;
-    res.writeJsonBody(responseModelErrorJson);
-}
-
-struct ErrorResponse {
-    int errorCode;
-    string errorDescription;
-}
-
-auto tryReqHandler(void delegate(HTTPServerRequest, HTTPServerResponse) fn) {
-    return (HTTPServerRequest req, HTTPServerResponse res) {
-        try {
-            fn(req, res);
-        }
-        catch (Exception e) {
-            res.handleServerError(req, e);
-        }
-    };
-}
-
-void handleServerError(HTTPServerResponse res, HTTPServerRequest req, Exception exception) {
-    auto rnd = rndGen;
-
-    const errorId = rnd.take(64).sum;
-
-    const err = ErrorResponse(HTTPStatus.internalServerError, "Internal Server Error, id: %s".format(
-            errorId));
-    const errJson = serializeToJson(err);
-
-    logError(format("%s", err));
-    logError(req.toString);
-    logError(exception.toString);
-
-    const responseModelErr = ResponseModel(false, errJson);
-
-    setCORSHeaders(res);
-    res.statusCode = HTTPStatus.internalServerError;
-    res.writeJsonBody(serializeToJson(responseModelErr));
-}
-
-/// General Template controller for generating POST, READ and DELETE routes.
+/// General Template controller for generating POST, GET and DELETE routes.
 struct Controller(T) {
     string name;
     DartService dart_service;
@@ -125,20 +45,6 @@ struct Controller(T) {
     this(const(string) access_token, const(string) name, ref URLRouter router, ref DartService dart_service) {
         this.name = name;
         this.dart_service = dart_service;
-
-        void optionsHandler(HTTPServerRequest req, HTTPServerResponse res) {
-            if (req.method == HTTPRequest.method.OPTIONS) {
-                writeln("req.method == HTTPRequest.method.OPTIONS");
-                setCORSHeaders(res);
-                res.statusCode = HTTPStatus.ok;
-            }
-
-            setCORSHeaders(res);
-            res.statusCode = HTTPStatus.noContent;
-            writeln("res.statusCode", res.statusCode);
-            writeln("res.headers", res.headers);
-            res.writeBody("no content");
-        }
 
         router.match(HTTPMethod.OPTIONS, "*", tryReqHandler(&optionsHandler));
         router.get(format("/%s/%s/:entityId", access_token, name), tryReqHandler(&getT));
@@ -295,7 +201,23 @@ struct Controller(T) {
     //     res.statusCode = HTTPStatus.ok;
     //     res.writeJsonBody(responseSuccessJson);
     // }
+
+    void optionsHandler(HTTPServerRequest req, HTTPServerResponse res) {
+      // handle CORS and response for preflight requests
+      if (req.method == HTTPRequest.method.OPTIONS) {
+        writeln("req.method == HTTPRequest.method.OPTIONS");
+        setCORSHeaders(res);
+        res.statusCode = HTTPStatus.ok;
+      }
+
+      setCORSHeaders(res);
+      res.statusCode = HTTPStatus.noContent;
+      writeln("res.statusCode", res.statusCode);
+      writeln("res.headers", res.headers);
+      res.writeBody("no content");
+    }
 }
+
 
 
 // post as normal to ex: /project/blabla

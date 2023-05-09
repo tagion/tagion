@@ -1,4 +1,5 @@
-module routes.benefitShareCredit.model;
+module source.models.benefitShareCredit;
+
 import tagion.hibon.HiBONRecord;
 
 @recordType("BenefitShareCredit")
