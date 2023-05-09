@@ -123,11 +123,11 @@ ActorHandle!A spawnActor(A)(string task_name) @trusted nothrow {
  *   a = an active actorhandle
  */
 A respawnActor(A)(A actor_handle) {
-    writefln("%s", typeid(actor_handle.actor));
+    writefln("%s", typeid(actor_handle.Actor));
     actor_handle.send(Sig.STOP);
     unregister(actor_handle.task_name);
 
-    return spawnActor!(A.actor)(actor_handle.task_name);
+    return spawnActor!(A.Actor)(actor_handle.task_name);
 }
 
 /// Nullable and nothrow wrapper around ownerTid
