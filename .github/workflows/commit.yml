@@ -8,6 +8,7 @@ env:
   TARGET: x86_64-linux
   STAGE: commit
   DC: dmd
+  PARALLEL: 2
 jobs:
   build_and_unittest:
     runs-on: self-hosted
@@ -16,7 +17,7 @@ jobs:
         run: |
           git pull
           git checkout current-commit
-          make clean test DC=dmd
+          make clean test -j ${{env.PARALLEL}} DC=dmd
       
       - name: Report unittests
         if: success()
