@@ -148,6 +148,8 @@ DEBUG_FLAGS+=$(DEXPORT_DYN)
 
 COVOPT=--DRT-covopt=\"merge:1\ dstpath:$(DLOG)\"
 
+DLIBTYPE=${if $(SHARED),$(DSHAREDLIB),$(DSTATICLIB)}
+
 #DEBUGFLAG+=
 env-compiler:
 	$(PRECMD)
