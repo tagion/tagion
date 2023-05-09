@@ -10,7 +10,7 @@ env:
   DC: dmd
   PARALLEL: 2
 jobs:
-  build_and_unittest:
+  build_and_test:
     runs-on: self-hosted
     steps:
 
@@ -53,7 +53,7 @@ jobs:
       #     force_push_tag: true
 
       - name: Create tar ball
-        run: tar -czf my_balls.tar.gz --exclude='*.o' logs/ build/
+        run: tar -czf ../my_balls.tar.gz --exclude='*.o' logs/ build/
 
       
     
