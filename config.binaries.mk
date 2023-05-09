@@ -7,6 +7,7 @@ SSLIMPLEMENTATION=$(LIBOPENSSL)
 NO_WOLFSSL=-a -not -path "*/wolfssl/*"
 endif
 
+#DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/lib-*" -a -not }
 
 #
 # Targets for all binaries

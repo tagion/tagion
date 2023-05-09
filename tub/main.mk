@@ -50,7 +50,7 @@ prebuild:
 	${foreach wrap,$(WRAPS),$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) $(wrap);}
 	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) revision
 	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) dstep
-	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) ddeps
+#	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) ddeps
 
 env-prebuild:
 	$(PRECMD)
@@ -78,12 +78,6 @@ include $(DTUB)/targets/dirs.mk
 #
 # Prebuild
 #
-#include $(TARGETS)/prebuild.mk
-ifndef PREBUILD
--include $(DBUILD)/gen.dfiles.mk
--include $(DBUILD)/gen.ddeps.mk
-endif
-
 -include $(REPOROOT)/platform.*.mk
 
 #
@@ -105,7 +99,7 @@ include $(DTUB)/devnet/devnet.mk
 #
 include $(TARGETS)/compiler.mk
 include $(TARGETS)/dstep.mk
-include $(TARGETS)/ddeps.mk
+#include $(TARGETS)/ddeps.mk
 include $(TARGETS)/bins.mk
 include $(TARGETS)/format.mk
 include $(TARGETS)/dscanner.mk
