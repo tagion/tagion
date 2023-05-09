@@ -100,6 +100,12 @@ ${call DO_BIN,tagionboot,tagion}
 target-tprofview: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
 target-tprofview: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-tprofview/*" -a -not -path "*/unitdata/*" -a -not -path "*/lib-betterc/*" $(NO_WOLFSSL) }
 
+#
+# Hashgraph view
+#
+# fixme(cbr): When ddeps.mk work those libs are not needed
+target-graphview: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-graphview/*" -a -not -path "*/unitdata/*" -a -not -path "*/lib-betterc/*" $(NO_WOLFSSL) }
+
 
 target-tagion: DFLAGS+=$(DVERSION)=ONETOOL
 target-tagion: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
@@ -113,6 +119,7 @@ target-tagion: DFILES+=${shell find $(DSRC)/bin-tools/tagion -name "*.d"  $(NO_W
 target-tagion: DFILES+=${shell find $(DSRC)/bin-boot/tagion -name "*.d"  $(NO_WOLFSSL) }
 target-tagion: DFILES+=${shell find $(DSRC)/bin-tprofview/tagion -name "*.d"  $(NO_WOLFSSL) }
 target-tagion: DFILES+=${shell find $(DSRC)/bin-recorderchain/tagion -name "*.d" $(NO_WOLFSSL)}
+target-tagion: DFILES+=${shell find $(DSRC)/bin-graphview/tagion -name "*.d" $(NO_WOLFSSL)}
 
 target-tagion:
 ${call DO_BIN,tagion,}
