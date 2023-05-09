@@ -13,14 +13,19 @@ jobs:
   build_and_unittest:
     runs-on: self-hosted
     steps:
+
+      - name: pull
+        run: |
+          git pull
+          git checkout current-commit
+
       - name: run tests
         run: |
           git pull
           git checkout current-commit
           make clean test -j ${{env.PARALLEL}} DC=dmd
-      
+
       - name: Report unittests
-        if: success()
         run: |
           RESULT=$(cat logs/${{ env.TARGET }}/unittest.log | grep -E "^[0-9]+ modules passed unittests")
           echo -e "### :heavy_check_mark: Unittests passed \n $RESULT" >> $GITHUB_STEP_SUMMARY
@@ -30,6 +35,17 @@ jobs:
           RESULT=$(./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/${{ env.STAGE }}/results)
           echo $RESULT | grep "Test result success!"
           echo -e "\n $RESULT" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Run make proper if tests fail
+        if: steps.check_test_result.outputs.result == ''
+        run: |
+          make proper
+
+      - name: Rerun tests
+        if: steps.check_test_result.outputs.result == ''
+        run: |
+          make clean test -j ${{env.PARALLEL}} DC=dmd
+
       
       # - name: Create passed tag
       #   if: success() && (github.ref == 'refs/heads/current')
