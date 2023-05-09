@@ -16,8 +16,8 @@ jobs:
         run: |
           git pull
           git checkout current-commit
-          make clean-dstep
           make clean
+          make clean-dstep
           make dstep -j
           make test -j
       
