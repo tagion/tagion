@@ -18,7 +18,8 @@ jobs:
         run: |
           git checkout current-commit
           git pull
-          git pull --recurse-submodules
+          git pull 
+# make it work with recursive submodules
           
 
       - name: Run tests
