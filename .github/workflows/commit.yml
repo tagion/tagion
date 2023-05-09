@@ -13,7 +13,12 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: run tests
-        run: make clean test -j
+        run: |
+          git pull
+          git checkout current-commit
+          make clean-dstep
+          make dstep -j
+          make test -j
       
       - name: Report unittests
         if: success()
