@@ -20,12 +20,9 @@ jobs:
           git checkout current-commit
 
       - name: Run tests
-        run: make clean test -j ${{env.PARALLEL}} DC=dmd
-      
-      - name: Rerun tests
-        if: failure()
-        run: make clean proper test -j ${{env.PARALLEL}} DC=dmd
-      
+        run: |
+          make clean test -j ${{env.PARALLEL}} DC=dmd || make clean proper test -j ${{env.PARALLEL}} DC=dmd
+          
       - name: Report unittests
         run: |
           RESULT=$(cat logs/${{ env.TARGET }}/unittest.log | grep -E "^[0-9]+ modules passed unittests")
