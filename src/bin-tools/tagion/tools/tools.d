@@ -13,8 +13,17 @@ int main(string[] args) {
     import blockutil = tagion.tools.blockutil;
     import tprofview = tagion.tools.tprofview;
     import recorderchain = tagion.tools.recorderchain;
+    import graphview = tagion.tools.graphview;
 
-    alias alltools = AliasSeq!(tagionwave, dartutil, hibonutil, tagionwallet, tagionboot, blockutil, tprofview, recorderchain);
+    alias alltools = AliasSeq!(
+    tagionwave, 
+    dartutil, 
+    hibonutil, 
+    tagionwallet, 
+    tagionboot, 
+    blockutil, tprofview, 
+    recorderchain, 
+    graphview);
     mixin doOneMain!(alltools);
     return do_main(args);
 }

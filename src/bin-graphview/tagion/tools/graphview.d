@@ -1,3 +1,4 @@
+module tagion.tools.graphview;
 import std.getopt;
 import std.file : fread = read, fwrite = write, exists;
 import std.format;
@@ -12,10 +13,20 @@ import std.conv : to;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONValid : error_callback;
-import tagion.hashgraph.HashGraphBasic : EventView, Params;
+import tagion.hashgraphview.EventView : EventView;
+import tagion.tools.revision;
 import tagion.utils.BitMask;
-import tagion.revision;
 import std.traits : isIntegral;
+import std.functional : toDelegate;
+
+import tagion.basic.basic : EnumText;
+
+protected enum _params = [
+        "events",
+        "size",
+    ];
+
+mixin(EnumText!("Params", _params));
 
 //
 
@@ -39,8 +50,8 @@ string color(T)(string[] colors, T index) if (isIntegral!T) {
 }
 
 enum fileextensions {
-    HIBON = ".hibon"//    JSON  = ".json"
-};
+    HIBON = ".hibon" //    JSON  = ".json"
+}
 
 enum dot_fileextension {
     CMAPX = "cmapx", /// Produces HTML map files for client-side image maps.
@@ -117,7 +128,7 @@ struct Dot {
             const mother_event = events[e.mother];
             string[] texts;
             string[] options;
-            const witness_mask_text = mask2text(mother_event.witness_mask);
+            const witness_mask_text=mask2text(mother_event.witness_mask);
             //texts~=mask2text(mother_event.witness_mask);
             const round_received_mask = mask2text(mother_event.round_received_mask);
             if (round_received_mask) {
@@ -128,7 +139,8 @@ struct Dot {
                 options ~= format(`fontcolor="%s"`, "blue");
                 options ~= format(`shape="%s"`, "plane");
 
-                const strongly_seening_mask = mask2text(mother_event.strongly_seeing_mask);
+                const strongly_seening_mask = mask2text(
+                    mother_event.strongly_seeing_mask);
                 if (strongly_seening_mask) {
                     texts ~= format("%s:s", strongly_seening_mask);
                 }
@@ -237,7 +249,12 @@ struct Dot {
     }
 }
 
-int main(string[] args) {
+import tagion.tools.Basic;
+
+mixin Main!_main;
+
+
+int _main(string[] args) {
     import std.stdio;
 
     immutable program = args[0];
@@ -247,28 +264,29 @@ int main(string[] args) {
     string inputfilename;
     string outputfilename;
 
+    auto logo = import("logo.txt");
     auto main_args = getopt(args,
             std.getopt.config.caseSensitive,
             std.getopt.config.bundling,
             "version", "display the version", &version_switch,
-            "inputfile|i", "Sets the HiBON input file name", &inputfilename,// "outputfile|o", "Sets the output file name",  &outputfilename,
+            "inputfile|i", "Sets the HiBON input file name", &inputfilename, // "outputfile|o", "Sets the output file name",  &outputfilename,
             // "bin|b", "Use HiBON or else use JSON", &binary,
             // "value|V", format("Bill value : default: %d", value), &value,
             // "pretty|p", format("JSON Pretty print: Default: %s", pretty), &pretty,
             //        "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase
-    
+
+            
+
     );
 
     if (version_switch) {
-        writefln("version %s", REVNO);
-        writefln("Git handle %s", HASH);
+        revision_text.writeln;
         return 0;
     }
 
     if (main_args.helpWanted) {
         defaultGetoptPrinter(
                 [
-                format("%s version %s", program, REVNO),
                 "Documentation: https://tagion.org/",
                 "",
                 "Usage:",
@@ -301,7 +319,7 @@ int main(string[] args) {
     case fileextensions.HIBON:
         immutable data = assumeUnique(cast(ubyte[]) fread(inputfilename));
         const doc = Document(data);
-        const error_code = doc.valid(&error_callback);
+        const error_code = doc.valid(toDelegate(&error_callback));
         if (error_code !is Document.Element.ErrorCode.NONE) {
             writeln("Document format error");
             writefln("For the file %s", inputfilename);

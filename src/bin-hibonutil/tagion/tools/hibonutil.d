@@ -22,6 +22,7 @@ import tagion.basic.Types : Buffer;
 import std.array : join;
 
 import tagion.tools.Basic;
+import tagion.tools.revision;
 
 mixin Main!_main;
 
@@ -78,7 +79,7 @@ int _main(string[] args) {
     }
 
     if (version_switch) {
-        writefln("version %s", VERSION_HIBONUTIL);
+        revision_text.writeln;
         return 0;
     }
 
@@ -86,18 +87,18 @@ int _main(string[] args) {
         writeln(logo);
         defaultGetoptPrinter(
                 [
-            "Documentation: https://tagion.org/",
-            "",
-            "Usage:",
-            format("%s [<option>...] <in-file>", program),
-            "",
-            "Where:",
-            "<in-file>           Is an input file in .json or .hibon format",
-            "",
+                "Documentation: https://tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...] <in-file>", program),
+                "",
+                "Where:",
+                "<in-file>           Is an input file in .json or .hibon format",
+                "",
 
-            "<option>:",
+                "<option>:",
 
-        ].join("\n"),
+                ].join("\n"),
                 main_args.options);
         return 0;
     }
