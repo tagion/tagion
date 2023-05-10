@@ -9,13 +9,13 @@ CONFIGUREFLAGS_SECP256K1 += CFLAGS="-arch $(CROSS_ARCH) -fpic -g -Os -pipe -isys
 
 SHARED?=1
 DLLEXT:=dylib
+DFILES: libphobos-aarch64-ios
+DFILES: libdruntime-aarch64-ios
 IOS_ARCH=$(IOS_AARCH64)
 TRIPLET = $(IOS_ARCH)
 CROSS_OS=ios
+DFLAGS+=$(DDEFAULTLIBSTATIC)
 DFLAGS+=-mtriple=$(TRIPLET)
 DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
-
-env-ios:
-	echo THIS IS IOS
 
 endif
