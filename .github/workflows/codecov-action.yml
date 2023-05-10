@@ -4,7 +4,6 @@ on:
   push: 
     branches: 
       - current
-      - codecov
 env:
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       
@@ -15,7 +14,7 @@ permissions:
 
 jobs:
   codecov:
-    runs-on: self-hosted
+    runs-on: old
     steps:
       - name: codecov report
         run: |
