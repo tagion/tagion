@@ -12,11 +12,14 @@ jobs:
     steps:
       - name: Mount Artifact
         run: | 
-          mkdir ARTIFACT
+          mkdir -p ARTIFACT
           archivemount ../my_balls.tar.gz ARTIFACT
       - name: Testing
         run: echo $(ls ARTIFACT)
+
+      
       - name: Unmount Artifact
+        if: failure() || success()
         run: |
           fusermount -u ARTIFACT
       

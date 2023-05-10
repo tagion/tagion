@@ -9,6 +9,7 @@ env:
   STAGE: commit
   DC: dmd
   PARALLEL: 2
+  TAR_FILENAME: my_balls
 jobs:
   build_and_test:
     runs-on: self-hosted
@@ -20,7 +21,6 @@ jobs:
           git pull
           git pull 
 # make it work with recursive submodules
-          
 
       - name: Run tests
         run: |
@@ -36,25 +36,10 @@ jobs:
           RESULT=$(./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/${{ env.STAGE }}/results)
           echo $RESULT | grep "Test result success!"
           echo -e "\n $RESULT" >> $GITHUB_STEP_SUMMARY
-      
-
-      
-      # - name: Create passed tag
-      #   if: success() && (github.ref == 'refs/heads/current')
-      #   uses: rickstaa/action-create-tag@v1
-      #   with:
-      #     tag: "passed"
-      #     force_push_tag: true
-
-      # - name: Create failed tag
-      #   if: failure() && (github.ref == 'refs/heads/current')
-      #   uses: rickstaa/action-create-tag@v1
-      #   with:
-      #     tag: "failed"
-      #     force_push_tag: true
 
       - name: Create tar ball
-        run: tar -czf ../my_balls.tar.gz --exclude='*.o' logs/ build/
+        run: |
+          tar -czf ../${{ env.TAR_FILENAME }}.tar.gz --exclude='*.o' logs/ build/
 
       
     

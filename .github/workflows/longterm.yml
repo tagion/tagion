@@ -60,7 +60,6 @@ jobs:
             setup_env commit
             echo "run commit env $scenario"
             testbench $scenario
-
             setup_env acceptance
             echo "run acceptance env $scenario"
             testbench $scenario
