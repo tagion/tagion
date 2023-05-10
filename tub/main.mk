@@ -41,7 +41,7 @@ include $(DTUB)/utilities/dir.mk
 include $(DTUB)/utilities/log.mk
 
 include $(DTUB)/tools/*.mk
-include $(TARGETS)/git.mk
+#include $(TARGETS)/git.mk
 include $(TARGETS)/commands.mk
 
 prebuild:
@@ -84,8 +84,8 @@ include $(DTUB)/targets/dirs.mk
 # Secondary tub functionality
 #
 include $(DTUB)/ways.mk
-include $(DTUB)/gitconfig.mk
-include $(TARGETS)/submodules.mk
+#include $(DTUB)/gitconfig.mk
+#include $(TARGETS)/submodules.mk
 include $(TARGETS)/submake.mk
 include $(TARGETS)/host.mk
 include $(TARGETS)/cross.mk
