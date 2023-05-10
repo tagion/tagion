@@ -3,7 +3,6 @@ BDD_FLAGS+=-p
 BDD_FLAGS+=-i$(BDD)/bdd_import.di
 BDD_FLAGS+=${addprefix -I,$(BDD)}
 
-
 BDD_DFLAGS+=${addprefix -I,$(BDD)}
 
 export BDD_LOG=$(DLOG)/bdd/$(TEST_STAGE)/
@@ -15,14 +14,11 @@ BDD_DFILES+=${shell find $(BDD) -name "*.d" -a -not -name "*.gen.d" -a -path "*/
 # Binary testbench 
 #
 testbench: bddfiles
-tagion-testbanch: $(BDD_DFILES)
 target-testbench: DFLAGS+=$(DVERSION)=ONETOOL
 target-testbench: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-target-testbench: DFILES+=$(BDD_DFILES)
 target-testbench: DFLAGS+=$(DEBUG_FLAGS)
 
-${call DO_BIN,testbench,}
+${call DO_BIN,testbench,$(LIB_DFILES) $(BDD_DFILES)}
 
-#$(DBIN)/testbench: $(BDD_DFILES) $(DFILES)
 
 
