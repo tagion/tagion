@@ -46,6 +46,6 @@ jobs:
       - name: Run acceptance workflow
         run: |
           gh workflow run acceptance.yml -f tarball=$tar_filename
-
-    
+        env:
+          GITHUB_TOKEN: ${{ secrets.BOT_TOKEN }}
  
