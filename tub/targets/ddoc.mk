@@ -10,7 +10,8 @@ env-ddoc:
 env: env-ddoc
 
 clean-ddoc:
-	$(PRECMD) rm -rv $(BUILDDOC)
+	$(PRECMD)
+	$(RM) -r $(BUILDDOC)
 	@echo cleaning docs
 
 .PHONY: clean-ddoc
