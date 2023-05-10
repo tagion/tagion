@@ -7,10 +7,23 @@ on:
       - completed
 
 jobs:
-  trigger:
+  run_acceptance_stage_tests:
     runs-on: self-hosted
     steps:
+      - name: Mount Artifact
+        run: | 
+          mkdir ARTIFACT
+          archivemount ../my_balls.tar.gz ARTIFACT
       - name: Testing
-        run: echo "it works!"
+        run: echo $(ls ARTIFACT)
+      - name: Unmount Artifact
+        run: |
+          fusermount -u ARTIFACT
+      
+
+
+
+      
+
       # Additional steps here
 
