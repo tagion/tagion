@@ -28,7 +28,7 @@ You can run the following command as root, if you are using arch or ubuntu
     
 ```bash
 # Ubuntu
-apt-get install make screen autoconf golang clang libclang-dev libtool
+apt-get install make screen autoconf golang clang libclang-dev libtool libssl-dev
 # Arch
 pacman -Syu make screen autoconf go clang libtool
 ```
