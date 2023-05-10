@@ -35,9 +35,12 @@ TRIPLET:=$(MTRIPLE)-android
 
 SHARED?=1
 DFLAGS+=$(DDEFAULTLIBSTATIC)
+DFLAGS+=-i
 
 ANDROID_ARCH=$(ANDROID_AARCH64)
 DFLAGS+=-mtriple=$(PLATFORM)
+
+DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
 
 env-android:
 	$(PRECMD)
