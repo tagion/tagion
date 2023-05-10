@@ -17,7 +17,8 @@ bins: $1
 ifneq ($(and $(ONETOOL),$3),) 
 
 $1: $3
-	echo $1 $3
+
+target-$1: $3
 
 else
 
