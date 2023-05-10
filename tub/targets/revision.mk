@@ -13,7 +13,6 @@ $(REVISION_FILE):
 	echo '$(DC_VERSION)' >> $@
 
 revision: $(REVISION_FILE)
-#	echo $(REVISION_FILE)
 
 prebuild:
 .PHONY: revision
@@ -49,4 +48,3 @@ env-revision:
 
 env: env-revision
 
-#DFILES+=$(REVISION_FILE)
