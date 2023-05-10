@@ -12,7 +12,7 @@ env:
   TAR_FILENAME: my_balls
 jobs:
   build_and_test:
-    runs-on: self-hosted
+    runs-on: phillip
     steps:
 
       - name: pull
