@@ -86,7 +86,6 @@ include $(DTUB)/targets/dirs.mk
 include $(DTUB)/ways.mk
 include $(DTUB)/gitconfig.mk
 include $(TARGETS)/submodules.mk
-# include $(TARGETS)/druntime.mk
 include $(TARGETS)/submake.mk
 include $(TARGETS)/host.mk
 include $(TARGETS)/cross.mk
@@ -103,7 +102,6 @@ include $(TARGETS)/dstep.mk
 include $(TARGETS)/bins.mk
 include $(TARGETS)/format.mk
 include $(TARGETS)/dscanner.mk
-include $(TARGETS)/libs.mk
 
 include $(DTUB)/compile.mk
 
@@ -159,3 +157,10 @@ include $(DTUB)/clean.mk
 # Help
 #
 include $(DTUB)/help.mk
+
+
+#
+# Road runner
+#
+include $(TARGETS)/trunk.mk
+
