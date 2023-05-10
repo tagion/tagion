@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push: 
     branches: 
-      - current-commit
+      - current
 env:
   TARGET: x86_64-linux
   STAGE: commit
@@ -17,7 +17,7 @@ jobs:
 
       - name: pull
         run: |
-          git checkout current-commit
+          git checkout current
           git pull
           git pull 
 # make it work with recursive submodules
