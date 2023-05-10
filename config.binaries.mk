@@ -120,6 +120,7 @@ ${call DO_BIN,tagion,$(LIB_DFILES) $(TAGION_BINS)}
 # Binary of BBD generator tool
 #
 target-collider: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+<<<<<<< HEAD
 ${call DO_BIN,collider,$(LIB_DFILES) ${call BIN_DEPS,collider}}
 
 target-libtagion: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
@@ -128,3 +129,7 @@ target-libtagion: DFLAGS+=$(DLIBTYPE)
 target-libtagion: DFILES:=${shell find $(DSRC) -name "*.d" -a -path "*/src/lib-*" -a -not -path "*/unitdata/*" -a -not -path "*/tests/*" -a -not -path "*/lib-betterc/*" $(NO_WOLFSSL) }
 ${call DO_BIN,libtagion,}
 
+=======
+target-collider: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-collider/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
+${call DO_BIN,collider,}
+>>>>>>> 1926f80be93e599151110cbc1aa54622b2e21596
