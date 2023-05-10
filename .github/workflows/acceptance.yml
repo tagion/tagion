@@ -1,10 +1,11 @@
 name: Acceptance tests
 on:
-  workflow_run:
-    workflows: ["Commit Build and Test"]
-    branches: [current]
-    types:
-      - completed
+  workflow_dispatch:
+    inputs:
+      tarball: 
+        description: "tar ball of the logs and build"
+        required: true
+        type: string
 
 jobs:
   run_acceptance_stage_tests:
@@ -13,7 +14,7 @@ jobs:
       - name: Mount Artifact
         run: | 
           mkdir -p ARTIFACT
-          archivemount ../my_balls.tar.gz ARTIFACT
+          archivemount ../${{inputs.tarball}} ARTIFACT
       - name: Testing
         run: echo $(ls ARTIFACT)
 

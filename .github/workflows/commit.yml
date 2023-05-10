@@ -14,7 +14,6 @@ jobs:
   build_and_test:
     runs-on: phillip
     steps:
-
       - name: pull
         run: |
           git checkout current
@@ -43,6 +42,7 @@ jobs:
           timestamp=$(date +%M-%H-%d-%m-%y)
           tar_filename="${commit_hash}-${timestamp}.tar.gz"
           tar -czf ../${tar_filename} --exclude='*.o' logs/ build/
+          echo -e "\nRelease candidate is: $tar_filename" >> $GITHUB_STEP_SUMMARY
 
       
     
