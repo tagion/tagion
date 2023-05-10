@@ -12,9 +12,11 @@ EXCLUDED_DIRS+=-a -not -path "*/lib-betterc/*"
 EXCLUDED_DIRS+=-a -not -path "*/tests/*"
 
 LIB_DFILES:=${shell find $(DSRC) -name "*.d" -a -path "*/lib-*" $(EXCLUDED_DIRS) $(NO_UNITDATA) }
+LIB_BETTERC:=${shell find $(DSRC) -name "*.d" -a -path "*/lib-betterc/*" -a -not -path "*/tests/*" $(NO_UNITDATA) }
 
 
 BIN_DEPS=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-$1/*" $(EXCLUDED_DIRS) $(NO_UNITDATA) $(NO_WOLFSSL) }
+
 
 
 #
@@ -30,47 +32,33 @@ ${call DO_BIN,tagionwave,$(LIB_DFILES) ${call BIN_DEPS,wave}}
 #
 # HiBON utility
 #
-# FIXME(CBR) should be remove when ddeps works correctly
 target-hibonutil: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-target-hibonutil: DFILES+=${call BIN_DEPS,hibonutil}
-${call DO_BIN,hibonutil,tagion}
+${call DO_BIN,hibonutil,$(LIB_DFILES) ${call BIN_DEPS,hibonutil}}
 
 
 #
 # DART utility
 #
-# FIXME(CBR) should be remove when ddeps works correctly
 target-dartutil: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-target-dartutil: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-dartutil/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
-target-dartutil: DFILES+=${call BIN_DEPS,dartutil}
-${call DO_BIN,dartutil,tagion}
+${call DO_BIN,dartutil,$(LIB_DFILES) ${call BIN_DEPS,dartutil},tagion}
 
 #
 # DART utility
 #
-# FIXME(CBR) should be remove when ddeps works correctly
 target-blockutil: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-#target-blockutil: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-blockutil/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
-target-blockutil: DFILES+=${call BIN_DEPS,blockutil}
-${call DO_BIN,blockutil,tagion}
+${call DO_BIN,blockutil,$(LIB_DFILES) ${call BIN_DEPS,blockutil},tagion}
 
 #
 # WASM utility
 #
-# FIXME(CBR) should be remove when ddeps works correctly
 target-wasmutil: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-#target-wasmutil: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-wasmutil/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
-target-wasmutil: DFILES+=${call BIN_DEPS,wasmutil}
-${call DO_BIN,wasmutil,}
+${call DO_BIN,wasmutil,$(LIB_DFILES) ${call BIN_DEPS,wasmutil},tagion}
 
 #
 # WASM utility
 #
-# FIXME(CBR) should be remove when ddeps works correctly
 target-tagionwallet: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-#target-tagionwallet: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-wallet/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
-target-tagionwallet: DFILES+=${call BIN_DEPS,wallet}
-${call DO_BIN,tagionwallet,}
+${call DO_BIN,tagionwallet,$(LIB_DFILES) ${call BIN_DEPS,tagionwallet},tagion}
 
 wallet: target-tagionwallet
 
@@ -78,36 +66,34 @@ wallet: target-tagionwallet
 # Subscription utility
 #
 target-tagionsubscription: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-target-tagionsubscription: DFILES+=${call BIN_DEPS,subscription}
-${call DO_BIN,tagionsubscription,}
+${call DO_BIN,subscription,$(LIB_DFILES) ${call BIN_DEPS,subsciption}}
 
 #
 # Recorderchain utility
 #
 target-recorderchain: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-target-recorderchain: DFILES+=${call BIN_DEPS,recorderchain}
-${call DO_BIN,recorderchain}
+${call DO_BIN,recorderchain,$(LIB_DFILES) ${call BIN_DEPS,recorderchain},tagion}
 
 #
 # Boot utility
 #
 # fixme(cbr): When ddeps.mk work those libs are not needed
 target-tagionboot: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-target-tagionboot: DFILES+=${call BIN_DEPS,boot}
-${call DO_BIN,tagionboot,tagion}
+${call DO_BIN,tagionboot,$(LIB_DFILES) ${call BIN_DEPS,boot},tagion}
 
 #
 # Profile view
 #
 # fixme(cbr): When ddeps.mk work those libs are not needed
 target-tprofview: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-target-tprofview: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-tprofview/*" -a -not -path "*/unitdata/*" -a -not -path "*/lib-betterc/*" $(NO_WOLFSSL) }
+${call DO_BIN,tprofview,$(LIB_DFILES) ${call BIN_DEPS,tprofview},tagion}
 
 #
 # Hashgraph view
 #
 # fixme(cbr): When ddeps.mk work those libs are not needed
-target-graphview: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-graphview/*" -a -not -path "*/unitdata/*" -a -not -path "*/lib-betterc/*" $(NO_WOLFSSL) }
+target-graphview: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+${call DO_BIN,graphview,$(LIB_DFILES) ${call BIN_DEPS,graphview},tagion}
 
 #
 # Tagion onetool
@@ -124,21 +110,6 @@ TAGION_TOOLS+=graphview
 TAGION_TOOLS+=recorderchain
 
 TAGION_BINS=$(foreach tools,$(TAGION_TOOLS), ${call BIN_DEPS,$(tools)} )
-
-
-test32:
-	@echo ${call BIN_DEPS,wave}
-
-test34:
-	@echo $(TAGION_BINS)
-
-
-
-
-
-test33:
-	@echo $(LIB_DFILES)
-
 
 target-tagion: DFLAGS+=$(DVERSION)=ONETOOL
 target-tagion: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)

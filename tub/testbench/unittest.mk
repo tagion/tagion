@@ -2,7 +2,7 @@
 #
 # Proto targets for unittest
 #
-UNITTEST_FLAGS?=$(DUNITTEST) $(DDEBUG) $(DDEBUG_SYMBOLS) $(DMAIN)
+#UNITTEST_FLAGS?=$(DUNITTEST) $(DDEBUG) $(DDEBUG_SYMBOLS) $(DMAIN)
 UNITTEST_DOBJ=$(DOBJ)/unittest
 UNITTEST_BIN?=$(DBIN)/unittest
 UNITTEST_LOG?=$(DLOG)/unittest.log
@@ -27,13 +27,12 @@ proto-unittest-run: proto-unittest-build
 proto-unittest-build: $(UNITTEST_BIN)
 
 $(UNITTEST_BIN): DFLAGS+=$(DIP25) $(DIP1000)
-$(UNITTEST_BIN): $(COVWAY) $$(DFILES)
+$(UNITTEST_BIN): $(COVWAY) 
+$(UNITTEST_BIN): $(UNITTEST_DFILES) 
 	$(PRECMD)
 	echo deps $?
-	echo LIBS=$(LIBS)
-	echo DFLAGS=$(DFLAGS)
-	echo DRTFLAGS=$(DRTFLAGS)
-	$(DC) $(UNITTEST_FLAGS) $(DFLAGS) $(DRTFLAGS) ${addprefix -I,$(DINC)} ${sort $(DFILES)} $(LIBS) $(OUTPUT)$@
+	${call log.env, UNITTEST_DFILES,${filter %.d,$^}}
+	$(DC) $(UNITTEST_FLAGS) $(DFLAGS) $(DRTFLAGS) ${addprefix -I,$(DINC)} ${sort ${filter %.d,$^}} $(LIBS) $(OUTPUT)$@
 
 unittest: revision $(REPOROOT)/default.mk
 
@@ -57,7 +56,7 @@ help-unittest:
 	${call log.help, "make env-uintest", "List all unittest parameters"}
 	${call log.help, "make unittest", "Compiles/Links and runs the unittest"}
 	${call log.help, "make unitmain", "Used to run a single unittest as a main" }
-	${call log.help, "make build-unittest-build", "Compiles/Links the unittest"}
+	${call log.help, "make proto-unittest-build", "Compiles/Links the unittest"}
 	${call log.close}
 
 help: help-unittest

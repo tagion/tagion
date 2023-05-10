@@ -2,6 +2,7 @@
 #
 # $1 : Program name
 # $2 : Depends list
+# $3 : onetool
 #
 define DO_BIN
 ${eval
@@ -13,11 +14,20 @@ BINS+=$$(_$1)
 
 bins: $1
 
+ifneq ($(and $(ONETOOL),$3),) 
+
+$1: $3
+	echo $1 $3
+
+else
+
 $1: target-$1
 
 $$(DBIN)/$1: $2
 
 target-$1: $$(DBIN)/$1
+
+endif
 
 env-$1:
 	$$(PRECMD)
