@@ -10,7 +10,7 @@ env:
   ## TODO: add ldc2/dmd switch & version
 jobs:
   run_bdd_tests:
-    runs-on: self-hosted
+    runs-on: old
     steps:
       
       - name: Cleanup
@@ -123,7 +123,7 @@ jobs:
       #     aws s3 ls core-tagion
       
   # create_tagion_images:
-  #   runs-on: self-hosted
+  #   runs-on: old
   #   needs: build_and_unittest
   #   outputs:
   #     scenario_list: ${{ steps.scenario_list.outputs.scenarious }}
@@ -189,7 +189,7 @@ jobs:
     
       
   # before_run:
-  #   runs-on: self-hosted
+  #   runs-on: old
   #   needs: create_tagion_images
   #   steps: 
     
@@ -216,7 +216,7 @@ jobs:
   #         sudo chmod -R 777 /tmp/scenario-result/${{ steps.commit.outputs.short }}
             
   # run_scenario:
-  #   runs-on: self-hosted
+  #   runs-on: old
   #   needs: [before_run, create_tagion_images]
   #   strategy:
   #     matrix:
@@ -263,7 +263,7 @@ jobs:
   #           docker stop "$app" && docker rm -f "$app"
   #         fi
   # after_run:
-  #   runs-on: self-hosted
+  #   runs-on: old
   #   needs: run_scenario
   #   continue-on-error: true
   #   steps:
