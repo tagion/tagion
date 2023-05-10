@@ -29,6 +29,9 @@ CROSS_ARCH=aarch64
 MTRIPLE:=aarch64-linux
 TRIPLET:=$(MTRIPLE)-android
 
+SHARED?=1
+DFLAGS+=$(DDEFAULTLIBSTATIC)
+
 ANDROID_ARCH=$(ANDROID_AARCH64)
 DFLAGS+=-mtriple=$(PLATFORM)
 
@@ -80,7 +83,3 @@ help: help-android
 
 .PHONY: env-android help-android
 endif
-
-PREBUILD=1 # Disable the dependency thingy 🤮
-export REPOROOT?=${shell git rev-parse --show-toplevel}
-include tub/main.mk
