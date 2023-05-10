@@ -24,7 +24,7 @@ jobs:
 
       - name: Run tests
         run: |
-          make clean test -j ${{env.PARALLEL}} DC=${{env.DC}} || make clean proper test -j ${{env.PARALLEL}} DC=${{env.DC}}
+          make test -j ${{env.PARALLEL}} DC=${{env.DC}} || make proper test -j ${{env.PARALLEL}} DC=${{env.DC}}
           
       - name: Report unittests
         run: |
@@ -39,7 +39,10 @@ jobs:
 
       - name: Create tar ball
         run: |
-          tar -czf ../${{ env.TAR_FILENAME }}.tar.gz --exclude='*.o' logs/ build/
+          commit_hash=$(git rev-parse HEAD)
+          timestamp=$(date +%M-%H-%d-%m-%y)
+          tar_filename="${commit_hash}-${timestamp}.tar.gz"
+          tar -czf ../${tar_filename} --exclude='*.o' logs/ build/
 
       
     
