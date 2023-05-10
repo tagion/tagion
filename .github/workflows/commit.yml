@@ -1,0 +1,46 @@
+name: Commit Build and Test
+on:
+  workflow_dispatch:
+  push: 
+    branches: 
+      - current
+env:
+  TARGET: x86_64-linux
+  STAGE: commit
+  DC: dmd
+  PARALLEL: 2
+  TAR_FILENAME: my_balls
+jobs:
+  build_and_test:
+    runs-on: phillip
+    steps:
+
+      - name: pull
+        run: |
+          git checkout current
+          git pull
+          git pull 
+# make it work with recursive submodules
+
+      - name: Run tests
+        run: |
+          make clean test -j ${{env.PARALLEL}} DC=${{env.DC}} || make clean proper test -j ${{env.PARALLEL}} DC=${{env.DC}}
+          
+      - name: Report unittests
+        run: |
+          RESULT=$(cat logs/${{ env.TARGET }}/unittest.log | grep -E "^[0-9]+ modules passed unittests")
+          echo -e "### :heavy_check_mark: Unittests passed \n $RESULT" >> $GITHUB_STEP_SUMMARY
+
+      - name: Report bddtests
+        run: | 
+          RESULT=$(./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/${{ env.STAGE }}/results)
+          echo $RESULT | grep "Test result success!"
+          echo -e "\n $RESULT" >> $GITHUB_STEP_SUMMARY
+
+      - name: Create tar ball
+        run: |
+          tar -czf ../${{ env.TAR_FILENAME }}.tar.gz --exclude='*.o' logs/ build/
+
+      
+    
+ 
