@@ -9,7 +9,6 @@ env:
   STAGE: commit
   DC: dmd
   PARALLEL: 2
-  TAR_FILENAME: my_balls
 jobs:
   build_and_test:
     runs-on: phillip

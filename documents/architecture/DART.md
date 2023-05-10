@@ -22,6 +22,10 @@ digraph module_diagram {
 }
 ```
 
+# DARTFile structure
+![Alt text](../figs/dartstructure.png?raw=true)
+
+
 ## CRUD
 
 This service is reponsible for executing data-base instruction and read/write to the physical file system.
