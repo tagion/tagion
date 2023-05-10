@@ -43,9 +43,8 @@ jobs:
           tar_filename="${commit_hash}-${timestamp}.tar.gz"
           tar -czf ../${tar_filename} --exclude='*.o' logs/ build/
           echo -e "\nRelease candidate is: $tar_filename" >> $GITHUB_STEP_SUMMARY
-      - name: Run acceptance workflow
-        run: |
           gh workflow run acceptance.yml -f tarball=$tar_filename
+
         env:
           GITHUB_TOKEN: ${{ secrets.BOT_TOKEN }}
  
