@@ -1,5 +1,5 @@
 /// Tool to generated behaviour driven code from markdown description 
-module tagion.tools.collider;
+module tagion.tools.collider.collider;
 
 /**
  * @brief tool generate d files from bdd md files and vice versa
@@ -392,6 +392,7 @@ int main(string[] args) {
     bool overwrite_switch; /** falg for to enable report checks */
     bool Check_reports_switch;
     bool check_reports_switch; /** verbose switch */
+    string[] stages;
     try {
         if (config_file.exists) {
             options.load(config_file);
@@ -411,6 +412,7 @@ int main(string[] args) {
                 .enable_package,
                 "c|check", "Check the bdd reports in give list of directories", &check_reports_switch,
                 "C", "Same as check but the program will return a nozero exit-code if the check fails", &Check_reports_switch,
+                "s|stage", "Sets stage target for the testbench to be runned", &stages,
                 "v|verbose", "Enable verbose print-out", &options.verbose_switch,
         );
         if (version_switch) {
@@ -438,6 +440,10 @@ int main(string[] args) {
                 "<option>:",
             ].join("\n"), main_args.options);
             return 0;
+        }
+
+        if (stages) {
+            stages.writeln;
         }
         check_reports_switch = Check_reports_switch || check_reports_switch;
         if (check_reports_switch) {

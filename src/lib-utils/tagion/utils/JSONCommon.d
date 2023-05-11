@@ -35,7 +35,10 @@ mixin template JSONCommon() {
     alias ArrayElementTypes = AliasSeq!(bool, string);
 
     enum isSupportedArray(T) = isArray!T && isSupported!(ElementType!T);
-    enum isSupported(T) = isOneOf!(T, ArrayElementTypes) || isNumeric!T || isSupportedArray!T || isJSONCommon!T;
+    enum isSupportedAssociativeArray(T) = isAssociativeArray!T && is(KeyType!T == string) && isSupported!(ForeachType!T);
+    enum isSupported(T) = isOneOf!(T, ArrayElementTypes) || isNumeric!T ||
+        isSupportedArray!T || isJSONCommon!T ||
+        isSupportedAssociativeArray!T;
 
     /++
      Returns:
@@ -43,28 +46,56 @@ mixin template JSONCommon() {
      +/
     JSON.JSONValue toJSON() const @safe {
         JSON.JSONValue result;
+        auto get(type, T)(T val) {
+
+            static if (is(type == enum)) {
+                return val.to!string;
+            }
+            else static if (is(type : immutable(ubyte[]))) {
+                return val.toHexString;
+            }
+            else static if (is(type == struct)) {
+                return val.toJSON;
+            }
+            else {
+                return val;
+            }
+        }
+
         foreach (i, m; this.tupleof) {
             enum name = basename!(this.tupleof[i]);
             alias type = typeof(m);
             static if (is(type == struct)) {
                 result[name] = m.toJSON;
             }
-            else static if (isArray!type && is(ElementType!type == struct)) {
+            else static if (isArray!type && isSupported!(ForeachType!type)) {
+                alias ElemType = ForeachType!type;
+                pragma(msg, "ElemType ", ElemType);
                 JSON.JSONValue[] array;
                 foreach (ref m_element; m) {
-                    array ~= m_element.toJSON;
+                    JSON.JSONValue val = get!ElemType(m_element);
+                    array ~= val;
                 }
                 result[name] = array; // ~= m_element.toJSON;
-
+            }
+            else static if (isSupportedAssociativeArray!type) {
+                JSON.JSONValue obj;
+                alias ElemType = ForeachType!type;
+                foreach (key, m_element; m) {
+                    obj[key] = get!ElemType(m_element);
+                }
+                result[name] = obj;
             }
             else {
-                static if (is(type == enum)) {
-                    result[name] = m.to!string;
-                }
-                else static if (is(type : immutable(ubyte[]))) {
+                result[name] = get!(type)(m);
+                version (none)
+                    static if (is(type == enum)) {
+                        result[name] = m.to!string;
+                    }
+                    else static if (is(type : immutable(ubyte[]))) {
                     result[name] = m.toHexString;
                 }
-                else {
+            else {
                     result[name] = m;
                 }
             }
@@ -98,6 +129,17 @@ mixin template JSONCommon() {
                 set(m_element, _json_value, name);
                 m ~= m_element;
             }
+        }
+
+        static void set_hashmap(T)(ref T m, ref JSON.JSONValue json, string name) @safe 
+    if (isSupportedAssociativeArray!T) {
+            alias ElemType = ForeachType!T;
+            foreach (key, json_value; json) {
+                Elemtype val;
+                set(val, json_value, name);
+                m[key] = val;
+            }
+
         }
 
         static bool set(T)(ref T m, ref JSON.JSONValue _json_value, string _name) @safe {
@@ -170,7 +212,14 @@ mixin template JSONCommon() {
                 (() @trusted => set_array(m, _json_value.array, _name))();
 
             }
-            else {
+        else static if (isSupportedAssociativeArray!T) {
+                check(_json_value.type is JSON.JSONType.object,
+                        format("Type of member '%s' must be an %s", _name, JSON.JSONType.object));
+                set_array(m, _json_value.object, _name);
+
+            
+        }
+        else {
                 check(0, format("Unsupported type %s for '%s' member", T.stringof, _name));
             }
             return true;
