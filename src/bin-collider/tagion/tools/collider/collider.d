@@ -34,6 +34,8 @@ import tagion.hibon.HiBONRecord : fwrite, fread;
 
 import tagion.utils.Term;
 
+import tagion.tools.collider.runner;
+
 enum ONE_ARGS_ONLY = 2;
 enum DFMT_ENV = "DFMT"; /// Set the path and argument d-format including the flags
 enum ICONV = "iconv"; /// Character format converter  
@@ -393,6 +395,10 @@ int main(string[] args) {
     bool Check_reports_switch;
     bool check_reports_switch; /** verbose switch */
     string[] stages;
+    string schedule_file="schedule".setExtension(FileExtension.json);
+    bool run_schedule;
+    uint schedule_jobs=0;
+    bool schedule_rewrite;
     try {
         if (config_file.exists) {
             options.load(config_file);
@@ -404,16 +410,20 @@ int main(string[] args) {
                 "version", "display the version", &version_switch,
                 "I", "Include directory", &options.paths, std.getopt.config.bundling,
                 "O", format("Write configure file %s", config_file), &overwrite_switch,
-                "r|regex_inc", format(`Include regex Default:"%s"`, options.regex_inc), &options.regex_inc,
-                "x|regex_exc", format(`Exclude regex Default:"%s"`, options.regex_exc), &options.regex_exc,
+                "R|regex_inc", format(`Include regex Default:"%s"`, options.regex_inc), &options.regex_inc,
+                "X|regex_exc", format(`Exclude regex Default:"%s"`, options.regex_exc), &options.regex_exc,
                 "i|import", format(`Set include file Default:"%s"`, options.importfile), &options
                 .importfile,
                 "p|package", "Generates D package to the source files", &options
                 .enable_package,
                 "c|check", "Check the bdd reports in give list of directories", &check_reports_switch,
                 "C", "Same as check but the program will return a nozero exit-code if the check fails", &Check_reports_switch,
-                "s|stage", "Sets stage target for the testbench to be runned", &stages,
-                "v|verbose", "Enable verbose print-out", &options.verbose_switch,
+                "g|stage", "Sets stage target for the testbench to be runned", &stages,
+    "s|schedule", format("Execution schedule Default: %s", schedule_file), &schedule_file,
+        "r|run", "Runs the test in the schedule", &run_schedule,
+        "S", "Rewrite the schedule file", &schedule_rewrite,
+    "j|jobs", format("Sets number jobs to run simultaneously (0 == max) Default: %d", schedule_jobs), &schedule_jobs,
+        "v|verbose", "Enable verbose print-out", &options.verbose_switch,
         );
         if (version_switch) {
             revision_text.writeln;
@@ -442,8 +452,13 @@ int main(string[] args) {
             return 0;
         }
 
-        if (stages) {
-            stages.writeln;
+        if (stages || run_schedule) {
+            Schedule schedule;
+            schedule.load(schedule_file);
+            runSchedule(schedule, stages, schedule_jobs);
+            if (schedule_rewrite) {
+                schedule.save(schedule_file);
+            }
         }
         check_reports_switch = Check_reports_switch || check_reports_switch;
         if (check_reports_switch) {
