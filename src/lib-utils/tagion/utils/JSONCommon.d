@@ -131,11 +131,11 @@ mixin template JSONCommon() {
             }
         }
 
-        static void set_hashmap(T)(ref T m, ref JSON.JSONValue json, string name) @safe 
-    if (isSupportedAssociativeArray!T) {
+        static void set_hashmap(T)(ref T m, ref JSON.JSONValue[string] json_array, string name) @safe
+                if (isSupportedAssociativeArray!T) {
             alias ElemType = ForeachType!T;
-            foreach (key, json_value; json) {
-                Elemtype val;
+            foreach (key, json_value; json_array) {
+                ElemType val;
                 set(val, json_value, name);
                 m[key] = val;
             }
@@ -212,14 +212,13 @@ mixin template JSONCommon() {
                 (() @trusted => set_array(m, _json_value.array, _name))();
 
             }
-        else static if (isSupportedAssociativeArray!T) {
+            else static if (isSupportedAssociativeArray!T) {
                 check(_json_value.type is JSON.JSONType.object,
                         format("Type of member '%s' must be an %s", _name, JSON.JSONType.object));
-                set_array(m, _json_value.object, _name);
+                (() @trusted => set_hashmap(m, _json_value.object, _name))();
 
-            
-        }
-        else {
+            }
+            else {
                 check(0, format("Unsupported type %s for '%s' member", T.stringof, _name));
             }
             return true;
@@ -283,6 +282,7 @@ version (unittest) {
 
 }
 
+@safe
 unittest {
     static struct OptS {
         bool _bool;
@@ -338,6 +338,7 @@ unittest {
 
 }
 
+@safe
 unittest { // JSONCommon with array types
     //    import std.stdio;
     static struct OptArray(T) {
@@ -408,4 +409,26 @@ unittest { // JSONCommon with array types
 
         assert(opt_loaded == opt);
     }
+}
+
+@safe
+unittest { // Check of support for associative array
+    static struct S {
+        string[string] names;
+        mixin JSONCommon;
+    }
+
+    S s;
+    s.names["Hugo"] = "big";
+    s.names["Borge"] = "small";
+
+    auto json = s.toJSON;
+
+    S s_result;
+    s_result.parse(json);
+    assert("Hugo" in s_result.names);
+    assert("Borge" in s_result.names);
+    assert(s_result.names["Hugo"] == "big");
+    assert(s_result.names["Borge"] == "small");
+
 }
