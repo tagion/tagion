@@ -25,5 +25,5 @@ jobs:
           cd tagion
           git pull 
           make unittest COV=1 DC=dmd
-          bash <(curl -s https://codecov.io/bash) -t 80252d60-5311-4a63-8ffe-823decc0cb79
+          bash <(curl -s https://codecov.io/bash) -t ${{ env.CODECOV_TOKEN }}
           
