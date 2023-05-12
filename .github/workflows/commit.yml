@@ -58,7 +58,7 @@ jobs:
       - name: Upload to shared directory
         if: success()
         run: |
-          folder=/mnt/shared${{env.STAGE}}
+          folder=/mnt/shared/${{env.STAGE}}
           mkdir -p $folder
           cp ${{steps.create_tar.outputs.tar_filename}} $folder
           
