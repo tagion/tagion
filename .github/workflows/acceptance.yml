@@ -24,7 +24,7 @@ jobs:
         run: |
           cp /mnt/shared/${{inputs.stage}}/${{inputs.tarball}} .
           mkdir -p ${{ env.ARTIFACT }}
-          tar -xzf ${{inputs.tarball}} ${{ env.ARTIFACT }}
+          tar -xzf ${{inputs.tarball}} -C ${{ env.ARTIFACT }}
         
       - name: Testing
         run: echo $(ls ${{ env.ARTIFACT }})
