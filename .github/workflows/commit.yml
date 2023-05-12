@@ -9,6 +9,8 @@ env:
   STAGE: commit
   DC: dmd
   PARALLEL: 2
+  RETENTION_DAYS_BINS: 3
+
 jobs:
   build_and_test:
     runs-on: phillip
@@ -43,6 +45,15 @@ jobs:
           tar -czf ../${tar_filename} --exclude='*.o' logs/ build/
           echo -e "\nRelease candidate is: $tar_filename" >> $GITHUB_STEP_SUMMARY
           gh workflow run acceptance.yml -f tarball=$tar_filename
+
+      - name: Upload all
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: failed-run
+          path: $tar_filename
+          retention-days: ${{ env.RETENTION_DAYS_BINS }}
+      # - name: Move tar ball to shared storage
 
         env:
           GITHUB_TOKEN: ${{ secrets.BOT_TOKEN }}
