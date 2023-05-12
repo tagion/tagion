@@ -6,23 +6,51 @@ on:
         description: "tar ball of the logs and build"
         required: true
         type: string
+      stage:
+        description: "the stage that the log should be taken from"
+        required: true
+        type: string
+env:
+  TARGET: x86_64-linux
+  STAGE: acceptance
+  ARTIFACT: ARTIFACT
+  RETENTION_DAYS_BINS: 3
 
 jobs:
   run_acceptance_stage_tests:
     runs-on: phillip
     steps:
-      - name: Mount Artifact
-        run: | 
-          mkdir -p ARTIFACT
-          archivemount ../${{inputs.tarball}} ARTIFACT
+      - name: Copy Artifact to local machine
+        run: |
+          cp /mnt/shared/${{inputs.stage}}/${{inputs.tarball}} .
+          mkdir -p ${{ env.ARTIFACT }}
+          tar -xzf ${{inputs.tarball}} -C ${{ env.ARTIFACT }}
+        
       - name: Testing
-        run: echo $(ls ARTIFACT)
+        run: echo $(ls ${{ env.ARTIFACT }})
 
       
-      - name: Unmount Artifact
-        if: failure() || success()
+      - name: Create tar ball
+        run: tar -czf ${{inputs.tarball}} --exclude='*.o' ${{ env.ARTIFACT }}/* 
+        
+      - uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: failed-run
+          path: ./${{inputs.tarball}}
+      
+      - name: Upload to shared directory
+        if: success()
         run: |
-          fusermount -u ARTIFACT
+          folder=/mnt/shared/${{env.STAGE}}
+          mkdir -p $folder
+          cp ${{inputs.tarball}} $folder
+        
+      - name: Cleanup
+        if: success() || failure()
+        run: |
+          rm ${{ inputs.tarball }}
+          rm -rf ${{env.ARTIFACT}}
       
 
 

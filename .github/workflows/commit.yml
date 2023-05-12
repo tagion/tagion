@@ -9,6 +9,8 @@ env:
   STAGE: commit
   DC: dmd
   PARALLEL: 2
+  RETENTION_DAYS_BINS: 3
+
 jobs:
   build_and_test:
     runs-on: phillip
@@ -36,14 +38,36 @@ jobs:
           echo -e "\n $RESULT" >> $GITHUB_STEP_SUMMARY
 
       - name: Create tar ball
+        if: success() || failure()
+        id: create_tar
         run: |
-          commit_hash=$(git rev-parse HEAD)
+          commit_hash=$(git rev-parse --short HEAD)
           timestamp=$(date +%M-%H-%d-%m-%y)
           tar_filename="${commit_hash}-${timestamp}.tar.gz"
-          tar -czf ../${tar_filename} --exclude='*.o' logs/ build/
+          tar -czf ${tar_filename} --exclude='*.o' logs/ build/
           echo -e "\nRelease candidate is: $tar_filename" >> $GITHUB_STEP_SUMMARY
-          gh workflow run acceptance.yml -f tarball=$tar_filename
+          echo "tar_filename=$tar_filename" >> $GITHUB_OUTPUT
 
+
+      - uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: failed-run
+          path: ./${{steps.create_tar.outputs.tar_filename}}
+      
+      - name: Upload to shared directory
+        if: success()
+        run: |
+          folder=/mnt/shared/${{env.STAGE}}
+          mkdir -p $folder
+          cp ${{steps.create_tar.outputs.tar_filename}} $folder
+          
+      - name: Start next workflow
+        if: success()
+        run: gh workflow run acceptance.yml -f tarball=${{ steps.create_tar.outputs.tar_filename }} -f stage=${{ env.STAGE }}
         env:
           GITHUB_TOKEN: ${{ secrets.BOT_TOKEN }}
  
+      - name: Cleanup
+        if: success() || failure()
+        run: rm ${{ steps.create_tar.outputs.tar_filename }}
