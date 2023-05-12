@@ -38,10 +38,10 @@ jobs:
           echo -e "\n $RESULT" >> $GITHUB_STEP_SUMMARY
 
       - name: Create tar ball
-        if: failure() || success() 
+        if: success() || failure()
         id: create_tar
         run: |
-          commit_hash=$(git rev-parse HEAD)
+          commit_hash=$(git rev-parse --short HEAD)
           timestamp=$(date +%M-%H-%d-%m-%y)
           tar_filename="${commit_hash}-${timestamp}.tar.gz"
           tar -czf ${tar_filename} --exclude='*.o' logs/ build/
@@ -55,9 +55,19 @@ jobs:
           name: failed-run
           path: ./${{steps.create_tar.outputs.tar_filename}}
       
+      - name: Upload to shared directory
+        if: success()
+        run: |
+          folder=/mnt/shared${{env.STAGE}}
+          mkdir -p $folder
+          cp ${{steps.create_tar.outputs.tar_filename}} $folder
+          
       - name: Start next workflow
         if: success()
-        run: gh workflow run acceptance.yml -f tarball=${{ steps.create_tar.outputs.tar_filename }}
+        run: gh workflow run acceptance.yml -f tarball=${{ steps.create_tar.outputs.tar_filename }} stage=${{ env.STAGE }}
         env:
           GITHUB_TOKEN: ${{ secrets.BOT_TOKEN }}
  
+      - name: Cleanup
+        if: success() || failure()
+        run: rm ${{ steps.create_tar.outputs.tar_filename }}

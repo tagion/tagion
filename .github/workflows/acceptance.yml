@@ -6,11 +6,19 @@ on:
         description: "tar ball of the logs and build"
         required: true
         type: string
-
+      stage:
+        description: "the stage that the log should be taken from"
+        required: true
+        type: string
 jobs:
   run_acceptance_stage_tests:
     runs-on: phillip
     steps:
+      - name: Copy Artifact to local machine
+        run: |
+          cp /mnt/shared/${{inputs.stage}}/${{inputs.tarball}} .
+          tar -xzf ${{inputs.tarball}}
+        
       - name: Mount Artifact
         run: | 
           mkdir -p ARTIFACT
