@@ -1,158 +1,140 @@
 name "tagion"
 description "Configuration exists to allow language server to do proper static analasys, compilation is not supported"
-targetType "executable"
-targetPath "build/dub/"
 authors "decard"
 copyright "Copyright © 2023, decard"
 license "proprietary"
-excludedSourceFiles "src/lib-behaviour/tagion/behaviour/unitdata/*" "src/lib-betterc/*" "src/lib-wasm/*"
-buildRequirements "allowWarnings" "silenceWarnings"
-sourceFiles "@tub/dub/dheaders.txt" \
-  "build/x86_64-linux/tmp/secp256k1/.libs/libsecp256k1.a" \
-  "build/x86_64-linux/tmp/libcrypto.a" \
-  "build/x86_64-linux/tmp/libssl.a" \
-  "build/x86_64-linux/tmp/libp2pgowrapper.a" \
-  platform="linux-x86_64"
-
-libs "secp256k1" "crypto" "ssl" "p2pgowrapper"
+dependency "unit-threaded" version="~>2.1.6"
+targetType "executable"
+targetPath "build/dub/"
 dflags "-dip25" "-dip1000" "-preview=inclusiveincontracts"
-versions "REDBLACKTREE_SAFE_PROBLEM" "SYNC_BLOCKFILE_WORKING" "TINY_AES" "WOLFSSL" "OLD_TRANSACTION" "ONETOOL" 
-stringImportPaths "tub/logos/" "/home/lucas/wrk/tagion/build/x86_64-linux"
-
-subPackage {
-    name "basic"
-    sourcePaths "src/lib-basic/"
-    importPaths "src/lib-basic/"
-}
-subPackage {
-    name "utils"
-    sourcePaths "src/lib-utils/"
-    importPaths "src/lib-utils/"
-    dependency "tagion:basic" version="*"
-}
-subPackage {
-    name "logger"
-    sourcePaths "src/lib-logger/"
-    importPaths "src/lib-logger/"
-    dependency "tagion:basic" version="*"
-    dependency "tagion:hibon" version="*"
-}
-subPackage {
-    name "actor"
-    sourcePaths "src/lib-actor/"
-    importPaths "src/lib-actor/"
-    dependency "tagion:basic" version="*"
-    dependency "tagion:logger" version="*"
-}
-
-subPackage {
-    name "hibon"
-    sourcePaths "src/lib-hibon/"
-    importPaths "src/lib-hibon/"
-    dependency "tagion:utils" version="*"
-}
-
-subPackage {
-    name "dart"
-    sourcePaths "src/lib-dart/"
-    importPaths "src/lib-dart/"
-    dependency "tagion:basic" version="*"
-    dependency "tagion:hibon" version="*"
-    dependency "tagion:logger" version="*"
-    dependency "tagion:crypto" version="*"
-    dependency "tagion:communication" version="*"
-    dependency "tagion:options" version="*"
-}
-
-subPackage {
-    name "crypto"
-    sourcePaths "src/lib-crypto/"
-    importPaths "src/lib-crypto/"
-}
-
-subPackage {
-    name "communication"
-    sourcePaths "src/lib-communication/"
-    importPaths "src/lib-communication/"
-}
-
-subPackage {
-    name "options"
-    sourcePaths "src/lib-options/"
-    importPaths "src/lib-options/"
-}
-
-subPackage {
-    name "tools"
-    sourcePaths "src/lib-tools"
-    importPaths "src/lib-tools"
-}
-
-
-subPackage {
-    name "behaviour"
-    sourcePaths "src/lib-behaviour/"
-    importPaths "src/lib-behaviour/"
-    dependency "tagion:hibon" version="*"
-}
-
-subPackage {
-    name "hashgraph"
-    sourcePaths "src/lib-hashgraph/"
-    importPaths "src/lib-hashgraph/"
-    dependency "tagion:hashgraphview" version="*"
-    dependency "tagion:gossip" version="*"
-}
-
-subPackage {
-    name "hashgraphview"
-    sourcePaths "src/lib-hashgraphview/"
-    importPaths "src/lib-hashgraphview/"
-}
-
-subPackage {
-    name "gossip"
-    sourcePaths "src/lib-gossip/"
-    importPaths "src/lib-gossip/"
-}
-
-subPackage {
-    name "network"
-    sourcePaths "src/lib-network/"
-    importPaths "src/lib-network/"
-}
-
-subPackage {
-    name "prior_services"
-    sourcePaths "src/lib-prior-services/"
-    importPaths "src/lib-prior-services/"
-}
-
-subPackage {
-    name "tests"
-    sourcePaths "bdd/"
-    importPaths "bdd/"
-    mainSourcePath "bdd/tagion/testbench/testbench.d"
-    excludedSourceFiles "bdd/**.gen.d"
-
-    dependency "tagion:basic" version="*"
-    dependency "tagion:behaviour" version="*"
-    dependency "tagion:tools" version="*"
-    dependency "tagion:actor" version="*"
-    dependency "tagion:crypto" version="*"
-    dependency "tagion:dart" version="*"
-    dependency "tagion:hashgraph" version="*"
-    dependency "tagion:network" version="*"
-}
-
+libs "secp256k1" "crypto" "ssl" "p2pgowrapper"
+sourceFiles "build/x86_64-linux/tmp/secp256k1/.libs/libsecp256k1.a" "build/x86_64-linux/tmp/wolfssl/src/.libs/libwolfssl.a" platform="linux-x86_64"
+excludedSourceFiles "src/lib-behaviour/tagion/behaviour/unitdata/**.d" "src/lib-betterc/*" "src/lib-wasm/*"
+versions "REDBLACKTREE_SAFE_PROBLEM" "SYNC_BLOCKFILE_WORKING" "TINY_AES" "WOLFSSL" "OLD_TRANSACTION" "ONETOOL"
+stringImportPaths "tub/logos/" "build/x86_64-linux/"
+buildRequirements "allowWarnings" "silenceWarnings"
 configuration "bin" {
-    sourcePath "src/bin-tools"
-    mainSourcePath "src/bin-tools/tagion/tools/tools.d"
-    dependency "tagion:basic" version="*"
-    dependency "tagion:behaviour" version="*"
-    dependency "tagion:actor" version="*"
-    dependency "tagion:crypto" version="*"
-    dependency "tagion:dart" version="*"
-    dependency "tagion:hashgraph" version="*"
-    dependency "tagion:network" version="*"
+	dependency "tagion:basic" version=">=0.0.0"
+	dependency "tagion:behaviour" version=">=0.0.0"
+	dependency "tagion:prior_services" version=">=0.0.0"
+	dependency "tagion:crypto" version=">=0.0.0"
+	dependency "tagion:dart" version=">=0.0.0"
+	dependency "tagion:actor_logger" version=">=0.0.0"
+	targetType "executable"
+}
+configuration "unittest" {
+	dependency "tagion:behaviour" version=">=0.0.0"
+	dependency "tagion:prior_services" version=">=0.0.0"
+	dependency "unit-threaded" version=">=0.0.0"
+	dependency "tagion:crypto" version=">=0.0.0"
+	dependency "tagion:dart" version=">=0.0.0"
+	dependency "tagion:actor_logger" version=">=0.0.0"
+	targetType "executable"
+	mainSourceFile "bin/ut.d"
+	excludedSourceFiles "src/lib-behaviour/tagion/behaviour/unitdata/**.d" "src/bin-*/**.d" "build/*"
+	stringImportPaths "tub/logos/" "build/x86_64-linux/"
+	preBuildCommands "$DUB run --compiler=dmd unit-threaded -c gen_ut_main -- -f bin/ut.d -d $DUB"
+	buildRequirements "allowWarnings" "silenceWarnings"
+}
+subPackage {
+	name "basic"
+	sourcePaths "src/lib-basic/"
+	importPaths "src/lib-basic/"
+}
+subPackage {
+	name "utils"
+	dependency "tagion:basic" version=">=0.0.0"
+	sourcePaths "src/lib-utils/"
+	importPaths "src/lib-utils/"
+}
+subPackage {
+	name "actor_logger"
+	dependency "tagion:basic" version=">=0.0.0"
+	dependency "tagion:hibon" version=">=0.0.0"
+	sourcePaths "src/lib-logger/" "src/lib-actor/"
+	importPaths "src/lib-logger/" "src/lib-actor/"
+}
+subPackage {
+	name "hibon"
+	dependency "tagion:utils" version=">=0.0.0"
+	dependency "tagion:tagion_phobos" version=">=0.0.0"
+	sourcePaths "src/lib-hibon/"
+	importPaths "src/lib-hibon/"
+	buildRequirements "allowWarnings" "silenceWarnings"
+}
+subPackage {
+	name "dart"
+	dependency "tagion:basic" version=">=0.0.0"
+	dependency "tagion:options" version=">=0.0.0"
+	dependency "tagion:crypto" version=">=0.0.0"
+	dependency "tagion:hibon" version=">=0.0.0"
+	dependency "tagion:actor_logger" version=">=0.0.0"
+	dependency "tagion:communication" version=">=0.0.0"
+	sourcePaths "src/lib-dart/"
+	importPaths "src/lib-dart/"
+}
+subPackage {
+	name "crypto"
+	dependency "tagion:basic" version=">=0.0.0"
+	dependency "tagion:hibon" version=">=0.0.0"
+	sourcePaths "src/lib-crypto/"
+	importPaths "src/lib-crypto/"
+}
+subPackage {
+	name "communication"
+	dependency "tagion:basic" version=">=0.0.0"
+	dependency "tagion:crypto" version=">=0.0.0"
+	dependency "tagion:hibon" version=">=0.0.0"
+	sourcePaths "src/lib-communication/"
+	importPaths "src/lib-communication/"
+}
+subPackage {
+	name "options"
+	dependency "tagion:utils" version=">=0.0.0"
+	sourcePaths "src/lib-options/"
+	importPaths "src/lib-options/"
+}
+subPackage {
+	name "tools"
+	sourcePaths "src/lib-tools"
+	importPaths "src/lib-tools"
+}
+subPackage {
+	name "behaviour"
+	dependency "tagion:hibon" version=">=0.0.0"
+	sourcePaths "src/lib-behaviour/"
+	excludedSourceFiles "src/lib-behaviour/tagion/behaviour/unitdata/**.d"
+	importPaths "src/lib-behaviour/"
+	buildRequirements "allowWarnings" "silenceWarnings"
+}
+subPackage {
+	name "prior_services"
+	dependency "tagion:options" version=">=0.0.0"
+	dependency "tagion:crypto" version=">=0.0.0"
+	dependency "tagion:actor_logger" version=">=0.0.0"
+	dependency "tagion:communication" version=">=0.0.0"
+	dependency "tagion:hibon" version=">=0.0.0"
+	dependency "tagion:dart" version=">=0.0.0"
+	dependency "tagion:utils" version=">=0.0.0"
+	sourcePaths "src/lib-prior-services/" "src/lib-gossip/" "src/lib-hashgraph/" "src/lib-hashchain/" "src/lib-p2pgowrapper/" "src/lib-hashgraphview/" "src/lib-funnel/" "src/lib-prior-actor/" "src/lib-taskwrapper/" "src/lib-network/" "src/lib-monitor/"
+	importPaths "src/lib-prior-services/" "src/lib-gossip/" "src/lib-hashgraph/" "src/lib-hashgraphview/" "src/lib-p2pgowrapper/" "src/lib-funnel/" "src/lib-prior-actor/" "src/lib-hashchain/" "src/lib-taskwrapper/" "src/lib-monitor/" "src/lib-network/"
+	buildRequirements "allowWarnings" "silenceWarnings"
+}
+subPackage {
+	name "tagion_phobos"
+	sourcePaths "src/lib-phobos/"
+	importPaths "src/lib-phobos/"
+}
+subPackage {
+	name "tests"
+	dependency "tagion:basic" version=">=0.0.0"
+	dependency "tagion:behaviour" version=">=0.0.0"
+	dependency "tagion:tools" version=">=0.0.0"
+	dependency "tagion:crypto" version=">=0.0.0"
+	dependency "tagion:dart" version=">=0.0.0"
+	dependency "tagion:actor_logger" version=">=0.0.0"
+	dependency "tagion:prior_services" version=">=0.0.0"
+	sourcePaths "bdd/"
+	excludedSourceFiles "bdd/**.gen.d"
+	importPaths "bdd/"
 }

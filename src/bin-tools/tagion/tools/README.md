@@ -7,5 +7,4 @@
 * [wallet](/src/bin-wallet/README.md)
 * [wasmutil](/src/bin-wasmutil/README.md)
 * [tagionwave](/src/bin-wave/README.md)
-* [tagionevilwallet](/src/bin-evilwallet/README.md)
 * [recorderchain](/src/bin-recorderchain/README.md)

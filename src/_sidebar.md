@@ -2,7 +2,6 @@
 - Modules
 	- [bin-boot](src/bin-boot/README.md)
 	- [bin-dartutil](src/bin-dartutil/README.md)
-	- [bin-evilwallet](src/bin-evilwallet/README.md)
 	- [bin-hibonutil](src/bin-hibonutil/README.md)
 	- [bin-recorderchain](src/bin-recorderchain/README.md)
 	- [bin-subscription](src/bin-subscription/README.md)
