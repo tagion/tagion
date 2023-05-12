@@ -53,7 +53,7 @@ jobs:
         if: failure()
         with:
           name: failed-run
-          path: ./${{steps.create_tar.outputs.tar_filename}}
+          path: ../${{steps.create_tar.outputs.tar_filename}}
       
       - name: Start next workflow
         if: success()
