@@ -44,7 +44,7 @@ jobs:
           commit_hash=$(git rev-parse HEAD)
           timestamp=$(date +%M-%H-%d-%m-%y)
           tar_filename="${commit_hash}-${timestamp}.tar.gz"
-          tar -czf ../${tar_filename} --exclude='*.o' logs/ build/
+          tar -czf ${tar_filename} --exclude='*.o' logs/ build/
           echo -e "\nRelease candidate is: $tar_filename" >> $GITHUB_STEP_SUMMARY
           echo "tar_filename=$tar_filename" >> $GITHUB_OUTPUT
 
@@ -53,7 +53,7 @@ jobs:
         if: failure()
         with:
           name: failed-run
-          path: ../${{steps.create_tar.outputs.tar_filename}}
+          path: ./${{steps.create_tar.outputs.tar_filename}}
       
       - name: Start next workflow
         if: success()
