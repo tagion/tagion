@@ -14,6 +14,8 @@ env:
 jobs:
   build_and_test:
     runs-on: phillip
+    outputs:
+      tar_filename: ${{ steps.create_tar.outputs.tar_filename }}
     steps:
       - name: pull
         run: |
@@ -38,26 +40,28 @@ jobs:
           echo -e "\n $RESULT" >> $GITHUB_STEP_SUMMARY
 
       - name: Create tar ball
+        id: create_tar
         run: |
           commit_hash=$(git rev-parse HEAD)
           timestamp=$(date +%M-%H-%d-%m-%y)
           tar_filename="${commit_hash}-${timestamp}.tar.gz"
           tar -czf ../${tar_filename} --exclude='*.o' logs/ build/
           echo -e "\nRelease candidate is: $tar_filename" >> $GITHUB_STEP_SUMMARY
+          echo "::set-output name=tar_filename::${tar_filename}"
 
       - name: Upload all
         if: failure()
         uses: actions/upload-artifact@v3
         with:
           name: failed-run
-          path: $tar_filename
+          path: ${{ needs.build_and_test.outputs.tar_filename }}
           retention-days: ${{ env.RETENTION_DAYS_BINS }}
         env:
           GITHUB_TOKEN: ${{ secrets.BOT_TOKEN }}
       
       - name: Start next workflow
         if: success()
-        run: gh workflow run acceptance.yml -f tarball=$tar_filename
+        run: gh workflow run acceptance.yml -f tarball=${{ needs.build_and_test.outputs.tar_filename }}
         env:
           GITHUB_TOKEN: ${{ secrets.BOT_TOKEN }}
  
