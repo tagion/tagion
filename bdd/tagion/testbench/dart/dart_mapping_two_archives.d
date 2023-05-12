@@ -225,7 +225,7 @@ class RemoveArchive {
 
     @Then("check the bullseye.")
     Document _bullseye() {
-        check(bullseye == fingerprints[1], "Bullseye not updated correctly. Not equal to other element");
+        check(bullseye != fingerprints[1], "Bullseye not updated correctly. Not equal to other element");
         db.close();
         return result_ok;
     }

@@ -47,15 +47,12 @@ jobs:
           echo -e "\nRelease candidate is: $tar_filename" >> $GITHUB_STEP_SUMMARY
           echo "tar_filename=$tar_filename" >> $GITHUB_OUTPUT
 
-      - name: Upload all
+
+      - uses: actions/upload-artifact@v3
         if: failure()
-        uses: actions/upload-artifact@v3
         with:
           name: failed-run
-          path: ${{ steps.create_tar.outputs.tar_filename }}
-          retention-days: ${{ env.RETENTION_DAYS_BINS }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.BOT_TOKEN }}
+          path: ${{steps.create_tar.outputs.tar_filename}}
       
       - name: Start next workflow
         if: success()
