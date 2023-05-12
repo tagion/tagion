@@ -14,7 +14,7 @@ jobs:
       - name: Mount Artifact
         run: | 
           mkdir -p ARTIFACT
-          archivemount ../${{inputs.tarball}} ARTIFACT
+          archivemount ${{inputs.tarball}} ARTIFACT
       - name: Testing
         run: echo $(ls ARTIFACT)
 
