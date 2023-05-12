@@ -38,6 +38,7 @@ jobs:
           echo -e "\n $RESULT" >> $GITHUB_STEP_SUMMARY
 
       - name: Create tar ball
+        if: failure() || success() 
         id: create_tar
         run: |
           commit_hash=$(git rev-parse HEAD)
