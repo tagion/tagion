@@ -3,7 +3,9 @@ module tagion.tools.collider.schedule;
 import std.typecons : tuple, Tuple;
 import std.algorithm;
 import std.process;
-import core.time;
+import std.datetime.systime;
+import std.format;
+import core.thread;
 import tagion.utils.JSONCommon;
 
 @safe
@@ -24,27 +26,27 @@ struct Schedule {
 alias Runner = Tuple!(
         ProcessPipes, "pipe",
         RunUnit, "unit",
-        string, "stage", //MonoTimeImpl, "time"
-
-        
-
+        string, "name",
+        string, "stage",
+        SysTime, "time"
 );
 
+@safe
 interface ScheduleReport {
-    void start(const Runner);
-    void stop(const Runner);
-    void timeout(const Runner);
+    void start(const ref Runner);
+    void stop(const ref Runner);
+    void timeout(const ref Runner);
 }
 
 @safe
 struct ScheduleRunner {
-    const Schedule schedule;
+    Schedule schedule;
     const(string[]) stages;
     const uint jobs;
     ScheduleReport report;
     @disable this();
     this(
-            const Schedule schedule,
+            ref Schedule schedule,
             const(string[]) stages,
     const uint jobs,
     ScheduleReport report = null) pure nothrow
@@ -57,13 +59,24 @@ struct ScheduleRunner {
         this.report = report;
     }
 
+    static void sleep(Duration val) nothrow @nogc @trusted {
+        Thread.sleep(val);
+    }
+
+    void opDispatch(string op, Args...)(Args args) {
+        if (report) {
+            enum code = format(q{report.%s(args);}, op);
+            mixin(code);
+        }
+    }
+
     void run(scope const(char[])[] args) {
         import std.stdio;
 
         schedule.toJSON.toPrettyString.writeln;
-        
-        alias Stage=Tuple!(const(RunUnit), "unit", string, "name", string, "stage");     
-    auto schedule_list = stages
+
+        alias Stage = Tuple!(RunUnit, "unit", string, "name", string, "stage");
+        auto schedule_list = stages
             .map!(stage => schedule.units
                     .byKeyValue
                     .filter!(unit => unit.value.stages.canFind(stage))
@@ -72,33 +85,32 @@ struct ScheduleRunner {
 
         auto runners = new Runner[jobs];
         auto check_running = runners
-            .filter!(r => r.pipe !is r.pipe.init) 
-    .any!(r => !tryWait(r.pipe.pid).terminated);
-        
+            .filter!(r => r.pipe !is r.pipe.init)
+            .any!(r => !tryWait(r.pipe.pid).terminated);
+
         while (!schedule_list.empty || check_running) {
             while (!schedule_list.empty && !runners.all!(r => r.pipe !is r.pipe.init)) {
                 const index = runners.countUntil!(r => r.pipe is r.pipe.init);
-                auto time = MonoTime.currTime;
-                pragma(msg, "Time ", typeof(time));
-                pragma(msg, "Front ", typeof(schedule_list.front));
-            const cmd = args~schedule_list.front.stage~schedule_list.front.unit.args;
-                auto pipe=pipeProcess(cmd);
+                auto time = Clock.currTime;
+                const cmd = args ~ schedule_list.front.stage ~ schedule_list.front.unit.args;
+                auto pipe = pipeProcess(cmd);
                 runners[index] = Runner(
                         pipe,
-                        schedule_list.front,
-                        stage,
-                        time);
+                        schedule_list.front.unit,
+                        schedule_list.front.name,
+                        schedule_list.front.stage,
+                        time
+                );
+                //              time);
 
                 schedule_list.popFront;
             }
-            Thread.delay(100.msec);
+            sleep(100.msecs);
             const index = runners
                 .filter!(r => r.pipe !is r.pipe.init)
-                .countUntil!(r => tryWait(p.pipe.pid).terminated);
+                .countUntil!(r => tryWait(r.pipe.pid).terminated);
             if (index >= 0) {
-                if (report) {
-                    report(schedule_list.front, pipes[index]);
-                }
+                this.stop(runners[index]);
                 runners[index] = Runner.init;
             }
         }
