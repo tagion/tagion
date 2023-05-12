@@ -34,7 +34,7 @@ import tagion.hibon.HiBONRecord : fwrite, fread;
 
 import tagion.utils.Term;
 
-import tagion.tools.collider.runner;
+import tagion.tools.collider.schedule;
 
 enum ONE_ARGS_ONLY = 2;
 enum DFMT_ENV = "DFMT"; /// Set the path and argument d-format including the flags
@@ -72,12 +72,14 @@ struct BehaviourOptions {
     /** 
      * Used to set default options if config file not provided
      */
+    string test_stage_env;
     void setDefault() {
         const gen = "gen";
         bdd_ext = FileExtension.markdown;
         bdd_gen_ext = [gen, FileExtension.markdown].join(DOT);
         d_ext = [gen, FileExtension.dsrc].join(DOT);
         regex_inc = `/testbench/`;
+        test_stage_env = "TEST_STAGE";
         if (!(DFMT_ENV in environment)) {
             const which_dfmt = execute(["which", "dfmt"]);
             if (which_dfmt.status is 0) {
@@ -395,10 +397,11 @@ int main(string[] args) {
     bool Check_reports_switch;
     bool check_reports_switch; /** verbose switch */
     string[] stages;
-    string schedule_file="schedule".setExtension(FileExtension.json);
+    string schedule_file = "schedule".setExtension(FileExtension.json);
     bool run_schedule;
-    uint schedule_jobs=0;
+    uint schedule_jobs = 0;
     bool schedule_rewrite;
+    string testbench;
     try {
         if (config_file.exists) {
             options.load(config_file);
@@ -419,11 +422,13 @@ int main(string[] args) {
                 "c|check", "Check the bdd reports in give list of directories", &check_reports_switch,
                 "C", "Same as check but the program will return a nozero exit-code if the check fails", &Check_reports_switch,
                 "g|stage", "Sets stage target for the testbench to be runned", &stages,
-    "s|schedule", format("Execution schedule Default: %s", schedule_file), &schedule_file,
-        "r|run", "Runs the test in the schedule", &run_schedule,
-        "S", "Rewrite the schedule file", &schedule_rewrite,
-    "j|jobs", format("Sets number jobs to run simultaneously (0 == max) Default: %d", schedule_jobs), &schedule_jobs,
-        "v|verbose", "Enable verbose print-out", &options.verbose_switch,
+                "s|schedule", format(
+                    "Execution schedule Default: %s", schedule_file), &schedule_file,
+                "r|run", "Runs the test in the schedule", &run_schedule,
+                "S", "Rewrite the schedule file", &schedule_rewrite,
+                "j|jobs", format("Sets number jobs to run simultaneously (0 == max) Default: %d", schedule_jobs), &schedule_jobs,
+                "b|bin", format("Testbench program Default: %s", testbench), &testbench,
+                "v|verbose", "Enable verbose print-out", &options.verbose_switch,
         );
         if (version_switch) {
             revision_text.writeln;
@@ -453,13 +458,19 @@ int main(string[] args) {
         }
 
         if (stages || run_schedule) {
+            import core.cpuid : coresPerCPU;
+
             Schedule schedule;
             schedule.load(schedule_file);
-            runSchedule(schedule, stages, schedule_jobs);
+            schedule_jobs = (schedule_jobs == 0) ? coresPerCPU : schedule_jobs;
+            auto schedule_runner = ScheduleRunner(schedule, stages, schedule_jobs);
+            schedule_runner.run([testbench]);
             if (schedule_rewrite) {
                 schedule.save(schedule_file);
             }
+
         }
+
         check_reports_switch = Check_reports_switch || check_reports_switch;
         if (check_reports_switch) {
             const ret = check_reports(args[1 .. $], options.verbose_switch);
