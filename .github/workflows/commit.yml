@@ -64,7 +64,7 @@ jobs:
           
       - name: Start next workflow
         if: success()
-        run: gh workflow run acceptance.yml -f tarball=${{ steps.create_tar.outputs.tar_filename }} stage=${{ env.STAGE }}
+        run: gh workflow run acceptance.yml -f tarball=${{ steps.create_tar.outputs.tar_filename }} -f stage=${{ env.STAGE }}
         env:
           GITHUB_TOKEN: ${{ secrets.BOT_TOKEN }}
  
