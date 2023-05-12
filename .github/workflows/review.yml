@@ -19,9 +19,10 @@ jobs:
       
       - name: Create Pull Request
         run: |
+          export RAND=${echo $((RANDOM % 59 +1))}
           gh pr create --title "Review week ${{ steps.week-number.outputs.week }}" \
-                       --body "Changes since week: ${{ steps.week-number.outputs.week }}" \
-                       --body "![LGTM](${{ env.shipit }})" \
+                       --body "Changes since week: ${{ steps.week-number.outputs.week }} \
+                       ![LGTM](${{ env.shipit }}/$RAND)" \
                        --base master --head current
         env:
           GITHUB_TOKEN: ${{ secrets.BOT_TOKEN }}
