@@ -5,10 +5,14 @@ on:
     - cron: '42 15 * * 0' # Every Sunday at 17:42 CEST
   workflow_dispatch:
 
+env:
+  shipit:  https://i.shipit.today
+
 jobs:
   create_pull_request:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
       - name: Get week number
         id: week-number
         run: echo "::set-output name=week::$(date +'%U')"
@@ -17,6 +21,7 @@ jobs:
         run: |
           gh pr create --title "Review week ${{ steps.week-number.outputs.week }}" \
                        --body "Changes since week: ${{ steps.week-number.outputs.week }}" \
+                       --body "![LGTM](${{ env.shipit }})" \
                        --base master --head current
         env:
           GITHUB_TOKEN: ${{ secrets.BOT_TOKEN }}
