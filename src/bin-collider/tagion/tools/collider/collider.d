@@ -391,7 +391,7 @@ void error(Args...)(string fmt, Args args) {
 int main(string[] args) {
     BehaviourOptions options;
     immutable program = args[0]; /** file for configurations */
-    auto config_file = "behaviour.json"; /** flag for print current version of behaviour */
+    auto config_file = "collider.json"; /** flag for print current version of behaviour */
     bool version_switch; /** flag for overwrite config file */
     bool overwrite_switch; /** falg for to enable report checks */
     bool Check_reports_switch;
@@ -401,7 +401,9 @@ int main(string[] args) {
     bool run_schedule;
     uint schedule_jobs = 0;
     bool schedule_rewrite;
-    string testbench;
+    bool schedule_write_proto;
+
+    string testbench="testbench";
     try {
         if (config_file.exists) {
             options.load(config_file);
@@ -412,7 +414,7 @@ int main(string[] args) {
         auto main_args = getopt(args, std.getopt.config.caseSensitive,
                 "version", "display the version", &version_switch,
                 "I", "Include directory", &options.paths, std.getopt.config.bundling,
-                "O", format("Write configure file %s", config_file), &overwrite_switch,
+                "O", format("Write configure file '%s'", config_file), &overwrite_switch,
                 "R|regex_inc", format(`Include regex Default:"%s"`, options.regex_inc), &options.regex_inc,
                 "X|regex_exc", format(`Exclude regex Default:"%s"`, options.regex_exc), &options.regex_exc,
                 "i|import", format(`Set include file Default:"%s"`, options.importfile), &options
@@ -423,11 +425,12 @@ int main(string[] args) {
                 "C", "Same as check but the program will return a nozero exit-code if the check fails", &Check_reports_switch,
                 "g|stage", "Sets stage target for the testbench to be runned", &stages,
                 "s|schedule", format(
-                    "Execution schedule Default: %s", schedule_file), &schedule_file,
+                    "Execution schedule Default: '%s'", schedule_file), &schedule_file,
                 "r|run", "Runs the test in the schedule", &run_schedule,
                 "S", "Rewrite the schedule file", &schedule_rewrite,
                 "j|jobs", format("Sets number jobs to run simultaneously (0 == max) Default: %d", schedule_jobs), &schedule_jobs,
-                "b|bin", format("Testbench program Default: %s", testbench), &testbench,
+                "b|bin", format("Testbench program Default: '%s'", testbench), &testbench,
+                "P|proto", "Writes sample schedule file", &schedule_write_proto,
                 "v|verbose", "Enable verbose print-out", &options.verbose_switch,
         );
         if (version_switch) {
@@ -457,6 +460,14 @@ int main(string[] args) {
             return 0;
         }
 
+        if (schedule_write_proto) {
+            Schedule schedule;
+            auto run_unit=RunUnit(["commit"], null, null, 0.0);
+            schedule.units["collider_test"]=run_unit;
+            schedule.save(schedule_file);
+            return 0;
+        }
+
         if (stages || run_schedule) {
             import core.cpuid : coresPerCPU;
 
@@ -468,7 +479,7 @@ int main(string[] args) {
             if (schedule_rewrite) {
                 schedule.save(schedule_file);
             }
-
+            Check_reports_switch=true;
         }
 
         check_reports_switch = Check_reports_switch || check_reports_switch;
@@ -486,6 +497,7 @@ int main(string[] args) {
     }
     catch (Exception e) {
         error("Error: %s", e.msg);
+        return 1;
     }
-    return 1;
+    return 0;
 }

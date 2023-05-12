@@ -13,6 +13,7 @@ struct RunUnit {
     string[] stages;
     string[string] envs;
     string[] args;
+    double timeout;
     mixin JSONCommon;
 }
 

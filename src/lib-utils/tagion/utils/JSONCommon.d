@@ -32,7 +32,7 @@ mixin template JSONCommon() {
     import std.range : ElementType;
 
     //    import std.traits : isArray;
-    alias ArrayElementTypes = AliasSeq!(bool, string);
+    alias ArrayElementTypes = AliasSeq!(bool, string, double, int);
 
     enum isSupportedArray(T) = isArray!T && isSupported!(ElementType!T);
     enum isSupportedAssociativeArray(T) = isAssociativeArray!T && is(KeyType!T == string) && isSupported!(ForeachType!T);
