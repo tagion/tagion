@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -i.bak 
+#!/usr/bin/perl -i.bak 
 
 while (<>) {
     s/^(\s*enum)$/$1 wolfCrypt_ErrorCodes/;

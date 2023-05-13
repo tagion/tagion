@@ -1,4 +1,4 @@
-#!/usr/bin/env perl -i.bak 
+#!/usr/bin/perl -i.bak 
 #  Correct numbers
 
 my $alias_funcs = join("|",
