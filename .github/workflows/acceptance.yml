@@ -12,6 +12,7 @@ on:
         type: string
 env:
   TARGET: x86_64-linux
+  STAGE: acceptance
   RETENTION_DAYS_BINS: 3
 
 jobs:
