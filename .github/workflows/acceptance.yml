@@ -31,7 +31,7 @@ jobs:
           source ${{ env.ARTIFACT }}/build/${{ env.TARGET }}/bin/bddenv.sh
           export DBIN=$PWD/${{ env.ARTIFACT }}/build/${{ env.TARGET }}/bin
           export DLOG=$PWD/${{ env.ARTIFACT }}/logs/${{ env.TARGET }}
-          export COLLIDER_ROOT=$PWD/${{ env.ARTIFACT }}/logs/${{ env.TARGET }}
+          export COLLIDER_ROOT=$PWD/${{ env.ARTIFACT }}/logs/${{ env.TARGET }}/bdd
           export PATH=$DBIN:$PATH
           ./${{ env.ARTIFACT }}/build/${{ env.TARGET }}/bin/collider -r acceptance -j 2 -b ${{ env.ARTIFACT }}/build/${{ env.TARGET}}/bin/testbench
 
@@ -39,7 +39,7 @@ jobs:
         run: tar -czf ${{inputs.tarball}} --exclude='*.o' ${{ env.ARTIFACT }}/* 
         
       - uses: actions/upload-artifact@v3
-        if: failure()
+        if: failure() || success()
         with:
           name: failed-run
           path: ./${{inputs.tarball}}
