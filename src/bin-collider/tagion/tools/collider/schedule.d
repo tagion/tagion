@@ -168,7 +168,7 @@ struct ScheduleRunner {
                         .each!(e => env[e.key] = e.value);
                     setEnv(env, schedule_list.front.stage);
                     //writefln("ENV %s ", env);
-                    auto pipe = pipeProcess(cmd, Redirect.stdout | Redirect.stderr, env);
+                    auto pipe = pipeProcess(cmd, Redirect.all, env);
                     writefln("--- %s start", cmd);
                     runners[runner_index] = Runner(
                             pipe,
