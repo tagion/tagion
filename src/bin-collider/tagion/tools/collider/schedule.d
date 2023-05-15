@@ -132,7 +132,9 @@ struct ScheduleRunner {
 
     static void kill(Pid pid) @trusted {
         try {
+
             
+
                 .kill(pid); //.ifThown!ProcessException;
         }
         catch (ProcessException e) {
@@ -225,7 +227,7 @@ struct ScheduleRunner {
                     break;
                 }
             }
-            sleep(3000.msecs);
+            //            sleep(3000.msecs);
             writefln("END %d", jobs);
         }
         return 0;
