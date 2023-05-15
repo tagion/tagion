@@ -145,7 +145,7 @@ struct ScheduleRunner {
     int run(scope const(char[])[] args) {
         import std.stdio;
 
-        schedule.toJSON.toPrettyString.writeln;
+        //        schedule.toJSON.toPrettyString.writeln;
 
         alias Stage = Tuple!(RunUnit, "unit", string, "name", string, "stage");
         auto schedule_list = stages
@@ -155,8 +155,6 @@ struct ScheduleRunner {
                     .map!(unit => Stage(unit.value, unit.key, stage)))
             .joiner;
 
-        writefln("list %s", schedule_list);
-        writefln("stages %s", schedule_list.map!(u => u.stage));
         if (schedule_list.empty) {
             writefln("None of the stage %s available", stages);
             writefln("Avalibale %s", schedule.stages);
@@ -167,12 +165,9 @@ struct ScheduleRunner {
             .filter!(r => r.pid !is r.pid.init)
             .any!(r => !tryWait(r.pid).terminated);
 
-        writefln("Before start %s", check_running);
-        writefln("Before start %s", schedule_list.empty);
         while (!schedule_list.empty || check_running) {
-            writefln("name %s", schedule_list.front.name);
             while (!schedule_list.empty && !runners.all!(r => r.pid !is r.pid.init)) {
-                const runner_index = runners.countUntil!(r => r.pid is r.pid.init);
+                const job_index = runners.countUntil!(r => r.pid is r.pid.init);
                 try {
                     auto time = Clock.currTime;
                     const cmd = args ~ schedule_list.front.name ~ schedule_list.front.unit
@@ -188,22 +183,22 @@ struct ScheduleRunner {
                     auto _stdin = (() @trusted => stdin)();
                     auto pid = spawnProcess(cmd, _stdin, fout, fout, env);
                     writefln("--- %s start pid=%d", cmd, pid.processID);
-                    runners[runner_index] = Runner(
+                    runners[job_index] = Runner(
                             pid,
                             fout,
                             schedule_list.front.unit,
                             schedule_list.front.name,
                             schedule_list.front.stage,
                             time,
-                            runner_index
+                            job_index
                     );
                 }
                 catch (Exception e) {
                     writefln("----Error %s", e.msg);
-                    runners[runner_index].fout.writeln("Error: %s", e.msg);
-                    runners[runner_index].fout.close;
-                    kill(runners[runner_index].pid);
-                    runners[runner_index] = Runner.init;
+                    runners[job_index].fout.writeln("Error: %s", e.msg);
+                    runners[job_index].fout.close;
+                    kill(runners[job_index].pid);
+                    runners[job_index] = Runner.init;
                 }
                 //              time);
 
@@ -214,21 +209,18 @@ struct ScheduleRunner {
                 const job_index = runners
                     .filter!(r => r.pid !is r.pid.init)
                     .countUntil!(r => tryWait(r.pid).terminated);
-                writefln("job_index=%d", job_index);
+                //                writefln("job_index=%d", job_index);
                 if (job_index >= 0) {
                     this.stop(runners[job_index]);
                     writefln("Dump job %d", job_index);
                     runners[job_index].fout.close;
-                    //runners[job_index].pipe.stdout.writeln;
-                    //runners[job_index].pipe.stderr.writeln;
-
                     runners[job_index] = Runner.init;
                     writefln("Next job");
                     break;
                 }
             }
             //            sleep(3000.msecs);
-            writefln("END %d", jobs);
+            //writefln("END %d", jobs);
         }
         return 0;
     }

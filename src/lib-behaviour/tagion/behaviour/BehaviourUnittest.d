@@ -9,17 +9,18 @@ version (unittest) {
     import std.format;
     import std.process;
 
-    immutable(string) REPOROOT;
-    shared static this() {
-        REPOROOT = environment.get(REPOROOT.stringof, null);
-        if (REPOROOT is null) {
+    version (none) {
+        immutable(string) REPOROOT;
+        shared static this() {
+            REPOROOT = environment.get(REPOROOT.stringof, null);
+            if (REPOROOT is null) {
 
-            const gitrepo = execute(["git", "rev-parse", "--show-toplevel"]);
-            REPOROOT = gitrepo.output;
+                const gitrepo = execute(["git", "rev-parse", "--show-toplevel"]);
+                REPOROOT = gitrepo.output;
+            }
+            assert(REPOROOT, format!"%s must be defined"(REPOROOT.stringof));
         }
-        assert(REPOROOT, format!"%s must be defined"(REPOROOT.stringof));
     }
-
     @safe
     Document result(string test) {
         auto h = new HiBON;
