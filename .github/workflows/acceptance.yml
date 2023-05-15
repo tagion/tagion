@@ -22,6 +22,7 @@ jobs:
     steps:
       - name: Copy Artifact to local machine
         run: |
+          rm -rf *
           cp /mnt/shared/${{inputs.stage}}/${{inputs.tarball}} .
           tar -xzf ${{inputs.tarball}}
         
