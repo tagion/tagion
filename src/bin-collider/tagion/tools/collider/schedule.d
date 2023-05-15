@@ -1,5 +1,7 @@
 module tagion.tools.collider.schedule;
 
+import std.traits;
+import std.array;
 import std.typecons : tuple, Tuple;
 import std.algorithm;
 import std.process;
@@ -37,6 +39,32 @@ interface ScheduleReport {
     void start(const ref Runner);
     void stop(const ref Runner);
     void timeout(const ref Runner);
+}
+
+@safe
+struct ScheduleOption {
+    string dlog;
+    string test_stage;
+    void setDefault() {
+        import std.ascii : toUpper;
+
+        static foreach (name; FieldNameTuple!ScheduleOption) {
+            {
+                pragma(msg, "NAME ", name);
+                /*
+                enum name = name.map!(a => cast(char) a.toupper).array;
+                try {
+                    __traits(getmember, temp, name) = environment[name];
+                }
+                catch (exception e) {
+                    // Ignore
+                    // writeln(e.msg);
+                    // errors++;
+                }
+        */
+            }
+        }
+    }
 }
 
 @safe
@@ -94,7 +122,11 @@ struct ScheduleRunner {
                 const index = runners.countUntil!(r => r.pipe is r.pipe.init);
                 auto time = Clock.currTime;
                 const cmd = args ~ schedule_list.front.stage ~ schedule_list.front.unit.args;
-                auto pipe = pipeProcess(cmd);
+                writefln("cmd=%s", cmd);   
+            auto env = environment.toAA;
+                schedule_list.front.unit.envs.byKeyValue
+                    .each!(e => env[e.key] = e.value);
+                auto pipe = pipeProcess(cmd, Redirect.all, env);
                 runners[index] = Runner(
                         pipe,
                         schedule_list.front.unit,
