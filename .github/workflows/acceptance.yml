@@ -12,8 +12,6 @@ on:
         type: string
 env:
   TARGET: x86_64-linux
-  STAGE: acceptance
-  ARTIFACT: ARTIFACT
   RETENTION_DAYS_BINS: 3
 
 jobs:
@@ -33,13 +31,13 @@ jobs:
           export DLOG=$PWD/logs/${{ env.TARGET }}
           export COLLIDER_ROOT=$PWD/logs/${{ env.TARGET }}/bdd
           export PATH=$DBIN:$PATH
-          ./build/${{ env.TARGET }}/bin/collider -r acceptance -j 2 -b build/${{ env.TARGET}}/bin/testbench -s build/${{ env.TARGET }}/bin/schedule.json  
+          ./build/${{ env.TARGET }}/bin/collider -r ${{ inputs.stage }} -j 2 -b build/${{ env.TARGET}}/bin/testbench -s build/${{ env.TARGET }}/bin/schedule.json  
 
       - name: Create tar ball
         run: tar -czf ${{inputs.tarball}} --exclude='*.o' logs/ build/ 
         
       - uses: actions/upload-artifact@v3
-        if: failure() || success()
+        if: failure() 
         with:
           name: failed-run
           path: ./${{inputs.tarball}}
@@ -50,13 +48,18 @@ jobs:
           folder=/mnt/shared/${{env.STAGE}}
           mkdir -p $folder
           cp ${{inputs.tarball}} $folder
-        
+
+      - name: Start next workflow
+        if: succes()
+        run: gh workflow run finish.yml -f tarball=${{ inputs.tarball }} -f stage=${{ inputs.stage}}
+        env:
+          GITHUB_TOKEN: ${{ secrets.BOT_TOKEN }}
+
       - name: Cleanup
         if: success() || failure()
         run: |
           rm ${{ inputs.tarball }}
           rm -rf *
-      
 
 
 

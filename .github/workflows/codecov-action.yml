@@ -1,12 +1,20 @@
-name: codecov
+name: Code Coverage
 on:
   workflow_dispatch:
-  push: 
-    branches: 
-      - current
+    inputs:
+      tarball: 
+        description: "tar ball of the logs and build"
+        required: true
+        type: string
+      stage:
+        description: "the stage that the log should be taken from"
+        required: true
+        type: string
 env:
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-      
+  TARGET: x86_64-linux
+  UNITTEST_COV: unittest-cov
+
 permissions:
   contents: read
   pages: write
@@ -16,14 +24,25 @@ jobs:
   codecov:
     runs-on: old
     steps:
+      - name: Copy Artifact to local machine
+        run: |
+          rm -rf *
+          cp /mnt/shared/${{inputs.stage}}/${{inputs.tarball}} .
+          tar -xzf ${{inputs.tarball}}
       - name: codecov report
         run: |
-          pwd
-          mkdir -p codecov || echo "codecov dir already exists"
-          cd codecov
-          git clone --recurse-submodules -j8 git@github.com:tagion/tagion.git || echo "repo already exists"
-          cd tagion
-          git pull 
-          make unittest COV=1 DC=dmd
+          ./build/${{ env.TARGET }}/bin/${{ unittest-cov }}
           bash <(curl -s https://codecov.io/bash) -t ${{ env.CODECOV_TOKEN }}
+      
+      # - name: codecov report
+      #   run: |
+          
+      #     pwd
+      #     mkdir -p codecov || echo "codecov dir already exists"
+      #     cd codecov
+      #     git clone --recurse-submodules -j8 git@github.com:tagion/tagion.git || echo "repo already exists"
+      #     cd tagion
+      #     git pull 
+      #     make unittest COV=1 DC=dmd
+      #     bash <(curl -s https://codecov.io/bash) -t ${{ env.CODECOV_TOKEN }}
           
