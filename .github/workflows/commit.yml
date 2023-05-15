@@ -21,7 +21,8 @@ jobs:
           git pull
           git pull 
 # make it work with recursive submodules
-
+      - name: Add schedule to build
+        run: cp schedule.json build/${{ env.TARGET }}/bin
       - name: Run tests
         run: |
           make test -j ${{env.PARALLEL}} DC=${{env.DC}} || make proper test -j ${{env.PARALLEL}} DC=${{env.DC}}
