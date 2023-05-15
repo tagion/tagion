@@ -1,0 +1,28 @@
+name: Finishing workflow
+on:
+  workflow_dispatch:
+    inputs:
+      tarball: 
+        description: "tar ball of the logs and build"
+        required: true
+        type: string
+      stage:
+        description: "the stage that the log should be taken from"
+        required: true
+        type: string
+
+env:
+  TARGET: x86_64-linux
+  RETENTION_DAYS_BINS: 3
+  
+jobs:
+  finish_workflow:
+    runs-on: CD
+    steps:    
+      - name: Start next workflow
+        if: success()
+        run: gh workflow run codecov-action.yml -f tarball=${{ inputs.tarball }} -f stage=${{ inputs.stage }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.BOT_TOKEN }}
+            
+

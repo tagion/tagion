@@ -50,7 +50,7 @@ jobs:
           cp ${{inputs.tarball}} $folder
 
       - name: Start next workflow
-        if: succes()
+        if: success()
         run: gh workflow run finish.yml -f tarball=${{ inputs.tarball }} -f stage=${{ inputs.stage}}
         env:
           GITHUB_TOKEN: ${{ secrets.BOT_TOKEN }}
