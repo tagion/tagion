@@ -4,7 +4,7 @@
             "args": [],
             "envs": {},
             "stages": [
-                "acceptance"
+                "none"
             ],
             "timeout": 0.0
         },
@@ -12,7 +12,7 @@
             "args": [],
             "envs": {},
             "stages": [
-                "acceptance"
+                "none"
             ],
             "timeout": 0.0
         },
@@ -20,7 +20,7 @@
             "args": [],
             "envs": {},
             "stages": [
-                "acceptance"
+                "none"
             ],
             "timeout": 0.0
         },
@@ -28,7 +28,7 @@
             "args": [],
             "envs": {},
             "stages": [
-                "acceptance"
+                "none"
             ],
             "timeout": 0.0
         },
@@ -76,7 +76,7 @@
             "args": [],
             "envs": {},
             "stages": [
-                "performance"
+                "performance", "acceptance"
             ],
             "timeout": 0.0
         },
