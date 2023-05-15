@@ -7,6 +7,8 @@ import std.algorithm;
 import std.process;
 import std.datetime.systime;
 import std.format;
+import std.path : buildNormalizedPath;
+import std.file : mkdirRecurse, exists;
 import core.thread;
 import tagion.utils.JSONCommon;
 import tagion.tools.collider.reporter : ScheduleReport;
@@ -72,6 +74,11 @@ struct ScheduleOption {
     }
 }
 
+enum TEST_STAGE = "TEST_STAGE";
+enum COLLIDER_ROOT = "COLLIDER_ROOT";
+enum BDD_LOG = "BDD_LOG";
+enum BDD_RESULTS = "BDD_RESULTS";
+
 @safe
 struct ScheduleRunner {
     Schedule schedule;
@@ -101,6 +108,22 @@ struct ScheduleRunner {
         if (report) {
             enum code = format(q{report.%s(args);}, op);
             mixin(code);
+        }
+    }
+
+    void setEnv(ref string[string] env, string stage) {
+        if (stage) {
+            env[TEST_STAGE] = stage;
+        }
+        if (COLLIDER_ROOT in env) {
+            env[BDD_LOG] = buildNormalizedPath(env[COLLIDER_ROOT], stage);
+            env[BDD_RESULTS] = buildNormalizedPath(env[COLLIDER_ROOT], stage, "result");
+            if (!env[BDD_LOG].exists) {
+                env[BDD_LOG].mkdirRecurse;
+            }
+            if (!env[BDD_RESULTS].exists) {
+                env[BDD_RESULTS].mkdirRecurse;
+            }
         }
     }
 
@@ -137,14 +160,15 @@ struct ScheduleRunner {
                 try {
                     const runner_index = runners.countUntil!(r => r.pipe is r.pipe.init);
                     auto time = Clock.currTime;
-                    const cmd = args ~ schedule_list.front.name ~ schedule_list.front.stage ~ schedule_list.front.unit
+                    const cmd = args ~ schedule_list.front.name ~ schedule_list.front.unit
                         .args;
                     writefln("cmd=%s", cmd);
                     auto env = environment.toAA;
                     schedule_list.front.unit.envs.byKeyValue
                         .each!(e => env[e.key] = e.value);
+                    setEnv(env, schedule_list.front.stage);
                     writefln("ENV %s ", env);
-                    auto pipe = pipeProcess(cmd, Redirect.all, env);
+                    auto pipe = pipeProcess(cmd, Redirect.stdout | Redirect.stderr, env);
                     writefln("--- %s start", cmd);
                     runners[runner_index] = Runner(
                             pipe,
