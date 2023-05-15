@@ -7,8 +7,9 @@ import std.algorithm;
 import std.process;
 import std.datetime.systime;
 import std.format;
-import std.path : buildNormalizedPath;
+import std.path : buildNormalizedPath, setExtension;
 import std.file : mkdirRecurse, exists;
+import std.stdio : File;
 import core.thread;
 import tagion.utils.JSONCommon;
 import tagion.tools.collider.reporter : ScheduleReport;
@@ -40,7 +41,9 @@ struct Schedule {
 }
 
 alias Runner = Tuple!(
-        ProcessPipes, "pipe",
+        //  ProcessPipes, "pipe",
+        Pid, "pid",
+        File, "fout",
         RunUnit, "unit",
         string, "name",
         string, "stage",
@@ -78,7 +81,7 @@ enum TEST_STAGE = "TEST_STAGE";
 enum COLLIDER_ROOT = "COLLIDER_ROOT";
 enum BDD_LOG = "BDD_LOG";
 enum BDD_RESULTS = "BDD_RESULTS";
-
+enum BDD_LOGFILE = "BDD_LOGFILE";
 @safe
 struct ScheduleRunner {
     Schedule schedule;
@@ -127,6 +130,16 @@ struct ScheduleRunner {
         }
     }
 
+    static void kill(Pid pid) @trusted {
+        try {
+            
+                .kill(pid); //.ifThown!ProcessException;
+        }
+        catch (ProcessException e) {
+            // ignore
+        }
+    }
+
     int run(scope const(char[])[] args) {
         import std.stdio;
 
@@ -149,16 +162,16 @@ struct ScheduleRunner {
         }
         auto runners = new Runner[jobs];
         auto check_running = runners
-            .filter!(r => r.pipe !is r.pipe.init)
-            .any!(r => !tryWait(r.pipe.pid).terminated);
+            .filter!(r => r.pid !is r.pid.init)
+            .any!(r => !tryWait(r.pid).terminated);
 
         writefln("Before start %s", check_running);
         writefln("Before start %s", schedule_list.empty);
         while (!schedule_list.empty || check_running) {
             writefln("name %s", schedule_list.front.name);
-            while (!schedule_list.empty && !runners.all!(r => r.pipe !is r.pipe.init)) {
+            while (!schedule_list.empty && !runners.all!(r => r.pid !is r.pid.init)) {
+                const runner_index = runners.countUntil!(r => r.pid is r.pid.init);
                 try {
-                    const runner_index = runners.countUntil!(r => r.pipe is r.pipe.init);
                     auto time = Clock.currTime;
                     const cmd = args ~ schedule_list.front.name ~ schedule_list.front.unit
                         .args;
@@ -168,10 +181,14 @@ struct ScheduleRunner {
                         .each!(e => env[e.key] = e.value);
                     setEnv(env, schedule_list.front.stage);
                     //writefln("ENV %s ", env);
-                    auto pipe = pipeProcess(cmd, Redirect.all, env);
-                    writefln("--- %s start", cmd);
+                    auto fout = File(buildNormalizedPath(env[BDD_RESULTS],
+                    schedule_list.front.name).setExtension("log"), "w");
+                    auto _stdin = (() @trusted => stdin)();
+                    auto pid = spawnProcess(cmd, _stdin, fout, fout, env);
+                    writefln("--- %s start pid=%d", cmd, pid.processID);
                     runners[runner_index] = Runner(
-                            pipe,
+                            pid,
+                            fout,
                             schedule_list.front.unit,
                             schedule_list.front.name,
                             schedule_list.front.stage,
@@ -181,6 +198,10 @@ struct ScheduleRunner {
                 }
                 catch (Exception e) {
                     writefln("----Error %s", e.msg);
+                    runners[runner_index].fout.writeln("Error: %s", e.msg);
+                    runners[runner_index].fout.close;
+                    kill(runners[runner_index].pid);
+                    runners[runner_index] = Runner.init;
                 }
                 //              time);
 
@@ -189,14 +210,15 @@ struct ScheduleRunner {
             for (;;) {
                 sleep(100.msecs);
                 const job_index = runners
-                    .filter!(r => r.pipe !is r.pipe.init)
-                    .countUntil!(r => tryWait(r.pipe.pid).terminated);
+                    .filter!(r => r.pid !is r.pid.init)
+                    .countUntil!(r => tryWait(r.pid).terminated);
                 writefln("job_index=%d", job_index);
                 if (job_index >= 0) {
                     this.stop(runners[job_index]);
                     writefln("Dump job %d", job_index);
-                    runners[job_index].pipe.stdout.writeln;
-                    runners[job_index].pipe.stderr.writeln;
+                    runners[job_index].fout.close;
+                    //runners[job_index].pipe.stdout.writeln;
+                    //runners[job_index].pipe.stderr.writeln;
 
                     runners[job_index] = Runner.init;
                     writefln("Next job");
