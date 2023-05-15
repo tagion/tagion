@@ -18,25 +18,24 @@ env:
 
 jobs:
   run_acceptance_stage_tests:
-    runs-on: phillip
+    runs-on: CD
     steps:
       - name: Copy Artifact to local machine
         run: |
           cp /mnt/shared/${{inputs.stage}}/${{inputs.tarball}} .
-          mkdir -p ${{ env.ARTIFACT }}
-          tar -xzf ${{inputs.tarball}} -C ${{ env.ARTIFACT }}
+          tar -xzf ${{inputs.tarball}}
         
       - name: Run collider tests
         run: |
-          source ${{ env.ARTIFACT }}/build/${{ env.TARGET }}/bin/bddenv.sh
-          export DBIN=$PWD/${{ env.ARTIFACT }}/build/${{ env.TARGET }}/bin
-          export DLOG=$PWD/${{ env.ARTIFACT }}/logs/${{ env.TARGET }}
-          export COLLIDER_ROOT=$PWD/${{ env.ARTIFACT }}/logs/${{ env.TARGET }}/bdd
+          source build/${{ env.TARGET }}/bin/bddenv.sh
+          export DBIN=$PWD/build/${{ env.TARGET }}/bin
+          export DLOG=$PWD/logs/${{ env.TARGET }}
+          export COLLIDER_ROOT=$PWD/logs/${{ env.TARGET }}/bdd
           export PATH=$DBIN:$PATH
-          ./${{ env.ARTIFACT }}/build/${{ env.TARGET }}/bin/collider -r acceptance -j 2 -b ${{ env.ARTIFACT }}/build/${{ env.TARGET}}/bin/testbench
+          ./build/${{ env.TARGET }}/bin/collider -r acceptance -j 2 -b ${{ env.ARTIFACT }}/build/${{ env.TARGET}}/bin/testbench
 
       - name: Create tar ball
-        run: tar -czf ${{inputs.tarball}} --exclude='*.o' ${{ env.ARTIFACT }}/* 
+        run: tar -czf ${{inputs.tarball}} --exclude='*.o' logs/ build/ 
         
       - uses: actions/upload-artifact@v3
         if: failure() || success()
@@ -55,7 +54,7 @@ jobs:
         if: success() || failure()
         run: |
           rm ${{ inputs.tarball }}
-          rm -rf ${{env.ARTIFACT}}
+          rm -rf *
       
 
 
