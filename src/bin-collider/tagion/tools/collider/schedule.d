@@ -1,12 +1,18 @@
 module tagion.tools.collider.schedule;
 
+import std.traits;
+import std.array;
 import std.typecons : tuple, Tuple;
 import std.algorithm;
 import std.process;
 import std.datetime.systime;
 import std.format;
+import std.path : buildNormalizedPath, setExtension;
+import std.file : mkdirRecurse, exists;
+import std.stdio : File;
 import core.thread;
 import tagion.utils.JSONCommon;
+import tagion.tools.collider.reporter : ScheduleReport;
 
 @safe
 struct RunUnit {
@@ -22,23 +28,60 @@ struct Schedule {
     RunUnit[string] units;
     mixin JSONCommon;
     mixin JSONConfig;
+    auto stages() const pure nothrow {
+        return units
+            .byValue
+            .map!(u => u.stages)
+            .join
+            .dup
+            .sort
+            .uniq;
+
+    }
 }
 
 alias Runner = Tuple!(
-        ProcessPipes, "pipe",
+        //  ProcessPipes, "pipe",
+        Pid, "pid",
+        File, "fout",
         RunUnit, "unit",
         string, "name",
         string, "stage",
-        SysTime, "time"
+        SysTime, "time",
+        long, "jobid",
 );
 
 @safe
-interface ScheduleReport {
-    void start(const ref Runner);
-    void stop(const ref Runner);
-    void timeout(const ref Runner);
+struct ScheduleOption {
+    string dlog;
+    string test_stage;
+    void setDefault() {
+        import std.ascii : toUpper;
+
+        static foreach (name; FieldNameTuple!ScheduleOption) {
+            {
+                pragma(msg, "NAME ", name);
+                /*
+                enum name = name.map!(a => cast(char) a.toupper).array;
+                try {
+                    __traits(getmember, temp, name) = environment[name];
+                }
+                catch (exception e) {
+                    // Ignore
+                    // writeln(e.msg);
+                    // errors++;
+                }
+        */
+            }
+        }
+    }
 }
 
+enum TEST_STAGE = "TEST_STAGE";
+enum COLLIDER_ROOT = "COLLIDER_ROOT";
+enum BDD_LOG = "BDD_LOG";
+enum BDD_RESULTS = "BDD_RESULTS";
+enum BDD_LOGFILE = "BDD_LOGFILE";
 @safe
 struct ScheduleRunner {
     Schedule schedule;
@@ -71,7 +114,35 @@ struct ScheduleRunner {
         }
     }
 
-    void run(scope const(char[])[] args) {
+    void setEnv(ref string[string] env, string stage) {
+        if (stage) {
+            env[TEST_STAGE] = stage;
+        }
+        if (COLLIDER_ROOT in env) {
+            env[BDD_LOG] = buildNormalizedPath(env[COLLIDER_ROOT], stage);
+            env[BDD_RESULTS] = buildNormalizedPath(env[COLLIDER_ROOT], stage, "results");
+            if (!env[BDD_LOG].exists) {
+                env[BDD_LOG].mkdirRecurse;
+            }
+            if (!env[BDD_RESULTS].exists) {
+                env[BDD_RESULTS].mkdirRecurse;
+            }
+        }
+    }
+
+    static void kill(Pid pid) @trusted {
+        try {
+
+            
+
+                .kill(pid); //.ifThown!ProcessException;
+        }
+        catch (ProcessException e) {
+            // ignore
+        }
+    }
+
+    int run(scope const(char[])[] args) {
         import std.stdio;
 
         schedule.toJSON.toPrettyString.writeln;
@@ -84,36 +155,81 @@ struct ScheduleRunner {
                     .map!(unit => Stage(unit.value, unit.key, stage)))
             .joiner;
 
+        writefln("list %s", schedule_list);
+        writefln("stages %s", schedule_list.map!(u => u.stage));
+        if (schedule_list.empty) {
+            writefln("None of the stage %s available", stages);
+            writefln("Avalibale %s", schedule.stages);
+            return 1;
+        }
         auto runners = new Runner[jobs];
         auto check_running = runners
-            .filter!(r => r.pipe !is r.pipe.init)
-            .any!(r => !tryWait(r.pipe.pid).terminated);
+            .filter!(r => r.pid !is r.pid.init)
+            .any!(r => !tryWait(r.pid).terminated);
 
+        writefln("Before start %s", check_running);
+        writefln("Before start %s", schedule_list.empty);
         while (!schedule_list.empty || check_running) {
-            while (!schedule_list.empty && !runners.all!(r => r.pipe !is r.pipe.init)) {
-                const index = runners.countUntil!(r => r.pipe is r.pipe.init);
-                auto time = Clock.currTime;
-                const cmd = args ~ schedule_list.front.stage ~ schedule_list.front.unit.args;
-                auto pipe = pipeProcess(cmd);
-                runners[index] = Runner(
-                        pipe,
-                        schedule_list.front.unit,
-                        schedule_list.front.name,
-                        schedule_list.front.stage,
-                        time
-                );
+            writefln("name %s", schedule_list.front.name);
+            while (!schedule_list.empty && !runners.all!(r => r.pid !is r.pid.init)) {
+                const runner_index = runners.countUntil!(r => r.pid is r.pid.init);
+                try {
+                    auto time = Clock.currTime;
+                    const cmd = args ~ schedule_list.front.name ~ schedule_list.front.unit
+                        .args;
+                    writefln("cmd=%s", cmd);
+                    auto env = environment.toAA;
+                    schedule_list.front.unit.envs.byKeyValue
+                        .each!(e => env[e.key] = e.value);
+                    setEnv(env, schedule_list.front.stage);
+                    //writefln("ENV %s ", env);
+                    auto fout = File(buildNormalizedPath(env[BDD_RESULTS],
+                    schedule_list.front.name).setExtension("log"), "w");
+                    auto _stdin = (() @trusted => stdin)();
+                    auto pid = spawnProcess(cmd, _stdin, fout, fout, env);
+                    writefln("--- %s start pid=%d", cmd, pid.processID);
+                    runners[runner_index] = Runner(
+                            pid,
+                            fout,
+                            schedule_list.front.unit,
+                            schedule_list.front.name,
+                            schedule_list.front.stage,
+                            time,
+                            runner_index
+                    );
+                }
+                catch (Exception e) {
+                    writefln("----Error %s", e.msg);
+                    runners[runner_index].fout.writeln("Error: %s", e.msg);
+                    runners[runner_index].fout.close;
+                    kill(runners[runner_index].pid);
+                    runners[runner_index] = Runner.init;
+                }
                 //              time);
 
                 schedule_list.popFront;
             }
-            sleep(100.msecs);
-            const index = runners
-                .filter!(r => r.pipe !is r.pipe.init)
-                .countUntil!(r => tryWait(r.pipe.pid).terminated);
-            if (index >= 0) {
-                this.stop(runners[index]);
-                runners[index] = Runner.init;
+            for (;;) {
+                sleep(100.msecs);
+                const job_index = runners
+                    .filter!(r => r.pid !is r.pid.init)
+                    .countUntil!(r => tryWait(r.pid).terminated);
+                writefln("job_index=%d", job_index);
+                if (job_index >= 0) {
+                    this.stop(runners[job_index]);
+                    writefln("Dump job %d", job_index);
+                    runners[job_index].fout.close;
+                    //runners[job_index].pipe.stdout.writeln;
+                    //runners[job_index].pipe.stderr.writeln;
+
+                    runners[job_index] = Runner.init;
+                    writefln("Next job");
+                    break;
+                }
             }
+            //            sleep(3000.msecs);
+            writefln("END %d", jobs);
         }
+        return 0;
     }
 }

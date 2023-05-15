@@ -73,6 +73,7 @@ struct BehaviourOptions {
      * Used to set default options if config file not provided
      */
     string test_stage_env;
+    string dbin_env;
     void setDefault() {
         const gen = "gen";
         bdd_ext = FileExtension.markdown;
@@ -90,6 +91,7 @@ struct BehaviourOptions {
         const which_iconv = execute(["which", "iconv"]);
         iconv = which_iconv.output;
         iconv_flags = ["-t", "utf-8", "-f", "utf-8", "-c"];
+        dbin_env = "DBIN";
     }
 
     mixin JSONCommon;
@@ -396,14 +398,14 @@ int main(string[] args) {
     bool overwrite_switch; /** falg for to enable report checks */
     bool Check_reports_switch;
     bool check_reports_switch; /** verbose switch */
-    string[] stages;
+    //    string[] stages;
     string schedule_file = "schedule".setExtension(FileExtension.json);
-    bool run_schedule;
+    string[] run_stages;
     uint schedule_jobs = 0;
     bool schedule_rewrite;
     bool schedule_write_proto;
 
-    string testbench="testbench";
+    string testbench = "testbench";
     try {
         if (config_file.exists) {
             options.load(config_file);
@@ -422,11 +424,10 @@ int main(string[] args) {
                 "p|package", "Generates D package to the source files", &options
                 .enable_package,
                 "c|check", "Check the bdd reports in give list of directories", &check_reports_switch,
-                "C", "Same as check but the program will return a nozero exit-code if the check fails", &Check_reports_switch,
-                "g|stage", "Sets stage target for the testbench to be runned", &stages,
+                "C", "Same as check but the program will return a nozero exit-code if the check fails", &Check_reports_switch, //    "g|stage", "Sets stage target for the testbench to be runned", &stages,
                 "s|schedule", format(
                     "Execution schedule Default: '%s'", schedule_file), &schedule_file,
-                "r|run", "Runs the test in the schedule", &run_schedule,
+                "r|run", "Runs the test in the schedule", &run_stages,
                 "S", "Rewrite the schedule file", &schedule_rewrite,
                 "j|jobs", format("Sets number jobs to run simultaneously (0 == max) Default: %d", schedule_jobs), &schedule_jobs,
                 "b|bin", format("Testbench program Default: '%s'", testbench), &testbench,
@@ -462,24 +463,24 @@ int main(string[] args) {
 
         if (schedule_write_proto) {
             Schedule schedule;
-            auto run_unit=RunUnit(["commit"], null, null, 0.0);
-            schedule.units["collider_test"]=run_unit;
+            auto run_unit = RunUnit(["commit"], null, null, 0.0);
+            schedule.units["collider_test"] = run_unit;
             schedule.save(schedule_file);
             return 0;
         }
 
-        if (stages || run_schedule) {
+        if (run_stages) {
             import core.cpuid : coresPerCPU;
 
             Schedule schedule;
             schedule.load(schedule_file);
             schedule_jobs = (schedule_jobs == 0) ? coresPerCPU : schedule_jobs;
-            auto schedule_runner = ScheduleRunner(schedule, stages, schedule_jobs);
+            auto schedule_runner = ScheduleRunner(schedule, run_stages, schedule_jobs);
             schedule_runner.run([testbench]);
             if (schedule_rewrite) {
                 schedule.save(schedule_file);
             }
-            Check_reports_switch=true;
+            //   Check_reports_switch = true;
         }
 
         check_reports_switch = Check_reports_switch || check_reports_switch;
@@ -496,7 +497,7 @@ int main(string[] args) {
         return parse_bdd(options);
     }
     catch (Exception e) {
-        error("Error: %s", e.msg);
+        error(">>Error: %s", e.toString);
         return 1;
     }
     return 0;
