@@ -167,7 +167,7 @@ struct ScheduleRunner {
                     schedule_list.front.unit.envs.byKeyValue
                         .each!(e => env[e.key] = e.value);
                     setEnv(env, schedule_list.front.stage);
-                    writefln("ENV %s ", env);
+                    //writefln("ENV %s ", env);
                     auto pipe = pipeProcess(cmd, Redirect.stdout | Redirect.stderr, env);
                     writefln("--- %s start", cmd);
                     runners[runner_index] = Runner(
@@ -178,28 +178,33 @@ struct ScheduleRunner {
                             time,
                             runner_index
                     );
-                    //              time);
-
-                    schedule_list.popFront;
-                    for (;;) {
-                        sleep(100.msecs);
-                        const job_index = runners
-                            .filter!(r => r.pipe !is r.pipe.init)
-                            .countUntil!(r => tryWait(r.pipe.pid).terminated);
-                        writefln("job_index=%d", job_index);
-                        if (job_index >= 0) {
-                            this.stop(runners[job_index]);
-                            runners[job_index] = Runner.init;
-                            break;
-                        }
-                    }
                 }
                 catch (Exception e) {
                     writefln("----Error %s", e.msg);
                 }
+                //              time);
+
+                schedule_list.popFront;
+            }
+            for (;;) {
+                sleep(100.msecs);
+                const job_index = runners
+                    .filter!(r => r.pipe !is r.pipe.init)
+                    .countUntil!(r => tryWait(r.pipe.pid).terminated);
+                writefln("job_index=%d", job_index);
+                if (job_index >= 0) {
+                    this.stop(runners[job_index]);
+                    writefln("Dump job %d", job_index);
+                    runners[job_index].pipe.stdout.writeln;
+                    runners[job_index].pipe.stderr.writeln;
+
+                    runners[job_index] = Runner.init;
+                    writefln("Next job");
+                    break;
+                }
             }
             sleep(1000.msecs);
-            writeln("END");
+            writefln("END %d", jobs);
         }
         return 0;
     }
