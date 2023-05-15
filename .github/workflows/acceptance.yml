@@ -27,7 +27,7 @@ jobs:
         
       - name: Run collider tests
         run: |
-          source build/${{ env.TARGET }}/bin/bddenv.sh
+          source $PWD/build/${{ env.TARGET }}/bin/bddenv.sh
           export DBIN=$PWD/build/${{ env.TARGET }}/bin
           export DLOG=$PWD/logs/${{ env.TARGET }}
           export COLLIDER_ROOT=$PWD/logs/${{ env.TARGET }}/bdd
