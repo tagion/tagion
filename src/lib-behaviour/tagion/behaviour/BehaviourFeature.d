@@ -67,7 +67,7 @@ enum isDescriptor(T) = hasMember!(T, "description");
 
 /* 
  * Contains the information for the Protorty including the name id and the result of the Property
-* The Property is as a general container for the Feature, Sceanrio and Actions
+* The Property is as a general container for the Feature, Scenario and Actions
  */
 struct Info(alias Property) {
     Property property; /// The property is a Feature, Scenario or an Action
@@ -107,7 +107,7 @@ struct ScenarioGroup {
 }
 
 /** 
- * Conatins all the sceanrio groups and information of the Feature
+ * Contains all the sceanrio groups and information of the Feature
  */
 @safe
 struct FeatureGroup {
