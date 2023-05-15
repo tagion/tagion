@@ -96,7 +96,7 @@
             ],
             "timeout": 0.0
         },
-        "actor_test": {
+        "actor_tests": {
             "args": [],
             "envs": {},
             "stages": [
