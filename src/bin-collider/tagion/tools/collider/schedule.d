@@ -117,7 +117,7 @@ struct ScheduleRunner {
         }
         if (COLLIDER_ROOT in env) {
             env[BDD_LOG] = buildNormalizedPath(env[COLLIDER_ROOT], stage);
-            env[BDD_RESULTS] = buildNormalizedPath(env[COLLIDER_ROOT], stage, "result");
+            env[BDD_RESULTS] = buildNormalizedPath(env[COLLIDER_ROOT], stage, "results");
             if (!env[BDD_LOG].exists) {
                 env[BDD_LOG].mkdirRecurse;
             }
