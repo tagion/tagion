@@ -53,6 +53,7 @@ jobs:
         if: success()
         run: |
           git init
+          git remote add origin git@github.com:tagion/tagion
           gh workflow run finish.yml -f tarball=${{ inputs.tarball }} -f stage=${{ env.STAGE }}
         env:
           GITHUB_TOKEN: ${{ secrets.BOT_TOKEN }}
