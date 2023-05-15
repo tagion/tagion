@@ -58,7 +58,7 @@ int _main(string[] args) {
     } 
 
  
-    if (env.stage == Stage.commit) {
+    if (env.stage == Stage.acceptance) {
         BDDOptions bdd_options;
         setDefaultBDDOptions(bdd_options);
         bdd_options.scenario_name = __MODULE__;
