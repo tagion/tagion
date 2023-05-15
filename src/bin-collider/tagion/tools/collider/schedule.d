@@ -24,6 +24,16 @@ struct Schedule {
     RunUnit[string] units;
     mixin JSONCommon;
     mixin JSONConfig;
+    auto stages() const pure nothrow {
+        return units
+            .byValue
+            .map!(u => u.stages)
+            .join
+            .dup
+            .sort
+            .uniq;
+
+    }
 }
 
 alias Runner = Tuple!(
@@ -99,7 +109,7 @@ struct ScheduleRunner {
         }
     }
 
-    void run(scope const(char[])[] args) {
+    int run(scope const(char[])[] args) {
         import std.stdio;
 
         schedule.toJSON.toPrettyString.writeln;
@@ -112,40 +122,65 @@ struct ScheduleRunner {
                     .map!(unit => Stage(unit.value, unit.key, stage)))
             .joiner;
 
+        writefln("list %s", schedule_list);
+        writefln("stages %s", schedule_list.map!(u => u.stage));
+        if (schedule_list.empty) {
+            writefln("None of the stage %s available", stages);
+            writefln("Avalibale %s", schedule.stages);
+            return 1;
+        }
         auto runners = new Runner[jobs];
         auto check_running = runners
             .filter!(r => r.pipe !is r.pipe.init)
             .any!(r => !tryWait(r.pipe.pid).terminated);
 
+        writefln("Before start %s", check_running);
+        writefln("Before start %s", schedule_list.empty);
         while (!schedule_list.empty || check_running) {
+            writefln("name %s", schedule_list.front.name);
             while (!schedule_list.empty && !runners.all!(r => r.pipe !is r.pipe.init)) {
-                const index = runners.countUntil!(r => r.pipe is r.pipe.init);
-                auto time = Clock.currTime;
-                const cmd = args ~ schedule_list.front.stage ~ schedule_list.front.unit.args;
-                writefln("cmd=%s", cmd);   
-            auto env = environment.toAA;
-                schedule_list.front.unit.envs.byKeyValue
-                    .each!(e => env[e.key] = e.value);
-                auto pipe = pipeProcess(cmd, Redirect.all, env);
-                runners[index] = Runner(
-                        pipe,
-                        schedule_list.front.unit,
-                        schedule_list.front.name,
-                        schedule_list.front.stage,
-                        time
-                );
-                //              time);
+                try {
+                    const runner_index = runners.countUntil!(r => r.pipe is r.pipe.init);
+                    auto time = Clock.currTime;
+                    const cmd = args ~ schedule_list.front.name ~ schedule_list.front.stage ~ schedule_list.front.unit
+                        .args;
+                    writefln("cmd=%s", cmd);
+                    auto env = environment.toAA;
+                    schedule_list.front.unit.envs.byKeyValue
+                        .each!(e => env[e.key] = e.value);
+                    writefln("ENV %s ", env);
+                    auto pipe = pipeProcess(cmd, Redirect.all, env);
+                    writefln("--- %s start", cmd);
+                    runners[runner_index] = Runner(
+                            pipe,
+                            schedule_list.front.unit,
+                            schedule_list.front.name,
+                            schedule_list.front.stage,
+                            time
+                    );
+                    //              time);
 
-                schedule_list.popFront;
+                    schedule_list.popFront;
+                    for (;;) {
+                        sleep(100.msecs);
+                        const job_index = runners
+                            .filter!(r => r.pipe !is r.pipe.init)
+                            .countUntil!(r => tryWait(r.pipe.pid).terminated);
+                        writefln("job_index=%d", job_index);
+                        if (job_index >= 0) {
+                            this.stop(runners[job_index]);
+                            runners[job_index] = Runner.init;
+                            break;
+                        }
+                    }
+                }
+                catch (Exception e) {
+                    writefln("----Error %s", e.msg);
+                }
             }
-            sleep(100.msecs);
-            const index = runners
-                .filter!(r => r.pipe !is r.pipe.init)
-                .countUntil!(r => tryWait(r.pipe.pid).terminated);
-            if (index >= 0) {
-                this.stop(runners[index]);
-                runners[index] = Runner.init;
-            }
+            sleep(1000.msecs);
+            writeln("END");
         }
+        return 0;
     }
 }

@@ -475,7 +475,7 @@ int main(string[] args) {
             Schedule schedule;
             schedule.load(schedule_file);
             schedule_jobs = (schedule_jobs == 0) ? coresPerCPU : schedule_jobs;
-            auto schedule_runner = ScheduleRunner(schedule, args, schedule_jobs);
+            auto schedule_runner = ScheduleRunner(schedule, args[1 .. $], schedule_jobs);
             schedule_runner.run([testbench]);
             if (schedule_rewrite) {
                 schedule.save(schedule_file);

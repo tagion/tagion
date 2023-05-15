@@ -36,7 +36,7 @@
             "args": [],
             "envs": {},
             "stages": [
-                "commit"
+                "commit","xtest"
             ],
             "timeout": 0.0
         },
@@ -76,7 +76,7 @@
             "args": [],
             "envs": {},
             "stages": [
-                "performace"
+                "performance"
             ],
             "timeout": 0.0
         },
@@ -84,7 +84,7 @@
             "args": [],
             "envs": {},
             "stages": [
-                "performace"
+                "performance"
             ],
             "timeout": 0.0
         },
