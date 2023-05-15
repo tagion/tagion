@@ -21,20 +21,21 @@ class ReportCallBacks : ScheduleReport {
 
     void initReport(const long number_of_runners) {
         this.number_of_runners = number_of_runners;
-        
+
         CLEARSCREEN.write;
-        foreach(i; 0..this.number_of_runners) {
+        foreach (i; 0 .. this.number_of_runners) {
             writefln("Runner %s idle", i);
         }
     }
+
     void goToLine(const ref Runner runner) {
         HOME.write;
 
         NEXTLINE.repeat(runner.jobid);
-       
+
         CLEARLINE.write;
     }
-            
+
     void start(const ref Runner runner) {
         goToLine(runner);
         writefln("Runner %s started %s", runner.jobid, runner.name);

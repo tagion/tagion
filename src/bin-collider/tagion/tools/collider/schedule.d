@@ -9,6 +9,7 @@ import std.datetime.systime;
 import std.format;
 import core.thread;
 import tagion.utils.JSONCommon;
+import tagion.tools.collider.reporter : ScheduleReport;
 
 @safe
 struct RunUnit {
@@ -41,15 +42,9 @@ alias Runner = Tuple!(
         RunUnit, "unit",
         string, "name",
         string, "stage",
-        SysTime, "time"
+        SysTime, "time",
+        long, "jobid",
 );
-
-@safe
-interface ScheduleReport {
-    void start(const ref Runner);
-    void stop(const ref Runner);
-    void timeout(const ref Runner);
-}
 
 @safe
 struct ScheduleOption {
@@ -156,7 +151,8 @@ struct ScheduleRunner {
                             schedule_list.front.unit,
                             schedule_list.front.name,
                             schedule_list.front.stage,
-                            time
+                            time,
+                            runner_index
                     );
                     //              time);
 
