@@ -13,6 +13,7 @@ DFILES: libphobos-aarch64-ios
 DFILES: libdruntime-aarch64-ios
 IOS_ARCH=$(IOS_AARCH64)
 TRIPLET = $(IOS_ARCH)
+ARCH = aarch64
 CROSS_OS=ios
 DFLAGS+=$(DDEFAULTLIBSTATIC)
 DFLAGS+=-mtriple=$(TRIPLET)
