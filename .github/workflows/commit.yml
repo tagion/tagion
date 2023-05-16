@@ -39,7 +39,7 @@ jobs:
       - name: Report bddtests
         run: | 
           RESULT=$(./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/${{ env.STAGE }}/results)
-          ./build/${{env.TARGET}/bin/shittier -o /dev/stdout logs/ >> $GITHUB_STEP_SUMMARY
+          ./build/${{env.TARGET}}/bin/shittier -o /dev/stdout logs/ >> $GITHUB_STEP_SUMMARY
 
       - name: Run coverage unittest
         run: |
