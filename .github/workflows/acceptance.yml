@@ -32,7 +32,7 @@ jobs:
           export DLOG=$PWD/logs/${{ env.TARGET }}
           export COLLIDER_ROOT=$PWD/logs/${{ env.TARGET }}/bdd
           export PATH=$DBIN:$PATH
-          ./build/${{ env.TARGET }}/bin/collider -r ${{ inputs.stage }} -j 2 -b build/${{ env.TARGET}}/bin/testbench -s build/${{ env.TARGET }}/bin/schedule.json  
+          ./build/${{ env.TARGET }}/bin/collider -r ${{ env.STAGE }} -j 2 -b build/${{ env.TARGET}}/bin/testbench -s build/${{ env.TARGET }}/bin/schedule.json  
 
       - name: Generate reports
         if: failure() || success()
