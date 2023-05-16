@@ -32,7 +32,7 @@ jobs:
       - name: Send ddoc to repository 
         run: |
           git clone https://${{ secrets.API_TOKEN_GITHUB }}@github.com/tagion/ddoc.git
-          mv build/ddoc ddoc
+          cp -R build/ddoc/* ddoc/          
           cd ddoc
           git config user.email "mm@decard.io"
           git config user.name "Matlab"
