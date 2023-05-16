@@ -132,7 +132,6 @@ include $(TARGETS)/ldc-build-runtime.mk
 #
 include $(DTUB)/testbench/unittest.mk
 include $(DTUB)/testbench/collider.mk
-include $(DTUB)/testbench/reporter.mk
 include $(DTUB)/testbench/test.mk
 
 #
