@@ -25,7 +25,7 @@ jobs:
         run: cp schedule.json build/${{ env.TARGET }}/bin
       - name: Run tests
         run: |
-          make test unittest-cov -j ${{env.PARALLEL}} DC=${{env.DC}} || make proper test unittest-cov -j ${{env.PARALLEL}} DC=${{env.DC}}
+          make test -j ${{env.PARALLEL}} DC=${{env.DC}} || make proper test -j ${{env.PARALLEL}} DC=${{env.DC}}
           
       - name: Report unittests
         run: |
@@ -40,8 +40,10 @@ jobs:
 
       - name: Run coverage unittest
         run: |
-          ./build/${{ env.TARGET }}/bin/unittest-cov --DRT-covopt="dstpath:logs/cov/"
-     
+          make unittest-cov DC={{env.DC}}
+          mkdir -p logs/cov
+          mv -- *.lst logs/cov
+               
       - name: Create tar ball
         if: success() || failure()
         id: create_tar
