@@ -19,11 +19,14 @@ jobs:
   finish_workflow:
     runs-on: CD
     steps:    
-      - name: Start next workflow
-        if: success()
+      - name: Start code coverage
         run: gh workflow run codecov-action.yml -f tarball=${{ inputs.tarball }} -f stage=${{ inputs.stage }}
         env:
           GITHUB_TOKEN: ${{ secrets.BOT_TOKEN }}
+      - name: Start documentation deploy
+        run: gh workflow run static.yml
+      - name: Start ddoc deploy
+        run: gh workflow run ddoc.yml
 
       - name: Copy Artifact to local machine
         run: |
