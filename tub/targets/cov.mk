@@ -7,7 +7,7 @@ unittest-cov: proto-unittest-cov-build
 	$(UNITTEST_COV) $(UNITTEST_COV_FLAGS) 
 
 proto-unittest-cov-build:
-	$(MAKE) UNITTEST_BIN=$(UNITTEST_COV) COV=1 unittest -f $(DTUB)/main.mk
+	$(MAKE) UNITTEST_BIN=$(UNITTEST_COV) COV=1 proto-unittest-build -f $(DTUB)/main.mk
 
 
 .PHONY: clean-unittest-cov
