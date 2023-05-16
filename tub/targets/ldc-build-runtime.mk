@@ -1,28 +1,8 @@
 
-
-### DEPRECATE, non aarch64 android still use this target
-
-
-LDC_NAME=ldc2-1.29.0-beta1-$(GETHOSTOS)-$(GETARCH)
-LDC_TAR_NAME=$(LDC_NAME).tar.xz
-LDC_URL=https://github.com/ldc-developers/ldc/releases/download/v1.29.0-beta1/$(LDC_TAR_NAME)
-LDC_TAR=$(TOOLS)/$(LDC_TAR_NAME)
 TOOLS_LDC_BIN=$(TOOLS)/$(LDC_NAME)/bin
 # LDC_BUILD_RUNTIME:=$(TOOLS_LDC_BIN)/ldc-build-runtime
 LDC_BUILD_RUNTIME:=$(shell which ldc-build-runtime)
 LDC_BUILD_RUNTIME_TMP:=$(DBUILD)/tmp/druntime/
-#https://github.com/ldc-developers/ldc/releases/download/v1.29.0-beta1/ldc2-1.29.0-beta1-linux-x86_64.tar.xz
-
-# $(LDC_TAR): $(TOOLS)/.way
-# 	$(PRECMD)
-# 	echo $(LDC_TAR)
-# 	$(CD) $(TOOLS); wget $(LDC_URL)
-# 	$(TOUCH) $@
-
-# $(TOOLS_LDC_BIN): $(LDC_TAR)
-# 	$(PRECMD)
-# 	$(CD) $(TOOLS); tar -xJvf $<
-# 	$(TOUCH) $@
 
 $(BUILD)/$(ARCH)-linux-android/tmp/druntime/: $(LDC_BUILD_RUNTIME)
 	$(LDC_BUILD_RUNTIME) \
@@ -46,10 +26,6 @@ $(BUILD)/$(ARCH)-ios/tmp/druntime/: $(LDC_BUILD_RUNTIME)
 	BUILD_LTO_LIBS=ON
 
 druntime: $(LDC_BUILD_RUNTIME_TMP)
-
-druntime-bin: $(TOOLS_LDC_BIN)
-
-druntime-tar: $(LDC_TAR)
 
 env-druntime:
 	$(PRECMD)
