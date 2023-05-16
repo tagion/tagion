@@ -24,5 +24,7 @@ jobs:
         run: gh workflow run codecov-action.yml -f tarball=${{ inputs.tarball }} -f stage=${{ inputs.stage }}
         env:
           GITHUB_TOKEN: ${{ secrets.BOT_TOKEN }}
-        
+      - name: Generate report
+        run: |
+          ./build/${{ env.TARGET }}/bin/shittier -o $GITHUB_STEP_SUMMARY logs
         

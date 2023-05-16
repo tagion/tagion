@@ -41,7 +41,9 @@ jobs:
       - name: Run coverage unittest
         run: |
           make unittest-cov DC=${{env.DC}}
-          
+      - name: Build shittier
+        run: |
+          make shittier DC=${{env.DC}}
                
       - name: Create tar ball
         if: success() || failure()
