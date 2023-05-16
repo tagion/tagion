@@ -31,6 +31,7 @@ env-dirs:
 	$(call log.kvp, DSRC, $(DSRC))
 	$(call log.kvp, DTUB, $(DTUB))
 	$(call log.kvp, TARGETS, $(TARGETS))
+	$(call log.kvp, COLLIDER_ROOT, $(COLLIDER_ROOT))
 	$(call log.kvp, BDD, $(BDD))
 	$(call log.kvp, BDD_LOG, $(BDD_LOG))
 	$(call log.kvp, TRUNK, $(TRUNK))
