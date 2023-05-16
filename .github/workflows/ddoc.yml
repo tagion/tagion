@@ -1,9 +1,9 @@
 name: ddoc
 on:
   workflow_dispatch:
-  push: 
-    branches: 
-      - current
+  # push: 
+  #   branches: 
+  #     - current
 env:
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       

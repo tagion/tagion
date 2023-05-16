@@ -19,10 +19,27 @@ jobs:
   finish_workflow:
     runs-on: CD
     steps:    
-      - name: Start next workflow
-        if: success()
-        run: gh workflow run codecov-action.yml -f tarball=${{ inputs.tarball }} -f stage=${{ inputs.stage }}
+      - name: Start codecov and documentation 
+        run: |
+          gh workflow run codecov-action.yml -f tarball=${{ inputs.tarball }} -f stage=${{ inputs.stage }}
+          gh workflow run static.yml
+          gh workflow run ddoc.yml
         env:
           GITHUB_TOKEN: ${{ secrets.BOT_TOKEN }}
-        
-        
+
+      - name: Copy Artifact to local machine
+        run: |
+          find . -mindepth 1 -delete
+          cp /mnt/shared/${{inputs.stage}}/${{inputs.tarball}} .
+          tar -xzf ${{inputs.tarball}}
+       
+      - name: Generate report
+        run: |
+          ./build/${{ env.TARGET }}/bin/shittier -o $GITHUB_STEP_SUMMARY logs
+
+      - name: Cleanup
+        if: success() || failure()
+        run: |
+          rm ${{ inputs.tarball }}
+          rm -rf *
+

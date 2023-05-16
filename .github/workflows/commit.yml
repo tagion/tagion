@@ -32,16 +32,18 @@ jobs:
           RESULT=$(cat logs/${{ env.TARGET }}/unittest.log | grep -E "^[0-9]+ modules passed unittests")
           echo -e "### :heavy_check_mark: Unittests passed \n $RESULT" >> $GITHUB_STEP_SUMMARY
 
+      - name: Build shittier
+        run: |
+          make shittier DC=${{env.DC}}
+
       - name: Report bddtests
         run: | 
           RESULT=$(./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/${{ env.STAGE }}/results)
-          echo $RESULT | grep "Test result success!"
-          echo -e "\n $RESULT" >> $GITHUB_STEP_SUMMARY
+          ./build/${{env.TARGET}}/bin/shittier -o /dev/stdout logs/ >> $GITHUB_STEP_SUMMARY
 
       - name: Run coverage unittest
         run: |
           make unittest-cov DC=${{env.DC}}
-          
                
       - name: Create tar ball
         if: success() || failure()
@@ -53,7 +55,6 @@ jobs:
           tar -czf ${tar_filename} --exclude='*.o' logs/ build/
           echo -e "\nRelease candidate is: $tar_filename" >> $GITHUB_STEP_SUMMARY
           echo "tar_filename=$tar_filename" >> $GITHUB_OUTPUT
-
 
       - uses: actions/upload-artifact@v3
         if: failure()

@@ -34,6 +34,11 @@ jobs:
           export PATH=$DBIN:$PATH
           ./build/${{ env.TARGET }}/bin/collider -r ${{ inputs.stage }} -j 2 -b build/${{ env.TARGET}}/bin/testbench -s build/${{ env.TARGET }}/bin/schedule.json  
 
+      - name: Generate reports
+        if: failure() || success()
+        run: |
+          ./build/${{ env.TARGET }}/bin/shittier -o $GITHUB_STEP_SUMMARY logs/
+
       - name: Create tar ball
         run: tar -czf ${{inputs.tarball}} --exclude='*.o' logs/ build/ 
         
@@ -42,6 +47,7 @@ jobs:
         with:
           name: failed-run
           path: ./${{inputs.tarball}}
+
       
       - name: Upload to shared directory
         if: success()
