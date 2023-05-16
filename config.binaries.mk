@@ -125,3 +125,4 @@ ${call DO_BIN,collider,$(LIB_DFILES) ${call BIN_DEPS,collider}}
 # COllider shitty formatting
 target-shittier: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
 ${call DO_BIN,shittier,$(LIB_DFILES) ${call BIN_DEPS,shittier}}
+

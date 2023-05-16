@@ -41,7 +41,6 @@ include $(DTUB)/utilities/dir.mk
 include $(DTUB)/utilities/log.mk
 
 include $(DTUB)/tools/*.mk
-#include $(TARGETS)/git.mk
 include $(TARGETS)/commands.mk
 
 prebuild:
@@ -50,7 +49,6 @@ prebuild:
 	${foreach wrap,$(WRAPS),$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) $(wrap);}
 	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) revision
 	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) dstep
-#	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) ddeps
 
 env-prebuild:
 	$(PRECMD)
@@ -84,8 +82,6 @@ include $(DTUB)/targets/dirs.mk
 # Secondary tub functionality
 #
 include $(DTUB)/ways.mk
-#include $(DTUB)/gitconfig.mk
-#include $(TARGETS)/submodules.mk
 include $(TARGETS)/submake.mk
 include $(TARGETS)/host.mk
 include $(TARGETS)/cross.mk
@@ -99,7 +95,6 @@ include $(DTUB)/devnet/devnet.mk
 #
 include $(TARGETS)/compiler.mk
 include $(TARGETS)/dstep.mk
-#include $(TARGETS)/ddeps.mk
 include $(TARGETS)/bins.mk
 include $(TARGETS)/format.mk
 include $(TARGETS)/dscanner.mk

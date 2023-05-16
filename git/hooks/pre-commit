@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/env bash
 
 # Automatically format staged d files
 # It automatically restages the files after formatting
