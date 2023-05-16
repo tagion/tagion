@@ -23,7 +23,7 @@ jobs:
         run: |
           gh workflow run codecov-action.yml -f tarball=${{ inputs.tarball }} -f stage=${{ inputs.stage }}
           gh workflow run static.yml
-          gh workflow run ddoc.yml
+          gh workflow run ddoc.yml -f tarball=${{ inputs.tarball }} -f stage=${{ inputs.stage }}
         env:
           GITHUB_TOKEN: ${{ secrets.BOT_TOKEN }}
 
