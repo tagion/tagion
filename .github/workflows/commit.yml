@@ -40,7 +40,7 @@ jobs:
 
       - name: Run coverage unittest
         run: |
-          make unittest-cov DC={{env.DC}}
+          make unittest-cov DC=${{env.DC}}
           mkdir -p logs/cov
           mv -- *.lst logs/cov
                
