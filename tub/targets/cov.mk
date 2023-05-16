@@ -1,7 +1,12 @@
 
 UNITTEST_COV:=$(DBIN)/unittest-cov
+UNITTEST_COV_FLAGS+=--DRT-covopt="dstpath:$(DLOGCOV)"
 
-unittest-cov:
+unittest-cov: proto-unittest-cov-build
+	$(PRECMD)
+	$(UNITTEST_COV) $(UNITTEST_COV_FLAGS) 
+
+proto-unittest-cov-build:
 	$(MAKE) UNITTEST_BIN=$(UNITTEST_COV) COV=1 unittest -f $(DTUB)/main.mk
 
 
