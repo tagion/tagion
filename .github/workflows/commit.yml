@@ -38,6 +38,10 @@ jobs:
           echo $RESULT | grep "Test result success!"
           echo -e "\n $RESULT" >> $GITHUB_STEP_SUMMARY
 
+      - name: Run coverage unittest
+        run: |
+          ./build/${{ env.TARGET }}/bin/unittest-cov --DRT-covopt="dstpath:logs/cov/"
+     
       - name: Create tar ball
         if: success() || failure()
         id: create_tar
