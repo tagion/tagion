@@ -41,8 +41,7 @@ jobs:
       - name: Run coverage unittest
         run: |
           make unittest-cov DC=${{env.DC}}
-          mkdir -p logs/cov
-          mv -- *.lst logs/cov
+          
                
       - name: Create tar ball
         if: success() || failure()
