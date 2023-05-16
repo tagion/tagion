@@ -1,11 +1,9 @@
 
 
 ci:
-	echo $(COLLIDER_ROOT)
 	$(MAKE) clean-trunk -f$(DTUB)/main.mk
 	$(MAKE) bins -f$(DTUB)/main.mk
-	$(MAKE) bddtest -f$(DTUB)/main.mk
-	$(MAKE) unittest-cov -f$(DTUB)/main.mk
+	$(MAKE) bddtest unittest-cov -f$(DTUB)/main.mk
 	$(MAKE) ddoc -f$(DTUB)/main.mk
 	$(MAKE) trunk -f$(DTUB)/main.mk
 	$(MAKE) bddreport -f$(DTUB)/main.mk

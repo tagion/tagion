@@ -31,7 +31,7 @@ jobs:
 
       - name: Send ddoc to repository 
         run: |
-          ls build/ddoc/
+          ls logs
           git clone https://${{ secrets.API_TOKEN_GITHUB }}@github.com/tagion/ddoc.git
           cp -R build/ddoc/* ddoc/          
           cd ddoc
