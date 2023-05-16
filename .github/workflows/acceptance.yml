@@ -42,6 +42,11 @@ jobs:
         with:
           name: failed-run
           path: ./${{inputs.tarball}}
+
+      - name: Generate reports
+        if: failure() || success()
+        run: |
+          ./build/${{ env.TARGET }}/bin/shittier -o $GITHUB_STEP_SUMMARY logs/
       
       - name: Upload to shared directory
         if: success()
