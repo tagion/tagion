@@ -30,11 +30,6 @@ druntime: $(LDC_BUILD_RUNTIME_TMP)
 env-druntime:
 	$(PRECMD)
 	${call log.header, $@ :: env}
-	${call log.kvp, LDC_TAR_NAME, $(LDC_TAR_NAME)}
-	${call log.kvp, LDC_NAME, $(LDC_NAME)}
-	${call log.kvp, LDC_TAR, $(LDC_TAR)}
-	${call log.kvp, LDC_URL, $(LDC_URL)}
-	${call log.kvp, TOOLS_LCD_BIN, $(TOOLS_LDC_BIN)}
 	${call log.kvp, LDC_BUILD_RUNTIME, $(LDC_BUILD_RUNTIME)}
 	${call log.kvp, LDC_BUILD_RUNTIME_TMP, $(LDC_BUILD_RUNTIME_TMP)}
 	${call log.close}
@@ -45,8 +40,7 @@ env: env-druntime
 help-druntime:
 	$(PRECMD)
 	${call log.header, $@ :: help}
-	${call log.help, "make druntime-bin", "Installs ldc2 compiler and runtime"}
-	${call log.help, "make druntime-tar", "Downloads the tar file for ldc2 compiler"}
+	${call log.help, "make druntime PLATFORM=<platform>", "Build the runtime for <platform>"}
 	${call log.close}
 
 help: help-druntime
