@@ -30,7 +30,6 @@ clean: clean-trunk
 
 $(TRUNK_LIST):  
 	find ${shell realpath --relative-to $(REPOROOT) $(TRUNK_DIRS)} -type f -not -name "*.o" -not -name "*-cov" > $@
-	echo $@
 
 
 $(TRUNK_MAKE): $(FUND)/ci/Makefile
