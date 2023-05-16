@@ -128,6 +128,7 @@ include $(TARGETS)/ldc-build-runtime.mk
 include $(DTUB)/testbench/unittest.mk
 include $(DTUB)/testbench/collider.mk
 include $(DTUB)/testbench/test.mk
+include $(DTUB)/testbench/citest.mk
 
 #
 # Install main tool

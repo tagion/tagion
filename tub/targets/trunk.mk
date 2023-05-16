@@ -1,44 +1,43 @@
 
 TRUNK_FILE=$(TRUNK)/trunk.tgz
-TRUNK_BUILD+=proto-unittest-build
-TRUNK_BUILD+=testbench
-TRUNK_BUILD+=tagion
-TRUNK_BUILD+=collider
 
 TRUNK_FLAGS+=-zcvf
 
 TRUNK_DIRS+=$(DLOG)
 TRUNK_DIRS+=$(DBIN)
-#TRUNK_DIRS+=$(DTUB)
+
+TRUNK_MAKE:=$(DBIN)/Makefile
 
 TRUNK_LIST:=$(TMP_FILE:.sh=.lst)
 
+.PHONY: $(TRUNK_FILE)
 .PHONY: trunk
 
 trunk: $(TRUNK_FILE)
-	echo test
 
-$(TRUNK_FILE): $(TRUNK_LIST) $(TRUNK)/.way
+$(TRUNK_FILE): $(TRUNK_LIST) $(TRUNK)/.way $(TRUNK_MAKE)
 	tar --files-from $(TRUNK_LIST) $(TRUNK_FLAGS) $(TRUNK_FILE) 
 
 .PHONY: clean-trunk
 clean-trunk:
+	${PRECMD}
+	${call log.header, $@ :: clean}
 	$(RM) $(TRUNK_FILE)
+	${call log.close}
 
 clean: clean-trunk
 
-test35: $(TRUNK_LIST)
-
-$(TRUNK_LIST): $(TRUNK_BUILD) 
+$(TRUNK_LIST):  
 	find ${shell realpath --relative-to $(REPOROOT) $(TRUNK_DIRS)} -type f -not -name "*.o" -not -name "*-cov" > $@
 	echo $@
 
-test31:
-	@echo $(shell realpath --relative-to $(REPOROOT) $(TRUNK_DIRS))
-	@echo $(shell realpath  $(TRUNK_DIRS))
-	@echo $(TRUNK_LIST)
+
+$(TRUNK_MAKE): $(FUND)/ci/Makefile
+	$(PRECMD)
+	$(CP) $< $@
 
 
+trunk_make: $(TRUNK_MAKE)
 
 .PHONY: help-trunk
 help-trunk:

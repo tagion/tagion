@@ -72,7 +72,7 @@ bddinit: target-testbench $(BDD_RESULTS)/.way $(BDD_LOG)/.way bddenv
 	$(PRECMD)
 	$(TESTPROGRAM) -f
 
-bddreport: target-hibonutil collider
+bddreport: target-hibonutil target-collider
 	$(PRECMD)
 	$(DBIN)/hibonutil -p $(ALL_BDD_REPORTS)
 	$(COLLIDER) -cv $(BDD_RESULTS)
