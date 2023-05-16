@@ -31,7 +31,7 @@ jobs:
           tar -xzf ${{inputs.tarball}}
       - name: codecov report
         run: |
-          ./build/${{ env.TARGET }}/bin/${{ unittest-cov }}
+          ./build/${{ env.TARGET }}/bin/${{ env.UNITTEST_COV }}
           bash <(curl -s https://codecov.io/bash) -t ${{ env.CODECOV_TOKEN }}
       
       # - name: codecov report
