@@ -44,7 +44,7 @@ int main(string[] args) {
     if (args.length == 2) {
         log_dir = args[1];
     }
-    if (!output_file) {
+    if (!output) {
         stderr.writeln("Output file is not specified");
         return 1;
     }
@@ -62,7 +62,7 @@ int main(string[] args) {
         outstring.put(fg.toMd);
     }
 
-    File(output_file, "w").write(outstring.data);
+    File(output, "w").write(outstring.data);
 
     return 0;
 }
