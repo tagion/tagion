@@ -1,5 +1,5 @@
 
-test: bddreport
+test:| bddtest bddreport
 
 bddreport: unittest
 

@@ -10,7 +10,7 @@ BDD_MD_FILES=${shell find $(BDD) -name "*.md" -a -not -name "*.gen.md"}
 
 bbdinit: DFLAGS+=$(BDDDFLAGS)
 
-bddtest: | bddtagion bddfiles bddinit bddrun  
+bddtest: | bddtagion bddfiles bddinit bddrun
 
 .PHONY: bddtest bddfiles bddtagion
 
@@ -28,6 +28,7 @@ bddcontent:
 	$(PRECMD)
 	$(DTUB)/bundle_bdd_files.d
 
+bddrun: $(BDD_RESULTS)/.way
 bddrun: $(BDDTESTS)
 
 .PHONY: bddrun

@@ -9,7 +9,7 @@ TRUNK_FLAGS+=-zcvf
 
 TRUNK_DIRS+=$(DLOG)
 TRUNK_DIRS+=$(DBIN)
-TRUNK_DIRS+=$(DTUB)
+#TRUNK_DIRS+=$(DTUB)
 
 TRUNK_LIST:=$(TMP_FILE:.sh=.lst)
 
@@ -30,8 +30,7 @@ clean: clean-trunk
 test35: $(TRUNK_LIST)
 
 $(TRUNK_LIST): $(TRUNK_BUILD) 
-	find ${shell realpath --relative-to $(REPOROOT) $(TRUNK_DIRS)} -type f -not -name "*.o" > $@
-	find . -maxdepth 1 -type -name "config.*.mk" >> $@
+	find ${shell realpath --relative-to $(REPOROOT) $(TRUNK_DIRS)} -type f -not -name "*.o" -not -name "*-cov" > $@
 	echo $@
 
 test31:
