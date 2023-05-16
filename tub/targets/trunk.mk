@@ -29,9 +29,7 @@ clean-trunk:
 clean: clean-trunk
 
 $(TRUNK_LIST):  
-	find ${shell realpath --relative-to $(REPOROOT) $(DBIN)} -type f -not -name "*.o" -not -name "*-cov" > $@
-	find ${shell realpath --relative-to $(REPOROOT) $(DLOG)} -type f >> $@
-	find ${shell realpath --relative-to $(REPOROOT) $(BUILDDOC)} -type f >> $@
+	find ${shell realpath --relative-to $(REPOROOT) $(TRUNK_DIRS)} -type f -not -name "*.o" -not -name "*-cov" > $@
 	echo $@
 
 
