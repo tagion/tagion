@@ -29,7 +29,8 @@ bddcontent:
 	$(DTUB)/bundle_bdd_files.d
 
 bddrun: $(BDD_RESULTS)/.way
-bddrun: $(BDDTESTS)
+bddrun: 
+	$(COLLIDER) -r $(TEST_STAGE) -b $(TESTBENCH) 
 
 .PHONY: bddrun
 
@@ -67,7 +68,7 @@ startreporter.sh:
 	$(PRECMD)
 	$(SCRIPTS)/genreporter.sh $@
 
-bddinit: $(TESTMAIN) $(BDD_RESULTS)/.way $(BDD_LOG)/.way bddenv
+bddinit: target-testbench $(BDD_RESULTS)/.way $(BDD_LOG)/.way bddenv
 	$(PRECMD)
 	$(TESTPROGRAM) -f
 

@@ -172,7 +172,6 @@ struct ScheduleRunner {
                     auto time = Clock.currTime;
                     const cmd = args ~ schedule_list.front.name ~ schedule_list.front.unit
                         .args;
-                    writefln("cmd=%s", cmd);
                     auto env = environment.toAA;
                     schedule_list.front.unit.envs.byKeyValue
                         .each!(e => env[e.key] = e.value);
@@ -182,7 +181,7 @@ struct ScheduleRunner {
                     schedule_list.front.name).setExtension("log"), "w");
                     auto _stdin = (() @trusted => stdin)();
                     auto pid = spawnProcess(cmd, _stdin, fout, fout, env);
-                    writefln("--- %s start pid=%d", cmd, pid.processID);
+                    writefln("%d] %-(%s %) # pid=%d", job_index, cmd, pid.processID);
                     runners[job_index] = Runner(
                             pid,
                             fout,
@@ -194,7 +193,7 @@ struct ScheduleRunner {
                     );
                 }
                 catch (Exception e) {
-                    writefln("----Error %s", e.msg);
+                    writefln("Error %s", e.msg);
                     runners[job_index].fout.writeln("Error: %s", e.msg);
                     runners[job_index].fout.close;
                     kill(runners[job_index].pid);
