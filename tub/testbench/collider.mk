@@ -29,7 +29,7 @@ bddcontent:
 	$(DTUB)/bundle_bdd_files.d
 
 bddrun: $(BDD_RESULTS)/.way
-bddrun: 
+bddrun: target-collider target-testbench 
 	$(COLLIDER) -r $(TEST_STAGE) -b $(TESTBENCH) 
 
 .PHONY: bddrun
