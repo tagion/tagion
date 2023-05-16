@@ -32,6 +32,7 @@ jobs:
           tar -xzf ${{inputs.tarball}}
       - name: codecov report
         run: |
+          ls logs/cov
           cd logs/cov
           bash <(curl -s https://codecov.io/bash) -t ${{ env.CODECOV_TOKEN }}
       
