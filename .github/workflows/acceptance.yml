@@ -14,7 +14,7 @@ env:
   TARGET: x86_64-linux
   STAGE: acceptance
   RETENTION_DAYS_BINS: 3
-  PARALLEL: 15
+  PARALLEL: 2
 
 jobs:
   run_acceptance_stage_tests:
