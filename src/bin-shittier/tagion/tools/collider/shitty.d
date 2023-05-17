@@ -4,6 +4,7 @@ module tagion.tools.collider.report;
 /**
  * @brief tool generate d files from bdd md files and vice versa
  */
+import tagion.tools.Basic;
 
 import tagion.hibon.HiBONRecord : fwrite, fread, isRecord;
 import tagion.hibon.HiBONJSON;
@@ -19,7 +20,9 @@ import std.algorithm.iteration;
 import std.stdio;
 import std.array;
 
-int main(string[] args) {
+mixin Main!(_main);
+
+int _main(string[] args) {
     immutable program = args[0];
     string output;
 

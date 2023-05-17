@@ -21,6 +21,7 @@ import std.process : execute, environment;
 import std.range;
 import std.typecons : Tuple;
 
+import tagion.tools.Basic;
 import tagion.utils.JSONCommon;
 import tagion.basic.Types : FileExtension, DOT;
 import tagion.tools.revision : revision_text;
@@ -390,7 +391,9 @@ void error(Args...)(string fmt, Args args) {
     stderr.writefln("%s%s%s", RED, format(fmt, args), RESET);
 }
 
-int main(string[] args) {
+mixin Main!(_main);
+
+int _main(string[] args) {
     BehaviourOptions options;
     immutable program = args[0]; /** file for configurations */
     auto config_file = "collider.json"; /** flag for print current version of behaviour */

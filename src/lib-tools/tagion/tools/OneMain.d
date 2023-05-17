@@ -2,6 +2,19 @@ module tagion.tools.OneMain;
 
 import std.typecons : Tuple;
 
+string[] getMains(alias _package)() {
+    return [__traits(allMembers, _package)];
+}
+
+static unittest {
+    import tagion;
+
+    alias x = __traits(allMembers, tagion);
+
+    pragma(msg, "Mains ", x);
+    pragma(msg, "Mains ", getMains!tagion);
+}
+
 alias Result = Tuple!(int, "exit_code", bool, "executed");
 mixin template doOneMain(alltools...) {
     import std.getopt;
@@ -113,16 +126,16 @@ mixin template doOneMain(alltools...) {
             if (main_args.helpWanted) {
                 defaultGetoptPrinter(
                         [
-                    revision_text,
-                    "Documentation: https://tagion.org/",
-                    "Usage:",
-                    format("%s <program> [<option>...]", program),
-                    format("Tool programs %-(%s, %)", toolnames),
-                    "",
-                    "<option>:",
+                        revision_text,
+                        "Documentation: https://tagion.org/",
+                        "Usage:",
+                        format("%s <program> [<option>...]", program),
+                        format("Tool programs %-(%s, %)", toolnames),
+                        "",
+                        "<option>:",
 
-                ].join("\n"),
-                main_args.options);
+                        ].join("\n"),
+                        main_args.options);
                 return Result(0, true);
             }
         }
