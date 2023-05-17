@@ -6,7 +6,9 @@ BDDBINS=${addprefix $(DBIN)/,$(BDDS)}
 
 ALL_BDD_REPORTS=${shell find $(BDD_RESULTS) -name "*.hibon" -printf "%p "}
 
-BDD_MD_FILES=${shell find $(BDD) -name "*.md" -a -not -name "*.gen.md"}
+BDD_MD_FILES=${shell find $(BDD)/tagion -name "*.md" -a -not -name "*.gen.md"}
+
+BDD_D_FILES:=$(BDD_MD_FILES:.md=.d)
 
 bbdinit: DFLAGS+=$(BDDDFLAGS)
 
@@ -18,18 +20,24 @@ bddtagion: tagion
 	$(PRECMD)
 	$(DBIN)/tagion -f
 
-bddfiles: collider bddcontent
+bddfiles: $(BDD)/.done
+
+$(BDD)/.done: $(BDD_MD_FILES)
 	$(PRECMD)
-	$(COLLIDER) $(BDD_FLAGS)
+	$(COLLIDER) -v $(BDD_FLAGS)
+	$(TOUCH) $@
+
+.PHONY: bddfiles
+
+bddcontent: $(BDD)/BDDS.md
+
+$(BDD)/BDDS.md: $(BDD_DFILES)
+	$(PRECMD)
+	$(DTUB)/bundle_bdd_files.d $@
 
 .PHONY: bddcontent
 
-bddcontent:
-	$(PRECMD)
-	$(DTUB)/bundle_bdd_files.d
-
-bddrun: $(BDD_RESULTS)/.way
-bddrun: target-collider target-testbench 
+bddrun: collider bddinit
 	$(COLLIDER) -r $(TEST_STAGE) -b $(TESTBENCH) 
 
 .PHONY: bddrun
@@ -57,7 +65,9 @@ ddd-%:
 
 bddenv: $(TESTENV)
 
-$(TESTENV): $(DBIN)
+.PHONY: bddenv
+
+$(TESTENV): $(DBIN) 
 	$(PRECMD)
 	$(SCRIPTS)/genenv.sh $@
 	chmod 750 $@
@@ -68,14 +78,18 @@ startreporter.sh:
 	$(PRECMD)
 	$(SCRIPTS)/genreporter.sh $@
 
-bddinit: target-testbench $(BDD_RESULTS)/.way $(BDD_LOG)/.way bddenv
+bddinit: testbench $(BDD_RESULTS)/.way $(BDD_LOG)/.way bddenv
 	$(PRECMD)
 	$(TESTPROGRAM) -f
 
-bddreport: target-hibonutil target-collider
+.PHONY: bddinit
+
+bddreport: 
 	$(PRECMD)
 	$(DBIN)/hibonutil -p $(ALL_BDD_REPORTS)
 	$(COLLIDER) -cv $(BDD_RESULTS)
+
+.PHONY: bddreport
 
 %.md.tmp: %.md
 	$(PRECMD)

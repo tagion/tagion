@@ -14,7 +14,7 @@ $(REVISION_FILE):
 
 revision: $(REVISION_FILE)
 
-prebuild:
+
 .PHONY: revision
 
 clean-revision:

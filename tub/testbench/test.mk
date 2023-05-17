@@ -1,7 +1,7 @@
 
-test:| bddtest bddreport
-
-bddreport: unittest
+test: bddtest unittest 
+	$(PRECMD)
+	$(MAKE) unittest-report bddreport -f $(DTUB)/main.mk
 
 .PHONY: test
 

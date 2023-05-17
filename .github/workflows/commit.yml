@@ -13,12 +13,13 @@ env:
 
 jobs:
   build_and_test:
-    runs-on: CI
+    runs-on: CI-2
     steps:
       - name: pull
         run: |
           pwd
           id
+          ls -l
           git checkout current
           git pull
 # make it work with recursive submodules

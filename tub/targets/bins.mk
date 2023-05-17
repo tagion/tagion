@@ -30,6 +30,8 @@ target-$1: $$(DBIN)/$1
 
 endif
 
+.PHONY: $1 target-$1
+
 env-$1:
 	$$(PRECMD)
 	$${call log.header, $$@ :: env}

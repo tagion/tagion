@@ -26,6 +26,14 @@ proto-unittest-run: proto-unittest-build
 
 proto-unittest-build: $(UNITTEST_BIN)
 
+unittest-report: 
+	$(PRECMD)
+	cat $(UNITTEST_LOG)
+
+
+.PHONY: proto-unittest-run proto-unittest-build
+
+
 $(UNITTEST_BIN): DFLAGS+=$(DIP25) $(DIP1000)
 $(UNITTEST_BIN): $(COVWAY) 
 $(UNITTEST_BIN): $(UNITTEST_DFILES) 
@@ -35,6 +43,8 @@ $(UNITTEST_BIN): $(UNITTEST_DFILES)
 	$(DC) $(UNITTEST_FLAGS) $(DFLAGS) $(DRTFLAGS) ${addprefix -I,$(DINC)} ${sort ${filter %.d,$^}} $(LIBS) $(OUTPUT)$@
 
 unittest: revision $(REPOROOT)/default.mk
+
+.PHONY: unittest
 
 unitmain: DFLAGS+=$(DVERSION)=unitmain
 unitmain: UNITTEST_FLAGS:=$(DDEBUG) $(DDBUG_SYMBOLS)
