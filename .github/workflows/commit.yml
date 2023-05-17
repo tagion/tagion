@@ -17,10 +17,12 @@ jobs:
     steps:
       - name: get repository
         run: |
+          pwd
           git clone git@github.com:tagion/tagion.git || echo "repo already exists"
           cd tagion
       - name: pull
         run: |
+          pwd
           git checkout current
           git pull
 # make it work with recursive submodules
