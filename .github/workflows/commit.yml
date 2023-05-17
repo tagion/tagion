@@ -24,9 +24,7 @@ jobs:
           cd tagion
           git checkout current
           git pull
-# make it work with recursive submodules
-      - name: Add schedule to build
-        run: cp schedule.json build/${{ env.TARGET }}/bin
+
       - name: Run tests
         run: |
           make clean ci -j ${{env.PARALLEL}} DC=${{env.DC}} || make proper ci -j ${{env.PARALLEL}} DC=${{env.DC}}
@@ -42,6 +40,11 @@ jobs:
           echo $RESULT | grep "Test result success!"
           ./build/${{env.TARGET}}/bin/shittier -o /dev/stdout logs/ >> $GITHUB_STEP_SUMMARY
                
+
+      - name: Add schedule to build
+        run: |
+          cp schedule.json build/${{ env.TARGET }}/bin
+
       - name: Create tar ball
         if: success() || failure()
         id: create_tar
