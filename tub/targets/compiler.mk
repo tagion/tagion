@@ -69,6 +69,7 @@ DIMPORTFILE=-J
 DDEFAULTLIBSTATIC=-link-defaultlib-shared=false
 DSTATICLIB=--lib
 DSHAREDLIB=--shared
+OUTPUTDIR = --od
 else ifeq ($(COMPILER),gdc)
 DVERSION := -fversion
 SONAME_FLAG := $(LINKERFLAG)-soname
@@ -84,6 +85,7 @@ NO_OBJ ?= -o-
 DCOV ?=-cov
 DSTATICLIB=-lib
 DSHAREDLIB=-shared
+OUTPUTDIR = -od
 else
 DVERSION = -version
 SONAME_FLAG = $(LINKERFLAG)-soname
@@ -103,6 +105,7 @@ DIMPORTFILE=-J
 DINCIMPORT= -i
 DSTATICLIB=-lib
 DSHAREDLIB=-shared
+OUTPUTDIR = -od
 endif
 
 DIP25 := $(DIP)25
