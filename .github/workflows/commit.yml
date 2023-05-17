@@ -8,7 +8,6 @@ env:
   TARGET: x86_64-linux
   STAGE: commit
   DC: dmd
-  PARALLEL: 2
   RETENTION_DAYS_BINS: 3
 
 jobs:
@@ -26,7 +25,7 @@ jobs:
 
       - name: Run tests
         run: |
-          make clean ci -j ${{env.PARALLEL}} DC=${{env.DC}} || make proper ci -j ${{env.PARALLEL}} DC=${{env.DC}}
+          make clean ci -j DC=${{env.DC}} || make proper ci -j DC=${{env.DC}}
           
       - name: Report unittests
         run: |
