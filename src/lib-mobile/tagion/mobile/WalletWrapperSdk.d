@@ -166,7 +166,7 @@ extern (C) {
         return 0;
     }
 
-    export uint create_contract(uint8_t* contractPtr, const uint8_t* invoicePtr, const uint32_t invoiceLen, const uint64_t amount) {
+    export uint create_contract(uint8_t* contractPtr, const uint8_t* invoicePtr, const uint32_t invoiceLen, const double amount) {
 
         immutable invoiceBuff = cast(immutable)(invoicePtr[0 .. invoiceLen]);
 
@@ -191,13 +191,13 @@ extern (C) {
         return 0;
     }
 
-    export uint create_invoice(uint8_t* invoicePtr, const uint64_t amount, const char* labelPtr, const uint32_t labelLen) {
+    export uint create_invoice(uint8_t* invoicePtr, const double amount, const char* labelPtr, const uint32_t labelLen) {
 
         immutable label = cast(immutable)(labelPtr[0 .. labelLen]);
 
         if (__secure_wallet.isLoggedin()) {
             auto invoice = SecureWallet!(StdSecureNet).createInvoice(label,
-                (cast(ulong) amount).TGN);
+                (cast(double) amount).TGN);
             __secure_wallet.registerInvoice(invoice);
 
             HiBON hibon = new HiBON();
@@ -245,14 +245,14 @@ extern (C) {
         return 0;
     }
 
-    export ulong get_locked_balance() {
+    export double get_locked_balance() {
         const balance = __secure_wallet.locked_balance();
-        return cast(ulong) balance.tagions;
+        return cast(double) balance.tagions;
     }
 
-    export ulong get_balance() {
+    export double get_balance() {
         const balance = __secure_wallet.available_balance();
-        return cast(ulong) balance.tagions;
+        return cast(double) balance.tagions;
     }
 
     export uint get_public_key(uint8_t* pubkeyPtr) {
@@ -669,7 +669,7 @@ class WalletStorage {
         }
     }
 
-    bool read(SecureWallet!(StdSecureNet) secure_wallet) {
+    bool read(ref SecureWallet!(StdSecureNet) secure_wallet) {
         if (exists(_walletDataPath)) {
             immutable walletFile = cast(immutable(ubyte)[]) fread(_walletDataPath);
             // TODO: add decryption for a file content.
