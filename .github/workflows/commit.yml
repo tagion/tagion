@@ -13,7 +13,7 @@ env:
 
 jobs:
   build_and_test:
-    runs-on: CI-3
+    runs-on: CI-1
     steps:
       - name: pull
         run: |
