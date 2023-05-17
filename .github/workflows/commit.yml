@@ -25,7 +25,7 @@ jobs:
         run: cp schedule.json build/${{ env.TARGET }}/bin
       - name: Run tests
         run: |
-          make ci -j ${{env.PARALLEL}} DC=${{env.DC}} || make proper ci -j ${{env.PARALLEL}} DC=${{env.DC}}
+          make clean ci -j ${{env.PARALLEL}} DC=${{env.DC}} || make proper ci -j ${{env.PARALLEL}} DC=${{env.DC}}
           
       - name: Report unittests
         run: |
