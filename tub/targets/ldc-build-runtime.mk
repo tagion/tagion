@@ -22,7 +22,7 @@ $(BUILD)/$(ARCH)-ios/tmp/druntime/: $(LDC_BUILD_RUNTIME)
 	$(LDC_BUILD_RUNTIME) \
 	--buildDir=$(LDC_BUILD_RUNTIME_TMP) \
 	--dFlags="-mtriple=$(TRIPLET) -flto=thin" \
-	--targetSystem="Android;Linux;UNIX" \
+	--targetSystem="iOS;Darwin;UNIX" \
 	BUILD_LTO_LIBS=ON
 
 druntime: $(LDC_BUILD_RUNTIME_TMP)

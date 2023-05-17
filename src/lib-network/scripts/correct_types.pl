@@ -1,4 +1,4 @@
-#!/usr/bin/perl -i.bak 
+#!/usr/bin/env -S perl -i.bak 
 # Remove dublicat lines 
 my $found=0;
 

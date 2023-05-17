@@ -14,7 +14,7 @@ This repository is a home for all core units, also containing scripts for cross-
 [DDOC](https://ddoc.tagion.org)
 
 ## Installation
-*Installation tested on ubuntu 20.04, 22.10, archlinux from 16-13-23*
+*Installation tested on ubuntu 22.04, archlinux from 17/05/23*
 
 ### Setup steps & preflight checks
 
@@ -28,9 +28,9 @@ You can run the following command as root, if you are using arch or ubuntu
     
 ```bash
 # Ubuntu
-apt-get install make screen autoconf golang clang libclang-dev libtool libssl-dev perl
+apt-get install make screen autoconf golang clang libclang-dev libtool libssl-dev perl dub
 # Arch
-pacman -Syu make screen autoconf go clang libtool perl
+pacman -Syu make screen autoconf go clang libtool perl dub
 ```
     
 3. Choose a D compiler ldc2 or dmd
