@@ -70,12 +70,6 @@ jobs:
           mkdir -p $folder
           cp ${{steps.create_tar.outputs.tar_filename}} $folder
           
-      - name: Start next workflow
-        if: success()
-        run: gh workflow run acceptance.yml -f tarball=${{ steps.create_tar.outputs.tar_filename }} -f stage=${{ env.STAGE }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.BOT_TOKEN }}
- 
       - name: Cleanup
         if: success() || failure()
         run: rm ${{ steps.create_tar.outputs.tar_filename }}
