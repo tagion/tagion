@@ -6,6 +6,7 @@ ci:
 	$(MAKE) bddtest unittest-cov -f$(DTUB)/main.mk
 	$(MAKE) ddoc -f$(DTUB)/main.mk
 	$(MAKE) trunk -f$(DTUB)/main.mk
+	$(MAKE) bddreport -f$(DTUB)/main.mk
 	#$(MAKE) test unittest-cov trunk bddreport -f$(DTUB)/main.mk
 
 help-ci:
