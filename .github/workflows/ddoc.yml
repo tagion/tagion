@@ -28,7 +28,7 @@ jobs:
           rm -rf *
           cp /mnt/shared/${{inputs.stage}}/${{inputs.tarball}} .
           tar -xzf ${{inputs.tarball}}
-          echo $(ls)     
+          echo $(ls build/)     
 
       - name: Send ddoc to repository 
         run: |
