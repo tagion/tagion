@@ -17,17 +17,15 @@ jobs:
     steps:
       - name: get repository
         run: |
-          pwd
+          cd ..
           git clone git@github.com:tagion/tagion.git || echo "repo already exists"
       - name: pull
         run: |
-          cd tagion
           git checkout current
           git pull
 
       - name: Run tests
         run: |
-          pwd
           make clean ci -j ${{env.PARALLEL}} DC=${{env.DC}} || make proper ci -j ${{env.PARALLEL}} DC=${{env.DC}}
           
       - name: Report unittests
