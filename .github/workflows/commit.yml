@@ -27,6 +27,7 @@ jobs:
 
       - name: Run tests
         run: |
+          pwd
           make clean ci -j ${{env.PARALLEL}} DC=${{env.DC}} || make proper ci -j ${{env.PARALLEL}} DC=${{env.DC}}
           
       - name: Report unittests
