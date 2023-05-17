@@ -14,7 +14,7 @@ This repository is a home for all core units, also containing scripts for cross-
 [DDOC](https://ddoc.tagion.org)
 
 ## Installation
-*Installation tested on ubuntu 20.04, 22.10, archlinux from 16-13-23*
+*Installation tested on ubuntu 22.04, archlinux from 17/05/23*
 
 ### Setup steps & preflight checks
 
