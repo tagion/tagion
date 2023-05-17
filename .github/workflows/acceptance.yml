@@ -14,6 +14,7 @@ env:
   TARGET: x86_64-linux
   STAGE: acceptance
   RETENTION_DAYS_BINS: 3
+  PARALLEL: 15
 
 jobs:
   run_acceptance_stage_tests:
@@ -32,7 +33,7 @@ jobs:
           export DLOG=$PWD/logs/${{ env.TARGET }}
           export COLLIDER_ROOT=$PWD/logs/${{ env.TARGET }}/bdd
           export PATH=$DBIN:$PATH
-          ./build/${{ env.TARGET }}/bin/collider -r ${{ env.STAGE }} -j -b build/${{ env.TARGET}}/bin/testbench -s build/${{ env.TARGET }}/bin/schedule.json  
+          ./build/${{ env.TARGET }}/bin/collider -r ${{ env.STAGE }} -j${{env.PARALLEL}} -b build/${{ env.TARGET}}/bin/testbench -s build/${{ env.TARGET }}/bin/schedule.json  
 
       - name: Generate reports
         if: failure() || success()
