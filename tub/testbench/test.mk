@@ -1,7 +1,9 @@
 
-test:| bddtest bddreport
+testrun: bddtest proto-unittest-run 
 
-bddreport: unittest
+.PHONY: testrun
+
+bddreport: unittest-report
 
 .PHONY: test
 

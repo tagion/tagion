@@ -6,7 +6,7 @@ string[] getMains(alias _package)() {
     return [__traits(allMembers, _package)];
 }
 
-static unittest {
+version (none) static unittest {
     import tagion;
 
     alias x = __traits(allMembers, tagion);

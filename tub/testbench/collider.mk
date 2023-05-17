@@ -22,14 +22,15 @@ bddfiles: collider bddcontent
 	$(PRECMD)
 	$(COLLIDER) $(BDD_FLAGS)
 
-.PHONY: bddcontent
 
-bddcontent:
+bddcontent: $(BDD_DFILES)
 	$(PRECMD)
 	$(DTUB)/bundle_bdd_files.d
 
+.PHONY: bddcontent bddfiles
+
 bddrun: $(BDD_RESULTS)/.way
-bddrun: target-collider target-testbench 
+bddrun: collider bddinit
 	$(COLLIDER) -r $(TEST_STAGE) -b $(TESTBENCH) 
 
 .PHONY: bddrun
@@ -56,8 +57,9 @@ ddd-%:
 	$(DEBUGGER) $(DBIN)/$* $(RUNFLAGS)
 
 bddenv: $(TESTENV)
+.PHONY: bddenv
 
-$(TESTENV): $(DBIN)
+$(TESTENV): 
 	$(PRECMD)
 	$(SCRIPTS)/genenv.sh $@
 	chmod 750 $@
@@ -68,14 +70,18 @@ startreporter.sh:
 	$(PRECMD)
 	$(SCRIPTS)/genreporter.sh $@
 
-bddinit: target-testbench $(BDD_RESULTS)/.way $(BDD_LOG)/.way bddenv
+bddinit: testbench $(BDD_RESULTS)/.way $(BDD_LOG)/.way bddenv
 	$(PRECMD)
 	$(TESTPROGRAM) -f
 
-bddreport: target-hibonutil target-collider
+.PHONY: bddinit
+
+bddreport: 
 	$(PRECMD)
 	$(DBIN)/hibonutil -p $(ALL_BDD_REPORTS)
 	$(COLLIDER) -cv $(BDD_RESULTS)
+
+.PHONY: bddreport
 
 %.md.tmp: %.md
 	$(PRECMD)
