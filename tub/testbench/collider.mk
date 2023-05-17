@@ -6,7 +6,9 @@ BDDBINS=${addprefix $(DBIN)/,$(BDDS)}
 
 ALL_BDD_REPORTS=${shell find $(BDD_RESULTS) -name "*.hibon" -printf "%p "}
 
-BDD_MD_FILES=${shell find $(BDD) -name "*.md" -a -not -name "*.gen.md"}
+BDD_MD_FILES=${shell find $(BDD)/tagion -name "*.md" -a -not -name "*.gen.md"}
+
+BDD_D_FILES:=$(BDD_MD_FILES:.md=.d)
 
 bbdinit: DFLAGS+=$(BDDDFLAGS)
 
@@ -18,18 +20,23 @@ bddtagion: tagion
 	$(PRECMD)
 	$(DBIN)/tagion -f
 
-bddfiles: collider bddcontent
+bddfiles: $(BDD)/.done
+
+$(BDD)/.done: $(BDD_MD_FILES)
 	$(PRECMD)
-	$(COLLIDER) $(BDD_FLAGS)
+	$(COLLIDER) -v $(BDD_FLAGS)
+	$(TOUCH) $@
 
+.PHONY: bddfiles
 
-bddcontent: $(BDD_DFILES)
+bddcontent: $(BDD)/BDDS.md
+
+$(BDD)/BDDS.md: $(BDD_DFILES)
 	$(PRECMD)
-	$(DTUB)/bundle_bdd_files.d
+	$(DTUB)/bundle_bdd_files.d $@
 
-.PHONY: bddcontent bddfiles
+.PHONY: bddcontent
 
-bddrun: $(BDD_RESULTS)/.way
 bddrun: collider bddinit
 	$(COLLIDER) -r $(TEST_STAGE) -b $(TESTBENCH) 
 
@@ -57,6 +64,7 @@ ddd-%:
 	$(DEBUGGER) $(DBIN)/$* $(RUNFLAGS)
 
 bddenv: $(TESTENV)
+
 .PHONY: bddenv
 
 $(TESTENV): 

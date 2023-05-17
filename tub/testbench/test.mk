@@ -1,9 +1,7 @@
 
-testrun: bddtest proto-unittest-run 
-
-.PHONY: testrun
-
-bddreport: unittest-report
+test: bddtest unittest 
+	$(PRECMD)
+	$(MAKE) unittest-report bddreport -f $(DTUB)/main.mk
 
 .PHONY: test
 
