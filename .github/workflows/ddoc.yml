@@ -21,7 +21,7 @@ permissions:
 
 jobs:
   ddoc_build:
-    runs-on: old 
+    runs-on: CD 
     steps:
       - name: Copy Artifact to local machine
         run: |
