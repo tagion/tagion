@@ -9,6 +9,19 @@ env:
   STAGE: commit
   DC: dmd
   RETENTION_DAYS_BINS: 3
+  CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+  UNITTEST_COV: unittest-cov
+
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write 
+
+# Allow one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
 
 jobs:
   commit_stage:
@@ -77,6 +90,10 @@ jobs:
   acceptance_stage:
     runs-on: CD
     needs: commit_stage
+    outputs:
+      tarball: ${{needs.commit_stage.outputs.stage}}
+      stage: "acceptance"
+    
     steps:
       - name: Copy Artifact to local machine
         run: |
@@ -118,4 +135,87 @@ jobs:
         if: success() || failure()
         run: |
           rm ${{ needs.commit_stage.outputs.tarball }}
+          rm -rf *
+
+  code_coverage:
+    runs-on: CD
+    needs: acceptance_stage
+    steps:
+      - name: Copy Artifact to local machine
+        run: |
+          rm -rf *
+          cp /mnt/shared/${{needs.acceptance_stage.outputs.stage}}/${{needs.acceptance_stage.outputs.tarball}} .
+          tar -xzf ${{needs.acceptance_stage.outputs.tarball}}
+      - name: codecov report
+        run: |
+          cd logs/${{ env.TARGET }}/cov
+          bash <(curl -s https://codecov.io/bash) -t ${{ env.CODECOV_TOKEN }}
+          cd ../../..
+      - name: clean up
+        run: rm -rf *
+
+  ddoc_build:
+    runs-on: CD
+    needs: acceptance_stage 
+    steps:
+      - name: Copy Artifact to local machine
+        run: |
+          rm -rf *
+          cp /mnt/nfs/${{needs.acceptance_stage.outputs.stage}}/${{needs.acceptance_stage.outputs.tarball}} .
+          tar -xzf ${{needs.acceptance_stage.outputs.tarball}}
+          echo $(ls build/)     
+
+      - name: Send ddoc to repository 
+        run: |
+          ls logs
+          git clone https://${{ secrets.API_TOKEN_GITHUB }}@github.com/tagion/ddoc.git
+          cp -R build/ddoc/* ddoc/          
+          cd ddoc
+          git config user.email "mm@decard.io"
+          git config user.name "Matlab"
+          git add .
+          git commit -m "ddocs updated" || echo "nothing to commit"
+          git push https://${{ secrets.API_TOKEN_GITHUB }}@github.com/tagion/ddoc.git || echo "repo already up to date"
+
+      - name: clean up
+        run: rm -rf *
+ 
+  docs_build:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: acceptance_stage
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v1
+        with:
+          # Upload entire repository
+          path: '.'
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v1
+
+  finish_workflow:
+    runs-on: CD
+    needs: [code_coverage, acceptance_stage, ddoc_build, docs_build]
+    steps:    
+      - name: Copy Artifact to local machine
+        run: |
+          find . -mindepth 1 -delete
+          cp /mnt/nfs/${{needs.acceptance_stage.outputs.stage}}/${{needs.acceptance_stage.outputs.tarball}} .
+          tar -xzf ${{needs.acceptance_stage.outputs.tarball}}
+       
+      - name: Generate report
+        run: |
+          ./build/${{ env.TARGET }}/bin/shittier -o $GITHUB_STEP_SUMMARY logs
+
+      - name: Cleanup
+        if: success() || failure()
+        run: |
+          rm ${{needs.acceptance_stage.outputs.tarball}}
           rm -rf *
