@@ -77,19 +77,28 @@ MdString toMd(FeatureGroup fg) {
     auto result_md = appender!string;
     string result_type() {
         if (fg.info.result.isRecord!Result) {
-            return format(":heavy_check_mark: %s", fg.info.name);
+            return "✔️ ";
         }
         else if (fg.info.result.isRecord!BehaviourError) {
-            return format(":x: %s", fg.info.name);
+            return "❌";
         }
         else {
-            return format(":question: Unknown result type %s", fg.info.name);
+            return "❓";
         }
     }
 
-    result_md.put(format("%s\n\n", result_type));
+    uint successful = 0;
+    foreach(scenario; fg.scenarios) {
+        if (scenario.info.result.isRecord!Result) {
+            successful += 1;
+        }
+    }
+    const summary = format("<summary> %s (%s/%s) %s </summary>\n\n", result_type, successful, fg.scenarios.length, fg.info.name);
 
-    result_md.put("<details>\n\n");
+    // result_md.put(format("%s\n\n", result_type));
+
+    result_md.put("<details>");
+    result_md.put(summary);
     result_md.put("```json\n");
     result_md.put(format("%s\n", fg.toPretty));
     result_md.put("```\n\n");
