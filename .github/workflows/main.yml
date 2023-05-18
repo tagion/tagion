@@ -4,6 +4,7 @@ on:
   push: 
     branches: 
       - current
+
 env:
   TARGET: x86_64-linux
   STAGE: commit
