@@ -44,9 +44,9 @@ jobs:
 
       - name: Report bddtests
         run: | 
-          RESULT=$(./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/${{ env.STAGE }}/results)
+          RESULT=$(./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/commit/results)
           echo $RESULT | grep "Test result success!"
-          ./build/${{env.TARGET}}/bin/collider reporter -o /dev/stdout logs/ >> $GITHUB_STEP_SUMMARY
+          ./build/${{env.TARGET}}/bin/collider reporter -o /dev/stdout logs/${{ env.TARGET }}/bdd/commit/ >> $GITHUB_STEP_SUMMARY
                
 
       - name: Add schedule to build
@@ -73,7 +73,7 @@ jobs:
       - name: Upload to shared directory
         if: success()
         run: |
-          folder=/mnt/nfs/${{env.STAGE}}
+          folder=/mnt/nfs/commit
           mkdir -p $folder
           cp ${{steps.create_tar.outputs.tar_filename}} $folder
           
@@ -107,7 +107,7 @@ jobs:
       - name: Generate reports
         if: failure() || success()
         run: |
-          ./build/${{ env.TARGET }}/bin/collider reporter -o $GITHUB_STEP_SUMMARY logs/
+          ./build/${{ env.TARGET }}/bin/collider reporter -o $GITHUB_STEP_SUMMARY logs/${{ env.TARGET }}/bdd/acceptance/
 
       - name: Create tar ball
         run: tar -czf ${{needs.commit_stage.outputs.tarball}} --exclude='*.o' logs/ build/ 
@@ -205,6 +205,7 @@ jobs:
        
       - name: Generate report
         run: |
+          echo -e "# All BDDtests\n" >> $GITHUB_STEP_SUMMARY 
           ./build/${{ env.TARGET }}/bin/collider reporter -o $GITHUB_STEP_SUMMARY logs
 
       - uses: actions/upload-artifact@v3
