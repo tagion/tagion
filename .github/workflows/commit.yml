@@ -91,7 +91,7 @@ jobs:
     runs-on: CD
     needs: commit_stage
     outputs:
-      tarball: ${{needs.commit_stage.outputs.stage}}
+      tarball: ${{needs.commit_stage.outputs.tarball}}
       stage: "acceptance"
     
     steps:
