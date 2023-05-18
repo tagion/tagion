@@ -1,3 +1,7 @@
+# General android config
+
+gendroid:
+	@echo is Android $(findstring android,$(PLATFORM))
 
 #
 # Linux aarch64 Android
@@ -8,30 +12,23 @@ PLATFORMS+=$(ANDROID_AARCH64)
 
 ifeq ($(PLATFORM),$(ANDROID_AARCH64))
 
-%:
-	$(PRECMD)
-	if [ -z "$(ANDROID_NDK)" ]; then
-	   echo "export the ANDROID_NDK environment variable"
-	   exit 1
-	fi
-
 ANDROID_API?=21
 ANDROID_ABI?=aarch64
 
-HOST_OS=${shell uname -s | tr '[:upper:]' '[:lower:]' }
-HOST_ARCH=${shell uname -m}
-ANDROID_TOOLCHAIN?=$(ANDROID_NDK)/toolchains/llvm/prebuilt/${HOST_OS}-${HOST_ARCH}
+HOST_OS:=${shell uname -s | tr '[:upper:]' '[:lower:]' }
+HOST_ARCH:=${shell uname -m}
+ANDROID_TOOLCHAIN:=$(ANDROID_NDK)/toolchains/llvm/prebuilt/${HOST_OS}-${HOST_ARCH}
 
 MTRIPLE:=aarch64-linux
 TRIPLET:=$(MTRIPLE)-android
 
-export AR=$(ANDROID_TOOLCHAIN)/bin/$(TRIPLET)-ar
-export AS=$(ANDROID_TOOLCHAIN)/bin/$(TRIPLET)-as
-export CC=$(ANDROID_TOOLCHAIN)/bin/$(TRIPLET)$(ANDROID_API)-clang
-export CXX=$(ANDROID_TOOLCHAIN)/bin/$(TRIPLET)$(ANDROID_API)-clang++
-export LD=$(ANDROID_TOOLCHAIN)/bin/$(TRIPLET)-ld
-export RANLIB=$(ANDROID_TOOLCHAIN)/bin/$(TRIPLET)-ranlib
-export STRIP=$(ANDROID_TOOLCHAIN)/bin/$(TRIPLET)-strip
+export AR:=$(ANDROID_TOOLCHAIN)/bin/$(TRIPLET)-ar
+export AS:=$(ANDROID_TOOLCHAIN)/bin/$(TRIPLET)-as
+export CC:=$(ANDROID_TOOLCHAIN)/bin/$(TRIPLET)$(ANDROID_API)-clang
+export CXX:=$(ANDROID_TOOLCHAIN)/bin/$(TRIPLET)$(ANDROID_API)-clang++
+export LD:=$(ANDROID_TOOLCHAIN)/bin/$(TRIPLET)-ld
+export RANLIB:=$(ANDROID_TOOLCHAIN)/bin/$(TRIPLET)-ranlib
+export STRIP:=$(ANDROID_TOOLCHAIN)/bin/$(TRIPLET)-strip
 
 ## Still need to see if can somehow specify the ldc's lib-dirs from commandline
 ANDROID_LDC_LIBS=$(ANDROID_LDC)
@@ -49,8 +46,6 @@ ANDROID_ARCH=$(ANDROID_AARCH64)
 DFLAGS+=-mtriple=$(PLATFORM)
 
 DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
-
-endif
 
 env-android:
 	$(PRECMD)
@@ -99,3 +94,6 @@ help-android:
 help: help-android
 
 .PHONY: env-android help-android
+
+endif
+
