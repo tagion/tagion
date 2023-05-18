@@ -1,5 +1,5 @@
 [![codecov](https://codecov.io/gh/tagion/tagion/branch/current/graph/badge.svg?token=TM12EX8GSB)](https://codecov.io/gh/tagion/tagion)
-[![Unittest and BDD build](https://github.com/tagion/tagion/actions/workflows/daily.yml/badge.svg?branch=current)](https://github.com/tagion/tagion/actions/workflows/daily.yml)
+[![CI](https://github.com/tagion/tagion/actions/workflows/main.yml/badge.svg?branch=current)](https://github.com/tagion/tagion/actions/workflows/main.yml)
 [![devnet uptime](https://img.shields.io/badge/dynamic/json?label=uptime&query=$.age&url=http://devnet-status.tagion.org/tagion/api/v1/data)](http://devnet-status.tagion.org/tagion/)
 
 # Tagion
