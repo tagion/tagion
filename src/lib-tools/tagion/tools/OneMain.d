@@ -15,6 +15,17 @@ version (none) static unittest {
     pragma(msg, "Mains ", getMains!tagion);
 }
 
+alias SubTools = int function(string[])[string];
+Result subTool(const SubTools sub_tools, string[] args, const size_t index = 0) {
+    if (args[index] in sub_tools) {
+        return Result(sub_tools[args[index]](args[index .. $]), true);
+    }
+    if (index < 1) {
+        return subTool(sub_tools, args, index + 1);
+    }
+    return Result.init;
+}
+
 alias Result = Tuple!(int, "exit_code", bool, "executed");
 mixin template doOneMain(alltools...) {
     import std.getopt;

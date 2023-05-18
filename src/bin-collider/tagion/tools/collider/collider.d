@@ -37,6 +37,8 @@ import tagion.utils.Term;
 
 import tagion.tools.collider.schedule;
 
+//import shitty=tagion.tools.collider.shitty;
+
 enum ONE_ARGS_ONLY = 2;
 enum DFMT_ENV = "DFMT"; /// Set the path and argument d-format including the flags
 enum ICONV = "iconv"; /// Character format converter  
@@ -282,7 +284,7 @@ int check_reports(string[] paths, const bool verbose) {
         }
     }
 
-    struct ReportCount {
+    struct TraceCount {
         uint passed;
         uint errors;
         uint started;
@@ -345,8 +347,8 @@ int check_reports(string[] paths, const bool verbose) {
 
     }
 
-    ReportCount feature_count;
-    ReportCount scenario_count;
+    TraceCount feature_count;
+    TraceCount scenario_count;
     int result;
     foreach (path; paths) {
         foreach (string report_file; dirEntries(path, "*.hibon", SpanMode.breadth)
@@ -356,7 +358,7 @@ int check_reports(string[] paths, const bool verbose) {
                 const feature_test_code = testCode(feature_group);
                 feature_count.update(feature_test_code);
                 if (show(feature_test_code)) {
-                    writefln("Report file %s", report_file);
+                    writefln("Trace file %s", report_file);
                 }
 
                 report(feature_test_code, feature_group.info.property.description);
@@ -391,9 +393,26 @@ void error(Args...)(string fmt, Args args) {
     stderr.writefln("%s%s%s", RED, format(fmt, args), RESET);
 }
 
-mixin Main!(_main);
+import tagion.tools.OneMain : Result;
 
-int _main(string[] args) {
+alias SubTools = int function(string[])[string];
+static SubTools sub_tools;
+static this() {
+    //   import tagion.tools.collider.report;
+    //   sub_tools["report"] = &report._main;
+}
+
+Result subTool(string[] args, const size_t index = 0) {
+    if (args[index] in sub_tools) {
+        return Result(sub_tools[args[index]](args[index .. $]), true);
+    }
+    if (index < 1) {
+        return subTool(args, index + 1);
+    }
+    return Result.init;
+}
+
+int main(string[] args) {
     BehaviourOptions options;
     immutable program = args[0]; /** file for configurations */
     auto config_file = "collider.json"; /** flag for print current version of behaviour */
@@ -409,12 +428,18 @@ int _main(string[] args) {
     bool schedule_write_proto;
 
     string testbench = "testbench";
+    // int function(string[])[string] sub_tools;
+    //  sub_tools["shitty"] = &shitty._main;
     try {
         if (config_file.exists) {
             options.load(config_file);
         }
         else {
             options.setDefault;
+        }
+        const Result result = subTool(args);
+        if (result.executed) {
+            return result.exit_code;
         }
         auto main_args = getopt(args, std.getopt.config.caseSensitive,
                 "version", "display the version", &version_switch,
@@ -427,7 +452,7 @@ int _main(string[] args) {
                 "p|package", "Generates D package to the source files", &options
                 .enable_package,
                 "c|check", "Check the bdd reports in give list of directories", &check_reports_switch,
-                "C", "Same as check but the program will return a nozero exit-code if the check fails", &Check_reports_switch, //    "g|stage", "Sets stage target for the testbench to be runned", &stages,
+                "C", "Same as check but the program will return a nozero exit-code if the check fails", &Check_reports_switch,
                 "s|schedule", format(
                     "Execution schedule Default: '%s'", schedule_file), &schedule_file,
                 "r|run", "Runs the test in the schedule", &run_stages,
@@ -500,7 +525,7 @@ int _main(string[] args) {
         return parse_bdd(options);
     }
     catch (Exception e) {
-        error(">>Error: %s", e.toString);
+        error("Error: %s", e.toString);
         return 1;
     }
     return 0;

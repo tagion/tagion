@@ -12,7 +12,7 @@ import std.file : mkdirRecurse, exists;
 import std.stdio : File;
 import core.thread;
 import tagion.utils.JSONCommon;
-import tagion.tools.collider.reporter : ScheduleReport;
+import tagion.tools.collider.trace : ScheduleTrace;
 
 @safe
 struct RunUnit {
@@ -87,13 +87,13 @@ struct ScheduleRunner {
     Schedule schedule;
     const(string[]) stages;
     const uint jobs;
-    ScheduleReport report;
+    ScheduleTrace report;
     @disable this();
     this(
             ref Schedule schedule,
             const(string[]) stages,
     const uint jobs,
-    ScheduleReport report = null) pure nothrow
+    ScheduleTrace report = null) pure nothrow
     in (jobs > 0)
     in (stages.length > 0)
     do {
@@ -132,9 +132,7 @@ struct ScheduleRunner {
 
     static void kill(Pid pid) @trusted {
         try {
-
             
-
                 .kill(pid); //.ifThown!ProcessException;
         }
         catch (ProcessException e) {

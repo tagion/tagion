@@ -1,5 +1,5 @@
-/// Reporter for seeing runtime status of collider
-module tagion.tools.collider.reporter;
+/// trace for seeing runtime status of collider
+module tagion.tools.collider.trace;
 
 import tagion.tools.collider.schedule : Runner;
 import std.stdio;
@@ -7,19 +7,19 @@ import tagion.utils.Term;
 import std.range : repeat;
 
 @safe
-interface ScheduleReport {
+interface ScheduleTrace {
     void start(const ref Runner runner);
     void stop(const ref Runner runner);
     void timeout(const ref Runner runner);
-    void initReport(const long number_of_runners);
+    void initTrace(const long number_of_runners);
 }
 
 @safe
-class ReportCallBacks : ScheduleReport {
+class TraceCallBacks : ScheduleTrace {
 
     long number_of_runners;
 
-    void initReport(const long number_of_runners) {
+    void initTrace(const long number_of_runners) {
         this.number_of_runners = number_of_runners;
 
         CLEARSCREEN.write;
