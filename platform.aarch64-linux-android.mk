@@ -8,6 +8,13 @@ PLATFORMS+=$(ANDROID_AARCH64)
 
 ifeq ($(PLATFORM),$(ANDROID_AARCH64))
 
+%:
+	$(PRECMD)
+	if [ -z "$(ANDROID_NDK)" ]; then
+	   echo "export the ANDROID_NDK environment variable"
+	   exit 1
+	fi
+
 ANDROID_API?=21
 ANDROID_ABI?=aarch64
 
