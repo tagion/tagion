@@ -11,16 +11,20 @@ ifeq ($(PLATFORM),$(ANDROID_AARCH64))
 ANDROID_API?=21
 ANDROID_ABI?=aarch64
 
-ANDROID_TOOLCHAIN?=$(ANDROID_NDK)/toolchains/llvm/prebuilt/$(OS)-$(ARCH)
+HOST_OS=${shell uname -s | tr '[:upper:]' '[:lower:]' }
+HOST_ARCH=${shell uname -m}
+ANDROID_TOOLCHAIN?=$(ANDROID_NDK)/toolchains/llvm/prebuilt/${HOST_OS}-${HOST_ARCH}
 
-CC=$(ANDROID_TOOLCHAIN)/$(TRIPLET)$(ANDROID_API)-clang
-AR=$(ANDROID_TOOLCHAIN)/bin/$(TARGET)-ar
-AS=$(ANDROID_TOOLCHAIN)/bin/$(TARGET)-as
-CC=$(ANDROID_TOOLCHAIN)/bin/$(TARGET)$(ANDROID_API)-clang
-CXX=$(ANDROID_TOOLCHAIN)/bin/$(TARGET)$(ANDROID_API)-clang++
-LD=$(ANDROID_TOOLCHAIN)/bin/$(TARGET)-ld
-RANLIB=$(ANDROID_TOOLCHAIN)/bin/$(TARGET)-ranlib
-STRIP=$(ANDROID_TOOLCHAIN)/bin/$(TARGET)-strip
+MTRIPLE:=aarch64-linux
+TRIPLET:=$(MTRIPLE)-android
+
+export AR=$(ANDROID_TOOLCHAIN)/bin/$(TRIPLET)-ar
+export AS=$(ANDROID_TOOLCHAIN)/bin/$(TRIPLET)-as
+export CC=$(ANDROID_TOOLCHAIN)/bin/$(TRIPLET)$(ANDROID_API)-clang
+export CXX=$(ANDROID_TOOLCHAIN)/bin/$(TRIPLET)$(ANDROID_API)-clang++
+export LD=$(ANDROID_TOOLCHAIN)/bin/$(TRIPLET)-ld
+export RANLIB=$(ANDROID_TOOLCHAIN)/bin/$(TRIPLET)-ranlib
+export STRIP=$(ANDROID_TOOLCHAIN)/bin/$(TRIPLET)-strip
 
 ## Still need to see if can somehow specify the ldc's lib-dirs from commandline
 ANDROID_LDC_LIBS=$(ANDROID_LDC)
@@ -29,9 +33,6 @@ CROSS_ENABLED=1
 CROSS_OS=android
 CROSS_GO_ARCH=arm64
 CROSS_ARCH=aarch64
-
-MTRIPLE:=aarch64-linux
-TRIPLET:=$(MTRIPLE)-android
 
 SHARED?=1
 DFLAGS+=$(DDEFAULTLIBSTATIC)
@@ -49,13 +50,13 @@ env-android:
 	${call log.kvp, ANDROID_API, $(ANDROID_API)}
 	${call log.kvp, ANDROID_ABI, $(ANDROID_ABI)}
 	${call log.kvp, ANDROID_TOOLCHAIN, $(ANDROID_TOOLCHAIN)}
-	${call log.kvp, ANDROID_LD, $(LD)}
-	${call log.kvp, ANDROID_CC, $(CC)}
-	${call log.kvp, ANDROID_CXX, $(CXX)}
-	${call log.kvp, ANDROID_STRIP, $(STRIP)}
-	${call log.kvp, ANDROID_AR, $(AR)}
-	${call log.kvp, ANDROID_RANLIB, $(RANLIB)}
-	${call log.kvp, ANDROID_AS, $(AS)}
+	${call log.kvp, LD, $(LD)}
+	${call log.kvp, CC, $(CC)}
+	${call log.kvp, CXX, $(CXX)}
+	${call log.kvp, STRIP, $(STRIP)}
+	${call log.kvp, AR, $(AR)}
+	${call log.kvp, RANLIB, $(RANLIB)}
+	${call log.kvp, AS, $(AS)}
 	${call log.close}
 
 env: env-android
