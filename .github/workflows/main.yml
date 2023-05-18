@@ -1,4 +1,4 @@
-name: Commit Build and Test
+name: Main Flow
 on:
   workflow_dispatch:
   push: 
