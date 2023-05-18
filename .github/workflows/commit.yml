@@ -144,7 +144,7 @@ jobs:
       - name: Copy Artifact to local machine
         run: |
           rm -rf *
-          cp /mnt/shared/${{needs.acceptance_stage.outputs.stage}}/${{needs.acceptance_stage.outputs.tarball}} .
+          cp /mnt/nfs/${{needs.acceptance_stage.outputs.stage}}/${{needs.acceptance_stage.outputs.tarball}} .
           tar -xzf ${{needs.acceptance_stage.outputs.tarball}}
       - name: codecov report
         run: |
