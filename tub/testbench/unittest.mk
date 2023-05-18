@@ -18,11 +18,10 @@ proto-unittest-run: $(DLOG)/.way
 proto-unittest-run: proto-unittest-build 
 	$(PRECMD)
 	$(CHEXE) $(TMP_UNITTEST)
-	echo $(PRETOOL) $(PRETOOL_FLAGS) $(UNITTEST_BIN) > $(TMP_UNITTEST) 
+	echo $(PRETOOL) $(PRETOOL_FLAGS) $(UNITTEST_BIN) $(DRT_FLAGS) > $(TMP_UNITTEST) 
 	echo $(TMP_UNITTEST)
 	$(SCRIPT_LOG) $(TMP_UNITTEST) $(UNITTEST_LOG)
 	echo $(INFO)
-
 
 proto-unittest-build: $(UNITTEST_BIN)
 

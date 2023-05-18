@@ -1,54 +1,98 @@
-/// Reporter for seeing runtime status of collider
+/// Tool to create report files from collider hibon files
 module tagion.tools.collider.reporter;
 
-import tagion.tools.collider.schedule : Runner;
-import std.stdio;
-import tagion.utils.Term;
-import std.range : repeat;
+/**
+ * @brief tool generate d files from bdd md files and vice versa
+ */
+import tagion.tools.Basic : Main;
 
-@safe
-interface ScheduleReport {
-    void start(const ref Runner runner);
-    void stop(const ref Runner runner);
-    void timeout(const ref Runner runner);
-    void initReport(const long number_of_runners);
+import tagion.hibon.HiBONRecord : fwrite, fread, isRecord;
+import tagion.hibon.HiBONJSON;
+import tagion.hibon.Document : Document;
+import tagion.tools.revision : revision_text;
+import tagion.behaviour.BehaviourFeature;
+import tagion.behaviour.BehaviourResult;
+import std.file;
+import std.getopt;
+import std.format;
+import std.string;
+import std.algorithm.iteration;
+import std.stdio;
+import std.array;
+
+mixin Main!(_main);
+
+int _main(string[] args) {
+    immutable program = args[0];
+    string output;
+
+    auto main_args = getopt(args,
+            "o|output", "output file", &output,
+    );
+
+    if (main_args.helpWanted) {
+        defaultGetoptPrinter([
+            revision_text,
+            "Documentation: https://tagion.org/",
+            "",
+            "Usage:",
+            format("%s [<option>...]", program),
+            "",
+            "<option>:",
+        ].join("\n"), main_args.options);
+        return 0;
+    }
+
+    string log_dir = ".";
+    if (args.length == 2) {
+        log_dir = args[1];
+    }
+    if (!output) {
+        stderr.writeln("Output file is not specified");
+        return 1;
+    }
+
+    auto result_files = dirEntries(log_dir, SpanMode.depth).filter!(dirEntry => dirEntry.name.endsWith(".hibon"))
+        .map!(dirEntry => dirEntry.name);
+
+    FeatureGroup[] featuregroups;
+    foreach (result; result_files) {
+        featuregroups ~= fread!FeatureGroup(result);
+    }
+
+    auto outstring = appender!string;
+    foreach (fg; featuregroups) {
+        outstring.put(fg.toMd);
+    }
+
+    File(output, "w").write(outstring.data);
+
+    return 0;
 }
 
-@safe
-class ReportCallBacks : ScheduleReport {
+alias MdString = string;
 
-    long number_of_runners;
-
-    void initReport(const long number_of_runners) {
-        this.number_of_runners = number_of_runners;
-
-        CLEARSCREEN.write;
-        foreach (i; 0 .. this.number_of_runners) {
-            writefln("Runner %s idle", i);
+/// Gh flavor markdown
+MdString toMd(FeatureGroup fg) {
+    auto result_md = appender!string;
+    string result_type() {
+        if (fg.info.result.isRecord!Result) {
+            return format(":heavy_check_mark: %s", fg.info.name);
+        }
+        else if (fg.info.result.isRecord!BehaviourError) {
+            return format(":x: %s", fg.info.name);
+        }
+        else {
+            return format(":question: Unknown result type %s", fg.info.name);
         }
     }
 
-    void goToLine(const ref Runner runner) {
-        HOME.write;
+    result_md.put(format("%s\n\n", result_type));
 
-        NEXTLINE.repeat(runner.jobid);
-
-        CLEARLINE.write;
-    }
-
-    void start(const ref Runner runner) {
-        goToLine(runner);
-        writefln("Runner %s started %s", runner.jobid, runner.name);
-    }
-
-    void stop(const ref Runner runner) {
-        goToLine(runner);
-        writefln("Runner %s stopped %s", runner.jobid, runner.name);
-    }
-
-    void timeout(const ref Runner runner) {
-        goToLine(runner);
-        writefln("Runner %s timeout %s", runner.jobid, runner.name);
-    }
-
+    result_md.put("<details>\n\n");
+    result_md.put("```json\n");
+    result_md.put(format("%s\n", fg.toPretty));
+    result_md.put("```\n\n");
+    result_md.put("</details><br>\n\n");
+    return result_md[];
 }

@@ -15,7 +15,6 @@ version (none) static unittest {
     pragma(msg, "Mains ", getMains!tagion);
 }
 
-alias Result = Tuple!(int, "exit_code", bool, "executed");
 mixin template doOneMain(alltools...) {
     import std.getopt;
     import std.stdio;
@@ -27,6 +26,7 @@ mixin template doOneMain(alltools...) {
     import tagion.tools.revision;
     import std.array : join;
     import std.algorithm.searching : canFind;
+    import tagion.tools.Basic : Result;
 
     /*
     * Strips the non package name from a module-name
@@ -147,7 +147,7 @@ mixin template doOneMain(alltools...) {
             stderr.writefln("Error: %s", e.msg);
             return Result(1, true);
         }
-        return Result(0, false);
+        return Result.init;
     }
 
     /* 
