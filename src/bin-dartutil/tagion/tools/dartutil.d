@@ -46,59 +46,6 @@ import tagion.dart.DARTFakeNet;
  * @brief tool for working with local DART database
  */
 
-pragma(msg, "fixme(ib): move to new library when it will be merged from cbr");
-version (none) void updateAddNetworkNameCard(const HashNet net, NetworkNameCard nnc, NetworkNameRecord nrc, RecordFactory
-        .Recorder recorder) {
-    recorder.remove(HashLock(net, nnc));
-
-    // Create new NNC, NRC and signature
-    NetworkNameCard nnc_new;
-    nnc_new.name = nnc.name;
-    nnc_new.lang = nnc.lang;
-    // nnc_new.time = current_time?
-
-    NetworkNameRecord nrc_new;
-    nrc_new.name = net.dartIndex(nnc_new.toDoc);
-    nrc_new.previous = net.dartIndex(nrc.toDoc);
-    nrc_new.index = nrc.index + 1;
-    nrc_new.node = nrc.node; // update NodeAddress?
-
-    nnc_new.record = net.dartIndex(nrc_new.toDoc);
-
-    auto hr_new = HashLock(net, nnc_new);
-
-    recorder.add(nnc_new);
-    recorder.add(nrc_new);
-    recorder.add(hr_new);
-}
-
-version (none) void updateRemoveHashKeyRecord(const HashNet net, const RecordFactory.Recorder src, RecordFactory
-        .Recorder dest)
-in {
-    assert(dest !is null);
-}
-do {
-    auto hash_filter = src[].filter!(a => a.isAdd && a.filed.hasHashKey);
-    dest.insert(hash_filter, Archive.Type.REMOVE);
-
-    // WRONG: removing NEW lock instead of OLD
-    // auto hash_locks = hash_filter.map!(a => HashLock(net, a.filed));
-    // dest.insert(hash_locks, Archive.Type.REMOVE);
-}
-
-pragma(msg, "fixme(ib): move to new library when it will be merged from cbr");
-version (none) void updateAddEpochBlock(const HashNet net, EpochBlock epoch_block, RecordFactory
-        .Recorder recorder) {
-    EpochBlock epoch_block_new;
-    epoch_block_new.epoch = epoch_block.epoch + 1;
-    epoch_block_new.previous = net.dartIndex(epoch_block);
-
-    auto le_block_new = LastEpochRecord(net, epoch_block_new);
-
-    recorder.add(epoch_block_new);
-    recorder.add(le_block_new);
-}
-
 mixin Main!_main;
 
 int _main(string[] args) {
@@ -163,20 +110,20 @@ int _main(string[] args) {
         writeln(logo);
         defaultGetoptPrinter(
                 [
-            // format("%s version %s", program, REVNO),
-            "Documentation: https://tagion.org/",
-            "",
-            "Usage:",
-            format("%s <command> [<option>...]", program),
-            "",
-            "Where:",
-            "<command>           one of [--read, --rim, --modify, --rpc]",
-            "",
+                // format("%s version %s", program, REVNO),
+                "Documentation: https://tagion.org/",
+                "",
+                "Usage:",
+                format("%s <command> [<option>...]", program),
+                "",
+                "Where:",
+                "<command>           one of [--read, --rim, --modify, --rpc]",
+                "",
 
-            "<option>:",
+                "<option>:",
 
-        ].join("\n"),
-        main_args.options);
+                ].join("\n"),
+                main_args.options);
         return 0;
     }
 

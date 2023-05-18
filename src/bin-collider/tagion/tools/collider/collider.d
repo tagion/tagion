@@ -393,23 +393,11 @@ void error(Args...)(string fmt, Args args) {
     stderr.writefln("%s%s%s", RED, format(fmt, args), RESET);
 }
 
-import tagion.tools.OneMain : Result;
-
-alias SubTools = int function(string[])[string];
-static SubTools sub_tools;
+SubTools sub_tools;
 static this() {
-    //   import tagion.tools.collider.report;
-    //   sub_tools["report"] = &report._main;
-}
+    import reporter = tagion.tools.collider.reporter;
 
-Result subTool(string[] args, const size_t index = 0) {
-    if (args[index] in sub_tools) {
-        return Result(sub_tools[args[index]](args[index .. $]), true);
-    }
-    if (index < 1) {
-        return subTool(args, index + 1);
-    }
-    return Result.init;
+    sub_tools["reporter"] = &reporter._main;
 }
 
 int main(string[] args) {
@@ -428,6 +416,7 @@ int main(string[] args) {
     bool schedule_write_proto;
 
     string testbench = "testbench";
+    bool force_switch;
     // int function(string[])[string] sub_tools;
     //  sub_tools["shitty"] = &shitty._main;
     try {
@@ -437,7 +426,7 @@ int main(string[] args) {
         else {
             options.setDefault;
         }
-        const Result result = subTool(args);
+        const Result result = subTool(sub_tools, args);
         if (result.executed) {
             return result.exit_code;
         }
@@ -460,6 +449,7 @@ int main(string[] args) {
                 "j|jobs", format("Sets number jobs to run simultaneously (0 == max) Default: %d", schedule_jobs), &schedule_jobs,
                 "b|bin", format("Testbench program Default: '%s'", testbench), &testbench,
                 "P|proto", "Writes sample schedule file", &schedule_write_proto,
+                "f|force", "Force a symbolic link to be created", &force_switch,
                 "v|verbose", "Enable verbose print-out", &options.verbose_switch,
         );
         if (version_switch) {
@@ -483,10 +473,16 @@ int main(string[] args) {
                 "",
                 "Usage:",
                 format("%s [<option>...]", program),
+                "# Sub-tools",
+                format("%s %-(%s|%) [<options>...]", program, sub_tools.keys),
                 "",
                 "<option>:",
             ].join("\n"), main_args.options);
             return 0;
+        }
+
+        if (force_switch) {
+            forceSymLink(sub_tools);
         }
 
         if (schedule_write_proto) {

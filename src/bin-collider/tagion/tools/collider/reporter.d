@@ -1,10 +1,10 @@
 /// Tool to create report files from collider hibon files
-module tagion.tools.collider.report;
+module tagion.tools.collider.reporter;
 
 /**
  * @brief tool generate d files from bdd md files and vice versa
  */
-import tagion.tools.Basic;
+import tagion.tools.Basic : Main;
 
 import tagion.hibon.HiBONRecord : fwrite, fread, isRecord;
 import tagion.hibon.HiBONJSON;
