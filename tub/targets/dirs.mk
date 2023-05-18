@@ -17,6 +17,12 @@ export TESTLOG := $(DLOG)/testlog
 export FUND := $(REPOROOT)/fundamental
 export SCRIPTS := $(DTUB)/scripts
 
+# directories for integration and dart project
+export INTEGRATION := ${abspath ${REPOROOT}/integration}
+export DART_API_SERVICE := $(INTEGRATION)/vibed-rest-api
+export DART_API_BUILD := $(DBUILD)/integration
+export DART_API_INSTALL_DIR :=$(HOME)/.local/share/dart_api
+
 env-dirs:
 	$(PRECMD)
 	$(call log.header, $@ :: env)

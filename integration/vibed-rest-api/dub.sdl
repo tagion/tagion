@@ -9,6 +9,6 @@ dependency "vibe-d:data" version="~>0.9.6"
 sourceFiles "../../build/x86_64-linux/lib/libtagion.a" "../../build/x86_64-linux/tmp/secp256k1/.libs/libsecp256k1.a" platform="linux-x86_64"
 importPaths "../../src/lib-options" "../../src/lib-hibon" "../../src/lib-hashchain" "../../src/lib-crypto" "../../src/lib-actor" "../../src/lib-hashgraph" "../../src/lib-basic" "../../src/lib-utils" "../../src/lib-dart" "../../src/lib-network" "../../src/lib-gossip" "../../src/lib-logger" "../../src/lib-communication" "../../src/lib-hashgraphview" "../../src/lib-phobos"
 versions "REDBLACKTREE_SAFE_PROBLEM" "TINY_AES" "WOLFSSL" "OLD_TRANSACTION" "ONETOOL" 
-
+targetPath "../../build/x86_64-linux/integration/"
 preBuildCommands "git rev-parse HEAD > texts/revision.txt"
 stringImportPaths "texts/"
