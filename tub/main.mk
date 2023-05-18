@@ -84,7 +84,6 @@ include $(DTUB)/targets/dirs.mk
 include $(DTUB)/ways.mk
 include $(TARGETS)/submake.mk
 include $(TARGETS)/host.mk
-include $(TARGETS)/cross.mk
 include $(TARGETS)/platform.mk
 include $(TARGETS)/auxiliary.mk
 include $(TARGETS)/cov.mk
