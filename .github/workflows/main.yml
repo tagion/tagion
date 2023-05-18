@@ -12,7 +12,6 @@ env:
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   UNITTEST_COV: unittest-cov
 
-
 permissions:
   contents: read
   pages: write
