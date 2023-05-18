@@ -49,7 +49,7 @@ $(LIBSECP256K1): $(DTMP)/.way $(DLIB)/.way
 	./autogen.sh
 	./configure $(CONFIGUREFLAGS_SECP256K1)
 	$(MAKE) clean
-	$(MAKE) $(SUBMAKE_PARALLEL)
+	$(MAKE)
 
 env-secp256k1:
 	$(PRECMD)
