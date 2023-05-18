@@ -19,4 +19,16 @@ DFLAGS+=$(DDEFAULTLIBSTATIC)
 DFLAGS+=-mtriple=$(TRIPLET)
 DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
 
+# XCode dipipo
+
+XCODE_ROOT := ${shell xcode-select -print-path}
+XCODE_SIMULATOR_SDK = $(XCODE_ROOT)/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator$(IPHONE_SDKVERSION).sdk
+XCODE_DEVICE_SDK = $(XCODE_ROOT)/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS$(IPHONE_SDKVERSION).sdk
+
 endif
+
+env-ios:
+	$(PRECMD)
+	$(call log.header, $@ :: cross)
+	$(call log.kvp, XCODE_ROOT, $(XCODE_ROOT))
+	$(call log.close)
