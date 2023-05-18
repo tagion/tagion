@@ -50,6 +50,8 @@ DFLAGS+=-mtriple=$(PLATFORM)
 
 DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
 
+endif
+
 env-android:
 	$(PRECMD)
 	${call log.header, $@ :: env}
@@ -97,5 +99,3 @@ help-android:
 help: help-android
 
 .PHONY: env-android help-android
-
-endif
