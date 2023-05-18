@@ -207,6 +207,12 @@ jobs:
         run: |
           ./build/${{ env.TARGET }}/bin/collider reporter -o $GITHUB_STEP_SUMMARY logs
 
+      - uses: actions/upload-artifact@v3
+        if: success()
+        with:
+          name: succesful_artifact
+          path: ./${{steps.create_tar.outputs.tar_filename}}
+
       - name: Cleanup
         if: success() || failure()
         run: |
