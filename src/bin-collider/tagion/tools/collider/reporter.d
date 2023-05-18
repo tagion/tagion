@@ -17,6 +17,7 @@ import std.getopt;
 import std.format;
 import std.string;
 import std.algorithm.iteration;
+import std.algorithm.sorting;
 import std.stdio;
 import std.array;
 
@@ -53,7 +54,7 @@ int _main(string[] args) {
     }
 
     auto result_files = dirEntries(log_dir, SpanMode.depth).filter!(dirEntry => dirEntry.name.endsWith(".hibon"))
-        .map!(dirEntry => dirEntry.name);
+        .map!(dirEntry => dirEntry.name).array.sort;
 
     FeatureGroup[] featuregroups;
     foreach (result; result_files) {
