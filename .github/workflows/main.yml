@@ -18,11 +18,6 @@ permissions:
   pages: write
   id-token: write 
 
-# Allow one concurrent deployment
-concurrency:
-  group: "pages"
-  cancel-in-progress: true
-
 jobs:
   commit_stage:
     runs-on: CI-1
