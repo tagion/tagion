@@ -211,7 +211,7 @@ jobs:
         if: success()
         with:
           name: succesful_artifact
-          path: ./${{steps.create_tar.outputs.tar_filename}}
+          path: ./${{needs.acceptance_stage.outputs.tarball}}
 
       - name: Cleanup
         if: success() || failure()
