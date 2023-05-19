@@ -69,6 +69,7 @@ jobs:
         with:
           name: failed-run
           path: ./${{steps.create_tar.outputs.tar_filename}}
+          if-no-files-found: error
       
       - name: Upload to shared directory
         if: success()
@@ -117,6 +118,7 @@ jobs:
         with:
           name: failed-run
           path: ./${{needs.commit_stage.outputs.tarball}}
+          if-no-files-found: error
 
       - name: Upload to shared directory
         if: success()
@@ -189,6 +191,7 @@ jobs:
         uses: actions/upload-pages-artifact@v1
         with:
           path: '.'
+          if-no-files-found: error
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v1
@@ -213,6 +216,7 @@ jobs:
         with:
           name: succesful_artifact
           path: ./${{needs.acceptance_stage.outputs.tarball}}
+          if-no-files-found: error
 
       - name: Cleanup
         if: success() || failure()
