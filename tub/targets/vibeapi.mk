@@ -27,6 +27,7 @@ help-dartapi:
 	${call log.header, $@ :: help}
 	${call log.help, "make dartapi", "Build the dartapi"}
 	${call log.help, "make install-dartapi", "Installs the dartapi systemctl"}
+	${call log.help, "make clean-dartapi", "Removes the binary"}
 
 .PHONY: help-dartapi
 	
