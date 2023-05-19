@@ -1,4 +1,4 @@
-module tagion.services.DartService;
+module tagion.services.DARTService;
 
 import std.path : isValidPath;
 import std.format : format;

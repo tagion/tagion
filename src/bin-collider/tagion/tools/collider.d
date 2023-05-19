@@ -25,7 +25,7 @@ import tagion.utils.JSONCommon;
 import tagion.basic.Types : FileExtension, DOT;
 import tagion.tools.revision : revision_text;
 import tagion.behaviour.BehaviourParser;
-import tagion.behaviour.BehaviourIssue : Dlang, DlangT, Markdown;
+import tagion.behaviour.BehaviourIssuer : Dlang, DlangT, Markdown;
 import tagion.behaviour.Emendation : emendation, suggestModuleName;
 import tagion.behaviour.BehaviourFeature;
 import tagion.behaviour.Behaviour : TestCode, testCode, testColor, getBDDErrors;

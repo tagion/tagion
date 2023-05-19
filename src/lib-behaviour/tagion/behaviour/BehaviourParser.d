@@ -258,7 +258,7 @@ unittest { /// Convert ProtoDBBTestComments to Feature
     const fileid = fileId!(FunctionTypeOf!parser)(FileExtension.markdown);
     immutable markdown_filename = fileid.fullpath;
 
-    import tagion.behaviour.BehaviourIssue;
+    import tagion.behaviour.BehaviourIssuer;
 
     /// Write the markdown file
     auto fout = File(markdown_filename, "w");

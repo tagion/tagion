@@ -132,7 +132,7 @@ include $(TARGETS)/ldc-build-runtime.mk
 # Testbench
 #
 include $(DTUB)/testbench/unittest.mk
-include $(DTUB)/testbench/unitthread.mk
+include $(TARGETS)/unitthreaded.mk
 include $(DTUB)/testbench/wallets.mk
 include $(DTUB)/testbench/mode0.mk
 include $(DTUB)/testbench/mode1.mk

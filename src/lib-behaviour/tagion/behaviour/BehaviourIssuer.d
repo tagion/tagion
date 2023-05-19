@@ -1,5 +1,4 @@
-/// \file BehaviourIssue.d
-module tagion.behaviour.BehaviourIssue;
+module tagion.behaviour.BehaviourIssuer;
 
 import std.traits;
 import std.algorithm : each, map;

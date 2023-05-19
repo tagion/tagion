@@ -1,5 +1,5 @@
 //\file HiBONSpecificationTest.d
-
+module tagion.hibon.HiBONSpecificationTest;
 /** @brief HiBON tests of the specification
  */
 

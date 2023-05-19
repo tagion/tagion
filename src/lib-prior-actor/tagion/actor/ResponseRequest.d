@@ -1,4 +1,4 @@
-module tagion.tasks.ResponseRequest;
+module tagion.actor.ResponseRequest;
 
 import concurrency = std.concurrency;
 import std.concurrency : Tid, ownerTid, register, thisTid, spawn, send;

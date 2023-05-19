@@ -89,3 +89,7 @@ class DARTFakeNet : StdSecureNet {
         return Document(hibon);
     }
 }
+
+unittest {
+    assert(true);
+}

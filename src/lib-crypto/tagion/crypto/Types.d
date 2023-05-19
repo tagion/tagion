@@ -24,3 +24,4 @@ alias Signature = Typedef!(Buffer, null, "SIGNATURE"); /// Signarure of message
 * This document can contain a '#' value and there for it should not be used as a signed message.
 */
 alias Fingerprint = Typedef!(Buffer, null, "MESSAGE");
+

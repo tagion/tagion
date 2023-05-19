@@ -1,5 +1,5 @@
 /// Handles the validation and smart-contract and verifies the Archives in the network
-module tagion.prior_services.ContactCollectorService;
+module tagion.prior_services.ContractCollectorService;
 
 import std.concurrency;
 import std.range : chain;

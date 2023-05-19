@@ -72,5 +72,3 @@ env-unittest:
 env: env-unittest
 
 
-unitthreaded:
-	$(dmd tub/bin/ut.d -I/home/imrying/.dub/packages/unit-threaded-2.1.6/unit-threaded/source/ -I/home/imrying/.dub/packages/unit-threaded-2.1.6/unit-threaded/subpackages/assertions/source/ -I/home/imrying/.dub/packages/unit-threaded-2.1.6/unit-threaded/subpackages/exception/source/ -I/home/imrying/.dub/packages/unit-threaded-2.1.6/unit-threaded/subpackages/from/source/ -I/home/imrying/.dub/packages/unit-threaded-2.1.6/unit-threaded/subpackages/behave/source/ -I/home/imrying/.dub/packages/unit-threaded-2.1.6/unit-threaded/subpackages/runner/source/ -I/home/imrying/.dub/packages/unit-threaded-2.1.6/unit-threaded/subpackages/integration/source/ -I/home/imrying/.dub/packages/unit-threaded-2.1.6/unit-threaded/subpackages/mocks/source/ -I/home/imrying/.dub/packages/unit-threaded-2.1.6/unit-threaded/subpackages/property/source/ src/lib-dart/**.d)
