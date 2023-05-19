@@ -1,5 +1,5 @@
 /// Tool to generated behaviour driven code from markdown description 
-module tagion.tools.collider;
+module tagion.tools.collider.collider;
 
 /**
  * @brief tool generate d files from bdd md files and vice versa
@@ -21,6 +21,7 @@ import std.process : execute, environment;
 import std.range;
 import std.typecons : Tuple;
 
+import tagion.tools.Basic;
 import tagion.utils.JSONCommon;
 import tagion.basic.Types : FileExtension, DOT;
 import tagion.tools.revision : revision_text;
@@ -33,6 +34,10 @@ import tagion.behaviour.Behaviour : TestCode, testCode, testColor, getBDDErrors;
 import tagion.hibon.HiBONRecord : fwrite, fread;
 
 import tagion.utils.Term;
+
+import tagion.tools.collider.schedule;
+
+//import shitty=tagion.tools.collider.shitty;
 
 enum ONE_ARGS_ONLY = 2;
 enum DFMT_ENV = "DFMT"; /// Set the path and argument d-format including the flags
@@ -70,12 +75,15 @@ struct BehaviourOptions {
     /** 
      * Used to set default options if config file not provided
      */
+    string test_stage_env;
+    string dbin_env;
     void setDefault() {
         const gen = "gen";
         bdd_ext = FileExtension.markdown;
         bdd_gen_ext = [gen, FileExtension.markdown].join(DOT);
         d_ext = [gen, FileExtension.dsrc].join(DOT);
         regex_inc = `/testbench/`;
+        test_stage_env = "TEST_STAGE";
         if (!(DFMT_ENV in environment)) {
             const which_dfmt = execute(["which", "dfmt"]);
             if (which_dfmt.status is 0) {
@@ -86,6 +94,7 @@ struct BehaviourOptions {
         const which_iconv = execute(["which", "iconv"]);
         iconv = which_iconv.output;
         iconv_flags = ["-t", "utf-8", "-f", "utf-8", "-c"];
+        dbin_env = "DBIN";
     }
 
     mixin JSONCommon;
@@ -275,7 +284,7 @@ int check_reports(string[] paths, const bool verbose) {
         }
     }
 
-    struct ReportCount {
+    struct TraceCount {
         uint passed;
         uint errors;
         uint started;
@@ -338,8 +347,8 @@ int check_reports(string[] paths, const bool verbose) {
 
     }
 
-    ReportCount feature_count;
-    ReportCount scenario_count;
+    TraceCount feature_count;
+    TraceCount scenario_count;
     int result;
     foreach (path; paths) {
         foreach (string report_file; dirEntries(path, "*.hibon", SpanMode.breadth)
@@ -349,7 +358,7 @@ int check_reports(string[] paths, const bool verbose) {
                 const feature_test_code = testCode(feature_group);
                 feature_count.update(feature_test_code);
                 if (show(feature_test_code)) {
-                    writefln("Report file %s", report_file);
+                    writefln("Trace file %s", report_file);
                 }
 
                 report(feature_test_code, feature_group.info.property.description);
@@ -384,14 +393,32 @@ void error(Args...)(string fmt, Args args) {
     stderr.writefln("%s%s%s", RED, format(fmt, args), RESET);
 }
 
+SubTools sub_tools;
+static this() {
+    import reporter = tagion.tools.collider.reporter;
+
+    sub_tools["reporter"] = &reporter._main;
+}
+
 int main(string[] args) {
     BehaviourOptions options;
     immutable program = args[0]; /** file for configurations */
-    auto config_file = "behaviour.json"; /** flag for print current version of behaviour */
+    auto config_file = "collider.json"; /** flag for print current version of behaviour */
     bool version_switch; /** flag for overwrite config file */
     bool overwrite_switch; /** falg for to enable report checks */
     bool Check_reports_switch;
     bool check_reports_switch; /** verbose switch */
+    //    string[] stages;
+    string schedule_file = "schedule".setExtension(FileExtension.json);
+    string[] run_stages;
+    uint schedule_jobs = 0;
+    bool schedule_rewrite;
+    bool schedule_write_proto;
+
+    string testbench = "testbench";
+    bool force_switch;
+    // int function(string[])[string] sub_tools;
+    //  sub_tools["shitty"] = &shitty._main;
     try {
         if (config_file.exists) {
             options.load(config_file);
@@ -399,18 +426,30 @@ int main(string[] args) {
         else {
             options.setDefault;
         }
+        const Result result = subTool(sub_tools, args);
+        if (result.executed) {
+            return result.exit_code;
+        }
         auto main_args = getopt(args, std.getopt.config.caseSensitive,
                 "version", "display the version", &version_switch,
                 "I", "Include directory", &options.paths, std.getopt.config.bundling,
-                "O", format("Write configure file %s", config_file), &overwrite_switch,
-                "r|regex_inc", format(`Include regex Default:"%s"`, options.regex_inc), &options.regex_inc,
-                "x|regex_exc", format(`Exclude regex Default:"%s"`, options.regex_exc), &options.regex_exc,
+                "O", format("Write configure file '%s'", config_file), &overwrite_switch,
+                "R|regex_inc", format(`Include regex Default:"%s"`, options.regex_inc), &options.regex_inc,
+                "X|regex_exc", format(`Exclude regex Default:"%s"`, options.regex_exc), &options.regex_exc,
                 "i|import", format(`Set include file Default:"%s"`, options.importfile), &options
                 .importfile,
                 "p|package", "Generates D package to the source files", &options
                 .enable_package,
                 "c|check", "Check the bdd reports in give list of directories", &check_reports_switch,
                 "C", "Same as check but the program will return a nozero exit-code if the check fails", &Check_reports_switch,
+                "s|schedule", format(
+                    "Execution schedule Default: '%s'", schedule_file), &schedule_file,
+                "r|run", "Runs the test in the schedule", &run_stages,
+                "S", "Rewrite the schedule file", &schedule_rewrite,
+                "j|jobs", format("Sets number jobs to run simultaneously (0 == max) Default: %d", schedule_jobs), &schedule_jobs,
+                "b|bin", format("Testbench program Default: '%s'", testbench), &testbench,
+                "P|proto", "Writes sample schedule file", &schedule_write_proto,
+                "f|force", "Force a symbolic link to be created", &force_switch,
                 "v|verbose", "Enable verbose print-out", &options.verbose_switch,
         );
         if (version_switch) {
@@ -434,11 +473,40 @@ int main(string[] args) {
                 "",
                 "Usage:",
                 format("%s [<option>...]", program),
+                "# Sub-tools",
+                format("%s %-(%s|%) [<options>...]", program, sub_tools.keys),
                 "",
                 "<option>:",
             ].join("\n"), main_args.options);
             return 0;
         }
+
+        if (force_switch) {
+            forceSymLink(sub_tools);
+        }
+
+        if (schedule_write_proto) {
+            Schedule schedule;
+            auto run_unit = RunUnit(["commit"], null, null, 0.0);
+            schedule.units["collider_test"] = run_unit;
+            schedule.save(schedule_file);
+            return 0;
+        }
+
+        if (run_stages) {
+            import core.cpuid : coresPerCPU;
+
+            Schedule schedule;
+            schedule.load(schedule_file);
+            schedule_jobs = (schedule_jobs == 0) ? coresPerCPU : schedule_jobs;
+            auto schedule_runner = ScheduleRunner(schedule, run_stages, schedule_jobs);
+            schedule_runner.run([testbench]);
+            if (schedule_rewrite) {
+                schedule.save(schedule_file);
+            }
+            //   Check_reports_switch = true;
+        }
+
         check_reports_switch = Check_reports_switch || check_reports_switch;
         if (check_reports_switch) {
             const ret = check_reports(args[1 .. $], options.verbose_switch);
@@ -453,7 +521,8 @@ int main(string[] args) {
         return parse_bdd(options);
     }
     catch (Exception e) {
-        error("Error: %s", e.msg);
+        error("Error: %s", e.toString);
+        return 1;
     }
-    return 1;
+    return 0;
 }

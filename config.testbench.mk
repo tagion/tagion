@@ -1,4 +1,5 @@
 
+COLLIDER_ROOT?=$(DLOG)/bdd/
 BDD_FLAGS+=-p
 BDD_FLAGS+=-i$(BDD)/bdd_import.di
 BDD_FLAGS+=${addprefix -I,$(BDD)}

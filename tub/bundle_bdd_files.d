@@ -15,12 +15,12 @@ auto get_md_paths(string pathname) {
         .array;
 }
 
-int main() {
+int main(string[] args) {
 
     const BDD = environment["BDD"];
     const REPOROOT = environment["REPOROOT"];
-    const FILE = buildPath(BDD, "BDDS.md");
-
+    //const FILE = buildPath(BDD, "BDDS.md");
+    const FILE = args[1];
     auto md_files = get_md_paths(BDD).sort;
 
     string[] relative_paths;

@@ -65,14 +65,14 @@ wallet: target-tagionwallet
 #
 # Subscription utility
 #
-target-tagionsubscription: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-${call DO_BIN,subscription,$(LIB_DFILES) ${call BIN_DEPS,subsciption}}
+#target-tagionsubscription: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+#${call DO_BIN,subscription,$(LIB_DFILES) ${call BIN_DEPS,subsciption}}
 
 #
 # Recorderchain utility
 #
-target-recorderchain: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-${call DO_BIN,recorderchain,$(LIB_DFILES) ${call BIN_DEPS,recorderchain},tagion}
+#target-recorderchain: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+#${call DO_BIN,recorderchain,$(LIB_DFILES) ${call BIN_DEPS,recorderchain},tagion}
 
 #
 # Boot utility
@@ -119,12 +119,7 @@ ${call DO_BIN,tagion,$(LIB_DFILES) $(TAGION_BINS)}
 #
 # Binary of BBD generator tool
 #
+target-collider: DFLAGS+=$(DVERSION)=ONETOOL
 target-collider: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
 ${call DO_BIN,collider,$(LIB_DFILES) ${call BIN_DEPS,collider}}
-
-target-libtagion: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-target-libtagion: DLIBTYPE?=$(DSTATICLIB)
-target-libtagion: DFLAGS+=$(DLIBTYPE)
-target-libtagion: DFILES:=${shell find $(DSRC) -name "*.d" -a -path "*/src/lib-*" -a -not -path "*/unitdata/*" -a -not -path "*/tests/*" -a -not -path "*/lib-betterc/*" $(NO_WOLFSSL) }
-${call DO_BIN,libtagion,}
 

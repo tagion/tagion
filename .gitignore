@@ -87,3 +87,5 @@ bdd/tagion/testbench/services/Transcript_service.d
 tagionwave.json
 
 .dub
+.done
+
