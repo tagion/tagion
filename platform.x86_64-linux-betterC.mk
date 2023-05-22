@@ -32,20 +32,14 @@ prebuild-extern-linux: $(DBUILD)/.way
 
 .PHONY: prebuild-linux
 
-#traget-linux: prebuild-linux
-#target-linux: | secp256k1 openssl p2pgowrapper
-# target-linux: | secp256k1 p2pgowrapper
 $(UNITTEST_BIN): $(DFILES)
 
-# unittest: LIBS+=$(LIBOPENSSL)
 unittest: LIBS+=$(LIBSECP256K1)
-# unittest: LIBS+=$(LIBP2PGOWRAPPER)
 unittest: proto-unittest-run
 
 target-android: LD=$(ANDROID_LD)
 target-android: CC=$(ANDROID_CC)
 target-android: CPP=$(ANDROID_CPP)
-#target-android: LDFLAGS=$(ANDROID_LDFLAGS)
 target-android: DFLAGS+=$(ANDROID_DFLAGS)
 target-android: LIBS+=$(LDC_BUILD_RUNTIME_TMP)/lib/libdruntime-ldc.a
 target-android: LIBS+=$(LDC_BUILD_RUNTIME_TMP)/lib/libphobos2-ldc.a

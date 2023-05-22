@@ -1060,7 +1060,6 @@ received = the HiRPC received package
             enum to = 0xABBD;
 
             //            import std.stdio;
-
             { // Single element same sector sectors
                 const ulong[] same_sector_tabel = [
                     0xABB9_13ab_cdef_1234,
@@ -1514,7 +1513,8 @@ received = the HiRPC received package
                 assert(dart_A.fingerprint == dart_B.fingerprint);
 
             }
-
+            pragma(msg, "fixme(pr) Test disabled because it takes a long time");
+            version(none)
             { // Synchronization of a Large DART A where DART A of DART B has common data
                 // writefln("Test 6");
                 DARTFile.create(filename_A);

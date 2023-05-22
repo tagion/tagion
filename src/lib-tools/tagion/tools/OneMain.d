@@ -2,7 +2,19 @@ module tagion.tools.OneMain;
 
 import std.typecons : Tuple;
 
-alias Result = Tuple!(int, "exit_code", bool, "executed");
+string[] getMains(alias _package)() {
+    return [__traits(allMembers, _package)];
+}
+
+version (none) static unittest {
+    import tagion;
+
+    alias x = __traits(allMembers, tagion);
+
+    pragma(msg, "Mains ", x);
+    pragma(msg, "Mains ", getMains!tagion);
+}
+
 mixin template doOneMain(alltools...) {
     import std.getopt;
     import std.stdio;
@@ -14,6 +26,7 @@ mixin template doOneMain(alltools...) {
     import tagion.tools.revision;
     import std.array : join;
     import std.algorithm.searching : canFind;
+    import tagion.tools.Basic : Result;
 
     /*
     * Strips the non package name from a module-name
@@ -113,16 +126,16 @@ mixin template doOneMain(alltools...) {
             if (main_args.helpWanted) {
                 defaultGetoptPrinter(
                         [
-                    revision_text,
-                    "Documentation: https://tagion.org/",
-                    "Usage:",
-                    format("%s <program> [<option>...]", program),
-                    format("Tool programs %-(%s, %)", toolnames),
-                    "",
-                    "<option>:",
+                        revision_text,
+                        "Documentation: https://tagion.org/",
+                        "Usage:",
+                        format("%s <program> [<option>...]", program),
+                        format("Tool programs %-(%s, %)", toolnames),
+                        "",
+                        "<option>:",
 
-                ].join("\n"),
-                main_args.options);
+                        ].join("\n"),
+                        main_args.options);
                 return Result(0, true);
             }
         }
@@ -134,7 +147,7 @@ mixin template doOneMain(alltools...) {
             stderr.writefln("Error: %s", e.msg);
             return Result(1, true);
         }
-        return Result(0, false);
+        return Result.init;
     }
 
     /* 
