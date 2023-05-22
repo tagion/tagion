@@ -50,6 +50,9 @@ jobs:
           RESULT=$(./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/commit/results)
           echo $RESULT | grep "Test result success!"
           ./build/${{env.TARGET}}/bin/collider reporter -o /dev/stdout logs/${{ env.TARGET }}/bdd/commit/ >> $GITHUB_STEP_SUMMARY
+      - name: codecov report
+        run: |
+          bash <(curl -s https://codecov.io/bash) -t ${{ env.CODECOV_TOKEN }}
                
 
       - name: Add schedule to build
@@ -136,23 +139,23 @@ jobs:
           rm ${{ needs.commit_stage.outputs.tarball }}
           rm -rf *
 
-  code_coverage:
-    runs-on: CD
-    needs: acceptance_stage
-    steps:
-      - name: Copy Artifact to local machine
-        run: |
-          find . -mindepth 1 -delete
-          cp /mnt/nfs/${{needs.acceptance_stage.outputs.stage}}/${{needs.acceptance_stage.outputs.tarball}} .
-          tar -xzf ${{needs.acceptance_stage.outputs.tarball}}
-      - name: codecov report
-        run: |
-          mv logs/${{ env.TARGET }}/cov/* .
-          bash <(curl -s https://codecov.io/bash) -t ${{ env.CODECOV_TOKEN }}
-      - name: clean up
-        run: |
-          rm -- *.lst
-          rm -rf *
+  # code_coverage:
+  #   runs-on: CD
+  #   needs: acceptance_stage
+  #   steps:
+  #     - name: Copy Artifact to local machine
+  #       run: |
+  #         find . -mindepth 1 -delete
+  #         cp /mnt/nfs/${{needs.acceptance_stage.outputs.stage}}/${{needs.acceptance_stage.outputs.tarball}} .
+  #         tar -xzf ${{needs.acceptance_stage.outputs.tarball}}
+  #     - name: codecov report
+  #       run: |
+  #         mv logs/${{ env.TARGET }}/cov/* .
+  #         bash <(curl -s https://codecov.io/bash) -t ${{ env.CODECOV_TOKEN }}
+  #     - name: clean up
+  #       run: |
+  #         rm -- *.lst
+  #         rm -rf *
 
   ddoc_build:
     runs-on: CD
