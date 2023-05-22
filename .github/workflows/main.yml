@@ -149,7 +149,9 @@ jobs:
           cp logs/${{ env.TARGET }}/cov/* .
           bash <(curl -s https://codecov.io/bash) -t ${{ env.CODECOV_TOKEN }}
       - name: clean up
-        run: rm -rf *
+        run: |
+          rm -- *.lst
+          rm -rf *
 
   ddoc_build:
     runs-on: CD
