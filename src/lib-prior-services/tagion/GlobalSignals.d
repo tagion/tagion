@@ -11,7 +11,7 @@ import tagion.basic.Version;
 //import core.internal.execinfo;
 // The declaration of the backtrace function in the execinfo.d is not declared @nogc
 // so they are declared here with @nogc because signal needs a @nogc function
-static if (ver.linux && not_unittest) {
+static if (ver.Posix && not_unittest) {
     extern (C) {
         nothrow @nogc {
             int backtrace(void** buffer, int size);
@@ -23,7 +23,7 @@ static if (ver.linux && not_unittest) {
 
 shared bool abort = false;
 private shared bool fault;
-static if (ver.linux && not_unittest) {
+static if (ver.Posix && not_unittest) {
     private static extern (C) void shutdown(int sig) @nogc nothrow {
         if (!fault) {
             if (sig is SIGINT) {
@@ -44,7 +44,7 @@ static if (ver.linux && not_unittest) {
 
 shared string call_stack_file;
 
-static if (ver.linux && not_unittest) {
+static if (ver.Posix && not_unittest) {
     import core.sys.posix.unistd : STDERR_FILENO;
     import core.sys.posix.signal;
 
@@ -103,7 +103,7 @@ static if (not_unittest) {
         call_stack_file = setExtension(thisExePath, backtrace_ext) ~ '\0';
 
         signal(SIGPIPE, &ignore);
-        version (posix) {
+        version (Posix) {
             import core.sys.posix.signal;
 
             //        import core.runtime;
