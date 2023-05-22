@@ -31,6 +31,7 @@ jobs:
           git clone git@github.com:tagion/tagion.git || echo "repo already exists"
       - name: pull
         run: |
+          git clean -f
           git checkout current
           git pull
 
@@ -140,16 +141,17 @@ jobs:
     steps:
       - name: Copy Artifact to local machine
         run: |
-          rm -rf *
+          find . -mindepth 1 -delete
           cp /mnt/nfs/${{needs.acceptance_stage.outputs.stage}}/${{needs.acceptance_stage.outputs.tarball}} .
           tar -xzf ${{needs.acceptance_stage.outputs.tarball}}
       - name: codecov report
         run: |
-          cd logs/${{ env.TARGET }}/cov
+          cp logs/${{ env.TARGET }}/cov/* .
           bash <(curl -s https://codecov.io/bash) -t ${{ env.CODECOV_TOKEN }}
-          cd ../../..
       - name: clean up
-        run: rm -rf *
+        run: |
+          rm -- *.lst
+          rm -rf *
 
   ddoc_build:
     runs-on: CD
