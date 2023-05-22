@@ -213,7 +213,7 @@ jobs:
       - uses: actions/upload-artifact@v3
         if: success()
         with:
-          name: succesful_artifact
+          name: successful_artifact
           path: ./${{needs.acceptance_stage.outputs.tarball}}
           if-no-files-found: error
 
