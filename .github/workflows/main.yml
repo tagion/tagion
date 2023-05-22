@@ -52,6 +52,7 @@ jobs:
           ./build/${{env.TARGET}}/bin/collider reporter -o /dev/stdout logs/${{ env.TARGET }}/bdd/commit/ >> $GITHUB_STEP_SUMMARY
       - name: codecov report
         run: |
+          rm -- logs/${{ env.TARGET/cov/*
           bash <(curl -s https://codecov.io/bash) -t ${{ env.CODECOV_TOKEN }}
                
 
