@@ -128,6 +128,11 @@ extern (C) {
         return 0;
     }
 
+
+    export uint wallet_check_login(){
+        return __secure_wallet.isLoggedin();
+    }
+
     export uint wallet_delete() {
         // Try to remove wallet file.
         if (__wallet_storage.remove()) {
@@ -203,7 +208,7 @@ extern (C) {
             HiBON hibon = new HiBON();
             hibon[0] = invoice.toDoc;
 
-            const invoiceDocId = recyclerDoc.create(Document(hibon));
+            const invoiceDocId = recyclerDoc.create(invoice.toDoc);
             // Save wallet state to file.
             __wallet_storage.write(__secure_wallet);
 
