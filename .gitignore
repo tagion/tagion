@@ -28,8 +28,7 @@ bdd/BDDS.md
 local.*
 # Auto generated files
 *.gen.*
-# Auto generated D interface files
-*.di
+
 # Auto generated C interface files
 *.i
 # Revision file
