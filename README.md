@@ -4,7 +4,7 @@
 
 # Tagion
 
-> 🚧 This document is still in development. Some thinks may be out of date or incomplete
+> 🚧 This document is still in development. Some things may be out of date or incomplete
 
 👋 Welcome to the Tagion project! 
 
