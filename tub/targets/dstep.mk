@@ -77,16 +77,16 @@ env-dstep: env-dstep-$1
 
 env: env-dstep
 
-clean: clean-dstep-$1
+# clean: clean-dstep-$1
 
-clean-dstep-$1:
-	$$(PRECMD)
-	$${call log.header, $$@ :: $1}
-	$$(RM) $$(DIFILES.$1)
+# clean-dstep-$1:
+# 	$$(PRECMD)
+# 	$${call log.header, $$@ :: $1}
+# 	$$(RM) $$(DIFILES.$1)
 
-clean-dstep: clean-dstep-$1
+# clean-dstep: clean-dstep-$1
 
-proper: clean-dstep-$1
+# proper: clean-dstep-$1
 
 }
 endef
