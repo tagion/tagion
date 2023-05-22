@@ -103,7 +103,7 @@ static if (not_unittest) {
         call_stack_file = setExtension(thisExePath, backtrace_ext) ~ '\0';
 
         signal(SIGPIPE, &ignore);
-        version (posix) {
+        version (Posix) {
             import core.sys.posix.signal;
 
             //        import core.runtime;
