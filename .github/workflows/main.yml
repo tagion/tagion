@@ -145,9 +145,8 @@ jobs:
           tar -xzf ${{needs.acceptance_stage.outputs.tarball}}
       - name: codecov report
         run: |
-          cd logs/${{ env.TARGET }}/cov
+          cp logs/${{ env.TARGET }}/cov .
           bash <(curl -s https://codecov.io/bash) -t ${{ env.CODECOV_TOKEN }}
-          cd ../../..
       - name: clean up
         run: rm -rf *
 
