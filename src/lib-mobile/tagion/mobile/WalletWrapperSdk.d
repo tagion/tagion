@@ -208,7 +208,7 @@ extern (C) {
             HiBON hibon = new HiBON();
             hibon[0] = invoice.toDoc;
 
-            const invoiceDocId = recyclerDoc.create(invoice.toDoc);
+            const invoiceDocId = recyclerDoc.create(Document(hibon));
             // Save wallet state to file.
             __wallet_storage.write(__secure_wallet);
 
@@ -452,6 +452,12 @@ unittest {
         const uint8_t[] pincode = cast(uint8_t[]) "1234".dup;
         const uint32_t pincodeLen = cast(uint32_t) pincode.length;
         const uint result = wallet_login(pincode.ptr, pincodeLen);
+        // Check the result
+        assert(result != 0, "Expected non-zero result");
+    }
+
+    { // Check login
+        const uint result = wallet_check_login();
         // Check the result
         assert(result != 0, "Expected non-zero result");
     }
