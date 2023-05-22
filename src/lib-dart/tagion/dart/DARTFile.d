@@ -1168,6 +1168,7 @@ unittest {
     import std.bitmanip : BitArray;
     import tagion.utils.Miscellaneous : cutHex;
     import tagion.hibon.HiBONJSON : toPretty;
+    import tagion.basic.basic : tempfile;
 
     auto net = new DARTFakeNet;
     auto manufactor = RecordFactory(net);
@@ -1208,9 +1209,6 @@ unittest {
 
     ];
 
-    immutable filename = fileId!DARTFile.fullpath;
-    immutable filename_A = fileId!DARTFile("A").fullpath;
-    immutable filename_B = fileId!DARTFile("B").fullpath;
 
     { // Test the fake hash on Archive
         auto doc_in = DARTFakeNet.fake_doc(table[0]);
@@ -1260,6 +1258,7 @@ unittest {
     }
 
     { // Rim 2 test
+        immutable filename = tempfile();
         DARTFile.create(filename);
         auto dart = new DARTFile(net, filename);
         RecordFactory.Recorder recorder;
@@ -1267,6 +1266,8 @@ unittest {
     }
 
     { // Rim 3 test
+        immutable filename = tempfile();
+
         DARTFile.create(filename);
         auto dart = new DARTFile(net, filename);
         RecordFactory.Recorder recorder;
@@ -1276,6 +1277,8 @@ unittest {
     }
 
     { // Rim 4 test
+        immutable filename = tempfile();
+
         DARTFile.create(filename);
         auto dart = new DARTFile(net, filename);
         RecordFactory.Recorder recorder;
@@ -1285,6 +1288,8 @@ unittest {
     }
 
     { // Rim 2 & 3
+        immutable filename = tempfile();
+
         DARTFile.create(filename);
         auto dart = new DARTFile(net, filename);
         RecordFactory.Recorder recorder;
@@ -1294,6 +1299,8 @@ unittest {
     }
 
     { // Rim 2 & 3 & 4
+        immutable filename = tempfile();
+
         DARTFile.create(filename);
         auto dart = new DARTFile(net, filename);
         RecordFactory.Recorder recorder;
@@ -1303,6 +1310,8 @@ unittest {
     }
 
     { // Rim all
+        immutable filename = tempfile();
+
         DARTFile.create(filename);
         auto dart = new DARTFile(net, filename);
         RecordFactory.Recorder recorder;
@@ -1312,8 +1321,8 @@ unittest {
     }
 
     { // Remove two archives and check the bulleye
-        immutable file_A = fileId!DARTFile("XA").fullpath;
-        immutable file_B = fileId!DARTFile("XB").fullpath;
+        immutable file_A = tempfile();
+        immutable file_B = tempfile();
 
         DARTFile.create(file_A);
         DARTFile.create(file_B);
@@ -1335,8 +1344,10 @@ unittest {
         //dart_A.dump;
         assert(bulleye_A == bulleye_B);
     }
-
     { // Random remove and the bulleye is check
+        immutable filename_A = tempfile();
+        immutable filename_B = tempfile();
+
         auto rand = Random!ulong(1234_5678_9012_345UL);
         enum N = 1000;
         auto random_table = new ulong[N];
@@ -1363,6 +1374,8 @@ unittest {
     }
     { // DARTFile.write on to an existing DART and the bulleye is check
         // This test is based on the next random test. Where an error was found. Do not delete.
+        immutable filename_A = tempfile();
+        immutable filename_B = tempfile();
         const from_random_table = [
             0xABBA_1234_DF92_7BA7UL, // add first time
             0xABBA_1234_62BD_7814UL, // add first time
@@ -1392,6 +1405,8 @@ unittest {
     }
 
     { // Random DARTFile.write on to an existing DART and the bulleye is check
+        immutable filename_A = tempfile();
+        immutable filename_B = tempfile();
         auto rand = Random!ulong(1234_5678_9012_345UL);
         enum N = 100;
         auto random_table = new ulong[N];
@@ -1419,6 +1434,8 @@ unittest {
     }
 
     { // Random remove and the bullseye is checked
+        immutable filename_A = tempfile();
+        immutable filename_B = tempfile();
         auto rand = Random!ulong(1234_5678_9012_345UL);
         enum N = 1000;
         auto random_table = new ulong[N];
@@ -1443,6 +1460,8 @@ unittest {
     }
 
     { // Random DARTFile.write and then bullseye is checked
+        immutable filename_A = tempfile();
+        immutable filename_B = tempfile();
         auto rand = Random!ulong(1234_5678_9012_345UL);
         enum N = 1000;
         auto random_table = new ulong[N];
@@ -1466,6 +1485,8 @@ unittest {
     }
 
     { // Try to remove a nonexisting archive
+        immutable filename_A = tempfile();
+        immutable filename_B = tempfile();
         auto rand = Random!ulong(1234_5678_9012_345UL);
         enum N = 50;
         auto random_table = new ulong[N];
@@ -1502,6 +1523,8 @@ unittest {
     }
 
     { // Large random test
+        immutable filename_A = tempfile();
+        immutable filename_B = tempfile();
         auto rand = Random!ulong(1234_5678_9012_345UL);
         enum N = 1000;
         auto random_table = new ulong[N];
@@ -1586,6 +1609,7 @@ unittest {
         }
 
         {
+            immutable filename_A = tempfile();
             DARTFile.create(filename_A);
             auto dart_A = new DARTFile(net, filename_A);
 
@@ -1617,6 +1641,8 @@ unittest {
         }
 
         {
+            immutable filename_A = tempfile();
+
             // this test is just a support to see how the real result should be of the previous test.
             DARTFile.create(filename_A);
             auto dart_A = new DARTFile(net, filename_A);
@@ -1660,6 +1686,8 @@ unittest {
             // | .. | .. | .. | AB [12]
             // | .. | .. | .. | .. abb913ab11ef [2]
             // | .. | .. | .. | .. abb913ab1213 [5]
+            immutable filename_A = tempfile();
+
             DARTFile.create(filename_A);
             auto dart_A = new DARTFile(net, filename_A);
 
@@ -1712,6 +1740,8 @@ unittest {
             // | .. | .. | .. | .. | .. | EF [12]
             // | .. | .. | .. | .. | .. | .. abb913ab11ef1234 [2]
             // | .. | .. | .. | .. | .. | .. abb913ab11ef2078 [11]
+            immutable filename_A = tempfile();
+
             DARTFile.create(filename_A);
             // writefln("dartfilename=%s", filename_A);
             auto dart_A = new DARTFile(net, filename_A);
@@ -1769,6 +1799,8 @@ unittest {
             // | .. | .. | .. | AB [14]
             // | .. | .. | .. | .. abb913ab11ef [2]
             // | .. | .. | .. | .. abb913ab1214 [6]
+            immutable filename_A = tempfile();
+
             DARTFile.create(filename_A);
             auto dart_A = new DARTFile(net, filename_A);
 
@@ -1831,6 +1863,8 @@ unittest {
             // | .. | .. | .. | .. | .. | EF [16]
             // | .. | .. | .. | .. | .. | .. abb913ab12ef1354 [4]
             // | .. | .. | .. | .. | .. | .. abb913ab12ef5656 [5]
+            immutable filename_A = tempfile();
+
             DARTFile.create(filename_A);
             auto dart_A = new DARTFile(net, filename_A);
 
@@ -1882,6 +1916,8 @@ unittest {
             // | .. | .. | .. | .. | .. | .. | .. abb913ab12ef565600 [5]
             // | .. | .. | .. | .. | .. | .. | .. abb913ab12ef567800 [6]
             // now we remove the middle branch located at EF.
+            immutable filename_A = tempfile();
+
             DARTFile.create(filename_A);
             auto dart_A = new DARTFile(net, filename_A);
 
@@ -1918,6 +1954,7 @@ unittest {
         }
 
         {
+            immutable filename_A = tempfile();
 
             DARTFile.create(filename_A);
             auto dart_A = new DARTFile(net, filename_A);
@@ -1956,6 +1993,7 @@ unittest {
         }
 
         {
+            immutable filename_A = tempfile();
 
             DARTFile.create(filename_A);
             auto dart_A = new DARTFile(net, filename_A);
@@ -1990,6 +2028,7 @@ unittest {
 
         }
         {
+            immutable filename_A = tempfile();
 
             DARTFile.create(filename_A);
             auto dart_A = new DARTFile(net, filename_A);
@@ -2025,6 +2064,8 @@ unittest {
         }
 
         {
+            immutable filename_A = tempfile();
+
             // add two of the same archives and remove it. The bullseye should be null.
 
             // writefln("two same archives");
@@ -2068,6 +2109,8 @@ unittest {
         { // add the same archive in different modifies. Should only contain one archive afterwards.
             // Test was created due to error were if the same archive was added it would remove the 
             // archive in the database.
+            immutable filename_A = tempfile();
+
             DARTFile.create(filename_A);
             auto dart_A = new DARTFile(net, filename_A);
 
@@ -2082,6 +2125,8 @@ unittest {
         }
 
         {
+            immutable filename_A = tempfile();
+
             DARTFile.create(filename_A);
             auto dart_A = new DARTFile(net, filename_A);
 
@@ -2122,6 +2167,8 @@ unittest {
 
         }
         {
+            immutable filename_A = tempfile();
+
             DARTFile.create(filename_A);
             auto dart_A = new DARTFile(net, filename_A);
             dart_A.close;
@@ -2148,6 +2195,8 @@ unittest {
             }
 
             {
+                immutable filename_A = tempfile();
+
                 DARTFile.create(filename_A);
                 auto dart_A = new DARTFile(net, filename_A);
 
@@ -2199,6 +2248,8 @@ unittest {
                 // Then perform a manual REMOVE ADD with a different add data in the same recorder
                 // should throw an exception since we cannot have multiple adds
                 // and removes in same recorder
+                immutable filename_B = tempfile();
+
                 import std.exception : assertThrown;
 
                 DARTFile.create(filename_B);
@@ -2231,6 +2282,8 @@ unittest {
         }
 
         { // undo test
+            immutable filename_A = tempfile();
+
             DARTFile.create(filename_A);
             auto dart_A = new DARTFile(net, filename_A);
             RecordFactory.Recorder recorder;
@@ -2256,6 +2309,8 @@ unittest {
     }
 
     { // undo test both with remove and adds
+        immutable filename_A = tempfile();
+
         DARTFile.create(filename_A);
         auto dart_A = new DARTFile(net, filename_A);
         RecordFactory.Recorder recorder;
