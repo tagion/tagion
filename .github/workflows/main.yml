@@ -51,7 +51,7 @@ jobs:
 
       - name: Add schedule to build
         run: |
-          cp schedule.json build/${{ env.TARGET }}/bin
+          cp collider_schedule.json build/${{ env.TARGET }}/bin
 
       - name: Create tar ball
         if: success() || failure()
@@ -103,7 +103,7 @@ jobs:
           export DLOG=$PWD/logs/${{ env.TARGET }}
           export COLLIDER_ROOT=$PWD/logs/${{ env.TARGET }}/bdd
           export PATH=$DBIN:$PATH
-          ./build/${{ env.TARGET }}/bin/collider -r acceptance -j2 -b build/${{ env.TARGET }}/bin/testbench -s build/${{ env.TARGET }}/bin/schedule.json  
+          ./build/${{ env.TARGET }}/bin/collider -r acceptance -j2 -b build/${{ env.TARGET }}/bin/testbench -s build/${{ env.TARGET }}/bin/collider_schedule.json  
 
       - name: Generate reports
         if: failure() || success()
