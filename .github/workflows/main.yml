@@ -144,10 +144,6 @@ jobs:
           find . -mindepth 1 -delete
           cp /mnt/nfs/${{needs.acceptance_stage.outputs.stage}}/${{needs.acceptance_stage.outputs.tarball}} .
           tar -xzf ${{needs.acceptance_stage.outputs.tarball}}
-      - name: Setup empty repo
-        run: |
-          git init
-          git remote add origin git@github.com:tagion/tagion.git
       - name: codecov report
         run: |
           cp logs/${{ env.TARGET }}/cov/* .
