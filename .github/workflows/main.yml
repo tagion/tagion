@@ -53,7 +53,7 @@ jobs:
       - name: codecov report
         run: |
           cp logs/${{ env.TARGET }}/cov/* .
-          bash <(curl -s https://codecov.io/bash) -t ${{ env.CODECOV_TOKEN }} -f "!*/cov/*"
+          bash <(curl -s https://codecov.io/bash) -t ${{ env.CODECOV_TOKEN }} -f "!*/cov/*" -f "!*/betterC/*"
                
 
       - name: Add schedule to build
