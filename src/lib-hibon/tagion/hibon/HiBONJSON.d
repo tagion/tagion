@@ -442,6 +442,23 @@ mixin template JSONString() {
     return Obj(json);
 }
 
+@safe
+HiBON toHiBON(const(char[]) json_text) {
+    const json = json_text.parseJSON;
+    return json.toHiBON;
+}
+
+@safe
+Document toDoc(scope const JSONValue json) {
+    return Document(json.toHiBON);
+}
+
+@safe
+Document toDoc(const(char[]) json_text) {
+    const json = parseJSON(json_text);
+    return json.toDoc;
+}
+
 @safe unittest {
     //    import std.stdio;
     import tagion.hibon.HiBON : HiBON;
@@ -581,5 +598,34 @@ mixin template JSONString() {
 
 @safe
 unittest {
+    import tagion.hibon.HiBONRecord;
+    import std.stdio;
+
+    static struct S {
+        int[] a;
+        mixin HiBONRecord!(q{
+            this(int[] a) {
+                this.a=a;
+            }
+         });
+    }
+
+    { /// Checks that an array of two elements is converted correctly
+        const s = S([20, 34]);
+        immutable text = s.toPretty;
+        //const json = text.parseJSON;
+        const h = text.toHiBON;
+        const doc = Document(h);
+        const result_s = S(doc);
+        assert(result_s == s);
+    }
+
+    { /// Checks 
+        const s = S([17, -20, 42]);
+        immutable text = s.toJSON;
+        const result_s = S(text.toDoc);
+        assert(result_s == s);
+
+    }
 
 }
