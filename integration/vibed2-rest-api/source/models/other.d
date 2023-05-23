@@ -13,6 +13,7 @@ struct ErrorResponse {
 }
 
 enum ErrorCode {
+    dataNotValid = 27,
     dataIdnotValid = 11,
     dataNotFound = 12,
     dataNotCorrectType = 13,
@@ -22,6 +23,7 @@ enum ErrorCode {
 }
 
 enum ErrorDescription {
+    dataNotValid = "The data provided is not valid",
     dataIdnotValid = "Provided fingerprint is not valid",
     dataNotFound = "Archive with fingerprint not found in database",
     dataNotCorrectType = "Wrong document type",
