@@ -68,3 +68,7 @@ tagionwave.json
 
 .dub
 .done
+
+# not finished bdd tests
+bdd/tagion/testbench/backlog/*.d
+bdd/tagion/testbench/communication/*.d
