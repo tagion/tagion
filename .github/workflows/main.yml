@@ -35,7 +35,6 @@ jobs:
           git checkout current
           git pull
           rm -- *.lst
-          rm -- logs/${{env.TARGET}}/cov/* || "echo no cov files found"
 
       - name: Run tests
         run: |

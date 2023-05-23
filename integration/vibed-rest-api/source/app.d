@@ -65,7 +65,7 @@ void main() {
     auto test_benefit = Controller!Benefit(test_token, Route.benefit, router, test_dart_service);
     
     auto test_delivery_order = Controller!DeliveryOrder(test_token, Route.delivery_order, router, test_dart_service);
-
+    auto test_signed_delivery_order = Controller!SignedDeliveryOrder(test_token, Route.signed_delivery_order, router, test_dart_service);
 
 
 
