@@ -187,10 +187,15 @@ jobs:
         uses: actions/checkout@v3
       - name: Setup Pages
         uses: actions/configure-pages@v3
+      - name: Copy md files
+        run: |
+          rm -r build/docs/
+          mkdir -p build/docs/
+          cp -r index.html README.md documents/ build/docs/
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
-          path: '.'
+          path: 'build/docs/'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v1
