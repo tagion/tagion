@@ -189,7 +189,7 @@ jobs:
         uses: actions/configure-pages@v3
       - name: Copy md files
         run: |
-          rm -r build/docs/
+          rm -r build/docs/ || echo 'no files to remove'
           mkdir -p build/docs/
           cp -r index.html README.md documents/ build/docs/
       - name: Upload artifact
