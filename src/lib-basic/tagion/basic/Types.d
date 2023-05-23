@@ -122,6 +122,12 @@ bool hasExtension(const(char[]) filename, const(FileExtension) ext) pure nothrow
     return ext.withDot == filename.extension;
 }
 
+@safe
+unittest {
+    assert("test.hibon".hasExtension(FileExtension.hibon));
+    assert(!"test.hibon".hasExtension(FileExtension.dart));
+}
+
 import std.traits : TemplateOf;
 
 enum isTypedef(T) = __traits(isSame, TemplateOf!T, Typedef);

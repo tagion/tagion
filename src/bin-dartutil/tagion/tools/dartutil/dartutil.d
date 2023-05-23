@@ -1,6 +1,6 @@
 /// \file dartutil.d
 
-module tagion.tools.dartutil;
+module tagion.tools.dartutil.dartutil;
 
 import std.getopt;
 import std.stdio;
@@ -23,11 +23,13 @@ import tagion.basic.basic : tempfile;
 
 import tagion.communication.HiRPC;
 import tagion.prior_services.DARTSynchronization;
+
 import tagion.gossip.GossipNet;
 import tagion.gossip.AddressBook;
 import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.dart.DARTFakeNet : DARTFakeNet;
+import tagion.tools.dartutil.synchronize;
 
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
@@ -53,24 +55,25 @@ mixin Main!_main;
 int _main(string[] args) {
     immutable program = args[0];
 
-    string dartfilename = "/tmp/default".setExtension(FileExtension.dart);
+    string dartfilename;
     string inputfilename;
     string destination_dartfilename;
     string outputfilename = tempfile;
     bool version_switch;
-    auto logo = import("logo.txt");
+    const logo = import("logo.txt");
 
-    bool dump = false;
+    bool dump;
 
-    bool dartread = false;
+    bool dartread;
     string[] dartread_args;
-    bool dartmodify = false;
-    bool dartrim = false;
-    bool dartrpc = false;
+    bool dartmodify;
+    bool dartrim;
+    bool dartrpc;
+    bool sync;
     bool eye;
-    bool fake = false;
+    bool fake;
 
-    bool initialize = false;
+    bool initialize;
     string passphrase = "verysecret";
 
     GetoptResult main_args;
@@ -84,12 +87,13 @@ int _main(string[] args) {
                 "initialize", "Create a dart file", &initialize,
                 "inputfile|i", "Sets the HiBON input file name", &inputfilename,
                 "outputfile|o", "Sets the output file name", &outputfilename,
-                "read|r", format("Excutes a DART read sequency: default %s", dartread), &dartread_args,
-                "rim", format("Performs DART rim read: default %s", dartrim), &dartrim,
-                "modify|m", format("Excutes a DART modify sequency: default %s", dartmodify), &dartmodify,
-                "rpc", format("Excutes a HiPRC on the DART: default %s", dartrpc), &dartrpc,
+                "read|r", "Excutes a DART read sequency", &dartread_args,
+                "rim", "Performs DART rim read", &dartrim,
+                "modify|m", "Excutes a DART modify sequency", &dartmodify,
+                "rpc", "Excutes a HiPRC on the DART: default %s", &dartrpc,
                 "dump", "Dumps all the arcvives with in the given angle", &dump,
                 "eye", "Prints the bullseye", &eye,
+                "sync", "Synchronize src.drt to dest.drt", &sync,
                 "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase,
                 "verbose|v", "Print output to console", &verbose,
                 "fake", format("Use fakenet instead of real hashes : default :%s", fake), &fake,
@@ -128,7 +132,8 @@ int _main(string[] args) {
         return 0;
     }
 
-    foreach (file; args) {
+    foreach (file; args[1 .. $]) {
+        writefln("hasExtension %s %s", file.hasExtension(FileExtension.hibon), file);
         if (file.hasExtension(FileExtension.hibon)) {
             tools.check(inputfilename is null, format("Input file '%s' has already been declared", inputfilename));
             inputfilename = file;
@@ -145,6 +150,9 @@ int _main(string[] args) {
             destination_dartfilename = file;
         }
     }
+    writefln("inputfilename=%s", inputfilename);
+    writefln("dartfilename=%s", dartfilename);
+    writefln("destination_dartfilename=%s", destination_dartfilename);
     SecureNet net;
 
     if (fake) {
@@ -167,9 +175,22 @@ int _main(string[] args) {
 
     Exception dart_exception;
     auto db = new DART(net, dartfilename, dart_exception);
-    if (!(dart_exception is null)) {
+    if (!dart_exception) {
         writefln("Fail to open DART: %s. Abort.", dart_exception.msg);
         return 1;
+    }
+
+    if (sync) {
+        if (!destination_dartfilename.exists) {
+            DART.create(destination_dartfilename);
+        }
+        auto dest_db = new DART(net, dartfilename, dart_exception);
+        if (!dart_exception) {
+            writefln("Fail to open destination DART: %s. Abort.", dart_exception.msg);
+            return 1;
+        }
+        immutable jounal_path = "/tmp/jounal_path";
+        synchronize(dest_db, db, jounal_path);
     }
 
     if (dump) {
