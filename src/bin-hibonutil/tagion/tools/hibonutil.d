@@ -15,7 +15,7 @@ import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.basic.Types : FileExtension, fileExtension, Buffer;
 import tagion.hibon.HiBONJSON;
-import tagion.hibon.HiBONtoText : encodeBase64;
+import tagion.hibon.HiBONtoText : encodeBase64, decodeBase64;
 import std.utf : toUTF8;
 import std.encoding : BOMSeq, BOM;
 
@@ -210,11 +210,11 @@ int _main(string[] args) {
                 const text_output = encodeBase64(doc);
                 if (standard_output) {
                     writefln("%s", text_output);
-                } else {
-                    inputfilename.setExtension(FileExtension.text).fwrite(text_output);
+                    return 0;
                 }
+                inputfilename.setExtension(FileExtension.text).fwrite(text_output);
                 
-                return 1;
+                return 0;
             }
             auto json = doc.toJSON;
             auto json_stringify = (pretty) ? json.toPrettyString : json.toString;
@@ -250,7 +250,7 @@ int _main(string[] args) {
             HiBON hibon;
             try {
                 auto parse = text.parseJSON;
-                writefln("%s", text);
+                // writefln("%s", text);
                 hibon = parse.toHiBON;
             }
             catch (HiBON2JSONException e) {
@@ -284,11 +284,32 @@ int _main(string[] args) {
                     return 1;
                 }
             }
-
             break;
+        case FileExtension.text:       
+            string text;
+            try {
+                text = inputfilename.readText;
+            }
+            catch (Exception e) {
+                printError(e);
+                return 1;
+            }
+            Document doc;
+            try {
+                doc = decodeBase64(text);
+            } catch (Exception e) {
+                printError(e);
+                return 1;
+            }
+            if (standard_output) {
+                stdout.rawWrite(doc.serialize);
+                return 0;
+            }
+            inputfilename.setExtension(FileExtension.hibon).fwrite(doc.serialize);
+            return 0;         
         default:
             stderr.writefln("File %s not valid (only %(.%s %))",
-                    inputfilename, only(FileExtension.hibon, FileExtension.json));
+                    inputfilename, only(FileExtension.hibon, FileExtension.json, FileExtension.text));
             return 1;
         }
     }
