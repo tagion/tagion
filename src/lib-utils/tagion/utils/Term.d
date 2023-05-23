@@ -39,6 +39,8 @@ else {
         CLEARUP = Cursor.ClearScreen.code(1),
         CLEARLINE = Cursor.ClearLine.code(2),
         CLEAREOL = Cursor.ClearLine.code(0),
+
+        NEXTLINE = Cursor.NextLine.code(0),
         HOME = "\u001b[f",
     }
 

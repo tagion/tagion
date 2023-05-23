@@ -13,19 +13,17 @@ import std.conv;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
-import tagion.basic.Types : FileExtension, fileExtension;
+import tagion.basic.Types : FileExtension, fileExtension, Buffer;
 import tagion.hibon.HiBONJSON;
 import std.utf : toUTF8;
 import std.encoding : BOMSeq, BOM;
-import tagion.basic.Types : Buffer;
 
 import std.array : join;
 
 import tagion.tools.Basic;
+import tagion.tools.revision;
 
 mixin Main!_main;
-
-enum VERSION_HIBONUTIL = "1.9";
 
 /**
  * @brief wrapper for BOM extracting
@@ -38,7 +36,6 @@ const(BOMSeq) getBOM(string str) @trusted {
     return _getBOM(cast(ubyte[]) str);
 }
 
-static bool verbose;
 void printError(const Exception e) {
     if (verbose) {
         stderr.writefln("%s", e);
@@ -78,7 +75,7 @@ int _main(string[] args) {
     }
 
     if (version_switch) {
-        writefln("version %s", VERSION_HIBONUTIL);
+        revision_text.writeln;
         return 0;
     }
 
@@ -86,18 +83,18 @@ int _main(string[] args) {
         writeln(logo);
         defaultGetoptPrinter(
                 [
-            "Documentation: https://tagion.org/",
-            "",
-            "Usage:",
-            format("%s [<option>...] <in-file>", program),
-            "",
-            "Where:",
-            "<in-file>           Is an input file in .json or .hibon format",
-            "",
+                "Documentation: https://tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...] <in-file>", program),
+                "",
+                "Where:",
+                "<in-file>           Is an input file in .json or .hibon format",
+                "",
 
-            "<option>:",
+                "<option>:",
 
-        ].join("\n"),
+                ].join("\n"),
                 main_args.options);
         return 0;
     }

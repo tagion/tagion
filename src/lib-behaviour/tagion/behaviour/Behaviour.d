@@ -172,6 +172,7 @@ FeatureGroup getFeature(alias M)() if (isFeature!M) {
 }
 
 ///Examples: How to use getFeature on a feature
+
 @safe
 unittest { //
     import tagion.hibon.HiBONRecord;
@@ -267,7 +268,7 @@ auto automation(alias M)() if (isFeature!M) {
                     }
                     else {
                         check(context[i]!is null,
-                                format("Scenario '%s' must be constructed before can be executed in '%s' feature",
+                        format("Scenario '%s' must be constructed before can be executed in '%s' feature",
                                 FeatureContext.fieldNames[i],
                                 moduleName!M));
                     }

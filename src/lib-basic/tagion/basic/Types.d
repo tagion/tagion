@@ -114,6 +114,13 @@ unittest {
     assert(FileExtension.markdown.withDot == ".md");
 }
 
+@safe
+bool hasExtension(const(char[]) filename, const(FileExtension) ext) pure nothrow {
+    import std.path : extension;
+
+    return ext.withDot == filename.extension;
+}
+
 import std.traits : TemplateOf;
 
 enum isTypedef(T) = __traits(isSame, TemplateOf!T, Typedef);

@@ -1,6 +1,6 @@
 .PHONY: $(REVISION_FILE)
 
-$(REVISION_FILE):
+$(REVISION_FILE): $(DBUILD)/.way
 	$(PRECMD)
 	${call log.header, revision :: $(GIT_DATE)}
 	echo '$(GIT_INFO)' > $@
@@ -13,9 +13,8 @@ $(REVISION_FILE):
 	echo '$(DC_VERSION)' >> $@
 
 revision: $(REVISION_FILE)
-#	echo $(REVISION_FILE)
 
-prebuild:
+
 .PHONY: revision
 
 clean-revision:
@@ -49,4 +48,3 @@ env-revision:
 
 env: env-revision
 
-#DFILES+=$(REVISION_FILE)

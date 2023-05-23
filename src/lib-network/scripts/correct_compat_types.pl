@@ -1,4 +1,4 @@
-#!/usr/bin/perl -i.bak 
+#!/usr/bin/env -S perl -i.bak 
 
 while (<>) {
     if (m/struct\s+WOLFSSL_HMAC_CTX/) {
