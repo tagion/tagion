@@ -106,7 +106,9 @@ struct ScheduleRunner {
 
     static void kill(Pid pid) @trusted {
         try {
+
             
+
                 .kill(pid); //.ifThown!ProcessException;
         }
         catch (ProcessException e) {

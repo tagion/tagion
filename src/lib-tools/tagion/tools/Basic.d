@@ -7,6 +7,7 @@ import std.file : exists, symlink, remove, thisExePath,
 
 import std.stdio;
 
+static bool verbose;
 alias SubTools = int function(string[])[string];
 Result subTool(const SubTools sub_tools, string[] args, const size_t index = 0) {
     if (args[index].baseName in sub_tools) {

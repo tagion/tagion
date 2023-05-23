@@ -69,8 +69,7 @@ enum HAVE_ANONYMOUS_INLINE_AGGREGATES = 1;
 /* helpers for stringifying the expanded value of a macro argument rather
  * than its literal text:
  */
-extern (D) string _WC_STRINGIFY_L2(T)(auto ref T str)
-{
+extern (D) string _WC_STRINGIFY_L2(T)(auto ref T str) {
     import std.conv : to;
 
     return to!string(str);
@@ -88,8 +87,7 @@ enum SIZEOF_LONG = 8;
 
 /* long long should be 64bit */
 
-extern (D) string W64LIT(T)(auto ref T x)
-{
+extern (D) string W64LIT(T)(auto ref T x) {
     import std.conv : to;
 
     return to!string(x) ~ "LL";
@@ -113,8 +111,7 @@ alias wolfssl_word = c_ulong;
 /* for mp_int, mp_word needs to be twice as big as \
  * mp_digit, no 64 bit type so make mp_digit 16 bit */
 
-struct w64wrapper
-{
+struct w64wrapper {
     word64 n;
 
     /* WORD64_AVAILABLE && WOLFSSL_W64_WRAPPER_TEST */
@@ -126,8 +123,7 @@ struct w64wrapper
 /* included for getting size_t type */
 alias wc_ptr_t = c_ulong;
 
-enum
-{
+enum {
     WOLFSSL_WORD_SIZE = wolfssl_word.sizeof,
     WOLFSSL_BIT_SIZE = 8,
     WOLFSSL_WORD_BITS = WOLFSSL_WORD_SIZE * WOLFSSL_BIT_SIZE
@@ -249,21 +245,20 @@ enum
 
 /* if custom XATOI is not already defined */
 
-char* wc_strtok (char* str, const(char)* delim, char** nextp);
+char* wc_strtok(char* str, const(char)* delim, char** nextp);
 
-char* wc_strsep (char** stringp, const(char)* delim);
+char* wc_strsep(char** stringp, const(char)* delim);
 
-size_t wc_strlcpy (char* dst, const(char)* src, size_t dstSize);
+size_t wc_strlcpy(char* dst, const(char)* src, size_t dstSize);
 
-size_t wc_strlcat (char* dst, const(char)* src, size_t dstSize);
+size_t wc_strlcat(char* dst, const(char)* src, size_t dstSize);
 
 /* !NO_FILESYSTEM && !NO_STDIO_FILESYSTEM */
 
 /* needed by wolfSSL_check_domain_name() */
 
 /* memory allocation types for user hints */
-enum
-{
+enum {
     DYNAMIC_TYPE_CA = 1,
     DYNAMIC_TYPE_CERT = 2,
     DYNAMIC_TYPE_KEY = 3,
@@ -372,14 +367,12 @@ enum
 /* max error buffer string size */
 
 /* stack protection */
-enum
-{
+enum {
     MIN_STACK_BUFFER = 8
 }
 
 /* Algorithm Types */
-enum wc_AlgoType
-{
+enum wc_AlgoType {
     WC_ALGO_TYPE_NONE = 0,
     WC_ALGO_TYPE_HASH = 1,
     WC_ALGO_TYPE_CIPHER = 2,
@@ -393,8 +386,7 @@ enum wc_AlgoType
 }
 
 /* hash types */
-enum wc_HashType
-{
+enum wc_HashType {
     /* In selftest build, WC_* types are not mapped to WC_HASH_TYPE types.
      * Values here are based on old selftest hmac.h enum, with additions.
      * These values are fixed for backwards FIPS compatibility */
@@ -425,14 +417,11 @@ enum wc_HashType
     WC_HASH_TYPE_SHAKE128 = 18,
     WC_HASH_TYPE_SHAKE256 = 19,
 
-    WC_HASH_TYPE_MAX = _WC_HASH_TYPE_MAX
-
-    /* HAVE_SELFTEST */
+    WC_HASH_TYPE_MAX = _WC_HASH_TYPE_MAX /* HAVE_SELFTEST */
 }
 
 /* cipher types */
-enum wc_CipherType
-{
+enum wc_CipherType {
     WC_CIPHER_NONE = 0,
     WC_CIPHER_AES = 1,
     WC_CIPHER_AES_CBC = 2,
@@ -450,8 +439,7 @@ enum wc_CipherType
 }
 
 /* PK=public key (asymmetric) based algorithms */
-enum wc_PkType
-{
+enum wc_PkType {
     WC_PK_TYPE_NONE = 0,
     WC_PK_TYPE_RSA = 1,
     WC_PK_TYPE_DH = 2,
@@ -473,21 +461,18 @@ enum wc_PkType
 }
 
 /* settings detection for compile vs runtime math incompatibilities */
-enum
-{
+enum {
     CTC_SETTINGS = 0x10
 }
 
-word32 CheckRunTimeSettings ();
+word32 CheckRunTimeSettings();
 enum WOLFSSL_MAX_16BIT = 0xffffU;
 
-extern (D) auto XSTR_SIZEOF(T)(auto ref T x)
-{
+extern (D) auto XSTR_SIZEOF(T)(auto ref T x) {
     return x.sizeof - 1;
 }
 
-extern (D) auto XREALLOC(T0, T1, T2, T3)(auto ref T0 p, auto ref T1 n, auto ref T2 h, auto ref T3 t)
-{
+extern (D) auto XREALLOC(T0, T1, T2, T3)(auto ref T0 p, auto ref T1 n, auto ref T2 h, auto ref T3 t) {
     return wolfSSL_Realloc(p, n);
 }
 
@@ -521,8 +506,7 @@ enum _WC_HASH_TYPE_MAX = wc_HashType.WC_HASH_TYPE_SHAKE256;
 /* If user uses RSA, DH, DSA, or ECC math lib directly then fast math and long
    types need to match at compile time and run time, CheckCtcSettings will
    return 1 if a match otherwise 0 */
-extern (D) auto CheckCtcSettings()
-{
+extern (D) auto CheckCtcSettings() {
     return .CTC_SETTINGS == CheckRunTimeSettings();
 }
 
@@ -560,9 +544,13 @@ enum FALSE = 0;
 
 /* not GNUC */
 
-void PRAGMA_CLANG_DIAG_PUSH() {pragma(msg, "clang diagnostic push");}
+void PRAGMA_CLANG_DIAG_PUSH() {
+    pragma(msg, "clang diagnostic push");
+}
 // DSTEP: alias PRAGMA_CLANG = _Pragma;
-void PRAGMA_CLANG_DIAG_POP() {pragma(msg, "clang diagnostic pop");}
+void PRAGMA_CLANG_DIAG_POP() {
+    pragma(msg, "clang diagnostic pop");
+}
 
 /* disable buggy MSC warning around while(0),
  *"warning C4127: conditional expression is constant"
