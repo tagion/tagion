@@ -31,7 +31,8 @@ subgraph "Event: workflow_dispatch, push (current branch)"
     M["Add schedule to build"]
     N["Create tar ball"]
     O["Upload to shared directory"]
-    P["Cleanup"]
+    P["Upload code coverage"]
+    Q["Cleanup"]
   end
 
   subgraph acceptance_stage
@@ -43,14 +44,6 @@ subgraph "Event: workflow_dispatch, push (current branch)"
     T["Create tar ball"]
     U["Upload to shared directory"]
     V["Cleanup"]
-  end
-
-  subgraph code_coverage
-    style D fill:#f9f9f9,stroke:#cccccc,stroke-width:1px,stroke-dasharray: 5,5
-    D[code_coverage]
-    W["Copy Artifact to local machine"]
-    X["codecov report"]
-    Y["clean up"]
   end
 
   subgraph ddoc_build
@@ -81,10 +74,8 @@ subgraph "Event: workflow_dispatch, push (current branch)"
 
   A --> B
   B --> C
-  C --> D
   C --> E
   C --> F
-  D --> G
   E --> G
   F --> G
 end
