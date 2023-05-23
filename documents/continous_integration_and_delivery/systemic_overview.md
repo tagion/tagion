@@ -5,11 +5,14 @@ We do this by an automated CI/CD flow that always produces a deployment candidat
 The quality is defined by the requirements to the systems expressed in tests.
 
 # Systemic overview tests
-![Alt text](../figs/system_overview.png)
+![Systemic overview](../figs/system_overview.png)
 
 
 # Deployment Pipeline
-![Alt text](../figs/deployment_pipeline.png)
+![Deployment Pipeline](../figs/deployment_pipeline.png)
+
+# Deployment Infastructure
+[servers](https://www.notion.so/decardcorp/CI-Infrastructure-e6f10802b67548148f2a970e10f14936)
 
 
 # Sequential diagram over workflow
