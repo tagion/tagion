@@ -99,6 +99,7 @@ enum FileExtension {
     dsrc = "d", // DART data-base
     recchainblock = "rcb", // Recorder chain block file format
     epochdumpblock = "epdmp", // Epoch dump chain block file format
+    text = "txt",
 }
 
 enum DOT = '.'; /// File extension separator
