@@ -31,8 +31,7 @@ extern (C):
 nothrow:
 @nogc:
 
-version(none) struct WOLFSSL_HMAC_CTX
-{
+version (none) struct WOLFSSL_HMAC_CTX {
     Hmac hmac;
     int type;
     word32[16] save_ipad; /* same block size all*/

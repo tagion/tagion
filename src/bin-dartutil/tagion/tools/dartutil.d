@@ -12,9 +12,10 @@ import std.array;
 import std.algorithm;
 import std.typecons;
 
+import tools = tagion.tools.toolsexception;
 import tagion.dart.DART : DART;
 import tagion.dart.DARTFile;
-import tagion.basic.Types : Buffer, FileExtension;
+import tagion.basic.Types : Buffer, FileExtension, hasExtension;
 import tagion.dart.DARTBasic : DARTIndex;
 import tagion.dart.DARTcrud : dartRead, dartModify;
 
@@ -41,6 +42,7 @@ import tagion.script.NameCardScripts : readStandardRecord;
 
 import tagion.tools.Basic;
 import tagion.dart.DARTFakeNet;
+import tagion.tools.revision;
 
 /**
  * @brief tool for working with local DART database
@@ -52,7 +54,8 @@ int _main(string[] args) {
     immutable program = args[0];
 
     string dartfilename = "/tmp/default".setExtension(FileExtension.dart);
-    string inputfilename = "";
+    string inputfilename;
+    string destination_dartfilename;
     string outputfilename = tempfile;
     bool version_switch;
     auto logo = import("logo.txt");
@@ -65,7 +68,6 @@ int _main(string[] args) {
     bool dartrim = false;
     bool dartrpc = false;
     bool eye;
-    bool verbose;
     bool fake = false;
 
     bool initialize = false;
@@ -77,7 +79,7 @@ int _main(string[] args) {
         main_args = getopt(args,
                 std.getopt.config.caseSensitive,
                 std.getopt.config.bundling,
-                "version|v", "display the version", &version_switch,
+                "version", "display the version", &version_switch,
                 "dartfilename|d", format("Sets the dartfile: default %s", dartfilename), &dartfilename,
                 "initialize", "Create a dart file", &initialize,
                 "inputfile|i", "Sets the HiBON input file name", &inputfilename,
@@ -89,7 +91,7 @@ int _main(string[] args) {
                 "dump", "Dumps all the arcvives with in the given angle", &dump,
                 "eye", "Prints the bullseye", &eye,
                 "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase,
-                "verbose", "Print output to console", &verbose,
+                "verbose|v", "Print output to console", &verbose,
                 "fake", format("Use fakenet instead of real hashes : default :%s", fake), &fake,
         );
     }
@@ -101,8 +103,7 @@ int _main(string[] args) {
     dartread = !dartread_args.empty;
 
     if (version_switch) {
-        // writefln("version %s", REVNO);
-        // writefln("Git handle %s", HASH);
+        revision_text.writeln;
         return 0;
     }
 
@@ -114,10 +115,10 @@ int _main(string[] args) {
                 "Documentation: https://tagion.org/",
                 "",
                 "Usage:",
-                format("%s <command> [<option>...]", program),
+                format("%s [<option>...] <files>...", program),
                 "",
-                "Where:",
-                "<command>           one of [--read, --rim, --modify, --rpc]",
+                "Example synchronizing src.drt on to dst.drt",
+                format("%s --sync src.drt dst.drt]", program),
                 "",
 
                 "<option>:",
@@ -127,6 +128,23 @@ int _main(string[] args) {
         return 0;
     }
 
+    foreach (file; args) {
+        if (file.hasExtension(FileExtension.hibon)) {
+            tools.check(inputfilename is null, format("Input file '%s' has already been declared", inputfilename));
+            inputfilename = file;
+            continue;
+        }
+        if (file.hasExtension(FileExtension.dart)) {
+            if (dartfilename is null) {
+                dartfilename = file;
+                continue;
+            }
+            tools.check(destination_dartfilename is null,
+                    format("Source '%s' and destination '%s' DART file has already been define",
+                    dartfilename, destination_dartfilename));
+            destination_dartfilename = file;
+        }
+    }
     SecureNet net;
 
     if (fake) {
@@ -159,43 +177,6 @@ int _main(string[] args) {
     }
     else if (eye) {
         writefln("EYE: %s", db.fingerprint.hex);
-    }
-
-    version (none) {
-        static const(HiRPCSender) readFromDB(Buffer[] fingerprints, HiRPC hirpc, DART db) {
-            const sender = DART.dartRead(fingerprints, hirpc);
-            auto receiver = hirpc.receive(sender.toDoc);
-            return db(receiver, false);
-        }
-
-        static const(HiRPCSender) writeToDB(RecordFactory.Recorder recorder, HiRPC hirpc, DART db) {
-            const sender = DART.dartModify(recorder, hirpc);
-            auto receiver = hirpc.receive(sender);
-            return db(receiver, false);
-        }
-
-        Nullable!T readRecord(T)(Buffer hash, HiRPC hirpc, DART db) if (isHiBONRecord!T) {
-            auto result = readFromDB([hash], hirpc, db);
-
-            auto factory = RecordFactory(net);
-            auto recorder = factory.recorder(result.message["result"].get!Document);
-
-            if (recorder[].empty) {
-                return Nullable!T.init;
-            }
-            else {
-                return Nullable!T(T(recorder[].front.filed));
-            }
-        }
-
-        Nullable!EpochBlock readLastEpochBlock(HiRPC hirpc, DART db) {
-            auto epoch_top_read = readRecord!LastEpochRecord(LastEpochRecord.dartHash(net), hirpc, db);
-            if (epoch_top_read.isNull) {
-                return Nullable!EpochBlock.init;
-            }
-
-            return readRecord!EpochBlock(epoch_top_read.get.top, hirpc, db);
-        }
     }
 
     /**
@@ -316,166 +297,6 @@ int _main(string[] args) {
                 writefln("Error trying to modify: %s. Abort", e.msg);
                 return 1;
             }
-        }
-    }
-    version (none) // else if (nncread)
-    {
-        auto nnc_out = readStandardRecord!NetworkNameCard(net, hirpc, db, NetworkNameCard.dartHash(net, nncreadname));
-
-        if (nnc_out.isNull) {
-            writeln;
-            writefln("No %s with name '%s' in DART", typeof(nnc_out.get).stringof, nncreadname);
-        }
-        else {
-            auto nnc = nnc_out.get;
-            toConsole(nnc, true, format("\nFound %s '%s'", typeof(nnc).stringof, nncreadname));
-
-            auto signature_out = readStandardRecord!HashLock(net, hirpc, db,
-                    net.dartIndex(HashLock(net, nnc)));
-            writeln;
-            if (signature_out.isNull)
-                writefln("WARNING: Signature for %s '%s' is not verified!", typeof(nnc).stringof, nnc
-                        .name);
-            else
-                writefln("Signature for %s '%s' is verified", typeof(nnc).stringof, nnc.name);
-
-            auto nrc_out = readStandardRecord!NetworkNameRecord(net, hirpc, db, nnc.record);
-            if (nrc_out.isNull) {
-                writeln;
-                writefln("No associated %s (hash='%s') with %s '%s' in DART", typeof(nrc_out.get)
-                        .stringof, typeof(nnc).stringof, nnc.record.cutHex, nnc.name);
-            }
-            else {
-                toConsole(nrc_out.get, true, format("\nFound %s for %s '%s'", typeof(nrc_out.get).stringof, typeof(
-                        nnc)
-                        .stringof, nncreadname));
-
-                auto node_addr_out = readStandardRecord!NodeAddress(net, hirpc, db, nrc_out
-                        .get.node);
-                if (node_addr_out.isNull) {
-                    writeln;
-                    writefln("No associated %s (hash='%s') with %s '%s' in DART", typeof(node_addr_out.get)
-                            .stringof, typeof(nnc).stringof, nrc_out.get.node.cutHex, nnc.name);
-                }
-                else
-                    toConsole(node_addr_out.get, true, format("\nFound %s for %s '%s'", typeof(
-                            node_addr_out.get)
-                            .stringof, typeof(nnc).stringof, nncreadname));
-            }
-        }
-    }
-    version (none) // else if (nncupdate)
-    {
-        auto nnc_out = readStandardRecord!NetworkNameCard(net, hirpc, db, NetworkNameCard.dartHash(net, nncupdatename));
-        if (nnc_out.isNull) {
-            writeln;
-            writefln("No %s with name '%s' in DART", typeof(nnc_out.get).stringof, nncupdatename);
-        }
-        else {
-            auto nnc = nnc_out.get;
-            auto nrc_out = readStandardRecord!NetworkNameRecord(net, hirpc, db, nnc.record);
-            if (nrc_out.isNull) {
-                writefln("No associated %s (hash='%s') with %s '%s' in DART", typeof(nrc_out.get)
-                        .stringof, typeof(nnc).stringof, nnc.record.cutHex, nnc.name);
-            }
-            else {
-                auto nrc = nrc_out.get;
-
-                auto signature = readStandardRecord!HashLock(net, hirpc, db,
-                        net.dartIndex(HashLock(net, nnc)));
-                if (signature.isNull) {
-                    writefln("WARNING: Signature for %s '%s' is not verified! Unable to update record\nAbort", typeof(
-                            nnc).stringof, nnc.name);
-                }
-                else {
-                    auto factory = RecordFactory(net);
-                    auto recorder_add = factory.recorder;
-                    updateAddNetworkNameCard(net, nnc, nrc, recorder_add);
-                    auto recorder_remove = factory.recorder;
-                    updateRemoveHashKeyRecord(net, recorder_add, recorder_remove);
-
-                    db.modify(recorder_remove);
-                    db.modify(recorder_add);
-
-                    writeln;
-                    writefln("Updated %s with name '%s'", typeof(nnc).stringof, nnc.name);
-
-                    if (verbose) {
-                        writeln;
-                        writefln("Recorder add %s", recorder_add.toPretty);
-                        writeln;
-                        writefln("Recorder remove %s", recorder_remove.toPretty);
-                    }
-
-                    if (dump) {
-                        writeln;
-                        db.dump(true);
-                    }
-                }
-            }
-        }
-    }
-    version (none) // else if (testaddblocks > 0)
-    {
-        foreach (i; 0 .. testaddblocks) {
-            writef("Adding block %d... ", i + 1);
-
-            auto last_epoch_block_read = readLastEpochBlock(hirpc, db);
-            if (last_epoch_block_read.isNull) {
-                writefln("DART is corrupted! Top epoch block in chain was not found. Abort");
-                return 1;
-            }
-
-            auto factory = RecordFactory(net);
-            auto recorder_add = factory.recorder;
-            updateAddEpochBlock(net, last_epoch_block_read.get, recorder_add);
-            auto recorder_remove = factory.recorder;
-            updateRemoveHashKeyRecord(net, recorder_add, recorder_remove);
-
-            db.modify(recorder_remove);
-            db.modify(recorder_add);
-
-            writeln("Done!");
-
-            if (verbose) {
-                writeln;
-                writefln("Recorder add %s", recorder_add.toPretty);
-                writeln;
-                writefln("Recorder remove %s", recorder_remove.toPretty);
-            }
-        }
-    }
-    version (none) // else if (testdumpblocks_enabled)
-    {
-        import tagion.dart.DARTFile : hash_null;
-
-        auto last_epoch_block_read = readLastEpochBlock(hirpc, db);
-        if (last_epoch_block_read.isNull) {
-            writefln("DART is corrupted! Top epoch block in chain was not found. Abort");
-            return 1;
-        }
-
-        toConsole(last_epoch_block_read.get, true, "Last block is read successfully.");
-        auto previous_hash = last_epoch_block_read.get.previous;
-
-        int i = 1;
-        const has_count_limit = testdumpblocks > 0; // testdumpblocks = 0 means no limit in blocks count
-        while (!has_count_limit || i < testdumpblocks) {
-            if (previous_hash == hash_null) {
-                writefln("Reached first block in chain. Stop");
-                break;
-            }
-
-            auto current_block_read = readRecord!EpochBlock(previous_hash, hirpc, db);
-            if (current_block_read.isNull) {
-                writefln("DART is corrupted! Epoch block in chain was not found. Abort");
-                return 1;
-            }
-
-            toConsole(current_block_read.get, true, format("N-%d epoch block is read successfully.", i));
-            previous_hash = current_block_read.get.previous;
-
-            i += 1;
         }
     }
     return 0;
