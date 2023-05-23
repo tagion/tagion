@@ -3,6 +3,13 @@ dartapi: libtagion
 	mkdir -p $(DART_API_BUILD)
 	dub build --root=$(DART_API_SERVICE) --compiler=$(DC)
 
+darttwoapi: libtagion
+	$(PRECMD)
+	mkdir -p $(DART_API_BUILD)
+	dub build --root=$(DART_API_SERVICE) --compiler=$(DC)
+
+
+
 install-dartapi: dartapi
 	mkdir -p $(DART_API_INSTALL_DIR)
 	mkdir -p $(HOME)/.config/systemd/user

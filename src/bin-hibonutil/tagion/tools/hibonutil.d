@@ -15,6 +15,7 @@ import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.basic.Types : FileExtension, fileExtension, Buffer;
 import tagion.hibon.HiBONJSON;
+import tagion.hibon.HiBONtoText : encodeBase64;
 import std.utf : toUTF8;
 import std.encoding : BOMSeq, BOM;
 
@@ -53,6 +54,7 @@ int _main(string[] args) {
     bool standard_output;
     //    string outputfilename;
     bool pretty;
+    bool base64;
     // bool verbose;
     string outputfilename;
     auto logo = import("logo.txt");
@@ -65,6 +67,7 @@ int _main(string[] args) {
                 "version", "display the version", &version_switch,
                 "c|stdout", "Print to standard output", &standard_output,
                 "pretty|p", format("JSON Pretty print: Default: %s", pretty), &pretty,
+                "b|base64", "Convert to base64 string", &base64,
                 "v|verbose", "Print more debug information", &verbose,
                 "o|output", "outputfilename only for stdin", &outputfilename,
         );
@@ -201,6 +204,10 @@ int _main(string[] args) {
                     Document.Element) previous) nothrow{ assumeWontThrow(writefln("%s", current)); return true; });
             if (error_code !is Document.Element.ErrorCode.NONE) {
                 stderr.writefln("Error: Document errorcode %s", error_code);
+                return 1;
+            }
+            if (base64) {
+                writefln("%s", encodeBase64(doc));
                 return 1;
             }
             auto json = doc.toJSON;
