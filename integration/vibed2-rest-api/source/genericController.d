@@ -48,13 +48,12 @@ struct GenericController {
 
         router.match(HTTPMethod.OPTIONS, "*", tryReqHandler(&optionsHandler));
         router.get(format("/%s/:entityId", access_token), tryReqHandler(&getT));
-        // router.delete_(format("/%s/%s/:entityId", access_token, name), tryReqHandler(&deleteT));
         router.post(format("/%s/:data", access_token), tryReqHandler(&postT));
+        router.post(format("/%s", access_token), tryReqHandler(&postJSONT)); 
     }
 
     /**
      * Get request for reading specific document.
-     * If the request is not valid according to the recordType we return an error.
      * Params:
      *   req = :entityID. Fingerprint of the Archive stored in the DART.
      *   res = returns the Document
@@ -101,8 +100,7 @@ struct GenericController {
     }
 
     /**
-     * Post the document for the specific type.
-     * Takes a json request and converts it to a struct.
+     * Post the document as base64.
      * If the data cannot be converted it throws a json error.
      * Params:
      *   req = json document
@@ -123,7 +121,6 @@ struct GenericController {
             respondWithError(res, err);
             return;
         }
-        // pragma(data.type_info);
         writeln(doc.toPretty);
         
         
@@ -154,6 +151,51 @@ struct GenericController {
         res.statusCode = HTTPStatus.created;
     }
 
+    void postJSONT(HTTPServerRequest req, HTTPServerResponse res) {
+        import tagion.hibon.HiBONJSON : toHiBON;
+        import stdjson = std.json;
+        writeln("POST JSON");
+        Document doc;
+
+        try {
+            const text = req.json.toString;
+            const json = stdjson.parseJSON(text);
+            doc = Document(toHiBON(json));
+        }
+        catch (Exception e) {
+            const err = ErrorResponse(ErrorCode.dataNotValid, ErrorDescription.dataNotValid);
+            writeln("ErrorDescription.dataNotValid");
+            respondWithError(res, err);
+            return;
+        }
+
+        const prev_bullseye = dart_service.bullseye;
+
+        const fingerprint = dart_service.modify(doc);
+        const new_bullseye = dart_service.bullseye;
+        if (new_bullseye == prev_bullseye) {
+            const err = ErrorResponse(ErrorCode.dataFingerprintNotAdded, ErrorDescription
+                    .dataFingerprintNotAdded);
+            writeln("ErrorDescription.dataFingerprintNotAdded");
+            respondWithError(res, err);
+            return;
+        }
+
+        Json dataSuccess = Json.emptyObject;
+        dataSuccess["fingerprint"] = fingerprint.toHexString;
+
+        ResponseModel responseSuccess = ResponseModel(true, dataSuccess);
+
+        const(Json) responseSuccessJson = serializeToJson(responseSuccess);
+
+        writeln("responseSuccessJson: ", responseSuccessJson);
+
+        setCORSHeaders(res);
+        res.statusCode = HTTPStatus.created;
+        res.writeJsonBody(responseSuccessJson);
+        
+    }
+    
 
     void optionsHandler(HTTPServerRequest req, HTTPServerResponse res) {
       // handle CORS and response for preflight requests

@@ -207,7 +207,13 @@ int _main(string[] args) {
                 return 1;
             }
             if (base64) {
-                writefln("%s", encodeBase64(doc));
+                const text_output = encodeBase64(doc);
+                if (standard_output) {
+                    writefln("%s", text_output);
+                } else {
+                    inputfilename.setExtension(FileExtension.text).fwrite(text_output);
+                }
+                
                 return 1;
             }
             auto json = doc.toJSON;
