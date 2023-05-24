@@ -369,6 +369,9 @@ class DART : DARTFile {
          * Returns: hex string
          */
         string toString() const pure nothrow {
+            if (rims.length == 0) {
+                return "XXXX";
+            }
             return rims.toHexString;
         }
     }
@@ -622,7 +625,7 @@ received = the HiRPC received package
          *   doc = Journal document
          */
         this(RecordFactory manufactor, const Document doc) {
-
+                import tagion.logger.Logger;
             
 
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
@@ -792,11 +795,17 @@ received = the HiRPC received package
         }
         // Adding and Removing archives
         void local_replay(bool remove)() @safe {
-            for (Index index = journalfile.masterBlock.root_index; index != Index.init;
+            import tagion.logger.Logger;
+            log("JOURNAL_FILENAME=%s", journal_filename);
+            for (Index index = journalfile.masterBlock.root_index; index != Index.init; 
 
                 ) {
+                
                 immutable data = journalfile.load(index);
                 const doc = Document(data);
+                if (!Journal.isRecord(doc)) {
+                    log(format("Index(%s) WRONG FORMAT=%s", index, doc.toPretty));
+                }
                 auto journal_replay = Journal(manufactor, doc);
                 index = journal_replay.index;
                 auto action_recorder = recorder;

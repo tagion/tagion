@@ -31,6 +31,10 @@ import tagion.dart.DARTException : BlockFileException;
 import tagion.dart.Recycler : Recycler;
 import tagion.dart.BlockSegment;
 
+
+///
+import tagion.logger.Logger;
+
 alias Index = Typedef!(ulong, ulong.init, "BlockIndex");
 enum BLOCK_SIZE = 0x80;
 
@@ -94,13 +98,14 @@ class BlockFile {
         recycler = Recycler(this);
         //empty
     }
-
+    string testname;
     protected this(
             string filename,
             immutable uint SIZE,
             const bool read_only = false) {
         File _file;
-
+        testname = filename;
+        log("OPENED BLOCKFILE=%s", testname);
         if (read_only) {
             _file.open(filename, "r");
         }
@@ -126,6 +131,9 @@ class BlockFile {
      *   BLOCK_SIZE = set the block size of the underlying BlockFile.
      */
     static void create(string filename, string description, immutable uint BLOCK_SIZE) {
+        import std.file : exists;
+
+        check(!filename.exists, format("Error: File %s already exists", filename));
         auto _file = File(filename, "w+");
         auto blockfile = new BlockFile(_file, BLOCK_SIZE);
         scope (exit) {
@@ -174,6 +182,7 @@ class BlockFile {
     /++
      +/
     void close() {
+        log("CLOSING BLOCKFILE=%s", testname);
         file.close;
     }
 
@@ -526,7 +535,7 @@ class BlockFile {
         import LEB128 = tagion.utils.LEB128;
 
         auto equal_chain = block_chains.equalRange(new const(BlockSegment)(Document.init, index));
-        assert(equal_chain.empty, "We should dispose cached blocks");
+        assert(equal_chain.empty, format("We should dispose cached blocks: %s", testname));
         seek(index);
         ubyte[LEB128.DataSize!ulong] _buf;
         ubyte[] buf = _buf;
@@ -718,10 +727,13 @@ class BlockFile {
     unittest {
         enum SMALL_BLOCK_SIZE = 0x40;
         import std.format;
+        import tagion.basic.basic : forceRemove;
 
         /// Test of BlockFile.create and BlockFile.opCall
         {
             immutable filename = fileId("create").fullpath;
+            filename.forceRemove;
+
             BlockFile.create(filename, "create.unittest", SMALL_BLOCK_SIZE);
             auto blockfile_load = BlockFile(filename);
             scope (exit) {
