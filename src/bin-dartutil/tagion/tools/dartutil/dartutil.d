@@ -150,9 +150,6 @@ int _main(string[] args) {
             destination_dartfilename = file;
         }
     }
-    writefln("inputfilename=%s", inputfilename);
-    writefln("dartfilename=%s", dartfilename);
-    writefln("destination_dartfilename=%s", destination_dartfilename);
     SecureNet net;
 
     if (dartfilename.empty) {
