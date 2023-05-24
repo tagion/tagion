@@ -672,6 +672,11 @@ received = the HiRPC received package
             this.chunck_size = chunck_size;
         }
 
+        this(BlockFile journalfile, const uint chunck_size = 0x400) {
+            this.journalfile = journalfile;
+            this.chunck_size = chunck_size;
+        }
+
         /** 
          * Update the add the recorder to the journal and store it
          * Params:
@@ -1470,8 +1475,7 @@ received = the HiRPC received package
 
             }
             pragma(msg, "fixme(pr) Test disabled because it takes a long time");
-            version(none)
-            { // Synchronization of a Large DART A where DART A of DART B has common data
+            version (none) { // Synchronization of a Large DART A where DART A of DART B has common data
                 // writefln("Test 6");
                 DARTFile.create(filename_A);
                 DARTFile.create(filename_B);

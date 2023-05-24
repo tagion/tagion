@@ -5,15 +5,17 @@ import tagion.communication.HiRPC;
 import tagion.dart.DART;
 import tagion.dart.BlockFile;
 import tagion.hibon.Document;
+import tagion.tools.Basic : verbose;
+import std.file : remove;
 
 @safe
 class DARTUtilSynchronizer : DART.StdSynchronizer {
     protected DART source;
     protected DART destination;
-    this(string journal_filename, DART destination, DART source) {
+    this(BlockFile journalfile, DART destination, DART source) {
         this.source = source;
         this.destination = destination;
-        super(journal_filename);
+        super(journalfile);
     }
 
     //
@@ -43,16 +45,31 @@ class DARTUtilSynchronizer : DART.StdSynchronizer {
         const received = destination.hirpc.receive(response_doc);
         return received;
     }
+
+    version (none) override void finish() {
+        //            journalfile.close;
+        _finished = true;
+    }
+
 }
 
 @safe
 string[] synchronize(DART destination, DART source, string journal_basename) {
     string[] journal_filenames;
     foreach (sector; destination.sectors) {
+        verbose("Sector %04x", sector);
         immutable journal_filename = format("%s.%04x.dart_journal", journal_basename, sector);
-        journal_filenames ~= journal_filename;
         BlockFile.create(journal_filename, DART.stringof, BLOCK_SIZE);
-        auto synch = new DARTUtilSynchronizer(journal_filename, destination, source);
+
+        auto journalfile = BlockFile(journal_filename);
+        scope (exit) {
+            if (!journalfile.empty) {
+                journal_filenames ~= journal_filename;
+                verbose("Journalfile %s", journal_filename);
+            }
+            journalfile.close;
+        }
+        auto synch = new DARTUtilSynchronizer(journalfile, destination, source);
 
         auto destination_synchronizer = destination.synchronizer(synch, DART.Rims(sector));
         while (!destination_synchronizer.empty) {
@@ -61,6 +78,7 @@ string[] synchronize(DART destination, DART source, string journal_basename) {
 
     }
 
+    verbose("Replay journal_filename");
     foreach (journal_filename; journal_filenames) {
         destination.replay(journal_filename);
     }

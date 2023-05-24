@@ -95,7 +95,7 @@ int _main(string[] args) {
                 "eye", "Prints the bullseye", &eye,
                 "sync", "Synchronize src.drt to dest.drt", &sync,
                 "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase,
-                "verbose|v", "Print output to console", &verbose,
+                "verbose|v", "Print output to console", &verbose_switch,
                 "fake", format("Use fakenet instead of real hashes : default :%s", fake), &fake,
         );
     }
@@ -119,7 +119,7 @@ int _main(string[] args) {
                 "Documentation: https://tagion.org/",
                 "",
                 "Usage:",
-                format("%s [<option>...] <files>...", program),
+                format("%s [<option>...] file.drt <files>", program),
                 "",
                 "Example synchronizing src.drt on to dst.drt",
                 format("%s --sync src.drt dst.drt]", program),
@@ -155,6 +155,9 @@ int _main(string[] args) {
     writefln("destination_dartfilename=%s", destination_dartfilename);
     SecureNet net;
 
+    if (dartfilename.empty) {
+        stderr.writefln("Error: Missing dart file");
+    }
     if (fake) {
         net = new DARTFakeNet("very_secret");
     }
@@ -166,31 +169,30 @@ int _main(string[] args) {
     const hirpc = HiRPC(net);
 
     if (initialize) {
-        if (dartfilename.length == 0) {
-            dartfilename = tempfile ~ "tmp";
-            writeln("DART filename: ", dartfilename);
-        }
-        writefln("DARTFILENAME: %s", dartfilename);
         DART.create(dartfilename);
     }
 
     Exception dart_exception;
     auto db = new DART(net, dartfilename, dart_exception);
-    if (!dart_exception) {
+    if (dart_exception !is null) {
         writefln("Fail to open DART: %s. Abort.", dart_exception.msg);
         return 1;
     }
 
     if (sync) {
         if (!destination_dartfilename.exists) {
+
             DART.create(destination_dartfilename);
+            writefln("DART %s created", destination_dartfilename);
         }
-        auto dest_db = new DART(net, dartfilename, dart_exception);
-        if (!dart_exception) {
+        auto dest_db = new DART(net, destination_dartfilename, dart_exception);
+        writefln("Open dest_db %s", destination_dartfilename);
+        if (dart_exception !is null) {
             writefln("Fail to open destination DART: %s. Abort.", dart_exception.msg);
             return 1;
         }
-        immutable jounal_path = "/tmp/jounal_path";
+        immutable jounal_path = "/tmp/journal_path";
+        writefln("Synchronize");
         synchronize(dest_db, db, jounal_path);
     }
 
@@ -208,7 +210,7 @@ int _main(string[] args) {
      * @param alternative_text - text to replace doc output when flag verbose is off
      */
     void toConsole(T)(T doc, bool indent_line = false, string alternative_text = "") if (isHiBONRecord!T || is(T == Document)) {
-        if (verbose) {
+        if (verbose_switch) {
             if (indent_line)
                 writeln;
             writefln("%s: %s", T.stringof, doc.toPretty);
