@@ -177,6 +177,10 @@ class BlockFile {
         file.close;
     }
 
+    bool empty() const pure nothrow {
+        return root_index is Index.init;
+    }
+
     ~this() {
         file.close;
     }

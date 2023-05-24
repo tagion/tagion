@@ -95,7 +95,7 @@ int _main(string[] args) {
                 "eye", "Prints the bullseye", &eye,
                 "sync", "Synchronize src.drt to dest.drt", &sync,
                 "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase,
-                "verbose|v", "Print output to console", &verbose,
+                "verbose|v", "Print output to console", &verbose_switch,
                 "fake", format("Use fakenet instead of real hashes : default :%s", fake), &fake,
         );
     }
@@ -191,7 +191,7 @@ int _main(string[] args) {
             writefln("Fail to open destination DART: %s. Abort.", dart_exception.msg);
             return 1;
         }
-        immutable jounal_path = "/tmp/jounal_path";
+        immutable jounal_path = "/tmp/journal_path";
         writefln("Synchronize");
         synchronize(dest_db, db, jounal_path);
     }
@@ -210,7 +210,7 @@ int _main(string[] args) {
      * @param alternative_text - text to replace doc output when flag verbose is off
      */
     void toConsole(T)(T doc, bool indent_line = false, string alternative_text = "") if (isHiBONRecord!T || is(T == Document)) {
-        if (verbose) {
+        if (verbose_switch) {
             if (indent_line)
                 writeln;
             writefln("%s: %s", T.stringof, doc.toPretty);
