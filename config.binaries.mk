@@ -62,6 +62,10 @@ ${call DO_BIN,tagionwallet,$(LIB_DFILES) ${call BIN_DEPS,tagionwallet},tagion}
 
 wallet: target-tagionwallet
 
+
+target-signs: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+${call DO_BIN,signs,$(LIB_DFILES) ${call BIN_DEPS,signs},tagion}
+
 #
 # Subscription utility
 #
@@ -108,6 +112,7 @@ TAGION_TOOLS+=boot
 TAGION_TOOLS+=tools
 TAGION_TOOLS+=graphview
 TAGION_TOOLS+=recorderchain
+TAGION_TOOLS+=signs
 
 TAGION_BINS=$(foreach tools,$(TAGION_TOOLS), ${call BIN_DEPS,$(tools)} )
 

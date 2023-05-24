@@ -14,6 +14,7 @@ int main(string[] args) {
     import tprofview = tagion.tools.tprofview;
     import recorderchain = tagion.tools.recorderchain;
     import graphview = tagion.tools.graphview;
+    import signs = tagion.tools.signs;
 
     alias alltools = AliasSeq!(
             tagionwave,
@@ -23,7 +24,8 @@ int main(string[] args) {
             tagionboot,
             blockutil, tprofview,
             recorderchain,
-            graphview);
+            graphview,
+            signs);
     mixin doOneMain!(alltools);
     return do_main(args);
 }
