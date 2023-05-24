@@ -29,7 +29,7 @@ import tagion.Keywords;
 import std.range;
 import tagion.utils.Random;
 import std.random : randomShuffle, MinstdRand0, randomSample;
-
+import tagion.basic.basic : forceRemove;
 import tagion.hibon.HiBONRecord;
 
 import tagion.testbench.dart.dart_helper_functions;
@@ -82,6 +82,7 @@ class SyncToAnotherDb {
 
     @Given("I have a empty dartfile2.")
     Document dartfile2() {
+        info.dartfilename2.forceRemove;
         DART.create(info.dartfilename2);
         Exception dart_exception;
         db2 = new DART(info.net, info.dartfilename2, dart_exception);
