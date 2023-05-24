@@ -119,7 +119,7 @@ int _main(string[] args) {
                 "Documentation: https://tagion.org/",
                 "",
                 "Usage:",
-                format("%s [<option>...] <files>...", program),
+                format("%s [<option>...] file.drt <files>", program),
                 "",
                 "Example synchronizing src.drt on to dst.drt",
                 format("%s --sync src.drt dst.drt]", program),
@@ -155,6 +155,9 @@ int _main(string[] args) {
     writefln("destination_dartfilename=%s", destination_dartfilename);
     SecureNet net;
 
+    if (dartfilename.empty) {
+        stderr.writefln("Error: Missing dart file");
+    }
     if (fake) {
         net = new DARTFakeNet("very_secret");
     }
@@ -166,30 +169,30 @@ int _main(string[] args) {
     const hirpc = HiRPC(net);
 
     if (initialize) {
-        if (dartfilename.length == 0) {
-            dartfilename = tempfile ~ "tmp";
-            writeln("DART filename: ", dartfilename);
-        }
         DART.create(dartfilename);
     }
 
     Exception dart_exception;
     auto db = new DART(net, dartfilename, dart_exception);
-    if (!dart_exception) {
+    if (dart_exception !is null) {
         writefln("Fail to open DART: %s. Abort.", dart_exception.msg);
         return 1;
     }
 
     if (sync) {
         if (!destination_dartfilename.exists) {
+
             DART.create(destination_dartfilename);
+            writefln("DART %s created", destination_dartfilename);
         }
-        auto dest_db = new DART(net, dartfilename, dart_exception);
-        if (!dart_exception) {
+        auto dest_db = new DART(net, destination_dartfilename, dart_exception);
+        writefln("Open dest_db %s", destination_dartfilename);
+        if (dart_exception !is null) {
             writefln("Fail to open destination DART: %s. Abort.", dart_exception.msg);
             return 1;
         }
         immutable jounal_path = "/tmp/jounal_path";
+        writefln("Synchronize");
         synchronize(dest_db, db, jounal_path);
     }
 
