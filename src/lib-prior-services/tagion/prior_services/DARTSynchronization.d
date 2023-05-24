@@ -37,6 +37,8 @@ import tagion.communication.HandlerPool;
 
 alias HiRPCSender = HiRPC.Sender;
 alias HiRPCReceiver = HiRPC.Receiver;
+import tagion.dart.synchronizer : Synchronizer;
+
 
 mixin template StateT(T) {
     protected T _state;

@@ -170,6 +170,7 @@ int _main(string[] args) {
             dartfilename = tempfile ~ "tmp";
             writeln("DART filename: ", dartfilename);
         }
+        writefln("DARTFILENAME: %s", dartfilename);
         DART.create(dartfilename);
     }
 
