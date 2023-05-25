@@ -53,6 +53,18 @@ bool all(Ctrl[TaskName] aa, Ctrl ctrl) {
     return true;
 }
 
+import std.traits;
+template isActor(A) {
+    template isTask(func) {
+        enum bool isTask = hasFunctionAttributes!(func, "nothrow");
+    }
+
+    alias task = A.task;
+
+    enum bool isActor = hasMember!(A, "task") && hasFunctionAttributes!(task, "nothrow");
+                     //&& isTask!(f);
+}
+
 /**
  * A "reference" to an actor that may or may not be spawned, we will never know
  * Params:
@@ -106,7 +118,8 @@ ActorHandle!A actorHandle(A)(string task_name) {
  * spawnActor!MyActor("my_task_name", 42);
  * ---
  */
-ActorHandle!A spawnActor(A)(string task_name) @trusted nothrow {
+ActorHandle!A spawnActor(A)(string task_name) @trusted nothrow 
+if(isActor!A) {
     alias task = A.task;
     Tid tid;
 
