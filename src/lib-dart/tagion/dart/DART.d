@@ -802,9 +802,7 @@ received = the HiRPC received package
 
                 immutable data = journalfile.load(index);
                 const doc = Document(data);
-                if (!Journal.isRecord(doc)) {
-                    log(format("Index(%s) WRONG FORMAT=%s", index, doc.toPretty));
-                }
+
                 auto journal_replay = Journal(manufactor, doc);
                 index = journal_replay.index;
                 auto action_recorder = recorder;
