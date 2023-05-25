@@ -1,4 +1,4 @@
-module source.helpers;
+module helpers;
 
 import std.random;
 import std.conv;

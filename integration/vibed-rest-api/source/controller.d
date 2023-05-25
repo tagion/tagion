@@ -26,9 +26,9 @@ import tagion.dart.DARTBasic : DARTIndex, dartIndex;
 import services.dartService;
 
 // models
-import source.models.other : ResponseModel, ErrorResponse, ErrorCode, ErrorDescription;
+import models.other : ResponseModel, ErrorResponse, ErrorCode, ErrorDescription;
 
-import source.helpers : setCORSHeaders, respondWithError, handleServerError, tryReqHandler;
+import helpers : setCORSHeaders, respondWithError, handleServerError, tryReqHandler;
 
 /// General Template controller for generating POST, GET and DELETE routes.
 struct Controller(T) {
