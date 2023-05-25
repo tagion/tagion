@@ -41,7 +41,7 @@ class SendATaskFailureToAnActor {
 
     @Given("an #actor")
     Document anActor() @trusted {
-        myActor = spawnActor!MyActor(actor_task);
+        myActor = spawn!MyActor(actor_task);
 
         return result_ok;
     }

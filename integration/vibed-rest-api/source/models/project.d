@@ -1,4 +1,4 @@
-module source.models.project;
+module models.project;
 
 import tagion.hibon.HiBONRecord;
 

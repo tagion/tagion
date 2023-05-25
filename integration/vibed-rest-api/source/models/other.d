@@ -1,4 +1,4 @@
-module source.models.other;
+module models.other;
 
 import vibe.data.json;
 

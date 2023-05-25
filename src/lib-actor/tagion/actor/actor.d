@@ -53,6 +53,22 @@ bool all(Ctrl[TaskName] aa, Ctrl ctrl) {
     return true;
 }
 
+import std.traits;
+template isActor(A) {
+
+    template isTask(args...)
+    if (args.length == 1 && isCallable!(args[0])) {
+        alias task = args[0];
+        alias params = Parameters!(task);
+        enum bool isTask = is(params[0] : string)
+                        && ParameterIdentifierTuple!(task)[0] == "task_name"
+                        && hasFunctionAttributes!(task, "nothrow");
+    }
+
+    enum bool isActor = hasMember!(A, "task") 
+                     && isTask!(A.task);
+}
+
 /**
  * A "reference" to an actor that may or may not be spawned, we will never know
  * Params:
@@ -90,7 +106,8 @@ struct ActorHandle(A) {
  * actorHandle!MyActor("my_task_name");
  * ---
  */
-ActorHandle!A actorHandle(A)(string task_name) {
+ActorHandle!A handle(A)(string task_name)
+if (isActor!A) {
     Tid tid = locate(task_name);
     return ActorHandle!A(tid, task_name);
 }
@@ -103,14 +120,16 @@ ActorHandle!A actorHandle(A)(string task_name) {
  * Returns: An actorHandle with type A
  * Examples:
  * ---
- * spawnActor!MyActor("my_task_name", 42);
+ * spawn!MyActor("my_task_name", 42);
  * ---
  */
-ActorHandle!A spawnActor(A)(string task_name) @trusted nothrow {
+ActorHandle!A spawn(A)(string task_name) @trusted nothrow 
+if (isActor!A) {
     alias task = A.task;
     Tid tid;
 
-    tid = assumeWontThrow(spawn(&task, task_name)); /// TODO: set oncrowding to exception;
+    import concurrency = std.concurrency;
+    tid = assumeWontThrow(concurrency.spawn(&task, task_name)); /// TODO: set oncrowding to exception;
     assumeWontThrow(register(task_name, tid));
     assumeWontThrow(writefln("%s registered", task_name));
 
@@ -122,12 +141,13 @@ ActorHandle!A spawnActor(A)(string task_name) @trusted nothrow {
  * Params:
  *   a = an active actorhandle
  */
-A respawnActor(A)(A actor_handle) {
+A respawn(A)(A actor_handle)
+if(isActor!(A.Actor)) {
     writefln("%s", typeid(actor_handle.Actor));
     actor_handle.send(Sig.STOP);
     unregister(actor_handle.task_name);
 
-    return spawnActor!(A.Actor)(actor_handle.task_name);
+    return spawn!(A.Actor)(actor_handle.task_name);
 }
 
 /// Nullable and nothrow wrapper around ownerTid
