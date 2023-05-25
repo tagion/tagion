@@ -14,6 +14,7 @@ import std.algorithm;
 import std.range;
 import std.format;
 import std.path;
+import std.file;
 
 bool waitUntilInGraph(int lockThreadTime, int sleepThreadTime, uint port) @trusted
 {
@@ -198,15 +199,19 @@ class Node
             this.boot_path = buildPath(module_path, "boot.hibon");
             this.port = port;
             this.transaction_port = transaction_port;
-            if (master) {
-                this.dart_path = module_path.buildPath("network", "data", "dart.drt");
-            } else {
-                this.dart_path = module_path.buildPath("network", "data", format("dart-%s.drt", node_number));
-            }
-
             this.logger_file = module_path.buildPath("tinynet.log");
             this.dart_init = false;
             this.dart_synchronize = false;
+            if (master) {
+                this.dart_path = module_path.buildPath("network", "data", "dart.drt");
+            } else {
+                this.dart_path = module_path.buildPath("network", "data", format("dart%s.drt", node_number));
+                
+                if (!this.dart_synchronize) {
+                   copy(module_path.buildPath("network", "data", "dart.drt"), this.dart_path);
+                }
+            }
+
         }
     }
 
@@ -242,6 +247,7 @@ class Node
                 format("--dart-init=%s", dart_init.to!string), 
                 format("--logger-filename=%s", logger_file),
                 format("--transaction-port=%s", transaction_port),
+                format("--dart-synchronize=%s", dart_synchronize.to!string),
             ];
             if (monitor) {
                 node_command ~= "--monitor";
