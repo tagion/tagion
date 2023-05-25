@@ -47,7 +47,7 @@ class DARTUtilSynchronizer : StdSynchronizer {
         return received;
     }
 
-    version (none) override void finish() {
+    override void finish() {
         //            journalfile.close;
         _finished = true;
     }
@@ -57,9 +57,9 @@ class DARTUtilSynchronizer : StdSynchronizer {
 @safe
 string[] synchronize(DART destination, DART source, string journal_basename) {
     string[] journal_filenames;
-    foreach (sector; destination.sectors) {
-        verbose("Sector %04x", sector);
-        immutable journal_filename = format("%s.%04x.dart_journal", journal_basename, sector);
+    foreach (ubyte root_rim; ubyte.min .. ubyte.max) {
+        verbose("RIM %04x", root_rim);
+        immutable journal_filename = format("%s.%02x.dart_journal", journal_basename, root_rim);
         BlockFile.create(journal_filename, DART.stringof, BLOCK_SIZE);
 
         auto journalfile = BlockFile(journal_filename);
@@ -72,7 +72,7 @@ string[] synchronize(DART destination, DART source, string journal_basename) {
         }
         auto synch = new DARTUtilSynchronizer(journalfile, destination, source);
 
-        auto destination_synchronizer = destination.synchronizer(synch, DART.Rims(sector));
+        auto destination_synchronizer = destination.synchronizer(synch, DART.Rims([root_rim]));
         while (!destination_synchronizer.empty) {
             (() @trusted { destination_synchronizer.call; })();
         }

@@ -1,4 +1,4 @@
-/// DART database build on DARTFile including CRUD commands and synchronization
+// DART database build on DARTFile including CRUD commands and synchronization
 module tagion.dart.DART;
 
 import std.stdio;
@@ -625,10 +625,11 @@ received = the HiRPC received package
          *   doc = Journal document
          */
         this(RecordFactory manufactor, const Document doc) {
-                import tagion.logger.Logger;
+            import tagion.logger.Logger;
+
             
 
-                .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
+            .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             index = doc[indexName].get!Index;
             const recorder_doc = doc[recorderName].get!Document;
             recorder = manufactor.recorder(recorder_doc);
@@ -646,7 +647,6 @@ received = the HiRPC received package
 
         mixin HiBONRecord!"{}";
     }
-
 
     /**
      * Creates a synchronization fiber from a synchroizer 
@@ -796,11 +796,12 @@ received = the HiRPC received package
         // Adding and Removing archives
         void local_replay(bool remove)() @safe {
             import tagion.logger.Logger;
+
             log("JOURNAL_FILENAME=%s", journal_filename);
-            for (Index index = journalfile.masterBlock.root_index; index != Index.init; 
+            for (Index index = journalfile.masterBlock.root_index; index != Index.init;
 
                 ) {
-                
+
                 immutable data = journalfile.load(index);
                 const doc = Document(data);
                 if (!Journal.isRecord(doc)) {
@@ -837,10 +838,10 @@ received = the HiRPC received package
         static class TestSynchronizer : StdSynchronizer {
             protected DART foreign_dart;
             protected DART owner;
-            this(string journal_filename, DART owner, DART foreign_dart) {
+            this(BlockFile journalfile, DART owner, DART foreign_dart) {
                 this.foreign_dart = foreign_dart;
                 this.owner = owner;
-                super(journal_filename);
+                super(journalfile);
             }
 
             //
@@ -967,7 +968,8 @@ received = the HiRPC received package
                         immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
                         journal_filenames ~= journal_filename;
                         BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
-                        auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
+                        auto journalfile = BlockFile(journal_filename);
+                        auto synch = new TestSynchronizer(journalfile, dart_A, dart_B);
                         auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                         // D!(sector, "%x");
                         while (!dart_A_synchronizer.empty) {
@@ -1027,7 +1029,8 @@ received = the HiRPC received package
                     immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
                     journal_filenames ~= journal_filename;
                     BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
-                    auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
+                    auto journalfile = BlockFile(journal_filename);
+                    auto synch = new TestSynchronizer(journalfile, dart_A, dart_B);
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
@@ -1079,7 +1082,8 @@ received = the HiRPC received package
                     immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
                     journal_filenames ~= journal_filename;
                     BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
-                    auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
+                    auto journalfile = BlockFile(journal_filename);
+                    auto synch = new TestSynchronizer(journalfile, dart_A, dart_B);
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
@@ -1135,7 +1139,8 @@ received = the HiRPC received package
                     immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
                     journal_filenames ~= journal_filename;
                     BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
-                    auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
+                    auto journalfile = BlockFile(journal_filename);
+                    auto synch = new TestSynchronizer(journalfile, dart_A, dart_B);
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
@@ -1186,7 +1191,8 @@ received = the HiRPC received package
                     immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
                     journal_filenames ~= journal_filename;
                     BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
-                    auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
+                    auto journalfile = BlockFile(journal_filename);
+                    auto synch = new TestSynchronizer(journalfile, dart_A, dart_B);
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
@@ -1239,7 +1245,8 @@ received = the HiRPC received package
                     immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
                     journal_filenames ~= journal_filename;
                     BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
-                    auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
+                    auto journalfile = BlockFile(journal_filename);
+                    auto synch = new TestSynchronizer(journalfile, dart_A, dart_B);
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
@@ -1292,7 +1299,8 @@ received = the HiRPC received package
                     immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
                     journal_filenames ~= journal_filename;
                     BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
-                    auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
+                    auto journalfile = BlockFile(journal_filename);
+                    auto synch = new TestSynchronizer(journalfile, dart_A, dart_B);
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
@@ -1345,7 +1353,8 @@ received = the HiRPC received package
                     immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
                     journal_filenames ~= journal_filename;
                     BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
-                    auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
+                    auto journalfile = BlockFile(journal_filename);
+                    auto synch = new TestSynchronizer(journalfile, dart_A, dart_B);
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                     while (!dart_A_synchronizer.empty) {
                         (() @trusted { dart_A_synchronizer.call; })();

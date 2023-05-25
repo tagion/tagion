@@ -1,6 +1,5 @@
 module tagion.dart.synchronizer;
 
-
 import tagion.communication.HiRPC;
 
 alias HiRPCSender = HiRPC.Sender;
@@ -10,7 +9,6 @@ import tagion.dart.Recorder;
 import tagion.dart.DART;
 import tagion.dart.BlockFile;
 import tagion.hibon.Document;
-
 
 /**
 * Interface to the DART synchronizer
@@ -79,7 +77,7 @@ static abstract class StdSynchronizer : Synchronizer {
         *                        Must be created by BlockFile.create method
         *     chunck_size = Set the max number of archives removed per chuck
         */
-    this(string journal_filename, const uint chunck_size = 0x400) {
+    version (none) this(string journal_filename, const uint chunck_size = 0x400) {
         journalfile = BlockFile(journal_filename);
         this.chunck_size = chunck_size;
     }

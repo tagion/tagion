@@ -31,7 +31,6 @@ import tagion.dart.DARTException : BlockFileException;
 import tagion.dart.Recycler : Recycler;
 import tagion.dart.BlockSegment;
 
-
 ///
 import tagion.logger.Logger;
 
@@ -68,7 +67,6 @@ class BlockFile {
     //immutable uint DATA_SIZE;
     alias BlockFileStatistic = Statistic!(uint, Yes.histogram);
     alias RecyclerFileStatistic = Statistic!(ulong, Yes.histogram);
-
     static bool do_not_write;
     package {
         File file;
@@ -98,12 +96,12 @@ class BlockFile {
         recycler = Recycler(this);
         //empty
     }
+
     protected this(
             string filename,
             immutable uint SIZE,
             const bool read_only = false) {
         File _file;
-
 
         if (read_only) {
             _file.open(filename, "r");
@@ -111,17 +109,18 @@ class BlockFile {
         else {
             _file.open(filename, "r+");
         }
-        this(_file, SIZE);
+        this(_file, SIZE, !read_only);
     }
 
-    protected this(File file, immutable uint SIZE) {
-        scope(failure) {
+    protected this(File file, immutable uint SIZE, const bool set_lock = true) {
+        scope (failure) {
             file.close;
         }
-        const lock = (() @trusted => file.tryLock(LockType.read) )();
+        if (set_lock) {
+            const lock = (() @trusted => file.tryLock(LockType.read))();
 
-        check(lock, "Error: BlockFile in use (LOCKED)");
-
+            check(lock, "Error: BlockFile in use (LOCKED)");
+        }
         this.BLOCK_SIZE = SIZE;
         this.file = file;
         recycler = Recycler(this);
@@ -488,7 +487,7 @@ class BlockFile {
      * Returns: Document of a blocksegment
      */
     const(Document) load(const Index index) {
-        check(index <= lastBlockIndex+1, format("Block index [%s] out of bounds for last block [%s]", index, lastBlockIndex));
+        check(index <= lastBlockIndex + 1, format("Block index [%s] out of bounds for last block [%s]", index, lastBlockIndex));
         return BlockSegment(this, index).doc;
     }
 
@@ -760,7 +759,7 @@ class BlockFile {
             filename.forceRemove;
             BlockFile.create(filename, "create.unittest", SMALL_BLOCK_SIZE);
             auto blockfile = BlockFile(filename);
-            
+
             assertThrown!BlockFileException(blockfile.load(Index(5)));
         }
 

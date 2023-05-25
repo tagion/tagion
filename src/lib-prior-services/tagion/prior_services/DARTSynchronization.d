@@ -39,7 +39,6 @@ alias HiRPCSender = HiRPC.Sender;
 alias HiRPCReceiver = HiRPC.Receiver;
 import tagion.dart.synchronizer : Synchronizer, StdSynchronizer;
 
-
 mixin template StateT(T) {
     protected T _state;
     protected bool checkState(T[] expected...) nothrow {
@@ -242,7 +241,6 @@ class P2pSynchronizationFactory : SynchronizationFactory {
     import tagion.dart.DARTOptions;
     import tagion.basic.basic : tempfile;
 
-
     protected {
         DART dart;
         shared ConnectionPoolT connection_pool;
@@ -292,8 +290,8 @@ class P2pSynchronizationFactory : SynchronizationFactory {
                     return synchronizing[node_address.address];
                 }
                 auto stream = node.connect(node_address.address, node_address.is_marshal, [
-                        dart_opts.sync.protocol_id
-                        ]);
+                    dart_opts.sync.protocol_id
+                ]);
                 connection_pool.add(stream.identifier, stream, true);
                 stream.listen(&StdHandlerCallback,
                         dart_opts.sync.task_name, dart_opts.sync.host.timeout.msecs, dart_opts
@@ -333,7 +331,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
                     continue;
                 auto response = syncWith(node_addr.value);
                 if (response[1] is null)
-                    continue;
+                continue;
                 return response;
             }
         }
@@ -361,10 +359,11 @@ class P2pSynchronizationFactory : SynchronizationFactory {
 
         this(string journal_filename, const ulong key, const OnComplete oncomplete, const OnFailure onfailure) {
             filename = journal_filename;
+            auto _journalfile = BlockFile(filename);
             this.key = key;
             this.oncomplete = oncomplete;
             this.onfailure = onfailure;
-            super(journal_filename);
+            super(_journalfile);
         }
 
         const(HiRPCReceiver) query(ref const(HiRPCSender) request) {
@@ -408,6 +407,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
             else {
                 log.trace("P2pSynchronizer: Synchronization Completed! Sector: %d", fiber
                         .root_rims.sector);
+                journalfile.close;
                 oncomplete(filename);
             }
             // connection_pool.close(key); //TODO: if one connnection used for one synchronization
@@ -630,7 +630,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
             if (result[1] is null) {
                 onFailure(root); //TODO: or just ignore?
             }
-            else {
+        else {
                 handlerPool.add(result[0], result[1], true);
                 sync_sectors[root] = true;
             }
@@ -643,7 +643,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
                 if (result[1] is null) {
                     onFailure(sector); //TODO: or just ignore?
                 }
-                else {
+        else {
                     sync_sectors[sector] = true;
                     handlerPool.add(result[0], result[1], true);
                 }
