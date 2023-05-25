@@ -74,8 +74,7 @@ template isActor(A) {
  * Params:
  *  A = an actor type
  */
-struct ActorHandle(A) 
-if (isActor!A) {
+struct ActorHandle(A) {
     import concurrency = std.concurrency;
 
     /// the tid of the spawned task
