@@ -55,14 +55,18 @@ bool all(Ctrl[TaskName] aa, Ctrl ctrl) {
 
 import std.traits;
 template isActor(A) {
-    // alias task = A.task;
-    // pragma(msg, typeof(task));
-    // enum params = Parameters!(A.task);
-    // pragma(msg, params);
+
+    template isTask(args...)
+    if (args.length == 1 && isCallable!(args[0])) {
+        alias task = args[0];
+        alias params = Parameters!(task);
+        enum bool isTask = is(params[0] : string)
+                        && ParameterIdentifierTuple!(task)[0] == "task_name"
+                        && hasFunctionAttributes!(task, "nothrow");
+    }
 
     enum bool isActor = hasMember!(A, "task") 
-                     && hasFunctionAttributes!(A.task, "nothrow")
-                     // && params[0] == "task_name"
+                     && isTask!(A.task)
                     ;
 }
 
