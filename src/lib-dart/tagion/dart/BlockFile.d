@@ -98,14 +98,13 @@ class BlockFile {
         recycler = Recycler(this);
         //empty
     }
-    string testname;
     protected this(
             string filename,
             immutable uint SIZE,
             const bool read_only = false) {
         File _file;
-        testname = filename;
-        log("OPENED BLOCKFILE=%s", testname);
+
+
         if (read_only) {
             _file.open(filename, "r");
         }
@@ -116,8 +115,14 @@ class BlockFile {
     }
 
     protected this(File file, immutable uint SIZE) {
+        scope(failure) {
+            file.close;
+        }
+        const lock = (() @trusted => file.tryLock(LockType.read) )();
+
+        check(lock, "Error: BlockFile in use (LOCKED)");
+
         this.BLOCK_SIZE = SIZE;
-        //   DATA_SIZE = BLOCK_SIZE - Block.HEADER_SIZE;
         this.file = file;
         recycler = Recycler(this);
         readInitial;
@@ -182,7 +187,11 @@ class BlockFile {
     /++
      +/
     void close() {
-        log("CLOSING BLOCKFILE=%s", testname);
+
+        if (file.isOpen) {
+            (() @trusted { file.unlock; })();
+        }
+
         file.close;
     }
 
@@ -479,6 +488,7 @@ class BlockFile {
      * Returns: Document of a blocksegment
      */
     const(Document) load(const Index index) {
+        check(index <= lastBlockIndex+1, format("Block index [%s] out of bounds for last block [%s]", index, lastBlockIndex));
         return BlockSegment(this, index).doc;
     }
 
@@ -535,7 +545,7 @@ class BlockFile {
         import LEB128 = tagion.utils.LEB128;
 
         auto equal_chain = block_chains.equalRange(new const(BlockSegment)(Document.init, index));
-        assert(equal_chain.empty, format("We should dispose cached blocks: %s", testname));
+        assert(equal_chain.empty, "We should dispose cached blocks");
         seek(index);
         ubyte[LEB128.DataSize!ulong] _buf;
         ubyte[] buf = _buf;
@@ -603,11 +613,12 @@ class BlockFile {
     struct BlockSegmentRange {
         BlockFile owner;
 
-        Index index = Index(1UL);
+        Index index;
         BlockSegmentInfo current_segment;
 
         this(BlockFile owner) {
             this.owner = owner;
+            index = (owner.lastBlockIndex == 0) ? Index.init : Index(1UL);
             initFront;
         }
 
@@ -733,7 +744,7 @@ class BlockFile {
         {
             immutable filename = fileId("create").fullpath;
             filename.forceRemove;
-
+            writefln("FILENAME=%s", filename);
             BlockFile.create(filename, "create.unittest", SMALL_BLOCK_SIZE);
             auto blockfile_load = BlockFile(filename);
             scope (exit) {
@@ -745,16 +756,19 @@ class BlockFile {
             import std.exception : assertThrown, ErrnoException;
 
             // try to load an index that is out of bounds of the blockfile. 
-            File _file = File(fileId.fullpath, "w");
-            auto blockfile = new BlockFile(_file, SMALL_BLOCK_SIZE);
-            assertThrown!ErrnoException(blockfile.load(Index(5)));
+            const filename = fileId.fullpath;
+            filename.forceRemove;
+            BlockFile.create(filename, "create.unittest", SMALL_BLOCK_SIZE);
+            auto blockfile = BlockFile(filename);
+            
+            assertThrown!BlockFileException(blockfile.load(Index(5)));
         }
 
         /// Create BlockFile
         {
             // Delete test blockfile
             // Create new blockfile
-            File _file = File(fileId.fullpath, "w");
+            File _file = File(fileId.fullpath, "w+");
             auto blockfile = new BlockFile(_file, SMALL_BLOCK_SIZE);
 
             assert(!blockfile.hasHeader);
