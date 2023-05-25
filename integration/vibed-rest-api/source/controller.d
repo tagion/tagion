@@ -1,4 +1,4 @@
-module source.controller;
+module controller;
 
 import vibe.http.server;
 import vibe.http.router;

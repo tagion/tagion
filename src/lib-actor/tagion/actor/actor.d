@@ -66,8 +66,7 @@ template isActor(A) {
     }
 
     enum bool isActor = hasMember!(A, "task") 
-                     && isTask!(A.task)
-                    ;
+                     && isTask!(A.task);
 }
 
 /**

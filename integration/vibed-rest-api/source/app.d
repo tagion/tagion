@@ -19,16 +19,16 @@ import services.dartService;
 import tagion.dart.DARTFile;
 
 // controllers
-import source.controller : Controller;
+import controller : Controller;
 
 // models
-import source.models.project;
-import source.models.projectDocument;
-import source.models.benefit;
-import source.models.benefitShare;
-import source.models.benefitShareCredit;
-import source.models.documentDocument;
-import source.models.other : Route;
+import models.project;
+import models.projectDocument;
+import models.benefit;
+import models.benefitShare;
+import models.benefitShareCredit;
+import models.documentDocument;
+import models.other : Route;
 
 const revision = import("revision.txt");
 

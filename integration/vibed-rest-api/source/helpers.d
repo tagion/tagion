@@ -16,7 +16,7 @@ import vibe.http.server;
 import vibe.http.router;
 import vibe.core.log;
 
-import source.models.other : ResponseModel, ErrorResponse;
+import models.other : ResponseModel, ErrorResponse;
 
 void setCORSHeaders(HTTPServerResponse res) {
     res.headers["Access-Control-Allow-Origin"] = "*"; // "https://editor.swagger.io, https://docs.decard.io"
