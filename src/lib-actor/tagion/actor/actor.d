@@ -128,7 +128,8 @@ if (isActor!A) {
     alias task = A.task;
     Tid tid;
 
-    tid = assumeWontThrow(spawn(&task, task_name)); /// TODO: set oncrowding to exception;
+    import concurrency = std.concurrency;
+    tid = assumeWontThrow(concurrency.spawn(&task, task_name)); /// TODO: set oncrowding to exception;
     assumeWontThrow(register(task_name, tid));
     assumeWontThrow(writefln("%s registered", task_name));
 
@@ -146,7 +147,7 @@ if(isActor!(A.Actor)) {
     actor_handle.send(Sig.STOP);
     unregister(actor_handle.task_name);
 
-    return spawnActor!(A.Actor)(actor_handle.task_name);
+    return spawn!(A.Actor)(actor_handle.task_name);
 }
 
 /// Nullable and nothrow wrapper around ownerTid
