@@ -57,7 +57,7 @@ class SendATaskFailureToAnActor {
 
     @Then("send a `TaskFailure` to the actor")
     Document toTheActor() @trusted {
-        myActor.send(TaskFailure(new immutable Exception("This big fail"), "main"));
+        myActor.send(TaskFailure( "main", new immutable Exception("This big fail")));
         return result_ok;
     }
 

@@ -304,7 +304,6 @@ class P2pSynchronizationFactory : SynchronizationFactory {
                 const stream_id = connect;
                 // log("SyncSectorResponse sector=%s", sector);
                 auto filename = format("%s_%s", tempfile, sector);
-                pragma(msg, "fixme(alex): Why 0x80");
                 BlockFile.create(filename, DART.stringof, BLOCK_SIZE);
                 auto sync = new P2pSynchronizer(filename, stream_id, oncomplete, onfailure);
                 auto db_sync = dart.synchronizer(sync, sector);
@@ -630,7 +629,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
             if (result[1] is null) {
                 onFailure(root); //TODO: or just ignore?
             }
-        else {
+            else {
                 handlerPool.add(result[0], result[1], true);
                 sync_sectors[root] = true;
             }
@@ -643,7 +642,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
                 if (result[1] is null) {
                     onFailure(sector); //TODO: or just ignore?
                 }
-        else {
+                else {
                     sync_sectors[sector] = true;
                     handlerPool.add(result[0], result[1], true);
                 }
@@ -695,6 +694,8 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
 
     private void onComplete(string journal_filename) {
         log("ONCOMPLETE INSERT=%s", journal_filename);
+
+       
         journal_replay.insert(journal_filename);
     }
 
