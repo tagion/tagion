@@ -13,8 +13,6 @@ import tagion.actor.exceptions;
 import tagion.actor.exceptions : TaskFailure;
 import tagion.basic.tagionexceptions : TagionException;
 
-alias TaskName = string;
-
 /**
  * Message "Atom" type
  * Examples:
@@ -42,9 +40,9 @@ enum Sig {
 
 /// Control message sent to a supervisor
 /// contains the Tid of the actor which send it and the state
-alias CtrlMsg = Tuple!(TaskName, "task_name", Ctrl, "ctrl");
+alias CtrlMsg = Tuple!(string, "task_name", Ctrl, "ctrl");
 
-bool all(Ctrl[TaskName] aa, Ctrl ctrl) {
+bool all(Ctrl[string] aa, Ctrl ctrl) {
     foreach (val; aa) {
         if (val != ctrl) {
             return false;
@@ -182,7 +180,7 @@ void sendOwner(T...)(T vals) {
 }
 
 /// send your state to your owner
-void setState(Ctrl ctrl, TaskName task_name) nothrow {
+void setState(Ctrl ctrl, string task_name) nothrow {
     try {
         if (!tidOwner.isNull) {
             tidOwner.get.prioritySend(CtrlMsg(task_name, ctrl));
@@ -198,6 +196,10 @@ void setState(Ctrl ctrl, TaskName task_name) nothrow {
     catch (Exception e) {
         /* logger.fatal(e); */
     }
+}
+
+void end(string task_name) {
+    setState(Ctrl.END, task_name);
 }
 
 /**
@@ -229,7 +231,7 @@ static:
     import std.stdio : writefln, writeln;
 
     bool stop = false;
-    Ctrl[TaskName] childrenState; // An AA to keep a copy of the state of the children
+    Ctrl[string] childrenState; // An AA to keep a copy of the state of the children
 
     alias This = typeof(this);
 
@@ -261,8 +263,8 @@ static:
         throw new UnknownMessage("No delegate to deal with message: %s".format(message));
     }
 
-    /// The tasks that get run when you call spawnActor!
-    void task(string task_name /* , Ctrl* state */ ) nothrow {
+    /// The tasks that get run when you call spawn!
+    void task(string task_name) nothrow {
         try {
 
             setState(Ctrl.STARTING, task_name); // Tell the owner that you are starting.
