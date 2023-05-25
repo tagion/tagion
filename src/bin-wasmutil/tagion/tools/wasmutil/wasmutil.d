@@ -1,4 +1,4 @@
-module tagion.wasmutil;
+module tagion.tools.wasmutil.wasmutil;
 
 import std.getopt;
 import std.stdio;
