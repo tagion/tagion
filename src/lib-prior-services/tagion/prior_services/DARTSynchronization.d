@@ -304,7 +304,6 @@ class P2pSynchronizationFactory : SynchronizationFactory {
                 const stream_id = connect;
                 // log("SyncSectorResponse sector=%s", sector);
                 auto filename = format("%s_%s", tempfile, sector);
-                pragma(msg, "fixme(alex): Why 0x80");
                 BlockFile.create(filename, DART.stringof, BLOCK_SIZE);
                 auto sync = new P2pSynchronizer(filename, stream_id, oncomplete, onfailure);
                 auto db_sync = dart.synchronizer(sync, sector);

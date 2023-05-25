@@ -607,6 +607,14 @@ class BlockFile {
         foreach (block_segment; block_chains) {
             block_segment.write(this);
         }
+        // check(onlyOneMasterBlock, "Failure in masterblocks");
+    }
+
+    bool onlyOneMasterBlock() {
+        import std.range;
+        const numberOfMasterBlocks = opSlice().filter!(seg => seg.type == "M").take(2).walkLength;
+        // writefln("NUMBER_OF_MASTERBLOCKS=%s", numberOfMasterBlocks);
+        return numberOfMasterBlocks < 2;
     }
 
     struct BlockSegmentRange {
