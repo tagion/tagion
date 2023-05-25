@@ -19,6 +19,7 @@ import tagion.dart.DARTBasic : DARTIndex, dartIndex;
 import tagion.testbench.tools.Environment;
 import tagion.utils.Miscellaneous : toHexString;
 import tagion.testbench.dart.dartinfo;
+import tagion.basic.basic : forceRemove;
 
 import tagion.communication.HiRPC;
 import tagion.hibon.HiBONJSON : toPretty;
@@ -62,6 +63,7 @@ class AddOneArchive {
         // create the directory to store the DART in.
         mkdirRecurse(info.module_path);
         // create the dartfile
+        info.dartfilename.forceRemove;
         DART.create(info.dartfilename);
 
         Exception dart_exception;

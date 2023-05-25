@@ -37,6 +37,8 @@ import tagion.communication.HandlerPool;
 
 alias HiRPCSender = HiRPC.Sender;
 alias HiRPCReceiver = HiRPC.Receiver;
+import tagion.dart.synchronizer : Synchronizer, StdSynchronizer;
+
 
 mixin template StateT(T) {
     protected T _state;
@@ -189,6 +191,7 @@ class ReplayPool(T) {
     void execute() {
         try {
             if (!empty) {
+                log("modifications[current_index]=%s", modifications[current_index]);
                 replayFunc(modifications[current_index]);
                 current_index++;
             }
@@ -199,6 +202,7 @@ class ReplayPool(T) {
     }
 
     void insert(T value) {
+        log("INSERTING %s", value);
         modifications ~= value;
     }
 
@@ -237,6 +241,7 @@ alias ConnectionPoolT = ConnectionPool!(shared p2plib.StreamI, ulong);
 class P2pSynchronizationFactory : SynchronizationFactory {
     import tagion.dart.DARTOptions;
     import tagion.basic.basic : tempfile;
+
 
     protected {
         DART dart;
@@ -278,6 +283,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
             const DART.Rims sector,
             const OnComplete oncomplete,
             const OnFailure onfailure) {
+
         SyncSectorResponse syncWith(ref const(NodeAddress) node_address) @safe {
             import p2p.go_helper;
 
@@ -298,6 +304,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
 
             try {
                 const stream_id = connect;
+                // log("SyncSectorResponse sector=%s", sector);
                 auto filename = format("%s_%s", tempfile, sector);
                 pragma(msg, "fixme(alex): Why 0x80");
                 BlockFile.create(filename, DART.stringof, BLOCK_SIZE);
@@ -335,7 +342,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
     }
 
     @safe
-    class P2pSynchronizer : DART.StdSynchronizer, ResponseHandler {
+    class P2pSynchronizer : StdSynchronizer, ResponseHandler {
         protected const ulong key;
         protected Buffer response;
         protected const OnComplete oncomplete;
@@ -687,6 +694,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
     }
 
     private void onComplete(string journal_filename) {
+        log("ONCOMPLETE INSERT=%s", journal_filename);
         journal_replay.insert(journal_filename);
     }
 

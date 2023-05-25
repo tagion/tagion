@@ -31,6 +31,10 @@ import tagion.dart.DARTException : BlockFileException;
 import tagion.dart.Recycler : Recycler;
 import tagion.dart.BlockSegment;
 
+
+///
+import tagion.logger.Logger;
+
 alias Index = Typedef!(ulong, ulong.init, "BlockIndex");
 enum BLOCK_SIZE = 0x80;
 
@@ -94,12 +98,12 @@ class BlockFile {
         recycler = Recycler(this);
         //empty
     }
-
     protected this(
             string filename,
             immutable uint SIZE,
             const bool read_only = false) {
         File _file;
+
 
         if (read_only) {
             _file.open(filename, "r");
@@ -111,8 +115,14 @@ class BlockFile {
     }
 
     protected this(File file, immutable uint SIZE) {
+        scope(failure) {
+            file.close;
+        }
+        const lock = (() @trusted => file.tryLock(LockType.read) )();
+
+        check(lock, "Error: BlockFile in use (LOCKED)");
+
         this.BLOCK_SIZE = SIZE;
-        //   DATA_SIZE = BLOCK_SIZE - Block.HEADER_SIZE;
         this.file = file;
         recycler = Recycler(this);
         readInitial;
@@ -126,6 +136,9 @@ class BlockFile {
      *   BLOCK_SIZE = set the block size of the underlying BlockFile.
      */
     static void create(string filename, string description, immutable uint BLOCK_SIZE) {
+        import std.file : exists;
+
+        check(!filename.exists, format("Error: File %s already exists", filename));
         auto _file = File(filename, "w+");
         auto blockfile = new BlockFile(_file, BLOCK_SIZE);
         scope (exit) {
@@ -174,6 +187,11 @@ class BlockFile {
     /++
      +/
     void close() {
+
+        if (file.isOpen) {
+            (() @trusted { file.unlock; })();
+        }
+
         file.close;
     }
 
@@ -470,6 +488,7 @@ class BlockFile {
      * Returns: Document of a blocksegment
      */
     const(Document) load(const Index index) {
+        check(index <= lastBlockIndex+1, format("Block index [%s] out of bounds for last block [%s]", index, lastBlockIndex));
         return BlockSegment(this, index).doc;
     }
 
@@ -594,11 +613,12 @@ class BlockFile {
     struct BlockSegmentRange {
         BlockFile owner;
 
-        Index index = Index(1UL);
+        Index index;
         BlockSegmentInfo current_segment;
 
         this(BlockFile owner) {
             this.owner = owner;
+            index = (owner.lastBlockIndex == 0) ? Index.init : Index(1UL);
             initFront;
         }
 
@@ -718,10 +738,13 @@ class BlockFile {
     unittest {
         enum SMALL_BLOCK_SIZE = 0x40;
         import std.format;
+        import tagion.basic.basic : forceRemove;
 
         /// Test of BlockFile.create and BlockFile.opCall
         {
             immutable filename = fileId("create").fullpath;
+            filename.forceRemove;
+            writefln("FILENAME=%s", filename);
             BlockFile.create(filename, "create.unittest", SMALL_BLOCK_SIZE);
             auto blockfile_load = BlockFile(filename);
             scope (exit) {
@@ -733,16 +756,19 @@ class BlockFile {
             import std.exception : assertThrown, ErrnoException;
 
             // try to load an index that is out of bounds of the blockfile. 
-            File _file = File(fileId.fullpath, "w");
-            auto blockfile = new BlockFile(_file, SMALL_BLOCK_SIZE);
-            assertThrown!ErrnoException(blockfile.load(Index(5)));
+            const filename = fileId.fullpath;
+            filename.forceRemove;
+            BlockFile.create(filename, "create.unittest", SMALL_BLOCK_SIZE);
+            auto blockfile = BlockFile(filename);
+            
+            assertThrown!BlockFileException(blockfile.load(Index(5)));
         }
 
         /// Create BlockFile
         {
             // Delete test blockfile
             // Create new blockfile
-            File _file = File(fileId.fullpath, "w");
+            File _file = File(fileId.fullpath, "w+");
             auto blockfile = new BlockFile(_file, SMALL_BLOCK_SIZE);
 
             assert(!blockfile.hasHeader);

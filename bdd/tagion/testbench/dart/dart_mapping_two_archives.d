@@ -26,6 +26,7 @@ import tagion.hibon.HiBONJSON : toPretty;
 import tagion.Keywords;
 import tagion.basic.Types : Buffer;
 import std.range;
+import tagion.basic.basic : forceRemove;
 
 import tagion.testbench.dart.dart_helper_functions : getRim, getRead, goToSplit, getFingerprints;
 
@@ -64,6 +65,7 @@ class AddOneArchive {
         // create the directory to store the DART in.
         mkdirRecurse(info.module_path);
         // create the dartfile
+        info.dartfilename.forceRemove;
         DART.create(info.dartfilename);
 
         Exception dart_exception;

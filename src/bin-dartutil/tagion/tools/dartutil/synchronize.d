@@ -7,9 +7,10 @@ import tagion.dart.BlockFile;
 import tagion.hibon.Document;
 import tagion.tools.Basic : verbose;
 import std.file : remove;
+import tagion.dart.synchronizer;
 
 @safe
-class DARTUtilSynchronizer : DART.StdSynchronizer {
+class DARTUtilSynchronizer : StdSynchronizer {
     protected DART source;
     protected DART destination;
     this(BlockFile journalfile, DART destination, DART source) {

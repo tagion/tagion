@@ -37,6 +37,7 @@ import tagion.dart.DARTFile;
 import tagion.dart.DARTBasic : DARTIndex;
 import CRUD = tagion.dart.DARTcrud;
 import tagion.dart.BlockFile : Index;
+import tagion.dart.synchronizer : Synchronizer, StdSynchronizer;
 
 /**
  * Calculates the to-angle on the angle circle 
@@ -368,6 +369,9 @@ class DART : DARTFile {
          * Returns: hex string
          */
         string toString() const pure nothrow {
+            if (rims.length == 0) {
+                return "XXXX";
+            }
             return rims.toHexString;
         }
     }
@@ -606,50 +610,6 @@ received = the HiRPC received package
         return hirpc.error(received, message, 22);
     }
 
-    /**
-     * Interface to the DART synchronizer
-     */
-    @safe
-    interface Synchronizer {
-        /**
-         * Recommend to put a yield the SynchronizationFiber between send and receive between the DART's
-         */
-        const(HiRPC.Receiver) query(ref const(HiRPC.Sender) request);
-        /**
-         * Stores the add and remove actions in the journal replay log file
-         * 
-         * Params:
-         *   recorder = DART recorder
-         */
-        void record(RecordFactory.Recorder recorder);
-        /**
-         * This function is call when hole branches doesn't exist in the foreign DART
-         * and need to be removed in the local DART
-         * Params:
-         *   rims = path to the selected rim
-         */
-        void remove_recursive(const Rims rims);
-        /**
-         * This function is called when the SynchronizationFiber run function finishes
-         */
-        void finish();
-        /**
-         * Called in by the SynchronizationFiber constructor
-         * which enable the query function to yield the run function in SynchronizationFiber
-         *
-         * Params:
-         *     owner = is the dart to be modified
-         *     fiber = is the synchronizer fiber object
-         */
-        void set(DART owner, SynchronizationFiber fiber, HiRPC hirpc);
-        /**
-         * Checks if the syncronizer is empty
-         * Returns:
-         *     If the SynchronizationFiber has finished then this function returns `true`
-         */
-        bool empty() const pure nothrow;
-    }
-
     /** 
  * Recorder journal
  */
@@ -665,7 +625,7 @@ received = the HiRPC received package
          *   doc = Journal document
          */
         this(RecordFactory manufactor, const Document doc) {
-
+                import tagion.logger.Logger;
             
 
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
@@ -687,127 +647,7 @@ received = the HiRPC received package
         mixin HiBONRecord!"{}";
     }
 
-    /**
-     *  Standards DART Synchronization object
-     */
-    @safe
-    static abstract class StdSynchronizer : Synchronizer {
 
-        protected SynchronizationFiber fiber; /// Contains the reference to SynchronizationFiber
-        immutable uint chunck_size; /// Max number of archives operates in one recorder action
-        protected {
-            BlockFile journalfile; /// The actives is stored in this journal file. Which late can be run via the replay function
-            bool _finished; /// Finish flag set when the Fiber function returns
-            bool _timeout; /// Set via the timeout method to indicate and network timeout
-            DART owner;
-            Index index; /// Current block index
-            HiRPC hirpc;
-        }
-        /**
-         * 
-         * Params:
-         *     journal_filename = Name of blockfile used for recording the modification journal
-         *                        Must be created by BlockFile.create method
-         *     chunck_size = Set the max number of archives removed per chuck
-         */
-        this(string journal_filename, const uint chunck_size = 0x400) {
-            journalfile = BlockFile(journal_filename);
-            this.chunck_size = chunck_size;
-        }
-
-        this(BlockFile journalfile, const uint chunck_size = 0x400) {
-            this.journalfile = journalfile;
-            this.chunck_size = chunck_size;
-        }
-
-        /** 
-         * Update the add the recorder to the journal and store it
-         * Params:
-         *   recorder = DART recorder
-         */
-        void record(const RecordFactory.Recorder recorder) @safe {
-            if (!recorder.empty) {
-                const journal = const(Journal)(recorder, index);
-                const allocated = journalfile.save(journal.toDoc);
-                index = Index(allocated.index);
-                journalfile.root_index = index;
-                scope (exit) {
-                    journalfile.store;
-                }
-            }
-        }
-        /** 
-         * Remove all archive at selected rim path
-         * Params:
-         *   selected_rims = selected rims to be removed
-         */
-        void remove_recursive(const Rims selected_rims) {
-            auto rim_walker = owner.rimWalkerRange(selected_rims.rims);
-            uint count = 0;
-            auto recorder_worker = owner.recorder;
-            foreach (archive_data; rim_walker) {
-                const archive_doc = Document(archive_data);
-                assert(!archive_doc.empty, "archive should not be empty");
-                recorder_worker.remove(archive_doc);
-                count++;
-                if (count > chunck_size) {
-                    record(recorder_worker);
-                    count = 0;
-                    recorder_worker.clear;
-                }
-            }
-            record(recorder_worker);
-        }
-
-        /**
-         * 
-         * Params:
-         *   owner = DART to be synchronized
-         *   fiber = syncronizer fiber
-         *   hirpc = remote credential used 
-         */
-        void set(
-                DART owner,
-                SynchronizationFiber fiber,
-                HiRPC hirpc) nothrow @trusted {
-            import std.conv : emplace;
-
-            this.fiber = fiber;
-            this.owner = owner;
-            emplace(&this.hirpc, hirpc);
-        }
-
-        /** 
-         * Should be called when the synchronization has finished
-         */
-        void finish() {
-            journalfile.close;
-            _finished = true;
-        }
-
-        /**
-         * Should be call on timeout timeout
-         */
-        void timeout() {
-            journalfile.close;
-            _timeout = true;
-        }
-
-        /**
-         * Checks if synchronization has ended
-         * Returns: true on empty
-         */
-        bool empty() const pure nothrow {
-            return (_finished || _timeout);
-        }
-        /* 
-         * Check the synchronization timeout
-         * Returns: true on timeout
-         */
-        bool timeout() const pure nothrow {
-            return _timeout;
-        }
-    }
     /**
      * Creates a synchronization fiber from a synchroizer 
      * Params:
@@ -955,11 +795,17 @@ received = the HiRPC received package
         }
         // Adding and Removing archives
         void local_replay(bool remove)() @safe {
-            for (Index index = journalfile.masterBlock.root_index; index != Index.init;
+            import tagion.logger.Logger;
+            log("JOURNAL_FILENAME=%s", journal_filename);
+            for (Index index = journalfile.masterBlock.root_index; index != Index.init; 
 
                 ) {
+                
                 immutable data = journalfile.load(index);
                 const doc = Document(data);
+                if (!Journal.isRecord(doc)) {
+                    log(format("Index(%s) WRONG FORMAT=%s", index, doc.toPretty));
+                }
                 auto journal_replay = Journal(manufactor, doc);
                 index = journal_replay.index;
                 auto action_recorder = recorder;
@@ -1464,7 +1310,6 @@ received = the HiRPC received package
                 // dart_B.dump;
                 assert(dart_A.fingerprint !is null);
                 assert(dart_A.fingerprint == dart_B.fingerprint);
-
             }
 
             { // Synchronization of a DART A where DART A of DART B has common data
