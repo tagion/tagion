@@ -795,9 +795,7 @@ received = the HiRPC received package
         }
         // Adding and Removing archives
         void local_replay(bool remove)() @safe {
-            import tagion.logger.Logger;
 
-            log("JOURNAL_FILENAME=%s", journal_filename);
             for (Index index = journalfile.masterBlock.root_index; index != Index.init;
 
                 ) {

@@ -629,7 +629,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
             if (result[1] is null) {
                 onFailure(root); //TODO: or just ignore?
             }
-        else {
+            else {
                 handlerPool.add(result[0], result[1], true);
                 sync_sectors[root] = true;
             }
@@ -642,7 +642,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
                 if (result[1] is null) {
                     onFailure(sector); //TODO: or just ignore?
                 }
-        else {
+                else {
                     sync_sectors[sector] = true;
                     handlerPool.add(result[0], result[1], true);
                 }
@@ -694,6 +694,8 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
 
     private void onComplete(string journal_filename) {
         log("ONCOMPLETE INSERT=%s", journal_filename);
+
+       
         journal_replay.insert(journal_filename);
     }
 
