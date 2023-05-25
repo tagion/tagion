@@ -11,6 +11,9 @@ import tagion.script.TagionCurrency;
 import tagion.script.StandardRecords : StandardBill, OwnerKey;
 import tagion.hibon.Document : Document;
 
+import tagion.dart.DARTBasic;
+import std.stdio;
+
 /// Contains the quiz question
 @safe
 @recordType("Quiz")
@@ -62,6 +65,29 @@ struct AccountDetails {
             return true;
         }
         return false;
+    }
+
+    void remove_bill_by_hash(const(DARTIndex) billHash) {
+        import std.algorithm : remove, countUntil;
+        import tagion.crypto.SecureNet : StdHashNet;
+
+        const net = new StdHashNet;
+
+        auto billsHashes = bills.map!(b => cast(Buffer) net.calcHash(b.toDoc.serialize)).array;
+        const index = billsHashes.countUntil(billHash);
+        bills = bills.remove(index);
+    }
+
+    void unlock_bill_by_hash(const(DARTIndex) billHash) {
+        import std.algorithm : remove, countUntil;
+        import tagion.crypto.SecureNet : StdHashNet;
+
+        const net = new StdHashNet;
+
+        auto billsHashes = bills.map!(b => cast(Buffer) net.calcHash(b.toDoc.serialize)).array;
+        const index = billsHashes.countUntil(billHash);
+
+        activated.remove(bills[index].owner);
     }
 
     void add_bill(StandardBill bill) {

@@ -128,8 +128,7 @@ extern (C) {
         return 0;
     }
 
-
-    export uint wallet_check_login(){
+    export uint wallet_check_login() {
         return __secure_wallet.isLoggedin();
     }
 
@@ -321,8 +320,7 @@ extern (C) {
         return 0;
     }
 
-    // TODO: add to account_details ability to remove bills by its hashes. 
-    export uint remove_bills_by_contract(uint8_t* contractPtr, uint32_t contractLen) {
+    export uint remove_bills_by_contract(const uint8_t* contractPtr, const uint32_t contractLen) {
         // Collect input and output keys from the contract.
         // Iterate them and call remove on each.
 
@@ -330,8 +328,6 @@ extern (C) {
 
         if (__secure_wallet.isLoggedin()) {
 
-            const net = new StdHashNet;
-
             auto contractDoc = Document(contractBuffer);
 
             // Contract inputs.
@@ -342,37 +338,21 @@ extern (C) {
             auto paramsDoc = messageDoc[paramsTag].get!Document;
             auto sContract = SignedContract(paramsDoc);
 
-            foreach (billHash; sContract.contract.inputs) {
-                // TODO: ask Carsten to add remove_bill_by_hash impl to AccountDetails.
-                // __secure_wallet.account.remove_bill_by_hash(billHash, net);
-            }
+            import std.algorithm;
+
+            sContract.contract.inputs.each!(hash => __secure_wallet.account.remove_bill_by_hash(hash));
 
             return 1;
         }
         return 0;
     }
 
-    export uint ulock_bill(uint8_t* billHashPtr, uint32_t billHashLen) {
-
-        immutable billHash = cast(immutable)(billHashPtr[0 .. billHashLen]);
-
-        if (__secure_wallet.isLoggedin()) {
-            const net = new StdHashNet;
-            // TODO: ask Carsten to add unlock_bill_by_hash impl to AccountDetails.
-            // __secure_wallet.account.unlock_bill_by_hash(billHash, net);
-            return 1;
-        }
-        return 0;
-    }
-
-    export uint ulock_bills_by_contract(uint8_t* contractPtr, uint32_t contractLen) {
+    export uint ulock_bills_by_contract(const uint8_t* contractPtr, const uint32_t contractLen) {
 
         immutable contractBuffer = cast(immutable)(contractPtr[0 .. contractLen]);
 
         if (__secure_wallet.isLoggedin()) {
 
-            const net = new StdHashNet;
-
             auto contractDoc = Document(contractBuffer);
 
             // Contract inputs.
@@ -383,10 +363,9 @@ extern (C) {
             auto paramsDoc = messageDoc[paramsTag].get!Document;
             auto sContract = SignedContract(paramsDoc);
 
-            foreach (billHash; sContract.contract.inputs) {
-                // TODO: ask Carsten to add unlock_bill_by_hash impl to AccountDetails.
-                // __secure_wallet.account.unlock_bill_by_hash(billHash, net);
-            }
+            import std.algorithm;
+
+            sContract.contract.inputs.each!(hash => __secure_wallet.account.unlock_bill_by_hash(hash));
 
             return 1;
         }
@@ -562,6 +541,17 @@ unittest {
         uint8_t contractDocId;
         const uint result = create_contract(&contractDocId, invoice.ptr, invoiceLen, contAmount);
 
+        auto contractDoc = recyclerDoc(contractDocId);
+
+        const uint8_t[] contract = cast(uint8_t[])(contractDoc.serialize);
+        const uint32_t contractLen = cast(uint32_t) contract.length;
+
+        writeln("Activated before ", __secure_wallet.account.activated.length);
+
+        ulock_bills_by_contract(contract.ptr, contractLen);
+
+        writeln("Activated after ", __secure_wallet.account.activated.length);
+
         // Check the result
         assert(result == 1, "Expected result to be 1");
 
@@ -641,6 +631,9 @@ unittest {
 
         // Check the result
         assert(result == 1, "Expected result to be 1");
+    }
+    { // Remove bills by contract.
+        
     }
 
 }
