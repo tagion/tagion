@@ -46,8 +46,8 @@ static:
         sendOwner(Msg!"response"(), counter);
     }
 
-    void relay(Msg!"relay", string message) {
-        sendOwner(Msg!"relay"(), message);
+    void relay(Msg!"relay", string to, string message) {
+        locate(to).send(Msg!"relay"(), supervisor_task_name, message);
     }
 
     mixin Actor!(&increase, &decrease, &relay); /// Turns the struct into an Actor
@@ -78,11 +78,10 @@ static:
     }
 
     void roundtrip(Msg!"roundtrip", string message) {
-        ChildHandle child = handle!MyActor(child1_task_name);
-        child.send(Msg!"relay"(), message);
+        child1Handle.send(Msg!"relay"(), child2_task_name, message);
     }
 
-    void relay(Msg!"relay", string message) {
+    void relay(Msg!"relay", string _, string message) {
         sendOwner(message);
     }
 
