@@ -37,7 +37,7 @@ import tagion.communication.HandlerPool;
 
 alias HiRPCSender = HiRPC.Sender;
 alias HiRPCReceiver = HiRPC.Receiver;
-import tagion.dart.synchronizer : Synchronizer, StdSynchronizer;
+import tagion.dart.synchronizer : Synchronizer, JournalSynchronizer;
 
 mixin template StateT(T) {
     protected T _state;
@@ -339,7 +339,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
     }
 
     @safe
-    class P2pSynchronizer : StdSynchronizer, ResponseHandler {
+    class P2pSynchronizer : JournalSynchronizer, ResponseHandler {
         protected const ulong key;
         protected Buffer response;
         protected const OnComplete oncomplete;

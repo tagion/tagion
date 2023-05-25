@@ -10,7 +10,7 @@ import std.file : remove;
 import tagion.dart.synchronizer;
 
 @safe
-class DARTUtilSynchronizer : StdSynchronizer {
+class DARTUtilSynchronizer : JournalSynchronizer {
     protected DART source;
     protected DART destination;
     this(BlockFile journalfile, DART destination, DART source) {

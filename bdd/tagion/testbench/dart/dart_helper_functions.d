@@ -181,7 +181,7 @@ ulong putInSector(ulong archive, const ushort angle, const ushort size) @safe {
 // same as in unittests.
 import tagion.dart.synchronizer;
 
-static class TestSynchronizer : StdSynchronizer {
+static class TestSynchronizer : JournalSynchronizer {
     protected DART foreign_dart;
     protected DART owner;
     this(string journal_filename, DART owner, DART foreign_dart) @safe {
