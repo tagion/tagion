@@ -107,7 +107,8 @@ if (isActor!A) {
  * actorHandle!MyActor("my_task_name");
  * ---
  */
-ActorHandle!A actorHandle(A)(string task_name) {
+ActorHandle!A handle(A)(string task_name)
+if (isActor!A) {
     Tid tid = locate(task_name);
     return ActorHandle!A(tid, task_name);
 }
@@ -120,10 +121,10 @@ ActorHandle!A actorHandle(A)(string task_name) {
  * Returns: An actorHandle with type A
  * Examples:
  * ---
- * spawnActor!MyActor("my_task_name", 42);
+ * spawn!MyActor("my_task_name", 42);
  * ---
  */
-ActorHandle!A spawnActor(A)(string task_name) @trusted nothrow 
+ActorHandle!A spawn(A)(string task_name) @trusted nothrow 
 if (isActor!A) {
     alias task = A.task;
     Tid tid;
@@ -140,7 +141,8 @@ if (isActor!A) {
  * Params:
  *   a = an active actorhandle
  */
-A respawnActor(A)(A actor_handle) {
+A respawn(A)(A actor_handle)
+if(isActor!(A.Actor)) {
     writefln("%s", typeid(actor_handle.Actor));
     actor_handle.send(Sig.STOP);
     unregister(actor_handle.task_name);
