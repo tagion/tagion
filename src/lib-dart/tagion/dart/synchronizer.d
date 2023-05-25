@@ -160,7 +160,7 @@ abstract class _StdSynchronizer : Synchronizer {
 }
 
 @safe
-class StdSynchronizer : _StdSynchronizer {
+class JournalSynchronizer : _StdSynchronizer {
     protected {
         BlockFile journalfile; /// The actives is stored in this journal file. Which late can be run via the replay function
         Index index; /// Current block index

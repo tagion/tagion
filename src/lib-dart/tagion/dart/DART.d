@@ -37,7 +37,7 @@ import tagion.dart.DARTFile;
 import tagion.dart.DARTBasic : DARTIndex;
 import CRUD = tagion.dart.DARTcrud;
 import tagion.dart.BlockFile : Index;
-import tagion.dart.synchronizer : Synchronizer, StdSynchronizer;
+import tagion.dart.synchronizer : Synchronizer, JournalSynchronizer;
 
 /**
  * Calculates the to-angle on the angle circle 
@@ -835,7 +835,7 @@ received = the HiRPC received package
     }
 
     version (unittest) {
-        static class TestSynchronizer : StdSynchronizer {
+        static class TestSynchronizer : JournalSynchronizer {
             protected DART foreign_dart;
             protected DART owner;
             this(BlockFile journalfile, DART owner, DART foreign_dart) {
