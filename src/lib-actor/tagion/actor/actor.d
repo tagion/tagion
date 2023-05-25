@@ -74,7 +74,8 @@ template isActor(A) {
  * Params:
  *  A = an actor type
  */
-struct ActorHandle(A) {
+struct ActorHandle(A) 
+if (isActor!A) {
     import concurrency = std.concurrency;
 
     /// the tid of the spawned task
@@ -123,7 +124,7 @@ ActorHandle!A actorHandle(A)(string task_name) {
  * ---
  */
 ActorHandle!A spawnActor(A)(string task_name) @trusted nothrow 
-if(isActor!A) {
+if (isActor!A) {
     alias task = A.task;
     Tid tid;
 
