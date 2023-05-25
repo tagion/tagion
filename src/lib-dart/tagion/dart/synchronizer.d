@@ -58,16 +58,16 @@ interface Synchronizer {
     *  Standards DART Synchronization object
     */
 @safe
-static abstract class StdSynchronizer : Synchronizer {
+abstract class _StdSynchronizer : Synchronizer {
 
     protected DART.SynchronizationFiber fiber; /// Contains the reference to SynchronizationFiber
     immutable uint chunck_size; /// Max number of archives operates in one recorder action
     protected {
-        BlockFile journalfile; /// The actives is stored in this journal file. Which late can be run via the replay function
+        //        BlockFile journalfile; /// The actives is stored in this journal file. Which late can be run via the replay function
         bool _finished; /// Finish flag set when the Fiber function returns
         bool _timeout; /// Set via the timeout method to indicate and network timeout
         DART owner;
-        Index index; /// Current block index
+        //        Index index; /// Current block index
         HiRPC hirpc;
     }
     /**
@@ -82,27 +82,11 @@ static abstract class StdSynchronizer : Synchronizer {
         this.chunck_size = chunck_size;
     }
 
-    this(BlockFile journalfile, const uint chunck_size = 0x400) {
-        this.journalfile = journalfile;
+    this(const uint chunck_size = 0x400) {
+        //       this.journalfile = journalfile;
         this.chunck_size = chunck_size;
     }
 
-    /** 
-        * Update the add the recorder to the journal and store it
-        * Params:
-        *   recorder = DART recorder
-        */
-    void record(const RecordFactory.Recorder recorder) @safe {
-        if (!recorder.empty) {
-            const journal = const(DART.Journal)(recorder, index);
-            const allocated = journalfile.save(journal.toDoc);
-            index = Index(allocated.index);
-            journalfile.root_index = index;
-            scope (exit) {
-                journalfile.store;
-            }
-        }
-    }
     /** 
         * Remove all archive at selected rim path
         * Params:
@@ -126,6 +110,13 @@ static abstract class StdSynchronizer : Synchronizer {
         record(recorder_worker);
     }
 
+    /** 
+        * Should be called when the synchronization has finished
+        */
+    void finish() {
+        _finished = true;
+    }
+
     /**
         * 
         * Params:
@@ -144,19 +135,11 @@ static abstract class StdSynchronizer : Synchronizer {
         emplace(&this.hirpc, hirpc);
     }
 
-    /** 
-        * Should be called when the synchronization has finished
-        */
-    void finish() {
-        journalfile.close;
-        _finished = true;
-    }
-
     /**
         * Should be call on timeout timeout
         */
     void timeout() {
-        journalfile.close;
+        //  journalfile.close;
         _timeout = true;
     }
 
@@ -174,4 +157,42 @@ static abstract class StdSynchronizer : Synchronizer {
     bool timeout() const pure nothrow {
         return _timeout;
     }
+}
+
+@safe
+class StdSynchronizer : _StdSynchronizer {
+    protected {
+        BlockFile journalfile; /// The actives is stored in this journal file. Which late can be run via the replay function
+        Index index; /// Current block index
+    }
+    this(BlockFile journalfile, const uint chunck_size = 0x400) {
+        this.journalfile = journalfile;
+        super(chunck_size);
+    }
+
+    /** 
+        * Update the add the recorder to the journal and store it
+        * Params:
+        *   recorder = DART recorder
+        */
+    void record(const RecordFactory.Recorder recorder) @safe {
+        if (!recorder.empty) {
+            const journal = const(DART.Journal)(recorder, index);
+            const allocated = journalfile.save(journal.toDoc);
+            index = Index(allocated.index);
+            journalfile.root_index = index;
+            scope (exit) {
+                journalfile.store;
+            }
+        }
+    }
+    /** 
+        * Should be called when the synchronization has finished
+        */
+    override void finish() {
+        journalfile.close;
+        super.finish;
+        _finished = true;
+    }
+
 }
