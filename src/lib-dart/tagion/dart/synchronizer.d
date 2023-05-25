@@ -58,7 +58,7 @@ interface Synchronizer {
     *  Standards DART Synchronization object
     */
 @safe
-abstract class _StdSynchronizer : Synchronizer {
+abstract class StdSynchronizer : Synchronizer {
 
     protected DART.SynchronizationFiber fiber; /// Contains the reference to SynchronizationFiber
     immutable uint chunck_size; /// Max number of archives operates in one recorder action
@@ -160,7 +160,7 @@ abstract class _StdSynchronizer : Synchronizer {
 }
 
 @safe
-class JournalSynchronizer : _StdSynchronizer {
+class JournalSynchronizer : StdSynchronizer {
     protected {
         BlockFile journalfile; /// The actives is stored in this journal file. Which late can be run via the replay function
         Index index; /// Current block index
