@@ -28,7 +28,7 @@ import source.models.benefit;
 import source.models.benefitShare;
 import source.models.benefitShareCredit;
 import source.models.documentDocument;
-import source.models.other : Route;
+import models.other : Route;
 
 const revision = import("revision.txt");
 
