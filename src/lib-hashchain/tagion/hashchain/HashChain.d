@@ -11,8 +11,6 @@ import tagion.hashchain.HashChainStorage : HashChainStorage;
 import tagion.hibon.HiBONRecord : isHiBONRecord;
 import tagion.utils.Miscellaneous : decode;
 
-import std.stdio;
-
 /** @brief File contains class HashChain
  */
 
@@ -90,7 +88,6 @@ import std.stdio;
         }
     }
     do {
-        writefln("block %s", block is null);
         _storage.write(block);
         _last_block = block;
     }
@@ -235,7 +232,7 @@ unittest {
         assert(chain.getLastBlock is null);
         assert(chain.isValidChain);
 
-        //rmdirRecurse(temp_folder);
+        rmdirRecurse(temp_folder);
     }
 
     /// HashChain_single_block
@@ -250,14 +247,13 @@ unittest {
         assert(chain.isValidChain);
 
         // Amount of blocks
-        writefln("chain %d", chain.storage.getHashes.length);
-        assert(chain.storage.getHashes.length == 0);
+        assert(chain.storage.getHashes.length == 1);
 
         // Find block with given hash
         auto found_block = chain.storage.find((b) => (b.getHash == block0.getHash));
         assert(found_block !is null && found_block.toDoc.serialize == block0.toDoc.serialize);
 
-        //rmdirRecurse(temp_folder);
+        rmdirRecurse(temp_folder);
     }
 
     /// HashChain_many_blocks
@@ -282,7 +278,7 @@ unittest {
         auto found_block = chain.storage.find((b) => b.isRoot);
         assert(found_block !is null && found_block.toDoc.serialize == block0.toDoc.serialize);
 
-        //rmdirRecurse(temp_folder);
+        rmdirRecurse(temp_folder);
     }
 
     /// HashChain_replay
@@ -308,7 +304,7 @@ unittest {
         assert(hashes[1] == block1.getHash);
         assert(hashes[2] == block2.getHash);
 
-        //rmdirRecurse(temp_folder);
+        rmdirRecurse(temp_folder);
     }
 
     /// HashChain_replayFrom
@@ -342,6 +338,6 @@ unittest {
             assert(hashes[i] == blocks[i + some_block_index + 1].getHash);
         }
 
-        //rmdirRecurse(temp_folder);
+        rmdirRecurse(temp_folder);
     }
 }

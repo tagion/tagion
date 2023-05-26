@@ -14,8 +14,6 @@ import tagion.hashchain.HashChainStorage : HashChainStorage;
 import tagion.hibon.HiBONRecord : fread, fwrite;
 import tagion.utils.Miscellaneous : decode, toHexString;
 
-import std.stdio;
-
 /** @brief File contains class HashChainFileStorage
  */
 
@@ -36,7 +34,6 @@ import std.stdio;
         this.folder_path = folder_path;
         this.net = net;
 
-        writefln("folder_path=%s", folder_path);
         if (!exists(this.folder_path)) {
             mkdirRecurse(this.folder_path);
         }
@@ -46,8 +43,6 @@ import std.stdio;
      *      @param block - block to write
      */
     void write(const(Block) block) {
-        writefln("makePath=%s", block.getHash.toHexString);
-        writefln("filename=%s", makePath(block.getHash));
         fwrite(makePath(block.getHash), block.toHiBON);
     }
 
@@ -87,17 +82,7 @@ import std.stdio;
     Fingerprint[] getHashes() @trusted {
         enum BLOCK_FILENAME_LEN = StdHashNet.HASH_SIZE * 2;
 
-        writefln("getHashes %s", folder_path);
-        writefln("getExtension %s", getExtension);
-        writefln("files %-(%s \n%)", folder_path.dirEntries(SpanMode.shallow)
-                .filter!(f => f.isFile) //    .filter!(f => 
-                .map!(f => f.baseName.stripExtension)
-                .filter!(f => f.length == BLOCK_FILENAME_LEN) //.map!(f => Fingerprint(f.decode))
-
-        
-
-        );
-        auto result = folder_path.dirEntries(SpanMode.shallow)
+        return folder_path.dirEntries(SpanMode.shallow)
             .filter!(f => f.isFile())
             .map!(f => baseName(f))
             .filter!(f => f.extension == getExtension)
@@ -105,8 +90,6 @@ import std.stdio;
             .map!(f => f.stripExtension)
             .map!(f => Fingerprint(f.decode))
             .array;
-        writefln("fingerprints %-(%s\n%)", result.map!(f => f.toHexString));
-        return result;
     }
 
     private {
