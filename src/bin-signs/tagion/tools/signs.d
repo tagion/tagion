@@ -158,17 +158,28 @@ int _main(string[] args) {
             return 0;
         }
         outputfilename.setExtension(FileExtension.hibon).fwrite(delivery_order.toDoc.serialize);
-        return 0;       
+        return 1;       
     
     }
      if (inputfilename.fileExtension != FileExtension.hibon) {
         stderr.writefln("Error: inputfilename not correct filetype. Must be %s", FileExtension.hibon);
-        return 0;
+        return 1;
     }
    
 
     immutable data = assumeUnique(cast(ubyte[]) fread(inputfilename));
     const doc = Document(data);
+
+    if (!(DeliveryOrder.isRecord(doc) || SignedDeliveryEvent.isRecord(doc))) {
+        stderr.writefln("Error: inputfilename not correct type. Must be DeliveryOrder or DeliveryEvent");
+        return 1;
+    }
+    writefln("going to sign the doc!");
+     
+
+
+
+
 
     const doc_signed = net.sign(doc);
     
