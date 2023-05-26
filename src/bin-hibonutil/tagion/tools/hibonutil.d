@@ -4,7 +4,7 @@ module tagion.tools.hibonutil;
 import std.getopt;
 import std.stdio;
 import std.file : fread = read, fwrite = write, exists, readText;
-import std.path : setExtension;
+import std.path : setExtension, extension;
 import std.format;
 import std.exception : assumeUnique, assumeWontThrow;
 import std.json;
@@ -13,7 +13,7 @@ import std.conv;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
-import tagion.basic.Types : FileExtension, fileExtension, Buffer;
+import tagion.basic.Types : FileExtension, Buffer;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONtoText : encodeBase64, decodeBase64;
 import std.utf : toUTF8;
@@ -192,7 +192,7 @@ int _main(string[] args) {
             stderr.writefln("Error: file %s does not exist", inputfilename);
             return 1;
         }
-        switch (inputfilename.fileExtension) {
+        switch (inputfilename.extension) {
         case FileExtension.hibon:
             immutable data = assumeUnique(cast(ubyte[]) fread(inputfilename));
             const doc = Document(data);

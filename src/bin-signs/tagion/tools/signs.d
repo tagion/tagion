@@ -6,10 +6,12 @@ import tagion.tools.revision;
 import std.getopt;
 import std.stdio;
 import std.file : fread = read, fwrite = write, exists, readText;
-import std.path : setExtension;
+import std.path : setExtension, extension;
 import std.exception : assumeUnique;
 import std.format;
 import std.array : join;
+
+import tagion.basic.Types : FileExtension;
 
 import tagion.hibon.HiBONRecord;
 import tagion.crypto.Types;
@@ -34,7 +36,7 @@ struct DeliveryOrder {
 
     sdt_t startTime; // standard time
     sdt_t endTime; // end time - should be delivered before this point    
-     
+
     @label(OwnerKey) Pubkey originalOwner; // the owner of the delivery order
     Pubkey receiver; // The receiver of the vaccines
     mixin HiBONRecord!(q{
@@ -82,7 +84,6 @@ struct SignedDeliveryEvent {
     });
 }
 
-
 mixin Main!_main;
 int _main(string[] args) {
     immutable program = args[0];
@@ -100,7 +101,7 @@ int _main(string[] args) {
                 std.getopt.config.caseSensitive,
                 std.getopt.config.bundling,
                 "version", "display the version", &version_switch,
-                "f|filename", "file to sign", &inputfilename, 
+                "f|filename", "file to sign", &inputfilename,
                 "p|password", "set the password for the signing", &password,
                 "c|stdout", "write the output to stdout", &standard_output,
                 "g|generate", "generates dummy delivery order", &generate,
@@ -137,14 +138,15 @@ int _main(string[] args) {
         return 0;
     }
 
-   SecureNet net = new StdSecureNet;
-    if (password.init) { 
-        net.generateKeyPair("very secret"); 
-    } else {
+    SecureNet net = new StdSecureNet;
+    if (password.init) {
+        net.generateKeyPair("very secret");
+    }
+    else {
         net.generateKeyPair(password);
     }
 
-     // if (args.length != 1) {
+    // if (args.length != 1) {
     //     stderr.writefln("inputfilename not specified!");
     //     return 0;
     // }
@@ -153,29 +155,28 @@ int _main(string[] args) {
         SecureNet receiver = new StdSecureNet;
         receiver.generateKeyPair("receiver");
         auto delivery_order = DeliveryOrder(
-            "Measels", 
-            "43a3efd", 
-            100, 
-            "Copenhagen", 
-            "Triesen Liechenstein", 
-            currentTime, 
-            currentTime, 
-            net.pubkey, 
-            receiver.pubkey,
+                "Measels",
+                "43a3efd",
+                100,
+                "Copenhagen",
+                "Triesen Liechenstein",
+                currentTime,
+                currentTime,
+                net.pubkey,
+                receiver.pubkey,
         );
         if (standard_output) {
             stdout.rawWrite(delivery_order.toDoc.serialize);
             return 0;
         }
         outputfilename.setExtension(FileExtension.hibon).fwrite(delivery_order.toDoc.serialize);
-        return 0;       
-    
+        return 0;
+
     }
-     if (inputfilename.fileExtension != FileExtension.hibon) {
+    if (inputfilename.extension != FileExtension.hibon) {
         stderr.writefln("Error: inputfilename not correct filetype. Must be %s", FileExtension.hibon);
         return 1;
     }
-   
 
     immutable data = assumeUnique(cast(ubyte[]) fread(inputfilename));
     const doc = Document(data);
@@ -201,14 +202,9 @@ int _main(string[] args) {
 
 
     import tagion.hibon.HiBONJSON : toPretty;
+
     writefln("%s", doc.toPretty);
-    
-    
+
     return 0;
 
 }
-
-
-
-
-
