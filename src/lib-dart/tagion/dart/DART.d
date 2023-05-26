@@ -794,40 +794,21 @@ received = the HiRPC received package
             journalfile.close;
         }
         // Adding and Removing archives
-        void local_replay(bool remove)() @safe {
+ 
+        for (Index index = journalfile.masterBlock.root_index; index != Index.init; ) {
+            immutable data = journalfile.load(index);
+            const doc = Document(data);
 
-            for (Index index = journalfile.masterBlock.root_index; index != Index.init;
-
-                ) {
-
-                immutable data = journalfile.load(index);
-                const doc = Document(data);
-
-                auto journal_replay = Journal(manufactor, doc);
-                index = journal_replay.index;
-                auto action_recorder = recorder;
-                foreach (a; journal_replay.recorder.archives[]) {
-                    static if (remove) {
-                        if (a.type is Archive.Type.REMOVE) {
-                            action_recorder.insert(a);
-                        }
-                    }
-                    else {
-                        if (a.type !is Archive.Type.REMOVE) {
-                            action_recorder.insert(a);
-                        }
-                    }
-                }
-                modify(action_recorder);
-            }
-
+            auto journal_replay = Journal(manufactor, doc);
+            index = journal_replay.index;
+            auto action_recorder = recorder;
+            action_recorder.insert(journal_replay.recorder.archives[]);
+            modify(action_recorder);
         }
+
         // All the remove actives is perform before the new archives are added
         // Remove
-        local_replay!true;
         // Add
-        local_replay!false;
-
     }
 
     version (unittest) {
@@ -975,12 +956,12 @@ received = the HiRPC received package
                     foreach (journal_filename; journal_filenames) {
                         dart_A.replay(journal_filename);
                     }
-                    // writefln("dart_A.dump");
-                    // dart_A.dump;
-                    // writefln("dart_B.dump");
-                    // dart_B.dump;
-                    // writefln("dart_A.fingerprint=%s", dart_A.fingerprint.cutHex);
-                    // writefln("dart_B.fingerprint=%s", dart_B.fingerprint.cutHex);
+                    writefln("dart_A.dump");
+                    dart_A.dump;
+                    writefln("dart_B.dump");
+                    dart_B.dump;
+                    writefln("dart_A.fingerprint=%s", dart_A.fingerprint.cutHex);
+                    writefln("dart_B.fingerprint=%s", dart_B.fingerprint.cutHex);
 
                     assert(dart_A.fingerprint == dart_B.fingerprint);
                     if (test_no == 0) {

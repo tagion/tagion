@@ -198,10 +198,6 @@ void setState(Ctrl ctrl, string task_name) nothrow {
     }
 }
 
-void end(string task_name) {
-    setState(Ctrl.END, task_name);
-}
-
 /**
  * Base template
  * All members should be static
@@ -335,6 +331,108 @@ static:
             if (tidOwner.get !is Tid.init) {
                 assumeWontThrow(ownerTid.prioritySend(TaskFailure(task_name, cast(immutable) t)));
             }
+        }
+    }
+}
+
+import std.exception : assumeWontThrow;
+import std.variant : Variant;
+import std.concurrency : OwnerTerminated, Tid, thisTid, ownerTid, receive, prioritySend, ThreadInfo, send, locate;
+import std.format : format;
+import std.traits : isCallable;
+import tagion.actor.exceptions : TaskFailure, taskException, ActorException, UnknownMessage;
+import std.stdio : writefln, writeln;
+
+void end(string task_name) nothrow {
+    assumeWontThrow(ThreadInfo.thisInfo.cleanup);
+    assumeWontThrow(setState(Ctrl.END, task_name));
+}
+
+
+void run(Args...)(string task_name, Args args) nothrow {
+    bool stop = false;
+    Ctrl[string] childrenState; // An AA to keep a copy of the state of the children
+
+    void signal(Sig signal) {
+        with (Sig) final switch (signal) {
+        case STOP:
+            stop = true;
+            break;
+        }
+    }
+
+    /// Controls message sent from the children.
+    void control(CtrlMsg msg) {
+        childrenState[msg.task_name] = msg.ctrl;
+    }
+
+    /// Stops the actor if the supervisor stops
+    void ownerTerminated(OwnerTerminated) {
+        writefln("%s, Owner stopped... nothing to life for... stopping self", thisTid);
+        stop = true;
+    }
+
+    /**
+     * The default message handler, if it's an unknown messages it will send a FAIL to the owner.
+     * Params:
+     *   message = literally any message
+     */
+    void unknown(Variant message) {
+        throw new UnknownMessage("No delegate to deal with message: %s".format(message));
+    }
+
+    try {
+        setState(Ctrl.STARTING, task_name); // Tell the owner that you are starting.
+        scope (exit) {
+            if (childrenState.length != 0) {
+                foreach (child_task_name, ctrl; childrenState) {
+                    if (ctrl is Ctrl.ALIVE) {
+                        locate(child_task_name).send(Sig.STOP);
+                    }
+                }
+
+                while (!(childrenState.all(Ctrl.END))) {
+                    receive(
+                            (CtrlMsg ctrl) { childrenState[ctrl.task_name] = ctrl.ctrl; },
+                            (TaskFailure tf) {
+                        writefln("While stopping `%s` received taskfailure: %s", task_name, tf.throwable.msg);
+                    }
+                    );
+                }
+            }
+        }
+
+        auto failhandler = (TaskFailure tf) {
+            if (ownerTid != Tid.init) {
+                ownerTid.prioritySend(tf);
+            }
+        };
+
+
+        setState(Ctrl.ALIVE, task_name); // Tell the owner that you running
+        while (!stop) {
+            try {
+                receive(
+                        args, // The message handlers you pass to your Actor template
+                        failhandler,
+                        &signal,
+                        &control,
+                        &ownerTerminated,
+                        &unknown,
+                );
+            }
+            catch (Throwable t) {
+                if (ownerTid != Tid.init) {
+                    ownerTid.prioritySend(TaskFailure(task_name, cast(immutable) t));
+                }
+            }
+        }
+    }
+
+    // If we catch an exception we send it back to owner for them to deal with it.
+    catch (Throwable t) {
+        if (tidOwner.get !is Tid.init) {
+            assumeWontThrow(ownerTid.prioritySend(TaskFailure(task_name, cast(immutable) t)));
         }
     }
 }
