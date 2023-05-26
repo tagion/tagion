@@ -113,6 +113,7 @@ TAGION_TOOLS+=tools
 TAGION_TOOLS+=graphview
 TAGION_TOOLS+=recorderchain
 TAGION_TOOLS+=signs
+TAGION_TOOLS+=wasmutil
 
 TAGION_BINS=$(foreach tools,$(TAGION_TOOLS), ${call BIN_DEPS,$(tools)} )
 

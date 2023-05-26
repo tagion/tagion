@@ -8,11 +8,12 @@ import std.path : extension;
 import std.traits : EnumMembers;
 import std.exception : assumeUnique;
 import std.json;
+import std.range : only;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.basic.basic : basename;
-import tagion.basic.Types : Buffer;
+import tagion.basic.Types : Buffer, FileExtension;
 import tagion.hibon.HiBONJSON;
 import tagion.wasm.Wast;
 import tagion.wasm.WasmReader;
@@ -22,17 +23,8 @@ import tagion.wasm.WasmGas;
 
 //import tagion.script.StandardRecords;
 import std.array : join;
+import tagion.tools.Basic : Main;
 import tagion.tools.revision;
-
-// import tagion.vm.wasm.revision;
-
-version (none) enum fileextensions {
-    wasm = ".wasm",
-    wo = ".wo",
-    wast = ".wast",
-
-    json = ".json"
-}
 
 mixin Main!_main;
 
@@ -152,7 +144,7 @@ int _main(string[] args) {
         */
         default:
             stderr.writefln("File extensions %s not valid for input file (only %s)",
-                    input_extension, [EnumMembers!fileextensions]);
+                    input_extension, only(FileExtension.wasm, FileExtension.wo));
         }
     }
     // Wast(wasm_reader, stdout).serialize();
