@@ -104,5 +104,13 @@
             ],
             "timeout": 0.0
         },
+        "dart_service": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "commit"
+            ],
+            "timeout": 0.0
+        },
     }
 }
