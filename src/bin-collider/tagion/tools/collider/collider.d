@@ -80,8 +80,8 @@ struct BehaviourOptions {
     void setDefault() {
         const gen = "gen";
         bdd_ext = FileExtension.markdown;
-        bdd_gen_ext = [gen, FileExtension.markdown].join(DOT);
-        d_ext = [gen, FileExtension.dsrc].join(DOT);
+        bdd_gen_ext = [gen, FileExtension.markdown].join;
+        d_ext = [gen, FileExtension.dsrc].join;
         regex_inc = `/testbench/`;
         test_stage_env = "TEST_STAGE";
         if (!(DFMT_ENV in environment)) {

@@ -79,18 +79,18 @@ unittest {
 }
 
 enum FileExtension {
-    json = "json", /// JSON File format
+    json = ".json", /// JSON File format
     hibon = ".hibon", /// HiBON file format
-    wasm = "wasm", /// WebAssembler binary format
-    wast = "wast", /// WebAssembler text format
-    wo = "wo", /// WASM object file
-    block = "blk", /// Block file
+    wasm = ".wasm", /// WebAssembler binary format
+    wast = ".wast", /// WebAssembler text format
+    wo = ".wo", /// WASM object file
+    block = ".blk", /// Block file
     dart = ".drt", /// DART data-base
-    markdown = "md", /// DART data-base
-    dsrc = "d", /// DART data-base
+    markdown = ".md", /// DART data-base
+    dsrc = ".d", /// DART data-base
     recchainblock = ".rcb", /// Recorder chain block file format
     epochdumpblock = ".epdmp", /// Epoch dump chain block file format
-    text = "txt",
+    text = ".txt",
 }
 
 enum DOT = '.'; /// File extension separator
