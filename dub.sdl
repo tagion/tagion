@@ -129,6 +129,14 @@ subPackage {
 }
 
 subPackage {
+    name "services"
+    sourcePaths "src/lib-services/"
+    importPaths "src/lib-services/"
+    dependency "tagion:actor" version="*"
+    dependency "tagion:dart" version="*"
+}
+
+subPackage {
     name "tests"
     sourcePaths "bdd/"
     importPaths "bdd/"

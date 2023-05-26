@@ -4,8 +4,8 @@ module tagion.tools.dartutil.dartutil;
 
 import std.getopt;
 import std.stdio;
-import std.file : exists;
-import std.path : setExtension;
+import std.file : exists, tempDir, mkdirRecurse;
+import std.path : setExtension, buildPath, baseName, stripExtension, dirName;
 import std.format;
 import std.conv : to;
 import std.array;
@@ -188,7 +188,10 @@ int _main(string[] args) {
             writefln("Fail to open destination DART: %s. Abort.", dart_exception.msg);
             return 1;
         }
-        immutable jounal_path = "/tmp/journal_path";
+        immutable jounal_path = buildPath(tempDir, "dart_sync",
+                destination_dartfilename.baseName.stripExtension);
+
+        jounal_path.dirName.mkdirRecurse;
         writefln("Synchronize");
         synchronize(dest_db, db, jounal_path);
     }
