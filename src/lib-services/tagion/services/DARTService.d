@@ -1,4 +1,4 @@
-module tagion.services.DartService;
+module tagion.services.DARTService;
 
 import std.path : isValidPath;
 import std.format : format;
@@ -10,7 +10,7 @@ import tagion.crypto.SecureNet;
 import tagion.dart.DART;
 import tagion.dart.Recorder;
 
-struct DartService {
+struct DARTService {
     static void dartRead(Msg!"dartRead", Fingerprint fingerprint) {
     }
 
@@ -37,7 +37,7 @@ struct DartService {
 
             db = new DART(net, dart_path);
 
-            run(task_name);
+            run(task_name, &dartRead, &dartRim, &dartModify, &dartBullseye);
             end(task_name);
 
             }
@@ -47,4 +47,4 @@ struct DartService {
     }
 }
 
-alias DartServiceHandle = ActorHandle!DartService;
+alias DARTServiceHandle = ActorHandle!DARTService;

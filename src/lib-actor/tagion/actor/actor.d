@@ -121,13 +121,13 @@ if (isActor!A) {
  * spawn!MyActor("my_task_name", 42);
  * ---
  */
-ActorHandle!A spawn(A)(string task_name) @trusted nothrow 
+ActorHandle!A spawn(A, Args...)(string task_name, Args args) @trusted nothrow 
 if (isActor!A) {
     alias task = A.task;
     Tid tid;
 
     import concurrency = std.concurrency;
-    tid = assumeWontThrow(concurrency.spawn(&task, task_name)); /// TODO: set oncrowding to exception;
+    tid = assumeWontThrow(concurrency.spawn(&task, task_name, args)); /// TODO: set oncrowding to exception;
     assumeWontThrow(register(task_name, tid));
     assumeWontThrow(writefln("%s registered", task_name));
 
