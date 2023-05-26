@@ -22,6 +22,7 @@ import tagion.wasm.WasmGas;
 
 //import tagion.script.StandardRecords;
 import std.array : join;
+import tagion.tools.revision;
 
 // import tagion.vm.wasm.revision;
 
@@ -33,7 +34,9 @@ enum fileextensions {
     json = ".json"
 };
 
-int main(string[] args) {
+mixin Main!_main;
+
+int _main(string[] args) {
     immutable program = args[0];
     bool version_switch;
 
@@ -62,28 +65,27 @@ int main(string[] args) {
     void help() {
         defaultGetoptPrinter(
                 [
-            // format("%s version %s", program, REVNO),
-            "Documentation: https://tagion.org/",
-            "",
-            "Usage:",
-            format("%s [<option>...] <in-file> <out-file>", program),
-            format("%s [<option>...] <in-file>", program),
-            "",
-            "Where:",
-            "<in-file>           Is an input file in .json or .hibon format",
-            // "<out-file>          Is an output file in .json or .hibon format",
-            "                    stdout is used of the output is not specifed the",
-            "",
+                // format("%s version %s", program, REVNO),
+                "Documentation: https://tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...] <in-file> <out-file>", program),
+                format("%s [<option>...] <in-file>", program),
+                "",
+                "Where:",
+                "<in-file>           Is an input file in .json or .hibon format",
+                // "<out-file>          Is an output file in .json or .hibon format",
+                "                    stdout is used of the output is not specifed the",
+                "",
 
-            "<option>:",
+                "<option>:",
 
-        ].join("\n"),
-        main_args.options);
+                ].join("\n"),
+                main_args.options);
     }
 
     if (version_switch) {
-        // writefln("version %s", REVNO);
-        // writefln("Git handle %s", HASH);
+        revision_text.writeln;
         return 0;
     }
 
@@ -129,7 +131,7 @@ int main(string[] args) {
     WasmReader wasm_reader;
     with (fileextensions) {
         switch (input_extension) {
-        case wasm, wo:
+        case wasm.withDot, wo.withDot:
             immutable read_data = assumeUnique(cast(ubyte[]) fread(inputfilename));
             wasm_reader = WasmReader(read_data);
             verbose.hex(0, read_data);

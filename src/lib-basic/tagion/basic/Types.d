@@ -64,18 +64,8 @@ private import std.range;
 //private std.range.primitives;
 string fileExtension(string path) {
     import std.path : extension;
-    import std.traits : EnumMembers;
-    import tagion.basic.Types : DOT;
 
-    switch (path.extension) {
-        static foreach (ext; EnumMembers!FileExtension) {
-    case DOT ~ ext:
-            return ext;
-        }
-    default:
-        return null;
-    }
-    assert(0);
+    return path.extension;
 }
 
 unittest {
@@ -89,28 +79,32 @@ unittest {
 }
 
 enum FileExtension {
-    json = "json", // JSON File format
-    hibon = "hibon", // HiBON file format
-    wasm = "wasm", // WebAssembler binary format
-    wast = "wast", // WebAssembler text format
-    block = "blk", // Block file
-    dart = "drt", // DART data-base
-    markdown = "md", // DART data-base
-    dsrc = "d", // DART data-base
-    recchainblock = "rcb", // Recorder chain block file format
-    epochdumpblock = "epdmp", // Epoch dump chain block file format
+    json = "json", /// JSON File format
+    hibon = ".hibon", /// HiBON file format
+    wasm = "wasm", /// WebAssembler binary format
+    wast = "wast", /// WebAssembler text format
+    wo = "wo", /// WASM object file
+    block = "blk", /// Block file
+    dart = ".drt", /// DART data-base
+    markdown = "md", /// DART data-base
+    dsrc = "d", /// DART data-base
+    recchainblock = ".rcb", /// Recorder chain block file format
+    epochdumpblock = ".epdmp", /// Epoch dump chain block file format
     text = "txt",
 }
 
 enum DOT = '.'; /// File extension separator
 
+//version(none)
+//private alias FileExtension=_FileExtension;
 @safe
 string withDot(FileExtension ext) pure nothrow {
 
-    return DOT ~ ext;
+    //return DOT ~ ext;
+    return ext;
 }
 
-@safe
+version (none) @safe
 unittest {
     assert(FileExtension.markdown.withDot == ".md");
 }
@@ -119,10 +113,10 @@ unittest {
 bool hasExtension(const(char[]) filename, const(FileExtension) ext) pure nothrow {
     import std.path : extension;
 
-    return ext.withDot == filename.extension;
+    return ext == filename.extension;
 }
 
-@safe
+version (none) @safe
 unittest {
     assert("test.hibon".hasExtension(FileExtension.hibon));
     assert(!"test.hibon".hasExtension(FileExtension.dart));
