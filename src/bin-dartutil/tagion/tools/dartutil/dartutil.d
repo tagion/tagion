@@ -133,7 +133,6 @@ int _main(string[] args) {
     }
 
     foreach (file; args[1 .. $]) {
-        writefln("hasExtension %s %s", file.hasExtension(FileExtension.hibon), file);
         if (file.hasExtension(FileExtension.hibon)) {
             tools.check(inputfilename is null, format("Input file '%s' has already been declared", inputfilename));
             inputfilename = file;
