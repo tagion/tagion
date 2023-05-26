@@ -9,8 +9,13 @@ import tagion.crypto.Types;
 import tagion.crypto.SecureNet;
 import tagion.dart.DART;
 import tagion.dart.Recorder;
+import std.path;
 
 struct DARTService {
+
+    DART db;
+    StdSecureNet net;
+
     static void dartRead(Msg!"dartRead", Fingerprint fingerprint) {
     }
 
@@ -29,13 +34,15 @@ struct DARTService {
         }
         do {
             try {
-            DART db;
-            StdSecureNet net;
-
             net = new StdSecureNet;
             net.generateKeyPair(password);
 
             db = new DART(net, dart_path);
+
+            if(!dart_path.exists) {
+                dart_path.dirName.mkdirRecurse();
+                DART.create(dart_path);
+            }
 
             run(task_name, &dartRead, &dartRim, &dartModify, &dartBullseye);
             end(task_name);
