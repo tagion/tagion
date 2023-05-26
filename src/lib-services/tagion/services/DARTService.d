@@ -10,6 +10,7 @@ import tagion.crypto.SecureNet;
 import tagion.dart.DART;
 import tagion.dart.Recorder;
 import std.path;
+import std.file;
 
 struct DARTService {
 
@@ -40,7 +41,7 @@ struct DARTService {
             db = new DART(net, dart_path);
 
             if(!dart_path.exists) {
-                dart_path.dirName.mkdirRecurse();
+                dart_path.dirName.mkdirRecurse;
                 DART.create(dart_path);
             }
 
