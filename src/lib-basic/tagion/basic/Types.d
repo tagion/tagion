@@ -62,13 +62,13 @@ enum Control {
 private import std.range;
 
 //private std.range.primitives;
-string fileExtension(string path) {
+version (none) string fileExtension(string path) {
     import std.path : extension;
 
     return path.extension;
 }
 
-unittest {
+version (none) unittest {
     import tagion.basic.Types : FileExtension;
     import std.path : setExtension;
 
@@ -95,9 +95,7 @@ enum FileExtension {
 
 enum DOT = '.'; /// File extension separator
 
-//version(none)
-//private alias FileExtension=_FileExtension;
-@safe
+version (none) @safe
 string withDot(FileExtension ext) pure nothrow {
 
     //return DOT ~ ext;

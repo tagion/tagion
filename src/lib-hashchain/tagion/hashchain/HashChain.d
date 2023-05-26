@@ -209,7 +209,7 @@ unittest {
     import std.range.primitives : back;
 
     import tagion.basic.basic : tempfile;
-    import tagion.basic.Types : Buffer, FileExtension, withDot;
+    import tagion.basic.Types : Buffer, FileExtension;
     import tagion.communication.HiRPC : HiRPC;
     import tagion.crypto.SecureNet : StdHashNet;
     import tagion.dart.Recorder : RecordFactory;
