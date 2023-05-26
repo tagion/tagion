@@ -11,8 +11,6 @@ import std.exception : assumeUnique;
 import std.format;
 import std.array : join;
 
-import tagion.basic.Types : FileExtension, fileExtension;
-
 import tagion.hibon.HiBONRecord;
 import tagion.crypto.Types;
 import tagion.basic.Types;
@@ -22,6 +20,7 @@ import tagion.script.TagionCurrency;
 import tagion.hibon.Document;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.crypto.SecureNet : StdSecureNet;
+import tagion.dart.DARTBasic;
 
 
 @recordType("DeliveryOrder")
@@ -64,12 +63,23 @@ struct DeliveryOrder {
 
 @recordType("SignedDeliveryEvent")
 struct SignedDeliveryEvent {
-    Signature deliveryOrderChain; // signature ex. from unicef
-    Buffer deliveryEvent;
+    Signature deliveryOrderChain; // signature ex. from current owner
+    DARTIndex deliveryEvent;
     sdt_t timeStamp;
-    @label(OwnerKey) Pubkey tokenOwner; // owner of the vaccines
+    @label(OwnerKey) Pubkey tokenOwner; // new token owner
     
-    mixin HiBONRecord;
+    
+    mixin HiBONRecord!(q{
+        this(Signature deliveryOrderChain, 
+            DARTIndex deliveryEvent,
+            sdt_t timeStamp,
+            Pubkey tokenOwner) 
+        {
+            this.deliveryOrderChain = deliveryOrderChain;
+            this.timeStamp = timeStamp;
+            this.tokenOwner = tokenOwner;
+        }
+    });
 }
 
 
@@ -158,7 +168,7 @@ int _main(string[] args) {
             return 0;
         }
         outputfilename.setExtension(FileExtension.hibon).fwrite(delivery_order.toDoc.serialize);
-        return 1;       
+        return 0;       
     
     }
      if (inputfilename.fileExtension != FileExtension.hibon) {
@@ -175,13 +185,18 @@ int _main(string[] args) {
         return 1;
     }
     writefln("going to sign the doc!");
+
+    // const doc_signed = net.sign(doc);
+    // const(DARTIndex) dart_index = net.dartIndex(doc);
+    // auto signed_delivery_event = SignedDeliveryEvent(doc_signed,dart_index, currentTime, net.pubkey);
      
-
-
-
-
-
-    const doc_signed = net.sign(doc);
+    // if (standard_output) {
+    //     stdout.rawWrite(signed_delivery_event.toDoc.serialize);
+    //     return 0;
+    // }
+    // outputfilename.setExtension(FileExtension.hibon).fwrite(signed_delivery_event.toDoc.serialize);
+    return 0;       
+    
     
 
 
