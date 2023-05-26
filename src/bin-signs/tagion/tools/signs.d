@@ -40,7 +40,8 @@ struct DeliveryOrder {
     @label(OwnerKey) Pubkey originalOwner; // the owner of the delivery order
     Pubkey receiver; // The receiver of the vaccines
     mixin HiBONRecord!(q{
-        this(string vaccineType, 
+        this(
+            string vaccineType, 
             string packageID, 
             int numberOfVaccines, 
             string destination, 
@@ -65,19 +66,21 @@ struct DeliveryOrder {
 
 @recordType("SignedDeliveryEvent")
 struct SignedDeliveryEvent {
-    Signature deliveryOrderChain; // signature ex. from current owner
+    Signature newSignature; // signature ex. from current owner
     DARTIndex deliveryEvent;
     sdt_t timeStamp;
     @label(OwnerKey) Pubkey tokenOwner; // new token owner
     
     
     mixin HiBONRecord!(q{
-        this(Signature deliveryOrderChain, 
+        this(
+            Signature newSignature, 
             DARTIndex deliveryEvent,
             sdt_t timeStamp,
             Pubkey tokenOwner) 
         {
-            this.deliveryOrderChain = deliveryOrderChain;
+            this.newSignature = newSignature;
+            this.deliveryEvent = deliveryEvent;
             this.timeStamp = timeStamp;
             this.tokenOwner = tokenOwner;
         }
@@ -187,24 +190,15 @@ int _main(string[] args) {
     }
     writefln("going to sign the doc!");
 
-    // const doc_signed = net.sign(doc);
-    // const(DARTIndex) dart_index = net.dartIndex(doc);
-    // auto signed_delivery_event = SignedDeliveryEvent(doc_signed,dart_index, currentTime, net.pubkey);
+    Signature doc_signed = net.sign(doc).signature;
+    DARTIndex dart_index = net.dartIndex(doc);
+
+    auto signed_delivery_event = SignedDeliveryEvent(doc_signed, dart_index, currentTime, net.pubkey);
      
-    // if (standard_output) {
-    //     stdout.rawWrite(signed_delivery_event.toDoc.serialize);
-    //     return 0;
-    // }
-    // outputfilename.setExtension(FileExtension.hibon).fwrite(signed_delivery_event.toDoc.serialize);
+    if (standard_output) {
+        stdout.rawWrite(signed_delivery_event.toDoc.serialize);
+        return 0;
+    }
+    outputfilename.setExtension(FileExtension.hibon).fwrite(signed_delivery_event.toDoc.serialize);
     return 0;       
-    
-    
-
-
-    import tagion.hibon.HiBONJSON : toPretty;
-
-    writefln("%s", doc.toPretty);
-
-    return 0;
-
 }
