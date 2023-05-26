@@ -23,7 +23,7 @@ import tagion.hibon.Document;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.dart.DARTBasic;
-
+import tagion.utils.Miscellaneous : toHexString, decode;
 
 @recordType("DeliveryOrder")
 struct DeliveryOrder {
@@ -33,12 +33,12 @@ struct DeliveryOrder {
     string destination; // Final destination - "Livingstone"
     string pickuppoint; // Pickup point location - "copenhagen"
     // TagionCurrency payment; // Payment - "20usd"
-
+    
     sdt_t startTime; // standard time
     sdt_t endTime; // end time - should be delivered before this point    
 
     @label(OwnerKey) Pubkey originalOwner; // the owner of the delivery order
-    Pubkey receiver; // The receiver of the vaccines
+    Pubkey finalReceiver; // The receiver of the vaccines
     mixin HiBONRecord!(q{
         this(
             string vaccineType, 
@@ -49,7 +49,7 @@ struct DeliveryOrder {
             sdt_t startTime,
             sdt_t endTime,
             Pubkey originalOwner,
-            Pubkey receiver
+            Pubkey finalReceiver,
         ) {
             this.vaccineType = vaccineType;
             this.packageID = packageID;
@@ -59,7 +59,7 @@ struct DeliveryOrder {
             this.startTime = startTime;
             this.endTime = endTime;
             this.originalOwner = originalOwner;
-            this.receiver = receiver;
+            this.finalReceiver = finalReceiver;
         }
     });
 }
@@ -69,7 +69,8 @@ struct SignedDeliveryEvent {
     Signature newSignature; // signature ex. from current owner
     DARTIndex deliveryEvent;
     sdt_t timeStamp;
-    @label(OwnerKey) Pubkey tokenOwner; // new token owner
+    Pubkey recipient;
+    @label(OwnerKey) Pubkey owner; // new token owner
     
     
     mixin HiBONRecord!(q{
@@ -77,13 +78,15 @@ struct SignedDeliveryEvent {
             Signature newSignature, 
             DARTIndex deliveryEvent,
             sdt_t timeStamp,
-            Pubkey tokenOwner) 
-        {
+            Pubkey recipient,
+            Pubkey owner) 
+        {    
             this.newSignature = newSignature;
             this.deliveryEvent = deliveryEvent;
             this.timeStamp = timeStamp;
-            this.tokenOwner = tokenOwner;
-        }
+            this.recipient = recipient;
+            this.owner = owner;
+        }   
     });
 }
 
@@ -97,7 +100,9 @@ int _main(string[] args) {
     bool generate;
     string inputfilename;
     string outputfilename = "delivery_order.hibon";
-
+    bool generate_pubkey;
+    string receiver_pubkey;
+    
     GetoptResult main_args;
     try {
         main_args = getopt(args,
@@ -108,6 +113,8 @@ int _main(string[] args) {
                 "p|password", "set the password for the signing", &password,
                 "c|stdout", "write the output to stdout", &standard_output,
                 "g|generate", "generates dummy delivery order", &generate,
+                "generate_pubkey", "generates public key to stdout", &generate_pubkey,
+                "r|receiver", "give the pubkey for the receiver", &receiver_pubkey,
                 "o|outputfilename", "filename to write to", &outputfilename,
         );
     }
@@ -149,14 +156,23 @@ int _main(string[] args) {
         net.generateKeyPair(password);
     }
 
+    if (generate_pubkey) {
+        writefln("%s", net.pubkey.toHexString);
+        return 0;
+    }
+
+    if (receiver_pubkey == receiver_pubkey.init) {
+        stderr.writefln("Please supply pubkey of next receiver");
+        return 1;
+    }
+    Pubkey receiver = decode(receiver_pubkey);
+    
     // if (args.length != 1) {
     //     stderr.writefln("inputfilename not specified!");
     //     return 0;
     // }
     if (generate) {
         writefln("generating dummy delivery order");
-        SecureNet receiver = new StdSecureNet;
-        receiver.generateKeyPair("receiver");
         auto delivery_order = DeliveryOrder(
                 "Measels",
                 "43a3efd",
@@ -166,7 +182,7 @@ int _main(string[] args) {
                 currentTime,
                 currentTime,
                 net.pubkey,
-                receiver.pubkey,
+                receiver,
         );
         if (standard_output) {
             stdout.rawWrite(delivery_order.toDoc.serialize);
@@ -193,7 +209,7 @@ int _main(string[] args) {
     Signature doc_signed = net.sign(doc).signature;
     DARTIndex dart_index = net.dartIndex(doc);
 
-    auto signed_delivery_event = SignedDeliveryEvent(doc_signed, dart_index, currentTime, net.pubkey);
+    auto signed_delivery_event = SignedDeliveryEvent(doc_signed, dart_index, currentTime, receiver, net.pubkey);
      
     if (standard_output) {
         stdout.rawWrite(signed_delivery_event.toDoc.serialize);
