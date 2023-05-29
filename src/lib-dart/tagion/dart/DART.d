@@ -806,9 +806,6 @@ received = the HiRPC received package
             modify(action_recorder);
         }
 
-        // All the remove actives is perform before the new archives are added
-        // Remove
-        // Add
     }
 
     version (unittest) {
@@ -956,12 +953,12 @@ received = the HiRPC received package
                     foreach (journal_filename; journal_filenames) {
                         dart_A.replay(journal_filename);
                     }
-                    writefln("dart_A.dump");
-                    dart_A.dump;
-                    writefln("dart_B.dump");
-                    dart_B.dump;
-                    writefln("dart_A.fingerprint=%s", dart_A.fingerprint.cutHex);
-                    writefln("dart_B.fingerprint=%s", dart_B.fingerprint.cutHex);
+                    // writefln("dart_A.dump");
+                    // dart_A.dump;
+                    // writefln("dart_B.dump");
+                    // dart_B.dump;
+                    // writefln("dart_A.fingerprint=%s", dart_A.fingerprint.cutHex);
+                    // writefln("dart_B.fingerprint=%s", dart_B.fingerprint.cutHex);
 
                     assert(dart_A.fingerprint == dart_B.fingerprint);
                     if (test_no == 0) {
