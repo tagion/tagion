@@ -6,7 +6,7 @@ import std.format : format;
 import tagion.actor;
 import std.stdio;
 import tagion.crypto.Types;
-import tagion.crypto.SecureNet;
+import tagion.crypto.SecureInterfaceNet;
 import tagion.dart.DART;
 import tagion.dart.Recorder;
 import std.path;
