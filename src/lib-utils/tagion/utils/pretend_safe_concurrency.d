@@ -10,6 +10,8 @@ import core.time : Duration;
 
 alias Tid = concurrency.Tid;
 alias thisTid = concurrency.thisTid;
+alias ThreadInfo = concurrency.ThreadInfo;
+alias OwnerTerminated = concurrency.OwnerTerminated;
 
 void send(Args...)(Tid tid, Args args) @trusted
 {
