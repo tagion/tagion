@@ -372,11 +372,41 @@ extern (C) {
         return 0;
     }
 
-    // export uint check_contract_payment(uint8_t* contract, uint8_t* status, uint64_t* amount) {
-    // }
+    export uint check_contract_payment(const uint8_t* contractPtr, const uint32_t contractLen, uint8_t* statusPtr) {
+        immutable contractBuffer = cast(immutable)(contractPtr[0 .. contractLen]);
 
-    // export uint check_invoice_payment(uint8_t* invoice, uint8_t* status, uint64_t* amount) {
-    // }
+        if (__secure_wallet.isLoggedin()) {
+
+            auto contractDoc = Document(contractBuffer);
+
+            // Contract inputs.
+            const messageTag = "$msg";
+            const paramsTag = "params";
+
+            auto messageDoc = contractDoc[messageTag].get!Document;
+            auto paramsDoc = messageDoc[paramsTag].get!Document;
+            auto sContract = SignedContract(paramsDoc);
+
+            int status = __secure_wallet.account.check_contract_payment(sContract.contract.inputs, sContract.contract.output);
+
+            *statusPtr = cast(uint8_t) status;
+
+            return 1;
+        }
+        return 0;
+    }
+
+    export double check_invoice_payment(const uint8_t* invoicePtr, const uint32_t invoiceLen) {
+        immutable invoiceBuffer = cast(immutable)(invoicePtr[0 .. invoiceLen]);
+
+        if (__secure_wallet.isLoggedin()) {
+
+            auto invoice = Invoice(Document(invoiceBuffer)[0].get!Document);
+            auto amount = __secure_wallet.account.check_invoice_payment(invoice.pkey);
+            return amount.tagions;
+        }
+        return 0;
+    }
 }
 
 unittest {
@@ -546,12 +576,9 @@ unittest {
         const uint8_t[] contract = cast(uint8_t[])(contractDoc.serialize);
         const uint32_t contractLen = cast(uint32_t) contract.length;
 
-        writeln("Activated before ", __secure_wallet.account.activated.length);
-
-        ulock_bills_by_contract(contract.ptr, contractLen);
-
-        writeln("Activated after ", __secure_wallet.account.activated.length);
-
+        auto pResult = check_invoice_payment(invoice.ptr, invoiceLen);
+        writeln("check_invoice_payment ", pResult);
+    
         // Check the result
         assert(result == 1, "Expected result to be 1");
 

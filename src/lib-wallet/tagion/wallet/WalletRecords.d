@@ -90,6 +90,42 @@ struct AccountDetails {
         activated.remove(bills[index].owner);
     }
 
+    int check_contract_payment(const(DARTIndex)[] inputs, Document[Pubkey] outputs){
+        import std.algorithm : countUntil;
+        import tagion.crypto.SecureNet : StdHashNet;
+
+        const net = new StdHashNet;
+
+        auto billsHashes = bills.map!(b => cast(Buffer) net.calcHash(b.toDoc.serialize)).array;
+
+        // Look for input matches. Return 0 from func if found.
+        foreach (inputHash; inputs) {
+            const index = countUntil!"a == b"(billsHashes, inputHash);
+            if(index >= 0){
+                return 0;
+            }
+        }
+        // Proceed if inputs are not matched.
+        // Look for outputs matches. Return 1 from func if found or 2 if not.
+        foreach (outputPubkey; outputs.keys) {
+            const index = countUntil!"a.owner == b"(bills, outputPubkey);
+            if(index >= 0){
+                return 1;
+            }
+        }
+        return 2;
+    }
+
+    TagionCurrency check_invoice_payment(Pubkey invoicePubkey){
+        import std.algorithm : countUntil;
+        
+        const index = countUntil!"a.owner == b"(bills, invoicePubkey);
+        if(index >= 0){
+            return bills[index].value;    
+        }
+        return TagionCurrency(0);
+    }
+
     void add_bill(StandardBill bill) {
         bills ~= bill;
     }
