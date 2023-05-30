@@ -4,8 +4,8 @@ import tagion.basic.tagionexceptions : TagionException;
 import std.exception;
 
 immutable struct TaskFailure {
-    Throwable throwable;
     string task_name;
+    Throwable throwable;
 }
 
 /++
@@ -19,7 +19,7 @@ immutable struct TaskFailure {
 static immutable(TaskFailure) taskException(const(Throwable) e) @nogc nothrow { //if (is(T:Throwable) && !is(T:TagionExceptionInterface)) {
     import tagion.logger.Logger;
 
-    return immutable(TaskFailure)(cast(immutable) e, log.task_name);
+    return immutable(TaskFailure)(log.task_name, cast(immutable) e);
 }
 
 @safe

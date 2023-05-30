@@ -9,6 +9,7 @@ digraph module_diagram {
 
     DART -> Dartutil [dir="none", weight=100];
     DART -> DARTFile [dir="none", weight=100];
+    DART -> Synchronizer [dir="none", weight=100];
     DARTFile -> BlockFile [dir="none", weight=100];
     BlockFile -> Blockutil [dir="none", weight=100];
     BlockFile -> Recycler [dir="none", weight=100];

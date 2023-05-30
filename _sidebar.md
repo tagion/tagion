@@ -5,7 +5,8 @@
 ---
 
 - [Home](README.md)
-
+- Continous Integration / Continours Delivery
+	- [Systemic overview](documents/continous_integration_and_delivery/systemic_overview.md)
 - Network
 	- [Modes](documents/architecture/Network_Modes.md)
 	- [bootstrap](documents/architecture/Network_bootstrap.md)

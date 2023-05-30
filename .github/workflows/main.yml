@@ -8,6 +8,7 @@ env:
   TARGET: x86_64-linux
   STAGE: commit
   DC: dmd
+  CD_PARALLEL: 2
   RETENTION_DAYS_BINS: 3
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   UNITTEST_COV: unittest-cov
@@ -48,10 +49,15 @@ jobs:
           echo $RESULT | grep "Test result success!"
           ./build/${{env.TARGET}}/bin/collider reporter -o /dev/stdout logs/${{ env.TARGET }}/bdd/commit/ >> $GITHUB_STEP_SUMMARY
                
-
+      - name: Upload  code coverage results
+        run: |
+          cp logs/${{env.TARGET}}/cov/* .      
+          bash <(curl -s https://codecov.io/bash) -t ${{ env.CODECOV_TOKEN }} -f "!*/cov/*"
+          rm -- *.lst
+      
       - name: Add schedule to build
         run: |
-          cp schedule.json build/${{ env.TARGET }}/bin
+          cp collider_schedule.json build/${{ env.TARGET }}/bin
 
       - name: Create tar ball
         if: success() || failure()
@@ -103,7 +109,7 @@ jobs:
           export DLOG=$PWD/logs/${{ env.TARGET }}
           export COLLIDER_ROOT=$PWD/logs/${{ env.TARGET }}/bdd
           export PATH=$DBIN:$PATH
-          ./build/${{ env.TARGET }}/bin/collider -r acceptance -j2 -b build/${{ env.TARGET }}/bin/testbench -s build/${{ env.TARGET }}/bin/schedule.json  
+          ./build/${{ env.TARGET }}/bin/collider -r acceptance -j ${{env.CD_PARALLEL}} -b build/${{ env.TARGET }}/bin/testbench -s build/${{ env.TARGET }}/bin/collider_schedule.json  
 
       - name: Generate reports
         if: failure() || success()
@@ -132,23 +138,6 @@ jobs:
         run: |
           rm ${{ needs.commit_stage.outputs.tarball }}
           rm -rf *
-
-  code_coverage:
-    runs-on: CD
-    needs: acceptance_stage
-    steps:
-      - name: Copy Artifact to local machine
-        run: |
-          rm -rf *
-          cp /mnt/nfs/${{needs.acceptance_stage.outputs.stage}}/${{needs.acceptance_stage.outputs.tarball}} .
-          tar -xzf ${{needs.acceptance_stage.outputs.tarball}}
-      - name: codecov report
-        run: |
-          cd logs/${{ env.TARGET }}/cov
-          bash <(curl -s https://codecov.io/bash) -t ${{ env.CODECOV_TOKEN }}
-          cd ../../..
-      - name: clean up
-        run: rm -rf *
 
   ddoc_build:
     runs-on: CD
@@ -187,17 +176,22 @@ jobs:
         uses: actions/checkout@v3
       - name: Setup Pages
         uses: actions/configure-pages@v3
+      - name: Copy md files
+        run: |
+          rm -r build/docs/ || echo 'no files to remove'
+          mkdir -p build/docs/
+          cp -r index.html _sidebar.md README.md documents/ build/docs/
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
-          path: '.'
+          path: 'build/docs/'
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v1
 
   finish_workflow:
     runs-on: CD
-    needs: [code_coverage, acceptance_stage, ddoc_build, docs_build]
+    needs: [acceptance_stage, ddoc_build, docs_build]
     steps:    
       - name: Copy Artifact to local machine
         run: |
@@ -213,7 +207,7 @@ jobs:
       - uses: actions/upload-artifact@v3
         if: success()
         with:
-          name: succesful_artifact
+          name: successful_artifact
           path: ./${{needs.acceptance_stage.outputs.tarball}}
           if-no-files-found: error
 

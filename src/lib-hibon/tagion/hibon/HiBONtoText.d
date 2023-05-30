@@ -17,6 +17,8 @@ import tagion.utils.Miscellaneous : toHex = toHexString, decode;
 import tagion.hibon.HiBONException;
 import std.format;
 import std.base64;
+import tagion.hibon.HiBONRecord;
+import tagion.hibon.Document;
 
 enum BASE64Indetifyer = '@';
 
@@ -28,6 +30,15 @@ enum {
 @safe string encodeBase64(const(ubyte[]) data) pure {
     const result = BASE64Indetifyer ~ Base64.encode(data);
     return result.idup;
+}
+
+@safe string encodeBase64(const(Document) doc) pure {
+    return encodeBase64(doc.data);
+}
+
+@safe string encodeBase64(T)(const(T) t) pure
+    if (isHiBONRecord!T) {
+    return encodeBase64(t.serialize);
 }
 
 @nogc @safe bool isHexPrefix(const(char[]) str) pure nothrow {
@@ -53,4 +64,8 @@ enum {
         throw new HiBONException(format("HiBON binary data missing the hex '%s' or Base64 identifier '%s'",
                 hex_prefix, BASE64Indetifyer));
     }
+}
+
+@safe Document decodeBase64(const(char[]) str) pure {
+    return Document(HiBONdecode(str));
 }

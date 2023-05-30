@@ -7,7 +7,7 @@ import std.file;
 import std.path;
 
 import tagion.crypto.Types : Fingerprint;
-import tagion.basic.Types : Buffer, FileExtension, withDot;
+import tagion.basic.Types : Buffer, FileExtension;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.crypto.SecureNet : StdHashNet;
 import tagion.hashchain.HashChainStorage : HashChainStorage;
@@ -85,7 +85,7 @@ import tagion.utils.Miscellaneous : decode, toHexString;
         return folder_path.dirEntries(SpanMode.shallow)
             .filter!(f => f.isFile())
             .map!(f => baseName(f))
-            .filter!(f => f.extension == getExtension.withDot)
+            .filter!(f => f.extension == getExtension)
             .filter!(f => f.stripExtension.length == BLOCK_FILENAME_LEN)
             .map!(f => f.stripExtension)
             .map!(f => Fingerprint(f.decode))

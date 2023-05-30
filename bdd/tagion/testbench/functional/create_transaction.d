@@ -20,6 +20,7 @@ import tagion.testbench.tools.Environment;
 import tagion.testbench.functional.create_wallets;
 import tagion.testbench.tools.utils : Genesis;
 import tagion.testbench.functional.create_network_in_mode_one;
+import tagion.testbench.functional.create_network_in_mode_zero;
 import tagion.testbench.tools.network;
 import tagion.testbench.tools.wallet;
 import tagion.testbench.tools.BDDOptions;
@@ -47,6 +48,14 @@ class CreateTransaction
     Balance wallet_1;
 
     this(GenerateNWallets genWallets, CreateNetworkWithNAmountOfNodesInModeone network, BDDOptions bdd_options)
+    {
+        this.wallets = genWallets.wallets;
+        this.genesis = bdd_options.genesis_wallets.wallets;
+        this.module_path = env.bdd_log.buildPath(bdd_options.scenario_name);
+        this.network = network.nodes;
+        this.default_port = bdd_options.network.default_port;
+    }
+    this(GenerateNWallets genWallets, CreateNetworkWithNAmountOfNodesInModezero network, BDDOptions bdd_options)
     {
         this.wallets = genWallets.wallets;
         this.genesis = bdd_options.genesis_wallets.wallets;
@@ -101,8 +110,8 @@ class CreateTransaction
     @Then("the balance should be checked against all nodes.")
     Document nodes()
     {
-        wallet_0 = wallets[0].getBalance();
-        wallet_1 = wallets[1].getBalance();
+        wallet_0 = wallets[0].getBalance(default_port);
+        wallet_1 = wallets[1].getBalance(default_port);
 
         check(wallet_0.returnCode == true && wallet_1.returnCode == true, "Balances not updated");
         return result_ok;

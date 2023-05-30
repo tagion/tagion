@@ -80,8 +80,8 @@ struct BehaviourOptions {
     void setDefault() {
         const gen = "gen";
         bdd_ext = FileExtension.markdown;
-        bdd_gen_ext = [gen, FileExtension.markdown].join(DOT);
-        d_ext = [gen, FileExtension.dsrc].join(DOT);
+        bdd_gen_ext = [gen, FileExtension.markdown].join;
+        d_ext = [gen, FileExtension.dsrc].join;
         regex_inc = `/testbench/`;
         test_stage_env = "TEST_STAGE";
         if (!(DFMT_ENV in environment)) {
@@ -403,13 +403,13 @@ static this() {
 int main(string[] args) {
     BehaviourOptions options;
     immutable program = args[0]; /** file for configurations */
-    auto config_file = "collider.json"; /** flag for print current version of behaviour */
+    auto config_file = "collider".setExtension(FileExtension.json); /** flag for print current version of behaviour */
     bool version_switch; /** flag for overwrite config file */
     bool overwrite_switch; /** falg for to enable report checks */
     bool Check_reports_switch;
     bool check_reports_switch; /** verbose switch */
     //    string[] stages;
-    string schedule_file = "schedule".setExtension(FileExtension.json);
+    string schedule_file = "collider_schedule".setExtension(FileExtension.json);
     string[] run_stages;
     uint schedule_jobs = 0;
     bool schedule_rewrite;

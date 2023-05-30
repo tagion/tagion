@@ -29,6 +29,7 @@ import tagion.Keywords;
 import std.range;
 import tagion.utils.Random;
 import std.random : randomShuffle, MinstdRand0, randomSample;
+import tagion.basic.basic : forceRemove;
 
 import tagion.hibon.HiBONRecord;
 
@@ -66,6 +67,7 @@ class FullSync {
 
         mkdirRecurse(info.module_path);
         // create the dartfile
+        info.dartfilename.forceRemove;
         DART.create(info.dartfilename);
 
         Exception dart_exception;
@@ -84,6 +86,7 @@ class FullSync {
 
     @Given("I have a empty dartfile2.")
     Document emptyDartfile2() {
+        info.dartfilename2.forceRemove;
         DART.create(info.dartfilename2);
 
         Exception dart_exception;

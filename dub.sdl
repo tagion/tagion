@@ -125,6 +125,15 @@ subPackage {
 	sourcePaths "src/lib-phobos/"
 	importPaths "src/lib-phobos/"
 }
+
+subPackage {
+    name "services"
+    sourcePaths "src/lib-services/"
+    importPaths "src/lib-services/"
+    dependency "tagion:actor" version="*"
+    dependency "tagion:dart" version="*"
+}
+
 subPackage {
 	name "tests"
 	dependency "tagion:basic" version=">=0.0.0"

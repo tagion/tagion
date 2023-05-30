@@ -26,6 +26,7 @@ import tagion.dart.Recorder : Archive, RecordFactory;
 import tagion.dart.DARTBasic;
 import std.digest;
 import tagion.utils.Miscellaneous : toHexString;
+import tagion.basic.basic : forceRemove;
 
 
 import tagion.testbench.dart.dart_helper_functions;
@@ -71,6 +72,7 @@ class AddRemoveAndReadTheResult {
     Document dartfile() {
         mkdirRecurse(info.module_path);
         // create the dartfile
+        info.dartfilename.forceRemove;
         DART.create(info.dartfilename);
 
         Exception dart_exception;

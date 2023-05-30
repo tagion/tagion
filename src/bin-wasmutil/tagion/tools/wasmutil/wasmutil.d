@@ -1,4 +1,4 @@
-module tagion.wasmutil;
+module tagion.tools.wasmutil.wasmutil;
 
 import std.getopt;
 import std.stdio;
@@ -8,11 +8,12 @@ import std.path : extension;
 import std.traits : EnumMembers;
 import std.exception : assumeUnique;
 import std.json;
+import std.range : only;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.basic.basic : basename;
-import tagion.basic.Types : Buffer;
+import tagion.basic.Types : Buffer, FileExtension;
 import tagion.hibon.HiBONJSON;
 import tagion.wasm.Wast;
 import tagion.wasm.WasmReader;
@@ -22,18 +23,12 @@ import tagion.wasm.WasmGas;
 
 //import tagion.script.StandardRecords;
 import std.array : join;
+import tagion.tools.Basic : Main;
+import tagion.tools.revision;
 
-// import tagion.vm.wasm.revision;
+mixin Main!_main;
 
-enum fileextensions {
-    wasm = ".wasm",
-    wo = ".wo",
-    wast = ".wast",
-
-    json = ".json"
-};
-
-int main(string[] args) {
+int _main(string[] args) {
     immutable program = args[0];
     bool version_switch;
 
@@ -62,28 +57,27 @@ int main(string[] args) {
     void help() {
         defaultGetoptPrinter(
                 [
-            // format("%s version %s", program, REVNO),
-            "Documentation: https://tagion.org/",
-            "",
-            "Usage:",
-            format("%s [<option>...] <in-file> <out-file>", program),
-            format("%s [<option>...] <in-file>", program),
-            "",
-            "Where:",
-            "<in-file>           Is an input file in .json or .hibon format",
-            // "<out-file>          Is an output file in .json or .hibon format",
-            "                    stdout is used of the output is not specifed the",
-            "",
+                // format("%s version %s", program, REVNO),
+                "Documentation: https://tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...] <in-file> <out-file>", program),
+                format("%s [<option>...] <in-file>", program),
+                "",
+                "Where:",
+                "<in-file>           Is an input file in .json or .hibon format",
+                // "<out-file>          Is an output file in .json or .hibon format",
+                "                    stdout is used of the output is not specifed the",
+                "",
 
-            "<option>:",
+                "<option>:",
 
-        ].join("\n"),
-        main_args.options);
+                ].join("\n"),
+                main_args.options);
     }
 
     if (version_switch) {
-        // writefln("version %s", REVNO);
-        // writefln("Git handle %s", HASH);
+        revision_text.writeln;
         return 0;
     }
 
@@ -127,7 +121,7 @@ int main(string[] args) {
     const input_extension = inputfilename.extension;
 
     WasmReader wasm_reader;
-    with (fileextensions) {
+    with (FileExtension) {
         switch (input_extension) {
         case wasm, wo:
             immutable read_data = assumeUnique(cast(ubyte[]) fread(inputfilename));
@@ -150,7 +144,7 @@ int main(string[] args) {
         */
         default:
             stderr.writefln("File extensions %s not valid for input file (only %s)",
-                    input_extension, [EnumMembers!fileextensions]);
+                    input_extension, only(FileExtension.wasm, FileExtension.wo));
         }
     }
     // Wast(wasm_reader, stdout).serialize();
@@ -210,28 +204,30 @@ int main(string[] args) {
 
     if (outputfilename) {
         const output_extension = outputfilename.extension;
-        switch (output_extension) {
-        case fileextensions.wasm:
-            // auto fout=File(outputfilename, "w");
-            // scope(exit) {
-            //     fout.close;
-            // }
-            // fout.write(data_out);
-            outputfilename.fwrite(data_out);
-            // immutable read_data=assumeUnique(cast(ubyte[])fread(inputfilename));
-            // wasm_reader=WasmReader(read_data);
-            break;
-        case fileextensions.wast:
-            auto fout = File(outputfilename, "w");
-            scope (exit) {
-                fout.close;
+        with (FileExtension) {
+            switch (output_extension) {
+            case wasm:
+                // auto fout=File(outputfilename, "w");
+                // scope(exit) {
+                //     fout.close;
+                // }
+                // fout.write(data_out);
+                outputfilename.fwrite(data_out);
+                // immutable read_data=assumeUnique(cast(ubyte[])fread(inputfilename));
+                // wasm_reader=WasmReader(read_data);
+                break;
+            case wast:
+                auto fout = File(outputfilename, "w");
+                scope (exit) {
+                    fout.close;
+                }
+                //            Wast(WasmReader(data_out), fout).serialize;
+                Wast(WasmReader(data_out), fout).serialize;
+                break;
+            default:
+                stderr.writefln("File extensions %s not valid output file (only %s)",
+                        output_extension, only(FileExtension.wasm, FileExtension.wast));
             }
-            //            Wast(WasmReader(data_out), fout).serialize;
-            Wast(WasmReader(data_out), fout).serialize;
-            break;
-        default:
-            stderr.writefln("File extensions %s not valid output file (only %s)",
-                    output_extension, [EnumMembers!fileextensions]);
         }
     }
     return 0;
