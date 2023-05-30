@@ -13,6 +13,10 @@ import tagion.actor.exceptions;
 import tagion.actor.exceptions : TaskFailure;
 import tagion.basic.tagionexceptions : TagionException;
 
+version(Posix) {
+    extern (C) int pthread_setname_np(pthread_t, const char*) nothrow;
+}
+
 /**
  * Message "Atom" type
  * Examples:
@@ -135,16 +139,15 @@ if (isActor!A) {
  * spawn!MyActor("my_task_name", 42);
  * ---
  */
-ActorHandle!A spawn(A, Args...)(string task_name, Args args) @trusted nothrow 
+ActorHandle!A spawn(A, Args...)(string task_name, Args args) @trusted nothrow // @safe
 if (isActor!A) {
     alias task = A.task;
     Tid tid;
 
     import concurrency = std.concurrency;
-    tid = assumeWontThrow(concurrency.spawn(&task, task_name, args));
     assumeWontThrow({
+        tid = concurrency.spawn(&task, task_name, args);
         tid.setMaxMailboxSize(int.sizeof, OnCrowding.throwException);
-        register(task_name, tid);
         writefln("%s registered", task_name);
     });
 
@@ -193,6 +196,16 @@ void sendOwner(T...)(T vals) {
         write("No owner, writing message to stdout instead: ");
         writeln(vals);
         // Log
+    }
+}
+
+void taskFailure(string task_name, Throwable t) @safe nothrow {
+    if (tidOwner.get !is Tid.init) {
+        assumeWontThrow(
+            ownerTid.prioritySend(
+                TaskFailure(task_name, cast(immutable) t)
+            )
+        );
     }
 }
 
@@ -276,10 +289,16 @@ static:
         throw new UnknownMessage("No delegate to deal with message: %s".format(message));
     }
 
+    void starting() {}
+
     /// The tasks that get run when you call spawn!
     void task(string task_name) nothrow {
         try {
 
+            version(Posix) {
+                pthread_setname_np(pthread_self(), toStringz(name));
+            }
+            register(task_name, thisTid);
             setState(Ctrl.STARTING, task_name); // Tell the owner that you are starting.
             scope (exit) {
                 if (childrenState.length != 0) {
@@ -299,16 +318,17 @@ static:
                     }
                 }
 
-                ThreadInfo.thisInfo.cleanup;
-                setState(Ctrl.END, task_name); // Tell the owner that you have finished.
+                end(task_name);
             }
 
             // Call starting() if it's implemented
-            static if (__traits(hasMember, This, "starting")) {
-                alias startingCall = __traits(getMember, This, "starting");
-                static assert(isCallable!startingCall, "the starting callback is not callable");
-                startingCall();
-            }
+            // version(none) static if (__traits(hasMember, This, "starting")) {
+            //     alias startingCall = __traits(getMember, This, "starting");
+            //     static assert(isCallable!startingCall, "the starting callback is not callable");
+            //     startingCall();
+            // }
+
+            starting();
 
             // Asign the failhandler if a custom one is defined override the default one
             static if (__traits(hasMember, This, "fail")) {
