@@ -28,12 +28,8 @@ struct DARTService {
     static void dartBullseye(Msg!"dartBullseye") {
     }
     
-    void task(string task_name, string dart_path, SecureNet net) nothrow 
-        in {
-            assert(dart_path.isValidPath, format("%s is not a valid path"));
-        }
-        do {
-            try {
+    void task(const string task_name, const string dart_path, const SecureNet net) nothrow {
+        try {
 
             db = new DART(net, dart_path);
 
@@ -44,11 +40,10 @@ struct DARTService {
 
             run(task_name, &dartRead, &dartRim, &dartModify, &dartBullseye);
             end(task_name);
-
-            }
-            catch (Exception e) {
-                return;
-            }
+        }
+        catch (Exception e) {
+            taskFailure(task_name, e);
+        }
     }
 }
 
