@@ -86,6 +86,20 @@ struct ActorHandle(A) {
         concurrency.send(tid, vals);
     }
 
+    // pragma(msg, format("# %s:", Actor.stringof));
+    static foreach(member; __traits(allMembers, Actor)) {
+        // alias getMem = __traits(getMember, Actor, member);
+        
+        // enum params = Parameters!(member);
+        // pragma(msg, format("\t%s:%s", member, __traits(getMember, Actor, member)));
+        static if(
+                isCallable!(__traits(getMember, Actor, member)) 
+                && Parameters!(__traits(getMember, Actor, member))
+            ) {
+            // pragma(msg, member);
+        }
+    }
+
     /// use
     // void opDispatch(string method, Args...)(Args args) {
     //     send(actor.Msg!method, args);
