@@ -87,7 +87,7 @@ struct ActorHandle(A) {
     }
 
     // pragma(msg, format("# %s:", Actor.stringof));
-    static foreach(member; __traits(allMembers, Actor)) {
+    version(none) static foreach(member; __traits(allMembers, Actor)) {
         // alias getMem = __traits(getMember, Actor, member);
         
         // enum params = Parameters!(member);
@@ -141,9 +141,12 @@ if (isActor!A) {
     Tid tid;
 
     import concurrency = std.concurrency;
-    tid = assumeWontThrow(concurrency.spawn(&task, task_name, args)); /// TODO: set oncrowding to exception;
-    assumeWontThrow(register(task_name, tid));
-    assumeWontThrow(writefln("%s registered", task_name));
+    tid = assumeWontThrow(concurrency.spawn(&task, task_name, args));
+    assumeWontThrow({
+        tid.setMaxMailboxSize(int.sizeof, OnCrowding.throwException);
+        register(task_name, tid);
+        writefln("%s registered", task_name);
+    });
 
     return ActorHandle!A(tid, task_name);
 }
