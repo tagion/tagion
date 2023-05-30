@@ -275,6 +275,22 @@ extern (C) {
         return 0;
     }
 
+    export uint get_derivers_state(uint8_t* deriversStatePtr) {
+        if (__secure_wallet.isLoggedin()) {
+            const deriversState = __secure_wallet.getDeriversState();
+
+            auto result = new HiBON();
+            result["derivers_state"] = deriversState;
+
+            const deviversStateDocId = recyclerDoc.create(Document(result));
+
+            *deriversStatePtr = cast(uint8_t) deviversStateDocId;
+
+            return 1;
+        }
+        return 0;
+    }
+
     export uint get_derivers(uint8_t* deriversPtr) {
         if (__secure_wallet.isLoggedin()) {
             const encrDerivers = __secure_wallet.getEncrDerivers();
@@ -628,6 +644,17 @@ unittest {
 
         // Check the result
         assert(setDResult == 1, "Expected result to be 1");
+    }
+
+    { // Get derivers state.
+        uint8_t deriversDocId;
+        uint getDResult = get_derivers_state(&deriversDocId);
+
+        // Check the result
+        assert(getDResult == 1, "Expected result to be 1");
+
+        // Verify that invoiceDocId is non-zero
+        assert(deriversDocId != 0, "Expected non-zero deriversDocId");
     }
 
     { // Add a new bill.

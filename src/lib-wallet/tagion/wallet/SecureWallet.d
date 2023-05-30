@@ -557,6 +557,10 @@ import tagion.communication.HiRPC;
         mixin HiBONRecord;
     }
 
+    Buffer getDeriversState(){
+        return this.account.derive_state;
+    }
+
     @trusted
     const(CiphDoc) getEncrDerivers() {
         DeriverState derive_state;
