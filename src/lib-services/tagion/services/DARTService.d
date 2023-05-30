@@ -15,7 +15,6 @@ import std.file;
 struct DARTService {
 
     DART db;
-    StdSecureNet net;
 
     static void dartRead(Msg!"dartRead", Fingerprint fingerprint) {
     }
@@ -29,14 +28,12 @@ struct DARTService {
     static void dartBullseye(Msg!"dartBullseye") {
     }
     
-    void task(string task_name, string dart_path, string password) nothrow 
+    void task(string task_name, string dart_path, SecureNet net) nothrow 
         in {
             assert(dart_path.isValidPath, format("%s is not a valid path"));
         }
         do {
             try {
-            net = new StdSecureNet;
-            net.generateKeyPair(password);
 
             db = new DART(net, dart_path);
 
