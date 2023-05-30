@@ -340,7 +340,6 @@ import std.variant : Variant;
 import std.concurrency : OwnerTerminated, Tid, thisTid, ownerTid, receive, prioritySend, ThreadInfo, send, locate;
 import std.format : format;
 import std.traits : isCallable;
-import tagion.actor.exceptions : TaskFailure, taskException, ActorException, UnknownMessage;
 import std.stdio : writefln, writeln;
 
 void end(string task_name) nothrow {

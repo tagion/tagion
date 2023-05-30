@@ -216,5 +216,5 @@ int _main(string[] args) {
         return 0;
     }
     outputfilename.setExtension(FileExtension.hibon).fwrite(signed_delivery_event.toDoc.serialize);
-    return 0;       
+    return 0;
 }
