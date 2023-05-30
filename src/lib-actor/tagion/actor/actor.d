@@ -14,6 +14,7 @@ import tagion.actor.exceptions : TaskFailure;
 import tagion.basic.tagionexceptions : TagionException;
 
 version(Posix) {
+    import core.sys.posix.pthread;
     extern (C) int pthread_setname_np(pthread_t, const char*) nothrow;
 }
 
@@ -77,7 +78,7 @@ template isActor(A) {
  *  A = an actor type
  */
 struct ActorHandle(A) {
-    import concurrency = std.concurrency;
+    import concurrency = tagion.utils.pretend_safe_concurrency;
 
     /// the tid of the spawned task
     Tid tid;
@@ -144,7 +145,7 @@ if (isActor!A) {
     alias task = A.task;
     Tid tid;
 
-    import concurrency = std.concurrency;
+    import concurrency = tagion.utils.pretend_safe_concurrency;
     assumeWontThrow({
         tid = concurrency.spawn(&task, task_name, args);
         tid.setMaxMailboxSize(int.sizeof, OnCrowding.throwException);
@@ -190,16 +191,13 @@ void sendOwner(T...)(T vals) {
     if (!tidOwner.isNull) {
         send(tidOwner.get, vals);
     }
-    // Otherwise writr a message to the logger instead,
-    // Otherwise just write it to stdout;
     else {
         write("No owner, writing message to stdout instead: ");
         writeln(vals);
-        // Log
     }
 }
 
-void taskFailure(string task_name, Throwable t) @safe nothrow {
+void taskFailure(string task_name, Throwable t) @trusted nothrow {
     if (tidOwner.get !is Tid.init) {
         assumeWontThrow(
             ownerTid.prioritySend(
@@ -250,7 +248,7 @@ mixin template Actor(T...) {
 static:
     import std.exception : assumeWontThrow;
     import std.variant : Variant;
-    import std.concurrency : OwnerTerminated, Tid, thisTid, ownerTid, receive, prioritySend, ThreadInfo, send, locate;
+    import tagion.utils.pretend_safe_concurrency : OwnerTerminated, Tid, thisTid, ownerTid, receive, prioritySend, ThreadInfo, send, locate;
     import std.format : format;
     import std.traits : isCallable;
     import tagion.actor.exceptions : TaskFailure, taskException, ActorException, UnknownMessage;
@@ -295,8 +293,11 @@ static:
     void task(string task_name) nothrow {
         try {
 
+            // Set the system thread name on posix for better debugging abiiities
             version(Posix) {
-                pthread_setname_np(pthread_self(), toStringz(name));
+                import std.string;
+                import core.sys.posix.pthread;
+                pthread_setname_np(pthread_self(), toStringz(task_name));
             }
             register(task_name, thisTid);
             setState(Ctrl.STARTING, task_name); // Tell the owner that you are starting.
@@ -374,7 +375,7 @@ static:
 
 import std.exception : assumeWontThrow;
 import std.variant : Variant;
-import std.concurrency : OwnerTerminated, Tid, thisTid, ownerTid, receive, prioritySend, ThreadInfo, send, locate;
+import tagion.utils.pretend_safe_concurrency : OwnerTerminated, Tid, thisTid, ownerTid, receive, prioritySend, ThreadInfo, send, locate;
 import std.format : format;
 import std.traits : isCallable;
 import std.stdio : writefln, writeln;
