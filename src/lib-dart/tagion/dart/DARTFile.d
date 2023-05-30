@@ -1293,6 +1293,8 @@ unittest {
     }
 
     { // Rim 2 & 3
+        immutable filename = tempfile();
+        filename.forceRemove;
         DARTFile.create(filename);
         auto dart = new DARTFile(net, filename);
         RecordFactory.Recorder recorder;
