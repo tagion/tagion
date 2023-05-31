@@ -32,7 +32,7 @@ jobs:
       - name: pull
         run: |
           git checkout current
-          git pull
+          git pull && git clean -f && git restore .
 
       - name: Run tests
         run: |
