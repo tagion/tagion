@@ -119,6 +119,13 @@ File inputfile.hibon not found
 **Result** (wrong file structure)<br>
 Dump of wrong data structures or JSON parsing error [see](#failure)
 
+# Encode base64
+Encode the file as base64.
+```
+-b --base64
+```
+Creates .txt file with base64 hibon. Can also be used in combination with `-c`.
+
 # version
 ```
 --version
