@@ -1,4 +1,4 @@
-module tagion.services.DartService;
+module tagion.services.DARTService;
 
 import std.path : isValidPath;
 import std.format : format;
@@ -6,11 +6,16 @@ import std.format : format;
 import tagion.actor;
 import std.stdio;
 import tagion.crypto.Types;
-import tagion.crypto.SecureNet;
+import tagion.crypto.SecureInterfaceNet;
 import tagion.dart.DART;
 import tagion.dart.Recorder;
+import std.path;
+import std.file;
 
-struct DartService {
+struct DARTService {
+
+    DART db;
+
     static void dartRead(Msg!"dartRead", Fingerprint fingerprint) {
     }
 
@@ -23,28 +28,23 @@ struct DartService {
     static void dartBullseye(Msg!"dartBullseye") {
     }
     
-    void task(string task_name, string dart_path, string password) nothrow 
-        in {
-            assert(dart_path.isValidPath, format("%s is not a valid path"));
-        }
-        do {
-            try {
-            DART db;
-            StdSecureNet net;
-
-            net = new StdSecureNet;
-            net.generateKeyPair(password);
+    void task(string task_name, string dart_path, SecureNet net) nothrow {
+        try {
 
             db = new DART(net, dart_path);
 
-            run(task_name);
-            end(task_name);
+            if(!dart_path.exists) {
+                dart_path.dirName.mkdirRecurse;
+                DART.create(dart_path);
+            }
 
-            }
-            catch (Exception e) {
-                return;
-            }
+            run(task_name, &dartRead, &dartRim, &dartModify, &dartBullseye);
+            end(task_name);
+        }
+        catch (Exception e) {
+            fail(task_name, e);
+        }
     }
 }
 
-alias DartServiceHandle = ActorHandle!DartService;
+alias DARTServiceHandle = ActorHandle!DARTService;

@@ -83,7 +83,7 @@ static:
     }
 
     // Override the default fail handler
-    auto fail = (TaskFailure tf) {
+    auto failHandler = (TaskFailure tf) {
         try {
             writefln("Received the taskfailure from overrid taskfail type: %s", typeid(tf.throwable));
             throw tf.throwable;
