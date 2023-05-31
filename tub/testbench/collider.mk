@@ -21,9 +21,12 @@ bddtagion: tagion
 	$(DBIN)/tagion -f
 
 bddfiles: $(BDD)/.done
+	$(PRECMD)
+	$(COLLIDER) $(BDD_FLAGS)
 
 $(BDD)/.done: $(BDD_MD_FILES)
 	$(PRECMD)
+	$(call log.kvp, "Generates BDD",  $@)
 	$(COLLIDER) -v $(BDD_FLAGS)
 	$(TOUCH) $@
 

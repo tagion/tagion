@@ -8,23 +8,63 @@ import std.path : extension;
 import std.traits : EnumMembers;
 import std.exception : assumeUnique;
 import std.json;
-import std.range : only;
+import std.range : only, empty;
+import std.meta;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.basic.basic : basename;
 import tagion.basic.Types : Buffer, FileExtension;
 import tagion.hibon.HiBONJSON;
-import tagion.wasm.Wast;
+import tagion.wasm.Wast : wast;
+import tagion.wasm.WasmBetterC : wasmBetterC;
 import tagion.wasm.WasmReader;
 import tagion.wasm.WasmWriter;
 import tagion.wasm.WasmBase;
 import tagion.wasm.WasmGas;
+import tagion.wasm.WasmException;
 
 //import tagion.script.StandardRecords;
 import std.array : join;
 import tagion.tools.Basic : Main;
 import tagion.tools.revision;
+
+template Produce(FileExtension ext) {
+    static if (ext == FileExtension.wast) {
+        import tagion.wasm.Wast;
+
+        alias Produce = wast;
+    }
+    else static if (ext == FileExtension.dsrc) {
+        import tagion.wasm.WasmBetterC;
+
+        alias Produce = wasmBetterC;
+    }
+    else {
+        static assert(0, format("Can not produce a %s format not supported", ext));
+    }
+}
+
+void produce(FileExtension ext)(WasmReader wasm_reader, File fout) {
+    Produce!(ext)(wasm_reader, fout).serialize;
+}
+
+enum OutputType {
+    wast, /// WASM text output type in wast format (FileExtension.wast) 
+    wasm, /// WASM binary output type (FileExtension.wasm)
+    betterc, /// BetterC source file (FileExtension.dsrc)
+}
+
+FileExtension typeExtension(const OutputType type) pure nothrow @nogc {
+    final switch (type) {
+    case OutputType.wast:
+        return FileExtension.wast;
+    case OutputType.wasm:
+        return FileExtension.wasm;
+    case OutputType.betterc:
+        return FileExtension.dsrc;
+    }
+}
 
 mixin Main!_main;
 
@@ -34,24 +74,29 @@ int _main(string[] args) {
 
     string inputfilename;
     string outputfilename;
-    bool print;
+    //bool print;
+    //bool betterc;
     bool inject_gas;
     bool verbose_switch;
     string[] modify_from;
     string[] modify_to;
+
+    OutputType type;
     try {
         auto main_args = getopt(args,
                 std.getopt.config.caseSensitive,
                 std.getopt.config.bundling,
-                "version", "display the version", &version_switch,
-                "inputfile|i", "Sets the HiBON input file name", &inputfilename,
-                "outputfile|o", "Sets the output file name", &outputfilename, // "bin|b", "Use HiBON or else use JSON", &binary,
+                "version", "display the version", &version_switch, //"inputfile|i", "Sets the HiBON input file name", &inputfilename,
+                //"outputfile|o", "Sets the output file name", &outputfilename, // "bin|b", "Use HiBON or else use JSON", &binary,
                 // "value|V", format("Bill value : default: %d", value), &value,
                 "gas|g", format("Inject gas countes: %s", inject_gas), &inject_gas,
                 "verbose|v", format("Verbose %s", verbose_switch), &verbose_switch,
                 "mod|m", "Modify import module name from ", &modify_from,
-                "to|t", "Modify import module name from ", &modify_to,
-                "print|p", format("Print the wasm as wast: %s", print), &print,
+                "to", "Modify import module name from ", &modify_to, //                "print|p", format("Print the wasm as wast: %s", print), &print,
+                //                "betterc|d", format("Print the wasm as wast: %s", betterc), &betterc,
+
+                "type|t", format("Sets stdout file type (%-(%s %))", [EnumMembers!OutputType]), &type,
+
         );
 
         void help() {
@@ -65,8 +110,10 @@ int _main(string[] args) {
                     format("%s [<option>...] <in-file>", program),
                     "",
                     "Where:",
-                    "<in-file>           Is an input file in .json or .hibon format",
-                    // "<out-file>          Is an output file in .json or .hibon format",
+                    format("<in-file>           Is an input file in (%-(%s -%)) format",
+                        only(FileExtension.wasm, FileExtension.wast)),
+                    format("<out-file>          Is an output file in (%-(%s -%)) format",
+                        only(FileExtension.wast, FileExtension.dsrc)),
                     "                    stdout is used of the output is not specifed the",
                     "",
 
@@ -81,9 +128,10 @@ int _main(string[] args) {
             return 0;
         }
 
-        if (verbose_switch && (!print || outputfilename.length is 0)) {
-            verbose.mode = VerboseMode.STANDARD;
-        }
+        version (none)
+            if (verbose_switch && (!print || outputfilename.length is 0)) {
+                verbose.mode = VerboseMode.STANDARD;
+            }
 
         if (main_args.helpWanted) {
             help;
@@ -100,6 +148,12 @@ int _main(string[] args) {
                     inputfilename = file;
                     break;
                 case dsrc:
+                    check(outputfilename is null,
+                            format("Only one outputfile allowed (both %s and %s has been specifiled)",
+                            inputfilename, file));
+                    outputfilename = file;
+                    break;
+                case wast:
                     check(outputfilename is null,
                             format("Only one outputfile allowed (both %s and %s has been specifiled)",
                             inputfilename, file));
@@ -141,121 +195,72 @@ int _main(string[] args) {
 
         immutable standard_output = (outputfilename.length == 0);
 
-        const input_extension = inputfilename.extension;
-
         WasmReader wasm_reader;
         with (FileExtension) {
-            switch (input_extension) {
+            switch (inputfilename.extension) {
             case wasm, wo:
                 immutable read_data = assumeUnique(cast(ubyte[]) fread(inputfilename));
                 wasm_reader = WasmReader(read_data);
                 verbose.hex(0, read_data);
-                //        writefln("reader\n%s", read_data);
                 break;
-                /*
-    case fileextensions.JSON:
-        const data=cast(char[])fread(inputfilename);
-        auto parse=data.parseJSON;
-        auto hibon=parse.toHiBON;
-        if (standard_output) {
-            write(hibon.serialize);
-        }
-        else {
-            outputfilename.fwrite(hibon.serialize);
-        }
-        break;
-        */
             default:
-                check(0, "File extensions %s not valid for input file (only %s)",
-                        input_extension, only(FileExtension.wasm, FileExtension.wo));
+                check(0, format("File extensions %s not valid for input file (only %-(%s, %))",
+                        inputfilename.extension, only(FileExtension.wasm, FileExtension.wo)));
             }
         }
-        // Wast(wasm_reader, stdout).serialize();
-        // return 0;
 
         WasmWriter wasm_writer = WasmWriter(wasm_reader);
 
-        // writeln("writer");
-        // foreach(i, d; wasm_writer.serialize) {
-        //     writef("%d ", d);
-        //     if (i % 20 == 0) {
-        //         writeln();
-        //     }
-        // }
-        // writefln("writer\n%s", wasm_writer.serialize);
-        // return 0;
-        if (modify_from) {
-        }
         if (inject_gas) {
             auto wasmgas = WasmGas(wasm_writer);
             wasmgas.modify;
-            //        auto wasm_writer=WasmWriter(wasm_reader);
         }
-        version (none)
-            static foreach (E; EnumMembers!Section) {
-                static if (E !is Section.CUSTOM && E !is Section.START) {
-                    {
-                        auto sec = wasm_writer.mod[E];
-                        if (sec !is null) {
-                            writefln("\n\n%s=%s", E, sec);
-                            foreach (i, s; sec.sectypes[]) {
-                                writefln("%d s=%s", i, s);
-                                import std.outbuffer;
-
-                                auto bout = new OutBuffer;
-                                s.serialize(bout);
-                                writefln(" %s\n", bout.toBytes);
-                            }
-                        }
-                    }
-                }
-            }
-
         immutable data_out = wasm_writer.serialize;
 
         if (verbose_switch) {
             verbose.mode = VerboseMode.STANDARD;
         }
 
-        if (print) {
-            //        writefln("data_out=%s", data_out);
-            // writefln("wasm_writer=%s", wasm_writer.serialize);
-            //        Wast(WasmReader(data_out), stdout).serialize();
-            Wast(wasm_reader, stdout).serialize();
-            verbose.mode = VerboseMode.NONE;
-        }
-
-        if (outputfilename) {
-            const output_extension = outputfilename.extension;
-            with (FileExtension) {
-                switch (output_extension) {
-                case wasm:
-                    // auto fout=File(outputfilename, "w");
-                    // scope(exit) {
-                    //     fout.close;
-                    // }
-                    // fout.write(data_out);
-                    outputfilename.fwrite(data_out);
-                    // immutable read_data=assumeUnique(cast(ubyte[])fread(inputfilename));
-                    // wasm_reader=WasmReader(read_data);
-                    break;
-                case wast:
-                    auto fout = File(outputfilename, "w");
-                    scope (exit) {
-                        fout.close;
+        const output_extension = (outputfilename.empty) ? type.typeExtension : outputfilename.extension;
+        writefln("Extension %s", output_extension);
+        with (FileExtension) {
+        WasmOutCase:
+            switch (output_extension) {
+                static foreach (WasmOut; AliasSeq!(wast, dsrc)) {
+            case WasmOut:
+                    File fout = stdout;
+                    if (!outputfilename.empty) {
+                        fout = File(outputfilename, "w");
                     }
-                    //            Wast(WasmReader(data_out), fout).serialize;
-                    Wast(WasmReader(data_out), fout).serialize;
-                    break;
-                default:
-                    check(0, "File extensions %s not valid output file (only %s)",
-                            output_extension, only(FileExtension.wasm, FileExtension.wast));
+                    scope (exit) {
+                        if (fout !is stdout) {
+                            fout.close;
+                        }
+                    }
+                    produce!WasmOut(WasmReader(data_out), fout);
+                    // produce!(FileExtension.wast)(WasmReader(data_out), outputfilename);
+                    //   import _wast=tagion.wasm.Wast;
+                    //       _wast.wast(WasmReader(data_out), stdout).serialize;
+                    break WasmOutCase;
                 }
+            case wasm:
+                outputfilename.fwrite(data_out);
+                break;
+            default:
+                check(outputfilename is null,
+                        format("File extensions %s not valid output file (only %s)",
+                        outputfilename.extension,
+                        only(FileExtension.wasm, FileExtension.wast)));
+                version (none)
+                    if (print) {
+                        Wast(wasm_reader, stdout).serialize();
+                    }
             }
         }
     }
     catch (Exception e) {
-        verbose(e);
+        //verbose(e);
+        stderr.writefln("Error: %s", e.msg);
     }
     return 0;
 }

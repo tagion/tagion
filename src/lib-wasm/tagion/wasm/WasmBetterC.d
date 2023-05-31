@@ -23,7 +23,7 @@ import tagion.basic.tagionexceptions;
 alias check = Check!WasmBetterCException;
 
 @safe WasmBetterC!(Output) wasmBetterC(Output)(WasmReader wasmreader, Output output) {
-    return new WamsBetterC!(Output)(wasmreader, output);
+    return new WasmBetterC!(Output)(wasmreader, output);
 }
 
 @safe class WasmBetterC(Output) : WasmReader.InterfaceModule {
