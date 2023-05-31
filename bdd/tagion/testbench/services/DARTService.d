@@ -7,7 +7,9 @@ import tagion.testbench.tools.Environment;
 
 import tagion.actor;
 import tagion.services.DARTService;
-import tagion.crypto.SecureNet;
+// import tagion.crypto.SecureNet;
+import tagion.crypto.SecureInterfaceNet;
+import tagion.dart.DARTFakeNet;
 
 enum feature = Feature(
 "see if we can read and write trough the dartservice",
@@ -21,9 +23,9 @@ alias FeatureContext = Tuple!(
 @safe @Scenario("write and read from dart db",
 [])
 class WriteAndReadFromDartDb {
-    enum dart_task = "dart_service_task";
-    DARTServiceHandle handle;
-    immutable StdSecureNet net;
+    // enum dart_task = "dart_service_task";
+    // DARTServiceHandle dart_handle;
+    // SecureNet net = new DARTFakeNet("very_secret");
 
     @Given("I have a dart db")
     Document dartDb() {
@@ -33,7 +35,7 @@ class WriteAndReadFromDartDb {
     @Given("I have an dart actor with said db")
     Document saidDb() {
         
-        handle = spawn!DARTService(dart_task, "/tmp/dart_service_test.drt", net);
+        // dart_handle = spawn!DARTService(dart_task, "/tmp/dart_service_test.drt", net);
         return result_ok;
     }
 
