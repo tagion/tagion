@@ -6,16 +6,15 @@ import tagion.hibon.HiBONRecord : fwrite;
 import tagion.tools.Basic;
 import tagion.testbench.hashgraph;
 import tagion.testbench.tools.Environment;
-
+import std.stdio;
 
 mixin Main!(_main);
 
 
 int _main(string[] args) {
-    if (true) {
-        auto hashgraph_sync_network_feature = automation!(synchron_network);
-        auto hashgraph_sync_network_context = hashgraph_sync_network_feature.run();
-    }
+    writefln("HASHGRAPH NAMES %s", args);    
+    auto hashgraph_sync_network_feature = automation!(synchron_network);
+    auto hashgraph_sync_network_context = hashgraph_sync_network_feature.run();
     return 0;
 
 }
