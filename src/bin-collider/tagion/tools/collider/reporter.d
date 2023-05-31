@@ -53,8 +53,17 @@ int _main(string[] args) {
         return 1;
     }
 
+    if (!log_dir.exists || !log_dir.isDir) {
+        stderr.writeln("Log directory does not exist");
+        return 1;
+    }
+
     auto result_files = dirEntries(log_dir, SpanMode.depth).filter!(dirEntry => dirEntry.name.endsWith(".hibon"))
         .map!(dirEntry => dirEntry.name).array.sort;
+
+    if (result_files.length == 0) {
+        stderr.writeln("No hibon result files found");
+    }
 
     FeatureGroup[] featuregroups;
     foreach (result; result_files) {
