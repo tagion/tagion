@@ -1,7 +1,6 @@
 /// Main implementation of actor framework
 module tagion.actor.actor;
 
-import std.concurrency;
 import std.stdio;
 import std.format : format;
 import std.typecons;
@@ -9,6 +8,7 @@ import core.thread;
 import std.exception;
 import std.traits;
 
+import tagion.utils.pretend_safe_concurrency;
 import tagion.actor.exceptions;
 import tagion.actor.exceptions : TaskFailure;
 import tagion.basic.tagionexceptions : TagionException;
@@ -47,7 +47,7 @@ enum Sig {
 /// contains the Tid of the actor which send it and the state
 alias CtrlMsg = Tuple!(string, "task_name", Ctrl, "ctrl");
 
-bool all(Ctrl[string] aa, Ctrl ctrl) {
+bool all(Ctrl[string] aa, Ctrl ctrl) @safe {
     foreach (val; aa) {
         if (val != ctrl) {
             return false;
@@ -123,7 +123,7 @@ struct ActorHandle(A) {
  * actorHandle!MyActor("my_task_name");
  * ---
  */
-ActorHandle!A handle(A)(string task_name)
+ActorHandle!A handle(A)(string task_name) @safe
 if (isActor!A) {
     Tid tid = locate(task_name);
     return ActorHandle!A(tid, task_name);
@@ -140,7 +140,7 @@ if (isActor!A) {
  * spawn!MyActor("my_task_name", 42);
  * ---
  */
-ActorHandle!A spawn(A, Args...)(string task_name, Args args) @trusted nothrow // @safe
+ActorHandle!A spawn(A, Args...)(string task_name, Args args) @safe nothrow // @safe
 if (isActor!A) {
     alias task = A.task;
     Tid tid;
@@ -160,7 +160,7 @@ if (isActor!A) {
  * Params:
  *   a = an active actorhandle
  */
-A respawn(A)(A actor_handle)
+A respawn(A)(A actor_handle) @safe
 if(isActor!(A.Actor)) {
     writefln("%s", typeid(actor_handle.Actor));
     actor_handle.send(Sig.STOP);
@@ -170,7 +170,7 @@ if(isActor!(A.Actor)) {
 }
 
 /// Nullable and nothrow wrapper around ownerTid
-Nullable!Tid tidOwner() nothrow {
+Nullable!Tid tidOwner() @safe nothrow {
     // tid is "null"
     Nullable!Tid tid;
     try {
@@ -187,7 +187,7 @@ Nullable!Tid tidOwner() nothrow {
 }
 
 /// Send to the owner if there is one
-void sendOwner(T...)(T vals) {
+void sendOwner(T...)(T vals) @safe {
     if (!tidOwner.isNull) {
         send(tidOwner.get, vals);
     }
@@ -197,7 +197,7 @@ void sendOwner(T...)(T vals) {
     }
 }
 
-void taskFailure(string task_name, Throwable t) @trusted nothrow {
+void fail(string task_name, Throwable t) @trusted nothrow {
     if (tidOwner.get !is Tid.init) {
         assumeWontThrow(
             ownerTid.prioritySend(
@@ -208,7 +208,7 @@ void taskFailure(string task_name, Throwable t) @trusted nothrow {
 }
 
 /// send your state to your owner
-void setState(Ctrl ctrl, string task_name) nothrow {
+void setState(Ctrl ctrl, string task_name) @safe nothrow {
     try {
         if (!tidOwner.isNull) {
             tidOwner.get.prioritySend(CtrlMsg(task_name, ctrl));
@@ -259,7 +259,7 @@ static:
 
     alias This = typeof(this);
 
-    void signal(Sig signal) {
+    void signal(Sig signal) @safe {
         with (Sig) final switch (signal) {
         case STOP:
             stop = true;
@@ -268,12 +268,12 @@ static:
     }
 
     /// Controls message sent from the children.
-    void control(CtrlMsg msg) {
+    void control(CtrlMsg msg) @safe {
         childrenState[msg.task_name] = msg.ctrl;
     }
 
     /// Stops the actor if the supervisor stops
-    void ownerTerminated(OwnerTerminated) {
+    void ownerTerminated(OwnerTerminated) @safe {
         writefln("%s, Owner stopped... nothing to life for... stopping self", thisTid);
         stop = true;
     }
@@ -283,11 +283,17 @@ static:
      * Params:
      *   message = literally any message
      */
-    void unknown(Variant message) {
+    void unknown(Variant message) @trusted  {
         throw new UnknownMessage("No delegate to deal with message: %s".format(message));
     }
 
-    void starting() {}
+    void starting() @safe {}
+
+    auto failhandler = (TaskFailure tf) @safe {
+        if (ownerTid != Tid.init) {
+            ownerTid.prioritySend(tf);
+        }
+    };
 
     /// The tasks that get run when you call spawn!
     void task(string task_name) nothrow {
@@ -322,27 +328,20 @@ static:
                 end(task_name);
             }
 
-            // Call starting() if it's implemented
-            // version(none) static if (__traits(hasMember, This, "starting")) {
-            //     alias startingCall = __traits(getMember, This, "starting");
-            //     static assert(isCallable!startingCall, "the starting callback is not callable");
-            //     startingCall();
-            // }
-
             starting();
 
-            // Asign the failhandler if a custom one is defined override the default one
-            static if (__traits(hasMember, This, "fail")) {
-                auto failhandler = __traits(getMember, This, "fail");
-            }
-            else {
-                // default failhandler
-                auto failhandler = (TaskFailure tf) {
-                    if (ownerTid != Tid.init) {
-                        ownerTid.prioritySend(tf);
-                    }
-                };
-            }
+            // // Asign the failhandler if a custom one is defined override the default one
+            // static if (__traits(hasMember, This, "fail")) {
+            //     auto failhandler = __traits(getMember, This, "fail");
+            // }
+            // else {
+            //     // default failhandler
+            //     auto failhandler = (TaskFailure tf) {
+            //         if (ownerTid != Tid.init) {
+            //             ownerTid.prioritySend(tf);
+            //         }
+            //     };
+            // }
 
             setState(Ctrl.ALIVE, task_name); // Tell the owner that you running
             while (!stop) {
@@ -357,18 +356,14 @@ static:
                     );
                 }
                 catch (Throwable t) {
-                    if (ownerTid != Tid.init) {
-                        ownerTid.prioritySend(TaskFailure(task_name, cast(immutable) t));
-                    }
+                    fail(task_name, t);
                 }
             }
         }
 
         // If we catch an exception we send it back to owner for them to deal with it.
         catch (Throwable t) {
-            if (tidOwner.get !is Tid.init) {
-                assumeWontThrow(ownerTid.prioritySend(TaskFailure(task_name, cast(immutable) t)));
-            }
+            fail(task_name, t);
         }
     }
 }
