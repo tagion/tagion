@@ -53,6 +53,7 @@
 	- [blockutil](/src/bin-blockutil/README.md)
 	- [hibonutil](/src/bin-hibonutil/README.md)
 	- [dartutil](/src/bin-dartutil/README.md)
+    - [collider](/src/bin-collider/README.md)
 
 - Project goals
 	- [Goals Q1-Q2 2023](documents/project/project_goals_2023_Q1_Q2.md)

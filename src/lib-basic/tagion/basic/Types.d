@@ -114,10 +114,19 @@ bool hasExtension(const(char[]) filename, const(FileExtension) ext) pure nothrow
     return ext == filename.extension;
 }
 
-version (none) @safe
+@safe
+bool hasExtension(const(char[]) filename, const(char[]) ext) pure nothrow {
+    import std.path : extension;
+
+    const file_ext = filename.extension;
+    return (file_ext == ext) || (file_ext == DOT ~ ext);
+}
+
 unittest {
     assert("test.hibon".hasExtension(FileExtension.hibon));
     assert(!"test.hibon".hasExtension(FileExtension.dart));
+    assert("test.hibon".hasExtension("hibon"));
+    assert("test.hibon".hasExtension(".hibon"));
 }
 
 import std.traits : TemplateOf;

@@ -9,7 +9,7 @@ import std.algorithm.searching : canFind;
 import std.getopt;
 import std.stdio;
 import std.format;
-import std.path : extension, setExtension, dirName, buildPath;
+import std.path : extension, setExtension, withExtension, dirName, buildPath;
 import std.file : exists, dirEntries, SpanMode, readText, fwrite = write;
 import std.string : join, strip, splitLines;
 import std.algorithm.iteration : filter, map, joiner, fold, uniq, splitter, each;
@@ -21,6 +21,7 @@ import std.process : execute, environment;
 import std.range;
 import std.typecons : Tuple;
 
+import tagion.basic.Types : hasExtension;
 import tagion.tools.Basic;
 import tagion.utils.JSONCommon;
 import tagion.basic.Types : FileExtension, DOT;
@@ -140,7 +141,7 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
         .map!(path => dirEntries(path, SpanMode.depth))
         .joiner
         .filter!(file => file.isFile)
-        .filter!(file => file.name.extension == opts.bdd_ext)
+        .filter!(file => file.name.hasExtension(opts.bdd_ext))
         .filter!(file => (opts.regex_inc.length is 0) || !file.name.matchFirst(regex_include).empty)
         .filter!(file => (opts.regex_exc.length is 0) || file.name.matchFirst(regex_exclude).empty)
         .array;
