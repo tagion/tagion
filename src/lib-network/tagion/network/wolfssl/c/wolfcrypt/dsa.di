@@ -43,12 +43,14 @@ alias DsaPublicKeyDecode = wc_DsaPublicKeyDecode;
 alias DsaPrivateKeyDecode = wc_DsaPrivateKeyDecode;
 alias DsaKeyToDer = wc_DsaKeyToDer;
 
-enum {
+enum
+{
     DSA_PUBLIC = 0,
     DSA_PRIVATE = 1
 }
 
-enum {
+enum
+{
     /* 160 bit q length */
     DSA_160_HALF_SIZE = 20, /* r and s size  */
     DSA_160_SIG_SIZE = 40, /* signature size */
@@ -66,7 +68,8 @@ enum {
 }
 
 /* DSA */
-struct DsaKey {
+struct DsaKey
+{
     mp_int p;
     mp_int q;
     mp_int g;
@@ -76,60 +79,60 @@ struct DsaKey {
     void* heap; /* memory hint */
 }
 
-int wc_InitDsaKey(DsaKey* key);
-int wc_InitDsaKey_h(DsaKey* key, void* h);
-void wc_FreeDsaKey(DsaKey* key);
-int wc_DsaSign(const(ubyte)* digest, ubyte* out_, DsaKey* key, WC_RNG* rng);
-int wc_DsaVerify(
-        const(ubyte)* digest,
-        const(ubyte)* sig,
-        DsaKey* key,
-        int* answer);
-int wc_DsaPublicKeyDecode(
-        const(ubyte)* input,
-        word32* inOutIdx,
-        DsaKey* key,
-        word32 inSz);
-int wc_DsaPrivateKeyDecode(
-        const(ubyte)* input,
-        word32* inOutIdx,
-        DsaKey* key,
-        word32 inSz);
-int wc_DsaKeyToDer(DsaKey* key, ubyte* output, word32 inLen);
-int wc_SetDsaPublicKey(
-        ubyte* output,
-        DsaKey* key,
-        int outLen,
-        int with_header);
-int wc_DsaKeyToPublicDer(DsaKey* key, ubyte* output, word32 inLen);
+int wc_InitDsaKey (DsaKey* key);
+int wc_InitDsaKey_h (DsaKey* key, void* h);
+void wc_FreeDsaKey (DsaKey* key);
+int wc_DsaSign (const(ubyte)* digest, ubyte* out_, DsaKey* key, WC_RNG* rng);
+int wc_DsaVerify (
+    const(ubyte)* digest,
+    const(ubyte)* sig,
+    DsaKey* key,
+    int* answer);
+int wc_DsaPublicKeyDecode (
+    const(ubyte)* input,
+    word32* inOutIdx,
+    DsaKey* key,
+    word32 inSz);
+int wc_DsaPrivateKeyDecode (
+    const(ubyte)* input,
+    word32* inOutIdx,
+    DsaKey* key,
+    word32 inSz);
+int wc_DsaKeyToDer (DsaKey* key, ubyte* output, word32 inLen);
+int wc_SetDsaPublicKey (
+    ubyte* output,
+    DsaKey* key,
+    int outLen,
+    int with_header);
+int wc_DsaKeyToPublicDer (DsaKey* key, ubyte* output, word32 inLen);
 
 /* raw export functions */
-int wc_DsaImportParamsRaw(
-        DsaKey* dsa,
-        const(char)* p,
-        const(char)* q,
-        const(char)* g);
-int wc_DsaImportParamsRawCheck(
-        DsaKey* dsa,
-        const(char)* p,
-        const(char)* q,
-        const(char)* g,
-        int trusted,
-        WC_RNG* rng);
-int wc_DsaExportParamsRaw(
-        DsaKey* dsa,
-        ubyte* p,
-        word32* pSz,
-        ubyte* q,
-        word32* qSz,
-        ubyte* g,
-        word32* gSz);
-int wc_DsaExportKeyRaw(
-        DsaKey* dsa,
-        ubyte* x,
-        word32* xSz,
-        ubyte* y,
-        word32* ySz);
+int wc_DsaImportParamsRaw (
+    DsaKey* dsa,
+    const(char)* p,
+    const(char)* q,
+    const(char)* g);
+int wc_DsaImportParamsRawCheck (
+    DsaKey* dsa,
+    const(char)* p,
+    const(char)* q,
+    const(char)* g,
+    int trusted,
+    WC_RNG* rng);
+int wc_DsaExportParamsRaw (
+    DsaKey* dsa,
+    ubyte* p,
+    word32* pSz,
+    ubyte* q,
+    word32* qSz,
+    ubyte* g,
+    word32* gSz);
+int wc_DsaExportKeyRaw (
+    DsaKey* dsa,
+    ubyte* x,
+    word32* xSz,
+    ubyte* y,
+    word32* ySz);
 
 /* extern "C" */
 

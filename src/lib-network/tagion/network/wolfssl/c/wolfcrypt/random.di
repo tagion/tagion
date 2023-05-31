@@ -82,11 +82,13 @@ enum WC_RESEED_INTERVAL = 1000000;
 /* guard on redeclaration */
 
 /* OS specific seeder */
-struct OS_Seed {
+struct OS_Seed
+{
     int fd;
 }
 
-struct DRBG_internal {
+struct DRBG_internal
+{
     word32 reseedCtr;
     word32 lastBlock;
     ubyte[55] V;
@@ -96,7 +98,8 @@ struct DRBG_internal {
 }
 
 /* RNG context */
-struct WC_RNG {
+struct WC_RNG
+{
     OS_Seed seed;
     void* heap;
 
@@ -114,52 +117,52 @@ struct WC_RNG {
 
 alias RNG = WC_RNG;
 
-int wc_GenerateSeed(OS_Seed* os, ubyte* seed, word32 sz);
+int wc_GenerateSeed (OS_Seed* os, ubyte* seed, word32 sz);
 
 /* Whitewood netRandom client library */
 
 /* HAVE_WNR */
 
-WC_RNG* wc_rng_new(ubyte* nonce, word32 nonceSz, void* heap);
-void wc_rng_free(WC_RNG* rng);
+WC_RNG* wc_rng_new (ubyte* nonce, word32 nonceSz, void* heap);
+void wc_rng_free (WC_RNG* rng);
 
-int wc_InitRng(WC_RNG* rng);
-int wc_InitRng_ex(WC_RNG* rng, void* heap, int devId);
-int wc_InitRngNonce(WC_RNG* rng, ubyte* nonce, word32 nonceSz);
-int wc_InitRngNonce_ex(
-        WC_RNG* rng,
-        ubyte* nonce,
-        word32 nonceSz,
-        void* heap,
-        int devId);
-int wc_RNG_GenerateBlock(WC_RNG* rng, ubyte* b, word32 sz);
-int wc_RNG_GenerateByte(WC_RNG* rng, ubyte* b);
-int wc_FreeRng(WC_RNG* rng);
+int wc_InitRng (WC_RNG* rng);
+int wc_InitRng_ex (WC_RNG* rng, void* heap, int devId);
+int wc_InitRngNonce (WC_RNG* rng, ubyte* nonce, word32 nonceSz);
+int wc_InitRngNonce_ex (
+    WC_RNG* rng,
+    ubyte* nonce,
+    word32 nonceSz,
+    void* heap,
+    int devId);
+int wc_RNG_GenerateBlock (WC_RNG* rng, ubyte* b, word32 sz);
+int wc_RNG_GenerateByte (WC_RNG* rng, ubyte* b);
+int wc_FreeRng (WC_RNG* rng);
 
 /* some older compilers do not like macro function in expression */
 
-int wc_RNG_DRBG_Reseed(WC_RNG* rng, const(ubyte)* entropy, word32 entropySz);
-int wc_RNG_TestSeed(const(ubyte)* seed, word32 seedSz);
-int wc_RNG_HealthTest(
-        int reseed,
-        const(ubyte)* entropyA,
-        word32 entropyASz,
-        const(ubyte)* entropyB,
-        word32 entropyBSz,
-        ubyte* output,
-        word32 outputSz);
-int wc_RNG_HealthTest_ex(
-        int reseed,
-        const(ubyte)* nonce,
-        word32 nonceSz,
-        const(ubyte)* entropyA,
-        word32 entropyASz,
-        const(ubyte)* entropyB,
-        word32 entropyBSz,
-        ubyte* output,
-        word32 outputSz,
-        void* heap,
-        int devId);
+int wc_RNG_DRBG_Reseed (WC_RNG* rng, const(ubyte)* entropy, word32 entropySz);
+int wc_RNG_TestSeed (const(ubyte)* seed, word32 seedSz);
+int wc_RNG_HealthTest (
+    int reseed,
+    const(ubyte)* entropyA,
+    word32 entropyASz,
+    const(ubyte)* entropyB,
+    word32 entropyBSz,
+    ubyte* output,
+    word32 outputSz);
+int wc_RNG_HealthTest_ex (
+    int reseed,
+    const(ubyte)* nonce,
+    word32 nonceSz,
+    const(ubyte)* entropyA,
+    word32 entropyASz,
+    const(ubyte)* entropyB,
+    word32 entropyBSz,
+    ubyte* output,
+    word32 outputSz,
+    void* heap,
+    int devId);
 /* HAVE_HASHDRBG */
 
 /* extern "C" */
