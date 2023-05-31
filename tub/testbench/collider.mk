@@ -26,7 +26,7 @@ bddfiles: $(BDD)/.done
 
 $(BDD)/.done: $(BDD_MD_FILES)
 	$(PRECMD)
-	$(call log.kvp, "Generates BDD",  $@)
+	$(call log.kvp, "Generates BDD",  $@)
 	$(COLLIDER) -v $(BDD_FLAGS)
 	$(TOUCH) $@
 
@@ -100,7 +100,7 @@ bddreport:
 	mv $@ $<
 
 bddstrip: $(BDD_MD_FILES:.md=.md.tmp)
-
+/bdd_
 env-bdd:
 	$(PRECMD)
 	${call log.header, $@ :: env}
@@ -141,7 +141,6 @@ help-bdd:
 	${call log.help, "make clean-bddtest", "Remove the bdd log files"}
 	${call log.help, "make clean-reports", "Remove all the bdd reports"}
 	${call log.help, "make clean-bdd", "Remove all the bdd files"}
-	${call log.help, "make list-bdd", "List all bdd targets"}
 	${call log.close}
 
 .PHONY: help-bdd
