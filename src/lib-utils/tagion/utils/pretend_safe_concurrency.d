@@ -8,10 +8,26 @@ import core.time : Duration;
  *         to use them in @safe code
  */
 
-alias Tid = concurrency.Tid;
-alias thisTid = concurrency.thisTid;
-alias ThreadInfo = concurrency.ThreadInfo;
-alias OwnerTerminated = concurrency.OwnerTerminated;
+public import std.concurrency :
+    Tid, 
+    ThreadInfo, 
+    OwnerTerminated, 
+    TidMissingException, 
+    thisTid, 
+    PriorityMessageException, 
+    OnCrowding,
+    MessageMismatch,
+    Variant;
+
+void setMaxMailboxSize(Tid tid, size_t messages, OnCrowding doThis) @trusted
+{
+    concurrency.setMaxMailboxSize(tid, messages, doThis);
+}
+
+void unregister(string name) @trusted {
+    concurrency.unregister(name);
+}
+
 
 void send(Args...)(Tid tid, Args args) @trusted
 {
@@ -28,7 +44,7 @@ void receive(Args...)(Args args) @trusted
     concurrency.receive(args);
 }
 
-auto receiveOnlyTrusted(T...)() @trusted
+auto receiveOnly(T...)() @trusted
 {
     return concurrency.receiveOnly!T;
 }
