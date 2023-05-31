@@ -28,7 +28,7 @@ struct DARTService {
     static void dartBullseye(Msg!"dartBullseye") {
     }
     
-    void task(const string task_name, const string dart_path, const SecureNet net) nothrow {
+    void task(string task_name, string dart_path, SecureNet net) nothrow {
         try {
 
             db = new DART(net, dart_path);
@@ -42,7 +42,7 @@ struct DARTService {
             end(task_name);
         }
         catch (Exception e) {
-            taskFailure(task_name, e);
+            fail(task_name, e);
         }
     }
 }
