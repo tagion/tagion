@@ -104,5 +104,13 @@
             ],
             "timeout": 0.0
         },
+        "hashgraph_test": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "hashgraph"
+            ],
+            "timeout": 0.0
+        }
     }
 }
