@@ -12,9 +12,8 @@ mixin Main!(_main);
 
 
 int _main(string[] args) {
-    writefln("HASHGRAPH NAMES %s", args);    
     auto hashgraph_sync_network_feature = automation!(synchron_network);
+    hashgraph_sync_network_feature.StartNetworkWithNAmountOfNodes(args);
     auto hashgraph_sync_network_context = hashgraph_sync_network_feature.run();
     return 0;
-
 }
