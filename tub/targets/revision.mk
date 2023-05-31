@@ -1,6 +1,6 @@
 .PHONY: $(REVISION_FILE)
 
-$(REVISION_FILE):
+$(REVISION_FILE): $(DBUILD)/.way
 	$(PRECMD)
 	${call log.header, revision :: $(GIT_DATE)}
 	echo '$(GIT_INFO)' > $@

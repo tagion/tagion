@@ -41,7 +41,7 @@ class SendATaskFailureToAnActor {
 
     @Given("an #actor")
     Document anActor() @trusted {
-        myActor = spawnActor!MyActor(actor_task);
+        myActor = spawn!MyActor(actor_task);
 
         return result_ok;
     }
@@ -57,7 +57,7 @@ class SendATaskFailureToAnActor {
 
     @Then("send a `TaskFailure` to the actor")
     Document toTheActor() @trusted {
-        myActor.send(TaskFailure(new immutable Exception("This big fail"), "main"));
+        myActor.send(TaskFailure( "main", new immutable Exception("This big fail")));
         return result_ok;
     }
 

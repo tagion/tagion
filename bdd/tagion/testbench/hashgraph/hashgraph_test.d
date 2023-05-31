@@ -18,8 +18,9 @@ import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBON;
 
 /++
-     This function makes sure that the HashGraph has all the events connected to this event
-     +/
+    This function makes sure that the HashGraph has all the events connected to this event
++/
+@safe
 static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
     import core.thread.fiber : Fiber;
     import tagion.crypto.SecureNet : StdSecureNet;
@@ -219,7 +220,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
 import std.compiler;
 
 // Unittest segfaults in LDC 1.29 (2.099)
-unittest {
+void hashgraphTest() @safe {
     import tagion.hashgraph.Event;
     import std.stdio;
     import std.traits;
@@ -227,8 +228,9 @@ unittest {
     import std.datetime;
     import tagion.hibon.HiBONJSON;
     import tagion.logger.Logger : log, LogLevel;
-
-    log.push(LogLevel.NONE);
+    import std.array;
+    import tagion.hashgraphview.Compare;
+    import std.exception : assumeWontThrow;
 
     enum NodeLabel {
         Alice,
@@ -327,14 +329,13 @@ unittest {
     }
 }
 
-version (unittest) {
+import basic = tagion.basic.basic;
+import std.range : dropExactly;
+import tagion.utils.Miscellaneous : cutHex;
+
+const(basic.FileNames) fileId(T = HashGraph)(string prefix = null) @safe {
     import basic = tagion.basic.basic;
-    import std.range : dropExactly;
-    import tagion.utils.Miscellaneous : cutHex;
 
-    const(basic.FileNames) fileId(T = HashGraph)(string prefix = null) @safe {
-        import basic = tagion.basic.basic;
-
-        return basic.fileId!T("hibon", prefix);
-    }
+    return basic.fileId!T("hibon", prefix);
 }
+

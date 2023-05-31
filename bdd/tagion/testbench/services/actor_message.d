@@ -46,8 +46,8 @@ static:
         sendOwner(Msg!"response"(), counter);
     }
 
-    void relay(Msg!"relay", string message) {
-        sendOwner(Msg!"relay"(), message);
+    void relay(Msg!"relay", string to, string message) {
+        locate(to).send(Msg!"relay"(), supervisor_task_name, message);
     }
 
     mixin Actor!(&increase, &decrease, &relay); /// Turns the struct into an Actor
@@ -61,8 +61,8 @@ static:
     ChildHandle child2Handle;
 
     void starting() {
-        child1Handle = spawnActor!MyActor(child1_task_name);
-        child2Handle = spawnActor!MyActor(child2_task_name);
+        child1Handle = spawn!MyActor(child1_task_name);
+        child2Handle = spawn!MyActor(child2_task_name);
 
         childrenState[child1Handle.task_name] = Ctrl.STARTING;
         childrenState[child2Handle.task_name] = Ctrl.STARTING;
@@ -78,11 +78,10 @@ static:
     }
 
     void roundtrip(Msg!"roundtrip", string message) {
-        ChildHandle child = actorHandle!MyActor(child1_task_name);
-        child.send(Msg!"relay"(), message);
+        child1Handle.send(Msg!"relay"(), child2_task_name, message);
     }
 
-    void relay(Msg!"relay", string message) {
+    void relay(Msg!"relay", string _, string message) {
         sendOwner(message);
     }
 
@@ -100,7 +99,7 @@ class MessageBetweenSupervisorAndChild {
 
     @Given("a supervisor #super and two child actors #child1 and #child2")
     Document actorsChild1AndChild2() @trusted {
-        supervisorHandle = spawnActor!MySuperActor(supervisor_task_name);
+        supervisorHandle = spawn!MySuperActor(supervisor_task_name);
 
         check(supervisorHandle.tid !is Tid.init, "Supervisor thread is not running");
         Ctrl ctrl = receiveOnlyTimeout!CtrlMsg.ctrl;
@@ -116,8 +115,8 @@ class MessageBetweenSupervisorAndChild {
     Document theChild1AndChild2() @trusted {
         // The supervisor should only send alive when it has receive alive from the children.
         // we assign the child handles
-        childHandleUno = actorHandle!MyActor(child1_task_name);
-        childHandleDos = actorHandle!MyActor(child2_task_name);
+        childHandleUno = handle!MyActor(child1_task_name);
+        childHandleDos = handle!MyActor(child2_task_name);
 
         return result_ok;
     }
@@ -168,7 +167,7 @@ class SendMessageBetweenTwoChildren {
 
     @Given("a supervisor #super and two child actors #child1 and #child2")
     Document actorsChild1AndChild2() @trusted {
-        supervisorHandle = spawnActor!MySuperActor(supervisor_task_name);
+        supervisorHandle = spawn!MySuperActor(supervisor_task_name);
         check(supervisorHandle.tid !is Tid.init, "Supervisor thread is not running");
 
         CtrlMsg ctrl = receiveOnlyTimeout!CtrlMsg;
@@ -184,8 +183,8 @@ class SendMessageBetweenTwoChildren {
     Document theChild1AndChild2() @trusted {
         // The supervisor should only send alive when it has receive alive from the children.
         // we assign the child handles
-        childHandleUno = actorHandle!MyActor(child1_task_name);
-        childHandleDos = actorHandle!MyActor(child2_task_name);
+        childHandleUno = handle!MyActor(child1_task_name);
+        childHandleDos = handle!MyActor(child2_task_name);
 
         return result_ok;
     }

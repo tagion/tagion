@@ -112,7 +112,7 @@ mixin template JSONString() {
     import std.conv : to;
 
     @trusted void toString(scope void delegate(scope const(char)[]) @system sink,
-            const FormatSpec!char fmt) const {
+    const FormatSpec!char fmt) const {
         alias ThisT = typeof(this);
         import tagion.hibon.Document;
         import tagion.hibon.HiBON;
@@ -343,14 +343,10 @@ mixin template JSONString() {
                 sub_result[key] = jvalue.boolean;
                 return true;
             }
-            if (jvalue.array[TYPE].type !is JSONType.STRING) {
+            if ((jvalue.array.length != 2) || (jvalue.array[TYPE].type !is JSONType.STRING) || !(jvalue.array[TYPE].str in labelMap)) {
                 return false;
             }
             immutable label = jvalue.array[TYPE].str;
-
-            
-
-            .check((label in labelMap) !is null, format("HiBON type name '%s' is not valid", label));
             immutable type = labelMap[label];
 
             with (Type) {
@@ -382,6 +378,7 @@ mixin template JSONString() {
                     }
                 }
             }
+
             assert(0);
         }
 
@@ -445,6 +442,23 @@ mixin template JSONString() {
     return Obj(json);
 }
 
+@safe
+HiBON toHiBON(const(char[]) json_text) {
+    const json = json_text.parseJSON;
+    return json.toHiBON;
+}
+
+@safe
+Document toDoc(scope const JSONValue json) {
+    return Document(json.toHiBON);
+}
+
+@safe
+Document toDoc(const(char[]) json_text) {
+    const json = parseJSON(json_text);
+    return json.toDoc;
+}
+
 @safe unittest {
     //    import std.stdio;
     import tagion.hibon.HiBON : HiBON;
@@ -473,10 +487,10 @@ mixin template JSONString() {
     test_tabel.TIME = sdt_t(1001);
 
     alias TabelArray = Tuple!(immutable(ubyte)[], Type.BINARY.stringof, string,
-            Type.STRING.stringof, DataBlock, Type.HASHDOC.stringof, // Credential,          Type.CREDENTIAL.stringof,
-            // CryptDoc,            Type.CRYPTDOC.stringof,
+    Type.STRING.stringof, DataBlock, Type.HASHDOC.stringof, // Credential,          Type.CREDENTIAL.stringof,
+        // CryptDoc,            Type.CRYPTDOC.stringof,
 
-            
+        
 
     );
     TabelArray test_tabel_array;
@@ -584,5 +598,34 @@ mixin template JSONString() {
 
 @safe
 unittest {
+    import tagion.hibon.HiBONRecord;
+    import std.stdio;
+
+    static struct S {
+        int[] a;
+        mixin HiBONRecord!(q{
+            this(int[] a) {
+                this.a=a;
+            }
+         });
+    }
+
+    { /// Checks that an array of two elements is converted correctly
+        const s = S([20, 34]);
+        immutable text = s.toPretty;
+        //const json = text.parseJSON;
+        const h = text.toHiBON;
+        const doc = Document(h);
+        const result_s = S(doc);
+        assert(result_s == s);
+    }
+
+    { /// Checks 
+        const s = S([17, -20, 42]);
+        immutable text = s.toJSON;
+        const result_s = S(text.toDoc);
+        assert(result_s == s);
+
+    }
 
 }

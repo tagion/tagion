@@ -20,14 +20,17 @@ bddtagion: tagion
 	$(PRECMD)
 	$(DBIN)/tagion -f
 
-bddfiles: $(BDD)/.done
+
+bddfiles: collider $(BDD)/.done
+
+.PHONY: bddfiles collider
 
 $(BDD)/.done: $(BDD_MD_FILES)
 	$(PRECMD)
 	$(COLLIDER) -v $(BDD_FLAGS)
 	$(TOUCH) $@
 
-.PHONY: bddfiles
+
 
 bddcontent: $(BDD)/BDDS.md
 
@@ -104,6 +107,7 @@ env-bdd:
 	${call log.env, BDD_FLAGS, $(BDD_FLAGS)}
 	${call log.env, BDD_DFLAGS, $(BDD_DFLAGS)}
 	${call log.env, BDD_DFILES, $(BDD_DFILES)}
+	${call log.env, BDD_D_FILES, $(BDD_D_FILES)}
 	${call log.env, BDD_MD_FILES, $(BDD_MD_FILES)}
 	${call log.env, TESTENV, $(TESTENV)}
 	${call log.kvp, TESTMAIN, $(TESTMAIN)}
@@ -138,7 +142,6 @@ help-bdd:
 	${call log.help, "make clean-bddtest", "Remove the bdd log files"}
 	${call log.help, "make clean-reports", "Remove all the bdd reports"}
 	${call log.help, "make clean-bdd", "Remove all the bdd files"}
-	${call log.help, "make list-bdd", "List all bdd targets"}
 	${call log.close}
 
 .PHONY: help-bdd

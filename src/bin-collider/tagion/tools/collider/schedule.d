@@ -183,7 +183,6 @@ struct ScheduleRunner {
                 //                writefln("job_index=%d", job_index);
                 if (job_index >= 0) {
                     this.stop(runners[job_index]);
-                    writefln("Dump job %d", job_index);
                     runners[job_index].fout.close;
                     runners[job_index] = Runner.init;
                     writefln("Next job");

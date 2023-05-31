@@ -84,7 +84,7 @@
             "args": [],
             "envs": {},
             "stages": [
-                "performance"
+                "commit", "performance"
             ],
             "timeout": 0.0
         },

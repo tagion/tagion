@@ -43,7 +43,7 @@ static:
     MyActorHandle childHandle;
 
     void starting() {
-        childHandle = spawnActor!MyActor(child_task_name);
+        childHandle = spawn!MyActor(child_task_name);
 
         childrenState[childHandle.task_name] = Ctrl.STARTING;
 
@@ -66,7 +66,7 @@ class SendAMessageToAnActorYouDontOwn {
 
     @Given("a supervisor #super and one child actor #child")
     Document actorChild() @trusted {
-        super_actor_handler = spawnActor!MySuperActor(super_task_name);
+        super_actor_handler = spawn!MySuperActor(super_task_name);
 
         Ctrl ctrl = receiveOnlyTimeout!CtrlMsg.ctrl;
         check(ctrl is Ctrl.STARTING, "Supervisor is not starting");
@@ -79,7 +79,7 @@ class SendAMessageToAnActorYouDontOwn {
 
     @When("#we request the handler for #child")
     Document forChild() @trusted {
-        child_handler = actorHandle!MyActor(child_task_name);
+        child_handler = handle!MyActor(child_task_name);
         check(child_handler.tid !is Tid.init, "Child task was not running");
         return result_ok;
     }

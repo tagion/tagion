@@ -1,7 +1,19 @@
+
+DART_API_SERVICE=$(INTEGRATION)/vibed-rest-api
+DART_API_TWO_SERVICE=$(INTEGRATION)/vibed2-rest-api
+DART_API_BUILD=$(DBUILD)/integration
+DART_API_INSTALL_DIR=$(HOME)/.local/share/dart_api
+
+
 dartapi: libtagion
 	$(PRECMD)
 	mkdir -p $(DART_API_BUILD)
 	dub build --root=$(DART_API_SERVICE) --compiler=$(DC)
+
+dartsecondapi: libtagion
+	$(PRECMD)
+	mkdir -p $(DART_API_BUILD)
+	dub build --root=$(DART_API_TWO_SERVICE) --compiler=$(DC)
 
 install-dartapi: dartapi
 	mkdir -p $(DART_API_INSTALL_DIR)

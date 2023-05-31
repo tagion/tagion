@@ -537,7 +537,7 @@ static setDefaultOption(ref Options options)
         prefix = "dart_";
         path = "";
         initialize = true;
-        synchronize = true;
+        synchronize = false;
         fast_load = false;
         tick_timeout = 500;
         with (sync)

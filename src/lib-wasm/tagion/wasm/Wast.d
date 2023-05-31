@@ -22,7 +22,7 @@ import tagion.basic.tagionexceptions;
 
 alias check = Check!WastException;
 
-@safe WastT!(Output) Wast(Output)(WasmReader wasmreader, Output output) {
+@safe WastT!(Output) wast(Output)(WasmReader wasmreader, Output output) {
     return new WastT!(Output)(wasmreader, output);
 }
 

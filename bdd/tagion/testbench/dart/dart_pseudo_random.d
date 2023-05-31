@@ -26,6 +26,7 @@ import tagion.Keywords;
 import std.range;
 import tagion.utils.Random;
 import std.random : randomShuffle, MinstdRand0, randomSample;
+import tagion.basic.basic : forceRemove;
 
 import tagion.hibon.HiBONRecord;
 
@@ -61,6 +62,8 @@ class AddPseudoRandomData {
         // create the directory to store the DART in.
         mkdirRecurse(info.module_path);
         // create the dartfile
+        info.dartfilename.forceRemove;
+        info.dartfilename2.forceRemove;
         DART.create(info.dartfilename);
         DART.create(info.dartfilename2);
 
