@@ -1,4 +1,4 @@
-module tagion.wasm.Wast;
+module tagion.wasm.WasmBetterC;
 
 import std.format;
 import std.stdio;
@@ -14,19 +14,19 @@ import tagion.wasm.WasmBase;
 import tagion.wasm.WasmException;
 import tagion.basic.tagionexceptions;
 
-@safe class WastException : WasmException {
+@safe class WasmBetterCException : WasmException {
     this(string msg, string file = __FILE__, size_t line = __LINE__) pure nothrow {
         super(msg, file, line);
     }
 }
 
-alias check = Check!WastException;
+alias check = Check!WasmBetterCException;
 
-@safe WastT!(Output) wast(Output)(WasmReader wasmreader, Output output) {
-    return new WastT!(Output)(wasmreader, output);
+@safe WasmBetterC!(Output) wasmBetterC(Output)(WasmReader wasmreader, Output output) {
+    return new WasmBetterC!(Output)(wasmreader, output);
 }
 
-@safe class WastT(Output) : WasmReader.InterfaceModule {
+@safe class WasmBetterC(Output) : WasmReader.InterfaceModule {
     alias Sections = WasmReader.Sections;
     //alias ExprRange=WasmReader.WasmRange.WasmSection.ExprRange;
     //alias WasmArg=WasmReader.WasmRange.WasmSection.WasmArg;
@@ -107,7 +107,6 @@ alias check = Check!WastException;
 
     alias Type = Sections[Section.TYPE];
     void type_sec(ref const(Type) _type) {
-        //        auto _type=*mod[Section.TYPE]; //type_sec;
         foreach (i, t; _type[].enumerate) {
             output.writef("%s(type (;%d;) (%s", indent, i, typesName(t.type));
             if (t.params.length) {
