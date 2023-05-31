@@ -1,6 +1,6 @@
 ## Feature: see if we can read and write trough the dartservice
 
-`tagion.testbench.services.Dartservice`
+`tagion.testbench.services.DARTService`
 
 ### Scenario: write and read from dart db
 
