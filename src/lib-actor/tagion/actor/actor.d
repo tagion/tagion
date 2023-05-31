@@ -87,8 +87,9 @@ struct ActorHandle(A) {
 
     alias Actor = A;
 
-    @trusted void send(T...)(T vals) {
-        concurrency.send(tid, vals);
+    @safe void send(T...)(T args) {
+        locate(task_name).send(args);
+        // concurrency.send(tid, args);
     }
 
     // pragma(msg, format("# %s:", Actor.stringof));
@@ -140,19 +141,25 @@ if (isActor!A) {
  * spawn!MyActor("my_task_name", 42);
  * ---
  */
-ActorHandle!A spawn(A, Args...)(string task_name, Args args) @safe nothrow // @safe
+ActorHandle!A spawn(A, Args...)(string task_name, Args args) @safe nothrow
 if (isActor!A) {
-    alias task = A.task;
-    Tid tid;
+    try {
+        immutable A actor = A();
+        Tid tid;
 
-    import concurrency = tagion.utils.pretend_safe_concurrency;
-    assumeWontThrow({
-        tid = concurrency.spawn(&task, task_name, args);
+        import concurrency = tagion.utils.pretend_safe_concurrency;
+        // import concurrency = std.concurrency;
+        tid = concurrency.spawn(&(actor.task), task_name, args);
+        writefln("spawning %s", task_name);
         tid.setMaxMailboxSize(int.sizeof, OnCrowding.throwException);
+        register(task_name, tid);
         writefln("%s registered", task_name);
-    });
 
-    return ActorHandle!A(tid, task_name);
+        return ActorHandle!A(tid, task_name);
+    }
+    catch (Exception e) {
+        assert(0, e.msg);
+    }
 }
 
 /*
@@ -287,14 +294,6 @@ static:
         throw new UnknownMessage("No delegate to deal with message: %s".format(message));
     }
 
-    void starting() @safe {}
-
-    auto failhandler = (TaskFailure tf) @safe {
-        if (ownerTid != Tid.init) {
-            ownerTid.prioritySend(tf);
-        }
-    };
-
     /// The tasks that get run when you call spawn!
     void task(string task_name) nothrow {
         try {
@@ -305,7 +304,6 @@ static:
                 import core.sys.posix.pthread;
                 pthread_setname_np(pthread_self(), toStringz(task_name));
             }
-            register(task_name, thisTid);
             setState(Ctrl.STARTING, task_name); // Tell the owner that you are starting.
             scope (exit) {
                 if (childrenState.length != 0) {
@@ -328,20 +326,25 @@ static:
                 end(task_name);
             }
 
-            starting();
+            // Call starting() if it's implemented
+            static if (__traits(hasMember, This, "starting")) {
+                alias startingCall = __traits(getMember, This, "starting");
+                static assert(isCallable!startingCall, "the starting callback is not callable");
+                startingCall();
+            }
 
             // // Asign the failhandler if a custom one is defined override the default one
-            // static if (__traits(hasMember, This, "fail")) {
-            //     auto failhandler = __traits(getMember, This, "fail");
-            // }
-            // else {
-            //     // default failhandler
-            //     auto failhandler = (TaskFailure tf) {
-            //         if (ownerTid != Tid.init) {
-            //             ownerTid.prioritySend(tf);
-            //         }
-            //     };
-            // }
+            static if (__traits(hasMember, This, "failHandler")) {
+                auto failhandler = __traits(getMember, This, "failHandler");
+            }
+            else {
+                // default failhandler
+                auto failhandler = (TaskFailure tf) {
+                    if (ownerTid != Tid.init) {
+                        ownerTid.prioritySend(tf);
+                    }
+                };
+            }
 
             setState(Ctrl.ALIVE, task_name); // Tell the owner that you running
             while (!stop) {
