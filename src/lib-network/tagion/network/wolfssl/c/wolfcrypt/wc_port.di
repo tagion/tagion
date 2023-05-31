@@ -95,7 +95,8 @@ alias wolfSSL_Mutex = pthread_mutex_t;
 /* SINGLE_THREADED */
 
 /* Reference counting. */
-struct wolfSSL_Ref {
+struct wolfSSL_Ref
+{
     /* TODO: use atomic operations instead of mutex. */
 
     wolfSSL_Mutex mutex;
@@ -103,10 +104,10 @@ struct wolfSSL_Ref {
     int count;
 }
 
-void wolfSSL_RefInit(wolfSSL_Ref* ref_, int* err);
-void wolfSSL_RefFree(wolfSSL_Ref* ref_);
-void wolfSSL_RefInc(wolfSSL_Ref* ref_, int* err);
-void wolfSSL_RefDec(wolfSSL_Ref* ref_, int* isZero, int* err);
+void wolfSSL_RefInit (wolfSSL_Ref* ref_, int* err);
+void wolfSSL_RefFree (wolfSSL_Ref* ref_);
+void wolfSSL_RefInc (wolfSSL_Ref* ref_, int* err);
+void wolfSSL_RefDec (wolfSSL_Ref* ref_, int* isZero, int* err);
 
 /* Enable crypt HW mutex for Freescale MMCAU, PIC32MZ or STM32 */
 
@@ -120,29 +121,32 @@ enum WOLFSSL_CRYPT_HW_MUTEX = 0;
    the same time. */
 
 /* Define stubs, since HW mutex is disabled */
-extern (D) int wolfSSL_CryptHwMutexInit() {
+extern (D) int wolfSSL_CryptHwMutexInit()
+{
     return 0;
 } /* Success */
-extern (D) int wolfSSL_CryptHwMutexLock() {
+extern (D) int wolfSSL_CryptHwMutexLock()
+{
     return 0;
 } /* Success */
-extern (D) auto wolfSSL_CryptHwMutexUnLock() {
+extern (D) auto wolfSSL_CryptHwMutexUnLock()
+{
     return cast(void) 0;
 } /* Success */
 /* WOLFSSL_CRYPT_HW_MUTEX */
 
 /* Mutex functions */
-int wc_InitMutex(wolfSSL_Mutex* m);
-wolfSSL_Mutex* wc_InitAndAllocMutex();
-int wc_FreeMutex(wolfSSL_Mutex* m);
-int wc_LockMutex(wolfSSL_Mutex* m);
-int wc_UnLockMutex(wolfSSL_Mutex* m);
+int wc_InitMutex (wolfSSL_Mutex* m);
+wolfSSL_Mutex* wc_InitAndAllocMutex ();
+int wc_FreeMutex (wolfSSL_Mutex* m);
+int wc_LockMutex (wolfSSL_Mutex* m);
+int wc_UnLockMutex (wolfSSL_Mutex* m);
 
 /* dynamically set which mutex to use. unlock / lock is controlled by flag */
 
 /* main crypto initialization function */
-int wolfCrypt_Init();
-int wolfCrypt_Cleanup();
+int wolfCrypt_Init ();
+int wolfCrypt_Cleanup ();
 
 /* FILESYSTEM SECTION */
 /* filesystem abstraction layer, used by ssl.c */
@@ -200,9 +204,10 @@ enum MAX_FILENAME_SZ = 256; /* max file name length */
 
 enum MAX_PATH = 256;
 
-int wc_FileLoad(const(char)* fname, ubyte** buf, size_t* bufLen, void* heap);
+int wc_FileLoad (const(char)* fname, ubyte** buf, size_t* bufLen, void* heap);
 
-struct ReadDirCtx {
+struct ReadDirCtx
+{
     dirent* entry;
     DIR* dir;
     stat_t s;
@@ -212,13 +217,13 @@ struct ReadDirCtx {
 
 enum WC_READDIR_NOFILE = -1;
 
-int wc_ReadDirFirst(ReadDirCtx* ctx, const(char)* path, char** name);
-int wc_ReadDirNext(ReadDirCtx* ctx, const(char)* path, char** name);
-void wc_ReadDirClose(ReadDirCtx* ctx);
+int wc_ReadDirFirst (ReadDirCtx* ctx, const(char)* path, char** name);
+int wc_ReadDirNext (ReadDirCtx* ctx, const(char)* path, char** name);
+void wc_ReadDirClose (ReadDirCtx* ctx);
 /* !NO_WOLFSSL_DIR */
 enum WC_ISFILEEXIST_NOFILE = -1;
 
-int wc_FileExists(const(char)* fname);
+int wc_FileExists (const(char)* fname);
 
 /* !NO_FILESYSTEM */
 
@@ -305,7 +310,8 @@ alias XTIME = time;
 
 /* reentrant version */
 
-extern (D) auto XGMTIME(T0, T1)(auto ref T0 c, auto ref T1 t) {
+extern (D) auto XGMTIME(T0, T1)(auto ref T0 c, auto ref T1 t)
+{
     return gmtime(c);
 }
 
@@ -336,7 +342,7 @@ extern (D) auto XGMTIME(T0, T1)(auto ref T0 c, auto ref T1 t) {
 
 /* NO_ASN_TIME */
 
-char* mystrnstr(const(char)* s1, const(char)* s2, uint n);
+char* mystrnstr (const(char)* s1, const(char)* s2, uint n);
 
 /* default static file buffer size for input, will use dynamic buffer if
  * not big enough */

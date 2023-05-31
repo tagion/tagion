@@ -62,7 +62,8 @@ struct falcon_key;
 
 struct dilithium_key;
 
-enum Ecc_Sum {
+enum Ecc_Sum
+{
     ECC_SECP112R1_OID = 182,
     ECC_SECP112R2_OID = 183,
     ECC_SECP128R1_OID = 204,
@@ -97,7 +98,8 @@ enum Ecc_Sum {
 }
 
 /* Certificate file Type */
-enum CertType {
+enum CertType
+{
     CERT_TYPE = 0,
     PRIVATEKEY_TYPE = 1,
     DH_PARAM_TYPE = 2,
@@ -134,7 +136,8 @@ enum CertType {
 }
 
 /* Signature type, by OID sum */
-enum Ctc_SigType {
+enum Ctc_SigType
+{
     CTC_SHAwDSA = 517,
     CTC_SHA256wDSA = 416,
     CTC_MD2wRSA = 646,
@@ -176,7 +179,8 @@ enum Ctc_SigType {
     CTC_DILITHIUM_AES_LEVEL5 = 224
 }
 
-enum Ctc_Encoding {
+enum Ctc_Encoding
+{
     CTC_UTF8 = 0x0c, /* utf8      */
     CTC_PRINTABLE = 0x13 /* printable */
 }
@@ -185,7 +189,8 @@ enum WC_CTC_NAME_SIZE = 64;
 
 enum WC_CTC_MAX_ALT_SIZE = 16384;
 
-enum Ctc_Misc {
+enum Ctc_Misc
+{
     CTC_COUNTRY_SIZE = 2,
     CTC_NAME_SIZE = WC_CTC_NAME_SIZE,
     CTC_DATE_SIZE = 32,
@@ -194,7 +199,9 @@ enum Ctc_Misc {
     CTC_GEN_SERIAL_SZ = 16,
     CTC_FILETYPE_ASN1 = 2,
     CTC_FILETYPE_PEM = 1,
-    CTC_FILETYPE_DEFAULT = 2/* AKID could contains: hash + (Option) AuthCertIssuer,AuthCertSerialNum
+    CTC_FILETYPE_DEFAULT = 2
+
+    /* AKID could contains: hash + (Option) AuthCertIssuer,AuthCertSerialNum
      * We support only hash */
     /* SHA256_DIGEST_SIZE */
     /* SHA256_DIGEST_SIZE */
@@ -206,7 +213,8 @@ enum Ctc_Misc {
 }
 
 /* DER buffer */
-struct DerBuffer {
+struct DerBuffer
+{
     ubyte* buffer;
     void* heap;
     word32 length;
@@ -214,13 +222,15 @@ struct DerBuffer {
     int dynType; /* DYNAMIC_TYPE_* */
 }
 
-struct WOLFSSL_ASN1_TIME {
+struct WOLFSSL_ASN1_TIME
+{
     ubyte[Ctc_Misc.CTC_DATE_SIZE] data; /* date bytes */
     int length;
     int type;
 }
 
-enum {
+enum
+{
     IV_SZ = 32, /* max iv sz */
 
     /* larger max one line, allows for longer
@@ -232,7 +242,7 @@ enum {
     PEM_PASS_WRITE = 1
 }
 
-alias wc_pem_password_cb = int function(char* passwd, int sz, int rw, void* userdata);
+alias wc_pem_password_cb = int function (char* passwd, int sz, int rw, void* userdata);
 
 /* In the past, wc_pem_password_cb was called pem_password_cb, which is the same
  * name as an identical typedef in OpenSSL. We don't want to break existing code
@@ -240,12 +250,13 @@ alias wc_pem_password_cb = int function(char* passwd, int sz, int rw, void* user
  * wc_pem_password_cb. In cases where a user needs to use both OpenSSL and
  * wolfSSL headers in the same code, they should define OPENSSL_COEXIST to
  * avoid errors stemming from the typedef being declared twice. */
-alias pem_password_cb = int function();
+alias pem_password_cb = int function ();
 
-struct EncryptedInfo {
+struct EncryptedInfo
+{
     import std.bitmanip : bitfields;
 
-    int function() passwd_cb;
+    int function () passwd_cb;
     void* passwd_userdata;
 
     c_long consumed; /* tracks PEM bytes consumed */
@@ -258,15 +269,16 @@ struct EncryptedInfo {
     ubyte[IV_SZ] iv;
 
     mixin(bitfields!(
-            word16, "set", 1,
-            uint, "", 7)); /* salt or encrypted IV */
+        word16, "set", 1,
+        uint, "", 7)); /* salt or encrypted IV */
 
     /* if encryption set */
 }
 
 enum WOLFSSL_ASN1_INTEGER_MAX = 20;
 
-struct WOLFSSL_ASN1_INTEGER {
+struct WOLFSSL_ASN1_INTEGER
+{
     import std.bitmanip : bitfields;
 
     /* size can be increased set at 20 for tag, length then to hold at least 16
@@ -279,8 +291,8 @@ struct WOLFSSL_ASN1_INTEGER {
     uint dataMax;
 
     mixin(bitfields!(
-            uint, "isDynamic", 1,
-            uint, "", 7)); /* max size of data buffer */
+        uint, "isDynamic", 1,
+        uint, "", 7)); /* max size of data buffer */
     /* flag for if data pointer dynamic (1 is yes 0 is no) */
 
     int length;
@@ -405,85 +417,85 @@ struct WOLFSSL_ASN1_INTEGER {
 /* WOLFSSL_CERT_EXT */
 /* WOLFSSL_CERT_GEN */
 
-int wc_GetDateInfo(
-        const(ubyte)* certDate,
-        int certDateSz,
-        const(ubyte*)* date,
-        ubyte* format,
-        int* length);
+int wc_GetDateInfo (
+    const(ubyte)* certDate,
+    int certDateSz,
+    const(ubyte*)* date,
+    ubyte* format,
+    int* length);
 
-int wc_GetDateAsCalendarTime(
-        const(ubyte)* date,
-        int length,
-        ubyte format,
-        tm* timearg);
+int wc_GetDateAsCalendarTime (
+    const(ubyte)* date,
+    int length,
+    ubyte format,
+    tm* timearg);
 
-int wc_PemGetHeaderFooter(
-        int type,
-        const(char*)* header,
-        const(char*)* footer);
+int wc_PemGetHeaderFooter (
+    int type,
+    const(char*)* header,
+    const(char*)* footer);
 
-int wc_AllocDer(DerBuffer** pDer, word32 length, int type, void* heap);
-void wc_FreeDer(DerBuffer** pDer);
+int wc_AllocDer (DerBuffer** pDer, word32 length, int type, void* heap);
+void wc_FreeDer (DerBuffer** pDer);
 
-int wc_PemToDer(
-        const(ubyte)* buff,
-        c_long longSz,
-        int type,
-        DerBuffer** pDer,
-        void* heap,
-        EncryptedInfo* info,
-        int* keyFormat);
+int wc_PemToDer (
+    const(ubyte)* buff,
+    c_long longSz,
+    int type,
+    DerBuffer** pDer,
+    void* heap,
+    EncryptedInfo* info,
+    int* keyFormat);
 
-int wc_KeyPemToDer(
-        const(ubyte)* pem,
-        int pemSz,
-        ubyte* buff,
-        int buffSz,
-        const(char)* pass);
-int wc_CertPemToDer(
-        const(ubyte)* pem,
-        int pemSz,
-        ubyte* buff,
-        int buffSz,
-        int type);
+int wc_KeyPemToDer (
+    const(ubyte)* pem,
+    int pemSz,
+    ubyte* buff,
+    int buffSz,
+    const(char)* pass);
+int wc_CertPemToDer (
+    const(ubyte)* pem,
+    int pemSz,
+    ubyte* buff,
+    int buffSz,
+    int type);
 /* WOLFSSL_PEM_TO_DER */
 
-int wc_PemPubKeyToDer(const(char)* fileName, ubyte* derBuf, int derSz);
-int wc_PemPubKeyToDer_ex(const(char)* fileName, DerBuffer** der);
+int wc_PemPubKeyToDer (const(char)* fileName, ubyte* derBuf, int derSz);
+int wc_PemPubKeyToDer_ex (const(char)* fileName, DerBuffer** der);
 
-int wc_PubKeyPemToDer(const(ubyte)* pem, int pemSz, ubyte* buff, int buffSz);
+int wc_PubKeyPemToDer (const(ubyte)* pem, int pemSz, ubyte* buff, int buffSz);
 /* WOLFSSL_CERT_EXT || WOLFSSL_PUB_PEM_TO_DER */
 
 /* WOLFSSL_CERT_GEN */
 
-int wc_RsaPublicKeyDecode_ex(
-        const(ubyte)* input,
-        word32* inOutIdx,
-        word32 inSz,
-        const(ubyte*)* n,
-        word32* nSz,
-        const(ubyte*)* e,
-        word32* eSz);
+int wc_RsaPublicKeyDecode_ex (
+    const(ubyte)* input,
+    word32* inOutIdx,
+    word32 inSz,
+    const(ubyte*)* n,
+    word32* nSz,
+    const(ubyte*)* e,
+    word32* eSz);
 /* For FIPS v1/v2 and selftest this is in rsa.h */
 
-int wc_RsaKeyToPublicDer(RsaKey* key, ubyte* output, word32 inLen);
+int wc_RsaKeyToPublicDer (RsaKey* key, ubyte* output, word32 inLen);
 
-int wc_RsaPublicKeyDerSize(RsaKey* key, int with_header);
-int wc_RsaKeyToPublicDer_ex(
-        RsaKey* key,
-        ubyte* output,
-        word32 inLen,
-        int with_header);
+int wc_RsaPublicKeyDerSize (RsaKey* key, int with_header);
+int wc_RsaKeyToPublicDer_ex (
+    RsaKey* key,
+    ubyte* output,
+    word32 inLen,
+    int with_header);
 
 /* DSA parameter DER helper functions */
-int wc_DsaParamsDecode(
-        const(ubyte)* input,
-        word32* inOutIdx,
-        DsaKey* key,
-        word32 inSz);
-int wc_DsaKeyToParamsDer(DsaKey* key, ubyte* output, word32 inLen);
-int wc_DsaKeyToParamsDer_ex(DsaKey* key, ubyte* output, word32* inLen);
+int wc_DsaParamsDecode (
+    const(ubyte)* input,
+    word32* inOutIdx,
+    DsaKey* key,
+    word32 inSz);
+int wc_DsaKeyToParamsDer (DsaKey* key, ubyte* output, word32 inLen);
+int wc_DsaKeyToParamsDer_ex (DsaKey* key, ubyte* output, word32* inLen);
 
 /* private key helpers */
 
@@ -502,57 +514,57 @@ int wc_DsaKeyToParamsDer_ex(DsaKey* key, ubyte* output, word32* inLen);
 /* HAVE_CURVE448 */
 
 /* DER encode signature */
-word32 wc_EncodeSignature(
-        ubyte* out_,
-        const(ubyte)* digest,
-        word32 digSz,
-        int hashOID);
-int wc_GetCTC_HashOID(int type);
+word32 wc_EncodeSignature (
+    ubyte* out_,
+    const(ubyte)* digest,
+    word32 digSz,
+    int hashOID);
+int wc_GetCTC_HashOID (int type);
 
-int wc_GetPkcs8TraditionalOffset(ubyte* input, word32* inOutIdx, word32 sz);
-int wc_CreatePKCS8Key(
-        ubyte* out_,
-        word32* outSz,
-        ubyte* key,
-        word32 keySz,
-        int algoID,
-        const(ubyte)* curveOID,
-        word32 oidSz);
-int wc_EncryptPKCS8Key(
-        ubyte* key,
-        word32 keySz,
-        ubyte* out_,
-        word32* outSz,
-        const(char)* password,
-        int passwordSz,
-        int vPKCS,
-        int pbeOid,
-        int encAlgId,
-        ubyte* salt,
-        word32 saltSz,
-        int itt,
-        WC_RNG* rng,
-        void* heap);
-int wc_DecryptPKCS8Key(
-        ubyte* input,
-        word32 sz,
-        const(char)* password,
-        int passwordSz);
-int wc_CreateEncryptedPKCS8Key(
-        ubyte* key,
-        word32 keySz,
-        ubyte* out_,
-        word32* outSz,
-        const(char)* password,
-        int passwordSz,
-        int vPKCS,
-        int pbeOid,
-        int encAlgId,
-        ubyte* salt,
-        word32 saltSz,
-        int itt,
-        WC_RNG* rng,
-        void* heap);
+int wc_GetPkcs8TraditionalOffset (ubyte* input, word32* inOutIdx, word32 sz);
+int wc_CreatePKCS8Key (
+    ubyte* out_,
+    word32* outSz,
+    ubyte* key,
+    word32 keySz,
+    int algoID,
+    const(ubyte)* curveOID,
+    word32 oidSz);
+int wc_EncryptPKCS8Key (
+    ubyte* key,
+    word32 keySz,
+    ubyte* out_,
+    word32* outSz,
+    const(char)* password,
+    int passwordSz,
+    int vPKCS,
+    int pbeOid,
+    int encAlgId,
+    ubyte* salt,
+    word32 saltSz,
+    int itt,
+    WC_RNG* rng,
+    void* heap);
+int wc_DecryptPKCS8Key (
+    ubyte* input,
+    word32 sz,
+    const(char)* password,
+    int passwordSz);
+int wc_CreateEncryptedPKCS8Key (
+    ubyte* key,
+    word32 keySz,
+    ubyte* out_,
+    word32* outSz,
+    const(char)* password,
+    int passwordSz,
+    int vPKCS,
+    int pbeOid,
+    int encAlgId,
+    ubyte* salt,
+    word32 saltSz,
+    int itt,
+    WC_RNG* rng,
+    void* heap);
 
 /* Time */
 /* Returns seconds (Epoch/UTC)
@@ -561,11 +573,11 @@ int wc_CreateEncryptedPKCS8Key(
     long lTime;
     rc = wc_GetTime(&lTime, (word32)sizeof(lTime));
 */
-int wc_GetTime(void* timePtr, word32 timeSize);
+int wc_GetTime (void* timePtr, word32 timeSize);
 
-alias wc_time_cb = c_long function(time_t* t);
-int wc_SetTimeCb(wc_time_cb f);
-time_t wc_Time(time_t* t);
+alias wc_time_cb = c_long function (time_t* t);
+int wc_SetTimeCb (wc_time_cb f);
+time_t wc_Time (time_t* t);
 
 /* Identiv Only */
 /* Identiv Only */
@@ -579,18 +591,18 @@ time_t wc_Time(time_t* t);
 /* Forward declaration needed, as DecodedCert is defined in asn.h.*/
 struct DecodedCert;
 
-void wc_InitDecodedCert(
-        DecodedCert* cert,
-        const(ubyte)* source,
-        word32 inSz,
-        void* heap);
-void wc_FreeDecodedCert(DecodedCert* cert);
-int wc_ParseCert(DecodedCert* cert, int type, int verify, void* cm);
+void wc_InitDecodedCert (
+    DecodedCert* cert,
+    const(ubyte)* source,
+    word32 inSz,
+    void* heap);
+void wc_FreeDecodedCert (DecodedCert* cert);
+int wc_ParseCert (DecodedCert* cert, int type, int verify, void* cm);
 
-int wc_GetPubKeyDerFromCert(
-        DecodedCert* cert,
-        ubyte* derKey,
-        word32* derKeySz);
+int wc_GetPubKeyDerFromCert (
+    DecodedCert* cert,
+    ubyte* derKey,
+    word32* derKeySz);
 
 /* WOLFSSL_FPKI */
 
