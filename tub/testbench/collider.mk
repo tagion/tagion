@@ -20,17 +20,17 @@ bddtagion: tagion
 	$(PRECMD)
 	$(DBIN)/tagion -f
 
-bddfiles: $(BDD)/.done
-	$(PRECMD)
-	$(COLLIDER) $(BDD_FLAGS)
+
+bddfiles: collider $(BDD)/.done
+
+.PHONY: bddfiles collider
 
 $(BDD)/.done: $(BDD_MD_FILES)
 	$(PRECMD)
-	$(call log.kvp, "Generates BDD",  $@)
 	$(COLLIDER) -v $(BDD_FLAGS)
 	$(TOUCH) $@
 
-.PHONY: bddfiles
+
 
 bddcontent: $(BDD)/BDDS.md
 
@@ -100,13 +100,14 @@ bddreport:
 	mv $@ $<
 
 bddstrip: $(BDD_MD_FILES:.md=.md.tmp)
-/bdd_
+
 env-bdd:
 	$(PRECMD)
 	${call log.header, $@ :: env}
 	${call log.env, BDD_FLAGS, $(BDD_FLAGS)}
 	${call log.env, BDD_DFLAGS, $(BDD_DFLAGS)}
 	${call log.env, BDD_DFILES, $(BDD_DFILES)}
+	${call log.env, BDD_D_FILES, $(BDD_D_FILES)}
 	${call log.env, BDD_MD_FILES, $(BDD_MD_FILES)}
 	${call log.env, TESTENV, $(TESTENV)}
 	${call log.kvp, TESTMAIN, $(TESTMAIN)}
