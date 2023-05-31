@@ -237,23 +237,9 @@ void hashgraphTest() @safe {
         Bob,
         Carol,
         Dave,
-
         Elisa,
         Freja,
-        George, // Hermine,
-
-        // Illa,
-        // Joella,
-        // Kattie,
-        // Laureen,
-        // Manual,
-        // Niels,
-        // Ove,
-        // Poul,
-        // Roberto,
-        // Samatha,
-        // Tamekia,
-
+        George, 
     }
 
     auto node_labels = [EnumMembers!NodeLabel].map!((E) => E.to!string).array;
@@ -277,18 +263,16 @@ void hashgraphTest() @safe {
         (() @trusted { writefln("%s", e); assert(0, e.msg); })();
     }
 
-    version (none) {
-        writefln("Save Alice");
-        Pubkey[string] node_labels;
+        // writefln("Save Alice");
+        // Pubkey[string] node_labels;
 
-        foreach (channel, _net; network.networks) {
-            node_labels[_net._hashgraph.name] = channel;
-        }
-        foreach (_net; network.networks) {
-            const filename = fileId(_net._hashgraph.name);
-            _net._hashgraph.fwrite(filename.fullpath, node_labels);
-        }
-    }
+        // foreach (channel, _net; network.networks) {
+        //     node_labels[_net._hashgraph.name] = channel;
+        // }
+        // foreach (_net; network.networks) {
+        //     const filename = fileId(_net._hashgraph.name);
+        //     _net._hashgraph.fwrite(filename.fullpath, node_labels);
+        // }
 
     bool event_error(const Event e1, const Event e2, const Compare.ErrorCode code) @safe nothrow {
         static string print(const Event e) nothrow {
