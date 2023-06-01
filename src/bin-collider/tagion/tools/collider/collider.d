@@ -9,7 +9,7 @@ import std.algorithm.searching : canFind;
 import std.getopt;
 import std.stdio;
 import std.format;
-import std.path : extension, setExtension, withExtension, dirName, buildPath;
+import std.path : extension, setExtension, dirName, buildPath;
 import std.file : exists, dirEntries, SpanMode, readText, fwrite = write;
 import std.string : join, strip, splitLines;
 import std.algorithm.iteration : filter, map, joiner, fold, uniq, splitter, each;

@@ -234,8 +234,8 @@ class RecordFactory {
             // }
             // do {
             if ((fingerprint.length !is 0) && (archives !is null)) {
-                scope archive = new Archive(fingerprint, Archive.Type.NONE);
-                scope range = archives.equalRange(archive);
+                auto archive = new Archive(fingerprint, Archive.Type.NONE);
+                auto range = archives.equalRange(archive);
                 if ((!range.empty) && (archive.fingerprint == range.front.fingerprint)) {
                     return range.front;
                 }

@@ -41,7 +41,7 @@ $(BDD)/BDDS.md: $(BDD_DFILES)
 .PHONY: bddcontent
 
 bddrun: collider bddinit
-	$(COLLIDER) -r $(TEST_STAGE) -b $(TESTBENCH) 
+	$(COLLIDER) -r $(TEST_STAGE) -b $(TESTBENCH) $(TESTBENCH_FLAGS) 
 
 .PHONY: bddrun
 
@@ -112,6 +112,7 @@ env-bdd:
 	${call log.env, TESTENV, $(TESTENV)}
 	${call log.kvp, TESTMAIN, $(TESTMAIN)}
 	${call log.kvp, TESTPROGRAM, $(TESTPROGRAM)}
+	${call log.kvp, TESTBENCH_FLAGS, $(TESTBENCH_FLAGS)}
 	${call log.env, BDDS, $(BDDS)}
 	${call log.close}
 
