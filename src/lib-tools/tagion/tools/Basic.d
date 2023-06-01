@@ -6,6 +6,7 @@ import std.file : exists, symlink, remove, thisExePath,
     getLinkAttributes, attrIsSymlink, FileException;
 
 import std.stdio;
+import tagion.utils.Term;
 
 __gshared static bool verbose_switch;
 //static uint verbose_mask;
@@ -25,13 +26,17 @@ void verbose(Args...)(string fmt, Args args) {
 }
 
 @trusted
-void verbose(const Exception e) {
+void error(const Exception e) {
+    error(e.msg);
     if (verbose_flag) {
         stderr.writefln("%s", e);
-        return;
     }
-    stderr.writefln(e.msg);
+}
 
+void error(Args...)(string fmt, Args args) @trusted {
+    import std.format;
+
+    stderr.writefln("%sError: %s%s", RED, format(fmt, args), RESET);
 }
 
 alias SubTools = int function(string[])[string];

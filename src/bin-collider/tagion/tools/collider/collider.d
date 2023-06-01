@@ -75,15 +75,16 @@ struct BehaviourOptions {
     /** 
      * Used to set default options if config file not provided
      */
-    string test_stage_env;
-    string dbin_env;
+    //    string test_stage_env;
+    //    string dbin_env;
+    string schedule_file; /// Schedule filename
     void setDefault() {
         const gen = "gen";
         bdd_ext = FileExtension.markdown;
         bdd_gen_ext = [gen, FileExtension.markdown].join;
         d_ext = [gen, FileExtension.dsrc].join;
         regex_inc = `/testbench/`;
-        test_stage_env = "TEST_STAGE";
+        //      test_stage_env = "TEST_STAGE";
         if (!(DFMT_ENV in environment)) {
             const which_dfmt = execute(["which", "dfmt"]);
             if (which_dfmt.status is 0) {
@@ -94,7 +95,7 @@ struct BehaviourOptions {
         const which_iconv = execute(["which", "iconv"]);
         iconv = which_iconv.output;
         iconv_flags = ["-t", "utf-8", "-f", "utf-8", "-c"];
-        dbin_env = "DBIN";
+        //        dbin_env = "DBIN";
     }
 
     mixin JSONCommon;
@@ -102,18 +103,6 @@ struct BehaviourOptions {
 }
 
 alias ModuleInfo = Tuple!(string, "name", string, "file"); /// Holds the filename and the module name for a d-module
-
-/** 
- * Used to remove dot
- * @param ext - lines to remove dot
- * @return stripted
- */
-const(char[]) stripDot(const(char[]) ext) pure nothrow @nogc {
-    if ((ext.length > 0) && (ext[0] == DOT)) {
-        return ext[1 .. $];
-    }
-    return ext;
-}
 
 /** 
  * Used to check valid filename
@@ -389,10 +378,6 @@ int check_reports(string[] paths) {
     return feature_count.result;
 }
 
-void error(Args...)(string fmt, Args args) {
-    stderr.writefln("%s%s%s", RED, format(fmt, args), RESET);
-}
-
 SubTools sub_tools;
 static this() {
     import reporter = tagion.tools.collider.reporter;
@@ -409,7 +394,8 @@ int main(string[] args) {
     bool Check_reports_switch;
     bool check_reports_switch;
     //    string[] stages;
-    string schedule_file = "collider_schedule".setExtension(FileExtension.json);
+    options.schedule_file = "collider_schedule".setExtension(FileExtension.json);
+
     string[] run_stages;
     uint schedule_jobs = 0;
     bool schedule_rewrite;
@@ -443,10 +429,11 @@ int main(string[] args) {
                 "c|check", "Check the bdd reports in give list of directories", &check_reports_switch,
                 "C", "Same as check but the program will return a nozero exit-code if the check fails", &Check_reports_switch,
                 "s|schedule", format(
-                    "Execution schedule Default: '%s'", schedule_file), &schedule_file,
+                    "Execution schedule Default: '%s'", options.schedule_file), &options.schedule_file,
                 "r|run", "Runs the test in the schedule", &run_stages,
                 "S", "Rewrite the schedule file", &schedule_rewrite,
-                "j|jobs", format("Sets number jobs to run simultaneously (0 == max) Default: %d", schedule_jobs), &schedule_jobs,
+                "j|jobs", format(
+                "Sets number jobs to run simultaneously (0 == max) Default: %d", schedule_jobs), &schedule_jobs,
                 "b|bin", format("Testbench program Default: '%s'", testbench), &testbench,
                 "P|proto", "Writes sample schedule file", &schedule_write_proto,
                 "f|force", "Force a symbolic link to be created", &force_switch,
@@ -489,7 +476,7 @@ int main(string[] args) {
             Schedule schedule;
             auto run_unit = RunUnit(["commit"], null, null, 0.0);
             schedule.units["collider_test"] = run_unit;
-            schedule.save(schedule_file);
+            schedule.save(options.schedule_file);
             return 0;
         }
 
@@ -497,12 +484,12 @@ int main(string[] args) {
             import core.cpuid : coresPerCPU;
 
             Schedule schedule;
-            schedule.load(schedule_file);
+            schedule.load(options.schedule_file);
             schedule_jobs = (schedule_jobs == 0) ? coresPerCPU : schedule_jobs;
             auto schedule_runner = ScheduleRunner(schedule, run_stages, schedule_jobs);
             schedule_runner.run([testbench]);
             if (schedule_rewrite) {
-                schedule.save(schedule_file);
+                schedule.save(options.schedule_file);
             }
             //   Check_reports_switch = true;
         }
@@ -521,7 +508,7 @@ int main(string[] args) {
         return parse_bdd(options);
     }
     catch (Exception e) {
-        error("Error: %s", e.toString);
+        error(e);
         return 1;
     }
     return 0;
