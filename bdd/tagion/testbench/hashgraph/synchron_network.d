@@ -74,44 +74,20 @@ class StartNetworkWithNAmountOfNodes {
         catch (Exception e) {
             check(false, e.msg);
         }
-        // Pubkey[bool] received_ripple;
 
-        // try {
-        //     while(received_ripple.length < node_names.length) {
-        //         const channel_number = network.random.value(0, channels.length);
-        //         const channel = network.channels[channel_number];
-        //         auto current = network.networks[channel];
-        //         (() @trusted { current.call; })();
-        //     } 
-        // }
-        // catch(Exception e) {
-        //     check(false, e.msg);
-        // }
-        
 
-        
-        // auto names = network.networks.byValue
-        //     .map!((net) => net._hashgraph.name)
-        //     .array.dup
-        //     .sort
-        //     .array;
+        writeln("going to create files");        
+        Pubkey[string] node_labels;
 
-        // HashGraph[string] hashgraphs;
-        // foreach (net; network.networks) {
-        //     hashgraphs[net._hashgraph.name] = net._hashgraph;
-        // }
+        foreach (channel, _net; network.networks) {
+            node_labels[_net._hashgraph.name] = channel;
+        }
+        foreach (_net; network.networks) {
+            const filename = fileId(_net._hashgraph.name);
+            writeln(filename.fullpath);
+            _net._hashgraph.fwrite(filename.fullpath, node_labels);
+        }
 
-        // writefln("Save Alice");
-        // Pubkey[string] node_labels;
-
-        // foreach (channel, _net; network.networks) {
-        //     node_labels[_net._hashgraph.name] = channel;
-        // }
-        // foreach (_net; network.networks) {
-        //     const filename = fileId(_net._hashgraph.name);
-        //     writeln(filename.fullpath);
-        //     _net._hashgraph.fwrite(filename.fullpath, node_names);
-        // }
 
         return Document();
     }

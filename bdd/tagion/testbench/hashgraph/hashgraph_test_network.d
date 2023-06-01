@@ -68,20 +68,12 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
 
         void send(const(Pubkey) channel, const(HiRPC.Sender) sender) {
             const doc = sender.toDoc;
-            
-            "/tmp/badhibon.hibon".fwrite(doc);
-            
-            const x = doc.toPretty;
-            "/tmp/badhibon2.hibon".fwrite(doc);
-
-            assumeWontThrow(writefln("SENDER: send to %s, doc=%s", channel.cutHex, sender.toDoc.toPretty));
-            import tagion.hibon.HiBONRecord;
-            
-            channel_queues[channel].write(sender.toDoc);
+            // assumeWontThrow(writefln("SENDER: send to %s, doc=%s", channel.cutHex, doc.toPretty));
+            channel_queues[channel].write(doc);
         }
 
         void send(const(Pubkey) channel, const(Document) doc) nothrow {
-            assumeWontThrow(writefln("DOC: send to %s, document=%s", channel.cutHex, doc.toPretty));
+            // assumeWontThrow(writefln("DOC: send to %s, document=%s", channel.cutHex, doc.toPretty));
             channel_queues[channel].write(doc);
         }
 
