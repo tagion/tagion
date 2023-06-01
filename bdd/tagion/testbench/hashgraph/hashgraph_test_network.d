@@ -16,6 +16,8 @@ import tagion.utils.Miscellaneous: cutHex;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBON;
+import std.stdio;
+import std.exception : assumeWontThrow;
 
 /++
     This function makes sure that the HashGraph has all the events connected to this event
@@ -65,14 +67,21 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         }
 
         void send(const(Pubkey) channel, const(HiRPC.Sender) sender) {
+            const doc = sender.toDoc;
+            
+            "/tmp/badhibon.hibon".fwrite(doc);
+            
+            const x = doc.toPretty;
+            "/tmp/badhibon2.hibon".fwrite(doc);
+
+            assumeWontThrow(writefln("SENDER: send to %s, doc=%s", channel.cutHex, sender.toDoc.toPretty));
+            import tagion.hibon.HiBONRecord;
+            
             channel_queues[channel].write(sender.toDoc);
         }
 
         void send(const(Pubkey) channel, const(Document) doc) nothrow {
-            log.trace("send to %s %d bytes", channel.cutHex, doc.serialize.length);
-            if (Event.callbacks) {
-                Event.callbacks.send(channel, doc);
-            }
+            assumeWontThrow(writefln("DOC: send to %s, document=%s", channel.cutHex, doc.toPretty));
             channel_queues[channel].write(doc);
         }
 
