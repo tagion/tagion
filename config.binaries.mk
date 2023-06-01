@@ -30,6 +30,12 @@ target-tagionwave: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
 ${call DO_BIN,tagionwave,$(LIB_DFILES) ${call BIN_DEPS,priorwave},tagion}
 
 #
+# New Wave
+#
+target-neuewelle: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+${call DO_BIN,neuewelle,$(LIB_DFILES) ${call BIN_DEPS,wave},tagion}
+
+#
 # HiBON utility
 #
 target-hibonutil: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
@@ -103,6 +109,7 @@ ${call DO_BIN,graphview,$(LIB_DFILES) ${call BIN_DEPS,graphview},tagion}
 # Tagion onetool
 #
 TAGION_TOOLS+=priorwave
+TAGION_TOOLS+=wave # New wave
 TAGION_TOOLS+=dartutil
 TAGION_TOOLS+=blockutil
 TAGION_TOOLS+=hibonutil
