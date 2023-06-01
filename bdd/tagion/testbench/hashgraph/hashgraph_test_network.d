@@ -1,5 +1,5 @@
 /// Consensus HashGraph main object 
-module tagion.hashgraph.hashgraph_test;
+module tagion.testbench.hashgraph.hashgraph_test_network;
 
 import std.format;
 import std.range : dropExactly;
