@@ -13,8 +13,8 @@ void tagionGetoptPrinter(string text, Option[] opt) @safe
     // stdout global __gshared is trusted with a locked text writer
     auto w = (() @trusted => stdout.lockingTextWriter())();
 
-    w.formattedWrite("%s\n\n", logo);
-    w.formattedWrite("Documentation: https://tagion.org/\n");
+    w.formattedWrite("%s\n", logo);
+    w.formattedWrite("Documentation: https://docs.tagion.org/\n");
 
     defaultGetoptFormatter(w, text, opt);
 }
