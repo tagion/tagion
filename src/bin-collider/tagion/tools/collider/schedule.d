@@ -106,7 +106,9 @@ struct ScheduleRunner {
 
     static void kill(Pid pid) @trusted {
         try {
+
             
+
                 .kill(pid); //.ifThown!ProcessException;
         }
         catch (ProcessException e) {
@@ -129,7 +131,7 @@ struct ScheduleRunner {
 
         if (schedule_list.empty) {
             writefln("None of the stage %s available", stages);
-            writefln("Avalibale %s", schedule.stages);
+            writefln("Availabale %s", schedule.stages);
             return 1;
         }
         auto runners = new Runner[jobs];

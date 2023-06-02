@@ -56,10 +56,9 @@ Sample of a config file
     ],
     "importfile": "", /// Include file (switch '-i')
     "paths": [],      /// List of source paths (switch '-I')
-    "regex_exc": "",  /// Regex to exclude file from source paths
-    "regex_inc": "\/testbench\/",  /// Regex to include files in the source paths
-    "schedule_file": "collider_schedule.json",  /// Collider run schedule filename (swirch '-P')
-    "test_stage_env": "TEST_STAGE" /// 
+    "regex_exc": "",  /// Regex to exclude file from source paths (switch '-X')
+    "regex_inc": "\/testbench\/",  /// Regex to include files in the source paths (switch '-R')
+    "schedule_file": "collider_schedule.json"  /// Collider run schedule filename (switch '-P')
 }
 ```
 
@@ -69,8 +68,54 @@ The switch `-i<include-file>` set the include files which is added to all the sk
 `-I<dir>` sets the import path and 
 `-p` enables the generation of the `package.d` for all the generated package inside the `<dir>`.
 
+*Example:*
 ```
-Example:
 collider -p -itagion/bdd/bdd_import.di -Itagion/bdd -v
+```
+[Example of BDD](documents/behaviour/BDD_Process.md)
+
+## Executing BDD 
+The collider tool can execute a list of BDD defined in the `collider_schedule.json`
+
+
+### Generate proto schedule file.
+```
+collider -P -s default_schedule.json
+```
+Will generated a default schedule file named `default_schedule.json`.
+```
+{
+    "units": {
+        "collider_test": { /// Name of test program 
+            "args": ["-x", "-oxxx.txt"],    /// Argument applied to the program
+            "envs": {
+                "MY_ENV" : "Some value"
+            },                              /// Addtinal environment 
+            "stages": [
+                "commit"                    /// This of stage flags
+            ],
+            "timeout": 0.0                  /// Timeout in ms
+        }
+    }
+}
+```
+
+### Run the test listed in the schedule file
+To run the all the testprograms in stage .
+*Example:*
+```
+# Make sure to set the environment before running the collider
+# The following will run all tests with the "commit" stage using 4 core.
+collider -r commit -j 4  -b build/x86_64-linux/bin/testbench
+```
+
+
+
+## Check the result of BDD run
+
+Prints the accumulated result. 
+*Example:*
+```
+collider -cv logs/x86_64-linux/bdd/commit/results/
 ```
 
