@@ -11,6 +11,9 @@ import tagion.script.TagionCurrency;
 import tagion.script.StandardRecords : StandardBill, OwnerKey;
 import tagion.hibon.Document : Document;
 
+import tagion.dart.DARTBasic;
+import std.stdio;
+
 /// Contains the quiz question
 @safe
 @recordType("Quiz")
@@ -62,6 +65,65 @@ struct AccountDetails {
             return true;
         }
         return false;
+    }
+
+    void remove_bill_by_hash(const(DARTIndex) billHash) {
+        import std.algorithm : remove, countUntil;
+        import tagion.crypto.SecureNet : StdHashNet;
+
+        const net = new StdHashNet;
+
+        auto billsHashes = bills.map!(b => cast(Buffer) net.calcHash(b.toDoc.serialize)).array;
+        const index = billsHashes.countUntil(billHash);
+        bills = bills.remove(index);
+    }
+
+    void unlock_bill_by_hash(const(DARTIndex) billHash) {
+        import std.algorithm : remove, countUntil;
+        import tagion.crypto.SecureNet : StdHashNet;
+
+        const net = new StdHashNet;
+
+        auto billsHashes = bills.map!(b => cast(Buffer) net.calcHash(b.toDoc.serialize)).array;
+        const index = billsHashes.countUntil(billHash);
+
+        activated.remove(bills[index].owner);
+    }
+
+    int check_contract_payment(const(DARTIndex)[] inputs, Document[Pubkey] outputs){
+        import std.algorithm : countUntil;
+        import tagion.crypto.SecureNet : StdHashNet;
+
+        const net = new StdHashNet;
+
+        auto billsHashes = bills.map!(b => cast(Buffer) net.calcHash(b.toDoc.serialize)).array;
+
+        // Look for input matches. Return 0 from func if found.
+        foreach (inputHash; inputs) {
+            const index = countUntil!"a == b"(billsHashes, inputHash);
+            if(index >= 0){
+                return 0;
+            }
+        }
+        // Proceed if inputs are not matched.
+        // Look for outputs matches. Return 1 from func if found or 2 if not.
+        foreach (outputPubkey; outputs.keys) {
+            const index = countUntil!"a.owner == b"(bills, outputPubkey);
+            if(index >= 0){
+                return 1;
+            }
+        }
+        return 2;
+    }
+
+    TagionCurrency check_invoice_payment(Pubkey invoicePubkey){
+        import std.algorithm : countUntil;
+        
+        const index = countUntil!"a.owner == b"(bills, invoicePubkey);
+        if(index >= 0){
+            return bills[index].value;    
+        }
+        return TagionCurrency(0);
     }
 
     void add_bill(StandardBill bill) {
