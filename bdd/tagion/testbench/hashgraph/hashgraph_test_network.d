@@ -18,7 +18,7 @@ import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBON;
 import std.stdio;
 import std.exception : assumeWontThrow;
-
+import core.memory : pageSize;
 /++
     This function makes sure that the HashGraph has all the events connected to this event
 +/
@@ -130,12 +130,12 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         HashGraph _hashgraph;
         //immutable(string) name;
         @trusted
-        this(HashGraph h) nothrow
+        this(HashGraph h, const(ulong) stacksize = pageSize*Fiber.defaultStackPages ) nothrow
         in {
             assert(_hashgraph is null);
         }
         do {
-            super(&run);
+            super(&run, stacksize);
             _hashgraph = h;
         }
 
@@ -211,7 +211,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
             net.generateKeyPair(passphrase);
             auto h = new HashGraph(N, net, &authorising.isValidChannel, null, null, name);
             h.scrap_depth = 0;
-            networks[net.pubkey] = new FiberNetwork(h);
+            networks[net.pubkey] = new FiberNetwork(h, pageSize*32);
         }
         networks.byKey.each!((a) => authorising.add_channel(a));
     }

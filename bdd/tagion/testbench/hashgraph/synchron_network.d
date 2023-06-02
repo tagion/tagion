@@ -11,6 +11,11 @@ import std.datetime;
 import tagion.crypto.Types : Pubkey;
 import tagion.hashgraph.HashGraph;
 import std.array;
+import core.sys.posix.sys.resource;
+import std.path : buildPath;
+import std.path : setExtension, extension;
+import tagion.basic.Types : FileExtension;
+
 
 
 enum feature = Feature(
@@ -27,13 +32,19 @@ alias FeatureContext = Tuple!(
 class StartNetworkWithNAmountOfNodes {
     string[] node_names;
     TestNetwork network;
+    string module_path;
     
-    this(string[] node_names) {
+    this(string[] node_names, const(string) module_path) {
         this.node_names = node_names;
+        this.module_path = module_path;
     }
     
     @Given("i have a HashGraph TestNetwork with n number of nodes")
     Document nodes() {
+        rlimit limit;
+        (() @trusted { getrlimit(RLIMIT_STACK, &limit); })();
+        writefln("RESOURCE LIMIT = %s", limit);
+        
         network = new TestNetwork(node_names);
         network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 0);
         network.random.seed(123456789);
@@ -61,31 +72,28 @@ class StartNetworkWithNAmountOfNodes {
 
     @When("all nodes are sending ripples")
     Document ripples() {
-        
         try {
-            foreach (i; 0 .. 550) {
+            foreach (i; 0 .. 1000) {
                 const channel_number = network.random.value(0, network.channels.length);
                 const channel = network.channels[channel_number];
                 auto current = network.networks[channel];
-                writefln("calling channel %s", channel_number);
                 (() @trusted { current.call; })();
-            }
+
+           }
         }
         catch (Exception e) {
             check(false, e.msg);
         }
 
-
-        writeln("going to create files");        
+        // create ripple files.
         Pubkey[string] node_labels;
-
         foreach (channel, _net; network.networks) {
             node_labels[_net._hashgraph.name] = channel;
         }
         foreach (_net; network.networks) {
-            const filename = fileId(_net._hashgraph.name);
-            writeln(filename.fullpath);
-            _net._hashgraph.fwrite(filename.fullpath, node_labels);
+            const filename = buildPath(module_path, "ripple-" ~ _net._hashgraph.name.setExtension(FileExtension.hibon));
+            writeln(filename);
+            _net._hashgraph.fwrite(filename, node_labels);
         }
 
 
