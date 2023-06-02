@@ -1,4 +1,4 @@
-module source.models.other;
+module models.other;
 
 import vibe.data.json;
 
@@ -37,4 +37,6 @@ enum Route {
     project_document = "project-document",
     document = "document",
     benefit = "benefit",
+    delivery_order = "delivery_order",
+    signed_delivery_order = "signed_delivery_order",
 }

@@ -1,4 +1,4 @@
-module source.models.benefitShareCredit;
+module models.benefitShareCredit;
 
 import tagion.hibon.HiBONRecord;
 

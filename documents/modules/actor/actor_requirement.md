@@ -2,10 +2,10 @@
 An actor is a task that is able to send and receive messages from other tasks.
 The actors have a hierarchical structure where the owner of an actor is called a supervisor and the actor owned by the supervisor is called a child.
 
-When an actor fails the error should be sent to the supervisor and the supervisor should decide what should be done.
+When an actor fails the error is sent to the to the supervisor if the error is deemed unrecoverable the supervisor can decide to restart the supervision tree.
+Since most of our services have dependant states on each other it would be almost impossible to restart a subtree. We have decided to use the 'one for all strategy' [^1] which mean that if one part fails we restart the entire supervision tree. 
 
-A supervisor should able to stop one or all children and if the actor requested to be stopped then it should safely stop all children owned by this actor.
-
+[^1]: Erlang Supervision Principles https://erlang.org/documentation/doc-4.9.1/doc/design_principles/sup_princ.html
 
 And actor can have 3 Control stages
 

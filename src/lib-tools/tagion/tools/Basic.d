@@ -7,6 +7,33 @@ import std.file : exists, symlink, remove, thisExePath,
 
 import std.stdio;
 
+__gshared static bool verbose_switch;
+//static uint verbose_mask;
+
+@trusted
+bool verbose_flag() nothrow {
+    return verbose_switch;
+}
+
+@safe
+void verbose(Args...)(string fmt, Args args) {
+    import std.stdio;
+
+    if (verbose_flag) {
+        writefln(fmt, args);
+    }
+}
+
+@trusted
+void verbose(const Exception e) {
+    if (verbose_flag) {
+        stderr.writefln("%s", e);
+        return;
+    }
+    stderr.writefln(e.msg);
+
+}
+
 alias SubTools = int function(string[])[string];
 Result subTool(const SubTools sub_tools, string[] args, const size_t index = 0) {
     if (args[index].baseName in sub_tools) {

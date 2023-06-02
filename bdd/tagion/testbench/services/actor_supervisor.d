@@ -73,7 +73,7 @@ static:
     ChildHandle childHandle;
 
     void starting() {
-        childHandle = spawnActor!SetUpForFailure(child_task_name);
+        childHandle = spawn!SetUpForFailure(child_task_name);
         childrenState[childHandle.task_name] = Ctrl.STARTING;
 
         while (!(childrenState.all(Ctrl.ALIVE))) {
@@ -83,7 +83,7 @@ static:
     }
 
     // Override the default fail handler
-    auto fail = (TaskFailure tf) {
+    auto failHandler = (TaskFailure tf) {
         try {
             writefln("Received the taskfailure from overrid taskfail type: %s", typeid(tf.throwable));
             throw tf.throwable;
@@ -95,7 +95,7 @@ static:
         }
         catch (Fatal e) {
             writeln(typeof(e).stringof, tf.task_name, locate(tf.task_name));
-            childHandle = respawnActor(childHandle);
+            childHandle = respawn(childHandle);
             writefln("This is fatal, we need to restart %s", tf.task_name);
             sendOwner(reFatal());
         }
@@ -122,7 +122,7 @@ class SupervisorWithFailingChild {
 
     @Given("a actor #super")
     Document aActorSuper() @trusted {
-        supervisorHandle = spawnActor!SetUpForDisappointment(supervisor_task_name);
+        supervisorHandle = spawn!SetUpForDisappointment(supervisor_task_name);
         Ctrl ctrl = receiveOnlyTimeout!CtrlMsg.ctrl;
         check(ctrl is Ctrl.STARTING, "Supervisor is not starting");
 
@@ -134,7 +134,7 @@ class SupervisorWithFailingChild {
         auto ctrl = receiveOnlyTimeout!CtrlMsg.ctrl;
         check(ctrl is Ctrl.ALIVE, "Supervisor is not running");
 
-        childHandle = actorHandle!SetUpForFailure(child_task_name);
+        childHandle = handle!SetUpForFailure(child_task_name);
         check(childHandle.tid !is Tid.init, "Child is not running");
 
         return result_ok;
@@ -154,7 +154,7 @@ class SupervisorWithFailingChild {
 
     @Then("the #super actor should stop #child and restart it")
     Document restartIt() @trusted {
-        childHandle = actorHandle!SetUpForFailure(child_task_name); // FIX: actor handle should be transparent
+        childHandle = handle!SetUpForFailure(child_task_name); // FIX: actor handle should be transparent
         check(locate(child_task_name) !is Tid.init, "Child thread is not running");
         return result_ok;
     }

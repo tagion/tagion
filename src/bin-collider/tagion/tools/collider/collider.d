@@ -70,7 +70,6 @@ struct BehaviourOptions {
     string[] iconv_flags;
 
     string importfile; /// Import file which are included into the generated skeleton
-    bool verbose_switch;
     bool enable_package; /// This produce the package 
     /** 
      * Used to set default options if config file not provided
@@ -80,8 +79,8 @@ struct BehaviourOptions {
     void setDefault() {
         const gen = "gen";
         bdd_ext = FileExtension.markdown;
-        bdd_gen_ext = [gen, FileExtension.markdown].join(DOT);
-        d_ext = [gen, FileExtension.dsrc].join(DOT);
+        bdd_gen_ext = [gen, FileExtension.markdown].join;
+        d_ext = [gen, FileExtension.dsrc].join;
         regex_inc = `/testbench/`;
         test_stage_env = "TEST_STAGE";
         if (!(DFMT_ENV in environment)) {
@@ -141,11 +140,13 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
         .map!(path => dirEntries(path, SpanMode.depth))
         .joiner
         .filter!(file => file.isFile)
-        .filter!(file => file.name.extension.stripDot == opts.bdd_ext)
+        .filter!(file => file.name.extension == opts.bdd_ext)
         .filter!(file => (opts.regex_inc.length is 0) || !file.name.matchFirst(regex_include).empty)
-        .filter!(file => (opts.regex_exc.length is 0) || file.name.matchFirst(regex_exclude).empty);
+        .filter!(file => (opts.regex_exc.length is 0) || file.name.matchFirst(regex_exclude).empty)
+        .array;
     string[] dfmt;
 
+    verbose("%-(BDD: %s\n%)", bdd_files);
     if (opts.dfmt.length) {
         dfmt = opts.dfmt.strip ~ opts.dfmt_flags.dup;
     }
@@ -189,9 +190,7 @@ int parse_bdd(ref const(BehaviourOptions) opts) {
             }
             { // Generate d-source file
                 auto fout = File(dsource, "w");
-                if (opts.verbose_switch) {
-                    writefln("dsource file %s", dsource);
-                }
+                verbose("SRC: %s", dsource);
                 auto dlang = Dlang(fout);
                 dlang.issue(feature);
                 fout.close;
@@ -262,10 +261,10 @@ void generate_packages(const(ModuleInfo[]) list_of_modules) {
     }
 }
 
-int check_reports(string[] paths, const bool verbose) {
+int check_reports(string[] paths) {
 
     bool show(const TestCode test_code) nothrow {
-        return verbose || test_code == TestCode.error || test_code == TestCode.started;
+        return verbose_switch || test_code == TestCode.error || test_code == TestCode.started;
     }
 
     void show_report(Args...)(const TestCode test_code, string fmt, Args args) {
@@ -403,13 +402,13 @@ static this() {
 int main(string[] args) {
     BehaviourOptions options;
     immutable program = args[0]; /** file for configurations */
-    auto config_file = "collider.json"; /** flag for print current version of behaviour */
+    auto config_file = "collider".setExtension(FileExtension.json); /** flag for print current version of behaviour */
     bool version_switch; /** flag for overwrite config file */
     bool overwrite_switch; /** falg for to enable report checks */
     bool Check_reports_switch;
-    bool check_reports_switch; /** verbose switch */
+    bool check_reports_switch;
     //    string[] stages;
-    string schedule_file = "schedule".setExtension(FileExtension.json);
+    string schedule_file = "collider_schedule".setExtension(FileExtension.json);
     string[] run_stages;
     uint schedule_jobs = 0;
     bool schedule_rewrite;
@@ -450,7 +449,7 @@ int main(string[] args) {
                 "b|bin", format("Testbench program Default: '%s'", testbench), &testbench,
                 "P|proto", "Writes sample schedule file", &schedule_write_proto,
                 "f|force", "Force a symbolic link to be created", &force_switch,
-                "v|verbose", "Enable verbose print-out", &options.verbose_switch,
+                "v|verbose", "Enable verbose print-out", &verbose_switch,
         );
         if (version_switch) {
             revision_text.writeln;
@@ -509,7 +508,7 @@ int main(string[] args) {
 
         check_reports_switch = Check_reports_switch || check_reports_switch;
         if (check_reports_switch) {
-            const ret = check_reports(args[1 .. $], options.verbose_switch);
+            const ret = check_reports(args[1 .. $]);
             if (ret) {
                 writeln("Test result failed!");
             }

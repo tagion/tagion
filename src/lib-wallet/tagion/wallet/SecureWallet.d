@@ -37,8 +37,12 @@ import tagion.wallet.KeyRecover;
 import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN, AccountDetails;
 import tagion.wallet.WalletException : WalletException;
 import tagion.basic.tagionexceptions : Check;
+import tagion.crypto.Cipher;
 
 alias check = Check!(WalletException);
+alias CiphDoc = Cipher.CipherDocument;
+
+import tagion.communication.HiRPC;
 
 /// Function and data to recover, sign transaction and hold the account information
 @safe struct SecureWallet(Net : SecureNet) {
@@ -56,15 +60,15 @@ alias check = Check!(WalletException);
      *   account =  Acount to hold bills and derivers
      */
     this(DevicePIN pin,
-            RecoverGenerator wallet = RecoverGenerator.init,
-            AccountDetails account = AccountDetails.init) nothrow {
+        RecoverGenerator wallet = RecoverGenerator.init,
+        AccountDetails account = AccountDetails.init) nothrow {
         _wallet = wallet;
         _pin = pin;
         this.account = account;
     }
 
     this(const Document wallet_doc,
-            const Document pin_doc = Document.init) {
+        const Document pin_doc = Document.init) {
         auto __wallet = RecoverGenerator(wallet_doc);
         DevicePIN __pin;
         if (!pin_doc.empty) {
@@ -109,11 +113,11 @@ alias check = Check!(WalletException);
      *   Create an new wallet accouring with the input
      */
     static SecureWallet createWallet(
-            scope const(string[]) questions,
-            scope const(char[][]) answers,
-            uint confidence,
-            const(char[]) pincode,
-            scope const(ubyte[]) seed = null)
+        scope const(string[]) questions,
+        scope const(char[][]) answers,
+        uint confidence,
+        const(char[]) pincode,
+        scope const(ubyte[]) seed = null)
     in {
         assert(questions.length > 3, "Minimal amount of answers is 4");
         assert(questions.length is answers.length, "Amount of questions should be same as answers");
@@ -155,8 +159,8 @@ alias check = Check!(WalletException);
      *   Create an new wallet with the input
      */
     static SecureWallet createWallet(
-            const(ushort[]) mnemonic,
-    const(char[]) pincode)
+        const(ushort[]) mnemonic,
+        const(char[]) pincode)
     in {
         assert(mnemonic.length >= 12, "Mnemonic is empty");
     }
@@ -164,7 +168,7 @@ alias check = Check!(WalletException);
         import tagion.wallet.BIP39;
 
         auto net = new Net;
-        //auto recover = KeyRecover(net);
+        auto recover = KeyRecover(net);
 
         //TODO: createKey with mnemonic and device id.
         // recover.createKey(mnemonic, deviceId, null);
@@ -179,16 +183,16 @@ alias check = Check!(WalletException);
 
             auto wallet = RecoverGenerator.init; //(recover.toDoc);
             result = SecureWallet(DevicePIN.init, wallet);
-            result.set_pincode(KeyRecover.init, R, pincode, net);
+            result.set_pincode(recover, R, pincode, net);
         }
         return result;
     }
 
     protected void set_pincode(
-            const KeyRecover recover,
-            scope const(ubyte[]) R,
-            scope const(char[]) pincode,
-            Net _net = null) {
+        const KeyRecover recover,
+        scope const(ubyte[]) R,
+        scope const(char[]) pincode,
+        Net _net = null) {
         const hash_size = ((net) ? net : _net).hashSize;
         auto seed = new ubyte[hash_size];
         scramble(seed);
@@ -339,7 +343,7 @@ alias check = Check!(WalletException);
         scope seed = new ubyte[net.hashSize];
         scramble(seed);
         account.derive_state = net.rawCalcHash(
-                seed ~ account.derive_state ~ current_time.representation);
+            seed ~ account.derive_state ~ current_time.representation);
         scramble(seed);
         auto pkey = net.derivePubkey(account.derive_state);
         invoice.pkey = pkey;
@@ -391,7 +395,9 @@ alias check = Check!(WalletException);
                     registerInvoice(money_back);
                     result.contract.output[money_back.pkey] = rest.toDoc;
                 }
-                orders.each!((o) { result.contract.output[o.pkey] = o.amount.toDoc; });
+                orders.each!((o) {
+                    result.contract.output[o.pkey] = o.amount.toDoc;
+                });
                 result.contract.script = Script("pay");
 
                 immutable message = net.calcHash(result.contract.toDoc);
@@ -537,6 +543,38 @@ alias check = Check!(WalletException);
         return bills.map!(b => b.value).sum;
     }
 
+    immutable(ubyte)[] getPublicKey() {
+        import std.typecons;
+        const pkey = net.pubkey;
+        return cast(TypedefType!Pubkey)(pkey);
+    }
+
+    struct DeriverState {
+        Buffer[Pubkey] derives;
+        Buffer derive_state;
+        mixin HiBONRecord;
+    }
+
+    Buffer getDeriversState(){
+        return this.account.derive_state;
+    }
+
+    @trusted
+    const(CiphDoc) getEncrDerivers() {
+        DeriverState derive_state;
+        derive_state.derives = this.account.derives;
+        derive_state.derive_state = this.account.derive_state;
+        return Cipher.encrypt(this.net, derive_state.toDoc);
+    }
+
+    void setEncrDerivers(const(CiphDoc) cipher_doc) {
+        Cipher cipher;
+        const derive_state_doc = cipher.decrypt(this.net, cipher_doc); //this.net, getEncrDerivesList(
+        DeriverState derive_state = DeriverState(derive_state_doc);
+        this.account.derives = derive_state.derives;
+        this.account.derive_state = derive_state.derive_state;
+    }
+
     unittest {
         import std.stdio;
         import tagion.hibon.HiBONJSON;
@@ -553,13 +591,13 @@ alias check = Check!(WalletException);
         const dummey_questions = num_of_questions.iota.map!(i => format("What %s", i)).array;
         const dummey_amswers = num_of_questions.iota.map!(i => format("A %s", i)).array;
         const wallet_doc = SecureWallet.createWallet(dummey_questions,
-                dummey_amswers, confidence, pin_code).wallet.toDoc;
+            dummey_amswers, confidence, pin_code).wallet.toDoc;
 
         const pin_doc = SecureWallet.createWallet(
-                dummey_questions,
-                dummey_amswers,
-                confidence,
-                pin_code).pin.toDoc;
+            dummey_questions,
+            dummey_amswers,
+            confidence,
+            pin_code).pin.toDoc;
 
         auto secure_wallet = SecureWallet(wallet_doc, pin_doc);
         const pin_code_2 = "3434";
@@ -619,6 +657,24 @@ alias check = Check!(WalletException);
             secure_wallet.login(new_pincode);
             assert(secure_wallet.isLoggedin);
         }
+        { // Secure wallet with mnemonic.
+
+            const test_pin_code = "1234";
+            const test_mnemonic = cast(ushort[]) [1,2,3,4,5,6,7,8,9,10,11,12];
+            // Create first wallet.
+            auto secure_wallet_1 = SecureWallet.createWallet(test_mnemonic, test_pin_code);
+            secure_wallet_1.login(test_pin_code);
+            auto pubkey_1 = secure_wallet_1.getPublicKey();
+            // Create second wallet.
+            auto secure_wallet_2 = SecureWallet.createWallet(test_mnemonic, test_pin_code);
+            secure_wallet_2.login(test_pin_code);
+            auto pubkey_2 = secure_wallet_2.getPublicKey();
+
+            writeln("Pubkey 1 ", pubkey_1);
+            writeln("Pubkey 2 ", pubkey_2);
+
+            assert(pubkey_1 == pubkey_2);
+        }
 
     }
 
@@ -666,7 +722,7 @@ alias check = Check!(WalletException);
         }
 
         pragma(msg,
-                "fixme(cbr): The following test is not finished, Need to transfer to money to receiver");
+            "fixme(cbr): The following test is not finished, Need to transfer to money to receiver");
         SignedContract contract_1;
         { // The receiver_wallet creates an invoice to the sender_wallet
             auto invoice = SecureWallet.createInvoice("To sender 1", 13.TGN);

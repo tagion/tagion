@@ -71,7 +71,7 @@ void tagionFactoryService(Options opts) nothrow {
 
                     service_options.node_id = cast(uint) i;
                     auto local_port = get_port(opts.port_base);
-                    service_options.dart.initialize = true;
+                    service_options.dart.initialize = opts.dart.synchronize;
                     if (is_master_node) {
                         service_options.dart.initialize = opts.dart.initialize;
                         service_options.dart.synchronize = false;

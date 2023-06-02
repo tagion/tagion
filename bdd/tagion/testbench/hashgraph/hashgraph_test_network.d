@@ -1,5 +1,5 @@
 /// Consensus HashGraph main object 
-module tagion.hashgraph.hashgraph_test;
+module tagion.testbench.hashgraph.hashgraph_test_network;
 
 import std.format;
 import std.range : dropExactly;
@@ -16,10 +16,13 @@ import tagion.utils.Miscellaneous: cutHex;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBON;
+import std.stdio;
+import std.exception : assumeWontThrow;
 
 /++
-     This function makes sure that the HashGraph has all the events connected to this event
-     +/
+    This function makes sure that the HashGraph has all the events connected to this event
++/
+@safe
 static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
     import core.thread.fiber : Fiber;
     import tagion.crypto.SecureNet : StdSecureNet;
@@ -64,14 +67,13 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         }
 
         void send(const(Pubkey) channel, const(HiRPC.Sender) sender) {
-            channel_queues[channel].write(sender.toDoc);
+            const doc = sender.toDoc;
+            // assumeWontThrow(writefln("SENDER: send to %s, doc=%s", channel.cutHex, doc.toPretty));
+            channel_queues[channel].write(doc);
         }
 
         void send(const(Pubkey) channel, const(Document) doc) nothrow {
-            log.trace("send to %s %d bytes", channel.cutHex, doc.serialize.length);
-            if (Event.callbacks) {
-                Event.callbacks.send(channel, doc);
-            }
+            // assumeWontThrow(writefln("DOC: send to %s, document=%s", channel.cutHex, doc.toPretty));
             channel_queues[channel].write(doc);
         }
 
@@ -219,7 +221,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
 import std.compiler;
 
 // Unittest segfaults in LDC 1.29 (2.099)
-unittest {
+void hashgraphTest() @safe {
     import tagion.hashgraph.Event;
     import std.stdio;
     import std.traits;
@@ -227,31 +229,18 @@ unittest {
     import std.datetime;
     import tagion.hibon.HiBONJSON;
     import tagion.logger.Logger : log, LogLevel;
-
-    log.push(LogLevel.NONE);
+    import std.array;
+    import tagion.hashgraphview.Compare;
+    import std.exception : assumeWontThrow;
 
     enum NodeLabel {
         Alice,
         Bob,
         Carol,
         Dave,
-
         Elisa,
         Freja,
-        George, // Hermine,
-
-        // Illa,
-        // Joella,
-        // Kattie,
-        // Laureen,
-        // Manual,
-        // Niels,
-        // Ove,
-        // Poul,
-        // Roberto,
-        // Samatha,
-        // Tamekia,
-
+        George, 
     }
 
     auto node_labels = [EnumMembers!NodeLabel].map!((E) => E.to!string).array;
@@ -275,18 +264,16 @@ unittest {
         (() @trusted { writefln("%s", e); assert(0, e.msg); })();
     }
 
-    version (none) {
-        writefln("Save Alice");
-        Pubkey[string] node_labels;
+        // writefln("Save Alice");
+        // Pubkey[string] node_labels;
 
-        foreach (channel, _net; network.networks) {
-            node_labels[_net._hashgraph.name] = channel;
-        }
-        foreach (_net; network.networks) {
-            const filename = fileId(_net._hashgraph.name);
-            _net._hashgraph.fwrite(filename.fullpath, node_labels);
-        }
-    }
+        // foreach (channel, _net; network.networks) {
+        //     node_labels[_net._hashgraph.name] = channel;
+        // }
+        // foreach (_net; network.networks) {
+        //     const filename = fileId(_net._hashgraph.name);
+        //     _net._hashgraph.fwrite(filename.fullpath, node_labels);
+        // }
 
     bool event_error(const Event e1, const Event e2, const Compare.ErrorCode code) @safe nothrow {
         static string print(const Event e) nothrow {
@@ -327,14 +314,13 @@ unittest {
     }
 }
 
-version (unittest) {
+import basic = tagion.basic.basic;
+import std.range : dropExactly;
+import tagion.utils.Miscellaneous : cutHex;
+
+const(basic.FileNames) fileId(T = HashGraph)(string prefix = null) @safe {
     import basic = tagion.basic.basic;
-    import std.range : dropExactly;
-    import tagion.utils.Miscellaneous : cutHex;
 
-    const(basic.FileNames) fileId(T = HashGraph)(string prefix = null) @safe {
-        import basic = tagion.basic.basic;
-
-        return basic.fileId!T("hibon", prefix);
-    }
+    return basic.fileId!T("hibon", prefix);
 }
+

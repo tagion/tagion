@@ -37,6 +37,7 @@ import tagion.communication.HandlerPool;
 
 alias HiRPCSender = HiRPC.Sender;
 alias HiRPCReceiver = HiRPC.Receiver;
+import tagion.dart.synchronizer : Synchronizer, JournalSynchronizer;
 
 mixin template StateT(T) {
     protected T _state;
@@ -189,6 +190,7 @@ class ReplayPool(T) {
     void execute() {
         try {
             if (!empty) {
+                log("modifications[current_index]=%s", modifications[current_index]);
                 replayFunc(modifications[current_index]);
                 current_index++;
             }
@@ -199,6 +201,7 @@ class ReplayPool(T) {
     }
 
     void insert(T value) {
+        log("INSERTING %s", value);
         modifications ~= value;
     }
 
@@ -278,6 +281,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
             const DART.Rims sector,
             const OnComplete oncomplete,
             const OnFailure onfailure) {
+
         SyncSectorResponse syncWith(ref const(NodeAddress) node_address) @safe {
             import p2p.go_helper;
 
@@ -286,8 +290,8 @@ class P2pSynchronizationFactory : SynchronizationFactory {
                     return synchronizing[node_address.address];
                 }
                 auto stream = node.connect(node_address.address, node_address.is_marshal, [
-                        dart_opts.sync.protocol_id
-                        ]);
+                    dart_opts.sync.protocol_id
+                ]);
                 connection_pool.add(stream.identifier, stream, true);
                 stream.listen(&StdHandlerCallback,
                         dart_opts.sync.task_name, dart_opts.sync.host.timeout.msecs, dart_opts
@@ -298,8 +302,8 @@ class P2pSynchronizationFactory : SynchronizationFactory {
 
             try {
                 const stream_id = connect;
+                // log("SyncSectorResponse sector=%s", sector);
                 auto filename = format("%s_%s", tempfile, sector);
-                pragma(msg, "fixme(alex): Why 0x80");
                 BlockFile.create(filename, DART.stringof, BLOCK_SIZE);
                 auto sync = new P2pSynchronizer(filename, stream_id, oncomplete, onfailure);
                 auto db_sync = dart.synchronizer(sync, sector);
@@ -326,7 +330,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
                     continue;
                 auto response = syncWith(node_addr.value);
                 if (response[1] is null)
-                    continue;
+                continue;
                 return response;
             }
         }
@@ -335,7 +339,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
     }
 
     @safe
-    class P2pSynchronizer : DART.StdSynchronizer, ResponseHandler {
+    class P2pSynchronizer : JournalSynchronizer, ResponseHandler {
         protected const ulong key;
         protected Buffer response;
         protected const OnComplete oncomplete;
@@ -354,10 +358,11 @@ class P2pSynchronizationFactory : SynchronizationFactory {
 
         this(string journal_filename, const ulong key, const OnComplete oncomplete, const OnFailure onfailure) {
             filename = journal_filename;
+            auto _journalfile = BlockFile(filename);
             this.key = key;
             this.oncomplete = oncomplete;
             this.onfailure = onfailure;
-            super(journal_filename);
+            super(_journalfile);
         }
 
         const(HiRPCReceiver) query(ref const(HiRPCSender) request) {
@@ -401,6 +406,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
             else {
                 log.trace("P2pSynchronizer: Synchronization Completed! Sector: %d", fiber
                         .root_rims.sector);
+                journalfile.close;
                 oncomplete(filename);
             }
             // connection_pool.close(key); //TODO: if one connnection used for one synchronization
@@ -687,6 +693,9 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
     }
 
     private void onComplete(string journal_filename) {
+        log("ONCOMPLETE INSERT=%s", journal_filename);
+
+       
         journal_replay.insert(journal_filename);
     }
 

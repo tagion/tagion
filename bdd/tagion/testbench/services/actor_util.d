@@ -1,6 +1,6 @@
 module tagion.testbench.services.actor_util;
 
-import std.concurrency : receiveTimeout, MessageMismatch;
+import tagion.utils.pretend_safe_concurrency : receiveTimeout, MessageMismatch;
 import tagion.actor.exceptions;
 import core.time;
 import std.variant;
@@ -13,7 +13,7 @@ import std.format;
     }
 }
 
-T receiveOnlyTimeout(T)() {
+T receiveOnlyTimeout(T)() @safe {
     T ret;
     receiveTimeout(
             2.seconds,

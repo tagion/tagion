@@ -402,6 +402,7 @@ version (unittest) {
     import tagion.basic.Types : FileExtension;
     import std.range : iota;
     import std.algorithm.iteration : map;
+    import tagion.basic.basic : forceRemove;
 
     enum SMALL_BLOCK_SIZE = 0x40;
 }
@@ -445,8 +446,8 @@ unittest {
 @safe
 unittest {
     // add extra test
-    immutable filename = fileId(
-            "recycle").fullpath;
+    immutable filename = fileId("recycle").fullpath;
+    filename.forceRemove;
     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
     auto blockfile = BlockFile(
             filename);
@@ -491,6 +492,7 @@ unittest {
     // middle add segment
     immutable filename = fileId(
             "recycle").fullpath;
+    filename.forceRemove;
     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
     auto blockfile = BlockFile(
             filename);
@@ -524,6 +526,8 @@ unittest {
     // empty lowerrange connecting
     immutable filename = fileId(
             "recycle").fullpath;
+    filename.forceRemove;
+
     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
     auto blockfile = BlockFile(
             filename);
@@ -569,6 +573,8 @@ unittest {
     // empty lowerrange NOT connecting
     immutable filename = fileId(
             "recycle").fullpath;
+    filename.forceRemove;
+
     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
     auto blockfile = BlockFile(
             filename);
@@ -614,6 +620,8 @@ unittest {
     // empty lowerrange connecting
     immutable filename = fileId(
             "recycle").fullpath;
+    filename.forceRemove;
+
     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
     auto blockfile = BlockFile(
             filename);
@@ -657,6 +665,8 @@ unittest {
 unittest {
     immutable filename = fileId(
             "recycle").fullpath;
+    filename.forceRemove;
+
     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
     auto blockfile = BlockFile(
             filename);
@@ -679,6 +689,8 @@ unittest {
 unittest {
     // test the full recycler flow.
     immutable filename = fileId("recycle").fullpath;
+    filename.forceRemove;
+
     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
     auto blockfile = BlockFile(filename);
     auto recycler = Recycler(blockfile);
@@ -729,6 +741,8 @@ unittest {
         }
         // try to read / load indices.
         immutable filename = fileId("recycle").fullpath;
+        filename.forceRemove;
+
         BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
         auto blockfile = BlockFile(filename);
         // auto recycler = Recycler(blockfile);
@@ -794,6 +808,8 @@ unittest {
     }
     // try to read / load indices.
     immutable filename = fileId("recycle").fullpath;
+    filename.forceRemove;
+
     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
     auto blockfile = BlockFile(filename);
     // auto recycler = Recycler(blockfile);
@@ -826,6 +842,8 @@ unittest {
     }
 
     immutable filename = fileId("recycle").fullpath;
+    filename.forceRemove;
+
     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
     auto blockfile = BlockFile(filename);
     scope (exit) {
@@ -880,6 +898,8 @@ unittest {
     }
 
     immutable filename = fileId("recycle").fullpath;
+    filename.forceRemove;
+
     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
     auto blockfile = BlockFile(filename);
     scope (exit) {
@@ -909,6 +929,8 @@ unittest {
     }
 
     immutable filename = fileId("recycle").fullpath;
+    filename.forceRemove;
+
     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
     auto blockfile = BlockFile(filename);
     scope (exit) {
@@ -960,6 +982,8 @@ unittest {
     }
 
     immutable filename = fileId("recycle").fullpath;
+    filename.forceRemove;
+
     BlockFile.create(filename, "recycle.unittest", SMALL_BLOCK_SIZE);
     auto blockfile = BlockFile(filename);
     scope (exit) {

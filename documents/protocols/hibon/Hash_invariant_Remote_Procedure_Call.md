@@ -5,41 +5,41 @@ The HiPRC is inspired by JSON-RPC just that it is base on the HiBON format and i
 
 ## Description of HiRPC format
 
-| Name    | Type | D-Type | Description |  Required |
-| ------  | ----- | ------- | ----------- | --- |
-| `$sign` | BINARY | Buffer | Digital signature | No |
-| `$pkey` | BINARY | Pubkey | Permission public key | No |
-| `$msg`  | DOCUMENT | [Document]() | RPC function call | Yes |
+| Name    | Type     | D-Type       | Description           | Required |
+| ------- | -------- | ------------ | --------------------- | -------- |
+| `$sign` | BINARY   | Buffer       | Digital signature     | No       |
+| `$pkey` | BINARY   | Pubkey       | Permission public key | No       |
+| `$msg`  | DOCUMENT | [Document]() | RPC function call     | Yes      |
 
 See [HiRPC](ddoc://tagion.communication.HiRPC.HiRPC)
 
 HiRPC `$msg` comes in 3 types. [Method](#Method), [Response](#Response) and [Error](#Error).
 
 ### Method
-| Name | Type | D-Type | Description | Required |
-| ---- | ----- | ------ | ------- | --- |
-| `method` | STRING | string | RPC method name | Yes |
-| `id`     | UINT32 | uint | Message id number | No |
-| `params` | DOCUMENT | [Document]() | parameter argument as a Document | No |
+| Name     | Type     | D-Type       | Description                      | Required |
+| -------- | -------- | ------------ | -------------------------------- | -------- |
+| `method` | STRING   | string       | RPC method name                  | Yes      |
+| `id`     | UINT32   | uint         | Message id number                | No       |
+| `params` | DOCUMENT | [Document]() | parameter argument as a Document | No       |
 
 See [Method](ddoc://tagion.communication.HiRPC.HiRPC.Method)
 
 ### Response 
-| Name | Type | D-Type | Description | Required |
-| ---- | ----- | ----- | ------- | --- |
-| `id ` | UINT32 | uint |Message id number | No |
-| `result` | DOCUMENT | [Document]() | Result for the RPC as a Document | Yes |
+| Name     | Type     | D-Type       | Description                      | Required |
+| -------- | -------- | ------------ | -------------------------------- | -------- |
+| `id `    | UINT32   | uint         | Message id number                | No       |
+| `result` | DOCUMENT | [Document]() | Result for the RPC as a Document | Yes      |
 
 See [Response](ddoc://tagion.communication.HiRPC.HiRPC.Response)
 
 ### Error
 
-| Name | Type | D-Type | Description | Required |
-| ---- | ----- | | ------- | --- |
-| `id` | UINT32 | uint | Message id number | Yes |
-| `$data` | DOCUMENT | [Document]() | Error result as Document | No |
-| `$msg` | STRING | string | Error message as text | No |
-| `$code` | INT32 | int |Error code | Yes |
+| Name    | Type     | D-Type       | Description              | Required |
+| ------- | -------- | ------------ | ------------------------ | -------- |
+| `id`    | UINT32   | uint         | Message id number        | Yes      |
+| `$data` | DOCUMENT | [Document]() | Error result as Document | No       |
+| `$msg`  | STRING   | string       | Error message as text    | No       |
+| `$code` | INT32    | int          | Error code               | Yes      |
 
 See [Error](ddoc://tagion.communication.HiRPC.HiRPC.Error)
 

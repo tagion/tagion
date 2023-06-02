@@ -51,32 +51,6 @@ alias Runner = Tuple!(
         long, "jobid",
 );
 
-@safe
-struct ScheduleOption {
-    string dlog;
-    string test_stage;
-    void setDefault() {
-        import std.ascii : toUpper;
-
-        static foreach (name; FieldNameTuple!ScheduleOption) {
-            {
-                pragma(msg, "NAME ", name);
-                /*
-                enum name = name.map!(a => cast(char) a.toupper).array;
-                try {
-                    __traits(getmember, temp, name) = environment[name];
-                }
-                catch (exception e) {
-                    // Ignore
-                    // writeln(e.msg);
-                    // errors++;
-                }
-        */
-            }
-        }
-    }
-}
-
 enum TEST_STAGE = "TEST_STAGE";
 enum COLLIDER_ROOT = "COLLIDER_ROOT";
 enum BDD_LOG = "BDD_LOG";
@@ -209,7 +183,6 @@ struct ScheduleRunner {
                 //                writefln("job_index=%d", job_index);
                 if (job_index >= 0) {
                     this.stop(runners[job_index]);
-                    writefln("Dump job %d", job_index);
                     runners[job_index].fout.close;
                     runners[job_index] = Runner.init;
                     writefln("Next job");

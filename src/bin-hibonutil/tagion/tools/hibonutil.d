@@ -4,7 +4,7 @@ module tagion.tools.hibonutil;
 import std.getopt;
 import std.stdio;
 import std.file : fread = read, fwrite = write, exists, readText;
-import std.path : setExtension;
+import std.path : setExtension, extension;
 import std.format;
 import std.exception : assumeUnique, assumeWontThrow;
 import std.json;
@@ -13,11 +13,11 @@ import std.conv;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
-import tagion.basic.Types : FileExtension, fileExtension;
+import tagion.basic.Types : FileExtension, Buffer;
 import tagion.hibon.HiBONJSON;
+import tagion.hibon.HiBONtoText : encodeBase64, decodeBase64;
 import std.utf : toUTF8;
 import std.encoding : BOMSeq, BOM;
-import tagion.basic.Types : Buffer;
 
 import std.array : join;
 
@@ -25,8 +25,6 @@ import tagion.tools.Basic;
 import tagion.tools.revision;
 
 mixin Main!_main;
-
-enum VERSION_HIBONUTIL = "1.9";
 
 /**
  * @brief wrapper for BOM extracting
@@ -39,8 +37,7 @@ const(BOMSeq) getBOM(string str) @trusted {
     return _getBOM(cast(ubyte[]) str);
 }
 
-static bool verbose;
-void printError(const Exception e) {
+version (none) void printError(const Exception e) {
     if (verbose) {
         stderr.writefln("%s", e);
         return;
@@ -57,6 +54,7 @@ int _main(string[] args) {
     bool standard_output;
     //    string outputfilename;
     bool pretty;
+    bool base64;
     // bool verbose;
     string outputfilename;
     auto logo = import("logo.txt");
@@ -69,7 +67,8 @@ int _main(string[] args) {
                 "version", "display the version", &version_switch,
                 "c|stdout", "Print to standard output", &standard_output,
                 "pretty|p", format("JSON Pretty print: Default: %s", pretty), &pretty,
-                "v|verbose", "Print more debug information", &verbose,
+                "b|base64", "Convert to base64 string", &base64,
+                "v|verbose", "Print more debug information", &verbose_switch,
                 "o|output", "outputfilename only for stdin", &outputfilename,
         );
     }
@@ -150,13 +149,13 @@ int _main(string[] args) {
             }
             catch (HiBON2JSONException e) {
                 stderr.writefln("Error: HiBON-JSON format in the %s file", outputfilename);
-                printError(e);
+                verbose(e);
                 return 1;
             }
             catch (JSONException e) {
                 stderr.writeln("Error: JSON syntax");
                 stderr.writefln("Error: HiBONError Document errorcode %s", error_code);
-                printError(e);
+                verbose(e);
                 return 1;
             }
             catch (Exception e) {
@@ -178,7 +177,7 @@ int _main(string[] args) {
                     }
                 }
                 catch (Exception e) {
-                    printError(e);
+                    verbose(e);
                     return 1;
                 }
             }
@@ -193,7 +192,7 @@ int _main(string[] args) {
             stderr.writefln("Error: file %s does not exist", inputfilename);
             return 1;
         }
-        switch (inputfilename.fileExtension) {
+        switch (inputfilename.extension) {
         case FileExtension.hibon:
             immutable data = assumeUnique(cast(ubyte[]) fread(inputfilename));
             const doc = Document(data);
@@ -206,6 +205,16 @@ int _main(string[] args) {
             if (error_code !is Document.Element.ErrorCode.NONE) {
                 stderr.writefln("Error: Document errorcode %s", error_code);
                 return 1;
+            }
+            if (base64) {
+                const text_output = encodeBase64(doc);
+                if (standard_output) {
+                    writefln("%s", text_output);
+                    return 0;
+                }
+                inputfilename.setExtension(FileExtension.text).fwrite(text_output);
+
+                return 0;
             }
             auto json = doc.toJSON;
             auto json_stringify = (pretty) ? json.toPrettyString : json.toString;
@@ -222,7 +231,7 @@ int _main(string[] args) {
                 text = inputfilename.readText;
             }
             catch (Exception e) {
-                printError(e);
+                verbose(e);
                 return 1;
             }
             const bom = getBOM(text);
@@ -241,17 +250,17 @@ int _main(string[] args) {
             HiBON hibon;
             try {
                 auto parse = text.parseJSON;
-                writefln("%s", text);
+                // writefln("%s", text);
                 hibon = parse.toHiBON;
             }
             catch (HiBON2JSONException e) {
                 stderr.writefln("Error: HiBON-JSON format in the %s file", inputfilename);
-                printError(e);
+                verbose(e);
                 return 1;
             }
             catch (JSONException e) {
                 stderr.writeln("Error: JSON syntax");
-                printError(e);
+                verbose(e);
                 return 1;
             }
             catch (Exception e) {
@@ -271,15 +280,37 @@ int _main(string[] args) {
                     }
                 }
                 catch (Exception e) {
-                    printError(e);
+                    verbose(e);
                     return 1;
                 }
             }
-
             break;
+        case FileExtension.text:
+            string text;
+            try {
+                text = inputfilename.readText;
+            }
+            catch (Exception e) {
+                verbose(e);
+                return 1;
+            }
+            Document doc;
+            try {
+                doc = decodeBase64(text);
+            }
+            catch (Exception e) {
+                verbose(e);
+                return 1;
+            }
+            if (standard_output) {
+                stdout.rawWrite(doc.serialize);
+                return 0;
+            }
+            inputfilename.setExtension(FileExtension.hibon).fwrite(doc.serialize);
+            return 0;
         default:
             stderr.writefln("File %s not valid (only %(.%s %))",
-                    inputfilename, only(FileExtension.hibon, FileExtension.json));
+                    inputfilename, only(FileExtension.hibon, FileExtension.json, FileExtension.text));
             return 1;
         }
     }

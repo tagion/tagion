@@ -27,7 +27,13 @@ BIN_DEPS=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-$1/*" $(EXCLUDED_D
 # Core program
 #
 target-tagionwave: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-${call DO_BIN,tagionwave,$(LIB_DFILES) ${call BIN_DEPS,wave},tagion}
+${call DO_BIN,tagionwave,$(LIB_DFILES) ${call BIN_DEPS,priorwave},tagion}
+
+#
+# New Wave
+#
+target-neuewelle: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+${call DO_BIN,neuewelle,$(LIB_DFILES) ${call BIN_DEPS,wave},tagion}
 
 #
 # HiBON utility
@@ -61,6 +67,10 @@ target-tagionwallet: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPE
 ${call DO_BIN,tagionwallet,$(LIB_DFILES) ${call BIN_DEPS,tagionwallet},tagion}
 
 wallet: target-tagionwallet
+
+
+target-signs: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+${call DO_BIN,signs,$(LIB_DFILES) ${call BIN_DEPS,signs},tagion}
 
 #
 # Subscription utility
@@ -98,7 +108,8 @@ ${call DO_BIN,graphview,$(LIB_DFILES) ${call BIN_DEPS,graphview},tagion}
 #
 # Tagion onetool
 #
-TAGION_TOOLS+=wave
+TAGION_TOOLS+=priorwave
+TAGION_TOOLS+=wave # New wave
 TAGION_TOOLS+=dartutil
 TAGION_TOOLS+=blockutil
 TAGION_TOOLS+=hibonutil
@@ -108,6 +119,8 @@ TAGION_TOOLS+=boot
 TAGION_TOOLS+=tools
 TAGION_TOOLS+=graphview
 TAGION_TOOLS+=recorderchain
+TAGION_TOOLS+=signs
+TAGION_TOOLS+=wasmutil
 
 TAGION_BINS=$(foreach tools,$(TAGION_TOOLS), ${call BIN_DEPS,$(tools)} )
 

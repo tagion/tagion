@@ -5,6 +5,10 @@ DTMP_WOLFSSL := $(DTMP)/wolfssl
 
 #CONFIGUREFLAGS_WOLFSSL := --enable-opensslextra --enable-static --enable-all --enable-memory --enable-debug --enable-bigcache
 CONFIGUREFLAGS_WOLFSSL := --enable-opensslextra --enable-static --enable-all --enable-memory --enable-debug --enable-bigcache
+# CONFIGUREFLAGS_WOLFSSL += PTHREAD_CFLAGS="-D_FORTIFY_SOURCE=2 -O2"
+
+
+
 ifdef DEBUG 
 CONFIGUREFLAGS_WOLFSSL += --enable-debug
 endif
@@ -28,7 +32,7 @@ $(LIBWOLFSSL): $(DTMP)/.way
 	$(CP) $(DSRC_WOLFSSL) $(DTMP_WOLFSSL)
 	$(PRECMD)cd $(DTMP_WOLFSSL); sh autogen.sh
 	$(PRECMD)cd $(DTMP_WOLFSSL); ./configure $(CONFIGUREFLAGS_WOLFSSL)
-	$(PRECMD)cd $(DTMP_WOLFSSL); make
+	$(PRECMD)cd $(DTMP_WOLFSSL); make CFLAGS=-O2
 
 env-wolfssl:
 	$(PRECMD)
