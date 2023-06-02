@@ -26,6 +26,8 @@ import core.memory : pageSize;
 static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
     import core.thread.fiber : Fiber;
     import tagion.crypto.SecureNet : StdSecureNet;
+
+    import tagion.crypto.SecureInterfaceNet : SecureNet;
     import tagion.gossip.InterfaceNet : GossipNet;
     import tagion.utils.Random;
     import tagion.utils.Queue;
@@ -41,13 +43,22 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         MAX = 150
     }
 
+    static const(SecureNet) verify_net;
+    static this() {
+        verify_net = new StdSecureNet();
+    }
+    
     alias ChannelQueue = Queue!Document;
-
     class TestGossipNet : GossipNet {
+        import tagion.hashgraph.HashGraphBasic;
         protected {
             ChannelQueue[Pubkey] channel_queues;
             sdt_t _current_time;
         }
+
+        ExchangeState[Pubkey][Pubkey] gossip_state;
+                
+        
         void start_listening() {
             // empty
         }
@@ -67,8 +78,12 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         }
 
         void send(const(Pubkey) channel, const(HiRPC.Sender) sender) {
+            const wave = Wavefront(verify_net, sender.method.params);
+            gossip_state[sender.pubkey][channel] = wave.state;
+            writefln("%s", gossip_state);
+
             const doc = sender.toDoc;
-            // assumeWontThrow(writefln("SENDER: send to %s, doc=%s", channel.cutHex, doc.toPretty));
+            assumeWontThrow(writefln("SENDER: send to %s, doc=%s", channel.cutHex, doc.toPretty));
             channel_queues[channel].write(doc);
         }
 
@@ -312,15 +327,5 @@ void hashgraphTest() @safe {
             assert(result, format("HashGraph %s and %s is not the same", h1.name, h2.name));
         }
     }
-}
-
-import basic = tagion.basic.basic;
-import std.range : dropExactly;
-import tagion.utils.Miscellaneous : cutHex;
-
-const(basic.FileNames) fileId(T = HashGraph)(string prefix = null) @safe {
-    import basic = tagion.basic.basic;
-
-    return basic.fileId!T("hibon", prefix);
 }
 
