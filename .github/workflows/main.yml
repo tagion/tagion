@@ -60,10 +60,6 @@ jobs:
           bash <(curl -s https://codecov.io/bash) -t ${{ env.CODECOV_TOKEN }} -f "!*/cov/*"
           rm -- *.lst
       
-      - name: Add schedule to build
-        run: |
-          cp collider_schedule.json build/${{ env.TARGET }}/bin
-
       - name: Create tar ball
         if: success() || failure()
         id: create_tar
