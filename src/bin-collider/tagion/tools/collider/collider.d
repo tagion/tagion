@@ -78,6 +78,7 @@ struct BehaviourOptions {
     //    string test_stage_env;
     //    string dbin_env;
     string schedule_file; /// Schedule filename
+    string collider_root;
     void setDefault() {
         const gen = "gen";
         bdd_ext = FileExtension.markdown;
@@ -438,6 +439,7 @@ int main(string[] args) {
                 "P|proto", "Writes sample schedule file", &schedule_write_proto,
                 "f|force", "Force a symbolic link to be created", &force_switch,
                 "v|verbose", "Enable verbose print-out", &verbose_switch,
+                "d|dry", "Shows the parameter for a schedule run", &__dry_switch,
         );
         if (version_switch) {
             revision_text.writeln;

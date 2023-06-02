@@ -13,6 +13,7 @@ import std.stdio : File;
 import core.thread;
 import tagion.utils.JSONCommon;
 import tagion.tools.collider.trace : ScheduleTrace;
+import tagion.tools.Basic : dry_switch;
 
 @safe
 struct RunUnit {
@@ -56,6 +57,7 @@ enum COLLIDER_ROOT = "COLLIDER_ROOT";
 enum BDD_LOG = "BDD_LOG";
 enum BDD_RESULTS = "BDD_RESULTS";
 enum BDD_LOGFILE = "BDD_LOGFILE";
+
 @safe
 struct ScheduleRunner {
     Schedule schedule;
@@ -116,84 +118,72 @@ struct ScheduleRunner {
         }
     }
 
-    int run(scope const(char[])[] args) {
-        import std.stdio;
+    void showEnv(const(string[string]) env) {
+        if (verbose_switch) {
+            env.byKeyValue
+                .each!(e => writefln("%s = %s", e.key, e.value); return;}
+            if (dry_switch) {
+                only(COLLIDER_ROOT, BDD_LOG, BDD_RESULTS, BDD_LOGFILE, TEST_STAGE)
+                    .each!(name => writefln("%s = %s", name, env.get(name, null));}
 
-        //        schedule.toJSON.toPrettyString.writeln;
-
-        alias Stage = Tuple!(RunUnit, "unit", string, "name", string, "stage");
-        auto schedule_list = stages
-            .map!(stage => schedule.units
-                    .byKeyValue
-                    .filter!(unit => unit.value.stages.canFind(stage))
-                    .map!(unit => Stage(unit.value, unit.key, stage)))
-            .joiner;
-
-        if (schedule_list.empty) {
-            writefln("None of the stage %s available", stages);
-            writefln("Availabale %s", schedule.stages);
-            return 1;
-        }
-        auto runners = new Runner[jobs];
-        auto check_running = runners
-            .filter!(r => r.pid !is r.pid.init)
-            .any!(r => !tryWait(r.pid).terminated);
-
-        while (!schedule_list.empty || check_running) {
-            while (!schedule_list.empty && !runners.all!(r => r.pid !is r.pid.init)) {
-                const job_index = runners.countUntil!(r => r.pid is r.pid.init);
-                try {
-                    auto time = Clock.currTime;
-                    const cmd = args ~ schedule_list.front.name ~ schedule_list.front.unit
-                        .args;
-                    auto env = environment.toAA;
-                    schedule_list.front.unit.envs.byKeyValue
-                        .each!(e => env[e.key] = e.value);
-                    setEnv(env, schedule_list.front.stage);
-                    //writefln("ENV %s ", env);
-                    auto fout = File(buildNormalizedPath(env[BDD_RESULTS],
-                    schedule_list.front.name).setExtension("log"), "w");
-                    auto _stdin = (() @trusted => stdin)();
-                    auto pid = spawnProcess(cmd, _stdin, fout, fout, env);
-                    writefln("%d] %-(%s %) # pid=%d", job_index, cmd, pid.processID);
-                    runners[job_index] = Runner(
-                            pid,
-                            fout,
-                            schedule_list.front.unit,
-                            schedule_list.front.name,
-                            schedule_list.front.stage,
-                            time,
-                            job_index
-                    );
-                }
-                catch (Exception e) {
-                    writefln("Error %s", e.msg);
-                    runners[job_index].fout.writeln("Error: %s", e.msg);
-                    runners[job_index].fout.close;
-                    kill(runners[job_index].pid);
-                    runners[job_index] = Runner.init;
-                }
-                //              time);
-
-                schedule_list.popFront;
             }
-            for (;;) {
-                sleep(100.msecs);
-                const job_index = runners
+
+            int run(scope const(char[])[] args) {
+                import std.stdio;
+
+                //        schedule.toJSON.toPrettyString.writeln;
+
+                alias Stage = Tuple!(RunUnit, "unit", string, "name", string, "stage"); auto schedule_list = stages
+                    .map!(stage => schedule.units
+                            .byKeyValue
+                            .filter!(unit => unit.value.stages.canFind(stage))
+                            .map!(unit => Stage(unit.value, unit.key, stage)))
+                    .joiner; if (schedule_list.empty) {
+                    writefln("None of the stage %s available", stages); writefln("Availabale %s", schedule.stages); return 1;
+                }
+                auto runners = new Runner[jobs]; auto check_running = runners
                     .filter!(r => r.pid !is r.pid.init)
-                    .countUntil!(r => tryWait(r.pid).terminated);
-                //                writefln("job_index=%d", job_index);
-                if (job_index >= 0) {
-                    this.stop(runners[job_index]);
-                    runners[job_index].fout.close;
-                    runners[job_index] = Runner.init;
-                    writefln("Next job");
-                    break;
-                }
-            }
-            //            sleep(3000.msecs);
-            //writefln("END %d", jobs);
-        }
-        return 0;
-    }
-}
+                    .any!(r => !tryWait(r.pid).terminated); while (!schedule_list.empty || check_running) {
+                    while (!schedule_list.empty && !runners.all!(r => r.pid !is r.pid.init)) {
+                        const job_index = runners.countUntil!(r => r.pid is r.pid.init); try {
+                            auto time = Clock.currTime; const cmd = args ~ schedule_list.front.name ~ schedule_list.front
+                                .unit
+                                .args; auto env = environment.toAA; schedule_list.front.unit.envs.byKeyValue
+                                .each!(e => env[e.key] = e.value); setEnv(env, schedule_list.front.stage); showEnv(env);  //writefln("ENV %s ", env);
+                            const log_filename = buildNormalizedPath(env[BDD_RESULTS],
+                            schedule_list.front.name).setExtension("log"); if (dry_switch) {
+                                writefln("%d] %-(%s %)", job_index, cmd); writefln("Log file %s", log_filename);}
+                            else {
+                                    auto fout = File(log_filename, "w"); auto _stdin = (() @trusted => stdin)(); auto pid = spawnProcess(
+                                            cmd, _stdin, fout, fout, env); writefln("%d] %-(%s %) # pid=%d", job_index, cmd, pid
+                                            .processID); runners[job_index] = Runner(
+                                            pid,
+                                            fout,
+                                            schedule_list.front.unit,
+                                            schedule_list.front.name,
+                                            schedule_list.front.stage,
+                                            time,
+                                            job_index
+                                    );}
+                                }
+                                catch (Exception e) {
+                                    writefln("Error %s", e.msg); runners[job_index].fout.writeln("Error: %s", e.msg); runners[job_index]
+                                        .fout.close; kill(runners[job_index].pid); runners[job_index] = Runner.init;}
+                                    //              time);
+
+                                    schedule_list.popFront;}
+                                    if (!dry_switch) {
+                                        for (;;) {
+                                            sleep(100.msecs); const job_index = runners
+                                                .filter!(r => r.pid !is r.pid.init)
+                                                .countUntil!(r => tryWait(r.pid).terminated);  //                writefln("job_index=%d", job_index);
+                                            if (job_index >= 0) {
+                                                this.stop(runners[job_index]); runners[job_index].fout.close; runners[job_index] = Runner
+                                                    .init; writefln("Next job"); break;}
+                                            }
+                                        }
+                                        //            sleep(3000.msecs);
+                                        //writefln("END %d", jobs);
+                                    }
+                                    return 0;}
+                                }

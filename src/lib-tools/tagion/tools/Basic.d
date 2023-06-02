@@ -9,11 +9,17 @@ import std.stdio;
 import tagion.utils.Term;
 
 __gshared static bool verbose_switch;
+__gshared static bool __dry_switch;
 //static uint verbose_mask;
 
 @trusted
-bool verbose_flag() nothrow {
+bool verbose_flag() nothrow @nogc {
     return verbose_switch;
+}
+
+@trusted
+bool dry_switch() nothrow @nogc {
+    return __dry_switch;
 }
 
 @safe

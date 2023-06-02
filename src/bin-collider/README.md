@@ -58,9 +58,13 @@ Sample of a config file
     "paths": [],      /// List of source paths (switch '-I')
     "regex_exc": "",  /// Regex to exclude file from source paths (switch '-X')
     "regex_inc": "\/testbench\/",  /// Regex to include files in the source paths (switch '-R')
-    "schedule_file": "collider_schedule.json"  /// Collider run schedule filename (switch '-P')
+    "schedule_file": "collider_schedule.json",  /// Collider run schedule filename (switch '-P')
+    "collider_root": ""  /// The root of the log files (if $COLLIDER_ROOT is set then this is used instead)
 }
 ```
+The root directory of the log path is set with the `"collider_root"` configure,
+this path can be overruled with the `$COLLIDER_ROOT` environment.
+
 
 ## Generating skeletens from the BDD md
 
@@ -79,6 +83,7 @@ The collider tool can execute a list of BDD defined in the `collider_schedule.js
 
 
 ### Generate proto schedule file.
+*Example:*
 ```
 collider -P -s default_schedule.json
 ```
@@ -102,6 +107,7 @@ Will generated a default schedule file named `default_schedule.json`.
 
 ### Run the test listed in the schedule file
 To run the all the testprograms in stage .
+
 *Example:*
 ```
 # Make sure to set the environment before running the collider
@@ -114,6 +120,7 @@ collider -r commit -j 4  -b build/x86_64-linux/bin/testbench
 ## Check the result of BDD run
 
 Prints the accumulated result. 
+
 *Example:*
 ```
 collider -cv logs/x86_64-linux/bdd/commit/results/
