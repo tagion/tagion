@@ -37,7 +37,7 @@ jobs:
 
       - name: Run tests
         run: |
-          make -k proper clean-trunk ci -j DC=${{env.DC}} || make -k proper ci -j DC=${{env.DC}}
+          make -k clean-trunk ci -j DC=${{env.DC}} || make -k proper ci -j DC=${{env.DC}}
           
       - name: Report unittests
         run: |

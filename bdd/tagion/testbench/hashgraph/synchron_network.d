@@ -93,6 +93,21 @@ class StartNetworkWithNAmountOfNodes {
             return true;    
         }
 
+        void printStates(const(ExchangeState[Pubkey][Pubkey]) gossip_states) {
+            writeln("----------------------");
+            foreach(channel_key; network.channels) {
+                foreach(receiver_key; network.channels) {
+                    const row = gossip_states.get(channel_key, null);
+                    ExchangeState state;
+                    if (row !is null) {
+                        state = row.get(receiver_key, ExchangeState.NONE);
+                    }
+                    writef("%15s", state);
+                }
+                writeln;
+            }
+        
+        }
         
         try {
             foreach (i; 0 .. 1000) {
@@ -100,7 +115,10 @@ class StartNetworkWithNAmountOfNodes {
                 const channel = network.channels[channel_number];
                 auto current = network.networks[channel];
                 (() @trusted { current.call; })();
-                // writefln("coherent = %s", allSendingState(ExchangeState.COHERENT, network.authorising.gossip_state));
+                
+                printStates(network.authorising.gossip_state);
+
+                 // writefln("coherent = %s", allSendingState(ExchangeState.COHERENT, network.authorising.gossip_state));
                 
 
            }

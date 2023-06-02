@@ -80,7 +80,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         void send(const(Pubkey) channel, const(HiRPC.Sender) sender) {
             const wave = Wavefront(verify_net, sender.method.params);
             gossip_state[sender.pubkey][channel] = wave.state;
-            writefln("owner %s, state=%s", sender.pubkey.cutHex, wave.state);
+            // writefln("owner %s, state=%s", sender.pubkey.cutHex, wave.state);
             const doc = sender.toDoc;
             // assumeWontThrow(writefln("SENDER: send to %s, doc=%s", channel.cutHex, doc.toPretty));
             channel_queues[channel].write(doc);
