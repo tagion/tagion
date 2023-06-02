@@ -22,7 +22,7 @@ import tagion.dart.DARTFile;
 import source.generic_controller : GenericController;
 
 
-const revision = import("revision.txt");
+// const revision = import("revision.txt");
 
 void main() {
     auto router = new URLRouter;
@@ -55,7 +55,7 @@ void main() {
 
     listenHTTP(settings, router);
 
-    logInfo("Running revision: %s", revision);
+    // logInfo("Running revision: %s", revision);
     logInfo("Open http://127.0.0.1:8081/ in your browser.");
 
     runApplication();
