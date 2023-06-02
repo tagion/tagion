@@ -44,7 +44,7 @@ int _main(string[] args) {
     Address contract_sock_addr = new UnixAddress(contract_sock_path);
     Socket contract_socket = new Socket(AddressFamily.UNIX, SocketType.STREAM);
 
-    echoFiber(&contract_socket, contract_sock_addr);
+    echoSock(&contract_socket, contract_sock_addr);
 
     return 0;
 }
