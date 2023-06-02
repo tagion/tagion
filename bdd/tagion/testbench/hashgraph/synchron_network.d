@@ -16,6 +16,8 @@ import std.path : buildPath;
 import std.path : setExtension, extension;
 import tagion.basic.Types : FileExtension;
 
+import tagion.hashgraph.HashGraphBasic;
+
 
 
 enum feature = Feature(
@@ -72,12 +74,34 @@ class StartNetworkWithNAmountOfNodes {
 
     @When("all nodes are sending ripples")
     Document ripples() {
+
+        bool allSendingState(const(ExchangeState) check_state, const(ExchangeState[Pubkey][Pubkey]) gossip_state) {
+            if (network.channels.length != gossip_state.length) {
+                writefln("only %s out of %s nodes sending", gossip_state.length, network.channels.length);
+                return false;
+            }
+            foreach(owner_keys; gossip_state) {
+                bool sending_state;
+                foreach(state; owner_keys) {
+                    if (state == check_state) {
+                        sending_state = true;
+                        break;
+                    }
+                }
+                if (sending_state == false) { return false; }
+            }
+            return true;    
+        }
+
+        
         try {
             foreach (i; 0 .. 1000) {
                 const channel_number = network.random.value(0, network.channels.length);
                 const channel = network.channels[channel_number];
                 auto current = network.networks[channel];
                 (() @trusted { current.call; })();
+                // writefln("coherent = %s", allSendingState(ExchangeState.COHERENT, network.authorising.gossip_state));
+                
 
            }
         }
