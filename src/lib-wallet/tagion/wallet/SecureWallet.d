@@ -545,8 +545,6 @@ import tagion.communication.HiRPC;
 
     immutable(ubyte)[] getPublicKey() {
         import std.typecons;
-        import std.stdio;
-
         const pkey = net.pubkey;
         return cast(TypedefType!Pubkey)(pkey);
     }
@@ -658,6 +656,24 @@ import tagion.communication.HiRPC;
             assert(!secure_wallet.isLoggedin);
             secure_wallet.login(new_pincode);
             assert(secure_wallet.isLoggedin);
+        }
+        { // Secure wallet with mnemonic.
+
+            const test_pin_code = "1234";
+            const test_mnemonic = cast(ushort[]) [1,2,3,4,5,6,7,8,9,10,11,12];
+            // Create first wallet.
+            auto secure_wallet_1 = SecureWallet.createWallet(test_mnemonic, test_pin_code);
+            secure_wallet_1.login(test_pin_code);
+            auto pubkey_1 = secure_wallet_1.getPublicKey();
+            // Create second wallet.
+            auto secure_wallet_2 = SecureWallet.createWallet(test_mnemonic, test_pin_code);
+            secure_wallet_2.login(test_pin_code);
+            auto pubkey_2 = secure_wallet_2.getPublicKey();
+
+            writeln("Pubkey 1 ", pubkey_1);
+            writeln("Pubkey 2 ", pubkey_2);
+
+            assert(pubkey_1 == pubkey_2);
         }
 
     }
