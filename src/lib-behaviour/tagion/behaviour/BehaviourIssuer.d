@@ -105,28 +105,26 @@ unittest { // Markdown scenario test
         scope (exit) {
             bout.clear;
         }
-        immutable filename = unit_mangle("descriptor")
-            .unitfile
-            .setExtension(FileExtension.markdown);
-        immutable expected = filename.freadText;
+        enum filename = unit_mangle("descriptor")
+                .setExtension(FileExtension.markdown);
+        enum expected = import(filename);
         //io.writefln("scenario_result.given.infos %s", scenario_result.given.infos);
         markdown.issue(scenario_result.given.infos[0], markdown.master.property);
         version (behaviour_unitdata)
-            filename.setExtension("mdtest").fwrite(bout.toString);
+            filename.unitfile.setExtension("mdtest").fwrite(bout.toString);
         assert(bout.toString == expected);
     }
     {
         scope (exit) {
             bout.clear;
         }
-        immutable filename = unit_mangle("scenario")
-            .unitfile
-            .setExtension(FileExtension.markdown);
+        enum filename = unit_mangle("scenario")
+                .setExtension(FileExtension.markdown);
         markdown.issue(scenario_result);
         version (behaviour_unitdata)
-            filename.setExtension("mdtest").fwrite(bout.toString);
+            filename.unitfile.setExtension("mdtest").fwrite(bout.toString);
 
-        immutable expected = filename.freadText;
+        enum expected = import(filename);
         assert(bout.toString == expected);
     }
 }
@@ -142,14 +140,13 @@ unittest {
         scope (exit) {
             bout.clear;
         }
-        immutable filename = unit_mangle("feature")
-            .unitfile
-            .setExtension(FileExtension.markdown);
+        enum filename = unit_mangle("feature")
+                .setExtension(FileExtension.markdown);
         markdown.issue(feature_group);
         version (behaviour_unitdata)
-            filename.setExtension("mdtest").fwrite(bout.toString);
+            filename.unitfile.setExtension("mdtest").fwrite(bout.toString);
 
-        immutable expected = filename.freadText;
+        immutable expected = import(filename);
         assert(bout.toString == expected);
     }
 
@@ -230,7 +227,7 @@ struct DlangT(Stream) {
         auto feature_tuple = chain(
                 feature_group.scenarios
                 .map!(scenario => [scenario.info.name, scenario.info.name]),
-                [["FeatureGroup*", "result"]])
+        [["FeatureGroup*", "result"]])
             .map!(ctx_type => format(`%s, "%s"`, ctx_type[0], ctx_type[1]))
             .join(",\n");
 
@@ -270,14 +267,13 @@ unittest {
         scope (exit) {
             bout.clear;
         }
-        immutable filename = unit_mangle("feature")
-            .unitfile
-            .setExtension(FileExtension.dsrc);
+        enum filename = unit_mangle("feature")
+                .setExtension(FileExtension.dsrc);
         dlang.issue(feature_group);
         immutable result = bout.toString;
         version (behaviour_unitdata)
-            filename.setExtension("dtest").fwrite(result.trim_source.join("\n"));
-        immutable expected = filename.freadText;
+            filename.unitfile.setExtension("dtest").fwrite(result.trim_source.join("\n"));
+        enum expected = import(filename);
         assert(equal(
                 result
                 .trim_source,

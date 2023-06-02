@@ -9,7 +9,15 @@
  */
 module tagion.hibon.HiBON;
 
-import std.container : RedBlackTree;
+version (REDBLACKTREE_SAFE_PROBLEM) {
+    /// dmd v2.100+ has problem with rbtree
+    /// Fix: This module hacks the @safe rbtree so it works with dmd v2.100 
+    import tagion.std.container.rbtree : RedBlackTree;
+}
+else {
+    import std.container.rbtree : RedBlackTree;
+}
+
 import std.format;
 import std.meta : staticIndexOf;
 import std.algorithm.iteration : map, fold, each, sum;
@@ -386,7 +394,6 @@ static size_t size(U)(const(U[]) array) pure {
             }
         }
     }
-
     alias Members = RedBlackTree!(Member, (a, b) @safe => (less_than(a.key, b.key)));
 
     protected Members _members;

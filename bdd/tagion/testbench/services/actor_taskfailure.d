@@ -1,11 +1,13 @@
 module tagion.testbench.services.actor_taskfailure;
 
+import tagion.testbench.services.actor_util;
+
 // Default import list for bdd
 import tagion.behaviour;
 import tagion.hibon.Document;
 import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
-import std.concurrency;
+import tagion.utils.pretend_safe_concurrency;
 import std.stdio;
 import core.time;
 import std.format : format;
@@ -38,14 +40,14 @@ class SendATaskFailureToAnActor {
     MyActorHandle myActor;
 
     @Given("an #actor")
-    Document anActor() @trusted {
-        myActor = spawnActor!MyActor(actor_task);
+    Document anActor() {
+        myActor = spawn!MyActor(actor_task);
 
         return result_ok;
     }
 
     @When("the #actor has started")
-    Document actorHasStarted() @trusted {
+    Document actorHasStarted() {
         check(receiveOnlyTimeout!CtrlMsg.ctrl is Ctrl.STARTING, "Actor is not starting");
         check(receiveOnlyTimeout!CtrlMsg.ctrl is Ctrl.ALIVE, "Actor never alived");
         check(myActor.tid !is Tid.init, "Actor task is not running");
@@ -54,13 +56,13 @@ class SendATaskFailureToAnActor {
     }
 
     @Then("send a `TaskFailure` to the actor")
-    Document toTheActor() @trusted {
-        myActor.send(TaskFailure(new immutable Exception("This big fail"), "main"));
+    Document toTheActor() {
+        myActor.send(TaskFailure( "main", new immutable Exception("This big fail")));
         return result_ok;
     }
 
     @Then("the actor should echo it back to the main thread")
-    Document theMainThread() @trusted {
+    Document theMainThread() {
         bool received = receiveTimeout(
                 1.seconds,
                 (TaskFailure tf) {
@@ -73,7 +75,7 @@ class SendATaskFailureToAnActor {
     }
 
     @Then("stop the #actor")
-    Document stopTheActor() @trusted {
+    Document stopTheActor() {
         myActor.send(Sig.STOP);
         check(receiveOnly!CtrlMsg.ctrl !is Ctrl.ALIVE, "Actor never stopped");
         return result_ok;

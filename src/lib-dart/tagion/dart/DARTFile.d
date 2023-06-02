@@ -808,125 +808,18 @@ alias check = Check!DARTException;
         return result;
     }
 
-    // Range over a Range with the same key in the a specific rim
-    @safe
-    struct RimKeyRange {
-        protected Archive[] current;
-        @disable this();
-        protected this(Archive[] current) pure nothrow @nogc {
-            this.current = current;
-        }
-
-        this(Range)(ref Range range, const uint rim) {
-            if (!range.empty) {
-                immutable key = range.front.fingerprint.rim_key(rim);
-                static if (is(Range == RimKeyRange)) {
-                    auto reuse_current = range.current;
-                    void build(ref Range range, const uint no = 0) @safe {
-                        if (!range.empty && (range.front.fingerprint.rim_key(rim) is key)) {
-                            range.popFront;
-                            build(range, no + 1);
-                        }
-                        else {
-                            // Reuse the parent current
-                            current = reuse_current[0 .. no];
-                        }
-                    }
-
-                    build(range);
-                }
-                else {
-                    void build(ref Range range, const uint no = 0) @safe {
-                        if (!range.empty && (range.front.fingerprint.rim_key(rim) is key)) {
-                            auto a = range.front;
-                            range.popFront;
-                            build(range, no + 1);
-                            (() @trusted { current[no] = cast(Archive) a; })();
-                        }
-                        else {
-                            current = new Archive[no];
-                        }
-                    }
-
-                    build(range);
-                }
-            }
-        }
-
-        /**
-     * Checks if all the archives in the range are of the type REMOVE
-     * Params:
-     *   get_type = archive type get function
-     * Returns: true if all the archives are removes
-     */
-        bool onlyRemove(const GetType get_type) const pure {
-            return current
-                .all!(a => get_type(a) is Archive.Type.REMOVE);
-        }
-
-        @nogc pure nothrow {
-            /** 
-             * Checks if the range only contains one archive 
-             * Returns: true range if single
-             */
-            bool oneLeft() const {
-                return current.length == 1;
-            }
-
-            /**
-             * Checks if the range is empty
-             * Returns: true if empty
-             */
-            bool empty() const {
-                return current.length == 0;
-            }
-
-            /**
-             *  Progress one archive
-             */
-            void popFront() {
-                if (!empty) {
-                    current = current[1 .. $];
-                }
-            }
-
-            /**
-             * Gets the current archive in the range
-             * Returns: current archive and return null if the range is empty
-             */
-            inout(Archive) front() inout {
-                if (empty) {
-                    return null;
-                }
-                return current[0];
-            }
-
-            /**
-             * Force the range to be empty
-             */
-            void force_empty() {
-                current = null;
-            }
-
-            /**
-             * Number of archive left in the range
-             * Returns: size of the range
-             */
-            size_t length() const {
-                return current.length;
-            }
-        }
-        /**
-         *  Creates new range at the current position
-         * Returns: copy of this range
-         */
-        version (none) RimKeyRange save() pure nothrow @nogc {
-            return RimKeyRange(current);
-        }
-
-    }
-
     enum RIMS_IN_SECTOR = 2;
+
+    /// Wrapper function for the modify function.
+    Buffer modify(const(RecordFactory.Recorder) modifyrecords, const Flag!"undo" undo = No.undo) {
+        if (undo) {
+            return modify!(Yes.undo)(modifyrecords);
+        }
+        else {
+            return modify!(No.undo)(modifyrecords);
+
+        }
+    }
     /**
      * $(SMALL_TABLE
      * Sample of the DART Map
@@ -947,37 +840,37 @@ alias check = Check!DARTException;
      * represents the key index into the Branches incices
      * The modifyrecords contains the archives which is going to be added or deleted
      * The type of archive tells which actions are going to be performed by the modifier
-     * If the function executes succesfully then the DART is update or else it does not affect the DART
+     * If the function executes succesfully then the DART is updated or else it does not affect the DART
      * The function returns the bullseye of the dart
      */
-
-    Buffer modify(const(RecordFactory.Recorder) modifyrecords, const Flag!"undo" undo = No.undo) {
-        if (undo) {
-            return modify!(Yes.undo)(modifyrecords);
-        }
-        else {
-            return modify!(No.undo)(modifyrecords);
-
-        }
-    }
-
     Buffer modify(Flag!"undo" undo)(const(RecordFactory.Recorder) modifyrecords) {
 
+        /** 
+         * Inner function for the modify function.
+         * Note that this function is recursive and called from itself. 
+         * Can be broken up into 3 sections. The first is for going through the branches
+         * In the sectors. Next section is for going through branches deeper than the sectors.
+         * The last section is responsible for acutally doing the work with the archives.
+         * Params:
+         *   range = RimKeyRange to traverse with.
+         *   branch_index = The branch index to modify.
+         * Returns: 
+         */
         Leave traverse_dart(Range)(Range range, const Index branch_index) @safe if (isInputRange!Range)
         out {
             assert(range.empty, "Must have been through the whole range and therefore empty on return");
         }
         do {
-
+            // if the range is empty that means that nothing is located in it now. 
             if (range.empty) {
                 return Leave.init;
             }
 
+            /// First section for going through the Branches in the sectors.
             Index erase_block_index;
             scope (success) {
                 blockfile.dispose(erase_block_index);
             }
-            // immutable sector = sector(archive.fingerprint);
             Branches branches;
             if (range.rim < RIMS_IN_SECTOR) {
                 if (branch_index !is Index.init) {
@@ -1004,6 +897,7 @@ alias check = Check!DARTException;
                         branches.fingerprint(this));
 
             }
+            // Section for going through branches that are not in the sectors.
             else {
                 if (branch_index !is Index.init) {
                     const doc = blockfile.cacheLoad(branch_index);
@@ -1051,6 +945,8 @@ alias check = Check!DARTException;
 
                     }
                 }
+                // If there is only one archive left, it means we have traversed to the bottom of the tree
+                // Therefore we must return the leave if it is an ADD.
                 if (range.oneLeft) {
                     scope (exit) {
                         range.popFront;
@@ -1061,18 +957,19 @@ alias check = Check!DARTException;
                     }
                     return Leave.init;
                 }
-
+                /// More than one archive is present. Meaning we have to traverse
+                /// Deeper into the tree.
                 while (!range.empty) {
                     const rim_key = range.front.fingerprint.rim_key(range.rim + 1);
 
                     const leave = traverse_dart(range.nextRim, Index.init);
                     branches[rim_key] = leave;
                 }
-
+                /// If the branch is empty we return a NULL leave.
                 if (branches.empty) {
                     return Leave.init;
                 }
-
+                // If the branch isSingle then we have to move the branch / archives located in it upwards.
                 if (branches.isSingle) {
                     const single_leave = branches[].front;
                     const buf = cacheLoad(single_leave.index);
@@ -1089,12 +986,14 @@ alias check = Check!DARTException;
 
         }
 
+        /// If our records is empty we return the previous fingerprint
         if (modifyrecords.empty) {
             return _fingerprint;
         }
 
         
-
+        // This check ensures us that we never have multiple add and deletes on the
+        // same archive in the same recorder.
         .check(modifyrecords.length <= 1 ||
                 !modifyrecords[].slide(2).map!(a => a.front.fingerprint == a.dropOne.front.fingerprint)
                     .any,
@@ -1215,8 +1114,6 @@ alias check = Check!DARTException;
             Buffer[] fingerprints(RecordFactory.Recorder recorder) {
                 Buffer[] results;
                 foreach (a; recorder.archives) {
-                    version (none)
-                        assert(a.done);
                     results ~= cast(Buffer) a.fingerprint;
                 }
                 return results;
@@ -1271,6 +1168,7 @@ unittest {
     import std.bitmanip : BitArray;
     import tagion.utils.Miscellaneous : cutHex;
     import tagion.hibon.HiBONJSON : toPretty;
+    import tagion.basic.basic : forceRemove;
 
     auto net = new DARTFakeNet;
     auto manufactor = RecordFactory(net);
@@ -1360,27 +1258,10 @@ unittest {
                 i++;
             }
         }
-
-        {
-            auto range = recorder.archives[];
-            auto rim_range = DARTFile.RimKeyRange(range, rim);
-            assert(!rim_range.empty);
-            assert(!rim_range.oneLeft);
-            rim_range.popFront;
-            assert(!rim_range.empty);
-            assert(!rim_range.oneLeft);
-            rim_range.popFront;
-            assert(!rim_range.empty);
-            assert(!rim_range.oneLeft);
-            rim_range.popFront;
-            assert(!rim_range.empty);
-            rim_range.popFront;
-            assert(rim_range.empty);
-            assert(!rim_range.oneLeft);
-        }
     }
 
     { // Rim 2 test
+        filename.forceRemove;
         DARTFile.create(filename);
         auto dart = new DARTFile(net, filename);
         RecordFactory.Recorder recorder;
@@ -1388,6 +1269,8 @@ unittest {
     }
 
     { // Rim 3 test
+        filename.forceRemove;
+
         DARTFile.create(filename);
         auto dart = new DARTFile(net, filename);
         RecordFactory.Recorder recorder;
@@ -1397,6 +1280,7 @@ unittest {
     }
 
     { // Rim 4 test
+        filename.forceRemove;
         DARTFile.create(filename);
         auto dart = new DARTFile(net, filename);
         RecordFactory.Recorder recorder;
@@ -1406,6 +1290,7 @@ unittest {
     }
 
     { // Rim 2 & 3
+        filename.forceRemove;
         DARTFile.create(filename);
         auto dart = new DARTFile(net, filename);
         RecordFactory.Recorder recorder;
@@ -1415,6 +1300,7 @@ unittest {
     }
 
     { // Rim 2 & 3 & 4
+        filename.forceRemove;
         DARTFile.create(filename);
         auto dart = new DARTFile(net, filename);
         RecordFactory.Recorder recorder;
@@ -1424,6 +1310,7 @@ unittest {
     }
 
     { // Rim all
+        filename.forceRemove;
         DARTFile.create(filename);
         auto dart = new DARTFile(net, filename);
         RecordFactory.Recorder recorder;
@@ -1489,6 +1376,8 @@ unittest {
             0xABBA_1234_62BD_7814UL, // add first time
             0xABBA_1234_DFA5_2B29UL,
         ];
+        filename_A.forceRemove;
+        filename_B.forceRemove;
         DARTFile.create(filename_A);
         DARTFile.create(filename_B);
         RecordFactory.Recorder recorder_A;
@@ -1519,6 +1408,8 @@ unittest {
         foreach (ref r; random_table) {
             r = rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
         }
+        filename_A.forceRemove;
+        filename_B.forceRemove;
         DARTFile.create(filename_A);
         DARTFile.create(filename_B);
         RecordFactory.Recorder recorder_A;
@@ -1546,6 +1437,8 @@ unittest {
         foreach (ref r; random_table) {
             r = rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
         }
+        filename_A.forceRemove;
+        filename_B.forceRemove;
         DARTFile.create(filename_A);
         DARTFile.create(filename_B);
         RecordFactory.Recorder recorder_A;
@@ -1570,6 +1463,8 @@ unittest {
         foreach (ref r; random_table) {
             r = rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
         }
+        filename_A.forceRemove;
+        filename_B.forceRemove;
         DARTFile.create(filename_A);
         DARTFile.create(filename_B);
         RecordFactory.Recorder recorder_A;
@@ -1593,6 +1488,8 @@ unittest {
         foreach (ref r; random_table) {
             r = rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
         }
+        filename_A.forceRemove;
+        filename_B.forceRemove;
         DARTFile.create(filename_A);
         DARTFile.create(filename_B);
 
@@ -1629,6 +1526,8 @@ unittest {
         foreach (ref r; random_table) {
             r = rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
         }
+        filename_A.forceRemove;
+        filename_B.forceRemove;
         DARTFile.create(filename_A);
         DARTFile.create(filename_B);
         // Recorder recorder_B;
@@ -1707,6 +1606,7 @@ unittest {
         }
 
         {
+            filename_A.forceRemove;
             DARTFile.create(filename_A);
             auto dart_A = new DARTFile(net, filename_A);
 
@@ -1739,6 +1639,7 @@ unittest {
 
         {
             // this test is just a support to see how the real result should be of the previous test.
+            filename_A.forceRemove;
             DARTFile.create(filename_A);
             auto dart_A = new DARTFile(net, filename_A);
 
@@ -1781,6 +1682,8 @@ unittest {
             // | .. | .. | .. | AB [12]
             // | .. | .. | .. | .. abb913ab11ef [2]
             // | .. | .. | .. | .. abb913ab1213 [5]
+            filename_A.forceRemove;
+
             DARTFile.create(filename_A);
             auto dart_A = new DARTFile(net, filename_A);
 
@@ -1833,6 +1736,8 @@ unittest {
             // | .. | .. | .. | .. | .. | EF [12]
             // | .. | .. | .. | .. | .. | .. abb913ab11ef1234 [2]
             // | .. | .. | .. | .. | .. | .. abb913ab11ef2078 [11]
+            filename_A.forceRemove;
+
             DARTFile.create(filename_A);
             // writefln("dartfilename=%s", filename_A);
             auto dart_A = new DARTFile(net, filename_A);
@@ -1890,6 +1795,8 @@ unittest {
             // | .. | .. | .. | AB [14]
             // | .. | .. | .. | .. abb913ab11ef [2]
             // | .. | .. | .. | .. abb913ab1214 [6]
+            filename_A.forceRemove;
+
             DARTFile.create(filename_A);
             auto dart_A = new DARTFile(net, filename_A);
 
@@ -1952,6 +1859,8 @@ unittest {
             // | .. | .. | .. | .. | .. | EF [16]
             // | .. | .. | .. | .. | .. | .. abb913ab12ef1354 [4]
             // | .. | .. | .. | .. | .. | .. abb913ab12ef5656 [5]
+            filename_A.forceRemove;
+
             DARTFile.create(filename_A);
             auto dart_A = new DARTFile(net, filename_A);
 
@@ -2003,6 +1912,8 @@ unittest {
             // | .. | .. | .. | .. | .. | .. | .. abb913ab12ef565600 [5]
             // | .. | .. | .. | .. | .. | .. | .. abb913ab12ef567800 [6]
             // now we remove the middle branch located at EF.
+            filename_A.forceRemove;
+
             DARTFile.create(filename_A);
             auto dart_A = new DARTFile(net, filename_A);
 
@@ -2039,6 +1950,7 @@ unittest {
         }
 
         {
+            filename_A.forceRemove;
 
             DARTFile.create(filename_A);
             auto dart_A = new DARTFile(net, filename_A);
@@ -2077,6 +1989,7 @@ unittest {
         }
 
         {
+            filename_A.forceRemove;
 
             DARTFile.create(filename_A);
             auto dart_A = new DARTFile(net, filename_A);
@@ -2111,6 +2024,7 @@ unittest {
 
         }
         {
+            filename_A.forceRemove;
 
             DARTFile.create(filename_A);
             auto dart_A = new DARTFile(net, filename_A);
@@ -2147,6 +2061,7 @@ unittest {
 
         {
             // add two of the same archives and remove it. The bullseye should be null.
+            filename_A.forceRemove;
 
             // writefln("two same archives");
             DARTFile.create(filename_A);
@@ -2189,6 +2104,8 @@ unittest {
         { // add the same archive in different modifies. Should only contain one archive afterwards.
             // Test was created due to error were if the same archive was added it would remove the 
             // archive in the database.
+            filename_A.forceRemove;
+
             DARTFile.create(filename_A);
             auto dart_A = new DARTFile(net, filename_A);
 
@@ -2203,6 +2120,8 @@ unittest {
         }
 
         {
+            filename_A.forceRemove;
+
             DARTFile.create(filename_A);
             auto dart_A = new DARTFile(net, filename_A);
 
@@ -2243,6 +2162,8 @@ unittest {
 
         }
         {
+            filename_A.forceRemove;
+
             DARTFile.create(filename_A);
             auto dart_A = new DARTFile(net, filename_A);
             dart_A.close;
@@ -2269,6 +2190,8 @@ unittest {
             }
 
             {
+                filename_A.forceRemove;
+
                 DARTFile.create(filename_A);
                 auto dart_A = new DARTFile(net, filename_A);
 
@@ -2311,8 +2234,8 @@ unittest {
                 // auto new_blockfile = BlockFile(filename_A);
                 // new_blockfile.dump;
                 // new_blockfile.close;
-                assert(new_read_name == new_name, 
-                    "Should not be updated, since the previous name record was not removed");
+                assert(new_read_name == new_name,
+                        "Should not be updated, since the previous name record was not removed");
 
             }
             {
@@ -2321,6 +2244,7 @@ unittest {
                 // should throw an exception since we cannot have multiple adds
                 // and removes in same recorder
                 import std.exception : assertThrown;
+                filename_B.forceRemove;
 
                 DARTFile.create(filename_B);
                 auto dart_A = new DARTFile(net, filename_B);
@@ -2352,6 +2276,8 @@ unittest {
         }
 
         { // undo test
+            filename_A.forceRemove;
+
             DARTFile.create(filename_A);
             auto dart_A = new DARTFile(net, filename_A);
             RecordFactory.Recorder recorder;
@@ -2369,14 +2295,16 @@ unittest {
             dart_A.modify(recorder);
             const new_bullseye = dart_A.bullseye;
             dart_A.modify(recorder, Yes.undo);
-            assert(dart_A.bullseye != new_bullseye, 
-            "Should not be the same as the new bullseye after undo");
+            assert(dart_A.bullseye != new_bullseye,
+                    "Should not be the same as the new bullseye after undo");
             assert(dart_A.bullseye == bullseye, "should have been reverted to previoius bullseye");
         }
 
     }
 
     { // undo test both with remove and adds
+        filename_A.forceRemove;
+
         DARTFile.create(filename_A);
         auto dart_A = new DARTFile(net, filename_A);
         RecordFactory.Recorder recorder;

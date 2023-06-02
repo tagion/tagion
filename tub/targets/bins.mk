@@ -1,8 +1,8 @@
 
 #
 # $1 : Program name
-# $2 : Set name of the onetool
-# $3 : Depends list
+# $2 : Depends list
+# $3 : onetool
 #
 define DO_BIN
 ${eval
@@ -12,27 +12,25 @@ export $${call DO_UPPER,$1}=$$(_$1)
 
 BINS+=$$(_$1)
 
-$1: target-$1
 bins: $1
 
-_TOOLS=$2
+ifneq ($(and $(ONETOOL),$3),) 
 
-ifdef _TOOLS
-info-$1:
-	@echo _TOOLS defined $$(TAGION)
+$1: $3
 
-target-$1: target-$2
-	@echo Tools enabled $1
-	$(RM) $$(_$1)
-	$(LN) $$(TAGION) $$(_$1)
+target-$1: $3
+
 else
-info-$1:
-	@echo _TOOLS undefined
+
+$1: target-$1
+
+$$(DBIN)/$1: $2
 
 target-$1: $$(DBIN)/$1
 
-
 endif
+
+.PHONY: $1 target-$1
 
 env-$1:
 	$$(PRECMD)

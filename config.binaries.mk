@@ -7,6 +7,17 @@ SSLIMPLEMENTATION=$(LIBOPENSSL)
 NO_WOLFSSL=-a -not -path "*/wolfssl/*"
 endif
 
+NO_UNITDATA=-a -not -path "*/unitdata/*"
+EXCLUDED_DIRS+=-a -not -path "*/lib-betterc/*"
+EXCLUDED_DIRS+=-a -not -path "*/tests/*"
+
+LIB_DFILES:=${shell find $(DSRC) -name "*.d" -a -path "*/lib-*" $(EXCLUDED_DIRS) $(NO_UNITDATA) }
+LIB_BETTERC:=${shell find $(DSRC) -name "*.d" -a -path "*/lib-betterc/*" -a -not -path "*/tests/*" $(NO_UNITDATA) }
+
+
+BIN_DEPS=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-$1/*" $(EXCLUDED_DIRS) $(NO_UNITDATA) $(NO_WOLFSSL) }
+
+
 
 #
 # Targets for all binaries
@@ -15,111 +26,113 @@ endif
 #
 # Core program
 #
-#tagion-tagionwave: DFLANG+=$(DONETOOL)
 target-tagionwave: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-target-tagionwave: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-wave/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
-${call DO_BIN,tagionwave,tagion}
+${call DO_BIN,tagionwave,$(LIB_DFILES) ${call BIN_DEPS,priorwave},tagion}
+
+#
+# New Wave
+#
+target-neuewelle: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+${call DO_BIN,neuewelle,$(LIB_DFILES) ${call BIN_DEPS,wave},tagion}
 
 #
 # HiBON utility
 #
-# FIXME(CBR) should be remove when ddeps works correctly
 target-hibonutil: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-target-hibonutil: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-hibonutil/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
-${call DO_BIN,hibonutil,tagion}
+${call DO_BIN,hibonutil,$(LIB_DFILES) ${call BIN_DEPS,hibonutil},tagion}
 
 
 #
 # DART utility
 #
-# FIXME(CBR) should be remove when ddeps works correctly
 target-dartutil: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-target-dartutil: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-dartutil/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
-${call DO_BIN,dartutil,tagion}
+${call DO_BIN,dartutil,$(LIB_DFILES) ${call BIN_DEPS,dartutil},tagion}
 
 #
 # DART utility
 #
-# FIXME(CBR) should be remove when ddeps works correctly
 target-blockutil: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-target-blockutil: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-blockutil/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
-${call DO_BIN,blockutil,tagion}
+${call DO_BIN,blockutil,$(LIB_DFILES) ${call BIN_DEPS,blockutil},tagion}
 
 #
 # WASM utility
 #
-# FIXME(CBR) should be remove when ddeps works correctly
 target-wasmutil: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-target-wasmutil: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-wasmutil/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
-${call DO_BIN,wasmutil,}
+${call DO_BIN,wasmutil,$(LIB_DFILES) ${call BIN_DEPS,wasmutil},tagion}
 
 #
 # WASM utility
 #
-# FIXME(CBR) should be remove when ddeps works correctly
 target-tagionwallet: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-target-tagionwallet: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-wallet/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
-${call DO_BIN,tagionwallet,tagion}
+${call DO_BIN,tagionwallet,$(LIB_DFILES) ${call BIN_DEPS,tagionwallet},tagion}
 
 wallet: target-tagionwallet
-#
-# Logservicetest utility
-#
-# # FIXME(IB) should be removed when ddeps works correctly
-# target-tagionlogservicetest: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-# target-tagionlogservicetest: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-logservicetest/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
-# ${call DO_BIN,tagionlogservicetest,}
+
+
+target-signs: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+${call DO_BIN,signs,$(LIB_DFILES) ${call BIN_DEPS,signs},tagion}
 
 #
 # Subscription utility
 #
-# FIXME(IB) should be removed when ddeps works correctly
-target-tagionsubscription: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-target-tagionsubscription: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-subscription/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
-${call DO_BIN,tagionsubscription,}
+#target-tagionsubscription: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+#${call DO_BIN,subscription,$(LIB_DFILES) ${call BIN_DEPS,subsciption}}
 
 #
 # Recorderchain utility
 #
-target-recorderchain: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-target-recorderchain: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-recorderchain/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
-${call DO_BIN,recorderchain,}
+#target-recorderchain: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+#${call DO_BIN,recorderchain,$(LIB_DFILES) ${call BIN_DEPS,recorderchain},tagion}
 
 #
 # Boot utility
 #
 # fixme(cbr): When ddeps.mk work those libs are not needed
 target-tagionboot: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-target-tagionboot: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-boot/*" -a -not -path "*/unitdata/*" -a -not -path "*/lib-betterc/*" $(NO_WOLFSSL) }
-${call DO_BIN,tagionboot,tagion}
+${call DO_BIN,tagionboot,$(LIB_DFILES) ${call BIN_DEPS,boot},tagion}
 
 #
 # Profile view
 #
 # fixme(cbr): When ddeps.mk work those libs are not needed
 target-tprofview: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-target-tprofview: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-tprofview/*" -a -not -path "*/unitdata/*" -a -not -path "*/lib-betterc/*" $(NO_WOLFSSL) }
+${call DO_BIN,tprofview,$(LIB_DFILES) ${call BIN_DEPS,tprofview},tagion}
 
+#
+# Hashgraph view
+#
+# fixme(cbr): When ddeps.mk work those libs are not needed
+target-graphview: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+${call DO_BIN,graphview,$(LIB_DFILES) ${call BIN_DEPS,graphview},tagion}
+
+#
+# Tagion onetool
+#
+TAGION_TOOLS+=priorwave
+TAGION_TOOLS+=wave # New wave
+TAGION_TOOLS+=dartutil
+TAGION_TOOLS+=blockutil
+TAGION_TOOLS+=hibonutil
+TAGION_TOOLS+=wallet
+TAGION_TOOLS+=tprofview
+TAGION_TOOLS+=boot
+TAGION_TOOLS+=tools
+TAGION_TOOLS+=graphview
+TAGION_TOOLS+=recorderchain
+TAGION_TOOLS+=signs
+TAGION_TOOLS+=wasmutil
+
+TAGION_BINS=$(foreach tools,$(TAGION_TOOLS), ${call BIN_DEPS,$(tools)} )
 
 target-tagion: DFLAGS+=$(DVERSION)=ONETOOL
 target-tagion: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-target-tagion: DFILES:=${shell find $(DSRC) -name "*.d" -a -path "*/src/lib-*" -a -not -path "*/unitdata/*" -a -not -path "*/tests/*" -a -not -path "*/lib-betterc/*" $(NO_WOLFSSL) }
-target-tagion: DFILES+=${shell find $(DSRC)/bin-wave/tagion -name "*.d"  $(NO_WOLFSSL) }
-target-tagion: DFILES+=${shell find $(DSRC)/bin-dartutil/tagion -name "*.d"  $(NO_WOLFSSL) }
-target-tagion: DFILES+=${shell find $(DSRC)/bin-blockutil/tagion -name "*.d"  $(NO_WOLFSSL) }
-target-tagion: DFILES+=${shell find $(DSRC)/bin-hibonutil/tagion -name "*.d"  $(NO_WOLFSSL) }
-target-tagion: DFILES+=${shell find $(DSRC)/bin-wallet/tagion -name "*.d"  $(NO_WOLFSSL) }
-target-tagion: DFILES+=${shell find $(DSRC)/bin-tools/tagion -name "*.d"  $(NO_WOLFSSL) }
-target-tagion: DFILES+=${shell find $(DSRC)/bin-boot/tagion -name "*.d"  $(NO_WOLFSSL) }
-target-tagion: DFILES+=${shell find $(DSRC)/bin-tprofview/tagion -name "*.d"  $(NO_WOLFSSL) }
+${call DO_BIN,tagion,$(LIB_DFILES) $(TAGION_BINS)}
 
-target-tagion:
-${call DO_BIN,tagion,}
 
 #
 # Binary of BBD generator tool
 #
+target-collider: DFLAGS+=$(DVERSION)=ONETOOL
 target-collider: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-target-collider: DFILES+=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-collider/*" -a -not -path "*/unitdata/*" $(NO_WOLFSSL) }
-${call DO_BIN,collider,}
+${call DO_BIN,collider,$(LIB_DFILES) ${call BIN_DEPS,collider}}
 

@@ -4,8 +4,8 @@ import tagion.basic.tagionexceptions : TagionException;
 import std.exception;
 
 immutable struct TaskFailure {
-    Throwable throwable;
     string task_name;
+    Throwable throwable;
 }
 
 /++
@@ -19,7 +19,7 @@ immutable struct TaskFailure {
 static immutable(TaskFailure) taskException(const(Throwable) e) @nogc nothrow { //if (is(T:Throwable) && !is(T:TagionExceptionInterface)) {
     import tagion.logger.Logger;
 
-    return immutable(TaskFailure)(cast(immutable) e, log.task_name);
+    return immutable(TaskFailure)(log.task_name, cast(immutable) e);
 }
 
 @safe
@@ -65,13 +65,6 @@ static void taskfailure(immutable(TaskFailure) t) nothrow {
 
 // Exception when the actor fails to start or stop
 @safe class RunFailure : ActorException {
-    this(immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__) pure {
-        super(msg, file, line);
-    }
-}
-
-/// Exception sent when the actor gets a message that it doesn't handle
-@safe class MessageTimeout : ActorException {
     this(immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__) pure {
         super(msg, file, line);
     }

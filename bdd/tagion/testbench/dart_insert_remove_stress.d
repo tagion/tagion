@@ -62,6 +62,35 @@ int _main(string[] args) {
 
     }
 
+    if (env.stage == Stage.commit) {
+        BDDOptions bdd_options;
+        setDefaultBDDOptions(bdd_options);
+        bdd_options.scenario_name = __MODULE__;
+
+        const string module_path = env.bdd_log.buildPath(bdd_options.scenario_name);
+        const string dartfilename = buildPath(module_path, "dart_insert_remove_stress_test".setExtension(FileExtension
+                .dart));
+
+        SecureNet net;
+
+        version(REAL_HASHES) {
+            net = new StdSecureNet();
+            net.generateKeyPair("very secret");
+        }
+        else {
+            net = new DARTFakeNet("very secret");
+        }
+
+        const hirpc = HiRPC(net);
+
+        DartInfo dart_info = DartInfo(dartfilename, module_path, net, hirpc);
+
+        auto dart_ADD_REMOVE_stress_feature = automation!(insert_remove_stress)();
+        dart_ADD_REMOVE_stress_feature.AddRemoveAndReadTheResult(dart_info, env.getSeed, 100, 5, 5);
+
+        auto dart_ADD_REMOVE_stress_context = dart_ADD_REMOVE_stress_feature.run();
+
+    }
     return 0;
 
 }

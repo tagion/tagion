@@ -9,8 +9,7 @@ int main(string[] args) {
     import bdd_services = tagion.testbench.bdd_services;
     import ssl_echo_server = tagion.testbench.ssl_echo_server;
     import transaction = tagion.testbench.transaction;
-    import receive_epoch = tagion.testbench.receive_epoch;
-    import transaction_mode_zero = tagion.testbench.transaction_mode_zero;
+    import receive_epoch = tagion.testbench.receive_epoch; import transaction_mode_zero = tagion.testbench.transaction_mode_zero;
     import dart_test = tagion.testbench.dart_test;
     import dart_deep_rim_test = tagion.testbench.dart_deep_rim_test;
     import dart_pseudo_random_archives = tagion.testbench.dart_pseudo_random_archives;
@@ -20,7 +19,9 @@ int main(string[] args) {
     import actor_tests = tagion.testbench.actor_tests;
     import dart_insert_remove_stress = tagion.testbench.dart_insert_remove_stress;
     import dart_sync_stress = tagion.testbench.dart_sync_stress;
-
+    import dart_service = tagion.testbench.dart_service;
+    import hashgraph_test = tagion.testbench.hashgraph_test;
+    
     alias alltools = AliasSeq!(
             ssl_server,
             bdd_services,
@@ -37,6 +38,8 @@ int main(string[] args) {
             actor_tests,
             dart_insert_remove_stress,
             dart_sync_stress,
+            dart_service,
+            hashgraph_test,
     );
     mixin doOneMain!(alltools);
     return do_main(args);

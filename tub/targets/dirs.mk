@@ -5,6 +5,7 @@ export DDEVNET := ${abspath ${REPOROOT}/devnet/}
 export DBUILD := ${abspath $(BUILD)/$(PLATFORM)}
 export DLOG := ${abspath $(LOG)/$(PLATFORM)}
 export TOOLS := ${abspath $(REPOROOT)/tools}
+export TRUNK := ${abspath $(BUILD)/trunk}
 
 export DBIN := $(DBUILD)/bin
 export DTMP := $(DBUILD)/tmp
@@ -15,7 +16,9 @@ export BUILDDOC := $(BUILD)/ddoc
 export TESTLOG := $(DLOG)/testlog
 export FUND := $(REPOROOT)/fundamental
 export SCRIPTS := $(DTUB)/scripts
-export TOOLS := $(REPOROOT)/tools
+
+# directories for integration and dart project
+export INTEGRATION := ${abspath ${REPOROOT}/integration}
 
 env-dirs:
 	$(PRECMD)
@@ -31,8 +34,10 @@ env-dirs:
 	$(call log.kvp, DSRC, $(DSRC))
 	$(call log.kvp, DTUB, $(DTUB))
 	$(call log.kvp, TARGETS, $(TARGETS))
+	$(call log.kvp, COLLIDER_ROOT, $(COLLIDER_ROOT))
 	$(call log.kvp, BDD, $(BDD))
 	$(call log.kvp, BDD_LOG, $(BDD_LOG))
+	$(call log.kvp, TRUNK, $(TRUNK))
 	$(call log.kvp, BDD_RESULTS, $(BDD_RESULTS))
 	$(call log.kvp, DLOGCOV, $(DLOGCOV))
 	$(call log.kvp, TESTLOG, $(TESTLOG))

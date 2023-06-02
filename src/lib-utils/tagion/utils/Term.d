@@ -39,6 +39,8 @@ else {
         CLEARUP = Cursor.ClearScreen.code(1),
         CLEARLINE = Cursor.ClearLine.code(2),
         CLEAREOL = Cursor.ClearLine.code(0),
+
+        NEXTLINE = Cursor.NextLine.code(0),
         HOME = "\u001b[f",
     }
 
@@ -180,21 +182,17 @@ else {
                             return KeyCode.NONE;
                         }
                     }
-                    return select!(index + 1, pos)(ch);
+                    else {
+                        return select!(index + 1, pos)(ch);
+                    }
                 }
-                return KeyCode.NONE;
+                else {
+                    return KeyCode.NONE;
+                }
             }
 
             ch = get;
             return select(ch);
         }
-
-        //enum strain = test;
-
-        // char opCall(ref KeyCode code) {
-        //     do {
-
-        //     }
-        // }
     }
 }

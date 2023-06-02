@@ -135,10 +135,21 @@ unittest {
 +/
 @trusted
 string tempfile() {
-    import std.file : deleteme;
+    import std.file;
+    import std.random;
+    import std.path;
+    import std.range;
 
-    int dummy;
-    return deleteme ~ (&dummy).to!string;
+    auto rnd = Random(unpredictableSeed);
+    return buildPath(tempDir, generate!(() => uniform('A', 'Z', rnd)).takeExactly(20).array);
+}
+
+@safe 
+void forceRemove(const(string) filename) {
+    import std.file : exists, remove;
+    if (filename.exists) {
+        filename.remove;
+    }
 }
 
 /++

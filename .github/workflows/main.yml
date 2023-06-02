@@ -1,0 +1,219 @@
+name: Main Flow
+on:
+  workflow_dispatch:
+  push: 
+    branches: 
+      - current
+env:
+  TARGET: x86_64-linux
+  STAGE: commit
+  DC: dmd
+  CD_PARALLEL: 2
+  RETENTION_DAYS_BINS: 3
+  CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+  UNITTEST_COV: unittest-cov
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write 
+
+jobs:
+  commit_stage:
+    runs-on: CI
+    outputs:
+      tarball: ${{steps.create_tar.outputs.tar_filename}}
+      stage: "commit"    
+    steps:
+      - name: get repository
+        run: |
+          cd ..
+          git clone git@github.com:tagion/tagion.git || echo "repo already exists"
+      - name: pull
+        run: |
+          git clean -f && git restore . 
+          git checkout current
+          git pull
+
+      - name: Run tests
+        run: |
+          make ci -j DC=${{env.DC}} || make proper ci -j DC=${{env.DC}}
+          
+      - name: Report unittests
+        run: |
+          RESULT=$(cat logs/${{ env.TARGET }}/unittest.log | grep -E "^[0-9]+ modules passed unittests")
+          echo -e "### :heavy_check_mark: Unittests passed \n $RESULT" >> $GITHUB_STEP_SUMMARY
+
+      - name: Report bddtests
+        run: | 
+          RESULT=$(./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/commit/results)
+          echo $RESULT | grep "Test result success!"
+          ./build/${{env.TARGET}}/bin/collider reporter -o /dev/stdout logs/${{ env.TARGET }}/bdd/commit/ >> $GITHUB_STEP_SUMMARY
+               
+      - name: Upload  code coverage results
+        run: |
+          cp logs/${{env.TARGET}}/cov/* .      
+          bash <(curl -s https://codecov.io/bash) -t ${{ env.CODECOV_TOKEN }} -f "!*/cov/*"
+          rm -- *.lst
+      
+      - name: Add schedule to build
+        run: |
+          cp collider_schedule.json build/${{ env.TARGET }}/bin
+
+      - name: Create tar ball
+        if: success() || failure()
+        id: create_tar
+        run: |
+          commit_hash=$(git rev-parse --short HEAD)
+          timestamp=$(date +%M-%H-%d-%m-%y)
+          tar_filename="${commit_hash}-${timestamp}.tar.gz"
+          mv build/trunk/trunk.tgz $tar_filename
+          echo -e "\nRelease candidate is: $tar_filename" >> $GITHUB_STEP_SUMMARY
+          echo "tar_filename=$tar_filename" >> $GITHUB_OUTPUT
+
+      - uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: failed-run
+          path: ./${{steps.create_tar.outputs.tar_filename}}
+          if-no-files-found: error
+      
+      - name: Upload to shared directory
+        if: success()
+        run: |
+          folder=/mnt/nfs/commit
+          mkdir -p $folder
+          cp ${{steps.create_tar.outputs.tar_filename}} $folder
+          
+      - name: Cleanup
+        if: success() || failure()
+        run: rm ${{ steps.create_tar.outputs.tar_filename }}
+
+  acceptance_stage:
+    runs-on: CD
+    needs: commit_stage
+    outputs:
+      tarball: ${{needs.commit_stage.outputs.tarball}}
+      stage: "acceptance"
+    
+    steps:
+      - name: Copy Artifact to local machine
+        run: |
+          find . -mindepth 1 -delete
+          cp /mnt/nfs/${{needs.commit_stage.outputs.stage}}/${{needs.commit_stage.outputs.tarball}} .
+          tar -xzf ${{needs.commit_stage.outputs.tarball}}
+        
+      - name: Run collider tests
+        run: |
+          source $PWD/build/${{ env.TARGET }}/bin/bddenv.sh
+          export DBIN=$PWD/build/${{ env.TARGET }}/bin
+          export DLOG=$PWD/logs/${{ env.TARGET }}
+          export COLLIDER_ROOT=$PWD/logs/${{ env.TARGET }}/bdd
+          export PATH=$DBIN:$PATH
+          ./build/${{ env.TARGET }}/bin/collider -r acceptance -j ${{env.CD_PARALLEL}} -b build/${{ env.TARGET }}/bin/testbench -s build/${{ env.TARGET }}/bin/collider_schedule.json  
+
+      - name: Generate reports
+        if: failure() || success()
+        run: |
+          ./build/${{ env.TARGET }}/bin/collider reporter -o $GITHUB_STEP_SUMMARY logs/${{ env.TARGET }}/bdd/acceptance/
+
+      - name: Create tar ball
+        run: tar -czf ${{needs.commit_stage.outputs.tarball}} --exclude='*.o' logs/ build/ 
+        
+      - uses: actions/upload-artifact@v3
+        if: failure() 
+        with:
+          name: failed-run
+          path: ./${{needs.commit_stage.outputs.tarball}}
+          if-no-files-found: error
+
+      - name: Upload to shared directory
+        if: success()
+        run: |
+          folder=/mnt/nfs/acceptance
+          mkdir -p $folder
+          cp ${{needs.commit_stage.outputs.tarball}} $folder
+
+      - name: Cleanup
+        if: success() || failure()
+        run: |
+          rm ${{ needs.commit_stage.outputs.tarball }}
+          rm -rf *
+
+  ddoc_build:
+    runs-on: CD
+    needs: acceptance_stage 
+    steps:
+      - name: Copy Artifact to local machine
+        run: |
+          rm -rf *
+          cp /mnt/nfs/${{needs.acceptance_stage.outputs.stage}}/${{needs.acceptance_stage.outputs.tarball}} .
+          tar -xzf ${{needs.acceptance_stage.outputs.tarball}}
+          echo $(ls build/)     
+
+      - name: Send ddoc to repository 
+        run: |
+          ls logs
+          git clone https://${{ secrets.API_TOKEN_GITHUB }}@github.com/tagion/ddoc.git
+          cp -R build/ddoc/* ddoc/          
+          cd ddoc
+          git config user.email "mm@decard.io"
+          git config user.name "Matlab"
+          git add .
+          git commit -m "ddocs updated" || echo "nothing to commit"
+          git push https://${{ secrets.API_TOKEN_GITHUB }}@github.com/tagion/ddoc.git || echo "repo already up to date"
+
+      - name: clean up
+        run: rm -rf *
+ 
+  docs_build:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: acceptance_stage
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+      - name: Copy md files
+        run: |
+          rm -r build/docs/ || echo 'no files to remove'
+          mkdir -p build/docs/
+          cp -r index.html _sidebar.md README.md documents/ build/docs/
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: 'build/docs/'
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v1
+
+  finish_workflow:
+    runs-on: CD
+    needs: [acceptance_stage, ddoc_build, docs_build]
+    steps:    
+      - name: Copy Artifact to local machine
+        run: |
+          find . -mindepth 1 -delete
+          cp /mnt/nfs/${{needs.acceptance_stage.outputs.stage}}/${{needs.acceptance_stage.outputs.tarball}} .
+          tar -xzf ${{needs.acceptance_stage.outputs.tarball}}
+       
+      - name: Generate report
+        run: |
+          echo -e "# All BDDtests\n" >> $GITHUB_STEP_SUMMARY 
+          ./build/${{ env.TARGET }}/bin/collider reporter -o $GITHUB_STEP_SUMMARY logs
+
+      - uses: actions/upload-artifact@v3
+        if: success()
+        with:
+          name: successful_artifact
+          path: ./${{needs.acceptance_stage.outputs.tarball}}
+          if-no-files-found: error
+
+      - name: Cleanup
+        if: success() || failure()
+        run: |
+          rm ${{needs.acceptance_stage.outputs.tarball}}
+          rm -rf *

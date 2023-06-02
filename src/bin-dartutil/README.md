@@ -1,5 +1,42 @@
 # bin-dartutil
 
+> Dartutil is tool read/inspect and manimulate the data store in a DART file (.drt)
+
+## Options
+```
+Usage:
+dartutil [<option>...] file.drt <files>
+
+Example synchronizing src.drt on to dst.drt
+dartutil --sync src.drt dst.drt]
+
+<option>:
+        --version display the version
+-d --dartfilename Sets the dartfile: default 
+     --initialize Create a dart file
+-i    --inputfile Sets the HiBON input file name
+-o   --outputfile Sets the output file name
+-r         --read Excutes a DART read sequency
+            --rim Performs DART rim read
+-m       --modify Excutes a DART modify sequency
+            --rpc Excutes a HiPRC on the DART: default %s
+           --dump Dumps all the arcvives with in the given angle
+            --eye Prints the bullseye
+           --sync Synchronize src.drt to dest.drt
+-P   --passphrase Passphrase of the keypair : default: verysecret
+-v      --verbose Print output to console
+           --fake Use fakenet instead of real hashes : default :false
+-h         --help This help information.``
+```
+
+
+## Create an empty dart
+```
+dartutil --initialize database.drt
+```
+The DART can also be created with to use the fake hash with the  `--fake` option.
+
+## List the dart 
 ## Exclusive functions
 You can call only one function from this list at a time
 - [--read](#read)

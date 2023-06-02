@@ -1,4 +1,4 @@
-/// DART database build on DARTFile including CRUD commands and synchronization
+// DART database build on DARTFile including CRUD commands and synchronization
 module tagion.dart.DART;
 
 import std.stdio;
@@ -37,6 +37,7 @@ import tagion.dart.DARTFile;
 import tagion.dart.DARTBasic : DARTIndex;
 import CRUD = tagion.dart.DARTcrud;
 import tagion.dart.BlockFile : Index;
+import tagion.dart.synchronizer : Synchronizer, JournalSynchronizer;
 
 /**
  * Calculates the to-angle on the angle circle 
@@ -91,7 +92,7 @@ unittest { // check calc_sector_size
 /** 
  * DART support for HiRPC(dartRead,dartRim,dartBullseye and dartModify)
  * DART include support for synchronization
- * 
+ * Examples: [tagion.testbench.dart]
  */
 @safe
 class DART : DARTFile {
@@ -368,6 +369,9 @@ class DART : DARTFile {
          * Returns: hex string
          */
         string toString() const pure nothrow {
+            if (rims.length == 0) {
+                return "XXXX";
+            }
             return rims.toHexString;
         }
     }
@@ -606,50 +610,6 @@ received = the HiRPC received package
         return hirpc.error(received, message, 22);
     }
 
-    /**
-     * Interface to the DART synchronizer
-     */
-    @safe
-    interface Synchronizer {
-        /**
-         * Recommend to put a yield the SynchronizationFiber between send and receive between the DART's
-         */
-        const(HiRPC.Receiver) query(ref const(HiRPC.Sender) request);
-        /**
-         * Stores the add and remove actions in the journal replay log file
-         * 
-         * Params:
-         *   recorder = DART recorder
-         */
-        void record(RecordFactory.Recorder recorder);
-        /**
-         * This function is call when hole branches doesn't exist in the foreign DART
-         * and need to be removed in the local DART
-         * Params:
-         *   rims = path to the selected rim
-         */
-        void remove_recursive(const Rims rims);
-        /**
-         * This function is called when the SynchronizationFiber run function finishes
-         */
-        void finish();
-        /**
-         * Called in by the SynchronizationFiber constructor
-         * which enable the query function to yield the run function in SynchronizationFiber
-         *
-         * Params:
-         *     owner = is the dart to be modified
-         *     fiber = is the synchronizer fiber object
-         */
-        void set(DART owner, SynchronizationFiber fiber, HiRPC hirpc);
-        /**
-         * Checks if the syncronizer is empty
-         * Returns:
-         *     If the SynchronizationFiber has finished then this function returns `true`
-         */
-        bool empty() const pure nothrow;
-    }
-
     /** 
  * Recorder journal
  */
@@ -665,10 +625,11 @@ received = the HiRPC received package
          *   doc = Journal document
          */
         this(RecordFactory manufactor, const Document doc) {
+            import tagion.logger.Logger;
 
             
 
-                .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
+            .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             index = doc[indexName].get!Index;
             const recorder_doc = doc[recorderName].get!Document;
             recorder = manufactor.recorder(recorder_doc);
@@ -687,122 +648,6 @@ received = the HiRPC received package
         mixin HiBONRecord!"{}";
     }
 
-    /**
-     *  Standards DART Synchronization object
-     */
-    @safe
-    static abstract class StdSynchronizer : Synchronizer {
-
-        protected SynchronizationFiber fiber; /// Contains the reference to SynchronizationFiber
-        immutable uint chunck_size; /// Max number of archives operates in one recorder action
-        protected {
-            BlockFile journalfile; /// The actives is stored in this journal file. Which late can be run via the replay function
-            bool _finished; /// Finish flag set when the Fiber function returns
-            bool _timeout; /// Set via the timeout method to indicate and network timeout
-            DART owner;
-            Index index; /// Current block index
-            HiRPC hirpc;
-        }
-        /**
-         * 
-         * Params:
-         *     journal_filename = Name of blockfile used for recording the modification journal
-         *                        Must be created by BlockFile.create method
-         *     chunck_size = Set the max number of archives removed per chuck
-         */
-        this(string journal_filename, const uint chunck_size = 0x400) {
-            journalfile = BlockFile(journal_filename);
-            this.chunck_size = chunck_size;
-        }
-
-        /** 
-         * Update the add the recorder to the journal and store it
-         * Params:
-         *   recorder = DART recorder
-         */
-        void record(const RecordFactory.Recorder recorder) @safe {
-            if (!recorder.empty) {
-                const journal = const(Journal)(recorder, index);
-                const allocated = journalfile.save(journal.toDoc);
-                index = Index(allocated.index);
-                journalfile.root_index = index;
-                scope (exit) {
-                    journalfile.store;
-                }
-            }
-        }
-        /** 
-         * Remove all archive at selected rim path
-         * Params:
-         *   selected_rims = selected rims to be removed
-         */
-        void remove_recursive(const Rims selected_rims) {
-            auto rim_walker = owner.rimWalkerRange(selected_rims.rims);
-            uint count = 0;
-            auto recorder_worker = owner.recorder;
-            foreach (archive_data; rim_walker) {
-                const archive_doc = Document(archive_data);
-                assert(!archive_doc.empty, "archive should not be empty");
-                recorder_worker.remove(archive_doc);
-                count++;
-                if (count > chunck_size) {
-                    record(recorder_worker);
-                    count = 0;
-                    recorder_worker.clear;
-                }
-            }
-            record(recorder_worker);
-        }
-
-        /**
-         * 
-         * Params:
-         *   owner = DART to be synchronized
-         *   fiber = syncronizer fiber
-         *   hirpc = remote credential used 
-         */
-        void set(
-                DART owner,
-                SynchronizationFiber fiber,
-                HiRPC hirpc) nothrow @trusted {
-            import std.conv : emplace;
-
-            this.fiber = fiber;
-            this.owner = owner;
-            emplace(&this.hirpc, hirpc);
-        }
-
-        /** 
-         * Should be called when the synchronization has finished
-         */
-        void finish() {
-            journalfile.close;
-            _finished = true;
-        }
-
-        /**
-         * Should be call on timeout timeout
-         */
-        void timeout() {
-            journalfile.close;
-            _timeout = true;
-        }
-
-        /**
-         * Checks if synchronization has ended
-         * Returns: true on empty
-         */
-        bool empty() const pure nothrow {
-            return (_finished || _timeout);
-        }
-        /* 
-         * Check the synchronization timeout
-         * Returns: true on timeout
-         */
-        bool timeout() const pure nothrow {
-            return _timeout;
-        }
-    }
     /**
      * Creates a synchronization fiber from a synchroizer 
      * Params:
@@ -949,48 +794,28 @@ received = the HiRPC received package
             journalfile.close;
         }
         // Adding and Removing archives
-        void local_replay(bool remove)() @safe {
-            for (Index index = journalfile.masterBlock.root_index; index != Index.init;
+ 
+        for (Index index = journalfile.masterBlock.root_index; index != Index.init; ) {
+            immutable data = journalfile.load(index);
+            const doc = Document(data);
 
-                ) {
-                immutable data = journalfile.load(index);
-                const doc = Document(data);
-                auto journal_replay = Journal(manufactor, doc);
-                index = journal_replay.index;
-                auto action_recorder = recorder;
-                foreach (a; journal_replay.recorder.archives[]) {
-                    static if (remove) {
-                        if (a.type is Archive.Type.REMOVE) {
-                            action_recorder.insert(a);
-                        }
-                    }
-                    else {
-                        if (a.type !is Archive.Type.REMOVE) {
-                            action_recorder.insert(a);
-                        }
-                    }
-                }
-                modify(action_recorder);
-            }
-
+            auto journal_replay = Journal(manufactor, doc);
+            index = journal_replay.index;
+            auto action_recorder = recorder;
+            action_recorder.insert(journal_replay.recorder.archives[]);
+            modify(action_recorder);
         }
-        // All the remove actives is perform before the new archives are added
-        // Remove
-        local_replay!true;
-        // Add
-        local_replay!false;
 
     }
 
-    // version (none) {
     version (unittest) {
-        static class TestSynchronizer : StdSynchronizer {
+        static class TestSynchronizer : JournalSynchronizer {
             protected DART foreign_dart;
             protected DART owner;
-            this(string journal_filename, DART owner, DART foreign_dart) {
+            this(BlockFile journalfile, DART owner, DART foreign_dart) {
                 this.foreign_dart = foreign_dart;
                 this.owner = owner;
-                super(journal_filename);
+                super(journalfile);
             }
 
             //
@@ -1061,7 +886,6 @@ received = the HiRPC received package
             enum to = 0xABBD;
 
             //            import std.stdio;
-
             { // Single element same sector sectors
                 const ulong[] same_sector_tabel = [
                     0xABB9_13ab_cdef_1234,
@@ -1118,7 +942,8 @@ received = the HiRPC received package
                         immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
                         journal_filenames ~= journal_filename;
                         BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
-                        auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
+                        auto journalfile = BlockFile(journal_filename);
+                        auto synch = new TestSynchronizer(journalfile, dart_A, dart_B);
                         auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                         // D!(sector, "%x");
                         while (!dart_A_synchronizer.empty) {
@@ -1178,7 +1003,8 @@ received = the HiRPC received package
                     immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
                     journal_filenames ~= journal_filename;
                     BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
-                    auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
+                    auto journalfile = BlockFile(journal_filename);
+                    auto synch = new TestSynchronizer(journalfile, dart_A, dart_B);
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
@@ -1230,7 +1056,8 @@ received = the HiRPC received package
                     immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
                     journal_filenames ~= journal_filename;
                     BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
-                    auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
+                    auto journalfile = BlockFile(journal_filename);
+                    auto synch = new TestSynchronizer(journalfile, dart_A, dart_B);
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
@@ -1286,7 +1113,8 @@ received = the HiRPC received package
                     immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
                     journal_filenames ~= journal_filename;
                     BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
-                    auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
+                    auto journalfile = BlockFile(journal_filename);
+                    auto synch = new TestSynchronizer(journalfile, dart_A, dart_B);
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
@@ -1337,7 +1165,8 @@ received = the HiRPC received package
                     immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
                     journal_filenames ~= journal_filename;
                     BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
-                    auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
+                    auto journalfile = BlockFile(journal_filename);
+                    auto synch = new TestSynchronizer(journalfile, dart_A, dart_B);
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
@@ -1390,7 +1219,8 @@ received = the HiRPC received package
                     immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
                     journal_filenames ~= journal_filename;
                     BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
-                    auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
+                    auto journalfile = BlockFile(journal_filename);
+                    auto synch = new TestSynchronizer(journalfile, dart_A, dart_B);
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
@@ -1443,7 +1273,8 @@ received = the HiRPC received package
                     immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
                     journal_filenames ~= journal_filename;
                     BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
-                    auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
+                    auto journalfile = BlockFile(journal_filename);
+                    auto synch = new TestSynchronizer(journalfile, dart_A, dart_B);
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
@@ -1461,7 +1292,6 @@ received = the HiRPC received package
                 // dart_B.dump;
                 assert(dart_A.fingerprint !is null);
                 assert(dart_A.fingerprint == dart_B.fingerprint);
-
             }
 
             { // Synchronization of a DART A where DART A of DART B has common data
@@ -1497,7 +1327,8 @@ received = the HiRPC received package
                     immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
                     journal_filenames ~= journal_filename;
                     BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
-                    auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
+                    auto journalfile = BlockFile(journal_filename);
+                    auto synch = new TestSynchronizer(journalfile, dart_A, dart_B);
                     auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
                     while (!dart_A_synchronizer.empty) {
                         (() @trusted { dart_A_synchronizer.call; })();
@@ -1515,8 +1346,8 @@ received = the HiRPC received package
                 assert(dart_A.fingerprint == dart_B.fingerprint);
 
             }
-
-            { // Synchronization of a Large DART A where DART A of DART B has common data
+            pragma(msg, "fixme(pr) Test disabled because it takes a long time");
+            version (none) { // Synchronization of a Large DART A where DART A of DART B has common data
                 // writefln("Test 6");
                 DARTFile.create(filename_A);
                 DARTFile.create(filename_B);

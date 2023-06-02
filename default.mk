@@ -1,11 +1,11 @@
 #DC?=dmd
-export GODEBUG=cgocheck=0
+export GODEBUG:=cgocheck=0
 WOLFSSL?=1
 OLD?=1
 ONETOOL?=1
 DEBUGGER?=ddd
-export TEST_STAGE?=commit
-export SEED?=$(shell git rev-parse HEAD)
+export TEST_STAGE:=commit
+export SEED:=$(shell git rev-parse HEAD)
 
 DFLAGS+=$(DVERSION)=REDBLACKTREE_SAFE_PROBLEM
 

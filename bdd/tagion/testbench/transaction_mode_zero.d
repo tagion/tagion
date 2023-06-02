@@ -17,7 +17,7 @@ mixin Main!(_main);
 
 int _main(string[] args)
 {
-    if (env.stage == Stage.acceptance) {
+    if (env.stage == Stage.commit) {
         string scenario_name = __MODULE__;
 
         BDDOptions bdd_options;
@@ -43,13 +43,13 @@ int _main(string[] args)
 
 
     
-        // auto create_transaction_feature = automation!(create_transaction)();
-        // create_transaction_feature.CreateTransaction(
-        //     create_wallets_context.GenerateNWallets,
-        //     create_network_in_mode_zero_context.CreateNetworkWithNAmountOfNodesInModezero,
-        //     bdd_options,
-        // );
-        // auto create_transaction_context = create_transaction_feature.run;
+        auto create_transaction_feature = automation!(create_transaction)();
+        create_transaction_feature.CreateTransaction(
+            create_wallets_context.GenerateNWallets,
+            create_network_in_mode_zero_context.CreateNetworkWithNAmountOfNodesInModezero,
+            bdd_options,
+        );
+        auto create_transaction_context = create_transaction_feature.run;
 
         // auto double_spend_feature = automation!(create_double_spend);
 

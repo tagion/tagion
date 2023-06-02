@@ -12,12 +12,6 @@ version (unittest) {
     import std.typecons : Tuple;
     import std.process;
 
-    immutable(string) REPOROOT;
-    shared static this() {
-        REPOROOT = environment.get(REPOROOT.stringof, null);
-        assert(REPOROOT, format!"%s must be defined"(REPOROOT.stringof));
-    }
-
     bool pass; /// Pass the test
     bool pass_one; /// Pass only one scenario
     bool pass_some; /// Pass some of the scenario

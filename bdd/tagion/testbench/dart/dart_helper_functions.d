@@ -126,8 +126,8 @@ DARTIndex[] randomAdd(const Sequence!ulong[] states, MinstdRand0 rnd, DART db) @
 }
 
 DARTIndex[] randomAdd(T)(T ranges, MinstdRand0 rnd, DART db) @safe
-    if (isRandomAccessRange!T && isInputRange!(ElementType!T) && is(
-        ElementType!(ElementType!T) : const(ulong))) {
+        if (isRandomAccessRange!T && isInputRange!(ElementType!T) && is(
+            ElementType!(ElementType!T) : const(ulong))) {
     DARTIndex[] fingerprints;
     foreach (range; ranges.randomShuffle(rnd)) {
         auto recorder = db.recorder();
@@ -173,19 +173,22 @@ ulong putInSector(ulong archive, const ushort angle, const ushort size) @safe {
     const ulong sector = ((archive >> size_none_sector - angle) % size + angle) << size_none_sector;
 
     const(ulong) new_archive = archive & ~(
-        ulong(ushort.max) << size_none_sector) | ulong(sector) << size_none_sector;
+            ulong(ushort.max) << size_none_sector) | ulong(sector) << size_none_sector;
 
     return new_archive;
 }
 
 // same as in unittests.
-static class TestSynchronizer : DART.StdSynchronizer {
+import tagion.dart.synchronizer;
+
+static class TestSynchronizer : JournalSynchronizer {
     protected DART foreign_dart;
     protected DART owner;
     this(string journal_filename, DART owner, DART foreign_dart) @safe {
         this.foreign_dart = foreign_dart;
         this.owner = owner;
-        super(journal_filename);
+        auto _journalfile = BlockFile(journal_filename);
+        super(_journalfile);
     }
 
     //
@@ -247,8 +250,6 @@ void syncDarts(DART db1, DART db2, const ushort from, const ushort to) @safe {
     }
 
 }
-
-
 
 struct RandomArchives {
     import std.random;

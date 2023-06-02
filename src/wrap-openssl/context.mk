@@ -30,14 +30,14 @@ proper: proper-openssl
 $(DTMP_OPENSSL)/.configured: $(DTMP)/.way
 	$(PRECMD)$(CP) $(DSRC_OPENSSL) $(DTMP_OPENSSL)
 	$(PRECMD)cd $(DTMP_OPENSSL); ./config $(CONFIGUREFLAGS_OPENSSL)
-	$(PRECMD)cd $(DTMP_OPENSSL); make build_generated $(SUBMAKE_PARALLEL)
+	$(PRECMD)cd $(DTMP_OPENSSL); make build_generated
 	$(PRECMD)touch $@
 
 $(DTMP)/libcrypto.a: $(DTMP_OPENSSL)/.configured
-	$(PRECMD)cd $(DTMP_OPENSSL); make libcrypto.a $(SUBMAKE_PARALLEL)
+	$(PRECMD)cd $(DTMP_OPENSSL); make libcrypto.a
 	$(PRECMD)cp $(DTMP_OPENSSL)/libcrypto.a $(DTMP)/libcrypto.a
 
 
 $(DTMP)/libssl.a: $(DTMP_OPENSSL)/.configured
-	$(PRECMD)cd $(DTMP_OPENSSL); make libssl.a $(SUBMAKE_PARALLEL)
+	$(PRECMD)cd $(DTMP_OPENSSL); make libssl.a
 	$(PRECMD)cp $(DTMP_OPENSSL)/libssl.a $(DTMP)/libssl.a

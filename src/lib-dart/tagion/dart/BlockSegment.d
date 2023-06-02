@@ -54,7 +54,7 @@ unittest {
     import std.algorithm.iteration : map;
 
     immutable filename = fileId("blocksegment").fullpath;
-    writefln("filename=%s", filename);
+    // writefln("filename=%s", filename);
     auto file = File(filename, "w");
     scope (exit) {
         file.close;

@@ -13,7 +13,7 @@ import std.array;
 import std.format;
 
 import tagion.basic.tagionexceptions;
-import tagion.basic.Types : FileExtension, withDot;
+import tagion.basic.Types : FileExtension;
 import tagion.crypto.SecureNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.dart.Recorder;
@@ -69,20 +69,20 @@ int _main(string[] args) {
             writeln(logo);
             defaultGetoptPrinter(
                     [
-                // format("%s version %s", program, REVNO),
-                "Documentation: https://tagion.org/",
-                "",
-                "Usage:",
-                format("%s [<option>...]", program),
-                "",
-                "Examples:",
-                "# To run recorer chain specify 2 required parameters",
-                format("%s -с chain_directory -d DART_directory -i true", program),
-                "",
-                "<option>:",
+                    // format("%s version %s", program, REVNO),
+                    "Documentation: https://tagion.org/",
+                    "",
+                    "Usage:",
+                    format("%s [<option>...]", program),
+                    "",
+                    "Examples:",
+                    "# To run recorer chain specify 2 required parameters",
+                    format("%s -с chain_directory -d DART_directory -i true", program),
+                    "",
+                    "<option>:",
 
-            ].join("\n"),
-            main_args.options);
+                    ].join("\n"),
+                    main_args.options);
             return 0;
         }
     }
@@ -92,7 +92,7 @@ int _main(string[] args) {
     }
 
     // Check genesis DART file 
-    if (!gen_dart_file.exists || gen_dart_file.extension != FileExtension.dart.withDot) {
+    if (!gen_dart_file.exists || gen_dart_file.extension != FileExtension.dart) {
         writefln("Incorrect genesis DART file '%s'", gen_dart_file);
         return 1;
     }

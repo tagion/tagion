@@ -4,13 +4,12 @@
 # Unignore all with extensions
 !*.*
 
+*.a
+
 # Unignore all dirs
 !*/
 
 .DS_Store
-
-# Bdd list
-bdd/BDDS.md
 
 # Emacs
 *~
@@ -26,8 +25,7 @@ bdd/BDDS.md
 local.*
 # Auto generated files
 *.gen.*
-# Auto generated D interface files
-*.di
+
 # Auto generated C interface files
 *.i
 # Revision file
@@ -63,23 +61,14 @@ tagionwallet.json
 # C Header files
 src/wrap-secp256k1/secp256k1/include/secp256k1_hash.h
 
-# WolfSSL .d links
-src/lib-network/tagion/network/wolfssl/c/*.d
-src/lib-network/tagion/network/wolfssl/c/wolfcrypt/*.d
-src/lib-network/tagion/network/wolfssl/c/openssl/*.d
-
-
 # Auto-generated .pem files
 pem_files
 
-
-# Remove this when the test should be written
-bdd/tagion/testbench/backlog
-bdd/tagion/testbench/communication
-bdd/tagion/testbench/services/Collector_service.d
-bdd/tagion/testbench/services/ContractInterface_service.d
-bdd/tagion/testbench/services/Logger_subscription_service.d
-bdd/tagion/testbench/services/Logger_subscription_service_with_parameter.d
-bdd/tagion/testbench/services/Recorder_chain_service.d
-bdd/tagion/testbench/services/Transcript_service.d
 tagionwave.json
+
+.dub
+.done
+
+# not finished bdd tests
+bdd/tagion/testbench/backlog/*.d
+bdd/tagion/testbench/communication/*.d

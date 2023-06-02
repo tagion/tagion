@@ -15,7 +15,6 @@ import tagion.logger.Logger;
 
 import tagion.basic.tagionexceptions;
 import tagion.actor.exceptions;
-import tagion.actor.exceptions;
 import tagion.script.SmartScript;
 import tagion.script.StandardRecords : Contract, SignedContract, PayContract, StandardBill;
 import tagion.basic.ConsensusExceptions : ConsensusException;

@@ -10,7 +10,8 @@ env-ddoc:
 env: env-ddoc
 
 clean-ddoc:
-	$(PRECMD) rm -rv $(BUILDDOC)
+	$(PRECMD)
+	$(RM) -r $(BUILDDOC)
 	@echo cleaning docs
 
 .PHONY: clean-ddoc
@@ -30,7 +31,7 @@ help: help-ddoc
 ddoc: $(BUILDDOC)/.way
 	$(PRECMD) 
 	echo "making ddoc"
-	$(ADRDOX) -i --skeleton $(DTUB)/docs_template/skeleton.html -o $(BUILDDOC) $(DSRC)
+	$(ADRDOX) -i --skeleton $(DTUB)/docs_template/skeleton.html -o $(BUILDDOC) $(DSRC) $(BDD)
 
 .PHONY: ddoc
 

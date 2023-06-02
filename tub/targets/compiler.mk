@@ -67,6 +67,9 @@ DEXPORT_DYN?=-L-export-dynamic
 DCOV=--cov
 DIMPORTFILE=-J
 DDEFAULTLIBSTATIC=-link-defaultlib-shared=false
+DSTATICLIB=--lib
+DSHAREDLIB=--shared
+OUTPUTDIR = --od
 else ifeq ($(COMPILER),gdc)
 DVERSION := -fversion
 SONAME_FLAG := $(LINKERFLAG)-soname
@@ -80,6 +83,9 @@ DCOMPILE_ONLY := -c
 DPREVIEW :=-preview
 NO_OBJ ?= -o-
 DCOV ?=-cov
+DSTATICLIB=-lib
+DSHAREDLIB=-shared
+OUTPUTDIR = -od
 else
 DVERSION = -version
 SONAME_FLAG = $(LINKERFLAG)-soname
@@ -97,6 +103,9 @@ DJSON ?= -Xf
 DCOV ?=-cov
 DIMPORTFILE=-J
 DINCIMPORT= -i
+DSTATICLIB=-lib
+DSHAREDLIB=-shared
+OUTPUTDIR = -od
 endif
 
 DIP25 := $(DIP)25
@@ -140,7 +149,9 @@ DEBUG_FLAGS+=$(DDEBUG)
 DEBUG_FLAGS+=$(DDEBUG_SYMBOLS)
 DEBUG_FLAGS+=$(DEXPORT_DYN)
 
-COVOPT=--DRT-covopt=\"merge:1\ dstpath:$(DLOG)\"
+COVOPT=--DRT-covopt=\"dstpath:$(DLOG)\"
+
+DLIBTYPE=${if $(SHARED),$(DSHAREDLIB),$(DSTATICLIB)}
 
 #DEBUGFLAG+=
 env-compiler:

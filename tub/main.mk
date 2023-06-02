@@ -41,7 +41,6 @@ include $(DTUB)/utilities/dir.mk
 include $(DTUB)/utilities/log.mk
 
 include $(DTUB)/tools/*.mk
-include $(TARGETS)/git.mk
 include $(TARGETS)/commands.mk
 
 prebuild:
@@ -50,7 +49,6 @@ prebuild:
 	${foreach wrap,$(WRAPS),$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) $(wrap);}
 	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) revision
 	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) dstep
-	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) ddeps
 
 env-prebuild:
 	$(PRECMD)
@@ -78,26 +76,16 @@ include $(DTUB)/targets/dirs.mk
 #
 # Prebuild
 #
-#include $(TARGETS)/prebuild.mk
-ifndef PREBUILD
--include $(DBUILD)/gen.dfiles.mk
--include $(DBUILD)/gen.ddeps.mk
-endif
-
 -include $(REPOROOT)/platform.*.mk
 
 #
 # Secondary tub functionality
 #
 include $(DTUB)/ways.mk
-include $(DTUB)/gitconfig.mk
-include $(TARGETS)/submodules.mk
-# include $(TARGETS)/druntime.mk
-include $(TARGETS)/submake.mk
 include $(TARGETS)/host.mk
-include $(TARGETS)/cross.mk
 include $(TARGETS)/platform.mk
 include $(TARGETS)/auxiliary.mk
+include $(TARGETS)/cov.mk
 include $(DTUB)/devnet/devnet.mk
 
 #
@@ -105,7 +93,6 @@ include $(DTUB)/devnet/devnet.mk
 #
 include $(TARGETS)/compiler.mk
 include $(TARGETS)/dstep.mk
-include $(TARGETS)/ddeps.mk
 include $(TARGETS)/bins.mk
 include $(TARGETS)/format.mk
 include $(TARGETS)/dscanner.mk
@@ -137,12 +124,9 @@ include $(TARGETS)/ldc-build-runtime.mk
 # Testbench
 #
 include $(DTUB)/testbench/unittest.mk
-include $(DTUB)/testbench/wallets.mk
-include $(DTUB)/testbench/mode0.mk
-include $(DTUB)/testbench/mode1.mk
 include $(DTUB)/testbench/collider.mk
-include $(DTUB)/testbench/reporter.mk
 include $(DTUB)/testbench/test.mk
+include $(DTUB)/testbench/citest.mk
 
 #
 # Install main tool
@@ -156,6 +140,11 @@ include $(TARGETS)/install.mk
 include $(TARGETS)/ddoc.mk
 
 #
+# Vibe.d DART API service
+#
+include $(TARGETS)/vibeapi.mk
+
+#
 # Enable cleaning
 #
 include $(DTUB)/clean.mk
@@ -164,3 +153,10 @@ include $(DTUB)/clean.mk
 # Help
 #
 include $(DTUB)/help.mk
+
+
+#
+# Road runner
+#
+include $(TARGETS)/trunk.mk
+

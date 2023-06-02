@@ -6,12 +6,13 @@ BDDBINS=${addprefix $(DBIN)/,$(BDDS)}
 
 ALL_BDD_REPORTS=${shell find $(BDD_RESULTS) -name "*.hibon" -printf "%p "}
 
-BDD_MD_FILES=${shell find $(BDD) -name "*.md" -a -not -name "*.gen.md"}
+BDD_MD_FILES=${shell find $(BDD)/tagion -name "*.md" -a -not -name "*.gen.md"}
+
+BDD_D_FILES:=$(BDD_MD_FILES:.md=.d)
 
 bbdinit: DFLAGS+=$(BDDDFLAGS)
-bddtest: bddreport
 
-bddreport: | bddtagion bddfiles bddinit bddrun  
+bddtest: | bddtagion bddfiles bddinit bddrun
 
 .PHONY: bddtest bddfiles bddtagion
 
@@ -19,17 +20,28 @@ bddtagion: tagion
 	$(PRECMD)
 	$(DBIN)/tagion -f
 
-bddfiles: collider bddcontent
+
+bddfiles: collider $(BDD)/.done
+
+.PHONY: bddfiles collider
+
+$(BDD)/.done: $(BDD_MD_FILES)
 	$(PRECMD)
-	$(COLLIDER) $(BDD_FLAGS)
+	$(COLLIDER) -v $(BDD_FLAGS)
+	$(TOUCH) $@
+
+
+
+bddcontent: $(BDD)/BDDS.md
+
+$(BDD)/BDDS.md: $(BDD_DFILES)
+	$(PRECMD)
+	$(DTUB)/bundle_bdd_files.d $@
 
 .PHONY: bddcontent
 
-bddcontent:
-	$(PRECMD)
-	$(DTUB)/bundle_bdd_files.d
-
-bddrun: $(BDDTESTS)
+bddrun: collider bddinit
+	$(COLLIDER) -r $(TEST_STAGE) -b $(TESTBENCH) 
 
 .PHONY: bddrun
 
@@ -56,7 +68,9 @@ ddd-%:
 
 bddenv: $(TESTENV)
 
-$(TESTENV): $(DBIN)
+.PHONY: bddenv
+
+$(TESTENV): $(DBIN) 
 	$(PRECMD)
 	$(SCRIPTS)/genenv.sh $@
 	chmod 750 $@
@@ -67,14 +81,18 @@ startreporter.sh:
 	$(PRECMD)
 	$(SCRIPTS)/genreporter.sh $@
 
-bddinit: $(TESTMAIN) $(BDD_RESULTS)/.way $(BDD_LOG)/.way bddenv
+bddinit: testbench $(BDD_RESULTS)/.way $(BDD_LOG)/.way bddenv
 	$(PRECMD)
 	$(TESTPROGRAM) -f
 
-bddreport: target-hibonutil collider
+.PHONY: bddinit
+
+bddreport: 
 	$(PRECMD)
 	$(DBIN)/hibonutil -p $(ALL_BDD_REPORTS)
 	$(COLLIDER) -cv $(BDD_RESULTS)
+
+.PHONY: bddreport
 
 %.md.tmp: %.md
 	$(PRECMD)
@@ -89,6 +107,7 @@ env-bdd:
 	${call log.env, BDD_FLAGS, $(BDD_FLAGS)}
 	${call log.env, BDD_DFLAGS, $(BDD_DFLAGS)}
 	${call log.env, BDD_DFILES, $(BDD_DFILES)}
+	${call log.env, BDD_D_FILES, $(BDD_D_FILES)}
 	${call log.env, BDD_MD_FILES, $(BDD_MD_FILES)}
 	${call log.env, TESTENV, $(TESTENV)}
 	${call log.kvp, TESTMAIN, $(TESTMAIN)}
@@ -123,7 +142,6 @@ help-bdd:
 	${call log.help, "make clean-bddtest", "Remove the bdd log files"}
 	${call log.help, "make clean-reports", "Remove all the bdd reports"}
 	${call log.help, "make clean-bdd", "Remove all the bdd files"}
-	${call log.help, "make list-bdd", "List all bdd targets"}
 	${call log.close}
 
 .PHONY: help-bdd

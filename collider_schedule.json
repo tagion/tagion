@@ -1,0 +1,124 @@
+{
+    "units": {
+        "ssl_echo_server": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "none"
+            ],
+            "timeout": 0.0
+        },
+        "transaction": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "none"
+            ],
+            "timeout": 0.0
+        },
+        "transaction_mode_zero": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "none"
+            ],
+            "timeout": 0.0
+        },
+        "receive_epoch": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "none"
+            ],
+            "timeout": 0.0
+        },
+        "dart_test": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "commit","xtest"
+            ],
+            "timeout": 0.0
+        },
+        "dart_deep_rim_test": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "commit"
+            ],
+            "timeout": 0.0
+        },
+        "dart_pseudo_random_archives": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "commit"
+            ],
+            "timeout": 0.0
+        },
+        "dart_sync": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "commit"
+            ],
+            "timeout": 0.0
+        },
+        "dart_partial_sync": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "performance"
+            ],
+            "timeout": 0.0
+        },
+        "dart_stress": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "performance", "acceptance"
+            ],
+            "timeout": 0.0
+        },
+        "dart_insert_remove_stress": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "commit", "performance"
+            ],
+            "timeout": 0.0
+        },
+         "dart_sync_stress": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "performance"
+            ],
+            "timeout": 0.0
+        },
+        "actor_tests": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "commit"
+            ],
+            "timeout": 0.0
+        },
+        "dart_service": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "commit"
+            ],
+            "timeout": 0.0
+        },
+        "hashgraph_test": {
+            "args": ["Alice", "Bob", "Carol", "Dave", "Elisa", "Freja", "George"],
+            "envs": {},
+            "stages": [
+                "hashgraph"
+            ],
+            "timeout": 0.0
+        }
+    }
+}
