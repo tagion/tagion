@@ -2,7 +2,8 @@
 
 ci:
 	$(MAKE) clean-trunk -f$(DTUB)/main.mk
-	$(MAKE) bins dartsecondapi -f$(DTUB)/main.mk
+	$(MAKE) bins -f$(DTUB)/main.mk
+	$(MAKE) dartsecondapi -f$(DTUB)/main.mk
 	$(MAKE) bddtest unittest-cov -f$(DTUB)/main.mk
 	$(MAKE) ddoc -f$(DTUB)/main.mk
 	$(MAKE) trunk -f$(DTUB)/main.mk
