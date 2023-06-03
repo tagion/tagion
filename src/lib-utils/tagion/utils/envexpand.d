@@ -14,22 +14,16 @@ enum bracket_pairs = [
 @safe
 string envExpand(string text, string[string] env, void delegate(string msg) error = null) pure {
     alias BracketState = Tuple!(string[], "bracket", ptrdiff_t, "index");
-    static long envName(string str, string end_sym, const size_t index) pure {
+    static long envName(string str, string end_sym) pure {
         import std.uni;
 
-        long innerEnv(string _str) {
-            if (end_sym.length) {
-                return _str.countUntil(end_sym);
-            }
-            if ((_str.length > 0) && !_str[0].isAlpha) {
-                return -1;
-            }
-            const x = (_str ~ '!').countUntil!(c => !c.isAlphaNum);
-            return x;
+        if (end_sym.length) {
+            return str.countUntil(end_sym);
         }
-
-        const result = innerEnv(str[index .. $]);
-        return (result < 0) ? result : result + index;
+        if ((str.length > 0) && !str[0].isAlpha) {
+            return -1;
+        }
+        return (str ~ '!').countUntil!(c => !c.isAlphaNum);
     }
 
     string innerExpand(string str) {
@@ -41,23 +35,18 @@ string envExpand(string text, string[string] env, void delegate(string msg) erro
             .take(1);
         if (!begin.empty) {
             const state = begin.front;
-            //            const size_t start
             const env_start_index = state.index + state.bracket[0].length;
-
-            string env_name;
+            auto end_str = innerExpand(str[env_start_index .. $]);
+            const env_end_index = envName(end_str, state.bracket[1]);
             string env_value;
-            const env_end_index = envName(str, state.bracket[1], env_start_index);
-            size_t next_index = env_start_index;
             if (env_end_index > 0) {
-                env_name = str[env_start_index .. env_end_index];
-                env_name = innerExpand(env_name);
+                const env_name = end_str[0 .. env_end_index];
+                end_str = end_str[env_end_index + state.bracket[1].length .. $];
                 env_value = env.get(env_name, null);
-
-                next_index = env_end_index + state.bracket[1].length;
             }
-            return str[0 .. state.index] ~
+            result = str[0 .. state.index] ~
                 env_value ~
-                innerExpand(str[next_index .. $]);
+                innerExpand(end_str);
         }
         return result;
 
@@ -96,5 +85,13 @@ unittest {
     writefln("%s", "text$(OF${NAME})".envExpand(["NAME": "hugo", "OFhugo": "_extra_"]));
     // Expansion of defined environment of environment
     assert("text$(OF${NAME})".envExpand(["NAME": "hugo", "OFhugo": "_extra_"]) == "text_extra_");
+
+    writefln("%s", "text$(OF${NAME}_end)".envExpand(["NAME": "hugo", "OFhugo": "_extra_", "OFhugo_end": "_other_extra_"]));
+    // Expansion of defined environment of environment
+    assert("text$(OF$(NAME)_end)".envExpand([
+        "NAME": "hugo",
+        "OFhugo": "_extra_",
+        "OFhugo_end": "_other_extra_"
+    ]) == "text_other_extra_");
 
 }
