@@ -3,12 +3,13 @@ module tagion.utils.envexpand;
 import std.typecons;
 import std.algorithm;
 import std.range;
+import tagion.basic.Debug;
 
 enum ignore_env_start = "!";
 enum bracket_pairs = [
+        ["$$", "$", ignore_env_start], // "!" ignored as environment start
         ["$(", ")"],
         ["${", "}"],
-        ["$$", "$$", ignore_env_start], // "!" ignored as environment start
         ["$", ""],
 
     ];
@@ -29,15 +30,20 @@ string envExpand(string text, string[string] env, void delegate(string msg) erro
     }
 
     string innerExpand(string str) {
+        __write("'%s'", str);
         auto begin = bracket_pairs
             .map!(bracket => BracketState(bracket, str.countUntil(bracket[0])))
-            .filter!(state => state.index >= 0)
-            .take(1);
+            .filter!(state => state.index >= 0);
+        //  .take(1);
         if (!begin.empty) {
             const state = begin.front;
+            __write("state %s", state);
+            import std.array;
+
+            __write("list %s", begin.array);
             if (state.bracket.length > 2) {
-                const next_index = state.index ~ state.bracket[1].length;
-                return str[0 .. state.index] ~ state.bracket[2] ~ innerExpand(str[next_index .. $]);
+                const next_index = state.index + state.bracket[0].length;
+                return str[0 .. state.index] ~ state.bracket[1] ~ innerExpand(str[next_index .. $]);
             }
             const env_start_index = state.index + state.bracket[0].length;
             auto end_str = innerExpand(str[env_start_index .. $]);
@@ -97,5 +103,8 @@ unittest {
         "OFhugo": "_extra_",
         "OFhugo_end": "_other_extra_"
     ]) == "text_other_extra_");
+    // Double dollar ignored as a environment
+    writefln("$$$$$");
+    writefln("%s", "text$$(NAME)".envExpand(["NAME": "not-replaced"]));
 
 }
