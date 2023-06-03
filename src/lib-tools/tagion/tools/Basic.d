@@ -8,13 +8,13 @@ import std.file : exists, symlink, remove, thisExePath,
 import std.stdio;
 import tagion.utils.Term;
 
-__gshared static bool verbose_switch;
+__gshared static bool __verbose_switch;
 __gshared static bool __dry_switch;
 //static uint verbose_mask;
 
 @trusted
-bool verbose_flag() nothrow @nogc {
-    return verbose_switch;
+bool verbose_switch() nothrow @nogc {
+    return __verbose_switch;
 }
 
 @trusted
@@ -26,7 +26,7 @@ bool dry_switch() nothrow @nogc {
 void verbose(Args...)(string fmt, Args args) {
     import std.stdio;
 
-    if (verbose_flag) {
+    if (verbose_switch) {
         writefln(fmt, args);
     }
 }
@@ -34,7 +34,7 @@ void verbose(Args...)(string fmt, Args args) {
 @trusted
 void error(const Exception e) {
     error(e.msg);
-    if (verbose_flag) {
+    if (verbose_switch) {
         stderr.writefln("%s", e);
     }
 }

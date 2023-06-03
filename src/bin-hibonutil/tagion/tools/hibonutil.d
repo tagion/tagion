@@ -68,7 +68,7 @@ int _main(string[] args) {
                 "c|stdout", "Print to standard output", &standard_output,
                 "pretty|p", format("JSON Pretty print: Default: %s", pretty), &pretty,
                 "b|base64", "Convert to base64 string", &base64,
-                "v|verbose", "Print more debug information", &verbose_switch,
+                "v|verbose", "Print more debug information", &__verbose_switch,
                 "o|output", "outputfilename only for stdin", &outputfilename,
         );
     }

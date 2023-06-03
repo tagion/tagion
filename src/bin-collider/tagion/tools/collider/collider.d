@@ -21,10 +21,9 @@ import std.process : execute, environment;
 import std.range;
 import std.typecons : Tuple;
 
-import tagion.basic.Types : hasExtension;
+import tagion.basic.Types : hasExtension, FileExtension, DOT;
 import tagion.tools.Basic;
 import tagion.utils.JSONCommon;
-import tagion.basic.Types : FileExtension, DOT;
 import tagion.tools.revision : revision_text;
 import tagion.behaviour.BehaviourParser;
 import tagion.behaviour.BehaviourIssue : Dlang, DlangT, Markdown;
@@ -438,7 +437,7 @@ int main(string[] args) {
                 "b|bin", format("Testbench program Default: '%s'", testbench), &testbench,
                 "P|proto", "Writes sample schedule file", &schedule_write_proto,
                 "f|force", "Force a symbolic link to be created", &force_switch,
-                "v|verbose", "Enable verbose print-out", &verbose_switch,
+                "v|verbose", "Enable verbose print-out", &__verbose_switch,
                 "d|dry", "Shows the parameter for a schedule run", &__dry_switch,
         );
         if (version_switch) {
