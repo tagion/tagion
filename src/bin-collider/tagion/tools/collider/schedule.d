@@ -137,7 +137,6 @@ struct ScheduleRunner {
     int run(scope const(char[])[] args) {
 
         //        schedule.toJSON.toPrettyString.writeln;
-
         alias Stage = Tuple!(RunUnit, "unit", string, "name", string, "stage");
         auto schedule_list = stages
             .map!(stage => schedule.units
@@ -151,6 +150,37 @@ struct ScheduleRunner {
             return 1;
         }
         auto runners = new Runner[jobs];
+
+        void batch(
+                const ptrdiff_t job_index,
+                const SysTime time,
+                const(char[][]) cmd,
+        const(string) log_filename,
+        const(string[string]) env) {
+            if (dry_switch) {
+                writefln("%d] %-(%s %)", job_index, cmd);
+                writefln("Log file %s", log_filename);
+            }
+            else {
+                auto fout = File(log_filename, "w");
+                auto _stdin = (() @trusted => stdin)();
+                auto pid = spawnProcess(
+                        cmd, _stdin, fout, fout, env);
+                writefln("%d] %-(%s %) # pid=%d", job_index, cmd,
+                        pid.processID);
+                runners[job_index] = Runner(
+                        pid,
+                        fout,
+                        schedule_list.front.unit,
+                        schedule_list.front.name,
+                        schedule_list.front.stage,
+                        time,
+                        job_index
+                );
+            }
+
+        }
+
         auto check_running = runners
             .filter!(r => r.pid !is r.pid.init)
             .any!(r => !tryWait(r.pid).terminated);
@@ -169,27 +199,7 @@ struct ScheduleRunner {
                     showEnv(env); //writefln("ENV %s ", env);
                     const log_filename = buildNormalizedPath(env[BDD_RESULTS],
                     schedule_list.front.name).setExtension("log");
-                    if (dry_switch) {
-                        writefln("%d] %-(%s %)", job_index, cmd);
-                        writefln("Log file %s", log_filename);
-                    }
-                    else {
-                        auto fout = File(log_filename, "w");
-                        auto _stdin = (() @trusted => stdin)();
-                        auto pid = spawnProcess(
-                                cmd, _stdin, fout, fout, env);
-                        writefln("%d] %-(%s %) # pid=%d", job_index, cmd, pid
-                                .processID);
-                        runners[job_index] = Runner(
-                                pid,
-                                fout,
-                                schedule_list.front.unit,
-                                schedule_list.front.name,
-                                schedule_list.front.stage,
-                                time,
-                                job_index
-                        );
-                    }
+                    batch(job_index, time, cmd, log_filename, env);
                 }
                 catch (Exception e) {
                     writefln("Error %s", e.msg);
@@ -200,7 +210,6 @@ struct ScheduleRunner {
                     runners[job_index] = Runner.init;
                 }
                 //              time);
-
                 schedule_list.popFront;
             }
             if (!dry_switch) {
