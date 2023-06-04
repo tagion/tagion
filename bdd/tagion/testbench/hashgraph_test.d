@@ -7,15 +7,14 @@ import tagion.tools.Basic;
 import tagion.testbench.hashgraph;
 import tagion.testbench.tools.Environment;
 import std.stdio;
-import core.memory : GC;
 
 mixin Main!(_main);
 
 int _main(string[] args) {
-    GC.disable;
-    auto hashgraph_sync_network_feature = automation!(synchron_network);
-    writefln("wowo");
-    hashgraph_sync_network_feature.StartNetworkWithNAmountOfNodes(args);
-    auto hashgraph_sync_network_context = hashgraph_sync_network_feature.run();
+    version (NOT_COMPILING) {
+        auto hashgraph_sync_network_feature = automation!(synchron_network);
+        hashgraph_sync_network_feature.StartNetworkWithNAmountOfNodes(args);
+        auto hashgraph_sync_network_context = hashgraph_sync_network_feature.run();
+    }
     return 0;
 }

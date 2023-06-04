@@ -21,15 +21,14 @@ import tagion.dart.DARTFile;
 // controllers
 import source.generic_controller : GenericController;
 
-
-const revision = import("revision.txt");
+// const revision = import("revision.txt");
 
 void main() {
     auto router = new URLRouter;
 
     // access tokens
     const string[] access_tokens = [
-      "test",
+        "test",
     ];
 
     const test_token = access_tokens[0];
@@ -42,8 +41,7 @@ void main() {
     auto test_dart_service = DartService(test_filename, test_token);
 
     auto test_project = GenericController(test_token, router, test_dart_service);
-    
-    
+
     foreach (route; router.getAllRoutes) {
         logInfo(format("(%s) %s", route.method, route.pattern));
     }
@@ -55,9 +53,8 @@ void main() {
 
     listenHTTP(settings, router);
 
-    logInfo("Running revision: %s", revision);
+    // logInfo("Running revision: %s", revision);
     logInfo("Open http://127.0.0.1:8081/ in your browser.");
 
     runApplication();
 }
-

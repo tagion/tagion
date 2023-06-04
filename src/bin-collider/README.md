@@ -126,3 +126,4 @@ Prints the accumulated result.
 collider -cv logs/x86_64-linux/bdd/commit/results/
 ```
 
+## Inspecting the setup of the schedule run.

@@ -12,12 +12,13 @@ import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.Event;
 import tagion.communication.HiRPC;
 import tagion.utils.StdTime;
-import tagion.utils.Miscellaneous: cutHex;
+import tagion.utils.Miscellaneous : cutHex;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBON;
 import std.stdio;
 import std.exception : assumeWontThrow;
+import core.memory : pageSize;
 
 /++
     This function makes sure that the HashGraph has all the events connected to this event
@@ -26,6 +27,8 @@ import std.exception : assumeWontThrow;
 static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
     import core.thread.fiber : Fiber;
     import tagion.crypto.SecureNet : StdSecureNet;
+
+    import tagion.crypto.SecureInterfaceNet : SecureNet;
     import tagion.gossip.InterfaceNet : GossipNet;
     import tagion.utils.Random;
     import tagion.utils.Queue;
@@ -41,13 +44,22 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         MAX = 150
     }
 
-    alias ChannelQueue = Queue!Document;
+    static const(SecureNet) verify_net;
+    static this() {
+        verify_net = new StdSecureNet();
+    }
 
+    alias ChannelQueue = Queue!Document;
     class TestGossipNet : GossipNet {
+        import tagion.hashgraph.HashGraphBasic;
+
         protected {
             ChannelQueue[Pubkey] channel_queues;
             sdt_t _current_time;
         }
+
+        ExchangeState[Pubkey][Pubkey] gossip_state;
+
         void start_listening() {
             // empty
         }
@@ -67,21 +79,16 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         }
 
         void send(const(Pubkey) channel, const(HiRPC.Sender) sender) {
+            const wave = Wavefront(verify_net, sender.method.params);
+            gossip_state[sender.pubkey][channel] = wave.state;
+            // writefln("owner %s, state=%s", sender.pubkey.cutHex, wave.state);
             const doc = sender.toDoc;
-            
-            "/tmp/badhibon.hibon".fwrite(doc);
-            
-            const x = doc.toPretty;
-            "/tmp/badhibon2.hibon".fwrite(doc);
-
-            assumeWontThrow(writefln("SENDER: send to %s, doc=%s", channel.cutHex, sender.toDoc.toPretty));
-            import tagion.hibon.HiBONRecord;
-            
-            channel_queues[channel].write(sender.toDoc);
+            // assumeWontThrow(writefln("SENDER: send to %s, doc=%s", channel.cutHex, doc.toPretty));
+            channel_queues[channel].write(doc);
         }
 
         void send(const(Pubkey) channel, const(Document) doc) nothrow {
-            assumeWontThrow(writefln("DOC: send to %s, document=%s", channel.cutHex, doc.toPretty));
+            // assumeWontThrow(writefln("DOC: send to %s, document=%s", channel.cutHex, doc.toPretty));
             channel_queues[channel].write(doc);
         }
 
@@ -138,12 +145,12 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         HashGraph _hashgraph;
         //immutable(string) name;
         @trusted
-        this(HashGraph h) nothrow
+        this(HashGraph h, const(ulong) stacksize = pageSize * Fiber.defaultStackPages) nothrow
         in {
             assert(_hashgraph is null);
         }
         do {
-            super(&run);
+            super(&run, stacksize);
             _hashgraph = h;
         }
 
@@ -219,12 +226,11 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
             net.generateKeyPair(passphrase);
             auto h = new HashGraph(N, net, &authorising.isValidChannel, null, null, name);
             h.scrap_depth = 0;
-            networks[net.pubkey] = new FiberNetwork(h);
+            networks[net.pubkey] = new FiberNetwork(h, pageSize * 32);
         }
         networks.byKey.each!((a) => authorising.add_channel(a));
     }
 }
-
 
 import std.compiler;
 
@@ -248,7 +254,7 @@ void hashgraphTest() @safe {
         Dave,
         Elisa,
         Freja,
-        George, 
+        George,
     }
 
     auto node_labels = [EnumMembers!NodeLabel].map!((E) => E.to!string).array;
@@ -272,16 +278,16 @@ void hashgraphTest() @safe {
         (() @trusted { writefln("%s", e); assert(0, e.msg); })();
     }
 
-        // writefln("Save Alice");
-        // Pubkey[string] node_labels;
+    // writefln("Save Alice");
+    // Pubkey[string] node_labels;
 
-        // foreach (channel, _net; network.networks) {
-        //     node_labels[_net._hashgraph.name] = channel;
-        // }
-        // foreach (_net; network.networks) {
-        //     const filename = fileId(_net._hashgraph.name);
-        //     _net._hashgraph.fwrite(filename.fullpath, node_labels);
-        // }
+    // foreach (channel, _net; network.networks) {
+    //     node_labels[_net._hashgraph.name] = channel;
+    // }
+    // foreach (_net; network.networks) {
+    //     const filename = fileId(_net._hashgraph.name);
+    //     _net._hashgraph.fwrite(filename.fullpath, node_labels);
+    // }
 
     bool event_error(const Event e1, const Event e2, const Compare.ErrorCode code) @safe nothrow {
         static string print(const Event e) nothrow {
@@ -321,14 +327,3 @@ void hashgraphTest() @safe {
         }
     }
 }
-
-import basic = tagion.basic.basic;
-import std.range : dropExactly;
-import tagion.utils.Miscellaneous : cutHex;
-
-const(basic.FileNames) fileId(T = HashGraph)(string prefix = null) @safe {
-    import basic = tagion.basic.basic;
-
-    return basic.fileId!T("hibon", prefix);
-}
-
