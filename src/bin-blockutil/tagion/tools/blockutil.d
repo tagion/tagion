@@ -121,107 +121,10 @@ struct BlockFileAnalyzer {
         writefln(segment_on_index.doc.toPretty);
     }
 
-    // static string blockType(const bool recycle_block) {
-    //     return recycle_block ? "Recycle" : "Data";
-    // }
-
-    // void display_block(const Index index, const(BlockFile.Block) b) {
-    //     if (b) {
-    //         writefln("%s  [%d <- %d -> %d size %d [%s]", blockfile.getSymbol(b, index).to!char, b.previous, index, b
-    //                 .next, b.size, blockType(blockfile.isRecyclable(index)));
-    //         return;
-    //     }
-    //     writefln("Block @ %d is nil", index);
-    // }
-
-    // bool trace(const Index index, const BlockFile.Fail f, scope const BlockFile.Block block, const bool recycle_chain) {
-    //     void error(string msg, const Index i = index) {
-    //         const is_recycle_block = blockfile.isRecyclable(index);
-    //         writefln("Error %s: %s @ %d in %s %s", f, msg, i, blockType(is_recycle_block), (
-    //                 is_recycle_block is recycle_chain) ? "" : "[Bad Type]");
-    //     }
-
-    //     with (BlockFile.Fail) final switch (f) {
-    //     case NON:
-    //         break;
-    //     case RECURSIVE:
-    //         error("Circular chain found");
-    //         auto range = blockfile.range(index);
-    //         do {
-    //             display_block(range.index, range.front);
-    //             range.popFront;
-    //         }
-    //         while (!range.empty && index !is range.index);
-    //         return true;
-    //     case INCREASING:
-    //         error("Block sequency order is wrong");
-    //         break;
-    //     case SEQUENCY:
-    //         error("Chain of the block size is wrong");
-    //         break;
-    //     case LINK:
-    //         error("Double linked fail");
-    //         break;
-    //     case ZERO_SIZE:
-    //         error("Block has zero-size");
-    //         break;
-    //     case BAD_SIZE:
-    //         error(format("Size of end-block is larger then %d", blockfile.DATA_SIZE), block
-    //                 .previous);
-    //         break;
-    //     case RECYCLE_HEADER:
-    //         error("Recycle block should not contain a header mask");
-    //         break;
-    //     case RECYCLE_NON_ZERO:
-    //         error("The size of an recycle block should be zero");
-    //         break;
-
-    //     }
-    //     if (inspect_iterations != inspect_iterations.max) {
-    //         inspect_iterations--;
-    //         return inspect_iterations == 0;
-    //     }
-    //     return false;
-    // }
-
-    // void display_meta() {
-    //     blockfile.headerBlock.writeln;
-    //     writeln;
-    //     blockfile.masterBlock.writeln;
-    //     writeln;
-    //     writefln("Last block @ %d", blockfile.lastBlockIndex);
-    //     writeln;
-    //     blockfile.statistic.writeln;
-    //     writeln;
-    // }
-
-    // void dump() {
-    //     writeln("Block map");
-    //     foreach (symbol; EnumMembers!(BlockFile.BlockSymbol)) {
-    //         writef("'%s' %s, ", symbol.to!char, symbol);
-    //     }
-    //     writeln;
-    //     blockfile.dump;
-    // }
-
-    // /**
-    //    number_of_seq block sequency displays
-    //  */
-    // void display_sequency(const Index index, uint number_of_sequency = 1) {
-    //     auto range = blockfile.range(index);
-    //     while (!range.empty) {
-    //         display_block(range.index, range.front);
-    //         range.popFront;
-    //         if (range.front !is null && range.front.head) {
-    //             number_of_sequency--;
-    //             if (number_of_sequency == 0) {
-    //                 return;
-    //             }
-    //             writeln;
-    //         }
-    //     }
-    // }
-
+    void dumpHeader() {
+        writeln("Header:");
+        //  writefln("Label: %s", blockfile.header")
+    }
 }
 
 BlockFileAnalyzer analyzer;
@@ -258,12 +161,6 @@ int _main(string[] args) {
             "g|dumpgraph", "Dump the blockfile in graphviz format", &dump_graph,
             "d|dumpdoc", "Dump the document located at an specific index", &dump_doc,
             "i|index", "the index to dump the document from", &dump_index, // "inspect|c", "Inspect the blockfile format", &inspect,
-            // "ignore|i", "Ignore blockfile format error", &ignore, //        "iter", "Set the max number of iterations do by the inspect", &analyzer.inspect_iterations,
-            //       "max", format(
-            //     "Max block iteration Default : %d", analyzer.max_block_iteration), &analyzer.max_block_iteration,
-            // "block|b", "Read from block number", &block_number,
-            // "seq", "Display the block sequency starting from the block-number", &sequency,
-            // "o", "Output filename", &output_filename,
 
             
 
