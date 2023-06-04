@@ -14,22 +14,19 @@ bbdinit: DFLAGS+=$(BDDDFLAGS)
 
 bddtest: | bddtagion bddfiles bddinit bddrun
 
-.PHONY: bddtest bddfiles bddtagion
+.PHONY: bddtest bddtagion
 
 bddtagion: tagion
 	$(PRECMD)
 	$(DBIN)/tagion -f
 
 
-bddfiles: collider $(BDD)/.done
+bddfiles: $(DLOG)/.bddfiles
 
-.PHONY: bddfiles collider
-
-$(BDD)/.done: $(BDD_MD_FILES)
+$(DLOG)/.bddfiles:  $(BDD_MD_FILES)
 	$(PRECMD)
 	$(COLLIDER) -v $(BDD_FLAGS)
-	$(TOUCH) $@
-
+	$(TOUCH) $@	
 
 
 bddcontent: $(BDD)/BDDS.md
