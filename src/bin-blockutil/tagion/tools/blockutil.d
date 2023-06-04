@@ -122,8 +122,14 @@ struct BlockFileAnalyzer {
     }
 
     void dumpHeader() {
+        import std.datetime;
+
         writeln("Header:");
-        //  writefln("Label: %s", blockfile.header")
+        const header = blockfile.headerBlock;
+        writefln("Label      : %s", header.label);
+        writefln("ID         : %s", header.id);
+        writefln("Block-size : %d", header.block_size);
+        writefln("time       : %s", SysTime.fromUnixTime(header.create_time));
     }
 }
 
@@ -142,6 +148,7 @@ int _main(string[] args) {
     bool dump_statistic;
     bool dump_graph;
     bool dump_doc;
+    bool dump_header;
     ulong dump_index;
 
     string output_filename;
@@ -160,6 +167,7 @@ int _main(string[] args) {
             "s|statistic", "Dumps the statistic block", &dump_statistic,
             "g|dumpgraph", "Dump the blockfile in graphviz format", &dump_graph,
             "d|dumpdoc", "Dump the document located at an specific index", &dump_doc,
+            "H|header", "Dump the header block", &dump_header,
             "i|index", "the index to dump the document from", &dump_index, // "inspect|c", "Inspect the blockfile format", &inspect,
 
             
@@ -240,6 +248,9 @@ int _main(string[] args) {
         analyzer.dumpStatistic;
     }
 
+    if (dump_header) {
+        analyzer.dumpHeader;
+    }
     if (dump_graph) {
         analyzer.dumpGraph;
     }
@@ -249,21 +260,5 @@ int _main(string[] args) {
             analyzer.dumpIndexDoc(Index(dump_index));
         }
     }
-
-    // if (block_number !is 0) {
-    //     if (sequency) {
-    //         analyzer.display_sequency(Index(block_number));
-    //     }
-    //     else {
-    //         immutable buffer = analyzer.blockfile.load(Index(block_number), !ignore);
-    //         if (output_filename) {
-    //             buffer.toFile(output_filename);
-    //         }
-    //     }
-    // }
-
-    // if (recycle_sequence) {
-    //     analyzer.blockfile.recycleDump;
-    // }
     return ExitCode.NOERROR;
 }

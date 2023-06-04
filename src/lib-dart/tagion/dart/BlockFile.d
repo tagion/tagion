@@ -447,10 +447,6 @@ class BlockFile {
         masterblock.read(file, BLOCK_SIZE);
     }
 
-    ref const(HeaderBlock) headerBlock() pure const nothrow {
-        return headerblock;
-    }
-
     private void readHeaderBlock() {
         check(file.size % BLOCK_SIZE == 0,
                 format("BlockFile should be sized in equal number of blocks of the size of %d but the size is %d", BLOCK_SIZE, file
