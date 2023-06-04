@@ -10,12 +10,14 @@ import std.format;
 import std.path : buildNormalizedPath, setExtension;
 import std.file : mkdirRecurse, exists;
 import std.stdio;
+import std.range;
 import std.algorithm;
 import core.thread;
 import tagion.utils.JSONCommon;
 import tagion.tools.collider.trace : ScheduleTrace;
 import tagion.tools.Basic : dry_switch, verbose_switch;
 import tagion.utils.envexpand;
+import tagion.hibon.HiBONJSON;
 
 @safe
 struct RunUnit {
@@ -58,7 +60,7 @@ enum TEST_STAGE = "TEST_STAGE";
 enum COLLIDER_ROOT = "COLLIDER_ROOT";
 enum BDD_LOG = "BDD_LOG";
 enum BDD_RESULTS = "BDD_RESULTS";
-enum BDD_LOGFILE = "BDD_LOGFILE";
+//enum BDD_LOGFILE = "BDD_LOGFILE";
 
 @safe
 struct ScheduleRunner {
@@ -122,12 +124,14 @@ struct ScheduleRunner {
 
     void showEnv(const(string[string]) env) {
         if (verbose_switch) {
+            writeln("Environment:");
             env.byKeyValue
                 .each!(e => writefln("%s = %s", e.key, e.value));
             return;
         }
         if (dry_switch) {
-            const env_list = [COLLIDER_ROOT, BDD_LOG, BDD_RESULTS, BDD_LOGFILE, TEST_STAGE];
+            writeln("Collider environment:");
+            const env_list = [COLLIDER_ROOT, BDD_LOG, BDD_RESULTS, TEST_STAGE];
             env_list
                 .each!(name => writefln("%s = %s", name, env.get(name, null)));
         }
@@ -157,9 +161,16 @@ struct ScheduleRunner {
                 const(char[][]) cmd,
         const(string) log_filename,
         const(string[string]) env) {
+            static uint job_count;
+            scope (exit) {
+                job_count++;
+            }
             if (dry_switch) {
-                writefln("%d] %-(%s %)", job_index, cmd);
+                const line_length = cmd.map!(c => c.length).sum;
+                writefln("%-(%s%)", '#'.repeat(max(min(line_length, 30), 80)));
+                writefln("%d] %-(%s %)", job_count, cmd);
                 writefln("Log file %s", log_filename);
+                writefln("Unit = %s", schedule_list.front.unit.toJSON.toPrettyString);
             }
             else {
                 auto fout = File(log_filename, "w");
@@ -178,7 +189,7 @@ struct ScheduleRunner {
                         job_index
                 );
             }
-
+            showEnv(env);
         }
 
         auto check_running = runners
@@ -196,7 +207,7 @@ struct ScheduleRunner {
                     schedule_list.front.unit.envs.byKeyValue
                         .each!(e => env[e.key] = envExpand(e.value, env));
                     setEnv(env, schedule_list.front.stage);
-                    showEnv(env); //writefln("ENV %s ", env);
+                    //showEnv(env); //writefln("ENV %s ", env);
                     const log_filename = buildNormalizedPath(env[BDD_RESULTS],
                     schedule_list.front.name).setExtension("log");
                     batch(job_index, time, cmd, log_filename, env);
