@@ -224,7 +224,8 @@ struct ScheduleRunner {
 
                 schedule_list.popFront;
             }
-            for (;;) {
+            for (; !dry_switch;) {
+
                 sleep(100.msecs);
                 const job_index = runners
                     .filter!(r => r.pid !is r.pid.init)
@@ -238,8 +239,6 @@ struct ScheduleRunner {
                     break;
                 }
             }
-            //            sleep(3000.msecs);
-            //writefln("END %d", jobs);
         }
         return 0;
     }
