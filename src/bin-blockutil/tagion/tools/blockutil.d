@@ -250,21 +250,23 @@ int _main(string[] args) {
     auto main_args = getopt(args,
             std.getopt.config.caseSensitive,
             std.getopt.config.bundling,
-            "version", "Display the version", &version_switch,// "info", "Display blockfile metadata", &display_meta,
+            "version", "Display the version", &version_switch, // "info", "Display blockfile metadata", &display_meta,
             "dump", "Dumps the entire blockfile", &dump,
             "dumprecycler", "Dumps the recycler", &dump_recycler,
             "r|recyclerstatistic", "Dumps the recycler statistic block", &dump_recycler_statistic,
             "s|statistic", "Dumps the statistic block", &dump_statistic,
             "g|dumpgraph", "Dump the blockfile in graphviz format", &dump_graph,
             "d|dumpdoc", "Dump the document located at an specific index", &dump_doc,
-            "i|index", "the index to dump the document from", &dump_index,// "inspect|c", "Inspect the blockfile format", &inspect,
+            "i|index", "the index to dump the document from", &dump_index, // "inspect|c", "Inspect the blockfile format", &inspect,
             // "ignore|i", "Ignore blockfile format error", &ignore, //        "iter", "Set the max number of iterations do by the inspect", &analyzer.inspect_iterations,
             //       "max", format(
             //     "Max block iteration Default : %d", analyzer.max_block_iteration), &analyzer.max_block_iteration,
             // "block|b", "Read from block number", &block_number,
             // "seq", "Display the block sequency starting from the block-number", &sequency,
             // "o", "Output filename", &output_filename,
-    
+
+            
+
     );
 
     if (version_switch) {
@@ -276,7 +278,7 @@ int _main(string[] args) {
         writeln(logo);
         defaultGetoptPrinter(
                 [
-                // format("%s version %s", program, REVNO),
+                revision_text,
                 "Documentation: https://tagion.org/",
                 "",
                 "Usage:",
