@@ -199,27 +199,19 @@ struct ScheduleRunner {
                 const job_index = runners.countUntil!(r => r.pid is r.pid.init);
                 try {
                     auto time = Clock.currTime;
-                    const cmd = args ~ schedule_list.front.name ~ schedule_list.front.unit
-                        .args;
                     auto env = environment.toAA;
                     schedule_list.front.unit.envs.byKeyValue
-                        .each!(e => env[e.key] = e.value);
+                        .each!(e => env[e.key] = envExpand(e.value, env));
+                    const cmd = args ~ schedule_list.front.name ~
+                        schedule_list.front.unit.args
+                            .map!(arg => envExpand(arg, env))
+                            .array;
                     setEnv(env, schedule_list.front.stage);
-                    //writefln("ENV %s ", env);
-                    auto fout = File(buildNormalizedPath(env[BDD_RESULTS],
-                    schedule_list.front.name).setExtension("log"), "w");
-                    auto _stdin = (() @trusted => stdin)();
-                    auto pid = spawnProcess(cmd, _stdin, fout, fout, env);
-                    writefln("%d] %-(%s %) # pid=%d", job_index, cmd, pid.processID);
-                    runners[job_index] = Runner(
-                            pid,
-                            fout,
-                            schedule_list.front.unit,
-                            schedule_list.front.name,
-                            schedule_list.front.stage,
-                            time,
-                            job_index
-                    );
+                    //showEnv(env); //writefln("ENV %s ", env);
+                    check((BDD_RESULTS in env) !is null, format("Environment variable %s or %s must be defined", BDD_RESULTS, COLLIDER_ROOT));
+                    const log_filename = buildNormalizedPath(env[BDD_RESULTS],
+                    schedule_list.front.name).setExtension("log");
+                    batch(job_index, time, cmd, log_filename, env);
                 }
                 catch (Exception e) {
                     writefln("Error %s", e.msg);
