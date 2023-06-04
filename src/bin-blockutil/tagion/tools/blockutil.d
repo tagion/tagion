@@ -236,6 +236,10 @@ int _main(string[] args) {
         analyzer.dump;
     }
 
+    if (dump_header) {
+        analyzer.dumpHeader;
+    }
+
     if (dump_recycler) {
         analyzer.recycleDump;
     }
@@ -248,9 +252,6 @@ int _main(string[] args) {
         analyzer.dumpStatistic;
     }
 
-    if (dump_header) {
-        analyzer.dumpHeader;
-    }
     if (dump_graph) {
         analyzer.dumpGraph;
     }

@@ -28,22 +28,21 @@ import std.digest;
 import tagion.utils.Miscellaneous : toHexString;
 import tagion.basic.basic : forceRemove;
 
-
 import tagion.testbench.dart.dart_helper_functions;
 
 enum feature = Feature(
-        "insert random stress test",
-        [
-        "This test uses dartfakenet to randomly add and remove archives in the same recorder."
-]);
+            "insert random stress test",
+            [
+            "This test uses dartfakenet to randomly add and remove archives in the same recorder."
+            ]);
 
 alias FeatureContext = Tuple!(
-    AddRemoveAndReadTheResult, "AddRemoveAndReadTheResult",
-    FeatureGroup*, "result"
+        AddRemoveAndReadTheResult, "AddRemoveAndReadTheResult",
+        FeatureGroup*, "result"
 );
 
 @safe @Scenario("add remove and read the result",
-    [])
+        [])
 class AddRemoveAndReadTheResult {
 
     DartInfo info;
@@ -57,7 +56,6 @@ class AddRemoveAndReadTheResult {
     uint number_of_samples;
 
     uint operations;
-
 
     this(DartInfo info, const uint seed, const uint number_of_seeds, const uint number_of_rounds, const uint number_of_samples) {
         check(number_of_samples < number_of_seeds, "number of samples must be smaller than number of seeds");
@@ -73,7 +71,7 @@ class AddRemoveAndReadTheResult {
         mkdirRecurse(info.module_path);
         // create the dartfile
         info.dartfilename.forceRemove;
-        DART.create(info.dartfilename);
+        DART.create(info.dartfilename, info.net);
 
         Exception dart_exception;
         db1 = new DART(info.net, info.dartfilename, dart_exception);
@@ -83,9 +81,9 @@ class AddRemoveAndReadTheResult {
 
     @Given("i have an array of randomarchives")
     Document randomarchives() {
-    
+
         // first we generate the array of random archives
-     
+
         random_archives = gen.take(number_of_seeds).map!(s => RandomArchives(s)).array;
 
         return result_ok;
@@ -94,21 +92,20 @@ class AddRemoveAndReadTheResult {
     @When("i select n amount of elements in the randomarchives and add them to the dart and flip their bool. And count the number of instructions.")
     Document instructions() {
 
-
-        foreach(i; 0..number_of_rounds) {
+        foreach (i; 0 .. number_of_rounds) {
             writefln("running %s", i);
             auto rnd = MinstdRand0(gen.front);
             gen.popFront;
             auto sample_numbers = iota(random_archives.length).randomSample(number_of_samples, rnd).array;
             auto recorder = db1.recorder();
 
-
-            foreach(sample_number; sample_numbers) {
+            foreach (sample_number; sample_numbers) {
                 auto docs = random_archives[sample_number].values.map!(a => DARTFakeNet.fake_doc(a));
 
                 if (!random_archives[sample_number].in_dart) {
                     recorder.insert(docs, Archive.Type.ADD);
-                } else {
+                }
+                else {
 
                     recorder.insert(docs, Archive.Type.REMOVE);
                 }
@@ -137,8 +134,6 @@ class AddRemoveAndReadTheResult {
             .map!(b => cast(Buffer) b)
             .array;
 
-
-
         writefln("###");
         read_watch.start();
         auto read_recorder = db1.loads(fingerprints, Archive.Type.NONE);
@@ -146,7 +141,7 @@ class AddRemoveAndReadTheResult {
         writeln(read_recorder[].walkLength);
 
         check(read_recorder[].walkLength == fingerprints.length, "the length of the read archives is not the same as the expected");
-        
+
         auto expected_read_docs = random_archives
             .filter!(s => s.in_dart == true)
             .map!(d => d.values)
@@ -159,19 +154,17 @@ class AddRemoveAndReadTheResult {
 
         check(equal(expected_recorder[].map!(a => a.filed), read_recorder[].map!(a => a.filed)), "data not the same");
 
-
         const long insert_time = insert_watch.peek.total!"msecs";
         const long read_time = read_watch.peek.total!"msecs";
-        
-        writefln("Total number of operations: %d", operations+fingerprints.length);
-        writefln("ADD and REMOVE operations: %d. pr. sec: %s", operations, operations/double(insert_time)*1000);
-        writefln("READ operations: %s. pr.sec %s", fingerprints.length, fingerprints.length/double(read_time)*1000);
+
+        writefln("Total number of operations: %d", operations + fingerprints.length);
+        writefln("ADD and REMOVE operations: %d. pr. sec: %s", operations, operations / double(insert_time) * 1000);
+        writefln("READ operations: %s. pr.sec %s", fingerprints.length, fingerprints.length / double(read_time) * 1000);
 
         // the total time
-        writefln("Total operations pr. sec: %1.f", (operations+fingerprints.length)/double(insert_time + read_time)*1000);
+        writefln("Total operations pr. sec: %1.f", (operations + fingerprints.length) / double(insert_time + read_time) * 1000);
         db1.close;
         return result_ok;
     }
 
 }
-

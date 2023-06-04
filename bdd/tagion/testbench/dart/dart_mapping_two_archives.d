@@ -66,7 +66,7 @@ class AddOneArchive {
         mkdirRecurse(info.module_path);
         // create the dartfile
         info.dartfilename.forceRemove;
-        DART.create(info.dartfilename);
+        DART.create(info.dartfilename, info.net);
 
         Exception dart_exception;
         db = new DART(info.net, info.dartfilename, dart_exception);

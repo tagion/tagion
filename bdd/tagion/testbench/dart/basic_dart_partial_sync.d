@@ -35,16 +35,16 @@ import tagion.hibon.HiBONRecord;
 import tagion.testbench.dart.dart_helper_functions;
 
 enum feature = Feature(
-        "DARTSynchronization partial sync.",
-        ["All test in this bdd should use dart fakenet."]);
+            "DARTSynchronization partial sync.",
+            ["All test in this bdd should use dart fakenet."]);
 
 alias FeatureContext = Tuple!(
-    PartialSync, "PartialSync",
-    FeatureGroup*, "result"
+        PartialSync, "PartialSync",
+        FeatureGroup*, "result"
 );
 
 @safe @Scenario("Partial sync.",
-    [])
+        [])
 class PartialSync {
     DART db1;
     DART db2;
@@ -69,7 +69,7 @@ class PartialSync {
 
         mkdirRecurse(info.module_path);
         // create the dartfile
-        DART.create(info.dartfilename);
+        DART.create(info.dartfilename, info.net);
 
         Exception dart_exception;
         db1 = new DART(info.net, info.dartfilename, dart_exception);
@@ -86,7 +86,7 @@ class PartialSync {
 
     @Given("I have added some of the pseudo random data to dartfile2.")
     Document toDartfile2() {
-        DART.create(info.dartfilename2);
+        DART.create(info.dartfilename2, info.net);
 
         Exception dart_exception;
         db2 = new DART(info.net, info.dartfilename2, dart_exception);

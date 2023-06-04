@@ -37,7 +37,8 @@ interface HashNet {
     final Fingerprint calcHash(T)(T value) const if (isHiBONRecord!T) {
         return calcHash(value.toDoc);
     }
-    // string multihash() const pure nothrow;
+
+    string multihash() const pure nothrow;
 }
 
 @safe

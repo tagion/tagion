@@ -61,7 +61,7 @@ alias BlockChain = RedBlackTree!(const(BlockSegment*), (a, b) => a.index < b.ind
 /// Block file operation
 @safe
 class BlockFile {
-    enum FILE_LABEL = "DART:0.0";
+    enum FILE_LABEL = "BLOCK:0.0";
     enum DEFAULT_BLOCK_SIZE = 0x40;
     immutable uint BLOCK_SIZE;
     //immutable uint DATA_SIZE;
@@ -137,8 +137,9 @@ class BlockFile {
      *   filename = File name of the blockfile
      *   description = this text will be written to the header
      *   BLOCK_SIZE = set the block size of the underlying BlockFile.
+     *   file_label = Used to set the type and version 
      */
-    static void create(string filename, string description, immutable uint BLOCK_SIZE) {
+    static void create(string filename, string description, immutable uint BLOCK_SIZE, string file_label = null) {
         import std.file : exists;
 
         check(!filename.exists, format("Error: File %s already exists", filename));
@@ -147,7 +148,7 @@ class BlockFile {
         scope (exit) {
             blockfile.close;
         }
-        blockfile.createHeader(description);
+        blockfile.createHeader(description, file_label);
         blockfile.writeMasterBlock;
     }
 
@@ -210,12 +211,17 @@ class BlockFile {
      * Params:
      *   name = name of the header
      */
-    protected void createHeader(string name) {
+    protected void createHeader(string name, string file_label) {
         check(!hasHeader, "Header is already created");
         check(file.size == 0, "Header can not be created the file is not empty");
         check(name.length < headerblock.id.length, format("Id is limited to a length of %d but is %d", headerblock
                 .id.length, name.length));
-        headerblock.label[0 .. FILE_LABEL.length] = FILE_LABEL;
+        check(file_label.length <= FILE_LABEL.length, format("Max size of file label is %d '%s' is %d", FILE_LABEL
+                .length, file_label, file_label.length));
+        if (!file_label) {
+            file_label = FILE_LABEL;
+        }
+        headerblock.label[0 .. file_label.length] = file_label;
         headerblock.block_size = BLOCK_SIZE;
         headerblock.id[0 .. name.length] = name;
         headerblock.create_time = Clock.currTime.toUnixTime!long;
@@ -770,7 +776,7 @@ class BlockFile {
             auto blockfile = new BlockFile(_file, SMALL_BLOCK_SIZE);
 
             assert(!blockfile.hasHeader);
-            blockfile.createHeader("This is a Blockfile unittest");
+            blockfile.createHeader("This is a Blockfile unittest", "ID");
             assert(blockfile.hasHeader);
             _file.close;
         }

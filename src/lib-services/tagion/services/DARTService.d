@@ -27,15 +27,15 @@ struct DARTService {
 
     static void dartBullseye(Msg!"dartBullseye") {
     }
-    
+
     void task(string task_name, string dart_path, SecureNet net) nothrow {
         try {
 
             db = new DART(net, dart_path);
 
-            if(!dart_path.exists) {
+            if (!dart_path.exists) {
                 dart_path.dirName.mkdirRecurse;
-                DART.create(dart_path);
+                DART.create(dart_path, net);
             }
 
             run(task_name, &dartRead, &dartRim, &dartModify, &dartBullseye);
