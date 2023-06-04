@@ -438,7 +438,7 @@ int main(string[] args) {
                 "P|proto", "Writes sample schedule file", &schedule_write_proto,
                 "f|force", "Force a symbolic link to be created", &force_switch,
                 "v|verbose", "Enable verbose print-out", &__verbose_switch,
-                "d|dry", "Shows the parameter for a schedule run", &__dry_switch,
+                "n|dry", "Shows the parameter for a schedule run (dry-run)", &__dry_switch,
         );
         if (version_switch) {
             revision_text.writeln;
@@ -475,7 +475,8 @@ int main(string[] args) {
 
         if (schedule_write_proto) {
             Schedule schedule;
-            auto run_unit = RunUnit(["commit"], null, null, 0.0);
+            auto run_unit = RunUnit(["example"], ["WORKDIR": "$(HOME)/work"], ["-f$WORKDIR"], 0.0);
+
             schedule.units["collider_test"] = run_unit;
             schedule.save(options.schedule_file);
             return 0;

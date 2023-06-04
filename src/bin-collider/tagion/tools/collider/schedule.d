@@ -12,12 +12,14 @@ import std.file : mkdirRecurse, exists;
 import std.stdio;
 import std.range;
 import std.algorithm;
+import std.array;
 import core.thread;
 import tagion.utils.JSONCommon;
 import tagion.tools.collider.trace : ScheduleTrace;
 import tagion.tools.Basic : dry_switch, verbose_switch;
 import tagion.utils.envexpand;
 import tagion.hibon.HiBONJSON;
+import tagion.tools.toolsexception;
 
 @safe
 struct RunUnit {
@@ -122,7 +124,7 @@ struct ScheduleRunner {
         }
     }
 
-    void showEnv(const(string[string]) env) {
+    void showEnv(const(string[string]) env, const(RunUnit) unit) {
         if (verbose_switch) {
             writeln("Environment:");
             env.byKeyValue
@@ -131,7 +133,7 @@ struct ScheduleRunner {
         }
         if (dry_switch) {
             writeln("Collider environment:");
-            const env_list = [COLLIDER_ROOT, BDD_LOG, BDD_RESULTS, TEST_STAGE];
+            const env_list = [COLLIDER_ROOT, BDD_LOG, BDD_RESULTS, TEST_STAGE] ~ unit.envs.keys;
             env_list
                 .each!(name => writefln("%s = %s", name, env.get(name, null)));
         }
@@ -189,7 +191,7 @@ struct ScheduleRunner {
                         job_index
                 );
             }
-            showEnv(env);
+            showEnv(env, schedule_list.front.unit);
         }
 
         auto check_running = runners
@@ -200,14 +202,16 @@ struct ScheduleRunner {
                 const job_index = runners.countUntil!(r => r.pid is r.pid.init);
                 try {
                     auto time = Clock.currTime;
-                    const cmd = args ~ schedule_list.front.name ~ schedule_list.front
-                        .unit
-                        .args;
                     auto env = environment.toAA;
                     schedule_list.front.unit.envs.byKeyValue
                         .each!(e => env[e.key] = envExpand(e.value, env));
+                    const cmd = args ~ schedule_list.front.name ~
+                        schedule_list.front.unit.args
+                            .map!(arg => envExpand(arg, env))
+                            .array;
                     setEnv(env, schedule_list.front.stage);
                     //showEnv(env); //writefln("ENV %s ", env);
+                    check((BDD_RESULTS in env) !is null, format("Environment variable %s or %s must be defined", BDD_RESULTS, COLLIDER_ROOT));
                     const log_filename = buildNormalizedPath(env[BDD_RESULTS],
                     schedule_list.front.name).setExtension("log");
                     batch(job_index, time, cmd, log_filename, env);

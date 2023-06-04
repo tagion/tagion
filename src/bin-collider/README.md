@@ -6,9 +6,9 @@
 ## Options
 ```
 Usage:
-collider [<option>...]
+./build/x86_64-linux/bin/collider [<option>...]
 # Sub-tools
-collider reporter [<options>...]
+./build/x86_64-linux/bin/collider reporter [<options>...]
 
 <option>:
      --version display the version
@@ -28,7 +28,8 @@ collider reporter [<options>...]
 -P     --proto Writes sample schedule file
 -f     --force Force a symbolic link to be created
 -v   --verbose Enable verbose print-out
--h      --help This help information.
+-n       --dry Shows the parameter for a schedule run
+-h      --help This help information.collider [<option>...]
 ```
 
 ## Configuration file
@@ -105,7 +106,7 @@ Will generated a default schedule file named `default_schedule.json`.
 }
 ```
 
-### Run the test listed in the schedule file
+### Run the tests listed in the schedule file
 To run the all the testprograms in stage .
 
 *Example:*
@@ -115,6 +116,7 @@ To run the all the testprograms in stage .
 collider -r commit -j 4  -b build/x86_64-linux/bin/testbench
 ```
 
+* Note: More than one `-r` can execute if needed.  
 
 
 ## Check the result of BDD run
@@ -127,3 +129,54 @@ collider -cv logs/x86_64-linux/bdd/commit/results/
 ```
 
 ## Inspecting the setup of the schedule run.
+
+The setting of a specific run can be inspect by adding the `--dry` switch.
+
+```
+export COLLIDER_ROOT=/tmp
+collider -r example --dry
+```
+With a schedule like this.
+```
+{
+    "units": {
+        "collider_test": {
+            "args": [
+                "-f$WORKDIR"
+            ],
+            "envs": {
+                "WORKDIR": "$(HOME)\/work"
+            },
+            "stages": [
+                "example"
+            ],
+            "timeout": 0.0
+        }
+    }
+}⏎   
+```
+Should produce a dry-run output as below.
+
+```
+################################################################################
+0] testbench test_example -f/home/carsten/work
+Log file /tmp/example/results/test_example.log
+Unit = {
+    "args": [
+        "-f$WORKDIR"
+    ],
+    "envs": {
+        "WORKDIR": "$(HOME)\/work"
+    },
+    "stages": [
+        "example"
+    ],
+    "timeout": 0.0
+}
+Collider environment:
+COLLIDER_ROOT = /tmp/
+BDD_LOG = /tmp/example
+BDD_RESULTS = /tmp/example/results
+TEST_STAGE = example
+WORKDIR = /home/carsten/work
+```
