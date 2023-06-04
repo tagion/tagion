@@ -23,7 +23,7 @@ bddtagion: tagion
 
 bddfiles: $(DLOG)/.bddfiles
 
-$(DLOG)/.bddfiles:  $(BDD_MD_FILES)
+$(DLOG)/.bddfiles:  $(DLOG)/.way $(BDD_MD_FILES)
 	$(PRECMD)
 	$(COLLIDER) -v $(BDD_FLAGS)
 	$(TOUCH) $@	

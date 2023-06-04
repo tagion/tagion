@@ -9,10 +9,17 @@ import std.datetime.systime;
 import std.format;
 import std.path : buildNormalizedPath, setExtension;
 import std.file : mkdirRecurse, exists;
-import std.stdio : File;
+import std.stdio;
+import std.range;
+import std.algorithm;
+import std.array;
 import core.thread;
 import tagion.utils.JSONCommon;
 import tagion.tools.collider.trace : ScheduleTrace;
+import tagion.tools.Basic : dry_switch, verbose_switch;
+import tagion.utils.envexpand;
+import tagion.hibon.HiBONJSON;
+import tagion.tools.toolsexception;
 
 @safe
 struct RunUnit {
@@ -55,7 +62,6 @@ enum TEST_STAGE = "TEST_STAGE";
 enum COLLIDER_ROOT = "COLLIDER_ROOT";
 enum BDD_LOG = "BDD_LOG";
 enum BDD_RESULTS = "BDD_RESULTS";
-enum BDD_LOGFILE = "BDD_LOGFILE";
 @safe
 struct ScheduleRunner {
     Schedule schedule;
@@ -114,6 +120,22 @@ struct ScheduleRunner {
         catch (ProcessException e) {
             // ignore
         }
+    }
+
+    void showEnv(const(string[string]) env, const(RunUnit) unit) {
+        if (verbose_switch) {
+            writeln("Environment:");
+            env.byKeyValue
+                .each!(e => writefln("%s = %s", e.key, e.value));
+            return;
+        }
+        if (dry_switch) {
+            writeln("Collider environment:");
+            const env_list = [COLLIDER_ROOT, BDD_LOG, BDD_RESULTS, TEST_STAGE] ~ unit.envs.keys;
+            env_list
+                .each!(name => writefln("%s = %s", name, env.get(name, null)));
+        }
+
     }
 
     int run(scope const(char[])[] args) {
