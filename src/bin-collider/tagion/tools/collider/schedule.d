@@ -139,10 +139,6 @@ struct ScheduleRunner {
     }
 
     int run(scope const(char[])[] args) {
-        import std.stdio;
-
-        //        schedule.toJSON.toPrettyString.writeln;
-
         alias Stage = Tuple!(RunUnit, "unit", string, "name", string, "stage");
         auto schedule_list = stages
             .map!(stage => schedule.units
@@ -150,13 +146,50 @@ struct ScheduleRunner {
                     .filter!(unit => unit.value.stages.canFind(stage))
                     .map!(unit => Stage(unit.value, unit.key, stage)))
             .joiner;
-
         if (schedule_list.empty) {
             writefln("None of the stage %s available", stages);
             writefln("Availabale %s", schedule.stages);
             return 1;
         }
         auto runners = new Runner[jobs];
+
+        void batch(
+                const ptrdiff_t job_index,
+                const SysTime time,
+                const(char[][]) cmd,
+        const(string) log_filename,
+        const(string[string]) env) {
+            static uint job_count;
+            scope (exit) {
+                job_count++;
+            }
+            if (dry_switch) {
+                const line_length = cmd.map!(c => c.length).sum;
+                writefln("%-(%s%)", '#'.repeat(max(min(line_length, 30), 80)));
+                writefln("%d] %-(%s %)", job_count, cmd);
+                writefln("Log file %s", log_filename);
+                writefln("Unit = %s", schedule_list.front.unit.toJSON.toPrettyString);
+            }
+            else {
+                auto fout = File(log_filename, "w");
+                auto _stdin = (() @trusted => stdin)();
+                auto pid = spawnProcess(
+                        cmd, _stdin, fout, fout, env);
+                writefln("%d] %-(%s %) # pid=%d", job_index, cmd,
+                        pid.processID);
+                runners[job_index] = Runner(
+                        pid,
+                        fout,
+                        schedule_list.front.unit,
+                        schedule_list.front.name,
+                        schedule_list.front.stage,
+                        time,
+                        job_index
+                );
+            }
+            showEnv(env, schedule_list.front.unit);
+        }
+
         auto check_running = runners
             .filter!(r => r.pid !is r.pid.init)
             .any!(r => !tryWait(r.pid).terminated);
