@@ -122,14 +122,7 @@ struct BlockFileAnalyzer {
     }
 
     void dumpHeader() {
-        import std.datetime;
-
-        writeln("Header:");
-        const header = blockfile.headerBlock;
-        writefln("Label      : %s", header.label);
-        writefln("ID         : %s", header.id);
-        writefln("Block-size : %d", header.block_size);
-        writefln("time       : %s", SysTime.fromUnixTime(header.create_time));
+        writefln("%s", blockfile.headerBlock);
     }
 }
 
