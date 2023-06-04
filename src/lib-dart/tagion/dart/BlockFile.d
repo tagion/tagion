@@ -78,9 +78,13 @@ class BlockFile {
     protected {
         MasterBlock masterblock;
         HeaderBlock headerblock;
-        bool hasheader;
+        // /bool hasheader;
         BlockFileStatistic _statistic;
         RecyclerFileStatistic _recycler_statistic;
+    }
+
+    const(HeaderBlock) headerBlock() const pure nothrow @nogc {
+        return headerblock;
     }
 
     const(BlockFileStatistic) statistic() const pure nothrow @nogc {
@@ -161,7 +165,7 @@ class BlockFile {
         blockfile.headerblock.write(_file);
         blockfile._last_block_index = 1;
         blockfile.masterblock.write(_file, blockfile.BLOCK_SIZE);
-        blockfile.hasheader = true;
+        // blockfile.hasheader = true;
         blockfile.store;
         return blockfile;
     }
@@ -207,7 +211,7 @@ class BlockFile {
      *   name = name of the header
      */
     protected void createHeader(string name) {
-        check(!hasheader, "Header is already created");
+        check(!hasHeader, "Header is already created");
         check(file.size == 0, "Header can not be created the file is not empty");
         check(name.length < headerblock.id.length, format("Id is limited to a length of %d but is %d", headerblock
                 .id.length, name.length));
@@ -218,7 +222,7 @@ class BlockFile {
         headerblock.write(file);
         _last_block_index = 1;
         masterblock.write(file, BLOCK_SIZE);
-        hasheader = true;
+        // hasheader = true;
     }
 
     /** 
@@ -226,7 +230,7 @@ class BlockFile {
      * Returns: `true` if the blockfile has a header.
      */
     bool hasHeader() const pure nothrow {
-        return hasheader;
+        return headerblock !is HeaderBlock.init;
     }
 
     protected void readInitial() {
@@ -458,7 +462,6 @@ class BlockFile {
         // The headerblock is locate in the start of the file
         seek(Index.init);
         headerblock.read(file, BLOCK_SIZE);
-        hasheader = true;
     }
 
     /** 
@@ -608,8 +611,6 @@ class BlockFile {
             block_segment.write(this);
         }
     }
-
-
 
     struct BlockSegmentRange {
         BlockFile owner;

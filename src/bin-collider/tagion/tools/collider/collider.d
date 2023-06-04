@@ -21,9 +21,10 @@ import std.process : execute, environment;
 import std.range;
 import std.typecons : Tuple;
 
-import tagion.basic.Types : hasExtension, FileExtension, DOT;
+import tagion.basic.Types : hasExtension;
 import tagion.tools.Basic;
 import tagion.utils.JSONCommon;
+import tagion.basic.Types : FileExtension, DOT;
 import tagion.tools.revision : revision_text;
 import tagion.behaviour.BehaviourParser;
 import tagion.behaviour.BehaviourIssue : Dlang, DlangT, Markdown;
@@ -438,7 +439,7 @@ int main(string[] args) {
                 "P|proto", "Writes sample schedule file", &schedule_write_proto,
                 "f|force", "Force a symbolic link to be created", &force_switch,
                 "v|verbose", "Enable verbose print-out", &__verbose_switch,
-                "n|dry", "Shows the parameter for a schedule run (dry-run)", &__dry_switch,
+                "d|dry", "Shows the parameter for a schedule run", &__dry_switch,
         );
         if (version_switch) {
             revision_text.writeln;
@@ -475,8 +476,7 @@ int main(string[] args) {
 
         if (schedule_write_proto) {
             Schedule schedule;
-            auto run_unit = RunUnit(["example"], ["WORKDIR": "$(HOME)/work"], ["-f$WORKDIR"], 0.0);
-
+            auto run_unit = RunUnit(["commit"], null, null, 0.0);
             schedule.units["collider_test"] = run_unit;
             schedule.save(options.schedule_file);
             return 0;
