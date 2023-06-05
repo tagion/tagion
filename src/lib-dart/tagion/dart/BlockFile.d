@@ -309,7 +309,7 @@ class BlockFile {
         string toString() const {
             return [
                 "Header Block",
-                format("Label      : %s", label[].until(char(ubyte.max))),
+                format("Label      : %s", label[].until(char.max)),
                 format("ID         : %s", id[].until(char.max)),
                 format("Block size : %d", block_size),
                 format("Created    : %s", SysTime.fromUnixTime(create_time).toSimpleString),
