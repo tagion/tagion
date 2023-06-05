@@ -3,7 +3,7 @@ module tagion.tools.collider.collider;
 
 /**
  * @brief tool generate d files from bdd md files and vice versa
- */
+*/
 
 import std.algorithm.searching : canFind;
 import std.getopt;
