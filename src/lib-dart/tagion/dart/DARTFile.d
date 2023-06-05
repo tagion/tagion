@@ -172,6 +172,7 @@ alias check = Check!DARTException;
         blockfile = BlockFile(filename);
         this.manufactor = RecordFactory(net);
         this.filename = filename;
+        writefln("DART Type %s", blockfile.headerBlock.checkId(net.multihash));
         //check(blockfile.headerBlock.id ==
         if (blockfile.root_index) {
             const data = blockfile.load(blockfile.root_index);

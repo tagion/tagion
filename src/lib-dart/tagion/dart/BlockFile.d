@@ -317,6 +317,12 @@ class BlockFile {
             ].join("\n");
         }
 
+        bool checkId(string _id) const pure nothrow {
+            import std.algorithm;
+
+            return equal(_id[], id[].until(char.max));
+        }
+
     }
 
     final Index lastBlockIndex() const pure nothrow {
