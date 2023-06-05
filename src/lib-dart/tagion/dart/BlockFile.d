@@ -214,10 +214,12 @@ class BlockFile {
     protected void createHeader(string name, string file_label) {
         check(!hasHeader, "Header is already created");
         check(file.size == 0, "Header can not be created the file is not empty");
-        check(name.length < headerblock.id.length, format("Id is limited to a length of %d but is %d", headerblock
-                .id.length, name.length));
-        check(file_label.length <= FILE_LABEL.length, format("Max size of file label is %d '%s' is %d", FILE_LABEL
-                .length, file_label, file_label.length));
+        check(name.length < headerblock.id.length,
+                format("Id is limited to a length of %d but is %d",
+                headerblock.id.length, name.length));
+        check(file_label.length <= FILE_LABEL.length,
+                format("Max size of file label is %d but '%s' is %d",
+                FILE_LABEL.length, file_label, file_label.length));
         if (!file_label) {
             file_label = FILE_LABEL;
         }
