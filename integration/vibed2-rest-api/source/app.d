@@ -24,7 +24,6 @@ import source.generic_controller : GenericController;
 
 void main() {
     auto router = new URLRouter;
-
     // access tokens
     const string[] access_tokens = [
         "test",
