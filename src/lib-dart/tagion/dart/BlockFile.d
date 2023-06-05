@@ -8,8 +8,7 @@ import std.bitmanip : binwrite = write, binread = read;
 import std.stdio;
 import std.file : remove, rename;
 import std.typecons;
-import std.algorithm.searching : until;
-import std.algorithm.iteration : filter, each, map;
+import std.algorithm;
 
 import std.range : isForwardRange, isInputRange;
 import std.array : array, join;
@@ -317,10 +316,20 @@ class BlockFile {
             ].join("\n");
         }
 
-        bool checkId(string _id) const pure nothrow {
-            import std.algorithm;
+        bool checkId(string _id) const pure {
+            return equal(_id, id[].until(char.max));
+        }
 
-            return equal(_id[], id[].until(char.max));
+        auto Id() const @nogc {
+            return id[].until(char.max);
+        }
+
+        bool checkLabel(string _label) const pure {
+            return equal(_label, label[].until(char.max));
+        }
+
+        auto Label() const @nogc {
+            return label[].until(char.max);
         }
 
     }
