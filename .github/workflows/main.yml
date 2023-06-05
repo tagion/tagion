@@ -242,4 +242,4 @@ jobs:
           ls -l
           cd build/x86_64-linux/integration
           ./install.sh
-          systemctl restart --user systemctl restart --user dart_api
+          systemctl restart --user dart_api.service
