@@ -234,12 +234,9 @@ jobs:
           git clone git@github.com:tagion/tagion.git || echo "repo already exists"
           cd tagion
           source ~/.bashrc
-          ls -l
-          id
-          pwd
+          loginctl enable-linger gitbot
           gh run download -n successful_artifact
           tar -xzf *.tar.gz
-          ls -l
           cd build/x86_64-linux/integration
           ./install.sh
           systemctl restart --user dart_api.service
