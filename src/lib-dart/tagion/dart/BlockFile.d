@@ -223,6 +223,8 @@ class BlockFile {
         if (!file_label) {
             file_label = FILE_LABEL;
         }
+        headerblock.label = ubyte.max;
+        headerblock.id = ubyte.max;
         headerblock.label[0 .. file_label.length] = file_label;
         headerblock.block_size = BLOCK_SIZE;
         headerblock.id[0 .. name.length] = name;

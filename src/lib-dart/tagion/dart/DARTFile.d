@@ -172,6 +172,7 @@ alias check = Check!DARTException;
         blockfile = BlockFile(filename);
         this.manufactor = RecordFactory(net);
         this.filename = filename;
+        //check(blockfile.headerBlock.id ==
         if (blockfile.root_index) {
             const data = blockfile.load(blockfile.root_index);
             const doc = Document(data);
