@@ -23,3 +23,5 @@
 `theChanged`
 
 
+```suggestion
+*Then* the read recorder should be the same as the dartModify recorder
