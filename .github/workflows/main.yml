@@ -229,8 +229,12 @@ jobs:
     steps:    
       - name: get artifact and restart service
         run: |
-          export GH_TOKEN=${{ env.GITBOT_TOKEN }}
+          ls -l
           id
           pwd
-          ls -l
-          echo $GH_TOKEN
+          export GH_TOKEN=${{ env.GITBOT_TOKEN }}
+          gh run download -n successful_artifact
+          tar -xzf *.tar.gz
+          cd build/x86_64-linux/integration
+          ./install.sh
+          systemctl restart --user systemctl restart --user dart_api
