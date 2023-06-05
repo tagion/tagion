@@ -272,7 +272,7 @@ class BlockFile {
             foreach (i, m; this.tupleof) {
                 alias type = typeof(m);
                 static if (isStaticArray!type) {
-                    buffer[pos .. pos + type.sizeof] = (cast(ubyte*) id.ptr)[0 .. type.sizeof];
+                    buffer[pos .. pos + type.sizeof] = (cast(ubyte*) m.ptr)[0 .. type.sizeof];
                     pos += type.sizeof;
                 }
                 else {
