@@ -28,7 +28,7 @@ enum {
 }
 
 @safe string encodeBase64(const(ubyte[]) data) pure {
-    const result = BASE64Indetifyer ~ Base64.encode(data);
+    const result = BASE64Indetifyer ~ Base64URL.encode(data);
     return result.idup;
 }
 
@@ -55,7 +55,7 @@ enum {
 
 @safe immutable(ubyte[]) HiBONdecode(const(char[]) str) pure {
     if (str[0] is BASE64Indetifyer) {
-        return Base64.decode(str[1 .. $]).idup;
+        return Base64URL.decode(str[1 .. $]).idup;
     }
     else if (isHexPrefix(str)) {
         return decode(str[hex_prefix.length .. $]);

@@ -12,6 +12,7 @@ env:
   RETENTION_DAYS_BINS: 3
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   UNITTEST_COV: unittest-cov
+  GITBOT_TOKEN: ${{ secrets.GITBOT_TOKEN }}
 
 permissions:
   contents: read
@@ -221,3 +222,21 @@ jobs:
         run: |
           rm ${{needs.acceptance_stage.outputs.tarball}}
           rm -rf *
+          
+  update_dartservice:
+    runs-on: dartservice-back
+    needs: [finish_workflow]
+    steps:    
+      - name: get artifact and restart service
+        run: |
+          cd ..
+          rm -rf tagion
+          git clone git@github.com:tagion/tagion.git || echo "repo already exists"
+          cd tagion
+          source ~/.bashrc
+          loginctl enable-linger gitbot
+          gh run download -n successful_artifact
+          tar -xzf *.tar.gz
+          cd build/x86_64-linux/integration
+          ./install.sh
+          systemctl restart --user dart_api.service
