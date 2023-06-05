@@ -48,7 +48,7 @@ jobs:
         run: |
           ls
           echo "logs dir"
-          ls logs/${{ env.TARGET }}/integration
+          ls build/${{ env.TARGET }}/integration
       - name: Report bddtests
         run: | 
           RESULT=$(./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/commit/results)
