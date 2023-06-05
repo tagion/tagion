@@ -13,7 +13,6 @@ import std.conv;
 import std.algorithm;
 import std.file : exists;
 import std.format;
-import std.file;
 
 import services.dartService;
 import tagion.dart.DARTFile;
@@ -33,10 +32,6 @@ void main() {
 
     const test_token = access_tokens[0];
     const test_filename = format("%s-dart.drt", test_token);
-
-    if (!test_filename.exists) {
-        DARTFile.create(test_filename);
-    }
 
     auto test_dart_service = DartService(test_filename, test_token);
 
