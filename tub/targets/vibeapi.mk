@@ -15,6 +15,7 @@ dartsecondapi: libtagion
 	mkdir -p $(DART_API_BUILD)
 	dub build --root=$(DART_API_TWO_SERVICE) --compiler=$(DC) --force
 	cp $(DART_API_TWO_SERVICE)/dart_api.service $(DART_API_BUILD)
+	cp -r $(DART_API_TWO_SERVICE)/public $(DART_API_BUILD)
 	cp $(DART_API_TWO_SERVICE)/install.sh $(DART_API_BUILD)
 
 install-dartapi: dartapi
