@@ -65,7 +65,7 @@ int _main(string[] args) {
 
     bool dump;
 
-    bool dartread;
+    //   bool dartread;
     string[] dartread_args;
     bool dartmodify;
     bool dartrim;
@@ -83,14 +83,14 @@ int _main(string[] args) {
         main_args = getopt(args,
                 std.getopt.config.caseSensitive,
                 std.getopt.config.bundling,
-                "version", "display the version", &version_switch, //                "dartfilename|d", format("Sets the dartfile: default %s", dartfilename), &dartfilename,
-                "initialize", "Create a dart file", &initialize, //                "inputfile|i", "Sets the HiBON input file name", &inputfilename,
+                "version", "display the version", &version_switch,
+                "i|initialize", "Create a dart file", &initialize,
                 "o|outputfile", "Sets the output file name", &outputfilename,
                 "r|read", "Excutes a DART read sequency", &dartread_args,
                 "rim", "Performs DART rim read", &dartrim,
                 "m|modify", "Excutes a DART modify sequency", &dartmodify,
-                "rpc", "Excutes a HiPRC on the DART: default %s", &dartrpc,
-                "dump", "Dumps all the arcvives with in the given angle", &dump,
+                "rpc", "Excutes a HiPRC on the DART", &dartrpc,
+                "dump", "Dumps all the archives with in the given angle", &dump,
                 "eye", "Prints the bullseye", &eye,
                 "sync", "Synchronize src.drt to dest.drt", &sync,
                 "P|passphrase", format("Passphrase of the keypair : default: %s", passphrase), &passphrase,
@@ -123,7 +123,7 @@ int _main(string[] args) {
             return 0;
         }
 
-        dartread = !dartread_args.empty;
+        //        dartread = !dartread_args.empty;
         foreach (file; args[1 .. $]) {
             if (file.hasExtension(FileExtension.hibon)) {
                 tools.check(inputfilename is null, format("Input file '%s' has already been declared", inputfilename));
@@ -143,9 +143,7 @@ int _main(string[] args) {
         }
         SecureNet net;
 
-        if (dartfilename.empty) {
-            stderr.writefln("Error: Missing dart file");
-        }
+        tools.check(!dartfilename.empty, "Missing dart file");
 
         if (dartfilename.exists) {
             auto blockfile = BlockFile(dartfilename);
@@ -166,6 +164,7 @@ int _main(string[] args) {
 
         if (initialize) {
             DART.create(dartfilename, net);
+            return 0;
         }
 
         Exception dart_exception;
@@ -205,6 +204,7 @@ int _main(string[] args) {
             writefln("EYE: %s", db.fingerprint.hex);
         }
 
+        const dartread = dartread_args.length > 0;
         const onehot = dartrpc + dartread + dartrim + dartmodify;
 
         tools.check(onehot <= 1,
@@ -278,8 +278,6 @@ int _main(string[] args) {
             auto result = db(received, false);
             auto tosend = hirpc.toHiBON(result);
             auto tosendResult = tosend.method.params;
-            if (dump)
-                db.dump(true);
             outputfilename.fwrite(tosendResult);
             return 0;
         }
