@@ -315,13 +315,13 @@ mixin template JSONString() {
         else static if (is(T : const BigNumber)) {
             const text = jvalue.str;
             if (isBase64Prefix(text) || isHexPrefix(text)) {
-                const data = HiBONdecode(text);
+                const data = decode(text);
                 return BigNumber(data);
             }
             return BigNumber(jvalue.str);
         }
         else static if (is(T : const DataBlock)) {
-            const buffer = HiBONdecode(jvalue.str);
+            const buffer = decode(jvalue.str);
             return T(buffer);
         }
         else static if (is(T : const sdt_t)) {
@@ -364,7 +364,7 @@ mixin template JSONString() {
                                 static if (E is BINARY) {
                                     import std.uni : toLower;
 
-                                    sub_result[key] = HiBONdecode(value.str).idup;
+                                    sub_result[key] = decode(value.str).idup;
                                 }
                                 else {
                                     sub_result[key] = get!T(value);
@@ -431,9 +431,7 @@ mixin template JSONString() {
         else if (json.type is JSONType.OBJECT) {
             return JSON!string(json);
         }
-
         
-
         .check(0, format("JSON_TYPE must be of %s or %s not %s",
                 JSONType.OBJECT, JSONType.ARRAY, json.type));
         assert(0);
