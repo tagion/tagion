@@ -87,6 +87,10 @@ class StdHashNet : HashNet {
     Fingerprint calcHash(const(Document) doc) const {
         return Fingerprint(rawCalcHash(doc.serialize));
     }
+
+    string multihash() const pure nothrow @nogc {
+        return "sha256";
+    }
 }
 
 @safe

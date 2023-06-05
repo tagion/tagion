@@ -36,16 +36,16 @@ import tagion.hibon.HiBONRecord;
 import tagion.testbench.dart.dart_helper_functions;
 
 enum feature = Feature(
-        "DARTSynchronization full sync",
-        ["All test in this bdd should use dart fakenet."]);
+            "DARTSynchronization full sync",
+            ["All test in this bdd should use dart fakenet."]);
 
 alias FeatureContext = Tuple!(
-    FullSync, "FullSync",
-    FeatureGroup*, "result"
+        FullSync, "FullSync",
+        FeatureGroup*, "result"
 );
 
 @safe @Scenario("Full sync.",
-    [])
+        [])
 class FullSync {
     DART db1;
     DART db2;
@@ -68,7 +68,7 @@ class FullSync {
         mkdirRecurse(info.module_path);
         // create the dartfile
         info.dartfilename.forceRemove;
-        DART.create(info.dartfilename);
+        DART.create(info.dartfilename, info.net);
 
         Exception dart_exception;
         db1 = new DART(info.net, info.dartfilename, dart_exception);
@@ -80,14 +80,14 @@ class FullSync {
 
         db1_fingerprints = randomAdd(sector_states, MinstdRand0(65), db1);
         check(!db1_fingerprints.empty, "No fingerprints added");
-        
+
         return result_ok;
     }
 
     @Given("I have a empty dartfile2.")
     Document emptyDartfile2() {
         info.dartfilename2.forceRemove;
-        DART.create(info.dartfilename2);
+        DART.create(info.dartfilename2, info.net);
 
         Exception dart_exception;
         db2 = new DART(info.net, info.dartfilename2, dart_exception);

@@ -74,7 +74,7 @@ class HashGraph {
         return _nodes;
     }
 
-    package HiRPC hirpc;
+    const HiRPC hirpc;
 
     // function not used
     @nogc

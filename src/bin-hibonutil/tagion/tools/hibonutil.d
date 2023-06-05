@@ -68,7 +68,7 @@ int _main(string[] args) {
                 "c|stdout", "Print to standard output", &standard_output,
                 "pretty|p", format("JSON Pretty print: Default: %s", pretty), &pretty,
                 "b|base64", "Convert to base64 string", &base64,
-                "v|verbose", "Print more debug information", &verbose_switch,
+                "v|verbose", "Print more debug information", &__verbose_switch,
                 "o|output", "outputfilename only for stdin", &outputfilename,
         );
     }
@@ -149,13 +149,13 @@ int _main(string[] args) {
             }
             catch (HiBON2JSONException e) {
                 stderr.writefln("Error: HiBON-JSON format in the %s file", outputfilename);
-                verbose(e);
+                error(e);
                 return 1;
             }
             catch (JSONException e) {
                 stderr.writeln("Error: JSON syntax");
                 stderr.writefln("Error: HiBONError Document errorcode %s", error_code);
-                verbose(e);
+                error(e);
                 return 1;
             }
             catch (Exception e) {
@@ -177,7 +177,7 @@ int _main(string[] args) {
                     }
                 }
                 catch (Exception e) {
-                    verbose(e);
+                    error(e);
                     return 1;
                 }
             }
@@ -231,7 +231,7 @@ int _main(string[] args) {
                 text = inputfilename.readText;
             }
             catch (Exception e) {
-                verbose(e);
+                error(e);
                 return 1;
             }
             const bom = getBOM(text);
@@ -255,12 +255,12 @@ int _main(string[] args) {
             }
             catch (HiBON2JSONException e) {
                 stderr.writefln("Error: HiBON-JSON format in the %s file", inputfilename);
-                verbose(e);
+                error(e);
                 return 1;
             }
             catch (JSONException e) {
                 stderr.writeln("Error: JSON syntax");
-                verbose(e);
+                error(e);
                 return 1;
             }
             catch (Exception e) {
@@ -280,7 +280,7 @@ int _main(string[] args) {
                     }
                 }
                 catch (Exception e) {
-                    verbose(e);
+                    error(e);
                     return 1;
                 }
             }
@@ -291,7 +291,7 @@ int _main(string[] args) {
                 text = inputfilename.readText;
             }
             catch (Exception e) {
-                verbose(e);
+                error(e);
                 return 1;
             }
             Document doc;
@@ -299,7 +299,7 @@ int _main(string[] args) {
                 doc = decodeBase64(text);
             }
             catch (Exception e) {
-                verbose(e);
+                error(e);
                 return 1;
             }
             if (standard_output) {

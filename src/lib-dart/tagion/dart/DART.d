@@ -794,8 +794,8 @@ received = the HiRPC received package
             journalfile.close;
         }
         // Adding and Removing archives
- 
-        for (Index index = journalfile.masterBlock.root_index; index != Index.init; ) {
+
+        for (Index index = journalfile.masterBlock.root_index; index != Index.init;) {
             immutable data = journalfile.load(index);
             const doc = Document(data);
 
@@ -895,8 +895,8 @@ received = the HiRPC received package
                 ];
                 // writefln("Test 0.0");
                 foreach (test_no; 0 .. 3) {
-                    DARTFile.create(filename_A);
-                    DARTFile.create(filename_B);
+                    DARTFile.create(filename_A, net);
+                    DARTFile.create(filename_B, net);
                     RecordFactory.Recorder recorder_B;
                     RecordFactory.Recorder recorder_A;
                     // Recorder recorder_B;
@@ -973,8 +973,8 @@ received = the HiRPC received package
             { // Single element different sectors
                 //
                 // writefln("Test 0.1");
-                DARTFile.create(filename_A);
-                DARTFile.create(filename_B);
+                DARTFile.create(filename_A, net);
+                DARTFile.create(filename_B, net);
                 RecordFactory.Recorder recorder_B;
                 RecordFactory.Recorder recorder_A;
                 // Recorder recorder_B;
@@ -1023,8 +1023,8 @@ received = the HiRPC received package
             }
             { // Synchronization of an empty DART 
                 // from DART A against DART B with ONE archive when DART A is empty
-                DARTFile.create(filename_A);
-                DARTFile.create(filename_B);
+                DARTFile.create(filename_A, net);
+                DARTFile.create(filename_B, net);
                 RecordFactory.Recorder recorder_B;
                 // Recorder recorder_B;
                 auto dart_A = new DART(net, filename_A, from, to);
@@ -1079,8 +1079,8 @@ received = the HiRPC received package
                 // from DART A against DART B when DART A is empty
                 // writefln("Test 1");
 
-                DARTFile.create(filename_A);
-                DARTFile.create(filename_B);
+                DARTFile.create(filename_A, net);
+                DARTFile.create(filename_B, net);
                 RecordFactory.Recorder recorder_B;
                 // Recorder recorder_B;
                 auto dart_A = new DART(net, filename_A, from, to);
@@ -1135,8 +1135,8 @@ received = the HiRPC received package
 
             { // Synchronization of a DART A which is a subset of DART B
                 // writefln("Test 2");
-                DARTFile.create(filename_A);
-                DARTFile.create(filename_B);
+                DARTFile.create(filename_A, net);
+                DARTFile.create(filename_B, net);
                 RecordFactory.Recorder recorder_A;
                 RecordFactory.Recorder recorder_B;
                 auto dart_A = new DART(net, filename_A, from, to);
@@ -1188,8 +1188,8 @@ received = the HiRPC received package
 
             { // Synchronization of a DART A where DART A is a superset of DART B
                 // writefln("Test 3");
-                DARTFile.create(filename_A);
-                DARTFile.create(filename_B);
+                DARTFile.create(filename_A, net);
+                DARTFile.create(filename_B, net);
                 RecordFactory.Recorder recorder_A;
                 RecordFactory.Recorder recorder_B;
                 auto dart_A = new DART(net, filename_A, from, to);
@@ -1242,8 +1242,8 @@ received = the HiRPC received package
 
             { // Synchronization of a DART A where DART A is complementary of DART B
                 // writefln("Test 4");
-                DARTFile.create(filename_A);
-                DARTFile.create(filename_B);
+                DARTFile.create(filename_A, net);
+                DARTFile.create(filename_B, net);
                 RecordFactory.Recorder recorder_A;
                 RecordFactory.Recorder recorder_B;
                 auto dart_A = new DART(net, filename_A, from, to);
@@ -1296,8 +1296,8 @@ received = the HiRPC received package
 
             { // Synchronization of a DART A where DART A of DART B has common data
                 // writefln("Test 5");
-                DARTFile.create(filename_A);
-                DARTFile.create(filename_B);
+                DARTFile.create(filename_A, net);
+                DARTFile.create(filename_B, net);
                 RecordFactory.Recorder recorder_A;
                 RecordFactory.Recorder recorder_B;
                 auto dart_A = new DART(net, filename_A, from, to);
@@ -1349,8 +1349,8 @@ received = the HiRPC received package
             pragma(msg, "fixme(pr) Test disabled because it takes a long time");
             version (none) { // Synchronization of a Large DART A where DART A of DART B has common data
                 // writefln("Test 6");
-                DARTFile.create(filename_A);
-                DARTFile.create(filename_B);
+                DARTFile.create(filename_A, net);
+                DARTFile.create(filename_B, net);
                 RecordFactory.Recorder recorder_A;
                 RecordFactory.Recorder recorder_B;
                 auto dart_A = new DART(net, filename_A, from, to);

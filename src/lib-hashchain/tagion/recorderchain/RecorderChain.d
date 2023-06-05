@@ -68,7 +68,7 @@ unittest {
         auto recorder_chain = new RecorderChain(storage);
 
         // Create empty DART
-        DART.create(dart_filename);
+        DART.create(dart_filename, net);
         Exception dart_exception;
         auto dart = new DART(net, dart_filename, dart_exception);
         assert(dart_exception is null);
@@ -97,7 +97,7 @@ unittest {
         }
 
         // Create new empty DART for recovery
-        DART.create(dart_recovered_filename);
+        DART.create(dart_recovered_filename, net);
         auto dart_recovered = new DART(net, dart_recovered_filename, dart_exception);
         assert(dart_exception is null);
 
@@ -126,7 +126,7 @@ unittest {
         auto recorder_chain = new RecorderChain(storage);
 
         // Create empty DART
-        DART.create(dart_filename);
+        DART.create(dart_filename, net);
         Exception dart_exception;
         auto dart = new DART(net, dart_filename, dart_exception);
         assert(dart_exception is null);
@@ -191,7 +191,7 @@ unittest {
         auto recorder_chain = new RecorderChain(storage);
 
         // Create empty DART
-        DART.create(dart_filename);
+        DART.create(dart_filename, net);
         Exception dart_exception;
         auto dart = new DART(net, dart_filename, dart_exception);
         assert(dart_exception is null);
@@ -262,7 +262,7 @@ unittest {
         auto recorder_chain = new RecorderChain(storage);
 
         // Create empty DART
-        DART.create(dart_filename);
+        DART.create(dart_filename, net);
         Exception dart_exception;
         auto dart = new DART(net, dart_filename, dart_exception);
         assert(dart_exception is null);
@@ -296,7 +296,7 @@ unittest {
         }
 
         // Create new empty DART for recovery
-        DART.create(dart_recovered_filename);
+        DART.create(dart_recovered_filename, net);
         auto dart_recovered = new DART(net, dart_recovered_filename, dart_exception);
         assert(dart_exception is null);
 

@@ -33,20 +33,20 @@ import tagion.hibon.HiBONRecord;
 import tagion.testbench.dart.dart_helper_functions;
 
 enum feature = Feature(
-        "Dart pseudo random test",
-        ["All test in this bdd should use dart fakenet."]);
+            "Dart pseudo random test",
+            ["All test in this bdd should use dart fakenet."]);
 
 alias FeatureContext = Tuple!(
-    AddPseudoRandomData, "AddPseudoRandomData",
-    RemovePseudoRandomData, "RemovePseudoRandomData",
-    FeatureGroup*, "result"
+        AddPseudoRandomData, "AddPseudoRandomData",
+        RemovePseudoRandomData, "RemovePseudoRandomData",
+        FeatureGroup*, "result"
 );
 
 DARTIndex[] db1_fingerprints;
 DARTIndex[] db2_fingerprints;
 
 @safe @Scenario("Add pseudo random data.",
-    [])
+        [])
 class AddPseudoRandomData {
     DART db1;
     DART db2;
@@ -64,8 +64,8 @@ class AddPseudoRandomData {
         // create the dartfile
         info.dartfilename.forceRemove;
         info.dartfilename2.forceRemove;
-        DART.create(info.dartfilename);
-        DART.create(info.dartfilename2);
+        DART.create(info.dartfilename, info.net);
+        DART.create(info.dartfilename2, info.net);
 
         Exception dart_exception;
         db1 = new DART(info.net, info.dartfilename, dart_exception);
@@ -108,7 +108,7 @@ class AddPseudoRandomData {
 }
 
 @safe @Scenario("Remove pseudo random data.",
-    [])
+        [])
 class RemovePseudoRandomData {
     DART db1;
     DART db2;
@@ -128,7 +128,7 @@ class RemovePseudoRandomData {
         check(dart_exception is null, format("Failed to open DART %s", dart_exception.msg));
 
         // since the finger
-        remove_fingerprints = db1_fingerprints.randomSample(db1_fingerprints.length/2, MinstdRand0(40)).array;
+        remove_fingerprints = db1_fingerprints.randomSample(db1_fingerprints.length / 2, MinstdRand0(40)).array;
         return result_ok;
     }
 

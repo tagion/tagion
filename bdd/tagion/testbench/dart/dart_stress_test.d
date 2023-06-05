@@ -68,7 +68,7 @@ class AddPseudoRandomData {
     Document dartfile() {
         mkdirRecurse(info.module_path);
         // create the dartfile
-        DART.create(info.dartfilename);
+        DART.create(info.dartfilename, info.net);
 
         Exception dart_exception;
         db1 = new DART(info.net, info.dartfilename, dart_exception);

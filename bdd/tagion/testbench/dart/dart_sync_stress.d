@@ -68,8 +68,8 @@ class AddRemoveAndReadTheResult {
     Document dartfiles() {
         mkdirRecurse(info.module_path);
         // create the dartfile
-        DART.create(info.dartfilename);
-        DART.create(info.dartfilename2);
+        DART.create(info.dartfilename, info.net);
+        DART.create(info.dartfilename2, info.net);
 
         Exception dart_exception;
         db1 = new DART(info.net, info.dartfilename, dart_exception);

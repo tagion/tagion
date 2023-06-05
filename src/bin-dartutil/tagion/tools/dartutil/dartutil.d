@@ -95,7 +95,7 @@ int _main(string[] args) {
                 "eye", "Prints the bullseye", &eye,
                 "sync", "Synchronize src.drt to dest.drt", &sync,
                 "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase,
-                "verbose|v", "Print output to console", &verbose_switch,
+                "verbose|v", "Print output to console", &__verbose_switch,
                 "fake", format("Use fakenet instead of real hashes : default :%s", fake), &fake,
         );
     }
@@ -165,7 +165,7 @@ int _main(string[] args) {
     const hirpc = HiRPC(net);
 
     if (initialize) {
-        DART.create(dartfilename);
+        DART.create(dartfilename, net);
     }
 
     Exception dart_exception;
@@ -178,7 +178,7 @@ int _main(string[] args) {
     if (sync) {
         if (!destination_dartfilename.exists) {
 
-            DART.create(destination_dartfilename);
+            DART.create(destination_dartfilename, net);
             writefln("DART %s created", destination_dartfilename);
         }
         auto dest_db = new DART(net, destination_dartfilename, dart_exception);

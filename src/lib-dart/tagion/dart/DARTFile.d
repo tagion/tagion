@@ -135,20 +135,20 @@ alias check = Check!DARTException;
     }
 
     protected enum _params = [
-        "fingerprints",
-        "bullseye",
-    ];
+            "fingerprints",
+            "bullseye",
+        ];
 
     mixin(EnumText!("Params", _params));
 
     enum MIN_BLOCK_SIZE = 0x80;
-    static create(string filename, const uint block_size = MIN_BLOCK_SIZE)
+    static create(string filename, const HashNet net, const uint block_size = MIN_BLOCK_SIZE)
     in {
         assert(block_size >= MIN_BLOCK_SIZE,
                 format("Block size is too small for %s, %d must be langer than %d", filename, block_size, MIN_BLOCK_SIZE));
     }
     do {
-        BlockFile.create(filename, DARTFile.stringof, block_size);
+        BlockFile.create(filename, net.multihash, block_size, DARTFile.stringof);
     }
     /++
      + A file set by filename should be create by the BlockFile
@@ -991,13 +991,12 @@ alias check = Check!DARTException;
             return _fingerprint;
         }
 
-        
         // This check ensures us that we never have multiple add and deletes on the
         // same archive in the same recorder.
         .check(modifyrecords.length <= 1 ||
-                !modifyrecords[].slide(2).map!(a => a.front.fingerprint == a.dropOne.front.fingerprint)
-                    .any,
-                "cannot have multiple operations on same fingerprint in one modify");
+                    !modifyrecords[].slide(2).map!(a => a.front.fingerprint == a.dropOne.front.fingerprint)
+                        .any,
+                        "cannot have multiple operations on same fingerprint in one modify");
 
         auto range = rimKeyRange!undo(modifyrecords);
         immutable new_root = traverse_dart(range, blockfile.masterBlock.root_index);
@@ -1262,7 +1261,7 @@ unittest {
 
     { // Rim 2 test
         filename.forceRemove;
-        DARTFile.create(filename);
+        DARTFile.create(filename, net);
         auto dart = new DARTFile(net, filename);
         RecordFactory.Recorder recorder;
         assert(DARTFile.validate(dart, table[0 .. 4], recorder));
@@ -1271,7 +1270,7 @@ unittest {
     { // Rim 3 test
         filename.forceRemove;
 
-        DARTFile.create(filename);
+        DARTFile.create(filename, net);
         auto dart = new DARTFile(net, filename);
         RecordFactory.Recorder recorder;
         //=Recorder(net);
@@ -1281,7 +1280,7 @@ unittest {
 
     { // Rim 4 test
         filename.forceRemove;
-        DARTFile.create(filename);
+        DARTFile.create(filename, net);
         auto dart = new DARTFile(net, filename);
         RecordFactory.Recorder recorder;
 
@@ -1291,7 +1290,7 @@ unittest {
 
     { // Rim 2 & 3
         filename.forceRemove;
-        DARTFile.create(filename);
+        DARTFile.create(filename, net);
         auto dart = new DARTFile(net, filename);
         RecordFactory.Recorder recorder;
 
@@ -1301,7 +1300,7 @@ unittest {
 
     { // Rim 2 & 3 & 4
         filename.forceRemove;
-        DARTFile.create(filename);
+        DARTFile.create(filename, net);
         auto dart = new DARTFile(net, filename);
         RecordFactory.Recorder recorder;
 
@@ -1311,7 +1310,7 @@ unittest {
 
     { // Rim all
         filename.forceRemove;
-        DARTFile.create(filename);
+        DARTFile.create(filename, net);
         auto dart = new DARTFile(net, filename);
         RecordFactory.Recorder recorder;
 
@@ -1323,8 +1322,8 @@ unittest {
         immutable file_A = fileId!DARTFile("XA").fullpath;
         immutable file_B = fileId!DARTFile("XB").fullpath;
 
-        DARTFile.create(file_A);
-        DARTFile.create(file_B);
+        DARTFile.create(file_A, net);
+        DARTFile.create(file_B, net);
 
         RecordFactory.Recorder recorder_A;
         RecordFactory.Recorder recorder_B;
@@ -1351,8 +1350,8 @@ unittest {
         foreach (ref r; random_table) {
             r = rand.value(0xABBA_1234_5678_0000UL, 0xABBA_1234_FFFF_0000UL);
         }
-        DARTFile.create(filename_A);
-        DARTFile.create(filename_B);
+        DARTFile.create(filename_A, net);
+        DARTFile.create(filename_B, net);
         RecordFactory.Recorder recorder_A;
         RecordFactory.Recorder recorder_B;
         auto dart_A = new DARTFile(net, filename_A);
@@ -1378,8 +1377,8 @@ unittest {
         ];
         filename_A.forceRemove;
         filename_B.forceRemove;
-        DARTFile.create(filename_A);
-        DARTFile.create(filename_B);
+        DARTFile.create(filename_A, net);
+        DARTFile.create(filename_B, net);
         RecordFactory.Recorder recorder_A;
         RecordFactory.Recorder recorder_B;
         auto dart_A = new DARTFile(net, filename_A);
@@ -1410,8 +1409,8 @@ unittest {
         }
         filename_A.forceRemove;
         filename_B.forceRemove;
-        DARTFile.create(filename_A);
-        DARTFile.create(filename_B);
+        DARTFile.create(filename_A, net);
+        DARTFile.create(filename_B, net);
         RecordFactory.Recorder recorder_A;
         RecordFactory.Recorder recorder_B;
         auto dart_A = new DARTFile(net, filename_A);
@@ -1439,8 +1438,8 @@ unittest {
         }
         filename_A.forceRemove;
         filename_B.forceRemove;
-        DARTFile.create(filename_A);
-        DARTFile.create(filename_B);
+        DARTFile.create(filename_A, net);
+        DARTFile.create(filename_B, net);
         RecordFactory.Recorder recorder_A;
         RecordFactory.Recorder recorder_B;
         auto dart_A = new DARTFile(net, filename_A);
@@ -1465,8 +1464,8 @@ unittest {
         }
         filename_A.forceRemove;
         filename_B.forceRemove;
-        DARTFile.create(filename_A);
-        DARTFile.create(filename_B);
+        DARTFile.create(filename_A, net);
+        DARTFile.create(filename_B, net);
         RecordFactory.Recorder recorder_A;
         RecordFactory.Recorder recorder_B;
         auto dart_A = new DARTFile(net, filename_A);
@@ -1490,8 +1489,8 @@ unittest {
         }
         filename_A.forceRemove;
         filename_B.forceRemove;
-        DARTFile.create(filename_A);
-        DARTFile.create(filename_B);
+        DARTFile.create(filename_A, net);
+        DARTFile.create(filename_B, net);
 
         auto dart_A = new DARTFile(net, filename_A);
         auto dart_B = new DARTFile(net, filename_B);
@@ -1528,8 +1527,8 @@ unittest {
         }
         filename_A.forceRemove;
         filename_B.forceRemove;
-        DARTFile.create(filename_A);
-        DARTFile.create(filename_B);
+        DARTFile.create(filename_A, net);
+        DARTFile.create(filename_B, net);
         // Recorder recorder_B;
         auto dart_A = new DARTFile(net, filename_A);
         auto dart_B = new DARTFile(net, filename_B);
@@ -1607,7 +1606,7 @@ unittest {
 
         {
             filename_A.forceRemove;
-            DARTFile.create(filename_A);
+            DARTFile.create(filename_A, net);
             auto dart_A = new DARTFile(net, filename_A);
 
             const ulong[] deep_table = [
@@ -1640,7 +1639,7 @@ unittest {
         {
             // this test is just a support to see how the real result should be of the previous test.
             filename_A.forceRemove;
-            DARTFile.create(filename_A);
+            DARTFile.create(filename_A, net);
             auto dart_A = new DARTFile(net, filename_A);
 
             const ulong archive = 0xABB9_13ab_11ef_0234;
@@ -1684,7 +1683,7 @@ unittest {
             // | .. | .. | .. | .. abb913ab1213 [5]
             filename_A.forceRemove;
 
-            DARTFile.create(filename_A);
+            DARTFile.create(filename_A, net);
             auto dart_A = new DARTFile(net, filename_A);
 
             const ulong[] deep_table = [
@@ -1738,7 +1737,7 @@ unittest {
             // | .. | .. | .. | .. | .. | .. abb913ab11ef2078 [11]
             filename_A.forceRemove;
 
-            DARTFile.create(filename_A);
+            DARTFile.create(filename_A, net);
             // writefln("dartfilename=%s", filename_A);
             auto dart_A = new DARTFile(net, filename_A);
 
@@ -1797,7 +1796,7 @@ unittest {
             // | .. | .. | .. | .. abb913ab1214 [6]
             filename_A.forceRemove;
 
-            DARTFile.create(filename_A);
+            DARTFile.create(filename_A, net);
             auto dart_A = new DARTFile(net, filename_A);
 
             const ulong[] deep_table = [
@@ -1861,7 +1860,7 @@ unittest {
             // | .. | .. | .. | .. | .. | .. abb913ab12ef5656 [5]
             filename_A.forceRemove;
 
-            DARTFile.create(filename_A);
+            DARTFile.create(filename_A, net);
             auto dart_A = new DARTFile(net, filename_A);
 
             const ulong[] deep_table = [
@@ -1914,7 +1913,7 @@ unittest {
             // now we remove the middle branch located at EF.
             filename_A.forceRemove;
 
-            DARTFile.create(filename_A);
+            DARTFile.create(filename_A, net);
             auto dart_A = new DARTFile(net, filename_A);
 
             const ulong[] deep_table = [
@@ -1952,7 +1951,7 @@ unittest {
         {
             filename_A.forceRemove;
 
-            DARTFile.create(filename_A);
+            DARTFile.create(filename_A, net);
             auto dart_A = new DARTFile(net, filename_A);
 
             const ulong[] deep_table = [
@@ -1991,7 +1990,7 @@ unittest {
         {
             filename_A.forceRemove;
 
-            DARTFile.create(filename_A);
+            DARTFile.create(filename_A, net);
             auto dart_A = new DARTFile(net, filename_A);
 
             const ulong[] deep_table = [
@@ -2026,7 +2025,7 @@ unittest {
         {
             filename_A.forceRemove;
 
-            DARTFile.create(filename_A);
+            DARTFile.create(filename_A, net);
             auto dart_A = new DARTFile(net, filename_A);
 
             const ulong[] deep_table = [
@@ -2064,7 +2063,7 @@ unittest {
             filename_A.forceRemove;
 
             // writefln("two same archives");
-            DARTFile.create(filename_A);
+            DARTFile.create(filename_A, net);
             auto dart_A = new DARTFile(net, filename_A);
 
             const ulong[] deep_table = [
@@ -2106,7 +2105,7 @@ unittest {
             // archive in the database.
             filename_A.forceRemove;
 
-            DARTFile.create(filename_A);
+            DARTFile.create(filename_A, net);
             auto dart_A = new DARTFile(net, filename_A);
 
             auto doc = DARTFakeNet.fake_doc(0xABB9_130b_11ef_0923);
@@ -2122,7 +2121,7 @@ unittest {
         {
             filename_A.forceRemove;
 
-            DARTFile.create(filename_A);
+            DARTFile.create(filename_A, net);
             auto dart_A = new DARTFile(net, filename_A);
 
             const ulong[] deep_table = [
@@ -2164,7 +2163,7 @@ unittest {
         {
             filename_A.forceRemove;
 
-            DARTFile.create(filename_A);
+            DARTFile.create(filename_A, net);
             auto dart_A = new DARTFile(net, filename_A);
             dart_A.close;
             auto blockfile = BlockFile(filename_A);
@@ -2192,7 +2191,7 @@ unittest {
             {
                 filename_A.forceRemove;
 
-                DARTFile.create(filename_A);
+                DARTFile.create(filename_A, net);
                 auto dart_A = new DARTFile(net, filename_A);
 
                 auto recorder = dart_A.recorder();
@@ -2244,9 +2243,10 @@ unittest {
                 // should throw an exception since we cannot have multiple adds
                 // and removes in same recorder
                 import std.exception : assertThrown;
+
                 filename_B.forceRemove;
 
-                DARTFile.create(filename_B);
+                DARTFile.create(filename_B, net);
                 auto dart_A = new DARTFile(net, filename_B);
 
                 auto recorder = dart_A.recorder();
@@ -2278,7 +2278,7 @@ unittest {
         { // undo test
             filename_A.forceRemove;
 
-            DARTFile.create(filename_A);
+            DARTFile.create(filename_A, net);
             auto dart_A = new DARTFile(net, filename_A);
             RecordFactory.Recorder recorder;
 
@@ -2305,7 +2305,7 @@ unittest {
     { // undo test both with remove and adds
         filename_A.forceRemove;
 
-        DARTFile.create(filename_A);
+        DARTFile.create(filename_A, net);
         auto dart_A = new DARTFile(net, filename_A);
         RecordFactory.Recorder recorder;
 

@@ -45,7 +45,7 @@ class DARTFakeNet : StdSecureNet {
 
     override immutable(Buffer) binaryHash(
             scope const(ubyte[]) h1,
-            scope const(ubyte[]) h2) const {
+    scope const(ubyte[]) h2) const {
         scope ubyte[] fake_h1;
         scope ubyte[] fake_h2;
         if (h1.length is ulong.sizeof) {
@@ -87,5 +87,9 @@ class DARTFakeNet : StdSecureNet {
         auto hibon = new HiBON;
         hibon[FAKE] = x;
         return Document(hibon);
+    }
+
+    override string multihash() const pure nothrow @nogc {
+        return "fake256";
     }
 }

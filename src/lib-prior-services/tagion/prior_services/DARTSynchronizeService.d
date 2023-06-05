@@ -98,12 +98,12 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
         else {
             immutable filename = opts.dart.path;
         }
+        auto net = new Net();
         if (opts.dart.initialize) {
-            DART.create(filename, BLOCK_SIZE);
+            DART.create(filename, net, BLOCK_SIZE);
         }
         log("DART file created with filename: %s", filename);
 
-        auto net = new Net();
         net.derive(task_name, master_net);
         DART dart = new DART(net, filename, sector_range.from_sector, sector_range.to_sector);
         log("DART initialized with angle: %s", sector_range);

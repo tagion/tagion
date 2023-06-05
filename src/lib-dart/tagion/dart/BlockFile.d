@@ -61,7 +61,7 @@ alias BlockChain = RedBlackTree!(const(BlockSegment*), (a, b) => a.index < b.ind
 /// Block file operation
 @safe
 class BlockFile {
-    enum FILE_LABEL = "DART:0.0";
+    enum FILE_LABEL = "BLOCK:0.0";
     enum DEFAULT_BLOCK_SIZE = 0x40;
     immutable uint BLOCK_SIZE;
     //immutable uint DATA_SIZE;
@@ -78,9 +78,13 @@ class BlockFile {
     protected {
         MasterBlock masterblock;
         HeaderBlock headerblock;
-        bool hasheader;
+        // /bool hasheader;
         BlockFileStatistic _statistic;
         RecyclerFileStatistic _recycler_statistic;
+    }
+
+    const(HeaderBlock) headerBlock() const pure nothrow @nogc {
+        return headerblock;
     }
 
     const(BlockFileStatistic) statistic() const pure nothrow @nogc {
@@ -133,8 +137,9 @@ class BlockFile {
      *   filename = File name of the blockfile
      *   description = this text will be written to the header
      *   BLOCK_SIZE = set the block size of the underlying BlockFile.
+     *   file_label = Used to set the type and version 
      */
-    static void create(string filename, string description, immutable uint BLOCK_SIZE) {
+    static void create(string filename, string description, immutable uint BLOCK_SIZE, string file_label = null) {
         import std.file : exists;
 
         check(!filename.exists, format("Error: File %s already exists", filename));
@@ -143,7 +148,7 @@ class BlockFile {
         scope (exit) {
             blockfile.close;
         }
-        blockfile.createHeader(description);
+        blockfile.createHeader(description, file_label);
         blockfile.writeMasterBlock;
     }
 
@@ -161,7 +166,7 @@ class BlockFile {
         blockfile.headerblock.write(_file);
         blockfile._last_block_index = 1;
         blockfile.masterblock.write(_file, blockfile.BLOCK_SIZE);
-        blockfile.hasheader = true;
+        // blockfile.hasheader = true;
         blockfile.store;
         return blockfile;
     }
@@ -206,19 +211,24 @@ class BlockFile {
      * Params:
      *   name = name of the header
      */
-    protected void createHeader(string name) {
-        check(!hasheader, "Header is already created");
+    protected void createHeader(string name, string file_label) {
+        check(!hasHeader, "Header is already created");
         check(file.size == 0, "Header can not be created the file is not empty");
         check(name.length < headerblock.id.length, format("Id is limited to a length of %d but is %d", headerblock
                 .id.length, name.length));
-        headerblock.label[0 .. FILE_LABEL.length] = FILE_LABEL;
+        check(file_label.length <= FILE_LABEL.length, format("Max size of file label is %d '%s' is %d", FILE_LABEL
+                .length, file_label, file_label.length));
+        if (!file_label) {
+            file_label = FILE_LABEL;
+        }
+        headerblock.label[0 .. file_label.length] = file_label;
         headerblock.block_size = BLOCK_SIZE;
         headerblock.id[0 .. name.length] = name;
         headerblock.create_time = Clock.currTime.toUnixTime!long;
         headerblock.write(file);
         _last_block_index = 1;
         masterblock.write(file, BLOCK_SIZE);
-        hasheader = true;
+        // hasheader = true;
     }
 
     /** 
@@ -226,7 +236,7 @@ class BlockFile {
      * Returns: `true` if the blockfile has a header.
      */
     bool hasHeader() const pure nothrow {
-        return hasheader;
+        return headerblock !is HeaderBlock.init;
     }
 
     protected void readInitial() {
@@ -443,10 +453,6 @@ class BlockFile {
         masterblock.read(file, BLOCK_SIZE);
     }
 
-    ref const(HeaderBlock) headerBlock() pure const nothrow {
-        return headerblock;
-    }
-
     private void readHeaderBlock() {
         check(file.size % BLOCK_SIZE == 0,
                 format("BlockFile should be sized in equal number of blocks of the size of %d but the size is %d", BLOCK_SIZE, file
@@ -458,7 +464,6 @@ class BlockFile {
         // The headerblock is locate in the start of the file
         seek(Index.init);
         headerblock.read(file, BLOCK_SIZE);
-        hasheader = true;
     }
 
     /** 
@@ -608,8 +613,6 @@ class BlockFile {
             block_segment.write(this);
         }
     }
-
-
 
     struct BlockSegmentRange {
         BlockFile owner;
@@ -773,7 +776,7 @@ class BlockFile {
             auto blockfile = new BlockFile(_file, SMALL_BLOCK_SIZE);
 
             assert(!blockfile.hasHeader);
-            blockfile.createHeader("This is a Blockfile unittest");
+            blockfile.createHeader("This is a Blockfile unittest", "ID");
             assert(blockfile.hasHeader);
             _file.close;
         }

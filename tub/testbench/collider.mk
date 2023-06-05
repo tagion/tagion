@@ -14,22 +14,19 @@ bbdinit: DFLAGS+=$(BDDDFLAGS)
 
 bddtest: | bddtagion bddfiles bddinit bddrun
 
-.PHONY: bddtest bddfiles bddtagion
+.PHONY: bddtest bddtagion
 
 bddtagion: tagion
 	$(PRECMD)
 	$(DBIN)/tagion -f
 
 
-bddfiles: collider $(BDD)/.done
+bddfiles: $(DLOG)/.bddfiles
 
-.PHONY: bddfiles collider
-
-$(BDD)/.done: $(BDD_MD_FILES)
+$(DLOG)/.bddfiles:  $(DLOG)/.way $(BDD_MD_FILES)
 	$(PRECMD)
 	$(COLLIDER) -v $(BDD_FLAGS)
-	$(TOUCH) $@
-
+	$(TOUCH) $@	
 
 
 bddcontent: $(BDD)/BDDS.md
@@ -41,7 +38,7 @@ $(BDD)/BDDS.md: $(BDD_DFILES)
 .PHONY: bddcontent
 
 bddrun: collider bddinit
-	$(COLLIDER) -r $(TEST_STAGE) -b $(TESTBENCH) 
+	$(COLLIDER) -r $(TEST_STAGE) -b $(TESTBENCH) $(TESTBENCH_FLAGS) 
 
 .PHONY: bddrun
 
@@ -112,6 +109,7 @@ env-bdd:
 	${call log.env, TESTENV, $(TESTENV)}
 	${call log.kvp, TESTMAIN, $(TESTMAIN)}
 	${call log.kvp, TESTPROGRAM, $(TESTPROGRAM)}
+	${call log.kvp, TESTBENCH_FLAGS, $(TESTBENCH_FLAGS)}
 	${call log.env, BDDS, $(BDDS)}
 	${call log.close}
 

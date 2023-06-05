@@ -229,7 +229,9 @@ static size_t size(U)(const(U[]) array) pure {
                     return T(doc);
                     break;
                 default:
+
                     
+
                         .check(0, message("Expected HiBON type %s but apply type (%s) which is not supported",
                                 type, T.stringof));
                 }
@@ -239,7 +241,9 @@ static size_t size(U)(const(U[]) array) pure {
 
         const(T) get(T)() const if (!isHiBONRecord!T && !isHiBON!T && !isTypedef!T) {
             enum E = Value.asType!T;
+
             
+
             .check(E is type, message("Expected HiBON type %s but apply type %s (%s)",
                     type, E, T.stringof));
             return value.by!E;
@@ -394,6 +398,7 @@ static size_t size(U)(const(U[]) array) pure {
             }
         }
     }
+
     alias Members = RedBlackTree!(Member, (a, b) @safe => (less_than(a.key, b.key)));
 
     protected Members _members;
@@ -512,7 +517,7 @@ static size_t size(U)(const(U[]) array) pure {
      if the an member with the key does not exist an HiBONException is thrown
      +/
     const(Member) opIndex(const string key) const {
-        scope search = new Member(key);
+        auto search = new Member(key);
         auto range = _members.equalRange(search);
 
         
@@ -728,8 +733,8 @@ static size_t size(U)(const(U[]) array) pure {
         // Note that the keys are in alphabetic order
         // Because the HiBON keys must be ordered
         alias TabelArray = Tuple!(immutable(ubyte)[], Type.BINARY.stringof, // Credential,          Type.CREDENTIAL.stringof,
-                // CryptDoc,            Type.CRYPTDOC.stringof,
-                DataBlock, Type.HASHDOC.stringof, string, Type.STRING.stringof,);
+            // CryptDoc,            Type.CRYPTDOC.stringof,
+            DataBlock, Type.HASHDOC.stringof, string, Type.STRING.stringof,);
 
         TabelArray test_tabel_array;
         test_tabel_array.BINARY = [1, 2, 3];

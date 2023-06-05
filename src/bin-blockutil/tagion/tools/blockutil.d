@@ -121,107 +121,9 @@ struct BlockFileAnalyzer {
         writefln(segment_on_index.doc.toPretty);
     }
 
-    // static string blockType(const bool recycle_block) {
-    //     return recycle_block ? "Recycle" : "Data";
-    // }
-
-    // void display_block(const Index index, const(BlockFile.Block) b) {
-    //     if (b) {
-    //         writefln("%s  [%d <- %d -> %d size %d [%s]", blockfile.getSymbol(b, index).to!char, b.previous, index, b
-    //                 .next, b.size, blockType(blockfile.isRecyclable(index)));
-    //         return;
-    //     }
-    //     writefln("Block @ %d is nil", index);
-    // }
-
-    // bool trace(const Index index, const BlockFile.Fail f, scope const BlockFile.Block block, const bool recycle_chain) {
-    //     void error(string msg, const Index i = index) {
-    //         const is_recycle_block = blockfile.isRecyclable(index);
-    //         writefln("Error %s: %s @ %d in %s %s", f, msg, i, blockType(is_recycle_block), (
-    //                 is_recycle_block is recycle_chain) ? "" : "[Bad Type]");
-    //     }
-
-    //     with (BlockFile.Fail) final switch (f) {
-    //     case NON:
-    //         break;
-    //     case RECURSIVE:
-    //         error("Circular chain found");
-    //         auto range = blockfile.range(index);
-    //         do {
-    //             display_block(range.index, range.front);
-    //             range.popFront;
-    //         }
-    //         while (!range.empty && index !is range.index);
-    //         return true;
-    //     case INCREASING:
-    //         error("Block sequency order is wrong");
-    //         break;
-    //     case SEQUENCY:
-    //         error("Chain of the block size is wrong");
-    //         break;
-    //     case LINK:
-    //         error("Double linked fail");
-    //         break;
-    //     case ZERO_SIZE:
-    //         error("Block has zero-size");
-    //         break;
-    //     case BAD_SIZE:
-    //         error(format("Size of end-block is larger then %d", blockfile.DATA_SIZE), block
-    //                 .previous);
-    //         break;
-    //     case RECYCLE_HEADER:
-    //         error("Recycle block should not contain a header mask");
-    //         break;
-    //     case RECYCLE_NON_ZERO:
-    //         error("The size of an recycle block should be zero");
-    //         break;
-
-    //     }
-    //     if (inspect_iterations != inspect_iterations.max) {
-    //         inspect_iterations--;
-    //         return inspect_iterations == 0;
-    //     }
-    //     return false;
-    // }
-
-    // void display_meta() {
-    //     blockfile.headerBlock.writeln;
-    //     writeln;
-    //     blockfile.masterBlock.writeln;
-    //     writeln;
-    //     writefln("Last block @ %d", blockfile.lastBlockIndex);
-    //     writeln;
-    //     blockfile.statistic.writeln;
-    //     writeln;
-    // }
-
-    // void dump() {
-    //     writeln("Block map");
-    //     foreach (symbol; EnumMembers!(BlockFile.BlockSymbol)) {
-    //         writef("'%s' %s, ", symbol.to!char, symbol);
-    //     }
-    //     writeln;
-    //     blockfile.dump;
-    // }
-
-    // /**
-    //    number_of_seq block sequency displays
-    //  */
-    // void display_sequency(const Index index, uint number_of_sequency = 1) {
-    //     auto range = blockfile.range(index);
-    //     while (!range.empty) {
-    //         display_block(range.index, range.front);
-    //         range.popFront;
-    //         if (range.front !is null && range.front.head) {
-    //             number_of_sequency--;
-    //             if (number_of_sequency == 0) {
-    //                 return;
-    //             }
-    //             writeln;
-    //         }
-    //     }
-    // }
-
+    void dumpHeader() {
+        writefln("%s", blockfile.headerBlock);
+    }
 }
 
 BlockFileAnalyzer analyzer;
@@ -239,6 +141,7 @@ int _main(string[] args) {
     bool dump_statistic;
     bool dump_graph;
     bool dump_doc;
+    bool dump_header;
     ulong dump_index;
 
     string output_filename;
@@ -250,22 +153,18 @@ int _main(string[] args) {
     auto main_args = getopt(args,
             std.getopt.config.caseSensitive,
             std.getopt.config.bundling,
-            "version", "Display the version", &version_switch,
-            // "info", "Display blockfile metadata", &display_meta,
+            "version", "Display the version", &version_switch, // "info", "Display blockfile metadata", &display_meta,
             "dump", "Dumps the entire blockfile", &dump,
             "dumprecycler", "Dumps the recycler", &dump_recycler,
-            "rs|recyclerstatistic", "Dumps the recycler statistic block", &dump_recycler_statistic,
+            "r|recyclerstatistic", "Dumps the recycler statistic block", &dump_recycler_statistic,
             "s|statistic", "Dumps the statistic block", &dump_statistic,
-            "dg|dumpgraph", "Dump the blockfile in graphviz format", &dump_graph,
-            "doc|dumpdoc", "Dump the document located at an specific index", &dump_doc,
-            "idx|index", "the index to dump the document from", &dump_index,
-            // "inspect|c", "Inspect the blockfile format", &inspect,
-            // "ignore|i", "Ignore blockfile format error", &ignore, //        "iter", "Set the max number of iterations do by the inspect", &analyzer.inspect_iterations,
-            //       "max", format(
-            //     "Max block iteration Default : %d", analyzer.max_block_iteration), &analyzer.max_block_iteration,
-            // "block|b", "Read from block number", &block_number,
-            // "seq", "Display the block sequency starting from the block-number", &sequency,
-            // "o", "Output filename", &output_filename,
+            "g|dumpgraph", "Dump the blockfile in graphviz format", &dump_graph,
+            "d|dumpdoc", "Dump the document located at an specific index", &dump_doc,
+            "H|header", "Dump the header block", &dump_header,
+            "i|index", "the index to dump the document from", &dump_index, // "inspect|c", "Inspect the blockfile format", &inspect,
+
+            
+
     );
 
     if (version_switch) {
@@ -277,19 +176,19 @@ int _main(string[] args) {
         writeln(logo);
         defaultGetoptPrinter(
                 [
-            // format("%s version %s", program, REVNO),
-            "Documentation: https://tagion.org/",
-            "",
-            "Usage:",
-            format("%s <file> [<option>...]", program),
-            "",
-            "Where:",
-            //            "<command>           one of [--read, --rim, --modify, --rpc]",
-            "",
+                revision_text,
+                "Documentation: https://tagion.org/",
+                "",
+                "Usage:",
+                format("%s <file> [<option>...]", program),
+                "",
+                "Where:",
+                //            "<command>           one of [--read, --rim, --modify, --rpc]",
+                "",
 
-            "<option>:",
+                "<option>:",
 
-        ].join("\n"),
+                ].join("\n"),
                 main_args.options);
         return ExitCode.NOERROR;
     }
@@ -330,6 +229,10 @@ int _main(string[] args) {
         analyzer.dump;
     }
 
+    if (dump_header) {
+        analyzer.dumpHeader;
+    }
+
     if (dump_recycler) {
         analyzer.recycleDump;
     }
@@ -351,21 +254,5 @@ int _main(string[] args) {
             analyzer.dumpIndexDoc(Index(dump_index));
         }
     }
-
-    // if (block_number !is 0) {
-    //     if (sequency) {
-    //         analyzer.display_sequency(Index(block_number));
-    //     }
-    //     else {
-    //         immutable buffer = analyzer.blockfile.load(Index(block_number), !ignore);
-    //         if (output_filename) {
-    //             buffer.toFile(output_filename);
-    //         }
-    //     }
-    // }
-
-    // if (recycle_sequence) {
-    //     analyzer.blockfile.recycleDump;
-    // }
     return ExitCode.NOERROR;
 }

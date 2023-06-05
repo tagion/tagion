@@ -1,15 +1,21 @@
 # bin-blockutil
 ## help
 ```
-               --version Display the version
-                  --dump Dumps the entire blockfile
-          --dumprecycler Dumps the recycler
- -rs --recyclerstatistic Dumps the recycler statistic block
-  -s         --statistic Dumps the statistic block
- -dg         --dumpgraph Dump the blockfile in graphviz format
--doc           --dumpdoc Dump the document located at an specific index
--idx             --index the index to dump the document from
-  -h              --help This help information.
+Usage:
+blockutil <file> [<option>...]
+
+Where:
+
+<option>:
+             --version Display the version
+                --dump Dumps the entire blockfile
+        --dumprecycler Dumps the recycler
+-r --recyclerstatistic Dumps the recycler statistic block
+-s         --statistic Dumps the statistic block
+-g         --dumpgraph Dump the blockfile in graphviz format
+-d           --dumpdoc Dump the document located at an specific index
+-i             --index the index to dump the document from
+-h              --help This help information.```
 ```
 ## dump
 ### dump the entire blockfile

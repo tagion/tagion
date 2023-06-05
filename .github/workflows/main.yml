@@ -12,6 +12,7 @@ env:
   RETENTION_DAYS_BINS: 3
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   UNITTEST_COV: unittest-cov
+  GITBOT_TOKEN: ${{ secrets.GITBOT_TOKEN }}
 
 permissions:
   contents: read
@@ -31,18 +32,23 @@ jobs:
           git clone git@github.com:tagion/tagion.git || echo "repo already exists"
       - name: pull
         run: |
+          git clean -f && git restore . 
           git checkout current
           git pull
 
       - name: Run tests
         run: |
-          make ci -j DC=${{env.DC}} || make proper ci -j DC=${{env.DC}}
+          make -k ci -j DC=${{env.DC}} || make -k proper ci -j DC=${{env.DC}}
           
       - name: Report unittests
         run: |
           RESULT=$(cat logs/${{ env.TARGET }}/unittest.log | grep -E "^[0-9]+ modules passed unittests")
           echo -e "### :heavy_check_mark: Unittests passed \n $RESULT" >> $GITHUB_STEP_SUMMARY
-
+      - name: show current files
+        run: |
+          ls
+          echo "logs dir"
+          ls logs
       - name: Report bddtests
         run: | 
           RESULT=$(./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/commit/results)
@@ -55,10 +61,6 @@ jobs:
           bash <(curl -s https://codecov.io/bash) -t ${{ env.CODECOV_TOKEN }} -f "!*/cov/*"
           rm -- *.lst
       
-      - name: Add schedule to build
-        run: |
-          cp collider_schedule.json build/${{ env.TARGET }}/bin
-
       - name: Create tar ball
         if: success() || failure()
         id: create_tar
@@ -101,7 +103,11 @@ jobs:
           find . -mindepth 1 -delete
           cp /mnt/nfs/${{needs.commit_stage.outputs.stage}}/${{needs.commit_stage.outputs.tarball}} .
           tar -xzf ${{needs.commit_stage.outputs.tarball}}
-        
+      - name: check the files
+        run: |
+          ls
+          echo "log dir"
+          ls logs      
       - name: Run collider tests
         run: |
           source $PWD/build/${{ env.TARGET }}/bin/bddenv.sh
@@ -216,3 +222,15 @@ jobs:
         run: |
           rm ${{needs.acceptance_stage.outputs.tarball}}
           rm -rf *
+          
+  update_dartservice:
+    runs-on: dartservice-back
+    needs: [finish_workflow]
+    steps:    
+      - name: get artifact and restart service
+        run: |
+          export GH_TOKEN=${{ env.GITBOT_TOKEN }}
+          id
+          pwd
+          ls -l
+          echo $GH_TOKEN
