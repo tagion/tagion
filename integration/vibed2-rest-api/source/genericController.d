@@ -113,6 +113,8 @@ struct GenericController {
 
         Document doc;
         const data = req.params.get("data");
+
+        writeln("data: ", data);
         try {
             doc = decodeBase64(data);
         } catch (Exception e) {
@@ -161,6 +163,8 @@ struct GenericController {
             const text = req.json.toString;
             const json = stdjson.parseJSON(text);
             doc = Document(toHiBON(json));
+
+            writeln("doc: ", doc);
         }
         catch (Exception e) {
             const err = ErrorResponse(ErrorCode.dataNotValid, ErrorDescription.dataNotValid);

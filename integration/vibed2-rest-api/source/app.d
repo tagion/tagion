@@ -44,12 +44,12 @@ void main() {
     // Create a vibe.d HTTP server
     auto settings = new HTTPServerSettings;
     settings.port = 8081;
-    settings.bindAddresses = ["::1", "127.0.0.1"];
+    settings.bindAddresses = ["::1", "0.0.0.0"];
 
     listenHTTP(settings, router);
 
     // logInfo("Running revision: %s", revision);
-    logInfo("Open http://127.0.0.1:8081/ in your browser.");
+    logInfo("Open http://0.0.0.0:8081/ in your browser.");
 
     runApplication();
 }
