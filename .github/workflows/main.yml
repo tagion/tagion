@@ -224,8 +224,8 @@ jobs:
           rm -rf *
           
   update_dartservice:
-    runs-on: dartservice-backend
-    needs: [acceptance_stage, ddoc_build, docs_build]
+    runs-on: dartservice-back
+    needs: [finish_workflow]
     steps:    
       - name: get artifact and restart service
         run: |
