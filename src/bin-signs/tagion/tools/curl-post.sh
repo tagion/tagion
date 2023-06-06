@@ -2,9 +2,9 @@
 
 # Set the directory path
 DIRECTORY=$PWD
-DART_BACKEND="0.0.0.0:8081/test"
+DART_BACKEND="https://api-services.decard.io/test"
 DART_FRONTEND="0.0.0.0:8081/test"
-LAST_FILE="delivery_event1.hibon"
+LAST_FILE="delivery_event2.hibon"
 # Loop through all files in the directory
 for file in "$DIRECTORY"/*; do
   if [ -f "$file" ]; then
@@ -18,7 +18,7 @@ for file in "$DIRECTORY"/*; do
     output=$(echo "$output" | awk '{$1=$1};1')
 
     # Run curl command with the output string and capture the response
-    response=$(curl --location --request POST "$DART_BACKEND/$output")
+    response=$(curl -k --location --request POST "$DART_BACKEND/$output")
 
     # Extract the fingerprint from the JSON response
     fingerprint=$(echo "$response" | jq -r '.data.fingerprint')
@@ -31,3 +31,5 @@ for file in "$DIRECTORY"/*; do
     fi
   fi
 done
+
+
