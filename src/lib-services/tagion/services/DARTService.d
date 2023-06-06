@@ -33,11 +33,6 @@ struct DARTService {
 
             db = new DART(net, dart_path);
 
-            if (!dart_path.exists) {
-                dart_path.dirName.mkdirRecurse;
-                DART.create(dart_path, net);
-            }
-
             run(task_name, &dartRead, &dartRim, &dartModify, &dartBullseye);
             end(task_name);
         }
