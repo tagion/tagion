@@ -25,7 +25,7 @@ import tagion.hibon.Document;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.dart.DARTBasic;
-import tagion.utils.Miscellaneous : toHexString, decode;
+import tagion.hibon.HiBONtoText : encodeBase64, decode;
 
 @recordType("DeliveryOrder")
 struct DeliveryOrder {
@@ -37,7 +37,6 @@ struct DeliveryOrder {
     string pickuppoint;
     sdt_t startTime;
     sdt_t endTime;
-    Pubkey receiver; // this would be the courier so the sender for the unicef package. Unicefs receiver
     @label(OwnerKey) Pubkey owner; // new token owner       
     Pubkey finalReceiver;
     
@@ -51,7 +50,6 @@ struct DeliveryOrder {
             string pickuppoint,
             sdt_t startTime,
             sdt_t endTime,
-            Pubkey receiver, // this would be the courier so the sender for the unicef package. Unicefs receiver
             @label(OwnerKey) Pubkey owner, // new token owner       
             Pubkey finalReceiver,
         ) {
@@ -62,7 +60,6 @@ struct DeliveryOrder {
             this.pickuppoint = pickuppoint;
             this.startTime = startTime;
             this.endTime = endTime;
-            this.receiver = receiver;
             this.owner = owner;
             this.finalReceiver = finalReceiver;
         }
@@ -73,19 +70,16 @@ struct DeliveryOrder {
 struct DeliveryEvent {
     Signature newSignature; // signature ex. from receiver or from sender when receiver has already signed
     DARTIndex deliveryEvent;
-    int temp;
+    string temp;
     sdt_t timeStamp;
-    Pubkey recipient;
     @label(OwnerKey) Pubkey owner; // new token owner
-    
     
     mixin HiBONRecord!(q{
         this(
             Signature newSignature, 
             DARTIndex deliveryEvent,
-            int temp,
+            string temp,
             sdt_t timeStamp,
-            Pubkey recipient,
             Pubkey owner,
     ) 
         {    
@@ -93,7 +87,6 @@ struct DeliveryEvent {
             this.deliveryEvent = deliveryEvent;
             this.temp = temp;
             this.timeStamp = timeStamp;
-            this.recipient = recipient;
             this.owner = owner;
         }   
     });
@@ -168,15 +161,11 @@ int _main(string[] args) {
     }
 
     if (generate_pubkey) {
-        writefln("%s", net.pubkey.toHexString);
+        auto buf = cast(Buffer) net.pubkey;
+        writefln("%s", buf.encodeBase64);
         return 0;
     }
 
-    if (receiver_pubkey == receiver_pubkey.init) {
-        stderr.writefln("Please supply pubkey of next receiver");
-        return 1;
-    }
-    Pubkey receiver = decode(receiver_pubkey);
     
     // if (args.length != 1) {
     //     stderr.writefln("inputfilename not specified!");
@@ -200,7 +189,6 @@ int _main(string[] args) {
                 sdt_t(startTime.stdTime),
                 sdt_t(endTime.stdTime),
                 net.pubkey,
-                receiver,
                 final_receiver,
         );
         if (standard_output) {
@@ -212,30 +200,41 @@ int _main(string[] args) {
 
     }
 
+    if (receiver_pubkey == receiver_pubkey.init) {
+        stderr.writefln("Please supply pubkey of next receiver");
+        return 1;
+    }
+    Pubkey receiver = decode(receiver_pubkey);
 
-    // if (inputfilename.extension != FileExtension.hibon) {
-    //     stderr.writefln("Error: inputfilename not correct filetype. Must be %s", FileExtension.hibon);
-    //     return 1;
-    // }
+    if (inputfilename.extension != FileExtension.hibon) {
+        stderr.writefln("Error: inputfilename not correct filetype. Must be %s", FileExtension.hibon);
+        return 1;
+    }
 
-    // immutable data = assumeUnique(cast(ubyte[]) fread(inputfilename));
-    // const doc = Document(data);
+    immutable data = assumeUnique(cast(ubyte[]) fread(inputfilename));
+    const doc = Document(data);
 
-    // if (!(DeliveryOrder.isRecord(doc) || SignedDeliveryEvent.isRecord(doc))) {
-    //     stderr.writefln("Error: inputfilename not correct type. Must be DeliveryOrder or DeliveryEvent");
-    //     return 1;
-    // }
-    // writefln("going to sign the doc!");
+    if (!(DeliveryOrder.isRecord(doc) || DeliveryEvent.isRecord(doc))) {
+        stderr.writefln("Error: inputfilename not correct type. Must be DeliveryOrder or DeliveryEvent");
+        return 1;
+    }
+    writefln("going to sign the doc!");
 
-    // Signature doc_signed = net.sign(doc).signature;
-    // DARTIndex dart_index = net.dartIndex(doc);
+    Signature doc_signed = net.sign(doc).signature;
+    DARTIndex dart_index = net.dartIndex(doc);
 
-    // auto signed_delivery_event = SignedDeliveryEvent(doc_signed, dart_index, currentTime, receiver, net.pubkey);
+    auto signed_delivery_event = DeliveryEvent(
+            doc_signed, 
+            dart_index,
+            "OK",
+            currentTime,
+            receiver, //new token owner
+    );
      
-    // if (standard_output) {
-    //     stdout.rawWrite(signed_delivery_event.toDoc.serialize);
-    //     return 0;
-    // }
-    // outputfilename.setExtension(FileExtension.hibon).fwrite(signed_delivery_event.toDoc.serialize);
+    if (standard_output) {
+        stdout.rawWrite(signed_delivery_event.toDoc.serialize);
+        return 0;
+    }
+    outputfilename.setExtension(FileExtension.hibon).fwrite(signed_delivery_event.toDoc.serialize);
     return 0;
 }
