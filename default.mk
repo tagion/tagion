@@ -10,6 +10,7 @@ export SEED:=$(shell git rev-parse HEAD)
 
 RELEASE_DFLAGS+=$(DOPT)
 
+#DFLAGS+=-s
 ifndef DEBUG_DISABLE
 DFLAGS+=$(DDEBUG_SYMBOLS)
 endif
