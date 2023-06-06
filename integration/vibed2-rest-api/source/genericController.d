@@ -19,7 +19,10 @@ import std.range : take;
 import tagion.hibon.HiBONJSON : toPretty;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
-import tagion.utils.Miscellaneous : toHexString, decode;
+import tagion.utils.Miscellaneous : toHexString;
+
+import tagion.hibon.HiBONtoText;
+import tagion.basic.Types;
 import tagion.dart.DARTBasic : DARTIndex, dartIndex;
 
 // services
@@ -66,9 +69,9 @@ struct GenericController {
 
         DARTIndex fingerprint;
         try {
-            if (id.length != 64) {
-                throw new Exception("Length is not correct");
-            }
+            // if (id.length != 64) {
+            //     throw new Exception("Length is not correct");
+            // }
             fingerprint = DARTIndex(decode(id));
         }
         catch (Exception e) {
@@ -107,7 +110,6 @@ struct GenericController {
      *   res = httpserverresponse
      */
     void postT(HTTPServerRequest req, HTTPServerResponse res) {
-        import tagion.hibon.HiBONtoText;
         import tagion.hibon.HiBONJSON;
         writeln("POST");
 
@@ -139,7 +141,8 @@ struct GenericController {
         }
 
         Json dataSuccess = Json.emptyObject;
-        dataSuccess["fingerprint"] = fingerprint.toHexString;
+        const buf = cast(Buffer) fingerprint;
+        dataSuccess["fingerprint"] = buf.encodeBase64;
 
         ResponseModel responseSuccess = ResponseModel(true, dataSuccess);
 
