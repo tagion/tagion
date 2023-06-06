@@ -6,6 +6,7 @@ ci:
 	$(RM) $(DLIB)/libtagion.$(LIBEXT)	
 	$(MAKE) dartsecondapi -f$(DTUB)/main.mk
 	$(MAKE) bddtest unittest-cov -f$(DTUB)/main.mk
+	$(MAKE) release -f$(DTUB)/main.mk
 	$(MAKE) ddoc -f$(DTUB)/main.mk
 	cp $(REPOROOT)/collider_schedule.json $(DBIN) 
 	$(MAKE) trunk -f$(DTUB)/main.mk

@@ -5,11 +5,11 @@ release-%:
 	export DFLAGS=$(RELEASE_DFLAGS)
 	export DBIN=$(DBIN)/release
 	export DLOG=$(DLOG)/release
+	export LDFLAGS=-L-s
 	$(MAKE) $* DEBUG_DISABLE=1 -f$(DTUB)/main.mk   
 
 release: release-tagion
 
-.PHONY: release-tagion
 
 help-release:
 	$(PRECMD)
