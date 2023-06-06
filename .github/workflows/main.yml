@@ -251,6 +251,7 @@ jobs:
           source ~/.bashrc
           ls -l
           pwd
+          rm -rf *
           loginctl enable-linger gitbot
           gh run download -n successful_artifact --repo tagion/tagion
           tar -xzf *.tar.gz
