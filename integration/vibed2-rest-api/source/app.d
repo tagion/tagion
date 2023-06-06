@@ -16,11 +16,10 @@ import std.format;
 
 import services.dartService;
 import tagion.dart.DARTFile;
+import tagion.tools.revision;
 
 // controllers
 import source.generic_controller : GenericController;
-
-// const revision = import("revision.txt");
 
 void main() {
     auto router = new URLRouter;
@@ -47,7 +46,7 @@ void main() {
 
     listenHTTP(settings, router);
 
-    // logInfo("Running revision: %s", revision);
+    logInfo("Running revision: \n%s", revision_text);
     logInfo("Open http://0.0.0.0:8081/ in your browser.");
 
     runApplication();

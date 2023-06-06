@@ -94,7 +94,7 @@ struct WalletOptions {
     */
     void setDefault() pure nothrow {
         accountfile = "account.hibon";
-        walletfile = "tagionwallet.hibon";
+        walletfile = "wallet.hibon";
         quizfile = "quiz.hibon";
         contractfile = "contract.hibon";
         billsfile = "bills.hibon";

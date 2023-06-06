@@ -238,5 +238,24 @@ jobs:
           gh run download -n successful_artifact
           tar -xzf *.tar.gz
           cd build/x86_64-linux/integration
+          systemctl stop --user dart_api.service
+          ./install.sh
+          systemctl restart --user dart_api.service
+  
+  update_dev_dartservice:
+    runs-on: dev-dartservice-back
+    needs: [finish_workflow]
+    steps:    
+      - name: get artifact and restart service
+        run: |
+          source ~/.bashrc
+          ls -l
+          pwd
+          rm -rf *
+          loginctl enable-linger gitbot
+          gh run download -n successful_artifact --repo tagion/tagion
+          tar -xzf *.tar.gz
+          cd build/x86_64-linux/integration
+          systemctl stop --user dart_api.service
           ./install.sh
           systemctl restart --user dart_api.service
