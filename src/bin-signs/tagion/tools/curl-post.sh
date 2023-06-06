@@ -3,6 +3,8 @@
 # Set the directory path
 DIRECTORY=$PWD
 DART_BACKEND="0.0.0.0:8081/test"
+DART_FRONTEND="0.0.0.0:8081/test"
+LAST_FILE="delivery_event1.hibon"
 # Loop through all files in the directory
 for file in "$DIRECTORY"/*; do
   if [ -f "$file" ]; then
@@ -24,8 +26,8 @@ for file in "$DIRECTORY"/*; do
     # Echo the fingerprint
     echo "Fingerprint for $filename: $fingerprint"
     # Display QR code for the URL containing the fingerprint
-    if [ "$filename" = "delivery_event1.hibon" ]; then
-      qrencode -t ansiutf8 "0.0.0.0:8081/test/$fingerprint"
+    if [ "$filename" = $LAST_FILE ]; then
+      qrencode -t ansiutf8 "$DART_FRONTEND/$fingerprint"
     fi
   fi
 done
