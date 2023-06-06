@@ -15,7 +15,6 @@ import tagion.network.SSLSocket;
 import tagion.network.FiberServer;
 import tagion.network.SSLServiceOptions;
 import tagion.network.SSLSocketException;
-import tagion.network.ReceiveBuffer : ReceiveBuffer;
 import tagion.GlobalSignals : abort;
 
 import tagion.logger.Logger;
