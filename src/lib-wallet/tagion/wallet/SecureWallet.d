@@ -45,7 +45,8 @@ alias CiphDoc = Cipher.CipherDocument;
 import tagion.communication.HiRPC;
 
 /// Function and data to recover, sign transaction and hold the account information
-@safe struct SecureWallet(Net : SecureNet) {
+@safe
+struct SecureWallet(Net : SecureNet) {
     protected RecoverGenerator _wallet; /// Information to recover the seed-generator
     protected DevicePIN _pin; /// Information to check the Pin code
 

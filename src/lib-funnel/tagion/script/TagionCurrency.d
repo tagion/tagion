@@ -271,5 +271,16 @@ struct TagionCurrency {
             assertThrown!ScriptException(very_poor - 2.TGN);
 
         }
+
+        version (none) { // Check casting to double
+            import std.stdio;
+
+            const x = 5.465.TGN;
+            const x_double = cast(double) x;
+            const x_back_tgn = x_double.TGN;
+
+            writefln("x=%f", x_double);
+            writefln("x_back_tgn=%s", x_back_tgn);
+        }
     }
 }
