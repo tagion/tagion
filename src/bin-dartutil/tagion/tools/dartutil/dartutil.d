@@ -86,7 +86,7 @@ int _main(string[] args) {
                 std.getopt.config.bundling,
                 "version", "display the version", &version_switch,
                 "dartfilename|d", format("Sets the dartfile: default %s", dartfilename), &dartfilename,
-                "inputfile|i", "Sets the HiBON input file name", &inputfilename,
+                "i|inputfile", "Sets the HiBON input file name", &inputfilename,
                 "I|initialize", "Create a dart file", &initialize,
                 "o|outputfile", "Sets the output file name", &outputfilename,
                 "r|read", "Excutes a DART read sequency", &dartread_args,
@@ -214,7 +214,7 @@ int _main(string[] args) {
                 "Only one of the dartrpc, dartread, dartrim, dartmodify switched alowed");
 
         if (dartrpc) {
-            tools.check(!inputfilename, "Missing input file for DART-rpc");
+            tools.check(!inputfilename.empty, "Missing input file for DART-rpc");
             const doc = inputfilename.fread;
             auto received = hirpc.receive(doc);
             auto result = db(received);
@@ -272,7 +272,7 @@ int _main(string[] args) {
             return 1;
         }
         if (dartmodify) {
-            tools.check(!inputfilename, "Missing input file DART-modify");
+            tools.check(!inputfilename.empty, "Missing input file DART-modify");
             const doc = inputfilename.fread;
             auto factory = RecordFactory(net);
             auto recorder = factory.recorder(doc);
@@ -281,11 +281,14 @@ int _main(string[] args) {
             auto result = db(received, false);
             auto tosend = hirpc.toHiBON(result);
             auto tosendResult = tosend.method.params;
-            outputfilename.fwrite(tosendResult);
+            if (!outputfilename.empty) {
+                outputfilename.fwrite(tosendResult);
+            }
             return 0;
         }
     }
     catch (Exception e) {
+        writefln("%s", e is null);
         error(e);
         return 1;
     }
