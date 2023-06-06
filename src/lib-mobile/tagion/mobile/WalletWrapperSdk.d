@@ -42,9 +42,9 @@ enum DrtStatus {
 /// Variable, which repsresents the d-runtime status
 __gshared DrtStatus __runtimeStatus = DrtStatus.DEFAULT_STS;
 // Wallet global variable.
-alias SecureWallet = Wallet.SecureWallet!(StdSecureNet);
+alias StdSecureWallet = Wallet.SecureWallet!(StdSecureNet);
 
-static __secure_wallet = SecureWallet(DevicePIN.init);
+static __secure_wallet = StdSecureWallet(DevicePIN.init);
 
 // Storage global variable.
 static const(WalletStorage)* __wallet_storage;
@@ -72,7 +72,7 @@ extern (C) {
 
     // Sets global wallet variable to init state.
     void defaultWallet() {
-        __secure_wallet = SecureWallet(DevicePIN.init,
+        __secure_wallet = StdSecureWallet(DevicePIN.init,
                 RecoverGenerator.init, AccountDetails.init);
     }
 
@@ -105,7 +105,7 @@ extern (C) {
         const mnemonic = mnemonicPtr[0 .. mnemonicLen];
 
         // Create a wallet from inputs.
-        __secure_wallet = SecureWallet.createWallet(
+        __secure_wallet = StdSecureWallet.createWallet(
                 mnemonic,
                 pincode
         );
@@ -219,7 +219,7 @@ extern (C) {
         immutable label = cast(immutable)(labelPtr[0 .. labelLen]);
 
         if (__secure_wallet.isLoggedin()) {
-            auto invoice = SecureWallet.createInvoice(
+            auto invoice = StdSecureWallet.createInvoice(
                     label, amount.TGN);
             __secure_wallet.registerInvoice(invoice);
 
@@ -741,7 +741,7 @@ struct WalletStorage {
             .any;
     }
 
-    bool write(const SecureWallet secure_wallet) const {
+    bool write(const StdSecureWallet secure_wallet) const {
         // Create a hibon for wallet data.
         try {
 
@@ -755,12 +755,12 @@ struct WalletStorage {
         }
     }
 
-    bool read(ref SecureWallet secure_wallet) const {
+    bool read(ref StdSecureWallet secure_wallet) const {
         try {
             auto pin = path(devicefile).fread!DevicePIN;
             auto wallet = path(walletfile).fread!RecoverGenerator;
             auto account = path(accountfile).fread!AccountDetails;
-            secure_wallet = SecureWallet(pin, wallet, account);
+            secure_wallet = StdSecureWallet(pin, wallet, account);
             return true;
         }
         catch (Exception e) {
@@ -804,7 +804,7 @@ unittest {
 
         auto strg = new WalletStorage(walletDataPath);
 
-        const secure_wallet = SecureWallet(DevicePIN.init,
+        const secure_wallet = StdSecureWallet(DevicePIN.init,
                 RecoverGenerator.init, AccountDetails.init);
 
         bool result = strg.write(secure_wallet);
@@ -818,7 +818,7 @@ unittest {
 
         auto strg = new WalletStorage(walletDataPath);
 
-        SecureWallet secure_wallet;
+        StdSecureWallet secure_wallet;
 
         bool result = strg.read(secure_wallet);
         assert(result, "Expect read result is true");
