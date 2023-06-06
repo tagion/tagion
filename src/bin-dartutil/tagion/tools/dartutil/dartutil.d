@@ -288,7 +288,6 @@ int _main(string[] args) {
         }
     }
     catch (Exception e) {
-        writefln("%s", e is null);
         error(e);
         return 1;
     }
