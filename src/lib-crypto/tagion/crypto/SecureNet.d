@@ -88,8 +88,9 @@ class StdHashNet : HashNet {
         return Fingerprint(rawCalcHash(doc.serialize));
     }
 
+    enum hashname = "sha256";
     string multihash() const pure nothrow @nogc {
-        return "sha256";
+        return hashname;
     }
 }
 

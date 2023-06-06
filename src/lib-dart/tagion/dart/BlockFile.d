@@ -8,8 +8,7 @@ import std.bitmanip : binwrite = write, binread = read;
 import std.stdio;
 import std.file : remove, rename;
 import std.typecons;
-import std.algorithm.searching : until;
-import std.algorithm.iteration : filter, each, map;
+import std.algorithm;
 
 import std.range : isForwardRange, isInputRange;
 import std.array : array, join;
@@ -214,13 +213,17 @@ class BlockFile {
     protected void createHeader(string name, string file_label) {
         check(!hasHeader, "Header is already created");
         check(file.size == 0, "Header can not be created the file is not empty");
-        check(name.length < headerblock.id.length, format("Id is limited to a length of %d but is %d", headerblock
-                .id.length, name.length));
-        check(file_label.length <= FILE_LABEL.length, format("Max size of file label is %d '%s' is %d", FILE_LABEL
-                .length, file_label, file_label.length));
+        check(name.length < headerblock.id.length,
+                format("Id is limited to a length of %d but is %d",
+                headerblock.id.length, name.length));
+        check(file_label.length <= FILE_LABEL.length,
+                format("Max size of file label is %d but '%s' is %d",
+                FILE_LABEL.length, file_label, file_label.length));
         if (!file_label) {
             file_label = FILE_LABEL;
         }
+        headerblock.label = ubyte.max;
+        headerblock.id = ubyte.max;
         headerblock.label[0 .. file_label.length] = file_label;
         headerblock.block_size = BLOCK_SIZE;
         headerblock.id[0 .. name.length] = name;
@@ -272,7 +275,7 @@ class BlockFile {
             foreach (i, m; this.tupleof) {
                 alias type = typeof(m);
                 static if (isStaticArray!type) {
-                    buffer[pos .. pos + type.sizeof] = (cast(ubyte*) id.ptr)[0 .. type.sizeof];
+                    buffer[pos .. pos + type.sizeof] = (cast(ubyte*) m.ptr)[0 .. type.sizeof];
                     pos += type.sizeof;
                 }
                 else {
@@ -306,11 +309,27 @@ class BlockFile {
         string toString() const {
             return [
                 "Header Block",
-                format("Label      : %s", label[].until(char(ubyte.max))),
+                format("Label      : %s", label[].until(char.max)),
                 format("ID         : %s", id[].until(char.max)),
                 format("Block size : %d", block_size),
                 format("Created    : %s", SysTime.fromUnixTime(create_time).toSimpleString),
             ].join("\n");
+        }
+
+        bool checkId(string _id) const pure {
+            return equal(_id, id[].until(char.max));
+        }
+
+        auto Id() const @nogc {
+            return id[].until(char.max);
+        }
+
+        bool checkLabel(string _label) const pure {
+            return equal(_label, label[].until(char.max));
+        }
+
+        auto Label() const @nogc {
+            return label[].until(char.max);
         }
 
     }

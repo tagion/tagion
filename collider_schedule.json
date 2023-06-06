@@ -36,7 +36,7 @@
             "args": [],
             "envs": {},
             "stages": [
-                "commit","xtest"
+                "commit","dart"
             ],
             "timeout": 0.0
         },
@@ -44,7 +44,7 @@
             "args": [],
             "envs": {},
             "stages": [
-                "commit"
+                "commit", "dart"
             ],
             "timeout": 0.0
         },
@@ -52,7 +52,7 @@
             "args": [],
             "envs": {},
             "stages": [
-                "commit"
+                "commit", "dart"
             ],
             "timeout": 0.0
         },
@@ -60,7 +60,7 @@
             "args": [],
             "envs": {},
             "stages": [
-                "commit"
+                "commit", "dart"
             ],
             "timeout": 0.0
         },
@@ -119,8 +119,7 @@
                 "hashgraph"
             ],
             "timeout": 0.0
-        }
-    },
+        },
         "collider_test": {
             "args": [
                 "-f$WORKDIR"
@@ -134,5 +133,6 @@
             "timeout": 0.0
         }
     
+    }
 
 }

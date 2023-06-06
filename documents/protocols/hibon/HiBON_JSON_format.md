@@ -34,7 +34,7 @@ This table shows the valid formats describe as regular expression.
 | signed       | `-?(0[xX][0-9a-fA-F]+|[0-9]+)`                               |
 | unsigend     | `(0[xX][0-9a-fA-F]+|[0-9]+)`                                 |
 | hex          | `0[xX][0-9a-fA-F]+`                                          |
-| base64       | `@[A-Za-z0-9\+\/]+[=]*`                                      |
+| base64URL    | `@[A-Za-z0-9\-_\=]+[=]*`                                     |
 
  
 
