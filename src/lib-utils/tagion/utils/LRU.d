@@ -246,7 +246,7 @@ class LRU(K, V) {
         alias LRU!(int, int) TestLRU;
         uint evictCounter;
 
-        void onEvicted(const(int) i, TestLRU.Element* e) @safe {
+        void onEvicted(scope const(int) i, TestLRU.Element* e) @safe {
             assert(e.entry.key == e.entry.value);
             evictCounter++;
         }
@@ -312,7 +312,7 @@ class LRU(K, V) {
     unittest { // getOldest removeOldest
         alias LRU!(int, int) TestLRU;
         uint evictCounter;
-        void onEvicted(const(int) i, TestLRU.Element* e) @safe {
+        void onEvicted(scope const(int) i, TestLRU.Element* e) @safe {
             assert(e.entry.key == e.entry.value);
             evictCounter++;
         }
@@ -338,7 +338,7 @@ class LRU(K, V) {
     unittest { // add
         alias LRU!(int, int) TestLRU;
         uint evictCounter;
-        void onEvicted(const(int) i, TestLRU.Element* e) @safe {
+        void onEvicted(scope const(int) i, TestLRU.Element* e) @safe {
             assert(e.entry.key == e.entry.value);
             evictCounter++;
         }
@@ -365,7 +365,7 @@ class LRU(K, V) {
     //func TestLRU_Contains(t *testing.T) {
     unittest {
         alias LRU!(int, int) TestLRU;
-        void onEvicted(const(int) i, TestLRU.Element* e) @safe {
+        void onEvicted(scope const(int) i, TestLRU.Element* e) @safe {
             assert(e.entry.key == e.entry.value);
         }
 
@@ -388,7 +388,7 @@ class LRU(K, V) {
     //func TestLRU_Peek(t *testing.T) {
     unittest {
         alias LRU!(int, int) TestLRU;
-        void onEvicted(const(int) i, TestLRU.Element* e) @safe {
+        void onEvicted(scope const(int) i, TestLRU.Element* e) @safe {
             assert(e.entry.key == e.entry.value);
         }
 
@@ -421,7 +421,7 @@ class LRU(K, V) {
         uint count;
         import std.stdio;
 
-        void onEvicted(const(int) i, TestLRU.Element* e) @safe {
+        void onEvicted(scope const(int) i, TestLRU.Element* e) @safe {
             count++;
         }
 
