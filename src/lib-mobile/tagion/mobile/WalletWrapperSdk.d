@@ -47,7 +47,7 @@ alias SecureWallet = Wallet.SecureWallet!(StdSecureNet);
 static __secure_wallet = SecureWallet(DevicePIN.init);
 
 // Storage global variable.
-static WalletStorage* __wallet_storage;
+static const(WalletStorage)* __wallet_storage;
 static Exception last_error;
 /// Functions called from d-lang through dart:ffi
 extern (C) {
@@ -141,7 +141,6 @@ extern (C) {
 
     export uint wallet_delete() {
         // Try to remove wallet file.
-        writefln("%s", __wallet_storage !is null);
         if (__wallet_storage !is null && __wallet_storage.remove()) {
             __secure_wallet.logout();
             // Set wallet to default.
@@ -521,9 +520,7 @@ unittest {
 
     { // Delete wallet.
 
-        writefln("%s", __wallet_storage._walletDataPath);
         const result = wallet_delete();
-        writefln("result %s", result);
         assert(result != 0, "Expected non-zero result");
         assert(!__secure_wallet.isLoggedin);
         assert(!__wallet_storage.isWalletExist);
@@ -729,27 +726,22 @@ struct WalletStorage {
                 FileExtension.hibon), /// wallet file name
         devicefile = "device".setExtension(FileExtension.hibon), /// device file name
     }
-    string _walletDataPath;
-    this(const char[] walletDataPath) pure nothrow {
-        _walletDataPath = walletDataPath.idup;
+    string wallet_data_path;
+    this(const char[] walletDataPath) const pure nothrow {
+        wallet_data_path = walletDataPath.idup;
     }
 
     string path(string filename) const pure {
-        return buildPath(_walletDataPath, filename);
+        return buildPath(wallet_data_path, filename);
     }
 
     bool isWalletExist() const {
-        only(accountfile, walletfile, devicefile)
-            .each!writeln;
-        only(accountfile, walletfile, devicefile)
-            .map!(file => path(file).exists)
-            .each!writeln;
         return only(accountfile, walletfile, devicefile)
             .map!(file => path(file).exists)
             .any;
     }
 
-    bool write(const SecureWallet secure_wallet) {
+    bool write(const SecureWallet secure_wallet) const {
         // Create a hibon for wallet data.
         try {
 
@@ -763,7 +755,7 @@ struct WalletStorage {
         }
     }
 
-    bool read(ref SecureWallet secure_wallet) {
+    bool read(ref SecureWallet secure_wallet) const {
         try {
             auto pin = path(devicefile).fread!DevicePIN;
             auto wallet = path(walletfile).fread!RecoverGenerator;
@@ -776,17 +768,13 @@ struct WalletStorage {
         }
     }
 
-    bool remove() {
-        writefln("%s %s", _walletDataPath, _walletDataPath.exists);
-        if (_walletDataPath.exists) {
+    bool remove() const {
+        if (wallet_data_path.exists) {
 
             try {
-                writefln("Remove files");
                 only(accountfile, walletfile, devicefile)
                     .each!(file => path(file).remove);
-                writefln("Remove dir");
-                //_walletDataPath.rmdir;
-                writefln("exit 1");
+                //wallet_data_path.rmdir;
                 return 1;
             }
             catch (Exception e) {
@@ -802,7 +790,6 @@ struct WalletStorage {
 unittest {
     import std.stdio;
 
-    writeln("WalletWrapper");
     const work_path = new_test_path;
     scope (success) {
         work_path.rmdirRecurse;
@@ -814,7 +801,6 @@ unittest {
 
         // Path to stored wallet data.
         const walletDataPath = work_path;
-        writefln("path = %s", walletDataPath);
 
         auto strg = new WalletStorage(walletDataPath);
 
@@ -829,7 +815,6 @@ unittest {
 
         // Path to stored wallet data.
         const walletDataPath = work_path;
-        writefln("path = %s", walletDataPath);
 
         auto strg = new WalletStorage(walletDataPath);
 
@@ -866,10 +851,7 @@ version (unittest) {
     import std.conv : to;
 
     string new_test_path(string func = __FUNCTION__, const size_t line = __LINE__) {
-        writefln("%s", deleteme);
-        writefln("%s", func);
         const result_path = [deleteme, func, line.to!string].join("_");
-        writefln("%s", result_path);
         result_path.mkdirRecurse;
         return result_path;
     }
