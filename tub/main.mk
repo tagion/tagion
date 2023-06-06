@@ -127,6 +127,7 @@ include $(DTUB)/testbench/unittest.mk
 include $(DTUB)/testbench/collider.mk
 include $(DTUB)/testbench/test.mk
 include $(DTUB)/testbench/citest.mk
+include $(DTUB)/testbench/release.mk
 
 #
 # Install main tool

@@ -2,12 +2,12 @@ export BUILD := ${abspath ${REPOROOT}/build/}
 export LOG := ${abspath ${REPOROOT}/logs/}
 
 export DDEVNET := ${abspath ${REPOROOT}/devnet/}
-export DBUILD := ${abspath $(BUILD)/$(PLATFORM)}
-export DLOG := ${abspath $(LOG)/$(PLATFORM)}
+export DBUILD ?= ${abspath $(BUILD)/$(PLATFORM)}
+export DLOG ?= ${abspath $(LOG)/$(PLATFORM)}
 export TOOLS := ${abspath $(REPOROOT)/tools}
-export TRUNK := ${abspath $(BUILD)/trunk}
+export TRUNK ?= ${abspath $(BUILD)/trunk}
 
-export DBIN := $(DBUILD)/bin
+export DBIN ?= $(DBUILD)/bin
 export DTMP := $(DBUILD)/tmp
 export DOBJ := $(DBUILD)/obj
 export DLIB := $(DBUILD)/lib

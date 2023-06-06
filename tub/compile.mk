@@ -56,9 +56,10 @@ endif
 $(DBIN)/%:
 	$(PRECMD)
 	${call log.kvp, bin$(MOD), $*}
-	echo ${filter %.d,$^} > /tmp/dfiles_q.mk
-	echo $(DFILES) > /tmp/dfiles.mk
-	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} ${sort $(DFILES) ${filter %.d,$^}} ${LDFLAGS} $(LIBS) $(OBJS) $(OUTPUT)$@
+	echo ${filter %.d,$^} > /tmp/$*_dfiles_q.mk
+	echo $(DFILES) > /tmp/$*_dfiles.mk
+	echo $(DFLAGS) $(DFLAGS_DEBUG) > /tmp/$*_dflags.mk
+	$(DC) $(DFLAGS_DEBUG) $(DFLAGS) ${addprefix -I,$(DINC)} ${sort $(DFILES) ${filter %.d,$^}} ${LDFLAGS} $(LIBS) $(OBJS) $(OUTPUT)$@
 
 
 # Object Clear"

@@ -85,6 +85,7 @@ int _main(string[] args) {
                 std.getopt.config.caseSensitive,
                 std.getopt.config.bundling,
                 "version", "display the version", &version_switch,
+                "dartfilename|d", format("Sets the dartfile: default %s", dartfilename), &dartfilename,
                 "i|initialize", "Create a dart file", &initialize,
                 "o|outputfile", "Sets the output file name", &outputfilename,
                 "r|read", "Excutes a DART read sequency", &dartread_args,
