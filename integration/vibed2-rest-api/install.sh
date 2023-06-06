@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -xe
+
 mkdir -p ~/.local/share/dart_api
 mkdir -p ~/.config/systemd/user
 cp vibed2-project ~/.local/share/dart_api
