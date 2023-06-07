@@ -4,7 +4,7 @@ module tagion.tools.dartutil.dartutil;
 
 import std.getopt;
 import std.stdio;
-import std.file : exists, tempDir, mkdirRecurse;
+import std.file : exists, tempDir, mkdirRecurse, rmdirRecurse;
 import std.path : setExtension, buildPath, baseName, stripExtension, dirName;
 import std.format;
 import std.conv : to;
@@ -61,7 +61,7 @@ int _main(string[] args) {
     string inputfilename;
     string destination_dartfilename;
     string outputfilename;
-    string jounal_path = buildPath(tempDir, "dart_jounals");
+    string journal_path = buildPath(tempDir, "dart_journals");
     bool version_switch;
     const logo = import("logo.txt");
 
@@ -188,19 +188,22 @@ int _main(string[] args) {
                 writefln("DART %s created", destination_dartfilename);
             }
             auto dest_db = new DART(net, destination_dartfilename, dart_exception);
-            writefln("Open dest_db %s", destination_dartfilename);
+            writefln("Open destination %s", destination_dartfilename);
             if (dart_exception !is null) {
                 writeln("Fail to open destination DART: %s. Abort.", destination_dartfilename);
                 error(dart_exception);
                 return 1;
             }
-            immutable _jounal_path = buildPath(jounal_path,
+            immutable _journal_path = buildPath(journal_path,
                     destination_dartfilename.baseName.stripExtension);
 
-            verbose("Jounal path %s", _jounal_path);
-            _jounal_path.dirName.mkdirRecurse;
-            writefln("Synchronize");
-            synchronize(dest_db, db, _jounal_path);
+            verbose("journal path %s", journal_path);
+            if (journal_path.exists) {
+                journal_path.rmdirRecurse;
+            }
+            journal_path.mkdirRecurse;
+            writefln("Synchronize journals %s", _journal_path);
+            synchronize(dest_db, db, _journal_path);
             return 0;
         }
 
