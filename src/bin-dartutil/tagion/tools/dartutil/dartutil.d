@@ -61,6 +61,7 @@ int _main(string[] args) {
     string inputfilename;
     string destination_dartfilename;
     string outputfilename;
+    string jounal_path = buildPath(tempDir, "dart_jounals");
     bool version_switch;
     const logo = import("logo.txt");
 
@@ -74,6 +75,7 @@ int _main(string[] args) {
     bool sync;
     bool eye;
     bool fake;
+    bool force;
 
     bool initialize;
     string passphrase = "verysecret";
@@ -92,6 +94,7 @@ int _main(string[] args) {
                 "r|read", "Excutes a DART read sequency", &dartread_args,
                 "rim", "Performs DART rim read", &dartrim,
                 "m|modify", "Excutes a DART modify sequency", &dartmodify,
+                "f|force", "Force erase and create journal and destination DART", &force,
                 "rpc", "Excutes a HiPRC on the DART", &dartrpc,
                 "dump", "Dumps all the archives with in the given angle", &dump,
                 "eye", "Prints the bullseye", &eye,
@@ -191,12 +194,13 @@ int _main(string[] args) {
                 error(dart_exception);
                 return 1;
             }
-            immutable jounal_path = buildPath(tempDir, "dart_sync",
+            immutable _jounal_path = buildPath(jounal_path,
                     destination_dartfilename.baseName.stripExtension);
 
-            jounal_path.dirName.mkdirRecurse;
+            verbose("Jounal path %s", _jounal_path);
+            _jounal_path.dirName.mkdirRecurse;
             writefln("Synchronize");
-            synchronize(dest_db, db, jounal_path);
+            synchronize(dest_db, db, _jounal_path);
             return 0;
         }
 
