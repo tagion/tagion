@@ -229,13 +229,10 @@ jobs:
     steps:    
       - name: get artifact and restart service
         run: |
-          cd ..
-          rm -rf tagion
-          git clone git@github.com:tagion/tagion.git || echo "repo already exists"
-          cd tagion
           source ~/.bashrc
+          rm -rf *
           loginctl enable-linger gitbot
-          gh run download -n successful_artifact
+          gh run download -n successful_artifact --repo tagion/tagion
           tar -xzf *.tar.gz
           cd build/x86_64-linux/integration
           systemctl stop --user dart_api.service
@@ -249,8 +246,6 @@ jobs:
       - name: get artifact and restart service
         run: |
           source ~/.bashrc
-          ls -l
-          pwd
           rm -rf *
           loginctl enable-linger gitbot
           gh run download -n successful_artifact --repo tagion/tagion
