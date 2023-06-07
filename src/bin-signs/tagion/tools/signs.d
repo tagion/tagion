@@ -35,8 +35,8 @@ struct DeliveryOrder {
     int numberOfVaccines; 
     string destination;
     string pickuppoint;
-    sdt_t startTime;
-    sdt_t endTime;
+    string startTime;
+    string endTime;
     @label(OwnerKey) Pubkey owner; // new token owner       
     Pubkey finalReceiver;
     
@@ -48,8 +48,8 @@ struct DeliveryOrder {
             int numberOfVaccines, 
             string destination, 
             string pickuppoint,
-            sdt_t startTime,
-            sdt_t endTime,
+            string startTime,
+            string endTime,
             @label(OwnerKey) Pubkey owner, // new token owner       
             Pubkey finalReceiver,
         ) {
@@ -71,7 +71,7 @@ struct DeliveryEvent {
     Signature newSignature; // signature ex. from receiver or from sender when receiver has already signed
     DARTIndex deliveryEvent;
     string temp;
-    sdt_t timeStamp;
+    string timeStamp;
     @label(OwnerKey) Pubkey owner; // new token owner
     
     mixin HiBONRecord!(q{
@@ -79,7 +79,7 @@ struct DeliveryEvent {
             Signature newSignature, 
             DARTIndex deliveryEvent,
             string temp,
-            sdt_t timeStamp,
+            string timeStamp,
             Pubkey owner,
     ) 
         {    
@@ -186,8 +186,8 @@ int _main(string[] args) {
                 100,
                 "Copenhagen",
                 "Triesen Liechenstein",
-                sdt_t(startTime.stdTime),
-                sdt_t(endTime.stdTime),
+                startTime.toISOExtString,
+                endTime.toISOExtString,
                 net.pubkey,
                 final_receiver,
         );
@@ -227,7 +227,7 @@ int _main(string[] args) {
             doc_signed, 
             dart_index,
             "OK",
-            currentTime,
+            Clock.currTime.toISOExtString,
             receiver, //new token owner
     );
      
