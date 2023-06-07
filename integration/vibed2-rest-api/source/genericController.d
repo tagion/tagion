@@ -126,19 +126,7 @@ struct GenericController {
             return;
         }
         writeln(doc.toPretty);
-        
-        
-        const prev_bullseye = dart_service.bullseye;
-
         const fingerprint = dart_service.modify(doc);
-        const new_bullseye = dart_service.bullseye;
-        if (new_bullseye == prev_bullseye) {
-            const err = ErrorResponse(ErrorCode.dataFingerprintNotAdded, ErrorDescription
-                    .dataFingerprintNotAdded);
-            writeln("ErrorDescription.dataFingerprintNotAdded");
-            respondWithError(res, err);
-            return;
-        }
 
         Json dataSuccess = Json.emptyObject;
         const buf = cast(Buffer) fingerprint;
