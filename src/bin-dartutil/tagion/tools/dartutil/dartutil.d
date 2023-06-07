@@ -190,7 +190,7 @@ int _main(string[] args) {
             auto dest_db = new DART(net, destination_dartfilename, dart_exception);
             writefln("Open destination %s", destination_dartfilename);
             if (dart_exception !is null) {
-                writeln("Fail to open destination DART: %s. Abort.", destination_dartfilename);
+                writefln("Fail to open destination DART: %s. Abort.", destination_dartfilename);
                 error(dart_exception);
                 return 1;
             }
