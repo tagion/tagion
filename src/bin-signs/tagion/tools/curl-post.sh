@@ -4,7 +4,7 @@
 DIRECTORY=$PWD
 DART_BACKEND="https://api-services.decard.io/test"
 DART_FRONTEND="https://rawdata.decard.io/?fp="
-LAST_FILE="final.hibon"
+LAST_FILE="final_destination.hibon"
 # Loop through all files in the directory
 for file in "$DIRECTORY"/*; do
   if [ -f "$file" ]; then
