@@ -27,7 +27,7 @@ DFLAGS+=-mtriple=$(PLATFORM)
 ANDROID_API?=21
 HOST_OS:=${shell uname -s | tr '[:upper:]' '[:lower:]' }
 HOST_ARCH:=${shell uname -m}
-ANDROID_TOOLCHAIN:=$(ANDROID_NDK)/toolchains/llvm/prebuilt/${HOST_OS}-${HOST_ARCH}
+ANDROID_TOOLCHAIN:=$(abspath $(ANDROID_NDK)/toolchains/llvm/prebuilt/${HOST_OS}-${HOST_ARCH})
 
 export AR:=$(ANDROID_TOOLCHAIN)/bin/$(TRIPLET)-ar
 export AS:=$(ANDROID_TOOLCHAIN)/bin/$(TRIPLET)-as

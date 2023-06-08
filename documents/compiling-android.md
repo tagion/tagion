@@ -54,3 +54,5 @@ Compile the mobile library in the root of the tagion source repo
 make prebuild
 make DC=ldc2 ANDROID_NDK=/path/to/android-ndk-r21b/ PLATFORM=aarch64-linux-android libmobile
 ```
+
+> Note: you have to specifiy the full path to android-ndk. If you use ~ then autoconf won't expand it and will think the directory doesn't exist
