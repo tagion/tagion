@@ -14,6 +14,8 @@ import tagion.tools.revision;
 import std.typecons;
 import std.path;
 import tagion.network.ReceiveBuffer;
+import tagion.basic.basic : forceRemove;
+import tagion.hibon.Document;
 
 // enum EXAMPLES {
 //     ver = Example("-v"),
@@ -23,18 +25,6 @@ import tagion.network.ReceiveBuffer;
 mixin Main!(_main);
 
 int _main(string[] args) {
-
-    const contract_sock_path = buildPath("/", "tmp", "tagionwave_contract.sock");
-
-    version (none) static if (ver.linux || ver.FreeBSD || ver.OpenBSD || ver.DragonFlyBSD) {
-        const contract_sock_path = "\0/tmp/tagionwave_contract.sock";
-    }
-
-    import tagion.basic.basic : forceRemove;
-
-    scope (exit) {
-        forceRemove(contract_sock_path);
-    }
 
     bool version_switch;
     immutable program = args[0];
@@ -56,6 +46,11 @@ int _main(string[] args) {
         return 0;
     }
 
+    const contract_sock_path = buildPath("/", "tmp", "tagionwave_contract.sock");
+    scope (exit) {
+        forceRemove(contract_sock_path);
+    }
+
     writeln("contract_sock_path: ", contract_sock_path);
     Address contract_sock_addr = new UnixAddress(contract_sock_path);
     Socket contract_socket = new Socket(AddressFamily.UNIX, SocketType.STREAM);
@@ -72,32 +67,12 @@ void echoSock(Socket sock, Address addr) {
     while (!exit) {
         ReceiveBuffer buf;
         auto result = buf.append(&sock.accept.receive);
-        writeln("Received: ", result);
+        immutable ubyte[] data = cast(immutable) result.data;
+        auto doc = Document(data);
+        assert(doc.valid is Document.Element.ErrorCode.NONE, "Message is not valid, not a HiBON Document");
+
+        writefln("Received document of size: %s", doc.length);
     }
 
     sock.close();
-}
-
-ubyte[] receiveRPC(Socket sock) {
-    enum MSG_PREFIX_SIZE = 4;
-
-    scope ubyte[MSG_PREFIX_SIZE] msg_size;
-    sock.handle.recv(msg_size.ptr, MSG_PREFIX_SIZE, 0);
-    writeln(msg_size);
-    const msg_len = msg_size.to!uint;
-    scope ubyte[] msg;
-    sock.handle.recv(msg.ptr, msg_len, 0);
-    return msg;
-}
-
-T to(T)(ubyte[] bytes) if (isUnsigned!T && isNumeric!T)
-in {
-    assert(bytes.length <= T.sizeof);
-}
-do {
-    uint value = 0;
-    foreach (ubyte b; bytes) {
-        value = (value << 8) + (b & 0xFF);
-    }
-    return value;
 }
