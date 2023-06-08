@@ -56,7 +56,7 @@ int _main(string[] args) {
         DartInfo dart_info = DartInfo(dartfilename, module_path, net, hirpc);
 
         auto dart_ADD_REMOVE_stress_feature = automation!(insert_remove_stress)();
-        dart_ADD_REMOVE_stress_feature.AddRemoveAndReadTheResult(dart_info, env.getSeed, 100_000, 1000, 1000);
+        dart_ADD_REMOVE_stress_feature.AddRemoveAndReadTheResult(dart_info, env.getSeed, 100_000, 20, 1000);
 
         auto dart_ADD_REMOVE_stress_context = dart_ADD_REMOVE_stress_feature.run();
 
