@@ -225,6 +225,7 @@ jobs:
           
   update_dartservice:
     runs-on: dartservice-back
+    environment: Prod-manual
     needs: [finish_workflow]
     steps:    
       - name: get artifact and restart service
