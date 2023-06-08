@@ -3,7 +3,7 @@
 # Set the directory path
 DIRECTORY=$PWD
 DART_BACKEND="https://api-services.decard.io/test"
-DART_FRONTEND="0.0.0.0:8081/test"
+DART_FRONTEND="https://rawdata.decard.io/?fp="
 LAST_FILE="final.hibon"
 # Loop through all files in the directory
 for file in "$DIRECTORY"/*; do
@@ -27,7 +27,7 @@ for file in "$DIRECTORY"/*; do
     echo "Fingerprint for $filename: $fingerprint"
     # Display QR code for the URL containing the fingerprint
     if [ "$filename" = $LAST_FILE ]; then
-      qrencode -t ansiutf8 "$DART_FRONTEND/$fingerprint"
+      qrencode -t ansiutf8 "$DART_FRONTEND$fingerprint"
     fi
   fi
 done

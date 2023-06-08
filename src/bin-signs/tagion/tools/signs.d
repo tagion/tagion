@@ -37,6 +37,7 @@ struct DeliveryOrder {
     string pickuppoint;
     string startTime;
     string endTime;
+    TagionCurrency payment;
     @label(OwnerKey) Pubkey owner; // new token owner       
     Pubkey finalReceiver;
     
@@ -50,6 +51,7 @@ struct DeliveryOrder {
             string pickuppoint,
             string startTime,
             string endTime,
+            TagionCurrency payment,
             @label(OwnerKey) Pubkey owner, // new token owner       
             Pubkey finalReceiver,
         ) {
@@ -60,6 +62,7 @@ struct DeliveryOrder {
             this.pickuppoint = pickuppoint;
             this.startTime = startTime;
             this.endTime = endTime;
+            this.payment = payment;
             this.owner = owner;
             this.finalReceiver = finalReceiver;
         }
@@ -182,12 +185,13 @@ int _main(string[] args) {
         auto endTime = startTime + 2.days;
         auto delivery_order = DeliveryOrder(
                 "Measels",
-                "43a3efd",
-                100,
-                "Copenhagen",
-                "Triesen Liechenstein",
+                "43a3efd0se395",
+                200,
+                "Livingstone Pharmacy",
+                "Lusaka Warehouse",
                 startTime.toISOExtString,
                 endTime.toISOExtString,
+                TagionCurrency(100),
                 net.pubkey,
                 final_receiver,
         );
