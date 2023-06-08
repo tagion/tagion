@@ -37,7 +37,7 @@ struct DeliveryOrder {
     string pickuppoint;
     string startTime;
     string endTime;
-    TagionCurrency payment;
+    int payment;
     @label(OwnerKey) Pubkey owner; // new token owner       
     Pubkey finalReceiver;
     
@@ -51,7 +51,7 @@ struct DeliveryOrder {
             string pickuppoint,
             string startTime,
             string endTime,
-            TagionCurrency payment,
+            int payment,
             @label(OwnerKey) Pubkey owner, // new token owner       
             Pubkey finalReceiver,
         ) {
@@ -191,7 +191,7 @@ int _main(string[] args) {
                 "Lusaka Warehouse",
                 startTime.toISOExtString,
                 endTime.toISOExtString,
-                TagionCurrency(100),
+                100,
                 net.pubkey,
                 final_receiver,
         );

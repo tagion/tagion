@@ -11,22 +11,22 @@ docker cp "$CONTAINER_ID:/opt/tagion/nodes/node-master/data/" "$DIRECTORY"
 
 # Check if the "--old" argument is provided
 if [[ "$2" == "--r" ]]; then
-  mkdir -p "$DIRECTORY/replica_db"
-  mv "$DIRECTORY"/data/* "$DIRECTORY/replica_db"
+  mkdir -p "$DIRECTORY/replica_DB_at_Service_Delivery_Point"
+  mv "$DIRECTORY"/data/* "$DIRECTORY/replica_DB_at_Service_Delivery_Point"
   echo "----------------------------------------------------------------------------"
   for i in 0 1 2 3 4
   do
-    BULLSEYE=$(dartutil "$DIRECTORY/replica_db/node$i/dart.drt" --eye)
+    BULLSEYE=$(dartutil "$DIRECTORY/replica_DB_at_Service_Delivery_Point/node$i/dart.drt" --eye)
     echo "node$i| $BULLSEYE"
   done
   
 else 
-  mkdir -p "$DIRECTORY/network"
-  mv "$DIRECTORY"/data/* "$DIRECTORY/network"
+  mkdir -p "$DIRECTORY/DC_DB_at_District_Centres"
+  mv "$DIRECTORY"/data/* "$DIRECTORY/DC_DB_at_District_Centres"
   echo "----------------------------------------------------------------------------"
   for i in 0 1 2 3 4
   do
-    BULLSEYE=$(dartutil "$DIRECTORY/network/node$i/dart.drt" --eye)
+    BULLSEYE=$(dartutil "$DIRECTORY/DC_DB_at_District_Centres/node$i/dart.drt" --eye)
     echo "node$i| $BULLSEYE"
   done
 fi

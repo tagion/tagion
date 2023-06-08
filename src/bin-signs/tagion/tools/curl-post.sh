@@ -28,6 +28,7 @@ for file in "$DIRECTORY"/*; do
     # Display QR code for the URL containing the fingerprint
     if [ "$filename" = $LAST_FILE ]; then
       qrencode -t ansiutf8 "$DART_FRONTEND$fingerprint"
+      echo "URL: $DART_FRONTEND$fingerprint"
     fi
   fi
 done
