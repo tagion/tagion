@@ -26,6 +26,7 @@ import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.dart.DARTBasic;
 import tagion.hibon.HiBONtoText : encodeBase64, decode;
+import tagion.hibon.HiBONJSON : toPretty;
 
 @recordType("DeliveryOrder")
 struct DeliveryOrder {
@@ -199,6 +200,7 @@ int _main(string[] args) {
             stdout.rawWrite(delivery_order.toDoc.serialize);
             return 0;
         }
+        writefln("%s", delivery_order.toDoc.toPretty);
         outputfilename.setExtension(FileExtension.hibon).fwrite(delivery_order.toDoc.serialize);
         return 0;
 
@@ -239,6 +241,7 @@ int _main(string[] args) {
         stdout.rawWrite(signed_delivery_event.toDoc.serialize);
         return 0;
     }
+    writefln("%s", signed_delivery_event.toDoc.toPretty);
     outputfilename.setExtension(FileExtension.hibon).fwrite(signed_delivery_event.toDoc.serialize);
     return 0;
 }

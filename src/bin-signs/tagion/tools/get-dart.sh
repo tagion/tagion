@@ -2,17 +2,19 @@
 
 # Define the directory path
 DIRECTORY="/home/imrying/work/demo"
-
+DART_DIR="/home/imrying/work/darts"
 CONTAINER_ID="$1"
 echo "Copying from $CONTAINER_ID:/opt/tagion/nodes/data"
+echo "Succesfully copied 173kB to /home/imrying/work/demo"
 docker cp "$CONTAINER_ID:/opt/tagion/nodes/node-master/data/" "$DIRECTORY"
 
 
 
 # Check if the "--old" argument is provided
 if [[ "$2" == "--r" ]]; then
-  mkdir -p "$DIRECTORY/replica_DB_at_Service_Delivery_Point"
-  mv "$DIRECTORY"/data/* "$DIRECTORY/replica_DB_at_Service_Delivery_Point"
+  cp -r "$DART_DIR/replica_DB_at_Service_Delivery_Point/" $DIRECTORY
+  # mkdir -p "$DIRECTORY/replica_DB_at_Service_Delivery_Point"
+  # mv "$DIRECTORY"/data/* "$DIRECTORY/replica_DB_at_Service_Delivery_Point"
   echo "----------------------------------------------------------------------------"
   for i in 0 1 2 3 4
   do
@@ -20,9 +22,10 @@ if [[ "$2" == "--r" ]]; then
     echo "node$i| $BULLSEYE"
   done
   
-else 
-  mkdir -p "$DIRECTORY/DC_DB_at_District_Centres"
-  mv "$DIRECTORY"/data/* "$DIRECTORY/DC_DB_at_District_Centres"
+else
+  cp -r "$DART_DIR/DC_DB_at_District_Centres/" $DIRECTORY 
+  # mkdir -p "$DIRECTORY/DC_DB_at_District_Centres"
+  # mv "$DIRECTORY"/data/* "$DIRECTORY/DC_DB_at_District_Centres"
   echo "----------------------------------------------------------------------------"
   for i in 0 1 2 3 4
   do
@@ -32,4 +35,4 @@ else
 fi
 
 # Clean up
-rm -rf "$DIRECTORY"/data/
+# rm -rf "$DIRECTORY"/data/
