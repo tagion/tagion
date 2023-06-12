@@ -1,8 +1,9 @@
 module tagion.script.TagionCurrency;
 
 import std.format;
-import std.traits : isIntegral, isNumeric, isFloatingPoint;
-import std.algorithm.searching : canFind;
+import std.traits : isNumeric;
+
+//import std.algorithm.searching : canFind;
 import std.exception : assumeWontThrow;
 
 //import std.range : only;
