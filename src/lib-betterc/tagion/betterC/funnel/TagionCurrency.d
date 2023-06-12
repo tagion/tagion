@@ -19,15 +19,11 @@ TagionCurrency TGN(T)(T x) pure if (isNumeric!T) {
     return TagionCurrency(cast(double) x);
 }
 
-alias TagionCurrency = Currency!("TGN", 1_000_000_000, 1_000_000_000);
-
 @trusted
-struct Currency(string UNIT, long BASE_UNIT = 1_000_000_000, long UNIT_MAX = 1_000_000_000) {
-    static assert(BASE_UNIT > 0, "Base unit must be positive");
-    static assert(UNIT_MAX > 0, "Max unit mist be positive");
+struct TagionCurrency {
     enum long AXION_UNIT = 1_000_000_000;
     enum long AXION_MAX = 1_000_000_000 * AXION_UNIT;
-    //enum UNIT = "TGN";
+    enum UNIT = "TGN";
 
     protected {
         @Label("$v") long _axions;

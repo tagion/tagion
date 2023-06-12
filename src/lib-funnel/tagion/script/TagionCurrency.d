@@ -15,10 +15,14 @@ TagionCurrency TGN(T)(T x) pure if (isNumeric!T) {
     return TagionCurrency(cast(double) x);
 }
 
+alias TagionCurrency = Currency!("TGN", 1_000_000_000, 1_000_000_000);
+
 @safe
-struct TagionCurrency {
-    enum long AXION_UNIT = 1_000_000_000;
-    enum long AXION_MAX = 1_000_000_000 * AXION_UNIT;
+struct Currency(string UNIT, long BASE_UNIT = 1_000_000_000, long UNIT_MAX = 1_000_000_000) {
+    static assert(BASE_UNIT > 0, "Base unit must be positive");
+    static assert(UNIT_MAX > 0, "Max unit mist be positive");
+    enum long BASE_UNIT = 1_000_000_000;
+    enum long AXION_MAX = 1_000_000_000 * BASE_UNIT;
     enum UNIT = "TGN";
 
     protected {
@@ -31,7 +35,7 @@ struct TagionCurrency {
                 scope(exit) {
                     check_range;
                 }
-                _axions = cast(long)(tagions * AXION_UNIT);
+                _axions = cast(long)(tagions * BASE_UNIT);
             }
 
             this(T)(const T axions) pure if (isIntegral!T) {
@@ -150,20 +154,20 @@ struct TagionCurrency {
 
         long axios() {
             if (_axions < 0) {
-                return -(-_axions % AXION_UNIT);
+                return -(-_axions % BASE_UNIT);
             }
-            return _axions % AXION_UNIT;
+            return _axions % BASE_UNIT;
         }
 
         long tagions() {
             if (_axions < 0) {
-                return -(-_axions / AXION_UNIT);
+                return -(-_axions / BASE_UNIT);
             }
-            return _axions / AXION_UNIT;
+            return _axions / BASE_UNIT;
         }
 
         double value() {
-            return double(_axions) / AXION_UNIT;
+            return double(_axions) / BASE_UNIT;
         }
 
         T opCast(T)() {
@@ -183,7 +187,7 @@ struct TagionCurrency {
             value = -value;
         }
         const sign = (axions < 0) ? "-" : "";
-        return only(sign, (value / AXION_UNIT).to!string, ".", (value % AXION_UNIT).to!string).join;
+        return only(sign, (value / BASE_UNIT).to!string, ".", (value % BASE_UNIT).to!string).join;
     }
 
     string toString() {
@@ -234,10 +238,10 @@ struct TagionCurrency {
         { // test of opEqual, opBinary, opBinaryRight, opUnary, opCmp
             const x = 11.TGN;
             const y = 31.TGN;
-            assert(x == 11 * AXION_UNIT);
+            assert(x == 11 * BASE_UNIT);
             assert(x + y == 42.TGN);
-            const z = x.opBinary!"+"(31 * AXION_UNIT);
-            assert(x + (31 * AXION_UNIT) == 42.TGN);
+            const z = x.opBinary!"+"(31 * BASE_UNIT);
+            assert(x + (31 * BASE_UNIT) == 42.TGN);
             assert(x * 4 == 44.TGN);
             assert(x / 4 == 2.75.TGN);
             assert(y - x == 20.TGN);
@@ -246,16 +250,16 @@ struct TagionCurrency {
             assert((x + 0.1.TGN) % 0.25.TGN == 0.1.TGN);
             // check opBinaryRight
             assert(4 * x == 44.TGN);
-            assert(4 * AXION_UNIT + x == 15.TGN);
-            assert(4 * AXION_UNIT - x == -7.TGN);
+            assert(4 * BASE_UNIT + x == 15.TGN);
+            assert(4 * BASE_UNIT - x == -7.TGN);
             // test opCmp
             assert(x < y);
             assert(!(x > y));
-            const x_same = 11 * AXION_UNIT;
+            const x_same = 11 * BASE_UNIT;
             assert(x >= x_same);
             assert(x <= x_same);
-            assert(x - y < -11 * AXION_UNIT);
-            assert(y - x > 11 * AXION_UNIT);
+            assert(x - y < -11 * BASE_UNIT);
+            assert(y - x > 11 * BASE_UNIT);
         }
 
         { // test opOpAssign
@@ -265,9 +269,9 @@ struct TagionCurrency {
             assert(y == 11.TGN + 31.TGN);
             y -= 2 * x;
             assert(y == 31.TGN - 11.TGN);
-            x += 5 * AXION_UNIT;
+            x += 5 * BASE_UNIT;
             assert(x == 11.TGN + 5.TGN);
-            x -= 5 * AXION_UNIT;
+            x -= 5 * BASE_UNIT;
             assert(x == 11.TGN);
             x *= 5;
             assert(x == 5 * 11.TGN);
@@ -282,9 +286,9 @@ struct TagionCurrency {
         { // Check over and underflow
             import tagion.script.ScriptException : ScriptException;
 
-            const very_rich = (AXION_MAX / AXION_UNIT - 1).TGN;
+            const very_rich = (AXION_MAX / BASE_UNIT - 1).TGN;
             assertThrown!ScriptException(very_rich + 2.TGN);
-            const very_poor = (-AXION_MAX / AXION_UNIT + 1).TGN;
+            const very_poor = (-AXION_MAX / BASE_UNIT + 1).TGN;
             assertThrown!ScriptException(very_poor - 2.TGN);
 
         }
