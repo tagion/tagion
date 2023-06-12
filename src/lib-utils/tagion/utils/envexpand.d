@@ -83,7 +83,7 @@ unittest {
         "OFhugo": "_extra_",
         "OFhugo_end": "_other_extra_"
     ]) == "text_other_extra_");
-    // Double dollar ignored as a environment
+    // Double dollar ignored as an environment
     assert("text$$(NAME)".envExpand(["NAME": "not-replaced"]) == "text$(NAME)");
 
 }

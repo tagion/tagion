@@ -94,7 +94,7 @@ struct WalletOptions {
     */
     void setDefault() pure nothrow {
         accountfile = "account.hibon";
-        walletfile = "tagionwallet.hibon";
+        walletfile = "wallet.hibon";
         quizfile = "quiz.hibon";
         contractfile = "contract.hibon";
         billsfile = "bills.hibon";
@@ -788,7 +788,7 @@ int _main(string[] args) {
         const answers = answers_str.split(',');
         assert(questions.length >= 3, "Minimal amount of answers is 3");
         assert(questions.length is answers.length, "Amount of questions should be same as answers");
-        assert(pincode.length = 4, "You must provide pin-code with 4 digits");
+        assert(pincode.length == 4, "You must provide pin-code with 4 digits");
         auto hashnet = new StdHashNet;
         auto recover = KeyRecover(hashnet);
         const pincode1 = to!(char[])(pincode);

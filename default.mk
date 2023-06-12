@@ -4,10 +4,19 @@ WOLFSSL?=1
 OLD?=1
 ONETOOL?=1
 DEBUGGER?=ddd
+
 export TEST_STAGE:=commit
 export SEED:=$(shell git rev-parse HEAD)
 
+RELEASE_DFLAGS+=$(DOPT)
+
+#DFLAGS+=-s
+ifndef DEBUG_DISABLE
+DFLAGS+=$(DDEBUG_SYMBOLS)
+endif
+
 DFLAGS+=$(DVERSION)=REDBLACKTREE_SAFE_PROBLEM
+
 
 
 # Extra DFLAGS for the testbench 

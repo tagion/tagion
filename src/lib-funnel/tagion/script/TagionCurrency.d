@@ -118,7 +118,14 @@ struct TagionCurrency {
         }
 
         bool opEquals(T)(T x) if (isNumeric!T) {
-            return _axions == x;
+            import std.math;
+
+            static if (isFloatingPoint!T) {
+                return isClose(value, x, 1e-9);
+            }
+            else {
+                return _axions == x;
+            }
         }
 
         int opCmp(const TagionCurrency x) {
@@ -156,8 +163,18 @@ struct TagionCurrency {
         }
 
         double value() {
-            return double(_axions) * AXION_UNIT;
+            return double(_axions) / AXION_UNIT;
         }
+
+        T opCast(T)() {
+            static if (is(Unqual!T == double)) {
+                return value;
+            }
+            else {
+                static assert(0, format("%s casting is not supported", T.stringof));
+            }
+        }
+
     }
 
     static string toTagion(const long axions) pure {
@@ -270,6 +287,16 @@ struct TagionCurrency {
             const very_poor = (-AXION_MAX / AXION_UNIT + 1).TGN;
             assertThrown!ScriptException(very_poor - 2.TGN);
 
+        }
+
+        { // Check casting to double
+            import std.math : isClose;
+
+            const x = 5.465.TGN;
+            const x_double = cast(double) x;
+            assert(isClose(x_double, 5.465, 1e-9));
+            const x_back_tgn = x_double.TGN;
+            assert(x_back_tgn == 5.465);
         }
     }
 }

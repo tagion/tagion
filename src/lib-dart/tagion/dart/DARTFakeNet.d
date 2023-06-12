@@ -89,7 +89,8 @@ class DARTFakeNet : StdSecureNet {
         return Document(hibon);
     }
 
+    enum hashname = "fake256";
     override string multihash() const pure nothrow @nogc {
-        return "fake256";
+        return hashname;
     }
 }

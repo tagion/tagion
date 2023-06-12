@@ -11,6 +11,7 @@ import tagion.dart.DARTFakeNet;
 import tagion.hibon.Document;
 import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 import tagion.crypto.SecureNet : StdSecureNet;
+import std.file : exists;
 
 
 struct DartService {
@@ -20,7 +21,10 @@ struct DartService {
     this(const(string) dart_filename, const(string) password) {
         net = new StdSecureNet();
         net.generateKeyPair(password);
-        // net = new DARTFakeNet;
+        // quick fix net should not be created nor dart created here.
+        if (!dart_filename.exists) {
+            DARTFile.create(dart_filename, net);
+        }
 
 
         db = new DART(net, dart_filename);

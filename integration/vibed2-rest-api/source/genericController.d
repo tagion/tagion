@@ -19,7 +19,10 @@ import std.range : take;
 import tagion.hibon.HiBONJSON : toPretty;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
-import tagion.utils.Miscellaneous : toHexString, decode;
+import tagion.utils.Miscellaneous : toHexString;
+
+import tagion.hibon.HiBONtoText;
+import tagion.basic.Types;
 import tagion.dart.DARTBasic : DARTIndex, dartIndex;
 
 // services
@@ -66,9 +69,9 @@ struct GenericController {
 
         DARTIndex fingerprint;
         try {
-            if (id.length != 64) {
-                throw new Exception("Length is not correct");
-            }
+            // if (id.length != 64) {
+            //     throw new Exception("Length is not correct");
+            // }
             fingerprint = DARTIndex(decode(id));
         }
         catch (Exception e) {
@@ -107,12 +110,13 @@ struct GenericController {
      *   res = httpserverresponse
      */
     void postT(HTTPServerRequest req, HTTPServerResponse res) {
-        import tagion.hibon.HiBONtoText;
         import tagion.hibon.HiBONJSON;
         writeln("POST");
 
         Document doc;
         const data = req.params.get("data");
+
+        writeln("data: ", data);
         try {
             doc = decodeBase64(data);
         } catch (Exception e) {
@@ -122,22 +126,11 @@ struct GenericController {
             return;
         }
         writeln(doc.toPretty);
-        
-        
-        const prev_bullseye = dart_service.bullseye;
-
         const fingerprint = dart_service.modify(doc);
-        const new_bullseye = dart_service.bullseye;
-        if (new_bullseye == prev_bullseye) {
-            const err = ErrorResponse(ErrorCode.dataFingerprintNotAdded, ErrorDescription
-                    .dataFingerprintNotAdded);
-            writeln("ErrorDescription.dataFingerprintNotAdded");
-            respondWithError(res, err);
-            return;
-        }
 
         Json dataSuccess = Json.emptyObject;
-        dataSuccess["fingerprint"] = fingerprint.toHexString;
+        const buf = cast(Buffer) fingerprint;
+        dataSuccess["fingerprint"] = buf.encodeBase64;
 
         ResponseModel responseSuccess = ResponseModel(true, dataSuccess);
 
@@ -161,6 +154,8 @@ struct GenericController {
             const text = req.json.toString;
             const json = stdjson.parseJSON(text);
             doc = Document(toHiBON(json));
+
+            writeln("doc: ", doc);
         }
         catch (Exception e) {
             const err = ErrorResponse(ErrorCode.dataNotValid, ErrorDescription.dataNotValid);

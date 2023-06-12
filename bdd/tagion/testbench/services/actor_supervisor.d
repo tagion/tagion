@@ -8,7 +8,7 @@ import tagion.hibon.Document;
 import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
 import tagion.actor.actor;
-import std.concurrency;
+import tagion.utils.pretend_safe_concurrency;
 import tagion.basic.tagionexceptions : TagionException;
 import tagion.actor.exceptions : TaskFailure;
 import core.time;
@@ -21,9 +21,9 @@ import std.stdio;
 enum feature = Feature(
             "Actor supervisor test",
             [
-            "This feature should check that when a child catches an exception is sends it up as a failure.",
-            "The supervisour has the abillity to decide whether or not to restart i depending on the exception."
-            ]);
+        "This feature should check that when a child catches an exception is sends it up as a failure.",
+        "The supervisour has the abillity to decide whether or not to restart i depending on the exception."
+]);
 
 alias FeatureContext = Tuple!(
         SupervisorWithFailingChild, "SupervisorWithFailingChild",
@@ -121,7 +121,7 @@ class SupervisorWithFailingChild {
     ChildHandle childHandle;
 
     @Given("a actor #super")
-    Document aActorSuper() @trusted {
+    Document aActorSuper() {
         supervisorHandle = spawn!SetUpForDisappointment(supervisor_task_name);
         Ctrl ctrl = receiveOnlyTimeout!CtrlMsg.ctrl;
         check(ctrl is Ctrl.STARTING, "Supervisor is not starting");
@@ -130,7 +130,7 @@ class SupervisorWithFailingChild {
     }
 
     @When("the #super and the #child has started")
-    Document hasStarted() @trusted {
+    Document hasStarted() {
         auto ctrl = receiveOnlyTimeout!CtrlMsg.ctrl;
         check(ctrl is Ctrl.ALIVE, "Supervisor is not running");
 
@@ -141,33 +141,33 @@ class SupervisorWithFailingChild {
     }
 
     @Then("the #super should send a message to the #child which results in a fail")
-    Document aFail() @trusted {
+    Document aFail() {
         childHandle.send(Msg!"fatal"());
         return result_ok;
     }
 
     @Then("the #super actor should catch the #child which failed")
-    Document whichFailed() @trusted {
+    Document whichFailed() {
         writeln("Returned ", receiveOnly!reFatal);
         return result_ok;
     }
 
     @Then("the #super actor should stop #child and restart it")
-    Document restartIt() @trusted {
+    Document restartIt() {
         childHandle = handle!SetUpForFailure(child_task_name); // FIX: actor handle should be transparent
         check(locate(child_task_name) !is Tid.init, "Child thread is not running");
         return result_ok;
     }
 
     @Then("the #super should send a message to the #child which results in a different fail")
-    Document differentFail() @trusted {
+    Document differentFail() {
         childHandle.send(Msg!"recoverable"());
         check(childHandle.tid !is Tid.init, "Child thread is not running");
         return result_ok;
     }
 
     @Then("the #super actor should let the #child keep running")
-    Document keepRunning() @trusted {
+    Document keepRunning() {
         writeln("Returned ", receiveOnly!reRecoverable);
         check(childHandle.tid !is Tid.init, "Child thread is not running");
 
@@ -175,7 +175,7 @@ class SupervisorWithFailingChild {
     }
 
     @Then("the #super should stop")
-    Document superShouldStop() @trusted {
+    Document superShouldStop() {
         supervisorHandle.send(Sig.STOP);
         auto ctrl = receiveOnly!CtrlMsg;
         check(ctrl.ctrl is Ctrl.END, "Supervisor did not stop");

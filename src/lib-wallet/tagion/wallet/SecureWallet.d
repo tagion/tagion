@@ -45,7 +45,8 @@ alias CiphDoc = Cipher.CipherDocument;
 import tagion.communication.HiRPC;
 
 /// Function and data to recover, sign transaction and hold the account information
-@safe struct SecureWallet(Net : SecureNet) {
+@safe
+struct SecureWallet(Net : SecureNet) {
     protected RecoverGenerator _wallet; /// Information to recover the seed-generator
     protected DevicePIN _pin; /// Information to check the Pin code
 
@@ -720,8 +721,7 @@ import tagion.communication.HiRPC;
             receiver_wallet.net = receiver_net;
         }
 
-        pragma(msg,
-                "fixme(cbr): The following test is not finished, Need to transfer to money to receiver");
+        pragma(msg, "fixme(cbr): The following test is not finished, Need to transfer to money to receiver");
         SignedContract contract_1;
         { // The receiver_wallet creates an invoice to the sender_wallet
             auto invoice = SecureWallet.createInvoice("To sender 1", 13.TGN);
