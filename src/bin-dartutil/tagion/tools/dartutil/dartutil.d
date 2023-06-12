@@ -128,7 +128,13 @@ int _main(string[] args) {
                     main_args.options);
             return 0;
         }
-
+        if (dartfilename != dartfilename.init) {
+            writefln("Deprecation notice: the -d / --dartfilename is deprecated. \n Please use dartutil FILENAME switches instead");
+        }
+        
+        if (inputfilename != inputfilename.init) {
+            writefln("Deprecation notice: the -i / --inputfilename is deprecated. \n Please use dartutil FILENAME switches instead");
+        }
         //        dartread = !dartread_args.empty;
         foreach (file; args[1 .. $]) {
             if (file.hasExtension(FileExtension.hibon)) {
