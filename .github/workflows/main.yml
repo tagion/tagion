@@ -105,7 +105,8 @@ jobs:
         run: |
           ls
           echo "log dir"
-          ls logs      
+          ls logs
+          ls build/${{ env.TARGET }}/integration      
       - name: Run collider tests
         run: |
           source $PWD/build/${{ env.TARGET }}/bin/bddenv.sh
