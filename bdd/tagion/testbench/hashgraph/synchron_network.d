@@ -78,19 +78,16 @@ class StartNetworkWithNAmountOfNodes {
                 writefln("only %s out of %s nodes sending", gossip_state.length, network.channels.length);
                 return false;
             }
-            foreach (owner_keys; gossip_state) {
-                bool sending_state;
-                foreach (state; owner_keys) {
-                    if (state == check_state) {
-                        sending_state = true;
-                        break;
+
+            foreach(owner_keys; gossip_state) {
+                foreach(state; owner_keys) {
+                    if (state != check_state) {
+                        return false;
                     }
-                }
-                if (sending_state == false) {
-                    return false;
-                }
+                }  
             }
             return true;
+
         }
 
         void printStates(const(ExchangeState[Pubkey][Pubkey]) gossip_states) {
@@ -109,6 +106,7 @@ class StartNetworkWithNAmountOfNodes {
 
         }
 
+        bool coherent;
         try {
             foreach (i; 0 .. 1000) {
                 const channel_number = network.random.value(0, network.channels.length);
@@ -117,14 +115,17 @@ class StartNetworkWithNAmountOfNodes {
                 (() @trusted { current.call; })();
 
                 printStates(network.authorising.gossip_state);
-
-                // writefln("coherent = %s", allSendingState(ExchangeState.COHERENT, network.authorising.gossip_state));
+                coherent = allSendingState(ExchangeState.COHERENT, network.authorising.gossip_state); 
+                if (coherent) {
+                    break;
+                }
 
             }
         }
         catch (Exception e) {
             check(false, e.msg);
         }
+        
 
         // create ripple files.
         Pubkey[string] node_labels;
@@ -136,8 +137,9 @@ class StartNetworkWithNAmountOfNodes {
             writeln(filename);
             _net._hashgraph.fwrite(filename, node_labels);
         }
+        check(coherent, "Nodes not coherent");
 
-        return Document();
+        return result_ok;
     }
 
     @When("all nodes are coherent")
