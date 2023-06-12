@@ -34,11 +34,11 @@ This table shows the valid formats describe as regular expression.
 | signed       | `-?(0[xX][0-9a-fA-F]+|[0-9]+)`                               |
 | unsigend     | `(0[xX][0-9a-fA-F]+|[0-9]+)`                                 |
 | hex          | `0[xX][0-9a-fA-F]+`                                          |
-| base64URL    | `@[A-Za-z0-9\-_\=]+[=]*`                                     |
+| base64       | `@[A-Za-z0-9\+\/]+[=]*`                                      |
 
  
 
-## JSON compliant rules
+## JSON Compliant rules
 
 1. The syntax of the JSON must compile to the JSON standard https://www.json.org/json-en.html
 2. If some items in the JSON document does not fit the HiBON to JSON format it is defined as an error.
@@ -46,9 +46,9 @@ This table shows the valid formats describe as regular expression.
 
 
 
-## JSON compliant tests
+## JSON Complaints tests
 
-Form a converter to be able compliant with HiBON and JSON conversion standard. The convert must be able to convert the flowing.
+Form a converter to be able complaint with HiBON and JSON conversion standard. The convert must be able to convert the flowing.
 
 **Test sample 1**
 

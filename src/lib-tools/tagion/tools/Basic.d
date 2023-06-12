@@ -32,26 +32,6 @@ void verbose(Args...)(string fmt, Args args) {
 }
 
 @trusted
-void noboseln(Args...)(string fmt, Args args) {
-    import std.stdio;
-
-    if (!verbose_switch) {
-        writefln(fmt, args);
-        stdout.flush;
-    }
-}
-
-@trusted
-void nobose(Args...)(string fmt, Args args) {
-    import std.stdio;
-
-    if (!verbose_switch) {
-        writef(fmt, args);
-        stdout.flush;
-    }
-}
-
-@trusted
 void error(const Exception e) {
     error(e.msg);
     if (verbose_switch) {

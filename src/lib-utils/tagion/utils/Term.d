@@ -148,7 +148,7 @@ else {
             }
         }
 
-        enum strain = [
+        alias strain = AliasSeq!(
                 KeyStrain(KeyCode.UP, [27, 91, 65]),
                 KeyStrain(KeyCode.DOWN, [27, 91, 66]),
                 KeyStrain(KeyCode.RIGHT, [27, 91, 67]),
@@ -158,15 +158,11 @@ else {
                 KeyStrain(KeyCode.PAGEDOWN, [27, 91, 54, 126]),
                 KeyStrain(KeyCode.PAGEUP, [27, 91, 53, 126]),
                 KeyStrain(KeyCode.ENTER, [13]),
-            ];
+        );
 
         KeyCode getKey(ref int ch) {
-            import std.algorithm;
-            import std.array;
-
             enum StaticComp(KeyStrain a, KeyStrain b) = a.branch < b.branch;
-
-            enum sorted_strain = strain.array.sort!((a, b) => a.branch < b.branch); //staticSort!(StaticComp, strain);
+            alias sorted_strain = staticSort!(StaticComp, strain);
             KeyCode select(uint index = 0, uint pos = 0)(ref int ch) {
                 static if (index < sorted_strain.length) {
                     static if (pos < sorted_strain[index].branch.length) {
@@ -174,19 +170,19 @@ else {
                             static if (pos + 1 is sorted_strain[index].branch.length) {
                                 return sorted_strain[index].code;
                             }
-                else {
+                            else {
                                 ch = get;
                                 return select!(index, pos + 1)(ch);
                             }
                         }
-                else if (ch > sorted_strain[index].branch[pos]) {
+                        else if (ch > sorted_strain[index].branch[pos]) {
                             return select!(index + 1, pos)(ch);
                         }
-                else {
+                        else {
                             return KeyCode.NONE;
                         }
                     }
-                else {
+                    else {
                         return select!(index + 1, pos)(ch);
                     }
                 }

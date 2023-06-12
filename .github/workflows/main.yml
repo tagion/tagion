@@ -48,7 +48,7 @@ jobs:
         run: |
           ls
           echo "logs dir"
-          ls build/${{ env.TARGET }}/integration
+          ls logs
       - name: Report bddtests
         run: | 
           RESULT=$(./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/commit/results)
@@ -225,33 +225,12 @@ jobs:
           
   update_dartservice:
     runs-on: dartservice-back
-    environment: Prod-manual
     needs: [finish_workflow]
     steps:    
       - name: get artifact and restart service
         run: |
-          source ~/.bashrc
-          rm -rf *
-          loginctl enable-linger gitbot
-          gh run download -n successful_artifact --repo tagion/tagion
-          tar -xzf *.tar.gz
-          cd build/x86_64-linux/integration
-          systemctl stop --user dart_api.service
-          ./install.sh
-          systemctl restart --user dart_api.service
-  
-  update_dev_dartservice:
-    runs-on: dev-dartservice-back
-    needs: [finish_workflow]
-    steps:    
-      - name: get artifact and restart service
-        run: |
-          source ~/.bashrc
-          rm -rf *
-          loginctl enable-linger gitbot
-          gh run download -n successful_artifact --repo tagion/tagion
-          tar -xzf *.tar.gz
-          cd build/x86_64-linux/integration
-          systemctl stop --user dart_api.service
-          ./install.sh
-          systemctl restart --user dart_api.service
+          export GH_TOKEN=${{ env.GITBOT_TOKEN }}
+          id
+          pwd
+          ls -l
+          echo $GH_TOKEN

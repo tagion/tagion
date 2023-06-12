@@ -5,10 +5,9 @@ import tagion.communication.HiRPC;
 import tagion.dart.DART;
 import tagion.dart.BlockFile;
 import tagion.hibon.Document;
-import tagion.tools.Basic : verbose, nobose, noboseln;
+import tagion.tools.Basic : verbose;
 import std.file : remove;
 import tagion.dart.synchronizer;
-import tagion.utils.Term;
 
 @safe
 class DARTUtilSynchronizer : JournalSynchronizer {
@@ -58,12 +57,7 @@ class DARTUtilSynchronizer : JournalSynchronizer {
 @safe
 string[] synchronize(DART destination, DART source, string journal_basename) {
     string[] journal_filenames;
-    uint count;
-    enum line_width = 32;
-    //    foreach (sector; destination.sectors) {
-    foreach (ushort _rim; 0 .. ubyte.max + 1) {
-        ushort sector = cast(ushort)(_rim << 8);
-        const(ubyte)[] rims;
+    foreach (sector; destination.sectors) {
         verbose("Sector %04x", sector);
         immutable journal_filename = format("%s.%04x.dart_journal", journal_basename, sector);
         BlockFile.create(journal_filename, DART.stringof, BLOCK_SIZE);
@@ -73,38 +67,21 @@ string[] synchronize(DART destination, DART source, string journal_basename) {
             if (!journalfile.empty) {
                 journal_filenames ~= journal_filename;
                 verbose("Journalfile %s", journal_filename);
-                nobose("%s#%s", YELLOW, RESET);
-
-            }
-            else {
-                nobose("%sX%s", BLUE, RESET);
-            }
-            count++;
-            if (count % line_width == 0) {
-                noboseln("!");
             }
             journalfile.close;
         }
         auto synch = new DARTUtilSynchronizer(journalfile, destination, source);
 
-        auto destination_synchronizer = destination.synchronizer(synch, DART.Rims([cast(ubyte) _rim]));
+        auto destination_synchronizer = destination.synchronizer(synch, DART.Rims(sector));
         while (!destination_synchronizer.empty) {
             (() @trusted { destination_synchronizer.call; })();
         }
 
     }
-    noboseln("Replay journal filenames");
-    verbose("Replay journal filenames");
-    count = 0;
+
+    verbose("Replay journal_filename");
     foreach (journal_filename; journal_filenames) {
         destination.replay(journal_filename);
-        verbose("Replay %s", journal_filename);
-        nobose("%s*%s", GREEN, RESET);
-        count++;
-        if (count % line_width == 0) {
-            noboseln("!");
-        }
     }
-    noboseln("\n%d journal files has been syncronized", count);
     return journal_filenames;
 }

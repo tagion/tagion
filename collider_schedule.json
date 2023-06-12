@@ -36,7 +36,7 @@
             "args": [],
             "envs": {},
             "stages": [
-                "commit","dart"
+                "commit","xtest"
             ],
             "timeout": 0.0
         },
@@ -44,7 +44,7 @@
             "args": [],
             "envs": {},
             "stages": [
-                "commit", "dart"
+                "commit"
             ],
             "timeout": 0.0
         },
@@ -52,7 +52,7 @@
             "args": [],
             "envs": {},
             "stages": [
-                "commit", "dart"
+                "commit"
             ],
             "timeout": 0.0
         },
@@ -60,7 +60,7 @@
             "args": [],
             "envs": {},
             "stages": [
-                "commit", "dart"
+                "commit"
             ],
             "timeout": 0.0
         },

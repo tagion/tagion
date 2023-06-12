@@ -148,7 +148,7 @@ struct ScheduleRunner {
             .joiner;
         if (schedule_list.empty) {
             writefln("None of the stage %s available", stages);
-            writefln("Available stages %s", schedule.stages);
+            writefln("Availabale %s", schedule.stages);
             return 1;
         }
         auto runners = new Runner[jobs];

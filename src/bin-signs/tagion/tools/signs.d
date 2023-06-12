@@ -17,32 +17,28 @@ import tagion.hibon.HiBONRecord;
 import tagion.crypto.Types;
 import tagion.basic.Types;
 import tagion.script.StandardRecords;
-import std.datetime;
 import tagion.utils.StdTime;
-import core.time;
 import tagion.script.TagionCurrency;
 import tagion.hibon.Document;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.dart.DARTBasic;
-import tagion.hibon.HiBONtoText : encodeBase64, decode;
-import tagion.hibon.HiBONJSON : toPretty;
+import tagion.utils.Miscellaneous : toHexString, decode;
 
 @recordType("DeliveryOrder")
 struct DeliveryOrder {
+    string vaccineType; // Vaccine Type - "Measels"
+    string packageID; // Package id - "1234ABC"
+    int numberOfVaccines; // Number of vaccines - 20
+    string destination; // Final destination - "Livingstone"
+    string pickuppoint; // Pickup point location - "copenhagen"
+    // TagionCurrency payment; // Payment - "20usd"
+    
+    sdt_t startTime; // standard time
+    sdt_t endTime; // end time - should be delivered before this point    
 
-    string vaccineType; 
-    string packageID;
-    int numberOfVaccines; 
-    string destination;
-    string pickuppoint;
-    string startTime;
-    string endTime;
-    int payment;
-    @label(OwnerKey) Pubkey owner; // new token owner       
-    Pubkey finalReceiver;
-    
-    
+    @label(OwnerKey) Pubkey originalOwner; // the owner of the delivery order
+    Pubkey finalReceiver; // The receiver of the vaccines
     mixin HiBONRecord!(q{
         this(
             string vaccineType, 
@@ -50,10 +46,9 @@ struct DeliveryOrder {
             int numberOfVaccines, 
             string destination, 
             string pickuppoint,
-            string startTime,
-            string endTime,
-            int payment,
-            @label(OwnerKey) Pubkey owner, // new token owner       
+            sdt_t startTime,
+            sdt_t endTime,
+            Pubkey originalOwner,
             Pubkey finalReceiver,
         ) {
             this.vaccineType = vaccineType;
@@ -63,34 +58,33 @@ struct DeliveryOrder {
             this.pickuppoint = pickuppoint;
             this.startTime = startTime;
             this.endTime = endTime;
-            this.payment = payment;
-            this.owner = owner;
+            this.originalOwner = originalOwner;
             this.finalReceiver = finalReceiver;
         }
     });
 }
 
-@recordType("DeliveryEvent")
-struct DeliveryEvent {
-    Signature newSignature; // signature ex. from receiver or from sender when receiver has already signed
+@recordType("SignedDeliveryEvent")
+struct SignedDeliveryEvent {
+    Signature newSignature; // signature ex. from current owner
     DARTIndex deliveryEvent;
-    string temp;
-    string timeStamp;
+    sdt_t timeStamp;
+    Pubkey recipient;
     @label(OwnerKey) Pubkey owner; // new token owner
+    
     
     mixin HiBONRecord!(q{
         this(
             Signature newSignature, 
             DARTIndex deliveryEvent,
-            string temp,
-            string timeStamp,
-            Pubkey owner,
-    ) 
+            sdt_t timeStamp,
+            Pubkey recipient,
+            Pubkey owner) 
         {    
             this.newSignature = newSignature;
             this.deliveryEvent = deliveryEvent;
-            this.temp = temp;
             this.timeStamp = timeStamp;
+            this.recipient = recipient;
             this.owner = owner;
         }   
     });
@@ -108,7 +102,6 @@ int _main(string[] args) {
     string outputfilename = "delivery_order.hibon";
     bool generate_pubkey;
     string receiver_pubkey;
-    string final_receiver_pubkey;
     
     GetoptResult main_args;
     try {
@@ -122,7 +115,6 @@ int _main(string[] args) {
                 "g|generate", "generates dummy delivery order", &generate,
                 "generate_pubkey", "generates public key to stdout", &generate_pubkey,
                 "r|receiver", "give the pubkey for the receiver", &receiver_pubkey,
-                "R|finalreceiver", "the final receiver only used for gen delivery order", &final_receiver_pubkey,
                 "o|outputfilename", "filename to write to", &outputfilename,
         );
     }
@@ -165,45 +157,8 @@ int _main(string[] args) {
     }
 
     if (generate_pubkey) {
-        auto buf = cast(Buffer) net.pubkey;
-        writefln("%s", buf.encodeBase64);
+        writefln("%s", net.pubkey.toHexString);
         return 0;
-    }
-
-    
-    // if (args.length != 1) {
-    //     stderr.writefln("inputfilename not specified!");
-    //     return 0;
-    // }
-    if (generate) {
-        writefln("generating delivery order");
-        if (final_receiver_pubkey == final_receiver_pubkey.init) {
-            stderr.writefln("missing finalreceiver");
-            return 1;
-        }
-        Pubkey final_receiver = decode(final_receiver_pubkey);
-        auto startTime = Clock.currTime();
-        auto endTime = startTime + 2.days;
-        auto delivery_order = DeliveryOrder(
-                "Measels",
-                "43a3efd0se395",
-                200,
-                "Livingstone Pharmacy",
-                "Lusaka Warehouse",
-                startTime.toISOExtString,
-                endTime.toISOExtString,
-                100,
-                net.pubkey,
-                final_receiver,
-        );
-        if (standard_output) {
-            stdout.rawWrite(delivery_order.toDoc.serialize);
-            return 0;
-        }
-        writefln("%s", delivery_order.toDoc.toPretty);
-        outputfilename.setExtension(FileExtension.hibon).fwrite(delivery_order.toDoc.serialize);
-        return 0;
-
     }
 
     if (receiver_pubkey == receiver_pubkey.init) {
@@ -211,7 +166,32 @@ int _main(string[] args) {
         return 1;
     }
     Pubkey receiver = decode(receiver_pubkey);
+    
+    // if (args.length != 1) {
+    //     stderr.writefln("inputfilename not specified!");
+    //     return 0;
+    // }
+    if (generate) {
+        writefln("generating dummy delivery order");
+        auto delivery_order = DeliveryOrder(
+                "Measels",
+                "43a3efd",
+                100,
+                "Copenhagen",
+                "Triesen Liechenstein",
+                currentTime,
+                currentTime,
+                net.pubkey,
+                receiver,
+        );
+        if (standard_output) {
+            stdout.rawWrite(delivery_order.toDoc.serialize);
+            return 0;
+        }
+        outputfilename.setExtension(FileExtension.hibon).fwrite(delivery_order.toDoc.serialize);
+        return 0;
 
+    }
     if (inputfilename.extension != FileExtension.hibon) {
         stderr.writefln("Error: inputfilename not correct filetype. Must be %s", FileExtension.hibon);
         return 1;
@@ -220,7 +200,7 @@ int _main(string[] args) {
     immutable data = assumeUnique(cast(ubyte[]) fread(inputfilename));
     const doc = Document(data);
 
-    if (!(DeliveryOrder.isRecord(doc) || DeliveryEvent.isRecord(doc))) {
+    if (!(DeliveryOrder.isRecord(doc) || SignedDeliveryEvent.isRecord(doc))) {
         stderr.writefln("Error: inputfilename not correct type. Must be DeliveryOrder or DeliveryEvent");
         return 1;
     }
@@ -229,19 +209,12 @@ int _main(string[] args) {
     Signature doc_signed = net.sign(doc).signature;
     DARTIndex dart_index = net.dartIndex(doc);
 
-    auto signed_delivery_event = DeliveryEvent(
-            doc_signed, 
-            dart_index,
-            "OK",
-            Clock.currTime.toISOExtString,
-            receiver, //new token owner
-    );
+    auto signed_delivery_event = SignedDeliveryEvent(doc_signed, dart_index, currentTime, receiver, net.pubkey);
      
     if (standard_output) {
         stdout.rawWrite(signed_delivery_event.toDoc.serialize);
         return 0;
     }
-    writefln("%s", signed_delivery_event.toDoc.toPretty);
     outputfilename.setExtension(FileExtension.hibon).fwrite(signed_delivery_event.toDoc.serialize);
     return 0;
 }

@@ -170,7 +170,6 @@ env-compiler:
 	${call log.kvp, SONAME_FLAG, "$(SONAME_FLAG)"}
 	${call log.kvp, DVERSION, $(DVERSION)}
 	${call log.kvp, DDEBUG, $(DDEBUG)}
-	${call log.kvp, DOPT, $(DOPT)}
 	${call log.kvp, DUNITTEST, $(DUNITTEST)}
 	${call log.kvp, DMAIN, $(DMAIN)}
 	${call log.kvp, DIP, $(DIP)}

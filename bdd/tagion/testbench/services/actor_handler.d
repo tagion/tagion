@@ -8,7 +8,7 @@ import tagion.hibon.Document;
 import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
 
-import tagion.utils.pretend_safe_concurrency;
+import std.concurrency;
 import tagion.actor.actor;
 import std.stdio;
 import core.time;
@@ -65,7 +65,7 @@ class SendAMessageToAnActorYouDontOwn {
     MyActorHandle child_handler;
 
     @Given("a supervisor #super and one child actor #child")
-    Document actorChild() {
+    Document actorChild() @trusted {
         super_actor_handler = spawn!MySuperActor(super_task_name);
 
         Ctrl ctrl = receiveOnlyTimeout!CtrlMsg.ctrl;
@@ -78,20 +78,20 @@ class SendAMessageToAnActorYouDontOwn {
     }
 
     @When("#we request the handler for #child")
-    Document forChild() {
+    Document forChild() @trusted {
         child_handler = handle!MyActor(child_task_name);
         check(child_handler.tid !is Tid.init, "Child task was not running");
         return result_ok;
     }
 
     @When("#we send a message to #child")
-    Document toChild() {
+    Document toChild() @trusted {
         child_handler.send(Msg!"setstatus"(), 42, thisTid);
         return result_ok;
     }
 
     @When("#we receive confirmation that shild has received the message.")
-    Document theMessage() {
+    Document theMessage() @trusted {
         string message = receiveOnlyTimeout!string;
 
         check(message !is string.init, "Never got the confirmation from the child");
@@ -100,7 +100,7 @@ class SendAMessageToAnActorYouDontOwn {
     }
 
     @Then("stop the #super")
-    Document theSuper() {
+    Document theSuper() @trusted {
         super_actor_handler.send(Sig.STOP);
         return result_ok;
     }

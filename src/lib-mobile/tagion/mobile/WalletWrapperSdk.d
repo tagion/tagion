@@ -10,26 +10,23 @@ import std.stdint;
 import std.string : toStringz, fromStringz;
 import std.array;
 import std.random;
-import std.stdio;
-import std.path;
-import std.range;
-import std.algorithm;
-import std.file : exists, remove;
-import core.stdc.string;
-
-import Wallet = tagion.wallet.SecureWallet;
+import tagion.wallet.SecureWallet;
 import tagion.script.TagionCurrency;
 import tagion.script.StandardRecords;
 import tagion.communication.HiRPC;
 import tagion.hibon.HiBON;
+import std.stdio;
 import tagion.hibon.HiBONJSON;
-import tagion.hibon.HiBONRecord : fwrite, fread, HiBONRecord;
-import tagion.basic.Types : Buffer, FileExtension;
+import tagion.hibon.HiBONRecord : fwrite;
+import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Pubkey;
 import tagion.crypto.aes.AESCrypto;
 import tagion.crypto.SecureNet : StdSecureNet, BadSecureNet;
 import tagion.crypto.SecureNet;
 import tagion.wallet.KeyRecover;
+import std.file : fread = read, exists, remove;
+import core.stdc.string;
+
 import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN, AccountDetails;
 import tagion.crypto.Cipher;
 
@@ -42,13 +39,11 @@ enum DrtStatus {
 /// Variable, which repsresents the d-runtime status
 __gshared DrtStatus __runtimeStatus = DrtStatus.DEFAULT_STS;
 // Wallet global variable.
-alias StdSecureWallet = Wallet.SecureWallet!(StdSecureNet);
-
-static __secure_wallet = StdSecureWallet(DevicePIN.init);
-
+static __secure_wallet = SecureWallet!(StdSecureNet)(DevicePIN.init,
+        RecoverGenerator.init, AccountDetails.init);
 // Storage global variable.
-static const(WalletStorage)* __wallet_storage;
-static Exception last_error;
+static WalletStorage __wallet_storage = null;
+
 /// Functions called from d-lang through dart:ffi
 extern (C) {
 
@@ -72,17 +67,18 @@ extern (C) {
 
     // Sets global wallet variable to init state.
     void defaultWallet() {
-        __secure_wallet = StdSecureWallet(DevicePIN.init,
+        __secure_wallet = SecureWallet!(StdSecureNet)(DevicePIN.init,
                 RecoverGenerator.init, AccountDetails.init);
     }
 
     // Storage should be initialised once with correct file path
     // before using other wallet's functionality.
-    export uint wallet_storage_init(const char* pathPtr, uint32_t pathLen) {
+    export uint wallet_storage_init(const uint8_t* pathPtr, uint32_t pathLen) {
         const directoryPath = cast(char[])(pathPtr[0 .. pathLen]);
         if (directoryPath.length > 0) {
             // Full path to stored wallet data.
-            const walletDataPath = directoryPath;
+            const walletDataPath = directoryPath ~ "/twallet.hibon";
+
             __wallet_storage = new WalletStorage(walletDataPath);
             return 1;
         }
@@ -95,17 +91,14 @@ extern (C) {
         return __wallet_storage.isWalletExist();
     }
 
-    export uint wallet_create(
-            const uint8_t* pincodePtr,
-            const uint32_t pincodeLen,
-            const uint16_t* mnemonicPtr,
-            const uint32_t mnemonicLen) {
+    export uint wallet_create(const uint8_t* pincodePtr,
+            const uint32_t pincodeLen, const uint16_t* mnemonicPtr, const uint32_t mnemonicLen) {
         // Restore data from pointers.  
         const pincode = cast(char[])(pincodePtr[0 .. pincodeLen]);
         const mnemonic = mnemonicPtr[0 .. mnemonicLen];
 
         // Create a wallet from inputs.
-        __secure_wallet = StdSecureWallet.createWallet(
+        __secure_wallet = SecureWallet!(StdSecureNet).createWallet(
                 mnemonic,
                 pincode
         );
@@ -141,7 +134,7 @@ extern (C) {
 
     export uint wallet_delete() {
         // Try to remove wallet file.
-        if (__wallet_storage !is null && __wallet_storage.remove()) {
+        if (__wallet_storage.remove()) {
             __secure_wallet.logout();
             // Set wallet to default.
             defaultWallet();
@@ -161,11 +154,7 @@ extern (C) {
     }
 
     // TODO: Get info if it's possible to change a pincode without providing a current one.
-    export uint change_pin(
-            const uint8_t* pincodePtr,
-            const uint32_t pincodeLen,
-            const uint8_t* newPincodePtr,
-            const uint32_t newPincodeLen) {
+    export uint change_pin(const uint8_t* pincodePtr, const uint32_t pincodeLen, const uint8_t* newPincodePtr, const uint32_t newPincodeLen) {
         const pincode = cast(char[])(pincodePtr[0 .. pincodeLen]);
         const newPincode = cast(char[])(newPincodePtr[0 .. newPincodeLen]);
 
@@ -181,11 +170,7 @@ extern (C) {
         return 0;
     }
 
-    export uint create_contract(
-            uint8_t* contractPtr,
-            const uint8_t* invoicePtr,
-            const uint32_t invoiceLen,
-            const double amount) {
+    export uint create_contract(uint8_t* contractPtr, const uint8_t* invoicePtr, const uint32_t invoiceLen, const double amount) {
 
         immutable invoiceBuff = cast(immutable)(invoicePtr[0 .. invoiceLen]);
 
@@ -210,17 +195,13 @@ extern (C) {
         return 0;
     }
 
-    export uint create_invoice(
-            uint8_t* invoicePtr,
-            const double amount,
-            const char* labelPtr,
-            const uint32_t labelLen) {
+    export uint create_invoice(uint8_t* invoicePtr, const double amount, const char* labelPtr, const uint32_t labelLen) {
 
         immutable label = cast(immutable)(labelPtr[0 .. labelLen]);
 
         if (__secure_wallet.isLoggedin()) {
-            auto invoice = StdSecureWallet.createInvoice(
-                    label, amount.TGN);
+            auto invoice = SecureWallet!(StdSecureNet).createInvoice(label,
+                    (cast(double) amount).TGN);
             __secure_wallet.registerInvoice(invoice);
 
             HiBON hibon = new HiBON();
@@ -268,13 +249,11 @@ extern (C) {
         return 0;
     }
 
-    @safe
     export double get_locked_balance() {
         const balance = __secure_wallet.locked_balance();
         return cast(double) balance.tagions;
     }
 
-    @safe
     export double get_balance() {
         const balance = __secure_wallet.available_balance();
         return cast(double) balance.tagions;
@@ -424,8 +403,8 @@ extern (C) {
             auto paramsDoc = messageDoc[paramsTag].get!Document;
             auto sContract = SignedContract(paramsDoc);
 
-            int status = __secure_wallet.account.check_contract_payment(
-                    sContract.contract.inputs, sContract.contract.output);
+            int status = __secure_wallet.account.check_contract_payment(sContract.contract.inputs, sContract.contract
+                    .output);
 
             *statusPtr = cast(uint8_t) status;
 
@@ -448,21 +427,18 @@ extern (C) {
 }
 
 unittest {
-    const work_path = new_test_path;
-    scope (success) {
-        work_path.rmdirRecurse;
-    }
+
     { // Init storage should fail with empty path.
-        const char[] path;
-        const pathLen = cast(uint32_t) path.length;
-        const result = wallet_storage_init(path.ptr, pathLen);
+        const uint8_t[] path = cast(uint8_t[]) "".dup;
+        const uint32_t pathLen = cast(uint32_t) path.length;
+        const uint result = wallet_storage_init(path.ptr, pathLen);
         // Check the result
         assert(result == 0);
         assert(__wallet_storage is null);
     }
 
     { // Init storage with correct path.
-        const path = work_path;
+        const uint8_t[] path = cast(uint8_t[]) ".".dup;
         const uint32_t pathLen = cast(uint32_t) path.length;
         const uint result = wallet_storage_init(path.ptr, pathLen);
         // Check the result
@@ -513,14 +489,13 @@ unittest {
     }
 
     { // Logout wallet.
-        const result = wallet_logout();
+        const uint result = wallet_logout();
         assert(result != 0, "Expected non-zero result");
         assert(!__secure_wallet.isLoggedin);
     }
 
     { // Delete wallet.
-
-        const result = wallet_delete();
+        const uint result = wallet_delete();
         assert(result != 0, "Expected non-zero result");
         assert(!__secure_wallet.isLoggedin);
         assert(!__wallet_storage.isWalletExist);
@@ -718,93 +693,81 @@ unittest {
 
 }
 
-struct WalletStorage {
+import tagion.hibon.HiBONRecord : fwrite;
+import tagion.wallet.SecureWallet;
+import tagion.hibon.Document;
+import std.file : fread = read, exists, remove;
+import tagion.hibon.HiBON;
 
-    enum {
-        accountfile = "account".setExtension(FileExtension.hibon), /// account file name
-        walletfile = "wallet".setExtension(
-                FileExtension.hibon), /// wallet file name
-        devicefile = "device".setExtension(FileExtension.hibon), /// device file name
-    }
-    string wallet_data_path;
-    this(const char[] walletDataPath) const pure nothrow {
-        wallet_data_path = walletDataPath.idup;
-    }
+class WalletStorage {
 
-    string path(string filename) const pure {
-        return buildPath(wallet_data_path, filename);
+    protected const char[] _walletDataPath;
+
+    this(const char[] walletDataPath) {
+        _walletDataPath = walletDataPath;
     }
 
-    bool isWalletExist() const {
-        return only(accountfile, walletfile, devicefile)
-            .map!(file => path(file).exists)
-            .any;
+    bool isWalletExist() {
+        return exists(_walletDataPath);
     }
 
-    bool write(const StdSecureWallet secure_wallet) const {
+    bool write(const(SecureWallet!(StdSecureNet)) secure_wallet) {
         // Create a hibon for wallet data.
-        try {
+        auto storedHibon = new HiBON();
+        storedHibon["pin"] = secure_wallet.pin.toHiBON;
+        storedHibon["account"] = secure_wallet.account.toHiBON;
+        storedHibon["wallet"] = secure_wallet.wallet.toHiBON;
 
-            path(devicefile).fwrite(secure_wallet.pin);
-            path(accountfile).fwrite(secure_wallet.account);
-            path(walletfile).fwrite(secure_wallet.wallet);
-            return true;
+        try {
+            // Write to the file
+            _walletDataPath.fwrite(storedHibon);
+            return 1;
         }
         catch (Exception e) {
-            return false;
+            return 0;
         }
     }
 
-    bool read(ref StdSecureWallet secure_wallet) const {
-        try {
-            auto pin = path(devicefile).fread!DevicePIN;
-            auto wallet = path(walletfile).fread!RecoverGenerator;
-            auto account = path(accountfile).fread!AccountDetails;
-            secure_wallet = StdSecureWallet(pin, wallet, account);
-            return true;
+    bool read(ref SecureWallet!(StdSecureNet) secure_wallet) {
+        if (exists(_walletDataPath)) {
+            immutable walletFile = cast(immutable(ubyte)[]) fread(_walletDataPath);
+            // TODO: add decryption for a file content.
+            // Wallet data in HiBON format.
+            auto storedHibon = Document(walletFile);
+            auto devicePin = storedHibon["pin"].get!Document;
+            auto account = storedHibon["account"].get!Document;
+            auto wallet = storedHibon["wallet"].get!Document;
+
+            secure_wallet = SecureWallet!(StdSecureNet)(DevicePIN(devicePin),
+                    RecoverGenerator(wallet), AccountDetails(account));
+            return 1;
         }
-        catch (Exception e) {
-            return false;
-        }
+        return 0;
     }
 
-    bool remove() const {
-        if (wallet_data_path.exists) {
-
+    bool remove() {
+        if (exists(_walletDataPath)) {
             try {
-                only(accountfile, walletfile, devicefile)
-                    .each!(file => path(file).remove);
-                //wallet_data_path.rmdir;
+                _walletDataPath.remove();
                 return 1;
             }
             catch (Exception e) {
-                last_error = e;
-                writefln("%s", e);
-                return false;
+                return 0;
             }
         }
-        return false;
+        return 0;
     }
 }
 
 unittest {
-    import std.stdio;
-
-    const work_path = new_test_path;
-    scope (success) {
-        work_path.rmdirRecurse;
-    }
-    scope (failure) {
-        writefln("failed work_path %s", work_path);
-    }
     { // Write wallet file.
 
         // Path to stored wallet data.
-        const walletDataPath = work_path;
+        const walletDataPath = "twallet.hibon";
 
-        auto strg = new WalletStorage(walletDataPath);
+        WalletStorage strg = new WalletStorage(walletDataPath);
 
-        const secure_wallet = StdSecureWallet(DevicePIN.init,
+        const secure_wallet = SecureWallet!(StdSecureNet)(DevicePIN.init,
                 RecoverGenerator.init, AccountDetails.init);
 
         bool result = strg.write(secure_wallet);
@@ -814,11 +777,11 @@ unittest {
     { // Read wallet file.
 
         // Path to stored wallet data.
-        const walletDataPath = work_path;
+        const walletDataPath = "twallet.hibon";
 
-        auto strg = new WalletStorage(walletDataPath);
+        WalletStorage strg = new WalletStorage(walletDataPath);
 
-        StdSecureWallet secure_wallet;
+        SecureWallet!(StdSecureNet) secure_wallet;
 
         bool result = strg.read(secure_wallet);
         assert(result, "Expect read result is true");
@@ -827,9 +790,9 @@ unittest {
     { // Check if wallet file is exist.
 
         // Path to stored wallet data.
-        const walletDataPath = work_path;
+        const walletDataPath = "twallet.hibon";
 
-        auto strg = new WalletStorage(walletDataPath);
+        WalletStorage strg = new WalletStorage(walletDataPath);
         bool result = strg.isWalletExist();
         assert(result, "Expect read result is true");
     }
@@ -837,22 +800,10 @@ unittest {
     { // Delete wallet file.
 
         // Path to stored wallet data.
-        const walletDataPath = work_path;
+        const walletDataPath = "twallet.hibon";
 
-        auto strg = new WalletStorage(walletDataPath);
+        WalletStorage strg = new WalletStorage(walletDataPath);
         bool result = strg.remove();
         assert(result, "Expect read result is true");
-    }
-
-}
-
-version (unittest) {
-    import std.file;
-    import std.conv : to;
-
-    string new_test_path(string func = __FUNCTION__, const size_t line = __LINE__) {
-        const result_path = [deleteme, func, line.to!string].join("_");
-        result_path.mkdirRecurse;
-        return result_path;
     }
 }
