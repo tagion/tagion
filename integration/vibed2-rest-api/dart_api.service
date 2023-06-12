@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 WorkingDirectory=%h/.local/share/dart_api/
-ExecStart=%h/.local/share/dart_api/vibed2-project
+ExecStart=%h/.local/share/dart_api/dartapi
 Restart=always
 RestartSec=30
 
