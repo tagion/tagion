@@ -105,7 +105,8 @@ jobs:
         run: |
           ls
           echo "log dir"
-          ls logs      
+          ls logs
+          ls build/${{ env.TARGET }}/integration      
       - name: Run collider tests
         run: |
           source $PWD/build/${{ env.TARGET }}/bin/bddenv.sh
@@ -223,7 +224,7 @@ jobs:
           
   update_dartservice:
     runs-on: dartservice-back
-    environment: Prod-manual
+    # environment: Prod-manual
     needs: [finish_workflow]
     steps:    
       - name: get artifact and restart service

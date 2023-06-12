@@ -1,4 +1,4 @@
-name "vibed2-project"
+name "dartapi"
 description "A simple vibe.d server application."
 authors "aleksandr_bohdanov"
 copyright "Copyright © 2023, aleksandr_bohdanov"

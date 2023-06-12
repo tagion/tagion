@@ -19,6 +19,8 @@ import std.format;
 import std.base64;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
+import tagion.basic.Types : isBufferTypedef;
+import std.typecons : TypedefType;
 
 alias toHex = misc.toHexString;
 
@@ -41,6 +43,11 @@ enum {
 @safe string encodeBase64(T)(const(T) t) pure
 if (isHiBONRecord!T) {
     return encodeBase64(t.serialize);
+}
+
+@safe string encodeBase64(T)(const(T) t) pure
+if (isBufferTypedef!T) {
+    return encodeBase64(cast(TypedefType!T) t);
 }
 
 @nogc @safe bool isHexPrefix(const(char[]) str) pure nothrow {

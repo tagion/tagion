@@ -26,7 +26,6 @@ mixin Main!(_main);
 
 
 int _main(string[] args) {
-    if (env.stage == Stage.commit) {
         BDDOptions bdd_options;
         setDefaultBDDOptions(bdd_options);
         bdd_options.scenario_name = __MODULE__;
@@ -44,7 +43,6 @@ int _main(string[] args) {
         auto dart_sync_feature = automation!(basic_dart_partial_sync)();
         dart_sync_feature.PartialSync(dart_info);
         dart_sync_feature.run();
-    }
 
     return 0;
 

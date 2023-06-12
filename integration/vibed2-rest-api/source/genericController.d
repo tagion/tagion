@@ -129,8 +129,8 @@ struct GenericController {
         const fingerprint = dart_service.modify(doc);
 
         Json dataSuccess = Json.emptyObject;
-        const buf = cast(Buffer) fingerprint;
-        dataSuccess["fingerprint"] = buf.encodeBase64;
+        // const buf = cast(Buffer) fingerprint;
+        dataSuccess["fingerprint"] = fingerprint.encodeBase64;
 
         ResponseModel responseSuccess = ResponseModel(true, dataSuccess);
 
@@ -164,20 +164,10 @@ struct GenericController {
             return;
         }
 
-        const prev_bullseye = dart_service.bullseye;
-
         const fingerprint = dart_service.modify(doc);
-        const new_bullseye = dart_service.bullseye;
-        if (new_bullseye == prev_bullseye) {
-            const err = ErrorResponse(ErrorCode.dataFingerprintNotAdded, ErrorDescription
-                    .dataFingerprintNotAdded);
-            writeln("ErrorDescription.dataFingerprintNotAdded");
-            respondWithError(res, err);
-            return;
-        }
 
         Json dataSuccess = Json.emptyObject;
-        dataSuccess["fingerprint"] = fingerprint.toHexString;
+        dataSuccess["fingerprint"] = fingerprint.encodeBase64;
 
         ResponseModel responseSuccess = ResponseModel(true, dataSuccess);
 
