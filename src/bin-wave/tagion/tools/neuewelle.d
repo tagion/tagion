@@ -1,3 +1,4 @@
+/// New wave implementation of the tagion node
 module tagion.tools.neuewelle;
 
 // import std.stdio;
@@ -15,6 +16,8 @@ import std.typecons;
 import std.path;
 import tagion.network.ReceiveBuffer;
 import tagion.basic.basic : forceRemove;
+import tagion.communication.HiRPC;
+import tagion.dart.DARTcrud;
 import tagion.hibon.Document;
 import tagion.GlobalSignals : abort;
 
@@ -22,6 +25,8 @@ import tagion.GlobalSignals : abort;
 //     ver = Example("-v"),
 //     db = Tuple("%s -d %s", program_name, file),
 // }
+
+enum contract_sock_path = buildPath("/", "tmp", "tagionwave_contract.sock");
 
 mixin Main!(_main);
 
@@ -47,11 +52,10 @@ int _main(string[] args) {
         return 0;
     }
 
-    const contract_sock_path = buildPath("/", "tmp", "tagionwave_contract.sock");
-
     writeln("contract_sock_path: ", contract_sock_path);
     Address contract_sock_addr = new UnixAddress(contract_sock_path);
     Socket contract_socket = new Socket(AddressFamily.UNIX, SocketType.STREAM);
+    contract_socket.blocking = true;
 
     scope (exit) {
         contract_socket.close();
