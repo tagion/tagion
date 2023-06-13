@@ -16,6 +16,7 @@ import std.path;
 import tagion.network.ReceiveBuffer;
 import tagion.basic.basic : forceRemove;
 import tagion.hibon.Document;
+import tagion.GlobalSignals : abort;
 
 // enum EXAMPLES {
 //     ver = Example("-v"),
@@ -47,27 +48,30 @@ int _main(string[] args) {
     }
 
     const contract_sock_path = buildPath("/", "tmp", "tagionwave_contract.sock");
-    scope (exit) {
-        forceRemove(contract_sock_path);
-    }
 
     writeln("contract_sock_path: ", contract_sock_path);
     Address contract_sock_addr = new UnixAddress(contract_sock_path);
     Socket contract_socket = new Socket(AddressFamily.UNIX, SocketType.STREAM);
+
+    scope (exit) {
+        contract_socket.close();
+        forceRemove(contract_sock_path);
+    }
 
     echoSock(contract_socket, contract_sock_addr);
 
     return 0;
 }
 
-void echoSock(Socket sock, Address addr) {
+void echoSock(Socket sock, Address addr) @safe {
     bool exit = false;
     sock.bind(addr);
-    sock.listen(1);
-    while (!exit) {
+    sock.listen(5);
+
+    while (!abort) {
         ReceiveBuffer buf;
         auto result = buf.append(&sock.accept.receive);
-        immutable ubyte[] data = cast(immutable) result.data;
+        immutable ubyte[] data = result.data.dup;
         auto doc = Document(data);
         assert(doc.valid is Document.Element.ErrorCode.NONE, "Message is not valid, not a HiBON Document");
 
