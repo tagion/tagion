@@ -27,26 +27,24 @@ mixin Main!(_main);
 
 int _main(string[] args) {
 
-    if (env.stage == Stage.commit) {
-        BDDOptions bdd_options;
-        setDefaultBDDOptions(bdd_options);
-        bdd_options.scenario_name = __MODULE__;
+    BDDOptions bdd_options;
+    setDefaultBDDOptions(bdd_options);
+    bdd_options.scenario_name = __MODULE__;
 
-        const string module_path = env.bdd_log.buildPath(bdd_options.scenario_name);
-        const string dartfilename = buildPath(module_path, "dart_mapping_two_archives".setExtension(FileExtension.dart));
-        const SecureNet net = new DARTFakeNet("very_secret");
-        const hirpc = HiRPC(net);
+    const string module_path = env.bdd_log.buildPath(bdd_options.scenario_name);
+    const string dartfilename = buildPath(module_path, "dart_mapping_two_archives".setExtension(FileExtension.dart));
+    const SecureNet net = new DARTFakeNet("very_secret");
+    const hirpc = HiRPC(net);
 
-        DartInfo dart_info = DartInfo(dartfilename, module_path, net, hirpc);
+    DartInfo dart_info = DartInfo(dartfilename, module_path, net, hirpc);
 
-        auto dart_mapping_two_archives_feature = automation!(dart_mapping_two_archives)();
+    auto dart_mapping_two_archives_feature = automation!(dart_mapping_two_archives)();
 
-        dart_mapping_two_archives_feature.AddOneArchive(dart_info);
-        dart_mapping_two_archives_feature.AddAnotherArchive(dart_info);
-        dart_mapping_two_archives_feature.RemoveArchive(dart_info);
-        
-        auto dart_mapping_two_archives_context = dart_mapping_two_archives_feature.run();
-    }
+    dart_mapping_two_archives_feature.AddOneArchive(dart_info);
+    dart_mapping_two_archives_feature.AddAnotherArchive(dart_info);
+    dart_mapping_two_archives_feature.RemoveArchive(dart_info);
+    
+    auto dart_mapping_two_archives_context = dart_mapping_two_archives_feature.run();
     return 0;
 }
 
