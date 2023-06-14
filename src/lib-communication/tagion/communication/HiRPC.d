@@ -162,7 +162,7 @@ struct HiRPC {
     }
 
     /// HiRPC Post (Sender,Receiver)
-    @recordType("HiPRC")
+    @recordType("HiRPC")
     struct Post(Direction DIRECTION) {
         union Message {
             Method method;
