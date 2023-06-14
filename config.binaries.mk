@@ -38,8 +38,8 @@ ${call DO_BIN,neuewelle,$(LIB_DFILES) ${call BIN_DEPS,wave},tagion}
 #
 # Test wallet interface
 #
-target-contracter: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-${call DO_BIN,contracter,$(LIB_DFILES) ${call BIN_DEPS,contracter},tagion}
+target-contractor: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+${call DO_BIN,contractor,$(LIB_DFILES) ${call BIN_DEPS,contractor},tagion}
 
 #
 # HiBON utility
@@ -116,7 +116,7 @@ ${call DO_BIN,graphview,$(LIB_DFILES) ${call BIN_DEPS,graphview},tagion}
 #
 TAGION_TOOLS+=priorwave
 TAGION_TOOLS+=wave # New wave
-TAGION_TOOLS+=contracter
+TAGION_TOOLS+=contractor
 TAGION_TOOLS+=dartutil
 TAGION_TOOLS+=blockutil
 TAGION_TOOLS+=hibonutil
