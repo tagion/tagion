@@ -436,7 +436,7 @@ struct HiRPC {
     }
 
     /** 
-     * Creates a sneder with a runtime method name 
+     * Creates a sender with a runtime method name 
      * Params:
      *   method = method name 
      *   params = argument for the method
