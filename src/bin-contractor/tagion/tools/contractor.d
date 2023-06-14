@@ -1,5 +1,5 @@
 /// Test "wallet" to interact with neuewelle over a Socket
-module tagion.tools.contracter;
+module tagion.tools.contractor;
 
 import std.socket;
 import tagion.dart.DARTcrud;
@@ -11,7 +11,7 @@ import tagion.hibon.HiBONBase;
 
 mixin Main!(_main);
 
-int _main() {
+int _main(string[] _) {
     HiRPC hirpc;
     HiBON hibon = new HiBON();
 
