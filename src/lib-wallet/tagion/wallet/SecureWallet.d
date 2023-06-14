@@ -2,6 +2,8 @@
 * Handles management of key-pair, account-details device-pin
 */
 module tagion.wallet.SecureWallet;
+import std.stdio;
+import tagion.utils.Miscellaneous;
 
 import std.format;
 import std.string : representation;
@@ -171,20 +173,27 @@ struct SecureWallet(Net : SecureNet) {
         auto net = new Net;
         auto recover = KeyRecover(net);
 
+        writefln("%-(%04X %)", mnemonic);
         //TODO: createKey with mnemonic and device id.
         // recover.createKey(mnemonic, deviceId, null);
         SecureWallet result;
         {
             auto R = bip39(mnemonic);
+            writefln("R = %s", R.toHexString);
             scope (exit) {
                 scramble(R);
             }
             //recover.findSecret(R, mnemonic);
             net.createKeyPair(R);
 
-            auto wallet = RecoverGenerator.init; //(recover.toDoc);
-            result = SecureWallet(DevicePIN.init, wallet);
-            result.set_pincode(recover, R, pincode, net);
+            //auto wallet = RecoverGenerator.init; //(recover.toDoc);
+            //result = SecureWallet(net); //DevicePIN.init, wallet);
+            result.net = net;
+            result.set_pincode(recover, R, pincode);
+            writefln("wallet = %s", result.wallet.toPretty);
+            writefln("pin    = %s", result.pin.toPretty);
+            writefln("check  = %s", result.checkPincode(pincode));
+            writefln("pubkey = %s", result.getPublicKey.toHexString);
         }
         return result;
     }
@@ -197,10 +206,14 @@ struct SecureWallet(Net : SecureNet) {
         const hash_size = ((net) ? net : _net).hashSize;
         auto seed = new ubyte[hash_size];
         scramble(seed);
+        /+
         _pin.U = seed.idup;
         const pinhash = recover.checkHash(pincode.representation, _pin.U);
-        _pin.D = xor(R, pinhash);
+        writefln("set_pincode pinhash=%s", pinhash.toHexString);    
+    _pin.D = xor(R, pinhash);
         _pin.S = recover.checkHash(R);
+ +/
+        _pin.setPin(&recover.checkHash, R, pincode.representation, seed.idup);
     }
 
     /**
@@ -276,9 +289,15 @@ struct SecureWallet(Net : SecureNet) {
             logout;
             auto hashnet = new Net;
             auto recover = KeyRecover(hashnet);
-            auto pinhash = recover.checkHash(pincode.representation, _pin.U);
+            // auto pinhash = recover.checkHash(pincode.representation, _pin.U);
+            //  writefln("pinhash = %s", pinhash.toHexString);
             auto R = new ubyte[hashnet.hashSize];
-            _pin.recover(R, pinhash);
+            scope (exit) {
+                scramble(R);
+            }
+            _pin.recover(&recover.checkHash, R, pincode.representation);
+            //  _pin.recover(R, pinhash);
+            writefln("_pin.R = %s", R.toHexString);
             if (_pin.S == recover.checkHash(R)) {
                 net = new Net;
                 net.createKeyPair(R);
@@ -304,9 +323,9 @@ struct SecureWallet(Net : SecureNet) {
     bool checkPincode(const(char[]) pincode) {
         const hashnet = new Net;
         auto recover = KeyRecover(hashnet);
-        const pinhash = recover.checkHash(pincode.representation, _pin.U);
+        //const pinhash = recover.checkHash(pincode.representation, _pin.U);
         scope R = new ubyte[hashnet.hashSize];
-        _pin.recover(R, pinhash);
+        _pin.recover(&recover.checkHash, R, pincode.representation);
         return _pin.S == recover.checkHash(R);
     }
 
@@ -320,10 +339,10 @@ struct SecureWallet(Net : SecureNet) {
     bool changePincode(const(char[]) pincode, const(char[]) new_pincode) {
         const hashnet = new Net;
         auto recover = KeyRecover(hashnet);
-        const pinhash = recover.checkHash(pincode.representation, _pin.U);
+        //const pinhash = recover.checkHash(pincode.representation, _pin.U);
         auto R = new ubyte[hashnet.hashSize];
         // xor(R, _pin.D, pinhash);
-        _pin.recover(R, pinhash);
+        _pin.recover(&recover.checkHash, R, recover.checkHash, pincode.representation);
         if (_pin.S == recover.checkHash(R)) {
             // const new_pinhash = recover.checkHash(new_pincode.representation, _pin.U);
             set_pincode(recover, R, new_pincode);
@@ -542,7 +561,7 @@ struct SecureWallet(Net : SecureNet) {
         return bills.map!(b => b.value).sum;
     }
 
-    immutable(ubyte)[] getPublicKey() {
+    Buffer getPublicKey() {
         import std.typecons;
 
         const pkey = net.pubkey;
@@ -657,23 +676,35 @@ struct SecureWallet(Net : SecureNet) {
             secure_wallet.login(new_pincode);
             assert(secure_wallet.isLoggedin);
         }
+
         { // Secure wallet with mnemonic.
 
+            writeln("------------ ---------------------");
             const test_pin_code = "1234";
             const test_mnemonic = cast(ushort[])[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
             // Create first wallet.
             auto secure_wallet_1 = SecureWallet.createWallet(test_mnemonic, test_pin_code);
+            const pubkey_1_create = secure_wallet_1.getPublicKey;
+            writefln("Pubkey 1 create %s", pubkey_1_create.toHexString);
             secure_wallet_1.login(test_pin_code);
-            auto pubkey_1 = secure_wallet_1.getPublicKey();
+            writefln("Loggin 1 create %s", secure_wallet_1.isLoggedin);
+            const pubkey_1 = secure_wallet_1.getPublicKey();
+            writefln("Pubkey 1 login  %s", pubkey_1.toHexString);
+            writefln("Logged 1 login  %s", secure_wallet_1.isLoggedin);
+
+            assert(pubkey_1_create == pubkey_1);
             // Create second wallet.
             auto secure_wallet_2 = SecureWallet.createWallet(test_mnemonic, test_pin_code);
+            //writefln("Pubkey 2 %s", secure_wallet_2.getPublicKey.toHexString);
+
             secure_wallet_2.login(test_pin_code);
+            // writefln("Logged in 2 %s", secure_wallet_2.isLoggedin);
             auto pubkey_2 = secure_wallet_2.getPublicKey();
 
-            writeln("Pubkey 1 ", pubkey_1);
-            writeln("Pubkey 2 ", pubkey_2);
+            // writefln("Pubkey 1 %s", pubkey_1.toHexString);
+            // writefln("Pubkey 2 %s", pubkey_2.toHexString);
 
-            version(MNEMONIC) {
+            version (MNEMONIC) {
                 assert(pubkey_1 == pubkey_2);
             }
         }
@@ -683,6 +714,7 @@ struct SecureWallet(Net : SecureNet) {
     unittest { // Test for account
         import std.stdio;
         import std.range : zip;
+        import tagion.utils.Miscellaneous;
 
         auto sender_wallet = SecureWallet(DevicePIN.init, RecoverGenerator.init);
         auto net = new Net;
