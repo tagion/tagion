@@ -21,6 +21,8 @@ import tagion.dart.DARTcrud;
 import tagion.hibon.Document;
 import tagion.GlobalSignals : abort;
 import tagion.hibon.HiBONJSON;
+import tagion.hibon.HiBONRecord;
+import std.concurrency;
 
 // enum EXAMPLES {
 //     ver = Example("-v"),
@@ -81,7 +83,10 @@ void echoSock(Socket sock, Address addr) @safe {
         writeln("HiBON status code: ", doc.valid);
         assert(doc.valid is Document.Element.ErrorCode.NONE, "Message is not valid, not a HiBON Document");
 
-        writefln("Received document of size: %s", doc.length);
+        writefln("Received document of length: %s", doc.length);
+        assert(doc.isRecord!(HiRPC.Sender), "Message is not a hirpc sender record");
+        assert(doc.isRecord!(HiRPC.Receiver), "Message is not a hirpc receiver record");
+
         writeln(doc.toPretty);
     }
 
