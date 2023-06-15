@@ -26,25 +26,24 @@ struct Quiz {
 @safe
 @recordType("PIN")
 struct DevicePIN {
-    alias Hash = Buffer delegate(scope const(ubyte[]) value, scope const(ubyte[]) salt);
     Buffer D; /// Device number
     Buffer U; /// Device random
     Buffer S; /// Check sum value
-    void recover(const Hash hash, ref scope ubyte[] R, scope const(ubyte[]) P) const {
+    void recover(const KeyRecover recover, ref scope ubyte[] R, scope const(ubyte[]) P) const {
         import tagion.utils.Miscellaneous : xor;
 
-        const pinhash = hash(P, U);
+        const pinhash = recover.checkHash(P, U);
         xor(R, D, pinhash);
 
     }
 
-    void setPin(const Hash hash, scope const(ubyte[]) R, scope const(ubyte[]) P, Buffer salt) {
+    void setPin(const KeyRecover recover, scope const(ubyte[]) R, scope const(ubyte[]) P, Buffer salt) {
         import tagion.utils.Miscellaneous : xor;
 
-        const pinhash = hash(P, salt);
+        const pinhash = recover.checkHash(P, salt);
         U = salt;
         D = xor(R, pinhash);
-        S = hash(R, null);
+        S = recover.checkHash(R);
 
     }
 

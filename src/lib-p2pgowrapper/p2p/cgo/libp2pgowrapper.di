@@ -11,6 +11,8 @@ nothrow:
 
 /* package p2p */
 
+/* for ptrdiff_t below */
+
 struct _GoString_
 {
     const(char)* p;
@@ -36,7 +38,6 @@ alias GoUint = ulong;
 alias GoUintptr = c_ulong;
 alias GoFloat32 = float;
 alias GoFloat64 = double;
-
 alias GoComplex64 = cfloat;
 alias GoComplex128 = cdouble;
 

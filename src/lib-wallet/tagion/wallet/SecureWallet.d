@@ -213,7 +213,7 @@ struct SecureWallet(Net : SecureNet) {
     _pin.D = xor(R, pinhash);
         _pin.S = recover.checkHash(R);
  +/
-        _pin.setPin(&recover.checkHash, R, pincode.representation, seed.idup);
+        _pin.setPin(recover, R, pincode.representation, seed.idup);
     }
 
     /**
@@ -295,7 +295,7 @@ struct SecureWallet(Net : SecureNet) {
             scope (exit) {
                 scramble(R);
             }
-            _pin.recover(&recover.checkHash, R, pincode.representation);
+            _pin.recover(recover, R, pincode.representation);
             //  _pin.recover(R, pinhash);
             writefln("_pin.R = %s", R.toHexString);
             if (_pin.S == recover.checkHash(R)) {
@@ -325,7 +325,7 @@ struct SecureWallet(Net : SecureNet) {
         auto recover = KeyRecover(hashnet);
         //const pinhash = recover.checkHash(pincode.representation, _pin.U);
         scope R = new ubyte[hashnet.hashSize];
-        _pin.recover(&recover.checkHash, R, pincode.representation);
+        _pin.recover(recover, R, pincode.representation);
         return _pin.S == recover.checkHash(R);
     }
 
@@ -342,7 +342,7 @@ struct SecureWallet(Net : SecureNet) {
         //const pinhash = recover.checkHash(pincode.representation, _pin.U);
         auto R = new ubyte[hashnet.hashSize];
         // xor(R, _pin.D, pinhash);
-        _pin.recover(&recover.checkHash, R, recover.checkHash, pincode.representation);
+        _pin.recover(recover, R, pincode.representation);
         if (_pin.S == recover.checkHash(R)) {
             // const new_pinhash = recover.checkHash(new_pincode.representation, _pin.U);
             set_pincode(recover, R, new_pincode);
