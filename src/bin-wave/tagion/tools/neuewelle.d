@@ -23,17 +23,37 @@ import tagion.GlobalSignals : abort;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord;
 import std.concurrency;
+import core.sys.posix.signal;
+import core.thread;
 
 // enum EXAMPLES {
 //     ver = Example("-v"),
 //     db = Tuple("%s -d %s", program_name, file),
 // }
 
+static shared run = true;
+extern (C)
+void signal_handler(int _) @trusted nothrow {
+    try {
+        run = true;
+    }
+    catch (Exception e) {
+        assert(0, format("DID NOT CLOSE PROPERLY \n %s", e));
+    }
+}
+
 enum contract_sock_path = buildPath("/", "tmp", "tagionwave_contract.sock");
 
 mixin Main!(_main);
 
 int _main(string[] args) {
+
+    sigaction_t sa;
+    sa.sa_handler = &signal_handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    // Register the signal handler for SIGINT
+    sigaction(SIGINT, &sa, null);
 
     bool version_switch;
     immutable program = args[0];
@@ -56,39 +76,44 @@ int _main(string[] args) {
     }
 
     writeln("contract_sock_path: ", contract_sock_path);
-    Address contract_sock_addr = new UnixAddress(contract_sock_path);
-    Socket contract_socket = new Socket(AddressFamily.UNIX, SocketType.STREAM);
-    contract_socket.blocking = true;
+    Address addr = new UnixAddress(contract_sock_path);
+    Socket sock = new Socket(AddressFamily.UNIX, SocketType.STREAM);
+    sock.blocking = true;
+    sock.bind(addr);
+    enum MAX_CONNECTIONS = 5;
+    sock.listen(MAX_CONNECTIONS);
 
-    scope (exit) {
-        contract_socket.close();
-        forceRemove(contract_sock_path);
+    Socket accept_sock = sock.accept;
+    spawn(&echoSock, cast(immutable) accept_sock);
+
+    while (run) {
     }
 
-    echoSock(contract_socket, contract_sock_addr);
+    writeln("exiting");
+    accept_sock.close();
+    sock.close();
+
+    thread_joinAll;
+
+    forceRemove(contract_sock_path);
 
     return 0;
 }
 
-void echoSock(Socket sock, Address addr) @safe {
-    bool exit = false;
-    sock.bind(addr);
-    sock.listen(5);
+void echoSock(immutable Socket _sock) {
+    Socket sock = cast(Socket) _sock;
+    ReceiveBuffer buf;
+    auto result = buf.append(&sock.receive);
+    immutable ubyte[] data = result.data.dup;
+    Document doc = Document(data);
+    writeln("HiBON status code: ", doc.valid);
+    assert(doc.valid is Document.Element.ErrorCode.NONE, "Message is not valid, not a HiBON Document");
 
-    while (!abort) {
-        ReceiveBuffer buf;
-        auto result = buf.append(&sock.accept.receive);
-        immutable ubyte[] data = result.data.dup;
-        Document doc = Document(data);
-        writeln("HiBON status code: ", doc.valid);
-        assert(doc.valid is Document.Element.ErrorCode.NONE, "Message is not valid, not a HiBON Document");
+    writefln("Received document of length: %s", doc.length);
+    assert(doc.isRecord!(HiRPC.Sender), "Message is not a hirpc sender record");
+    assert(doc.isRecord!(HiRPC.Receiver), "Message is not a hirpc receiver record");
 
-        writefln("Received document of length: %s", doc.length);
-        assert(doc.isRecord!(HiRPC.Sender), "Message is not a hirpc sender record");
-        assert(doc.isRecord!(HiRPC.Receiver), "Message is not a hirpc receiver record");
-
-        writeln(doc.toPretty);
-    }
+    writeln(doc.toPretty);
 
     sock.close();
 }
