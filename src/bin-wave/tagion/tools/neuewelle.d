@@ -32,10 +32,11 @@ import core.thread;
 // }
 
 static shared run = true;
+
 extern (C)
 void signal_handler(int _) @trusted nothrow {
     try {
-        run = true;
+        run = false;
     }
     catch (Exception e) {
         assert(0, format("DID NOT CLOSE PROPERLY \n %s", e));
@@ -83,14 +84,20 @@ int _main(string[] args) {
     enum MAX_CONNECTIONS = 5;
     sock.listen(MAX_CONNECTIONS);
 
-    Socket accept_sock = sock.accept;
-    spawn(&echoSock, cast(immutable) accept_sock);
+    Socket accept_sock;
+
+    try {
+        accept_sock = sock.accept;
+        spawn(&echoSock, cast(immutable) accept_sock);
+    }
+    catch (SocketOSException e) {
+        writeln("Socket was closed by os");
+    }
 
     while (run) {
     }
 
     writeln("exiting");
-    accept_sock.close();
     sock.close();
 
     thread_joinAll;
@@ -114,6 +121,5 @@ void echoSock(immutable Socket _sock) {
     assert(doc.isRecord!(HiRPC.Receiver), "Message is not a hirpc receiver record");
 
     writeln(doc.toPretty);
-
-    sock.close();
+    // run = false;
 }
