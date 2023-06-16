@@ -49,14 +49,15 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         verify_net = new StdSecureNet();
     }
 
+    Pubkey current;
+
+
     alias ChannelQueue = Queue!Document;
     class TestGossipNet : GossipNet {
         import tagion.hashgraph.HashGraphBasic;
 
         ChannelQueue[Pubkey] channel_queues;
         sdt_t _current_time;
-
-        ExchangeState[Pubkey][Pubkey] gossip_state;
 
         void start_listening() {
             // empty
@@ -78,7 +79,6 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
 
         void send(const(Pubkey) channel, const(HiRPC.Sender) sender) {
             const wave = Wavefront(verify_net, sender.method.params);
-            gossip_state[sender.pubkey][channel] = wave.state;
             // writefln("owner %s, state=%s", sender.pubkey.cutHex, wave.state);
             const doc = sender.toDoc;
             // assumeWontThrow(writefln("SENDER: send to %s, doc=%s", channel.cutHex, doc.toPretty));
@@ -215,6 +215,18 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
 
     FiberNetwork[Pubkey] networks;
 
+    struct Epoch {
+        const(Event)[] events;
+        sdt_t epoch_time;
+    }
+    
+    Epoch[][Pubkey] epoch_events;
+    void epochCallback(const(Event[]) events, const sdt_t epoch_time) {
+        pragma(msg, typeof(current));
+        auto epoch = Epoch(events, epoch_time);
+        epoch_events[current] ~= epoch;
+    }
+    
     this(const(string[]) node_names) {
         authorising = new TestGossipNet;
         immutable N = node_names.length; //EnumMembers!NodeList.length;
@@ -222,7 +234,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
             immutable passphrase = format("very secret %s", name);
             auto net = new StdSecureNet();
             net.generateKeyPair(passphrase);
-            auto h = new HashGraph(N, net, &authorising.isValidChannel, null, null, name);
+            auto h = new HashGraph(N, net, &authorising.isValidChannel, &epochCallback, null, name);
             h.scrap_depth = 0;
             networks[net.pubkey] = new FiberNetwork(h, pageSize * 128);
         }

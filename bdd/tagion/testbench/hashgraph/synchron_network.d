@@ -15,8 +15,8 @@ import core.sys.posix.sys.resource;
 import std.path : buildPath;
 import std.path : setExtension, extension;
 import tagion.basic.Types : FileExtension;
-
-
+import std.range;
+import std.array;
 import tagion.utils.Miscellaneous : cutHex;
 import tagion.hashgraph.HashGraphBasic;
 
@@ -45,26 +45,25 @@ class StartNetworkWithNAmountOfNodes {
 
     bool allCoherent() {
     
-        const allCor = network.networks
+        return network.networks
                 .byValue
                 .map!(n => n._hashgraph.owner_node.sticky_state)
                 .all!(s => s == ExchangeState.COHERENT);
-        return allCor;
     }
 
     void printStates() {
         foreach(channel; network.channels) {
-        writeln("----------------------");
-        foreach (channel_key; network.channels) {
-            const current_hashgraph = network.networks[channel_key]._hashgraph;
-            writef("%16s %10s ingraph:%5s|", channel_key.cutHex, current_hashgraph.owner_node.sticky_state, current_hashgraph.areWeInGraph);
-            foreach (receiver_key; network.channels) {
-                const node = current_hashgraph.nodes.get(receiver_key, null);                
-                const state = (node is null) ? ExchangeState.NONE : node.state;
-                writef("%15s %s", state, node is null ? "X" : " ");
+            writeln("----------------------");
+            foreach (channel_key; network.channels) {
+                const current_hashgraph = network.networks[channel_key]._hashgraph;
+                writef("%16s %10s ingraph:%5s|", channel_key.cutHex, current_hashgraph.owner_node.sticky_state, current_hashgraph.areWeInGraph);
+                foreach (receiver_key; network.channels) {
+                    const node = current_hashgraph.nodes.get(receiver_key, null);                
+                    const state = (node is null) ? ExchangeState.NONE : node.state;
+                    writef("%15s %s", state, node is null ? "X" : " ");
+                }
+                writeln;
             }
-            writeln;
-        }
         }
     
     }
@@ -145,21 +144,71 @@ class StartNetworkWithNAmountOfNodes {
         return Document();
     }
 
+    void verifyEpochs(TestNetwork.Epoch[][Pubkey] epoch_events) {
+        //
+        // auto test = epoch_events.byKeyValue.slide(2);
+        // pragma(msg, typeof(test.front));
+        // test.popFront;
+        // pragma(msg, typeof(test.front));
+        // pragma(msg, __traits(allMembers, typeof(test.front)));
+        // pragma(msg, __traits(allMembers, typeof(test.front.front)));
+
+
+        foreach(epoch_pair; epoch_events.byKeyValue.slide(2)) {
+
+            // pragma(msg, typeof(epoch_pair.front));
+            // pragma(msg, __traits(allMembers, typeof(epoch_pair.front)));
+            // pragma(msg, typeof(epoch_pair.front.key));
+            // pragma(msg, typeof(epoch_pair.front.value));
+
+            auto a = epoch_pair.front;
+            epoch_pair.popFront;
+            auto b = epoch_pair.front;
+            pragma(msg, typeof(a.key));
+            const l = min(a.value.length, b.value.length);
+            check(l != 0, "node not started");
+            foreach(i; 0..l) {
+                const e = equal(a.value[i].events.map!(e => e.event_package), b.value[i].events.map!(e => e.event_package));
+
+                check(e, "sikker noget skidt");
+            }
+
+        }   
+
+        // }
+        // uint i = 0;
+        // while(true) {
+        //     Epoch[] epoch_events[0][i];
+        
+        //     foreach(channel; epoch_events) {
+        //         merge ~= 
+        //     }
+        //     i++;
+        // }    
+    }
+
     @Then("wait until the first epoch")
     Document epoch() {
+
         try {
             foreach (i; 0 .. 1000) {
                 const channel_number = network.random.value(0, network.channels.length);
-                const channel = network.channels[channel_number];
-                auto current = network.networks[channel];
+                network.current = Pubkey(network.channels[channel_number]);
+                auto current = network.networks[network.current];
                 (() @trusted { current.call; })();
 
+                // if (network.epoch_events.length == node_names.length) {
+                //     // all nodes have created at least one epoch
+                //     break;
+                // }
                 printStates();
             }
         }
         catch (Exception e) {
             check(false, e.msg);
         }
+
+        verifyEpochs(network.epoch_events);
         
 
         return Document();
