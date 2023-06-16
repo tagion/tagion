@@ -50,6 +50,9 @@ void main() {
                 // ...
             }
         }
+        finally {
+            // ignore
+        }
     }
     writeln("W: fin");
 }
