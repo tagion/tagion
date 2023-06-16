@@ -3,6 +3,8 @@
 import std.datetime, std.stdio;
 import zmqd, zhelpers;
 
+import std.datetime.stopwatch;
+
 void main() {
     // Socket to receive messages on
     auto receiver = Socket(SocketType.pull);
@@ -31,7 +33,7 @@ void main() {
         stdout.flush();
     }
     watch.stop();
-    writefln("Total elapsed time: %d msec\n", watch.peek().msecs);
+    writefln("Total elapsed time: %s\n", watch.peek);
 
     // Send kill signal to workers
     controller.send("KILL");
