@@ -1,8 +1,0 @@
-language: d
-d:
- - dmd-2.066.1
-
-script:
- - dub test -b unittest-cov --compiler=${DC}
-after_success:
- - bash <(curl -s https://codecov.io/bash) -t 80252d60-5311-4a63-8ffe-823decc0cb79
