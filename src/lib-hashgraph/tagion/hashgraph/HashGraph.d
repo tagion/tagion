@@ -65,6 +65,10 @@ class HashGraph {
         uint event_id;
         sdt_t last_epoch_time;
     }
+    protected Node _owner_node;
+    const(Node) owner_node() const pure nothrow @nogc {
+        return _owner_node;
+    }
 
     /**
  * Get a map of all the nodes currently handled by the graph 
@@ -113,6 +117,7 @@ class HashGraph {
             const EventPackageCallback epack_callback = null,
             string name = null) {
         hirpc = HiRPC(net);
+        this._owner_node = getNode(hirpc.net.pubkey);
         this.node_size = node_size;
         this.valid_channel = valid_channel;
         this.epoch_callback = epoch_callback;
@@ -557,13 +562,16 @@ class HashGraph {
                     break;
                 case RIPPLE: ///
                     received_node.state = NONE;
+                    received_node.sticky_state = RIPPLE;
                     const ripple_wave = rippleWave(received_wave);
                     return ripple_wave;
                 case COHERENT:
                     received_node.state = NONE;
+                    received_node.sticky_state = COHERENT;
                     if (!areWeInGraph) {
                         try {
                             initialize_witness(received_wave.epacks);
+                            _owner_node.sticky_state = COHERENT;
                         }
                         catch (ConsensusException e) {
                             // initialized witness not correct
@@ -637,7 +645,19 @@ class HashGraph {
             this.node_id = node_id;
             this.channel = channel;
         }
+        protected ExchangeState _sticky_state = ExchangeState.RIPPLE;
 
+        void sticky_state(const(ExchangeState) state) pure nothrow @nogc 
+        {
+
+            if (state > _sticky_state) {
+                _sticky_state = state;
+            }
+        }
+
+        const(ExchangeState) sticky_state() const pure nothrow @nogc {
+            return _sticky_state;
+        }
         /++
          Register first event
          +/

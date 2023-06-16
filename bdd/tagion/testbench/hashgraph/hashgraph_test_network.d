@@ -53,10 +53,8 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
     class TestGossipNet : GossipNet {
         import tagion.hashgraph.HashGraphBasic;
 
-        protected {
-            ChannelQueue[Pubkey] channel_queues;
-            sdt_t _current_time;
-        }
+        ChannelQueue[Pubkey] channel_queues;
+        sdt_t _current_time;
 
         ExchangeState[Pubkey][Pubkey] gossip_state;
 
@@ -226,7 +224,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
             net.generateKeyPair(passphrase);
             auto h = new HashGraph(N, net, &authorising.isValidChannel, null, null, name);
             h.scrap_depth = 0;
-            networks[net.pubkey] = new FiberNetwork(h, pageSize * 32);
+            networks[net.pubkey] = new FiberNetwork(h, pageSize * 128);
         }
         networks.byKey.each!((a) => authorising.add_channel(a));
     }

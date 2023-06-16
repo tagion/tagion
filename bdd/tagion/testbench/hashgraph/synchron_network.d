@@ -16,6 +16,8 @@ import std.path : buildPath;
 import std.path : setExtension, extension;
 import tagion.basic.Types : FileExtension;
 
+
+import tagion.utils.Miscellaneous : cutHex;
 import tagion.hashgraph.HashGraphBasic;
 
 enum feature = Feature(
@@ -39,6 +41,35 @@ class StartNetworkWithNAmountOfNodes {
         this.module_path = module_path;
     }
 
+    bool coherent;
+
+    bool allCoherent() {
+    
+        const allCor = network.networks
+                .byValue
+                .map!(n => n._hashgraph.owner_node.sticky_state)
+                .all!(s => s == ExchangeState.COHERENT);
+        return allCor;
+    }
+
+    void printStates() {
+        foreach(channel; network.channels) {
+        writeln("----------------------");
+        foreach (channel_key; network.channels) {
+            const current_hashgraph = network.networks[channel_key]._hashgraph;
+            writef("%16s %10s ingraph:%5s|", channel_key.cutHex, current_hashgraph.owner_node.sticky_state, current_hashgraph.areWeInGraph);
+            foreach (receiver_key; network.channels) {
+                const node = current_hashgraph.nodes.get(receiver_key, null);                
+                const state = (node is null) ? ExchangeState.NONE : node.state;
+                writef("%15s %s", state, node is null ? "X" : " ");
+            }
+            writeln;
+        }
+        }
+    
+    }
+
+    
     @Given("i have a HashGraph TestNetwork with n number of nodes")
     Document nodes() {
         rlimit limit;
@@ -73,40 +104,8 @@ class StartNetworkWithNAmountOfNodes {
     @When("all nodes are sending ripples")
     Document ripples() {
 
-        bool allSendingState(const(ExchangeState) check_state, const(ExchangeState[Pubkey][Pubkey]) gossip_state) {
-            if (network.channels.length != gossip_state.length) {
-                writefln("only %s out of %s nodes sending", gossip_state.length, network.channels.length);
-                return false;
-            }
 
-            foreach(owner_keys; gossip_state) {
-                foreach(state; owner_keys) {
-                    if (state != check_state) {
-                        return false;
-                    }
-                }  
-            }
-            return true;
 
-        }
-
-        void printStates(const(ExchangeState[Pubkey][Pubkey]) gossip_states) {
-            writeln("----------------------");
-            foreach (channel_key; network.channels) {
-                foreach (receiver_key; network.channels) {
-                    const row = gossip_states.get(channel_key, null);
-                    ExchangeState state;
-                    if (row !is null) {
-                        state = row.get(receiver_key, ExchangeState.NONE);
-                    }
-                    writef("%15s", state);
-                }
-                writeln;
-            }
-
-        }
-
-        bool coherent;
         try {
             foreach (i; 0 .. 1000) {
                 const channel_number = network.random.value(0, network.channels.length);
@@ -114,12 +113,11 @@ class StartNetworkWithNAmountOfNodes {
                 auto current = network.networks[channel];
                 (() @trusted { current.call; })();
 
-                printStates(network.authorising.gossip_state);
-                coherent = allSendingState(ExchangeState.COHERENT, network.authorising.gossip_state); 
-                if (coherent) {
+                printStates();
+                if (allCoherent) {
+                    coherent = true;
                     break;
                 }
-
             }
         }
         catch (Exception e) {
@@ -137,18 +135,33 @@ class StartNetworkWithNAmountOfNodes {
             writeln(filename);
             _net._hashgraph.fwrite(filename, node_labels);
         }
-        check(coherent, "Nodes not coherent");
 
         return result_ok;
     }
 
     @When("all nodes are coherent")
-    Document coherent() {
+    Document _coherent() {
+        check(coherent, "Nodes not coherent");
         return Document();
     }
 
     @Then("wait until the first epoch")
     Document epoch() {
+        try {
+            foreach (i; 0 .. 1000) {
+                const channel_number = network.random.value(0, network.channels.length);
+                const channel = network.channels[channel_number];
+                auto current = network.networks[channel];
+                (() @trusted { current.call; })();
+
+                printStates();
+            }
+        }
+        catch (Exception e) {
+            check(false, e.msg);
+        }
+        
+
         return Document();
     }
 
