@@ -10,9 +10,10 @@ endif
 NO_UNITDATA=-a -not -path "*/unitdata/*"
 EXCLUDED_DIRS+=-a -not -path "*/lib-betterc/*"
 EXCLUDED_DIRS+=-a -not -path "*/tests/*"
+EXCLUDED_DIRS+=-a -not -path "*/lib-zmqd/zmqd/examples/*"
 ifndef ZMQ
 EXCLUDED_DIRS+=-a -not -path "*/lib-zmqd/*"
-#EXCLUDED_DIRS+=-a -not -path "*/lib-demos/*"
+EXCLUDED_DIRS+=-a -not -path "*/lib-demos/*"
 
 endif
 

@@ -494,7 +494,7 @@ struct Socket {
     */
     void send(ref Frame msg, bool more = false) {
         immutable flags = more ? ZMQ_SNDMORE : 0;
-        if (trusted!zmq_msg_send(msg.handle, m_socket, flags) < 0) {
+        if (scopedTrusted!zmq_msg_send(msg.handle, m_socket, flags) < 0) {
             throw new ZmqException;
         }
     }
@@ -502,7 +502,7 @@ struct Socket {
     /// ditto
     bool trySend(ref Frame msg, bool more = false) {
         immutable flags = ZMQ_DONTWAIT | (more ? ZMQ_SNDMORE : 0);
-        if (trusted!zmq_msg_send(msg.handle, m_socket, flags) < 0) {
+        if (scopedTrusted!zmq_msg_send(msg.handle, m_socket, flags) < 0) {
             import core.stdc.errno : EAGAIN, EINTR;
             import std.algorithm : among;
 
@@ -683,7 +683,7 @@ struct Socket {
 
     */
     size_t receive(ref Frame msg) {
-        immutable len = trusted!zmq_msg_recv(msg.handle, m_socket, 0);
+        immutable len = scopedTrusted!zmq_msg_recv(msg.handle, m_socket, 0);
         if (len >= 0) {
             import std.conv;
 
@@ -696,7 +696,7 @@ struct Socket {
 
     /// ditto
     Tuple!(size_t, bool) tryReceive(ref Frame msg) {
-        immutable len = trusted!zmq_msg_recv(msg.handle, m_socket, ZMQ_DONTWAIT);
+        immutable len = scopedTrusted!zmq_msg_recv(msg.handle, m_socket, ZMQ_DONTWAIT);
         if (len >= 0) {
             import std.conv;
 
@@ -2350,7 +2350,7 @@ struct Frame {
     */
     ~this() nothrow {
         if (m_initialized) {
-            immutable rc = trusted!zmq_msg_close(&m_msg);
+            immutable rc = scopedTrusted!zmq_msg_close(&m_msg);
             assert(rc == 0, "zmq_msg_close failed: Invalid message frame");
         }
     }
@@ -2369,7 +2369,7 @@ struct Frame {
     */
     void close() {
         if (m_initialized) {
-            if (trusted!zmq_msg_close(&m_msg) != 0) {
+            if (scopedTrusted!zmq_msg_close(&m_msg) != 0) {
                 throw new ZmqException;
             }
             m_initialized = false;
@@ -2401,7 +2401,7 @@ struct Frame {
     /// ditto
     void copyTo(ref Frame dest)
     in (m_initialized) {
-        if (trusted!zmq_msg_copy(&dest.m_msg, &m_msg) != 0) {
+        if (scopedTrusted!zmq_msg_copy(&dest.m_msg, &m_msg) != 0) {
             throw new ZmqException;
         }
     }
@@ -2438,7 +2438,7 @@ struct Frame {
     /// ditto
     void moveTo(ref Frame dest)
     in (m_initialized) {
-        if (trusted!zmq_msg_move(&dest.m_msg, &m_msg) != 0) {
+        if (scopedTrusted!zmq_msg_move(&dest.m_msg, &m_msg) != 0) {
             throw new ZmqException;
         }
     }
@@ -2462,7 +2462,7 @@ struct Frame {
     */
     @property size_t size() nothrow
     in (m_initialized) {
-        return trusted!zmq_msg_size(&m_msg);
+        return scopedTrusted!zmq_msg_size(&m_msg);
     }
 
     ///
@@ -2500,7 +2500,7 @@ struct Frame {
     */
     @property bool more() nothrow
     in (m_initialized) {
-        return !!trusted!zmq_msg_more(&m_msg);
+        return !!scopedTrusted!zmq_msg_more(&m_msg);
     }
 
     /**
@@ -2582,7 +2582,7 @@ private:
     private void init()
     in (!m_initialized)
     out (; m_initialized) {
-        if (trusted!zmq_msg_init(&m_msg) != 0) {
+        if (scopedTrusted!zmq_msg_init(&m_msg) != 0) {
             throw new ZmqException;
         }
         m_initialized = true;
@@ -2591,7 +2591,7 @@ private:
     private void init(size_t size)
     in (!m_initialized)
     out (; m_initialized) {
-        if (trusted!zmq_msg_init_size(&m_msg, size) != 0) {
+        if (scopedTrusted!zmq_msg_init_size(&m_msg, size) != 0) {
             throw new ZmqException;
         }
         m_initialized = true;
