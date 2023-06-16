@@ -29,19 +29,19 @@ struct DevicePIN {
     Buffer D; /// Device number
     Buffer U; /// Device random
     Buffer S; /// Check sum value
-    void recover(const KeyRecover recover, ref scope ubyte[] R, scope const(ubyte[]) P) const {
+    bool recover(const KeyRecover recover, ref scope ubyte[] R, scope const(ubyte[]) P) const {
         import tagion.utils.Miscellaneous : xor;
 
         const pinhash = recover.checkHash(P, U);
         xor(R, D, pinhash);
-
+        return S == recover.checkHash(R);
     }
 
     void setPin(const KeyRecover recover, scope const(ubyte[]) R, scope const(ubyte[]) P, Buffer salt) {
         import tagion.utils.Miscellaneous : xor;
 
-        const pinhash = recover.checkHash(P, salt);
         U = salt;
+        const pinhash = recover.checkHash(P, U);
         D = xor(R, pinhash);
         S = recover.checkHash(R);
 
