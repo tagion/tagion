@@ -5,14 +5,15 @@ module tagion.wallet.WalletRecords;
 
 import tagion.hibon.HiBONRecord;
 import tagion.wallet.KeyRecover : KeyRecover;
+import tagion.wallet.Basic : saltHash;
+
 import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Pubkey;
+import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.script.TagionCurrency;
 import tagion.script.StandardRecords : StandardBill, OwnerKey;
 import tagion.hibon.Document : Document;
-
 import tagion.dart.DARTBasic;
-import std.stdio;
 
 /// Contains the quiz question
 @safe
@@ -29,21 +30,21 @@ struct DevicePIN {
     Buffer D; /// Device number
     Buffer U; /// Device random
     Buffer S; /// Check sum value
-    bool recover(const KeyRecover recover, ref scope ubyte[] R, scope const(ubyte[]) P) const {
+    bool recover(const HashNet net, ref scope ubyte[] R, scope const(ubyte[]) P) const {
         import tagion.utils.Miscellaneous : xor;
 
-        const pinhash = recover.checkHash(P, U);
+        const pinhash = net.saltHash(P, U);
         xor(R, D, pinhash);
-        return S == recover.checkHash(R);
+        return S == net.saltHash(R);
     }
 
-    void setPin(const KeyRecover recover, scope const(ubyte[]) R, scope const(ubyte[]) P, Buffer salt) {
+    void setPin(const HashNet net, scope const(ubyte[]) R, scope const(ubyte[]) P, Buffer salt) {
         import tagion.utils.Miscellaneous : xor;
 
         U = salt;
-        const pinhash = recover.checkHash(P, U);
+        const pinhash = net.saltHash(P, U);
         D = xor(R, pinhash);
-        S = recover.checkHash(R);
+        S = net.saltHash(R);
 
     }
 
@@ -52,7 +53,6 @@ struct DevicePIN {
 
 @safe
 unittest {
-    import tagion.wallet.KeyRecover;
     import tagion.crypto.SecureNet : StdHashNet;
     import std.string : representation;
     import std.range;
@@ -64,27 +64,23 @@ unittest {
     auto rnd = Random(unpredictableSeed);
     auto rnd_range = generate!(() => uniform!ubyte(rnd));
     const net = new StdHashNet;
-    const recover = KeyRecover(net);
     //auto R=new ubyte[net.hashSize];
     {
         auto salt = iota(ubyte(0), ubyte(net.hashSize & ubyte.max)).array.idup;
         const R = rnd_range.take(net.hashSize).array;
         DevicePIN pin;
         const pin_code = "1234".representation;
-        pin.setPin(recover, R, pin_code, salt);
+        pin.setPin(net, R, pin_code, salt);
 
-        writefln("::pin %s", pin.toPretty);
-        writefln("::R   %s", R.toHexString);
         ubyte[] recovered_R = new ubyte[net.hashSize];
         { /// Recover the seed R with the correct pin-code 
-            const recovered = pin.recover(recover, recovered_R, pin_code);
-            writefln("::Rec %s", recovered_R.toHexString);
+            const recovered = pin.recover(net, recovered_R, pin_code);
             assert(recovered);
             assert(R == recovered_R);
         }
 
         { /// Try to recover the seed R with the wrong pin-code 
-            const recovered = pin.recover(recover, recovered_R, "wrong pin code".representation);
+            const recovered = pin.recover(net, recovered_R, "wrong pin code".representation);
             assert(!recovered);
             assert(R != recovered_R);
         }
