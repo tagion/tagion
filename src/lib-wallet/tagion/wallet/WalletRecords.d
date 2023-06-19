@@ -76,10 +76,19 @@ unittest {
         writefln("::pin %s", pin.toPretty);
         writefln("::R   %s", R.toHexString);
         ubyte[] recovered_R = new ubyte[net.hashSize];
-        pin.recover(recover, recovered_R, pin_code);
-        writefln("::Rec %s", recovered_R.toHexString);
+        { /// Recover the seed R with the correct pin-code 
+            const recovered = pin.recover(recover, recovered_R, pin_code);
+            writefln("::Rec %s", recovered_R.toHexString);
+            assert(recovered);
+            assert(R == recovered_R);
+        }
 
-        assert(R == recovered_R);
+        { /// Try to recover the seed R with the wrong pin-code 
+            const recovered = pin.recover(recover, recovered_R, "wrong pin code".representation);
+            assert(!recovered);
+            assert(R != recovered_R);
+        }
+
     }
 }
 /// Key-pair recovery generator
