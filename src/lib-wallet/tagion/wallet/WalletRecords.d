@@ -73,12 +73,13 @@ unittest {
         const pin_code = "1234".representation;
         pin.setPin(recover, R, pin_code, salt);
 
-        writefln("pin %s", pin.toPretty);
-        writefln("R   %s", R.toHexString);
-        ubyte[] recovered_R;
+        writefln("::pin %s", pin.toPretty);
+        writefln("::R   %s", R.toHexString);
+        ubyte[] recovered_R = new ubyte[net.hashSize];
         pin.recover(recover, recovered_R, pin_code);
-        writefln("Rec %s", recovered_R.toHexString);
+        writefln("::Rec %s", recovered_R.toHexString);
 
+        assert(R == recovered_R);
     }
 }
 /// Key-pair recovery generator
