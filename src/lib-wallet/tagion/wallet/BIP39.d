@@ -25,22 +25,27 @@ picture sponsor display jump nothing wing twin exotic earth vessel one blur erup
 */
 
 import std.range;
+import std.algorithm;
+import std.typecons;
 
 @safe
 struct WordList {
     protected ushort[string] table;
-    this(sting[] list)
+    this(string[] list)
     in (list.length == 2048)
     do {
+        table = list
+            .enumerate!ushort
+            .map!(w => tuple!("index", "value")(w.value, w.index))
+            .assocArray;
 
-        list.enumerate.each!(word => table[cast(ushort) word.index) = word.value);
+    }
 
-            }
+    const(ushort[]) list(const(string[]) mnemonics) {
 
-            const(ushort[]) list(const(char[][]) mnemonics) {
-                return mnemonics
-                    .map!(m => table.get(m, short.max))
-                    .array;
+        return mnemonics
+            .map!(m => table.get(m, ushort.max))
+            .array;
 
-            }
-            }
+    }
+}
