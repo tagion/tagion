@@ -50,9 +50,14 @@ struct GenericController {
         this.dart_service = dart_service;
 
         router.match(HTTPMethod.OPTIONS, "*", tryReqHandler(&optionsHandler));
-        router.get(format("/%s/:entityId", access_token), tryReqHandler(&getT));
+        router.get(format("/%s", access_token), tryReqHandler(&getT));
         router.post(format("/%s/:data", access_token), tryReqHandler(&postT));
-        router.post(format("/%s", access_token), tryReqHandler(&postJSONT)); 
+        router.post(format("/%s", access_token), tryReqHandler(&postJSONT));
+    }
+
+    void getQuery(HTTPServerRequest req, HTTPServerResponse res) {
+        writeln(req);
+        writeln(req.query);
     }
 
     /**
@@ -64,8 +69,8 @@ struct GenericController {
     void getT(HTTPServerRequest req, HTTPServerResponse res) {
         import tagion.hibon.HiBONJSON : toJSON;
         writeln("GET");
-
-        string id = req.params.get("entityId");
+        string id = req.query["fp"];
+        writeln(req.query);
 
         DARTIndex fingerprint;
         try {
