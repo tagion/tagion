@@ -41,9 +41,10 @@ OBJEXT ?= o
 
 CD ?= cd
 
-# D step
-# TODO: Clone local dstep
-DSTEP?=${shell which dstep}
+# Only define dstep if it's avaliable in your path
+ifneq ($(strip $(shell which dstep 2>/dev/null)),)
+	DSTEP?=dstep
+endif
 
 GO?=${shell which go}
 

@@ -162,7 +162,7 @@ struct HiRPC {
     }
 
     /// HiRPC Post (Sender,Receiver)
-    @recordType("HiPRC")
+    @recordType("HiRPC")
     struct Post(Direction DIRECTION) {
         union Message {
             Method method;
@@ -436,7 +436,7 @@ struct HiRPC {
     }
 
     /** 
-     * Creates a sneder with a runtime method name 
+     * Creates a sender with a runtime method name 
      * Params:
      *   method = method name 
      *   params = argument for the method

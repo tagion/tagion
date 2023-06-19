@@ -38,6 +38,8 @@ DIFILES+=$$(DIFILES.$1)
 
 DIFILES_DEPS+=$4
 
+ifdef ($(DSTEP))
+
 $$(DESTROOT.$1)/%.di: $$(HPATH.$1)/%.h | $$(DESTROOT.$1)
 	$$(PRECMD)${call log.kvp, dstep, $$(@F)}
 	$$(DSTEP) $$(DSTEP_ATTRIBUTES) $$(DSTEPFLAGS.$1) $$(DSTEPFLAGS) --package $1 $$< -o $$@
@@ -47,6 +49,7 @@ $$(DESTROOT.$1)/%.di: $$(HPATH.$1)/%.h | $$(DESTROOT.$1)
 	$$(LN) $$(@F) $$(basename $$(@F)).d 
 	fi
 
+endif # End dstep tool is avaliable
 
 $$(DESTROOT.$1):
 	$$(PRECMD)mkdir -p $$@

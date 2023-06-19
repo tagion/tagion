@@ -11,3 +11,6 @@
 	path = src/wrap-wolfssl/wolfssl
 	url = git@github.com:tagion/fork-wolfssl.git
 
+[submodule "src/wrap-zmq/libzmq"]
+	path = src/wrap-zmq/libzmq
+	url = git@github.com:tagion/libzmq.git

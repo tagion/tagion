@@ -144,9 +144,10 @@ string tempfile() {
     return buildPath(tempDir, generate!(() => uniform('A', 'Z', rnd)).takeExactly(20).array);
 }
 
-@safe 
+@safe
 void forceRemove(const(string) filename) {
     import std.file : exists, remove;
+
     if (filename.exists) {
         filename.remove;
     }
@@ -471,4 +472,27 @@ pragma(msg, "fixme(ib): replace template with functions like sendTrusted");
             return concurrency.register(name, tid);
         }
     }
+}
+
+bool isinit(T)(T x) pure nothrow @safe {
+    return x is T.init;
+}
+
+@safe
+unittest {
+    class C {
+    }
+
+    C c;
+    assert(c.isinit);
+    c = new C;
+    assert(!c.isinit);
+    static struct S {
+        int x;
+    }
+
+    S s;
+    assert(s.isinit);
+    s = S(42);
+    assert(!s.isinit);
 }

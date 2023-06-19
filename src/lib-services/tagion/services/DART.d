@@ -1,7 +1,8 @@
-module tagion.services.DARTService;
+module tagion.services.DART;
 
 import std.path : isValidPath;
 import std.format : format;
+import std.file;
 
 import tagion.actor;
 import std.stdio;
@@ -9,13 +10,10 @@ import tagion.crypto.Types;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.dart.DART;
 import tagion.dart.Recorder;
-import std.path;
-import std.file;
+import tagion.dart.DARTBasic : DARTIndex;
 
 struct DARTService {
-
-    DART db;
-
+    static DART db;
     static void dartRead(Msg!"dartRead", Fingerprint fingerprint) {
     }
 
@@ -26,14 +24,15 @@ struct DARTService {
     }
 
     static void dartBullseye(Msg!"dartBullseye") {
+        sendOwner(DARTIndex(db.bullseye));
     }
 
-    void task(string task_name, string dart_path, SecureNet net) nothrow {
+    static void task(string task_name, string dart_path, immutable SecureNet net) nothrow {
         try {
-
             db = new DART(net, dart_path);
-
             run(task_name, &dartRead, &dartRim, &dartModify, &dartBullseye);
+
+            db.close();
             end(task_name);
         }
         catch (Exception e) {
