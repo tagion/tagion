@@ -11,8 +11,8 @@ import tagion.services.contract;
 import tagion.crypto.SecureNet;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.dart.DARTFile;
-
 import tagion.dart.DARTBasic : DARTIndex;
+import tagion.basic.Types : FileExtension;
 
 struct Supervisor {
     enum dart_task_name = "dart";
@@ -22,7 +22,7 @@ struct Supervisor {
         try {
             SecureNet net = new StdSecureNet();
             net.generateKeyPair("aparatus");
-            const dart_filename = buildPath(".", "dart" ~ ".drt");
+            const dart_filename = buildPath(".", "dart".setExtension(FileExtension.dart));
 
             if (!dart_filename.exists) {
                 DARTFile.create(dart_filename, net);
