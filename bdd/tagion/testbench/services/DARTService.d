@@ -6,22 +6,23 @@ import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
 
 import tagion.actor;
-import tagion.services.DARTService;
+import tagion.services.DART;
+
 // import tagion.crypto.SecureNet;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.dart.DARTFakeNet;
 
 enum feature = Feature(
-"see if we can read and write trough the dartservice",
-[]);
+            "see if we can read and write trough the dartservice",
+            []);
 
 alias FeatureContext = Tuple!(
-    WriteAndReadFromDartDb, "WriteAndReadFromDartDb",
-    FeatureGroup*, "result"
+        WriteAndReadFromDartDb, "WriteAndReadFromDartDb",
+        FeatureGroup*, "result"
 );
 
 @safe @Scenario("write and read from dart db",
-[])
+        [])
 class WriteAndReadFromDartDb {
     // enum dart_task = "dart_service_task";
     // DARTServiceHandle dart_handle;
@@ -34,7 +35,7 @@ class WriteAndReadFromDartDb {
 
     @Given("I have an dart actor with said db")
     Document saidDb() {
-        
+
         // dart_handle = spawn!DARTService(dart_task, "/tmp/dart_service_test.drt", net);
         return result_ok;
     }

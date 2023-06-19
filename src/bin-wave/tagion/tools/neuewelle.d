@@ -1,31 +1,50 @@
+/// New wave implementation of the tagion node
 module tagion.tools.neuewelle;
 
-// import std.stdio;
-import std.format;
-import std.getopt;
-import tagion.tools.Basic;
-import tagion.utils.getopt;
+import core.sys.posix.signal;
 import core.thread;
+import std.getopt;
 import std.stdio;
-import std.traits : isUnsigned, isNumeric;
 import std.socket;
-import tagion.basic.Version;
-import tagion.tools.revision;
 import std.typecons;
 import std.path;
-import tagion.network.ReceiveBuffer;
-import tagion.basic.basic : forceRemove;
-import tagion.hibon.Document;
+import std.concurrency;
+
+import tagion.tools.Basic;
+import tagion.utils.getopt;
+import tagion.basic.Version;
+import tagion.tools.revision;
 import tagion.GlobalSignals : abort;
+import tagion.actor;
+import tagion.services.supervisor;
 
 // enum EXAMPLES {
 //     ver = Example("-v"),
 //     db = Tuple("%s -d %s", program_name, file),
 // }
 
+static shared runit = true;
+
+extern (C)
+void signal_handler(int _) @trusted nothrow {
+    try {
+        runit = false;
+    }
+    catch (Exception e) {
+        assert(0, format("DID NOT CLOSE PROPERLY \n %s", e));
+    }
+}
+
 mixin Main!(_main);
 
 int _main(string[] args) {
+
+    sigaction_t sa;
+    sa.sa_handler = &signal_handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    // Register the signal handler for SIGINT
+    sigaction(SIGINT, &sa, null);
 
     bool version_switch;
     immutable program = args[0];
@@ -47,36 +66,21 @@ int _main(string[] args) {
         return 0;
     }
 
-    const contract_sock_path = buildPath("/", "tmp", "tagionwave_contract.sock");
+    enum supervisor_task_name = "supervisor";
+    auto supervisor_handle = spawn!Supervisor(supervisor_task_name);
+    waitfor([supervisor_task_name: Ctrl.STARTING], Ctrl.ALIVE);
 
-    writeln("contract_sock_path: ", contract_sock_path);
-    Address contract_sock_addr = new UnixAddress(contract_sock_path);
-    Socket contract_socket = new Socket(AddressFamily.UNIX, SocketType.STREAM);
-
-    scope (exit) {
-        contract_socket.close();
-        forceRemove(contract_sock_path);
+    while (runit) {
     }
 
-    echoSock(contract_socket, contract_sock_addr);
+    supervisor_handle.send(Sig.STOP);
+
+    // writeln("exiting");
+    // sock.close();
+
+    thread_joinAll;
+
+    // forceRemove(contract_sock_path);
 
     return 0;
-}
-
-void echoSock(Socket sock, Address addr) @safe {
-    bool exit = false;
-    sock.bind(addr);
-    sock.listen(5);
-
-    while (!abort) {
-        ReceiveBuffer buf;
-        auto result = buf.append(&sock.accept.receive);
-        immutable ubyte[] data = result.data.dup;
-        auto doc = Document(data);
-        assert(doc.valid is Document.Element.ErrorCode.NONE, "Message is not valid, not a HiBON Document");
-
-        writefln("Received document of size: %s", doc.length);
-    }
-
-    sock.close();
 }

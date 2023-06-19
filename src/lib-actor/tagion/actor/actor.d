@@ -1,4 +1,4 @@
-/// Main implementation of actor framework
+/// Actor framework implementation
 module tagion.actor.actor;
 
 import std.stdio;
@@ -13,8 +13,9 @@ import tagion.actor.exceptions;
 import tagion.actor.exceptions : TaskFailure;
 import tagion.basic.tagionexceptions : TagionException;
 
-version(Posix) {
+version (Posix) {
     import core.sys.posix.pthread;
+
     extern (C) int pthread_setname_np(pthread_t, const char*) nothrow;
 }
 
@@ -56,20 +57,28 @@ bool all(Ctrl[string] aa, Ctrl ctrl) @safe {
     return true;
 }
 
+void waitfor(Ctrl[string] childrenState, Ctrl state) @safe {
+    while (!(childrenState.all(state))) {
+        CtrlMsg msg = receiveOnly!CtrlMsg;
+        writeln(msg);
+        childrenState[msg.task_name] = msg.ctrl;
+    }
+}
+
 import std.traits;
+
 template isActor(A) {
 
-    template isTask(args...)
-    if (args.length == 1 && isCallable!(args[0])) {
+    template isTask(args...) if (args.length == 1 && isCallable!(args[0])) {
         alias task = args[0];
         alias params = Parameters!(task);
         enum bool isTask = is(params[0] : string)
-                        && ParameterIdentifierTuple!(task)[0] == "task_name"
-                        && hasFunctionAttributes!(task, "nothrow");
+            && ParameterIdentifierTuple!(task)[0] == "task_name"
+            && hasFunctionAttributes!(task, "nothrow");
     }
 
-    enum bool isActor = hasMember!(A, "task") 
-                     && isTask!(A.task);
+    enum bool isActor = hasMember!(A, "task")
+        && isTask!(A.task);
 }
 
 /**
@@ -93,13 +102,13 @@ struct ActorHandle(A) {
     }
 
     // pragma(msg, format("# %s:", Actor.stringof));
-    version(none) static foreach(member; __traits(allMembers, Actor)) {
+    version (none) static foreach (member; __traits(allMembers, Actor)) {
         // alias getMem = __traits(getMember, Actor, member);
-        
+
         // enum params = Parameters!(member);
         // pragma(msg, format("\t%s:%s", member, __traits(getMember, Actor, member)));
-        static if(
-                isCallable!(__traits(getMember, Actor, member)) 
+        static if (
+            isCallable!(__traits(getMember, Actor, member))
                 && Parameters!(__traits(getMember, Actor, member))
             ) {
             // pragma(msg, member);
@@ -124,10 +133,27 @@ struct ActorHandle(A) {
  * actorHandle!MyActor("my_task_name");
  * ---
  */
-ActorHandle!A handle(A)(string task_name) @safe
-if (isActor!A) {
+ActorHandle!A handle(A)(string task_name) @safe if (isActor!A) {
     Tid tid = locate(task_name);
     return ActorHandle!A(tid, task_name);
+}
+
+ActorHandle!A spawn(A, Args...)(A actor, string task_name, Args args) @safe nothrow
+if (isActor!A) {
+    try {
+        Tid tid;
+        import concurrency = tagion.utils.pretend_safe_concurrency;
+
+        tid = concurrency.spawn(&(actor.task), task_name, args);
+        writefln("spawning %s", task_name);
+        tid.setMaxMailboxSize(int.sizeof, OnCrowding.throwException);
+        register(task_name, tid);
+        writefln("%s registered", task_name);
+        return ActorHandle!A(tid, task_name);
+    }
+    catch (Exception e) {
+        assert(0, e.msg);
+    }
 }
 
 /**
@@ -143,23 +169,8 @@ if (isActor!A) {
  */
 ActorHandle!A spawn(A, Args...)(string task_name, Args args) @safe nothrow
 if (isActor!A) {
-    try {
-        immutable A actor = A();
-        Tid tid;
-
-        import concurrency = tagion.utils.pretend_safe_concurrency;
-        // import concurrency = std.concurrency;
-        tid = concurrency.spawn(&(actor.task), task_name, args);
-        writefln("spawning %s", task_name);
-        tid.setMaxMailboxSize(int.sizeof, OnCrowding.throwException);
-        register(task_name, tid);
-        writefln("%s registered", task_name);
-
-        return ActorHandle!A(tid, task_name);
-    }
-    catch (Exception e) {
-        assert(0, e.msg);
-    }
+    A actor = A();
+    return spawn(actor, task_name, args);
 }
 
 /*
@@ -167,8 +178,7 @@ if (isActor!A) {
  * Params:
  *   a = an active actorhandle
  */
-A respawn(A)(A actor_handle) @safe
-if(isActor!(A.Actor)) {
+A respawn(A)(A actor_handle) @safe if (isActor!(A.Actor)) {
     writefln("%s", typeid(actor_handle.Actor));
     actor_handle.send(Sig.STOP);
     unregister(actor_handle.task_name);
@@ -207,9 +217,9 @@ void sendOwner(T...)(T vals) @safe {
 void fail(string task_name, Throwable t) @trusted nothrow {
     if (tidOwner.get !is Tid.init) {
         assumeWontThrow(
-            ownerTid.prioritySend(
+                ownerTid.prioritySend(
                 TaskFailure(task_name, cast(immutable) t)
-            )
+        )
         );
     }
 }
@@ -290,7 +300,7 @@ static:
      * Params:
      *   message = literally any message
      */
-    void unknown(Variant message) @trusted  {
+    void unknown(Variant message) @trusted {
         throw new UnknownMessage("No delegate to deal with message: %s".format(message));
     }
 
@@ -298,10 +308,11 @@ static:
     void task(string task_name) nothrow {
         try {
 
-            // Set the system thread name on posix for better debugging abiiities
-            version(Posix) {
+            // Set the system thread name on posix for better debugging abilities
+            version (Posix) {
                 import std.string;
                 import core.sys.posix.pthread;
+
                 pthread_setname_np(pthread_self(), toStringz(task_name));
             }
             setState(Ctrl.STARTING, task_name); // Tell the owner that you are starting.
@@ -383,7 +394,6 @@ void end(string task_name) nothrow {
     assumeWontThrow(setState(Ctrl.END, task_name));
 }
 
-
 void run(Args...)(string task_name, Args args) nothrow {
     bool stop = false;
     Ctrl[string] childrenState; // An AA to keep a copy of the state of the children
@@ -442,7 +452,6 @@ void run(Args...)(string task_name, Args args) nothrow {
                 ownerTid.prioritySend(tf);
             }
         };
-
 
         setState(Ctrl.ALIVE, task_name); // Tell the owner that you running
         while (!stop) {

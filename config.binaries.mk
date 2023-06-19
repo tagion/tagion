@@ -10,13 +10,30 @@ endif
 NO_UNITDATA=-a -not -path "*/unitdata/*"
 EXCLUDED_DIRS+=-a -not -path "*/lib-betterc/*"
 EXCLUDED_DIRS+=-a -not -path "*/tests/*"
+EXCLUDED_DIRS+=-a -not -path "*/lib-zmqd/zmqd/examples/*"
+ifndef ZMQ
+EXCLUDED_DIRS+=-a -not -path "*/lib-zmqd/*"
+EXCLUDED_DIRS+=-a -not -path "*/lib-demos/*"
+
+endif
 
 LIB_DFILES:=${shell find $(DSRC) -name "*.d" -a -path "*/lib-*" $(EXCLUDED_DIRS) $(NO_UNITDATA) }
+
+env-dfiles:
+	$(PRECMD)
+	$(call log.header, $@ :: env)
+	$(call log.env, LIB_DFILES, $(LIB_DFILES))
+	$(call log.close)
+
+.PHONY: env-dfiles
+
+env: env-dfiles
+
+
 LIB_BETTERC:=${shell find $(DSRC) -name "*.d" -a -path "*/lib-betterc/*" -a -not -path "*/tests/*" $(NO_UNITDATA) }
 
 
 BIN_DEPS=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-$1/*" $(EXCLUDED_DIRS) $(NO_UNITDATA) $(NO_WOLFSSL) }
-
 
 
 #
@@ -34,6 +51,12 @@ ${call DO_BIN,tagionwave,$(LIB_DFILES) ${call BIN_DEPS,priorwave},tagion}
 #
 target-neuewelle: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
 ${call DO_BIN,neuewelle,$(LIB_DFILES) ${call BIN_DEPS,wave},tagion}
+
+#
+# Test wallet interface
+#
+target-contractor: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+${call DO_BIN,contractor,$(LIB_DFILES) ${call BIN_DEPS,contractor},tagion}
 
 #
 # HiBON utility
@@ -110,6 +133,7 @@ ${call DO_BIN,graphview,$(LIB_DFILES) ${call BIN_DEPS,graphview},tagion}
 #
 TAGION_TOOLS+=priorwave
 TAGION_TOOLS+=wave # New wave
+TAGION_TOOLS+=contractor
 TAGION_TOOLS+=dartutil
 TAGION_TOOLS+=blockutil
 TAGION_TOOLS+=hibonutil
