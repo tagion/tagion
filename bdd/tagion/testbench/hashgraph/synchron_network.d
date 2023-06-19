@@ -68,6 +68,45 @@ class StartNetworkWithNAmountOfNodes {
     
     }
 
+
+    void verifyEpochs(TestNetwork.Epoch[][Pubkey] epoch_events) {
+        //
+        // auto test = epoch_events.byKeyValue.slide(2);
+        // pragma(msg, typeof(test.front));
+        // test.popFront;
+        // pragma(msg, typeof(test.front));
+        // pragma(msg, __traits(allMembers, typeof(test.front)));
+        // pragma(msg, __traits(allMembers, typeof(test.front.front)));
+
+
+        foreach(epoch_pair; epoch_events.byKeyValue.slide(2)) {
+
+
+            auto a = epoch_pair.front;
+            epoch_pair.popFront;
+            auto b = epoch_pair.front;
+            pragma(msg, typeof(a.key));
+            const l = min(a.value.length, b.value.length);
+            check(l != 0, "node not started");
+            foreach(i; 0..l) {
+                const e = equal(a.value[i].events.map!(e => e.event_package), b.value[i].events.map!(e => e.event_package));
+
+                check(e, "sikker noget skidt");
+            }
+
+        }   
+
+        // }
+        // uint i = 0;
+        // while(true) {
+        //     Epoch[] epoch_events[0][i];
+        
+        //     foreach(channel; epoch_events) {
+        //         merge ~= 
+        //     }
+        //     i++;
+        // }    
+    }
     
     @Given("i have a HashGraph TestNetwork with n number of nodes")
     Document nodes() {
@@ -144,49 +183,6 @@ class StartNetworkWithNAmountOfNodes {
         return Document();
     }
 
-    void verifyEpochs(TestNetwork.Epoch[][Pubkey] epoch_events) {
-        //
-        // auto test = epoch_events.byKeyValue.slide(2);
-        // pragma(msg, typeof(test.front));
-        // test.popFront;
-        // pragma(msg, typeof(test.front));
-        // pragma(msg, __traits(allMembers, typeof(test.front)));
-        // pragma(msg, __traits(allMembers, typeof(test.front.front)));
-
-
-        foreach(epoch_pair; epoch_events.byKeyValue.slide(2)) {
-
-            // pragma(msg, typeof(epoch_pair.front));
-            // pragma(msg, __traits(allMembers, typeof(epoch_pair.front)));
-            // pragma(msg, typeof(epoch_pair.front.key));
-            // pragma(msg, typeof(epoch_pair.front.value));
-
-            auto a = epoch_pair.front;
-            epoch_pair.popFront;
-            auto b = epoch_pair.front;
-            pragma(msg, typeof(a.key));
-            const l = min(a.value.length, b.value.length);
-            check(l != 0, "node not started");
-            foreach(i; 0..l) {
-                const e = equal(a.value[i].events.map!(e => e.event_package), b.value[i].events.map!(e => e.event_package));
-
-                check(e, "sikker noget skidt");
-            }
-
-        }   
-
-        // }
-        // uint i = 0;
-        // while(true) {
-        //     Epoch[] epoch_events[0][i];
-        
-        //     foreach(channel; epoch_events) {
-        //         merge ~= 
-        //     }
-        //     i++;
-        // }    
-    }
-
     @Then("wait until the first epoch")
     Document epoch() {
 
@@ -197,21 +193,39 @@ class StartNetworkWithNAmountOfNodes {
                 auto current = network.networks[network.current];
                 (() @trusted { current.call; })();
 
-                // if (network.epoch_events.length == node_names.length) {
-                //     // all nodes have created at least one epoch
-                //     break;
-                // }
+                if (network.epoch_events.length == node_names.length) {
+                    // all nodes have created at least one epoch
+                    break;
+                }
                 printStates();
             }
         }
         catch (Exception e) {
             check(false, e.msg);
         }
+        check(network.epoch_events.length == node_names.length, "All nodes should have created a epoch");
+        // verifyEpochs(network.epoch_events);
+        // network
+        //     .epoch_events
+        //     .byKeyValue
+        //     .each!(e => e.key.cutHex.writeln);
 
-        verifyEpochs(network.epoch_events);
-        
+        const compare_events = network.epoch_events.byKeyValue.front.value;
+        writeln(compare_events);
+        writeln(compare_events.length);
+        pragma(msg, typeof(compare_events));
 
-        return Document();
+        foreach(channel_epoch; network.epoch_events.byKeyValue) {
+            const epoch = channel_epoch.value.front;
+            pragma(msg, typeof(epoch));
+        }
+        // foreach(i; 0..compare_events.length) {
+        //     foreach(channel_epoch; network.epoch_events.byKeyValue) {
+                
+        //     }
+        // }
+
+        return result_ok;
     }
 
     @Then("stop the network")
