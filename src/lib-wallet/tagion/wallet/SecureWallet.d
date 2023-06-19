@@ -148,8 +148,8 @@ struct SecureWallet(Net : SecureNet) {
             net.createKeyPair(R);
             auto wallet = RecoverGenerator(recover.toDoc);
             result = SecureWallet(DevicePIN.init, wallet);
-            result.set_pincode(R, pincode);
             result.net = net;
+            result.set_pincode(R, pincode);
         }
         return result;
     }
