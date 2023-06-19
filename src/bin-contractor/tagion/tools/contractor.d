@@ -2,12 +2,13 @@
 module tagion.tools.contractor;
 
 import std.socket;
+
 import tagion.dart.DARTcrud;
 import tagion.communication.HiRPC;
 import tagion.tools.Basic;
-import tagion.tools.neuewelle : contract_sock_path;
 import tagion.hibon.HiBON;
 import tagion.hibon.HiBONBase;
+import tagion.services.contract : contract_sock_path;
 
 mixin Main!(_main);
 
@@ -17,7 +18,7 @@ int _main(string[] _) {
 
     hibon["$test"] = 5;
 
-    const sender = hirpc.action("action", hibon);
+    const sender = hirpc.act(hibon);
 
     Address addr = new UnixAddress(contract_sock_path);
     Socket sock = new Socket(AddressFamily.UNIX, SocketType.STREAM);
