@@ -61,7 +61,7 @@ immutable(ulong[]) gene_xor(scope const(ulong[]) a, scope const(ulong[]) b) pure
 void gene_xor(ref scope ulong[] result, scope const(ulong[]) a, scope const(ulong[]) b) pure nothrow
 in {
     assert(a.length == b.length);
-    assert(result.length == b.length);
+    assert(result.length == b.length, "Length of a and b should bed the same");
 }
 do {
     foreach (i, ref r; result) {

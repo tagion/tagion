@@ -50,6 +50,37 @@ struct DevicePIN {
     mixin HiBONRecord;
 }
 
+@safe
+unittest {
+    import tagion.wallet.KeyRecover;
+    import tagion.crypto.SecureNet : StdHashNet;
+    import std.string : representation;
+    import std.range;
+    import std.array;
+    import std.random;
+    import tagion.hibon.HiBONJSON;
+    import tagion.utils.Miscellaneous;
+
+    auto rnd = Random(unpredictableSeed);
+    auto rnd_range = generate!(() => uniform!ubyte(rnd));
+    const net = new StdHashNet;
+    const recover = KeyRecover(net);
+    //auto R=new ubyte[net.hashSize];
+    {
+        auto salt = iota(ubyte(0), ubyte(net.hashSize & ubyte.max)).array.idup;
+        const R = rnd_range.take(net.hashSize).array;
+        DevicePIN pin;
+        const pin_code = "1234".representation;
+        pin.setPin(recover, R, pin_code, salt);
+
+        writefln("pin %s", pin.toPretty);
+        writefln("R   %s", R.toHexString);
+        ubyte[] recovered_R;
+        pin.recover(recover, recovered_R, pin_code);
+        writefln("Rec %s", recovered_R.toHexString);
+
+    }
+}
 /// Key-pair recovery generator
 @safe
 @recordType("Wallet")
