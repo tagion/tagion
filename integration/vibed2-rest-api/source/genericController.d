@@ -69,12 +69,12 @@ struct GenericController {
     void getT(HTTPServerRequest req, HTTPServerResponse res) {
         import tagion.hibon.HiBONJSON : toJSON;
         writeln("GET");
-        string id = req.query["fp"];
+        string id; 
         writeln(req.query);
 
         DARTIndex fingerprint;
         try {
-            // if (id.length != 64) {
+            id = req.query["fp"];            // if (id.length != 64) {
             //     throw new Exception("Length is not correct");
             // }
             fingerprint = DARTIndex(decode(id));
