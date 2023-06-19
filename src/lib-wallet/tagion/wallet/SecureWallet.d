@@ -164,38 +164,19 @@ struct SecureWallet(Net : SecureNet) {
      */
     static SecureWallet createWallet(
             const(ushort[]) mnemonic,
-    const(char[]) pincode)
-    in {
-        assert(mnemonic.length >= 12, "Mnemonic is empty");
-    }
-    do {
+    const(char[]) pincode) {
+        check(mnemonic.length >= 12, "Mnemonic is empty");
+
         import tagion.wallet.BIP39;
 
         auto net = new Net;
-        //auto recover = KeyRecover(net);
-
-        writefln("%-(%04X %)", mnemonic);
-        //TODO: createKey with mnemonic and device id.
-        // recover.createKey(mnemonic, deviceId, null);
         SecureWallet result;
-        writefln("Before");
         {
             auto R = bip39(mnemonic);
-            writefln("::R = %s --", R.toHexString);
-            //recover.findSecret(R, mnemonic);
             result.net = net;
             result.set_pincode(R, pincode);
             net.createKeyPair(R);
-
-            //auto wallet = RecoverGenerator.init; //(recover.toDoc);
-            //result = SecureWallet(net); //DevicePIN.init, wallet);
-            writefln("::R = %s ++", R.toHexString);
-            writefln("::wallet = %s", result.wallet.toPretty);
-            writefln("::pin    = %s", result.pin.toPretty);
-            writefln("::check  = %s", result.checkPincode(pincode));
-            writefln("::pubkey = %s", result.getPublicKey.toHexString);
         }
-        writefln("After");
         return result;
     }
 
