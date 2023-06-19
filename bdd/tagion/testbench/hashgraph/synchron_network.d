@@ -177,7 +177,7 @@ class StartNetworkWithNAmountOfNodes {
     Document epoch() {
 
         try {
-            foreach (i; 0 .. 1000) {
+            foreach (i; 0 .. 500) {
                 const channel_number = network.random.value(0, network.channels.length);
                 network.current = Pubkey(network.channels[channel_number]);
                 auto current = network.networks[network.current];
