@@ -163,16 +163,6 @@ class StartNetworkWithNAmountOfNodes {
         }
         
 
-        // create ripple files.
-        Pubkey[string] node_labels;
-        foreach (channel, _net; network.networks) {
-            node_labels[_net._hashgraph.name] = channel;
-        }
-        foreach (_net; network.networks) {
-            const filename = buildPath(module_path, "ripple-" ~ _net._hashgraph.name.setExtension(FileExtension.hibon));
-            writeln(filename);
-            _net._hashgraph.fwrite(filename, node_labels);
-        }
 
         return result_ok;
     }
@@ -193,10 +183,10 @@ class StartNetworkWithNAmountOfNodes {
                 auto current = network.networks[network.current];
                 (() @trusted { current.call; })();
 
-                if (network.epoch_events.length == node_names.length) {
-                    // all nodes have created at least one epoch
-                    break;
-                }
+                // if (network.epoch_events.length == node_names.length) {
+                //     // all nodes have created at least one epoch
+                //     break;
+                // }
                 printStates();
             }
         }
@@ -204,32 +194,43 @@ class StartNetworkWithNAmountOfNodes {
             check(false, e.msg);
         }
         check(network.epoch_events.length == node_names.length, "All nodes should have created a epoch");
-        // verifyEpochs(network.epoch_events);
-        // network
-        //     .epoch_events
-        //     .byKeyValue
-        //     .each!(e => e.key.cutHex.writeln);
+        
 
-        const compare_events = network.epoch_events.byKeyValue.front.value;
-        writeln(compare_events);
-        writeln(compare_events.length);
-        pragma(msg, typeof(compare_events));
+        foreach(i, compare_epoch; network.epoch_events.byKeyValue.front.value) {
+            const compare_events = compare_epoch.events
+                                                .map!(e => e.event_package)
+                                                .array;
+            writefln("compare_events: %s", compare_events);
+            foreach(channel_epoch; network.epoch_events.byKeyValue) {
+                const events = channel_epoch.value[i]
+                                            .events
+                                            .map!(e => e.event_package)
+                                            .array;
+                writefln("events: %s", events);
+                writefln("channel %s time: %s", channel_epoch.key.cutHex, channel_epoch.value[i].epoch_time);
 
-        foreach(channel_epoch; network.epoch_events.byKeyValue) {
-            const epoch = channel_epoch.value.front;
-            pragma(msg, typeof(epoch));
-        }
-        // foreach(i; 0..compare_events.length) {
-        //     foreach(channel_epoch; network.epoch_events.byKeyValue) {
-                
-        //     }
-        // }
+                const isSame = equal(compare_events, events);
+                writefln("isSame: %s", isSame);
+                // check(isSame, "event pkgs not the same");            
+            
+            }
+        }        
 
         return result_ok;
     }
 
     @Then("stop the network")
     Document _network() {
+        // create ripple files.
+        Pubkey[string] node_labels;
+        foreach (channel, _net; network.networks) {
+            node_labels[_net._hashgraph.name] = channel;
+        }
+        foreach (_net; network.networks) {
+            const filename = buildPath(module_path, "ripple-" ~ _net._hashgraph.name.setExtension(FileExtension.hibon));
+            writeln(filename);
+            _net._hashgraph.fwrite(filename, node_labels);
+        }
         return Document();
     }
 
