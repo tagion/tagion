@@ -206,7 +206,7 @@ jobs:
       - name: Generate report
         run: |
           echo -e "# All BDDtests\n" >> $GITHUB_STEP_SUMMARY 
-          ./build/${{ env.TARGET }}/bin/collider reporter -o $GITHUB_STEP_SUMMARY logs
+          ./build/${{ env.TARGET }}/bin/collider reporter -o $GITHUB_STEP_SUMMARY logs/${{ env.TARGET }}/bdd/commit/results 
 
       - uses: actions/upload-artifact@v3
         if: success()
