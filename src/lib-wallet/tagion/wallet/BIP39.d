@@ -1,15 +1,39 @@
 module tagion.wallet.BIP39;
 
 @trusted
-ubyte[] bip39(const(ushort[]) mnemonic) pure nothrow {
+ubyte[] bip39(const(ushort[]) mnemonics) pure nothrow {
     pragma(msg, "fixme(cbr): Fake BIP39 must be fixed later");
     import std.digest.sha : SHA256;
     import std.digest;
 
-    return digest!SHA256(cast(ubyte[]) mnemonic).dup;
+    enum MAX_WORDS = 24; /// Max number of mnemonic word in a string
+    enum MNEMONIC_BITS = 11; /// Bit size of the word number 2^11=2048
+    enum MAX_BITS = MAX_WORDS * MNEMONIC_BITS; /// Total number of bits
+    enum WORK_BITS = 8 * uint.sizeof;
+    enum SIZE_OF_WORK_BUFFER = (MAX_BITS / WORK_BITS) + ((MAX_BITS % WORK_BITS) ? 1 : 0);
+    const total_bits = mnemonics.length * MNEMONIC_BITS;
+    uint[SIZE_OF_WORK_BUFFER] work_buffer;
+    ulong* work_slide = cast(ulong*)&work_buffer[0];
+    uint mnemonic_pos;
+    size_t work_pos;
+    foreach (mnemonic; mnemonics) {
+        *work_slide |= uint(mnemonic) << mnemonic_pos;
+        mnemonic_pos += MNEMONIC_BITS;
+        if (mnemonic_pos >= WORK_BITS) {
+            work_pos++;
+            mnemonic_pos -= WORK_BITS;
+            work_slide = cast(ulong*)&work_buffer[work_pos];
+        }
+    }
+
+    const result_buffer = (&work_buffer[0])[0 .. (mnemonics.length * WORK_BITS) / 8];
+
+    pragma(msg, "fixme(cbr): PBKDF2 hmac function should be used");
+    return digest!SHA256(cast(ubyte[]) result_buffer).dup;
 }
 
 /*
+https://github.com/bitcoin/bips/blob/master/bip-0039.mediawikiP
 10001111110100110100110001011001100010111110011101010000101001000000110000011001101010001100001000011101110011000100000111111100
 0111
 
@@ -27,6 +51,7 @@ picture sponsor display jump nothing wing twin exotic earth vessel one blur erup
 import std.range;
 import std.algorithm;
 import std.typecons;
+import tagion.hibon.HiBONRecord;
 
 @safe
 struct WordList {

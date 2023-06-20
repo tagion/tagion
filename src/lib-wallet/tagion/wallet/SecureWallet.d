@@ -2,7 +2,6 @@
 * Handles management of key-pair, account-details device-pin
 */
 module tagion.wallet.SecureWallet;
-import std.stdio;
 import tagion.utils.Miscellaneous;
 
 import std.format;
@@ -278,7 +277,6 @@ struct SecureWallet(Net : SecureNet) {
             }
             const recovered = _pin.recover(login_net, R, pincode.representation);
             //  _pin.recover(R, pinhash);
-            writefln("_pin.R = %s", R.toHexString);
             if (recovered) {
                 login_net.createKeyPair(R);
                 net = login_net;
@@ -667,31 +665,21 @@ struct SecureWallet(Net : SecureNet) {
 
         { // Secure wallet with mnemonic.
 
-            writeln("------------ ---------------------");
             const test_pin_code = "1234";
             const test_mnemonic = cast(ushort[])[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
             // Create first wallet.
             auto secure_wallet_1 = SecureWallet.createWallet(test_mnemonic, test_pin_code);
             const pubkey_1_create = secure_wallet_1.getPublicKey;
-            writefln("Pubkey 1 create %s", pubkey_1_create.toHexString);
             secure_wallet_1.logout;
             secure_wallet_1.login(test_pin_code);
-            writefln("Loggin 1 create %s", secure_wallet_1.isLoggedin);
             const pubkey_1 = secure_wallet_1.getPublicKey();
-            writefln("Pubkey 1 login  %s", pubkey_1.toHexString);
-            writefln("Logged 1 login  %s", secure_wallet_1.isLoggedin);
 
             assert(pubkey_1_create == pubkey_1);
             // Create second wallet.
             auto secure_wallet_2 = SecureWallet.createWallet(test_mnemonic, test_pin_code);
-            //writefln("Pubkey 2 %s", secure_wallet_2.getPublicKey.toHexString);
 
             secure_wallet_2.login(test_pin_code);
-            // writefln("Logged in 2 %s", secure_wallet_2.isLoggedin);
             auto pubkey_2 = secure_wallet_2.getPublicKey();
-
-            // writefln("Pubkey 1 %s", pubkey_1.toHexString);
-            // writefln("Pubkey 2 %s", pubkey_2.toHexString);
 
             version (MNEMONIC) {
                 assert(pubkey_1 == pubkey_2);
@@ -701,7 +689,6 @@ struct SecureWallet(Net : SecureNet) {
     }
 
     unittest { // Test for account
-        import std.stdio;
         import std.range : zip;
         import tagion.utils.Miscellaneous;
 
