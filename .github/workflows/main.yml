@@ -13,7 +13,6 @@ env:
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   UNITTEST_COV: unittest-cov
   GITBOT_TOKEN: ${{ secrets.GITBOT_TOKEN }}
-
 permissions:
   contents: read
   pages: write
