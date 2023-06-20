@@ -116,7 +116,7 @@
             "args": ["Alice", "Bob", "Carol", "Dave", "Elisa"],
             "envs": {},
             "stages": [
-                "commit", "hashgraph"
+                "hashgraph"
             ],
             "timeout": 0.0
         },
