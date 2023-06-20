@@ -133,7 +133,8 @@ class StartNetworkWithNAmountOfNodes {
 
         network = new TestNetwork(node_names);
         network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 0);
-        network.random.seed(123456789);
+        (() @trusted { network.random.seed(env.getSeed); })();
+        writeln(network.random);
 
         network.global_time = SysTime.fromUnixTime(1_614_355_286);
 
