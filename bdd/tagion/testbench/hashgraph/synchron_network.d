@@ -19,6 +19,11 @@ import std.range;
 import std.array;
 import tagion.utils.Miscellaneous : cutHex;
 import tagion.hashgraph.HashGraphBasic;
+import tagion.hashgraphview.Compare;
+import tagion.hashgraph.Event;
+import std.format;
+import std.exception;
+import std.conv;
 
 enum feature = Feature(
             "Bootstrap of hashgraph",
@@ -68,45 +73,57 @@ class StartNetworkWithNAmountOfNodes {
     
     }
 
-
-    void verifyEpochs(TestNetwork.Epoch[][Pubkey] epoch_events) {
-        //
-        // auto test = epoch_events.byKeyValue.slide(2);
-        // pragma(msg, typeof(test.front));
-        // test.popFront;
-        // pragma(msg, typeof(test.front));
-        // pragma(msg, __traits(allMembers, typeof(test.front)));
-        // pragma(msg, __traits(allMembers, typeof(test.front.front)));
-
-
-        foreach(epoch_pair; epoch_events.byKeyValue.slide(2)) {
-
-
-            auto a = epoch_pair.front;
-            epoch_pair.popFront;
-            auto b = epoch_pair.front;
-            pragma(msg, typeof(a.key));
-            const l = min(a.value.length, b.value.length);
-            check(l != 0, "node not started");
-            foreach(i; 0..l) {
-                const e = equal(a.value[i].events.map!(e => e.event_package), b.value[i].events.map!(e => e.event_package));
-
-                check(e, "sikker noget skidt");
+    bool event_error(const Event e1, const Event e2, const Compare.ErrorCode code) @safe nothrow {
+        static string print(const Event e) nothrow {
+            if (e) {
+                const round_received = (e.round_received) ? e.round_received.number.to!string : "#";
+                return assumeWontThrow(format("(%d:%d:%d:r=%d:rr=%s:%s)",
+                        e.id, e.node_id, e.altitude, e.round.number, round_received,
+                        e.fingerprint.cutHex));
             }
+            return assumeWontThrow(format("(%d:%d:%s:%s)", 0, -1, 0, "nil"));
+        }
 
-        }   
-
-        // }
-        // uint i = 0;
-        // while(true) {
-        //     Epoch[] epoch_events[0][i];
-        
-        //     foreach(channel; epoch_events) {
-        //         merge ~= 
-        //     }
-        //     i++;
-        // }    
+        assumeWontThrow(writefln("Event %s and %s %s", print(e1), print(e2), code));
+        return false;
     }
+
+    // void verifyEpochs(TestNetwork.Epoch[][Pubkey] epoch_events) {
+    //     //
+    //     // auto test = epoch_events.byKeyValue.slide(2);
+    //     // pragma(msg, typeof(test.front));
+    //     // test.popFront;
+    //     // pragma(msg, typeof(test.front));
+    //     // pragma(msg, __traits(allMembers, typeof(test.front)));
+    //     // pragma(msg, __traits(allMembers, typeof(test.front.front)));
+
+
+    //     foreach(epoch_pair; epoch_events.byKeyValue.slide(2)) {
+    //         auto a = epoch_pair.front;
+    //         epoch_pair.popFront;
+    //         auto b = epoch_pair.front;
+    //         pragma(msg, typeof(a.key));
+    //         const l = min(a.value.length, b.value.length);
+    //         check(l != 0, "node not started");
+    //         foreach(i; 0..l) {
+    //             const e = equal(a.value[i].events.map!(e => e.event_package), b.value[i].events.map!(e => e.event_package));
+
+    //             // check(e, "sikker noget skidt");
+    //         }
+
+    //     }   
+
+    //     // }
+    //     // uint i = 0;
+    //     // while(true) {
+    //     //     Epoch[] epoch_events[0][i];
+        
+    //     //     foreach(channel; epoch_events) {
+    //     //         merge ~= 
+    //     //     }
+    //     //     i++;
+    //     // }    
+    // }
     
     @Given("i have a HashGraph TestNetwork with n number of nodes")
     Document nodes() {
@@ -170,7 +187,7 @@ class StartNetworkWithNAmountOfNodes {
     @When("all nodes are coherent")
     Document _coherent() {
         check(coherent, "Nodes not coherent");
-        return Document();
+        return result_ok;
     }
 
     @Then("wait until the first epoch")
@@ -193,28 +210,49 @@ class StartNetworkWithNAmountOfNodes {
         catch (Exception e) {
             check(false, e.msg);
         }
-        check(network.epoch_events.length == node_names.length, "All nodes should have created a epoch");
-        
+        // check(network.epoch_events.length == node_names.length, "All nodes should have created a epoch");
+        auto names = network.networks.byValue
+            .map!((net) => net._hashgraph.name)
+            .array.dup
+            .sort
+            .array;
 
-        foreach(i, compare_epoch; network.epoch_events.byKeyValue.front.value) {
-            const compare_events = compare_epoch.events
-                                                .map!(e => e.event_package)
-                                                .array;
-            writefln("compare_events: %s", compare_events);
-            foreach(channel_epoch; network.epoch_events.byKeyValue) {
-                const events = channel_epoch.value[i]
-                                            .events
-                                            .map!(e => e.event_package)
-                                            .array;
-                writefln("events: %s", events);
-                writefln("channel %s time: %s", channel_epoch.key.cutHex, channel_epoch.value[i].epoch_time);
+        HashGraph[string] hashgraphs;
+        foreach (net; network.networks) {
+            hashgraphs[net._hashgraph.name] = net._hashgraph;
+        }
 
-                const isSame = equal(compare_events, events);
-                writefln("isSame: %s", isSame);
-                // check(isSame, "event pkgs not the same");            
-            
+        foreach (i, name_h1; names[0 .. $ - 1]) {
+            const h1 = hashgraphs[name_h1];
+            foreach (name_h2; names[i + 1 .. $]) {
+                const h2 = hashgraphs[name_h2];
+                auto comp = Compare(h1, h2, &event_error);
+                // writefln("%s %s round_offset=%d order_offset=%d",
+                //     h1.name, h2.name, comp.round_offset, comp.order_offset);
+                const result = comp.compare;
+                check(result, format("HashGraph %s and %s is not the same", h1.name, h2.name));
             }
-        }        
+        }
+
+        // foreach(i, compare_epoch; network.epoch_events.byKeyValue.front.value) {
+        //     const compare_events = compare_epoch.events
+        //                                         .map!(e => e.event_package)
+        //                                         .array;
+        //     writefln("compare_events: %s", compare_events);
+        //     foreach(channel_epoch; network.epoch_events.byKeyValue) {
+        //         const events = channel_epoch.value[i]
+        //                                     .events
+        //                                     .map!(e => e.event_package)
+        //                                     .array;
+        //         writefln("events: %s", events);
+        //         writefln("channel %s time: %s", channel_epoch.key.cutHex, channel_epoch.value[i].epoch_time);
+
+        //         const isSame = equal(compare_events, events);
+        //         writefln("isSame: %s", isSame);
+        //         // check(isSame, "event pkgs not the same");            
+            
+        //     }
+        // }        
 
         return result_ok;
     }
@@ -231,7 +269,7 @@ class StartNetworkWithNAmountOfNodes {
             writeln(filename);
             _net._hashgraph.fwrite(filename, node_labels);
         }
-        return Document();
+        return result_ok;
     }
 
 }
