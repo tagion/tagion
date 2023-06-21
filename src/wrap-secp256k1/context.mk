@@ -2,7 +2,6 @@
 
 LIBSECP256K1_NAME:=libsecp256k1
 
-# It seems the build creates both the shared and static library regardless of this options being enabled or disabled
 ifdef SHARED
 LIBSECP256K1_FILE:=$(LIBSECP256K1_NAME).$(DLLEXT)
 CONFIGUREFLAGS_SECP256K1 += --enable-shared=yes
