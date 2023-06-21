@@ -48,8 +48,8 @@ enum Sig {
 /// contains the Tid of the actor which send it and the state
 alias CtrlMsg = Tuple!(string, "task_name", Ctrl, "ctrl");
 
-bool all(Ctrl[string] aa, Ctrl ctrl) @safe {
-    foreach (val; aa) {
+bool all(Ctrl[string] aa, Ctrl ctrl) @safe nothrow {
+    foreach (val; aa.byValue) {
         if (val != ctrl) {
             return false;
         }
@@ -57,16 +57,23 @@ bool all(Ctrl[string] aa, Ctrl ctrl) @safe {
     return true;
 }
 
-void waitfor(Ctrl[string] childrenState, Ctrl state) @safe {
+bool waitfor(Ctrl[string] childrenState, Ctrl state) @safe nothrow {
+    bool success = true;
     while (!(childrenState.all(state))) {
-        CtrlMsg msg = receiveOnly!CtrlMsg;
-        writeln(msg);
-        childrenState[msg.task_name] = msg.ctrl;
+        try {
+            CtrlMsg msg = receiveOnly!CtrlMsg;
+            childrenState[msg.task_name] = msg.ctrl;
+        }
+        catch (Exception _) {
+            success = false;
+        }
     }
+    return success;
 }
 
 import std.traits;
 
+/// Checks if a type has the required members to be an actor
 template isActor(A) {
 
     template isTask(args...) if (args.length == 1 && isCallable!(args[0])) {
@@ -214,6 +221,11 @@ void sendOwner(T...)(T vals) @safe {
     }
 }
 
+/** 
+ * Send a TaskFailure up to the owner
+ * Silently fails if there is no owner
+ * Does NOT exit regular control flow
+*/
 void fail(string task_name, Throwable t) @trusted nothrow {
     if (tidOwner.get !is Tid.init) {
         assumeWontThrow(
