@@ -40,7 +40,7 @@ class StartNetworkWithNAmountOfNodes {
     string[] node_names;
     TestNetwork network;
     string module_path;
-
+    const(uint) MAX_CALLS = 5000;
     this(string[] node_names, const(string) module_path) {
         this.node_names = node_names;
         this.module_path = module_path;
@@ -133,7 +133,7 @@ class StartNetworkWithNAmountOfNodes {
 
         network = new TestNetwork(node_names);
         network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 0);
-        (() @trusted { network.random.seed(env.getSeed); })();
+        network.random.seed(123456789);
         writeln(network.random);
 
         network.global_time = SysTime.fromUnixTime(1_614_355_286);
@@ -195,23 +195,29 @@ class StartNetworkWithNAmountOfNodes {
     Document epoch() {
 
         try {
-            foreach (i; 0 .. 500) {
+            uint i = 0;
+            while(i < MAX_CALLS) {
+            
                 const channel_number = network.random.value(0, network.channels.length);
                 network.current = Pubkey(network.channels[channel_number]);
                 auto current = network.networks[network.current];
                 (() @trusted { current.call; })();
 
-                // if (network.epoch_events.length == node_names.length) {
-                //     // all nodes have created at least one epoch
-                //     break;
-                // }
+                if (network.epoch_events.length == node_names.length) {
+                    // all nodes have created at least one epoch
+                    break;
+                }
                 printStates();
+                i++;
             }
+            check(network.epoch_events.length == node_names.length, 
+                format("Max calls %d reached, not all nodes have created epochs only %d", 
+                MAX_CALLS, network.epoch_events.length));
+
         }
         catch (Exception e) {
             check(false, e.msg);
         }
-        // check(network.epoch_events.length == node_names.length, "All nodes should have created a epoch");
         auto names = network.networks.byValue
             .map!((net) => net._hashgraph.name)
             .array.dup
