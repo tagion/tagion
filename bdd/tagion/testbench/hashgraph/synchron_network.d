@@ -25,6 +25,8 @@ import std.format;
 import std.exception;
 import std.conv;
 
+import tagion.utils.Miscellaneous : toHexString;
+
 enum feature = Feature(
             "Bootstrap of hashgraph",
             []);
@@ -203,10 +205,10 @@ class StartNetworkWithNAmountOfNodes {
                 auto current = network.networks[network.current];
                 (() @trusted { current.call; })();
 
-                if (network.epoch_events.length == node_names.length) {
-                    // all nodes have created at least one epoch
-                    break;
-                }
+                // if (network.epoch_events.length == node_names.length) {
+                //     // all nodes have created at least one epoch
+                //     break;
+                // }
                 printStates();
                 i++;
             }
@@ -218,6 +220,9 @@ class StartNetworkWithNAmountOfNodes {
         catch (Exception e) {
             check(false, e.msg);
         }
+
+
+        // compare ordering
         auto names = network.networks.byValue
             .map!((net) => net._hashgraph.name)
             .array.dup
@@ -228,7 +233,6 @@ class StartNetworkWithNAmountOfNodes {
         foreach (net; network.networks) {
             hashgraphs[net._hashgraph.name] = net._hashgraph;
         }
-
         foreach (i, name_h1; names[0 .. $ - 1]) {
             const h1 = hashgraphs[name_h1];
             foreach (name_h2; names[i + 1 .. $]) {
@@ -240,26 +244,31 @@ class StartNetworkWithNAmountOfNodes {
                 check(result, format("HashGraph %s and %s is not the same", h1.name, h2.name));
             }
         }
+        // compare epochs
+        foreach(i, compare_epoch; network.epoch_events.byKeyValue.front.value) {
+            const compare_events = compare_epoch
+                                            .events
+                                            .map!(e => e.event_package)
+                                            .array;
+            writefln("compare_events: %s", compare_events);
+            foreach(channel_epoch; network.epoch_events.byKeyValue) {
+                const events = channel_epoch.value[i]
+                                            .events
+                                            .map!(e => e.event_package)
+                                            .array;
+                writefln("events: %s", events);
+                writefln("channel %s time: %s", channel_epoch.key.cutHex, channel_epoch.value[i].epoch_time);
 
-        // foreach(i, compare_epoch; network.epoch_events.byKeyValue.front.value) {
-        //     const compare_events = compare_epoch.events
-        //                                         .map!(e => e.event_package)
-        //                                         .array;
-        //     writefln("compare_events: %s", compare_events);
-        //     foreach(channel_epoch; network.epoch_events.byKeyValue) {
-        //         const events = channel_epoch.value[i]
-        //                                     .events
-        //                                     .map!(e => e.event_package)
-        //                                     .array;
-        //         writefln("events: %s", events);
-        //         writefln("channel %s time: %s", channel_epoch.key.cutHex, channel_epoch.value[i].epoch_time);
+                
+                check(compare_events.length == events.length, "event_packages not the same length");
 
-        //         const isSame = equal(compare_events, events);
-        //         writefln("isSame: %s", isSame);
-        //         // check(isSame, "event pkgs not the same");            
+                const isSame = equal(compare_events, events);
+                writefln("isSame: %s", isSame);
+                // writefln("isSame: %s", compare_events == events);
+                check(isSame, "event_packages not the same");            
             
-        //     }
-        // }        
+            }
+        }        
 
         return result_ok;
     }

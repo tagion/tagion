@@ -186,7 +186,6 @@ struct EventBody {
             check(mother != father, ConsensusFailCode.MOTHER_AND_FATHER_CAN_NOT_BE_THE_SAME);
         }
     }
-
 }
 
 @safe
