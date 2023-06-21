@@ -11,7 +11,8 @@ clean-libtagion:
 clean: clean-libtagion
 
 LIBMOBILE:=$(DLIB)/libmobile.$(LIBEXT)
-libmobile: LIBS+=$(DTMP_SECP256K1)/.libs/$(LIBSECP256K1_NAME).$(STAEXT)
+libmobile: $(LIBSECP256K1)
+libmobile: LIBS+=$(LIBSECP256K1_STATIC)
 libmobile: DFILES:=${shell find $(DSRC)/lib-mobile -name "*.d"}
 libmobile: $(LIBMOBILE) $(DFILES)
 
