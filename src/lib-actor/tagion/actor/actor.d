@@ -4,13 +4,16 @@ module tagion.actor.actor;
 import std.stdio;
 import std.format : format;
 import std.typecons;
-import core.thread;
 import std.exception;
 import std.traits;
+import std.variant : Variant;
+import std.format : format;
+import std.traits : isCallable;
+
+import core.thread;
 
 import tagion.utils.pretend_safe_concurrency;
 import tagion.actor.exceptions;
-import tagion.actor.exceptions : TaskFailure;
 import tagion.basic.tagionexceptions : TagionException;
 
 version (Posix) {
@@ -259,152 +262,6 @@ void setState(Ctrl ctrl, string task_name) @safe nothrow {
         /* logger.fatal(e); */
     }
 }
-
-/**
- * Base template
- * All members should be static
- *
- * Params:
- *  T... = a list of message handlers passed to the receive function
- * 
- * Implemnt:
- *  Struct may implement starting callback that gets called after the actor sends Ctrl.STARTING
- *  ---
- *  void starting() {...}
- *  ---
- * 
- *  fail a callable to override the default failhandler
- *  ---
- *  auto fail = (TaskFailure tf) {,,,};
- *  ---
- */
-mixin template Actor(T...) {
-static:
-    import std.exception : assumeWontThrow;
-    import std.variant : Variant;
-    import tagion.utils.pretend_safe_concurrency : OwnerTerminated, Tid, thisTid, ownerTid, receive, prioritySend, ThreadInfo, send, locate;
-    import std.format : format;
-    import std.traits : isCallable;
-    import tagion.actor.exceptions : TaskFailure, taskException, ActorException, UnknownMessage;
-    import std.stdio : writefln, writeln;
-
-    bool stop = false;
-    Ctrl[string] childrenState; // An AA to keep a copy of the state of the children
-
-    alias This = typeof(this);
-
-    void signal(Sig signal) @safe {
-        with (Sig) final switch (signal) {
-        case STOP:
-            stop = true;
-            break;
-        }
-    }
-
-    /// Controls message sent from the children.
-    void control(CtrlMsg msg) @safe {
-        childrenState[msg.task_name] = msg.ctrl;
-    }
-
-    /// Stops the actor if the supervisor stops
-    void ownerTerminated(OwnerTerminated) @safe {
-        writefln("%s, Owner stopped... nothing to life for... stopping self", thisTid);
-        stop = true;
-    }
-
-    /**
-     * The default message handler, if it's an unknown messages it will send a FAIL to the owner.
-     * Params:
-     *   message = literally any message
-     */
-    void unknown(Variant message) @trusted {
-        throw new UnknownMessage("No delegate to deal with message: %s".format(message));
-    }
-
-    /// The tasks that get run when you call spawn!
-    void task(string task_name) nothrow {
-        try {
-
-            // Set the system thread name on posix for better debugging abilities
-            version (Posix) {
-                import std.string;
-                import core.sys.posix.pthread;
-
-                pthread_setname_np(pthread_self(), toStringz(task_name));
-            }
-            setState(Ctrl.STARTING, task_name); // Tell the owner that you are starting.
-            scope (exit) {
-                if (childrenState.length != 0) {
-                    foreach (child_task_name, ctrl; childrenState) {
-                        if (ctrl is Ctrl.ALIVE) {
-                            locate(child_task_name).send(Sig.STOP);
-                        }
-                    }
-
-                    while (!(childrenState.all(Ctrl.END))) {
-                        receive(
-                                (CtrlMsg ctrl) { childrenState[ctrl.task_name] = ctrl.ctrl; },
-                                (TaskFailure tf) {
-                            writefln("While stopping `%s` received taskfailure: %s", task_name, tf.throwable.msg);
-                        }
-                        );
-                    }
-                }
-
-                end(task_name);
-            }
-
-            // Call starting() if it's implemented
-            static if (__traits(hasMember, This, "starting")) {
-                alias startingCall = __traits(getMember, This, "starting");
-                static assert(isCallable!startingCall, "the starting callback is not callable");
-                startingCall();
-            }
-
-            // // Asign the failhandler if a custom one is defined override the default one
-            static if (__traits(hasMember, This, "failHandler")) {
-                auto failhandler = __traits(getMember, This, "failHandler");
-            }
-            else {
-                // default failhandler
-                auto failhandler = (TaskFailure tf) {
-                    if (ownerTid != Tid.init) {
-                        ownerTid.prioritySend(tf);
-                    }
-                };
-            }
-
-            setState(Ctrl.ALIVE, task_name); // Tell the owner that you running
-            while (!stop) {
-                try {
-                    receive(
-                            T, // The message handlers you pass to your Actor template
-                            failhandler,
-                            &signal,
-                            &control,
-                            &ownerTerminated,
-                            &unknown,
-                    );
-                }
-                catch (Throwable t) {
-                    fail(task_name, t);
-                }
-            }
-        }
-
-        // If we catch an exception we send it back to owner for them to deal with it.
-        catch (Throwable t) {
-            fail(task_name, t);
-        }
-    }
-}
-
-import std.exception : assumeWontThrow;
-import std.variant : Variant;
-import tagion.utils.pretend_safe_concurrency : OwnerTerminated, Tid, thisTid, ownerTid, receive, prioritySend, ThreadInfo, send, locate;
-import std.format : format;
-import std.traits : isCallable;
-import std.stdio : writefln, writeln;
 
 void end(string task_name) nothrow {
     assumeWontThrow(ThreadInfo.thisInfo.cleanup);
