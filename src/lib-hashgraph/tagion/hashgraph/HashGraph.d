@@ -304,6 +304,9 @@ class HashGraph {
 
     package void epoch(const(Event)[] events, const sdt_t epoch_time, const Round decided_round) {
         import std.stdio;
+        writefln("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d time=%s",
+                name, decided_round.number,
+                Event.count, Event.Witness.count, events.length, epoch_time);
 
         log.trace("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d",
                 name, decided_round.number,

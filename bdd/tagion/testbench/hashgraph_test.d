@@ -15,9 +15,9 @@ mixin Main!(_main);
 int _main(string[] args) {
     const module_path = env.bdd_log.buildPath(__MODULE__);
     mkdirRecurse(module_path);
-
+    writeln(args);
     auto hashgraph_sync_network_feature = automation!(synchron_network);
-    hashgraph_sync_network_feature.StartNetworkWithNAmountOfNodes(args, module_path);
+    hashgraph_sync_network_feature.StartNetworkWithNAmountOfNodes(args[1..$], module_path);
     auto hashgraph_sync_network_context = hashgraph_sync_network_feature.run();
     return 0;
 }

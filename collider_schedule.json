@@ -113,7 +113,7 @@
             "timeout": 0.0
         },
         "hashgraph_test": {
-            "args": ["Alice", "Bob", "Carol", "Dave", "Elisa"],
+            "args": ["Alice", "Bob", "Carol", "Dave", "Elisa", "Freja"],
             "envs": {},
             "stages": [
                 "hashgraph"

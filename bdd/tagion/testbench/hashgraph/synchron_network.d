@@ -51,7 +51,7 @@ class StartNetworkWithNAmountOfNodes {
     bool coherent;
 
     bool allCoherent() {
-    
+        writeln(node_names);    
         return network.networks
                 .byValue
                 .map!(n => n._hashgraph.owner_node.sticky_state)
@@ -90,42 +90,6 @@ class StartNetworkWithNAmountOfNodes {
         return false;
     }
 
-    // void verifyEpochs(TestNetwork.Epoch[][Pubkey] epoch_events) {
-    //     //
-    //     // auto test = epoch_events.byKeyValue.slide(2);
-    //     // pragma(msg, typeof(test.front));
-    //     // test.popFront;
-    //     // pragma(msg, typeof(test.front));
-    //     // pragma(msg, __traits(allMembers, typeof(test.front)));
-    //     // pragma(msg, __traits(allMembers, typeof(test.front.front)));
-
-
-    //     foreach(epoch_pair; epoch_events.byKeyValue.slide(2)) {
-    //         auto a = epoch_pair.front;
-    //         epoch_pair.popFront;
-    //         auto b = epoch_pair.front;
-    //         pragma(msg, typeof(a.key));
-    //         const l = min(a.value.length, b.value.length);
-    //         check(l != 0, "node not started");
-    //         foreach(i; 0..l) {
-    //             const e = equal(a.value[i].events.map!(e => e.event_package), b.value[i].events.map!(e => e.event_package));
-
-    //             // check(e, "sikker noget skidt");
-    //         }
-
-    //     }   
-
-    //     // }
-    //     // uint i = 0;
-    //     // while(true) {
-    //     //     Epoch[] epoch_events[0][i];
-        
-    //     //     foreach(channel; epoch_events) {
-    //     //         merge ~= 
-    //     //     }
-    //     //     i++;
-    //     // }    
-    // }
     
     @Given("i have a HashGraph TestNetwork with n number of nodes")
     Document nodes() {
@@ -194,7 +158,8 @@ class StartNetworkWithNAmountOfNodes {
     }
 
     @Then("wait until the first epoch")
-    Document epoch() {
+    Document epoch() @trusted
+    {
 
         try {
             uint i = 0;
@@ -248,23 +213,23 @@ class StartNetworkWithNAmountOfNodes {
         foreach(i, compare_epoch; network.epoch_events.byKeyValue.front.value) {
             const compare_events = compare_epoch
                                             .events
-                                            .map!(e => e.event_package)
+                                            .map!(e => e.event_package.event_body.time)
                                             .array;
             writefln("compare_events: %s", compare_events);
+            // writefln("channel %s time: %s", compare_epoch.key.cutHex, compare_epoch.value[i].epoch_time);
             foreach(channel_epoch; network.epoch_events.byKeyValue) {
                 const events = channel_epoch.value[i]
                                             .events
-                                            .map!(e => e.event_package)
+                                            .map!(e => e.event_package.event_body.time)
                                             .array;
                 writefln("events: %s", events);
                 writefln("channel %s time: %s", channel_epoch.key.cutHex, channel_epoch.value[i].epoch_time);
-
+                
                 
                 check(compare_events.length == events.length, "event_packages not the same length");
 
                 const isSame = equal(compare_events, events);
                 writefln("isSame: %s", isSame);
-                // writefln("isSame: %s", compare_events == events);
                 check(isSame, "event_packages not the same");            
             
             }
