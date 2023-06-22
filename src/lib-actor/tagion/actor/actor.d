@@ -75,7 +75,6 @@ import std.traits;
 
 /// Checks if a type has the required members to be an actor
 template isActor(A) {
-
     template isTask(args...) if (args.length == 1 && isCallable!(args[0])) {
         alias task = args[0];
         alias params = Parameters!(task);
@@ -86,6 +85,12 @@ template isActor(A) {
 
     enum bool isActor = hasMember!(A, "task")
         && isTask!(A.task);
+}
+
+template isFailHandler(F) {
+    enum bool isFailHandler
+        = is(F : void function(TaskFailure))
+        || is(F : void delegate(TaskFailure));
 }
 
 /**
@@ -406,6 +411,11 @@ void end(string task_name) nothrow {
     assumeWontThrow(setState(Ctrl.END, task_name));
 }
 
+/* 
+ * Params:
+ *   task_name = the name of the task
+ *   args = a list of message handlers for the task
+ */
 void run(Args...)(string task_name, Args args) nothrow {
     bool stop = false;
     Ctrl[string] childrenState; // An AA to keep a copy of the state of the children
@@ -459,13 +469,21 @@ void run(Args...)(string task_name, Args args) nothrow {
             }
         }
 
-        auto failhandler = (TaskFailure tf) {
-            if (ownerTid != Tid.init) {
-                ownerTid.prioritySend(tf);
-            }
-        };
+        // static if(args.length == 1) {
+        //     pragma(msg, format("IS taskfailure %s %s", isFailHandler!(typeof(args[$-1])), args));
+        // }
+        static if (args.length == 1 && isFailHandler!(typeof(args[$ - 1]))) {
+            enum failhandler = () {}; /// Use the fail handler passed through `args`
+        }
+        else {
+            enum failhandler = (TaskFailure tf) {
+                if (ownerTid != Tid.init) {
+                    ownerTid.prioritySend(tf);
+                }
+            };
+        }
 
-        setState(Ctrl.ALIVE, task_name); // Tell the owner that you running
+        setState(Ctrl.ALIVE, task_name); // Tell the owner that you are running
         while (!stop) {
             try {
                 receive(
@@ -477,18 +495,14 @@ void run(Args...)(string task_name, Args args) nothrow {
                         &unknown,
                 );
             }
-            catch (Throwable t) {
-                if (ownerTid != Tid.init) {
-                    ownerTid.prioritySend(TaskFailure(task_name, cast(immutable) t));
-                }
+            catch (Exception t) {
+                fail(task_name, t);
             }
         }
     }
 
     // If we catch an exception we send it back to owner for them to deal with it.
-    catch (Throwable t) {
-        if (tidOwner.get !is Tid.init) {
-            assumeWontThrow(ownerTid.prioritySend(TaskFailure(task_name, cast(immutable) t)));
-        }
+    catch (Exception t) {
+        fail(task_name, t);
     }
 }
