@@ -209,16 +209,18 @@ class StartNetworkWithNAmountOfNodes {
         }
         // compare epochs
         foreach(i, compare_epoch; network.epoch_events.byKeyValue.front.value) {
-            const compare_events = compare_epoch
+            auto compare_events = compare_epoch
                                             .events
                                             .map!(e => e.event_package.fingerprint.cutHex)
                                             .array;
+            compare_events.sort!((a,b) => a < b);                                
             writefln("compare_events: %s", compare_events);
             foreach(channel_epoch; network.epoch_events.byKeyValue) {
-                const events = channel_epoch.value[i]
+                auto events = channel_epoch.value[i]
                                             .events
                                             .map!(e => e.event_package.fingerprint.cutHex)
                                             .array;
+                events.sort!((a,b) => a < b);
                 writefln("events: %s", events);
                 writefln("channel %s time: %s", channel_epoch.key.cutHex, channel_epoch.value[i].epoch_time);
                 

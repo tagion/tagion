@@ -141,6 +141,7 @@ class HashGraph {
                 auto event = new Event(epack, this);
                 _event_cache[event.fingerprint] = event;
                 event.witness_event;
+                writefln("init_event time %s", event.event_body.time);
                 _rounds.last_round.add(event);
                 front_seat(event);
             }
@@ -306,14 +307,9 @@ class HashGraph {
     }
 
     package void epoch(const(Event)[] events, const sdt_t epoch_time, const Round decided_round) {
-        import std.stdio;
-        writefln("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d time=%s",
+        log.trace("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d time=%s",
                 name, decided_round.number,
                 Event.count, Event.Witness.count, events.length, epoch_time);
-
-        log.trace("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d",
-                name, decided_round.number,
-                Event.count, Event.Witness.count, events.length);
         if (epoch_callback !is null) {
             epoch_callback(events, epoch_time);
         }
