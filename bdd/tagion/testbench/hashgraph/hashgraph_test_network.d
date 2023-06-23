@@ -158,7 +158,8 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
 
         sdt_t time() {
             const systime = global_time + random.value(timestep.MIN, timestep.MAX).msecs;
-            return sdt_t(systime.stdTime);
+            const sdt_time = sdt_t(systime.stdTime);
+            return sdt_time;
         }
 
         private void run() {
@@ -184,6 +185,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
                 while (!authorising.empty(_hashgraph.channel)) {
                     const received = _hashgraph.hirpc.receive(
                             authorising.receive(_hashgraph.channel));
+
                     _hashgraph.wavefront(
                             received,
                             time,

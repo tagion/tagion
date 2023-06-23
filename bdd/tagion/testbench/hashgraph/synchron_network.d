@@ -24,8 +24,9 @@ import tagion.hashgraph.Event;
 import std.format;
 import std.exception;
 import std.conv;
-
+import tagion.hibon.HiBONJSON;
 import tagion.utils.Miscellaneous : toHexString;
+import tagion.basic.basic;
 
 enum feature = Feature(
             "Bootstrap of hashgraph",
@@ -125,9 +126,6 @@ class StartNetworkWithNAmountOfNodes {
 
     @When("all nodes are sending ripples")
     Document ripples() {
-
-
-
         try {
             foreach (i; 0 .. 1000) {
                 const channel_number = network.random.value(0, network.channels.length);
@@ -213,14 +211,13 @@ class StartNetworkWithNAmountOfNodes {
         foreach(i, compare_epoch; network.epoch_events.byKeyValue.front.value) {
             const compare_events = compare_epoch
                                             .events
-                                            .map!(e => e.event_package.event_body.time)
+                                            .map!(e => e.event_package.fingerprint.cutHex)
                                             .array;
             writefln("compare_events: %s", compare_events);
-            // writefln("channel %s time: %s", compare_epoch.key.cutHex, compare_epoch.value[i].epoch_time);
             foreach(channel_epoch; network.epoch_events.byKeyValue) {
                 const events = channel_epoch.value[i]
                                             .events
-                                            .map!(e => e.event_package.event_body.time)
+                                            .map!(e => e.event_package.fingerprint.cutHex)
                                             .array;
                 writefln("events: %s", events);
                 writefln("channel %s time: %s", channel_epoch.key.cutHex, channel_epoch.value[i].epoch_time);

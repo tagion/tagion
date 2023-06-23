@@ -28,6 +28,8 @@ import tagion.utils.BitMask;
 import tagion.logger.Logger;
 import tagion.gossip.InterfaceNet;
 
+// debug
+import tagion.hibon.HiBONJSON;
 version (unittest) {
     version = hashgraph_fibertest;
 }
@@ -238,6 +240,7 @@ class HashGraph {
 
         const(HiRPC.Sender) ripple_sender() @safe {
             log("Send ripple");
+            writefln("SENDING RIPPLE");
             const ripple_wavefront = rippleWave(Wavefront());
             const sender = hirpc.wavefront(ripple_wavefront);
             return sender;
@@ -515,7 +518,9 @@ class HashGraph {
         }
         foreach (epack; received_wave.epacks) {
             if (getNode(epack.pubkey).event is null) {
+                writefln("epack time: %s", epack.event_body.time);
                 auto first_event = new Event(epack, this);
+                writefln("foreach event %s", first_event.event_package.event_body.time);
                 check(first_event.isEva, ConsensusFailCode.GOSSIPNET_FIRST_EVENT_MUST_BE_EVA);
                 _event_cache[first_event.fingerprint] = first_event;
                 front_seat(first_event);
@@ -545,7 +550,6 @@ class HashGraph {
         alias consensus = consensusCheckArguments!(GossipConsensusException);
         immutable from_channel = received.pubkey;
         const received_wave = received.params!(Wavefront)(hirpc.net);
-
         check(valid_channel(from_channel), ConsensusFailCode.GOSSIPNET_ILLEGAL_CHANNEL);
         auto received_node = getNode(from_channel);
         if (Event.callbacks) {
@@ -566,6 +570,7 @@ class HashGraph {
                 case RIPPLE: ///
                     received_node.state = NONE;
                     received_node.sticky_state = RIPPLE;
+                    writefln("received wave: %s", received_wave.toDoc.toPretty);
                     const ripple_wave = rippleWave(received_wave);
                     return ripple_wave;
                 case COHERENT:
