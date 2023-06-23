@@ -238,7 +238,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
             net.generateKeyPair(passphrase);
             auto h = new HashGraph(N, net, &authorising.isValidChannel, &epochCallback, null, name);
             h.scrap_depth = 0;
-            networks[net.pubkey] = new FiberNetwork(h, pageSize * 128);
+            networks[net.pubkey] = new FiberNetwork(h, pageSize * 256);
         }
         networks.byKey.each!((a) => authorising.add_channel(a));
     }

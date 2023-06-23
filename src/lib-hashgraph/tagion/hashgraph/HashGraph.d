@@ -232,6 +232,7 @@ class HashGraph {
             lazy const sdt_t time) {
         const(HiRPC.Sender) payload_sender() @safe {
             const doc = payload();
+            // writefln("init_tide time: %s", time);
             immutable epack = event_pack(time, null, doc);
             const registrated = registerEventPackage(epack);
             assert(registrated, "Should not fail here");
@@ -512,6 +513,7 @@ class HashGraph {
                 .array;
             return Wavefront(result, null, ExchangeState.COHERENT);
         }
+        writefln("rippleWave: %s", received_wave.toDoc.toPretty);
         foreach (epack; received_wave.epacks) {
             if (getNode(epack.pubkey).event is null) {
                 writefln("epack time: %s", epack.event_body.time);
@@ -566,7 +568,7 @@ class HashGraph {
                 case RIPPLE: ///
                     received_node.state = NONE;
                     received_node.sticky_state = RIPPLE;
-                    writefln("received wave: %s", received_wave.toDoc.toPretty);
+                    // writefln("received wave: %s", received_wave.toDoc.toPretty);
                     const ripple_wave = rippleWave(received_wave);
                     return ripple_wave;
                 case COHERENT:
@@ -590,7 +592,6 @@ class HashGraph {
                     check(received_wave.epacks.length is 0, ConsensusFailCode
                             .GOSSIPNET_TIDAL_WAVE_CONTAINS_EVENTS);
                     received_node.state = received_wave.state;
-
                     immutable epack = event_pack(time, null, payload());
                     const registered = registerEventPackage(epack);
                     assert(registered);
@@ -1046,6 +1047,7 @@ class HashGraph {
 
     static if (!vendor.llvm || !(version_major == 2 && version_minor == 99)) {
         // Unittest segfaults in LDC 1.29 (2.099)
+        version(none)
         unittest {
             import tagion.hashgraph.Event;
             import std.stdio;

@@ -213,18 +213,18 @@ class StartNetworkWithNAmountOfNodes {
                                             .events
                                             .map!(e => e.event_package.fingerprint.cutHex)
                                             .array;
-            compare_events.sort!((a,b) => a < b);                                
+            // compare_events.sort!((a,b) => a < b);
             writefln("compare_events: %s", compare_events);
             foreach(channel_epoch; network.epoch_events.byKeyValue) {
+                writefln("epoch: %s", i);
                 auto events = channel_epoch.value[i]
                                             .events
                                             .map!(e => e.event_package.fingerprint.cutHex)
                                             .array;
-                events.sort!((a,b) => a < b);
+                // events.sort!((a,b) => a < b);
                 writefln("events: %s", events);
                 writefln("channel %s time: %s", channel_epoch.key.cutHex, channel_epoch.value[i].epoch_time);
-                
-                
+                               
                 check(compare_events.length == events.length, "event_packages not the same length");
 
                 const isSame = equal(compare_events, events);
