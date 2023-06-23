@@ -26,6 +26,7 @@ DFILES: libdruntime-arm64-ios
 
 STAEXT ?= a
 DFLAGS+=$(DDEFAULTLIBSTATIC)
+DFLAGS+=-i
 DFLAGS+=-mtriple=$(TRIPLET)
 DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
 
