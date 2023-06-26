@@ -1,5 +1,9 @@
 module tagion.wallet.BIP39;
 
+import tagion.basic.Version : ver;
+
+static assert(ver.LittleEndian, "At the moment bip39 only supports Little Endian");
+
 @trusted
 ubyte[] bip39(const(ushort[]) mnemonics) pure nothrow {
     pragma(msg, "fixme(cbr): Fake BIP39 must be fixed later");
