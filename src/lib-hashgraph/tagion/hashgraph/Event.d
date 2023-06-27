@@ -36,6 +36,9 @@ import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.hashgraphview.EventMonitorCallbacks;
 import tagion.utils.BitMask : BitMask;
 
+// debug
+import std.stdio;
+
 /// Handles the round information for the events in the Hashgraph
 @safe
 class Round {
@@ -456,6 +459,7 @@ class Round {
                     }
                     bool rare_less(Buffer a_print, Buffer b_print) {
                         rare_order_compare_count++;
+                        writefln("compare count: %s", rare_order_compare_count);
                         pragma(msg, "review(cbr): Concensus order changed");
                         return a_print < b_print;
                     }
