@@ -434,14 +434,17 @@ extern (C) {
         return 0;
     }
 
-    export double check_invoice_payment(const uint8_t* invoicePtr, const uint32_t invoiceLen) {
+    export uint check_invoice_payment(const uint8_t* invoicePtr, const uint32_t invoiceLen, double* amountPtr) {
         immutable invoiceBuffer = cast(immutable)(invoicePtr[0 .. invoiceLen]);
 
         if (__secure_wallet.isLoggedin()) {
 
             auto invoice = Invoice(Document(invoiceBuffer)[0].get!Document);
             auto amount = __secure_wallet.account.check_invoice_payment(invoice.pkey);
-            return amount.tagions;
+
+            *amountPtr = amount.tagions;
+
+            return 1;
         }
         return 0;
     }
@@ -703,10 +706,13 @@ unittest {
         assert(result == 1, "Expected result to be 1");
     }
     { // Check invoice payment
-        auto result = check_invoice_payment(invoice.ptr, invoiceLen);
+
+        double amount;
+        auto result = check_invoice_payment(invoice.ptr, invoiceLen, &amount);
 
         // Check the result
-        assert(result != 0, "Expected result not to be 0");
+        assert(result == 1, "Expected result to be 1");
+        assert(amount != 0, "Expected amount not to be 0");
     }
     { // Check contract payment
 
