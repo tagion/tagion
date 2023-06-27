@@ -1,6 +1,8 @@
 module tagion.wallet.BIP39;
 
 import tagion.basic.Version : ver;
+import tagion.basic.Debug;
+import tagion.utils.Miscellaneous : toHexString;
 
 static assert(ver.LittleEndian, "At the moment bip39 only supports Little Endian");
 
@@ -21,7 +23,7 @@ ubyte[] bip39(const(ushort[]) mnemonics) pure nothrow {
     uint mnemonic_pos;
     size_t work_pos;
     foreach (mnemonic; mnemonics) {
-        *work_slide |= uint(mnemonic) << mnemonic_pos;
+        *work_slide |= ulong(mnemonic) << mnemonic_pos;
         mnemonic_pos += MNEMONIC_BITS;
         if (mnemonic_pos >= WORK_BITS) {
             work_pos++;
@@ -30,7 +32,7 @@ ubyte[] bip39(const(ushort[]) mnemonics) pure nothrow {
         }
     }
 
-    const result_buffer = (&work_buffer[0])[0 .. (mnemonics.length * WORK_BITS) / 8];
+    const result_buffer = (cast(ubyte*)&work_buffer[0])[0 .. SIZE_OF_WORK_BUFFER * uint.sizeof];
 
     pragma(msg, "fixme(cbr): PBKDF2 hmac function should be used");
     return digest!SHA256(cast(ubyte[]) result_buffer).dup;
