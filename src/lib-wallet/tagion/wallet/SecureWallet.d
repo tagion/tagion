@@ -665,32 +665,25 @@ struct SecureWallet(Net : SecureNet) {
 
         { // Secure wallet with mnemonic.
 
-            import tagion.hibon.HiBONJSON;
-            import std.stdio;
-
             const test_pin_code = "1234";
             const test_mnemonic = cast(ushort[])[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
             // Create first wallet.
             auto secure_wallet_1 = SecureWallet.createWallet(test_mnemonic, test_pin_code);
             const pubkey_1_create = secure_wallet_1.getPublicKey;
-            writefln("pubkey_1_create=%s", pubkey_1_create.toHexString);
             secure_wallet_1.logout;
             const wallet_1_loggedin = secure_wallet_1.login(test_pin_code);
             assert(wallet_1_loggedin);
             const pubkey_1 = secure_wallet_1.getPublicKey();
-            writefln("pubkey_1       =%s", pubkey_1.toHexString);
 
             assert(pubkey_1_create == pubkey_1);
             // Create second wallet.
             auto secure_wallet_2 = SecureWallet.createWallet(test_mnemonic, test_pin_code);
             const pubkey_2_create = secure_wallet_2.getPublicKey;
-            writefln("pubkey_2_create=%s", pubkey_2_create.toHexString);
 
             const wallet_2_loggedin = secure_wallet_2.login(test_pin_code);
             assert(wallet_2_loggedin);
             const pubkey_2 = secure_wallet_2.getPublicKey();
 
-            writefln("pubkey_2       =%s", pubkey_2.toHexString);
             version (MNEMONIC) {
                 assert(pubkey_1 == pubkey_2);
             }

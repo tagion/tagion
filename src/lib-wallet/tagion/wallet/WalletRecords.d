@@ -39,10 +39,8 @@ struct DevicePIN {
     }
 
     void setPin(const HashNet net, scope const(ubyte[]) R, scope const(ubyte[]) P, Buffer salt) {
-        import tagion.utils.Miscellaneous : xor, toHexString;
-        import std.stdio;
+        import tagion.utils.Miscellaneous : xor;
 
-        writefln("setPin R=%s", R.toHexString);
         U = salt;
         const pinhash = net.saltHash(P, U);
         D = xor(R, pinhash);
