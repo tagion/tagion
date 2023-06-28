@@ -43,10 +43,11 @@ class StartNetworkWithNAmountOfNodes {
     string[] node_names;
     TestNetwork network;
     string module_path;
-    const(uint) MAX_CALLS = 5000;
+    uint MAX_CALLS;
     this(string[] node_names, const(string) module_path) {
         this.node_names = node_names;
         this.module_path = module_path;
+        MAX_CALLS = cast(int) node_names.length * 1000;
     }
 
     bool coherent;
@@ -218,6 +219,9 @@ class StartNetworkWithNAmountOfNodes {
             writefln("%s", compare_events.map!(f => f.cutHex));
             foreach(channel_epoch; network.epoch_events.byKeyValue) {
                 writefln("epoch: %s", i);
+                if (channel_epoch.value.length-1 < i) {
+                    break;
+                }
                 auto events = channel_epoch.value[i]
                                             .events
                                             .map!(e => e.event_package.fingerprint)
