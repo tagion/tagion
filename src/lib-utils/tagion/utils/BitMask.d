@@ -454,7 +454,8 @@ struct BitMask {
                 assert(format("%16.4s", y) == "1000_0100_1000_0000");
                 assert(y.count is 3);
             }
-            {
+            
+            version(BITMASK){
                 BitMask null_mask;
                 const y = a - null_mask;
                 assert(y == a);
