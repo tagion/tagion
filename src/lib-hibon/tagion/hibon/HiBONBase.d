@@ -217,6 +217,29 @@ enum isDataBlock(T) = is(T : const(DataBlock));
 
 enum isBasicValueType(T) = isBasicType!T || is(T : decimal_t);
 
+/**
+    Converts to the HiBON TypedefType except for sdt_t
+*/
+template TypedefBase(T) {
+    static if (is(T : const(sdt_t))) {
+        alias TypedefBase = T;
+    }
+    else {
+        alias TypedefBase = TypedefType!T;
+    }
+}
+
+@nogc
+static unittest {
+    import std.typecons;
+
+    static assert(is(TypedefBase!int == int));
+    alias MyInt = Typedef!(int, int.init, "MyInt");
+    static assert(is(TypedefBase!(MyInt) == int));
+    static assert(is(TypedefBase!(sdt_t) == sdt_t));
+    static assert(is(TypedefBase!(const(sdt_t)) == const(sdt_t)));
+}
+
 /++
  HiBON Generic value used by the HiBON class and the Document struct
 +/
@@ -416,7 +439,7 @@ enum isBasicValueType(T) = isBasicType!T || is(T : decimal_t);
             else static if (is(T : U[], U) && isBasicValueType!U) {
                 return cast(uint)(by!(E).length * U.sizeof);
             }
-            else {
+        else {
                 static assert(0, format("Type %s of %s is not defined", E, T.stringof));
             }
         }
