@@ -124,7 +124,6 @@ struct EventBody {
     @label("$f", true) @(filter.Initialized) Buffer father; // Hash of the other-parent
     @label("$a") int altitude;
     @label("$t") sdt_t time;
-    pragma(msg, "fixme(pr) should be $t");
     bool verify() {
         return (father is null) ? true : (mother !is null);
     }
