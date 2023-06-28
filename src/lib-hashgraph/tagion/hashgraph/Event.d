@@ -449,10 +449,10 @@ class Round {
                     if (a._father && b._father) {
                         return order_less(a._father, b._father);
                     }
-                    if (a._father && !b._father) {
+                    if (a._father) {
                         return true;
                     }
-                    if (!a._father && b._father) {
+                    if (b._father) {
                         return false;
                     }
                     // if (a._father && b._mother) {
