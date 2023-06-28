@@ -659,9 +659,6 @@ mixin template HiBONRecord(string CTOR = "") {
                             }
 
                         }
-                        import tagion.utils.StdTime;
-                        import std.stdio;
-
                         static if (is(BaseT == enum)) {
                             m = doc[name].get!BaseT;
                             //                            static if (isIntegral!(OriginalType
@@ -669,15 +666,7 @@ mixin template HiBONRecord(string CTOR = "") {
                         else static if (Document.isDocTypedef!BaseT) {
                             m = doc[name].get!BaseT;
                         }
-                        /*
-                        else static if (is(BaseT == sdt_t)) {
-                            writefln("BaseT=%s typeof=%s", BaseT.stringof, typeof(m).stringof);
-
-                            writefln("Type=%s", doc[name].type);
-                            m = doc[name].get!BaseT;
-                        }
-*/
-                    else static if (Document.Value.hasType!BaseT) {
+                        else static if (Document.Value.hasType!BaseT) {
                             m = doc[name].get!BaseT;
                         }
                         else static if (is(BaseT == struct)) {
@@ -1570,21 +1559,30 @@ unittest {
 @safe
 unittest {
     import tagion.utils.StdTime;
-    import tagion.hibon.HiBONJSON;
-    import std.stdio;
 
-    static struct Time {
-        @label("$t") sdt_t time;
-        mixin HiBONRecord;
+    { /// Single time element
+        static struct Time {
+            @label("$t") sdt_t time;
+            mixin HiBONRecord;
+        }
+
+        Time expected_time;
+        expected_time.time = 12345678;
+        const doc = expected_time.toDoc;
+        const result = Time(doc);
+        assert(expected_time == result);
     }
 
-    Time expected_time;
-    expected_time.time = 12345678;
+    {
+        static struct Times {
+            sdt_t[] times;
+            mixin HiBONRecord;
+        }
 
-    const doc = expected_time.toDoc;
-
-    writefln("doc=%s", doc.toPretty);
-    const result = Time(doc);
-
-    assert(expected_time == result);
+        Times expected_times;
+        expected_times.times = [sdt_t(12345), sdt_t(23456), sdt_t(1345)];
+        const doc = expected_times.toDoc;
+        const result = Times(doc);
+        assert(expected_times == result);
+    }
 }
