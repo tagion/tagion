@@ -710,9 +710,11 @@ static assert(uint.sizeof == 4);
         test_tabel.BOOLEAN = true;
         test_tabel.TIME = 1001;
 
-        alias TabelArray = Tuple!(immutable(ubyte)[], Type.BINARY.stringof, // Credential,          Type.CREDENTIAL.stringof,
-            // CryptDoc,            Type.CRYPTDOC.stringof,
-            DataBlock, Type.HASHDOC.stringof, string, Type.STRING.stringof,);
+        alias TabelArray = Tuple!(
+                immutable(ubyte)[], Type.BINARY.stringof,
+                DataBlock, Type.HASHDOC.stringof,
+                string, Type.STRING.stringof,
+        );
 
         TabelArray test_tabel_array;
         test_tabel_array.BINARY = [1, 2, 3];
@@ -720,8 +722,6 @@ static assert(uint.sizeof == 4);
         test_tabel_array.HASHDOC = DataBlock(27, [3, 4, 5]);
 
         { // Document with simple types
-            //test_tabel.UTC      = 1234;
-
             index = 0;
 
             { // Document with a single value
@@ -730,15 +730,6 @@ static assert(uint.sizeof == 4);
                 const doc = Document(data);
                 assert(doc.length is 1);
                 // assert(doc[Type.FLOAT32.stringof].get!float == test_tabel[0]);
-            }
-
-            { // Document with a single value
-                index = make(buffer, test_tabel, 1);
-                immutable data = buffer[0 .. index].idup;
-                const doc = Document(data);
-                //                writefln("doc.length=%d", doc.length);
-                assert(doc.length is 1);
-                // assert(doc[Type.FLOAT32.stringof].get!BigNumber == test_tabel[0]);
             }
 
             { // Document including basic types
@@ -1011,7 +1002,8 @@ static assert(uint.sizeof == 4);
 
                 
 
-                    .check(type is E, message("Type expected is %s but the actual type is %s", E, type));
+                    .check(type is E,
+                            message("Type expected is %s but the actual type is %s", E, type));
 
                 
 
@@ -1032,7 +1024,7 @@ static assert(uint.sizeof == 4);
             }
 
             T get(T)() if (isDocTypedef!T) {
-                alias BaseType = TypedefType!T;
+                alias BaseType = TypedefBase!T;
                 const ret = get!BaseType;
                 return T(ret);
             }
@@ -1056,9 +1048,7 @@ static assert(uint.sizeof == 4);
                     }
                 }
                 else {
-
                     
-
                         .check(doc.isArray, "Document must be an array");
                     result.length = doc.length;
                     foreach (ref a, e; lockstep(result, doc[])) {

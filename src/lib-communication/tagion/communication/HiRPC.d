@@ -232,10 +232,8 @@ struct HiRPC {
 
                 type = getType(doc);
                 message = doc[messageName].get!Document;
-                signature = doc.hasMember(signName) ? doc[signName].get!(
-                        TypedefType!Signature) : null;
-                pubkey = doc.hasMember(pubkeyName) ? doc[pubkeyName].get!(
-                        TypedefType!Pubkey) : null;
+                signature = doc.hasMember(signName) ? doc[signName].get!(Signature) : Signature.init;
+                pubkey = doc.hasMember(pubkeyName) ? doc[pubkeyName].get!(Pubkey) : Pubkey.init;
                 Pubkey used_pubkey;
                 static SignedState verifySignature(const SecureNet net, const Document doc, const Signature sgn, const Pubkey pkey) {
                     if (sgn.length) {
