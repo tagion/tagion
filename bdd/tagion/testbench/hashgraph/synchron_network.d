@@ -168,10 +168,10 @@ class StartNetworkWithNAmountOfNodes {
                 auto current = network.networks[network.current];
                 (() @trusted { current.call; })();
 
-                if (network.epoch_events.length == node_names.length) {
-                    // all nodes have created at least one epoch
-                    break;
-                }
+                // if (network.epoch_events.length == node_names.length) {
+                //     // all nodes have created at least one epoch
+                //     break;
+                // }
                 printStates();
                 i++;
             }
@@ -211,25 +211,28 @@ class StartNetworkWithNAmountOfNodes {
         foreach(i, compare_epoch; network.epoch_events.byKeyValue.front.value) {
             auto compare_events = compare_epoch
                                             .events
-                                            .map!(e => e.event_package.event_body.toDoc.toPretty)
+                                            .map!(e => e.event_package.fingerprint)
                                             .array;
             // compare_events.sort!((a,b) => a < b);
-            compare_events.each!writeln;
+            // compare_events.each!writeln;
+            writefln("%s", compare_events.map!(f => f.cutHex));
             foreach(channel_epoch; network.epoch_events.byKeyValue) {
                 writefln("epoch: %s", i);
                 auto events = channel_epoch.value[i]
                                             .events
-                                            .map!(e => e.event_package.event_body.toDoc.toPretty)
+                                            .map!(e => e.event_package.fingerprint)
                                             .array;
                 // events.sort!((a,b) => a < b);
-                events.each!writeln;
+
+                writefln("%s", events.map!(f => f.cutHex));
+                // events.each!writeln;
                 writefln("channel %s time: %s", channel_epoch.key.cutHex, channel_epoch.value[i].epoch_time);
                                
                 check(compare_events.length == events.length, "event_packages not the same length");
 
                 const isSame = equal(compare_events, events);
                 writefln("isSame: %s", isSame);
-                // check(isSame, "event_packages not the same");            
+                check(isSame, "event_packages not the same");            
             
             }
         }        
@@ -240,15 +243,15 @@ class StartNetworkWithNAmountOfNodes {
     @Then("stop the network")
     Document _network() {
         // create ripple files.
-        // Pubkey[string] node_labels;
-        // foreach (channel, _net; network.networks) {
-        //     node_labels[_net._hashgraph.name] = channel;
-        // }
-        // foreach (_net; network.networks) {
-        //     const filename = buildPath(module_path, "ripple-" ~ _net._hashgraph.name.setExtension(FileExtension.hibon));
-        //     writeln(filename);
-        //     _net._hashgraph.fwrite(filename, node_labels);
-        // }
+        Pubkey[string] node_labels;
+        foreach (channel, _net; network.networks) {
+            node_labels[_net._hashgraph.name] = channel;
+        }
+        foreach (_net; network.networks) {
+            const filename = buildPath(module_path, "ripple-" ~ _net._hashgraph.name.setExtension(FileExtension.hibon));
+            writeln(filename);
+            _net._hashgraph.fwrite(filename, node_labels);
+        }
         return result_ok;
     }
 
