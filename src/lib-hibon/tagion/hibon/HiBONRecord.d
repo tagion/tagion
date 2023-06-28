@@ -398,9 +398,6 @@ mixin template HiBONRecord(string CTOR = "") {
                     else static if (is(BaseT == class) || is(BaseT == struct)) {
                         static if (isInputRange!UnqualT) {
                             alias ElementT = Unqual!(ForeachType!UnqualT);
-                            pragma(msg, "ElementT ", ElementT);
-                            pragma(msg, "HiBON.Value.hasType!ElementT ", HiBON.Value.hasType!ElementT);
-                            pragma(msg, "isHiBON!ElementT ", isHiBON!ElementT);
                             static assert((HiBON.Value.hasType!ElementT) || isHiBON!ElementT,
                                     format("The sub element '%s' of type %s is not supported",
                                     name, BaseT.stringof));
@@ -672,13 +669,15 @@ mixin template HiBONRecord(string CTOR = "") {
                         else static if (Document.isDocTypedef!BaseT) {
                             m = doc[name].get!BaseT;
                         }
+                        /*
                         else static if (is(BaseT == sdt_t)) {
                             writefln("BaseT=%s typeof=%s", BaseT.stringof, typeof(m).stringof);
 
                             writefln("Type=%s", doc[name].type);
                             m = doc[name].get!BaseT;
                         }
-                        else static if (Document.Value.hasType!BaseT) {
+*/
+                    else static if (Document.Value.hasType!BaseT) {
                             m = doc[name].get!BaseT;
                         }
                         else static if (is(BaseT == struct)) {
@@ -1585,6 +1584,7 @@ unittest {
     const doc = expected_time.toDoc;
 
     writefln("doc=%s", doc.toPretty);
-    const stime = Time(doc);
+    const result = Time(doc);
 
+    assert(expected_time == result);
 }
