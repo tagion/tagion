@@ -329,7 +329,7 @@ static unittest {
     /++
      convert the T to a HiBON-Type
      +/
-    enum asType(T) = GetType!(T, FieldNameTuple!ValueT);
+    enum asType(T) = GetType!(Unqual!T, FieldNameTuple!ValueT);
     /++
      is true if the type T is support by the HiBON
      +/
