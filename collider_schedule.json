@@ -120,6 +120,14 @@
             ],
             "timeout": 0.0
         },
+        "hashgraph_contributors": {
+            "args": ["Alice", "Bob", "Carol", "Dave", "Elisa", "Freja", "Nonvoting"],
+            "envs": {},
+            "stages": [
+                "hashgraph"
+            ],
+            "timeout": 0.0
+        },
         "collider_test": {
             "args": [
                 "-f$WORKDIR"

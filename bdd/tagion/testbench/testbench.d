@@ -21,7 +21,7 @@ int main(string[] args) {
     import dart_sync_stress = tagion.testbench.dart_sync_stress;
     import dart_service = tagion.testbench.dart_service;
     import hashgraph_test = tagion.testbench.hashgraph_test;
-    
+    import hashgraph_contributors = tagion.testbench.hashgraph_contributors;    
     alias alltools = AliasSeq!(
             ssl_server,
             bdd_services,
@@ -40,6 +40,7 @@ int main(string[] args) {
             dart_sync_stress,
             dart_service,
             hashgraph_test,
+            hashgraph_contributors,
     );
     mixin doOneMain!(alltools);
     return do_main(args);
