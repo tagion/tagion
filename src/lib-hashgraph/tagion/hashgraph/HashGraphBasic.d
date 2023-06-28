@@ -59,7 +59,7 @@ unittest { // Test of the altitude measure function
  * Calculates the majority votes
  * Params:
  *     voting    = Number of votes
- *     node_size = Total bumber of votes
+ *     node_size = Total number of votes
  * Returns:
  *     Returns `true` if the votes are more than 2/3
  */
@@ -68,9 +68,10 @@ bool isMajority(const size_t voting, const size_t node_size) pure nothrow {
     return (node_size >= minimum_nodes) && (3 * voting > 2 * node_size);
 }
 
-@safe @nogc
+@safe
 bool isMajority(const(BitMask) mask, const HashGraph hashgraph) pure nothrow {
-    return isMajority(mask.count, hashgraph.node_size);
+    const vote_mask = mask;//  hashgraph.excluded_nodes_mask;
+    return isMajority(vote_mask.count, hashgraph.node_size);
 }
 
 @safe @nogc

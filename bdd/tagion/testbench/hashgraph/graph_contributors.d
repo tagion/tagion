@@ -75,6 +75,7 @@ class ANonvotingNode {
 
     @When("i mark one node as non-voting")
     Document nonvoting() {
+
         return Document();
     }
 

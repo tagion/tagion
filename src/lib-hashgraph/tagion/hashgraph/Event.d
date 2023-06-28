@@ -722,7 +722,6 @@ class Event {
      *   hashgraph = hashgraph owning the event 
      * Returns: true if the witness is famous 
      */
-            @nogc
             private bool famous(const HashGraph hashgraph) {
                 if (!_famous) {
                     _famous = _strong_seeing_mask.isMajority(hashgraph);
