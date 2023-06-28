@@ -225,7 +225,7 @@ class Round {
         Round last_round;
         Round last_decided_round;
         HashGraph hashgraph;
-
+        enum MAX_ORDER_COUNT = 10; /// Max recursion count for order_less function
         @disable this();
 
         this(HashGraph hashgraph) pure nothrow {
@@ -436,18 +436,23 @@ class Round {
                 .tee!((e) => e._round_received = r)
                 .map!((e) => e);
 
-            bool order_less(const Event a, const Event b) @safe {
+            bool order_less(const Event a, const Event b, const(int) order_count) @safe {
                 bool rare_less(Buffer a_print, Buffer b_print) {
                     rare_order_compare_count++;
                     pragma(msg, "review(cbr): Concensus order changed");
                     return a_print < b_print;
                 }
 
+
                 order_compare_iteration_count++;
                 writefln("order compare: %d, rare: %d", order_compare_iteration_count, rare_order_compare_count);
+
+                if (order_count < 0) {
+                    return rare_less(a.fingerprint, b.fingerprint);
+                }
                 if (a.received_order is b.received_order) {
                     if (a._father && b._father) {
-                        return order_less(a._father, b._father);
+                        return order_less(a._father, b._father, order_count - 1);
                     }
                     if (a._father) {
                         return true;
@@ -463,7 +468,7 @@ class Round {
                     // }
 
                     if (!a.isFatherLess && !b.isFatherLess) {
-                        return order_less(a._mother, b._mother);
+                        return order_less(a._mother, b._mother, order_count - 1);
                     }
 
                     writefln("both connected to eva");
@@ -480,12 +485,13 @@ class Round {
             }
             
             // Collect and sort all events
+
             sdt_t[] times;
             auto event_collection = event_filter
                 .tee!((e) => times ~= e.event_body.time)
                 .filter!((e) => !e.event_body.payload.empty)
                 .array
-                .sort!((a, b) => order_less(a, b))
+                .sort!((a, b) => order_less(a, b, MAX_ORDER_COUNT))
                 .release;
             times.sort;
             const mid = times.length / 2 + (times.length % 1);
