@@ -2,13 +2,14 @@
 module tagion.testbench.hashgraph.hashgraph_test_network;
 
 import std.format;
-import std.range : dropExactly;
+import std.range;
 import std.algorithm;
 
 import tagion.logger.Logger : log;
 import tagion.basic.Types : Buffer;
 import tagion.crypto.Types;
 import tagion.hashgraph.HashGraph;
+import tagion.hashgraph.HashGraphBasic;
 import tagion.hashgraph.Event;
 import tagion.communication.HiRPC;
 import tagion.utils.StdTime;
@@ -213,6 +214,14 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
     @trusted
     const(Pubkey[]) channels() const pure nothrow {
         return networks.keys;
+    }
+
+    
+    bool allCoherent() {
+        return networks
+                .byValue
+                .map!(n => n._hashgraph.owner_node.sticky_state)
+                .all!(s => s == ExchangeState.COHERENT);
     }
 
     FiberNetwork[Pubkey] networks;

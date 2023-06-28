@@ -52,14 +52,6 @@ class StartNetworkWithNAmountOfNodes {
 
     bool coherent;
 
-    bool allCoherent() {
-        writeln(node_names);    
-        return network.networks
-                .byValue
-                .map!(n => n._hashgraph.owner_node.sticky_state)
-                .all!(s => s == ExchangeState.COHERENT);
-    }
-
     void printStates() {
         foreach(channel; network.channels) {
             writeln("----------------------");
@@ -135,7 +127,7 @@ class StartNetworkWithNAmountOfNodes {
                 (() @trusted { current.call; })();
 
                 printStates();
-                if (allCoherent) {
+                if (network.allCoherent) {
                     coherent = true;
                     break;
                 }

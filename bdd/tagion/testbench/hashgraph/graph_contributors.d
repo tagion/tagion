@@ -4,6 +4,10 @@ import tagion.behaviour;
 import tagion.hibon.Document;
 import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
+import tagion.testbench.hashgraph.hashgraph_test_network;
+
+import std.datetime;
+import std.algorithm;
 
 enum feature = Feature(
             "Hashgraph contributors",
@@ -22,13 +26,19 @@ class ANonvotingNode {
     string[] node_names;
     string module_path;
 
+    TestNetwork network;
+
     this(string[] node_names, const(string) module_path) {
         this.node_names = node_names;
         this.module_path = module_path;
     } 
     @Given("i have a hashgraph testnetwork with n number of nodes")
     Document nodes() {
-        return Document();
+        network = new TestNetwork(node_names);
+        network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 0);
+        network.random.seed(123456789);
+        network.global_time = SysTime.fromUnixTime(1_614_355_286);
+        return result_ok;
     }
 
     @When("all nodes have created at least one epoch")
@@ -47,7 +57,7 @@ class ANonvotingNode {
     }
 
     @Then("stop the network")
-    Document network() {
+    Document _network() {
         return Document();
     }
 
