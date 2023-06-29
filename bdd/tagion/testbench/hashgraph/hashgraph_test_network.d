@@ -46,6 +46,8 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         MAX = 150
     }
 
+    BitMask[int] excluded_nodes_history;
+
     static const(SecureNet) verify_net;
     static this() {
         verify_net = new StdSecureNet();
@@ -240,10 +242,14 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
     }
 
     @safe
-    void excludedNodesCallback(ref scope BitMask excluded_mask, const(HashGraph) hashgraph) {
+    void excludedNodesCallback(ref BitMask excluded_mask, const(HashGraph) hashgraph) {
         import tagion.basic.Debug;
 
-        // __write("callback %s", excluded_mask);
+        if (hashgraph.rounds.last_decided_round.number == 23) {
+            excluded_mask[0] = true;
+            writeln("WOWO");
+        }
+        __write("callback<%s>", excluded_mask);
 
     }
     

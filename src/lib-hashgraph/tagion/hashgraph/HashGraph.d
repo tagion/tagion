@@ -102,7 +102,7 @@ class HashGraph {
     alias ValidChannel = bool delegate(const Pubkey channel);
     const ValidChannel valid_channel; /// Valiates of a node at channel is valid
     alias EpochCallback = void delegate(const(Event[]) events, const sdt_t epoch_time) @safe;
-    alias ExcludedNodesCallback = void delegate(ref scope BitMask mask, const(HashGraph) hashgraph) @safe; 
+    alias ExcludedNodesCallback = void delegate(ref BitMask mask, const(HashGraph) hashgraph) @safe; 
     alias EventPackageCallback = void delegate(immutable(EventPackage*) epack) @safe;
     const EpochCallback epoch_callback; /// Call when an epoch has been produced
     const EventPackageCallback epack_callback; /// Call back which is called when an event-package has been added to the event chache.

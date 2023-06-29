@@ -7,6 +7,7 @@ import tagion.testbench.tools.Environment;
 import tagion.testbench.hashgraph.hashgraph_test_network;
 import tagion.crypto.Types : Pubkey;
 import tagion.basic.basic : isinit;
+import tagion.utils.BitMask;
 
 import std.datetime;
 import std.algorithm;
@@ -30,7 +31,8 @@ class ANonvotingNode {
     uint CALLS; 
     // enum NON_VOTING = "Nonvoting";
     TestNetwork network;
-    // TestNetwork.FiberNetwork non_voting;
+
+    enum excluded_nodes_history = [23: BitMask([0])];
 
     this(string[] node_names, const(string) module_path) {
         this.node_names = node_names;
@@ -44,6 +46,7 @@ class ANonvotingNode {
 
       
         network = new TestNetwork(node_names);
+        network.excluded_nodes_history = excluded_nodes_history;
         network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 0);
         network.random.seed(123456789);
         network.global_time = SysTime.fromUnixTime(1_614_355_286);
