@@ -172,6 +172,15 @@ struct BitMask {
         return b;
     }
 
+    unittest {
+        BitMask bits;
+        assert(!bits[100]);
+        bits[100] = true;
+        assert(bits[100]);
+        bits[100] = false;
+        assert(!bits[100]);
+    }
+
     BitMask opOpAssign(string op)(scope const BitMask rhs) pure nothrow
     if (op == "-" || op == "&" || op == "|" || op == "^") {
         if (mask.length > rhs.mask.length) {
