@@ -260,28 +260,7 @@ struct BitMask {
 
         BitMask result;
         result.mask = mask.dup;
-
         result.opOpAssign!op(rhs);
-        /*
-        BitMask result;
-        const max_length = max(mask.length, rhs.mask.length);
-        result.mask = new size_t[max_length];
-        const min_length = min(mask.length, rhs.mask.length);
-        static if (op == "-") {
-            result.mask[0 .. min_length] = mask[0 .. min_length] & ~rhs.mask[0 .. min_length];
-        }
-        else {
-            enum code = format(q{result.mask[0..min_length] = mask[0..min_length] %s rhs.mask[0..min_length];}, op);
-            mixin(code);
-        }
-        if (mask.length !is rhs.mask.length) {
-            auto rest = (mask.length > rhs.mask.length) ? mask : rhs.mask;
-            enum final_code = format(q{result.mask[min_length..$] %s= rest[min_length..$];}, op);
-            static if (op == "|" || op == "^") {
-                mixin(final_code);
-            }
-        }
-        */
         return result;
     }
 
@@ -329,17 +308,17 @@ struct BitMask {
                 foreach (test; only(left_one_right_none, left_one_right_one, left_more_right_more)) {
                     const expected = test[OP];
                     with (expected) {
+                        __write("%s  A=%s", OP, A);
+                        __write("   B=%s", B);
+                        __write("   Y=%s", Y);
                         const result = A.opBinary!OP(B);
+                        __write("   R=%s", result);
                         assert(result == Y,
                                 __format("%.16s == %.16s %s %.16s result %.16s", Y, A, OP, B, result));
                     }
                     with (expected) {
                         auto result = A.dup;
-                        __write("%s  A=%s", OP, result);
-                        __write("   B=%s", B);
                         result.opOpAssign!OP(B);
-                        __write("   Y=%s", Y);
-                        __write("   R=%s", result);
 
                         assert(result == Y,
                                 __format("%.16s == (%.16s %s= %.16s) result %.16s", Y, A, OP, B, result));
@@ -364,16 +343,18 @@ struct BitMask {
         else if (mask.length < rhs.mask.length) {
             mask.length = rhs.mask.length;
         }
-        static if (op == "-") {
+        /*
+    static if (op == "-") {
             __write("Before mask=%s rhs=%s", this, rhs);
 
             mask[0 .. rhs.mask.length] &= ~rhs.mask[0 .. rhs.mask.length];
             __write("After  mask=%s rhs=%s", this, rhs);
         }
         else {
-            enum code = format(q{mask[0..rhs.mask.length] %s= rhs.mask[0..rhs.mask.length];}, op);
-            mixin(code);
-        }
+    */
+        enum code = format(q{mask[0..rhs.mask.length] %s= rhs.mask[0..rhs.mask.length];}, op);
+        mixin(code);
+        //  }
         return this;
     }
 
