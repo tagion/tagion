@@ -308,11 +308,7 @@ struct BitMask {
                 foreach (test; only(left_one_right_none, left_one_right_one, left_more_right_more)) {
                     const expected = test[OP];
                     with (expected) {
-                        __write("%s  A=%s", OP, A);
-                        __write("   B=%s", B);
-                        __write("   Y=%s", Y);
                         const result = A.opBinary!OP(B);
-                        __write("   R=%s", result);
                         assert(result == Y,
                                 __format("%.16s == %.16s %s %.16s result %.16s", Y, A, OP, B, result));
                     }
@@ -345,13 +341,9 @@ struct BitMask {
         }
 
         static if (op == "-") {
-            __write("Before mask=%s rhs=%s", this, rhs);
-
             mask[0 .. rhs.mask.length] &= ~rhs.mask[0 .. rhs.mask.length];
-            __write("After  mask=%s rhs=%s", this, rhs);
         }
         else {
-
             enum code = format(q{mask[0..rhs.mask.length] %s= rhs.mask[0..rhs.mask.length];}, op);
             mixin(code);
         }
