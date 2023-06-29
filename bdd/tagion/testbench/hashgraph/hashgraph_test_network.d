@@ -245,10 +245,13 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
     void excludedNodesCallback(ref BitMask excluded_mask, const(HashGraph) hashgraph) {
         import tagion.basic.Debug;
 
-        if (hashgraph.rounds.last_decided_round.number == 23) {
-            excluded_mask[0] = true;
-            writeln("WOWO");
+        if (excluded_nodes_history is null) { return; }
+        const last_decided_round = hashgraph.rounds.last_decided_round.number;
+        const mask = excluded_nodes_history.get(last_decided_round, BitMask.init);
+        if (mask !is BitMask.init) {
+            excluded_mask = mask;
         }
+
         __write("callback<%s>", excluded_mask);
 
     }
