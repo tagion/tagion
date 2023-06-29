@@ -19,8 +19,7 @@ struct BitMask {
     import std.format;
     import std.algorithm;
     import std.range;
-    import std.range.primitives : isInputRange;
-    import std.traits : isSomeString;
+    import std.traits;
 
     enum absolute_mask = 0x1000;
     private size_t[] mask;
@@ -350,19 +349,36 @@ struct BitMask {
         return this;
     }
 
-    BitMask opBinary(string op)(const size_t index) const pure nothrow
-    if ((op == "-" || op == "+")) {
+    BitMask opBinary(string op, Index)(const Index index) const pure nothrow
+    if ((op == "-" || op == "+") && isIntegral!Index) {
         BitMask result = dup;
         result[index] = (op == "+");
         return result;
     }
 
-    void chunk(size_t bit_len) nothrow {
+    unittest {
+        BitMask bits;
+        assert(bits + 17 == BitMask([17]));
+        bits = BitMask([42, 17]);
+        assert(bits + 100 == BitMask([17, 100, 42]));
+        assert(bits - 17 == BitMask([42]));
+    }
+
+    void chunk(size_t bit_len) pure nothrow {
         const new_size = bit_len.wordindex + 1;
         if (new_size < mask.length) {
             mask.length = new_size;
         }
-        mask[$ - 1] &= (1 << bit_len.word_bitindex) - 1;
+        const chunk_mask = ((size_t(1) << (bit_len.word_bitindex)) - 1);
+        mask[$ - 1] &= chunk_mask;
+    }
+
+    unittest {
+        BitMask bits = BitMask([17, 42, 99, 101]);
+        bits.chunk(100);
+        assert(equal(bits[], [17, 42, 99]));
+        bits.chunk(99);
+        assert(equal(bits[], [17, 42]));
     }
 
     size_t count() const pure nothrow @nogc {
