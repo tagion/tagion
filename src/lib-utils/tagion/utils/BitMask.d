@@ -55,14 +55,39 @@ struct BitMask {
         mask[] = 0;
     }
 
-    version (none) @nogc
+    @nogc
     bool opEquals(const BitMask rhs) const pure nothrow {
-        return mask == rhs.mask;
+        import std.algorithm;
+
+        if (mask == rhs.mask) {
+            return true;
+        }
+        const min_length = min(mask.length, rhs.mask.length);
+        if (mask[0 .. min_length] == rhs.mask[0 .. min_length]) {
+            return mask.all!(q{a==0}) && rhs.mask.all!(q{a==0});
+
+        }
+        return false;
+    }
+
+    unittest {
+        BitMask bits_a, bits_b;
+        assert(bits_a == bits_b);
+        bits_b.mask.length = 1;
+        assert(bits_a == bits_b);
+        bits_a[17] = true;
+        assert(bits_a != bits_b);
+        bits_b[17] = true;
+        assert(bits_a == bits_b);
+        bits_b[100] = true;
+        assert(bits_a != bits_b);
+        bits_a[100] = true;
+        assert(bits_a == bits_b);
     }
 
     @trusted
     void toString(scope void delegate(scope const(char)[]) @trusted sink,
-            const FormatSpec!char fmt) const {
+    const FormatSpec!char fmt) const {
         enum separator = '_';
         import std.stdio;
 
@@ -150,8 +175,11 @@ struct BitMask {
     BitMask opOpAssign(string op)(scope const BitMask rhs) pure nothrow
     if (op == "-" || op == "&" || op == "|" || op == "^") {
         if (mask.length > rhs.mask.length) {
-            static if (op == "&") {
+            switch (op) {
+            case "&":
                 mask[rhs.mask.length .. $] = 0;
+                break;
+            default:
             }
         }
         else if (mask.length < rhs.mask.length) {
@@ -167,6 +195,16 @@ struct BitMask {
         return this;
     }
 
+    unittest {
+        BitMask bits_a, bits_b;
+
+        static foreach (OP; ["-", "&", "|", "^"]) {
+            assert(bits_a.opOpAssign!OP(BitMask.init) == bits_a, format("bits_a %s= BitMask.init failed", OP));
+
+        }
+
+    }
+
     BitMask opBinary(string op)(scope const BitMask rhs) const pure nothrow
     if (op == "-" || op == "&" || op == "|" || op == "^") {
         import std.algorithm.comparison : max, min;
@@ -179,19 +217,22 @@ struct BitMask {
             result.mask[0 .. min_length] = mask[0 .. min_length] & ~rhs.mask[0 .. min_length];
         }
         else {
-            {
-                enum code = format(q{result.mask[0..min_length] = mask[0..min_length] %s rhs.mask[0..min_length];}, op);
-                mixin(code);
-            }
+            enum code = format(q{result.mask[0..min_length] = mask[0..min_length] %s rhs.mask[0..min_length];}, op);
+            mixin(code);
         }
         if (mask.length !is rhs.mask.length) {
             auto rest = (mask.length > rhs.mask.length) ? mask : rhs.mask;
+            enum final_code = format(q{result.mask[min_length..$] %s= rest[min_length..$];}, op);
             static if (op == "|" || op == "^") {
-                enum code = format(q{result.mask[min_length..$] %s= rest[min_length..$];}, op);
-                mixin(code);
+                mixin(final_code);
             }
         }
         return result;
+    }
+
+    unittest {
+        BitMask bit_a, bit_b;
+
     }
 
     BitMask opBinary(string op)(const size_t index) const pure nothrow
@@ -254,8 +295,8 @@ struct BitMask {
 
         private this(
                 const(size_t[]) mask,
-                size_t index,
-                size_t bit_pos) pure nothrow {
+        size_t index,
+        size_t bit_pos) pure nothrow {
             this.mask = mask;
             this.index = index;
             this.bit_pos = bit_pos;
@@ -454,8 +495,8 @@ struct BitMask {
                 assert(format("%16.4s", y) == "1000_0100_1000_0000");
                 assert(y.count is 3);
             }
-            
-            version(BITMASK){
+
+            version (BITMASK) {
                 BitMask null_mask;
                 const y = a - null_mask;
                 assert(y == a);
