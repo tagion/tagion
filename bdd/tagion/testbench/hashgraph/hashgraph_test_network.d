@@ -243,7 +243,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
     void excludedNodesCallback(ref scope BitMask excluded_mask, const(HashGraph) hashgraph) {
         import tagion.basic.Debug;
 
-        __write("callback %s", excluded_mask.count);
+        __write("callback %s", excluded_mask);
     }
     
     this(const(string[]) node_names) {
