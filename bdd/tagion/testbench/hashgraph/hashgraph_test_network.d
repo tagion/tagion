@@ -20,6 +20,7 @@ import tagion.hibon.HiBON;
 import std.stdio;
 import std.exception : assumeWontThrow;
 import core.memory : pageSize;
+import tagion.utils.BitMask;
 
 /++
     This function makes sure that the HashGraph has all the events connected to this event
@@ -237,6 +238,12 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         auto epoch = Epoch(events, epoch_time);
         epoch_events[current] ~= epoch;
     }
+
+    @safe
+    void excludedNodesCallback(ref scope BitMask excluded_mask, const(HashGraph) hashgraph) {
+        import tagion.basic.Debug;
+        __write("callback %s", excluded_mask);
+    }
     
     this(const(string[]) node_names) {
         authorising = new TestGossipNet;
@@ -245,7 +252,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
             immutable passphrase = format("very secret %s", name);
             auto net = new StdSecureNet();
             net.generateKeyPair(passphrase);
-            auto h = new HashGraph(N, net, &authorising.isValidChannel, &epochCallback, null, null, name);
+            auto h = new HashGraph(N, net, &authorising.isValidChannel, &epochCallback, null, &excludedNodesCallback, name);
             h.scrap_depth = 0;
             networks[net.pubkey] = new FiberNetwork(h, pageSize * 256);
         }

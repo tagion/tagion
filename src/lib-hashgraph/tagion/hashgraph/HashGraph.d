@@ -521,7 +521,7 @@ class HashGraph {
                 .array;
             return Wavefront(result, null, ExchangeState.COHERENT);
         }
-        writefln("rippleWave: %s", received_wave.toDoc.toPretty);
+        // writefln("rippleWave: %s", received_wave.toDoc.toPretty);
         foreach (epack; received_wave.epacks) {
             if (getNode(epack.pubkey).event is null) {
                 writefln("epack time: %s", epack.event_body.time);
