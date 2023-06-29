@@ -218,26 +218,10 @@ struct BitMask {
     }
 
     size_t count() const pure nothrow @nogc {
-        static size_t local_count(size_t BIT_SIZE)(const size_t x) pure nothrow {
-            static if (BIT_SIZE is 1) {
-                return x & 1;
-            }
-            else {
-                if (x is 0) {
-                    return 0;
-                }
-                enum HALF_SIZE = BIT_SIZE >> 1;
-                enum MASK = (size_t(1) << HALF_SIZE) - 1;
-                return local_count!HALF_SIZE(x & MASK) + local_count!HALF_SIZE(
-                        (x >> HALF_SIZE) & MASK);
-            }
-        }
+        import core.bitop : popcnt;
+        import std.algorithm;
 
-        size_t result;
-        foreach (m; mask) {
-            result += local_count!(WORD_SIZE)(m);
-        }
-        return result;
+        return mask.map!(m => m.popcnt).sum;
     }
 
     Range opSlice() const pure nothrow {
