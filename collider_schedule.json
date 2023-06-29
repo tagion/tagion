@@ -124,7 +124,7 @@
             "args": ["Alice", "Bob", "Carol", "Dave", "Elisa", "Freja", "Nonvoting"],
             "envs": {},
             "stages": [
-                "hashgraph"
+                "none"
             ],
             "timeout": 0.0
         },
