@@ -245,7 +245,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
             immutable passphrase = format("very secret %s", name);
             auto net = new StdSecureNet();
             net.generateKeyPair(passphrase);
-            auto h = new HashGraph(N, net, &authorising.isValidChannel, &epochCallback, null, name);
+            auto h = new HashGraph(N, net, &authorising.isValidChannel, &epochCallback, null, null, name);
             h.scrap_depth = 0;
             networks[net.pubkey] = new FiberNetwork(h, pageSize * 256);
         }

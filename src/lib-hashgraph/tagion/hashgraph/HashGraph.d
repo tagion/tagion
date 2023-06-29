@@ -93,14 +93,20 @@ class HashGraph {
         return _excluded_nodes_mask;
     }
 
+    void excluded_nodes_mask(const(BitMask) mask) pure nothrow {
+        _excluded_nodes_mask = mask;
+    }
+
     package Round.Rounder _rounds; /// The rounder hold the round in the queue both decided and undecided rounds
 
     alias ValidChannel = bool delegate(const Pubkey channel);
     const ValidChannel valid_channel; /// Valiates of a node at channel is valid
     alias EpochCallback = void delegate(const(Event[]) events, const sdt_t epoch_time) @safe;
+    alias ExcludedNodesCallback = void delegate(ref scope BitMask mask, const(HashGraph) hashgraph) @safe; 
     alias EventPackageCallback = void delegate(immutable(EventPackage*) epack) @safe;
     const EpochCallback epoch_callback; /// Call when an epoch has been produced
     const EventPackageCallback epack_callback; /// Call back which is called when an event-package has been added to the event chache.
+    const ExcludedNodesCallback excluded_nodes_callback;
 
     /**
  * Creates a graph with node_size nodes
@@ -117,6 +123,7 @@ class HashGraph {
             const ValidChannel valid_channel,
             const EpochCallback epoch_callback,
             const EventPackageCallback epack_callback = null,
+            const ExcludedNodesCallback excluded_nodes_callback = null,
             string name = null) {
         hirpc = HiRPC(net);
         this._owner_node = getNode(hirpc.net.pubkey);
@@ -124,6 +131,7 @@ class HashGraph {
         this.valid_channel = valid_channel;
         this.epoch_callback = epoch_callback;
         this.epack_callback = epack_callback;
+        this.excluded_nodes_callback = excluded_nodes_callback;
         this.name = name;
         _rounds = Round.Rounder(this);
     }
@@ -1033,7 +1041,7 @@ class HashGraph {
                     immutable passphrase = format("very secret %s", name);
                     auto net = new StdSecureNet();
                     net.generateKeyPair(passphrase);
-                    auto h = new HashGraph(N, net, &authorising.isValidChannel, null, null, name);
+                    auto h = new HashGraph(N, net, &authorising.isValidChannel, null, null, null, name);
                     h.scrap_depth = 0;
                     networks[net.pubkey] = new FiberNetwork(h);
                 }
