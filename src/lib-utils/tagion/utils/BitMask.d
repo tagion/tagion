@@ -254,6 +254,30 @@ struct BitMask {
 
     }
 
+    BitMask opOpAssign(string op)(scope const BitMask rhs) pure nothrow
+    if (op == "-" || op == "&" || op == "|" || op == "^") {
+        if (mask.length > rhs.mask.length) {
+            switch (op) {
+            case "&":
+                mask[rhs.mask.length .. $] = 0;
+                break;
+            default:
+            }
+        }
+        else if (mask.length < rhs.mask.length) {
+            mask.length = rhs.mask.length;
+        }
+
+        static if (op == "-") {
+            mask[0 .. rhs.mask.length] &= ~rhs.mask[0 .. rhs.mask.length];
+        }
+        else {
+            enum code = format(q{mask[0..rhs.mask.length] %s= rhs.mask[0..rhs.mask.length];}, op);
+            mixin(code);
+        }
+        return this;
+    }
+
     BitMask opBinary(string op)(scope const BitMask rhs) const pure nothrow
     if (op == "-" || op == "&" || op == "|" || op == "^") {
         import std.algorithm.comparison : max, min;
@@ -324,30 +348,6 @@ struct BitMask {
                 }
             }
         }
-    }
-
-    BitMask opOpAssign(string op)(scope const BitMask rhs) pure nothrow
-    if (op == "-" || op == "&" || op == "|" || op == "^") {
-        if (mask.length > rhs.mask.length) {
-            switch (op) {
-            case "&":
-                mask[rhs.mask.length .. $] = 0;
-                break;
-            default:
-            }
-        }
-        else if (mask.length < rhs.mask.length) {
-            mask.length = rhs.mask.length;
-        }
-
-        static if (op == "-") {
-            mask[0 .. rhs.mask.length] &= ~rhs.mask[0 .. rhs.mask.length];
-        }
-        else {
-            enum code = format(q{mask[0..rhs.mask.length] %s= rhs.mask[0..rhs.mask.length];}, op);
-            mixin(code);
-        }
-        return this;
     }
 
     BitMask opBinary(string op)(const size_t index) const pure nothrow
