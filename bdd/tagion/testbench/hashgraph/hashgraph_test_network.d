@@ -22,6 +22,7 @@ import std.exception : assumeWontThrow;
 import core.memory : pageSize;
 import tagion.utils.BitMask;
 
+
 /++
     This function makes sure that the HashGraph has all the events connected to this event
 +/
@@ -46,7 +47,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         MAX = 150
     }
 
-    BitMask[int] excluded_nodes_history;
+    Pubkey[int] excluded_nodes_history;
 
     static const(SecureNet) verify_net;
     static this() {
@@ -246,11 +247,21 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         import tagion.basic.Debug;
 
         if (excluded_nodes_history is null) { return; }
+        
+        
         const last_decided_round = hashgraph.rounds.last_decided_round.number;
-        const mask = excluded_nodes_history.get(last_decided_round, BitMask.init);
-        if (mask !is BitMask.init) {
-            excluded_mask = mask;
+        const exclude_channel = excluded_nodes_history.get(last_decided_round, Pubkey.init);
+        if (exclude_channel !is Pubkey.init) {
+            const node = hashgraph.nodes.get(exclude_channel, HashGraph.Node.init);
+            if (node !is HashGraph.Node.init) {
+                excluded_mask[node.node_id] = !excluded_mask[node.node_id]; 
+            }
         }
+        
+        // const mask = excluded_nodes_history.get(last_decided_round, );
+        // if (mask !is BitMask.init) {
+        //     excluded_mask = mask;
+        // }
 
         __write("callback<%s>", excluded_mask);
 
