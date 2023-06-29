@@ -56,7 +56,6 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
 
     Pubkey current;
 
-
     alias ChannelQueue = Queue!Document;
     class TestGossipNet : GossipNet {
         import tagion.hashgraph.HashGraphBasic;
@@ -220,12 +219,11 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         return networks.keys;
     }
 
-    
     bool allCoherent() {
         return networks
-                .byValue
-                .map!(n => n._hashgraph.owner_node.sticky_state)
-                .all!(s => s == ExchangeState.COHERENT);
+            .byValue
+            .map!(n => n._hashgraph.owner_node.sticky_state)
+            .all!(s => s == ExchangeState.COHERENT);
     }
 
     FiberNetwork[Pubkey] networks;
@@ -234,7 +232,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         const(Event)[] events;
         sdt_t epoch_time;
     }
-    
+
     Epoch[][Pubkey] epoch_events;
     void epochCallback(const(Event[]) events, const sdt_t epoch_time) {
         pragma(msg, typeof(current));
@@ -266,7 +264,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         __write("callback<%s>", excluded_mask);
 
     }
-    
+
     this(const(string[]) node_names) {
         authorising = new TestGossipNet;
         immutable N = node_names.length; //EnumMembers!NodeList.length;

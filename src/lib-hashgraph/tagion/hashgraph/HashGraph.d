@@ -30,6 +30,7 @@ import tagion.gossip.InterfaceNet;
 
 // debug
 import tagion.hibon.HiBONJSON;
+
 version (unittest) {
     version = hashgraph_fibertest;
 }
@@ -102,7 +103,7 @@ class HashGraph {
     alias ValidChannel = bool delegate(const Pubkey channel);
     const ValidChannel valid_channel; /// Valiates of a node at channel is valid
     alias EpochCallback = void delegate(const(Event[]) events, const sdt_t epoch_time) @safe;
-    alias ExcludedNodesCallback = void delegate(ref BitMask mask, const(HashGraph) hashgraph) @safe; 
+    alias ExcludedNodesCallback = void delegate(ref BitMask mask, const(HashGraph) hashgraph) @safe;
     alias EventPackageCallback = void delegate(immutable(EventPackage*) epack) @safe;
     const EpochCallback epoch_callback; /// Call when an epoch has been produced
     const EventPackageCallback epack_callback; /// Call back which is called when an event-package has been added to the event chache.
@@ -322,7 +323,7 @@ class HashGraph {
         if (epoch_callback !is null) {
             epoch_callback(events, epoch_time);
         }
-        if (excluded_nodes_callback !is null) { 
+        if (excluded_nodes_callback !is null) {
             excluded_nodes_callback(_excluded_nodes_mask, this);
         }
         if (scrap_depth > 0) {
@@ -542,8 +543,8 @@ class HashGraph {
 
         const contain_all =
             _nodes
-            .byValue
-            .all!((n) => n._event !is null);
+                .byValue
+                .all!((n) => n._event !is null);
 
         const state = (_nodes.length is node_size && contain_all) ? ExchangeState.COHERENT : ExchangeState.RIPPLE;
 
@@ -661,10 +662,10 @@ class HashGraph {
             this.node_id = node_id;
             this.channel = channel;
         }
+
         protected ExchangeState _sticky_state = ExchangeState.RIPPLE;
 
-        void sticky_state(const(ExchangeState) state) pure nothrow @nogc 
-        {
+        void sticky_state(const(ExchangeState) state) pure nothrow @nogc {
 
             if (state > _sticky_state) {
                 _sticky_state = state;
@@ -1058,8 +1059,7 @@ class HashGraph {
 
     static if (!vendor.llvm || !(version_major == 2 && version_minor == 99)) {
         // Unittest segfaults in LDC 1.29 (2.099)
-        version(none)
-        unittest {
+        version (none) unittest {
             import tagion.hashgraph.Event;
             import std.stdio;
             import std.traits;

@@ -15,11 +15,12 @@ import std.stdio;
 import std.datetime;
 import std.algorithm;
 import std.format;
+
 enum feature = Feature(
             "Hashgraph contributors",
             [
-        "This test is meant to test the ability for a node to get marked as non-voting which should result in the rest of the network continuing to run."
-]);
+            "This test is meant to test the ability for a node to get marked as non-voting which should result in the rest of the network continuing to run."
+            ]);
 
 alias FeatureContext = Tuple!(
         ANonvotingNode, "ANonvotingNode",
@@ -31,7 +32,7 @@ alias FeatureContext = Tuple!(
 class ANonvotingNode {
     string[] node_names;
     string module_path;
-    uint CALLS; 
+    uint CALLS;
     // enum NON_VOTING = "Nonvoting";
     TestNetwork network;
 
@@ -41,14 +42,15 @@ class ANonvotingNode {
         this.module_path = module_path;
         CALLS = cast(uint) node_names.length * 1000;
 
-        
-    } 
+    }
+
     @Given("i have a hashgraph testnetwork with n number of nodes")
     Document nodes() {
 
       
 
         
+
         network = new TestNetwork(node_names);
 
         auto exclude_channel = Pubkey(network.channels[network.random.value(0, network.channels.length)]);
@@ -66,8 +68,8 @@ class ANonvotingNode {
 
         try {
             uint i = 0;
-            while(i < CALLS) {
-            
+            while (i < CALLS) {
+
                 const channel_number = network.random.value(0, network.channels.length);
                 network.current = Pubkey(network.channels[channel_number]);
                 auto current = network.networks[network.current];
@@ -75,9 +77,9 @@ class ANonvotingNode {
 
                 i++;
             }
-            check(network.epoch_events.length == node_names.length, 
-                format("Max calls %d reached, not all nodes have created epochs only %d", 
-                CALLS, network.epoch_events.length));
+            check(network.epoch_events.length == node_names.length,
+                    format("Max calls %d reached, not all nodes have created epochs only %d",
+                    CALLS, network.epoch_events.length));
 
         }
         catch (Exception e) {
