@@ -235,13 +235,19 @@ struct BitMask {
         return result;
     }
 
+    @trusted
     unittest {
         BitMask bits;
         assert(~bits == BitMask.init);
         bits.mask.length = 1;
-        const x = BitMask('1'.repeat(size_t.sizeof).array);
-        //writefln("%s", x);
-        //     assert(~bits == BitMask('1'.repeat(size_t.sizeof).array)); 
+        const all_bits = BitMask('1'.repeat(8 * size_t.sizeof).array);
+        assert(~bits == all_bits);
+        BitMask expected = all_bits.dup;
+        expected[7] = false;
+        assert(~bits != expected);
+        bits[7] = true;
+        assert(~bits == expected);
+
     }
 
     BitMask opBinary(string op)(scope const BitMask rhs) const pure nothrow
