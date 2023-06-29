@@ -244,6 +244,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         import tagion.basic.Debug;
 
         __write("callback %s", excluded_mask);
+
     }
     
     this(const(string[]) node_names) {
