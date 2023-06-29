@@ -18,8 +18,9 @@ debug {
     }
 }
 else {
-    void __write(Args...)(string fmt, Args args) @trusted nothrow {
-        assumeWontThrow(stderr.writefln(fmt, args));
+    void __write(Args...)(string fmt, Args args) @trusted nothrow pure {
+        pragma(msg, "Cannot call __write without debug flag");
+        // assumeWontThrow(stderr.writefln(fmt, args));
     }
 }
 

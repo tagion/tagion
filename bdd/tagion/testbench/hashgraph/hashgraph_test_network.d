@@ -20,6 +20,7 @@ import tagion.hibon.HiBON;
 import std.stdio;
 import std.exception : assumeWontThrow;
 import core.memory : pageSize;
+import tagion.utils.BitMask;
 
 /++
     This function makes sure that the HashGraph has all the events connected to this event
@@ -45,13 +46,14 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         MAX = 150
     }
 
+    BitMask[int] excluded_nodes_history;
+
     static const(SecureNet) verify_net;
     static this() {
         verify_net = new StdSecureNet();
     }
 
     Pubkey current;
-
 
     alias ChannelQueue = Queue!Document;
     class TestGossipNet : GossipNet {
@@ -216,12 +218,11 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         return networks.keys;
     }
 
-    
     bool allCoherent() {
         return networks
-                .byValue
-                .map!(n => n._hashgraph.owner_node.sticky_state)
-                .all!(s => s == ExchangeState.COHERENT);
+            .byValue
+            .map!(n => n._hashgraph.owner_node.sticky_state)
+            .all!(s => s == ExchangeState.COHERENT);
     }
 
     FiberNetwork[Pubkey] networks;
@@ -230,14 +231,26 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         const(Event)[] events;
         sdt_t epoch_time;
     }
-    
+
     Epoch[][Pubkey] epoch_events;
     void epochCallback(const(Event[]) events, const sdt_t epoch_time) {
         pragma(msg, typeof(current));
         auto epoch = Epoch(events, epoch_time);
         epoch_events[current] ~= epoch;
     }
-    
+
+    @safe
+    void excludedNodesCallback(ref BitMask excluded_mask, const(HashGraph) hashgraph) {
+        import tagion.basic.Debug;
+
+        if (hashgraph.rounds.last_decided_round.number == 23) {
+            excluded_mask[0] = true;
+            writeln("WOWO");
+        }
+        __write("callback<%s>", excluded_mask);
+
+    }
+
     this(const(string[]) node_names) {
         authorising = new TestGossipNet;
         immutable N = node_names.length; //EnumMembers!NodeList.length;
@@ -245,7 +258,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
             immutable passphrase = format("very secret %s", name);
             auto net = new StdSecureNet();
             net.generateKeyPair(passphrase);
-            auto h = new HashGraph(N, net, &authorising.isValidChannel, &epochCallback, null, name);
+            auto h = new HashGraph(N, net, &authorising.isValidChannel, &epochCallback, null, &excludedNodesCallback, name);
             h.scrap_depth = 0;
             networks[net.pubkey] = new FiberNetwork(h, pageSize * 256);
         }

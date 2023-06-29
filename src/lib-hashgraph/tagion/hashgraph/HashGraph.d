@@ -30,6 +30,7 @@ import tagion.gossip.InterfaceNet;
 
 // debug
 import tagion.hibon.HiBONJSON;
+
 version (unittest) {
     version = hashgraph_fibertest;
 }
@@ -93,14 +94,20 @@ class HashGraph {
         return _excluded_nodes_mask;
     }
 
+    void excluded_nodes_mask(const(BitMask) mask) pure nothrow {
+        _excluded_nodes_mask = mask;
+    }
+
     package Round.Rounder _rounds; /// The rounder hold the round in the queue both decided and undecided rounds
 
     alias ValidChannel = bool delegate(const Pubkey channel);
     const ValidChannel valid_channel; /// Valiates of a node at channel is valid
     alias EpochCallback = void delegate(const(Event[]) events, const sdt_t epoch_time) @safe;
+    alias ExcludedNodesCallback = void delegate(ref BitMask mask, const(HashGraph) hashgraph) @safe;
     alias EventPackageCallback = void delegate(immutable(EventPackage*) epack) @safe;
     const EpochCallback epoch_callback; /// Call when an epoch has been produced
     const EventPackageCallback epack_callback; /// Call back which is called when an event-package has been added to the event chache.
+    const ExcludedNodesCallback excluded_nodes_callback;
 
     /**
  * Creates a graph with node_size nodes
@@ -117,6 +124,7 @@ class HashGraph {
             const ValidChannel valid_channel,
             const EpochCallback epoch_callback,
             const EventPackageCallback epack_callback = null,
+            const ExcludedNodesCallback excluded_nodes_callback = null,
             string name = null) {
         hirpc = HiRPC(net);
         this._owner_node = getNode(hirpc.net.pubkey);
@@ -124,6 +132,7 @@ class HashGraph {
         this.valid_channel = valid_channel;
         this.epoch_callback = epoch_callback;
         this.epack_callback = epack_callback;
+        this.excluded_nodes_callback = excluded_nodes_callback;
         this.name = name;
         _rounds = Round.Rounder(this);
     }
@@ -313,6 +322,9 @@ class HashGraph {
                 Event.count, Event.Witness.count, events.length, epoch_time);
         if (epoch_callback !is null) {
             epoch_callback(events, epoch_time);
+        }
+        if (excluded_nodes_callback !is null) {
+            excluded_nodes_callback(_excluded_nodes_mask, this);
         }
         if (scrap_depth > 0) {
             live_events_statistic(Event.count);
@@ -513,7 +525,7 @@ class HashGraph {
                 .array;
             return Wavefront(result, null, ExchangeState.COHERENT);
         }
-        writefln("rippleWave: %s", received_wave.toDoc.toPretty);
+        // writefln("rippleWave: %s", received_wave.toDoc.toPretty);
         foreach (epack; received_wave.epacks) {
             if (getNode(epack.pubkey).event is null) {
                 writefln("epack time: %s", epack.event_body.time);
@@ -531,8 +543,8 @@ class HashGraph {
 
         const contain_all =
             _nodes
-            .byValue
-            .all!((n) => n._event !is null);
+                .byValue
+                .all!((n) => n._event !is null);
 
         const state = (_nodes.length is node_size && contain_all) ? ExchangeState.COHERENT : ExchangeState.RIPPLE;
 
@@ -650,10 +662,10 @@ class HashGraph {
             this.node_id = node_id;
             this.channel = channel;
         }
+
         protected ExchangeState _sticky_state = ExchangeState.RIPPLE;
 
-        void sticky_state(const(ExchangeState) state) pure nothrow @nogc 
-        {
+        void sticky_state(const(ExchangeState) state) pure nothrow @nogc {
 
             if (state > _sticky_state) {
                 _sticky_state = state;
@@ -1033,7 +1045,7 @@ class HashGraph {
                     immutable passphrase = format("very secret %s", name);
                     auto net = new StdSecureNet();
                     net.generateKeyPair(passphrase);
-                    auto h = new HashGraph(N, net, &authorising.isValidChannel, null, null, name);
+                    auto h = new HashGraph(N, net, &authorising.isValidChannel, null, null, null, name);
                     h.scrap_depth = 0;
                     networks[net.pubkey] = new FiberNetwork(h);
                 }
@@ -1047,8 +1059,7 @@ class HashGraph {
 
     static if (!vendor.llvm || !(version_major == 2 && version_minor == 99)) {
         // Unittest segfaults in LDC 1.29 (2.099)
-        version(none)
-        unittest {
+        version (none) unittest {
             import tagion.hashgraph.Event;
             import std.stdio;
             import std.traits;
