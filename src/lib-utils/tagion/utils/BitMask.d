@@ -343,18 +343,18 @@ struct BitMask {
         else if (mask.length < rhs.mask.length) {
             mask.length = rhs.mask.length;
         }
-        /*
-    static if (op == "-") {
+
+        static if (op == "-") {
             __write("Before mask=%s rhs=%s", this, rhs);
 
             mask[0 .. rhs.mask.length] &= ~rhs.mask[0 .. rhs.mask.length];
             __write("After  mask=%s rhs=%s", this, rhs);
         }
         else {
-    */
-        enum code = format(q{mask[0..rhs.mask.length] %s= rhs.mask[0..rhs.mask.length];}, op);
-        mixin(code);
-        //  }
+
+            enum code = format(q{mask[0..rhs.mask.length] %s= rhs.mask[0..rhs.mask.length];}, op);
+            mixin(code);
+        }
         return this;
     }
 
