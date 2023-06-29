@@ -83,6 +83,10 @@ struct BitMask {
         assert(bits_a != bits_b);
         bits_a[100] = true;
         assert(bits_a == bits_b);
+        BitMask all_null_bits;
+        all_null_bits.mask.length = 3; // long sequency of bits of value
+        assert(all_null_bits == BitMask.init);
+        assert(BitMask.init == all_null_bits);
     }
 
     Range opSlice() const pure nothrow {
@@ -255,6 +259,11 @@ struct BitMask {
         import std.algorithm.comparison : max, min;
 
         BitMask result;
+        result.mask = mask.dup;
+
+        result.opOpAssign!op(rhs);
+        /*
+        BitMask result;
         const max_length = max(mask.length, rhs.mask.length);
         result.mask = new size_t[max_length];
         const min_length = min(mask.length, rhs.mask.length);
@@ -272,26 +281,74 @@ struct BitMask {
                 mixin(final_code);
             }
         }
+        */
         return result;
     }
 
     version (unittest) {
         import std.stdio;
         import std.array;
+        import tagion.basic.Debug;
 
         /// Result table
         /// 
     }
 
     unittest { // opBinary and opOpAssign
+
         BitMask bits_a, bits_b;
         enum op_list = ["|", "&", "^", "-"];
         //enum righ
-        static foreach (OP; op_list) {
-            assert(bits_a.opBinary!OP(bits_b) == BitMask.init);
-
+        static struct Expected {
+            BitMask Y, A, B; /// y = a OP b
         }
 
+        const left_one_right_none = [
+            "|": Expected(BitMask("010101"), BitMask("010101"), BitMask.init),
+            "&": Expected(BitMask("000000"), BitMask("010101"), BitMask.init),
+            "^": Expected(BitMask("010101"), BitMask("010101"), BitMask.init),
+            "-": Expected(BitMask("010101"), BitMask("010101"), BitMask.init),
+        ];
+        const left_one_right_one = [
+            "|": Expected(BitMask("010111001"), BitMask("010101001"), BitMask("0101110")),
+            "&": Expected(BitMask("010001"), BitMask("010101"), BitMask("0100010")),
+            "^": Expected(BitMask("00110001"), BitMask("000101"), BitMask("00100101")),
+            "-": Expected(BitMask("0000101"), BitMask("000010111"), BitMask("01010101111")),
+        ];
+
+        const left_more_right_more = [
+            "|": Expected(BitMask([1, 57, 100]), BitMask([57]), BitMask([100, 1])),
+            "&": Expected(BitMask([57, 101]), BitMask([1, 57, 101, 65]), BitMask([101, 57, 22])),
+            "^": Expected(BitMask([1, 2, 57, 100]), BitMask([2, 57, 100, 65]), BitMask([1, 65])),
+            "-": Expected(BitMask([2, 100]), BitMask([2, 57, 100, 65]), BitMask([67, 57, 65])),
+        ];
+
+        static foreach (OP; op_list) {
+            assert(bits_a.opBinary!OP(bits_b) == BitMask.init);
+            {
+                foreach (test; only(left_one_right_none, left_one_right_one, left_more_right_more)) {
+                    const expected = test[OP];
+                    with (expected) {
+                        const result = A.opBinary!OP(B);
+                        assert(result == Y,
+                                __format("%.16s == %.16s %s %.16s result %.16s", Y, A, OP, B, result));
+                    }
+                    with (expected) {
+                        auto result = A.dup;
+                        __write("%s  A=%s", OP, result);
+                        __write("   B=%s", B);
+                        result.opOpAssign!OP(B);
+                        __write("   Y=%s", Y);
+                        __write("   R=%s", result);
+
+                        assert(result == Y,
+                                __format("%.16s == (%.16s %s= %.16s) result %.16s", Y, A, OP, B, result));
+
+                    }
+
+                }
+            }
+        }
     }
 
     BitMask opOpAssign(string op)(scope const BitMask rhs) pure nothrow
@@ -308,23 +365,16 @@ struct BitMask {
             mask.length = rhs.mask.length;
         }
         static if (op == "-") {
+            __write("Before mask=%s rhs=%s", this, rhs);
+
             mask[0 .. rhs.mask.length] &= ~rhs.mask[0 .. rhs.mask.length];
+            __write("After  mask=%s rhs=%s", this, rhs);
         }
         else {
             enum code = format(q{mask[0..rhs.mask.length] %s= rhs.mask[0..rhs.mask.length];}, op);
             mixin(code);
         }
         return this;
-    }
-
-    unittest {
-        BitMask bits_a, bits_b;
-
-        static foreach (OP; ["-", "&", "|", "^"]) {
-            assert(bits_a.opOpAssign!OP(BitMask.init) == bits_a, format("bits_a %s= BitMask.init failed", OP));
-
-        }
-
     }
 
     BitMask opBinary(string op)(const size_t index) const pure nothrow
