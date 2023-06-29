@@ -322,6 +322,9 @@ class HashGraph {
         if (epoch_callback !is null) {
             epoch_callback(events, epoch_time);
         }
+        if (excluded_nodes_callback !is null) { 
+            excluded_nodes_callback(_excluded_nodes_mask, this);
+        }
         if (scrap_depth > 0) {
             live_events_statistic(Event.count);
             mixin Log!(live_events_statistic);
