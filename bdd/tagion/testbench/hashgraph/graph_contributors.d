@@ -11,7 +11,13 @@ import tagion.utils.BitMask;
 import std.path : buildPath, setExtension, extension;
 import tagion.basic.Types : FileExtension;
 import std.stdio;
-
+import tagion.hashgraph.HashGraph;
+import tagion.utils.Miscellaneous : cutHex;
+import tagion.hashgraph.HashGraphBasic;
+import tagion.hashgraphview.Compare;
+import tagion.hashgraph.Event;
+import std.functional : toDelegate;
+import std.array;
 import std.datetime;
 import std.algorithm;
 import std.format;
@@ -90,13 +96,68 @@ class ANonvotingNode {
 
     @When("i mark one node as non-voting")
     Document nonvoting() {
-            
+        // done in history            
         return result_ok;
     }
 
     @Then("the network should still reach consensus")
-    Document consensus() {
-        return Document();
+    Document consensus() @trusted {
+
+        // // compare ordering
+        // auto names = network.networks.byValue
+        //     .map!((net) => net._hashgraph.name)
+        //     .array.dup
+        //     .sort
+        //     .array;
+
+        // HashGraph[string] hashgraphs;
+        // foreach (net; network.networks) {
+        //     hashgraphs[net._hashgraph.name] = net._hashgraph;
+        // }
+        // foreach (i, name_h1; names[0 .. $ - 1]) {
+        //     const h1 = hashgraphs[name_h1];
+        //     foreach (name_h2; names[i + 1 .. $]) {
+        //         const h2 = hashgraphs[name_h2];
+        //         auto comp = Compare(h1, h2, toDelegate(&event_error));
+        //         // writefln("%s %s round_offset=%d order_offset=%d",
+        //         //     h1.name, h2.name, comp.round_offset, comp.order_offset);
+        //         const result = comp.compare;
+        //         check(result, format("HashGraph %s and %s is not the same", h1.name, h2.name));
+        //     }
+        // }
+        // compare epochs
+        foreach(i, compare_epoch; network.epoch_events.byKeyValue.front.value) {
+            auto compare_events = compare_epoch
+                                            .events
+                                            .map!(e => e.event_package.fingerprint)
+                                            .array;
+            // compare_events.sort!((a,b) => a < b);
+            // compare_events.each!writeln;
+            writefln("%s", compare_events.map!(f => f.cutHex));
+            foreach(channel_epoch; network.epoch_events.byKeyValue) {
+                writefln("epoch: %s", i);
+                if (channel_epoch.value.length-1 < i) {
+                    break;
+                }
+                auto events = channel_epoch.value[i]
+                                            .events
+                                            .map!(e => e.event_package.fingerprint)
+                                            .array;
+                // events.sort!((a,b) => a < b);
+
+                writefln("%s", events.map!(f => f.cutHex));
+                // events.each!writeln;
+                writefln("channel %s time: %s", channel_epoch.key.cutHex, channel_epoch.value[i].epoch_time);
+                               
+                check(compare_events.length == events.length, "event_packages not the same length");
+
+                const isSame = equal(compare_events, events);
+                writefln("isSame: %s", isSame);
+                check(isSame, "event_packages not the same");            
+            
+            }
+        }         
+        return result_ok;
     }
 
     @Then("stop the network")

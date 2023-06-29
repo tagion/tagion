@@ -5,7 +5,8 @@ import tagion.hibon.Document;
 import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
 import std.stdio;
-import tagion.testbench.hashgraph.hashgraph_test_network;
+import tagion.testbench.hashgraph.hashgraph_test_network : TestNetwork, event_error;
+
 import std.algorithm;
 import std.datetime;
 import tagion.crypto.Types : Pubkey;
@@ -27,6 +28,7 @@ import std.conv;
 import tagion.hibon.HiBONJSON;
 import tagion.utils.Miscellaneous : toHexString;
 import tagion.basic.basic;
+import std.functional : toDelegate;
 
 enum feature = Feature(
             "Bootstrap of hashgraph",
@@ -69,20 +71,6 @@ class StartNetworkWithNAmountOfNodes {
     
     }
 
-    bool event_error(const Event e1, const Event e2, const Compare.ErrorCode code) @safe nothrow {
-        static string print(const Event e) nothrow {
-            if (e) {
-                const round_received = (e.round_received) ? e.round_received.number.to!string : "#";
-                return assumeWontThrow(format("(%d:%d:%d:r=%d:rr=%s:%s)",
-                        e.id, e.node_id, e.altitude, e.round.number, round_received,
-                        e.fingerprint.cutHex));
-            }
-            return assumeWontThrow(format("(%d:%d:%s:%s)", 0, -1, 0, "nil"));
-        }
-
-        assumeWontThrow(writefln("Event %s and %s %s", print(e1), print(e2), code));
-        return false;
-    }
 
     
     @Given("i have a HashGraph TestNetwork with n number of nodes")
@@ -193,7 +181,7 @@ class StartNetworkWithNAmountOfNodes {
             const h1 = hashgraphs[name_h1];
             foreach (name_h2; names[i + 1 .. $]) {
                 const h2 = hashgraphs[name_h2];
-                auto comp = Compare(h1, h2, &event_error);
+                auto comp = Compare(h1, h2, toDelegate(&event_error));
                 // writefln("%s %s round_offset=%d order_offset=%d",
                 //     h1.name, h2.name, comp.round_offset, comp.order_offset);
                 const result = comp.compare;

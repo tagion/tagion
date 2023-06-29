@@ -21,7 +21,7 @@ import std.stdio;
 import std.exception : assumeWontThrow;
 import core.memory : pageSize;
 import tagion.utils.BitMask;
-
+import std.conv;
 
 /++
     This function makes sure that the HashGraph has all the events connected to this event
@@ -280,98 +280,21 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
     }
 }
 
-import std.compiler;
-
-// Unittest segfaults in LDC 1.29 (2.099)
-void hashgraphTest() @safe {
-    import tagion.hashgraph.Event;
-    import std.stdio;
-    import std.traits;
-    import std.conv;
-    import std.datetime;
-    import tagion.hibon.HiBONJSON;
-    import tagion.logger.Logger : log, LogLevel;
-    import std.array;
-    import tagion.hashgraphview.Compare;
-    import std.exception : assumeWontThrow;
-
-    enum NodeLabel {
-        Alice,
-        Bob,
-        Carol,
-        Dave,
-        Elisa,
-        Freja,
-        George,
-    }
-
-    auto node_labels = [EnumMembers!NodeLabel].map!((E) => E.to!string).array;
-    auto network = new TestNetwork(node_labels); //!NodeLabel();
-    network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 0);
-    network.random.seed(123456789);
-
-    network.global_time = SysTime.fromUnixTime(1_614_355_286); //SysTime(DateTime(2021, 2, 26, 15, 59, 46));
-
-    const channels = network.channels;
-
-    try {
-        foreach (i; 0 .. 550) {
-            const channel_number = network.random.value(0, channels.length);
-            const channel = channels[channel_number];
-            auto current = network.networks[channel];
-            (() @trusted { current.call; })();
+import tagion.hashgraphview.Compare;
+bool event_error(const Event e1, const Event e2, const Compare.ErrorCode code) @safe nothrow {
+    static string print(const Event e) nothrow {
+        if (e) {
+            const round_received = (e.round_received) ? e.round_received.number.to!string : "#";
+            return assumeWontThrow(format("(%d:%d:%d:r=%d:rr=%s:%s)",
+                    e.id, e.node_id, e.altitude, e.round.number, round_received,
+                    e.fingerprint.cutHex));
         }
-    }
-    catch (Exception e) {
-        (() @trusted { writefln("%s", e); assert(0, e.msg); })();
+        return assumeWontThrow(format("(%d:%d:%s:%s)", 0, -1, 0, "nil"));
     }
 
-    // writefln("Save Alice");
-    // Pubkey[string] node_labels;
-
-    // foreach (channel, _net; network.networks) {
-    //     node_labels[_net._hashgraph.name] = channel;
-    // }
-    // foreach (_net; network.networks) {
-    //     const filename = fileId(_net._hashgraph.name);
-    //     _net._hashgraph.fwrite(filename.fullpath, node_labels);
-    // }
-
-    bool event_error(const Event e1, const Event e2, const Compare.ErrorCode code) @safe nothrow {
-        static string print(const Event e) nothrow {
-            if (e) {
-                const round_received = (e.round_received) ? e.round_received.number.to!string : "#";
-                return assumeWontThrow(format("(%d:%d:%d:r=%d:rr=%s:%s)",
-                        e.id, e.node_id, e.altitude, e.round.number, round_received,
-                        e.fingerprint.cutHex));
-            }
-            return assumeWontThrow(format("(%d:%d:%s:%s)", 0, -1, 0, "nil"));
-        }
-
-        assumeWontThrow(writefln("Event %s and %s %s", print(e1), print(e2), code));
-        return false;
-    }
-
-    auto names = network.networks.byValue
-        .map!((net) => net._hashgraph.name)
-        .array.dup
-        .sort
-        .array;
-
-    HashGraph[string] hashgraphs;
-    foreach (net; network.networks) {
-        hashgraphs[net._hashgraph.name] = net._hashgraph;
-    }
-
-    foreach (i, name_h1; names[0 .. $ - 1]) {
-        const h1 = hashgraphs[name_h1];
-        foreach (name_h2; names[i + 1 .. $]) {
-            const h2 = hashgraphs[name_h2];
-            auto comp = Compare(h1, h2, &event_error);
-            // writefln("%s %s round_offset=%d order_offset=%d",
-            //     h1.name, h2.name, comp.round_offset, comp.order_offset);
-            const result = comp.compare;
-            assert(result, format("HashGraph %s and %s is not the same", h1.name, h2.name));
-        }
-    }
+    assumeWontThrow(writefln("Event %s and %s %s", print(e1), print(e2), code));
+    return false;
 }
+
+
+
