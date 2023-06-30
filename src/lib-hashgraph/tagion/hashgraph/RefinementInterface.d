@@ -15,11 +15,11 @@ interface Refinement {
 
     bool valid_channel(const Pubkey channel);
 
-    void epochCallback(const(Event[]) events, const sdt_t epoch_time);
+    void epoch(const(Event[]) events, const sdt_t epoch_time);
 
-    void excludedNodesCallback(ref BitMask mask);
+    void excludedNodes(ref BitMask mask);
 
-    void epackCallback(immutable(EventPackage*) epack);
+    void epack(immutable(EventPackage*) epack);
 
 
 

@@ -315,8 +315,8 @@ class HashGraph {
         log.trace("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d time=%s",
                 name, decided_round.number,
                 Event.count, Event.Witness.count, events.length, epoch_time);
-        refinement.epochCallback(events, epoch_time);
-        refinement.excludedNodesCallback(_excluded_nodes_mask);
+        refinement.epoch(events, epoch_time);
+        refinement.excludedNodes(_excluded_nodes_mask);
         if (scrap_depth > 0) {
             live_events_statistic(Event.count);
             mixin Log!(live_events_statistic);
@@ -341,7 +341,7 @@ class HashGraph {
         if (valid_channel(event_pack.pubkey)) {
             auto event = new Event(event_pack, this);
             _event_cache[event.fingerprint] = event;
-            refinement.epackCallback(event_pack);
+            refinement.epack(event_pack);
             event.connect(this);
             return event;
         }

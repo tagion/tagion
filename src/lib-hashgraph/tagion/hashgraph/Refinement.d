@@ -37,13 +37,13 @@ class StdRefinement : Refinement {
     }
 
     static Epoch[][Pubkey] epoch_events;
-    void epochCallback(const(Event[]) events, const sdt_t epoch_time) {
+    void epoch(const(Event[]) events, const sdt_t epoch_time) {
         auto epoch = Epoch(events, epoch_time);
         epoch_events[hashgraph.owner_node.channel] ~= epoch;
     }
 
     Pubkey[int] excluded_nodes_history;
-    void excludedNodesCallback(ref BitMask excluded_mask) {
+    void excludedNodes(ref BitMask excluded_mask) {
         import tagion.basic.Debug;
 
         if (excluded_nodes_history is null) { return; }
@@ -67,7 +67,7 @@ class StdRefinement : Refinement {
     }
 
 
-    void epackCallback(immutable(EventPackage*) epack) @safe {
+    void epack(immutable(EventPackage*) epack) @safe {
         // log.trace("epack.event_body.payload.empty %s", epack.event_body.payload.empty);
     }
 
