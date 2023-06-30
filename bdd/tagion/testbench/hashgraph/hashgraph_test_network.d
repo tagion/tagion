@@ -40,6 +40,30 @@ class TestRefinement : StdRefinement {
         auto epoch = Epoch(events, epoch_time);
         epoch_events[hashgraph.owner_node.channel] ~= epoch;
     }
+
+    Pubkey[int] excluded_nodes_history;
+    override void excludedNodes(ref BitMask excluded_mask) {
+        import tagion.basic.Debug;
+
+        if (excluded_nodes_history is null) { return; }
+                
+        const last_decided_round = hashgraph.rounds.last_decided_round.number;
+        const exclude_channel = excluded_nodes_history.get(last_decided_round, Pubkey.init);
+        if (exclude_channel !is Pubkey.init) {
+            const node = hashgraph.nodes.get(exclude_channel, HashGraph.Node.init);
+            if (node !is HashGraph.Node.init) {
+                excluded_mask[node.node_id] = !excluded_mask[node.node_id]; 
+            }
+        }
+        
+        // const mask = excluded_nodes_history.get(last_decided_round, );
+        // if (mask !is BitMask.init) {
+        //     excluded_mask = mask;
+        // }
+
+        __write("callback<%s>", excluded_mask);
+
+    }
 }
 
 
