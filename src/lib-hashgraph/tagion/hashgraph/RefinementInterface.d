@@ -20,5 +20,4 @@ interface Refinement {
     void epack(immutable(EventPackage*) epack);
 
 
-
 }
