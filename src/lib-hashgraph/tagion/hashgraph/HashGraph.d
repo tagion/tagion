@@ -105,8 +105,6 @@ class HashGraph {
 
     alias ValidChannel = bool delegate(const Pubkey channel);
     const ValidChannel valid_channel; /// Valiates of a node at channel is valid
-    alias EventPackageCallback = void delegate(immutable(EventPackage*) epack) @safe;
-    const EventPackageCallback epack_callback; /// Call back which is called when an event-package has been added to the event chache.
     /**
  * Creates a graph with node_size nodes
  * Params:
@@ -121,7 +119,6 @@ class HashGraph {
             const SecureNet net,
             Refinement refinement,
             const ValidChannel valid_channel,
-            const EventPackageCallback epack_callback = null,
             string name = null) {
         hirpc = HiRPC(net);
         this._owner_node = getNode(hirpc.net.pubkey);
@@ -129,7 +126,6 @@ class HashGraph {
         this.refinement = refinement;
         this.refinement.setOwner(this);
         this.valid_channel = valid_channel;
-        this.epack_callback = epack_callback;
         
         
         this.name = name;
@@ -345,9 +341,7 @@ class HashGraph {
         if (valid_channel(event_pack.pubkey)) {
             auto event = new Event(event_pack, this);
             _event_cache[event.fingerprint] = event;
-            if (epack_callback) {
-                epack_callback(event_pack);
-            }
+            refinement.epackCallback(event_pack);
             event.connect(this);
             return event;
         }

@@ -272,7 +272,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
             auto net = new StdSecureNet();
             net.generateKeyPair(passphrase);
             auto refinement = new StdRefinement;
-            auto h = new HashGraph(N, net, refinement, &authorising.isValidChannel, null, name);
+            auto h = new HashGraph(N, net, refinement, &authorising.isValidChannel, name);
             h.scrap_depth = 0;
             networks[net.pubkey] = new FiberNetwork(h, pageSize * 256);
         }

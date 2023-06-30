@@ -19,7 +19,7 @@ interface Refinement {
 
     void excludedNodesCallback(ref BitMask mask);
 
-    void epack_callback(immutable(EventPackage*) epack);
+    void epackCallback(immutable(EventPackage*) epack);
 
 
 

@@ -66,10 +66,10 @@ class StdRefinement : Refinement {
 
     }
 
-    void epack_callback(immutable(EventPackage*) epack) {
-        writefln("%s", __FUNCTION__);
-    }
 
+    void epackCallback(immutable(EventPackage*) epack) @safe {
+        // log.trace("epack.event_body.payload.empty %s", epack.event_body.payload.empty);
+    }
 
 }
 

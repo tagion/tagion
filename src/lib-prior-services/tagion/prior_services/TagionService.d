@@ -190,9 +190,6 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
             
         }
 
-        void register_epack(immutable(EventPackage*) epack) @safe {
-            log.trace("epack.event_body.payload.empty %s", epack.event_body.payload.empty);
-        }
 
         if (opts.monitor.enable) {
             monitor_socket_tid = spawn(&monitorServiceTask, opts);
@@ -209,7 +206,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         log.trace("Hashgraph pubkey=%s", net.pubkey.cutHex);
         import tagion.hashgraph.Refinement;
         auto refinement = new PriorStdRefinement;
-        hashgraph = new HashGraph(opts.nodes, net, refinement, &gossip_net.isValidChannel, &register_epack);
+        hashgraph = new HashGraph(opts.nodes, net, refinement, &gossip_net.isValidChannel);
         hashgraph.scrap_depth = opts.scrap_depth;
 
         discovery_tid = spawn(
