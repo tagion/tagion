@@ -13,8 +13,6 @@ interface Refinement {
 
     void setOwner(HashGraph hashgraph);
 
-    bool valid_channel(const Pubkey channel);
-
     void epoch(const(Event[]) events, const sdt_t epoch_time);
 
     void excludedNodes(ref BitMask mask);

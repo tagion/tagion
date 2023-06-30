@@ -26,11 +26,6 @@ class StdRefinement : Refinement {
         this.hashgraph = hashgraph;
     }
 
-    bool valid_channel(const Pubkey channel) {
-        writefln("%s", __FUNCTION__);
-        return true;
-    }
-
     struct Epoch {
         const(Event)[] events;
         sdt_t epoch_time;
