@@ -11,6 +11,8 @@ import tagion.utils.StdTime;
 @safe
 interface Refinement {
 
+    void setOwner(HashGraph hashgraph);
+
     bool valid_channel(const Pubkey channel);
 
     void epoch_callback(const(Event[]) events, const sdt_t epoch_time);

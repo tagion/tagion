@@ -12,7 +12,19 @@ import tagion.utils.StdTime;
 // std
 import std.stdio;
 
+@safe
 class StdRefinement : Refinement {
+    protected {
+        HashGraph hashgraph;
+    }
+
+
+    void setOwner(HashGraph hashgraph) 
+    in (this.hashgraph is null) 
+    do
+    {
+        this.hashgraph = hashgraph;
+    }
 
     bool valid_channel(const Pubkey channel) {
         writefln("%s", __FUNCTION__);

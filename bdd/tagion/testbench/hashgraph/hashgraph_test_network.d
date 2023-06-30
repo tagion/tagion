@@ -22,7 +22,7 @@ import std.exception : assumeWontThrow;
 import core.memory : pageSize;
 import tagion.utils.BitMask;
 import std.conv;
-
+import tagion.hashgraph.Refinement;
 /++
     This function makes sure that the HashGraph has all the events connected to this event
 +/
@@ -272,7 +272,8 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
             immutable passphrase = format("very secret %s", name);
             auto net = new StdSecureNet();
             net.generateKeyPair(passphrase);
-            auto h = new HashGraph(N, net, &authorising.isValidChannel, &epochCallback, null, &excludedNodesCallback, name);
+            auto refinement = new StdRefinement;
+            auto h = new HashGraph(N, net, refinement, &authorising.isValidChannel, &epochCallback, null, &excludedNodesCallback, name);
             h.scrap_depth = 0;
             networks[net.pubkey] = new FiberNetwork(h, pageSize * 256);
         }

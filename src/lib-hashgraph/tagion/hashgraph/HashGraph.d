@@ -18,12 +18,14 @@ import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONRecord : isHiBONRecord;
 import tagion.communication.HiRPC;
 import tagion.utils.StdTime;
+import tagion.hashgraph.RefinementInterface;
 
 import tagion.basic.Debug : __format;
 import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Pubkey, Signature, Privkey;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.utils.BitMask;
+
 
 import tagion.logger.Logger;
 import tagion.gossip.InterfaceNet;
@@ -67,6 +69,7 @@ class HashGraph {
         Node[Pubkey] _nodes; // List of participating _nodes T
         uint event_id;
         sdt_t last_epoch_time;
+        Refinement refinement;
     }
     protected Node _owner_node;
     const(Node) owner_node() const pure nothrow @nogc {
@@ -108,7 +111,6 @@ class HashGraph {
     const EpochCallback epoch_callback; /// Call when an epoch has been produced
     const EventPackageCallback epack_callback; /// Call back which is called when an event-package has been added to the event chache.
     const ExcludedNodesCallback excluded_nodes_callback;
-
     /**
  * Creates a graph with node_size nodes
  * Params:
@@ -121,6 +123,7 @@ class HashGraph {
  */
     this(const size_t node_size,
             const SecureNet net,
+            Refinement refinement,
             const ValidChannel valid_channel,
             const EpochCallback epoch_callback,
             const EventPackageCallback epack_callback = null,
@@ -129,10 +132,14 @@ class HashGraph {
         hirpc = HiRPC(net);
         this._owner_node = getNode(hirpc.net.pubkey);
         this.node_size = node_size;
+        this.refinement = refinement;
+        this.refinement.setOwner(this);
         this.valid_channel = valid_channel;
         this.epoch_callback = epoch_callback;
         this.epack_callback = epack_callback;
         this.excluded_nodes_callback = excluded_nodes_callback;
+        
+        
         this.name = name;
         _rounds = Round.Rounder(this);
     }
@@ -857,7 +864,7 @@ class HashGraph {
     /++
      This function makes sure that the HashGraph has all the events connected to this event
      +/
-    version (hashgraph_fibertest) {
+    version (none) {
         static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
             import core.thread.fiber : Fiber;
             import tagion.crypto.SecureNet : StdSecureNet;

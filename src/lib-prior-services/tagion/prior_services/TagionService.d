@@ -201,7 +201,9 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         import tagion.utils.Miscellaneous;
 
         log.trace("Hashgraph pubkey=%s", net.pubkey.cutHex);
-        hashgraph = new HashGraph(opts.nodes, net, &gossip_net.isValidChannel, &receive_epoch, &register_epack);
+        import tagion.hashgraph.Refinement;
+        auto refinement = new StdRefinement;
+        hashgraph = new HashGraph(opts.nodes, net, refinement, &gossip_net.isValidChannel, &receive_epoch, &register_epack);
         hashgraph.scrap_depth = opts.scrap_depth;
 
         discovery_tid = spawn(
