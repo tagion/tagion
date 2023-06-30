@@ -166,7 +166,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         @safe
         class PriorStdRefinement : StdRefinement {
 
-            override void epoch(const(Event)[] events, const sdt_t epoch_time) {
+            override void finishedEpoch(const(Event)[] events, const sdt_t epoch_time) {
                 import std.algorithm;
                 import std.array : array;
                 import tagion.hibon.HiBONJSON;

@@ -13,11 +13,13 @@ interface Refinement {
 
     void setOwner(HashGraph hashgraph);
 
-    void epoch(const(Event[]) events, const sdt_t epoch_time);
+    /// called when the epoch is final
+    void finishedEpoch(const(Event[]) events, const sdt_t epoch_time);
 
     void excludedNodes(ref BitMask mask);
 
     void epack(immutable(EventPackage*) epack);
 
+    void epoch(Event[] events, const(Round) decided_round);
 
 }

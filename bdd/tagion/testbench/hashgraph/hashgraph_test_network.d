@@ -36,7 +36,7 @@ class TestRefinement : StdRefinement {
     }
 
     static Epoch[][Pubkey] epoch_events;
-    override void epoch(const(Event[]) events, const sdt_t epoch_time) {
+    override void finishedEpoch(const(Event[]) events, const sdt_t epoch_time) {
         auto epoch = Epoch(events, epoch_time);
         epoch_events[hashgraph.owner_node.channel] ~= epoch;
     }
