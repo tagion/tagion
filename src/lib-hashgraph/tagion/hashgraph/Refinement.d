@@ -31,8 +31,15 @@ class StdRefinement : Refinement {
         return true;
     }
 
-    void epoch_callback(const(Event[]) events, const sdt_t epoch_time) {
-        writefln("%s", __FUNCTION__);
+    struct Epoch {
+        const(Event)[] events;
+        sdt_t epoch_time;
+    }
+
+    static Epoch[][Pubkey] epoch_events;
+    void epochCallback(const(Event[]) events, const sdt_t epoch_time) {
+        auto epoch = Epoch(events, epoch_time);
+        epoch_events[hashgraph.owner_node.channel] ~= epoch;
     }
 
     Pubkey[int] excluded_nodes_history;

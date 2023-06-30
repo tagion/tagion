@@ -161,27 +161,33 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
                     opts.host,
                     p2pnode);
         }
+        import tagion.hashgraph.Refinement;
+        import tagion.basic.basic : trusted;
+        @safe
+        class PriorStdRefinement : StdRefinement {
 
-        void receive_epoch(const(Event)[] events, const sdt_t epoch_time) @trusted {
-            import std.algorithm;
-            import std.array : array;
-            import tagion.hibon.HiBONJSON;
+            override void epochCallback(const(Event)[] events, const sdt_t epoch_time) {
+                import std.algorithm;
+                import std.array : array;
+                import tagion.hibon.HiBONJSON;
 
-            HiBON params = new HiBON;
+                HiBON params = new HiBON;
 
-            params = events
-                .filter!((e) => !e.event_body.payload.empty)
-                .map!((e) => e.event_body.payload);
+                params = events
+                    .filter!((e) => !e.event_body.payload.empty)
+                    .map!((e) => e.event_body.payload);
 
-            transcript_tid.send(params.serialize);
-            epoch_num++;
-            count_transactions = 0;
-            epoch_timestamp = Clock.currTime().toTimeSpec.tv_sec;
+                (() @trusted => transcript_tid.send(params.serialize))();
+                epoch_num++;
+                count_transactions = 0;
+                epoch_timestamp = Clock.currTime().toTimeSpec.tv_sec;
 
-            if (epoch_num >= opts.epoch_limit) {
-                auto main_tid = locate(main_task);
-                main_tid.send(Control.STOP);
+                if (epoch_num >= opts.epoch_limit) {
+                    auto main_tid = (() @trusted => locate(main_task))();
+                    (() @trusted => (main_tid.send(Control.STOP)))();
+                }
             }
+            
         }
 
         void register_epack(immutable(EventPackage*) epack) @safe {
@@ -202,8 +208,8 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
 
         log.trace("Hashgraph pubkey=%s", net.pubkey.cutHex);
         import tagion.hashgraph.Refinement;
-        auto refinement = new StdRefinement;
-        hashgraph = new HashGraph(opts.nodes, net, refinement, &gossip_net.isValidChannel, &receive_epoch, &register_epack);
+        auto refinement = new PriorStdRefinement;
+        hashgraph = new HashGraph(opts.nodes, net, refinement, &gossip_net.isValidChannel, &register_epack);
         hashgraph.scrap_depth = opts.scrap_depth;
 
         discovery_tid = spawn(

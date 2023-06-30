@@ -105,9 +105,7 @@ class HashGraph {
 
     alias ValidChannel = bool delegate(const Pubkey channel);
     const ValidChannel valid_channel; /// Valiates of a node at channel is valid
-    alias EpochCallback = void delegate(const(Event[]) events, const sdt_t epoch_time) @safe;
     alias EventPackageCallback = void delegate(immutable(EventPackage*) epack) @safe;
-    const EpochCallback epoch_callback; /// Call when an epoch has been produced
     const EventPackageCallback epack_callback; /// Call back which is called when an event-package has been added to the event chache.
     /**
  * Creates a graph with node_size nodes
@@ -123,7 +121,6 @@ class HashGraph {
             const SecureNet net,
             Refinement refinement,
             const ValidChannel valid_channel,
-            const EpochCallback epoch_callback,
             const EventPackageCallback epack_callback = null,
             string name = null) {
         hirpc = HiRPC(net);
@@ -132,7 +129,6 @@ class HashGraph {
         this.refinement = refinement;
         this.refinement.setOwner(this);
         this.valid_channel = valid_channel;
-        this.epoch_callback = epoch_callback;
         this.epack_callback = epack_callback;
         
         
@@ -323,9 +319,7 @@ class HashGraph {
         log.trace("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d time=%s",
                 name, decided_round.number,
                 Event.count, Event.Witness.count, events.length, epoch_time);
-        if (epoch_callback !is null) {
-            epoch_callback(events, epoch_time);
-        }
+        refinement.epochCallback(events, epoch_time);
         refinement.excludedNodesCallback(_excluded_nodes_mask);
         if (scrap_depth > 0) {
             live_events_statistic(Event.count);

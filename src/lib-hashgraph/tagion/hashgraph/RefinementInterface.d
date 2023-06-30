@@ -15,7 +15,7 @@ interface Refinement {
 
     bool valid_channel(const Pubkey channel);
 
-    void epoch_callback(const(Event[]) events, const sdt_t epoch_time);
+    void epochCallback(const(Event[]) events, const sdt_t epoch_time);
 
     void excludedNodesCallback(ref BitMask mask);
 

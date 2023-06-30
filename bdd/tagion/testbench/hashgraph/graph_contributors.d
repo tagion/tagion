@@ -21,6 +21,7 @@ import std.array;
 import std.datetime;
 import std.algorithm;
 import std.format;
+import tagion.hashgraph.Refinement;
 
 enum feature = Feature(
             "Hashgraph contributors",
@@ -83,9 +84,9 @@ class ANonvotingNode {
 
                 i++;
             }
-            check(network.epoch_events.length == node_names.length,
+            check(StdRefinement.epoch_events.length == node_names.length,
                     format("Max calls %d reached, not all nodes have created epochs only %d",
-                    CALLS, network.epoch_events.length));
+                    CALLS, StdRefinement.epoch_events.length));
 
         }
         catch (Exception e) {
@@ -126,7 +127,7 @@ class ANonvotingNode {
         //     }
         // }
         // compare epochs
-        foreach(i, compare_epoch; network.epoch_events.byKeyValue.front.value) {
+        foreach(i, compare_epoch; StdRefinement.epoch_events.byKeyValue.front.value) {
             auto compare_events = compare_epoch
                                             .events
                                             .map!(e => e.event_package.fingerprint)
@@ -134,7 +135,7 @@ class ANonvotingNode {
             // compare_events.sort!((a,b) => a < b);
             // compare_events.each!writeln;
             writefln("%s", compare_events.map!(f => f.cutHex));
-            foreach(channel_epoch; network.epoch_events.byKeyValue) {
+            foreach(channel_epoch; StdRefinement.epoch_events.byKeyValue) {
                 writefln("epoch: %s", i);
                 if (channel_epoch.value.length-1 < i) {
                     break;
