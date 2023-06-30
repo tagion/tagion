@@ -19,8 +19,7 @@ struct BitMask {
     import std.format;
     import std.algorithm;
     import std.range;
-    import std.range.primitives : isInputRange;
-    import std.traits : isSomeString;
+    import std.traits;
 
     enum absolute_mask = 0x1000;
     private size_t[] mask;
@@ -350,42 +349,56 @@ struct BitMask {
         return this;
     }
 
-    BitMask opBinary(string op)(const size_t index) const pure nothrow
-    if ((op == "-" || op == "+")) {
+    BitMask opBinary(string op, Index)(const Index index) const pure nothrow
+    if ((op == "-" || op == "+") && isIntegral!Index) {
         BitMask result = dup;
         result[index] = (op == "+");
         return result;
     }
 
-    void chunk(size_t bit_len) nothrow {
+    unittest {
+        BitMask bits;
+        assert(bits + 17 == BitMask([17]));
+        bits = BitMask([42, 17]);
+        assert(bits + 100 == BitMask([17, 100, 42]));
+        assert(bits - 17 == BitMask([42]));
+    }
+
+    void chunk(size_t bit_len) pure nothrow {
         const new_size = bit_len.wordindex + 1;
         if (new_size < mask.length) {
             mask.length = new_size;
         }
-        mask[$ - 1] &= (1 << bit_len.word_bitindex) - 1;
+        const chunk_mask = ((size_t(1) << (bit_len.word_bitindex)) - 1);
+        mask[$ - 1] &= chunk_mask;
+    }
+
+    unittest {
+        BitMask bits = BitMask([17, 42, 99, 101]);
+        bits.chunk(100);
+        assert(equal(bits[], [17, 42, 99]));
+        bits.chunk(99);
+        assert(equal(bits[], [17, 42]));
     }
 
     size_t count() const pure nothrow @nogc {
-        static size_t local_count(size_t BIT_SIZE)(const size_t x) pure nothrow {
-            static if (BIT_SIZE is 1) {
-                return x & 1;
-            }
-            else {
-                if (x is 0) {
-                    return 0;
-                }
-                enum HALF_SIZE = BIT_SIZE >> 1;
-                enum MASK = (size_t(1) << HALF_SIZE) - 1;
-                return local_count!HALF_SIZE(x & MASK) + local_count!HALF_SIZE(
-                        (x >> HALF_SIZE) & MASK);
-            }
-        }
+        import core.bitop : popcnt;
 
-        size_t result;
-        foreach (m; mask) {
-            result += local_count!(WORD_SIZE)(m);
-        }
-        return result;
+        return mask.map!(m => m.popcnt).sum;
+    }
+
+    unittest {
+        BitMask bits;
+        assert(bits.count == 0);
+        bits[17] = true;
+        assert(bits.count == 1);
+        bits = ~bits;
+        assert(bits.count == WORD_SIZE - 1);
+        bits[WORD_SIZE * 3 / 2] = true;
+        assert(bits.count == WORD_SIZE);
+        bits[WORD_SIZE / 2] = false;
+        bits = ~bits;
+        assert(bits.count == WORD_SIZE + 1);
     }
 
     void toString(scope void delegate(scope const(char)[]) @safe sink,
@@ -541,7 +554,6 @@ struct BitMask {
 
     }
 
-    @trusted
     unittest {
         import std.algorithm : equal;
         import std.algorithm.sorting : merge, sort;
@@ -702,7 +714,7 @@ struct BitMask {
             { // Or
                 auto y = a.dup;
                 y |= b;
-                auto y_list = (a_list ~ b_list).dup.sort.uniq; //uniq;//.dup.sort;
+                auto y_list = (a_list ~ b_list).dup.sort.uniq;
                 assert(equal(y[], y_list));
                 assert(y.count is 10);
             }
