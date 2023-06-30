@@ -23,6 +23,29 @@ import core.memory : pageSize;
 import tagion.utils.BitMask;
 import std.conv;
 import tagion.hashgraph.Refinement;
+
+
+
+
+
+class TestRefinement : StdRefinement { 
+
+    struct Epoch {
+        const(Event)[] events;
+        sdt_t epoch_time;
+    }
+
+    static Epoch[][Pubkey] epoch_events;
+    override void epoch(const(Event[]) events, const sdt_t epoch_time) {
+        auto epoch = Epoch(events, epoch_time);
+        epoch_events[hashgraph.owner_node.channel] ~= epoch;
+    }
+}
+
+
+
+
+
 /++
     This function makes sure that the HashGraph has all the events connected to this event
 +/
@@ -227,43 +250,6 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
 
     FiberNetwork[Pubkey] networks;
 
-    // struct Epoch {
-    //     const(Event)[] events;
-    //     sdt_t epoch_time;
-    // }
-
-    // Epoch[][Pubkey] epoch_events;
-    // void epochCallback(const(Event[]) events, const sdt_t epoch_time) {
-    //     pragma(msg, typeof(current));
-    //     auto epoch = Epoch(events, epoch_time);
-    //     epoch_events[current] ~= epoch;
-    // }
-
-    // @safe
-    // void excludedNodesCallback(ref BitMask excluded_mask, const(HashGraph) hashgraph) {
-    //     import tagion.basic.Debug;
-
-    //     if (excluded_nodes_history is null) { return; }
-        
-        
-    //     const last_decided_round = hashgraph.rounds.last_decided_round.number;
-    //     const exclude_channel = excluded_nodes_history.get(last_decided_round, Pubkey.init);
-    //     if (exclude_channel !is Pubkey.init) {
-    //         const node = hashgraph.nodes.get(exclude_channel, HashGraph.Node.init);
-    //         if (node !is HashGraph.Node.init) {
-    //             excluded_mask[node.node_id] = !excluded_mask[node.node_id]; 
-    //         }
-    //     }
-        
-    //     // const mask = excluded_nodes_history.get(last_decided_round, );
-    //     // if (mask !is BitMask.init) {
-    //     //     excluded_mask = mask;
-    //     // }
-
-    //     __write("callback<%s>", excluded_mask);
-
-    // }
-
     this(const(string[]) node_names) {
         authorising = new TestGossipNet;
         immutable N = node_names.length; //EnumMembers!NodeList.length;
@@ -271,7 +257,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
             immutable passphrase = format("very secret %s", name);
             auto net = new StdSecureNet();
             net.generateKeyPair(passphrase);
-            auto refinement = new StdRefinement;
+            auto refinement = new TestRefinement;
             auto h = new HashGraph(N, net, refinement, &authorising.isValidChannel, name);
             h.scrap_depth = 0;
             networks[net.pubkey] = new FiberNetwork(h, pageSize * 256);

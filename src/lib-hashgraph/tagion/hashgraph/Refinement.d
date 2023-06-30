@@ -26,15 +26,8 @@ class StdRefinement : Refinement {
         this.hashgraph = hashgraph;
     }
 
-    struct Epoch {
-        const(Event)[] events;
-        sdt_t epoch_time;
-    }
-
-    static Epoch[][Pubkey] epoch_events;
     void epoch(const(Event[]) events, const sdt_t epoch_time) {
-        auto epoch = Epoch(events, epoch_time);
-        epoch_events[hashgraph.owner_node.channel] ~= epoch;
+        assert(0, "not implemented");
     }
 
     Pubkey[int] excluded_nodes_history;
