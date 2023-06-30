@@ -106,11 +106,9 @@ class HashGraph {
     alias ValidChannel = bool delegate(const Pubkey channel);
     const ValidChannel valid_channel; /// Valiates of a node at channel is valid
     alias EpochCallback = void delegate(const(Event[]) events, const sdt_t epoch_time) @safe;
-    alias ExcludedNodesCallback = void delegate(ref BitMask mask, const(HashGraph) hashgraph) @safe;
     alias EventPackageCallback = void delegate(immutable(EventPackage*) epack) @safe;
     const EpochCallback epoch_callback; /// Call when an epoch has been produced
     const EventPackageCallback epack_callback; /// Call back which is called when an event-package has been added to the event chache.
-    const ExcludedNodesCallback excluded_nodes_callback;
     /**
  * Creates a graph with node_size nodes
  * Params:
@@ -127,7 +125,6 @@ class HashGraph {
             const ValidChannel valid_channel,
             const EpochCallback epoch_callback,
             const EventPackageCallback epack_callback = null,
-            const ExcludedNodesCallback excluded_nodes_callback = null,
             string name = null) {
         hirpc = HiRPC(net);
         this._owner_node = getNode(hirpc.net.pubkey);
@@ -137,7 +134,6 @@ class HashGraph {
         this.valid_channel = valid_channel;
         this.epoch_callback = epoch_callback;
         this.epack_callback = epack_callback;
-        this.excluded_nodes_callback = excluded_nodes_callback;
         
         
         this.name = name;
@@ -330,9 +326,7 @@ class HashGraph {
         if (epoch_callback !is null) {
             epoch_callback(events, epoch_time);
         }
-        if (excluded_nodes_callback !is null) {
-            excluded_nodes_callback(_excluded_nodes_mask, this);
-        }
+        refinement.excludedNodesCallback(_excluded_nodes_mask);
         if (scrap_depth > 0) {
             live_events_statistic(Event.count);
             mixin Log!(live_events_statistic);

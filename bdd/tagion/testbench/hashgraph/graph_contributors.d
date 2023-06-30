@@ -62,7 +62,7 @@ class ANonvotingNode {
         auto exclude_channel = Pubkey(network.channels[network.random.value(0, network.channels.length)]);
 
        
-        network.excluded_nodes_history = [23: exclude_channel];
+        // network.excluded_nodes_history = [23: exclude_channel];
         network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 0);
         network.random.seed(123456789);
         network.global_time = SysTime.fromUnixTime(1_614_355_286);

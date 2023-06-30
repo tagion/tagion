@@ -17,7 +17,7 @@ interface Refinement {
 
     void epoch_callback(const(Event[]) events, const sdt_t epoch_time);
 
-    void excluded_nodes_callback(ref BitMask mask, const(HashGraph) hashgraph);
+    void excludedNodesCallback(ref BitMask mask);
 
     void epack_callback(immutable(EventPackage*) epack);
 
