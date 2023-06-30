@@ -16,6 +16,8 @@ import std.stdio;
 
 @safe
 class StdRefinement : Refinement {
+
+    enum MAX_ORDER_COUNT = 10; /// Max recursion count for order_less function
     protected {
         HashGraph hashgraph;
     }
@@ -88,7 +90,7 @@ class StdRefinement : Refinement {
             .tee!((e) => times ~= e.event_body.time)
             .filter!((e) => !e.event_body.payload.empty)
             .array
-            .sort!((a, b) => order_less(a, b, Round.Rounder.MAX_ORDER_COUNT))
+            .sort!((a, b) => order_less(a, b, MAX_ORDER_COUNT))
             .release;
         times.sort;
         const mid = times.length / 2 + (times.length % 1);
