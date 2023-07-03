@@ -161,32 +161,35 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
                     opts.host,
                     p2pnode);
         }
+        import tagion.hashgraph.Refinement;
+        import tagion.basic.basic : trusted;
+        @safe
+        class PriorStdRefinement : StdRefinement {
 
-        void receive_epoch(const(Event)[] events, const sdt_t epoch_time) @trusted {
-            import std.algorithm;
-            import std.array : array;
-            import tagion.hibon.HiBONJSON;
+            override void finishedEpoch(const(Event)[] events, const sdt_t epoch_time) {
+                import std.algorithm;
+                import std.array : array;
+                import tagion.hibon.HiBONJSON;
 
-            HiBON params = new HiBON;
+                HiBON params = new HiBON;
 
-            params = events
-                .filter!((e) => !e.event_body.payload.empty)
-                .map!((e) => e.event_body.payload);
+                params = events
+                    .filter!((e) => !e.event_body.payload.empty)
+                    .map!((e) => e.event_body.payload);
 
-            transcript_tid.send(params.serialize);
-            epoch_num++;
-            count_transactions = 0;
-            epoch_timestamp = Clock.currTime().toTimeSpec.tv_sec;
+                (() @trusted => transcript_tid.send(params.serialize))();
+                epoch_num++;
+                count_transactions = 0;
+                epoch_timestamp = Clock.currTime().toTimeSpec.tv_sec;
 
-            if (epoch_num >= opts.epoch_limit) {
-                auto main_tid = locate(main_task);
-                main_tid.send(Control.STOP);
+                if (epoch_num >= opts.epoch_limit) {
+                    auto main_tid = (() @trusted => locate(main_task))();
+                    (() @trusted => (main_tid.send(Control.STOP)))();
+                }
             }
+            
         }
 
-        void register_epack(immutable(EventPackage*) epack) @safe {
-            log.trace("epack.event_body.payload.empty %s", epack.event_body.payload.empty);
-        }
 
         if (opts.monitor.enable) {
             monitor_socket_tid = spawn(&monitorServiceTask, opts);
@@ -201,7 +204,9 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         import tagion.utils.Miscellaneous;
 
         log.trace("Hashgraph pubkey=%s", net.pubkey.cutHex);
-        hashgraph = new HashGraph(opts.nodes, net, &gossip_net.isValidChannel, &receive_epoch, &register_epack);
+        import tagion.hashgraph.Refinement;
+        auto refinement = new PriorStdRefinement;
+        hashgraph = new HashGraph(opts.nodes, net, refinement, &gossip_net.isValidChannel);
         hashgraph.scrap_depth = opts.scrap_depth;
 
         discovery_tid = spawn(

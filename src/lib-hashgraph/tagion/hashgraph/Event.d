@@ -225,7 +225,6 @@ class Round {
         Round last_round;
         Round last_decided_round;
         HashGraph hashgraph;
-        enum MAX_ORDER_COUNT = 10; /// Max recursion count for order_less function
         @disable this();
 
         this(HashGraph hashgraph) pure nothrow {
@@ -427,75 +426,17 @@ class Round {
                 .filter!((e) => (e !is null))
                 .each!((ref e) => mark_received_events(e.node_id, e));
 
-            auto event_filter = r._events
+            auto event_collection = r._events
                 .filter!((e) => (e !is null))
+                .filter!((e) => !hashgraph.excluded_nodes_mask[e.node_id])
                 .map!((ref e) => e[]
                         .until!((e) => (e._round_received !is null))
                         .filter!((e) => (e._round_received_mask.isMajority(hashgraph))))
                 .joiner
                 .tee!((e) => e._round_received = r)
-                .map!((e) => e);
-
-            bool order_less(const Event a, const Event b, const(int) order_count) @safe {
-                bool rare_less(Buffer a_print, Buffer b_print) {
-                    rare_order_compare_count++;
-                    pragma(msg, "review(cbr): Concensus order changed");
-                    return a_print < b_print;
-                }
-
-
-                order_compare_iteration_count++;
-                writefln("order compare: %d, rare: %d", order_compare_iteration_count, rare_order_compare_count);
-
-                if (order_count < 0) {
-                    return rare_less(a.fingerprint, b.fingerprint);
-                }
-                if (a.received_order is b.received_order) {
-                    if (a._father && b._father) {
-                        return order_less(a._father, b._father, order_count - 1);
-                    }
-                    if (a._father) {
-                        return true;
-                    }
-                    if (b._father) {
-                        return false;
-                    }
-                    // if (a._father && b._mother) {
-                    //     return order_less(a._father, b._mother);
-                    // }
-                    // if (a._mother && b._father) {
-                    //     return order_less(a._mother, b._father);
-                    // }
-
-                    if (!a.isFatherLess && !b.isFatherLess) {
-                        return order_less(a._mother, b._mother, order_count - 1);
-                    }
-
-                    writefln("both connected to eva");
-                    // if (!a.isFatherLess) {
-                    //     return false;
-                    // }
-                    // if (!b.isFatherLess) {
-                    //     return true;
-                    // }
-                    // assert(a.isFatherLess && b.isFatherLess);
-                    return rare_less(a.fingerprint, b.fingerprint);
-                }
-                return a.received_order < b.received_order;
-            }
-            
-            // Collect and sort all events
-
-            sdt_t[] times;
-            auto event_collection = event_filter
-                .tee!((e) => times ~= e.event_body.time)
-                .filter!((e) => !e.event_body.payload.empty)
-                .array
-                .sort!((a, b) => order_less(a, b, MAX_ORDER_COUNT))
-                .release;
-            times.sort;
-            const mid = times.length / 2 + (times.length % 1);
-            hashgraph.epoch(event_collection, times[mid], r);
+                .map!((e) => e)
+                .array;
+            hashgraph.epoch(event_collection, r);
         }
 
         /**

@@ -18,12 +18,14 @@ import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONRecord : isHiBONRecord;
 import tagion.communication.HiRPC;
 import tagion.utils.StdTime;
+import tagion.hashgraph.RefinementInterface;
 
 import tagion.basic.Debug : __format;
 import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Pubkey, Signature, Privkey;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.utils.BitMask;
+
 
 import tagion.logger.Logger;
 import tagion.gossip.InterfaceNet;
@@ -62,11 +64,12 @@ class HashGraph {
     Statistic!uint live_events_statistic;
     Statistic!uint live_witness_statistic;
     Statistic!long epoch_delay_statistic;
+    BitMask _excluded_nodes_mask;
     private {
-        BitMask _excluded_nodes_mask;
         Node[Pubkey] _nodes; // List of participating _nodes T
         uint event_id;
         sdt_t last_epoch_time;
+        Refinement refinement;
     }
     protected Node _owner_node;
     const(Node) owner_node() const pure nothrow @nogc {
@@ -102,13 +105,6 @@ class HashGraph {
 
     alias ValidChannel = bool delegate(const Pubkey channel);
     const ValidChannel valid_channel; /// Valiates of a node at channel is valid
-    alias EpochCallback = void delegate(const(Event[]) events, const sdt_t epoch_time) @safe;
-    alias ExcludedNodesCallback = void delegate(ref BitMask mask, const(HashGraph) hashgraph) @safe;
-    alias EventPackageCallback = void delegate(immutable(EventPackage*) epack) @safe;
-    const EpochCallback epoch_callback; /// Call when an epoch has been produced
-    const EventPackageCallback epack_callback; /// Call back which is called when an event-package has been added to the event chache.
-    const ExcludedNodesCallback excluded_nodes_callback;
-
     /**
  * Creates a graph with node_size nodes
  * Params:
@@ -121,18 +117,17 @@ class HashGraph {
  */
     this(const size_t node_size,
             const SecureNet net,
+            Refinement refinement,
             const ValidChannel valid_channel,
-            const EpochCallback epoch_callback,
-            const EventPackageCallback epack_callback = null,
-            const ExcludedNodesCallback excluded_nodes_callback = null,
             string name = null) {
         hirpc = HiRPC(net);
         this._owner_node = getNode(hirpc.net.pubkey);
         this.node_size = node_size;
+        this.refinement = refinement;
+        this.refinement.setOwner(this);
         this.valid_channel = valid_channel;
-        this.epoch_callback = epoch_callback;
-        this.epack_callback = epack_callback;
-        this.excluded_nodes_callback = excluded_nodes_callback;
+        
+        
         this.name = name;
         _rounds = Round.Rounder(this);
     }
@@ -316,16 +311,8 @@ class HashGraph {
         return (fingerprint in _event_cache) !is null;
     }
 
-    package void epoch(const(Event)[] events, const sdt_t epoch_time, const Round decided_round) {
-        log.trace("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d time=%s",
-                name, decided_round.number,
-                Event.count, Event.Witness.count, events.length, epoch_time);
-        if (epoch_callback !is null) {
-            epoch_callback(events, epoch_time);
-        }
-        if (excluded_nodes_callback !is null) {
-            excluded_nodes_callback(_excluded_nodes_mask, this);
-        }
+    package void epoch(Event[] event_collection, const Round decided_round) {
+        refinement.epoch(event_collection, decided_round);
         if (scrap_depth > 0) {
             live_events_statistic(Event.count);
             mixin Log!(live_events_statistic);
@@ -350,9 +337,7 @@ class HashGraph {
         if (valid_channel(event_pack.pubkey)) {
             auto event = new Event(event_pack, this);
             _event_cache[event.fingerprint] = event;
-            if (epack_callback) {
-                epack_callback(event_pack);
-            }
+            refinement.epack(event_pack);
             event.connect(this);
             return event;
         }
@@ -857,7 +842,7 @@ class HashGraph {
     /++
      This function makes sure that the HashGraph has all the events connected to this event
      +/
-    version (hashgraph_fibertest) {
+    version (none) {
         static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
             import core.thread.fiber : Fiber;
             import tagion.crypto.SecureNet : StdSecureNet;

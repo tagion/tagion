@@ -22,6 +22,50 @@ import std.exception : assumeWontThrow;
 import core.memory : pageSize;
 import tagion.utils.BitMask;
 import std.conv;
+import tagion.hashgraph.Refinement;
+
+
+
+
+
+class TestRefinement : StdRefinement { 
+
+    static Pubkey[int] excluded_nodes_history;
+     
+    struct Epoch {
+        const(Event)[] events;
+        sdt_t epoch_time;
+    }
+
+    static Epoch[][Pubkey] epoch_events;
+    override void finishedEpoch(const(Event[]) events, const sdt_t epoch_time) {
+        auto epoch = Epoch(events, epoch_time);
+        epoch_events[hashgraph.owner_node.channel] ~= epoch;
+    }
+
+    override void excludedNodes(ref BitMask excluded_mask) {
+        import tagion.basic.Debug;
+
+        if (excluded_nodes_history is null) { return; }
+                
+        const last_decided_round = hashgraph.rounds.last_decided_round.number;
+        const exclude_channel = excluded_nodes_history.get(last_decided_round, Pubkey.init);
+        if (exclude_channel !is Pubkey.init) {
+            const node = hashgraph.nodes.get(exclude_channel, HashGraph.Node.init);
+            if (node !is HashGraph.Node.init) {
+                excluded_mask[node.node_id] = !excluded_mask[node.node_id]; 
+                __write("setting exclude mask");
+            }
+        }
+        
+        __write("callback<%s>", excluded_mask);
+
+    }
+}
+
+
+
+
 
 /++
     This function makes sure that the HashGraph has all the events connected to this event
@@ -47,7 +91,6 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         MAX = 150
     }
 
-    Pubkey[int] excluded_nodes_history;
 
     static const(SecureNet) verify_net;
     static this() {
@@ -228,43 +271,6 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
 
     FiberNetwork[Pubkey] networks;
 
-    struct Epoch {
-        const(Event)[] events;
-        sdt_t epoch_time;
-    }
-
-    Epoch[][Pubkey] epoch_events;
-    void epochCallback(const(Event[]) events, const sdt_t epoch_time) {
-        pragma(msg, typeof(current));
-        auto epoch = Epoch(events, epoch_time);
-        epoch_events[current] ~= epoch;
-    }
-
-    @safe
-    void excludedNodesCallback(ref BitMask excluded_mask, const(HashGraph) hashgraph) {
-        import tagion.basic.Debug;
-
-        if (excluded_nodes_history is null) { return; }
-        
-        
-        const last_decided_round = hashgraph.rounds.last_decided_round.number;
-        const exclude_channel = excluded_nodes_history.get(last_decided_round, Pubkey.init);
-        if (exclude_channel !is Pubkey.init) {
-            const node = hashgraph.nodes.get(exclude_channel, HashGraph.Node.init);
-            if (node !is HashGraph.Node.init) {
-                excluded_mask[node.node_id] = !excluded_mask[node.node_id]; 
-            }
-        }
-        
-        // const mask = excluded_nodes_history.get(last_decided_round, );
-        // if (mask !is BitMask.init) {
-        //     excluded_mask = mask;
-        // }
-
-        __write("callback<%s>", excluded_mask);
-
-    }
-
     this(const(string[]) node_names) {
         authorising = new TestGossipNet;
         immutable N = node_names.length; //EnumMembers!NodeList.length;
@@ -272,7 +278,8 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
             immutable passphrase = format("very secret %s", name);
             auto net = new StdSecureNet();
             net.generateKeyPair(passphrase);
-            auto h = new HashGraph(N, net, &authorising.isValidChannel, &epochCallback, null, &excludedNodesCallback, name);
+            auto refinement = new TestRefinement;
+            auto h = new HashGraph(N, net, refinement, &authorising.isValidChannel, name);
             h.scrap_depth = 0;
             networks[net.pubkey] = new FiberNetwork(h, pageSize * 256);
         }
@@ -297,4 +304,20 @@ bool event_error(const Event e1, const Event e2, const Compare.ErrorCode code) @
 }
 
 
+@safe
+void printStates(TestNetwork network) {
+    foreach(channel; network.networks) {
+        writeln("----------------------");
+        foreach (channel_key; network.channels) {
+            const current_hashgraph = network.networks[channel_key]._hashgraph;
+            writef("%16s %10s ingraph:%5s|", channel_key.cutHex, current_hashgraph.owner_node.sticky_state, current_hashgraph.areWeInGraph);
+            foreach (receiver_key; network.channels) {
+                const node = current_hashgraph.nodes.get(receiver_key, null);                
+                const state = (node is null) ? ExchangeState.NONE : node.state;
+                writef("%15s %s", state, node is null ? "X" : " ");
+            }
+            writeln;
+        }
+    }
 
+}
