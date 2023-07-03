@@ -18,6 +18,7 @@ import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONRecord : isHiBONRecord;
 import tagion.communication.HiRPC;
 import tagion.utils.StdTime;
+import tagion.hashgraph.RefinementInterface;
 
 import tagion.basic.Debug : __format;
 import tagion.basic.Types : Buffer;
@@ -25,8 +26,12 @@ import tagion.crypto.Types : Pubkey, Signature, Privkey;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.utils.BitMask;
 
+
 import tagion.logger.Logger;
 import tagion.gossip.InterfaceNet;
+
+// debug
+import tagion.hibon.HiBONJSON;
 
 version (unittest) {
     version = hashgraph_fibertest;
@@ -59,11 +64,16 @@ class HashGraph {
     Statistic!uint live_events_statistic;
     Statistic!uint live_witness_statistic;
     Statistic!long epoch_delay_statistic;
+    BitMask _excluded_nodes_mask;
     private {
-        BitMask _excluded_nodes_mask;
         Node[Pubkey] _nodes; // List of participating _nodes T
         uint event_id;
         sdt_t last_epoch_time;
+        Refinement refinement;
+    }
+    protected Node _owner_node;
+    const(Node) owner_node() const pure nothrow @nogc {
+        return _owner_node;
     }
 
     /**
@@ -87,15 +97,14 @@ class HashGraph {
         return _excluded_nodes_mask;
     }
 
+    void excluded_nodes_mask(const(BitMask) mask) pure nothrow {
+        _excluded_nodes_mask = mask;
+    }
+
     package Round.Rounder _rounds; /// The rounder hold the round in the queue both decided and undecided rounds
 
     alias ValidChannel = bool delegate(const Pubkey channel);
     const ValidChannel valid_channel; /// Valiates of a node at channel is valid
-    alias EpochCallback = void delegate(const(Event[]) events, const sdt_t epoch_time) @safe;
-    alias EventPackageCallback = void delegate(immutable(EventPackage*) epack) @safe;
-    const EpochCallback epoch_callback; /// Call when an epoch has been produced
-    const EventPackageCallback epack_callback; /// Call back which is called when an event-package has been added to the event chache.
-
     /**
  * Creates a graph with node_size nodes
  * Params:
@@ -108,15 +117,17 @@ class HashGraph {
  */
     this(const size_t node_size,
             const SecureNet net,
+            Refinement refinement,
             const ValidChannel valid_channel,
-            const EpochCallback epoch_callback,
-            const EventPackageCallback epack_callback = null,
             string name = null) {
         hirpc = HiRPC(net);
+        this._owner_node = getNode(hirpc.net.pubkey);
         this.node_size = node_size;
+        this.refinement = refinement;
+        this.refinement.setOwner(this);
         this.valid_channel = valid_channel;
-        this.epoch_callback = epoch_callback;
-        this.epack_callback = epack_callback;
+        
+        
         this.name = name;
         _rounds = Round.Rounder(this);
     }
@@ -134,6 +145,7 @@ class HashGraph {
                 auto event = new Event(epack, this);
                 _event_cache[event.fingerprint] = event;
                 event.witness_event;
+                writefln("init_event time %s", event.event_body.time);
                 _rounds.last_round.add(event);
                 front_seat(event);
             }
@@ -224,6 +236,7 @@ class HashGraph {
             lazy const sdt_t time) {
         const(HiRPC.Sender) payload_sender() @safe {
             const doc = payload();
+            // writefln("init_tide time: %s", time);
             immutable epack = event_pack(time, null, doc);
             const registrated = registerEventPackage(epack);
             assert(registrated, "Should not fail here");
@@ -233,6 +246,7 @@ class HashGraph {
 
         const(HiRPC.Sender) ripple_sender() @safe {
             log("Send ripple");
+            writefln("SENDING RIPPLE");
             const ripple_wavefront = rippleWave(Wavefront());
             const sender = hirpc.wavefront(ripple_wavefront);
             return sender;
@@ -297,15 +311,8 @@ class HashGraph {
         return (fingerprint in _event_cache) !is null;
     }
 
-    package void epoch(const(Event)[] events, const sdt_t epoch_time, const Round decided_round) {
-        import std.stdio;
-
-        log.trace("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d",
-                name, decided_round.number,
-                Event.count, Event.Witness.count, events.length);
-        if (epoch_callback !is null) {
-            epoch_callback(events, epoch_time);
-        }
+    package void epoch(Event[] event_collection, const Round decided_round) {
+        refinement.epoch(event_collection, decided_round);
         if (scrap_depth > 0) {
             live_events_statistic(Event.count);
             mixin Log!(live_events_statistic);
@@ -330,9 +337,7 @@ class HashGraph {
         if (valid_channel(event_pack.pubkey)) {
             auto event = new Event(event_pack, this);
             _event_cache[event.fingerprint] = event;
-            if (epack_callback) {
-                epack_callback(event_pack);
-            }
+            refinement.epack(event_pack);
             event.connect(this);
             return event;
         }
@@ -505,9 +510,12 @@ class HashGraph {
                 .array;
             return Wavefront(result, null, ExchangeState.COHERENT);
         }
+        // writefln("rippleWave: %s", received_wave.toDoc.toPretty);
         foreach (epack; received_wave.epacks) {
             if (getNode(epack.pubkey).event is null) {
+                writefln("epack time: %s", epack.event_body.time);
                 auto first_event = new Event(epack, this);
+                writefln("foreach event %s", first_event.event_package.event_body.time);
                 check(first_event.isEva, ConsensusFailCode.GOSSIPNET_FIRST_EVENT_MUST_BE_EVA);
                 _event_cache[first_event.fingerprint] = first_event;
                 front_seat(first_event);
@@ -520,8 +528,8 @@ class HashGraph {
 
         const contain_all =
             _nodes
-            .byValue
-            .all!((n) => n._event !is null);
+                .byValue
+                .all!((n) => n._event !is null);
 
         const state = (_nodes.length is node_size && contain_all) ? ExchangeState.COHERENT : ExchangeState.RIPPLE;
 
@@ -537,7 +545,6 @@ class HashGraph {
         alias consensus = consensusCheckArguments!(GossipConsensusException);
         immutable from_channel = received.pubkey;
         const received_wave = received.params!(Wavefront)(hirpc.net);
-
         check(valid_channel(from_channel), ConsensusFailCode.GOSSIPNET_ILLEGAL_CHANNEL);
         auto received_node = getNode(from_channel);
         if (Event.callbacks) {
@@ -557,13 +564,17 @@ class HashGraph {
                     break;
                 case RIPPLE: ///
                     received_node.state = NONE;
+                    received_node.sticky_state = RIPPLE;
+                    // writefln("received wave: %s", received_wave.toDoc.toPretty);
                     const ripple_wave = rippleWave(received_wave);
                     return ripple_wave;
                 case COHERENT:
                     received_node.state = NONE;
+                    received_node.sticky_state = COHERENT;
                     if (!areWeInGraph) {
                         try {
                             initialize_witness(received_wave.epacks);
+                            _owner_node.sticky_state = COHERENT;
                         }
                         catch (ConsensusException e) {
                             // initialized witness not correct
@@ -578,7 +589,6 @@ class HashGraph {
                     check(received_wave.epacks.length is 0, ConsensusFailCode
                             .GOSSIPNET_TIDAL_WAVE_CONTAINS_EVENTS);
                     received_node.state = received_wave.state;
-
                     immutable epack = event_pack(time, null, payload());
                     const registered = registerEventPackage(epack);
                     assert(registered);
@@ -638,6 +648,18 @@ class HashGraph {
             this.channel = channel;
         }
 
+        protected ExchangeState _sticky_state = ExchangeState.RIPPLE;
+
+        void sticky_state(const(ExchangeState) state) pure nothrow @nogc {
+
+            if (state > _sticky_state) {
+                _sticky_state = state;
+            }
+        }
+
+        const(ExchangeState) sticky_state() const pure nothrow @nogc {
+            return _sticky_state;
+        }
         /++
          Register first event
          +/
@@ -820,7 +842,7 @@ class HashGraph {
     /++
      This function makes sure that the HashGraph has all the events connected to this event
      +/
-    version (hashgraph_fibertest) {
+    version (none) {
         static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
             import core.thread.fiber : Fiber;
             import tagion.crypto.SecureNet : StdSecureNet;
@@ -1008,7 +1030,7 @@ class HashGraph {
                     immutable passphrase = format("very secret %s", name);
                     auto net = new StdSecureNet();
                     net.generateKeyPair(passphrase);
-                    auto h = new HashGraph(N, net, &authorising.isValidChannel, null, null, name);
+                    auto h = new HashGraph(N, net, &authorising.isValidChannel, null, null, null, name);
                     h.scrap_depth = 0;
                     networks[net.pubkey] = new FiberNetwork(h);
                 }
@@ -1022,7 +1044,7 @@ class HashGraph {
 
     static if (!vendor.llvm || !(version_major == 2 && version_minor == 99)) {
         // Unittest segfaults in LDC 1.29 (2.099)
-        unittest {
+        version (none) unittest {
             import tagion.hashgraph.Event;
             import std.stdio;
             import std.traits;

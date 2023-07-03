@@ -13,7 +13,6 @@ env:
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   UNITTEST_COV: unittest-cov
   GITBOT_TOKEN: ${{ secrets.GITBOT_TOKEN }}
-
 permissions:
   contents: read
   pages: write
@@ -38,7 +37,7 @@ jobs:
 
       - name: Run tests
         run: |
-          make -k ci -j DC=${{env.DC}} || make -k proper ci -j DC=${{env.DC}}
+          make -k clean ci -j DC=${{env.DC}} || make -k clean proper ci -j DC=${{env.DC}}
           
       - name: Report unittests
         run: |
@@ -51,7 +50,7 @@ jobs:
         run: | 
           RESULT=$(./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/commit/results)
           echo $RESULT | grep "Test result success!"
-          ./build/${{env.TARGET}}/bin/collider reporter -o /dev/stdout logs/${{ env.TARGET }}/bdd/commit/ >> $GITHUB_STEP_SUMMARY
+          ./build/${{env.TARGET}}/bin/collider reporter -o /dev/stdout logs/${{ env.TARGET }}/bdd/commit/results >> $GITHUB_STEP_SUMMARY
                
       - name: Upload  code coverage results
         run: |
@@ -207,7 +206,7 @@ jobs:
       - name: Generate report
         run: |
           echo -e "# All BDDtests\n" >> $GITHUB_STEP_SUMMARY 
-          ./build/${{ env.TARGET }}/bin/collider reporter -o $GITHUB_STEP_SUMMARY logs
+          ./build/${{ env.TARGET }}/bin/collider reporter -o $GITHUB_STEP_SUMMARY logs/${{ env.TARGET }}/bdd/commit/results 
 
       - uses: actions/upload-artifact@v3
         if: success()

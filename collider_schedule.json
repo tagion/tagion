@@ -113,7 +113,15 @@
             "timeout": 0.0
         },
         "hashgraph_test": {
-            "args": ["Alice", "Bob", "Carol", "Dave", "Elisa"],
+            "args": ["Alice", "Bob", "Carol", "Dave", "Elisa", "Freja", "Greta"],
+            "envs": {},
+            "stages": [
+                "commit", "hashgraph"
+            ],
+            "timeout": 0.0
+        },
+        "hashgraph_contributors": {
+            "args": ["Alice", "Bob", "Carol", "Dave", "Elisa", "Freja", "Nonvoting"],
             "envs": {},
             "stages": [
                 "hashgraph"

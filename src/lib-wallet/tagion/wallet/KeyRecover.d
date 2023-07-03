@@ -12,6 +12,7 @@ import tagion.basic.Message;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONRecord;
+import tagion.wallet.Basic : saltHash;
 
 import std.exception : assumeUnique;
 import std.string : representation;
@@ -129,17 +130,6 @@ struct KeyRecover {
         assert(numberOfSeeds(10, 5) is 26);
     }
 
-    /**
-     * Calculates the check-sum hash
-     * Params:
-     *   value = value to be checked
-     *   salt = optional salt value
-     * Returns: the double hash
-     */
-    Buffer checkHash(scope const(ubyte[]) value, scope const(ubyte[]) salt = null) const {
-        return net.rawCalcHash(net.rawCalcHash(value) ~ salt);
-    }
-
     static void iterateSeeds(
             const uint M,
             const uint N,
@@ -154,7 +144,7 @@ struct KeyRecover {
                     include[index]++;
                     local_search(index, size);
                 }
-                else if (index > 0) {
+            else if (index > 0) {
                     include[index - 1]++;
                     local_search(index - 1, size - 1);
                 }
@@ -174,9 +164,9 @@ struct KeyRecover {
      */
     void createKey(
             scope const(string[]) questions,
-            scope const(char[][]) answers,
-            const uint confidence,
-            scope const(ubyte[]) seed = null) {
+    scope const(char[][]) answers,
+    const uint confidence,
+    scope const(ubyte[]) seed = null) {
         createKey(quiz(questions, answers), confidence, seed);
     }
 
@@ -211,11 +201,11 @@ struct KeyRecover {
      *   confidence = number of minimum correct answern
      */
     void quizSeed(scope ref const(ubyte[]) R,
-            scope Buffer[] A,
-            const uint confidence) {
+    scope Buffer[] A,
+    const uint confidence) {
         scope (success) {
             generator.confidence = confidence;
-            generator.S = checkHash(R);
+            generator.S = net.saltHash(R);
         }
         scope (failure) {
             generator.Y = null;
@@ -258,7 +248,7 @@ struct KeyRecover {
     bool findSecret(
             scope ref ubyte[] R,
             scope const(string[]) questions,
-            scope const(char[][]) answers) const {
+    scope const(char[][]) answers) const {
         return findSecret(R, quiz(questions, answers));
     }
 
@@ -287,7 +277,7 @@ struct KeyRecover {
             foreach (y; generator.Y) {
                 xor(_R, y, guess);
                 pragma(msg, "review(cbr): constant time on a equal - sidechannel attack");
-                if (generator.S == checkHash(_R)) {
+                if (generator.S == net.saltHash(_R)) {
                     _R.copy(R);
                     result = true;
                 }

@@ -2,13 +2,14 @@
 module tagion.testbench.hashgraph.hashgraph_test_network;
 
 import std.format;
-import std.range : dropExactly;
+import std.range;
 import std.algorithm;
 
 import tagion.logger.Logger : log;
 import tagion.basic.Types : Buffer;
 import tagion.crypto.Types;
 import tagion.hashgraph.HashGraph;
+import tagion.hashgraph.HashGraphBasic;
 import tagion.hashgraph.Event;
 import tagion.communication.HiRPC;
 import tagion.utils.StdTime;
@@ -19,6 +20,52 @@ import tagion.hibon.HiBON;
 import std.stdio;
 import std.exception : assumeWontThrow;
 import core.memory : pageSize;
+import tagion.utils.BitMask;
+import std.conv;
+import tagion.hashgraph.Refinement;
+
+
+
+
+
+class TestRefinement : StdRefinement { 
+
+    static Pubkey[int] excluded_nodes_history;
+     
+    struct Epoch {
+        const(Event)[] events;
+        sdt_t epoch_time;
+    }
+
+    static Epoch[][Pubkey] epoch_events;
+    override void finishedEpoch(const(Event[]) events, const sdt_t epoch_time) {
+        auto epoch = Epoch(events, epoch_time);
+        epoch_events[hashgraph.owner_node.channel] ~= epoch;
+    }
+
+    override void excludedNodes(ref BitMask excluded_mask) {
+        import tagion.basic.Debug;
+
+        if (excluded_nodes_history is null) { return; }
+                
+        const last_decided_round = hashgraph.rounds.last_decided_round.number;
+        const exclude_channel = excluded_nodes_history.get(last_decided_round, Pubkey.init);
+        if (exclude_channel !is Pubkey.init) {
+            const node = hashgraph.nodes.get(exclude_channel, HashGraph.Node.init);
+            if (node !is HashGraph.Node.init) {
+                excluded_mask[node.node_id] = !excluded_mask[node.node_id]; 
+                __write("setting exclude mask");
+            }
+        }
+        
+        __write("callback<%s>", excluded_mask);
+
+    }
+}
+
+
+
+
 
 /++
     This function makes sure that the HashGraph has all the events connected to this event
@@ -44,21 +91,20 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         MAX = 150
     }
 
+
     static const(SecureNet) verify_net;
     static this() {
         verify_net = new StdSecureNet();
     }
 
+    Pubkey current;
+
     alias ChannelQueue = Queue!Document;
     class TestGossipNet : GossipNet {
         import tagion.hashgraph.HashGraphBasic;
 
-        protected {
-            ChannelQueue[Pubkey] channel_queues;
-            sdt_t _current_time;
-        }
-
-        ExchangeState[Pubkey][Pubkey] gossip_state;
+        ChannelQueue[Pubkey] channel_queues;
+        sdt_t _current_time;
 
         void start_listening() {
             // empty
@@ -80,7 +126,6 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
 
         void send(const(Pubkey) channel, const(HiRPC.Sender) sender) {
             const wave = Wavefront(verify_net, sender.method.params);
-            gossip_state[sender.pubkey][channel] = wave.state;
             // writefln("owner %s, state=%s", sender.pubkey.cutHex, wave.state);
             const doc = sender.toDoc;
             // assumeWontThrow(writefln("SENDER: send to %s, doc=%s", channel.cutHex, doc.toPretty));
@@ -160,7 +205,8 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
 
         sdt_t time() {
             const systime = global_time + random.value(timestep.MIN, timestep.MAX).msecs;
-            return sdt_t(systime.stdTime);
+            const sdt_time = sdt_t(systime.stdTime);
+            return sdt_time;
         }
 
         private void run() {
@@ -186,6 +232,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
                 while (!authorising.empty(_hashgraph.channel)) {
                     const received = _hashgraph.hirpc.receive(
                             authorising.receive(_hashgraph.channel));
+
                     _hashgraph.wavefront(
                             received,
                             time,
@@ -215,6 +262,13 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         return networks.keys;
     }
 
+    bool allCoherent() {
+        return networks
+            .byValue
+            .map!(n => n._hashgraph.owner_node.sticky_state)
+            .all!(s => s == ExchangeState.COHERENT);
+    }
+
     FiberNetwork[Pubkey] networks;
 
     this(const(string[]) node_names) {
@@ -224,106 +278,46 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
             immutable passphrase = format("very secret %s", name);
             auto net = new StdSecureNet();
             net.generateKeyPair(passphrase);
-            auto h = new HashGraph(N, net, &authorising.isValidChannel, null, null, name);
+            auto refinement = new TestRefinement;
+            auto h = new HashGraph(N, net, refinement, &authorising.isValidChannel, name);
             h.scrap_depth = 0;
-            networks[net.pubkey] = new FiberNetwork(h, pageSize * 32);
+            networks[net.pubkey] = new FiberNetwork(h, pageSize * 256);
         }
         networks.byKey.each!((a) => authorising.add_channel(a));
     }
 }
 
-import std.compiler;
-
-// Unittest segfaults in LDC 1.29 (2.099)
-void hashgraphTest() @safe {
-    import tagion.hashgraph.Event;
-    import std.stdio;
-    import std.traits;
-    import std.conv;
-    import std.datetime;
-    import tagion.hibon.HiBONJSON;
-    import tagion.logger.Logger : log, LogLevel;
-    import std.array;
-    import tagion.hashgraphview.Compare;
-    import std.exception : assumeWontThrow;
-
-    enum NodeLabel {
-        Alice,
-        Bob,
-        Carol,
-        Dave,
-        Elisa,
-        Freja,
-        George,
-    }
-
-    auto node_labels = [EnumMembers!NodeLabel].map!((E) => E.to!string).array;
-    auto network = new TestNetwork(node_labels); //!NodeLabel();
-    network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 0);
-    network.random.seed(123456789);
-
-    network.global_time = SysTime.fromUnixTime(1_614_355_286); //SysTime(DateTime(2021, 2, 26, 15, 59, 46));
-
-    const channels = network.channels;
-
-    try {
-        foreach (i; 0 .. 550) {
-            const channel_number = network.random.value(0, channels.length);
-            const channel = channels[channel_number];
-            auto current = network.networks[channel];
-            (() @trusted { current.call; })();
+import tagion.hashgraphview.Compare;
+bool event_error(const Event e1, const Event e2, const Compare.ErrorCode code) @safe nothrow {
+    static string print(const Event e) nothrow {
+        if (e) {
+            const round_received = (e.round_received) ? e.round_received.number.to!string : "#";
+            return assumeWontThrow(format("(%d:%d:%d:r=%d:rr=%s:%s)",
+                    e.id, e.node_id, e.altitude, e.round.number, round_received,
+                    e.fingerprint.cutHex));
         }
-    }
-    catch (Exception e) {
-        (() @trusted { writefln("%s", e); assert(0, e.msg); })();
+        return assumeWontThrow(format("(%d:%d:%s:%s)", 0, -1, 0, "nil"));
     }
 
-    // writefln("Save Alice");
-    // Pubkey[string] node_labels;
+    assumeWontThrow(writefln("Event %s and %s %s", print(e1), print(e2), code));
+    return false;
+}
 
-    // foreach (channel, _net; network.networks) {
-    //     node_labels[_net._hashgraph.name] = channel;
-    // }
-    // foreach (_net; network.networks) {
-    //     const filename = fileId(_net._hashgraph.name);
-    //     _net._hashgraph.fwrite(filename.fullpath, node_labels);
-    // }
 
-    bool event_error(const Event e1, const Event e2, const Compare.ErrorCode code) @safe nothrow {
-        static string print(const Event e) nothrow {
-            if (e) {
-                const round_received = (e.round_received) ? e.round_received.number.to!string : "#";
-                return assumeWontThrow(format("(%d:%d:%d:r=%d:rr=%s:%s)",
-                        e.id, e.node_id, e.altitude, e.round.number, round_received,
-                        e.fingerprint.cutHex));
+@safe
+void printStates(TestNetwork network) {
+    foreach(channel; network.networks) {
+        writeln("----------------------");
+        foreach (channel_key; network.channels) {
+            const current_hashgraph = network.networks[channel_key]._hashgraph;
+            writef("%16s %10s ingraph:%5s|", channel_key.cutHex, current_hashgraph.owner_node.sticky_state, current_hashgraph.areWeInGraph);
+            foreach (receiver_key; network.channels) {
+                const node = current_hashgraph.nodes.get(receiver_key, null);                
+                const state = (node is null) ? ExchangeState.NONE : node.state;
+                writef("%15s %s", state, node is null ? "X" : " ");
             }
-            return assumeWontThrow(format("(%d:%d:%s:%s)", 0, -1, 0, "nil"));
-        }
-
-        assumeWontThrow(writefln("Event %s and %s %s", print(e1), print(e2), code));
-        return false;
-    }
-
-    auto names = network.networks.byValue
-        .map!((net) => net._hashgraph.name)
-        .array.dup
-        .sort
-        .array;
-
-    HashGraph[string] hashgraphs;
-    foreach (net; network.networks) {
-        hashgraphs[net._hashgraph.name] = net._hashgraph;
-    }
-
-    foreach (i, name_h1; names[0 .. $ - 1]) {
-        const h1 = hashgraphs[name_h1];
-        foreach (name_h2; names[i + 1 .. $]) {
-            const h2 = hashgraphs[name_h2];
-            auto comp = Compare(h1, h2, &event_error);
-            // writefln("%s %s round_offset=%d order_offset=%d",
-            //     h1.name, h2.name, comp.round_offset, comp.order_offset);
-            const result = comp.compare;
-            assert(result, format("HashGraph %s and %s is not the same", h1.name, h2.name));
+            writeln;
         }
     }
+
 }

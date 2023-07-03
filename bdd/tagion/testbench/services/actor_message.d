@@ -49,7 +49,10 @@ static:
         locate(to).send(Msg!"relay"(), supervisor_task_name, message);
     }
 
-    mixin Actor!(&increase, &decrease, &relay); /// Turns the struct into an Actor
+    void task(string task_name) nothrow {
+        run(task_name, &increase, &decrease, &relay);
+        end(task_name);
+    }
 }
 
 alias ChildHandle = ActorHandle!MyActor;
@@ -58,19 +61,6 @@ struct MySuperActor {
 static:
     ChildHandle child1Handle;
     ChildHandle child2Handle;
-
-    void starting() @safe {
-        child1Handle = spawn!MyActor(child1_task_name);
-        child2Handle = spawn!MyActor(child2_task_name);
-
-        childrenState[child1Handle.task_name] = Ctrl.STARTING;
-        childrenState[child2Handle.task_name] = Ctrl.STARTING;
-
-        while (!(childrenState.all(Ctrl.ALIVE))) {
-            CtrlMsg msg = receiveOnlyTimeout!CtrlMsg;
-            childrenState[msg.task_name] = msg.ctrl;
-        }
-    }
 
     void receiveStatus(Msg!"response", int status) {
         sendOwner(status);
@@ -84,7 +74,19 @@ static:
         sendOwner(message);
     }
 
-    mixin Actor!(&receiveStatus, &roundtrip, &relay); /// Turns the struct into an Actor
+    void task(string task_name) nothrow {
+        child1Handle = spawn!MyActor(child1_task_name);
+        child2Handle = spawn!MyActor(child2_task_name);
+
+        Ctrl[string] childrenState;
+        childrenState[child1Handle.task_name] = Ctrl.STARTING;
+        childrenState[child2Handle.task_name] = Ctrl.STARTING;
+
+        waitfor(childrenState, Ctrl.ALIVE);
+        run(task_name, &receiveStatus, &roundtrip, &relay);
+        end(task_name);
+    }
+
 }
 
 alias SupervisorHandle = ActorHandle!MySuperActor;

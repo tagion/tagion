@@ -289,6 +289,9 @@ int _main(string[] args) {
                 [
                 "Documentation: https://tagion.org/",
                 "",
+                "",
+                "Example:",
+                "graphview Alice.hibon | neato -Tsvg -o outputfile.svg",
                 "Usage:",
                 // format("%s [<option>...] <in-file> <out-file>", program),
                 format("%s [<option>...] <in-file>", program),
@@ -300,7 +303,6 @@ int _main(string[] args) {
                 "",
 
                 "<option>:",
-
                 ].join("\n"),
                 main_args.options);
         return 0;

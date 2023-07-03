@@ -55,7 +55,10 @@ static:
         throw new Fatal("I am big fail");
     }
 
-    mixin Actor!(&recoverable, &fatal); /// Turns the struct into an Actor
+    void task(string task_name) nothrow {
+        run(task_name, &recoverable, &fatal);
+        end(task_name);
+    }
 }
 
 alias ChildHandle = ActorHandle!SetUpForFailure;
@@ -72,14 +75,14 @@ static:
     //SetUpForFailure child;
     ChildHandle childHandle;
 
-    void starting() {
+    void task(string task_name) nothrow {
         childHandle = spawn!SetUpForFailure(child_task_name);
+        Ctrl[string] childrenState;
         childrenState[childHandle.task_name] = Ctrl.STARTING;
+        waitfor(childrenState, Ctrl.ALIVE);
 
-        while (!(childrenState.all(Ctrl.ALIVE))) {
-            CtrlMsg msg = receiveOnlyTimeout!CtrlMsg;
-            childrenState[msg.task_name] = msg.ctrl;
-        }
+        run(task_name, failHandler);
+        end(task_name);
     }
 
     // Override the default fail handler
@@ -108,8 +111,6 @@ static:
             }
         }
     };
-
-    mixin Actor!(); /// Turns the struct into an Actor
 }
 
 alias SupervisorHandle = ActorHandle!SetUpForDisappointment;

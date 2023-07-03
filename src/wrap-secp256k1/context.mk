@@ -2,7 +2,6 @@
 
 LIBSECP256K1_NAME:=libsecp256k1
 
-# It seems the build creates both the shared and static library regardless of this options being enabled or disabled
 ifdef SHARED
 LIBSECP256K1_FILE:=$(LIBSECP256K1_NAME).$(DLLEXT)
 CONFIGUREFLAGS_SECP256K1 += --enable-shared=yes
@@ -41,7 +40,7 @@ proper-secp256k1:
 	$(RM) $(LIBSECP256K1)
 	$(RMDIR) $(DTMP_SECP256K1)
 
-$(LIBSECP256K1): $(DTMP)/.way $(DLIB)/.way
+$(DTMP_SECP256K1)/.libs/$(LIBSECP256K1_NAME).%: $(DTMP)/.way $(DLIB)/.way
 	$(PRECMD)
 	${call log.kvp, $@}
 	$(CP) $(DSRC_SECP256K1) $(DTMP_SECP256K1)

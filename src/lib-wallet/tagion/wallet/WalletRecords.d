@@ -5,14 +5,15 @@ module tagion.wallet.WalletRecords;
 
 import tagion.hibon.HiBONRecord;
 import tagion.wallet.KeyRecover : KeyRecover;
+import tagion.wallet.Basic : saltHash;
+
 import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Pubkey;
+import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.script.TagionCurrency;
 import tagion.script.StandardRecords : StandardBill, OwnerKey;
 import tagion.hibon.Document : Document;
-
 import tagion.dart.DARTBasic;
-import std.stdio;
 
 /// Contains the quiz question
 @safe
@@ -29,15 +30,63 @@ struct DevicePIN {
     Buffer D; /// Device number
     Buffer U; /// Device random
     Buffer S; /// Check sum value
-    void recover(ref scope ubyte[] R, scope const(ubyte[]) P) pure nothrow const {
+    bool recover(const HashNet net, ref scope ubyte[] R, scope const(ubyte[]) P) const {
         import tagion.utils.Miscellaneous : xor;
 
-        xor(R, D, P);
+        const pinhash = net.saltHash(P, U);
+        xor(R, D, pinhash);
+        return S == net.saltHash(R);
+    }
+
+    void setPin(const HashNet net, scope const(ubyte[]) R, scope const(ubyte[]) P, Buffer salt) {
+        import tagion.utils.Miscellaneous : xor;
+
+        U = salt;
+        const pinhash = net.saltHash(P, U);
+        D = xor(R, pinhash);
+        S = net.saltHash(R);
+
     }
 
     mixin HiBONRecord;
 }
 
+@safe
+unittest {
+    import tagion.crypto.SecureNet : StdHashNet;
+    import std.string : representation;
+    import std.range;
+    import std.array;
+    import std.random;
+    import tagion.hibon.HiBONJSON;
+    import tagion.utils.Miscellaneous;
+
+    auto rnd = Random(unpredictableSeed);
+    auto rnd_range = generate!(() => uniform!ubyte(rnd));
+    const net = new StdHashNet;
+    //auto R=new ubyte[net.hashSize];
+    {
+        auto salt = iota(ubyte(0), ubyte(net.hashSize & ubyte.max)).array.idup;
+        const R = rnd_range.take(net.hashSize).array;
+        DevicePIN pin;
+        const pin_code = "1234".representation;
+        pin.setPin(net, R, pin_code, salt);
+
+        ubyte[] recovered_R = new ubyte[net.hashSize];
+        { /// Recover the seed R with the correct pin-code 
+            const recovered = pin.recover(net, recovered_R, pin_code);
+            assert(recovered);
+            assert(R == recovered_R);
+        }
+
+        { /// Try to recover the seed R with the wrong pin-code 
+            const recovered = pin.recover(net, recovered_R, "wrong pin code".representation);
+            assert(!recovered);
+            assert(R != recovered_R);
+        }
+
+    }
+}
 /// Key-pair recovery generator
 @safe
 @recordType("Wallet")

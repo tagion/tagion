@@ -38,7 +38,8 @@ bool isRecord(T)(const Document doc) nothrow pure {
     static if (hasUDA!(T, recordType)) {
         enum record_type = getUDAs!(T, recordType)[0].name;
         return doc.hasMember(TYPENAME) && assumeWontThrow(doc[TYPENAME] == record_type);
-    } else {
+    }
+    else {
         return false;
     }
 }
@@ -236,9 +237,10 @@ pragma(msg, "fixme(cbr): The less_than function in this mixin is used for none s
 
 mixin template HiBONRecord(string CTOR = "") {
 
-    import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType, Unqual, hasMember, isCallable,
+    import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType,
+        Unqual, hasMember, isCallable,
         EnumMembers, ForeachType, isArray, isAssociativeArray, KeyType, ValueType;
-    import std.typecons : TypedefType, Tuple;
+    import std.typecons : Tuple;
     import std.format;
     import std.functional : unaryFun;
     import std.range : iota, enumerate, lockstep;
@@ -256,7 +258,9 @@ mixin template HiBONRecord(string CTOR = "") {
     import tagion.hibon.HiBONException : HiBONRecordException;
     import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType,
         label, GetLabel, filter, fixed, inspect, VOID;
-    import HiBONRecord = tagion.hibon.HiBONRecord; // : TYPENAME;
+    import HiBONRecord = tagion.hibon.HiBONRecord;
+
+    import tagion.hibon.HiBONBase : TypedefBase;
 
     protected alias check = Check!(HiBONRecordException);
 
@@ -270,7 +274,7 @@ mixin template HiBONRecord(string CTOR = "") {
 
     enum HAS_TYPE = hasMember!(ThisType, "type_name");
     static bool less_than(Key)(Key a, Key b) if (!is(Key : string)) {
-        alias BaseKey = TypedefType!Key;
+        alias BaseKey = TypedefBase!Key;
         static if (HiBON.Value.hasType!BaseKey || is(BaseKey == enum)) {
             return Key(a) < Key(b);
         }
@@ -293,7 +297,7 @@ mixin template HiBONRecord(string CTOR = "") {
 
             auto result = new HiBON;
             alias UnqualL = Unqual!L;
-            alias ElementT = Unqual!(TypedefType!(ForeachType!L));
+            alias ElementT = Unqual!(TypedefBase!(ForeachType!L));
             static if (isArray!L || isAssociativeArray!L) {
                 static if (isSpecialKeyType!L) {
                     uint list_index;
@@ -319,7 +323,7 @@ mixin template HiBONRecord(string CTOR = "") {
                 void set(Index, Value)(Index key, Value value) {
                     static if (isSpecialKeyType!L) {
                         auto element = new HiBON;
-                        alias BaseIndex = TypedefType!Index;
+                        alias BaseIndex = TypedefBase!Index;
                         static if (HiBON.Value.hasType!BaseIndex || is(BaseIndex == enum)) {
                             element[0] = Index(key);
                         }
@@ -375,7 +379,7 @@ mixin template HiBONRecord(string CTOR = "") {
                 }
                 static if (name.length) {
                     alias MemberT = typeof(m);
-                    alias BaseT = TypedefType!MemberT;
+                    alias BaseT = TypedefBase!MemberT;
                     alias UnqualT = Unqual!BaseT;
                     // writefln("name=%s BaseT=%s isInputRange!BaseT=%s isInputRange!UnqualT=%s",
                     //     name, BaseT.stringof, isInputRange!BaseT, isInputRange!UnqualT);
@@ -393,7 +397,7 @@ mixin template HiBONRecord(string CTOR = "") {
                     }
                     else static if (is(BaseT == class) || is(BaseT == struct)) {
                         static if (isInputRange!UnqualT) {
-                            alias ElementT = ForeachType!UnqualT;
+                            alias ElementT = Unqual!(ForeachType!UnqualT);
                             static assert((HiBON.Value.hasType!ElementT) || isHiBON!ElementT,
                                     format("The sub element '%s' of type %s is not supported",
                                     name, BaseT.stringof));
@@ -401,13 +405,14 @@ mixin template HiBONRecord(string CTOR = "") {
                             hibon[name] = toList(cast(UnqualT) m);
                         }
                         else {
-                            static assert(is(BaseT == HiBON) || is(BaseT : const(Document)), format(`A sub class/struct '%s' of type %s must have a toHiBON or must be ingnored with @label("") UDA tag`,
+                            static assert(is(BaseT == HiBON) || is(BaseT : const(Document)),
+                                    format(`A sub class/struct '%s' of type %s must have a toHiBON or must be ingnored with @label("") UDA tag`,
                                     name, BaseT.stringof));
                             hibon[name] = cast(BaseT) m;
                         }
                     }
                     else static if (isInputRange!UnqualT || isAssociativeArray!UnqualT) {
-                        alias BaseU = TypedefType!(ForeachType!(UnqualT));
+                        alias BaseU = TypedefBase!(ForeachType!(UnqualT));
                         hibon[name] = toList(m);
                     }
                     else static if (isIntegral!UnqualT || UnqualT.sizeof <= short.sizeof) {
@@ -492,7 +497,7 @@ mixin template HiBONRecord(string CTOR = "") {
             }
             static R toList(R)(const Document doc) {
                 alias MemberU = ForeachType!(R);
-                alias BaseU = TypedefType!MemberU;
+                alias BaseU = TypedefBase!MemberU;
                 static if (isArray!R) {
                     alias UnqualU = Unqual!MemberU;
                     check(doc.isArray, format("Document is expected to be an array"));
@@ -523,7 +528,7 @@ mixin template HiBONRecord(string CTOR = "") {
                         static if (isSpecialKeyType!R) {
                             const value_doc = elm.get!Document;
                             alias KeyT = KeyType!R;
-                            alias BaseKeyT = TypedefType!KeyT;
+                            alias BaseKeyT = TypedefBase!KeyT;
                             static if (Document.Value.hasType!BaseKeyT || is(BaseKeyT == enum)) {
                                 const key = KeyT(value_doc[0].get!BaseKeyT);
                             }
@@ -632,7 +637,7 @@ mixin template HiBONRecord(string CTOR = "") {
                         }
                         enum member_name = this.tupleof[i].stringof;
                         alias MemberT = typeof(m);
-                        //alias BaseT = TypedefType!MemberT;
+                        //alias BaseT = TypedefBase!MemberT;
                         alias BaseT = MemberT;
                         alias UnqualT = Unqual!BaseT;
                         static if (optional) {
@@ -1548,5 +1553,36 @@ unittest {
         fout = File(deleteme, "r");
         const result = fout.fread!Simple;
         assert(expected_s == result);
+    }
+}
+
+@safe
+unittest {
+    import tagion.utils.StdTime;
+
+    { /// Single time element
+        static struct Time {
+            @label("$t") sdt_t time;
+            mixin HiBONRecord;
+        }
+
+        Time expected_time;
+        expected_time.time = 12345678;
+        const doc = expected_time.toDoc;
+        const result = Time(doc);
+        assert(expected_time == result);
+    }
+
+    {
+        static struct Times {
+            sdt_t[] times;
+            mixin HiBONRecord;
+        }
+
+        Times expected_times;
+        expected_times.times = [sdt_t(12345), sdt_t(23456), sdt_t(1345)];
+        const doc = expected_times.toDoc;
+        const result = Times(doc);
+        assert(expected_times == result);
     }
 }

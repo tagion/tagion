@@ -10,7 +10,7 @@ import tagion.basic.tagionexceptions;
 
 @safe struct Result(V) {
     V value;
-    immutable(UtilException) e;
+    UtilException e;
     @disable this();
     @nogc this(V value) pure nothrow {
         this.value = value;

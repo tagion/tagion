@@ -17,7 +17,7 @@ TRUNK_LIST:=$(TMP_FILE:.sh=.lst)
 
 trunk: $(TRUNK_FILE)
 
-$(TRUNK_FILE): $(TRUNK_LIST) $(TRUNK)/.way $(TRUNK_MAKE)
+$(TRUNK_FILE): $(TRUNK_LIST) $(TRUNK)/.way #$(TRUNK_MAKE)
 	tar --files-from $(TRUNK_LIST) $(TRUNK_FLAGS) $(TRUNK_FILE) 
 
 .PHONY: clean-trunk
@@ -34,12 +34,12 @@ $(TRUNK_LIST):
 	echo $@
 
 
-$(TRUNK_MAKE): $(FUND)/ci/Makefile
-	$(PRECMD)
-	$(CP) $< $@
+# $(TRUNK_MAKE): $(FUND)/ci/Makefile
+# 	$(PRECMD)
+# 	$(CP) $< $@
 
 
-trunk_make: $(TRUNK_MAKE)
+# trunk_make: $(TRUNK_MAKE)
 
 .PHONY: help-trunk
 help-trunk:

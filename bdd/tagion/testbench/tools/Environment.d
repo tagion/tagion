@@ -76,7 +76,7 @@ struct Environment {
     string test_stage;
     string seed;
 
-    uint getSeed() const pure {
+    const(uint) getSeed() const pure {
         import tagion.utils.Miscellaneous;
         import std.bitmanip : binread = read;
 

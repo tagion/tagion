@@ -271,13 +271,13 @@ extern (C) {
     @safe
     export double get_locked_balance() {
         const balance = __secure_wallet.locked_balance();
-        return cast(double) balance.tagions;
+        return balance.value;
     }
 
     @safe
     export double get_balance() {
         const balance = __secure_wallet.available_balance();
-        return cast(double) balance.tagions;
+        return balance.value;
     }
 
     export uint get_public_key(uint8_t* pubkeyPtr) {
@@ -434,14 +434,17 @@ extern (C) {
         return 0;
     }
 
-    export double check_invoice_payment(const uint8_t* invoicePtr, const uint32_t invoiceLen) {
+    export uint check_invoice_payment(const uint8_t* invoicePtr, const uint32_t invoiceLen, double* amountPtr) {
         immutable invoiceBuffer = cast(immutable)(invoicePtr[0 .. invoiceLen]);
 
         if (__secure_wallet.isLoggedin()) {
 
             auto invoice = Invoice(Document(invoiceBuffer)[0].get!Document);
             auto amount = __secure_wallet.account.check_invoice_payment(invoice.pkey);
-            return amount.tagions;
+
+            *amountPtr = amount.value;
+
+            return 1;
         }
         return 0;
     }
@@ -558,16 +561,16 @@ unittest {
         assert(__secure_wallet.isLoggedin, "Expected wallet stays logged in");
     }
 
+    // Create input data
+    const uint64_t invAmount = 100;
+    const char[] label = "Test Invoice";
+    const uint32_t labelLen = cast(uint32_t) label.length;
+    uint8_t invoiceDocId;
+
     { // Create invoice.
 
-        // Create input data
-        const uint64_t amount = 100;
-        const char[] label = "Test Invoice";
-        const uint32_t labelLen = cast(uint32_t) label.length;
-        uint8_t invoiceDocId;
-
         // Call the create_invoice function
-        const uint result = create_invoice(&invoiceDocId, amount, label.ptr, labelLen);
+        const uint result = create_invoice(&invoiceDocId, invAmount, label.ptr, labelLen);
 
         // Check the result
         assert(result == 1, "Expected result to be 1");
@@ -576,50 +579,34 @@ unittest {
         assert(invoiceDocId != 0, "Expected non-zero invoiceDocId");
     }
 
+    import std.algorithm : map;
+    import std.string : representation;
+    import std.range : zip;
+
+    auto bill_amounts = [200, 500, 100].map!(a => a.TGN);
+    const net = new StdHashNet;
+    auto gene = cast(Buffer) net.calcHash("gene".representation);
+    const uint epoch = 42;
+
+    import tagion.utils.Miscellaneous : hex;
+
+    // Add the bills to the account with the derive keys
+    with (__secure_wallet.account) {
+        bills = zip(bill_amounts, derives.byKey).map!(bill_derive => StandardBill(bill_derive[0],
+        epoch, bill_derive[1], gene)).array;
+    }
+
+    auto invoiceDoc = recyclerDoc(invoiceDocId);
+
+    // Contract input data.
+    const uint8_t[] invoice = cast(uint8_t[])(invoiceDoc.serialize);
+    const uint32_t invoiceLen = cast(uint32_t) invoice.length;
+    const uint64_t contAmount = 100;
+
+    uint8_t contractDocId;
+
     { // Create a contract.
-        import std.algorithm : map;
-        import std.string : representation;
-        import std.range : zip;
-
-        auto bill_amounts = [200, 500, 100].map!(a => a.TGN);
-        const net = new StdHashNet;
-        auto gene = cast(Buffer) net.calcHash("gene".representation);
-        const uint epoch = 42;
-
-        import tagion.utils.Miscellaneous : hex;
-
-        // Add the bills to the account with the derive keys
-        with (__secure_wallet.account) {
-            bills = zip(bill_amounts, derives.byKey).map!(bill_derive => StandardBill(bill_derive[0],
-            epoch, bill_derive[1], gene)).array;
-        }
-
-        // Create input data
-        const uint64_t invAmount = 0;
-        const char[] label = "Test Invoice";
-        const uint32_t labelLen = cast(uint32_t) label.length;
-        uint8_t invoiceDocId;
-
-        // Call the create_invoice function
-        create_invoice(&invoiceDocId, invAmount, label.ptr, labelLen);
-
-        auto invoiceDoc = recyclerDoc(invoiceDocId);
-
-        // Contract input data.
-        const uint8_t[] invoice = cast(uint8_t[])(invoiceDoc.serialize);
-        const uint32_t invoiceLen = cast(uint32_t) invoice.length;
-        const uint64_t contAmount = 100;
-
-        uint8_t contractDocId;
         const uint result = create_contract(&contractDocId, invoice.ptr, invoiceLen, contAmount);
-
-        auto contractDoc = recyclerDoc(contractDocId);
-
-        const uint8_t[] contract = cast(uint8_t[])(contractDoc.serialize);
-        const uint32_t contractLen = cast(uint32_t) contract.length;
-
-        auto pResult = check_invoice_payment(invoice.ptr, invoiceLen);
-        writeln("check_invoice_payment ", pResult);
 
         // Check the result
         assert(result == 1, "Expected result to be 1");
@@ -627,6 +614,11 @@ unittest {
         // Verify that invoiceDocId is non-zero
         assert(contractDocId != 0, "Expected non-zero contractDocId");
     }
+
+    auto contractDoc = recyclerDoc(contractDocId);
+
+    const uint8_t[] contract = cast(uint8_t[])(contractDoc.serialize);
+    const uint32_t contractLen = cast(uint32_t) contract.length;
 
     { // Update request.
         uint8_t requestDocId;
@@ -688,15 +680,9 @@ unittest {
         import std.string : representation;
         import std.range : zip;
 
-        const net = new StdHashNet;
-        auto gene = cast(Buffer) net.calcHash("gene".representation);
-        const uint epoch = 42;
-
         import tagion.utils.Miscellaneous : hex;
 
         StandardBill[] newBills;
-
-        auto bill_amounts = [777].map!(a => a.TGN);
 
         // Add the bills to the account with the derive keys
         with (__secure_wallet.account) {
@@ -712,8 +698,38 @@ unittest {
         // Check the result
         assert(result == 1, "Expected result to be 1");
     }
+    { // Ulock bills by contract
+
+        uint result = ulock_bills_by_contract(contract.ptr, contractLen);
+
+        // Check the result
+        assert(result == 1, "Expected result to be 1");
+    }
+    { // Check invoice payment
+
+        double amount;
+        auto result = check_invoice_payment(invoice.ptr, invoiceLen, &amount);
+
+        // Check the result
+        assert(result == 1, "Expected result to be 1");
+        assert(amount != 0, "Expected amount not to be 0");
+    }
+    { // Check contract payment
+
+        uint8_t status;
+
+        uint result = check_contract_payment(contract.ptr, contractLen, &status);
+
+        // Check the result
+        assert(result == 1, "Expected result to be 1");
+        assert(status == 0, "Expected status to be 0");
+    }
     { // Remove bills by contract.
 
+        uint result = remove_bills_by_contract(contract.ptr, contractLen);
+
+        // Check the result
+        assert(result == 1, "Expected result to be 1");
     }
 
 }

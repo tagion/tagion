@@ -59,7 +59,7 @@ unittest { // Test of the altitude measure function
  * Calculates the majority votes
  * Params:
  *     voting    = Number of votes
- *     node_size = Total bumber of votes
+ *     node_size = Total number of votes
  * Returns:
  *     Returns `true` if the votes are more than 2/3
  */
@@ -68,9 +68,15 @@ bool isMajority(const size_t voting, const size_t node_size) pure nothrow {
     return (node_size >= minimum_nodes) && (3 * voting > 2 * node_size);
 }
 
-@safe @nogc
+@safe
 bool isMajority(const(BitMask) mask, const HashGraph hashgraph) pure nothrow {
-    return isMajority(mask.count, hashgraph.node_size);
+    import tagion.basic.basic;
+    import tagion.basic.Debug;
+
+
+    const vote_mask = (hashgraph.excluded_nodes_mask is BitMask.init) ? mask : mask - hashgraph.excluded_nodes_mask;
+    __write("received mask<%s>\nvote_mask<%s>", mask, vote_mask);     
+    return isMajority(vote_mask.count, hashgraph.node_size);
 }
 
 @safe @nogc
@@ -121,9 +127,7 @@ struct EventBody {
     @label("$m", true) @(filter.Initialized) Buffer mother; // Hash of the self-parent
     @label("$f", true) @(filter.Initialized) Buffer father; // Hash of the other-parent
     @label("$a") int altitude;
-    //  @label("$t") sdt_t time;
-    @label("") sdt_t time;
-
+    @label("$t") sdt_t time;
     bool verify() {
         return (father is null) ? true : (mother !is null);
     }
@@ -186,7 +190,6 @@ struct EventBody {
             check(mother != father, ConsensusFailCode.MOTHER_AND_FATHER_CAN_NOT_BE_THE_SAME);
         }
     }
-
 }
 
 @safe

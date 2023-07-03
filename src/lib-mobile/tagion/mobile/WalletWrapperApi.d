@@ -225,7 +225,7 @@ export ulong get_balance_available(const uint32_t doc_id) {
             RecoverGenerator.init, AccountDetails(wallet_doc));
 
     const balance = secure_wallet.available_balance();
-    return cast(ulong) balance.tagions;
+    return cast(ulong) balance.units;
 }
 
 export ulong get_balance_locked(const uint32_t wallet_doc_id) {
@@ -235,7 +235,7 @@ export ulong get_balance_locked(const uint32_t wallet_doc_id) {
             RecoverGenerator.init, AccountDetails(wallet_doc));
 
     const balance = secure_wallet.locked_balance();
-    return cast(ulong) balance.tagions;
+    return cast(ulong) balance.units;
 }
 
 // export ulong get_lock_for_amount(const uint32_t wallet_doc_id, const uint64_t amount)

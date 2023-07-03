@@ -29,7 +29,11 @@ enum actor_task = "actor_task";
 
 struct MyActor {
 static:
-    mixin Actor!();
+
+    void task(string task_name) nothrow {
+        run(task_name);
+        end(task_name);
+    }
 }
 
 alias MyActorHandle = ActorHandle!MyActor;
@@ -57,7 +61,7 @@ class SendATaskFailureToAnActor {
 
     @Then("send a `TaskFailure` to the actor")
     Document toTheActor() {
-        myActor.send(TaskFailure( "main", new immutable Exception("This big fail")));
+        myActor.send(TaskFailure("main", new immutable Exception("This big fail")));
         return result_ok;
     }
 

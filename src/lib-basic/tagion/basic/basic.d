@@ -496,3 +496,24 @@ unittest {
     s = S(42);
     assert(!s.isinit);
 }
+
+auto trusted(alias func, Args...)(auto ref Args args) @trusted {
+    return func(args);
+}
+
+auto scopedTrusted(alias func, Args...)(auto ref scope Args args) @trusted {
+    return func(args);
+}
+
+@safe
+unittest {
+    import std.traits;
+    
+    @system  
+    int mul(int a, int b) {return a*b;}
+
+    static assert(!isSafe!mul);
+    assert(trusted!mul(1,2) == 2);
+    assert(scopedTrusted!mul(1,2) == 2);
+}
+
