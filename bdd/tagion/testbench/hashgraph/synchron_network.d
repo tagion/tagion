@@ -53,22 +53,6 @@ class StartNetworkWithNAmountOfNodes {
 
     bool coherent;
 
-    void printStates() {
-        foreach(channel; network.channels) {
-            writeln("----------------------");
-            foreach (channel_key; network.channels) {
-                const current_hashgraph = network.networks[channel_key]._hashgraph;
-                writef("%16s %10s ingraph:%5s|", channel_key.cutHex, current_hashgraph.owner_node.sticky_state, current_hashgraph.areWeInGraph);
-                foreach (receiver_key; network.channels) {
-                    const node = current_hashgraph.nodes.get(receiver_key, null);                
-                    const state = (node is null) ? ExchangeState.NONE : node.state;
-                    writef("%15s %s", state, node is null ? "X" : " ");
-                }
-                writeln;
-            }
-        }
-    
-    }
 
 
     
@@ -113,7 +97,7 @@ class StartNetworkWithNAmountOfNodes {
                 auto current = network.networks[channel];
                 (() @trusted { current.call; })();
 
-                printStates();
+                printStates(network);
                 if (network.allCoherent) {
                     coherent = true;
                     break;
@@ -152,7 +136,7 @@ class StartNetworkWithNAmountOfNodes {
                 //     // all nodes have created at least one epoch
                 //     break;
                 // }
-                printStates();
+                printStates(network);
                 i++;
             }
             check(TestRefinement.epoch_events.length == node_names.length, 

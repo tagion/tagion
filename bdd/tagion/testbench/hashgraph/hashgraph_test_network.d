@@ -30,6 +30,8 @@ import tagion.hashgraph.Refinement;
 
 class TestRefinement : StdRefinement { 
 
+    static Pubkey[int] excluded_nodes_history;
+     
     struct Epoch {
         const(Event)[] events;
         sdt_t epoch_time;
@@ -41,7 +43,6 @@ class TestRefinement : StdRefinement {
         epoch_events[hashgraph.owner_node.channel] ~= epoch;
     }
 
-    Pubkey[int] excluded_nodes_history;
     override void excludedNodes(ref BitMask excluded_mask) {
         import tagion.basic.Debug;
 
@@ -53,14 +54,10 @@ class TestRefinement : StdRefinement {
             const node = hashgraph.nodes.get(exclude_channel, HashGraph.Node.init);
             if (node !is HashGraph.Node.init) {
                 excluded_mask[node.node_id] = !excluded_mask[node.node_id]; 
+                __write("setting exclude mask");
             }
         }
         
-        // const mask = excluded_nodes_history.get(last_decided_round, );
-        // if (mask !is BitMask.init) {
-        //     excluded_mask = mask;
-        // }
-
         __write("callback<%s>", excluded_mask);
 
     }
@@ -307,4 +304,20 @@ bool event_error(const Event e1, const Event e2, const Compare.ErrorCode code) @
 }
 
 
+@safe
+void printStates(TestNetwork network) {
+    foreach(channel; network.networks) {
+        writeln("----------------------");
+        foreach (channel_key; network.channels) {
+            const current_hashgraph = network.networks[channel_key]._hashgraph;
+            writef("%16s %10s ingraph:%5s|", channel_key.cutHex, current_hashgraph.owner_node.sticky_state, current_hashgraph.areWeInGraph);
+            foreach (receiver_key; network.channels) {
+                const node = current_hashgraph.nodes.get(receiver_key, null);                
+                const state = (node is null) ? ExchangeState.NONE : node.state;
+                writef("%15s %s", state, node is null ? "X" : " ");
+            }
+            writeln;
+        }
+    }
 
+}

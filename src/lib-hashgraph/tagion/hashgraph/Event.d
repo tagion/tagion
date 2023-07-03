@@ -225,7 +225,6 @@ class Round {
         Round last_round;
         Round last_decided_round;
         HashGraph hashgraph;
-        enum MAX_ORDER_COUNT = 10; /// Max recursion count for order_less function
         @disable this();
 
         this(HashGraph hashgraph) pure nothrow {
@@ -429,6 +428,7 @@ class Round {
 
             auto event_collection = r._events
                 .filter!((e) => (e !is null))
+                .filter!((e) => !hashgraph.excluded_nodes_mask[e.node_id])
                 .map!((ref e) => e[]
                         .until!((e) => (e._round_received !is null))
                         .filter!((e) => (e._round_received_mask.isMajority(hashgraph))))
