@@ -20,11 +20,11 @@ struct Currency(string _UNIT, long _BASE_UNIT = 1_000_000_000, long MAX_VALUE_IN
 
     mixin HiBONRecord!(
             q{
-            this(T)(T tagions) pure if (isFloatingPoint!T) {
+            this(T)(T whole) pure if (isFloatingPoint!T) {
                 scope(exit) {
                     check_range;
                 }
-                _units = cast(long)(tagions * BASE_UNIT);
+                _units = cast(long)(whole * BASE_UNIT);
             }
 
             this(T)(const T units) pure if (isIntegral!T) {
@@ -44,9 +44,9 @@ struct Currency(string _UNIT, long _BASE_UNIT = 1_000_000_000, long MAX_VALUE_IN
 
         scriptCheck(_units > -UNIT_MAX && _units < UNIT_MAX,
                 format("Value out of range [%s:%s] value is %s",
-                toTagion(-UNIT_MAX),
-                toTagion(UNIT_MAX),
-                toTagion(_units)));
+                toValue(-UNIT_MAX),
+                toValue(UNIT_MAX),
+                toValue(_units)));
     }
 
     Currency opBinary(string OP)(const Currency rhs) const pure
@@ -141,6 +141,10 @@ struct Currency(string _UNIT, long _BASE_UNIT = 1_000_000_000, long MAX_VALUE_IN
             return 0;
         }
 
+        long units() {
+            return _units;
+        }
+
         long axios() {
             if (_units < 0) {
                 return -(-_units % BASE_UNIT);
@@ -148,7 +152,7 @@ struct Currency(string _UNIT, long _BASE_UNIT = 1_000_000_000, long MAX_VALUE_IN
             return _units % BASE_UNIT;
         }
 
-        long tagions() {
+        long whole() {
             if (_units < 0) {
                 return -(-_units / BASE_UNIT);
             }
@@ -170,7 +174,7 @@ struct Currency(string _UNIT, long _BASE_UNIT = 1_000_000_000, long MAX_VALUE_IN
 
     }
 
-    static string toTagion(const long units) pure {
+    static string toValue(const long units) pure {
         long value = units;
         if (units < 0) {
             value = -value;
@@ -180,6 +184,6 @@ struct Currency(string _UNIT, long _BASE_UNIT = 1_000_000_000, long MAX_VALUE_IN
     }
 
     string toString() {
-        return toTagion(_units);
+        return toValue(_units);
     }
 }

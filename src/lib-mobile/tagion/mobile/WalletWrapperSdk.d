@@ -271,13 +271,13 @@ extern (C) {
     @safe
     export double get_locked_balance() {
         const balance = __secure_wallet.locked_balance();
-        return cast(double) balance.tagions;
+        return balance.value;
     }
 
     @safe
     export double get_balance() {
         const balance = __secure_wallet.available_balance();
-        return cast(double) balance.tagions;
+        return balance.value;
     }
 
     export uint get_public_key(uint8_t* pubkeyPtr) {
@@ -442,7 +442,7 @@ extern (C) {
             auto invoice = Invoice(Document(invoiceBuffer)[0].get!Document);
             auto amount = __secure_wallet.account.check_invoice_payment(invoice.pkey);
 
-            *amountPtr = amount.tagions;
+            *amountPtr = amount.value;
 
             return 1;
         }
