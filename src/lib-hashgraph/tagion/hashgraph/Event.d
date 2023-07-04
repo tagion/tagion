@@ -551,6 +551,8 @@ class Event {
         return _count;
     }
 
+    bool error;
+
     /**
      * Builds an event from an eventpackage
      * Params:
