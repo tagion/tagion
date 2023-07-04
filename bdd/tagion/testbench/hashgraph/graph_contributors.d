@@ -60,10 +60,10 @@ class ANonvotingNode {
         
 
         network = new TestNetwork(node_names);
-        auto exclude_channel = Pubkey(network.channels[network.random.value(0, network.channels.length)]);
-        writefln("exclude_channel=%s", exclude_channel.cutHex);
+        auto exclude_channel = Pubkey(network.channels[$-1]);
+        auto second_exclude = Pubkey(network.channels[$-2]);
         
-        TestRefinement.excluded_nodes_history = [21: exclude_channel];
+        TestRefinement.excluded_nodes_history = [21: exclude_channel, 22: second_exclude, 28: second_exclude, 32: exclude_channel];
         network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 0);
         network.random.seed(123456432789);
         network.global_time = SysTime.fromUnixTime(1_614_355_286);
@@ -157,7 +157,7 @@ class ANonvotingNode {
                 if (compare_events.length != events.length) {
                     writefln("events not the same length. Was %d and %d", compare_events.length, events.length);
                 }               
-                // check(compare_events.length == events.length, format("event_packages not the same length. Was %d and %d", compare_events.length, events.length));
+                check(compare_events.length == events.length, format("event_packages not the same length. Was %d and %d", compare_events.length, events.length));
 
                 const compare_fingerprints = compare_events.map!(e => e.event_package.fingerprint).array;
                 const event_fingerprints = events.map!(e => e.event_package.fingerprint).array;

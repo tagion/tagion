@@ -29,8 +29,6 @@ $(DOBJ)/%.$(OBJEXT): $(DSRC)/%.d
 	${call log.kvp, compile, $(MODE)}
 	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $< $(DCOMPILE_ONLY) $(OUTPUT)$@
 
-
-
 #
 # Compile and link or split link
 #
