@@ -65,24 +65,6 @@ private bool all(Ctrl[string] aa, Ctrl ctrl) @safe nothrow {
     }
     return true;
 }
-
-/* 
- * Waif for an associative array of task name to be in Ctrl state
- * Returns: false if any message is received that is not CtrlMsg 
- */
-bool waitfor(Ctrl[string] childrenState, Ctrl state) @safe nothrow {
-    try {
-        while (!(childrenState.all(state))) {
-            CtrlMsg msg = receiveOnly!CtrlMsg;
-            childrenState[msg.task_name] = msg.ctrl;
-        }
-    }
-    catch (Exception _) {
-        return false;
-    }
-    return true;
-}
-
 /* 
  * Waif for an array of task names to be in Ctrl state
  * Returns: false if any message is received that is not CtrlMsg 
