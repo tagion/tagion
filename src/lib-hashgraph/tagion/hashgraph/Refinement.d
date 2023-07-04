@@ -104,8 +104,6 @@ class StdRefinement : Refinement {
         excludedNodes(hashgraph._excluded_nodes_mask);
 
     
-    
-    
     }
 }
 

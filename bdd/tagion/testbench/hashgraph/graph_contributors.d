@@ -23,6 +23,8 @@ import std.algorithm;
 import std.format;
 import tagion.hashgraph.Refinement;
 
+import std.algorithm.comparison;
+
 enum feature = Feature(
             "Hashgraph contributors",
             [
@@ -40,7 +42,6 @@ class ANonvotingNode {
     string[] node_names;
     string module_path;
     uint CALLS;
-    // enum NON_VOTING = "Nonvoting";
     TestNetwork network;
 
 
@@ -62,7 +63,7 @@ class ANonvotingNode {
         auto exclude_channel = Pubkey(network.channels[network.random.value(0, network.channels.length)]);
         writefln("exclude_channel=%s", exclude_channel.cutHex);
         
-        // TestRefinement.excluded_nodes_history = [21: exclude_channel, 30: exclude_channel];
+        TestRefinement.excluded_nodes_history = [21: exclude_channel];
         network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 0);
         network.random.seed(123456432789);
         network.global_time = SysTime.fromUnixTime(1_614_355_286);
@@ -126,14 +127,20 @@ class ANonvotingNode {
         //     }
         // }
         // compare epochs
+        // void compareMismatch(Buffer[] a, Buffer[] b, Event[] events) {
+
+        //     const misses = mismatch(a, b);
+        //     foreach(mis; misses[1]) {
+        //         const pos = countUntil(b, mis);
+        //     }
+        // }
+        
+        
         foreach(i, compare_epoch; TestRefinement.epoch_events.byKeyValue.front.value) {
             auto compare_events = compare_epoch
                                             .events
-                                            .map!(e => e.event_package.fingerprint)
                                             .array;
-            // compare_events.sort!((a,b) => a < b);
-            // compare_events.each!writeln;
-            writefln("%s", compare_events.map!(f => f.cutHex));
+            writefln("%s", compare_events.map!(e => e.event_package.fingerprint.cutHex));
             foreach(channel_epoch; TestRefinement.epoch_events.byKeyValue) {
                 writefln("epoch: %s", i);
                 if (channel_epoch.value.length-1 < i) {
@@ -141,22 +148,26 @@ class ANonvotingNode {
                 }
                 auto events = channel_epoch.value[i]
                                             .events
-                                            .map!(e => e.event_package.fingerprint)
                                             .array;
-                // events.sort!((a,b) => a < b);
 
-                writefln("%s", events.map!(f => f.cutHex));
+                writefln("%s", events.map!(e => e.event_package.fingerprint.cutHex));
                 // events.each!writeln;
                 writefln("channel %s time: %s", channel_epoch.key.cutHex, channel_epoch.value[i].epoch_time);
 
                 if (compare_events.length != events.length) {
-                    writefln("event_packages not the same length. Was %d and %d", compare_events.length, events.length);
+                    writefln("events not the same length. Was %d and %d", compare_events.length, events.length);
                 }               
                 // check(compare_events.length == events.length, format("event_packages not the same length. Was %d and %d", compare_events.length, events.length));
-                
-                const isSame = equal(compare_events, events);
+
+                const compare_fingerprints = compare_events.map!(e => e.event_package.fingerprint).array;
+                const event_fingerprints = events.map!(e => e.event_package.fingerprint).array;
+                const isSame = equal(compare_fingerprints, event_fingerprints);
                 writefln("isSame: %s", isSame);
-                // check(isSame, "event_packages not the same");            
+
+                // const misses = mismatch(compare_events, events);
+                // misses[1].each!writeln;
+                check(isSame, "event_packages not the same");            
+
             
             }
         }         
@@ -166,6 +177,27 @@ class ANonvotingNode {
     @Then("stop the network")
     Document _network() {
 
+    
+    foreach(i, compare_epoch; TestRefinement.epoch_events.byKeyValue.front.value) {
+        auto compare_events = compare_epoch
+                                        .events
+                                        .array;
+        foreach(channel_epoch; TestRefinement.epoch_events.byKeyValue) {
+            if (channel_epoch.value.length-1 < i) {
+                break;
+            }
+            auto events = channel_epoch.value[i]
+                                        .events
+                                        .array;
+            auto misses = mismatch!((a,b) => a.event_package.fingerprint == b.event_package.fingerprint)(compare_events, events);
+
+            foreach(event_miss; misses.array.join) {
+                writefln("event_miss %s", event_miss.event_package.fingerprint.cutHex);
+
+                event_miss.error = true;
+            }
+        }
+    } 
     // create ripple files.
         Pubkey[string] node_labels;
         foreach (channel, _net; network.networks) {

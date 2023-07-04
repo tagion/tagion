@@ -33,13 +33,14 @@ class TestRefinement : StdRefinement {
     static Pubkey[int] excluded_nodes_history;
      
     struct Epoch {
-        const(Event)[] events;
+        Event[] events;
         sdt_t epoch_time;
     }
 
     static Epoch[][Pubkey] epoch_events;
     override void finishedEpoch(const(Event[]) events, const sdt_t epoch_time) {
-        auto epoch = Epoch(events, epoch_time);
+        
+        auto epoch = (() @trusted => Epoch(cast(Event[]) events, epoch_time))(); 
         epoch_events[hashgraph.owner_node.channel] ~= epoch;
     }
 

@@ -51,6 +51,7 @@ struct DARTService {
             end(task_name);
         }
         catch (Exception e) {
+
             fail(task_name, e);
         }
     }
