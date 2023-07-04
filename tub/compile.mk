@@ -10,6 +10,10 @@ ifneq ($(COMPILER),gdc)
 DFLAGS+=$(DPREVIEW)=inclusiveincontracts
 endif
 
+ifdef VERBOSE_COMPILER_ERRORS
+DFLAGS+=$(VERRORS)
+endif
+
 DFLAGS+=-J$(DTUB)/logos/
 
 #

@@ -106,6 +106,7 @@ DINCIMPORT= -i
 DSTATICLIB=-lib
 DSHAREDLIB=-shared
 OUTPUTDIR = -od
+VERRORS=-verrors=context
 endif
 
 DIP25 := $(DIP)25
