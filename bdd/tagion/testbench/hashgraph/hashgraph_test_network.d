@@ -65,8 +65,6 @@ class TestRefinement : StdRefinement {
                 __write("setting exclude mask");
             }
         }
-
-        
         __write("callback<%s>", excluded_mask);
 
     }
