@@ -45,32 +45,16 @@ class ANonvotingNode {
     TestNetwork network;
 
 
-    this(string[] node_names, const(string) module_path) {
+    this(string[] node_names, TestNetwork network, const(string) module_path) {
         this.node_names = node_names;
         this.module_path = module_path;
         CALLS = cast(uint) node_names.length * 1000;
+        this.network = network;
 
     }
 
     @Given("i have a hashgraph testnetwork with n number of nodes")
     Document nodes() {
-
-      
-
-        
-
-        network = new TestNetwork(node_names);
-        auto exclude_channel = Pubkey(network.channels[$-1]);
-        auto second_exclude = Pubkey(network.channels[$-2]);
-
-
-        alias Hist = TestRefinement.ExcludedNodesHistory;
-        TestRefinement.excluded_nodes_history = [
-            Hist(exclude_channel, true, 23),
-            Hist(second_exclude, true, 24),
-            Hist(exclude_channel, false, 29),
-            Hist(second_exclude, false, 30),
-        ];
 
         
         network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 0);
