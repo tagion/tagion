@@ -4,6 +4,7 @@ WOLFSSL?=1
 OLD?=1
 ONETOOL?=1
 DEBUGGER?=ddd
+VERBOSE_COMPILER_ERRORS=1
 
 export TEST_STAGE:=commit
 export SEED:=$(shell git rev-parse HEAD)

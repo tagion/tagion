@@ -101,6 +101,7 @@ class HashGraph {
         _excluded_nodes_mask = mask;
     }
 
+
     package Round.Rounder _rounds; /// The rounder hold the round in the queue both decided and undecided rounds
 
     alias ValidChannel = bool delegate(const Pubkey channel);

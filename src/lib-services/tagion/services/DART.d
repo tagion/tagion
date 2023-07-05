@@ -47,10 +47,13 @@ struct DARTService {
             db = new DART(net, dart_path);
             run(task_name, &dartRead, &dartRim, &dartModify, &dartBullseye);
 
-            db.close();
-            end(task_name);
+            scope (exit) {
+                db.close();
+                end(task_name);
+            }
         }
         catch (Exception e) {
+
             fail(task_name, e);
         }
     }

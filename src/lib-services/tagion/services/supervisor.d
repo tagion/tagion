@@ -33,11 +33,7 @@ struct Supervisor {
             const dart_service_handle =
                 spawn!DARTService(dart_task_name, dart_filename, cast(immutable) net);
 
-            Ctrl[string] childrenState;
-            childrenState[dart_task_name] = Ctrl.STARTING;
-            childrenState[contract_task_name] = Ctrl.STARTING;
-            // Wait for all tasks to be running
-            waitfor(childrenState, Ctrl.ALIVE);
+            waitfor([dart_task_name, contract_task_name], Ctrl.ALIVE);
             run(task_name);
 
             end(task_name);

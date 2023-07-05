@@ -434,7 +434,6 @@ class Round {
                         .filter!((e) => (e._round_received_mask.isMajority(hashgraph))))
                 .joiner
                 .tee!((e) => e._round_received = r)
-                .map!((e) => e)
                 .array;
             hashgraph.epoch(event_collection, r);
         }
@@ -453,8 +452,9 @@ class Round {
                         .map!((e) => e.node_id));
                 if (votes_mask.isMajority(hashgraph)) {
                     const round_decided = votes_mask[]
-                        .all!((vote_node_id) => round_to_be_decided._events[vote_node_id]._witness.famous(
-                                hashgraph));
+                        .all!((vote_node_id) => round_to_be_decided._events[vote_node_id]
+                        ._witness.famous(hashgraph));
+
                     if (Event.callbacks) {
                         votes_mask[].filter!((vote_node_id) => round_to_be_decided._events[vote_node_id]._witness.famous)
                             .each!((vote_node_id) => Event.callbacks.famous(round_to_be_decided._events[vote_node_id]));
@@ -550,6 +550,8 @@ class Event {
     static uint count() nothrow {
         return _count;
     }
+
+    bool error;
 
     /**
      * Builds an event from an eventpackage

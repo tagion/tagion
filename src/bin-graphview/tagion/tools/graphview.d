@@ -167,6 +167,9 @@ struct Dot {
 
         }
         obuf.writefln(`%s%s [pos="%s, %s!"];`, indent ~ INDENT, e.id, e.node_id * 2, e.order);
+        // if (e.error) {
+        //     obuf.writefln(`%s%s [fillcolor="%s"];`, indent ~ INDENT, e.id, "sienna");
+        // }
         if (e.witness) {
             const color = (e.famous) ? "red" : "lightgreen";
             obuf.writefln(`%s%s [fillcolor="%s"];`, indent ~ INDENT, e.id, color);
@@ -174,7 +177,11 @@ struct Dot {
         else {
             obuf.writefln(`%s%s [fillcolor="%s"];`, indent ~ INDENT, e.id, pastel19.color(e.round));
         }
-        if (e.father_less) {
+
+        if (e.error) {
+            obuf.writefln(`%s%s [shape="%s"];`, indent ~ INDENT, e.id, "star");
+        }
+        else if (e.father_less) {
             obuf.writefln(`%s%s [shape="%s"];`, indent ~ INDENT, e.id, "egg");
         }
         string round_text = (e.round is int.min) ? "\u2693" : e.round.to!string;

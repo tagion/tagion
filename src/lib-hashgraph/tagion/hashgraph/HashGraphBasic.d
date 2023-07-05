@@ -68,15 +68,9 @@ bool isMajority(const size_t voting, const size_t node_size) pure nothrow {
     return (node_size >= minimum_nodes) && (3 * voting > 2 * node_size);
 }
 
-@safe
+@safe @nogc
 bool isMajority(const(BitMask) mask, const HashGraph hashgraph) pure nothrow {
-    import tagion.basic.basic;
-    import tagion.basic.Debug;
-
-
-    const vote_mask = (hashgraph.excluded_nodes_mask is BitMask.init) ? mask : mask - hashgraph.excluded_nodes_mask;
-    __write("received mask<%s>\nvote_mask<%s>", mask, vote_mask);     
-    return isMajority(vote_mask.count, hashgraph.node_size);
+    return isMajority(mask.count, hashgraph.node_size);
 }
 
 @safe @nogc
