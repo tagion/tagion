@@ -45,29 +45,18 @@ class ANonvotingNode {
     TestNetwork network;
 
 
-    this(string[] node_names, const(string) module_path) {
+    this(string[] node_names, TestNetwork network, const(string) module_path) {
         this.node_names = node_names;
         this.module_path = module_path;
         CALLS = cast(uint) node_names.length * 1000;
+        this.network = network;
 
     }
 
     @Given("i have a hashgraph testnetwork with n number of nodes")
     Document nodes() {
 
-      
-
         
-
-        network = new TestNetwork(node_names);
-        auto exclude_channel = Pubkey(network.channels[$-1]);
-        auto second_exclude = Pubkey(network.channels[$-2]);
-        
-        TestRefinement.excluded_nodes_history = [
-            21: exclude_channel, 
-            22: second_exclude, 
-            28: second_exclude, 
-            32: exclude_channel];
         network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 0);
         network.random.seed(123456432789);
         network.global_time = SysTime.fromUnixTime(1_614_355_286);
@@ -85,7 +74,7 @@ class ANonvotingNode {
                 network.current = Pubkey(network.channels[channel_number]);
                 auto current = network.networks[network.current];
                 (() @trusted { current.call; })();
-                printStates(network);
+                // printStates(network);
                 i++;
             }
             check(TestRefinement.epoch_events.length == node_names.length,
@@ -108,43 +97,55 @@ class ANonvotingNode {
     @Then("the network should still reach consensus")
     Document consensus() @trusted {
 
-        // // compare ordering
-        // auto names = network.networks.byValue
-        //     .map!((net) => net._hashgraph.name)
-        //     .array.dup
-        //     .sort
-        //     .array;
+        // compare ordering
+        auto names = network.networks.byValue
+            .map!((net) => net._hashgraph.name)
+            .array.dup
+            .sort
+            .array;
 
-        // HashGraph[string] hashgraphs;
-        // foreach (net; network.networks) {
-        //     hashgraphs[net._hashgraph.name] = net._hashgraph;
-        // }
-        // foreach (i, name_h1; names[0 .. $ - 1]) {
-        //     const h1 = hashgraphs[name_h1];
-        //     foreach (name_h2; names[i + 1 .. $]) {
-        //         const h2 = hashgraphs[name_h2];
-        //         auto comp = Compare(h1, h2, toDelegate(&event_error));
-        //         // writefln("%s %s round_offset=%d order_offset=%d",
-        //         //     h1.name, h2.name, comp.round_offset, comp.order_offset);
-        //         const result = comp.compare;
-        //         check(result, format("HashGraph %s and %s is not the same", h1.name, h2.name));
-        //     }
-        // }
-        // compare epochs
-        // void compareMismatch(Buffer[] a, Buffer[] b, Event[] events) {
-
-        //     const misses = mismatch(a, b);
-        //     foreach(mis; misses[1]) {
-        //         const pos = countUntil(b, mis);
-        //     }
-        // }
+        HashGraph[string] hashgraphs;
+        foreach (net; network.networks) {
+            hashgraphs[net._hashgraph.name] = net._hashgraph;
+        }
+        foreach (i, name_h1; names[0 .. $ - 1]) {
+            const h1 = hashgraphs[name_h1];
+            foreach (name_h2; names[i + 1 .. $]) {
+                const h2 = hashgraphs[name_h2];
+                auto comp = Compare(h1, h2, toDelegate(&event_error));
+                // writefln("%s %s round_offset=%d order_offset=%d",
+                //     h1.name, h2.name, comp.round_offset, comp.order_offset);
+                const result = comp.compare;
+                check(result, format("HashGraph %s and %s is not the same", h1.name, h2.name));
+            }
+        }
         
         
         foreach(i, compare_epoch; TestRefinement.epoch_events.byKeyValue.front.value) {
             auto compare_events = compare_epoch
                                             .events
                                             .array;
-            writefln("%s", compare_events.map!(e => e.event_package.fingerprint.cutHex));
+            const round_number = cast(int) i;
+            auto histories = TestRefinement.excluded_nodes_history
+                                .filter!(h => h.round < round_number-1)
+                                .array
+                                .sort!((a,b) => a.round < b.round);
+            bool[Pubkey] current_states;
+            foreach(hist; histories) {
+                current_states[hist.pubkey] = hist.state;
+            }
+            if (current_states !is null) {
+
+                foreach(state; current_states.byKeyValue) {
+                    if (state.value) {
+                        const isExcluded = compare_events.map!(e => e.event_package.pubkey)
+                                            .all!(p => p != state.key);
+                        check(isExcluded, format("Pubkey %s not excluded from epoch %s", state.key.cutHex, round_number-1)); 
+                    }
+                }
+            }
+            
+                        
             foreach(channel_epoch; TestRefinement.epoch_events.byKeyValue) {
                 writefln("epoch: %s", i);
                 if (channel_epoch.value.length-1 < i) {
@@ -168,11 +169,9 @@ class ANonvotingNode {
                 const isSame = equal(compare_fingerprints, event_fingerprints);
                 writefln("isSame: %s", isSame);
 
-                // const misses = mismatch(compare_events, events);
-                // misses[1].each!writeln;
                 check(isSame, "event_packages not the same");            
 
-            
+                
             }
         }         
         return result_ok;
