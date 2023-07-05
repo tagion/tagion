@@ -30,8 +30,14 @@ import tagion.hashgraph.Refinement;
 
 class TestRefinement : StdRefinement { 
 
-    static Pubkey[int] excluded_nodes_history;
-     
+    struct ExcludedNodesHistory {
+        Pubkey pubkey;
+        bool state;
+        int round;   
+    }
+    static ExcludedNodesHistory[] excluded_nodes_history;
+
+   
     struct Epoch {
         Event[] events;
         sdt_t epoch_time;
@@ -46,18 +52,20 @@ class TestRefinement : StdRefinement {
 
     override void excludedNodes(ref BitMask excluded_mask) {
         import tagion.basic.Debug;
-
+        import std.algorithm : filter;
         if (excluded_nodes_history is null) { return; }
                 
         const last_decided_round = hashgraph.rounds.last_decided_round.number;
-        const exclude_channel = excluded_nodes_history.get(last_decided_round, Pubkey.init);
-        if (exclude_channel !is Pubkey.init) {
-            const node = hashgraph.nodes.get(exclude_channel, HashGraph.Node.init);
+
+        auto histories = excluded_nodes_history.filter!(h => h.round == last_decided_round);
+        foreach(history; histories) {
+            const node = hashgraph.nodes.get(history.pubkey, HashGraph.Node.init);
             if (node !is HashGraph.Node.init) {
-                excluded_mask[node.node_id] = !excluded_mask[node.node_id]; 
+                excluded_mask[node.node_id] = history.state;
                 __write("setting exclude mask");
             }
         }
+
         
         __write("callback<%s>", excluded_mask);
 

@@ -62,12 +62,17 @@ class ANonvotingNode {
         network = new TestNetwork(node_names);
         auto exclude_channel = Pubkey(network.channels[$-1]);
         auto second_exclude = Pubkey(network.channels[$-2]);
-        
+
+
+        alias Hist = TestRefinement.ExcludedNodesHistory;
         TestRefinement.excluded_nodes_history = [
-            21: exclude_channel, 
-            22: second_exclude, 
-            28: second_exclude, 
-            32: exclude_channel];
+            Hist(exclude_channel, true, 23),
+            Hist(second_exclude, true, 24),
+            Hist(exclude_channel, false, 29),
+            Hist(second_exclude, false, 30),
+        ];
+
+        
         network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 0);
         network.random.seed(123456432789);
         network.global_time = SysTime.fromUnixTime(1_614_355_286);
@@ -85,7 +90,7 @@ class ANonvotingNode {
                 network.current = Pubkey(network.channels[channel_number]);
                 auto current = network.networks[network.current];
                 (() @trusted { current.call; })();
-                printStates(network);
+                // printStates(network);
                 i++;
             }
             check(TestRefinement.epoch_events.length == node_names.length,
@@ -137,6 +142,11 @@ class ANonvotingNode {
                                             .events
                                             .array;
             writefln("%s", compare_events.map!(e => e.event_package.fingerprint.cutHex));
+            // const round_number = cast(int) i;
+            // const excluded_in_epoch = TestRefinement.excluded_nodes_history.get(round_number, Pubkey.init);
+            // if (excluded_in_epoch !is Pubkey.init) {
+            //     writeln("WOWO");
+            // }
             foreach(channel_epoch; TestRefinement.epoch_events.byKeyValue) {
                 writefln("epoch: %s", i);
                 if (channel_epoch.value.length-1 < i) {
@@ -160,11 +170,9 @@ class ANonvotingNode {
                 const isSame = equal(compare_fingerprints, event_fingerprints);
                 writefln("isSame: %s", isSame);
 
-                // const misses = mismatch(compare_events, events);
-                // misses[1].each!writeln;
                 check(isSame, "event_packages not the same");            
 
-            
+                
             }
         }         
         return result_ok;
