@@ -8,20 +8,21 @@ A node consist of the following services.
 - Main services
 	- [Tagion](/documents/architecture/Tagion.md) is the service which handles the all the services related to the rest of the services (And run the HashGraph).
 	- [Tagion Factory](/documents/architecture/TagionFactory.md) This services takes care of the *mode* in which the network is started.
-	- [TVM](/documents/architecture/TVM.md) ("Tagion Virtual Machine") is responsible for executing the instructions in the contract ensuring the contracts are compliant with Consensus Rules producing outputs and sending new contracts to the Epoch Creator.
-	- [DART](/documents/architecture/DART.md "Distributed Archive of Random Transactions") service is reponsible for executing data-base instruction and read/write to the physical file system.
-	- [Replicator](/documents/architecture/Replicator.md) service is responsible for keeping record of the database instructions both to undo, replay and publish the instructions sequantially.
-	- [Contract Interface](/documents/architecture/ContractInterface.md) service is responsible for receiving contracts, ensuring a valid data format of HiRPC requests and compliance with the HiRPC protocol before it is executed in the system. 
+    - [Input Validator](/documents/architecture/InputValidator.md) This service handle the data-stream input to the network.
+    - [Contract Verifier](/documents/architecture/ContractVerifier.md) service is responsible for receiving contracts, ensuring a valid data format of HiRPC requests and compliance with the HiRPC protocol before it is executed in the system. 
 	- [Collector](/documents/architecture/Collector.md) service is responsible for collecting input data for a Contract and ensuring the data is valid and signed before the contract is executed by the TVM.
+	- [TVM](/documents/architecture/TVM.md) ("Tagion Virtual Machine") is responsible for executing the instructions in the contract ensuring the contracts are compliant with Consensus Rules producing outputs and sending new contracts to the Epoch Creator.
 	- [Transcript](/documents/architecture/Transcript.md) service is responsible for producing a Recorder ensuring correct inputs and output archives including no double input and output in the same Epoch and sending it to the DART.
 	- [Epoch Creator](/documents/architecture/EpochCreator.md) service is responsible for resolving the Hashgraph and producing a consensus ordered list of events, an Epoch. 
-	- [Epoch Dump](/documents/architecture/EpochDump.md) Service is responsible for writing the Epoch to a file as a backup.
+	- [DART](/documents/architecture/DART.md "Distributed Archive of Random Transactions") service is reponsible for executing data-base instruction and read/write to the physical file system.
+	- [Replicator](/documents/architecture/Replicator.md) service is responsible for keeping record of the database instructions both to undo, replay and publish the instructions sequantially.
 	- [Node Interface](/documents/architecture/NodeInterface.md) service is responsible for handling and routing requests to and from the p2p node network.
 
 * Support services
 	- [Logger](/documents/architecture/Logger.md) takes care of handling the logger information for all the services.
 	- [Logger Subscription](/documents/architecture/LoggerSubscription.md) The logger subscript take care of handling remote logger and event logging.
 	- [Monitor](/documents/architecture/Monitor.md) Monitor interface to display the state of the HashGraph.
+	- [Epoch Dump](/documents/architecture/EpochDump.md) Service is responsible for writing the Epoch to a file as a backup.
 
 
 ## Data Message flow
@@ -29,42 +30,93 @@ This graph show the primary data message flow in the network.
 
 ```graphviz
 digraph Message_flow {
-rankdir=UD;
   compound=true;
   labelangle=35;
   node [style=filled]
   node [ shape = "rect"];
   DART [shape = cylinder];
-  TLS [ style=filled fillcolor=green ];
+  Input [ label="Input\nValidator" style=filled fillcolor=green ]
   P2P [ style=filled fillcolor=red]
-  ContractInterface [ label="Contract\nInterface"]
+  ContractVerifier [ label="Contract\nVerifier"]
   NodeInterface [ label="Node\nInterface"]
   Transcript [shape = note]
   EpochCreator [label="Epoch\nCreator"]
-  subgraph cluster_1 {
-    peripheries=0;
-    TLS -> ContractInterface [label="HiRPC(contract)" color=green];
- 	ContractInterface -> Collector [label=contract color=green];
-	Collector -> TVM [label="contract-S" color=green];
-	EpochCreator -> Collector [label=contract color=darkgreen];
-	EpochCreator -> Transcript [label=epoch color=green];
-    TVM -> Transcript [label="archives\nin/out" color=red];
-  };
- subgraph cluster_2 {
-    peripheries=0;
-	TVM -> EpochCreator [label="contract-SC" color=green];
-    DART -> Replicator [label=recorder color=red dir=both];
-  };
-  subgraph cluster_3 {
-    peripheries=0;
-	DART -> NodeInterface [label="DART(ro)\nrecorder" dir=both color=magenta];
-    NodeInterface -> P2P [label=Document dir=both];
-  };
-  DART -> Collector [label=recorder color=red];
-  EpochCreator -> NodeInterface [label=gossip dir=both color=cyan4];
+  Input -> ContractVerifier [label="HiRPC(contract)" color=green];
+  ContractVerifier -> Collector [label=contract color=green];
+  Collector -> TVM [label="contract-S" color=green];
+  EpochCreator -> Collector [label=contract color=darkgreen];
+  EpochCreator -> Transcript [label=epoch color=green];
+  TVM -> Transcript [label="archives\nin/out" color=red];
+  TVM -> EpochCreator [label="contract-SC" color=green];
+  DART -> Replicator [label=recorder color=red dir=both];
+  DART -> NodeInterface [label="DART(ro)\nrecorder" dir=both color=magenta];
+  NodeInterface -> P2P [label=Document dir=both];
+  DART -> Collector [label="recorder\nin/read" color=red];
+  EpochCreator -> NodeInterface [label=wavefront dir=both color=cyan4];
   Transcript -> DART [label=recorder color=blue];
   Replicator -> NodeInterface [label=recorder];
 }
+```
+
+```mermaid
+flowchart TB 
+  classDef contract_route fill:#f96,strock-width:3px,stroke:green;
+
+  TLS[TLS]
+  NodeInterface(("Node\nInterface"))
+  Epoch("Epoch\nInterface")
+  DART[(DART)]:::green
+  Transcript[[Transcript]]
+  Collector(Collector)
+%%  linkStyle default fill:none,stroke-width:3px,stroke:red %%
+
+
+      X(*) -- HiRPC --> TLS
+      TLS -- contract --> Contract
+      Contract -- contract --> Collector  
+      Collector -- contract-S --> TVM 
+      TVM -- contract-SC --> Epoch
+      Transcript -- recorder --> DART 
+      Epoch -- epoch --> Transcript  
+      Epoch -- contract --> Collector 
+      DART -- "recorder(ro)" --> Collector 
+      Replicator <-- recorder --> DART
+      Replicator -- recorder --> NodeInterface
+      DART -- "recorder(ro)"--> NodeInterface 
+      NodeInterface -- "crud(ro)" --> DART 
+      NodeInterface <-- wavefront --> Epoch  
+      NodeInterface <--> P2P
+
+      linkStyle 1 stroke:red
+	  linkStyle 2 stroke:blue
+      linkStyle 4 stroke:green
+```
+
+```mermaid
+stateDiagram-v2
+    direction LR
+    Contract: Contract\nInterface
+    NodeInterface: Node\nInterface
+    Epoch: Epoch\nCreate
+    style Epoch fill:#00758f
+    [*] --> TLS : HiRPC
+      TLS --> Contract: contract
+      Contract --> Collector : contract 
+      Collector --> TVM : contract-S
+      TVM --> Epoch : contract-SC
+      Epoch --> Transcript : epoch 
+      Transcript --> DART : recorder
+      DART --> Collector : recorder(ro)
+      DART --> Replicator : recorder
+      Replicator --> DART : recorder
+      Replicator --> NodeInterface : recorder
+      DART --> NodeInterface : recorder(ro)
+      Epoch --> NodeInterface : wavefront
+      Epoch --> Collector : contract
+      NodeInterface --> DART : crud(ro) 
+      NodeInterface --> Epoch : wavefront 
+      NodeInterface --> P2P
+      P2P --> NodeInterface
 ```
 
 ## Tagion Service Hierarchy

@@ -143,4 +143,13 @@ sequenceDiagram
 ```
 
 The Recorder protocol can be found in [Recorder](documents/protocols/dart/Recorder.md)
+```mermaid
+stateDiagram-v2
+[*] --> Still
+Still --> [*]
+Still --> Moving
+Moving --> Still
+Moving --> Crash
+Crash --> [*]
+```
 
