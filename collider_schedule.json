@@ -128,6 +128,14 @@
             ],
             "timeout": 0.0
         },
+        "hashgraph_exclude": {
+            "args": ["Alice", "Bob", "Carol", "Dave", "Elisa", "Freja", "Gretha"], 
+            "envs": {},
+            "stages": [
+                "hashgraph"
+            ],
+            "timeout": 0.0
+        },
         "collider_test": {
             "args": [
                 "-f$WORKDIR"
