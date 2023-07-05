@@ -108,36 +108,28 @@ class ANonvotingNode {
     @Then("the network should still reach consensus")
     Document consensus() @trusted {
 
-        // // compare ordering
-        // auto names = network.networks.byValue
-        //     .map!((net) => net._hashgraph.name)
-        //     .array.dup
-        //     .sort
-        //     .array;
+        // compare ordering
+        auto names = network.networks.byValue
+            .map!((net) => net._hashgraph.name)
+            .array.dup
+            .sort
+            .array;
 
-        // HashGraph[string] hashgraphs;
-        // foreach (net; network.networks) {
-        //     hashgraphs[net._hashgraph.name] = net._hashgraph;
-        // }
-        // foreach (i, name_h1; names[0 .. $ - 1]) {
-        //     const h1 = hashgraphs[name_h1];
-        //     foreach (name_h2; names[i + 1 .. $]) {
-        //         const h2 = hashgraphs[name_h2];
-        //         auto comp = Compare(h1, h2, toDelegate(&event_error));
-        //         // writefln("%s %s round_offset=%d order_offset=%d",
-        //         //     h1.name, h2.name, comp.round_offset, comp.order_offset);
-        //         const result = comp.compare;
-        //         check(result, format("HashGraph %s and %s is not the same", h1.name, h2.name));
-        //     }
-        // }
-        // compare epochs
-        // void compareMismatch(Buffer[] a, Buffer[] b, Event[] events) {
-
-        //     const misses = mismatch(a, b);
-        //     foreach(mis; misses[1]) {
-        //         const pos = countUntil(b, mis);
-        //     }
-        // }
+        HashGraph[string] hashgraphs;
+        foreach (net; network.networks) {
+            hashgraphs[net._hashgraph.name] = net._hashgraph;
+        }
+        foreach (i, name_h1; names[0 .. $ - 1]) {
+            const h1 = hashgraphs[name_h1];
+            foreach (name_h2; names[i + 1 .. $]) {
+                const h2 = hashgraphs[name_h2];
+                auto comp = Compare(h1, h2, toDelegate(&event_error));
+                // writefln("%s %s round_offset=%d order_offset=%d",
+                //     h1.name, h2.name, comp.round_offset, comp.order_offset);
+                const result = comp.compare;
+                check(result, format("HashGraph %s and %s is not the same", h1.name, h2.name));
+            }
+        }
         
         
         foreach(i, compare_epoch; TestRefinement.epoch_events.byKeyValue.front.value) {
