@@ -3,6 +3,7 @@ module tagion.behaviour.Behaviour;
 public import tagion.behaviour.BehaviourFeature;
 import tagion.hibon.Document;
 
+import core.exception : AssertError;
 import std.traits;
 import std.format;
 import std.meta : AliasSeq;
@@ -23,7 +24,7 @@ import tagion.basic.basic : isOneOf;
    Returns:
    The ScenarioGroup including the result of each action
 */
-@safe
+@trusted
 ScenarioGroup run(T)(T scenario) if (isScenario!T) {
     ScenarioGroup scenario_group = getScenarioGroup!T;
     debug (bdd) import std.stdio;
@@ -88,6 +89,10 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T) {
         scenario_group.info.result = result_ok;
     }
     catch (Exception e) {
+        scenario_group.info.result = BehaviourError(e).toDoc;
+    }
+    // We want to be able to report asserts as well
+    catch (AssertError e) {
         scenario_group.info.result = BehaviourError(e).toDoc;
     }
     return scenario_group;
@@ -268,7 +273,7 @@ auto automation(alias M)() if (isFeature!M) {
                     }
                     else {
                         check(context[i]!is null,
-                        format("Scenario '%s' must be constructed before can be executed in '%s' feature",
+                                format("Scenario '%s' must be constructed before can be executed in '%s' feature",
                                 FeatureContext.fieldNames[i],
                                 moduleName!M));
                     }
