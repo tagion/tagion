@@ -28,6 +28,7 @@ int _main(string[] args) {
     TestNetwork network = new TestNetwork(node_names);
 
     auto hashgraph_exclude_feature = automation!(exclude_node);
+    hashgraph_exclude_feature.StaticExclusionOfANode(node_names, network, module_path);
     hashgraph_exclude_feature.run;
     return 0;
 }
