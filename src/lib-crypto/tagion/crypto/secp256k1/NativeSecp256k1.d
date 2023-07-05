@@ -475,11 +475,11 @@ class NativeSecp256k1 {
         return secp256k1_context_randomize(_ctx, _seed) == 1;
     }
 
-    @trusted
+    version (HASH) @trusted
     ubyte[32] calcHash(const const(ubyte[]) data) {
         secp256k1_sha256 sha;
         ubyte[32] res;
-       
+
         ubyte* ret_arr;
 
         secp256k1_sha256_initialize(&sha);
