@@ -18,6 +18,7 @@ module tagion.crypto.secp256k1.NativeSecp256k1;
 
 private import tagion.crypto.secp256k1.c.secp256k1;
 private import tagion.crypto.secp256k1.c.secp256k1_ecdh;
+private import tagion.crypto.secp256k1.c.secp256k1_hash;
 
 import std.exception : assumeUnique;
 import tagion.basic.ConsensusExceptions;
@@ -474,6 +475,24 @@ class NativeSecp256k1 {
         return secp256k1_context_randomize(_ctx, _seed) == 1;
     }
 
+    @trusted
+    ubyte[32] calcHash(const const(ubyte[]) data) {
+        secp256k1_sha256 sha;
+        ubyte[32] res;
+       
+        ubyte* ret_arr;
+
+        secp256k1_sha256_initialize(&sha);
+        secp256k1_sha256_write(&sha, &data[0], data.length);
+        secp256k1_sha256_finalize(&sha, ret_arr);
+
+        for (int i = 0; i < 32; i++) {
+            res[i] = *(ret_arr + i);
+        }
+
+        return res;
+    }
+
 }
 
 //@safe
@@ -877,4 +896,21 @@ unittest {
 
         //  "f2785178d20217ed89e982ddca6491ed21d598d8545db503f1dee5e09c747164");
     }
+
+    // {
+    //     import std.string : representation;
+    //     import std.stdio;
+    //     try {
+    //         auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.DER, NativeSecp256k1.Format.DER);
+    //         auto resultArr = crypt.calcHash("testing".representation);
+    //         writeln("resultArr.toHexString = ", resultArr.toHexString);
+
+    //         version (HASH){
+    //             assert(resultArr.toHexString == "CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90"); //sha256hash of "testing"
+    //         }
+    //     }
+    //     catch (ConsensusException e) {
+    //         assert(0, e.msg);
+    //     }
+    // }
 }
