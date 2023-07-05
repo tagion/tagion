@@ -12,7 +12,7 @@ Output:
 
 The services does the following:
 - Check that the size of the package does not exceed max-package length.
-- Puts the length and the packge into one byte string.
+- Puts the length and the package into one byte string.
 - Check that the byte stream is a correct HiBON document format.
 - Send the data-package to the Contract Verifier service.
 
