@@ -141,12 +141,27 @@ class ANonvotingNode {
             auto compare_events = compare_epoch
                                             .events
                                             .array;
-            writefln("%s", compare_events.map!(e => e.event_package.fingerprint.cutHex));
-            // const round_number = cast(int) i;
-            // const excluded_in_epoch = TestRefinement.excluded_nodes_history.get(round_number, Pubkey.init);
-            // if (excluded_in_epoch !is Pubkey.init) {
-            //     writeln("WOWO");
-            // }
+            const round_number = cast(int) i;
+            auto histories = TestRefinement.excluded_nodes_history
+                                .filter!(h => h.round < round_number-1)
+                                .array
+                                .sort!((a,b) => a.round < b.round);
+            bool[Pubkey] current_states;
+            foreach(hist; histories) {
+                current_states[hist.pubkey] = hist.state;
+            }
+            if (current_states !is null) {
+
+                foreach(state; current_states.byKeyValue) {
+                    if (state.value) {
+                        const isExcluded = compare_events.map!(e => e.event_package.pubkey)
+                                            .all!(p => p != state.key);
+                        check(isExcluded, format("Pubkey %s not excluded from epoch %s", state.key.cutHex, round_number-1)); 
+                    }
+                }
+            }
+            
+                        
             foreach(channel_epoch; TestRefinement.epoch_events.byKeyValue) {
                 writefln("epoch: %s", i);
                 if (channel_epoch.value.length-1 < i) {
