@@ -58,67 +58,6 @@ digraph Message_flow {
 }
 ```
 
-```mermaid
-flowchart TB 
-  classDef contract_route fill:#f96,strock-width:3px,stroke:green;
-
-  TLS[TLS]
-  NodeInterface(("Node\nInterface"))
-  Epoch("Epoch\nInterface")
-  DART[(DART)]:::green
-  Transcript[[Transcript]]
-  Collector(Collector)
-%%  linkStyle default fill:none,stroke-width:3px,stroke:red %%
-
-
-      X(*) -- HiRPC --> TLS
-      TLS -- contract --> Contract
-      Contract -- contract --> Collector  
-      Collector -- contract-S --> TVM 
-      TVM -- contract-SC --> Epoch
-      Transcript -- recorder --> DART 
-      Epoch -- epoch --> Transcript  
-      Epoch -- contract --> Collector 
-      DART -- "recorder(ro)" --> Collector 
-      Replicator <-- recorder --> DART
-      Replicator -- recorder --> NodeInterface
-      DART -- "recorder(ro)"--> NodeInterface 
-      NodeInterface -- "crud(ro)" --> DART 
-      NodeInterface <-- wavefront --> Epoch  
-      NodeInterface <--> P2P
-
-      linkStyle 1 stroke:red
-	  linkStyle 2 stroke:blue
-      linkStyle 4 stroke:green
-```
-
-```mermaid
-stateDiagram-v2
-    direction LR
-    Contract: Contract\nInterface
-    NodeInterface: Node\nInterface
-    Epoch: Epoch\nCreate
-    style Epoch fill:#00758f
-    [*] --> TLS : HiRPC
-      TLS --> Contract: contract
-      Contract --> Collector : contract 
-      Collector --> TVM : contract-S
-      TVM --> Epoch : contract-SC
-      Epoch --> Transcript : epoch 
-      Transcript --> DART : recorder
-      DART --> Collector : recorder(ro)
-      DART --> Replicator : recorder
-      Replicator --> DART : recorder
-      Replicator --> NodeInterface : recorder
-      DART --> NodeInterface : recorder(ro)
-      Epoch --> NodeInterface : wavefront
-      Epoch --> Collector : contract
-      NodeInterface --> DART : crud(ro) 
-      NodeInterface --> Epoch : wavefront 
-      NodeInterface --> P2P
-      P2P --> NodeInterface
-```
-
 ## Tagion Service Hierarchy
 
 This graph show the supervisor hierarchy of the services in the network.
@@ -133,10 +72,11 @@ digraph tagion_hierarchy {
     rankdir=UD;
     size="8,5"
    node [style=filled shape=rect]
+   Input [ label="Input\nValidator" ]
 Tagionwave [color=blue]
 TagionFactory [label="Tagion\nFactory"]
 DART [shape = cylinder]
-ContractInterface [label="Contract\nInterface"]
+ContractVerifier [label="Contract\nVerifier"]
 Transcript [shape = note]
 Collector [shape=rect]
 EpochCreator [label="Epoch\nCreator"]
@@ -153,12 +93,12 @@ node [shape = rect];
 	DART -> Replicator;
 	Tagion -> DART;
     Tagion -> EpochCreator;
-	EpochCreator -> ContractInterface [href="/documents/architecture/ContractInterface.md"];
+	EpochCreator -> ContractVerifier [href="/documents/architecture/ContractVerifier.md"];
 	EpochCreator -> Transcript;
 	EpochCreator -> Collector;
 	Transcript -> EpochDump;
 	EpochCreator -> Monitor;
 	Collector -> TVM;
-	ContractInterface -> TLS;
+	ContractVerifier -> Input;
 }
 ```
