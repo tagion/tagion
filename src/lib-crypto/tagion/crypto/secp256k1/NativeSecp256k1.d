@@ -476,23 +476,18 @@ class NativeSecp256k1 {
     }
 
     version (HASH) @trusted
-    ubyte[32] calcHash(const const(ubyte[]) data) {
-        secp256k1_sha256 sha;
-        ubyte[32] res;
+    ubyte[32] tagged_sha256(const const(ubyte[]) data, const(ubyte[]) tag = null) {
+        ubyte[32] result;
+        const ret = secp256k1_tagged_sha256(
+                _ctx,
+                &result[0],
+                &tag[0],
+                tag.length,
+                &data[0],
+                data.length);
+        return result;
 
-        ubyte* ret_arr;
-
-        secp256k1_sha256_initialize(&sha);
-        secp256k1_sha256_write(&sha, &data[0], data.length);
-        secp256k1_sha256_finalize(&sha, ret_arr);
-
-        for (int i = 0; i < 32; i++) {
-            res[i] = *(ret_arr + i);
-        }
-
-        return res;
     }
-
 }
 
 //@safe

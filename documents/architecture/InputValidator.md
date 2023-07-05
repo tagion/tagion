@@ -18,10 +18,10 @@ The services does the following:
 
 ```mermaid
 sequenceDiagram
-    participant Pipe
+    participant Stream 
     participant Input Validator 
     participant Contract Verifier
-    Pipe ->> Input Validator: Byte stream
+    Stream ->> Input Validator: Byte stream
     Input Validator->>Contract Verifier: Document  
 
 ```
