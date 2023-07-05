@@ -127,27 +127,6 @@ struct ActorHandle(A) {
     @safe void send(T...)(T args) {
         concurrency.send(this.tid, args);
     }
-
-    pragma(msg, format("# %s:", [__traits(allMembers, Actor)]));
-
-    version (none) static foreach (member; __traits(allMembers, Actor)) {
-        // alias getMem = __traits(getMember, Actor, member);
-
-        // enum params = Parameters!(member);
-        // pragma(msg, format("\t%s:%s", member, __traits(getMember, Actor, member)));
-        static if (
-            isCallable!(__traits(getMember, Actor, member))
-                && Parameters!(__traits(getMember, Actor, member))
-            ) {
-            // pragma(msg, member);
-        }
-    }
-
-    /// use
-    // void opDispatch(string method, Args...)(Args args) {
-    //     send(actor.Msg!method, args);
-    // }
-
 }
 
 /**
@@ -336,9 +315,6 @@ void run(Args...)(string task_name, Args args) nothrow {
             }
         }
 
-        // static if(args.length == 1) {
-        //     pragma(msg, format("IS taskfailure %s %s", isFailHandler!(typeof(args[$-1])), args));
-        // }
         static if (args.length == 1 && isFailHandler!(typeof(args[$ - 1]))) {
             enum failhandler = () {}; /// Use the fail handler passed through `args`
         }
