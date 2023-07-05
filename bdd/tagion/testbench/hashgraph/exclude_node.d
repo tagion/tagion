@@ -9,6 +9,8 @@ import tagion.testbench.hashgraph.hashgraph_test_network;
 import std.datetime;
 import std.stdio;
 import std.algorithm;
+import std.format;
+import tagion.crypto.Types;
 
 enum feature = Feature(
             "Hashgraph exclude node",
@@ -47,11 +49,65 @@ class StaticExclusionOfANode {
 
     @When("all nodes have created at least one epoch")
     Document epoch() {
-        return Document();
+        try {
+            uint i = 0;
+            while (i < CALLS) {
+
+                const channel_number = network.random.value(0, network.channels.length);
+                network.current = Pubkey(network.channels[channel_number]);
+                auto current = network.networks[network.current];
+                (() @trusted { current.call; })();
+                // printStates(network);
+                i++;
+                if (TestRefinement.epoch_events.length == node_names.length) { break; }
+            }
+
+            check(TestRefinement.epoch_events.length == node_names.length,
+                    format("Max calls %d reached, not all nodes have created epochs only %d",
+                    CALLS, TestRefinement.epoch_events.length));
+
+        }
+        catch (Exception e) {
+            check(false, e.msg);
+        }
+        return result_ok;
     }
 
     @When("i mark one node statically as non-voting and disable communication for him")
     Document him() {
+        // we are excluding one node. We continue until that epoch where we afterwards break all communication with him.
+
+        // try {
+        //     uint = 0;
+        //     while (i < CALLS) {
+        //         // get the current states of the nodes.
+        //         const round_number = cast(int) i;
+        //         auto histories = TestRefinement.excluded_nodes_history
+        //                             .filter!(h => h.round < round_number-1)
+        //                             .array
+        //                             .sort!((a,b) => a.round < b.round);
+        //         bool[Pubkey] current_states;
+        //         foreach(hist; histories) {
+        //             current_states[hist.pubkey] = hist.state;
+        //         }
+        //         // if (current_states !is null) {
+        //         //     const callable = current_states
+        //         //                         .byKeyValue
+        //         //                         .filter!(h => !h.value)
+        //         //                         .map!(h => h.key)
+        //         //                         .array;
+        //         // }
+        //         // Pubkey current;
+        //         // if (current_states !is null) {
+                    
+        //         // }
+
+                
+
+                
+        //     }
+        // }
+        
         return Document();
     }
 

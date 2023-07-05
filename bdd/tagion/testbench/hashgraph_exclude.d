@@ -11,7 +11,7 @@ import tagion.testbench.tools.Environment;
 import std.stdio;
 import std.path : buildPath;
 import std.file : mkdirRecurse;
-
+import tagion.crypto.Types;
 
 import tagion.testbench.hashgraph.hashgraph_test_network;
 
@@ -27,6 +27,14 @@ int _main(string[] args) {
 
     TestNetwork network = new TestNetwork(node_names);
 
+    auto first_exclude = Pubkey(network.channels[$-1]);
+    alias Hist = TestRefinement.ExcludedNodesHistory;
+    TestRefinement.excluded_nodes_history = [
+        Hist(first_exclude, true, 23),
+    ];
+
+
+    
     auto hashgraph_exclude_feature = automation!(exclude_node);
     hashgraph_exclude_feature.StaticExclusionOfANode(node_names, network, module_path);
     hashgraph_exclude_feature.run;
