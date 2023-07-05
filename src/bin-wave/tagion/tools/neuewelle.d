@@ -68,7 +68,7 @@ int _main(string[] args) {
 
     enum supervisor_task_name = "supervisor";
     auto supervisor_handle = spawn!Supervisor(supervisor_task_name);
-    waitfor([supervisor_task_name: Ctrl.STARTING], Ctrl.ALIVE);
+    waitfor([supervisor_task_name], Ctrl.ALIVE);
 
     while (runit) {
     }
