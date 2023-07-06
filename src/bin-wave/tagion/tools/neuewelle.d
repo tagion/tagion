@@ -2,6 +2,7 @@
 module tagion.tools.neuewelle;
 
 import core.sys.posix.signal;
+import core.sync.event;
 import core.thread;
 import std.getopt;
 import std.stdio;
@@ -17,18 +18,18 @@ import tagion.tools.revision;
 import tagion.GlobalSignals : abort;
 import tagion.actor;
 import tagion.services.supervisor;
+import tagion.GlobalSignals;
 
 // enum EXAMPLES {
 //     ver = Example("-v"),
 //     db = Tuple("%s -d %s", program_name, file),
 // }
 
-static shared runit = true;
-
 extern (C)
 void signal_handler(int _) @trusted nothrow {
     try {
-        runit = false;
+        stopsignal.set;
+        writeln("Received stop signal");
     }
     catch (Exception e) {
         assert(0, format("DID NOT CLOSE PROPERLY \n %s", e));
@@ -70,17 +71,15 @@ int _main(string[] args) {
     auto supervisor_handle = spawn!Supervisor(supervisor_task_name);
     waitfor([supervisor_task_name], Ctrl.ALIVE);
 
-    while (runit) {
-    }
+    writeln("alive");
 
+    stopsignal.wait;
+
+    writeln("Sending stop signal to supervisor");
     supervisor_handle.send(Sig.STOP);
-
-    // writeln("exiting");
-    // sock.close();
-
+    writeln("waiting for all threads");
     thread_joinAll;
 
-    // forceRemove(contract_sock_path);
-
+    writeln("Exiting");
     return 0;
 }
