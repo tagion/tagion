@@ -1,4 +1,4 @@
-# Contract  Service
+# Contract Verifier Service
 
 This service is responsible for receiving contracts, ensuring a valid data format of HiRPC requests and compliance with the HiRPC protocol before it is executed in the system.
 
@@ -12,7 +12,6 @@ Output:
 
 The service does the following:
 
-  - Check the data package comply with size limitation.
   - Validate the HiRPC request is correct formatted.
   - Validates signature on permissioned HiRPC request. 
   - Ensure the HiRPC request complay with the protocol
@@ -23,8 +22,8 @@ The acceptance criteria specification can be found in [ContractInterface_service
 ```mermaid
 sequenceDiagram
     participant Input Validator 
-    participant Contract Interface
+    participant Contract Verifier 
     participant Collector
-    Input Validator->>Contract Interface: HiRPC.Receiver
-    Contract Interface->>Collector: Contract
+    Input Validator->>Contract Verifier: HiRPC.Receiver
+    Contract Verifier->>Collector: Contract
 ```
