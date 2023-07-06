@@ -6,7 +6,7 @@ module tagion.hashgraph.Event;
 import std.datetime; // Date, DateTime
 import std.exception : assumeWontThrow;
 import std.conv;
-
+import std.range : iota;
 import std.format;
 import std.typecons;
 import std.traits : Unqual, ReturnType;
@@ -212,6 +212,20 @@ class Round {
         return _previous;
     }
 
+    /**
+ * Range from this round and down
+ * Returns: range of rounds 
+ */
+    @nogc
+    package Rounder.Range!false opSlice() pure nothrow {
+        return Rounder.Range!false(this);
+    }
+
+    /// Ditto
+    @nogc
+    Rounder.Range!true opSlice() const pure nothrow {
+        return Rounder.Range!true(this);
+    }
     invariant {
         assert(!_previous || (_previous.number + 1 is number));
         assert(!_next || (_next.number - 1 is number));
@@ -451,15 +465,29 @@ class Round {
                         .filter!((e) => (e) && !hashgraph.excluded_nodes_mask[e.node_id])
                         .map!((e) => e.node_id));
                 if (votes_mask.isMajority(hashgraph)) {
+
+                    
                     const round_decided = votes_mask[]
                         .all!((vote_node_id) => round_to_be_decided._events[vote_node_id]
                         ._witness.famous(hashgraph));
 
+                    
+                    writefln("majority, owner: %s, round decided: %s", hashgraph.owner_node.channel.cutHex, round_decided);
+                    
+                    
                     if (Event.callbacks) {
                         votes_mask[].filter!((vote_node_id) => round_to_be_decided._events[vote_node_id]._witness.famous)
                             .each!((vote_node_id) => Event.callbacks.famous(round_to_be_decided._events[vote_node_id]));
                     }
                     if (round_decided) {
+                        // round_to_be_decided.events.map!(e => e.event_package.pubkey.cutHex).each!writeln;
+
+                        
+                        
+                        // iota(hashgraph.node_size)
+                        //     .filter!(node_id => round_to_be_decided.events[node_id] is null)
+                        //     .each!(node_id => hashgraph._excluded_nodes_mask[node_id] = true);
+                        // writefln("EXCLUDED: %s %s", hashgraph.owner_node.channel.cutHex, hashgraph.excluded_nodes_mask);
                         collect_received_round(round_to_be_decided, hashgraph);
                         round_to_be_decided._decided = true;
                         last_decided_round = round_to_be_decided;

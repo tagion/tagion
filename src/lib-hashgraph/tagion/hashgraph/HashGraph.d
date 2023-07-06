@@ -187,11 +187,22 @@ class HashGraph {
         }
     }
 
+    package bool _can_rouind_be_decided(const Round r) nothrow {
+        
+        // // event famous 
+        // const test = _nodes
+        //         .byKeyValue
+        //         .filter!((n) => (r.events[n.node_id] !is null)
+        //         .filter!((n) => (r.events[n.node_id].famous))
+        //         .count!((n) => (r.next !is null));
+
+        
+        return true;
+    }
     package bool can_round_be_decided(const Round r) nothrow {
         const result = _nodes
             .byValue
-            .filter!((n) => (r.events[n.node_id] is null))
-            .filter!((n) => !excluded_nodes_mask[n.node_id])
+            .filter!((n) => (r.events[n.node_id] is null) && (!excluded_nodes_mask[n.node_id]))
             .tee!((n) => n.asleep)
             .all!((n) => n.sleeping);
         return result;

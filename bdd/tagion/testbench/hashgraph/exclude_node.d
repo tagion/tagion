@@ -14,6 +14,8 @@ import tagion.crypto.Types;
 import std.array;
 import std.path : buildPath, setExtension, extension;
 import tagion.basic.Types : FileExtension;
+import tagion.utils.Miscellaneous : cutHex;
+
 enum feature = Feature(
             "Hashgraph exclude node",
             ["This test is meant to test if a node completely stops communicating."]);
@@ -91,6 +93,7 @@ class StaticExclusionOfANode {
 
                 if (i == 10) {
                     TestNetwork.TestGossipNet.online_states[network.current] = false;
+                    writefln("excluding: %s", network.current.cutHex);
                     writefln("after exclude %s", TestNetwork.TestGossipNet.online_states);
                 }
                 i++;
