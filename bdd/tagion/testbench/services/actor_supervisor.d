@@ -87,7 +87,7 @@ static:
     auto failHandler = (TaskFailure tf) {
         try {
             writefln("Received the taskfailure from overrid taskfail type: %s", typeid(tf.throwable));
-            throw tf.throwable;
+            throw cast(typeof(tf.throwable)) tf.throwable;
         }
         catch (Recoverable e) {
             writeln(typeof(e).stringof);
