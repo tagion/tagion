@@ -136,7 +136,6 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         }
 
         void send(const(Pubkey) channel, const(HiRPC.Sender) sender) {
-            
             if (online_states !is null && !online_states[channel]) { return; }
 
             const doc = sender.toDoc;
@@ -144,10 +143,14 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         }
 
         void send(const(Pubkey) channel, const(Document) doc) nothrow {
+            if (online_states !is null && !online_states[channel]) { return; }
+
             channel_queues[channel].write(doc);
         }
 
         final void send(T)(const(Pubkey) channel, T pack) if (isHiBONRecord!T) {
+            if (online_states !is null && !online_states[channel]) { return; }
+
             send(channel, pack.toDoc);
         }
 
@@ -240,6 +243,10 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
 
             while (!stop) {
                 while (!authorising.empty(_hashgraph.channel)) {
+                    if (current !is Pubkey.init && TestGossipNet.online_states !is null && !TestGossipNet.online_states[current]) {
+                        (() @trusted { yield; })();
+                    }
+
                     const received = _hashgraph.hirpc.receive(
                             authorising.receive(_hashgraph.channel));
 
