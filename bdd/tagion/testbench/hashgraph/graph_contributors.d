@@ -55,8 +55,6 @@ class ANonvotingNode {
 
     @Given("i have a hashgraph testnetwork with n number of nodes")
     Document nodes() {
-
-        
         network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 0);
         network.random.seed(123456432789);
         network.global_time = SysTime.fromUnixTime(1_614_355_286);
