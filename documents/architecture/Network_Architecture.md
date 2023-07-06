@@ -37,10 +37,14 @@ digraph Message_flow {
   DART [href="#/documents/architecture/DART.md" shape = cylinder];
   Input [href="#/documents/architecture/InputValidator.md" label="Input\nValidator" style=filled fillcolor=green ]
   P2P [ style=filled fillcolor=red]
-  ContractVerifier [ label="Contract\nVerifier"]
-  NodeInterface [ label="Node\nInterface"]
-  Transcript [shape = note]
-  EpochCreator [label="Epoch\nCreator"]
+  ContractVerifier [href="#/documents/architecture/InputValidator.md"  label="Contract\nVerifier"]
+  NodeInterface [href="#/documents/architecture/NodeInterface.md"  label="Node\nInterface"]
+  Transcript [href="#/documents/architecture/Transcript.md" shape = note]
+  EpochCreator [href="#/documents/architecture/EpochCreator.md" label="Epoch\nCreator"]
+  TVM [href="#/documents/architecture/TVM.md"]
+  Collector [href="#/documents/architecture/Collector.md"]
+  Replicator [href="#/documents/architecture/Replicator.md"]
+
   Input -> ContractVerifier [label="HiRPC(contract)" color=green];
   ContractVerifier -> Collector [label="contract-NC" color=green];
   Collector -> TVM [label="contract-S" color=green];
@@ -72,19 +76,23 @@ digraph tagion_hierarchy {
     rankdir=UD;
     size="8,5"
    node [style=filled shape=rect]
-   Input [ label="Input\nValidator" ]
+   Input [href="#/documents/architecture/InputValidator.md" label="Input\nValidator" color=green ]
+Tagion [href="#/documents/architecture/Tagion.md"]
 Tagionwave [color=blue]
-TagionFactory [label="Tagion\nFactory"]
-DART [shape = cylinder]
-ContractVerifier [label="Contract\nVerifier"]
-Transcript [shape = note]
-Collector [shape=rect]
-EpochCreator [label="Epoch\nCreator"]
-EpochDump [label="Epoch\nDump"]
-NodeInterface [shape=rect label="Node\nInterface"]
-LoggerSubscription [label="Logger\nSubscription"]
-TLS [color=green]
-P2P [color=red]
+TagionFactory [href="#/documents/architecture/Collector.md" label="Tagion\nFactory"]
+TVM [href="#/documents/architecture/TVM.md"] 
+DART [href="#/documents/architecture/DART.md" shape = cylinder]
+Replicator [href="#/documents/architecture/Replicator.md"] 
+ContractVerifier [href="#/documents/architecture/ContractVerifier.md" label="Contract\nVerifier"]
+Transcript [href="#/documents/architecture/Transcript.md" shape = note]
+Collector [href="#/documents/architecture/Collector.md" shape=rect]
+EpochCreator [href="#/documents/architecture/EpochCreator.md" label="Epoch\nCreator"]
+EpochDump [href="#/documents/architecture/EpochDump.md" label="Epoch\nDump"]
+NodeInterface [href="#/documents/architecture/NodeInterface.md" lshape=rect label="Node\nInterface"]
+P2P [href="#/documents/architecture/P2P.md" color=red]
+LoggerSubscription [href="#/documents/architecture/LoggerSubscription.md" label="Logger\nSubscription"]
+Logger [href="#/documents/architecture/Logger.md"] 
+Monitor [href="#/documents/architecture/Monitor.md"] 
 node [shape = rect];
 	Tagionwave -> Logger -> LoggerSubscription;
 	Tagionwave -> TagionFactory;
@@ -93,7 +101,7 @@ node [shape = rect];
 	DART -> Replicator;
 	Tagion -> DART;
     Tagion -> EpochCreator;
-	EpochCreator -> ContractVerifier [href="/documents/architecture/ContractVerifier.md"];
+	EpochCreator -> ContractVerifier;
 	EpochCreator -> Transcript;
 	EpochCreator -> Collector;
 	Transcript -> EpochDump;
