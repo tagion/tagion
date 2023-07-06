@@ -497,9 +497,9 @@ class NativeSecp256k1 {
 
         ubyte* ret_arr;
 
-        secp256k1_sha256_initialize(&sha);
-        secp256k1_sha256_write(&sha, &data[0], data.length);
-        secp256k1_sha256_finalize(&sha, ret_arr);
+        secp256k1_sha256_initialize_w(&sha);
+        secp256k1_sha256_write_w(&sha, &data[0], data.length);
+        secp256k1_sha256_finalize_w(&sha, ret_arr);
 
         for (int i = 0; i < 32; i++) {
             res[i] = *(ret_arr + i);
