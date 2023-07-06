@@ -11,6 +11,7 @@ import std.stdio;
 import std.algorithm;
 import std.format;
 import tagion.crypto.Types;
+import std.array;
 
 enum feature = Feature(
             "Hashgraph exclude node",
@@ -36,8 +37,6 @@ class StaticExclusionOfANode {
         this.module_path = module_path;
         CALLS = cast(uint) node_names.length * 1000;
     }
-
-
 
     @Given("i have a hashgraph testnetwork with n number of nodes")
     Document nodes() {
@@ -75,40 +74,52 @@ class StaticExclusionOfANode {
 
     @When("i mark one node statically as non-voting and disable communication for him")
     Document him() {
-        // we are excluding one node. We continue until that epoch where we afterwards break all communication with him.
-
-        // try {
-        //     uint = 0;
-        //     while (i < CALLS) {
-        //         // get the current states of the nodes.
-        //         const round_number = cast(int) i;
-        //         auto histories = TestRefinement.excluded_nodes_history
-        //                             .filter!(h => h.round < round_number-1)
-        //                             .array
-        //                             .sort!((a,b) => a.round < b.round);
-        //         bool[Pubkey] current_states;
-        //         foreach(hist; histories) {
-        //             current_states[hist.pubkey] = hist.state;
-        //         }
-        //         // if (current_states !is null) {
-        //         //     const callable = current_states
-        //         //                         .byKeyValue
-        //         //                         .filter!(h => !h.value)
-        //         //                         .map!(h => h.key)
-        //         //                         .array;
-        //         // }
-        //         // Pubkey current;
-        //         // if (current_states !is null) {
+        //we are excluding one node. We continue until that epoch where we afterwards break all communication with him.
+        foreach(channel; network.channels) {
+            TestNetwork.TestGossipNet.online_states[channel] = true;
+        }
+        writefln("ONLINE: %s", TestNetwork.TestGossipNet.online_states);
+            
+        try {
+            uint i = 0;
+            while (i < CALLS) {
+                // get the current states of the nodes.
+                
+                // const round_number = cast(int) i;
+                // auto histories = TestRefinement.excluded_nodes_history
+                //                     .filter!(h => h.round < round_number-1)
+                //                     .array
+                //                     .sort!((a,b) => a.round < b.round);
+                // foreach(hist; histories) {
+                //     current_states[hist.pubkey] = hist.state;
+                // }
+                // const callable = current_states
+                //                     .byKeyValue
+                //                     .filter!(h => !h.value)
+                //                     .map!(h => h.key)
+                //                     .array;
+                // writefln("%s, %s", i, callable.length);
+                // if (current_states !is null) {
+                //     const callable = current_states
+                //                         .byKeyValue
+                //                         .filter!(h => !h.value)
+                //                         .map!(h => h.key)
+                //                         .array;
+                // }
+                // Pubkey current;
+                // if (current_states !is null) {
                     
-        //         // }
+                // }
+
+                i++;
 
                 
-
-                
-        //     }
-        // }
+            }
+        } catch (Exception e) {
+            check(false, e.msg);
+        }
         
-        return Document();
+        return result_ok;
     }
 
     @Then("the network should still reach consensus")

@@ -27,11 +27,6 @@ int _main(string[] args) {
 
     TestNetwork network = new TestNetwork(node_names);
 
-    auto first_exclude = Pubkey(network.channels[$-1]);
-    alias Hist = TestRefinement.ExcludedNodesHistory;
-    TestRefinement.excluded_nodes_history = [
-        Hist(first_exclude, true, 23),
-    ];
 
 
     

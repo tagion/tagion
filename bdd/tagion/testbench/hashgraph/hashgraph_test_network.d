@@ -33,7 +33,8 @@ class TestRefinement : StdRefinement {
     struct ExcludedNodesHistory {
         Pubkey pubkey;
         bool state;
-        int round;   
+        int round;
+        bool stop_communication;   
     }
     static ExcludedNodesHistory[] excluded_nodes_history;
 
@@ -113,6 +114,9 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         ChannelQueue[Pubkey] channel_queues;
         sdt_t _current_time;
 
+        static bool[Pubkey] online_states;
+
+               
         void start_listening() {
             // empty
         }
@@ -126,21 +130,20 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         const(sdt_t) time() pure const {
             return _current_time;
         }
-
+                
         bool isValidChannel(const(Pubkey) channel) const pure nothrow {
             return (channel in channel_queues) !is null;
         }
 
         void send(const(Pubkey) channel, const(HiRPC.Sender) sender) {
-            const wave = Wavefront(verify_net, sender.method.params);
-            // writefln("owner %s, state=%s", sender.pubkey.cutHex, wave.state);
+            
+            if (online_states !is null && !online_states[channel]) { return; }
+
             const doc = sender.toDoc;
-            // assumeWontThrow(writefln("SENDER: send to %s, doc=%s", channel.cutHex, doc.toPretty));
             channel_queues[channel].write(doc);
         }
 
         void send(const(Pubkey) channel, const(Document) doc) nothrow {
-            // assumeWontThrow(writefln("DOC: send to %s, document=%s", channel.cutHex, doc.toPretty));
             channel_queues[channel].write(doc);
         }
 
