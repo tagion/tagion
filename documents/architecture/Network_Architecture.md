@@ -34,17 +34,17 @@ digraph Message_flow {
   labelangle=35;
   node [style=filled]
   node [ shape = "rect"];
-  DART [shape = cylinder];
-  Input [ label="Input\nValidator" style=filled fillcolor=green ]
+  DART [href="#/documents/architecture/DART.md" shape = cylinder];
+  Input [href="#/documents/architecture/InputValidator.md" label="Input\nValidator" style=filled fillcolor=green ]
   P2P [ style=filled fillcolor=red]
   ContractVerifier [ label="Contract\nVerifier"]
   NodeInterface [ label="Node\nInterface"]
   Transcript [shape = note]
   EpochCreator [label="Epoch\nCreator"]
   Input -> ContractVerifier [label="HiRPC(contract)" color=green];
-  ContractVerifier -> Collector [label=contract color=green];
+  ContractVerifier -> Collector [label="contract-NC" color=green];
   Collector -> TVM [label="contract-S" color=green];
-  EpochCreator -> Collector [label=contract color=darkgreen];
+  EpochCreator -> Collector [label="contract-C" color=darkgreen];
   EpochCreator -> Transcript [label=epoch color=green];
   TVM -> Transcript [label="archives\nin/out" color=red];
   TVM -> EpochCreator [label="contract-SC" color=green];
