@@ -12,7 +12,8 @@ import std.algorithm;
 import std.format;
 import tagion.crypto.Types;
 import std.array;
-
+import std.path : buildPath, setExtension, extension;
+import tagion.basic.Types : FileExtension;
 enum feature = Feature(
             "Hashgraph exclude node",
             ["This test is meant to test if a node completely stops communicating."]);
@@ -36,6 +37,10 @@ class StaticExclusionOfANode {
         this.node_names = node_names;
         this.module_path = module_path;
         CALLS = cast(uint) node_names.length * 1000;
+        foreach(channel; network.channels) {
+            TestNetwork.TestGossipNet.online_states[channel] = true;
+        }
+        writefln("ONLINE: %s", TestNetwork.TestGossipNet.online_states);
     }
 
     @Given("i have a hashgraph testnetwork with n number of nodes")
@@ -75,14 +80,20 @@ class StaticExclusionOfANode {
     @When("i mark one node statically as non-voting and disable communication for him")
     Document him() {
         //we are excluding one node. We continue until that epoch where we afterwards break all communication with him.
-        foreach(channel; network.channels) {
-            TestNetwork.TestGossipNet.online_states[channel] = true;
-        }
-        writefln("ONLINE: %s", TestNetwork.TestGossipNet.online_states);
             
         try {
             uint i = 0;
             while (i < CALLS) {
+                const channel_number = network.random.value(0, network.channels.length);
+                network.current = Pubkey(network.channels[channel_number]);
+                auto current = network.networks[network.current];
+                (() @trusted { current.call; })();
+
+                if (i == 10) {
+                    TestNetwork.TestGossipNet.online_states[network.current] = false;
+                    writefln("after exclude %s", TestNetwork.TestGossipNet.online_states);
+                }
+                i++;
                 // get the current states of the nodes.
                 
                 // const round_number = cast(int) i;
@@ -129,7 +140,17 @@ class StaticExclusionOfANode {
 
     @Then("stop the network")
     Document _network() {
-        return Document();
+    // create ripple files.
+        Pubkey[string] node_labels;
+        foreach (channel, _net; network.networks) {
+            node_labels[_net._hashgraph.name] = channel;
+        }
+        foreach (_net; network.networks) {
+            const filename = buildPath(module_path, "ripple-" ~ _net._hashgraph.name.setExtension(FileExtension.hibon));
+            writeln(filename);
+            _net._hashgraph.fwrite(filename, node_labels);
+        }
+        return result_ok;
     }
 
 }

@@ -245,6 +245,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
                 while (!authorising.empty(_hashgraph.channel)) {
                     if (current !is Pubkey.init && TestGossipNet.online_states !is null && !TestGossipNet.online_states[current]) {
                         (() @trusted { yield; })();
+                        writeln("WOWO?");
                     }
 
                     const received = _hashgraph.hirpc.receive(
