@@ -1,9 +1,11 @@
 module tagion.services.contract;
 
+import core.sys.posix.unistd : getuid;
 import std.socket;
 import std.stdio;
 import std.path;
-import core.sys.posix.unistd : getuid;
+import std.algorithm : remove;
+import std.exception : enforce;
 
 import tagion.actor;
 import tagion.script.StandardRecords;
@@ -13,9 +15,16 @@ import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord;
 import tagion.communication.HiRPC;
 import tagion.basic.basic : forceRemove;
+import tagion.GlobalSignals : stopsignal;
 
-string contract_sock_path() {
-    return buildPath("/", "run", "user", format("%s", getuid), "tagionwave_contract.sock");
+@property static immutable(string) contract_sock_path() {
+    version (linux) {
+        return "\0NEUEWELLE_CONTRACT";
+    }
+    else {
+        enforce(0, "Abstract socket address not supported on platform, please implement with file system addresses");
+        // return buildPath("/", "run", "user", format("%d", getuid), "tagionwave_contract.sock");
+    }
 }
 
 void echoSock(immutable Socket _sock) {
@@ -32,34 +41,70 @@ void echoSock(immutable Socket _sock) {
     assert(doc.isRecord!(HiRPC.Receiver), "Message is not a hirpc receiver record");
 
     writeln(doc.toPretty);
-    // runit = false;
 }
 
 struct ContractService {
     static void task(string task_name) nothrow {
         try {
             writeln("contract_sock_path: ", contract_sock_path);
-            Address addr = new UnixAddress(contract_sock_path);
-            Socket sock = new Socket(AddressFamily.UNIX, SocketType.STREAM);
-            sock.blocking = true;
-            sock.bind(addr);
-            enum MAX_CONNECTIONS = 5;
-            sock.listen(MAX_CONNECTIONS);
+            Socket listener = new Socket(AddressFamily.UNIX, SocketType.STREAM);
+            listener.blocking = false;
+            listener.bind(new UnixAddress(contract_sock_path));
+            enum MAX_CONNECTIONS = 10;
+            listener.listen(MAX_CONNECTIONS);
 
-            Socket accept_sock;
-            // try {
-            //     accept_sock = sock.accept;
-            //     spawn(&echoSock, cast(immutable) accept_sock);
-            // }
-            // catch (SocketOSException e) {
-            //     writeln("Socket was closed by os");
-            // }
+            auto socketSet = new SocketSet(MAX_CONNECTIONS + 1);
 
-            run(task_name);
+            Socket[] reads;
 
-            // writeln("exiting");
-            sock.close();
-            forceRemove(contract_sock_path);
+            setState(Ctrl.ALIVE, task_name); // Tell the owner that you are running
+            while (!stopsignal.wait) {
+                socketSet.add(listener);
+
+                foreach (sock; reads) {
+                    socketSet.add(sock);
+                }
+                Socket.select(socketSet, null, null);
+
+                for (size_t i = 0; i < reads.length; i++) {
+                    if (socketSet.isSet(reads[i])) {
+                        ReceiveBuffer buf;
+                        buf.append(&reads[i].receive);
+                        reads[i].close();
+                        reads = reads.remove(i);
+                        i--;
+
+                        writefln("\tTotal connections: %d", reads.length);
+                    }
+                }
+                if (socketSet.isSet(listener)) // connection request 
+                {
+                    Socket sn = null;
+                    scope (failure) {
+                        writefln("error accepting");
+
+                        if (sn)
+                            sn.close();
+                    }
+                    sn = listener.accept();
+                    assert(sn.isAlive);
+                    assert(listener.isAlive);
+
+                    if (reads.length < MAX_CONNECTIONS) {
+                        writefln("connection from %s established.", sn.remoteAddress().toString());
+                        reads ~= sn;
+                        writefln("\ttotal connections: %d", reads.length);
+                    }
+                    else {
+                        writefln("rejected connection from %s; too many connections.", sn.remoteAddress().toString());
+                        sn.close();
+                        assert(!sn.isAlive);
+                        assert(listener.isAlive);
+                    }
+                }
+
+                socketSet.reset();
+            }
 
             end(task_name);
         }
