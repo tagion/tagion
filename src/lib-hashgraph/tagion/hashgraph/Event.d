@@ -466,6 +466,20 @@ class Round {
                         .filter!((e) => (e) && !hashgraph.excluded_nodes_mask[e.node_id])
                         .map!((e) => e.node_id));
                 if (votes_mask.isMajority(hashgraph)) {
+
+                    votes_mask[]
+                        .each!((vote_node_id) => round_to_be_decided._events[vote_node_id]
+                        ._witness.famous(hashgraph));
+
+                    const famous_round = votes_mask[]
+                        .all!((vote_node_id) => round_to_be_decided._events[vote_node_id]
+                        ._witness.famous);
+
+                    if (!famous_round) {
+                        writefln("not famous round");
+                        return;
+                    }
+                    
                     uint count_rounds;
                     foreach(r; round_to_be_decided[].retro) {
                         const round_contains_witness = votes_mask[]
@@ -493,6 +507,7 @@ class Round {
                             .each!((vote_node_id) => Event.callbacks.famous(round_to_be_decided._events[vote_node_id]));
                     }
                     if (round_decided) {
+                        writefln("decided round: %s count %s", round_to_be_decided.number, count_rounds);
                         // round_to_be_decided.events.map!(e => e.event_package.pubkey.cutHex).each!writeln;
 
                         

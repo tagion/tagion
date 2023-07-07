@@ -194,7 +194,7 @@ class HashGraph {
             return false;
         }
         const possible_decided = r.events
-                .all!((e) => e is null || e.witness.famous || e.isEva);
+                .all!((e) => e is null || e.isWitness);
         return possible_decided;
 
     }
