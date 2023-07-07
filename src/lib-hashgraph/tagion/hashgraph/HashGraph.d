@@ -187,14 +187,14 @@ class HashGraph {
     }
 
     package bool possible_round_decided(const Round r) nothrow {
-        const famous_count = r.events
-            .count!((e) => (e !is null) && e.witness.famous);
-        __write("famous count=%s", famous_count);
-        if (!isMajority(famous_count)) {
+        const witness_count = r.events
+            .count!((e) => (e !is null) && e.isWitness);
+        __write("round=%s, witness count=%s",r.number, witness_count);
+        if (!isMajority(witness_count)) {
             return false;
         }
         const possible_decided = r.events
-                .all!((e) => e is null || e.witness.famous);
+                .all!((e) => e is null || e.witness.famous || e.isEva);
         return possible_decided;
 
     }

@@ -481,8 +481,8 @@ class Round {
                     // const round_decided = votes_mask[]
                     //     .all!((vote_node_id) => round_to_be_decided[vote_node_id][].retro.walkLength > 2);
                     
-                    // //     // .all!((vote_node_id) => round_to_be_decided._events[vote_node_id]
-                    //     // ._witness.famous(hashgraph));
+                     // .all!((vote_node_id) => round_to_be_decided._events[vote_node_id]
+                     // ._witness.famous(hashgraph));
 
                     
                     // writefln("majority, owner: %s, round decided: %s", hashgraph.owner_node.channel.cutHex, round_decided);
@@ -1082,7 +1082,7 @@ class Event {
             return _daughter is null;
         }
 
-        /**
+     /**
      * Check if an evnet has around 
      * Returns: true if an round exist for this event
      */
@@ -1121,6 +1121,9 @@ class Event {
             return _witness;
         }
 
+        bool isWitness() {
+            return _witness !is null;
+        }
         /**
      * Get the altitude of the event
      * Returns: altitude
