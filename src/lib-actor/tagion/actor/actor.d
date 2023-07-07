@@ -37,9 +37,6 @@ version (Posix) {
 struct Msg(string name) {
 }
 
-struct method {
-};
-
 // State messages send to the supervisor
 enum Ctrl {
     UNKNOWN, // Unkwnown state
@@ -69,7 +66,7 @@ private bool all(Ctrl[string] aa, Ctrl ctrl) @safe nothrow {
  * Waif for an array of task names to be in Ctrl state
  * Returns: false if any message is received that is not CtrlMsg 
  */
-bool waitfor(string[] _childrenState, Ctrl state) @safe nothrow {
+bool waitfor(inout(string[]) _childrenState, Ctrl state) @safe nothrow {
     Ctrl[string] childrenState;
     foreach (task_name; _childrenState) {
         childrenState[task_name] = Ctrl.UNKNOWN;
@@ -327,6 +324,7 @@ void run(Args...)(string task_name, Args args) nothrow {
         }
 
         setState(Ctrl.ALIVE, task_name); // Tell the owner that you are running
+        writefln("Entering %s event loop", task_name);
         while (!stop) {
             try {
                 receive(
