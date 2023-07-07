@@ -5,9 +5,7 @@ import std.stdio;
 import std.conv;
 import std.format;
 import std.exception : assumeWontThrow;
-import std.algorithm.sorting : sort;
-import std.algorithm.searching : all;
-import std.algorithm.iteration : map, each, filter;
+import std.algorithm;
 import std.range : tee;
 import std.array : array;
 
@@ -32,6 +30,7 @@ import tagion.gossip.InterfaceNet;
 
 // debug
 import tagion.hibon.HiBONJSON;
+import tagion.basic.Debug;
 
 version (unittest) {
     version = hashgraph_fibertest;
@@ -187,17 +186,17 @@ class HashGraph {
         }
     }
 
-    package bool _can_rouind_be_decided(const Round r) nothrow {
-        
-        // // event famous 
-        // const test = _nodes
-        //         .byKeyValue
-        //         .filter!((n) => (r.events[n.node_id] !is null)
-        //         .filter!((n) => (r.events[n.node_id].famous))
-        //         .count!((n) => (r.next !is null));
+    package bool possible_round_decided(const Round r) nothrow {
+        const famous_count = r.events
+            .count!((e) => (e !is null) && e.witness.famous);
+        __write("famous count=%s", famous_count);
+        if (!isMajority(famous_count)) {
+            return false;
+        }
+        const possible_decided = r.events
+                .all!((e) => e is null || e.witness.famous);
+        return possible_decided;
 
-        
-        return true;
     }
     package bool can_round_be_decided(const Round r) nothrow {
         const result = _nodes
@@ -768,7 +767,7 @@ class HashGraph {
     }
 
     @nogc
-    bool isMajority(const uint voting) const pure nothrow {
+    bool isMajority(const size_t voting) const pure nothrow {
         return .isMajority(voting, node_size);
     }
 

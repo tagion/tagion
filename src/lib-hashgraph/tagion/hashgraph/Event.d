@@ -6,7 +6,7 @@ module tagion.hashgraph.Event;
 import std.datetime; // Date, DateTime
 import std.exception : assumeWontThrow;
 import std.conv;
-import std.range : iota;
+import std.range;
 import std.format;
 import std.typecons;
 import std.traits : Unqual, ReturnType;
@@ -460,19 +460,32 @@ class Round {
         void check_decided_round(HashGraph hashgraph) @trusted {
             auto round_to_be_decided = last_decided_round._next;
 
-            if (hashgraph.can_round_be_decided(round_to_be_decided)) {
+            if (hashgraph.possible_round_decided(round_to_be_decided)) {
+                writefln("possible_round_decided");
                 const votes_mask = BitMask(round_to_be_decided.events
                         .filter!((e) => (e) && !hashgraph.excluded_nodes_mask[e.node_id])
                         .map!((e) => e.node_id));
                 if (votes_mask.isMajority(hashgraph)) {
+                    uint count_rounds;
+                    foreach(r; round_to_be_decided[].retro) {
+                        const round_contains_witness = votes_mask[]
+                            .all!(vote_node_id => r.events[vote_node_id] !is null);
+
+                        if (!round_contains_witness) {
+                            break;
+                        }
+                        count_rounds++;
+                    }
+                    const round_decided = count_rounds > 2;
+                    writefln("vote mask isMajority count:%s", count_rounds);
+                    // const round_decided = votes_mask[]
+                    //     .all!((vote_node_id) => round_to_be_decided[vote_node_id][].retro.walkLength > 2);
+                    
+                    // //     // .all!((vote_node_id) => round_to_be_decided._events[vote_node_id]
+                    //     // ._witness.famous(hashgraph));
 
                     
-                    const round_decided = votes_mask[]
-                        .all!((vote_node_id) => round_to_be_decided._events[vote_node_id]
-                        ._witness.famous(hashgraph));
-
-                    
-                    writefln("majority, owner: %s, round decided: %s", hashgraph.owner_node.channel.cutHex, round_decided);
+                    // writefln("majority, owner: %s, round decided: %s", hashgraph.owner_node.channel.cutHex, round_decided);
                     
                     
                     if (Event.callbacks) {
