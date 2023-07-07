@@ -473,7 +473,7 @@ class Round {
 
                     const famous_round = votes_mask[]
                         .all!((vote_node_id) => round_to_be_decided._events[vote_node_id]
-                        ._witness.famous);
+                        .isFamous);
 
                     if (!famous_round) {
                         writefln("not famous round");
@@ -503,7 +503,7 @@ class Round {
                     
                     
                     if (Event.callbacks) {
-                        votes_mask[].filter!((vote_node_id) => round_to_be_decided._events[vote_node_id]._witness.famous)
+                        votes_mask[].filter!((vote_node_id) => round_to_be_decided._events[vote_node_id].isFamous)
                             .each!((vote_node_id) => Event.callbacks.famous(round_to_be_decided._events[vote_node_id]));
                     }
                     if (round_decided) {
@@ -711,7 +711,7 @@ class Event {
      * Checks if the witness is famous
      * Returns: ture if famous
      */
-            bool famous() const {
+            bool famous() const @nogc {
                 return _famous;
             }
 
@@ -1138,6 +1138,10 @@ class Event {
 
         bool isWitness() {
             return _witness !is null;
+        }
+
+        bool isFamous() {
+            return isWitness && _witness.famous;
         }
         /**
      * Get the altitude of the event
