@@ -30,34 +30,42 @@ import tagion.hashgraph.Refinement;
 
 class TestRefinement : StdRefinement { 
 
-    static Pubkey[int] excluded_nodes_history;
-     
+    struct ExcludedNodesHistory {
+        Pubkey pubkey;
+        bool state;
+        int round;
+        bool stop_communication;   
+    }
+    static ExcludedNodesHistory[] excluded_nodes_history;
+
+   
     struct Epoch {
-        const(Event)[] events;
+        Event[] events;
         sdt_t epoch_time;
     }
 
     static Epoch[][Pubkey] epoch_events;
     override void finishedEpoch(const(Event[]) events, const sdt_t epoch_time) {
-        auto epoch = Epoch(events, epoch_time);
+        
+        auto epoch = (() @trusted => Epoch(cast(Event[]) events, epoch_time))(); 
         epoch_events[hashgraph.owner_node.channel] ~= epoch;
     }
 
     override void excludedNodes(ref BitMask excluded_mask) {
         import tagion.basic.Debug;
-
+        import std.algorithm : filter;
         if (excluded_nodes_history is null) { return; }
                 
         const last_decided_round = hashgraph.rounds.last_decided_round.number;
-        const exclude_channel = excluded_nodes_history.get(last_decided_round, Pubkey.init);
-        if (exclude_channel !is Pubkey.init) {
-            const node = hashgraph.nodes.get(exclude_channel, HashGraph.Node.init);
+
+        auto histories = excluded_nodes_history.filter!(h => h.round == last_decided_round);
+        foreach(history; histories) {
+            const node = hashgraph.nodes.get(history.pubkey, HashGraph.Node.init);
             if (node !is HashGraph.Node.init) {
-                excluded_mask[node.node_id] = !excluded_mask[node.node_id]; 
+                excluded_mask[node.node_id] = history.state;
                 __write("setting exclude mask");
             }
         }
-        
         __write("callback<%s>", excluded_mask);
 
     }
@@ -106,6 +114,9 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         ChannelQueue[Pubkey] channel_queues;
         sdt_t _current_time;
 
+        static bool[Pubkey] online_states;
+
+               
         void start_listening() {
             // empty
         }
@@ -119,25 +130,27 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         const(sdt_t) time() pure const {
             return _current_time;
         }
-
+                
         bool isValidChannel(const(Pubkey) channel) const pure nothrow {
             return (channel in channel_queues) !is null;
         }
 
         void send(const(Pubkey) channel, const(HiRPC.Sender) sender) {
-            const wave = Wavefront(verify_net, sender.method.params);
-            // writefln("owner %s, state=%s", sender.pubkey.cutHex, wave.state);
+            if (online_states !is null && !online_states[channel]) { return; }
+
             const doc = sender.toDoc;
-            // assumeWontThrow(writefln("SENDER: send to %s, doc=%s", channel.cutHex, doc.toPretty));
             channel_queues[channel].write(doc);
         }
 
         void send(const(Pubkey) channel, const(Document) doc) nothrow {
-            // assumeWontThrow(writefln("DOC: send to %s, document=%s", channel.cutHex, doc.toPretty));
+            if (online_states !is null && !online_states[channel]) { return; }
+
             channel_queues[channel].write(doc);
         }
 
         final void send(T)(const(Pubkey) channel, T pack) if (isHiBONRecord!T) {
+            if (online_states !is null && !online_states[channel]) { return; }
+
             send(channel, pack.toDoc);
         }
 
@@ -230,6 +243,11 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
 
             while (!stop) {
                 while (!authorising.empty(_hashgraph.channel)) {
+                    if (current !is Pubkey.init && TestGossipNet.online_states !is null && !TestGossipNet.online_states[current]) {
+                        (() @trusted { yield; })();
+                        writeln("WOWO?");
+                    }
+
                     const received = _hashgraph.hirpc.receive(
                             authorising.receive(_hashgraph.channel));
 

@@ -684,9 +684,7 @@ struct SecureWallet(Net : SecureNet) {
             assert(wallet_2_loggedin);
             const pubkey_2 = secure_wallet_2.getPublicKey();
 
-            version (MNEMONIC) {
-                assert(pubkey_1 == pubkey_2);
-            }
+            assert(pubkey_1 == pubkey_2);
         }
 
     }

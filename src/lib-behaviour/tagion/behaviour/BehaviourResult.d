@@ -23,7 +23,7 @@ struct BehaviourError {
     string msg; ///  Error message in the Exception
     string[] trace; ///. Exception line trace of in the exception
     mixin HiBONRecord!(q{
-            this(Exception e) nothrow @trusted {
+            this(Throwable e) nothrow @trusted {
                 import std.exception : assumeWontThrow;
                 import std.string : splitLines;
                 import std.stdio;

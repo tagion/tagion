@@ -21,6 +21,7 @@ struct EventView {
     @label("$strong") uint[] strongly_seeing_mask;
     @label("$seen") uint[] round_seen_mask;
     @label("$received") uint[] round_received_mask;
+    @label("$error", true) bool error;
     bool father_less;
 
     mixin HiBONRecord!(
@@ -39,6 +40,7 @@ struct EventView {
                         father=event.father.id;
                     }
                 }
+                error=event.error;
                 node_id=(relocate_node_id is size_t.max)?event.node_id:relocate_node_id;
                 altitude=event.altitude;
                 order=event.received_order;

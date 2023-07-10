@@ -82,7 +82,9 @@ class StdRefinement : Refinement {
             }
             return a.received_order < b.received_order;
         }
-        
+        const online = BitMask(decided_round.events.filter!((e) => e.isFamous).map!(e => e.node_id));
+        import tagion.basic.Debug;
+        __write("ONLINE NODES %s", online);
         // Collect and sort all events
 
         sdt_t[] times;
@@ -101,10 +103,9 @@ class StdRefinement : Refinement {
                 Event.count, Event.Witness.count, events.length, epoch_time);
 
         finishedEpoch(events, epoch_time);
+
         excludedNodes(hashgraph._excluded_nodes_mask);
 
-    
-    
     
     }
 }

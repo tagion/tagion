@@ -10,6 +10,10 @@ ifneq ($(COMPILER),gdc)
 DFLAGS+=$(DPREVIEW)=inclusiveincontracts
 endif
 
+ifdef VERBOSE_COMPILER_ERRORS
+DFLAGS+=$(VERRORS)
+endif
+
 DFLAGS+=-J$(DTUB)/logos/
 
 #
@@ -24,8 +28,6 @@ $(DOBJ)/%.$(OBJEXT): $(DSRC)/%.d
 	$(PRECMD)
 	${call log.kvp, compile, $(MODE)}
 	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} $< $(DCOMPILE_ONLY) $(OUTPUT)$@
-
-
 
 #
 # Compile and link or split link

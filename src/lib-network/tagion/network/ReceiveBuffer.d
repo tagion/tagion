@@ -15,6 +15,7 @@ struct ReceiveBuffer {
     static size_t max_size = 0x1000;
     alias Receive = ptrdiff_t delegate(void[] buf);
     alias ResultBuffer = Tuple!(ptrdiff_t, "size", ubyte[], "data");
+
     const(ResultBuffer) append(const Receive receive) {
         if (buffer is null) {
             buffer = new ubyte[START_SIZE];

@@ -619,7 +619,7 @@ mixin template HiBONRecord(string CTOR = "") {
                                     basename!(this.tupleof[i])));
                         }
                     }
-                else {
+                    else {
                         enum name = default_name;
                         enum optional = false;
                     }
@@ -652,7 +652,7 @@ mixin template HiBONRecord(string CTOR = "") {
                                     {
                                         alias inspectFun = unaryFun!(F.code);
                                         check(inspectFun(m),
-                                                message("Member %s faild on inspection %s with %s",
+                                                message("Member %s failed on inspection %s with %s",
                                                 name, F.code, m));
                                     }
                                 }

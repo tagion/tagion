@@ -78,11 +78,8 @@ static:
         child1Handle = spawn!MyActor(child1_task_name);
         child2Handle = spawn!MyActor(child2_task_name);
 
-        Ctrl[string] childrenState;
-        childrenState[child1Handle.task_name] = Ctrl.STARTING;
-        childrenState[child2Handle.task_name] = Ctrl.STARTING;
+        waitfor(Ctrl.ALIVE, child1Handle, child2Handle);
 
-        waitfor(childrenState, Ctrl.ALIVE);
         run(task_name, &receiveStatus, &roundtrip, &relay);
         end(task_name);
     }

@@ -4,6 +4,7 @@ import core.stdc.signal;
 import core.stdc.stdio;
 import core.stdc.stdlib : exit, system;
 import core.stdc.string : strlen;
+import core.sync.event;
 import tagion.logger.Logger;
 
 import tagion.basic.Version;
@@ -21,7 +22,9 @@ static if (ver.Posix && not_unittest) {
     }
 }
 
-shared bool abort = false;
+__gshared Event stopsignal;
+static shared bool abort = false;
+
 private shared bool fault;
 static if (ver.Posix && not_unittest) {
     private static extern (C) void shutdown(int sig) @nogc nothrow {
@@ -99,6 +102,8 @@ static if (not_unittest) {
     shared static this() {
         import std.path;
         import std.file : thisExePath;
+
+        stopsignal.initialize(true, false);
 
         call_stack_file = setExtension(thisExePath, backtrace_ext) ~ '\0';
 

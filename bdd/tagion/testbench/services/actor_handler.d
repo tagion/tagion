@@ -47,11 +47,11 @@ static:
     MyActorHandle childHandle;
 
     void task(string task_name) nothrow {
-        Ctrl[string] childrenState;
+        // Ctrl[string] childrenState;
         childHandle = spawn!MyActor(child_task_name);
-        childrenState[childHandle.task_name] = Ctrl.STARTING;
+        // childrenState[childHandle.task_name] = Ctrl.UNKNOWN;
 
-        waitfor(childrenState, Ctrl.ALIVE);
+        waitfor(Ctrl.ALIVE, childHandle);
         run(task_name);
 
         end(task_name);

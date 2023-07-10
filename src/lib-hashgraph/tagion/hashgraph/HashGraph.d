@@ -5,9 +5,7 @@ import std.stdio;
 import std.conv;
 import std.format;
 import std.exception : assumeWontThrow;
-import std.algorithm.sorting : sort;
-import std.algorithm.searching : all;
-import std.algorithm.iteration : map, each, filter;
+import std.algorithm;
 import std.range : tee;
 import std.array : array;
 
@@ -32,6 +30,7 @@ import tagion.gossip.InterfaceNet;
 
 // debug
 import tagion.hibon.HiBONJSON;
+import tagion.basic.Debug;
 
 version (unittest) {
     version = hashgraph_fibertest;
@@ -100,6 +99,7 @@ class HashGraph {
     void excluded_nodes_mask(const(BitMask) mask) pure nothrow {
         _excluded_nodes_mask = mask;
     }
+
 
     package Round.Rounder _rounds; /// The rounder hold the round in the queue both decided and undecided rounds
 
@@ -186,11 +186,22 @@ class HashGraph {
         }
     }
 
+    package bool possible_round_decided(const Round r) nothrow {
+        const witness_count = r.events
+            .count!((e) => (e !is null) && e.isWitness);
+        __write("round=%s, witness count=%s",r.number, witness_count);
+        if (!isMajority(witness_count)) {
+            return false;
+        }
+        const possible_decided = r.events
+                .all!((e) => e is null || e.isWitness);
+        return possible_decided;
+
+    }
     package bool can_round_be_decided(const Round r) nothrow {
         const result = _nodes
             .byValue
-            .filter!((n) => (r.events[n.node_id] is null))
-            .filter!((n) => !excluded_nodes_mask[n.node_id])
+            .filter!((n) => (r.events[n.node_id] is null) && (!excluded_nodes_mask[n.node_id]))
             .tee!((n) => n.asleep)
             .all!((n) => n.sleeping);
         return result;
@@ -756,7 +767,7 @@ class HashGraph {
     }
 
     @nogc
-    bool isMajority(const uint voting) const pure nothrow {
+    bool isMajority(const size_t voting) const pure nothrow {
         return .isMajority(voting, node_size);
     }
 
