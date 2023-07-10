@@ -440,6 +440,7 @@ class Round {
                 .filter!((e) => (e !is null))
                 .each!((ref e) => mark_received_events(e.node_id, e));
 
+            writefln("r._events=%s", r._events.count!((e) => e !is null && e.isFamous));
             auto event_collection = r._events
                 .filter!((e) => (e !is null))
                 .filter!((e) => !hashgraph.excluded_nodes_mask[e.node_id])
@@ -449,6 +450,8 @@ class Round {
                 .joiner
                 .tee!((e) => e._round_received = r)
                 .array;
+
+            writefln("event_collection=%s", event_collection.count!((e) => e !is null && e.isFamous));
             hashgraph.epoch(event_collection, r);
         }
 
@@ -507,7 +510,7 @@ class Round {
                             .each!((vote_node_id) => Event.callbacks.famous(round_to_be_decided._events[vote_node_id]));
                     }
                     if (round_decided) {
-                        writefln("decided round: %s count %s", round_to_be_decided.number, count_rounds);
+                        writefln("decided round: %s count %s famous %s", round_to_be_decided.number, count_rounds, round_to_be_decided.events.count!((e) => e !is null && e.isFamous));
                         // round_to_be_decided.events.map!(e => e.event_package.pubkey.cutHex).each!writeln;
 
                         

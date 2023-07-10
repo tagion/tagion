@@ -167,9 +167,7 @@ struct Dot {
 
         }
         obuf.writefln(`%s%s [pos="%s, %s!"];`, indent ~ INDENT, e.id, e.node_id * 2, e.order);
-        // if (e.error) {
-        //     obuf.writefln(`%s%s [fillcolor="%s"];`, indent ~ INDENT, e.id, "sienna");
-        // }
+
         if (e.witness) {
             const color = (e.famous) ? "red" : "lightgreen";
             obuf.writefln(`%s%s [fillcolor="%s"];`, indent ~ INDENT, e.id, color);

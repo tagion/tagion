@@ -97,37 +97,6 @@ class StaticExclusionOfANode {
                     writefln("after exclude %s", TestNetwork.TestGossipNet.online_states);
                 }
                 i++;
-                // get the current states of the nodes.
-                
-                // const round_number = cast(int) i;
-                // auto histories = TestRefinement.excluded_nodes_history
-                //                     .filter!(h => h.round < round_number-1)
-                //                     .array
-                //                     .sort!((a,b) => a.round < b.round);
-                // foreach(hist; histories) {
-                //     current_states[hist.pubkey] = hist.state;
-                // }
-                // const callable = current_states
-                //                     .byKeyValue
-                //                     .filter!(h => !h.value)
-                //                     .map!(h => h.key)
-                //                     .array;
-                // writefln("%s, %s", i, callable.length);
-                // if (current_states !is null) {
-                //     const callable = current_states
-                //                         .byKeyValue
-                //                         .filter!(h => !h.value)
-                //                         .map!(h => h.key)
-                //                         .array;
-                // }
-                // Pubkey current;
-                // if (current_states !is null) {
-                    
-                // }
-
-                i++;
-
-                
             }
         } catch (Exception e) {
             check(false, e.msg);

@@ -22,4 +22,5 @@ interface Refinement {
 
     void epoch(Event[] events, const(Round) decided_round);
 
+
 }
