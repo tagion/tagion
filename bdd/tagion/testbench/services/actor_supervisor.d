@@ -85,25 +85,23 @@ static:
 
     // Override the default fail handler
     auto failHandler = (TaskFailure tf) {
-        try {
-            writefln("Received the taskfailure from overrid taskfail type: %s", typeid(tf.throwable));
-            throw cast(typeof(tf.throwable)) tf.throwable;
-        }
-        catch (Recoverable e) {
-            writeln(typeof(e).stringof);
+        writefln("Received the taskfailure from overrid taskfail type: %s", typeid(tf.throwable));
+
+        if (cast(Recoverable) tf.throwable !is null) {
+            writeln(typeof(tf.throwable).stringof);
             writeln("This is Recoverable, just let it run");
             sendOwner(reRecoverable());
         }
-        catch (Fatal e) {
-            writeln(typeof(e).stringof, tf.task_name, locate(tf.task_name));
+        else if (cast(Fatal) tf.throwable !is null) {
+            writeln(typeof(tf.throwable).stringof, tf.task_name, locate(tf.task_name));
             childHandle = respawn(childHandle);
             writefln("This is fatal, we need to restart %s", tf.task_name);
             sendOwner(reFatal());
         }
-        catch (MessageMismatch e) {
+        else if (cast(MessageMismatch) tf.throwable !is null) {
             writeln("The actor does not handle this type of message");
         }
-        catch (Throwable) {
+        else {
             if (ownerTid !is Tid.init) {
                 assumeWontThrow(ownerTid.prioritySend(tf));
             }
