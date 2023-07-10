@@ -35,22 +35,22 @@ static:
                 DARTFile.create(dart_filename, net);
             }
 
-            spawn!DARTService(dart_task_name, dart_filename, cast(immutable) net);
-            spawn!ContractService(contract_task_name);
+            auto dart_handle = spawn!DARTService(dart_task_name, dart_filename, cast(immutable) net);
+            auto contract_handle = spawn!ContractService(contract_task_name);
 
             import concurrency = tagion.utils.pretend_safe_concurrency;
 
             concurrency.spawn(&inputvalidator, contract_task_name);
 
-            const services = [dart_task_name, contract_task_name];
-            waitfor(services, Ctrl.ALIVE);
+            waitfor(Ctrl.ALIVE, dart_handle, contract_handle);
             run(task_name, failHandler);
 
+            const services = [dart_task_name, contract_task_name];
             foreach (service; services) {
                 locate(service).send(Sig.STOP);
             }
             writeln("Supervisor stopping services");
-            waitfor(services, Ctrl.END);
+            waitfor(Ctrl.END, dart_handle, contract_handle);
             writeln("All services stopped");
 
             end(task_name);
