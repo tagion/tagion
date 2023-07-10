@@ -168,10 +168,6 @@ class StaticExclusionOfANode {
             
             }
         }        
-
-
-
-        
         return result_ok;
     }
 
