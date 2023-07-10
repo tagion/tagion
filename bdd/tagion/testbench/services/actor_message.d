@@ -78,7 +78,7 @@ static:
         child1Handle = spawn!MyActor(child1_task_name);
         child2Handle = spawn!MyActor(child2_task_name);
 
-        waitfor([child1_task_name, child2_task_name], Ctrl.ALIVE);
+        waitfor(Ctrl.ALIVE, child1Handle, child2Handle);
 
         run(task_name, &receiveStatus, &roundtrip, &relay);
         end(task_name);

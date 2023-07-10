@@ -77,7 +77,7 @@ static:
 
     void task(string task_name) nothrow {
         childHandle = spawn!SetUpForFailure(child_task_name);
-        waitfor([child_task_name], Ctrl.ALIVE);
+        waitfor(Ctrl.ALIVE, childHandle);
 
         run(task_name, failHandler);
         end(task_name);

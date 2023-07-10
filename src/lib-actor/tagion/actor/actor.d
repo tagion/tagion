@@ -10,6 +10,7 @@ import std.traits;
 import std.variant : Variant;
 import std.format : format;
 import std.traits;
+import std.meta : allSatisfy;
 
 import core.thread;
 
@@ -62,14 +63,16 @@ private bool all(Ctrl[string] aa, Ctrl ctrl) @safe nothrow {
     }
     return true;
 }
+
 /* 
- * Waif for an array of task names to be in Ctrl state
+ * Waif for vararg of ActorHandles to be in Ctrl state
  * Returns: false if any message is received that is not CtrlMsg 
  */
-bool waitfor(inout(string[]) _childrenState, Ctrl state) @safe nothrow {
+bool waitfor(T...)(Ctrl state, T handlers) @safe nothrow
+if (allSatisfy!(isActorHandle, T)) {
     Ctrl[string] childrenState;
-    foreach (task_name; _childrenState) {
-        childrenState[task_name] = Ctrl.UNKNOWN;
+    foreach (handle; handlers) {
+        childrenState[handle.task_name] = Ctrl.UNKNOWN;
     }
 
     try {
@@ -96,6 +99,10 @@ template isActor(A) {
 
     enum bool isActor = hasMember!(A, "task")
         && isTask!(A.task);
+}
+
+template isActorHandle(T) {
+    enum bool isActorHandle = __traits(isSame, TemplateOf!(T), ActorHandle);
 }
 
 template isFailHandler(F) {
