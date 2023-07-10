@@ -145,8 +145,6 @@ class StaticExclusionOfANode {
                                             .events
                                             .map!(e => e.event_package.fingerprint)
                                             .array;
-            // compare_events.sort!((a,b) => a < b);
-            // compare_events.each!writeln;
             writefln("%s", compare_events.map!(f => f.cutHex));
             foreach(channel_epoch; TestRefinement.epoch_events.byKeyValue) {
                 writefln("epoch: %s", i);
@@ -157,7 +155,6 @@ class StaticExclusionOfANode {
                                             .events
                                             .map!(e => e.event_package.fingerprint)
                                             .array;
-                // events.sort!((a,b) => a < b);
 
                 writefln("%s", events.map!(f => f.cutHex));
                 // events.each!writeln;
