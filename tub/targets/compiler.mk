@@ -76,7 +76,8 @@ SONAME_FLAG := $(LINKERFLAG)-soname
 DDEBUG := -fdebug
 DUNITTEST := -funittest
 DMAIN := -fmain
-DIP := -ftransition=dip
+DIP := -fpreview=dip
+DIMPORTFILE=-J
 DDEBUG_SYMBOLS := -g
 DBETTERC := --betterC
 DCOMPILE_ONLY := -c

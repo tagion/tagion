@@ -478,12 +478,21 @@ class Round {
                         .all!((vote_node_id) => round_to_be_decided._events[vote_node_id]
                         .isFamous);
 
-                    if (!famous_round) {
-                        writefln("not famous round");
+                    if (famous_round && votes_mask.count == hashgraph.node_size - hashgraph.excluded_nodes_mask.count) {
+                        collect_received_round(round_to_be_decided, hashgraph);
+                        round_to_be_decided._decided = true;
+                        last_decided_round = round_to_be_decided;
+                        check_decided_round(hashgraph);
                         return;
                     }
+                    // if (!famous_round) {
+                    //     writefln("not famous round");
+                    //     return;
+                    // }
+
                     
                     uint count_rounds;
+                    writefln("round_to_be_decided length=%s", round_to_be_decided[].retro.walkLength);
                     foreach(r; round_to_be_decided[].retro) {
                         const round_contains_witness = votes_mask[]
                             .all!(vote_node_id => r.events[vote_node_id] !is null);
@@ -493,7 +502,7 @@ class Round {
                         }
                         count_rounds++;
                     }
-                    const round_decided = count_rounds > 2;
+                    const round_decided = count_rounds > 6;
                     writefln("vote mask isMajority count:%s", count_rounds);
                     // const round_decided = votes_mask[]
                     //     .all!((vote_node_id) => round_to_be_decided[vote_node_id][].retro.walkLength > 2);
