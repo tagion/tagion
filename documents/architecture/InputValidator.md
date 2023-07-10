@@ -17,6 +17,8 @@ The services does the following:
 - Construct a HiRPC form the HiBON Document.
 - Send the data-package to the Contract Verifier service.
 
+If one or more of the stages fails an error should be logged and the HiPRC should not be passed on.
+
 ```mermaid
 sequenceDiagram
     participant Stream 

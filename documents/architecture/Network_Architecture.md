@@ -37,7 +37,7 @@ digraph Message_flow {
   DART [href="#/documents/architecture/DART.md" shape = cylinder];
   Input [href="#/documents/architecture/InputValidator.md" label="Input\nValidator" style=filled fillcolor=green ]
   P2P [ style=filled fillcolor=red]
-  ContractVerifier [href="#/documents/architecture/InputValidator.md"  label="Contract\nVerifier"]
+  ContractVerifier [href="#/documents/architecture/ContractVerifier.md"  label="Contract\nVerifier"]
   NodeInterface [href="#/documents/architecture/NodeInterface.md"  label="Node\nInterface"]
   Transcript [href="#/documents/architecture/Transcript.md" shape = note]
   EpochCreator [href="#/documents/architecture/EpochCreator.md" label="Epoch\nCreator"]
