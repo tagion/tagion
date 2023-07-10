@@ -29,6 +29,7 @@ include ${call dir.resolve, cross.mk}
 
 secp256k1: $(LIBSECP256K1) $(DSRC_SECP256K1)/include/secp256k1_hash.h
 
+
 $(DSRC_SECP256K1)/include/secp256k1_hash.h: $(DSRC_SECP256K1)/src/hash.h
 	$(PRECMD)
 	ln -s $< $@

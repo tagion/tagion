@@ -25,12 +25,12 @@ The acceptance criteria specification can be found in [Collector_service](/bdd/t
 
 ```mermaid
 sequenceDiagram
-    participant Contract Interface
+    participant Contract Verifier 
     participant Epoch Creator
     participant DART 
     participant Collector
     participant TVM 
-    Contract Interface->>Collector: Contract-NC 
+    Contract Verifier->>Collector: Contract-NC 
     Epoch Creator->>Collector: Contract-C
     Collector->>DART: Request Archives
     DART->>Collector: Retrieve Archives
