@@ -53,7 +53,6 @@ struct DARTService {
             }
         }
         catch (Exception e) {
-
             fail(task_name, e);
         }
     }

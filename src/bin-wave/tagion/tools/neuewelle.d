@@ -72,13 +72,11 @@ int _main(string[] args) {
     waitfor([supervisor_task_name], Ctrl.ALIVE);
 
     writeln("alive");
-
     stopsignal.wait;
-
     writeln("Sending stop signal to supervisor");
     supervisor_handle.send(Sig.STOP);
     writeln("waiting for all threads");
-    thread_joinAll;
+    // thread_joinAll;
 
     writeln("Exiting");
     return 0;

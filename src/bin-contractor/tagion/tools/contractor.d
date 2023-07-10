@@ -8,7 +8,7 @@ import tagion.communication.HiRPC;
 import tagion.tools.Basic;
 import tagion.hibon.HiBON;
 import tagion.hibon.HiBONBase;
-import tagion.services.contract : contract_sock_path;
+import tagion.services.inputvalidator : contract_sock_path;
 
 mixin Main!(_main);
 
