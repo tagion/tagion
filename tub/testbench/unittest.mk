@@ -33,14 +33,14 @@ unittest-report:
 
 .PHONY: proto-unittest-run proto-unittest-build
 
-
 $(UNITTEST_BIN): DFLAGS+=$(DIP25) $(DIP1000)
 $(UNITTEST_BIN): $(COVWAY) 
 $(UNITTEST_BIN): $(UNITTEST_DFILES) 
 	$(PRECMD)
 	echo deps $?
+	echo LIBS=$(LIBS)
 	${call log.env, UNITTEST_DFILES,${filter %.d,$^}}
-	$(DC) $(UNITTEST_FLAGS) $(DFLAGS) $(DRTFLAGS) ${addprefix -I,$(DINC)} ${sort ${filter %.d,$^}} $(LIBS) $(OUTPUT)$@
+	$(DC) $(UNITTEST_FLAGS) $(DFLAGS) $(DRTFLAGS) ${addprefix -I,$(DINC)} ${sort ${filter %.d,$^}} $(LIBS) $(LDFLAGS) $(OUTPUT)$@
 
 unittest: revision $(REPOROOT)/default.mk
 

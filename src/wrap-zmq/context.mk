@@ -8,13 +8,14 @@ CONFIGUREFLAGS_ZMQ += --enable-shared=yes
 else
 LIBZMQ_FILE:=$(LIBZMQ_NAME).$(STAEXT)
 CONFIGUREFLAGS_ZMQ += --enable-shared=on
+LDFLAGS+=$(LINKERFLAG)-l:libstdc++.so
 endif
 
 
 DSRC_ZMQ := ${call dir.resolve, libzmq}
 DTMP_ZMQ := $(DTMP)/libzmq
 
-LIBZMQ:=$(DTMP_ZMQ)/.libs/$(LIBZMQ_FILE)
+LIBZMQ:=$(DTMP_ZMQ)/src/.libs/$(LIBZMQ_FILE)
 LIBZMQ_STATIC:=$(DTMP_ZMQ)/.libs/$(LIBZMQ_NAME).$(STAEXT)
 LIBZMQ_OBJ:=$(DTMP_ZMQ)/src/libzmq_la-zmq.o
 

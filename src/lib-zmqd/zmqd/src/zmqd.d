@@ -3535,7 +3535,7 @@ debug (WithCurveTests) unittest {
     client.connect("inproc://curveKeyPair_test");
     client.send("hello");
 
-    ubyte[5] buf;
+    auto buf = new ubyte[5];
     assert(server.receive(buf) == 5);
     assert(buf.asString() == "hello");
 }
@@ -3593,7 +3593,7 @@ unittest {
     msg.data.asString()[] = "Hello World!";
     s1.send(msg);
 
-    ubyte[12] buf;
+    auto buf = new ubyte[12];
     s2.receive(buf);
     assert(buf.asString() == "Hello World!");
 }
