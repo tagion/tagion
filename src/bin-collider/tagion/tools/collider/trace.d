@@ -8,8 +8,8 @@ import std.range : repeat;
 
 @safe
 interface ScheduleTrace {
-    void start(const ref Runner runner);
-    void stop(const ref Runner runner);
+    void started(const ref Runner runner);
+    void stopped(const ref Runner runner);
     void timeout(const ref Runner runner);
     void initTrace(const long number_of_runners);
 }
@@ -36,12 +36,12 @@ class TraceCallBacks : ScheduleTrace {
         CLEARLINE.write;
     }
 
-    void start(const ref Runner runner) {
+    void started(const ref Runner runner) {
         goToLine(runner);
         writefln("Runner %s started %s", runner.jobid, runner.name);
     }
 
-    void stop(const ref Runner runner) {
+    void stopped(const ref Runner runner) {
         goToLine(runner);
         writefln("Runner %s stopped %s", runner.jobid, runner.name);
     }
