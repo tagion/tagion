@@ -174,6 +174,7 @@ env-compiler:
 	${call log.kvp, DDEBUG, $(DDEBUG)}
 	${call log.kvp, DOPT, $(DOPT)}
 	${call log.kvp, DUNITTEST, $(DUNITTEST)}
+	${call log.kvp, LINKERFLAG, $(LINKERFLAG)}
 	${call log.kvp, DMAIN, $(DMAIN)}
 	${call log.kvp, DIP, $(DIP)}
 	${call log.kvp, DIP25, $(DIP25)}

@@ -1,5 +1,5 @@
 
-
+LIBSTLZMQ=zmq
 LIBZMQ_NAME:=libzmq
 
 ifdef SHARED
@@ -8,13 +8,14 @@ CONFIGUREFLAGS_ZMQ += --enable-shared=yes
 else
 LIBZMQ_FILE:=$(LIBZMQ_NAME).$(STAEXT)
 CONFIGUREFLAGS_ZMQ += --enable-shared=on
+LDFLAGS+=$(LINKERFLAG)-l:libstdc++.so
 endif
 
 
 DSRC_ZMQ := ${call dir.resolve, libzmq}
 DTMP_ZMQ := $(DTMP)/libzmq
 
-LIBZMQ:=$(DTMP_ZMQ)/.libs/$(LIBZMQ_FILE)
+LIBZMQ:=$(DTMP_ZMQ)/src/.libs/$(LIBZMQ_FILE)
 LIBZMQ_STATIC:=$(DTMP_ZMQ)/.libs/$(LIBZMQ_NAME).$(STAEXT)
 LIBZMQ_OBJ:=$(DTMP_ZMQ)/src/libzmq_la-zmq.o
 
@@ -31,10 +32,10 @@ proper-zmq:
 
 proper: proper-zmq
 
-$(DTMP_ZMQ)/.libs/$(LIBZMQ_NAME).%: $(DTMP)/.way $(DLIB)/.way
+$(DTMP_ZMQ)/src/.libs/$(LIBZMQ_NAME).%: $(DTMP_ZMQ)/.way $(DLIB)/.way
 	$(PRECMD)
 	${call log.kvp, $@}
-	$(CP) $(DSRC_ZMQ) $(DTMP_ZMQ)
+	$(CP) $(DSRC_ZMQ) $(DTMP)
 	$(CD) $(DTMP_ZMQ)
 	./autogen.sh
 	./configure $(CONFIGUREFLAGS_ZMQ)
