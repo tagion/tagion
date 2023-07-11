@@ -46,7 +46,7 @@ struct InputValidatorService {
             listener.listen(1);
             writefln("Listening on address %s.", sock_path);
             scope (exit) {
-                writeln("Closing listener.");
+                writefln("Closing listener %s", sock_path);
                 listener.close();
                 assert(!listener.isAlive);
                 end(task_name);
@@ -63,7 +63,7 @@ struct InputValidatorService {
                     receiveTimeout(10.msecs,
                             (Sig sig) {
                         if (sig is Sig.STOP) {
-                            writeln("INput validator service received stop signal");
+                            writeln("Input validator service received stop signal");
                             stop = true;
                         }
                     }
@@ -132,3 +132,5 @@ struct InputValidatorService {
         }
     }
 }
+
+alias InputValidatorHandle = ActorHandle!InputValidatorService;
