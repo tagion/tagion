@@ -26,11 +26,15 @@ static immutable(string) contract_sock_path() nothrow {
         return "\0NEUEWELLE_CONTRACT";
     }
     else version (Posix) {
-        return buildPath("/", "run", "user", format("%d", getuid), "tagionwave_contract.sock");
+        import std.exception;
+        import std.conv;
+        const uid = assumeWontThrow( getuid.to!string );
+        return buildPath("/", "run", "user", uid, "tagionwave_contract.sock");
     }
     else {
         assert(0, "Unsupported platform");
     }
+
 }
 
 void inputvalidator(string receiver_task) nothrow {
