@@ -114,7 +114,7 @@ jobs:
           export COLLIDER_ROOT=$PWD/logs/${{ env.TARGET }}/bdd
           export PATH=$DBIN:$PATH
           ./build/${{ env.TARGET }}/bin/collider -r acceptance -j ${{env.CD_PARALLEL}} -b build/${{ env.TARGET }}/bin/testbench -s build/${{ env.TARGET }}/bin/collider_schedule.json  
-
+          sleep 15
       - name: Generate reports
         if: failure() || success()
         run: |
