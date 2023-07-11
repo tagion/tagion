@@ -1,5 +1,5 @@
 /// Actor framework implementation
-/// Examples: [tagion.testbench.services]
+/// Examles: [tagion.testbench.services]
 module tagion.actor.actor;
 
 import std.stdio;
@@ -55,7 +55,7 @@ enum Sig {
 /// contains the Tid of the actor which send it and the state
 alias CtrlMsg = Tuple!(string, "task_name", Ctrl, "ctrl");
 
-private bool all(Ctrl[string] aa, Ctrl ctrl) @safe nothrow {
+private bool all(const(Ctrl[string]) aa, Ctrl ctrl) @safe nothrow {
     foreach (val; aa.byValue) {
         if (val != ctrl) {
             return false;
@@ -64,27 +64,35 @@ private bool all(Ctrl[string] aa, Ctrl ctrl) @safe nothrow {
     return true;
 }
 
+private static Ctrl[string] childrenState;
 /* 
  * Waif for vararg of ActorHandles to be in Ctrl state
  * Returns: false if any message is received that is not CtrlMsg 
  */
-bool waitfor(T...)(Ctrl state, T handlers) @safe nothrow
+bool waitfor(T...)(Ctrl state, const(T) handlers) @trusted nothrow
 if (allSatisfy!(isActorHandle, T)) {
-    Ctrl[string] childrenState;
     foreach (handle; handlers) {
         childrenState[handle.task_name] = Ctrl.UNKNOWN;
     }
+    bool code = false;
 
     try {
+        scope (exit)
+            writeln(childrenState);
         while (!(childrenState.all(state))) {
-            CtrlMsg msg = receiveOnly!CtrlMsg;
+            CtrlMsg msg;
+            receive(
+                    (CtrlMsg _msg) { msg = _msg; }
+            );
             childrenState[msg.task_name] = msg.ctrl;
         }
+        code = true;
     }
-    catch (Exception _) {
-        return false;
+    catch (Exception e) {
+        assumeWontThrow(writeln("Exception: ", e));
+        code = false;
     }
-    return true;
+    return code;
 }
 
 /// Checks if a type has the required members to be an actor
@@ -231,7 +239,7 @@ void sendOwner(T...)(T vals) @safe {
  * Does NOT exit regular control flow
 */
 void fail(string task_name, Throwable t) @trusted nothrow {
-    if (tidOwner.get !is Tid.init) {
+    if (!tidOwner.isNull) {
         assumeWontThrow(
                 ownerTid.prioritySend(
                 TaskFailure(task_name, cast(immutable) t)
@@ -243,8 +251,7 @@ void fail(string task_name, Throwable t) @trusted nothrow {
 /// send your state to your owner
 void setState(Ctrl ctrl, string task_name) @safe nothrow {
     try {
-        assert(!tidOwner.isNull, format("This task %s, does not have an owner", task_name));
-        tidOwner.get.prioritySend(CtrlMsg(task_name, ctrl));
+        ownerTid.prioritySend(CtrlMsg(task_name, ctrl));
     }
     catch (PriorityMessageException e) {
         /* logger.fatal(e); */
@@ -268,7 +275,6 @@ void end(string task_name) nothrow {
  */
 void run(Args...)(string task_name, Args args) nothrow {
     bool stop = false;
-    Ctrl[string] childrenState; // An AA to keep a copy of the state of the children
 
     void signal(Sig signal) {
         with (Sig) final switch (signal) {
