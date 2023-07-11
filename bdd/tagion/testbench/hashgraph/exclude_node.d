@@ -42,6 +42,8 @@ class StaticExclusionOfANode {
     string module_path;
     uint CALLS;
 
+    Pubkey offline_node;
+    
     this(string[] node_names, TestNetwork network, string module_path) {
         this.network = network;
         this.node_names = node_names;
@@ -98,7 +100,8 @@ class StaticExclusionOfANode {
                 auto current = network.networks[network.current];
                 (() @trusted { current.call; })();
 
-                if (i == 10) {
+                if (i == 32) {
+                    offline_node = network.current;
                     TestNetwork.TestGossipNet.online_states[network.current] = false;
                     writefln("excluding: %s", network.current.cutHex);
                     writefln("after exclude %s", TestNetwork.TestGossipNet.online_states);
@@ -115,6 +118,15 @@ class StaticExclusionOfANode {
 
     @Then("the network should still reach consensus")
     Document consensus() @trusted {
+        // check that all nodes have excluded a node.
+        import tagion.utils.BitMask;
+        const all_offline = network.networks.byValue
+                        .filter!((n) => n._hashgraph.owner_node.channel != offline_node)
+                        .map!((n) => n._hashgraph.excluded_nodes_mask)
+                        .all!((m) => m.count == 1);
+
+        writefln("count offline =%s", all_offline);             
+        check(all_offline, "not all nodes agreed on offline node");
        
         // compare graph
         auto names = network.networks.byValue
