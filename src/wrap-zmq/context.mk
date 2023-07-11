@@ -1,5 +1,5 @@
 
-
+LIBSTLZMQ=zmq
 LIBZMQ_NAME:=libzmq
 
 ifdef SHARED

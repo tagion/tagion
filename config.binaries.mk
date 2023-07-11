@@ -14,6 +14,8 @@ EXCLUDED_DIRS+=-a -not -path "*/lib-zmqd/zmqd/examples/*"
 ifndef STLZMQ
 EXCLUDED_DIRS+=-a -not -path "*/lib-zmqd/*"
 EXCLUDED_DIRS+=-a -not -path "*/lib-demos/*"
+else
+ZMQIMPLEMENTATION=$(LIBSTLZMQ)
 endif
 
 LIB_DFILES:=${shell find $(DSRC) -name "*.d" -a -path "*/lib-*" $(EXCLUDED_DIRS) $(NO_UNITDATA) }
