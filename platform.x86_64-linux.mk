@@ -20,7 +20,10 @@ $(UNITTEST_BIN): $(DFILES)
 proto-unittest-build: LIBS+=$(SSLIMPLEMENTATION)
 proto-unittest-build: LIBS+=$(LIBSECP256K1)
 proto-unittest-build: LIBS+=$(LIBP2PGOWRAPPER)
+
+ifdef STLZMQ
 proto-unittest-build: LIBS+=$(LIBZMQ)
+endif
 
 unittest: proto-unittest-run
 

@@ -38,7 +38,6 @@ $(UNITTEST_BIN): $(COVWAY)
 $(UNITTEST_BIN): $(UNITTEST_DFILES) 
 	$(PRECMD)
 	echo deps $?
-	echo LIBS=$(LIBS)
 	${call log.env, UNITTEST_DFILES,${filter %.d,$^}}
 	$(DC) $(UNITTEST_FLAGS) $(DFLAGS) $(DRTFLAGS) ${addprefix -I,$(DINC)} ${sort ${filter %.d,$^}} $(LIBS) $(LDFLAGS) $(OUTPUT)$@
 
