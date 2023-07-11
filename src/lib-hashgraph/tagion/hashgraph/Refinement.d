@@ -82,13 +82,14 @@ class StdRefinement : Refinement {
             }
             return a.received_order < b.received_order;
         }
-        const online = BitMask(decided_round.events.filter!((e) => e.isFamous).map!(e => e.node_id));
+        // const online = BitMask(decided_round.events.filter!((e) => e.isFamous).map!(e => e.node_id));
         import tagion.basic.Debug;
-        __write("ONLINE NODES %s", online);
+        // __write("ONLINE NODES %s", online);
         // Collect and sort all events
 
         sdt_t[] times;
         auto events = event_collection
+            .filter!((e) => e !is null)
             .tee!((e) => times ~= e.event_body.time)
             .filter!((e) => !e.event_body.payload.empty)
             .array

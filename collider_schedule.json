@@ -132,7 +132,7 @@
             "args": ["Alice", "Bob", "Carol", "Dave", "Elisa", "Freja", "Gretha"], 
             "envs": {},
             "stages": [
-                "hashgraph"
+                "commit", "hashgraph"
             ],
             "timeout": 0.0
         },
