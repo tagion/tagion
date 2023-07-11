@@ -90,7 +90,6 @@ class StaticExclusionOfANode {
     @When("i mark one node statically as non-voting and disable communication for him")
     Document him() {
         //we are excluding one node. We continue until that epoch where we afterwards break all communication with him.
-            
         try {
             uint i = 0;
             while (i < CALLS) {
@@ -104,6 +103,7 @@ class StaticExclusionOfANode {
                     writefln("excluding: %s", network.current.cutHex);
                     writefln("after exclude %s", TestNetwork.TestGossipNet.online_states);
                 }
+
                 i++;
             }
         } catch (Exception e) {

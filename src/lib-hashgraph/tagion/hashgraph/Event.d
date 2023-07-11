@@ -461,7 +461,17 @@ class Round {
      *   hashgraph = hashgraph which owns the round 
      */
         void check_decided_round(HashGraph hashgraph) @trusted {
+
+            
             auto round_to_be_decided = last_decided_round._next;
+
+            void decide_round() {
+                collect_received_round(round_to_be_decided, hashgraph);
+                round_to_be_decided._decided = true;
+                last_decided_round = round_to_be_decided;
+                check_decided_round(hashgraph);
+                return;
+            }
 
             if (hashgraph.possible_round_decided(round_to_be_decided)) {
                 writefln("possible_round_decided");
@@ -469,6 +479,11 @@ class Round {
                         .filter!((e) => (e) && !hashgraph.excluded_nodes_mask[e.node_id])
                         .map!((e) => e.node_id));
                 if (votes_mask.isMajority(hashgraph)) {
+
+                    if (Event.callbacks) {
+                        votes_mask[].filter!((vote_node_id) => round_to_be_decided._events[vote_node_id].isFamous)
+                            .each!((vote_node_id) => Event.callbacks.famous(round_to_be_decided._events[vote_node_id]));
+                    }
 
                     votes_mask[]
                         .each!((vote_node_id) => round_to_be_decided._events[vote_node_id]
@@ -479,20 +494,11 @@ class Round {
                         .isFamous);
 
                     if (famous_round && votes_mask.count == hashgraph.node_size - hashgraph.excluded_nodes_mask.count) {
-                        collect_received_round(round_to_be_decided, hashgraph);
-                        round_to_be_decided._decided = true;
-                        last_decided_round = round_to_be_decided;
-                        check_decided_round(hashgraph);
+                        decide_round();
                         return;
                     }
-                    // if (!famous_round) {
-                    //     writefln("not famous round");
-                    //     return;
-                    // }
-
                     
                     uint count_rounds;
-                    writefln("round_to_be_decided length=%s", round_to_be_decided[].retro.walkLength);
                     foreach(r; round_to_be_decided[].retro) {
                         const round_contains_witness = votes_mask[]
                             .all!(vote_node_id => r.events[vote_node_id] !is null);
@@ -501,30 +507,10 @@ class Round {
                             break;
                         }
                         count_rounds++;
-                    }
-                    const round_decided = count_rounds > 6;
-                    writefln("vote mask isMajority count:%s", count_rounds);
-                    
-                    
-                    if (Event.callbacks) {
-                        votes_mask[].filter!((vote_node_id) => round_to_be_decided._events[vote_node_id].isFamous)
-                            .each!((vote_node_id) => Event.callbacks.famous(round_to_be_decided._events[vote_node_id]));
-                    }
-                    if (round_decided) {
-                        writefln("decided round: %s count %s famous %s", round_to_be_decided.number, count_rounds, round_to_be_decided.events.count!((e) => e !is null && e.isFamous));
-                        // round_to_be_decided.events.map!(e => e.event_package.pubkey.cutHex).each!writeln;
-
-                        
-                        
-                        // iota(hashgraph.node_size)
-                        //     .filter!(node_id => round_to_be_decided.events[node_id] is null)
-                        //     .each!(node_id => hashgraph._excluded_nodes_mask[node_id] = true);
-                        // writefln("EXCLUDED: %s %s", hashgraph.owner_node.channel.cutHex, hashgraph.excluded_nodes_mask);
-                        collect_received_round(round_to_be_decided, hashgraph);
-                        round_to_be_decided._decided = true;
-                        last_decided_round = round_to_be_decided;
-                        check_decided_round(hashgraph);
-
+                        if (count_rounds > 6) {
+                            decide_round();
+                            return;
+                        }
                     }
                 }
             }

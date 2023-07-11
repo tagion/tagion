@@ -82,10 +82,20 @@ class StdRefinement : Refinement {
             }
             return a.received_order < b.received_order;
         }
-        // const online = BitMask(decided_round.events.filter!((e) => e.isFamous).map!(e => e.node_id));
         import tagion.basic.Debug;
-        // __write("ONLINE NODES %s", online);
-        // Collect and sort all events
+        auto offline = ~BitMask(decided_round.events.filter!((e) => e !is null && e.isFamous).map!(e => e.node_id));
+        offline.chunk(hashgraph.node_size);
+        hashgraph._excluded_nodes_mask |= offline;
+        __write("Epoch exclude = %s", hashgraph.excluded_nodes_mask);
+        
+        // __write("Epoch ONLINE=%s", online);
+
+        // online.chunk(hashgraph.node_size);
+        // hashgraph._excluded_nodes_mask |= ~online;
+        // __write(" wowo excluded nodes after=%s", hashgraph.excluded_nodes_mask);
+
+        
+        import tagion.basic.Debug;
 
         sdt_t[] times;
         auto events = event_collection
