@@ -118,7 +118,7 @@ jobs:
       - name: Generate reports
         if: failure() || success()
         run: |
-          ./build/${{ env.TARGET }}/bin/collider reporter -o $GITHUB_STEP_SUMMARY logs/${{ env.TARGET }}/bdd/acceptance/
+          ./build/${{ env.TARGET }}/bin/collider reporter -o $GITHUB_STEP_SUMMARY logs/${{ env.TARGET }}/bdd/acceptance/results
 
       - name: Create tar ball
         run: tar -czf ${{needs.commit_stage.outputs.tarball}} --exclude='*.o' logs/ build/ 
