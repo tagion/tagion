@@ -32,10 +32,10 @@ proper-zmq:
 
 proper: proper-zmq
 
-$(DTMP_ZMQ)/.libs/$(LIBZMQ_NAME).%: $(DTMP)/.way $(DLIB)/.way
+$(DTMP_ZMQ)/src/.libs/$(LIBZMQ_NAME).%: $(DTMP_ZMQ)/.way $(DLIB)/.way
 	$(PRECMD)
 	${call log.kvp, $@}
-	$(CP) $(DSRC_ZMQ) $(DTMP_ZMQ)
+	$(CP) $(DSRC_ZMQ) $(DTMP)
 	$(CD) $(DTMP_ZMQ)
 	./autogen.sh
 	./configure $(CONFIGUREFLAGS_ZMQ)

@@ -10,7 +10,8 @@ ANDROID_ABI=x86_64
 DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
 #DFILES?=${shell find $(DSRC) -type f -name "*.d" -path "*src/lib-*" -a -not -path "*/tests/*" -a -not -path "*/c/*" -a -not -path "*/unitdata/*"}
 
-WRAPS+=secp256k1 p2pgowrapper $(SSLIMPLEMENTATION)
+WRAPS+=secp256k1 p2pgowrapper $(SSLIMPLEMENTATION) $(ZMQIMPLEMENTATION) 
+
 
 .PHONY: prebuild-linux
 
