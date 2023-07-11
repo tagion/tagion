@@ -39,7 +39,7 @@ void signal_handler(int _) @trusted nothrow {
 mixin Main!(_main);
 
 int _main(string[] args) {
-
+    stopsignal.initialize(true, false);
     sigaction_t sa;
     sa.sa_handler = &signal_handler;
     sigemptyset(&sa.sa_mask);
@@ -76,8 +76,8 @@ int _main(string[] args) {
     writeln("Sending stop signal to supervisor");
     supervisor_handle.send(Sig.STOP);
     writeln("waiting for all threads");
+    waitfor(Ctrl.END, supervisor_handle);
     // thread_joinAll;
-
     writeln("Exiting");
     return 0;
 }

@@ -5,6 +5,7 @@ import std.path;
 import std.file;
 import std.stdio;
 import std.socket;
+import std.typecons;
 
 import tagion.actor;
 import tagion.actor.exceptions;
@@ -34,26 +35,23 @@ static:
             if (!dart_filename.exists) {
                 DARTFile.create(dart_filename, net);
             }
-
             auto dart_handle = spawn!DARTService(dart_task_name, dart_filename, cast(immutable) net);
             auto contract_handle = spawn!ContractService(contract_task_name);
+            auto inputvalidator_handle = spawn!InputValidatorService("inputvalidator", contract_task_name, contract_sock_path);
 
-            import concurrency = tagion.utils.pretend_safe_concurrency;
-
-            concurrency.spawn(&inputvalidator, contract_task_name);
-
-            waitfor(Ctrl.ALIVE, dart_handle, contract_handle);
+            auto services = tuple(dart_handle, contract_handle, inputvalidator_handle);
+            waitfor(Ctrl.ALIVE, services.expand);
             run(task_name, failHandler);
 
-            const services = [dart_task_name, contract_task_name];
             foreach (service; services) {
-                locate(service).send(Sig.STOP);
+                service.send(Sig.STOP);
             }
             writeln("Supervisor stopping services");
-            waitfor(Ctrl.END, dart_handle, contract_handle);
+            waitfor(Ctrl.END, services.expand);
             writeln("All services stopped");
 
-            end(task_name);
+            scope (exit)
+                end(task_name);
         }
 
         catch (Exception e) {
