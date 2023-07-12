@@ -57,7 +57,7 @@ static:
 
     void task(string task_name) nothrow {
         run(task_name, &recoverable, &fatal);
-        end(task_name);
+        end();
     }
 }
 
@@ -80,7 +80,7 @@ static:
         waitforChildren(Ctrl.ALIVE);
 
         run(task_name, failHandler);
-        end(task_name);
+        end();
     }
 
     // Override the default fail handler

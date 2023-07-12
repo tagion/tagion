@@ -56,7 +56,7 @@ enum Sig {
 alias CtrlMsg = Tuple!(string, "task_name", Ctrl, "ctrl");
 
 private static Ctrl[string] childrenState;
-private static string _task_name;
+static string _task_name;
 
 bool statusChildren(Ctrl ctrl) @safe nothrow {
     foreach (val; childrenState.byValue) {
@@ -240,20 +240,20 @@ void sendOwner(T...)(T vals) @safe {
  * Silently fails if there is no owner
  * Does NOT exit regular control flow
 */
-void fail(string task_name, Throwable t) @trusted nothrow {
+void fail(Throwable t) @trusted nothrow {
     if (!tidOwner.isNull) {
         assumeWontThrow(
                 ownerTid.prioritySend(
-                TaskFailure(task_name, cast(immutable) t)
+                TaskFailure(_task_name, cast(immutable) t)
         )
         );
     }
 }
 
 /// send your state to your owner
-void setState(Ctrl ctrl, string task_name) @safe nothrow {
+void setState(Ctrl ctrl) @safe nothrow {
     try {
-        ownerTid.prioritySend(CtrlMsg(task_name, ctrl));
+        ownerTid.prioritySend(CtrlMsg(_task_name, ctrl));
     }
     catch (PriorityMessageException e) {
         /* logger.fatal(e); */
@@ -264,10 +264,10 @@ void setState(Ctrl ctrl, string task_name) @safe nothrow {
 }
 
 /// Cleanup and notify the supervisor that you have ended
-void end(string task_name) nothrow {
+void end() nothrow {
     // writefln("Ending task: %s %s", task_name, locate(task_name));
     assumeWontThrow(ThreadInfo.thisInfo.cleanup);
-    assumeWontThrow(setState(Ctrl.END, task_name));
+    assumeWontThrow(setState(Ctrl.END));
 }
 
 /* 
@@ -308,7 +308,7 @@ void run(Args...)(string task_name, Args args) nothrow {
     }
 
     try {
-        setState(Ctrl.STARTING, task_name); // Tell the owner that you are starting.
+        setState(Ctrl.STARTING); // Tell the owner that you are starting.
         scope (exit) {
             if (childrenState.length != 0 && !statusChildren(Ctrl.END)) {
                 foreach (child_task_name, ctrl; childrenState) {
@@ -331,7 +331,7 @@ void run(Args...)(string task_name, Args args) nothrow {
             };
         }
 
-        setState(Ctrl.ALIVE, task_name); // Tell the owner that you are running
+        setState(Ctrl.ALIVE); // Tell the owner that you are running
         writefln("Entering %s event loop", task_name);
         while (!stop) {
             try {
@@ -345,13 +345,13 @@ void run(Args...)(string task_name, Args args) nothrow {
                 );
             }
             catch (Exception t) {
-                fail(task_name, t);
+                fail(t);
             }
         }
     }
 
     // If we catch an exception we send it back to owner for them to deal with it.
     catch (Exception t) {
-        fail(task_name, t);
+        fail(t);
     }
 }

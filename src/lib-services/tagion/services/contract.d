@@ -15,7 +15,7 @@ static:
 
     void task(string task_name) nothrow {
         scope (exit) {
-            end(task_name);
+            end();
         }
         run(task_name, &contract);
     }

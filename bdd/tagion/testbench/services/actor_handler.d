@@ -36,7 +36,7 @@ static:
 
     void task(string task_name) nothrow {
         run(task_name, &setstatus);
-        end(task_name);
+        end();
     }
 }
 
@@ -54,7 +54,7 @@ static:
         waitforChildren(Ctrl.ALIVE);
         run(task_name);
 
-        end(task_name);
+        end();
     }
 }
 

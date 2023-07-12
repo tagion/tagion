@@ -24,7 +24,7 @@ import tagion.utils.JSONCommon;
 alias inputDoc = Msg!"inputDoc";
 
 @property
-static immutable(string) contract_sock_path() nothrow {
+static immutable(string) contract_sock_path() @safe nothrow {
     version (linux) {
         return "\0NEUEWELLE_CONTRACT";
     }
@@ -52,8 +52,9 @@ struct InputValidatorService {
 
     static void task(string task_name, string receiver_task, string sock_path) nothrow {
         try {
+            _task_name = task_name;
             bool stop = false;
-            setState(Ctrl.STARTING, task_name);
+            setState(Ctrl.STARTING);
             auto listener = new Socket(AddressFamily.UNIX, SocketType.STREAM);
             assert(listener.isAlive);
             listener.blocking = false;
@@ -64,14 +65,14 @@ struct InputValidatorService {
                 writefln("Closing listener %s", sock_path);
                 listener.close();
                 assert(!listener.isAlive);
-                end(task_name);
+                end();
             }
 
             auto socketSet = new SocketSet(options.max_connections + 1); // Room for listener.
             Socket[] reads;
             ReceiveBuffer buf;
 
-            setState(Ctrl.ALIVE, task_name);
+            setState(Ctrl.ALIVE);
             eventloop: while (true) {
                 try {
                     receiveTimeout(options.mbox_timeout.msecs,
@@ -137,12 +138,12 @@ struct InputValidatorService {
                     socketSet.reset();
                 }
                 catch (Exception e) {
-                    fail(task_name, e);
+                    fail(e);
                 }
             }
         }
         catch (Exception e) {
-            fail(task_name, e);
+            fail(e);
         }
     }
 }

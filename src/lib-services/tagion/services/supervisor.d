@@ -22,7 +22,7 @@ import tagion.services.contract;
 
 struct SupervisorOptions {
     string dart_filename = buildPath(".", "dart".setExtension(FileExtension.dart));
-    string contract_sock_path = .contract_sock_path;
+    string contract_addr = contract_sock_path;
     mixin JSONCommon;
 }
 
@@ -38,7 +38,7 @@ static:
     void task(string task_name) nothrow {
         try {
             scope (exit) {
-                end(task_name);
+                end();
             }
 
             SecureNet net = new StdSecureNet();
@@ -51,7 +51,7 @@ static:
             auto dart_handle = spawn!DARTService(dart_task_name, dart_filename, cast(immutable) net);
             auto contract_handle = spawn!ContractService(contract_task_name);
             auto inputvalidator_handle = spawn!InputValidatorService(input_task_name, contract_task_name, opts
-                    .contract_sock_path);
+                    .contract_addr);
             auto services = tuple(dart_handle, contract_handle, inputvalidator_handle);
             waitforChildren(Ctrl.ALIVE);
 
@@ -66,7 +66,7 @@ static:
         }
 
         catch (Exception e) {
-            fail(task_name, e);
+            fail(e);
         }
     }
 }

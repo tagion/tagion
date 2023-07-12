@@ -34,11 +34,6 @@ enum input_test = "input_test";
 @safe @Scenario("send a document to the socket",
         [])
 class SendADocumentToTheSocket {
-
-    ~this() @trusted {
-        writeln("Exit SendADocumentToTheSocket");
-    }
-
     Address addr;
     Socket sock;
     InputValidatorHandle input_handle;

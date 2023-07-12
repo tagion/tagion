@@ -49,11 +49,11 @@ struct DARTService {
 
             scope (exit) {
                 db.close();
-                end(task_name);
+                end();
             }
         }
         catch (Exception e) {
-            fail(task_name, e);
+            fail(e);
         }
     }
 }

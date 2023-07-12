@@ -32,7 +32,7 @@ static:
 
     void task(string task_name) nothrow {
         run(task_name);
-        end(task_name);
+        end();
     }
 }
 
