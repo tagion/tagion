@@ -9,38 +9,52 @@ import std.typecons;
 
 import tagion.actor;
 import tagion.actor.exceptions;
-import tagion.utils.pretend_safe_concurrency : locate, send;
-import tagion.services.DART;
-import tagion.services.inputvalidator;
-import tagion.services.contract;
+import tagion.basic.Types : FileExtension;
 import tagion.crypto.SecureNet;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.dart.DARTFile;
 import tagion.dart.DARTBasic : DARTIndex;
-import tagion.basic.Types : FileExtension;
+import tagion.utils.JSONCommon;
+import tagion.utils.pretend_safe_concurrency : locate, send;
+import tagion.services.DART;
+import tagion.services.inputvalidator;
+import tagion.services.contract;
+
+struct SupervisorOptions {
+    string dart_filename = buildPath(".", "dart".setExtension(FileExtension.dart));
+    string contract_sock_path = .contract_sock_path;
+    mixin JSONCommon;
+}
 
 struct Supervisor {
-static:
     enum dart_task_name = "dart";
     enum contract_task_name = "contract";
+    enum input_task_name = "inputvalidator";
 
+static:
+    SupervisorOptions opts;
     auto failHandler = (TaskFailure tf) { writefln("Supervisor caught exception: \n%s", tf); };
 
-    static void task(string task_name) nothrow {
+    void task(string task_name) nothrow {
         try {
+            scope (exit) {
+                end(task_name);
+            }
+
             SecureNet net = new StdSecureNet();
             net.generateKeyPair("aparatus"); // Key
-            const dart_filename = buildPath(".", "dart".setExtension(FileExtension.dart));
+            const dart_filename = opts.dart_filename;
 
             if (!dart_filename.exists) {
                 DARTFile.create(dart_filename, net);
             }
             auto dart_handle = spawn!DARTService(dart_task_name, dart_filename, cast(immutable) net);
             auto contract_handle = spawn!ContractService(contract_task_name);
-            auto inputvalidator_handle = spawn!InputValidatorService("inputvalidator", contract_task_name, contract_sock_path);
-
+            auto inputvalidator_handle = spawn!InputValidatorService(input_task_name, contract_task_name, opts
+                    .contract_sock_path);
             auto services = tuple(dart_handle, contract_handle, inputvalidator_handle);
             waitforChildren(Ctrl.ALIVE);
+
             run(task_name, failHandler);
 
             foreach (service; services) {
@@ -49,9 +63,6 @@ static:
             writeln("Supervisor stopping services");
             waitforChildren(Ctrl.END);
             writeln("All services stopped");
-
-            scope (exit)
-                end(task_name);
         }
 
         catch (Exception e) {
