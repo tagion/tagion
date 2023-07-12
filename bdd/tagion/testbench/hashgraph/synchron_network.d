@@ -28,6 +28,7 @@ import tagion.hibon.HiBONJSON;
 import tagion.utils.Miscellaneous : toHexString;
 import tagion.basic.basic;
 import std.functional : toDelegate;
+import tagion.basic.Types;
 
 enum feature = Feature(
             "Bootstrap of hashgraph",
@@ -48,7 +49,7 @@ class StartNetworkWithNAmountOfNodes {
     this(string[] node_names, const(string) module_path) {
         this.node_names = node_names;
         this.module_path = module_path;
-        MAX_CALLS = cast(uint) node_names.length * 1000;
+        MAX_CALLS = cast(uint) node_names.length * 100;
     }
 
     bool coherent;
@@ -91,13 +92,13 @@ class StartNetworkWithNAmountOfNodes {
     @When("all nodes are sending ripples")
     Document ripples() {
         try {
-            foreach (i; 0 .. 1000) {
+            foreach (i; 0 .. MAX_CALLS) {
                 const channel_number = network.random.value(0, network.channels.length);
                 const channel = network.channels[channel_number];
                 auto current = network.networks[channel];
                 (() @trusted { current.call; })();
 
-                printStates(network);
+                // printStates(network);
                 if (network.allInGraph) {
                     coherent = true;
                     break;
@@ -136,7 +137,7 @@ class StartNetworkWithNAmountOfNodes {
                 //     // all nodes have created at least one epoch
                 //     break;
                 // }
-                printStates(network);
+                // printStates(network);
                 i++;
             }
             check(TestRefinement.epoch_events.length == node_names.length, 
@@ -175,7 +176,7 @@ class StartNetworkWithNAmountOfNodes {
         foreach(i, compare_epoch; TestRefinement.epoch_events.byKeyValue.front.value) {
             auto compare_events = compare_epoch
                                             .events
-                                            .map!(e => e.event_package.fingerprint)
+                                            .map!(e => cast(Buffer) e.event_package.fingerprint)
                                             .array;
             // compare_events.sort!((a,b) => a < b);
             // compare_events.each!writeln;
@@ -187,7 +188,7 @@ class StartNetworkWithNAmountOfNodes {
                 }
                 auto events = channel_epoch.value[i]
                                             .events
-                                            .map!(e => e.event_package.fingerprint)
+                                            .map!(e => cast(Buffer) e.event_package.fingerprint)
                                             .array;
                 // events.sort!((a,b) => a < b);
 
@@ -197,6 +198,10 @@ class StartNetworkWithNAmountOfNodes {
                                
                 check(compare_events.length == events.length, "event_packages not the same length");
 
+
+                const sameEvents = equal(compare_events.sort, events.sort);
+                check(sameEvents, "events lists does not contain same events");
+                
                 const isSame = equal(compare_events, events);
                 writefln("isSame: %s", isSame);
                 check(isSame, "event_packages not the same");            
