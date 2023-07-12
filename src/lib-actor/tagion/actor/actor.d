@@ -56,7 +56,7 @@ enum Sig {
 alias CtrlMsg = Tuple!(string, "task_name", Ctrl, "ctrl");
 
 private static Ctrl[string] childrenState;
-static string _task_name;
+private static string _task_name;
 
 bool statusChildren(Ctrl ctrl) @safe nothrow {
     foreach (val; childrenState.byValue) {
@@ -159,11 +159,15 @@ ActorHandle!A handle(A)(string task_name) @safe if (isActor!A) {
     return ActorHandle!A(task_name);
 }
 
-ActorHandle!A spawn(A, Args...)(A actor, string task_name, Args args) @safe nothrow
+ActorHandle!A spawn(A, Args...)(string task_name, Args args) @safe nothrow
 if (isActor!A) {
     try {
         Tid tid;
-        tid = concurrency.spawn(&(actor.task), task_name, args);
+        tid = concurrency.spawn((string task_name, Args args) {
+            _task_name = task_name;
+            A actor;
+            actor.task(task_name, args);
+        }, task_name, args);
         childrenState[task_name] = Ctrl.UNKNOWN;
         writefln("spawning %s", task_name);
         tid.setMaxMailboxSize(int.sizeof, OnCrowding.throwException);
@@ -188,11 +192,11 @@ if (isActor!A) {
  * spawn!MyActor("my_task_name", 42);
  * ---
  */
-ActorHandle!A spawn(A, Args...)(string task_name, Args args) @safe nothrow
-if (isActor!A) {
-    A actor = A();
-    return spawn(actor, task_name, args);
-}
+// ActorHandle!A spawn(A, Args...)(string task_name, Args args) @safe nothrow
+// if (isActor!A) {
+//     A actor = A();
+//     return spawn(actor, task_name, args);
+// }
 
 /*
  *
