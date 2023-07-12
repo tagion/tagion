@@ -1,3 +1,5 @@
+/// Service for verifying contracts
+/// [Documentation](https://docs.tagion.org/#/documents/architecture/ContractVerifier)
 module tagion.services.contract;
 
 import std.stdio;

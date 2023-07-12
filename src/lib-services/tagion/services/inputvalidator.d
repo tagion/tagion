@@ -1,3 +1,5 @@
+/// Service for validating inputs sent via socket
+/// [Documentation documents/architecture/InputValidator](https://docs.tagion.org/#/documents/architecture/InputValidator)
 module tagion.services.inputvalidator;
 
 import core.sys.posix.unistd : getuid;
@@ -52,7 +54,6 @@ struct InputValidatorService {
 
     static void task(string task_name, string receiver_task, string sock_path) nothrow {
         try {
-            _task_name = task_name;
             bool stop = false;
             setState(Ctrl.STARTING);
             auto listener = new Socket(AddressFamily.UNIX, SocketType.STREAM);
