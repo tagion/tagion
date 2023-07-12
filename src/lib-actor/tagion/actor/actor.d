@@ -15,6 +15,7 @@ import std.meta : allSatisfy;
 import core.thread;
 
 import concurrency = tagion.utils.pretend_safe_concurrency;
+import tagion.utils.Result;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.actor.exceptions;
 import tagion.basic.tagionexceptions : TagionException;
@@ -55,8 +56,10 @@ enum Sig {
 /// contains the Tid of the actor which send it and the state
 alias CtrlMsg = Tuple!(string, "task_name", Ctrl, "ctrl");
 
-private bool all(const(Ctrl[string]) aa, Ctrl ctrl) @safe nothrow {
-    foreach (val; aa.byValue) {
+private static Ctrl[string] childrenState;
+
+bool statusChildren(Ctrl ctrl) @safe nothrow {
+    foreach (val; childrenState.byValue) {
         if (val != ctrl) {
             return false;
         }
@@ -64,22 +67,17 @@ private bool all(const(Ctrl[string]) aa, Ctrl ctrl) @safe nothrow {
     return true;
 }
 
-private static Ctrl[string] childrenState;
 /* 
  * Waif for vararg of ActorHandles to be in Ctrl state
  * Returns: false if any message is received that is not CtrlMsg 
  */
 bool waitfor(T...)(Ctrl state, const(T) handlers) @trusted nothrow
 if (allSatisfy!(isActorHandle, T)) {
-    foreach (handle; handlers) {
-        childrenState[handle.task_name] = Ctrl.UNKNOWN;
-    }
     bool code = false;
-
     try {
         scope (exit)
             writeln(childrenState);
-        while (!(childrenState.all(state))) {
+        while (!(statusChildren(state))) {
             CtrlMsg msg;
             receive(
                     (CtrlMsg _msg) { msg = _msg; }
@@ -89,7 +87,6 @@ if (allSatisfy!(isActorHandle, T)) {
         code = true;
     }
     catch (Exception e) {
-        assumeWontThrow(writeln("Exception: ", e));
         code = false;
     }
     return code;
@@ -163,6 +160,7 @@ if (isActor!A) {
         import concurrency = tagion.utils.pretend_safe_concurrency;
 
         tid = concurrency.spawn(&(actor.task), task_name, args);
+        childrenState[task_name] = Ctrl.UNKNOWN;
         writefln("spawning %s", task_name);
         tid.setMaxMailboxSize(int.sizeof, OnCrowding.throwException);
         if (concurrency.register(task_name, tid)) {
@@ -307,14 +305,13 @@ void run(Args...)(string task_name, Args args) nothrow {
     try {
         setState(Ctrl.STARTING, task_name); // Tell the owner that you are starting.
         scope (exit) {
-            if (childrenState.length != 0) {
+            if (childrenState.length != 0 && !statusChildren(Ctrl.END)) {
                 foreach (child_task_name, ctrl; childrenState) {
                     if (ctrl is Ctrl.ALIVE) {
                         locate(child_task_name).send(Sig.STOP);
                     }
                 }
-
-                while (!(childrenState.all(Ctrl.END))) {
+                while (!(statusChildren(Ctrl.END))) {
                     receive(
                             (CtrlMsg ctrl) { childrenState[ctrl.task_name] = ctrl.ctrl; },
                             (TaskFailure tf) {
