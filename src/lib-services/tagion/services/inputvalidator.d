@@ -18,7 +18,9 @@ import tagion.communication.HiRPC;
 import tagion.basic.basic : forceRemove;
 import tagion.basic.Debug : __write;
 import tagion.GlobalSignals : stopsignal;
+import tagion.utils.JSONCommon;
 
+/// Msg Type sent to actors who receive the document
 alias inputDoc = Msg!"inputDoc";
 
 @property
@@ -38,7 +40,16 @@ static immutable(string) contract_sock_path() nothrow {
     }
 }
 
+struct InputValidatorOptions {
+    uint mbox_timeout = 10; // msecs
+    uint socket_select_timeout = 1000; // msecs
+    uint max_connections = 1;
+    mixin JSONCommon;
+}
+
 struct InputValidatorService {
+    static InputValidatorOptions options;
+
     static void task(string task_name, string receiver_task, string sock_path) nothrow {
         try {
             bool stop = false;
@@ -56,15 +67,14 @@ struct InputValidatorService {
                 end(task_name);
             }
 
-            enum MAX_CONNECTIONS = 1;
-            auto socketSet = new SocketSet(MAX_CONNECTIONS + 1); // Room for listener.
+            auto socketSet = new SocketSet(options.max_connections + 1); // Room for listener.
             Socket[] reads;
             ReceiveBuffer buf;
 
             setState(Ctrl.ALIVE, task_name);
             eventloop: while (true) {
                 try {
-                    receiveTimeout(10.msecs,
+                    receiveTimeout(options.mbox_timeout.msecs,
                             (Sig sig) {
                         if (sig is Sig.STOP) {
                             writeln("Input validator service received stop signal");
@@ -80,7 +90,7 @@ struct InputValidatorService {
                     foreach (sock; reads)
                         socketSet.add(sock);
 
-                    Socket.select(socketSet, null, null, 1.seconds);
+                    Socket.select(socketSet, null, null, options.socket_select_timeout.msecs);
 
                     for (size_t i = 0; i < reads.length; i++) {
                         if (socketSet.isSet(reads[i])) {
@@ -113,7 +123,7 @@ struct InputValidatorService {
                         assert(sn.isAlive);
                         assert(listener.isAlive);
 
-                        if (reads.length < MAX_CONNECTIONS) {
+                        if (reads.length < options.max_connections) {
                             writefln("Connection established.");
                             reads ~= sn;
                         }
