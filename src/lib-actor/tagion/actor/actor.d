@@ -57,6 +57,7 @@ enum Sig {
 alias CtrlMsg = Tuple!(string, "task_name", Ctrl, "ctrl");
 
 private static Ctrl[string] childrenState;
+private static string _task_name;
 
 bool statusChildren(Ctrl ctrl) @safe nothrow {
     foreach (val; childrenState.byValue) {
@@ -71,8 +72,7 @@ bool statusChildren(Ctrl ctrl) @safe nothrow {
  * Waif for vararg of ActorHandles to be in Ctrl state
  * Returns: false if any message is received that is not CtrlMsg 
  */
-bool waitfor(T...)(Ctrl state, const(T) handlers) @trusted nothrow
-if (allSatisfy!(isActorHandle, T)) {
+bool waitforChildren(Ctrl state) @safe nothrow {
     bool code = false;
     try {
         scope (exit)
@@ -311,14 +311,7 @@ void run(Args...)(string task_name, Args args) nothrow {
                         locate(child_task_name).send(Sig.STOP);
                     }
                 }
-                while (!(statusChildren(Ctrl.END))) {
-                    receive(
-                            (CtrlMsg ctrl) { childrenState[ctrl.task_name] = ctrl.ctrl; },
-                            (TaskFailure tf) {
-                        writefln("While stopping `%s` received taskfailure: %s", task_name, tf.throwable.msg);
-                    }
-                    );
-                }
+                waitforChildren(Ctrl.END);
             }
         }
 

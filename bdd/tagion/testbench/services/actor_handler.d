@@ -51,7 +51,7 @@ static:
         childHandle = spawn!MyActor(child_task_name);
         // childrenState[childHandle.task_name] = Ctrl.UNKNOWN;
 
-        waitfor(Ctrl.ALIVE, childHandle);
+        waitforChildren(Ctrl.ALIVE);
         run(task_name);
 
         end(task_name);

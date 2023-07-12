@@ -40,14 +40,14 @@ static:
             auto inputvalidator_handle = spawn!InputValidatorService("inputvalidator", contract_task_name, contract_sock_path);
 
             auto services = tuple(dart_handle, contract_handle, inputvalidator_handle);
-            waitfor(Ctrl.ALIVE, services.expand);
+            waitforChildren(Ctrl.ALIVE);
             run(task_name, failHandler);
 
             foreach (service; services) {
                 service.send(Sig.STOP);
             }
             writeln("Supervisor stopping services");
-            waitfor(Ctrl.END, services.expand);
+            waitforChildren(Ctrl.END);
             writeln("All services stopped");
 
             scope (exit)

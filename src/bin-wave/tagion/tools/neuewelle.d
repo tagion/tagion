@@ -69,14 +69,14 @@ int _main(string[] args) {
 
     enum supervisor_task_name = "supervisor";
     auto supervisor_handle = spawn!Supervisor(supervisor_task_name);
-    waitfor(Ctrl.ALIVE, supervisor_handle);
+    waitforChildren(Ctrl.ALIVE);
 
     writeln("alive");
     stopsignal.wait;
     writeln("Sending stop signal to supervisor");
     supervisor_handle.send(Sig.STOP);
     writeln("waiting for all threads");
-    waitfor(Ctrl.END, supervisor_handle);
+    waitforChildren(Ctrl.END);
     // thread_joinAll;
     writeln("Exiting");
     return 0;

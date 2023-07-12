@@ -51,7 +51,7 @@ class SendADocumentToTheSocket {
     Document aInputvalidator() {
         register(input_test, thisTid);
         input_handle = spawn!InputValidatorService("input_test_task", "input_test", sock_path);
-        check(waitfor(Ctrl.ALIVE, input_handle), "The inputvalidator did not start");
+        check(waitforChildren(Ctrl.ALIVE), "The inputvalidator did not start");
         return result_ok;
     }
 
@@ -78,7 +78,7 @@ class SendADocumentToTheSocket {
     @Then("stop the inputvalidator")
     Document theInputvalidator() {
         input_handle.send(Sig.STOP);
-        check(waitfor(Ctrl.END, input_handle), "The inputvalidator did not stop");
+        check(waitforChildren(Ctrl.END), "The inputvalidator did not stop");
         sock.close();
         return result_ok;
     }

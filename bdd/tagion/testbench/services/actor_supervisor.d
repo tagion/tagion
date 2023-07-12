@@ -77,7 +77,7 @@ static:
 
     void task(string task_name) nothrow {
         childHandle = spawn!SetUpForFailure(child_task_name);
-        waitfor(Ctrl.ALIVE, childHandle);
+        waitforChildren(Ctrl.ALIVE);
 
         run(task_name, failHandler);
         end(task_name);
@@ -95,6 +95,9 @@ static:
         else if (cast(Fatal) tf.throwable !is null) {
             writeln(typeof(tf.throwable).stringof, tf.task_name, locate(tf.task_name));
             childHandle = respawn(childHandle);
+            waitforChildren(Ctrl.ALIVE);
+            import std.concurrency;
+
             writefln("This is fatal, we need to restart %s", tf.task_name);
             sendOwner(reFatal());
         }
