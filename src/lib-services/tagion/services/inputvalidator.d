@@ -7,6 +7,7 @@ import std.path;
 import std.algorithm : remove;
 
 import tagion.actor;
+import core.time;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.script.StandardRecords;
 import tagion.network.ReceiveBuffer;
