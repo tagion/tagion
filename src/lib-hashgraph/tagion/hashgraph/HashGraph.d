@@ -646,6 +646,10 @@ class HashGraph {
                     received_node.state = RIPPLE;
                     received_node.sticky_state = RIPPLE;
 
+                    if (areWeInGraph) {
+                        break;
+                    }
+
                     // if we receive a ripplewave, we must add the eva events to our own graph.
                     const received_epacks = received_wave.epacks;
                     foreach(epack; received_epacks) {
@@ -665,7 +669,7 @@ class HashGraph {
                             .byValue
                             .all!((n) => n._event !is null);
 
-                    if (contain_all && node_size == _nodes.length && !areWeInGraph) {
+                    if (contain_all && node_size == _nodes.length) {
                         const own_epacks = _nodes
                             .byValue
                             .map!((n) => n[])
