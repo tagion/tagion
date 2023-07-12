@@ -76,7 +76,8 @@ SONAME_FLAG := $(LINKERFLAG)-soname
 DDEBUG := -fdebug
 DUNITTEST := -funittest
 DMAIN := -fmain
-DIP := -ftransition=dip
+DIP := -fpreview=dip
+DIMPORTFILE=-J
 DDEBUG_SYMBOLS := -g
 DBETTERC := --betterC
 DCOMPILE_ONLY := -c
@@ -173,6 +174,7 @@ env-compiler:
 	${call log.kvp, DDEBUG, $(DDEBUG)}
 	${call log.kvp, DOPT, $(DOPT)}
 	${call log.kvp, DUNITTEST, $(DUNITTEST)}
+	${call log.kvp, LINKERFLAG, $(LINKERFLAG)}
 	${call log.kvp, DMAIN, $(DMAIN)}
 	${call log.kvp, DIP, $(DIP)}
 	${call log.kvp, DIP25, $(DIP25)}

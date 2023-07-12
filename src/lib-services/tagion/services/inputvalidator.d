@@ -1,7 +1,6 @@
 module tagion.services.inputvalidator;
 
 import core.sys.posix.unistd : getuid;
-import core.time;
 import std.socket;
 import std.stdio;
 import std.path;
@@ -22,12 +21,16 @@ import tagion.GlobalSignals : stopsignal;
 alias inputDoc = Msg!"inputDoc";
 
 @property
-static immutable(string) contract_sock_path() @safe nothrow {
+static immutable(string) contract_sock_path() nothrow {
     version (linux) {
         return "\0NEUEWELLE_CONTRACT";
     }
     else version (Posix) {
-        return buildPath("/", "run", "user", format("%d", getuid), "neuewelle_contract.sock");
+        import std.exception;
+        import std.conv;
+
+        const uid = assumeWontThrow(getuid.to!string);
+        return buildPath("/", "run", "user", uid, "tagionwave_contract.sock");
     }
     else {
         assert(0, "Unsupported platform");

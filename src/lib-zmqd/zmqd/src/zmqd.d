@@ -3449,7 +3449,7 @@ ubyte[] z85Decode(char[] text, ubyte[] dest) // TODO: Make text const when we up
     if (dest.length < len)
         throw new RangeError;
     if (text[$ - 1] != '\0')
-    text ~= '\0';
+        text ~= '\0';
     if (trusted!zmq_z85_decode(ptr(dest), ptr(text)) == null) {
         throw new ZmqException;
     }
@@ -3535,7 +3535,7 @@ debug (WithCurveTests) unittest {
     client.connect("inproc://curveKeyPair_test");
     client.send("hello");
 
-    ubyte[5] buf;
+    auto buf = new ubyte[5];
     assert(server.receive(buf) == 5);
     assert(buf.asString() == "hello");
 }
@@ -3593,7 +3593,7 @@ unittest {
     msg.data.asString()[] = "Hello World!";
     s1.send(msg);
 
-    ubyte[12] buf;
+    auto buf = new ubyte[12];
     s2.receive(buf);
     assert(buf.asString() == "Hello World!");
 }
