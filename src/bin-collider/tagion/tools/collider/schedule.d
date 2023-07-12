@@ -193,48 +193,66 @@ struct ScheduleRunner {
         auto check_running = runners
             .filter!(r => r.pid !is r.pid.init)
             .any!(r => !tryWait(r.pid).terminated);
-    scope(exit) {    
-    import tagion.basic.Debug;
-        __write("Ends %s -%(%s\n%:", check_running, runners
-    .filter!(r => r.pid !is r.pid.init)
-    .map!(r => tryWait(r.pid)));
-    }
-        while (!schedule_list.empty || check_running) {
-   //         while (!schedule_list.empty && !runners.all!(r => r.pid !is r.pid.init)) {
-                try {
-                    const job_index = runners.countUntil!(r => r.pid is r.pid.init);
-                    auto time = Clock.currTime;
-                    auto env = environment.toAA;
-                    schedule_list.front.unit.envs.byKeyValue
-                        .each!(e => env[e.key] = envExpand(e.value, env));
-                    const cmd = args ~ schedule_list.front.name ~
-                        schedule_list.front.unit.args
-                            .map!(arg => envExpand(arg, env))
-                            .array;
-                    setEnv(env, schedule_list.front.stage);
-                    //showEnv(env); //writefln("ENV %s ", env);
-                    check((BDD_RESULTS in env) !is null, 
-                format("Environment variable %s or %s must be defined", BDD_RESULTS, COLLIDER_ROOT));
-                    const log_filename = buildNormalizedPath(env[BDD_RESULTS],
-                    schedule_list.front.name).setExtension("log");
-                    batch(job_index, time, cmd, log_filename, env);
-                    schedule_list.popFront;
-                }
-                catch (Exception e) {
-                    writefln("Error %s", e.msg);
-                    runners[job_index].fout.writeln("Error: %s", e.msg);
-                    runners[job_index].fout.close;
-                    kill(runners[job_index].pid);
-                    runners[job_index] = Runner.init;
-                }
-                const terminated_index = runners
-                    .filter!(r => r.pid !is r.pid.init)
-                    .countUntil!(r => tryWait(r.pid).terminated);
-                if (terminated_index >= 0) {
-                :}   
-                //              time);
+        scope (exit) {
+            import tagion.basic.Debug;
 
+            writefln("--- END ---");
+            writefln("Ends %s -%(%s\n%):", check_running, runners
+                    .filter!(r => r.pid !is r.pid.init)
+                    .map!(r => tryWait(r.pid)));
+        }
+        while (!schedule_list.empty || check_running) {
+            //         while (!schedule_list.empty && !runners.all!(r => r.pid !is r.pid.init)) {
+            if (!schedule_list.empty) {
+                const job_index = runners.countUntil!(r => r.pid is r.pid.init);
+                if (job_index >= 0) {
+                    try {
+                        auto time = Clock.currTime;
+                        auto env = environment.toAA;
+                        schedule_list.front.unit.envs.byKeyValue
+                            .each!(e => env[e.key] = envExpand(e.value, env));
+                        const cmd = args ~ schedule_list.front.name ~
+                            schedule_list.front.unit.args
+                                .map!(arg => envExpand(arg, env))
+                                .array;
+                        setEnv(env, schedule_list.front.stage);
+                        //showEnv(env); //writefln("ENV %s ", env);
+                        check((BDD_RESULTS in env) !is null,
+                                format("Environment variable %s or %s must be defined", BDD_RESULTS, COLLIDER_ROOT));
+                        const log_filename = buildNormalizedPath(env[BDD_RESULTS],
+                        schedule_list.front.name).setExtension("log");
+                        batch(job_index, time, cmd, log_filename, env);
+                        schedule_list.popFront;
+                    }
+                    catch (Exception e) {
+                        writefln("Error %s", e.msg);
+                        runners[job_index].fout.writeln("Error: %s", e.msg);
+                        runners[job_index].fout.close;
+                        kill(runners[job_index].pid);
+                        runners[job_index] = Runner.init;
+                    }
+                }
             }
+
+            const terminated_index = runners
+                .filter!(r => r.pid !is r.pid.init)
+                .countUntil!(r => tryWait(r.pid).terminated);
+
+            if (terminated_index >= 0) {
+                writefln("---- %d", terminated_index);
+                writefln("Next job %d pid=%d %s ", terminated_index, runners[terminated_index].jobid, tryWait(runners[terminated_index]
+                    .pid));
+                this.stopped(runners[terminated_index]);
+                runners[terminated_index].fout.close;
+                runners[terminated_index] = Runner.init;
+            }
+            else {
+                writefln("sleep");
+                sleep(100.msecs);
+            }
+
+        }
+        version (none)
             for (; !dry_switch;) {
 
                 sleep(100.msecs);
@@ -250,7 +268,6 @@ struct ScheduleRunner {
                     break;
                 }
             }
-        }
         return 0;
     }
 }
