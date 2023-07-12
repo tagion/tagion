@@ -99,7 +99,8 @@ struct InputValidatorService {
                             Document doc = Document(cast(immutable) result.data);
                             __write("Received %d bytes.", result.size);
                             __write("Document status code %s", doc.valid);
-                            if (result.size != 0 && doc.valid is Document.Element.ErrorCode.NONE) {
+                            if (result.size != 0 && doc.valid is Document.Element.ErrorCode.NONE && doc.isRecord!(HiRPC
+                                    .Sender)) {
                                 __write("sending to %s", receiver_task);
                                 locate(receiver_task).send(inputDoc(), doc);
                             }
