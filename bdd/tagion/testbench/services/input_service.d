@@ -53,9 +53,11 @@ class SendADocumentToTheSocket {
         addr = new UnixAddress(sock_path); // TODO: make this configurable
         sock = new Socket(AddressFamily.UNIX, SocketType.STREAM);
         sock.blocking = false;
+        HiRPC hirpc;
         auto hibon = new HiBON();
         hibon["$test"] = 5;
-        doc = Document(hibon);
+        const sender = hirpc.act(hibon);
+        doc = sender.toDoc;
         sock.connect(addr);
         check(doc.serialize.length == sock.send(doc.serialize), "The entire document was not sent");
         return result_ok;
