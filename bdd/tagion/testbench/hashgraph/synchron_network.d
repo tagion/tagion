@@ -98,7 +98,7 @@ class StartNetworkWithNAmountOfNodes {
                 (() @trusted { current.call; })();
 
                 printStates(network);
-                if (network.allCoherent) {
+                if (network.allInGraph) {
                     coherent = true;
                     break;
                 }

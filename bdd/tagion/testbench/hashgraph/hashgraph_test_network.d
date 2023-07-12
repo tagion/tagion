@@ -277,11 +277,11 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         return networks.keys;
     }
 
-    bool allCoherent() {
+    bool allInGraph() {
         return networks
             .byValue
-            .map!(n => n._hashgraph.owner_node.sticky_state)
-            .all!(s => s == ExchangeState.COHERENT);
+            .map!(n => n._hashgraph.areWeInGraph)
+            .all!(s => s);
     }
 
     FiberNetwork[Pubkey] networks;
