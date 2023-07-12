@@ -228,13 +228,10 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
                 const nonce = cast(Buffer) _hashgraph.hirpc.net.calcHash(buf);
                 auto eva_event = _hashgraph.createEvaEvent(time, nonce);
 
-                if (eva_event is null) {
-                    log.error("The channel of this oner is not valid");
-                    return;
-                }
             }
             uint count;
             bool stop;
+
             const(Document) payload() @safe {
                 auto h = new HiBON;
                 h["node"] = format("%s-%d", _hashgraph.name, count);
@@ -255,8 +252,8 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
                             received,
                             time,
                             (const(HiRPC.Sender) return_wavefront) @safe {
-                        authorising.send(received.pubkey, return_wavefront);
-                    },
+                            authorising.send(received.pubkey, return_wavefront);
+                            },
                             &payload
                     );
                     count++;
@@ -299,7 +296,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
             auto refinement = new TestRefinement;
             auto h = new HashGraph(N, net, refinement, &authorising.isValidChannel, name);
             h.scrap_depth = 0;
-            networks[net.pubkey] = new FiberNetwork(h, pageSize * 256);
+            networks[net.pubkey] = new FiberNetwork(h, pageSize * 1024);
         }
         networks.byKey.each!((a) => authorising.add_channel(a));
     }

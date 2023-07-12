@@ -63,29 +63,25 @@ class StaticExclusionOfANode {
 
     @When("all nodes have created at least one epoch")
     Document epoch() {
-        try {
-            uint i = 0;
-            while (i < CALLS) {
+        uint i = 0;
+        while (i < CALLS) {
 
-                const channel_number = network.random.value(0, network.channels.length);
-                network.current = Pubkey(network.channels[channel_number]);
-                auto current = network.networks[network.current];
-                (() @trusted { current.call; })();
-                // printStates(network);
-                i++;
-                if (TestRefinement.epoch_events.length == node_names.length) {
-                    break;
-                }
+            const channel_number = network.random.value(0, network.channels.length);
+            network.current = Pubkey(network.channels[channel_number]);
+            auto current = network.networks[network.current];
+            (() @trusted { current.call; })();
+            // printStates(network);
+            i++;
+            if (TestRefinement.epoch_events.length == node_names.length) {
+                break;
             }
-
-            check(TestRefinement.epoch_events.length == node_names.length,
-                    format("Max calls %d reached, not all nodes have created epochs only %d",
-                    CALLS, TestRefinement.epoch_events.length));
-
         }
-        catch (Exception e) {
-            check(false, e.msg);
-        }
+
+        check(TestRefinement.epoch_events.length == node_names.length,
+                format("Max calls %d reached, not all nodes have created epochs only %d",
+                CALLS, TestRefinement.epoch_events.length));
+
+    
         return result_ok;
     }
 

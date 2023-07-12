@@ -608,7 +608,8 @@ class Event {
     package this(
             immutable(EventPackage)* epack,
             HashGraph hashgraph,
-    ) {
+    ) in (epack !is null)
+    do {
         event_package = epack;
         this.node_id = hashgraph.getNode(channel).node_id;
         this.id = hashgraph.next_event_id;
