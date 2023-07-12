@@ -10,7 +10,6 @@ import std.traits;
 import std.variant : Variant;
 import std.format : format;
 import std.traits;
-import std.meta : allSatisfy;
 
 import core.thread;
 
@@ -75,8 +74,6 @@ bool statusChildren(Ctrl ctrl) @safe nothrow {
 bool waitforChildren(Ctrl state) @safe nothrow {
     bool code = false;
     try {
-        scope (exit)
-            writeln(childrenState);
         while (!(statusChildren(state))) {
             CtrlMsg msg;
             receive(
@@ -85,6 +82,7 @@ bool waitforChildren(Ctrl state) @safe nothrow {
             childrenState[msg.task_name] = msg.ctrl;
         }
         code = true;
+        writeln(childrenState);
     }
     catch (Exception e) {
         code = false;
@@ -130,10 +128,18 @@ struct ActorHandle(A) {
         return concurrency.locate(task_name);
     }
 
+    // Get the status of the tasb, asserts if the calling task did not spawn it
+    Ctrl state() @safe nothrow {
+        if (task_name in childrenState) {
+            return childrenState[task_name];
+        }
+        assert(0, "You don't own this task");
+    }
+
     alias Actor = A;
 
     /// Send a message to this task
-    @safe void send(T...)(T args) {
+    void send(T...)(T args) @safe {
         concurrency.send(this.tid, args);
     }
 }
@@ -157,8 +163,6 @@ ActorHandle!A spawn(A, Args...)(A actor, string task_name, Args args) @safe noth
 if (isActor!A) {
     try {
         Tid tid;
-        import concurrency = tagion.utils.pretend_safe_concurrency;
-
         tid = concurrency.spawn(&(actor.task), task_name, args);
         childrenState[task_name] = Ctrl.UNKNOWN;
         writefln("spawning %s", task_name);
@@ -272,6 +276,7 @@ void end(string task_name) nothrow {
  *   args = a list of message handlers for the task
  */
 void run(Args...)(string task_name, Args args) nothrow {
+    _task_name = task_name;
     bool stop = false;
 
     void signal(Sig signal) {
