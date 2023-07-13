@@ -24,6 +24,7 @@ int main(string[] args) {
     import hashgraph_test = tagion.testbench.hashgraph_test;
     import hashgraph_contributors = tagion.testbench.hashgraph_contributors;
     import hashgraph_exclude = tagion.testbench.hashgraph_exclude;
+    import hashgraph_swap = tagion.testbench.hashgraph_swap;
 
     alias alltools = AliasSeq!(
             ssl_server,
@@ -45,6 +46,7 @@ int main(string[] args) {
             hashgraph_test,
             hashgraph_contributors,
             hashgraph_exclude,
+            hashgraph_swap,
     );
     mixin doOneMain!(alltools);
     return do_main(args);
