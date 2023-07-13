@@ -28,26 +28,23 @@ class TraceCallBacks : ScheduleTrace {
         }
     }
 
-    void goToLine(const ref Runner runner) {
+    void goToLine(const size_t line_number) {
         HOME.write;
 
-        NEXTLINE.repeat(runner.jobid);
+        NEXTLINE.repeat(line_number).write;
 
         CLEARLINE.write;
     }
 
     void started(const ref Runner runner) {
-        goToLine(runner);
         writefln("Runner %s started %s", runner.jobid, runner.name);
     }
 
     void stopped(const ref Runner runner) {
-        goToLine(runner);
         writefln("Runner %s stopped %s", runner.jobid, runner.name);
     }
 
     void timeout(const ref Runner runner) {
-        goToLine(runner);
         writefln("Runner %s timeout %s", runner.jobid, runner.name);
     }
 

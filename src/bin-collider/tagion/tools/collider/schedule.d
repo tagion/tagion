@@ -94,6 +94,13 @@ struct ScheduleRunner {
         }
     }
 
+    void progress(Args...)(const string fmt, Args args) @trusted {
+        import tagion.utils.Term;
+
+        writef(CLEAREOL ~ fmt ~ "\r", args);
+        stdout.flush;
+    }
+
     void setEnv(ref string[string] env, string stage) {
         if (stage) {
             env[TEST_STAGE] = stage;
@@ -195,32 +202,20 @@ struct ScheduleRunner {
             .any!(r => !tryWait(r.pid).terminated);
         auto check_running = runners
             .any!(r => r.pid !is r.pid.init);
-        scope (exit) {
-            import tagion.basic.Debug;
-
-            writefln("--- END ---");
-            writefln("Ends %s %(%s\n%): %(%s\n%) : %s, %s", check_running, runners
-                    .filter!(r => r.pid !is r.pid.init)
-                    .map!(r => tryWait(r.pid)),
-                    runners
-                    .filter!(r => r.pid !is r.pid.init)
-                    .map!(r => tryWait(r.pid).terminated),
-                    runners //.filter!(r => r.pid !is r.pid.init)
-                    .map!(r => (r.pid !is r.pid.init)),
-                    runners
-                    .any!(r => r.pid !is r.pid.init)
-
-            );
-
-        }
         void teminate(ref Runner runner) {
-            writeln("Job done");
+            this.stopped(runner);
             runner = Runner.init;
         }
 
-        while (!schedule_list.empty || runners.any!(r => r.pid !is r.pid.init)) {
+        uint count;
+        enum progress_meter = [
+                "|",
+                "/",
+                "-",
+                "\\",
+            ];
 
-            //         while (!schedule_list.empty && !runners.all!(r => r.pid !is r.pid.init)) {
+        while (!schedule_list.empty || runners.any!(r => r.pid !is r.pid.init)) {
             if (!schedule_list.empty) {
                 const job_index = runners.countUntil!(r => r.pid is r.pid.init);
                 if (job_index >= 0) {
@@ -256,55 +251,17 @@ struct ScheduleRunner {
                 .filter!(r => r.pid !is r.pid.init)
                 .filter!(r => tryWait(r.pid).terminated)
                 .each!((ref r) => teminate(r));
-            writefln("Next job %s", runners
+            progress("%s Running jobs %s",
+                    progress_meter[count % progress_meter.length],
+                    runners
                     .enumerate
                     .filter!(r => r.value.pid !is r.value.pid.init)
-                    .map!(r => r.index)
+                    .map!(r => r.index),
             );
-            /*
-            if (terminated_index >= 0) {
-                writefln("---- %d", terminated_index);
-                writefln("Next job %d %s", terminated_index, runners
-                .enumerate
-                .filter!(r => r.value.pid !is r.value.pid.init)
-                .map!(r => r.index)
-        );
-                this.stopped(runners[terminated_index]);
-                runners[terminated_index].fout.close;
-                runners[terminated_index] = Runner.init;
-            }
-            else {
-        */
-            writefln("sleep");
+            count++;
             sleep(100.msecs);
-            //  }
-            version (none)
-                writefln("Loop check check_running %s %(%s\n%): %s",
-                        check_running,
-                        runners
-                        .filter!(r => r.pid !is r.pid.init)
-                        .map!(r => tryWait(r.pid)),
-
-                        runners
-                        .any!(r => r.pid !is r.pid.init)
-                );
         }
-        version (none)
-            for (; !dry_switch;) {
-
-                sleep(100.msecs);
-                const job_index = runners
-                    .filter!(r => r.pid !is r.pid.init)
-                    .countUntil!(r => tryWait(r.pid).terminated);
-                writefln("job_index=%d", job_index);
-                if (job_index >= 0) {
-                    this.stopped(runners[job_index]);
-                    writefln("Next job %s", tryWait(runners[job_index].pid));
-                    runners[job_index].fout.close;
-                    runners[job_index] = Runner.init;
-                    break;
-                }
-            }
+        progress("Done");
         return 0;
     }
 }
