@@ -94,6 +94,13 @@ struct ScheduleRunner {
         }
     }
 
+    void progress(Args...)(const string fmt, Args args) @trusted {
+        import tagion.utils.Term;
+
+        writef(CLEAREOL ~ fmt ~ "\r", args);
+        stdout.flush;
+    }
+
     void setEnv(ref string[string] env, string stage) {
         if (stage) {
             env[TEST_STAGE] = stage;
@@ -190,56 +197,71 @@ struct ScheduleRunner {
             showEnv(env, schedule_list.front.unit);
         }
 
-        auto check_running = runners
+        auto _check_running = runners
             .filter!(r => r.pid !is r.pid.init)
             .any!(r => !tryWait(r.pid).terminated);
-
-        while (!schedule_list.empty || check_running) {
-            while (!schedule_list.empty && !runners.all!(r => r.pid !is r.pid.init)) {
-                const job_index = runners.countUntil!(r => r.pid is r.pid.init);
-                try {
-                    auto time = Clock.currTime;
-                    auto env = environment.toAA;
-                    schedule_list.front.unit.envs.byKeyValue
-                        .each!(e => env[e.key] = envExpand(e.value, env));
-                    const cmd = args ~ schedule_list.front.name ~
-                        schedule_list.front.unit.args
-                            .map!(arg => envExpand(arg, env))
-                            .array;
-                    setEnv(env, schedule_list.front.stage);
-                    //showEnv(env); //writefln("ENV %s ", env);
-                    check((BDD_RESULTS in env) !is null, format("Environment variable %s or %s must be defined", BDD_RESULTS, COLLIDER_ROOT));
-                    const log_filename = buildNormalizedPath(env[BDD_RESULTS],
-                    schedule_list.front.name).setExtension("log");
-                    batch(job_index, time, cmd, log_filename, env);
-                }
-                catch (Exception e) {
-                    writefln("Error %s", e.msg);
-                    runners[job_index].fout.writeln("Error: %s", e.msg);
-                    runners[job_index].fout.close;
-                    kill(runners[job_index].pid);
-                    runners[job_index] = Runner.init;
-                }
-                //              time);
-
-                schedule_list.popFront;
-            }
-            for (; !dry_switch;) {
-
-                sleep(100.msecs);
-                const job_index = runners
-                    .filter!(r => r.pid !is r.pid.init)
-                    .countUntil!(r => tryWait(r.pid).terminated);
-                //                writefln("job_index=%d", job_index);
-                if (job_index >= 0) {
-                    this.stop(runners[job_index]);
-                    runners[job_index].fout.close;
-                    runners[job_index] = Runner.init;
-                    writefln("Next job");
-                    break;
-                }
-            }
+        auto check_running = runners
+            .any!(r => r.pid !is r.pid.init);
+        void teminate(ref Runner runner) {
+            this.stopped(runner);
+            runner = Runner.init;
         }
+
+        uint count;
+        enum progress_meter = [
+                "|",
+                "/",
+                "-",
+                "\\",
+            ];
+
+        while (!schedule_list.empty || runners.any!(r => r.pid !is r.pid.init)) {
+            if (!schedule_list.empty) {
+                const job_index = runners.countUntil!(r => r.pid is r.pid.init);
+                if (job_index >= 0) {
+                    try {
+                        auto time = Clock.currTime;
+                        auto env = environment.toAA;
+                        schedule_list.front.unit.envs.byKeyValue
+                            .each!(e => env[e.key] = envExpand(e.value, env));
+                        const cmd = args ~ schedule_list.front.name ~
+                            schedule_list.front.unit.args
+                                .map!(arg => envExpand(arg, env))
+                                .array;
+                        setEnv(env, schedule_list.front.stage);
+                        //showEnv(env); //writefln("ENV %s ", env);
+                        check((BDD_RESULTS in env) !is null,
+                                format("Environment variable %s or %s must be defined", BDD_RESULTS, COLLIDER_ROOT));
+                        const log_filename = buildNormalizedPath(env[BDD_RESULTS],
+                        schedule_list.front.name).setExtension("log");
+                        batch(job_index, time, cmd, log_filename, env);
+                        schedule_list.popFront;
+                    }
+                    catch (Exception e) {
+                        writefln("Error %s", e.msg);
+                        runners[job_index].fout.writeln("Error: %s", e.msg);
+                        runners[job_index].fout.close;
+                        kill(runners[job_index].pid);
+                        runners[job_index] = Runner.init;
+                    }
+                }
+            }
+
+            runners
+                .filter!(r => r.pid !is r.pid.init)
+                .filter!(r => tryWait(r.pid).terminated)
+                .each!((ref r) => teminate(r));
+            progress("%s Running jobs %s",
+                    progress_meter[count % progress_meter.length],
+                    runners
+                    .enumerate
+                    .filter!(r => r.value.pid !is r.value.pid.init)
+                    .map!(r => r.index),
+            );
+            count++;
+            sleep(100.msecs);
+        }
+        progress("Done");
         return 0;
     }
 }
