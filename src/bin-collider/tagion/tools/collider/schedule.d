@@ -190,18 +190,36 @@ struct ScheduleRunner {
             showEnv(env, schedule_list.front.unit);
         }
 
-        auto check_running = runners
+        auto _check_running = runners
             .filter!(r => r.pid !is r.pid.init)
             .any!(r => !tryWait(r.pid).terminated);
+        auto check_running = runners
+            .any!(r => r.pid !is r.pid.init);
         scope (exit) {
             import tagion.basic.Debug;
 
             writefln("--- END ---");
-            writefln("Ends %s -%(%s\n%):", check_running, runners
+            writefln("Ends %s %(%s\n%): %(%s\n%) : %s, %s", check_running, runners
                     .filter!(r => r.pid !is r.pid.init)
-                    .map!(r => tryWait(r.pid)));
+                    .map!(r => tryWait(r.pid)),
+                    runners
+                    .filter!(r => r.pid !is r.pid.init)
+                    .map!(r => tryWait(r.pid).terminated),
+                    runners //.filter!(r => r.pid !is r.pid.init)
+                    .map!(r => (r.pid !is r.pid.init)),
+                    runners
+                    .any!(r => r.pid !is r.pid.init)
+
+            );
+
         }
-        while (!schedule_list.empty || check_running) {
+        void teminate(ref Runner runner) {
+            writeln("Job done");
+            runner = Runner.init;
+        }
+
+        while (!schedule_list.empty || runners.any!(r => r.pid !is r.pid.init)) {
+
             //         while (!schedule_list.empty && !runners.all!(r => r.pid !is r.pid.init)) {
             if (!schedule_list.empty) {
                 const job_index = runners.countUntil!(r => r.pid is r.pid.init);
@@ -234,23 +252,42 @@ struct ScheduleRunner {
                 }
             }
 
-            const terminated_index = runners
+            runners
                 .filter!(r => r.pid !is r.pid.init)
-                .countUntil!(r => tryWait(r.pid).terminated);
-
+                .filter!(r => tryWait(r.pid).terminated)
+                .each!((ref r) => teminate(r));
+            writefln("Next job %s", runners
+                    .enumerate
+                    .filter!(r => r.value.pid !is r.value.pid.init)
+                    .map!(r => r.index)
+            );
+            /*
             if (terminated_index >= 0) {
                 writefln("---- %d", terminated_index);
-                writefln("Next job %d pid=%d %s ", terminated_index, runners[terminated_index].jobid, tryWait(runners[terminated_index]
-                    .pid));
+                writefln("Next job %d %s", terminated_index, runners
+                .enumerate
+                .filter!(r => r.value.pid !is r.value.pid.init)
+                .map!(r => r.index)
+        );
                 this.stopped(runners[terminated_index]);
                 runners[terminated_index].fout.close;
                 runners[terminated_index] = Runner.init;
             }
             else {
-                writefln("sleep");
-                sleep(100.msecs);
-            }
+        */
+            writefln("sleep");
+            sleep(100.msecs);
+            //  }
+            version (none)
+                writefln("Loop check check_running %s %(%s\n%): %s",
+                        check_running,
+                        runners
+                        .filter!(r => r.pid !is r.pid.init)
+                        .map!(r => tryWait(r.pid)),
 
+                        runners
+                        .any!(r => r.pid !is r.pid.init)
+                );
         }
         version (none)
             for (; !dry_switch;) {
