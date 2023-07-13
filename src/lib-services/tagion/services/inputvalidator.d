@@ -50,9 +50,9 @@ struct InputValidatorOptions {
 }
 
 struct InputValidatorService {
-    static InputValidatorOptions options;
+    InputValidatorOptions options;
 
-    static void task(string task_name, string receiver_task, string sock_path) nothrow {
+    void task(string receiver_task, string sock_path) nothrow {
         try {
             bool stop = false;
             setState(Ctrl.STARTING);

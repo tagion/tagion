@@ -10,16 +10,15 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
 
 struct ContractService {
-static:
     void contract(inputDoc, Document doc) {
         writefln("Received document \n\t %s", doc.toPretty);
     }
 
-    void task(string task_name) nothrow {
+    void task() nothrow {
         scope (exit) {
             end();
         }
-        run(task_name, &contract);
+        run(&contract);
     }
 }
 

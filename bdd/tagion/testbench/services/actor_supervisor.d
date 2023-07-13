@@ -44,7 +44,6 @@ class Fatal : TagionException {
 
 /// Child Actor
 struct SetUpForFailure {
-static:
     void recoverable(Msg!"recoverable") {
         writeln("oh nose");
         throw new Recoverable("I am fail");
@@ -55,8 +54,8 @@ static:
         throw new Fatal("I am big fail");
     }
 
-    void task(string task_name) nothrow {
-        run(task_name, &recoverable, &fatal);
+    void task() nothrow {
+        run(&recoverable, &fatal);
         end();
     }
 }
@@ -71,15 +70,14 @@ alias reFatal = Msg!"reFatal";
 
 /// Supervisor Actor
 struct SetUpForDisappointment {
-static:
     //SetUpForFailure child;
-    ChildHandle childHandle;
+    static ChildHandle childHandle;
 
-    void task(string task_name) nothrow {
+    void task() nothrow {
         childHandle = spawn!SetUpForFailure(child_task_name);
         waitforChildren(Ctrl.ALIVE);
 
-        run(task_name, failHandler);
+        run(failHandler);
         end();
     }
 

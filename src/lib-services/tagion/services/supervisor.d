@@ -31,11 +31,10 @@ struct Supervisor {
     enum contract_task_name = "contract";
     enum input_task_name = "inputvalidator";
 
-static:
     SupervisorOptions opts;
     auto failHandler = (TaskFailure tf) { writefln("Supervisor caught exception: \n%s", tf); };
 
-    void task(string task_name) nothrow {
+    void task() nothrow {
         try {
             scope (exit) {
                 end();
@@ -55,7 +54,7 @@ static:
             auto services = tuple(dart_handle, contract_handle, inputvalidator_handle);
             waitforChildren(Ctrl.ALIVE);
 
-            run(task_name, failHandler);
+            run(failHandler);
 
             foreach (service; services) {
                 service.send(Sig.STOP);
