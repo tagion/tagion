@@ -2,10 +2,8 @@
 /// [Documentation documents/architecture/InputValidator](https://docs.tagion.org/#/documents/architecture/InputValidator)
 module tagion.services.inputvalidator;
 
-import core.sys.posix.unistd : getuid;
 import std.socket;
 import std.stdio;
-import std.path;
 import std.algorithm : remove;
 
 import tagion.actor;
@@ -31,8 +29,10 @@ static immutable(string) contract_sock_path() @safe nothrow {
         return "\0NEUEWELLE_CONTRACT";
     }
     else version (Posix) {
-        import std.exception;
+        import std.path;
         import std.conv;
+        import std.exception;
+        import core.sys.posix.unistd : getuid;
 
         const uid = assumeWontThrow(getuid.to!string);
         return buildPath("/", "run", "user", uid, "tagionwave_contract.sock");

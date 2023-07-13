@@ -21,8 +21,8 @@ import tagion.services.inputvalidator;
 import tagion.services.contract;
 
 struct SupervisorOptions {
+    string contract_addr;
     string dart_filename = buildPath(".", "dart".setExtension(FileExtension.dart));
-    string contract_addr = contract_sock_path;
     mixin JSONCommon;
 }
 
@@ -39,6 +39,7 @@ struct Supervisor {
             scope (exit) {
                 end();
             }
+            opts.contract_addr = contract_sock_path;
 
             SecureNet net = new StdSecureNet();
             net.generateKeyPair("aparatus"); // Key
