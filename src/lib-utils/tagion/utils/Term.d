@@ -40,6 +40,7 @@ else {
         CLEARLINE = Cursor.ClearLine.code(2),
         CLEAREOL = Cursor.ClearLine.code(0),
 
+        CR = "\x13",
         NEXTLINE = Cursor.NextLine.code(0),
         HOME = "\u001b[f",
     }
