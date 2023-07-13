@@ -1,3 +1,5 @@
+/// Service for validating inputs sent via socket
+/// [Documentation documents/architecture/InputValidator](https://docs.tagion.org/#/documents/architecture/InputValidator)
 module tagion.services.inputvalidator;
 
 import core.sys.posix.unistd : getuid;
@@ -18,11 +20,13 @@ import tagion.communication.HiRPC;
 import tagion.basic.basic : forceRemove;
 import tagion.basic.Debug : __write;
 import tagion.GlobalSignals : stopsignal;
+import tagion.utils.JSONCommon;
 
+/// Msg Type sent to actors who receive the document
 alias inputDoc = Msg!"inputDoc";
 
 @property
-static immutable(string) contract_sock_path() nothrow {
+static immutable(string) contract_sock_path() @safe nothrow {
     version (linux) {
         return "\0NEUEWELLE_CONTRACT";
     }
@@ -38,11 +42,20 @@ static immutable(string) contract_sock_path() nothrow {
     }
 }
 
+struct InputValidatorOptions {
+    uint mbox_timeout = 10; // msecs
+    uint socket_select_timeout = 1000; // msecs
+    uint max_connections = 1;
+    mixin JSONCommon;
+}
+
 struct InputValidatorService {
+    static InputValidatorOptions options;
+
     static void task(string task_name, string receiver_task, string sock_path) nothrow {
         try {
             bool stop = false;
-            setState(Ctrl.STARTING, task_name);
+            setState(Ctrl.STARTING);
             auto listener = new Socket(AddressFamily.UNIX, SocketType.STREAM);
             assert(listener.isAlive);
             listener.blocking = false;
@@ -53,18 +66,17 @@ struct InputValidatorService {
                 writefln("Closing listener %s", sock_path);
                 listener.close();
                 assert(!listener.isAlive);
-                end(task_name);
+                end();
             }
 
-            enum MAX_CONNECTIONS = 1;
-            auto socketSet = new SocketSet(MAX_CONNECTIONS + 1); // Room for listener.
+            auto socketSet = new SocketSet(options.max_connections + 1); // Room for listener.
             Socket[] reads;
             ReceiveBuffer buf;
 
-            setState(Ctrl.ALIVE, task_name);
+            setState(Ctrl.ALIVE);
             eventloop: while (true) {
                 try {
-                    receiveTimeout(10.msecs,
+                    receiveTimeout(options.mbox_timeout.msecs,
                             (Sig sig) {
                         if (sig is Sig.STOP) {
                             writeln("Input validator service received stop signal");
@@ -80,7 +92,7 @@ struct InputValidatorService {
                     foreach (sock; reads)
                         socketSet.add(sock);
 
-                    Socket.select(socketSet, null, null, 1.seconds);
+                    Socket.select(socketSet, null, null, options.socket_select_timeout.msecs);
 
                     for (size_t i = 0; i < reads.length; i++) {
                         if (socketSet.isSet(reads[i])) {
@@ -88,7 +100,8 @@ struct InputValidatorService {
                             Document doc = Document(cast(immutable) result.data);
                             __write("Received %d bytes.", result.size);
                             __write("Document status code %s", doc.valid);
-                            if (result.size != 0 && doc.valid is Document.Element.ErrorCode.NONE) {
+                            if (result.size != 0 && doc.valid is Document.Element.ErrorCode.NONE && doc.isRecord!(HiRPC
+                                    .Sender)) {
                                 __write("sending to %s", receiver_task);
                                 locate(receiver_task).send(inputDoc(), doc);
                             }
@@ -113,7 +126,7 @@ struct InputValidatorService {
                         assert(sn.isAlive);
                         assert(listener.isAlive);
 
-                        if (reads.length < MAX_CONNECTIONS) {
+                        if (reads.length < options.max_connections) {
                             writefln("Connection established.");
                             reads ~= sn;
                         }
@@ -127,12 +140,12 @@ struct InputValidatorService {
                     socketSet.reset();
                 }
                 catch (Exception e) {
-                    fail(task_name, e);
+                    fail(e);
                 }
             }
         }
         catch (Exception e) {
-            fail(task_name, e);
+            fail(e);
         }
     }
 }

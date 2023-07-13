@@ -34,18 +34,11 @@ enum input_test = "input_test";
 @safe @Scenario("send a document to the socket",
         [])
 class SendADocumentToTheSocket {
-
-    ~this() @trusted {
-        writeln("Exit SendADocumentToTheSocket");
-    }
-
     Address addr;
     Socket sock;
     InputValidatorHandle input_handle;
-    HiBON doc;
+    Document doc;
     enum sock_path = "\0input_validator_test";
-    enum some_key = "$test";
-    enum some_value = 5;
 
     @Given("a inputvalidator")
     Document aInputvalidator() {
@@ -60,8 +53,11 @@ class SendADocumentToTheSocket {
         addr = new UnixAddress(sock_path); // TODO: make this configurable
         sock = new Socket(AddressFamily.UNIX, SocketType.STREAM);
         sock.blocking = false;
-        doc = new HiBON();
-        doc[some_key] = some_value;
+        HiRPC hirpc;
+        auto hibon = new HiBON();
+        hibon["$test"] = 5;
+        const sender = hirpc.act(hibon);
+        doc = sender.toDoc;
         sock.connect(addr);
         check(doc.serialize.length == sock.send(doc.serialize), "The entire document was not sent");
         return result_ok;
@@ -71,15 +67,15 @@ class SendADocumentToTheSocket {
     Document ourMailbox() @trusted {
         auto res = receiveOnly!(Tuple!(inputDoc, Document));
         writeln("Receive back: ", res[1].toPretty);
-        check(res[1].data == doc.serialize, "The value was not the same as we sent");
+        check(res[1] == doc, "The value was not the same as we sent");
         return result_ok;
     }
 
     @Then("stop the inputvalidator")
     Document theInputvalidator() {
+        sock.close();
         input_handle.send(Sig.STOP);
         check(waitforChildren(Ctrl.END), "The inputvalidator did not stop");
-        sock.close();
         return result_ok;
     }
 

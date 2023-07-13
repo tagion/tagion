@@ -51,7 +51,7 @@ static:
 
     void task(string task_name) nothrow {
         run(task_name, &increase, &decrease, &relay);
-        end(task_name);
+        end();
     }
 }
 
@@ -81,7 +81,7 @@ static:
         waitforChildren(Ctrl.ALIVE);
 
         run(task_name, &receiveStatus, &roundtrip, &relay);
-        end(task_name);
+        end();
     }
 
 }

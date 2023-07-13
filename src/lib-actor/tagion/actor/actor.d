@@ -10,7 +10,6 @@ import std.traits;
 import std.variant : Variant;
 import std.format : format;
 import std.traits;
-import std.meta : allSatisfy;
 
 import core.thread;
 
@@ -75,8 +74,6 @@ bool statusChildren(Ctrl ctrl) @safe nothrow {
 bool waitforChildren(Ctrl state) @safe nothrow {
     bool code = false;
     try {
-        scope (exit)
-            writeln(childrenState);
         while (!(statusChildren(state))) {
             CtrlMsg msg;
             receive(
@@ -85,6 +82,7 @@ bool waitforChildren(Ctrl state) @safe nothrow {
             childrenState[msg.task_name] = msg.ctrl;
         }
         code = true;
+        writeln(childrenState);
     }
     catch (Exception e) {
         code = false;
@@ -130,10 +128,18 @@ struct ActorHandle(A) {
         return concurrency.locate(task_name);
     }
 
+    // Get the status of the tasb, asserts if the calling task did not spawn it
+    Ctrl state() @safe nothrow {
+        if (task_name in childrenState) {
+            return childrenState[task_name];
+        }
+        assert(0, "You don't own this task");
+    }
+
     alias Actor = A;
 
     /// Send a message to this task
-    @safe void send(T...)(T args) {
+    void send(T...)(T args) @safe {
         concurrency.send(this.tid, args);
     }
 }
@@ -153,13 +159,15 @@ ActorHandle!A handle(A)(string task_name) @safe if (isActor!A) {
     return ActorHandle!A(task_name);
 }
 
-ActorHandle!A spawn(A, Args...)(A actor, string task_name, Args args) @safe nothrow
+ActorHandle!A spawn(A, Args...)(string task_name, Args args) @safe nothrow
 if (isActor!A) {
     try {
         Tid tid;
-        import concurrency = tagion.utils.pretend_safe_concurrency;
-
-        tid = concurrency.spawn(&(actor.task), task_name, args);
+        tid = concurrency.spawn((string task_name, Args args) {
+            _task_name = task_name;
+            A actor;
+            actor.task(task_name, args);
+        }, task_name, args);
         childrenState[task_name] = Ctrl.UNKNOWN;
         writefln("spawning %s", task_name);
         tid.setMaxMailboxSize(int.sizeof, OnCrowding.throwException);
@@ -184,11 +192,11 @@ if (isActor!A) {
  * spawn!MyActor("my_task_name", 42);
  * ---
  */
-ActorHandle!A spawn(A, Args...)(string task_name, Args args) @safe nothrow
-if (isActor!A) {
-    A actor = A();
-    return spawn(actor, task_name, args);
-}
+// ActorHandle!A spawn(A, Args...)(string task_name, Args args) @safe nothrow
+// if (isActor!A) {
+//     A actor = A();
+//     return spawn(actor, task_name, args);
+// }
 
 /*
  *
@@ -236,20 +244,20 @@ void sendOwner(T...)(T vals) @safe {
  * Silently fails if there is no owner
  * Does NOT exit regular control flow
 */
-void fail(string task_name, Throwable t) @trusted nothrow {
+void fail(Throwable t) @trusted nothrow {
     if (!tidOwner.isNull) {
         assumeWontThrow(
                 ownerTid.prioritySend(
-                TaskFailure(task_name, cast(immutable) t)
+                TaskFailure(_task_name, cast(immutable) t)
         )
         );
     }
 }
 
 /// send your state to your owner
-void setState(Ctrl ctrl, string task_name) @safe nothrow {
+void setState(Ctrl ctrl) @safe nothrow {
     try {
-        ownerTid.prioritySend(CtrlMsg(task_name, ctrl));
+        ownerTid.prioritySend(CtrlMsg(_task_name, ctrl));
     }
     catch (PriorityMessageException e) {
         /* logger.fatal(e); */
@@ -260,10 +268,10 @@ void setState(Ctrl ctrl, string task_name) @safe nothrow {
 }
 
 /// Cleanup and notify the supervisor that you have ended
-void end(string task_name) nothrow {
+void end() nothrow {
     // writefln("Ending task: %s %s", task_name, locate(task_name));
     assumeWontThrow(ThreadInfo.thisInfo.cleanup);
-    assumeWontThrow(setState(Ctrl.END, task_name));
+    assumeWontThrow(setState(Ctrl.END));
 }
 
 /* 
@@ -272,6 +280,7 @@ void end(string task_name) nothrow {
  *   args = a list of message handlers for the task
  */
 void run(Args...)(string task_name, Args args) nothrow {
+    _task_name = task_name;
     bool stop = false;
 
     void signal(Sig signal) {
@@ -303,7 +312,7 @@ void run(Args...)(string task_name, Args args) nothrow {
     }
 
     try {
-        setState(Ctrl.STARTING, task_name); // Tell the owner that you are starting.
+        setState(Ctrl.STARTING); // Tell the owner that you are starting.
         scope (exit) {
             if (childrenState.length != 0 && !statusChildren(Ctrl.END)) {
                 foreach (child_task_name, ctrl; childrenState) {
@@ -326,7 +335,7 @@ void run(Args...)(string task_name, Args args) nothrow {
             };
         }
 
-        setState(Ctrl.ALIVE, task_name); // Tell the owner that you are running
+        setState(Ctrl.ALIVE); // Tell the owner that you are running
         writefln("Entering %s event loop", task_name);
         while (!stop) {
             try {
@@ -340,13 +349,13 @@ void run(Args...)(string task_name, Args args) nothrow {
                 );
             }
             catch (Exception t) {
-                fail(task_name, t);
+                fail(t);
             }
         }
     }
 
     // If we catch an exception we send it back to owner for them to deal with it.
     catch (Exception t) {
-        fail(task_name, t);
+        fail(t);
     }
 }

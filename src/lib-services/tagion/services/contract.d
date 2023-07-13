@@ -1,3 +1,5 @@
+/// Service for verifying contracts
+/// [Documentation](https://docs.tagion.org/#/documents/architecture/ContractVerifier)
 module tagion.services.contract;
 
 import std.stdio;
@@ -15,7 +17,7 @@ static:
 
     void task(string task_name) nothrow {
         scope (exit) {
-            end(task_name);
+            end();
         }
         run(task_name, &contract);
     }
