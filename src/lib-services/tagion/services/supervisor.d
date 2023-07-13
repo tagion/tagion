@@ -21,8 +21,8 @@ import tagion.services.inputvalidator;
 import tagion.services.contract;
 
 struct SupervisorOptions {
+    string contract_addr;
     string dart_filename = buildPath(".", "dart".setExtension(FileExtension.dart));
-    string contract_addr = contract_sock_path;
     mixin JSONCommon;
 }
 
@@ -31,15 +31,15 @@ struct Supervisor {
     enum contract_task_name = "contract";
     enum input_task_name = "inputvalidator";
 
-static:
     SupervisorOptions opts;
     auto failHandler = (TaskFailure tf) { writefln("Supervisor caught exception: \n%s", tf); };
 
-    void task(string task_name) nothrow {
+    void task() nothrow {
         try {
             scope (exit) {
                 end();
             }
+            opts.contract_addr = contract_sock_path;
 
             SecureNet net = new StdSecureNet();
             net.generateKeyPair("aparatus"); // Key
@@ -55,7 +55,7 @@ static:
             auto services = tuple(dart_handle, contract_handle, inputvalidator_handle);
             waitforChildren(Ctrl.ALIVE);
 
-            run(task_name, failHandler);
+            run(failHandler);
 
             foreach (service; services) {
                 service.send(Sig.STOP);

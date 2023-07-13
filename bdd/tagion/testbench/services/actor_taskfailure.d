@@ -28,10 +28,8 @@ alias FeatureContext = Tuple!(
 enum actor_task = "actor_task";
 
 struct MyActor {
-static:
-
-    void task(string task_name) nothrow {
-        run(task_name);
+    void task() nothrow {
+        run();
         end();
     }
 }

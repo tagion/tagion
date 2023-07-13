@@ -57,6 +57,9 @@ alias CtrlMsg = Tuple!(string, "task_name", Ctrl, "ctrl");
 
 private static Ctrl[string] childrenState;
 private static string _task_name;
+@property string task_name() {
+    return _task_name;
+}
 
 bool statusChildren(Ctrl ctrl) @safe nothrow {
     foreach (val; childrenState.byValue) {
@@ -94,10 +97,7 @@ bool waitforChildren(Ctrl state) @safe nothrow {
 template isActor(A) {
     template isTask(args...) if (args.length == 1 && isCallable!(args[0])) {
         alias task = args[0];
-        alias params = Parameters!(task);
-        enum bool isTask = is(params[0] : string)
-            && ParameterIdentifierTuple!(task)[0] == "task_name"
-            && hasFunctionAttributes!(task, "nothrow");
+        enum bool isTask = hasFunctionAttributes!(task, "nothrow");
     }
 
     enum bool isActor = hasMember!(A, "task")
@@ -159,22 +159,18 @@ ActorHandle!A handle(A)(string task_name) @safe if (isActor!A) {
     return ActorHandle!A(task_name);
 }
 
-ActorHandle!A spawn(A, Args...)(string task_name, Args args) @safe nothrow
+ActorHandle!A spawn(A, Args...)(string name, Args args) @safe nothrow
 if (isActor!A) {
     try {
         Tid tid;
-        tid = concurrency.spawn((string task_name, Args args) {
-            _task_name = task_name;
-            A actor;
-            actor.task(task_name, args);
-        }, task_name, args);
-        childrenState[task_name] = Ctrl.UNKNOWN;
-        writefln("spawning %s", task_name);
+        tid = concurrency.spawn((string name, Args args) { _task_name = name; A actor; actor.task(args); }, name, args);
+        childrenState[name] = Ctrl.UNKNOWN;
+        writefln("spawning %s", name);
         tid.setMaxMailboxSize(int.sizeof, OnCrowding.throwException);
-        if (concurrency.register(task_name, tid)) {
-            writefln("%s registered as %s", locate(task_name), task_name);
+        if (concurrency.register(name, tid)) {
+            writefln("%s registered as %s", locate(name), name);
         }
-        return ActorHandle!A(task_name);
+        return ActorHandle!A(name);
     }
     catch (Exception e) {
         assert(0, format("Exception: %s", e.msg));
@@ -279,8 +275,7 @@ void end() nothrow {
  *   task_name = the name of the task
  *   args = a list of message handlers for the task
  */
-void run(Args...)(string task_name, Args args) nothrow {
-    _task_name = task_name;
+void run(Args...)(Args args) nothrow {
     bool stop = false;
 
     void signal(Sig signal) {

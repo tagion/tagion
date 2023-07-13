@@ -26,7 +26,6 @@ enum child_task_name = "child_task";
 enum super_task_name = "super_task";
 
 struct MyActor {
-static:
     int status = 0;
 
     void setstatus(Msg!"setstatus", int i, Tid returnTid) {
@@ -34,8 +33,8 @@ static:
         send(returnTid, "hey we received that number");
     }
 
-    void task(string task_name) nothrow {
-        run(task_name, &setstatus);
+    void task() nothrow {
+        run(&setstatus);
         end();
     }
 }
@@ -43,16 +42,15 @@ static:
 alias MyActorHandle = ActorHandle!MyActor;
 
 struct MySuperActor {
-static:
     MyActorHandle childHandle;
 
-    void task(string task_name) nothrow {
+    void task() nothrow {
         // Ctrl[string] childrenState;
         childHandle = spawn!MyActor(child_task_name);
         // childrenState[childHandle.task_name] = Ctrl.UNKNOWN;
 
         waitforChildren(Ctrl.ALIVE);
-        run(task_name);
+        run();
 
         end();
     }

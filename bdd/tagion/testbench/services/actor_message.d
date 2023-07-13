@@ -33,7 +33,6 @@ enum child2_task_name = "ch2ld";
 
 // Child actor
 struct MyActor {
-static:
     int counter = 0;
     void increase(Msg!"increase") {
         counter++;
@@ -49,8 +48,8 @@ static:
         locate(to).send(Msg!"relay"(), supervisor_task_name, message);
     }
 
-    void task(string task_name) nothrow {
-        run(task_name, &increase, &decrease, &relay);
+    void task() nothrow {
+        run(&increase, &decrease, &relay);
         end();
     }
 }
@@ -58,7 +57,6 @@ static:
 alias ChildHandle = ActorHandle!MyActor;
 
 struct MySuperActor {
-static:
     ChildHandle child1Handle;
     ChildHandle child2Handle;
 
@@ -74,13 +72,13 @@ static:
         sendOwner(message);
     }
 
-    void task(string task_name) nothrow {
+    void task() nothrow {
         child1Handle = spawn!MyActor(child1_task_name);
         child2Handle = spawn!MyActor(child2_task_name);
 
         waitforChildren(Ctrl.ALIVE);
 
-        run(task_name, &receiveStatus, &roundtrip, &relay);
+        run(&receiveStatus, &roundtrip, &relay);
         end();
     }
 
