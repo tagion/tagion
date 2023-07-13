@@ -58,22 +58,63 @@ class OfflineNodeSwap {
     }
     @Given("i have a hashgraph testnetwork with n number of nodes")
     Document ofNodes() {
-        return Document();
+        network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 0);
+        network.random.seed(123456432789);
+        network.global_time = SysTime.fromUnixTime(1_614_355_286);
+        return result_ok;
     }
 
     @When("all nodes have created at least one epoch")
     Document oneEpoch() {
-        return Document();
+        uint i = 0;
+        while (i < CALLS) {
+
+            const channel_number = network.random.value(0, network.channels.length);
+            network.current = Pubkey(network.channels[channel_number]);
+            auto current = network.networks[network.current];
+            (() @trusted { current.call; })();
+            // printStates(network);
+            i++;
+            if (TestRefinement.epoch_events.length == node_names.length) {
+                break;
+            }
+        }
+
+        check(TestRefinement.epoch_events.length == node_names.length,
+                format("Max calls %d reached, not all nodes have created epochs only %d",
+                CALLS, TestRefinement.epoch_events.length));
+
+    
+        return result_ok;
     }
 
     @When("i disable all communication for one node.")
     Document oneNode() {
-        return Document();
+        const channel_number = network.random.value(0, network.channels.length);
+        offline_node = Pubkey(network.channels[channel_number]);
+        TestNetwork.TestGossipNet.online_states[offline_node] = false;
+        writefln("stopped communication for %s", offline_node.cutHex);
+        return result_ok;
     }
 
     @When("the node is marked as offline")
     Document asOffline() {
-        return Document();
+        bool allExcluded;
+        uint i = 0;
+        while (i < CALLS) {
+            const channel_number = network.random.value(0, network.channels.length);
+            network.current = Pubkey(network.channels[channel_number]);
+            auto current = network.networks[network.current];
+            (() @trusted { current.call; })();
+            i++;
+            allExcluded = network.networks.byValue
+                .filter!(n => n._hashgraph.owner_node.channel != offline_node)
+                .all!(n => n._hashgraph.excluded_nodes_mask.count == 1);
+            if (allExcluded) { break; }
+
+        }
+        check(allExcluded, format("not all nodes excluded %s", offline_node.cutHex));
+        return result_ok;
     }
 
     @Then("the node should be deleted from the nodes.")

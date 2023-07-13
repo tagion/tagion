@@ -88,26 +88,21 @@ class StaticExclusionOfANode {
     @When("i mark one node statically as non-voting and disable communication for him")
     Document him() {
         //we are excluding one node. We continue until that epoch where we afterwards break all communication with him.
-        try {
-            uint i = 0;
-            while (i < CALLS) {
-                const channel_number = network.random.value(0, network.channels.length);
-                network.current = Pubkey(network.channels[channel_number]);
-                auto current = network.networks[network.current];
-                (() @trusted { current.call; })();
+        uint i = 0;
+        while (i < CALLS) {
+            const channel_number = network.random.value(0, network.channels.length);
+            network.current = Pubkey(network.channels[channel_number]);
+            auto current = network.networks[network.current];
+            (() @trusted { current.call; })();
 
-                if (i == 32) {
-                    offline_node = network.current;
-                    TestNetwork.TestGossipNet.online_states[network.current] = false;
-                    writefln("excluding: %s", network.current.cutHex);
-                    writefln("after exclude %s", TestNetwork.TestGossipNet.online_states);
-                }
-
-                i++;
+            if (i == 32) {
+                offline_node = network.current;
+                TestNetwork.TestGossipNet.online_states[network.current] = false;
+                writefln("excluding: %s", network.current.cutHex);
+                writefln("after exclude %s", TestNetwork.TestGossipNet.online_states);
             }
-        }
-        catch (Exception e) {
-            check(false, e.msg);
+
+            i++;
         }
 
         return result_ok;
