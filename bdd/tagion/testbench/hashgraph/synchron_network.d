@@ -49,7 +49,7 @@ class StartNetworkWithNAmountOfNodes {
     this(string[] node_names, const(string) module_path) {
         this.node_names = node_names;
         this.module_path = module_path;
-        MAX_CALLS = cast(uint) node_names.length * 100;
+        MAX_CALLS = cast(uint) node_names.length * 500;
     }
 
     bool coherent;
