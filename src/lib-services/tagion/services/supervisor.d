@@ -58,7 +58,9 @@ struct Supervisor {
             run(failHandler);
 
             foreach (service; services) {
-                service.send(Sig.STOP);
+                if (service.state is Ctrl.ALIVE) {
+                    service.send(Sig.STOP);
+                }
             }
             writeln("Supervisor stopping services");
             waitforChildren(Ctrl.END);
