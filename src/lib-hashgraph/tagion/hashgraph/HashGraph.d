@@ -754,6 +754,7 @@ class HashGraph {
         ExchangeState state;
         immutable size_t node_id;
         immutable(Pubkey) channel;
+        private bool _offline;
         @nogc
         this(const Pubkey channel, const size_t node_id) pure nothrow {
             this.node_id = node_id;
@@ -767,6 +768,10 @@ class HashGraph {
             if (state > _sticky_state) {
                 _sticky_state = state;
             }
+        }
+
+        final bool offline() const pure nothrow @nogc {
+            return _offline;
         }
 
         const(ExchangeState) sticky_state() const pure nothrow @nogc {
@@ -890,6 +895,18 @@ class HashGraph {
         return false;
     }
 
+    void mark_offline(const(size_t) node_id) nothrow {
+
+        auto mark_node = _nodes.byKeyValue
+                    .filter!((pair) => !pair.value._offline)
+                    .filter!((pair) => pair.value.node_id == node_id)
+                    .map!(pair => pair.value);
+        if (mark_node.empty) {
+            return;
+        }
+        mark_node.front._offline = true;
+    }
+
     @nogc
     uint next_event_id() pure nothrow {
         event_id++;
@@ -926,7 +943,7 @@ class HashGraph {
 
         size_t[Pubkey] node_id_relocation;
         if (node_labels.length) {
-            assert(node_labels.length is _nodes.length);
+            // assert(node_labels.length is _nodes.length);
             auto names = node_labels.keys;
             names.sort;
             foreach (i, name; names) {

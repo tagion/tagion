@@ -40,6 +40,8 @@ class StdRefinement : Refinement {
         // log.trace("epack.event_body.payload.empty %s", epack.event_body.payload.empty);
     }
 
+    
+
     void epoch(Event[] event_collection, const(Round) decided_round) {
 
         import std.algorithm;
@@ -84,8 +86,13 @@ class StdRefinement : Refinement {
                 .filter!((e) => e !is null && e.isFamous)
                 .map!(e => e.node_id));
         offline.chunk(hashgraph.node_size);
+
+
+        offline[].each!((node_id) => hashgraph.mark_offline(node_id));
+        
         hashgraph._excluded_nodes_mask |= offline;
         __write("Epoch exclude = %s", hashgraph.excluded_nodes_mask);
+
 
         // __write("Epoch ONLINE=%s", online);
 
