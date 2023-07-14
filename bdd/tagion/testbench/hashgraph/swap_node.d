@@ -119,27 +119,48 @@ class OfflineNodeSwap {
 
     @Then("the node should be deleted from the nodes.")
     Document theNodes() {
-        return Document();
+
+        network.networks.byKeyValue
+            .filter!(n => n.key != offline_node)
+            .each!(n => check(n.value._hashgraph.nodes[offline_node].offline, format("Node %s did not mark offline node", n.key)));
+
+        
+        // foreach(net; network.networks.byKeyValue) {
+        //     if (net.key == offline_node) { continue; }
+        //     check(net.value._hashgraph.nodes[offline_node].offline, format("Node %s did not mark offline node", net.key));
+        // }
+        return result_ok;
     }
 
     @Then("a new node should take its place.")
     Document itsPlace() {
-        return Document();
+
+        return result_ok;
     }
 
     @Then("the new node should come in graph.")
     Document inGraph() {
-        return Document();
+        return result_ok;
     }
 
     @Then("compare the epochs the node creates from the point of swap.")
     Document ofSwap() {
-        return Document();
+        return result_ok;
     }
 
     @Then("stop the network.")
     Document theNetwork() {
-        return Document();
+        // create ripple files.
+        Pubkey[string] node_labels;
+        foreach (channel, _net; network.networks) {
+            node_labels[_net._hashgraph.name] = channel;
+        }
+        foreach (_net; network.networks) {
+            const filename = buildPath(module_path, "ripple-" ~ _net._hashgraph.name.setExtension(FileExtension.hibon));
+            writeln(filename);
+            _net._hashgraph.fwrite(filename, node_labels);
+        }
+        return result_ok;
     }
 
 }
