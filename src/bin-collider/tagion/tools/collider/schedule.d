@@ -197,11 +197,6 @@ struct ScheduleRunner {
             showEnv(env, schedule_list.front.unit);
         }
 
-        auto _check_running = runners
-            .filter!(r => r.pid !is r.pid.init)
-            .any!(r => !tryWait(r.pid).terminated);
-        auto check_running = runners
-            .any!(r => r.pid !is r.pid.init);
         void teminate(ref Runner runner) {
             this.stopped(runner);
             runner = Runner.init;
