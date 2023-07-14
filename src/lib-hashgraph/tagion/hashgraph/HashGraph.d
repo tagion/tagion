@@ -70,11 +70,15 @@ class HashGraph {
         uint event_id;
         sdt_t last_epoch_time;
         Refinement refinement;
-        Flag!"joining" joining;
+        Flag!"joining" _joining;
     }
     protected Node _owner_node;
     const(Node) owner_node() const pure nothrow @nogc {
         return _owner_node;
+    }
+
+    Flag!"joining" joining() const pure nothrow @nogc {
+        return _joining;
     }
 
     /**
@@ -130,7 +134,7 @@ class HashGraph {
         this.refinement.setOwner(this);
         this.valid_channel = valid_channel;
         
-        this.joining = joining;
+        this._joining = joining;
         this.name = name;
         _rounds = Round.Rounder(this);
     }
@@ -405,11 +409,11 @@ class HashGraph {
             if (fingerprint) {
 
                 event = lookup(fingerprint);
-
                 
-                
-                Event.check(event !is null, ConsensusFailCode.EVENT_MISSING_IN_CACHE);
-                event.connect(this.outer);
+                Event.check(_joining || event !is null, ConsensusFailCode.EVENT_MISSING_IN_CACHE);
+                if (event !is null) {
+                    event.connect(this.outer);
+                }
             }
             return event;
         }

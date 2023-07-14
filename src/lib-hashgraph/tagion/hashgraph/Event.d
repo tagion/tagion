@@ -994,7 +994,7 @@ class Event {
                 }
 
             }
-            else if (!isEva) {
+            else if (!isEva && !hashgraph.joining) {
                 check(false, ConsensusFailCode.EVENT_MOTHER_LESS);
             }
         }
