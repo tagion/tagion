@@ -51,9 +51,9 @@ class OfflineNodeSwap {
         this.node_names = node_names;
         this.module_path = module_path;
         CALLS = cast(uint) node_names.length * 1000;
-        foreach (channel; network.channels) {
-            TestNetwork.TestGossipNet.online_states[channel] = true;
-        }
+        // foreach (channel; network.channels) {
+        //     TestNetwork.TestGossipNet.online_states[channel] = true;
+        // }
         writefln("ONLINE: %s", TestNetwork.TestGossipNet.online_states);
     }
     @Given("i have a hashgraph testnetwork with n number of nodes")
@@ -123,12 +123,24 @@ class OfflineNodeSwap {
         network.networks.byKeyValue
             .filter!(n => n.key != offline_node)
             .each!(n => check(n.value._hashgraph.nodes[offline_node].offline, format("Node %s did not mark offline node", n.key)));
+
+        
         return result_ok;
     }
 
     @Then("a new node should take its place.")
     Document itsPlace() {
+        network.addNode(node_names.length, "NEW_NODE");
 
+        uint i = 0;
+        while (i < CALLS) {
+            const channel_number = network.random.value(0, network.channels.length);
+            network.current = Pubkey(network.channels[channel_number]);
+            auto current = network.networks[network.current];
+            (() @trusted { current.call; })();
+            i++;
+        }
+        
         return result_ok;
     }
 

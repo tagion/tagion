@@ -47,9 +47,6 @@ class StaticExclusionOfANode {
         this.node_names = node_names;
         this.module_path = module_path;
         CALLS = cast(uint) node_names.length * 1000;
-        foreach (channel; network.channels) {
-            TestNetwork.TestGossipNet.online_states[channel] = true;
-        }
         writefln("ONLINE: %s", TestNetwork.TestGossipNet.online_states);
     }
 

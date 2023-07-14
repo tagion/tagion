@@ -292,15 +292,15 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         auto h = new HashGraph(N, net, refinement, &authorising.isValidChannel, name);
         h.scrap_depth = 0;
         networks[net.pubkey] = new FiberNetwork(h, pageSize * 1024);
+        authorising.add_channel(net.pubkey);
+        TestGossipNet.online_states[net.pubkey] = true;
     }
 
     FiberNetwork[Pubkey] networks;
-
     this(const(string[]) node_names) {
         authorising = new TestGossipNet;
         immutable N = node_names.length; //EnumMembers!NodeList.length;
         node_names.each!(name => addNode(N, name));
-        networks.byKey.each!((a) => authorising.add_channel(a));
     }
 }
 
