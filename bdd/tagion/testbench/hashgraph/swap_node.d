@@ -123,12 +123,6 @@ class OfflineNodeSwap {
         network.networks.byKeyValue
             .filter!(n => n.key != offline_node)
             .each!(n => check(n.value._hashgraph.nodes[offline_node].offline, format("Node %s did not mark offline node", n.key)));
-
-        
-        // foreach(net; network.networks.byKeyValue) {
-        //     if (net.key == offline_node) { continue; }
-        //     check(net.value._hashgraph.nodes[offline_node].offline, format("Node %s did not mark offline node", net.key));
-        // }
         return result_ok;
     }
 

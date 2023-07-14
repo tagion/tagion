@@ -284,20 +284,22 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
             .all!(s => s);
     }
 
+    void addNode(immutable(ulong) N, const(string) name) {
+        immutable passphrase = format("very secret %s", name);
+        auto net = new StdSecureNet();
+        net.generateKeyPair(passphrase);
+        auto refinement = new TestRefinement;
+        auto h = new HashGraph(N, net, refinement, &authorising.isValidChannel, name);
+        h.scrap_depth = 0;
+        networks[net.pubkey] = new FiberNetwork(h, pageSize * 1024);
+    }
+
     FiberNetwork[Pubkey] networks;
 
     this(const(string[]) node_names) {
         authorising = new TestGossipNet;
         immutable N = node_names.length; //EnumMembers!NodeList.length;
-        foreach (name; node_names) {
-            immutable passphrase = format("very secret %s", name);
-            auto net = new StdSecureNet();
-            net.generateKeyPair(passphrase);
-            auto refinement = new TestRefinement;
-            auto h = new HashGraph(N, net, refinement, &authorising.isValidChannel, name);
-            h.scrap_depth = 0;
-            networks[net.pubkey] = new FiberNetwork(h, pageSize * 1024);
-        }
+        node_names.each!(name => addNode(N, name));
         networks.byKey.each!((a) => authorising.add_channel(a));
     }
 }
