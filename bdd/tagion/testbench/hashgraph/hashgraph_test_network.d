@@ -23,7 +23,7 @@ import core.memory : pageSize;
 import tagion.utils.BitMask;
 import std.conv;
 import tagion.hashgraph.Refinement;
-
+import std.typecons;
 
 
 
@@ -289,7 +289,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         auto net = new StdSecureNet();
         net.generateKeyPair(passphrase);
         auto refinement = new TestRefinement;
-        auto h = new HashGraph(N, net, refinement, &authorising.isValidChannel, name);
+        auto h = new HashGraph(N, net, refinement, &authorising.isValidChannel, No.joining, name);
         h.scrap_depth = 0;
         networks[net.pubkey] = new FiberNetwork(h, pageSize * 1024);
         authorising.add_channel(net.pubkey);
