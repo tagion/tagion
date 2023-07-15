@@ -36,9 +36,6 @@ struct Supervisor {
 
     void task() nothrow {
         try {
-            scope (exit) {
-                end();
-            }
             opts.contract_addr = contract_sock_path;
 
             SecureNet net = new StdSecureNet();
@@ -54,7 +51,6 @@ struct Supervisor {
                     .contract_addr);
             auto services = tuple(dart_handle, contract_handle, inputvalidator_handle);
             waitforChildren(Ctrl.ALIVE);
-
             run(failHandler);
 
             foreach (service; services) {

@@ -50,7 +50,6 @@ struct MyActor {
 
     void task() nothrow {
         run(&increase, &decrease, &relay);
-        end();
     }
 }
 
@@ -77,9 +76,7 @@ struct MySuperActor {
         child2Handle = spawn!MyActor(child2_task_name);
 
         waitforChildren(Ctrl.ALIVE);
-
         run(&receiveStatus, &roundtrip, &relay);
-        end();
     }
 
 }
@@ -98,11 +95,7 @@ class MessageBetweenSupervisorAndChild {
         supervisorHandle = spawn!MySuperActor(supervisor_task_name);
 
         check(supervisorHandle.tid !is Tid.init, "Supervisor thread is not running");
-        Ctrl ctrl = receiveOnlyTimeout!CtrlMsg.ctrl;
-        check(ctrl is Ctrl.STARTING, "Supervisor is not starting");
-
-        ctrl = receiveOnlyTimeout!CtrlMsg.ctrl;
-        check(ctrl is Ctrl.ALIVE, "Supervisor is not alive");
+        check(waitforChildren(Ctrl.ALIVE), "Supervisor did not alive");
 
         return result_ok;
     }
@@ -147,8 +140,7 @@ class MessageBetweenSupervisorAndChild {
     @Then("stop the #super")
     Document stopTheSuper() {
         supervisorHandle.send(Sig.STOP);
-        Ctrl ctrl = receiveOnlyTimeout!CtrlMsg.ctrl;
-        check(ctrl is Ctrl.END, "The supervisor did not stop");
+        check(waitforChildren(Ctrl.END), "Supervisor did not end");
 
         return result_ok;
     }
@@ -166,12 +158,7 @@ class SendMessageBetweenTwoChildren {
     Document actorsChild1AndChild2() {
         supervisorHandle = spawn!MySuperActor(supervisor_task_name);
         check(supervisorHandle.tid !is Tid.init, "Supervisor thread is not running");
-
-        CtrlMsg ctrl = receiveOnlyTimeout!CtrlMsg;
-        check(ctrl.ctrl is Ctrl.STARTING, "Supervisor is not starting");
-
-        ctrl = receiveOnlyTimeout!CtrlMsg;
-        check(ctrl.ctrl is Ctrl.ALIVE, "Supervisor is not alive");
+        check(waitforChildren(Ctrl.ALIVE), "Supervisor is not alive");
 
         return result_ok;
     }
@@ -199,8 +186,7 @@ class SendMessageBetweenTwoChildren {
     @Then("stop the #super")
     Document stopTheSuper() {
         supervisorHandle.send(Sig.STOP);
-        CtrlMsg ctrl = receiveOnlyTimeout!CtrlMsg;
-        check(ctrl.ctrl is Ctrl.END, "The supervisor did not stop");
+        check(waitforChildren(Ctrl.END), "Supervisor did not end ");
         while (locate(supervisor_task_name) !is Tid.init) {
         }
         check(locate(supervisor_task_name) is Tid.init, "SuperVisor thread is still running");

@@ -1,4 +1,4 @@
-/// Actor framework implementation
+/// Actor framework iplementation
 /// Examles: [tagion.testbench.services]
 module tagion.actor.actor;
 
@@ -12,6 +12,7 @@ import std.format : format;
 import std.traits;
 
 import core.thread;
+import core.time;
 
 import concurrency = tagion.utils.pretend_safe_concurrency;
 import tagion.utils.Result;
@@ -75,26 +76,28 @@ bool statusChildren(Ctrl ctrl) @safe nothrow {
 }
 
 /* 
- * Waif for vararg of ActorHandles to be in Ctrl state
- * Returns: false if any message is received that is not CtrlMsg 
+ * Waif for the spawned child Actors of this thread to be in Ctrl state.
+ * If it an Ctrl.END state it will free the children.
+ * Returns: true if all of the get in Ctrl state before the timeout
  */
-bool waitforChildren(Ctrl state) @safe nothrow {
-    bool code = false;
+bool waitforChildren(Ctrl state, Duration timeout = 1.seconds) @safe nothrow {
+    auto limit = MonoTime.currTime + timeout;
     try {
-        while (!(statusChildren(state))) {
-            CtrlMsg msg;
-            receive(
-                    (CtrlMsg _msg) { msg = _msg; }
+        while (!statusChildren(state) && MonoTime.currTime <= limit) {
+            receiveTimeout(
+                    timeout / childrenState.length,
+                    (CtrlMsg msg) { childrenState[msg.task_name] = msg.ctrl; }
             );
-            childrenState[msg.task_name] = msg.ctrl;
         }
-        code = true;
         writeln(childrenState);
+        if (state is Ctrl.END) {
+            destroy(childrenState);
+        }
+        return statusChildren(state);
     }
     catch (Exception e) {
-        code = false;
+        return false;
     }
-    return code;
 }
 
 /// Checks if a type has the required members to be an actor
@@ -171,7 +174,8 @@ if (isActor!A) {
             A actor;
             try {
                 actor.task(args);
-                if (childrenState.length != 0 && !statusChildren(Ctrl.END)) {
+                // If the actor forgets to kill it's children we'll do it anyway
+                if (!statusChildren(Ctrl.END)) {
                     foreach (child_task_name, ctrl; childrenState) {
                         if (ctrl is Ctrl.ALIVE) {
                             locate(child_task_name).send(Sig.STOP);
@@ -188,9 +192,8 @@ if (isActor!A) {
         childrenState[name] = Ctrl.UNKNOWN;
         writefln("spawning %s", name);
         tid.setMaxMailboxSize(int.sizeof, OnCrowding.throwException);
-        if (concurrency.register(name, tid)) {
-            writefln("%s registered as %s", locate(name), name);
-        }
+        assert(concurrency.register(name, tid), format("this task %s is already running", name));
+        writefln("%s registered as %s", locate(name), name);
         return ActorHandle!A(name);
     }
     catch (Exception e) {
@@ -274,6 +277,7 @@ void fail(Throwable t) @trusted nothrow {
 /// send your state to your owner
 void setState(Ctrl ctrl) @safe nothrow {
     try {
+        writefln("%s setting state to %s", task_name, ctrl);
         ownerTid.prioritySend(CtrlMsg(task_name, ctrl));
     }
     catch (PriorityMessageException e) {
@@ -297,17 +301,7 @@ static bool stop;
  *   args = a list of message handlers for the task
  */
 void run(Args...)(Args args) nothrow {
-    // scope (exit) {
-    //     if (childrenState.length != 0 && !statusChildren(Ctrl.END)) {
-    //         foreach (child_task_name, ctrl; childrenState) {
-    //             if (ctrl is Ctrl.ALIVE) {
-    //                 locate(child_task_name).send(Sig.STOP);
-    //             }
-    //         }
-    //         waitforChildren(Ctrl.END);
-    //     }
-    // }
-
+    // Check if a failHandler was passed as an arg
     static if (args.length == 1 && isFailHandler!(typeof(args[$ - 1]))) {
         enum failhandler = () {}; /// Use the fail handler passed through `args`
     }
