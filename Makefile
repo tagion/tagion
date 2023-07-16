@@ -11,21 +11,27 @@ DLFLAGS=-Lextern/nng/build/lib/ -lnng
 DTESTS=$(wildcard test/*.d)
 DTARGETS=$(basename $(DTESTS))
 
-all: test
+all: lib test
+	@echo "All done!"
 
 test: extern $(DTESTS)
 
 extern:
+	git submodule update && \
 	$(MAKE) -C extern/
 
 $(DTESTS): 
 	$(DC) $(DCFLAGS) -of=$(basename $@) ${addprefix -I,$(DINC)} ${addprefix -L,$(DLFLAGS)} $@
 
+lib:
+	$(DC) $(DCFLAGS) -lib -od=build/ ${addprefix -I,$(DINC)} ${addprefix -L,$(DLFLAGS)} libnng/libnng.d
+
 clean: clean-local
 
 clean-local:
-	rm $(DTARGETS) $(DTARGETS).o
+	rm -rf ./build && \
+	rm -f $(DTARGETS) $(DTARGETS).o
  
 
-.PHONY: all extern clean $(DTESTS)
+.PHONY: all extern lib clean $(DTESTS)
 
