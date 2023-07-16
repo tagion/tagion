@@ -17,7 +17,7 @@ all: lib test
 test: extern $(DTESTS)
 
 extern:
-	git submodule update && \
+	git submodule update --init --checkout --recursive && \
 	$(MAKE) -C extern/
 
 $(DTESTS): 
