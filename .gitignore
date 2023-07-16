@@ -1,0 +1,11 @@
+.dub
+.tmp
+extern/*
+docs.json
+__dummy.html
+docs/
+*.a
+*.exe
+*.o
+*.obj
+*.lst
