@@ -91,8 +91,6 @@ struct SetUpForDisappointment {
             writeln(typeof(tf.throwable).stringof, tf.task_name, locate(tf.task_name));
             childHandle = respawn(childHandle);
             waitforChildren(Ctrl.ALIVE);
-            import std.concurrency;
-
             writefln("This is fatal, we need to restart %s", tf.task_name);
             sendOwner(reFatal());
         }

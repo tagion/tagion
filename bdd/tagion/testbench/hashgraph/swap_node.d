@@ -130,7 +130,8 @@ class OfflineNodeSwap {
 
     @Then("a new node should take its place.")
     Document itsPlace() {
-        network.addNode(node_names.length, "NEW_NODE");
+        import std.typecons;
+        network.addNode(node_names.length, "NEW_NODE", Yes.joining);
 
         uint i = 0;
         while (i < CALLS) {

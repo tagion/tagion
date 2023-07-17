@@ -23,7 +23,7 @@ import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Pubkey, Signature, Privkey;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.utils.BitMask;
-
+import std.typecons : Flag;
 
 import tagion.logger.Logger;
 import tagion.gossip.InterfaceNet;
@@ -70,10 +70,15 @@ class HashGraph {
         uint event_id;
         sdt_t last_epoch_time;
         Refinement refinement;
+        Flag!"joining" _joining;
     }
     protected Node _owner_node;
     const(Node) owner_node() const pure nothrow @nogc {
         return _owner_node;
+    }
+
+    Flag!"joining" joining() const pure nothrow @nogc {
+        return _joining;
     }
 
     /**
@@ -120,6 +125,7 @@ class HashGraph {
             const SecureNet net,
             Refinement refinement,
             const ValidChannel valid_channel,
+            const Flag!"joining" joining,
             string name = null) {
         hirpc = HiRPC(net);
         this._owner_node = getNode(hirpc.net.pubkey);
@@ -128,7 +134,7 @@ class HashGraph {
         this.refinement.setOwner(this);
         this.valid_channel = valid_channel;
         
-        
+        this._joining = joining;
         this.name = name;
         _rounds = Round.Rounder(this);
     }
@@ -401,9 +407,13 @@ class HashGraph {
         final Event register(const(Buffer) fingerprint) {
             Event event;
             if (fingerprint) {
+
                 event = lookup(fingerprint);
-                Event.check(event !is null, ConsensusFailCode.EVENT_MISSING_IN_CACHE);
-                event.connect(this.outer);
+                
+                Event.check(_joining || event !is null, ConsensusFailCode.EVENT_MISSING_IN_CACHE);
+                if (event !is null) {
+                    event.connect(this.outer);
+                }
             }
             return event;
         }
@@ -685,6 +695,9 @@ class HashGraph {
                     received_node.sticky_state = COHERENT;
                     if (!areWeInGraph) {
                         try {
+                            received_wave.epacks.
+                                map!(epack => epack.event_body)
+                                .each!(ebody => ebody.toPretty.writeln);
                             initialize_witness(received_wave.epacks);
                             _owner_node.sticky_state = COHERENT;
                         }

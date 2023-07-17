@@ -23,7 +23,7 @@ import core.memory : pageSize;
 import tagion.utils.BitMask;
 import std.conv;
 import tagion.hashgraph.Refinement;
-
+import std.typecons;
 
 
 
@@ -284,12 +284,12 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
             .all!(s => s);
     }
 
-    void addNode(immutable(ulong) N, const(string) name) {
+    void addNode(immutable(ulong) N, const(string) name, const Flag!"joining" joining = No.joining) {
         immutable passphrase = format("very secret %s", name);
         auto net = new StdSecureNet();
         net.generateKeyPair(passphrase);
         auto refinement = new TestRefinement;
-        auto h = new HashGraph(N, net, refinement, &authorising.isValidChannel, name);
+        auto h = new HashGraph(N, net, refinement, &authorising.isValidChannel, joining, name);
         h.scrap_depth = 0;
         networks[net.pubkey] = new FiberNetwork(h, pageSize * 1024);
         authorising.add_channel(net.pubkey);

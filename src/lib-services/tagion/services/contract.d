@@ -14,7 +14,7 @@ struct ContractService {
         writefln("Received document \n\t %s", doc.toPretty);
     }
 
-    void task() nothrow {
+    void task() {
         run(&contract);
     }
 }
