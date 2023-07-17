@@ -10,12 +10,13 @@ import std.socket;
 import std.typecons;
 import std.path;
 import std.concurrency;
+import std.path : baseName;
 
 import tagion.tools.Basic;
 import tagion.utils.getopt;
+import tagion.logger.Logger;
 import tagion.basic.Version;
 import tagion.tools.revision;
-import tagion.GlobalSignals : abort;
 import tagion.actor;
 import tagion.services.supervisor;
 import tagion.GlobalSignals;
@@ -49,6 +50,7 @@ int _main(string[] args) {
 
     bool version_switch;
     immutable program = args[0];
+    log.register(baseName(program));
 
     auto main_args = getopt(args,
             "v|version", "Print revision information", &version_switch
@@ -71,11 +73,11 @@ int _main(string[] args) {
     auto supervisor_handle = spawn!Supervisor(supervisor_task_name);
     waitforChildren(Ctrl.ALIVE);
 
-    writeln("alive");
+    log("alive");
     stopsignal.wait;
-    writeln("Sending stop signal to supervisor");
+    log("Sending stop signal to supervisor");
     supervisor_handle.send(Sig.STOP);
     waitforChildren(Ctrl.END);
-    writeln("Exiting");
+    log("Exiting");
     return 0;
 }

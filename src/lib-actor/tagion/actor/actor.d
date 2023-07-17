@@ -2,7 +2,6 @@
 /// Examles: [tagion.testbench.services]
 module tagion.actor.actor;
 
-import std.stdio;
 import std.format : format;
 import std.typecons;
 import std.exception;
@@ -15,6 +14,7 @@ import core.thread;
 import core.time;
 
 import concurrency = tagion.utils.pretend_safe_concurrency;
+import tagion.logger.Logger;
 import tagion.utils.Result;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.actor.exceptions;
@@ -89,7 +89,7 @@ bool waitforChildren(Ctrl state, Duration timeout = 1.seconds) @safe nothrow {
                     (CtrlMsg msg) { childrenState[msg.task_name] = msg.ctrl; }
             );
         }
-        writeln(childrenState);
+        log("%s", childrenState);
         if (state is Ctrl.END) {
             destroy(childrenState);
         }
@@ -167,6 +167,7 @@ if (isActor!A) {
         Tid tid;
         tid = concurrency.spawn((string name, Args args) nothrow{
             _task_name = name;
+            log.register(name);
             stop = false;
             setState(Ctrl.STARTING); // Tell the owner that you are starting.
             version (Posix)
@@ -190,10 +191,14 @@ if (isActor!A) {
             end;
         }, name, args);
         childrenState[name] = Ctrl.UNKNOWN;
-        writefln("spawning %s", name);
+        log("spawning %s", name);
         tid.setMaxMailboxSize(int.sizeof, OnCrowding.throwException);
-        assert(concurrency.register(name, tid), format("this task %s is already running", name));
-        writefln("%s registered as %s", locate(name), name);
+        if (concurrency.register(name, tid)) {
+            log("%s registered as %s", tid, name);
+        }
+        else {
+            log("could not register %s as %s, name already registered", tid, name);
+        }
         return ActorHandle!A(name);
     }
     catch (Exception e) {
@@ -224,7 +229,6 @@ if (isActor!A) {
  *   a = an active actorhandle
  */
 A respawn(A)(A actor_handle) @safe if (isActor!(A.Actor)) {
-    writefln("%s", typeid(actor_handle.Actor));
     actor_handle.send(Sig.STOP);
     unregister(actor_handle.task_name);
 
@@ -254,8 +258,8 @@ void sendOwner(T...)(T vals) @safe {
         concurrency.send(tidOwner.get, vals);
     }
     else {
-        writeln("No owner, writing message to stdout instead: ");
-        writeln(vals);
+        log.error("No owner tried to send a message to it");
+        log.error("%s", tuple(vals));
     }
 }
 
@@ -265,6 +269,7 @@ void sendOwner(T...)(T vals) @safe {
  * Does NOT exit regular control flow
 */
 void fail(Throwable t) @trusted nothrow {
+    log(t);
     if (!tidOwner.isNull) {
         assumeWontThrow(
                 ownerTid.prioritySend(
@@ -277,20 +282,18 @@ void fail(Throwable t) @trusted nothrow {
 /// send your state to your owner
 void setState(Ctrl ctrl) @safe nothrow {
     try {
-        writefln("%s setting state to %s", task_name, ctrl);
+        log("setting state to %s", ctrl);
         ownerTid.prioritySend(CtrlMsg(task_name, ctrl));
     }
-    catch (PriorityMessageException e) {
-        /* logger.fatal(e); */
-    }
     catch (Exception e) {
-        /* logger.fatal(e); */
+        log.error("Failed to set state");
+        log(e);
     }
 }
 
 /// Cleanup and notify the supervisor that you have ended
 void end() nothrow {
-    assumeWontThrow({ writefln("Ending task: %s %s", task_name, locate(task_name)); ThreadInfo.thisInfo.cleanup; });
+    assumeWontThrow(ThreadInfo.thisInfo.cleanup);
     setState(Ctrl.END);
 }
 
@@ -346,7 +349,7 @@ void control(CtrlMsg msg) {
 
 /// Stops the actor if the supervisor stops
 void ownerTerminated(OwnerTerminated) {
-    writefln("%s, Owner stopped... nothing to life for... stopping self", thisTid);
+    log.trace("%s, Owner stopped... nothing to life for... stopping self", thisTid);
     stop = true;
 }
 
