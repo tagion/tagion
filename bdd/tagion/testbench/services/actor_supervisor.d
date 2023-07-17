@@ -44,7 +44,6 @@ class Fatal : TagionException {
 
 /// Child Actor
 struct SetUpForFailure {
-static:
     void recoverable(Msg!"recoverable") {
         writeln("oh nose");
         throw new Recoverable("I am fail");
@@ -55,9 +54,8 @@ static:
         throw new Fatal("I am big fail");
     }
 
-    void task(string task_name) nothrow {
-        run(task_name, &recoverable, &fatal);
-        end(task_name);
+    void task() nothrow {
+        run(&recoverable, &fatal);
     }
 }
 
@@ -71,16 +69,13 @@ alias reFatal = Msg!"reFatal";
 
 /// Supervisor Actor
 struct SetUpForDisappointment {
-static:
     //SetUpForFailure child;
-    ChildHandle childHandle;
+    static ChildHandle childHandle;
 
-    void task(string task_name) nothrow {
+    void task() nothrow {
         childHandle = spawn!SetUpForFailure(child_task_name);
-        waitfor(Ctrl.ALIVE, childHandle);
-
-        run(task_name, failHandler);
-        end(task_name);
+        waitforChildren(Ctrl.ALIVE);
+        run(failHandler);
     }
 
     // Override the default fail handler
@@ -95,6 +90,7 @@ static:
         else if (cast(Fatal) tf.throwable !is null) {
             writeln(typeof(tf.throwable).stringof, tf.task_name, locate(tf.task_name));
             childHandle = respawn(childHandle);
+            waitforChildren(Ctrl.ALIVE);
             writefln("This is fatal, we need to restart %s", tf.task_name);
             sendOwner(reFatal());
         }
@@ -120,17 +116,13 @@ class SupervisorWithFailingChild {
     @Given("a actor #super")
     Document aActorSuper() {
         supervisorHandle = spawn!SetUpForDisappointment(supervisor_task_name);
-        Ctrl ctrl = receiveOnlyTimeout!CtrlMsg.ctrl;
-        check(ctrl is Ctrl.STARTING, "Supervisor is not starting");
+        check(waitforChildren(Ctrl.ALIVE), "Supervisor is not alive");
 
         return result_ok;
     }
 
     @When("the #super and the #child has started")
     Document hasStarted() {
-        auto ctrl = receiveOnlyTimeout!CtrlMsg.ctrl;
-        check(ctrl is Ctrl.ALIVE, "Supervisor is not running");
-
         childHandle = handle!SetUpForFailure(child_task_name);
         check(childHandle.tid !is Tid.init, "Child is not running");
 
@@ -174,12 +166,7 @@ class SupervisorWithFailingChild {
     @Then("the #super should stop")
     Document superShouldStop() {
         supervisorHandle.send(Sig.STOP);
-        auto ctrl = receiveOnly!CtrlMsg;
-        check(ctrl.ctrl is Ctrl.END, "Supervisor did not stop");
-
-        //Tid childTid = locate(child_task_name);
-        //check(childTid !is Tid.init, "Child is still running");
-
+        check(waitforChildren(Ctrl.END), "Supervisor did not end");
         return result_ok;
     }
 

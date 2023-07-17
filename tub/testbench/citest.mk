@@ -6,7 +6,7 @@ ci:
 	$(MAKE) bins -f$(DTUB)/main.mk
 	$(RM) $(DLIB)/libtagion.$(LIBEXT)	
 	$(MAKE) dartapi -f$(DTUB)/main.mk
-	$(MAKE) bddtest unittest-cov -f$(DTUB)/main.mk
+	$(MAKE) bddtest unittest-cov TESTBENCH_FLAGS=--silent -f$(DTUB)/main.mk
 	$(MAKE) release -f$(DTUB)/main.mk
 	$(MAKE) ddoc -f$(DTUB)/main.mk
 	cp $(REPOROOT)/collider_schedule.json $(DBIN) 

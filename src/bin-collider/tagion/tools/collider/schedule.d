@@ -20,6 +20,7 @@ import tagion.tools.Basic : dry_switch, verbose_switch;
 import tagion.utils.envexpand;
 import tagion.hibon.HiBONJSON;
 import tagion.tools.toolsexception;
+import tagion.tools.collider.BehaviourOptions;
 
 @safe
 struct RunUnit {
@@ -68,11 +69,13 @@ struct ScheduleRunner {
     const(string[]) stages;
     const uint jobs;
     ScheduleTrace report;
+    const BehaviourOptions opts;
     @disable this();
     this(
             ref Schedule schedule,
             const(string[]) stages,
     const uint jobs,
+    const BehaviourOptions opts,
     ScheduleTrace report = null) pure nothrow
     in (jobs > 0)
     in (stages.length > 0)
@@ -80,6 +83,7 @@ struct ScheduleRunner {
         this.schedule = schedule;
         this.stages = stages;
         this.jobs = jobs;
+        this.opts = opts;
         this.report = report;
     }
 
@@ -91,6 +95,15 @@ struct ScheduleRunner {
         if (report) {
             enum code = format(q{report.%s(args);}, op);
             mixin(code);
+        }
+    }
+
+    void progress(Args...)(const string fmt, Args args) @trusted {
+        if (!opts.silent) {
+            import tagion.utils.Term;
+
+            writef(CLEAREOL ~ fmt ~ "\r", args);
+            stdout.flush;
         }
     }
 
@@ -190,56 +203,66 @@ struct ScheduleRunner {
             showEnv(env, schedule_list.front.unit);
         }
 
-        auto check_running = runners
-            .filter!(r => r.pid !is r.pid.init)
-            .any!(r => !tryWait(r.pid).terminated);
-
-        while (!schedule_list.empty || check_running) {
-            while (!schedule_list.empty && !runners.all!(r => r.pid !is r.pid.init)) {
-                const job_index = runners.countUntil!(r => r.pid is r.pid.init);
-                try {
-                    auto time = Clock.currTime;
-                    auto env = environment.toAA;
-                    schedule_list.front.unit.envs.byKeyValue
-                        .each!(e => env[e.key] = envExpand(e.value, env));
-                    const cmd = args ~ schedule_list.front.name ~
-                        schedule_list.front.unit.args
-                            .map!(arg => envExpand(arg, env))
-                            .array;
-                    setEnv(env, schedule_list.front.stage);
-                    //showEnv(env); //writefln("ENV %s ", env);
-                    check((BDD_RESULTS in env) !is null, format("Environment variable %s or %s must be defined", BDD_RESULTS, COLLIDER_ROOT));
-                    const log_filename = buildNormalizedPath(env[BDD_RESULTS],
-                    schedule_list.front.name).setExtension("log");
-                    batch(job_index, time, cmd, log_filename, env);
-                }
-                catch (Exception e) {
-                    writefln("Error %s", e.msg);
-                    runners[job_index].fout.writeln("Error: %s", e.msg);
-                    runners[job_index].fout.close;
-                    kill(runners[job_index].pid);
-                    runners[job_index] = Runner.init;
-                }
-                //              time);
-
-                schedule_list.popFront;
-            }
-            for (; !dry_switch;) {
-
-                sleep(100.msecs);
-                const job_index = runners
-                    .filter!(r => r.pid !is r.pid.init)
-                    .countUntil!(r => tryWait(r.pid).terminated);
-                //                writefln("job_index=%d", job_index);
-                if (job_index >= 0) {
-                    this.stop(runners[job_index]);
-                    runners[job_index].fout.close;
-                    runners[job_index] = Runner.init;
-                    writefln("Next job");
-                    break;
-                }
-            }
+        void teminate(ref Runner runner) {
+            this.stopped(runner);
+            runner = Runner.init;
         }
+
+        uint count;
+        enum progress_meter = [
+                "|",
+                "/",
+                "-",
+                "\\",
+            ];
+
+        while (!schedule_list.empty || runners.any!(r => r.pid !is r.pid.init)) {
+            if (!schedule_list.empty) {
+                const job_index = runners.countUntil!(r => r.pid is r.pid.init);
+                if (job_index >= 0) {
+                    try {
+                        auto time = Clock.currTime;
+                        auto env = environment.toAA;
+                        schedule_list.front.unit.envs.byKeyValue
+                            .each!(e => env[e.key] = envExpand(e.value, env));
+                        const cmd = args ~ schedule_list.front.name ~
+                            schedule_list.front.unit.args
+                                .map!(arg => envExpand(arg, env))
+                                .array;
+                        setEnv(env, schedule_list.front.stage);
+                        //showEnv(env); //writefln("ENV %s ", env);
+                        check((BDD_RESULTS in env) !is null,
+                                format("Environment variable %s or %s must be defined", BDD_RESULTS, COLLIDER_ROOT));
+                        const log_filename = buildNormalizedPath(env[BDD_RESULTS],
+                        schedule_list.front.name).setExtension("log");
+                        batch(job_index, time, cmd, log_filename, env);
+                        schedule_list.popFront;
+                    }
+                    catch (Exception e) {
+                        writefln("Error %s", e.msg);
+                        runners[job_index].fout.writeln("Error: %s", e.msg);
+                        runners[job_index].fout.close;
+                        kill(runners[job_index].pid);
+                        runners[job_index] = Runner.init;
+                    }
+                }
+            }
+
+            runners
+                .filter!(r => r.pid !is r.pid.init)
+                .filter!(r => tryWait(r.pid).terminated)
+                .each!((ref r) => teminate(r));
+            progress("%s Running jobs %s",
+                    progress_meter[count % progress_meter.length],
+                    runners
+                    .enumerate
+                    .filter!(r => r.value.pid !is r.value.pid.init)
+                    .map!(r => r.index),
+            );
+            count++;
+            sleep(100.msecs);
+        }
+        progress("Done");
         return 0;
     }
 }

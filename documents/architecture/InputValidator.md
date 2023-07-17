@@ -1,5 +1,7 @@
 # Input Validator Service
 
+[tagion.services.inputvalidator](ddoc://tagion.services.inputvalidator)
+
 This service splits the stream into a [Data Package](/documents/protocols/hibon/DataPackage.md) and send package to the next service.
 The services should check that the package does not exceed the max-package length.
 
@@ -16,6 +18,8 @@ The services does the following:
 - Check that the byte stream is a correct HiBON document format.
 - Construct a HiRPC form the HiBON Document.
 - Send the data-package to the Contract Verifier service.
+
+If one or more of the stages fails an error should be logged and the HiPRC should not be passed on.
 
 ```mermaid
 sequenceDiagram

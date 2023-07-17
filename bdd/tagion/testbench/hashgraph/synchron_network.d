@@ -28,6 +28,7 @@ import tagion.hibon.HiBONJSON;
 import tagion.utils.Miscellaneous : toHexString;
 import tagion.basic.basic;
 import std.functional : toDelegate;
+import tagion.basic.Types;
 
 enum feature = Feature(
             "Bootstrap of hashgraph",
@@ -48,7 +49,7 @@ class StartNetworkWithNAmountOfNodes {
     this(string[] node_names, const(string) module_path) {
         this.node_names = node_names;
         this.module_path = module_path;
-        MAX_CALLS = cast(uint) node_names.length * 1000;
+        MAX_CALLS = cast(uint) node_names.length * 500;
     }
 
     bool coherent;
@@ -75,14 +76,9 @@ class StartNetworkWithNAmountOfNodes {
     @When("the network has started")
     Document started() {
 
-        try {
-            foreach (channel; network.channels) {
-                auto current = network.networks[channel];
-                (() @trusted { current.call; })();
-            }
-        }
-        catch (Exception e) {
-            check(false, e.msg);
+        foreach (channel; network.channels) {
+            auto current = network.networks[channel];
+            (() @trusted { current.call; })();
         }
         return result_ok;
 
@@ -90,22 +86,17 @@ class StartNetworkWithNAmountOfNodes {
 
     @When("all nodes are sending ripples")
     Document ripples() {
-        try {
-            foreach (i; 0 .. 1000) {
-                const channel_number = network.random.value(0, network.channels.length);
-                const channel = network.channels[channel_number];
-                auto current = network.networks[channel];
-                (() @trusted { current.call; })();
+        foreach (i; 0 .. MAX_CALLS) {
+            const channel_number = network.random.value(0, network.channels.length);
+            const channel = network.channels[channel_number];
+            auto current = network.networks[channel];
+            (() @trusted { current.call; })();
 
-                printStates(network);
-                if (network.allCoherent) {
-                    coherent = true;
-                    break;
-                }
+            // printStates(network);
+            if (network.allInGraph) {
+                coherent = true;
+                break;
             }
-        }
-        catch (Exception e) {
-            check(false, e.msg);
         }
         
 
@@ -122,11 +113,10 @@ class StartNetworkWithNAmountOfNodes {
     @Then("wait until the first epoch")
     Document epoch() @trusted
     {
-
-        try {
+        {
             uint i = 0;
             while(i < MAX_CALLS) {
-            
+        
                 const channel_number = network.random.value(0, network.channels.length);
                 network.current = Pubkey(network.channels[channel_number]);
                 auto current = network.networks[network.current];
@@ -136,16 +126,12 @@ class StartNetworkWithNAmountOfNodes {
                 //     // all nodes have created at least one epoch
                 //     break;
                 // }
-                printStates(network);
+                // printStates(network);
                 i++;
             }
             check(TestRefinement.epoch_events.length == node_names.length, 
                 format("Max calls %d reached, not all nodes have created epochs only %d", 
                 MAX_CALLS, TestRefinement.epoch_events.length));
-
-        }
-        catch (Exception e) {
-            check(false, e.msg);
         }
 
 
@@ -175,7 +161,7 @@ class StartNetworkWithNAmountOfNodes {
         foreach(i, compare_epoch; TestRefinement.epoch_events.byKeyValue.front.value) {
             auto compare_events = compare_epoch
                                             .events
-                                            .map!(e => e.event_package.fingerprint)
+                                            .map!(e => cast(Buffer) e.event_package.fingerprint)
                                             .array;
             // compare_events.sort!((a,b) => a < b);
             // compare_events.each!writeln;
@@ -187,7 +173,7 @@ class StartNetworkWithNAmountOfNodes {
                 }
                 auto events = channel_epoch.value[i]
                                             .events
-                                            .map!(e => e.event_package.fingerprint)
+                                            .map!(e => cast(Buffer) e.event_package.fingerprint)
                                             .array;
                 // events.sort!((a,b) => a < b);
 
@@ -197,6 +183,10 @@ class StartNetworkWithNAmountOfNodes {
                                
                 check(compare_events.length == events.length, "event_packages not the same length");
 
+
+                const sameEvents = equal(compare_events.sort, events.sort);
+                check(sameEvents, "events lists does not contain same events");
+                
                 const isSame = equal(compare_events, events);
                 writefln("isSame: %s", isSame);
                 check(isSame, "event_packages not the same");            
@@ -209,7 +199,6 @@ class StartNetworkWithNAmountOfNodes {
 
     @Then("stop the network")
     Document _network() {
-        // create ripple files.
         Pubkey[string] node_labels;
         foreach (channel, _net; network.networks) {
             node_labels[_net._hashgraph.name] = channel;

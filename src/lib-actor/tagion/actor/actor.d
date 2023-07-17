@@ -1,8 +1,7 @@
-/// Actor framework implementation
-/// Examples: [tagion.testbench.services]
+/// Actor framework iplementation
+/// Examles: [tagion.testbench.services]
 module tagion.actor.actor;
 
-import std.stdio;
 import std.format : format;
 import std.typecons;
 import std.exception;
@@ -10,16 +9,19 @@ import std.traits;
 import std.variant : Variant;
 import std.format : format;
 import std.traits;
-import std.meta : allSatisfy;
 
 import core.thread;
+import core.time;
 
 import concurrency = tagion.utils.pretend_safe_concurrency;
+import tagion.logger.Logger;
+import tagion.utils.Result;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.actor.exceptions;
 import tagion.basic.tagionexceptions : TagionException;
 
 version (Posix) {
+    import std.string : toStringz;
     import core.sys.posix.pthread;
 
     extern (C) int pthread_setname_np(pthread_t, const char*) nothrow;
@@ -55,8 +57,17 @@ enum Sig {
 /// contains the Tid of the actor which send it and the state
 alias CtrlMsg = Tuple!(string, "task_name", Ctrl, "ctrl");
 
-private bool all(Ctrl[string] aa, Ctrl ctrl) @safe nothrow {
-    foreach (val; aa.byValue) {
+private static Ctrl[string] childrenState;
+private static string _task_name;
+@property string task_name() @trusted {
+    if (_task_name is string.init) {
+        assert(0, "This thread is not a spawned actor");
+    }
+    return _task_name;
+}
+
+bool statusChildren(Ctrl ctrl) @safe nothrow {
+    foreach (val; childrenState.byValue) {
         if (val != ctrl) {
             return false;
         }
@@ -65,40 +76,34 @@ private bool all(Ctrl[string] aa, Ctrl ctrl) @safe nothrow {
 }
 
 /* 
- * Waif for vararg of ActorHandles to be in Ctrl state
- * Returns: false if any message is received that is not CtrlMsg 
+ * Waif for the spawned child Actors of this thread to be in Ctrl state.
+ * If it an Ctrl.END state it will free the children.
+ * Returns: true if all of the get in Ctrl state before the timeout
  */
-bool waitfor(T...)(Ctrl state, T handlers) @safe nothrow
-if (allSatisfy!(isActorHandle, T)) {
-    Ctrl[string] childrenState;
-    foreach (handle; handlers) {
-        childrenState[handle.task_name] = Ctrl.UNKNOWN;
-    }
-
+bool waitforChildren(Ctrl state, Duration timeout = 1.seconds) @safe nothrow {
+    auto limit = MonoTime.currTime + timeout;
     try {
-        while (!(childrenState.all(state))) {
-            CtrlMsg msg = receiveOnly!CtrlMsg;
-            childrenState[msg.task_name] = msg.ctrl;
+        while (!statusChildren(state) && MonoTime.currTime <= limit) {
+            receiveTimeout(
+                    timeout / childrenState.length,
+                    (CtrlMsg msg) { childrenState[msg.task_name] = msg.ctrl; }
+            );
         }
+        log("%s", childrenState);
+        if (state is Ctrl.END) {
+            destroy(childrenState);
+        }
+        return statusChildren(state);
     }
-    catch (Exception _) {
+    catch (Exception e) {
         return false;
     }
-    return true;
 }
 
 /// Checks if a type has the required members to be an actor
 template isActor(A) {
-    template isTask(args...) if (args.length == 1 && isCallable!(args[0])) {
-        alias task = args[0];
-        alias params = Parameters!(task);
-        enum bool isTask = is(params[0] : string)
-            && ParameterIdentifierTuple!(task)[0] == "task_name"
-            && hasFunctionAttributes!(task, "nothrow");
-    }
-
     enum bool isActor = hasMember!(A, "task")
-        && isTask!(A.task);
+        && isCallable!(A.task);
 }
 
 template isActorHandle(T) {
@@ -125,10 +130,18 @@ struct ActorHandle(A) {
         return concurrency.locate(task_name);
     }
 
+    // Get the status of the task, asserts if the calling task did not spawn it
+    Ctrl state() @safe nothrow {
+        if (task_name in childrenState) {
+            return childrenState[task_name];
+        }
+        assert(0, "You don't own this task");
+    }
+
     alias Actor = A;
 
     /// Send a message to this task
-    @safe void send(T...)(T args) {
+    void send(T...)(T args) @safe {
         concurrency.send(this.tid, args);
     }
 }
@@ -148,19 +161,45 @@ ActorHandle!A handle(A)(string task_name) @safe if (isActor!A) {
     return ActorHandle!A(task_name);
 }
 
-ActorHandle!A spawn(A, Args...)(A actor, string task_name, Args args) @safe nothrow
+ActorHandle!A spawn(A, Args...)(string name, Args args) @safe nothrow
 if (isActor!A) {
     try {
         Tid tid;
-        import concurrency = tagion.utils.pretend_safe_concurrency;
-
-        tid = concurrency.spawn(&(actor.task), task_name, args);
-        writefln("spawning %s", task_name);
+        tid = concurrency.spawn((string name, Args args) nothrow{
+            _task_name = name;
+            log.register(name);
+            stop = false;
+            setState(Ctrl.STARTING); // Tell the owner that you are starting.
+            version (Posix)
+                pthread_setname_np(pthread_self(), toStringz(name));
+            A actor;
+            try {
+                actor.task(args);
+                // If the actor forgets to kill it's children we'll do it anyway
+                if (!statusChildren(Ctrl.END)) {
+                    foreach (child_task_name, ctrl; childrenState) {
+                        if (ctrl is Ctrl.ALIVE) {
+                            locate(child_task_name).send(Sig.STOP);
+                        }
+                    }
+                    waitforChildren(Ctrl.END);
+                }
+            }
+            catch (Exception t) {
+                fail(t);
+            }
+            end;
+        }, name, args);
+        childrenState[name] = Ctrl.UNKNOWN;
+        log("spawning %s", name);
         tid.setMaxMailboxSize(int.sizeof, OnCrowding.throwException);
-        if (concurrency.register(task_name, tid)) {
-            writefln("%s registered as %s", locate(task_name), task_name);
+        if (concurrency.register(name, tid)) {
+            log("%s registered as %s", tid, name);
         }
-        return ActorHandle!A(task_name);
+        else {
+            log("could not register %s as %s, name already registered", tid, name);
+        }
+        return ActorHandle!A(name);
     }
     catch (Exception e) {
         assert(0, format("Exception: %s", e.msg));
@@ -178,11 +217,11 @@ if (isActor!A) {
  * spawn!MyActor("my_task_name", 42);
  * ---
  */
-ActorHandle!A spawn(A, Args...)(string task_name, Args args) @safe nothrow
-if (isActor!A) {
-    A actor = A();
-    return spawn(actor, task_name, args);
-}
+// ActorHandle!A spawn(A, Args...)(string task_name, Args args) @safe nothrow
+// if (isActor!A) {
+//     A actor = A();
+//     return spawn(actor, task_name, args);
+// }
 
 /*
  *
@@ -190,7 +229,6 @@ if (isActor!A) {
  *   a = an active actorhandle
  */
 A respawn(A)(A actor_handle) @safe if (isActor!(A.Actor)) {
-    writefln("%s", typeid(actor_handle.Actor));
     actor_handle.send(Sig.STOP);
     unregister(actor_handle.task_name);
 
@@ -220,8 +258,8 @@ void sendOwner(T...)(T vals) @safe {
         concurrency.send(tidOwner.get, vals);
     }
     else {
-        writeln("No owner, writing message to stdout instead: ");
-        writeln(vals);
+        log.error("No owner tried to send a message to it");
+        log.error("%s", tuple(vals));
     }
 }
 
@@ -230,127 +268,96 @@ void sendOwner(T...)(T vals) @safe {
  * Silently fails if there is no owner
  * Does NOT exit regular control flow
 */
-void fail(string task_name, Throwable t) @trusted nothrow {
-    if (tidOwner.get !is Tid.init) {
+void fail(Throwable t) @trusted nothrow {
+    log(t);
+    if (!tidOwner.isNull) {
         assumeWontThrow(
                 ownerTid.prioritySend(
-                TaskFailure(task_name, cast(immutable) t)
+                TaskFailure(_task_name, cast(immutable) t)
         )
         );
     }
 }
 
 /// send your state to your owner
-void setState(Ctrl ctrl, string task_name) @safe nothrow {
+void setState(Ctrl ctrl) @safe nothrow {
     try {
-        assert(!tidOwner.isNull, format("This task %s, does not have an owner", task_name));
-        tidOwner.get.prioritySend(CtrlMsg(task_name, ctrl));
-    }
-    catch (PriorityMessageException e) {
-        /* logger.fatal(e); */
+        log("setting state to %s", ctrl);
+        ownerTid.prioritySend(CtrlMsg(task_name, ctrl));
     }
     catch (Exception e) {
-        /* logger.fatal(e); */
+        log.error("Failed to set state");
+        log(e);
     }
 }
 
 /// Cleanup and notify the supervisor that you have ended
-void end(string task_name) nothrow {
-    // writefln("Ending task: %s %s", task_name, locate(task_name));
+void end() nothrow {
     assumeWontThrow(ThreadInfo.thisInfo.cleanup);
-    assumeWontThrow(setState(Ctrl.END, task_name));
+    setState(Ctrl.END);
 }
 
+static bool stop;
 /* 
  * Params:
  *   task_name = the name of the task
  *   args = a list of message handlers for the task
  */
-void run(Args...)(string task_name, Args args) nothrow {
-    bool stop = false;
-    Ctrl[string] childrenState; // An AA to keep a copy of the state of the children
+void run(Args...)(Args args) nothrow {
+    // Check if a failHandler was passed as an arg
+    static if (args.length == 1 && isFailHandler!(typeof(args[$ - 1]))) {
+        enum failhandler = () {}; /// Use the fail handler passed through `args`
+    }
+    else {
+        enum failhandler = (TaskFailure tf) {
+            if (ownerTid != Tid.init) {
+                ownerTid.prioritySend(tf);
+            }
+        };
+    }
 
-    void signal(Sig signal) {
-        with (Sig) final switch (signal) {
-        case STOP:
-            stop = true;
-            break;
+    setState(Ctrl.ALIVE); // Tell the owner that you are running
+    while (!stop) {
+        try {
+            receive(
+                    args, // The message handlers you pass to your Actor template
+                    failhandler,
+                    &signal,
+                    &control,
+                    &ownerTerminated,
+                    &unknown,
+            );
+        }
+        catch (Exception t) {
+            fail(t);
         }
     }
+}
 
-    /// Controls message sent from the children.
-    void control(CtrlMsg msg) {
-        childrenState[msg.task_name] = msg.ctrl;
-    }
-
-    /// Stops the actor if the supervisor stops
-    void ownerTerminated(OwnerTerminated) {
-        writefln("%s, Owner stopped... nothing to life for... stopping self", thisTid);
+void signal(Sig signal) {
+    with (Sig) final switch (signal) {
+    case STOP:
         stop = true;
+        break;
     }
+}
 
-    /**
-     * The default message handler, if it's an unknown messages it will send a FAIL to the owner.
-     * Params:
-     *   message = literally any message
-     */
-    void unknown(Variant message) {
-        throw new UnknownMessage("No delegate to deal with message: %s".format(message));
-    }
+/// Controls message sent from the children.
+void control(CtrlMsg msg) {
+    childrenState[msg.task_name] = msg.ctrl;
+}
 
-    try {
-        setState(Ctrl.STARTING, task_name); // Tell the owner that you are starting.
-        scope (exit) {
-            if (childrenState.length != 0) {
-                foreach (child_task_name, ctrl; childrenState) {
-                    if (ctrl is Ctrl.ALIVE) {
-                        locate(child_task_name).send(Sig.STOP);
-                    }
-                }
+/// Stops the actor if the supervisor stops
+void ownerTerminated(OwnerTerminated) {
+    log.trace("%s, Owner stopped... nothing to life for... stopping self", thisTid);
+    stop = true;
+}
 
-                while (!(childrenState.all(Ctrl.END))) {
-                    receive(
-                            (CtrlMsg ctrl) { childrenState[ctrl.task_name] = ctrl.ctrl; },
-                            (TaskFailure tf) {
-                        writefln("While stopping `%s` received taskfailure: %s", task_name, tf.throwable.msg);
-                    }
-                    );
-                }
-            }
-        }
-
-        static if (args.length == 1 && isFailHandler!(typeof(args[$ - 1]))) {
-            enum failhandler = () {}; /// Use the fail handler passed through `args`
-        }
-        else {
-            enum failhandler = (TaskFailure tf) {
-                if (ownerTid != Tid.init) {
-                    ownerTid.prioritySend(tf);
-                }
-            };
-        }
-
-        setState(Ctrl.ALIVE, task_name); // Tell the owner that you are running
-        writefln("Entering %s event loop", task_name);
-        while (!stop) {
-            try {
-                receive(
-                        args, // The message handlers you pass to your Actor template
-                        failhandler,
-                        &signal,
-                        &control,
-                        &ownerTerminated,
-                        &unknown,
-                );
-            }
-            catch (Exception t) {
-                fail(task_name, t);
-            }
-        }
-    }
-
-    // If we catch an exception we send it back to owner for them to deal with it.
-    catch (Exception t) {
-        fail(task_name, t);
-    }
+/**
+ * The default message handler, if it's an unknown messages it will send a FAIL to the owner.
+ * Params:
+ *   message = literally any message
+ */
+void unknown(Variant message) {
+    throw new UnknownMessage("No delegate to deal with message: %s".format(message));
 }

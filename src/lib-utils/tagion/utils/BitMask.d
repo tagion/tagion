@@ -117,8 +117,8 @@ struct BitMask {
 
         private this(
                 const(size_t[]) mask,
-        size_t index,
-        size_t bit_pos) pure nothrow {
+                size_t index,
+                size_t bit_pos) pure nothrow {
             this.mask = mask;
             this.index = index;
             this.bit_pos = bit_pos;
@@ -402,7 +402,7 @@ struct BitMask {
     }
 
     void toString(scope void delegate(scope const(char)[]) @safe sink,
-    const FormatSpec!char fmt) const {
+            const FormatSpec!char fmt) const {
         enum separator = '_';
         import std.stdio;
 

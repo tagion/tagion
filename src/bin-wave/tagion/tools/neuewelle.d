@@ -10,12 +10,13 @@ import std.socket;
 import std.typecons;
 import std.path;
 import std.concurrency;
+import std.path : baseName;
 
 import tagion.tools.Basic;
 import tagion.utils.getopt;
+import tagion.logger.Logger;
 import tagion.basic.Version;
 import tagion.tools.revision;
-import tagion.GlobalSignals : abort;
 import tagion.actor;
 import tagion.services.supervisor;
 import tagion.GlobalSignals;
@@ -39,7 +40,7 @@ void signal_handler(int _) @trusted nothrow {
 mixin Main!(_main);
 
 int _main(string[] args) {
-
+    stopsignal.initialize(true, false);
     sigaction_t sa;
     sa.sa_handler = &signal_handler;
     sigemptyset(&sa.sa_mask);
@@ -49,6 +50,7 @@ int _main(string[] args) {
 
     bool version_switch;
     immutable program = args[0];
+    log.register(baseName(program));
 
     auto main_args = getopt(args,
             "v|version", "Print revision information", &version_switch
@@ -69,15 +71,13 @@ int _main(string[] args) {
 
     enum supervisor_task_name = "supervisor";
     auto supervisor_handle = spawn!Supervisor(supervisor_task_name);
-    waitfor(Ctrl.ALIVE, supervisor_handle);
+    waitforChildren(Ctrl.ALIVE);
 
-    writeln("alive");
+    log("alive");
     stopsignal.wait;
-    writeln("Sending stop signal to supervisor");
+    log("Sending stop signal to supervisor");
     supervisor_handle.send(Sig.STOP);
-    writeln("waiting for all threads");
-    // thread_joinAll;
-
-    writeln("Exiting");
+    waitforChildren(Ctrl.END);
+    log("Exiting");
     return 0;
 }

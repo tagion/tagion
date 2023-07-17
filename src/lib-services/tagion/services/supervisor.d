@@ -5,59 +5,61 @@ import std.path;
 import std.file;
 import std.stdio;
 import std.socket;
+import std.typecons;
 
+import tagion.logger.Logger;
 import tagion.actor;
 import tagion.actor.exceptions;
-import tagion.utils.pretend_safe_concurrency : locate, send;
-import tagion.services.DART;
-import tagion.services.inputvalidator;
-import tagion.services.contract;
+import tagion.basic.Types : FileExtension;
 import tagion.crypto.SecureNet;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.dart.DARTFile;
 import tagion.dart.DARTBasic : DARTIndex;
-import tagion.basic.Types : FileExtension;
+import tagion.utils.JSONCommon;
+import tagion.utils.pretend_safe_concurrency : locate, send;
+import tagion.services.DART;
+import tagion.services.inputvalidator;
+import tagion.services.contract;
+
+struct SupervisorOptions {
+    string contract_addr;
+    string dart_filename = buildPath(".", "dart".setExtension(FileExtension.dart));
+    mixin JSONCommon;
+}
 
 struct Supervisor {
-static:
     enum dart_task_name = "dart";
     enum contract_task_name = "contract";
+    enum input_task_name = "inputvalidator";
 
-    auto failHandler = (TaskFailure tf) { writefln("Supervisor caught exception: \n%s", tf); };
+    SupervisorOptions opts;
+    auto failHandler = (TaskFailure tf) { log("Supervisor caught exception: \n%s", tf); };
 
-    static void task(string task_name) nothrow {
-        try {
-            SecureNet net = new StdSecureNet();
-            net.generateKeyPair("aparatus"); // Key
-            const dart_filename = buildPath(".", "dart".setExtension(FileExtension.dart));
+    void task() {
+        opts.contract_addr = contract_sock_path;
 
-            if (!dart_filename.exists) {
-                DARTFile.create(dart_filename, net);
-            }
+        SecureNet net = new StdSecureNet();
+        net.generateKeyPair("aparatus"); // Key
+        const dart_filename = opts.dart_filename;
 
-            auto dart_handle = spawn!DARTService(dart_task_name, dart_filename, cast(immutable) net);
-            auto contract_handle = spawn!ContractService(contract_task_name);
-
-            import concurrency = tagion.utils.pretend_safe_concurrency;
-
-            concurrency.spawn(&inputvalidator, contract_task_name);
-
-            waitfor(Ctrl.ALIVE, dart_handle, contract_handle);
-            run(task_name, failHandler);
-
-            const services = [dart_task_name, contract_task_name];
-            foreach (service; services) {
-                locate(service).send(Sig.STOP);
-            }
-            writeln("Supervisor stopping services");
-            waitfor(Ctrl.END, dart_handle, contract_handle);
-            writeln("All services stopped");
-
-            end(task_name);
+        if (!dart_filename.exists) {
+            DARTFile.create(dart_filename, net);
         }
+        auto dart_handle = spawn!DARTService(dart_task_name, dart_filename, cast(immutable) net);
+        auto contract_handle = spawn!ContractService(contract_task_name);
+        auto inputvalidator_handle = spawn!InputValidatorService(input_task_name, contract_task_name, opts
+                .contract_addr);
+        auto services = tuple(dart_handle, contract_handle, inputvalidator_handle);
+        waitforChildren(Ctrl.ALIVE);
+        run(failHandler);
 
-        catch (Exception e) {
-            fail(task_name, e);
+        foreach (service; services) {
+            if (service.state is Ctrl.ALIVE) {
+                service.send(Sig.STOP);
+            }
         }
+        log("Supervisor stopping services");
+        waitforChildren(Ctrl.END);
+        log("All services stopped");
     }
 }

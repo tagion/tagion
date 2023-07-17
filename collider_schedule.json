@@ -104,7 +104,7 @@
             ],
             "timeout": 0.0
         },
-        "dart_service": {
+        "services_test": {
             "args": [],
             "envs": {},
             "stages": [
@@ -113,10 +113,10 @@
             "timeout": 0.0
         },
         "hashgraph_test": {
-            "args": ["Alice", "Bob", "Carol", "Dave", "Elisa", "Freja", "Greta"],
+            "args": ["Alice", "Bob", "Carol", "Dave", "Elisa", "Freja"],
             "envs": {},
             "stages": [
-                "commit", "hashgraph"
+                "acceptance", "hashgraph"
             ],
             "timeout": 0.0
         },
@@ -124,11 +124,19 @@
             "args": ["Alice", "Bob", "Carol", "Dave", "Elisa", "Freja", "Nonvoting"], 
             "envs": {},
             "stages": [
-                "commit", "hashgraph"
+                "acceptance", "hashgraph"
             ],
             "timeout": 0.0
         },
         "hashgraph_exclude": {
+            "args": ["Alice", "Bob", "Carol", "Dave", "Elisa", "Freja", "Gretha"], 
+            "envs": {},
+            "stages": [
+                "acceptance", "hashgraph"
+            ],
+            "timeout": 0.0
+        },
+        "hashgraph_swap": {
             "args": ["Alice", "Bob", "Carol", "Dave", "Elisa", "Freja", "Gretha"], 
             "envs": {},
             "stages": [

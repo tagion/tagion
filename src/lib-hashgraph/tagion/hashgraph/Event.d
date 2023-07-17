@@ -141,7 +141,7 @@ class Round {
     private void remove(const(Event) event) nothrow
     in {
         assert(event.isEva || _events[event.node_id] is event,
-                "This event does not exist in round at the current node so it can not be remove from this round");
+        "This event does not exist in round at the current node so it can not be remove from this round");
         assert(event.isEva || !empty, "No events exists in this round");
     }
     do {
@@ -166,7 +166,7 @@ class Round {
             if (e !is null) {
                 count++;
                 if (Event.callbacks) {
-                   Event.callbacks.remove(e);
+                    Event.callbacks.remove(e);
                 }
                 scrap_events(e._mother);
                 e.disconnect(hashgraph);
@@ -226,6 +226,7 @@ class Round {
     Rounder.Range!true opSlice() const pure nothrow {
         return Rounder.Range!true(this);
     }
+
     invariant {
         assert(!_previous || (_previous.number + 1 is number));
         assert(!_next || (_next.number - 1 is number));
@@ -424,8 +425,8 @@ class Round {
             r._events
                 .filter!((e) => (e !is null))
                 .each!((e) => e[]
-                        .until!((e) => (e._round_received !is null))
-                        .each!((ref e) => e._round_received_mask.clear));
+                .until!((e) => (e._round_received !is null))
+                .each!((ref e) => e._round_received_mask.clear));
 
             void mark_received_events(const size_t voting_node_id, Event e) {
                 mark_received_iteration_count++;
@@ -445,8 +446,8 @@ class Round {
                 .filter!((e) => (e !is null))
                 .filter!((e) => !hashgraph.excluded_nodes_mask[e.node_id])
                 .map!((ref e) => e[]
-                        .until!((e) => (e._round_received !is null))
-                        .filter!((e) => (e._round_received_mask.isMajority(hashgraph))))
+                .until!((e) => (e._round_received !is null))
+                .filter!((e) => (e._round_received_mask.isMajority(hashgraph))))
                 .joiner
                 .tee!((e) => e._round_received = r)
                 .array;
@@ -461,14 +462,28 @@ class Round {
      *   hashgraph = hashgraph which owns the round 
      */
         void check_decided_round(HashGraph hashgraph) @trusted {
+
             auto round_to_be_decided = last_decided_round._next;
+
+            void decide_round() {
+                collect_received_round(round_to_be_decided, hashgraph);
+                round_to_be_decided._decided = true;
+                last_decided_round = round_to_be_decided;
+                check_decided_round(hashgraph);
+                return;
+            }
 
             if (hashgraph.possible_round_decided(round_to_be_decided)) {
                 writefln("possible_round_decided");
                 const votes_mask = BitMask(round_to_be_decided.events
                         .filter!((e) => (e) && !hashgraph.excluded_nodes_mask[e.node_id])
-                        .map!((e) => e.node_id));
+                    .map!((e) => e.node_id));
                 if (votes_mask.isMajority(hashgraph)) {
+
+                    if (Event.callbacks) {
+                        votes_mask[].filter!((vote_node_id) => round_to_be_decided._events[vote_node_id].isFamous)
+                            .each!((vote_node_id) => Event.callbacks.famous(round_to_be_decided._events[vote_node_id]));
+                    }
 
                     votes_mask[]
                         .each!((vote_node_id) => round_to_be_decided._events[vote_node_id]
@@ -478,52 +493,24 @@ class Round {
                         .all!((vote_node_id) => round_to_be_decided._events[vote_node_id]
                         .isFamous);
 
-                    if (!famous_round) {
-                        writefln("not famous round");
+                    if (famous_round && votes_mask.count == hashgraph.node_size - hashgraph.excluded_nodes_mask.count) {
+                        decide_round();
                         return;
                     }
-                    
+
                     uint count_rounds;
-                    foreach(r; round_to_be_decided[].retro) {
+                    foreach (r; round_to_be_decided[].retro) {
                         const round_contains_witness = votes_mask[]
-                            .all!(vote_node_id => r.events[vote_node_id] !is null);
+                            .all!(vote_node_id => r.events[vote_node_id]!is null);
 
                         if (!round_contains_witness) {
                             break;
                         }
                         count_rounds++;
-                    }
-                    const round_decided = count_rounds > 2;
-                    writefln("vote mask isMajority count:%s", count_rounds);
-                    // const round_decided = votes_mask[]
-                    //     .all!((vote_node_id) => round_to_be_decided[vote_node_id][].retro.walkLength > 2);
-                    
-                     // .all!((vote_node_id) => round_to_be_decided._events[vote_node_id]
-                     // ._witness.famous(hashgraph));
-
-                    
-                    // writefln("majority, owner: %s, round decided: %s", hashgraph.owner_node.channel.cutHex, round_decided);
-                    
-                    
-                    if (Event.callbacks) {
-                        votes_mask[].filter!((vote_node_id) => round_to_be_decided._events[vote_node_id].isFamous)
-                            .each!((vote_node_id) => Event.callbacks.famous(round_to_be_decided._events[vote_node_id]));
-                    }
-                    if (round_decided) {
-                        writefln("decided round: %s count %s famous %s", round_to_be_decided.number, count_rounds, round_to_be_decided.events.count!((e) => e !is null && e.isFamous));
-                        // round_to_be_decided.events.map!(e => e.event_package.pubkey.cutHex).each!writeln;
-
-                        
-                        
-                        // iota(hashgraph.node_size)
-                        //     .filter!(node_id => round_to_be_decided.events[node_id] is null)
-                        //     .each!(node_id => hashgraph._excluded_nodes_mask[node_id] = true);
-                        // writefln("EXCLUDED: %s %s", hashgraph.owner_node.channel.cutHex, hashgraph.excluded_nodes_mask);
-                        collect_received_round(round_to_be_decided, hashgraph);
-                        round_to_be_decided._decided = true;
-                        last_decided_round = round_to_be_decided;
-                        check_decided_round(hashgraph);
-
+                        if (count_rounds > 6) {
+                            decide_round();
+                            return;
+                        }
                     }
                 }
             }
@@ -621,7 +608,9 @@ class Event {
     package this(
             immutable(EventPackage)* epack,
             HashGraph hashgraph,
-    ) {
+    )
+    in (epack !is null)
+    do {
         event_package = epack;
         this.node_id = hashgraph.getNode(channel).node_id;
         this.id = hashgraph.next_event_id;
@@ -1006,7 +995,7 @@ class Event {
                 }
 
             }
-            else if (!isEva) {
+            else if (!isEva && !hashgraph.joining) {
                 check(false, ConsensusFailCode.EVENT_MOTHER_LESS);
             }
         }
@@ -1100,7 +1089,7 @@ class Event {
             return _daughter is null;
         }
 
-     /**
+        /**
      * Check if an evnet has around 
      * Returns: true if an round exist for this event
      */

@@ -23,7 +23,7 @@ import core.memory : pageSize;
 import tagion.utils.BitMask;
 import std.conv;
 import tagion.hashgraph.Refinement;
-
+import std.typecons;
 
 
 
@@ -228,13 +228,10 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
                 const nonce = cast(Buffer) _hashgraph.hirpc.net.calcHash(buf);
                 auto eva_event = _hashgraph.createEvaEvent(time, nonce);
 
-                if (eva_event is null) {
-                    log.error("The channel of this oner is not valid");
-                    return;
-                }
             }
             uint count;
             bool stop;
+
             const(Document) payload() @safe {
                 auto h = new HiBON;
                 h["node"] = format("%s-%d", _hashgraph.name, count);
@@ -255,8 +252,8 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
                             received,
                             time,
                             (const(HiRPC.Sender) return_wavefront) @safe {
-                        authorising.send(received.pubkey, return_wavefront);
-                    },
+                            authorising.send(received.pubkey, return_wavefront);
+                            },
                             &payload
                     );
                     count++;
@@ -280,28 +277,30 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         return networks.keys;
     }
 
-    bool allCoherent() {
+    bool allInGraph() {
         return networks
             .byValue
-            .map!(n => n._hashgraph.owner_node.sticky_state)
-            .all!(s => s == ExchangeState.COHERENT);
+            .map!(n => n._hashgraph.areWeInGraph)
+            .all!(s => s);
+    }
+
+    void addNode(immutable(ulong) N, const(string) name, const Flag!"joining" joining = No.joining) {
+        immutable passphrase = format("very secret %s", name);
+        auto net = new StdSecureNet();
+        net.generateKeyPair(passphrase);
+        auto refinement = new TestRefinement;
+        auto h = new HashGraph(N, net, refinement, &authorising.isValidChannel, joining, name);
+        h.scrap_depth = 0;
+        networks[net.pubkey] = new FiberNetwork(h, pageSize * 1024);
+        authorising.add_channel(net.pubkey);
+        TestGossipNet.online_states[net.pubkey] = true;
     }
 
     FiberNetwork[Pubkey] networks;
-
     this(const(string[]) node_names) {
         authorising = new TestGossipNet;
         immutable N = node_names.length; //EnumMembers!NodeList.length;
-        foreach (name; node_names) {
-            immutable passphrase = format("very secret %s", name);
-            auto net = new StdSecureNet();
-            net.generateKeyPair(passphrase);
-            auto refinement = new TestRefinement;
-            auto h = new HashGraph(N, net, refinement, &authorising.isValidChannel, name);
-            h.scrap_depth = 0;
-            networks[net.pubkey] = new FiberNetwork(h, pageSize * 256);
-        }
-        networks.byKey.each!((a) => authorising.add_channel(a));
+        node_names.each!(name => addNode(N, name));
     }
 }
 

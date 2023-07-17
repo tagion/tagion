@@ -46,6 +46,7 @@ include $(TARGETS)/commands.mk
 prebuild:
 	$(PRECMD)
 	git submodule update --recursive
+	echo $(WRAPS)
 	${foreach wrap,$(WRAPS),$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) $(wrap);}
 	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) revision
 	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) dstep

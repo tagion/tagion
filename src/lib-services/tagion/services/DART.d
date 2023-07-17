@@ -21,39 +21,33 @@ import tagion.hibon.Document;
 alias dartResp = Msg!"dartResp";
 
 struct DARTService {
-    static DART db;
+    DART db;
 
     // Rssponds immutable Document[]
-    static void dartRead(Msg!"dartRead", Tid to, const(DARTIndex)[] fingerprints) {
+    void dartRead(Msg!"dartRead", Tid to, const(DARTIndex)[] fingerprints) {
         auto read_recorder = db.loads(fingerprints);
         const(Document)[] docs = read_recorder[].map!(a => a.filed).array;
 
         send(to, dartResp(), cast(immutable) docs);
     }
 
-    static void dartRim(Msg!"dartRim", Tid to, DART.Rims rims) {
+    void dartRim(Msg!"dartRim", Tid to, DART.Rims rims) {
     }
 
-    static void dartModify(Msg!"dartModify", Tid to, RecordFactory.Recorder recorder) {
+    void dartModify(Msg!"dartModify", Tid to, RecordFactory.Recorder recorder) {
     }
 
     // Responds DARTIndex
-    static void dartBullseye(Msg!"dartBullseye", Tid to) {
+    void dartBullseye(Msg!"dartBullseye", Tid to) {
         send(to, dartResp(), DARTIndex(db.bullseye));
     }
 
-    static void task(string task_name, string dart_path, immutable SecureNet net) nothrow {
-        try {
-            db = new DART(net, dart_path);
-            run(task_name, &dartRead, &dartRim, &dartModify, &dartBullseye);
+    void task(string dart_path, immutable SecureNet net) {
+        db = new DART(net, dart_path);
+        run(&dartRead, &dartRim, &dartModify, &dartBullseye);
 
-            scope (exit) {
-                db.close();
-                end(task_name);
-            }
-        }
-        catch (Exception e) {
-            fail(task_name, e);
+        scope (exit) {
+            db.close();
         }
     }
 }
