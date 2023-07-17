@@ -54,19 +54,18 @@ struct InputValidatorService {
 
     void task(string receiver_task, string sock_path) nothrow {
         try {
-            bool stop = false;
             setState(Ctrl.STARTING);
             auto listener = new Socket(AddressFamily.UNIX, SocketType.STREAM);
             assert(listener.isAlive);
             listener.blocking = false;
             listener.bind(new UnixAddress(sock_path));
+
             listener.listen(1);
             writefln("Listening on address %s.", sock_path);
             scope (exit) {
                 writefln("Closing listener %s", sock_path);
                 listener.close();
                 assert(!listener.isAlive);
-                end();
             }
 
             auto socketSet = new SocketSet(options.max_connections + 1); // Room for listener.
@@ -74,15 +73,13 @@ struct InputValidatorService {
             ReceiveBuffer buf;
 
             setState(Ctrl.ALIVE);
-            eventloop: while (true) {
+            eventloop: while (!stop) {
                 try {
                     receiveTimeout(options.mbox_timeout.msecs,
-                            (Sig sig) {
-                        if (sig is Sig.STOP) {
-                            writeln("Input validator service received stop signal");
-                            stop = true;
-                        }
-                    }
+                            &signal,
+                            &control,
+                            &ownerTerminated,
+                            &unknown
                     );
                     if (stop)
                         break eventloop;
@@ -143,6 +140,18 @@ struct InputValidatorService {
                     fail(e);
                 }
             }
+        }
+        catch (SocketOSException e) {
+            pragma(msg, "TODO: implement pidfile lock on non-linux");
+            import std.exception;
+
+            assumeWontThrow({
+                writefln("Failed to open socket %s, is the program already running?", sock_path);
+                writeln(e.msg);
+            });
+            stopsignal.set;
+            fail(e);
+            return;
         }
         catch (Exception e) {
             fail(e);

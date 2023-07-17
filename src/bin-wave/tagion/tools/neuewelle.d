@@ -75,9 +75,7 @@ int _main(string[] args) {
     stopsignal.wait;
     writeln("Sending stop signal to supervisor");
     supervisor_handle.send(Sig.STOP);
-    writeln("waiting for all threads");
     waitforChildren(Ctrl.END);
-    // thread_joinAll;
     writeln("Exiting");
     return 0;
 }

@@ -56,7 +56,6 @@ struct SetUpForFailure {
 
     void task() nothrow {
         run(&recoverable, &fatal);
-        end();
     }
 }
 
@@ -76,9 +75,7 @@ struct SetUpForDisappointment {
     void task() nothrow {
         childHandle = spawn!SetUpForFailure(child_task_name);
         waitforChildren(Ctrl.ALIVE);
-
         run(failHandler);
-        end();
     }
 
     // Override the default fail handler
@@ -121,17 +118,13 @@ class SupervisorWithFailingChild {
     @Given("a actor #super")
     Document aActorSuper() {
         supervisorHandle = spawn!SetUpForDisappointment(supervisor_task_name);
-        Ctrl ctrl = receiveOnlyTimeout!CtrlMsg.ctrl;
-        check(ctrl is Ctrl.STARTING, "Supervisor is not starting");
+        check(waitforChildren(Ctrl.ALIVE), "Supervisor is not alive");
 
         return result_ok;
     }
 
     @When("the #super and the #child has started")
     Document hasStarted() {
-        auto ctrl = receiveOnlyTimeout!CtrlMsg.ctrl;
-        check(ctrl is Ctrl.ALIVE, "Supervisor is not running");
-
         childHandle = handle!SetUpForFailure(child_task_name);
         check(childHandle.tid !is Tid.init, "Child is not running");
 
@@ -175,12 +168,7 @@ class SupervisorWithFailingChild {
     @Then("the #super should stop")
     Document superShouldStop() {
         supervisorHandle.send(Sig.STOP);
-        auto ctrl = receiveOnly!CtrlMsg;
-        check(ctrl.ctrl is Ctrl.END, "Supervisor did not stop");
-
-        //Tid childTid = locate(child_task_name);
-        //check(childTid !is Tid.init, "Child is still running");
-
+        check(waitforChildren(Ctrl.END), "Supervisor did not end");
         return result_ok;
     }
 

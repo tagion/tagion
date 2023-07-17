@@ -30,7 +30,6 @@ enum actor_task = "actor_task";
 struct MyActor {
     void task() nothrow {
         run();
-        end();
     }
 }
 
@@ -50,8 +49,7 @@ class SendATaskFailureToAnActor {
 
     @When("the #actor has started")
     Document actorHasStarted() {
-        check(receiveOnlyTimeout!CtrlMsg.ctrl is Ctrl.STARTING, "Actor is not starting");
-        check(receiveOnlyTimeout!CtrlMsg.ctrl is Ctrl.ALIVE, "Actor never alived");
+        check(waitforChildren(Ctrl.ALIVE), "Actor never alived");
         check(myActor.tid !is Tid.init, "Actor task is not running");
 
         return result_ok;
@@ -79,7 +77,7 @@ class SendATaskFailureToAnActor {
     @Then("stop the #actor")
     Document stopTheActor() {
         myActor.send(Sig.STOP);
-        check(receiveOnly!CtrlMsg.ctrl !is Ctrl.ALIVE, "Actor never stopped");
+        check(waitforChildren(Ctrl.END), "Actor never stopped");
         return result_ok;
     }
 

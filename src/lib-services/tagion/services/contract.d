@@ -15,9 +15,6 @@ struct ContractService {
     }
 
     void task() nothrow {
-        scope (exit) {
-            end();
-        }
         run(&contract);
     }
 }

@@ -22,8 +22,8 @@ alias FeatureContext = Tuple!(
         FeatureGroup*, "result"
 );
 
-enum child_task_name = "child_task";
-enum super_task_name = "super_task";
+enum child_task_name = "handle_child_task";
+enum super_task_name = "handle_super_task";
 
 struct MyActor {
     int status = 0;
@@ -35,7 +35,6 @@ struct MyActor {
 
     void task() nothrow {
         run(&setstatus);
-        end();
     }
 }
 
@@ -44,15 +43,10 @@ alias MyActorHandle = ActorHandle!MyActor;
 struct MySuperActor {
     MyActorHandle childHandle;
 
-    void task() nothrow {
-        // Ctrl[string] childrenState;
+    void task() {
         childHandle = spawn!MyActor(child_task_name);
-        // childrenState[childHandle.task_name] = Ctrl.UNKNOWN;
-
         waitforChildren(Ctrl.ALIVE);
         run();
-
-        end();
     }
 }
 
@@ -68,12 +62,7 @@ class SendAMessageToAnActorYouDontOwn {
     Document actorChild() {
         super_actor_handler = spawn!MySuperActor(super_task_name);
 
-        Ctrl ctrl = receiveOnlyTimeout!CtrlMsg.ctrl;
-        check(ctrl is Ctrl.STARTING, "Supervisor is not starting");
-
-        ctrl = receiveOnlyTimeout!CtrlMsg.ctrl;
-        check(ctrl is Ctrl.ALIVE, "Supervisor is not running");
-
+        check(waitforChildren(Ctrl.ALIVE), "Supervisor did not alive");
         return result_ok;
     }
 
@@ -102,6 +91,7 @@ class SendAMessageToAnActorYouDontOwn {
     @Then("stop the #super")
     Document theSuper() {
         super_actor_handler.send(Sig.STOP);
+        check(waitforChildren(Ctrl.END), "Child did not end");
         return result_ok;
     }
 

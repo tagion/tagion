@@ -49,7 +49,6 @@ struct DARTService {
 
             scope (exit) {
                 db.close();
-                end();
             }
         }
         catch (Exception e) {
