@@ -40,10 +40,8 @@ version (unittest) {
 @safe
 class HashGraph {
     enum default_scrap_depth = 10;
-    enum default_awake = 3;
     //bool print_flag;
     int scrap_depth = default_scrap_depth;
-    uint awake = default_awake;
     import tagion.basic.ConsensusExceptions;
 
     protected alias check = Check!HashGraphConsensusException;
@@ -207,14 +205,6 @@ class HashGraph {
 
     }
 
-    package bool can_round_be_decided(const Round r) nothrow {
-        const result = _nodes
-            .byValue
-            .filter!((n) => (r.events[n.node_id] is null) && (!excluded_nodes_mask[n.node_id]))
-            .tee!((n) => n.asleep)
-            .all!((n) => n.sleeping);
-        return result;
-    }
 
     @nogc
     const(Round.Rounder) rounds() const pure nothrow {
@@ -802,20 +792,10 @@ class HashGraph {
                 Event.check(event.mother !is null, ConsensusFailCode.EVENT_MOTHER_LESS);
                 _event = event;
             }
-            awake = this.outer.awake;
         }
 
         private Event _event; /// This is the last event in this Node
 
-        @nogc
-        void asleep() pure nothrow {
-            awake = (awake is 0) ? 0 : awake - 1;
-        }
-
-        @nogc
-        bool sleeping() const pure nothrow {
-            return awake is 0;
-        }
 
         @nogc
         const(Event) event() const pure nothrow {
