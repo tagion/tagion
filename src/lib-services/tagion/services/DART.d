@@ -42,17 +42,12 @@ struct DARTService {
         send(to, dartResp(), DARTIndex(db.bullseye));
     }
 
-    void task(string dart_path, immutable SecureNet net) nothrow {
-        try {
-            db = new DART(net, dart_path);
-            run(&dartRead, &dartRim, &dartModify, &dartBullseye);
+    void task(string dart_path, immutable SecureNet net) {
+        db = new DART(net, dart_path);
+        run(&dartRead, &dartRim, &dartModify, &dartBullseye);
 
-            scope (exit) {
-                db.close();
-            }
-        }
-        catch (Exception e) {
-            fail(e);
+        scope (exit) {
+            db.close();
         }
     }
 }

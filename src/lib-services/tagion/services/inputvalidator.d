@@ -52,94 +52,13 @@ struct InputValidatorOptions {
 struct InputValidatorService {
     InputValidatorOptions options;
 
-    void task(string receiver_task, string sock_path) nothrow {
+    void task(string receiver_task, string sock_path) {
+        setState(Ctrl.STARTING);
+        auto listener = new Socket(AddressFamily.UNIX, SocketType.STREAM);
+        assert(listener.isAlive);
+        listener.blocking = false;
         try {
-            setState(Ctrl.STARTING);
-            auto listener = new Socket(AddressFamily.UNIX, SocketType.STREAM);
-            assert(listener.isAlive);
-            listener.blocking = false;
             listener.bind(new UnixAddress(sock_path));
-
-            listener.listen(1);
-            writefln("Listening on address %s.", sock_path);
-            scope (exit) {
-                writefln("Closing listener %s", sock_path);
-                listener.close();
-                assert(!listener.isAlive);
-            }
-
-            auto socketSet = new SocketSet(options.max_connections + 1); // Room for listener.
-            Socket[] reads;
-            ReceiveBuffer buf;
-
-            setState(Ctrl.ALIVE);
-            eventloop: while (!stop) {
-                try {
-                    receiveTimeout(options.mbox_timeout.msecs,
-                            &signal,
-                            &control,
-                            &ownerTerminated,
-                            &unknown
-                    );
-                    if (stop)
-                        break eventloop;
-
-                    socketSet.add(listener);
-
-                    foreach (sock; reads)
-                        socketSet.add(sock);
-
-                    Socket.select(socketSet, null, null, options.socket_select_timeout.msecs);
-
-                    for (size_t i = 0; i < reads.length; i++) {
-                        if (socketSet.isSet(reads[i])) {
-                            auto result = buf.append(&reads[i].receive);
-                            Document doc = Document(cast(immutable) result.data);
-                            __write("Received %d bytes.", result.size);
-                            __write("Document status code %s", doc.valid);
-                            if (result.size != 0 && doc.valid is Document.Element.ErrorCode.NONE && doc.isRecord!(HiRPC
-                                    .Sender)) {
-                                __write("sending to %s", receiver_task);
-                                locate(receiver_task).send(inputDoc(), doc);
-                            }
-                            // release socket resources now
-                            reads[i].close();
-                            reads = reads.remove(i);
-                            // i will be incremented by the for, we don't want it to be.
-                            i--;
-                        }
-                    }
-
-                    /// Accept incoming reguests
-                    if (socketSet.isSet(listener)) {
-                        Socket sn = null;
-                        scope (failure) {
-                            writefln("Error accepting");
-
-                            if (sn)
-                                sn.close();
-                        }
-                        sn = listener.accept();
-                        assert(sn.isAlive);
-                        assert(listener.isAlive);
-
-                        if (reads.length < options.max_connections) {
-                            writefln("Connection established.");
-                            reads ~= sn;
-                        }
-                        else {
-                            writefln("Rejected connection; too many connections.");
-                            sn.close();
-                            assert(!sn.isAlive);
-                            assert(listener.isAlive);
-                        }
-                    }
-                    socketSet.reset();
-                }
-                catch (Exception e) {
-                    fail(e);
-                }
-            }
         }
         catch (SocketOSException e) {
             pragma(msg, "TODO: implement pidfile lock on non-linux");
@@ -153,8 +72,86 @@ struct InputValidatorService {
             fail(e);
             return;
         }
-        catch (Exception e) {
-            fail(e);
+
+        listener.listen(1);
+        writefln("Listening on address %s.", sock_path);
+        scope (exit) {
+            writefln("Closing listener %s", sock_path);
+            listener.close();
+            assert(!listener.isAlive);
+        }
+
+        auto socketSet = new SocketSet(options.max_connections + 1); // Room for listener.
+        Socket[] reads;
+        ReceiveBuffer buf;
+
+        setState(Ctrl.ALIVE);
+        eventloop: while (!stop) {
+            try {
+                receiveTimeout(options.mbox_timeout.msecs,
+                        &signal,
+                        &control,
+                        &ownerTerminated,
+                        &unknown
+                );
+                if (stop)
+                    break eventloop;
+
+                socketSet.add(listener);
+
+                foreach (sock; reads)
+                    socketSet.add(sock);
+
+                Socket.select(socketSet, null, null, options.socket_select_timeout.msecs);
+
+                for (size_t i = 0; i < reads.length; i++) {
+                    if (socketSet.isSet(reads[i])) {
+                        auto result = buf.append(&reads[i].receive);
+                        Document doc = Document(cast(immutable) result.data);
+                        __write("Received %d bytes.", result.size);
+                        __write("Document status code %s", doc.valid);
+                        if (result.size != 0 && doc.valid is Document.Element.ErrorCode.NONE && doc.isRecord!(HiRPC
+                                .Sender)) {
+                            __write("sending to %s", receiver_task);
+                            locate(receiver_task).send(inputDoc(), doc);
+                        }
+                        // release socket resources now
+                        reads[i].close();
+                        reads = reads.remove(i);
+                        // i will be incremented by the for, we don't want it to be.
+                        i--;
+                    }
+                }
+
+                /// Accept incoming reguests
+                if (socketSet.isSet(listener)) {
+                    Socket sn = null;
+                    scope (failure) {
+                        writefln("Error accepting");
+
+                        if (sn)
+                            sn.close();
+                    }
+                    sn = listener.accept();
+                    assert(sn.isAlive);
+                    assert(listener.isAlive);
+
+                    if (reads.length < options.max_connections) {
+                        writefln("Connection established.");
+                        reads ~= sn;
+                    }
+                    else {
+                        writefln("Rejected connection; too many connections.");
+                        sn.close();
+                        assert(!sn.isAlive);
+                        assert(listener.isAlive);
+                    }
+                }
+                socketSet.reset();
+            }
+            catch (Exception e) {
+                fail(e);
+            }
         }
     }
 }
