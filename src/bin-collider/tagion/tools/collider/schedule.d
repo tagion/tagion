@@ -20,6 +20,7 @@ import tagion.tools.Basic : dry_switch, verbose_switch;
 import tagion.utils.envexpand;
 import tagion.hibon.HiBONJSON;
 import tagion.tools.toolsexception;
+import tagion.tools.collider.BehaviourOptions;
 
 @safe
 struct RunUnit {
@@ -68,11 +69,13 @@ struct ScheduleRunner {
     const(string[]) stages;
     const uint jobs;
     ScheduleTrace report;
+    const BehaviourOptions opts;
     @disable this();
     this(
             ref Schedule schedule,
             const(string[]) stages,
     const uint jobs,
+    const BehaviourOptions opts,
     ScheduleTrace report = null) pure nothrow
     in (jobs > 0)
     in (stages.length > 0)
@@ -80,6 +83,7 @@ struct ScheduleRunner {
         this.schedule = schedule;
         this.stages = stages;
         this.jobs = jobs;
+        this.opts = opts;
         this.report = report;
     }
 
@@ -95,10 +99,12 @@ struct ScheduleRunner {
     }
 
     void progress(Args...)(const string fmt, Args args) @trusted {
-        import tagion.utils.Term;
+        if (!opts.silent) {
+            import tagion.utils.Term;
 
-        writef(CLEAREOL ~ fmt ~ "\r", args);
-        stdout.flush;
+            writef(CLEAREOL ~ fmt ~ "\r", args);
+            stdout.flush;
+        }
     }
 
     void setEnv(ref string[string] env, string stage) {
