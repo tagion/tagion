@@ -86,27 +86,17 @@ struct InputValidatorService {
         ReceiveBuffer buf;
 
         setState(Ctrl.ALIVE);
-        eventloop: while (!stop) {
+        while (!stop) {
             try {
-                receiveTimeout(options.mbox_timeout.msecs,
-                        &signal,
-                        &control,
-                        &ownerTerminated,
-                        &unknown
-                );
-                if (stop)
-                    break eventloop;
-
                 socketSet.add(listener);
-
-                foreach (sock; reads)
+                foreach (sock; reads) {
                     socketSet.add(sock);
-
+                }
                 Socket.select(socketSet, null, null, options.socket_select_timeout.msecs);
 
-                for (size_t i = 0; i < reads.length; i++) {
-                    if (socketSet.isSet(reads[i])) {
-                        auto result = buf.append(&reads[i].receive);
+                foreach (i, ref read; reads) {
+                    if (socketSet.isSet(read)) {
+                        auto result = buf.append(&read.receive);
                         Document doc = Document(cast(immutable) result.data);
                         __write("Received %d bytes.", result.size);
                         __write("Document status code %s", doc.valid);
@@ -116,7 +106,7 @@ struct InputValidatorService {
                             locate(receiver_task).send(inputDoc(), doc);
                         }
                         // release socket resources now
-                        reads[i].close();
+                        read.close();
                         reads = reads.remove(i);
                         // i will be incremented by the for, we don't want it to be.
                         i--;
@@ -148,6 +138,13 @@ struct InputValidatorService {
                     }
                 }
                 socketSet.reset();
+
+                receiveTimeout(options.mbox_timeout.msecs,
+                        &signal,
+                        &control,
+                        &ownerTerminated,
+                        &unknown
+                );
             }
             catch (Exception e) {
                 fail(e);
