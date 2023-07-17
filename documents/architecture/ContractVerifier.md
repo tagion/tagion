@@ -1,6 +1,6 @@
 # Contract Verifier Service
 
-[tagion.service.contract](ddoc://tagion.services.contract)
+[tagion.services.contract](ddoc://tagion.services.contract)
 
 This service is responsible for receiving contracts, ensuring a valid data format of HiRPC requests and compliance with the HiRPC protocol before it is executed in the system.
 
