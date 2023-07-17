@@ -106,7 +106,6 @@ class HashGraph {
         _excluded_nodes_mask = mask;
     }
 
-
     package Round.Rounder _rounds; /// The rounder hold the round in the queue both decided and undecided rounds
 
     alias ValidChannel = bool delegate(const Pubkey channel);
@@ -133,7 +132,7 @@ class HashGraph {
         this.refinement = refinement;
         this.refinement.setOwner(this);
         this.valid_channel = valid_channel;
-        
+
         this._joining = joining;
         this.name = name;
         _rounds = Round.Rounder(this);
@@ -196,17 +195,18 @@ class HashGraph {
     package bool possible_round_decided(const Round r) nothrow {
         const witness_count = r.events
             .count!((e) => (e !is null) && e.isWitness);
-        __write("round=%s, witness count=%s",r.number, witness_count);
+        __write("round=%s, witness count=%s", r.number, witness_count);
         if (!isMajority(witness_count)) {
             __write("possible_round_decided !ismajority");
             return false;
         }
         const possible_decided = r.events
-                .all!((e) => e is null || e.isWitness);
+            .all!((e) => e is null || e.isWitness);
         __write("possible_round_decided=%s", possible_decided);
         return possible_decided;
 
     }
+
     package bool can_round_be_decided(const Round r) nothrow {
         const result = _nodes
             .byValue
@@ -409,7 +409,7 @@ class HashGraph {
             if (fingerprint) {
 
                 event = lookup(fingerprint);
-                
+
                 Event.check(_joining || event !is null, ConsensusFailCode.EVENT_MISSING_IN_CACHE);
                 if (event !is null) {
                     event.connect(this.outer);
@@ -544,29 +544,29 @@ class HashGraph {
         // if we are not in graph ourselves, we put the delta information
         // in and return a RIPPLE.
         auto received_epacks = received_wave
-                            .epacks
-                            .map!((e) => cast(immutable(EventPackage)*) e)
-                            .array
-                            .sort!((a,b) => a.fingerprint < b.fingerprint);
+            .epacks
+            .map!((e) => cast(immutable(EventPackage)*) e)
+            .array
+            .sort!((a, b) => a.fingerprint < b.fingerprint);
         auto own_epacks = _nodes.byValue
-                            .map!((n) => n[])
-                            .joiner
-                            .map!((e) => cast(immutable(EventPackage)*) e.event_package)
-                            .array
-                            .sort!((a,b) => a.fingerprint < b.fingerprint);
+            .map!((n) => n[])
+            .joiner
+            .map!((e) => cast(immutable(EventPackage)*) e.event_package)
+            .array
+            .sort!((a, b) => a.fingerprint < b.fingerprint);
         import std.algorithm.setops : setDifference;
 
-        auto changes = setDifference!((a,b) => a.fingerprint < b.fingerprint)(received_epacks, own_epacks);
+        auto changes = setDifference!((a, b) => a.fingerprint < b.fingerprint)(received_epacks, own_epacks);
 
         writefln("owner_epacks %s", own_epacks.length);
         if (!changes.empty) {
             // delta received from sharp should be added to our own node. 
             writefln("changes found");
-            foreach(epack; changes) {
+            foreach (epack; changes) {
                 const epack_node = getNode(epack.pubkey);
                 auto first_event = new Event(epack, this);
                 if (epack_node.event is null) {
-                    check(first_event.isEva,ConsensusFailCode.GOSSIPNET_FIRST_EVENT_MUST_BE_EVA);
+                    check(first_event.isEva, ConsensusFailCode.GOSSIPNET_FIRST_EVENT_MUST_BE_EVA);
                 }
                 _event_cache[first_event.fingerprint] = first_event;
                 front_seat(first_event);
@@ -574,13 +574,11 @@ class HashGraph {
         }
         writefln("after owner_epacks %s", _nodes.byValue.map!((n) => n[]).joiner.array.length);
 
-
-            
-        auto result = setDifference!((a,b) => a.fingerprint < b.fingerprint)(own_epacks, received_epacks).array;
+        auto result = setDifference!((a, b) => a.fingerprint < b.fingerprint)(own_epacks, received_epacks).array;
 
         const state = ExchangeState.RIPPLE;
-        return Wavefront(result, Tides.init, state);                
-           
+        return Wavefront(result, Tides.init, state);
+
         // foreach (epack; received_wave.epacks) {
         //     if (getNode(epack.pubkey).event is null) {
         //         writefln("epack time: %s", epack.event_body.time);
@@ -619,6 +617,7 @@ class HashGraph {
 
         return Wavefront(result, null, ExchangeState.SHARP);
     }
+
     void wavefront(
             const HiRPC.Receiver received,
             lazy const(sdt_t) time,
@@ -662,8 +661,8 @@ class HashGraph {
 
                     // if we receive a ripplewave, we must add the eva events to our own graph.
                     const received_epacks = received_wave.epacks;
-                    foreach(epack; received_epacks) {
-                        const epack_node = getNode(epack.pubkey); 
+                    foreach (epack; received_epacks) {
+                        const epack_node = getNode(epack.pubkey);
                         auto first_event = new Event(epack, this);
                         if (epack_node.event is null) {
                             check(first_event.isEva, ConsensusFailCode.GOSSIPNET_FIRST_EVENT_MUST_BE_EVA);
@@ -672,8 +671,6 @@ class HashGraph {
                         front_seat(first_event);
                     }
 
-                    
-                    
                     const contain_all =
                         _nodes
                             .byValue
@@ -686,17 +683,17 @@ class HashGraph {
                             .joiner
                             .map!((e) => e.event_package)
                             .array;
-                        writefln("%s going to init witnesses, areweingraph %s", _owner_node.channel.cutHex, areWeInGraph);                            
+                        writefln("%s going to init witnesses, areweingraph %s", _owner_node.channel.cutHex, areWeInGraph);
                         initialize_witness(own_epacks);
                     }
-                    break;                    
+                    break;
                 case COHERENT:
                     received_node.state = NONE;
                     received_node.sticky_state = COHERENT;
                     if (!areWeInGraph) {
                         try {
-                            received_wave.epacks.
-                                map!(epack => epack.event_body)
+                            received_wave.epacks
+                                .map!(epack => epack.event_body)
                                 .each!(ebody => ebody.toPretty.writeln);
                             initialize_witness(received_wave.epacks);
                             _owner_node.sticky_state = COHERENT;
@@ -911,9 +908,9 @@ class HashGraph {
     void mark_offline(const(size_t) node_id) nothrow {
 
         auto mark_node = _nodes.byKeyValue
-                    .filter!((pair) => !pair.value._offline)
-                    .filter!((pair) => pair.value.node_id == node_id)
-                    .map!(pair => pair.value);
+            .filter!((pair) => !pair.value._offline)
+            .filter!((pair) => pair.value.node_id == node_id)
+            .map!(pair => pair.value);
         if (mark_node.empty) {
             return;
         }
