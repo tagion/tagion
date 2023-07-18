@@ -225,7 +225,7 @@ import tagion.wasm.WasmException;
                                         format("Array type %s is not supported", T.stringof));
                             }
                         }
-                        else {
+                    else {
                             static assert(0, format("Type %s is not supported", T.stringof));
                         }
                     }

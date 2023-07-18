@@ -3,6 +3,7 @@ module tagion.wasm.WastParser;
 import tagion.basic.Debug;
 
 enum Chars : char {
+    NUL = '\0',
     SPACE = char(0x20),
     DOUBLE_QUOTE = '"',
     PARENTHESES_BEGIN = '(',
@@ -47,81 +48,135 @@ struct WastParser {
         this.text = text;
     }
 
+    enum TokenType {
+        EOF,
+        BEGIN,
+        END,
+        COMMENT,
+        WORD,
+        STRING,
+    }
+
     @nogc
     struct TokenRange {
-        string text;
+        private string text;
         string token;
         uint line;
         uint pos;
-        int max_count;
-        this(string text) pure nothrow {
-            line = 1;
-            this.text = text;
-        }
-
-        bool empty() const pure nothrow {
-            return pos >= text.length;
-        }
-
-        void next() pure nothrow {
-            if (!empty) {
-                pos++;
+        uint start_line_pos;
+        pure nothrow {
+            this(string text) {
+                line = 1;
+                this.text = text;
+                popFront;
             }
-        }
 
-        string nextToken() pure nothrow {
-            max_count--;
-            assert(max_count >= 0);
-            trim;
-            const begin_pos = pos;
-            with (Chars) {
-                switch (currentChar) {
-                case PARENTHESES_BEGIN:
-                case PARENTHESES_END:
-                    pos++;
-                    break;
+            bool empty() const {
+                return pos >= text.length;
+            }
 
-                case SEMICOLON:
-                    pos++;
-                    while (!empty && text[pos] != SEMICOLON) {
-                        pos++;
-                    }
-                    next;
-                    break;
+            version (none) struct front {
+                const(TokenRange*) owner;
+                this(const(TokenRange)* owner) pure nothrow {
+                    this.owner = owner;
+                }
 
-                case DOUBLE_QUOTE:
+                const opDispatch(string name)() pure nothrow {
+                    enum code = format("const result=owner.%s;", name);
+                    mixin(code);
+                    return result;
+                }
+            }
+
+            ref const(TokenRange) front() const @trusted {
+                return this;
+            }
+
+            void next() {
+                if (!empty) {
                     pos++;
-                    while (!empty && text[pos] != DOUBLE_QUOTE) {
-                        pos++;
-                    }
-                    next;
-                    break;
-                default:
-                    while (!empty && text[pos].isWordChar) {
-                        pos++;
+                }
+            }
+
+            uint line_pos() const {
+                return pos - start_line_pos;
+            }
+
+            TokenType type() const {
+                if (empty) {
+                    return TokenType.EOF;
+                }
+                with (Chars) {
+                    switch (token[0]) {
+                    case NUL:
+                        return TokenType.EOF;
+                        case PARENTHESES_BEGIN:
+                        return TokenType.BEGIN;
+                        case PARENTHESES_END:
+                        return TokenType.END;
+                        case SEMICOLON:
+                        return TokenType.COMMENT;
+                        case DOUBLE_QUOTE:
+                        return TokenType.STRING;
+                        default:
+                        return TokenType.WORD;
                     }
                 }
-                __write("[%d..%d]=%s", begin_pos, pos, text[begin_pos .. pos]);
-                return token = text[begin_pos .. pos];
+                assert(0);
             }
-        }
 
-        void trim() pure nothrow {
-            while (!empty && text[pos].isInvisiable) {
-                if (text[pos] == Chars.NEWLINE) {
-                    line++;
+            void popFront() {
+                trim;
+                const begin_pos = pos;
+                with (Chars) {
+                    switch (currentChar) {
+                    case PARENTHESES_BEGIN:
+                    case PARENTHESES_END:
+                        pos++;
+                        break;
+
+                    case SEMICOLON:
+                        pos++;
+                        while (!empty && text[pos] != SEMICOLON) {
+                            pos++;
+                        }
+                        next;
+                        break;
+
+                    case DOUBLE_QUOTE:
+                        pos++;
+                        while (!empty && text[pos] != DOUBLE_QUOTE) {
+                            pos++;
+                        }
+                        next;
+                        break;
+                    default:
+                        while (!empty && text[pos].isWordChar) {
+                            pos++;
+                        }
+                    }
+                    token = text[begin_pos .. pos];
                 }
-                pos++;
             }
-        }
 
-        char currentChar() const pure nothrow {
-            if (!empty) {
-                return text[pos];
+            void trim() {
+                while (!empty && text[pos].isInvisiable) {
+                    if (text[pos] == Chars.NEWLINE) {
+                        start_line_pos = pos + 1;
+                        line++;
+                    }
+                    pos++;
+                }
             }
-            return '\0';
-        }
 
+            char currentChar() const {
+                if (!empty) {
+                    return text[pos];
+                }
+                return '\0';
+            }
+
+        }
     }
 }
 
@@ -135,9 +190,6 @@ version (unittest) {
     }
 }
 
-void func() {
-}
-
 @safe
 unittest {
     import tagion.basic.basic;
@@ -147,9 +199,8 @@ unittest {
     //    writefln("Unitfile file %s", mangle!(WastParser)(""));
     //writefln("Unitfile file %s", wast_text);
     auto r = WastParser.TokenRange(wast_text);
-    r.max_count = 2000;
     while (!r.empty) {
-        const token = r.nextToken;
-        writefln("<%s:%d:%s>", r.line, r.pos, r.token);
+        writefln("<%s:%d:%s:%s>", r.line, r.line_pos, r.type, r.token);
+        r.popFront;
     }
 }
