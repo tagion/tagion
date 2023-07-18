@@ -23,26 +23,9 @@ import tagion.utils.JSONCommon;
 /// Msg Type sent to actors who receive the document
 alias inputDoc = Msg!"inputDoc";
 
-@property
-static immutable(string) contract_sock_path() @safe nothrow {
-    version (linux) {
-        return "\0NEUEWELLE_CONTRACT";
-    }
-    else version (Posix) {
-        import std.path;
-        import std.conv;
-        import std.exception;
-        import core.sys.posix.unistd : getuid;
-
-        const uid = assumeWontThrow(getuid.to!string);
-        return buildPath("/", "run", "user", uid, "tagionwave_contract.sock");
-    }
-    else {
-        assert(0, "Unsupported platform");
-    }
-}
-
+@safe
 struct InputValidatorOptions {
+    string sock_addr;
     uint mbox_timeout = 10; // msecs
     uint socket_select_timeout = 1000; // msecs
     uint max_connections = 1;
@@ -50,22 +33,20 @@ struct InputValidatorOptions {
 }
 
 struct InputValidatorService {
-    InputValidatorOptions options;
-
-    void task(string receiver_task, string sock_path) {
+    void task(immutable(InputValidatorOptions) opts, string receiver_task, ) {
         setState(Ctrl.STARTING);
         auto listener = new Socket(AddressFamily.UNIX, SocketType.STREAM);
         assert(listener.isAlive);
         listener.blocking = false;
         try {
-            listener.bind(new UnixAddress(sock_path));
+            listener.bind(new UnixAddress(opts.sock_addr));
         }
         catch (SocketOSException e) {
             pragma(msg, "TODO: implement pidfile lock on non-linux");
             import std.exception;
 
             assumeWontThrow({
-                writefln("Failed to open socket %s, is the program already running?", sock_path);
+                writefln("Failed to open socket %s, is the program already running?", opts.sock_addr);
                 writeln(e.msg);
             });
             stopsignal.set;
@@ -74,14 +55,14 @@ struct InputValidatorService {
         }
 
         listener.listen(1);
-        writefln("Listening on address %s.", sock_path);
+        writefln("Listening on address %s.", opts.sock_addr);
         scope (exit) {
-            writefln("Closing listener %s", sock_path);
+            writefln("Closing listener %s", opts.sock_addr);
             listener.close();
             assert(!listener.isAlive);
         }
 
-        auto socketSet = new SocketSet(options.max_connections + 1); // Room for listener.
+        auto socketSet = new SocketSet(opts.max_connections + 1); // Room for listener.
         Socket[] reads;
         ReceiveBuffer buf;
 
@@ -92,7 +73,7 @@ struct InputValidatorService {
                 foreach (sock; reads) {
                     socketSet.add(sock);
                 }
-                Socket.select(socketSet, null, null, options.socket_select_timeout.msecs);
+                Socket.select(socketSet, null, null, opts.socket_select_timeout.msecs);
 
                 foreach (i, ref read; reads) {
                     if (socketSet.isSet(read)) {
@@ -126,7 +107,7 @@ struct InputValidatorService {
                     assert(sn.isAlive);
                     assert(listener.isAlive);
 
-                    if (reads.length < options.max_connections) {
+                    if (reads.length < opts.max_connections) {
                         writefln("Connection established.");
                         reads ~= sn;
                     }
@@ -139,7 +120,7 @@ struct InputValidatorService {
                 }
                 socketSet.reset();
 
-                receiveTimeout(options.mbox_timeout.msecs,
+                receiveTimeout(opts.mbox_timeout.msecs,
                         &signal,
                         &control,
                         &ownerTerminated,

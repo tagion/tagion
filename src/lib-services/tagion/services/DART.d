@@ -7,8 +7,11 @@ import std.file;
 import std.algorithm : map;
 import std.array;
 import std.stdio;
+import std.path;
 
 import tagion.utils.pretend_safe_concurrency;
+import tagion.utils.JSONCommon;
+import tagion.basic.Types : FileExtension;
 import tagion.actor;
 import tagion.crypto.Types;
 import tagion.crypto.SecureInterfaceNet;
@@ -17,6 +20,11 @@ import tagion.dart.Recorder;
 import tagion.dart.DARTBasic : DARTIndex;
 import tagion.hibon.Document;
 
+@safe
+struct DARTOptions {
+    string dart_filename = buildPath(".", "dart".setExtension(FileExtension.dart));
+    mixin JSONCommon;
+}
 /// Response from a dart CRUD call
 alias dartResp = Msg!"dartResp";
 
@@ -42,8 +50,8 @@ struct DARTService {
         send(to, dartResp(), DARTIndex(db.bullseye));
     }
 
-    void task(string dart_path, immutable SecureNet net) {
-        db = new DART(net, dart_path);
+    void task(immutable(DARTOptions) opts, immutable(SecureNet) net) {
+        db = new DART(net, opts.dart_filename);
         run(&dartRead, &dartRim, &dartModify, &dartBullseye);
 
         scope (exit) {
