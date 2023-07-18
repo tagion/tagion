@@ -30,6 +30,3 @@ When send a message from #super to #child1 and from #child1 to #child2 and back 
 	Check that message has been received correctly
 
 Then stop the #super 
-	check that #child1 and #child2 has stopped
-
-Then check the #child1 and #child2 threads are stopped

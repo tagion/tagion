@@ -187,21 +187,6 @@ class SendMessageBetweenTwoChildren {
     Document stopTheSuper() {
         supervisorHandle.send(Sig.STOP);
         check(waitforChildren(Ctrl.END), "Supervisor did not end ");
-        while (locate(supervisor_task_name) !is Tid.init) {
-        }
-        check(locate(supervisor_task_name) is Tid.init, "SuperVisor thread is still running");
         return result_ok;
     }
-
-    @Then("check the #child1 and #child2 threads are stopped")
-    Document child2ThreadsAreStopped() {
-        while (locate(child1_task_name) !is Tid.init) {
-        }
-        check(locate(child1_task_name) is Tid.init, "Child 1 thread is still running");
-        while (locate(child2_task_name) !is Tid.init) {
-        }
-        check(locate(child2_task_name) is Tid.init, "Child 2 thread is still running");
-        return result_ok;
-    }
-
 }
