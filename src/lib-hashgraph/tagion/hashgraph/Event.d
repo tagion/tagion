@@ -141,7 +141,7 @@ class Round {
     private void remove(const(Event) event) nothrow
     in {
         assert(event.isEva || _events[event.node_id] is event,
-                "This event does not exist in round at the current node so it can not be remove from this round");
+        "This event does not exist in round at the current node so it can not be remove from this round");
         assert(event.isEva || !empty, "No events exists in this round");
     }
     do {
@@ -425,8 +425,8 @@ class Round {
             r._events
                 .filter!((e) => (e !is null))
                 .each!((e) => e[]
-                        .until!((e) => (e._round_received !is null))
-                        .each!((ref e) => e._round_received_mask.clear));
+                .until!((e) => (e._round_received !is null))
+                .each!((ref e) => e._round_received_mask.clear));
 
             void mark_received_events(const size_t voting_node_id, Event e) {
                 mark_received_iteration_count++;
@@ -446,8 +446,8 @@ class Round {
                 .filter!((e) => (e !is null))
                 .filter!((e) => !hashgraph.excluded_nodes_mask[e.node_id])
                 .map!((ref e) => e[]
-                        .until!((e) => (e._round_received !is null))
-                        .filter!((e) => (e._round_received_mask.isMajority(hashgraph))))
+                .until!((e) => (e._round_received !is null))
+                .filter!((e) => (e._round_received_mask.isMajority(hashgraph))))
                 .joiner
                 .tee!((e) => e._round_received = r)
                 .array;
@@ -477,23 +477,26 @@ class Round {
                 writefln("possible_round_decided");
                 const votes_mask = BitMask(round_to_be_decided.events
                         .filter!((e) => (e) && !hashgraph.excluded_nodes_mask[e.node_id])
-                        .map!((e) => e.node_id));
+                    .map!((e) => e.node_id));
                 if (votes_mask.isMajority(hashgraph)) {
 
                     if (Event.callbacks) {
-                        votes_mask[].filter!((vote_node_id) => round_to_be_decided._events[vote_node_id].isFamous)
-                            .each!((vote_node_id) => Event.callbacks.famous(round_to_be_decided._events[vote_node_id]));
+                        votes_mask[].filter!(
+                            (vote_node_id) => round_to_be_decided._events[vote_node_id].isFamous)
+                            .each!((vote_node_id) => Event.callbacks.famous(
+                                    round_to_be_decided._events[vote_node_id]));
                     }
 
                     votes_mask[]
                         .each!((vote_node_id) => round_to_be_decided._events[vote_node_id]
-                                ._witness.famous(hashgraph));
+                        ._witness.famous(hashgraph));
 
                     const famous_round = votes_mask[]
                         .all!((vote_node_id) => round_to_be_decided._events[vote_node_id]
-                                .isFamous);
+                        .isFamous);
 
-                    if (famous_round && votes_mask.count == hashgraph.node_size - hashgraph.excluded_nodes_mask.count) {
+                    if (famous_round && votes_mask.count == hashgraph.node_size - hashgraph
+                        .excluded_nodes_mask.count) {
                         decide_round();
                         return;
                     }
@@ -606,9 +609,10 @@ class Event {
      *   hashgraph = the hashgraph which produce the event
      */
     package this(
-            immutable(EventPackage)* epack,
-            HashGraph hashgraph,
-    ) in (epack !is null)
+        immutable(EventPackage)* epack,
+        HashGraph hashgraph,
+    )
+    in (epack !is null)
     do {
         event_package = epack;
         this.node_id = hashgraph.getNode(channel).node_id;
@@ -628,7 +632,7 @@ class Event {
                 assert(!_witness_mask[].empty);
                 assert(_mother._daughter is this);
                 assert(
-                        event_package.event_body.altitude - _mother
+                    event_package.event_body.altitude - _mother
                         .event_package.event_body.altitude is 1);
                 assert(_received_order is int.init || (_received_order - _mother._received_order > 0));
             }
@@ -664,8 +668,8 @@ class Event {
  */
         @trusted
         this(
-                Event owner_event,
-                ref const(BitMask) seeing_witness_in_previous_round_mask) nothrow
+            Event owner_event,
+            ref const(BitMask) seeing_witness_in_previous_round_mask) nothrow
         in {
             assert(owner_event);
         }
@@ -942,9 +946,9 @@ class Event {
             scope (exit) {
                 if (_mother) {
                     Event.check(this.altitude - _mother.altitude is 1,
-                            ConsensusFailCode.EVENT_ALTITUDE);
+                        ConsensusFailCode.EVENT_ALTITUDE);
                     Event.check(channel == _mother.channel,
-                            ConsensusFailCode.EVENT_MOTHER_CHANNEL);
+                        ConsensusFailCode.EVENT_MOTHER_CHANNEL);
                 }
                 hashgraph.front_seat(this);
                 if (Event.callbacks) {
