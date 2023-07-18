@@ -102,20 +102,13 @@ bool waitforChildren(Ctrl state, Duration timeout = 1.seconds) @safe nothrow {
 }
 
 /// Checks if a type has the required members to be an actor
-template isActor(A) {
-    enum bool isActor = hasMember!(A, "task")
-        && isCallable!(A.task);
-}
+enum bool isActor(A) = hasMember!(A, "task") && isCallable!(A.task);
 
-template isActorHandle(T) {
-    enum bool isActorHandle = __traits(isSame, TemplateOf!(T), ActorHandle);
-}
+enum bool isActorHandle(T) = __traits(isSame, TemplateOf!(T), ActorHandle);
 
-template isFailHandler(F) {
-    enum bool isFailHandler
-        = is(F : void function(TaskFailure))
-        || is(F : void delegate(TaskFailure));
-}
+enum bool isFailHandler(F)
+    = is(F : void function(TaskFailure))
+    || is(F : void delegate(TaskFailure));
 
 /// Stolen from std.concurrency;
 template isSpawnable(F, T...)
@@ -138,7 +131,6 @@ template isSpawnable(F, T...)
             && isParamsImplicitlyConvertible!(F, void function(T))
             && (isFunctionPointer!F || !hasUnsharedAliasing!F);
 }
-
 
 /**
  * A "reference" to an actor that may or may not be spawned, we will never know
@@ -178,7 +170,7 @@ struct ActorHandle(A) {
  * Returns: Actorhandle with type A
  * Examples:
  * ---
- * actorHandle!MyActor("my_task_name");
+ * handle!MyActor("my_task_name");
  * ---
  */
 ActorHandle!A handle(A)(string task_name) @safe if (isActor!A) {
