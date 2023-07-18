@@ -161,18 +161,16 @@ ActorHandle!A handle(A)(string task_name) @safe if (isActor!A) {
     return ActorHandle!A(task_name);
 }
 
-ActorHandle!A spawn(A, Args...)(string name, Args args) @safe nothrow
+ActorHandle!A spawn(A, Args...)(immutable(A) actor, string name, Args args) @safe nothrow
 if (isActor!A) {
     try {
         Tid tid;
-        tid = concurrency.spawn((string name, Args args) nothrow{
+        tid = concurrency.spawn((immutable(A) _actor, string name, Args args) @trusted nothrow {
             _task_name = name;
             log.register(name);
             stop = false;
+            A actor = cast(A) _actor;
             setState(Ctrl.STARTING); // Tell the owner that you are starting.
-            version (Posix)
-                pthread_setname_np(pthread_self(), toStringz(name));
-            A actor;
             try {
                 actor.task(args);
                 // If the actor forgets to kill it's children we'll do it anyway
@@ -189,7 +187,7 @@ if (isActor!A) {
                 fail(t);
             }
             end;
-        }, name, args);
+        }, actor, name, args);
         childrenState[name] = Ctrl.UNKNOWN;
         log("spawning %s", name);
         tid.setMaxMailboxSize(int.sizeof, OnCrowding.throwException);
@@ -204,6 +202,12 @@ if (isActor!A) {
     catch (Exception e) {
         assert(0, format("Exception: %s", e.msg));
     }
+}
+
+ActorHandle!A spawn(A, Args...)(string name, Args args) @safe nothrow
+if (isActor!A) {
+    immutable A actor;
+    return spawn(actor, name, args);
 }
 
 /**
