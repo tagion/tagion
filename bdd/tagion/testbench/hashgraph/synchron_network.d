@@ -46,10 +46,10 @@ class StartNetworkWithNAmountOfNodes {
     TestNetwork network;
     string module_path;
     uint MAX_CALLS;
-    this(string[] node_names, const(string) module_path) {
+    this(string[] node_names, const uint calls, const(string) module_path) {
         this.node_names = node_names;
         this.module_path = module_path;
-        MAX_CALLS = cast(uint) node_names.length * 500;
+        MAX_CALLS = cast(uint) node_names.length * calls;
     }
 
     bool coherent;
