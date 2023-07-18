@@ -7,6 +7,7 @@ import std.stdio;
 import std.socket;
 import std.typecons;
 
+import tagion.logger.Logger;
 import tagion.actor;
 import tagion.actor.exceptions;
 import tagion.basic.Types : FileExtension;
@@ -32,39 +33,33 @@ struct Supervisor {
     enum input_task_name = "inputvalidator";
 
     SupervisorOptions opts;
-    auto failHandler = (TaskFailure tf) { writefln("Supervisor caught exception: \n%s", tf); };
+    auto failHandler = (TaskFailure tf) { log("Supervisor caught exception: \n%s", tf); };
 
-    void task() nothrow {
-        try {
-            opts.contract_addr = contract_sock_path;
+    void task() {
+        opts.contract_addr = contract_sock_path;
 
-            SecureNet net = new StdSecureNet();
-            net.generateKeyPair("aparatus"); // Key
-            const dart_filename = opts.dart_filename;
+        SecureNet net = new StdSecureNet();
+        net.generateKeyPair("aparatus"); // Key
+        const dart_filename = opts.dart_filename;
 
-            if (!dart_filename.exists) {
-                DARTFile.create(dart_filename, net);
-            }
-            auto dart_handle = spawn!DARTService(dart_task_name, dart_filename, cast(immutable) net);
-            auto contract_handle = spawn!ContractService(contract_task_name);
-            auto inputvalidator_handle = spawn!InputValidatorService(input_task_name, contract_task_name, opts
-                    .contract_addr);
-            auto services = tuple(dart_handle, contract_handle, inputvalidator_handle);
-            waitforChildren(Ctrl.ALIVE);
-            run(failHandler);
-
-            foreach (service; services) {
-                if (service.state is Ctrl.ALIVE) {
-                    service.send(Sig.STOP);
-                }
-            }
-            writeln("Supervisor stopping services");
-            waitforChildren(Ctrl.END);
-            writeln("All services stopped");
+        if (!dart_filename.exists) {
+            DARTFile.create(dart_filename, net);
         }
+        auto dart_handle = spawn!DARTService(dart_task_name, dart_filename, cast(immutable) net);
+        auto contract_handle = spawn!ContractService(contract_task_name);
+        auto inputvalidator_handle = spawn!InputValidatorService(input_task_name, contract_task_name, opts
+                .contract_addr);
+        auto services = tuple(dart_handle, contract_handle, inputvalidator_handle);
+        waitforChildren(Ctrl.ALIVE);
+        run(failHandler);
 
-        catch (Exception e) {
-            fail(e);
+        foreach (service; services) {
+            if (service.state is Ctrl.ALIVE) {
+                service.send(Sig.STOP);
+            }
         }
+        log("Supervisor stopping services");
+        waitforChildren(Ctrl.END);
+        log("All services stopped");
     }
 }
