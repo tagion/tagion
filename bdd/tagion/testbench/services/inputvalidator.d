@@ -1,4 +1,5 @@
-module tagion.testbench.services.input_service;
+/// Test for [tagion.services.inputvalidator]
+module tagion.testbench.services.inputvalidator;
 // Default import list for bdd
 import tagion.behaviour;
 import tagion.hibon.Document;
