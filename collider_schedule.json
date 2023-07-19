@@ -144,6 +144,14 @@
             ],
             "timeout": 0.0
         },
+        "hashgraph_round_fingerprint": {
+            "args": ["Alice", "Bob", "Carol", "Dave", "Elisa", "Freja", "Gretha"], 
+            "envs": {},
+            "stages": [
+                "round_fingerprint"
+            ],
+            "timeout": 0.0
+        },
         "collider_test": {
             "args": [
                 "-f$WORKDIR"

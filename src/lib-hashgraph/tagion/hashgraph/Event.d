@@ -481,8 +481,10 @@ class Round {
                 if (votes_mask.isMajority(hashgraph)) {
 
                     if (Event.callbacks) {
-                        votes_mask[].filter!((vote_node_id) => round_to_be_decided._events[vote_node_id].isFamous)
-                            .each!((vote_node_id) => Event.callbacks.famous(round_to_be_decided._events[vote_node_id]));
+                        votes_mask[].filter!(
+                            (vote_node_id) => round_to_be_decided._events[vote_node_id].isFamous)
+                            .each!((vote_node_id) => Event.callbacks.famous(
+                                    round_to_be_decided._events[vote_node_id]));
                     }
 
                     votes_mask[]
@@ -493,7 +495,8 @@ class Round {
                         .all!((vote_node_id) => round_to_be_decided._events[vote_node_id]
                         .isFamous);
 
-                    if (famous_round && votes_mask.count == hashgraph.node_size - hashgraph.excluded_nodes_mask.count) {
+                    if (famous_round && votes_mask.count == hashgraph.node_size - hashgraph
+                        .excluded_nodes_mask.count) {
                         decide_round();
                         return;
                     }
@@ -606,8 +609,8 @@ class Event {
      *   hashgraph = the hashgraph which produce the event
      */
     package this(
-            immutable(EventPackage)* epack,
-            HashGraph hashgraph,
+        immutable(EventPackage)* epack,
+        HashGraph hashgraph,
     )
     in (epack !is null)
     do {
@@ -629,7 +632,7 @@ class Event {
                 assert(!_witness_mask[].empty);
                 assert(_mother._daughter is this);
                 assert(
-                        event_package.event_body.altitude - _mother
+                    event_package.event_body.altitude - _mother
                         .event_package.event_body.altitude is 1);
                 assert(_received_order is int.init || (_received_order - _mother._received_order > 0));
             }
@@ -665,8 +668,8 @@ class Event {
          */
         @trusted
         this(
-                Event owner_event,
-                ref const(BitMask) seeing_witness_in_previous_round_mask) nothrow
+            Event owner_event,
+            ref const(BitMask) seeing_witness_in_previous_round_mask) nothrow
         in {
             assert(owner_event);
         }
@@ -943,9 +946,9 @@ class Event {
             scope (exit) {
                 if (_mother) {
                     Event.check(this.altitude - _mother.altitude is 1,
-                            ConsensusFailCode.EVENT_ALTITUDE);
+                        ConsensusFailCode.EVENT_ALTITUDE);
                     Event.check(channel == _mother.channel,
-                            ConsensusFailCode.EVENT_MOTHER_CHANNEL);
+                        ConsensusFailCode.EVENT_MOTHER_CHANNEL);
                 }
                 hashgraph.front_seat(this);
                 if (Event.callbacks) {
