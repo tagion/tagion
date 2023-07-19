@@ -247,7 +247,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
 
                     const received = _hashgraph.hirpc.receive(
                             authorising.receive(_hashgraph.channel));
-
+                    writefln("starting wavefront sender: channel %s, %s", _hashgraph.channel.cutHex, _hashgraph.joining);
                     _hashgraph.wavefront(
                             received,
                             time,
@@ -291,6 +291,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         auto refinement = new TestRefinement;
         auto h = new HashGraph(N, net, refinement, &authorising.isValidChannel, joining, name);
         h.scrap_depth = 0;
+        writefln("Adding Node: %s with %s", name, net.pubkey.cutHex);
         networks[net.pubkey] = new FiberNetwork(h, pageSize * 1024);
         authorising.add_channel(net.pubkey);
         TestGossipNet.online_states[net.pubkey] = true;
@@ -338,3 +339,4 @@ void printStates(TestNetwork network) {
     }
 
 }
+

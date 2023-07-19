@@ -658,11 +658,11 @@ class Event {
         }
 
         /**
- * Contsruct a witness of an event
- * Params:
- *   owner_event = the event which is voted to be a witness
- *   seeing_witness_in_previous_round_mask = The witness seen from this event to the privious witness.
- */
+         * Contsruct a witness of an event
+         * Params:
+         *   owner_event = the event which is voted to be a witness
+         *   seeing_witness_in_previous_round_mask = The witness seen from this event to the privious witness.
+         */
         @trusted
         this(
                 Event owner_event,

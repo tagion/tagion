@@ -52,7 +52,6 @@ class OfflineNodeSwap {
         // foreach (channel; network.channels) {
         //     TestNetwork.TestGossipNet.online_states[channel] = true;
         // }
-        writefln("ONLINE: %s", TestNetwork.TestGossipNet.online_states);
     }
 
     @Given("i have a hashgraph testnetwork with n number of nodes")
@@ -133,12 +132,14 @@ class OfflineNodeSwap {
     @Then("a new node should take its place.")
     Document itsPlace() {
         import std.typecons;
-
-        network.addNode(node_names.length, "NEW_NODE", Yes.joining);
-
+        network.addNode(node_names.length, "new_node", Yes.joining);
+        
+        
         uint i = 0;
         while (i < CALLS) {
             const channel_number = network.random.value(0, network.channels.length);
+            auto pkey = Pubkey(network.channels[channel_number]);
+            if (pkey == offline_node) { continue; }
             network.current = Pubkey(network.channels[channel_number]);
             auto current = network.networks[network.current];
             (() @trusted { current.call; })();
@@ -161,15 +162,15 @@ class OfflineNodeSwap {
     @Then("stop the network.")
     Document theNetwork() {
         // create ripple files.
-        Pubkey[string] node_labels;
-        foreach (channel, _net; network.networks) {
-            node_labels[_net._hashgraph.name] = channel;
-        }
-        foreach (_net; network.networks) {
-            const filename = buildPath(module_path, "ripple-" ~ _net._hashgraph.name.setExtension(FileExtension.hibon));
-            writeln(filename);
-            _net._hashgraph.fwrite(filename, node_labels);
-        }
+        // Pubkey[string] node_labels;
+        // foreach (channel, _net; network.networks) {
+        //     node_labels[_net._hashgraph.name] = channel;
+        // }
+        // foreach (_net; network.networks) {
+        //     const filename = buildPath(module_path, "ripple-" ~ _net._hashgraph.name.setExtension(FileExtension.hibon));
+        //     // writeln(filename);
+        //     _net._hashgraph.fwrite(filename, node_labels);
+        // }
         return result_ok;
     }
 

@@ -6,7 +6,7 @@ import std.conv;
 import std.format;
 import std.exception : assumeWontThrow;
 import std.algorithm;
-import std.range : tee;
+import std.range;
 import std.array : array;
 
 import tagion.hashgraph.Event;
@@ -23,7 +23,7 @@ import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Pubkey, Signature, Privkey;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.utils.BitMask;
-import std.typecons : Flag;
+import std.typecons : Flag, Yes, No;
 
 import tagion.logger.Logger;
 import tagion.gossip.InterfaceNet;
@@ -193,14 +193,14 @@ class HashGraph {
     package bool possible_round_decided(const Round r) nothrow {
         const witness_count = r.events
             .count!((e) => (e !is null) && e.isWitness);
-        __write("round=%s, witness count=%s", r.number, witness_count);
+        // __write("round=%s, witness count=%s", r.number, witness_count);
         if (!isMajority(witness_count)) {
-            __write("possible_round_decided !ismajority");
+            // __write("possible_round_decided !ismajority");
             return false;
         }
         const possible_decided = r.events
             .all!((e) => e is null || e.isWitness);
-        __write("possible_round_decided=%s", possible_decided);
+        // __write("possible_round_decided=%s", possible_decided);
         return possible_decided;
 
     }
@@ -249,6 +249,7 @@ class HashGraph {
             // writefln("init_tide time: %s", time);
             immutable epack = event_pack(time, null, doc);
             const registrated = registerEventPackage(epack);
+            
             assert(registrated, "Should not fail here");
             const sender = hirpc.wavefront(tidalWave);
             return sender;
@@ -269,6 +270,8 @@ class HashGraph {
                     &payload_sender);
             if (send_channel !is Pubkey(null)) {
                 getNode(send_channel).state = ExchangeState.INIT_TIDE;
+
+                assert(_nodes.length <= node_size, format("Node[] must not be greater than node_size %s", send_channel.cutHex)); // used for debug
             }
         }
         else {
@@ -292,6 +295,7 @@ class HashGraph {
     }
 
     Event createEvaEvent(lazy const sdt_t time, const Buffer nonce) {
+        writeln("creating eva event");
         immutable eva_epack = eva_pack(time, nonce);
         auto eva_event = new Event(eva_epack, this);
 
@@ -438,6 +442,7 @@ class HashGraph {
         assert(_register.event_package_cache.length);
         Event front_seat_event;
         foreach (fingerprint; _register.event_package_cache.byKey) {
+
             auto registered_event = register(fingerprint);
             if (registered_event.channel == from_channel) {
                 if (front_seat_event is null) {
@@ -680,6 +685,7 @@ class HashGraph {
                 case COHERENT:
                     received_node.state = NONE;
                     received_node.sticky_state = COHERENT;
+                    writefln("received coherent from: %s, self %s", received_node.channel.cutHex, _owner_node.channel.cutHex);
                     if (!areWeInGraph) {
                         try {
                             received_wave.epacks
@@ -694,7 +700,7 @@ class HashGraph {
                     }
                     break;
                 case TIDAL_WAVE: ///
-                    if (received_node.state !is NONE || !areWeInGraph) {
+                    if (received_node.state !is NONE || !areWeInGraph || joining) {
                         received_node.state = NONE;
                         return buildWavefront(BREAKING_WAVE);
                     }
@@ -714,13 +720,34 @@ class HashGraph {
                         return buildWavefront(BREAKING_WAVE);
                     }
                     received_node.state = NONE;
+                    if (joining) {
+                        immutable(EventPackage)*[] result;
+                        writefln("owner node id %s nodes length:%s", _owner_node.node_id,_nodes.length);
+                        assert(_nodes.length == node_size);
+                        foreach(n; _nodes.byKeyValue) {
+                            const stored_event_altitude = _rounds.
+                                last_decided_round
+                                .events[n.value.node_id]
+                                .event_package
+                                .event_body
+                                .altitude;
+
+                            auto to_add = received_wave
+                                .epacks
+                                .filter!((epack) => epack !is null && epack.pubkey == n.key && highest(epack.event_body.altitude, stored_event_altitude));
+                            // to_add.each!writeln;                            
+                        }
+                        writefln("AFTER nodes length:%s", _nodes.length);
+                        return buildWavefront(BREAKING_WAVE);
+                    }
+                        
                     const from_front_seat = register_wavefront(received_wave, from_channel);
                     immutable epack = event_pack(time, from_front_seat, payload());
                     const registreted = registerEventPackage(epack);
                     assert(registreted, "The event package has not been registered correct (The wave should be dumped)");
                     return buildWavefront(SECOND_WAVE, received_wave.tides);
                 case SECOND_WAVE:
-                    if (received_node.state !is TIDAL_WAVE || !areWeInGraph) {
+                    if (received_node.state !is TIDAL_WAVE || !areWeInGraph || joining) {
                         received_node.state = NONE;
                         return buildWavefront(BREAKING_WAVE);
                     }
