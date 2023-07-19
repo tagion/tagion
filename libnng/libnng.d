@@ -54,7 +54,7 @@ enum nng_errno {
 
 enum nng_flag {
      NNG_FLAG_ALLOC = 1 
-    ,NNG_FLAG_NONBLOCK 2
+    ,NNG_FLAG_NONBLOCK = 2
 }
 
 @safe:
