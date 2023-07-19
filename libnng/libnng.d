@@ -52,6 +52,11 @@ enum nng_errno {
     NNG_ETRANERR     = 0x20000000
 };
 
+enum nng_flag {
+     NNG_FLAG_ALLOC = 1 
+    ,NNG_FLAG_NONBLOCK 2
+}
+
 @safe:
 T* ptr(T)(T[] arr) { return arr.length == 0 ? null : &arr[0]; }
 
