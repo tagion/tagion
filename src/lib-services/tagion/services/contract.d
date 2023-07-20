@@ -17,6 +17,8 @@ import tagion.crypto.SecureInterfaceNet;
 /// Msg type sent to receiver task along with a hirpc
 alias inputHiRPC = Msg!"inputHiRPC";
 
+/// ContractService actor
+/// Examples: [tagion.testbench.services.contract]
 struct ContractService {
     string receiver_task;
     void task(string receiver_task, immutable(SecureNet) net) {

@@ -109,13 +109,17 @@ int _main(string[] args) {
     immutable opts = Options(
             InputValidatorOptions(contract_sock_path)
     );
-    log("Starting with options \n %s", opts.stringify);
+    log("Starting with options \n%s", opts.stringify);
     enum supervisor_task_name = "supervisor";
     auto supervisor_handle = spawn!Supervisor(supervisor_task_name, opts);
-    waitforChildren(Ctrl.ALIVE);
 
-    log("alive");
-    stopsignal.wait;
+    if(waitforChildren(Ctrl.ALIVE)) {
+        log("alive");
+        stopsignal.wait;
+    } else {
+        log("Progam did not start");
+    }
+
     log("Sending stop signal to supervisor");
     supervisor_handle.send(Sig.STOP);
     waitforChildren(Ctrl.END);

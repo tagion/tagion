@@ -45,10 +45,13 @@ struct Supervisor {
             DARTFile.create(dart_filename, net);
         }
         auto dart_handle = spawn!DARTService(dart_task_name, opts.dart, net);
-        auto contract_handle = spawn!ContractService(contract_task_name, "___collector", net);
+        auto contract_handle = spawn!ContractService(contract_task_name, "__tmp_collector", net);
         auto inputvalidator_handle = spawn!InputValidatorService(input_task_name, opts.inputvalidator, contract_task_name);
         auto services = tuple(dart_handle, contract_handle, inputvalidator_handle);
-        waitforChildren(Ctrl.ALIVE);
+
+        if(!waitforChildren(Ctrl.ALIVE)) {
+            log.error("Not all children became Alive");
+        }
         run(failHandler);
 
         foreach (service; services) {
