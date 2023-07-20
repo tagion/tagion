@@ -19,6 +19,7 @@ import tagion.basic.Version;
 import tagion.tools.revision;
 import tagion.actor;
 import tagion.services.supervisor;
+import tagion.services.options;
 import tagion.GlobalSignals;
 
 // enum EXAMPLES {
@@ -70,7 +71,11 @@ int _main(string[] args) {
     }
 
     enum supervisor_task_name = "supervisor";
-    auto supervisor_handle = spawn!Supervisor(supervisor_task_name);
+    immutable opts = Options(
+            InputValidatorOptions(contract_sock_path)
+    );
+    log("Starting with options \n %s", opts.stringify);
+    auto supervisor_handle = spawn!Supervisor(supervisor_task_name, opts);
     waitforChildren(Ctrl.ALIVE);
 
     log("alive");

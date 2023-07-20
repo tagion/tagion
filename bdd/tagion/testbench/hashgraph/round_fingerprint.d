@@ -111,8 +111,7 @@ Document started() {
     }
 @Then("check that the nodes have the same round fingerprint")
 Document fingerprint() @trusted
-    {
-        import tagion.hashgraph.Event: Round;
+    {   
         // compare ordering
         auto names = network.networks.byValue
             .map!((net) => net._hashgraph.name)
@@ -126,7 +125,7 @@ Document fingerprint() @trusted
         }
 
         int minimum_common_round = names.map!(n => hashgraphs[n].rounds.last_decided_round.number).minElement;
-        auto ldr1 = cast(Round)hashgraphs[names[0]].rounds.last_decided_round;
+        const ldr1 = hashgraphs[names[0]].rounds.last_decided_round;
         int r1 = ldr1.number;
 
         while(r1 > minimum_common_round)
@@ -137,7 +136,7 @@ Document fingerprint() @trusted
         const rf1 = StdRefinement.hashLastDecidedRound(ldr1);
 
         foreach(name; names[1 .. $]) {
-            auto ldr2 = cast(Round)hashgraphs[name].rounds.last_decided_round;
+            const ldr2 = hashgraphs[name].rounds.last_decided_round;
             int r2 = ldr2.number;
             while(r2 > minimum_common_round)
             {

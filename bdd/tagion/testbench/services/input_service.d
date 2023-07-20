@@ -10,7 +10,7 @@ import std.typecons;
 import std.stdio;
 import tagion.actor;
 import tagion.actor.exceptions;
-import tagion.utils.pretend_safe_concurrency;
+import concurrency = tagion.utils.pretend_safe_concurrency;
 import tagion.services.inputvalidator;
 import tagion.communication.HiRPC;
 import tagion.tools.Basic;
@@ -42,8 +42,9 @@ class SendADocumentToTheSocket {
 
     @Given("a inputvalidator")
     Document aInputvalidator() {
-        register(input_test, thisTid);
-        input_handle = spawn!InputValidatorService("input_test_task", "input_test", sock_path);
+        concurrency.register(input_test, concurrency.thisTid);
+        immutable opts = InputValidatorOptions(sock_path);
+        input_handle = spawn!InputValidatorService("input_test_task", opts, input_test);
         check(waitforChildren(Ctrl.ALIVE), "The inputvalidator did not start");
         return result_ok;
     }
@@ -65,7 +66,7 @@ class SendADocumentToTheSocket {
 
     @When("we receive back the Document in our mailbox")
     Document ourMailbox() @trusted {
-        auto res = receiveOnly!(Tuple!(inputDoc, Document));
+        auto res = concurrency.receiveOnly!(Tuple!(inputDoc, Document));
         writeln("Receive back: ", res[1].toPretty);
         check(res[1] == doc, "The value was not the same as we sent");
         return result_ok;

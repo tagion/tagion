@@ -189,8 +189,7 @@ class StartNetworkWithNAmountOfNodes {
                 
                 const isSame = equal(compare_events, events);
                 writefln("isSame: %s", isSame);
-                check(isSame, "event_packages not the same");            
-            
+                check(isSame, "event_packages not the same");
             }
         }        
 
