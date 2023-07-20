@@ -31,7 +31,7 @@ class StdRefinement : Refinement {
         this.hashgraph = hashgraph;
     }
 
-    void finishedEpoch(const(Event[]) events, const sdt_t epoch_time) {
+    void finishedEpoch(const(Event[]) events, const sdt_t epoch_time, const Round decided_round) {
         assert(0, "not implemented");
     }
 
@@ -120,7 +120,7 @@ class StdRefinement : Refinement {
                 hashgraph.name, decided_round.number,
                 Event.count, Event.Witness.count, events.length, epoch_time);
 
-        finishedEpoch(events, epoch_time);
+        finishedEpoch(events, epoch_time, decided_round);
 
         excludedNodes(hashgraph._excluded_nodes_mask);
     }
