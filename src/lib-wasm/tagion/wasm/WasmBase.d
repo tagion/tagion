@@ -357,7 +357,8 @@ static unittest {
 }
 
 shared static immutable(Instr[IR]) instrTable;
-shared static immutable(IR[string]) instrLookupTable;
+shared static immutable(IR[string]) irLookupTable;
+shared static immutable(Instr[string]) _instrLookupTable;
 
 protected immutable(Instr[IR]) generate_instrTable() {
     Instr[IR] result;
@@ -382,7 +383,20 @@ shared static this() {
         return assumeUnique(result);
     }
 
-    instrLookupTable = generateLookupTable;
+    irLookupTable = generateLookupTable;
+
+    immutable(Instr[string]) generated_instrLookupTable() {
+        Instr[string] result;
+        static foreach (ir; EnumMembers!IR) {
+            {
+                enum instr = getInstr!ir;
+                result[instr.name] = instr;
+            }
+        }
+        return assumeUnique(result);
+    }
+
+    _instrLookupTable = generated_instrLookupTable;
 }
 
 enum IR_TRUNC_SAT : ubyte {
@@ -536,7 +550,7 @@ alias u64 = decode!ulong;
 alias i32 = decode!int;
 alias i64 = decode!long;
 
-static string secname(immutable Section s) {
+string secname(immutable Section s) @safe {
     import std.exception : assumeUnique;
 
     return assumeUnique(format("%s_sec", toLower(s.to!string)));
@@ -551,16 +565,28 @@ protected string GenerateInterfaceModule(T...)() {
     import std.array : join;
 
     string[] result;
-    foreach (i, E; EnumMembers!Section) {
-        result ~= format(q{alias SecType_%s=T[Section.%s];}, i, E);
-        result ~= format(q{void %s(ref ConstOf!(SecType_%s) sec);}, secname(E), i);
+    static foreach (i, E; EnumMembers!Section) {
+        {
+            result ~= format(q{alias SecType_%s=T[Section.%s];}, i, E);
+            result ~= format(q{void %s(ref ConstOf!(SecType_%s) sec);}, secname(E), i);
+        }
     }
     return result.join("\n");
 }
 
 interface InterfaceModuleT(T...) {
     enum code = GenerateInterfaceModule!(T)();
+    pragma(msg, code);
     mixin(code);
+}
+
+version (none) bool isWasmModule(alias M)() @safe if (is(M == struct) || is(M == class)) {
+    import std.algorithm;
+
+    enum all_members = [__traits(allMembers, M)];
+    return [EnumMembers!Section]
+        .map!(sec => sec.secname)
+        .all!(name => all_members.canFind(name));
 }
 
 @safe struct WasmArg {

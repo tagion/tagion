@@ -31,7 +31,7 @@ import tagion.wasm.WasmException;
 
     // The first element Custom is Sections sequency is replaced with CustomList
     alias Modules = Tuple!(Replace!(WasmSection.Custom, WasmSection.CustomList, Sections));
-    alias InterfaceModule = InterfaceModuleT!(Sections);
+    //    alias InterfaceModule = InterfaceModuleT!(Sections);
 
     alias ReaderSecType(Section sec) = TemplateArgsOf!(ReaderSections[sec].SecRange)[1];
 
@@ -39,6 +39,10 @@ import tagion.wasm.WasmException;
     this(ref const(WasmReader) reader) {
         auto loader = new WasmLoader;
         reader(loader);
+    }
+
+    this() pure nothrow @nogc {
+        // empty
     }
 
     static WasmWriter opCall(ref const(WasmReader) reader) {
@@ -96,30 +100,17 @@ import tagion.wasm.WasmException;
             mod[Section.CUSTOM].add(previous_sec, sec);
         }
 
-        mixin loadSec!(Section.TYPE);
-
-        mixin loadSec!(Section.IMPORT);
-
-        mixin loadSec!(Section.FUNCTION);
-
-        mixin loadSec!(Section.TABLE);
-
-        mixin loadSec!(Section.MEMORY);
-
-        mixin loadSec!(Section.GLOBAL);
-
-        mixin loadSec!(Section.EXPORT);
-
         final void start_sec(ref ConstOf!(ReaderSections[Section.START]) sec) {
             previous_sec = Section.START;
             mod[Section.START] = new WasmSection.Start(sec);
         }
 
-        mixin loadSec!(Section.ELEMENT);
+        static foreach (Sec; EnumMembers!Section) {
+            static if (Sec !is Section.START && Sec !is Section.CUSTOM) {
+                mixin loadSec!Sec;
 
-        mixin loadSec!(Section.CODE);
-
-        mixin loadSec!(Section.DATA);
+            }
+        }
 
     }
 
@@ -287,7 +278,7 @@ import tagion.wasm.WasmException;
                 return name.length + bytes.length + uint.sizeof * 2;
             }
 
-            this(const(ReaderCustom) s) {
+            this(_ReaderCustom)(const(_ReaderCustom) s) {
                 name = s.name;
                 bytes = s.bytes;
             }
@@ -297,7 +288,7 @@ import tagion.wasm.WasmException;
 
         struct CustomList {
             Custom[][EnumMembers!(Section).length + 1] list;
-            void add(const size_t sec_index, const(ReaderCustom) s) {
+            void add(_ReaderCustom)(const size_t sec_index, const(_ReaderCustom) s) {
                 list[sec_index] ~= new Custom(s);
             }
 
