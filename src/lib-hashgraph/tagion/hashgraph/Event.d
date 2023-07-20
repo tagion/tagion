@@ -208,9 +208,15 @@ class Round {
      * Returns: previous round
      */
     @nogc
-    package inout(Round) previous() inout pure nothrow {
+    package Round previous() pure nothrow {
         return _previous;
     }
+
+    @nogc
+    const(Round) previous() const pure nothrow {
+        return _previous;
+    }
+
 
     /**
  * Range from this round and down
@@ -441,7 +447,7 @@ class Round {
                 .filter!((e) => (e !is null))
                 .each!((ref e) => mark_received_events(e.node_id, e));
 
-            writefln("r._events=%s", r._events.count!((e) => e !is null && e.isFamous));
+            // writefln("r._events=%s", r._events.count!((e) => e !is null && e.isFamous));
             auto event_collection = r._events
                 .filter!((e) => (e !is null))
                 .filter!((e) => !hashgraph.excluded_nodes_mask[e.node_id])
@@ -452,7 +458,7 @@ class Round {
                 .tee!((e) => e._round_received = r)
                 .array;
 
-            writefln("event_collection=%s", event_collection.count!((e) => e !is null && e.isFamous));
+            // writefln("event_collection=%s", event_collection.count!((e) => e !is null && e.isFamous));
             hashgraph.epoch(event_collection, r);
         }
 
@@ -474,7 +480,7 @@ class Round {
             }
 
             if (hashgraph.possible_round_decided(round_to_be_decided)) {
-                writefln("possible_round_decided");
+                // writefln("possible_round_decided");
                 const votes_mask = BitMask(round_to_be_decided.events
                         .filter!((e) => (e) && !hashgraph.excluded_nodes_mask[e.node_id])
                     .map!((e) => e.node_id));

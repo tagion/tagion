@@ -125,7 +125,14 @@ class StdRefinement : Refinement {
         excludedNodes(hashgraph._excluded_nodes_mask);
     }
 
-    void hashLastDecidedRound(Round last_decided_round)
+    @safe
+    struct RoundFingerprint {
+        Buffer[] fingerprints;
+        mixin HiBONRecord;
+    }
+
+    @safe
+    static RoundFingerprint hashLastDecidedRound(const Round last_decided_round)
     {
         import std.algorithm:filter;
 
@@ -136,20 +143,7 @@ class StdRefinement : Refinement {
             .array
             .sort
             .array;
-    }
-
-    struct RoundFingerprint {
-        Buffer[] fingerprints;
-        mixin HiBONRecord;
+        return round_fingerprint;
     }
 
 }
-
-    unittest {
-        Round test_round;
-        foreach (i; 0..42)
-        {
-
-        }
-        writefln("ROUND %s", test_round);
-    }

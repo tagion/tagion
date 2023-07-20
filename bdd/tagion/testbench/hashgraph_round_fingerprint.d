@@ -17,7 +17,7 @@ int _main(string[] args) {
     mkdirRecurse(module_path);
     writeln(args);
     auto hashgraph_round_fingerprint_feature = automation!(round_fingerprint);
-    // hashgraph_round_fingerprint_feature.SameRoundFingerprintAcrossDifferentNodes(args[1..$], module_path);
+    hashgraph_round_fingerprint_feature.SameRoundFingerprintAcrossDifferentNodes(args[1..$], module_path);
 
     auto hashgraph_sync_network_context = hashgraph_round_fingerprint_feature.run();
     return 0;
