@@ -6,8 +6,10 @@ import std.socket;
 import std.stdio;
 import std.algorithm : remove;
 
-import tagion.actor;
 import core.time;
+
+import tagion.actor;
+import tagion.logger.Logger;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.script.StandardRecords;
 import tagion.network.ReceiveBuffer;
@@ -26,7 +28,7 @@ alias inputDoc = Msg!"inputDoc";
 @safe
 struct InputValidatorOptions {
     string sock_addr;
-    uint mbox_timeout = 10; // msecs
+    // uint mbox_timeout = 10; // msecs
     uint socket_select_timeout = 1000; // msecs
     uint max_connections = 1;
     mixin JSONCommon;
@@ -45,19 +47,16 @@ struct InputValidatorService {
             pragma(msg, "TODO: implement pidfile lock on non-linux");
             import std.exception;
 
-            assumeWontThrow({
-                writefln("Failed to open socket %s, is the program already running?", opts.sock_addr);
-                writeln(e.msg);
-            });
+            log.error("Failed to open socket %s, is the program already running?", opts.sock_addr);
             stopsignal.set;
             fail(e);
             return;
         }
 
         listener.listen(1);
-        writefln("Listening on address %s.", opts.sock_addr);
+        log("Listening on address %s.", opts.sock_addr);
         scope (exit) {
-            writefln("Closing listener %s", opts.sock_addr);
+            log("Closing listener %s", opts.sock_addr);
             listener.close();
             assert(!listener.isAlive);
         }
@@ -120,9 +119,8 @@ struct InputValidatorService {
                 }
                 socketSet.reset();
 
-                receiveTimeout(opts.mbox_timeout.msecs,
+                receiveTimeout(Duration.zero,
                         &signal,
-                        &control,
                         &ownerTerminated,
                         &unknown
                 );
