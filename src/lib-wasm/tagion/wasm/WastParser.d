@@ -190,11 +190,18 @@ struct WastParser {
                     writefln("::Result %s", arg);
                     return ParserStage.RESULT;
                 case "export":
+                    check(stage == ParserStage.MODULE, r);
+
                     r.popFront;
-                    check(r.type == TokenType.WORD, r);
+                    writefln("export %s", r);
+                    check(r.type == TokenType.STRING, r);
                     label = r.token;
                     r.popFront;
+                    arg = r.token;
+                    writefln("---export %s", r);
                     check(r.type == TokenType.WORD, r);
+                    writefln("End export %s %s", label, arg);
+                    r.popFront;
                     return ParserStage.EXPORT;
                 default:
                     if (r.type == TokenType.COMMENT) {
