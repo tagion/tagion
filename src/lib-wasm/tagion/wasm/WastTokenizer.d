@@ -22,37 +22,43 @@ enum TokenType {
     STRING,
 }
 
-@safe
-bool isWordChar(const char ch) pure nothrow {
-    with (Chars) {
-        return (ch > SPACE) && (ch < DEL) &&
-            (ch != DOUBLE_QUOTE) && (ch != PARENTHESES_BEGIN) && (ch != PARENTHESES_END);
+@safe @nogc pure nothrow {
+    bool isWordChar(const char ch) {
+        with (Chars) {
+            return (ch > SPACE) && (ch < DEL) &&
+                (ch != DOUBLE_QUOTE) && (ch != PARENTHESES_BEGIN) && (ch != PARENTHESES_END);
+        }
+    }
+
+    bool isStringChar(const char ch) {
+        with (Chars) {
+            return (ch >= SPACE) && (ch < DEL) && (ch != DOUBLE_QUOTE);
+        }
+    }
+
+    bool isInvisiable(const char ch) {
+        with (Chars) {
+            return (ch <= SPACE) || (ch == DEL);
+        }
     }
 }
 
 @safe
-bool isStringChar(const char ch) pure nothrow {
-    with (Chars) {
-        return (ch >= SPACE) && (ch < DEL) && (ch != DOUBLE_QUOTE);
-    }
-}
-
-@safe
-bool isInvisiable(const char ch) pure nothrow {
-    with (Chars) {
-        return (ch <= SPACE) || (ch == DEL);
-    }
-}
-
-@safe
-@nogc
 struct WastTokenizer {
+    string toString() const pure nothrow @trusted {
+        import std.exception : assumeWontThrow;
+        import std.format;
+
+        return assumeWontThrow(format("%s:%s:%d:%d", token, type, line, line_pos));
+
+    }
+
     private string text;
     string token;
     uint line;
     uint pos;
     uint start_line_pos;
-    pure nothrow {
+    @nogc pure nothrow {
         this(string text) {
             line = 1;
             this.text = text;
@@ -151,6 +157,9 @@ struct WastTokenizer {
             return '\0';
         }
 
+        WastTokenizer save() {
+            return this;
+        }
     }
 }
 
