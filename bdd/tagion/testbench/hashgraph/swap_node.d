@@ -5,7 +5,6 @@ import tagion.hibon.Document;
 import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
 
-
 import tagion.testbench.hashgraph.hashgraph_test_network;
 import std.datetime;
 import std.stdio;
@@ -21,7 +20,6 @@ import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.hashgraphview.Compare;
 import tagion.hashgraph.Event;
-
 
 enum feature = Feature(
             "Hashgraph swap node",
@@ -45,7 +43,7 @@ class OfflineNodeSwap {
 
     Pubkey offline_node;
     Pubkey new_node;
-    
+
     this(string[] node_names, TestNetwork network, string module_path) {
         this.network = network;
         this.node_names = node_names;
@@ -54,8 +52,8 @@ class OfflineNodeSwap {
         // foreach (channel; network.channels) {
         //     TestNetwork.TestGossipNet.online_states[channel] = true;
         // }
-        writefln("ONLINE: %s", TestNetwork.TestGossipNet.online_states);
     }
+
     @Given("i have a hashgraph testnetwork with n number of nodes")
     Document ofNodes() {
         network.networks.byValue.each!((ref _net) => _net._hashgraph.scrap_depth = 0);
@@ -84,7 +82,6 @@ class OfflineNodeSwap {
                 format("Max calls %d reached, not all nodes have created epochs only %d",
                 CALLS, TestRefinement.epoch_events.length));
 
-    
         return result_ok;
     }
 
@@ -107,10 +104,13 @@ class OfflineNodeSwap {
             auto current = network.networks[network.current];
             (() @trusted { current.call; })();
             i++;
-            allExcluded = network.networks.byValue
+            allExcluded = network.networks
+                .byValue
                 .filter!(n => n._hashgraph.owner_node.channel != offline_node)
                 .all!(n => n._hashgraph.excluded_nodes_mask.count == 1);
-            if (allExcluded) { break; }
+            if (allExcluded) {
+                break;
+            }
 
         }
         check(allExcluded, format("not all nodes excluded %s", offline_node.cutHex));
@@ -120,28 +120,32 @@ class OfflineNodeSwap {
     @Then("the node should be deleted from the nodes.")
     Document theNodes() {
 
-        network.networks.byKeyValue
+        network.networks
+            .byKeyValue
             .filter!(n => n.key != offline_node)
-            .each!(n => check(n.value._hashgraph.nodes[offline_node].offline, format("Node %s did not mark offline node", n.key)));
+            .each!(n => check(n.value._hashgraph.nodes[offline_node].offline, format("Node %s did not mark offline node", n
+                .key)));
 
-        
         return result_ok;
     }
 
     @Then("a new node should take its place.")
     Document itsPlace() {
         import std.typecons;
-        network.addNode(node_names.length, "NEW_NODE", Yes.joining);
-
+        network.addNode(node_names.length, "new_node", Yes.joining);
+        
+        
         uint i = 0;
         while (i < CALLS) {
             const channel_number = network.random.value(0, network.channels.length);
+            auto pkey = Pubkey(network.channels[channel_number]);
+            if (pkey == offline_node) { continue; }
             network.current = Pubkey(network.channels[channel_number]);
             auto current = network.networks[network.current];
             (() @trusted { current.call; })();
             i++;
         }
-        
+
         return result_ok;
     }
 
@@ -158,15 +162,15 @@ class OfflineNodeSwap {
     @Then("stop the network.")
     Document theNetwork() {
         // create ripple files.
-        Pubkey[string] node_labels;
-        foreach (channel, _net; network.networks) {
-            node_labels[_net._hashgraph.name] = channel;
-        }
-        foreach (_net; network.networks) {
-            const filename = buildPath(module_path, "ripple-" ~ _net._hashgraph.name.setExtension(FileExtension.hibon));
-            writeln(filename);
-            _net._hashgraph.fwrite(filename, node_labels);
-        }
+        // Pubkey[string] node_labels;
+        // foreach (channel, _net; network.networks) {
+        //     node_labels[_net._hashgraph.name] = channel;
+        // }
+        // foreach (_net; network.networks) {
+        //     const filename = buildPath(module_path, "ripple-" ~ _net._hashgraph.name.setExtension(FileExtension.hibon));
+        //     // writeln(filename);
+        //     _net._hashgraph.fwrite(filename, node_labels);
+        // }
         return result_ok;
     }
 

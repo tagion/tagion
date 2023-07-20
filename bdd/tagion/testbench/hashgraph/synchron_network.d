@@ -46,10 +46,10 @@ class StartNetworkWithNAmountOfNodes {
     TestNetwork network;
     string module_path;
     uint MAX_CALLS;
-    this(string[] node_names, const(string) module_path) {
+    this(string[] node_names, const uint calls, const(string) module_path) {
         this.node_names = node_names;
         this.module_path = module_path;
-        MAX_CALLS = cast(uint) node_names.length * 500;
+        MAX_CALLS = cast(uint) node_names.length * calls;
     }
 
     bool coherent;
@@ -76,14 +76,9 @@ class StartNetworkWithNAmountOfNodes {
     @When("the network has started")
     Document started() {
 
-        try {
-            foreach (channel; network.channels) {
-                auto current = network.networks[channel];
-                (() @trusted { current.call; })();
-            }
-        }
-        catch (Exception e) {
-            check(false, e.msg);
+        foreach (channel; network.channels) {
+            auto current = network.networks[channel];
+            (() @trusted { current.call; })();
         }
         return result_ok;
 
@@ -91,22 +86,17 @@ class StartNetworkWithNAmountOfNodes {
 
     @When("all nodes are sending ripples")
     Document ripples() {
-        try {
-            foreach (i; 0 .. MAX_CALLS) {
-                const channel_number = network.random.value(0, network.channels.length);
-                const channel = network.channels[channel_number];
-                auto current = network.networks[channel];
-                (() @trusted { current.call; })();
+        foreach (i; 0 .. MAX_CALLS) {
+            const channel_number = network.random.value(0, network.channels.length);
+            const channel = network.channels[channel_number];
+            auto current = network.networks[channel];
+            (() @trusted { current.call; })();
 
-                // printStates(network);
-                if (network.allInGraph) {
-                    coherent = true;
-                    break;
-                }
+            // printStates(network);
+            if (network.allInGraph) {
+                coherent = true;
+                break;
             }
-        }
-        catch (Exception e) {
-            check(false, e.msg);
         }
         
 
@@ -123,11 +113,10 @@ class StartNetworkWithNAmountOfNodes {
     @Then("wait until the first epoch")
     Document epoch() @trusted
     {
-
-        try {
+        {
             uint i = 0;
             while(i < MAX_CALLS) {
-            
+        
                 const channel_number = network.random.value(0, network.channels.length);
                 network.current = Pubkey(network.channels[channel_number]);
                 auto current = network.networks[network.current];
@@ -143,10 +132,6 @@ class StartNetworkWithNAmountOfNodes {
             check(TestRefinement.epoch_events.length == node_names.length, 
                 format("Max calls %d reached, not all nodes have created epochs only %d", 
                 MAX_CALLS, TestRefinement.epoch_events.length));
-
-        }
-        catch (Exception e) {
-            check(false, e.msg);
         }
 
 

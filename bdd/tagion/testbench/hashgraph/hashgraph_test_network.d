@@ -15,7 +15,7 @@ import tagion.communication.HiRPC;
 import tagion.utils.StdTime;
 import tagion.utils.Miscellaneous : cutHex;
 import tagion.hibon.Document;
-import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONRecord : isHiBONRecord;
 import tagion.hibon.HiBON;
 import std.stdio;
 import std.exception : assumeWontThrow;
@@ -135,6 +135,10 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
             return (channel in channel_queues) !is null;
         }
 
+        // bool channelFilter(const(Pubkey) channel) const pure nothrow {
+        //     return (channel in channel_queues) !is null && (online_states is null || online_states[channel])
+        // }
+
         void send(const(Pubkey) channel, const(HiRPC.Sender) sender) {
             if (online_states !is null && !online_states[channel]) { return; }
 
@@ -242,12 +246,10 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
                 while (!authorising.empty(_hashgraph.channel)) {
                     if (current !is Pubkey.init && TestGossipNet.online_states !is null && !TestGossipNet.online_states[current]) {
                         (() @trusted { yield; })();
-                        writeln("WOWO?");
                     }
 
                     const received = _hashgraph.hirpc.receive(
                             authorising.receive(_hashgraph.channel));
-
                     _hashgraph.wavefront(
                             received,
                             time,
@@ -291,6 +293,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         auto refinement = new TestRefinement;
         auto h = new HashGraph(N, net, refinement, &authorising.isValidChannel, joining, name);
         h.scrap_depth = 0;
+        writefln("Adding Node: %s with %s", name, net.pubkey.cutHex);
         networks[net.pubkey] = new FiberNetwork(h, pageSize * 1024);
         authorising.add_channel(net.pubkey);
         TestGossipNet.online_states[net.pubkey] = true;
@@ -338,3 +341,4 @@ void printStates(TestNetwork network) {
     }
 
 }
+

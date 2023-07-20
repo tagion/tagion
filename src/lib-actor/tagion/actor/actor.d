@@ -59,7 +59,8 @@ alias CtrlMsg = Tuple!(string, "task_name", Ctrl, "ctrl");
 
 private static Ctrl[string] childrenState;
 private static string _task_name;
-@property string task_name() @trusted {
+@property
+string task_name() @trusted {
     if (_task_name is string.init) {
         assert(0, "This thread is not a spawned actor");
     }
@@ -101,19 +102,34 @@ bool waitforChildren(Ctrl state, Duration timeout = 1.seconds) @safe nothrow {
 }
 
 /// Checks if a type has the required members to be an actor
-template isActor(A) {
-    enum bool isActor = hasMember!(A, "task")
-        && isCallable!(A.task);
-}
+enum bool isActor(A) = hasMember!(A, "task") && isCallable!(A.task);
 
-template isActorHandle(T) {
-    enum bool isActorHandle = __traits(isSame, TemplateOf!(T), ActorHandle);
-}
+enum bool isActorHandle(T) = __traits(isSame, TemplateOf!(T), ActorHandle);
 
-template isFailHandler(F) {
-    enum bool isFailHandler
-        = is(F : void function(TaskFailure))
-        || is(F : void delegate(TaskFailure));
+enum bool isFailHandler(F)
+    = is(F : void function(TaskFailure))
+    || is(F : void delegate(TaskFailure));
+
+/// Stolen from std.concurrency;
+template isSpawnable(F, T...)
+{
+    template isParamsImplicitlyConvertible(F1, F2, int i = 0)
+    {
+        alias param1 = Parameters!F1;
+        alias param2 = Parameters!F2;
+        static if (param1.length != param2.length)
+            enum isParamsImplicitlyConvertible = false;
+        else static if (param1.length == i)
+            enum isParamsImplicitlyConvertible = true;
+        else static if (isImplicitlyConvertible!(param2[i], param1[i]))
+            enum isParamsImplicitlyConvertible = isParamsImplicitlyConvertible!(F1,
+                    F2, i + 1);
+        else
+            enum isParamsImplicitlyConvertible = false;
+    }
+    enum isSpawnable = isCallable!F && is(ReturnType!F : void)
+            && isParamsImplicitlyConvertible!(F, void function(T))
+            && (isFunctionPointer!F || !hasUnsharedAliasing!F);
 }
 
 /**
@@ -154,25 +170,23 @@ struct ActorHandle(A) {
  * Returns: Actorhandle with type A
  * Examples:
  * ---
- * actorHandle!MyActor("my_task_name");
+ * handle!MyActor("my_task_name");
  * ---
  */
 ActorHandle!A handle(A)(string task_name) @safe if (isActor!A) {
     return ActorHandle!A(task_name);
 }
 
-ActorHandle!A spawn(A, Args...)(string name, Args args) @safe nothrow
-if (isActor!A) {
+ActorHandle!A spawn(A, Args...)(immutable(A) actor, string name, Args args) @safe nothrow
+if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
     try {
         Tid tid;
-        tid = concurrency.spawn((string name, Args args) nothrow{
+        tid = concurrency.spawn((immutable(A) _actor, string name, Args args) @trusted nothrow {
             _task_name = name;
             log.register(name);
             stop = false;
+            A actor = cast(A) _actor;
             setState(Ctrl.STARTING); // Tell the owner that you are starting.
-            version (Posix)
-                pthread_setname_np(pthread_self(), toStringz(name));
-            A actor;
             try {
                 actor.task(args);
                 // If the actor forgets to kill it's children we'll do it anyway
@@ -189,7 +203,7 @@ if (isActor!A) {
                 fail(t);
             }
             end;
-        }, name, args);
+        }, actor, name, args);
         childrenState[name] = Ctrl.UNKNOWN;
         log("spawning %s", name);
         tid.setMaxMailboxSize(int.sizeof, OnCrowding.throwException);
@@ -204,6 +218,12 @@ if (isActor!A) {
     catch (Exception e) {
         assert(0, format("Exception: %s", e.msg));
     }
+}
+
+ActorHandle!A spawn(A, Args...)(string name, Args args) @safe nothrow
+if (isActor!A) {
+    immutable A actor;
+    return spawn(actor, name, args);
 }
 
 /**
