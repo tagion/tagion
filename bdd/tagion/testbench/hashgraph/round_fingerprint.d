@@ -125,7 +125,7 @@ Document fingerprint() @trusted
         }
 
         int minimum_common_round = names.map!(n => hashgraphs[n].rounds.last_decided_round.number).minElement;
-        const ldr1 = hashgraphs[names[0]].rounds.last_decided_round;
+        auto ldr1 =   cast(Round)hashgraphs[names[0]].rounds.last_decided_round;
         int r1 = ldr1.number;
 
         while(r1 > minimum_common_round)
@@ -136,7 +136,7 @@ Document fingerprint() @trusted
         const rf1 = StdRefinement.hashLastDecidedRound(ldr1);
 
         foreach(name; names[1 .. $]) {
-            const ldr2 = hashgraphs[name].rounds.last_decided_round;
+            auto ldr2 = cast(Round)hashgraphs[name].rounds.last_decided_round;
             int r2 = ldr2.number;
             while(r2 > minimum_common_round)
             {
