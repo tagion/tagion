@@ -218,19 +218,19 @@ enum IR : ubyte {
         @Instr("i64.ge_s", "i64.ge_s", 1, IRType.CODE, 2, 1)            I64_GE_S            = 0x59, ///  i64.ge_s
         @Instr("i64.ge_u", "i64.ge_u", 1, IRType.CODE, 2, 1)            I64_GE_U            = 0x5A, ///  i64.ge_u
 
-        @Instr("f32.eq", "f32.eq", 1, IRType.CODE, 1)                 F32_EQ              = 0x5B, ///  f32.eq
-        @Instr("f32.ne", "f32.ne", 1, IRType.CODE, 1)                 F32_NE              = 0x5C, ///  f32.ne
-        @Instr("f32.lt", "f32.lt", 1, IRType.CODE, 1)                 F32_LT              = 0x5D, ///  f32.lt
-        @Instr("f32.gt", "f32.gt", 1, IRType.CODE, 1)                 F32_GT              = 0x5E, ///  f32.gt
-        @Instr("f32.le", "f32.le", 1, IRType.CODE, 1)                 F32_LE              = 0x5F, ///  f32.le
-        @Instr("f32.ge", "f32.ge", 1, IRType.CODE, 1)                 F32_GE              = 0x60, ///  f32.ge
+        @Instr("f32.eq", "f32.eq", 1, IRType.CODE, 2, 1)                 F32_EQ              = 0x5B, ///  f32.eq
+        @Instr("f32.ne", "f32.ne", 1, IRType.CODE, 2, 1)                 F32_NE              = 0x5C, ///  f32.ne
+        @Instr("f32.lt", "f32.lt", 1, IRType.CODE, 2, 1)                 F32_LT              = 0x5D, ///  f32.lt
+        @Instr("f32.gt", "f32.gt", 1, IRType.CODE, 2, 1)                 F32_GT              = 0x5E, ///  f32.gt
+        @Instr("f32.le", "f32.le", 1, IRType.CODE, 2, 1)                 F32_LE              = 0x5F, ///  f32.le
+        @Instr("f32.ge", "f32.ge", 1, IRType.CODE, 2, 1)                 F32_GE              = 0x60, ///  f32.ge
 
-        @Instr("f64.eq", "f64.eq", 1, IRType.CODE, 1)                 F64_EQ              = 0x61, ///  f64.eq
-        @Instr("f64.ne", "f64.ne", 1, IRType.CODE, 1)                 F64_NE              = 0x62, ///  f64.ne
-        @Instr("f64.lt", "f64.lt", 1, IRType.CODE, 1)                 F64_LT              = 0x63, ///  f64.lt
-        @Instr("f64.gt", "f64.gt", 1, IRType.CODE, 1)                 F64_GT              = 0x64, ///  f64.gt
-        @Instr("f64.le", "f64.le", 1, IRType.CODE, 1)                 F64_LE              = 0x65, ///  f64.le
-        @Instr("f64.ge", "f64.ge", 1, IRType.CODE, 1)                 F64_GE              = 0x66, ///  f64.ge
+        @Instr("f64.eq", "f64.eq", 1, IRType.CODE, 2, 1)                 F64_EQ              = 0x61, ///  f64.eq
+        @Instr("f64.ne", "f64.ne", 1, IRType.CODE, 2, 1)                 F64_NE              = 0x62, ///  f64.ne
+        @Instr("f64.lt", "f64.lt", 1, IRType.CODE, 2, 1)                 F64_LT              = 0x63, ///  f64.lt
+        @Instr("f64.gt", "f64.gt", 1, IRType.CODE, 2, 1)                 F64_GT              = 0x64, ///  f64.gt
+        @Instr("f64.le", "f64.le", 1, IRType.CODE, 2, 1)                 F64_LE              = 0x65, ///  f64.le
+        @Instr("f64.ge", "f64.ge", 1, IRType.CODE, 2, 1)                 F64_GE              = 0x66, ///  f64.ge
 
             // instructions
         @Instr("i32.clz", "i32.clz", 1, IRType.CODE, 1, 1)             I32_CLZ             = 0x67, ///  i32.clz
