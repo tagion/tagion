@@ -217,7 +217,8 @@ version (unittest) {
         //wast_text = "nan-propagation.wast".unitfile.readText;
         // wast_text = "forward.wast".unitfile.readText;
         //wast_text = "func_ptrs.wast".unitfile.readText;
-        wast_text = "functions.wast".unitfile.readText;
+        //        wast_text = "functions.wast".unitfile.readText;
+        wast_text = "has_feature.wast".unitfile.readText;
     }
 }
 
