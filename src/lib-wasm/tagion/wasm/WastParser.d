@@ -97,6 +97,7 @@ struct WastParser {
                         break;
                     case CALL:
                         r.popFront;
+                        writefln("CALL %s", r);
                         label = r.token;
                         r.popFront;
                         while (r.type == TokenType.BEGIN) {
@@ -294,7 +295,9 @@ struct WastParser {
 
                     // Invoke call
                     parse_instr(r, ParserStage.ASSERT);
-                    parse_instr(r, ParserStage.EXPECTED);
+                    if (r.type == TokenType.BEGIN) {
+                        parse_instr(r, ParserStage.EXPECTED);
+                    }
                     return ParserStage.ASSERT;
                 case "assert_trap":
                     check(stage == ParserStage.BASE, r);
