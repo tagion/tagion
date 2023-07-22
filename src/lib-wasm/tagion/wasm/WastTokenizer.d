@@ -209,7 +209,8 @@ version (unittest) {
         //wast_text = "unreachable.wast".unitfile.readText;
         //wast_text = "float_literals.wast".unitfile.readText;
         //wast_text = "float_memory.wast".unitfile.readText;
-        wast_text = "float_misc.wast".unitfile.readText;
+        //wast_text = "float_misc.wast".unitfile.readText;
+        wast_text = "conversions.wast".unitfile.readText;
     }
 }
 

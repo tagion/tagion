@@ -301,13 +301,13 @@ enum IR : ubyte {
         @Instr("f64.max", "f64.max", 1, IRType.CODE, 2, 1)             F64_MAX             = 0xA5, ///  f64.max
         @Instr("f64.copysign", "f64.copysign", 1, IRType.CODE, 2, 1)        F64_COPYSIGN        = 0xA6, ///  f64.copysign
 
-        @Instr("i32.wrap_i64", "i32.wrap_i64", 1, IRType.CODE, 1, 1)        I32_WRAP_I64        = 0xA7, ///  i32.wrap_i64
+        @Instr("i32.wrap_i64", "i32.wrap/i64", 1, IRType.CODE, 1, 1)        I32_WRAP_I64        = 0xA7, ///  i32.wrap_i64
         @Instr("i32.trunc_f32_s", "i32.trunc_s/f32", 1, IRType.CODE, 1, 1)     I32_TRUNC_F32_S     = 0xA8, ///  i32.trunc_f32_s
         @Instr("i32.trunc_f32_u", "i32.trunc_u/f32", 1, IRType.CODE, 1, 1)     I32_TRUNC_F32_U     = 0xA9, ///  i32.trunc_f32_u
         @Instr("i32.trunc_f64_s", "i32.trunc_s/f64", 1, IRType.CODE, 1, 1)     I32_TRUNC_F64_S     = 0xAA, ///  i32.trunc_f64_s
         @Instr("i32.trunc_f64_u", "i32.trunc_u/f64", 1, IRType.CODE, 1, 1)     I32_TRUNC_F64_U     = 0xAB, ///  i32.trunc_f64_u
-        @Instr("i64.extend_i32_s", "i64.extend_i32_s", 1, IRType.CODE, 1, 1)    I64_EXTEND_I32_S    = 0xAC, ///  i64.extend_i32_s
-        @Instr("i64.extend_i32_u", "i64.extend_i32_u", 1, IRType.CODE, 1, 1)    I64_EXTEND_I32_U    = 0xAD, ///  i64.extend_i32_u
+        @Instr("i64.extend_i32_s", "i64.extend_s/i32", 1, IRType.CODE, 1, 1)    I64_EXTEND_I32_S    = 0xAC, ///  i64.extend_i32_s
+        @Instr("i64.extend_i32_u", "i64.extend_u/i32", 1, IRType.CODE, 1, 1)    I64_EXTEND_I32_U    = 0xAD, ///  i64.extend_i32_u
         @Instr("i32.extend8_s", "i32.extend8_s", 1, IRType.CODE, 1, 1)       I32_EXTEND8_S       = 0xC0, ///  i32.extend8_s
         @Instr("i32.extend16_s", "i32.extend16_s", 1, IRType.CODE, 1, 1)      I32_EXTEND16_S      = 0xC1, ///  i32.extend16_s
         @Instr("i64.extend8_s", "i64.extend8_s", 1, IRType.CODE, 1, 1)       I64_EXTEND8_S       = 0xC2, ///  i64.extend8_s
@@ -321,12 +321,12 @@ enum IR : ubyte {
         @Instr("f32.convert_i32_u", "f32.convert_u/i32", 1, IRType.CODE, 1, 1)   F32_CONVERT_I32_U   = 0xB3, ///  f32.convert_i32_u
         @Instr("f32.convert_i64_s", "f32.convert_s/i64", 1, IRType.CODE, 1, 1)   F32_CONVERT_I64_S   = 0xB4, ///  f32.convert_i64_s
         @Instr("f32.convert_i64_u", "f32.convert_u/i64", 1, IRType.CODE, 1, 1)   F32_CONVERT_I64_U   = 0xB5, ///  f32.convert_i64_u
-        @Instr("f32.demote_f64", "f32.demote_f64", 1, IRType.CODE, 1, 1)      F32_DEMOTE_F64      = 0xB6, ///  f32.demote_f64
+        @Instr("f32.demote_f64", "f32.demote/f64", 1, IRType.CODE, 1, 1)      F32_DEMOTE_F64      = 0xB6, ///  f32.demote_f64
         @Instr("f64.convert_i32_s", "f64.convert_s/i32", 1, IRType.CODE, 1, 1)   F64_CONVERT_I32_S   = 0xB7, ///  f64.convert_i32_s
         @Instr("f64.convert_i32_u", "f64.convert_u/i32", 1, IRType.CODE, 1, 1)   F64_CONVERT_I32_U   = 0xB8, ///  f64.convert_i32_u
         @Instr("f64.convert_i64_s", "f64.convert_s/i64", 1, IRType.CODE, 1, 1)   F64_CONVERT_I64_S   = 0xB9, ///  f64.convert_i64_s
         @Instr("f64.convert_i64_u", "f64.convert_u/i64", 1, IRType.CODE, 1, 1)   F64_CONVERT_I64_U   = 0xBA, ///  f64.convert_i64_u
-        @Instr("f64.promote_f32", "f64.promote_f32", 1, IRType.CODE, 1, 1)     F64_PROMOTE_F32     = 0xBB, ///  f64.promote_f32
+        @Instr("f64.promote_f32", "f64.promote/f32", 1, IRType.CODE, 1, 1)     F64_PROMOTE_F32     = 0xBB, ///  f64.promote_f32
         @Instr("i32.reinterpret_f32", "i32.reinterpret/f32", 1, IRType.CODE, 1, 1) I32_REINTERPRET_F32 = 0xBC, ///  i32.reinterpret_f32
         @Instr("i64.reinterpret_f64", "i64.reinterpret/f64", 1, IRType.CODE, 1, 1) I64_REINTERPRET_F64 = 0xBD, ///  i64.reinterpret_f64
         @Instr("f32.reinterpret_i32", "f32.reinterpret/i32", 1, IRType.CODE, 1, 1) F32_REINTERPRET_I32 = 0xBE, ///  f32.reinterpret_i32
