@@ -211,7 +211,8 @@ version (unittest) {
         //wast_text = "float_memory.wast".unitfile.readText;
         //wast_text = "float_misc.wast".unitfile.readText;
         //wast_text = "conversions.wast".unitfile.readText;
-        wast_text = "endianness.wast".unitfile.readText;
+        //wast_text = "endianness.wast".unitfile.readText;
+        wast_text = "traps.wast".unitfile.readText;
     }
 }
 
