@@ -302,10 +302,10 @@ enum IR : ubyte {
         @Instr("f64.copysign", "f64.copysign", 1, IRType.CODE, 2, 1)        F64_COPYSIGN        = 0xA6, ///  f64.copysign
 
         @Instr("i32.wrap_i64", "i32.wrap_i64", 1, IRType.CODE, 1, 1)        I32_WRAP_I64        = 0xA7, ///  i32.wrap_i64
-        @Instr("i32.trunc_f32_s", "i32.trunc_f32_s", 1, IRType.CODE, 1, 1)     I32_TRUNC_F32_S     = 0xA8, ///  i32.trunc_f32_s
-        @Instr("i32.trunc_f32_u", "i32.trunc_f32_u", 1, IRType.CODE, 1, 1)     I32_TRUNC_F32_U     = 0xA9, ///  i32.trunc_f32_u
-        @Instr("i32.trunc_f64_s", "i32.trunc_f64_s", 1, IRType.CODE, 1, 1)     I32_TRUNC_F64_S     = 0xAA, ///  i32.trunc_f64_s
-        @Instr("i32.trunc_f64_u", "i32.trunc_f64_u", 1, IRType.CODE, 1, 1)     I32_TRUNC_F64_U     = 0xAB, ///  i32.trunc_f64_u
+        @Instr("i32.trunc_f32_s", "i32.trunc_s/f32", 1, IRType.CODE, 1, 1)     I32_TRUNC_F32_S     = 0xA8, ///  i32.trunc_f32_s
+        @Instr("i32.trunc_f32_u", "i32.trunc_u/f32", 1, IRType.CODE, 1, 1)     I32_TRUNC_F32_U     = 0xA9, ///  i32.trunc_f32_u
+        @Instr("i32.trunc_f64_s", "i32.trunc_s/f64", 1, IRType.CODE, 1, 1)     I32_TRUNC_F64_S     = 0xAA, ///  i32.trunc_f64_s
+        @Instr("i32.trunc_f64_u", "i32.trunc_u/f64", 1, IRType.CODE, 1, 1)     I32_TRUNC_F64_U     = 0xAB, ///  i32.trunc_f64_u
         @Instr("i64.extend_i32_s", "i64.extend_i32_s", 1, IRType.CODE, 1, 1)    I64_EXTEND_I32_S    = 0xAC, ///  i64.extend_i32_s
         @Instr("i64.extend_i32_u", "i64.extend_i32_u", 1, IRType.CODE, 1, 1)    I64_EXTEND_I32_U    = 0xAD, ///  i64.extend_i32_u
         @Instr("i32.extend8_s", "i32.extend8_s", 1, IRType.CODE, 1, 1)       I32_EXTEND8_S       = 0xC0, ///  i32.extend8_s
@@ -313,19 +313,19 @@ enum IR : ubyte {
         @Instr("i64.extend8_s", "i64.extend8_s", 1, IRType.CODE, 1, 1)       I64_EXTEND8_S       = 0xC2, ///  i64.extend8_s
         @Instr("i64.extend16_s", "i64.extend16_s", 1, IRType.CODE, 1, 1)      I64_EXTEND16_S      = 0xC3, ///  i64.extend16_s
         @Instr("i64.extend32_s", "i64.extend32_s", 1, IRType.CODE, 1, 1)      I64_EXTEND32_S     = 0xC4, ///  i64.extend32_s
-        @Instr("i64.trunc_f32_s", "i64.trunc_f32_s", 1, IRType.CODE, 1, 1)     I64_TRUNC_F32_S     = 0xAE, ///  i64.trunc_f32_s
-        @Instr("i64.trunc_f32_u", "i64.trunc_f32_u", 1, IRType.CODE, 1, 1)     I64_TRUNC_F32_U     = 0xAF, ///  i64.trunc_f32_u
-        @Instr("i64.trunc_f64_s", "i64.trunc_f64_s", 1, IRType.CODE, 1, 1)     I64_TRUNC_F64_S     = 0xB0, ///  i64.trunc_f64_s
-        @Instr("i64.trunc_f64_u", "i64.trunc_f64_u", 1, IRType.CODE, 1, 1)     I64_TRUNC_F64_U     = 0xB1, ///  i64.trunc_f64_u
-        @Instr("f32.convert_i32_s", "f32.convert_i32_s", 1, IRType.CODE, 1, 1)   F32_CONVERT_I32_S   = 0xB2, ///  f32.convert_i32_s
-        @Instr("f32.convert_i32_u", "f32.convert_i32_u", 1, IRType.CODE, 1, 1)   F32_CONVERT_I32_U   = 0xB3, ///  f32.convert_i32_u
-        @Instr("f32.convert_i64_s", "f32.convert_i64_s", 1, IRType.CODE, 1, 1)   F32_CONVERT_I64_S   = 0xB4, ///  f32.convert_i64_s
-        @Instr("f32.convert_i64_u", "f32.convert_i64_u", 1, IRType.CODE, 1, 1)   F32_CONVERT_I64_U   = 0xB5, ///  f32.convert_i64_u
+        @Instr("i64.trunc_f32_s", "i64.trunc_s/f32", 1, IRType.CODE, 1, 1)     I64_TRUNC_F32_S     = 0xAE, ///  i64.trunc_f32_s
+        @Instr("i64.trunc_f32_u", "i64.trunc_u/f32", 1, IRType.CODE, 1, 1)     I64_TRUNC_F32_U     = 0xAF, ///  i64.trunc_f32_u
+        @Instr("i64.trunc_f64_s", "i64.trunc_s/f64", 1, IRType.CODE, 1, 1)     I64_TRUNC_F64_S     = 0xB0, ///  i64.trunc_f64_s
+        @Instr("i64.trunc_f64_u", "i64.trunc_u/f64", 1, IRType.CODE, 1, 1)     I64_TRUNC_F64_U     = 0xB1, ///  i64.trunc_f64_u
+        @Instr("f32.convert_i32_s", "f32.convert_s/i32", 1, IRType.CODE, 1, 1)   F32_CONVERT_I32_S   = 0xB2, ///  f32.convert_i32_s
+        @Instr("f32.convert_i32_u", "f32.convert_u/i32", 1, IRType.CODE, 1, 1)   F32_CONVERT_I32_U   = 0xB3, ///  f32.convert_i32_u
+        @Instr("f32.convert_i64_s", "f32.convert_s/i64", 1, IRType.CODE, 1, 1)   F32_CONVERT_I64_S   = 0xB4, ///  f32.convert_i64_s
+        @Instr("f32.convert_i64_u", "f32.convert_u/i64", 1, IRType.CODE, 1, 1)   F32_CONVERT_I64_U   = 0xB5, ///  f32.convert_i64_u
         @Instr("f32.demote_f64", "f32.demote_f64", 1, IRType.CODE, 1, 1)      F32_DEMOTE_F64      = 0xB6, ///  f32.demote_f64
-        @Instr("f64.convert_i32_s", "f64.convert_i32_s", 1, IRType.CODE, 1, 1)   F64_CONVERT_I32_S   = 0xB7, ///  f64.convert_i32_s
-        @Instr("f64.convert_i32_u", "f64.convert_i32_u", 1, IRType.CODE, 1, 1)   F64_CONVERT_I32_U   = 0xB8, ///  f64.convert_i32_u
-        @Instr("f64.convert_i64_s", "f64.convert_i64_s", 1, IRType.CODE, 1, 1)   F64_CONVERT_I64_S   = 0xB9, ///  f64.convert_i64_s
-        @Instr("f64.convert_i64_u", "f64.convert_i64_u", 1, IRType.CODE, 1, 1)   F64_CONVERT_I64_U   = 0xBA, ///  f64.convert_i64_u
+        @Instr("f64.convert_i32_s", "f64.convert_s/i32", 1, IRType.CODE, 1, 1)   F64_CONVERT_I32_S   = 0xB7, ///  f64.convert_i32_s
+        @Instr("f64.convert_i32_u", "f64.convert_u/i32", 1, IRType.CODE, 1, 1)   F64_CONVERT_I32_U   = 0xB8, ///  f64.convert_i32_u
+        @Instr("f64.convert_i64_s", "f64.convert_s/i64", 1, IRType.CODE, 1, 1)   F64_CONVERT_I64_S   = 0xB9, ///  f64.convert_i64_s
+        @Instr("f64.convert_i64_u", "f64.convert_u/i64", 1, IRType.CODE, 1, 1)   F64_CONVERT_I64_U   = 0xBA, ///  f64.convert_i64_u
         @Instr("f64.promote_f32", "f64.promote_f32", 1, IRType.CODE, 1, 1)     F64_PROMOTE_F32     = 0xBB, ///  f64.promote_f32
         @Instr("i32.reinterpret_f32", "i32.reinterpret_f32", 1, IRType.CODE, 1, 1) I32_REINTERPRET_F32 = 0xBC, ///  i32.reinterpret_f32
         @Instr("i64.reinterpret_f64", "i64.reinterpret_f64", 1, IRType.CODE, 1, 1) I64_REINTERPRET_F64 = 0xBD, ///  i64.reinterpret_f64
@@ -454,7 +454,7 @@ enum Mutable : ubyte {
 enum Types : ubyte {
     EMPTY = 0x40, /// Empty block
     @("func") FUNC = 0x60, /// functype
-    FUNCREF = 0x70, /// funcref
+    @("funcref") FUNCREF = 0x70, /// funcref
     @("i32") I32 = 0x7F, /// i32 valtype
     @("i64") I64 = 0x7E, /// i64 valtype
     @("f32") F32 = 0x7D, /// f32 valtype
@@ -513,11 +513,34 @@ template toDType(Types t) {
     import std.conv : to;
 
     final switch (type) {
-        foreach (E; EnumMembers!Types) {
+        static foreach (E; EnumMembers!Types) {
     case E:
             return toLower(E.to!string);
         }
     }
+}
+
+@safe static Types getType(const string name) pure {
+    import std.traits;
+
+    switch (name) {
+        static foreach (E; EnumMembers!Types) {
+            static if (hasUDA!(E, string)) {
+    case getUDAs!(E, string)[0]:
+                return E;
+            }
+        }
+    default:
+        return Types.EMPTY;
+    }
+}
+
+@safe
+unittest {
+    assert("f32".getType == Types.F32);
+    assert("empty".getType == Types.EMPTY);
+    assert("not-valid".getType == Types.EMPTY);
+
 }
 
 enum IndexType : ubyte {

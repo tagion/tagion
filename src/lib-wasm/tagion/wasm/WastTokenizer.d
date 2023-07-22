@@ -73,10 +73,18 @@ struct WastTokenizer {
             return this;
         }
 
-        void next() {
+        char next() {
             if (!empty) {
-                pos++;
+                scope (exit) {
+                    pos++;
+                }
+
+                if (text[pos] == Chars.NEWLINE) {
+                    line++;
+                }
+                return text[pos];
             }
+            return Chars.NUL;
         }
 
         uint line_pos() const {
@@ -129,12 +137,13 @@ struct WastTokenizer {
                     break;
 
                 case SEMICOLON:
-                    pos++;
-                    while (!empty && text[pos] == SEMICOLON) {
-                        pos++;
+                    next;
+
+                    while (next == SEMICOLON) {
+                        //pos++;
                     }
-                    while (!empty && text[pos] != SEMICOLON) {
-                        pos++;
+                    while (next != NEWLINE) {
+                        //pos++;
                     }
                     next;
                     break;
@@ -186,11 +195,11 @@ version (unittest) {
     shared static this() {
         //        wast_text = "i32.wast".unitfile.readText;
         //wast_text = "f32.wast".unitfile.readText;
-        wast_text = "i64.wast".unitfile.readText;
-        //wast_text = "f64.wast".unitfile.readText;
+        //wast_text = "i64.wast".unitfile.readText;
+        // wast_text = "f64.wast".unitfile.readText;
         //wast_text = "f32_cmp.wast".unitfile.readText;
         //wast_text = "f64_cmp.wast".unitfile.readText;
-        //wast_text = "float_exprs.wast".unitfile.readText;
+        wast_text = "float_exprs.wast".unitfile.readText;
     }
 }
 

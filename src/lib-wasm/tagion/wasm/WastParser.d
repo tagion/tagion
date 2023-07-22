@@ -185,9 +185,12 @@ struct WastParser {
                     check(stage == ParserStage.FUNC, r);
                     r.popFront;
                     check(r.type == TokenType.WORD, r);
-                    label = r.token;
-                    r.popFront;
-                    check(r.type == TokenType.WORD, r);
+                    if (r.token.getType is Types.EMPTY) {
+                        label = r.token;
+                        r.popFront;
+
+                        check(r.type == TokenType.WORD, r);
+                    }
                     arg = r.token;
                     r.popFront;
                     return ParserStage.PARAM;
