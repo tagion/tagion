@@ -54,6 +54,10 @@ struct WastParser {
 
         ParserStage parse_instr(ref WastTokenizer r, const ParserStage stage) {
             writefln("Parse instr %s %s", r.token, r.type);
+            if (r.type == TokenType.COMMENT) {
+                r.popFront;
+                return parse_instr(r, stage);
+            }
             check(r.type == TokenType.BEGIN, r);
             scope (exit) {
                 check(r.type == TokenType.END, r);
@@ -133,6 +137,10 @@ struct WastParser {
         }
 
         ParserStage parse_section(ref WastTokenizer r, const ParserStage stage) {
+            if (r.type == TokenType.COMMENT) {
+                r.popFront;
+                return parse_section(r, stage);
+            }
             if (r.type == TokenType.BEGIN) {
                 string label;
                 string arg;
