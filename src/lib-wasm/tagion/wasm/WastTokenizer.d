@@ -80,11 +80,26 @@ struct WastTokenizer {
                 }
 
                 if (text[pos] == Chars.NEWLINE) {
+                    start_line_pos = pos + 1;
                     line++;
                 }
                 return text[pos];
             }
             return Chars.NUL;
+        }
+
+        void nextUntil(string fun, string paramName = "a")() {
+            import std.format;
+
+            enum code = format(q{
+                alias goUntil=(%1$s) => %2$s; 
+                while(!empty && goUntil(text[pos])) {
+                next;
+                  // empty
+                }
+            }, paramName, fun);
+            pragma(msg, code);
+            mixin(code);
         }
 
         uint line_pos() const {
@@ -123,49 +138,40 @@ struct WastTokenizer {
             with (Chars) {
                 switch (currentChar) {
                 case PARENTHESES_BEGIN:
-                    pos++;
+                    next;
                     if (!empty && text[pos] == SEMICOLON) {
-                        pos++;
-                        while (!empty && text[pos] != PARENTHESES_END) {
-                            pos++;
-                        }
-                        pos++;
+                        next;
+                        nextUntil!q{a != Chars.PARENTHESES_END};
+                        next;
                     }
                     break;
                 case PARENTHESES_END:
-                    pos++;
+                    next;
                     break;
 
                 case SEMICOLON:
                     next;
-
-                    while (next == SEMICOLON) {
-                        //pos++;
-                    }
-                    while (next != NEWLINE) {
-                        //pos++;
-                    }
+                    nextUntil!q{a == Chars.SEMICOLON};
+                    nextUntil!q{a != Chars.NEWLINE};
                     next;
                     break;
 
                 case DOUBLE_QUOTE:
-                    pos++;
-                    while (!empty && text[pos] != DOUBLE_QUOTE) {
-                        pos++;
-                    }
+                    next;
+                    nextUntil!q{a != Chars.DOUBLE_QUOTE};
                     next;
                     break;
                 default:
-                    while (!empty && text[pos].isWordChar) {
-                        pos++;
-                    }
+                    nextUntil!q{a.isWordChar};
                 }
                 token = text[begin_pos .. pos];
             }
         }
 
         void trim() {
-            while (!empty && text[pos].isInvisiable) {
+            nextUntil!q{a.isInvisiable};
+            version (none)
+                while (!empty && text[pos].isInvisiable) {
                 if (text[pos] == Chars.NEWLINE) {
                     start_line_pos = pos + 1;
                     line++;
