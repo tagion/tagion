@@ -205,10 +205,10 @@ enum IR : ubyte {
         @Instr("i32.ge_s", "i32.ge_s", 1, IRType.CODE, 2, 1)            I32_GE_S            = 0x4E, ///  i32.ge_s
         @Instr("i32.ge_u", "i32.ge_u", 1, IRType.CODE, 2, 1)            I32_GE_U            = 0x4F, ///  i32.ge_u
 
-        @Instr("i64.eqz", "i64.eqz", 1, IRType.CODE, 1, 1)             I64_EQZ             = 0x50, ///  i64.eqz
-        @Instr("i64.eq", "i64.eq", 1, IRType.CODE, 1, 1)              I64_EQ              = 0x51, ///  i64.eq
-        @Instr("i64.ne", "i64.ne", 1, IRType.CODE, 1, 1)              I64_NE              = 0x52, ///  i64.ne
-        @Instr("i64.lt_s", "i64.lt_s", 1, IRType.CODE)                  I64_LT_S            = 0x53, ///  i64.lt_s
+        @Instr("i64.eqz", "i64.eqz", 1, IRType.CODE, 2, 1)             I64_EQZ             = 0x50, ///  i64.eqz
+        @Instr("i64.eq", "i64.eq", 1, IRType.CODE, 2, 1)              I64_EQ              = 0x51, ///  i64.eq
+        @Instr("i64.ne", "i64.ne", 1, IRType.CODE, 2, 1)              I64_NE              = 0x52, ///  i64.ne
+        @Instr("i64.lt_s", "i64.lt_s", 1, IRType.CODE, 2, 1)                  I64_LT_S            = 0x53, ///  i64.lt_s
 
         @Instr("i64.lt_u", "i64.lt_u", 1, IRType.CODE, 2, 1)            I64_LT_U            = 0x54, ///  i64.lt_u
         @Instr("i64.gt_s", "i64.gt_s", 1, IRType.CODE, 2, 1)            I64_GT_S            = 0x55, ///  i64.gt_s
