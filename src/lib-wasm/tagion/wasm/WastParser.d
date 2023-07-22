@@ -238,6 +238,9 @@ struct WastParser {
                     parse_section(r, stage);
                 }
             }
+            if (r.type == TokenType.COMMENT) {
+                r.popFront;
+            }
             return ParserStage.END;
         }
 

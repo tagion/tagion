@@ -92,6 +92,9 @@ struct WastTokenizer {
                 case NUL:
                     return TokenType.EOF;
                     case PARENTHESES_BEGIN:
+                    if (token.length > 1 && token[1] == SEMICOLON) {
+                        return TokenType.COMMENT;
+                    }
                     return TokenType.BEGIN;
                     case PARENTHESES_END:
                     return TokenType.END;
@@ -112,12 +115,24 @@ struct WastTokenizer {
             with (Chars) {
                 switch (currentChar) {
                 case PARENTHESES_BEGIN:
+                    pos++;
+                    if (!empty && text[pos] == SEMICOLON) {
+                        pos++;
+                        while (!empty && text[pos] != PARENTHESES_END) {
+                            pos++;
+                        }
+                        pos++;
+                    }
+                    break;
                 case PARENTHESES_END:
                     pos++;
                     break;
 
                 case SEMICOLON:
                     pos++;
+                    while (!empty && text[pos] == SEMICOLON) {
+                        pos++;
+                    }
                     while (!empty && text[pos] != SEMICOLON) {
                         pos++;
                     }
@@ -169,12 +184,13 @@ version (unittest) {
 
     immutable(string) wast_text;
     shared static this() {
-        //wast_text = "i32.wast".unitfile.readText;
+        wast_text = "i32.wast".unitfile.readText;
         //wast_text = "f32.wast".unitfile.readText;
         //wast_text = "i64.wast".unitfile.readText;
         //wast_text = "f64.wast".unitfile.readText;
         //wast_text = "f32_cmp.wast".unitfile.readText;
-        wast_text = "f64_cmp.wast".unitfile.readText;
+        //wast_text = "f64_cmp.wast".unitfile.readText;
+        //wast_text = "float_exprs.wast".unitfile.readText;
     }
 }
 
@@ -188,7 +204,6 @@ unittest {
     //writefln("Unitfile file %s", wast_text);
     auto r = WastTokenizer(wast_text);
     while (!r.empty) {
-        //        writefln("<%s:%d:%s:%s>", r.line, r.line_pos, r.type, r.token);
         r.popFront;
     }
 }
