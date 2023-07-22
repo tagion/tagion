@@ -361,6 +361,7 @@ shared static immutable(Instr[IR]) instrTable;
 shared static immutable(IR[string]) irLookupTable;
 shared static immutable(Instr[string]) instrWastLookup;
 
+immutable invoke_keyword = "invoke";
 protected immutable(Instr[IR]) generate_instrTable() {
     Instr[IR] result;
     with (IR) {
@@ -394,6 +395,7 @@ shared static this() {
                 result[instr.wast] = instr;
             }
         }
+        result[invoke_keyword] = Instr("<" ~ invoke_keyword ~ ">", invoke_keyword, 12345, IRType.CALL);
         return assumeUnique(result);
     }
 

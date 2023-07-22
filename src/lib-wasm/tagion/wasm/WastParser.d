@@ -28,7 +28,7 @@ struct WastParser {
     alias ExportType = WasmSection.ExportType;
 
     enum ParserStage {
-        NONE,
+        BASE,
         COMMENT,
         MODULE,
         FUNC,
@@ -38,6 +38,8 @@ struct WastParser {
         CODE,
         END_FUNC,
         EXPORT,
+        ASSERT,
+        EXPECTED,
         END,
     }
 
@@ -82,6 +84,15 @@ struct WastParser {
                     case BRANCH_TABLE:
                         break;
                     case CALL:
+                        r.popFront;
+                        label = r.token;
+                        r.popFront;
+                        while (r.type == TokenType.BEGIN) {
+                            parse_instr(r, ParserStage.CODE);
+                            writefln("Arg--%s", r);
+                        }
+
+                        writefln("End call %s", r);
                         break;
                     case CALL_INDIRECT:
                         break;
@@ -106,6 +117,11 @@ struct WastParser {
                     case MEMOP:
                         break;
                     case CONST:
+                        writefln("Const %s %d", instr.wast, instr.pops);
+                        r.popFront;
+                        check(r.type == TokenType.WORD, r);
+                        label = r.token;
+                        r.popFront;
                         break;
                     case END:
                         break;
@@ -203,6 +219,27 @@ struct WastParser {
                     writefln("End export %s %s", label, arg);
                     r.popFront;
                     return ParserStage.EXPORT;
+                case "assert_return":
+                    check(stage == ParserStage.BASE, r);
+                    label = r.token;
+                    r.popFront;
+
+                    // Invoke call
+                    parse_instr(r, ParserStage.ASSERT);
+                    parse_instr(r, ParserStage.EXPECTED);
+                    return ParserStage.ASSERT;
+                case "assert_trap":
+                    check(stage == ParserStage.BASE, r);
+                    label = r.token;
+                    r.popFront;
+                    // Invoke call
+                    parse_instr(r, ParserStage.ASSERT);
+                    writefln("String %s", r);
+
+                    check(r.type == TokenType.STRING, r);
+                    arg = r.token;
+                    r.popFront;
+                    return ParserStage.ASSERT;
                 default:
                     if (r.type == TokenType.COMMENT) {
                         writefln("Comment!!!");
@@ -230,7 +267,7 @@ struct WastParser {
             return ParserStage.END;
         }
 
-        while (parse_section(tokenizer, ParserStage.init) !is ParserStage.END) {
+        while (parse_section(tokenizer, ParserStage.BASE) !is ParserStage.END) {
             write("* ");
             //empty    
         }
