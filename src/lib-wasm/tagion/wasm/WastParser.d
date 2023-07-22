@@ -86,6 +86,10 @@ struct WastParser {
                     case BLOCK:
                         break;
                     case BRANCH:
+                        r.popFront;
+                        foreach (i; 0 .. instr.pops) {
+                            parse_instr(r, ParserStage.CODE);
+                        }
                         break;
                     case BRANCH_TABLE:
                         break;

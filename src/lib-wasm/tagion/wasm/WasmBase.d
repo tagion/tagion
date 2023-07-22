@@ -361,7 +361,11 @@ shared static immutable(Instr[IR]) instrTable;
 shared static immutable(IR[string]) irLookupTable;
 shared static immutable(Instr[string]) instrWastLookup;
 
-immutable invoke_keyword = "invoke";
+enum PseudoWastInstr {
+    invoke = "invoke",
+    if_else = "if_else",
+}
+
 protected immutable(Instr[IR]) generate_instrTable() {
     Instr[IR] result;
     with (IR) {
@@ -395,7 +399,10 @@ shared static this() {
                 result[instr.wast] = instr;
             }
         }
-        result[invoke_keyword] = Instr("<" ~ invoke_keyword ~ ">", invoke_keyword, 12345, IRType.CALL);
+        result[PseudoWastInstr.invoke] = Instr("<" ~ PseudoWastInstr.invoke ~ ">", PseudoWastInstr.invoke, uint.max, IRType
+                .CALL);
+        result[PseudoWastInstr.if_else] = Instr("<" ~ PseudoWastInstr.if_else ~ ">", PseudoWastInstr.if_else, uint.max, IRType
+                .BRANCH, 3, 1);
         return assumeUnique(result);
     }
 
