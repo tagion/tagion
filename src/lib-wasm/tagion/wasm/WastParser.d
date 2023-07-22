@@ -62,6 +62,7 @@ struct WastParser {
             check(r.type == TokenType.BEGIN, r);
             scope (exit) {
                 check(r.type == TokenType.END, r);
+                writefln("<%s %s", r.type, r.token);
                 r.popFront;
             }
             r.popFront;
@@ -102,8 +103,10 @@ struct WastParser {
                     case CALL_INDIRECT:
                         break;
                     case LOCAL:
+                        writefln("LOCAL %s", r);
                         r.popFront;
                         label = r.token;
+                        writefln("LOCAL arg %s", r);
                         check(r.type == TokenType.WORD, r);
                         r.popFront;
                         break;
@@ -114,6 +117,7 @@ struct WastParser {
                         r.popFront;
                         break;
                     case MEMORY:
+                        writefln("MEMORY %s", r);
                         r.popFront;
                         foreach (i; 0 .. instr.pops) {
                             parse_instr(r, ParserStage.CODE);
@@ -150,8 +154,9 @@ struct WastParser {
                 string label;
                 string arg;
                 r.popFront;
+                bool not_ended;
                 scope (exit) {
-                    check(r.type == TokenType.END, r);
+                    check(r.type == TokenType.END || not_ended, r);
                     r.popFront;
                 }
                 writefln("Token %s %s", r.token, r.type);
@@ -181,10 +186,16 @@ struct WastParser {
                     }
                     while (arg_stage == ParserStage.PARAM);
                     //auto result_r=r.save;
+                    writefln("Before rewind %s", arg_stage);
                     if (arg_stage != ParserStage.RESULT) {
                         r = rewined;
                     }
-                    parse_instr(r, ParserStage.FUNC_BODY);
+
+                    do {
+                        const ret = parse_instr(r, ParserStage.FUNC_BODY);
+                        check(ret == ParserStage.FUNC_BODY, r);
+                    }
+                    while (r.type != TokenType.END);
                     return ParserStage.FUNC;
                 case "param": // Example (param $y i32)
                     check(stage == ParserStage.FUNC, r);
@@ -211,10 +222,12 @@ struct WastParser {
                     r.popFront;
                     check(r.type == TokenType.WORD, r);
                     label = r.token;
+
                     r.popFront;
-                    check(r.type == TokenType.WORD, r);
-                    arg = r.token;
-                    r.popFront;
+                    if (r.type == TokenType.WORD) {
+                        arg = r.token;
+                        r.popFront;
+                    }
                     return ParserStage.MEMORY;
                 case "export":
                     check(stage == ParserStage.MODULE, r);
@@ -260,8 +273,9 @@ struct WastParser {
                         r.popFront;
                         return ParserStage.COMMENT;
                     }
-                    r.popFront;
-                    parse_section(r, stage);
+                    not_ended = true;
+                    writefln("DEFAULT %s", r);
+                    return stage;
                 }
             }
             if (r.type == TokenType.COMMENT) {
