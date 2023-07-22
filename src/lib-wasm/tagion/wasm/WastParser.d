@@ -38,6 +38,7 @@ struct WastParser {
         CODE,
         END_FUNC,
         EXPORT,
+        MEMORY,
         ASSERT,
         EXPECTED,
         END,
@@ -113,6 +114,10 @@ struct WastParser {
                         r.popFront;
                         break;
                     case MEMORY:
+                        r.popFront;
+                        foreach (i; 0 .. instr.pops) {
+                            parse_instr(r, ParserStage.CODE);
+                        }
                         break;
                     case MEMOP:
                         break;
@@ -201,6 +206,16 @@ struct WastParser {
                     arg = r.token;
                     r.popFront;
                     return ParserStage.RESULT;
+                case "memory":
+                    check(stage == ParserStage.MODULE, r);
+                    r.popFront;
+                    check(r.type == TokenType.WORD, r);
+                    label = r.token;
+                    r.popFront;
+                    check(r.type == TokenType.WORD, r);
+                    arg = r.token;
+                    r.popFront;
+                    return ParserStage.MEMORY;
                 case "export":
                     check(stage == ParserStage.MODULE, r);
 

@@ -207,7 +207,8 @@ version (unittest) {
         //wast_text = "f64_cmp.wast".unitfile.readText;
         //wast_text = "float_exprs.wast".unitfile.readText;
         //wast_text = "unreachable.wast".unitfile.readText;
-        wast_text = "float_literals.wast".unitfile.readText;
+        //wast_text = "float_literals.wast".unitfile.readText;
+        wast_text = "float_memory.wast".unitfile.readText;
     }
 }
 
