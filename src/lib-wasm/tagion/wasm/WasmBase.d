@@ -278,12 +278,12 @@ enum IR : ubyte {
         @Instr("f32.trunc", "f32.trunc", 1, IRType.CODE, 1, 1)           F32_TRUNC           = 0x8F, ///  f32.trunc
         @Instr("f32.nearest", "f32.nearest", 1, IRType.CODE, 1, 1)         F32_NEAREST         = 0x90, ///  f32.nearest
         @Instr("f32.sqrt", "f32.sqrt", 3, IRType.CODE, 1, 1)            F32_SQRT            = 0x91, ///  f32.sqrt
-        @Instr("f32.add", "f32.add", 3, IRType.CODE, 1, 1)             F32_ADD             = 0x92, ///  f32.add
-        @Instr("f32.sub", "f32.sub", 3, IRType.CODE, 1, 1)             F32_SUB             = 0x93, ///  f32.sub
-        @Instr("f32.mul", "f32.mul", 3, IRType.CODE, 1, 1)             F32_MUL             = 0x94, ///  f32.mul
-        @Instr("f32.div", "f32.div", 3, IRType.CODE, 1, 1)             F32_DIV             = 0x95, ///  f32.div
-        @Instr("f32.min", "f32.min", 1, IRType.CODE, 1, 1)             F32_MIN             = 0x96, ///  f32.min
-        @Instr("f32.max", "f32.max", 1, IRType.CODE, 1, 1)             F32_MAX             = 0x97, ///  f32.max
+        @Instr("f32.add", "f32.add", 3, IRType.CODE, 2, 1)             F32_ADD             = 0x92, ///  f32.add
+        @Instr("f32.sub", "f32.sub", 3, IRType.CODE, 2, 1)             F32_SUB             = 0x93, ///  f32.sub
+        @Instr("f32.mul", "f32.mul", 3, IRType.CODE, 2, 1)             F32_MUL             = 0x94, ///  f32.mul
+        @Instr("f32.div", "f32.div", 3, IRType.CODE, 2, 1)             F32_DIV             = 0x95, ///  f32.div
+        @Instr("f32.min", "f32.min", 1, IRType.CODE, 2, 1)             F32_MIN             = 0x96, ///  f32.min
+        @Instr("f32.max", "f32.max", 1, IRType.CODE, 2, 1)             F32_MAX             = 0x97, ///  f32.max
         @Instr("f32.copysign", "f32.copysign", 1, IRType.CODE, 2, 1)        F32_COPYSIGN        = 0x98, ///  f32.copysign
 
         @Instr("f64.abs", "f64.abs", 1, IRType.CODE, 1, 1)             F64_ABS             = 0x99, ///  f64.abs

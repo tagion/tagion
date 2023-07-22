@@ -99,25 +99,20 @@ struct WastParser {
                     case LOCAL:
                         r.popFront;
                         label = r.token;
-                        writefln("Local %s %s", instr.name, label);
                         check(r.type == TokenType.WORD, r);
                         r.popFront;
-                        writefln("End Local %s", r.type);
                         break;
                     case GLOBAL:
                         r.popFront;
                         label = r.token;
-                        writefln("Global %s %s", instr.name, label);
                         check(r.type == TokenType.WORD, r);
                         r.popFront;
-                        writefln("End global %s", r.type);
                         break;
                     case MEMORY:
                         break;
                     case MEMOP:
                         break;
                     case CONST:
-                        writefln("Const %s %d", instr.wast, instr.pops);
                         r.popFront;
                         check(r.type == TokenType.WORD, r);
                         label = r.token;
@@ -138,7 +133,6 @@ struct WastParser {
         }
 
         ParserStage parse_section(ref WastTokenizer r, const ParserStage stage) {
-            writefln("parse_section %s", r);
             if (r.type == TokenType.BEGIN) {
                 string label;
                 string arg;
@@ -175,15 +169,9 @@ struct WastParser {
                     while (arg_stage == ParserStage.PARAM);
                     //auto result_r=r.save;
                     if (arg_stage != ParserStage.RESULT) {
-                        writefln(">Rewind %s %s", r.token, r.type);
                         r = rewined;
-                        writefln("<Rewind %s %s", r.token, r.type);
-
-                        //parse_section(r, ParserStage.FUNC);
                     }
-                    writefln("Begin function %s %s", label, r.type);
                     parse_instr(r, ParserStage.FUNC_BODY);
-                    writefln("End function %s %s:%s ", label, r.token, r.type);
                     return ParserStage.FUNC;
                 case "param": // Example (param $y i32)
                     check(stage == ParserStage.FUNC, r);
@@ -194,8 +182,6 @@ struct WastParser {
                     check(r.type == TokenType.WORD, r);
                     arg = r.token;
                     r.popFront;
-                    writefln("::Param %s %s", label, arg);
-                    //parse_section(r, stage);
                     return ParserStage.PARAM;
                 case "result":
                     check(stage == ParserStage.FUNC, r);
@@ -203,20 +189,16 @@ struct WastParser {
                     check(r.type == TokenType.WORD, r);
                     arg = r.token;
                     r.popFront;
-                    writefln("::Result %s", arg);
                     return ParserStage.RESULT;
                 case "export":
                     check(stage == ParserStage.MODULE, r);
 
                     r.popFront;
-                    writefln("export %s", r);
                     check(r.type == TokenType.STRING, r);
                     label = r.token;
                     r.popFront;
                     arg = r.token;
-                    writefln("---export %s", r);
                     check(r.type == TokenType.WORD, r);
-                    writefln("End export %s %s", label, arg);
                     r.popFront;
                     return ParserStage.EXPORT;
                 case "assert_return":
@@ -234,36 +216,28 @@ struct WastParser {
                     r.popFront;
                     // Invoke call
                     parse_instr(r, ParserStage.ASSERT);
-                    writefln("String %s", r);
 
                     check(r.type == TokenType.STRING, r);
                     arg = r.token;
                     r.popFront;
                     return ParserStage.ASSERT;
+                case "assert_return_nan":
+                    check(stage == ParserStage.BASE, r);
+                    label = r.token;
+                    r.popFront;
+                    // Invoke call
+                    parse_instr(r, ParserStage.ASSERT);
+
+                    return ParserStage.ASSERT;
                 default:
                     if (r.type == TokenType.COMMENT) {
-                        writefln("Comment!!!");
                         r.popFront;
                         return ParserStage.COMMENT;
                     }
-                    /*
-                    if (stage == ParserStage.FUNC) {
-                        r.popFront;
-                        writefln("---> FUNC body begin %s", r.type);
-                        return parse_instr(r, ParserStage.FUNC);
-                    }
-                    else {
-                */
                     r.popFront;
                     parse_section(r, stage);
-                    //  }
-                }
-
-                if (r.type != TokenType.END) {
-                    writefln("Error %s expected", TokenType.END);
                 }
             }
-            writefln("End!!");
             return ParserStage.END;
         }
 

@@ -169,7 +169,8 @@ version (unittest) {
 
     immutable(string) wast_text;
     shared static this() {
-        wast_text = "i32.wast".unitfile.readText;
+        //wast_text = "i32.wast".unitfile.readText;
+        wast_text = "f32.wast".unitfile.readText;
     }
 }
 
