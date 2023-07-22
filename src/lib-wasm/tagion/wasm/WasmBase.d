@@ -293,12 +293,12 @@ enum IR : ubyte {
         @Instr("f64.trunc", "f64.trunc", 1, IRType.CODE, 1, 1)           F64_TRUNC           = 0x9D, ///  f64.trunc
         @Instr("f64.nearest", "f64.nearest", 1, IRType.CODE, 1, 1)         F64_NEAREST         = 0x9E, ///  f64.nearest
         @Instr("f64.sqrt", "f64.sqrt", 3, IRType.CODE, 1, 1)            F64_SQRT            = 0x9F, ///  f64.sqrt
-        @Instr("f64.add", "f64.add", 3, IRType.CODE, 1, 1)             F64_ADD             = 0xA0, ///  f64.add
-        @Instr("f64.sub", "f64.sub", 3, IRType.CODE, 1, 1)             F64_SUB             = 0xA1, ///  f64.sub
-        @Instr("f64.mul", "f64.mul", 3, IRType.CODE, 1, 1)             F64_MUL             = 0xA2, ///  f64.mul
-        @Instr("f64.div", "f64.div", 3, IRType.CODE, 1, 1)             F64_DIV             = 0xA3, ///  f64.div
-        @Instr("f64.min", "f64.min", 1, IRType.CODE, 1, 1)             F64_MIN             = 0xA4, ///  f64.min
-        @Instr("f64.max", "f64.max", 1, IRType.CODE, 1, 1)             F64_MAX             = 0xA5, ///  f64.max
+        @Instr("f64.add", "f64.add", 3, IRType.CODE, 2, 1)             F64_ADD             = 0xA0, ///  f64.add
+        @Instr("f64.sub", "f64.sub", 3, IRType.CODE, 2, 1)             F64_SUB             = 0xA1, ///  f64.sub
+        @Instr("f64.mul", "f64.mul", 3, IRType.CODE, 2, 1)             F64_MUL             = 0xA2, ///  f64.mul
+        @Instr("f64.div", "f64.div", 3, IRType.CODE, 2, 1)             F64_DIV             = 0xA3, ///  f64.div
+        @Instr("f64.min", "f64.min", 1, IRType.CODE, 2, 1)             F64_MIN             = 0xA4, ///  f64.min
+        @Instr("f64.max", "f64.max", 1, IRType.CODE, 2, 1)             F64_MAX             = 0xA5, ///  f64.max
         @Instr("f64.copysign", "f64.copysign", 1, IRType.CODE, 2, 1)        F64_COPYSIGN        = 0xA6, ///  f64.copysign
 
         @Instr("i32.wrap_i64", "i32.wrap_i64", 1, IRType.CODE, 1, 1)        I32_WRAP_I64        = 0xA7, ///  i32.wrap_i64
