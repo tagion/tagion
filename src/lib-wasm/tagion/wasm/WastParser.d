@@ -173,10 +173,12 @@ struct WastParser {
                 case "func": // Example (func $name (param ...) (result i32) )
                     check(stage < ParserStage.FUNC, r);
                     r.popFront;
-                    check(r.type == TokenType.WORD, r);
-                    label = r.token;
-                    writefln("::Func label %s", label);
-                    r.popFront;
+                    if (r.type == TokenType.WORD) {
+                        // Function with label
+                        label = r.token;
+                        writefln("::Func label %s", label);
+                        r.popFront;
+                    }
                     ParserStage arg_stage;
                     WastTokenizer rewined;
                     do {
