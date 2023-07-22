@@ -173,7 +173,8 @@ version (unittest) {
         //wast_text = "f32.wast".unitfile.readText;
         //wast_text = "i64.wast".unitfile.readText;
         //wast_text = "f64.wast".unitfile.readText;
-        wast_text = "f32_cmp.wast".unitfile.readText;
+        //wast_text = "f32_cmp.wast".unitfile.readText;
+        wast_text = "f64_cmp.wast".unitfile.readText;
     }
 }
 
