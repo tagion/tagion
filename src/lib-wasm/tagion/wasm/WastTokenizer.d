@@ -219,7 +219,8 @@ version (unittest) {
         //wast_text = "func_ptrs.wast".unitfile.readText;
         //        wast_text = "functions.wast".unitfile.readText;
         /// -- wast_text = "has_feature.wast".unitfile.readText;
-        wast_text = "imports.wast".unitfile.readText;
+        //wast_text = "imports.wast".unitfile.readText;
+        wast_text = "int_exprs.wast".unitfile.readText;
     }
 }
 
