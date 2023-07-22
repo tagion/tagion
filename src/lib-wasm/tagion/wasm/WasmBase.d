@@ -327,10 +327,10 @@ enum IR : ubyte {
         @Instr("f64.convert_i64_s", "f64.convert_s/i64", 1, IRType.CODE, 1, 1)   F64_CONVERT_I64_S   = 0xB9, ///  f64.convert_i64_s
         @Instr("f64.convert_i64_u", "f64.convert_u/i64", 1, IRType.CODE, 1, 1)   F64_CONVERT_I64_U   = 0xBA, ///  f64.convert_i64_u
         @Instr("f64.promote_f32", "f64.promote_f32", 1, IRType.CODE, 1, 1)     F64_PROMOTE_F32     = 0xBB, ///  f64.promote_f32
-        @Instr("i32.reinterpret_f32", "i32.reinterpret_f32", 1, IRType.CODE, 1, 1) I32_REINTERPRET_F32 = 0xBC, ///  i32.reinterpret_f32
-        @Instr("i64.reinterpret_f64", "i64.reinterpret_f64", 1, IRType.CODE, 1, 1) I64_REINTERPRET_F64 = 0xBD, ///  i64.reinterpret_f64
-        @Instr("f32.reinterpret_i32", "f32.reinterpret_i32", 1, IRType.CODE, 1, 1) F32_REINTERPRET_I32 = 0xBE, ///  f32.reinterpret_i32
-        @Instr("f64.reinterpret_i64", "f64.reinterpret_i64", 1, IRType.CODE, 1, 1) F64_REINTERPRET_I64 = 0xBF, ///  f64.reinterpret_i64
+        @Instr("i32.reinterpret_f32", "i32.reinterpret/f32", 1, IRType.CODE, 1, 1) I32_REINTERPRET_F32 = 0xBC, ///  i32.reinterpret_f32
+        @Instr("i64.reinterpret_f64", "i64.reinterpret/f64", 1, IRType.CODE, 1, 1) I64_REINTERPRET_F64 = 0xBD, ///  i64.reinterpret_f64
+        @Instr("f32.reinterpret_i32", "f32.reinterpret/i32", 1, IRType.CODE, 1, 1) F32_REINTERPRET_I32 = 0xBE, ///  f32.reinterpret_i32
+        @Instr("f64.reinterpret_i64", "f64.reinterpret/i64", 1, IRType.CODE, 1, 1) F64_REINTERPRET_I64 = 0xBF, ///  f64.reinterpret_i64
         @Instr("truct_sat", "truct_sat", 1, IRType.CODE, 1, 1, true)     TRUNC_SAT           = 0xFC, ///  TYPE.truct_sat_TYPE_SIGN
             // dfmt on
 
