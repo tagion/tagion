@@ -31,6 +31,7 @@ struct WastParser {
         BASE,
         COMMENT,
         MODULE,
+        TYPE,
         FUNC,
         PARAM,
         RESULT,
@@ -38,6 +39,7 @@ struct WastParser {
         CODE,
         END_FUNC,
         EXPORT,
+        IMPORT,
         MEMORY,
         ASSERT,
         EXPECTED,
@@ -174,6 +176,24 @@ struct WastParser {
                     }
                     while (r.type != TokenType.END && !r.empty);
                     return ParserStage.MODULE;
+                case "type":
+                    r.popFront;
+
+                    if (stage == ParserStage.MODULE) {
+                        if (r.type == TokenType.WORD) {
+                            label = r.token;
+                            r.popFront;
+                        }
+                        parse_section(r, ParserStage.TYPE);
+                        return stage;
+                    }
+                    //if (stage == ParserStage.FUNC) {
+                    check(r.type == TokenType.WORD, r);
+                    label = r.token;
+                    r.popFront;
+                    return ParserStage.TYPE;
+                    //}
+                    //return stage;
                 case "func": // Example (func $name (param ...) (result i32) )
                     check(stage < ParserStage.FUNC, r);
                     r.popFront;
@@ -185,36 +205,41 @@ struct WastParser {
                     }
                     ParserStage arg_stage;
                     WastTokenizer rewined;
+                    uint only_one_type_allowed;
                     do {
                         rewined = r.save;
                         arg_stage = parse_section(r, ParserStage.FUNC);
                         writefln("Args %s", arg_stage);
+
+                        only_one_type_allowed += (only_one_type_allowed > 0) || (arg_stage == ParserStage.TYPE);
+
+                        //count_types+=(arg_stage == ParserStage.TYPE);
                     }
-                    while (arg_stage == ParserStage.PARAM);
+                    while ((arg_stage == ParserStage.PARAM) || (only_one_type_allowed == 1));
                     //auto result_r=r.save;
                     writefln("Before rewind %s", arg_stage);
-                    if (arg_stage != ParserStage.RESULT) {
+                    if (arg_stage != ParserStage.TYPE && arg_stage != ParserStage.RESULT) {
                         r = rewined;
                     }
+                    while (r.type == TokenType.BEGIN) {
 
-                    do {
                         const ret = parse_instr(r, ParserStage.FUNC_BODY);
                         check(ret == ParserStage.FUNC_BODY, r);
                     }
-                    while (r.type != TokenType.END);
                     return ParserStage.FUNC;
                 case "param": // Example (param $y i32)
                     check(stage == ParserStage.FUNC, r);
                     r.popFront;
-                    check(r.type == TokenType.WORD, r);
-                    if (r.token.getType is Types.EMPTY) {
+                    if (r.type == TokenType.WORD && r.token.getType is Types.EMPTY) {
                         label = r.token;
                         r.popFront;
 
                         check(r.type == TokenType.WORD, r);
                     }
-                    arg = r.token;
-                    r.popFront;
+                    if (r.type == TokenType.WORD) {
+                        arg = r.token;
+                        r.popFront;
+                    }
                     return ParserStage.PARAM;
                 case "result":
                     check(stage == ParserStage.FUNC, r);
@@ -246,6 +271,22 @@ struct WastParser {
                     check(r.type == TokenType.WORD, r);
                     r.popFront;
                     return ParserStage.EXPORT;
+                case "import":
+                    string arg2;
+                    r.popFront;
+                    check(r.type == TokenType.WORD, r);
+                    label = r.token;
+                    r.popFront;
+                    check(r.type == TokenType.STRING, r);
+                    arg = r.token;
+                    r.popFront;
+                    check(r.type == TokenType.STRING, r);
+                    arg2 = r.token;
+                    r.popFront;
+                    const ret = parse_section(r, ParserStage.IMPORT);
+                    check(ret == ParserStage.TYPE, r);
+
+                    return stage;
                 case "assert_return":
                     check(stage == ParserStage.BASE, r);
                     label = r.token;

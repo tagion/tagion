@@ -364,6 +364,7 @@ shared static immutable(Instr[string]) instrWastLookup;
 enum PseudoWastInstr {
     invoke = "invoke",
     if_else = "if_else",
+    call_import = "call_import",
 }
 
 protected immutable(Instr[IR]) generate_instrTable() {
@@ -403,6 +404,8 @@ shared static this() {
                 .CALL);
         result[PseudoWastInstr.if_else] = Instr("<" ~ PseudoWastInstr.if_else ~ ">", PseudoWastInstr.if_else, uint.max, IRType
                 .BRANCH, 3, 1);
+        result[PseudoWastInstr.call_import] = Instr("<" ~ PseudoWastInstr.call_import ~ ">", PseudoWastInstr.call_import, uint
+                .max, IRType.CALL);
         return assumeUnique(result);
     }
 
