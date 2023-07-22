@@ -229,17 +229,28 @@ struct WastParser {
                     }
                     return ParserStage.FUNC;
                 case "param": // Example (param $y i32)
-                    check(stage == ParserStage.FUNC, r);
                     r.popFront;
-                    if (r.type == TokenType.WORD && r.token.getType is Types.EMPTY) {
-                        label = r.token;
-                        r.popFront;
-
-                        check(r.type == TokenType.WORD, r);
+                    if (stage == ParserStage.IMPORT) {
+                        Types[] wasm_types;
+                        writefln("Import PARAM %s %s", r, r.token.getType);
+                        while (r.token.getType !is Types.EMPTY) {
+                            wasm_types ~= r.token.getType;
+                            r.popFront;
+                        }
                     }
-                    if (r.type == TokenType.WORD) {
-                        arg = r.token;
-                        r.popFront;
+                    else {
+                        check(stage == ParserStage.FUNC, r);
+
+                        if (r.type == TokenType.WORD && r.token.getType is Types.EMPTY) {
+                            label = r.token;
+                            r.popFront;
+
+                            check(r.type == TokenType.WORD, r);
+                        }
+                        if (r.type == TokenType.WORD) {
+                            arg = r.token;
+                            r.popFront;
+                        }
                     }
                     return ParserStage.PARAM;
                 case "result":
@@ -285,7 +296,7 @@ struct WastParser {
                     arg2 = r.token;
                     r.popFront;
                     const ret = parse_section(r, ParserStage.IMPORT);
-                    check(ret == ParserStage.TYPE, r);
+                    check(ret == ParserStage.TYPE || ret == ParserStage.PARAM, r);
 
                     return stage;
                 case "assert_return":
