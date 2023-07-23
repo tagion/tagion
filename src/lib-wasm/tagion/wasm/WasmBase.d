@@ -414,8 +414,8 @@ shared static this() {
 
         setPseudo(PseudoWastInstr.invoke, IRType.CALL);
         setPseudo(PseudoWastInstr.if_else, IRType.BRANCH, 3, 1);
-        setPseudo(PseudoWastInstr.local, IRType.LOCAL);
-        setPseudo(PseudoWastInstr.label, IRType.SYMBOL, 1, 1);
+        setPseudo(PseudoWastInstr.local, IRType.SYMBOL, 0, uint.max);
+        setPseudo(PseudoWastInstr.label, IRType.SYMBOL, 1, uint.max);
         setPseudo(PseudoWastInstr.call_import, IRType.CALL);
         setPseudo(PseudoWastInstr.tableswitch, IRType.SYMBOL, uint.max, uint.max);
         setPseudo(PseudoWastInstr.table, IRType.SYMBOL, uint.max);

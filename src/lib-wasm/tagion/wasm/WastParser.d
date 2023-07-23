@@ -167,7 +167,13 @@ struct WastParser {
                         break;
                     case MEMORY:
                         writefln("MEMORY %s", r);
+
                         r.popFront;
+                        for (uint i = 0; (i < 2) && (r.type == TokenType.WORD); i++) {
+                            label = r.token; // Fix this later
+                            writefln("memory arg %s", label);
+                            r.popFront;
+                        }
                         foreach (i; 0 .. instr.pops) {
                             parse_instr(r, ParserStage.CODE);
                         }
@@ -330,7 +336,19 @@ struct WastParser {
                         arg = r.token;
                         r.popFront;
                     }
+                    while (r.type == TokenType.BEGIN) {
+                        parse_section(r, ParserStage.MEMORY);
+                    }
                     return ParserStage.MEMORY;
+                case "segment":
+                    r.popFront;
+                    check(r.type == TokenType.WORD, r);
+                    label = r.token;
+                    r.popFront;
+                    check(r.type == TokenType.STRING, r);
+                    arg = r.token;
+                    r.popFront;
+                    break;
                 case "export":
                     check(stage == ParserStage.MODULE, r);
 
@@ -393,7 +411,6 @@ struct WastParser {
                     check(stage == ParserStage.BASE, r);
                     r.popFront;
                     parse_section(r, ParserStage.ASSERT);
-                    r.popFront;
                     check(r.type == TokenType.STRING, r);
                     arg = r.token;
                     r.popFront;
