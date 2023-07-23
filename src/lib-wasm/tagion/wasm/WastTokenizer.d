@@ -226,7 +226,8 @@ version (unittest) {
         //        wast_text = "left-to-right.wast".unitfile.readText;
         //wast_text = "memory_redundancy.wast".unitfile.readText;
         //        wast_text = "memory_trap.wast".unitfile.readText;
-        wast_text = "memory.wast".unitfile.readText;
+        //wast_text = "memory.wast".unitfile.readText;
+        wast_text = "resizing.wast".unitfile.readText;
     }
 }
 
