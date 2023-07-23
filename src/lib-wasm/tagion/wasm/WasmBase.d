@@ -113,6 +113,7 @@ enum IRType {
     //    BLOCK_IF,      /// Block for [IF] ELSE END
     //   BLOCK_ELSE,    /// Block for IF [ELSE] END
     BRANCH, /// Branch jump instruction
+    BRANCH_IF, /// Conditional branch jump instruction
     BRANCH_TABLE, /// Branch table jump instruction
     CALL, /// Subroutine call
     CALL_INDIRECT, /// Indirect subroutine call
@@ -150,7 +151,7 @@ enum IR : ubyte {
         @Instr("else", "else", 0, IRType.END)                       ELSE                = 0x05, ///  else
         @Instr("end", "end", 0, IRType.END)                        END                 = 0x0B, ///  end
         @Instr("br", "br", 1, IRType.BRANCH, 1)                      BR                  = 0x0C, ///  br l:labelidx
-        @Instr("br_if", "br_if", 1, IRType.BRANCH, 1)                BR_IF               = 0x0D, ///  br_if l:labelidx
+        @Instr("br_if", "br_if", 1, IRType.BRANCH_IF, 1)                BR_IF               = 0x0D, ///  br_if l:labelidx
         @Instr("br_table", "br_table", 1, IRType.BRANCH_TABLE, 1)       BR_TABLE            = 0x0E, ///  br_table l:vec(labelidx) * lN:labelidx
         @Instr("return", "return", 1, IRType.CODE, 1)                    RETURN              = 0x0F, ///  return
         @Instr("call", "call", 1, IRType.CALL)                      CALL                = 0x10, ///  call x:funcidx
@@ -796,6 +797,7 @@ static assert(isInputRange!ExprRange);
                     _level++;
                     break;
                 case BRANCH:
+                case BRANCH_IF:
                     // branchidx
                     set(elm._warg, Types.I32);
                     _level++;

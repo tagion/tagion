@@ -30,6 +30,7 @@ struct WastParser {
     enum ParserStage {
         BASE,
         COMMENT,
+        ASSERT,
         MODULE,
         TYPE,
         FUNC,
@@ -41,7 +42,6 @@ struct WastParser {
         EXPORT,
         IMPORT,
         MEMORY,
-        ASSERT,
         EXPECTED,
         END,
     }
@@ -110,6 +110,17 @@ struct WastParser {
                         }
                         if (r.type == TokenType.BEGIN) {
                             //foreach (i; 0 .. instr.pops) {
+                            parse_instr(r, ParserStage.CODE);
+                        }
+                        break;
+                    case BRANCH_IF:
+                        r.popFront;
+                        parse_instr(r, ParserStage.CODE);
+                        writefln("BRANCH_IF %s", r);
+                        check(r.type == TokenType.WORD, r);
+                        label = r.token;
+                        r.popFront;
+                        if (r.type == TokenType.BEGIN) {
                             parse_instr(r, ParserStage.CODE);
                         }
                         break;
@@ -319,6 +330,7 @@ struct WastParser {
                     check(stage == ParserStage.MODULE, r);
 
                     r.popFront;
+                    writefln("Export %s", r);
                     check(r.type == TokenType.STRING, r);
                     label = r.token;
                     r.popFront;
@@ -372,6 +384,15 @@ struct WastParser {
                     parse_instr(r, ParserStage.ASSERT);
 
                     return ParserStage.ASSERT;
+                case "assert_invalid":
+                    check(stage == ParserStage.BASE, r);
+                    r.popFront;
+                    parse_section(r, ParserStage.ASSERT);
+                    r.popFront;
+                    check(r.type == TokenType.STRING, r);
+                    arg = r.token;
+                    r.popFront;
+                    return ParserStage.ASSERT;
                 default:
                     if (r.type == TokenType.COMMENT) {
                         r.popFront;
@@ -379,6 +400,7 @@ struct WastParser {
                     }
                     not_ended = true;
                     writefln("DEFAULT %s", r);
+                    check(0, r);
                     return stage;
                 }
             }

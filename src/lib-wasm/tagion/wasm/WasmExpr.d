@@ -27,7 +27,7 @@ struct WasmExpr {
                         format("Instruction %s should have no arguments", instr.name));
                 // No args
                 break;
-            case BLOCK, BRANCH, CALL, LOCAL, GLOBAL:
+            case BLOCK, BRANCH, BRANCH_IF, CALL, LOCAL, GLOBAL:
                 assert(Args.length == 1,
                         format("Instruction %s only one argument expected", instr.name));
                 static if (Args.length == 1) {
