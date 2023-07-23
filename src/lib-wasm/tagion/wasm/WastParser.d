@@ -44,10 +44,13 @@ struct WastParser {
         MEMORY,
         EXPECTED,
         END,
+        UNDEFINED,
     }
 
     void parse(ref WastTokenizer tokenizer) {
         void check(const bool flag, ref const(WastTokenizer) r, string file = __FILE__, const size_t line = __LINE__) {
+            import std.stdio;
+
             if (!flag) {
                 writefln("Error: %s:%s:%d:%d", r.token, r.type, r.line, r.line_pos);
                 writefln("%s:%d", file, line);
@@ -56,7 +59,6 @@ struct WastParser {
         }
 
         ParserStage parse_instr(ref WastTokenizer r, const ParserStage stage) {
-            writefln("Parse instr %s %s", r.token, r.type);
             version (none)
                 if (r.type == TokenType.COMMENT) {
                     r.nextToken;
@@ -65,26 +67,20 @@ struct WastParser {
             check(r.type == TokenType.BEGIN, r);
             scope (exit) {
                 check(r.type == TokenType.END, r);
-                writefln("<%s %s", r.type, r.token);
                 r.nextToken;
             }
             r.nextToken;
-            writefln("IR %s:%s", r.token, r.type);
             check(r.type == TokenType.WORD, r);
             const instr = instrWastLookup.get(r.token, Instr.init);
-            writefln("Instr %s", instr);
             string label;
             if (instr !is Instr.init) {
                 with (IRType) {
                     final switch (instr.irtype) {
                     case CODE:
-                        writefln("code %s %s", instr.wast, instr.pops);
                         r.nextToken;
                         foreach (i; 0 .. instr.pops) {
-                            writefln("\targ %d '%s'", i, r.token);
                             parse_instr(r, ParserStage.CODE);
                         }
-                        writefln("end code %s %s:%s %d:%d", instr.wast, r.token, r.type, r.line, r.line_pos);
                         break;
                     case BLOCK:
                         string arg;
@@ -105,11 +101,10 @@ struct WastParser {
                     case BRANCH:
                         r.nextToken;
                         if (r.type == TokenType.WORD) {
-                            writefln("Branch %s", r);
                             label = r.token;
                             r.nextToken;
                         }
-                        if (r.type == TokenType.BEGIN) {
+                        while (r.type == TokenType.BEGIN) {
                             //foreach (i; 0 .. instr.pops) {
                             parse_instr(r, ParserStage.CODE);
                         }
@@ -117,7 +112,6 @@ struct WastParser {
                     case BRANCH_IF:
                         r.nextToken;
                         parse_instr(r, ParserStage.CODE);
-                        writefln("BRANCH_IF %s", r);
                         check(r.type == TokenType.WORD, r);
                         label = r.token;
                         r.nextToken;
@@ -129,27 +123,21 @@ struct WastParser {
                         break;
                     case CALL:
                         r.nextToken;
-                        writefln("CALL %s", r);
                         label = r.token;
                         r.nextToken;
                         while (r.type == TokenType.BEGIN) {
                             parse_instr(r, ParserStage.CODE);
-                            writefln("Arg--%s", r);
                         }
 
-                        writefln("End call %s", r);
                         break;
                     case CALL_INDIRECT:
                         break;
                     case LOCAL:
                         string arg;
-                        writefln("LOCAL %s", r);
                         r.nextToken;
                         label = r.token;
-                        writefln("LOCAL arg %s", r);
                         check(r.type == TokenType.WORD, r);
                         r.nextToken;
-
                         if (r.type == TokenType.WORD) {
                             arg = r.token;
                             r.nextToken;
@@ -167,12 +155,10 @@ struct WastParser {
                         r.nextToken;
                         break;
                     case MEMORY:
-                        writefln("MEMORY %s", r);
 
                         r.nextToken;
                         for (uint i = 0; (i < 2) && (r.type == TokenType.WORD); i++) {
                             label = r.token; // Fix this later
-                            writefln("memory arg %s", label);
                             r.nextToken;
                         }
                         foreach (i; 0 .. instr.pops) {
@@ -199,7 +185,6 @@ struct WastParser {
                         r.nextToken;
                         for (uint i = 0; (instr.push == uint.max) ? r.type == TokenType.WORD : i < instr.push; i++) {
                             label = r.token;
-                            writefln("Label %s", r);
                             r.nextToken;
                         }
                         for (uint i = 0; (instr.pops == uint.max) ? r.type == TokenType.BEGIN : i < instr.pops; i++) {
@@ -232,7 +217,6 @@ struct WastParser {
                     check(r.type == TokenType.END || not_ended, r);
                     r.nextToken;
                 }
-                writefln("Token %s %s", r.token, r.type);
                 switch (r.token) {
                 case "module":
                     check(stage < ParserStage.MODULE, r);
@@ -266,17 +250,14 @@ struct WastParser {
                     if (r.type == TokenType.WORD) {
                         // Function with label
                         label = r.token;
-                        writefln("::Func label %s", label);
                         r.nextToken;
                     }
                     ParserStage arg_stage;
                     WastTokenizer rewined;
                     uint only_one_type_allowed;
-                    writefln("First token %s", r);
                     do {
                         rewined = r.save;
                         arg_stage = parse_section(r, ParserStage.FUNC);
-                        writefln("Args %s", arg_stage);
 
                         only_one_type_allowed += (only_one_type_allowed > 0) || (arg_stage == ParserStage.TYPE);
 
@@ -284,12 +265,11 @@ struct WastParser {
                     }
                     while ((arg_stage == ParserStage.PARAM) || (only_one_type_allowed == 1));
                     //auto result_r=r.save;
-                    writefln("Before rewind %s", arg_stage);
-                    if (arg_stage != ParserStage.TYPE && arg_stage != ParserStage.RESULT) {
+                    if (arg_stage != ParserStage.TYPE && arg_stage != ParserStage.RESULT || arg_stage == ParserStage
+                            .UNDEFINED) {
                         r = rewined;
                     }
                     while (r.type == TokenType.BEGIN) {
-                        writefln("Function body %s", label);
                         const ret = parse_instr(r, ParserStage.FUNC_BODY);
                         check(ret == ParserStage.FUNC_BODY, r);
                     }
@@ -298,7 +278,6 @@ struct WastParser {
                     r.nextToken;
                     if (stage == ParserStage.IMPORT) {
                         Types[] wasm_types;
-                        writefln("Import PARAM %s %s", r, r.token.getType);
                         while (r.token.getType !is Types.EMPTY) {
                             wasm_types ~= r.token.getType;
                             r.nextToken;
@@ -354,7 +333,6 @@ struct WastParser {
                     check(stage == ParserStage.MODULE, r);
 
                     r.nextToken;
-                    writefln("Export %s", r);
                     check(r.type == TokenType.STRING, r);
                     label = r.token;
                     r.nextToken;
@@ -422,9 +400,8 @@ struct WastParser {
                         return ParserStage.COMMENT;
                     }
                     not_ended = true;
-                    writefln("DEFAULT %s", r);
-                    //check(0, r);
-                    return stage;
+                    r.nextToken;
+                    return ParserStage.UNDEFINED;
                 }
             }
             if (r.type == TokenType.COMMENT) {
@@ -434,7 +411,6 @@ struct WastParser {
         }
 
         while (parse_section(tokenizer, ParserStage.BASE) !is ParserStage.END) {
-            write("* ");
             //empty    
         }
 
@@ -444,14 +420,79 @@ struct WastParser {
 
 version (WAST) @safe
 unittest {
-    import tagion.wasm.WastTokenizer : wast_text;
+    import tagion.basic.basic : unitfile;
+    import std.file : readText;
+    import std.stdio;
 
-    auto tokenizer = WastTokenizer(wast_text);
-    auto writer = new WasmWriter;
-    auto wast_parser = WastParser(writer);
-    wast_parser.parse(tokenizer);
-    tokenizer.popFront;
-    writefln("%s:%s", tokenizer.token, tokenizer.type);
-    tokenizer.popFront;
-    writefln("%s:%s", tokenizer.token, tokenizer.type);
+    immutable wast_test_files = [
+        "i32.wast",
+        "f32.wast",
+        "i64.wast",
+        "f64.wast",
+        "f32_cmp.wast",
+        "f64_cmp.wast",
+        "float_exprs.wast",
+        "unreachable.wast",
+        "float_literals.wast",
+        "float_memory.wast",
+        "float_misc.wast",
+        "conversions.wast",
+        "endianness.wast",
+        "traps.wast",
+        "runaway-recursion.wast",
+        "nan-propagation.wast",
+        "forward.wast",
+        "func_ptrs.wast",
+        "functions.wast",
+        // "has_feature.wast",
+        "imports.wast",
+        "int_exprs.wast",
+        "int_literals.wast",
+        "labels.wast",
+        "left-to-right.wast",
+        "memory_redundancy.wast",
+        "memory_trap.wast",
+        "memory.wast",
+        "resizing.wast",
+        "select.wast",
+        "store_retval.wast",
+        "switch.wast",
+    ];
+    version (none) immutable wast_test_files = [
+        "unreachable.wast",
+        /*
+        "float_literals.wast",
+        "float_memory.wast",
+        "float_misc.wast",
+        "conversions.wast",
+        "endianness.wast",
+        "traps.wast",
+        "runaway-recursion.wast",
+        "nan-propagation.wast",
+        "forward.wast",
+        "func_ptrs.wast",
+        "functions.wast",
+        "has_feature.wast",
+        "imports.wast",
+        "int_exprs.wast",
+        "int_literals.wast",
+        "labels.wast",
+        "left-to-right.wast",
+        "memory_redundancy.wast",
+        "memory_trap.wast",
+        "memory.wast",
+        "resizing.wast",
+        "select.wast",
+        "store_retval.wast",
+        "switch.wast",
+*/
+    ];
+    foreach (wast_file; wast_test_files) {
+        immutable wast_text = wast_file.unitfile.readText;
+        writefln("wast_file %s", wast_file);
+        auto tokenizer = WastTokenizer(wast_text);
+        auto writer = new WasmWriter;
+        auto wast_parser = WastParser(writer);
+        wast_parser.parse(tokenizer);
+    }
 }
