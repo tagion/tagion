@@ -149,6 +149,7 @@ union nng_sockaddr {
     nng_sockaddr_storage  s_storage;
 };
 enum nng_sockaddr_family {
+    NNG_AF_NONE     = 65535,
     NNG_AF_UNSPEC   = 0,
     NNG_AF_INPROC   = 1,
     NNG_AF_IPC      = 2,
