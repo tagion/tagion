@@ -168,6 +168,14 @@ struct WastTokenizer {
             }
         }
 
+        // Like popFront exception that it skips the Comment token
+        void nextToken() {
+            do {
+                popFront;
+            }
+            while (type == TokenType.COMMENT);
+        }
+
         void trim() {
             nextUntil!q{a.isInvisiable};
             version (none)
@@ -229,7 +237,8 @@ version (unittest) {
         //wast_text = "memory.wast".unitfile.readText;
         //wast_text = "resizing.wast".unitfile.readText;
         //wast_text = "select.wast".unitfile.readText;
-        wast_text = "store_retval.wast".unitfile.readText;
+        //wast_text = "store_retval.wast".unitfile.readText;
+        wast_text = "switch.wast".unitfile.readText;
     }
 }
 
