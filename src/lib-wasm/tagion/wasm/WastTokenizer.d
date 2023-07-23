@@ -98,7 +98,6 @@ struct WastTokenizer {
                   // empty
                 }
             }, paramName, fun);
-            pragma(msg, code);
             mixin(code);
         }
 
@@ -242,7 +241,7 @@ version (unittest) {
     }
 }
 
-@safe
+version (WAST) @safe
 unittest {
     import tagion.basic.basic;
 

@@ -622,17 +622,14 @@ protected string GenerateInterfaceModule(T...)() {
 
     string[] result;
     static foreach (i, E; EnumMembers!Section) {
-        {
-            result ~= format(q{alias SecType_%s=T[Section.%s];}, i, E);
-            result ~= format(q{void %s(ref ConstOf!(SecType_%s) sec);}, secname(E), i);
-        }
+        result ~= format(q{alias SecType_%s=T[Section.%s];}, i, E);
+        result ~= format(q{void %s(ref ConstOf!(SecType_%s) sec);}, secname(E), i);
     }
     return result.join("\n");
 }
 
 interface InterfaceModuleT(T...) {
     enum code = GenerateInterfaceModule!(T)();
-    pragma(msg, code);
     mixin(code);
 }
 

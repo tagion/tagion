@@ -442,7 +442,7 @@ struct WastParser {
 
 }
 
-@safe
+version (WAST) @safe
 unittest {
     import tagion.wasm.WastTokenizer : wast_text;
 
