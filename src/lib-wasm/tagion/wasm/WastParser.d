@@ -173,6 +173,10 @@ struct WastParser {
                         }
                         break;
                     case MEMOP:
+                        r.popFront;
+                        foreach (i; 0 .. instr.pops) {
+                            parse_instr(r, ParserStage.CODE);
+                        }
                         break;
                     case CONST:
                         r.popFront;

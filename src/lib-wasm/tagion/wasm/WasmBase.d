@@ -187,8 +187,8 @@ enum IR : ubyte {
         @Instr("i64.store8", "i64.store8", 2, IRType.MEMORY, 2)           I64_STORE8          = 0x3C, ///  i64.store8   m:memarg
         @Instr("i64.store16", "i64.store16", 2, IRType.MEMORY, 2)          I64_STORE16         = 0x3D, ///  i64.store16  m:memarg
         @Instr("i64.store32", "i64.store32", 2, IRType.MEMORY, 2)          I64_STORE32         = 0x3E, ///  i64.store32  m:memarg
-        @Instr("memory.size", "memory.size", 7, IRType.MEMOP, 0, 2)        MEMORY_SIZE         = 0x3F, ///  memory.size  0x00
-        @Instr("memory.grow", "memory.grow", 7, IRType.MEMOP, 1, 2)        MEMORY_GROW         = 0x40, ///  memory.grow  0x00
+        @Instr("memory.size", "memory_size", 7, IRType.MEMOP, 0, 2)        MEMORY_SIZE         = 0x3F, ///  memory.size  0x00
+        @Instr("memory.grow", "grow_memory", 7, IRType.MEMOP, 1, 2)        MEMORY_GROW         = 0x40, ///  memory.grow  0x00
 
         @Instr("i32.const", "i32.const", 1, IRType.CONST, 0, 1)          I32_CONST           = 0x41, ///  i32.const n:i32
         @Instr("i64.const", "i64.const", 1, IRType.CONST, 0, 1)          I64_CONST           = 0x42, ///  i64.const n:i64
@@ -372,6 +372,7 @@ enum PseudoWastInstr {
     tableswitch = "tableswitch",
     table = "table",
     case_ = "case",
+    memory_size = "memory_size",
 }
 
 protected immutable(Instr[IR]) generate_instrTable() {
