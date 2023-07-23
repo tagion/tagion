@@ -223,7 +223,8 @@ version (unittest) {
         //wast_text = "int_exprs.wast".unitfile.readText;
         //wast_text = "int_literals.wast".unitfile.readText;
         //wast_text = "labels.wast".unitfile.readText;
-        wast_text = "left-to-right.wast".unitfile.readText;
+        //        wast_text = "left-to-right.wast".unitfile.readText;
+        wast_text = "memory_redundancy.wast".unitfile.readText;
     }
 }
 
