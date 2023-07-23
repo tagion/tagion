@@ -134,6 +134,8 @@ struct WasmGas {
                     case END:
                         wasmexpr(elm.code);
                         return GasResult(gas_count, elm.code);
+                    case SYMBOL:
+                        assert(0, "Symbol opcode and it does not have an equivalent opcode");
                     }
                 }
             }

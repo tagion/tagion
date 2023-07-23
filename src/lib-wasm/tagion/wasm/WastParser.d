@@ -86,10 +86,30 @@ struct WastParser {
                         writefln("end code %s %s:%s %d:%d", instr.wast, r.token, r.type, r.line, r.line_pos);
                         break;
                     case BLOCK:
-                        break;
+                        string arg;
+                        r.popFront;
+                        if (r.type == TokenType.WORD) {
+                            //check(r.type == TokenType.WORD, r);
+                            label = r.token;
+                            r.popFront;
+                        }
+                        if (r.type == TokenType.WORD) {
+                            arg = r.token;
+                            r.popFront;
+                        }
+                        while (r.type == TokenType.BEGIN) {
+                            parse_instr(r, ParserStage.CODE);
+                        }
+                        return stage;
                     case BRANCH:
                         r.popFront;
-                        foreach (i; 0 .. instr.pops) {
+                        if (r.type == TokenType.WORD) {
+                            writefln("Branch %s", r);
+                            label = r.token;
+                            r.popFront;
+                        }
+                        if (r.type == TokenType.BEGIN) {
+                            //foreach (i; 0 .. instr.pops) {
                             parse_instr(r, ParserStage.CODE);
                         }
                         break;
@@ -110,12 +130,23 @@ struct WastParser {
                     case CALL_INDIRECT:
                         break;
                     case LOCAL:
+                        string arg;
                         writefln("LOCAL %s", r);
                         r.popFront;
                         label = r.token;
                         writefln("LOCAL arg %s", r);
                         check(r.type == TokenType.WORD, r);
                         r.popFront;
+
+                        if (r.type == TokenType.WORD) {
+                            arg = r.token;
+                            r.popFront;
+                        }
+                        else {
+                            foreach (i; 0 .. instr.pops) {
+                                parse_instr(r, ParserStage.CODE);
+                            }
+                        }
                         break;
                     case GLOBAL:
                         r.popFront;
@@ -141,6 +172,18 @@ struct WastParser {
                     case END:
                         break;
                     case PREFIX:
+                        break;
+                    case SYMBOL:
+                        r.popFront;
+                        for (uint i = 0; (instr.push == uint.max) ? r.type == TokenType.WORD : i < instr.push; i++) {
+                            label = r.token;
+                            writefln("Label %s", r);
+                            r.popFront;
+                        }
+                        for (uint i = 0; (instr.pops == uint.max) ? r.type == TokenType.BEGIN : i < instr.pops; i++) {
+                            parse_instr(r, ParserStage.CODE);
+
+                        }
                     }
                 }
 

@@ -123,6 +123,7 @@ enum IRType {
     CONST, /// Constant argument
     END, /// Block end instruction
     PREFIX, /// Prefix for two byte extension
+    SYMBOL, /// This is extra instruction which does not have an equivalent wasm opcode
 }
 
 struct Instr {
@@ -148,7 +149,7 @@ enum IR : ubyte {
                                                                                         +/
         @Instr("else", "else", 0, IRType.END)                       ELSE                = 0x05, ///  else
         @Instr("end", "end", 0, IRType.END)                        END                 = 0x0B, ///  end
-        @Instr("br", "br", 1, IRType.BRANCH)                      BR                  = 0x0C, ///  br l:labelidx
+        @Instr("br", "br", 1, IRType.BRANCH, 1)                      BR                  = 0x0C, ///  br l:labelidx
         @Instr("br_if", "br_if", 1, IRType.BRANCH, 1)                BR_IF               = 0x0D, ///  br_if l:labelidx
         @Instr("br_table", "br_table", 1, IRType.BRANCH_TABLE, 1)       BR_TABLE            = 0x0E, ///  br_table l:vec(labelidx) * lN:labelidx
         @Instr("return", "return", 1, IRType.CODE, 1)                    RETURN              = 0x0F, ///  return
@@ -365,6 +366,11 @@ enum PseudoWastInstr {
     invoke = "invoke",
     if_else = "if_else",
     call_import = "call_import",
+    local = "local",
+    label = "label",
+    tableswitch = "tableswitch",
+    table = "table",
+    case_ = "case",
 }
 
 protected immutable(Instr[IR]) generate_instrTable() {
@@ -400,12 +406,19 @@ shared static this() {
                 result[instr.wast] = instr;
             }
         }
-        result[PseudoWastInstr.invoke] = Instr("<" ~ PseudoWastInstr.invoke ~ ">", PseudoWastInstr.invoke, uint.max, IRType
-                .CALL);
-        result[PseudoWastInstr.if_else] = Instr("<" ~ PseudoWastInstr.if_else ~ ">", PseudoWastInstr.if_else, uint.max, IRType
-                .BRANCH, 3, 1);
-        result[PseudoWastInstr.call_import] = Instr("<" ~ PseudoWastInstr.call_import ~ ">", PseudoWastInstr.call_import, uint
-                .max, IRType.CALL);
+        void setPseudo(const PseudoWastInstr pseudo, const IRType ir_type, const uint pushs = 0, const uint pops = 0) {
+            result[pseudo] = Instr("<" ~ pseudo ~ ">", pseudo, uint.max, ir_type, pushs, pops);
+        }
+
+        setPseudo(PseudoWastInstr.invoke, IRType.CALL);
+        setPseudo(PseudoWastInstr.if_else, IRType.BRANCH, 3, 1);
+        setPseudo(PseudoWastInstr.local, IRType.LOCAL);
+        setPseudo(PseudoWastInstr.label, IRType.SYMBOL, 1, 1);
+        setPseudo(PseudoWastInstr.call_import, IRType.CALL);
+        setPseudo(PseudoWastInstr.tableswitch, IRType.SYMBOL, uint.max, uint.max);
+        setPseudo(PseudoWastInstr.table, IRType.SYMBOL, uint.max);
+        setPseudo(PseudoWastInstr.case_, IRType.SYMBOL, uint.max, 1);
+
         return assumeUnique(result);
     }
 
@@ -844,7 +857,10 @@ static assert(isInputRange!ExprRange);
                 case END:
                     _level--;
                     break;
+                case SYMBOL:
+                    assert(0, "Symbol opcode and it does not have an equivalent opcode");
                 }
+
             }
         }
         else {

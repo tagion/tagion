@@ -60,7 +60,7 @@ struct WasmExpr {
                 assert(Args.length == 1, format("Instruction %s one argument", instr.name));
                 static if (Args.length == 1) {
                     assert(isIntegral!(Args[0]),
-                            format("The funcidx must be an integer for %s", instr.name));
+                    format("The funcidx must be an integer for %s", instr.name));
                     static if (isIntegral!(Args[0])) {
                         bout.write(encode(args[0]));
                         bout.write(cast(ubyte)(0x00));
@@ -71,9 +71,9 @@ struct WasmExpr {
                 assert(Args.length == 2, format("Instruction %s two arguments", instr.name));
                 static if (Args.length == 2) {
                     assert(isIntegral!(Args[0]),
-                            format("The funcidx must be an integer for %s", instr.name));
+                    format("The funcidx must be an integer for %s", instr.name));
                     assert(isIntegral!(Args[1]),
-                            format("The funcidx must be an integer for %s", instr.name));
+                    format("The funcidx must be an integer for %s", instr.name));
                     static if (isIntegral!(Args[0]) && isIntegral!(Args[1])) {
                         bout.write(encode(args[0]));
                         bout.write(encode(args[1]));
@@ -131,6 +131,9 @@ struct WasmExpr {
             case END:
                 assert(Args.length == 0,
                         format("Instruction %s should have no arguments", instr.name));
+                break;
+            case SYMBOL:
+                assert(0, "Symbol opcode and it does not have an equivalent opcode");
             }
         }
         return this;
