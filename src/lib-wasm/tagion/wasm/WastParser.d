@@ -261,6 +261,7 @@ struct WastParser {
                     ParserStage arg_stage;
                     WastTokenizer rewined;
                     uint only_one_type_allowed;
+                    writefln("First token %s", r);
                     do {
                         rewined = r.save;
                         arg_stage = parse_section(r, ParserStage.FUNC);
@@ -277,7 +278,7 @@ struct WastParser {
                         r = rewined;
                     }
                     while (r.type == TokenType.BEGIN) {
-
+                        writefln("Function body %s", label);
                         const ret = parse_instr(r, ParserStage.FUNC_BODY);
                         check(ret == ParserStage.FUNC_BODY, r);
                     }
@@ -301,7 +302,7 @@ struct WastParser {
 
                             check(r.type == TokenType.WORD, r);
                         }
-                        if (r.type == TokenType.WORD) {
+                        while (r.type == TokenType.WORD && r.token.getType !is Types.EMPTY) {
                             arg = r.token;
                             r.popFront;
                         }
@@ -400,7 +401,7 @@ struct WastParser {
                     }
                     not_ended = true;
                     writefln("DEFAULT %s", r);
-                    check(0, r);
+                    //check(0, r);
                     return stage;
                 }
             }
