@@ -421,6 +421,11 @@ shared static this() {
         setPseudo(PseudoWastInstr.table, IRType.SYMBOL, uint.max);
         setPseudo(PseudoWastInstr.case_, IRType.SYMBOL, uint.max, 1);
 
+        result["i32.select"] = instrTable[IR.SELECT];
+        result["i64.select"] = instrTable[IR.SELECT];
+        result["f32.select"] = instrTable[IR.SELECT];
+        result["f64.select"] = instrTable[IR.SELECT];
+
         return assumeUnique(result);
     }
 
