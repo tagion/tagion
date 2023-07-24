@@ -724,7 +724,7 @@ class Event {
      */
             private bool famous(const HashGraph hashgraph) {
                 if (!_famous) {
-                    _famous = _strong_seeing_mask.isMajority(hashgraph);
+                    _famous = _strong_seeing_mask.isMajority(hashgraph);    
                 }
                 return _famous;
             }

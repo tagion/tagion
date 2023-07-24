@@ -125,25 +125,25 @@ class StdRefinement : Refinement {
         excludedNodes(hashgraph._excluded_nodes_mask);
     }
 
-    @safe
-    struct RoundFingerprint {
-        Buffer[] fingerprints;
-        mixin HiBONRecord;
-    }
+}
 
-    @safe
-    static RoundFingerprint hashLastDecidedRound(const Round last_decided_round)
-    {
-        import std.algorithm:filter;
+@safe
+struct RoundFingerprint {
+    Buffer[] fingerprints;
+    mixin HiBONRecord;
+}
 
-        RoundFingerprint round_fingerprint;
-        round_fingerprint.fingerprints = last_decided_round.events
-            .filter!(e => e !is null)
-            .map!(e => cast (Buffer)e.event_package.fingerprint)
-            .array
-            .sort
-            .array;
-        return round_fingerprint;
-    }
+@safe
+const(RoundFingerprint) hashLastDecidedRound(const Round last_decided_round) pure nothrow
+{
+    import std.algorithm:filter;
 
+    RoundFingerprint round_fingerprint;
+    round_fingerprint.fingerprints = last_decided_round.events
+        .filter!(e => e !is null)
+        .map!(e => cast (Buffer)e.event_package.fingerprint)
+        .array
+        .sort
+        .array;
+    return round_fingerprint;
 }
