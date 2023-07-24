@@ -377,7 +377,6 @@ class HashGraph {
         // }
         this(const Wavefront received_wave) pure nothrow {
             uint count_events;
-            __write("calling CTOR");
             scope (exit) {
                 wavefront_event_package_statistic(count_events);
                 wavefront_event_package_used_statistic(cast(uint) event_package_cache.length);
@@ -663,11 +662,11 @@ class HashGraph {
         auto received_node = getNode(from_channel);
 
         if (from_channel.cutHex == "037ba30f467d5de5") {
-            writefln("Node: %s received wave: %s from NEWNODE: %s", _owner_node.channel.cutHex, received_wave.state, received_wave.toDoc.toPretty);
+            writefln("Node: %s received wave: %s from NEWNODE", _owner_node.channel.cutHex, received_wave.state);
 
         }
         if (_owner_node.channel.cutHex == "037ba30f467d5de5") {
-            writefln("NEWNODE received wave: %s from %s, %s", received_wave.state,from_channel.cutHex, received_wave.toDoc.toPretty);
+            writefln("NEWNODE received wave: %s from %s", received_wave.state,from_channel.cutHex);
         }
         
         if (Event.callbacks) {
@@ -761,7 +760,7 @@ class HashGraph {
                     const wave = buildWavefront(FIRST_WAVE, received_wave.tides);
 
                     if (from_channel.cutHex == "037ba30f467d5de5") {
-                        writefln("Node: %s FIRST_WAVE response NEWNODE: %s", _owner_node.channel.cutHex, wave.toDoc.toPretty);
+                        writefln("Node: %s FIRST_WAVE response NEWNODE: %s", _owner_node.channel.cutHex);
                     }
                     return wave;
                 case BREAKING_WAVE:
@@ -773,28 +772,6 @@ class HashGraph {
                         return buildWavefront(BREAKING_WAVE);
                     }
                     received_node.state = NONE;
-                    // if (joining) {
-                    //     immutable(EventPackage)*[] result;
-                    //     writefln("owner node id %s nodes length:%s", _owner_node.node_id,_nodes.length);
-                    //     assert(_nodes.length == node_size);
-                    //     foreach(n; _nodes.byKeyValue) {
-                    //         const stored_event_altitude = _rounds.
-                    //             last_decided_round
-                    //             .events[n.value.node_id]
-                    //             .event_package
-                    //             .event_body
-                    //             .altitude;
-
-                    //         auto to_add = received_wave
-                    //             .epacks
-                    //             .filter!((epack) => epack !is null && epack.pubkey == n.key && highest(epack.event_body.altitude, stored_event_altitude));
-                    //         // to_add.each!writeln;                            
-                    //     }
-                    //     writefln("AFTER nodes length:%s", _nodes.length);
-                    //     return buildWavefront(BREAKING_WAVE);
-                    // }
-
-                    
                         
                     const from_front_seat = register_wavefront(received_wave, from_channel);
                     immutable epack = event_pack(time, from_front_seat, payload());

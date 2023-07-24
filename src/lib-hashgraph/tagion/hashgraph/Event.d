@@ -979,7 +979,6 @@ class Event {
                     Event.callbacks.connect(this);
                 }
             }
-            writeln("inside connect");
             _mother = hashgraph.register(event_package.event_body.mother);
             if (_mother) {
                 check(!_mother._daughter, ConsensusFailCode.EVENT_MOTHER_FORK);

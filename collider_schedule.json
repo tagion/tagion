@@ -140,7 +140,7 @@
             "args": ["Alice", "Bob", "Carol", "Dave", "Elisa", "Freja", "Gretha"], 
             "envs": {},
             "stages": [
-                "swap"
+                "hashgraph", "swap"
             ],
             "timeout": 0.0
         },
