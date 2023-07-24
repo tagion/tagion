@@ -136,10 +136,6 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
             return (channel in channel_queues) !is null;
         }
 
-        // bool channelFilter(const(Pubkey) channel) const pure nothrow {
-        //     return (channel in channel_queues) !is null && (online_states is null || online_states[channel])
-        // }
-
         void send(const(Pubkey) channel, const(HiRPC.Sender) sender) {
             if (online_states !is null && !online_states[channel]) { return; }
 

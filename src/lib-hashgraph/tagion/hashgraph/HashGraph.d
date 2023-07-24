@@ -476,10 +476,7 @@ class HashGraph {
             _nodes.byValue.map!(n => [n.event.event_package.pubkey.cutHex, n.event.event_package.event_body.altitude.to!string, n.event.event_package.fingerprint.cutHex])
             .each!writeln;
         }
-        
 
-
-        
         Event front_seat_event;
         foreach (fingerprint; _register.event_package_cache.byKey) {
             auto registered_event = register(fingerprint);
