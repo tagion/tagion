@@ -478,7 +478,6 @@ class Round {
      *   hashgraph = hashgraph which owns the round 
      */
         void check_decided_round(HashGraph hashgraph) @trusted {
-
             auto round_to_be_decided = last_decided_round._next;
 
             void decide_round() {
@@ -673,7 +672,13 @@ class Event {
         private {
             immutable(BitMask) _seeing_witness_in_previous_round_mask; /// The mask resulting to this witness
             BitMask _strong_seeing_mask; /// Nodes which has voted this witness as strogly seen
-            bool _famous; /// True if the witness is voted famous
+            Fame _famous; /// True if the witness is voted famous
+        }
+
+        enum Fame {
+            UNDECIDED,
+            INFAMOUS,
+            FAMOUS,
         }
 
         /**
@@ -723,7 +728,7 @@ class Event {
      * Returns: ture if famous
      */
             bool famous() const @nogc {
-                return _famous;
+                return _famous == Fame.FAMOUS;
             }
 
             /**
@@ -732,9 +737,9 @@ class Event {
      *   hashgraph = hashgraph owning the event 
      * Returns: true if the witness is famous 
      */
-            private bool famous(const HashGraph hashgraph) {
-                if (!_famous) {
-                    _famous = _strong_seeing_mask.isMajority(hashgraph);
+            private Fame famous(const HashGraph hashgraph) {
+                if (_famous is Fame.UNDECIDED) {
+                    _famous = _strong_seeing_mask.isMajority(hashgraph) ? Fame.FAMOUS : Fame.UNDECIDED;
                 }
                 return _famous;
             }
