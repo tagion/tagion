@@ -162,15 +162,15 @@ class OfflineNodeSwap {
     @Then("stop the network.")
     Document theNetwork() {
         // create ripple files.
-        // Pubkey[string] node_labels;
-        // foreach (channel, _net; network.networks) {
-        //     node_labels[_net._hashgraph.name] = channel;
-        // }
-        // foreach (_net; network.networks) {
-        //     const filename = buildPath(module_path, "ripple-" ~ _net._hashgraph.name.setExtension(FileExtension.hibon));
-        //     // writeln(filename);
-        //     _net._hashgraph.fwrite(filename, node_labels);
-        // }
+        Pubkey[string] node_labels;
+        foreach (channel, _net; network.networks) {
+            node_labels[_net._hashgraph.name] = channel;
+        }
+        foreach (_net; network.networks) {
+            const filename = buildPath(module_path, "ripple-" ~ _net._hashgraph.name.setExtension(FileExtension.hibon));
+            // writeln(filename);
+            _net._hashgraph.fwrite(filename, node_labels);
+        }
         return result_ok;
     }
 

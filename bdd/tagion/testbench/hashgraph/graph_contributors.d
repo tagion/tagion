@@ -72,6 +72,7 @@ class ANonvotingNode {
             auto current = network.networks[network.current];
             (() @trusted { current.call; })();
             // printStates(network);
+            writefln("call %s out of %s", i, CALLS);
             i++;
         }
         check(TestRefinement.epoch_events.length == node_names.length,

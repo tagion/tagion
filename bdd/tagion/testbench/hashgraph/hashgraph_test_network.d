@@ -168,13 +168,17 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
 
         const(Pubkey) select_channel(ChannelFilter channel_filter) {
             foreach (count; 0 .. channel_queues.length / 2) {
+
+
                 const node_index = random.value(0, channel_queues.length);
-                const send_channel = channel_queues
+
+                auto send_channels = channel_queues
                     .byKey
                     .dropExactly(node_index)
-                    .front;
-                if (channel_filter(send_channel)) {
-                    return send_channel;
+                    .filter!((k) => online_states[k]);
+
+                if (!send_channels.empty && channel_filter(send_channels.front)) {
+                    return send_channels.front;
                 }
             }
             return Pubkey();
