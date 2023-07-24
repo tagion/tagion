@@ -14,7 +14,7 @@ interface Refinement {
     void setOwner(HashGraph hashgraph);
 
     /// called when the epoch is final
-    void finishedEpoch(const(Event[]) events, const sdt_t epoch_time);
+    void finishedEpoch(const(Event[]) events, const sdt_t epoch_time, const Round decided_round);
 
     void excludedNodes(ref BitMask mask);
 

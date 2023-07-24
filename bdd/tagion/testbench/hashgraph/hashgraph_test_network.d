@@ -42,12 +42,13 @@ class TestRefinement : StdRefinement {
     struct Epoch {
         Event[] events;
         sdt_t epoch_time;
+        Round decided_round;
     }
 
     static Epoch[][Pubkey] epoch_events;
-    override void finishedEpoch(const(Event[]) events, const sdt_t epoch_time) {
+    override void finishedEpoch(const(Event[]) events, const sdt_t epoch_time, const Round decided_round) {
         
-        auto epoch = (() @trusted => Epoch(cast(Event[]) events, epoch_time))(); 
+        auto epoch = (() @trusted => Epoch(cast(Event[]) events, epoch_time, cast(Round)decided_round))(); 
         epoch_events[hashgraph.owner_node.channel] ~= epoch;
     }
 
