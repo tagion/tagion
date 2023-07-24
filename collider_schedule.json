@@ -114,6 +114,7 @@
         },
         "hashgraph_test": {
             "args": ["5", "400"],
+            "args": ["10", "500"],
             "envs": {},
             "stages": [
                 "acceptance", "hashgraph"

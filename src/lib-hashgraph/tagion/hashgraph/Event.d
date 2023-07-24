@@ -14,7 +14,7 @@ import std.array : array;
 
 import std.algorithm.sorting : sort;
 import std.algorithm.iteration : map, each, filter, cache, fold, joiner;
-import std.algorithm.searching : count, any, all, until;
+import std.algorithm.searching : count, any, all, until, canFind;
 import std.range.primitives : walkLength, isInputRange, isForwardRange, isBidirectionalRange;
 import std.range : enumerate, tee;
 
@@ -349,6 +349,16 @@ class Round {
                     Event.callbacks.round_seen(e);
                 }
             }
+        }
+
+        bool isEventInLastDecidedRound(const(Event) event) const pure nothrow @nogc {
+            if (!last_decided_round) {
+                return false;
+            }
+
+            return last_decided_round.events.filter!((e) => e !is null)
+                .map!(e => e.event_package.fingerprint)
+                .canFind(event.event_package.fingerprint);
         }
 
         /**
@@ -792,6 +802,14 @@ class Event {
 
     immutable size_t node_id; /// Node number of the event
 
+
+    void initializeReceivedOrder() pure nothrow @nogc {
+        if (_received_order is int.init) {
+            _received_order = -2;
+        }
+    }
+
+
     /**
      * Sets the received order of the event
      * Params:
@@ -961,6 +979,7 @@ class Event {
                     Event.callbacks.connect(this);
                 }
             }
+            writeln("inside connect");
             _mother = hashgraph.register(event_package.event_body.mother);
             if (_mother) {
                 check(!_mother._daughter, ConsensusFailCode.EVENT_MOTHER_FORK);
@@ -1004,7 +1023,7 @@ class Event {
                 }
 
             }
-            else if (!isEva && !hashgraph.joining) {
+            else if (!isEva && !hashgraph.joining && !hashgraph.rounds.isEventInLastDecidedRound(this))  {
                 check(false, ConsensusFailCode.EVENT_MOTHER_LESS);
             }
         }
