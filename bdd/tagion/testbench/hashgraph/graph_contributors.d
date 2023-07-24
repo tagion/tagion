@@ -48,7 +48,7 @@ class ANonvotingNode {
     this(string[] node_names, TestNetwork network, const(string) module_path) {
         this.node_names = node_names;
         this.module_path = module_path;
-        CALLS = cast(uint) node_names.length * 1000;
+        CALLS = cast(uint) node_names.length * 500;
         this.network = network;
 
     }
