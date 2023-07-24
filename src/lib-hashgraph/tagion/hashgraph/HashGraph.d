@@ -331,11 +331,12 @@ class HashGraph {
         return (fingerprint in _event_cache) !is null;
     }
 
+    uint epoch_counts;
     package void epoch(Event[] event_collection, const Round decided_round) {
-        // if (epoch_counts > 0) {
+        if (epoch_counts > 1) {
             refinement.epoch(event_collection, decided_round);
-        // }
-        // epoch_counts++;
+        }
+        epoch_counts++;
         if (scrap_depth > 0) {
             live_events_statistic(Event.count);
             mixin Log!(live_events_statistic);

@@ -71,7 +71,7 @@ class OfflineNodeSwap {
             (() @trusted { current.call; })();
             // printStates(network);
             i++;
-            if (TestRefinement.epoch_events.length == node_names.length) {
+            if (TestRefinement.epoch_events.length == node_names.length && TestRefinement.epoch_events.byValue.map!((ep) => ep.length).all!((ep_length) => ep_length > 2)) {
                 break;
             }
         }
