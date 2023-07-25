@@ -29,6 +29,7 @@ import tagion.utils.Miscellaneous : toHexString;
 import tagion.basic.basic;
 import std.functional : toDelegate;
 import tagion.basic.Types;
+import tagion.hashgraph.Refinement;
 
 enum feature = Feature(
             "Bootstrap of hashgraph",
@@ -46,10 +47,10 @@ class StartNetworkWithNAmountOfNodes {
     TestNetwork network;
     string module_path;
     uint MAX_CALLS;
-    this(string[] node_names, const(string) module_path) {
+    this(string[] node_names, const uint calls, const(string) module_path) {
         this.node_names = node_names;
         this.module_path = module_path;
-        MAX_CALLS = cast(uint) node_names.length * 500;
+        MAX_CALLS = cast(uint) node_names.length * calls;
     }
 
     bool coherent;
@@ -157,12 +158,16 @@ class StartNetworkWithNAmountOfNodes {
                 check(result, format("HashGraph %s and %s is not the same", h1.name, h2.name));
             }
         }
+
+
         // compare epochs
         foreach(i, compare_epoch; TestRefinement.epoch_events.byKeyValue.front.value) {
             auto compare_events = compare_epoch
                                             .events
                                             .map!(e => cast(Buffer) e.event_package.fingerprint)
                                             .array;
+            auto compare_round_fingerprint = hashLastDecidedRound(compare_epoch.decided_round);
+
             // compare_events.sort!((a,b) => a < b);
             // compare_events.each!writeln;
             writefln("%s", compare_events.map!(f => f.cutHex));
@@ -175,12 +180,14 @@ class StartNetworkWithNAmountOfNodes {
                                             .events
                                             .map!(e => cast(Buffer) e.event_package.fingerprint)
                                             .array;
+                auto channel_round_fingerprint = hashLastDecidedRound(compare_epoch.decided_round);
                 // events.sort!((a,b) => a < b);
+
 
                 writefln("%s", events.map!(f => f.cutHex));
                 // events.each!writeln;
                 writefln("channel %s time: %s", channel_epoch.key.cutHex, channel_epoch.value[i].epoch_time);
-                               
+                
                 check(compare_events.length == events.length, "event_packages not the same length");
 
 
@@ -189,8 +196,12 @@ class StartNetworkWithNAmountOfNodes {
                 
                 const isSame = equal(compare_events, events);
                 writefln("isSame: %s", isSame);
-                check(isSame, "event_packages not the same");            
-            
+                check(isSame, "event_packages not the same");
+
+                const sameRoundFingerprints = equal(compare_round_fingerprint.fingerprints, channel_round_fingerprint.fingerprints);
+                writefln("Roundfingerprint: %s", channel_round_fingerprint.fingerprints.map!(b => b.toHexString));
+                writefln("Sameroundfingerprints: %s", sameRoundFingerprints);
+                check(sameRoundFingerprints, "round fingerprints not the same");
             }
         }        
 

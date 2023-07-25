@@ -312,6 +312,7 @@ alias check = Check!WasmBetterCException;
                     }
                     break;
                 case BRANCH:
+                case BRANCH_IF:
                     output.writefln("%s%s %s", indent, instr.name, elm.warg.get!uint);
                     break;
                 case BRANCH_TABLE:
@@ -370,6 +371,8 @@ alias check = Check!WasmBetterCException;
                     break;
                 case END:
                     return elm;
+                case SYMBOL:
+                    assert(0, "Symbol opcode and it does not have an equivalent opcode");
                 }
             }
         }

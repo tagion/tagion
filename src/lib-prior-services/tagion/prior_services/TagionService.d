@@ -24,6 +24,7 @@ import tagion.gossip.EmulatorGossipNet;
 import tagion.gossip.InterfaceNet;
 import tagion.gossip.P2pGossipNet;
 import tagion.hashgraph.Event : Event;
+import tagion.hashgraph.Event : Round;
 import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.hashgraph.HashGraphBasic : EventPackage;
 import tagion.hibon.Document : Document;
@@ -166,7 +167,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         @safe
         class PriorStdRefinement : StdRefinement {
 
-            override void finishedEpoch(const(Event)[] events, const sdt_t epoch_time) {
+            override void finishedEpoch(const(Event)[] events, const sdt_t epoch_time, const Round decided_round) {
                 import std.algorithm;
                 import std.array : array;
                 import tagion.hibon.HiBONJSON;
