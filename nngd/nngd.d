@@ -19,6 +19,39 @@ void nng_sleep(Duration val){
     nng_msleep(cast(nng_duration)val.total!"msecs");
 }
 
+string toString(nng_sockaddr a){
+    string s = "<ADDR:UNKNOWN>";
+    switch(a.s_family){
+        case nng_sockaddr_family.NNG_AF_NONE    : 
+            s = format("<ADDR:NONE>");
+            break;
+        case nng_sockaddr_family.NNG_AF_UNSPEC  : 
+            s = format("<ADDR:UNSPEC>");
+            break;
+        case nng_sockaddr_family.NNG_AF_INPROC  : 
+            s = format("<ADDR:INPROC name: %s >", a.s_inproc.sa_name);
+            break;
+        case nng_sockaddr_family.NNG_AF_IPC     : 
+            s = format("<ADDR:IPC path: %s >",a.s_ipc.sa_path);
+            break;
+        case nng_sockaddr_family.NNG_AF_INET    : 
+            s = format("<ADDR:INET addr: %u port: %u >",a.s_in.sa_addr,a.s_in.sa_port);
+            break;
+        case nng_sockaddr_family.NNG_AF_INET6   : 
+            s = format("<ADDR:INET6 scope: %u addr: %s port: %u >",a.s_in6.sa_scope,a.s_in6.sa_addr,a.s_in6.sa_port);
+            break;
+        case nng_sockaddr_family.NNG_AF_ZT      :  
+            s = format("<ADDR:ZT nwid: %u nodeid: %u port: %u >",a.s_zt.sa_nwid,a.s_zt.sa_nodeid,a.s_zt.sa_port);
+            break;
+        case nng_sockaddr_family.NNG_AF_ABSTRACT: 
+            s = format("<ADDR:ABSTRACT name: %s >",cast(string)a.s_abstract.sa_name[0..a.s_abstract.sa_len]);
+            break;
+        default:
+            break;
+    }
+    return s;
+}
+
 enum infiniteDuration = Duration.max;
 
 enum nng_socket_type {
@@ -330,11 +363,11 @@ struct NNGSocket {
             return getopt_string(NNG_OPT_URL,"socket"); 
     }
 
-    @property Duration maxttl() { return getopt_duration(NNG_OPT_MAXTTL); } 
-    @property void maxttl(Duration val){ setopt_duration(NNG_OPT_MAXTTL,val); }
+    @property int maxttl() { return getopt_int(NNG_OPT_MAXTTL); } 
+    @property void maxttl(int val){ setopt_int(NNG_OPT_MAXTTL,val); }
     
-    @property int recvmaxsz() { return getopt_int(NNG_OPT_RECVMAXSZ); } 
-    @property void recvmaxsz(int val) { return setopt_int(NNG_OPT_RECVMAXSZ,val); } 
+    @property size_t recvmaxsz() { return getopt_size(NNG_OPT_RECVMAXSZ); } 
+    @property void recvmaxsz(size_t val) { return setopt_size(NNG_OPT_RECVMAXSZ,val); } 
 
     @property Duration reconnmint() { return getopt_duration(NNG_OPT_RECONNMINT); } 
     @property void reconnmint(Duration val){ setopt_duration(NNG_OPT_RECONNMINT,val); }
@@ -354,6 +387,32 @@ private:
         m_errno = cast(nng_errno)0;
         int p;
         auto rc = nng_socket_get_int(m_socket,toStringz(opt),&p);
+        if(rc == 0){ return p; }else{ m_errno = cast(nng_errno)rc; return -1; }    
+    }
+    
+    void setopt_ulong(string opt, ulong val){
+        m_errno = cast(nng_errno)0;
+        auto rc = nng_socket_set_uint64(m_socket,toStringz(opt),val);
+        if(rc == 0){ return; }else{ m_errno = cast(nng_errno)rc; } 
+    }
+
+    ulong getopt_ulong(string opt) {
+        m_errno = cast(nng_errno)0;
+        ulong p;
+        auto rc = nng_socket_get_uint64(m_socket,toStringz(opt),&p);
+        if(rc == 0){ return p; }else{ m_errno = cast(nng_errno)rc; return -1; }    
+    }
+    
+    void setopt_size(string opt, size_t val){
+        m_errno = cast(nng_errno)0;
+        auto rc = nng_socket_set_size(m_socket,toStringz(opt),val);
+        if(rc == 0){ return; }else{ m_errno = cast(nng_errno)rc; } 
+    }
+    
+    size_t getopt_size(string opt) {
+        m_errno = cast(nng_errno)0;
+        size_t p;
+        auto rc = nng_socket_get_size(m_socket,toStringz(opt),&p);
         if(rc == 0){ return p; }else{ m_errno = cast(nng_errno)rc; return -1; }    
     }
     
