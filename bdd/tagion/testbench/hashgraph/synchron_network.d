@@ -166,7 +166,7 @@ class StartNetworkWithNAmountOfNodes {
                                             .events
                                             .map!(e => cast(Buffer) e.event_package.fingerprint)
                                             .array;
-            auto compare_round_fingerprint = StdRefinement.hashLastDecidedRound(compare_epoch.decided_round);
+            auto compare_round_fingerprint = hashLastDecidedRound(compare_epoch.decided_round);
 
             // compare_events.sort!((a,b) => a < b);
             // compare_events.each!writeln;
@@ -180,7 +180,7 @@ class StartNetworkWithNAmountOfNodes {
                                             .events
                                             .map!(e => cast(Buffer) e.event_package.fingerprint)
                                             .array;
-                auto channel_round_fingerprint = StdRefinement.hashLastDecidedRound(compare_epoch.decided_round);
+                auto channel_round_fingerprint = hashLastDecidedRound(compare_epoch.decided_round);
                 // events.sort!((a,b) => a < b);
 
 

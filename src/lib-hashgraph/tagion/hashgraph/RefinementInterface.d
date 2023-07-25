@@ -7,7 +7,6 @@ import tagion.utils.BitMask;
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.utils.StdTime;
-
 @safe
 interface Refinement {
 
@@ -21,6 +20,5 @@ interface Refinement {
     void epack(immutable(EventPackage*) epack);
 
     void epoch(Event[] events, const(Round) decided_round);
-
 
 }

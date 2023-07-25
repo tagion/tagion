@@ -116,7 +116,7 @@
             "args": ["10", "500"],
             "envs": {},
             "stages": [
-                "acceptance", "hashgraph"
+                "hashgraph", "swap"
             ],
             "timeout": 0.0
         },
