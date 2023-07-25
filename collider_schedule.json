@@ -116,7 +116,7 @@
             "args": ["10", "500"],
             "envs": {},
             "stages": [
-                "hashgraph", "swap"
+                "hashgraph", "acceptance"
             ],
             "timeout": 0.0
         },
@@ -140,7 +140,7 @@
             "args": ["Alice", "Bob", "Carol", "Dave", "Elisa", "Freja", "Gretha"], 
             "envs": {},
             "stages": [
-                "hashgraph", "swap"
+                "swap"
             ],
             "timeout": 0.0
         },
