@@ -24,13 +24,13 @@ $(DTESTS):
 	$(DC) $(DCFLAGS) -of=$(basename $@) ${addprefix -I,$(DINC)} ${addprefix -L,$(DLFLAGS)} $@
 
 lib:
-	$(DC) $(DCFLAGS) -lib -od=build/ ${addprefix -I,$(DINC)} ${addprefix -L,$(DLFLAGS)} libnng/libnng.d
+	$(DC) $(DCFLAGS) -lib -od=build/ -H -Hd=build/ ${addprefix -I,$(DINC)} ${addprefix -L,$(DLFLAGS)} libnng/libnng.d
 
 clean: clean-local
 
 clean-local:
 	rm -rf ./build && \
-	rm -f $(DTARGETS) $(DTARGETS).o
+	rm -f $(DTARGETS) $(addsuffix .o,$(DTARGETS))
  
 
 .PHONY: all extern lib clean $(DTESTS)
