@@ -447,6 +447,7 @@ class HashGraph {
      +/
     const(Event) register_wavefront(const Wavefront received_wave, const Pubkey from_channel) {
         _register = new Register(received_wave);
+
         scope (exit) {
             mixin Log!(wavefront_event_package_statistic);
             mixin Log!(wavefront_event_package_used_statistic);
