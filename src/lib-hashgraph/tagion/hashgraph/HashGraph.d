@@ -410,19 +410,15 @@ class HashGraph {
 
         final Event register(const(Buffer) fingerprint) {
             Event event;
-            if (fingerprint) {
 
-                event = lookup(fingerprint);
-
-                if (!(_joining || event !is null)) {
-                    
-                    writefln("register error: %s", fingerprint.cutHex);
-                
-                }
-                // Event.check(_joining || event !is null, ConsensusFailCode.EVENT_MISSING_IN_CACHE);
-                if (event !is null) {
-                    event.connect(this.outer);
-                }
+            if (!fingerprint) {
+                return event;
+            }
+            
+            event = lookup(fingerprint);
+            Event.check(_joining || event !is null, ConsensusFailCode.EVENT_MISSING_IN_CACHE);
+            if (event !is null) {
+                event.connect(this.outer);
             }
             return event;
         }
