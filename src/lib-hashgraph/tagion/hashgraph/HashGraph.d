@@ -414,16 +414,6 @@ class HashGraph {
 
                 event = lookup(fingerprint);
 
-                // if (event is null) {
-                    
-                //     const fingerprint_in_nodes = _nodes.events
-                //         .filter!((e) => e !is null)
-                //         .map!(e => e.event_package.fingerprint)
-                //         .canFind(fingerprint);
-
-                //     if (fingerprint_in_nodes) { return null; }                
-                // }
-                
                 if (!(_joining || event !is null)) {
                     
                     writefln("register error: %s", fingerprint.cutHex);
@@ -444,11 +434,13 @@ class HashGraph {
         if (_register) {
             return _register.register(fingerprint);
         }
-        scope event_ptr = fingerprint in _event_cache;
-        if (event_ptr) {
-            return *event_ptr;
-        }
-        return null;
+
+        return _event_cache.get(fingerprint, null);
+        // scope event_ptr = fingerprint in _event_cache;
+        // if (event_ptr) {
+        //     return *event_ptr;
+        // }
+        // return null;
     }
 
     /++
@@ -466,15 +458,15 @@ class HashGraph {
         }
         // assert(_register.event_package_cache.length);
 
-        if (_owner_node.channel.cutHex == "037ba30f467d5de5") {
-            writefln("register wavefront new node from %s", from_channel.cutHex);
-            received_wave.epacks.map!((epack) => [epack.pubkey.cutHex, epack.event_body.altitude.to!string, epack.fingerprint.cutHex])
-            .each!writeln;
+        // if (_owner_node.channel.cutHex == "037ba30f467d5de5") {
+        //     writefln("register wavefront new node from %s", from_channel.cutHex);
+        //     received_wave.epacks.map!((epack) => [epack.pubkey.cutHex, epack.event_body.altitude.to!string, epack.fingerprint.cutHex])
+        //     .each!writeln;
 
-            writefln("own altitudes");
-            _nodes.byValue.map!(n => [n.event.event_package.pubkey.cutHex, n.event.event_package.event_body.altitude.to!string, n.event.event_package.fingerprint.cutHex])
-            .each!writeln;
-        }
+        //     writefln("own altitudes");
+        //     _nodes.byValue.map!(n => [n.event.event_package.pubkey.cutHex, n.event.event_package.event_body.altitude.to!string, n.event.event_package.fingerprint.cutHex])
+        //     .each!writeln;
+        // }
 
         Event front_seat_event;
         foreach (fingerprint; _register.event_package_cache.byKey) {
