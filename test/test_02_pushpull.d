@@ -6,6 +6,7 @@ import core.thread;
 import std.datetime.systime;
 
 import nngd;
+import nngtestutil;
 
 static double timestamp()
 {
@@ -27,48 +28,8 @@ void sender_worker(string url)
     s.sendbuf = 4096;
     log("SS: dialing");
     rc = s.dial(url);
-log("SS: PROPERTIES -----------------------------\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = name: ", s.name,"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = raw: ", s.raw,"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = proto: ", s.proto,"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = protoname: ", s.protoname,"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = peer: ", s.peer,"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = peername: ", s.peername,"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = recvbuf: ", s.recvbuf,"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = sendbuf: ", s.sendbuf,"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = recvfd: ", s.recvfd,"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = sendfd: ", s.sendfd,"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = recvtimeout: ", s.recvtimeout,"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = sendtimeout: ", s.sendtimeout,"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = locaddr: ", toString(s.locaddr),"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = remaddr: ", toString(s.remaddr),"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = url: ", s.url,"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = maxttl: ", s.maxttl,"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = recvmaxsz: ", s.recvmaxsz,"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = reconnmint: ", s.reconnmint,"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = reconnmaxt: ", s.reconnmaxt,"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"SS: /PROPERTIES -----------------------------\n");
     assert(rc == 0);
+    log(nngtest_socket_properties(s,"sender"));
     while(1){
         line = format(">MSG:%d DBL:%d TRL:%d<",k,k*2,k*3);
         if(k > 9) line = "END";
@@ -90,48 +51,8 @@ void receiver_worker(string url)
     s.recvtimeout = msecs(1000);
     rc = s.listen(url);
     log("RR: listening");
-log("RR: PROPERTIES -----------------------------\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = name: ", s.name,"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = raw: ", s.raw,"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = proto: ", s.proto,"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = protoname: ", s.protoname,"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = peer: ", s.peer,"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = peername: ", s.peername,"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = recvbuf: ", s.recvbuf,"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = sendbuf: ", s.sendbuf,"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = recvfd: ", s.recvfd,"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = sendfd: ", s.sendfd,"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = recvtimeout: ", s.recvtimeout,"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = sendtimeout: ", s.sendtimeout,"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = locaddr: ", toString(s.locaddr),"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = remaddr: ", toString(s.remaddr),"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = url: ", s.url,"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = maxttl: ", s.maxttl,"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = recvmaxsz: ", s.recvmaxsz,"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = reconnmint: ", s.reconnmint,"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"\t = reconnmaxt: ", s.reconnmaxt,"\n"
-,"\t\t = state: ", s.state," errno: ", s.errno,"\n"
-,"RR: /PROPERTIES -----------------------------\n");
     assert(rc == 0);
+    log(nngtest_socket_properties(s,"receiver"));
     while(1){
         log("RR to receive");
         log("RR: debug state: ",s.state, " errno: ", s.errno);

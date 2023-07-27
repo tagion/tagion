@@ -8,7 +8,7 @@ DCFLAGS=-O -d -m64 -i
 DINC=nngd extern/libnng/libnng
 DLFLAGS=-Lextern/libnng/extern/nng/build/lib/ -lnng
 
-DTESTS=$(wildcard test/*.d)
+DTESTS=$(wildcard test/test*.d)
 DTARGETS=$(basename $(DTESTS))
 
 all: lib test
@@ -21,7 +21,7 @@ extern:
 	$(MAKE) -C extern/
 
 $(DTESTS): 
-	$(DC) $(DCFLAGS) -of=$(basename $@) ${addprefix -I,$(DINC)} ${addprefix -L,$(DLFLAGS)} $@
+	$(DC) $(DCFLAGS) -of=$(basename $@) ${addprefix -I,$(DINC)} -Itest ${addprefix -L,$(DLFLAGS)} $@
 
 lib: extern
 	$(DC) $(DCFLAGS) -lib -of=build/libnngd.a -H -Hd=build/ ${addprefix -I,$(DINC)} ${addprefix -L,$(DLFLAGS)} nngd/nngd.d

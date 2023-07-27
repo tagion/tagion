@@ -160,11 +160,6 @@ struct NNGSocket {
 
     } // this
 
-
-
-
-
-
     // setup listener
 
     int listener_create(string url){
@@ -321,7 +316,9 @@ struct NNGSocket {
             return null;
         }
     }
+
     // properties
+    @property string versionstring() { return to!string(nng_version()); }
     @property int state() { return m_state; }
     @property int errno() { return m_errno; }
 
