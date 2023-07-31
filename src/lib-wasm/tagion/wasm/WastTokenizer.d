@@ -69,7 +69,7 @@ struct WastTokenizer {
             return pos >= text.length;
         }
 
-        ref const(WastTokenizer) front() const @trusted {
+        const(WastTokenizer) front() const {
             return this;
         }
 

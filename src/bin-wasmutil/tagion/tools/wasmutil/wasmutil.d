@@ -16,7 +16,7 @@ import tagion.hibon.Document : Document;
 import tagion.basic.basic : basename;
 import tagion.basic.Types : Buffer, FileExtension;
 import tagion.hibon.HiBONJSON;
-import tagion.wasm.Wast : wast;
+import tagion.wasm.WasmWat : wat;
 import tagion.wasm.WasmBetterC : wasmBetterC;
 import tagion.wasm.WasmReader;
 import tagion.wasm.WasmWriter;
@@ -30,10 +30,10 @@ import tagion.tools.Basic : Main;
 import tagion.tools.revision;
 
 template Produce(FileExtension ext) {
-    static if (ext == FileExtension.wast) {
-        import tagion.wasm.Wast;
+    static if (ext == FileExtension.wat) {
+        import tagion.wasm.WasmWat;
 
-        alias Produce = wast;
+        alias Produce = wat;
     }
     else static if (ext == FileExtension.dsrc) {
         import tagion.wasm.WasmBetterC;
@@ -50,15 +50,15 @@ void produce(FileExtension ext)(WasmReader wasm_reader, File fout) {
 }
 
 enum OutputType {
-    wast, /// WASM text output type in wast format (FileExtension.wast) 
+    wat, /// WASM text output type in wat format (FileExtension.wat) 
     wasm, /// WASM binary output type (FileExtension.wasm)
     betterc, /// BetterC source file (FileExtension.dsrc)
 }
 
 FileExtension typeExtension(const OutputType type) pure nothrow @nogc {
     final switch (type) {
-    case OutputType.wast:
-        return FileExtension.wast;
+    case OutputType.wat:
+        return FileExtension.wat;
     case OutputType.wasm:
         return FileExtension.wasm;
     case OutputType.betterc:
@@ -92,8 +92,8 @@ int _main(string[] args) {
                 "gas|g", format("Inject gas countes: %s", inject_gas), &inject_gas,
                 "verbose|v", format("Verbose %s", verbose_switch), &verbose_switch,
                 "mod|m", "Modify import module name from ", &modify_from,
-                "to", "Modify import module name from ", &modify_to, //                "print|p", format("Print the wasm as wast: %s", print), &print,
-                //                "betterc|d", format("Print the wasm as wast: %s", betterc), &betterc,
+                "to", "Modify import module name from ", &modify_to, //                "print|p", format("Print the wasm as wat: %s", print), &print,
+                //                "betterc|d", format("Print the wasm as wat: %s", betterc), &betterc,
 
                 "type|t", format("Sets stdout file type (%-(%s %))", [EnumMembers!OutputType]), &type,
 
@@ -111,9 +111,9 @@ int _main(string[] args) {
                     "",
                     "Where:",
                     format("<in-file>           Is an input file in (%-(%s -%)) format",
-                        only(FileExtension.wasm, FileExtension.wast)),
+                        only(FileExtension.wasm, FileExtension.wat)),
                     format("<out-file>          Is an output file in (%-(%s -%)) format",
-                        only(FileExtension.wast, FileExtension.dsrc)),
+                        only(FileExtension.wat, FileExtension.dsrc)),
                     "                    stdout is used of the output is not specifed the",
                     "",
 
@@ -153,7 +153,7 @@ int _main(string[] args) {
                             inputfilename, file));
                     outputfilename = file;
                     break;
-                case wast:
+                case wat:
                     check(outputfilename is null,
                             format("Only one outputfile allowed (both %s and %s has been specifiled)",
                             inputfilename, file));
@@ -226,7 +226,7 @@ int _main(string[] args) {
         with (FileExtension) {
         WasmOutCase:
             switch (output_extension) {
-                static foreach (WasmOut; AliasSeq!(wast, dsrc)) {
+                static foreach (WasmOut; AliasSeq!(wat, dsrc)) {
             case WasmOut:
                     File fout = stdout;
                     if (!outputfilename.empty) {
@@ -238,9 +238,9 @@ int _main(string[] args) {
                         }
                     }
                     produce!WasmOut(WasmReader(data_out), fout);
-                    // produce!(FileExtension.wast)(WasmReader(data_out), outputfilename);
-                    //   import _wast=tagion.wasm.Wast;
-                    //       _wast.wast(WasmReader(data_out), stdout).serialize;
+                    // produce!(FileExtension.wat)(WasmReader(data_out), outputfilename);
+                    //   import _wast=tagion.wasm.Wat;
+                    //       _wast.wat(WasmReader(data_out), stdout).serialize;
                     break WasmOutCase;
                 }
             case wasm:
@@ -250,10 +250,10 @@ int _main(string[] args) {
                 check(outputfilename is null,
                         format("File extensions %s not valid output file (only %s)",
                         outputfilename.extension,
-                        only(FileExtension.wasm, FileExtension.wast)));
+                        only(FileExtension.wasm, FileExtension.wat)));
                 version (none)
                     if (print) {
-                        Wast(wasm_reader, stdout).serialize();
+                        Wat(wasm_reader, stdout).serialize();
                     }
             }
         }

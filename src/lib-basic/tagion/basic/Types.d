@@ -82,7 +82,8 @@ enum FileExtension {
     json = ".json", /// JSON File format
     hibon = ".hibon", /// HiBON file format
     wasm = ".wasm", /// WebAssembler binary format
-    wast = ".wast", /// WebAssembler text format
+    wat = ".wat", /// WebAssembler text format
+    wast = ".wast", /// WebAssembler superset text format
     wo = ".wo", /// WASM object file
     block = ".blk", /// Block file
     dart = ".drt", /// DART data-base
