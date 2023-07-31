@@ -31,7 +31,7 @@ class StdRefinement : Refinement {
         this.hashgraph = hashgraph;
     }
 
-    void finishedEpoch(const(Event[]) events, const sdt_t epoch_time) {
+    void finishedEpoch(const(Event[]) events, const sdt_t epoch_time, const Round decided_round) {
         assert(0, "not implemented");
     }
 
@@ -120,36 +120,30 @@ class StdRefinement : Refinement {
                 hashgraph.name, decided_round.number,
                 Event.count, Event.Witness.count, events.length, epoch_time);
 
-        finishedEpoch(events, epoch_time);
+        finishedEpoch(events, epoch_time, decided_round);
 
         excludedNodes(hashgraph._excluded_nodes_mask);
     }
 
-    void hashLastDecidedRound(Round last_decided_round)
-    {
-        import std.algorithm:filter;
-
-        RoundFingerprint round_fingerprint;
-        round_fingerprint.fingerprints = last_decided_round.events
-            .filter!(e => e !is null)
-            .map!(e => cast (Buffer)e.event_package.fingerprint)
-            .array
-            .sort
-            .array;
-    }
-
-    struct RoundFingerprint {
-        Buffer[] fingerprints;
-        mixin HiBONRecord;
-    }
-
 }
 
-    unittest {
-        Round test_round;
-        foreach (i; 0..42)
-        {
+@safe
+struct RoundFingerprint {
+    Buffer[] fingerprints;
+    mixin HiBONRecord;
+}
 
-        }
-        writefln("ROUND %s", test_round);
-    }
+@safe
+const(RoundFingerprint) hashLastDecidedRound(const Round last_decided_round) pure nothrow
+{
+    import std.algorithm:filter;
+
+    RoundFingerprint round_fingerprint;
+    round_fingerprint.fingerprints = last_decided_round.events
+        .filter!(e => e !is null)
+        .map!(e => cast (Buffer)e.event_package.fingerprint)
+        .array
+        .sort
+        .array;
+    return round_fingerprint;
+}

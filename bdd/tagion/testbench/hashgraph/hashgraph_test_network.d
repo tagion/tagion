@@ -15,7 +15,7 @@ import tagion.communication.HiRPC;
 import tagion.utils.StdTime;
 import tagion.utils.Miscellaneous : cutHex;
 import tagion.hibon.Document;
-import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONRecord : isHiBONRecord;
 import tagion.hibon.HiBON;
 import std.stdio;
 import std.exception : assumeWontThrow;
@@ -42,12 +42,13 @@ class TestRefinement : StdRefinement {
     struct Epoch {
         Event[] events;
         sdt_t epoch_time;
+        Round decided_round;
     }
 
     static Epoch[][Pubkey] epoch_events;
-    override void finishedEpoch(const(Event[]) events, const sdt_t epoch_time) {
+    override void finishedEpoch(const(Event[]) events, const sdt_t epoch_time, const Round decided_round) {
         
-        auto epoch = (() @trusted => Epoch(cast(Event[]) events, epoch_time))(); 
+        auto epoch = (() @trusted => Epoch(cast(Event[]) events, epoch_time, cast(Round)decided_round))(); 
         epoch_events[hashgraph.owner_node.channel] ~= epoch;
     }
 
@@ -164,13 +165,17 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
 
         const(Pubkey) select_channel(ChannelFilter channel_filter) {
             foreach (count; 0 .. channel_queues.length / 2) {
+
+
                 const node_index = random.value(0, channel_queues.length);
-                const send_channel = channel_queues
+
+                auto send_channels = channel_queues
                     .byKey
                     .dropExactly(node_index)
-                    .front;
-                if (channel_filter(send_channel)) {
-                    return send_channel;
+                    .filter!((k) => online_states[k]);
+
+                if (!send_channels.empty && channel_filter(send_channels.front)) {
+                    return send_channels.front;
                 }
             }
             return Pubkey();
@@ -242,12 +247,10 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
                 while (!authorising.empty(_hashgraph.channel)) {
                     if (current !is Pubkey.init && TestGossipNet.online_states !is null && !TestGossipNet.online_states[current]) {
                         (() @trusted { yield; })();
-                        writeln("WOWO?");
                     }
 
                     const received = _hashgraph.hirpc.receive(
                             authorising.receive(_hashgraph.channel));
-                    writefln("starting wavefront sender: channel %s, %s", _hashgraph.channel.cutHex, _hashgraph.joining);
                     _hashgraph.wavefront(
                             received,
                             time,

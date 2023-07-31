@@ -14,7 +14,7 @@ import std.array : array;
 
 import std.algorithm.sorting : sort;
 import std.algorithm.iteration : map, each, filter, cache, fold, joiner;
-import std.algorithm.searching : count, any, all, until;
+import std.algorithm.searching : count, any, all, until, canFind;
 import std.range.primitives : walkLength, isInputRange, isForwardRange, isBidirectionalRange;
 import std.range : enumerate, tee;
 
@@ -208,9 +208,15 @@ class Round {
      * Returns: previous round
      */
     @nogc
-    package inout(Round) previous() inout pure nothrow {
+    package Round previous() pure nothrow {
         return _previous;
     }
+
+    @nogc
+    const(Round) previous() const pure nothrow {
+        return _previous;
+    }
+
 
     /**
  * Range from this round and down
@@ -345,6 +351,16 @@ class Round {
             }
         }
 
+        bool isEventInLastDecidedRound(const(Event) event) const pure nothrow @nogc {
+            if (!last_decided_round) {
+                return false;
+            }
+
+            return last_decided_round.events.filter!((e) => e !is null)
+                .map!(e => e.event_package.fingerprint)
+                .canFind(event.event_package.fingerprint);
+        }
+
         /**
      * Check of a round has been decided
      * Params:
@@ -441,7 +457,7 @@ class Round {
                 .filter!((e) => (e !is null))
                 .each!((ref e) => mark_received_events(e.node_id, e));
 
-            writefln("r._events=%s", r._events.count!((e) => e !is null && e.isFamous));
+            // writefln("r._events=%s", r._events.count!((e) => e !is null && e.isFamous));
             auto event_collection = r._events
                 .filter!((e) => (e !is null))
                 .filter!((e) => !hashgraph.excluded_nodes_mask[e.node_id])
@@ -452,7 +468,7 @@ class Round {
                 .tee!((e) => e._round_received = r)
                 .array;
 
-            writefln("event_collection=%s", event_collection.count!((e) => e !is null && e.isFamous));
+            // writefln("event_collection=%s", event_collection.count!((e) => e !is null && e.isFamous));
             hashgraph.epoch(event_collection, r);
         }
 
@@ -462,7 +478,6 @@ class Round {
      *   hashgraph = hashgraph which owns the round 
      */
         void check_decided_round(HashGraph hashgraph) @trusted {
-
             auto round_to_be_decided = last_decided_round._next;
 
             void decide_round() {
@@ -474,7 +489,7 @@ class Round {
             }
 
             if (hashgraph.possible_round_decided(round_to_be_decided)) {
-                writefln("possible_round_decided");
+                // writefln("possible_round_decided");
                 const votes_mask = BitMask(round_to_be_decided.events
                         .filter!((e) => (e) && !hashgraph.excluded_nodes_mask[e.node_id])
                     .map!((e) => e.node_id));
@@ -657,7 +672,13 @@ class Event {
         private {
             immutable(BitMask) _seeing_witness_in_previous_round_mask; /// The mask resulting to this witness
             BitMask _strong_seeing_mask; /// Nodes which has voted this witness as strogly seen
-            bool _famous; /// True if the witness is voted famous
+            Fame _famous; /// True if the witness is voted famous
+        }
+
+        enum Fame {
+            UNDECIDED,
+            INFAMOUS,
+            FAMOUS,
         }
 
         /**
@@ -707,7 +728,7 @@ class Event {
      * Returns: ture if famous
      */
             bool famous() const @nogc {
-                return _famous;
+                return _famous == Fame.FAMOUS;
             }
 
             /**
@@ -716,9 +737,9 @@ class Event {
      *   hashgraph = hashgraph owning the event 
      * Returns: true if the witness is famous 
      */
-            private bool famous(const HashGraph hashgraph) {
-                if (!_famous) {
-                    _famous = _strong_seeing_mask.isMajority(hashgraph);
+            private Fame famous(const HashGraph hashgraph) {
+                if (_famous is Fame.UNDECIDED) {
+                    _famous = _strong_seeing_mask.isMajority(hashgraph) ? Fame.FAMOUS : Fame.UNDECIDED;
                 }
                 return _famous;
             }
@@ -786,6 +807,14 @@ class Event {
 
     immutable size_t node_id; /// Node number of the event
 
+
+    void initializeReceivedOrder() pure nothrow @nogc {
+        if (_received_order is int.init) {
+            _received_order = -2;
+        }
+    }
+
+
     /**
      * Sets the received order of the event
      * Params:
@@ -797,43 +826,41 @@ class Event {
                 if (_mother._received_order is int.init) {
                     _mother.received_order(iteration_count);
                 }
-                _received_order = expected_order;
+                _received_order = expected_order();
+            }
+            return;
+        }
+
+        if (_received_order is int.init) {
+            _received_order = expected_order();
+        }
+
+        const expected = expected_order();
+
+        if ((expected - _received_order) > 0) {
+            _received_order = expected;
+            if (_son) {
+                _son.received_order(iteration_count);
+            }
+            if (_daughter) {
+                _daughter.received_order(iteration_count);
             }
         }
-        else if (_received_order is int.init) {
-            _received_order = expected_order;
-            if (_received_order !is int.init) {
-                received_order(iteration_count);
+        else if ((expected - _received_order) < 0) {
+            if (_father) {
+                _father.received_order(iteration_count);
             }
-        }
-        else {
-            const expected = expected_order;
-            if ((expected - _received_order) > 0) {
-                _received_order = expected;
-                if (_son) {
-                    _son.received_order(iteration_count);
-                }
-                if (_daughter) {
-                    _daughter.received_order(iteration_count);
-                }
+            if (_mother) {
+                _mother.received_order(iteration_count);
+            }
+            _received_order = expected_order();
+            if (_son) {
+                _son.received_order(iteration_count);
+            }
+            if (_daughter) {
+                _daughter.received_order(iteration_count);
+            }
 
-            }
-            else if ((expected - _received_order) < 0) {
-                if (_father) {
-                    _father.received_order(iteration_count);
-                }
-                if (_mother) {
-                    _mother.received_order(iteration_count);
-                }
-                _received_order = expected_order;
-                if (_son) {
-                    _son.received_order(iteration_count);
-                }
-                if (_daughter) {
-                    _daughter.received_order(iteration_count);
-                }
-
-            }
         }
     }
 
@@ -942,66 +969,68 @@ class Event {
         assert(event_package.event_body.father && _father || !_father);
     }
     do {
-        if (!connected) {
-            scope (exit) {
-                if (_mother) {
-                    Event.check(this.altitude - _mother.altitude is 1,
-                        ConsensusFailCode.EVENT_ALTITUDE);
-                    Event.check(channel == _mother.channel,
-                        ConsensusFailCode.EVENT_MOTHER_CHANNEL);
-                }
-                hashgraph.front_seat(this);
-                if (Event.callbacks) {
-                    Event.callbacks.connect(this);
-                }
-            }
-            _mother = hashgraph.register(event_package.event_body.mother);
+        if (connected) {
+             return;     
+        }
+
+        scope (exit) {
             if (_mother) {
-                check(!_mother._daughter, ConsensusFailCode.EVENT_MOTHER_FORK);
-                _mother._daughter = this;
-                _father = hashgraph.register(event_package.event_body.father);
-                attach_round(hashgraph);
-                _witness_mask = _mother._witness_mask;
-                if (_father) {
-                    check(!_father._son, ConsensusFailCode.EVENT_FATHER_FORK);
-                    _father._son = this;
-                    _witness_mask |= _father._witness_mask;
-                }
-                if (callbacks) {
-                    callbacks.round(this);
-                }
-                uint received_order_iteration_count;
-                received_order(received_order_iteration_count);
-                hashgraph.received_order_statistic(received_order_iteration_count);
-                with (hashgraph) {
-                    mixin Log!(received_order_statistic);
-                }
-                auto witness_seen_mask = calc_witness_mask(hashgraph);
-                if (witness_seen_mask.isMajority(hashgraph)) {
-                    hashgraph._rounds.next_round(this);
-                    _witness = new Witness(this, witness_seen_mask);
-
-                    strong_seeing(hashgraph);
-                    if (callbacks) {
-                        callbacks.strongly_seeing(this);
-                    }
-                    with (hashgraph) {
-                        mixin Log!(strong_seeing_statistic);
-                    }
-                    hashgraph._rounds.check_decided_round(hashgraph);
-                    _witness_mask.clear;
-                    _witness_mask[node_id] = true;
-                    if (callbacks) {
-                        callbacks.witness(this);
-                    }
-
-                }
-
+                Event.check(this.altitude - _mother.altitude is 1,
+                    ConsensusFailCode.EVENT_ALTITUDE);
+                Event.check(channel == _mother.channel,
+                    ConsensusFailCode.EVENT_MOTHER_CHANNEL);
             }
-            else if (!isEva && !hashgraph.joining) {
-                check(false, ConsensusFailCode.EVENT_MOTHER_LESS);
+            hashgraph.front_seat(this);
+            if (Event.callbacks) {
+                Event.callbacks.connect(this);
             }
         }
+        _mother = hashgraph.register(event_package.event_body.mother);
+        if (_mother) {
+            check(!_mother._daughter, ConsensusFailCode.EVENT_MOTHER_FORK);
+            _mother._daughter = this;
+            _father = hashgraph.register(event_package.event_body.father);
+            attach_round(hashgraph);
+            _witness_mask = _mother._witness_mask;
+            if (_father) {
+                check(!_father._son, ConsensusFailCode.EVENT_FATHER_FORK);
+                _father._son = this;
+                _witness_mask |= _father._witness_mask;
+            }
+            if (callbacks) {
+                callbacks.round(this);
+            }
+            uint received_order_iteration_count;
+            received_order(received_order_iteration_count);
+            hashgraph.received_order_statistic(received_order_iteration_count);
+            with (hashgraph) {
+                mixin Log!(received_order_statistic);
+            }
+            auto witness_seen_mask = calc_witness_mask(hashgraph);
+            if (witness_seen_mask.isMajority(hashgraph)) {
+                hashgraph._rounds.next_round(this);
+                _witness = new Witness(this, witness_seen_mask);
+
+                strong_seeing(hashgraph);
+                if (callbacks) {
+                    callbacks.strongly_seeing(this);
+                }
+                with (hashgraph) {
+                    mixin Log!(strong_seeing_statistic);
+                }
+                hashgraph._rounds.check_decided_round(hashgraph);
+                _witness_mask.clear;
+                _witness_mask[node_id] = true;
+                if (callbacks) {
+                    callbacks.witness(this);
+                }
+
+            }
+        }
+        else if (!isEva && !hashgraph.joining && !hashgraph.rounds.isEventInLastDecidedRound(this))  {
+            check(false, ConsensusFailCode.EVENT_MOTHER_LESS);
+        }
+        
     }
 
     /**
@@ -1139,38 +1168,38 @@ class Event {
             return isWitness && _witness.famous;
         }
         /**
-     * Get the altitude of the event
-     * Returns: altitude
-     */
+         * Get the altitude of the event
+         * Returns: altitude
+         */
         immutable(int) altitude() {
             return event_package.event_body.altitude;
         }
 
         /**
-     *  Calculates the order of this event
-     * Returns: order
-     */
-        int expected_order() {
+         *  Calculates the order of this event
+         * Returns: order ( max(m+1, f+1 ). 
+         */
+        int expected_order() const pure nothrow @nogc {
             const m = (_mother) ? _mother._received_order : int.init;
             const f = (_father) ? _father._received_order : int.init;
             int result = (m - f > 0) ? m : f;
             result++;
-            result = (result is int.init) ? int.init + 1 : result;
+            result = (result is int.init) ? 1 : result;
             return result;
         }
         /**
-      * Is this event owner but this node 
-      * Returns: true if the evnet is owned
-      */
-        bool nodeOwner() {
+          * Is this event owner but this node 
+          * Returns: true if the evnet is owned
+          */
+        bool nodeOwner() const pure nothrow @nogc {
             return node_id is 0;
         }
 
         /**
-     * Gets the event order number 
-     * Returns: order
-     */
-        int received_order()
+         * Gets the event order number 
+         * Returns: order
+         */
+        int received_order() const pure nothrow @nogc
         in {
             assert(isEva || (_received_order !is int.init), "The received order of this event has not been defined");
         }
@@ -1182,7 +1211,7 @@ class Event {
        * Checks if the event is connected in the graph 
        * Returns: true if the event is corrected 
        */
-        bool connected() {
+        bool connected() const pure @nogc {
             return (_mother !is null);
         }
 

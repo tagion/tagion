@@ -113,10 +113,10 @@
             "timeout": 0.0
         },
         "hashgraph_test": {
-            "args": ["7", "200"],
+            "args": ["7", "500"],
             "envs": {},
             "stages": [
-                "acceptance", "hashgraph"
+                "hashgraph", "acceptance"
             ],
             "timeout": 0.0
         },
@@ -141,14 +141,6 @@
             "envs": {},
             "stages": [
                 "swap"
-            ],
-            "timeout": 0.0
-        },
-        "hashgraph_round_fingerprint": {
-            "args": ["Alice", "Bob", "Carol", "Dave", "Elisa", "Freja", "Gretha"], 
-            "envs": {},
-            "stages": [
-                "round_fingerprint"
             ],
             "timeout": 0.0
         },

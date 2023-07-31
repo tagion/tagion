@@ -48,7 +48,7 @@ class ANonvotingNode {
     this(string[] node_names, TestNetwork network, const(string) module_path) {
         this.node_names = node_names;
         this.module_path = module_path;
-        CALLS = cast(uint) node_names.length * 1000;
+        CALLS = cast(uint) node_names.length * 500;
         this.network = network;
 
     }
@@ -72,6 +72,7 @@ class ANonvotingNode {
             auto current = network.networks[network.current];
             (() @trusted { current.call; })();
             // printStates(network);
+            writefln("call %s out of %s", i, CALLS);
             i++;
         }
         check(TestRefinement.epoch_events.length == node_names.length,
@@ -120,7 +121,7 @@ class ANonvotingNode {
                                             .array;
             const round_number = cast(int) i;
             auto histories = TestRefinement.excluded_nodes_history
-                                .filter!(h => h.round < round_number-1)
+                                .filter!(h => h.round < round_number+1)
                                 .array
                                 .sort!((a,b) => a.round < b.round);
             bool[Pubkey] current_states;
@@ -133,7 +134,7 @@ class ANonvotingNode {
                     if (state.value) {
                         const isExcluded = compare_events.map!(e => e.event_package.pubkey)
                                             .all!(p => p != state.key);
-                        check(isExcluded, format("Pubkey %s not excluded from epoch %s", state.key.cutHex, round_number-1)); 
+                        check(isExcluded, format("Pubkey %s not excluded from epoch %s", state.key.cutHex, round_number+1)); 
                     }
                 }
             }

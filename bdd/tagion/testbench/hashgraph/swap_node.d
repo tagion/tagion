@@ -49,9 +49,7 @@ class OfflineNodeSwap {
         this.node_names = node_names;
         this.module_path = module_path;
         CALLS = cast(uint) node_names.length * 1000;
-        // foreach (channel; network.channels) {
-        //     TestNetwork.TestGossipNet.online_states[channel] = true;
-        // }
+
     }
 
     @Given("i have a hashgraph testnetwork with n number of nodes")
@@ -73,7 +71,7 @@ class OfflineNodeSwap {
             (() @trusted { current.call; })();
             // printStates(network);
             i++;
-            if (TestRefinement.epoch_events.length == node_names.length) {
+            if (TestRefinement.epoch_events.length == node_names.length && TestRefinement.epoch_events.byValue.map!((ep) => ep.length).all!((ep_length) => ep_length > 2)) {
                 break;
             }
         }
@@ -162,15 +160,15 @@ class OfflineNodeSwap {
     @Then("stop the network.")
     Document theNetwork() {
         // create ripple files.
-        // Pubkey[string] node_labels;
-        // foreach (channel, _net; network.networks) {
-        //     node_labels[_net._hashgraph.name] = channel;
-        // }
-        // foreach (_net; network.networks) {
-        //     const filename = buildPath(module_path, "ripple-" ~ _net._hashgraph.name.setExtension(FileExtension.hibon));
-        //     // writeln(filename);
-        //     _net._hashgraph.fwrite(filename, node_labels);
-        // }
+        Pubkey[string] node_labels;
+        foreach (channel, _net; network.networks) {
+            node_labels[_net._hashgraph.name] = channel;
+        }
+        foreach (_net; network.networks) {
+            const filename = buildPath(module_path, "ripple-" ~ _net._hashgraph.name.setExtension(FileExtension.hibon));
+            // writeln(filename);
+            _net._hashgraph.fwrite(filename, node_labels);
+        }
         return result_ok;
     }
 
