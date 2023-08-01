@@ -2,7 +2,7 @@ module tagion.tools.wasmutil.wasmutil;
 
 import std.getopt;
 import std.stdio;
-import std.file : fread = read, fwrite = write, exists;
+import std.file : fread = read, fwrite = write, exists, readText;
 import std.format;
 import std.path : extension;
 import std.traits : EnumMembers;
@@ -142,18 +142,17 @@ int _main(string[] args) {
             with (FileExtension) {
                 switch (file.extension) {
                 case wasm:
-                    check(inputfilename is null,
-                            format("Only one inputfile allowed (both %s and %s has been specifiled)",
-                            inputfilename, file));
-                    inputfilename = file;
-                    break;
-                case dsrc:
+                case wat:
+                    if (inputfilename.empty) {
+                        inputfilename = file;
+                        break;
+                    }
                     check(outputfilename is null,
                             format("Only one outputfile allowed (both %s and %s has been specifiled)",
                             inputfilename, file));
                     outputfilename = file;
                     break;
-                case wat:
+                case dsrc:
                     check(outputfilename is null,
                             format("Only one outputfile allowed (both %s and %s has been specifiled)",
                             inputfilename, file));
@@ -196,12 +195,24 @@ int _main(string[] args) {
         immutable standard_output = (outputfilename.length == 0);
 
         WasmReader wasm_reader;
+        WasmWriter wasm_writer;
         with (FileExtension) {
             switch (inputfilename.extension) {
             case wasm, wo:
                 immutable read_data = assumeUnique(cast(ubyte[]) fread(inputfilename));
                 wasm_reader = WasmReader(read_data);
                 verbose.hex(0, read_data);
+                wasm_writer = WasmWriter(wasm_reader);
+                break;
+            case wast:
+                import tagion.wasm.WastTokenizer;
+                import tagion.wasm.WastParser;
+
+                immutable wast_text = inputfilename.readText;
+                auto tokenizer = WastTokenizer(wast_text);
+                wasm_writer = new WasmWriter;
+                auto wast_parser = WastParser(wasm_writer);
+                wast_parser.parse(tokenizer);
                 break;
             default:
                 check(0, format("File extensions %s not valid for input file (only %-(%s, %))",
@@ -209,7 +220,7 @@ int _main(string[] args) {
             }
         }
 
-        WasmWriter wasm_writer = WasmWriter(wasm_reader);
+        //WasmWriter wasm_writer = WasmWriter(wasm_reader);
 
         if (inject_gas) {
             auto wasmgas = WasmGas(wasm_writer);
