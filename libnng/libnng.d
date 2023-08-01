@@ -52,6 +52,46 @@ enum nng_errno {
     NNG_ETRANERR     = 0x20000000
 };
 
+string nng_errstr ( int ierrno ) {
+    immutable string[int] _nng_errstr = [
+         1:            "NNG_EINTR"
+        ,2:            "NNG_ENOMEM    Insufficient free memory exists."
+        ,3:            "NNG_EINVAL    An invalid URL or other data was supplied."
+        ,4:            "NNG_EBUSY    Server instance is running."
+        ,5:            "NNG_ETIMEDOUT    The operation timed out."
+        ,6:            "NNG_ECONNREFUSED    The remote peer refused the connection."
+        ,7:            "NNG_ECLOSED    At least one of the sockets is not open."
+        ,8:            "NNG_EAGAIN"
+        ,9:            "NNG_ENOTSUP    The option or protocol is not supported."
+        ,10:           "NNG_EADDRINUSE    The address is already in use."
+        ,11:           "NNG_ESTATE    The context/dialer/listener cannot do what your want state."
+        ,12:           "NNG_ENOENT    Handler is not registered with server."
+        ,13:           "NNG_EPROTO    A protocol error occurred."
+        ,14:           "NNG_EUNREACHABLE    The remote address is not reachable."
+        ,15:           "NNG_EADDRINVAL    The address is invalid or unavailable."
+        ,16:           "NNG_EPERM    No permission to read the file."
+        ,17:           "NNG_EMSGSIZE    The message is too large."
+        ,18:           "NNG_ECONNABORTED"
+        ,19:           "NNG_ECONNRESET    The connection was reset by the peer."
+        ,20:           "NNG_ECANCELED    The operation was aborted."
+        ,21:           "NNG_ENOFILES"
+        ,22:           "NNG_ENOSPC"
+        ,23:           "NNG_EEXIST"
+        ,24:           "NNG_EREADONLY    The option may not be modified."
+        ,25:           "NNG_EWRITEONLY    The option may not read."
+        ,26:           "NNG_ECRYPTO"
+        ,27:           "NNG_EPEERAUTH    Authentication or authorization failure."
+        ,28:           "NNG_ENOARG    Option requires an argument: but one is not present."
+        ,29:           "NNG_EAMBIGUOUS    Parsed option matches more than one specification."
+        ,30:           "NNG_EBADTYPE    Incorrect type for option."
+        ,31:           "NNG_ECONNSHUT    Remote peer shutdown after sending data."
+        ,1000:         "NNG_EINTERNAL"
+        ,0x10000000:   "NNG_ESYSERR"
+        ,0x20000000:   "NNG_ETRANERR"
+    ];
+    return (ierrno in _nng_errstr) ? _nng_errstr[ierrno] : "";
+}
+
 enum nng_flag {
      NNG_FLAG_ALLOC = 1 
     ,NNG_FLAG_NONBLOCK = 2
