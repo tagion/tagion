@@ -8,12 +8,11 @@ import std.string;
 import std.typecons;
 import std.datetime.systime;
 
-
 import libnng;
-
 
 T* ptr(T)(T[] arr, size_t off = 0) { return arr.length == 0 ? null : &arr[off]; }
 
+alias nng_errno = libnng.nng_errno;
 
 void nng_sleep(Duration val){
     nng_msleep(cast(nng_duration)val.total!"msecs");
@@ -50,6 +49,14 @@ string toString(nng_sockaddr a){
             break;
     }
     return s;
+}
+
+string toString(nng_errno e){
+    return nng_errstr(cast(int)e);        
+}
+
+string nng_strerror( int e ){
+    return nng_errstr(e);
 }
 
 enum infiniteDuration = Duration.max;

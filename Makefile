@@ -9,7 +9,6 @@ DINC=nngd extern/libnng/libnng
 DLFLAGS=-Lextern/libnng/extern/nng/build/lib/ -lnng
 
 DTESTS=$(wildcard test/test*.d)
-DTARGETS=$(basename $(DTESTS))
 
 all: lib test
 	@echo "All done!"
@@ -21,7 +20,7 @@ extern:
 	$(MAKE) -C extern/
 
 $(DTESTS): 
-	$(DC) $(DCFLAGS) -of=$(basename $@) ${addprefix -I,$(DINC)} -Itest ${addprefix -L,$(DLFLAGS)} $@
+	$(DC) $(DCFLAGS) -od=test/build -of=test/build/$(basename $@) ${addprefix -I,$(DINC)} -Itest ${addprefix -L,$(DLFLAGS)} $@
 
 lib: extern
 	$(DC) $(DCFLAGS) -lib -of=build/libnngd.a -H -Hd=build/ ${addprefix -I,$(DINC)} ${addprefix -L,$(DLFLAGS)} nngd/nngd.d
@@ -30,7 +29,7 @@ clean: clean-extern clean-local
 
 clean-local:
 	rm -rf ./build && \
-	rm -f $(DTARGETS) $(addsuffix .o,$(DTARGETS))
+	rm -rf ./test/build 
 
 clean-extern:
 	$(MAKE) -C extern/ clean 

@@ -1,7 +1,8 @@
 .dub
 .tmp
 build
-extern/*/build
+extern/*
+test/build
 docs.json
 __dummy.html
 docs/
