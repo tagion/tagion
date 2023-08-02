@@ -6,6 +6,7 @@ import core.time;
 import std.conv;
 import std.string;
 import std.typecons;
+import std.algorithm;
 import std.datetime.systime;
 
 import libnng;
@@ -87,6 +88,7 @@ struct NNGSocket {
     nng_socket_state m_state;
     nng_socket m_socket;
     nng_ctx[] m_ctx;
+    string[] m_subscriptions;
     string m_name;
     nng_errno m_errno;
 
@@ -212,6 +214,41 @@ struct NNGSocket {
         }else{
             return -1;
         }
+    }
+
+    // setup subscriber
+
+    int subscribe ( string tag ){
+        if(m_subscriptions.canFind(tag))
+            return 0;
+        setopt_buf(NNG_OPT_SUB_SUBSCRIBE,cast(ubyte[])(tag.dup));
+        if(m_errno == 0)
+            m_subscriptions ~= tag;
+        return m_errno;    
+    }
+
+    int unsubscribe ( string tag ) {
+        if(!m_subscriptions.canFind(tag))
+            return 0;
+        setopt_buf(NNG_OPT_SUB_UNSUBSCRIBE,cast(ubyte[])(tag.dup));                
+        if(m_errno == 0)
+            m_subscriptions.remove(tag);
+        return m_errno;    
+    }
+
+    int clearsubscribe (){
+        foreach(tag; m_subscriptions){
+            setopt_buf(NNG_OPT_SUB_UNSUBSCRIBE,cast(ubyte[])(tag.dup));
+            if(m_errno != 0)
+                return m_errno;
+            if(m_subscriptions.canFind(tag))    
+                m_subscriptions.remove(tag);    
+        }
+        return 0;
+    }
+
+    string[] subscriptions(){
+        return m_subscriptions;
     }
 
     // setup dialer
@@ -440,7 +477,13 @@ private:
 
     void setopt_string(string opt, string val){
         m_errno = cast(nng_errno)0;
-        auto rc = nng_socket_set_string(m_socket,cast(const char*)toStringz(opt),cast(const char*)toStringz(val));
+        auto rc = nng_socket_set_string(m_socket,toStringz(opt),toStringz(val));
+        if(rc == 0){ return; }else{ m_errno = cast(nng_errno)rc; }                
+    }
+    
+    void setopt_buf(string opt, ubyte[] val){
+        m_errno = cast(nng_errno)0;
+        auto rc = nng_socket_set(m_socket,toStringz(opt),ptr(val),val.length);
         if(rc == 0){ return; }else{ m_errno = cast(nng_errno)rc; }                
     }
 

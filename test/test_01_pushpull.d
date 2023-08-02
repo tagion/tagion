@@ -26,9 +26,17 @@ void sender_worker(string url)
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
     s.sendtimeout = msecs(1000);
     s.sendbuf = 4096;
-    log("SS: dialing");
-    rc = s.dial(url);
-    assert(rc == 0);
+    while(1){
+        log("SS: to dial...");
+        rc = s.dial(url);
+        if(rc == 0) break;
+        log("SS: Dial error: ",nng_strerror(rc));
+        if(rc == nng_errno.NNG_ECONNREFUSED){
+            nng_sleep(msecs(100));
+            continue;
+        }
+        assert(rc == 0);
+    }
     log(nngtest_socket_properties(s,"sender"));
     while(1){
         line = format(">MSG:%d DBL:%d TRL:%d<",k,k*2,k*3);
