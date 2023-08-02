@@ -6,6 +6,7 @@ import core.time;
 import std.conv;
 import std.string;
 import std.typecons;
+import std.algorithm;
 import std.datetime.systime;
 
 
@@ -15,10 +16,53 @@ import libnng;
 @safe
 T* ptr(T)(T[] arr, size_t off = 0) pure nothrow { return arr.length == 0 ? null : &arr[off]; }
 
+alias nng_errno = libnng.nng_errno;
+
 
 @safe
 void nng_sleep(Duration val) nothrow {
     nng_msleep(cast(nng_duration)val.total!"msecs");
+}
+
+string toString(nng_sockaddr a){
+    string s = "<ADDR:UNKNOWN>";
+    switch(a.s_family){
+        case nng_sockaddr_family.NNG_AF_NONE    : 
+            s = format("<ADDR:NONE>");
+            break;
+        case nng_sockaddr_family.NNG_AF_UNSPEC  : 
+            s = format("<ADDR:UNSPEC>");
+            break;
+        case nng_sockaddr_family.NNG_AF_INPROC  : 
+            s = format("<ADDR:INPROC name: %s >", a.s_inproc.sa_name);
+            break;
+        case nng_sockaddr_family.NNG_AF_IPC     : 
+            s = format("<ADDR:IPC path: %s >",a.s_ipc.sa_path);
+            break;
+        case nng_sockaddr_family.NNG_AF_INET    : 
+            s = format("<ADDR:INET addr: %u port: %u >",a.s_in.sa_addr,a.s_in.sa_port);
+            break;
+        case nng_sockaddr_family.NNG_AF_INET6   : 
+            s = format("<ADDR:INET6 scope: %u addr: %s port: %u >",a.s_in6.sa_scope,a.s_in6.sa_addr,a.s_in6.sa_port);
+            break;
+        case nng_sockaddr_family.NNG_AF_ZT      :  
+            s = format("<ADDR:ZT nwid: %u nodeid: %u port: %u >",a.s_zt.sa_nwid,a.s_zt.sa_nodeid,a.s_zt.sa_port);
+            break;
+        case nng_sockaddr_family.NNG_AF_ABSTRACT: 
+            s = format("<ADDR:ABSTRACT name: %s >",cast(string)a.s_abstract.sa_name[0..a.s_abstract.sa_len]);
+            break;
+        default:
+            break;
+    }
+    return s;
+}
+
+string toString(nng_errno e){
+    return nng_errstr(cast(int)e);        
+}
+
+string nng_strerror( int e ){
+    return nng_errstr(e);
 }
 
 enum infiniteDuration = Duration.max;
@@ -50,6 +94,7 @@ struct NNGSocket {
     nng_socket_state m_state;
     nng_socket m_socket;
     nng_ctx[] m_ctx;
+    string[] m_subscriptions;
     string m_name;
     nng_errno m_errno;
 
@@ -185,6 +230,41 @@ struct NNGSocket {
         }else{
             return -1;
         }
+    }
+
+    // setup subscriber
+
+    int subscribe ( string tag ){
+        if(m_subscriptions.canFind(tag))
+            return 0;
+        setopt_buf(NNG_OPT_SUB_SUBSCRIBE,cast(ubyte[])(tag.dup));
+        if(m_errno == 0)
+            m_subscriptions ~= tag;
+        return m_errno;    
+    }
+
+    int unsubscribe ( string tag ) {
+        if(!m_subscriptions.canFind(tag))
+            return 0;
+        setopt_buf(NNG_OPT_SUB_UNSUBSCRIBE,cast(ubyte[])(tag.dup));                
+        if(m_errno == 0)
+            m_subscriptions.remove(tag);
+        return m_errno;    
+    }
+
+    int clearsubscribe (){
+        foreach(tag; m_subscriptions){
+            setopt_buf(NNG_OPT_SUB_UNSUBSCRIBE,cast(ubyte[])(tag.dup));
+            if(m_errno != 0)
+                return m_errno;
+            if(m_subscriptions.canFind(tag))    
+                m_subscriptions.remove(tag);    
+        }
+        return 0;
+    }
+
+    string[] subscriptions(){
+        return m_subscriptions;
     }
 
     // setup dialer
@@ -437,9 +517,35 @@ nothrow {
         if(rc == 0){ return p; }else{ m_errno = cast(nng_errno)rc; return -1; }    
     }
     
+    void setopt_ulong(string opt, ulong val){
+        m_errno = cast(nng_errno)0;
+        auto rc = nng_socket_set_uint64(m_socket,toStringz(opt),val);
+        if(rc == 0){ return; }else{ m_errno = cast(nng_errno)rc; } 
+    }
+
+    ulong getopt_ulong(string opt) {
+        m_errno = cast(nng_errno)0;
+        ulong p;
+        auto rc = nng_socket_get_uint64(m_socket,toStringz(opt),&p);
+        if(rc == 0){ return p; }else{ m_errno = cast(nng_errno)rc; return -1; }    
+    }
+    
+    void setopt_size(string opt, size_t val){
+        m_errno = cast(nng_errno)0;
+        auto rc = nng_socket_set_size(m_socket,toStringz(opt),val);
+        if(rc == 0){ return; }else{ m_errno = cast(nng_errno)rc; } 
+    }
+    
+    size_t getopt_size(string opt) {
+        m_errno = cast(nng_errno)0;
+        size_t p;
+        auto rc = nng_socket_get_size(m_socket,toStringz(opt),&p);
+        if(rc == 0){ return p; }else{ m_errno = cast(nng_errno)rc; return -1; }    
+    }
+    
     string getopt_string(string opt, string base = "socket" ) { 
         m_errno = cast(nng_errno)0;
-        char *ptr; 
+        char *ptr;
         int rc;
         switch(base){
             case "dialer":
@@ -457,7 +563,13 @@ nothrow {
 
     void setopt_string(string opt, string val){
         m_errno = cast(nng_errno)0;
-        auto rc = nng_socket_set_string(m_socket,cast(const char*)toStringz(opt),cast(const char*)toStringz(val));
+        auto rc = nng_socket_set_string(m_socket,toStringz(opt),toStringz(val));
+        if(rc == 0){ return; }else{ m_errno = cast(nng_errno)rc; }                
+    }
+    
+    void setopt_buf(string opt, ubyte[] val){
+        m_errno = cast(nng_errno)0;
+        auto rc = nng_socket_set(m_socket,toStringz(opt),ptr(val),val.length);
         if(rc == 0){ return; }else{ m_errno = cast(nng_errno)rc; }                
     }
 

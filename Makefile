@@ -5,7 +5,7 @@
 
 DC=dmd
 DCFLAGS=-O -d -m64 -i
-DINC=nngd extern/libnng
+DINC=nngd extern/libnng/libnng
 DLFLAGS=-Lextern/libnng/extern/nng/build/lib/ -lnng
 
 DTESTS=$(wildcard test/*.d)
@@ -29,9 +29,13 @@ lib: extern/libnng/.git
 clean: clean-local
 
 clean-local:
-	rm -rf ./build && \
+	rm -rf ./build
 	rm -f $(DTARGETS) $(DTARGETS).o
  
+clean-extern:
+	$(MAKE) -C extern/ clean 
+
+proper: clean-extern
 
 .PHONY: all extern lib clean $(DTESTS)
 

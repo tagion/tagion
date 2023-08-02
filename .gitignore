@@ -1,5 +1,8 @@
 .dub
 .tmp
+build
+extern/*
+test/build
 docs.json
 __dummy.html
 docs/

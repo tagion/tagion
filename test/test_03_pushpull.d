@@ -4,6 +4,7 @@ import std.string;
 import std.concurrency;
 import core.thread;
 import std.datetime.systime;
+import std.uuid;
 
 import nngd;
 import nngtestutil;
@@ -23,6 +24,7 @@ void sender_worker(string url)
     int k = 0;
     string line;
     int rc;
+    log("SS: started for URL: " ~ url);
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
     s.sendtimeout = msecs(1000);
     s.sendbuf = 4096;
@@ -39,13 +41,13 @@ void sender_worker(string url)
     }
     log(nngtest_socket_properties(s,"sender"));
     while(1){
-        line = format(">MSG:%d DBL:%d TRL:%d<",k,k*2,k*3);
+        line = format("%08d %s",k,randomUUID().toString());
         if(k > 9) line = "END";
-        rc = s.send(line);
+        rc = s.send_string(line);
         assert(rc == 0);
-        log("SS sent: ",k," : ",line);
+        log(format("SS sent [%03d]: %s",line.length,line));
         k++;
-        nng_sleep(msecs(500));
+        nng_sleep(msecs(200));
         if(k > 10) break;
     }
     log(" SS: bye!");
@@ -55,19 +57,16 @@ void sender_worker(string url)
 void receiver_worker(string url)
 {
     int rc;
+    log("RR: started with URL: " ~ url);
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_PULL);
     s.recvtimeout = msecs(1000);
     rc = s.listen(url);
-    log("RR: listening");
     assert(rc == 0);
     log(nngtest_socket_properties(s,"receiver"));
     while(1){
-        log("RR to receive");
-        log("RR: debug state: ",s.state, " errno: ", s.errno);
-        auto str = s.receive!string();
-        log("RR: debug state: ",s.state, s.errno);
+        auto str = s.receive_string();
         if(s.errno == 0){
-            log("RR: GOT["~(to!string(str.length))~"]: >"~str~"<");
+            log(format("RR recv [%03d]: %s", str.length, str));
             if(str == "END") 
                 break;
         }else{
@@ -81,14 +80,18 @@ void receiver_worker(string url)
 int main()
 {
     writeln("Hello NNGD!");
-    writeln("Simple push-pull test with byte buffers");
+    writeln("Simple push-pull test with all transports");
+    
+    string[3] transports = ["tcp://127.0.0.1:31200", "ipc:///tmp/testnng.ipc", "inproc://testnng"];
 
-    string uri = "tcp://127.0.0.1:31200";
-
-    auto tid01 = spawn(&receiver_worker, uri);
-    auto tid02 = spawn(&sender_worker, uri);
-    thread_joinAll();
-
+    foreach(uri; transports){
+        writeln("\n\n-------------------- simple push-pull with URL: " ~ uri);
+        auto tid01 = spawn(&receiver_worker, uri);
+        auto tid02 = spawn(&sender_worker, uri);
+        thread_joinAll();
+        writeln("-------------------- end test");
+    }        
+    writeln("Bye!");
     return 0;
 }
 
