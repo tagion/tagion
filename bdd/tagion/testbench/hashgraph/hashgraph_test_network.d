@@ -288,6 +288,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
             .all!(s => s);
     }
 
+    static bool testing;
     void addNode(immutable(ulong) N, const(string) name, const Flag!"joining" joining = No.joining) {
         immutable passphrase = format("very secret %s", name);
         auto net = new StdSecureNet();
@@ -295,6 +296,9 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         auto refinement = new TestRefinement;
         
         auto h = new HashGraph(N, net, refinement, &authorising.isValidChannel, joining, name);
+        if (!testing) {
+            h.__debug_print=testing=true;
+        }
         h.scrap_depth = 0;
         writefln("Adding Node: %s with %s", name, net.pubkey.cutHex);
         networks[net.pubkey] = new FiberNetwork(h, pageSize * 1024);

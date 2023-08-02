@@ -44,6 +44,8 @@ class HashGraph {
     int scrap_depth = default_scrap_depth;
     import tagion.basic.ConsensusExceptions;
 
+    bool __debug_print;
+
     protected alias check = Check!HashGraphConsensusException;
     //   protected alias consensus=consensusCheckArguments!(HashGraphConsensusException);
     import tagion.logger.Statistic;
@@ -299,7 +301,6 @@ class HashGraph {
     }
 
     Event createEvaEvent(lazy const sdt_t time, const Buffer nonce) {
-        writeln("creating eva event");
         immutable eva_epack = eva_pack(time, nonce);
         auto eva_event = new Event(eva_epack, this);
 
@@ -307,6 +308,9 @@ class HashGraph {
         front_seat(eva_event);
         writefln("NODE SIZE IS: %s", node_size);
         set_strongly_seen_mask(eva_event);
+        if (__debug_print) {
+            writefln("CREATING EVA EVENT with id, nodeid: %s %s",eva_event.id, eva_event.node_id);
+        } 
         return eva_event;
     }
 
@@ -841,6 +845,10 @@ class HashGraph {
                     _witness_strongly_seen_masks[i] |= _father_strong_seen_mask[i];
 
                 }
+                if (__debug_print)
+                {
+                    __write("strong_matrix: %s  \n%(%4s\n%)", event.id, _witness_strongly_seen_masks);
+                }
                 const strongly_seen_votes = _witness_strongly_seen_masks.filter!(mask => mask.isMajority(this.outer)).count;
                 return isMajority(strongly_seen_votes);
             }
@@ -850,7 +858,12 @@ class HashGraph {
             foreach (ref mask; _witness_strongly_seen_masks) {
                 mask.clear();
             }
-            _witness_strongly_seen_masks[event.node_id][event.node_id] = true;     
+            _witness_strongly_seen_masks[event.node_id][event.node_id] = true;
+                 
+if (__debug_print)
+                {
+                    __write("strong_matrix: %s  \n%(%4s\n%)", event.id, _witness_strongly_seen_masks);
+                }
         }
         private Event _event; /// This is the last event in this Node
 
@@ -915,7 +928,7 @@ class HashGraph {
         return hirpc.net;
     }
 
-    package Node getNode(Pubkey channel) pure out (ret) {__write("TEST in getnode %s", ret._witness_strongly_seen_masks.length); } do {
+    package Node getNode(Pubkey channel) pure {
         const next_id = next_node_id;
         return _nodes.require(channel, new Node(channel, next_id));
     }

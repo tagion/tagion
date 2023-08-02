@@ -1028,11 +1028,15 @@ class Event {
                 if (callbacks) {
                     callbacks.witness(this);
                 }
-                hashgraph.set_strongly_seen_mask(this);
+                //hashgraph.set_strongly_seen_mask(this);
             }
         }
         else if (!isEva && !hashgraph.joining && !hashgraph.rounds.isEventInLastDecidedRound(this))  {
             check(false, ConsensusFailCode.EVENT_MOTHER_LESS);
+        }
+        else if (isEva)
+        {
+            hashgraph.set_strongly_seen_mask(this);
         }
         
     }

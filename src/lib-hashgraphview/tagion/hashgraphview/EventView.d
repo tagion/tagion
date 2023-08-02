@@ -14,7 +14,7 @@ struct EventView {
     @label("$a") int altitude;
     @label("$o") int order;
     @label("$r") int round;
-    @label("__ns") bool __new_witness;
+    @label("$__nw") bool __new_witness;
     @label("$rec") int round_received;
     @label("$w", true) @(filter.Initialized) bool witness;
     @label("$famous", true) @(filter.Initialized) bool famous;
