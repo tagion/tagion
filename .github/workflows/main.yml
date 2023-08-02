@@ -272,3 +272,6 @@ jobs:
           mkdir -p /opt/tagion/artifact
           cp build/x86_64-linux/bin/tagion /opt/tagion/artifact/
           docker start tagion-dashboard
+          rm -rf build || echo "build directory already deleted"
+          rm  *.tar.gz || echo "No such file or directory"
+          
