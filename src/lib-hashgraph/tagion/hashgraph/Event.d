@@ -1009,7 +1009,7 @@ class Event {
             with (hashgraph) {
                 mixin Log!(received_order_statistic);
             }
-            hashgraph.update_strongly_seen(this);
+            __new_witness = hashgraph.update_strongly_seen(this);
             auto witness_seen_mask = calc_witness_mask(hashgraph);
             if (witness_seen_mask.isMajority(hashgraph)) {
                 hashgraph._rounds.next_round(this);
