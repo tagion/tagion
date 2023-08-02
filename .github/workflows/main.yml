@@ -264,7 +264,7 @@ jobs:
           id
           pwd
           rm -rf build || echo "build directory already deleted"
-          rm  *.tar.gz
+          rm  *.tar.gz || echo "No such file or directory"
           echo "cleaned"
           gh run download -n successful_artifact --repo tagion/tagion
           tar -xzf *.tar.gz
