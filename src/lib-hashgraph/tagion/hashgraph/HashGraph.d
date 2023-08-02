@@ -798,7 +798,6 @@ class HashGraph {
             this.node_id = node_id;
             this.channel = channel;
             this._witness_strongly_seen_masks = new BitMask[this.outer.node_size];
-            __write("WITNESS STRONGLY SEEN MAKSS %s %s", _witness_strongly_seen_masks.length, this.outer.node_size);
         }
 
         protected ExchangeState _sticky_state = ExchangeState.RIPPLE;
@@ -847,15 +846,10 @@ class HashGraph {
             }
             return false;
         }
-        version(none) invariant{
-            assert(_witness_strongly_seen_masks.length == node_size, "BAD NODE SIZE");
-        }
         void set_strongly_seen_mask(const Event event) {
-            writefln("HEHEH %s %s", _witness_strongly_seen_masks.length, node_size);
             foreach (ref mask; _witness_strongly_seen_masks) {
                 mask.clear();
             }
-            writefln("length o'f witness strongly seen masks: %s", _witness_strongly_seen_masks.length); 
             _witness_strongly_seen_masks[event.node_id][event.node_id] = true;     
         }
         private Event _event; /// This is the last event in this Node
@@ -922,10 +916,7 @@ class HashGraph {
     }
 
     package Node getNode(Pubkey channel) pure out (ret) {__write("TEST in getnode %s", ret._witness_strongly_seen_masks.length); } do {
-        __write("TESTING NODE SIZE %s", node_size);
         const next_id = next_node_id;
-        const xxx = new Node(channel, next_id);
-        __write("MORE TEST %s", xxx._witness_strongly_seen_masks.length);
         return _nodes.require(channel, new Node(channel, next_id));
     }
 
@@ -1027,12 +1018,8 @@ class HashGraph {
     }
 
     void set_strongly_seen_mask(Event event) {
-        writefln("SECOND CHECK SIZE IS %s,", node_size);
         getNode(event.channel).set_strongly_seen_mask(event);
-        writefln("THIRD CHECK %s", _nodes[event.channel]._witness_strongly_seen_masks.length);    
     }
-
-    invariant { assert(node_size >=4, "SIKKE NOGET SKIDT)");}
 }
 
 version (unittest) {
