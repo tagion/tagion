@@ -833,7 +833,7 @@ class HashGraph {
 
         bool update_strongly_seen(const Event event) {
             if(event.father())
-            {
+            {   
                 const _father_strong_seen_mask = _nodes[event.father.channel]._witness_strongly_seen_masks;
                 foreach (i; 0 .. node_size) {
                     _witness_strongly_seen_masks[i] |= _father_strong_seen_mask[i];
@@ -845,6 +845,9 @@ class HashGraph {
             return false;
         }
 
+        void set_strongly_seen_mask(const Event event) {
+           _witness_strongly_seen_masks.each!(ref mask {mask.clear; mask = event.node_id; return No.each});     
+        }
         private Event _event; /// This is the last event in this Node
 
 
