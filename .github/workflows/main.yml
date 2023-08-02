@@ -252,3 +252,26 @@ jobs:
           systemctl stop --user dart_api.service
           ./install.sh
           systemctl restart --user dart_api.service
+          
+  deploy_testnet_container:
+    runs-on: testnet-container
+    needs: [finish_workflow]
+    steps:    
+      - name: get artifact and restart service
+        run: |
+          source ~/.bashrc
+          ls -l
+          id
+          pwd
+          sudo rm -rf build || echo "build directory already deleted"
+          sudo rm  *.tar.gz || echo "No such file or directory"
+          echo "cleaned"
+          gh run download -n successful_artifact --repo tagion/tagion
+          tar -xzf *.tar.gz
+          docker stop tagion-dashboard
+          mkdir -p /opt/tagion/artifact
+          sudo cp build/x86_64-linux/bin/tagion /opt/tagion/artifact/
+          docker start tagion-dashboard
+          sudo rm -rf build || echo "build directory already deleted"
+          sudo rm  *.tar.gz || echo "No such file or directory"
+          
