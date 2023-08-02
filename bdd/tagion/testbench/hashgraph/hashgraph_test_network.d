@@ -231,6 +231,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
             { // Eva Event
                 immutable buf = cast(Buffer) _hashgraph.channel;
                 const nonce = cast(Buffer) _hashgraph.hirpc.net.calcHash(buf);
+                writefln("NODE SIZE OF TEST HASHGRAPH %s", _hashgraph.node_size);
                 auto eva_event = _hashgraph.createEvaEvent(time, nonce);
 
             }
@@ -292,6 +293,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         auto net = new StdSecureNet();
         net.generateKeyPair(passphrase);
         auto refinement = new TestRefinement;
+        
         auto h = new HashGraph(N, net, refinement, &authorising.isValidChannel, joining, name);
         h.scrap_depth = 0;
         writefln("Adding Node: %s with %s", name, net.pubkey.cutHex);
