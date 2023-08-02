@@ -791,10 +791,11 @@ class HashGraph {
         immutable size_t node_id;
         immutable(Pubkey) channel;
         private bool _offline;
-        @nogc
+        package BitMask[] _witness_strongly_seen_masks;
         this(const Pubkey channel, const size_t node_id) pure nothrow {
             this.node_id = node_id;
             this.channel = channel;
+            this._witness_strongly_seen_masks = new BitMask[node_size];
         }
 
         protected ExchangeState _sticky_state = ExchangeState.RIPPLE;
