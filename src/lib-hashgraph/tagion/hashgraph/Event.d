@@ -610,6 +610,9 @@ class Event {
 
     alias check = Check!EventConsensusException;
     protected static uint _count;
+
+    bool __new_witness;
+
     @nogc
     static uint count() nothrow {
         return _count;
@@ -632,7 +635,7 @@ class Event {
         event_package = epack;
         this.node_id = hashgraph.getNode(channel).node_id;
         this.id = hashgraph.next_event_id;
-        _witness_seen_mask[node_id] = true;
+        _witness_mask[node_id] = true;
         _count++;
 
     }
@@ -644,7 +647,7 @@ class Event {
     invariant {
         if (!scrapping) {
             if (_mother) {
-                assert(!_witness_seen_mask[].empty);
+                assert(!_witness_mask[].empty);
                 assert(_mother._daughter is this);
                 assert(
                     event_package.event_body.altitude - _mother
@@ -762,7 +765,7 @@ class Event {
         // The withness mask contains the mask of the nodes
         // Which can be seen by the next rounds witness
         Witness _witness;
-        BitMask _witness_seen_mask;
+        BitMask _witness_mask;
         BitMask _round_seen_mask;
     }
 
@@ -906,9 +909,9 @@ class Event {
      *   hashgraph = 
      * Returns: 
      */
-    private const(BitMask) calc_witness_seen_mask(HashGraph hashgraph) nothrow
+    private const(BitMask) calc_witness_mask(HashGraph hashgraph) nothrow
     in {
-        assert(!_mother._witness_seen_mask[].empty);
+        assert(!_mother._witness_mask[].empty);
     }
     do {
         uint iterative_witness_search_count;
@@ -921,27 +924,27 @@ class Event {
                 callbacks.witness_mask(this);
             }
         }
-        const(BitMask) local_calc_witness_seen_mask(const Event e, const BitMask voting_mask, const BitMask marker_mask) nothrow @safe {
+        const(BitMask) local_calc_witness_mask(const Event e, const BitMask voting_mask, const BitMask marker_mask) nothrow @safe {
             iterative_witness_search_count++;
             if (e && e._round && !marker_mask[e.node_id]) {
                 BitMask result = voting_mask.dup;
                 if (e._round.number == _round.number) {
                     result[e.node_id] = true;
-                    const collecting_voting_mask = e._witness_seen_mask & ~result;
+                    const collecting_voting_mask = e._witness_mask & ~result;
                     if (!collecting_voting_mask[].empty) {
-                        result |= local_calc_witness_seen_mask(e._father, result, marker_mask + e
+                        result |= local_calc_witness_mask(e._father, result, marker_mask + e
                                 .node_id);
-                        result |= local_calc_witness_seen_mask(e._mother, result, marker_mask);
+                        result |= local_calc_witness_mask(e._mother, result, marker_mask);
                     }
                 }
                 else if (e._round.number > _round.number) {
                     const event_round = e._round.events[e.node_id];
                     if (event_round) {
                         result |= event_round._witness.round_seen_mask;
-                        const collecting_voting_mask = e._witness_seen_mask & ~result;
+                        const collecting_voting_mask = e._witness_mask & ~result;
                         if (!collecting_voting_mask[].empty) {
-                            result |= local_calc_witness_seen_mask(event_round, result, marker_mask);
-                            result |= local_calc_witness_seen_mask(e._father, result, marker_mask + e
+                            result |= local_calc_witness_mask(event_round, result, marker_mask);
+                            result |= local_calc_witness_mask(e._father, result, marker_mask + e
                                     .node_id);
                         }
                     }
@@ -951,7 +954,7 @@ class Event {
             return voting_mask;
         }
 
-        return local_calc_witness_seen_mask(this, BitMask(), BitMask());
+        return local_calc_witness_mask(this, BitMask(), BitMask());
     }
 
     /**
@@ -991,11 +994,11 @@ class Event {
             _mother._daughter = this;
             _father = hashgraph.register(event_package.event_body.father);
             attach_round(hashgraph);
-            _witness_seen_mask = _mother._witness_seen_mask;
+            _witness_mask = _mother._witness_mask;
             if (_father) {
                 check(!_father._son, ConsensusFailCode.EVENT_FATHER_FORK);
                 _father._son = this;
-                _witness_seen_mask |= _father._witness_seen_mask;
+                _witness_mask |= _father._witness_mask;
             }
             if (callbacks) {
                 callbacks.round(this);
@@ -1006,7 +1009,7 @@ class Event {
             with (hashgraph) {
                 mixin Log!(received_order_statistic);
             }
-            auto witness_seen_mask = calc_witness_seen_mask(hashgraph);
+            auto witness_seen_mask = calc_witness_mask(hashgraph);
             if (witness_seen_mask.isMajority(hashgraph)) {
                 hashgraph._rounds.next_round(this);
                 _witness = new Witness(this, witness_seen_mask);
@@ -1019,8 +1022,8 @@ class Event {
                     mixin Log!(strong_seeing_statistic);
                 }
                 hashgraph._rounds.check_decided_round(hashgraph);
-                _witness_seen_mask.clear;
-                _witness_seen_mask[node_id] = true;
+                _witness_mask.clear;
+                _witness_mask[node_id] = true;
                 if (callbacks) {
                     callbacks.witness(this);
                 }
@@ -1147,7 +1150,7 @@ class Event {
         * Returns: witness mask
         */
         const(BitMask) witness_mask() {
-            return _witness_seen_mask;
+            return _witness_mask;
         }
 
         /**

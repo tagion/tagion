@@ -831,6 +831,20 @@ class HashGraph {
             }
         }
 
+        bool update_strongly_seen(const Event event) {
+            if(event.father())
+            {
+                const _father_strong_seen_mask = _nodes[event.father.channel]._witness_strongly_seen_masks;
+                foreach (i; 0 .. node_size) {
+                    _witness_strongly_seen_masks[i] |= _father_strong_seen_mask[i];
+
+                }
+                const strongly_seen_votes = _witness_strongly_seen_masks.filter!(mask => mask.isMajority(this.outer)).count;
+                return isMajority(strongly_seen_votes);
+            }
+            return false;
+        }
+
         private Event _event; /// This is the last event in this Node
 
 
