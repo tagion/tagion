@@ -72,7 +72,7 @@ log("SS: PROPERTIES -----------------------------\n"
     while(1){
         line = format(">MSG:%d DBL:%d TRL:%d<",k,k*2,k*3);
         if(k > 9) line = "END";
-        rc = s.send_string(line);
+        rc = s.send(line);
         assert(rc == 0);
         log("SS sent: ",k," : ",line);
         k++;
@@ -135,7 +135,7 @@ log("RR: PROPERTIES -----------------------------\n"
     while(1){
         log("RR to receive");
         log("RR: debug state: ",s.state, " errno: ", s.errno);
-        auto str = s.receive_string();
+        auto str = s.receive!string();
         log("RR: debug state: ",s.state, s.errno);
         if(s.errno == 0){
             log("RR: GOT["~(to!string(str.length))~"]: >"~str~"<");

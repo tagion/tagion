@@ -16,14 +16,14 @@ all: lib test
 
 test: $(DTESTS)
 
-extern:
+extern/libnng/.git:
 	git submodule update --init --checkout --recursive --remote --force && \
 	$(MAKE) -C extern/
 
 $(DTESTS): 
 	$(DC) $(DCFLAGS) -of=$(basename $@) ${addprefix -I,$(DINC)} ${addprefix -L,$(DLFLAGS)} $@
 
-lib: extern
+lib: extern/libnng/.git
 	$(DC) $(DCFLAGS) -lib -od=build/ ${addprefix -I,$(DINC)} ${addprefix -L,$(DLFLAGS)} nngd/nngd.d
 
 clean: clean-local

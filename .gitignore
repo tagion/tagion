@@ -8,3 +8,5 @@ docs/
 *.o
 *.obj
 *.lst
+# C deps files
+*.o.d 
