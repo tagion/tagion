@@ -1074,11 +1074,11 @@ class Event {
         }
 
         const _father_masks = father._witness_strong_seen_masks;
-        foreach (ref mask; _father_masks.length) {
-            _witness_strong_seen_mask[i] |= _father_masks[i];
+        foreach (i;0 .. _father_masks.length) {
+            _witness_strong_seen_masks[i] |= _father_masks[i];
         }
         const strongly_seen_votes = _witness_strong_seen_masks.filter!(mask => mask.isMajority(hashgraph)).count;
-        return isMajority(strongly_seen_votes);
+        return hashgraph.isMajority(strongly_seen_votes);
     }
 
     void clear_witness_strong_seen_masks() {
