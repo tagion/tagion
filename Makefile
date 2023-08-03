@@ -32,9 +32,11 @@ clean-local:
 	rm -rf ./test/build 
 
 clean-extern:
-	$(MAKE) -C extern/ clean 
+	$(MAKE) -C extern/ clean
+
 
 proper: clean-extern
+	find extern -name "*.a" -exec rm {} \;
 
 .PHONY: all extern lib clean $(DTESTS)
 

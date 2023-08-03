@@ -365,7 +365,31 @@ struct NNGSocket {
         
     }
 
-    int receive ( ubyte[] data, size_t* sz, bool nonblock = false ){
+    /**
+        Receives a data buffer of the max size data.length 
+Params:
+            data = preallocated buffer
+            nonblock = set the non blocking mode
+            sz = if sz != the this sz is used as max size
+*/
+    @nogc @safe
+    const(ubyte[]) _receive ( ubyte[] data,  bool nonblock = false, size_t sz=0 ) nothrow 
+        in(data.length>=sz)
+        in(data.length)
+do {
+        m_errno = nng_errno.init;
+        if(m_state == nng_socket_state.NNG_STATE_CONNECTED){
+            sz =(sz==0)?data.length:sz;
+            m_errno = (() @trusted => cast(nng_errno)nng_recv(m_socket, &data[0], &sz, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 ))();
+            if (m_errno !is nng_errno.init) {    
+                return null;
+            }
+            return data[0..sz];
+        }
+        return null;
+    }
+
+     int receive ( ubyte[] data, size_t* sz, bool nonblock = false ){
         m_errno = cast(nng_errno)0;
         if(m_state == nng_socket_state.NNG_STATE_CONNECTED){
             auto rc = nng_recv(m_socket, ptr(data), sz, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 );
@@ -375,38 +399,48 @@ struct NNGSocket {
             }
             data = data[0..*sz];
             return 0;
-        }else{
-            return -1;
         }
+        return -1;
     }
-    
-    string receive_string ( bool nonblock = false ){
-        m_errno = cast(nng_errno)0;
+   
+    import std.traits;
+    T receive(T)( bool nonblock = false ) if (isArray!T) {
+        m_errno = nng_errno.init;
+        alias U=ForeachType!T;
+        static assert(U.sizeof == 1, "None byte size array element are not supported");
         if(m_state == nng_socket_state.NNG_STATE_CONNECTED){
-            char *buf;
+            ubyte* buf;
             size_t sz;
-            auto rc = nng_recv(m_socket, &buf, &sz, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 + nng_flag.NNG_FLAG_ALLOC );
-            if( rc != 0){
+            const rc = nng_recv(m_socket, &buf, &sz, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 + nng_flag.NNG_FLAG_ALLOC );
+            if (rc != 0) { 
                 m_errno = cast(nng_errno)rc;
-                return "";
+                return T.init;
             }
             GC.addRange(buf,sz);
-            return (cast(immutable(char)*)buf)[0..sz];
-        }else{
-            return null;
+            return (cast(U*)buf)[0..sz];
         }
+        return T.init;
+        
+    }
+    // properties Note @propery is not need anymore
+    @nogc nothrow pure  {
+    @property int state() const { return m_state; }
+    @property int errno() const { return m_errno; }
+
+    string name() const { return m_name; }
+    
+    /* You don't need to dup the string because is immutable 
+        Only if you are planing to change the content in the string
+@property void name(string val) { m_name = val.dup; }
+        Ex:
+        The function can be @nogc if you don't duplicate
+*/    
+    void name(string val) { m_name = val; }
+
+    @property bool raw() const { return m_raw; }
     }
 
-    // properties
-    @property string versionstring() { return to!string(nng_version()); }
-    @property int state() { return m_state; }
-    @property int errno() { return m_errno; }
-
-    @property string name() { return m_name; }
-    @property void name(string val) { m_name = val.dup; }
-
-    @property bool raw() { return m_raw; }
-    
+    nothrow {
     @property int proto() { return getopt_int(NNG_OPT_PROTO); }
     @property string protoname() { return getopt_string(NNG_OPT_PROTONAME); }
     
@@ -430,7 +464,17 @@ struct NNGSocket {
 
     @property nng_sockaddr locaddr() { return (m_may_send) ? getopt_addr(NNG_OPT_LOCADDR,"dialer") : getopt_addr(NNG_OPT_LOCADDR,"listener"); } 
     @property nng_sockaddr remaddr() { return (m_may_send) ? getopt_addr(NNG_OPT_REMADDR,"dialer") : nng_sockaddr(nng_sockaddr_family.NNG_AF_NONE); } 
-
+}
+    // Recommend the use a enum for like this
+    enum Modes {
+        dialer,
+        listner,
+        socket,
+    }
+    /+ And then use
+    const m=Modes.dailer;
+    string name=m.to!string;
+    +/
     @property string url() { 
         if(m_may_send)
             return getopt_string(NNG_OPT_URL,"dialer"); 
@@ -440,11 +484,11 @@ struct NNGSocket {
             return getopt_string(NNG_OPT_URL,"socket"); 
     }
 
-    @property int maxttl() { return getopt_int(NNG_OPT_MAXTTL); } 
-    @property void maxttl(int val){ setopt_int(NNG_OPT_MAXTTL,val); }
+    @property Duration maxttl() { return getopt_duration(NNG_OPT_MAXTTL); } 
+    @property void maxttl(Duration val){ setopt_duration(NNG_OPT_MAXTTL,val); }
     
-    @property size_t recvmaxsz() { return getopt_size(NNG_OPT_RECVMAXSZ); } 
-    @property void recvmaxsz(size_t val) { return setopt_size(NNG_OPT_RECVMAXSZ,val); } 
+    @property int recvmaxsz() { return getopt_int(NNG_OPT_RECVMAXSZ); } 
+    @property void recvmaxsz(int val) { return setopt_int(NNG_OPT_RECVMAXSZ,val); } 
 
     @property Duration reconnmint() { return getopt_duration(NNG_OPT_RECONNMINT); } 
     @property void reconnmint(Duration val){ setopt_duration(NNG_OPT_RECONNMINT,val); }
@@ -454,7 +498,8 @@ struct NNGSocket {
 
     // TODO: NNG_OPT_IPC_*, NNG_OPT_TLS_*, NNG_OPT_WS_*  
 private:
-    void setopt_int(string opt, int val){
+nothrow {
+    void setopt_int(string opt, int val) {
         m_errno = cast(nng_errno)0;
         auto rc = nng_socket_set_int(m_socket,toStringz(opt),val);
         if(rc == 0){ return; }else{ m_errno = cast(nng_errno)rc; } 
@@ -565,6 +610,7 @@ private:
         m_errno = cast(nng_errno)0;
         auto rc = nng_socket_set_addr(m_socket,cast(const char*)toStringz(opt),&val);
         if(rc == 0){ return; }else{ m_errno = cast(nng_errno)rc; }
+    }
     }
 }   // struct Socket
 
