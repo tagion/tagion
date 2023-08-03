@@ -43,7 +43,7 @@ void sender_worker(string url)
     while(1){
         line = format("%08d %s",k,randomUUID().toString());
         if(k > 9) line = "END";
-        rc = s.send_string(line);
+        rc = s.send(line);
         assert(rc == 0);
         log(format("SS sent [%03d]: %s",line.length,line));
         k++;

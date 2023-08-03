@@ -41,7 +41,7 @@ void sender_worker(string url)
     while(1){
         line = format(">MSG:%d DBL:%d TRL:%d<",k,k*2,k*3);
         if(k > 9) line = "END";
-        rc = s.send_string(line);
+        rc = s.send(line);
         assert(rc == 0);
         log("SS sent: ",k," : ",line);
         k++;

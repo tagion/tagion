@@ -38,13 +38,13 @@ void pub_worker(string url, const string[] tags)
         if(k > 31) {
             foreach(tag; tags){
                 line = tag ~ " END";
-                rc = s.send_string(line);
+                rc = s.send(line);
                 assert(rc == 0);
                 log("PUB sent: ",k," : ",line);
             }
             break;
         }
-        rc = s.send_string(line);
+        rc = s.send(line);
         assert(rc == 0);
         log("PUB sent: ",k," : ",line);
         k++;
