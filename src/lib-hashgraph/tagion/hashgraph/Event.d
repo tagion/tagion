@@ -1068,6 +1068,13 @@ class Event {
         return false;
     }
 
+    void clear_witness_strong_seen_masks() {
+        foreach (ref mask; _witness_strong_seen_masks) {
+            mask.clear();
+        }
+        _witness_strong_seen_masks[node_id][node_id] = true;
+    }
+
     /**
      * Disconnect this event from hashgraph
      * Used to remove events which are no longer needed 
