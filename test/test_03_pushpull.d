@@ -16,7 +16,7 @@ static double timestamp()
 }
 
 static void log(A...)(string fmt, A a){
-    writefln("%.6f ",timestamp,a);
+    writefln("%.6f "~fmt,timestamp,a);
 }
 
 void sender_worker(string url)
@@ -64,7 +64,7 @@ void receiver_worker(string url)
     assert(rc == 0);
     log(nngtest_socket_properties(s,"receiver"));
     while(1){
-        auto str = s.receive_string();
+        auto str = s.receive!string;
         if(s.errno == 0){
             log(format("RR recv [%03d]: %s", str.length, str));
             if(str == "END") 

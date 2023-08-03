@@ -76,7 +76,7 @@ void sub_worker(string url, string tag)
     log("%s",s.subscriptions());
     while(1){
         log("SUB("~tag~"): to receive");
-        auto str = s.receive_string();
+        auto str = s.receive!string;
         if(s.errno == 0){
             log(format("SUB("~tag~") recv [%03d]: %s", str.length, str));
             if(str[$-3..$] == "END") 
