@@ -2,8 +2,9 @@ module libnng.libnng;
 
 import std.meta : Alias;
 import core.stdc.config;
+import std.traits;
 
-nothrow extern (C)
+@nogc nothrow extern (C)
 {
 
 
@@ -15,6 +16,7 @@ const int NNG_MAXADDRLEN = 128;
 
 int NNG_PROTOCOL_NUMBER (int maj, int min) { return maj *16 + min; }
 
+version(none)
 enum nng_errno {
     NNG_EINTR        = 1,
     NNG_ENOMEM       = 2,
@@ -52,6 +54,57 @@ enum nng_errno {
     NNG_ETRANERR     = 0x20000000
 };
 
+enum nng_errno : int {
+        @("") NNG_EINTR = 1,
+        @("Insufficient free memory exists.") NNG_ENOMEM = 2,
+        @("An invalid URL or other data was supplied.") NNG_EINVAL = 3,
+        @("Server instance is running.") NNG_EBUSY = 4,
+        @("The operation timed out.") NNG_ETIMEDOUT = 5,
+        @("The remote peer refused the connection.") NNG_ECONNREFUSED = 6,
+        @("At least one of the sockets is not open.") NNG_ECLOSED = 7,
+        @("") NNG_EAGAIN = 8,
+        @("The option or protocol is not supported.") NNG_ENOTSUP = 9,
+        @("The address is already in use.") NNG_EADDRINUSE = 10,
+        @("The context/dialer/listener cannot do what your want state.") NNG_ESTATE = 11,
+        @("Handler is not registered with server.") NNG_ENOENT = 12,
+        @("A protocol error occurred.") NNG_EPROTO = 13,
+        @("The remote address is not reachable.") NNG_EUNREACHABLE = 14,
+        @("The address is invalid or unavailable.") NNG_EADDRINVAL = 15,
+        @("No permission to read the file.") NNG_EPERM = 16,
+        @("The message is too large.") NNG_EMSGSIZE = 17,
+        @("") NNG_ECONNABORTED = 18,
+        @("The connection was reset by the peer.") NNG_ECONNRESET = 19,
+        @("The operation was aborted.") NNG_ECANCELED = 20,
+        @("") NNG_ENOFILES = 21,
+        @("") NNG_ENOSPC = 22,
+        @("") NNG_EEXIST = 23,
+        @("The option may not be modified.") NNG_EREADONLY = 24,
+        @("The option may not read.") NNG_EWRITEONLY = 25,
+        @("") NNG_ECRYPTO = 26,
+        @("Authentication or authorization failure.") NNG_EPEERAUTH = 27,
+        @("Option requires an argument: but one is not present.") NNG_ENOARG = 28,
+        @("Parsed option matches more than one specification.") NNG_EAMBIGUOUS = 29,
+        @("Incorrect type for option.") NNG_EBADTYPE = 30,
+        @("Remote peer shutdown after sending data.") NNG_ECONNSHUT = 31,
+        @("") NNG_EINTERNAL = 1000,
+        @("") NNG_ESYSERR = 0x1000_0000,
+        @("") NNG_ETRANERR = 0x2000_0000,
+}
+
+string nng_errstr(nng_errno errno) {
+    switch(errno) { 
+        static foreach(E; EnumMembers!nng_errno) {
+            case E:
+                enum error_text = getUDAs!(E, string)[0];
+                return E.stringof~(error_text.length)?" - ":""~error_text;
+        }
+    default:
+        return null;
+    }
+    assert(0);
+}
+
+version(none)
 string nng_errstr ( int ierrno ) {
     immutable string[int] _nng_errstr = [
          1:            "NNG_EINTR"
@@ -92,6 +145,7 @@ string nng_errstr ( int ierrno ) {
     return (ierrno in _nng_errstr) ? _nng_errstr[ierrno] : "";
 }
 
+version(none)
 string nng_errstr ( nng_errno e ){
     return nng_errstr(cast(int)e);
 }
@@ -217,7 +271,7 @@ void nng_free(void *, size_t);
 char *nng_strdup(const char *);
 char *nng_strerror(int);
 void nng_strfree(char *);
-char *nng_version();
+char *nng_version() pure;
 
 // ------------------------------------- system functions
 
