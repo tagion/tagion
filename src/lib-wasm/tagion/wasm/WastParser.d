@@ -239,41 +239,7 @@ struct WastParser {
                 //}
                 //return stage;
             case "func": // Example (func $name (param ...) (result i32) )
-
-                check(stage < ParserStage.FUNC, r);
-                auto type_section = writer.section!(Section.TYPE);
-
-                const type_idx = type_section.sectypes.length;
-
-                writefln("%s", type_section.sectypes.length);
-                r.nextToken;
-                if (r.type == TokenType.WORD) {
-                    // Function with label
-                    label = r.token;
-                    r.nextToken;
-                }
-                ParserStage arg_stage;
-                WastTokenizer rewined;
-                uint only_one_type_allowed;
-                do {
-                    rewined = r.save;
-                    arg_stage = parse_section(r, ParserStage.FUNC);
-
-                    only_one_type_allowed += (only_one_type_allowed > 0) || (arg_stage == ParserStage.TYPE);
-
-                    //count_types+=(arg_stage == ParserStage.TYPE);
-                }
-                while ((arg_stage == ParserStage.PARAM) || (only_one_type_allowed == 1));
-                //auto result_r=r.save;
-                if (arg_stage != ParserStage.TYPE && arg_stage != ParserStage.RESULT || arg_stage == ParserStage
-                        .UNDEFINED) {
-                    r = rewined;
-                }
-                while (r.type == TokenType.BEGIN) {
-                    const ret = parse_instr(r, ParserStage.FUNC_BODY);
-                    check(ret == ParserStage.FUNC_BODY, r);
-                }
-                return ParserStage.FUNC;
+                return parse_type_section(r, stage);
             case "param": // Example (param $y i32)
                 r.nextToken;
                 if (stage == ParserStage.IMPORT) {
@@ -408,6 +374,45 @@ struct WastParser {
             r.nextToken;
         }
         return ParserStage.END;
+    }
+
+    ParserStage parse_type_section(ref WastTokenizer r, const ParserStage stage) {
+        string label;
+
+        check(stage < ParserStage.FUNC, r);
+        auto type_section = writer.section!(Section.TYPE);
+
+        const type_idx = type_section.sectypes.length;
+
+        writefln("%s", type_section.sectypes.length);
+        r.nextToken;
+        if (r.type == TokenType.WORD) {
+            // Function with label
+            label = r.token;
+            r.nextToken;
+        }
+        ParserStage arg_stage;
+        WastTokenizer rewined;
+        uint only_one_type_allowed;
+        do {
+            rewined = r.save;
+            arg_stage = parse_section(r, ParserStage.FUNC);
+
+            only_one_type_allowed += (only_one_type_allowed > 0) || (arg_stage == ParserStage.TYPE);
+
+            //count_types+=(arg_stage == ParserStage.TYPE);
+        }
+        while ((arg_stage == ParserStage.PARAM) || (only_one_type_allowed == 1));
+        //auto result_r=r.save;
+        if (arg_stage != ParserStage.TYPE && arg_stage != ParserStage.RESULT || arg_stage == ParserStage
+                .UNDEFINED) {
+            r = rewined;
+        }
+        while (r.type == TokenType.BEGIN) {
+            const ret = parse_instr(r, ParserStage.FUNC_BODY);
+            check(ret == ParserStage.FUNC_BODY, r);
+        }
+        return ParserStage.FUNC;
     }
 
     void parse(ref WastTokenizer tokenizer) {
