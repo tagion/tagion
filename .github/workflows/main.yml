@@ -269,6 +269,7 @@ jobs:
           sudo rm  *.tar.gz || echo "No such file or directory"
           docker rm - tagion-dashboard || echo "container not exists"
           docker volume rm -f tagion-dashboard || echo "volume deleted"
+          docker volume create tagion-dashboard
           echo "cleaned"
           gh run download -n successful_artifact --repo tagion/tagion
           tar -xzf *.tar.gz
