@@ -29,7 +29,7 @@ jobs:
         run: |
           cd ..
           git clone git@github.com:tagion/tagion.git || echo "repo already exists"
-          echo $GITHUB_REF_NAME >> $GITHUB_ENV
+
       - name: pull
         run: |
           git clean -f && git restore . 
