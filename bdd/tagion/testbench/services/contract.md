@@ -5,28 +5,6 @@ The HiRPC is package into a HiBON-Document in the following called doc.
 
 `tagion.testbench.services.contract`
 
-### Scenario: A malformed Document should be rejected
-
-`AMalformedDocumentShouldBeRejected`
-
-*Given* a doc which has an incorrect HiRPC format.
-
-`hiRPCFormat`
-
-*When* the doc should been received by the this services.
-
-`thisServices`
-
-*Then* the doc is check that it is a correct Document for format
-and the doc document should be rejected.
-The document format is check with the Document.isValid.
-
-`forFormat`
-
-*But* the doc should not be sent to the Collector Service
-
-`collectorService`
-
 
 ### Scenario: The Document is not a HiRPC
 
@@ -43,6 +21,10 @@ The document format is check with the Document.isValid.
 *Then* the doc should be checked that it is a correct HiRPC and if it is not it should be rejected.
 
 `rejected`
+
+*But* the doc should not be sent to the Collector Service
+
+`collectorService`
 
 
 ### Scenario: Correct HiRPC format and permission.
