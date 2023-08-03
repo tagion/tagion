@@ -275,8 +275,9 @@ jobs:
           tar -xzf *.tar.gz
           mkdir -p /opt/tagion/artifact
           sudo cp build/x86_64-linux/bin/tagion /var/lib/docker/volumes/tagion-dashboard/_data/
-          sudo ./home/ubuntu/build/x86_64-linux/bin/tagion --version | grep hash > /var/lib/docker/volumes/tagion-dashboard/_data/requirements.txt
-          sudo echo $GITHUB_REF_NAME >> /var/lib/docker/volumes/tagion-dashboard/_data/requirements.txt
+          /home/ubuntu/build/x86_64-linux/bin/tagion --version | grep hash > requirements.txt
+          echo $GITHUB_REF_NAME >> requirements.txt
+          sudo cp requirements.txt /var/lib/docker/volumes/tagion-dashboard/_data/
           ./dashboard.sh
           sudo rm -rf build || echo "build directory already deleted"
           sudo rm  *.tar.gz || echo "No such file or directory"
