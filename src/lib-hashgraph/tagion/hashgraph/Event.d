@@ -29,6 +29,7 @@ import tagion.basic.Types : Buffer;
 import tagion.basic.basic : this_dot, basename, EnumText, buf_idup;
 import tagion.crypto.Types : Pubkey;
 import tagion.Keywords : Keywords;
+import tagion.basic.Debug;
 
 import tagion.logger.Logger;
 import tagion.hashgraph.HashGraphBasic : isMajority, isAllVotes, higher, EventBody, EventPackage, EvaPayload, Tides;
@@ -1013,6 +1014,8 @@ class Event {
             version (NEWWITNESS)
             {
                 auto witness_seen_mask = calc_witness_mask(hashgraph);
+
+                __new_witness = calc_witness_strong_seen_masks(hashgraph);
                 if (witness_seen_mask.isMajority(hashgraph)) {
                 // if (__new_witness || ((father) && (father.round.number > mother.round.number))) {
                     // __new_witness = true;
@@ -1078,6 +1081,9 @@ class Event {
             _witness_strong_seen_masks[i] |= _father_masks[i];
         }
         const strongly_seen_votes = _witness_strong_seen_masks.filter!(mask => mask.isMajority(hashgraph)).count;
+        if (hashgraph.__debug_print) {
+            __write("EVENT: %s Standard alg \n%(%4s\n%)", id, _witness_strong_seen_masks);
+        }
         return hashgraph.isMajority(strongly_seen_votes);
     }
 
