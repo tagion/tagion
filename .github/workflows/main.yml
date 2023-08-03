@@ -259,19 +259,23 @@ jobs:
     steps:    
       - name: get artifact and restart service
         run: |
+          commit_hash=$(git rev-parse --short HEAD)
           source ~/.bashrc
           ls -l
           id
           pwd
           sudo rm -rf build || echo "build directory already deleted"
           sudo rm  *.tar.gz || echo "No such file or directory"
+          docker rm - tagion-dashboard
+          docker volume rm -f tagion-dashboard
           echo "cleaned"
           gh run download -n successful_artifact --repo tagion/tagion
           tar -xzf *.tar.gz
-          docker stop tagion-dashboard
           mkdir -p /opt/tagion/artifact
-          sudo cp build/x86_64-linux/bin/tagion /opt/tagion/artifact/
-          docker start tagion-dashboard
+          sudo cp build/x86_64-linux/bin/tagion /var/lib/docker/volumes/tagion-dashboard/_data/
+          sudo echo ${commit_hash} > /var/lib/docker/volumes/tagion-dashboard/_data/requirements.txt
+          sudo echo $GITHUB_REF_NAME >> /var/lib/docker/volumes/tagion-dashboard/_data/requirements.txt
+          ./dashboard.sh
           sudo rm -rf build || echo "build directory already deleted"
           sudo rm  *.tar.gz || echo "No such file or directory"
           
