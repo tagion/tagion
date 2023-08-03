@@ -15,7 +15,7 @@ all: lib test
 
 test: $(DTESTS)
 
-extern:
+extern/libnng/.git:
 	git submodule update --init --checkout --recursive --remote --force && \
 	$(MAKE) -C extern/
 
@@ -25,7 +25,7 @@ $(DTESTS):
 lib: extern
 	$(DC) $(DCFLAGS) -lib -of=build/libnngd.a -H -Hd=build/ ${addprefix -I,$(DINC)} ${addprefix -L,$(DLFLAGS)} nngd/nngd.d
 
-clean: clean-extern clean-local
+clean: clean-local
 
 clean-local:
 	rm -rf ./build && \
@@ -33,6 +33,8 @@ clean-local:
 
 clean-extern:
 	$(MAKE) -C extern/ clean 
+
+proper: clean-extern
 
 .PHONY: all extern lib clean $(DTESTS)
 
