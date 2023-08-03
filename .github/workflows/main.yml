@@ -34,6 +34,7 @@ jobs:
           git clean -f && git restore . 
           git checkout current
           git pull
+          echo $GITHUB_REF_NAME >> $GITHUB_ENV
 
       - name: Run tests
         run: |
