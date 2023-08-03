@@ -33,7 +33,11 @@ clean-local:
 	rm -f $(DTARGETS) $(DTARGETS).o
  
 clean-extern:
-	$(MAKE) -C extern/ clean 
+	$(MAKE) -C extern/ clean
+
+
+proper: clean-extern
+	find extern -name "*.a" -exec rm {} \;
 
 proper: clean-extern
 

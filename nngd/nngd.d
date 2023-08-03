@@ -9,7 +9,6 @@ import std.typecons;
 import std.algorithm;
 import std.datetime.systime;
 
-
 import libnng;
 
 
@@ -57,10 +56,13 @@ string toString(nng_sockaddr a){
     return s;
 }
 
+alias toString=nng_errstr;
+version(none)
 string toString(nng_errno e){
-    return nng_errstr(cast(int)e);        
+    return nng_errstr(e);        
 }
 
+version(none)
 string nng_strerror( int e ){
     return nng_errstr(e);
 }
@@ -87,7 +89,6 @@ enum nng_socket_state {
     ,NNG_STATE_CONNECTED    = 4
     ,NNG_STATE_ERROR        = 16
 }
-
 
 struct NNGSocket {
     nng_socket_type m_type;
@@ -179,11 +180,6 @@ struct NNGSocket {
         }
 
     } // this
-
-
-
-
-
 
     // setup listener
 
@@ -340,7 +336,7 @@ struct NNGSocket {
         return -1;
     }
     // send & receive
-     int send ( ubyte[] data , bool nonblock = false, size_t size = 0, size_t offset = 0 ){
+    int send ( ubyte[] data , bool nonblock = false, size_t size = 0, size_t offset = 0 ){
         m_errno = cast(nng_errno)0;
         if(m_state == nng_socket_state.NNG_STATE_CONNECTED){
             auto rc = nng_send(m_socket, ptr(data,offset), (size > 0) ? size : (data.length - offset), nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0);
@@ -404,8 +400,7 @@ do {
             data = data[0..*sz];
             return 0;
         }
-            return -1;
-        
+        return -1;
     }
    
     import std.traits;
