@@ -1013,7 +1013,8 @@ class Event {
             version (NEWWITNESS)
             {
                 auto witness_seen_mask = calc_witness_mask(hashgraph);
-                if (__new_witness || ((father) && (father.round.number > mother.round.number))) {
+                if (witness_seen_mask.isMajority(hashgraph)) {
+                // if (__new_witness || ((father) && (father.round.number > mother.round.number))) {
                     // __new_witness = true;
                     hashgraph._rounds.next_round(this);
                     _witness = new Witness(this, witness_seen_mask);
