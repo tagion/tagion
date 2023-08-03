@@ -1007,20 +1007,12 @@ class Event {
             with (hashgraph) {
                 mixin Log!(received_order_statistic);
             }
-            __new_witness = hashgraph.update_strongly_seen(this);
-            if (__new_witness) {
-               hashgraph.set_strongly_seen_mask(this);
-            }
 
             version (NEWWITNESS)
             {
                 auto witness_seen_mask = calc_witness_mask(hashgraph);
-                if (father)
-                {
-                    writefln("WOWOWO FATHER< MOTHER #: %s, %s", father.round.number, mother.round.number);
-                }
                 if (__new_witness || ((father) && (father.round.number > mother.round.number))) {
-                    __new_witness = true;
+                    // __new_witness = true;
                     hashgraph._rounds.next_round(this);
                     _witness = new Witness(this, witness_seen_mask);
 
