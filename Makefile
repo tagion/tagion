@@ -21,10 +21,10 @@ extern/libnng/.git:
 	$(MAKE) -C extern/
 
 $(DTESTS): 
-	$(DC) $(DCFLAGS) -of=$(basename $@) ${addprefix -I,$(DINC)} ${addprefix -L,$(DLFLAGS)} $@
+	$(DC) $(DCFLAGS) -od=test/build -of=test/build/$(basename $@) ${addprefix -I,$(DINC)} -Itest ${addprefix -L,$(DLFLAGS)} $@
 
 lib: extern/libnng/.git
-	$(DC) $(DCFLAGS) -lib -od=build/ ${addprefix -I,$(DINC)} ${addprefix -L,$(DLFLAGS)} nngd/nngd.d
+	$(DC) $(DCFLAGS) -lib -of=build/libnngd.a -H -Hd=build/ ${addprefix -I,$(DINC)} ${addprefix -L,$(DLFLAGS)} nngd/nngd.d
 
 clean: clean-local
 
@@ -36,10 +36,9 @@ clean-extern:
 	$(MAKE) -C extern/ clean
 
 
-proper: clean-extern
+proper: clean clean-extern
 	find extern -name "*.a" -exec rm {} \;
 
-proper: clean-extern
 
-.PHONY: all extern lib clean $(DTESTS)
+.PHONY: proper all extern lib clean $(DTESTS)
 
