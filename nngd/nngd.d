@@ -426,6 +426,10 @@ do {
     @nogc nothrow pure  {
     @property int state() const { return m_state; }
     @property int errno() const { return m_errno; }
+    @property string versionstring() {
+        import core.stdc.string : strlen;
+        return nng_version[0..strlen(nng_version)]; 
+    }
 
     string name() const { return m_name; }
     
