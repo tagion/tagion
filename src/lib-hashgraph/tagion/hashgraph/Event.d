@@ -612,6 +612,7 @@ class Event {
     protected static uint _count;
 
     bool __new_witness;
+    package BitMask[] _witness_strong_seen_masks;
 
     @nogc
     static uint count() nothrow {
@@ -632,6 +633,7 @@ class Event {
     )
     in (epack !is null)
     do {
+        _witness_strong_seen_masks = new BitMask[hashgraph.node_size];
         event_package = epack;
         this.id = hashgraph.next_event_id;
         this.node_id = hashgraph.getNode(channel).node_id;
@@ -1059,6 +1061,10 @@ class Event {
             check(false, ConsensusFailCode.EVENT_MOTHER_LESS);
         }
         
+    }
+
+    bool calc_witness_strong_seen_masks(HashGraph hashgraph) {
+        return false;
     }
 
     /**
