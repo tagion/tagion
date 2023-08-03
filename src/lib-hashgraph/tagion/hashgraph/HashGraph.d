@@ -154,13 +154,13 @@ class HashGraph {
                 writefln("init_event time %s", event.event_body.time);
                 _rounds.last_round.add(event);
                 front_seat(event);
-                    
+                set_strongly_seen_mask(event);
             }
 
             _rounds.erase;
             _rounds = Round.Rounder(this);
             _rounds.last_decided_round = _rounds.last_round;
-            (() @trusted { _event_cache.clear; })();
+            // (() @trusted { _event_cache.clear; })();
             init_event(_owner_node.event.event_package);
             // front_seat(owen_event);
             foreach (epack; epacks) {
@@ -306,11 +306,7 @@ class HashGraph {
 
         _event_cache[eva_event.fingerprint] = eva_event;
         front_seat(eva_event);
-        writefln("NODE SIZE IS: %s", node_size);
-        set_strongly_seen_mask(eva_event);
-        if (__debug_print) {
-            writefln("CREATING EVA EVENT with id, nodeid: %s %s",eva_event.id, eva_event.node_id);
-        } 
+        // set_strongly_seen_mask(eva_event);
         return eva_event;
     }
 
@@ -838,21 +834,44 @@ class HashGraph {
         }
 
         bool update_strongly_seen(const Event event) {
-            if(event.father())
-            {   
-                const _father_strong_seen_mask = _nodes[event.father.channel]._witness_strongly_seen_masks;
-                foreach (i; 0 .. node_size) {
-                    _witness_strongly_seen_masks[i] |= _father_strong_seen_mask[i];
-
+            if (!event.father || event.round.number > event.father.round.number) {
+                if (__debug_print) {
+                    __write("EVENT: %s, no update necessary", event.id);
                 }
+                return false;
+            }
+
+            if (event.round.number < event.father.round.number) {
+                set_strongly_seen_mask(event);
+                pragma(msg, "fixme(bh): this might be memory heavy");
+                _witness_strongly_seen_masks = _nodes[event.father.channel]._witness_strongly_seen_masks.dup;
+                _witness_strongly_seen_masks[event.node_id] |= event.father.witness_mask;
+                
                 if (__debug_print)
                 {
-                    __write("strong_matrix: %s  \n%(%4s\n%)", event.id, _witness_strongly_seen_masks);
+                    __write("EVENT: %s ancestor is witness \n%(%4s\n%)", event.id, _witness_strongly_seen_masks);
+                    __write("$$$$\n%s ", event.father.witness_mask);
                 }
-                const strongly_seen_votes = _witness_strongly_seen_masks.filter!(mask => mask.isMajority(this.outer)).count;
-                return isMajority(strongly_seen_votes);
+                return true;
             }
-            return false;
+            
+            if (event.round !is event.mother.round) {
+                set_strongly_seen_mask(event);
+            }
+            const _father_strong_seen_mask = _nodes[event.father.channel]._witness_strongly_seen_masks;
+            foreach (i; 0 .. node_size) {
+                _witness_strongly_seen_masks[i] |= _father_strong_seen_mask[i];
+                if (i == event.node_id) {
+                    _witness_strongly_seen_masks[i] |= event.father.witness_mask;
+                }
+            }
+            if (__debug_print)
+            {
+                __write("EVENT: %s Standard alg \n%(%4s\n%)", event.id, _witness_strongly_seen_masks);
+                __write("$$\n%s ", event.father.witness_mask);
+            }
+            const strongly_seen_votes = _witness_strongly_seen_masks.filter!(mask => mask.isMajority(this.outer)).count;
+            return isMajority(strongly_seen_votes);
         }
         void set_strongly_seen_mask(const Event event) {
             foreach (ref mask; _witness_strongly_seen_masks) {
@@ -862,7 +881,7 @@ class HashGraph {
                  
 if (__debug_print)
                 {
-                    __write("strong_matrix: %s  \n%(%4s\n%)", event.id, _witness_strongly_seen_masks);
+                    __write("strong_matrix2: %s  \n%(%4s\n%)", event.id, _witness_strongly_seen_masks);
                 }
         }
         private Event _event; /// This is the last event in this Node
@@ -1031,6 +1050,7 @@ if (__debug_print)
     }
 
     void set_strongly_seen_mask(Event event) {
+        __write("SET STRONG SEEN OUTER; id, eventid: %s %s", event.id, event.node_id);
         getNode(event.channel).set_strongly_seen_mask(event);
     }
 }

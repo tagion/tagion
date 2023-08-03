@@ -633,11 +633,10 @@ class Event {
     in (epack !is null)
     do {
         event_package = epack;
-        this.node_id = hashgraph.getNode(channel).node_id;
         this.id = hashgraph.next_event_id;
+        this.node_id = hashgraph.getNode(channel).node_id;
         _witness_mask[node_id] = true;
         _count++;
-
     }
 
     ~this() {
@@ -975,7 +974,6 @@ class Event {
         if (connected) {
              return;     
         }
-
         scope (exit) {
             if (_mother) {
                 Event.check(this.altitude - _mother.altitude is 1,
@@ -1010,6 +1008,40 @@ class Event {
                 mixin Log!(received_order_statistic);
             }
             __new_witness = hashgraph.update_strongly_seen(this);
+            if (__new_witness) {
+               hashgraph.set_strongly_seen_mask(this);
+            }
+
+            version (NEWWITNESS)
+            {
+                auto witness_seen_mask = calc_witness_mask(hashgraph);
+                if (father)
+                {
+                    writefln("WOWOWO FATHER< MOTHER #: %s, %s", father.round.number, mother.round.number);
+                }
+                if (__new_witness || ((father) && (father.round.number > mother.round.number))) {
+                    __new_witness = true;
+                    hashgraph._rounds.next_round(this);
+                    _witness = new Witness(this, witness_seen_mask);
+
+                    strong_seeing(hashgraph);
+                    if (callbacks) {
+                        callbacks.strongly_seeing(this);
+                    }
+                    with (hashgraph) {
+                        mixin Log!(strong_seeing_statistic);
+                    }
+                    hashgraph._rounds.check_decided_round(hashgraph);
+                    _witness_mask.clear;
+                    _witness_mask[node_id] = true;
+                    if (callbacks) {
+                        callbacks.witness(this);
+                    }    
+                }
+            }
+            else {
+
+            
             auto witness_seen_mask = calc_witness_mask(hashgraph);
             if (witness_seen_mask.isMajority(hashgraph)) {
                 hashgraph._rounds.next_round(this);
@@ -1028,15 +1060,11 @@ class Event {
                 if (callbacks) {
                     callbacks.witness(this);
                 }
-                //hashgraph.set_strongly_seen_mask(this);
+            }
             }
         }
         else if (!isEva && !hashgraph.joining && !hashgraph.rounds.isEventInLastDecidedRound(this))  {
             check(false, ConsensusFailCode.EVENT_MOTHER_LESS);
-        }
-        else if (isEva)
-        {
-            hashgraph.set_strongly_seen_mask(this);
         }
         
     }
