@@ -1079,6 +1079,10 @@ class Event {
         const _father_masks = father._witness_strong_seen_masks;
         foreach (i;0 .. _father_masks.length) {
             _witness_strong_seen_masks[i] |= _father_masks[i];
+
+            if (_father_masks[i][father.node_id]) {
+                _witness_strong_seen_masks[i][node_id] = true;
+            }
         }
         const strongly_seen_votes = _witness_strong_seen_masks.filter!(mask => mask.isMajority(hashgraph)).count;
         if (hashgraph.__debug_print) {
@@ -1087,11 +1091,15 @@ class Event {
         return hashgraph.isMajority(strongly_seen_votes);
     }
 
-    void clear_witness_strong_seen_masks() {
+    void clear_witness_strong_seen_masks(HashGraph hashgraph) {
         foreach (ref mask; _witness_strong_seen_masks) {
             mask.clear();
         }
         _witness_strong_seen_masks[node_id][node_id] = true;
+
+        if (hashgraph.__debug_print) {
+            __write("EVENT: %s Standard alg \n%(%4s\n%)", id, _witness_strong_seen_masks);
+        }
     }
 
     /**
