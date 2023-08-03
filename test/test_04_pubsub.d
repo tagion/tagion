@@ -16,8 +16,8 @@ static double timestamp()
     return ts.tv_sec + ts.tv_nsec/1e9;
 }
 
-static void log(A...)(A a){
-    writeln(format("%.6f ",timestamp),a); stdout.flush();
+static void log(A...)(string fmt, A a){
+    writefln("%.6f "~fmt,timestamp,a); stdout.flush();
 }
 
 void pub_worker(string url, const string[] tags)
@@ -65,7 +65,7 @@ void sub_worker(string url, string tag)
         log("SUB("~tag~"): to dial...");
         rc = s.dial(url);
         if(rc == 0) break;
-        log("SUB("~tag~"): Dial error: ",nng_strerror(rc));
+        log("SUB(%s): Dial error: %s", tag, rc);
         if(rc == nng_errno.NNG_ECONNREFUSED){
             nng_sleep(msecs(100));
             continue;
@@ -73,7 +73,7 @@ void sub_worker(string url, string tag)
         assert(rc == 0);
     }
     log(nngtest_socket_properties(s,"SUB("~tag~")"));
-    log(s.subscriptions());
+    log("%s",s.subscriptions());
     while(1){
         log("SUB("~tag~"): to receive");
         auto str = s.receive_string();
@@ -82,7 +82,7 @@ void sub_worker(string url, string tag)
             if(str[$-3..$] == "END") 
                 break;
         }else{
-            log("SUB("~tag~"): Error string: " ~ nng_strerror(s.errno));
+            log("SUB(%s): Error string: %s", tag,s.errno);
         }                
     }
     log("SUB("~tag~"): bye!");

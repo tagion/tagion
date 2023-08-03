@@ -52,10 +52,13 @@ string toString(nng_sockaddr a){
     return s;
 }
 
+alias toString=nng_errstr;
+version(none)
 string toString(nng_errno e){
-    return nng_errstr(cast(int)e);        
+    return nng_errstr(e);        
 }
 
+version(none)
 string nng_strerror( int e ){
     return nng_errstr(e);
 }
