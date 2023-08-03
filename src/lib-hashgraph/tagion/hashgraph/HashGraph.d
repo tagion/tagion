@@ -154,7 +154,7 @@ class HashGraph {
                 writefln("init_event time %s", event.event_body.time);
                 _rounds.last_round.add(event);
                 front_seat(event);
-                // event.set_strongly_seen_mask(this);
+                event.calc_witness_strong_seen_masks(this);
             }
 
             _rounds.erase;

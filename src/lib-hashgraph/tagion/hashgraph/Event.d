@@ -1065,6 +1065,14 @@ class Event {
     }
 
     bool calc_witness_strong_seen_masks(HashGraph hashgraph) {
+        if (!mother) {
+            return false;
+        }
+        _witness_strong_seen_masks = _mother._witness_strong_seen_masks.dup;
+        if (!father || round.number > father.round.number) {
+            return false;
+        }
+            
         return false;
     }
 
