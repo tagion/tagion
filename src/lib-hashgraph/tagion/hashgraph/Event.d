@@ -612,7 +612,6 @@ class Event {
     alias check = Check!EventConsensusException;
     protected static uint _count;
 
-    bool __new_witness;
     package BitMask[] _witness_strong_seen_masks;
 
     @nogc
@@ -678,6 +677,8 @@ class Event {
         private {
             immutable(BitMask) _seeing_witness_in_previous_round_mask; /// The mask resulting to this witness
             BitMask _strong_seeing_mask; /// Nodes which has voted this witness as strogly seen
+            BitMask _vote_on_earlist_witnesses;
+            BitMask _prev_strongly_seen_witnesses;
             Fame _famous; /// True if the witness is voted famous
         }
 
@@ -1017,12 +1018,12 @@ class Event {
             {
                 auto witness_seen_mask = calc_witness_mask(hashgraph);
 
-                __new_witness = calc_witness_strong_seen_masks(hashgraph);
-                if (__new_witness) {
+                const new_witness = calc_witness_strong_seen_masks(hashgraph);
+                if (new_witness) {
                     hashgraph._rounds.next_round(this);
                 }
                 if (round.number > mother.round.number) {
-                    __new_witness = true;
+                // _prev_strongly_seen_witnesses = 
                 // if (round.number > mother.round.number) {
                 // if (witness_seen_mask.isMajority(hashgraph)) {
                     // __new_witness = true;
@@ -1078,7 +1079,11 @@ class Event {
     }
 
     private bool calc_witness_strong_seen_masks(HashGraph hashgraph) {
-        
+        pragma(msg, "fixme(bbh) We are currently missing which previous round witnesses you can strongly
+         see if the method by which you became a witness was not this function but just that father.round>mother.round.
+         A quick fix to this is just having the witnesses keep 2 bitarrays; one for what you can see in the previous round
+         and the next, or implementing another way to check for strongly seen. One could also make a special call that just
+         search recursively whenever a witness becomes a witness by this second method");
         if (!father || mother.round.number > father.round.number) {
             _witness_strong_seen_masks = _mother._witness_strong_seen_masks.dupBitMaskArray;
             
