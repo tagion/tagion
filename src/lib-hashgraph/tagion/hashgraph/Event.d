@@ -1027,7 +1027,7 @@ class Event {
                 // if (witness_seen_mask.isMajority(hashgraph)) {
                     // __new_witness = true;
                     
-                    hashgraph._rounds.next_round(this);
+                    // hashgraph._rounds.next_round(this);
                     _witness = new Witness(this, witness_seen_mask);
                     strong_seeing(hashgraph);
                     if (callbacks) {
@@ -1080,22 +1080,51 @@ class Event {
     private bool calc_witness_strong_seen_masks(HashGraph hashgraph) {
         
         if (!father || mother.round.number > father.round.number) {
-            _witness_strong_seen_masks = _mother._witness_strong_seen_masks.dup;
+            _witness_strong_seen_masks = _mother._witness_strong_seen_masks.dupBitMaskArray;
+            
+            if (hashgraph.__debug_print) {
+                __write("EVENT: %s First Catch \n%(%4s\n%)", id, _witness_strong_seen_masks);
+            }
             return false;
         }
 
-        if (father.round.number == mother.round.number) {
-            _witness_strong_seen_masks = _mother._witness_strong_seen_masks.dup;
+        if (father.round is mother.round) {
+            if (hashgraph.__debug_print) {
+                __write("FATHER == MOTHER");
+            }
+            _witness_strong_seen_masks = _mother._witness_strong_seen_masks.dupBitMaskArray;
+        }
+        
+        if (hashgraph.__debug_print) {
+            __write("EVENT: %s START OF STD ALG1 \n%(%4s\n%)", id, _witness_strong_seen_masks);
         }
         
         _witness_strong_seen_masks[node_id][node_id] = true;
 
+
+        if (hashgraph.__debug_print) {
+            __write("EVENT: %s Start of STD ALG2 \n%(%4s\n%)", id, _witness_strong_seen_masks);
+        }
+
+        
         const _father_masks = father._witness_strong_seen_masks;
         foreach (i;0 .. _father_masks.length) {
+            if (hashgraph.__debug_print && id == 133) {
+                __write("mymask, fathermask \n%4s\n%4s\n", _witness_strong_seen_masks[i], _father_masks[i]);
+            }           
             _witness_strong_seen_masks[i] |= _father_masks[i];
+
+            
+            if (hashgraph.__debug_print && id == 133) {
+                __write("EVENT: %s IN LOOP: %s \n%(%4s\n%)", id, i, _witness_strong_seen_masks);
+            }
 
             if (_father_masks[i][father.node_id]) {
                 _witness_strong_seen_masks[i][node_id] = true;
+            }
+
+            if (hashgraph.__debug_print && id == 133) {
+                __write("EVENT: %s IN LOOP: %s \n%(%4s\n%)", id, i, _witness_strong_seen_masks);
             }
         }
         const strongly_seen_votes = _witness_strong_seen_masks.filter!(mask => mask.isMajority(hashgraph)).count;
@@ -1424,4 +1453,8 @@ class Event {
     static assert(isInputRange!(Range!true));
     static assert(isForwardRange!(Range!true));
     static assert(isBidirectionalRange!(Range!true));
+}
+@safe
+static BitMask[] dupBitMaskArray(BitMask[] masksIn) {
+    return masksIn.map!(m => m.dup).array;
 }
