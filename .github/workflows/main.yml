@@ -278,7 +278,7 @@ jobs:
           /home/ubuntu/build/x86_64-linux/bin/tagion --version | grep hash > requirements.txt
           echo $GITHUB_REF_NAME >> requirements.txt
           sudo cp requirements.txt /var/lib/docker/volumes/tagion-dashboard/_data/
-          ./dashboard.sh
+          /home/ubuntu/dashboard.sh
           sudo rm -rf build || echo "build directory already deleted"
           sudo rm  *.tar.gz || echo "No such file or directory"
           
