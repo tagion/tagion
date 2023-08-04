@@ -29,11 +29,13 @@ jobs:
         run: |
           cd ..
           git clone git@github.com:tagion/tagion.git || echo "repo already exists"
+
       - name: pull
         run: |
           git clean -f && git restore . 
           git checkout current
           git pull
+          
 
       - name: Run tests
         run: |
@@ -265,13 +267,18 @@ jobs:
           pwd
           sudo rm -rf build || echo "build directory already deleted"
           sudo rm  *.tar.gz || echo "No such file or directory"
+          docker rm -f tagion-dashboard || echo "container not exists"
+          docker volume rm -f tagion-dashboard || echo "volume deleted"
+          docker volume create tagion-dashboard
           echo "cleaned"
           gh run download -n successful_artifact --repo tagion/tagion
           tar -xzf *.tar.gz
-          docker stop tagion-dashboard
           mkdir -p /opt/tagion/artifact
-          sudo cp build/x86_64-linux/bin/tagion /opt/tagion/artifact/
-          docker start tagion-dashboard
+          sudo cp build/x86_64-linux/bin/tagion /var/lib/docker/volumes/tagion-dashboard/_data/
+          /home/ubuntu/build/x86_64-linux/bin/tagion --version | grep hash > revision.txt
+          echo $GITHUB_REF_NAME >> revision.txt
+          sudo cp requirements.txt /var/lib/docker/volumes/tagion-dashboard/_data/
+          /home/ubuntu/dashboard.sh
           sudo rm -rf build || echo "build directory already deleted"
           sudo rm  *.tar.gz || echo "No such file or directory"
           
