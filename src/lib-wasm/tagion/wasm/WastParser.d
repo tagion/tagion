@@ -47,29 +47,19 @@ struct WastParser {
         UNDEFINED,
     }
 
-    void check(const bool flag, ref const(WastTokenizer) r, string file = __FILE__, const size_t line = __LINE__) {
-        import std.stdio;
-
-        if (!flag) {
-            writefln("Error: %s:%s:%d:%d", r.token, r.type, r.line, r.line_pos);
-            writefln("%s:%d", file, line);
-            //   assert(0, "Check error");
-        }
-    }
-
-    ParserStage parse_instr(ref WastTokenizer r, const ParserStage stage) {
+    private ParserStage parseInstr(ref WastTokenizer r, const ParserStage stage) {
         version (none)
             if (r.type == TokenType.COMMENT) {
                 r.nextToken;
-                return parse_instr(r, stage);
+                return parseInstr(r, stage);
             }
-        check(r.type == TokenType.BEGIN, r);
+        r.check(r.type == TokenType.BEGIN);
         scope (exit) {
-            check(r.type == TokenType.END, r);
+            r.check(r.type == TokenType.END);
             r.nextToken;
         }
         r.nextToken;
-        check(r.type == TokenType.WORD, r);
+        r.check(r.type == TokenType.WORD);
         const instr = instrWastLookup.get(r.token, Instr.init);
         string label;
         if (instr !is Instr.init) {
@@ -78,14 +68,14 @@ struct WastParser {
                 case CODE:
                     r.nextToken;
                     foreach (i; 0 .. instr.pops) {
-                        parse_instr(r, ParserStage.CODE);
+                        parseInstr(r, ParserStage.CODE);
                     }
                     break;
                 case BLOCK:
                     string arg;
                     r.nextToken;
                     if (r.type == TokenType.WORD) {
-                        //check(r.type == TokenType.WORD, r);
+                        //r.check(r.type == TokenType.WORD);
                         label = r.token;
                         r.nextToken;
                     }
@@ -94,7 +84,7 @@ struct WastParser {
                         r.nextToken;
                     }
                     while (r.type == TokenType.BEGIN) {
-                        parse_instr(r, ParserStage.CODE);
+                        parseInstr(r, ParserStage.CODE);
                     }
                     return stage;
                 case BRANCH:
@@ -105,17 +95,17 @@ struct WastParser {
                     }
                     while (r.type == TokenType.BEGIN) {
                         //foreach (i; 0 .. instr.pops) {
-                        parse_instr(r, ParserStage.CODE);
+                        parseInstr(r, ParserStage.CODE);
                     }
                     break;
                 case BRANCH_IF:
                     r.nextToken;
-                    parse_instr(r, ParserStage.CODE);
-                    check(r.type == TokenType.WORD, r);
+                    parseInstr(r, ParserStage.CODE);
+                    r.check(r.type == TokenType.WORD);
                     label = r.token;
                     r.nextToken;
                     if (r.type == TokenType.BEGIN) {
-                        parse_instr(r, ParserStage.CODE);
+                        parseInstr(r, ParserStage.CODE);
                     }
                     break;
                 case BRANCH_TABLE:
@@ -125,7 +115,7 @@ struct WastParser {
                     label = r.token;
                     r.nextToken;
                     while (r.type == TokenType.BEGIN) {
-                        parse_instr(r, ParserStage.CODE);
+                        parseInstr(r, ParserStage.CODE);
                     }
 
                     break;
@@ -135,7 +125,7 @@ struct WastParser {
                     string arg;
                     r.nextToken;
                     label = r.token;
-                    check(r.type == TokenType.WORD, r);
+                    r.check(r.type == TokenType.WORD);
                     r.nextToken;
                     if (r.type == TokenType.WORD) {
                         arg = r.token;
@@ -143,14 +133,14 @@ struct WastParser {
                     }
                     else {
                         foreach (i; 0 .. instr.pops) {
-                            parse_instr(r, ParserStage.CODE);
+                            parseInstr(r, ParserStage.CODE);
                         }
                     }
                     break;
                 case GLOBAL:
                     r.nextToken;
                     label = r.token;
-                    check(r.type == TokenType.WORD, r);
+                    r.check(r.type == TokenType.WORD);
                     r.nextToken;
                     break;
                 case MEMORY:
@@ -161,18 +151,18 @@ struct WastParser {
                         r.nextToken;
                     }
                     foreach (i; 0 .. instr.pops) {
-                        parse_instr(r, ParserStage.CODE);
+                        parseInstr(r, ParserStage.CODE);
                     }
                     break;
                 case MEMOP:
                     r.nextToken;
                     foreach (i; 0 .. instr.pops) {
-                        parse_instr(r, ParserStage.CODE);
+                        parseInstr(r, ParserStage.CODE);
                     }
                     break;
                 case CONST:
                     r.nextToken;
-                    check(r.type == TokenType.WORD, r);
+                    r.check(r.type == TokenType.WORD);
                     label = r.token;
                     r.nextToken;
                     break;
@@ -187,7 +177,7 @@ struct WastParser {
                         r.nextToken;
                     }
                     for (uint i = 0; (instr.pops == uint.max) ? r.type == TokenType.BEGIN : i < instr.pops; i++) {
-                        parse_instr(r, ParserStage.CODE);
+                        parseInstr(r, ParserStage.CODE);
 
                     }
                 }
@@ -195,28 +185,28 @@ struct WastParser {
 
         }
         else {
-            check(false, r);
+            r.check(false);
         }
 
         return stage;
     }
 
-    ParserStage parse_section(ref WastTokenizer r, const ParserStage stage) {
+    private ParserStage parseModule(ref WastTokenizer r, const ParserStage stage) {
         if (r.type == TokenType.BEGIN) {
             string label;
             string arg;
             r.nextToken;
             bool not_ended;
             scope (exit) {
-                check(r.type == TokenType.END || not_ended, r);
+                r.check(r.type == TokenType.END || not_ended);
                 r.nextToken;
             }
             switch (r.token) {
             case "module":
-                check(stage < ParserStage.MODULE, r);
+                r.check(stage < ParserStage.MODULE);
                 r.nextToken;
                 while (r.type == TokenType.BEGIN) {
-                    parse_section(r, ParserStage.MODULE);
+                    parseModule(r, ParserStage.MODULE);
 
                 }
                 return ParserStage.MODULE;
@@ -228,18 +218,18 @@ struct WastParser {
                         label = r.token;
                         r.nextToken;
                     }
-                    parse_section(r, ParserStage.TYPE);
+                    parseModule(r, ParserStage.TYPE);
                     return stage;
                 }
                 //if (stage == ParserStage.FUNC) {
-                check(r.type == TokenType.WORD, r);
+                r.check(r.type == TokenType.WORD);
                 label = r.token;
                 r.nextToken;
                 return ParserStage.TYPE;
                 //}
                 //return stage;
             case "func": // Example (func $name (param ...) (result i32) )
-                return parse_type_section(r, stage);
+                return parseTypeSection(r, stage);
             case "param": // Example (param $y i32)
                 r.nextToken;
                 if (stage == ParserStage.IMPORT) {
@@ -250,13 +240,13 @@ struct WastParser {
                     }
                 }
                 else {
-                    check(stage == ParserStage.FUNC, r);
+                    r.check(stage == ParserStage.FUNC);
 
                     if (r.type == TokenType.WORD && r.token.getType is Types.EMPTY) {
                         label = r.token;
                         r.nextToken;
 
-                        check(r.type == TokenType.WORD, r);
+                        r.check(r.type == TokenType.WORD);
                     }
                     while (r.type == TokenType.WORD && r.token.getType !is Types.EMPTY) {
                         arg = r.token;
@@ -265,16 +255,16 @@ struct WastParser {
                 }
                 return ParserStage.PARAM;
             case "result":
-                check(stage == ParserStage.FUNC, r);
+                r.check(stage == ParserStage.FUNC);
                 r.nextToken;
-                check(r.type == TokenType.WORD, r);
+                r.check(r.type == TokenType.WORD);
                 arg = r.token;
                 r.nextToken;
                 return ParserStage.RESULT;
             case "memory":
-                check(stage == ParserStage.MODULE, r);
+                r.check(stage == ParserStage.MODULE);
                 r.nextToken;
-                check(r.type == TokenType.WORD, r);
+                r.check(r.type == TokenType.WORD);
                 label = r.token;
 
                 r.nextToken;
@@ -283,80 +273,80 @@ struct WastParser {
                     r.nextToken;
                 }
                 while (r.type == TokenType.BEGIN) {
-                    parse_section(r, ParserStage.MEMORY);
+                    parseModule(r, ParserStage.MEMORY);
                 }
                 return ParserStage.MEMORY;
             case "segment":
                 r.nextToken;
-                check(r.type == TokenType.WORD, r);
+                r.check(r.type == TokenType.WORD);
                 label = r.token;
                 r.nextToken;
-                check(r.type == TokenType.STRING, r);
+                r.check(r.type == TokenType.STRING);
                 arg = r.token;
                 r.nextToken;
                 break;
             case "export":
-                check(stage == ParserStage.MODULE, r);
+                r.check(stage == ParserStage.MODULE);
 
                 r.nextToken;
-                check(r.type == TokenType.STRING, r);
+                r.check(r.type == TokenType.STRING);
                 label = r.token;
                 r.nextToken;
                 arg = r.token;
-                check(r.type == TokenType.WORD, r);
+                r.check(r.type == TokenType.WORD);
                 r.nextToken;
                 return ParserStage.EXPORT;
             case "import":
                 string arg2;
                 r.nextToken;
-                check(r.type == TokenType.WORD, r);
+                r.check(r.type == TokenType.WORD);
                 label = r.token;
                 r.nextToken;
-                check(r.type == TokenType.STRING, r);
+                r.check(r.type == TokenType.STRING);
                 arg = r.token;
                 r.nextToken;
-                check(r.type == TokenType.STRING, r);
+                r.check(r.type == TokenType.STRING);
                 arg2 = r.token;
                 r.nextToken;
-                const ret = parse_section(r, ParserStage.IMPORT);
-                check(ret == ParserStage.TYPE || ret == ParserStage.PARAM, r);
+                const ret = parseModule(r, ParserStage.IMPORT);
+                r.check(ret == ParserStage.TYPE || ret == ParserStage.PARAM);
 
                 return stage;
             case "assert_return":
-                check(stage == ParserStage.BASE, r);
+                r.check(stage == ParserStage.BASE);
                 label = r.token;
                 r.nextToken;
 
                 // Invoke call
-                parse_instr(r, ParserStage.ASSERT);
+                parseInstr(r, ParserStage.ASSERT);
                 if (r.type == TokenType.BEGIN) {
-                    parse_instr(r, ParserStage.EXPECTED);
+                    parseInstr(r, ParserStage.EXPECTED);
                 }
                 return ParserStage.ASSERT;
             case "assert_trap":
-                check(stage == ParserStage.BASE, r);
+                r.check(stage == ParserStage.BASE);
                 label = r.token;
                 r.nextToken;
                 // Invoke call
-                parse_instr(r, ParserStage.ASSERT);
+                parseInstr(r, ParserStage.ASSERT);
 
-                check(r.type == TokenType.STRING, r);
+                r.check(r.type == TokenType.STRING);
                 arg = r.token;
                 r.nextToken;
                 return ParserStage.ASSERT;
             case "assert_return_nan":
-                check(stage == ParserStage.BASE, r);
+                r.check(stage == ParserStage.BASE);
                 label = r.token;
                 r.nextToken;
                 // Invoke call
-                parse_instr(r, ParserStage.ASSERT);
+                parseInstr(r, ParserStage.ASSERT);
 
                 return ParserStage.ASSERT;
             case "assert_invalid":
-                check(stage == ParserStage.BASE, r);
+                r.check(stage == ParserStage.BASE);
                 r.nextToken;
-                parse_section(r, ParserStage.ASSERT);
-                check(r.type == TokenType.STRING, r);
+                parseModule(r, ParserStage.ASSERT);
+                r.check(r.type == TokenType.STRING);
                 arg = r.token;
                 r.nextToken;
                 return ParserStage.ASSERT;
@@ -376,10 +366,10 @@ struct WastParser {
         return ParserStage.END;
     }
 
-    ParserStage parse_type_section(ref WastTokenizer r, const ParserStage stage) {
+    private ParserStage parseTypeSection(ref WastTokenizer r, const ParserStage stage) {
         string label;
 
-        check(stage < ParserStage.FUNC, r);
+        r.check(stage < ParserStage.FUNC);
         auto type_section = writer.section!(Section.TYPE);
 
         const type_idx = type_section.sectypes.length;
@@ -396,7 +386,7 @@ struct WastParser {
         uint only_one_type_allowed;
         do {
             rewined = r.save;
-            arg_stage = parse_section(r, ParserStage.FUNC);
+            arg_stage = parseModule(r, ParserStage.FUNC);
 
             only_one_type_allowed += (only_one_type_allowed > 0) || (arg_stage == ParserStage.TYPE);
 
@@ -409,8 +399,8 @@ struct WastParser {
             r = rewined;
         }
         while (r.type == TokenType.BEGIN) {
-            const ret = parse_instr(r, ParserStage.FUNC_BODY);
-            check(ret == ParserStage.FUNC_BODY, r);
+            const ret = parseInstr(r, ParserStage.FUNC_BODY);
+            r.check(ret == ParserStage.FUNC_BODY);
         }
         return ParserStage.FUNC;
     }
@@ -418,7 +408,7 @@ struct WastParser {
     void parse(ref WastTokenizer tokenizer) {
         uint[string] func_idx;
 
-        while (parse_section(tokenizer, ParserStage.BASE) !is ParserStage.END) {
+        while (parseModule(tokenizer, ParserStage.BASE) !is ParserStage.END) {
             //empty    
         }
 
