@@ -1016,7 +1016,7 @@ class Event {
             {
                 auto witness_seen_mask = calc_witness_mask(hashgraph);
 
-                // __new_witness = calc_witness_strong_seen_masks(hashgraph);
+                __new_witness = calc_witness_strong_seen_masks(hashgraph);
                 // if (__new_witness) {
                 //     hashgraph._rounds.next_round(this);
                 // }
