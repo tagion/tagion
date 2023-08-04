@@ -366,55 +366,44 @@ struct WastParser {
         return ParserStage.END;
     }
 
-    private ParserStage parseFuncArgs(ref WastTokenizer r, const ParserStage stage) {
-        if (r.type == TokenType.BEGIN) {
-        }
-        return stage;
-
-    }
-
     private ParserStage parseTypeSection(ref WastTokenizer r, const ParserStage stage) {
-        if (r.type == TokenType.BEGIN) {
-            string label;
+        string label;
 
-            r.check(stage < ParserStage.FUNC);
-            auto type_section = writer.section!(Section.TYPE);
+        r.check(stage < ParserStage.FUNC);
+        auto type_section = writer.section!(Section.TYPE);
 
-            const type_idx = type_section.sectypes.length;
+        const type_idx = type_section.sectypes.length;
 
-            writefln("%s", type_section.sectypes.length);
+        writefln("%s", type_section.sectypes.length);
+        r.nextToken;
+        if (r.type == TokenType.WORD) {
+            // Function with label
+            label = r.token;
+            func_idx[label] = type_idx;
             r.nextToken;
-            if (r.type == TokenType.WORD) {
-                // Function with label
-                label = r.token;
-                func_idx[label] = type_idx;
-                r.nextToken;
-            }
-            ParserStage arg_stage;
-            WastTokenizer rewined;
-            uint only_one_type_allowed;
-            do {
-                rewined = r.save;
-                arg_stage = parseModule(r, ParserStage.FUNC);
-
-                only_one_type_allowed += (only_one_type_allowed > 0) || (arg_stage == ParserStage.TYPE);
-
-                //count_types+=(arg_stage == ParserStage.TYPE);
-            }
-            while ((arg_stage == ParserStage.PARAM) || (only_one_type_allowed == 1));
-            //auto result_r=r.save;
-            if (arg_stage != ParserStage.TYPE && arg_stage != ParserStage.RESULT || arg_stage == ParserStage
-                    .UNDEFINED) {
-                r = rewined;
-            }
-            while (r.type == TokenType.BEGIN) {
-                const ret = parseInstr(r, ParserStage.FUNC_BODY);
-                r.check(ret == ParserStage.FUNC_BODY);
-            }
-            return ParserStage.FUNC;
         }
-        return stage;
+        ParserStage arg_stage;
+        WastTokenizer rewined;
+        uint only_one_type_allowed;
+        do {
+            rewined = r.save;
+            arg_stage = parseModule(r, ParserStage.FUNC);
 
+            only_one_type_allowed += (only_one_type_allowed > 0) || (arg_stage == ParserStage.TYPE);
+
+            //count_types+=(arg_stage == ParserStage.TYPE);
+        }
+        while ((arg_stage == ParserStage.PARAM) || (only_one_type_allowed == 1));
+        //auto result_r=r.save;
+        if (arg_stage != ParserStage.TYPE && arg_stage != ParserStage.RESULT || arg_stage == ParserStage
+                .UNDEFINED) {
+            r = rewined;
+        }
+        while (r.type == TokenType.BEGIN) {
+            const ret = parseInstr(r, ParserStage.FUNC_BODY);
+            r.check(ret == ParserStage.FUNC_BODY);
+        }
+        return ParserStage.FUNC;
     }
 
     private {
