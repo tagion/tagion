@@ -994,7 +994,8 @@ class Event {
             check(!_mother._daughter, ConsensusFailCode.EVENT_MOTHER_FORK);
             _mother._daughter = this;
             _father = hashgraph.register(event_package.event_body.father);
-            attach_round(hashgraph);
+            // attach_round(hashgraph);
+            _round = (father.round.number >= mother.round.number) ? _father._round : _mother._round; 
             _witness_mask = _mother._witness_mask;
             if (_father) {
                 check(!_father._son, ConsensusFailCode.EVENT_FATHER_FORK);
@@ -1016,9 +1017,10 @@ class Event {
                 auto witness_seen_mask = calc_witness_mask(hashgraph);
 
                 __new_witness = calc_witness_strong_seen_masks(hashgraph);
-                if (witness_seen_mask.isMajority(hashgraph)) {
-                // if (__new_witness || ((father) && (father.round.number > mother.round.number))) {
+                // if (__new_witness || father.round.number > mother.round.number) {
+                if (__new_witness || ((father) && (father.round.number > mother.round.number))) {
                     // __new_witness = true;
+                    const round_incr = max(father.round.number, mother.round.number) - round.number
                     hashgraph._rounds.next_round(this);
                     _witness = new Witness(this, witness_seen_mask);
 
@@ -1069,11 +1071,15 @@ class Event {
 
     bool calc_witness_strong_seen_masks(HashGraph hashgraph) {
         
-        _witness_strong_seen_masks = _mother._witness_strong_seen_masks.dup;
-        if (!father || round.number > father.round.number) {
+        if (!father || mother.round.number > father.round.number) {
+            _witness_strong_seen_masks = _mother._witness_strong_seen_masks.dup;
             return false;
         }
 
+        if (father.round.number == mother.round.number) {
+            _witness_strong_seen_masks = _mother._witness_strong_seen_masks.dup;
+        }
+        
         const _father_masks = father._witness_strong_seen_masks;
         foreach (i;0 .. _father_masks.length) {
             _witness_strong_seen_masks[i] |= _father_masks[i];
@@ -1085,8 +1091,8 @@ class Event {
         const strongly_seen_votes = _witness_strong_seen_masks.filter!(mask => mask.isMajority(hashgraph)).count;
         if (hashgraph.__debug_print) {
             __write("EVENT: %s Standard alg \n%(%4s\n%)", id, _witness_strong_seen_masks);
-        }
-        return hashgraph.isMajority(strongly_seen_votes);
+        } 
+        return (hashgraph.isMajority(strongly_seen_votes) || father.round.number > mother.round.number);
     }
 
     void clear_witness_strong_seen_masks(HashGraph hashgraph) {
