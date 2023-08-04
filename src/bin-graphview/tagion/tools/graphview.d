@@ -175,9 +175,6 @@ struct Dot {
         else {
             obuf.writefln(`%s%s [fillcolor="%s"];`, indent ~ INDENT, e.id, pastel19.color(e.round));
         }
-        if (e.__new_witness) {
-            obuf.writefln(`%s%s [shape="%s"];`, indent ~ INDENT, e.id, "star");
-        }
         if (e.error) {
             obuf.writefln(`%s%s [shape="%s"];`, indent ~ INDENT, e.id, "star");
         }

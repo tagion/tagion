@@ -14,7 +14,6 @@ struct EventView {
     @label("$a") int altitude;
     @label("$o") int order;
     @label("$r") int round;
-    @label("$__nw") bool __new_witness;
     @label("$rec") int round_received;
     @label("$w", true) @(filter.Initialized) bool witness;
     @label("$famous", true) @(filter.Initialized) bool famous;
@@ -45,7 +44,6 @@ struct EventView {
                 node_id=(relocate_node_id is size_t.max)?event.node_id:relocate_node_id;
                 altitude=event.altitude;
                 order=event.received_order;
-                __new_witness = event.__new_witness;
                 witness=event.witness !is null;
                 event.witness_mask[].each!((n) => witness_mask~=cast(uint)(n));
                 round=(event.hasRound)?event.round.number:event.round.number.min;

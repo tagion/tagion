@@ -1082,55 +1082,24 @@ class Event {
         if (!father || mother.round.number > father.round.number) {
             _witness_strong_seen_masks = _mother._witness_strong_seen_masks.dupBitMaskArray;
             
-            if (hashgraph.__debug_print) {
-                __write("EVENT: %s First Catch \n%(%4s\n%)", id, _witness_strong_seen_masks);
-            }
             return false;
         }
 
         if (father.round is mother.round) {
-            if (hashgraph.__debug_print) {
-                __write("FATHER == MOTHER");
-            }
             _witness_strong_seen_masks = _mother._witness_strong_seen_masks.dupBitMaskArray;
-        }
-        
-        if (hashgraph.__debug_print) {
-            __write("EVENT: %s START OF STD ALG1 \n%(%4s\n%)", id, _witness_strong_seen_masks);
-        }
+        }        
         
         _witness_strong_seen_masks[node_id][node_id] = true;
-
-
-        if (hashgraph.__debug_print) {
-            __write("EVENT: %s Start of STD ALG2 \n%(%4s\n%)", id, _witness_strong_seen_masks);
-        }
-
         
         const _father_masks = father._witness_strong_seen_masks;
         foreach (i;0 .. _father_masks.length) {
-            if (hashgraph.__debug_print && id == 133) {
-                __write("mymask, fathermask \n%4s\n%4s\n", _witness_strong_seen_masks[i], _father_masks[i]);
-            }           
             _witness_strong_seen_masks[i] |= _father_masks[i];
-
-            
-            if (hashgraph.__debug_print && id == 133) {
-                __write("EVENT: %s IN LOOP: %s \n%(%4s\n%)", id, i, _witness_strong_seen_masks);
-            }
 
             if (_father_masks[i][father.node_id]) {
                 _witness_strong_seen_masks[i][node_id] = true;
             }
-
-            if (hashgraph.__debug_print && id == 133) {
-                __write("EVENT: %s IN LOOP: %s \n%(%4s\n%)", id, i, _witness_strong_seen_masks);
-            }
         }
         const strongly_seen_votes = _witness_strong_seen_masks.filter!(mask => mask.isMajority(hashgraph)).count;
-        if (hashgraph.__debug_print) {
-            __write("EVENT: %s Standard alg \n%(%4s\n%)", id, _witness_strong_seen_masks);
-        }
         const result = hashgraph.isMajority(strongly_seen_votes);
         if (result) {
             clear_witness_strong_seen_masks(hashgraph);
@@ -1144,9 +1113,6 @@ class Event {
         }
         _witness_strong_seen_masks[node_id][node_id] = true;
 
-        if (hashgraph.__debug_print) {
-            __write("EVENT: %s Standard alg \n%(%4s\n%)", id, _witness_strong_seen_masks);
-        }
     }
 
     /**
