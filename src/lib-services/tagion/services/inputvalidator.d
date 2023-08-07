@@ -34,10 +34,13 @@ struct InputValidatorOptions {
     mixin JSONCommon;
 }
 
-/// InputValidator actor
-/// Examples: [tagion.testbench.services.inputvalidator]
+/** 
+ *  InputValidator actor
+ *  Examples: [tagion.testbench.services.inputvalidator]
+ *  Sends: (inputDoc, Document) to receiver_task;
+**/
 struct InputValidatorService {
-    void task(immutable(InputValidatorOptions) opts, string receiver_task, ) {
+    void task(immutable(InputValidatorOptions) opts, string receiver_task,) {
         // setState(Ctrl.STARTING);
         auto listener = new Socket(AddressFamily.UNIX, SocketType.STREAM);
         assert(listener.isAlive);
@@ -121,6 +124,7 @@ struct InputValidatorService {
                 }
                 socketSet.reset();
 
+                // Check for control signal
                 receiveTimeout(Duration.zero,
                         &signal,
                         &ownerTerminated,
