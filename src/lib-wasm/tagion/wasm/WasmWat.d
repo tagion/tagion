@@ -1,4 +1,4 @@
-module tagion.wasm.Wast;
+module tagion.wasm.WasmWat;
 
 import std.format;
 import std.stdio;
@@ -14,19 +14,19 @@ import tagion.wasm.WasmBase;
 import tagion.wasm.WasmException;
 import tagion.basic.tagionexceptions;
 
-@safe class WastException : WasmException {
+@safe class WatException : WasmException {
     this(string msg, string file = __FILE__, size_t line = __LINE__) pure nothrow {
         super(msg, file, line);
     }
 }
 
-alias check = Check!WastException;
+alias check = Check!WatException;
 
-@safe WastT!(Output) wast(Output)(WasmReader wasmreader, Output output) {
-    return new WastT!(Output)(wasmreader, output);
+@safe WatT!(Output) wat(Output)(WasmReader wasmreader, Output output) {
+    return new WatT!(Output)(wasmreader, output);
 }
 
-@safe class WastT(Output) : WasmReader.InterfaceModule {
+@safe class WatT(Output) : WasmReader.InterfaceModule {
     alias Sections = WasmReader.Sections;
     //alias ExprRange=WasmReader.WasmRange.WasmSection.ExprRange;
     //alias WasmArg=WasmReader.WasmRange.WasmSection.WasmArg;
@@ -417,7 +417,7 @@ version (none) unittest {
     immutable code = fread(filename);
     auto wasm = WasmReader(code);
     //    auto dasm=Wdisasm(wasm);
-    Wast(wasm, stdout).serialize();
-    //    auto output=Wast
+    Wat(wasm, stdout).serialize();
+    //    auto output=Wat
 
 }

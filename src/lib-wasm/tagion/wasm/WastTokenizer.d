@@ -53,6 +53,15 @@ struct WastTokenizer {
 
     }
 
+    void check(const bool flag, string msg = null, string file = __FILE__, const size_t line = __LINE__) {
+        import std.stdio;
+
+        if (!flag) {
+            writefln("Error:%s %s:%s:%d:%d", msg, token, type, line, line_pos);
+            writefln("%s:%d", file, line);
+        }
+    }
+
     private string text;
     string token;
     uint line;
@@ -69,7 +78,7 @@ struct WastTokenizer {
             return pos >= text.length;
         }
 
-        ref const(WastTokenizer) front() const @trusted {
+        const(WastTokenizer) front() const {
             return this;
         }
 

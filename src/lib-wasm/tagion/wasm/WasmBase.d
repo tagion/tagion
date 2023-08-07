@@ -612,10 +612,20 @@ string secname(immutable Section s) @safe {
     return assumeUnique(format("%s_sec", toLower(s.to!string)));
 }
 
-alias SectionsT(SectionType) = AliasSeq!(SectionType.Custom, SectionType.Type,
-        SectionType.Import, SectionType.Function,
-        SectionType.Table, SectionType.Memory, SectionType.Global, SectionType.Export,
-        SectionType.Start, SectionType.Element, SectionType.Code, SectionType.Data,);
+alias SectionsT(SectionType) = AliasSeq!(
+        SectionType.Custom,
+        SectionType.Type,
+        SectionType.Import,
+        SectionType.Function,
+        SectionType.Table,
+        SectionType.Memory,
+        SectionType.Global,
+        SectionType.Export,
+        SectionType.Start,
+        SectionType.Element,
+        SectionType.Code,
+        SectionType.Data,
+);
 
 protected string GenerateInterfaceModule(T...)() {
     import std.array : join;
