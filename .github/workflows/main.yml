@@ -21,7 +21,6 @@ permissions:
 jobs:
   commit_stage:
     runs-on: CI
-    defaults:
     outputs:
       tarball: ${{steps.create_tar.outputs.tar_filename}}
       stage: "commit"    
@@ -38,8 +37,8 @@ jobs:
           git pull
 
       - name: set testnet1 vars
+        shell: bash
         run: |
-          shell: bash
           git branch
           id
           pwd
