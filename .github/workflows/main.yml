@@ -38,6 +38,9 @@ jobs:
 
       - name: set testnet1 vars
         run: |
+          git branch
+          id
+          pwd
           echo $SHELL
           set BRANCH (make help |tail -n 3 |head -n 1) 
           set COMMIT (make help |tail -n 2 |head -n 1)
