@@ -826,43 +826,41 @@ class Event {
                 if (_mother._received_order is int.init) {
                     _mother.received_order(iteration_count);
                 }
-                _received_order = expected_order;
+                _received_order = expected_order();
+            }
+            return;
+        }
+
+        if (_received_order is int.init) {
+            _received_order = expected_order();
+        }
+
+        const expected = expected_order();
+
+        if ((expected - _received_order) > 0) {
+            _received_order = expected;
+            if (_son) {
+                _son.received_order(iteration_count);
+            }
+            if (_daughter) {
+                _daughter.received_order(iteration_count);
             }
         }
-        else if (_received_order is int.init) {
-            _received_order = expected_order;
-            if (_received_order !is int.init) {
-                received_order(iteration_count);
+        else if ((expected - _received_order) < 0) {
+            if (_father) {
+                _father.received_order(iteration_count);
             }
-        }
-        else {
-            const expected = expected_order;
-            if ((expected - _received_order) > 0) {
-                _received_order = expected;
-                if (_son) {
-                    _son.received_order(iteration_count);
-                }
-                if (_daughter) {
-                    _daughter.received_order(iteration_count);
-                }
+            if (_mother) {
+                _mother.received_order(iteration_count);
+            }
+            _received_order = expected_order();
+            if (_son) {
+                _son.received_order(iteration_count);
+            }
+            if (_daughter) {
+                _daughter.received_order(iteration_count);
+            }
 
-            }
-            else if ((expected - _received_order) < 0) {
-                if (_father) {
-                    _father.received_order(iteration_count);
-                }
-                if (_mother) {
-                    _mother.received_order(iteration_count);
-                }
-                _received_order = expected_order;
-                if (_son) {
-                    _son.received_order(iteration_count);
-                }
-                if (_daughter) {
-                    _daughter.received_order(iteration_count);
-                }
-
-            }
         }
     }
 
@@ -971,66 +969,68 @@ class Event {
         assert(event_package.event_body.father && _father || !_father);
     }
     do {
-        if (!connected) {
-            scope (exit) {
-                if (_mother) {
-                    Event.check(this.altitude - _mother.altitude is 1,
-                        ConsensusFailCode.EVENT_ALTITUDE);
-                    Event.check(channel == _mother.channel,
-                        ConsensusFailCode.EVENT_MOTHER_CHANNEL);
-                }
-                hashgraph.front_seat(this);
-                if (Event.callbacks) {
-                    Event.callbacks.connect(this);
-                }
-            }
-            _mother = hashgraph.register(event_package.event_body.mother);
+        if (connected) {
+             return;     
+        }
+
+        scope (exit) {
             if (_mother) {
-                check(!_mother._daughter, ConsensusFailCode.EVENT_MOTHER_FORK);
-                _mother._daughter = this;
-                _father = hashgraph.register(event_package.event_body.father);
-                attach_round(hashgraph);
-                _witness_mask = _mother._witness_mask;
-                if (_father) {
-                    check(!_father._son, ConsensusFailCode.EVENT_FATHER_FORK);
-                    _father._son = this;
-                    _witness_mask |= _father._witness_mask;
-                }
-                if (callbacks) {
-                    callbacks.round(this);
-                }
-                uint received_order_iteration_count;
-                received_order(received_order_iteration_count);
-                hashgraph.received_order_statistic(received_order_iteration_count);
-                with (hashgraph) {
-                    mixin Log!(received_order_statistic);
-                }
-                auto witness_seen_mask = calc_witness_mask(hashgraph);
-                if (witness_seen_mask.isMajority(hashgraph)) {
-                    hashgraph._rounds.next_round(this);
-                    _witness = new Witness(this, witness_seen_mask);
-
-                    strong_seeing(hashgraph);
-                    if (callbacks) {
-                        callbacks.strongly_seeing(this);
-                    }
-                    with (hashgraph) {
-                        mixin Log!(strong_seeing_statistic);
-                    }
-                    hashgraph._rounds.check_decided_round(hashgraph);
-                    _witness_mask.clear;
-                    _witness_mask[node_id] = true;
-                    if (callbacks) {
-                        callbacks.witness(this);
-                    }
-
-                }
-
+                Event.check(this.altitude - _mother.altitude is 1,
+                    ConsensusFailCode.EVENT_ALTITUDE);
+                Event.check(channel == _mother.channel,
+                    ConsensusFailCode.EVENT_MOTHER_CHANNEL);
             }
-            else if (!isEva && !hashgraph.joining && !hashgraph.rounds.isEventInLastDecidedRound(this))  {
-                check(false, ConsensusFailCode.EVENT_MOTHER_LESS);
+            hashgraph.front_seat(this);
+            if (Event.callbacks) {
+                Event.callbacks.connect(this);
             }
         }
+        _mother = hashgraph.register(event_package.event_body.mother);
+        if (_mother) {
+            check(!_mother._daughter, ConsensusFailCode.EVENT_MOTHER_FORK);
+            _mother._daughter = this;
+            _father = hashgraph.register(event_package.event_body.father);
+            attach_round(hashgraph);
+            _witness_mask = _mother._witness_mask;
+            if (_father) {
+                check(!_father._son, ConsensusFailCode.EVENT_FATHER_FORK);
+                _father._son = this;
+                _witness_mask |= _father._witness_mask;
+            }
+            if (callbacks) {
+                callbacks.round(this);
+            }
+            uint received_order_iteration_count;
+            received_order(received_order_iteration_count);
+            hashgraph.received_order_statistic(received_order_iteration_count);
+            with (hashgraph) {
+                mixin Log!(received_order_statistic);
+            }
+            auto witness_seen_mask = calc_witness_mask(hashgraph);
+            if (witness_seen_mask.isMajority(hashgraph)) {
+                hashgraph._rounds.next_round(this);
+                _witness = new Witness(this, witness_seen_mask);
+
+                strong_seeing(hashgraph);
+                if (callbacks) {
+                    callbacks.strongly_seeing(this);
+                }
+                with (hashgraph) {
+                    mixin Log!(strong_seeing_statistic);
+                }
+                hashgraph._rounds.check_decided_round(hashgraph);
+                _witness_mask.clear;
+                _witness_mask[node_id] = true;
+                if (callbacks) {
+                    callbacks.witness(this);
+                }
+
+            }
+        }
+        else if (!isEva && !hashgraph.joining && !hashgraph.rounds.isEventInLastDecidedRound(this))  {
+            check(false, ConsensusFailCode.EVENT_MOTHER_LESS);
+        }
+        
     }
 
     /**
@@ -1168,38 +1168,38 @@ class Event {
             return isWitness && _witness.famous;
         }
         /**
-     * Get the altitude of the event
-     * Returns: altitude
-     */
+         * Get the altitude of the event
+         * Returns: altitude
+         */
         immutable(int) altitude() {
             return event_package.event_body.altitude;
         }
 
         /**
-     *  Calculates the order of this event
-     * Returns: order
-     */
-        int expected_order() {
+         *  Calculates the order of this event
+         * Returns: order ( max(m+1, f+1 ). 
+         */
+        int expected_order() const pure nothrow @nogc {
             const m = (_mother) ? _mother._received_order : int.init;
             const f = (_father) ? _father._received_order : int.init;
             int result = (m - f > 0) ? m : f;
             result++;
-            result = (result is int.init) ? int.init + 1 : result;
+            result = (result is int.init) ? 1 : result;
             return result;
         }
         /**
-      * Is this event owner but this node 
-      * Returns: true if the evnet is owned
-      */
-        bool nodeOwner() {
+          * Is this event owner but this node 
+          * Returns: true if the evnet is owned
+          */
+        bool nodeOwner() const pure nothrow @nogc {
             return node_id is 0;
         }
 
         /**
-     * Gets the event order number 
-     * Returns: order
-     */
-        int received_order()
+         * Gets the event order number 
+         * Returns: order
+         */
+        int received_order() const pure nothrow @nogc
         in {
             assert(isEva || (_received_order !is int.init), "The received order of this event has not been defined");
         }
@@ -1211,7 +1211,7 @@ class Event {
        * Checks if the event is connected in the graph 
        * Returns: true if the event is corrected 
        */
-        bool connected() {
+        bool connected() const pure @nogc {
             return (_mother !is null);
         }
 

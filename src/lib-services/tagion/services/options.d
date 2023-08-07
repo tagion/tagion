@@ -1,8 +1,11 @@
+/// Options for tagionwave services,
+/// Publicly imports all service options
 module tagion.services.options;
 
 import tagion.utils.JSONCommon;
 public import tagion.services.inputvalidator : InputValidatorOptions;
 public import tagion.services.DART : DARTOptions;
+public import tagion.services.contract : ContractOptions;
 
 @property
 static immutable(string) contract_sock_path() @safe nothrow {
@@ -23,8 +26,10 @@ static immutable(string) contract_sock_path() @safe nothrow {
     }
 }
 
+/// All options for neuewelle
 struct Options {
     InputValidatorOptions inputvalidator;
     DARTOptions dart;
+    ContractOptions contract;
     mixin JSONCommon;
 }

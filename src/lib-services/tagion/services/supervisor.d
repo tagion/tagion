@@ -21,6 +21,7 @@ import tagion.services.DART;
 import tagion.services.inputvalidator;
 import tagion.services.contract;
 
+@safe
 class WaveNet : StdSecureNet {
     this(in string passphrase) {
         super();
@@ -37,7 +38,7 @@ struct Supervisor {
     auto failHandler = (TaskFailure tf) { log("Supervisor caught exception: \n%s", tf); };
 
     void task(immutable(Options) opts) {
-        immutable SecureNet net = (() @trusted => cast(immutable) new WaveNet("aparatus")) ();
+        immutable SecureNet net = (() @trusted => cast(immutable) new WaveNet("aparatus"))();
 
         const dart_filename = opts.dart.dart_filename;
 
@@ -45,10 +46,13 @@ struct Supervisor {
             DARTFile.create(dart_filename, net);
         }
         auto dart_handle = spawn!DARTService(dart_task_name, opts.dart, net);
-        auto contract_handle = spawn!ContractService(contract_task_name, "___collector", net);
+        auto contract_handle = spawn!ContractService(contract_task_name, opts.contract, "__tmp_collector", net);
         auto inputvalidator_handle = spawn!InputValidatorService(input_task_name, opts.inputvalidator, contract_task_name);
         auto services = tuple(dart_handle, contract_handle, inputvalidator_handle);
-        waitforChildren(Ctrl.ALIVE);
+
+        if (!waitforChildren(Ctrl.ALIVE)) {
+            log.error("Not all children became Alive");
+        }
         run(failHandler);
 
         foreach (service; services) {

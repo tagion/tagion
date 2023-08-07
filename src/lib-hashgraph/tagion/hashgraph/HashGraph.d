@@ -308,8 +308,8 @@ class HashGraph {
         return eva_event;
     }
 
-    alias EventPackageCache = immutable(EventPackage)*[Buffer];
-    alias EventCache = Event[Buffer];
+    alias EventPackageCache = immutable(EventPackage)*[Buffer]; /// EventPackages received from another node in the hashgraph.
+    alias EventCache = Event[Buffer]; /// Events already connected to this hashgraph. 
 
     protected {
         EventCache _event_cache;
@@ -392,7 +392,8 @@ class HashGraph {
             if (fingerprint in _event_cache) {
                 return _event_cache[fingerprint];
             }
-            else if (fingerprint in event_package_cache) {
+
+            if (fingerprint in event_package_cache) {
                 immutable event_pack = event_package_cache[fingerprint];
                 if (valid_channel(event_pack.pubkey)) {
                     auto event = new Event(event_pack, this.outer);
@@ -410,29 +411,16 @@ class HashGraph {
 
         final Event register(const(Buffer) fingerprint) {
             Event event;
-            if (fingerprint) {
 
-                event = lookup(fingerprint);
+            if (!fingerprint) {
+                return event;
+            }
 
-                // if (event is null) {
-                    
-                //     const fingerprint_in_nodes = _nodes.events
-                //         .filter!((e) => e !is null)
-                //         .map!(e => e.event_package.fingerprint)
-                //         .canFind(fingerprint);
-
-                //     if (fingerprint_in_nodes) { return null; }                
-                // }
-                
-                if (!(_joining || event !is null)) {
-                    
-                    writefln("register error: %s", fingerprint.cutHex);
-                
-                }
-                // Event.check(_joining || event !is null, ConsensusFailCode.EVENT_MISSING_IN_CACHE);
-                if (event !is null) {
-                    event.connect(this.outer);
-                }
+            // event either from event_package_cache or event_cache.
+            event = lookup(fingerprint); 
+            Event.check(_joining || event !is null, ConsensusFailCode.EVENT_MISSING_IN_CACHE);
+            if (event !is null) {
+                event.connect(this.outer);
             }
             return event;
         }
@@ -444,36 +432,26 @@ class HashGraph {
         if (_register) {
             return _register.register(fingerprint);
         }
-        scope event_ptr = fingerprint in _event_cache;
-        if (event_ptr) {
-            return *event_ptr;
-        }
-        return null;
+
+        return _event_cache.get(fingerprint, null);
+        // scope event_ptr = fingerprint in _event_cache;
+        // if (event_ptr) {
+        //     return *event_ptr;
+        // }
+        // return null;
     }
 
     /++
      Returns:
      The front event of the send channel
      +/
-    const(Event) register_wavefront(
-            const Wavefront received_wave,
-            const Pubkey from_channel) {
+    const(Event) register_wavefront(const Wavefront received_wave, const Pubkey from_channel) {
         _register = new Register(received_wave);
+
         scope (exit) {
             mixin Log!(wavefront_event_package_statistic);
             mixin Log!(wavefront_event_package_used_statistic);
             _register = null;
-        }
-        // assert(_register.event_package_cache.length);
-
-        if (_owner_node.channel.cutHex == "037ba30f467d5de5") {
-            writefln("register wavefront new node from %s", from_channel.cutHex);
-            received_wave.epacks.map!((epack) => [epack.pubkey.cutHex, epack.event_body.altitude.to!string, epack.fingerprint.cutHex])
-            .each!writeln;
-
-            writefln("own altitudes");
-            _nodes.byValue.map!(n => [n.event.event_package.pubkey.cutHex, n.event.event_package.event_body.altitude.to!string, n.event.event_package.fingerprint.cutHex])
-            .each!writeln;
         }
 
         Event front_seat_event;

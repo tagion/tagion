@@ -60,10 +60,7 @@ alias CtrlMsg = Tuple!(string, "task_name", Ctrl, "ctrl");
 private static Ctrl[string] childrenState;
 private static string _task_name;
 @property
-string task_name() @trusted {
-    if (_task_name is string.init) {
-        assert(0, "This thread is not a spawned actor");
-    }
+string task_name() @safe nothrow {
     return _task_name;
 }
 
@@ -263,11 +260,7 @@ Nullable!Tid tidOwner() @safe nothrow {
         // Tid is assigned
         tid = ownerTid;
     }
-    catch (TidMissingException) {
-        // Tid is "just null"
-    }
-    catch (Exception e) {
-        // logger.fatal(e);
+    catch (Exception _) {
     }
     return tid;
 }
@@ -289,13 +282,16 @@ void sendOwner(T...)(T vals) @safe {
  * Does NOT exit regular control flow
 */
 void fail(Throwable t) @trusted nothrow {
-    log(t);
-    if (!tidOwner.isNull) {
-        assumeWontThrow(
-                ownerTid.prioritySend(
-                TaskFailure(_task_name, cast(immutable) t)
-        )
-        );
+    try {
+        ownerTid.prioritySend(TaskFailure(_task_name, cast(immutable) t));
+    }
+    catch(Exception e) {
+        log.fatal("Failed to deliver TaskFailure: \n
+                %s\n\n
+                Because:\n
+                %s", t, e);
+        log.fatal("Stopping because we failed to deliver a TaskFailure to the supervisor");
+        stop = true;
     }
 }
 

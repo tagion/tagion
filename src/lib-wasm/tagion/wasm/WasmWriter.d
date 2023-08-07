@@ -36,6 +36,13 @@ import tagion.wasm.WasmException;
     alias ReaderSecType(Section sec) = TemplateArgsOf!(ReaderSections[sec].SecRange)[1];
 
     Modules mod;
+    Sections[Sec] section(Section Sec)() {
+        if (!mod[Sec]) {
+            mod[Sec] = new Sections[Sec];
+        }
+        return mod[Sec];
+    }
+
     this(ref const(WasmReader) reader) {
         auto loader = new WasmLoader;
         reader(loader);
