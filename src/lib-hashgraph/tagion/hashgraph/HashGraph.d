@@ -542,7 +542,7 @@ class HashGraph {
     }
     do {
         if (areWeInGraph) {
-            writefln("sharp response ingraph:true");
+            // writefln("sharp response ingraph:true");
             immutable(EventPackage)*[] result = _rounds.last_decided_round
                 .events
                 .filter!((e) => (e !is null))
@@ -712,9 +712,9 @@ class HashGraph {
                     writefln("received coherent from: %s, self %s", received_node.channel.cutHex, _owner_node.channel.cutHex);
                     if (!areWeInGraph) {
                         try {
-                            received_wave.epacks
-                                .map!(epack => epack.event_body)
-                                .each!(ebody => ebody.toPretty.writeln);
+                            // received_wave.epacks
+                            //     .map!(epack => epack.event_body)
+                            //     .each!(ebody => ebody.toPretty.writeln);
                             initialize_witness(received_wave.epacks);
                             _owner_node.sticky_state = COHERENT;
                             _joining = No.joining;
