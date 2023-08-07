@@ -679,6 +679,7 @@ class Event {
             BitMask _strong_seeing_mask; /// Nodes which has voted this witness as strogly seen
             BitMask _vote_on_earliest_witnesses;
             BitMask _prev_strongly_seen_witnesses;
+            BitMask _prev_seen_witnesses;
             Fame _famous; /// True if the witness is voted famous
         }
 
@@ -1028,18 +1029,13 @@ class Event {
                     hashgraph._rounds.next_round(this);
                 }
                 if (round.number > mother.round.number) {
-                // _prev_strongly_seen_witnesses = 
-                // if (round.number > mother.round.number) {
-                // if (witness_seen_mask.isMajority(hashgraph)) {
-                    // __new_witness = true;
-                    
-                    // hashgraph._rounds.next_round(this);
                     _witness = new Witness(this, witness_seen_mask);
                     
                     if (new_witness) {
 
                         foreach (i;0 .. _witness_strong_seen_masks.length)
                         {
+                            _witness._prev_seen_witnesses[i] = _witness_strong_seen_masks[i][node_id];
                             _witness._prev_strongly_seen_witnesses[i] = _witness_strong_seen_masks[i].isMajority(hashgraph);
 
                         }
@@ -1053,6 +1049,17 @@ class Event {
                             .filter!(b => b.value)
                             .map!(b => b.index)) {
                                 _witness._prev_strongly_seen_witnesses |= round.events[idx]._witness._prev_strongly_seen_witnesses;
+                                foreach(j; 0 .. _witness_strong_seen_masks.length) {
+                                    if (round.events[idx]._witness._prev_seen_witnesses[j]) {
+                                        _witness._prev_seen_witnesses[j] = round.events[idx]._witness._prev_seen_witnesses[j];
+                                    }
+                                }
+                        }
+
+                        foreach(j; 0 .. _witness_strong_seen_masks.length) {
+                            if (mother._witness_strong_seen_masks[j][mother.node_id] && mother.round.number + 1 == round.number) {
+                                _witness._prev_seen_witnesses[j] = mother._witness_strong_seen_masks[j][mother.node_id];
+                            }
                         }
                     }
                     strong_seeing(hashgraph);
@@ -1069,7 +1076,7 @@ class Event {
                         callbacks.witness(this);
                     }
                     if (hashgraph.__debug_print) {
-                        // __write("WITNESS EVENT: %s, prv_mask: %4s", id, _witness._prev_strongly_seen_witnesses);
+                        __write("WITNESS EVENT: %s, prv_mask: %4s", id, _witness._prev_seen_witnesses);
                     }    
                 }
             }
@@ -1102,8 +1109,14 @@ class Event {
         }
         else if (!isEva && !hashgraph.joining && !hashgraph.rounds.isEventInLastDecidedRound(this))  {
             check(false, ConsensusFailCode.EVENT_MOTHER_LESS);
-        }
-        
+        }        
+    }
+
+    private void vote(HashGraph hashgraph, int node_id) {
+        int voting_round = round.number;
+        Round 
+        while (round.events == null || round.events
+        return void;
     }
 
     private bool calc_witness_strong_seen_masks(HashGraph hashgraph) {
@@ -1121,9 +1134,6 @@ class Event {
         if (father.round is mother.round) {
             _witness_strong_seen_masks = _mother._witness_strong_seen_masks.dupBitMaskArray;
         }
-        else {
-            // _prev_strongly_seen_witnesses = father._prev_strongly_seen_witnesses;
-        }
         
         _witness_strong_seen_masks[node_id][node_id] = true;
         
@@ -1137,15 +1147,6 @@ class Event {
         }
         const strongly_seen_votes = _witness_strong_seen_masks.filter!(mask => mask.isMajority(hashgraph)).count;
         const result = hashgraph.isMajority(strongly_seen_votes);
-        // if (result) {
-
-        //     foreach (i;0 .. _witness_strong_seen_masks.length)
-        //     {
-        //         _prev_strongly_seen_witnesses[i] = _witness_strong_seen_masks[i].isMajority(hashgraph);
-
-        //     }
-        //     clear_witness_strong_seen_masks(hashgraph);
-        // }
         return hashgraph.isMajority(strongly_seen_votes);
     }
 
