@@ -42,6 +42,9 @@ jobs:
           id
           pwd
           echo $SHELL
+          echo "change to bash"
+          bash
+          echo $SHELL
           export BRANCH $(make help | tail -n 3 | head -n 1) 
           export COMMIT $(make help | tail -n 3 | head -n 1)
           echo $BRANCH 
