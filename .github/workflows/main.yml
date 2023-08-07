@@ -44,7 +44,7 @@ jobs:
           pwd
           echo $SHELL
           echo "change to bash"
-          bash
+          source ~/.bashrc
           echo $SHELL
           export BRANCH $(make help | tail -n 3 | head -n 1) 
           export COMMIT $(make help | tail -n 3 | head -n 1)
