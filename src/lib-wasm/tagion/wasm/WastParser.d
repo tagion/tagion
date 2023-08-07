@@ -366,6 +366,57 @@ struct WastParser {
         return ParserStage.END;
     }
 
+    private ParserStage parseFuncArgs(ref WastTokenizer r, const ParserStage stage) {
+        if (r.type == TokenType.BEGIN) {
+            string label;
+            string arg;
+            r.nextToken;
+            bool not_ended;
+            scope (exit) {
+                r.check(r.type == TokenType.END || not_ended);
+                r.nextToken;
+            }
+            switch (r.token) {
+            case "param": // Example (param $y i32)
+                r.nextToken;
+                if (stage == ParserStage.IMPORT) {
+                    Types[] wasm_types;
+                    while (r.token.getType !is Types.EMPTY) {
+                        wasm_types ~= r.token.getType;
+                        r.nextToken;
+                    }
+                }
+                else {
+                    r.check(stage == ParserStage.FUNC);
+
+                    if (r.type == TokenType.WORD && r.token.getType is Types.EMPTY) {
+                        label = r.token;
+                        r.nextToken;
+
+                        r.check(r.type == TokenType.WORD);
+                    }
+                    while (r.type == TokenType.WORD && r.token.getType !is Types.EMPTY) {
+                        arg = r.token;
+                        r.nextToken;
+                    }
+                }
+                return ParserStage.PARAM;
+            case "result":
+                r.check(stage == ParserStage.FUNC);
+                r.nextToken;
+                r.check(r.type == TokenType.WORD);
+                arg = r.token;
+                r.nextToken;
+                return ParserStage.RESULT;
+            default:
+                not_ended = true;
+                r.nextToken;
+                return ParserStage.UNDEFINED;
+            }
+        }
+        return ParserStage.UNDEFINED;
+    }
+
     private ParserStage parseTypeSection(ref WastTokenizer r, const ParserStage stage) {
         string label;
 
@@ -387,7 +438,7 @@ struct WastParser {
         uint only_one_type_allowed;
         do {
             rewined = r.save;
-            arg_stage = parseModule(r, ParserStage.FUNC);
+            arg_stage = parseFuncArgs(r, ParserStage.FUNC);
 
             only_one_type_allowed += (only_one_type_allowed > 0) || (arg_stage == ParserStage.TYPE);
 
