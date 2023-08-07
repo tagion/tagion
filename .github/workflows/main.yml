@@ -38,6 +38,7 @@ jobs:
 
       - name: set testnet1 vars
         run: |
+          shell: bash
           git branch
           id
           pwd
