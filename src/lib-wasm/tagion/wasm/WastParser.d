@@ -47,148 +47,148 @@ struct WastParser {
         UNDEFINED,
     }
 
-    private ParserStage parseInstr(ref WastTokenizer r, const ParserStage stage) {
-        version (none)
-            if (r.type == TokenType.COMMENT) {
+    private ParserStage parseInstr(ref WastTokenizer r, const ParserStage stage, ref CodeType code_type, ref const(FuncType) func_type, scope const(
+            size_t[string]) params) {
+        ParserStage innerInstr(ref WastTokenizer r, const ParserStage) {
+            r.check(r.type == TokenType.BEGIN);
+            scope (exit) {
+                r.check(r.type == TokenType.END);
                 r.nextToken;
-                return parseInstr(r, stage);
             }
-        r.check(r.type == TokenType.BEGIN);
-        scope (exit) {
-            r.check(r.type == TokenType.END);
             r.nextToken;
-        }
-        r.nextToken;
-        r.check(r.type == TokenType.WORD);
-        const instr = instrWastLookup.get(r.token, Instr.init);
-        string label;
-        if (instr !is Instr.init) {
-            with (IRType) {
-                final switch (instr.irtype) {
-                case CODE:
-                    r.nextToken;
-                    foreach (i; 0 .. instr.pops) {
-                        parseInstr(r, ParserStage.CODE);
-                    }
-                    break;
-                case BLOCK:
-                    string arg;
-                    r.nextToken;
-                    if (r.type == TokenType.WORD) {
-                        //r.check(r.type == TokenType.WORD);
-                        label = r.token;
+            r.check(r.type == TokenType.WORD);
+            const instr = instrWastLookup.get(r.token, Instr.init);
+            string label;
+            if (instr !is Instr.init) {
+                with (IRType) {
+                    final switch (instr.irtype) {
+                    case CODE:
                         r.nextToken;
-                    }
-                    if (r.type == TokenType.WORD) {
-                        arg = r.token;
-                        r.nextToken;
-                    }
-                    while (r.type == TokenType.BEGIN) {
-                        parseInstr(r, ParserStage.CODE);
-                    }
-                    return stage;
-                case BRANCH:
-                    r.nextToken;
-                    if (r.type == TokenType.WORD) {
-                        label = r.token;
-                        r.nextToken;
-                    }
-                    while (r.type == TokenType.BEGIN) {
-                        //foreach (i; 0 .. instr.pops) {
-                        parseInstr(r, ParserStage.CODE);
-                    }
-                    break;
-                case BRANCH_IF:
-                    r.nextToken;
-                    parseInstr(r, ParserStage.CODE);
-                    r.check(r.type == TokenType.WORD);
-                    label = r.token;
-                    r.nextToken;
-                    if (r.type == TokenType.BEGIN) {
-                        parseInstr(r, ParserStage.CODE);
-                    }
-                    break;
-                case BRANCH_TABLE:
-                    break;
-                case CALL:
-                    r.nextToken;
-                    label = r.token;
-                    r.nextToken;
-                    while (r.type == TokenType.BEGIN) {
-                        parseInstr(r, ParserStage.CODE);
-                    }
-
-                    break;
-                case CALL_INDIRECT:
-                    break;
-                case LOCAL:
-                    string arg;
-                    r.nextToken;
-                    label = r.token;
-                    r.check(r.type == TokenType.WORD);
-                    r.nextToken;
-                    if (r.type == TokenType.WORD) {
-                        arg = r.token;
-                        r.nextToken;
-                    }
-                    else {
                         foreach (i; 0 .. instr.pops) {
-                            parseInstr(r, ParserStage.CODE);
+                            innerInstr(r, ParserStage.CODE);
+                        }
+                        break;
+                    case BLOCK:
+                        string arg;
+                        r.nextToken;
+                        if (r.type == TokenType.WORD) {
+                            //r.check(r.type == TokenType.WORD);
+                            label = r.token;
+                            r.nextToken;
+                        }
+                        if (r.type == TokenType.WORD) {
+                            arg = r.token;
+                            r.nextToken;
+                        }
+                        while (r.type == TokenType.BEGIN) {
+                            innerInstr(r, ParserStage.CODE);
+                        }
+                        return stage;
+                    case BRANCH:
+                        r.nextToken;
+                        if (r.type == TokenType.WORD) {
+                            label = r.token;
+                            r.nextToken;
+                        }
+                        while (r.type == TokenType.BEGIN) {
+                            //foreach (i; 0 .. instr.pops) {
+                            innerInstr(r, ParserStage.CODE);
+                        }
+                        break;
+                    case BRANCH_IF:
+                        r.nextToken;
+                        innerInstr(r, ParserStage.CODE);
+                        r.check(r.type == TokenType.WORD);
+                        label = r.token;
+                        r.nextToken;
+                        if (r.type == TokenType.BEGIN) {
+                            innerInstr(r, ParserStage.CODE);
+                        }
+                        break;
+                    case BRANCH_TABLE:
+                        break;
+                    case CALL:
+                        r.nextToken;
+                        label = r.token;
+                        r.nextToken;
+                        while (r.type == TokenType.BEGIN) {
+                            innerInstr(r, ParserStage.CODE);
+                        }
+
+                        break;
+                    case CALL_INDIRECT:
+                        break;
+                    case LOCAL:
+                        string arg;
+                        r.nextToken;
+                        label = r.token;
+                        r.check(r.type == TokenType.WORD);
+                        r.nextToken;
+                        if (r.type == TokenType.WORD) {
+                            arg = r.token;
+                            r.nextToken;
+                        }
+                        else {
+                            foreach (i; 0 .. instr.pops) {
+                                innerInstr(r, ParserStage.CODE);
+                            }
+                        }
+                        break;
+                    case GLOBAL:
+                        r.nextToken;
+                        label = r.token;
+                        r.check(r.type == TokenType.WORD);
+                        r.nextToken;
+                        break;
+                    case MEMORY:
+
+                        r.nextToken;
+                        for (uint i = 0; (i < 2) && (r.type == TokenType.WORD); i++) {
+                            label = r.token; // Fix this later
+                            r.nextToken;
+                        }
+                        foreach (i; 0 .. instr.pops) {
+                            innerInstr(r, ParserStage.CODE);
+                        }
+                        break;
+                    case MEMOP:
+                        r.nextToken;
+                        foreach (i; 0 .. instr.pops) {
+                            innerInstr(r, ParserStage.CODE);
+                        }
+                        break;
+                    case CONST:
+                        r.nextToken;
+                        r.check(r.type == TokenType.WORD);
+                        label = r.token;
+                        r.nextToken;
+                        break;
+                    case END:
+                        break;
+                    case PREFIX:
+                        break;
+                    case SYMBOL:
+                        r.nextToken;
+                        for (uint i = 0; (instr.push == uint.max) ? r.type == TokenType.WORD : i < instr.push; i++) {
+                            label = r.token;
+                            r.nextToken;
+                        }
+                        for (uint i = 0; (instr.pops == uint.max) ? r.type == TokenType.BEGIN : i < instr.pops; i++) {
+                            innerInstr(r, ParserStage.CODE);
+
                         }
                     }
-                    break;
-                case GLOBAL:
-                    r.nextToken;
-                    label = r.token;
-                    r.check(r.type == TokenType.WORD);
-                    r.nextToken;
-                    break;
-                case MEMORY:
-
-                    r.nextToken;
-                    for (uint i = 0; (i < 2) && (r.type == TokenType.WORD); i++) {
-                        label = r.token; // Fix this later
-                        r.nextToken;
-                    }
-                    foreach (i; 0 .. instr.pops) {
-                        parseInstr(r, ParserStage.CODE);
-                    }
-                    break;
-                case MEMOP:
-                    r.nextToken;
-                    foreach (i; 0 .. instr.pops) {
-                        parseInstr(r, ParserStage.CODE);
-                    }
-                    break;
-                case CONST:
-                    r.nextToken;
-                    r.check(r.type == TokenType.WORD);
-                    label = r.token;
-                    r.nextToken;
-                    break;
-                case END:
-                    break;
-                case PREFIX:
-                    break;
-                case SYMBOL:
-                    r.nextToken;
-                    for (uint i = 0; (instr.push == uint.max) ? r.type == TokenType.WORD : i < instr.push; i++) {
-                        label = r.token;
-                        r.nextToken;
-                    }
-                    for (uint i = 0; (instr.pops == uint.max) ? r.type == TokenType.BEGIN : i < instr.pops; i++) {
-                        parseInstr(r, ParserStage.CODE);
-
-                    }
                 }
+
+            }
+            else {
+                r.check(false);
             }
 
-        }
-        else {
-            r.check(false);
+            return stage;
         }
 
-        return stage;
+        return innerInstr(r, stage);
     }
 
     private ParserStage parseModule(ref WastTokenizer r, const ParserStage stage) {
@@ -212,26 +212,15 @@ struct WastParser {
                 return ParserStage.MODULE;
             case "type":
                 r.nextToken;
-
-                //               if (stage == ParserStage.MODULE) {
                 if (r.type == TokenType.WORD) {
                     label = r.token;
                     r.nextToken;
                 }
                 parseModule(r, ParserStage.TYPE);
                 return stage;
-                //             }
-                /+
-                //if (stage == ParserStage.FUNC) {
-                r.check(r.type == TokenType.WORD);
-                label = r.token;
-                r.nextToken;
-                return ParserStage.TYPE;
-+/
-                //}
-                //return stage;
             case "func": // Example (func $name (param ...) (result i32) )
-                return parseTypeSection(r, stage);
+                CodeType code_type;
+                return parseTypeSection(r, code_type, stage);
             case "param": // Example (param $y i32)
                 r.nextToken;
                 if (stage == ParserStage.IMPORT) {
@@ -310,7 +299,9 @@ struct WastParser {
                 r.check(r.type == TokenType.STRING);
                 arg2 = r.token;
                 r.nextToken;
-                const ret = parseFuncArgs(r, ParserStage.IMPORT);
+                FuncType func_type;
+                scope size_t[string] params;
+                const ret = parseFuncArgs(r, ParserStage.IMPORT, func_type, params);
                 r.check(ret == ParserStage.TYPE || ret == ParserStage.PARAM);
 
                 return stage;
@@ -318,19 +309,24 @@ struct WastParser {
                 r.check(stage == ParserStage.BASE);
                 label = r.token;
                 r.nextToken;
-
+                FuncType func_type;
+                CodeType code_type;
+                scope size_t[string] params;
                 // Invoke call
-                parseInstr(r, ParserStage.ASSERT);
+                parseInstr(r, ParserStage.ASSERT, code_type, func_type, params);
                 if (r.type == TokenType.BEGIN) {
-                    parseInstr(r, ParserStage.EXPECTED);
+                    parseInstr(r, ParserStage.EXPECTED, code_type, func_type, params);
                 }
                 return ParserStage.ASSERT;
             case "assert_trap":
                 r.check(stage == ParserStage.BASE);
                 label = r.token;
                 r.nextToken;
+                FuncType func_type;
+                CodeType code_type;
+                scope size_t[string] params;
                 // Invoke call
-                parseInstr(r, ParserStage.ASSERT);
+                parseInstr(r, ParserStage.ASSERT, code_type, func_type, params);
 
                 r.check(r.type == TokenType.STRING);
                 arg = r.token;
@@ -340,8 +336,11 @@ struct WastParser {
                 r.check(stage == ParserStage.BASE);
                 label = r.token;
                 r.nextToken;
+                FuncType func_type;
+                CodeType code_type;
+                scope size_t[string] params;
                 // Invoke call
-                parseInstr(r, ParserStage.ASSERT);
+                parseInstr(r, ParserStage.ASSERT, code_type, func_type, params);
 
                 return ParserStage.ASSERT;
             case "assert_invalid":
@@ -368,7 +367,7 @@ struct WastParser {
         return ParserStage.END;
     }
 
-    private ParserStage parseFuncArgs(ref WastTokenizer r, const ParserStage stage) {
+    private ParserStage parseFuncArgs(ref WastTokenizer r, const ParserStage stage, ref FuncType func_type, ref scope size_t[string] params) {
         if (r.type == TokenType.BEGIN) {
             string label;
             string arg;
@@ -387,8 +386,11 @@ struct WastParser {
                 return ParserStage.TYPE;
             case "param": // Example (param $y i32)
                 r.nextToken;
+                immutable(Types)[] wasm_types;
+                scope (exit) {
+                    func_type.params = wasm_types;
+                }
                 if (stage == ParserStage.IMPORT) {
-                    Types[] wasm_types;
                     while (r.token.getType !is Types.EMPTY) {
                         wasm_types ~= r.token.getType;
                         r.nextToken;
@@ -402,6 +404,9 @@ struct WastParser {
                         r.nextToken;
 
                         r.check(r.type == TokenType.WORD);
+                        params[label] = wasm_types.length;
+                        wasm_types ~= r.token.getType;
+                        r.check(r.token.getType !is Types.EMPTY);
                     }
                     while (r.type == TokenType.WORD && r.token.getType !is Types.EMPTY) {
                         arg = r.token;
@@ -413,7 +418,10 @@ struct WastParser {
                 r.check(stage == ParserStage.FUNC);
                 r.nextToken;
                 r.check(r.type == TokenType.WORD);
-                arg = r.token;
+
+                //arg = r.token;
+                func_type.results = [r.token.getType];
+                r.check(r.token.getType !is Types.EMPTY);
                 r.nextToken;
                 return ParserStage.RESULT;
             default:
@@ -425,13 +433,18 @@ struct WastParser {
         return ParserStage.UNDEFINED;
     }
 
-    private ParserStage parseTypeSection(ref WastTokenizer r, const ParserStage stage) {
+    private ParserStage parseTypeSection(ref WastTokenizer r, ref CodeType code_type, const ParserStage stage) {
         string label;
 
         r.check(stage < ParserStage.FUNC);
         auto type_section = writer.section!(Section.TYPE);
 
         const type_idx = type_section.sectypes.length;
+        FuncType func_type;
+        scope size_t[string] params;
+        scope (exit) {
+            type_section.sectypes ~= func_type;
+        }
 
         //        writefln("%s", type_section.sectypes.length);
         r.nextToken;
@@ -446,20 +459,18 @@ struct WastParser {
         uint only_one_type_allowed;
         do {
             rewined = r.save;
-            arg_stage = parseFuncArgs(r, ParserStage.FUNC);
+            arg_stage = parseFuncArgs(r, ParserStage.FUNC, func_type, params);
 
             only_one_type_allowed += (only_one_type_allowed > 0) || (arg_stage == ParserStage.TYPE);
-
-            //count_types+=(arg_stage == ParserStage.TYPE);
         }
         while ((arg_stage == ParserStage.PARAM) || (only_one_type_allowed == 1));
         //auto result_r=r.save;
-        if (arg_stage != ParserStage.TYPE && arg_stage != ParserStage.RESULT || arg_stage == ParserStage
-                .UNDEFINED) {
+        if (arg_stage != ParserStage.TYPE && arg_stage != ParserStage.RESULT ||
+                arg_stage == ParserStage.UNDEFINED) {
             r = rewined;
         }
         while (r.type == TokenType.BEGIN) {
-            const ret = parseInstr(r, ParserStage.FUNC_BODY);
+            const ret = parseInstr(r, ParserStage.FUNC_BODY, code_type, func_type, params);
             r.check(ret == ParserStage.FUNC_BODY);
         }
         return ParserStage.FUNC;
