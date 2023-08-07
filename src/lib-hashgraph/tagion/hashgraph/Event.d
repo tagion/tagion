@@ -993,7 +993,7 @@ class Event {
         }
 
         if (hashgraph.__debug_print) {
-            __write("EVENT: %s", id);
+            // __write("EVENT: %s", id);
         }
         
         _mother = hashgraph.register(event_package.event_body.mother);
@@ -1069,7 +1069,7 @@ class Event {
                         callbacks.witness(this);
                     }
                     if (hashgraph.__debug_print) {
-                        __write("WITNESS EVENT: %s, prv_mask: %4s", id, _witness._prev_strongly_seen_witnesses);
+                        // __write("WITNESS EVENT: %s, prv_mask: %4s", id, _witness._prev_strongly_seen_witnesses);
                     }    
                 }
             }
@@ -1097,7 +1097,7 @@ class Event {
             }
             }
             if (hashgraph.__debug_print) {
-                writefln("EVENT: %s, ROUND: %s", id, round.number);
+                // writefln("EVENT: %s, ROUND: %s", id, round.number);
             }       
         }
         else if (!isEva && !hashgraph.joining && !hashgraph.rounds.isEventInLastDecidedRound(this))  {
@@ -1136,9 +1136,6 @@ class Event {
             }
         }
         const strongly_seen_votes = _witness_strong_seen_masks.filter!(mask => mask.isMajority(hashgraph)).count;
-        if (hashgraph.__debug_print) {
-            __write("HUHUHOHO: %s", strongly_seen_votes);
-        }
         const result = hashgraph.isMajority(strongly_seen_votes);
         // if (result) {
 
