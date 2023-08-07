@@ -35,8 +35,14 @@ jobs:
           git clean -f && git restore . 
           git checkout current
           git pull
-          
 
+      - name: set testnet1 vars
+        run: |
+          set BRANCH (make help |tail -n 3 |head -n 1) 
+          set COMMIT (make help |tail -n 2 |head -n 1)
+          echo $BRANCH >> "$GITHUB_ENV"
+          echo $COMMIT >> "$GITHUB_ENV
+         
       - name: Run tests
         run: |
           make -k clean ci -j DC=${{env.DC}} || make -k clean proper ci -j DC=${{env.DC}}
@@ -275,8 +281,8 @@ jobs:
           tar -xzf *.tar.gz
           mkdir -p /opt/tagion/artifact
           sudo cp build/x86_64-linux/bin/tagion /var/lib/docker/volumes/tagion-dashboard/_data/
-          /home/ubuntu/build/x86_64-linux/bin/tagion --version | grep hash > revision.txt
-          echo $GITHUB_REF_NAME >> revision.txt
+          echo "${{ env.BRANCH }}" > revision.txt
+          echo "${{ env.COMMIT }}" >> revision.txt
           sudo cp requirements.txt /var/lib/docker/volumes/tagion-dashboard/_data/
           /home/ubuntu/dashboard.sh
           sudo rm -rf build || echo "build directory already deleted"
