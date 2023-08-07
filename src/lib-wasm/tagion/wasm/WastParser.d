@@ -213,19 +213,21 @@ struct WastParser {
             case "type":
                 r.nextToken;
 
-                if (stage == ParserStage.MODULE) {
-                    if (r.type == TokenType.WORD) {
-                        label = r.token;
-                        r.nextToken;
-                    }
-                    parseModule(r, ParserStage.TYPE);
-                    return stage;
+                //               if (stage == ParserStage.MODULE) {
+                if (r.type == TokenType.WORD) {
+                    label = r.token;
+                    r.nextToken;
                 }
+                parseModule(r, ParserStage.TYPE);
+                return stage;
+                //             }
+                /+
                 //if (stage == ParserStage.FUNC) {
                 r.check(r.type == TokenType.WORD);
                 label = r.token;
                 r.nextToken;
                 return ParserStage.TYPE;
++/
                 //}
                 //return stage;
             case "func": // Example (func $name (param ...) (result i32) )
@@ -308,7 +310,7 @@ struct WastParser {
                 r.check(r.type == TokenType.STRING);
                 arg2 = r.token;
                 r.nextToken;
-                const ret = parseModule(r, ParserStage.IMPORT);
+                const ret = parseFuncArgs(r, ParserStage.IMPORT);
                 r.check(ret == ParserStage.TYPE || ret == ParserStage.PARAM);
 
                 return stage;
