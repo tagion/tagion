@@ -53,12 +53,12 @@ struct WastTokenizer {
 
     }
 
-    void check(const bool flag, string msg = null, string file = __FILE__, const size_t line = __LINE__) {
+    void check(const bool flag, string msg = null, string file = __FILE__, const size_t code_line = __LINE__) {
         import std.stdio;
 
         if (!flag) {
             writefln("Error:%s %s:%s:%d:%d", msg, token, type, line, line_pos);
-            writefln("%s:%d", file, line);
+            writefln("%s:%d", file, code_line);
         }
     }
 

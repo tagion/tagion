@@ -377,6 +377,12 @@ struct WastParser {
                 r.nextToken;
             }
             switch (r.token) {
+            case "type":
+                r.nextToken;
+                r.check(r.type == TokenType.WORD);
+                label = r.token;
+                r.nextToken;
+                return ParserStage.TYPE;
             case "param": // Example (param $y i32)
                 r.nextToken;
                 if (stage == ParserStage.IMPORT) {
@@ -425,7 +431,7 @@ struct WastParser {
 
         const type_idx = type_section.sectypes.length;
 
-        writefln("%s", type_section.sectypes.length);
+        //        writefln("%s", type_section.sectypes.length);
         r.nextToken;
         if (r.type == TokenType.WORD) {
             // Function with label
