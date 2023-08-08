@@ -124,6 +124,8 @@ jobs:
           ls build/${{ env.TARGET }}/integration      
       - name: Run collider tests
         run: |
+          id
+          pwd
           source $PWD/build/${{ env.TARGET }}/bin/bddenv.sh
           export DBIN=$PWD/build/${{ env.TARGET }}/bin
           export DLOG=$PWD/logs/${{ env.TARGET }}
