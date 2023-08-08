@@ -149,15 +149,17 @@ Note. The result from the `callgrind` viewed with [Kcachegrind](https://kcachegr
 ## Overview
 
 ```bash
-./docs/ # Development flow docs
+./documents/ # Development flow docs
 
 ./src/
      /lib-* # Library source code
      /bin-* # Executable source code
      /wrap-* # Vendor library compilation scripts
 
-./tub # Build flow scripts
+./bdd/ # behaviour driven tests
+./tub/ # Build flow scripts
 ./Makefile # Pre-build Make file
+./integration # High level integration services
 ```
 
 ## Generating Docs
