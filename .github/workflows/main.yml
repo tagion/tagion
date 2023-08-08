@@ -41,8 +41,6 @@ jobs:
         run: |
           git branch
           id
-          pwd
-          echo $SHELL
           echo "change to bash"
           source ~/.bashrc
           echo $SHELL
@@ -50,8 +48,8 @@ jobs:
           export COMMIT=$(make help |tail -n 2 |head -n 1)
           echo $BRANCH 
           echo $COMMIT
-          echo $BRANCH >> $GITHUB_ENV
-          echo $COMMIT >> $GITHUB_ENV
+          echo "BRANCH=$(make help |tail -n 3 |head -n 1)" >> "$GITHUB_ENV"
+          echo "COMMIT=$(make help |tail -n 2 |head -n 1)" >> "$GITHUB_ENV"
          
       - name: Run tests
         run: |
