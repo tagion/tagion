@@ -46,10 +46,10 @@ jobs:
           echo "change to bash"
           source ~/.bashrc
           echo $SHELL
-          export BRANCH $(git rev-parse --abbrev-ref HEAD) 
-          export COMMIT $(git rev-parse --short HEAD)
+          export BRANCH=$(git rev-parse --abbrev-ref HEAD) 
+          export COMMIT=$(git rev-parse --short HEAD)
           echo $BRANCH 
-          #echo $COMMIT
+          echo $COMMIT
           #echo $BRANCH >> $GITHUB_ENV
           #echo $COMMIT >> $GITHUB_ENV
          
