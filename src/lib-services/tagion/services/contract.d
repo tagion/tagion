@@ -34,7 +34,6 @@ enum ContractMethods {
 
 /// used internally in combination with `send_rejected_contracts` optios for testing & tracing that contracts are correctly rejected
 enum RejectReason {
-    exception, // There was an internal exception in the contract task
     notAHiRPC, // The Document received was not a vald HiRPC
     invalidMethod, // The method was not one of the accepted methods
     notSigned, // The rpc was not signed when it should have been
@@ -44,12 +43,10 @@ enum RejectReason {
  * ContractService actor
  * Examples: [tagion.testbench.services.contract]
  * Receives: (inputDoc, Document)
- * Sends: (inputHiRPC, HiRPC.Sender) to receiver_task, where Document is a correctly formatted HiRPC
+ * Sends: (inputHiRPC, HiRPC.Receiver) to receiver_task, where Document is a correctly formatted HiRPC
 **/
 struct ContractService {
-    string receiver_task;
     void task(immutable(ContractOptions) opts, string receiver_task, immutable(SecureNet) net) {
-        receiver_task = receiver_task;
         const hirpc = HiRPC(net);
 
         void reject(RejectReason reason, lazy Document doc) {
@@ -60,9 +57,6 @@ struct ContractService {
 
         void contract(inputDoc, Document doc) {
             debug log("Received document \n%s", doc.toPretty);
-            scope (failure) {
-                reject(RejectReason.exception, doc);
-            }
 
             if (!doc.isRecord!(HiRPC.Sender)) {
                 reject(RejectReason.notAHiRPC, doc);
@@ -72,9 +66,11 @@ struct ContractService {
             const receiver = hirpc.receive(doc);
             with (ContractMethods) switch (receiver.method.name) {
             case transaction:
-                HiRPC.Sender sender = hirpc.contract(doc);
-                if (sender.isSigned) {
-                    locate(receiver_task).send(inputHiRPC(), sender);
+                if (receiver.signed is HiRPC.SignedState.VALID) {
+                    locate(receiver_task).send(inputHiRPC(), receiver);
+                }
+                else {
+                    reject(RejectReason.notSigned, doc);
                 }
                 break;
             default:
