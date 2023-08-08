@@ -12,6 +12,7 @@ import tagion.communication.HiRPC;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.crypto.SecureNet;
 import tagion.actor;
+import tagion.testbench.services.actor_util;
 import tagion.actor.exceptions;
 import tagion.services.contract;
 
@@ -49,6 +50,7 @@ class TheDocumentIsNotAHiRPC {
     Document format() {
         writeln(thisTid);
         check(waitforChildren(Ctrl.ALIVE), "ContractService never alived");
+        check(contract_handle.tid !is Tid.init, "Contract thread is not running");
 
         auto hibon = new HiBON();
         hibon["$test"] = 5;
@@ -65,14 +67,9 @@ class TheDocumentIsNotAHiRPC {
 
     @Then("the doc should be checked that it is a correct HiRPC and if it is not it should be rejected.")
     Document rejected() {
-        bool received = receiveTimeout(
-                1.seconds,
-                (RejectReason r, Document d) {
-            check(r is RejectReason.notAHiRPC, "Did not reject for the correct reason");
-            check(doc == d, "The rejected doc was not the same as was sent");
-        }
-        );
-        check(received, "Never received invalid contract");
+        const receiveTuple = receiveOnlyTimeout!(RejectReason, Document);
+        check(receiveTuple[0] == RejectReason.notAHiRPC,  "Did not reject for the correct reason");
+        check(receiveTuple[1] == doc, "The rejected doc was not the same as was sent");
         return result_ok;
     }
 
@@ -112,11 +109,12 @@ class CorrectHiRPCFormatAndPermission {
     Document transaction() {
         writeln(thisTid);
         check(waitforChildren(Ctrl.ALIVE), "ContractService never alived");
+        check(contract_handle.tid !is Tid.init, "Contract thread is not running");
         auto params = new HiBON;
         params["test"] = 42;
         const sender = hirpc.action(ContractMethods.transaction, params);
         doc = sender.toDoc;
-        contract_handle.send(sender);
+        contract_handle.send(inputDoc(), doc);
 
         return result_ok;
     }
@@ -145,14 +143,10 @@ class CorrectHiRPCFormatAndPermission {
 
     @Then("if check that the Collector services received the contract.")
     Document contract() {
-        receiveTimeout(
-                1.seconds,
-                (inputHiRPC _, HiRPC.Sender s) {
-            const receiver = hirpc.receive(s.toDoc);
-            check(receiver.method.name == ContractMethods.transaction, "Incorrect method name");
-            check(s.toDoc == doc, "The received sender was not the same as was sent");
-        }
-        );
+        const receiver = receiveOnlyTimeout!(inputHiRPC, immutable(HiRPC.Receiver))()[1];
+        check(receiver.method.name == ContractMethods.transaction, "The incorrect method name was sent back");
+        check(receiver.toDoc == doc, "The received sender was not the same as was sent");
+
         return result_ok;
     }
 }
@@ -175,23 +169,22 @@ class CorrectHiRPCWithPermissionDenied {
     Document invalid_doc;
     @Given("a HiPRC with incorrect permission")
     Document incorrectPermission() {
+        check(waitforChildren(Ctrl.ALIVE), "ContractService never alived");
+        check(contract_handle.tid !is Tid.init, "Contract thread is not running");
         auto params = new HiBON;
         params["test"] = 42;
         const invalid_sender = bad_hirpc.action(ContractMethods.transaction, params);
         invalid_doc = invalid_sender.toDoc;
-        contract_handle.send(invalid_sender);
+        contract_handle.send(inputDoc(), invalid_doc);
         return result_ok;
     }
 
     @When("do scenario \'#permission\'")
     Document scenarioPermission() {
-        receiveTimeout(
-                1.seconds,
-                (RejectReason r, Document d) {
-            check(d == invalid_doc, "The rejected doc was not the same as was sent");
-            check(r == RejectReason.notSigned, "The docuemnt was not rejected for the correct reason");
-        },
-        );
+        const receiveTuple = receiveOnlyTimeout!(RejectReason, Document);
+        check(receiveTuple[0] == RejectReason.notSigned, "The docuemnt was not rejected for the correct reason");
+        check(receiveTuple[1] == invalid_doc, "The rejected doc was not the same as was sent");
+ 
         return result_ok;
     }
 
@@ -202,7 +195,9 @@ class CorrectHiRPCWithPermissionDenied {
                 (inputHiRPC _, HiRPC.Sender __) { check(false, "Should not have received a doc"); },
         );
 
-        waitforChildren(Ctrl.END);
+        contract_handle.send(Sig.STOP);
+        check(waitforChildren(Ctrl.END), "Contract service Never ended");
+
         return result_ok;
     }
 
