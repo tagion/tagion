@@ -118,6 +118,8 @@ jobs:
           tar -xzf ${{needs.commit_stage.outputs.tarball}}
       - name: check the files
         run: |
+          pwd
+          hostname
           ls
           echo "log dir"
           ls logs
@@ -126,6 +128,7 @@ jobs:
         run: |
           id
           pwd
+          hostname
           source $PWD/build/${{ env.TARGET }}/bin/bddenv.sh
           export DBIN=$PWD/build/${{ env.TARGET }}/bin
           export DLOG=$PWD/logs/${{ env.TARGET }}
