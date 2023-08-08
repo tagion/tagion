@@ -228,7 +228,7 @@ struct nng_cv {};
 
 nng_time nng_clock();
 void nng_msleep(nng_duration);
-int nng_thread_create(nng_thread **, void function(void *), void *);
+int nng_thread_create(nng_thread **, void* function(void *), void *);
 void nng_thread_set_name(nng_thread *, const char *);
 void nng_thread_destroy(nng_thread *);
 int nng_mtx_alloc(nng_mtx **);
@@ -302,7 +302,31 @@ struct nng_optspec {
 int nng_opts_parse(int argc, const char **argv,
     const nng_optspec *opts, int *val, char **optarg, int *optidx);
 
-// ------------------------------------- aio functions TODO:
+// ------------------------------------- aio functions:
+
+int nng_aio_alloc(nng_aio **, void* function(void *), void *);
+void nng_aio_free(nng_aio *);
+void nng_aio_reap(nng_aio *);
+void nng_aio_stop(nng_aio *);
+int nng_aio_result(nng_aio *);
+size_t nng_aio_count(nng_aio *);
+void nng_aio_cancel(nng_aio *);
+void nng_aio_abort(nng_aio *, int);
+void nng_aio_wait(nng_aio *);
+bool nng_aio_busy(nng_aio *);
+void nng_aio_set_msg(nng_aio *, nng_msg *);
+nng_msg *nng_aio_get_msg(nng_aio *);
+int nng_aio_set_input(nng_aio *, uint, void *);
+void *nng_aio_get_input(nng_aio *, uint);
+int nng_aio_set_output(nng_aio *, uint, void *);
+void *nng_aio_get_output(nng_aio *, uint);
+void nng_aio_set_timeout(nng_aio *, nng_duration);
+int nng_aio_set_iov(nng_aio *, uint, const nng_iov *);
+bool nng_aio_begin(nng_aio *);
+void nng_aio_finish(nng_aio *, int);
+void nng_aio_defer(nng_aio *, void* function(nng_aio *, void *, int), void *);
+void nng_sleep_aio(nng_duration, nng_aio *);
+
 
 // ------------------------------------- context functions
 
@@ -331,10 +355,12 @@ int nng_ctx_set_string(nng_ctx, const char *, const char *);
 int nng_ctx_set_ptr(nng_ctx, const char *, void *);
 int nng_ctx_set_ms(nng_ctx, const char *, nng_duration);
 int nng_ctx_set_addr(nng_ctx, const char *, const nng_sockaddr *);
+void nng_ctx_recv(nng_ctx, nng_aio *);
+void nng_ctx_send(nng_ctx, nng_aio *);
 
-// TODO: TBD: aio
-//void nng_ctx_recv(nng_ctx, nng_aio *);
-//void nng_ctx_send(nng_ctx, nng_aio *);
+// ------------------------------------- device functions 
+int nng_device(nng_socket, nng_socket);
+void nng_device_aio(nng_aio *, nng_socket, nng_socket);
 
 
 // ------------------------------------- statistics functions TODO:
