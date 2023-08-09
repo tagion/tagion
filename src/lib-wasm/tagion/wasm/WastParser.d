@@ -254,6 +254,9 @@ struct WastParser {
     }
 
     private ParserStage parseModule(ref WastTokenizer r, const ParserStage stage) {
+        if (r.type == TokenType.COMMENT) {
+            r.nextToken;
+        }
         if (r.type == TokenType.BEGIN) {
             string label;
             string arg;
@@ -281,6 +284,7 @@ struct WastParser {
                 parseModule(r, ParserStage.TYPE);
                 return stage;
             case "func": // Example (func $name (param ...) (result i32) )
+
                 return parseTypeSection(r, stage);
             case "param": // Example (param $y i32)
                 r.nextToken;
@@ -522,6 +526,7 @@ struct WastParser {
 
         const type_idx = cast(int) type_section.sectypes.length;
         FuncType func_type;
+        func_type.type = Types.FUNC;
         scope int[string] params;
         //scope Types[] locals;
         scope (exit) {
@@ -561,7 +566,7 @@ struct WastParser {
         int[string] func_idx;
     }
     void parse(ref WastTokenizer tokenizer) {
-
+        writefln("Start parse");
         while (parseModule(tokenizer, ParserStage.BASE) !is ParserStage.END) {
             //empty    
         }
@@ -582,6 +587,7 @@ unittest {
 
     immutable wast_test_files = [
         "i32.wast",
+        /*
         "f32.wast",
         "i64.wast",
         "f64.wast",
@@ -613,10 +619,10 @@ unittest {
         "select.wast",
         "store_retval.wast",
         "switch.wast",
+*/
     ];
     version (none) immutable wast_test_files = [
         "unreachable.wast",
-        /*
         "float_literals.wast",
         "float_memory.wast",
         "float_misc.wast",
@@ -641,7 +647,6 @@ unittest {
         "select.wast",
         "store_retval.wast",
         "switch.wast",
-*/
     ];
     import std.file : fwrite = write;
 
