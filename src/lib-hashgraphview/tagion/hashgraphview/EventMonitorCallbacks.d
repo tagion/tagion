@@ -12,8 +12,7 @@ interface EventMonitorCallbacks {
     nothrow {
         void connect(const(Event) e);
         void witness(const(Event) e);
-        void witness_mask(const(Event) e);
-        void round_seen(const(Event) e);
+        // void round_seen(const(Event) e);
         void round(const(Event) e);
         void round_decided(const(Round.Rounder) rounder);
         void round_received(const(Event) e);

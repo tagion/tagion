@@ -354,9 +354,9 @@ class Round {
             else {
                 e._round = new Round(last_round, hashgraph.node_size);
                 last_round = e._round;
-                if (Event.callbacks) {
-                    Event.callbacks.round_seen(e);
-                }
+                // if (Event.callbacks) {
+                //     Event.callbacks.round_seen(e);
+                // }
             }
         }
 
@@ -486,6 +486,9 @@ class Round {
      * Params:
      *   hashgraph = hashgraph which owns the round 
      */
+        void check_decided_round(HashGraph hashgraph) {}
+        
+        version(none)
         void check_decided_round(HashGraph hashgraph) @trusted {
             auto round_to_be_decided = last_decided_round._next;
 
@@ -658,7 +661,6 @@ class Event {
         event_package = epack;
         this.id = hashgraph.next_event_id;
         this.node_id = hashgraph.getNode(channel).node_id;
-        _witness_mask[node_id] = true;
         _count++;
     }
 
@@ -669,7 +671,7 @@ class Event {
     invariant {
         if (!scrapping) {
             if (_mother) {
-                assert(!_witness_mask[].empty);
+                // assert(!_witness_mask[].empty);
                 assert(_mother._daughter is this);
                 assert(
                     event_package.event_body.altitude - _mother
@@ -696,19 +698,14 @@ class Event {
         }
 
         private {
-            immutable(BitMask) _seeing_witness_in_previous_round_mask; /// The mask resulting to this witness
+            // immutable(BitMask) _seeing_witness_in_previous_round_mask; /// The mask resulting to this witness
             BitMask _strong_seeing_mask; /// Nodes which has voted this witness as strogly seen
             BitMask _vote_on_earliest_witnesses;
             BitMask _prev_strongly_seen_witnesses;
             BitMask _prev_seen_witnesses;
-            Fame _famous; /// True if the witness is voted famous
+            // Fame _famous; /// True if the witness is voted famous
         }
 
-        enum Fame {
-            UNDECIDED,
-            INFAMOUS,
-            FAMOUS,
-        }
 
         /**
          * Contsruct a witness of an event
@@ -717,15 +714,13 @@ class Event {
          *   seeing_witness_in_previous_round_mask = The witness seen from this event to the privious witness.
          */
         @trusted
-        this(
-            Event owner_event,
-            ref const(BitMask) seeing_witness_in_previous_round_mask) nothrow
+        this(Event owner_event) nothrow
         in {
             assert(owner_event);
         }
         do {
-            _seeing_witness_in_previous_round_mask = cast(immutable) seeing_witness_in_previous_round_mask
-                .dup;
+            // _seeing_xhwitness_in_previous_round_mask = cast(immutable) seeing_witness_in_previous_round_mask
+            //     .dup;
             _count++;
         }
 
@@ -746,7 +741,7 @@ class Event {
             /**
      * Strongly seen witness from the previous round 
      * Returns: previous stongly seen witness
-     */
+     */     version(none)
             @nogc
             const(BitMask) round_seen_mask() const {
                 return _seeing_witness_in_previous_round_mask;
@@ -755,7 +750,7 @@ class Event {
             /**
      * Checks if the witness is famous
      * Returns: ture if famous
-     */
+     */    version(none)
             bool famous() const @nogc {
                 return _famous == Fame.FAMOUS;
             }
@@ -766,6 +761,7 @@ class Event {
      *   hashgraph = hashgraph owning the event 
      * Returns: true if the witness is famous 
      */
+            version(none)
             private Fame famous(const HashGraph hashgraph) {
                 if (_famous is Fame.UNDECIDED) {
                     _famous = _strong_seeing_mask.isMajority(hashgraph) ? Fame.FAMOUS : Fame.UNDECIDED;
@@ -791,7 +787,6 @@ class Event {
         // The withness mask contains the mask of the nodes
         // Which can be seen by the next rounds witness
         Witness _witness;
-        BitMask _witness_mask;
         BitMask _round_seen_mask;
     }
 
@@ -830,8 +825,7 @@ class Event {
         assert(!_witness);
     }
     do {
-        BitMask round_mask;
-        _witness = new Witness(this, round_mask);
+        _witness = new Witness(this);
     }
 
     immutable size_t node_id; /// Node number of the event
@@ -898,6 +892,7 @@ class Event {
      * Params:
      *   hashgraph = event owner
      */
+    version(none)
     private void strong_seeing(HashGraph hashgraph) pure nothrow {
         uint strong_seeing_interation_count;
         scope (exit) {
@@ -935,6 +930,7 @@ class Event {
      *   hashgraph = 
      * Returns: 
      */
+    version(none)
     private const(BitMask) calc_witness_mask(HashGraph hashgraph) nothrow
     in {
         assert(!_mother._witness_mask[].empty);
@@ -1025,11 +1021,11 @@ class Event {
             _father = hashgraph.register(event_package.event_body.father);
             // attach_round(hashgraph);
             _round = ((father) && (father.round.number >= mother.round.number)) ? _father._round : _mother._round; 
-            _witness_mask = _mother._witness_mask;
+            // _witness_mask = _mother._witness_mask;
             if (_father) {
                 check(!_father._son, ConsensusFailCode.EVENT_FATHER_FORK);
                 _father._son = this;
-                _witness_mask |= _father._witness_mask;
+                // _witness_mask |= _father._witness_mask;
             }
             if (callbacks) {
                 callbacks.round(this);
@@ -1043,14 +1039,14 @@ class Event {
 
             version (NEWWITNESS)
             {
-                auto witness_seen_mask = calc_witness_mask(hashgraph);
+                // auto witness_seen_mask = calc_witness_mask(hashgraph);
 
                 const new_witness = calc_witness_strong_seen_masks(hashgraph);
                 if (new_witness) {
                     hashgraph._rounds.next_round(this);
                 }
                 if (round.number > mother.round.number) {
-                    _witness = new Witness(this, witness_seen_mask);
+                    _witness = new Witness(this);
                     
                     if (new_witness) {
 
@@ -1091,14 +1087,15 @@ class Event {
                         mixin Log!(strong_seeing_statistic);
                     }
                     // hashgraph._rounds.check_decided_round(hashgraph);
-                    _witness_mask.clear;
-                    _witness_mask[node_id] = true;
+                    // _witness_mask.clear;
+                    // _witness_mask[node_id] = true;
                     if (callbacks) {
                         callbacks.witness(this);
                     }
                     foreach(i; 0 .. hashgraph.node_size) {
                         calc_vote(hashgraph, i);
                     }
+                    // hashgraph._rounds.check_decided_round(hashgraph);
                 }
             }
             else {
@@ -1312,6 +1309,7 @@ class Event {
         * The witness seen from this event 
         * Returns: witness mask
         */
+    version(none)
         const(BitMask) witness_mask() {
             return _witness_mask;
         }
@@ -1329,9 +1327,9 @@ class Event {
         bool isWitness() {
             return _witness !is null;
         }
-
+        
         bool isFamous() {
-            return isWitness && _witness.famous;
+            return isWitness && round.famous_mask[node_id];
         }
         /**
          * Get the altitude of the event

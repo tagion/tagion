@@ -17,9 +17,8 @@ struct EventView {
     @label("$rec") int round_received;
     @label("$w", true) @(filter.Initialized) bool witness;
     @label("$famous", true) @(filter.Initialized) bool famous;
-    @label("witness") uint[] witness_mask;
     @label("$strong") uint[] strongly_seeing_mask;
-    @label("$seen") uint[] round_seen_mask;
+    // @label("$seen") uint[] round_seen_mask;
     @label("$received") uint[] round_received_mask;
     @label("$error", true) bool error;
     bool father_less;
@@ -45,12 +44,11 @@ struct EventView {
                 altitude=event.altitude;
                 order=event.received_order;
                 witness=event.witness !is null;
-                event.witness_mask[].each!((n) => witness_mask~=cast(uint)(n));
                 round=(event.hasRound)?event.round.number:event.round.number.min;
                 father_less=event.isFatherLess;
                 if (witness) {
                     event.witness.strong_seeing_mask[].each!((n) => strongly_seeing_mask~=cast(uint)(n));
-                    event.witness.round_seen_mask[].each!((n) => round_seen_mask~=cast(uint)(n));
+                    // event.witness.round_seen_mask[].each!((n) => round_seen_mask~=cast(uint)(n));
                     // famous = event.witness.famous;
                     famous = event.round.famous_mask[event.node_id];
                 }

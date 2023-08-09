@@ -121,14 +121,14 @@ struct Dot {
         if (father_flag && e.father !is e.father.init && e.father in events) {
             const father_event = events[e.father];
             string[] texts;
-            texts ~= mask2text(father_event.witness_mask);
+            // texts ~= mask2text(father_event.witness_mask);
             local_edge(texts, e.father);
         }
         else if (e.mother !is e.mother.init && e.mother in events) {
             const mother_event = events[e.mother];
             string[] texts;
             string[] options;
-            const witness_mask_text=mask2text(mother_event.witness_mask);
+            // const witness_mask_text=mask2text(mother_event.witness_mask);
             //texts~=mask2text(mother_event.witness_mask);
             const round_received_mask = mask2text(mother_event.round_received_mask);
             if (round_received_mask) {
@@ -144,12 +144,12 @@ struct Dot {
                 if (strongly_seening_mask) {
                     texts ~= format("%s:s", strongly_seening_mask);
                 }
-                const round_seen_mask = mask2text(mother_event.round_seen_mask);
-                if (round_seen_mask) {
-                    texts ~= format("%s:r", round_seen_mask); //mask2text(mother_event.round_seen_mask));
-                }
+                // const round_seen_mask = mask2text(mother_event.round_seen_mask);
+                // if (round_seen_mask) {
+                    // texts ~= format("%s:r", round_seen_mask); //mask2text(mother_event.round_seen_mask));
+                // }
             }
-            texts ~= format("%s:w", witness_mask_text);
+            // texts ~= format("%s:w", witness_mask_text);
 
             //     //       texts~=mask2text(mother_event.strongly_seeing_mask);
             // }
