@@ -41,6 +41,13 @@ enum TokenType {
             return (ch <= SPACE) || (ch == DEL);
         }
     }
+
+    string stripQuotes(string text) {
+        if (text.length > 2) {
+            return text[text[0] == '"' .. $ - (text[$ - 1] == '"')];
+        }
+        return text;
+    }
 }
 
 @safe

@@ -79,8 +79,8 @@ struct WastParser {
             return result;
         }
 
+        writefln("%s %s", __FUNCTION__, params.dup);
         ParserStage innerInstr(ref WastTokenizer r, const ParserStage) {
-            writefln("%s %s", __FUNCTION__, params.dup);
             r.check(r.type == TokenType.BEGIN);
             scope (exit) {
                 r.check(r.type == TokenType.END);
@@ -155,14 +155,11 @@ struct WastParser {
                         //string arg;
                         r.nextToken;
                         label = r.token;
-                        writefln("params=%s", params.dup);
-                        writefln("%s %s", instr.name, label);
                         r.check(r.type == TokenType.WORD);
                         //r.nextToken;
                         //r.check(r.type != TokenType.WORD);
                         //if (r.type == TokenType.WORD) {
                         const local_idx = getLocal(r.token);
-                        writefln("%s local_idx=%d", instr.name, local_idx);
                         wasmexpr(irLookupTable[instr.name], local_idx);
                         //.ifThrown!RangeError(-1);
 
@@ -173,7 +170,6 @@ struct WastParser {
                 }
                         else {
 */
-                        writefln("instr.pops=%s", instr.pops);
                         foreach (i; 0 .. instr.pops) {
                             innerInstr(r, ParserStage.CODE);
                         }
@@ -226,13 +222,10 @@ struct WastParser {
                         }
                         switch (instr.wast) {
                         case PseudoWastInstr.local:
-                            writefln("labels=%s %s", labels, labels[1].getType);
                             r.check(labels.length >= 1);
                             if ((labels.length == 2) && (labels[1].getType !is Types.EMPTY)) {
-                                writefln("Local SET!!!");
                                 params[labels[0]] = cast(int) locals.length;
                                 locals ~= labels[1].getType;
-                                writefln("%s params=%s", instr.name, params.dup);
                                 break;
                             }
                             locals ~= labels.map!(l => l.getType).array;
@@ -252,7 +245,9 @@ struct WastParser {
 
         scope (exit) {
             writefln("%(%02X %)", wasmexpr.serialize);
-            writefln("params=%s", params.dup);
+            if (locals.length > number_of_func_arguments) {
+                writefln("locals=%s", params.dup);
+            }
             code_type = CodeType(locals[number_of_func_arguments .. $], wasmexpr.serialize);
         }
         return innerInstr(r, stage);
@@ -286,11 +281,7 @@ struct WastParser {
                 parseModule(r, ParserStage.TYPE);
                 return stage;
             case "func": // Example (func $name (param ...) (result i32) )
-                CodeType code_type;
-                scope (exit) {
-                    writer.section!(Section.CODE).sectypes ~= code_type;
-                }
-                return parseTypeSection(r, code_type, stage);
+                return parseTypeSection(r, stage);
             case "param": // Example (param $y i32)
                 r.nextToken;
                 if (stage == ParserStage.IMPORT) {
@@ -347,14 +338,23 @@ struct WastParser {
                 r.nextToken;
                 break;
             case "export":
+                ExportType export_type;
+                scope (exit) {
+                    writer.section!(Section.EXPORT).sectypes ~= export_type;
+                }
                 r.check(stage == ParserStage.MODULE);
 
                 r.nextToken;
                 r.check(r.type == TokenType.STRING);
-                label = r.token;
+                export_type.name = r.token.stripQuotes;
                 r.nextToken;
-                arg = r.token;
+                //arg = r.token;
                 r.check(r.type == TokenType.WORD);
+                export_type.desc = IndexType.FUNC;
+                writefln("r.token=%s %s", r.token, func_idx);
+                export_type.idx = func_idx.get(r.token, -1);
+                r.check(export_type.idx >= 0);
+
                 r.nextToken;
                 return ParserStage.EXPORT;
             case "import":
@@ -508,13 +508,19 @@ struct WastParser {
         return ParserStage.UNDEFINED;
     }
 
-    private ParserStage parseTypeSection(ref WastTokenizer r, ref CodeType code_type, const ParserStage stage) {
+    private ParserStage parseTypeSection(ref WastTokenizer r, const ParserStage stage) {
         //string label;
+        CodeType code_type;
+        writeln("Function code");
+        scope (exit) {
+            writer.section!(Section.CODE).sectypes ~= code_type;
+            writefln("%s %s", Section.CODE, writer.section!(Section.CODE).sectypes.length);
+        }
 
         r.check(stage < ParserStage.FUNC);
         auto type_section = writer.section!(Section.TYPE);
 
-        const type_idx = type_section.sectypes.length;
+        const type_idx = cast(int) type_section.sectypes.length;
         FuncType func_type;
         scope int[string] params;
         //scope Types[] locals;
@@ -522,7 +528,6 @@ struct WastParser {
             type_section.sectypes ~= func_type;
         }
 
-        //        writefln("%s", type_section.sectypes.length);
         r.nextToken;
         if (r.type == TokenType.WORD) {
             // Function with label
@@ -553,14 +558,18 @@ struct WastParser {
     }
 
     private {
-        size_t[string] func_idx;
+        int[string] func_idx;
     }
     void parse(ref WastTokenizer tokenizer) {
 
         while (parseModule(tokenizer, ParserStage.BASE) !is ParserStage.END) {
             //empty    
         }
-        writefln("func_idx=%s", func_idx);
+        static foreach (Sec; EnumMembers!Section) {
+            static if (Sec !is Section.CUSTOM && Sec !is Section.START) {
+                writefln("%s sectypes.length=%d", Sec, writer.section!Sec.sectypes.length);
+            }
+        }
     }
 
 }
@@ -634,6 +643,8 @@ unittest {
         "switch.wast",
 */
     ];
+    import std.file : fwrite = write;
+
     foreach (wast_file; wast_test_files) {
         immutable wast_text = wast_file.unitfile.readText;
         writefln("wast_file %s", wast_file);
@@ -641,5 +652,14 @@ unittest {
         auto writer = new WasmWriter;
         auto wast_parser = WastParser(writer);
         wast_parser.parse(tokenizer);
+        if (wast_file == "i32.wast") {
+            static foreach (Sec; EnumMembers!Section) {
+                static if (Sec !is Section.CUSTOM && Sec !is Section.START) {
+                    writefln("After parser %s sectypes.length=%d", Sec, writer.section!Sec.sectypes.length);
+                }
+            }
+            "/tmp/i32.wasm".fwrite(writer.serialize);
+        }
     }
+
 }

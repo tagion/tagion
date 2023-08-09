@@ -4,7 +4,7 @@ import std.getopt;
 import std.stdio;
 import std.file : fread = read, fwrite = write, exists, readText;
 import std.format;
-import std.path : extension;
+import std.path : extension, setExtension;
 import std.traits : EnumMembers;
 import std.exception : assumeUnique;
 import std.json;
@@ -138,6 +138,7 @@ int _main(string[] args) {
             return 0;
         }
 
+        writefln("args=%s", args);
         foreach (file; args[1 .. $]) {
             with (FileExtension) {
                 switch (file.extension) {
@@ -158,32 +159,21 @@ int _main(string[] args) {
                             inputfilename, file));
                     outputfilename = file;
                     break;
+                case wast:
+
+                    if (inputfilename.empty) {
+                        inputfilename = file;
+                        writefln("WAST %s", inputfilename);
+                        type = OutputType.wasm;
+
+                    }
+
+                    break;
                 default:
                     check(0, format("File %s is not supported", file));
                 }
             }
         }
-        //    writefln("args=%s", args);
-        version (none) {
-            if (args.length > 3) {
-                stderr.writefln("Only one output file name allowed (given %s)", args[1 .. $]);
-                help;
-                return 3;
-            }
-            if (args.length > 2) {
-                outputfilename = args[2];
-                //        writefln("outputfilename%s", outputfilename);
-            }
-            if (args.length > 1) {
-                inputfilename = args[1];
-            }
-            else {
-                stderr.writefln("Input file missing");
-                help;
-                return 1;
-            }
-        }
-
         if (modify_from.length !is modify_to.length) {
             stderr.writefln("Modify set must be set in pair");
             stderr.writefln("mod=%s", modify_from);
@@ -213,6 +203,8 @@ int _main(string[] args) {
                 wasm_writer = new WasmWriter;
                 auto wast_parser = WastParser(wasm_writer);
                 wast_parser.parse(tokenizer);
+                writefln("Before wasmwrite");
+                writefln("wasm_writer=%(%02X %)", wasm_writer.serialize);
                 break;
             default:
                 check(0, format("File extensions %s not valid for input file (only %-(%s, %))",
@@ -227,7 +219,7 @@ int _main(string[] args) {
             wasmgas.modify;
         }
         immutable data_out = wasm_writer.serialize;
-
+        writefln("after data_out");
         if (verbose_switch) {
             verbose.mode = VerboseMode.STANDARD;
         }
@@ -255,6 +247,10 @@ int _main(string[] args) {
                     break WasmOutCase;
                 }
             case wasm:
+                if (outputfilename.empty) {
+                    outputfilename = inputfilename.setExtension(FileExtension.wasm);
+                }
+                writefln("Write wasm %s", outputfilename);
                 outputfilename.fwrite(data_out);
                 break;
             default:

@@ -141,7 +141,7 @@ import std.format;
             this.data = data;
             magic = cast(string)(data[0 .. uint.sizeof]);
             _index = uint.sizeof;
-            vernum = data[_index .. $].peek!uint(Endian.littleEndian);
+            vernum = data[_index .. $].peek!(uint, Endian.littleEndian);
             _index += uint.sizeof;
             _index = 2 * uint.sizeof;
         }
