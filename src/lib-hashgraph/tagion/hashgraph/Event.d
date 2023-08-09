@@ -47,7 +47,7 @@ class Round {
     enum uint total_limit = 3;
     enum int coin_round_limit = 10;
     pragma(msg, "fixme(bbh) should be protected");
-    public {
+    protected {
         Round _previous;
         Round _next;
         bool _decided;
@@ -722,6 +722,8 @@ class Event {
             BitMask _vote_on_earliest_witnesses;
             BitMask _prev_strongly_seen_witnesses;
             BitMask _prev_seen_witnesses;
+            Event[] _ancestors_tide;
+            Event[] _descendants_tide;
             // Fame _famous; /// True if the witness is voted famous
         }
 
@@ -733,9 +735,11 @@ class Event {
          *   seeing_witness_in_previous_round_mask = The witness seen from this event to the privious witness.
          */
         @trusted
-        this(Event owner_event) nothrow
+        this(Event owner_event, ulong node_size) nothrow
         in {
             assert(owner_event);
+            // this._ancestors_tide = new Event[node_size];
+            // this._descendants_tide = new Event[node_size];
         }
         do {
             // _seeing_xhwitness_in_previous_round_mask = cast(immutable) seeing_witness_in_previous_round_mask
@@ -808,12 +812,12 @@ class Event {
     /**
     *  Makes the event a witness  
     */
-    package void witness_event() nothrow
+    package void witness_event(ulong node_size) nothrow
     in {
         assert(!_witness);
     }
     do {
-        _witness = new Witness(this);
+        _witness = new Witness(this, node_size);
     }
 
     immutable size_t node_id; /// Node number of the event
@@ -943,7 +947,7 @@ class Event {
                     hashgraph._rounds.next_round(this);
                 }
                 if (round.number > mother.round.number) {
-                    _witness = new Witness(this);
+                    _witness = new Witness(this, hashgraph.node_size);
                     
                     if (new_witness) {
 
