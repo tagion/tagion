@@ -488,63 +488,6 @@ class Round {
      */
         void check_decided_round(HashGraph hashgraph) {}
         
-        version(none)
-        void check_decided_round(HashGraph hashgraph) @trusted {
-            auto round_to_be_decided = last_decided_round._next;
-
-            void decide_round() {
-                collect_received_round(round_to_be_decided, hashgraph);
-                round_to_be_decided._decided = true;
-                last_decided_round = round_to_be_decided;
-                check_decided_round(hashgraph);
-                return;
-            }
-
-            if (hashgraph.possible_round_decided(round_to_be_decided)) {
-                // writefln("possible_round_decided");
-                const votes_mask = BitMask(round_to_be_decided.events
-                        .filter!((e) => (e) && !hashgraph.excluded_nodes_mask[e.node_id])
-                    .map!((e) => e.node_id));
-                if (votes_mask.isMajority(hashgraph)) {
-
-                    if (Event.callbacks) {
-                        votes_mask[].filter!(
-                            (vote_node_id) => round_to_be_decided._events[vote_node_id].isFamous)
-                            .each!((vote_node_id) => Event.callbacks.famous(
-                                    round_to_be_decided._events[vote_node_id]));
-                    }
-
-                    votes_mask[]
-                        .each!((vote_node_id) => round_to_be_decided._events[vote_node_id]
-                        ._witness.famous(hashgraph));
-
-                    const famous_round = votes_mask[]
-                        .all!((vote_node_id) => round_to_be_decided._events[vote_node_id]
-                        .isFamous);
-
-                    if (famous_round && votes_mask.count == hashgraph.node_size - hashgraph
-                        .excluded_nodes_mask.count) {
-                        decide_round();
-                        return;
-                    }
-
-                    uint count_rounds;
-                    foreach (r; round_to_be_decided[].retro) {
-                        const round_contains_witness = votes_mask[]
-                            .all!(vote_node_id => r.events[vote_node_id]!is null);
-
-                        if (!round_contains_witness) {
-                            break;
-                        }
-                        count_rounds++;
-                        if (count_rounds > 6) {
-                            decide_round();
-                            return;
-                        }
-                    }
-                }
-            }
-        }
 
         void vote(ulong vote_node_id, ulong caller_id) {
             voting_round_per_node[vote_node_id] = voting_round_per_node[vote_node_id]._next;
@@ -737,37 +680,6 @@ class Event {
             const(BitMask) strong_seeing_mask() const {
                 return _strong_seeing_mask;
             }
-
-            /**
-     * Strongly seen witness from the previous round 
-     * Returns: previous stongly seen witness
-     */     version(none)
-            @nogc
-            const(BitMask) round_seen_mask() const {
-                return _seeing_witness_in_previous_round_mask;
-            }
-
-            /**
-     * Checks if the witness is famous
-     * Returns: ture if famous
-     */    version(none)
-            bool famous() const @nogc {
-                return _famous == Fame.FAMOUS;
-            }
-
-            /**
-     *  Checks and set if the event has been voted famous
-     * Params:
-     *   hashgraph = hashgraph owning the event 
-     * Returns: true if the witness is famous 
-     */
-            version(none)
-            private Fame famous(const HashGraph hashgraph) {
-                if (_famous is Fame.UNDECIDED) {
-                    _famous = _strong_seeing_mask.isMajority(hashgraph) ? Fame.FAMOUS : Fame.UNDECIDED;
-                }
-                return _famous;
-            }
         }
     }
 
@@ -887,97 +799,6 @@ class Event {
         }
     }
 
-    /**
-     * Decides if the event is strogly seen 
-     * Params:
-     *   hashgraph = event owner
-     */
-    version(none)
-    private void strong_seeing(HashGraph hashgraph) pure nothrow {
-        uint strong_seeing_interation_count;
-        scope (exit) {
-            hashgraph.strong_seeing_statistic(strong_seeing_interation_count);
-        }
-        void local_strong_seeing(Round r, const BitMask seeing_mask) pure nothrow @trusted {
-            strong_seeing_interation_count++;
-            if (r && r._previous && !r._previous.decided) {
-                BitMask next_seeing_mask;
-                foreach (e; r._events) {
-                    if (e && seeing_mask[e.node_id]) {
-                        next_seeing_mask |= e._witness.round_seen_mask;
-                        if (next_seeing_mask.isAllVotes(hashgraph)) {
-                            break;
-                        }
-                    }
-                }
-                local_strong_seeing(r._previous, next_seeing_mask);
-                if (next_seeing_mask.isMajority(hashgraph)) {
-                    r._previous
-                        ._events
-                        .filter!((e) => (e) && next_seeing_mask[e.node_id])
-                        .each!((e) => e._witness._strong_seeing_mask[node_id] = true);
-                }
-            }
-        }
-
-        local_strong_seeing(_round._previous, _witness.round_seen_mask);
-    }
-
-    /**
-     * Calculated the witness mask for the event
-     * which marks the witness see from this event
-     * Params:
-     *   hashgraph = 
-     * Returns: 
-     */
-    version(none)
-    private const(BitMask) calc_witness_mask(HashGraph hashgraph) nothrow
-    in {
-        assert(!_mother._witness_mask[].empty);
-    }
-    do {
-        uint iterative_witness_search_count;
-        scope (exit) {
-            with (hashgraph) {
-                witness_search_statistic(iterative_witness_search_count);
-                mixin Log!(witness_search_statistic);
-            }
-            if (callbacks) {
-                callbacks.witness_mask(this);
-            }
-        }
-        const(BitMask) local_calc_witness_mask(const Event e, const BitMask voting_mask, const BitMask marker_mask) nothrow @safe {
-            iterative_witness_search_count++;
-            if (e && e._round && !marker_mask[e.node_id]) {
-                BitMask result = voting_mask.dup;
-                if (e._round.number == _round.number) {
-                    result[e.node_id] = true;
-                    const collecting_voting_mask = e._witness_mask & ~result;
-                    if (!collecting_voting_mask[].empty) {
-                        result |= local_calc_witness_mask(e._father, result, marker_mask + e
-                                .node_id);
-                        result |= local_calc_witness_mask(e._mother, result, marker_mask);
-                    }
-                }
-                else if (e._round.number > _round.number) {
-                    const event_round = e._round.events[e.node_id];
-                    if (event_round) {
-                        result |= event_round._witness.round_seen_mask;
-                        const collecting_voting_mask = e._witness_mask & ~result;
-                        if (!collecting_voting_mask[].empty) {
-                            result |= local_calc_witness_mask(event_round, result, marker_mask);
-                            result |= local_calc_witness_mask(e._father, result, marker_mask + e
-                                    .node_id);
-                        }
-                    }
-                }
-                return result;
-            }
-            return voting_mask;
-        }
-
-        return local_calc_witness_mask(this, BitMask(), BitMask());
-    }
 
     /**
       * Connect the event to the hashgraph
@@ -1304,17 +1125,7 @@ class Event {
         do {
             return _round;
         }
-
-        /**
-        * The witness seen from this event 
-        * Returns: witness mask
-        */
-    version(none)
-        const(BitMask) witness_mask() {
-            return _witness_mask;
-        }
-
-        /**
+    /**
      * Gets the witness infomatioin of the event
      * Returns: 
      * if this event is a witness the witness is returned

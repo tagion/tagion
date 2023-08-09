@@ -185,34 +185,6 @@ class MonitorCallBacks : EventMonitorCallbacks {
             }
             socket_send(hibon);
         }
-        version(none)
-        void witness_mask(const(Event) e) {
-
-            auto hibon = createHiBON(e);
-            try {
-                const string mask = getBitMaskString(e.witness_mask, e.round.node_size);
-                hibon[Params.witness_mask] = mask;
-            }
-            catch (Exception excp) {
-                //empty
-            }
-
-            socket_send(hibon);
-        }
-        version(none)
-        void round_seen(const(Event) e) @trusted {
-            // check if working
-
-            auto hibon = createHiBON(e);
-            try {
-                hibon[Keywords.round_seen] = getBitMaskString(e.round_seen_mask, e.round.node_size);
-            }
-            catch (Exception excp) {
-                // empty
-            }
-            socket_send(hibon);
-        }
-
         void round_received(const(Event) e) {
             auto hibon = createHiBON(e);
             try {
