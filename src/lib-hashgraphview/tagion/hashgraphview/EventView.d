@@ -51,7 +51,8 @@ struct EventView {
                 if (witness) {
                     event.witness.strong_seeing_mask[].each!((n) => strongly_seeing_mask~=cast(uint)(n));
                     event.witness.round_seen_mask[].each!((n) => round_seen_mask~=cast(uint)(n));
-                    famous = event.witness.famous;
+                    // famous = event.witness.famous;
+                    famous = event.round.famous_mask[event.node_id];
                 }
                 if (!event.round_received_mask[].empty) {
                     event.round_received_mask[].each!((n) => round_received_mask~=cast(uint)(n));
