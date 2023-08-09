@@ -6,7 +6,7 @@ import std.traits : isIntegral, isFloatingPoint, EnumMembers, hasMember, Unqual,
     TemplateArgsOf, PointerTarget, getUDAs, isPointer, ConstOf, ForeachType, FieldNameTuple;
 import std.typecons : Tuple;
 import std.format;
-import std.algorithm.iteration : each, map, sum, fold, filter;
+import std.algorithm;
 import std.range.primitives : isInputRange;
 
 import std.meta : staticMap, Replace;
@@ -610,8 +610,27 @@ import tagion.wasm.WasmException;
                 mixin Serialize;
             }
 
+            static Local[] toLocals(scope const(Types[]) types) pure nothrow {
+                Local[] result;
+                void compact(const(Types[]) _types) {
+                    if (_types.length) {
+                        const count = cast(uint) _types.count(_types[0]);
+                        result ~= Local(count, _types[0]);
+                        compact(_types[count .. $]);
+                    }
+                }
+
+                return result;
+
+            }
+
             this(Local[] locals, immutable(ubyte[]) expr) {
                 this.locals = locals;
+                this.expr = expr;
+            }
+
+            this(scope const(Types[]) types, immutable(ubyte[]) expr) {
+                this.locals = toLocals(types);
                 this.expr = expr;
             }
 

@@ -59,14 +59,13 @@ struct WastParser {
     private ParserStage parseInstr(ref WastTokenizer r,
             const ParserStage stage,
             ref CodeType code_type,
-            ref const(FuncType) func_type,//scope immutable(Types)[] locals,
+            ref const(FuncType) func_type, //scope immutable(Types)[] locals,
             ref scope int[string] params) {
         import tagion.wasm.WasmExpr;
         import std.outbuffer;
 
-        pragma(msg, "PARAMS ", typeof(func_type.params));
+        immutable number_of_func_arguments = func_type.params.length;
         scope immutable(Types)[] locals = func_type.params;
-        pragma(msg, "LOCALS ", typeof(locals));
         auto bout = new OutBuffer;
         auto wasmexpr = WasmExpr(bout);
         int getLocal(string text) @trusted {
@@ -254,6 +253,7 @@ struct WastParser {
         scope (exit) {
             writefln("%(%02X %)", wasmexpr.serialize);
             writefln("params=%s", params.dup);
+            code_type = CodeType(locals[number_of_func_arguments .. $], wasmexpr.serialize);
         }
         return innerInstr(r, stage);
     }
@@ -287,6 +287,9 @@ struct WastParser {
                 return stage;
             case "func": // Example (func $name (param ...) (result i32) )
                 CodeType code_type;
+                scope (exit) {
+                    writer.section!(Section.CODE).sectypes ~= code_type;
+                }
                 return parseTypeSection(r, code_type, stage);
             case "param": // Example (param $y i32)
                 r.nextToken;
@@ -440,9 +443,8 @@ struct WastParser {
     private ParserStage parseFuncArgs(
             ref WastTokenizer r,
             const ParserStage stage,
-            ref FuncType func_type,//ref immutable(Types) wasm_types,
+            ref FuncType func_type,
             ref scope int[string] params) {
-        //   immutable(Types)[] wasm_types;
         if (r.type == TokenType.BEGIN) {
             //string label;
             string arg;
@@ -461,9 +463,6 @@ struct WastParser {
                 return ParserStage.TYPE;
             case "param": // Example (param $y i32)
                 r.nextToken;
-                // scope (exit) {
-                //     func_type.params = wasm_types;
-                // }
                 if (stage == ParserStage.IMPORT) {
                     while (r.token.getType !is Types.EMPTY) {
                         func_type.params ~= r.token.getType;
