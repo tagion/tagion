@@ -247,12 +247,15 @@ class Round {
         Round last_round;
         Round last_decided_round;
         HashGraph hashgraph;
+        Round[] voting_round_per_node;
+
         @disable this();
 
         this(HashGraph hashgraph) pure nothrow {
             this.hashgraph = hashgraph;
             last_round = new Round(null, hashgraph.node_size);
-            //            last_decided_round._decided=true;
+
+            voting_round_per_node = last_round.repeat(hashgraph.node_size).array;
         }
 
         package void erase() {
@@ -271,6 +274,10 @@ class Round {
             last_decided_round = null;
             local_erase(last_round);
         }
+
+        // package void set_lowest_undecided_witness(Event event) {
+        //     voting_events[event.node_id] = &event;
+        // }
 
         /**
      * Cleans up old round and events if they are no-longer needed
@@ -531,6 +538,37 @@ class Round {
                             return;
                         }
                     }
+                }
+            }
+        }
+
+        void vote(ulong vote_node_id, ulong caller_id) {
+            if (hashgraph.__debug_print) {
+                __write("OVER IN VOTE");
+            }
+            // voting_events.[vote_node_id] = &voting_events[vote_node_id]._round._next._events[vote_node_id];
+            voting_round_per_node[vote_node_id] = voting_round_per_node[vote_node_id]._next;
+            if (hashgraph.__debug_print) {
+                __write("OVER IN VOTEh2 %s", caller_id);
+            }
+            Round current_round = voting_round_per_node[vote_node_id];
+            
+            if (hashgraph.__debug_print) {
+                __write("OVER IN VOTE3, %s", current_round._next.number);
+            }
+            while(current_round._next !is null) {
+                
+
+                if (hashgraph.__debug_print) {
+                    __write("OVER IN VOTE4, %s", current_round._next.number);
+                }
+                current_round = current_round._next;
+                foreach (e; current_round._events) {
+                    if (e is null) { continue; }
+                    if (hashgraph.__debug_print) {
+                        __write("EVENT: %s", e.id);
+                    }
+                    e.calc_vote(hashgraph, vote_node_id);
                 }
             }
         }
@@ -1062,21 +1100,24 @@ class Event {
                             }
                         }
                     }
-                    strong_seeing(hashgraph);
-                    if (callbacks) {
-                        callbacks.strongly_seeing(this);
-                    }
+                    // strong_seeing(hashgraph);
+                    // if (callbacks) {
+                        // callbacks.strongly_seeing(this);
+                    // }
                     with (hashgraph) {
                         mixin Log!(strong_seeing_statistic);
                     }
-                    hashgraph._rounds.check_decided_round(hashgraph);
+                    // hashgraph._rounds.check_decided_round(hashgraph);
                     _witness_mask.clear;
                     _witness_mask[node_id] = true;
                     if (callbacks) {
                         callbacks.witness(this);
                     }
+                    foreach(i; 0 .. hashgraph.node_size) {
+                        calc_vote(hashgraph, i);
+                    }
                     if (hashgraph.__debug_print) {
-                        __write("WITNESS EVENT: %s, prv_mask: %4s", id, _witness._prev_seen_witnesses);
+                        // __write("WITNESS EVENT: %s, prv_mask: %4s", id, _witness._prev_seen_witnesses);
                     }    
                 }
             }
@@ -1112,11 +1153,50 @@ class Event {
         }        
     }
 
-    private void vote(HashGraph hashgraph, int node_id) {
-        int voting_round = round.number;
-        Round 
-        while (round.events == null || round.events
-        return void;
+    void calc_vote(HashGraph hashgraph, ulong vote_node_id) {
+        // if (hashgraph.__debug_print) {
+        //     __write("IN CALC VOTE EVENT: %s, %s", id, hashgraph._rounds.voting_events[vote_node_id]);
+        // }
+        // if (hashgraph._rounds.voting_round_per_node[vote_node_id] is null) {
+        //     _witness._vote_on_earliest_witnesses[vote_node_id] = false;
+        // }
+        if (hashgraph.__debug_print) {
+            __write("IAORTHIO");
+        }
+        Event voting_event = hashgraph._rounds.voting_round_per_node[vote_node_id]._events[vote_node_id];
+        
+        if (hashgraph.__debug_print) {
+            __write("IAORTSNENSTENSTENHIO");
+        }
+        if (voting_event is null) {
+            // voting_event._witness._famous = Witness.Fame.INFAMOUS;
+            return;
+        }
+        
+        if (hashgraph.__debug_print) {
+            __write("IAORTHIO %s", voting_event.id);
+        }
+        if (voting_event.round.number >= round.number) { return; }
+        if (voting_event.round.number + 1 == round.number ) {
+            _witness._vote_on_earliest_witnesses[vote_node_id] = _witness._prev_seen_witnesses[vote_node_id];
+            return;
+        }
+        auto votes = _witness._prev_strongly_seen_witnesses[]
+                        .map!(i => round.previous.events[i]._witness._vote_on_earliest_witnesses[vote_node_id]);
+        const yes_votes = votes.count;
+        const no_votes = votes.walkLength - yes_votes;
+        _witness._vote_on_earliest_witnesses[vote_node_id] = (yes_votes >= no_votes);
+        if (hashgraph.__debug_print) {
+            // __write("HEHEHEHEH: %s", votes);
+            __write("EVENT: %s votes: %s on EVENT: %s with %s vs %s votes", id, (yes_votes >= no_votes), voting_event.id, yes_votes, no_votes);
+        }
+        if (hashgraph.isMajority(yes_votes) || hashgraph.isMajority(no_votes)) {
+            if (hashgraph.__debug_print) {
+                __write("We DECIDED ON A VOTE");
+            }
+            voting_event._witness._famous = (yes_votes >= no_votes) ? Witness.Fame.FAMOUS : Witness.Fame.INFAMOUS;
+            hashgraph._rounds.vote(vote_node_id, id);
+        }
     }
 
     private bool calc_witness_strong_seen_masks(HashGraph hashgraph) {
