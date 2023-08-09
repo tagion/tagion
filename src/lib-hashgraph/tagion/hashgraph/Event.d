@@ -544,31 +544,13 @@ class Round {
         }
 
         void vote(ulong vote_node_id, ulong caller_id) {
-            if (hashgraph.__debug_print) {
-                __write("OVER IN VOTE");
-            }
-            // voting_events.[vote_node_id] = &voting_events[vote_node_id]._round._next._events[vote_node_id];
             voting_round_per_node[vote_node_id] = voting_round_per_node[vote_node_id]._next;
-            if (hashgraph.__debug_print) {
-                __write("OVER IN VOTEh2 %s", caller_id);
-            }
             Round current_round = voting_round_per_node[vote_node_id];
             
-            if (hashgraph.__debug_print) {
-                __write("OVER IN VOTE3, %s", current_round._next.number);
-            }
             while(current_round._next !is null) {
-                
-
-                if (hashgraph.__debug_print) {
-                    __write("OVER IN VOTE4, %s", current_round._next.number);
-                }
                 current_round = current_round._next;
                 foreach (e; current_round._events) {
                     if (e is null) { continue; }
-                    if (hashgraph.__debug_print) {
-                        __write("EVENT: %s", e.id);
-                    }
                     e.calc_vote(hashgraph, vote_node_id);
                 }
             }
@@ -1117,9 +1099,6 @@ class Event {
                     foreach(i; 0 .. hashgraph.node_size) {
                         calc_vote(hashgraph, i);
                     }
-                    if (hashgraph.__debug_print) {
-                        // __write("WITNESS EVENT: %s, prv_mask: %4s", id, _witness._prev_seen_witnesses);
-                    }    
                 }
             }
             else {
@@ -1155,38 +1134,15 @@ class Event {
     }
 
     void calc_vote(HashGraph hashgraph, ulong vote_node_id) {
-        // if (hashgraph.__debug_print) {
-        //     __write("IN CALC VOTE EVENT: %s, %s", id, hashgraph._rounds.voting_events[vote_node_id]);
-        // }
-        // if (hashgraph._rounds.voting_round_per_node[vote_node_id] is null) {
-        //     _witness._vote_on_earliest_witnesses[vote_node_id] = false;
-        // }
-        // if (hashgraph.__debug_print) {
-        //     __write("IAORTHIO");
-        // }
         Round voting_round = hashgraph._rounds.voting_round_per_node[vote_node_id];
         Event voting_event = voting_round._events[vote_node_id];
         
-        // if (hashgraph.__debug_print) {
-        //     __write("IAORTSNENSTENSTENHIO");
-        // }
-        
-        // if (hashgraph.__debug_print) {
-        //     __write("IAORTHIO %s", voting_event.id);
-        // }
         if (voting_round.number >= round.number) { return; }
         if (voting_round.number + 1 == round.number ) {
-            if (hashgraph.__debug_print) {
-                __write("EVENT: %s votes: %s on event *round nodeid: %s %s", id, _witness._prev_seen_witnesses[vote_node_id], voting_round.number, vote_node_id);
-            }
             _witness._vote_on_earliest_witnesses[vote_node_id] = _witness._prev_seen_witnesses[vote_node_id];
             return;
         }
         if (voting_event is null) {
-
-            if (hashgraph.__debug_print) {
-                __write("EVENT DECIDED: %s votes: no on eVent: %s %s", id, voting_round.number, vote_node_id);
-            }
             hashgraph._rounds.vote(vote_node_id, id);
             return;
         }
@@ -1195,16 +1151,11 @@ class Event {
         const yes_votes = votes.count;
         const no_votes = votes.walkLength - yes_votes;
         _witness._vote_on_earliest_witnesses[vote_node_id] = (yes_votes >= no_votes);
-        if (hashgraph.__debug_print) {
-            // __write("HEHEHEHEH: %s", votes);
-            __write("EVENT: %s votes: %s on EVENT: %s with %s vs %s votes", id, (yes_votes >= no_votes), voting_event.id, yes_votes, no_votes);
-        }
         if (hashgraph.isMajority(yes_votes) || hashgraph.isMajority(no_votes)) {
-            if (hashgraph.__debug_print) {
-                __write("We DECIDED ON A VOTE");
-            }
             voting_round.famous_mask[vote_node_id] = (yes_votes >= no_votes);
-            voting_event._witness._famous = (yes_votes >= no_votes) ? Witness.Fame.FAMOUS : Witness.Fame.INFAMOUS;
+            if (yes_votes < no_votes) {
+                __write("A NOTE HAS BEEN VOTED INFAMOUS");
+            }
             hashgraph._rounds.vote(vote_node_id, id);
         }
     }
