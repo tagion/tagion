@@ -204,7 +204,7 @@ struct BitMask {
         return false;
     }
 
-    bool opIndexAssign(bool b, size_t i) pure nothrow
+    bool opIndexAssign(const bool b, const size_t i) pure nothrow
     in {
         assert(i < absolute_mask);
     }
