@@ -337,7 +337,7 @@ void printStates(TestNetwork network) {
         writeln("----------------------");
         foreach (channel_key; network.channels) {
             const current_hashgraph = network.networks[channel_key]._hashgraph;
-            writef("%16s %10s ingraph:%5s|", channel_key.cutHex, current_hashgraph.owner_node.sticky_state, current_hashgraph.areWeInGraph);
+            // writef("%16s %10s ingraph:%5s|", channel_key.cutHex, current_hashgraph.owner_node.sticky_state, current_hashgraph.areWeInGraph);
             foreach (receiver_key; network.channels) {
                 const node = current_hashgraph.nodes.get(receiver_key, null);                
                 const state = (node is null) ? ExchangeState.NONE : node.state;

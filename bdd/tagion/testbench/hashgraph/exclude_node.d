@@ -95,8 +95,8 @@ class StaticExclusionOfANode {
             if (i == 32) {
                 offline_node = network.current;
                 TestNetwork.TestGossipNet.online_states[network.current] = false;
-                writefln("excluding: %s", network.current.cutHex);
-                writefln("after exclude %s", TestNetwork.TestGossipNet.online_states);
+                // writefln("excluding: %s", network.current.cutHex);
+                // writefln("after exclude %s", TestNetwork.TestGossipNet.online_states);
             }
 
             i++;
@@ -148,7 +148,7 @@ class StaticExclusionOfANode {
                 .events
                 .map!(e => e.event_package.fingerprint)
                 .array;
-            writefln("%s", compare_events.map!(f => f.cutHex));
+            // writefln("%s", compare_events.map!(f => f.cutHex));
             foreach (channel_epoch; TestRefinement.epoch_events.byKeyValue) {
                 writefln("epoch: %s", i);
                 if (channel_epoch.value.length - 1 < i) {
@@ -159,14 +159,14 @@ class StaticExclusionOfANode {
                     .map!(e => e.event_package.fingerprint)
                     .array;
 
-                writefln("%s", events.map!(f => f.cutHex));
+                // writefln("%s", events.map!(f => f.cutHex));
                 // events.each!writeln;
-                writefln("channel %s time: %s", channel_epoch.key.cutHex, channel_epoch.value[i].epoch_time);
+                // writefln("channel %s time: %s", channel_epoch.key.cutHex, channel_epoch.value[i].epoch_time);
 
                 check(compare_events.length == events.length, "event_packages not the same length");
 
                 const isSame = equal(compare_events, events);
-                writefln("isSame: %s", isSame);
+                // writefln("isSame: %s", isSame);
                 check(isSame, "event_packages not the same");
 
             }
