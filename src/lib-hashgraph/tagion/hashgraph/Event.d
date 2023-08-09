@@ -487,7 +487,64 @@ class Round {
      *   hashgraph = hashgraph which owns the round 
      */
         void check_decided_round(HashGraph hashgraph) {}
-        
+
+        version(none)
+        void check_decided_round(HashGraph hashgraph) @trusted {
+            auto round_to_be_decided = last_decided_round._next;
+            void decide_round() {
+                collect_received_round(round_to_be_decided, hashgraph);
+-                round_to_be_decided._decided = true;
+-                last_decided_round = round_to_be_decided;
+-                check_decided_round(hashgraph);
+-                return;
+-           }
+-
+-           if (hashgraph.possible_round_decided(round_to_be_decided))
+            {
+-                // writefln("possible_round_decided");
+-               const votes_mask = BitMask(round_to_be_decided.events
+-                        .filter!((e) => (e) && !hashgraph.excluded_nodes_mask[e.node_id])
+-                    .map!((e) => e.node_id));
+-               if (votes_mask.isMajority(hashgraph)) {
+-
+-                    if (Event.callbacks) {
+-                        votes_mask[].filter!(
+-                            (vote_node_id) => round_to_be_decided._events[vote_node_id].isFamous)
+-                            .each!((vote_node_id) => Event.callbacks.famous(
+-                                    round_to_be_decided._events[vote_node_id]));
+-                    }
+-
+-                    votes_mask[]
+-                        .each!((vote_node_id) => round_to_be_decided._events[vote_node_id]
+-                        ._witness.famous(hashgraph));
+-
+-                    const famous_round = votes_mask[]
+-                        .all!((vote_node_id) => round_to_be_decided._events[vote_node_id]
+-                        .isFamous);
+-
+-                    if (famous_round && votes_mask.count == hashgraph.node_size - hashgraph
+-                        .excluded_nodes_mask.count) {
+-                        decide_round();
+-                        return;
+-                    }
+-
+-                    uint count_rounds;
+-                    foreach (r; round_to_be_decided[].retro) {
+-                        const round_contains_witness = votes_mask[]
+-                            .all!(vote_node_id => r.events[vote_node_id]!is null);
+-
+-                        if (!round_contains_witness) {
+-                            break;
+-                        }
+-                        count_rounds++;
+-                        if (count_rounds > 6) {
+-                            decide_round();
+-                            return;
+-                        }
+-                    }
+                }
+            }
+        }
 
         void vote(ulong vote_node_id, ulong caller_id) {
             voting_round_per_node[vote_node_id] = voting_round_per_node[vote_node_id]._next;
