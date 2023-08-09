@@ -197,18 +197,20 @@ class HashGraph {
         }
     }
 
-    package bool possible_round_decided(const Round r) nothrow {
-        const witness_count = r.events
-            .count!((e) => (e !is null) && e.isWitness);
-        // __write("round=%s, witness count=%s", r.number, witness_count);
-        if (!isMajority(witness_count)) {
-            // __write("possible_round_decided !ismajority");
-            return false;
-        }
-        const possible_decided = r.events
-            .all!((e) => e is null || e.isWitness);
-        // __write("possible_round_decided=%s", possible_decided);
-        return possible_decided;
+    version(none)
+    package bool possible_round_decided(const Round round) nothrow {
+        return _rounds.voting_round_per_node.all!(r => r.number > round.number);
+        // const witness_count = r.events
+        //     .count!((e) => (e !is null) && e.isWitness);
+        // // __write("round=%s, witness count=%s", r.number, witness_count);
+        // if (!isMajority(witness_count)) {
+        //     // __write("possible_round_decided !ismajority");
+        //     return false;
+        // }
+        // const possible_decided = r.events
+        //     .all!((e) => e is null || e.isWitness);
+        // // __write("possible_round_decided=%s", possible_decided);
+        // return possible_decided;
 
     }
 
@@ -994,6 +996,8 @@ class HashGraph {
         h[Params.events] = events;
         filename.fwrite(h);
     }
+
+    
 }
 
 version (unittest) {

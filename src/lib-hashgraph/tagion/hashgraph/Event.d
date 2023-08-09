@@ -46,7 +46,8 @@ class Round {
     //    bool erased;
     enum uint total_limit = 3;
     enum int coin_round_limit = 10;
-    protected {
+    pragma(msg, "fixme(bbh) should be protected");
+    public {
         Round _previous;
         Round _next;
         bool _decided;
@@ -191,6 +192,10 @@ class Round {
      */
     @nogc bool decided() const pure nothrow {
         return _decided;
+    }
+
+    const(Round) next() const pure nothrow {
+        return _next; 
     }
 
     /**
@@ -425,13 +430,26 @@ class Round {
             return cached_decided_count > total_limit;
         }
 
+        
+    void decide_round() {
+        auto round_to_be_decided = last_decided_round._next;
+        if (!voting_round_per_node.all!(r => r.number > round_to_be_decided.number)) { return; }
+        collect_received_round(round_to_be_decided, hashgraph);
+        round_to_be_decided._decided = true;
+        last_decided_round = round_to_be_decided;
+            // if (hashgraph._rounds.voting_round_per_node.all!(r => r.number > round_to_be_decided.number)
+            // {
+            //     check_decided_round(hashgraph);        
+            // } 
+        }
+
         /**
      * Call to collect and order the epoch
      * Params:
      *   r = decided round to collect events to produce the epoch
      *   hashgraph = hashgraph which ownes this rounds
      */
-        private void collect_received_round(Round r, HashGraph hashgraph) {
+        package void collect_received_round(Round r, HashGraph hashgraph) {
             uint mark_received_iteration_count;
             uint order_compare_iteration_count;
             uint rare_order_compare_count;
@@ -486,69 +504,70 @@ class Round {
      * Params:
      *   hashgraph = hashgraph which owns the round 
      */
-        void check_decided_round(HashGraph hashgraph) {}
 
-        version(none)
-        void check_decided_round(HashGraph hashgraph) @trusted {
-            auto round_to_be_decided = last_decided_round._next;
-            void decide_round() {
-                collect_received_round(round_to_be_decided, hashgraph);
--                round_to_be_decided._decided = true;
--                last_decided_round = round_to_be_decided;
--                check_decided_round(hashgraph);
--                return;
--           }
--
--           if (hashgraph.possible_round_decided(round_to_be_decided))
-            {
--                // writefln("possible_round_decided");
--               const votes_mask = BitMask(round_to_be_decided.events
--                        .filter!((e) => (e) && !hashgraph.excluded_nodes_mask[e.node_id])
--                    .map!((e) => e.node_id));
--               if (votes_mask.isMajority(hashgraph)) {
--
--                    if (Event.callbacks) {
--                        votes_mask[].filter!(
--                            (vote_node_id) => round_to_be_decided._events[vote_node_id].isFamous)
--                            .each!((vote_node_id) => Event.callbacks.famous(
--                                    round_to_be_decided._events[vote_node_id]));
--                    }
--
--                    votes_mask[]
--                        .each!((vote_node_id) => round_to_be_decided._events[vote_node_id]
--                        ._witness.famous(hashgraph));
--
--                    const famous_round = votes_mask[]
--                        .all!((vote_node_id) => round_to_be_decided._events[vote_node_id]
--                        .isFamous);
--
--                    if (famous_round && votes_mask.count == hashgraph.node_size - hashgraph
--                        .excluded_nodes_mask.count) {
--                        decide_round();
--                        return;
--                    }
--
--                    uint count_rounds;
--                    foreach (r; round_to_be_decided[].retro) {
--                        const round_contains_witness = votes_mask[]
--                            .all!(vote_node_id => r.events[vote_node_id]!is null);
--
--                        if (!round_contains_witness) {
--                            break;
--                        }
--                        count_rounds++;
--                        if (count_rounds > 6) {
--                            decide_round();
--                            return;
--                        }
--                    }
-                }
-            }
-        }
+//         version(none)
+//         void check_decided_round(HashGraph hashgraph) @trusted {
+//             auto round_to_be_decided = last_decided_round._next;
+//             void decide_round() {
+//                 collect_received_round(round_to_be_decided, hashgraph);
+// -                round_to_be_decided._decided = true;
+// -                last_decided_round = round_to_be_decided;
+// -                check_decided_round(hashgraph);
+// -                return;
+// -           }
+// -
+// -           if (hashgraph.possible_round_decided(round_to_be_decided))
+//             {
+// -                // writefln("possible_round_decided");
+// -               const votes_mask = BitMask(round_to_be_decided.events
+// -                        .filter!((e) => (e) && !hashgraph.excluded_nodes_mask[e.node_id])
+// -                    .map!((e) => e.node_id));
+// -               if (votes_mask.isMajority(hashgraph)) {
+// -
+// -                    if (Event.callbacks) {
+// -                        votes_mask[].filter!(
+// -                            (vote_node_id) => round_to_be_decided._events[vote_node_id].isFamous)
+// -                            .each!((vote_node_id) => Event.callbacks.famous(
+// -                                    round_to_be_decided._events[vote_node_id]));
+// -                    }
+// -
+// -                    votes_mask[]
+// -                        .each!((vote_node_id) => round_to_be_decided._events[vote_node_id]
+// -                        ._witness.famous(hashgraph));
+// -
+// -                    const famous_round = votes_mask[]
+// -                        .all!((vote_node_id) => round_to_be_decided._events[vote_node_id]
+// -                        .isFamous);
+// -
+// -                    if (famous_round && votes_mask.count == hashgraph.node_size - hashgraph
+// -                        .excluded_nodes_mask.count) {
+// -                        decide_round();
+// -                        return;
+// -                    }
+// -
+// -                    uint count_rounds;
+// -                    foreach (r; round_to_be_decided[].retro) {
+// -                        const round_contains_witness = votes_mask[]
+// -                            .all!(vote_node_id => r.events[vote_node_id]!is null);
+// -
+// -                        if (!round_contains_witness) {
+// -                            break;
+// -                        }
+// -                        count_rounds++;
+// -                        if (count_rounds > 6) {
+// -                            decide_round();
+// -                            return;
+// -                        }
+// -                    }
+//                 }
+//             }
+//         }
 
-        void vote(ulong vote_node_id, ulong caller_id) {
+        void vote(ulong vote_node_id, HashGraph hashgraph)
+        {
             voting_round_per_node[vote_node_id] = voting_round_per_node[vote_node_id]._next;
             Round current_round = voting_round_per_node[vote_node_id];
+            if (hashgraph._rounds.voting_round_per_node.all!(r => r.number >= current_round.number)) { hashgraph._rounds.decide_round(); }
             
             while(current_round._next !is null) {
                 current_round = current_round._next;
@@ -957,23 +976,17 @@ class Event {
                             }
                         }
                     }
-                    // strong_seeing(hashgraph);
-                    // if (callbacks) {
-                        // callbacks.strongly_seeing(this);
-                    // }
                     with (hashgraph) {
                         mixin Log!(strong_seeing_statistic);
                     }
-                    // hashgraph._rounds.check_decided_round(hashgraph);
-                    // _witness_mask.clear;
-                    // _witness_mask[node_id] = true;
                     if (callbacks) {
                         callbacks.witness(this);
                     }
                     foreach(i; 0 .. hashgraph.node_size) {
                         calc_vote(hashgraph, i);
                     }
-                    // hashgraph._rounds.check_decided_round(hashgraph);
+                        
+                    // hashgraph.check_decided_round(hashgraph);
                 }
             }
             else {
@@ -1018,7 +1031,7 @@ class Event {
             return;
         }
         if (voting_event is null) {
-            hashgraph._rounds.vote(vote_node_id, id);
+            hashgraph._rounds.vote(vote_node_id, hashgraph);
             return;
         }
         auto votes = _witness._prev_strongly_seen_witnesses[]
@@ -1031,7 +1044,7 @@ class Event {
             if (yes_votes < no_votes) {
                 __write("A NOTE HAS BEEN VOTED INFAMOUS");
             }
-            hashgraph._rounds.vote(vote_node_id, id);
+            hashgraph._rounds.vote(vote_node_id, hashgraph);
         }
     }
 
