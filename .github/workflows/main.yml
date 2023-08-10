@@ -39,8 +39,10 @@ jobs:
       - name: set testnet1 vars
         shell: bash
         run: |
-          echo "BRANCH=$(git rev-parse --abbrev-ref HEAD)" >> "$GITHUB_ENV"
-          echo "COMMIT=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+          echo "BRANCH=$(make help |tail -n 3 |head -n 1)" >> $GITHUB_ENV
+          echo "COMMIT=$(make help |tail -n 2 |head -n 1)" >> $GITHUB_ENV
+          echo $BRANCH
+          echo $COMMIT
          
       - name: Run tests
         run: |
