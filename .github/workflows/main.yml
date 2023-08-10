@@ -48,8 +48,8 @@ jobs:
           export COMMIT=$(make help |tail -n 2 |head -n 1)
           echo $BRANCH 
           echo $COMMIT
-          echo "BRANCH=$(make help |tail -n 3 |head -n 1)" >> "$GITHUB_ENV"
-          echo "COMMIT=$(make help |tail -n 2 |head -n 1)" >> "$GITHUB_ENV"
+          echo $BRANCH >> "$GITHUB_ENV"
+          echo $COMMIT >> "$GITHUB_ENV"
 
          
       - name: Run tests
