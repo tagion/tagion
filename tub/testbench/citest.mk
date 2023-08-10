@@ -1,7 +1,6 @@
 
 
 ci:
-public import input_service = tagion.testbench.services.input_service;
 	$(MAKE) -S clean-trunk -f$(DTUB)/main.mk
 	$(MAKE) -S clean-dartapi -f$(DTUB)/main.mk
 	$(MAKE) -S bins -f$(DTUB)/main.mk
@@ -9,7 +8,7 @@ public import input_service = tagion.testbench.services.input_service;
 	$(MAKE) -S dartapi -f$(DTUB)/main.mk
 	$(MAKE) -S bddtest unittest-cov TESTBENCH_FLAGS=--silent -f$(DTUB)/main.mk
 	$(MAKE) -S release -f$(DTUB)/main.mk
-	# $(MAKE) -S ddoc -f$(DTUB)/main.mk
+	$(MAKE) -S ddoc -f$(DTUB)/main.mk
 	cp $(REPOROOT)/collider_schedule.json $(DBIN) 
 	$(MAKE) -S trunk -f$(DTUB)/main.mk
 	#$(MAKE) -S test unittest-cov trunk bddreport -f$(DTUB)/main.mk
