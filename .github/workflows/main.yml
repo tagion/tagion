@@ -113,6 +113,7 @@ jobs:
     steps:
       - name: Copy Artifact to local machine
         run: |
+          ls -l
           find . -mindepth 1 -delete
           cp /mnt/nfs/${{needs.commit_stage.outputs.stage}}/${{needs.commit_stage.outputs.tarball}} .
           tar -xzf ${{needs.commit_stage.outputs.tarball}}
@@ -163,7 +164,7 @@ jobs:
           rm ${{ needs.commit_stage.outputs.tarball }}
           rm -rf *
 
-  ddoc_build:
+  ddoc_push:
     runs-on: CD
     needs: acceptance_stage 
     steps:
@@ -173,15 +174,15 @@ jobs:
           cp /mnt/nfs/${{needs.acceptance_stage.outputs.stage}}/${{needs.acceptance_stage.outputs.tarball}} .
           tar -xzf ${{needs.acceptance_stage.outputs.tarball}}
           echo $(ls build/)     
-
+          push
       - name: Send ddoc to repository 
         run: |
           ls logs
           git clone https://${{ secrets.API_TOKEN_GITHUB }}@github.com/tagion/ddoc.git
           cp -R build/ddoc/* ddoc/          
           cd ddoc
-          git config user.email "mm@decard.io"
-          git config user.name "Matlab"
+          git config user.email "gitbot@decard.io"
+          git config user.name "gitbot"
           git add .
           git commit -m "ddocs updated" || echo "nothing to commit"
           git push https://${{ secrets.API_TOKEN_GITHUB }}@github.com/tagion/ddoc.git || echo "repo already up to date"
@@ -215,7 +216,7 @@ jobs:
 
   finish_workflow:
     runs-on: CD
-    needs: [acceptance_stage, ddoc_build, docs_build]
+    needs: [acceptance_stage, ddoc_push, docs_build]
     steps:    
       - name: Copy Artifact to local machine
         run: |

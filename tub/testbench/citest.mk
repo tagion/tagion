@@ -1,17 +1,18 @@
 
 
 ci:
-	$(MAKE) clean-trunk -f$(DTUB)/main.mk
-	$(MAKE) clean-dartapi -f$(DTUB)/main.mk
-	$(MAKE) bins -f$(DTUB)/main.mk
+public import input_service = tagion.testbench.services.input_service;
+	$(MAKE) -S clean-trunk -f$(DTUB)/main.mk
+	$(MAKE) -S clean-dartapi -f$(DTUB)/main.mk
+	$(MAKE) -S bins -f$(DTUB)/main.mk
 	$(RM) $(DLIB)/libtagion.$(LIBEXT)	
-	$(MAKE) dartapi -f$(DTUB)/main.mk
-	$(MAKE) bddtest unittest-cov TESTBENCH_FLAGS=--silent -f$(DTUB)/main.mk
-	$(MAKE) release -f$(DTUB)/main.mk
-	$(MAKE) ddoc -f$(DTUB)/main.mk
+	$(MAKE) -S dartapi -f$(DTUB)/main.mk
+	$(MAKE) -S bddtest unittest-cov TESTBENCH_FLAGS=--silent -f$(DTUB)/main.mk
+	$(MAKE) -S release -f$(DTUB)/main.mk
+	# $(MAKE) -S ddoc -f$(DTUB)/main.mk
 	cp $(REPOROOT)/collider_schedule.json $(DBIN) 
-	$(MAKE) trunk -f$(DTUB)/main.mk
-	#$(MAKE) test unittest-cov trunk bddreport -f$(DTUB)/main.mk
+	$(MAKE) -S trunk -f$(DTUB)/main.mk
+	#$(MAKE) -S test unittest-cov trunk bddreport -f$(DTUB)/main.mk
 
 help-ci:
 	${PRECMD}
