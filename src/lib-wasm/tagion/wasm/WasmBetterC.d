@@ -8,6 +8,7 @@ import std.uni : toLower;
 import std.conv : to;
 import std.range.primitives : isOutputRange;
 import std.range : StoppingPolicy, lockstep, enumerate;
+import std.algorithm;
 
 import tagion.wasm.WasmReader;
 import tagion.wasm.WasmBase;
@@ -98,16 +99,12 @@ alias check = Check!WasmBetterCException;
             }
         }
         output.writefln(`")`);
-        //        auto _custom=mod[Section.CUSTOM];//.custom_sec;
-        //foreach(c; _custom[]) {
-        //        writefln("_custom=%s",  _custom);
-        //output.writef("%s(custom (%s %s))", indent, c.name, cast(string)(c.bytes));
-        //}
     }
 
     alias Type = Sections[Section.TYPE];
     void type_sec(ref const(Type) _type) {
-        foreach (i, t; _type[].enumerate) {
+        version (none)
+            foreach (i, t; _type[].enumerate) {
             output.writef("%s(type (;%d;) (%s", indent, i, typesName(t.type));
             if (t.params.length) {
                 output.write(" (param");
@@ -199,8 +196,8 @@ alias check = Check!WasmBetterCException;
 
     alias Export = Sections[Section.EXPORT];
     void export_sec(ref const(Export) _export) {
-        //        auto _export=*mod[Section.EXPORT];
-        foreach (exp; _export[]) {
+        version (none)
+            foreach (exp; _export[]) {
             output.writefln(`%s(export "%s" (%s %d))`, indent, exp.name,
                     indexName(exp.desc), exp.idx);
         }
@@ -228,11 +225,55 @@ alias check = Check!WasmBetterCException;
         }
     }
 
+    static string dType(const Types type) {
+        with (Types) {
+            final switch (type) {
+
+            case EMPTY:
+                return "void";
+            case I32:
+                return "int";
+            case I64:
+                return "long";
+            case F32:
+                return "float";
+            case F64:
+                return "double";
+            case FUNC:
+                return "_function_";
+            case FUNCREF:
+                return "void*";
+
+            }
+        }
+        assert(0);
+    }
+
+    static string return_type(const(Types[]) types) {
+        return (types.length == 1) ? dType(types[0]) : "void";
+    }
+
+    static string function_name(const int index) {
+        return format("func_%d", index);
+    }
+
+    static string function_params(const(Types[]) types) {
+        return format("%-(%s, %)", types.enumerate.map!(type => format("%s param_%d", dType(type.value), type.index)));
+    }
+
     alias Code = Sections[Section.CODE];
     @trusted void code_sec(ref const(Code) _code) {
         foreach (f, c; lockstep(_function[], _code[], StoppingPolicy.requireSameLength)) {
             auto expr = c[];
-            output.writefln("%s(func (type %d)", indent, f.idx);
+            const function_header = wasmstream.get!(Section.TYPE)[f.idx];
+            pragma(msg, "function_header ", typeof(function_header));
+            pragma(msg, "function_header ", typeof(function_header.results));
+            const x = return_type(function_header.results);
+            output.writefln("%s%s %s (%s) {",
+                    indent,
+                    return_type(function_header.results),
+                    function_name(f.idx),
+                    function_params(function_header.params));
             const local_indent = indent ~ spacer;
             if (!c.locals.empty) {
                 output.writef("%s(local", local_indent);
@@ -245,7 +286,7 @@ alias check = Check!WasmBetterCException;
             }
 
             block(expr, local_indent);
-            output.writefln("%s)", indent);
+            output.writefln("%s}", indent);
         }
     }
 

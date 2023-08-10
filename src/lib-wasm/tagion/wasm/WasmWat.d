@@ -231,7 +231,6 @@ alias check = Check!WatException;
 
     alias Code = Sections[Section.CODE];
     @trusted void code_sec(ref const(Code) _code) {
-        writefln("_function is null %s", _function is null);
         check(_function !is null, "Fuction section missing");
         check(_code !is null, "Code section missing");
         foreach (f, c; lockstep(_function[], _code[], StoppingPolicy.requireSameLength)) {
