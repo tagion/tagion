@@ -36,22 +36,17 @@ jobs:
           git checkout current
           git pull
 
-      - name: set testnet1 vars
+      - name: get revision file
         shell: bash
         run: |
-          git branch
-          id
-          echo "change to bash"
-          source ~/.bashrc
-          echo $SHELL
-          export BRANCH=$(make help |tail -n 3 |head -n 1) 
-          export COMMIT=$(make help |tail -n 2 |head -n 1)
-          echo $BRANCH 
-          echo $COMMIT
-          echo BRANCH=$(make help |tail -n 3 |head -n 1) >> $GITHUB_ENV
-          echo BRANCH=$(make help |tail -n 2 |head -n 1) >> $GITHUB_ENV
+          pwd
+          make help |tail -n 3 |head -n 2 > revision.txt
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v3.1.2
+        with:
+          name: revision
+          path: ./revision.txt
 
-         
       - name: Run tests
         run: |
           make clean ci -j DC=${{env.DC}} || make clean proper ci -j DC=${{env.DC}}
@@ -267,6 +262,10 @@ jobs:
     runs-on: testnet-container
     needs: [finish_workflow]
     steps:    
+    - uses: actions/download-artifact@v3
+      with:
+        name: revision
+        
       - name: get artifact and restart service
         run: |
           source ~/.bashrc
