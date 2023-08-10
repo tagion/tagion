@@ -39,17 +39,9 @@ jobs:
       - name: set testnet1 vars
         shell: bash
         run: |
-          git branch
           id
-          echo "change to bash"
-          source ~/.bashrc
-          echo $SHELL
-          export BRANCH=$(make help |tail -n 3 |head -n 1) 
-          export COMMIT=$(make help |tail -n 2 |head -n 1)
-          echo $BRANCH 
-          echo $COMMIT
-          echo "BRANCH=$(make help |tail -n 3 |head -n 1)" >> "$GITHUB_ENV"
-          echo "COMMIT=$(make help |tail -n 2 |head -n 1)" >> "$GITHUB_ENV"
+          echo "BRANCH=$(git rev-parse --abbrev-ref HEAD)" >> "$GITHUB_ENV"
+          echo "COMMIT=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
          
       - name: Run tests
         run: |
@@ -114,7 +106,7 @@ jobs:
       - name: Copy Artifact to local machine
         run: |
           ls -l
-          sudo find . -mindepth 1 -delete
+          find . -mindepth 1 -delete
           cp /mnt/nfs/${{needs.commit_stage.outputs.stage}}/${{needs.commit_stage.outputs.tarball}} .
           tar -xzf ${{needs.commit_stage.outputs.tarball}}
       - name: check the files
@@ -174,7 +166,6 @@ jobs:
           cp /mnt/nfs/${{needs.acceptance_stage.outputs.stage}}/${{needs.acceptance_stage.outputs.tarball}} .
           tar -xzf ${{needs.acceptance_stage.outputs.tarball}}
           echo $(ls build/)     
-          push
       - name: Send ddoc to repository 
         run: |
           ls logs
