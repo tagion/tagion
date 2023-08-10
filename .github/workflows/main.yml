@@ -262,9 +262,9 @@ jobs:
     runs-on: testnet-container
     needs: [finish_workflow]
     steps:    
-    - uses: actions/download-artifact@v3
-      with:
-        name: revision
+      - uses: actions/download-artifact@v3
+        with:
+          name: revision
         
       - name: get artifact and restart service
         run: |
