@@ -39,10 +39,18 @@ jobs:
       - name: set testnet1 vars
         shell: bash
         run: |
-          echo "BRANCH=$(make help |tail -n 3 |head -n 1)" >> $GITHUB_ENV
-          echo "COMMIT=$(make help |tail -n 2 |head -n 1)" >> $GITHUB_ENV
-          echo $BRANCH
+          git branch
+          id
+          echo "change to bash"
+          source ~/.bashrc
+          echo $SHELL
+          export BRANCH=$(make help |tail -n 3 |head -n 1) 
+          export COMMIT=$(make help |tail -n 2 |head -n 1)
+          echo $BRANCH 
           echo $COMMIT
+          echo "BRANCH=$(make help |tail -n 3 |head -n 1)" >> "$GITHUB_ENV"
+          echo "COMMIT=$(make help |tail -n 2 |head -n 1)" >> "$GITHUB_ENV"
+
          
       - name: Run tests
         run: |
