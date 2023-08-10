@@ -114,7 +114,7 @@ jobs:
       - name: Copy Artifact to local machine
         run: |
           ls -l
-          find . -mindepth 1 -delete
+          sudo find . -mindepth 1 -delete
           cp /mnt/nfs/${{needs.commit_stage.outputs.stage}}/${{needs.commit_stage.outputs.tarball}} .
           tar -xzf ${{needs.commit_stage.outputs.tarball}}
       - name: check the files
