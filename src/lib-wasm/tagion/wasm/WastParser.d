@@ -79,7 +79,7 @@ struct WastParser {
             return result;
         }
 
-        writefln("%s %s", __FUNCTION__, params.dup);
+        // writefln("%s %s", __FUNCTION__, params.dup);
         ParserStage innerInstr(ref WastTokenizer r, const ParserStage) {
             r.check(r.type == TokenType.BEGIN);
             scope (exit) {
@@ -355,7 +355,7 @@ struct WastParser {
                 //arg = r.token;
                 r.check(r.type == TokenType.WORD);
                 export_type.desc = IndexType.FUNC;
-                writefln("r.token=%s %s", r.token, func_idx);
+                //writefln("r.token=%s %s", r.token, func_idx);
                 export_type.idx = func_idx.get(r.token, -1);
                 r.check(export_type.idx >= 0);
 
@@ -374,7 +374,6 @@ struct WastParser {
                 arg2 = r.token;
                 r.nextToken;
                 FuncType func_type;
-                scope Type[] locals;
                 scope int[string] params;
                 const ret = parseFuncArgs(r, ParserStage.IMPORT, func_type, params);
                 r.check(ret == ParserStage.TYPE || ret == ParserStage.PARAM);
@@ -517,8 +516,11 @@ struct WastParser {
         CodeType code_type;
         writeln("Function code");
         scope (exit) {
+            const type_index = cast(uint) writer.section!(Section.CODE).sectypes.length;
+            writer.section!(Section.FUNCTION).sectypes ~= TypeIndex(type_index);
             writer.section!(Section.CODE).sectypes ~= code_type;
-            writefln("%s %s", Section.CODE, writer.section!(Section.CODE).sectypes.length);
+            writefln("%s code.length=%s %s", Section.CODE, code_type.expr.length, writer.section!(Section.CODE).sectypes
+                    .length);
         }
 
         r.check(stage < ParserStage.FUNC);
@@ -570,9 +572,12 @@ struct WastParser {
         while (parseModule(tokenizer, ParserStage.BASE) !is ParserStage.END) {
             //empty    
         }
+        writefln("End parse");
         static foreach (Sec; EnumMembers!Section) {
             static if (Sec !is Section.CUSTOM && Sec !is Section.START) {
-                writefln("%s sectypes.length=%d", Sec, writer.section!Sec.sectypes.length);
+                if (writer.mod[Sec]) {
+                    writefln("%s sectypes.length=%d", Sec, writer.mod[Sec].sectypes.length);
+                }
             }
         }
     }
@@ -660,7 +665,9 @@ unittest {
         if (wast_file == "i32.wast") {
             static foreach (Sec; EnumMembers!Section) {
                 static if (Sec !is Section.CUSTOM && Sec !is Section.START) {
-                    writefln("After parser %s sectypes.length=%d", Sec, writer.section!Sec.sectypes.length);
+                    if (writer.mod[Sec]) {
+                        writefln("After parser %s sectypes.length=%d", Sec, writer.mod[Sec].sectypes.length);
+                    }
                 }
             }
             "/tmp/i32.wasm".fwrite(writer.serialize);
