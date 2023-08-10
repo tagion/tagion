@@ -39,7 +39,6 @@ jobs:
       - name: set testnet1 vars
         shell: bash
         run: |
-          id
           echo "BRANCH=$(git rev-parse --abbrev-ref HEAD)" >> "$GITHUB_ENV"
           echo "COMMIT=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
          
@@ -51,9 +50,6 @@ jobs:
         run: |
           RESULT=$(cat logs/${{ env.TARGET }}/unittest.log | grep -E "^[0-9]+ modules passed unittests")
           echo -e "### :heavy_check_mark: Unittests passed \n $RESULT" >> $GITHUB_STEP_SUMMARY
-      - name: show current files
-        run: |
-          ls
       - name: Report bddtests
         run: | 
           RESULT=$(./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/commit/results)
@@ -105,18 +101,9 @@ jobs:
     steps:
       - name: Copy Artifact to local machine
         run: |
-          ls -l
           find . -mindepth 1 -delete
           cp /mnt/nfs/${{needs.commit_stage.outputs.stage}}/${{needs.commit_stage.outputs.tarball}} .
           tar -xzf ${{needs.commit_stage.outputs.tarball}}
-      - name: check the files
-        run: |
-          pwd
-          hostname
-          ls
-          echo "log dir"
-          ls logs
-          ls build/${{ env.TARGET }}/integration      
       - name: Run collider tests
         run: |
           id
@@ -127,7 +114,7 @@ jobs:
           export DLOG=$PWD/logs/${{ env.TARGET }}
           export COLLIDER_ROOT=$PWD/logs/${{ env.TARGET }}/bdd
           export PATH=$DBIN:$PATH
-          ./build/${{ env.TARGET }}/bin/collider -r acceptance -j ${{env.CD_PARALLEL}} -b build/${{ env.TARGET }}/bin/testbench -s build/${{ env.TARGET }}/bin/collider_schedule.json  
+          ./build/${{ env.TARGET }}/bin/collider -r --silent acceptance -j ${{env.CD_PARALLEL}} -b build/${{ env.TARGET }}/bin/testbench -s build/${{ env.TARGET }}/bin/collider_schedule.json  
       - name: Generate reports
         if: failure() || success()
         run: |
