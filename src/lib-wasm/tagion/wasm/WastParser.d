@@ -584,23 +584,32 @@ struct WastParser {
 
 }
 
-version (none) {
-    struct Assert {
-        enum Method : ubyte {
-            Return,
-            Invalid,
-            //Return_nan, same as Return
-            Trap,
-        }
+import std.outbuffer;
 
-        Method method;
-        CodeType expr;
-        CodeType result;
-        string message;
+import tagion.basic.Types;
+import tagion.hibon.HiBONRecord;
+
+@safe
+struct Assert {
+    enum Method {
+        Return,
+        Invalid,
+        //Return_nan, same as Return
+        Trap,
     }
 
-    alias SectionAssert = WasmWriter.WasmSection.SectionT!Assert;
+    Method method;
+    @label("assert") Buffer assert_code;
+    @label("*", true) Buffer result;
+    @label("*", true) string message;
+
+    mixin HiBONRecord;
+    void serialize(ref OutBuffer bout) const {
+    }
 }
+
+alias SectionAssert = WasmWriter.WasmSection.SectionT!Assert;
+
 version (WAST) @safe
 unittest {
     import tagion.basic.basic : unitfile;

@@ -185,7 +185,7 @@ import tagion.wasm.WasmException;
                 static if (hasMember!(MainType, "guess_size")) {
                     bout.reserve(guess_size);
                 }
-
+                pragma(msg, "MainType ", MainType);
                 foreach (i, m; this.tupleof) {
                     alias T = typeof(m);
                     static if (is(T == struct) || is(T == class)) {
