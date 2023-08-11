@@ -3,10 +3,6 @@ module libnng.libnng;
 import std.meta : Alias;
 import core.stdc.config;
 
-nothrow extern (C)
-{
-
-
 enum NNG_MAJOR_VERSION = 1;
 enum NNG_MINOR_VERSION = 6;
 enum NNG_PATCH_VERSION = 0;
@@ -104,7 +100,8 @@ enum nng_flag {
 @safe:
 T* ptr(T)(T[] arr) { return arr.length == 0 ? null : &arr[0]; }
 
-
+nothrow extern (C)
+{
 // ------------------------------------- typedefs
 
 struct nng_ctx {
