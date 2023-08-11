@@ -104,6 +104,7 @@ include $(DTUB)/compile.mk
 # Include all unit make files
 #
 -include $(DSRC)/wrap-*/context.mk
+-include $(DSRC)/fork-*/context.mk
 -include $(DSRC)/lib-*/context.mk
 -include $(DSRC)/bin-*/context.mk
 
