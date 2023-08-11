@@ -657,7 +657,7 @@ class Event {
     protected static uint _count;
 
     package BitMask[] _witness_strong_seen_masks;
-    package BitMask _witness_descendants;
+    package Event[] _youngest_ancestors;
 
 
     protected {
@@ -693,6 +693,7 @@ class Event {
     )
     in (epack !is null)
     do {
+        // _youngest_ancestors = new Event[hashgraph.node_size];
         _witness_strong_seen_masks = new BitMask[hashgraph.node_size];
         event_package = epack;
         this.id = hashgraph.next_event_id;
@@ -929,6 +930,7 @@ class Event {
             if (callbacks) {
                 callbacks.round(this);
             }
+
             uint received_order_iteration_count;
             received_order(received_order_iteration_count);
             hashgraph.received_order_statistic(received_order_iteration_count);
@@ -938,7 +940,7 @@ class Event {
 
 
             const new_witness = calc_witness_strong_seen_masks(hashgraph);
-            calc_witness_descendants(hashgraph);
+            calc_youngest_ancestors(hashgraph);
             if (new_witness) {
                 hashgraph._rounds.next_round(this);
             }
@@ -952,7 +954,7 @@ class Event {
                         _witness._prev_strongly_seen_witnesses[i] = _witness_strong_seen_masks[i].isMajority(hashgraph);
                     }
                     clear_witness_strong_seen_masks(hashgraph);
-                    clear_witness_descendants(hashgraph);
+                    clear_youngest_ancestors(hashgraph);
                 }
                 else {
                     _round.add(this);
@@ -991,31 +993,54 @@ class Event {
         }        
     }
 
-    void calc_witness_descendants(HashGraph hashgraph) {
+    void calc_youngest_ancestors(HashGraph hashgraph) {
+        // __write("AIORSTNOARTNEIART");
+        if (hashgraph.__debug_print) {
+            __write("AIORSTNOARTNEIART");
+            __write("EVENT: %s, has _youngest_ancestors: %s", id, _youngest_ancestors);
+        }
         if (!father || mother.round.number > father.round.number) {
-            _witness_descendants = mother._witness_descendants;
+            _youngest_ancestors = _mother._youngest_ancestors;
+            // _witness_descendants = mother._witness_descendants;
             return;
         }
 
+        // if (hashgraph.__debug_print) {
+        //     __write("EVENT: %s, has _youngest_ancestors: %s", id, _youngest_ancestors.filter!(e => e !is null).map!(e => e.id).array);
+        // }
         if (father.round is mother.round) {
-            _witness_descendants = mother._witness_descendants;
+            _youngest_ancestors = _mother._youngest_ancestors.dup();
+            // _witness_descendants = mother._witness_descendants;
         }
-        const father_unique_descendants = (~_witness_descendants & father._witness_descendants);
-        father_unique_descendants[]
-            .map!(i => _round._events[i])
-            .filter!(e => e._witness._ancestors_tide[node_id] !is null)
-            .filter!(e  => higher(e._witness._ancestors_tide[node_id].received_order, received_order))
-            .each!(e => e._witness._ancestors_tide[node_id] = this);
+        else {
+            _youngest_ancestors = new Event[hashgraph.node_size];
+        }
 
-        _witness_descendants |= father._witness_descendants;
+        // if (hashgraph.__debug_print) {
+        //     __write("EVENT: %s, has _youngest_ancestors: %s", id, _youngest_ancestors.filter!(e => e !is null).map!(e => e.id).array);
+        // }
+        iota(_father._youngest_ancestors.length)
+            .filter!((ulong i) => _father._youngest_ancestors[i] !is null)
+            .filter!((ulong i) => _youngest_ancestors[i] is null || _father._youngest_ancestors[i].received_order > _youngest_ancestors[i].received_order)
+            .each!((ulong i) => _youngest_ancestors[i] = _father._youngest_ancestors[i]);
+        _youngest_ancestors[_father.node_id] = _father;
+        
+        // const father_unique_descendants = (~_witness_descendants & father._witness_descendants);
+        // father_unique_descendants[]
+        //     .map!(i => _round._events[i])
+        //     .filter!(e => e._witness._ancestors_tide[node_id] !is null)
+        //     .filter!(e  => higher(e._witness._ancestors_tide[node_id].received_order, received_order))
+        //     .each!(e => e._witness._ancestors_tide[node_id] = this);
+
+        // _witness_descendants |= father._witness_descendants;
         if (hashgraph.__debug_print) {
-            __write("EVENT: %s, has _witness_descendants: %4s", id, _witness_descendants);
+            __write("ENDOFFUNC EVENT: %s, has _youngest_ancestors: %s", id, _youngest_ancestors.filter!(e => e !is null).map!(e => e.id).array);
         }
     }
 
-    void clear_witness_descendants(HashGraph hashgraph) {
-        _witness_descendants.clear();
-        _witness_descendants[node_id] = true;
+    void clear_youngest_ancestors(HashGraph hashgraph) {
+        _youngest_ancestors = new Event[hashgraph.node_size];
+        _youngest_ancestors[node_id] = this;
     }
 
     void calc_vote(HashGraph hashgraph, ulong vote_node_id) {
