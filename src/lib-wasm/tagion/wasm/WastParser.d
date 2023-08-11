@@ -584,6 +584,23 @@ struct WastParser {
 
 }
 
+version (none) {
+    struct Assert {
+        enum Method : ubyte {
+            Return,
+            Invalid,
+            //Return_nan, same as Return
+            Trap,
+        }
+
+        Method method;
+        CodeType expr;
+        CodeType result;
+        string message;
+    }
+
+    alias SectionAssert = WasmWriter.WasmSection.SectionT!Assert;
+}
 version (WAST) @safe
 unittest {
     import tagion.basic.basic : unitfile;
