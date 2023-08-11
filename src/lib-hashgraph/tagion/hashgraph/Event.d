@@ -972,23 +972,41 @@ class Event {
                 }
                 else {
                     _round.add(this);
-                    foreach(idx; father._witness_strong_seen_masks
-                        .map!(mask => (mask.count >= 1))
-                        .enumerate
-                        .filter!(b => b.value)
-                        .map!(b => b.index)) {
-                            _witness._prev_strongly_seen_witnesses |= round.events[idx]._witness._prev_strongly_seen_witnesses;
-                            foreach(j; 0 .. _witness_strong_seen_masks.length) {
-                                if (round.events[idx]._witness._prev_seen_witnesses[j]) {
-                                    _witness._prev_seen_witnesses[j] = round.events[idx]._witness._prev_seen_witnesses[j];
-                                }
+
+                    foreach(e; _youngest_ancestors.filter!(e => e !is null)) {
+                        _witness._prev_strongly_seen_witnesses |= round.events[e.node_id]._witness._prev_strongly_seen_witnesses;
+                
+                        foreach(j; 0 .. hashgraph.node_size) {
+                            if (round.events[e.node_id]._witness._prev_seen_witnesses[j]) {
+                                _witness._prev_seen_witnesses[j] = round.events[e.node_id]._witness._prev_seen_witnesses[j];
                             }
-                    }
-                    foreach(j; 0 .. _witness_strong_seen_masks.length) {
-                        if (mother._witness_strong_seen_masks[j][mother.node_id] && mother.round.number + 1 == round.number) {
-                            _witness._prev_seen_witnesses[j] = mother._witness_strong_seen_masks[j][mother.node_id];
                         }
                     }
+
+                    
+                    foreach(j; 0 .. hashgraph.node_size) {
+                        if (mother._youngest_ancestors[j] !is null && mother.round.number + 1 == round.number) {
+                            _witness._prev_seen_witnesses[j] = true;
+                        }
+                    }
+                    
+                    // foreach(idx; father._witness_strong_seen_masks
+                    //     .map!(mask => (mask.count >= 1))
+                    //     .enumerate
+                    //     .filter!(b => b.value)
+                    //     .map!(b => b.index)) {
+                    //         _witness._prev_strongly_seen_witnesses |= round.events[idx]._witness._prev_strongly_seen_witnesses;
+                    //         foreach(j; 0 .. _witness_strong_seen_masks.length) {
+                    //             if (round.events[idx]._witness._prev_seen_witnesses[j]) {
+                    //                 _witness._prev_seen_witnesses[j] = round.events[idx]._witness._prev_seen_witnesses[j];
+                    //             }
+                    //         }
+                    // }
+                    // foreach(j; 0 .. _witness_strong_seen_masks.length) {
+                    //     if (mother._witness_strong_seen_masks[j][mother.node_id] && mother.round.number + 1 == round.number) {
+                    //         _witness._prev_seen_witnesses[j] = mother._witness_strong_seen_masks[j][mother.node_id];
+                    //     }
+                    // }
                 }
                 with (hashgraph) {
                     mixin Log!(strong_seeing_statistic);
