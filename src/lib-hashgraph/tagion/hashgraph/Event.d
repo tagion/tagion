@@ -994,48 +994,22 @@ class Event {
     }
 
     void calc_youngest_ancestors(HashGraph hashgraph) {
-        // __write("AIORSTNOARTNEIART");
-        // if (hashgraph.__debug_print) {
-        //     __write("AIORSTNOARTNEIART");
-        //     __write("EVENT: %s, has _youngest_ancestors: %s", id, _youngest_ancestors);
-        // }
         if (!father || mother.round.number > father.round.number) {
             _youngest_ancestors = _mother._youngest_ancestors;
-            // _witness_descendants = mother._witness_descendants;
             return;
         }
-
-        // if (hashgraph.__debug_print) {
-        //     __write("EVENT: %s, has _youngest_ancestors: %s", id, _youngest_ancestors.filter!(e => e !is null).map!(e => e.id).array);
+        _youngest_ancestors = (father.round is mother.round) ? _mother._youngest_ancestors.dup() : new Event[hashgraph.node_size];
+        // if (father.round is mother.round) {
+        //     _youngest_ancestors = _mother._youngest_ancestors.dup();
         // }
-        if (father.round is mother.round) {
-            _youngest_ancestors = _mother._youngest_ancestors.dup();
-            // _witness_descendants = mother._witness_descendants;
-        }
-        else {
-            _youngest_ancestors = new Event[hashgraph.node_size];
-        }
-
-        // if (hashgraph.__debug_print) {
-        //     __write("EVENT: %s, has _youngest_ancestors: %s", id, _youngest_ancestors.filter!(e => e !is null).map!(e => e.id).array);
+        // else {
+        //     _youngest_ancestors = new Event[hashgraph.node_size];
         // }
+        _youngest_ancestors[node_id] = this;
         iota(_father._youngest_ancestors.length)
             .filter!((ulong i) => _father._youngest_ancestors[i] !is null)
             .filter!((ulong i) => _youngest_ancestors[i] is null || _father._youngest_ancestors[i].received_order > _youngest_ancestors[i].received_order)
             .each!((ulong i) => _youngest_ancestors[i] = _father._youngest_ancestors[i]);
-        _youngest_ancestors[node_id] = this;
-        
-        // const father_unique_descendants = (~_witness_descendants & father._witness_descendants);
-        // father_unique_descendants[]
-        //     .map!(i => _round._events[i])
-        //     .filter!(e => e._witness._ancestors_tide[node_id] !is null)
-        //     .filter!(e  => higher(e._witness._ancestors_tide[node_id].received_order, received_order))
-        //     .each!(e => e._witness._ancestors_tide[node_id] = this);
-
-        // _witness_descendants |= father._witness_descendants;
-        if (hashgraph.__debug_print) {
-            __write("ENDOFFUNC EVENT: %s, has _youngest_ancestors: %s", id, _youngest_ancestors.filter!(e => e !is null).map!(e => e.id).array);
-        }
     }
 
     void clear_youngest_ancestors(HashGraph hashgraph) {
