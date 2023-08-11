@@ -4,6 +4,7 @@ $(REVISION_FILE): $(DBUILD)/.way
 	$(PRECMD)
 	${call log.header, revision :: $(GIT_DATE)}
 	echo '$(GIT_INFO)' > $@
+	echo '$(GIT_BRANCH)' >> $@
 	echo '$(GIT_HASH)' >> $@
 	echo '$(GIT_REVNO)' >> $@
 	echo '$(GIT_DATE)' >> $@

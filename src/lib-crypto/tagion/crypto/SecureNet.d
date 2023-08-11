@@ -434,6 +434,7 @@ unittest { // StdHashNet
 
 }
 
+@safe
 class BadSecureNet : StdSecureNet {
     this(string passphrase) {
         super();

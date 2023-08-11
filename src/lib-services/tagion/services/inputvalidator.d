@@ -34,9 +34,14 @@ struct InputValidatorOptions {
     mixin JSONCommon;
 }
 
+/** 
+ *  InputValidator actor
+ *  Examples: [tagion.testbench.services.inputvalidator]
+ *  Sends: (inputDoc, Document) to receiver_task;
+**/
 struct InputValidatorService {
-    void task(immutable(InputValidatorOptions) opts, string receiver_task, ) {
-        setState(Ctrl.STARTING);
+    void task(immutable(InputValidatorOptions) opts, string receiver_task,) {
+        // setState(Ctrl.STARTING);
         auto listener = new Socket(AddressFamily.UNIX, SocketType.STREAM);
         assert(listener.isAlive);
         listener.blocking = false;
@@ -47,7 +52,7 @@ struct InputValidatorService {
             pragma(msg, "TODO: implement pidfile lock on non-linux");
             import std.exception;
 
-            log.error("Failed to open socket %s, is the program already running?", opts.sock_addr);
+            log.fatal("Failed to open socket address %s, is the program already running?", opts.sock_addr);
             stopsignal.set;
             fail(e);
             return;
@@ -119,6 +124,7 @@ struct InputValidatorService {
                 }
                 socketSet.reset();
 
+                // Check for control signal
                 receiveTimeout(Duration.zero,
                         &signal,
                         &ownerTerminated,

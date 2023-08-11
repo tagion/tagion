@@ -35,19 +35,26 @@ jobs:
           git clean -f && git restore . 
           git checkout current
           git pull
-          
+
+      - name: get revision file
+        shell: bash
+        run: |
+          pwd
+          make help |tail -n 3 |head -n 2 > revision.txt
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v3.1.2
+        with:
+          name: revision
+          path: ./revision.txt
 
       - name: Run tests
         run: |
-          make -k clean ci -j DC=${{env.DC}} || make -k clean proper ci -j DC=${{env.DC}}
+          make clean ci -j DC=${{env.DC}} || make clean proper ci -j DC=${{env.DC}}
           
       - name: Report unittests
         run: |
           RESULT=$(cat logs/${{ env.TARGET }}/unittest.log | grep -E "^[0-9]+ modules passed unittests")
           echo -e "### :heavy_check_mark: Unittests passed \n $RESULT" >> $GITHUB_STEP_SUMMARY
-      - name: show current files
-        run: |
-          ls
       - name: Report bddtests
         run: | 
           RESULT=$(./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/commit/results)
@@ -102,20 +109,17 @@ jobs:
           find . -mindepth 1 -delete
           cp /mnt/nfs/${{needs.commit_stage.outputs.stage}}/${{needs.commit_stage.outputs.tarball}} .
           tar -xzf ${{needs.commit_stage.outputs.tarball}}
-      - name: check the files
-        run: |
-          ls
-          echo "log dir"
-          ls logs
-          ls build/${{ env.TARGET }}/integration      
       - name: Run collider tests
         run: |
+          id
+          pwd
+          hostname
           source $PWD/build/${{ env.TARGET }}/bin/bddenv.sh
           export DBIN=$PWD/build/${{ env.TARGET }}/bin
           export DLOG=$PWD/logs/${{ env.TARGET }}
           export COLLIDER_ROOT=$PWD/logs/${{ env.TARGET }}/bdd
           export PATH=$DBIN:$PATH
-          ./build/${{ env.TARGET }}/bin/collider -r acceptance -j ${{env.CD_PARALLEL}} -b build/${{ env.TARGET }}/bin/testbench -s build/${{ env.TARGET }}/bin/collider_schedule.json  
+          ./build/${{ env.TARGET }}/bin/collider --silent -r acceptance -j ${{env.CD_PARALLEL}} -b build/${{ env.TARGET }}/bin/testbench -s build/${{ env.TARGET }}/bin/collider_schedule.json  
       - name: Generate reports
         if: failure() || success()
         run: |
@@ -144,7 +148,7 @@ jobs:
           rm ${{ needs.commit_stage.outputs.tarball }}
           rm -rf *
 
-  ddoc_build:
+  ddoc_push:
     runs-on: CD
     needs: acceptance_stage 
     steps:
@@ -154,15 +158,14 @@ jobs:
           cp /mnt/nfs/${{needs.acceptance_stage.outputs.stage}}/${{needs.acceptance_stage.outputs.tarball}} .
           tar -xzf ${{needs.acceptance_stage.outputs.tarball}}
           echo $(ls build/)     
-
       - name: Send ddoc to repository 
         run: |
           ls logs
           git clone https://${{ secrets.API_TOKEN_GITHUB }}@github.com/tagion/ddoc.git
           cp -R build/ddoc/* ddoc/          
           cd ddoc
-          git config user.email "mm@decard.io"
-          git config user.name "Matlab"
+          git config user.email "gitbot@decard.io"
+          git config user.name "gitbot"
           git add .
           git commit -m "ddocs updated" || echo "nothing to commit"
           git push https://${{ secrets.API_TOKEN_GITHUB }}@github.com/tagion/ddoc.git || echo "repo already up to date"
@@ -196,7 +199,7 @@ jobs:
 
   finish_workflow:
     runs-on: CD
-    needs: [acceptance_stage, ddoc_build, docs_build]
+    needs: [acceptance_stage, ddoc_push, docs_build]
     steps:    
       - name: Copy Artifact to local machine
         run: |
@@ -259,6 +262,10 @@ jobs:
     runs-on: testnet-container
     needs: [finish_workflow]
     steps:    
+      - uses: actions/download-artifact@v3
+        with:
+          name: revision
+        
       - name: get artifact and restart service
         run: |
           source ~/.bashrc
@@ -275,9 +282,7 @@ jobs:
           tar -xzf *.tar.gz
           mkdir -p /opt/tagion/artifact
           sudo cp build/x86_64-linux/bin/tagion /var/lib/docker/volumes/tagion-dashboard/_data/
-          /home/ubuntu/build/x86_64-linux/bin/tagion --version | grep hash > revision.txt
-          echo $GITHUB_REF_NAME >> revision.txt
-          sudo cp requirements.txt /var/lib/docker/volumes/tagion-dashboard/_data/
+          sudo cp -f /home/ubuntu/actions-runner/_work/tagion/tagion/revision.txt /var/lib/docker/volumes/tagion-dashboard/_data/
           /home/ubuntu/dashboard.sh
           sudo rm -rf build || echo "build directory already deleted"
           sudo rm  *.tar.gz || echo "No such file or directory"

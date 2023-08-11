@@ -2,6 +2,7 @@
 module tagion.tools.neuewelle;
 
 import core.sys.posix.signal;
+import core.sys.posix.unistd;
 import core.sync.event;
 import core.thread;
 import std.getopt;
@@ -27,6 +28,30 @@ import tagion.GlobalSignals;
 //     db = Tuple("%s -d %s", program_name, file),
 // }
 
+// TODO: 
+deprecated("rewrite logger with the 4th implementation of a taskwrapper")
+auto startLogger() {
+    import tagion.taskwrapper.TaskWrapper : Task;
+    import tagion.prior_services.LoggerService;
+    import tagion.basic.Types : Control;
+    import tagion.prior_services.Options;
+    import tagion.options.CommonOptions : setCommonOptions;
+
+    Options options;
+    setDefaultOption(options);
+    auto logger_service_tid = Task!LoggerTask(options.logger.task_name, options);
+    import std.stdio : stderr;
+
+    stderr.writeln("Waiting for logger");
+    const response = receiveOnly!Control;
+    stderr.writeln("Logger started");
+    if (response !is Control.LIVE) {
+        stderr.writeln("ERROR:Logger %s", response);
+        _exit(1);
+    }
+    return logger_service_tid;
+}
+
 extern (C)
 void signal_handler(int _) @trusted nothrow {
     try {
@@ -41,6 +66,10 @@ void signal_handler(int _) @trusted nothrow {
 mixin Main!(_main);
 
 int _main(string[] args) {
+    if(geteuid == 0) {
+        stderr.writeln("FATAL: YOU SHALL NOT RUN THIS PROGRAM AS ROOT");
+        return 1;
+    }
     stopsignal.initialize(true, false);
     sigaction_t sa;
     sa.sa_handler = &signal_handler;
@@ -51,7 +80,6 @@ int _main(string[] args) {
 
     bool version_switch;
     immutable program = args[0];
-    log.register(baseName(program));
 
     auto main_args = getopt(args,
             "v|version", "Print revision information", &version_switch
@@ -70,16 +98,28 @@ int _main(string[] args) {
         return 0;
     }
 
-    enum supervisor_task_name = "supervisor";
+    auto logger_service_tid = startLogger;
+    scope (exit) {
+        import tagion.basic.Types : Control;
+        logger_service_tid.control(Control.STOP);
+        receiveOnly!Control;
+    }
+
+    log.register(baseName(program));
     immutable opts = Options(
             InputValidatorOptions(contract_sock_path)
     );
-    log("Starting with options \n %s", opts.stringify);
+    log("Starting with options \n%s", opts.stringify);
+    enum supervisor_task_name = "supervisor";
     auto supervisor_handle = spawn!Supervisor(supervisor_task_name, opts);
-    waitforChildren(Ctrl.ALIVE);
 
-    log("alive");
-    stopsignal.wait;
+    if(waitforChildren(Ctrl.ALIVE)) {
+        log("alive");
+        stopsignal.wait;
+    } else {
+        log("Progam did not start");
+    }
+
     log("Sending stop signal to supervisor");
     supervisor_handle.send(Sig.STOP);
     waitforChildren(Ctrl.END);

@@ -1,4 +1,5 @@
 REVISION_FILE?=$(DBUILD)/revision.mixin
+GIT_BRANCH:=${shell git rev-parse --abbrev-ref HEAD}
 GIT_HASH:=${shell git rev-parse HEAD}
 GIT_INFO:=${shell git  config --get remote.origin.url}
 GIT_REVNO:=${shell git log --pretty=format:'%h'|wc -l}
