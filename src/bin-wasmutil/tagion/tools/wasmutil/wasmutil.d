@@ -45,8 +45,8 @@ template Produce(FileExtension ext) {
     }
 }
 
-void produce(FileExtension ext)(WasmReader wasm_reader, File fout) {
-    Produce!(ext)(wasm_reader, fout).serialize;
+auto produce(FileExtension ext)(WasmReader wasm_reader, File fout) {
+    return Produce!(ext)(wasm_reader, fout);
 }
 
 enum OutputType {
@@ -76,8 +76,11 @@ int _main(string[] args) {
     string outputfilename;
     //bool print;
     //bool betterc;
+    string module_name = "wasm_test";
+    string[] imports;
     bool inject_gas;
     bool verbose_switch;
+
     string[] modify_from;
     string[] modify_to;
 
@@ -92,7 +95,10 @@ int _main(string[] args) {
                 "gas|g", format("Inject gas countes: %s", inject_gas), &inject_gas,
                 "verbose|v", format("Verbose %s", verbose_switch), &verbose_switch,
                 "mod|m", "Modify import module name from ", &modify_from,
-                "to", "Modify import module name from ", &modify_to, //                "print|p", format("Print the wasm as wat: %s", print), &print,
+                "to", "Modify import module name from ", &modify_to,
+                "imports|i", "Import list", &imports,
+                "name", "Import list", &module_name,//                "print|p", format("Print the wasm as wat: %s", print), &print,
+
                 //                "betterc|d", format("Print the wasm as wat: %s", betterc), &betterc,
 
                 "type|t", format("Sets stdout file type (%-(%s %))", [EnumMembers!OutputType]), &type,
@@ -225,7 +231,6 @@ int _main(string[] args) {
         }
 
         const output_extension = (outputfilename.empty) ? type.typeExtension : outputfilename.extension;
-        writefln("Extension %s", output_extension);
         with (FileExtension) {
         WasmOutCase:
             switch (output_extension) {
@@ -240,17 +245,22 @@ int _main(string[] args) {
                             fout.close;
                         }
                     }
-                    produce!WasmOut(WasmReader(data_out), fout);
+                    auto prod = produce!WasmOut(WasmReader(data_out), fout);
+                    static if (__traits(hasMember, prod, "module_name")) {
+                        writefln("BetterC");
+                        prod.module_name = module_name;
+                        prod.imports = imports;
+                    }
                     // produce!(FileExtension.wat)(WasmReader(data_out), outputfilename);
                     //   import _wast=tagion.wasm.Wat;
                     //       _wast.wat(WasmReader(data_out), stdout).serialize;
+                    prod.serialize;
                     break WasmOutCase;
                 }
             case wasm:
                 if (outputfilename.empty) {
                     outputfilename = inputfilename.setExtension(FileExtension.wasm);
                 }
-                writefln("Write wasm %s", outputfilename);
                 outputfilename.fwrite(data_out);
                 break;
             default:
