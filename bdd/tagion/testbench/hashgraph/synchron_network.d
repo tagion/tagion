@@ -170,9 +170,9 @@ class StartNetworkWithNAmountOfNodes {
 
             // compare_events.sort!((a,b) => a < b);
             // compare_events.each!writeln;
-            writefln("%s", compare_events.map!(f => f.cutHex));
+            // writefln("%s", compare_events.map!(f => f.cutHex));
             foreach(channel_epoch; TestRefinement.epoch_events.byKeyValue) {
-                writefln("epoch: %s", i);
+                // writefln("epoch: %s", i);
                 if (channel_epoch.value.length-1 < i) {
                     break;
                 }
@@ -184,9 +184,9 @@ class StartNetworkWithNAmountOfNodes {
                 // events.sort!((a,b) => a < b);
 
 
-                writefln("%s", events.map!(f => f.cutHex));
+                // writefln("%s", events.map!(f => f.cutHex));
                 // events.each!writeln;
-                writefln("channel %s time: %s", channel_epoch.key.cutHex, channel_epoch.value[i].epoch_time);
+                // writefln("channel %s time: %s", channel_epoch.key.cutHex, channel_epoch.value[i].epoch_time);
                 
                 check(compare_events.length == events.length, "event_packages not the same length");
 
@@ -195,12 +195,10 @@ class StartNetworkWithNAmountOfNodes {
                 check(sameEvents, "events lists does not contain same events");
                 
                 const isSame = equal(compare_events, events);
-                writefln("isSame: %s", isSame);
+                // writefln("isSame: %s", isSame);
                 check(isSame, "event_packages not the same");
 
                 const sameRoundFingerprints = equal(compare_round_fingerprint.fingerprints, channel_round_fingerprint.fingerprints);
-                writefln("Roundfingerprint: %s", channel_round_fingerprint.fingerprints.map!(b => b.toHexString));
-                writefln("Sameroundfingerprints: %s", sameRoundFingerprints);
                 check(sameRoundFingerprints, "round fingerprints not the same");
             }
         }        

@@ -268,6 +268,10 @@ import std.format;
                     this.data = data[index .. $];
                 }
 
+                protected this(const(SectionT) that) @nogc pure nothrow {
+                    data = that.data;
+                    length = that.length;
+                }
                 // static assert(isInputRange!SecRange);
                 // static assert(isForwardRange!SecRange);
                 alias SecRange = VectorRange!(SectionT, SecType);
@@ -277,6 +281,10 @@ import std.format;
 
                 SecType opIndex(const size_t index) const pure {
                     return SecRange(this).opIndex(index);
+                }
+
+                SectionT dup() const pure nothrow {
+                    return new SectionT(this);
                 }
 
                 @trusted override string toString() const {
