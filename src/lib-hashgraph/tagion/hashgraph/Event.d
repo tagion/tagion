@@ -938,7 +938,7 @@ class Event {
 
 
             const new_witness = calc_witness_strong_seen_masks(hashgraph);
-            calc_witness_descendants();
+            calc_witness_descendants(hashgraph);
             if (new_witness) {
                 hashgraph._rounds.next_round(this);
             }
@@ -952,6 +952,7 @@ class Event {
                         _witness._prev_strongly_seen_witnesses[i] = _witness_strong_seen_masks[i].isMajority(hashgraph);
                     }
                     clear_witness_strong_seen_masks(hashgraph);
+                    clear_witness_descendants(hashgraph);
                 }
                 else {
                     _round.add(this);
@@ -990,40 +991,31 @@ class Event {
         }        
     }
 
-    void calc_witness_descendants() {
+    void calc_witness_descendants(HashGraph hashgraph) {
         if (!father || mother.round.number > father.round.number) {
             _witness_descendants = mother._witness_descendants;
-            // _witness_strong_seen_masks = _mother._witness_strong_seen_masks.dupBitMaskArray;
-            
             return;
         }
 
         if (father.round is mother.round) {
             _witness_descendants = mother._witness_descendants;
-            // _witness_strong_seen_masks = _mother._witness_strong_seen_masks.dupBitMaskArray;
         }
-        
-        const father_descendants = (~_witness_descendants & father._witness_descendants);
-        father_descendants[]
-            .map!(i => round._events[i])
-            .filter!(e => e._witness._ancestors_tide[node_id] is null)
-            .filter!(e => higher(e._witness._ancestors_tide[node_id].received_order, received_order)) 
-            .each!((ref e) { e._ancestors_tide[node_id] = this; return No.each; });
+        const father_unique_descendants = (~_witness_descendants & father._witness_descendants);
+        father_unique_descendants[]
+            .map!(i => _round._events[i])
+            .filter!(e => e._witness._ancestors_tide[node_id] !is null)
+            .filter!(e  => higher(e._witness._ancestors_tide[node_id].received_order, received_order))
+            .each!(e => e._witness._ancestors_tide[node_id] = this);
+
         _witness_descendants |= father._witness_descendants;
         if (hashgraph.__debug_print) {
             __write("EVENT: %s, has _witness_descendants: %4s", id, _witness_descendants);
         }
-        // // const _father_masks = father._witness_strong_seen_masks;
-        // foreach (i;0 .. _father_masks.length) {
-        //     _witness_strong_seen_masks[i] |= _father_masks[i];
+    }
 
-        //     if (_father_masks[i][father.node_id]) {
-        //         _witness_strong_seen_masks[i][node_id] = true;
-        //     }
-        // }
-        // const strongly_seen_votes = _witness_strong_seen_masks.filter!(mask => mask.isMajority(hashgraph)).count;
-        // const result = hashgraph.isMajority(strongly_seen_votes);
-        // return hashgraph.isMajority(strongly_seen_votes);
+    void clear_witness_descendants(HashGraph hashgraph) {
+        _witness_descendants.clear();
+        _witness_descendants[node_id] = true;
     }
 
     void calc_vote(HashGraph hashgraph, ulong vote_node_id) {
