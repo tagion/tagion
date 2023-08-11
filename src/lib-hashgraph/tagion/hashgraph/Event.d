@@ -934,10 +934,7 @@ class Event {
 
         calc_youngest_ancestors(hashgraph);
         BitMask strongly_seen_nodes = calc_strongly_seen_nodes(hashgraph);
-        if (hashgraph.__debug_print)
-        {
-            __write("###{ %s", strongly_seen_nodes);
-        }
+        
         if (strongly_seen_nodes.isMajority(hashgraph)) {
             hashgraph._rounds.next_round(this);
         }
@@ -945,17 +942,10 @@ class Event {
             _witness = new Witness(this, hashgraph.node_size);
             
             if (strongly_seen_nodes.isMajority(hashgraph)) {
+                _witness._prev_strongly_seen_witnesses = strongly_seen_nodes;
                 foreach (i;0 .. _witness_strong_seen_masks.length)
                 {
                     _witness._prev_seen_witnesses[i] = (_youngest_ancestors[i] !is null);
-                    _witness._prev_strongly_seen_witnesses[i] =
-                                 
-            _youngest_ancestors
-                .filter!((Event e) => e !is null)
-                .map!((Event e) => e._youngest_ancestors.map!((Event e) => e !is null).array).array
-                .transposed!()
-                .map!(l => l.count!(b => b))
-                .map!(n => hashgraph.isMajority(n)).array[i];
                 }
                 clear_youngest_ancestors(hashgraph);
             }
@@ -1047,45 +1037,6 @@ class Event {
             }
             hashgraph._rounds.vote(vote_node_id, hashgraph);
         }
-    }
-    version(none)
-    private bool calc_witness_strong_seen_masks(HashGraph hashgraph) {
-        pragma(msg, "fixme(bbh) We are currently missing which previous round witnesses you can strongly
-         see if the method by which you became a witness was not this function but just that father.round>mother.round.
-         A quick fix to this is just having the witnesses keep 2 bitarrays; one for what you can see in the previous round
-         and the next, or implementing another way to check for strongly seen. One could also make a special call that just
-         search recursively whenever a witness becomes a witness by this second method");
-        if (!father || mother.round.number > father.round.number) {
-            _witness_strong_seen_masks = _mother._witness_strong_seen_masks.dupBitMaskArray;
-            
-            return false;
-        }
-
-        if (father.round is mother.round) {
-            _witness_strong_seen_masks = _mother._witness_strong_seen_masks.dupBitMaskArray;
-        }
-        
-        _witness_strong_seen_masks[node_id][node_id] = true;
-        
-        const _father_masks = father._witness_strong_seen_masks;
-        foreach (i;0 .. _father_masks.length) {
-            _witness_strong_seen_masks[i] |= _father_masks[i];
-
-            if (_father_masks[i][father.node_id]) {
-                _witness_strong_seen_masks[i][node_id] = true;
-            }
-        }
-        const strongly_seen_votes = _witness_strong_seen_masks.filter!(mask => mask.isMajority(hashgraph)).count;
-        const result = hashgraph.isMajority(strongly_seen_votes);
-        return hashgraph.isMajority(strongly_seen_votes);
-    }
-    version(none)
-    void clear_witness_strong_seen_masks(HashGraph hashgraph) {
-        foreach (ref mask; _witness_strong_seen_masks) {
-            mask.clear();
-        }
-        _witness_strong_seen_masks[node_id][node_id] = true;
-
     }
 
     /**
