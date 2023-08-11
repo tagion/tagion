@@ -40,6 +40,7 @@ help: help-nng
 
 proper-nng:
 	$(PRECMD)
+	${call log.header, $@ :: wolfssl}
 	$(RMDIR) $(DTMP_NNG)
 
 proper: proper-nng
