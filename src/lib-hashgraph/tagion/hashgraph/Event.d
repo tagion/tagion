@@ -938,14 +938,8 @@ class Event {
                 mixin Log!(received_order_statistic);
             }
 
-
-            // calc_witness_strong_seen_masks(hashgraph);
             calc_youngest_ancestors(hashgraph);
             const new_witness = strongly_sees(hashgraph);
-            // if (hashgraph.__debug_print) {
-            //     __write("################################ %s", _youngest_ancestors.filter!(e => e !is null).map!(e => e.id));
-            //     __write("EVENT: %s is a witness? %s", id, strongly_sees(hashgraph));
-            // }
             if (new_witness) {
                 hashgraph._rounds.next_round(this);
             }
@@ -964,10 +958,7 @@ class Event {
                     .transposed!()
                     .map!(l => l.count!(b => b))
                     .map!(n => hashgraph.isMajority(n)).array[i];
-                        // _witness._prev_seen_witnesses[i] = _witness_strong_seen_masks[i][node_id];
-                        // _witness._prev_strongly_seen_witnesses[i] = _witness_strong_seen_masks[i].isMajority(hashgraph);
                     }
-                    // clear_witness_strong_seen_masks(hashgraph);
                     clear_youngest_ancestors(hashgraph);
                 }
                 else {
@@ -989,24 +980,6 @@ class Event {
                             _witness._prev_seen_witnesses[j] = true;
                         }
                     }
-                    
-                    // foreach(idx; father._witness_strong_seen_masks
-                    //     .map!(mask => (mask.count >= 1))
-                    //     .enumerate
-                    //     .filter!(b => b.value)
-                    //     .map!(b => b.index)) {
-                    //         _witness._prev_strongly_seen_witnesses |= round.events[idx]._witness._prev_strongly_seen_witnesses;
-                    //         foreach(j; 0 .. _witness_strong_seen_masks.length) {
-                    //             if (round.events[idx]._witness._prev_seen_witnesses[j]) {
-                    //                 _witness._prev_seen_witnesses[j] = round.events[idx]._witness._prev_seen_witnesses[j];
-                    //             }
-                    //         }
-                    // }
-                    // foreach(j; 0 .. _witness_strong_seen_masks.length) {
-                    //     if (mother._witness_strong_seen_masks[j][mother.node_id] && mother.round.number + 1 == round.number) {
-                    //         _witness._prev_seen_witnesses[j] = mother._witness_strong_seen_masks[j][mother.node_id];
-                    //     }
-                    // }
                 }
                 with (hashgraph) {
                     mixin Log!(strong_seeing_statistic);
