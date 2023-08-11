@@ -995,10 +995,10 @@ class Event {
 
     void calc_youngest_ancestors(HashGraph hashgraph) {
         // __write("AIORSTNOARTNEIART");
-        if (hashgraph.__debug_print) {
-            __write("AIORSTNOARTNEIART");
-            __write("EVENT: %s, has _youngest_ancestors: %s", id, _youngest_ancestors);
-        }
+        // if (hashgraph.__debug_print) {
+        //     __write("AIORSTNOARTNEIART");
+        //     __write("EVENT: %s, has _youngest_ancestors: %s", id, _youngest_ancestors);
+        // }
         if (!father || mother.round.number > father.round.number) {
             _youngest_ancestors = _mother._youngest_ancestors;
             // _witness_descendants = mother._witness_descendants;
@@ -1023,7 +1023,7 @@ class Event {
             .filter!((ulong i) => _father._youngest_ancestors[i] !is null)
             .filter!((ulong i) => _youngest_ancestors[i] is null || _father._youngest_ancestors[i].received_order > _youngest_ancestors[i].received_order)
             .each!((ulong i) => _youngest_ancestors[i] = _father._youngest_ancestors[i]);
-        _youngest_ancestors[_father.node_id] = _father;
+        _youngest_ancestors[node_id] = this;
         
         // const father_unique_descendants = (~_witness_descendants & father._witness_descendants);
         // father_unique_descendants[]
