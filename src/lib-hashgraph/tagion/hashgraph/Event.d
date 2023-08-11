@@ -939,12 +939,13 @@ class Event {
             }
 
 
-            const new_witness = calc_witness_strong_seen_masks(hashgraph);
+            calc_witness_strong_seen_masks(hashgraph);
             calc_youngest_ancestors(hashgraph);
-            if (hashgraph.__debug_print) {
-                __write("################################ %s", _youngest_ancestors.filter!(e => e !is null).map!(e => e.id));
-                __write("EVENT: %s is a witness? %s", id, strongly_sees(hashgraph));
-            }
+            const new_witness = strongly_sees(hashgraph);
+            // if (hashgraph.__debug_print) {
+            //     __write("################################ %s", _youngest_ancestors.filter!(e => e !is null).map!(e => e.id));
+            //     __write("EVENT: %s is a witness? %s", id, strongly_sees(hashgraph));
+            // }
             if (new_witness) {
                 hashgraph._rounds.next_round(this);
             }
@@ -954,8 +955,17 @@ class Event {
                 if (new_witness) {
                     foreach (i;0 .. _witness_strong_seen_masks.length)
                     {
-                        _witness._prev_seen_witnesses[i] = _witness_strong_seen_masks[i][node_id];
-                        _witness._prev_strongly_seen_witnesses[i] = _witness_strong_seen_masks[i].isMajority(hashgraph);
+                        _witness._prev_seen_witnesses[i] = (_youngest_ancestors[i] !is null);
+                        _witness._prev_strongly_seen_witnesses[i] =
+                                 
+                _youngest_ancestors
+                    .filter!((Event e) => e !is null)
+                    .map!((Event e) => e._youngest_ancestors.map!((Event e) => e !is null).array).array
+                    .transposed!()
+                    .map!(l => l.count!(b => b))
+                    .map!(n => hashgraph.isMajority(n)).array[i];
+                        // _witness._prev_seen_witnesses[i] = _witness_strong_seen_masks[i][node_id];
+                        // _witness._prev_strongly_seen_witnesses[i] = _witness_strong_seen_masks[i].isMajority(hashgraph);
                     }
                     clear_witness_strong_seen_masks(hashgraph);
                     clear_youngest_ancestors(hashgraph);
