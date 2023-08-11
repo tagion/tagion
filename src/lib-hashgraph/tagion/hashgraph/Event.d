@@ -938,45 +938,47 @@ class Event {
         if (strongly_seen_nodes.isMajority(hashgraph)) {
             hashgraph._rounds.next_round(this);
         }
-        if (round.number > mother.round.number) {
-            _witness = new Witness(this, hashgraph.node_size);
+
+        if (!higher(round.number, mother.round.number)) { return; } //not a witness; return
+        
+        _witness = new Witness(this, hashgraph.node_size);
             
-            if (strongly_seen_nodes.isMajority(hashgraph)) {
-                _witness._prev_strongly_seen_witnesses = strongly_seen_nodes;
-                foreach (i;0 .. _witness_strong_seen_masks.length)
-                {
-                    _witness._prev_seen_witnesses[i] = (_youngest_ancestors[i] !is null);
-                }
-                clear_youngest_ancestors(hashgraph);
-            }
-            else {
-                _round.add(this);
-                foreach(e; _youngest_ancestors.filter!(e => e !is null)) {
-                    _witness._prev_strongly_seen_witnesses |= round.events[e.node_id]._witness._prev_strongly_seen_witnesses;
-                
-                    foreach(j; 0 .. hashgraph.node_size) {
-                        if (round.events[e.node_id]._witness._prev_seen_witnesses[j]) {
-                            _witness._prev_seen_witnesses[j] = round.events[e.node_id]._witness._prev_seen_witnesses[j];
-                        }
+        if (strongly_seen_nodes.isMajority(hashgraph)) {
+            _witness._prev_strongly_seen_witnesses = strongly_seen_nodes;
+            _witness._prev_seen_witnesses = BitMask(_youngest_ancestors.map!(e => e !is null));
+            // foreach (i;0 .. hashgraph.node_size)
+            // {
+            //     _witness._prev_seen_witnesses[i] = (_youngest_ancestors[i] !is null);
+            // }
+            clear_youngest_ancestors(hashgraph);
+        }
+        else {
+            _round.add(this);
+            foreach(e; _youngest_ancestors.filter!(e => e !is null)) {
+                _witness._prev_strongly_seen_witnesses |= round.events[e.node_id]._witness._prev_strongly_seen_witnesses;
+            
+                foreach(j; 0 .. hashgraph.node_size) {
+                    if (round.events[e.node_id]._witness._prev_seen_witnesses[j]) {
+                        _witness._prev_seen_witnesses[j] = round.events[e.node_id]._witness._prev_seen_witnesses[j];
                     }
                 }
+            }
 
                     
-                foreach(j; 0 .. hashgraph.node_size) {
-                    if (mother._youngest_ancestors[j] !is null && mother.round.number + 1 == round.number) {
-                        _witness._prev_seen_witnesses[j] = true;
-                    }
+            foreach(j; 0 .. hashgraph.node_size) {
+                if (mother._youngest_ancestors[j] !is null && mother.round.number + 1 == round.number) {
+                    _witness._prev_seen_witnesses[j] = true;
                 }
             }
-            with (hashgraph) {
-                mixin Log!(strong_seeing_statistic);
-            }
-            if (callbacks) {
-                callbacks.witness(this);
-            }
-            foreach(i; 0 .. hashgraph.node_size) {
-                calc_vote(hashgraph, i);
-            }                    
+        }
+        with (hashgraph) {
+            mixin Log!(strong_seeing_statistic);
+        }
+        if (callbacks) {
+            callbacks.witness(this);
+        }
+        foreach(i; 0 .. hashgraph.node_size) {
+            calc_vote(hashgraph, i);
         }
     }
 
