@@ -939,7 +939,7 @@ class Event {
             }
 
 
-            calc_witness_strong_seen_masks(hashgraph);
+            // calc_witness_strong_seen_masks(hashgraph);
             calc_youngest_ancestors(hashgraph);
             const new_witness = strongly_sees(hashgraph);
             // if (hashgraph.__debug_print) {
@@ -967,7 +967,7 @@ class Event {
                         // _witness._prev_seen_witnesses[i] = _witness_strong_seen_masks[i][node_id];
                         // _witness._prev_strongly_seen_witnesses[i] = _witness_strong_seen_masks[i].isMajority(hashgraph);
                     }
-                    clear_witness_strong_seen_masks(hashgraph);
+                    // clear_witness_strong_seen_masks(hashgraph);
                     clear_youngest_ancestors(hashgraph);
                 }
                 else {
