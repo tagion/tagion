@@ -282,13 +282,8 @@ class Round {
             local_erase(last_round);
         }
 
-        // package void set_lowest_undecided_witness(Event event) {
-        //     voting_events[event.node_id] = &event;
-        // }
-
-        /**
-     * Cleans up old round and events if they are no-longer needed
-     */
+     //Cleans up old round and events if they are no-longer needed
+     
         package
         void dustman() {
             void local_dustman(Round r) {
@@ -1005,15 +1000,7 @@ class Event {
                     .transposed!()
                     .map!(l => l.count!(b => b))
                     .map!(n => hashgraph.isMajority(n)).array;
-        if (hashgraph.__debug_print) {
-            __write("EVETNENSTENSETN: %s", strongly_seen_nodes);
-        }
         return hashgraph.isMajority(strongly_seen_nodes.count!(b => b));
-        // return false;
-        // if (hashgraph.__debug_print) {
-        //     __write("EVENT: %s strongly sees views: %s", id, views);
-        // }
-        // return false;
     }
 
     void calc_youngest_ancestors(HashGraph hashgraph) {
@@ -1060,7 +1047,7 @@ class Event {
             hashgraph._rounds.vote(vote_node_id, hashgraph);
         }
     }
-
+    version(none)
     private bool calc_witness_strong_seen_masks(HashGraph hashgraph) {
         pragma(msg, "fixme(bbh) We are currently missing which previous round witnesses you can strongly
          see if the method by which you became a witness was not this function but just that father.round>mother.round.
@@ -1091,7 +1078,7 @@ class Event {
         const result = hashgraph.isMajority(strongly_seen_votes);
         return hashgraph.isMajority(strongly_seen_votes);
     }
-
+    version(none)
     void clear_witness_strong_seen_masks(HashGraph hashgraph) {
         foreach (ref mask; _witness_strong_seen_masks) {
             mask.clear();
