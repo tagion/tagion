@@ -1004,16 +1004,11 @@ class Event {
                 .transposed!()
                 .map!(l => l.count!(b => b))
                 .map!(n => hashgraph.isMajority(n)).array;
-        BitMask temp;
-        foreach(i; 0 .. hashgraph.node_size) {
-            temp[i] = strongly_seen_nodes[i];
-        }
-        // iota(hashgraph.node_size).each!(i => temp[i] = strongly_seen_nodes[i]);
-        // if (hashgraph.__debug_print) {
-        //     __write("XYXYXYXYYX: %s \n %s \n %s", strongly_seen_nodes, BitMask(strongly_seen_nodes), new BitMask(strongly_seen_nodes));
+        BitMask temp = BitMask(strongly_seen_nodes);
+        // foreach(i; 0 .. hashgraph.node_size) {
+        //     temp[i] = strongly_seen_nodes[i];
         // }
         return temp;
-        // return hashgraph.isMajority(strongly_seen_nodes.count!(b => b));
     }
 
     void calc_youngest_ancestors(HashGraph hashgraph) {
