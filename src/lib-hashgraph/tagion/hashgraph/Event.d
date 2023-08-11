@@ -934,14 +934,18 @@ class Event {
             }
 
             calc_youngest_ancestors(hashgraph);
-            const new_witness = strongly_sees(hashgraph);
-            if (new_witness) {
+            BitMask strongly_seen_nodes = calc_strongly_seen_nodes(hashgraph);
+            if (hashgraph.__debug_print)
+            {
+                __write("###{ %s", strongly_seen_nodes);
+            }
+            if (strongly_seen_nodes.isMajority(hashgraph)) {
                 hashgraph._rounds.next_round(this);
             }
             if (round.number > mother.round.number) {
                 _witness = new Witness(this, hashgraph.node_size);
                 
-                if (new_witness) {
+                if (strongly_seen_nodes.isMajority(hashgraph)) {
                     foreach (i;0 .. _witness_strong_seen_masks.length)
                     {
                         _witness._prev_seen_witnesses[i] = (_youngest_ancestors[i] !is null);
@@ -993,14 +997,23 @@ class Event {
         }        
     }
 
-    bool strongly_sees(HashGraph hashgraph) {
+    BitMask calc_strongly_seen_nodes(HashGraph hashgraph) {
         const strongly_seen_nodes = _youngest_ancestors
-                    .filter!((Event e) => e !is null)
-                    .map!((Event e) => e._youngest_ancestors.map!((Event e) => e !is null).array).array
-                    .transposed!()
-                    .map!(l => l.count!(b => b))
-                    .map!(n => hashgraph.isMajority(n)).array;
-        return hashgraph.isMajority(strongly_seen_nodes.count!(b => b));
+                .filter!(e => e !is null)
+                .map!((Event e) => e._youngest_ancestors.map!((Event e) => e !is null).array).array
+                .transposed!()
+                .map!(l => l.count!(b => b))
+                .map!(n => hashgraph.isMajority(n)).array;
+        BitMask temp;
+        foreach(i; 0 .. hashgraph.node_size) {
+            temp[i] = strongly_seen_nodes[i];
+        }
+        // iota(hashgraph.node_size).each!(i => temp[i] = strongly_seen_nodes[i]);
+        // if (hashgraph.__debug_print) {
+        //     __write("XYXYXYXYYX: %s \n %s \n %s", strongly_seen_nodes, BitMask(strongly_seen_nodes), new BitMask(strongly_seen_nodes));
+        // }
+        return temp;
+        // return hashgraph.isMajority(strongly_seen_nodes.count!(b => b));
     }
 
     void calc_youngest_ancestors(HashGraph hashgraph) {
