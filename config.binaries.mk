@@ -52,7 +52,7 @@ ${call DO_BIN,tagionwave,$(LIB_DFILES) ${call BIN_DEPS,priorwave},tagion}
 #
 # New Wave
 #
-target-neuewelle: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+target-neuewelle: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER) $(LIBNNG)
 ${call DO_BIN,neuewelle,$(LIB_DFILES) ${call BIN_DEPS,wave},tagion}
 
 
@@ -92,12 +92,6 @@ wallet: target-tagionwallet
 
 target-signs: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
 ${call DO_BIN,signs,$(LIB_DFILES) ${call BIN_DEPS,signs},tagion}
-
-#
-# Subscription utility
-#
-#target-tagionsubscription: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-#${call DO_BIN,subscription,$(LIB_DFILES) ${call BIN_DEPS,subsciption}}
 
 #
 # Recorderchain utility
@@ -146,7 +140,7 @@ TAGION_TOOLS+=wasmutil
 TAGION_BINS=$(foreach tools,$(TAGION_TOOLS), ${call BIN_DEPS,$(tools)} )
 
 target-tagion: DFLAGS+=$(DVERSION)=ONETOOL
-target-tagion: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+target-tagion: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER) $(LIBNNG)
 ${call DO_BIN,tagion,$(LIB_DFILES) $(TAGION_BINS)}
 
 
@@ -154,6 +148,6 @@ ${call DO_BIN,tagion,$(LIB_DFILES) $(TAGION_BINS)}
 # Binary of BBD generator tool
 #
 target-collider: DFLAGS+=$(DVERSION)=ONETOOL
-target-collider: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+target-collider: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER) $(LIBNNG)
 ${call DO_BIN,collider,$(LIB_DFILES) ${call BIN_DEPS,collider}}
 
