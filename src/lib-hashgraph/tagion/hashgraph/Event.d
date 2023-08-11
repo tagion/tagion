@@ -941,6 +941,10 @@ class Event {
 
             const new_witness = calc_witness_strong_seen_masks(hashgraph);
             calc_youngest_ancestors(hashgraph);
+            if (hashgraph.__debug_print) {
+                __write("################################ %s", _youngest_ancestors.filter!(e => e !is null).map!(e => e.id));
+                __write("EVENT: %s is a witness? %s", id, strongly_sees(hashgraph));
+            }
             if (new_witness) {
                 hashgraph._rounds.next_round(this);
             }
@@ -993,18 +997,30 @@ class Event {
         }        
     }
 
+    bool strongly_sees(HashGraph hashgraph) {
+        const strongly_seen_nodes = _youngest_ancestors
+                    .filter!((Event e) => e !is null)
+                    .map!((Event e) => e._youngest_ancestors.map!((Event e) => e !is null).array).array
+                    .transposed!()
+                    .map!(l => l.count!(b => b))
+                    .map!(n => hashgraph.isMajority(n)).array;
+        if (hashgraph.__debug_print) {
+            __write("EVETNENSTENSETN: %s", strongly_seen_nodes);
+        }
+        return hashgraph.isMajority(strongly_seen_nodes.count!(b => b));
+        // return false;
+        // if (hashgraph.__debug_print) {
+        //     __write("EVENT: %s strongly sees views: %s", id, views);
+        // }
+        // return false;
+    }
+
     void calc_youngest_ancestors(HashGraph hashgraph) {
         if (!father || mother.round.number > father.round.number) {
             _youngest_ancestors = _mother._youngest_ancestors;
             return;
         }
         _youngest_ancestors = (father.round is mother.round) ? _mother._youngest_ancestors.dup() : new Event[hashgraph.node_size];
-        // if (father.round is mother.round) {
-        //     _youngest_ancestors = _mother._youngest_ancestors.dup();
-        // }
-        // else {
-        //     _youngest_ancestors = new Event[hashgraph.node_size];
-        // }
         _youngest_ancestors[node_id] = this;
         iota(_father._youngest_ancestors.length)
             .filter!((ulong i) => _father._youngest_ancestors[i] !is null)
