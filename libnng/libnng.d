@@ -16,6 +16,7 @@ const int NNG_MAXADDRLEN = 128;
 
 int NNG_PROTOCOL_NUMBER (int maj, int min) { return maj *16 + min; }
 
+/+
 version(none)
 enum nng_errno {
     NNG_EINTR        = 1,
@@ -53,6 +54,8 @@ enum nng_errno {
     NNG_ESYSERR      = 0x10000000,
     NNG_ETRANERR     = 0x20000000
 };
++/
+
 
 enum nng_errno : int {
         @("") NNG_EINTR = 1,
@@ -104,6 +107,8 @@ string nng_errstr(nng_errno errno) {
     assert(0);
 }
 
+
+/+
 version(none)
 string nng_errstr ( int ierrno ) {
     immutable string[int] _nng_errstr = [
@@ -149,6 +154,8 @@ version(none)
 string nng_errstr ( nng_errno e ){
     return nng_errstr(cast(int)e);
 }
++/
+
 
 enum nng_flag {
      NNG_FLAG_ALLOC = 1 
