@@ -509,6 +509,8 @@ int nng_send(nng_socket, void *, size_t, int);
 int nng_recv(nng_socket, void *, size_t *, int);
 int nng_sendmsg(nng_socket, nng_msg *, int);
 int nng_recvmsg(nng_socket, nng_msg **, int);
+void nng_send_aio(nng_socket, nng_aio *);
+void nng_recv_aio(nng_socket, nng_aio *);
 
 // ------------------------------------- message functions
 
