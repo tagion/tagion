@@ -107,6 +107,10 @@ string nng_errstr(nng_errno errno) {
     assert(0);
 }
 
+string nng_errstr( int errno ){
+    return nng_errstr(cast(nng_errno)errno);
+}
+
 
 /+
 version(none)
