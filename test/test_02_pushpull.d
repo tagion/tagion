@@ -14,8 +14,8 @@ static double timestamp()
     return ts.tv_sec + ts.tv_nsec/1e9;
 }
 
-static void log(A...)(A a){
-    writeln(format("%.6f ",timestamp),a);
+static void log(A...)(string fmt, A a){
+    writefln("%.6f "~fmt,timestamp,a);
 }
 
 void sender_worker(string url)
@@ -30,7 +30,7 @@ void sender_worker(string url)
         log("SS: to dial...");
         rc = s.dial(url);
         if(rc == 0) break;
-        log("SS: Dial error: ",nng_strerror(rc));
+        log("SS: Dial error: %s",rc);
         if(rc == nng_errno.NNG_ECONNREFUSED){
             nng_sleep(msecs(100));
             continue;
@@ -41,7 +41,7 @@ void sender_worker(string url)
     while(1){
         line = format(">MSG:%d DBL:%d TRL:%d<",k,k*2,k*3);
         if(k > 9) line = "END";
-        rc = s.send_string(line);
+        rc = s.send(line);
         assert(rc == 0);
         log("SS sent: ",k," : ",line);
         k++;
@@ -64,7 +64,7 @@ void receiver_worker(string url)
     while(1){
         log("RR to receive");
         log("RR: debug state: ",s.state, " errno: ", s.errno);
-        auto str = s.receive_string();
+        auto str = s.receive!string();
         log("RR: debug state: ",s.state, s.errno);
         if(s.errno == 0){
             log("RR: GOT["~(to!string(str.length))~"]: >"~str~"<");

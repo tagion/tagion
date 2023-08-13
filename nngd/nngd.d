@@ -11,11 +11,15 @@ import std.datetime.systime;
 
 import libnng;
 
-T* ptr(T)(T[] arr, size_t off = 0) { return arr.length == 0 ? null : &arr[off]; }
+
+@safe
+T* ptr(T)(T[] arr, size_t off = 0) pure nothrow { return arr.length == 0 ? null : &arr[off]; }
 
 alias nng_errno = libnng.nng_errno;
 
-void nng_sleep(Duration val){
+
+@safe
+void nng_sleep(Duration val) nothrow {
     nng_msleep(cast(nng_duration)val.total!"msecs");
 }
 
@@ -52,10 +56,13 @@ string toString(nng_sockaddr a){
     return s;
 }
 
+alias toString=nng_errstr;
+version(none)
 string toString(nng_errno e){
-    return nng_errstr(cast(int)e);        
+    return nng_errstr(e);        
 }
 
+version(none)
 string nng_strerror( int e ){
     return nng_errstr(e);
 }
@@ -105,59 +112,64 @@ struct NNGSocket {
         m_type = itype;
         m_raw = iraw;
         m_state = nng_socket_state.NNG_STATE_NONE;
-        switch(itype){
-            case nng_socket_type.NNG_SOCKET_BUS:
+        with(nng_socket_type) {
+        final switch(itype){
+            case NNG_SOCKET_BUS:
                 rc = (!raw) ? nng_bus_open(&m_socket) : nng_bus_open_raw(&m_socket);
                 m_may_send = true;
                 m_may_recv = true;
                 break;
-            case nng_socket_type.NNG_SOCKET_PAIR:       
+            case NNG_SOCKET_PAIR:       
                 rc = (!raw) ? nng_pair_open(&m_socket) : nng_pair_open_raw(&m_socket);
                 m_may_send = true;
                 m_may_recv = true;
                 break;
-            case nng_socket_type.NNG_SOCKET_PULL:       
+            case NNG_SOCKET_PULL:       
                 rc = (!raw) ? nng_pull_open(&m_socket) : nng_pull_open_raw(&m_socket);
                 m_may_send = false;
                 m_may_recv = true;
                 break;
-            case nng_socket_type.NNG_SOCKET_PUSH:       
+            case NNG_SOCKET_PUSH:       
                 rc = (!raw) ? nng_push_open(&m_socket) : nng_push_open_raw(&m_socket);
                 m_may_send = true;
                 m_may_recv = false;
                 break;
-            case nng_socket_type.NNG_SOCKET_PUB:        
+            case NNG_SOCKET_PUB:        
                 rc = (!raw) ? nng_pub_open(&m_socket) : nng_pub_open_raw(&m_socket);
                 m_may_send = true;
                 m_may_recv = false;
                 break;
-            case nng_socket_type.NNG_SOCKET_SUB:        
+            case NNG_SOCKET_SUB:        
                 rc = (!raw) ? nng_sub_open(&m_socket) : nng_sub_open_raw(&m_socket);
                 m_may_send = false;
                 m_may_recv = true;
                 break;
-            case nng_socket_type.NNG_SOCKET_REQ:        
+            case NNG_SOCKET_REQ:        
                 rc = (!raw) ? nng_req_open(&m_socket) : nng_req_open_raw(&m_socket);
                 m_may_send = true;
                 m_may_recv = true;
                 break;
-            case nng_socket_type.NNG_SOCKET_REP:        
+            case NNG_SOCKET_REP:        
                 rc = (!raw) ? nng_rep_open(&m_socket) : nng_rep_open_raw(&m_socket);
                 m_may_send = true;
                 m_may_recv = true;
                 break;
-            case nng_socket_type.NNG_SOCKET_SURVEYOR:   
+            case NNG_SOCKET_SURVEYOR:   
                 rc = (!raw) ? nng_surveyor_open(&m_socket) : nng_surveyor_open_raw(&m_socket);
                 m_may_send = true;
                 m_may_recv = true;
                 break;
-            case nng_socket_type.NNG_SOCKET_RESPONDENT: 
+            case NNG_SOCKET_RESPONDENT: 
                 rc = (!raw) ? nng_respondent_open(&m_socket) : nng_respondent_open_raw(&m_socket);
                 m_may_send = true;
                 m_may_recv = true;
                 break;
-            default:
+
+        /+
+        default:
                 rc = -1;
++/  
+           }
         }
         if(rc != 0){
             m_state = nng_socket_state.NNG_STATE_ERROR;
@@ -171,7 +183,7 @@ struct NNGSocket {
 
     // setup listener
 
-    int listener_create(string url){
+    int listener_create(const(string) url){
         m_errno = cast(nng_errno)0;
         if(m_state == nng_socket_state.NNG_STATE_CREATED){
             auto rc = nng_listener_create( &m_listener, m_socket, toStringz(url) );
@@ -186,7 +198,7 @@ struct NNGSocket {
         }
     }        
 
-    int listener_start( bool nonblock = false ){
+    int listener_start( const bool nonblock = false ){
         m_errno = cast(nng_errno)0;
         if(m_state == nng_socket_state.NNG_STATE_PREPARED){
             auto rc =  nng_listener_start(m_listener, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 );
@@ -201,7 +213,7 @@ struct NNGSocket {
         }
     }
 
-    int listen ( string url, bool nonblock = false ){
+    int listen ( const(string) url, const bool nonblock = false ) nothrow {
         m_errno = cast(nng_errno)0;
         if(m_state == nng_socket_state.NNG_STATE_CREATED){
             auto rc = nng_listen(m_socket, toStringz(url), &m_listener, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 );
@@ -253,7 +265,7 @@ struct NNGSocket {
 
     // setup dialer
     
-    int dialer_create(string url){
+    int dialer_create(const(string) url) nothrow {
         m_errno = cast(nng_errno)0;
         if(m_state == nng_socket_state.NNG_STATE_CREATED){
             auto rc = nng_dialer_create( &m_dialer, m_socket, toStringz(url) );
@@ -268,7 +280,7 @@ struct NNGSocket {
         }
     }        
 
-    int dialer_start( bool nonblock = false ){
+    int dialer_start( const bool nonblock = false ) nothrow {
         m_errno = cast(nng_errno)0;
         if(m_state == nng_socket_state.NNG_STATE_PREPARED){
             auto rc =  nng_dialer_start(m_dialer, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 );
@@ -283,7 +295,7 @@ struct NNGSocket {
         }
     }
 
-    int dial ( string url, bool nonblock = false ){
+    int dial ( const(string) url, const bool nonblock = false ) nothrow {
         m_errno = cast(nng_errno)0;
         if(m_state == nng_socket_state.NNG_STATE_CREATED){
             auto rc = nng_dial(m_socket, toStringz(url), &m_dialer, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 );
@@ -298,8 +310,32 @@ struct NNGSocket {
         }
     }
 
-    // send & receive
+    /+ I don't think we need the size and offset 
+    // because it east to move the posstion in an array
+    // like
+    // auto buf=new ubyte[100]
+    // _send(buf[offset..size+offset]);
+   
+    I suggest to use a template Type because the it work ofr both char[] and byte[] ubyte[] etc..
+    +/
+    int _send (T)( const(T) data , bool nonblock = false) if(isArray!T)
+     {
+        alias U=ForeachType!T;
+        static assert(U.sizeof == 1, "None byte size array element are not supported");
 
+        m_errno = nng_errno.init;
+        if(m_state == nng_socket_state.NNG_STATE_CONNECTED){
+            void* ptr=cast(void*)&data[0];
+            auto rc = nng_send(m_socket, ptr, data.length, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0);
+            if( rc != 0){
+                m_errno = cast(nng_errno)rc;
+                return rc;
+            }
+            return 0;
+        }
+        return -1;
+    }
+    // send & receive
     int send ( ubyte[] data , bool nonblock = false, size_t size = 0, size_t offset = 0 ){
         m_errno = cast(nng_errno)0;
         if(m_state == nng_socket_state.NNG_STATE_CONNECTED){
@@ -314,7 +350,7 @@ struct NNGSocket {
         }
     }
     
-    int send_string ( string s, bool nonblock = false ){
+    int send ( const(char[]) s, const bool nonblock = false ) nothrow {
         m_errno = cast(nng_errno)0;
         if(m_state == nng_socket_state.NNG_STATE_CONNECTED){
             auto data = cast(ubyte[])(s.dup);
@@ -324,12 +360,36 @@ struct NNGSocket {
                 return rc;
             }
             return 0;
-        }else{
-            return -1;
         }
+        return -1;
+        
     }
 
-    int receive ( ubyte[] data, size_t* sz, bool nonblock = false ){
+    /**
+        Receives a data buffer of the max size data.length 
+Params:
+            data = preallocated buffer
+            nonblock = set the non blocking mode
+            sz = if sz != the this sz is used as max size
+*/
+    @nogc @safe
+    const(ubyte[]) _receive ( ubyte[] data,  bool nonblock = false, size_t sz=0 ) nothrow 
+        in(data.length>=sz)
+        in(data.length)
+do {
+        m_errno = nng_errno.init;
+        if(m_state == nng_socket_state.NNG_STATE_CONNECTED){
+            sz =(sz==0)?data.length:sz;
+            m_errno = (() @trusted => cast(nng_errno)nng_recv(m_socket, &data[0], &sz, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 ))();
+            if (m_errno !is nng_errno.init) {    
+                return null;
+            }
+            return data[0..sz];
+        }
+        return null;
+    }
+
+     int receive ( ubyte[] data, size_t* sz, bool nonblock = false ){
         m_errno = cast(nng_errno)0;
         if(m_state == nng_socket_state.NNG_STATE_CONNECTED){
             auto rc = nng_recv(m_socket, ptr(data), sz, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 );
@@ -339,38 +399,52 @@ struct NNGSocket {
             }
             data = data[0..*sz];
             return 0;
-        }else{
-            return -1;
         }
+        return -1;
     }
-    
-    string receive_string ( bool nonblock = false ){
-        m_errno = cast(nng_errno)0;
+   
+    import std.traits;
+    T receive(T)( bool nonblock = false ) if (isArray!T) {
+        m_errno = nng_errno.init;
+        alias U=ForeachType!T;
+        static assert(U.sizeof == 1, "None byte size array element are not supported");
         if(m_state == nng_socket_state.NNG_STATE_CONNECTED){
-            char *buf;
+            ubyte* buf;
             size_t sz;
-            auto rc = nng_recv(m_socket, &buf, &sz, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 + nng_flag.NNG_FLAG_ALLOC );
-            if( rc != 0){
+            const rc = nng_recv(m_socket, &buf, &sz, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 + nng_flag.NNG_FLAG_ALLOC );
+            if (rc != 0) { 
                 m_errno = cast(nng_errno)rc;
-                return "";
+                return T.init;
             }
             GC.addRange(buf,sz);
-            return (cast(immutable(char)*)buf)[0..sz];
-        }else{
-            return null;
+            return (cast(U*)buf)[0..sz];
         }
+        return T.init;
+        
+    }
+    // properties Note @propery is not need anymore
+    @nogc nothrow pure  {
+    @property int state() const { return m_state; }
+    @property int errno() const { return m_errno; }
+    @property string versionstring() {
+        import core.stdc.string : strlen;
+        return nng_version[0..strlen(nng_version)]; 
     }
 
-    // properties
-    @property string versionstring() { return to!string(nng_version()); }
-    @property int state() { return m_state; }
-    @property int errno() { return m_errno; }
-
-    @property string name() { return m_name; }
-    @property void name(string val) { m_name = val.dup; }
-
-    @property bool raw() { return m_raw; }
+    string name() const { return m_name; }
     
+    /* You don't need to dup the string because is immutable 
+        Only if you are planing to change the content in the string
+@property void name(string val) { m_name = val.dup; }
+        Ex:
+        The function can be @nogc if you don't duplicate
+*/    
+    void name(string val) { m_name = val; }
+
+    @property bool raw() const { return m_raw; }
+    }
+
+    nothrow {
     @property int proto() { return getopt_int(NNG_OPT_PROTO); }
     @property string protoname() { return getopt_string(NNG_OPT_PROTONAME); }
     
@@ -394,7 +468,17 @@ struct NNGSocket {
 
     @property nng_sockaddr locaddr() { return (m_may_send) ? getopt_addr(NNG_OPT_LOCADDR,"dialer") : getopt_addr(NNG_OPT_LOCADDR,"listener"); } 
     @property nng_sockaddr remaddr() { return (m_may_send) ? getopt_addr(NNG_OPT_REMADDR,"dialer") : nng_sockaddr(nng_sockaddr_family.NNG_AF_NONE); } 
-
+}
+    // Recommend the use a enum for like this
+    enum Modes {
+        dialer,
+        listner,
+        socket,
+    }
+    /+ And then use
+    const m=Modes.dailer;
+    string name=m.to!string;
+    +/
     @property string url() { 
         if(m_may_send)
             return getopt_string(NNG_OPT_URL,"dialer"); 
@@ -404,11 +488,11 @@ struct NNGSocket {
             return getopt_string(NNG_OPT_URL,"socket"); 
     }
 
-    @property int maxttl() { return getopt_int(NNG_OPT_MAXTTL); } 
-    @property void maxttl(int val){ setopt_int(NNG_OPT_MAXTTL,val); }
+    @property Duration maxttl() { return getopt_duration(NNG_OPT_MAXTTL); } 
+    @property void maxttl(Duration val){ setopt_duration(NNG_OPT_MAXTTL,val); }
     
-    @property size_t recvmaxsz() { return getopt_size(NNG_OPT_RECVMAXSZ); } 
-    @property void recvmaxsz(size_t val) { return setopt_size(NNG_OPT_RECVMAXSZ,val); } 
+    @property int recvmaxsz() { return getopt_int(NNG_OPT_RECVMAXSZ); } 
+    @property void recvmaxsz(int val) { return setopt_int(NNG_OPT_RECVMAXSZ,val); } 
 
     @property Duration reconnmint() { return getopt_duration(NNG_OPT_RECONNMINT); } 
     @property void reconnmint(Duration val){ setopt_duration(NNG_OPT_RECONNMINT,val); }
@@ -418,7 +502,8 @@ struct NNGSocket {
 
     // TODO: NNG_OPT_IPC_*, NNG_OPT_TLS_*, NNG_OPT_WS_*  
 private:
-    void setopt_int(string opt, int val){
+nothrow {
+    void setopt_int(string opt, int val) {
         m_errno = cast(nng_errno)0;
         auto rc = nng_socket_set_int(m_socket,toStringz(opt),val);
         if(rc == 0){ return; }else{ m_errno = cast(nng_errno)rc; } 
@@ -529,6 +614,7 @@ private:
         m_errno = cast(nng_errno)0;
         auto rc = nng_socket_set_addr(m_socket,cast(const char*)toStringz(opt),&val);
         if(rc == 0){ return; }else{ m_errno = cast(nng_errno)rc; }
+    }
     }
 }   // struct Socket
 
