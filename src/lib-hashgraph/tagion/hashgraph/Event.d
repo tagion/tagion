@@ -13,7 +13,7 @@ import std.traits : Unqual, ReturnType;
 import std.array : array;
 
 import std.algorithm.sorting : sort;
-import std.algorithm.iteration : map, each, filter, cache, fold, joiner;
+import std.algorithm.iteration : map, each, filter, cache, fold, joiner, reduce;
 import std.algorithm.searching : count, any, all, until, canFind;
 import std.range.primitives : walkLength, isInputRange, isForwardRange, isBidirectionalRange;
 import std.range : enumerate, tee;
@@ -916,6 +916,7 @@ class Event {
             }
             return;
         }
+        
         check(!_mother._daughter, ConsensusFailCode.EVENT_MOTHER_FORK);
         _mother._daughter = this;
         _father = hashgraph.register(event_package.event_body.father);
@@ -936,10 +937,6 @@ class Event {
 
         calc_youngest_ancestors(hashgraph);
         BitMask strongly_seen_nodes = calc_strongly_seen_nodes(hashgraph);
-        if (hashgraph.__debug_print) {
-            __write("AFTER FUNCT %4s", strongly_seen_nodes);
-        }
-        
         if (strongly_seen_nodes.isMajority(hashgraph)) {
             hashgraph._rounds.next_round(this);
         }
@@ -951,30 +948,19 @@ class Event {
         if (strongly_seen_nodes.isMajority(hashgraph)) {
             _witness._prev_strongly_seen_witnesses = strongly_seen_nodes;
             _witness._prev_seen_witnesses = BitMask(_youngest_ancestors.map!(e => e !is null));
-            // foreach (i;0 .. hashgraph.node_size)
-            // {
-            //     _witness._prev_seen_witnesses[i] = (_youngest_ancestors[i] !is null);
-            // }
             clear_youngest_ancestors(hashgraph);
         }
         else {
             _round.add(this);
-            foreach(e; _youngest_ancestors.filter!(e => e !is null)) {
-                _witness._prev_strongly_seen_witnesses |= round.events[e.node_id]._witness._prev_strongly_seen_witnesses;
-            
-                foreach(j; 0 .. hashgraph.node_size) {
-                    if (round.events[e.node_id]._witness._prev_seen_witnesses[j]) {
-                        _witness._prev_seen_witnesses[j] = round.events[e.node_id]._witness._prev_seen_witnesses[j];
-                    }
-                }
-            }
+            auto witness_ancestors = _youngest_ancestors
+                                    .filter!(e => e !is null)
+                                    .map!(e => _round._events[e.node_id]._witness);
 
-                    
-            foreach(j; 0 .. hashgraph.node_size) {
-                if (mother._youngest_ancestors[j] !is null && mother.round.number + 1 == round.number) {
-                    _witness._prev_seen_witnesses[j] = true;
-                }
+            witness_ancestors.each!(w => _witness._prev_strongly_seen_witnesses |= w._prev_strongly_seen_witnesses);
+            if (mother.round is round.previous) {
+                _witness._prev_seen_witnesses = BitMask(mother._youngest_ancestors.map!(e => e !is null));
             }
+            _witness._prev_seen_witnesses |= witness_ancestors.map!(w => w._prev_seen_witnesses).array.reduce!((a,b) => a | b);
         }
         with (hashgraph) {
             mixin Log!(strong_seeing_statistic);
@@ -994,18 +980,6 @@ class Event {
                 .transposed!()
                 .map!(l => l.count!(b => b))
                 .map!(n => hashgraph.isMajority(n)).array;
-         // BitMask temp;
-        // foreach(i; 0 .. hashgraph.node_size) {
-        //     temp[i] = strongly_seen_nodes[i];
-        // }
-        alias R = typeof(strongly_seen_nodes);
-        pragma(msg, ((isInputRange!R) && is(ElementType!R==bool)));
-        pragma(msg, ((isInputRange!R) && !isSomeString!R && !is(ElementType!R==bool)));
-        pragma(msg, (is(ElementType!R==const(bool))));
-        if (hashgraph.__debug_print) {
-                pragma(msg, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX;", ElementType!(typeof(strongly_seen_nodes)));            
-                __write("return range: %s", strongly_seen_nodes); 
-        }
         return BitMask(strongly_seen_nodes);
     }
 
@@ -1047,9 +1021,6 @@ class Event {
         _witness._vote_on_earliest_witnesses[vote_node_id] = (yes_votes >= no_votes);
         if (hashgraph.isMajority(yes_votes) || hashgraph.isMajority(no_votes)) {
             voting_round.famous_mask[vote_node_id] = (yes_votes >= no_votes);
-            if (yes_votes < no_votes) {
-                __write("A NOTE HAS BEEN VOTED INFAMOUS");
-            }
             hashgraph._rounds.vote(vote_node_id, hashgraph);
         }
     }
