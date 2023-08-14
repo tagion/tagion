@@ -25,7 +25,7 @@ import tagion.crypto.secp256k1.NativeSecp256k1;
 import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 
 import tagion.prior_services.DARTSynchronization;
-import tagion.tasks.ResponseRequest;
+import tagion.prior_services.ResponseRequest;
 
 version (unittest) import tagion.dart.BlockFile : fileId;
 import tagion.hibon.HiBONJSON;

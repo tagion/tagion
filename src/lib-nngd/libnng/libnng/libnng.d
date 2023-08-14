@@ -2,6 +2,12 @@ module libnng.libnng;
 
 import std.meta : Alias;
 import core.stdc.config;
+import std.traits;
+import core.stdc.stdio: printf;
+
+@nogc nothrow extern (C)
+{
+
 
 enum NNG_MAJOR_VERSION = 1;
 enum NNG_MINOR_VERSION = 6;
@@ -11,6 +17,8 @@ const int NNG_MAXADDRLEN = 128;
 
 int NNG_PROTOCOL_NUMBER (int maj, int min) { return maj *16 + min; }
 
+/+
+version(none)
 enum nng_errno {
     NNG_EINTR        = 1,
     NNG_ENOMEM       = 2,
@@ -47,7 +55,67 @@ enum nng_errno {
     NNG_ESYSERR      = 0x10000000,
     NNG_ETRANERR     = 0x20000000
 };
++/
 
+
+enum nng_errno : int {
+        @("Ok!") NNG_OK = 0,
+        @("Interrupted system call") NNG_EINTR = 1,
+        @("Insufficient free memory exists.") NNG_ENOMEM = 2,
+        @("An invalid URL or other data was supplied.") NNG_EINVAL = 3,
+        @("Server instance is running.") NNG_EBUSY = 4,
+        @("The operation timed out.") NNG_ETIMEDOUT = 5,
+        @("The remote peer refused the connection.") NNG_ECONNREFUSED = 6,
+        @("At least one of the sockets is not open.") NNG_ECLOSED = 7,
+        @("Resource temporarily unavailable") NNG_EAGAIN = 8,
+        @("The option or protocol is not supported.") NNG_ENOTSUP = 9,
+        @("The address is already in use.") NNG_EADDRINUSE = 10,
+        @("The context/dialer/listener cannot do what your want state.") NNG_ESTATE = 11,
+        @("Handler is not registered with server.") NNG_ENOENT = 12,
+        @("A protocol error occurred.") NNG_EPROTO = 13,
+        @("The remote address is not reachable.") NNG_EUNREACHABLE = 14,
+        @("The address is invalid or unavailable.") NNG_EADDRINVAL = 15,
+        @("No permission to read the file.") NNG_EPERM = 16,
+        @("The message is too large.") NNG_EMSGSIZE = 17,
+        @("Software caused connection abort") NNG_ECONNABORTED = 18,
+        @("The connection was reset by the peer.") NNG_ECONNRESET = 19,
+        @("The operation was aborted.") NNG_ECANCELED = 20,
+        @("") NNG_ENOFILES = 21,
+        @("No space left on device") NNG_ENOSPC = 22,
+        @("") NNG_EEXIST = 23,
+        @("The option may not be modified.") NNG_EREADONLY = 24,
+        @("The option may not read.") NNG_EWRITEONLY = 25,
+        @("") NNG_ECRYPTO = 26,
+        @("Authentication or authorization failure.") NNG_EPEERAUTH = 27,
+        @("Option requires an argument: but one is not present.") NNG_ENOARG = 28,
+        @("Parsed option matches more than one specification.") NNG_EAMBIGUOUS = 29,
+        @("Incorrect type for option.") NNG_EBADTYPE = 30,
+        @("Remote peer shutdown after sending data.") NNG_ECONNSHUT = 31,
+        @("") NNG_EINTERNAL = 1000,
+        @("") NNG_ESYSERR = 0x1000_0000,
+        @("") NNG_ETRANERR = 0x2000_0000,
+}
+
+string nng_errstr(nng_errno errno) {
+    switch(errno) { 
+        static foreach(E; EnumMembers!nng_errno) {
+            case E:
+                enum error_text = getUDAs!(E, string)[0];
+                return (error_text.length) ? error_text : E.stringof;
+        }
+    default:
+        return null;
+    }
+    assert(0);
+}
+
+string nng_errstr( int errno ){
+    return nng_errstr(cast(nng_errno)errno);
+}
+
+
+/+
+version(none)
 string nng_errstr ( int ierrno ) {
     immutable string[int] _nng_errstr = [
          1:            "NNG_EINTR"
@@ -88,9 +156,12 @@ string nng_errstr ( int ierrno ) {
     return (ierrno in _nng_errstr) ? _nng_errstr[ierrno] : "";
 }
 
+version(none)
 string nng_errstr ( nng_errno e ){
     return nng_errstr(cast(int)e);
 }
++/
+
 
 enum nng_flag {
      NNG_FLAG_ALLOC = 1 
@@ -100,8 +171,7 @@ enum nng_flag {
 @safe:
 T* ptr(T)(T[] arr) { return arr.length == 0 ? null : &arr[0]; }
 
-nothrow extern (C)
-{
+
 // ------------------------------------- typedefs
 
 struct nng_ctx {
@@ -214,7 +284,7 @@ void nng_free(void *, size_t);
 char *nng_strdup(const char *);
 char *nng_strerror(int);
 void nng_strfree(char *);
-char *nng_version();
+char *nng_version() pure;
 
 // ------------------------------------- system functions
 
@@ -225,7 +295,7 @@ struct nng_cv {};
 
 nng_time nng_clock();
 void nng_msleep(nng_duration);
-int nng_thread_create(nng_thread **, void function(void *), void *);
+int nng_thread_create(nng_thread **, void* function(void *), void *);
 void nng_thread_set_name(nng_thread *, const char *);
 void nng_thread_destroy(nng_thread *);
 int nng_mtx_alloc(nng_mtx **);
@@ -299,7 +369,31 @@ struct nng_optspec {
 int nng_opts_parse(int argc, const char **argv,
     const nng_optspec *opts, int *val, char **optarg, int *optidx);
 
-// ------------------------------------- aio functions TODO:
+// ------------------------------------- aio functions:
+
+int nng_aio_alloc(nng_aio **, void* function(void *), void *);
+void nng_aio_free(nng_aio *);
+void nng_aio_reap(nng_aio *);
+void nng_aio_stop(nng_aio *);
+int nng_aio_result(nng_aio *);
+size_t nng_aio_count(nng_aio *);
+void nng_aio_cancel(nng_aio *);
+void nng_aio_abort(nng_aio *, int);
+void nng_aio_wait(nng_aio *);
+bool nng_aio_busy(nng_aio *);
+void nng_aio_set_msg(nng_aio *, nng_msg *);
+nng_msg *nng_aio_get_msg(nng_aio *);
+int nng_aio_set_input(nng_aio *, uint, void *);
+void *nng_aio_get_input(nng_aio *, uint);
+int nng_aio_set_output(nng_aio *, uint, void *);
+void *nng_aio_get_output(nng_aio *, uint);
+void nng_aio_set_timeout(nng_aio *, nng_duration);
+int nng_aio_set_iov(nng_aio *, uint, const nng_iov *);
+bool nng_aio_begin(nng_aio *);
+void nng_aio_finish(nng_aio *, int);
+void nng_aio_defer(nng_aio *, void* function(nng_aio *, void *, int), void *);
+void nng_sleep_aio(nng_duration, nng_aio *);
+
 
 // ------------------------------------- context functions
 
@@ -328,10 +422,12 @@ int nng_ctx_set_string(nng_ctx, const char *, const char *);
 int nng_ctx_set_ptr(nng_ctx, const char *, void *);
 int nng_ctx_set_ms(nng_ctx, const char *, nng_duration);
 int nng_ctx_set_addr(nng_ctx, const char *, const nng_sockaddr *);
+void nng_ctx_recv(nng_ctx, nng_aio *);
+void nng_ctx_send(nng_ctx, nng_aio *);
 
-// TODO: TBD: aio
-//void nng_ctx_recv(nng_ctx, nng_aio *);
-//void nng_ctx_send(nng_ctx, nng_aio *);
+// ------------------------------------- device functions 
+int nng_device(nng_socket, nng_socket);
+void nng_device_aio(nng_aio *, nng_socket, nng_socket);
 
 
 // ------------------------------------- statistics functions TODO:
@@ -426,6 +522,8 @@ int nng_send(nng_socket, void *, size_t, int);
 int nng_recv(nng_socket, void *, size_t *, int);
 int nng_sendmsg(nng_socket, nng_msg *, int);
 int nng_recvmsg(nng_socket, nng_msg **, int);
+void nng_send_aio(nng_socket, nng_aio *);
+void nng_recv_aio(nng_socket, nng_aio *);
 
 // ------------------------------------- message functions
 
