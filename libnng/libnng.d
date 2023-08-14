@@ -59,6 +59,7 @@ enum nng_errno {
 
 
 enum nng_errno : int {
+        @("Ok!") NNG_OK = 0,
         @("Interrupted system call") NNG_EINTR = 1,
         @("Insufficient free memory exists.") NNG_ENOMEM = 2,
         @("An invalid URL or other data was supplied.") NNG_EINVAL = 3,
