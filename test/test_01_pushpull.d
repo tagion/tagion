@@ -42,7 +42,7 @@ void sender_worker(string url)
         line = format(">MSG:%d DBL:%d TRL:%d<",k,k*2,k*3);
         if(k > 9) line = "END";
         auto buf = cast(ubyte[])line.dup;
-        rc = s.send(buf);
+        rc = s.send!(ubyte[])(buf);
         assert(rc == 0);
         log("SS sent: ",k," : ",line);
         k++;
@@ -56,6 +56,8 @@ void sender_worker(string url)
 void receiver_worker(string url)
 {
     int rc;
+    ubyte[4096] buf;
+    size_t sz = buf.length;
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_PULL);
     s.recvtimeout = msecs(1000);
     rc = s.listen(url);
@@ -63,11 +65,14 @@ void receiver_worker(string url)
     assert(rc == 0);
     log(nngtest_socket_properties(s,"receiver"));
     while(1){
-        ubyte[4096] buf;
-        size_t sz = buf.length;
-        rc = s.receive(buf, &sz);
+        sz = s._receive(buf, buf.length);
+        if(sz < 0){
+            log("REcv error: " ~ toString(s.m_errno));
+            continue;
+        }
         auto str = cast(string)buf[0..sz];
         log("RR: GOT["~(to!string(sz))~"]: >"~str~"<");
+        writeln(str);
         if(str == "END") 
             break;
     }

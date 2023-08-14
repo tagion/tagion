@@ -37,11 +37,12 @@ void server_worker(string url)
     assert(rc == 0);
     log(nngtest_socket_properties(s,"REP"));
     while( p < 4 ){
-        line = s.receive_string();
+        auto ss = s.receive!string();
         if(s.errno != 0){
-            log("REP: RECV ERROR: " ~ nng_strerror(s.errno));
+            log("REP: RECV ERROR: " ~ toString(s.errno));
             continue;
         }
+        line = ss;
         k++;
         log("REP: RECV: " ~ line);
         auto rres = matchFirst(line, ctr);
@@ -53,9 +54,9 @@ void server_worker(string url)
                 p++;
             }
         }
-        rc = s.send_string(line);
+        rc = s.send!string(line);
         if(rc != 0){
-            log("REP: SEND ERROR: " ~ nng_strerror(rc));
+            log("REP: SEND ERROR: " ~ toString(rc));
         }else{
             log("REP: SENT: " ~ line);
         }
@@ -76,7 +77,7 @@ void client_worker(string url, string tag)
         log("REQ("~tag~"): to dial...");
         rc = s.dial(url);
         if(rc == 0) break;
-        log("REQ("~tag~"): Dial error: ",nng_strerror(rc));
+        log("REQ("~tag~"): Dial error: ",toString(rc));
         if(rc == nng_errno.NNG_ECONNREFUSED){
             nng_sleep(msecs(100));
             continue;
@@ -87,14 +88,14 @@ void client_worker(string url, string tag)
     while(1){
         k++;
         line = format("Client(%s) request %d", tag, k);            
-        rc = s.send_string(line);
+        rc = s.send!string(line);
         assert(rc == 0);
         log("REQ("~tag~"): SENT: " ~ line);
-        auto str = s.receive_string();
+        auto str = s.receive!string();
         if(s.errno == 0){
             log(format("REQ("~tag~") RECV [%03d]: %s", str.length, str));
         }else{
-            log("REQ("~tag~"): Error string: " ~ nng_strerror(s.errno));
+            log("REQ("~tag~"): Error string: " ~ toString(s.errno));
         }    
         if(str == "END")
             break;
