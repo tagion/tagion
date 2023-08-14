@@ -390,6 +390,7 @@ struct WastParser {
 
                 return stage;
             case "assert_return":
+            case "assert_return_nan":
                 Assert assert_type;
                 assert_type.method = Assert.Method.Return;
                 r.check(stage == ParserStage.BASE);
@@ -409,32 +410,40 @@ struct WastParser {
                 wast_assert.sectypes ~= assert_type;
                 return ParserStage.ASSERT;
             case "assert_trap":
+                Assert assert_type;
+                assert_type.method = Assert.Method.Trap;
                 r.check(stage == ParserStage.BASE);
                 label = r.token;
                 r.nextToken;
                 FuncType func_type;
-                CodeType code_type;
-                scope Types[] locals;
+                CodeType code_invoke;
                 scope int[string] params;
                 // Invoke call
-                parseInstr(r, ParserStage.ASSERT, code_type, func_type, params);
+                parseInstr(r, ParserStage.ASSERT, code_invoke, func_type, params);
+                assert_type.invoke = code_invoke.serialize;
 
                 r.check(r.type == TokenType.STRING);
-                arg = r.token;
+                assert_type.message = r.token;
                 r.nextToken;
                 return ParserStage.ASSERT;
+                version (none) {
             case "assert_return_nan":
-                r.check(stage == ParserStage.BASE);
-                label = r.token;
-                r.nextToken;
-                FuncType func_type;
-                CodeType code_type;
-                scope Types[] locals;
-                scope int[string] params;
-                // Invoke call
-                parseInstr(r, ParserStage.ASSERT, code_type, func_type, params);
+                    Assert assert_type;
+                    assert_type.method = Assert.Method.Return;
+                    r.check(stage == ParserStage.BASE);
+                    label = r.token;
+                    r.nextToken;
+                    FuncType func_type;
+                    CodeType code_invoke;
+                    scope int[string] params;
+                    // Invoke call
+                    parseInstr(r, ParserStage.ASSERT, code_invoke, func_type, params);
+                    assert_type.invoke = code_invoke.serialize;
+                    assert_type.result = code_result.serialize;
+                    wast_assert.sectypes ~= assert_type;
 
-                return ParserStage.ASSERT;
+                    return ParserStage.ASSERT;
+                }
             case "assert_invalid":
                 r.check(stage == ParserStage.BASE);
                 r.nextToken;

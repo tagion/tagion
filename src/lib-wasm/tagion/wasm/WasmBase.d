@@ -344,14 +344,6 @@ Instr getInstr(IR ir)() {
     return result;
 }
 
-version (none) shared static this() {
-    static foreach (ir; EnumMembers!IR) {
-        {
-            enum irInstr = getInstr!ir;
-        }
-    }
-}
-
 static unittest {
     enum InstrUnreachable = Instr("unreachable", "unreachable", 1, IRType.CODE);
     static assert(getInstr!(IR.UNREACHABLE) == InstrUnreachable);
