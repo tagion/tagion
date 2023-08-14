@@ -3,6 +3,7 @@ module libnng.libnng;
 import std.meta : Alias;
 import core.stdc.config;
 import std.traits;
+import core.stdc.stdio: printf;
 
 @nogc nothrow extern (C)
 {
@@ -58,14 +59,14 @@ enum nng_errno {
 
 
 enum nng_errno : int {
-        @("") NNG_EINTR = 1,
+        @("Interrupted system call") NNG_EINTR = 1,
         @("Insufficient free memory exists.") NNG_ENOMEM = 2,
         @("An invalid URL or other data was supplied.") NNG_EINVAL = 3,
         @("Server instance is running.") NNG_EBUSY = 4,
         @("The operation timed out.") NNG_ETIMEDOUT = 5,
         @("The remote peer refused the connection.") NNG_ECONNREFUSED = 6,
         @("At least one of the sockets is not open.") NNG_ECLOSED = 7,
-        @("") NNG_EAGAIN = 8,
+        @("Resource temporarily unavailable") NNG_EAGAIN = 8,
         @("The option or protocol is not supported.") NNG_ENOTSUP = 9,
         @("The address is already in use.") NNG_EADDRINUSE = 10,
         @("The context/dialer/listener cannot do what your want state.") NNG_ESTATE = 11,
@@ -75,11 +76,11 @@ enum nng_errno : int {
         @("The address is invalid or unavailable.") NNG_EADDRINVAL = 15,
         @("No permission to read the file.") NNG_EPERM = 16,
         @("The message is too large.") NNG_EMSGSIZE = 17,
-        @("") NNG_ECONNABORTED = 18,
+        @("Software caused connection abort") NNG_ECONNABORTED = 18,
         @("The connection was reset by the peer.") NNG_ECONNRESET = 19,
         @("The operation was aborted.") NNG_ECANCELED = 20,
         @("") NNG_ENOFILES = 21,
-        @("") NNG_ENOSPC = 22,
+        @("No space left on device") NNG_ENOSPC = 22,
         @("") NNG_EEXIST = 23,
         @("The option may not be modified.") NNG_EREADONLY = 24,
         @("The option may not read.") NNG_EWRITEONLY = 25,
@@ -99,7 +100,7 @@ string nng_errstr(nng_errno errno) {
         static foreach(E; EnumMembers!nng_errno) {
             case E:
                 enum error_text = getUDAs!(E, string)[0];
-                return E.stringof~(error_text.length)?" - ":""~error_text;
+                return (error_text.length) ? error_text : E.stringof;
         }
     default:
         return null;
