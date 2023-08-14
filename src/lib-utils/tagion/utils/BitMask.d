@@ -40,7 +40,12 @@ struct BitMask {
         }
     }
 
-    this(R)(R range) pure nothrow if ((isInputRange!R) && !isSomeString!R) {
+    
+    this(R)(R range) pure nothrow if ((isInputRange!R) && is(ElementType!R:bool)) {         
+        this(range.enumerate.filter!(b => b.value).map!(b => b.index));
+    }
+
+    this(R)(R range) pure nothrow if ((isInputRange!R) && !isSomeString!R && !is(ElementType!R:bool)) {
         range.each!((n) => this[n] = true);
     }
 

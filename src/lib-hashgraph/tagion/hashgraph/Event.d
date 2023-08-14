@@ -39,6 +39,8 @@ import tagion.utils.BitMask : BitMask;
 
 import std.typecons : No;
 
+import std.traits;
+
 import std.stdio;
 
 /// Handles the round information for the events in the Hashgraph
@@ -934,6 +936,9 @@ class Event {
 
         calc_youngest_ancestors(hashgraph);
         BitMask strongly_seen_nodes = calc_strongly_seen_nodes(hashgraph);
+        if (hashgraph.__debug_print) {
+            __write("AFTER FUNCT %4s", strongly_seen_nodes);
+        }
         
         if (strongly_seen_nodes.isMajority(hashgraph)) {
             hashgraph._rounds.next_round(this);
@@ -989,11 +994,19 @@ class Event {
                 .transposed!()
                 .map!(l => l.count!(b => b))
                 .map!(n => hashgraph.isMajority(n)).array;
-        BitMask temp;
-        foreach(i; 0 .. hashgraph.node_size) {
-            temp[i] = strongly_seen_nodes[i];
+         // BitMask temp;
+        // foreach(i; 0 .. hashgraph.node_size) {
+        //     temp[i] = strongly_seen_nodes[i];
+        // }
+        alias R = typeof(strongly_seen_nodes);
+        pragma(msg, ((isInputRange!R) && is(ElementType!R==bool)));
+        pragma(msg, ((isInputRange!R) && !isSomeString!R && !is(ElementType!R==bool)));
+        pragma(msg, (is(ElementType!R==const(bool))));
+        if (hashgraph.__debug_print) {
+                pragma(msg, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX;", ElementType!(typeof(strongly_seen_nodes)));            
+                __write("return range: %s", strongly_seen_nodes); 
         }
-        return temp;
+        return BitMask(strongly_seen_nodes);
     }
 
     void calc_youngest_ancestors(HashGraph hashgraph) {
