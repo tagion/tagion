@@ -28,9 +28,9 @@ You can run the following command as root, if you are using arch or ubuntu
     
 ```bash
 # Ubuntu
-apt-get install make screen autoconf golang clang libclang-dev libtool libssl-dev perl dub
+apt-get install make screen autoconf golang clang libclang-dev libtool libssl-dev perl dub cmake
 # Arch
-pacman -Syu make screen autoconf go clang libtool perl dub
+pacman -Syu make screen autoconf go clang libtool perl dub cmake
 ```
     
 3. Choose a D compiler ldc2 or dmd
