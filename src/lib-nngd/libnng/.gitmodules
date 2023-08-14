@@ -1,3 +1,0 @@
-[submodule "extern/nng"]
-	path = extern/nng
-	url = git@github.com:nanomsg/nng.git
