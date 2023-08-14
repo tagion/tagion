@@ -8,7 +8,7 @@ DCFLAGS=-O -d -m64 -i
 DINC=libnng
 DLFLAGS=-Lextern/nng/build/lib/ -lnng
 
-DTESTS=$(wildcard test/*.d)
+DTESTS=$(wildcard tests/*.d)
 DTARGETS=$(basename $(DTESTS))
 
 all: lib test
