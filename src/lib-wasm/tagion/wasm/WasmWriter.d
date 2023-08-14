@@ -284,7 +284,12 @@ import tagion.wasm.WasmException;
                 return name.length + bytes.length + uint.sizeof * 2;
             }
 
-            this(_ReaderCustom)(const(_ReaderCustom) s) {
+            this(string name, immutable(ubyte[]) bytes) pure nothrow {
+                this.name = name;
+                this.bytes = bytes;
+            }
+
+            this(_ReaderCustom)(const(_ReaderCustom) s) pure nothrow {
                 name = s.name;
                 bytes = s.bytes;
             }

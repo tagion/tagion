@@ -17,12 +17,12 @@ import std.array;
 @safe
 struct WastParser {
     WasmWriter writer;
-    SectionAssert _wast_assert;
-    SectionAssert wast_assert() pure nothrow {
-        if (_wast_assert is null) {
-            return new SectionAssert;
+    SectionAssert wast_assert;
+    private void writeCustomAssert() {
+        if (wast_assert !is SectionAssert.init) {
+            auto _custom = new CustomType("assert", wast_assert.toDoc.serialize);
+
         }
-        return _wast_assert;
     }
 
     alias WasmSection = WasmWriter.WasmSection;
@@ -40,6 +40,7 @@ struct WastParser {
     alias TypeIndex = WasmSection.TypeIndex;
     alias CodeType = WasmSection.CodeType;
     alias ExportType = WasmSection.ExportType;
+    alias CustomType = WasmSection.Custom;
 
     enum ParserStage {
         BASE,
@@ -407,7 +408,7 @@ struct WastParser {
                 }
                 assert_type.invoke = code_invoke.serialize;
                 assert_type.result = code_result.serialize;
-                wast_assert.sectypes ~= assert_type;
+                wast_assert.asserts ~= assert_type;
                 return ParserStage.ASSERT;
             case "assert_trap":
                 Assert assert_type;
@@ -424,6 +425,7 @@ struct WastParser {
 
                 r.check(r.type == TokenType.STRING);
                 assert_type.message = r.token;
+                wast_assert.asserts ~= assert_type;
                 r.nextToken;
                 return ParserStage.ASSERT;
                 version (none) {
@@ -440,7 +442,7 @@ struct WastParser {
                     parseInstr(r, ParserStage.ASSERT, code_invoke, func_type, params);
                     assert_type.invoke = code_invoke.serialize;
                     assert_type.result = code_result.serialize;
-                    wast_assert.sectypes ~= assert_type;
+                    wast_assert.asserts ~= assert_type;
 
                     return ParserStage.ASSERT;
                 }

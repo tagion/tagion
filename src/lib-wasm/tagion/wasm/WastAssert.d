@@ -22,7 +22,12 @@ struct Assert {
 
     mixin HiBONRecord;
     void serialize(ref OutBuffer bout) const {
+        bout.write(toDoc.serialize);
     }
 }
 
-alias SectionAssert = WasmWriter.WasmSection.SectionT!Assert;
+@safe
+struct SectionAssert {
+    Assert[] asserts;
+    mixin HiBONRecord;
+}
