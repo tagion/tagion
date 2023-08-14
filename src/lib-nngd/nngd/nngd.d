@@ -8,14 +8,22 @@ import std.string;
 import std.typecons;
 import std.algorithm;
 import std.datetime.systime;
+import std.traits;
 
 import libnng;
 
-T* ptr(T)(T[] arr, size_t off = 0) { return arr.length == 0 ? null : &arr[off]; }
+import std.stdio;
+
+
+@safe
+T* ptr(T)(T[] arr, size_t off = 0) pure nothrow { return arr.length == 0 ? null : &arr[off]; }
 
 alias nng_errno = libnng.nng_errno;
+alias nng_errstr = libnng.nng_errstr;
+alias toString=nng_errstr;
 
-void nng_sleep(Duration val){
+@safe
+void nng_sleep(Duration val) nothrow {
     nng_msleep(cast(nng_duration)val.total!"msecs");
 }
 
@@ -52,13 +60,6 @@ string toString(nng_sockaddr a){
     return s;
 }
 
-string toString(nng_errno e){
-    return nng_errstr(cast(int)e);        
-}
-
-string nng_strerror( int e ){
-    return nng_errstr(e);
-}
 
 enum infiniteDuration = Duration.max;
 
@@ -83,6 +84,12 @@ enum nng_socket_state {
     ,NNG_STATE_ERROR        = 16
 }
 
+enum nng_property_base {
+     NNG_BASE_SOCKET
+    ,NNG_BASE_DIALER
+    ,NNG_BASE_LISTENER
+}
+        
 struct NNGSocket {
     nng_socket_type m_type;
     nng_socket_state m_state;
@@ -105,59 +112,59 @@ struct NNGSocket {
         m_type = itype;
         m_raw = iraw;
         m_state = nng_socket_state.NNG_STATE_NONE;
-        switch(itype){
-            case nng_socket_type.NNG_SOCKET_BUS:
+        with(nng_socket_type) {
+        final switch(itype){
+            case NNG_SOCKET_BUS:
                 rc = (!raw) ? nng_bus_open(&m_socket) : nng_bus_open_raw(&m_socket);
                 m_may_send = true;
                 m_may_recv = true;
                 break;
-            case nng_socket_type.NNG_SOCKET_PAIR:       
+            case NNG_SOCKET_PAIR:       
                 rc = (!raw) ? nng_pair_open(&m_socket) : nng_pair_open_raw(&m_socket);
                 m_may_send = true;
                 m_may_recv = true;
                 break;
-            case nng_socket_type.NNG_SOCKET_PULL:       
+            case NNG_SOCKET_PULL:       
                 rc = (!raw) ? nng_pull_open(&m_socket) : nng_pull_open_raw(&m_socket);
                 m_may_send = false;
                 m_may_recv = true;
                 break;
-            case nng_socket_type.NNG_SOCKET_PUSH:       
+            case NNG_SOCKET_PUSH:       
                 rc = (!raw) ? nng_push_open(&m_socket) : nng_push_open_raw(&m_socket);
                 m_may_send = true;
                 m_may_recv = false;
                 break;
-            case nng_socket_type.NNG_SOCKET_PUB:        
+            case NNG_SOCKET_PUB:        
                 rc = (!raw) ? nng_pub_open(&m_socket) : nng_pub_open_raw(&m_socket);
                 m_may_send = true;
                 m_may_recv = false;
                 break;
-            case nng_socket_type.NNG_SOCKET_SUB:        
+            case NNG_SOCKET_SUB:        
                 rc = (!raw) ? nng_sub_open(&m_socket) : nng_sub_open_raw(&m_socket);
                 m_may_send = false;
                 m_may_recv = true;
                 break;
-            case nng_socket_type.NNG_SOCKET_REQ:        
+            case NNG_SOCKET_REQ:        
                 rc = (!raw) ? nng_req_open(&m_socket) : nng_req_open_raw(&m_socket);
                 m_may_send = true;
                 m_may_recv = true;
                 break;
-            case nng_socket_type.NNG_SOCKET_REP:        
+            case NNG_SOCKET_REP:        
                 rc = (!raw) ? nng_rep_open(&m_socket) : nng_rep_open_raw(&m_socket);
                 m_may_send = true;
                 m_may_recv = true;
                 break;
-            case nng_socket_type.NNG_SOCKET_SURVEYOR:   
+            case NNG_SOCKET_SURVEYOR:   
                 rc = (!raw) ? nng_surveyor_open(&m_socket) : nng_surveyor_open_raw(&m_socket);
                 m_may_send = true;
                 m_may_recv = true;
                 break;
-            case nng_socket_type.NNG_SOCKET_RESPONDENT: 
+            case NNG_SOCKET_RESPONDENT: 
                 rc = (!raw) ? nng_respondent_open(&m_socket) : nng_respondent_open_raw(&m_socket);
                 m_may_send = true;
                 m_may_recv = true;
                 break;
-            default:
-                rc = -1;
+           }
         }
         if(rc != 0){
             m_state = nng_socket_state.NNG_STATE_ERROR;
@@ -171,7 +178,7 @@ struct NNGSocket {
 
     // setup listener
 
-    int listener_create(string url){
+    int listener_create(const(string) url){
         m_errno = cast(nng_errno)0;
         if(m_state == nng_socket_state.NNG_STATE_CREATED){
             auto rc = nng_listener_create( &m_listener, m_socket, toStringz(url) );
@@ -186,7 +193,7 @@ struct NNGSocket {
         }
     }        
 
-    int listener_start( bool nonblock = false ){
+    int listener_start( const bool nonblock = false ){
         m_errno = cast(nng_errno)0;
         if(m_state == nng_socket_state.NNG_STATE_PREPARED){
             auto rc =  nng_listener_start(m_listener, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 );
@@ -201,7 +208,7 @@ struct NNGSocket {
         }
     }
 
-    int listen ( string url, bool nonblock = false ){
+    int listen ( const(string) url, const bool nonblock = false ) nothrow {
         m_errno = cast(nng_errno)0;
         if(m_state == nng_socket_state.NNG_STATE_CREATED){
             auto rc = nng_listen(m_socket, toStringz(url), &m_listener, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 );
@@ -253,7 +260,7 @@ struct NNGSocket {
 
     // setup dialer
     
-    int dialer_create(string url){
+    int dialer_create(const(string) url) nothrow {
         m_errno = cast(nng_errno)0;
         if(m_state == nng_socket_state.NNG_STATE_CREATED){
             auto rc = nng_dialer_create( &m_dialer, m_socket, toStringz(url) );
@@ -268,7 +275,7 @@ struct NNGSocket {
         }
     }        
 
-    int dialer_start( bool nonblock = false ){
+    int dialer_start( const bool nonblock = false ) nothrow {
         m_errno = cast(nng_errno)0;
         if(m_state == nng_socket_state.NNG_STATE_PREPARED){
             auto rc =  nng_dialer_start(m_dialer, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 );
@@ -283,7 +290,7 @@ struct NNGSocket {
         }
     }
 
-    int dial ( string url, bool nonblock = false ){
+    int dial ( const(string) url, const bool nonblock = false ) nothrow {
         m_errno = cast(nng_errno)0;
         if(m_state == nng_socket_state.NNG_STATE_CREATED){
             auto rc = nng_dial(m_socket, toStringz(url), &m_dialer, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 );
@@ -298,117 +305,134 @@ struct NNGSocket {
         }
     }
 
-    // send & receive
+    // send & receive TODO: Serialization for objects and structures - see protobuf or hibon?
+    
 
-    int send ( ubyte[] data , bool nonblock = false, size_t size = 0, size_t offset = 0 ){
-        m_errno = cast(nng_errno)0;
+    int send (T)( const(T) data , bool nonblock = false ) if(isArray!T){
+        alias U=ForeachType!T;
+        static assert(U.sizeof == 1, "None byte size array element are not supported");
+        m_errno = nng_errno.init;
         if(m_state == nng_socket_state.NNG_STATE_CONNECTED){
-            auto rc = nng_send(m_socket, ptr(data,offset), (size > 0) ? size : (data.length - offset), nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0);
+            auto rc = nng_send(m_socket, ptr(cast(ubyte[])data), data.length, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0);
             if( rc != 0){
                 m_errno = cast(nng_errno)rc;
                 return rc;
             }
             return 0;
-        }else{
-            return -1;
         }
+        return -1;
     }
     
-    int send_string ( string s, bool nonblock = false ){
-        m_errno = cast(nng_errno)0;
+
+    /*
+        Receives a data buffer of the max size data.length 
+        Params:
+            data = preallocated buffer
+            nonblock = set the non blocking mode
+            sz = if sz != the this sz is used as max size
+    */
+    @nogc @safe
+    size_t _receive ( ubyte[] data, size_t sz = 0,  bool nonblock = false ) nothrow 
+        in(data.length>=sz)
+        in(data.length)
+    do {
+        m_errno = nng_errno.init;
         if(m_state == nng_socket_state.NNG_STATE_CONNECTED){
-            auto data = cast(ubyte[])(s.dup);
-            auto rc = nng_send(m_socket, ptr(data), data.length, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0);
-            if( rc != 0){
-                m_errno = cast(nng_errno)rc;
-                return rc;
+            sz =(sz==0)?data.length:sz;
+            m_errno = (() @trusted => cast(nng_errno)nng_recv(m_socket, ptr(data), &sz, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 ))();
+            if (m_errno !is nng_errno.init) {    
+                return -1;
             }
-            return 0;
-        }else{
-            return -1;
+            return sz;
         }
+        return -1;
     }
 
-    int receive ( ubyte[] data, size_t* sz, bool nonblock = false ){
-        m_errno = cast(nng_errno)0;
+    /*
+        Receives a data type (castable to byte array) as postallocated buffer
+        Params:
+            nonblock = set the non blocking mode
+    */
+    T receive(T)( bool nonblock = false ) if (isArray!T) {
+        m_errno = nng_errno.init;
+        alias U=ForeachType!T;
+        static assert(U.sizeof == 1, "None byte size array element are not supported");
         if(m_state == nng_socket_state.NNG_STATE_CONNECTED){
-            auto rc = nng_recv(m_socket, ptr(data), sz, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 );
-            if( rc != 0){
-                m_errno = cast(nng_errno)rc;
-                return rc;
-            }
-            data = data[0..*sz];
-            return 0;
-        }else{
-            return -1;
-        }
-    }
-    
-    string receive_string ( bool nonblock = false ){
-        m_errno = cast(nng_errno)0;
-        if(m_state == nng_socket_state.NNG_STATE_CONNECTED){
-            char *buf;
+            void* buf;
             size_t sz;
             auto rc = nng_recv(m_socket, &buf, &sz, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 + nng_flag.NNG_FLAG_ALLOC );
-            if( rc != 0){
+            if (rc != 0) { 
                 m_errno = cast(nng_errno)rc;
-                return "";
+                return T.init;
             }
             GC.addRange(buf,sz);
-            return (cast(immutable(char)*)buf)[0..sz];
-        }else{
-            return null;
+            return (cast(U*)buf)[0..sz];
         }
+        return T.init;
     }
+    
+    // properties Note @propery is not need anymore
+    @nogc nothrow pure  {
+        @property int state() const { return m_state; }
+        @property int errno() const { return m_errno; }
+        @property string versionstring() {
+            import core.stdc.string : strlen;
+            return nng_version[0..strlen(nng_version)]; 
+        }
 
-    // properties
-    @property string versionstring() { return to!string(nng_version()); }
-    @property int state() { return m_state; }
-    @property int errno() { return m_errno; }
-
-    @property string name() { return m_name; }
+        string name() const { return m_name; }
+        
+        /* You don't need to dup the string because is immutable 
+            Only if you are planing to change the content in the string
     @property void name(string val) { m_name = val.dup; }
+            Ex:
+            The function can be @nogc if you don't duplicate
+    */    
+        void name(string val) { m_name = val; }
 
-    @property bool raw() { return m_raw; }
+        @property bool raw() const { return m_raw; }
+    } // nogc nothrow pure
+
+    nothrow {
+        @property int proto() { return getopt_int(NNG_OPT_PROTO); }
+        @property string protoname() { return getopt_string(NNG_OPT_PROTONAME); }
+        
+        @property int peer() { return getopt_int(NNG_OPT_PEER); }
+        @property string peername() { return getopt_string(NNG_OPT_PEERNAME); } 
+        
+        @property int recvbuf() { return getopt_int(NNG_OPT_RECVBUF); }
+        @property void recvbuf(int val){ setopt_int(NNG_OPT_RECVBUF,val); }
+
+        @property int sendbuf() { return getopt_int(NNG_OPT_SENDBUF); } 
+        @property void sendbuf(int val){ setopt_int(NNG_OPT_SENDBUF,val); }
+
+        @property int recvfd() { return (m_may_recv) ? getopt_int(NNG_OPT_RECVFD) : -1; } 
+        @property int sendfd() { return (m_may_send) ? getopt_int(NNG_OPT_SENDFD) : -1; } 
+
+        @property Duration recvtimeout() { return getopt_duration(NNG_OPT_RECVTIMEO); } 
+        @property void recvtimeout(Duration val){ setopt_duration(NNG_OPT_RECVTIMEO,val); }
+
+        @property Duration sendtimeout() { return getopt_duration(NNG_OPT_SENDTIMEO); } 
+        @property void sendtimeout(Duration val){ setopt_duration(NNG_OPT_SENDTIMEO,val); }
+
+        @property nng_sockaddr locaddr() { return (m_may_send) ? getopt_addr(NNG_OPT_LOCADDR,nng_property_base.NNG_BASE_DIALER) : getopt_addr(NNG_OPT_LOCADDR,nng_property_base.NNG_BASE_LISTENER); } 
+        @property nng_sockaddr remaddr() { return (m_may_send) ? getopt_addr(NNG_OPT_REMADDR,nng_property_base.NNG_BASE_DIALER) : nng_sockaddr(nng_sockaddr_family.NNG_AF_NONE); } 
+    } // nothrow
     
-    @property int proto() { return getopt_int(NNG_OPT_PROTO); }
-    @property string protoname() { return getopt_string(NNG_OPT_PROTONAME); }
-    
-    @property int peer() { return getopt_int(NNG_OPT_PEER); }
-    @property string peername() { return getopt_string(NNG_OPT_PEERNAME); } 
-    
-    @property int recvbuf() { return getopt_int(NNG_OPT_RECVBUF); }
-    @property void recvbuf(int val){ setopt_int(NNG_OPT_RECVBUF,val); }
-
-    @property int sendbuf() { return getopt_int(NNG_OPT_SENDBUF); } 
-    @property void sendbuf(int val){ setopt_int(NNG_OPT_SENDBUF,val); }
-
-    @property int recvfd() { return (m_may_recv) ? getopt_int(NNG_OPT_RECVFD) : -1; } 
-    @property int sendfd() { return (m_may_send) ? getopt_int(NNG_OPT_SENDFD) : -1; } 
-
-    @property Duration recvtimeout() { return getopt_duration(NNG_OPT_RECVTIMEO); } 
-    @property void recvtimeout(Duration val){ setopt_duration(NNG_OPT_RECVTIMEO,val); }
-
-    @property Duration sendtimeout() { return getopt_duration(NNG_OPT_SENDTIMEO); } 
-    @property void sendtimeout(Duration val){ setopt_duration(NNG_OPT_SENDTIMEO,val); }
-
-    @property nng_sockaddr locaddr() { return (m_may_send) ? getopt_addr(NNG_OPT_LOCADDR,"dialer") : getopt_addr(NNG_OPT_LOCADDR,"listener"); } 
-    @property nng_sockaddr remaddr() { return (m_may_send) ? getopt_addr(NNG_OPT_REMADDR,"dialer") : nng_sockaddr(nng_sockaddr_family.NNG_AF_NONE); } 
-
     @property string url() { 
         if(m_may_send)
-            return getopt_string(NNG_OPT_URL,"dialer"); 
+            return getopt_string(NNG_OPT_URL,nng_property_base.NNG_BASE_DIALER); 
         else if(m_may_recv)    
-            return getopt_string(NNG_OPT_URL,"listener"); 
+            return getopt_string(NNG_OPT_URL,nng_property_base.NNG_BASE_LISTENER); 
         else            
-            return getopt_string(NNG_OPT_URL,"socket"); 
+            return getopt_string(NNG_OPT_URL,nng_property_base.NNG_BASE_SOCKET); 
     }
 
-    @property int maxttl() { return getopt_int(NNG_OPT_MAXTTL); } 
-    @property void maxttl(int val){ setopt_int(NNG_OPT_MAXTTL,val); }
+    @property Duration maxttl() { return getopt_duration(NNG_OPT_MAXTTL); } 
+    @property void maxttl(Duration val){ setopt_duration(NNG_OPT_MAXTTL,val); }
     
-    @property size_t recvmaxsz() { return getopt_size(NNG_OPT_RECVMAXSZ); } 
-    @property void recvmaxsz(size_t val) { return setopt_size(NNG_OPT_RECVMAXSZ,val); } 
+    @property int recvmaxsz() { return getopt_int(NNG_OPT_RECVMAXSZ); } 
+    @property void recvmaxsz(int val) { return setopt_int(NNG_OPT_RECVMAXSZ,val); } 
 
     @property Duration reconnmint() { return getopt_duration(NNG_OPT_RECONNMINT); } 
     @property void reconnmint(Duration val){ setopt_duration(NNG_OPT_RECONNMINT,val); }
@@ -418,117 +442,117 @@ struct NNGSocket {
 
     // TODO: NNG_OPT_IPC_*, NNG_OPT_TLS_*, NNG_OPT_WS_*  
 private:
-    void setopt_int(string opt, int val){
-        m_errno = cast(nng_errno)0;
-        auto rc = nng_socket_set_int(m_socket,toStringz(opt),val);
-        if(rc == 0){ return; }else{ m_errno = cast(nng_errno)rc; } 
-    }
-
-    int getopt_int(string opt) {
-        m_errno = cast(nng_errno)0;
-        int p;
-        auto rc = nng_socket_get_int(m_socket,toStringz(opt),&p);
-        if(rc == 0){ return p; }else{ m_errno = cast(nng_errno)rc; return -1; }    
-    }
-    
-    void setopt_ulong(string opt, ulong val){
-        m_errno = cast(nng_errno)0;
-        auto rc = nng_socket_set_uint64(m_socket,toStringz(opt),val);
-        if(rc == 0){ return; }else{ m_errno = cast(nng_errno)rc; } 
-    }
-
-    ulong getopt_ulong(string opt) {
-        m_errno = cast(nng_errno)0;
-        ulong p;
-        auto rc = nng_socket_get_uint64(m_socket,toStringz(opt),&p);
-        if(rc == 0){ return p; }else{ m_errno = cast(nng_errno)rc; return -1; }    
-    }
-    
-    void setopt_size(string opt, size_t val){
-        m_errno = cast(nng_errno)0;
-        auto rc = nng_socket_set_size(m_socket,toStringz(opt),val);
-        if(rc == 0){ return; }else{ m_errno = cast(nng_errno)rc; } 
-    }
-    
-    size_t getopt_size(string opt) {
-        m_errno = cast(nng_errno)0;
-        size_t p;
-        auto rc = nng_socket_get_size(m_socket,toStringz(opt),&p);
-        if(rc == 0){ return p; }else{ m_errno = cast(nng_errno)rc; return -1; }    
-    }
-    
-    string getopt_string(string opt, string base = "socket" ) { 
-        m_errno = cast(nng_errno)0;
-        char *ptr;
-        int rc;
-        switch(base){
-            case "dialer":
-                rc = nng_dialer_get_string(m_dialer,cast(const char*)toStringz(opt),&ptr); 
-            break;
-            case "listener":
-                rc = nng_listener_get_string(m_listener,cast(const char*)toStringz(opt),&ptr); 
-            break;
-            default:
-                rc = nng_socket_get_string(m_socket,cast(const char*)toStringz(opt),&ptr); 
-            break;
-        }    
-        if(rc == 0){ return to!string(ptr); }else{ m_errno = cast(nng_errno)rc; return "<none>"; }            
-    }
-
-    void setopt_string(string opt, string val){
-        m_errno = cast(nng_errno)0;
-        auto rc = nng_socket_set_string(m_socket,toStringz(opt),toStringz(val));
-        if(rc == 0){ return; }else{ m_errno = cast(nng_errno)rc; }                
-    }
-    
-    void setopt_buf(string opt, ubyte[] val){
-        m_errno = cast(nng_errno)0;
-        auto rc = nng_socket_set(m_socket,toStringz(opt),ptr(val),val.length);
-        if(rc == 0){ return; }else{ m_errno = cast(nng_errno)rc; }                
-    }
-
-    Duration getopt_duration(string opt){
-        m_errno = cast(nng_errno)0;
-        nng_duration p;
-        auto rc = nng_socket_get_ms(m_socket,toStringz(opt),&p);
-        if(rc == 0){
-            return msecs(p);
-        }else{
-            m_errno = cast(nng_errno)rc;
-            return infiniteDuration;
+    nothrow {
+        void setopt_int(string opt, int val) {
+            m_errno = cast(nng_errno)0;
+            auto rc = nng_socket_set_int(m_socket,toStringz(opt),val);
+            if(rc == 0){ return; }else{ m_errno = cast(nng_errno)rc; } 
         }
-    }
-    
-    void setopt_duration(string opt, Duration val) {
-        m_errno = cast(nng_errno)0;
-        auto rc = nng_socket_set_ms(m_socket,cast(const char*)toStringz(opt),cast(int)val.total!"msecs"); 
-        if(rc == 0){ return; }else{ m_errno = cast(nng_errno)rc; } 
-    }
 
-    nng_sockaddr getopt_addr(string opt, string base = "socket" ){
-        m_errno = cast(nng_errno)0;
-        nng_sockaddr addr;
-        int rc;
-        switch(base){
-            case "dialer":
-                rc = nng_dialer_get_addr(m_dialer,toStringz(opt),&addr);
+        int getopt_int(string opt) {
+            m_errno = cast(nng_errno)0;
+            int p;
+            auto rc = nng_socket_get_int(m_socket,toStringz(opt),&p);
+            if(rc == 0){ return p; }else{ m_errno = cast(nng_errno)rc; return -1; }    
+        }
+        
+        void setopt_ulong(string opt, ulong val){
+            m_errno = cast(nng_errno)0;
+            auto rc = nng_socket_set_uint64(m_socket,toStringz(opt),val);
+            if(rc == 0){ return; }else{ m_errno = cast(nng_errno)rc; } 
+        }
+
+        ulong getopt_ulong(string opt) {
+            m_errno = cast(nng_errno)0;
+            ulong p;
+            auto rc = nng_socket_get_uint64(m_socket,toStringz(opt),&p);
+            if(rc == 0){ return p; }else{ m_errno = cast(nng_errno)rc; return -1; }    
+        }
+        
+        void setopt_size(string opt, size_t val){
+            m_errno = cast(nng_errno)0;
+            auto rc = nng_socket_set_size(m_socket,toStringz(opt),val);
+            if(rc == 0){ return; }else{ m_errno = cast(nng_errno)rc; } 
+        }
+        
+        size_t getopt_size(string opt) {
+            m_errno = cast(nng_errno)0;
+            size_t p;
+            auto rc = nng_socket_get_size(m_socket,toStringz(opt),&p);
+            if(rc == 0){ return p; }else{ m_errno = cast(nng_errno)rc; return -1; }    
+        }
+        
+        string getopt_string(string opt, nng_property_base base = nng_property_base.NNG_BASE_SOCKET ) { 
+            m_errno = cast(nng_errno)0;
+            char *ptr;
+            int rc;
+            switch(base){
+                case nng_property_base.NNG_BASE_DIALER:
+                    rc = nng_dialer_get_string(m_dialer,cast(const char*)toStringz(opt),&ptr); 
                 break;
-            case "listener":
-                rc = nng_listener_get_addr(m_listener,toStringz(opt),&addr);
+                case nng_property_base.NNG_BASE_LISTENER:
+                    rc = nng_listener_get_string(m_listener,cast(const char*)toStringz(opt),&ptr); 
                 break;
-            case "socket":
-                rc = nng_socket_get_addr(m_socket,toStringz(opt),&addr);
+                default:
+                    rc = nng_socket_get_string(m_socket,cast(const char*)toStringz(opt),&ptr); 
                 break;
-            default:
-                rc = -1;
-        }                
-        if(rc == 0){ return addr; } else { m_errno = cast(nng_errno)rc; addr.s_family = nng_sockaddr_family.NNG_AF_NONE; return addr; }
-    }
-    
-    void setopt_addr(string opt, nng_sockaddr val){
-        m_errno = cast(nng_errno)0;
-        auto rc = nng_socket_set_addr(m_socket,cast(const char*)toStringz(opt),&val);
-        if(rc == 0){ return; }else{ m_errno = cast(nng_errno)rc; }
-    }
+            }    
+            if(rc == 0){ return to!string(ptr); }else{ m_errno = cast(nng_errno)rc; return "<none>"; }            
+        }
+
+        void setopt_string(string opt, string val){
+            m_errno = cast(nng_errno)0;
+            auto rc = nng_socket_set_string(m_socket,toStringz(opt),toStringz(val));
+            if(rc == 0){ return; }else{ m_errno = cast(nng_errno)rc; }                
+        }
+        
+        void setopt_buf(string opt, ubyte[] val){
+            m_errno = cast(nng_errno)0;
+            auto rc = nng_socket_set(m_socket,toStringz(opt),ptr(val),val.length);
+            if(rc == 0){ return; }else{ m_errno = cast(nng_errno)rc; }                
+        }
+
+        Duration getopt_duration(string opt){
+            m_errno = cast(nng_errno)0;
+            nng_duration p;
+            auto rc = nng_socket_get_ms(m_socket,toStringz(opt),&p);
+            if(rc == 0){
+                return msecs(p);
+            }else{
+                m_errno = cast(nng_errno)rc;
+                return infiniteDuration;
+            }
+        }
+        
+        void setopt_duration(string opt, Duration val) {
+            m_errno = cast(nng_errno)0;
+            auto rc = nng_socket_set_ms(m_socket,cast(const char*)toStringz(opt),cast(int)val.total!"msecs"); 
+            if(rc == 0){ return; }else{ m_errno = cast(nng_errno)rc; } 
+        }
+
+        nng_sockaddr getopt_addr(string opt, nng_property_base base = nng_property_base.NNG_BASE_SOCKET ){
+            m_errno = cast(nng_errno)0;
+            nng_sockaddr addr;
+            int rc;
+            switch(base){
+                case nng_property_base.NNG_BASE_DIALER:
+                    rc = nng_dialer_get_addr(m_dialer,toStringz(opt),&addr);
+                    break;
+                case nng_property_base.NNG_BASE_LISTENER:
+                    rc = nng_listener_get_addr(m_listener,toStringz(opt),&addr);
+                    break;
+                default:
+                    rc = nng_socket_get_addr(m_socket,toStringz(opt),&addr);
+                    break;
+            }                
+            if(rc == 0){ return addr; } else { m_errno = cast(nng_errno)rc; addr.s_family = nng_sockaddr_family.NNG_AF_NONE; return addr; }
+        }
+        
+        void setopt_addr(string opt, nng_sockaddr val){
+            m_errno = cast(nng_errno)0;
+            auto rc = nng_socket_set_addr(m_socket,cast(const char*)toStringz(opt),&val);
+            if(rc == 0){ return; }else{ m_errno = cast(nng_errno)rc; }
+        }
+    } // nothrow
 }   // struct Socket
 

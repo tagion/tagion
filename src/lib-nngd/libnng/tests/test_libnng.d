@@ -103,6 +103,11 @@ int main()
     
     string[3] transports = ["tcp://127.0.0.1:31200", "ipc:///tmp/testnng.ipc", "inproc://testnng"];
 
+    writeln("// ERROR TEST");
+    for(auto i=1; i<32; i++ ){
+        writeln("ERROR: ",i,"  =  ",nng_errstr(i));
+    }
+
     // -- [1] push-pull test
         writeln("\n<TEST01>");
         foreach(uri; transports){
