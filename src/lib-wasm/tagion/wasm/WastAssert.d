@@ -16,7 +16,7 @@ struct Assert {
     }
 
     Method method;
-    @label("assert") Buffer assert_code;
+    Buffer invoke;
     @label("*", true) Buffer result;
     @label("*", true) string message;
 

@@ -185,7 +185,6 @@ import tagion.wasm.WasmException;
                 static if (hasMember!(MainType, "guess_size")) {
                     bout.reserve(guess_size);
                 }
-                pragma(msg, "MainType ", MainType);
                 foreach (i, m; this.tupleof) {
                     alias T = typeof(m);
                     static if (is(T == struct) || is(T == class)) {
@@ -655,6 +654,12 @@ import tagion.wasm.WasmException;
                 tmp_out.write(expr);
                 bout.write(encode(tmp_out.offset));
                 bout.write(tmp_out.toBytes);
+            }
+
+            immutable(ubyte[]) serialize() const @trusted {
+                auto bout = new OutBuffer;
+                serialize(bout);
+                return assumeUnique(bout.toBytes);
             }
         }
 
