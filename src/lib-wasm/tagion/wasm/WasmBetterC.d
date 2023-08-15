@@ -95,20 +95,38 @@ alias check = Check!WasmBetterCException;
 
     alias Custom = Sections[Section.CUSTOM];
     void custom_sec(ref scope const(Custom) _custom) {
-        output.writef(`%s(custom "%s" "`, indent, _custom.name);
+        import tagion.hibon.HiBONJSON;
+
+        //output.writef(`%s(custom "%s" "`, indent, _custom.name);
         enum {
             SPACE = 32,
             DEL = 127
         }
-        foreach (d; _custom.bytes) {
-            if ((d > SPACE) && (d < DEL)) {
-                output.writef(`%c`, char(d));
-            }
-            else {
-                output.writef(`\x%02X`, d);
+        if (_custom.doc.isInorder) {
+            switch (_custom.name) {
+            case "+assert":
+                output.writeln("@safe");
+                output.writefln("unittest { // %s", _custom.name);
+                output.write("}");
+                break;
+            default:
+                output.writefln("/* %s", _custom.name);
+                output.writefln("%s", _custom.doc.toPretty);
+                output.writeln("*/");
             }
         }
-        output.writefln(`")`);
+        else {
+            output.writefln(`/* "%s"`, _custom.name);
+            foreach (d; _custom.bytes) {
+                if ((d > SPACE) && (d < DEL)) {
+                    output.writef(`%c`, char(d));
+                }
+                else {
+                    output.writef(`\x%02X`, d);
+                }
+            }
+            output.writeln(`*/`);
+        }
     }
 
     alias Type = Sections[Section.TYPE];
