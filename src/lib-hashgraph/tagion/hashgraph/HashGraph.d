@@ -642,13 +642,6 @@ class HashGraph {
         check(valid_channel(from_channel), ConsensusFailCode.GOSSIPNET_ILLEGAL_CHANNEL);
         auto received_node = getNode(from_channel);
 
-        if (from_channel.cutHex == "037ba30f467d5de5") {
-            writefln("Node: %s received wave: %s from NEWNODE", _owner_node.channel.cutHex, received_wave.state);
-
-        }
-        if (_owner_node.channel.cutHex == "037ba30f467d5de5") {
-            writefln("NEWNODE received wave: %s from %s", received_wave.state,from_channel.cutHex);
-        }
         
         if (Event.callbacks) {
             Event.callbacks.receive(received_wave);
@@ -740,9 +733,6 @@ class HashGraph {
 
                     const wave = buildWavefront(FIRST_WAVE, received_wave.tides);
 
-                    if (from_channel.cutHex == "037ba30f467d5de5") {
-                        writefln("Node: %s FIRST_WAVE response NEWNODE: %s", _owner_node.channel.cutHex);
-                    }
                     return wave;
                 case BREAKING_WAVE:
                     received_node.state = NONE;
