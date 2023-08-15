@@ -599,6 +599,7 @@ struct WastParser {
         while (parseModule(tokenizer, ParserStage.BASE) !is ParserStage.END) {
             //empty    
         }
+        writeCustomAssert;
         writefln("End parse");
         static foreach (Sec; EnumMembers!Section) {
             static if (Sec !is Section.CUSTOM && Sec !is Section.START) {
