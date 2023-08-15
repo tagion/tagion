@@ -36,17 +36,6 @@ jobs:
           git checkout current
           git pull
 
-      - name: get revision file
-        shell: bash
-        run: |
-          pwd
-          make help |tail -n 3 |head -n 2 > revision.txt
-      - name: Upload a Build Artifact
-        uses: actions/upload-artifact@v3.1.2
-        with:
-          name: revision
-          path: ./revision.txt
-
       - name: Run tests
         run: |
           make clean ci -j DC=${{env.DC}} || make clean proper ci -j DC=${{env.DC}}
@@ -259,31 +248,29 @@ jobs:
           systemctl restart --user dart_api.service
           
   deploy_testnet_container:
-    runs-on: testnet-container
+    runs-on: testnet1-local
     needs: [finish_workflow]
-    steps:    
-      - uses: actions/download-artifact@v3
-        with:
-          name: revision
-        
+    steps:         
       - name: get artifact and restart service
         run: |
           source ~/.bashrc
           ls -l
           id
           pwd
-          sudo rm -rf build || echo "build directory already deleted"
-          sudo rm  *.tar.gz || echo "No such file or directory"
+          rm -rf build || echo "build directory already deleted"
+          rm  *.tar.gz || echo "No such file or directory"
           docker rm -f tagion-dashboard || echo "container not exists"
           docker volume rm -f tagion-dashboard || echo "volume deleted"
           docker volume create tagion-dashboard
           echo "cleaned"
+          export GH_TOKEN=${{ env.GITBOT_TOKEN }}
           gh run download -n successful_artifact --repo tagion/tagion
           tar -xzf *.tar.gz
+          /home/moonbase/actions-runner/_work/tagion/tagion/build/x86_64-linux/bin/tagion --version
           mkdir -p /opt/tagion/artifact
-          sudo cp build/x86_64-linux/bin/tagion /var/lib/docker/volumes/tagion-dashboard/_data/
-          sudo cp -f /home/ubuntu/actions-runner/_work/tagion/tagion/revision.txt /var/lib/docker/volumes/tagion-dashboard/_data/
+          cp build/x86_64-linux/bin/tagion /var/lib/docker/volumes/tagion-dashboard/_data/
+          cp -f /home/ubuntu/actions-runner/_work/tagion/tagion/revision.txt /var/lib/docker/volumes/tagion-dashboard/_data/
           /home/ubuntu/dashboard.sh
-          sudo rm -rf build || echo "build directory already deleted"
-          sudo rm  *.tar.gz || echo "No such file or directory"
+          rm -rf build || echo "build directory already deleted"
+          rm  *.tar.gz || echo "No such file or directory"
           
