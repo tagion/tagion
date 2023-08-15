@@ -118,7 +118,7 @@ static size_t size(U)(const(U[]) array) pure {
      Returns:
      The byte stream
      +/
-    @trusted immutable(ubyte[]) serialize() const {
+    @trusted immutable(ubyte[]) serialize() const pure {
         auto buffer = new ubyte[serialize_size];
         size_t index;
         append(buffer, index);
