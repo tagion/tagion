@@ -104,7 +104,15 @@
             ],
             "timeout": 0.0
         },
-        "services_test": {
+        "inputvalidator": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "commit"
+            ],
+            "timeout": 0.0
+        },
+        "hircp_verifier": {
             "args": [],
             "envs": {},
             "stages": [
