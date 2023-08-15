@@ -112,7 +112,7 @@
             ],
             "timeout": 0.0
         },
-        "hircp_verifier": {
+        "hirpc_verifier": {
             "args": [],
             "envs": {},
             "stages": [
