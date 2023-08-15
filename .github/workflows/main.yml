@@ -248,28 +248,24 @@ jobs:
           systemctl restart --user dart_api.service
           
   deploy_testnet_container:
-    runs-on: testnet1-local
+    runs-on: testnet-container
     needs: [finish_workflow]
     steps:         
       - name: get artifact and restart service
         run: |
           source ~/.bashrc
-          ls -l
-          id
-          pwd
           rm -rf build || echo "build directory already deleted"
           rm  *.tar.gz || echo "No such file or directory"
           docker rm -f tagion-dashboard || echo "container not exists"
-          docker volume rm -f tagion-dashboard || echo "volume deleted"
-          docker volume create tagion-dashboard
+          rm -fr ~/opt/* || echo "clean"
           echo "cleaned"
           export GH_TOKEN=${{ env.GITBOT_TOKEN }}
           gh run download -n successful_artifact --repo tagion/tagion
           tar -xzf *.tar.gz
-          /home/moonbase/actions-runner/_work/tagion/tagion/build/x86_64-linux/bin/tagion --version
+          /home/ubuntu/actions-runner/_work/tagion/tagion/build/x86_64-linux/bin/tagion --version | head -n 3 | tail -n 2 > revision.txt
           mkdir -p /opt/tagion/artifact
-          cp build/x86_64-linux/bin/tagion /var/lib/docker/volumes/tagion-dashboard/_data/
-          cp -f /home/ubuntu/actions-runner/_work/tagion/tagion/revision.txt /var/lib/docker/volumes/tagion-dashboard/_data/
+          cp build/x86_64-linux/bin/tagion ~/opt
+          cp revision.txt ~/opt
           /home/ubuntu/dashboard.sh
           rm -rf build || echo "build directory already deleted"
           rm  *.tar.gz || echo "No such file or directory"

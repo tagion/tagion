@@ -288,8 +288,6 @@ alias check = Check!WasmBetterCException;
         Context ctx;
         auto expr = code_type[];
         const function_header = wasmstream.get!(Section.TYPE)[func.idx];
-        pragma(msg, "function_header ", typeof(function_header));
-        pragma(msg, "function_header ", typeof(function_header.results));
         const x = return_type(function_header.results);
         output.writefln("%s%s %s (%s) {",
                 indent,

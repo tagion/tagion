@@ -16,13 +16,18 @@ struct Assert {
     }
 
     Method method;
-    @label("assert") Buffer assert_code;
+    Buffer invoke;
     @label("*", true) Buffer result;
     @label("*", true) string message;
 
     mixin HiBONRecord;
     void serialize(ref OutBuffer bout) const {
+        bout.write(toDoc.serialize);
     }
 }
 
-alias SectionAssert = WasmWriter.WasmSection.SectionT!Assert;
+@safe
+struct SectionAssert {
+    Assert[] asserts;
+    mixin HiBONRecord;
+}

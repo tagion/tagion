@@ -3,7 +3,9 @@ module tagion.wasm.WastParser;
 import tagion.wasm.WastTokenizer;
 import tagion.wasm.WasmWriter;
 import tagion.wasm.WasmBase;
+import tagion.wasm.WastAssert;
 import tagion.basic.Debug;
+
 import std.stdio;
 import std.exception : ifThrown;
 import core.exception : RangeError;
@@ -15,6 +17,14 @@ import std.array;
 @safe
 struct WastParser {
     WasmWriter writer;
+    SectionAssert wast_assert;
+    private void writeCustomAssert() {
+        if (wast_assert !is SectionAssert.init) {
+            auto _custom = new CustomType("assert", wast_assert.toDoc);
+            writer.mod[Section.CUSTOM].list[Section.DATA] ~= _custom;
+        }
+    }
+
     alias WasmSection = WasmWriter.WasmSection;
     this(WasmWriter writer) @nogc pure nothrow {
         this.writer = writer;
@@ -30,6 +40,7 @@ struct WastParser {
     alias TypeIndex = WasmSection.TypeIndex;
     alias CodeType = WasmSection.CodeType;
     alias ExportType = WasmSection.ExportType;
+    alias CustomType = WasmSection.Custom;
 
     enum ParserStage {
         BASE,
@@ -380,45 +391,61 @@ struct WastParser {
 
                 return stage;
             case "assert_return":
+            case "assert_return_nan":
+                Assert assert_type;
+                assert_type.method = Assert.Method.Return;
                 r.check(stage == ParserStage.BASE);
                 label = r.token;
                 r.nextToken;
                 FuncType func_type;
-                CodeType code_type;
+                CodeType code_invoke;
+                CodeType code_result;
                 scope int[string] params;
                 // Invoke call
-                parseInstr(r, ParserStage.ASSERT, code_type, func_type, params);
+                parseInstr(r, ParserStage.ASSERT, code_invoke, func_type, params);
                 if (r.type == TokenType.BEGIN) {
-                    parseInstr(r, ParserStage.EXPECTED, code_type, func_type, params);
+                    parseInstr(r, ParserStage.EXPECTED, code_invoke, func_type, params);
                 }
+                assert_type.invoke = code_invoke.serialize;
+                assert_type.result = code_result.serialize;
+                wast_assert.asserts ~= assert_type;
                 return ParserStage.ASSERT;
             case "assert_trap":
+                Assert assert_type;
+                assert_type.method = Assert.Method.Trap;
                 r.check(stage == ParserStage.BASE);
                 label = r.token;
                 r.nextToken;
                 FuncType func_type;
-                CodeType code_type;
-                scope Types[] locals;
+                CodeType code_invoke;
                 scope int[string] params;
                 // Invoke call
-                parseInstr(r, ParserStage.ASSERT, code_type, func_type, params);
+                parseInstr(r, ParserStage.ASSERT, code_invoke, func_type, params);
+                assert_type.invoke = code_invoke.serialize;
 
                 r.check(r.type == TokenType.STRING);
-                arg = r.token;
+                assert_type.message = r.token;
+                wast_assert.asserts ~= assert_type;
                 r.nextToken;
                 return ParserStage.ASSERT;
+                version (none) {
             case "assert_return_nan":
-                r.check(stage == ParserStage.BASE);
-                label = r.token;
-                r.nextToken;
-                FuncType func_type;
-                CodeType code_type;
-                scope Types[] locals;
-                scope int[string] params;
-                // Invoke call
-                parseInstr(r, ParserStage.ASSERT, code_type, func_type, params);
+                    Assert assert_type;
+                    assert_type.method = Assert.Method.Return;
+                    r.check(stage == ParserStage.BASE);
+                    label = r.token;
+                    r.nextToken;
+                    FuncType func_type;
+                    CodeType code_invoke;
+                    scope int[string] params;
+                    // Invoke call
+                    parseInstr(r, ParserStage.ASSERT, code_invoke, func_type, params);
+                    assert_type.invoke = code_invoke.serialize;
+                    assert_type.result = code_result.serialize;
+                    wast_assert.asserts ~= assert_type;
 
-                return ParserStage.ASSERT;
+                    return ParserStage.ASSERT;
+                }
             case "assert_invalid":
                 r.check(stage == ParserStage.BASE);
                 r.nextToken;
@@ -572,6 +599,7 @@ struct WastParser {
         while (parseModule(tokenizer, ParserStage.BASE) !is ParserStage.END) {
             //empty    
         }
+        writeCustomAssert;
         writefln("End parse");
         static foreach (Sec; EnumMembers!Section) {
             static if (Sec !is Section.CUSTOM && Sec !is Section.START) {
@@ -584,32 +612,6 @@ struct WastParser {
 
 }
 
-import std.outbuffer;
-
-import tagion.basic.Types;
-import tagion.hibon.HiBONRecord;
-
-@safe
-struct Assert {
-    enum Method {
-        Return,
-        Invalid,
-        //Return_nan, same as Return
-        Trap,
-    }
-
-    Method method;
-    @label("assert") Buffer assert_code;
-    @label("*", true) Buffer result;
-    @label("*", true) string message;
-
-    mixin HiBONRecord;
-    void serialize(ref OutBuffer bout) const {
-    }
-}
-
-alias SectionAssert = WasmWriter.WasmSection.SectionT!Assert;
-
 version (WAST) @safe
 unittest {
     import tagion.basic.basic : unitfile;
@@ -618,7 +620,7 @@ unittest {
 
     immutable wast_test_files = [
         "i32.wast",
-        /*
+
         "f32.wast",
         "i64.wast",
         "f64.wast",
@@ -650,7 +652,7 @@ unittest {
         "select.wast",
         "store_retval.wast",
         "switch.wast",
-*/
+
     ];
     version (none) immutable wast_test_files = [
         "unreachable.wast",
