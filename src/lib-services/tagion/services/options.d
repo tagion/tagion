@@ -10,7 +10,7 @@ public import tagion.services.contract : ContractOptions;
 @property
 static immutable(string) contract_sock_path() @safe nothrow {
     version (linux) {
-        return "\0NEUEWELLE_CONTRACT";
+        return "abstract://NEUEWELLE_CONTRACT";
     }
     else version (Posix) {
         import std.path;
@@ -19,7 +19,7 @@ static immutable(string) contract_sock_path() @safe nothrow {
         import core.sys.posix.unistd : getuid;
 
         const uid = assumeWontThrow(getuid.to!string);
-        return buildPath("/", "run", "user", uid, "tagionwave_contract.sock");
+        return "ipc://" ~ buildPath("/", "run", "user", uid, "tagionwave_contract.sock");
     }
     else {
         assert(0, "Unsupported platform");
