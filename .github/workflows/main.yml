@@ -260,8 +260,7 @@ jobs:
           rm -rf build || echo "build directory already deleted"
           rm  *.tar.gz || echo "No such file or directory"
           docker rm -f tagion-dashboard || echo "container not exists"
-          docker volume rm -f tagion-dashboard || echo "volume deleted"
-          docker volume create tagion-dashboard
+          rm -f /var/lib/docker/volumes/tagion-dashboard/_data/* || echo "clean"
           echo "cleaned"
           export GH_TOKEN=${{ env.GITBOT_TOKEN }}
           gh run download -n successful_artifact --repo tagion/tagion
