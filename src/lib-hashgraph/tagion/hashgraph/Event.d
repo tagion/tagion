@@ -973,13 +973,13 @@ class Event {
         }
     }
 
-    BitMask calc_strongly_seen_nodes(HashGraph hashgraph) {
+    private BitMask calc_strongly_seen_nodes(const HashGraph hashgraph) {
         const strongly_seen_nodes = _youngest_ancestors
                 .filter!(e => e !is null)
-                .map!((Event e) => e._youngest_ancestors.map!((Event e) => e !is null).array).array
-                .transposed!()
+                .map!(e => e._youngest_ancestors.map!(e => e !is null)).array
+                .transposed
                 .map!(l => l.count!(b => b))
-                .map!(n => hashgraph.isMajority(n)).array;
+                .map!(n => hashgraph.isMajority(n)).array; //migh 
         return BitMask(strongly_seen_nodes);
     }
 
