@@ -248,7 +248,7 @@ jobs:
           systemctl restart --user dart_api.service
           
   deploy_testnet_container:
-    runs-on: testnet1-local
+    runs-on: testnet-container
     needs: [finish_workflow]
     steps:         
       - name: get artifact and restart service
@@ -266,7 +266,7 @@ jobs:
           export GH_TOKEN=${{ env.GITBOT_TOKEN }}
           gh run download -n successful_artifact --repo tagion/tagion
           tar -xzf *.tar.gz
-          /home/moonbase/actions-runner/_work/tagion/tagion/build/x86_64-linux/bin/tagion --version
+          /home/ubuntu/actions-runner/_work/tagion/tagion/build/x86_64-linux/bin/tagion --version
           mkdir -p /opt/tagion/artifact
           cp build/x86_64-linux/bin/tagion /var/lib/docker/volumes/tagion-dashboard/_data/
           cp -f /home/ubuntu/actions-runner/_work/tagion/tagion/revision.txt /var/lib/docker/volumes/tagion-dashboard/_data/
