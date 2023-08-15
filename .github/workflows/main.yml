@@ -269,6 +269,7 @@ jobs:
           /home/ubuntu/actions-runner/_work/tagion/tagion/build/x86_64-linux/bin/tagion --version | head -n 2 > revision.txt
           mkdir -p /opt/tagion/artifact
           cp build/x86_64-linux/bin/tagion /var/lib/docker/volumes/tagion-dashboard/_data/
+          pwd
           cp revision.txt /var/lib/docker/volumes/tagion-dashboard/_data/
           /home/ubuntu/dashboard.sh
           rm -rf build || echo "build directory already deleted"
