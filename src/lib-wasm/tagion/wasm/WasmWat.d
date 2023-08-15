@@ -89,12 +89,24 @@ alias check = Check!WatException;
             SPACE = 32,
             DEL = 127
         }
-        foreach (d; _custom.bytes) {
-            if ((d > SPACE) && (d < DEL)) {
-                output.writef(`%c`, char(d));
-            }
-            else {
-                output.writef(`\x%02X`, d);
+        import tagion.hibon.Document;
+        import tagion.hibon.HiBONJSON;
+        import LEB128 = tagion.utils.LEB128;
+        import std.algorithm;
+
+        output.writefln("doc %s %(%02X %) %s doc %(%02X %)", _custom.doc.isInorder, _custom.bytes[0 .. 10], LEB128
+            .decode!uint(_custom.bytes), _custom.doc.data[0 .. min(10, $)]);
+        if (_custom.doc.isInorder) {
+            output.writefln("%s", _custom.doc.toPretty);
+        }
+        else {
+            foreach (d; _custom.bytes) {
+                if ((d > SPACE) && (d < DEL)) {
+                    output.writef(`%c`, char(d));
+                }
+                else {
+                    output.writef(`\x%02X`, d);
+                }
             }
         }
         output.writefln(`")`);

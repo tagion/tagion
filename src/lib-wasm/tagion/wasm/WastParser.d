@@ -13,6 +13,7 @@ import std.conv;
 import std.traits;
 import std.algorithm;
 import std.array;
+import std.stdio;
 
 @safe
 struct WastParser {
@@ -20,11 +21,13 @@ struct WastParser {
     SectionAssert wast_assert;
     private void writeCustomAssert() {
         if (wast_assert !is SectionAssert.init) {
-            auto _custom = new CustomType("assert", wast_assert.toDoc.serialize);
-            pragma(msg, "Custom ", typeof(writer.mod[Section.CUSTOM]));
-            pragma(msg, "Custom! ", typeof(writer.mod[Section.CUSTOM].list[Section.DATA]));
+            import LEB128 = tagion.utils.LEB128;
+            import tagion.hibon.Document;
 
-            //            writer.section!(Section.CUSTOM).list[Section.DATA]=_custom;
+            const doc = wast_assert.toDoc;
+            writefln("writeCustomAssert %s %(%02X %)", LEB128.decode!uint(doc.data), doc.data[0 .. 10]);
+            auto _custom = new CustomType("assert", wast_assert.toDoc);
+
             writer.mod[Section.CUSTOM].list[Section.DATA] ~= _custom;
         }
     }

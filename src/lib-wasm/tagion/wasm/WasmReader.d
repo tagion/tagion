@@ -297,12 +297,21 @@ import std.format;
             }
 
             static class Custom {
+                import tagion.hibon.Document;
+
                 immutable(char[]) name;
                 immutable(ubyte[]) bytes;
+                const(Document) doc;
                 immutable(size_t) size;
                 this(immutable(ubyte[]) data) pure nothrow {
                     size_t index;
                     name = Vector!char(data, index);
+                    import LEB128 = tagion.utils.LEB128;
+                    import tagion.basic.Debug;
+
+                    __write("WasmReader %s", LEB128.decode!uint(data[index .. $]));
+                    doc = Document(data[index .. $]);
+                    index += LEB128.decode!uint(data[index .. $]).size;
                     bytes = data[index .. $];
                     size = data.length;
                 }
