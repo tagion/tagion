@@ -19,7 +19,7 @@ int _main(string[] args) {
     const module_path = env.bdd_log.buildPath(__MODULE__);
     mkdirRecurse(module_path);
     writeln(args);
-
+    stdout.flush;
     const node_amount = args[1].to!uint;
     const calls = args[2].to!uint;
     string[] node_names;

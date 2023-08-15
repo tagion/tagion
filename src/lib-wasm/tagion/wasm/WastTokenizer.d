@@ -41,6 +41,13 @@ enum TokenType {
             return (ch <= SPACE) || (ch == DEL);
         }
     }
+
+    string stripQuotes(string text) {
+        if (text.length > 2) {
+            return text[text[0] == '"' .. $ - (text[$ - 1] == '"')];
+        }
+        return text;
+    }
 }
 
 @safe
@@ -53,12 +60,12 @@ struct WastTokenizer {
 
     }
 
-    void check(const bool flag, string msg = null, string file = __FILE__, const size_t line = __LINE__) {
+    void check(const bool flag, string msg = null, string file = __FILE__, const size_t code_line = __LINE__) {
         import std.stdio;
 
         if (!flag) {
             writefln("Error:%s %s:%s:%d:%d", msg, token, type, line, line_pos);
-            writefln("%s:%d", file, line);
+            writefln("%s:%d", file, code_line);
         }
     }
 

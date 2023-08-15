@@ -6,7 +6,7 @@ import std.traits : isIntegral, isFloatingPoint, EnumMembers, hasMember, Unqual,
     TemplateArgsOf, PointerTarget, getUDAs, isPointer, ConstOf, ForeachType, FieldNameTuple;
 import std.typecons : Tuple;
 import std.format;
-import std.algorithm.iteration : each, map, sum, fold, filter;
+import std.algorithm;
 import std.range.primitives : isInputRange;
 
 import std.meta : staticMap, Replace;
@@ -185,7 +185,6 @@ import tagion.wasm.WasmException;
                 static if (hasMember!(MainType, "guess_size")) {
                     bout.reserve(guess_size);
                 }
-
                 foreach (i, m; this.tupleof) {
                     alias T = typeof(m);
                     static if (is(T == struct) || is(T == class)) {
@@ -285,7 +284,12 @@ import tagion.wasm.WasmException;
                 return name.length + bytes.length + uint.sizeof * 2;
             }
 
-            this(_ReaderCustom)(const(_ReaderCustom) s) {
+            this(string name, immutable(ubyte[]) bytes) pure nothrow {
+                this.name = name;
+                this.bytes = bytes;
+            }
+
+            this(_ReaderCustom)(const(_ReaderCustom) s) pure nothrow {
                 name = s.name;
                 bytes = s.bytes;
             }
@@ -610,8 +614,27 @@ import tagion.wasm.WasmException;
                 mixin Serialize;
             }
 
+            static Local[] toLocals(scope const(Types[]) types) pure nothrow {
+                Local[] result;
+                void compact(const(Types[]) _types) {
+                    if (_types.length) {
+                        const count = cast(uint) _types.count(_types[0]);
+                        result ~= Local(count, _types[0]);
+                        compact(_types[count .. $]);
+                    }
+                }
+
+                return result;
+
+            }
+
             this(Local[] locals, immutable(ubyte[]) expr) {
                 this.locals = locals;
+                this.expr = expr;
+            }
+
+            this(scope const(Types[]) types, immutable(ubyte[]) expr) {
+                this.locals = toLocals(types);
                 this.expr = expr;
             }
 
@@ -636,6 +659,12 @@ import tagion.wasm.WasmException;
                 tmp_out.write(expr);
                 bout.write(encode(tmp_out.offset));
                 bout.write(tmp_out.toBytes);
+            }
+
+            immutable(ubyte[]) serialize() const @trusted {
+                auto bout = new OutBuffer;
+                serialize(bout);
+                return assumeUnique(bout.toBytes);
             }
         }
 

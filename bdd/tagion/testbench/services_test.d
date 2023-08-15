@@ -13,9 +13,7 @@ import tagion.utils.pretend_safe_concurrency;
 
 mixin Main!(_main, "services");
 
-version = contract_test;
-
-int _main(string[] args) {
+int _main(string[] _) {
     automation!inputvalidator.run;
 
     version (contract_test) {
@@ -27,10 +25,6 @@ int _main(string[] args) {
         enum contract_success = __MODULE__ ~ "_contract_success"; // 'Collector'
         register(contract_rejected, thisTid);
         register(contract_success, thisTid);
-        scope (exit) {
-            unregister(contract_rejected);
-            unregister(contract_success);
-        }
 
         const opts = ContractOptions(
                 true,
@@ -42,9 +36,9 @@ int _main(string[] args) {
         contract_feature.TheDocumentIsNotAHiRPC(contract_handle, contract_success, contract_rejected);
         contract_feature.CorrectHiRPCFormatAndPermission(contract_handle, contract_success, contract_rejected);
         contract_feature.CorrectHiRPCWithPermissionDenied(contract_handle, contract_success, contract_rejected);
+        contract_feature.run;
 
-        contract_handle.send(Sig.STOP);
-        // check(waitforChildren(Ctrl.END), "ContractService never ended");
+        waitforChildren(Ctrl.END);
     }
 
     return 0;

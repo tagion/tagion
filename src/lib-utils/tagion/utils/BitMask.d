@@ -40,7 +40,13 @@ struct BitMask {
         }
     }
 
-    this(R)(R range) pure nothrow if ((isInputRange!R) && !isSomeString!R) {
+    this(R)(scope R range) pure nothrow if ((isInputRange!R) && is(ElementType!R : bool)) {
+        this(range.enumerate
+                .filter!(b => b.value)
+                .map!(b => b.index));
+    }
+
+    this(R)(scope R range) pure nothrow if ((isInputRange!R) && isIntegral!(ElementType!R) && !is(ElementType!R : bool)) {
         range.each!((n) => this[n] = true);
     }
 
@@ -117,8 +123,8 @@ struct BitMask {
 
         private this(
                 const(size_t[]) mask,
-                size_t index,
-                size_t bit_pos) pure nothrow {
+        size_t index,
+        size_t bit_pos) pure nothrow {
             this.mask = mask;
             this.index = index;
             this.bit_pos = bit_pos;
@@ -204,7 +210,7 @@ struct BitMask {
         return false;
     }
 
-    bool opIndexAssign(bool b, size_t i) pure nothrow
+    bool opIndexAssign(const bool b, const size_t i) pure nothrow
     in {
         assert(i < absolute_mask);
     }
@@ -402,7 +408,7 @@ struct BitMask {
     }
 
     void toString(scope void delegate(scope const(char)[]) @safe sink,
-            const FormatSpec!char fmt) const {
+    const FormatSpec!char fmt) const {
         enum separator = '_';
         import std.stdio;
 

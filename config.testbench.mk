@@ -16,14 +16,7 @@ BDD_DFILES+=${shell find $(BDD) -name "*.d" -a -not -name "*.gen.d" -a -path "*/
 #
 testbench: bddfiles
 target-testbench: DFLAGS+=$(DVERSION)=ONETOOL
-target-testbench: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+target-testbench: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER) $(LIBNNG)
 target-testbench: DFLAGS+=$(DEBUG_FLAGS)
 
-ifdef STLZMQ
-target-testbench: LIBS+=$(LIBZMQ)
-endif
-
 ${call DO_BIN,testbench,$(LIB_DFILES) $(BDD_DFILES)}
-
-
-

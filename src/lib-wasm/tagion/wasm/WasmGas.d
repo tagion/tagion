@@ -272,7 +272,7 @@ struct WasmGas {
                     (IR.END);
                 // dfmt on
                 immutable expr = out_expr.toBytes.idup;
-                code_type = CodeType(null, expr);
+                code_type = CodeType(Types[].init, expr);
             }
             const code_idx = inject(code_type);
 

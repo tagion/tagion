@@ -6,15 +6,6 @@ string[] getMains(alias _package)() {
     return [__traits(allMembers, _package)];
 }
 
-version (none) static unittest {
-    import tagion;
-
-    alias x = __traits(allMembers, tagion);
-
-    pragma(msg, "Mains ", x);
-    pragma(msg, "Mains ", getMains!tagion);
-}
-
 mixin template doOneMain(alltools...) {
     import std.getopt;
     import std.stdio;

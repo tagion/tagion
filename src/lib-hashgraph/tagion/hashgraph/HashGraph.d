@@ -44,6 +44,8 @@ class HashGraph {
     int scrap_depth = default_scrap_depth;
     import tagion.basic.ConsensusExceptions;
 
+    bool __debug_print;
+
     protected alias check = Check!HashGraphConsensusException;
     //   protected alias consensus=consensusCheckArguments!(HashGraphConsensusException);
     import tagion.logger.Statistic;
@@ -123,10 +125,10 @@ class HashGraph {
             Refinement refinement,
             const ValidChannel valid_channel,
             const Flag!"joining" joining,
-            string name = null) {
+            string name = null) in(node_size >= 4) do {
         hirpc = HiRPC(net);
-        this._owner_node = getNode(hirpc.net.pubkey);
         this.node_size = node_size;
+        this._owner_node = getNode(hirpc.net.pubkey);
         this.refinement = refinement;
         this.refinement.setOwner(this);
         this.valid_channel = valid_channel;
@@ -148,11 +150,11 @@ class HashGraph {
             void init_event(immutable(EventPackage*) epack) {
                 auto event = new Event(epack, this);
                 _event_cache[event.fingerprint] = event;
-                event.witness_event;
+                event.witness_event(node_size);
                 writefln("init_event time %s", event.event_body.time);
                 _rounds.last_round.add(event);
                 front_seat(event);
-                    
+                event.clear_youngest_ancestors(this);
             }
 
             _rounds.erase;
@@ -193,18 +195,20 @@ class HashGraph {
         }
     }
 
-    package bool possible_round_decided(const Round r) nothrow {
-        const witness_count = r.events
-            .count!((e) => (e !is null) && e.isWitness);
-        // __write("round=%s, witness count=%s", r.number, witness_count);
-        if (!isMajority(witness_count)) {
-            // __write("possible_round_decided !ismajority");
-            return false;
-        }
-        const possible_decided = r.events
-            .all!((e) => e is null || e.isWitness);
-        // __write("possible_round_decided=%s", possible_decided);
-        return possible_decided;
+    version(none)
+    package bool possible_round_decided(const Round round) nothrow {
+        return _rounds.voting_round_per_node.all!(r => r.number > round.number);
+        // const witness_count = r.events
+        //     .count!((e) => (e !is null) && e.isWitness);
+        // // __write("round=%s, witness count=%s", r.number, witness_count);
+        // if (!isMajority(witness_count)) {
+        //     // __write("possible_round_decided !ismajority");
+        //     return false;
+        // }
+        // const possible_decided = r.events
+        //     .all!((e) => e is null || e.isWitness);
+        // // __write("possible_round_decided=%s", possible_decided);
+        // return possible_decided;
 
     }
 
@@ -299,12 +303,12 @@ class HashGraph {
     }
 
     Event createEvaEvent(lazy const sdt_t time, const Buffer nonce) {
-        writeln("creating eva event");
         immutable eva_epack = eva_pack(time, nonce);
         auto eva_event = new Event(eva_epack, this);
 
         _event_cache[eva_event.fingerprint] = eva_event;
         front_seat(eva_event);
+        // set_strongly_seen_mask(eva_event);
         return eva_event;
     }
 
@@ -540,7 +544,7 @@ class HashGraph {
     }
     do {
         if (areWeInGraph) {
-            writefln("sharp response ingraph:true");
+            // writefln("sharp response ingraph:true");
             immutable(EventPackage)*[] result = _rounds.last_decided_round
                 .events
                 .filter!((e) => (e !is null))
@@ -710,9 +714,9 @@ class HashGraph {
                     writefln("received coherent from: %s, self %s", received_node.channel.cutHex, _owner_node.channel.cutHex);
                     if (!areWeInGraph) {
                         try {
-                            received_wave.epacks
-                                .map!(epack => epack.event_body)
-                                .each!(ebody => ebody.toPretty.writeln);
+                            // received_wave.epacks
+                            //     .map!(epack => epack.event_body)
+                            //     .each!(ebody => ebody.toPretty.writeln);
                             initialize_witness(received_wave.epacks);
                             _owner_node.sticky_state = COHERENT;
                             _joining = No.joining;
@@ -791,8 +795,7 @@ class HashGraph {
         immutable size_t node_id;
         immutable(Pubkey) channel;
         private bool _offline;
-        @nogc
-        this(const Pubkey channel, const size_t node_id) pure nothrow {
+        private this(const Pubkey channel, const size_t node_id) pure nothrow {
             this.node_id = node_id;
             this.channel = channel;
         }
@@ -991,6 +994,8 @@ class HashGraph {
         h[Params.events] = events;
         filename.fwrite(h);
     }
+
+    
 }
 
 version (unittest) {

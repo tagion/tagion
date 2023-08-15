@@ -4,7 +4,7 @@ import std.getopt;
 import std.stdio;
 import std.file : fread = read, fwrite = write, exists, readText;
 import std.format;
-import std.path : extension;
+import std.path : extension, setExtension;
 import std.traits : EnumMembers;
 import std.exception : assumeUnique;
 import std.json;
@@ -45,8 +45,8 @@ template Produce(FileExtension ext) {
     }
 }
 
-void produce(FileExtension ext)(WasmReader wasm_reader, File fout) {
-    Produce!(ext)(wasm_reader, fout).serialize;
+auto produce(FileExtension ext)(WasmReader wasm_reader, File fout) {
+    return Produce!(ext)(wasm_reader, fout);
 }
 
 enum OutputType {
@@ -76,8 +76,11 @@ int _main(string[] args) {
     string outputfilename;
     //bool print;
     //bool betterc;
+    string module_name = "wasm_test";
+    string[] imports;
     bool inject_gas;
     bool verbose_switch;
+
     string[] modify_from;
     string[] modify_to;
 
@@ -92,7 +95,10 @@ int _main(string[] args) {
                 "gas|g", format("Inject gas countes: %s", inject_gas), &inject_gas,
                 "verbose|v", format("Verbose %s", verbose_switch), &verbose_switch,
                 "mod|m", "Modify import module name from ", &modify_from,
-                "to", "Modify import module name from ", &modify_to, //                "print|p", format("Print the wasm as wat: %s", print), &print,
+                "to", "Modify import module name from ", &modify_to,
+                "imports|i", "Import list", &imports,
+                "name", "Import list", &module_name,//                "print|p", format("Print the wasm as wat: %s", print), &print,
+
                 //                "betterc|d", format("Print the wasm as wat: %s", betterc), &betterc,
 
                 "type|t", format("Sets stdout file type (%-(%s %))", [EnumMembers!OutputType]), &type,
@@ -138,6 +144,7 @@ int _main(string[] args) {
             return 0;
         }
 
+        writefln("args=%s", args);
         foreach (file; args[1 .. $]) {
             with (FileExtension) {
                 switch (file.extension) {
@@ -158,32 +165,21 @@ int _main(string[] args) {
                             inputfilename, file));
                     outputfilename = file;
                     break;
+                case wast:
+
+                    if (inputfilename.empty) {
+                        inputfilename = file;
+                        writefln("WAST %s", inputfilename);
+                        type = OutputType.wasm;
+
+                    }
+
+                    break;
                 default:
                     check(0, format("File %s is not supported", file));
                 }
             }
         }
-        //    writefln("args=%s", args);
-        version (none) {
-            if (args.length > 3) {
-                stderr.writefln("Only one output file name allowed (given %s)", args[1 .. $]);
-                help;
-                return 3;
-            }
-            if (args.length > 2) {
-                outputfilename = args[2];
-                //        writefln("outputfilename%s", outputfilename);
-            }
-            if (args.length > 1) {
-                inputfilename = args[1];
-            }
-            else {
-                stderr.writefln("Input file missing");
-                help;
-                return 1;
-            }
-        }
-
         if (modify_from.length !is modify_to.length) {
             stderr.writefln("Modify set must be set in pair");
             stderr.writefln("mod=%s", modify_from);
@@ -213,6 +209,8 @@ int _main(string[] args) {
                 wasm_writer = new WasmWriter;
                 auto wast_parser = WastParser(wasm_writer);
                 wast_parser.parse(tokenizer);
+                writefln("Before wasmwrite");
+                writefln("wasm_writer=%(%02X %)", wasm_writer.serialize);
                 break;
             default:
                 check(0, format("File extensions %s not valid for input file (only %-(%s, %))",
@@ -227,13 +225,12 @@ int _main(string[] args) {
             wasmgas.modify;
         }
         immutable data_out = wasm_writer.serialize;
-
+        writefln("after data_out");
         if (verbose_switch) {
             verbose.mode = VerboseMode.STANDARD;
         }
 
         const output_extension = (outputfilename.empty) ? type.typeExtension : outputfilename.extension;
-        writefln("Extension %s", output_extension);
         with (FileExtension) {
         WasmOutCase:
             switch (output_extension) {
@@ -248,13 +245,22 @@ int _main(string[] args) {
                             fout.close;
                         }
                     }
-                    produce!WasmOut(WasmReader(data_out), fout);
+                    auto prod = produce!WasmOut(WasmReader(data_out), fout);
+                    static if (__traits(hasMember, prod, "module_name")) {
+                        writefln("BetterC");
+                        prod.module_name = module_name;
+                        prod.imports = imports;
+                    }
                     // produce!(FileExtension.wat)(WasmReader(data_out), outputfilename);
                     //   import _wast=tagion.wasm.Wat;
                     //       _wast.wat(WasmReader(data_out), stdout).serialize;
+                    prod.serialize;
                     break WasmOutCase;
                 }
             case wasm:
+                if (outputfilename.empty) {
+                    outputfilename = inputfilename.setExtension(FileExtension.wasm);
+                }
                 outputfilename.fwrite(data_out);
                 break;
             default:

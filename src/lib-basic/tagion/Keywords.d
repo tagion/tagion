@@ -23,7 +23,7 @@ protected enum _keywords = [
     "payload",
     "channel",
     "witness",
-    "witness_mask",
+    // "witness_mask",
     "round_mask",
     "round_seen",
     "round_received",

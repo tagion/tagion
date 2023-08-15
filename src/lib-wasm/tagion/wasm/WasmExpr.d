@@ -8,6 +8,7 @@ import std.format;
 import tagion.wasm.WasmBase;
 import tagion.utils.LEB128;
 
+@safe
 struct WasmExpr {
     protected OutBuffer bout;
     @disable this();

@@ -93,7 +93,7 @@ class StdRefinement : Refinement {
         offline[].each!((node_id) => hashgraph.mark_offline(node_id));
         
         hashgraph._excluded_nodes_mask |= offline;
-        __write("Epoch exclude = %s", hashgraph.excluded_nodes_mask);
+        // __write("Epoch exclude = %s", hashgraph.excluded_nodes_mask);
 
 
         // __write("Epoch ONLINE=%s", online);

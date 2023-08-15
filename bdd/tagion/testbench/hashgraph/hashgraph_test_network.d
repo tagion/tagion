@@ -231,6 +231,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
             { // Eva Event
                 immutable buf = cast(Buffer) _hashgraph.channel;
                 const nonce = cast(Buffer) _hashgraph.hirpc.net.calcHash(buf);
+                writefln("NODE SIZE OF TEST HASHGRAPH %s", _hashgraph.node_size);
                 auto eva_event = _hashgraph.createEvaEvent(time, nonce);
 
             }
@@ -287,12 +288,17 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
             .all!(s => s);
     }
 
+    static bool testing;
     void addNode(immutable(ulong) N, const(string) name, const Flag!"joining" joining = No.joining) {
         immutable passphrase = format("very secret %s", name);
         auto net = new StdSecureNet();
         net.generateKeyPair(passphrase);
         auto refinement = new TestRefinement;
+        
         auto h = new HashGraph(N, net, refinement, &authorising.isValidChannel, joining, name);
+        if (!testing) {
+            h.__debug_print=testing=true;
+        }
         h.scrap_depth = 0;
         writefln("Adding Node: %s with %s", name, net.pubkey.cutHex);
         networks[net.pubkey] = new FiberNetwork(h, pageSize * 1024);
@@ -331,7 +337,7 @@ void printStates(TestNetwork network) {
         writeln("----------------------");
         foreach (channel_key; network.channels) {
             const current_hashgraph = network.networks[channel_key]._hashgraph;
-            writef("%16s %10s ingraph:%5s|", channel_key.cutHex, current_hashgraph.owner_node.sticky_state, current_hashgraph.areWeInGraph);
+            // writef("%16s %10s ingraph:%5s|", channel_key.cutHex, current_hashgraph.owner_node.sticky_state, current_hashgraph.areWeInGraph);
             foreach (receiver_key; network.channels) {
                 const node = current_hashgraph.nodes.get(receiver_key, null);                
                 const state = (node is null) ? ExchangeState.NONE : node.state;
