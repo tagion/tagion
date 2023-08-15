@@ -21,7 +21,11 @@ struct WastParser {
     private void writeCustomAssert() {
         if (wast_assert !is SectionAssert.init) {
             auto _custom = new CustomType("assert", wast_assert.toDoc.serialize);
+            pragma(msg, "Custom ", typeof(writer.mod[Section.CUSTOM]));
+            pragma(msg, "Custom! ", typeof(writer.mod[Section.CUSTOM].list[Section.DATA]));
 
+            //            writer.section!(Section.CUSTOM).list[Section.DATA]=_custom;
+            writer.mod[Section.CUSTOM].list[Section.DATA] ~= _custom;
         }
     }
 
