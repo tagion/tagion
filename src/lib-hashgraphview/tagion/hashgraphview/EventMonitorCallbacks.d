@@ -18,7 +18,6 @@ interface EventMonitorCallbacks {
         void round_received(const(Event) e);
         void famous(const(Event) e);
         void round(const(Event) e);
-        void strongly_seeing(const(Event) e);
         void remove(const(Event) e);
         //        void son(const(Event) e);
         //       void daughter(const(Event) e);

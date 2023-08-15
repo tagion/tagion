@@ -979,7 +979,7 @@ class Event {
         }
     }
 
-    private BitMask calc_strongly_seen_nodes(const HashGraph hashgraph) {
+    private BitMask _calc_strongly_seen_nodes(const HashGraph hashgraph) {
         scope strongly_seen_votes = new size_t[hashgraph.node_size];
         foreach (node_id; _youngest_ancestors
                 .filter!(e => e !is null)
@@ -990,11 +990,13 @@ class Event {
                 .joiner) {
             strongly_seen_votes[node_id]++;
         }
-        auto _strongly_seen_nodes = strongly_seen_votes.enumerate
+        auto strongly_seen_nodes = strongly_seen_votes.enumerate
             .filter!(vote => hashgraph.isMajority(vote.value))
             .map!(vote => vote.index);
-        alias R = typeof(_strongly_seen_nodes);
-        return BitMask(_strongly_seen_nodes);
+        return BitMask(strongly_seen_nodes);
+    }
+
+    private BitMask calc_strongly_seen_nodes(const HashGraph hashgraph) {
         const strongly_seen_nodes = _youngest_ancestors
             .filter!(e => e !is null)
             .map!(e => e._youngest_ancestors.map!(e => e !is null))
@@ -1002,8 +1004,7 @@ class Event {
             .transposed
             .map!(l => l.count!(b => b))
             .map!(n => hashgraph.isMajority(n))
-            .array;
-        //migh 
+            .array; //migh 
         return BitMask(strongly_seen_nodes);
     }
 
