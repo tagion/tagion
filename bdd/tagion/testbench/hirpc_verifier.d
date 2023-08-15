@@ -8,7 +8,7 @@ import tagion.tools.Basic;
 import tagion.actor;
 import tagion.crypto.SecureNet;
 import tagion.crypto.SecureInterfaceNet;
-import tagion.services.contract;
+import tagion.services.hirpc_verifier;
 import tagion.utils.pretend_safe_concurrency;
 
 mixin Main!(_main);
@@ -16,23 +16,23 @@ mixin Main!(_main);
 int _main(string[] _) {
     immutable SecureNet net = (() @trusted => cast(immutable) new StdSecureNet())();
 
-    enum contract_name = __MODULE__ ~ "_contract";
-    enum contract_rejected = __MODULE__ ~ "_contract_reject";
-    enum contract_success = __MODULE__ ~ "_contract_success"; // 'Collector'
-    register(contract_rejected, thisTid);
-    register(contract_success, thisTid);
+    enum hirpc_verifier_name = __MODULE__ ~ "_hirpc_verifier";
+    enum hirpc_verifier_rejected = __MODULE__ ~ "_hirpc_verifier_reject";
+    enum hirpc_verifier_success = __MODULE__ ~ "_hirpc_verifier_success"; // 'Collector'
+    register(hirpc_verifier_rejected, thisTid);
+    register(hirpc_verifier_success, thisTid);
 
-    const opts = ContractOptions(
+    const opts = HiRPCVerifierOptions(
             true,
-            contract_rejected,
+            hirpc_verifier_rejected,
     );
-    auto contract_handle = spawn!ContractService(contract_name, opts, contract_success, net);
+    auto hirpc_verifier_handle = spawn!HiRPCVerifierService(hirpc_verifier_name, opts, hirpc_verifier_success, net);
 
-    auto contract_feature = automation!(contract);
-    contract_feature.TheDocumentIsNotAHiRPC(contract_handle, contract_success, contract_rejected);
-    contract_feature.CorrectHiRPCFormatAndPermission(contract_handle, contract_success, contract_rejected);
-    contract_feature.CorrectHiRPCWithPermissionDenied(contract_handle, contract_success, contract_rejected);
-    contract_feature.run;
+    auto hirpc_verifier_feature = automation!(hirpc_verifier);
+    hirpc_verifier_feature.TheDocumentIsNotAHiRPC(hirpc_verifier_handle, hirpc_verifier_success, hirpc_verifier_rejected);
+    hirpc_verifier_feature.CorrectHiRPCFormatAndPermission(hirpc_verifier_handle, hirpc_verifier_success, hirpc_verifier_rejected);
+    hirpc_verifier_feature.CorrectHiRPCWithPermissionDenied(hirpc_verifier_handle, hirpc_verifier_success, hirpc_verifier_rejected);
+    hirpc_verifier_feature.run;
 
     waitforChildren(Ctrl.END);
 

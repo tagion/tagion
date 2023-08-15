@@ -1,6 +1,6 @@
 /// Service for verifying contracts
-/// [Documentation](https://docs.tagion.org/#/documents/architecture/ContractVerifier)
-module tagion.services.contract;
+/// [Documentation](https://docs.tagion.org/#/documents/architecture/HiRPCVerifier)
+module tagion.services.hirpc_verifier;
 
 import std.stdio;
 
@@ -19,11 +19,11 @@ public import tagion.services.inputvalidator : inputDoc;
 /// Msg type sent to receiver task along with a hirpc
 alias inputHiRPC = Msg!"inputHiRPC";
 
-struct ContractOptions {
+struct HiRPCVerifierOptions {
     /// Rejected documents won be discarded and instead sent to rejected_contracts_task
-    bool send_rejected_contracts = false;
+    bool send_rejected_hirpcs = false;
     /// Which task to send rejected document to;
-    string rejected_contracts_task = "";
+    string rejected_hirpcs = "";
     mixin JSONCommon;
 }
 
@@ -40,18 +40,18 @@ enum RejectReason {
 }
 
 /**
- * ContractService actor
- * Examples: [tagion.testbench.services.contract]
+ * HiRPCVerifierService actor
+ * Examples: [tagion.testbench.services.hirpc_verifier]
  * Receives: (inputDoc, Document)
  * Sends: (inputHiRPC, HiRPC.Receiver) to receiver_task, where Document is a correctly formatted HiRPC
 **/
-struct ContractService {
-    void task(immutable(ContractOptions) opts, string receiver_task, immutable(SecureNet) net) {
+struct HiRPCVerifierService {
+    void task(immutable(HiRPCVerifierOptions) opts, string receiver_task, immutable(SecureNet) net) {
         const hirpc = HiRPC(net);
 
         void reject(RejectReason reason, lazy Document doc) {
-            if (opts.send_rejected_contracts) {
-                locate(opts.rejected_contracts_task).send(reason, doc);
+            if (opts.send_rejected_hirpcs) {
+                locate(opts.rejected_hirpcs).send(reason, doc);
             }
         }
 
@@ -83,4 +83,4 @@ struct ContractService {
     }
 }
 
-alias ContractServiceHandle = ActorHandle!ContractService;
+alias HiRPCVerifierServiceHandle = ActorHandle!HiRPCVerifierService;
