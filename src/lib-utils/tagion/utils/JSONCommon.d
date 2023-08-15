@@ -70,7 +70,6 @@ mixin template JSONCommon() {
             }
             else static if (isArray!type && isSupported!(ForeachType!type)) {
                 alias ElemType = ForeachType!type;
-                pragma(msg, "ElemType ", ElemType);
                 JSON.JSONValue[] array;
                 foreach (ref m_element; m) {
                     JSON.JSONValue val = get!ElemType(m_element);
