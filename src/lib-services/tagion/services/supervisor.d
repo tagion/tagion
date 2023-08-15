@@ -19,7 +19,7 @@ import tagion.utils.pretend_safe_concurrency : locate, send;
 import tagion.services.options;
 import tagion.services.DART;
 import tagion.services.inputvalidator;
-import tagion.services.contract;
+import tagion.services.hirpc_verifier;
 
 @safe
 class WaveNet : StdSecureNet {
@@ -32,7 +32,7 @@ class WaveNet : StdSecureNet {
 @safe
 struct Supervisor {
     enum dart_task_name = "dart";
-    enum contract_task_name = "contract";
+    enum hirpc_verifier_task_name = "hirpc_verifier";
     enum input_task_name = "inputvalidator";
 
     auto failHandler = (TaskFailure tf) { log("Supervisor caught exception: \n%s", tf); };
@@ -46,9 +46,9 @@ struct Supervisor {
             DARTFile.create(dart_filename, net);
         }
         auto dart_handle = spawn!DARTService(dart_task_name, opts.dart, net);
-        auto contract_handle = spawn!ContractService(contract_task_name, opts.contract, "__tmp_collector", net);
-        auto inputvalidator_handle = spawn!InputValidatorService(input_task_name, opts.inputvalidator, contract_task_name);
-        auto services = tuple(dart_handle, contract_handle, inputvalidator_handle);
+        auto hirpc_verifier_handle = spawn!HiRPCVerifierService(hirpc_verifier_task_name, opts.hirpc_verifier, "__tmp_collector", net);
+        auto inputvalidator_handle = spawn!InputValidatorService(input_task_name, opts.inputvalidator, hirpc_verifier_task_name);
+        auto services = tuple(dart_handle, hirpc_verifier_handle, inputvalidator_handle);
 
         if (!waitforChildren(Ctrl.ALIVE)) {
             log.error("Not all children became Alive");

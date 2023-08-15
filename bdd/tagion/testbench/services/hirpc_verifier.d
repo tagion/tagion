@@ -1,5 +1,5 @@
-/// Test for [tagion.services.contract]_
-module tagion.testbench.services.contract;
+/// Test for [tagion.services.hirpc_verifier]_
+module tagion.testbench.services.hirpc_verifier;
 // Default import list for bdd
 import tagion.behaviour;
 import tagion.hibon.Document;
@@ -14,12 +14,12 @@ import tagion.crypto.SecureNet;
 import tagion.actor;
 import tagion.testbench.services.actor_util;
 import tagion.actor.exceptions;
-import tagion.services.contract;
+import tagion.services.hirpc_verifier;
 
 import std.stdio;
 
 enum feature = Feature(
-            "ContractInterface service.",
+            "HiRPCInterfaceService.",
             [
         "The transaction service should be able to receive HiRPC, validate data format and protocol rules before it sends to and send to the Collector services.",
         "The HiRPC is package into a HiBON-Document in the following called doc."
@@ -35,13 +35,13 @@ alias FeatureContext = Tuple!(
 @safe @Scenario("The Document is not a HiRPC",
         [])
 class TheDocumentIsNotAHiRPC {
-    ContractServiceHandle contract_handle;
-    string contract_success;
-    string contract_reject;
-    this(ContractServiceHandle _contract_handle, string _success, string _reject) {
-        contract_handle = _contract_handle;
-        contract_success = _success; // The name of the service which successfull documents are sent to
-        contract_reject = _reject; // The name of the service which rejected documents are sent to
+    HiRPCVerifierServiceHandle hirpc_verifier_handle;
+    string hirpc_verifier_success;
+    string hirpc_verifier_reject;
+    this(HiRPCVerifierServiceHandle _hirpc_verifier_handle, string _success, string _reject) {
+        hirpc_verifier_handle = _hirpc_verifier_handle;
+        hirpc_verifier_success = _success; // The name of the service which successfull documents are sent to
+        hirpc_verifier_reject = _reject; // The name of the service which rejected documents are sent to
     }
 
     Document doc;
@@ -49,13 +49,13 @@ class TheDocumentIsNotAHiRPC {
     @Given("a doc with a correct document format but which is incorrect HiRPC format.")
     Document format() {
         writeln(thisTid);
-        check(waitforChildren(Ctrl.ALIVE), "ContractService never alived");
-        check(contract_handle.tid !is Tid.init, "Contract thread is not running");
+        check(waitforChildren(Ctrl.ALIVE), "hirpc_verifierService never alived");
+        check(hirpc_verifier_handle.tid !is Tid.init, "hirpc_verifier thread is not running");
 
         auto hibon = new HiBON();
         hibon["$test"] = 5;
         doc = Document(hibon);
-        contract_handle.send(inputDoc(), doc);
+        hirpc_verifier_handle.send(inputDoc(), doc);
 
         return result_ok;
     }
@@ -85,12 +85,12 @@ class TheDocumentIsNotAHiRPC {
     "The #permission scenario can be executed with and without correct permission."
 ])
 class CorrectHiRPCFormatAndPermission {
-    ContractServiceHandle contract_handle;
+    HiRPCVerifierServiceHandle hirpc_verifier_handle;
     string contract_success;
     string contract_reject;
     HiRPC hirpc;
-    this(ContractServiceHandle _contract_handle, string _success, string _reject) {
-        contract_handle = _contract_handle;
+    this(HiRPCVerifierServiceHandle _hirpc_verifier_handle, string _success, string _reject) {
+        hirpc_verifier_handle = _hirpc_verifier_handle;
         contract_success = _success; // The name of the service which successfull documents are sent to
         contract_reject = _reject; // The name of the service which rejected documents are sent to
         hirpc = HiRPC(new HiRPCNet("someObscurePassphrase"));
@@ -109,12 +109,12 @@ class CorrectHiRPCFormatAndPermission {
     Document transaction() {
         writeln(thisTid);
         check(waitforChildren(Ctrl.ALIVE), "ContractService never alived");
-        check(contract_handle.tid !is Tid.init, "Contract thread is not running");
+        check(hirpc_verifier_handle.tid !is Tid.init, "Contract thread is not running");
         auto params = new HiBON;
         params["test"] = 42;
         const sender = hirpc.action(ContractMethods.transaction, params);
         doc = sender.toDoc;
-        contract_handle.send(inputDoc(), doc);
+        hirpc_verifier_handle.send(inputDoc(), doc);
 
         return result_ok;
     }
@@ -155,27 +155,27 @@ class CorrectHiRPCFormatAndPermission {
         [])
 class CorrectHiRPCWithPermissionDenied {
 
-    ContractServiceHandle contract_handle;
-    string contract_success;
-    string contract_reject;
+    HiRPCVerifierServiceHandle hirpc_verifier_handle;
+    string hirpc_verifier_success;
+    string hirpc_verifier_reject;
     HiRPC bad_hirpc;
-    this(ContractServiceHandle _contract_handle, string _success, string _reject) {
-        contract_handle = _contract_handle;
-        contract_success = _success; // The name of the service which successfull documents are sent to
-        contract_reject = _reject; // The name of the service which rejected documents are sent to
+    this(HiRPCVerifierServiceHandle _hirpc_verifier_handle, string _success, string _reject) {
+        hirpc_verifier_handle = _hirpc_verifier_handle;
+        hirpc_verifier_success = _success; // The name of the service which successfull documents are sent to
+        hirpc_verifier_reject = _reject; // The name of the service which rejected documents are sent to
         bad_hirpc = HiRPC(new BadSecureNet("someLessObscurePassphrase"));
     }
 
     Document invalid_doc;
     @Given("a HiPRC with incorrect permission")
     Document incorrectPermission() {
-        check(waitforChildren(Ctrl.ALIVE), "ContractService never alived");
-        check(contract_handle.tid !is Tid.init, "Contract thread is not running");
+        check(waitforChildren(Ctrl.ALIVE), "hirpc_verifierService never alived");
+        check(hirpc_verifier_handle.tid !is Tid.init, "hirpc_verifier thread is not running");
         auto params = new HiBON;
         params["test"] = 42;
         const invalid_sender = bad_hirpc.action(ContractMethods.transaction, params);
         invalid_doc = invalid_sender.toDoc;
-        contract_handle.send(inputDoc(), invalid_doc);
+        hirpc_verifier_handle.send(inputDoc(), invalid_doc);
         return result_ok;
     }
 
@@ -195,8 +195,8 @@ class CorrectHiRPCWithPermissionDenied {
                 (inputHiRPC _, HiRPC.Sender __) { check(false, "Should not have received a doc"); },
         );
 
-        contract_handle.send(Sig.STOP);
-        check(waitforChildren(Ctrl.END), "Contract service Never ended");
+        hirpc_verifier_handle.send(Sig.STOP);
+        check(waitforChildren(Ctrl.END), "hirpc verifier service Never ended");
 
         return result_ok;
     }

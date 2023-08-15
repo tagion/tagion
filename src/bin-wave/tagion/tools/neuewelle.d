@@ -29,7 +29,7 @@ import tagion.GlobalSignals;
 // }
 
 // TODO: 
-deprecated("rewrite logger with the 4th implementation of a taskwrapper")
+pragma(msg, "TODO(lr) rewrite logger with the 4th implementation of a taskwrapper");
 auto startLogger() {
     import tagion.taskwrapper.TaskWrapper : Task;
     import tagion.prior_services.LoggerService;
@@ -107,6 +107,8 @@ int _main(string[] args) {
 
     log.register(baseName(program));
     immutable opts = Options(
+            /// InputValidatorOptions("ipc:///var/run/user/1001/neuewelle.sock")
+            // InputValidatorOptions("tcp://127.0.0.1:31200")
             InputValidatorOptions(contract_sock_path)
     );
     log("Starting with options \n%s", opts.stringify);

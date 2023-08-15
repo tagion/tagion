@@ -21,6 +21,7 @@ import tagion.basic.basic : forceRemove;
 import tagion.basic.Debug : __write;
 import tagion.GlobalSignals : stopsignal;
 import tagion.utils.JSONCommon;
+version(NNG_INPUT) import nngd;
 
 /// Msg Type sent to actors who receive the document
 alias inputDoc = Msg!"inputDoc";
@@ -39,6 +40,56 @@ struct InputValidatorOptions {
  *  Examples: [tagion.testbench.services.inputvalidator]
  *  Sends: (inputDoc, Document) to receiver_task;
 **/
+version(NNG_INPUT) {
+struct InputValidatorService {
+    void task(immutable(InputValidatorOptions) opts, string receiver_task,) {
+        NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_PULL);
+        ReceiveBuffer buf;
+        s.recvtimeout = opts.socket_select_timeout.msecs;
+        const listening = s.listen(opts.sock_addr);
+        if (listening == 0) {
+            log("listening on addr: %s", opts.sock_addr);
+        }
+        else {
+            log.error("Failed to listen on addr: %s, %s", opts.sock_addr, nng_errstr(listening));
+            assert(0); // fixme
+        }
+        const recv = (void[] b) @trusted { 
+            return cast(ptrdiff_t)s._receive(cast(ubyte[]) b); 
+        };
+        setState(Ctrl.ALIVE);
+        while(!stop){
+            auto result = buf.append(recv);
+            if (s.m_errno != 0) {
+                log.error("Failed to receive: %s", nng_errstr(listening));
+                // fail()
+            }
+
+            if (result.size != 0) {
+                Document doc = Document(cast(immutable) result.data);
+                __write("Received %d bytes.", result.size);
+                __write("Document status code %s", doc.valid);
+
+                    if(doc.valid is Document.Element.ErrorCode.NONE 
+                    && doc.isRecord!(HiRPC.Sender)) {
+                    __write("sending to %s", receiver_task);
+                    locate(receiver_task).send(inputDoc(), doc);
+                }
+            }
+
+            // Check for control signal
+            receiveTimeout(
+                    Duration.zero,
+                    &signal,
+                    &ownerTerminated,
+                    &unknown
+            );
+        }
+        log("RR: bye!");
+    }
+}
+}
+else {
 struct InputValidatorService {
     void task(immutable(InputValidatorOptions) opts, string receiver_task,) {
         // setState(Ctrl.STARTING);
@@ -136,6 +187,7 @@ struct InputValidatorService {
             }
         }
     }
+}
 }
 
 alias InputValidatorHandle = ActorHandle!InputValidatorService;
