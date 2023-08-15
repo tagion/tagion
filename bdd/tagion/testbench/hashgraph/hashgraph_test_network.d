@@ -11,6 +11,7 @@ import tagion.crypto.Types;
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.hashgraph.Event;
+import tagion.hashgraph.Round;
 import tagion.communication.HiRPC;
 import tagion.utils.StdTime;
 import tagion.utils.Miscellaneous : cutHex;
