@@ -207,12 +207,6 @@ import tagion.wasm.WasmException;
                                 bout.write(LEB128.encode(m.length));
                             }
                             static if (U.sizeof == 1) {
-                                import LEB128 = tagion.utils.LEB128;
-
-                                alias This = typeof(this);
-                                //static if (is(This:const(Custom))) {
-                                writefln("buffer %s %(%02X %)", LEB128.decode!uint(cast(const(ubyte[])) m), m[0 .. min($, 10)]);
-                                //}
                                 bout.write(cast(const(ubyte[])) m);
                             }
                             else static if (isIntegral!U) {
@@ -298,13 +292,8 @@ import tagion.wasm.WasmException;
             import tagion.hibon.Document;
 
             this(string name, const(Document) doc) pure nothrow {
-
                 this.name = name;
                 bytes = doc.data[doc.begin .. $];
-                import tagion.basic.Debug;
-                import LEB128 = tagion.utils.LEB128;
-
-                __write("Custom data begin=%d %(%02X %) %s", doc.begin, doc.data[0 .. 10], LEB128.decode!uint(doc.data));
             }
 
             this(_ReaderCustom)(const(_ReaderCustom) s) pure nothrow {

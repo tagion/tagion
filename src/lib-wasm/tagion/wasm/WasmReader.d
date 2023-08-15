@@ -307,9 +307,7 @@ import std.format;
                     size_t index;
                     name = Vector!char(data, index);
                     import LEB128 = tagion.utils.LEB128;
-                    import tagion.basic.Debug;
 
-                    __write("WasmReader %s", LEB128.decode!uint(data[index .. $]));
                     doc = Document(data[index .. $]);
                     index += LEB128.decode!uint(data[index .. $]).size;
                     bytes = data[index .. $];

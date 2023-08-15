@@ -84,7 +84,7 @@ alias check = Check!WatException;
 
     alias Custom = Sections[Section.CUSTOM];
     void custom_sec(ref scope const(Custom) _custom) {
-        output.writef(`%s(custom "%s" "`, indent, _custom.name);
+        output.writef(`%s(custom "%s" `, indent, _custom.name);
         enum {
             SPACE = 32,
             DEL = 127
@@ -94,12 +94,12 @@ alias check = Check!WatException;
         import LEB128 = tagion.utils.LEB128;
         import std.algorithm;
 
-        output.writefln("doc %s %(%02X %) %s doc %(%02X %)", _custom.doc.isInorder, _custom.bytes[0 .. 10], LEB128
-            .decode!uint(_custom.bytes), _custom.doc.data[0 .. min(10, $)]);
         if (_custom.doc.isInorder) {
-            output.writefln("%s", _custom.doc.toPretty);
+            output.writefln("\n%s", _custom.doc.toPretty);
+            output.writefln(`)`);
         }
         else {
+            output.write(`"`);
             foreach (d; _custom.bytes) {
                 if ((d > SPACE) && (d < DEL)) {
                     output.writef(`%c`, char(d));
@@ -108,13 +108,8 @@ alias check = Check!WatException;
                     output.writef(`\x%02X`, d);
                 }
             }
+            output.writefln(`")`);
         }
-        output.writefln(`")`);
-        //        auto _custom=mod[Section.CUSTOM];//.custom_sec;
-        //foreach(c; _custom[]) {
-        //        writefln("_custom=%s",  _custom);
-        //output.writef("%s(custom (%s %s))", indent, c.name, cast(string)(c.bytes));
-        //}
     }
 
     alias Type = Sections[Section.TYPE];
