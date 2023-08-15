@@ -497,80 +497,16 @@ class Round {
             hashgraph.epoch(event_collection, r);
         }
 
-        /**
-     * Called to check of the round can be decided
-     * Params:
-     *   hashgraph = hashgraph which owns the round 
-     */
 
-//         version(none)
-//         void check_decided_round(HashGraph hashgraph) @trusted {
-//             auto round_to_be_decided = last_decided_round._next;
-//             void decide_round() {
-//                 collect_received_round(round_to_be_decided, hashgraph);
-// -                round_to_be_decided._decided = true;
-// -                last_decided_round = round_to_be_decided;
-// -                check_decided_round(hashgraph);
-// -                return;
-// -           }
-// -
-// -           if (hashgraph.possible_round_decided(round_to_be_decided))
-//             {
-// -                // writefln("possible_round_decided");
-// -               const votes_mask = BitMask(round_to_be_decided.events
-// -                        .filter!((e) => (e) && !hashgraph.excluded_nodes_mask[e.node_id])
-// -                    .map!((e) => e.node_id));
-// -               if (votes_mask.isMajority(hashgraph)) {
-// -
-// -                    if (Event.callbacks) {
-// -                        votes_mask[].filter!(
-// -                            (vote_node_id) => round_to_be_decided._events[vote_node_id].isFamous)
-// -                            .each!((vote_node_id) => Event.callbacks.famous(
-// -                                    round_to_be_decided._events[vote_node_id]));
-// -                    }
-// -
-// -                    votes_mask[]
-// -                        .each!((vote_node_id) => round_to_be_decided._events[vote_node_id]
-// -                        ._witness.famous(hashgraph));
-// -
-// -                    const famous_round = votes_mask[]
-// -                        .all!((vote_node_id) => round_to_be_decided._events[vote_node_id]
-// -                        .isFamous);
-// -
-// -                    if (famous_round && votes_mask.count == hashgraph.node_size - hashgraph
-// -                        .excluded_nodes_mask.count) {
-// -                        decide_round();
-// -                        return;
-// -                    }
-// -
-// -                    uint count_rounds;
-// -                    foreach (r; round_to_be_decided[].retro) {
-// -                        const round_contains_witness = votes_mask[]
-// -                            .all!(vote_node_id => r.events[vote_node_id]!is null);
-// -
-// -                        if (!round_contains_witness) {
-// -                            break;
-// -                        }
-// -                        count_rounds++;
-// -                        if (count_rounds > 6) {
-// -                            decide_round();
-// -                            return;
-// -                        }
-// -                    }
-//                 }
-//             }
-//         }
-
-        void vote(ulong vote_node_id, HashGraph hashgraph)
+        package void vote(HashGraph hashgraph, size_t vote_node_id)
         {
             voting_round_per_node[vote_node_id] = voting_round_per_node[vote_node_id]._next;
             Round current_round = voting_round_per_node[vote_node_id];
-            if (hashgraph._rounds.voting_round_per_node.all!(r => r.number >= current_round.number)) { hashgraph._rounds.decide_round(); }
+            if (voting_round_per_node.all!(r => !higher(current_round.number, r.number))) { decide_round(); }
             
             while(current_round._next !is null) {
                 current_round = current_round._next;
-                foreach (e; current_round._events) {
-                    if (e is null) { continue; }
+                foreach (e; current_round._events.filter!(e => e !is null)) {
                     e.calc_vote(hashgraph, vote_node_id);
                 }
             }
@@ -653,7 +589,6 @@ class Event {
     alias check = Check!EventConsensusException;
     protected static uint _count;
 
-    package BitMask[] _witness_strong_seen_masks;
     package Event[] _youngest_ancestors;
 
 
@@ -690,8 +625,6 @@ class Event {
     )
     in (epack !is null)
     do {
-        // _youngest_ancestors = new Event[hashgraph.node_size];
-        _witness_strong_seen_masks = new BitMask[hashgraph.node_size];
         event_package = epack;
         this.id = hashgraph.next_event_id;
         this.node_id = hashgraph.getNode(channel).node_id;
@@ -733,14 +666,9 @@ class Event {
 
 
         private {
-            // immutable(BitMask) _seeing_witness_in_previous_round_mask; /// The mask resulting to this witness
-            BitMask _strong_seeing_mask; /// Nodes which has voted this witness as strogly seen
             BitMask _vote_on_earliest_witnesses;
             BitMask _prev_strongly_seen_witnesses;
             BitMask _prev_seen_witnesses;
-            Event[] _ancestors_tide;
-            Event[] _descendants_tide;
-            // Fame _famous; /// True if the witness is voted famous
         }
 
 
@@ -756,11 +684,6 @@ class Event {
             assert(owner_event);
         }
         do {
-
-            this._ancestors_tide = new Event[node_size];
-            this._descendants_tide = new Event[node_size];
-            // _seeing_xhwitness_in_previous_round_mask = cast(immutable) seeing_witness_in_previous_round_mask
-            //     .dup;
             _count++;
         }
 
@@ -768,16 +691,6 @@ class Event {
             _count--;
         }
 
-        pure nothrow final {
-            /**
- * Nodes which see this witness as strogly seen
- * Returns: strogly seening mask 
- */
-            @nogc
-            const(BitMask) strong_seeing_mask() const {
-                return _strong_seeing_mask;
-            }
-        }
     }
 
     static EventMonitorCallbacks callbacks;
@@ -983,45 +896,44 @@ class Event {
         return BitMask(strongly_seen_nodes);
     }
 
-    void calc_youngest_ancestors(HashGraph hashgraph) {
-        if (!father || mother.round.number > father.round.number) {
+    private void calc_youngest_ancestors(const HashGraph hashgraph) {
+        if (!_father || higher(_mother.round.number, _father.round.number)) {
             _youngest_ancestors = _mother._youngest_ancestors;
             return;
         }
-        _youngest_ancestors = (father.round is mother.round) ? _mother._youngest_ancestors.dup() : new Event[hashgraph.node_size];
+        _youngest_ancestors = (_father.round is _mother.round) ? _mother._youngest_ancestors.dup() : new Event[hashgraph.node_size];
         _youngest_ancestors[node_id] = this;
-        iota(_father._youngest_ancestors.length)
-            .filter!((ulong i) => _father._youngest_ancestors[i] !is null)
-            .filter!((ulong i) => _youngest_ancestors[i] is null || _father._youngest_ancestors[i].received_order > _youngest_ancestors[i].received_order)
-            .each!((ulong i) => _youngest_ancestors[i] = _father._youngest_ancestors[i]);
+        iota(hashgraph.node_size)
+            .filter!(node_id => _father._youngest_ancestors[node_id] !is null)
+            .filter!(node_id => _youngest_ancestors[node_id] is null || _father._youngest_ancestors[node_id].received_order > _youngest_ancestors[node_id].received_order)
+            .each!(node_id => _youngest_ancestors[node_id] = _father._youngest_ancestors[node_id]);
     }
 
-    void clear_youngest_ancestors(HashGraph hashgraph) {
+    package void clear_youngest_ancestors(const HashGraph hashgraph) {
         _youngest_ancestors = new Event[hashgraph.node_size];
         _youngest_ancestors[node_id] = this;
     }
 
-    void calc_vote(HashGraph hashgraph, ulong vote_node_id) {
+    package void calc_vote(HashGraph hashgraph, size_t vote_node_id) {
         Round voting_round = hashgraph._rounds.voting_round_per_node[vote_node_id];
         Event voting_event = voting_round._events[vote_node_id];
         
-        if (voting_round.number >= round.number) { return; }
+        if (!higher(round.number, voting_round.number)) { return; }
         if (voting_round.number + 1 == round.number ) {
             _witness._vote_on_earliest_witnesses[vote_node_id] = _witness._prev_seen_witnesses[vote_node_id];
             return;
         }
         if (voting_event is null) {
-            hashgraph._rounds.vote(vote_node_id, hashgraph);
+            hashgraph._rounds.vote(hashgraph, vote_node_id);
             return;
         }
-        auto votes = _witness._prev_strongly_seen_witnesses[]
-                        .map!(i => round.previous.events[i]._witness._vote_on_earliest_witnesses[vote_node_id]);
+        auto votes = _witness._prev_strongly_seen_witnesses[].map!(i => round.previous.events[i]._witness._vote_on_earliest_witnesses[vote_node_id]);
         const yes_votes = votes.count;
         const no_votes = votes.walkLength - yes_votes;
         _witness._vote_on_earliest_witnesses[vote_node_id] = (yes_votes >= no_votes);
         if (hashgraph.isMajority(yes_votes) || hashgraph.isMajority(no_votes)) {
             voting_round.famous_mask[vote_node_id] = (yes_votes >= no_votes);
-            hashgraph._rounds.vote(vote_node_id, hashgraph);
+            hashgraph._rounds.vote(hashgraph, vote_node_id);
         }
     }
 

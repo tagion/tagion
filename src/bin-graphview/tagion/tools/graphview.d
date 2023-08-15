@@ -139,11 +139,11 @@ struct Dot {
                 options ~= format(`fontcolor="%s"`, "blue");
                 options ~= format(`shape="%s"`, "plane");
 
-                const strongly_seening_mask = mask2text(
-                    mother_event.strongly_seeing_mask);
-                if (strongly_seening_mask) {
-                    texts ~= format("%s:s", strongly_seening_mask);
-                }
+                // const strongly_seening_mask = mask2text(
+                //     // mother_event.strongly_seeing_mask);
+                // if (strongly_seening_mask) {
+                //     texts ~= format("%s:s", strongly_seening_mask);
+                // }
                 // const round_seen_mask = mask2text(mother_event.round_seen_mask);
                 // if (round_seen_mask) {
                     // texts ~= format("%s:r", round_seen_mask); //mask2text(mother_event.round_seen_mask));

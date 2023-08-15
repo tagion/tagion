@@ -232,20 +232,6 @@ class MonitorCallBacks : EventMonitorCallbacks {
             // socket_send(hibon);
         }
 
-        void strongly_seeing(const(Event) e) {
-            auto hibon = createHiBON(e);
-
-            try {
-                // hibon[Keywords.strongly_seeing]=e.strongly_seeing;
-                hibon[Keywords.strong_mask] = getBitMaskString(e.witness.strong_seeing_mask, e.round.node_size);
-            }
-            catch (Exception excp) {
-                // empty
-            }
-
-            socket_send(hibon);
-        }
-
         void famous(const(Event) e) {
             auto hibon = createHiBON(e);
 
