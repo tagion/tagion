@@ -65,7 +65,6 @@ class Event {
         Event _son;
 
         int _received_order;
-        int __received_order;
         // The withness mask contains the mask of the nodes
         // Which can be seen by the next rounds witness
         Witness _witness;
@@ -206,8 +205,8 @@ class Event {
 
     void initializeReceivedOrder() pure nothrow @nogc {
         if (_received_order is int.init) {
-            _received_order = -2;
-            __received_order = -2;
+            // _received_order = -2;
+            _received_order = -1;
         }
     }
 
@@ -216,6 +215,7 @@ class Event {
      * Params:
      *   iteration_count = iteration count used for debugging
      */
+    version(none)
     private void received_order(ref uint iteration_count) pure nothrow {
         if (isFatherLess) {
             if (_mother) {
@@ -309,17 +309,8 @@ class Event {
         if (callbacks) {
             callbacks.round(this);
         }
-        __received_order = (_father && higher(_father.__received_order, _mother.__received_order)) ? _father.__received_order + 1 : _mother.__received_order + 1;
-        __received_order += (__received_order is int.init);
-        uint received_order_iteration_count;
-        received_order(received_order_iteration_count);
-        hashgraph.received_order_statistic(received_order_iteration_count);
-        if (hashgraph.__debug_print) {
-            __write("EVENT: %s, o vs o: %s %s", id, _received_order, __received_order);
-            if (__received_order != _received_order) {
-                __write("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
-            }
-        }
+        _received_order = (_father && higher(_father._received_order, _mother._received_order)) ? _father._received_order + 1 : _mother._received_order + 1;
+        _received_order += (_received_order is int.init);
         with (hashgraph) {
             mixin Log!(received_order_statistic);
         }
@@ -545,18 +536,6 @@ class Event {
         }
 
         /**
-         *  Calculates the order of this event
-         * Returns: order ( max(m+1, f+1 ). 
-         */
-        int expected_order() const pure nothrow @nogc {
-            const m = (_mother) ? _mother._received_order : int.init;
-            const f = (_father) ? _father._received_order : int.init;
-            int result = (m - f > 0) ? m : f;
-            result++;
-            result = (result is int.init) ? 1 : result;
-            return result;
-        }
-        /**
           * Is this event owner but this node 
           * Returns: true if the evnet is owned
           */
@@ -569,10 +548,7 @@ class Event {
          * Returns: order
          */
         int received_order() const pure nothrow @nogc
-        in {
-            assert(isEva || (_received_order !is int.init), "The received order of this event has not been defined");
-        }
-        do {
+        {
             return _received_order;
         }
 
@@ -634,10 +610,6 @@ class Event {
         bool isFatherLess() {
             return isEva || !isGrounded && (event_package.event_body.father is null) && _mother
                 .isFatherLess;
-        }
-
-        bool hasOrder() {
-            return _received_order !is int.init;
         }
 
         bool isGrounded() {
