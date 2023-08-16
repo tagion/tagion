@@ -7,7 +7,7 @@ env:
 
 jobs:
   commit_stage:
-    runs-on: CI
+    runs-on: CI-2
     # runs-on: ubuntu-22.04
     steps:
       - name: get repository
