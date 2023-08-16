@@ -20,7 +20,7 @@ jobs:
 
       - name: Install android tools
         run: |
-          make -fj tub/scripts/setup_android_toolchain.mk
+          make -j -f tub/scripts/setup_android_toolchain.mk
 
       - name: Build
         run: |
