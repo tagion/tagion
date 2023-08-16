@@ -25,9 +25,6 @@ import std.conv;
 import tagion.hashgraph.Refinement;
 import std.typecons;
 
-
-
-
 class TestRefinement : StdRefinement { 
 
     struct ExcludedNodesHistory {
