@@ -452,30 +452,43 @@ class Round {
      *   r = decided round to collect events to produce the epoch
      *   hashgraph = hashgraph which ownes this rounds
      */
-        // version(none)
-        // package void collect_received_round(Round r, HashGraph hashgraph) {
-        //     Event[] new_consensus_tide = consensus_tide.dup();
-        //     foreach(famous_event; r._events.filter!(e => e.witness.famous_mask[e.node_id])) {
-        //         if (famous_event.witness._prev_strongly_seen_witnesses
-        //     }
-            
+        version(none)
+        package void collect_received_round(Round r, HashGraph hashgraph) {
+            scope Event[] new_consensus_tide = r._events.dup();
+            foreach(famous_event; r._events.filter!(e => e.witness.famous_mask[e.node_id])) {
+                famous_event._youngest_ancestors
+                    .filter!(e => e !is null)
+                    .filter!(e => higher(new_consensus_tide[e.node_id].received_order, e.received_order))
+                    .each!(e => new_consensus_tide[e.node_id] = e);
+            }
+
                         
-        //     scope (success) {
-        //         with (hashgraph) {
-        //             mark_received_statistic(mark_received_iteration_count);
-        //             mixin Log!(mark_received_statistic);
-        //             order_compare_statistic(order_compare_iteration_count);
-        //             mixin Log!(order_compare_statistic);
-        //             epoch_events_statistic(epoch_events_count);
-        //             mixin Log!(epoch_events_statistic);
-        //         }
-        //     }
+            scope (success) {
+                with (hashgraph) {
+                    mark_received_statistic(mark_received_iteration_count);
+                    mixin Log!(mark_received_statistic);
+                    order_compare_statistic(order_compare_iteration_count);
+                    mixin Log!(order_compare_statistic);
+                    epoch_events_statistic(epoch_events_count);
+                    mixin Log!(epoch_events_statistic);
+                }
+            }
             
              
-        // }
+        }
         
         // version(none)
         package void collect_received_round(Round r, HashGraph hashgraph) {
+            scope Event[] new_consensus_tide = r._events.dup();
+            foreach(famous_event; r._events.filter!(e => e.witness.famous_mask[e.node_id])) {
+                famous_event._youngest_ancestors
+                    .filter!(e => e !is null)
+                    .filter!(e => higher(new_consensus_tide[e.node_id].received_order, e.received_order))
+                    .each!(e => new_consensus_tide[e.node_id] = e);
+            }
+            if (hashgraph.__debug_print) {
+                __write("testingd: %s", new_consensus_tide.filter!(e => e !is null).map!(e => e.id));
+            }
             uint mark_received_iteration_count;
             uint order_compare_iteration_count;
             uint rare_order_compare_count;
