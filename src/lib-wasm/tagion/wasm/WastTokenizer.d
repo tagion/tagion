@@ -1,6 +1,7 @@
 module tagion.wasm.WastTokenizer;
 
 import tagion.basic.Debug;
+import std.traits;
 
 enum Chars : char {
     NUL = '\0',
@@ -60,13 +61,51 @@ struct WastTokenizer {
 
     }
 
-    void check(const bool flag, string msg = null, string file = __FILE__, const size_t code_line = __LINE__) {
+    void check(const bool flag, string msg = null, string file = __FILE__, const size_t code_line = __LINE__) nothrow {
         import std.stdio;
+        import std.exception : assumeWontThrow;
 
         if (!flag) {
-            writefln("Error:%s %s:%s:%d:%d", msg, token, type, line, line_pos);
-            writefln("%s:%d", file, code_line);
+            assumeWontThrow((() {
+                    writefln("Error:%s %s:%s:%d:%d", msg, token, type, line, line_pos);
+                    writefln("%s:%d", file, code_line);
+                })());
+
         }
+    }
+
+    T get(T)() nothrow if (isIntegral!T) {
+        import std.conv;
+        import std.algorithm.comparison : min;
+
+        try {
+            __write("NUMBER %s %s", T.stringof, token);
+            enum hex_prefix = "0x";
+            if (token[0 .. min(hex_prefix.length, $)] == hex_prefix) {
+                return cast(T)(token[hex_prefix.length .. $].to!(Unsigned!T)(16));
+            }
+            return token.to!T;
+        }
+        catch (Exception e) {
+            check(false, e.msg);
+        }
+        return T.init;
+    }
+
+    T get(T)() nothrow if (isFloatingPoint!T) {
+        import std.format;
+
+        try {
+            const spec = singleSpec("%f");
+            auto number = token;
+            __write("NUMBER %s %s", T.stringof, number);
+            return unformatValue!T(number, spec);
+        }
+        catch (Exception e) {
+            check(false, e.msg);
+        }
+        return T.init;
+
     }
 
     private string text;

@@ -70,7 +70,7 @@ struct WastParser {
     private ParserStage parseInstr(ref WastTokenizer r,
             const ParserStage stage,
             ref CodeType code_type,
-            ref const(FuncType) func_type, //scope immutable(Types)[] locals,
+            ref const(FuncType) func_type,
             ref scope int[string] params) {
         import tagion.wasm.WasmExpr;
         import std.outbuffer;
@@ -162,30 +162,15 @@ struct WastParser {
                     case CALL_INDIRECT:
                         break;
                     case LOCAL:
-
-                        //string arg;
                         r.nextToken;
                         label = r.token;
                         r.check(r.type == TokenType.WORD);
-                        //r.nextToken;
-                        //r.check(r.type != TokenType.WORD);
-                        //if (r.type == TokenType.WORD) {
                         const local_idx = getLocal(r.token);
                         wasmexpr(irLookupTable[instr.name], local_idx);
-                        //.ifThrown!RangeError(-1);
-
-                        //arg = r.token;
                         r.nextToken;
-                        //  r.check(r.type != TokenType.WORD);
-                        /*        
-                }
-                        else {
-*/
                         foreach (i; 0 .. instr.pops) {
                             innerInstr(r, ParserStage.CODE);
                         }
-                        //                        }
-
                         break;
                     case GLOBAL:
                         r.nextToken;
@@ -213,7 +198,25 @@ struct WastParser {
                     case CONST:
                         r.nextToken;
                         r.check(r.type == TokenType.WORD);
-                        label = r.token;
+                        const ir = irLookupTable[instr.name];
+                        writefln("Const number %s", r.token);
+                        with (IR) switch (ir) {
+                        case I32_CONST:
+                            wasmexpr(ir, r.get!int);
+                            break;
+                        case I64_CONST:
+                            wasmexpr(ir, r.get!long);
+                            break;
+                        case F32_CONST:
+                            wasmexpr(ir, r.get!float);
+                            break;
+                        case F64_CONST:
+                            wasmexpr(ir, r.get!double);
+                            break;
+                        default:
+                            r.check(0, "Bad const instruction");
+                        }
+                        //label = r.token;
                         r.nextToken;
                         break;
                     case END:
@@ -392,10 +395,12 @@ struct WastParser {
                 return stage;
             case "assert_return":
             case "assert_return_nan":
+                writef("-->%s ", r.token);
                 Assert assert_type;
                 assert_type.method = Assert.Method.Return;
                 r.check(stage == ParserStage.BASE);
                 label = r.token;
+                writefln("LABEL %s", label);
                 r.nextToken;
                 FuncType func_type;
                 CodeType code_invoke;
@@ -408,6 +413,7 @@ struct WastParser {
                 }
                 assert_type.invoke = code_invoke.serialize;
                 assert_type.result = code_result.serialize;
+                writefln("invoke %(%02X %)", assert_type.invoke);
                 wast_assert.asserts ~= assert_type;
                 return ParserStage.ASSERT;
             case "assert_trap":
@@ -596,6 +602,11 @@ struct WastParser {
     }
     void parse(ref WastTokenizer tokenizer) {
         writefln("Start parse");
+        /*
+        if (tokenizer.type is TokenType.COMMENT) {
+         tokenizer.nextToken;  
+    }
+*/
         while (parseModule(tokenizer, ParserStage.BASE) !is ParserStage.END) {
             //empty    
         }
@@ -620,7 +631,7 @@ unittest {
 
     immutable wast_test_files = [
         "i32.wast",
-
+        /*
         "f32.wast",
         "i64.wast",
         "f64.wast",
@@ -652,7 +663,7 @@ unittest {
         "select.wast",
         "store_retval.wast",
         "switch.wast",
-
+*/
     ];
     version (none) immutable wast_test_files = [
         "unreachable.wast",

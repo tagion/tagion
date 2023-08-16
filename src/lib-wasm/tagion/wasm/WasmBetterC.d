@@ -17,6 +17,8 @@ import tagion.wasm.WasmReader;
 import tagion.wasm.WasmBase;
 import tagion.wasm.WasmException;
 import tagion.basic.tagionexceptions;
+import tagion.hibon.Document;
+import tagion.wasm.WastAssert;
 
 @safe class WasmBetterCException : WasmException {
     this(string msg, string file = __FILE__, size_t line = __LINE__) pure nothrow {
@@ -93,6 +95,25 @@ alias check = Check!WasmBetterCException;
         return result;
     }
 
+    void produceAsserts(const Document doc, const string indent) {
+        const sec_assert = SectionAssert(doc);
+        void innerAssert(const Assert _assert, const string indent) {
+            Context ctx;
+            auto expr = ExprRange(_assert.invoke);
+            output.writefln("expr %(%02X %)", _assert.invoke);
+            block(expr, ctx, indent);
+
+        }
+
+        foreach (_assert; sec_assert.asserts) {
+            output.writefln("%s{", indent);
+            innerAssert(_assert, indent ~ spacer);
+            output.writefln("%s}", indent);
+
+        }
+    }
+
+    enum max_linewidth = 120;
     alias Custom = Sections[Section.CUSTOM];
     void custom_sec(ref scope const(Custom) _custom) {
         import tagion.hibon.HiBONJSON;
@@ -104,10 +125,11 @@ alias check = Check!WasmBetterCException;
         }
         if (_custom.doc.isInorder) {
             switch (_custom.name) {
-            case "+assert":
+            case "assert":
                 output.writeln("@safe");
-                output.writefln("unittest { // %s", _custom.name);
-                output.write("}");
+                output.writefln("%sunittest { // %s", indent, _custom.name);
+                produceAsserts(_custom.doc, indent ~ spacer);
+                output.writefln("%s}", indent);
                 break;
             default:
                 output.writefln("/* %s", _custom.name);
@@ -116,13 +138,20 @@ alias check = Check!WasmBetterCException;
             }
         }
         else {
-            output.writefln(`/* "%s"`, _custom.name);
+            uint linewidth;
+            output.writefln(`/* Custom "%s"`, _custom.name);
             foreach (d; _custom.bytes) {
                 if ((d > SPACE) && (d < DEL)) {
                     output.writef(`%c`, char(d));
+                    linewidth += 1;
                 }
                 else {
                     output.writef(`\x%02X`, d);
+                    linewidth += 3;
+                }
+                if (linewidth >= max_linewidth) {
+                    output.writeln;
+                    linewidth = 0;
                 }
             }
             output.writeln(`*/`);
@@ -190,13 +219,12 @@ alias check = Check!WasmBetterCException;
     protected Function _function;
     @trusted void function_sec(ref const(Function) _function) {
         // Empty
-        // The functions headers are printed in the code section
+        // The function headers are printed in the code section
         this._function = cast(Function) _function;
     }
 
     alias Table = Sections[Section.TABLE];
     void table_sec(ref const(Table) _table) {
-        //        auto _table=*mod[Section.TABLE];
         foreach (i, t; _table[].enumerate) {
             output.writefln("%s(table (;%d;) %s %s)", indent, i,
                     limitToString(t.limit), typesName(t.type));
@@ -205,7 +233,6 @@ alias check = Check!WasmBetterCException;
 
     alias Memory = Sections[Section.MEMORY];
     void memory_sec(ref const(Memory) _memory) {
-        //        auto _memory=*mod[Section.MEMORY];
         foreach (i, m; _memory[].enumerate) {
             output.writefln("%s(memory (;%d;) %s)", indent, i, limitToString(m.limit));
         }
