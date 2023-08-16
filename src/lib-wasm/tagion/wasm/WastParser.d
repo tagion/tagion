@@ -110,9 +110,7 @@ struct WastParser {
                     writefln("Export %s", writer.mod[Section.EXPORT].sectypes.map!(exp => exp.name));
                     auto export_found = writer.mod[Section.EXPORT].sectypes
                         .find!(exp => exp.name == r.token.stripQuotes);
-                    writefln("export_found=%s", export_found);
                     if (!export_found.empty) {
-                        writefln("FOUND=%s %s idx=%d", export_found.front, func_idx, export_found.front.idx);
                         return export_found.front.idx;
                     }
                 }

@@ -101,7 +101,7 @@ alias check = Check!WasmBetterCException;
             Context ctx;
             auto code_type = CodeType(_assert.invoke);
             auto expr = code_type[];
-            output.writefln("//expr %(%02X %)", expr);
+            output.writefln("//expr %(%02X %)", _assert.invoke);
             block(expr, ctx, indent);
 
         }
@@ -389,6 +389,19 @@ alias check = Check!WasmBetterCException;
             return peek;
         }
 
+        string[] pops(const size_t amount) pure nothrow {
+            try {
+                scope (success) {
+                    stack.length -= amount;
+                }
+                return stack[$ - amount .. $];
+            }
+            catch (Exception e) {
+                return ["Error Stack underflow", e.msg];
+            }
+            assert(0);
+        }
+
         void push(string value) pure nothrow {
             stack ~= value;
         }
@@ -487,6 +500,11 @@ alias check = Check!WasmBetterCException;
                         break;
                     case CALL:
                         output.writefln("%s%s %s", indent, instr.name, elm.warg.get!uint);
+                        const func_idx = elm.warg.get!uint;
+                        output.writefln("FuncType =%s", func_idx);
+                        const function_header = wasmstream.get!(Section.TYPE)[func_idx];
+                        output.writefln("header %s", function_header);
+                        output.writefln("pops %s", ctx.pops(function_header.params.length));
                         break;
                     case CALL_INDIRECT:
                         output.writefln("%s%s (type %d)", indent, instr.name, elm.warg.get!uint);
@@ -509,17 +527,15 @@ alias check = Check!WasmBetterCException;
                             with (Types) {
                                 switch (a.type) {
                                 case I32:
-                                    return a.get!int
-                                        .to!string;
+                                    return format("(%d)", a.get!int);
                                 case I64:
-                                    return a.get!long
-                                        .to!string;
+                                    return format("(%dL)", a.get!long);
                                 case F32:
                                     const x = a.get!float;
-                                    return format("%a (;=%s;)", x, x);
+                                    return format("(%a /* %s */)", x, x);
                                 case F64:
                                     const x = a.get!double;
-                                    return format("%a (;=%s;)", x, x);
+                                    return format("(%a /* %s */)", x, x);
                                 default:
                                     assert(0);
                                 }
@@ -527,7 +543,9 @@ alias check = Check!WasmBetterCException;
                             assert(0);
                         }
 
-                        output.writefln("%s%s %s", indent, instr.name, toText(elm.warg));
+                        const value = toText(elm.warg);
+                        output.writefln("%s// %s %s", indent, instr.name, value);
+                        ctx.push(value);
                         break;
                     case END:
                         return elm;
