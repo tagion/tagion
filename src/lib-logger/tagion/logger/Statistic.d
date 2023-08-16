@@ -124,7 +124,6 @@ unittest {
 
     assert(r.max == samples.maxElement);
     assert(r.min == samples.minElement);
-
     // samples/histogram does not contain -4
     assert(!s.contains(-4));
     // but conatians -10

@@ -44,6 +44,11 @@ class StdRefinement : Refinement {
         // log.trace("epack.event_body.payload.empty %s", epack.event_body.payload.empty);
     }
 
+    void swap_node() {
+
+    }
+
+
 
     void epoch(Event[] event_collection, const(Round) decided_round) {
 
@@ -94,14 +99,6 @@ class StdRefinement : Refinement {
         offline[].each!((node_id) => hashgraph.mark_offline(node_id));
         
         hashgraph._excluded_nodes_mask |= offline;
-        // __write("Epoch exclude = %s", hashgraph.excluded_nodes_mask);
-
-
-        // __write("Epoch ONLINE=%s", online);
-
-        // online.chunk(hashgraph.node_size);
-        // hashgraph._excluded_nodes_mask |= ~online;
-        // __write(" wowo excluded nodes after=%s", hashgraph.excluded_nodes_mask);
 
         import tagion.basic.Debug;
 
@@ -122,7 +119,7 @@ class StdRefinement : Refinement {
                 Event.count, Event.Witness.count, events.length, epoch_time);
 
         finishedEpoch(events, epoch_time, decided_round);
-
+        
         excludedNodes(hashgraph._excluded_nodes_mask);
     }
 
