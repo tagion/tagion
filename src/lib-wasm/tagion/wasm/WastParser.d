@@ -5,7 +5,7 @@ import tagion.wasm.WasmWriter;
 import tagion.wasm.WasmBase;
 import tagion.wasm.WastAssert;
 import tagion.basic.Debug;
-
+import tagion.wasm.WasmException;
 import std.stdio;
 import std.exception : ifThrown;
 import core.exception : RangeError;
@@ -223,6 +223,9 @@ struct WastParser {
                         break;
                     case PREFIX:
                         break;
+                    case ILLEGAL:
+                        throw new WasmException("Undefined instruction %s", r.token);
+                        break;
                     case SYMBOL:
                         r.nextToken;
                         string[] labels;
@@ -258,7 +261,8 @@ struct WastParser {
         }
 
         scope (exit) {
-            writefln("%(%02X %)", wasmexpr.serialize);
+            writefln("1] %(%02X %)", wasmexpr.serialize);
+            writefln("2] %(%02X %)", wasmexpr.serialize);
             if (locals.length > number_of_func_arguments) {
                 writefln("locals=%s", params.dup);
             }
@@ -399,8 +403,7 @@ struct WastParser {
                 Assert assert_type;
                 assert_type.method = Assert.Method.Return;
                 r.check(stage == ParserStage.BASE);
-                label = r.token;
-                writefln("LABEL %s", label);
+                assert_type.name = r.token;
                 r.nextToken;
                 FuncType func_type;
                 CodeType code_invoke;
@@ -409,11 +412,12 @@ struct WastParser {
                 // Invoke call
                 parseInstr(r, ParserStage.ASSERT, code_invoke, func_type, params);
                 if (r.type == TokenType.BEGIN) {
-                    parseInstr(r, ParserStage.EXPECTED, code_invoke, func_type, params);
+                    parseInstr(r, ParserStage.EXPECTED, code_result, func_type, params);
                 }
                 assert_type.invoke = code_invoke.serialize;
+                writefln("invoke %(%02X %) [%(%02X %)]", assert_type.invoke, code_invoke.expr);
                 assert_type.result = code_result.serialize;
-                writefln("invoke %(%02X %)", assert_type.invoke);
+                writefln("result %(%02X %) [%(%02X %)]", assert_type.invoke, code_invoke.expr);
                 wast_assert.asserts ~= assert_type;
                 return ParserStage.ASSERT;
             case "assert_trap":

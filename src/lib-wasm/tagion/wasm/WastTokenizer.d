@@ -79,7 +79,6 @@ struct WastTokenizer {
         import std.algorithm.comparison : min;
 
         try {
-            __write("NUMBER %s %s", T.stringof, token);
             enum hex_prefix = "0x";
             if (token[0 .. min(hex_prefix.length, $)] == hex_prefix) {
                 return cast(T)(token[hex_prefix.length .. $].to!(Unsigned!T)(16));
@@ -98,7 +97,6 @@ struct WastTokenizer {
         try {
             const spec = singleSpec("%f");
             auto number = token;
-            __write("NUMBER %s %s", T.stringof, number);
             return unformatValue!T(number, spec);
         }
         catch (Exception e) {

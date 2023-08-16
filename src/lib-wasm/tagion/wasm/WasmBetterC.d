@@ -99,14 +99,15 @@ alias check = Check!WasmBetterCException;
         const sec_assert = SectionAssert(doc);
         void innerAssert(const Assert _assert, const string indent) {
             Context ctx;
-            auto expr = ExprRange(_assert.invoke);
-            output.writefln("expr %(%02X %)", _assert.invoke);
+            auto code_type = CodeType(_assert.invoke);
+            auto expr = code_type[];
+            output.writefln("//expr %(%02X %)", indent, _assert.invoke);
             block(expr, ctx, indent);
 
         }
 
         foreach (_assert; sec_assert.asserts) {
-            output.writefln("%s{", indent);
+            output.writefln("%s{ // %s", indent, _assert.name);
             innerAssert(_assert, indent ~ spacer);
             output.writefln("%s}", indent);
 
@@ -529,6 +530,9 @@ alias check = Check!WasmBetterCException;
                         output.writefln("%s%s %s", indent, instr.name, toText(elm.warg));
                         break;
                     case END:
+                        return elm;
+                    case ILLEGAL:
+                        output.writefln("Error: Illegal instruction %02X", elm.code);
                         return elm;
                     case SYMBOL:
                         assert(0, "Symbol opcode and it does not have an equivalent opcode");
