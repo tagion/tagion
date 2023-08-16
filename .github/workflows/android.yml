@@ -43,7 +43,7 @@ jobs:
       - name: Build
         run: |
           export PATH="tools/ldc2-1.29.0-linux-x86_64/bin:$PATH"
-          make -j DC=ldc2 ANDROID_NDK=tools/android-ndk-r21b/ PLATFORM=aarch64-linux-android libmobile
+          make DC=ldc2 ANDROID_NDK=tools/android-ndk-r21b/ PLATFORM=aarch64-linux-android libmobile
 
       - uses: actions/upload-artifact@v3
         if: success()
