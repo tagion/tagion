@@ -101,7 +101,7 @@ class Event {
     }
 
     invariant {
-        if (!scrapping) {
+        if (!scrapping && this !is null) {
             if (_mother) {
                 // assert(!_witness_mask[].empty);
                 assert(_mother._daughter is this);

@@ -480,10 +480,10 @@ class Round {
         // version(none)
         package void collect_received_round(Round r, HashGraph hashgraph) {
             scope Event[] new_consensus_tide = r._events.dup();
-            foreach(famous_event; r._events.filter!(e => e.witness.famous_mask[e.node_id])) {
+            foreach(famous_event; r._events.filter!(e => e !is null && r.famous_mask[e.node_id])) {
                 famous_event._youngest_ancestors
                     .filter!(e => e !is null)
-                    .filter!(e => higher(new_consensus_tide[e.node_id].received_order, e.received_order))
+                    .filter!(e => new_consensus_tide[e.node_id] is null || higher(new_consensus_tide[e.node_id].received_order, e.received_order))
                     .each!(e => new_consensus_tide[e.node_id] = e);
             }
             if (hashgraph.__debug_print) {
