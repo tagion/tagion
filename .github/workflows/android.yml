@@ -1,0 +1,28 @@
+name: android
+on:
+  workflow_dispatch:
+
+jobs:
+  commit_stage:
+    runs-on: ubuntu-22.10
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install build tools
+        run: |
+          sudo apt update
+          sudo apt-get install make screen autoconf golang clang libclang-dev libtool libssl-dev perl dub cmake wget xz-utils unzip
+
+      - name: Install android tools
+        run: |
+          make -f tub/scripts/setup_android_toolchain.mk
+
+      - name: Build
+          export PATH="tools/ldc2-1.29.0-linux-x86_64/bin:$PATH"
+          make DC=ldc2 ANDROID_NDK=tools/android-ndk-r21b/ PLATFORM=aarch64-linux-android libmobile
+
+      - uses: actions/upload-artifact@v3
+        if: success()
+        with:
+          name: android-libmobile
+          path: ./build/x86_64-linux/
+          if-no-files-found: error
