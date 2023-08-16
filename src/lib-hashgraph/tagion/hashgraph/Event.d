@@ -350,13 +350,20 @@ class Event {
             __write("TRAOIENSATOIENSATIOE: event: %s,round.number: %s", id, round.number);
             auto witness_ancestors = _youngest_ancestors
                 .filter!(e => e !is null)
-                .filter!(e => !higher(round.number-1, e._round.number))
+                .filter!(e => e.round is round)
                 .map!(e => _round._events[e.node_id]._witness);
 
+            // if (hashgraph.__debug_print) {
+            //     __write("XXXXXXXX: %s", _youngest_ancestors
+            //     .filter!(e => e !is null)
+            //     .filter!(e => e.round is round)
+            //     .map!(e => _round._events[e.node_id].id));
+            // }
+            
             witness_ancestors.each!(w => _witness._prev_strongly_seen_witnesses |= w._prev_strongly_seen_witnesses);
-            if (mother.round is round.previous) {
+            // if (mother.round is round.previous) {
                 _witness._prev_seen_witnesses = BitMask(mother._youngest_ancestors.map!(e => (e !is null && !higher(round.number - 1, e.round.number))));
-            }
+            // }
             _witness._prev_seen_witnesses |= witness_ancestors.map!(w => w._prev_seen_witnesses)
                 .array
                 .reduce!((a, b) => a | b);
@@ -380,6 +387,19 @@ class Event {
     private BitMask calc_strongly_seen_nodes(const HashGraph hashgraph) {
         if (hashgraph.__debug_print) {
             __write("round is %s", round.number);
+            if (_youngest_ancestors[0] !is null) {
+                __write("%s", _youngest_ancestors[0].round.number);
+            }
+
+            if (_youngest_ancestors[1] !is null) {
+                __write("%s", _youngest_ancestors[1].round.number);
+            }
+            if (_youngest_ancestors[2] !is null) {
+                __write("%s", _youngest_ancestors[2].round.number);
+            }
+            if (_youngest_ancestors[3] !is null) {
+                __write("%s", _youngest_ancestors[3].round.number);
+            }
         }
         scope strongly_seen_votes = new size_t[hashgraph.node_size];
         foreach (node_id; _youngest_ancestors
@@ -422,8 +442,8 @@ class Event {
 
     version(none)
     package void clear_youngest_ancestors(const HashGraph hashgraph) {
-        _youngest_ancestors = new Event[hashgraph.node_size];
-        _youngest_ancestors[node_id] = this;
+        // _youngest_ancestors = new Event[hashgraph.node_size];
+        // _youngest_ancestors[node_id] = this;
     }
 
     package void calc_vote(HashGraph hashgraph, size_t vote_node_id) {
