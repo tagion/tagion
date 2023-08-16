@@ -35,6 +35,7 @@
 		- [HiBON_LEB128](/documents/protocols/hibon/HiBON_LEB128.md)
 		- [HiBON_Record](/documents/protocols/hibon/HiBON_Record.md)
 	- [Contract](/documents/protocols/contract/Contract.md)
+        - [Methods](/documents/protocols/contract/hirpcmethods.md)
 	- DART
 		- [Recorder](/documents/modules/dart/recorder.md)
 		- [BlockFile and Recycler](/documents/modules/dart/block_file_recycler.md)
