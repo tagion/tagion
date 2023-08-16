@@ -321,25 +321,14 @@ class Event {
         }
         if (!higher(round.number, mother.round.number)) {
             return;
-        } //not a witness; return
+        }
 
         _witness = new Witness(this, hashgraph.node_size);
 
-        if (strongly_seen_nodes.isMajority(hashgraph)) {
-            _witness._prev_strongly_seen_witnesses = strongly_seen_nodes;
-            _witness._prev_seen_witnesses = BitMask(_youngest_ancestors.map!(e => (e !is null && !higher(round.number-1, e.round.number))));
-        }
-        else {
+        _witness._prev_strongly_seen_witnesses = strongly_seen_nodes;
+        _witness._prev_seen_witnesses = BitMask(_youngest_ancestors.map!(e => (e !is null && !higher(round.number-1, e.round.number))));
+        if (!strongly_seen_nodes.isMajority(hashgraph)) {
             _round.add(this);
-            auto witness_ancestors = _youngest_ancestors
-                .filter!(e => e !is null)
-                .filter!(e => e.round is round)
-                .map!(e => _round._events[e.node_id]._witness);
-            witness_ancestors.each!(w => _witness._prev_strongly_seen_witnesses |= w._prev_strongly_seen_witnesses);
-            _witness._prev_seen_witnesses = BitMask(mother._youngest_ancestors.map!(e => (e !is null && !higher(round.number - 1, e.round.number))));
-            _witness._prev_seen_witnesses |= witness_ancestors.map!(w => w._prev_seen_witnesses)
-                .array
-                .reduce!((a, b) => a | b);
         }
         with (hashgraph) {
             mixin Log!(strong_seeing_statistic);
