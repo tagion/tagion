@@ -25,6 +25,8 @@ jobs:
       - name: setup git
         run: |
           gh auth setup-git
+          git config --local --replace-all url."https://github.com".insteadOf git@github.com
+          git config --local --add url."https://".insteadOf git://
           git submodule update --init
 
       - name: Install build tools
