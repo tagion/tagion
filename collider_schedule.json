@@ -137,7 +137,7 @@
             "timeout": 0.0
         },
         "hashgraph_swap": {
-            "args": ["Alice", "Bob", "Carol", "Dave", "Elisa", "Freja", "Gretha"], 
+            "args": ["7", "100"], 
             "envs": {},
             "stages": [
                 "swap"

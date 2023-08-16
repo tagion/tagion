@@ -38,7 +38,7 @@ class TestRefinement : StdRefinement {
     }
     static ExcludedNodesHistory[] excluded_nodes_history;
 
-   
+
     struct Epoch {
         Event[] events;
         sdt_t epoch_time;
@@ -70,6 +70,7 @@ class TestRefinement : StdRefinement {
         __write("callback<%s>", excluded_mask);
 
     }
+
 }
 
 
@@ -304,6 +305,10 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         networks[net.pubkey] = new FiberNetwork(h, pageSize * 1024);
         authorising.add_channel(net.pubkey);
         TestGossipNet.online_states[net.pubkey] = true;
+    }
+
+    void swapNode(immutable(ulong) N, const Pubkey out_channel, const string new_node) {
+        authorising.remove_channel(out_channel);
     }
 
     FiberNetwork[Pubkey] networks;
