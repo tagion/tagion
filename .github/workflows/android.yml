@@ -49,5 +49,5 @@ jobs:
         if: success()
         with:
           name: android-libmobile
-          path: ./build/x86_64-linux/
+          path: ./build/aarch64-linux-android/lib/
           if-no-files-found: error
