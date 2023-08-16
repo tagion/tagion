@@ -259,13 +259,13 @@ class Round {
         Round last_decided_round;
         HashGraph hashgraph;
         Round[] voting_round_per_node;
-        Event[] consensusTide;
+        Event[] consensus_tide;
 
         @disable this();
 
         this(HashGraph hashgraph) pure nothrow {
             this.hashgraph = hashgraph;
-            consensusTide = new Event[hashgraph.node_size];
+            consensus_tide = new Event[hashgraph.node_size];
             last_round = new Round(null, hashgraph.node_size);
             voting_round_per_node = last_round.repeat(hashgraph.node_size).array;
         }
@@ -479,62 +479,66 @@ class Round {
         
         // version(none)
         package void collect_received_round(Round r, HashGraph hashgraph) {
-            scope Event[] new_consensus_tide = r._events.dup();
+            Event[] new_consensus_tide = r._events.dup();
             foreach(famous_event; r._events.filter!(e => e !is null && r.famous_mask[e.node_id])) {
                 famous_event._youngest_ancestors
                     .filter!(e => e !is null)
                     .filter!(e => new_consensus_tide[e.node_id] is null || higher(new_consensus_tide[e.node_id].received_order, e.received_order))
                     .each!(e => new_consensus_tide[e.node_id] = e);
             }
-            if (hashgraph.__debug_print) {
-                __write("testingd: %s", new_consensus_tide.filter!(e => e !is null).map!(e => e.id));
-            }
-            uint mark_received_iteration_count;
-            uint order_compare_iteration_count;
-            uint rare_order_compare_count;
-            uint epoch_events_count;
-            // uint count;
-            scope (success) {
-                with (hashgraph) {
-                    mark_received_statistic(mark_received_iteration_count);
-                    mixin Log!(mark_received_statistic);
-                    order_compare_statistic(order_compare_iteration_count);
-                    mixin Log!(order_compare_statistic);
-                    epoch_events_statistic(epoch_events_count);
-                    mixin Log!(epoch_events_statistic);
-                }
-            }
-            r._events
-                .filter!((e) => (e !is null))
-                .each!((e) => e[]
-                .until!((e) => (e._round_received !is null))
-                .each!((ref e) => e._round_received_mask.clear));
+            auto event_collection = new_consensus_tide.map!(e => e[]
+                    .until!(e => e is consensus_tide[e.node_id]))
+                .joiner.array;
+            
+            // if (hashgraph.__debug_print) {
+            //     __write("testingd: %s", new_consensus_tide.filter!(e => e !is null).map!(e => e.id));
+            // }
+            // uint mark_received_iteration_count;
+            // uint order_compare_iteration_count;
+            // uint rare_order_compare_count;
+            // uint epoch_events_count;
+            // // uint count;
+            // scope (success) {
+            //     with (hashgraph) {
+            //         mark_received_statistic(mark_received_iteration_count);
+            //         mixin Log!(mark_received_statistic);
+            //         order_compare_statistic(order_compare_iteration_count);
+            //         mixin Log!(order_compare_statistic);
+            //         epoch_events_statistic(epoch_events_count);
+            //         mixin Log!(epoch_events_statistic);
+            //     }
+            // }
+            // r._events
+            //     .filter!((e) => (e !is null))
+            //     .each!((e) => e[]
+            //     .until!((e) => (e._round_received !is null))
+            //     .each!((ref e) => e._round_received_mask.clear));
 
-            void mark_received_events(const size_t voting_node_id, Event e) {
-                mark_received_iteration_count++;
-                if ((e) && (!e._round_received) && !e._round_received_mask[voting_node_id]) { // && !marker_mask[e.node_id] ) {
-                    e._round_received_mask[voting_node_id] = true;
-                    mark_received_events(voting_node_id, e._father);
-                    mark_received_events(voting_node_id, e._mother);
-                }
-            }
-            // Marks all the event below round r
-            r._events
-                .filter!((e) => (e !is null))
-                .each!((ref e) => mark_received_events(e.node_id, e));
+            // void mark_received_events(const size_t voting_node_id, Event e) {
+            //     mark_received_iteration_count++;
+            //     if ((e) && (!e._round_received) && !e._round_received_mask[voting_node_id]) { // && !marker_mask[e.node_id] ) {
+            //         e._round_received_mask[voting_node_id] = true;
+            //         mark_received_events(voting_node_id, e._father);
+            //         mark_received_events(voting_node_id, e._mother);
+            //     }
+            // }
+            // // Marks all the event below round r
+            // r._events
+            //     .filter!((e) => (e !is null))
+            //     .each!((ref e) => mark_received_events(e.node_id, e));
 
-            // writefln("r._events=%s", r._events.count!((e) => e !is null && e.isFamous));
-            auto event_collection = r._events
-                .filter!((e) => (e !is null))
-                .filter!((e) => !hashgraph.excluded_nodes_mask[e.node_id])
-                .map!((ref e) => e[]
-                .until!((e) => (e._round_received !is null))
-                .filter!((e) => (e._round_received_mask.isMajority(hashgraph))))
-                .joiner
-                .tee!((e) => e._round_received = r)
-                .array;
+            // // writefln("r._events=%s", r._events.count!((e) => e !is null && e.isFamous));
+            // auto event_collection = r._events
+            //     .filter!((e) => (e !is null))
+            //     .filter!((e) => !hashgraph.excluded_nodes_mask[e.node_id])
+            //     .map!((ref e) => e[]
+            //     .until!((e) => (e._round_received !is null))
+            //     .filter!((e) => (e._round_received_mask.isMajority(hashgraph))))
+            //     .joiner
+            //     .tee!((e) => e._round_received = r)
+            //     .array;
 
-            // writefln("event_collection=%s", event_collection.count!((e) => e !is null && e.isFamous));
+            // // writefln("event_collection=%s", event_collection.count!((e) => e !is null && e.isFamous));
             hashgraph.epoch(event_collection, r);
         }
 
