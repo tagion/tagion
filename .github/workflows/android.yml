@@ -5,7 +5,6 @@ on:
 jobs:
   commit_stage:
     runs-on: ubuntu-22.04
-    token: ${{ secrets.GH_PAT }}
     steps:
       - uses: actions/checkout@v3
       - name: setup secrets
