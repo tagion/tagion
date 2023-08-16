@@ -1,4 +1,4 @@
-# Contract Verifier Service
+# HiRPC Verifier Service
 
 [tagion.services.contract](ddoc://tagion.services.contract)
 
@@ -21,13 +21,13 @@ The service does the following:
 
 If one or more of the checks fails an error should be log and contract be dropped.
 
-The acceptance criteria specification can be found in [ContractInterface_service](/bdd/tagion/testbench/services/ContractInterface_service.md).
+The acceptance criteria specification can be found in [services/hirpc_verifier](/bdd/tagion/testbench/services/hirpc_verifier.md).
 
 ```mermaid
 sequenceDiagram
     participant Input Validator 
-    participant Contract Verifier 
+    participant HiRPC Verifier 
     participant Collector
-    Input Validator->>Contract Verifier: HiRPC.Receiver
-    Contract Verifier->>Collector: Contract(if no errors)
+    Input Validator->>HiRPC Verifier: HiRPC.Receiver
+    HiRPC Verifier->>Collector: HiRPC(if no errors)
 ```

@@ -10,6 +10,7 @@ import std.range;
 import std.array : array;
 
 import tagion.hashgraph.Event;
+import tagion.hashgraph.Round;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;

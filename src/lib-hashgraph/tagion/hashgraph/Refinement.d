@@ -5,6 +5,7 @@ import tagion.hashgraph.RefinementInterface;
 import tagion.crypto.Types : Pubkey;
 import tagion.basic.Types : Buffer;
 import tagion.hashgraph.Event;
+import tagion.hashgraph.Round;
 import tagion.utils.BitMask;
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.HashGraphBasic;

@@ -4,7 +4,8 @@ module tagion.monitor.Monitor;
 
 import tagion.network.ListenerSocket;
 
-import tagion.hashgraph.Event : Event, Round;
+import tagion.hashgraph.Event : Event;
+import tagion.hashgraph.Round;
 import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.hashgraph.HashGraphBasic : Tides;
 import tagion.hashgraphview.EventMonitorCallbacks : EventMonitorCallbacks;

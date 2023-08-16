@@ -9,7 +9,7 @@ A node consist of the following services.
 	- [Tagion](/documents/architecture/Tagion.md) is the service which handles the all the services related to the rest of the services (And run the HashGraph).
 	- [Tagion Factory](/documents/architecture/TagionFactory.md) This services takes care of the *mode* in which the network is started.
     - [Input Validator](/documents/architecture/InputValidator.md) This service handle the data-stream input to the network.
-    - [Contract Verifier](/documents/architecture/ContractVerifier.md) service is responsible for receiving contracts, ensuring a valid data format of HiRPC requests and compliance with the HiRPC protocol before it is executed in the system. 
+    - [HiRPC Verifier](/documents/architecture/HiRPCVerifier.md) service is responsible for receiving contracts, ensuring a valid data format of HiRPC requests and compliance with the HiRPC protocol before it is executed in the system. 
 	- [Collector](/documents/architecture/Collector.md) service is responsible for collecting input data for a Contract and ensuring the data is valid and signed before the contract is executed by the TVM.
 	- [TVM](/documents/architecture/TVM.md) ("Tagion Virtual Machine") is responsible for executing the instructions in the contract ensuring the contracts are compliant with Consensus Rules producing outputs and sending new contracts to the Epoch Creator.
 	- [Transcript](/documents/architecture/Transcript.md) service is responsible for producing a Recorder ensuring correct inputs and output archives including no double input and output in the same Epoch and sending it to the DART.
@@ -37,7 +37,7 @@ digraph Message_flow {
   DART [href="#/documents/architecture/DART.md" shape = cylinder];
   Input [href="#/documents/architecture/InputValidator.md" label="Input\nValidator" style=filled fillcolor=green ]
   P2P [ style=filled fillcolor=red]
-  ContractVerifier [href="#/documents/architecture/ContractVerifier.md"  label="Contract\nVerifier"]
+  HiRPCVerifier [href="#/documents/architecture/HiRPCVerifier.md"  label="HiRPC\nVerifier"]
   NodeInterface [href="#/documents/architecture/NodeInterface.md"  label="Node\nInterface"]
   Transcript [href="#/documents/architecture/Transcript.md" shape = note]
   EpochCreator [href="#/documents/architecture/EpochCreator.md" label="Epoch\nCreator"]
@@ -45,8 +45,8 @@ digraph Message_flow {
   Collector [href="#/documents/architecture/Collector.md"]
   Replicator [href="#/documents/architecture/Replicator.md"]
 
-  Input -> ContractVerifier [label="HiRPC(contract)" color=green];
-  ContractVerifier -> Collector [label="contract-NC" color=green];
+  Input -> HiRPCVerifier [label="HiRPC(contract)" color=green];
+  HiRPCVerifier -> Collector [label="contract-NC" color=green];
   Collector -> TVM [label="contract-S" color=green];
   EpochCreator -> Collector [label="contract-C" color=darkgreen];
   EpochCreator -> Transcript [label=epoch color=green];
@@ -83,7 +83,7 @@ TagionFactory [href="#/documents/architecture/Collector.md" label="Tagion\nFacto
 TVM [href="#/documents/architecture/TVM.md"] 
 DART [href="#/documents/architecture/DART.md" shape = cylinder]
 Replicator [href="#/documents/architecture/Replicator.md"] 
-ContractVerifier [href="#/documents/architecture/ContractVerifier.md" label="Contract\nVerifier"]
+HiRPCVerifier [href="#/documents/architecture/HiRPCVerifier.md" label="HiRPC\nVerifier"]
 Transcript [href="#/documents/architecture/Transcript.md" shape = note]
 Collector [href="#/documents/architecture/Collector.md" shape=rect]
 EpochCreator [href="#/documents/architecture/EpochCreator.md" label="Epoch\nCreator"]
@@ -101,12 +101,12 @@ node [shape = rect];
 	DART -> Replicator;
 	Tagion -> DART;
     Tagion -> EpochCreator;
-	EpochCreator -> ContractVerifier;
+	EpochCreator -> HiRPCVerifier;
 	EpochCreator -> Transcript;
 	EpochCreator -> Collector;
 	Transcript -> EpochDump;
 	EpochCreator -> Monitor;
 	Collector -> TVM;
-	ContractVerifier -> Input;
+	HiRPCVerifier -> Input;
 }
 ```
