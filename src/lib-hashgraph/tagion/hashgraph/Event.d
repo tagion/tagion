@@ -65,6 +65,7 @@ class Event {
         Event _son;
 
         int _received_order;
+        int __received_order;
         // The withness mask contains the mask of the nodes
         // Which can be seen by the next rounds witness
         Witness _witness;
@@ -206,6 +207,7 @@ class Event {
     void initializeReceivedOrder() pure nothrow @nogc {
         if (_received_order is int.init) {
             _received_order = -2;
+            __received_order = -2;
         }
     }
 
@@ -307,10 +309,17 @@ class Event {
         if (callbacks) {
             callbacks.round(this);
         }
-            _received_order = (_father && higher(_father.received_order, _mother.received_order)) ? _father.received_order + 1 : _mother.received_order + 1;
-        // uint received_order_iteration_count;
-        // received_order(received_order_iteration_count);
-        // hashgraph.received_order_statistic(received_order_iteration_count);
+        __received_order = (_father && higher(_father.__received_order, _mother.__received_order)) ? _father.__received_order + 1 : _mother.__received_order + 1;
+        __received_order += (__received_order is int.init);
+        uint received_order_iteration_count;
+        received_order(received_order_iteration_count);
+        hashgraph.received_order_statistic(received_order_iteration_count);
+        if (hashgraph.__debug_print) {
+            __write("EVENT: %s, o vs o: %s %s", id, _received_order, __received_order);
+            if (__received_order != _received_order) {
+                __write("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+            }
+        }
         with (hashgraph) {
             mixin Log!(received_order_statistic);
         }
