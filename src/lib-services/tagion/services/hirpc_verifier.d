@@ -29,7 +29,7 @@ struct HiRPCVerifierOptions {
 
 /// HiRPC methods
 enum ContractMethods {
-    transaction = "transaction",
+    submit = "submit",
 }
 
 /// used internally in combination with `send_rejected_contracts` optios for testing & tracing that contracts are correctly rejected
@@ -65,7 +65,7 @@ struct HiRPCVerifierService {
 
             const receiver = hirpc.receive(doc);
             with (ContractMethods) switch (receiver.method.name) {
-            case transaction:
+            case submit:
                 if (receiver.signed is HiRPC.SignedState.VALID) {
                     locate(receiver_task).send(inputHiRPC(), receiver);
                 }

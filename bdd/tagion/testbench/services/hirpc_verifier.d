@@ -112,7 +112,7 @@ class CorrectHiRPCFormatAndPermission {
         check(hirpc_verifier_handle.tid !is Tid.init, "Contract thread is not running");
         auto params = new HiBON;
         params["test"] = 42;
-        const sender = hirpc.action(ContractMethods.transaction, params);
+        const sender = hirpc.action(ContractMethods.submit, params);
         doc = sender.toDoc;
         hirpc_verifier_handle.send(inputDoc(), doc);
 
@@ -144,7 +144,7 @@ class CorrectHiRPCFormatAndPermission {
     @Then("if check that the Collector services received the contract.")
     Document contract() {
         const receiver = receiveOnlyTimeout!(inputHiRPC, immutable(HiRPC.Receiver))()[1];
-        check(receiver.method.name == ContractMethods.transaction, "The incorrect method name was sent back");
+        check(receiver.method.name == ContractMethods.submit, "The incorrect method name was sent back");
         check(receiver.toDoc == doc, "The received sender was not the same as was sent");
 
         return result_ok;
@@ -173,7 +173,7 @@ class CorrectHiRPCWithPermissionDenied {
         check(hirpc_verifier_handle.tid !is Tid.init, "hirpc_verifier thread is not running");
         auto params = new HiBON;
         params["test"] = 42;
-        const invalid_sender = bad_hirpc.action(ContractMethods.transaction, params);
+        const invalid_sender = bad_hirpc.action(ContractMethods.submit, params);
         invalid_doc = invalid_sender.toDoc;
         hirpc_verifier_handle.send(inputDoc(), invalid_doc);
         return result_ok;
