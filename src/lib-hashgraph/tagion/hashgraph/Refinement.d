@@ -80,7 +80,7 @@ class StdRefinement : Refinement {
                 }
 
                 if (!a.isFatherLess && !b.isFatherLess) {
-                    return order_less(a.mother, b.mother, order_count - 1);
+                   return order_less(a.mother, b.mother, order_count - 1);
                 }
 
                 return rare_less(a.fingerprint, b.fingerprint);

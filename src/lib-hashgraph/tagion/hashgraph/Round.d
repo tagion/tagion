@@ -259,13 +259,14 @@ class Round {
         Round last_decided_round;
         HashGraph hashgraph;
         Round[] voting_round_per_node;
+        Event[] consensusTide;
 
         @disable this();
 
         this(HashGraph hashgraph) pure nothrow {
             this.hashgraph = hashgraph;
+            consensusTide = new Event[hashgraph.node_size];
             last_round = new Round(null, hashgraph.node_size);
-
             voting_round_per_node = last_round.repeat(hashgraph.node_size).array;
         }
 
@@ -431,7 +432,7 @@ class Round {
             return cached_decided_count > total_limit;
         }
 
-        void decide_round() {
+        void check_decide_round() {
             auto round_to_be_decided = last_decided_round._next;
             if (!voting_round_per_node.all!(r => r.number > round_to_be_decided.number)) {
                 return;
@@ -451,6 +452,29 @@ class Round {
      *   r = decided round to collect events to produce the epoch
      *   hashgraph = hashgraph which ownes this rounds
      */
+        // version(none)
+        // package void collect_received_round(Round r, HashGraph hashgraph) {
+        //     Event[] new_consensus_tide = consensus_tide.dup();
+        //     foreach(famous_event; r._events.filter!(e => e.witness.famous_mask[e.node_id])) {
+        //         if (famous_event.witness._prev_strongly_seen_witnesses
+        //     }
+            
+                        
+        //     scope (success) {
+        //         with (hashgraph) {
+        //             mark_received_statistic(mark_received_iteration_count);
+        //             mixin Log!(mark_received_statistic);
+        //             order_compare_statistic(order_compare_iteration_count);
+        //             mixin Log!(order_compare_statistic);
+        //             epoch_events_statistic(epoch_events_count);
+        //             mixin Log!(epoch_events_statistic);
+        //         }
+        //     }
+            
+             
+        // }
+        
+        // version(none)
         package void collect_received_round(Round r, HashGraph hashgraph) {
             uint mark_received_iteration_count;
             uint order_compare_iteration_count;
@@ -505,7 +529,7 @@ class Round {
             voting_round_per_node[vote_node_id] = voting_round_per_node[vote_node_id]._next;
             Round current_round = voting_round_per_node[vote_node_id];
             if (voting_round_per_node.all!(r => !higher(current_round.number, r.number))) {
-                decide_round();
+                check_decide_round();
             }
 
             while (current_round._next !is null) {
