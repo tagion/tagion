@@ -155,7 +155,7 @@ class HashGraph {
                 writefln("init_event time %s", event.event_body.time);
                 _rounds.last_round.add(event);
                 front_seat(event);
-                event.clear_youngest_ancestors(this);
+                // event.clear_youngest_ancestors(this);
             }
 
             _rounds.erase;
