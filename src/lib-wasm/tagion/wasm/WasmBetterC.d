@@ -101,7 +101,7 @@ alias check = Check!WasmBetterCException;
             Context ctx;
             auto code_type = CodeType(_assert.invoke);
             auto expr = code_type[];
-            output.writefln("//expr %(%02X %)", indent, _assert.invoke);
+            output.writefln("//expr %(%02X %)", expr);
             block(expr, ctx, indent);
 
         }
