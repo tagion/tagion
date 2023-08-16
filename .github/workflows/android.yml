@@ -5,8 +5,15 @@ on:
 jobs:
   commit_stage:
     runs-on: ubuntu-22.04
+    token: ${{ secrets.GH_PAT }}
     steps:
       - uses: actions/checkout@v3
+      - name: setup secrets
+        run: |
+          eval `ssh-agent -s`
+          echo "${{secrets.SSH_PRIVATE_KEY}}" | ssh-add -
+          eval `ssh-agent -k`
+
       - name: Install build tools
         run: |
           sudo apt update
@@ -14,12 +21,12 @@ jobs:
 
       - name: Install android tools
         run: |
-          make -f tub/scripts/setup_android_toolchain.mk
+          make -fj tub/scripts/setup_android_toolchain.mk
 
       - name: Build
         run: |
           export PATH="tools/ldc2-1.29.0-linux-x86_64/bin:$PATH"
-          make DC=ldc2 ANDROID_NDK=tools/android-ndk-r21b/ PLATFORM=aarch64-linux-android libmobile
+          make -j DC=ldc2 ANDROID_NDK=tools/android-ndk-r21b/ PLATFORM=aarch64-linux-android libmobile
 
       - uses: actions/upload-artifact@v3
         if: success()
