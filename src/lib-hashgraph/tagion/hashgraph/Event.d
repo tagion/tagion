@@ -310,7 +310,6 @@ class Event {
             callbacks.round(this);
         }
         _received_order = (_father && higher(_father._received_order, _mother._received_order)) ? _father._received_order + 1 : _mother._received_order + 1;
-        _received_order += (_received_order is int.init);
         with (hashgraph) {
             mixin Log!(received_order_statistic);
         }
