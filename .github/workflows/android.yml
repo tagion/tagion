@@ -7,8 +7,8 @@ env:
 
 jobs:
   commit_stage:
-    # runs-on: CI
-    runs-on: ubuntu-22.04
+    runs-on: CI
+    # runs-on: ubuntu-22.04
     steps:
       # - name: get repository
       #   run: |
@@ -21,20 +21,20 @@ jobs:
       #     git checkout current
       #     git pull
 
-      - uses: actions/checkout@v3
-      - name: setup git
-        run: |
-          gh auth setup-git
-          gh auth status
-          sed -i 's,git@github.com:,https://github.com/,g' .git/config
-          # git config --local --replace-all url."https://github.com".insteadOf git@github.com
-          # git config --local --add url."https://".insteadOf git://
-          git submodule update --init
+      # - uses: actions/checkout@v3
+      # - name: setup git
+      #   run: |
+      #     gh auth setup-git
+      #     gh auth status
+      #     sed -i 's,git@github.com:,https://github.com/,g' .git/config
+      #     # git config --local --replace-all url."https://github.com".insteadOf git@github.com
+      #     # git config --local --add url."https://".insteadOf git://
+      #     git submodule update --init
 
-      - name: Install build tools
-        run: |
-          sudo apt update
-          sudo apt-get install make screen autoconf golang clang libclang-dev libtool libssl-dev perl dub cmake wget xz-utils unzip
+      # - name: Install build tools
+      #   run: |
+      #     sudo apt update
+      #     sudo apt-get install make screen autoconf golang clang libclang-dev libtool libssl-dev perl dub cmake wget xz-utils unzip
 
       - name: Install android tools
         run: |
