@@ -12,6 +12,7 @@ import std.path : buildPath, setExtension, extension;
 
 import std.stdio;
 import std.algorithm;
+import std.format;
 import std.datetime;
 import tagion.utils.Miscellaneous : cutHex;
 
@@ -32,6 +33,8 @@ class NodeSwap {
     TestNetwork network;
     string module_path;
     uint MAX_CALLS;
+    Pubkey offline_key;
+    enum new_node = "NEW_NODE";
 
     this(string[] node_names, const uint calls, const string module_path) {
         this.node_names = node_names;
@@ -39,7 +42,6 @@ class NodeSwap {
         MAX_CALLS = cast(uint) node_names.length * calls;
     }
 
-    
     @Given("i have a hashgraph testnetwork with n number of nodes.")
     Document nodes() {
 
@@ -49,6 +51,17 @@ class NodeSwap {
         writeln(network.random);
 
         network.global_time = SysTime.fromUnixTime(1_614_355_286);
+        offline_key = Pubkey(network.channels[0]);
+
+        // should be made properly.
+        import tagion.crypto.SecureNet : StdSecureNet;
+        import tagion.crypto.SecureInterfaceNet : SecureNet;
+
+        immutable passphrase = format("very secret %s", new_node);
+        auto net = new StdSecureNet();
+        net.generateKeyPair(passphrase);
+
+        // TestRefinement.swap = TestRefinement.Swap(offline_key,);
 
         return result_ok;
     }
@@ -67,19 +80,14 @@ class NodeSwap {
             (() @trusted { current.call; })();
 
         }
-        auto pkey = Pubkey(network.channels[0]);
-        writefln("REMOVING %s", pkey.cutHex);
+        TestNetwork.TestGossipNet.online_states[offline_key] = false;
 
+        network.swapNode(node_names.length, offline_key, "NEW_NODE");
 
         foreach (i; 0 .. MAX_CALLS) {
-
             const channel_number = network.random.value(0, network.channels.length);
             const channel = network.channels[channel_number];
-            if (channel == pkey) {
-                continue;
-            }
             auto current = network.networks[channel];
-            writefln("CURRENT %s", channel.cutHex);
             (() @trusted { current.call; })();
 
         }
