@@ -307,9 +307,10 @@ class Event {
         if (callbacks) {
             callbacks.round(this);
         }
-        uint received_order_iteration_count;
-        received_order(received_order_iteration_count);
-        hashgraph.received_order_statistic(received_order_iteration_count);
+            _received_order = (_father && higher(_father.received_order, _mother.received_order)) ? _father.received_order + 1 : _mother.received_order + 1;
+        // uint received_order_iteration_count;
+        // received_order(received_order_iteration_count);
+        // hashgraph.received_order_statistic(received_order_iteration_count);
         with (hashgraph) {
             mixin Log!(received_order_statistic);
         }
