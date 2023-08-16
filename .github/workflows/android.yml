@@ -2,32 +2,35 @@ name: android
 on:
   workflow_dispatch:
 
+env:
+  GH_TOKEN: ${secrets.GITBOT_TOKEN}
+
 jobs:
   commit_stage:
-    runs-on: CI
+    # runs-on: CI
+    runs-on: ubuntu-22.04
     steps:
-      - name: get repository
+      # - name: get repository
+      #   run: |
+      #     cd ..
+      #     git clone git@github.com:tagion/tagion.git || echo "repo already exists"
+
+      # - name: pull
+      #   run: |
+      #     git clean -f && git restore . 
+      #     git checkout current
+      #     git pull
+
+      - uses: actions/checkout@v3
+      - name: setup git
         run: |
-          cd ..
-          git clone git@github.com:tagion/tagion.git || echo "repo already exists"
+          gh auth setup-git
+          git submodule update --init
 
-      - name: pull
+      - name: Install build tools
         run: |
-          git clean -f && git restore . 
-          git checkout current
-          git pull
-
-      #  - uses: actions/checkout@v3
-      #  - name: setup secrets
-      #    run: |
-      #      eval `ssh-agent -s`
-      #      echo "${{secrets.SSH_PRIVATE_KEY}}" | ssh-add -
-      #      eval `ssh-agent -k`
-
-      #  - name: Install build tools
-      #    run: |
-      #      sudo apt update
-      #      sudo apt-get install make screen autoconf golang clang libclang-dev libtool libssl-dev perl dub cmake wget xz-utils unzip
+          sudo apt update
+          sudo apt-get install make screen autoconf golang clang libclang-dev libtool libssl-dev perl dub cmake wget xz-utils unzip
 
       - name: Install android tools
         run: |
