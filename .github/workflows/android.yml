@@ -4,7 +4,7 @@ on:
 
 jobs:
   commit_stage:
-    runs-on: ubuntu-22.10
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
       - name: Install build tools
