@@ -24,7 +24,7 @@ jobs:
 
       - name: Install android tools
         run: |
-          make -jf tub/scripts/setup_android_toolchain.mk TARGET_ARCH=${{ matrix.arch}}
+          make -j -f tub/scripts/setup_android_toolchain.mk TARGET_ARCH=${{ matrix.arch}}
 
       - name: Build
         run: |

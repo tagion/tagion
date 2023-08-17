@@ -20,8 +20,8 @@ It will do 4 things
 ```sh
 # The script will use these tools to install everything
 # apt-get install wget xz-utils unzip make
-make -jf tub/scripts/setup_android_toolchain.mk LDC_TARGET=ldc2-1.29.0-android-aarch64
-make -jf tub/scripts/setup_android_toolchain.mk LDC_TARGET=ldc2-1.29.0-android-armv7a
+make -j -f tub/scripts/setup_android_toolchain.mk LDC_TARGET=ldc2-1.29.0-android-aarch64
+make -j -f tub/scripts/setup_android_toolchain.mk LDC_TARGET=ldc2-1.29.0-android-armv7a
 # The x86_64 libraries are included and configured when downloading the aarch64 libraries
 ```
 
