@@ -288,7 +288,7 @@ jobs:
           systemctl restart --user dart_api.service
           
   deploy_testnet_container:
-    runs-on: testnet-container
+    runs-on: testnet1-local
     needs: [finish_workflow]
     steps:         
       - name: get artifact and restart service
