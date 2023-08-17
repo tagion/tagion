@@ -12,11 +12,11 @@ import tagion.hashgraph.HashGraphBasic;
 import tagion.utils.StdTime;
 import tagion.logger.Logger;
 import tagion.hibon.HiBONRecord;
+
 // std
 import std.stdio;
 import std.algorithm;
 import std.array;
-
 
 @safe
 class StdRefinement : Refinement {
@@ -44,11 +44,9 @@ class StdRefinement : Refinement {
         // log.trace("epack.event_body.payload.empty %s", epack.event_body.payload.empty);
     }
 
-    void swap_node() {
+    void swapNode() {
 
     }
-
-
 
     void epoch(Event[] event_collection, const(Round) decided_round) {
 
@@ -95,9 +93,8 @@ class StdRefinement : Refinement {
                 .map!(e => e.node_id));
         offline.chunk(hashgraph.node_size);
 
-
         offline[].each!((node_id) => hashgraph.mark_offline(node_id));
-        
+
         hashgraph._excluded_nodes_mask |= offline;
 
         import tagion.basic.Debug;
@@ -119,8 +116,9 @@ class StdRefinement : Refinement {
                 Event.count, Event.Witness.count, events.length, epoch_time);
 
         finishedEpoch(events, epoch_time, decided_round);
-        
+
         excludedNodes(hashgraph._excluded_nodes_mask);
+        swapNode();
     }
 
 }
@@ -132,14 +130,13 @@ struct RoundFingerprint {
 }
 
 @safe
-const(RoundFingerprint) hashLastDecidedRound(const Round last_decided_round) pure nothrow
-{
-    import std.algorithm:filter;
+const(RoundFingerprint) hashLastDecidedRound(const Round last_decided_round) pure nothrow {
+    import std.algorithm : filter;
 
     RoundFingerprint round_fingerprint;
     round_fingerprint.fingerprints = last_decided_round.events
         .filter!(e => e !is null)
-        .map!(e => cast (Buffer)e.event_package.fingerprint)
+        .map!(e => cast(Buffer) e.event_package.fingerprint)
         .array
         .sort
         .array;

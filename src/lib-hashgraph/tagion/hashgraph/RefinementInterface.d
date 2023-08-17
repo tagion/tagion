@@ -8,6 +8,7 @@ import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.Round;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.utils.StdTime;
+
 @safe
 interface Refinement {
 
@@ -22,6 +23,6 @@ interface Refinement {
 
     void epoch(Event[] events, const(Round) decided_round);
 
-    void swap_node();
+    void swapNode();
 
 }

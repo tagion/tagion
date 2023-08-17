@@ -1,4 +1,3 @@
-
 /// HashGraph Event
 module tagion.hashgraph.Round;
 
@@ -44,7 +43,6 @@ import std.typecons : No;
 import std.traits;
 
 import std.stdio;
-
 
 /// Handles the round information for the events in the Hashgraph
 @safe
