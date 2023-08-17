@@ -306,7 +306,7 @@ jobs:
           mkdir -p /opt/tagion/artifact
           cp build/x86_64-linux/bin/tagion /opt/tagion/artifact
           cp revision.txt /opt/tagion/artifact
-          /home/ubuntu/dashboard.sh
+          /home/moonbase/dashboard.sh
           rm -rf build || echo "build directory already deleted"
           rm  *.tar.gz || echo "No such file or directory"
           
