@@ -6,7 +6,9 @@ import tagion.hibon.Document;
 import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
 
+version(NNG_INPUT) import nngd;
 import std.socket;
+import core.time;
 import std.typecons;
 import std.stdio;
 import tagion.actor;
@@ -35,11 +37,20 @@ enum input_test = "input_test";
 @safe @Scenario("send a document to the socket",
         [])
 class SendADocumentToTheSocket {
-    Address addr;
-    Socket sock;
     InputValidatorHandle input_handle;
     Document doc;
-    enum sock_path = "\0input_validator_test";
+    version(NNG_INPUT) {
+    enum sock_path = "abstract://" ~ __MODULE__;
+    NNGSocket sock;
+    this() @trusted {
+        sock = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
+    }
+    }
+    else {
+    Socket sock;
+    Address addr;
+    enum sock_path = "\0" ~ __MODULE__;
+    }
 
     @Given("a inputvalidator")
     Document aInputvalidator() {
@@ -51,7 +62,22 @@ class SendADocumentToTheSocket {
     }
 
     @When("we send a `Document` on a socket")
-    Document aSocket() {
+    Document aSocket() @trusted {
+        version(NNG_INPUT) {
+        sock.sendtimeout = msecs(1000);
+        sock.sendbuf = 4096;
+        int rc = sock.dial(sock_path);
+        check(rc == 0, format("Failed to dial %s", nng_errstr(rc)));
+        HiRPC hirpc;
+        auto hibon = new HiBON();
+        hibon["$test"] = 5;
+        const sender = hirpc.act(hibon);
+        doc = sender.toDoc;
+        rc = sock.send(doc.serialize);
+        check(rc == 0, format("Failed to send %s", nng_errstr(rc)));
+
+        }
+        else {
         addr = new UnixAddress(sock_path); // TODO: make this configurable
         sock = new Socket(AddressFamily.UNIX, SocketType.STREAM);
         sock.blocking = false;
@@ -62,6 +88,7 @@ class SendADocumentToTheSocket {
         doc = sender.toDoc;
         sock.connect(addr);
         check(doc.serialize.length == sock.send(doc.serialize), "The entire document was not sent");
+        }
         return result_ok;
     }
 
@@ -75,9 +102,11 @@ class SendADocumentToTheSocket {
 
     @Then("stop the inputvalidator")
     Document theInputvalidator() {
-        sock.close();
+        version(NNG_INPUT) {} else { sock.close(); }
+
         input_handle.send(Sig.STOP);
-        check(waitforChildren(Ctrl.END), "The inputvalidator did not stop");
+        import core.time;
+        check(waitforChildren(Ctrl.END, 5.seconds), "The inputvalidator did not stop");
         return result_ok;
     }
 

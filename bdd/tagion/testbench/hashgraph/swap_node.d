@@ -109,7 +109,6 @@ class OfflineNodeSwap {
             if (allExcluded) {
                 break;
             }
-
         }
         check(allExcluded, format("not all nodes excluded %s", offline_node.cutHex));
         return result_ok;

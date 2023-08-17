@@ -128,7 +128,8 @@ struct Recycler {
      * Params:
      *   segment_range = Range of segments. Must be ElementType = RecycleSegment*
      */
-    protected void insert(R)(R segment_range) if (isInputRange!R && isImplicitlyConvertible!(ElementType!R, RecycleSegment*)) {
+    protected void insert(R)(R segment_range)
+            if (isInputRange!R && isImplicitlyConvertible!(ElementType!R, RecycleSegment*)) {
         indices.stableInsert(segment_range);
         segments ~= segment_range;
     }
@@ -541,13 +542,13 @@ unittest {
     add_indices =
         [
             new RecycleSegment(Index(10UL), 5)
-        ];
+    ];
     recycler.recycle(add_indices);
     // recycler.dump;
     add_indices =
         [
             new RecycleSegment(Index(2UL), 8)
-        ];
+    ];
     recycler.recycle(add_indices);
 
     assert(recycler.indices.length == 1, "should have merged segments");
@@ -558,7 +559,7 @@ unittest {
     add_indices =
         [
             new RecycleSegment(Index(15UL), 5)
-        ];
+    ];
     recycler.recycle(add_indices);
     assert(recycler.indices.length == 1, "should have merged segments");
     assert(recycler.indices.front.index == Index(
@@ -587,13 +588,13 @@ unittest {
     add_indices =
         [
             new RecycleSegment(Index(10UL), 5)
-        ];
+    ];
     recycler.recycle(add_indices);
     // recycler.dump;
     add_indices =
         [
             new RecycleSegment(Index(2UL), 5)
-        ];
+    ];
     recycler.recycle(
             add_indices);
 
@@ -606,7 +607,7 @@ unittest {
     add_indices =
         [
             new RecycleSegment(Index(25UL), 5)
-        ];
+    ];
     recycler.recycle(
             add_indices[]);
     assert(recycler.indices.length == 3, "Should not have merged");
@@ -635,13 +636,13 @@ unittest {
         [
             new RecycleSegment(Index(10UL), 5),
             new RecycleSegment(Index(1UL), 1)
-        ];
+    ];
     recycler.recycle(add_indices);
     // recycler.dump;
     add_indices =
         [
             new RecycleSegment(Index(5UL), 5)
-        ];
+    ];
     recycler.recycle(add_indices);
     // recycler.dump;
     assert(recycler.indices.length == 2, "should have merged segments");
@@ -650,12 +651,12 @@ unittest {
     add_indices =
         [
             new RecycleSegment(Index(25UL), 5)
-        ];
+    ];
     recycler.recycle(add_indices);
     add_indices =
         [
             new RecycleSegment(Index(17UL), 2)
-        ];
+    ];
     recycler.recycle(
             add_indices);
     assert(
@@ -679,7 +680,7 @@ unittest {
     RecycleSegment*[] add_indices =
         [
             new RecycleSegment(Index(10UL), 5),
-        ];
+    ];
     recycler.recycle(add_indices);
 
     recycler.claim(5);
