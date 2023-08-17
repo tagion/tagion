@@ -450,11 +450,20 @@ class Round {
      */
         
         package void collect_received_round(Round r, HashGraph hashgraph) {
-            // const famous_witnesses = r._events.filter!(e => !is null && r.famous_mask[e.node_id]);
-            // const famous_youngest_common_son_ancestors = famous_witnesses.
-            
-            
+            // auto famous_witness_youngest_son_ancestors = r._events
+            //                                                     .filter!(e => e !is null && r.famous_mask[e.node_id])
+            //                                                     .map!(e => e._youngest_son_ancestors).joiner;
             Event[] consensus_tide = r._events.dup();
+            // foreach(son_ancestor; famous_witness_youngest_son_ancestors) {
+            //     if (consensus_tide[son_ancestor.node_id] is null) { continue; }            
+            //     if (higher(consensus_tide[son_ancestor.node_id].received_order, son_ancestor.received_order)) {
+            //         consensus_tide[son_ancestor.node_id] is null) { continue; }
+                
+            // }
+            // famous_witnesses_youngest_son_ancestors.each!(
+
+
+            
             foreach(famous_event; r._events.filter!(e => e !is null && r.famous_mask[e.node_id]))
             {
                 famous_event._youngest_son_ancestors
