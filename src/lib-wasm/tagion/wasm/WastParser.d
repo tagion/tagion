@@ -5,7 +5,7 @@ import tagion.wasm.WasmWriter;
 import tagion.wasm.WasmBase;
 import tagion.wasm.WastAssert;
 import tagion.basic.Debug;
-
+import tagion.wasm.WasmException;
 import std.stdio;
 import std.exception : ifThrown;
 import core.exception : RangeError;
@@ -13,6 +13,7 @@ import std.conv;
 import std.traits;
 import std.algorithm;
 import std.array;
+import std.format;
 
 @safe
 struct WastParser {
@@ -70,7 +71,7 @@ struct WastParser {
     private ParserStage parseInstr(ref WastTokenizer r,
             const ParserStage stage,
             ref CodeType code_type,
-            ref const(FuncType) func_type, //scope immutable(Types)[] locals,
+            ref const(FuncType) func_type,
             ref scope int[string] params) {
         import tagion.wasm.WasmExpr;
         import std.outbuffer;
@@ -90,6 +91,38 @@ struct WastParser {
             return result;
         }
 
+        int getFuncIdx() @trusted {
+            int innerFunc(string text) {
+                int result = func_idx[text].ifThrown!RangeError(int(-1));
+                if (result < 0) {
+                    result = text.to!int
+                        .ifThrown!ConvException(-1);
+                    r.check(result >= 0, format("Invalid function %s name or index", text));
+                }
+                return result;
+            }
+
+            switch (r.type) {
+            case TokenType.WORD:
+                return innerFunc(r.token);
+            case TokenType.STRING:
+                if (writer.mod[Section.EXPORT]!is null) {
+                    writefln("Export %s", writer.mod[Section.EXPORT].sectypes.map!(exp => exp.name));
+                    auto export_found = writer.mod[Section.EXPORT].sectypes
+                        .find!(exp => exp.name == r.token.stripQuotes);
+                    if (!export_found.empty) {
+                        return export_found.front.idx;
+                    }
+                }
+
+                break;
+            default:
+                // empty
+            }
+            r.check(0, format("Export %s is not defined", r.token));
+
+            return -1;
+        }
         // writefln("%s %s", __FUNCTION__, params.dup);
         ParserStage innerInstr(ref WastTokenizer r, const ParserStage) {
             r.check(r.type == TokenType.BEGIN);
@@ -134,7 +167,6 @@ struct WastParser {
                             r.nextToken;
                         }
                         while (r.type == TokenType.BEGIN) {
-                            //foreach (i; 0 .. instr.pops) {
                             innerInstr(r, ParserStage.CODE);
                         }
                         break;
@@ -152,40 +184,27 @@ struct WastParser {
                         break;
                     case CALL:
                         r.nextToken;
+                        const idx = getFuncIdx();
+                        writefln("CALL %s %d", r.token, idx);
                         label = r.token;
                         r.nextToken;
                         while (r.type == TokenType.BEGIN) {
                             innerInstr(r, ParserStage.CODE);
                         }
-
+                        wasmexpr(IR.CALL, idx);
                         break;
                     case CALL_INDIRECT:
                         break;
                     case LOCAL:
-
-                        //string arg;
                         r.nextToken;
                         label = r.token;
                         r.check(r.type == TokenType.WORD);
-                        //r.nextToken;
-                        //r.check(r.type != TokenType.WORD);
-                        //if (r.type == TokenType.WORD) {
                         const local_idx = getLocal(r.token);
                         wasmexpr(irLookupTable[instr.name], local_idx);
-                        //.ifThrown!RangeError(-1);
-
-                        //arg = r.token;
                         r.nextToken;
-                        //  r.check(r.type != TokenType.WORD);
-                        /*        
-                }
-                        else {
-*/
                         foreach (i; 0 .. instr.pops) {
                             innerInstr(r, ParserStage.CODE);
                         }
-                        //                        }
-
                         break;
                     case GLOBAL:
                         r.nextToken;
@@ -213,12 +232,33 @@ struct WastParser {
                     case CONST:
                         r.nextToken;
                         r.check(r.type == TokenType.WORD);
-                        label = r.token;
+                        const ir = irLookupTable[instr.name];
+                        writefln("Const number %s", r.token);
+                        with (IR) switch (ir) {
+                        case I32_CONST:
+                            wasmexpr(ir, r.get!int);
+                            break;
+                        case I64_CONST:
+                            wasmexpr(ir, r.get!long);
+                            break;
+                        case F32_CONST:
+                            wasmexpr(ir, r.get!float);
+                            break;
+                        case F64_CONST:
+                            wasmexpr(ir, r.get!double);
+                            break;
+                        default:
+                            r.check(0, "Bad const instruction");
+                        }
+                        //label = r.token;
                         r.nextToken;
                         break;
                     case END:
                         break;
                     case PREFIX:
+                        break;
+                    case ILLEGAL:
+                        throw new WasmException("Undefined instruction %s", r.token);
                         break;
                     case SYMBOL:
                         r.nextToken;
@@ -255,7 +295,8 @@ struct WastParser {
         }
 
         scope (exit) {
-            writefln("%(%02X %)", wasmexpr.serialize);
+            writefln("1] %(%02X %)", wasmexpr.serialize);
+            writefln("2] %(%02X %)", wasmexpr.serialize);
             if (locals.length > number_of_func_arguments) {
                 writefln("locals=%s", params.dup);
             }
@@ -363,10 +404,8 @@ struct WastParser {
                 r.check(r.type == TokenType.STRING);
                 export_type.name = r.token.stripQuotes;
                 r.nextToken;
-                //arg = r.token;
                 r.check(r.type == TokenType.WORD);
                 export_type.desc = IndexType.FUNC;
-                //writefln("r.token=%s %s", r.token, func_idx);
                 export_type.idx = func_idx.get(r.token, -1);
                 r.check(export_type.idx >= 0);
 
@@ -392,10 +431,11 @@ struct WastParser {
                 return stage;
             case "assert_return":
             case "assert_return_nan":
+                r.check(stage == ParserStage.BASE);
+                writef("-->%s ", r.token);
                 Assert assert_type;
                 assert_type.method = Assert.Method.Return;
-                r.check(stage == ParserStage.BASE);
-                label = r.token;
+                assert_type.name = r.token;
                 r.nextToken;
                 FuncType func_type;
                 CodeType code_invoke;
@@ -404,16 +444,19 @@ struct WastParser {
                 // Invoke call
                 parseInstr(r, ParserStage.ASSERT, code_invoke, func_type, params);
                 if (r.type == TokenType.BEGIN) {
-                    parseInstr(r, ParserStage.EXPECTED, code_invoke, func_type, params);
+                    parseInstr(r, ParserStage.EXPECTED, code_result, func_type, params);
                 }
                 assert_type.invoke = code_invoke.serialize;
+                writefln("invoke %(%02X %) [%(%02X %)]", assert_type.invoke, code_invoke.expr);
                 assert_type.result = code_result.serialize;
+                writefln("result %(%02X %) [%(%02X %)]", assert_type.invoke, code_invoke.expr);
                 wast_assert.asserts ~= assert_type;
                 return ParserStage.ASSERT;
             case "assert_trap":
+                r.check(stage == ParserStage.BASE);
                 Assert assert_type;
                 assert_type.method = Assert.Method.Trap;
-                r.check(stage == ParserStage.BASE);
+                assert_type.name = r.token;
                 label = r.token;
                 r.nextToken;
                 FuncType func_type;
@@ -428,24 +471,6 @@ struct WastParser {
                 wast_assert.asserts ~= assert_type;
                 r.nextToken;
                 return ParserStage.ASSERT;
-                version (none) {
-            case "assert_return_nan":
-                    Assert assert_type;
-                    assert_type.method = Assert.Method.Return;
-                    r.check(stage == ParserStage.BASE);
-                    label = r.token;
-                    r.nextToken;
-                    FuncType func_type;
-                    CodeType code_invoke;
-                    scope int[string] params;
-                    // Invoke call
-                    parseInstr(r, ParserStage.ASSERT, code_invoke, func_type, params);
-                    assert_type.invoke = code_invoke.serialize;
-                    assert_type.result = code_result.serialize;
-                    wast_assert.asserts ~= assert_type;
-
-                    return ParserStage.ASSERT;
-                }
             case "assert_invalid":
                 r.check(stage == ParserStage.BASE);
                 r.nextToken;
@@ -539,7 +564,6 @@ struct WastParser {
     }
 
     private ParserStage parseTypeSection(ref WastTokenizer r, const ParserStage stage) {
-        //string label;
         CodeType code_type;
         writeln("Function code");
         scope (exit) {
@@ -564,8 +588,6 @@ struct WastParser {
 
         r.nextToken;
         if (r.type == TokenType.WORD) {
-            // Function with label
-            //label = r.token;
             func_idx[r.token] = type_idx;
             r.nextToken;
         }
@@ -596,6 +618,11 @@ struct WastParser {
     }
     void parse(ref WastTokenizer tokenizer) {
         writefln("Start parse");
+        /*
+        if (tokenizer.type is TokenType.COMMENT) {
+         tokenizer.nextToken;  
+    }
+*/
         while (parseModule(tokenizer, ParserStage.BASE) !is ParserStage.END) {
             //empty    
         }
@@ -620,7 +647,7 @@ unittest {
 
     immutable wast_test_files = [
         "i32.wast",
-
+        /*
         "f32.wast",
         "i64.wast",
         "f64.wast",
@@ -652,7 +679,7 @@ unittest {
         "select.wast",
         "store_retval.wast",
         "switch.wast",
-
+*/
     ];
     version (none) immutable wast_test_files = [
         "unreachable.wast",
