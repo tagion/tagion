@@ -1,9 +1,14 @@
 # tools directory
 TOOLS:=tools
 
-
-LDC_HOST:=ldc2-1.29.0-linux-x86_64
+TARGET_ARCH:=aarch64
+ifeq ($(TARGET_ARCH),x86_64)
+# There is no distribution for android x86_64, however the libs are included with aarch64
 LDC_TARGET:=ldc2-1.29.0-android-aarch64
+else
+LDC_TARGET:=ldc2-1.29.0-android-$(TARGET_ARCH)
+endif
+LDC_HOST:=ldc2-1.29.0-linux-x86_64
 LDC_HOST_TAR:=$(LDC_HOST).tar.xz
 LDC_TARGET_TAR:=$(LDC_TARGET).tar.xz
 
