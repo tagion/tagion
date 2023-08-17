@@ -80,6 +80,13 @@ class TestRefinement : StdRefinement {
 
     }
 
+    override void swapNode() {
+        if (swap is swap.init || swap.round != hashgraph.rounds.last_decided_round.number) {
+            return;
+        }
+
+    }
+
 }
 
 /++
@@ -298,7 +305,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
     }
 
     static bool testing;
-    void addNode(immutable(ulong) N, const(string) name, const Flag!"joining" joining = No.joining) {
+    void addNode(immutable(ulong) N, const(string) name, const Flag!"joining" joining = No.joining, bool passive = false) {
         immutable passphrase = format("very secret %s", name);
         auto net = new StdSecureNet();
         net.generateKeyPair(passphrase);
@@ -311,12 +318,9 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         h.scrap_depth = 0;
         writefln("Adding Node: %s with %s", name, net.pubkey.cutHex);
         networks[net.pubkey] = new FiberNetwork(h, pageSize * 1024);
-        authorising.add_channel(net.pubkey);
-        TestGossipNet.online_states[net.pubkey] = true;
-    }
 
-    void swapNode(immutable(ulong) N, const Pubkey out_channel, const string new_node) {
-        addNode(N, new_node, No.joining);
+        authorising.add_channel(net.pubkey);
+        TestGossipNet.online_states[net.pubkey] = !passive;
     }
 
     FiberNetwork[Pubkey] networks;

@@ -9,10 +9,12 @@ import tagion.testbench.hashgraph.hashgraph_test_network;
 import tagion.crypto.Types : Pubkey;
 import tagion.basic.Types : FileExtension;
 import std.path : buildPath, setExtension, extension;
+import tagion.utils.Miscellaneous : cutHex;
 
 import std.stdio;
 import std.algorithm;
 import std.format;
+import std.typecons;
 import std.datetime;
 import tagion.utils.Miscellaneous : cutHex;
 
@@ -61,7 +63,10 @@ class NodeSwap {
         auto net = new StdSecureNet();
         net.generateKeyPair(passphrase);
 
-        // TestRefinement.swap = TestRefinement.Swap(offline_key,);
+        writefln("new node pubkey: %s", net.pubkey.cutHex);
+
+        TestRefinement.swap = TestRefinement.Swap(net.pubkey, net.pubkey, 10);
+        network.addNode(node_names.length, new_node, Yes.joining, true);
 
         return result_ok;
     }
@@ -80,9 +85,10 @@ class NodeSwap {
             (() @trusted { current.call; })();
 
         }
-        TestNetwork.TestGossipNet.online_states[offline_key] = false;
 
-        network.swapNode(node_names.length, offline_key, "NEW_NODE");
+        // TestNetwork.TestGossipNet.online_states[offline_key] = false;
+
+        // network.swapNode(node_names.length, offline_key, "NEW_NODE");
 
         foreach (i; 0 .. MAX_CALLS) {
             const channel_number = network.random.value(0, network.channels.length);

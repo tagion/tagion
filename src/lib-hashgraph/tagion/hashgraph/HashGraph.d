@@ -126,7 +126,9 @@ class HashGraph {
             Refinement refinement,
             const ValidChannel valid_channel,
             const Flag!"joining" joining,
-            string name = null) in(node_size >= 4) do {
+            string name = null)
+    in (node_size >= 4)
+    do {
         hirpc = HiRPC(net);
         this.node_size = node_size;
         this._owner_node = getNode(hirpc.net.pubkey);
@@ -177,7 +179,9 @@ class HashGraph {
                 }
             }
 
-            _nodes.byValue.map!(n => n.event).each!(e => e.initializeReceivedOrder);
+            _nodes.byValue
+                .map!(n => n.event)
+                .each!(e => e.initializeReceivedOrder);
         }
         scope (failure) {
             _nodes = recovered_nodes;
@@ -196,8 +200,7 @@ class HashGraph {
         }
     }
 
-    version(none)
-    package bool possible_round_decided(const Round round) nothrow {
+    version (none) package bool possible_round_decided(const Round round) nothrow {
         return _rounds.voting_round_per_node.all!(r => r.number > round.number);
         // const witness_count = r.events
         //     .count!((e) => (e !is null) && e.isWitness);
@@ -212,7 +215,6 @@ class HashGraph {
         // return possible_decided;
 
     }
-
 
     @nogc
     const(Round.Rounder) rounds() const pure nothrow {
@@ -257,7 +259,7 @@ class HashGraph {
             // writefln("init_tide time: %s", time);
             immutable epack = event_pack(time, null, doc);
             const registrated = registerEventPackage(epack);
-            
+
             assert(registrated, "Should not fail here");
             const sender = hirpc.wavefront(tidalWave);
             return sender;
@@ -277,9 +279,9 @@ class HashGraph {
                     &not_used_channels,
                     &payload_sender);
             if (send_channel !is Pubkey(null)) {
-                
+
                 getNode(send_channel).state = ExchangeState.INIT_TIDE;
-                
+
                 // assert(_nodes.length <= node_size, format("Node[] must not be greater than node_size %s", send_channel.cutHex)); // used for debug
             }
         }
@@ -422,7 +424,7 @@ class HashGraph {
             }
 
             // event either from event_package_cache or event_cache.
-            event = lookup(fingerprint); 
+            event = lookup(fingerprint);
             Event.check(_joining || event !is null, ConsensusFailCode.EVENT_MISSING_IN_CACHE);
             if (event !is null) {
                 event.connect(this.outer);
@@ -510,8 +512,7 @@ class HashGraph {
         if (state is ExchangeState.NONE || state is ExchangeState.BREAKING_WAVE) {
             return Wavefront(null, null, state);
         }
-        
-        
+
         immutable(EventPackage)*[] result;
         Tides owner_tides;
         foreach (n; _nodes) {
@@ -643,7 +644,6 @@ class HashGraph {
         check(valid_channel(from_channel), ConsensusFailCode.GOSSIPNET_ILLEGAL_CHANNEL);
         auto received_node = getNode(from_channel);
 
-        
         if (Event.callbacks) {
             Event.callbacks.receive(received_wave);
         }
@@ -705,7 +705,8 @@ class HashGraph {
                 case COHERENT:
                     received_node.state = NONE;
                     received_node.sticky_state = COHERENT;
-                    writefln("received coherent from: %s, self %s", received_node.channel.cutHex, _owner_node.channel.cutHex);
+                    writefln("received coherent from: %s, self %s", received_node.channel.cutHex, _owner_node.channel
+                            .cutHex);
                     if (!areWeInGraph) {
                         try {
                             // received_wave.epacks
@@ -744,7 +745,7 @@ class HashGraph {
                         return buildWavefront(BREAKING_WAVE);
                     }
                     received_node.state = NONE;
-                        
+
                     const from_front_seat = register_wavefront(received_wave, from_channel);
                     immutable epack = event_pack(time, from_front_seat, payload());
                     const registreted = registerEventPackage(epack);
@@ -825,7 +826,6 @@ class HashGraph {
         }
 
         private Event _event; /// This is the last event in this Node
-
 
         @nogc
         const(Event) event() const pure nothrow {
@@ -986,7 +986,6 @@ class HashGraph {
         filename.fwrite(h);
     }
 
-    
 }
 
 version (unittest) {
