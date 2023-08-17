@@ -140,6 +140,7 @@ jobs:
   android_libmobile:
     needs: acceptance_stage
     strategy:
+      fail-fast: false
       matrix:
         arch: [aarch64, armv7a, x86_64]
     runs-on: CI
