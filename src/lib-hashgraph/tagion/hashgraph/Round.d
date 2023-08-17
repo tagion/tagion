@@ -450,6 +450,10 @@ class Round {
      */
         
         package void collect_received_round(Round r, HashGraph hashgraph) {
+            // const famous_witnesses = r._events.filter!(e => !is null && r.famous_mask[e.node_id]);
+            // const famous_youngest_common_son_ancestors = famous_witnesses.
+            
+            
             Event[] consensus_tide = r._events.dup();
             foreach(famous_event; r._events.filter!(e => e !is null && r.famous_mask[e.node_id]))
             {

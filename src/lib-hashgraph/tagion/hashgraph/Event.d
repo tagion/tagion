@@ -345,22 +345,14 @@ class Event {
     }
 
     private BitMask calc_strongly_seen_nodes(const HashGraph hashgraph) {
+        auto see_through_matrix = _youngest_son_ancestors 
+                                    .filter!(e => e !is null && e.round is round)
+                                    .map!(e => e._youngest_son_ancestors
+                                        .map!(e => e !is null && e.round is round));
+        
         scope strongly_seen_votes = new size_t[hashgraph.node_size];
-        foreach (node_id; _youngest_son_ancestors
-                .filter!(e => e !is null)
-                .filter!(e => e.round is round)
-                .map!(e => e._youngest_son_ancestors
-                    .enumerate
-                    .filter!(elm => elm.value !is null)
-                    .filter!(elm => elm.value.round is round)
-                    .map!(elm => elm.index))
-                .joiner) {
-            strongly_seen_votes[node_id]++;
-        }
-        auto strongly_seen_nodes = strongly_seen_votes.enumerate
-            .filter!(vote => hashgraph.isMajority(vote.value))
-            .map!(vote => vote.index);
-        return BitMask(strongly_seen_nodes);
+        see_through_matrix.each!(row => row.enumerate.each!(elm => strongly_seen_votes[elm.index] += elm.value));
+        return BitMask(strongly_seen_votes.map!(votes => hashgraph.isMajority(votes)));
     }
 
     private void calc_youngest_son_ancestors(const HashGraph hashgraph) {
