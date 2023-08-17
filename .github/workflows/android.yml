@@ -36,7 +36,7 @@ jobs:
         if: success()
         with:
           name: android-libmobile
-          path: ./build/${{ matrix.arch }}-linux-android/lib/libmobile.so
+          path: ./build/*/lib/libmobile.so
           if-no-files-found: error
 
       - name: Cleanup
