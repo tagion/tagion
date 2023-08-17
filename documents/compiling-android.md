@@ -1,58 +1,47 @@
 Cross compiling mobile library for android from Ubuntu 22.10 x86_64
 
-Install the following tools
+## Install build tools
+This is the subset of tools from the README used to compile the mobile android library
 
 ```sh
 # apt-get update
-# apt-get install make screen autoconf libtool wget xz-utils unzip git
+# apt-get install make screen autoconf libtool git
 ```
 
-Also install dstep
-as described in the README
+## Install android specific libraries and tools
+there is an install script that will download the required tools to build
+
+It will do 4 things
+1. Download a ldc compiler for the host
+2. Download a ldc compiler for the target platform, which includes the necessary libraries
+3. Download the android ndk, which includes android specific c compiler and linkers
+4. Configure the host compiler to use the android specific libraries and tools
 
 ```sh
-wget https://github.com/jacob-carlborg/dstep/releases/download/v1.0.0/dstep-1.0.0-linux-x86_64.tar.xz
-tar xf dstep-1.0.0-linux-x86_64.tar.xz
-# Then copy the executable to a directory searched by your path, like the path you added when you set up your compiler
+# The script will use these tools to install everything
+# apt-get install wget xz-utils unzip make
+make -jf tub/scripts/setup_android_toolchain.mk LDC_TARGET=ldc2-1.29.0-android-aarch64
+make -jf tub/scripts/setup_android_toolchain.mk LDC_TARGET=ldc2-1.29.0-android-armv7a
+# The x86_64 libraries are included and configured when downloading the aarch64 libraries
 ```
 
-
-Create a working directory to house your files
-```sh
-mkdir dondroid
-cd dondroid
-```
-
-Install the host D compiler
+## Add the host ldc compiler to your path
 
 ```sh
-wget https://github.com/ldc-developers/ldc/releases/download/v1.29.0/ldc2-1.29.0-linux-x86_64.tar.xz
-tar xf ldc2-1.29.0-linux-x86_64.tar.xz
-export PATH="/path/to/ldc2-1.29.0-linux-x86_64/bin:$PATH"
-```
+export PATH="$PWD/tools/ldc2-1.29.0-linux-x86_64/bin/:$PATH/"
+``` 
 
-Download the target compiler files (We need the precompiled runtime and std library)
+## Buiding mobile lib
 
 ```sh
-wget https://github.com/ldc-developers/ldc/releases/download/v1.29.0/ldc2-1.29.0-android-aarch64.tar.xz
-tar xf ldc2-1.29.0-android-aarch64.tar.xz
+make PLATFORM=aarch64-linux-android libmobile
+make PLATFORM=armv7a-linux-android libmobile
+make PLATFORM=x86_64-linux-android libmobile
 ```
 
-Download the android NDK toolchain
-```sh
-wget https://dl.google.com/android/repository/android-ndk-r21b-linux-x86_64.zip
-unzip android-ndk-r21b-linux-x86_64.zip
-```
 
-Copy ldc2 configuration
-```sh
-cp /path/to/tagion_source/tub/ldc2.conf ldc2-1.29.0-linux-x86_64/etc/ldc2.conf
+## Additional info
+If you have installed the android ndk in a different location you may configure it with ANDROID_NDK
 ```
-
-Compile the mobile library in the root of the tagion source repo
-```sh
-make prebuild
-make DC=ldc2 ANDROID_NDK=/path/to/android-ndk-r21b/ PLATFORM=aarch64-linux-android libmobile
+ANDROID_NDK=tools/android-ndk-r21b/
 ```
-
-> Note: you have to specifiy the full path to android-ndk. If you use ~ then autoconf won't expand it and will think the directory doesn't exist
