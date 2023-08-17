@@ -302,7 +302,7 @@ jobs:
           export GH_TOKEN=${{ env.GITBOT_TOKEN }}
           gh run download -n successful_artifact --repo tagion/tagion
           tar -xzf *.tar.gz
-          /home/ubuntu/actions-runner/_work/tagion/tagion/build/x86_64-linux/bin/tagion --version | head -n 3 | tail -n 2 > revision.txt
+          /home/moonbase/actions-runner/_work/tagion/tagion/build/x86_64-linux/bin/tagion --version | head -n 3 | tail -n 2 > revision.txt
           mkdir -p /opt/tagion/artifact
           cp build/x86_64-linux/bin/tagion ~/opt
           cp revision.txt ~/opt
