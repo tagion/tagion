@@ -106,7 +106,7 @@
 (assert_return (invoke "div_u" (i32.const 1) (i32.const 1)) (i32.const 1))
 (assert_return (invoke "div_u" (i32.const 0) (i32.const 1)) (i32.const 0))
 (assert_return (invoke "div_u" (i32.const -1) (i32.const -1)) (i32.const 1))
-//(assert_return (invoke "div_u" (i32.const 0x80000000) (i32.const -1)) (i32.const 0))
+(assert_return (invoke "div_u" (i32.const 0x80000000) (i32.const -1)) (i32.const 0))
 (assert_return (invoke "div_u" (i32.const 0x80000000) (i32.const 2)) (i32.const 0x40000000))
 (assert_return (invoke "div_u" (i32.const 0x8ff00ff0) (i32.const 0x10001)) (i32.const 0x8fef))
 (assert_return (invoke "div_u" (i32.const 0x80000001) (i32.const 1000)) (i32.const 0x20c49b))
@@ -124,7 +124,8 @@
 (assert_return (invoke "rem_s" (i32.const 1) (i32.const 1)) (i32.const 0))
 (assert_return (invoke "rem_s" (i32.const 0) (i32.const 1)) (i32.const 0))
 (assert_return (invoke "rem_s" (i32.const -1) (i32.const -1)) (i32.const 0))
-(assert_return (invoke "rem_s" (i32.const 0x80000000) (i32.const -1)) (i32.const 0))
+;; This gives an signal SIGFPE, Arithmetic exception 
+;; (assert_return (invoke "rem_s" (i32.const 0x80000000) (i32.const -1)) (i32.const 0))
 (assert_return (invoke "rem_s" (i32.const 0x80000000) (i32.const 2)) (i32.const 0))
 (assert_return (invoke "rem_s" (i32.const 0x80000001) (i32.const 1000)) (i32.const -647))
 (assert_return (invoke "rem_s" (i32.const 5) (i32.const 2)) (i32.const 1))

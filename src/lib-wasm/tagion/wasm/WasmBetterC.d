@@ -628,7 +628,7 @@ shared static this() {
         IR.I32_AND: q{(%2$s & %1$s)},
         IR.I32_OR: q{(%2$s | %1$s)},
         IR.I32_XOR: q{(%2$s ^ %1$s)},
-        IR.I32_SHL: q{(%2$s >> %1$s)},
+        IR.I32_SHL: q{(%2$s << %1$s)},
         IR.I32_SHR_S: q{(%2$s >> %1$s)},
         IR.I32_SHR_U: q{(%2$s >>> %1$s)},
         IR.I32_ROTL: q{wasm.rotl(%1$s, %2$s)},
