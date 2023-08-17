@@ -480,15 +480,33 @@ class Round {
         // version(none)
         package void collect_received_round(Round r, HashGraph hashgraph) {
             Event[] new_consensus_tide = r._events.dup();
-            foreach(famous_event; r._events.filter!(e => e !is null && r.famous_mask[e.node_id])) {
+            foreach(famous_event; r._events.filter!(e => e !is null && r.famous_mask[e.node_id]))
+            {
                 famous_event._youngest_ancestors
                     .filter!(e => e !is null)
                     .filter!(e => new_consensus_tide[e.node_id] is null || higher(new_consensus_tide[e.node_id].received_order, e.received_order))
                     .each!(e => new_consensus_tide[e.node_id] = e);
             }
+
+            foreach(i;0 .. hashgraph.node_size) {
+                if (new_consensus_tide[i] is null) { continue; }
+                while(!new_consensus_tide[i]._son)
+                {
+                    new_consensus_tide[i] = new_consensus_tide[i]._daughter;
+                }
+            }
+            if (hashgraph.__debug_print) {
+                __write("round: %s, consensus_tide %s", r.number, new_consensus_tide.filter!(e => e !is null).map!(e => e.id));
+            }
             auto event_collection = new_consensus_tide.map!(e => e[]
-                    .until!(e => e is consensus_tide[e.node_id]))
+                    .until!(e => e._round_received !is null))
                 .joiner.array;
+
+            foreach(event; event_collection) {
+                event._round_received = r;
+            }
+
+            consensus_tide = new_consensus_tide;
             
             // if (hashgraph.__debug_print) {
             //     __write("testingd: %s", new_consensus_tide.filter!(e => e !is null).map!(e => e.id));

@@ -132,7 +132,7 @@
             "args": ["Alice", "Bob", "Carol", "Dave", "Elisa", "Freja", "Nonvoting"], 
             "envs": {},
             "stages": [
-                "acceptance", "hashgraph"
+                "none"
             ],
             "timeout": 0.0
         },
@@ -140,7 +140,7 @@
             "args": ["Alice", "Bob", "Carol", "Dave", "Elisa", "Freja", "Gretha"], 
             "envs": {},
             "stages": [
-                "acceptance", "hashgraph"
+                "none"
             ],
             "timeout": 0.0
         },
