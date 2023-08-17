@@ -101,7 +101,7 @@ class Event {
     }
 
     invariant {
-        if (!scrapping) {
+        if (!scrapping && this !is null) {
             if (_mother) {
                 // assert(!_witness_mask[].empty);
                 assert(_mother._daughter is this);
@@ -338,6 +338,9 @@ class Event {
         }
         foreach (i; 0 .. hashgraph.node_size) {
             calc_vote(hashgraph, i);
+        }
+        if (hashgraph.__debug_print) {
+            __write("EVENT: %s, Youngest_ancestors: %s", id, _youngest_ancestors.filter!(e => e !is null).map!(e => e.id));
         }
     }
 
