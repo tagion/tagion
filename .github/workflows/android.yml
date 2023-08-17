@@ -7,32 +7,34 @@ env:
 
 jobs:
   commit_stage:
-    # runs-on: CI
-    runs-on: ubuntu-22.04
+    runs-on: CI-2
+    # runs-on: ubuntu-22.04
     steps:
-      # - name: get repository
-      #   run: |
-      #     cd ..
-      #     git clone git@github.com:tagion/tagion.git || echo "repo already exists"
-
-      # - name: pull
-      #   run: |
-      #     git clean -f && git restore . 
-      #     git checkout current
-      #     git pull
-
-      - uses: actions/checkout@v3
-      - name: setup git
+      - name: get repository
         run: |
-          gh auth setup-git
-          git config --local --replace-all url."https://github.com".insteadOf git@github.com
-          git config --local --add url."https://".insteadOf git://
-          git submodule update --init
+          cd ..
+          git clone git@github.com:tagion/tagion.git || echo "repo already exists"
 
-      - name: Install build tools
+      - name: pull
         run: |
-          sudo apt update
-          sudo apt-get install make screen autoconf golang clang libclang-dev libtool libssl-dev perl dub cmake wget xz-utils unzip
+          git clean -f && git restore . 
+          git checkout current
+          git pull
+
+      # - uses: actions/checkout@v3
+      # - name: setup git
+      #   run: |
+      #     gh auth setup-git
+      #     gh auth status
+      #     sed -i 's,git@github.com:,https://github.com/,g' .git/config
+      #     # git config --local --replace-all url."https://github.com".insteadOf git@github.com
+      #     # git config --local --add url."https://".insteadOf git://
+      #     git submodule update --init
+
+      # - name: Install build tools
+      #   run: |
+      #     sudo apt update
+      #     sudo apt-get install make screen autoconf golang clang libclang-dev libtool libssl-dev perl dub cmake wget xz-utils unzip
 
       - name: Install android tools
         run: |
@@ -41,11 +43,11 @@ jobs:
       - name: Build
         run: |
           export PATH="tools/ldc2-1.29.0-linux-x86_64/bin:$PATH"
-          make -j DC=ldc2 ANDROID_NDK=tools/android-ndk-r21b/ PLATFORM=aarch64-linux-android libmobile
+          make DC=ldc2 ANDROID_NDK=tools/android-ndk-r21b/ PLATFORM=aarch64-linux-android libmobile
 
       - uses: actions/upload-artifact@v3
         if: success()
         with:
           name: android-libmobile
-          path: ./build/x86_64-linux/
+          path: ./build/aarch64-linux-android/lib/
           if-no-files-found: error
