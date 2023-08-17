@@ -33,10 +33,13 @@ $(TOOLS)/$(LDC_HOST_TAR):
 
 $(TOOLS)/$(LDC_HOST)/.done: $(TOOLS)/$(LDC_HOST_TAR)
 	cd $(TOOLS); tar xf $(LDC_HOST_TAR)
-	cp tub/ldc2.conf $(TOOLS)/$(LDC_HOST)/etc/
 	touch $@
 
+$(TOOLS)/$(LDC_HOST)/etc/ldc2.conf: tub/ldc2.conf
+	cp tub/ldc2.conf $(TOOLS)/$(LDC_HOST)/etc/ldc2.conf
+
 $(LDC_HOST): $(TOOLS)/$(LDC_HOST)/.done
+$(LDC_HOST): $(TOOLS)/$(LDC_HOST)/etc/ldc2.conf
 
 $(TOOLS)/$(LDC_TARGET)/.done: $(TOOLS)/$(LDC_TARGET_TAR)
 	cd $(TOOLS); tar xf $(LDC_TARGET_TAR)
@@ -51,6 +54,6 @@ $(TOOLS)/$(ANDROID_NDK)/.done: $(TOOLS)/$(ANDROID_NDK_ZIP)
 $(ANDROID_NDK): $(TOOLS)/$(ANDROID_NDK)/.done
 
 clean:
-	rm -vr
+	$(RM) -vr $(TOOLS)
 
 .PHONE: clean
