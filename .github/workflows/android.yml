@@ -6,48 +6,39 @@ env:
   GH_TOKEN: ${secrets.GITBOT_TOKEN}
 
 jobs:
-  commit_stage:
+  android_libmobile:
     runs-on: CI-2
-    # runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        arch: [aarch64, armv7a, x86_64]
     steps:
       - name: get repository
         run: |
           cd ..
           git clone git@github.com:tagion/tagion.git || echo "repo already exists"
-
       - name: pull
         run: |
           git clean -f && git restore . 
           git checkout current
           git pull
 
-      # - uses: actions/checkout@v3
-      # - name: setup git
-      #   run: |
-      #     gh auth setup-git
-      #     gh auth status
-      #     sed -i 's,git@github.com:,https://github.com/,g' .git/config
-      #     # git config --local --replace-all url."https://github.com".insteadOf git@github.com
-      #     # git config --local --add url."https://".insteadOf git://
-      #     git submodule update --init
-
-      # - name: Install build tools
-      #   run: |
-      #     sudo apt update
-      #     sudo apt-get install make screen autoconf golang clang libclang-dev libtool libssl-dev perl dub cmake wget xz-utils unzip
-
       - name: Install android tools
         run: |
-          make -j -f tub/scripts/setup_android_toolchain.mk
+          make -j -f tub/scripts/setup_android_toolchain.mk TARGET_ARCH=${{ matrix.arch}}
 
       - name: Build
         run: |
           export PATH="tools/ldc2-1.29.0-linux-x86_64/bin:$PATH"
-          make DC=ldc2 ANDROID_NDK=tools/android-ndk-r21b/ PLATFORM=aarch64-linux-android libmobile
+          make DC=ldc2 PLATFORM=${{ matrix.arch }}-linux-android libmobile
+          file ./build/${{ matrix.arch }}-linux-android/lib/libmobile.so
 
       - uses: actions/upload-artifact@v3
         if: success()
         with:
           name: android-libmobile
-          path: ./build/aarch64-linux-android/lib/
+          path: ./build/*/lib/libmobile.so
           if-no-files-found: error
+
+      - name: Cleanup
+        run: 
+          make PLATFORM=aarch64-linux-android clean
