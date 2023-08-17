@@ -78,7 +78,7 @@ class StdRefinement : Refinement {
                 }
 
                 if (!a.isFatherLess && !b.isFatherLess) {
-                   return order_less(a.mother, b.mother, order_count - 1);
+                    return order_less(a.mother, b.mother, order_count - 1);
                 }
 
                 return rare_less(a.fingerprint, b.fingerprint);
@@ -88,14 +88,14 @@ class StdRefinement : Refinement {
 
         import tagion.basic.Debug;
 
-        auto offline = ~BitMask(decided_round.events
-                .filter!((e) => e !is null && e.isFamous)
-                .map!(e => e.node_id));
-        offline.chunk(hashgraph.node_size);
+        // auto offline = ~BitMask(decided_round.events
+        //         .filter!((e) => e !is null && e.isFamous)
+        //         .map!(e => e.node_id));
+        // offline.chunk(hashgraph.node_size);
 
-        offline[].each!((node_id) => hashgraph.mark_offline(node_id));
+        // offline[].each!((node_id) => hashgraph.mark_offline(node_id));
 
-        hashgraph._excluded_nodes_mask |= offline;
+        // hashgraph._excluded_nodes_mask |= offline;
 
         import tagion.basic.Debug;
 

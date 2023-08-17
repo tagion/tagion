@@ -10,6 +10,8 @@ import tagion.crypto.Types : Pubkey;
 import tagion.basic.Types : FileExtension;
 import std.path : buildPath, setExtension, extension;
 import tagion.utils.Miscellaneous : cutHex;
+import tagion.crypto.SecureNet : StdSecureNet;
+import tagion.crypto.SecureInterfaceNet : SecureNet;
 
 import std.stdio;
 import std.algorithm;
@@ -53,8 +55,11 @@ class NodeSwap {
         writeln(network.random);
 
         network.global_time = SysTime.fromUnixTime(1_614_355_286);
-        offline_key = Pubkey(network.channels[0]);
+        offline_key = Pubkey(network.channels[1]);
 
+        auto net = new StdSecureNet();
+        net.generateKeyPair(format("very secret %s", new_node));
+        TestRefinement.swap = TestRefinement.Swap(offline_key, net.pubkey, 10);
         return result_ok;
     }
 
@@ -74,25 +79,35 @@ class NodeSwap {
             if (TestRefinement.epoch_events.length == node_names.length && TestRefinement.epoch_events
                     .byValue
                     .map!((ep) => ep.length)
-                    .all!((ep_length) => ep_length > 5)) {
+                    .all!((ep_length) => ep_length > 2)) {
                 break;
             }
             (() @trusted { current.call; })();
         }
 
-        TestNetwork.TestGossipNet.online_states[offline_key] = false;
-        writefln("stopped communication for %s", offline_key.cutHex);
+        TestNetwork.TestGossipNet.online_states[offline_key] = !TestNetwork.TestGossipNet.online_states[offline_key];
+        // TestNetwork.TestGossipNet.online_states[offline_key] = false;
 
         foreach (i; 0 .. MAX_CALLS) {
-            writeln("WOWO");
             const channel_number = network.random.value(0, network.channels.length);
             const channel = network.channels[channel_number];
-            auto current = network.networks[channel];
             network.current = Pubkey(channel);
+            auto current = network.networks[channel];
 
             (() @trusted { current.call; })();
-
         }
+
+        network.addNode(node_names.length, new_node, Yes.joining);
+
+        foreach (i; 0 .. MAX_CALLS) {
+            const channel_number = network.random.value(0, network.channels.length);
+            const channel = network.channels[channel_number];
+            network.current = Pubkey(channel);
+            auto current = network.networks[channel];
+
+            (() @trusted { current.call; })();
+        }
+
         return result_ok;
     }
 
@@ -113,9 +128,11 @@ class NodeSwap {
             node_labels[_net._hashgraph.name] = channel;
         }
         foreach (_net; network.networks) {
-            const filename = buildPath(module_path, "ripple-" ~ _net._hashgraph.name.setExtension(FileExtension.hibon));
+            const filename = buildPath(module_path, "ripple-" ~ _net._hashgraph.name
+                    .setExtension(FileExtension.hibon));
             writeln(filename);
-            _net._hashgraph.fwrite(filename, node_labels);
+            _net
+                ._hashgraph.fwrite(filename, node_labels);
         }
         return result_ok;
     }

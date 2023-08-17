@@ -58,32 +58,34 @@ class TestRefinement : StdRefinement {
         epoch_events[hashgraph.owner_node.channel] ~= epoch;
     }
 
-    override void excludedNodes(ref BitMask excluded_mask) {
-        import tagion.basic.Debug;
-        import std.algorithm : filter;
+    // override void excludedNodes(ref BitMask excluded_mask) {
+    //     import tagion.basic.Debug;
+    //     import std.algorithm : filter;
 
-        if (excluded_nodes_history is null) {
-            return;
-        }
+    //     if (excluded_nodes_history is null) {
+    //         return;
+    //     }
 
-        const last_decided_round = hashgraph.rounds.last_decided_round.number;
+    //     const last_decided_round = hashgraph.rounds.last_decided_round.number;
 
-        auto histories = excluded_nodes_history.filter!(h => h.round == last_decided_round);
-        foreach (history; histories) {
-            const node = hashgraph.nodes.get(history.pubkey, HashGraph.Node.init);
-            if (node !is HashGraph.Node.init) {
-                excluded_mask[node.node_id] = history.state;
-                __write("setting exclude mask");
-            }
-        }
-        __write("callback<%s>", excluded_mask);
+    //     auto histories = excluded_nodes_history.filter!(h => h.round == last_decided_round);
+    //     foreach (history; histories) {
+    //         const node = hashgraph.nodes.get(history.pubkey, HashGraph.Node.init);
+    //         if (node !is HashGraph.Node.init) {
+    //             excluded_mask[node.node_id] = history.state;
+    //             __write("setting exclude mask");
+    //         }
+    //     }
+    //     __write("callback<%s>", excluded_mask);
 
-    }
+    // }
 
     override void swapNode() {
         if (swap is swap.init || swap.round != hashgraph.rounds.last_decided_round.number) {
             return;
         }
+
+        hashgraph.remove_node(swap.swap_out);
 
     }
 

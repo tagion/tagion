@@ -145,7 +145,7 @@
             "timeout": 0.0
         },
         "hashgraph_swap": {
-            "args": ["4", "100"], 
+            "args": ["4", "500"], 
             "envs": {},
             "stages": [
                 "swap"
