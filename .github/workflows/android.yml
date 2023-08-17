@@ -6,32 +6,36 @@ env:
   GH_TOKEN: ${secrets.GITBOT_TOKEN}
 
 jobs:
-  commit_stage:
+  android_libmobile:
     runs-on: CI-2
-    steps:
-      - name: get repository
-        run: |
-          cd ..
-          git clone git@github.com:tagion/tagion.git || echo "repo already exists"
+    strategy:
+      matrix:
+        arch: [aarch64, armv7a, x86_64]
+        steps:
+          - name: get repository
+            run: |
+              cd ..
+              git clone git@github.com:tagion/tagion.git || echo "repo already exists"
+              git clean -f && git restore . 
+              git checkout current
+              git pull
 
-      - name: pull
-        run: |
-          git clean -f && git restore . 
-          git checkout current
-          git pull
+          - name: Install android tools
+            run: |
+              make -jf tub/scripts/setup_android_toolchain.mk TARGET_ARCH=${matrix.arch}
 
-      - name: Install android tools
-        run: |
-          make -j -f tub/scripts/setup_android_toolchain.mk
+          - name: Build
+            run: |
+              export PATH="tools/ldc2-1.29.0-linux-x86_64/bin:$PATH"
+              make DC=ldc2 PLATFORM=aarch64-linux-android libmobile
 
-      - name: Build
-        run: |
-          export PATH="tools/ldc2-1.29.0-linux-x86_64/bin:$PATH"
-          make DC=ldc2 ANDROID_NDK=tools/android-ndk-r21b/ PLATFORM=aarch64-linux-android libmobile
+          - uses: actions/upload-artifact@v3
+            if: success()
+            with:
+              name: android-libmobile
+              path: ./build/aarch64-linux-android/lib/libmobile.so
+              if-no-files-found: error
 
-      - uses: actions/upload-artifact@v3
-        if: success()
-        with:
-          name: android-libmobile
-          path: ./build/aarch64-linux-android/lib/
-          if-no-files-found: error
+          - name: Cleanup
+            run: 
+              make PLATFORM=aarch64-linux-android clean
