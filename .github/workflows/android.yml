@@ -11,31 +11,32 @@ jobs:
     strategy:
       matrix:
         arch: [aarch64, armv7a, x86_64]
-        steps:
-          - name: get repository
-            run: |
-              cd ..
-              git clone git@github.com:tagion/tagion.git || echo "repo already exists"
-              git clean -f && git restore . 
-              git checkout current
-              git pull
+    steps:
+      - name: get repository
+        run: |
+          cd ..
+          git clone git@github.com:tagion/tagion.git || echo "repo already exists"
+          git clean -f && git restore . 
+          git checkout current
+          git pull
 
-          - name: Install android tools
-            run: |
-              make -jf tub/scripts/setup_android_toolchain.mk TARGET_ARCH=${matrix.arch}
+      - name: Install android tools
+        run: |
+          make -jf tub/scripts/setup_android_toolchain.mk TARGET_ARCH=${{ matrix.arch}}
 
-          - name: Build
-            run: |
-              export PATH="tools/ldc2-1.29.0-linux-x86_64/bin:$PATH"
-              make DC=ldc2 PLATFORM=aarch64-linux-android libmobile
+      - name: Build
+        run: |
+          export PATH="tools/ldc2-1.29.0-linux-x86_64/bin:$PATH"
+          make DC=ldc2 PLATFORM=${{ matrix.arch }}-linux-android libmobile
+          file ./build/${{ matrix.arch }}-linux-android/lib/libmobile.so
 
-          - uses: actions/upload-artifact@v3
-            if: success()
-            with:
-              name: android-libmobile
-              path: ./build/aarch64-linux-android/lib/libmobile.so
-              if-no-files-found: error
+      - uses: actions/upload-artifact@v3
+        if: success()
+        with:
+          name: android-libmobile
+          path: ./build/${{ matrix.arch }}-linux-android/lib/libmobile.so
+          if-no-files-found: error
 
-          - name: Cleanup
-            run: 
-              make PLATFORM=aarch64-linux-android clean
+      - name: Cleanup
+        run: 
+          make PLATFORM=aarch64-linux-android clean
