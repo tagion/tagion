@@ -404,10 +404,10 @@ shared static this() {
             }
         }
         void setPseudo(const PseudoWastInstr pseudo, const IRType ir_type, const uint pushs = 0, const uint pops = 0) {
-            result[pseudo] = Instr("<" ~ pseudo ~ ">", pseudo, uint.max, ir_type, pushs, pops);
+            result[pseudo] = Instr("<" ~ pseudo ~ ">", pseudo, uint.max, ir_type, pops, pushs);
         }
 
-        setPseudo(PseudoWastInstr.invoke, IRType.CALL);
+        setPseudo(PseudoWastInstr.invoke, IRType.CALL, 0, 1);
         setPseudo(PseudoWastInstr.if_else, IRType.BRANCH, 3, 1);
         setPseudo(PseudoWastInstr.local, IRType.SYMBOL, 0, uint.max);
         setPseudo(PseudoWastInstr.label, IRType.SYMBOL, 1, uint.max);

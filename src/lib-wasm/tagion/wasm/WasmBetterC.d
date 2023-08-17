@@ -100,10 +100,20 @@ alias check = Check!WasmBetterCException;
         void innerAssert(const Assert _assert, const string indent) {
             Context ctx;
             auto code_type = CodeType(_assert.invoke);
-            auto expr = code_type[];
-            output.writefln("//expr %(%02X %)", _assert.invoke);
-            block(expr, ctx, indent);
-
+            auto invoke_expr = code_type[];
+            output.writefln("%s// expr   %(%02X %)", indent, _assert.invoke);
+            output.writefln("%s// result %(%02X %)", indent, _assert.result);
+            block(invoke_expr, ctx, indent, true);
+            if (_assert.result.length != 0) {
+                auto result_type = CodeType(_assert.result);
+                auto result_expr = result_type[];
+                block(result_expr, ctx, indent, true);
+                output.writef("%sassert(%s == %s", indent, ctx.pop, ctx.pop);
+                if (_assert.message.length) {
+                    output.writef(`, "%s"`, _assert.message);
+                }
+                output.writeln(");");
+            }
         }
 
         foreach (_assert; sec_assert.asserts) {
@@ -432,7 +442,8 @@ alias check = Check!WasmBetterCException;
     private const(ExprRange.IRElement) block(
             ref ExprRange expr,
             ref Context ctx,
-            const(string) indent) {
+            const(string) indent,
+            const bool no_return = false) {
         string block_comment;
         uint block_count;
         uint count;
@@ -507,15 +518,11 @@ alias check = Check!WasmBetterCException;
                         scope (exit) {
                             calls++;
                         }
-                        output.writefln("%s//%s %s", indent, instr.name, elm.warg.get!uint);
+                        output.writefln("%s// %s %s", indent, instr.name, elm.warg.get!uint);
                         const func_idx = elm.warg.get!uint;
-                        output.writefln("FuncType =%s", func_idx);
                         const function_header = wasmstream.get!(Section.TYPE)[func_idx];
-                        output.writefln("header %s", function_header);
-                        //output.writefln("pops %s", ctx.pops(function_header.params.length));
                         const function_call = format("%s(%-(%s,%))", function_name(func_idx), ctx.pops(function_header
                                 .params.length));
-                        output.writefln("call %s", function_call);
                         string set_result;
                         if (function_header.results.length) {
                             set_result = format("const %s=", result_name);
@@ -578,10 +585,11 @@ alias check = Check!WasmBetterCException;
         }
 
         scope (exit) {
-            if (ctx.stack.length > 0) {
+            if (!no_return && (ctx.stack.length > 0)) {
                 output.writefln("%sreturn %s;", indent, ctx.pop);
             }
-            check(ctx.stack.length == 0, format("Stack size is %d but the stack should be empty on return", ctx.stack
+            check(no_return || (ctx.stack.length == 0), format("Stack size is %d but the stack should be empty on return", ctx
+                    .stack
                     .length));
         }
         return innerBlock(expr, indent, 0);
@@ -610,32 +618,32 @@ shared static this() {
         IR.I32_CLZ: q{wasm.clz(%s)},
         IR.I32_CTZ: q{wasm.clz(%s)},
         IR.I32_POPCNT: q{wasm.popcnt(%s)},
-        IR.I32_ADD: q{(%1$s + %2$s)},
-        IR.I32_SUB: q{(%1$s - %2$s)},
-        IR.I32_MUL: q{(%1$s * %2$s)},
-        IR.I32_DIV_S: q{(%1$s / %2$s)},
-        IR.I32_DIV_U: q{uint(%1$s) / uint(%2$s)},
-        IR.I32_REM_S: q{(%1$s %% %2$s)},
-        IR.I32_REM_U: q{(uint(%1$s) %% uint(%2$s))},
-        IR.I32_AND: q{(%1$s & %2$s)},
-        IR.I32_OR: q{(%1$s | %2$s)},
-        IR.I32_XOR: q{(%1$s ^ %2$s)},
-        IR.I32_SHL: q{(%1$s >> %2$s)},
-        IR.I32_SHR_S: q{(%1$s >> %2$s)},
-        IR.I32_SHR_U: q{(%1$s >>> %2$s)},
+        IR.I32_ADD: q{(%2$s + %1$s)},
+        IR.I32_SUB: q{(%2$s - %1$s)},
+        IR.I32_MUL: q{(%2$s * %1$s)},
+        IR.I32_DIV_S: q{(%2$s / %1$s)},
+        IR.I32_DIV_U: q{uint(%2$s) / uint(%1$s)},
+        IR.I32_REM_S: q{(%2$s %% %1$s)},
+        IR.I32_REM_U: q{(uint(%2$s) %% uint(%1$s))},
+        IR.I32_AND: q{(%2$s & %1$s)},
+        IR.I32_OR: q{(%2$s | %1$s)},
+        IR.I32_XOR: q{(%2$s ^ %1$s)},
+        IR.I32_SHL: q{(%2$s >> %1$s)},
+        IR.I32_SHR_S: q{(%2$s >> %1$s)},
+        IR.I32_SHR_U: q{(%2$s >>> %1$s)},
         IR.I32_ROTL: q{wasm.rotl(%1$s, %2$s)},
         IR.I32_ROTR: q{wasm.rotr(%1$s, %2$s)},
         IR.I32_EQZ: q{(%1$s == 0)},
-        IR.I32_EQ: q{(%1$s == %2$s)},
-        IR.I32_NE: q{(%1$s != %2$s)},
-        IR.I32_LT_S: q{(%1$s < %2$s)},
-        IR.I32_LT_U: q{(uint(%1$s) < uint(%2$s))},
-        IR.I32_LE_S: q{(%1$s <= %2$s)},
-        IR.I32_LE_U: q{(uint(%1$s) <= uint(%2$s))},
-        IR.I32_GT_S: q{(%1$s > %2$s)},
-        IR.I32_GT_U: q{(uint(%1$s) > uint(%2$s))},
-        IR.I32_GE_S: q{(%1$s >= %2$s)},
-        IR.I32_GE_U: q{(uint(%1$s) >= uint(%2$s))},
+        IR.I32_EQ: q{(%2$s == %1$s)},
+        IR.I32_NE: q{(%2$s != %1$s)},
+        IR.I32_LT_S: q{(%2$s < %1$s)},
+        IR.I32_LT_U: q{(uint(%2$s) < uint(%1$s))},
+        IR.I32_LE_S: q{(%2$s <= %1$s)},
+        IR.I32_LE_U: q{(uint(%2$s) <= uint(%1$s))},
+        IR.I32_GT_S: q{(%2$s > %1$s)},
+        IR.I32_GT_U: q{(uint(%2$s) > uint(%1$s))},
+        IR.I32_GE_S: q{(%2$s >= %1$s)},
+        IR.I32_GE_U: q{(uint(%2$s) >= uint(%1$s))},
 
     ];
 }
