@@ -43,6 +43,12 @@ endif
 # General android config
 ifneq (,$(findstring android,$(PLATFORM)))
 
+DC:=ldc2
+
+# This is the default ANDROID_NDK location where the install script dowloads to.
+# You may override this in your local.mk
+ANDROID_NDK:=$(REPOROOT)/tools/android-ndk/android-ndk-r21b/
+
 DFLAGS+=-mtriple=$(PLATFORM)
 
 ANDROID_API?=21
