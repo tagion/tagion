@@ -55,7 +55,7 @@ class Event {
     alias check = Check!EventConsensusException;
     protected static uint _count;
 
-    package Event[] _youngest_ancestors;
+    package Event[] _youngest_son_ancestors;
 
     package {
         // This is the internal pointer to the connected Event's
@@ -197,8 +197,8 @@ class Event {
     }
     do {
         _witness = new Witness(this, node_size);
-        _youngest_ancestors = new Event[node_size];
-        _youngest_ancestors[node_id] = this;
+        _youngest_son_ancestors = new Event[node_size];
+        _youngest_son_ancestors[node_id] = this;
     }
 
     immutable size_t node_id; /// Node number of the event
@@ -314,7 +314,7 @@ class Event {
             mixin Log!(received_order_statistic);
         }
 
-        calc_youngest_ancestors(hashgraph);
+        calc_youngest_son_ancestors(hashgraph);
         BitMask strongly_seen_nodes = calc_strongly_seen_nodes(hashgraph);
         if (strongly_seen_nodes.isMajority(hashgraph)) {
             hashgraph._rounds.next_round(this);
@@ -326,7 +326,7 @@ class Event {
         _witness = new Witness(this, hashgraph.node_size);
 
         _witness._prev_strongly_seen_witnesses = strongly_seen_nodes;
-        _witness._prev_seen_witnesses = BitMask(_youngest_ancestors.map!(e => (e !is null && !higher(round.number-1, e.round.number))));
+        _witness._prev_seen_witnesses = BitMask(_youngest_son_ancestors.map!(e => (e !is null && !higher(round.number-1, e.round.number))));
         if (!strongly_seen_nodes.isMajority(hashgraph)) {
             _round.add(this);
         }
@@ -340,42 +340,34 @@ class Event {
             calc_vote(hashgraph, i);
         }
         if (hashgraph.__debug_print) {
-            __write("EVENT: %s, Youngest_ancestors: %s", id, _youngest_ancestors.filter!(e => e !is null).map!(e => e.id));
+            __write("EVENT: %s, Youngest_ancestors: %s", id, _youngest_son_ancestors.filter!(e => e !is null).map!(e => e.id));
         }
     }
 
     private BitMask calc_strongly_seen_nodes(const HashGraph hashgraph) {
+        auto see_through_matrix = _youngest_son_ancestors 
+                                    .filter!(e => e !is null && e.round is round)
+                                    .map!(e => e._youngest_son_ancestors
+                                        .map!(e => e !is null && e.round is round));
+        
         scope strongly_seen_votes = new size_t[hashgraph.node_size];
-        foreach (node_id; _youngest_ancestors
-                .filter!(e => e !is null)
-                .filter!(e => e.round is round)
-                .map!(e => e._youngest_ancestors
-                    .enumerate
-                    .filter!(elm => elm.value !is null)
-                    .filter!(elm => elm.value.round is round)
-                    .map!(elm => elm.index))
-                .joiner) {
-            strongly_seen_votes[node_id]++;
-        }
-        auto strongly_seen_nodes = strongly_seen_votes.enumerate
-            .filter!(vote => hashgraph.isMajority(vote.value))
-            .map!(vote => vote.index);
-        return BitMask(strongly_seen_nodes);
+        see_through_matrix.each!(row => row.enumerate.each!(elm => strongly_seen_votes[elm.index] += elm.value));
+        return BitMask(strongly_seen_votes.map!(votes => hashgraph.isMajority(votes)));
     }
 
-    private void calc_youngest_ancestors(const HashGraph hashgraph) {
+    private void calc_youngest_son_ancestors(const HashGraph hashgraph) {
         if (!_father) {
-            _youngest_ancestors = _mother._youngest_ancestors;
+            _youngest_son_ancestors = _mother._youngest_son_ancestors;
             return;
         }
 
-        _youngest_ancestors = _mother._youngest_ancestors.dup();
-        _youngest_ancestors[node_id] = this;
+        _youngest_son_ancestors = _mother._youngest_son_ancestors.dup();
+        _youngest_son_ancestors[node_id] = this;
         iota(hashgraph.node_size)
-            .filter!(node_id => _father._youngest_ancestors[node_id]!is null)
-            .filter!(node_id => _youngest_ancestors[node_id] is null || _father._youngest_ancestors[node_id]
-            .received_order > _youngest_ancestors[node_id].received_order)
-            .each!(node_id => _youngest_ancestors[node_id] = _father._youngest_ancestors[node_id]);
+            .filter!(node_id => _father._youngest_son_ancestors[node_id]!is null)
+            .filter!(node_id => _youngest_son_ancestors[node_id] is null || _father._youngest_son_ancestors[node_id]
+            .received_order > _youngest_son_ancestors[node_id].received_order)
+            .each!(node_id => _youngest_son_ancestors[node_id] = _father._youngest_son_ancestors[node_id]);
     }
 
     package void calc_vote(HashGraph hashgraph, size_t vote_node_id) {
