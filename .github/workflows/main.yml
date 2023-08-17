@@ -137,6 +137,44 @@ jobs:
           rm ${{ needs.commit_stage.outputs.tarball }}
           rm -rf *
 
+  android_libmobile:
+    needs: acceptance_stage
+    strategy:
+      matrix:
+        arch: [aarch64, armv7a, x86_64]
+    runs-on: CI
+    steps:
+      - name: get repository
+        run: |
+          cd ..
+          git clone git@github.com:tagion/tagion.git || echo "repo already exists"
+      - name: pull
+        run: |
+          git clean -f && git restore . 
+          git checkout current
+          git pull
+
+      - name: Install android tools
+        run: |
+          make -j -f tub/scripts/setup_android_toolchain.mk TARGET_ARCH=${{ matrix.arch}}
+
+      - name: Build
+        run: |
+          export PATH="tools/ldc2-1.29.0-linux-x86_64/bin:$PATH"
+          make DC=ldc2 PLATFORM=${{ matrix.arch }}-linux-android libmobile
+          file ./build/${{ matrix.arch }}-linux-android/lib/libmobile.so
+
+      - uses: actions/upload-artifact@v3
+        if: success()
+        with:
+          name: android-libmobile
+          path: ./build/*/lib/libmobile.so
+          if-no-files-found: error
+
+      - name: Cleanup
+        run: 
+          make PLATFORM=aarch64-linux-android clean
+
   ddoc_push:
     runs-on: CD
     needs: acceptance_stage 
