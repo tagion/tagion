@@ -54,7 +54,7 @@ alias check = Check!WasmBetterCException;
 
     string module_name;
     string[] imports;
-    this(WasmReader wasmstream, Output output, string spacer = "  ") {
+    this(WasmReader wasmstream, Output output, string spacer = "    ") {
         this.output = output;
         this.wasmstream = wasmstream;
         this.spacer = spacer;
@@ -103,8 +103,19 @@ alias check = Check!WasmBetterCException;
             auto invoke_expr = code_type[];
             output.writefln("%s// expr   %(%02X %)", indent, _assert.invoke);
             output.writefln("%s// result %(%02X %)", indent, _assert.result);
-            block(invoke_expr, ctx, indent, true);
-            if (_assert.result.length != 0) {
+            if (_assert.method is Assert.Method.Trap) {
+                void assert_block(const string _indent) {
+                    block(invoke_expr, ctx, _indent ~ spacer);
+                    output.writefln("%s}", _indent);
+                }
+
+                output.writefln("%swasm.assert_trap((() {", indent);
+                assert_block(indent ~ spacer);
+                output.writefln("%s)());", indent);
+
+            }
+            else if (_assert.result.length != 0) {
+                block(invoke_expr, ctx, indent, true);
                 auto result_type = CodeType(_assert.result);
                 auto result_expr = result_type[];
                 block(result_expr, ctx, indent, true);
@@ -621,10 +632,10 @@ shared static this() {
         IR.I32_ADD: q{(%2$s + %1$s)},
         IR.I32_SUB: q{(%2$s - %1$s)},
         IR.I32_MUL: q{(%2$s * %1$s)},
-        IR.I32_DIV_S: q{(%2$s / %1$s)},
-        IR.I32_DIV_U: q{uint(%2$s) / uint(%1$s)},
-        IR.I32_REM_S: q{(%2$s %% %1$s)},
-        IR.I32_REM_U: q{(uint(%2$s) %% uint(%1$s))},
+        IR.I32_DIV_S: q{wasm.div(%2$s, %1$s)},
+        IR.I32_DIV_U: q{wasm.div(uint(%2$s), uint(%1$s))},
+        IR.I32_REM_S: q{wasm.rem(%2$s, %1$s)},
+        IR.I32_REM_U: q{wasm.rem(uint(%2$s), uint(%1$s))},
         IR.I32_AND: q{(%2$s & %1$s)},
         IR.I32_OR: q{(%2$s | %1$s)},
         IR.I32_XOR: q{(%2$s ^ %1$s)},
