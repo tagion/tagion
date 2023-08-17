@@ -197,13 +197,16 @@ class Event {
     }
     do {
         _witness = new Witness(this, node_size);
+        _youngest_ancestors = new Event[node_size];
+        _youngest_ancestors[node_id] = this;
     }
 
     immutable size_t node_id; /// Node number of the event
 
     void initializeReceivedOrder() pure nothrow @nogc {
         if (_received_order is int.init) {
-            _received_order = -2;
+            // _received_order = -2;
+            _received_order = -1;
         }
     }
 
@@ -212,6 +215,7 @@ class Event {
      * Params:
      *   iteration_count = iteration count used for debugging
      */
+    version(none)
     private void received_order(ref uint iteration_count) pure nothrow {
         if (isFatherLess) {
             if (_mother) {
@@ -305,9 +309,7 @@ class Event {
         if (callbacks) {
             callbacks.round(this);
         }
-        uint received_order_iteration_count;
-        received_order(received_order_iteration_count);
-        hashgraph.received_order_statistic(received_order_iteration_count);
+        _received_order = (_father && higher(_father._received_order, _mother._received_order)) ? _father._received_order + 1 : _mother._received_order + 1;
         with (hashgraph) {
             mixin Log!(received_order_statistic);
         }
@@ -317,31 +319,16 @@ class Event {
         if (strongly_seen_nodes.isMajority(hashgraph)) {
             hashgraph._rounds.next_round(this);
         }
-
         if (!higher(round.number, mother.round.number)) {
             return;
-        } //not a witness; return
+        }
 
         _witness = new Witness(this, hashgraph.node_size);
 
-        if (strongly_seen_nodes.isMajority(hashgraph)) {
-            _witness._prev_strongly_seen_witnesses = strongly_seen_nodes;
-            _witness._prev_seen_witnesses = BitMask(_youngest_ancestors.map!(e => e !is null));
-            clear_youngest_ancestors(hashgraph);
-        }
-        else {
+        _witness._prev_strongly_seen_witnesses = strongly_seen_nodes;
+        _witness._prev_seen_witnesses = BitMask(_youngest_ancestors.map!(e => (e !is null && !higher(round.number-1, e.round.number))));
+        if (!strongly_seen_nodes.isMajority(hashgraph)) {
             _round.add(this);
-            auto witness_ancestors = _youngest_ancestors
-                .filter!(e => e !is null)
-                .map!(e => _round._events[e.node_id]._witness);
-
-            witness_ancestors.each!(w => _witness._prev_strongly_seen_witnesses |= w._prev_strongly_seen_witnesses);
-            if (mother.round is round.previous) {
-                _witness._prev_seen_witnesses = BitMask(mother._youngest_ancestors.map!(e => e !is null));
-            }
-            _witness._prev_seen_witnesses |= witness_ancestors.map!(w => w._prev_seen_witnesses)
-                .array
-                .reduce!((a, b) => a | b);
         }
         with (hashgraph) {
             mixin Log!(strong_seeing_statistic);
@@ -358,9 +345,11 @@ class Event {
         scope strongly_seen_votes = new size_t[hashgraph.node_size];
         foreach (node_id; _youngest_ancestors
                 .filter!(e => e !is null)
+                .filter!(e => e.round is round)
                 .map!(e => e._youngest_ancestors
                     .enumerate
                     .filter!(elm => elm.value !is null)
+                    .filter!(elm => elm.value.round is round)
                     .map!(elm => elm.index))
                 .joiner) {
             strongly_seen_votes[node_id]++;
@@ -372,23 +361,18 @@ class Event {
     }
 
     private void calc_youngest_ancestors(const HashGraph hashgraph) {
-        if (!_father || higher(_mother.round.number, _father.round.number)) {
+        if (!_father) {
             _youngest_ancestors = _mother._youngest_ancestors;
             return;
         }
-        _youngest_ancestors = (_father.round is _mother.round) ? _mother._youngest_ancestors.dup() : new Event[hashgraph
-                .node_size];
+
+        _youngest_ancestors = _mother._youngest_ancestors.dup();
         _youngest_ancestors[node_id] = this;
         iota(hashgraph.node_size)
             .filter!(node_id => _father._youngest_ancestors[node_id]!is null)
             .filter!(node_id => _youngest_ancestors[node_id] is null || _father._youngest_ancestors[node_id]
             .received_order > _youngest_ancestors[node_id].received_order)
             .each!(node_id => _youngest_ancestors[node_id] = _father._youngest_ancestors[node_id]);
-    }
-
-    package void clear_youngest_ancestors(const HashGraph hashgraph) {
-        _youngest_ancestors = new Event[hashgraph.node_size];
-        _youngest_ancestors[node_id] = this;
     }
 
     package void calc_vote(HashGraph hashgraph, size_t vote_node_id) {
@@ -551,18 +535,6 @@ class Event {
         }
 
         /**
-         *  Calculates the order of this event
-         * Returns: order ( max(m+1, f+1 ). 
-         */
-        int expected_order() const pure nothrow @nogc {
-            const m = (_mother) ? _mother._received_order : int.init;
-            const f = (_father) ? _father._received_order : int.init;
-            int result = (m - f > 0) ? m : f;
-            result++;
-            result = (result is int.init) ? 1 : result;
-            return result;
-        }
-        /**
           * Is this event owner but this node 
           * Returns: true if the evnet is owned
           */
@@ -575,10 +547,7 @@ class Event {
          * Returns: order
          */
         int received_order() const pure nothrow @nogc
-        in {
-            assert(isEva || (_received_order !is int.init), "The received order of this event has not been defined");
-        }
-        do {
+        {
             return _received_order;
         }
 
@@ -640,10 +609,6 @@ class Event {
         bool isFatherLess() {
             return isEva || !isGrounded && (event_package.event_body.father is null) && _mother
                 .isFatherLess;
-        }
-
-        bool hasOrder() {
-            return _received_order !is int.init;
         }
 
         bool isGrounded() {
