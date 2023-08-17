@@ -436,6 +436,7 @@ alias check = Check!WasmBetterCException;
         string block_comment;
         uint block_count;
         uint count;
+        uint calls;
         static string block_result_type()(const Types t) {
             with (Types) {
                 switch (t) {
@@ -448,6 +449,10 @@ alias check = Check!WasmBetterCException;
                 }
             }
             assert(0);
+        }
+
+        string result_name() {
+            return format("result_%d", calls);
         }
 
         const(ExprRange.IRElement) innerBlock(ref ExprRange expr, const(string) indent, const uint level) {
@@ -499,12 +504,24 @@ alias check = Check!WasmBetterCException;
                         output.writefln("%s%s %s", indent, instr.name, branch_table(elm.wargs));
                         break;
                     case CALL:
-                        output.writefln("%s%s %s", indent, instr.name, elm.warg.get!uint);
+                        scope (exit) {
+                            calls++;
+                        }
+                        output.writefln("%s//%s %s", indent, instr.name, elm.warg.get!uint);
                         const func_idx = elm.warg.get!uint;
                         output.writefln("FuncType =%s", func_idx);
                         const function_header = wasmstream.get!(Section.TYPE)[func_idx];
                         output.writefln("header %s", function_header);
-                        output.writefln("pops %s", ctx.pops(function_header.params.length));
+                        //output.writefln("pops %s", ctx.pops(function_header.params.length));
+                        const function_call = format("%s(%-(%s,%))", function_name(func_idx), ctx.pops(function_header
+                                .params.length));
+                        output.writefln("call %s", function_call);
+                        string set_result;
+                        if (function_header.results.length) {
+                            set_result = format("const %s=", result_name);
+                            ctx.push(result_name);
+                        }
+                        output.writefln("%s%s%s;", indent, set_result, function_call);
                         break;
                     case CALL_INDIRECT:
                         output.writefln("%s%s (type %d)", indent, instr.name, elm.warg.get!uint);
