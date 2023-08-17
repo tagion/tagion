@@ -305,7 +305,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
     }
 
     static int testing;
-    void addNode(immutable(ulong) N, const(string) name, const Flag!"joining" joining = No.joining, bool passive = false) {
+    void addNode(immutable(ulong) N, const(string) name, const Flag!"joining" joining = No.joining) {
         immutable passphrase = format("very secret %s", name);
         auto net = new StdSecureNet();
         net.generateKeyPair(passphrase);
@@ -315,7 +315,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         if (testing < 2) {
             testing++;
             if (testing == 1) {
-            h.__debug_print=true;
+                h.__debug_print = true;
             }
         }
         h.scrap_depth = 0;
@@ -323,7 +323,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         networks[net.pubkey] = new FiberNetwork(h, pageSize * 1024);
 
         authorising.add_channel(net.pubkey);
-        TestGossipNet.online_states[net.pubkey] = !passive;
+        TestGossipNet.online_states[net.pubkey] = true;
     }
 
     FiberNetwork[Pubkey] networks;

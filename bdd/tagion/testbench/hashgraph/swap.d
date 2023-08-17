@@ -55,19 +55,6 @@ class NodeSwap {
         network.global_time = SysTime.fromUnixTime(1_614_355_286);
         offline_key = Pubkey(network.channels[0]);
 
-        // should be made properly.
-        import tagion.crypto.SecureNet : StdSecureNet;
-        import tagion.crypto.SecureInterfaceNet : SecureNet;
-
-        immutable passphrase = format("very secret %s", new_node);
-        auto net = new StdSecureNet();
-        net.generateKeyPair(passphrase);
-
-        writefln("new node pubkey: %s", net.pubkey.cutHex);
-
-        // TestRefinement.swap = TestRefinement.Swap(net.pubkey, net.pubkey, 10);
-        // network.addNode(node_names.length, new_node, Yes.joining, true);
-
         return result_ok;
     }
 
@@ -95,19 +82,14 @@ class NodeSwap {
 
         TestNetwork.TestGossipNet.online_states[offline_key] = false;
         writefln("stopped communication for %s", offline_key.cutHex);
-        // TestNetwork.TestGossipNet.online_states[offline_key] = false;
-
-        // network.swapNode(node_names.length, offline_key, "NEW_NODE");
 
         foreach (i; 0 .. MAX_CALLS) {
+            writeln("WOWO");
             const channel_number = network.random.value(0, network.channels.length);
             const channel = network.channels[channel_number];
             auto current = network.networks[channel];
             network.current = Pubkey(channel);
 
-            if (channel == offline_key) {
-                continue;
-            }
             (() @trusted { current.call; })();
 
         }
