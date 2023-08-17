@@ -146,6 +146,8 @@ jobs:
     steps:
       - name: get repository
         run: |
+          pwd
+          ls
           cd ..
           git clone git@github.com:tagion/tagion.git || echo "repo already exists"
       - name: pull
