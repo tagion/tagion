@@ -54,6 +54,7 @@ alias check = Check!WasmBetterCException;
 
     string module_name;
     string[] imports;
+    string[] attributes;
     this(WasmReader wasmstream, Output output, string spacer = "    ") {
         this.output = output;
         this.wasmstream = wasmstream;
@@ -610,6 +611,7 @@ alias check = Check!WasmBetterCException;
         output.writefln("module %s;", module_name);
         output.writeln;
         imports.each!(imp => output.writefln("import %s;", imp));
+        attributes.each!(attr => output.writefln("%s:", attr));
         //indent = spacer;
         scope (exit) {
             output.writeln("// end");
