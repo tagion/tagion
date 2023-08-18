@@ -32,6 +32,8 @@ alias ReceivedWavefront = Msg!"ReceivedWavefront";
 
 alias PayloadQueue = Queue!Document;
 
+@safe:
+
 enum NetworkMode {
     internal,
     local,
@@ -40,12 +42,13 @@ enum NetworkMode {
 
 struct EpochCreatorOptions {
 
-    uint timeout; // timeout between nodes;
+    uint timeout; // timeout between nodes in milliseconds;
     ushort nodes;
     uint scrap_depth;
+    mixin JSONCommon;
 }
 
-struct EpochCreatorSercive {
+struct EpochCreatorService {
 
     void task(immutable(EpochCreatorOptions) opts, immutable(SecureNet) net, immutable(Pubkey[]) pkeys) {
         const hirpc = HiRPC(net);
@@ -65,13 +68,7 @@ struct EpochCreatorSercive {
             immutable buf = cast(Buffer) hashgraph.channel;
             const nonce = cast(Buffer) net.calcHash(buf);
             auto eva_event = hashgraph.createEvaEvent(gossip_net.time, nonce);
-
-            if (eva_event is null) {
-                log.error("The channel of this owner is not valid");
-                return;
-            }
         }
-
 
         gossip_net.start_listening();
 
@@ -86,6 +83,7 @@ struct EpochCreatorSercive {
             payload_queue.write(pload);
         }
 
+
         void receiveWavefront(ReceivedWavefront, Document wave_doc) {
             const receiver = HiRPC.Receiver(wave_doc);
             hashgraph.wavefront(
@@ -94,6 +92,12 @@ struct EpochCreatorSercive {
                     (const(HiRPC.Sender) return_wavefront) { gossip_net.send(receiver.pubkey, return_wavefront); },
                     &payload);
         }
+
+        void timeout() {
+            // empty for now
+        }
+
+        runTimeout(opts.timeout.msecs, &timeout, &receivePayload, &receiveWavefront);
 
     }
 
