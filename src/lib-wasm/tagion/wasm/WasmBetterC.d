@@ -17,6 +17,8 @@ import tagion.wasm.WasmReader;
 import tagion.wasm.WasmBase;
 import tagion.wasm.WasmException;
 import tagion.basic.tagionexceptions;
+import tagion.hibon.Document;
+import tagion.wasm.WastAssert;
 
 @safe class WasmBetterCException : WasmException {
     this(string msg, string file = __FILE__, size_t line = __LINE__) pure nothrow {
@@ -52,7 +54,8 @@ alias check = Check!WasmBetterCException;
 
     string module_name;
     string[] imports;
-    this(WasmReader wasmstream, Output output, string spacer = "  ") {
+    string[] attributes;
+    this(WasmReader wasmstream, Output output, string spacer = "    ") {
         this.output = output;
         this.wasmstream = wasmstream;
         this.spacer = spacer;
@@ -93,6 +96,47 @@ alias check = Check!WasmBetterCException;
         return result;
     }
 
+    void produceAsserts(const Document doc, const string indent) {
+        const sec_assert = SectionAssert(doc);
+        void innerAssert(const Assert _assert, const string indent) {
+            Context ctx;
+            auto code_type = CodeType(_assert.invoke);
+            auto invoke_expr = code_type[];
+            output.writefln("%s// expr   %(%02X %)", indent, _assert.invoke);
+            output.writefln("%s// result %(%02X %)", indent, _assert.result);
+            if (_assert.method is Assert.Method.Trap) {
+                void assert_block(const string _indent) {
+                    block(invoke_expr, ctx, _indent ~ spacer);
+                    output.writefln("%s}", _indent);
+                }
+
+                output.writefln("%swasm.assert_trap((() {", indent);
+                assert_block(indent ~ spacer);
+                output.writefln("%s)());", indent);
+
+            }
+            else if (_assert.result.length != 0) {
+                block(invoke_expr, ctx, indent, true);
+                auto result_type = CodeType(_assert.result);
+                auto result_expr = result_type[];
+                block(result_expr, ctx, indent, true);
+                output.writef("%sassert(%s == %s", indent, ctx.pop, ctx.pop);
+                if (_assert.message.length) {
+                    output.writef(`, "%s"`, _assert.message);
+                }
+                output.writeln(");");
+            }
+        }
+
+        foreach (_assert; sec_assert.asserts) {
+            output.writefln("%s{ // %s", indent, _assert.name);
+            innerAssert(_assert, indent ~ spacer);
+            output.writefln("%s}", indent);
+
+        }
+    }
+
+    enum max_linewidth = 120;
     alias Custom = Sections[Section.CUSTOM];
     void custom_sec(ref scope const(Custom) _custom) {
         import tagion.hibon.HiBONJSON;
@@ -104,10 +148,11 @@ alias check = Check!WasmBetterCException;
         }
         if (_custom.doc.isInorder) {
             switch (_custom.name) {
-            case "+assert":
+            case "assert":
                 output.writeln("@safe");
-                output.writefln("unittest { // %s", _custom.name);
-                output.write("}");
+                output.writefln("%sunittest { // %s", indent, _custom.name);
+                produceAsserts(_custom.doc, indent ~ spacer);
+                output.writefln("%s}", indent);
                 break;
             default:
                 output.writefln("/* %s", _custom.name);
@@ -116,13 +161,20 @@ alias check = Check!WasmBetterCException;
             }
         }
         else {
-            output.writefln(`/* "%s"`, _custom.name);
+            uint linewidth;
+            output.writefln(`/* Custom "%s"`, _custom.name);
             foreach (d; _custom.bytes) {
                 if ((d > SPACE) && (d < DEL)) {
                     output.writef(`%c`, char(d));
+                    linewidth += 1;
                 }
                 else {
                     output.writef(`\x%02X`, d);
+                    linewidth += 3;
+                }
+                if (linewidth >= max_linewidth) {
+                    output.writeln;
+                    linewidth = 0;
                 }
             }
             output.writeln(`*/`);
@@ -190,13 +242,12 @@ alias check = Check!WasmBetterCException;
     protected Function _function;
     @trusted void function_sec(ref const(Function) _function) {
         // Empty
-        // The functions headers are printed in the code section
+        // The function headers are printed in the code section
         this._function = cast(Function) _function;
     }
 
     alias Table = Sections[Section.TABLE];
     void table_sec(ref const(Table) _table) {
-        //        auto _table=*mod[Section.TABLE];
         foreach (i, t; _table[].enumerate) {
             output.writefln("%s(table (;%d;) %s %s)", indent, i,
                     limitToString(t.limit), typesName(t.type));
@@ -205,7 +256,6 @@ alias check = Check!WasmBetterCException;
 
     alias Memory = Sections[Section.MEMORY];
     void memory_sec(ref const(Memory) _memory) {
-        //        auto _memory=*mod[Section.MEMORY];
         foreach (i, m; _memory[].enumerate) {
             output.writefln("%s(memory (;%d;) %s)", indent, i, limitToString(m.limit));
         }
@@ -361,6 +411,19 @@ alias check = Check!WasmBetterCException;
             return peek;
         }
 
+        string[] pops(const size_t amount) pure nothrow {
+            try {
+                scope (success) {
+                    stack.length -= amount;
+                }
+                return stack[$ - amount .. $];
+            }
+            catch (Exception e) {
+                return ["Error Stack underflow", e.msg];
+            }
+            assert(0);
+        }
+
         void push(string value) pure nothrow {
             stack ~= value;
         }
@@ -391,10 +454,12 @@ alias check = Check!WasmBetterCException;
     private const(ExprRange.IRElement) block(
             ref ExprRange expr,
             ref Context ctx,
-            const(string) indent) {
+            const(string) indent,
+            const bool no_return = false) {
         string block_comment;
         uint block_count;
         uint count;
+        uint calls;
         static string block_result_type()(const Types t) {
             with (Types) {
                 switch (t) {
@@ -407,6 +472,10 @@ alias check = Check!WasmBetterCException;
                 }
             }
             assert(0);
+        }
+
+        string result_name() {
+            return format("result_%d", calls);
         }
 
         const(ExprRange.IRElement) innerBlock(ref ExprRange expr, const(string) indent, const uint level) {
@@ -458,7 +527,20 @@ alias check = Check!WasmBetterCException;
                         output.writefln("%s%s %s", indent, instr.name, branch_table(elm.wargs));
                         break;
                     case CALL:
-                        output.writefln("%s%s %s", indent, instr.name, elm.warg.get!uint);
+                        scope (exit) {
+                            calls++;
+                        }
+                        output.writefln("%s// %s %s", indent, instr.name, elm.warg.get!uint);
+                        const func_idx = elm.warg.get!uint;
+                        const function_header = wasmstream.get!(Section.TYPE)[func_idx];
+                        const function_call = format("%s(%-(%s,%))", function_name(func_idx), ctx.pops(function_header
+                                .params.length));
+                        string set_result;
+                        if (function_header.results.length) {
+                            set_result = format("const %s=", result_name);
+                            ctx.push(result_name);
+                        }
+                        output.writefln("%s%s%s;", indent, set_result, function_call);
                         break;
                     case CALL_INDIRECT:
                         output.writefln("%s%s (type %d)", indent, instr.name, elm.warg.get!uint);
@@ -481,17 +563,15 @@ alias check = Check!WasmBetterCException;
                             with (Types) {
                                 switch (a.type) {
                                 case I32:
-                                    return a.get!int
-                                        .to!string;
+                                    return format("(%d)", a.get!int);
                                 case I64:
-                                    return a.get!long
-                                        .to!string;
+                                    return format("(%dL)", a.get!long);
                                 case F32:
                                     const x = a.get!float;
-                                    return format("%a (;=%s;)", x, x);
+                                    return format("(%a /* %s */)", x, x);
                                 case F64:
                                     const x = a.get!double;
-                                    return format("%a (;=%s;)", x, x);
+                                    return format("(%a /* %s */)", x, x);
                                 default:
                                     assert(0);
                                 }
@@ -499,9 +579,14 @@ alias check = Check!WasmBetterCException;
                             assert(0);
                         }
 
-                        output.writefln("%s%s %s", indent, instr.name, toText(elm.warg));
+                        const value = toText(elm.warg);
+                        output.writefln("%s// %s %s", indent, instr.name, value);
+                        ctx.push(value);
                         break;
                     case END:
+                        return elm;
+                    case ILLEGAL:
+                        output.writefln("Error: Illegal instruction %02X", elm.code);
                         return elm;
                     case SYMBOL:
                         assert(0, "Symbol opcode and it does not have an equivalent opcode");
@@ -512,10 +597,11 @@ alias check = Check!WasmBetterCException;
         }
 
         scope (exit) {
-            if (ctx.stack.length > 0) {
+            if (!no_return && (ctx.stack.length > 0)) {
                 output.writefln("%sreturn %s;", indent, ctx.pop);
             }
-            check(ctx.stack.length == 0, format("Stack size is %d but the stack should be empty on return", ctx.stack
+            check(no_return || (ctx.stack.length == 0), format("Stack size is %d but the stack should be empty on return", ctx
+                    .stack
                     .length));
         }
         return innerBlock(expr, indent, 0);
@@ -525,6 +611,7 @@ alias check = Check!WasmBetterCException;
         output.writefln("module %s;", module_name);
         output.writeln;
         imports.each!(imp => output.writefln("import %s;", imp));
+        attributes.each!(attr => output.writefln("%s:", attr));
         //indent = spacer;
         scope (exit) {
             output.writeln("// end");
@@ -542,34 +629,34 @@ shared static this() {
         IR.LOCAL_GET: q{%1$s},
         IR.LOCAL_SET: q{%2$s=$1$s;},
         IR.I32_CLZ: q{wasm.clz(%s)},
-        IR.I32_CTZ: q{wasm.clz(%s)},
+        IR.I32_CTZ: q{wasm.ctz(%s)},
         IR.I32_POPCNT: q{wasm.popcnt(%s)},
-        IR.I32_ADD: q{(%1$s + %2$s)},
-        IR.I32_SUB: q{(%1$s - %2$s)},
-        IR.I32_MUL: q{(%1$s * %2$s)},
-        IR.I32_DIV_S: q{(%1$s / %2$s)},
-        IR.I32_DIV_U: q{uint(%1$s) / uint(%2$s)},
-        IR.I32_REM_S: q{(%1$s %% %2$s)},
-        IR.I32_REM_U: q{(uint(%1$s) %% uint(%2$s))},
-        IR.I32_AND: q{(%1$s & %2$s)},
-        IR.I32_OR: q{(%1$s | %2$s)},
-        IR.I32_XOR: q{(%1$s ^ %2$s)},
-        IR.I32_SHL: q{(%1$s >> %2$s)},
-        IR.I32_SHR_S: q{(%1$s >> %2$s)},
-        IR.I32_SHR_U: q{(%1$s >>> %2$s)},
+        IR.I32_ADD: q{(%2$s + %1$s)},
+        IR.I32_SUB: q{(%2$s - %1$s)},
+        IR.I32_MUL: q{(%2$s * %1$s)},
+        IR.I32_DIV_S: q{wasm.div(%2$s, %1$s)},
+        IR.I32_DIV_U: q{wasm.div(uint(%2$s), uint(%1$s))},
+        IR.I32_REM_S: q{wasm.rem(%2$s, %1$s)},
+        IR.I32_REM_U: q{wasm.rem(uint(%2$s), uint(%1$s))},
+        IR.I32_AND: q{(%2$s & %1$s)},
+        IR.I32_OR: q{(%2$s | %1$s)},
+        IR.I32_XOR: q{(%2$s ^ %1$s)},
+        IR.I32_SHL: q{(%2$s << %1$s)},
+        IR.I32_SHR_S: q{(%2$s >> %1$s)},
+        IR.I32_SHR_U: q{(%2$s >>> %1$s)},
         IR.I32_ROTL: q{wasm.rotl(%1$s, %2$s)},
         IR.I32_ROTR: q{wasm.rotr(%1$s, %2$s)},
         IR.I32_EQZ: q{(%1$s == 0)},
-        IR.I32_EQ: q{(%1$s == %2$s)},
-        IR.I32_NE: q{(%1$s != %2$s)},
-        IR.I32_LT_S: q{(%1$s < %2$s)},
-        IR.I32_LT_U: q{(uint(%1$s) < uint(%2$s))},
-        IR.I32_LE_S: q{(%1$s <= %2$s)},
-        IR.I32_LE_U: q{(uint(%1$s) <= uint(%2$s))},
-        IR.I32_GT_S: q{(%1$s > %2$s)},
-        IR.I32_GT_U: q{(uint(%1$s) > uint(%2$s))},
-        IR.I32_GE_S: q{(%1$s >= %2$s)},
-        IR.I32_GE_U: q{(uint(%1$s) >= uint(%2$s))},
+        IR.I32_EQ: q{(%2$s == %1$s)},
+        IR.I32_NE: q{(%2$s != %1$s)},
+        IR.I32_LT_S: q{(%2$s < %1$s)},
+        IR.I32_LT_U: q{(uint(%2$s) < uint(%1$s))},
+        IR.I32_LE_S: q{(%2$s <= %1$s)},
+        IR.I32_LE_U: q{(uint(%2$s) <= uint(%1$s))},
+        IR.I32_GT_S: q{(%2$s > %1$s)},
+        IR.I32_GT_U: q{(uint(%2$s) > uint(%1$s))},
+        IR.I32_GE_S: q{(%2$s >= %1$s)},
+        IR.I32_GE_U: q{(uint(%2$s) >= uint(%1$s))},
 
     ];
 }

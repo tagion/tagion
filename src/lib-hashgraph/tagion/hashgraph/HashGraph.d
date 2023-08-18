@@ -157,7 +157,6 @@ class HashGraph {
                 writefln("init_event time %s", event.event_body.time);
                 _rounds.last_round.add(event);
                 front_seat(event);
-                _rounds.consensus_tide[event.node_id] = event;
                 event._round_received = _rounds.last_round;
             }
 

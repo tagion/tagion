@@ -78,6 +78,7 @@ int _main(string[] args) {
     //bool betterc;
     string module_name = "wasm_test";
     string[] imports;
+    string[] attributes;
     bool inject_gas;
     bool verbose_switch;
 
@@ -97,12 +98,12 @@ int _main(string[] args) {
                 "mod|m", "Modify import module name from ", &modify_from,
                 "to", "Modify import module name from ", &modify_to,
                 "imports|i", "Import list", &imports,
-                "name", "Import list", &module_name,//                "print|p", format("Print the wasm as wat: %s", print), &print,
+                "name", "Import list", &module_name, //                "print|p", format("Print the wasm as wat: %s", print), &print,
 
                 //                "betterc|d", format("Print the wasm as wat: %s", betterc), &betterc,
 
                 "type|t", format("Sets stdout file type (%-(%s %))", [EnumMembers!OutputType]), &type,
-
+        "global-attribute", "Sets the global attribute for the D transpiling", &attributes,
         );
 
         void help() {
@@ -250,6 +251,7 @@ int _main(string[] args) {
                         writefln("BetterC");
                         prod.module_name = module_name;
                         prod.imports = imports;
+                        prod.attributes = attributes;
                     }
                     // produce!(FileExtension.wat)(WasmReader(data_out), outputfilename);
                     //   import _wast=tagion.wasm.Wat;

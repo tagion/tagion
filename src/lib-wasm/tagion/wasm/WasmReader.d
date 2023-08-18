@@ -219,16 +219,16 @@ import std.format;
                 const ModuleSection owner;
                 protected size_t pos;
                 protected uint index;
-                this(const ModuleSection owner) pure nothrow {
+                this(const ModuleSection owner) pure {
                     this.owner = owner;
                 }
 
-                pure nothrow {
+                pure {
                     Element front() const {
                         return Element(owner.data[pos .. $]);
                     }
 
-                    bool empty() const {
+                    bool empty() const nothrow {
                         return index >= owner.length;
                     }
 
@@ -237,7 +237,7 @@ import std.format;
                         index++;
                     }
 
-                    VectorRange save() {
+                    VectorRange save() nothrow {
                         VectorRange result = this;
                         return result;
                     }
@@ -476,7 +476,7 @@ import std.format;
                 immutable(ImportType.ImportDesc.GlobalDesc) global;
                 immutable(ubyte[]) expr;
                 immutable(size_t) size;
-                this(immutable(ubyte[]) data) pure nothrow {
+                this(immutable(ubyte[]) data) pure {
                     size_t index;
                     global = ImportType.ImportDesc.GlobalDesc(data, index);
                     auto range = ExprRange(data[index .. $]);
@@ -504,7 +504,7 @@ import std.format;
                 immutable(IndexType) desc;
                 immutable(uint) idx;
                 immutable(size_t) size;
-                this(immutable(ubyte[]) data) pure nothrow {
+                this(immutable(ubyte[]) data) pure {
                     size_t index;
                     name = Vector!char(data, index);
                     desc = cast(IndexType) data[index];
@@ -529,7 +529,7 @@ import std.format;
                 immutable(ubyte[]) expr;
                 immutable(uint[]) funcs;
                 immutable(size_t) size;
-                static immutable(ubyte[]) exprBlock(immutable(ubyte[]) data) pure nothrow {
+                static immutable(ubyte[]) exprBlock(immutable(ubyte[]) data) pure {
                     auto range = ExprRange(data);
                     while (!range.empty) {
                         const elm = range.front;
@@ -542,7 +542,7 @@ import std.format;
                     assert(0);
                 }
 
-                this(immutable(ubyte[]) data) pure nothrow {
+                this(immutable(ubyte[]) data) pure {
                     size_t index;
                     tableidx = u32(data, index);
                     expr = exprBlock(data[index .. $]);
@@ -600,21 +600,19 @@ import std.format;
                         _local = Local(data, local_index);
                     }
 
-                    @property {
-                        const(Local) front() const pure nothrow {
-                            return _local;
-                        }
+                    const(Local) front() const pure nothrow {
+                        return _local;
+                    }
 
-                        bool empty() const pure nothrow {
-                            return (j > length);
-                        }
+                    bool empty() const pure nothrow {
+                        return (j > length);
+                    }
 
-                        void popFront() pure nothrow {
-                            if (j < length) {
-                                set_front(index);
-                            }
-                            j++;
+                    void popFront() pure nothrow {
+                        if (j < length) {
+                            set_front(index);
                         }
+                        j++;
                     }
                 }
 
@@ -644,7 +642,7 @@ import std.format;
                 immutable(char[]) base; // init value
                 immutable(size_t) size;
 
-                this(immutable(ubyte[]) data) pure nothrow {
+                this(immutable(ubyte[]) data) pure {
                     size_t index;
                     idx = u32(data, index);
                     auto range = ExprRange(data[index .. $]);

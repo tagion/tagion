@@ -293,7 +293,7 @@ alias check = Check!WatException;
 
         while (!expr.empty) {
             const elm = expr.front;
-            const instr = instrTable[elm.code];
+            const instr = instrTable.get(elm.code, illegalInstr);
             expr.popFront;
             with (IRType) {
                 final switch (instr.irtype) {
@@ -381,6 +381,8 @@ alias check = Check!WatException;
                     break;
                 case END:
                     return elm;
+                case ILLEGAL:
+                    throw new WatException(format("Illegal instruction %02X", elm.code));
                 case SYMBOL:
                     assert(0, "Symbol opcode and it does not have an equivalent opcode");
                 }

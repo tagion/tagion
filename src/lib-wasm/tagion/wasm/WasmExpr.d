@@ -17,7 +17,7 @@ struct WasmExpr {
     }
 
     ref WasmExpr opCall(Args...)(const IR ir, Args args) {
-        immutable instr = instrTable[ir];
+        immutable instr = instrTable.get(ir, illegalInstr);
         bout.write(cast(ubyte) ir);
         immutable irtype = instr.irtype;
         with (IRType) {
@@ -132,6 +132,9 @@ struct WasmExpr {
             case END:
                 assert(Args.length == 0,
                         format("Instruction %s should have no arguments", instr.name));
+                break;
+            case ILLEGAL:
+                assert(0, format("Illegal opcode %02X", ir));
                 break;
             case SYMBOL:
                 assert(0, "Symbol opcode and it does not have an equivalent opcode");
