@@ -13,9 +13,11 @@ import tagion.gossip.GossipNet;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.crypto.Types : Pubkey;
+import tagion.basic.Types : Buffer;
 import tagion.hashgraph.Refinement;
 import tagion.gossip.InterfaceNet : GossipNet;
 import tagion.gossip.EmulatorGossipNet;
+import tagion.utils.Queue;
 
 // core
 import core.time;
@@ -24,8 +26,11 @@ import core.time;
 import std.algorithm : each;
 import std.typecons : No;
 
-alias ContractSignedConsensus = Msg!"ContractSignedConsensus";
-alias WavefrontGossip = Msg!"WavefrontGossip";
+// alias ContractSignedConsensus = Msg!"ContractSignedConsensus";
+alias Payload = Msg!"Payload";
+alias ReceivedWavefront = Msg!"ReceivedWavefront";
+
+alias PayloadQueue = Queue!Document;
 
 enum NetworkMode {
     internal,
@@ -44,14 +49,51 @@ struct EpochCreatorSercive {
 
     void task(immutable(EpochCreatorOptions) opts, immutable(SecureNet) net, immutable(Pubkey[]) pkeys) {
         const hirpc = HiRPC(net);
-        GossipNet gossip_net;
-        auto refinement = new StdRefinement;
 
+        GossipNet gossip_net;
         gossip_net = new EmulatorGossipNet(net.pubkey, opts.timeout.msecs);
         pkeys.each!(p => gossip_net.add_channel(p));
 
+        auto refinement = new StdRefinement;
+
         HashGraph hashgraph = new HashGraph(opts.nodes, net, refinement, &gossip_net.isValidChannel, No.joining);
         hashgraph.scrap_depth = opts.scrap_depth;
+
+        PayloadQueue payload_queue = new PayloadQueue();
+
+        {
+            immutable buf = cast(Buffer) hashgraph.channel;
+            const nonce = cast(Buffer) net.calcHash(buf);
+            auto eva_event = hashgraph.createEvaEvent(gossip_net.time, nonce);
+
+            if (eva_event is null) {
+                log.error("The channel of this owner is not valid");
+                return;
+            }
+        }
+
+
+        gossip_net.start_listening();
+
+        const(Document) payload() {
+            if (!hashgraph.active || payload_queue.empty) {
+                return Document();
+            }
+            return payload_queue.read;
+        }
+
+        void receivePayload(Payload, Document pload) {
+            payload_queue.write(pload);
+        }
+
+        void receiveWavefront(ReceivedWavefront, Document wave_doc) {
+            const receiver = HiRPC.Receiver(wave_doc);
+            hashgraph.wavefront(
+                    receiver,
+                    gossip_net.time,
+                    (const(HiRPC.Sender) return_wavefront) { gossip_net.send(receiver.pubkey, return_wavefront); },
+                    &payload);
+        }
 
     }
 
