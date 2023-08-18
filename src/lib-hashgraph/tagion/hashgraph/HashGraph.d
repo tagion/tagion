@@ -201,7 +201,6 @@ class HashGraph {
         }
     }
 
-
     @nogc
     const(Round.Rounder) rounds() const pure nothrow {
         return _rounds;
@@ -698,6 +697,7 @@ class HashGraph {
                             // received_wave.epacks
                             //     .map!(epack => epack.event_body)
                             //     .each!(ebody => ebody.toPretty.writeln);
+                            writefln("GOING to init");
                             initialize_witness(received_wave.epacks);
                             _owner_node.sticky_state = COHERENT;
                             _joining = No.joining;

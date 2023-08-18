@@ -97,6 +97,7 @@ class NodeSwap {
             (() @trusted { current.call; })();
         }
 
+        writefln("ADDING NEW NODE");
         network.addNode(node_names.length, new_node, Yes.joining);
 
         foreach (i; 0 .. MAX_CALLS) {

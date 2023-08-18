@@ -85,8 +85,6 @@ class TestRefinement : StdRefinement {
             return;
         }
 
-        hashgraph.remove_node(swap.swap_out);
-
     }
 
 }
