@@ -147,8 +147,6 @@ jobs:
     steps:
       - name: get repository
         run: |
-          pwd
-          ls
           cd ..
           git clone git@github.com:tagion/tagion.git || echo "repo already exists"
       - name: pull
@@ -159,7 +157,7 @@ jobs:
 
       - name: Install android tools
         run: |
-          make -j -f tub/scripts/setup_android_toolchain.mk TARGET_ARCH=${{ matrix.arch}}
+          make -f tub/scripts/setup_android_toolchain.mk TARGET_ARCH=${{ matrix.arch}}
 
       - name: Build
         run: |
