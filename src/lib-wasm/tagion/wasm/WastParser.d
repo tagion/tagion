@@ -107,7 +107,6 @@ struct WastParser {
                 return innerFunc(r.token);
             case TokenType.STRING:
                 if (writer.mod[Section.EXPORT]!is null) {
-                    writefln("Export %s", writer.mod[Section.EXPORT].sectypes.map!(exp => exp.name));
                     auto export_found = writer.mod[Section.EXPORT].sectypes
                         .find!(exp => exp.name == r.token.stripQuotes);
                     if (!export_found.empty) {
@@ -185,7 +184,7 @@ struct WastParser {
                     case CALL:
                         r.nextToken;
                         const idx = getFuncIdx();
-                        writefln("CALL %s %d", r.token, idx);
+                        //writefln("CALL %s %d", r.token, idx);
                         label = r.token;
                         r.nextToken;
                         while (r.type == TokenType.BEGIN) {
@@ -233,7 +232,6 @@ struct WastParser {
                         r.nextToken;
                         r.check(r.type == TokenType.WORD);
                         const ir = irLookupTable[instr.name];
-                        writefln("Const number %s", r.token);
                         with (IR) switch (ir) {
                         case I32_CONST:
                             wasmexpr(ir, r.get!int);
@@ -295,11 +293,6 @@ struct WastParser {
         }
 
         scope (exit) {
-            writefln("1] %(%02X %)", wasmexpr.serialize);
-            writefln("2] %(%02X %)", wasmexpr.serialize);
-            if (locals.length > number_of_func_arguments) {
-                writefln("locals=%s", params.dup);
-            }
             code_type = CodeType(locals[number_of_func_arguments .. $], wasmexpr.serialize);
         }
         return innerInstr(r, stage);
@@ -432,7 +425,6 @@ struct WastParser {
             case "assert_return":
             case "assert_return_nan":
                 r.check(stage == ParserStage.BASE);
-                writef("-->%s ", r.token);
                 Assert assert_type;
                 assert_type.method = Assert.Method.Return;
                 assert_type.name = r.token;
@@ -447,9 +439,7 @@ struct WastParser {
                     parseInstr(r, ParserStage.EXPECTED, code_result, func_type, params);
                 }
                 assert_type.invoke = code_invoke.serialize;
-                writefln("invoke %(%02X %) [%(%02X %)]", assert_type.invoke, code_invoke.expr);
                 assert_type.result = code_result.serialize;
-                writefln("result %(%02X %) [%(%02X %)]", assert_type.invoke, code_invoke.expr);
                 wast_assert.asserts ~= assert_type;
                 return ParserStage.ASSERT;
             case "assert_trap":
@@ -565,13 +555,12 @@ struct WastParser {
 
     private ParserStage parseTypeSection(ref WastTokenizer r, const ParserStage stage) {
         CodeType code_type;
-        writeln("Function code");
+        //writeln("Function code");
         scope (exit) {
             const type_index = cast(uint) writer.section!(Section.CODE).sectypes.length;
             writer.section!(Section.FUNCTION).sectypes ~= TypeIndex(type_index);
             writer.section!(Section.CODE).sectypes ~= code_type;
-            writefln("%s code.length=%s %s", Section.CODE, code_type.expr.length, writer.section!(Section.CODE).sectypes
-                    .length);
+            //writefln("%s code.length=%s %s", Section.CODE, code_type.expr.length, writer.section!(Section.CODE).sectypes.length);
         }
 
         r.check(stage < ParserStage.FUNC);
@@ -617,24 +606,10 @@ struct WastParser {
         int[string] func_idx;
     }
     void parse(ref WastTokenizer tokenizer) {
-        writefln("Start parse");
-        /*
-        if (tokenizer.type is TokenType.COMMENT) {
-         tokenizer.nextToken;  
-    }
-*/
         while (parseModule(tokenizer, ParserStage.BASE) !is ParserStage.END) {
             //empty    
         }
         writeCustomAssert;
-        writefln("End parse");
-        static foreach (Sec; EnumMembers!Section) {
-            static if (Sec !is Section.CUSTOM && Sec !is Section.START) {
-                if (writer.mod[Sec]) {
-                    writefln("%s sectypes.length=%d", Sec, writer.mod[Sec].sectypes.length);
-                }
-            }
-        }
     }
 
 }
@@ -712,19 +687,11 @@ unittest {
 
     foreach (wast_file; wast_test_files) {
         immutable wast_text = wast_file.unitfile.readText;
-        writefln("wast_file %s", wast_file);
         auto tokenizer = WastTokenizer(wast_text);
         auto writer = new WasmWriter;
         auto wast_parser = WastParser(writer);
         wast_parser.parse(tokenizer);
         if (wast_file == "i32.wast") {
-            static foreach (Sec; EnumMembers!Section) {
-                static if (Sec !is Section.CUSTOM && Sec !is Section.START) {
-                    if (writer.mod[Sec]) {
-                        writefln("After parser %s sectypes.length=%d", Sec, writer.mod[Sec].sectypes.length);
-                    }
-                }
-            }
             "/tmp/i32.wasm".fwrite(writer.serialize);
         }
     }
