@@ -18,6 +18,7 @@ import tagion.hashgraph.Refinement;
 import tagion.gossip.InterfaceNet : GossipNet;
 import tagion.gossip.EmulatorGossipNet;
 import tagion.utils.Queue;
+import tagion.utils.Random;
 
 // core
 import core.time;
@@ -93,8 +94,12 @@ struct EpochCreatorService {
                     &payload);
         }
 
+        Random!size_t random;
+        random.seed(123456789);
         void timeout() {
-            // empty for now
+           const init_tide = random.value(0,2) is 1;
+            if (!init_tide) { return; }
+            hashgraph.init_tide(&gossip_net.gossip, &payload, gossip_net.time); 
         }
 
         runTimeout(opts.timeout.msecs, &timeout, &receivePayload, &receiveWavefront);
