@@ -1,3 +1,3 @@
 module tagion.testbench.tvm;
 
-public import betterc_tvm = tagion.testbench.tvm.betterc_tvm;
+public import wasm_testsuite = tagion.testbench.tvm.wasm_testsuite;
