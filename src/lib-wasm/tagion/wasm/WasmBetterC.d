@@ -627,7 +627,7 @@ shared static this() {
         IR.LOCAL_GET: q{%1$s},
         IR.LOCAL_SET: q{%2$s=$1$s;},
         IR.I32_CLZ: q{wasm.clz(%s)},
-        IR.I32_CTZ: q{wasm.clz(%s)},
+        IR.I32_CTZ: q{wasm.ctz(%s)},
         IR.I32_POPCNT: q{wasm.popcnt(%s)},
         IR.I32_ADD: q{(%2$s + %1$s)},
         IR.I32_SUB: q{(%2$s - %1$s)},

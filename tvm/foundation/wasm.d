@@ -5,11 +5,17 @@ import std.traits;
 public import core.bitop : popcnt;
 
 T clz(T)(T val) if (isIntegral!T) {
-    return bsr(val);
+    if (val == 0) {
+        return T.sizeof * 8;
+    }
+    return 31 - bsr(val);
 }
 
 T ctz(T)(T val) if (isIntegral!T) {
-    return bsr(val);
+    if (val == 0) {
+        return T.sizeof * 8;
+    }
+    return bsf(val);
 }
 
 T div(T)(T x, T y) if (isIntegral!T) {
