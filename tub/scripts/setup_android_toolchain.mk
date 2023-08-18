@@ -40,7 +40,7 @@ $(TOOLS)/$(LDC_TARGET)/.done:
 
 $(LDC_TARGET): $(TOOLS)/$(LDC_TARGET)/.done
 
-$(TOOLS)/$(ANDROID_NDK)/.done: $(TOOLS)/$(ANDROID_NDK_ZIP)
+$(TOOLS)/$(ANDROID_NDK)/.done:
 	cd $(TOOLS); wget https://dl.google.com/android/repository/${ANDROID_NDK_ZIP} -O ${ANDROID_NDK_ZIP}
 	cd $(TOOLS); unzip $(ANDROID_NDK_ZIP)
 	touch $@
