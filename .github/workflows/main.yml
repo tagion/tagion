@@ -289,7 +289,7 @@ jobs:
           systemctl restart --user dart_api.service
           
   deploy_testnet_container:
-    runs-on: testnet-container
+    runs-on: testnet1-local
     needs: [finish_workflow]
     steps:         
       - name: get artifact and restart service
@@ -303,11 +303,11 @@ jobs:
           export GH_TOKEN=${{ env.GITBOT_TOKEN }}
           gh run download -n successful_artifact --repo tagion/tagion
           tar -xzf *.tar.gz
-          /home/ubuntu/actions-runner/_work/tagion/tagion/build/x86_64-linux/bin/tagion --version | head -n 3 | tail -n 2 > revision.txt
+          /home/moonbase/actions-runner/_work/tagion/tagion/build/x86_64-linux/bin/tagion --version | head -n 3 | tail -n 2 > revision.txt
           mkdir -p /opt/tagion/artifact
-          cp build/x86_64-linux/bin/tagion ~/opt
-          cp revision.txt ~/opt
-          /home/ubuntu/dashboard.sh
+          cp build/x86_64-linux/bin/tagion /opt/tagion/artifact
+          cp revision.txt /opt/tagion/artifact
+          /home/moonbase/dashboard.sh
           rm -rf build || echo "build directory already deleted"
           rm  *.tar.gz || echo "No such file or directory"
           
