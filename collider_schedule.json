@@ -152,6 +152,14 @@
             ],
             "timeout": 0.0
         },
+        "epoch_creator": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "epoch"
+            ],
+            "timeout": 0.0
+        },
         "collider_test": {
             "args": [
                 "-f$WORKDIR"

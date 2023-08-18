@@ -59,7 +59,8 @@ struct EpochCreatorService {
         pkeys.each!(p => gossip_net.add_channel(p));
 
         auto refinement = new StdRefinement;
-
+        // refinement.collector_service = trastarst;
+        
         HashGraph hashgraph = new HashGraph(opts.nodes, net, refinement, &gossip_net.isValidChannel, No.joining);
         hashgraph.scrap_depth = opts.scrap_depth;
 
@@ -84,7 +85,6 @@ struct EpochCreatorService {
             payload_queue.write(pload);
         }
 
-
         void receiveWavefront(ReceivedWavefront, Document wave_doc) {
             const receiver = HiRPC.Receiver(wave_doc);
             hashgraph.wavefront(
@@ -97,9 +97,11 @@ struct EpochCreatorService {
         Random!size_t random;
         random.seed(123456789);
         void timeout() {
-           const init_tide = random.value(0,2) is 1;
-            if (!init_tide) { return; }
-            hashgraph.init_tide(&gossip_net.gossip, &payload, gossip_net.time); 
+            const init_tide = random.value(0, 2) is 1;
+            if (!init_tide) {
+                return;
+            }
+            hashgraph.init_tide(&gossip_net.gossip, &payload, gossip_net.time);
         }
 
         runTimeout(opts.timeout.msecs, &timeout, &receivePayload, &receiveWavefront);
@@ -107,3 +109,5 @@ struct EpochCreatorService {
     }
 
 }
+
+
