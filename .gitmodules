@@ -14,3 +14,6 @@
 [submodule "src/wrap-nng/nng"]
 	path = src/fork-nng/nng
     url = https://github.com/tagion/fork-nng.git
+[submodule "bdd/tagion/testbench/tvm/testsuite"]
+	path = bdd/tagion/testbench/tvm/testsuite
+	url = https://github.com/WebAssembly/testsuite.git

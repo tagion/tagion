@@ -23,31 +23,24 @@ Specified in [WebAssembly testsuite](https://github.com/WebAssembly/testsuite)
 
 ### Scenario: should load a wasm file and convert it into betterC
 
-`ShouldLoadAWasmFileAndConvertItIntoBetterC`
 
 *Given* the testsuite file in #wasm-file format
 
-`wasmfileFormat`
 
 *Then* convert the #wasm-file into betteC #dlang-file format
 
-`dlangfileFormat`
 
 
-### Scenario: should compile and the betterC file and execution in.
+### Scenario: should transpile the wasm file to betterC file and execution it.
 
-`ShouldCompileAndTheBetterCFileAndExecutionIn`
 
 *Given* the testsuite #dlang-file in betterC/D format.
 
-`format`
 
 *When* the #dlang-file has been compile in unittest mode.
 
-`mode`
 
 *Then* execute the unittest file and check that all unittests parses.
 
-`parses`
 
 

@@ -3,7 +3,15 @@ module tagion.testbench.tvm.wasm_testsuite;
 import tagion.behaviour;
 import tagion.hibon.Document;
 import std.typecons : Tuple;
+import std.stdio;
 import tagion.testbench.tools.Environment;
+import std.file : fread = read, fwrite = write, readText;
+import std.path;
+import tagion.wasm.WastTokenizer;
+import tagion.wasm.WasmWriter;
+import tagion.wasm.WasmReader;
+import tagion.wasm.WastParser;
+import tagion.wasm.WasmBetterC;
 
 enum feature = Feature(
             "Test of the wasm to betterc execution",
@@ -15,27 +23,43 @@ enum feature = Feature(
 alias FeatureContext = Tuple!(
         ShouldConvertsWastTestsuiteToWasmFileFormat, "ShouldConvertsWastTestsuiteToWasmFileFormat",
         ShouldLoadAWasmFileAndConvertItIntoBetterC, "ShouldLoadAWasmFileAndConvertItIntoBetterC",
-        ShouldCompileAndTheBetterCFileAndExecutionIn, "ShouldCompileAndTheBetterCFileAndExecutionIn",
+        ShouldTranspileTheWasmFileToBetterCFileAndExecutionIt, "ShouldTranspileTheWasmFileToBetterCFileAndExecutionIt",
         FeatureGroup*, "result"
 );
 
+static string testsuite; // WebAssembly testsuite root
 @safe @Scenario("should converts wast testsuite to wasm file format",
         [])
 class ShouldConvertsWastTestsuiteToWasmFileFormat {
+    string wast_file;
+    string wasm_file;
+    WastTokenizer tokenizer;
+    WasmWriter writer;
+    this(const string wast_file) {
+        this.wast_file = buildPath(testsuite, wast_file);
+    }
 
     @Given("a wast testsuite file")
     Document file() {
-        return Document();
+        immutable wast_text = wast_file.readText;
+        tokenizer = WastTokenizer(wast_text);
+        return result_ok;
     }
 
     @When("the wast file has successfully been converted to WebAssembly")
     Document webAssembly() {
-        return Document();
+        writer = new WasmWriter;
+        auto wast_parser = WastParser(writer);
+        wast_parser.parse(tokenizer);
+        return result_ok;
     }
 
     @Then("write the wasm-binary data of to a #wasm-file")
     Document wasmfile() {
-        return Document();
+        wasm_file = buildPath(env.bdd_results, wast_file.baseName.setExtension("wasm"));
+        writefln("wasm file %s", wasm_file);
+        wasm_file.fwrite(writer.serialize);
+        return result_ok;
     }
 
 }
@@ -43,22 +67,37 @@ class ShouldConvertsWastTestsuiteToWasmFileFormat {
 @safe @Scenario("should load a wasm file and convert it into betterC",
         [])
 class ShouldLoadAWasmFileAndConvertItIntoBetterC {
+    string wasm_file;
+    string betterc_file;
+    WasmReader reader;
+    this(ShouldConvertsWastTestsuiteToWasmFileFormat load_wasm) {
+        wasm_file = load_wasm.wasm_file;
+    }
 
     @Given("the testsuite file in #wasm-file format")
-    Document wasmfileFormat() {
-        return Document();
+    Document wasmfileFormat() @trusted {
+        immutable data = cast(immutable(ubyte)[]) wasm_file.fread;
+        reader = WasmReader(data);
+        return result_ok;
     }
 
     @Then("convert the #wasm-file into betteC #dlang-file format")
     Document dlangfileFormat() {
-        return Document();
+        betterc_file = wasm_file.setExtension("d");
+        auto fout = File(betterc_file, "w");
+        scope (exit) {
+            fout.close;
+        }
+        auto src_out = wasmBetterC(reader, fout);
+        src_out.serialize;
+        return result_ok;
     }
 
 }
 
-@safe @Scenario("should compile and the betterC file and execution in.",
+@safe @Scenario("should transpile the wasm file to betterC file and execution it.",
         [])
-class ShouldCompileAndTheBetterCFileAndExecutionIn {
+class ShouldTranspileTheWasmFileToBetterCFileAndExecutionIt {
 
     @Given("the testsuite #dlang-file in betterC/D format.")
     Document format() {
