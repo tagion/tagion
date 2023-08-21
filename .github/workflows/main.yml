@@ -304,7 +304,7 @@ jobs:
           /home/moonbase/actions-runner/_work/tagion/tagion/build/x86_64-linux/bin/tagion --version | head -n 3 | tail -n 2 > revision.txt
           mkdir -p /opt/tagion/artifact
           cp build/x86_64-linux/bin/tagion /opt/tagion/artifact
-          cp revision.txt /opt/tagion/artifact
+          cp revision.txt /opt/tagion/
           /home/moonbase/dashboard.sh
           rm -rf build || echo "build directory already deleted"
           rm  *.tar.gz || echo "No such file or directory"
