@@ -12,6 +12,7 @@ import tagion.services.epoch_creator;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.crypto.Types : Pubkey;
+import std.format;
 
 import std.stdio;
 
@@ -28,33 +29,62 @@ alias FeatureContext = Tuple!(
         FeatureGroup*, "result"
 );
 
+
 @safe @Scenario("Send payload and create epoch",
         [])
 class SendPayloadAndCreateEpoch {
-    immutable(EpochCreatorOptions) epoch_creator_options = EpochCreatorOptions(1000, 5, 5);
+    // immutable(EpochCreatorOptions) epoch_creator_options = EpochCreatorOptions(1000, 5, 5);
+    struct Node {
+        SecureNet net;
+        string name;
+         EpochCreatorOptions opts;   
+    }
+    Node[] nodes;
 
     this() {
         //empty
+
+
+        foreach(i; 0..5) {
+
+            immutable name = format("NODE-%s", i);
+            auto net = new StdSecureNet();
+            net.generateKeyPair(name);
+            nodes ~= Node(net, name, EpochCreatorOptions(1000, 5, 5));            
+        }
     }
 
     @Given("I have 5 nodes and start them in mode0")
     Document mode0() @trusted {
 
-        auto net = new StdSecureNet();
-        immutable passphrase = "wowo";
-        net.generateKeyPair(passphrase);
+        Pubkey[] pkeys = nodes.map!(n => n.net.pubkey).array;
+        
+    
+        ActorHandle!EpochCreatorService[] handles;
 
-        auto net2 = new StdSecureNet();
-        immutable passphrase2 = "wowo2";
-        net2.generateKeyPair(passphrase);
-        immutable pkeys = [net.pubkey, net2.pubkey];
-         
-        auto epochhandle = spawn!EpochCreatorService(
-                "wowo",
-                epoch_creator_options,
-                cast(immutable) net,
+        foreach(n; nodes) {
+            handles ~= spawn!EpochCreatorService(
+                n.name,
+                n.opts,
+                cast(immutable) n.net,
                 pkeys,
-        );
+        }    
+
+        // // auto net = new StdSecureNet();
+        // // immutable passphrase = "wowo";
+        // // net.generateKeyPair(passphrase);
+
+        // // auto net2 = new StdSecureNet();
+        // // immutable passphrase2 = "wowo2";
+        // // net2.generateKeyPair(passphrase);
+        // // immutable pkeys = [net.pubkey, net2.pubkey];
+
+        // auto epochhandle = spawn!EpochCreatorService(
+        //         "wowo",
+        //         epoch_creator_options,
+        //         cast(immutable) net,
+        //         pkeys,
+        // );
 
         check(waitforChildren(Ctrl.ALIVE, 10.seconds), "The node did not start");
 
