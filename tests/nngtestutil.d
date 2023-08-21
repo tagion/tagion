@@ -1,5 +1,6 @@
 import std.stdio;
 import std.format;
+import std.datetime.systime;
 
 import nngd;
 
@@ -50,3 +51,14 @@ string nngtest_socket_properties(ref NNGSocket s, string tag){
     res ~= format("\n----------------------- </PROPERTIES %s>\n", tag);
     return res;
 }
+
+static double timestamp()
+{
+    auto ts = Clock.currTime().toTimeSpec();
+    return ts.tv_sec + ts.tv_nsec/1e9;
+}
+
+static void log(A...)(string fmt, A a){
+    writefln("%.6f "~fmt,timestamp,a);
+}
+
