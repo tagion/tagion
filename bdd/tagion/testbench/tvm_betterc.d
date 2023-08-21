@@ -16,7 +16,8 @@ int _main(string[] args) {
 
     writefln("%s %s", __MODULE__, __FILE__);
     auto wasm_testsuite_feature = automation!(wasm_testsuite)();
-    wasm_testsuite_feature.ShouldConvertsWastTestsuiteToWasmFileFormat(args[1]);
+    wasm_testsuite_feature.ShouldConvertswastfileTestsuiteToWasmFileFormat(args[1]);
+    wasm_testsuite_feature.ShouldLoadAwasmfileAndConvertItIntoBetterC(wasm_testsuite_feature.context[0]);
     auto wasm_testsuite_context = wasm_testsuite_feature.run();
 
     return 0;

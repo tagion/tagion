@@ -4,9 +4,9 @@ Specified in [WebAssembly testsuite](https://github.com/WebAssembly/testsuite)
 
 `tagion.testbench.tvm.wasm_testsuite`
 
-### Scenario: should converts wast testsuite to wasm file format
+### Scenario: should converts #wast-file testsuite to wasm file format
 
-`ShouldConvertsWastTestsuiteToWasmFileFormat`
+`ShouldConvertswastfileTestsuiteToWasmFileFormat`
 
 *Given* a wast testsuite file
 
@@ -21,26 +21,33 @@ Specified in [WebAssembly testsuite](https://github.com/WebAssembly/testsuite)
 `wasmfile`
 
 
-### Scenario: should load a wasm file and convert it into betterC
+### Scenario: should load a #wasm-file and convert it into betterC
 
+`ShouldLoadAwasmfileAndConvertItIntoBetterC`
 
 *Given* the testsuite file in #wasm-file format
 
+`wasmfileFormat`
 
 *Then* convert the #wasm-file into betteC #dlang-file format
 
+`dlangfileFormat`
 
 
 ### Scenario: should transpile the wasm file to betterC file and execution it.
 
+`ShouldTranspileTheWasmFileToBetterCFileAndExecutionIt`
 
 *Given* the testsuite #dlang-file in betterC/D format.
 
+`format`
 
 *When* the #dlang-file has been compile in unittest mode.
 
+`mode`
 
 *Then* execute the unittest file and check that all unittests parses.
 
+`parses`
 
 

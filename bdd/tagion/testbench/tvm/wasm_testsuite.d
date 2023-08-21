@@ -21,22 +21,24 @@ enum feature = Feature(
             ]);
 
 alias FeatureContext = Tuple!(
-        ShouldConvertsWastTestsuiteToWasmFileFormat, "ShouldConvertsWastTestsuiteToWasmFileFormat",
-        ShouldLoadAWasmFileAndConvertItIntoBetterC, "ShouldLoadAWasmFileAndConvertItIntoBetterC",
+        ShouldConvertswastfileTestsuiteToWasmFileFormat, "ShouldConvertswastfileTestsuiteToWasmFileFormat",
+        ShouldLoadAwasmfileAndConvertItIntoBetterC, "ShouldLoadAwasmfileAndConvertItIntoBetterC",
         ShouldTranspileTheWasmFileToBetterCFileAndExecutionIt, "ShouldTranspileTheWasmFileToBetterCFileAndExecutionIt",
         FeatureGroup*, "result"
 );
 
-static string testsuite; // WebAssembly testsuite root
-@safe @Scenario("should converts wast testsuite to wasm file format",
+static string testsuite;
+@safe @Scenario("should converts #wast-file testsuite to wasm file format",
         [])
-class ShouldConvertsWastTestsuiteToWasmFileFormat {
+class ShouldConvertswastfileTestsuiteToWasmFileFormat {
+
     string wast_file;
     string wasm_file;
     WastTokenizer tokenizer;
     WasmWriter writer;
     this(const string wast_file) {
         this.wast_file = buildPath(testsuite, wast_file);
+        wasm_file = buildPath(env.bdd_results, wast_file.baseName.setExtension("wasm"));
     }
 
     @Given("a wast testsuite file")
@@ -64,13 +66,13 @@ class ShouldConvertsWastTestsuiteToWasmFileFormat {
 
 }
 
-@safe @Scenario("should load a wasm file and convert it into betterC",
+@safe @Scenario("should load a #wasm-file and convert it into betterC",
         [])
-class ShouldLoadAWasmFileAndConvertItIntoBetterC {
+class ShouldLoadAwasmfileAndConvertItIntoBetterC {
     string wasm_file;
     string betterc_file;
     WasmReader reader;
-    this(ShouldConvertsWastTestsuiteToWasmFileFormat load_wasm) {
+    this(ShouldConvertswastfileTestsuiteToWasmFileFormat load_wasm) {
         wasm_file = load_wasm.wasm_file;
     }
 
@@ -84,6 +86,7 @@ class ShouldLoadAWasmFileAndConvertItIntoBetterC {
     @Then("convert the #wasm-file into betteC #dlang-file format")
     Document dlangfileFormat() {
         betterc_file = wasm_file.setExtension("d");
+        writefln("betterc_file=%s", betterc_file);
         auto fout = File(betterc_file, "w");
         scope (exit) {
             fout.close;
