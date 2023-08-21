@@ -675,8 +675,3 @@ class Event {
     static assert(isForwardRange!(Range!true));
     static assert(isBidirectionalRange!(Range!true));
 }
-
-@safe
-static BitMask[] dupBitMaskArray(BitMask[] masksIn) {
-    return masksIn.map!(m => m.dup).array;
-}
