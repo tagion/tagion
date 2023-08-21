@@ -20,7 +20,7 @@ permissions:
 
 jobs:
   commit_stage:
-    runs-on: CI-1
+    runs-on: CI
     outputs:
       tarball: ${{steps.create_tar.outputs.tar_filename}}
       stage: "commit"    
