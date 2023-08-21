@@ -2,7 +2,7 @@
 This feature test of transpiler from wasm to betterC parses of the testsuite.
 Specified in [WebAssembly testsuite](https://github.com/WebAssembly/testsuite)
 
-`tagion.testbench.tvm.betterc_tvm`
+`tagion.testbench.tvm.wasm_testsuite`
 
 ### Scenario: should converts wast testsuite to wasm file format
 

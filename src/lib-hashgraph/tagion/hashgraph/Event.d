@@ -288,6 +288,8 @@ class Event {
             if (Event.callbacks) {
                 Event.callbacks.connect(this);
             }
+            // refinement
+            hashgraph.refinement.payload(event_package);
         }
 
         _mother = hashgraph.register(event_package.event_body.mother);

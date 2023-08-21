@@ -23,6 +23,8 @@ interface Refinement {
 
     void epoch(Event[] events, const(Round) decided_round);
 
+    void payload(immutable(EventPackage*) epack);
+
     void swapNode();
 
 }

@@ -1,4 +1,4 @@
-module tagion.testbench.tvm.betterc_tvm;
+module tagion.testbench.tvm.wasm_testsuite;
 // Default import list for bdd
 import tagion.behaviour;
 import tagion.hibon.Document;

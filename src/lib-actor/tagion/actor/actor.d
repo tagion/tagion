@@ -350,6 +350,48 @@ void run(Args...)(Args args) nothrow {
     }
 }
 
+/** 
+ * 
+ * Params:
+ *   duration = the duration for the timeout
+ *   timeout = delegate function to call
+ *   args = normal message handlers for the task
+ */
+void runTimeout(Args...)(Duration duration, void delegate() @safe timeout, Args args) nothrow {
+    // Check if a failHandler was passed as an arg
+    static if (args.length == 1 && isFailHandler!(typeof(args[$ - 1]))) {
+        enum failhandler = () {}; /// Use the fail handler passed through `args`
+    }
+    else {
+        enum failhandler = (TaskFailure tf) {
+            if (ownerTid != Tid.init) {
+                ownerTid.prioritySend(tf);
+            }
+        };
+    }
+
+    setState(Ctrl.ALIVE); // Tell the owner that you are running
+    while (!stop) {
+        try {
+            const message = receiveTimeout(
+                    duration,
+                    args, // The message handlers you pass to your Actor template
+                    failhandler,
+                    &signal,
+                    &control,
+                    &ownerTerminated,
+                    &unknown,
+            );
+            if (!message) {
+                timeout();
+            }
+        }
+        catch (Exception t) {
+            fail(t);
+        }
+    }
+}
+
 void signal(Sig signal) {
     with (Sig) final switch (signal) {
     case STOP:

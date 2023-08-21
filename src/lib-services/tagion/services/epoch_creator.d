@@ -18,6 +18,7 @@ import tagion.hashgraph.Refinement;
 import tagion.gossip.InterfaceNet : GossipNet;
 import tagion.gossip.EmulatorGossipNet;
 import tagion.utils.Queue;
+import tagion.utils.Random;
 
 // core
 import core.time;
@@ -25,12 +26,15 @@ import core.time;
 // std
 import std.algorithm : each;
 import std.typecons : No;
+import std.stdio;
 
 // alias ContractSignedConsensus = Msg!"ContractSignedConsensus";
 alias Payload = Msg!"Payload";
 alias ReceivedWavefront = Msg!"ReceivedWavefront";
 
 alias PayloadQueue = Queue!Document;
+
+@safe:
 
 enum NetworkMode {
     internal,
@@ -40,40 +44,38 @@ enum NetworkMode {
 
 struct EpochCreatorOptions {
 
-    uint timeout; // timeout between nodes;
+    uint timeout; // timeout between nodes in milliseconds;
     ushort nodes;
     uint scrap_depth;
+    mixin JSONCommon;
 }
 
-struct EpochCreatorSercive {
+struct EpochCreatorService {
 
     void task(immutable(EpochCreatorOptions) opts, immutable(SecureNet) net, immutable(Pubkey[]) pkeys) {
+
+        writeln("IN TASK");
         const hirpc = HiRPC(net);
 
         GossipNet gossip_net;
         gossip_net = new EmulatorGossipNet(net.pubkey, opts.timeout.msecs);
+        writefln("BEFORE PKEY");
         pkeys.each!(p => gossip_net.add_channel(p));
-
+        writeln("AFTER GOSSIPNET");
         auto refinement = new StdRefinement;
+        // refinement.collector_service = trastarst;
 
         HashGraph hashgraph = new HashGraph(opts.nodes, net, refinement, &gossip_net.isValidChannel, No.joining);
         hashgraph.scrap_depth = opts.scrap_depth;
 
         PayloadQueue payload_queue = new PayloadQueue();
-
+        writeln("before eva");
         {
             immutable buf = cast(Buffer) hashgraph.channel;
             const nonce = cast(Buffer) net.calcHash(buf);
             auto eva_event = hashgraph.createEvaEvent(gossip_net.time, nonce);
-
-            if (eva_event is null) {
-                log.error("The channel of this owner is not valid");
-                return;
-            }
         }
 
-
-        gossip_net.start_listening();
 
         const(Document) payload() {
             if (!hashgraph.active || payload_queue.empty) {
@@ -94,6 +96,19 @@ struct EpochCreatorSercive {
                     (const(HiRPC.Sender) return_wavefront) { gossip_net.send(receiver.pubkey, return_wavefront); },
                     &payload);
         }
+
+        Random!size_t random;
+        random.seed(123456789);
+        void timeout() {
+            const init_tide = random.value(0, 2) is 1;
+            if (!init_tide) {
+                return;
+            }
+            hashgraph.init_tide(&gossip_net.gossip, &payload, gossip_net.time);
+        }
+
+
+        run(&receivePayload, &receiveWavefront);
 
     }
 

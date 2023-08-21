@@ -17,6 +17,7 @@ import tagion.hibon.HiBONRecord;
 import std.stdio;
 import std.algorithm;
 import std.array;
+import tagion.utils.pretend_safe_concurrency;
 
 @safe
 class StdRefinement : Refinement {
@@ -30,6 +31,14 @@ class StdRefinement : Refinement {
     in (this.hashgraph is null)
     do {
         this.hashgraph = hashgraph;
+    }
+
+    Tid collector_service;
+    void payload(immutable(EventPackage*) epack) {
+        if (!epack.event_body.payload.empty) {
+            // send to collector payload.
+            
+        }
     }
 
     void finishedEpoch(const(Event[]) events, const sdt_t epoch_time, const Round decided_round) {

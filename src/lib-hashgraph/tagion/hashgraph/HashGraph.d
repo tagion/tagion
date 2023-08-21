@@ -70,9 +70,9 @@ class HashGraph {
         Node[Pubkey] _nodes; // List of participating _nodes T
         uint event_id;
         sdt_t last_epoch_time;
-        Refinement refinement;
         Flag!"joining" _joining;
     }
+    Refinement refinement;
     protected Node _owner_node;
     const(Node) owner_node() const pure nothrow @nogc {
         return _owner_node;
