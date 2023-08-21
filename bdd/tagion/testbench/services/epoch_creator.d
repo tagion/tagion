@@ -12,7 +12,8 @@ import tagion.services.epoch_creator;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.crypto.Types : Pubkey;
-import std.format;
+import std.algorithm;
+import std.array;
 
 import std.stdio;
 
@@ -64,10 +65,11 @@ class SendPayloadAndCreateEpoch {
 
         foreach(n; nodes) {
             handles ~= spawn!EpochCreatorService(
-                n.name,
-                n.opts,
+                cast(immutable) n.name,
+                cast(immutable) n.opts,
                 cast(immutable) n.net,
-                pkeys,
+                cast(immutable(Pubkey[])) pkeys,
+            );
         }    
 
         // // auto net = new StdSecureNet();
