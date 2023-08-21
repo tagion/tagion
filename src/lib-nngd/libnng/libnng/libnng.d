@@ -295,7 +295,7 @@ struct nng_cv {};
 
 nng_time nng_clock();
 void nng_msleep(nng_duration);
-int nng_thread_create(nng_thread **, void* function(void *), void *);
+int nng_thread_create(nng_thread **, void function(void *), void *);
 void nng_thread_set_name(nng_thread *, const char *);
 void nng_thread_destroy(nng_thread *);
 int nng_mtx_alloc(nng_mtx **);
@@ -371,7 +371,7 @@ int nng_opts_parse(int argc, const char **argv,
 
 // ------------------------------------- aio functions:
 
-int nng_aio_alloc(nng_aio **, void* function(void *), void *);
+int nng_aio_alloc(nng_aio **, void function(void *), void *);
 void nng_aio_free(nng_aio *);
 void nng_aio_reap(nng_aio *);
 void nng_aio_stop(nng_aio *);
@@ -391,7 +391,7 @@ void nng_aio_set_timeout(nng_aio *, nng_duration);
 int nng_aio_set_iov(nng_aio *, uint, const nng_iov *);
 bool nng_aio_begin(nng_aio *);
 void nng_aio_finish(nng_aio *, int);
-void nng_aio_defer(nng_aio *, void* function(nng_aio *, void *, int), void *);
+void nng_aio_defer(nng_aio *, void function(nng_aio *, void *, int), void *);
 void nng_sleep_aio(nng_duration, nng_aio *);
 
 
