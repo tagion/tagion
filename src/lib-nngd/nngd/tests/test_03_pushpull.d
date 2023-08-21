@@ -9,15 +9,6 @@ import std.uuid;
 import nngd;
 import nngtestutil;
 
-static double timestamp()
-{
-    auto ts = Clock.currTime().toTimeSpec();
-    return ts.tv_sec + ts.tv_nsec/1e9;
-}
-
-static void log(A...)(string fmt, A a){
-    writefln("%.6f "~fmt,timestamp,a);
-}
 
 void sender_worker(string url)
 {

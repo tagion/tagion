@@ -288,6 +288,8 @@ class Event {
             if (Event.callbacks) {
                 Event.callbacks.connect(this);
             }
+            // refinement
+            hashgraph.refinement.payload(event_package);
         }
 
         _mother = hashgraph.register(event_package.event_body.mother);
@@ -672,9 +674,4 @@ class Event {
     static assert(isInputRange!(Range!true));
     static assert(isForwardRange!(Range!true));
     static assert(isBidirectionalRange!(Range!true));
-}
-
-@safe
-static BitMask[] dupBitMaskArray(BitMask[] masksIn) {
-    return masksIn.map!(m => m.dup).array;
 }

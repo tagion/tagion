@@ -9,6 +9,7 @@ import std.conv;
 import std.range;
 import std.format;
 import std.typecons;
+import std.algorithm.searching;
 import std.traits : Unqual, ReturnType;
 import std.array : array;
 
@@ -50,7 +51,6 @@ class Round {
     //    bool erased;
     enum uint total_limit = 3;
     enum int coin_round_limit = 10;
-    pragma(msg, "fixme(bbh) should be protected");
     protected {
         Round _previous;
         Round _next;
@@ -450,42 +450,24 @@ class Round {
      */
         
         package void collect_received_round(Round r, HashGraph hashgraph) {
-            // auto famous_witness_youngest_son_ancestors = r._events
-            //                                                     .filter!(e => e !is null && r.famous_mask[e.node_id])
-            //                                                     .map!(e => e._youngest_son_ancestors).joiner;
-            Event[] consensus_tide = r._events.dup();
-            // foreach(son_ancestor; famous_witness_youngest_son_ancestors) {
-            //     if (consensus_tide[son_ancestor.node_id] is null) { continue; }            
-            //     if (higher(consensus_tide[son_ancestor.node_id].received_order, son_ancestor.received_order)) {
-            //         consensus_tide[son_ancestor.node_id] is null) { continue; }
-                
-            // }
-            // famous_witnesses_youngest_son_ancestors.each!(
-
-
+            auto famous_witness_youngest_son_ancestors = r._events
+                                                            .filter!(e => e !is null && r.famous_mask[e.node_id])
+                                                            .map!(e => e._youngest_son_ancestors).joiner;
             
-            foreach(famous_event; r._events.filter!(e => e !is null && r.famous_mask[e.node_id]))
-            {
-                famous_event._youngest_son_ancestors
-                    .filter!(e => e !is null)
-                    .filter!(e => consensus_tide[e.node_id] is null || higher(consensus_tide[e.node_id].received_order, e.received_order))
-                    .each!(e => consensus_tide[e.node_id] = e);
-            }
-
-            foreach(i;0 .. hashgraph.node_size) {
-                if (consensus_tide[i] is null) { continue; }
-                while(!consensus_tide[i]._son)
-                {
-                    consensus_tide[i] = consensus_tide[i]._daughter;
+            Event[] consensus_tide = r._events.find!(e => e !is null).front._youngest_son_ancestors.dup();
+            
+            foreach(son_ancestor; famous_witness_youngest_son_ancestors.filter!(e => e !is null)) {
+                if (consensus_tide[son_ancestor.node_id] is null) { continue; }            
+                if (higher(consensus_tide[son_ancestor.node_id].received_order, son_ancestor.received_order)) {
+                    consensus_tide[son_ancestor.node_id] = son_ancestor;
                 }
             }
+            consensus_tide.map!(e => e[].retro.find!(e => e._son).front);
             auto event_collection = consensus_tide.map!(e => e[]
                     .until!(e => e._round_received !is null))
                 .joiner.array;
+            event_collection.each!(e => e._round_received = r);
 
-            foreach(event; event_collection) {
-                event._round_received = r;
-            }    
             hashgraph.epoch(event_collection, r);
         }
 

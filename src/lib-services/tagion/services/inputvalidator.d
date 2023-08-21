@@ -55,13 +55,14 @@ struct InputValidatorService {
             assert(0); // fixme
         }
         const recv = (void[] b) @trusted { 
-            return cast(ptrdiff_t)s._receive(cast(ubyte[]) b); 
+	    size_t ret = s.receivebuf(cast(ubyte[]) b); 
+            return (ret < 0)? 0 : cast(ptrdiff_t)ret;
         };
         setState(Ctrl.ALIVE);
         while(!stop){
             auto result = buf.append(recv);
-            if (s.m_errno != 0) {
-                log.error("Failed to receive: %s", nng_errstr(listening));
+            if (s.m_errno != nng_errno.NNG_OK) {
+                log.error("Failed to receive: %s", s.m_errno, nng_errstr(s.m_errno));
                 // fail()
             }
 
