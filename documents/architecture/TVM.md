@@ -2,6 +2,7 @@
 
 The TVM is responsible for executing the instructions in the contract ensuring the contract is compliant with Consensus Rules producing outputs. 
 It send new, non-consensus, contracts to the Epoch Creator Service.
+The outputs produced by the contract are send to the Transcript Service. 
 
 
 Input: 
@@ -21,15 +22,17 @@ The service does the following:
 - Executes the instruction(s).
     - Ensures the intructions are valid.
     - Ensures the intructions follow the Consensus Rules.
-    - Executes the instructions and produces output draft archives
+    - Executes the instructions and produces draft output archives.
 - If input was Contract-S then a Contract-SC is sent to the Epoch Creator Service.
-- Sends output draft archives and input archives to Transcript Service.
+- Sends output archives draft are send to Transcript Service.
 
 ```mermaid
 sequenceDiagram
     participant Contract Interface
     participant TVM
     participant Epoch Creator
+    participant Transcript
     Contract Interface ->> TVM: Contract-S + Archives(inputs)
-    TVM ->> Epoch Creator: Contract+SC 
+    TVM ->> Epoch Creator: Contract+SC
+    TVM ->> Transcript: Draft outputs 
 ```
