@@ -59,7 +59,7 @@ struct InputValidatorService {
             return (ret < 0)? 0 : cast(ptrdiff_t)ret;
         };
         setState(Ctrl.ALIVE);
-        while(!stop){
+        while(!thisActor.stop){
             auto result = buf.append(recv);
             if (s.m_errno != nng_errno.NNG_OK) {
                 log.error("Failed to receive: %s", s.m_errno, nng_errstr(s.m_errno));
@@ -123,7 +123,7 @@ struct InputValidatorService {
         ReceiveBuffer buf;
 
         setState(Ctrl.ALIVE);
-        while (!stop) {
+        while (!thisActor.stop) {
             try {
                 socketSet.add(listener);
                 foreach (sock; reads) {
