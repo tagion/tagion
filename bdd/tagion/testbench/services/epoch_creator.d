@@ -19,6 +19,7 @@ import tagion.utils.Miscellaneous : cutHex;
 import std.stdio;
 
 import core.time;
+import core.thread;
 
 enum feature = Feature(
             "EpochCreator service",
@@ -95,7 +96,7 @@ class SendPayloadAndCreateEpoch {
         }
 
         waitforChildren(Ctrl.ALIVE);
-
+        Thread.sleep(10.seconds);
 
         // // auto net = new StdSecureNet();
         // // immutable passphrase = "wowo";

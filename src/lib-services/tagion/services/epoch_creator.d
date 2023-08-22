@@ -112,6 +112,7 @@ struct EpochCreatorService {
         Random!size_t random;
         random.seed(123456789);
         void timeout() {
+            writefln("running timeout");
             const init_tide = random.value(0, 2) is 1;
             if (!init_tide) {
                 return;
@@ -120,7 +121,7 @@ struct EpochCreatorService {
         }
 
 
-        run(&receivePayload, &receiveWavefront);
+        runTimeout(500.msecs, &timeout, &receivePayload, &receiveWavefront);
 
     }
 
