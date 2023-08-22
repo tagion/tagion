@@ -40,14 +40,14 @@ Specified in [WebAssembly testsuite](https://github.com/WebAssembly/testsuite)
 
 *Given* the testsuite #dlang-file in betterC/D format.
 
-`format`
+`betterc_format`
 
 *When* the #dlang-file has been compile in unittest mode.
 
-`mode`
+`compile`
 
 *Then* execute the unittest file and check that all unittests parses.
 
-`parses`
+`run_test`
 
 
