@@ -19,6 +19,8 @@ import tagion.gossip.InterfaceNet : GossipNet;
 import tagion.gossip.EmulatorGossipNet;
 import tagion.utils.Queue;
 import tagion.utils.Random;
+import tagion.utils.pretend_safe_concurrency : ownerTid, receiveOnly, send;
+import tagion.utils.Miscellaneous : cutHex;
 
 // core
 import core.time;
@@ -52,18 +54,28 @@ struct EpochCreatorOptions {
 
 struct EpochCreatorService {
 
-    void task(immutable(EpochCreatorOptions) opts, immutable(SecureNet) net, immutable(Pubkey[]) pkeys) {
+    Pubkey[] pkeys;
+    void task(immutable(EpochCreatorOptions) opts, immutable(SecureNet) net) {
 
-        writeln("IN TASK");
+        // writeln("IN TASK");
         const hirpc = HiRPC(net);
 
         GossipNet gossip_net;
         gossip_net = new EmulatorGossipNet(net.pubkey, opts.timeout.msecs);
-        writefln("BEFORE PKEY");
-        pkeys.each!(p => gossip_net.add_channel(p));
-        writeln("AFTER GOSSIPNET");
+
+        ownerTid.send(net.pubkey);
+
+        foreach (i; 0 .. opts.nodes) {
+            auto p = receiveOnly!(Pubkey);
+            pkeys ~= p;
+            // writefln("node: %s, %s receive %s", net.pubkey.cutHex, i, p.cutHex); 
+            log.trace("Receive %d %s", i, pkeys[i].cutHex);
+        }
+        foreach(p; pkeys) {
+            gossip_net.add_channel(p);
+        }
+
         auto refinement = new StdRefinement;
-        // refinement.collector_service = trastarst;
 
         HashGraph hashgraph = new HashGraph(opts.nodes, net, refinement, &gossip_net.isValidChannel, No.joining);
         hashgraph.scrap_depth = opts.scrap_depth;
