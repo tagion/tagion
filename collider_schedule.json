@@ -162,7 +162,7 @@
                 "attributes" : "@safe",
             },
             "stages": [
-                "tvm"
+                "tvm", "commit"
             ],
             "timeout": 0.0
         },
