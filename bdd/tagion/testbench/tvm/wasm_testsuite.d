@@ -120,20 +120,16 @@ class ShouldTranspileTheWasmFileToBetterCFileAndExecutionIt {
 
     @Given("the testsuite #dlang-file in betterC/D format.")
     Document betterc_format() {
-        writefln("%s", __FUNCTION__);
         check(betterc_file.exists, format("%s not found", betterc_file));
         return result_ok;
     }
 
     @When("the #dlang-file has been compile in unittest mode.")
     Document compile() {
-        writefln("compile!!");
         auto cmd = environment["DCOMPILE"];
 
         cmd = [cmd, betterc_file, format("-of=%s", test_file)].join(" ");
-
         auto pid = spawnShell(cmd);
-
         writefln("%s", cmd);
         const ret = wait(pid);
         check(ret == 0, format("Compilation of %s faild", betterc_file));
