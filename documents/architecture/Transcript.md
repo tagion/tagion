@@ -4,14 +4,15 @@ This service is responsible for producing a Recorder ensuring correct inputs and
 
 Input:
   - Receives an Epoch list contaning ordered events from the [Epoch Creator](/documents/architecture/EpochCreator.md).
+  - Receives all Draft outputs archives from the [TVM](/documents/architecture/TVM.md).
 
 Request:
-  - Request to all the inputs and draft outputs archives from the TVM.
+  - Request to all the inputs archives from the [DART](/documents/architecture/DART.md).
 
 Output:
   - A DART-recorder is sent to the [DART](/documents/architecture/DART.md)
 
-The acceptance criteria specification can be found in [Transcript_services](/bdd/tagion/testbench/services/ContractInterface_service.md).
+;; The acceptance criteria specification can be found in [Transcript_services](/bdd/tagion/testbench/services/ContractInterface_service.md).
 
 ```mermaid
 sequenceDiagram
@@ -19,8 +20,10 @@ sequenceDiagram
     participant Epoch Creator 
     participant Transcript
     participant DART 
+    TVM ->> Transcript: Draft Output Archives
+    Transcript ->> DART: Request input Archives
+    DART ->> Transcript : Input Archives
     Epoch Creator ->> Transcript: Epoch list  
-    TVM ->> Transcript: Input/Draft Output Archives
-    Transcript ->> DART: Recorder
+    Transcript ->> DART: Recorder(Modifiy)
 ```
 
