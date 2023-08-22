@@ -153,7 +153,7 @@
             "timeout": 0.0
         },
         "tvm_betterc": {
-            "args": [], 
+            "args": ["i32.wast"], 
             "envs": {},
             "stages": [
                 "tvm"
