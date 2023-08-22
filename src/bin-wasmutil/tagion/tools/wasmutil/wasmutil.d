@@ -4,7 +4,7 @@ import std.getopt;
 import std.stdio;
 import std.file : fread = read, fwrite = write, exists, readText;
 import std.format;
-import std.path : extension, setExtension;
+import std.path : extension, setExtension, baseName;
 import std.traits : EnumMembers;
 import std.exception : assumeUnique;
 import std.json;
@@ -76,7 +76,7 @@ int _main(string[] args) {
     string outputfilename;
     //bool print;
     //bool betterc;
-    string module_name = "wasm_test";
+    string module_name;
     string[] imports;
     string[] attributes;
     bool inject_gas;
@@ -145,7 +145,6 @@ int _main(string[] args) {
             return 0;
         }
 
-        writefln("args=%s", args);
         foreach (file; args[1 .. $]) {
             with (FileExtension) {
                 switch (file.extension) {
@@ -170,11 +169,13 @@ int _main(string[] args) {
 
                     if (inputfilename.empty) {
                         inputfilename = file;
-                        writefln("WAST %s", inputfilename);
                         type = OutputType.wasm;
 
                     }
 
+                    if (module_name.empty) {
+                        module_name = inputfilename.baseName(FileExtension.wast);
+                    }
                     break;
                 default:
                     check(0, format("File %s is not supported", file));
