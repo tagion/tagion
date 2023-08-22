@@ -14,10 +14,12 @@ import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.crypto.Types : Pubkey;
 import std.algorithm;
 import std.array;
+import tagion.utils.Miscellaneous : cutHex;
 
 import std.stdio;
 
 import core.time;
+import core.thread;
 
 enum feature = Feature(
             "EpochCreator service",
@@ -40,7 +42,10 @@ class SendPayloadAndCreateEpoch {
         string name;
          EpochCreatorOptions opts;   
     }
+
+
     Node[] nodes;
+    ActorHandle!EpochCreatorService[] handles;
 
     this() {
         //empty
@@ -48,7 +53,7 @@ class SendPayloadAndCreateEpoch {
 
         foreach(i; 0..5) {
 
-            immutable name = format("NODE-%s", i);
+            immutable name = format("Node_%s", i);
             auto net = new StdSecureNet();
             net.generateKeyPair(name);
             nodes ~= Node(net, name, EpochCreatorOptions(1000, 5, 5));            
@@ -57,20 +62,41 @@ class SendPayloadAndCreateEpoch {
 
     @Given("I have 5 nodes and start them in mode0")
     Document mode0() @trusted {
+        import tagion.options.CommonOptions : setCommonOptions;
+        import tagion.prior_services.Options;
 
-        Pubkey[] pkeys = nodes.map!(n => n.net.pubkey).array;
-        
+
+        Options opt;
+        setDefaultOption(opt);
+        setCommonOptions(opt.common);
+
+        // Pubkey[] pkeys = nodes.map!(n => n.net.pubkey).array;
     
-        ActorHandle!EpochCreatorService[] handles;
-
+        Pubkey[] pkeys;
         foreach(n; nodes) {
             handles ~= spawn!EpochCreatorService(
                 cast(immutable) n.name,
                 cast(immutable) n.opts,
                 cast(immutable) n.net,
-                cast(immutable(Pubkey[])) pkeys,
             );
-        }    
+        }
+        waitforChildren(Ctrl.STARTING);
+
+        foreach(handle; handles) {
+
+            auto p = receiveOnly!Pubkey;
+            writefln("owner receive %s", p.cutHex);
+            pkeys ~= p;
+        }        
+        foreach (handle; handles) {
+            foreach (pkey; pkeys) {
+                writefln("OWNER SEND");
+                handle.send(pkey);
+            }
+        }
+
+        waitforChildren(Ctrl.ALIVE);
+        Thread.sleep(10.seconds);
 
         // // auto net = new StdSecureNet();
         // // immutable passphrase = "wowo";
@@ -95,11 +121,18 @@ class SendPayloadAndCreateEpoch {
 
     @When("i sent a payload to node0")
     Document node0() {
+        
         return Document();
     }
 
     @Then("all the nodes should create an epoch containing the payload")
     Document payload() {
+
+        foreach( handle; handles) {
+            handle.send(Sig.STOP);
+        }
+        
+        waitforChildren(Ctrl.END);
         return Document();
     }
 
