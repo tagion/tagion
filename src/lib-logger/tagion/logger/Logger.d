@@ -70,8 +70,6 @@ static struct Logger {
         try {
             logger_tid = locate(logger_task_name);
 
-            
-
             .register(task_name, thisTid);
             _task_name = task_name;
             setThreadName(task_name);
@@ -194,7 +192,6 @@ Returns: the current mask
     }
 
     /// This function should be rewritte it' for the event logging
-    version(none)
     @trusted
     void report(T)(string symbol_name, T h) const nothrow if (isHiBONRecord!T) {
         version (unittest)
@@ -213,6 +210,12 @@ Returns: the current mask
                 assumeWontThrow({ stderr.writefln("%s", e.msg); stderr.writefln("\t%s:%s env", task_name, symbol_name); }());
 
             }
+        }
+    }
+
+    void report(T)(Topic topic, symbol) const nothrow {
+        if (topic.subscribed is Subscribed.yes && isLoggerServiceRegistered) {
+            logger_tid.send(send, symbol);
         }
     }
 
@@ -343,19 +346,24 @@ unittest {
 
 import std.typecons;
 
+struct Topic {
+    const(Subscribed)* subscribed;
+    string name;
+}
+
 alias Subscribed = shared(Flag!"subscribed");
 shared struct SubscriptionMask {
-    protected Tid logger_subscription_tid;
+    // protected Tid logger_subscription_tid;
     //      yes|no     topic
     private Subscribed[string] _registered_topics;
 
-    const(Subscribed)* register(string topic) @safe {
+    Topic register(string topic) @safe {
         Subscribed* s = topic in _registered_topics;
         if (s is null) {
             _registered_topics[topic] = Subscribed.no;
             s = topic in _registered_topics;
         }
-        return s;
+        return Topic(s, topic);
     }
 
     void subscribe(string topic) {
@@ -372,21 +380,3 @@ shared struct SubscriptionMask {
 }
 
 static shared SubscriptionMask submask;
-
-struct Topic(string topic) {
-}
-
-struct EventLogger(string) {
-    const(Subscribed)* subscribed;
-    Topic!t topic;
-
-    this(string _topic) @trusted
-    {
-        subscribed = submask.register(_topic);
-        topic = Topic!_topic;
-    }
-
-    void log(Args...)(Args args) {
-        submask.logger_subscription_tid.send(topic, args);
-    }
-}
