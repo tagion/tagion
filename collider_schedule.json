@@ -182,6 +182,14 @@
             ],
             "timeout": 0.0
         },
+         "transaction_service": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "transaction_service"
+            ],
+            "timeout": 0.0
+        },
         "collider_test": {
             "args": [
                 "-f$WORKDIR"

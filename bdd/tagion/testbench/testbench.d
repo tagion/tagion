@@ -29,6 +29,7 @@ int main(string[] args) {
     import tvm_betterc = tagion.testbench.tvm_betterc;
     import epoch_creator = tagion.testbench.epoch_creator;
     import tvm_service = tagion.testbench.tvm_service;
+    import transaction_service = tagion.testbench.transaction_service;
 
     alias alltools = AliasSeq!(
             ssl_server,
@@ -55,6 +56,7 @@ int main(string[] args) {
             tvm_betterc,
             epoch_creator,
             tvm_service,
+            transaction_service,
     );
     mixin doOneMain!(alltools);
     return do_main(args);
