@@ -2,7 +2,7 @@ Feature Tagion Virtual Machine services
 This feature handles the execution of the smart contracts.
 The purpose of this services is to execute the contract with the input and the readonly archives received.
 
-Senario should execute the contract.
+Scenario should execute the contract.
 
 Give a contract with inputs and readonly archives.
 
