@@ -12,7 +12,7 @@ import std.range : take;
 import std.array;
 import tagion.basic.Types : FileExtension;
 
-import tagion.testbench.services;
+import tagion.testbench.actor;
 
 debug = actor;
 
@@ -21,16 +21,16 @@ mixin Main!(_main);
 int _main(string[] args) {
     if (env.stage == Stage.commit) {
         // See if an taskfailure sent to an actor can be will send up to the owner
-        automation!actor_taskfailure.run;
+        automation!taskfailure.run;
 
         // Request child handle and see if we can send something to it
-        automation!actor_handler.run;
+        automation!handler.run;
 
         // Sending messages between supervisor & children
-        automation!actor_message.run;
+        automation!message.run;
 
         // Supervisor with failing child
-        automation!actor_supervisor.run;
+        automation!supervisor.run;
     }
 
     return 0;

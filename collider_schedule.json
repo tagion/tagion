@@ -153,10 +153,16 @@
             "timeout": 0.0
         },
         "tvm_betterc": {
-            "args": ["i32.wast"], 
-            "envs": {},
+            "args": [
+                "i32.wast", 
+            ], 
+            "envs": {
+                "DCOMPILE" : "dmd -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/wasm.d -g -unittest -main",
+                "imports" : "wasm=foundation.wasm",
+                "attributes" : "@safe",
+            },
             "stages": [
-                "tvm"
+                "tvm", "commit"
             ],
             "timeout": 0.0
         },
