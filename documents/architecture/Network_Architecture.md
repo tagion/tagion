@@ -50,7 +50,7 @@ digraph Message_flow {
   Collector -> TVM [label="contract-S" color=green];
   EpochCreator -> Collector [label="contract-C" color=darkgreen];
   EpochCreator -> Transcript [label=epoch color=green];
-  TVM -> Transcript [label="archives\nin/out" color=red];
+  TVM -> Transcript [label="contract\noutput" color=red];
   TVM -> EpochCreator [label="contract-SC" color=green];
   DART -> Replicator [label=recorder color=red dir=both];
   DART -> NodeInterface [label="DART(ro)\nrecorder" dir=both color=magenta];
