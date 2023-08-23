@@ -40,21 +40,22 @@ class SendPayloadAndCreateEpoch {
     struct Node {
         SecureNet net;
         string name;
-         EpochCreatorOptions opts;   
+        EpochCreatorOptions opts;   
     }
 
 
     Node[] nodes;
     ActorHandle!EpochCreatorService[] handles;
+    immutable(EpochCreatorOptions) epoch_creator_options = EpochCreatorOptions(1000, 5, 0);
 
     this() {
         //empty
-        foreach(i; 0..4) {
+        foreach(i; 0..5) {
 
             immutable name = format("Node_%s", i);
             auto net = new StdSecureNet();
             net.generateKeyPair(name);
-            nodes ~= Node(net, name, EpochCreatorOptions(1000, 4, 0));            
+            nodes ~= Node(net, name, epoch_creator_options);            
         }
     }
 
@@ -80,21 +81,22 @@ class SendPayloadAndCreateEpoch {
         }
         waitforChildren(Ctrl.STARTING);
 
-        foreach(handle; handles) {
-            pkeys ~= receiveOnly!Pubkey;
-            // receive((Pubkey p) {pkeys ~=p;});
-            writefln("owner receive %s", pkeys[$-1].cutHex);
-        }
-        check(pkeys.length == handles.length, "not all pkeys added");        
+        handles.each!(h => pkeys ~= receiveOnly!Pubkey);
+        check(pkeys.length == handles.length && pkeys.length == epoch_creator_options.nodes, "not all pkeys added");        
+        writefln("owner received pkeys");
 
-        foreach (handle; handles) {
-            foreach (pkey; pkeys) {
-                writefln("OWNER SEND");
+        foreach (i, handle; handles) {
+            foreach(pkey; pkeys) {
+                writefln("BEFORE SEND %s", i);
                 handle.send(pkey);
+                writefln("AFTER SEND %s", i);
             }
-            receiveOnly!(Msg!"READY");
+
+            // pkeys.each!(p => handle.send(p));
+            writefln("send %d pkeys", pkeys.length);
+            receiveOnly!(AddedChannels);
         }
-        Thread.sleep(5.seconds);
+
         handles.each!(h => h.send(Msg!"BEGIN"()));
         waitforChildren(Ctrl.ALIVE);
         Thread.sleep(100.seconds);
