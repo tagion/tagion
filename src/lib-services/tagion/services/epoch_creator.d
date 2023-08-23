@@ -1,4 +1,4 @@
-/// Service for creating epochs
+// Service for creating epochs
 /// [Documentation](https://docs.tagion.org/#/documents/architecture/EpochCreator)
 module tagion.services.epoch_creator;
 
@@ -19,7 +19,7 @@ import tagion.gossip.InterfaceNet : GossipNet;
 import tagion.gossip.EmulatorGossipNet;
 import tagion.utils.Queue;
 import tagion.utils.Random;
-import tagion.utils.pretend_safe_concurrency : ownerTid, receiveOnly, send;
+import tagion.utils.pretend_safe_concurrency;
 import tagion.utils.Miscellaneous : cutHex;
 
 // core
@@ -47,7 +47,7 @@ enum NetworkMode {
 struct EpochCreatorOptions {
 
     uint timeout; // timeout between nodes in milliseconds;
-    ushort nodes;
+    size_t nodes;
     uint scrap_depth;
     mixin JSONCommon;
 }
@@ -61,19 +61,26 @@ struct EpochCreatorService {
         const hirpc = HiRPC(net);
 
         GossipNet gossip_net;
-        gossip_net = new EmulatorGossipNet(net.pubkey, opts.timeout.msecs);
+        gossip_net = new NewEmulatorGossipNet(net.pubkey, opts.timeout.msecs);
 
         ownerTid.send(net.pubkey);
 
         foreach (i; 0 .. opts.nodes) {
+            writeln("before receive");
             auto p = receiveOnly!(Pubkey);
+            // receive((Pubkey p) {pkeys ~= p;});
             pkeys ~= p;
-            // writefln("node: %s, %s receive %s", net.pubkey.cutHex, i, p.cutHex); 
+            writefln("node: %s, %s receive %s", net.pubkey.cutHex, i, p.cutHex); 
             log.trace("Receive %d %s", i, pkeys[i].cutHex);
         }
+                
         foreach(p; pkeys) {
             gossip_net.add_channel(p);
         }
+        ownerTid.send(Msg!"READY"());
+
+        writefln("waiting for supervisor call");
+        receiveOnly!(Msg!"BEGIN");
 
         auto refinement = new StdRefinement;
 
@@ -97,10 +104,12 @@ struct EpochCreatorService {
         }
 
         void receivePayload(Payload, Document pload) {
+            log.trace("Received Payload");
             payload_queue.write(pload);
         }
 
-        void receiveWavefront(ReceivedWavefront, Document wave_doc) {
+        void receiveWavefront(ReceivedWavefront, const(Document) wave_doc) {
+            log.trace("Received wavefront");
             const receiver = HiRPC.Receiver(wave_doc);
             hashgraph.wavefront(
                     receiver,
@@ -112,16 +121,17 @@ struct EpochCreatorService {
         Random!size_t random;
         random.seed(123456789);
         void timeout() {
-            writefln("running timeout");
-            const init_tide = random.value(0, 2) is 1;
+            writefln("%s areweingraph: %s", net.pubkey.cutHex, hashgraph.areWeInGraph);
+            
+            const init_tide = random.value(0, 3) is 1;
             if (!init_tide) {
                 return;
             }
             hashgraph.init_tide(&gossip_net.gossip, &payload, gossip_net.time);
         }
 
-
-        runTimeout(500.msecs, &timeout, &receivePayload, &receiveWavefront);
+        
+        runTimeout(100.msecs, &timeout, &receivePayload, &receiveWavefront);
 
     }
 
