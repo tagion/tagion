@@ -6,7 +6,7 @@ BDDBINS=${addprefix $(DBIN)/,$(BDDS)}
 
 ALL_BDD_REPORTS=${shell find $(BDD_RESULTS) -name "*.hibon" -printf "%p "}
 
-BDD_MD_FILES=${shell find $(BDD)/tagion -name "*.md" -a -not -name "*.gen.md"}
+BDD_MD_FILES=${shell find $(BDD)/tagion -name "*.md" -a -not -name "*.gen.md" -a -not -path "*/tagion/testbench/tvm/testsuite/*"}
 
 BDD_D_FILES:=$(BDD_MD_FILES:.md=.d)
 
