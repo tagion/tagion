@@ -194,6 +194,7 @@ Returns: the current mask
     }
 
     /// This function should be rewritte it' for the event logging
+    version(none)
     @trusted
     void report(T)(string symbol_name, T h) const nothrow if (isHiBONRecord!T) {
         version (unittest)
@@ -338,4 +339,54 @@ unittest {
     const s = S(10);
     mixin Log!s;
 
+}
+
+import std.typecons;
+
+alias Subscribed = shared(Flag!"subscribed");
+shared struct SubscriptionMask {
+    protected Tid logger_subscription_tid;
+    //      yes|no     topic
+    private Subscribed[string] _registered_topics;
+
+    const(Subscribed)* register(string topic) @safe {
+        Subscribed* s = topic in _registered_topics;
+        if (s is null) {
+            _registered_topics[topic] = Subscribed.no;
+            s = topic in _registered_topics;
+        }
+        return s;
+    }
+
+    void subscribe(string topic) {
+        _registered_topics[topic] = Subscribed.yes;
+    }
+
+    void unsubscribe(string topic) {
+        _registered_topics[topic] = Subscribed.no;
+    }
+
+    void register_subscription_task(string task_name) {
+        logger_subscription_tid = cast(shared)locate(task_name);
+    }
+}
+
+static shared SubscriptionMask submask;
+
+struct Topic(string topic) {
+}
+
+struct EventLogger(string) {
+    const(Subscribed)* subscribed;
+    Topic!t topic;
+
+    this(string _topic) @trusted
+    {
+        subscribed = submask.register(_topic);
+        topic = Topic!_topic;
+    }
+
+    void log(Args...)(Args args) {
+        submask.logger_subscription_tid.send(topic, args);
+    }
 }
