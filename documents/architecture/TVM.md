@@ -34,5 +34,5 @@ sequenceDiagram
     participant Transcript
     Contract Interface ->> TVM: Contract-S + Archives(inputs)
     TVM ->> Epoch Creator: Contract+SC
-    TVM ->> Transcript: Draft Output Archives 
+    TVM ->> Transcript: Archives(inputs)+Draft output Archives 
 ```

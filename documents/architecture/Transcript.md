@@ -12,7 +12,23 @@ Request:
 Output:
   - A DART-recorder is sent to the [DART](/documents/architecture/DART.md)
 
-;; The acceptance criteria specification can be found in [Transcript_services](/bdd/tagion/testbench/services/ContractInterface_service.md).
+This services performs the following:
+```{r, eval=FALSE,tidy=FALSE}
+Collect all the inputs/output archives related to the contract
+WHEN an list of $epochs has been received 
+    Clear the input used list
+    LOOP through each contract in the Epoch list
+        IF inputs of the contract exists in the DART and is not in the used list THEN
+            Mark the input archives as remove in the Recorder.
+            Add the epoch number to the output archives.
+            Mark the output archives as add in the Recorder.
+            Add the inputs to the used list
+        END
+    END
+    Send the Recorder to the DART.
+
+```
+The acceptance criteria specification can be found in [Transcript_services](/bdd/tagion/testbench/services/ContractInterface_service.md).
 
 ```mermaid
 sequenceDiagram
@@ -20,10 +36,10 @@ sequenceDiagram
     participant Epoch Creator 
     participant Transcript
     participant DART 
-    TVM ->> Transcript: Draft Output Archives
-    Transcript ->> DART: Request input Archives
-    DART ->> Transcript : Input Archives
+    TVM ->> Transcript: Contract + Inputs/Outputs
     Epoch Creator ->> Transcript: Epoch list  
+    Transcript ->> DART:  Verify all inputs 
+    DART ->> Transcript : List of invalid inputs 
     Transcript ->> DART: Recorder(Modifiy)
 ```
 
