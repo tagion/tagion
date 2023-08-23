@@ -166,11 +166,19 @@
             ],
             "timeout": 0.0
         },
-         "epoch_creator": {
+        "epoch_creator": {
             "args": [],
             "envs": {},
             "stages": [
                 "epoch"
+            ],
+            "timeout": 0.0
+        },
+        "tvm_service": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "tvm_service"
             ],
             "timeout": 0.0
         },
