@@ -1,6 +1,6 @@
-module tagion.testbench.services.actor_message;
+module tagion.testbench.actor.message;
 
-import tagion.testbench.services.actor_util;
+import tagion.testbench.actor.util;
 import tagion.actor.actor;
 import core.time;
 import std.stdio;

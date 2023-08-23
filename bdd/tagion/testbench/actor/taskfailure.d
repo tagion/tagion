@@ -1,6 +1,6 @@
-module tagion.testbench.services.actor_taskfailure;
+module tagion.testbench.actor.taskfailure;
 
-import tagion.testbench.services.actor_util;
+import tagion.testbench.actor.util;
 
 // Default import list for bdd
 import tagion.behaviour;

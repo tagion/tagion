@@ -1,4 +1,4 @@
-module tagion.testbench.services.actor_util;
+module tagion.testbench.actor.util;
 
 import tagion.utils.pretend_safe_concurrency : receiveTimeout, MessageMismatch;
 import tagion.actor.exceptions;
