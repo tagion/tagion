@@ -16,7 +16,7 @@ import std.array : join;
 
 import std.stdio;
 
-import tagion.utils.LEB128 : encode;
+import LEB128 = tagion.utils.LEB128;
 import tagion.wasm.WasmBase;
 import tagion.wasm.WasmReader;
 import tagion.wasm.WasmException;
@@ -165,7 +165,7 @@ import tagion.wasm.WasmException;
         void append_buffer(const OutBuffer b, const(Section) sec) {
             if (b !is null) {
                 output.write(cast(ubyte) sec);
-                output.write(encode(b.offset));
+                output.write(LEB128.encode(b.offset));
                 output.write(b);
             }
         }
@@ -195,7 +195,7 @@ import tagion.wasm.WasmException;
                             bout.write(cast(ubyte) m);
                         }
                         else static if (isIntegral!T) {
-                            bout.write(encode(m));
+                            bout.write(LEB128.encode(m));
                         }
                         else static if (isFloatingPoint!T) {
                             bout.write(nativeToLittleEndian(m));
@@ -204,13 +204,13 @@ import tagion.wasm.WasmException;
                             alias spec = getUDAs!(this.tupleof[i], Section);
                             static if ((spec.length == 0) || (spec[0]!is Section.CODE)) {
                                 // Check to avoid adding the length for an expression
-                                bout.write(encode(m.length));
+                                bout.write(LEB128.encode(m.length));
                             }
                             static if (U.sizeof == 1) {
                                 bout.write(cast(const(ubyte[])) m);
                             }
                             else static if (isIntegral!U) {
-                                m.each!((e) => bout.write(encode(e)));
+                                m.each!((e) => bout.write(LEB128.encode(e)));
                             }
                             else static if (hasMember!(U, "serialize")) {
                                 foreach (e; m) {
@@ -242,14 +242,14 @@ import tagion.wasm.WasmException;
 
             void serialize(ref OutBuffer bout) const {
                 bout.write(cast(ubyte) lim);
-                bout.write(encode(from));
+                bout.write(LEB128.encode(from));
                 with (Limits) {
                     final switch (lim) {
                     case INFINITE:
                         // Empty
                         break;
                     case RANGE:
-                        bout.write(encode(to));
+                        bout.write(LEB128.encode(to));
                         break;
                     }
                 }
@@ -287,6 +287,13 @@ import tagion.wasm.WasmException;
             this(string name, immutable(ubyte[]) bytes) pure nothrow {
                 this.name = name;
                 this.bytes = bytes;
+            }
+
+            import tagion.hibon.Document;
+
+            this(string name, const(Document) doc) pure nothrow {
+                this.name = name;
+                bytes = doc.data[doc.begin .. $];
             }
 
             this(_ReaderCustom)(const(_ReaderCustom) s) pure nothrow {
@@ -654,10 +661,10 @@ import tagion.wasm.WasmException;
             void serialize(ref OutBuffer bout) const {
                 auto tmp_out = new OutBuffer;
                 tmp_out.reserve(guess_size);
-                tmp_out.write(encode(locals.length));
+                tmp_out.write(LEB128.encode(locals.length));
                 locals.each!((l) => l.serialize(tmp_out));
                 tmp_out.write(expr);
-                bout.write(encode(tmp_out.offset));
+                bout.write(LEB128.encode(tmp_out.offset));
                 bout.write(tmp_out.toBytes);
             }
 

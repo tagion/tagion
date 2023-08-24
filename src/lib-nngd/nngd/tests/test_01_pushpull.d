@@ -8,15 +8,6 @@ import std.datetime.systime;
 import nngd;
 import nngtestutil;
 
-static double timestamp()
-{
-    auto ts = Clock.currTime().toTimeSpec();
-    return ts.tv_sec + ts.tv_nsec/1e9;
-}
-
-static void log(A...)(string fmt, A a){
-    writefln("%.6f "~fmt,timestamp,a);
-}
 
 void sender_worker(string url)
 {
@@ -65,7 +56,7 @@ void receiver_worker(string url)
     assert(rc == 0);
     log(nngtest_socket_properties(s,"receiver"));
     while(1){
-        sz = s._receive(buf, buf.length);
+        sz = s.receivebuf(buf, buf.length);
         if(sz < 0){
             log("REcv error: " ~ toString(s.m_errno));
             continue;

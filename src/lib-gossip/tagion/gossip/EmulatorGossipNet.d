@@ -61,6 +61,7 @@ class EmulatorGossipNet : GossipNet {
     private Duration duration;
     @trusted
     static Tid getTidByNodeNumber(const uint i) {
+        writeln("in static getTidByNodeNumber");
         immutable taskname = i.get_node_name;
         log.trace("Trying to locate: %s", taskname);
         auto tid = locate(taskname);
@@ -80,6 +81,7 @@ class EmulatorGossipNet : GossipNet {
     }
 
     void add_channel(const Pubkey channel) {
+        writeln("in add channel");
         _pkeys ~= channel;
         _tids[channel] = getTidByNodeNumber(node_counter);
         log.trace("Add channel: %s tid: %s", channel.cutHex, _tids[channel]);

@@ -218,18 +218,17 @@ auto automation(alias M)() if (isFeature!M) {
             context[tuple_index] = new _Scenario(args);
         }
 
-        bool find(Args...)(string regex_text, Args args) {
-            import std.regex;
+        bool create(Args...)(string regex_text, Args args) {
+            const index = find_scenario(regex_text);
+            import std.stdio;
 
-            const search_regex = regex(regex_text);
-
-            static foreach (tuple_index; 0 .. FeatureContext.Types.length - 1) {
-                {
-                    alias _Scenario = FeatureContext.Types[tuple_index];
-                    enum scenario_property = getScenario!_Scenario;
-                    enum compiles = __traits(compiles, new _Scenario(args));
-                    if (!scenario_property.description.matchFirst(search_regex).empty ||
-                            scenario_property.comments.any!(c => !c.matchFirst(search_regex).empty)) {
+            switch (index) {
+                static foreach (tuple_index; 0 .. FeatureContext.Types.length - 1) {
+                    {
+                        alias _Scenario = FeatureContext.Types[tuple_index];
+                        enum scenario_property = getScenario!_Scenario;
+                        enum compiles = __traits(compiles, new _Scenario(args));
+            case tuple_index:
                         static if (compiles) {
                             context[tuple_index] = new _Scenario(args);
                             return true;
@@ -239,10 +238,42 @@ auto automation(alias M)() if (isFeature!M) {
                                     format("Arguments %s does not match construct of %s",
                                     Args.stringof, _Scenario.stringof));
                         }
+                        // return true;
+                    }
+                }
+            default:
+                return false;
+
+            }
+            return false;
+        }
+
+        static int find_scenario(string regex_text) {
+            import std.regex;
+
+            const search_regex = regex(regex_text);
+
+            static foreach (tuple_index; 0 .. FeatureContext.Types.length - 1) {
+                {
+                    alias _Scenario = FeatureContext.Types[tuple_index];
+                    enum scenario_property = getScenario!_Scenario;
+                    //                    enum compiles = __traits(compiles, new _Scenario(args));
+                    if (!scenario_property.description.matchFirst(search_regex).empty ||
+                            scenario_property.comments.any!(c => !c.matchFirst(search_regex).empty)) {
+                        return tuple_index;
                     }
                 }
             }
-            return false;
+            return -1;
+        }
+
+        version (none) auto find(string regex_text)() {
+            import std.regex;
+
+            enum tuple_index = find_scenario(regex_text);
+            static assert(tuple_index >= 0, format("Scenario description with '%s' not found in %s", regex_text, FeatureContext
+                    .stringof));
+            return FeatureContext.Types[tuple_index];
         }
 
         @safe
@@ -273,7 +304,7 @@ auto automation(alias M)() if (isFeature!M) {
                     }
                     else {
                         check(context[i]!is null,
-                                format("Scenario '%s' must be constructed before can be executed in '%s' feature",
+                        format("Scenario '%s' must be constructed before can be executed in '%s' feature",
                                 FeatureContext.fieldNames[i],
                                 moduleName!M));
                     }
@@ -588,9 +619,9 @@ unittest {
         .BehaviourUnittestWithCtor;
 
     auto feature_with_ctor = automation!(WithCtor)();
-    assert(feature_with_ctor.find("bankster", 17));
-    assertThrown!BehaviourException(feature_with_ctor.find("bankster", "wrong argument"));
-    assert(!feature_with_ctor.find("this-text-does-not-exists", 17));
+    assert(feature_with_ctor.create("bankster", 17));
+    assertThrown!BehaviourException(feature_with_ctor.create("bankster", "wrong argument"));
+    assert(!feature_with_ctor.create("this-text-does-not-exists", 17));
 }
 
 version (unittest) {

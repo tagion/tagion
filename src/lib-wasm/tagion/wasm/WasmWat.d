@@ -84,25 +84,32 @@ alias check = Check!WatException;
 
     alias Custom = Sections[Section.CUSTOM];
     void custom_sec(ref scope const(Custom) _custom) {
-        output.writef(`%s(custom "%s" "`, indent, _custom.name);
+        output.writef(`%s(custom "%s" `, indent, _custom.name);
         enum {
             SPACE = 32,
             DEL = 127
         }
-        foreach (d; _custom.bytes) {
-            if ((d > SPACE) && (d < DEL)) {
-                output.writef(`%c`, char(d));
-            }
-            else {
-                output.writef(`\x%02X`, d);
-            }
+        import tagion.hibon.Document;
+        import tagion.hibon.HiBONJSON;
+        import LEB128 = tagion.utils.LEB128;
+        import std.algorithm;
+
+        if (_custom.doc.isInorder) {
+            output.writefln("\n%s", _custom.doc.toPretty);
+            output.writefln(`)`);
         }
-        output.writefln(`")`);
-        //        auto _custom=mod[Section.CUSTOM];//.custom_sec;
-        //foreach(c; _custom[]) {
-        //        writefln("_custom=%s",  _custom);
-        //output.writef("%s(custom (%s %s))", indent, c.name, cast(string)(c.bytes));
-        //}
+        else {
+            output.write(`"`);
+            foreach (d; _custom.bytes) {
+                if ((d > SPACE) && (d < DEL)) {
+                    output.writef(`%c`, char(d));
+                }
+                else {
+                    output.writef(`\x%02X`, d);
+                }
+            }
+            output.writefln(`")`);
+        }
     }
 
     alias Type = Sections[Section.TYPE];
@@ -286,7 +293,7 @@ alias check = Check!WatException;
 
         while (!expr.empty) {
             const elm = expr.front;
-            const instr = instrTable[elm.code];
+            const instr = instrTable.get(elm.code, illegalInstr);
             expr.popFront;
             with (IRType) {
                 final switch (instr.irtype) {
@@ -374,6 +381,8 @@ alias check = Check!WatException;
                     break;
                 case END:
                     return elm;
+                case ILLEGAL:
+                    throw new WatException(format("Illegal instruction %02X", elm.code));
                 case SYMBOL:
                     assert(0, "Symbol opcode and it does not have an equivalent opcode");
                 }

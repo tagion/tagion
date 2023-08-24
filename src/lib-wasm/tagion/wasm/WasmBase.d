@@ -125,7 +125,10 @@ enum IRType {
     END, /// Block end instruction
     PREFIX, /// Prefix for two byte extension
     SYMBOL, /// This is extra instruction which does not have an equivalent wasm opcode
+    ILLEGAL, /// Illegal instructions
 }
+
+immutable illegalInstr = Instr("illegal", "illegal", 0, IRType.ILLEGAL);
 
 struct Instr {
     string name; /// Instruction name
@@ -401,10 +404,10 @@ shared static this() {
             }
         }
         void setPseudo(const PseudoWastInstr pseudo, const IRType ir_type, const uint pushs = 0, const uint pops = 0) {
-            result[pseudo] = Instr("<" ~ pseudo ~ ">", pseudo, uint.max, ir_type, pushs, pops);
+            result[pseudo] = Instr("<" ~ pseudo ~ ">", pseudo, uint.max, ir_type, pops, pushs);
         }
 
-        setPseudo(PseudoWastInstr.invoke, IRType.CALL);
+        setPseudo(PseudoWastInstr.invoke, IRType.CALL, 0, 1);
         setPseudo(PseudoWastInstr.if_else, IRType.BRANCH, 3, 1);
         setPseudo(PseudoWastInstr.local, IRType.SYMBOL, 0, uint.max);
         setPseudo(PseudoWastInstr.label, IRType.SYMBOL, 1, uint.max);
@@ -753,12 +756,12 @@ static assert(isInputRange!ExprRange);
 
     }
 
-    this(immutable(ubyte[]) data) pure nothrow {
+    this(immutable(ubyte[]) data) pure {
         this.data = data;
         set_front(current, _index);
     }
 
-    @safe protected void set_front(ref scope IRElement elm, ref size_t index) pure nothrow {
+    @safe protected void set_front(ref scope IRElement elm, ref size_t index) pure {
         @trusted void set(ref WasmArg warg, const Types type) pure nothrow {
             with (Types) {
                 switch (type) {
@@ -786,7 +789,7 @@ static assert(isInputRange!ExprRange);
         if (index < data.length) {
             elm.code = cast(IR) data[index];
             elm._types = null;
-            const instr = instrTable[elm.code];
+            const instr = instrTable.get(elm.code, illegalInstr);
             index += IR.sizeof;
             with (IRType) {
                 final switch (instr.irtype) {
@@ -822,10 +825,12 @@ static assert(isInputRange!ExprRange);
                 case CALL_INDIRECT:
                     // typeidx
                     set(elm._warg, Types.I32);
-                    if (!(data[index] == 0x00)) {
-                        wasm_exception = new WasmException("call_indirect should end with 0x00");
+                    scope (exit) {
+                        index += ubyte.sizeof;
                     }
-                    index += ubyte.sizeof;
+                    if (!(data[index] == 0x00)) {
+                        throw new WasmException("call_indirect should end with 0x00");
+                    }
                     break;
                 case LOCAL, GLOBAL:
                     // localidx globalidx
@@ -857,15 +862,19 @@ static assert(isInputRange!ExprRange);
                             set(elm._warg, Types.F64);
                             break;
                         default:
-                            assert(0, format("Instruction %s is not a const", elm.code));
+                            throw new WasmException(format("Instruction %s is not a const", elm.code));
                         }
                     }
                     break;
                 case END:
                     _level--;
                     break;
+                case ILLEGAL:
+
+                    throw new WasmException(format("%s:Illegal opcode %02X", __FUNCTION__, elm.code));
+                    break;
                 case SYMBOL:
-                    assert(0, "Symbol opcode and it does not have an equivalent opcode");
+                    assert(0, "Is a symbol and it does not have an equivalent opcode");
                 }
 
             }
@@ -878,7 +887,7 @@ static assert(isInputRange!ExprRange);
         }
     }
 
-    @property pure nothrow {
+    pure nothrow {
         const(size_t) index() const {
             return _index;
         }
@@ -891,9 +900,9 @@ static assert(isInputRange!ExprRange);
             return _index > data.length || (wasm_exception !is null);
         }
 
-        void popFront() {
-            set_front(current, _index);
-        }
+    }
+    void popFront() pure {
+        set_front(current, _index);
     }
 
 }

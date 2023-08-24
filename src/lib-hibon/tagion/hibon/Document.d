@@ -125,7 +125,7 @@ static assert(uint.sizeof == 4);
             return _data.length <= ubyte.sizeof;
         }
 
-        @trusted uint size() {
+        uint size() {
             if (_data.length) {
                 return LEB128.decode!uint(_data).value;
             }
@@ -136,6 +136,13 @@ static assert(uint.sizeof == 4);
             if (_data.length) {
                 const len = LEB128.decode!uint(_data);
                 return len.size + len.value;
+            }
+            return 0;
+        }
+
+        size_t begin() @nogc {
+            if (_data.length) {
+                return LEB128.decode!uint(_data).size;
             }
             return 0;
         }
@@ -1048,7 +1055,9 @@ static assert(uint.sizeof == 4);
                     }
                 }
                 else {
+
                     
+
                         .check(doc.isArray, "Document must be an array");
                     result.length = doc.length;
                     foreach (ref a, e; lockstep(result, doc[])) {
