@@ -78,7 +78,7 @@ unittest {
     some_responder(created_req);
     int received = receiveTimeout(Duration.zero, (Some_req.Response res, string _) {
             assert(created_req.msg == res.msg, "request msg were not the same");
-            assert(created_req.id == res.id, "request msg were not the same");
+            assert(created_req.id == res.id, "request id were not the same");
     });
     assert(received, "never received response");
 }
