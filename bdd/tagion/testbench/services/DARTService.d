@@ -87,25 +87,24 @@ class WriteAndReadFromDartDb {
     @When("I send a dartModify command with a recorder containing changes to add")
     Document toAdd() {
 
+        // ask for bullseye before:
+        auto bullseye_request = dartBullseyeRR();
+        handle.send(bullseye_request);
+        const empty_bullseye = receiveOnly!(dartBullseyeRR.Response, immutable(DARTIndex));
+        writefln("%s", empty_bullseye);
+
         random_archives = RandomArchives(gen.front, 100, 1000);
         auto record_factory = RecordFactory(net);
         auto recorder = record_factory.recorder;
         auto docs = random_archives.values.map!(a => SimpleDoc(a).toDoc).array;
 
         recorder.insert(docs, Archive.Type.ADD);
-
         auto modify_request = dartModifyRR();
         (() @trusted => handle.send(modify_request, cast(immutable) recorder))();
-
-        // const bullseye = receiveOnly!(Tuple!(dartModifyRR.Response res, );
-
         const bullseye = receiveOnly!(dartModifyRR.Response, immutable(DARTIndex));
 
         writefln("%s", bullseye);
 
-        // DARTIndex bullseye = receiveTimeout(Duration.zero, (dartModifyRR.Response res, string _) {
-
-        // }
 
         return Document();
     }
