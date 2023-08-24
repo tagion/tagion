@@ -228,7 +228,7 @@ is ready and has been started correctly
     /// Conditional subscription logging
     @trusted
     void report(T)(Topic topic, string identifier, T value) const nothrow {
-        if (topic.subscribed.yes && log.isLoggerSubRegistered) {
+        if (*topic.subscribed is Subscribed.yes && log.isLoggerSubRegistered) {
             try {
                 logger_subscription_tid.send(topic, identifier, value);
             }
@@ -414,12 +414,15 @@ static shared SubscriptionMask submask;
 unittest {
     import core.time;
     Topic topic = submask.register("some_tag");
+    assert(*topic.subscribed is Subscribed.no, "Topic was subscribed, it shouldn't");
     register("log_sub_task", thisTid);
     log.registerSubscriptionTask("log_sub_task");
     int some_symbol = 5;
     Log_!(some_symbol)(topic);
     assert(false == receiveTimeout(Duration.zero, (Topic _, string __, typeof(some_symbol)) {}), "Received an unsubscribed topic");
+    // receiveTimeout(Duration.zero, (Topic _, string __, typeof(some_symbol)) {});
     submask.subscribe(topic.name);
+    assert(*topic.subscribed is Subscribed.yes, "Topic wasn't subscribed, it should");
     Log_!(some_symbol)(topic);
     assert(true == receiveTimeout(Duration.zero, (Topic _, string __, typeof(some_symbol)) {}), "Didn't receive subscribed topic");
 }
