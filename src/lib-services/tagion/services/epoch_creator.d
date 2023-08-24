@@ -21,17 +21,18 @@ import tagion.utils.Queue;
 import tagion.utils.Random;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.utils.Miscellaneous : cutHex;
+import tagion.gossip.AddressBook;
 
 // core
 import core.time;
 
 // std
-import std.algorithm : each;
+import std.algorithm;
 import std.typecons : No;
 import std.stdio;
 
 // alias ContractSignedConsensus = Msg!"ContractSignedConsensus";
-alias Payload = Msg!"Payload";
+alias payload = Msg!"Payload";
 alias ReceivedWavefront = Msg!"ReceivedWavefront";
 alias AddedChannels = Msg!"AddedChannels";
 
@@ -50,6 +51,7 @@ struct EpochCreatorOptions {
     uint timeout; // timeout between nodes in milliseconds;
     size_t nodes;
     uint scrap_depth;
+    string task_name = "epoch_creator";
     mixin JSONCommon;
 }
 
@@ -63,9 +65,8 @@ struct EpochCreatorService {
         // GossipNet gossip_net;
         // gossip_net = new NewEmulatorGossipNet(net.pubkey, opts.timeout.msecs);
 
-        ownerTid.send(net.pubkey);
-        Pubkey[] pkeys;
-
+        Pubkey[] channels = addressbook.activeNodeChannels;
+        /*
         foreach (i; 0 .. opts.nodes) {
             log.trace("Waiting for Receive %d", i);
             // writeln("before receive");
@@ -74,14 +75,15 @@ struct EpochCreatorService {
             // receive((Pubkey p) {pkeys ~= p;});
             log.trace("Receive %d %s", i, pkeys[i].cutHex);
         }
-                
+
         // foreach(p; pkeys) {
         //     gossip_net.add_channel(p);
         // }
         ownerTid.send(AddedChannels());
 
         receiveOnly!(Msg!"BEGIN");
-
+        log.trace("After begin");
+    */
         // auto refinement = new StdRefinement;
 
         // HashGraph hashgraph = new HashGraph(opts.nodes, net, refinement, &gossip_net.isValidChannel, No.joining);
@@ -94,7 +96,6 @@ struct EpochCreatorService {
         //     const nonce = cast(Buffer) net.calcHash(buf);
         //     auto eva_event = hashgraph.createEvaEvent(gossip_net.time, nonce);
         // }
-
 
         // const(Document) payload() {
         //     if (!hashgraph.active || payload_queue.empty) {
@@ -122,19 +123,23 @@ struct EpochCreatorService {
         // random.seed(123456789);
         // void timeout() {
         //     writefln("%s areweingraph: %s", net.pubkey.cutHex, hashgraph.areWeInGraph);
-            
+
         //     const init_tide = random.value(0, 3) is 1;
         //     if (!init_tide) {
         //         return;
         //     }
         //     hashgraph.init_tide(&gossip_net.gossip, &payload, gossip_net.time);
         // }
-        void timeout() {
-            writeln("TEST");
+
+        void receivePayload(payload, Document payload) {
         }
-        
+
+        void timeout() {
+            log.trace("TEST %s", channels.map!(p => p.cutHex));
+        }
+
         // runTimeout(100.msecs, &timeout, &receivePayload, &receiveWavefront);
-        runTimeout(100.msecs, &timeout);
+        runTimeout(100.msecs, &timeout, &receivePayload);
 
     }
 
