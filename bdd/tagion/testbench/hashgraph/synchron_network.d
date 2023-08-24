@@ -55,9 +55,6 @@ class StartNetworkWithNAmountOfNodes {
 
     bool coherent;
 
-
-
-    
     @Given("i have a HashGraph TestNetwork with n number of nodes")
     Document nodes() {
         rlimit limit;
@@ -99,8 +96,6 @@ class StartNetworkWithNAmountOfNodes {
                 break;
             }
         }
-        
-
 
         return result_ok;
     }
@@ -112,12 +107,11 @@ class StartNetworkWithNAmountOfNodes {
     }
 
     @Then("wait until the first epoch")
-    Document epoch() @trusted
-    {
+    Document epoch() @trusted {
         {
             uint i = 0;
-            while(i < MAX_CALLS) {
-        
+            while (i < MAX_CALLS) {
+
                 const channel_number = network.random.value(0, network.channels.length);
                 network.current = Pubkey(network.channels[channel_number]);
                 auto current = network.networks[network.current];
@@ -130,11 +124,10 @@ class StartNetworkWithNAmountOfNodes {
                 // printStates(network);
                 i++;
             }
-            check(TestRefinement.epoch_events.length == node_names.length, 
-                format("Max calls %d reached, not all nodes have created epochs only %d", 
-                MAX_CALLS, TestRefinement.epoch_events.length));
+            check(TestRefinement.epoch_events.length == node_names.length,
+                    format("Max calls %d reached, not all nodes have created epochs only %d",
+                    MAX_CALLS, TestRefinement.epoch_events.length));
         }
-
 
         // compare ordering
         auto names = network.networks.byValue
@@ -159,49 +152,47 @@ class StartNetworkWithNAmountOfNodes {
             }
         }
 
-
         // compare epochs
-        foreach(i, compare_epoch; TestRefinement.epoch_events.byKeyValue.front.value) {
+        foreach (i, compare_epoch; TestRefinement.epoch_events.byKeyValue.front.value) {
             auto compare_events = compare_epoch
-                                            .events
-                                            .map!(e => cast(Buffer) e.event_package.fingerprint)
-                                            .array;
+                .events
+                .map!(e => cast(Buffer) e.event_package.fingerprint)
+                .array;
             auto compare_round_fingerprint = hashLastDecidedRound(compare_epoch.decided_round);
 
             // compare_events.sort!((a,b) => a < b);
             // compare_events.each!writeln;
             // writefln("%s", compare_events.map!(f => f.cutHex));
-            foreach(channel_epoch; TestRefinement.epoch_events.byKeyValue) {
+            foreach (channel_epoch; TestRefinement.epoch_events.byKeyValue) {
                 // writefln("epoch: %s", i);
-                if (channel_epoch.value.length-1 < i) {
+                if (channel_epoch.value.length - 1 < i) {
                     break;
                 }
                 auto events = channel_epoch.value[i]
-                                            .events
-                                            .map!(e => cast(Buffer) e.event_package.fingerprint)
-                                            .array;
+                    .events
+                    .map!(e => cast(Buffer) e.event_package.fingerprint)
+                    .array;
                 auto channel_round_fingerprint = hashLastDecidedRound(compare_epoch.decided_round);
                 // events.sort!((a,b) => a < b);
-
 
                 // writefln("%s", events.map!(f => f.cutHex));
                 // events.each!writeln;
                 // writefln("channel %s time: %s", channel_epoch.key.cutHex, channel_epoch.value[i].epoch_time);
-                
-                check(compare_events.length == events.length, "event_packages not the same length");
 
+                check(compare_events.length == events.length, "event_packages not the same length");
 
                 const sameEvents = equal(compare_events.sort, events.sort);
                 check(sameEvents, "events lists does not contain same events");
-                
+
                 const isSame = equal(compare_events, events);
                 // writefln("isSame: %s", isSame);
                 check(isSame, "event_packages not the same");
 
-                const sameRoundFingerprints = equal(compare_round_fingerprint.fingerprints, channel_round_fingerprint.fingerprints);
+                const sameRoundFingerprints = equal(compare_round_fingerprint.fingerprints, channel_round_fingerprint
+                        .fingerprints);
                 check(sameRoundFingerprints, "round fingerprints not the same");
             }
-        }        
+        }
 
         return result_ok;
     }

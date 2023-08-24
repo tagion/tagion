@@ -6,7 +6,8 @@ import tagion.tools.OneMain;
 
 int main(string[] args) {
     import ssl_server = tagion.testbench.ssl_server;
-    import services_test = tagion.testbench.services_test;
+    import hirpc_verifier = tagion.testbench.hirpc_verifier;
+    import inputvalidator = tagion.testbench.inputvalidator;
     import ssl_echo_server = tagion.testbench.ssl_echo_server;
     import transaction = tagion.testbench.transaction;
     import receive_epoch = tagion.testbench.receive_epoch;
@@ -25,10 +26,13 @@ int main(string[] args) {
     import hashgraph_contributors = tagion.testbench.hashgraph_contributors;
     import hashgraph_exclude = tagion.testbench.hashgraph_exclude;
     import hashgraph_swap = tagion.testbench.hashgraph_swap;
+    import tvm_betterc = tagion.testbench.tvm_betterc;
+    import epoch_creator = tagion.testbench.epoch_creator;
 
     alias alltools = AliasSeq!(
             ssl_server,
-            services_test,
+            hirpc_verifier,
+            inputvalidator,
             ssl_echo_server,
             transaction,
             receive_epoch,
@@ -47,6 +51,8 @@ int main(string[] args) {
             hashgraph_contributors,
             hashgraph_exclude,
             hashgraph_swap,
+            tvm_betterc,
+            epoch_creator,
     );
     mixin doOneMain!(alltools);
     return do_main(args);

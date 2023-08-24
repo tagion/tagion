@@ -53,19 +53,20 @@ enum Sig {
     STOP,
 }
 
+struct ActorInfo {
+    private Ctrl[string] childrenState;
+    string task_name;
+    bool stop;
+}
+
+static ActorInfo thisActor;
+
 /// Control message sent to a supervisor
 /// contains the Tid of the actor which send it and the state
 alias CtrlMsg = Tuple!(string, "task_name", Ctrl, "ctrl");
 
-private static Ctrl[string] childrenState;
-private static string _task_name;
-@property
-string task_name() @safe nothrow {
-    return _task_name;
-}
-
 bool statusChildren(Ctrl ctrl) @safe nothrow {
-    foreach (val; childrenState.byValue) {
+    foreach (val; thisActor.childrenState.byValue) {
         if (val != ctrl) {
             return false;
         }
@@ -83,13 +84,13 @@ bool waitforChildren(Ctrl state, Duration timeout = 1.seconds) @safe nothrow {
     try {
         while (!statusChildren(state) && MonoTime.currTime <= limit) {
             receiveTimeout(
-                    timeout / childrenState.length,
-                    (CtrlMsg msg) { childrenState[msg.task_name] = msg.ctrl; }
+                    timeout / thisActor.childrenState.length,
+                    (CtrlMsg msg) { thisActor.childrenState[msg.task_name] = msg.ctrl; }
             );
         }
-        log("%s", childrenState);
+        log("%s", thisActor.childrenState);
         if (state is Ctrl.END) {
-            destroy(childrenState);
+            destroy(thisActor.childrenState);
         }
         return statusChildren(state);
     }
@@ -145,8 +146,8 @@ struct ActorHandle(A) {
 
     // Get the status of the task, asserts if the calling task did not spawn it
     Ctrl state() @safe nothrow {
-        if (task_name in childrenState) {
-            return childrenState[task_name];
+        if (task_name in thisActor.childrenState) {
+            return thisActor.childrenState[task_name];
         }
         assert(0, "You don't own this task");
     }
@@ -179,16 +180,16 @@ if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
     try {
         Tid tid;
         tid = concurrency.spawn((immutable(A) _actor, string name, Args args) @trusted nothrow {
-            _task_name = name;
+            thisActor.task_name = name;
             log.register(name);
-            stop = false;
+            thisActor.stop = false;
             A actor = cast(A) _actor;
             setState(Ctrl.STARTING); // Tell the owner that you are starting.
             try {
                 actor.task(args);
                 // If the actor forgets to kill it's children we'll do it anyway
                 if (!statusChildren(Ctrl.END)) {
-                    foreach (child_task_name, ctrl; childrenState) {
+                    foreach (child_task_name, ctrl; thisActor.childrenState) {
                         if (ctrl is Ctrl.ALIVE) {
                             locate(child_task_name).send(Sig.STOP);
                         }
@@ -201,7 +202,7 @@ if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
             }
             end;
         }, actor, name, args);
-        childrenState[name] = Ctrl.UNKNOWN;
+        thisActor.childrenState[name] = Ctrl.UNKNOWN;
         log("spawning %s", name);
         tid.setMaxMailboxSize(int.sizeof, OnCrowding.throwException);
         if (concurrency.register(name, tid)) {
@@ -283,7 +284,8 @@ void sendOwner(T...)(T vals) @safe {
 */
 void fail(Throwable t) @trusted nothrow {
     try {
-        ownerTid.prioritySend(TaskFailure(_task_name, cast(immutable) t));
+        debug(actor) log(t);
+        ownerTid.prioritySend(TaskFailure(thisActor.task_name, cast(immutable) t));
     }
     catch(Exception e) {
         log.fatal("Failed to deliver TaskFailure: \n
@@ -291,7 +293,7 @@ void fail(Throwable t) @trusted nothrow {
                 Because:\n
                 %s", t, e);
         log.fatal("Stopping because we failed to deliver a TaskFailure to the supervisor");
-        stop = true;
+        thisActor.stop = true;
     }
 }
 
@@ -299,7 +301,7 @@ void fail(Throwable t) @trusted nothrow {
 void setState(Ctrl ctrl) @safe nothrow {
     try {
         log("setting state to %s", ctrl);
-        ownerTid.prioritySend(CtrlMsg(task_name, ctrl));
+        ownerTid.prioritySend(CtrlMsg(thisActor.task_name, ctrl));
     }
     catch (Exception e) {
         log.error("Failed to set state");
@@ -313,7 +315,6 @@ void end() nothrow {
     setState(Ctrl.END);
 }
 
-static bool stop;
 /* 
  * Params:
  *   task_name = the name of the task
@@ -333,7 +334,7 @@ void run(Args...)(Args args) nothrow {
     }
 
     setState(Ctrl.ALIVE); // Tell the owner that you are running
-    while (!stop) {
+    while (!thisActor.stop) {
         try {
             receive(
                     args, // The message handlers you pass to your Actor template
@@ -350,23 +351,65 @@ void run(Args...)(Args args) nothrow {
     }
 }
 
+/** 
+ * 
+ * Params:
+ *   duration = the duration for the timeout
+ *   timeout = delegate function to call
+ *   args = normal message handlers for the task
+ */
+void runTimeout(Args...)(Duration duration, void delegate() @safe timeout, Args args) nothrow {
+    // Check if a failHandler was passed as an arg
+    static if (args.length == 1 && isFailHandler!(typeof(args[$ - 1]))) {
+        enum failhandler = () {}; /// Use the fail handler passed through `args`
+    }
+    else {
+        enum failhandler = (TaskFailure tf) {
+            if (ownerTid != Tid.init) {
+                ownerTid.prioritySend(tf);
+            }
+        };
+    }
+
+    setState(Ctrl.ALIVE); // Tell the owner that you are running
+    while (!thisActor.stop) {
+        try {
+            const message = receiveTimeout(
+                    duration,
+                    args, // The message handlers you pass to your Actor template
+                    failhandler,
+                    &signal,
+                    &control,
+                    &ownerTerminated,
+                    &unknown,
+            );
+            if (!message) {
+                timeout();
+            }
+        }
+        catch (Exception t) {
+            fail(t);
+        }
+    }
+}
+
 void signal(Sig signal) {
     with (Sig) final switch (signal) {
     case STOP:
-        stop = true;
+        thisActor.stop = true;
         break;
     }
 }
 
 /// Controls message sent from the children.
 void control(CtrlMsg msg) {
-    childrenState[msg.task_name] = msg.ctrl;
+    thisActor.childrenState[msg.task_name] = msg.ctrl;
 }
 
 /// Stops the actor if the supervisor stops
 void ownerTerminated(OwnerTerminated) {
     log.trace("%s, Owner stopped... nothing to life for... stopping self", thisTid);
-    stop = true;
+    thisActor.stop = true;
 }
 
 /**

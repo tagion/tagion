@@ -67,7 +67,7 @@ struct WasmGas {
             uint gas_count;
             while (!expr.empty) {
                 const elm = expr.front;
-                const instr = instrTable[elm.code];
+                const instr = instrTable.get(elm.code, illegalInstr);
                 gas_count += instr.cost;
                 expr.popFront;
                 with (IRType) {
@@ -135,6 +135,9 @@ struct WasmGas {
                     case END:
                         wasmexpr(elm.code);
                         return GasResult(gas_count, elm.code);
+                    case ILLEGAL:
+                        assert(0, format("Illegal opcode %02X", elm.code));
+                        break;
                     case SYMBOL:
                         assert(0, "Symbol opcode and it does not have an equivalent opcode");
                     }

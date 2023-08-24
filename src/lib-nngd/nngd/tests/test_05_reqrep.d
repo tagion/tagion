@@ -10,15 +10,6 @@ import std.regex;
 import nngd;
 import nngtestutil;
 
-static double timestamp()
-{
-    auto ts = Clock.currTime().toTimeSpec();
-    return ts.tv_sec + ts.tv_nsec/1e9;
-}
-
-static void log(A...)(A a){
-    writeln(format("%.6f ",timestamp),a); stdout.flush();
-}
 
 // REP
 void server_worker(string url)

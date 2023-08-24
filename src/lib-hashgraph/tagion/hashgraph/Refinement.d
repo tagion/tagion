@@ -5,17 +5,19 @@ import tagion.hashgraph.RefinementInterface;
 import tagion.crypto.Types : Pubkey;
 import tagion.basic.Types : Buffer;
 import tagion.hashgraph.Event;
+import tagion.hashgraph.Round;
 import tagion.utils.BitMask;
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.utils.StdTime;
 import tagion.logger.Logger;
 import tagion.hibon.HiBONRecord;
+
 // std
 import std.stdio;
 import std.algorithm;
 import std.array;
-
+import tagion.utils.pretend_safe_concurrency;
 
 @safe
 class StdRefinement : Refinement {
@@ -31,6 +33,14 @@ class StdRefinement : Refinement {
         this.hashgraph = hashgraph;
     }
 
+    Tid collector_service;
+    void payload(immutable(EventPackage*) epack) {
+        if (!epack.event_body.payload.empty) {
+            // send to collector payload.
+            
+        }
+    }
+
     void finishedEpoch(const(Event[]) events, const sdt_t epoch_time, const Round decided_round) {
         assert(0, "not implemented");
     }
@@ -43,6 +53,9 @@ class StdRefinement : Refinement {
         // log.trace("epack.event_body.payload.empty %s", epack.event_body.payload.empty);
     }
 
+    void swapNode() {
+
+    }
 
     void epoch(Event[] event_collection, const(Round) decided_round) {
 
@@ -84,23 +97,14 @@ class StdRefinement : Refinement {
 
         import tagion.basic.Debug;
 
-        auto offline = ~BitMask(decided_round.events
-                .filter!((e) => e !is null && e.isFamous)
-                .map!(e => e.node_id));
-        offline.chunk(hashgraph.node_size);
+        // auto offline = ~BitMask(decided_round.events
+        //         .filter!((e) => e !is null && e.isFamous)
+        //         .map!(e => e.node_id));
+        // offline.chunk(hashgraph.node_size);
 
+        // offline[].each!((node_id) => hashgraph.mark_offline(node_id));
 
-        offline[].each!((node_id) => hashgraph.mark_offline(node_id));
-        
-        hashgraph._excluded_nodes_mask |= offline;
-        // __write("Epoch exclude = %s", hashgraph.excluded_nodes_mask);
-
-
-        // __write("Epoch ONLINE=%s", online);
-
-        // online.chunk(hashgraph.node_size);
-        // hashgraph._excluded_nodes_mask |= ~online;
-        // __write(" wowo excluded nodes after=%s", hashgraph.excluded_nodes_mask);
+        // hashgraph._excluded_nodes_mask |= offline;
 
         import tagion.basic.Debug;
 
@@ -123,6 +127,7 @@ class StdRefinement : Refinement {
         finishedEpoch(events, epoch_time, decided_round);
 
         excludedNodes(hashgraph._excluded_nodes_mask);
+        swapNode();
     }
 
 }
@@ -134,14 +139,13 @@ struct RoundFingerprint {
 }
 
 @safe
-const(RoundFingerprint) hashLastDecidedRound(const Round last_decided_round) pure nothrow
-{
-    import std.algorithm:filter;
+const(RoundFingerprint) hashLastDecidedRound(const Round last_decided_round) pure nothrow {
+    import std.algorithm : filter;
 
     RoundFingerprint round_fingerprint;
     round_fingerprint.fingerprints = last_decided_round.events
         .filter!(e => e !is null)
-        .map!(e => cast (Buffer)e.event_package.fingerprint)
+        .map!(e => cast(Buffer) e.event_package.fingerprint)
         .array
         .sort
         .array;

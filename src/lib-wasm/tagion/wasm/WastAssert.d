@@ -15,6 +15,7 @@ struct Assert {
         Trap,
     }
 
+    string name;
     Method method;
     Buffer invoke;
     @label("*", true) Buffer result;

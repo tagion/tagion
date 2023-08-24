@@ -137,6 +137,45 @@ jobs:
           rm ${{ needs.commit_stage.outputs.tarball }}
           rm -rf *
 
+  android_libmobile:
+    needs: acceptance_stage
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [aarch64, armv7a, x86_64]
+    runs-on: CI
+    steps:
+      - name: get repository
+        run: |
+          cd ..
+          git clone git@github.com:tagion/tagion.git || echo "repo already exists"
+      - name: pull
+        run: |
+          git clean -f && git restore . 
+          git checkout current
+          git pull
+
+      - name: Install android tools
+        run: |
+          make -f tub/scripts/setup_android_toolchain.mk TARGET_ARCH=${{ matrix.arch}}
+
+      - name: Build
+        run: |
+          export PATH="tools/ldc2-1.29.0-linux-x86_64/bin:$PATH"
+          make DC=ldc2 PLATFORM=${{ matrix.arch }}-linux-android libmobile
+          file ./build/${{ matrix.arch }}-linux-android/lib/libmobile.so
+
+      - uses: actions/upload-artifact@v3
+        if: success()
+        with:
+          name: android-libmobile
+          path: ./build/*/lib/libmobile.so
+          if-no-files-found: error
+
+      - name: Cleanup
+        run: 
+          make PLATFORM=aarch64-linux-android clean
+
   ddoc_push:
     runs-on: CD
     needs: acceptance_stage 
@@ -248,7 +287,7 @@ jobs:
           systemctl restart --user dart_api.service
           
   deploy_testnet_container:
-    runs-on: testnet-container
+    runs-on: testnet1-local
     needs: [finish_workflow]
     steps:         
       - name: get artifact and restart service
@@ -262,11 +301,11 @@ jobs:
           export GH_TOKEN=${{ env.GITBOT_TOKEN }}
           gh run download -n successful_artifact --repo tagion/tagion
           tar -xzf *.tar.gz
-          /home/ubuntu/actions-runner/_work/tagion/tagion/build/x86_64-linux/bin/tagion --version | head -n 2 | tail -n 2 > revision.txt
+          /home/moonbase/actions-runner/_work/tagion/tagion/build/x86_64-linux/bin/tagion --version | head -n 3 | tail -n 2 > revision.txt
           mkdir -p /opt/tagion/artifact
-          cp build/x86_64-linux/bin/tagion ~/opt
-          cp revision.txt ~/opt
-          /home/ubuntu/dashboard.sh
+          cp build/x86_64-linux/bin/tagion /opt/tagion/artifact
+          cp revision.txt /opt/tagion/
+          /home/moonbase/dashboard.sh
           rm -rf build || echo "build directory already deleted"
           rm  *.tar.gz || echo "No such file or directory"
           

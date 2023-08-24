@@ -15,7 +15,7 @@ uint gene_count(const ulong bitstring) pure nothrow {
         }
         else {
             enum HALF_BITS = BITS / 2;
-            enum MASK = size_t(1UL << (HALF_BITS)) - 1;
+            enum MASK = ulong(1UL << (HALF_BITS)) - 1;
             return count_ones!(HALF_BITS)(x & MASK) + count_ones!(HALF_BITS)(x >> HALF_BITS);
         }
     }

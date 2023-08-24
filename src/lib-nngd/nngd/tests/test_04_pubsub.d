@@ -10,15 +10,6 @@ import std.random;
 import nngd;
 import nngtestutil;
 
-static double timestamp()
-{
-    auto ts = Clock.currTime().toTimeSpec();
-    return ts.tv_sec + ts.tv_nsec/1e9;
-}
-
-static void log(A...)(string fmt, A a){
-    writefln("%.6f "~fmt,timestamp,a); stdout.flush();
-}
 
 void pub_worker(string url, const string[] tags)
 {

@@ -5,12 +5,17 @@ module tagion.services.options;
 import tagion.utils.JSONCommon;
 public import tagion.services.inputvalidator : InputValidatorOptions;
 public import tagion.services.DART : DARTOptions;
-public import tagion.services.contract : ContractOptions;
+public import tagion.services.hirpc_verifier : HiRPCVerifierOptions;
 
 @property
 static immutable(string) contract_sock_path() @safe nothrow {
     version (linux) {
+        version (NNG_INPUT) {
+        return "abstract://NEUEWELLE_CONTRACT";
+        }
+        else {
         return "\0NEUEWELLE_CONTRACT";
+        }
     }
     else version (Posix) {
         import std.path;
@@ -19,7 +24,7 @@ static immutable(string) contract_sock_path() @safe nothrow {
         import core.sys.posix.unistd : getuid;
 
         const uid = assumeWontThrow(getuid.to!string);
-        return buildPath("/", "run", "user", uid, "tagionwave_contract.sock");
+        return "ipc://" ~ buildPath("/", "run", "user", uid, "tagionwave_contract.sock");
     }
     else {
         assert(0, "Unsupported platform");
@@ -30,6 +35,6 @@ static immutable(string) contract_sock_path() @safe nothrow {
 struct Options {
     InputValidatorOptions inputvalidator;
     DARTOptions dart;
-    ContractOptions contract;
+    HiRPCVerifierOptions hirpc_verifier;
     mixin JSONCommon;
 }

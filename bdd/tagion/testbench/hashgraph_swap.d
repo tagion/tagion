@@ -12,6 +12,8 @@ import std.stdio;
 import std.path : buildPath;
 import std.file : mkdirRecurse;
 
+import std.conv;
+import std.format;
 import tagion.testbench.hashgraph.hashgraph_test_network;
 
 
@@ -22,15 +24,16 @@ int _main(string[] args) {
     const module_path = env.bdd_log.buildPath(__MODULE__);
     mkdirRecurse(module_path);
     writeln(args);
-    auto node_names = args[1..$];
-
-    TestNetwork network = new TestNetwork(node_names);
-
-
-
+    stdout.flush;
+    const node_amount = args[1].to!uint;
+    const calls = args[2].to!uint;
+    string[] node_names;
+    foreach (i; 0..node_amount) {
+        node_names ~= format("Node%d", i);
+    }
     
-    auto hashgraph_swap_feature = automation!(swap_node);
-    hashgraph_swap_feature.OfflineNodeSwap(node_names, network, module_path);
+    auto hashgraph_swap_feature = automation!(swap);
+    hashgraph_swap_feature.NodeSwap(node_names, calls, module_path);
     hashgraph_swap_feature.run;
     return 0;
 }
