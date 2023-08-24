@@ -6,27 +6,21 @@ import std.stdio;
 
 import tagion.logger.Logger;
 import tagion.basic.Debug : __write;
-import tagion.utils.JSONCommon;
 import tagion.actor.actor;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord;
-import tagion.services.transcript : TranscriptOptions;
-import tagion.services.collector : CollectedSignedContract;
+import tagion.services.options;
 import tagion.services.messages;
 
 /// Msg type sent to receiver task along with a hirpc
 //alias contractProduct = Msg!"contract_product";
 @safe
 struct TVMOptions {
+    import tagion.utils.JSONCommon;
+
     string task_name = "tvm_task";
     mixin JSONCommon;
-}
-
-@safe
-struct ContractProduct {
-    CollectedSignedContract contract;
-    Document[] outputs;
 }
 
 /**
@@ -37,7 +31,7 @@ struct ContractProduct {
 **/
 @safe
 struct TVMService {
-    void task(immutable(TVMOptions) opts, immutable(TranscriptOptions)) {
+    void task(immutable(TVMOptions) opts, immutable(Options.TranscriptOptions)) {
 
         void contract(signedContract, immutable(CollectedSignedContract) contract) {
         }

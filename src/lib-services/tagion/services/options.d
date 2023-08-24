@@ -2,19 +2,14 @@
 /// Publicly imports all service options
 module tagion.services.options;
 
-import tagion.utils.JSONCommon;
-public import tagion.services.inputvalidator : InputValidatorOptions;
-public import tagion.services.DART : DARTOptions;
-public import tagion.services.hirpc_verifier : HiRPCVerifierOptions;
-
 @property
 static immutable(string) contract_sock_path() @safe nothrow {
     version (linux) {
         version (NNG_INPUT) {
-        return "abstract://NEUEWELLE_CONTRACT";
+            return "abstract://NEUEWELLE_CONTRACT";
         }
         else {
-        return "\0NEUEWELLE_CONTRACT";
+            return "\0NEUEWELLE_CONTRACT";
         }
     }
     else version (Posix) {
@@ -32,9 +27,23 @@ static immutable(string) contract_sock_path() @safe nothrow {
 }
 
 /// All options for neuewelle
+//@safe
 struct Options {
+    import std.json;
+    import tagion.utils.JSONCommon;
+    public import tagion.services.inputvalidator : InputValidatorOptions;
+    public import tagion.services.DART : DARTOptions;
+    public import tagion.services.hirpc_verifier : HiRPCVerifierOptions;
+    public import tagion.services.collector : CollectorOptions;
+    public import tagion.services.transcript : TranscriptOptions;
+    public import tagion.services.TVM : TVMOptions;
+
     InputValidatorOptions inputvalidator;
-    DARTOptions dart;
     HiRPCVerifierOptions hirpc_verifier;
+    DARTOptions dart;
+    CollectorOptions collector;
+    TranscriptOptions transcript;
+    TVMOptions tvm;
     mixin JSONCommon;
+    mixin JSONConfig;
 }

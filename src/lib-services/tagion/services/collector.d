@@ -3,22 +3,16 @@ module tagion.services.collector;
 import tagion.actor.actor;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
-import tagion.script.StandardRecords;
 import tagion.dart.Recorder : RecordFactory;
-
+import tagion.script.StandardRecords : SignedContract;
 import tagion.services.messages;
 
 @safe
-struct CollectedSignedContract {
-    Document[] inputs;
-    Document[] reads;
-    SignedContract contract;
-    //    mixin HiBONRecord;
-}
-
-@safe
 struct CollectorOptions {
+    import tagion.utils.JSONCommon;
+
     string task_name = "collector_task";
+    mixin JSONCommon;
 }
 
 @safe

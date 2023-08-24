@@ -22,6 +22,7 @@ import tagion.actor;
 import tagion.services.supervisor;
 import tagion.services.options;
 import tagion.GlobalSignals;
+import tagion.utils.JSONCommon;
 
 // enum EXAMPLES {
 //     ver = Example("-v"),
@@ -66,7 +67,7 @@ void signal_handler(int _) @trusted nothrow {
 mixin Main!(_main);
 
 int _main(string[] args) {
-    if(geteuid == 0) {
+    if (geteuid == 0) {
         stderr.writeln("FATAL: YOU SHALL NOT RUN THIS PROGRAM AS ROOT");
         return 1;
     }
@@ -101,6 +102,7 @@ int _main(string[] args) {
     auto logger_service_tid = startLogger;
     scope (exit) {
         import tagion.basic.Types : Control;
+
         logger_service_tid.control(Control.STOP);
         receiveOnly!Control;
     }
@@ -109,16 +111,17 @@ int _main(string[] args) {
     immutable opts = Options(
             /// InputValidatorOptions("ipc:///var/run/user/1001/neuewelle.sock")
             // InputValidatorOptions("tcp://127.0.0.1:31200")
-            InputValidatorOptions(contract_sock_path)
+            Options.InputValidatorOptions(contract_sock_path)
     );
     log("Starting with options \n%s", opts.stringify);
     enum supervisor_task_name = "supervisor";
     auto supervisor_handle = spawn!Supervisor(supervisor_task_name, opts);
 
-    if(waitforChildren(Ctrl.ALIVE)) {
+    if (waitforChildren(Ctrl.ALIVE)) {
         log("alive");
         stopsignal.wait;
-    } else {
+    }
+    else {
         log("Progam did not start");
     }
 
