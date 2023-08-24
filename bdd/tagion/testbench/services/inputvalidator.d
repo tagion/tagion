@@ -23,15 +23,17 @@ import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONBase;
 
 enum feature = Feature(
-            "Inputvalidator service",
-            [
-        "This feature should verify that the inputvalidator accepts valid and rejects invalid LEB128 input over a socket"
-]);
+    "Inputvalidator service",
+    ["This feature should verify that the inputvalidator accepts valid and rejects invalid LEB128 input over a socket"]);
 
 alias FeatureContext = Tuple!(
-        SendADocumentToTheSocket, "SendADocumentToTheSocket",
-        FeatureGroup*, "result"
+    SendADocumentToTheSocket, "SendADocumentToTheSocket",
+    SendRandomBuffer, "SendRandomBuffer",
+    SendMalformedHiBON, "SendMalformedHiBON",
+    SendPartialHiBON, "SendPartialHiBON",
+    FeatureGroup*, "result"
 );
+            
 
 enum input_test = "input_test";
 
@@ -111,4 +113,66 @@ class SendADocumentToTheSocket {
         return result_ok;
     }
 
+                @safe @Scenario("send random buffer",
+[])
+                    class SendRandomBuffer {
+                        
+                @Given("a inputvalidator")
+                Document inputvalidator() {
+                        return Document();
+                    }
+                
+                @When("we send a `random_buffer` on a socket")
+                Document socket() {
+                        return Document();
+                    }
+                
+                @Then("the inputvalidator rejects")
+                Document rejects() {
+                        return Document();
+                    }
+                
+                    }
+                
+                @safe @Scenario("send malformed HiBON",
+[])
+                    class SendMalformedHiBON {
+                        
+                @Given("a inputvalidator")
+                Document inputvalidator() {
+                        return Document();
+                    }
+                
+                @When("we send a `malformed_hibon` on a socket")
+                Document socket() {
+                        return Document();
+                    }
+                
+                @Then("the inputvalidator rejects")
+                Document rejects() {
+                        return Document();
+                    }
+                
+                    }
+                
+@safe @Scenario("send partial HiBON",
+[])
+class SendPartialHiBON {
+        
+@Given("a inputvalidator")
+Document inputvalidator() {
+        return Document();
+}
+
+@When("we send a `partial_hibon` on a socket")
+Document socket() {
+        return Document();
+    }
+
+@Then("the inputvalidator rejects")
+Document rejects() {
+        return Document();
+    }
+
+    }
 }
