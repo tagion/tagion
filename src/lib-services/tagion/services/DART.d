@@ -19,44 +19,56 @@ import tagion.dart.DART;
 import tagion.dart.Recorder;
 import tagion.dart.DARTBasic : DARTIndex;
 import tagion.hibon.Document;
+import tagion.services.messages;
 
 @safe
 struct DARTOptions {
     string dart_filename = buildPath(".", "dart".setExtension(FileExtension.dart));
     mixin JSONCommon;
 }
-/// Response from a dart CRUD call
-alias dartResp = Msg!"dartResp";
 
 struct DARTService {
-    DART db;
-
-    // Rssponds immutable Document[]
-    void dartRead(Msg!"dartRead", Tid to, const(DARTIndex)[] fingerprints) {
-        auto read_recorder = db.loads(fingerprints);
-        const(Document)[] docs = read_recorder[].map!(a => a.filed).array;
-
-        send(to, dartResp(), cast(immutable) docs);
-    }
-
-    void dartRim(Msg!"dartRim", Tid to, DART.Rims rims) {
-    }
-
-    void dartModify(Msg!"dartModify", Tid to, RecordFactory.Recorder recorder) {
-    }
-
-    // Responds DARTIndex
-    void dartBullseye(Msg!"dartBullseye", Tid to) {
-        send(to, dartResp(), DARTIndex(db.bullseye));
-    }
-
     void task(immutable(DARTOptions) opts, immutable(SecureNet) net) {
+        DART db;
         db = new DART(net, opts.dart_filename);
-        run(&dartRead, &dartRim, &dartModify, &dartBullseye);
 
-        scope (exit) {
+        DARTIndex eye;
+
+        scope(exit) {
             db.close();
         }
+
+        void read(dartReadRR req, immutable(DARTIndex[]) fingerprints) {
+            RecordFactory.Recorder read_recorder = db.loads(fingerprints);                            
+            req.respond(cast(immutable) read_recorder);
+        }
+
+        // only used from the outside
+        void rim(dartRimRR req, DART.Rims rims) {
+            // empty  
+        } 
+
+        void modify(dartModifyRR req, immutable(RecordFactory.Recorder) recorder) {
+            eye = DARTIndex(db.modify(recorder));
+            req.respond(cast(immutable) eye);
+        }
+
+        void bullseye(dartBullseyeRR req) {
+            if (eye is DARTIndex.init) {
+                eye = DARTIndex(db.bullseye);
+            }
+
+            req.respond(cast(immutable) eye);
+            
+            
+
+        }
+
+        
+        run(&read, &modify, &bullseye);
+        // run(&read, &rim, &modify, &bullseye);
+        
+
     }
 }
 
