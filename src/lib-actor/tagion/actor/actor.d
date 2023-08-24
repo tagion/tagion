@@ -78,7 +78,7 @@ unittest {
     some_responder(created_req);
     int received = receiveTimeout(Duration.zero, (Some_req.Response res, string _) {
             assert(created_req.msg == res.msg, "request msg were not the same");
-            assert(created_req.id == res.id, "request msg were not the same");
+            assert(created_req.id == res.id, "request id were not the same");
     });
     assert(received, "never received response");
 }
@@ -86,9 +86,9 @@ unittest {
 // State messages send to the supervisor
 enum Ctrl {
     UNKNOWN, // Unkwnown state
-    STARTING, // The actors is lively
-    ALIVE, /// Send to the ownerTid when the task has been started
-    END, /// Send for the child to the ownerTid when the task ends
+    STARTING, // The actors is starting
+    ALIVE, /// The actor is running
+    END, /// The actor is stopping
 }
 
 // Signals send from the supervisor to the direct children
