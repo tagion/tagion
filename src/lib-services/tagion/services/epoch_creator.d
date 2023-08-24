@@ -21,12 +21,13 @@ import tagion.utils.Queue;
 import tagion.utils.Random;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.utils.Miscellaneous : cutHex;
+import tagion.gossip.AddressBook;
 
 // core
 import core.time;
 
 // std
-import std.algorithm : each;
+import std.algorithm;
 import std.typecons : No;
 import std.stdio;
 
@@ -64,9 +65,8 @@ struct EpochCreatorService {
         // GossipNet gossip_net;
         // gossip_net = new NewEmulatorGossipNet(net.pubkey, opts.timeout.msecs);
 
-        ownerTid.send(net.pubkey);
-        Pubkey[] pkeys;
-
+        Pubkey[] channels = addressbook.activeNodeChannels;
+        /*
         foreach (i; 0 .. opts.nodes) {
             log.trace("Waiting for Receive %d", i);
             // writeln("before receive");
@@ -83,6 +83,7 @@ struct EpochCreatorService {
 
         receiveOnly!(Msg!"BEGIN");
         log.trace("After begin");
+    */
         // auto refinement = new StdRefinement;
 
         // HashGraph hashgraph = new HashGraph(opts.nodes, net, refinement, &gossip_net.isValidChannel, No.joining);
@@ -134,7 +135,7 @@ struct EpochCreatorService {
         }
 
         void timeout() {
-            log.trace("TEST");
+            log.trace("TEST %s", channels.map!(p => p.cutHex));
         }
 
         // runTimeout(100.msecs, &timeout, &receivePayload, &receiveWavefront);

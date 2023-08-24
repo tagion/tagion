@@ -249,11 +249,11 @@ synchronized class AddressBook {
      * Return active node channels in network
      * @return active node channels
      */
-    immutable(Pubkey[]) activeNodeChannels() @trusted const pure nothrow {
+    Pubkey[] activeNodeChannels() @trusted const pure nothrow {
         import std.exception : assumeUnique;
 
         auto channels = (cast(NodeAddresses) addresses).keys;
-        return assumeUnique(channels);
+        return channels;
     }
 
     /**

@@ -15,6 +15,7 @@ import tagion.crypto.Types : Pubkey;
 import std.algorithm;
 import std.array;
 import tagion.utils.Miscellaneous : cutHex;
+import tagion.dart.DARTOptions;
 
 import std.stdio;
 
@@ -52,6 +53,7 @@ class SendPayloadAndCreateEpoch {
 
         this.epoch_creator_options = epoch_creator_options;
         //EpochCreatorOptions xxx = epoch_creator_options;
+        addressbook.number_of_active_nodes = epoch_creator_options.nodes;
         foreach (i; 0 .. epoch_creator_options.nodes) {
             EpochCreatorOptions local_opts = epoch_creator_options;
             immutable prefix = format("Node_%s", i);
@@ -60,6 +62,7 @@ class SendPayloadAndCreateEpoch {
             auto net = new StdSecureNet();
             net.generateKeyPair(opts.task_name);
             nodes ~= Node(net, opts.task_name, opts);
+            addressbook[net.pubkey] = NodeAddress(format("address %s", i), DARTOptions.init, 0);
         }
 
     }
@@ -84,11 +87,12 @@ class SendPayloadAndCreateEpoch {
             );
         }
         waitforChildren(Ctrl.STARTING);
-
+        /*
         handles.each!(h => pkeys ~= receiveOnly!Pubkey);
         check(pkeys.length == handles.length && pkeys.length == epoch_creator_options.nodes, "not all pkeys added");
         writefln("owner received pkeys");
 
+        
         foreach (i, handle; handles) {
             foreach (pkey; pkeys) {
                 writefln("BEFORE SEND %s", i);
@@ -103,9 +107,10 @@ class SendPayloadAndCreateEpoch {
         }
 
         handles.each!(h => h.send(Msg!"BEGIN"()));
+*/
         waitforChildren(Ctrl.ALIVE);
-        writefln("Wait 1 sec");
-        Thread.sleep(1.seconds);
+        //    writefln("Wait 1 sec");
+        //      Thread.sleep(1.seconds);
 
         // // auto net = new StdSecureNet();
         // // immutable passphrase = "wowo";
