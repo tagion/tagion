@@ -1,4 +1,4 @@
-/// Service for creating epochs
+// Service for creating epochs
 /// [Documentation](https://docs.tagion.org/#/documents/architecture/EpochCreator)
 module tagion.services.epoch_creator;
 
@@ -19,7 +19,7 @@ import tagion.gossip.InterfaceNet : GossipNet;
 import tagion.gossip.EmulatorGossipNet;
 import tagion.utils.Queue;
 import tagion.utils.Random;
-import tagion.utils.pretend_safe_concurrency : ownerTid, receiveOnly, send;
+import tagion.utils.pretend_safe_concurrency;
 import tagion.utils.Miscellaneous : cutHex;
 
 // core
@@ -33,6 +33,7 @@ import std.stdio;
 // alias ContractSignedConsensus = Msg!"ContractSignedConsensus";
 alias Payload = Msg!"Payload";
 alias ReceivedWavefront = Msg!"ReceivedWavefront";
+alias AddedChannels = Msg!"AddedChannels";
 
 alias PayloadQueue = Queue!Document;
 
@@ -47,81 +48,93 @@ enum NetworkMode {
 struct EpochCreatorOptions {
 
     uint timeout; // timeout between nodes in milliseconds;
-    ushort nodes;
+    size_t nodes;
     uint scrap_depth;
     mixin JSONCommon;
 }
 
 struct EpochCreatorService {
 
-    Pubkey[] pkeys;
     void task(immutable(EpochCreatorOptions) opts, immutable(SecureNet) net) {
 
         // writeln("IN TASK");
-        const hirpc = HiRPC(net);
+        // const hirpc = HiRPC(net);
 
-        GossipNet gossip_net;
-        gossip_net = new EmulatorGossipNet(net.pubkey, opts.timeout.msecs);
+        // GossipNet gossip_net;
+        // gossip_net = new NewEmulatorGossipNet(net.pubkey, opts.timeout.msecs);
 
         ownerTid.send(net.pubkey);
+        Pubkey[] pkeys;
 
         foreach (i; 0 .. opts.nodes) {
-            auto p = receiveOnly!(Pubkey);
-            pkeys ~= p;
-            // writefln("node: %s, %s receive %s", net.pubkey.cutHex, i, p.cutHex); 
+            log.trace("Waiting for Receive %d", i);
+            // writeln("before receive");
+            pkeys ~= receiveOnly!(Pubkey);
+            // pkeys ~= p;
+            // receive((Pubkey p) {pkeys ~= p;});
             log.trace("Receive %d %s", i, pkeys[i].cutHex);
         }
-        foreach(p; pkeys) {
-            gossip_net.add_channel(p);
-        }
+                
+        // foreach(p; pkeys) {
+        //     gossip_net.add_channel(p);
+        // }
+        ownerTid.send(AddedChannels());
 
-        auto refinement = new StdRefinement;
+        receiveOnly!(Msg!"BEGIN");
 
-        HashGraph hashgraph = new HashGraph(opts.nodes, net, refinement, &gossip_net.isValidChannel, No.joining);
-        hashgraph.scrap_depth = opts.scrap_depth;
+        // auto refinement = new StdRefinement;
 
-        PayloadQueue payload_queue = new PayloadQueue();
-        writeln("before eva");
-        {
-            immutable buf = cast(Buffer) hashgraph.channel;
-            const nonce = cast(Buffer) net.calcHash(buf);
-            auto eva_event = hashgraph.createEvaEvent(gossip_net.time, nonce);
-        }
+        // HashGraph hashgraph = new HashGraph(opts.nodes, net, refinement, &gossip_net.isValidChannel, No.joining);
+        // hashgraph.scrap_depth = opts.scrap_depth;
+
+        // PayloadQueue payload_queue = new PayloadQueue();
+        // writeln("before eva");
+        // {
+        //     immutable buf = cast(Buffer) hashgraph.channel;
+        //     const nonce = cast(Buffer) net.calcHash(buf);
+        //     auto eva_event = hashgraph.createEvaEvent(gossip_net.time, nonce);
+        // }
 
 
-        const(Document) payload() {
-            if (!hashgraph.active || payload_queue.empty) {
-                return Document();
-            }
-            return payload_queue.read;
-        }
+        // const(Document) payload() {
+        //     if (!hashgraph.active || payload_queue.empty) {
+        //         return Document();
+        //     }
+        //     return payload_queue.read;
+        // }
 
-        void receivePayload(Payload, Document pload) {
-            payload_queue.write(pload);
-        }
+        // void receivePayload(Payload, Document pload) {
+        //     log.trace("Received Payload");
+        //     payload_queue.write(pload);
+        // }
 
-        void receiveWavefront(ReceivedWavefront, Document wave_doc) {
-            const receiver = HiRPC.Receiver(wave_doc);
-            hashgraph.wavefront(
-                    receiver,
-                    gossip_net.time,
-                    (const(HiRPC.Sender) return_wavefront) { gossip_net.send(receiver.pubkey, return_wavefront); },
-                    &payload);
-        }
+        // void receiveWavefront(ReceivedWavefront, const(Document) wave_doc) {
+        //     log.trace("Received wavefront");
+        //     const receiver = HiRPC.Receiver(wave_doc);
+        //     hashgraph.wavefront(
+        //             receiver,
+        //             gossip_net.time,
+        //             (const(HiRPC.Sender) return_wavefront) { gossip_net.send(receiver.pubkey, return_wavefront); },
+        //             &payload);
+        // }
 
-        Random!size_t random;
-        random.seed(123456789);
+        // Random!size_t random;
+        // random.seed(123456789);
+        // void timeout() {
+        //     writefln("%s areweingraph: %s", net.pubkey.cutHex, hashgraph.areWeInGraph);
+            
+        //     const init_tide = random.value(0, 3) is 1;
+        //     if (!init_tide) {
+        //         return;
+        //     }
+        //     hashgraph.init_tide(&gossip_net.gossip, &payload, gossip_net.time);
+        // }
         void timeout() {
-            writefln("running timeout");
-            const init_tide = random.value(0, 2) is 1;
-            if (!init_tide) {
-                return;
-            }
-            hashgraph.init_tide(&gossip_net.gossip, &payload, gossip_net.time);
+            writeln("TEST");
         }
-
-
-        runTimeout(500.msecs, &timeout, &receivePayload, &receiveWavefront);
+        
+        // runTimeout(100.msecs, &timeout, &receivePayload, &receiveWavefront);
+        runTimeout(100.msecs, &timeout);
 
     }
 
