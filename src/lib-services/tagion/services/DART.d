@@ -8,6 +8,7 @@ import std.algorithm : map;
 import std.array;
 import std.stdio;
 import std.path;
+import std.exception;
 
 import tagion.utils.pretend_safe_concurrency;
 import tagion.utils.JSONCommon;
@@ -30,7 +31,13 @@ struct DARTOptions {
 struct DARTService {
     void task(immutable(DARTOptions) opts, immutable(SecureNet) net) {
         DART db;
+        Exception dart_exception;
         db = new DART(net, opts.dart_filename);
+        if (dart_exception !is null) {
+            throw dart_exception;
+        }
+        
+
 
         DARTIndex eye;
 

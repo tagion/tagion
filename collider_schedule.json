@@ -201,6 +201,15 @@
                 "example"
             ],
             "timeout": 0.0
+        },
+        "dart_service": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "dart_service",
+                "services"
+            ],
+            "timeout": 0.0
         }
     
     }
