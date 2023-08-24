@@ -1,4 +1,4 @@
-module tagion.testbench.transaction_service;
+module tagion.testbench.transcript_service;
 
 import tagion.tools.Basic;
 import tagion.behaviour.Behaviour;
@@ -16,7 +16,7 @@ mixin Main!(_main);
 
 int _main(string[] args) {
     //    wasm_testsuite.testsuite=buildPath(__FILE__.dirName, "tvm", "testsuite");
-    /*
+/*
     wasm_testsuite.testsuite = buildPath(env.reporoot, "src", "lib-wasm", "tagion", "wasm", "unitdata");
 
     writefln("args=%s", args);

@@ -46,18 +46,20 @@ digraph Message_flow {
   Replicator [href="#/documents/architecture/Replicator.md"]
 
   Input -> HiRPCVerifier [label="HiRPC(contract)" color=green];
-  HiRPCVerifier -> Collector [label="contract-NC" color=green];
-  Collector -> TVM [label="contract-S" color=green];
+  HiRPCVerifier -> Collector [label="contract" color=green];
+  Collector -> DART [label=dartRead color=blue]
+  Collector -> TVM [label="contract-S\ninputs" color=green];
+  Collector -> TVM [label="contract-C\ninputs" color=green];
   EpochCreator -> Collector [label="contract-C" color=darkgreen];
   EpochCreator -> Transcript [label=epoch color=green];
-  TVM -> Transcript [label="contract\noutput" color=red];
-  TVM -> EpochCreator [label="contract-SC" color=green];
+  TVM -> Transcript [label="contract\ninputs\noutputs" color=red];
+  TVM -> EpochCreator [label="contract" color=green];
   DART -> Replicator [label=recorder color=red dir=both];
   DART -> NodeInterface [label="DART(ro)\nrecorder" dir=both color=magenta];
   NodeInterface -> P2P [label=Document dir=both];
-  DART -> Collector [label="recorder\nin/read" color=red];
+  DART -> Collector [label="recorder" color=red];
   EpochCreator -> NodeInterface [label=wavefront dir=both color=cyan4];
-  Transcript -> DART [label=recorder color=blue];
+  Transcript -> DART [label=dartModify color=blue];
   Replicator -> NodeInterface [label=recorder];
 }
 ```
