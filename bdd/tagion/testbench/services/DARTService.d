@@ -15,6 +15,8 @@ import std.algorithm;
 import std.array;
 import tagion.testbench.dart.dart_helper_functions;
 import tagion.dart.Recorder;
+import tagion.utils.pretend_safe_concurrency;
+import tagion.dart.DARTBasic : DARTIndex;
 
 // import tagion.crypto.SecureNet;
 import tagion.crypto.SecureInterfaceNet;
@@ -22,8 +24,6 @@ import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.dart.DART;
 import std.random;
 import tagion.hibon.HiBONRecord;
-
-
 
 enum feature = Feature(
             "see if we can read and write trough the dartservice",
@@ -38,7 +38,7 @@ alias FeatureContext = Tuple!(
         [])
 class WriteAndReadFromDartDb {
 
-    DARTServiceHandle handle;    
+    DARTServiceHandle handle;
     SecureNet net;
     DARTOptions opts;
     Mt19937 gen;
@@ -53,7 +53,6 @@ class WriteAndReadFromDartDb {
         });
     }
 
-    
     this(DARTOptions opts) {
 
         this.opts = opts;
@@ -64,11 +63,10 @@ class WriteAndReadFromDartDb {
 
     }
 
-
     @Given("I have a dart db")
     Document dartDb() {
         if (opts.dart_filename.exists) {
-            opts.dart_filename.remove;            
+            opts.dart_filename.remove;
         }
 
         DART.create(opts.dart_filename, net);
@@ -77,10 +75,11 @@ class WriteAndReadFromDartDb {
 
     @Given("I have an dart actor with said db")
     Document saidDb() {
+        thisActor.task_name = "wowo";
+        register("wowo", thisTid);
+
         handle = (() @trusted => spawn!DARTService("DartService", cast(immutable) opts, cast(immutable) net))();
         waitforChildren(Ctrl.ALIVE);
-
-
 
         return result_ok;
     }
@@ -88,16 +87,25 @@ class WriteAndReadFromDartDb {
     @When("I send a dartModify command with a recorder containing changes to add")
     Document toAdd() {
 
-
         random_archives = RandomArchives(gen.front, 100, 1000);
         auto record_factory = RecordFactory(net);
         auto recorder = record_factory.recorder;
-        pragma(msg, "TESTNERTEINTRSNTRIN", typeof(random_archives.values.front));
         auto docs = random_archives.values.map!(a => SimpleDoc(a).toDoc).array;
 
         recorder.insert(docs, Archive.Type.ADD);
 
+        auto modify_request = dartModifyRR();
+        (() @trusted => handle.send(modify_request, cast(immutable) recorder))();
 
+        // const bullseye = receiveOnly!(Tuple!(dartModifyRR.Response res, );
+
+        const bullseye = receiveOnly!(dartModifyRR.Response, immutable(DARTIndex));
+
+        writefln("%s", bullseye);
+
+        // DARTIndex bullseye = receiveTimeout(Duration.zero, (dartModifyRR.Response res, string _) {
+
+        // }
 
         return Document();
     }

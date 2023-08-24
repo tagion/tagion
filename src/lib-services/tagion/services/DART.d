@@ -57,14 +57,16 @@ struct DARTService {
 
         void modify(dartModifyRR req, immutable(RecordFactory.Recorder) recorder) {
             eye = DARTIndex(db.modify(recorder));
+            writefln("before send bullseye");
             req.respond(cast(immutable) eye);
+            writefln("send bullseye");
         }
 
         void bullseye(dartBullseyeRR req) {
             if (eye is DARTIndex.init) {
                 eye = DARTIndex(db.bullseye);
             }
-
+            
             req.respond(cast(immutable) eye);
             
             
