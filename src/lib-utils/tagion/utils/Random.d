@@ -197,3 +197,20 @@ unittest {
     }
 
 }
+
+
+/**
+ * Generate a random id 
+ * Returns: random id
+**/
+const(uint) generateId() @safe {
+    uint id = 0;
+    import stdrnd = std.random;
+
+    auto rnd = Random!uint(stdrnd.unpredictableSeed);
+    do {
+        id = rnd.value();
+    }
+    while (id is 0 || id is uint.max);
+    return id;
+}

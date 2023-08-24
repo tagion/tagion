@@ -402,21 +402,13 @@ struct HiRPC {
     alias check = Check!HiRPCException;
     const SecureNet net;
 
-    /* 
- * Generate a random id 
- * Returns: random id
- */
-    const(uint) generateId() const {
-        uint id = 0;
-        import tagion.utils.Random;
-        import stdrnd = std.random;
-
-        auto rnd = Random!uint(stdrnd.unpredictableSeed);
-        do {
-            id = rnd.value();
-        }
-        while (id is 0 || id is uint.max);
-        return id;
+    /**
+     * Generate a random id 
+     * Returns: random id
+    **/
+    const(uint) generateId() @safe const {
+        import rnd =tagion.utils.Random;
+        return rnd.generateId;
     }
 
     /** 
@@ -625,3 +617,5 @@ unittest {
         // writefln("recever.verified=%s", recever.verified);
     }
 }
+
+
