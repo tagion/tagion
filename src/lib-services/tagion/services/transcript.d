@@ -1,4 +1,4 @@
-/// Service for transcript  
+// Service for transcript  
 /// [Documentation](https://docs.tagion.org/#/documents/architecture/transcript)
 module tagion.services.transcript;
 
@@ -14,7 +14,6 @@ import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord;
 import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet;
-public import tagion.services.inputvalidator : inputDoc;
 import tagion.services.messages;
 
 /// Msg type sent to receiver task along with a hirpc

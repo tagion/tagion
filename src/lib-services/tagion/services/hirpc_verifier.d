@@ -4,6 +4,7 @@ module tagion.services.hirpc_verifier;
 
 import std.stdio;
 
+import tagion.services.messages;
 import tagion.logger.Logger;
 import tagion.basic.Debug : __write;
 import tagion.utils.JSONCommon;
@@ -14,10 +15,6 @@ import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord;
 import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet;
-public import tagion.services.inputvalidator : inputDoc;
-
-/// Msg type sent to receiver task along with a hirpc
-alias inputHiRPC = Msg!"inputHiRPC";
 
 struct HiRPCVerifierOptions {
     /// Rejected documents won be discarded and instead sent to rejected_contracts_task
