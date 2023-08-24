@@ -50,7 +50,7 @@ class SendPayloadAndCreateEpoch {
 
     this() {
         //empty
-        foreach(i; 0..5) {
+        foreach(i; 0..epoch_creator_options.nodes) {
 
             immutable name = format("Node_%s", i);
             auto net = new StdSecureNet();
@@ -89,6 +89,7 @@ class SendPayloadAndCreateEpoch {
             foreach(pkey; pkeys) {
                 writefln("BEFORE SEND %s", i);
                 handle.send(pkey);
+                Thread.sleep(1.msecs);
                 writefln("AFTER SEND %s", i);
             }
 
