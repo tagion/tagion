@@ -24,14 +24,13 @@ import core.thread;
 enum feature = Feature(
             "EpochCreator service",
             [
-        "This service is responsbile for resolving the Hashgraph and producing a consensus ordered list of events, an Epoch."
-]);
+            "This service is responsbile for resolving the Hashgraph and producing a consensus ordered list of events, an Epoch."
+            ]);
 
 alias FeatureContext = Tuple!(
         SendPayloadAndCreateEpoch, "SendPayloadAndCreateEpoch",
         FeatureGroup*, "result"
 );
-
 
 @safe @Scenario("Send payload and create epoch",
         [])
@@ -40,9 +39,8 @@ class SendPayloadAndCreateEpoch {
     struct Node {
         SecureNet net;
         string name;
-        EpochCreatorOptions opts;   
+        EpochCreatorOptions opts;
     }
-
 
     Node[] nodes;
     ActorHandle!EpochCreatorService[] handles;
@@ -50,12 +48,12 @@ class SendPayloadAndCreateEpoch {
 
     this() {
         //empty
-        foreach(i; 0..epoch_creator_options.nodes) {
+        foreach (i; 0 .. epoch_creator_options.nodes) {
 
             immutable name = format("Node_%s", i);
             auto net = new StdSecureNet();
             net.generateKeyPair(name);
-            nodes ~= Node(net, name, epoch_creator_options);            
+            nodes ~= Node(net, name, epoch_creator_options);
         }
     }
 
@@ -64,43 +62,43 @@ class SendPayloadAndCreateEpoch {
         import tagion.options.CommonOptions : setCommonOptions;
         import tagion.prior_services.Options;
 
-
         Options opt;
         setDefaultOption(opt);
         setCommonOptions(opt.common);
 
         // Pubkey[] pkeys = nodes.map!(n => n.net.pubkey).array;
-    
+
         Pubkey[] pkeys;
-        foreach(n; nodes) {
+        foreach (n; nodes) {
             handles ~= spawn!EpochCreatorService(
-                cast(immutable) n.name,
-                cast(immutable) n.opts,
-                cast(immutable) n.net,
+                    cast(immutable) n.name,
+                    cast(immutable) n.opts,
+                    cast(immutable) n.net,
             );
         }
         waitforChildren(Ctrl.STARTING);
 
         handles.each!(h => pkeys ~= receiveOnly!Pubkey);
-        check(pkeys.length == handles.length && pkeys.length == epoch_creator_options.nodes, "not all pkeys added");        
+        check(pkeys.length == handles.length && pkeys.length == epoch_creator_options.nodes, "not all pkeys added");
         writefln("owner received pkeys");
 
         foreach (i, handle; handles) {
-            foreach(pkey; pkeys) {
+            foreach (pkey; pkeys) {
                 writefln("BEFORE SEND %s", i);
                 handle.send(pkey);
-                Thread.sleep(1.msecs);
+                // Thread.sleep(1.msecs);
                 writefln("AFTER SEND %s", i);
             }
 
             // pkeys.each!(p => handle.send(p));
-            writefln("send %d pkeys", pkeys.length);
+            writefln("send node %d %d pkeys", i, pkeys.length);
             receiveOnly!(AddedChannels);
         }
 
         handles.each!(h => h.send(Msg!"BEGIN"()));
         waitforChildren(Ctrl.ALIVE);
-        Thread.sleep(100.seconds);
+        writefln("Wait 1 sec");
+        Thread.sleep(1.seconds);
 
         // // auto net = new StdSecureNet();
         // // immutable passphrase = "wowo";
@@ -118,26 +116,25 @@ class SendPayloadAndCreateEpoch {
         //         pkeys,
         // );
 
-
         return result_ok;
     }
 
     @When("i sent a payload to node0")
     Document node0() {
-        
+
         return Document();
     }
 
     @Then("all the nodes should create an epoch containing the payload")
     Document payload() {
 
-        import core.thread.threadbase : thread_joinAll;
-        (() @trusted => thread_joinAll())();
-        
-        foreach( handle; handles) {
+        // import core.thread.threadbase : thread_joinAll;
+        // (() @trusted => thread_joinAll())();
+
+        foreach (handle; handles) {
             handle.send(Sig.STOP);
         }
-        
+
         waitforChildren(Ctrl.END);
         return Document();
     }

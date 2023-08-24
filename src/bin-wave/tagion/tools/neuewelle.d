@@ -67,6 +67,7 @@ void signal_handler(int _) @trusted nothrow {
 mixin Main!(_main);
 
 int _main(string[] args) {
+    immutable program = args[0];
     if (geteuid == 0) {
         stderr.writeln("FATAL: YOU SHALL NOT RUN THIS PROGRAM AS ROOT");
         return 1;
@@ -80,7 +81,8 @@ int _main(string[] args) {
     sigaction(SIGINT, &sa, null);
 
     bool version_switch;
-    immutable program = args[0];
+    auto config_file = "tagionwave.json";
+    scope Options local_options = Options.defaultOptions;
 
     auto main_args = getopt(args,
             "v|version", "Print revision information", &version_switch
@@ -108,12 +110,8 @@ int _main(string[] args) {
     }
 
     log.register(baseName(program));
-    immutable opts = Options(
-            /// InputValidatorOptions("ipc:///var/run/user/1001/neuewelle.sock")
-            // InputValidatorOptions("tcp://127.0.0.1:31200")
-            Options.InputValidatorOptions(contract_sock_path)
-    );
-    log("Starting with options \n%s", opts.stringify);
+
+    immutable opts = Options(local_options);
     enum supervisor_task_name = "supervisor";
     auto supervisor_handle = spawn!Supervisor(supervisor_task_name, opts);
 
