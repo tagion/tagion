@@ -20,6 +20,7 @@ import std.stdio;
 
 import core.time;
 import core.thread;
+import tagion.gossip.AddressBook;
 
 enum feature = Feature(
             "EpochCreator service",
@@ -44,17 +45,23 @@ class SendPayloadAndCreateEpoch {
 
     Node[] nodes;
     ActorHandle!EpochCreatorService[] handles;
-    immutable(EpochCreatorOptions) epoch_creator_options = EpochCreatorOptions(1000, 5, 0);
+    immutable(EpochCreatorOptions) epoch_creator_options; // = EpochCreatorOptions(1000, 5, 0);
 
-    this() {
-        //empty
+    this(immutable(EpochCreatorOptions) epoch_creator_options) {
+        import tagion.services.options;
+
+        this.epoch_creator_options = epoch_creator_options;
+        //EpochCreatorOptions xxx = epoch_creator_options;
         foreach (i; 0 .. epoch_creator_options.nodes) {
-
-            immutable name = format("Node_%s", i);
+            EpochCreatorOptions local_opts = epoch_creator_options;
+            immutable prefix = format("Node_%s", i);
+            setTaskPrefix(local_opts, prefix);
+            immutable opts = local_opts;
             auto net = new StdSecureNet();
-            net.generateKeyPair(name);
-            nodes ~= Node(net, name, epoch_creator_options);
+            net.generateKeyPair(opts.task_name);
+            nodes ~= Node(net, opts.task_name, opts);
         }
+
     }
 
     @Given("I have 5 nodes and start them in mode0")
