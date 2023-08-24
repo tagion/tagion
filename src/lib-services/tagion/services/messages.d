@@ -3,6 +3,11 @@ import tagion.actor.actor;
 import tagion.hibon.Document;
 import tagion.script.StandardRecords;
 
+/// Msg Type sent to actors who receive the document
+alias inputDoc = Msg!"inputDoc";
+/// Msg type sent to receiver task along with a hirpc
+alias inputHiRPC = Msg!"inputHiRPC";
+
 alias inputContract = Msg!"contract";
 alias inputRecorder = Msg!"recorder";
 

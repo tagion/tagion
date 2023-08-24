@@ -15,6 +15,7 @@ import tagion.actor;
 import tagion.actor.exceptions;
 import concurrency = tagion.utils.pretend_safe_concurrency;
 import tagion.services.inputvalidator;
+import tagion.services.messages;
 import tagion.communication.HiRPC;
 import tagion.tools.Basic;
 import tagion.hibon.HiBON;

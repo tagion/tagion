@@ -9,6 +9,7 @@ import std.algorithm : remove;
 import core.time;
 
 import tagion.actor;
+import tagion.services.messages;
 import tagion.logger.Logger;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.script.StandardRecords;
@@ -23,9 +24,6 @@ import tagion.GlobalSignals : stopsignal;
 import tagion.utils.JSONCommon;
 
 version (NNG_INPUT) import nngd;
-
-/// Msg Type sent to actors who receive the document
-alias inputDoc = Msg!"inputDoc";
 
 @safe
 struct InputValidatorOptions {
