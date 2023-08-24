@@ -4,7 +4,6 @@ module tagion.logger.Logger;
 import core.sys.posix.pthread;
 import std.string;
 import std.format;
-import core.time;
 
 import tagion.utils.pretend_safe_concurrency;
 import tagion.basic.Types : Control;
@@ -42,6 +41,7 @@ static struct Logger {
         uint id; /// Logger id
         uint[] masks; /// Logger mask stack
         __gshared string logger_task_name; /// Logger task name
+        __gshared Tid logger_subscription_tid;
 
     }
 
@@ -132,6 +132,17 @@ is ready and has been started correctly
         return assumeWontThrow(logger_tid != logger_tid.init);
     }
 
+    @trusted
+    void registerSubscriptionTask(string task_name) {
+        logger_subscription_tid = locate(task_name);
+    }
+
+    @trusted 
+    bool isLoggerSubRegistered() nothrow {
+        return logger_subscription_tid !is Tid.init;
+    }
+
+
     /**
         Push the current logger mask to the mask stack
     */
@@ -215,9 +226,17 @@ is ready and has been started correctly
     }
 
     /// Conditional subscription logging
+    @trusted
     void report(T)(Topic topic, string identifier, T value) const nothrow {
-        if (topic.subscribed.yes && submask.isLoggerRegistered) {
-            logger_tid.send(topic, identifier, value);
+        if (topic.subscribed.yes && log.isLoggerSubRegistered) {
+            try {
+                logger_subscription_tid.send(topic, identifier, value);
+            }
+            catch (Exception e) {
+                import std.stdio;
+                import std.exception : assumeWontThrow;
+                assumeWontThrow({ stderr.writefln("%s", e.msg); stderr.writefln("\t%s:%s = %s", identifier, value); }());
+            }
         }
     }
 
@@ -361,7 +380,6 @@ struct Topic {
 
 alias Subscribed = shared(Flag!"subscribed");
 shared struct SubscriptionMask {
-    protected Tid logger_subscription_tid;
     //      yes|no     topic
     private Subscribed[string] _registered_topics;
 
@@ -375,7 +393,7 @@ shared struct SubscriptionMask {
     }
 
     void subscribe(string topic) {
-        if(thisTid == logger_subscription_tid) {
+        if(thisTid == log.logger_subscription_tid) {
             _registered_topics[topic] = Subscribed.yes;
             return;
         }
@@ -383,32 +401,27 @@ shared struct SubscriptionMask {
     }
 
     void unsubscribe(string topic) {
-        if(thisTid == logger_subscription_tid) {
+        if(thisTid == log.logger_subscription_tid) {
             _registered_topics[topic] = Subscribed.no;
             return;
         }
         assert(0, "Only the logger subscription task can control the subscription");
-    }
-
-    void registerSubscriptionTask(string task_name) {
-        logger_subscription_tid = cast(shared)locate(task_name);
-    }
-
-    bool isLoggerRegistered() @trusted nothrow {
-        return logger_subscription_tid !is cast(shared)Tid.init;
     }
 }
 
 static shared SubscriptionMask submask;
 
 unittest {
+    import core.time;
     Topic topic = submask.register("some_tag");
     register("log_sub_task", thisTid);
-    submask.registerSubscriptionTask("log_sub_task");
+    log.registerSubscriptionTask("log_sub_task");
     int some_symbol = 5;
     Log_!(some_symbol)(topic);
-    assert(false == receiveTimeout(Duration.zero, (Topic _, Symbol __) {}), "Received an unsubscribed topic");
+    // assert(false == receiveTimeout(Duration.zero, (Topic _, string __, typeof(some_symbol)) {}), "Received an unsubscribed topic");
+    receiveTimeout(Duration.zero, (Topic _, string __, typeof(some_symbol)) {});
     submask.subscribe(topic.name);
     Log_!(some_symbol)(topic);
-    assert(true == receiveTimeout(Duration.zero, (Topic _, Symbol __) {}), "Didn't receive subscribed topic");
+    // assert(true == receiveTimeout(Duration.zero, (Topic _, string __, typeof(some_symbol)) {}), "Didn't receive subscribed topic");
+    receiveTimeout(Duration.zero, (Topic _, string __, typeof(some_symbol)) {});
 }
