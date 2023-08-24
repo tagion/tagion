@@ -418,10 +418,8 @@ unittest {
     log.registerSubscriptionTask("log_sub_task");
     int some_symbol = 5;
     Log_!(some_symbol)(topic);
-    // assert(false == receiveTimeout(Duration.zero, (Topic _, string __, typeof(some_symbol)) {}), "Received an unsubscribed topic");
-    receiveTimeout(Duration.zero, (Topic _, string __, typeof(some_symbol)) {});
+    assert(false == receiveTimeout(Duration.zero, (Topic _, string __, typeof(some_symbol)) {}), "Received an unsubscribed topic");
     submask.subscribe(topic.name);
     Log_!(some_symbol)(topic);
-    // assert(true == receiveTimeout(Duration.zero, (Topic _, string __, typeof(some_symbol)) {}), "Didn't receive subscribed topic");
-    receiveTimeout(Duration.zero, (Topic _, string __, typeof(some_symbol)) {});
+    assert(true == receiveTimeout(Duration.zero, (Topic _, string __, typeof(some_symbol)) {}), "Didn't receive subscribed topic");
 }
