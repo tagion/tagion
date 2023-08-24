@@ -112,8 +112,9 @@ class SendADocumentToTheSocket {
         check(waitforChildren(Ctrl.END, 5.seconds), "The inputvalidator did not stop");
         return result_ok;
     }
+}
 
-                @safe @Scenario("send random buffer",
+@safe @Scenario("send random buffer",
 [])
                     class SendRandomBuffer {
                         
@@ -174,5 +175,4 @@ Document rejects() {
         return Document();
     }
 
-    }
 }
