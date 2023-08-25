@@ -6,8 +6,7 @@ import tagion.hibon.Document;
 import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
 
-version (NNG_INPUT) import nngd;
-import std.socket;
+import nngd;
 import core.time;
 import std.typecons;
 import std.stdio;
@@ -36,8 +35,7 @@ alias FeatureContext = Tuple!(
         FeatureGroup*, "result"
 );
 
-@safe @Scenario("send a document to the socket",
-        [])
+@safe @Scenario("send a document to the socket", [])
 class SendADocumentToTheSocket {
     NNGSocket sock;
     const string sock_path;
@@ -55,32 +53,18 @@ class SendADocumentToTheSocket {
 
     @When("we send a `Document` on a socket")
     Document aSocket() @trusted {
-        version (NNG_INPUT) {
-            sock.sendtimeout = msecs(1000);
-            sock.sendbuf = 4096;
-            int rc = sock.dial(sock_path);
-            check(rc == 0, format("Failed to dial %s", nng_errstr(rc)));
-            HiRPC hirpc;
-            auto hibon = new HiBON();
-            hibon["$test"] = 5;
-            const sender = hirpc.act(hibon);
-            doc = sender.toDoc;
-            rc = sock.send(doc.serialize);
-            check(rc == 0, format("Failed to send %s", nng_errstr(rc)));
+        sock.sendtimeout = msecs(1000);
+        sock.sendbuf = 4096;
+        int rc = sock.dial(sock_path);
+        check(rc == 0, format("Failed to dial %s", nng_errstr(rc)));
+        HiRPC hirpc;
+        auto hibon = new HiBON();
+        hibon["$test"] = 5;
+        const sender = hirpc.act(hibon);
+        doc = sender.toDoc;
+        rc = sock.send(doc.serialize);
+        check(rc == 0, format("Failed to send %s", nng_errstr(rc)));
 
-        }
-        else {
-            addr = new UnixAddress(sock_path); // TODO: make this configurable
-            sock = new Socket(AddressFamily.UNIX, SocketType.STREAM);
-            sock.blocking = false;
-            HiRPC hirpc;
-            auto hibon = new HiBON();
-            hibon["$test"] = 5;
-            const sender = hirpc.act(hibon);
-            doc = sender.toDoc;
-            sock.connect(addr);
-            check(doc.serialize.length == sock.send(doc.serialize), "The entire document was not sent");
-        }
         return result_ok;
     }
 
@@ -93,8 +77,7 @@ class SendADocumentToTheSocket {
     }
 }
 
-@safe @Scenario("send random buffer",
-        [])
+@safe @Scenario("send random buffer", [])
 class SendRandomBuffer {
 
     @Given("a inputvalidator")
@@ -114,8 +97,7 @@ class SendRandomBuffer {
 
 }
 
-@safe @Scenario("send malformed HiBON",
-        [])
+@safe @Scenario("send malformed HiBON", [])
 class SendMalformedHiBON {
 
     @Given("a inputvalidator")
@@ -135,8 +117,7 @@ class SendMalformedHiBON {
 
 }
 
-@safe @Scenario("send partial HiBON",
-        [])
+@safe @Scenario("send partial HiBON", [])
 class SendPartialHiBON {
 
     @Given("a inputvalidator")
