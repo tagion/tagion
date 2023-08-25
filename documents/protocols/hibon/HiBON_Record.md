@@ -6,5 +6,14 @@ Keys with prefix with '#' is a hash element, Only one hash element  is allowed i
 
 Keys with prefix with '$' is a parameter.
 
-The keys with prefix '#$' is reserved for internal use.
+The key '$@' reseved for the as a type-name all types starting with '$@' is reseved for internal use.
+
+
+
+The keys with prefix '$@' is reserved for internal use.
+
+
+
+
+
 
