@@ -36,32 +36,20 @@ alias FeatureContext = Tuple!(
         FeatureGroup*, "result"
 );
 
-enum input_test = "input_test";
-
 @safe @Scenario("send a document to the socket",
         [])
 class SendADocumentToTheSocket {
-    InputValidatorHandle input_handle;
+    NNGSocket sock;
+    const string sock_path;
+    this(string _sock_path) @trusted {
+        sock = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
+        sock_path = _sock_path;
+    }
+
     Document doc;
-    version (NNG_INPUT) {
-        enum sock_path = "abstract://" ~ __MODULE__;
-        NNGSocket sock;
-        this() @trusted {
-            sock = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
-        }
-    }
-    else {
-        Socket sock;
-        Address addr;
-        enum sock_path = "\0" ~ __MODULE__;
-    }
 
     @Given("a inputvalidator")
     Document aInputvalidator() {
-        concurrency.register(input_test, concurrency.thisTid);
-        immutable opts = InputValidatorOptions(sock_path);
-        input_handle = spawn!InputValidatorService("input_test_task", opts, input_test);
-        check(waitforChildren(Ctrl.ALIVE), "The inputvalidator did not start");
         return result_ok;
     }
 
@@ -96,26 +84,11 @@ class SendADocumentToTheSocket {
         return result_ok;
     }
 
-    @When("we receive back the Document in our mailbox")
+    @Then("we receive back the Document in our mailbox")
     Document ourMailbox() @trusted {
         auto res = concurrency.receiveOnly!(Tuple!(inputDoc, Document));
         writeln("Receive back: ", res[1].toPretty);
         check(res[1] == doc, "The value was not the same as we sent");
-        return result_ok;
-    }
-
-    @Then("stop the inputvalidator")
-    Document theInputvalidator() {
-        version (NNG_INPUT) {
-        }
-        else {
-            sock.close();
-        }
-
-        input_handle.send(Sig.STOP);
-        import core.time;
-
-        check(waitforChildren(Ctrl.END, 5.seconds), "The inputvalidator did not stop");
         return result_ok;
     }
 }
