@@ -46,6 +46,7 @@ class WriteAndReadFromDartDb {
     Mt19937 gen;
     RandomArchives random_archives;
     Document[] docs;
+    RecordFactory.Recorder insert_recorder;
 
     struct SimpleDoc {
         ulong n;
@@ -92,15 +93,16 @@ class WriteAndReadFromDartDb {
 
         random_archives = RandomArchives(gen.front, 4, 10);
         auto record_factory = RecordFactory(net);
-        auto recorder = record_factory.recorder;
+        insert_recorder = record_factory.recorder;
         docs = (() @trusted => cast(Document[]) random_archives.values.map!(a => SimpleDoc(a).toDoc).array)();
 
-        recorder.insert(docs, Archive.Type.ADD);
+        insert_recorder.insert(docs, Archive.Type.ADD);
         auto modify_request = dartModifyRR();
-        (() @trusted => handle.send(modify_request, cast(immutable) recorder))();
-        const bullseye = receiveOnly!(dartModifyRR.Response, immutable(DARTIndex));
+        (() @trusted => handle.send(modify_request, cast(immutable) insert_recorder))();
+        const bullseye_tuple = receiveOnly!(dartModifyRR.Response, immutable(DARTIndex));
 
-        writefln("%s", bullseye);
+        check(bullseye_tuple[1] !is DARTIndex.init, "Bullseye not updated");
+
 
         return result_ok;
     }
@@ -113,20 +115,20 @@ class WriteAndReadFromDartDb {
             .map!(d => net.dartIndex(d))
             .array;
 
-        pragma(msg, "FINGERPRINTS", typeof(fingerprints));
-        // auto _fingerprints = assumeUnique(fingerprints);
-        // pragma(msg, "FINGERPRINTS", typeof(_fingerprints));
-
         auto read_request = dartReadRR();
         handle.send(read_request, fingerprints);
-        const read_recorder = receiveOnly!(dartReadRR.Response, immutable(RecordFactory.Recorder));
-        // writefln("%s", read_recorder);
+        auto read_tuple = receiveOnly!(dartReadRR.Response, immutable(RecordFactory.Recorder));
+        auto read_recorder = read_tuple[1];
+
+        check(equal(read_recorder[].map!(a => a.filed), insert_recorder[].map!(a => a.filed)), "Data not the same");
+
 
         return result_ok;
     }
 
     @Then("the read recorder should be the same as the dartModify recorder")
     Document dartModifyRecorder() {
+        // checked above
 
         handle.send(Sig.STOP);
         waitforChildren(Ctrl.END);

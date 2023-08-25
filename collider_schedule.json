@@ -178,7 +178,7 @@
             "args": [],
             "envs": {},
             "stages": [
-                "tvm_service"
+                "tvm_service", "services"
             ],
             "timeout": 0.0
         },
@@ -186,7 +186,7 @@
             "args": [],
             "envs": {},
             "stages": [
-                "transaction_service"
+                "transaction_service", "services"
             ],
             "timeout": 0.0
         },
@@ -206,7 +206,7 @@
             "args": [],
             "envs": {},
             "stages": [
-                "dart_service",
+                "commit", "dart_service",
                 "services"
             ],
             "timeout": 0.0
