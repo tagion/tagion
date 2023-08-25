@@ -4,18 +4,34 @@ import tagion.tools.Basic;
 import tagion.behaviour.Behaviour;
 import tagion.testbench.tools.Environment;
 import tagion.testbench.services;
-
+import tagion.services.TVM;
+import tagion.services.options;
+import tagion.actor.actor;
 import std.stdio;
 import std.path;
 import std.algorithm;
 import std.array;
 import std.range;
+import core.thread;
+import core.time;
 
 mixin Main!(_main);
 
 int _main(string[] args) {
+    Options local_opts;
+    local_opts.defaultOptions;
+    immutable opts = Options(local_opts);
+    auto handle = spawn!(TVMService)(opts.tvm.task_name, opts.tvm, opts.transcript);
+
+    waitforChildren(Ctrl.STARTING);
+    scope (exit) {
+        waitforChildren(Ctrl.END);
+    }
+
     auto tvm_service_feature = automation!(TVM);
     auto tvm_service_context = tvm_service_feature.run();
+    //Thread.sleep(2.seconds);
+    handle.send(Sig.STOP);
     /*
     //    wasm_testsuite.testsuite=buildPath(__FILE__.dirName, "tvm", "testsuite");
     wasm_testsuite.testsuite = buildPath(env.reporoot, "src", "lib-wasm", "tagion", "wasm", "unitdata");

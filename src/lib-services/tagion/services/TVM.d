@@ -3,6 +3,7 @@
 module tagion.services.TVM;
 
 import std.stdio;
+import core.time;
 
 import tagion.logger.Logger;
 import tagion.basic.Debug : __write;
@@ -12,6 +13,7 @@ import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord;
 import tagion.services.options;
 import tagion.services.messages;
+import tagion.logger.Logger;
 
 /// Msg type sent to receiver task along with a hirpc
 //alias contractProduct = Msg!"contract_product";
@@ -39,7 +41,13 @@ struct TVMService {
         void consensus_contract(consensusContract, immutable(CollectedSignedContract) contract) {
         }
 
+        void timeout() {
+            log("Time out");
+        }
+
+        log("Start %s", opts.task_name);
         run(&contract, &consensus_contract);
+        //runTimeout(100.msecs, &timeout);   
     }
 }
 
