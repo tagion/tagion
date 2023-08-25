@@ -109,7 +109,7 @@ class WriteAndReadFromDartDb {
     Document theChanged() @trusted {
         import std.exception : assumeUnique;
 
-        DARTIndex[] fingerprints = docs
+        immutable fingerprints = docs
             .map!(d => net.dartIndex(d))
             .array;
 
@@ -122,7 +122,6 @@ class WriteAndReadFromDartDb {
         const read_recorder = receiveOnly!(dartReadRR.Response, immutable(RecordFactory.Recorder));
         // writefln("%s", read_recorder);
 
-
         return result_ok;
     }
 
@@ -131,7 +130,7 @@ class WriteAndReadFromDartDb {
 
         handle.send(Sig.STOP);
         waitforChildren(Ctrl.END);
-        
+
         return result_ok;
     }
 
