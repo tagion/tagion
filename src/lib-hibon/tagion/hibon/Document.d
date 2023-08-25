@@ -1413,7 +1413,7 @@ static assert(uint.sizeof == 4);
                     if (type is Type.STRING) {
                         const len = LEB128.decode!ulong(data[valuePos .. $]);
                         const type_name = data[valuePos + len.size .. valuePos + len.size + len.value];
-                        if (type_name.length > TYPENAME.length &&
+                        if (type_name.length >= TYPENAME.length &&
                                 type_name[0 .. TYPENAME.length] == TYPENAME) {
                             return RESERVED_HIBON_TYPE;
                         }
@@ -1444,8 +1444,7 @@ static assert(uint.sizeof == 4);
 
 @safe
 unittest { // Bugfix (Fails in isInorder);
-    //    import std.stdio;
-    {
+{
         immutable(ubyte[]) data = [
             220, 252, 73, 35, 27, 55, 228, 198, 34, 5, 5, 13, 153, 209, 212,
             161, 82, 232, 239, 91, 103, 93, 26, 163, 205, 99, 121, 104, 172, 161,
@@ -1455,4 +1454,9 @@ unittest { // Bugfix (Fails in isInorder);
         assert(!doc.isInorder);
         assert(doc.valid is Document.Element.ErrorCode.DOCUMENT_OVERFLOW);
     }
+}
+
+@safe
+unittest {
+
 }
