@@ -22,8 +22,10 @@ import tagion.dart.DARTBasic : DARTIndex;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.dart.DART;
+import tagion.dart.DARTBasic;
 import std.random;
 import tagion.hibon.HiBONRecord;
+import tagion.basic.Types;
 
 enum feature = Feature(
             "see if we can read and write trough the dartservice",
@@ -43,6 +45,7 @@ class WriteAndReadFromDartDb {
     DARTOptions opts;
     Mt19937 gen;
     RandomArchives random_archives;
+    Document[] docs;
 
     struct SimpleDoc {
         ulong n;
@@ -87,16 +90,10 @@ class WriteAndReadFromDartDb {
     @When("I send a dartModify command with a recorder containing changes to add")
     Document toAdd() {
 
-        // ask for bullseye before:
-        auto bullseye_request = dartBullseyeRR();
-        handle.send(bullseye_request);
-        const empty_bullseye = receiveOnly!(dartBullseyeRR.Response, immutable(DARTIndex));
-        writefln("%s", empty_bullseye);
-
-        random_archives = RandomArchives(gen.front, 100, 1000);
+        random_archives = RandomArchives(gen.front, 4, 10);
         auto record_factory = RecordFactory(net);
         auto recorder = record_factory.recorder;
-        auto docs = random_archives.values.map!(a => SimpleDoc(a).toDoc).array;
+        docs = (() @trusted => cast(Document[]) random_archives.values.map!(a => SimpleDoc(a).toDoc).array)();
 
         recorder.insert(docs, Archive.Type.ADD);
         auto modify_request = dartModifyRR();
@@ -105,18 +102,37 @@ class WriteAndReadFromDartDb {
 
         writefln("%s", bullseye);
 
-
-        return Document();
+        return result_ok;
     }
 
     @When("I send a dartRead command to see if it has the changed")
-    Document theChanged() {
-        return Document();
+    Document theChanged() @trusted {
+        import std.exception : assumeUnique;
+
+        DARTIndex[] fingerprints = docs
+            .map!(d => net.dartIndex(d))
+            .array;
+
+        pragma(msg, "FINGERPRINTS", typeof(fingerprints));
+        // auto _fingerprints = assumeUnique(fingerprints);
+        // pragma(msg, "FINGERPRINTS", typeof(_fingerprints));
+
+        auto read_request = dartReadRR();
+        handle.send(read_request, fingerprints);
+        const read_recorder = receiveOnly!(dartReadRR.Response, immutable(RecordFactory.Recorder));
+        // writefln("%s", read_recorder);
+
+
+        return result_ok;
     }
 
     @Then("the read recorder should be the same as the dartModify recorder")
     Document dartModifyRecorder() {
-        return Document();
+
+        handle.send(Sig.STOP);
+        waitforChildren(Ctrl.END);
+        
+        return result_ok;
     }
 
 }

@@ -43,9 +43,11 @@ struct DARTService {
             db.close();
         }
 
-        void read(dartReadRR req, immutable(DARTIndex[]) fingerprints) {
+        void read(dartReadRR req, DARTIndex[] fingerprints) {
+            pragma(msg, "DARTSERVICE: ", typeof(fingerprints));
             RecordFactory.Recorder read_recorder = db.loads(fingerprints);
-            req.respond(cast(immutable) read_recorder);
+            writefln("%s",read_recorder);
+            req.respond(cast(immutable(RecordFactory.Recorder)) read_recorder);
         }
 
         // only used from the outside
@@ -61,12 +63,7 @@ struct DARTService {
         }
 
         void bullseye(dartBullseyeRR req) {
-            if (eye is DARTIndex.init) {
-                eye = DARTIndex(db.bullseye);
-            }
-
             req.respond(cast(immutable) eye);
-
         }
 
         run(&read, &modify, &bullseye);
