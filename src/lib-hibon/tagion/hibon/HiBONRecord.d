@@ -65,7 +65,7 @@ enum STUB = HiBONPrefix.HASH ~ "";
 
 enum HiBONPrefix {
     HASH = '#',
-    PARAM = '$'
+    PARAM = '$',
 }
 
 @safe
@@ -619,7 +619,7 @@ mixin template HiBONRecord(string CTOR = "") {
                                     basename!(this.tupleof[i])));
                         }
                     }
-                    else {
+                else {
                         enum name = default_name;
                         enum optional = false;
                     }

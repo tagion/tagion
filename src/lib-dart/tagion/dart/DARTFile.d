@@ -172,12 +172,16 @@ alias check = Check!DARTException;
         blockfile = BlockFile(filename);
         this.manufactor = RecordFactory(net);
         this.filename = filename;
+
         
+
         .check(blockfile.headerBlock.checkLabel(DARTFile.stringof),
                 format("Wrong label %s expected %s for %s",
                 blockfile.headerBlock.Label,
                 DARTFile.stringof, filename));
+
         
+
         .check(blockfile.headerBlock.checkId(net.multihash),
                 format("Wrong hash type %s expected %s for %s",
                 net.multihash, blockfile.headerBlock.Id, filename));
@@ -320,7 +324,7 @@ alias check = Check!DARTException;
     /**
  * Data struct which contains the branches in sub-tree
  */
-    @recordType("Branches") struct Branches {
+    @recordType("$@B") struct Branches {
         import std.stdio;
         import tagion.hibon.HiBONJSON;
 

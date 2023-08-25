@@ -27,9 +27,6 @@ struct TVMOptions {
 
 /**
  * TVMService actor
- * Examples: [tagion.testbench.services.hirpc_verifier]
- * Receives: (inputDoc, Document)
- * Sends: (inputHiRPC, HiRPC.Receiver) to receiver_task, where Document is a correctly formatted HiRPC
 **/
 @safe
 struct TVMService {

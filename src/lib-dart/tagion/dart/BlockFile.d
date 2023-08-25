@@ -352,7 +352,7 @@ class BlockFile {
      + This block maintains the indices to of other block
      +/
 
-    @safe @recordType("M")
+    @safe @recordType("$@M")
     static struct MasterBlock {
         @label("head") Index recycle_header_index; /// Points to the root of recycle block list
         @label("root") Index root_index; /// Point the root of the database
