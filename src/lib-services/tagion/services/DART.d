@@ -36,24 +36,24 @@ struct DARTService {
         if (dart_exception !is null) {
             throw dart_exception;
         }
-        
-
 
         DARTIndex eye;
 
-        scope(exit) {
+        scope (exit) {
             db.close();
         }
 
-        void read(dartReadRR req, immutable(DARTIndex[]) fingerprints) {
-            RecordFactory.Recorder read_recorder = db.loads(fingerprints);                            
-            req.respond(cast(immutable) read_recorder);
+        void read(dartReadRR req, immutable(DARTIndex)[] fingerprints) {
+            pragma(msg, "DARTSERVICE: ", typeof(fingerprints));
+            RecordFactory.Recorder read_recorder = db.loads(fingerprints);
+            writefln("%s", read_recorder);
+            req.respond(cast(immutable(RecordFactory.Recorder)) read_recorder);
         }
 
         // only used from the outside
         void rim(dartRimRR req, DART.Rims rims) {
             // empty  
-        } 
+        }
 
         void modify(dartModifyRR req, immutable(RecordFactory.Recorder) recorder) {
             eye = DARTIndex(db.modify(recorder));
@@ -63,20 +63,11 @@ struct DARTService {
         }
 
         void bullseye(dartBullseyeRR req) {
-            if (eye is DARTIndex.init) {
-                eye = DARTIndex(db.bullseye);
-            }
-            
             req.respond(cast(immutable) eye);
-            
-            
-
         }
 
-        
         run(&read, &modify, &bullseye);
         // run(&read, &rim, &modify, &bullseye);
-        
 
     }
 }

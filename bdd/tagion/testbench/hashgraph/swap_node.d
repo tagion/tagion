@@ -21,6 +21,8 @@ import tagion.hashgraph.HashGraphBasic;
 import tagion.hashgraphview.Compare;
 import tagion.hashgraph.Event;
 
+// old way of swapping should be removed
+
 enum feature = Feature(
             "Hashgraph swap node",
             [
