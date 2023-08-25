@@ -43,10 +43,10 @@ struct DARTService {
             db.close();
         }
 
-        void read(dartReadRR req, DARTIndex[] fingerprints) {
+        void read(dartReadRR req, immutable(DARTIndex)[] fingerprints) {
             pragma(msg, "DARTSERVICE: ", typeof(fingerprints));
             RecordFactory.Recorder read_recorder = db.loads(fingerprints);
-            writefln("%s",read_recorder);
+            writefln("%s", read_recorder);
             req.respond(cast(immutable(RecordFactory.Recorder)) read_recorder);
         }
 

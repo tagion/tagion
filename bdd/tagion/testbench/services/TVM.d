@@ -18,8 +18,13 @@ alias FeatureContext = Tuple!(
 );
 
 @safe @Scenario("should execute the contract.",
-        ["Give a contract with inputs and readonly archives."])
+        [])
 class ShouldExecuteTheContract {
+
+    @Given("a contract with inputs and readonly archives.")
+    Document inputsAndReadonlyArchives() {
+        return Document();
+    }
 
     @When("the format and the method of the contract has been check.")
     Document contractHasBeenCheck() {
