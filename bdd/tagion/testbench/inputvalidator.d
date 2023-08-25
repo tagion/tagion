@@ -25,6 +25,9 @@ int _main(string[] _) {
 
     auto inputvalidator_feature = automation!inputvalidator;
     inputvalidator_feature.SendADocumentToTheSocket(sock_path);
+    inputvalidator_feature.SendRandomBuffer(sock_path);
+    inputvalidator_feature.SendMalformedHiBON(sock_path);
+    inputvalidator_feature.SendPartialHiBON(sock_path);
     inputvalidator_feature.run;
 
     // automation!inputvalidator.run;
@@ -39,7 +42,7 @@ int _main(string[] _) {
     enforce(rc == 0, format("Failed to dial %s", nng_errstr(rc)));
     sock.send("end");
 
-    enforce(waitforChildren(Ctrl.END, 5.seconds), "The inputvalidator did not stop");
+    enforce(waitforChildren(Ctrl.END), "The inputvalidator did not stop");
 
     return 0;
 }

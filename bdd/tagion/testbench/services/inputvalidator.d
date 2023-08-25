@@ -48,6 +48,7 @@ class SendADocumentToTheSocket {
 
     @Given("a inputvalidator")
     Document aInputvalidator() {
+        waitforChildren(Ctrl.ALIVE);
         return result_ok;
     }
 
@@ -80,18 +81,43 @@ class SendADocumentToTheSocket {
 @safe @Scenario("send random buffer", [])
 class SendRandomBuffer {
 
+    NNGSocket sock;
+    const string sock_path;
+    this(string _sock_path) @trusted {
+        sock = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
+        sock_path = _sock_path;
+    }
+
     @Given("a inputvalidator")
     Document inputvalidator() {
-        return Document();
+        waitforChildren(Ctrl.ALIVE);
+        return result_ok;
     }
 
     @When("we send a `random_buffer` on a socket")
-    Document socket() {
-        return Document();
+    Document socket() @trusted {
+        sock.sendtimeout = msecs(1000);
+        sock.sendbuf = 4096;
+        int rc = sock.dial(sock_path);
+        check(rc == 0, format("Failed to dial %s", nng_errstr(rc)));
+
+        // import tagion.utils.Random;
+        // import std.array;
+        // import std.range : take;
+        // ubyte[] rnd_buffer = Random!uint().take(32).array;
+        ubyte[] rnd_buffer = new ubyte[](32);
+        writefln("rnd_buffer: %s", rnd_buffer);
+
+        rc = sock.send(rnd_buffer);
+        check(rc == 0, format("Failed to send %s", nng_errstr(rc)));
+        return result_ok;
     }
 
     @Then("the inputvalidator rejects")
     Document rejects() {
+        import tagion.testbench.actor.util;
+
+        check(concurrency.receiveTimeout(Duration.zero, (inputDoc _, Document __) {}) == false, "should not have received anything");
         return Document();
     }
 
@@ -100,8 +126,16 @@ class SendRandomBuffer {
 @safe @Scenario("send malformed HiBON", [])
 class SendMalformedHiBON {
 
+    NNGSocket sock;
+    const string sock_path;
+    this(string _sock_path) @trusted {
+        sock = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
+        sock_path = _sock_path;
+    }
+
     @Given("a inputvalidator")
     Document inputvalidator() {
+        waitforChildren(Ctrl.ALIVE);
         return Document();
     }
 
@@ -120,8 +154,16 @@ class SendMalformedHiBON {
 @safe @Scenario("send partial HiBON", [])
 class SendPartialHiBON {
 
+    NNGSocket sock;
+    const string sock_path;
+    this(string _sock_path) @trusted {
+        sock = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
+        sock_path = _sock_path;
+    }
+
     @Given("a inputvalidator")
     Document inputvalidator() {
+        waitforChildren(Ctrl.ALIVE);
         return Document();
     }
 

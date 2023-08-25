@@ -18,9 +18,7 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord;
 import tagion.communication.HiRPC;
-import tagion.basic.basic : forceRemove;
 import tagion.basic.Debug : __write;
-import tagion.GlobalSignals : stopsignal;
 import tagion.utils.JSONCommon;
 
 import nngd;
@@ -28,15 +26,12 @@ import nngd;
 @safe
 struct InputValidatorOptions {
     string sock_addr;
-    // uint mbox_timeout = 10; // msecs
     uint socket_select_timeout = 1000; // msecs
-    uint max_connections = 1;
     void setDefault() nothrow {
         import tagion.services.options : contract_sock_path;
 
         sock_addr = contract_sock_path;
         socket_select_timeout = 1000;
-        max_connections = 1;
     }
 
     mixin JSONCommon;
@@ -49,9 +44,6 @@ struct InputValidatorOptions {
 **/
 struct InputValidatorService {
     void task(immutable(InputValidatorOptions) opts, string receiver_task) {
-        scope (exit) {
-            log("stopping");
-        }
         NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_PULL);
         ReceiveBuffer buf;
         s.recvtimeout = opts.socket_select_timeout.msecs;
