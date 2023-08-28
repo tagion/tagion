@@ -35,10 +35,8 @@ import std.stdio;
 alias payload = Msg!"Payload";
 alias ReceivedWavefront = Msg!"ReceivedWavefront";
 alias AddedChannels = Msg!"AddedChannels";
-
 alias PayloadQueue = Queue!Document;
 
-@safe:
 
 enum NetworkMode {
     internal,
@@ -46,6 +44,7 @@ enum NetworkMode {
     pub
 }
 
+@safe
 struct EpochCreatorOptions {
 
     uint timeout; // timeout between nodes in milliseconds;
@@ -55,6 +54,7 @@ struct EpochCreatorOptions {
     mixin JSONCommon;
 }
 
+@safe
 struct EpochCreatorService {
 
     void task(immutable(EpochCreatorOptions) opts, immutable(SecureNet) net) {

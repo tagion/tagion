@@ -35,7 +35,7 @@ And all the smart contracts which use the same input should be given processed b
 *When* the epoch-list and the list of contract are available.
 
 
-*When* the transcript services have been executed by the smart-contracts the Recorder produces should be sent to the DART-Services
+*When* the transcript services have been executed by the smart-contracts the produced Recorder should be sent to the DART-Services
 
 
 *Then* the Recorder received to DART-Services should be checked that it contains the correct modifications.
