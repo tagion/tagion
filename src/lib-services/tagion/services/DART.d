@@ -27,7 +27,7 @@ struct DARTOptions {
     string dart_filename = buildPath(".", "dart".setExtension(FileExtension.dart));
     mixin JSONCommon;
 }
-
+@safe
 struct DARTService {
     void task(immutable(DARTOptions) opts, immutable(SecureNet) net) {
         DART db;
