@@ -407,7 +407,7 @@ struct HiRPC {
      * Returns: random id
     **/
     const(uint) generateId() @safe const {
-        import rnd =tagion.utils.Random;
+        import rnd = tagion.utils.Random;
         return rnd.generateId;
     }
 
