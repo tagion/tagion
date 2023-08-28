@@ -22,12 +22,12 @@ import tagion.dart.DARTBasic : DARTIndex;
 import tagion.hibon.Document;
 import tagion.services.messages;
 
-@safe
+@safe:
+
 struct DARTOptions {
     string dart_filename = buildPath(".", "dart".setExtension(FileExtension.dart));
     mixin JSONCommon;
 }
-@safe
 struct DARTService {
     void task(immutable(DARTOptions) opts, immutable(SecureNet) net) {
         DART db;
