@@ -124,13 +124,13 @@ class SendRandomBuffer {
     Document rejects() {
         import tagion.testbench.actor.util;
 
-        check(concurrency.receiveTimeout(Duration.zero, (inputDoc _, Document __) {}) == false, "should not have received a doc");
-        const received = concurrency.receiveTimeout(Duration.zero, (Topic t, string s, Document d) {
+        check(!concurrency.receiveTimeout(1.seconds, (inputDoc _, Document __) {}), "should not have received a doc");
+        const received = concurrency.receiveTimeout(1.seconds, (Topic t, string s, Document d) {
             writefln("Received rejected ", d);
         });
         check(received, "Didn't received rejected");
 
-        return Document();
+        return result_ok;
     }
 
 }

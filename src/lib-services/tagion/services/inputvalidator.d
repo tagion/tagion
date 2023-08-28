@@ -44,6 +44,7 @@ struct InputValidatorOptions {
 **/
 struct InputValidatorService {
     void task(immutable(InputValidatorOptions) opts, string receiver_task) {
+        auto rejected = submask.register("inputvalidator/reject");
         NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_PULL);
         ReceiveBuffer buf;
         s.recvtimeout = opts.socket_select_timeout.msecs;
@@ -76,6 +77,10 @@ struct InputValidatorService {
                         && doc.isRecord!(HiRPC.Sender)) {
                     __write("sending to %s", receiver_task);
                     locate(receiver_task).send(inputDoc(), doc);
+                }
+                else {
+                    log(rejected, "invalid_doc", doc);
+                    log("invalid_doc %s, subscribed %s", doc, *rejected.subscribed);
                 }
             }
 
