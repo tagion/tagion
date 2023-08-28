@@ -153,18 +153,40 @@
             "timeout": 0.0
         },
         "tvm_betterc": {
-            "args": ["i32.wast"], 
-            "envs": {},
+            "args": [
+                "i32.wast", 
+            ], 
+            "envs": {
+                "DCOMPILE" : "dmd -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/wasm.d -g -unittest -main",
+                "imports" : "wasm=foundation.wasm",
+                "attributes" : "@safe",
+            },
             "stages": [
-                "tvm"
+                "tvm", "commit"
             ],
             "timeout": 0.0
         },
-         "epoch_creator": {
+        "epoch_creator": {
             "args": [],
             "envs": {},
             "stages": [
                 "epoch"
+            ],
+            "timeout": 0.0
+        },
+        "tvm_service": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "tvm_service", "services"
+            ],
+            "timeout": 0.0
+        },
+         "transaction_service": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "transaction_service", "services"
             ],
             "timeout": 0.0
         },
@@ -177,6 +199,15 @@
             },
             "stages": [
                 "example"
+            ],
+            "timeout": 0.0
+        },
+        "dart_service": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "commit", "dart_service",
+                "services"
             ],
             "timeout": 0.0
         }

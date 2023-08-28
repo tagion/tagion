@@ -12,9 +12,10 @@ import tagion.communication.HiRPC;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.crypto.SecureNet;
 import tagion.actor;
-import tagion.testbench.services.actor_util;
+import tagion.testbench.actor.util;
 import tagion.actor.exceptions;
 import tagion.services.hirpc_verifier;
+import tagion.services.messages;
 
 import std.stdio;
 

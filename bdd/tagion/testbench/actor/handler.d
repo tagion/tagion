@@ -1,6 +1,6 @@
-module tagion.testbench.services.actor_handler;
+module tagion.testbench.actor.handler;
 
-import tagion.testbench.services.actor_util;
+import tagion.testbench.actor.util;
 
 // Default import list for bdd
 import tagion.behaviour;

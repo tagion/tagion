@@ -148,6 +148,7 @@ class HashGraph {
         assert(_owner_node !is null);
     }
     do {
+        writefln("INITTING WITNESSES %s", _owner_node.channel.cutHex);
         Node[Pubkey] recovered_nodes;
         scope (success) {
             void init_event(immutable(EventPackage*) epack) {

@@ -28,6 +28,8 @@ int main(string[] args) {
     import hashgraph_swap = tagion.testbench.hashgraph_swap;
     import tvm_betterc = tagion.testbench.tvm_betterc;
     import epoch_creator = tagion.testbench.epoch_creator;
+    import tvm_service = tagion.testbench.tvm_service;
+    import transcript_service = tagion.testbench.transcript_service;
 
     alias alltools = AliasSeq!(
             ssl_server,
@@ -53,6 +55,8 @@ int main(string[] args) {
             hashgraph_swap,
             tvm_betterc,
             epoch_creator,
+            tvm_service,
+            transcript_service,
     );
     mixin doOneMain!(alltools);
     return do_main(args);

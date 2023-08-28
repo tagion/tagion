@@ -9,10 +9,8 @@ import std.meta : AliasSeq, Filter;
 import std.traits : isBasicType, isSomeString, isNumeric, EnumMembers, Unqual, ForeachType,
     isIntegral, hasMember, isArrayT = isArray, isAssociativeArray, OriginalType, isCallable;
 import std.conv : to, emplace;
-import std.algorithm.iteration : map;
-import std.algorithm.searching : count;
-import std.range.primitives : walkLength;
-import std.range : lockstep;
+import std.algorithm;
+import std.range;
 import std.array : join;
 import std.typecons : TypedefType;
 import core.exception : RangeError;
@@ -25,7 +23,7 @@ import tagion.basic.Message : message;
 import tagion.hibon.BigNumber;
 import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException : check, HiBONException;
-import tagion.hibon.HiBONRecord : isHiBONRecord, isHiBONTypeArray;
+import tagion.hibon.HiBONRecord : TYPENAME, isHiBONRecord, isHiBONTypeArray;
 import tagion.basic.Types : isTypedef;
 import LEB128 = tagion.utils.LEB128;
 
@@ -1346,8 +1344,11 @@ static assert(uint.sizeof == 4);
                 BAD_SUB_DOCUMENT, /// Error convering sub document
                 NOT_AN_ARRAY, /// Not an Document array
                 KEY_ZERO_SIZE, /// Invalid zero key size
+                RESERVED_KEY, /// Name of the key is reserved 
+                RESERVED_HIBON_TYPE, /// HiBON type name is reserved for internal use
                 UNKNOW_TAGION, /// Unknow error (used when some underlaying function thows an TagionException
                 UNKNOW /// Unknow error (used when some underlaying function thows an Exception
+
             }
 
         }
@@ -1405,6 +1406,20 @@ static assert(uint.sizeof == 4);
                 if (!isValidType(type)) {
                     return INVALID_TYPE;
                 }
+                if (key[0 .. min(TYPENAME.length, $)] == TYPENAME) {
+                    if (key.length != TYPENAME.length) {
+                        return RESERVED_KEY;
+                    }
+                    if (type is Type.STRING) {
+                        const len = LEB128.decode!ulong(data[valuePos .. $]);
+                        const type_name = data[valuePos + len.size .. valuePos + len.size + len.value];
+                        if (type_name.length >= TYPENAME.length &&
+                                type_name[0 .. TYPENAME.length] == TYPENAME) {
+                            return RESERVED_HIBON_TYPE;
+                        }
+                    }
+                }
+
                 return NONE;
             }
         }
@@ -1429,8 +1444,7 @@ static assert(uint.sizeof == 4);
 
 @safe
 unittest { // Bugfix (Fails in isInorder);
-    //    import std.stdio;
-    {
+{
         immutable(ubyte[]) data = [
             220, 252, 73, 35, 27, 55, 228, 198, 34, 5, 5, 13, 153, 209, 212,
             161, 82, 232, 239, 91, 103, 93, 26, 163, 205, 99, 121, 104, 172, 161,
@@ -1440,4 +1454,9 @@ unittest { // Bugfix (Fails in isInorder);
         assert(!doc.isInorder);
         assert(doc.valid is Document.Element.ErrorCode.DOCUMENT_OVERFLOW);
     }
+}
+
+@safe
+unittest {
+
 }

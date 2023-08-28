@@ -170,8 +170,8 @@ Returns: the current mask
                 scope const _level = assumeWontThrow(level.to!string);
                 scope const _text = assumeWontThrow(toStringz(text));
                 if (_task_name.length > 0) {
-                    printf("ERROR: Logger not register for '%.*s'\n", cast(int) _task_name.length, _task_name
-                            .ptr);
+                    // printf("ERROR: Logger not register for '%.*s'\n", cast(int) _task_name.length, _task_name
+                    //         .ptr);
                 }
                 printf("%.*s:%.*s: %s\n",
                         cast(int) _task_name.length, _task_name.ptr,

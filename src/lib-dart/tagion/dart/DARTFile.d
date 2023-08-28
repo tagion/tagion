@@ -172,12 +172,16 @@ alias check = Check!DARTException;
         blockfile = BlockFile(filename);
         this.manufactor = RecordFactory(net);
         this.filename = filename;
+
         
+
         .check(blockfile.headerBlock.checkLabel(DARTFile.stringof),
                 format("Wrong label %s expected %s for %s",
                 blockfile.headerBlock.Label,
                 DARTFile.stringof, filename));
+
         
+
         .check(blockfile.headerBlock.checkId(net.multihash),
                 format("Wrong hash type %s expected %s for %s",
                 net.multihash, blockfile.headerBlock.Id, filename));
@@ -320,7 +324,7 @@ alias check = Check!DARTException;
     /**
  * Data struct which contains the branches in sub-tree
  */
-    @recordType("Branches") struct Branches {
+    @recordType("$@B") struct Branches {
         import std.stdio;
         import tagion.hibon.HiBONJSON;
 
@@ -816,6 +820,25 @@ alias check = Check!DARTException;
         traverse_dart(blockfile.masterBlock.root_index, sorted_fingerprints);
         return result;
     }
+
+    // DARTIndex[] checkload(Range)(Range fingerprints)
+    version(none)
+    DARTIndex[] checkload(Range)(Range fingerprints)
+    if (isInputRange!Range && isBufferType!(ElementType!Range))
+    {
+        import std.algorithm : canFind;
+
+        auto result = loads(fingerprints)[]
+            .map!(a => a.fingerprint);
+
+        auto t = fingerprints.filter!(f => !canFind(result, f));
+
+
+        pragma(msg, "CHECKLOAD ", typeof(result));
+
+
+    }
+    
 
     enum RIMS_IN_SECTOR = 2;
 
@@ -1643,6 +1666,28 @@ unittest {
 
             assert(numberOfArchives(branches, dart_A) == 1, "Branch not snapped back to rim 2");
 
+        }
+        version(none)
+        {
+            writefln("UNITTEST");
+            filename_A.forceRemove;
+            DARTFile.create(filename_A, net);
+            auto dart_A = new DARTFile(net, filename_A);
+            const ulong[] deep_table = [
+                0xABB9_13ab_11ef_0923,
+                0xABB9_13ab_11ef_1234,
+            ];
+
+            auto docs = deep_table.map!(a => DARTFakeNet.fake_doc(a));
+            auto recorder = dart_A.recorder();
+            foreach (doc; docs) {
+                recorder.add(doc);
+            }
+            dart_A.modify(recorder);
+            dart_A.dump();
+            auto fingerprints = recorder[].map!(a => DARTIndex(a.fingerprint)).array;
+
+            dart_A.checkload(fingerprints);
         }
 
         {
