@@ -7,13 +7,13 @@ The collected result should as a modifications updates to the DART-Service.
 ### Scenario: Process an epoch-list with all valid epochs
 
 
-*Given* a list of contract where all the contracts has been executed bye the TVM-service.
+*Given* a list of contracst where all the contracts have been executed by the TVM-service.
 
 
-*Given* a list of valid contract in an epoch-list.
+*Given* a list of valid contracts in an epoch-list.
 
 
-*When* the epoch-list and the list of contract is available.
+*When* the epoch-list and the list of contracts are available.
 
 
 *Then* the Recorder received to DART-Services should be checked that it contains the correct modifications.
@@ -32,10 +32,10 @@ And all the smart contracts which use the same input should be given processed b
 *Given* an epoch-list where some of the inputs are used multiple time.
 
 
-*When* the epoch-list and the list of contract is available.
+*When* the epoch-list and the list of contract are available.
 
 
-*When* the transcript services have been executed the smart-contracts the Recorder produces should be sent to the DART-Services
+*When* the transcript services have been executed by the smart-contracts the Recorder produces should be sent to the DART-Services
 
 
 *Then* the Recorder received to DART-Services should be checked that it contains the correct modifications.
