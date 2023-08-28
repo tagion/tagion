@@ -71,6 +71,8 @@ static struct Logger {
         try {
             logger_tid = locate(logger_task_name);
 
+            
+
             .register(task_name, thisTid);
             _task_name = task_name;
             setThreadName(task_name);
@@ -137,11 +139,10 @@ is ready and has been started correctly
         logger_subscription_tid = locate(task_name);
     }
 
-    @trusted 
+    @trusted
     bool isLoggerSubRegistered() nothrow {
         return logger_subscription_tid !is Tid.init;
     }
-
 
     /**
         Push the current logger mask to the mask stack
@@ -204,6 +205,7 @@ is ready and has been started correctly
     }
 
     /// This function should be rewritte it' for the event logging
+    deprecated("use Topic based subscription")
     @trusted
     void report(T)(string symbol_name, T h) const nothrow if (isHiBONRecord!T) {
         version (unittest)
@@ -227,7 +229,7 @@ is ready and has been started correctly
 
     /// Conditional subscription logging
     @trusted
-    void report(T)(Topic topic, string identifier, T value) const nothrow {
+    void report(T)(Topic topic, lazy string identifier, lazy T value) const nothrow {
         if (*topic.subscribed is Subscribed.yes && log.isLoggerSubRegistered) {
             try {
                 logger_subscription_tid.send(topic, identifier, value);
@@ -235,9 +237,14 @@ is ready and has been started correctly
             catch (Exception e) {
                 import std.stdio;
                 import std.exception : assumeWontThrow;
+
                 assumeWontThrow({ stderr.writefln("%s", e.msg); stderr.writefln("\t%s:%s = %s", identifier, value); }());
             }
         }
+    }
+
+    void opCall(T)(Topic topic, lazy string identifier, lazy T value) const nothrow {
+        report(topic, identifier, value);
     }
 
     /**
@@ -383,7 +390,8 @@ shared struct SubscriptionMask {
     //      yes|no     topic
     private Subscribed[string] _registered_topics;
 
-    Topic register(string topic) @safe {
+    @safe
+    Topic register(string topic) {
         Subscribed* s = topic in _registered_topics;
         if (s is null) {
             _registered_topics[topic] = Subscribed.no;
@@ -392,16 +400,18 @@ shared struct SubscriptionMask {
         return Topic(s, topic);
     }
 
+    @trusted
     void subscribe(string topic) {
-        if(thisTid == log.logger_subscription_tid) {
+        if (thisTid == log.logger_subscription_tid) {
             _registered_topics[topic] = Subscribed.yes;
             return;
         }
         assert(0, "Only the logger subscription task can control the subscription");
     }
 
+    @trusted
     void unsubscribe(string topic) {
-        if(thisTid == log.logger_subscription_tid) {
+        if (thisTid == log.logger_subscription_tid) {
             _registered_topics[topic] = Subscribed.no;
             return;
         }
@@ -413,6 +423,7 @@ static shared SubscriptionMask submask;
 
 unittest {
     import core.time;
+
     Topic topic = submask.register("some_tag");
     assert(*topic.subscribed is Subscribed.no, "Topic was subscribed, it shouldn't");
     register("log_sub_task", thisTid);

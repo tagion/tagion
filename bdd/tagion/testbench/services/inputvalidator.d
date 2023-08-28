@@ -20,6 +20,8 @@ import tagion.tools.Basic;
 import tagion.hibon.HiBON;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONBase;
+import tagion.logger.Logger;
+import tagion.utils.pretend_safe_concurrency;
 
 enum feature = Feature(
             "Inputvalidator service",
@@ -91,6 +93,11 @@ class SendRandomBuffer {
     @Given("a inputvalidator")
     Document inputvalidator() {
         waitforChildren(Ctrl.ALIVE);
+
+        register("inputvalidator_tester", thisTid);
+
+        log.registerSubscriptionTask("inputvalidator_tester");
+        submask.subscribe("inputvalidator/reject");
         return result_ok;
     }
 
@@ -105,7 +112,7 @@ class SendRandomBuffer {
         // import std.array;
         // import std.range : take;
         // ubyte[] rnd_buffer = Random!uint().take(32).array;
-        ubyte[] rnd_buffer = new ubyte[](32);
+        ubyte[8] rnd_buffer = [0, 1, 2, 3, 4, 5, 6, 7];
         writefln("rnd_buffer: %s", rnd_buffer);
 
         rc = sock.send(rnd_buffer);
@@ -117,7 +124,12 @@ class SendRandomBuffer {
     Document rejects() {
         import tagion.testbench.actor.util;
 
-        check(concurrency.receiveTimeout(Duration.zero, (inputDoc _, Document __) {}) == false, "should not have received anything");
+        check(concurrency.receiveTimeout(Duration.zero, (inputDoc _, Document __) {}) == false, "should not have received a doc");
+        const received = concurrency.receiveTimeout(Duration.zero, (Topic t, string s, Document d) {
+            writefln("Received rejected ", d);
+        });
+        check(received, "Didn't received rejected");
+
         return Document();
     }
 
