@@ -1586,3 +1586,31 @@ unittest {
         assert(expected_times == result);
     }
 }
+
+///
+@safe
+unittest { /// Reseved keys and types
+
+{ /// Check for reseved HiBON types
+        @recordType("$@")
+        static struct S {
+            int x;
+            mixin HiBONRecord;
+        }
+
+        S s;
+        const doc = s.toDoc;
+        assert(doc.valid is Document.Element.ErrorCode.RESERVED_HIBON_TYPE);
+    }
+    { /// Check for reseved keys 
+        static struct S {
+            @label("$@x") int x;
+            mixin HiBONRecord;
+        }
+
+        S s;
+        const doc = s.toDoc;
+        assert(doc.valid is Document.Element.ErrorCode.RESERVED_KEY);
+    }
+
+}
