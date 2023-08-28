@@ -1,6 +1,6 @@
 ## Feature: Tagion Virtual Machine services
 This feature handles the execution of the smart contracts.
-The purpose of this services is to execute the contract with the input and the readonly archives received.
+The purpose of this service is to execute the contract with the input and the readonly archives received.
 
 `tagion.testbench.services.TVM`
 
@@ -12,15 +12,15 @@ The purpose of this services is to execute the contract with the input and the r
 
 `inputsAndReadonlyArchives`
 
-*When* the format and the method of the contract has been check.
+*When* the format and the method of the contract has been checked.
 
 `contractHasBeenCheck`
 
-*Then* the contract is execute and the result should be send to the transcript.
+*Then* the contract is executed and the result should be send to the transcript service.
 
 `sendToTheTranscript`
 
-*But* if contract fails the fails should be reported to the transcript.
+*But* if the contract fails it should be reported to the transcript service.
 
 `reportedToTheTranscript`
 
