@@ -47,6 +47,7 @@ struct Request(string name) {
 
     static Request opCall() @safe {
         import tagion.utils.Random;
+
         Request!name r;
         r.msg = Msg!name();
         r.id = generateId();
@@ -67,6 +68,7 @@ struct Response(string name) {
     int id;
 }
 
+@safe
 unittest {
     thisActor.task_name = "req_resp";
     register("req_resp", thisTid);
@@ -74,11 +76,12 @@ unittest {
     void some_responder(Some_req req) {
         req.respond("hello");
     }
+
     auto created_req = Some_req();
     some_responder(created_req);
     int received = receiveTimeout(Duration.zero, (Some_req.Response res, string _) {
-            assert(created_req.msg == res.msg, "request msg were not the same");
-            assert(created_req.id == res.id, "request id were not the same");
+        assert(created_req.msg == res.msg, "request msg were not the same");
+        assert(created_req.id == res.id, "request id were not the same");
     });
     assert(received, "never received response");
 }
@@ -152,10 +155,8 @@ enum bool isFailHandler(F)
     || is(F : void delegate(TaskFailure));
 
 /// Stolen from std.concurrency;
-template isSpawnable(F, T...)
-{
-    template isParamsImplicitlyConvertible(F1, F2, int i = 0)
-    {
+template isSpawnable(F, T...) {
+    template isParamsImplicitlyConvertible(F1, F2, int i = 0) {
         alias param1 = Parameters!F1;
         alias param2 = Parameters!F2;
         static if (param1.length != param2.length)
@@ -164,13 +165,14 @@ template isSpawnable(F, T...)
             enum isParamsImplicitlyConvertible = true;
         else static if (isImplicitlyConvertible!(param2[i], param1[i]))
             enum isParamsImplicitlyConvertible = isParamsImplicitlyConvertible!(F1,
-                    F2, i + 1);
+                        F2, i + 1);
         else
             enum isParamsImplicitlyConvertible = false;
     }
+
     enum isSpawnable = isCallable!F && is(ReturnType!F : void)
-            && isParamsImplicitlyConvertible!(F, void function(T))
-            && (isFunctionPointer!F || !hasUnsharedAliasing!F);
+        && isParamsImplicitlyConvertible!(F, void function(T))
+        && (isFunctionPointer!F || !hasUnsharedAliasing!F);
 }
 
 /**
@@ -222,7 +224,7 @@ ActorHandle!A spawn(A, Args...)(immutable(A) actor, string name, Args args) @saf
 if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
     try {
         Tid tid;
-        tid = concurrency.spawn((immutable(A) _actor, string name, Args args) @trusted nothrow {
+        tid = concurrency.spawn((immutable(A) _actor, string name, Args args) @trusted nothrow{
             thisActor.task_name = name;
             log.register(name);
             thisActor.stop = false;
@@ -327,10 +329,11 @@ void sendOwner(T...)(T vals) @safe {
 */
 void fail(Throwable t) @trusted nothrow {
     try {
-        debug(actor) log(t);
+        debug (actor)
+            log(t);
         ownerTid.prioritySend(TaskFailure(thisActor.task_name, cast(immutable) t));
     }
-    catch(Exception e) {
+    catch (Exception e) {
         log.fatal("Failed to deliver TaskFailure: \n
                 %s\n\n
                 Because:\n
