@@ -26,7 +26,6 @@ int _main(string[] _) {
     auto inputvalidator_feature = automation!inputvalidator;
     inputvalidator_feature.SendADocumentToTheSocket(sock_path);
     inputvalidator_feature.SendRandomBuffer(sock_path);
-    inputvalidator_feature.SendMalformedHiBON(sock_path);
     inputvalidator_feature.SendPartialHiBON(sock_path);
     inputvalidator_feature.run;
 

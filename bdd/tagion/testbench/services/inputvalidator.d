@@ -33,7 +33,6 @@ enum feature = Feature(
 alias FeatureContext = Tuple!(
         SendADocumentToTheSocket, "SendADocumentToTheSocket",
         SendRandomBuffer, "SendRandomBuffer",
-        SendMalformedHiBON, "SendMalformedHiBON",
         SendPartialHiBON, "SendPartialHiBON",
         FeatureGroup*, "result"
 );
@@ -133,34 +132,6 @@ class SendRandomBuffer {
         check(received, "Didn't received rejected");
 
         return result_ok;
-    }
-
-}
-
-@safe @Scenario("send malformed HiBON", [])
-class SendMalformedHiBON {
-
-    NNGSocket sock;
-    const string sock_path;
-    this(string _sock_path) @trusted {
-        sock = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
-        sock_path = _sock_path;
-    }
-
-    @Given("a inputvalidator")
-    Document inputvalidator() {
-        waitforChildren(Ctrl.ALIVE);
-        return Document();
-    }
-
-    @When("we send a `malformed_hibon` on a socket")
-    Document socket() {
-        return Document();
-    }
-
-    @Then("the inputvalidator rejects")
-    Document rejects() {
-        return Document();
     }
 
 }
