@@ -44,10 +44,13 @@ struct InputValidatorOptions {
 **/
 struct InputValidatorService {
     void task(immutable(InputValidatorOptions) opts, string receiver_task) {
+        scope (exit) {
+            log("RR: bye!");
+        }
         auto rejected = submask.register("inputvalidator/reject");
         NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_PULL);
         ReceiveBuffer buf;
-        s.recvtimeout = opts.socket_select_timeout.msecs;
+        // s.recvtimeout = opts.socket_select_timeout.msecs;
         const listening = s.listen(opts.sock_addr);
         if (listening == 0) {
             log("listening on addr: %s", opts.sock_addr);
@@ -58,41 +61,49 @@ struct InputValidatorService {
         }
         const recv = (void[] b) @trusted {
             size_t ret = s.receivebuf(cast(ubyte[]) b);
+            log("Received a total of %s", ret);
             return (ret < 0) ? 0 : cast(ptrdiff_t) ret;
         };
         setState(Ctrl.ALIVE);
         while (!thisActor.stop) {
-            auto result = buf.append(recv);
-            if (s.m_errno != nng_errno.NNG_OK) {
-                log.error("Failed to receive: %s", s.m_errno, nng_errstr(s.m_errno));
-                // fail()
-            }
-
-            if (result.size != 0) {
-                Document doc = Document(cast(immutable) result.data);
-                __write("Received %d bytes.", result.size);
-                __write("Document status code %s", doc.valid);
-
-                if (doc.valid is Document.Element.ErrorCode.NONE
-                        && doc.isRecord!(HiRPC.Sender)) {
-                    __write("sending to %s", receiver_task);
-                    locate(receiver_task).send(inputDoc(), doc);
-                }
-                else {
-                    log(rejected, "invalid_doc", doc);
-                    log("invalid_doc %s, subscribed %s", doc, *rejected.subscribed);
-                }
-            }
-
             // Check for control signal
-            receiveTimeout(
+            const received = receiveTimeout(
                     Duration.zero,
                     &signal,
                     &ownerTerminated,
                     &unknown
             );
+            if (received) {
+                continue;
+            }
+
+            auto result = buf.append(recv);
+            if (s.m_errno != nng_errno.NNG_OK) {
+                log.error("Failed to receive: %s", s.m_errno, nng_errstr(s.m_errno));
+                log(rejected, "NNG_ERRNO", s.m_errno);
+                continue;
+            }
+
+            if (result.size <= 0) {
+                log(rejected, "invalid_buf", result.size);
+                log("invalid_buf %s, subscribed %s", result.size, *rejected.subscribed);
+                continue;
+            }
+
+            Document doc = Document(cast(immutable) result.data);
+            __write("Received %d bytes.", result.size);
+            __write("Document status code %s", doc.valid);
+
+            if (doc.valid is Document.Element.ErrorCode.NONE
+                    && doc.isRecord!(HiRPC.Sender)) {
+                __write("sending to %s", receiver_task);
+                locate(receiver_task).send(inputDoc(), doc);
+            }
+            else {
+                log(rejected, "invalid_doc", doc);
+                log("invalid_doc %s, subscribed %s", doc, *rejected.subscribed);
+            }
         }
-        log("RR: bye!");
     }
 }
 
