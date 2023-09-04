@@ -44,9 +44,6 @@ struct InputValidatorOptions {
 **/
 struct InputValidatorService {
     void task(immutable(InputValidatorOptions) opts, string receiver_task) {
-        scope (exit) {
-            log("RR: bye!");
-        }
         auto rejected = submask.register("inputvalidator/reject");
         NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_PULL);
         ReceiveBuffer buf;
@@ -61,7 +58,6 @@ struct InputValidatorService {
         }
         const recv = (scope void[] b) @trusted {
             size_t ret = s.receivebuf(cast(ubyte[]) b);
-            log("Received a total of %s", ret);
             return (ret < 0) ? 0 : cast(ptrdiff_t) ret;
         };
         setState(Ctrl.ALIVE);
@@ -79,7 +75,6 @@ struct InputValidatorService {
 
             auto result = buf.append(recv);
             if (s.m_errno != nng_errno.NNG_OK) {
-                log.error("Failed to receive: %s", s.m_errno, nng_errstr(s.m_errno));
                 log(rejected, "NNG_ERRNO", s.m_errno);
                 continue;
             }
@@ -87,21 +82,15 @@ struct InputValidatorService {
             // Fixme ReceiveBuffer .size doesn't always return correct lenght
             if (result.data.length <= 0) {
                 log(rejected, "invalid_buf", result.size);
-                log("invalid_buf %s, subscribed %s", result.size, *rejected.subscribed);
                 continue;
             }
 
             Document doc = Document(cast(immutable) result.data);
-            __write("Received %d bytes.", result.size);
-            __write("Document status code %s", doc.valid);
-
             if (doc.isInorder && doc.isRecord!(HiRPC.Sender)) {
-                __write("sending to %s", receiver_task);
                 locate(receiver_task).send(inputDoc(), doc);
             }
             else {
                 log(rejected, "invalid_doc", doc);
-                log("invalid_doc %s, subscribed %s", doc, *rejected.subscribed);
             }
         }
     }
