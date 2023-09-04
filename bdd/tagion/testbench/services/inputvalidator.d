@@ -109,11 +109,12 @@ class SendRandomBuffer {
         int rc = sock.dial(sock_path);
         check(rc == 0, format("Failed to dial %s", nng_errstr(rc)));
 
-        // import tagion.utils.Random;
-        // import std.array;
-        // import std.range : take;
-        // ubyte[] rnd_buffer = Random!uint().take(32).array;
-        ubyte[8] rnd_buffer = [0, 1, 2, 3, 4, 5, 6, 7];
+        import tagion.utils.Random;
+        import std.array;
+        import std.range : take;
+        import std.algorithm : map;
+
+        ubyte[32] rnd_buffer = Random!uint(env.getSeed).map!(r => cast(ubyte) r).take(32).array;
         writefln("rnd_buffer: %s", rnd_buffer);
 
         rc = sock.send(rnd_buffer);
