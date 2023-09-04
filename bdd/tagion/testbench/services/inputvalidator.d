@@ -32,7 +32,7 @@ enum feature = Feature(
 
 alias FeatureContext = Tuple!(
         SendADocumentToTheSocket, "SendADocumentToTheSocket",
-        SendRandomBuffer, "SendRandomBuffer",
+        SendNoneHiRPC, "SendNoneHiRPC",
         SendPartialHiBON, "SendPartialHiBON",
         FeatureGroup*, "result"
 );
@@ -80,8 +80,8 @@ class SendADocumentToTheSocket {
     }
 }
 
-@safe @Scenario("send random buffer", [])
-class SendRandomBuffer {
+@safe @Scenario("send none hirpc document", [])
+class SendNoneHiRPC {
 
     NNGSocket sock;
     const string sock_path;
@@ -101,23 +101,19 @@ class SendRandomBuffer {
         return result_ok;
     }
 
-    @When("we send a `random_buffer` on a socket")
+    @When("we send a document which is not a HiRPC on a socket")
     Document socket() @trusted {
         sock.sendtimeout = msecs(1000);
         sock.sendbuf = 4096;
         int rc = sock.dial(sock_path);
-        check(rc == 0, format("Failed to dial %s", nng_errstr(rc)));
+        check(rc == 0, format("Failed to dial %s", rc));
 
-        import tagion.utils.Random;
-        import std.array;
-        import std.range : take;
-        import std.algorithm : map;
+        auto hibon = new HiBON();
+        hibon["$test"] = 5;
+        writefln("Buf lenght %s %s", hibon.serialize.length, Document(hibon.serialize).valid);
 
-        ubyte[32] rnd_buffer = Random!uint(env.getSeed).map!(r => cast(ubyte) r).take(32).array;
-        writefln("rnd_buffer: %s", rnd_buffer);
-
-        rc = sock.send(rnd_buffer);
-        check(rc == 0, format("Failed to send %s", nng_errstr(rc)));
+        rc = sock.send(hibon.serialize);
+        check(rc == 0, format("Failed to send %s", rc));
         return result_ok;
     }
 
@@ -125,8 +121,8 @@ class SendRandomBuffer {
     Document rejects() {
         import tagion.testbench.actor.util;
 
-        check(!concurrency.receiveTimeout(1.seconds, (inputDoc _, Document __) {}), "should not have received a doc");
-        const received = concurrency.receiveTimeout(1.seconds, (Topic t, string s, Document d) {
+        check(!concurrency.receiveTimeout(100.msecs, (inputDoc _, Document __) {}), "should not have received a doc");
+        const received = concurrency.receiveTimeout(100.msecs, (Topic t, string s, Document d) {
             writefln("Received rejected ", d);
         });
         check(received, "Didn't received rejected");
@@ -151,6 +147,10 @@ class SendPartialHiBON {
     @Given("a inputvalidator")
     Document inputvalidator() {
         check(waitforChildren(Ctrl.ALIVE), "waitforChildren");
+
+        register("inputvalidator_tester", thisTid);
+        log.registerSubscriptionTask("inputvalidator_tester");
+        submask.subscribe("inputvalidator/reject");
         return result_ok;
     }
 

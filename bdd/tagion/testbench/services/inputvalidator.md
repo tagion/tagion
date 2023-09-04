@@ -11,11 +11,11 @@ When we send a `Document` on a socket
 Then we receive back the Document in our mailbox
 
 
-## Scenario send random buffer
+## Scenario None HiRPC document
 
 Given a inputvalidator
 
-When we send a `random_buffer` on a socket
+When we send a document which is not a HiRPC on a socket
 
 Then the inputvalidator rejects
 

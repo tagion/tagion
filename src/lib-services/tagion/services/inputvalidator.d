@@ -59,7 +59,7 @@ struct InputValidatorService {
             log.error("Failed to listen on addr: %s, %s", opts.sock_addr, nng_errstr(listening));
             assert(0); // fixme
         }
-        const recv = (void[] b) @trusted {
+        const recv = (scope void[] b) @trusted {
             size_t ret = s.receivebuf(cast(ubyte[]) b);
             log("Received a total of %s", ret);
             return (ret < 0) ? 0 : cast(ptrdiff_t) ret;
@@ -84,7 +84,8 @@ struct InputValidatorService {
                 continue;
             }
 
-            if (result.size <= 0) {
+            // Fixme ReceiveBuffer .size doesn't always return correct lenght
+            if (result.data.length <= 0) {
                 log(rejected, "invalid_buf", result.size);
                 log("invalid_buf %s, subscribed %s", result.size, *rejected.subscribed);
                 continue;
@@ -94,8 +95,7 @@ struct InputValidatorService {
             __write("Received %d bytes.", result.size);
             __write("Document status code %s", doc.valid);
 
-            if (doc.valid is Document.Element.ErrorCode.NONE
-                    && doc.isRecord!(HiRPC.Sender)) {
+            if (doc.isInorder && doc.isRecord!(HiRPC.Sender)) {
                 __write("sending to %s", receiver_task);
                 locate(receiver_task).send(inputDoc(), doc);
             }
