@@ -5,6 +5,7 @@ import tagion.behaviour;
 import tagion.hibon.Document;
 import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
+import tagion.testbench.actor.util;
 
 import nngd;
 import core.time;
@@ -171,22 +172,38 @@ class SendPartialHiBON {
     this(string _sock_path) @trusted {
         sock = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
         sock_path = _sock_path;
+        sock.sendtimeout = msecs(1000);
+        sock.sendbuf = 4096;
     }
 
     @Given("a inputvalidator")
     Document inputvalidator() {
-        waitforChildren(Ctrl.ALIVE);
-        return Document();
+        check(waitforChildren(Ctrl.ALIVE), "waitforChildren");
+        return result_ok;
     }
 
     @When("we send a `partial_hibon` on a socket")
-    Document socket() {
-        return Document();
+    Document socket() @trusted {
+        int rc = sock.dial(sock_path);
+        check(rc == 0, format("Failed to dial %s", nng_errstr(rc)));
+        HiRPC hirpc;
+        auto hibon = new HiBON();
+        hibon["$test"] = 5;
+        const sender = hirpc.act(hibon);
+        Document doc = sender.toDoc;
+        immutable partial_buf = doc.serialize[0 .. 26].dup;
+        writefln("Buf lenght %s %s", partial_buf.length, Document(partial_buf).valid);
+        rc = sock.send(partial_buf);
+        check(rc == 0, format("Failed to send %s", nng_errstr(rc)));
+        return result_ok;
     }
 
     @Then("the inputvalidator rejects")
     Document rejects() {
-        return Document();
+        check(!concurrency.receiveTimeout(100.msecs, (inputDoc _, Document __) {}), "should not have received a doc");
+        const received = receiveOnlyTimeout!(Topic, string, const(long)); // Subscribed rejected data
+        check(received !is typeof(received).init, "Didn't received rejected");
+        return result_ok;
     }
 
 }
