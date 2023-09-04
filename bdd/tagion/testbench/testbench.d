@@ -23,8 +23,6 @@ int main(string[] args) {
     import dart_sync_stress = tagion.testbench.dart_sync_stress;
     import dart_service = tagion.testbench.dart_service;
     import hashgraph_test = tagion.testbench.hashgraph_test;
-    import hashgraph_contributors = tagion.testbench.hashgraph_contributors;
-    import hashgraph_exclude = tagion.testbench.hashgraph_exclude;
     import hashgraph_swap = tagion.testbench.hashgraph_swap;
     import tvm_betterc = tagion.testbench.tvm_betterc;
     import epoch_creator = tagion.testbench.epoch_creator;
@@ -50,8 +48,6 @@ int main(string[] args) {
             dart_sync_stress,
             dart_service,
             hashgraph_test,
-            hashgraph_contributors,
-            hashgraph_exclude,
             hashgraph_swap,
             tvm_betterc,
             epoch_creator,
