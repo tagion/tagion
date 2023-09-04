@@ -26,12 +26,10 @@ import nngd;
 @safe
 struct InputValidatorOptions {
     string sock_addr;
-    uint socket_select_timeout = 1000; // msecs
     void setDefault() nothrow {
         import tagion.services.options : contract_sock_path;
 
         sock_addr = contract_sock_path;
-        socket_select_timeout = 1000;
     }
 
     mixin JSONCommon;

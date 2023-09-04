@@ -60,6 +60,13 @@ struct Supervisor {
                 service.send(Sig.STOP);
             }
         }
+        (() @trusted { // NNG shoould be safe
+            import nngd;
+
+            NNGSocket input_sock = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
+            input_sock.dial(opts.inputvalidator.sock_addr);
+            input_sock.send("End!"); // Send arbitrary data to the inputvalidator so releases the socket and checks its mailbox
+        })();
         log("Supervisor stopping services");
         waitforChildren(Ctrl.END);
         log("All services stopped");
