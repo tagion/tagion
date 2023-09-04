@@ -303,7 +303,7 @@ class Event {
         check(!_mother._daughter, ConsensusFailCode.EVENT_MOTHER_FORK);
         _mother._daughter = this;
         _father = hashgraph.register(event_package.event_body.father);
-        _round = ((father) && (father.round.number >= mother.round.number)) ? _father._round : _mother._round;
+        _round = ((father) && !higher(mother.round.number, father.round.number)) ? _father._round : _mother._round;
         if (_father) {
             check(!_father._son, ConsensusFailCode.EVENT_FATHER_FORK);
             _father._son = this;
