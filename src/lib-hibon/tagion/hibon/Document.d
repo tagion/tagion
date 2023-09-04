@@ -1133,7 +1133,7 @@ static assert(uint.sizeof == 4);
                 
 
                     .check(isIndex, [
-                    "Key '", key.to!string, "' is not an index", key
+                        "Key '", key.to!string, "' is not an index", key
                 ].join);
                 return LEB128.decode!uint(data[keyPos .. $]).value;
             }
@@ -1411,7 +1411,7 @@ static assert(uint.sizeof == 4);
                         return RESERVED_KEY;
                     }
                     if (type is Type.STRING) {
-                        const len = LEB128.decode!ulong(data[valuePos .. $]);
+                        const len = LEB128.decode!uint(data[valuePos .. $]);
                         const type_name = data[valuePos + len.size .. valuePos + len.size + len.value];
                         if (type_name.length >= TYPENAME.length &&
                                 type_name[0 .. TYPENAME.length] == TYPENAME) {
