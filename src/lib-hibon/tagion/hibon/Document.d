@@ -507,10 +507,6 @@ static assert(uint.sizeof == 4);
         else static if (is(T : const BigNumber)) {
             size += x.calc_size;
         }
-        else static if (isDataBlock!T) {
-            const _size = x.size;
-            size += LEB128.calc_size(_size) + _size;
-        }
         else {
             alias BaseT = TypedefType!T;
             static if (isIntegral!BaseT) {
@@ -577,12 +573,6 @@ static assert(uint.sizeof == 4);
         }
         else static if (is(T : const BigNumber)) {
             buffer.array_write(x.serialize, index);
-        }
-        else static if (isDataBlock!T) {
-            immutable data = x.serialize;
-            immutable size = LEB128.encode(data.length);
-            buffer.array_write(size, index);
-            buffer.array_write(data, index);
         }
         else static if (isIntegral!BaseT) {
             buffer.array_write(LEB128.encode(cast(BaseT) x), index);
@@ -717,14 +707,12 @@ static assert(uint.sizeof == 4);
 
         alias TabelArray = Tuple!(
                 immutable(ubyte)[], Type.BINARY.stringof,
-                DataBlock, Type.HASHDOC.stringof,
                 string, Type.STRING.stringof,
         );
 
         TabelArray test_tabel_array;
         test_tabel_array.BINARY = [1, 2, 3];
         test_tabel_array.STRING = "Text";
-        test_tabel_array.HASHDOC = DataBlock(27, [3, 4, 5]);
 
         { // Document with simple types
             index = 0;
@@ -957,12 +945,6 @@ static assert(uint.sizeof == 4);
                         else static if (E is BIGINT) {
                             auto big_leb128 = BigNumber.decodeLEB128(data[value_pos .. $]);
                             return new Value(big_leb128.value);
-                        }
-                        else static if (isDataBlock(E)) {
-                            immutable binary_len = LEB128.decode!uint(data[value_pos .. $]);
-                            immutable buffer_pos = value_pos + binary_len.size;
-                            immutable buffer = data[buffer_pos .. buffer_pos + binary_len.value];
-                            return new Value(DataBlock(buffer));
                         }
                         else {
                             if (isHiBONBaseType(type)) {
@@ -1271,9 +1253,6 @@ static assert(uint.sizeof == 4);
                             static if (isHiBONBaseType(E)) {
                                 alias T = Value.TypeT!E;
                                 static if ((E is STRING) || (E is DOCUMENT) || (E is BINARY)) {
-                                    return dataPos + dataSize;
-                                }
-                                else static if (isDataBlock(E)) {
                                     return dataPos + dataSize;
                                 }
                                 else static if (E is BIGINT) {
