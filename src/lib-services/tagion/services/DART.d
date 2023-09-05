@@ -49,6 +49,11 @@ struct DARTService {
             req.respond(cast(immutable(RecordFactory.Recorder)) read_recorder);
         }
 
+        void checkRead(dartCheckReadRR req, immutable(DARTIndex)[] fingerprints) {
+            auto check_read = db.checkload(fingerprints);
+            req.respond(check_read);
+        }
+
         // only used from the outside
         void rim(dartRimRR req, DART.Rims rims) {
             // empty  
@@ -64,7 +69,7 @@ struct DARTService {
             req.respond(eye);
         }
 
-        run(&read, &modify, &bullseye);
+        run(&read, &modify, &bullseye, &checkRead);
         // run(&read, &rim, &modify, &bullseye);
 
     }

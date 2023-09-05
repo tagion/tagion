@@ -822,16 +822,17 @@ alias check = Check!DARTException;
     }
 
     // DARTIndex[] checkload(Range)(Range fingerprints)
-    DARTIndex[] checkload(Range)(Range fingerprints)
+    immutable(DARTIndex)[] checkload(Range)(Range fingerprints)
     if (isInputRange!Range && isBufferType!(ElementType!Range))
     {
         import std.algorithm : canFind;
 
         auto result = loads(fingerprints)[]
-            .map!(a => a.fingerprint);
+            .map!(a => DARTIndex(a.fingerprint));
 
         auto not_found = fingerprints.filter!(f => !canFind(result, f)).array;
 
+        // return (() @trusted => assumeUnique(not_found))();
         return not_found;
     }
     
@@ -1680,8 +1681,8 @@ unittest {
                 recorder.add(doc);
             }
             dart_A.modify(recorder);
-            dart_A.dump();
-            auto fingerprints = recorder[].map!(a => DARTIndex(a.fingerprint)).array;
+            // dart_A.dump();
+            auto fingerprints = recorder[].map!(a => cast(immutable) DARTIndex(a.fingerprint)).array;
 
             auto empty_load = dart_A.checkload(fingerprints);
             assert(empty_load.length == 0);
@@ -1693,7 +1694,7 @@ unittest {
             ];
             auto not_in_dart_fingerprints = not_in_dart
                 .map!(a => DARTFakeNet.fake_doc(a))
-                .map!(a => cast(DARTIndex) net.calcHash(a));
+                .map!(a => net.dartIndex(a));
 
             auto full_load = dart_A.checkload(not_in_dart_fingerprints);
             assert(not_in_dart_fingerprints.length == full_load.length);
@@ -1704,7 +1705,7 @@ unittest {
             ];
             auto half_in_dart_fingerprints = half_in_dart
                 .map!(a => DARTFakeNet.fake_doc(a))
-                .map!(a => cast(DARTIndex) net.calcHash(a))
+                .map!(a => net.dartIndex(a))
                 .array;
 
             auto half_load = dart_A.checkload(half_in_dart_fingerprints);
