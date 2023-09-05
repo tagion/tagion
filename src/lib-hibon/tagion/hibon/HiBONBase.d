@@ -54,7 +54,7 @@ enum Type : ubyte {
 
     BOOLEAN = 0x08, /// Boolean - true or false
     TIME = 0x09, /// Standard Time counted as the total 100nsecs from midnight, January 1st, 1 A.D. UTC.
-    HASHDOC = 0x0F, /// Hash point to documement, public key or signature
+    // HASHDOC = 0x0F, /// Hash point to documement, public key or signature
 
     INT32 = 0x11, /// 32-bit integer
     INT64 = 0x12, /// 64-bit integer,
@@ -88,7 +88,7 @@ static unittest {
     static assert(Type.VER < SPACE);
 }
 
-@safe struct DataBlock {
+version (none) @safe struct DataBlock {
     protected {
         uint _type;
         immutable(ubyte)[] _data;
@@ -130,7 +130,7 @@ static unittest {
 
 //alias HashDoc = DataBlock; //!(Type.HASHDOC);
 
-enum isDataBlock(T) = is(T : const(DataBlock));
+//enum isDataBlock(T) = is(T : const(DataBlock));
 
 /++
  Returns:
@@ -191,12 +191,6 @@ enum isDataBlock(T) = is(T : const(DataBlock));
 
     enum flags = make_flags;
     return flags[type];
-}
-
-@safe @nogc bool isDataBlock(Type type) pure nothrow {
-    with (Type) {
-        return (type is HASHDOC);
-    }
 }
 
 @safe @nogc bool isLEB128Basic(Type type) pure nothrow {
@@ -262,7 +256,7 @@ static unittest {
     @Type(Type.UINT32) uint uint32;
     @Type(Type.UINT64) ulong uint64;
     @Type(Type.BIGINT) BigNumber bigint;
-    @Type(Type.HASHDOC) DataBlock hashdoc;
+    //@Type(Type.HASHDOC) DataBlock hashdoc;
 
     static if (!is(Document == void)) {
         @Type(Type.NATIVE_DOCUMENT) Document native_document;
@@ -365,10 +359,6 @@ static unittest {
             }
         }
         assert(0, format("%s is not supported", T.stringof));
-    }
-
-    @trusted @nogc this(const DataBlock x) pure nothrow {
-        hashdoc = x;
     }
 
     /++

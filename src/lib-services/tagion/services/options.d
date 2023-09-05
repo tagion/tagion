@@ -7,12 +7,7 @@ import std.range;
 
 static immutable(string) contract_sock_path() @safe nothrow {
     version (linux) {
-        version (NNG_INPUT) {
-            return "abstract://NEUEWELLE_CONTRACT";
-        }
-        else {
-            return "\0NEUEWELLE_CONTRACT";
-        }
+        return "abstract://NEUEWELLE_CONTRACT";
     }
     else version (Posix) {
         import std.path;

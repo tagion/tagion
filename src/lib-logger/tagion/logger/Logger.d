@@ -1,11 +1,11 @@
 /// Global logger module 
 module tagion.logger.Logger;
 
-import std.concurrency;
 import core.sys.posix.pthread;
 import std.string;
 import std.format;
 
+import tagion.utils.pretend_safe_concurrency;
 import tagion.basic.Types : Control;
 import tagion.actor.exceptions;
 import tagion.hibon.HiBONRecord;
@@ -41,6 +41,7 @@ static struct Logger {
         uint id; /// Logger id
         uint[] masks; /// Logger mask stack
         __gshared string logger_task_name; /// Logger task name
+        __gshared Tid logger_subscription_tid;
 
     }
 
@@ -124,8 +125,8 @@ is ready and has been started correctly
     }
 
     /**
-Returns: true if the task_name has been register by the logger
-*/
+        Returns: true if the task_name has been register by the logger
+    */
     @property @trusted
     bool isLoggerServiceRegistered() const nothrow {
         import std.exception : assumeWontThrow;
@@ -133,17 +134,27 @@ Returns: true if the task_name has been register by the logger
         return assumeWontThrow(logger_tid != logger_tid.init);
     }
 
+    @trusted
+    void registerSubscriptionTask(string task_name) {
+        logger_subscription_tid = locate(task_name);
+    }
+
+    @trusted
+    bool isLoggerSubRegistered() nothrow {
+        return logger_subscription_tid !is Tid.init;
+    }
+
     /**
-    Push the current logger mask to the mask stack
-*/
+        Push the current logger mask to the mask stack
+    */
     void push(const uint mask) nothrow {
         masks ~= mask;
     }
 
     /**
-Pops the current logger mask
-Returns: the current mask
-*/
+        Pops the current logger mask
+        Returns: the current mask
+    */
     @nogc
     uint pop() nothrow {
         uint result = masks[$ - 1];
@@ -155,7 +166,7 @@ Returns: the current mask
 
     /**
     Reports the text to the logger with the level LogLevel
-*/
+    */
     @trusted
     void report(const LogLevel level, lazy scope string text) const nothrow {
         version (unittest)
@@ -194,6 +205,7 @@ Returns: the current mask
     }
 
     /// This function should be rewritte it' for the event logging
+    deprecated("use Topic based subscription")
     @trusted
     void report(T)(string symbol_name, T h) const nothrow if (isHiBONRecord!T) {
         version (unittest)
@@ -215,9 +227,29 @@ Returns: the current mask
         }
     }
 
+    /// Conditional subscription logging
+    @trusted
+    void report(T)(Topic topic, lazy string identifier, lazy T value) const nothrow {
+        if (*topic.subscribed is Subscribed.yes && log.isLoggerSubRegistered) {
+            try {
+                logger_subscription_tid.send(topic, identifier, value);
+            }
+            catch (Exception e) {
+                import std.stdio;
+                import std.exception : assumeWontThrow;
+
+                assumeWontThrow({ stderr.writefln("%s", e.msg); stderr.writefln("\t%s:%s = %s", identifier, value); }());
+            }
+        }
+    }
+
+    void opCall(T)(Topic topic, lazy string identifier, lazy T value) const nothrow {
+        report(topic, identifier, value);
+    }
+
     /**
-    formated logger 
-*/
+    formatted logger 
+    */
     @trusted
     void report(Args...)(LogLevel level, string fmt, lazy Args args) const nothrow {
         report(level, format(fmt, args));
@@ -323,6 +355,12 @@ mixin template Log(alias name) {
     mixin(format(q{const bool %1$s_logger = log.env("%1$s", %1$s);}, __traits(identifier, name)));
 }
 
+template Log_(alias name) {
+    void Log_(Topic topic) {
+        log.report(topic, __traits(identifier, name), name);
+    }
+}
+
 static Logger log;
 
 unittest {
@@ -338,4 +376,64 @@ unittest {
     const s = S(10);
     mixin Log!s;
 
+}
+
+import std.typecons;
+
+struct Topic {
+    const(Subscribed)* subscribed;
+    string name;
+}
+
+alias Subscribed = shared(Flag!"subscribed");
+shared struct SubscriptionMask {
+    //      yes|no     topic
+    private Subscribed[string] _registered_topics;
+
+    @safe
+    Topic register(string topic) {
+        Subscribed* s = topic in _registered_topics;
+        if (s is null) {
+            _registered_topics[topic] = Subscribed.no;
+            s = topic in _registered_topics;
+        }
+        return Topic(s, topic);
+    }
+
+    @trusted
+    void subscribe(string topic) {
+        if (thisTid == log.logger_subscription_tid) {
+            _registered_topics[topic] = Subscribed.yes;
+            return;
+        }
+        assert(0, "Only the logger subscription task can control the subscription");
+    }
+
+    @trusted
+    void unsubscribe(string topic) {
+        if (thisTid == log.logger_subscription_tid) {
+            _registered_topics[topic] = Subscribed.no;
+            return;
+        }
+        assert(0, "Only the logger subscription task can control the subscription");
+    }
+}
+
+static shared SubscriptionMask submask;
+
+unittest {
+    import core.time;
+
+    Topic topic = submask.register("some_tag");
+    assert(*topic.subscribed is Subscribed.no, "Topic was subscribed, it shouldn't");
+    register("log_sub_task", thisTid);
+    log.registerSubscriptionTask("log_sub_task");
+    int some_symbol = 5;
+    Log_!(some_symbol)(topic);
+    assert(false == receiveTimeout(Duration.zero, (Topic _, string __, typeof(some_symbol)) {}), "Received an unsubscribed topic");
+    // receiveTimeout(Duration.zero, (Topic _, string __, typeof(some_symbol)) {});
+    submask.subscribe(topic.name);
+    assert(*topic.subscribed is Subscribed.yes, "Topic wasn't subscribed, it should");
+    Log_!(some_symbol)(topic);
+    assert(true == receiveTimeout(Duration.zero, (Topic _, string __, typeof(some_symbol)) {}), "Didn't receive subscribed topic");
 }

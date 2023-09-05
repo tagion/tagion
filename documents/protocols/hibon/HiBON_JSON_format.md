@@ -8,19 +8,20 @@ Except for HIBON type STRING and BOOLEAN which uses the JSON type directly and t
 
 
 
-| Type name | HiBON Type | D-Type        |  Value format     | JSON Type      |
-| --------- | ---------- | ------------- | ---------------- | -------------- |
-| "f32"     | FLOAT32    | float         | hex_float        | string         |
-| "f64"     | FLOAT64    | double        | hex_float        | string         |
-| "i32"     | INT32      | int           | number\|signed   | number\|string |
-| "i64"     | INT64      | long          | signed           | string         |
-| "u32"     | UINT32     | uint          | number\|unsigend | number\|string |
-| "u64"     | UINT64     | ulong         | unsigend         | string         |
-|           | BOOLEAN    | bool          | bool             | bool           |
-|           | STRING     | string        | string           | string         |
-| "utc"     | UTC        | SDT           | unsigend         | string         |
-| "ibig"    | INTBIG     | BigNumber     | signed \| base64 | string         |
-| "*"       | BINARY     | Buffer        | base64 \|  hex   | string         |
+| Type name | HiBON Type | Type-Code | D-Type        |  Value format    | JSON Type      |
+| --------- | ---------- | --------- | ------------- | ---------------- | -------------- |
+| "f32"     | FLOAT32    |   0x17    | float         | hex_float        | string         |
+| "f64"     | FLOAT64    |   0x18    | double        | hex_float        | string         |
+| "i32"     | INT32      |   0x11    | int           | number\|signed   | number\|string |
+| "i64"     | INT64      |   0x12    | long          | signed           | string         |
+| "u32"     | UINT32     |   0x14    | uint          | number\|unsigend | number\|string |
+| "u64"     | UINT64     |   0x15    | ulong         | unsigend         | string         |
+|           | BOOLEAN    |   0x08    | bool          | bool             | bool           |
+|           | STRING     |   0x01    | string        | string           | string         |
+| "time"    | TIME       |   0x09    | sdt_t         | unsigend         | string         |
+| "ibig"    | INTBIG     |   0x1A    | BigNumber     | signed \| base64 | string         |
+| "*"       | BINARY     |   0x03    | Buffer        | base64 \|  hex   | string         |
+| "ver"     | UINT32     |   0x1F    | uint          | unsigend         | numnber        |
 
 
 
@@ -94,19 +95,7 @@ This examples contains all the types in HiBON as an HiBON object inside and HiBO
             "*",
             "@AQID"
         ],
-        "CREDENTIAL": [
-            "&",
-            "@dQkKCw=="
-        ],
-        "CRYPTDOC": [
-            "(#)",
-            "@KgYHCA=="
-        ],
-        "HASHDOC": [
-            "#",
-            "@GwMEBQ=="
-        ],
-        "STRING": "Text"
+       "STRING": "Text"
     }
 }
 ```
