@@ -3,7 +3,7 @@
 The service is responsible for collecting input data for a Contract and ensuring the data is valid and signed before the contract is executed by the TVM.
 
 Input:
-  - A Contract-NC (No Consensus) received from [Contract Interface](/documents/architecture/ContractInterface.md) Service.
+  - A Contract-NC (No Consensus) received from [HiRPC Verifier](/documents/architecture/HiRPCVerifier.md) Service.
   - Contract-C received from [Epoch Creator](/documents/architecture/EpochCreator.md) Service.
 
 Request:
