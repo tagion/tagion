@@ -19,6 +19,7 @@ alias producedContract = Msg!"produced_contract";
 
 
 alias dartReadRR = Request!"dartRead";
+alias dartCheckReadRR = Request!"dartCheckRead";
 alias dartRimRR = Request!"dartRim";
 alias dartBullseyeRR = Request!"dartBullseye";
 alias dartModifyRR = Request!"dartModify";

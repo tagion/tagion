@@ -111,9 +111,10 @@ class WriteAndReadFromDartDb {
     Document theChanged() @trusted {
         import std.exception : assumeUnique;
 
-        immutable fingerprints = docs
+        auto fingerprints = docs
             .map!(d => net.dartIndex(d))
             .array;
+        pragma(msg, "FINGERPRINTS: ", typeof(fingerprints));
 
         auto read_request = dartReadRR();
         handle.send(read_request, fingerprints);
