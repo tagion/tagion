@@ -5,7 +5,7 @@ import tagion.basic.Types : Buffer;
 
 bool error_callback(const Document main_doc, const Document.Element.ErrorCode error_code,
         const(Document.Element) current, const(Document.Element) previous) nothrow @safe {
-    import tagion.hibon.HiBONBase : Type, isDataBlock, isHiBONBaseType;
+    import tagion.hibon.HiBONBase : Type, isHiBONBaseType;
     import LEB128 = tagion.utils.LEB128;
     import std.exception : assumeWontThrow;
     import std.traits : isIntegral, EnumMembers;
@@ -70,16 +70,6 @@ bool error_callback(const Document main_doc, const Document.Element.ErrorCode er
                                     writefln("\tbigSize  %d", big_size);
                                     hex_dump(current.data[current.dataPos .. big_size]);
                                 }
-                                else static if (isDataBlock(E)) {
-                                    const binary_len = LEB128.decode!uint(
-                                            current.data[current.valuePos .. $]);
-                                    writefln("\tbin_size %d", binary_len);
-                                    const buffer_pos = current.valuePos + binary_len.size;
-                                    writefln("\tbin_pos  %d", buffer_pos);
-                                    const buffer = current.data[buffer_pos
-                                        .. buffer_pos + binary_len.value];
-                                    hex_dump(buffer);
-                                }
                                 else static if (isHiBONBaseType(E)) {
                                     static if (E is TIME) {
                                         alias T = long;
@@ -93,12 +83,12 @@ bool error_callback(const Document main_doc, const Document.Element.ErrorCode er
                                         writefln("\tleb128  %d", leb128_size);
                                         hex_dump(
                                                 current.data[current.valuePos
-                                                .. current.valuePos + leb128_size]);
+                                            .. current.valuePos + leb128_size]);
                                     }
                                     else {
                                         hex_dump(
                                                 current.data[current.valuePos
-                                                .. current.valuePos + T.sizeof]);
+                                            .. current.valuePos + T.sizeof]);
                                     }
                                 }
                                 else static if (E is VER) {
@@ -106,7 +96,7 @@ bool error_callback(const Document main_doc, const Document.Element.ErrorCode er
                                             current.data[ubyte.sizeof .. $]);
                                     hex_dump(
                                             current.data[ubyte.sizeof
-                                            .. ubyte.sizeof + leb128_version_size]);
+                                        .. ubyte.sizeof + leb128_version_size]);
                                 }
                                 static if (isHiBONBaseType(E)) {
                                     (() @trusted { writefln("\tvalue  %s", current.by!E); })();

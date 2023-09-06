@@ -52,6 +52,7 @@ class SendPayloadAndCreateEpoch {
         import tagion.services.options;
 
         this.epoch_creator_options = epoch_creator_options;
+        //EpochCreatorOptions xxx = epoch_creator_options;
         addressbook.number_of_active_nodes = epoch_creator_options.nodes;
         foreach (i; 0 .. epoch_creator_options.nodes) {
             // EpochCreatorOptions local_opts = epoch_creator_options;
@@ -60,6 +61,7 @@ class SendPayloadAndCreateEpoch {
             assert(task_names.epoch_creator == "Node_%s".format(i), "Nodes note names correctly");
             auto net = new StdSecureNet();
             net.generateKeyPair(task_names.epoch_creator);
+            writefln("node task name %s", task_names.epoch_creator);
             nodes ~= Node(net, task_names.epoch_creator, epoch_creator_options);
             addressbook[net.pubkey] = NodeAddress(format("address %s", i), DARTOptions.init, 0);
         }
@@ -71,13 +73,17 @@ class SendPayloadAndCreateEpoch {
         import tagion.options.CommonOptions : setCommonOptions;
         import tagion.prior_services.Options;
 
+        // foreach(n; nodes) {
+        //     addressbook[n.net.pubkey] = NodeAddress.init;
+        // }
+
         Options opt;
         setDefaultOption(opt);
         setCommonOptions(opt.common);
 
         // Pubkey[] pkeys = nodes.map!(n => n.net.pubkey).array;
 
-        Pubkey[] pkeys;
+        // Pubkey[] pkeys;
         foreach (n; nodes) {
             handles ~= spawn!EpochCreatorService(
                     cast(immutable) n.name,
@@ -86,30 +92,16 @@ class SendPayloadAndCreateEpoch {
             );
         }
         waitforChildren(Ctrl.STARTING);
-        /*
-        handles.each!(h => pkeys ~= receiveOnly!Pubkey);
-        check(pkeys.length == handles.length && pkeys.length == epoch_creator_options.nodes, "not all pkeys added");
-        writefln("owner received pkeys");
 
-        
         foreach (i, handle; handles) {
-            foreach (pkey; pkeys) {
-                writefln("BEFORE SEND %s", i);
-                handle.send(pkey);
-                // Thread.sleep(1.msecs);
-                writefln("AFTER SEND %s", i);
-            }
-
-            // pkeys.each!(p => handle.send(p));
-            writefln("send node %d %d pkeys", i, pkeys.length);
             receiveOnly!(AddedChannels);
         }
 
         handles.each!(h => h.send(Msg!"BEGIN"()));
-*/
+
         waitforChildren(Ctrl.ALIVE);
         //    writefln("Wait 1 sec");
-        //      Thread.sleep(1.seconds);
+        Thread.sleep(30.seconds);
 
         // // auto net = new StdSecureNet();
         // // immutable passphrase = "wowo";
@@ -119,13 +111,6 @@ class SendPayloadAndCreateEpoch {
         // // immutable passphrase2 = "wowo2";
         // // net2.generateKeyPair(passphrase);
         // // immutable pkeys = [net.pubkey, net2.pubkey];
-
-        // auto epochhandle = spawn!EpochCreatorService(
-        //         "wowo",
-        //         epoch_creator_options,
-        //         cast(immutable) net,
-        //         pkeys,
-        // );
 
         return result_ok;
     }

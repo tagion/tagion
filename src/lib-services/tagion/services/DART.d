@@ -28,7 +28,6 @@ struct DARTOptions {
     mixin JSONCommon;
 }
 
-
 @safe
 struct DARTService {
     void task(immutable(DARTOptions) opts, immutable(SecureNet) net) {
@@ -39,7 +38,6 @@ struct DARTService {
             throw dart_exception;
         }
 
-
         scope (exit) {
             db.close();
         }
@@ -47,6 +45,11 @@ struct DARTService {
         void read(dartReadRR req, immutable(DARTIndex)[] fingerprints) {
             RecordFactory.Recorder read_recorder = db.loads(fingerprints);
             req.respond(cast(immutable(RecordFactory.Recorder)) read_recorder);
+        }
+
+        void checkRead(dartCheckReadRR req, immutable(DARTIndex)[] fingerprints) {
+            auto check_read = db.checkload(fingerprints);
+            req.respond(check_read);
         }
 
         // only used from the outside
@@ -64,7 +67,7 @@ struct DARTService {
             req.respond(eye);
         }
 
-        run(&read, &modify, &bullseye);
+        run(&read, &modify, &bullseye, &checkRead);
         // run(&read, &rim, &modify, &bullseye);
 
     }

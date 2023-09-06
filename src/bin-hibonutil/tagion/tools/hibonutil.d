@@ -37,15 +37,6 @@ const(BOMSeq) getBOM(string str) @trusted {
     return _getBOM(cast(ubyte[]) str);
 }
 
-version (none) void printError(const Exception e) {
-    if (verbose) {
-        stderr.writefln("%s", e);
-        return;
-    }
-    stderr.writeln(e.msg);
-
-}
-
 int _main(string[] args) {
     immutable program = args[0];
     bool version_switch;
@@ -55,6 +46,7 @@ int _main(string[] args) {
     //    string outputfilename;
     bool pretty;
     bool base64;
+    bool sample;
     // bool verbose;
     string outputfilename;
     auto logo = import("logo.txt");
@@ -70,13 +62,22 @@ int _main(string[] args) {
                 "b|base64", "Convert to base64 string", &base64,
                 "v|verbose", "Print more debug information", &__verbose_switch,
                 "o|output", "outputfilename only for stdin", &outputfilename,
+                "sample", "Produce a sample HiBON", &sample,
         );
     }
     catch (std.getopt.GetOptException e) {
         writeln(e.msg);
         return 1;
     }
-
+    if (sample) {
+        string sample_file_name = "sample".setExtension(FileExtension.hibon);
+        writefln("Write %s", sample_file_name);
+        sample_file_name.fwrite(sampleHiBON.serialize);
+        sample_file_name = "sample_array".setExtension(FileExtension.hibon);
+        writefln("Write %s", sample_file_name);
+        sample_file_name.fwrite(sampleHiBON(true).serialize);
+        return 0;
+    }
     if (version_switch) {
         revision_text.writeln;
         return 0;
@@ -86,18 +87,18 @@ int _main(string[] args) {
         writeln(logo);
         defaultGetoptPrinter(
                 [
-                "Documentation: https://tagion.org/",
-                "",
-                "Usage:",
-                format("%s [<option>...] <in-file>", program),
-                "",
-                "Where:",
-                "<in-file>           Is an input file in .json or .hibon format",
-                "",
+            "Documentation: https://tagion.org/",
+            "",
+            "Usage:",
+            format("%s [<option>...] <in-file>", program),
+            "",
+            "Where:",
+            "<in-file>           Is an input file in .json or .hibon format",
+            "",
 
-                "<option>:",
+            "<option>:",
 
-                ].join("\n"),
+        ].join("\n"),
                 main_args.options);
         return 0;
     }
@@ -315,4 +316,63 @@ int _main(string[] args) {
         }
     }
     return 0;
+}
+
+Document sampleHiBON(const bool hibon_array = false) {
+    import tagion.hibon.BigNumber;
+    import std.typecons;
+
+    auto list = tuple!(
+            "BIGINT",
+            "BOOLEAN",
+            "FLOAT32",
+            "FLOAT64",
+            "INT32",
+            "INT64",
+            "UINT32",
+            "UINT64")(
+            BigNumber("-1234_1234_4678_4678_9876_8438_2345_1111"),
+            true,
+            float(0x1.3ae148p+0),
+            double(0x1.9b5d96fe285c6p+664),
+            int(-42),
+            long(-1234_1234_4678_4678),
+            int(42),
+            long(1234_1234_4678_4678),
+    );
+
+    immutable(ubyte)[] buf = [1, 2, 3, 4];
+    auto sub_list = tuple!(
+            "BINARY",
+            "STRING")(
+            buf,
+            "Text",
+    );
+    auto h = new HiBON;
+    foreach (i, value; list) {
+        if (hibon_array) {
+            h[i] = value;
+        }
+        else {
+            h[list.fieldNames[i]] = value;
+        }
+    }
+    auto sub_hibon = new HiBON;
+    foreach (i, value; sub_list) {
+        if (hibon_array) {
+            sub_hibon[i] = value;
+        }
+        else {
+            sub_hibon[list.fieldNames[i]] = value;
+        }
+    }
+    if (hibon_array) {
+        h["sub_hibon"] = sub_hibon;
+    }
+    else {
+        h[list.length] = sub_hibon;
+    }
+
+    return Document(h.serialize);
+
 }

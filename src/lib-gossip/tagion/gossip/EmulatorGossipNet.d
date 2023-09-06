@@ -30,7 +30,7 @@ import tagion.basic.ConsensusExceptions;
 
 import tagion.logger.Logger;
 import tagion.options.ServiceNames : get_node_name;
-import tagion.options.CommonOptions : CommonOptions;
+import tagion.options.CommonOptions;
 
 import tagion.utils.StdTime;
 import tagion.communication.HiRPC;
@@ -170,14 +170,6 @@ class EmulatorGossipNet : GossipNet {
 class NewEmulatorGossipNet : GossipNet {
     private uint node_counter = 0;
     private Duration duration;
-    @trusted
-    static Tid getTidByNodeNumber(const uint i) {
-        writeln("in static getTidByNodeNumber");
-        immutable taskname = i.get_node_name;
-        log.trace("Trying to locate: %s", taskname);
-        auto tid = locate(taskname);
-        return tid;
-    }
 
     private Tid[immutable(Pubkey)] _tids;
     private immutable(Pubkey)[] _pkeys;
@@ -185,6 +177,7 @@ class NewEmulatorGossipNet : GossipNet {
     protected sdt_t _current_time;
     immutable(Pubkey) mypk;
     Random random;
+
     this(const Pubkey mypk, Duration duration) {
         this.random = Random(unpredictableSeed);
         this.duration = duration;
@@ -192,9 +185,12 @@ class NewEmulatorGossipNet : GossipNet {
     }
 
     void add_channel(const Pubkey channel) {
-        writeln("in add channel");
+        import tagion.gossip.AddressBook;
+
         _pkeys ~= channel;
-        _tids[channel] = getTidByNodeNumber(node_counter);
+        const task_name = addressbook.getAddress(channel);
+        _tids[channel] = (() @trusted => locate(task_name))();
+
         log.trace("Add channel: %s tid: %s", channel.cutHex, _tids[channel]);
         node_counter++;
     }
