@@ -16,6 +16,7 @@ import std.algorithm;
 import std.array;
 import tagion.utils.Miscellaneous : cutHex;
 import tagion.dart.DARTOptions;
+import tagion.services.messages;
 
 import std.stdio;
 
@@ -101,7 +102,7 @@ class SendPayloadAndCreateEpoch {
 
         waitforChildren(Ctrl.ALIVE);
         //    writefln("Wait 1 sec");
-         Thread.sleep(30.seconds);
+         Thread.sleep(14.seconds);
 
         // // auto net = new StdSecureNet();
         // // immutable passphrase = "wowo";
@@ -117,7 +118,15 @@ class SendPayloadAndCreateEpoch {
     }
 
     @When("i sent a payload to node0")
-    Document node0() {
+    Document node0() @trusted {
+        import tagion.hibon.HiBON;
+        import tagion.hibon.Document;
+        auto h = new HiBON;
+        h["node0"] = "TEST PAYLOAD";
+        immutable doc = Document(h);
+        writefln("SENDING TEST DOC");
+        handles[1].send(Payload(), doc);
+        Thread.sleep(100.seconds);
 
         return Document();
     }
