@@ -170,15 +170,6 @@ class EmulatorGossipNet : GossipNet {
 class NewEmulatorGossipNet : GossipNet {
     private uint node_counter = 0;
     private Duration duration;
-    @trusted
-    static Tid getTidByNodeNumber(const uint i) {
-        writeln("in static getTidByNodeNumber");
-        immutable taskname = i.get_node_name;
-        log.trace("Trying to locate: %s", taskname);
-        auto tid = locate(taskname);
-        return tid;
-    }
-
 
     private Tid[immutable(Pubkey)] _tids;
     private immutable(Pubkey)[] _pkeys;
