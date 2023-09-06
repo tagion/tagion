@@ -249,7 +249,7 @@ if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
         }, actor, name, args);
         thisActor.childrenState[name] = Ctrl.UNKNOWN;
         log("spawning %s", name);
-        tid.setMaxMailboxSize(int.sizeof, OnCrowding.throwException);
+        tid.setMaxMailboxSize(int.max, OnCrowding.throwException);
         if (concurrency.register(name, tid)) {
             log("%s registered as %s", tid, name);
         }

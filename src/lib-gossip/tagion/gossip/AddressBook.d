@@ -256,6 +256,10 @@ synchronized class AddressBook {
         return channels;
     }
 
+    const(string) getAddress(const Pubkey pkey) const pure nothrow {
+        return addresses[pkey].address;
+    }
+
     /**
      * Return amount of active nodes in network
      * @return amount of active nodes
