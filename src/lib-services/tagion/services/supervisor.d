@@ -31,10 +31,6 @@ class WaveNet : StdSecureNet {
 
 @safe
 struct Supervisor {
-    enum dart_task_name = "dart";
-    enum hirpc_verifier_task_name = "hirpc_verifier";
-    enum input_task_name = "inputvalidator";
-
     auto failHandler = (TaskFailure tf) { log("Supervisor caught exception: \n%s", tf); };
 
     void task(immutable(Options) opts) {
@@ -45,9 +41,12 @@ struct Supervisor {
         if (!dart_filename.exists) {
             DARTFile.create(dart_filename, net);
         }
-        auto dart_handle = spawn!DARTService(dart_task_name, opts.dart, net);
-        auto hirpc_verifier_handle = spawn!HiRPCVerifierService(hirpc_verifier_task_name, opts.hirpc_verifier, "__tmp_collector", net);
-        auto inputvalidator_handle = spawn!InputValidatorService(input_task_name, opts.inputvalidator, hirpc_verifier_task_name);
+
+        immutable tn = opts.task_names;
+        auto dart_handle = spawn!DARTService(tn.dart, opts.dart, net);
+        auto hirpc_verifier_handle = spawn!HiRPCVerifierService(tn.hirpc_verifier, opts.hirpc_verifier, tn.collector, net);
+        auto inputvalidator_handle = spawn!InputValidatorService(tn.inputvalidator, opts.inputvalidator, tn
+                .hirpc_verifier);
         auto services = tuple(dart_handle, hirpc_verifier_handle, inputvalidator_handle);
 
         if (!waitforChildren(Ctrl.ALIVE)) {

@@ -20,7 +20,6 @@ import tagion.services.messages;
 
 @safe
 struct TranscriptOptions {
-    string task_name = "transcript_task";
     mixin JSONCommon;
 }
 
