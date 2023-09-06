@@ -37,7 +37,6 @@ alias ReceivedWavefront = Msg!"ReceivedWavefront";
 alias AddedChannels = Msg!"AddedChannels";
 alias PayloadQueue = Queue!Document;
 
-
 enum NetworkMode {
     internal,
     local,
@@ -50,7 +49,6 @@ struct EpochCreatorOptions {
     uint timeout; // timeout between nodes in milliseconds;
     size_t nodes;
     uint scrap_depth;
-    string task_name = "epoch_creator";
     mixin JSONCommon;
 }
 

@@ -26,8 +26,8 @@ import tagion.gossip.AddressBook;
 enum feature = Feature(
             "EpochCreator service",
             [
-            "This service is responsbile for resolving the Hashgraph and producing a consensus ordered list of events, an Epoch."
-            ]);
+        "This service is responsbile for resolving the Hashgraph and producing a consensus ordered list of events, an Epoch."
+]);
 
 alias FeatureContext = Tuple!(
         SendPayloadAndCreateEpoch, "SendPayloadAndCreateEpoch",
@@ -52,16 +52,15 @@ class SendPayloadAndCreateEpoch {
         import tagion.services.options;
 
         this.epoch_creator_options = epoch_creator_options;
-        //EpochCreatorOptions xxx = epoch_creator_options;
         addressbook.number_of_active_nodes = epoch_creator_options.nodes;
         foreach (i; 0 .. epoch_creator_options.nodes) {
-            EpochCreatorOptions local_opts = epoch_creator_options;
+            // EpochCreatorOptions local_opts = epoch_creator_options;
             immutable prefix = format("Node_%s", i);
-            setTaskPrefix(local_opts, prefix);
-            immutable opts = local_opts;
+            immutable task_names = TaskNames(prefix);
+            assert(task_names.epoch_creator == "Node_%s".format(i), "Nodes note names correctly");
             auto net = new StdSecureNet();
-            net.generateKeyPair(opts.task_name);
-            nodes ~= Node(net, opts.task_name, opts);
+            net.generateKeyPair(task_names.epoch_creator);
+            nodes ~= Node(net, task_names.epoch_creator, epoch_creator_options);
             addressbook[net.pubkey] = NodeAddress(format("address %s", i), DARTOptions.init, 0);
         }
 
