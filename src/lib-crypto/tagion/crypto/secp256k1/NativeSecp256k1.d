@@ -459,39 +459,52 @@ class NativeSecp256k1 {
         return result.idup;
     }
 
-    extern(C) size_t getrandom (void *buf, size_t buflen,  uint flags) @trusted;
-    extern(C) void arc4random_buf (void *buf, size_t buflen) @trusted;
-
     /++
-     + getRandom - runs platform specific random function.
+     + libsecp256k1 randomize - updates the context randomization
+     +
+     + @param seed 32-byte random seed
      +/
     @trusted
-    ubyte[] getRandom(){
-        auto buf=new ubyte[20];
-
-        version(Android){
-            // GRND_NONBLOCK = 0x0001. Don't block and return EAGAIN instead
-            // GRND_RANDOM   = 0x0002. No effect
-            // GRND_INSECURE = 0x0004. Return non-cryptographic random bytes
-
-            getrandom(&buf[0], buf.length, 0x0002);
-        }
-        else version(iOS){
-            arc4random_buf(&buf[0], buf.length);
-        } // TODO: add other platforms
-        
-        return buf;
+    bool randomize(immutable(ubyte[]) seed)
+    in {
+        assert(seed.length == 32 || seed is null);
+    }
+    do {
+        //        auto ctx=getContext();
+        immutable(ubyte)* _seed = seed.ptr;
+        return secp256k1_context_randomize(_ctx, _seed) == 1;
     }
 
-    version (SECP256K1_HASH) @trusted
+    // Function to generate a secure random number
+    version (RANDOM) @trusted
+    pure ulong secureRandom() {
+
+        // Generate a random 256-bit private key
+        ubyte[32] privateKey;
+        // To cbleser: secp256k1_rand256 is not found but supposed to be somewhere in the project.
+        secp256k1_rand256(privateKey.ptr);
+
+        // Interpret the private key as an unsigned long
+        ulong randomNum = *cast(ulong*) privateKey.ptr;
+
+        return randomNum;
+    }
+
+    version (HASH_SECP256K1) @trusted
     ubyte[32] calcHash(const const(ubyte[]) data) {
         secp256k1_sha256 sha;
         ubyte[32] res;
 
+        //ubyte* ret_arr;
+
         secp256k1_sha256_initialize_w(&sha);
         secp256k1_sha256_write_w(&sha, &data[0], data.length);
         secp256k1_sha256_finalize_w(&sha, &res[0]);
-        
+        /*
+        for (int i = 0; i < 32; i++) {
+            res[i] = *(ret_arr + i);
+        }
+*/
         return res;
     }
 }
@@ -898,7 +911,7 @@ unittest {
         //  "f2785178d20217ed89e982ddca6491ed21d598d8545db503f1dee5e09c747164");
     }
 
-    version (SECP256K1_HASH) {
+    version (HASH) {
         import std.string : representation;
         import std.stdio;
 
@@ -906,8 +919,19 @@ unittest {
             auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.DER, NativeSecp256k1.Format.DER);
             auto resultArr = crypt.calcHash("testing".representation);
 
-            writeln("resultArr.toHexString = ", resultArr.toHexString);
             assert(resultArr.toHexString == "CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90"); //sha256hash of "testing"
+        }
+        catch (ConsensusException e) {
+            assert(0, e.msg);
+        }
+    }
+
+    version (RANDOM) {
+        try {
+            auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.DER, NativeSecp256k1.Format.DER);
+            auto result = crypt.secureRandom();
+
+            assert(result != 0);
         }
         catch (ConsensusException e) {
             assert(0, e.msg);
