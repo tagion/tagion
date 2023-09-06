@@ -190,6 +190,7 @@ class NewEmulatorGossipNet : GossipNet {
 
         _pkeys ~= channel;
         const task_name = addressbook.getAddress(channel);
+        log.trace("trying to locate %s", task_name);
         _tids[channel] = (() @trusted => locate(task_name))();
 
         log.trace("Add channel: %s tid: %s", channel.cutHex, _tids[channel]);
