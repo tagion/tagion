@@ -320,7 +320,9 @@ int _main(string[] args) {
 
 Document sampleHiBON(const bool hibon_array = false) {
     import tagion.hibon.BigNumber;
+    import tagion.utils.StdTime;
     import std.typecons;
+    import std.datetime;
 
     auto list = tuple!(
             "BIGINT",
@@ -341,13 +343,6 @@ Document sampleHiBON(const bool hibon_array = false) {
             long(1234_1234_4678_4678),
     );
 
-    immutable(ubyte)[] buf = [1, 2, 3, 4];
-    auto sub_list = tuple!(
-            "BINARY",
-            "STRING")(
-            buf,
-            "Text",
-    );
     auto h = new HiBON;
     foreach (i, value; list) {
         if (hibon_array) {
@@ -357,20 +352,29 @@ Document sampleHiBON(const bool hibon_array = false) {
             h[list.fieldNames[i]] = value;
         }
     }
+    immutable(ubyte)[] buf = [1, 2, 3, 4];
+    auto sub_list = tuple!(
+            "BINARY",
+            "STRING",
+            "TIME")(
+            buf,
+            "Text",
+            currentTime
+    );
     auto sub_hibon = new HiBON;
     foreach (i, value; sub_list) {
         if (hibon_array) {
             sub_hibon[i] = value;
         }
         else {
-            sub_hibon[list.fieldNames[i]] = value;
+            sub_hibon[sub_list.fieldNames[i]] = value;
         }
     }
     if (hibon_array) {
-        h["sub_hibon"] = sub_hibon;
+        h[list.length] = sub_hibon;
     }
     else {
-        h[list.length] = sub_hibon;
+        h["sub_hibon"] = sub_hibon;
     }
 
     return Document(h.serialize);

@@ -59,7 +59,7 @@ enum typeMap = [
         Type.BINARY: "*",
         Type.DOCUMENT: "{}",
         Type.BOOLEAN: "bool",
-        Type.TIME: "sdt",
+        Type.TIME: "time",
         Type.INT32: "i32",
         Type.INT64: "i64",
         Type.UINT32: "u32",
@@ -242,7 +242,10 @@ mixin template JSONString() {
                         }
                     }
                     else static if (E is TIME) {
-                        doc_element[VALUE] = format("0x%x", e.by!(E));
+                        import std.datetime;
+
+                        SysTime sys_time = SysTime(cast(long) e.by!E);
+                        doc_element[VALUE] = sys_time.toISOExtString;
                     }
                     else {
                         goto default;
@@ -320,7 +323,11 @@ mixin template JSONString() {
             return BigNumber(jvalue.str);
         }
         else static if (is(T : const sdt_t)) {
-            return sdt_t(get!long(jvalue));
+            import std.datetime;
+
+            const text_time = get!string(jvalue);
+            const sys_time = SysTime.fromISOExtString(text_time);
+            return sdt_t(sys_time.stdTime);
         }
         else {
             static assert(0, format("Type %s is not supported", T.stringof));
