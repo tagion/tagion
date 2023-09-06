@@ -177,7 +177,7 @@ class NewEmulatorGossipNet : GossipNet {
     protected sdt_t _current_time;
     immutable(Pubkey) mypk;
     Random random;
-    
+
     this(const Pubkey mypk, Duration duration) {
         this.random = Random(unpredictableSeed);
         this.duration = duration;
@@ -190,7 +190,7 @@ class NewEmulatorGossipNet : GossipNet {
         _pkeys ~= channel;
         const task_name = addressbook.getAddress(channel);
         _tids[channel] = (() @trusted => locate(task_name))();
-        
+
         log.trace("Add channel: %s tid: %s", channel.cutHex, _tids[channel]);
         node_counter++;
     }

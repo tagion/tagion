@@ -4,8 +4,8 @@ import std.typecons : Typedef;
 
 //import tagion.gossip.InterfaceNet : SecureNet, HashNet;
 import tagion.crypto.SecureNet : StdSecureNet;
-import tagion.crypto.Types : Fingerprint;
-import tagion.basic.Types : Buffer, Control, BufferType;
+import tagion.crypto.Types : Fingerprint, BufferType;
+import tagion.basic.Types : Buffer, Control;
 import tagion.dart.DART;
 import tagion.dart.DARTFile : DARTFile;
 import tagion.dart.Recorder : RecordFactory;

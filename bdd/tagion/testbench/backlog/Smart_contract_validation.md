@@ -1,3 +1,0 @@
-Feature Smart contact validation
-
-

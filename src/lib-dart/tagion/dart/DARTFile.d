@@ -822,9 +822,7 @@ alias check = Check!DARTException;
     }
 
     // DARTIndex[] checkload(Range)(Range fingerprints)
-    immutable(DARTIndex)[] checkload(Range)(Range fingerprints)
-    if (isInputRange!Range && isBufferType!(ElementType!Range))
-    {
+    immutable(DARTIndex)[] checkload(Range)(Range fingerprints) if (isInputRange!Range && isBufferType!(ElementType!Range)) {
         import std.algorithm : canFind;
 
         auto result = loads(fingerprints)[]
@@ -835,7 +833,6 @@ alias check = Check!DARTException;
         // return (() @trusted => assumeUnique(not_found))();
         return not_found;
     }
-    
 
     enum RIMS_IN_SECTOR = 2;
 
@@ -1690,7 +1687,7 @@ unittest {
             const ulong[] not_in_dart = [
                 0xABB9_13ab_11ef_0929,
                 0xABB9_13ab_11ef_1239,
-                
+
             ];
             auto not_in_dart_fingerprints = not_in_dart
                 .map!(a => DARTFakeNet.fake_doc(a))
@@ -1712,10 +1709,6 @@ unittest {
             assert(half_load.length == 1);
 
             assert(half_load[0] == half_in_dart_fingerprints[1]);
-
-
-
-
 
         }
 

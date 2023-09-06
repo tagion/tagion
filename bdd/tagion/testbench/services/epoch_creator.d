@@ -55,15 +55,15 @@ class SendPayloadAndCreateEpoch {
         //EpochCreatorOptions xxx = epoch_creator_options;
         addressbook.number_of_active_nodes = epoch_creator_options.nodes;
         foreach (i; 0 .. epoch_creator_options.nodes) {
-            EpochCreatorOptions local_opts = epoch_creator_options;
+            // EpochCreatorOptions local_opts = epoch_creator_options;
             immutable prefix = format("Node_%s", i);
-            setTaskPrefix(local_opts, prefix);
-            immutable opts = local_opts;
+            immutable task_names = TaskNames(prefix);
+            assert(task_names.epoch_creator == "Node_%s".format(i), "Nodes note names correctly");
             auto net = new StdSecureNet();
-            net.generateKeyPair(opts.task_name);
-            writefln("node task name %s", opts.task_name);
-            nodes ~= Node(net, opts.task_name, opts);
-            addressbook[net.pubkey] = NodeAddress(opts.task_name, DARTOptions.init, 0);
+            net.generateKeyPair(task_names.epoch_creator);
+            writefln("node task name %s", task_names.epoch_creator);
+            nodes ~= Node(net, task_names.epoch_creator, epoch_creator_options);
+            addressbook[net.pubkey] = NodeAddress(format("address %s", i), DARTOptions.init, 0);
         }
 
     }
@@ -101,7 +101,7 @@ class SendPayloadAndCreateEpoch {
 
         waitforChildren(Ctrl.ALIVE);
         //    writefln("Wait 1 sec");
-         Thread.sleep(30.seconds);
+        Thread.sleep(30.seconds);
 
         // // auto net = new StdSecureNet();
         // // immutable passphrase = "wowo";
@@ -111,7 +111,6 @@ class SendPayloadAndCreateEpoch {
         // // immutable passphrase2 = "wowo2";
         // // net2.generateKeyPair(passphrase);
         // // immutable pkeys = [net.pubkey, net2.pubkey];
-
 
         return result_ok;
     }
