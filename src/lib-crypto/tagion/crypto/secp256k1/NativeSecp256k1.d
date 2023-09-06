@@ -460,19 +460,24 @@ class NativeSecp256k1 {
     }
 
     /++
-     + libsecp256k1 randomize - updates the context randomization
-     +
-     + @param seed 32-byte random seed
+     + getRandom - runs platform specific random function.
      +/
     @trusted
-    bool randomize(immutable(ubyte[]) seed)
-    in {
-        assert(seed.length == 32 || seed is null);
-    }
-    do {
-        //        auto ctx=getContext();
-        immutable(ubyte)* _seed = seed.ptr;
-        return secp256k1_context_randomize(_ctx, _seed) == 1;
+    ubyte[] getRandom(){
+        auto buf=new ubyte[20];
+
+        version(Android){
+            // GRND_NONBLOCK = 0x0001. Don't block and return EAGAIN instead
+            // GRND_RANDOM   = 0x0002. No effect
+            // GRND_INSECURE = 0x0004. Return non-cryptographic random bytes
+
+            getrandom(&buf[0], buf.length, 0x0002);
+        }
+        else version(iOS){
+            arc4random_buf(&buf[0], buf.length);
+        } // TODO: add other platforms
+        
+        return buf;
     }
 
     version (SECP256K1_HASH) @trusted
