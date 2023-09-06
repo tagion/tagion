@@ -554,6 +554,7 @@ const Neutral = delegate(const(Archive) a) => a.type;
 }
 
 ///
+@safe
 unittest { // Archive
     //    import std.stdio;
     import std.format;
@@ -623,6 +624,7 @@ unittest { // Archive
 
 }
 
+@safe
 unittest { /// RecordFactory.Recorder.insert range
     import tagion.hibon.HiBONRecord;
     import tagion.crypto.SecureNet;

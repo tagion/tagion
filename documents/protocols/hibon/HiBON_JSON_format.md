@@ -153,19 +153,7 @@ Note. Because the inner object is name "sub_hibon" the main HiBON is defined as 
             "@AQID"
         ],
         "Text",
-        [
-            "#",
-            "@GwMEBQ=="
-        ],
-        [
-            "&",
-            "@dQkKCw=="
-        ],
-        [
-            "(#)",
-            "@KgYHCA=="
-        ]
-    ]
+   ]
 }
 ```
 
