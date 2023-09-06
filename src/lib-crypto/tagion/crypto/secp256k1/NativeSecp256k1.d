@@ -475,6 +475,30 @@ class NativeSecp256k1 {
         return secp256k1_context_randomize(_ctx, _seed) == 1;
     }
 
+    extern(C) size_t getrandom (void *buf, size_t buflen,  uint flags) @trusted;
+    extern(C) void arc4random_buf (void *buf, size_t buflen) @trusted;
+
+    /++
+     + getRandom - runs platform specific random function.
+     +/
+    @trusted
+    ubyte[] getRandom(){
+        auto buf=new ubyte[20];
+
+        version(Android){
+            // GRND_NONBLOCK = 0x0001. Don't block and return EAGAIN instead
+            // GRND_RANDOM   = 0x0002. No effect
+            // GRND_INSECURE = 0x0004. Return non-cryptographic random bytes
+
+            getrandom(&buf[0], buf.length, 0x0002);
+        }
+        else version(iOS){
+            arc4random_buf(&buf[0], buf.length);
+        }
+        
+        return buf;
+    }
+
     version (SECP256K1_HASH) @trusted
     ubyte[32] calcHash(const const(ubyte[]) data) {
         secp256k1_sha256 sha;
