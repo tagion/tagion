@@ -28,7 +28,6 @@ struct DARTOptions {
     mixin JSONCommon;
 }
 
-
 @safe
 struct DARTService {
     void task(immutable(DARTOptions) opts, immutable(SecureNet) net) {
@@ -38,7 +37,6 @@ struct DARTService {
         if (dart_exception !is null) {
             throw dart_exception;
         }
-
 
         scope (exit) {
             db.close();

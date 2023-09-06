@@ -59,7 +59,7 @@ This examples contains all the types in HiBON as an HiBON object inside and HiBO
 {
     "BIGINT": [
         "big",
-        "@g0qwRVSuRUr6sTLA48YXAAE="
+        "@meiC-oiHr6Tg-POQtYdZ"
     ],
     "BOOLEAN": true,
     "FLOAT32": [
@@ -76,26 +76,22 @@ This examples contains all the types in HiBON as an HiBON object inside and HiBO
     ],
     "INT64": [
         "i64",
-        "0xfedccba987654321"
-    ],
-    "TIME": [
-        "sdt",
-        "0x3e9"
+        "0xfffb9d923e586d5a"
     ],
     "UINT32": [
-        "u32",
+        "i32",
         42
     ],
     "UINT64": [
-        "u64",
-        "0x1233456789abcdf"
+        "i64",
+        "0x4626dc1a792a6"
     ],
     "sub_hibon": {
-        "BINARY": [
+        "BIGINT": [
             "*",
-            "@AQID"
+            "@AQIDBA=="
         ],
-       "STRING": "Text"
+        "BOOLEAN": "Text"
     }
 }
 ```

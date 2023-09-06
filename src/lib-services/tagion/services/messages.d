@@ -17,7 +17,6 @@ alias consensusContract = Msg!"contract-C";
 alias consensusEpoch = Msg!"consensus_epoch";
 alias producedContract = Msg!"produced_contract";
 
-
 alias dartReadRR = Request!"dartRead";
 alias dartCheckReadRR = Request!"dartCheckRead";
 alias dartRimRR = Request!"dartRim";

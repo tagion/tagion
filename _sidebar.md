@@ -14,7 +14,7 @@
 		- [Tagion](/documents/architecture/Tagion.md)
 		- [Tagion Factory](/documents/architecture/TagionFactory.md)
 		- [Input Validator](/documents/architecture/InputValidator.md)
-		- [Contract Verifier](/documents/architecture/HiRPCVerifier.md)
+		- [HiRPC Verifier](/documents/architecture/HiRPCVerifier.md)
 		- [Collector](/documents/architecture/Collector.md)
 		- [TVM](/documents/architecture/TVM.md "Tagion Virtual Machine")
 		- [Transcript](/documents/architecture/Transcript.md)

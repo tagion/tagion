@@ -2,15 +2,6 @@ module tagion.basic.Types;
 
 import std.typecons : Typedef, TypedefType;
 
-enum BufferType {
-    PUBKEY, /// Public key buffer type
-    PRIVKEY, /// Private key buffer type
-    SIGNATURE, /// Signature buffer type
-    HASHPOINTER, /// Hash pointre buffer type
-    MESSAGE, /// Message buffer type
-    //    PAYLOAD /// Payload buffer type
-}
-
 enum BillType {
     NON_USABLE,
     TAGIONS,

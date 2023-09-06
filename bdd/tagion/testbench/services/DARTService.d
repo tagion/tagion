@@ -101,8 +101,7 @@ class WriteAndReadFromDartDb {
         (() @trusted => handle.send(modify_request, cast(immutable) insert_recorder))();
         const bullseye_tuple = receiveOnly!(dartModifyRR.Response, immutable(DARTIndex));
 
-        check(bullseye_tuple[1] !is DARTIndex.init, "Bullseye not updated");
-
+        check(bullseye_tuple[1]!is DARTIndex.init, "Bullseye not updated");
 
         return result_ok;
     }
@@ -122,7 +121,6 @@ class WriteAndReadFromDartDb {
         auto read_recorder = read_tuple[1];
 
         check(equal(read_recorder[].map!(a => a.filed), insert_recorder[].map!(a => a.filed)), "Data not the same");
-
 
         return result_ok;
     }

@@ -36,7 +36,6 @@ import std.stdio;
 
 alias PayloadQueue = Queue!Document;
 
-
 enum NetworkMode {
     internal,
     local,
@@ -49,7 +48,6 @@ struct EpochCreatorOptions {
     uint timeout; // timeout between nodes in milliseconds;
     size_t nodes;
     uint scrap_depth;
-    string task_name = "epoch_creator";
     mixin JSONCommon;
 }
 
@@ -66,7 +64,7 @@ struct EpochCreatorService {
 
         Pubkey[] channels = addressbook.activeNodeChannels;
 
-        foreach(channel; channels) {
+        foreach (channel; channels) {
             gossip_net.add_channel(channel);
         }
         ownerTid.send(AddedChannels());
@@ -118,7 +116,6 @@ struct EpochCreatorService {
             }
             hashgraph.init_tide(&gossip_net.gossip, &payload, gossip_net.time);
         }
-
 
         runTimeout(100.msecs, &timeout, &receivePayload, &receiveWavefront);
         // runTimeout(100.msecs, &timeout, &receivePayload);
