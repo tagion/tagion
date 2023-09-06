@@ -459,6 +459,22 @@ class NativeSecp256k1 {
         return result.idup;
     }
 
+    /++
+     + libsecp256k1 randomize - updates the context randomization
+     +
+     + @param seed 32-byte random seed
+     +/
+    @trusted
+    bool randomize(immutable(ubyte[]) seed)
+    in {
+        assert(seed.length == 32 || seed is null);
+    }
+    do {
+        //        auto ctx=getContext();
+        immutable(ubyte)* _seed = seed.ptr;
+        return secp256k1_context_randomize(_ctx, _seed) == 1;
+    }
+
     extern(C) size_t getrandom (void *buf, size_t buflen,  uint flags) @trusted;
     extern(C) void arc4random_buf (void *buf, size_t buflen) @trusted;
 
@@ -478,7 +494,7 @@ class NativeSecp256k1 {
         }
         else version(iOS){
             arc4random_buf(&buf[0], buf.length);
-        } // TODO: add other platforms
+        }
         
         return buf;
     }
