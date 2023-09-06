@@ -459,6 +459,9 @@ class NativeSecp256k1 {
         return result.idup;
     }
 
+    extern(C) size_t getrandom (void *buf, size_t buflen,  uint flags) @trusted;
+    extern(C) void arc4random_buf (void *buf, size_t buflen) @trusted;
+
     /++
      + getRandom - runs platform specific random function.
      +/
