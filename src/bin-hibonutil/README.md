@@ -1,142 +1,86 @@
-# bin-hibonutil
-
->Hibonutil console viewer/converter for hibon/json files.
-
-# inputfile
-Takes list of  .json and .hibon files.
-```
-hibonutil inputfile1.hibon inputfile2.json 
-```
-The `inputfile1.hibon` will be converted to a json output
-and the `inputfile1.json` will be converted into a hibon output.
-## Parameters
-[--pretty](#pretty) or
-[--stdout](#stdout) **optional**
-## Use cases
-
-###  Case: open file with key
-```
-hibonutil inputfile.hibon
-```
-#### Success
-**Result**:
-<br>Open hibon and show in JSON format
-```
-{"$@":"Quiz","$Q":["What is your favorite book?","What is the name of the road you grew up on?","What is your mother’s maiden name?","What was the name of your first\/current\/favorite pet?"]}
-```
-**Result**
-<br>Open JSON and show as JSON formatted digits array
-```
-[0, 1, 2, 3, 4]
-```
-
-#### Failure
-**Result** (when path not exists):
-<br>Show message
-```
-File inputfile.hibon not found
-```
-
-**WIP : need to rewrite invalid cases**
-**Result** (when path has inappropriate format):
-<br>Show unredable parse out (only hibon)
-<br>Json parsing fail example
-```
-Conversion error, please validate input JSON file
-```
-
-**WIP : need to rewrite behavior for fail cases**
-**Result**:
-<br>message about unssuported extension
-<br>_Below the console output after this scenario_
-```
-File file.ext not valid (only .hibon .json)
-```
-
-###  Case: open file
-```
-hibonutil inputfile.json
-```
-#### Success
-**Result**:
-produces an output file `inputfile.hibon` in hibon format
-
-#### Failure
-[See](#failure)
+# HiBON Utility tools `hibonutil`
 
 
-# pretty
-```
--p --pretty
-```
-Print formatted JSON representation of hibon file<br>
-Example of using:
-```
-hibonutil --pretty readfile.hibon
-```
-## Use cases
+> This tool converts to and from HiBON
+ The `hibonutil` support the following arguments.
+ ```
+ Documentation: https://tagion.org/
 
-###  Case: open file
-```
-hibonutil --pretty device.hibon
-```
-#### Success case
-**Result**:
-Pretty formatted out a file `device.json` or to the console with [-c](#stdout) switch
+Usage:
+hibonutil [<option>...] <in-file>
 
-```
-{
-    "$@": "PIN",
-    "D": [
-        "*",
-        "@7U7QoIF1ZQmqrvORgmtPZ999GY\/BG2OYSHwBVmazVoA="
-    ],
-    "S": [
-        "*",
-        "@PdicCrlKiSa3PxSPvS7afez29cFEITBBhIkgOjHg8cA="
-    ],
-    "U": [
-        "*",
-        "@REX8BY4i3gGJEtf184WDib6xddd423nBSrzDHqUdbkc="
-    ]
-}
-```
-# stdout
-```
--c --stdout
-```
-Prints file to the standard output instead a file<br>
+Where:
+<in-file>           Is an input file in .json or .hibon format
 
-#### Failure
-**Result** (wrong file extension)
-```
-File device.txt not valid (only .hibon .json)
-```
-**Result** (absent file)<br>
-```
-File inputfile.hibon not found
-```
-**Result** (wrong file structure)<br>
-Dump of wrong data structures or JSON parsing error [see](#failure)
+<option>:
+   --version display the version
+-c  --stdout Print to standard output
+-p  --pretty JSON Pretty print: Default: false
+-b  --base64 Convert to base64 string
+-v --verbose Print more debug information
+-o  --output outputfilename only for stdin
+    --sample Produce a sample HiBON
+-h    --help This help information.
+ ```
 
-# Encode base64
-Encode the file as base64.
-```
--b --base64
-```
-Creates .txt file with base64 hibon. Can also be used in combination with `-c`.
+## HiBON sample
 
-# version
-```
---version
+The `hibonutil` can produce sample HiBON files.
+```bash
+> hibonutil --sample
+Write sample.hibon
+Write sample_array.hibon
 ```
 
-Example of using:
+This produces two samples files.
+
+## Covert to a JSON format
+By default `hibonutil` will convert a `.hibon` file to a `.json` file.
 ```
-hibonutil --version
+> hibonutil sample.hibon
+
 ```
-###  Case: show version
-#### Success case
+Will produces a `sample.json` which can be seen in [HiBON_JSON_format](/documents/protocols/hibon/HiBON_JSON_format.md).
+
+The json can be printed to stdout with the `-c` and if `-p` is added the in pretty prints the `.json`.
 ```
-version 1.9
+> hibonutil -pc sample.hibon
 ```
+
+## Covert a JSON to HiBON format
+By default `hibonutil` will convert a `.json` file to a `.json` file. 
+```
+> hibonutil sample.json
+```
+Will produces a `sample.hibon` file.
+
+## Convert to base64.
+By adding the `-b` switch the file will be converted to a base64 and this will produces a `.txt` file.
+
+```
+> hibonutil -b sample.hibon
+```
+Convert to base64 to `.hibon`
+
+```
+> hibonutil sample.txt
+```
+
+## Convert from stdin
+
+The util can read from stdin by specifing a file name with the `-o` switch.
+
+Convert from `.hibon` to `.json`
+```
+> cat sample.hibon |hibonutil -po test.json
+```
+
+## Coverting a list of files
+The `hibonutil` can convert a list of file from `.hibon` to `.json` and vica versa.
+
+```
+hibonutil sample.json sample_array.hibon test.json
+```
+Produces the files `sample.hibon sample_array.json test.hibon`.
+
+

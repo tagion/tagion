@@ -34,7 +34,7 @@
 		- [HiBON_JSON_format](/documents/protocols/hibon/HiBON_JSON_format.md)
 		- [HiBON_LEB128](/documents/protocols/hibon/HiBON_LEB128.md)
 		- [HiBON_Record](/documents/protocols/hibon/HiBON_Record.md)
-	- [Contract](/documents/protocols/contract/Contract.md)
+    - [Contract](/documents/protocols/contract/Contract.md)
         - [Methods](/documents/protocols/contract/hirpcmethods.md)
 	- DART
 		- [Recorder](/documents/modules/dart/recorder.md)
@@ -43,6 +43,9 @@
 		- [Wallet](/documents/modules/wallet/wallet.md)
 	- Actors
 		- [Actor](/documents/modules/actor/actor_requirement.md)
+
+- Tagion API's
+    - [HiBON API](/documents/protocols/api/hibon_api.md)
 
 - Testing
 	- Behaviour tests
