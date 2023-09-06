@@ -40,10 +40,10 @@ enum RejectReason {
  * HiRPCVerifierService actor
  * Examples: [tagion.testbench.services.hirpc_verifier]
  * Receives: (inputDoc, Document)
- * Sends: (inputHiRPC, HiRPC.Receiver) to receiver_task, where Document is a correctly formatted HiRPC
+ * Sends: (inputHiRPC, HiRPC.Receiver) to collector_task, where Document is a correctly formatted HiRPC
 **/
 struct HiRPCVerifierService {
-    void task(immutable(HiRPCVerifierOptions) opts, string receiver_task, immutable(SecureNet) net) {
+    void task(immutable(HiRPCVerifierOptions) opts, string collector_task, immutable(SecureNet) net) {
         const hirpc = HiRPC(net);
 
         void reject(RejectReason reason, lazy Document doc) {
@@ -64,7 +64,7 @@ struct HiRPCVerifierService {
             with (ContractMethods) switch (receiver.method.name) {
             case submit:
                 if (receiver.signed is HiRPC.SignedState.VALID) {
-                    locate(receiver_task).send(inputHiRPC(), receiver);
+                    locate(collector_task).send(inputHiRPC(), receiver);
                 }
                 else {
                     reject(RejectReason.notSigned, doc);
