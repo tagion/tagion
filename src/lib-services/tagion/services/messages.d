@@ -23,6 +23,12 @@ alias dartRimRR = Request!"dartRim";
 alias dartBullseyeRR = Request!"dartBullseye";
 alias dartModifyRR = Request!"dartModify";
 
+
+alias Payload = Msg!"Payload";
+alias ReceivedWavefront = Msg!"ReceivedWavefront";
+alias AddedChannels = Msg!"AddedChannels";
+
+
 @safe
 struct ContractProduct {
     CollectedSignedContract contract;

@@ -58,7 +58,7 @@ class StdRefinement : Refinement {
     }
 
     void epoch(Event[] event_collection, const(Round) decided_round) {
-        writefln("CREATING EPOCH");
+        writefln("CREATING EPOCH XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
         import std.algorithm;
         import std.range;
 

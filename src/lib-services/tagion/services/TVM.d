@@ -21,7 +21,6 @@ import tagion.logger.Logger;
 struct TVMOptions {
     import tagion.utils.JSONCommon;
 
-    string task_name = "tvm_task";
     mixin JSONCommon;
 }
 
@@ -42,7 +41,6 @@ struct TVMService {
             log("Time out");
         }
 
-        log("Start %s", opts.task_name);
         run(&contract, &consensus_contract);
         //runTimeout(100.msecs, &timeout);   
     }

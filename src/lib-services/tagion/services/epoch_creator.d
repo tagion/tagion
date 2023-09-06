@@ -24,6 +24,7 @@ import tagion.utils.Miscellaneous : cutHex;
 import tagion.gossip.AddressBook;
 import tagion.hibon.HiBONJSON;
 import tagion.utils.Miscellaneous : cutHex;
+import tagion.services.messages;
 
 // core
 import core.time;
@@ -33,10 +34,6 @@ import std.algorithm;
 import std.typecons : No;
 import std.stdio;
 
-// alias ContractSignedConsensus = Msg!"ContractSignedConsensus";
-alias Payload = Msg!"Payload";
-alias ReceivedWavefront = Msg!"ReceivedWavefront";
-alias AddedChannels = Msg!"AddedChannels";
 alias PayloadQueue = Queue!Document;
 
 enum NetworkMode {
@@ -95,7 +92,7 @@ struct EpochCreatorService {
             return payload_queue.read;
         }
 
-        void receivePayload(Payload, Document pload) {
+        void receivePayload(Payload, const(Document) pload) {
             log.trace("Received Payload");
             payload_queue.write(pload);
         }
@@ -113,7 +110,6 @@ struct EpochCreatorService {
         Random!size_t random;
         random.seed(123456789);
         void timeout() {
-            writefln("running timeout");
             const init_tide = random.value(0, 2) is 1;
             if (!init_tide) {
                 return;

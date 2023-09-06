@@ -40,6 +40,7 @@ import std.random : Random, unpredictableSeed, uniform;
 import core.time;
 import std.datetime;
 import core.thread;
+import tagion.services.messages;
 
 @trusted
 static uint getTids(Tid[] tids) {
@@ -189,6 +190,7 @@ class NewEmulatorGossipNet : GossipNet {
 
         _pkeys ~= channel;
         const task_name = addressbook.getAddress(channel);
+        log.trace("trying to locate %s", task_name);
         _tids[channel] = (() @trusted => locate(task_name))();
 
         log.trace("Add channel: %s tid: %s", channel.cutHex, _tids[channel]);
@@ -250,7 +252,6 @@ class NewEmulatorGossipNet : GossipNet {
     void send(const Pubkey channel, const(HiRPC.Sender) sender) {
         import std.algorithm.searching : countUntil;
         import tagion.hibon.HiBONJSON;
-        import tagion.services.epoch_creator : ReceivedWavefront;
 
         log("Send to %s (Node_%s) %d bytes", channel.cutHex, _pkeys.countUntil(channel), sender
                 .toDoc.serialize.length);

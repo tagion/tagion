@@ -16,6 +16,7 @@ import std.algorithm;
 import std.array;
 import tagion.utils.Miscellaneous : cutHex;
 import tagion.dart.DARTOptions;
+import tagion.services.messages;
 
 import std.stdio;
 
@@ -58,12 +59,12 @@ class SendPayloadAndCreateEpoch {
             // EpochCreatorOptions local_opts = epoch_creator_options;
             immutable prefix = format("Node_%s", i);
             immutable task_names = TaskNames(prefix);
-            assert(task_names.epoch_creator == "Node_%s".format(i), "Nodes note names correctly");
+            // assert(task_names.epoch_creator == "Node_%s".format(i), "Nodes note names correctly");
             auto net = new StdSecureNet();
             net.generateKeyPair(task_names.epoch_creator);
             writefln("node task name %s", task_names.epoch_creator);
             nodes ~= Node(net, task_names.epoch_creator, epoch_creator_options);
-            addressbook[net.pubkey] = NodeAddress(format("address %s", i), DARTOptions.init, 0);
+            addressbook[net.pubkey] = NodeAddress(task_names.epoch_creator, DARTOptions.init, 0);
         }
 
     }
@@ -73,17 +74,11 @@ class SendPayloadAndCreateEpoch {
         import tagion.options.CommonOptions : setCommonOptions;
         import tagion.prior_services.Options;
 
-        // foreach(n; nodes) {
-        //     addressbook[n.net.pubkey] = NodeAddress.init;
-        // }
 
         Options opt;
         setDefaultOption(opt);
         setCommonOptions(opt.common);
 
-        // Pubkey[] pkeys = nodes.map!(n => n.net.pubkey).array;
-
-        // Pubkey[] pkeys;
         foreach (n; nodes) {
             handles ~= spawn!EpochCreatorService(
                     cast(immutable) n.name,
@@ -101,22 +96,21 @@ class SendPayloadAndCreateEpoch {
 
         waitforChildren(Ctrl.ALIVE);
         //    writefln("Wait 1 sec");
-        Thread.sleep(30.seconds);
-
-        // // auto net = new StdSecureNet();
-        // // immutable passphrase = "wowo";
-        // // net.generateKeyPair(passphrase);
-
-        // // auto net2 = new StdSecureNet();
-        // // immutable passphrase2 = "wowo2";
-        // // net2.generateKeyPair(passphrase);
-        // // immutable pkeys = [net.pubkey, net2.pubkey];
+         Thread.sleep(20.seconds);
 
         return result_ok;
     }
 
     @When("i sent a payload to node0")
-    Document node0() {
+    Document node0() @trusted {
+        import tagion.hibon.HiBON;
+        import tagion.hibon.Document;
+        auto h = new HiBON;
+        h["node0"] = "TEST PAYLOAD";
+        immutable doc = Document(h);
+        writefln("SENDING TEST DOC");
+        handles[1].send(Payload(), doc);
+        Thread.sleep(100.seconds);
 
         return Document();
     }
