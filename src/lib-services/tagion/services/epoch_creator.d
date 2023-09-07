@@ -44,7 +44,6 @@ enum NetworkMode {
 
 @safe
 struct EpochCreatorOptions {
-
     uint timeout; // timeout in msecs 
     size_t nodes;
     uint scrap_depth;
@@ -56,12 +55,10 @@ struct EpochCreatorService {
 
     void task(immutable(EpochCreatorOptions) opts, immutable(SecureNet) net) {
 
-        // writeln("IN TASK");
         const hirpc = HiRPC(net);
 
         GossipNet gossip_net;
         gossip_net = new NewEmulatorGossipNet(net.pubkey, opts.timeout.msecs);
-
         Pubkey[] channels = addressbook.activeNodeChannels;
 
         foreach (channel; channels) {
@@ -69,8 +66,8 @@ struct EpochCreatorService {
         }
         ownerTid.send(AddedChannels());
 
-        receiveOnly!(Msg!"BEGIN");
-        log.trace("After begin");
+        receiveOnly!BeginGossip;
+        log.trace("Beginning gossip");
 
         auto refinement = new StdRefinement;
 
@@ -78,7 +75,6 @@ struct EpochCreatorService {
         hashgraph.scrap_depth = opts.scrap_depth;
 
         PayloadQueue payload_queue = new PayloadQueue();
-        writeln("before eva");
         {
             immutable buf = cast(Buffer) hashgraph.channel;
             const nonce = cast(Buffer) net.calcHash(buf);
@@ -118,8 +114,6 @@ struct EpochCreatorService {
         }
 
         runTimeout(opts.timeout.msecs, &timeout, &receivePayload, &receiveWavefront);
-        // runTimeout(100.msecs, &timeout, &receivePayload);
-
     }
 
 }

@@ -12,10 +12,12 @@ import tagion.hashgraph.HashGraphBasic;
 import tagion.utils.StdTime;
 import tagion.logger.Logger;
 import tagion.hibon.HiBONRecord;
+import tagion.hibon.Document;
+import tagion.hibon.HiBON;
 
 // std
 import std.stdio;
-import std.algorithm;
+import std.algorithm : map, filter, sort;
 import std.array;
 import tagion.utils.pretend_safe_concurrency;
 
@@ -42,7 +44,15 @@ class StdRefinement : Refinement {
     }
 
     void finishedEpoch(const(Event[]) events, const sdt_t epoch_time, const Round decided_round) {
-        log.trace("EPOCH finished");
+        auto epoch_created = submask.register("epoch_creator/epoch_created");
+
+
+        HiBON epoch_events;
+        epoch_events = events
+            .filter!((e) => !e.event_body.payload.empty)
+            .map!((e) => e.event_body.payload);
+        
+        log(epoch_created, "epoch succesful", Document(epoch_events));
 
     }
 
