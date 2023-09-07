@@ -23,15 +23,13 @@ alias dartRimRR = Request!"dartRim";
 alias dartBullseyeRR = Request!"dartBullseye";
 alias dartModifyRR = Request!"dartModify";
 
-
 alias Payload = Msg!"Payload";
 alias ReceivedWavefront = Msg!"ReceivedWavefront";
 alias AddedChannels = Msg!"AddedChannels";
 
-
 @safe
 struct ContractProduct {
-    CollectedSignedContract contract;
+    immutable(CollectedSignedContract*) contract;
     Document[] outputs;
 }
 
@@ -40,5 +38,5 @@ struct CollectedSignedContract {
     Document[] inputs;
     Document[] reads;
     SignedContract contract;
-    //    mixin HiBONRecord;
+    //mixin HiBONRecord;
 }
