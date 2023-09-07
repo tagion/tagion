@@ -4,7 +4,12 @@ import tagion.utils.pretend_safe_concurrency : receiveTimeout, MessageMismatch;
 import tagion.actor.exceptions;
 import core.time;
 import std.variant;
-import std.format;
+
+private string format(Args...)(Args args) @trusted {
+    import f = std.format;
+
+    return f.format(args);
+}
 
 /// Exception sent when the actor gets a message that it doesn't handle
 @safe class MessageTimeout : ActorException {
@@ -13,29 +18,27 @@ import std.format;
     }
 }
 
-private template receiveOnlyRet(T...)
-{
-    static if ( T.length == 1 )
-    {
+private template receiveOnlyRet(T...) {
+    static if (T.length == 1) {
         alias receiveOnlyRet = T[0];
     }
-    else
-    {
+    else {
         import std.typecons : Tuple;
+
         alias receiveOnlyRet = Tuple!(T);
     }
 }
 
 /**
 * Throws: MessageTimeout, if no message is received before Duration
-* Throws: MessageMismatch, if incorrect message was received
+* Throws: WrongMessage, if incorrect message was received
 */
 T receiveOnlyTimeout(T)(Duration d = 1.seconds) @safe {
     T ret;
     const received = receiveTimeout(
             d,
             (T val) { ret = val; },
-            (Variant val) {
+            (Variant val) @trusted {
         throw new MessageMismatch(
             format("Unexpected message got %s of type %s, expected %s", val, val.type.toString(), T
             .stringof));
@@ -53,6 +56,7 @@ T receiveOnlyTimeout(T)(Duration d = 1.seconds) @safe {
 }
 
 import std.typecons : Tuple;
+
 /// ditto
 Tuple!(T) receiveOnlyTimeout(T...)(Duration d = 1.seconds) @safe if (T.length > 1) {
     import std.meta : allSatisfy;
@@ -60,23 +64,22 @@ Tuple!(T) receiveOnlyTimeout(T...)(Duration d = 1.seconds) @safe if (T.length > 
 
     Tuple!(T) ret;
     const received = receiveTimeout(
-        d,
-        (T val) {
-            static if (allSatisfy!(isAssignable, T))
-            {
-                ret.field = val;
-            }
-            else
-            {
-                import core.lifetime : emplace;
-                emplace(&ret, val);
-            }
-        },
-        (Variant val) {
-            throw new MessageMismatch(
-                format("Unexpected message got %s of type %s, expected %s", val, val.type.toString(), T
-                .stringof));
+            d,
+            (T val) @safe {
+        static if (allSatisfy!(isAssignable, T)) {
+            ret.field = val;
         }
+        else {
+            import core.lifetime : emplace;
+
+            emplace(&ret, val);
+        }
+    },
+            (Variant val) @trusted {
+        throw new MessageMismatch(
+            format("Unexpected message got %s of type %s, expected %s", val, val.type.toString(), T
+            .stringof));
+    }
     );
 
     if (!received) {
