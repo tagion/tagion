@@ -3,6 +3,7 @@ module tagion.crypto.random.random;
 import tagion.basic.Version;
 import std.system : os;
 import std.format;
+import std.traits;
 
 static if (ver.linux || ver.Android) {
     enum is_getrandom = true;
@@ -32,4 +33,12 @@ void getRandom(ref scope ubyte[] buf) {
     else {
         arc4random_buf(&buf[0], buf.length);
     } // TODO: add other platforms
+}
+
+T getRandom(T)() if (isBasicType!T) {
+    T result;
+    auto buf = cast(ubyte*)(&result)[0 .. T.sizeof];
+    getRandom(buf);
+    return result;
+
 }
