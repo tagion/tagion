@@ -1,4 +1,4 @@
-module tagion.crypto.random;
+module tagion.crypto.random.random;
 
 import tagion.basic.Version;
 import std.system : os;

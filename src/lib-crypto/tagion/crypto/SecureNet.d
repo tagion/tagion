@@ -8,15 +8,22 @@ import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Signature, Fingerprint;
 import tagion.hibon.Document : Document;
 import tagion.basic.ConsensusExceptions;
+import std.range;
 
-void scramble(T, B = T[])(scope ref T[] data, scope const(B) xor = null) @safe if (T.sizeof is ubyte.sizeof) {
-    import std.random;
+void scramble(T, B = T[])(scope ref T[] data, scope const(B) xor = null) @safe if (T.sizeof is ubyte.sizeof)
+in (xor.empty || data.length == xor.length) {
+    //  import std.random;
+    import tagion.crypto.random.random;
 
+    scope buf = cast(ubyte[]) data;
+    getRandom(buf);
+    /*
     auto gen = Mt19937(unpredictableSeed);
     foreach (ref s; data) {
         s = gen.front & ubyte.max;
         gen.popFront;
     }
+*/
     foreach (i, x; xor) {
         data[i] ^= x;
     }
