@@ -117,7 +117,7 @@ struct EpochCreatorService {
             hashgraph.init_tide(&gossip_net.gossip, &payload, gossip_net.time);
         }
 
-        runTimeout(100.msecs, &timeout, &receivePayload, &receiveWavefront);
+        runTimeout(800.msecs, &timeout, &receivePayload, &receiveWavefront);
         // runTimeout(100.msecs, &timeout, &receivePayload);
 
     }
