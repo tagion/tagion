@@ -20,8 +20,7 @@ else {
      + getRandom - runs platform specific random function.
      +/
 @trusted
-ubyte[] getRandom(const size_t size) {
-    auto buf = new ubyte[size];
+void getRandom(ref scope ubyte[] buf) {
 
     static if (is_getrandom) {
         // GRND_NONBLOCK = 0x0001. Don't block and return EAGAIN instead
@@ -33,6 +32,4 @@ ubyte[] getRandom(const size_t size) {
     else {
         arc4random_buf(&buf[0], buf.length);
     } // TODO: add other platforms
-
-    return buf;
 }
