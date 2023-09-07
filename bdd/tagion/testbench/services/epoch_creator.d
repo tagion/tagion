@@ -17,6 +17,9 @@ import std.array;
 import tagion.utils.Miscellaneous : cutHex;
 import tagion.dart.DARTOptions;
 import tagion.services.messages;
+import tagion.logger.Logger;
+import tagion.hibon.HiBON;
+import tagion.hibon.HiBONJSON;
 
 import std.stdio;
 
@@ -69,6 +72,7 @@ class SendPayloadAndCreateEpoch {
 
     @Given("I have 5 nodes and start them in mode0")
     Document mode0() @trusted {
+        register("epoch_creator_tester", thisTid);
 
         foreach (n; nodes) {
             handles ~= spawn!EpochCreatorService(
@@ -83,7 +87,7 @@ class SendPayloadAndCreateEpoch {
             receiveOnly!(AddedChannels);
         }
 
-        handles.each!(h => h.send(Msg!"BEGIN"()));
+        handles.each!(h => h.send(BeginGossip()));
 
         waitforChildren(Ctrl.ALIVE);
         //    writefln("Wait 1 sec");
@@ -94,6 +98,8 @@ class SendPayloadAndCreateEpoch {
 
     @When("i sent a payload to node0")
     Document node0() @trusted {
+
+
         import tagion.hibon.HiBON;
         import tagion.hibon.Document;
         auto h = new HiBON;
@@ -101,13 +107,20 @@ class SendPayloadAndCreateEpoch {
         const doc = Document(h);
         writefln("SENDING TEST DOC");
         handles[1].send(Payload(), doc);
-        Thread.sleep(100.seconds);
 
-        return Document();
+        return result_ok;
     }
 
     @Then("all the nodes should create an epoch containing the payload")
     Document payload() {
+        writefln("BEFORE TIMEOUT");
+        log.registerSubscriptionTask("epoch_creator_tester");
+
+        submask.subscribe("epoch_creator/epoch_created");
+
+        const received = receiveTimeout(100.seconds, (Topic t, string s, Document d) {
+            writefln("received epoch %s %s", s, d.toPretty);
+        });
 
         // import core.thread.threadbase : thread_joinAll;
         // (() @trusted => thread_joinAll())();
