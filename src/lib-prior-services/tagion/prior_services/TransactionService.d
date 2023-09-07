@@ -22,8 +22,8 @@ import tagion.basic.Types : Control, Buffer;
 import tagion.hibon.Document;
 import tagion.communication.HiRPC;
 import tagion.hibon.HiBON;
-import tagion.script.StandardRecords : __Contract, SignedContract, PayContract;
-import tagion.script.SmartScript;
+import tagion.script.prior.StandardRecords : __Contract, SignedContract, PayContract;
+import tagion.script.prior.SmartScript;
 import tagion.crypto.SecureNet : StdSecureNet;
 
 import tagion.actor.exceptions : fatal, taskfailure;
@@ -209,7 +209,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                                     const foreign_recorder = rec_factory.recorder(
                                             received.response.result);
 
-                                    import tagion.script.StandardRecords : StandardBill;
+                                    import tagion.script.prior.StandardRecords : StandardBill;
 
                                     PayContract payment;
 

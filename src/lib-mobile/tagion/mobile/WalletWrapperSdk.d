@@ -19,7 +19,7 @@ import core.stdc.string;
 
 import Wallet = tagion.wallet.SecureWallet;
 import tagion.script.TagionCurrency;
-import tagion.script.StandardRecords;
+import tagion.script.prior.StandardRecords;
 import tagion.communication.HiRPC;
 import tagion.hibon.HiBON;
 import tagion.hibon.HiBONJSON;

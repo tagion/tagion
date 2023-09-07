@@ -41,7 +41,7 @@ import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONtoText : decode;
 import tagion.Keywords;
 import tagion.dart.Recorder;
-import tagion.script.StandardRecords;
+import tagion.script.prior.StandardRecords;
 import tagion.script.NameCardScripts : readStandardRecord;
 
 import tagion.tools.Basic;
@@ -131,7 +131,7 @@ int _main(string[] args) {
         if (dartfilename != dartfilename.init) {
             writefln("Deprecation notice: the -d / --dartfilename is deprecated. \n Please use dartutil FILENAME switches instead");
         }
-        
+
         if (inputfilename != inputfilename.init) {
             writefln("Deprecation notice: the -i / --inputfilename is deprecated. \n Please use dartutil FILENAME switches instead");
         }

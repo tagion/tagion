@@ -11,7 +11,7 @@ import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Pubkey;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.script.TagionCurrency;
-import tagion.script.StandardRecords : StandardBill, OwnerKey;
+import tagion.script.prior.StandardRecords : StandardBill, OwnerKey;
 import tagion.hibon.Document : Document;
 import tagion.dart.DARTBasic;
 

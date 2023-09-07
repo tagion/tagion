@@ -31,7 +31,7 @@ import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.logger.Logger;
 import tagion.monitor.Monitor : MonitorCallBacks;
-import tagion.script.StandardRecords;
+import tagion.script.prior.StandardRecords;
 import tagion.prior_services.Options : Options, setOptions, OptionException, NetworkMode, main_task;
 import tagion.prior_services.DARTService;
 import tagion.prior_services.DARTSynchronizeService;
@@ -164,6 +164,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
         }
         import tagion.hashgraph.Refinement;
         import tagion.basic.basic : trusted;
+
         @safe
         class PriorStdRefinement : StdRefinement {
 
@@ -188,9 +189,8 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
                     (() @trusted => (main_tid.send(Control.STOP)))();
                 }
             }
-            
-        }
 
+        }
 
         if (opts.monitor.enable) {
             monitor_socket_tid = spawn(&monitorServiceTask, opts);
@@ -207,6 +207,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
 
         log.trace("Hashgraph pubkey=%s", net.pubkey.cutHex);
         import tagion.hashgraph.Refinement;
+
         auto refinement = new PriorStdRefinement;
         hashgraph = new HashGraph(opts.nodes, net, refinement, &gossip_net.isValidChannel, No.joining);
         hashgraph.scrap_depth = opts.scrap_depth;

@@ -16,7 +16,7 @@ import tagion.basic.Types : FileExtension;
 import tagion.hibon.HiBONRecord;
 import tagion.crypto.Types;
 import tagion.basic.Types;
-import tagion.script.StandardRecords;
+import tagion.script.prior.StandardRecords;
 import std.datetime;
 import tagion.utils.StdTime;
 import core.time;
@@ -31,9 +31,9 @@ import tagion.hibon.HiBONJSON : toPretty;
 @recordType("DeliveryOrder")
 struct DeliveryOrder {
 
-    string vaccineType; 
+    string vaccineType;
     string packageID;
-    int numberOfVaccines; 
+    int numberOfVaccines;
     string destination;
     string pickuppoint;
     string startTime;
@@ -41,8 +41,7 @@ struct DeliveryOrder {
     int payment;
     @label(OwnerKey) Pubkey owner; // new token owner       
     Pubkey finalReceiver;
-    
-    
+
     mixin HiBONRecord!(q{
         this(
             string vaccineType, 
@@ -77,7 +76,7 @@ struct DeliveryEvent {
     string temp;
     string timeStamp;
     @label(OwnerKey) Pubkey owner; // new token owner
-    
+
     mixin HiBONRecord!(q{
         this(
             Signature newSignature, 
@@ -109,7 +108,7 @@ int _main(string[] args) {
     bool generate_pubkey;
     string receiver_pubkey;
     string final_receiver_pubkey;
-    
+
     GetoptResult main_args;
     try {
         main_args = getopt(args,
@@ -170,7 +169,6 @@ int _main(string[] args) {
         return 0;
     }
 
-    
     // if (args.length != 1) {
     //     stderr.writefln("inputfilename not specified!");
     //     return 0;
@@ -230,13 +228,14 @@ int _main(string[] args) {
     DARTIndex dart_index = net.dartIndex(doc);
 
     auto signed_delivery_event = DeliveryEvent(
-            doc_signed, 
+            doc_signed,
             dart_index,
             "OK",
             Clock.currTime.toISOExtString,
             receiver, //new token owner
+            
     );
-     
+
     if (standard_output) {
         stdout.rawWrite(signed_delivery_event.toDoc.serialize);
         return 0;

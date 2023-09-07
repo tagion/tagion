@@ -1,4 +1,4 @@
-module tagion.script.StandardRecords;
+module tagion.script.prior.StandardRecords;
 
 import std.meta : AliasSeq;
 
@@ -301,15 +301,6 @@ enum OwnerKey = "$Y";
 
         }
     }
-
-    version (none) alias ListOfRecords = AliasSeq!(
-            StandardBill,
-            NetworkNameCard,
-            NetworkNameRecord, // NetworkNodeRecord,
-            __Contract,
-            SignedContract
-    );
-
 }
 
 static Globals globals;

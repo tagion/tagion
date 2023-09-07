@@ -21,7 +21,7 @@ import tagion.hibon.HiBONException : HiBONRecordException;
 import tagion.basic.basic : basename;
 import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Pubkey;
-import tagion.script.StandardRecords;
+import tagion.script.prior.StandardRecords;
 import tagion.crypto.SecureNet : scramble;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 
@@ -75,9 +75,9 @@ import tagion.wallet.SecureWallet : check;
 
     static EvilWallet createWallet(
             scope const(string[]) questions,
-            scope const(char[][]) answers,
-            uint confidence,
-            const(char[]) pincode)
+    scope const(char[][]) answers,
+    uint confidence,
+    const(char[]) pincode)
     in {
         assert(questions.length > 3, "Minimal amount of answers is 4");
         assert(questions.length is answers.length, "Amount of questions should be same as answers");
@@ -114,8 +114,8 @@ import tagion.wallet.SecureWallet : check;
     protected void set_pincode(
             const KeyRecover recover,
             scope const(ubyte[]) R,
-            scope const(char[]) pincode,
-            Net _net = null) {
+    scope const(char[]) pincode,
+    Net _net = null) {
         const hash_size = ((net) ? net : _net).hashSize;
         auto seed = new ubyte[hash_size];
         scramble(seed);

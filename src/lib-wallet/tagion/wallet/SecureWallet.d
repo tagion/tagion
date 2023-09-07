@@ -24,7 +24,7 @@ import tagion.dart.DARTBasic;
 import tagion.basic.basic : basename, isinit;
 import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Pubkey;
-import tagion.script.StandardRecords : SignedContract, StandardBill, Invoice, globals, Script;
+import tagion.script.prior.StandardRecords : SignedContract, StandardBill, Invoice, globals, Script;
 import tagion.crypto.SecureNet : scramble;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 

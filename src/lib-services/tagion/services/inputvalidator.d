@@ -12,7 +12,7 @@ import tagion.actor;
 import tagion.services.messages;
 import tagion.logger.Logger;
 import tagion.utils.pretend_safe_concurrency;
-import tagion.script.StandardRecords;
+import tagion.script.prior.StandardRecords;
 import tagion.network.ReceiveBuffer;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;

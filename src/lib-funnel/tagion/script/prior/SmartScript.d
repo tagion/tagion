@@ -1,4 +1,4 @@
-module tagion.script.SmartScript;
+module tagion.script.prior.SmartScript;
 
 import std.exception : assumeUnique;
 import std.range : lockstep, zip;
@@ -9,7 +9,7 @@ import std.algorithm.searching : all;
 import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 import tagion.basic.ConsensusExceptions : SmartScriptException, ConsensusFailCode, Check;
 import tagion.basic.tagionexceptions : TagionException;
-import tagion.script.StandardRecords : SignedContract, StandardBill, PayContract, OwnerKey, __Contract, Script, Globals, globals;
+import tagion.script.prior.StandardRecords : SignedContract, StandardBill, PayContract, OwnerKey, __Contract, Script, Globals, globals;
 import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Pubkey, Signature, Fingerprint;
 import tagion.script.TagionCurrency;
@@ -263,7 +263,7 @@ version (OLD_TRANSACTION) {
         import std.stdio : writefln, writeln;
         import tagion.crypto.SecureNet;
         import tagion.hibon.HiBON;
-        import tagion.script.StandardRecords : Script;
+        import tagion.script.prior.StandardRecords : Script;
 
         const net = new StdSecureNet;
         import std.array;
