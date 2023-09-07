@@ -439,7 +439,7 @@ void runTimeout(Args...)(Duration duration, void delegate() @safe timeout, Args 
     }
 }
 
-void signal(Sig signal) {
+void signal(Sig signal) @safe {
     with (Sig) final switch (signal) {
     case STOP:
         thisActor.stop = true;
@@ -448,12 +448,12 @@ void signal(Sig signal) {
 }
 
 /// Controls message sent from the children.
-void control(CtrlMsg msg) {
+void control(CtrlMsg msg) @safe {
     thisActor.childrenState[msg.task_name] = msg.ctrl;
 }
 
 /// Stops the actor if the supervisor stops
-void ownerTerminated(OwnerTerminated) {
+void ownerTerminated(OwnerTerminated) @safe {
     log.trace("%s, Owner stopped... nothing to life for... stopping self", thisTid);
     thisActor.stop = true;
 }
@@ -463,6 +463,6 @@ void ownerTerminated(OwnerTerminated) {
  * Params:
  *   message = literally any message
  */
-void unknown(Variant message) {
+void unknown(Variant message) @trusted {
     throw new UnknownMessage("No delegate to deal with message: %s".format(message));
 }
