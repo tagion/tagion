@@ -16,18 +16,6 @@ import tagion.utils.pretend_safe_concurrency;
 
 import std.typecons;
 
-version (none) struct Stack(T) {
-    import std.container.slist;
-
-    immutable(T) pop(uint id) {
-        return cast(immutable) t;
-    }
-
-    void push(uint id, immutable T item) {
-        stack[id] = cast(T) item;
-    }
-}
-
 @safe
 struct CollectorOptions {
     import tagion.utils.JSONCommon;
@@ -39,18 +27,15 @@ struct CollectorOptions {
 struct CollectorService {
     void task(immutable(CollectorOptions) opts, immutable SecureNet net, const string dart_task_name, const string tvm_task_name) {
         //            [req id]
-        // Slist!(immutable(SignedContract)) contracts;
-        import std.typecons : Unique;
-
-        CollectedSignedContract[uint] collections;
-        // Unique!CollectedSignedContract[uint] collections;
+        // CollectedSignedContract[uint] collections;
+        Stack!CollectedSignedContract collections;
 
         void signed_contract(inputContract, immutable(SignedContract) s_contract) {
             const req = dartReadRR();
 
-            // collections[req.id] = new Unique!CollectorService;
-            // collections[req.id].contract = s_contract;
-            collections[req.id].contract = cast(SignedContract) s_contract;
+            collections.put(req.id, CollectedSignedContract());
+            collections.peek(req.id).contract = cast(SignedContract) s_contract;
+            // collections[req.id].contract = cast(SignedContract) s_contract;
             locate(dart_task_name).send(req, s_contract.contract.reads);
             locate(dart_task_name).send(req, s_contract.contract.inputs);
         }
@@ -72,7 +57,7 @@ struct CollectorService {
             import tagion.dart.DARTBasic : dartFingerprint;
             import std.algorithm.iteration : map;
 
-            auto collection = collections[res.id];
+            auto collection = collections.peek(res.id);
 
             const archives = recorder[];
             const s_contract = collection.contract;
@@ -92,19 +77,47 @@ struct CollectorService {
                 return;
             }
 
-            import std.exception;
-
-            const(Document[]) inputs = recorder[].map!(a => a.toDoc).array;
-            // immutable collected = 
-            //     CollectedSignedContract(
-            //             assumeUnique(inputs),
-            //             assumeUnique(inputs), // reads
-            //             s_contract,
-            //     );
-
-            // locate(tvm_task_name).send(signedContract(), collected);
+            locate(tvm_task_name).send(signedContract(), collections.giveme(res.id));
         }
 
         run(&signed_contract, &recorder, &rpc_contract);
+    }
+}
+
+private struct Stack(T) {
+    import std.container.dlist;
+
+    struct Data {
+        uint id;
+        T payload;
+    }
+
+    DList!Data list;
+
+    void put(uint id, T val) {
+        list.insert(Data(id, val));
+    }
+
+    immutable(T) giveme(uint id) @trusted {
+        scope (exit) {
+            list.removeFront;
+        }
+        while (list.front.id != id && !list.empty) {
+            list.removeFront;
+        }
+
+        if (list.front.id == id) {
+            return cast(immutable) list.front.payload;
+        }
+        assert(0, format("%s, doesn't exist in stack", id));
+    }
+
+    T peek(uint id) {
+        foreach_reverse (n; list) {
+            if (n.id == id) {
+                return n.payload;
+            }
+        }
+        assert(0, format("%s, doesn't exist in stack", id));
     }
 }
