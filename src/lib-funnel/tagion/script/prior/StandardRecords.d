@@ -23,9 +23,8 @@ enum OwnerKey = "$Y";
         @label("$k") uint epoch; // Epoch number
         @label(OwnerKey) Pubkey owner; // Double hashed owner key
         @label("$G") Buffer gene; // Bill gene
-        version (OLD_TRANSACTION) {
-            mixin HiBONRecord!(
-                    q{
+        mixin HiBONRecord!(
+                q{
                 this(TagionCurrency value, const uint epoch, Pubkey owner, Buffer gene) {
                     this.value = value;
                     this.epoch = epoch;
@@ -33,10 +32,6 @@ enum OwnerKey = "$Y";
                     this.gene = gene;
                 }
             });
-        }
-        else {
-            mixin HiBONRecord;
-        }
     }
 
     @recordType("NNC") struct NetworkNameCard {
