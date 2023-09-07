@@ -70,14 +70,6 @@ class SendPayloadAndCreateEpoch {
     @Given("I have 5 nodes and start them in mode0")
     Document mode0() @trusted {
 
-        import tagion.options.CommonOptions : setCommonOptions;
-        import tagion.prior_services.Options;
-
-
-        Options opt;
-        setDefaultOption(opt);
-        setCommonOptions(opt.common);
-
         foreach (n; nodes) {
             handles ~= spawn!EpochCreatorService(
                     cast(immutable) n.name,
