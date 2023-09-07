@@ -208,11 +208,28 @@ enum OwnerKey = "$Y";
         mixin HiBONRecord;
     }
 
-    @recordType("SMC") struct Contract {
+    @recordType("SMC") struct __Contract {
+        @label("$in") const(DARTIndex)[] inputs; /// Hash pointer to input (DART)
+        @label("$read", true) DARTIndex[] reads; /// Hash pointer to read-only input (DART)
+        version (OLD_TRANSACTION) {
+            @label("$out") Document[Pubkey] output; // pubkey of the output
+            @label("$run") Script script; // TVM-links / Wasm binary
+        }
+        else {
+            @label("$out") Pubkey[] output; // pubkey of the output
+
+        }
+        mixin HiBONRecord;
+        bool verify() {
+            return (inputs.length > 0);
+        }
+    }
+
+    @recordType("SMC") struct _Contract {
         @label("$in") const(DARTIndex)[] inputs; /// Hash pointer to input (DART)
         @label("$read", true) DARTIndex[] reads; /// Hash pointer to read-only input (DART)
         static if (ver.TVM_TRANSACTION) {
-            @label("$time") sdt_t time; /// Time of contract creation 
+            //            @label("$time") sdt_t time; /// Time of contract creation 
             @label("$run") Document script; /// Standard contract or TVM link. 
         }
         else static if (ver.OLD_TRANSACTION) {
@@ -232,7 +249,7 @@ enum OwnerKey = "$Y";
 
     @recordType("SSC") struct SignedContract {
         @label("$signs") Signature[] signs; /// Signature of all inputs
-        @label("$contract") Contract contract; /// The contract must signed by all inputs
+        @label("$contract") __Contract contract; /// The contract must signed by all inputs
         version (OLD_TRANSACTION) {
             pragma(msg, "OLD_TRANSACTION ", __FILE__, ":", __LINE__);
             @label("$in", true) StandardBill[] inputs; /// The actual inputs
@@ -285,11 +302,11 @@ enum OwnerKey = "$Y";
         }
     }
 
-    alias ListOfRecords = AliasSeq!(
+    version (none) alias ListOfRecords = AliasSeq!(
             StandardBill,
             NetworkNameCard,
             NetworkNameRecord, // NetworkNodeRecord,
-            Contract,
+            __Contract,
             SignedContract
     );
 

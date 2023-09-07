@@ -16,7 +16,7 @@ import tagion.logger.Logger;
 import tagion.basic.tagionexceptions;
 import tagion.actor.exceptions;
 import tagion.script.SmartScript;
-import tagion.script.StandardRecords : Contract, SignedContract, PayContract, StandardBill;
+import tagion.script.StandardRecords : __Contract, SignedContract, PayContract, StandardBill;
 import tagion.basic.ConsensusExceptions : ConsensusException;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.crypto.Types : Fingerprint;

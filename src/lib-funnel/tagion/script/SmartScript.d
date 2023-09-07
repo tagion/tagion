@@ -9,7 +9,7 @@ import std.algorithm.searching : all;
 import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 import tagion.basic.ConsensusExceptions : SmartScriptException, ConsensusFailCode, Check;
 import tagion.basic.tagionexceptions : TagionException;
-import tagion.script.StandardRecords : SignedContract, StandardBill, PayContract, OwnerKey, Contract, Script, Globals, globals;
+import tagion.script.StandardRecords : SignedContract, StandardBill, PayContract, OwnerKey, __Contract, Script, Globals, globals;
 import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Pubkey, Signature, Fingerprint;
 import tagion.script.TagionCurrency;
@@ -111,7 +111,9 @@ version (OLD_TRANSACTION) {
                 _output_bills ~= bill;
                 index_in_epoch++;
             }
+
             
+
             .check(total_output <= total_input - globals.fees(),
                     ConsensusFailCode.SMARTSCRIPT_NOT_ENOUGH_MONEY);
         }
@@ -285,7 +287,7 @@ version (OLD_TRANSACTION) {
             auto input_bill = StandardBill(1000.TGN, epoch, alice.pubkey, null);
 
             SignedContract ssc;
-            Contract contract;
+            __Contract contract;
 
             contract.inputs = [net.HashNet.dartIndex(input_bill)];
             contract.output[bob.pubkey] = amount.toDoc;
@@ -303,7 +305,7 @@ version (OLD_TRANSACTION) {
                 const StandardBill[] output_bills,
                 const SecureNet net,
                 ref SignedContract signed_contract) {
-            Contract contract;
+            __Contract contract;
             contract.inputs = input_bills.map!(b => net.dartIndex(b.toDoc)).array;
             foreach (bill; output_bills) {
                 contract.output[bill.owner] = bill.value.toDoc;
