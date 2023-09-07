@@ -22,7 +22,7 @@ import tagion.basic.Types : Control, Buffer;
 import tagion.hibon.Document;
 import tagion.communication.HiRPC;
 import tagion.hibon.HiBON;
-import tagion.script.prior.StandardRecords : __Contract, SignedContract, PayContract;
+import tagion.script.prior.StandardRecords : Contract, SignedContract, PayContract;
 import tagion.script.prior.SmartScript;
 import tagion.crypto.SecureNet : StdSecureNet;
 

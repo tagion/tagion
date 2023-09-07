@@ -208,7 +208,7 @@ enum OwnerKey = "$Y";
         mixin HiBONRecord;
     }
 
-    @recordType("SMC") struct __Contract {
+    @recordType("SMC") struct Contract {
         @label("$in") const(DARTIndex)[] inputs; /// Hash pointer to input (DART)
         @label("$read", true) DARTIndex[] reads; /// Hash pointer to read-only input (DART)
         version (OLD_TRANSACTION) {
@@ -249,7 +249,7 @@ enum OwnerKey = "$Y";
 
     @recordType("SSC") struct SignedContract {
         @label("$signs") Signature[] signs; /// Signature of all inputs
-        @label("$contract") __Contract contract; /// The contract must signed by all inputs
+        @label("$contract") Contract contract; /// The contract must signed by all inputs
         version (OLD_TRANSACTION) {
             pragma(msg, "OLD_TRANSACTION ", __FILE__, ":", __LINE__);
             @label("$in", true) StandardBill[] inputs; /// The actual inputs
