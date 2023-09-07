@@ -169,7 +169,6 @@ class EmulatorGossipNet : GossipNet {
 
 @safe
 class NewEmulatorGossipNet : GossipNet {
-    private uint node_counter = 0;
     private Duration duration;
 
     private Tid[immutable(Pubkey)] _tids;
@@ -187,14 +186,15 @@ class NewEmulatorGossipNet : GossipNet {
 
     void add_channel(const Pubkey channel) {
         import tagion.gossip.AddressBook;
+        import core.thread;
+        import tagion.services.locator;
 
-        _pkeys ~= channel;
         const task_name = addressbook.getAddress(channel);
-        log.trace("trying to locate %s", task_name);
-        _tids[channel] = (() @trusted => locate(task_name))();
+        auto task_id = tryLocate(task_name);
+        _pkeys ~= channel;
+        _tids[channel] = task_id;
 
         log.trace("Add channel: %s tid: %s", channel.cutHex, _tids[channel]);
-        node_counter++;
     }
 
     void remove_channel(const Pubkey channel) {
@@ -242,6 +242,9 @@ class NewEmulatorGossipNet : GossipNet {
             const(SenderCallBack) sender) {
         const send_channel = select_channel(channel_filter);
         log.trace("Selected channel: %s", send_channel.cutHex);
+        if (send_channel is Pubkey.init) {
+            log.trace("CHANNEL IS INININININIT");
+        }
         if (send_channel.length) {
             send(send_channel, sender());
         }

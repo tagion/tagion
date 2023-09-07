@@ -38,7 +38,6 @@ alias FeatureContext = Tuple!(
 @safe @Scenario("Send payload and create epoch",
         [])
 class SendPayloadAndCreateEpoch {
-    // immutable(EpochCreatorOptions) epoch_creator_options = EpochCreatorOptions(1000, 5, 5);
     struct Node {
         SecureNet net;
         string name;
@@ -47,13 +46,12 @@ class SendPayloadAndCreateEpoch {
 
     Node[] nodes;
     ActorHandle!EpochCreatorService[] handles;
-    immutable(EpochCreatorOptions) epoch_creator_options; // = EpochCreatorOptions(1000, 5, 0);
+    immutable(EpochCreatorOptions) epoch_creator_options; 
 
     this(immutable(EpochCreatorOptions) epoch_creator_options) {
         import tagion.services.options;
 
         this.epoch_creator_options = epoch_creator_options;
-        //EpochCreatorOptions xxx = epoch_creator_options;
         addressbook.number_of_active_nodes = epoch_creator_options.nodes;
         foreach (i; 0 .. epoch_creator_options.nodes) {
             // EpochCreatorOptions local_opts = epoch_creator_options;
@@ -71,6 +69,7 @@ class SendPayloadAndCreateEpoch {
 
     @Given("I have 5 nodes and start them in mode0")
     Document mode0() @trusted {
+
         import tagion.options.CommonOptions : setCommonOptions;
         import tagion.prior_services.Options;
 
@@ -107,7 +106,7 @@ class SendPayloadAndCreateEpoch {
         import tagion.hibon.Document;
         auto h = new HiBON;
         h["node0"] = "TEST PAYLOAD";
-        immutable doc = Document(h);
+        const doc = Document(h);
         writefln("SENDING TEST DOC");
         handles[1].send(Payload(), doc);
         Thread.sleep(100.seconds);
