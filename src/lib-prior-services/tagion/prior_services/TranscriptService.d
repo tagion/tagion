@@ -119,17 +119,14 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
         log("Start with bullseye: %s", last_bullseye.toHexString);
         bool to_smart_script(ref const(SignedContract) signed_contract, ref uint index) nothrow {
             try {
-                version (OLD_TRANSACTION) {
-                    pragma(msg, "OLD_TRANSACTION ", __FILE__, ":", __LINE__);
-                    auto smart_script = new SmartScript(signed_contract);
-                    smart_script.check(net);
-                    const signed_contract_doc = signed_contract.toDoc;
-                    const fingerprint = net.HashNet.calcHash(signed_contract_doc);
-                    uint prev_index = index;
-                    smart_script.run(current_epoch + 1, index, last_bullseye, net);
-                    assert(index == prev_index + smart_script.output_bills.length);
-                    smart_scripts[fingerprint] = smart_script;
-                }
+                auto smart_script = new SmartScript(signed_contract);
+                smart_script.check(net);
+                const signed_contract_doc = signed_contract.toDoc;
+                const fingerprint = net.HashNet.calcHash(signed_contract_doc);
+                uint prev_index = index;
+                smart_script.run(current_epoch + 1, index, last_bullseye, net);
+                assert(index == prev_index + smart_script.output_bills.length);
+                smart_scripts[fingerprint] = smart_script;
                 return true;
             }
             catch (ConsensusException e) {
