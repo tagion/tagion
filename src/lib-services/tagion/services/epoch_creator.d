@@ -45,7 +45,7 @@ enum NetworkMode {
 @safe
 struct EpochCreatorOptions {
 
-    uint timeout; // timeout between nodes in milliseconds;
+    uint timeout; // timeout in msecs 
     size_t nodes;
     uint scrap_depth;
     mixin JSONCommon;
@@ -117,7 +117,7 @@ struct EpochCreatorService {
             hashgraph.init_tide(&gossip_net.gossip, &payload, gossip_net.time);
         }
 
-        runTimeout(800.msecs, &timeout, &receivePayload, &receiveWavefront);
+        runTimeout(opts.timeout.msecs, &timeout, &receivePayload, &receiveWavefront);
         // runTimeout(100.msecs, &timeout, &receivePayload);
 
     }

@@ -22,7 +22,7 @@ class LocatorException : TagionException {
 
 struct LocatorOptions {
     uint max_attempts; // The number of times we try to locate the thread.
-    Duration delay; // Delay between next time we try to locate.
+    uint delay; // Delay in msecs between next time we try to locate.
 }
 
 public shared static immutable (LocatorOptions)* locator_options;
@@ -34,19 +34,19 @@ public shared static immutable (LocatorOptions)* locator_options;
  *   task_name = task name to locate
  * Returns: Tid
  */
-Tid tryLocate(const(string) task_name) @safe {
+Tid tryLocate(const(string) task_name) @trusted {
     import std.stdio;
     assert(locator_options !is null, "The locator option was not set");
 
     uint tries;
 
     do {
-        auto task_id = (() @trusted => locate(task_name))();
+        auto task_id = locate(task_name);
         if (task_id !is Tid.init) { 
             return task_id;
         }
         log.trace("trying to locate %s", task_name);
-        (() @trusted => Thread.sleep(locator_options.delay))();
+        Thread.sleep(locator_options.delay.msecs);
         tries++;
     } while(tries < locator_options.max_attempts); 
 

@@ -260,8 +260,8 @@ class NewEmulatorGossipNet : GossipNet {
                 .toDoc.serialize.length);
         Thread.sleep(duration);
         _tids[channel].send(ReceivedWavefront(), sender.toDoc);
-        log.trace("Successfully sent to %s (Node_%s) %d bytes, Tid(%s)", channel.cutHex, _pkeys.countUntil(channel), sender
-                .toDoc.serialize.length, _tids[channel]);
+        log.trace("Successfully sent to %s (Node_%s) %d bytes", channel.cutHex, _pkeys.countUntil(channel), sender
+                .toDoc.serialize.length);
     }
 
     void start_listening() {
