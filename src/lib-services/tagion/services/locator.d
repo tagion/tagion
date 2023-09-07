@@ -22,7 +22,7 @@ class LocatorException : TagionException {
 
 struct LocatorOptions {
     uint max_attempts; // The number of times we try to locate the thread.
-    Duration delay; // Delay between next time we try to locate.
+    uint delay; // Delay in msecs between next time we try to locate.
 }
 
 public shared static immutable (LocatorOptions)* locator_options;
@@ -46,7 +46,7 @@ Tid tryLocate(const(string) task_name) @trusted {
             return task_id;
         }
         log.trace("trying to locate %s", task_name);
-        Thread.sleep(locator_options.delay);
+        Thread.sleep(locator_options.delay.msecs);
         tries++;
     } while(tries < locator_options.max_attempts); 
 
