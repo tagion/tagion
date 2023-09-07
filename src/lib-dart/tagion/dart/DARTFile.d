@@ -1663,7 +1663,6 @@ unittest {
         }
         // version(none)
         {
-            writefln("UNITTEST");
             filename_A.forceRemove;
             DARTFile.create(filename_A, net);
             auto dart_A = new DARTFile(net, filename_A);
