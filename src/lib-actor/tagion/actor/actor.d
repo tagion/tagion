@@ -9,6 +9,7 @@ import std.traits;
 import std.variant : Variant;
 import std.format : format;
 import std.traits;
+import std.meta;
 
 import core.thread;
 import core.time;
@@ -146,7 +147,7 @@ bool waitforChildren(Ctrl state, Duration timeout = 1.seconds) @safe nothrow {
 }
 
 /// Checks if a type has the required members to be an actor
-enum bool isActor(A) = hasMember!(A, "task") && isCallable!(A.task);
+enum bool isActor(A) = hasMember!(A, "task") && isCallable!(A.task) && isSafe!(A.task);
 
 enum bool isActorHandle(T) = __traits(isSame, TemplateOf!(T), ActorHandle);
 
@@ -366,14 +367,15 @@ void end() nothrow {
  *   task_name = the name of the task
  *   args = a list of message handlers for the task
  */
-void run(Args...)(Args args) nothrow {
+void run(Args...)(Args args) @safe nothrow
+if (allSatisfy!(isSafe, Args)) {
     // Check if a failHandler was passed as an arg
     static if (args.length == 1 && isFailHandler!(typeof(args[$ - 1]))) {
-        enum failhandler = () {}; /// Use the fail handler passed through `args`
+        enum failhandler = () @safe {}; /// Use the fail handler passed through `args`
     }
     else {
-        enum failhandler = (TaskFailure tf) {
-            if (ownerTid != Tid.init) {
+        enum failhandler = (TaskFailure tf) @trusted {
+            if (!tidOwner.isNull) {
                 ownerTid.prioritySend(tf);
             }
         };
@@ -404,14 +406,15 @@ void run(Args...)(Args args) nothrow {
  *   timeout = delegate function to call
  *   args = normal message handlers for the task
  */
-void runTimeout(Args...)(Duration duration, void delegate() @safe timeout, Args args) nothrow {
+void runTimeout(Args...)(Duration duration, void delegate() @safe timeout, Args args) nothrow
+if (allSatisfy!(isSafe, Args)) {
     // Check if a failHandler was passed as an arg
     static if (args.length == 1 && isFailHandler!(typeof(args[$ - 1]))) {
-        enum failhandler = () {}; /// Use the fail handler passed through `args`
+        enum failhandler = () @safe {}; /// Use the fail handler passed through `args`
     }
     else {
-        enum failhandler = (TaskFailure tf) {
-            if (ownerTid != Tid.init) {
+        enum failhandler = (TaskFailure tf) @safe {
+            if (!tidOwner.isNull) {
                 ownerTid.prioritySend(tf);
             }
         };
