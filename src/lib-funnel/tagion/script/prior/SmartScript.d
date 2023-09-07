@@ -34,7 +34,6 @@ const(TagionCurrency) calcTotal(const(StandardBill[]) bills) pure {
 
 @safe
 class SmartScript {
-    pragma(msg, "OLD_TRANSACTION ", __FILE__, ":", __LINE__);
     const SignedContract signed_contract;
     this(const SignedContract signed_contract) {
         this.signed_contract = signed_contract;

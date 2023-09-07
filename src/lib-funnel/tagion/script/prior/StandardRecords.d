@@ -206,14 +206,8 @@ enum OwnerKey = "$Y";
     @recordType("SMC") struct Contract {
         @label("$in") const(DARTIndex)[] inputs; /// Hash pointer to input (DART)
         @label("$read", true) DARTIndex[] reads; /// Hash pointer to read-only input (DART)
-        version (OLD_TRANSACTION) {
-            @label("$out") Document[Pubkey] output; // pubkey of the output
-            @label("$run") Script script; // TVM-links / Wasm binary
-        }
-        else {
-            @label("$out") Pubkey[] output; // pubkey of the output
-
-        }
+        @label("$out") Document[Pubkey] output; // pubkey of the output
+        @label("$run") Script script; // TVM-links / Wasm binary
         mixin HiBONRecord;
         bool verify() {
             return (inputs.length > 0);
@@ -223,14 +217,8 @@ enum OwnerKey = "$Y";
     @recordType("SMC") struct _Contract {
         @label("$in") const(DARTIndex)[] inputs; /// Hash pointer to input (DART)
         @label("$read", true) DARTIndex[] reads; /// Hash pointer to read-only input (DART)
-        static if (ver.TVM_TRANSACTION) {
-            //            @label("$time") sdt_t time; /// Time of contract creation 
-            @label("$run") Document script; /// Standard contract or TVM link. 
-        }
-        else static if (ver.OLD_TRANSACTION) {
-            @label("$out") Document[Pubkey] output; /// pubkey of the output
-            @label("$run") Script script; /// TVM-links / Wasm binary
-        }
+        @label("$out") Document[Pubkey] output; /// pubkey of the output
+        @label("$run") Script script; /// TVM-links / Wasm binary
         mixin HiBONRecord;
         bool verify() {
             return (inputs.length > 0);
@@ -245,10 +233,7 @@ enum OwnerKey = "$Y";
     @recordType("SSC") struct SignedContract {
         @label("$signs") Signature[] signs; /// Signature of all inputs
         @label("$contract") Contract contract; /// The contract must signed by all inputs
-        version (OLD_TRANSACTION) {
-            pragma(msg, "OLD_TRANSACTION ", __FILE__, ":", __LINE__);
-            @label("$in", true) StandardBill[] inputs; /// The actual inputs
-        }
+        @label("$in", true) StandardBill[] inputs; /// The actual inputs
         mixin HiBONRecord;
     }
 
@@ -279,22 +264,20 @@ enum OwnerKey = "$Y";
             });
     }
 
-    version (OLD_TRANSACTION) {
-        struct Script {
-            @label("$name", true) string name;
-            @label("$env", true) Buffer link; // Hash pointer to smart contract object;
-            mixin HiBONRecord!(
-                    q{
+    struct Script {
+        @label("$name", true) string name;
+        @label("$env", true) Buffer link; // Hash pointer to smart contract object;
+        mixin HiBONRecord!(
+                q{
                 this(string name, Buffer link=null) {
                     this.name = name;
                     this.link = link;
                 }
             });
-            bool verify() {
-                return (name.empty) ^ (link.empty);
-            }
-
+        bool verify() {
+            return (name.empty) ^ (link.empty);
         }
+
     }
 }
 
