@@ -147,7 +147,7 @@ static size_t size(U)(const(U[]) array) pure {
         immutable Type type;
         Value value;
 
-        @nogc protected this(const string key) pure {
+        @nogc protected this(const string key) pure scope {
             this.key = key;
             type = Type.NONE;
         }
