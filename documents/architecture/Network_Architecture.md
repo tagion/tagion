@@ -96,19 +96,18 @@ LoggerSubscription [href="#/documents/architecture/LoggerSubscription.md" label=
 Logger [href="#/documents/architecture/Logger.md"] 
 Monitor [href="#/documents/architecture/Monitor.md"] 
 node [shape = rect];
-	Tagionwave -> Logger -> LoggerSubscription;
-	Tagionwave -> TagionFactory;
-	TagionFactory -> Tagion;
-	Tagion -> NodeInterface -> P2P;
-	DART -> Replicator;
-	Tagion -> DART;
-    Tagion -> EpochCreator;
-	EpochCreator -> HiRPCVerifier;
-	EpochCreator -> Transcript;
-	EpochCreator -> Collector;
-	Transcript -> EpochDump;
-	EpochCreator -> Monitor;
-	Collector -> TVM;
-	HiRPCVerifier -> Input;
+	Tagionwave -> Logger -> LoggerSubscription [label="(1)"];
+	Tagionwave -> TagionFactory [label="(2)"];
+	TagionFactory -> Tagion [label="(2)"];
+	Tagion -> NodeInterface -> P2P [label="(3)"];
+	Tagion -> DART -> Replicator [label="(4)"];
+    Tagion -> Collector -> TVM [label="(5)"];
+    Collector -> EpochCreator [label="(6)"];
+	EpochCreator -> Transcript -> EpochDump [label="(7)"];
+	EpochCreator -> Monitor [label="(6)"];
+	Collector -> HiRPCVerifier -> Input [label="(8)"];
 }
 ```
+
+The (number) in the graph indicates the ordered in which the services should be started.
+
