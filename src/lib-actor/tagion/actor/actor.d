@@ -42,7 +42,7 @@ struct Msg(string name) {
 
 struct Request(string name) {
     Msg!name msg;
-    int id;
+    uint id;
     string task_name;
 
     static Request opCall() @safe {
@@ -65,7 +65,7 @@ struct Request(string name) {
 
 struct Response(string name) {
     Msg!name msg;
-    int id;
+    uint id;
 }
 
 @safe

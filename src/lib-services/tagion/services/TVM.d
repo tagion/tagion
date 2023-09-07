@@ -29,12 +29,19 @@ struct TVMOptions {
 **/
 @safe
 struct TVMService {
-    void task(immutable(TVMOptions) opts, immutable(Options.TranscriptOptions)) {
+    void task(immutable(TVMOptions) opts, immutable(TaskNames) task_names) {
 
-        void contract(signedContract, immutable(CollectedSignedContract) contract) {
+        immutable(ContractProduct*) execute(immutable(CollectedSignedContract*) contract) {
+
+            return new ContractProduct;
         }
 
-        void consensus_contract(consensusContract, immutable(CollectedSignedContract) contract) {
+        void contract(signedContract, immutable(CollectedSignedContract)* contract) {
+            auto result = execute(contract);
+
+        }
+
+        void consensus_contract(consensusContract, immutable(CollectedSignedContract)* contract) {
         }
 
         void timeout() {

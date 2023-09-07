@@ -10,7 +10,7 @@ import std.array;
 import std.random;
 import tagion.wallet.SecureWallet;
 import tagion.script.TagionCurrency;
-import tagion.script.StandardRecords;
+import tagion.script.prior.StandardRecords;
 import tagion.communication.HiRPC;
 import tagion.hibon.HiBON;
 import std.stdio;

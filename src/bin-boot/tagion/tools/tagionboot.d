@@ -19,10 +19,9 @@ import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Pubkey;
 import tagion.dart.DARTBasic : DARTIndex;
 import tagion.basic.basic : basename;
-import tagion.script.StandardRecords;
+import tagion.script.prior.StandardRecords;
 import tagion.crypto.SecureNet;
 import tagion.crypto.SecureInterfaceNet;
-import tagion.script.StandardRecords : Invoice;
 import tagion.script.TagionCurrency;
 import tagion.wallet.SecureWallet;
 
@@ -111,20 +110,20 @@ int _main(string[] args) {
         writeln(logo);
         defaultGetoptPrinter(
                 [
-            format("%s version %s", program, REVNO),
-            "Documentation: https://tagion.org/",
-            "",
-            "Usage:",
-            format("%s [<option>...] <invoice-file0> <invoice-file1>...", program),
-            "",
-            "Where:",
-            format("<file>           hibon outfile (Default %s)", outputfile),
-            "",
+                format("%s version %s", program, REVNO),
+                "Documentation: https://tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...] <invoice-file0> <invoice-file1>...", program),
+                "",
+                "Where:",
+                format("<file>           hibon outfile (Default %s)", outputfile),
+                "",
 
-            "<option>:",
+                "<option>:",
 
-        ].join("\n"),
-        main_args.options);
+                ].join("\n"),
+                main_args.options);
         return 0;
     }
     //writefln("args=%s", args);
