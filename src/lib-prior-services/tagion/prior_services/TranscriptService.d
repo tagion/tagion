@@ -202,17 +202,13 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
                         const added = to_smart_script(signed_contract, output_index);
                         if (added && fingerprint in smart_scripts) {
                             scope smart_script = smart_scripts[fingerprint];
-                            version (OLD_TRANSACTION) {
-                                pragma(msg, "OLD_TRANSACTION ", __FUNCTION__, " ", __FILE__, ":", __LINE__);
-                                foreach (bill; signed_contract.inputs) {
-                                    const bill_doc = bill.toDoc;
-                                    recorder.remove(bill_doc);
-                                }
-                                pragma(msg, "OLD_TRANSACTION ", __FILE__, ":", __LINE__);
-                                foreach (bill; smart_script.output_bills) {
-                                    const bill_doc = bill.toDoc;
-                                    recorder.add(bill_doc);
-                                }
+                            foreach (bill; signed_contract.inputs) {
+                                const bill_doc = bill.toDoc;
+                                recorder.remove(bill_doc);
+                            }
+                            foreach (bill; smart_script.output_bills) {
+                                const bill_doc = bill.toDoc;
+                                recorder.add(bill_doc);
                             }
                         }
                         else {
