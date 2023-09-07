@@ -30,7 +30,7 @@ struct CollectorService {
         // CollectedSignedContract[uint] collections;
         Stack!CollectedSignedContract collections;
 
-        void signed_contract(inputContract, immutable(SignedContract) s_contract) {
+        void signed_contract(inputContract, immutable(SignedContract) s_contract) @trusted {
             const req = dartReadRR();
 
             collections.put(req.id, CollectedSignedContract());
@@ -41,7 +41,7 @@ struct CollectorService {
         }
 
         // Input received directly from the HiRPC verifier
-        void rpc_contract(inputHiRPC, immutable(HiRPC.Receiver) receiver) {
+        void rpc_contract(inputHiRPC, immutable(HiRPC.Receiver) receiver) @trusted {
             auto doc = Document(receiver.method.params);
             if (!doc.isRecord!SignedContract) {
                 return;

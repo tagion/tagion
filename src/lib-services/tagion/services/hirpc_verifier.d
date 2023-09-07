@@ -42,17 +42,18 @@ enum RejectReason {
  * Receives: (inputDoc, Document)
  * Sends: (inputHiRPC, HiRPC.Receiver) to collector_task, where Document is a correctly formatted HiRPC
 **/
+@safe
 struct HiRPCVerifierService {
     void task(immutable(HiRPCVerifierOptions) opts, string collector_task, immutable(SecureNet) net) {
         const hirpc = HiRPC(net);
 
-        void reject(RejectReason reason, lazy Document doc) {
+        void reject(RejectReason reason, lazy Document doc) @safe {
             if (opts.send_rejected_hirpcs) {
                 locate(opts.rejected_hirpcs).send(reason, doc);
             }
         }
 
-        void contract(inputDoc, Document doc) {
+        void contract(inputDoc, Document doc) @safe {
             debug log("Received document \n%s", doc.toPretty);
 
             if (!doc.isRecord!(HiRPC.Sender)) {

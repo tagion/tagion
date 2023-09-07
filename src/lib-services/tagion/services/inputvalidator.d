@@ -40,8 +40,10 @@ struct InputValidatorOptions {
  *  Examples: [tagion.testbench.services.inputvalidator]
  *  Sends: (inputDoc, Document) to receiver_task;
 **/
+@safe
 struct InputValidatorService {
-    void task(immutable(InputValidatorOptions) opts, string receiver_task) {
+    pragma(msg, "TODO: Make inputvalidator safe when nng is");
+    void task(immutable(InputValidatorOptions) opts, string receiver_task) @trusted {
         auto rejected = submask.register("inputvalidator/reject");
         NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_PULL);
         ReceiveBuffer buf;
@@ -83,7 +85,9 @@ struct InputValidatorService {
                 continue;
             }
 
-            Document doc = Document(cast(immutable) result.data);
+            import std.exception;
+
+            Document doc = Document(assumeUnique(result.data));
             if (doc.isInorder && doc.isRecord!(HiRPC.Sender)) {
                 locate(receiver_task).send(inputDoc(), doc);
             }

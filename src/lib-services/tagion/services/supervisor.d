@@ -33,7 +33,7 @@ class WaveNet : StdSecureNet {
 struct Supervisor {
     auto failHandler = (TaskFailure tf) { log("Supervisor caught exception: \n%s", tf); };
 
-    void task(immutable(Options) opts) {
+    void task(immutable(Options) opts) @safe {
         immutable SecureNet net = (() @trusted => cast(immutable) new WaveNet("aparatus"))();
 
         const dart_filename = opts.dart.dart_filename;
