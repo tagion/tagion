@@ -11,6 +11,7 @@ import tagion.hibon.HiBONException;
 import std.range : empty;
 import tagion.script.TagionCurrency;
 import tagion.script.ScriptException : check;
+import tagion.basic.Version;
 
 import tagion.dart.DARTBasic;
 
@@ -210,13 +211,13 @@ enum OwnerKey = "$Y";
     @recordType("SMC") struct Contract {
         @label("$in") const(DARTIndex)[] inputs; /// Hash pointer to input (DART)
         @label("$read", true) DARTIndex[] reads; /// Hash pointer to read-only input (DART)
-        version (OLD_TRANSACTION) {
-            @label("$out") Document[Pubkey] output; // pubkey of the output
-            @label("$run") Script script; // TVM-links / Wasm binary
+        static if (ver.TVM_TRANSACTION) {
+            @label("$time") sdt_t time; /// Time of contract creation 
+            @label("$run") Document script; /// Standard contract or TVM link. 
         }
-        else {
-            @label("$out") Pubkey[] output; // pubkey of the output
-
+        else static if (ver.OLD_TRANSACTION) {
+            @label("$out") Document[Pubkey] output; /// pubkey of the output
+            @label("$run") Script script; /// TVM-links / Wasm binary
         }
         mixin HiBONRecord;
         bool verify() {
