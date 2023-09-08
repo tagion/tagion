@@ -89,7 +89,7 @@ class RecordFactory {
     * Params:
      * rec = is set to null after
      */
-    immutable(Recorder) uniqueRecorder(ref Recorder rec) const pure nothrow @trusted {
+    static immutable(Recorder) uniqueRecorder(ref Recorder rec) pure nothrow @trusted {
         scope (exit) {
             rec = null;
         }
