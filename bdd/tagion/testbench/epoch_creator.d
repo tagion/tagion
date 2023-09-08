@@ -8,7 +8,7 @@ import tagion.tools.Basic;
 mixin Main!(_main);
 
 int _main(string[] args) {
-    immutable epoch_creator_options = EpochCreatorOptions(100, 5, 5);
+    immutable epoch_creator_options = EpochCreatorOptions(25, 5, 5);
     import tagion.services.locator;
     locator_options = new immutable(LocatorOptions)(5, 5);
 

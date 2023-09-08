@@ -47,12 +47,12 @@ class StdRefinement : Refinement {
         auto epoch_created = submask.register("epoch_creator/epoch_created");
 
 
-        HiBON epoch_events;
-        epoch_events = events
-            .filter!((e) => !e.event_body.payload.empty)
-            .map!((e) => e.event_body.payload);
+        immutable epoch_events = events
+            .map!((e) => e.event_package)
+            .array;
+
         
-        log(epoch_created, "epoch succesful", Document(epoch_events));
+        log(epoch_created, "epoch succesful", epoch_events);
 
     }
 

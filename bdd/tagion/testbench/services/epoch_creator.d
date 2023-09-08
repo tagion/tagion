@@ -20,12 +20,14 @@ import tagion.services.messages;
 import tagion.logger.Logger;
 import tagion.hibon.HiBON;
 import tagion.hibon.HiBONJSON;
+import std.range: empty;
+import tagion.hashgraph.HashGraphBasic;
 
 import std.stdio;
 
 import core.time;
 import core.thread;
-import tagion.gossip.AddressBook;
+import tagion.gossip.AddressBook : addressbook, NodeAddress;
 
 enum feature = Feature(
             "EpochCreator service",
@@ -50,6 +52,7 @@ class SendPayloadAndCreateEpoch {
     Node[] nodes;
     ActorHandle!EpochCreatorService[] handles;
     immutable(EpochCreatorOptions) epoch_creator_options; 
+    Document send_payload;
 
     this(immutable(EpochCreatorOptions) epoch_creator_options) {
         import tagion.services.options;
@@ -104,9 +107,9 @@ class SendPayloadAndCreateEpoch {
         import tagion.hibon.Document;
         auto h = new HiBON;
         h["node0"] = "TEST PAYLOAD";
-        const doc = Document(h);
+        send_payload = Document(h);
         writefln("SENDING TEST DOC");
-        handles[1].send(Payload(), doc);
+        handles[1].send(Payload(), const Document(h));
 
         return result_ok;
     }
@@ -118,19 +121,33 @@ class SendPayloadAndCreateEpoch {
 
         submask.subscribe("epoch_creator/epoch_created");
 
-        const received = receiveTimeout(100.seconds, (Topic t, string s, Document d) {
-            writefln("received epoch %s %s", s, d.toPretty);
-        });
+        bool stop;
+        const max_attempts=10;
+        uint counter;
+        do {
+            const received = receiveOnly!(Topic, string, immutable(EventPackage*)[]);
+            const epoch = received[2];
+            writefln("received epoch %s%s", epoch, epoch.length);
 
-        // import core.thread.threadbase : thread_joinAll;
-        // (() @trusted => thread_joinAll())();
+            if (epoch.length > 0) {
+                check(epoch.length == 1, format("should only have received one event got %s", epoch.length));
+
+                const received_payload = epoch[0].event_body.payload;
+                check(received_payload == send_payload, "Payloads not the same");
+                stop = true;
+            }
+            counter++;
+
+        } while(!stop || counter < max_attempts);
+        check(stop, "no epoch found");
+
 
         foreach (handle; handles) {
             handle.send(Sig.STOP);
         }
 
         waitforChildren(Ctrl.END);
-        return Document();
+        return result_ok;
     }
 
 }
