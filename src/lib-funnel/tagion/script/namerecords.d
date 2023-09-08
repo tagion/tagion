@@ -10,7 +10,7 @@ import tagion.dart.DARTBasic;
 @safe
 @recordType("NNC") struct NetworkNameCard {
     @label("#name") string name; /// Tagion domain name
-    @label(OwnerKey) Pubkey pubkey; /// NNC pubkey
+    @label(StdNames.owner) Pubkey pubkey; /// NNC pubkey
     @label("$lang") string lang; /// Language used for the #name
     @label("$time") ulong time; /// Time-stamp of
     @label("$record") DARTIndex record; /// Hash pointer to NRC
