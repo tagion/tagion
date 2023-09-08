@@ -50,7 +50,7 @@ enum StdNames {
 }
 
 @safe
-@recordType("PAY")
+@recordType("pay")
 struct PayScript {
     @label(StdNames.values) TagionCurrency[] values;
     mixin HiBONRecord;

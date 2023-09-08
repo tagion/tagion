@@ -26,17 +26,3 @@ alias dartModifyRR = Request!"dartModify";
 alias Payload = Msg!"Payload";
 alias ReceivedWavefront = Msg!"ReceivedWavefront";
 alias AddedChannels = Msg!"AddedChannels";
-
-@safe
-struct ContractProduct {
-    immutable(CollectedSignedContract*) contract;
-    Document[] outputs;
-}
-
-@safe
-struct CollectedSignedContract {
-    Document[] inputs;
-    Document[] reads;
-    SignedContract contract;
-    //mixin HiBONRecord;
-}

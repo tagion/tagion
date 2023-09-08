@@ -1,4 +1,40 @@
-module tagion.funnel.SmartScript;
+module tagion.script.execute;
+
+import tagion.script.common;
+import tagion.hibon.Document;
+import tagion.hibon.HiBONRecord : isRecord;
+
+@safe
+struct ContractProduct {
+    immutable(CollectedSignedContract*) contract;
+    Document[] outputs;
+}
+
+@safe
+struct CollectedSignedContract {
+    Document[] inputs;
+    Document[] reads;
+    SignedContract sign_contract;
+    //mixin HiBONRecord;
+}
+
+@safe
+struct ContractExecution {
+    immutable(ContractProduct)* opCall(immutable(CollectedSignedContract)* exec_contract) {
+        const script_doc=exec_contract.sign_contract.contract.script;
+        if (isRecord!PayScript(script_doc)) {
+        }
+
+        return null;
+    }
+    immutable(ContractProduct)* pay(immutable(CollectedSignedContract)* exec_contract) {
+        const pay_script=PayScript(exec_contract.sign_contract.contract.script);
+       return null; 
+    }
+}
+
+
+
 
 version (none) {
     @safe
