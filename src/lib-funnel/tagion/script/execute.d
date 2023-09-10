@@ -87,13 +87,12 @@ struct ContractExecution {
 
             .totalAmount;
         const output_amount = pay_script.outputs.totalAmount;
-
-        return new immutable(ContractProduct)(
+        const result = new immutable(ContractProduct)(
                 exec_contract,
-                pay_script.outputs
-                .map!(v => v.toDoc)
-                .array);
-
+                pay_script.outputs.map!(v => v.toDoc).array);
+        check(check_contract.validAmout(exec_contract, input_ammount, output_amount,
+                GasUse(1000, result.outputs.map!(doc => doc.full_size).sum)), "Invalid amount");
+        return result;
     }
 }
 
