@@ -3,7 +3,7 @@ TOOLS:=tools
 
 TARGET_ARCH:=aarch64
 ifeq ($(TARGET_ARCH),x86_64)
-# There is no distribution for android x86_64, however the libs are included with aarch64
+# There is no distribution for android x86, however the 64-bit libs are included with aarch64 and 32-bit with armv7a
 LDC_TARGET:=ldc2-1.29.0-android-aarch64
 else
 LDC_TARGET:=ldc2-1.29.0-android-$(TARGET_ARCH)
@@ -15,8 +15,11 @@ LDC_TARGET_TAR:=$(LDC_TARGET).tar.xz
 ANDROID_NDK:=android-ndk-r21b
 ANDROID_NDK_ZIP:=$(ANDROID_NDK)-linux-x86_64.zip
 
+ANDROID_CMAKE_ZIP:=cmake-3.10.2-linux-x86_64.zip
+ANDROID_CMAKE:=android-cmake
+
 install: $(TOOLS)/.way
-install: $(LDC_TARGET) $(ANDROID_NDK) $(LDC_HOST)
+install: $(LDC_TARGET) $(ANDROID_NDK) $(LDC_HOST) $(ANDROID_CMAKE)
 
 $(TOOLS)/.way:
 	mkdir -p $(TOOLS)
@@ -46,6 +49,13 @@ $(TOOLS)/$(ANDROID_NDK)/.done:
 	touch $@
 
 $(ANDROID_NDK): $(TOOLS)/$(ANDROID_NDK)/.done
+
+$(TOOLS)/$(ANDROID_CMAKE)/.done:
+	cd $(TOOLS); wget https://dl.google.com/android/repository/${ANDROID_CMAKE_ZIP} -O ${ANDROID_CMAKE_ZIP}
+	cd $(TOOLS); unzip $(ANDROID_CMAKE_ZIP) -d $(ANDROID_CMAKE)
+	touch $@
+
+$(ANDROID_CMAKE): $(TOOLS)/$(ANDROID_CMAKE)/.done
 
 clean:
 	$(RM) -vr $(TOOLS)

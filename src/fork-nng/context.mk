@@ -2,10 +2,11 @@ DSRC_NNG := ${call dir.resolve, nng}
 DTMP_NNG := $(DTMP)/nng
 
 LIBNNG := $(DTMP_NNG)/libnng.a
+CMAKE := cmake
 
 $(LIBNNG): $(DTMP_NNG)/.way $(REPOROOT)/.git/modules/src/wrap-nng/nng/HEAD
 	cd $(DTMP_NNG)
-	cmake $(DSRC_NNG)
+	$(CMAKE) $(NNG_CMAKE_FLAGS) $(DSRC_NNG)
 	$(MAKE)
 
 nng: $(LIBNNG)
