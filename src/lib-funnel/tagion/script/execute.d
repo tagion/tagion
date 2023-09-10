@@ -1,6 +1,8 @@
 module tagion.script.execute;
-
+import std.algorithm;
 import tagion.script.common;
+import tagion.script.Currency;
+import std.array;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord : isRecord;
 
@@ -18,23 +20,37 @@ struct CollectedSignedContract {
     //mixin HiBONRecord;
 }
 
+interface CheckContract {
+
+}
+
 @safe
 struct ContractExecution {
     immutable(ContractProduct)* opCall(immutable(CollectedSignedContract)* exec_contract) {
-        const script_doc=exec_contract.sign_contract.contract.script;
+        const script_doc = exec_contract.sign_contract.contract.script;
         if (isRecord!PayScript(script_doc)) {
+            return pay(exec_contract);
         }
 
         return null;
     }
+
     immutable(ContractProduct)* pay(immutable(CollectedSignedContract)* exec_contract) {
-        const pay_script=PayScript(exec_contract.sign_contract.contract.script);
-       return null; 
+        const pay_script = PayScript(exec_contract.sign_contract.contract.script);
+        const input_ammount = exec_contract.inputs
+            .map!(doc => TagionBill(doc).value)
+
+            .totalAmount;
+        const output_amount = pay_script.outputs.totalAmount;
+
+        return new immutable(ContractProduct)(
+                exec_contract,
+                pay_script.outputs
+                .map!(v => v.toDoc)
+                .array);
+
     }
 }
-
-
-
 
 version (none) {
     @safe

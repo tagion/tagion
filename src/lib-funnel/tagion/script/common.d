@@ -25,7 +25,7 @@ enum StdNames {
                 this(TagionCurrency value, const sdt_t time, Pubkey owner, Buffer gene) {
                     this.value = value;
                     this.time = time;
-                    this.owner = owner;
+                    this.owner = owner; 
                 }
             });
 }
@@ -52,6 +52,6 @@ enum StdNames {
 @safe
 @recordType("pay")
 struct PayScript {
-    @label(StdNames.values) TagionCurrency[] values;
+    @label(StdNames.values) TagionCurrency[] outputs;
     mixin HiBONRecord;
 }
