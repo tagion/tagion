@@ -8,9 +8,9 @@ import tagion.basic.tagionexceptions;
     }
 }
 
-@safe struct Result(V) {
+@safe struct Result(V, Except = UtilException) {
     V value;
-    UtilException e;
+    Except e;
     @disable this();
     @nogc this(V value) pure nothrow {
         this.value = value;
@@ -19,7 +19,7 @@ import tagion.basic.tagionexceptions;
 
     this(V value, string msg, string file = __FILE__, size_t line = __LINE__) pure nothrow {
         this.value = value;
-        e = new UtilException(msg, file, line);
+        e = new Except(msg, file, line);
     }
 
     this(string msg, string file = __FILE__, size_t line = __LINE__) pure nothrow {

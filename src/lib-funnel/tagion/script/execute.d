@@ -5,6 +5,7 @@ import tagion.script.Currency;
 import std.array;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord : isRecord;
+import tagion.script.TagionCurrency;
 
 @safe
 struct ContractProduct {
@@ -20,12 +21,46 @@ struct CollectedSignedContract {
     //mixin HiBONRecord;
 }
 
+@safe
 interface CheckContract {
+    const(TagionCurrency) calcFees(immutable(CollectedSignedContract)* exec_contract, in TagionCurrency amount, in GasUse gas_use);
+    bool validAmout(immutable(CollectedSignedContract)* exec_contract,
+            in TagionCurrency input_ammount,
+            in TagionCurrency output_amount,
+            in GasUse use);
+}
+
+@safe
+struct GasUse {
+    size_t gas;
+    size_t storage;
+}
+
+@safe
+class StdCheckContract : CheckContract {
+    TagionCurrency storage_fees; /// Fees per bytes
+    TagionCurrency gas_price; /// Fees per TVM instruction
+    const(TagionCurrency) calcFees(
+            immutable(CollectedSignedContract)* exec_contract,
+            in TagionCurrency amount,
+            in GasUse use) {
+        return use.gas * gas_price + use.storage * storage_fees;
+
+    }
+
+    bool validAmout(immutable(CollectedSignedContract)* exec_contract,
+            in TagionCurrency input_ammount,
+            in TagionCurrency output_amount,
+            in GasUse use) {
+        const gas_cost = calcFees(exec_contract, output_amount, use);
+        return input_ammount + gas_cost <= output_amount;
+    }
 
 }
 
 @safe
 struct ContractExecution {
+    static StdCheckContract check_contract;
     immutable(ContractProduct)* opCall(immutable(CollectedSignedContract)* exec_contract) {
         const script_doc = exec_contract.sign_contract.contract.script;
         if (isRecord!PayScript(script_doc)) {
@@ -35,7 +70,7 @@ struct ContractExecution {
         return null;
     }
 
-    immutable(ContractProduct)* pay(immutable(CollectedSignedContract)* exec_contract) {
+    Result(immutable(ContractProduct) * , SmartScriptException) pay(immutable(CollectedSignedContract) * exec_contract) {
         const pay_script = PayScript(exec_contract.sign_contract.contract.script);
         const input_ammount = exec_contract.inputs
             .map!(doc => TagionBill(doc).value)
