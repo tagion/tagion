@@ -13,6 +13,10 @@ import tagion.script.ScriptException;
 struct ContractProduct {
     immutable(CollectedSignedContract*) contract;
     Document[] outputs;
+    this(immutable(CollectedSignedContract)* contract, const(Document)[] outputs) @trusted immutable {
+        this.contract = contract;
+        this.outputs = cast(immutable) outputs;
+    }
 }
 
 @safe
@@ -81,12 +85,15 @@ struct ContractExecution {
     }
 
     immutable(ContractProduct)* pay(immutable(CollectedSignedContract)* exec_contract) {
+        import std.exception;
+
         const pay_script = PayScript(exec_contract.sign_contract.contract.script);
         const input_ammount = exec_contract.inputs
             .map!(doc => TagionBill(doc).value)
 
             .totalAmount;
         const output_amount = pay_script.outputs.totalAmount;
+        pragma(msg, "Outputs ", typeof(pay_script.outputs.map!(v => v.toDoc).array));
         const result = new immutable(ContractProduct)(
                 exec_contract,
                 pay_script.outputs.map!(v => v.toDoc).array);
