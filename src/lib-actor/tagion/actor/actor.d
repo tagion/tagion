@@ -165,8 +165,8 @@ template isSpawnable(F, T...) {
         else static if (param1.length == i)
             enum isParamsImplicitlyConvertible = true;
         else static if (isImplicitlyConvertible!(param2[i], param1[i]))
-            enum isParamsImplicitlyConvertible = isParamsImplicitlyConvertible!(F1,
-                        F2, i + 1);
+        enum isParamsImplicitlyConvertible = isParamsImplicitlyConvertible!(F1,
+                    F2, i + 1);
         else
             enum isParamsImplicitlyConvertible = false;
     }

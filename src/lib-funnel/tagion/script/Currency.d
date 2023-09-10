@@ -2,9 +2,43 @@ module tagion.script.Currency;
 import std.algorithm.searching : canFind;
 
 import std.traits : isIntegral, isNumeric, isFloatingPoint;
-import std.range : only;
+import std.range;
 import std.format;
+import std.traits;
+import std.algorithm;
 import tagion.hibon.HiBONRecord : HiBONRecord, label, recordType;
+import tagion.script.ScriptException : ScriptException, scriptCheck = check;
+
+@safe
+const(V) totalAmount(R, V = ElementType!R)(R r) if (isInputRange!R && isCurrency!V) {
+    scriptCheck(r.all!(v => v.units >= 0), format("Negative currency unit %s ", V.UNIT));
+    return r.sum;
+}
+
+@safe
+template isCurrency(alias T) {
+    enum isCurrency = __traits(hasMember, T, "units") && is(typeof(T.units()) == long);
+}
+
+version (unittest) {
+    alias MyCurrency = Currency!"My";
+}
+@safe
+static unittest {
+    static assert(isCurrency!MyCurrency);
+}
+
+@safe
+unittest {
+    import std.exception;
+
+    auto list = [MyCurrency(12.0), MyCurrency(120.0), MyCurrency(1300.0)];
+    import std.stdio;
+
+    assert(list.totalAmount == MyCurrency(1432.0));
+    assertThrown!ScriptException((list ~ MyCurrency(-1.3)).totalAmount);
+
+}
 
 @safe
 struct Currency(string _UNIT, long _BASE_UNIT = 1_000_000_000, long MAX_VALUE_IN_BASE_UNITS = 1_000_000_000) {
@@ -15,7 +49,7 @@ struct Currency(string _UNIT, long _BASE_UNIT = 1_000_000_000, long MAX_VALUE_IN
     enum UNIT = _UNIT;
     enum type_name = _UNIT;
     protected {
-        @label("$v") long _units;
+        @label("$") long _units;
     }
 
     mixin HiBONRecord!(
@@ -40,7 +74,6 @@ struct Currency(string _UNIT, long _BASE_UNIT = 1_000_000_000, long MAX_VALUE_IN
     }
 
     void check_range() const pure {
-        import tagion.script.ScriptException : scriptCheck = check;
 
         scriptCheck(_units > -UNIT_MAX && _units < UNIT_MAX,
                 format("Value out of range [%s:%s] value is %s",

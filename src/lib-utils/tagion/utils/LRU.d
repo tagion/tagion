@@ -42,7 +42,7 @@ class LRU(K, V) {
             // size zero means unlimited
             this(EvictCallback onEvict = null, immutable uint size = 0) pure nothrow {
                 this.size = size;
-                evictList = new EvictList;
+                //evictList =  EvictList;
                 this.onEvict = onEvict;
             }
 
@@ -54,7 +54,7 @@ class LRU(K, V) {
                     }
                 }
                 items = null;
-                evictList = new EvictList;
+                evictList = EvictList.init;
             }
 
             // add adds a value to the cache.  Returns true if an eviction occurred.

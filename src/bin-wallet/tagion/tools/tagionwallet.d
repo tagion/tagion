@@ -614,7 +614,7 @@ void sendPaymentData(const ubyte[] data, const string adress, ushort port, ref H
 
 import tagion.tools.Basic;
 
-mixin Main!(_main, "wallet");
+mixin Main!(_main);
 
 int _main(string[] args) {
     immutable program = args[0];

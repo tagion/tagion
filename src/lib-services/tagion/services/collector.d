@@ -28,12 +28,12 @@ struct CollectorService {
     void task(immutable(CollectorOptions) opts, immutable SecureNet net, const string dart_task_name, const string tvm_task_name) {
         //            [req id]
         // CollectedSignedContract[uint] collections;
-        Stack!CollectedSignedContract collections;
+        Stack!_CollectedSignedContract collections;
 
         void signed_contract(inputContract, immutable(SignedContract) s_contract) @trusted {
             const req = dartReadRR();
 
-            collections.put(req.id, CollectedSignedContract());
+            collections.put(req.id, _CollectedSignedContract());
             collections.peek(req.id).contract = cast(SignedContract) s_contract;
             // collections[req.id].contract = cast(SignedContract) s_contract;
             locate(dart_task_name).send(req, s_contract.contract.reads);

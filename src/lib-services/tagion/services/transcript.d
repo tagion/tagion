@@ -15,6 +15,7 @@ import tagion.hibon.HiBONRecord;
 import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.services.messages;
+import tagion.script.execute : ContractProduct;
 
 /// Msg type sent to receiver task along with a hirpc
 

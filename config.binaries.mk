@@ -57,6 +57,13 @@ ${call DO_BIN,neuewelle,$(LIB_DFILES) ${call BIN_DEPS,wave},tagion}
 
 
 #
+# New Wallet
+#
+target-geldbeutel: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER) 
+${call DO_BIN,geldbeutel,$(LIB_DFILES) ${call BIN_DEPS,geldbeutel},tagion}
+
+
+#
 # HiBON utility
 #
 target-hibonutil: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
@@ -136,6 +143,7 @@ TAGION_TOOLS+=graphview
 TAGION_TOOLS+=recorderchain
 TAGION_TOOLS+=signs
 TAGION_TOOLS+=wasmutil
+TAGION_TOOLS+=geldbeutel
 
 TAGION_BINS=$(foreach tools,$(TAGION_TOOLS), ${call BIN_DEPS,$(tools)} )
 

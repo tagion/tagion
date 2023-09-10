@@ -21,9 +21,9 @@ import std.stdio;
 enum feature = Feature(
             "Actor supervisor test",
             [
-        "This feature should check that when a child catches an exception is sends it up as a failure.",
-        "The supervisour has the abillity to decide whether or not to restart i depending on the exception."
-]);
+            "This feature should check that when a child catches an exception is sends it up as a failure.",
+            "The supervisour has the abillity to decide whether or not to restart i depending on the exception."
+            ]);
 
 alias FeatureContext = Tuple!(
         SupervisorWithFailingChild, "SupervisorWithFailingChild",

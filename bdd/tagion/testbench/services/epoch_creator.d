@@ -20,7 +20,7 @@ import tagion.services.messages;
 import tagion.logger.Logger;
 import tagion.hibon.HiBON;
 import tagion.hibon.HiBONJSON;
-import std.range: empty;
+import std.range : empty;
 import tagion.hashgraph.HashGraphBasic;
 
 import std.stdio;
@@ -51,7 +51,7 @@ class SendPayloadAndCreateEpoch {
 
     Node[] nodes;
     ActorHandle!EpochCreatorService[] handles;
-    immutable(EpochCreatorOptions) epoch_creator_options; 
+    immutable(EpochCreatorOptions) epoch_creator_options;
     Document send_payload;
 
     this(immutable(EpochCreatorOptions) epoch_creator_options) {
@@ -94,7 +94,7 @@ class SendPayloadAndCreateEpoch {
 
         waitforChildren(Ctrl.ALIVE);
         //    writefln("Wait 1 sec");
-         Thread.sleep(20.seconds);
+        Thread.sleep(20.seconds);
 
         return result_ok;
     }
@@ -102,9 +102,9 @@ class SendPayloadAndCreateEpoch {
     @When("i sent a payload to node0")
     Document node0() @trusted {
 
-
         import tagion.hibon.HiBON;
         import tagion.hibon.Document;
+
         auto h = new HiBON;
         h["node0"] = "TEST PAYLOAD";
         send_payload = Document(h);
@@ -122,7 +122,7 @@ class SendPayloadAndCreateEpoch {
         submask.subscribe("epoch_creator/epoch_created");
 
         bool stop;
-        const max_attempts=10;
+        const max_attempts = 10;
         uint counter;
         do {
             const received = receiveOnly!(Topic, string, immutable(EventPackage*)[]);
@@ -138,9 +138,9 @@ class SendPayloadAndCreateEpoch {
             }
             counter++;
 
-        } while(!stop || counter < max_attempts);
+        }
+        while (!stop || counter < max_attempts);
         check(stop, "no epoch found");
-
 
         foreach (handle; handles) {
             handle.send(Sig.STOP);

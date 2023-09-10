@@ -39,19 +39,17 @@ class StdRefinement : Refinement {
     void payload(immutable(EventPackage*) epack) {
         if (!epack.event_body.payload.empty) {
             // send to collector payload.
-            
+
         }
     }
 
     void finishedEpoch(const(Event[]) events, const sdt_t epoch_time, const Round decided_round) {
         auto epoch_created = submask.register("epoch_creator/epoch_created");
 
-
         immutable epoch_events = events
             .map!((e) => e.event_package)
             .array;
 
-        
         log(epoch_created, "epoch succesful", epoch_events);
 
     }
@@ -101,7 +99,6 @@ class StdRefinement : Refinement {
             }
             return a.received_order < b.received_order;
         }
-
 
         sdt_t[] times;
         auto events = event_collection

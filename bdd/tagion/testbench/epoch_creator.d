@@ -10,6 +10,7 @@ mixin Main!(_main);
 int _main(string[] args) {
     immutable epoch_creator_options = EpochCreatorOptions(15, 5, 5);
     import tagion.services.locator;
+
     locator_options = new immutable(LocatorOptions)(5, 5);
 
     auto epoch_creator_feature = automation!epoch_creator;

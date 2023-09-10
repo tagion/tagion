@@ -4,9 +4,9 @@ import tagion.actor.actor;
 import tagion.hibon.Document;
 import tagion.script.prior.StandardRecords;
 
-/// Generic Document sent
+/// Msg Type sent to actors who receive the document
 alias inputDoc = Msg!"inputDoc";
-/// Generic HiRPC sent
+/// Msg type sent to receiver task along with a hirpc
 alias inputHiRPC = Msg!"inputHiRPC";
 
 /// Contracts sent to the collector
@@ -32,13 +32,13 @@ alias AddedChannels = Msg!"AddedChannels";
 alias BeginGossip = Msg!"BeginGossip";
 
 @safe
-struct ContractProduct {
-    immutable(CollectedSignedContract*) contract;
+struct _ContractProduct {
+    immutable(_CollectedSignedContract*) contract;
     Document[] outputs;
 }
 
 @safe
-struct CollectedSignedContract {
+struct _CollectedSignedContract {
     Document[] inputs;
     Document[] reads;
     SignedContract contract;

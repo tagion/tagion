@@ -14,6 +14,8 @@ import tagion.hibon.HiBONRecord;
 import tagion.services.options;
 import tagion.services.messages;
 import tagion.logger.Logger;
+import tagion.script.common;
+import tagion.script.execute;
 
 /// Msg type sent to receiver task along with a hirpc
 //alias contractProduct = Msg!"contract_product";
