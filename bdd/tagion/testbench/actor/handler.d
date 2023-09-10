@@ -25,6 +25,7 @@ alias FeatureContext = Tuple!(
 enum child_task_name = "handle_child_task";
 enum super_task_name = "handle_super_task";
 
+@safe
 struct MyActor {
     int status = 0;
 
@@ -40,6 +41,7 @@ struct MyActor {
 
 alias MyActorHandle = ActorHandle!MyActor;
 
+@safe
 struct MySuperActor {
     MyActorHandle childHandle;
 

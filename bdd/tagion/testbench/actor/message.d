@@ -32,6 +32,7 @@ enum child1_task_name = "ch1ld";
 enum child2_task_name = "ch2ld";
 
 // Child actor
+@safe
 struct MyActor {
     int counter = 0;
     void increase(Msg!"increase") {
@@ -55,6 +56,7 @@ struct MyActor {
 
 alias ChildHandle = ActorHandle!MyActor;
 
+@safe
 struct MySuperActor {
     ChildHandle child1Handle;
     ChildHandle child2Handle;

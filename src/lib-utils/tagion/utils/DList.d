@@ -2,7 +2,7 @@ module tagion.utils.DList;
 
 import tagion.utils.Result;
 
-@safe class DList(E) {
+@safe struct DList(E) {
     @nogc struct Element {
         E entry;
         protected Element* next;
@@ -151,21 +151,7 @@ import tagion.utils.Result;
     }
 
     @nogc
-    uint length() pure const nothrow
-    out (result) {
-        uint internal_count(const(Element)* e, uint i = 0) pure {
-            if (e is null) {
-                return i;
-            }
-            else {
-                return internal_count(e.next, i + 1);
-            }
-        }
-
-        immutable _count = internal_count(_head);
-        assert(result == _count);
-    }
-    do {
+    uint length() pure const nothrow {
         return count;
     }
 
@@ -233,20 +219,6 @@ import tagion.utils.Result;
         }
     }
 
-    ~this() {
-        // Assist the GC to clean the chain
-        Element* clear(ref Element* e) {
-            if (e !is null) {
-                e.prev = null;
-                e = clear(e.next);
-            }
-            return null;
-        }
-
-        clear(_head);
-        _tail = null;
-    }
-
     invariant {
         if (_head is null) {
             assert(_tail is null);
@@ -265,7 +237,7 @@ import tagion.utils.Result;
 
 unittest {
     { // Empty element test
-        auto l = new DList!int;
+        DList!int l;
         //        auto e = l.shift;
         //        assert(e is null);
         // bool flag;
@@ -283,7 +255,7 @@ unittest {
     }
 
     { // One element test
-        auto l = new DList!int;
+        DList!int l;
         l.unshift(7);
         assert(l.length == 1);
         auto first = l.first;
@@ -295,7 +267,7 @@ unittest {
         assert(l.length == 0);
     }
     { // two element test
-        auto l = new DList!int;
+        DList!int l;
         assert(l.length == 0);
         l.unshift(7);
         assert(l.length == 1);
@@ -317,7 +289,7 @@ unittest {
         import std.algorithm.comparison : equal;
         import std.array;
 
-        auto l = new DList!int;
+        DList!int l;
         enum amount = 4;
         int[] test;
         foreach (i; 0 .. amount) {
@@ -337,7 +309,7 @@ unittest {
     { // More elements test
         import std.algorithm.comparison : equal;
 
-        auto l = new DList!int;
+        DList!int l;
         enum amount = 4;
         foreach (i; 0 .. amount) {
             l.push(i);

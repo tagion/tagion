@@ -3,7 +3,7 @@ module source.models.unicef;
 import tagion.hibon.HiBONRecord;
 import tagion.crypto.Types;
 import tagion.basic.Types;
-import tagion.script.StandardRecords;
+import tagion.script.prior.StandardRecords;
 import tagion.utils.StdTime;
 import tagion.script.TagionCurrency;
 
@@ -19,7 +19,7 @@ struct DeliveryOrder {
     sdt_t startTime; // standard time
     sdt_t endTime; // end time - should be delivered before this point    
     sdt_t timeStamp; // When the delivery order was created
-     
+
     @label(OwnerKey) Pubkey originalOwner; // the owner of the delivery order
     Pubkey receiver; // The receiver of the vaccines
     mixin HiBONRecord;
@@ -31,10 +31,9 @@ struct SignedDeliveryOrder {
     Buffer deliveryOrder;
     sdt_t timeStamp;
     @label(OwnerKey) Pubkey tokenOwner; // owner of the vaccines
-    
+
     mixin HiBONRecord;
 }
-
 
 // @recordType("ShippingNote")
 // struct ShippingNote {
@@ -42,7 +41,7 @@ struct SignedDeliveryOrder {
 //     PubKey receiverPubKey; // Receivers public key
 //     int timeStamp; // When the note was created
 //     string refDeliveryOrder; // hash referencing to the delivery order
-    
+
 //     mixin HiBONRecord;
 // }
 

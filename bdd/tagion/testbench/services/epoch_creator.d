@@ -17,12 +17,17 @@ import std.array;
 import tagion.utils.Miscellaneous : cutHex;
 import tagion.dart.DARTOptions;
 import tagion.services.messages;
+import tagion.logger.Logger;
+import tagion.hibon.HiBON;
+import tagion.hibon.HiBONJSON;
+import std.range : empty;
+import tagion.hashgraph.HashGraphBasic;
 
 import std.stdio;
 
 import core.time;
 import core.thread;
-import tagion.gossip.AddressBook;
+import tagion.gossip.AddressBook : addressbook, NodeAddress;
 
 enum feature = Feature(
             "EpochCreator service",
@@ -46,7 +51,8 @@ class SendPayloadAndCreateEpoch {
 
     Node[] nodes;
     ActorHandle!EpochCreatorService[] handles;
-    immutable(EpochCreatorOptions) epoch_creator_options; 
+    immutable(EpochCreatorOptions) epoch_creator_options;
+    Document send_payload;
 
     this(immutable(EpochCreatorOptions) epoch_creator_options) {
         import tagion.services.options;
@@ -69,6 +75,7 @@ class SendPayloadAndCreateEpoch {
 
     @Given("I have 5 nodes and start them in mode0")
     Document mode0() @trusted {
+        register("epoch_creator_tester", thisTid);
 
         foreach (n; nodes) {
             handles ~= spawn!EpochCreatorService(
@@ -83,41 +90,64 @@ class SendPayloadAndCreateEpoch {
             receiveOnly!(AddedChannels);
         }
 
-        handles.each!(h => h.send(Msg!"BEGIN"()));
+        handles.each!(h => h.send(BeginGossip()));
 
         waitforChildren(Ctrl.ALIVE);
         //    writefln("Wait 1 sec");
-         Thread.sleep(20.seconds);
+        Thread.sleep(20.seconds);
 
         return result_ok;
     }
 
     @When("i sent a payload to node0")
     Document node0() @trusted {
+
         import tagion.hibon.HiBON;
         import tagion.hibon.Document;
+
         auto h = new HiBON;
         h["node0"] = "TEST PAYLOAD";
-        const doc = Document(h);
+        send_payload = Document(h);
         writefln("SENDING TEST DOC");
-        handles[1].send(Payload(), doc);
-        Thread.sleep(100.seconds);
+        handles[1].send(Payload(), const Document(h));
 
-        return Document();
+        return result_ok;
     }
 
     @Then("all the nodes should create an epoch containing the payload")
     Document payload() {
+        writefln("BEFORE TIMEOUT");
+        log.registerSubscriptionTask("epoch_creator_tester");
 
-        // import core.thread.threadbase : thread_joinAll;
-        // (() @trusted => thread_joinAll())();
+        submask.subscribe("epoch_creator/epoch_created");
+
+        bool stop;
+        const max_attempts = 10;
+        uint counter;
+        do {
+            const received = receiveOnly!(Topic, string, immutable(EventPackage*)[]);
+            const epoch = received[2];
+            writefln("received epoch %s%s", epoch, epoch.length);
+
+            if (epoch.length > 0) {
+                check(epoch.length == 1, format("should only have received one event got %s", epoch.length));
+
+                const received_payload = epoch[0].event_body.payload;
+                check(received_payload == send_payload, "Payloads not the same");
+                stop = true;
+            }
+            counter++;
+
+        }
+        while (!stop || counter < max_attempts);
+        check(stop, "no epoch found");
 
         foreach (handle; handles) {
             handle.send(Sig.STOP);
         }
 
         waitforChildren(Ctrl.END);
-        return Document();
+        return result_ok;
     }
 
 }
