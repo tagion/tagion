@@ -3,9 +3,11 @@ import std.algorithm;
 import tagion.script.common;
 import tagion.script.Currency;
 import std.array;
+import std.format;
 import tagion.hibon.Document;
-import tagion.hibon.HiBONRecord : isRecord;
+import tagion.hibon.HiBONRecord : isRecord, getType;
 import tagion.script.TagionCurrency;
+import tagion.script.ScriptException;
 
 @safe
 struct ContractProduct {
@@ -36,6 +38,10 @@ struct GasUse {
     size_t storage;
 }
 
+import tagion.utils.Result;
+
+alias ContractProductResult = Result!(immutable(ContractProduct)*, Exception);
+
 @safe
 class StdCheckContract : CheckContract {
     TagionCurrency storage_fees; /// Fees per bytes
@@ -61,16 +67,20 @@ class StdCheckContract : CheckContract {
 @safe
 struct ContractExecution {
     static StdCheckContract check_contract;
-    immutable(ContractProduct)* opCall(immutable(CollectedSignedContract)* exec_contract) {
+    ContractProductResult opCall(immutable(CollectedSignedContract)* exec_contract) nothrow {
         const script_doc = exec_contract.sign_contract.contract.script;
-        if (isRecord!PayScript(script_doc)) {
-            return pay(exec_contract);
+        try {
+            if (isRecord!PayScript(script_doc)) {
+                return ContractProductResult(pay(exec_contract));
+            }
+            return ContractProductResult(format("Illegal corrected contract %s", script_doc.getType));
         }
-
-        return null;
+        catch (Exception e) {
+            return ContractProductResult(e);
+        }
     }
 
-    Result(immutable(ContractProduct) * , SmartScriptException) pay(immutable(CollectedSignedContract) * exec_contract) {
+    immutable(ContractProduct)* pay(immutable(CollectedSignedContract)* exec_contract) {
         const pay_script = PayScript(exec_contract.sign_contract.contract.script);
         const input_ammount = exec_contract.inputs
             .map!(doc => TagionBill(doc).value)

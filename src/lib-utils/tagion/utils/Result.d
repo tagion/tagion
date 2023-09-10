@@ -26,6 +26,11 @@ import tagion.basic.tagionexceptions;
         this(V.init, msg, file, line);
     }
 
+    this(Except e) @nogc pure nothrow {
+        value = V.init;
+        this.e = e;
+    }
+
     @nogc bool error() pure const nothrow {
         return e !is null;
     }
