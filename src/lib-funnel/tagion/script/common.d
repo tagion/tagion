@@ -18,7 +18,7 @@ enum StdNames {
 @safe
 @recordType("TGN") struct TagionBill {
     @label(StdNames.value) TagionCurrency value; // Bill type
-    @label(StdNames.time) sdt_t time; // Epoch number
+    @label(StdNames.time) sdt_t time; // Time stamp
     @label(StdNames.owner) Pubkey owner; // owner key
     mixin HiBONRecord!(
             q{

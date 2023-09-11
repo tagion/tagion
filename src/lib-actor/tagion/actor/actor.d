@@ -165,8 +165,8 @@ template isSpawnable(F, T...) {
         else static if (param1.length == i)
             enum isParamsImplicitlyConvertible = true;
         else static if (isImplicitlyConvertible!(param2[i], param1[i]))
-        enum isParamsImplicitlyConvertible = isParamsImplicitlyConvertible!(F1,
-                    F2, i + 1);
+            enum isParamsImplicitlyConvertible = isParamsImplicitlyConvertible!(F1,
+                        F2, i + 1);
         else
             enum isParamsImplicitlyConvertible = false;
     }
@@ -374,7 +374,7 @@ if (allSatisfy!(isSafe, Args)) {
         enum failhandler = () @safe {}; /// Use the fail handler passed through `args`
     }
     else {
-        enum failhandler = (TaskFailure tf) @trusted {
+        enum failhandler = (TaskFailure tf) @safe {
             if (!tidOwner.isNull) {
                 ownerTid.prioritySend(tf);
             }
