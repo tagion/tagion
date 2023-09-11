@@ -7,7 +7,7 @@ mixin Main!(_main, "newwallet");
 
 import tagion.crypto.SecureNet;
 
-//import Wallet=tagion.wallet.SecureWallet;
+import Wallet = tagion.wallet.SecureWallet;
 
 int _main(string[] args) {
     immutable program = args[0];
