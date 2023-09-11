@@ -21,7 +21,7 @@ jobs:
         run: |
           export RAND=$(echo $((RANDOM % 59 +1)))
           gh pr create --title "Review week ${{ steps.week-number.outputs.week }}" \
-                       --body "Changes since week: ${{ steps.week-number.outputs.week }}   \
+                       --body "Changes to be reviewed for week: ${{ steps.week-number.outputs.week }}   \
                        ![LGTM](${{ env.shipit }}/$RAND)" \
                        --base master --head current
                        # env:
