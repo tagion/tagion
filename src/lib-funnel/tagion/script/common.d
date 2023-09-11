@@ -22,7 +22,7 @@ enum StdNames {
     @label(StdNames.owner) Pubkey owner; // owner key
     mixin HiBONRecord!(
             q{
-                this(TagionCurrency value, const sdt_t time, Pubkey owner, Buffer gene) {
+                this(TagionCurrency value, const sdt_t time, Pubkey owner) {
                     this.value = value;
                     this.time = time;
                     this.owner = owner; 
