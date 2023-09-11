@@ -113,7 +113,6 @@ class WriteAndReadFromDartDb {
         auto fingerprints = docs
             .map!(d => net.dartIndex(d))
             .array;
-        pragma(msg, "FINGERPRINTS: ", typeof(fingerprints));
 
         auto read_request = dartReadRR();
         handle.send(read_request, fingerprints);
