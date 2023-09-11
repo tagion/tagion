@@ -450,6 +450,11 @@ class Round {
      */
         
         package void collect_received_round(Round r, HashGraph hashgraph) {
+            if (hashgraph.__debug_print) {
+                foreach(wit; r._events.filter!(e => e !is null && r.famous_mask[e.node_id])) {
+                    __write("EVENT: %s, %s", wit.id, wit._youngest_son_ancestors.filter!(e => e !is null).map!(e => e.id));
+                }
+            }
             auto famous_witness_youngest_son_ancestors = r._events
                                                             .filter!(e => e !is null && r.famous_mask[e.node_id])
                                                             .map!(e => e._youngest_son_ancestors).joiner;
@@ -462,9 +467,24 @@ class Round {
                     consensus_tide[son_ancestor.node_id] = son_ancestor;
                 }
             }
-            consensus_tide.map!(e => e[].retro.find!(e => e._son).front);
-            auto event_collection = consensus_tide.map!(e => e[]
-                    .until!(e => e._round_received !is null))
+
+            // if (hashgraph.__debug_print) {
+            //     __write("Round: %s, youngest_ancestors: %s", r.number, consensus_tide.filter!(e => e !is null).map!(e => e.id));
+            //     __write("FFS: %s", consensus_tide[2][].retro.filter!(e => e._son !is null).map!(e => e.id).array);
+            //     __write("FFS: %s", consensus_tide[2][].retro.find!(e => e._son !is null).front.id);
+            //     __write("HELLO: %s", consensus_tide.map!(e => e[].retro.filter!(e => e._son !is null).front).map!(e => e.id));
+            //     // __write("Round %s, %s", r.number, consensus_tide.map!x(e => e.id));
+            // }
+            
+            // consensus_tide.map!(e => e[].retro.filter!(e => e._son !is null).front);
+
+            // if (hashgraph.__debug_print) {
+            //     __write("Round: %s, youngest_ancestors: %s", r.number, consensus_tide.filter!(e => e !is null).map!(e => e.id));
+            //     // __write("Round %s, %s", r.number, consensus_tide.map!(e => e.id));
+            // }
+            auto event_collection = consensus_tide
+                .map!(e => e[].retro.filter!(e => e._son !is null).front)
+                .map!(e => e[].until!(e => e._round_received !is null))
                 .joiner.array;
             event_collection.each!(e => e._round_received = r);
 
