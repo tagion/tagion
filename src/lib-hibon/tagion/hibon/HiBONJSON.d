@@ -59,13 +59,12 @@ enum typeMap = [
         Type.BINARY: "*",
         Type.DOCUMENT: "{}",
         Type.BOOLEAN: "bool",
-        Type.TIME: "sdt",
+        Type.TIME: "time",
         Type.INT32: "i32",
         Type.INT64: "i64",
         Type.UINT32: "u32",
         Type.UINT64: "u64",
         Type.BIGINT: "big",
-        Type.HASHDOC: "#",
 
         Type.DEFINED_NATIVE: NotSupported,
 
@@ -228,7 +227,7 @@ mixin template JSONString() {
                     else static if (E is INT64 || E is UINT64) {
                         doc_element[VALUE] = format("0x%x", e.by!(E));
                     }
-                    else static if ((E is HASHDOC) || (E is BIGINT)) {
+                    else static if (E is BIGINT) {
                         doc_element[VALUE] = encodeBase64(e.by!(E).serialize);
                     }
                     else static if (E is BINARY) {
@@ -243,7 +242,10 @@ mixin template JSONString() {
                         }
                     }
                     else static if (E is TIME) {
-                        doc_element[VALUE] = format("0x%x", e.by!(E));
+                        import std.datetime;
+
+                        SysTime sys_time = SysTime(cast(long) e.by!E);
+                        doc_element[VALUE] = sys_time.toISOExtString;
                     }
                     else {
                         goto default;
@@ -320,12 +322,12 @@ mixin template JSONString() {
             }
             return BigNumber(jvalue.str);
         }
-        else static if (is(T : const DataBlock)) {
-            const buffer = decode(jvalue.str);
-            return T(buffer);
-        }
         else static if (is(T : const sdt_t)) {
-            return sdt_t(get!long(jvalue));
+            import std.datetime;
+
+            const text_time = get!string(jvalue);
+            const sys_time = SysTime.fromISOExtString(text_time);
+            return sdt_t(sys_time.stdTime);
         }
         else {
             static assert(0, format("Type %s is not supported", T.stringof));
@@ -431,7 +433,9 @@ mixin template JSONString() {
         else if (json.type is JSONType.OBJECT) {
             return JSON!string(json);
         }
+
         
+
         .check(0, format("JSON_TYPE must be of %s or %s not %s",
                 JSONType.OBJECT, JSONType.ARRAY, json.type));
         assert(0);
@@ -484,17 +488,13 @@ Document toDoc(const(char[]) json_text) {
     test_tabel.BIGINT = BigNumber("-1234_5678_9123_1234_5678_9123_1234_5678_9123");
     test_tabel.TIME = sdt_t(1001);
 
-    alias TabelArray = Tuple!(immutable(ubyte)[], Type.BINARY.stringof, string,
-    Type.STRING.stringof, DataBlock, Type.HASHDOC.stringof, // Credential,          Type.CREDENTIAL.stringof,
-        // CryptDoc,            Type.CRYPTDOC.stringof,
-
-        
-
+    alias TabelArray = Tuple!(
+            immutable(ubyte)[], Type.BINARY.stringof,
+            string, Type.STRING.stringof,
     );
     TabelArray test_tabel_array;
     test_tabel_array.BINARY = [1, 2, 3];
     test_tabel_array.STRING = "Text";
-    test_tabel_array.HASHDOC = DataBlock(27, [3, 4, 5]);
 
     { // Empty Document
         const doc = Document();

@@ -28,7 +28,6 @@ struct DARTOptions {
     mixin JSONCommon;
 }
 
-
 @safe
 struct DARTService {
     void task(immutable(DARTOptions) opts, immutable(SecureNet) net) {
@@ -39,14 +38,18 @@ struct DARTService {
             throw dart_exception;
         }
 
-
         scope (exit) {
             db.close();
         }
 
-        void read(dartReadRR req, immutable(DARTIndex)[] fingerprints) {
+        void read(dartReadRR req, immutable(DARTIndex)[] fingerprints) @safe {
             RecordFactory.Recorder read_recorder = db.loads(fingerprints);
-            req.respond(cast(immutable(RecordFactory.Recorder)) read_recorder);
+            req.respond(RecordFactory.uniqueRecorder(read_recorder));
+        }
+
+        void checkRead(dartCheckReadRR req, immutable(DARTIndex)[] fingerprints) @safe {
+            auto check_read = db.checkload(fingerprints);
+            req.respond(check_read);
         }
 
         // only used from the outside
@@ -54,17 +57,17 @@ struct DARTService {
             // empty  
         }
 
-        void modify(dartModifyRR req, immutable(RecordFactory.Recorder) recorder) {
+        void modify(dartModifyRR req, immutable(RecordFactory.Recorder) recorder) @safe {
             immutable eye = DARTIndex(db.modify(recorder));
             req.respond(eye);
         }
 
-        void bullseye(dartBullseyeRR req) {
+        void bullseye(dartBullseyeRR req) @safe {
             immutable eye = DARTIndex(db.bullseye);
             req.respond(eye);
         }
 
-        run(&read, &modify, &bullseye);
+        run(&read, &modify, &bullseye, &checkRead);
         // run(&read, &rim, &modify, &bullseye);
 
     }

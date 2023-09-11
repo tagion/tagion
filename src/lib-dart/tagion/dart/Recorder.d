@@ -89,7 +89,7 @@ class RecordFactory {
     * Params:
      * rec = is set to null after
      */
-    immutable(Recorder) uniqueRecorder(ref Recorder rec) const pure nothrow @trusted {
+    static immutable(Recorder) uniqueRecorder(ref Recorder rec) pure nothrow @trusted {
         scope (exit) {
             rec = null;
         }
@@ -554,6 +554,7 @@ const Neutral = delegate(const(Archive) a) => a.type;
 }
 
 ///
+@safe
 unittest { // Archive
     //    import std.stdio;
     import std.format;
@@ -623,6 +624,7 @@ unittest { // Archive
 
 }
 
+@safe
 unittest { /// RecordFactory.Recorder.insert range
     import tagion.hibon.HiBONRecord;
     import tagion.crypto.SecureNet;

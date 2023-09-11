@@ -23,12 +23,13 @@ import tagion.hibon.HiBONJSON;
 
 import tagion.basic.Types : Buffer;
 import tagion.basic.tagionexceptions;
-import tagion.script.StandardRecords;
+import tagion.script.prior.StandardRecords;
 import tagion.script.TagionCurrency;
 import tagion.crypto.SecureNet : StdSecureNet, StdHashNet, scramble;
 import tagion.wallet.KeyRecover;
-import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN, Quiz, AccountDetails;
-import tagion.wallet.SecureWallet;
+import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN, Quiz;
+import tagion.wallet.prior.AccountDetails;
+import tagion.wallet.prior.SecureWallet;
 import tagion.utils.Term;
 import tagion.basic.Message;
 
@@ -55,16 +56,6 @@ Socket socket(AddressFamily af,
     }
     return new SSLSocket(af, type);
 }
-/**
- * \struct Invoices
- * Struct invoices array
- */
-struct Invoices {
-    /** internal array */
-    Invoice[] list;
-    mixin HiBONRecord;
-}
-
 /**
  * \struct WalletOptions
  * Struct wallet options files and network status storage models
@@ -614,7 +605,7 @@ void sendPaymentData(const ubyte[] data, const string adress, ushort port, ref H
 
 import tagion.tools.Basic;
 
-mixin Main!(_main, "wallet");
+mixin Main!(_main);
 
 int _main(string[] args) {
     immutable program = args[0];

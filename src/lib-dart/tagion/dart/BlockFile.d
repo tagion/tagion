@@ -767,7 +767,6 @@ class BlockFile {
         {
             immutable filename = fileId("create").fullpath;
             filename.forceRemove;
-            writefln("FILENAME=%s", filename);
             BlockFile.create(filename, "create.unittest", SMALL_BLOCK_SIZE);
             auto blockfile_load = BlockFile(filename);
             scope (exit) {

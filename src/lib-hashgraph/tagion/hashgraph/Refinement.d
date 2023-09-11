@@ -12,10 +12,12 @@ import tagion.hashgraph.HashGraphBasic;
 import tagion.utils.StdTime;
 import tagion.logger.Logger;
 import tagion.hibon.HiBONRecord;
+import tagion.hibon.Document;
+import tagion.hibon.HiBON;
 
 // std
 import std.stdio;
-import std.algorithm;
+import std.algorithm : map, filter, sort;
 import std.array;
 import tagion.utils.pretend_safe_concurrency;
 
@@ -37,12 +39,19 @@ class StdRefinement : Refinement {
     void payload(immutable(EventPackage*) epack) {
         if (!epack.event_body.payload.empty) {
             // send to collector payload.
-            
+
         }
     }
 
     void finishedEpoch(const(Event[]) events, const sdt_t epoch_time, const Round decided_round) {
-        assert(0, "not implemented");
+        auto epoch_created = submask.register("epoch_creator/epoch_created");
+
+        immutable epoch_events = events
+            .map!((e) => e.event_package)
+            .array;
+
+        log(epoch_created, "epoch succesful", epoch_events);
+
     }
 
     void excludedNodes(ref BitMask excluded_mask) {
@@ -58,7 +67,6 @@ class StdRefinement : Refinement {
     }
 
     void epoch(Event[] event_collection, const(Round) decided_round) {
-        writefln("CREATING EPOCH");
         import std.algorithm;
         import std.range;
 
@@ -68,9 +76,6 @@ class StdRefinement : Refinement {
                 pragma(msg, "review(cbr): Concensus order changed");
                 return a_print < b_print;
             }
-
-            // order_compare_iteration_count++;
-            // writefln("order compare: %d, rare: %d", order_compare_iteration_count, rare_order_compare_count);
 
             if (order_count < 0) {
                 return rare_less(a.fingerprint, b.fingerprint);
@@ -94,19 +99,6 @@ class StdRefinement : Refinement {
             }
             return a.received_order < b.received_order;
         }
-
-        import tagion.basic.Debug;
-
-        // auto offline = ~BitMask(decided_round.events
-        //         .filter!((e) => e !is null && e.isFamous)
-        //         .map!(e => e.node_id));
-        // offline.chunk(hashgraph.node_size);
-
-        // offline[].each!((node_id) => hashgraph.mark_offline(node_id));
-
-        // hashgraph._excluded_nodes_mask |= offline;
-
-        import tagion.basic.Debug;
 
         sdt_t[] times;
         auto events = event_collection

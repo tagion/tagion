@@ -22,8 +22,8 @@ import tagion.basic.Types : Control, Buffer;
 import tagion.hibon.Document;
 import tagion.communication.HiRPC;
 import tagion.hibon.HiBON;
-import tagion.script.StandardRecords : Contract, SignedContract, PayContract;
-import tagion.script.SmartScript;
+import tagion.script.prior.StandardRecords : Contract, SignedContract, PayContract;
+import tagion.script.prior.SmartScript;
 import tagion.crypto.SecureNet : StdSecureNet;
 
 import tagion.actor.exceptions : fatal, taskfailure;
@@ -126,40 +126,22 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                     doc = receivessl();
 
                     pragma(msg, "fixme(cbr): If doc is empty then return ");
-                    version (OLD_TRANSACTION) {
-                        pragma(msg, "OLD_TRANSACTION ", __FILE__, ":", __LINE__);
 
-                        pragma(msg, "fixme(cbr): smartscipt should be services not a local");
-                        // import tagion.script.ScriptBuilder;
-                        // import tagion.script.ScriptParser;
-                        // import tagion.script.Script;
+                    pragma(msg, "fixme(cbr): smartscipt should be services not a local");
+                    // import tagion.script.ScriptBuilder;
+                    // import tagion.script.ScriptParser;
+                    // import tagion.script.Script;
 
-                        const hirpc_received = hirpc.receive(doc);
-                        ssl_relay.id = hirpc_received.method.id;
-                        const method_name = hirpc_received.method.name;
-                        const params = hirpc_received.method.params;
-                    }
-                    else {
-                        pragma(msg, "fixme(cbr): smartscipt should be services not a local");
-                        const signed_contract = SignedContract(doc);
-                        auto smartscript = new SmartScript(hirpc.net, signed_contract);
-                        const hirpc_received = hirpc.receive(doc);
-                        respone_id = hirpc_received.method.id;
-                    }
+                    const hirpc_received = hirpc.receive(doc);
+                    ssl_relay.id = hirpc_received.method.id;
+                    const method_name = hirpc_received.method.name;
+                    const params = hirpc_received.method.params;
+
                     {
                         void yield() @trusted {
                             Fiber.yield;
                         }
 
-                        version (OLD_TRANSACTION) {
-                            pragma(msg, "OLD_TRANSACTION ", __FILE__, ":", __LINE__);
-
-                        }
-                        else {
-                            const method_name = hirpc_received.method.name;
-                            const params = hirpc_received.method.params;
-                        }
-                        log("Method name: %s", method_name);
                         switch (method_name) {
                         case "search":
                             ssl_relay.requestResponse();
@@ -184,97 +166,71 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                             log("sending healthcheck response %s", Document(response).toJSON);
                             ssl_relay.send(response);
                             break;
-                            version (OLD_TRANSACTION) {
-                                pragma(msg, "OLD_TRANSACTION ", __FILE__, ":", __LINE__);
 
                         case "transaction":
-                                // Should be EXTERNAL
-                                try {
-                                    auto signed_contract = SignedContract(params);
-                                    //                            if (signed_contract.valid) {
-                                    //
-                                    // Load inputs to the contract from the DART
-                                    //
+                            // Should be EXTERNAL
+                            try {
+                                auto signed_contract = SignedContract(params);
+                                //                            if (signed_contract.valid) {
+                                //
+                                // Load inputs to the contract from the DART
+                                //
 
-                                    auto inputs = signed_contract.contract.inputs;
-                                    ssl_relay.requestResponse();
-                                    requestInputs(inputs, ssl_relay.id);
-                                    if (!ssl_relay.available) {
-                                        log.warning("connection closed to no response");
-                                        return true;
-                                    }
-                                    //() @trusted => Fiber.yield; // Expect an Recorder resonse for the DART service
-                                    const response = ssl_relay.response;
-                                    const received = internal_hirpc.receive(Document(response));
-                                    const foreign_recorder = rec_factory.recorder(
-                                            received.response.result);
-
-                                    import tagion.script.StandardRecords : StandardBill;
-
-                                    PayContract payment;
-
-                                    foreach (archive; foreign_recorder[]) {
-                                        auto std_bill = StandardBill(archive.filed);
-                                        payment.bills ~= std_bill;
-                                    }
-                                    foreach (input; signed_contract.contract.inputs) {
-                                        foreach (bill; payment.bills) {
-                                            if (hirpc.net.dartIndex(bill.toDoc) == input) {
-                                                signed_contract.inputs ~= bill;
-                                            }
-                                        }
-                                    }
-                                    // Send the contract as payload to the HashGraph
-                                    // The data inside HashGraph is pure payload not an HiRPC
-                                    SmartScript.check(hirpc.net, signed_contract);
-                                    const payload = Document(signed_contract.toHiBON.serialize);
-                                    sendPayload(payload);
-                                    auto empty_params = new HiBON;
-                                    auto empty_response = internal_hirpc.result(hirpc_received,
-                                            empty_params);
-                                    ssl_relay.send(empty_response.toDoc.serialize);
-                                }
-                                catch (TagionException e) {
-                                    log.error("Bad contract: %s", e.msg);
-                                    auto bad_response = internal_hirpc.error(hirpc_received, e.msg, 1);
-                                    ssl_relay.send(bad_response.toDoc.serialize);
+                                auto inputs = signed_contract.contract.inputs;
+                                ssl_relay.requestResponse();
+                                requestInputs(inputs, ssl_relay.id);
+                                if (!ssl_relay.available) {
+                                    log.warning("connection closed to no response");
                                     return true;
                                 }
-                                {
-                                    auto response = new HiBON;
-                                    response["done"] = true;
-                                    const hirpc_send = hirpc.result(hirpc_received, response);
-                                    immutable send_buffer = hirpc_send.toDoc.serialize;
-                                    ssl_relay.send(send_buffer);
-                                }
-                                return true;
-                                break;
-                        default:
-                            }
-                            else {
-                        default:
-                                const inputs = signed_contract.contract.inputs;
-                                requestInputs(inputs, ssl_relay.id);
-                                yield;
-
+                                //() @trusted => Fiber.yield; // Expect an Recorder resonse for the DART service
                                 const response = ssl_relay.response;
                                 const received = internal_hirpc.receive(Document(response));
-                                immutable foreign_recorder = rec_factory.uniqueRecorder(
+                                const foreign_recorder = rec_factory.recorder(
                                         received.response.result);
-                                auto fail_code = SmartScript.check(hirpc.net, signed_contract, foreign_recorder);
-                                if (!fail_code) {
-                                    sendPayload(signed_contract.toDoc);
-                                    const empty_response = internal_hirpc.result(hirpc_received, Document());
-                                    ssl_relay.send(empty_response.toDoc.serialize);
-                                }
-                                if (fail_code) {
-                                    import tagion.basic.ConsensusExceptions : consensus_error_messages;
 
-                                    const error_response = internal_hirpc.error(hirpc_received, consensus_error_messages[fail_code]);
+                                import tagion.script.prior.StandardRecords : StandardBill;
+
+                                PayContract payment;
+
+                                foreach (archive; foreign_recorder[]) {
+                                    auto std_bill = StandardBill(archive.filed);
+                                    payment.bills ~= std_bill;
                                 }
+                                foreach (input; signed_contract.contract.inputs) {
+                                    foreach (bill; payment.bills) {
+                                        if (hirpc.net.dartIndex(bill.toDoc) == input) {
+                                            signed_contract.inputs ~= bill;
+                                        }
+                                    }
+                                }
+                                // Send the contract as payload to the HashGraph
+                                // The data inside HashGraph is pure payload not an HiRPC
+                                SmartScript.check(hirpc.net, signed_contract);
+                                const payload = Document(signed_contract.toHiBON.serialize);
+                                sendPayload(payload);
+                                auto empty_params = new HiBON;
+                                auto empty_response = internal_hirpc.result(hirpc_received,
+                                        empty_params);
+                                ssl_relay.send(empty_response.toDoc.serialize);
                             }
+                            catch (TagionException e) {
+                                log.error("Bad contract: %s", e.msg);
+                                auto bad_response = internal_hirpc.error(hirpc_received, e.msg, 1);
+                                ssl_relay.send(bad_response.toDoc.serialize);
+                                return true;
+                            }
+                            {
+                                auto response = new HiBON;
+                                response["done"] = true;
+                                const hirpc_send = hirpc.result(hirpc_received, response);
+                                immutable send_buffer = hirpc_send.toDoc.serialize;
+                                ssl_relay.send(send_buffer);
+                            }
+                            return true;
+                            break;
+                        default:
                         }
-
                     }
                 }
                 catch (SocketTimeout e) {

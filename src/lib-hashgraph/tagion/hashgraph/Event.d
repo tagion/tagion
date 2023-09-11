@@ -211,56 +211,6 @@ class Event {
     }
 
     /**
-     * Sets the received order of the event
-     * Params:
-     *   iteration_count = iteration count used for debugging
-     */
-    version(none)
-    private void received_order(ref uint iteration_count) pure nothrow {
-        if (isFatherLess) {
-            if (_mother) {
-                if (_mother._received_order is int.init) {
-                    _mother.received_order(iteration_count);
-                }
-                _received_order = expected_order();
-            }
-            return;
-        }
-
-        if (_received_order is int.init) {
-            _received_order = expected_order();
-        }
-
-        const expected = expected_order();
-
-        if ((expected - _received_order) > 0) {
-            _received_order = expected;
-            if (_son) {
-                _son.received_order(iteration_count);
-            }
-            if (_daughter) {
-                _daughter.received_order(iteration_count);
-            }
-        }
-        else if ((expected - _received_order) < 0) {
-            if (_father) {
-                _father.received_order(iteration_count);
-            }
-            if (_mother) {
-                _mother.received_order(iteration_count);
-            }
-            _received_order = expected_order();
-            if (_son) {
-                _son.received_order(iteration_count);
-            }
-            if (_daughter) {
-                _daughter.received_order(iteration_count);
-            }
-
-        }
-    }
-
-    /**
       * Connect the event to the hashgraph
       * Params:
       *   hashgraph = event owner 
@@ -303,7 +253,7 @@ class Event {
         check(!_mother._daughter, ConsensusFailCode.EVENT_MOTHER_FORK);
         _mother._daughter = this;
         _father = hashgraph.register(event_package.event_body.father);
-        _round = ((father) && (father.round.number >= mother.round.number)) ? _father._round : _mother._round;
+        _round = ((father) && higher(father.round.number, mother.round.number)) ? _father._round : _mother._round;
         if (_father) {
             check(!_father._son, ConsensusFailCode.EVENT_FATHER_FORK);
             _father._son = this;

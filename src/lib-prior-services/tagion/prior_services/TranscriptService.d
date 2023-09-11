@@ -15,8 +15,8 @@ import tagion.logger.Logger;
 
 import tagion.basic.tagionexceptions;
 import tagion.actor.exceptions;
-import tagion.script.SmartScript;
-import tagion.script.StandardRecords : Contract, SignedContract, PayContract, StandardBill;
+import tagion.script.prior.SmartScript;
+import tagion.script.prior.StandardRecords : Contract, SignedContract, PayContract, StandardBill;
 import tagion.basic.ConsensusExceptions : ConsensusException;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.crypto.Types : Fingerprint;
@@ -119,17 +119,14 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
         log("Start with bullseye: %s", last_bullseye.toHexString);
         bool to_smart_script(ref const(SignedContract) signed_contract, ref uint index) nothrow {
             try {
-                version (OLD_TRANSACTION) {
-                    pragma(msg, "OLD_TRANSACTION ", __FILE__, ":", __LINE__);
-                    auto smart_script = new SmartScript(signed_contract);
-                    smart_script.check(net);
-                    const signed_contract_doc = signed_contract.toDoc;
-                    const fingerprint = net.HashNet.calcHash(signed_contract_doc);
-                    uint prev_index = index;
-                    smart_script.run(current_epoch + 1, index, last_bullseye, net);
-                    assert(index == prev_index + smart_script.output_bills.length);
-                    smart_scripts[fingerprint] = smart_script;
-                }
+                auto smart_script = new SmartScript(signed_contract);
+                smart_script.check(net);
+                const signed_contract_doc = signed_contract.toDoc;
+                const fingerprint = net.HashNet.calcHash(signed_contract_doc);
+                uint prev_index = index;
+                smart_script.run(current_epoch + 1, index, last_bullseye, net);
+                assert(index == prev_index + smart_script.output_bills.length);
+                smart_scripts[fingerprint] = smart_script;
                 return true;
             }
             catch (ConsensusException e) {
@@ -205,17 +202,13 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
                         const added = to_smart_script(signed_contract, output_index);
                         if (added && fingerprint in smart_scripts) {
                             scope smart_script = smart_scripts[fingerprint];
-                            version (OLD_TRANSACTION) {
-                                pragma(msg, "OLD_TRANSACTION ", __FUNCTION__, " ", __FILE__, ":", __LINE__);
-                                foreach (bill; signed_contract.inputs) {
-                                    const bill_doc = bill.toDoc;
-                                    recorder.remove(bill_doc);
-                                }
-                                pragma(msg, "OLD_TRANSACTION ", __FILE__, ":", __LINE__);
-                                foreach (bill; smart_script.output_bills) {
-                                    const bill_doc = bill.toDoc;
-                                    recorder.add(bill_doc);
-                                }
+                            foreach (bill; signed_contract.inputs) {
+                                const bill_doc = bill.toDoc;
+                                recorder.remove(bill_doc);
+                            }
+                            foreach (bill; smart_script.output_bills) {
+                                const bill_doc = bill.toDoc;
+                                recorder.add(bill_doc);
                             }
                         }
                         else {

@@ -3,7 +3,8 @@ module tagion.dart.DARTBasic;
 
 import std.typecons : Typedef;
 
-import tagion.basic.Types : Buffer, BufferType;
+import tagion.crypto.Types : BufferType, Fingerprint;
+import tagion.basic.Types : Buffer;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord : isHiBONRecord;
@@ -41,4 +42,9 @@ immutable(DARTIndex) dartIndex(const(HashNet) net, const(Document) doc) {
 @safe
 immutable(DARTIndex) dartIndex(T)(const(HashNet) net, T value) if (isHiBONRecord!T) {
     return net.dartIndex(value.toDoc);
+}
+
+@safe
+Fingerprint dartFingerprint(const(DARTIndex) index) {
+    return cast(Fingerprint) index;
 }

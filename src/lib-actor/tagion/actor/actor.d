@@ -9,6 +9,7 @@ import std.traits;
 import std.variant : Variant;
 import std.format : format;
 import std.traits;
+import std.meta;
 
 import core.thread;
 import core.time;
@@ -42,11 +43,12 @@ struct Msg(string name) {
 
 struct Request(string name) {
     Msg!name msg;
-    int id;
+    uint id;
     string task_name;
 
     static Request opCall() @safe {
         import tagion.utils.Random;
+
         Request!name r;
         r.msg = Msg!name();
         r.id = generateId();
@@ -64,9 +66,10 @@ struct Request(string name) {
 
 struct Response(string name) {
     Msg!name msg;
-    int id;
+    uint id;
 }
 
+@safe
 unittest {
     thisActor.task_name = "req_resp";
     register("req_resp", thisTid);
@@ -74,11 +77,12 @@ unittest {
     void some_responder(Some_req req) {
         req.respond("hello");
     }
+
     auto created_req = Some_req();
     some_responder(created_req);
     int received = receiveTimeout(Duration.zero, (Some_req.Response res, string _) {
-            assert(created_req.msg == res.msg, "request msg were not the same");
-            assert(created_req.id == res.id, "request id were not the same");
+        assert(created_req.msg == res.msg, "request msg were not the same");
+        assert(created_req.id == res.id, "request id were not the same");
     });
     assert(received, "never received response");
 }
@@ -143,7 +147,7 @@ bool waitforChildren(Ctrl state, Duration timeout = 1.seconds) @safe nothrow {
 }
 
 /// Checks if a type has the required members to be an actor
-enum bool isActor(A) = hasMember!(A, "task") && isCallable!(A.task);
+enum bool isActor(A) = hasMember!(A, "task") && isCallable!(A.task) && isSafe!(A.task);
 
 enum bool isActorHandle(T) = __traits(isSame, TemplateOf!(T), ActorHandle);
 
@@ -152,10 +156,8 @@ enum bool isFailHandler(F)
     || is(F : void delegate(TaskFailure));
 
 /// Stolen from std.concurrency;
-template isSpawnable(F, T...)
-{
-    template isParamsImplicitlyConvertible(F1, F2, int i = 0)
-    {
+template isSpawnable(F, T...) {
+    template isParamsImplicitlyConvertible(F1, F2, int i = 0) {
         alias param1 = Parameters!F1;
         alias param2 = Parameters!F2;
         static if (param1.length != param2.length)
@@ -164,13 +166,14 @@ template isSpawnable(F, T...)
             enum isParamsImplicitlyConvertible = true;
         else static if (isImplicitlyConvertible!(param2[i], param1[i]))
             enum isParamsImplicitlyConvertible = isParamsImplicitlyConvertible!(F1,
-                    F2, i + 1);
+                        F2, i + 1);
         else
             enum isParamsImplicitlyConvertible = false;
     }
+
     enum isSpawnable = isCallable!F && is(ReturnType!F : void)
-            && isParamsImplicitlyConvertible!(F, void function(T))
-            && (isFunctionPointer!F || !hasUnsharedAliasing!F);
+        && isParamsImplicitlyConvertible!(F, void function(T))
+        && (isFunctionPointer!F || !hasUnsharedAliasing!F);
 }
 
 /**
@@ -222,7 +225,7 @@ ActorHandle!A spawn(A, Args...)(immutable(A) actor, string name, Args args) @saf
 if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
     try {
         Tid tid;
-        tid = concurrency.spawn((immutable(A) _actor, string name, Args args) @trusted nothrow {
+        tid = concurrency.spawn((immutable(A) _actor, string name, Args args) @trusted nothrow{
             thisActor.task_name = name;
             log.register(name);
             thisActor.stop = false;
@@ -247,7 +250,7 @@ if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
         }, actor, name, args);
         thisActor.childrenState[name] = Ctrl.UNKNOWN;
         log("spawning %s", name);
-        tid.setMaxMailboxSize(int.sizeof, OnCrowding.throwException);
+        tid.setMaxMailboxSize(int.max, OnCrowding.throwException);
         if (concurrency.register(name, tid)) {
             log("%s registered as %s", tid, name);
         }
@@ -327,10 +330,11 @@ void sendOwner(T...)(T vals) @safe {
 */
 void fail(Throwable t) @trusted nothrow {
     try {
-        debug(actor) log(t);
+        debug (actor)
+            log(t);
         ownerTid.prioritySend(TaskFailure(thisActor.task_name, cast(immutable) t));
     }
-    catch(Exception e) {
+    catch (Exception e) {
         log.fatal("Failed to deliver TaskFailure: \n
                 %s\n\n
                 Because:\n
@@ -363,14 +367,15 @@ void end() nothrow {
  *   task_name = the name of the task
  *   args = a list of message handlers for the task
  */
-void run(Args...)(Args args) nothrow {
+void run(Args...)(Args args) @safe nothrow
+if (allSatisfy!(isSafe, Args)) {
     // Check if a failHandler was passed as an arg
     static if (args.length == 1 && isFailHandler!(typeof(args[$ - 1]))) {
-        enum failhandler = () {}; /// Use the fail handler passed through `args`
+        enum failhandler = () @safe {}; /// Use the fail handler passed through `args`
     }
     else {
-        enum failhandler = (TaskFailure tf) {
-            if (ownerTid != Tid.init) {
+        enum failhandler = (TaskFailure tf) @safe {
+            if (!tidOwner.isNull) {
                 ownerTid.prioritySend(tf);
             }
         };
@@ -401,14 +406,15 @@ void run(Args...)(Args args) nothrow {
  *   timeout = delegate function to call
  *   args = normal message handlers for the task
  */
-void runTimeout(Args...)(Duration duration, void delegate() @safe timeout, Args args) nothrow {
+void runTimeout(Args...)(Duration duration, void delegate() @safe timeout, Args args) nothrow
+if (allSatisfy!(isSafe, Args)) {
     // Check if a failHandler was passed as an arg
     static if (args.length == 1 && isFailHandler!(typeof(args[$ - 1]))) {
-        enum failhandler = () {}; /// Use the fail handler passed through `args`
+        enum failhandler = () @safe {}; /// Use the fail handler passed through `args`
     }
     else {
-        enum failhandler = (TaskFailure tf) {
-            if (ownerTid != Tid.init) {
+        enum failhandler = (TaskFailure tf) @safe {
+            if (!tidOwner.isNull) {
                 ownerTid.prioritySend(tf);
             }
         };
@@ -436,7 +442,7 @@ void runTimeout(Args...)(Duration duration, void delegate() @safe timeout, Args 
     }
 }
 
-void signal(Sig signal) {
+void signal(Sig signal) @safe {
     with (Sig) final switch (signal) {
     case STOP:
         thisActor.stop = true;
@@ -445,12 +451,12 @@ void signal(Sig signal) {
 }
 
 /// Controls message sent from the children.
-void control(CtrlMsg msg) {
+void control(CtrlMsg msg) @safe {
     thisActor.childrenState[msg.task_name] = msg.ctrl;
 }
 
 /// Stops the actor if the supervisor stops
-void ownerTerminated(OwnerTerminated) {
+void ownerTerminated(OwnerTerminated) @safe {
     log.trace("%s, Owner stopped... nothing to life for... stopping self", thisTid);
     thisActor.stop = true;
 }
@@ -460,6 +466,6 @@ void ownerTerminated(OwnerTerminated) {
  * Params:
  *   message = literally any message
  */
-void unknown(Variant message) {
+void unknown(Variant message) @trusted {
     throw new UnknownMessage("No delegate to deal with message: %s".format(message));
 }

@@ -21,21 +21,23 @@ import std.stdio;
 enum feature = Feature(
             "Actor supervisor test",
             [
-        "This feature should check that when a child catches an exception is sends it up as a failure.",
-        "The supervisour has the abillity to decide whether or not to restart i depending on the exception."
-]);
+            "This feature should check that when a child catches an exception is sends it up as a failure.",
+            "The supervisour has the abillity to decide whether or not to restart i depending on the exception."
+            ]);
 
 alias FeatureContext = Tuple!(
         SupervisorWithFailingChild, "SupervisorWithFailingChild",
         FeatureGroup*, "result"
 );
 
+@safe
 class Recoverable : TagionException {
     this(immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__) pure {
         super(msg, file, line);
     }
 }
 
+@safe
 class Fatal : TagionException {
     this(immutable(char)[] msg, string file = __FILE__, size_t line = __LINE__) pure {
         super(msg, file, line);
@@ -43,6 +45,7 @@ class Fatal : TagionException {
 }
 
 /// Child Actor
+@safe
 struct SetUpForFailure {
     void recoverable(Msg!"recoverable") {
         writeln("oh nose");
@@ -68,18 +71,19 @@ alias reRecoverable = Msg!"reRecoverable";
 alias reFatal = Msg!"reFatal";
 
 /// Supervisor Actor
+@safe
 struct SetUpForDisappointment {
     //SetUpForFailure child;
     static ChildHandle childHandle;
 
-    void task() nothrow {
+    void task() @safe nothrow {
         childHandle = spawn!SetUpForFailure(child_task_name);
         waitforChildren(Ctrl.ALIVE);
         run(failHandler);
     }
 
     // Override the default fail handler
-    auto failHandler = (TaskFailure tf) {
+    auto failHandler = (TaskFailure tf) @trusted {
         writefln("Received the taskfailure from overrid taskfail type: %s", typeid(tf.throwable));
 
         if (cast(Recoverable) tf.throwable !is null) {

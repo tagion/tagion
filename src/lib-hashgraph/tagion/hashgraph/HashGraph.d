@@ -263,11 +263,8 @@ class HashGraph {
             const send_channel = responde(
                     &not_used_channels,
                     &payload_sender);
-            if (send_channel !is Pubkey(null)) {
-
+            if (send_channel !is Pubkey.init) {
                 getNode(send_channel).state = ExchangeState.INIT_TIDE;
-
-                // assert(_nodes.length <= node_size, format("Node[] must not be greater than node_size %s", send_channel.cutHex)); // used for debug
             }
         }
         else {

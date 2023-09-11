@@ -30,7 +30,7 @@ unittest {
     import tagion.crypto.Types : Fingerprint;
     import tagion.dart.DART : DART;
     import tagion.dart.Recorder;
-    import tagion.script.StandardRecords : StandardBill;
+    import tagion.script.prior.StandardRecords : StandardBill;
     import tagion.script.TagionCurrency : TGN;
     import tagion.utils.Miscellaneous : toHexString;
 

@@ -32,7 +32,7 @@ import tagion.hibon.HiBONJSON;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.communication.HiRPC;
-import tagion.script.StandardRecords;
+import tagion.script.prior.StandardRecords;
 import tagion.communication.HandlerPool;
 
 //import tagion.prior_services.MdnsDiscoveryService;

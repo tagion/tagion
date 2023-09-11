@@ -31,13 +31,9 @@ class WaveNet : StdSecureNet {
 
 @safe
 struct Supervisor {
-    enum dart_task_name = "dart";
-    enum hirpc_verifier_task_name = "hirpc_verifier";
-    enum input_task_name = "inputvalidator";
-
     auto failHandler = (TaskFailure tf) { log("Supervisor caught exception: \n%s", tf); };
 
-    void task(immutable(Options) opts) {
+    void task(immutable(Options) opts) @safe {
         immutable SecureNet net = (() @trusted => cast(immutable) new WaveNet("aparatus"))();
 
         const dart_filename = opts.dart.dart_filename;
@@ -45,9 +41,12 @@ struct Supervisor {
         if (!dart_filename.exists) {
             DARTFile.create(dart_filename, net);
         }
-        auto dart_handle = spawn!DARTService(dart_task_name, opts.dart, net);
-        auto hirpc_verifier_handle = spawn!HiRPCVerifierService(hirpc_verifier_task_name, opts.hirpc_verifier, "__tmp_collector", net);
-        auto inputvalidator_handle = spawn!InputValidatorService(input_task_name, opts.inputvalidator, hirpc_verifier_task_name);
+
+        immutable tn = opts.task_names;
+        auto dart_handle = spawn!DARTService(tn.dart, opts.dart, net);
+        auto hirpc_verifier_handle = spawn!HiRPCVerifierService(tn.hirpc_verifier, opts.hirpc_verifier, tn.collector, net);
+        auto inputvalidator_handle = spawn!InputValidatorService(tn.inputvalidator, opts.inputvalidator, tn
+                .hirpc_verifier);
         auto services = tuple(dart_handle, hirpc_verifier_handle, inputvalidator_handle);
 
         if (!waitforChildren(Ctrl.ALIVE)) {
@@ -60,6 +59,13 @@ struct Supervisor {
                 service.send(Sig.STOP);
             }
         }
+        (() @trusted { // NNG shoould be safe
+            import nngd;
+
+            NNGSocket input_sock = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
+            input_sock.dial(opts.inputvalidator.sock_addr);
+            input_sock.send("End!"); // Send arbitrary data to the inputvalidator so releases the socket and checks its mailbox
+        })();
         log("Supervisor stopping services");
         waitforChildren(Ctrl.END);
         log("All services stopped");

@@ -30,7 +30,7 @@ import tagion.basic.ConsensusExceptions;
 
 import tagion.logger.Logger;
 import tagion.options.ServiceNames : get_node_name;
-import tagion.options.CommonOptions : CommonOptions;
+import tagion.options.CommonOptions;
 
 import tagion.utils.StdTime;
 import tagion.communication.HiRPC;
@@ -40,6 +40,7 @@ import std.random : Random, unpredictableSeed, uniform;
 import core.time;
 import std.datetime;
 import core.thread;
+import tagion.services.messages;
 
 @trusted
 static uint getTids(Tid[] tids) {
@@ -168,16 +169,7 @@ class EmulatorGossipNet : GossipNet {
 
 @safe
 class NewEmulatorGossipNet : GossipNet {
-    private uint node_counter = 0;
     private Duration duration;
-    @trusted
-    static Tid getTidByNodeNumber(const uint i) {
-        writeln("in static getTidByNodeNumber");
-        immutable taskname = i.get_node_name;
-        log.trace("Trying to locate: %s", taskname);
-        auto tid = locate(taskname);
-        return tid;
-    }
 
     private Tid[immutable(Pubkey)] _tids;
     private immutable(Pubkey)[] _pkeys;
@@ -185,6 +177,7 @@ class NewEmulatorGossipNet : GossipNet {
     protected sdt_t _current_time;
     immutable(Pubkey) mypk;
     Random random;
+
     this(const Pubkey mypk, Duration duration) {
         this.random = Random(unpredictableSeed);
         this.duration = duration;
@@ -192,11 +185,16 @@ class NewEmulatorGossipNet : GossipNet {
     }
 
     void add_channel(const Pubkey channel) {
-        writeln("in add channel");
+        import tagion.gossip.AddressBook;
+        import core.thread;
+        import tagion.services.locator;
+
+        const task_name = addressbook.getAddress(channel);
+        auto task_id = tryLocate(task_name);
         _pkeys ~= channel;
-        _tids[channel] = getTidByNodeNumber(node_counter);
+        _tids[channel] = task_id;
+
         log.trace("Add channel: %s tid: %s", channel.cutHex, _tids[channel]);
-        node_counter++;
     }
 
     void remove_channel(const Pubkey channel) {
@@ -244,6 +242,9 @@ class NewEmulatorGossipNet : GossipNet {
             const(SenderCallBack) sender) {
         const send_channel = select_channel(channel_filter);
         log.trace("Selected channel: %s", send_channel.cutHex);
+        if (send_channel is Pubkey.init) {
+            log.trace("CHANNEL IS INININININIT");
+        }
         if (send_channel.length) {
             send(send_channel, sender());
         }
@@ -254,14 +255,13 @@ class NewEmulatorGossipNet : GossipNet {
     void send(const Pubkey channel, const(HiRPC.Sender) sender) {
         import std.algorithm.searching : countUntil;
         import tagion.hibon.HiBONJSON;
-        import tagion.services.epoch_creator : ReceivedWavefront;
 
         log("Send to %s (Node_%s) %d bytes", channel.cutHex, _pkeys.countUntil(channel), sender
                 .toDoc.serialize.length);
         Thread.sleep(duration);
         _tids[channel].send(ReceivedWavefront(), sender.toDoc);
-        log.trace("Successfully sent to %s (Node_%s) %d bytes, Tid(%s)", channel.cutHex, _pkeys.countUntil(channel), sender
-                .toDoc.serialize.length, _tids[channel]);
+        log.trace("Successfully sent to %s (Node_%s) %d bytes", channel.cutHex, _pkeys.countUntil(channel), sender
+                .toDoc.serialize.length);
     }
 
     void start_listening() {

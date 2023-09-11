@@ -1,4 +1,4 @@
-module tagion.script.StandardRecords;
+module tagion.script.prior.StandardRecords;
 
 import std.meta : AliasSeq;
 
@@ -11,6 +11,7 @@ import tagion.hibon.HiBONException;
 import std.range : empty;
 import tagion.script.TagionCurrency;
 import tagion.script.ScriptException : check;
+import tagion.basic.Version;
 
 import tagion.dart.DARTBasic;
 
@@ -22,9 +23,8 @@ enum OwnerKey = "$Y";
         @label("$k") uint epoch; // Epoch number
         @label(OwnerKey) Pubkey owner; // Double hashed owner key
         @label("$G") Buffer gene; // Bill gene
-        version (OLD_TRANSACTION) {
-            mixin HiBONRecord!(
-                    q{
+        mixin HiBONRecord!(
+                q{
                 this(TagionCurrency value, const uint epoch, Pubkey owner, Buffer gene) {
                     this.value = value;
                     this.epoch = epoch;
@@ -32,10 +32,6 @@ enum OwnerKey = "$Y";
                     this.gene = gene;
                 }
             });
-        }
-        else {
-            mixin HiBONRecord;
-        }
     }
 
     @recordType("NNC") struct NetworkNameCard {
@@ -210,14 +206,19 @@ enum OwnerKey = "$Y";
     @recordType("SMC") struct Contract {
         @label("$in") const(DARTIndex)[] inputs; /// Hash pointer to input (DART)
         @label("$read", true) DARTIndex[] reads; /// Hash pointer to read-only input (DART)
-        version (OLD_TRANSACTION) {
-            @label("$out") Document[Pubkey] output; // pubkey of the output
-            @label("$run") Script script; // TVM-links / Wasm binary
+        @label("$out") Document[Pubkey] output; // pubkey of the output
+        @label("$run") Script script; // TVM-links / Wasm binary
+        mixin HiBONRecord;
+        bool verify() {
+            return (inputs.length > 0);
         }
-        else {
-            @label("$out") Pubkey[] output; // pubkey of the output
+    }
 
-        }
+    @recordType("SMC") struct _Contract {
+        @label("$in") const(DARTIndex)[] inputs; /// Hash pointer to input (DART)
+        @label("$read", true) DARTIndex[] reads; /// Hash pointer to read-only input (DART)
+        @label("$out") Document[Pubkey] output; /// pubkey of the output
+        @label("$run") Script script; /// TVM-links / Wasm binary
         mixin HiBONRecord;
         bool verify() {
             return (inputs.length > 0);
@@ -232,10 +233,7 @@ enum OwnerKey = "$Y";
     @recordType("SSC") struct SignedContract {
         @label("$signs") Signature[] signs; /// Signature of all inputs
         @label("$contract") Contract contract; /// The contract must signed by all inputs
-        version (OLD_TRANSACTION) {
-            pragma(msg, "OLD_TRANSACTION ", __FILE__, ":", __LINE__);
-            @label("$in", true) StandardBill[] inputs; /// The actual inputs
-        }
+        @label("$in", true) StandardBill[] inputs; /// The actual inputs
         mixin HiBONRecord;
     }
 
@@ -266,32 +264,21 @@ enum OwnerKey = "$Y";
             });
     }
 
-    version (OLD_TRANSACTION) {
-        struct Script {
-            @label("$name", true) string name;
-            @label("$env", true) Buffer link; // Hash pointer to smart contract object;
-            mixin HiBONRecord!(
-                    q{
+    struct Script {
+        @label("$name", true) string name;
+        @label("$env", true) Buffer link; // Hash pointer to smart contract object;
+        mixin HiBONRecord!(
+                q{
                 this(string name, Buffer link=null) {
                     this.name = name;
                     this.link = link;
                 }
             });
-            bool verify() {
-                return (name.empty) ^ (link.empty);
-            }
-
+        bool verify() {
+            return (name.empty) ^ (link.empty);
         }
+
     }
-
-    alias ListOfRecords = AliasSeq!(
-            StandardBill,
-            NetworkNameCard,
-            NetworkNameRecord, // NetworkNodeRecord,
-            Contract,
-            SignedContract
-    );
-
 }
 
 static Globals globals;
@@ -299,14 +286,4 @@ static Globals globals;
 static this() {
     globals.fixed_fees = 1.TGN / 10; // Fixed fee
     globals.storage_fee = 1.TGN / 200; // Fee per stored byte
-}
-
-@safe
-@recordType("Invoice")
-struct Invoice {
-    string name;
-    TagionCurrency amount;
-    @label(OwnerKey) Pubkey pkey;
-    @label("*", true) Document info;
-    mixin HiBONRecord;
 }

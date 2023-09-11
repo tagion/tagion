@@ -7,12 +7,7 @@ import std.range;
 
 static immutable(string) contract_sock_path() @safe nothrow {
     version (linux) {
-        version (NNG_INPUT) {
-            return "abstract://NEUEWELLE_CONTRACT";
-        }
-        else {
-            return "\0NEUEWELLE_CONTRACT";
-        }
+        return "abstract://NEUEWELLE_CONTRACT";
     }
     else version (Posix) {
         import std.path;
@@ -28,13 +23,49 @@ static immutable(string) contract_sock_path() @safe nothrow {
     }
 }
 
+@safe
+struct TaskNames {
+    public import tagion.utils.JSONCommon;
+
+    string program = "tagion";
+    string inputvalidator = "inputvalidator";
+    string dart = "dart";
+    string hirpc_verifier = "hirpc_verifier";
+    string collector = "collector ";
+    string transcript = "transcript";
+    string tvm = "tvm";
+    string epoch_creator = "epoch_creator";
+
+    mixin JSONCommon;
+
+    /// Set a prefix for the default options
+    this(const string prefix) pure {
+        setPrefix(prefix);
+    }
+
+    /**
+        Inserts a prefix for all the task_names
+        This function is used in mode 0.
+    */
+    void setPrefix(const string prefix) pure nothrow {
+        import std.exception;
+
+        alias This = typeof(this);
+        alias FieldsNames = FieldNameTuple!This;
+        static foreach (i, T; Fields!This) {
+            static if (is(T == string)) {
+                this.tupleof[i] = assumeWontThrow(format("%s_%s", prefix, this.tupleof[i]));
+            }
+        }
+    }
+}
+
 /// All options for neuewelle
 @safe
 struct Options {
     import std.json;
     import tagion.utils.JSONCommon;
 
-    string task_name = "tagion";
     public import tagion.services.inputvalidator : InputValidatorOptions;
     public import tagion.services.DART : DARTOptions;
     public import tagion.services.hirpc_verifier : HiRPCVerifierOptions;
@@ -48,16 +79,13 @@ struct Options {
     CollectorOptions collector;
     TranscriptOptions transcript;
     TVMOptions tvm;
+
+    TaskNames task_names;
     mixin JSONCommon;
     mixin JSONConfig;
-    this(ref inout(Options) opt, const string prefix = null) inout pure nothrow @trusted {
-
+    this(ref inout(Options) opt) inout pure nothrow @trusted {
         foreach (i, ref inout member; opt.tupleof) {
             this.tupleof[i] = member;
-        }
-        if (!prefix.empty) {
-            auto that = cast(Options*)&this;
-            setTaskPrefix(*that, prefix);
         }
     }
 
@@ -65,28 +93,6 @@ struct Options {
         Options opts;
         setDefault(opts);
         return opts;
-    }
-}
-
-/**
-    Inserts a prefix for all the task_name in Opt
-    This function is used in mode 0.
-*/
-@safe
-void setTaskPrefix(Opt)(ref Opt opt, const string prefix) pure nothrow if (is(Opt == struct)) {
-    import std.exception;
-
-    alias FieldsNames = FieldNameTuple!Opt;
-
-    static foreach (i, T; Fields!Opt) {
-        //foreach(i, ref member; opt.tupleof) {
-        static if (is(T == string) && FieldsNames[i] == "task_name") {
-            opt.tupleof[i] = assumeWontThrow(format("%s_%s", prefix, opt.tupleof[i]));
-        }
-        else static if (is(T == struct)) {
-            setTaskPrefix(opt.tupleof[i], prefix);
-        }
-
     }
 }
 
@@ -109,10 +115,11 @@ unittest {
 
     enum prefix = "NodeX";
     Options opt = Options.defaultOptions;
-    assert(opt.task_name[0 .. prefix.length] != prefix);
-    assert(opt.transcript.task_name[0 .. prefix.length] != prefix);
+    assert(opt.task_names.program[0 .. prefix.length] != prefix);
+    assert(opt.task_names.transcript[0 .. prefix.length] != prefix);
 
-    immutable sub_opt = Options(opt, prefix);
-    assert(sub_opt.task_name[0 .. prefix.length] == prefix);
-    assert(sub_opt.transcript.task_name[0 .. prefix.length] == prefix);
+    opt.task_names.setPrefix(prefix);
+    immutable sub_opt = Options(opt);
+    assert(sub_opt.task_names.program[0 .. prefix.length] == prefix);
+    assert(sub_opt.task_names.transcript[0 .. prefix.length] == prefix);
 }

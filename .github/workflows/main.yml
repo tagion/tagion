@@ -282,6 +282,7 @@ jobs:
           gh run download -n successful_artifact --repo tagion/tagion
           tar -xzf *.tar.gz
           cd build/x86_64-linux/integration
+          ls
           systemctl stop --user dart_api.service
           ./install.sh
           systemctl restart --user dart_api.service

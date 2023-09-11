@@ -822,23 +822,17 @@ alias check = Check!DARTException;
     }
 
     // DARTIndex[] checkload(Range)(Range fingerprints)
-    version(none)
-    DARTIndex[] checkload(Range)(Range fingerprints)
-    if (isInputRange!Range && isBufferType!(ElementType!Range))
-    {
+    immutable(DARTIndex)[] checkload(Range)(Range fingerprints) if (isInputRange!Range && isBufferType!(ElementType!Range)) {
         import std.algorithm : canFind;
 
         auto result = loads(fingerprints)[]
-            .map!(a => a.fingerprint);
+            .map!(a => DARTIndex(a.fingerprint));
 
-        auto t = fingerprints.filter!(f => !canFind(result, f));
+        auto not_found = fingerprints.filter!(f => !canFind(result, f)).array;
 
-
-        pragma(msg, "CHECKLOAD ", typeof(result));
-
-
+        // return (() @trusted => assumeUnique(not_found))();
+        return not_found;
     }
-    
 
     enum RIMS_IN_SECTOR = 2;
 
@@ -1667,9 +1661,8 @@ unittest {
             assert(numberOfArchives(branches, dart_A) == 1, "Branch not snapped back to rim 2");
 
         }
-        version(none)
+        // version(none)
         {
-            writefln("UNITTEST");
             filename_A.forceRemove;
             DARTFile.create(filename_A, net);
             auto dart_A = new DARTFile(net, filename_A);
@@ -1684,10 +1677,38 @@ unittest {
                 recorder.add(doc);
             }
             dart_A.modify(recorder);
-            dart_A.dump();
-            auto fingerprints = recorder[].map!(a => DARTIndex(a.fingerprint)).array;
+            // dart_A.dump();
+            auto fingerprints = recorder[].map!(a => cast(immutable) DARTIndex(a.fingerprint)).array;
 
-            dart_A.checkload(fingerprints);
+            auto empty_load = dart_A.checkload(fingerprints);
+            assert(empty_load.length == 0);
+            // test.map!(f => f.toPretty).writeln;
+            const ulong[] not_in_dart = [
+                0xABB9_13ab_11ef_0929,
+                0xABB9_13ab_11ef_1239,
+
+            ];
+            auto not_in_dart_fingerprints = not_in_dart
+                .map!(a => DARTFakeNet.fake_doc(a))
+                .map!(a => net.dartIndex(a));
+
+            auto full_load = dart_A.checkload(not_in_dart_fingerprints);
+            assert(not_in_dart_fingerprints.length == full_load.length);
+
+            const ulong[] half_in_dart = [
+                0xABB9_13ab_11ef_0923,
+                0xABB9_13ab_11ef_1239,
+            ];
+            auto half_in_dart_fingerprints = half_in_dart
+                .map!(a => DARTFakeNet.fake_doc(a))
+                .map!(a => net.dartIndex(a))
+                .array;
+
+            auto half_load = dart_A.checkload(half_in_dart_fingerprints);
+            assert(half_load.length == 1);
+
+            assert(half_load[0] == half_in_dart_fingerprints[1]);
+
         }
 
         {
