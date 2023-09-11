@@ -339,8 +339,8 @@ Document sampleHiBON(const bool hibon_array = false) {
             double(0x1.9b5d96fe285c6p+664),
             int(-42),
             long(-1234_1234_4678_4678),
-            int(42),
-            long(1234_1234_4678_4678),
+            uint(42),
+            ulong(1234_1234_4678_4678),
     );
 
     auto h = new HiBON;
