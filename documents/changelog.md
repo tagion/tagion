@@ -1,3 +1,41 @@
+# Changelog for week 36/37
+
+**Hashgraph**
+Event round uses higher function in order to avoid underflow when comparing mother & father rounds.
+Several outdated tests were removed.
+
+**Safer actors**
+Fixed an oversight where actor message delegates were not checked to be @safe.
+
+**Inputvalidator**
+Updated the tests for the inputvalidator. 
+Previous tests were underspecified and we now try to cover all paths. By sending, valid hirpcs, invalid Documents and invalid hirpcs.
+The version flag for the regular socket implementation has been removed and we now only use NNG sockets.
+
+**Event subscription**
+Implemented an internal mechanism for subscribing to events via a topic in the system. Which makes it easier to develop tests that require to know the falsy states of a service. In the future it will be used to decide which events get sent out through the shell.
+
+**HiBON**
+Updated the documentation for HiBONJSON and provide samples in hibonutil for easier compatibillity testing.
+ISO time is now the accepted time format in HiBONJSON as opposed to SDT time
+
+**CRYPTO**
+Random generators are seeded with the hardware random functions provided by the OS.
+
+**Epoch Creator**
+The epoch creator is the service that drives the hashgraph. 
+It's implemented using a shared address-book and tested in mode-0.
+The address-book avoids burried state which was a source of several problems previosly when bootstrapping the network.
+
+**DART Service**
+The DART service has been implemented and CRUD operations tested. 
+The service allows several services to access the DART.
+
+**OLD TRANSACTION**
+The code for the old transaction mechanism has been seperated and moved in to the prior services. This means that the code lives seperately and the OLD_TRANSACTION version flag has been removed.
+
+
+
 # Changelog for week 34/35
 
 **NNG**
