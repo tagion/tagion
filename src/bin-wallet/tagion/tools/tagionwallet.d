@@ -11,7 +11,6 @@ import std.range : lockstep, zip;
 import std.array;
 import std.string : toLower;
 import std.conv : to;
-import std.array : join;
 import std.exception : assumeUnique, assumeWontThrow;
 import std.socket : Socket, SocketType, InternetAddress, AddressFamily, SocketOSException, SocketException;
 import core.thread;
