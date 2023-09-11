@@ -28,7 +28,8 @@ void getRandom(ref scope ubyte[] buf) {
         // GRND_RANDOM   = 0x0002. No effect
         // GRND_INSECURE = 0x0004. Return non-cryptographic random bytes
 
-        getrandom(&buf[0], buf.length, 0x0002);
+        const size = getrandom(&buf[0], buf.length, 0x0000);
+        assert(size == buf.length);
     }
     else {
         arc4random_buf(&buf[0], buf.length);

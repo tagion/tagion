@@ -1,7 +1,7 @@
 /**
 * Handles management of key-pair, account-details device-pin
 */
-module tagion.wallet.SecureWallet;
+module tagion.wallet.prior.SecureWallet;
 import tagion.utils.Miscellaneous;
 
 import std.format;
@@ -24,7 +24,7 @@ import tagion.dart.DARTBasic;
 import tagion.basic.basic : basename, isinit;
 import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Pubkey;
-import tagion.script.prior.StandardRecords : SignedContract, StandardBill, Invoice, globals, Script;
+import tagion.script.prior.StandardRecords : SignedContract, StandardBill,  globals, Script;
 import tagion.crypto.SecureNet : scramble;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 
@@ -35,8 +35,9 @@ import tagion.Keywords;
 import tagion.script.TagionCurrency;
 import tagion.communication.HiRPC;
 import tagion.wallet.KeyRecover;
-import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN, AccountDetails;
+import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN;
 import tagion.wallet.WalletException : WalletException;
+import tagion.wallet.prior.AccountDetails;
 import tagion.wallet.Basic : saltHash;
 import tagion.basic.tagionexceptions : Check;
 import tagion.crypto.Cipher;
