@@ -106,8 +106,16 @@ struct WalletInterface {
         return false;
     }
 
-    void save() {
+    void save(const(char[]) pincode, const bool recover_flag) {
+        secure_wallet.login(pincode);
 
+        if (secure_wallet.isLoggedin) {
+            options.walletfile.fwrite(secure_wallet.wallet);
+            options.devicefile.fwrite(secure_wallet.pin);
+            if (!recover_flag) {
+                options.quizfile.fwrite(quiz);
+            }
+        }
     }
     /**
     * @brief pseudographical UI interface, pin code reading
@@ -189,14 +197,11 @@ struct WalletInterface {
                 break;
             case WAIT_LOGIN:
                 writefln("Pincode:%s", CLEARDOWN);
-                //char[MAX_PINCODE_SIZE] stack_pincode;
                 char[] pincode;
                 pincode.length = MAX_PINCODE_SIZE;
                 readln(pincode);
-                //pincode = pincode[0..size];
                 word_strip(pincode);
                 scope (exit) {
-                    //pincode = stack_pincode;
                     scramble(pincode);
                 }
                 secure_wallet.login(pincode);
@@ -333,13 +338,13 @@ struct WalletInterface {
         while (ch != 'q') {
             //    import core.stdc.stdio : getc, stdin;
             HOME.write;
-            warning();
+            // warning();
             if (recover_flag) {
-                writefln("Recover account");
+                writefln("%sRecover account%s", YELLOW, RESET);
                 writefln("Answers %d to more of the questions below", confidence);
             }
             else {
-                writefln("Create a new account");
+                writefln("%sCreate a new account%s", BLUE, RESET);
                 writefln("Answers two to more of the questions below");
             }
             LINE.writeln;
@@ -457,28 +462,24 @@ struct WalletInterface {
                                     writefln("%sPincode must be at least 4 chars%s", RED, RESET);
                                 }
                                 else if (pincode1.length > MAX_PINCODE_SIZE) {
-                                    writefln("%1$sPincode must be less than %3$d chars%2$s", RED, RESET, pincode1
-                                            .length);
+                                    writefln("%1$sPincode must be less than %3$d chars%2$s",
+                                            RED, RESET, pincode1.length);
                                 }
                                 else {
                                     if (recover_flag) {
                                         const ok = secure_wallet.recover(quiz.questions, selected_answers, pincode1);
                                         if (ok) {
                                             writefln("%1$sWallet recovered%2$s", GREEN, RESET);
+                                            save(pincode1, recover_flag);
                                         }
                                         else {
                                             writefln("%1$sWallet NOT recovered%2$s", RED, RESET);
                                         }
-                                        options.walletfile.fwrite(secure_wallet.wallet);
-                                        options.devicefile.fwrite(secure_wallet.pin);
                                     }
                                     else {
-                                        secure_wallet = StdSecureWallet.createWallet(quiz.questions, selected_answers, confidence, pincode1);
-                                        secure_wallet.login(pincode1);
-                                        options.walletfile.fwrite(secure_wallet.wallet);
-                                        options.devicefile.fwrite(secure_wallet.pin);
-                                        options.quizfile.fwrite(quiz);
-
+                                        secure_wallet = StdSecureWallet.createWallet(
+                                                quiz.questions, selected_answers, confidence, pincode1);
+                                        save(pincode1, recover_flag);
                                     }
                                 }
                             }
