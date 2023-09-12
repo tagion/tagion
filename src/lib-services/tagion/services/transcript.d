@@ -72,9 +72,9 @@ struct TranscriptService {
 
             const epoch_contract = epoch_contracts.get(res.id, EpochContracts.init);
             assert(epoch_contract !is EpochContracts.init, "unlinked data received from DART");
-            // scope(exit) {
-            //     epoch_contracts[res.id] = null;
-            // }
+            scope(exit) {
+                epoch_contracts.remove(res.id);
+            }
 
             DARTIndex[] used;
             auto recorder = rec_factory.recorder;
@@ -92,25 +92,14 @@ struct TranscriptService {
                     assert(0, "what should we do here");
                 }
 
-                pragma(msg, "RECORDER INSERT: ", typeof(tvm_contract_outputs.outputs));
-                pragma(msg, "RECORDER REMOVE: ", typeof(s_contract.contract.inputs));
-
                 recorder.insert(tvm_contract_outputs.outputs, Archive.Type.ADD);
-                // const removes = s_contract.contract.inputs.map!(d => new Archive(d));
                 foreach(input; s_contract.contract.inputs) {
                     recorder.remove(input);
                 }
-                // pragma(msg, "RECORDER REMOVE: ", typeof(removes));
-                // recorder.insert(removes, Archive.Type.REMOVE);
-
                 used ~= s_contract.contract.inputs;
-
             }
 
-
-
-            
-
+            locate(dart_task_name).send(dartModify(), RecordFactory.uniqueRecorder(recorder));
 
         }
 
