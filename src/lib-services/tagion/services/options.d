@@ -102,7 +102,6 @@ struct Options {
 void setDefault(Opt)(ref Opt opt) nothrow if (is(Opt == struct)) {
     static if (__traits(hasMember, Opt, "setDefault")) {
         opt.setDefault;
-
     }
     static foreach (i, T; Fields!Opt) {
         static if (is(T == struct)) {
