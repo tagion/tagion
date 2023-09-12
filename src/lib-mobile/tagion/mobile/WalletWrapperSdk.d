@@ -191,7 +191,7 @@ extern (C) {
         immutable invoiceBuff = cast(immutable)(invoicePtr[0 .. invoiceLen]);
 
         if (__secure_wallet.isLoggedin()) {
-            auto invoice = Invoice(Document(invoiceBuff)[0].get!Document);
+            auto invoice = Invoice(Document(invoiceBuff));
             invoice.amount = TagionCurrency(amount);
 
             SignedContract signed_contract;
@@ -224,10 +224,7 @@ extern (C) {
                     label, amount.TGN);
             __secure_wallet.registerInvoice(invoice);
 
-            HiBON hibon = new HiBON();
-            hibon[0] = invoice.toDoc;
-
-            const invoiceDocId = recyclerDoc.create(Document(hibon));
+            const invoiceDocId = recyclerDoc.create(invoice.toDoc);
             // Save wallet state to file.
             __wallet_storage.write(__secure_wallet);
 
@@ -440,7 +437,7 @@ extern (C) {
 
         if (__secure_wallet.isLoggedin()) {
 
-            auto invoice = Invoice(Document(invoiceBuffer)[0].get!Document);
+            auto invoice = Invoice(Document(invoiceBuffer));
             auto amount = __secure_wallet.account.check_invoice_payment(invoice.pkey);
 
             *amountPtr = amount.value;

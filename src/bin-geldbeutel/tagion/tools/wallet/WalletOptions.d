@@ -3,6 +3,7 @@ module tagion.tools.wallet.WalletOptions;
 import tagion.utils.JSONCommon;
 import tagion.basic.Types : FileExtension;
 import std.path;
+import tagion.wallet.KeyRecover : standard_questions;
 
 /**
 *
@@ -29,6 +30,7 @@ struct WalletOptions {
     /** port part of network socket */
     ushort port;
 
+    string[] questions;
     /**
     * @brief set default values for wallet
     */
@@ -41,6 +43,7 @@ struct WalletOptions {
         paymentrequestsfile = "paymentrequests".setExtension(FileExtension.hibon);
         devicefile = "device".setExtension(FileExtension.hibon);
         addr = "localhost";
+        questions = standard_questions.dup;
         port = 10800;
     }
 
