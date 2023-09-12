@@ -26,6 +26,20 @@ version (Posix) {
     import core.sys.posix.pthread;
 
     extern (C) int pthread_setname_np(pthread_t, const char*) nothrow;
+
+    /**
+    Set the thread name to the same as the task name
+    Note. Makes it easier to debug because pthread name is the same as th task name
+    */
+    @trusted
+    void setThreadName(string name) nothrow {
+        pthread_setname_np(pthread_self(), toStringz(name));
+    }
+}
+else {
+    @trusted
+    void setThreadName(string _) nothrow {
+    }
 }
 
 /**
@@ -41,6 +55,58 @@ version (Posix) {
 struct Msg(string name) {
 }
 
+private struct ActorInfo {
+    private Ctrl[string] childrenState;
+    private string _task_name;
+    bool stop;
+
+    string task_name() @trusted {
+        return _task_name;
+    }
+
+    bool task_name(const string name) @trusted nothrow {
+        try {
+            const registered = locate(name);
+            const i_am_the_registered = (() @trusted => registered == thisTid)();
+            if (registered is Tid.init) {
+                register(name, thisTid);
+                _task_name = name;
+                setThreadName(name);
+                return true;
+            }
+            else if (i_am_the_registered) {
+                _task_name = name;
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+        catch (Exception e) {
+            import std.stdio;
+
+            printf("Could not set name '%s', \nbecause %s", toStringz(name), toStringz(e.msg));
+            return false;
+        }
+    }
+}
+
+static ActorInfo thisActor;
+
+///
+unittest {
+    assert(thisActor.task_name is string.init, "task_name did not start as init");
+    enum dummy_name = "dummy_name";
+    scope (exit) {
+        unregister(dummy_name);
+    }
+    assert(thisActor.task_name = dummy_name, "setting name failed");
+    assert(thisActor.task_name = dummy_name, "setting name seconds time did not fallthrough");
+    assert(thisActor.task_name == dummy_name, "name was not the same as we set");
+    assert(locate(thisActor.task_name) == thisTid, "Name not registered");
+
+}
+
 struct Request(string name) {
     Msg!name msg;
     uint id;
@@ -52,6 +118,7 @@ struct Request(string name) {
         Request!name r;
         r.msg = Msg!name();
         r.id = generateId();
+        assert(thisActor.task_name !is string.init, "The requester is not registered as a task");
         r.task_name = thisActor.task_name;
         return r;
     }
@@ -99,14 +166,6 @@ enum Ctrl {
 enum Sig {
     STOP,
 }
-
-struct ActorInfo {
-    private Ctrl[string] childrenState;
-    string task_name;
-    bool stop;
-}
-
-static ActorInfo thisActor;
 
 /// Control message sent to a supervisor
 /// contains the Tid of the actor which send it and the state
@@ -226,8 +285,8 @@ if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
     try {
         Tid tid;
         tid = concurrency.spawn((immutable(A) _actor, string name, Args args) @trusted nothrow{
-            thisActor.task_name = name;
             log.register(name);
+            // thisActor.task_name(name);
             thisActor.stop = false;
             A actor = cast(A) _actor;
             setState(Ctrl.STARTING); // Tell the owner that you are starting.
@@ -348,6 +407,7 @@ void fail(Throwable t) @trusted nothrow {
 void setState(Ctrl ctrl) @safe nothrow {
     try {
         log("setting state to %s", ctrl);
+        assert(thisActor.task_name !is string.init, "Can not set the state for a task with no name");
         ownerTid.prioritySend(CtrlMsg(thisActor.task_name, ctrl));
     }
     catch (Exception e) {

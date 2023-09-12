@@ -8,6 +8,7 @@ import std.format;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.basic.Types : Control;
 import tagion.actor.exceptions;
+import tagion.actor : thisActor;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.Document : Document;
@@ -48,18 +49,10 @@ static struct Logger {
     shared bool silent; /// If true the log is silened (no logs is process from any tasks)
 
     /**
-    Set the thread name to the same as the task name
-    Note. Makes it easier to debug because pthead name is the same as th task name
-*/
-    @trusted
-    static setThreadName(string name) nothrow {
-        pthread_setname_np(pthread_self(), toStringz(name));
-    }
-
-    /**
     Register the task logger name.
     Should be done when the task starts
-*/
+    */
+    pragma(msg, "TODO: Remove log register when prior services are removed");
     @trusted
     void register(string task_name) nothrow
     in (logger_tid is logger_tid.init)
@@ -71,11 +64,13 @@ static struct Logger {
         try {
             logger_tid = locate(logger_task_name);
 
-            
-
-            .register(task_name, thisTid);
+            const registered = thisActor.task_name = task_name;
             _task_name = task_name;
-            setThreadName(task_name);
+
+            if (!registered) {
+                log.error("%s logger not register", _task_name);
+            }
+
             import std.stdio : stderr;
 
             static if (ver.not_unittest) {
@@ -86,20 +81,6 @@ static struct Logger {
         catch (Exception e) {
             log.error("%s logger not register", _task_name);
         }
-    }
-
-    /**
-Helper function used by the register function
-*/
-    @property @trusted
-    void task_name(string task_name)
-    in {
-        assert(logger_tid == logger_tid.init);
-    }
-    do {
-        _task_name = task_name;
-        setThreadName(task_name);
-        log("Register: %s logger", _task_name);
     }
 
     /**
