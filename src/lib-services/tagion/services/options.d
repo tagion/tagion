@@ -5,18 +5,18 @@ import std.traits;
 import std.format;
 import std.range;
 
-static immutable(string) contract_sock_path() @safe nothrow {
+static immutable(string) contract_sock_path(const string prefix = "") @safe nothrow {
+    import std.exception;
     version (linux) {
-        return "abstract://NEUEWELLE_CONTRACT";
+        return assumeWontThrow(format("abstract://%s_NEUEWELLE_CONTRACT", prefix));
     }
     else version (Posix) {
         import std.path;
         import std.conv;
-        import std.exception;
         import core.sys.posix.unistd : getuid;
 
         const uid = assumeWontThrow(getuid.to!string);
-        return "ipc://" ~ buildPath("/", "run", "user", uid, "tagionwave_contract.sock");
+        return "ipc://" ~ buildPath("/", "run", "user", uid, assumeWontThrow(format("%s_tagionwave_contract.sock", prefix)));
     }
     else {
         assert(0, "Unsupported platform");

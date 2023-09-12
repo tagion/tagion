@@ -349,10 +349,7 @@ struct NodeAddress {
                 pragma(msg, "fixme(pr): addressbook for mode0 should be created instead");
                 this.address = address;
             }
-            this(
-            string address,
-            const ulong port_base,
-            bool marshal = false) {
+            this(string address, const ulong port_base, bool marshal = false) {
         import std.string;
 
         try {

@@ -130,26 +130,23 @@ int _main(string[] args) {
     Node[] nodes;
     ActorHandle!Supervisor[] supervisor_handles;
     
+    
     foreach(i; 0..5) {
-        log("wowo1");
         auto opts = Options(local_options);
         immutable prefix = format("Node_%s", i);
-        log("wowo2");
         immutable task_names = TaskNames(prefix);
         opts.task_names = task_names;
         immutable supervisor_taskname = format("%s_supervisor", prefix);
-        log("wowo3");
+        opts.inputvalidator.sock_addr = contract_sock_path(prefix);
+        opts.dart.dart_filename = buildPath(".", format("%s_dart.drt", prefix));
         SecureNet net = new StdSecureNet();
         net.generateKeyPair(supervisor_taskname);
 
         nodes ~= Node(supervisor_taskname, opts, cast(immutable) net);
-        log("wowo4");
 
 
         addressbook[net.pubkey] = NodeAddress(task_names.epoch_creator);
-        log("wowo5");
     }
-    log("AFTER INITIATLIZING");
 
     /// spawn the nodes
     foreach(n; nodes) {
