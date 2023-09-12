@@ -118,7 +118,7 @@ void serverFileDiscoveryService(
                         auto addr = doc["address"].get!string;
                         import tagion.utils.Miscellaneous : toHexString, cutHex;
 
-                        auto node_addr = NodeAddress(addr, opts.dart, opts.port_base, true);
+                        auto node_addr = NodeAddress(addr, opts.port_base, true);
                         node_addresses[pkey] = node_addr;
                     }
                 }

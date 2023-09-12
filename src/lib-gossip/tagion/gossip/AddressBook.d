@@ -347,7 +347,6 @@ struct NodeAddress {
             q{
             this(
             string address,
-            immutable(DARTOptions) dart_opts,
             const ulong port_base,
             bool marshal = false) {
         import std.string;

@@ -15,7 +15,6 @@ import tagion.crypto.Types : Pubkey;
 import std.algorithm;
 import std.array;
 import tagion.utils.Miscellaneous : cutHex;
-import tagion.dart.DARTOptions;
 import tagion.services.messages;
 import tagion.logger.Logger;
 import tagion.hibon.HiBON;
@@ -68,7 +67,7 @@ class SendPayloadAndCreateEpoch {
             net.generateKeyPair(task_names.epoch_creator);
             writefln("node task name %s", task_names.epoch_creator);
             nodes ~= Node(net, task_names.epoch_creator, epoch_creator_options);
-            addressbook[net.pubkey] = NodeAddress(task_names.epoch_creator, DARTOptions.init, 0);
+            addressbook[net.pubkey] = NodeAddress(task_names.epoch_creator, 0);
         }
 
     }

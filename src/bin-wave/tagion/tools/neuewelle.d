@@ -25,6 +25,7 @@ import tagion.GlobalSignals;
 import tagion.utils.JSONCommon;
 import tagion.crypto.SecureNet;
 import tagion.crypto.SecureInterfaceNet;
+import tagion.gossip.AddressBook : addressbook, NodeAddress;
 
 // enum EXAMPLES {
 //     ver = Example("-v"),
@@ -132,13 +133,15 @@ int _main(string[] args) {
     foreach(i; 0..5) {
         auto opts = Options(local_options);
         auto prefix = format("Node_%s", i);
-        auto task_names = TaskNames(prefix);
+        immutable task_names = TaskNames(prefix);
         opts.task_names = task_names;
         immutable supervisor_taskname = format("%s_supervisor", prefix);
         SecureNet net = new StdSecureNet();
         net.generateKeyPair(supervisor_taskname);
 
         nodes ~= Node(supervisor_taskname, opts, cast(immutable) net);
+
+        addressbook[net.pubkey] = NodeAddress(task_names.epoch_creator, 0);
     }
 
     /// spawn the nodes
