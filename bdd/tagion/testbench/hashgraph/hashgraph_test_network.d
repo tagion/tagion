@@ -80,12 +80,6 @@ class TestRefinement : StdRefinement {
 
     // }
 
-    override void swapNode() {
-        if (swap is swap.init || swap.round != hashgraph.rounds.last_decided_round.number) {
-            return;
-        }
-
-    }
 
 }
 

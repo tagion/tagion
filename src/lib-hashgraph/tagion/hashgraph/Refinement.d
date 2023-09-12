@@ -62,8 +62,10 @@ class StdRefinement : Refinement {
         // log.trace("epack.event_body.payload.empty %s", epack.event_body.payload.empty);
     }
 
-    void swapNode() {
 
+    version(none)
+    void epoch(Event[] event_collection, const(Round) decided_round) {
+        
     }
 
     void epoch(Event[] event_collection, const(Round) decided_round) {
@@ -119,7 +121,6 @@ class StdRefinement : Refinement {
         finishedEpoch(events, epoch_time, decided_round);
 
         excludedNodes(hashgraph._excluded_nodes_mask);
-        swapNode();
     }
 
 }

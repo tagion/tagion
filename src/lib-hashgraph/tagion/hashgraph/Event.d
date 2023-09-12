@@ -57,6 +57,8 @@ class Event {
 
     package Event[] _youngest_son_ancestors;
 
+    package int pseudo_time_counter;
+
     package {
         // This is the internal pointer to the connected Event's
         Event _mother;
@@ -262,6 +264,10 @@ class Event {
             callbacks.round(this);
         }
         _received_order = (_father && higher(_father._received_order, _mother._received_order)) ? _father._received_order + 1 : _mother._received_order + 1;
+        
+        pseudo_time_counter = (_mother._witness) ? 0 : _mother.pseudo_time_counter;
+        if (_father) { pseudo_time_counter += 1; }
+        
         with (hashgraph) {
             mixin Log!(received_order_statistic);
         }
@@ -276,7 +282,7 @@ class Event {
         }
 
         _witness = new Witness(this, hashgraph.node_size);
-
+            
         _witness._prev_strongly_seen_witnesses = strongly_seen_nodes;
         _witness._prev_seen_witnesses = BitMask(_youngest_son_ancestors.map!(e => (e !is null && !higher(round.number-1, e.round.number))));
         if (!strongly_seen_nodes.isMajority(hashgraph)) {
