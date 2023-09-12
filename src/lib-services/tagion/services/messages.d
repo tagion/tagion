@@ -29,8 +29,6 @@ alias dartModify = Msg!"dartModify";
 
 alias Payload = Msg!"Payload";
 alias ReceivedWavefront = Msg!"ReceivedWavefront";
-alias AddedChannels = Msg!"AddedChannels";
-alias BeginGossip = Msg!"BeginGossip";
 
 @safe
 struct _ContractProduct {

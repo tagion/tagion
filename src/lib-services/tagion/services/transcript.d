@@ -72,30 +72,29 @@ struct TranscriptService {
 
             const epoch_contract = epoch_contracts.get(res.id, EpochContracts.init);
             assert(epoch_contract !is EpochContracts.init, "unlinked data received from DART");
-            scope(exit) {
+            scope (exit) {
                 epoch_contracts.remove(res.id);
             }
 
             DARTIndex[] used;
             auto recorder = rec_factory.recorder;
 
-            foreach(s_contract; epoch_contract.signed_contracts) {
-
-                foreach(input; s_contract.contract.inputs) {
+            foreach (s_contract; epoch_contract.signed_contracts) {
+                foreach (input; s_contract.contract.inputs) {
                     if (used.canFind(input)) {
                         assert(0, "input already in used list");
                     }
                 }
 
                 const tvm_contract_outputs = products.get(net.dartIndex(s_contract.contract), null);
+
                 if (tvm_contract_outputs is null) {
                     assert(0, "what should we do here");
                 }
 
                 recorder.insert(tvm_contract_outputs.outputs, Archive.Type.ADD);
-                foreach(input; s_contract.contract.inputs) {
-                    recorder.remove(input);
-                }
+                recorder.insert(tvm_contract_outputs.contract.inputs, Archive.Type.REMOVE);
+
                 used ~= s_contract.contract.inputs;
             }
 

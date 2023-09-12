@@ -23,6 +23,9 @@ import tagion.services.supervisor;
 import tagion.services.options;
 import tagion.GlobalSignals;
 import tagion.utils.JSONCommon;
+import tagion.crypto.SecureNet;
+import tagion.crypto.SecureInterfaceNet;
+import tagion.gossip.AddressBook : addressbook, NodeAddress;
 
 // enum EXAMPLES {
 //     ver = Example("-v"),
@@ -111,10 +114,42 @@ int _main(string[] args) {
 
     log.register(baseName(program));
 
-    immutable opts = Options(local_options);
-    enum supervisor_task_name = "supervisor";
-    auto supervisor_handle = spawn!Supervisor(supervisor_task_name, opts);
+    
+    /// mode 0
 
+    struct Node {
+        immutable(Options) opts;
+        immutable(string) supervisor_taskname;
+        immutable(SecureNet) net;
+        this(immutable(string) supervisor_taskname, immutable(Options) opts, immutable(SecureNet) net) {
+            this.opts = opts;
+            this.supervisor_taskname = supervisor_taskname;
+            this.net = net;
+        }
+    }
+    Node[] nodes;
+    ActorHandle!Supervisor[] supervisor_handles;
+    
+    foreach(i; 0..5) {
+        auto opts = Options(local_options);
+        auto prefix = format("Node_%s", i);
+        immutable task_names = TaskNames(prefix);
+        opts.task_names = task_names;
+        immutable supervisor_taskname = format("%s_supervisor", prefix);
+        SecureNet net = new StdSecureNet();
+        net.generateKeyPair(supervisor_taskname);
+
+        nodes ~= Node(supervisor_taskname, opts, cast(immutable) net);
+
+        addressbook[net.pubkey] = NodeAddress(task_names.epoch_creator, 0);
+    }
+
+    /// spawn the nodes
+    foreach(n; nodes) {
+       supervisor_handles ~= spawn!Supervisor(n.supervisor_taskname, n.opts, n.net);
+    }
+
+    
     if (waitforChildren(Ctrl.ALIVE)) {
         log("alive");
         stopsignal.wait;
@@ -124,7 +159,10 @@ int _main(string[] args) {
     }
 
     log("Sending stop signal to supervisor");
-    supervisor_handle.send(Sig.STOP);
+    foreach(supervisor; supervisor_handles) {
+        supervisor.send(Sig.STOP);
+    }
+    // supervisor_handle.send(Sig.STOP);
     waitforChildren(Ctrl.END);
     log("Exiting");
     return 0;

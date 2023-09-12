@@ -44,9 +44,9 @@ enum NetworkMode {
 
 @safe
 struct EpochCreatorOptions {
-    uint timeout; // timeout in msecs 
-    size_t nodes;
-    uint scrap_depth;
+    uint timeout = 15; // timeout in msecs 
+    size_t nodes = 5;
+    uint scrap_depth = 5;
     mixin JSONCommon;
 }
 
@@ -64,9 +64,6 @@ struct EpochCreatorService {
         foreach (channel; channels) {
             gossip_net.add_channel(channel);
         }
-        ownerTid.send(AddedChannels());
-
-        receiveOnly!BeginGossip;
         log.trace("Beginning gossip");
 
         auto refinement = new StdRefinement;

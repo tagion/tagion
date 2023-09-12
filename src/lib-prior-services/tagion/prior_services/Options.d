@@ -196,7 +196,7 @@ struct Options {
 
     LogSubscription logsubscription;
 
-    import tagion.dart.DARTOptions;
+    import tagion.prior_services.DARTOptions;
 
     DARTOptions dart;
 

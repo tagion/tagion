@@ -3,7 +3,7 @@ module tagion.gossip.AddressBook;
 import tagion.crypto.Types : Pubkey;
 import tagion.hibon.HiBONRecord;
 import tagion.dart.DART : DART;
-import tagion.dart.DARTOptions : DARTOptions;
+import tagion.prior_services.DARTOptions : DARTOptions;
 import tagion.logger.Logger : log;
 import tagion.utils.Miscellaneous : cutHex;
 
@@ -347,7 +347,6 @@ struct NodeAddress {
             q{
             this(
             string address,
-            immutable(DARTOptions) dart_opts,
             const ulong port_base,
             bool marshal = false) {
         import std.string;

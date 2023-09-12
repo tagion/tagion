@@ -20,21 +20,15 @@ import tagion.services.options;
 import tagion.services.DART;
 import tagion.services.inputvalidator;
 import tagion.services.hirpc_verifier;
+import tagion.services.epoch_creator;
 
-@safe
-class WaveNet : StdSecureNet {
-    this(in string passphrase) {
-        super();
-        generateKeyPair(passphrase);
-    }
-}
 
 @safe
 struct Supervisor {
     auto failHandler = (TaskFailure tf) { log("Supervisor caught exception: \n%s", tf); };
 
-    void task(immutable(Options) opts) @safe {
-        immutable SecureNet net = (() @trusted => cast(immutable) new WaveNet("aparatus"))();
+    void task(immutable(Options) opts, immutable(SecureNet) net) @safe {
+        // immutable SecureNet net = (() @trusted => cast(immutable) new WaveNet(password))();
 
         const dart_filename = opts.dart.dart_filename;
 
@@ -44,10 +38,14 @@ struct Supervisor {
 
         immutable tn = opts.task_names;
         auto dart_handle = spawn!DARTService(tn.dart, opts.dart, net);
+
         auto hirpc_verifier_handle = spawn!HiRPCVerifierService(tn.hirpc_verifier, opts.hirpc_verifier, tn.collector, net);
-        auto inputvalidator_handle = spawn!InputValidatorService(tn.inputvalidator, opts.inputvalidator, tn
-                .hirpc_verifier);
-        auto services = tuple(dart_handle, hirpc_verifier_handle, inputvalidator_handle);
+
+        auto inputvalidator_handle = spawn!InputValidatorService(tn.inputvalidator, opts.inputvalidator, tn.hirpc_verifier);
+
+        auto epoch_creator_handle = spawn!EpochCreatorService(tn.epoch_creator, opts.epoch_creator, net);
+        
+        auto services = tuple(dart_handle, hirpc_verifier_handle, inputvalidator_handle, epoch_creator_handle);
 
         if (!waitforChildren(Ctrl.ALIVE)) {
             log.error("Not all children became Alive");

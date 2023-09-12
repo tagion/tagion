@@ -39,7 +39,7 @@ void fileDiscoveryService(
             count++;
             addressbook.load(shared_storage, false);
             addressbook.erase(pubkey);
-            addressbook[pubkey] = NodeAddress(node.LlistenAddress, opts.dart, opts.port_base);
+            addressbook[pubkey] = NodeAddress(node.LlistenAddress, opts.port_base);
             addressbook.save(shared_storage, true);
         }
 
