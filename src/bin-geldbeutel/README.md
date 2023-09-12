@@ -25,6 +25,10 @@ This will write a configuration file `wallet.json` and the wallet will be placed
 geldbeutel -O --path $HOME/wallet/
 ```
 
+## A wallet account can be create as follows
+
+
+
 >Tagionwallet main application for working with tagion wallets
 
 # Amount
