@@ -84,13 +84,6 @@ class SendPayloadAndCreateEpoch {
                     cast(immutable) n.net,
             );
         }
-        waitforChildren(Ctrl.STARTING);
-
-        foreach (i, handle; handles) {
-            receiveOnly!(AddedChannels);
-        }
-
-        handles.each!(h => h.send(BeginGossip()));
 
         waitforChildren(Ctrl.ALIVE);
         //    writefln("Wait 1 sec");
