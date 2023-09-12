@@ -26,19 +26,11 @@ import tagion.basic.ConsensusExceptions : convertEnum, GossipConsensusException,
 enum minimum_nodes = 3;
 import tagion.utils.Miscellaneous : cutHex;
 
-/// check function used in the Event package
-// Returns the highest altitude
 @safe @nogc
 int highest(int a, int b) pure nothrow {
-    if (higher(a, b)) {
-        return a;
-    }
-    else {
-        return b;
-    }
+    return higher(a,b) ? a : b;
 }
 
-// Is a higher or equal to b
 @safe @nogc
 bool higher(int a, int b) pure nothrow {
     return a - b > 0;

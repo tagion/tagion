@@ -450,21 +450,28 @@ class Round {
      */
         
         package void collect_received_round(Round r, HashGraph hashgraph) {
+            if (hashgraph.__debug_print) {
+                foreach(wit; r._events.filter!(e => e !is null && r.famous_mask[e.node_id])) {
+                    __write("EVENT: %s, %s", wit.id, wit._youngest_son_ancestors.filter!(e => e !is null).map!(e => e.id));
+                }
+            }
             auto famous_witness_youngest_son_ancestors = r._events
                                                             .filter!(e => e !is null && r.famous_mask[e.node_id])
                                                             .map!(e => e._youngest_son_ancestors).joiner;
             
-            Event[] consensus_tide = r._events.find!(e => e !is null).front._youngest_son_ancestors.dup();
+            Event[] consensus_son_tide = r._events.find!(e => e !is null).front._youngest_son_ancestors.dup();
             
             foreach(son_ancestor; famous_witness_youngest_son_ancestors.filter!(e => e !is null)) {
-                if (consensus_tide[son_ancestor.node_id] is null) { continue; }            
-                if (higher(consensus_tide[son_ancestor.node_id].received_order, son_ancestor.received_order)) {
-                    consensus_tide[son_ancestor.node_id] = son_ancestor;
+                if (consensus_son_tide[son_ancestor.node_id] is null) { continue; }            
+                if (higher(consensus_son_tide[son_ancestor.node_id].received_order, son_ancestor.received_order)) {
+                    consensus_son_tide[son_ancestor.node_id] = son_ancestor;
                 }
             }
-            consensus_tide.map!(e => e[].retro.find!(e => e._son).front);
-            auto event_collection = consensus_tide.map!(e => e[]
-                    .until!(e => e._round_received !is null))
+
+            auto consensus_tide = consensus_son_tide.map!(e => e[].retro.filter!(e => e._son !is null).front);
+
+            auto event_collection = consensus_tide
+                .map!(e => e[].until!(e => e._round_received !is null))
                 .joiner.array;
             event_collection.each!(e => e._round_received = r);
 

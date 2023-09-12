@@ -57,18 +57,22 @@ struct DARTService {
             // empty  
         }
 
-        void modify(dartModifyRR req, immutable(RecordFactory.Recorder) recorder) @safe {
+        void modify_request(dartModifyRR req, immutable(RecordFactory.Recorder) recorder) @safe {
             immutable eye = DARTIndex(db.modify(recorder));
             req.respond(eye);
         }
+
+        void modify(dartModify, immutable(RecordFactory.Recorder) recorder) @safe {
+            db.modify(recorder);
+        } 
+
 
         void bullseye(dartBullseyeRR req) @safe {
             immutable eye = DARTIndex(db.bullseye);
             req.respond(eye);
         }
 
-        run(&read, &modify, &bullseye, &checkRead);
-        // run(&read, &rim, &modify, &bullseye);
+        run(&read, &checkRead, &modify_request, &modify, &bullseye);
 
     }
 }
