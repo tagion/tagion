@@ -173,7 +173,7 @@ struct Dot {
             obuf.writefln(`%s%s [fillcolor="%s"];`, indent ~ INDENT, e.id, color);
         }
         else {
-            obuf.writefln(`%s%s [fillcolor="%s"];`, indent ~ INDENT, e.id, pastel19.color(e.round));
+            obuf.writefln(`%s%s [fillcolor="%s"];`, indent ~ INDENT, e.id, pastel19.color(e.round_received));
         }
         if (e.error) {
             obuf.writefln(`%s%s [shape="%s"];`, indent ~ INDENT, e.id, "star");

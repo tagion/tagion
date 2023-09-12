@@ -1,7 +1,7 @@
 /**
 * Handles management of key-pair, account-details device-pin
 */
-module tagion.wallet.SecureWallet;
+module tagion.wallet.prior.SecureWallet;
 import tagion.utils.Miscellaneous;
 
 import std.format;
@@ -24,7 +24,7 @@ import tagion.dart.DARTBasic;
 import tagion.basic.basic : basename, isinit;
 import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Pubkey;
-import tagion.script.prior.StandardRecords : SignedContract, StandardBill, globals, Script;
+import tagion.script.prior.StandardRecords : SignedContract, StandardBill,  globals, Script;
 import tagion.crypto.SecureNet : scramble;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 
@@ -37,12 +37,10 @@ import tagion.communication.HiRPC;
 import tagion.wallet.KeyRecover;
 import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN;
 import tagion.wallet.WalletException : WalletException;
-import tagion.wallet.AccountDetails;
+import tagion.wallet.prior.AccountDetails;
 import tagion.wallet.Basic : saltHash;
-import tagion.script.common;
 import tagion.basic.tagionexceptions : Check;
 import tagion.crypto.Cipher;
-import tagion.utils.StdTime;
 
 alias check = Check!(WalletException);
 alias CiphDoc = Cipher.CipherDocument;
@@ -385,7 +383,7 @@ struct SecureWallet(Net : SecureNet) {
             pragma(msg, "fixme(cbr): Storage fee needs to be estimated");
             const fees = globals.fees();
             const amount = topay + fees;
-            TagionBill[] contract_bills;
+            StandardBill[] contract_bills;
             const enough = collect_bills(amount, contract_bills);
             if (enough) {
                 const total = contract_bills.map!(b => b.value).sum;
@@ -472,7 +470,7 @@ struct SecureWallet(Net : SecureNet) {
      *   locked_bills = the list of bills
      * Returns: true if wallet has enough to pay the amount
      */
-    bool collect_bills(const TagionCurrency amount, out TagionBill[] locked_bills) {
+    bool collect_bills(const TagionCurrency amount, out StandardBill[] locked_bills) {
         import std.algorithm.sorting : isSorted, sort;
         import std.algorithm.iteration : cumulativeFold;
         import std.range : takeOne, tee;
@@ -498,7 +496,7 @@ struct SecureWallet(Net : SecureNet) {
                 .array;
             if (rest > 0) {
                 // Take an extra larger bill if not enough
-                TagionBill extra_bill;
+                StandardBill extra_bill;
                 none_locked.each!(b => extra_bill = b);
                 account.activated[extra_bill.owner] = true;
                 locked_bills ~= extra_bill;
@@ -519,7 +517,7 @@ struct SecureWallet(Net : SecureNet) {
     bool setResponseUpdateWallet(const(HiRPC.Receiver) receiver) nothrow {
         if (receiver.isResponse) {
             try {
-                account.bills = receiver.response.result[].map!(e => TagionBill(e.get!Document))
+                account.bills = receiver.response.result[].map!(e => StandardBill(e.get!Document))
                     .array;
                 return true;
             }
@@ -718,10 +716,8 @@ struct SecureWallet(Net : SecureNet) {
 
             // Add the bulls to the account with the derive keys
             with (sender_wallet.account) {
-                bills = zip(bill_amounts, derives.byKey).map!(bill_derive => TagionBill(
-                        bill_derive[0],
-                        currentTime,
-                        bill_derive[1])).array;
+                bills = zip(bill_amounts, derives.byKey).map!(bill_derive => StandardBill(bill_derive[0],
+                epoch, bill_derive[1], gene)).array;
             }
 
             assert(sender_wallet.available_balance == bill_amounts.sum);

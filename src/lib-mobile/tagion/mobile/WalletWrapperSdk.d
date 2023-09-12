@@ -17,9 +17,10 @@ import std.algorithm;
 import std.file : exists, remove;
 import core.stdc.string;
 
-import Wallet = tagion.wallet.SecureWallet;
+import Wallet = tagion.wallet.prior.SecureWallet;
 import tagion.script.TagionCurrency;
 import tagion.script.prior.StandardRecords;
+import tagion.wallet.prior.AccountDetails;
 import tagion.communication.HiRPC;
 import tagion.hibon.HiBON;
 import tagion.hibon.HiBONJSON;
@@ -30,7 +31,7 @@ import tagion.crypto.aes.AESCrypto;
 import tagion.crypto.SecureNet : StdSecureNet, BadSecureNet;
 import tagion.crypto.SecureNet;
 import tagion.wallet.KeyRecover;
-import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN, AccountDetails;
+import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN;
 import tagion.crypto.Cipher;
 
 /// Used for describing the d-runtime status
