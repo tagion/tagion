@@ -40,7 +40,7 @@ struct EventView {
                 error=event.error;
                 node_id=(relocate_node_id is size_t.max)?event.node_id:relocate_node_id;
                 altitude=event.altitude;
-                order=event.received_order;
+                order=event.order;
                 witness=event.witness !is null;
                 round=(event.hasRound)?event.round.number:event.round.number.min;
                 father_less=event.isFatherLess;

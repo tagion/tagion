@@ -154,7 +154,7 @@ class MonitorCallBacks : EventMonitorCallbacks {
 
             try {
                 hibon[Params.altitude] = e.altitude;
-                hibon[Params.order] = e.received_order;
+                hibon[Params.order] = e.order;
                 if (e.hasRound) {
                     hibon[Params.number] = e.round.number;
                 }

@@ -182,7 +182,7 @@ class HashGraph {
 
             _nodes.byValue
                 .map!(n => n.event)
-                .each!(e => e.initializeReceivedOrder);
+                .each!(e => e.initializeOrder);
         }
         scope (failure) {
             _nodes = recovered_nodes;

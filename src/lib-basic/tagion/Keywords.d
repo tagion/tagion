@@ -8,7 +8,7 @@ protected enum _keywords = [
     "pubkey",       // Pubkey
     "signature",        // signature of the block
 //    "altitude",   // altitude
-    "received_order",
+    "order",
     // "tidewave",
     // "wavefront",  // Wave front is the list of events hashs
 //    "ebody",      // Event body

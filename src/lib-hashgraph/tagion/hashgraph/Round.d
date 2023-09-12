@@ -463,7 +463,7 @@ class Round {
             
             foreach(son_ancestor; famous_witness_youngest_son_ancestors.filter!(e => e !is null)) {
                 if (consensus_son_tide[son_ancestor.node_id] is null) { continue; }            
-                if (higher(consensus_son_tide[son_ancestor.node_id].received_order, son_ancestor.received_order)) {
+                if (higher(consensus_son_tide[son_ancestor.node_id].order, son_ancestor.order)) {
                     consensus_son_tide[son_ancestor.node_id] = son_ancestor;
                 }
             }

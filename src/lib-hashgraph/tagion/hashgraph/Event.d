@@ -66,7 +66,7 @@ class Event {
         Event _daughter;
         Event _son;
 
-        int _received_order;
+        int _order;
         // The withness mask contains the mask of the nodes
         // Which can be seen by the next rounds witness
         Witness _witness;
@@ -110,12 +110,12 @@ class Event {
                 assert(
                         event_package.event_body.altitude - _mother
                         .event_package.event_body.altitude is 1);
-                assert(_received_order is int.init || (_received_order - _mother._received_order > 0));
+                assert(_order is int.init || (_order - _mother._order > 0));
             }
             if (_father) {
                 pragma(msg, "fixme(bbh) this test should be reimplemented once new witness def works");
                 // assert(_father._son is this, "fathers is not me");
-                assert(_received_order is int.init || (_received_order - _father._received_order > 0));
+                assert(_order is int.init || (_order - _father._order > 0));
             }
         }
     }
@@ -205,10 +205,9 @@ class Event {
 
     immutable size_t node_id; /// Node number of the event
 
-    void initializeReceivedOrder() pure nothrow @nogc {
-        if (_received_order is int.init) {
-            // _received_order = -2;
-            _received_order = -1;
+    void initializeOrder() pure nothrow @nogc {
+        if (order is int.init) {
+            _order = -1;
         }
     }
 
@@ -263,7 +262,7 @@ class Event {
         if (callbacks) {
             callbacks.round(this);
         }
-        _received_order = (_father && higher(_father._received_order, _mother._received_order)) ? _father._received_order + 1 : _mother._received_order + 1;
+        _order = (_father && higher(_father.order, _mother.order)) ? _father.order + 1 : _mother.order + 1;
         
         pseudo_time_counter = (_mother._witness) ? 0 : _mother.pseudo_time_counter;
         if (_father) { pseudo_time_counter += 1; }
@@ -324,7 +323,7 @@ class Event {
         iota(hashgraph.node_size)
             .filter!(node_id => _father._youngest_son_ancestors[node_id]!is null)
             .filter!(node_id => _youngest_son_ancestors[node_id] is null || _father._youngest_son_ancestors[node_id]
-            .received_order > _youngest_son_ancestors[node_id].received_order)
+            .order > _youngest_son_ancestors[node_id].order)
             .each!(node_id => _youngest_son_ancestors[node_id] = _father._youngest_son_ancestors[node_id]);
     }
 
@@ -499,9 +498,9 @@ class Event {
          * Gets the event order number 
          * Returns: order
          */
-        int received_order() const pure nothrow @nogc
+        int order() const pure nothrow @nogc
         {
-            return _received_order;
+            return _order;
         }
 
         /**

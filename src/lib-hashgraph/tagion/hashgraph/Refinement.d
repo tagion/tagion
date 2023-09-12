@@ -110,7 +110,7 @@ class StdRefinement : Refinement {
             if (order_count < 0) {
                 return rare_less(a.fingerprint, b.fingerprint);
             }
-            if (a.received_order is b.received_order) {
+            if (a.order is b.order) {
                 if (a.father && b.father) {
                     return order_less(a.father, b.father, order_count - 1);
                 }
@@ -127,7 +127,7 @@ class StdRefinement : Refinement {
 
                 return rare_less(a.fingerprint, b.fingerprint);
             }
-            return a.received_order < b.received_order;
+            return a.order < b.order;
         }
 
         sdt_t[] times;
