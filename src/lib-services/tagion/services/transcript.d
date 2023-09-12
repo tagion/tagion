@@ -72,6 +72,9 @@ struct TranscriptService {
 
             const epoch_contract = epoch_contracts.get(res.id, EpochContracts.init);
             assert(epoch_contract !is EpochContracts.init, "unlinked data received from DART");
+            // scope(exit) {
+            //     epoch_contracts[res.id] = null;
+            // }
 
             DARTIndex[] used;
             auto recorder = rec_factory.recorder;
@@ -103,6 +106,7 @@ struct TranscriptService {
                 used ~= s_contract.contract.inputs;
 
             }
+
 
 
             
