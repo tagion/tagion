@@ -459,31 +459,18 @@ class Round {
                                                             .filter!(e => e !is null && r.famous_mask[e.node_id])
                                                             .map!(e => e._youngest_son_ancestors).joiner;
             
-            Event[] consensus_tide = r._events.find!(e => e !is null).front._youngest_son_ancestors.dup();
+            Event[] consensus_son_tide = r._events.find!(e => e !is null).front._youngest_son_ancestors.dup();
             
             foreach(son_ancestor; famous_witness_youngest_son_ancestors.filter!(e => e !is null)) {
-                if (consensus_tide[son_ancestor.node_id] is null) { continue; }            
-                if (higher(consensus_tide[son_ancestor.node_id].received_order, son_ancestor.received_order)) {
-                    consensus_tide[son_ancestor.node_id] = son_ancestor;
+                if (consensus_son_tide[son_ancestor.node_id] is null) { continue; }            
+                if (higher(consensus_son_tide[son_ancestor.node_id].received_order, son_ancestor.received_order)) {
+                    consensus_son_tide[son_ancestor.node_id] = son_ancestor;
                 }
             }
 
-            // if (hashgraph.__debug_print) {
-            //     __write("Round: %s, youngest_ancestors: %s", r.number, consensus_tide.filter!(e => e !is null).map!(e => e.id));
-            //     __write("FFS: %s", consensus_tide[2][].retro.filter!(e => e._son !is null).map!(e => e.id).array);
-            //     __write("FFS: %s", consensus_tide[2][].retro.find!(e => e._son !is null).front.id);
-            //     __write("HELLO: %s", consensus_tide.map!(e => e[].retro.filter!(e => e._son !is null).front).map!(e => e.id));
-            //     // __write("Round %s, %s", r.number, consensus_tide.map!x(e => e.id));
-            // }
-            
-            // consensus_tide.map!(e => e[].retro.filter!(e => e._son !is null).front);
+            auto consensus_tide = consensus_son_tide.map!(e => e[].retro.filter!(e => e._son !is null).front);
 
-            // if (hashgraph.__debug_print) {
-            //     __write("Round: %s, youngest_ancestors: %s", r.number, consensus_tide.filter!(e => e !is null).map!(e => e.id));
-            //     // __write("Round %s, %s", r.number, consensus_tide.map!(e => e.id));
-            // }
             auto event_collection = consensus_tide
-                .map!(e => e[].retro.filter!(e => e._son !is null).front)
                 .map!(e => e[].until!(e => e._round_received !is null))
                 .joiner.array;
             event_collection.each!(e => e._round_received = r);
