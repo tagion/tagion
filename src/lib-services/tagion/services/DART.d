@@ -64,8 +64,7 @@ struct DARTService {
 
         void modify(dartModify, immutable(RecordFactory.Recorder) recorder) @safe {
             db.modify(recorder);
-        } 
-
+        }
 
         void bullseye(dartBullseyeRR req) @safe {
             immutable eye = DARTIndex(db.bullseye);
