@@ -65,7 +65,35 @@ class StdRefinement : Refinement {
 
     version(none)
     void epoch(Event[] event_collection, const(Round) decided_round) {
-        
+
+        const famous_witnesses = decided_round
+                                        ._events
+                                        .filter!(e => e !is null)
+                                        .filter!(e => decided_round.famous_mask[e.node_id]);
+
+        import std.bigint; 
+
+        struct PseudoTime {
+            BigInt numerator;
+            BigInt denominator;
+
+            this(int num, int denom) {
+                numerator = BigInt(num);
+                denominator = BigInt(denom);
+            }
+            
+            int[] opBinary(string op : "+")(int rhs)
+            {
+                BigInt d = gcd(denominator, rhs.denominator);
+                return PseudoTime(rhs.denominator/d*numerator+denominator/d*rhs.numerator,denominator/d*rhs.denominator);
+            }
+        }
+
+        PseudoTime calc_pseudo_time(Event event) {
+            // famous_witnesses
+            //     .map!(e => e[]
+            //                 .until!(e => e._youngest_son_ancestor[e.node].));
+        }
     }
 
     void epoch(Event[] event_collection, const(Round) decided_round) {
