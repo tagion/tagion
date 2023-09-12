@@ -125,10 +125,10 @@ struct SecureWallet(Net : SecureNet) {
     const(char[]) pincode,
     scope const(ubyte[]) seed = null)
     in {
-        assert(questions.length > 3, "Minimal amount of answers is 4");
         assert(questions.length is answers.length, "Amount of questions should be same as answers");
     }
     do {
+        check(questions.length > 3, "Minimal amount of answers is 4");
         auto net = new Net();
         //        auto hashnet = new StdHashNet;
         auto recover = KeyRecover(net);

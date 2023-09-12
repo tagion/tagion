@@ -40,7 +40,7 @@ do {
 
 T getRandom(T)() if (isBasicType!T) {
     T result;
-    auto buf = cast(ubyte*)(&result)[0 .. T.sizeof];
+    auto buf = (cast(ubyte*)&result)[0 .. T.sizeof];
     getRandom(buf);
     return result;
 
