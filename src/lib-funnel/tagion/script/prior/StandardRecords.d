@@ -287,13 +287,3 @@ static this() {
     globals.fixed_fees = 1.TGN / 10; // Fixed fee
     globals.storage_fee = 1.TGN / 200; // Fee per stored byte
 }
-
-@safe
-@recordType("Invoice")
-struct Invoice {
-    string name;
-    TagionCurrency amount;
-    @label(OwnerKey) Pubkey pkey;
-    @label("*", true) Document info;
-    mixin HiBONRecord;
-}

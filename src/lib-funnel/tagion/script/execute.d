@@ -31,7 +31,7 @@ struct CollectedSignedContract {
 interface CheckContract {
     const(TagionCurrency) calcFees(immutable(CollectedSignedContract)* exec_contract, in TagionCurrency amount, in GasUse gas_use);
     bool validAmout(immutable(CollectedSignedContract)* exec_contract,
-            in TagionCurrency input_ammount,
+            in TagionCurrency input_amount,
             in TagionCurrency output_amount,
             in GasUse use);
 }
@@ -59,11 +59,11 @@ class StdCheckContract : CheckContract {
     }
 
     bool validAmout(immutable(CollectedSignedContract)* exec_contract,
-            in TagionCurrency input_ammount,
+            in TagionCurrency input_amount,
             in TagionCurrency output_amount,
             in GasUse use) {
         const gas_cost = calcFees(exec_contract, output_amount, use);
-        return input_ammount + gas_cost <= output_amount;
+        return input_amount + gas_cost <= output_amount;
     }
 
 }

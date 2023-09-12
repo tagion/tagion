@@ -20,10 +20,11 @@ import tagion.crypto.Types : Pubkey;
 import tagion.dart.DARTBasic : DARTIndex;
 import tagion.basic.basic : basename;
 import tagion.script.prior.StandardRecords;
+import tagion.wallet.prior.AccountDetails;
 import tagion.crypto.SecureNet;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.script.TagionCurrency;
-import tagion.wallet.SecureWallet;
+import tagion.wallet.prior.SecureWallet;
 
 //import tagion.dart.DARTFile;
 import tagion.dart.Recorder;

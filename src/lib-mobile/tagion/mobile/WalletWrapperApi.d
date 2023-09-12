@@ -8,7 +8,8 @@ import std.stdint;
 import std.string : toStringz, fromStringz;
 import std.array;
 import std.random;
-import tagion.wallet.SecureWallet;
+import tagion.wallet.prior.SecureWallet;
+import tagion.wallet.prior.AccountDetails;
 import tagion.script.TagionCurrency;
 import tagion.script.prior.StandardRecords;
 import tagion.communication.HiRPC;
@@ -22,7 +23,7 @@ import tagion.crypto.SecureNet : StdSecureNet, BadSecureNet;
 import tagion.crypto.SecureNet;
 import tagion.wallet.KeyRecover;
 
-import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN, AccountDetails;
+import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN;
 
 /// Used for describing the d-runtime status
 enum drtStatus {

@@ -108,12 +108,12 @@ HiBON as hex dump of the binary data
 00000020  41 4e 01 17 07 46 4c 4f  41 54 33 32 a4 70 9d 3f  |AN...FLOAT32.p.?|
 00000030  18 07 46 4c 4f 41 54 36  34 c6 85 e2 6f d9 b5 79  |..FLOAT64...o..y|
 00000040  69 11 05 49 4e 54 33 32  56 12 05 49 4e 54 36 34  |i..INT32V..INT64|
-00000050  da da e1 f2 a3 b2 e7 7d  11 06 55 49 4e 54 33 32  |.......}..UINT32|
-00000060  2a 12 06 55 49 4e 54 36  34 a6 a5 9e 8d dc cd 98  |*..UINT64.......|
+00000050  da da e1 f2 a3 b2 e7 7d  14 06 55 49 4e 54 33 32  |.......}..UINT32|
+00000060  2a 15 06 55 49 4e 54 36  34 a6 a5 9e 8d dc cd 98  |*..UINT64.......|
 00000070  02 02 09 73 75 62 5f 68  69 62 6f 6e 29 03 06 42  |...sub_hibon)..B|
 00000080  49 4e 41 52 59 04 01 02  03 04 01 06 53 54 52 49  |INARY.......STRI|
-00000090  4e 47 04 54 65 78 74 09  04 54 49 4d 45 c6 bc c7  |NG.Text..TIME...|
-000000a0  a1 a4 da eb ed 08                                 |......|
+00000090  4e 47 04 54 65 78 74 09  04 54 49 4d 45 c3 f9 d7  |NG.Text..TIME...|
+000000a0  87 c2 d5 ec ed 08                                 |......|
 ```
 
 **Test sample 2**
@@ -124,8 +124,7 @@ Note. Because the inner object is name "sub_hibon" the main HiBON is defined as 
 
 ```json
 [
-    [
-        "big",
+    "big",
         "@meiC-oiHr6Tg-POQtYdZ"
     ],
     true,
@@ -146,11 +145,11 @@ Note. Because the inner object is name "sub_hibon" the main HiBON is defined as 
         "0xfffb9d923e586d5a"
     ],
     [
-        "i32",
+        "u32",
         42
     ],
     [
-        "i64",
+        "u64",
         "0x4626dc1a792a6"
     ],
     [
@@ -161,11 +160,10 @@ Note. Because the inner object is name "sub_hibon" the main HiBON is defined as 
         "Text",
         [
             "time",
-            "2023-09-06T15:10:31.3543176"
+            "2023-09-11T12:47:36.0169725"
         ]
     ]
 ]
-
 ```
 
 HiBON daya are shown as hex dump of the binary data 
@@ -174,11 +172,10 @@ HiBON daya are shown as hex dump of the binary data
 00000000  66 1a 00 00 99 e8 82 fa  88 87 af a4 e0 f8 f3 90  |f...............|
 00000010  b5 87 59 08 00 01 01 17  00 02 a4 70 9d 3f 18 00  |..Y........p.?..|
 00000020  03 c6 85 e2 6f d9 b5 79  69 11 00 04 56 12 00 05  |....o..yi...V...|
-00000030  da da e1 f2 a3 b2 e7 7d  11 00 06 2a 12 00 07 a6  |.......}...*....|
+00000030  da da e1 f2 a3 b2 e7 7d  14 00 06 2a 15 00 07 a6  |.......}...*....|
 00000040  a5 9e 8d dc cd 98 02 02  00 08 1c 03 00 00 04 01  |................|
-00000050  02 03 04 01 00 01 04 54  65 78 74 09 00 02 88 cc  |.......Text.....|
-00000060  c7 a1 a4 da eb ed 08                              |.......|
-00000067
+00000050  02 03 04 01 00 01 04 54  65 78 74 09 00 02 fd 85  |.......Text.....|
+00000060  d8 87 c2 d5 ec ed 08                              |.......|
 ```
 
 
