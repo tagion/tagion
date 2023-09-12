@@ -13,6 +13,8 @@ import std.algorithm;
 import std.range;
 import core.thread;
 import tagion.basic.Message;
+import tagion.basic.tagionexceptions;
+import tagion.hibon.Document;
 
 /**
  * @brief strip white spaces in begin/end of text
@@ -72,6 +74,41 @@ struct WalletInterface {
         this.options = options;
     }
 
+    bool load() {
+        if (options.walletfile.exists) {
+            Document wallet_doc;
+            try {
+                wallet_doc = options.walletfile.fread;
+            }
+            catch (TagionException e) {
+                writeln(e.msg);
+                return false;
+            }
+            const pin_doc = options.devicefile.exists ? options.devicefile.fread : Document.init;
+            if (wallet_doc.isInorder && pin_doc.isInorder) {
+                try {
+                    secure_wallet = WalletInterface.StdSecureWallet(wallet_doc, pin_doc);
+                }
+                catch (TagionException e) {
+                    writefln(e.msg);
+                    return false;
+                }
+            }
+            if (options.quizfile.exists) {
+                const quiz_doc = options.quizfile.fread;
+                if (quiz_doc.isInorder) {
+                    quiz = Quiz(quiz_doc);
+                }
+                return false;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    void save() {
+
+    }
     /**
     * @brief pseudographical UI interface, pin code reading
     * \return Check pin code result
@@ -191,7 +228,7 @@ struct WalletInterface {
                 break;
             case 'c':
                 if (!secure_wallet.isLoggedin) {
-                    generateSeed(standard_questions.idup, false);
+                    generateSeed(options.questions, false);
                 }
                 break;
             case 'p':
