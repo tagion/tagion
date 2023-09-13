@@ -2,8 +2,9 @@
 # Apple arm64 iOS
 #
 
-IOS_ARM64=arm64-apple-ios12.0
-PLATFORMS+=$(IOS_arm64)
+IOS_ARM64=arm64-apple-ios
+# 12.0
+PLATFORMS+=$(IOS_ARM64)
 
 ifeq ($(PLATFORM),$(IOS_ARM64))
 
@@ -24,7 +25,9 @@ TRIPLET = $(IOS_ARCH)
 DFILES: libphobos-arm64-ios
 DFILES: libdruntime-arm64-ios
 
-STAEXT ?= a
+SHARED?=1
+OS:=darwin
+DLLEXT:=dylib
 DFLAGS+=$(DDEFAULTLIBSTATIC)
 DFLAGS+=-i
 DFLAGS+=-mtriple=$(TRIPLET)
@@ -52,4 +55,6 @@ env-ios:
 	$(PRECMD)
 	$(call log.header, $@ :: cross)
 	$(call log.kvp, XCODE_ROOT, $(XCODE_ROOT))
+	${call log.kvp, OS, $(OS)}
+	${call log.kvp, SHARED, $(SHARED)}
 	$(call log.close)
