@@ -154,7 +154,7 @@ int _main(string[] args) {
 
     /// spawn the nodes
     foreach(n; nodes) {
-        supervisor_handles ~= spawn!Supervisor(cast(immutable) n.supervisor_taskname, cast(immutable) n.opts, cast(immutable) n.net);
+        supervisor_handles ~= spawn!Supervisor(n.supervisor_taskname, n.opts, n.net);
     }
 
     

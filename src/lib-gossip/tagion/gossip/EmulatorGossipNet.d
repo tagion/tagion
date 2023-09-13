@@ -191,7 +191,6 @@ class NewEmulatorGossipNet : GossipNet {
 
         const task_name = addressbook.getAddress(channel);
 
-        log("add_channel: going to try to find %s", task_name);
         auto task_id = tryLocate(task_name);
 
         _pkeys ~= channel;
