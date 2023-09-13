@@ -55,6 +55,7 @@ struct EpochCreatorService {
 
     void task(immutable(EpochCreatorOptions) opts, immutable(SecureNet) net) {
 
+        log.trace("starting epoch_creator");
         const hirpc = HiRPC(net);
 
         GossipNet gossip_net;
@@ -62,6 +63,7 @@ struct EpochCreatorService {
         Pubkey[] channels = addressbook.activeNodeChannels;
 
         foreach (channel; channels) {
+            log.trace("adding channel %s", channel.cutHex);
             gossip_net.add_channel(channel);
         }
         log.trace("Beginning gossip");

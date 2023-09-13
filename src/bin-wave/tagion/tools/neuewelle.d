@@ -5,6 +5,7 @@ import core.sys.posix.signal;
 import core.sys.posix.unistd;
 import core.sync.event;
 import core.thread;
+import core.time;
 import std.getopt;
 import std.stdio;
 import std.socket;
@@ -21,11 +22,13 @@ import tagion.tools.revision;
 import tagion.actor;
 import tagion.services.supervisor;
 import tagion.services.options;
+import tagion.services.locator;
 import tagion.GlobalSignals;
 import tagion.utils.JSONCommon;
 import tagion.crypto.SecureNet;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.gossip.AddressBook : addressbook, NodeAddress;
+
 
 // enum EXAMPLES {
 //     ver = Example("-v"),
@@ -114,6 +117,8 @@ int _main(string[] args) {
 
     log.register(baseName(program));
 
+    locator_options = new immutable(LocatorOptions)(5, 5);
+
     
     /// mode 0
 
@@ -144,17 +149,16 @@ int _main(string[] args) {
 
         nodes ~= Node(supervisor_taskname, opts, cast(immutable) net);
 
-
         addressbook[net.pubkey] = NodeAddress(task_names.epoch_creator);
     }
 
     /// spawn the nodes
     foreach(n; nodes) {
-       supervisor_handles ~= spawn!Supervisor(n.supervisor_taskname, n.opts, n.net);
+        supervisor_handles ~= spawn!Supervisor(cast(immutable) n.supervisor_taskname, cast(immutable) n.opts, cast(immutable) n.net);
     }
 
     
-    if (waitforChildren(Ctrl.ALIVE)) {
+    if (waitforChildren(Ctrl.ALIVE, 10.seconds)) {
         log("alive");
         stopsignal.wait;
     }

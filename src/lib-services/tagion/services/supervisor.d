@@ -6,6 +6,7 @@ import std.file;
 import std.stdio;
 import std.socket;
 import std.typecons;
+import core.time;
 
 import tagion.logger.Logger;
 import tagion.actor;
@@ -47,7 +48,7 @@ struct Supervisor {
         
         auto services = tuple(dart_handle, hirpc_verifier_handle, inputvalidator_handle, epoch_creator_handle);
 
-        if (!waitforChildren(Ctrl.ALIVE)) {
+        if (!waitforChildren(Ctrl.ALIVE, 5.seconds)) {
             log.error("Not all children became Alive");
         }
         run(failHandler);
