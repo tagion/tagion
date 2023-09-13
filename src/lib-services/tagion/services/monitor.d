@@ -45,19 +45,6 @@ void monitorServiceTask(immutable(MonitorOptions) opts) @trusted nothrow {
             listener_socket.stop;
         }
 
-        // bool stop;
-        // void handleState(Sig ts) {
-        //     with (Sig) switch (ts) {
-        //     case STOP:
-        //         log("Kill socket thread. %d", opts.port);
-
-        //         stop = true;
-        //         break;
-        //     default:
-        //         log.error("Bad Control command %s", ts);
-        //     }
-        // }
-
         void taskfailure(immutable(TaskFailure) t) @safe {
             ownerTid.send(t);
         }
