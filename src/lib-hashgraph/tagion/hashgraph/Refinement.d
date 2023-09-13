@@ -15,6 +15,8 @@ import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON;
 
+import tagion.basic.Debug;
+
 // std
 import std.stdio;
 import std.algorithm : map, filter, sort;
@@ -63,14 +65,20 @@ class StdRefinement : Refinement {
     }
 
 
-    version(none)
-    void epoch(Event[] event_collection, const(Round) decided_round) {
+    
+    void epoch_fut(Event[] event_collection, const(Round) decided_round) {
+        if (hashgraph.__debug_print) {
+            __write("EPOCH_FUT: %s", decided_round.number);
+        }
 
         const famous_witnesses = decided_round
                                         ._events
                                         .filter!(e => e !is null)
-                                        .filter!(e => decided_round.famous_mask[e.node_id]);
-
+                                        // .filter!(e => decided_round.famous_mask[e.node_id]);
+                                        .map!(e => e.id).array;
+        if (hashgraph.__debug_print) {
+            __write("HELLO WTF%s", famous_witnesses);
+        }
         import std.bigint; 
 
         struct PseudoTime {
@@ -90,13 +98,20 @@ class StdRefinement : Refinement {
         }
 
         PseudoTime calc_pseudo_time(Event event) {
-            // famous_witnesses
-            //     .map!(e => e[]
-            //                 .until!(e => e._youngest_son_ancestor[e.node].));
+            // auto received_pseudo_time = famous_witnesses.map!(e => e);
+                                            // .map!(e => e[].filter!(e => higher(event.order, e._youngest_son_ancestors[e.node_id].order)));
+                                                // .front);
+                                                // .daughter);
+                                            // .map!(e => PseudoTime(e.pseudo_time_counter, e._round._next._events[e.node_id].pseudo_time_counter))
+                                            // .reduce!((t1, t2) => t1 + t2);
+        
+        return PseudoTime(1,1);
         }
+                
     }
 
     void epoch(Event[] event_collection, const(Round) decided_round) {
+        epoch_fut(event_collection, decided_round);
         import std.algorithm;
         import std.range;
 

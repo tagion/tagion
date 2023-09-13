@@ -475,6 +475,9 @@ class Round {
                 .joiner.array;
             event_collection.each!(e => e._round_received = r);
 
+            if (hashgraph.__debug_print) {
+                __write("SOMETHING FISHY: %s", r.number);
+            }
             hashgraph.epoch(event_collection, r);
         }
 
