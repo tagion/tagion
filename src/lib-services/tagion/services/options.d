@@ -23,6 +23,19 @@ static immutable(string) contract_sock_path(const string prefix = "") @safe noth
     }
 }
 
+enum NetworkMode {
+    INTERNAL,
+    LOCAL,
+    PUB
+}
+@safe
+struct WaveOptions {
+    import tagion.utils.JSONCommon;
+    NetworkMode network_mode = NetworkMode.INTERNAL;
+    size_t number_of_nodes = 5;
+    mixin JSONCommon;
+}
+
 @safe
 struct TaskNames {
     public import tagion.utils.JSONCommon;
@@ -83,6 +96,7 @@ struct Options {
     TVMOptions tvm;
     EpochCreatorOptions epoch_creator;
     MonitorOptions monitor;
+    WaveOptions wave;
 
     TaskNames task_names;
     mixin JSONCommon;

@@ -1,19 +1,14 @@
 module tagion.services.monitor;
 
-import std.stdio : writeln, writefln;
 import std.format;
 import std.socket;
 import core.thread;
 import std.concurrency;
 
 import tagion.logger.Logger;
-import tagion.prior_services.Options : Options, setOptions, options;
-import tagion.options.CommonOptions : commonOptions;
 import tagion.actor : Ctrl, Sig;
-import tagion.basic.basic : basename;
 import tagion.basic.tagionexceptions : TagionException;
 import tagion.actor.exceptions;
-import tagion.crypto.Types : Pubkey;
 
 import tagion.hibon.Document;
 import tagion.utils.JSONCommon;

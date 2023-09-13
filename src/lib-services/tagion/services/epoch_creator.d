@@ -39,8 +39,6 @@ alias PayloadQueue = Queue!Document;
 
 enum NetworkMode {
     internal,
-    local,
-    pub
 }
 
 @safe
