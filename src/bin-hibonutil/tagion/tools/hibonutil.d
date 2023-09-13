@@ -123,7 +123,7 @@ int _main(string[] args) {
                 const(Document) sub_doc,
                 const Document.Element.ErrorCode error_code,
                 const(Document.Element) current, const(
-                Document.Element) previous) nothrow{ assumeWontThrow(writefln("%s", current)); return true; });
+                Document.Element) previous) nothrow { return true; });
         if (error_code is Document.Element.ErrorCode.NONE) {
             auto json = doc.toJSON;
             auto json_stringify = (pretty) ? json.toPrettyString : json.toString;
@@ -140,12 +140,10 @@ int _main(string[] args) {
             return 1;
         }
         else {
-            writefln("HIBON DETECTED");
             HiBON hibon;
             const text = cast(string) data;
             try {
                 auto parse = text.parseJSON;
-                writefln("%s", text);
                 hibon = parse.toHiBON;
             }
             catch (HiBON2JSONException e) {
@@ -167,21 +165,33 @@ int _main(string[] args) {
             }
             if (standard_output) {
                 stdout.rawWrite(hibon.serialize);
+                return 1;
+            } 
+
+            if (outputfilename) {
+                outputfilename.setExtension(FileExtension.hibon).fwrite(hibon.serialize);
+                return 1;
+
+
             }
-            else {
-                try {
-                    if (standard_output) {
-                        stdout.rawWrite(hibon.serialize);
-                    }
-                    else {
-                        outputfilename.setExtension(FileExtension.hibon).fwrite(hibon.serialize);
-                    }
-                }
-                catch (Exception e) {
-                    error(e);
-                    return 1;
-                }
-            }
+
+            stderr.writeln("Error: output not specified");
+            return 1;
+            
+            // else {
+            //     try {
+            //         if (standard_output) {
+            //             stdout.rawWrite(hibon.serialize);
+            //         }
+            //         else {
+            //             outputfilename.setExtension(FileExtension.hibon).fwrite(hibon.serialize);
+            //         }
+            //     }
+            //     catch (Exception e) {
+            //         error(e);
+            //         return 1;
+            //     }
+            // }
         }
 
         stderr.writefln("Input file missing");
