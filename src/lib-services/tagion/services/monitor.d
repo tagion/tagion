@@ -3,10 +3,10 @@ module tagion.services.monitor;
 import std.format;
 import std.socket;
 import core.thread;
-import std.concurrency;
+import tagion.utils.pretend_safe_concurrency;
 
 import tagion.logger.Logger;
-import tagion.actor : Ctrl, Sig;
+import tagion.actor;
 import tagion.basic.tagionexceptions : TagionException;
 import tagion.actor.exceptions;
 
@@ -31,6 +31,7 @@ struct MonitorOptions {
 void monitorServiceTask(immutable(MonitorOptions) opts) @trusted nothrow {
     try {
 
+        // ownerTid.send(Ctrl.STARTING);
         log.register(opts.taskname);
 
 
@@ -44,30 +45,31 @@ void monitorServiceTask(immutable(MonitorOptions) opts) @trusted nothrow {
             listener_socket.stop;
         }
 
-        bool stop;
-        void handleState(Sig ts) {
-            with (Sig) switch (ts) {
-            case STOP:
-                log("Kill socket thread. %d", opts.port);
+        // bool stop;
+        // void handleState(Sig ts) {
+        //     with (Sig) switch (ts) {
+        //     case STOP:
+        //         log("Kill socket thread. %d", opts.port);
 
-                stop = true;
-                break;
-            default:
-                log.error("Bad Control command %s", ts);
-            }
-        }
+        //         stop = true;
+        //         break;
+        //     default:
+        //         log.error("Bad Control command %s", ts);
+        //     }
+        // }
 
-        void taskfailure(immutable(TaskFailure) t) {
+        void taskfailure(immutable(TaskFailure) t) @safe {
             ownerTid.send(t);
         }
 
         ownerTid.send(Ctrl.ALIVE);
-        while (!stop) {
+        while (!thisActor.stop) {
             receiveTimeout(500.msecs, //Control the thread
-                    &handleState,
-                    (string json) { listener_socket.broadcast(json); },
-                    (immutable(ubyte)[] hibon_bytes) { listener_socket.broadcast(hibon_bytes); },
-                    (Document doc) { listener_socket.broadcast(doc); },
+                    &signal,
+                    &ownerTerminated,
+                    (string json) @trusted { listener_socket.broadcast(json); },
+                    (immutable(ubyte)[] hibon_bytes) @trusted { listener_socket.broadcast(hibon_bytes); },
+                    (Document doc) @trusted { listener_socket.broadcast(doc); },
                     &taskfailure
             );
         }

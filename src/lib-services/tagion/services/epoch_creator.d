@@ -26,6 +26,7 @@ import tagion.hibon.HiBONJSON;
 import tagion.utils.Miscellaneous : cutHex;
 import tagion.services.messages;
 import tagion.services.monitor;
+import tagion.services.options : NetworkMode;
 
 // core
 import core.time;
@@ -44,7 +45,6 @@ enum NetworkMode {
 @safe
 struct EpochCreatorOptions {
     uint timeout = 15; // timeout in msecs 
-    size_t nodes = 5;
     uint scrap_depth = 5;
     mixin JSONCommon;
 }
@@ -52,19 +52,22 @@ struct EpochCreatorOptions {
 @safe
 struct EpochCreatorService {
 
-    void task(immutable(EpochCreatorOptions) opts, immutable(SecureNet) net, immutable(MonitorOptions) monitor_opts) {
+    void task(immutable(EpochCreatorOptions) opts, immutable(NetworkMode) network_mode, immutable(size_t) number_of_nodes, immutable(SecureNet) net, immutable(MonitorOptions) monitor_opts) {
+
+        assert(network_mode == NetworkMode.INTERNAL, "Unsupported network mode");
 
         if (monitor_opts.enable) {
-
             import tagion.monitor.Monitor : MonitorCallBacks;
             import tagion.hashgraph.Event : Event;
 
+            log("BEFORE SPAWN");
             auto monitor_socket_tid = spawn(&monitorServiceTask, monitor_opts);
             Event.callbacks = new MonitorCallBacks(
                 monitor_socket_tid, monitor_opts.dataformat);
             
             assert(receiveOnly!Ctrl is Ctrl.ALIVE);
         }
+
         
         const hirpc = HiRPC(net);
 
@@ -79,7 +82,7 @@ struct EpochCreatorService {
 
         auto refinement = new StdRefinement;
 
-        HashGraph hashgraph = new HashGraph(opts.nodes, net, refinement, &gossip_net.isValidChannel, No.joining);
+        HashGraph hashgraph = new HashGraph(number_of_nodes, net, refinement, &gossip_net.isValidChannel, No.joining);
         hashgraph.scrap_depth = opts.scrap_depth;
 
         PayloadQueue payload_queue = new PayloadQueue();

@@ -22,6 +22,7 @@ import tagion.hibon.HiBONJSON;
 import std.range : empty;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.services.monitor;
+import tagion.services.options : NetworkMode;
 
 import std.stdio;
 
@@ -50,19 +51,21 @@ class SendPayloadAndCreateEpoch {
         MonitorOptions monitor_opts;
     }
 
+    immutable(size_t) number_of_nodes;
+
     Node[] nodes;
     ActorHandle!EpochCreatorService[] handles;
     Document send_payload;
 
-    this(EpochCreatorOptions epoch_creator_options, MonitorOptions monitor_opts) {
+    this(EpochCreatorOptions epoch_creator_options, MonitorOptions monitor_opts, immutable size_t number_of_nodes) {
         import tagion.services.options;
 
-        addressbook.number_of_active_nodes = epoch_creator_options.nodes;
-        foreach (i; 0 .. epoch_creator_options.nodes) {
-            // EpochCreatorOptions local_opts = epoch_creator_options;
+        this.number_of_nodes = number_of_nodes;
+
+        addressbook.number_of_active_nodes = number_of_nodes;
+        foreach (i; 0 .. number_of_nodes) {
             immutable prefix = format("Node_%s", i);
             immutable task_names = TaskNames(prefix);
-            // assert(task_names.epoch_creator == "Node_%s".format(i), "Nodes note names correctly");
             auto net = new StdSecureNet();
             net.generateKeyPair(task_names.epoch_creator);
             writefln("node task name %s", task_names.epoch_creator);
@@ -84,6 +87,8 @@ class SendPayloadAndCreateEpoch {
             handles ~= spawn!EpochCreatorService(
                     cast(immutable) n.name,
                     cast(immutable) n.opts,
+                    NetworkMode.INTERNAL,
+                    number_of_nodes,
                     cast(immutable) n.net,
                     cast(immutable) n.monitor_opts,
             );

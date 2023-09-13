@@ -9,14 +9,14 @@ import tagion.tools.Basic;
 mixin Main!(_main);
 
 int _main(string[] args) {
-    auto epoch_creator_options = EpochCreatorOptions(15, 5, 5);
+    auto epoch_creator_options = EpochCreatorOptions(15, 5);
     MonitorOptions monitor_options;
     import tagion.services.locator;
 
     locator_options = new immutable(LocatorOptions)(5, 5);
 
     auto epoch_creator_feature = automation!epoch_creator;
-    epoch_creator_feature.SendPayloadAndCreateEpoch(epoch_creator_options, monitor_options);
+    epoch_creator_feature.SendPayloadAndCreateEpoch(epoch_creator_options, monitor_options, 5);
     epoch_creator_feature.run;
 
     return 0;
