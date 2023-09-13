@@ -120,7 +120,7 @@ int _main(string[] args) {
     locator_options = new immutable(LocatorOptions)(5, 5);
     ActorHandle!Supervisor[] supervisor_handles;
 
-    auto wave_options = Options(local_options).wave;
+    immutable wave_options = Options(local_options).wave;
     if (wave_options.network_mode == NetworkMode.INTERNAL) {
 
         struct Node {
@@ -136,7 +136,7 @@ int _main(string[] args) {
 
         Node[] nodes;
 
-        foreach (i; 0 .. 5) {
+        foreach (i; 0 .. wave_options.number_of_nodes) {
             auto opts = Options(local_options);
             immutable prefix = format("Node_%s", i);
             immutable task_names = TaskNames(prefix);
