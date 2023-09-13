@@ -73,6 +73,7 @@ struct Options {
     public import tagion.services.transcript : TranscriptOptions;
     public import tagion.services.TVM : TVMOptions;
     public import tagion.services.epoch_creator : EpochCreatorOptions;
+    public import tagion.services.monitor : MonitorOptions;
 
     InputValidatorOptions inputvalidator;
     HiRPCVerifierOptions hirpc_verifier;
@@ -81,6 +82,7 @@ struct Options {
     TranscriptOptions transcript;
     TVMOptions tvm;
     EpochCreatorOptions epoch_creator;
+    MonitorOptions monitor;
 
     TaskNames task_names;
     mixin JSONCommon;

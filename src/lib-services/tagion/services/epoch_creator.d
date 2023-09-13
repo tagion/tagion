@@ -25,6 +25,7 @@ import tagion.gossip.AddressBook;
 import tagion.hibon.HiBONJSON;
 import tagion.utils.Miscellaneous : cutHex;
 import tagion.services.messages;
+import tagion.services.monitor;
 
 // core
 import core.time;
@@ -53,8 +54,20 @@ struct EpochCreatorOptions {
 @safe
 struct EpochCreatorService {
 
-    void task(immutable(EpochCreatorOptions) opts, immutable(SecureNet) net) {
+    void task(immutable(EpochCreatorOptions) opts, immutable(SecureNet) net, immutable(MonitorOptions) monitor_opts) {
 
+        if (monitor_opts.enable) {
+
+            import tagion.monitor.Monitor : MonitorCallBacks;
+            import tagion.hashgraph.Event : Event;
+
+            auto monitor_socket_tid = spawn(&monitorServiceTask, monitor_opts);
+            Event.callbacks = new MonitorCallBacks(
+                monitor_socket_tid, monitor_opts.dataformat);
+            
+            assert(receiveOnly!Ctrl is Ctrl.ALIVE);
+        }
+        
         const hirpc = HiRPC(net);
 
         GossipNet gossip_net;

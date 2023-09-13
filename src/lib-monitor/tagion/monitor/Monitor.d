@@ -88,7 +88,6 @@ class MonitorCallBacks : EventMonitorCallbacks {
         Tid _socket_thread_id;
         //       Tid _network_socket_tread_id;
     }
-    immutable uint _local_node_id;
     // immutable uint _global_node_id;
     immutable FileExtension ext;
 
@@ -379,11 +378,8 @@ class MonitorCallBacks : EventMonitorCallbacks {
 
     @trusted
     this(Tid socket_thread_id,
-            const uint local_node_id, // const uint global_node_id,
             const FileExtension dataformat) {
         this._socket_thread_id = socket_thread_id;
-        //        this._network_socket_tread_id = locate("network_socket_thread");
-        this._local_node_id = local_node_id;
         this.ext = dataformat;
     }
 
