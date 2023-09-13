@@ -310,12 +310,6 @@ if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
         thisActor.childrenState[name] = Ctrl.UNKNOWN;
         log("spawning %s", name);
         tid.setMaxMailboxSize(int.max, OnCrowding.throwException);
-        if (concurrency.register(name, tid)) {
-            log("%s registered as %s", tid, name);
-        }
-        else {
-            log("could not register %s as %s, name already registered", tid, name);
-        }
         return ActorHandle!A(name);
     }
     catch (Exception e) {
@@ -389,8 +383,9 @@ void sendOwner(T...)(T vals) @safe {
 */
 void fail(Throwable t) @trusted nothrow {
     try {
-        debug (actor)
+        debug (actor) {
             log(t);
+        }
         ownerTid.prioritySend(TaskFailure(thisActor.task_name, cast(immutable) t));
     }
     catch (Exception e) {
