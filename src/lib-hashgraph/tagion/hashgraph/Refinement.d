@@ -78,6 +78,9 @@ class StdRefinement : Refinement {
         if (hashgraph.__debug_print) {
             __write("HELLO WTF%s", famous_witnesses.map!(e => e.id).array);
         }
+
+        import std.algorithm;
+        import std.range;
         import std.bigint;
         import std.numeric: gcd;
         import std.range: retro, back;
@@ -130,7 +133,7 @@ class StdRefinement : Refinement {
                 // __write("£££££££££ EVENT: %s ££££££££££££", event.id);
                 // __write("RECEIVERS: %s", receivers.map!(e => e.id));
                 // __write("TIMES: %s / %s", times.map!(t => t.numerator), times.map!(t => t.denominator));
-                __write("EVENT: %s TIME: %s / %s", event.id, av_time.numerator, av_time.denominator*4);
+                // __write("EVENT: %s TIME: %s / %s", event.id, av_time.numerator, av_time.denominator*4);
                 // __write("EVENT: %s PSEUDOTIME: %s", event.id, event.pseudo_time_counter);
             }    
         
@@ -146,9 +149,16 @@ class StdRefinement : Refinement {
                 if (a.order == b.order)
                 {
                     return a.fingerprint < b.fingerprint;
+
+                    if (hashgraph.__debug_print) {
+                        __write("SPECIALSPECIALCASE");
+                    }
                     //special special case
                 }
-                return higher(a.order, b.order);
+                if (hashgraph.__debug_print) {
+                    // __write("SPECIALCASE");
+                }
+                return higher(b.order, a.order);
             }
             return at.numerator*bt.denominator < at.denominator*bt.numerator;
         }
@@ -158,45 +168,39 @@ class StdRefinement : Refinement {
         //     calc_pseudo_time(event);    
         // }
         
-        // auto events = event_collection
-        //     .filter!((e) => !e.event_body.payload.empty)
-        //     .array
-        //     .sort!((a, b) => order_less(a, b))
-        //     .release;
+        auto events = event_collection
+            .filter!((e) => !e.event_body.payload.empty)
+            .array
+            .sort!((a, b) => order_less(a, b))
+            .release;
 
 
 
-        // sdt_t[] times;
-        // auto events2 = event_collection
-        //     .filter!((e) => e !is null)
-        //     .tee!((e) => times ~= e.event_body.time)
-        //     .filter!((e) => !e.event_body.payload.empty)
-        //     .array
-        //     .sort!((a, b) => order_less(a, b, MAX_ORDER_COUNT))
-        //     .release;
-        // times.sort;
-        // const mid = times.length / 2 + (times.length % 1);
-        // const epoch_time = times[mid];
-
-        // log.trace("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d time=%s",
-        //         hashgraph.name, decided_round.number,
-        //         Event.count, Event.Witness.count, events.length, epoch_time);
-
-        // finishedEpoch(events, epoch_time, decided_round);
-
-        // excludedNodes(hashgraph._excluded_nodes_mask);
 
         sdt_t[] times;
-        auto events = event_collection
+        auto events2 = event_collection
             .filter!((e) => e !is null)
             .tee!((e) => times ~= e.event_body.time)
             .filter!((e) => !e.event_body.payload.empty)
             .array
-            .sort!((a, b) => order_less(a, b, MAX_ORDER_COUNT))
+            .sort!((a, b) => order_less(a, b))
             .release;
         times.sort;
         const mid = times.length / 2 + (times.length % 1);
         const epoch_time = times[mid];
+
+        log.trace("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d time=%s",
+                hashgraph.name, decided_round.number,
+                Event.count, Event.Witness.count, events.length, epoch_time);
+
+        finishedEpoch(events, epoch_time, decided_round);
+
+        excludedNodes(hashgraph._excluded_nodes_mask);
+
+        if (hashgraph.__debug_print) {
+            __write("ROUND: %s ORDER: %s", decided_round.number, events.map!(e => e.id));
+        }
+
     }
 
     void epoch(Event[] event_collection, const(Round) decided_round) {
@@ -234,25 +238,25 @@ class StdRefinement : Refinement {
             return a.order < b.order;
         }
 
-        sdt_t[] times;
-        auto events = event_collection
-            .filter!((e) => e !is null)
-            .tee!((e) => times ~= e.event_body.time)
-            .filter!((e) => !e.event_body.payload.empty)
-            .array
-            .sort!((a, b) => order_less(a, b, MAX_ORDER_COUNT))
-            .release;
-        times.sort;
-        const mid = times.length / 2 + (times.length % 1);
-        const epoch_time = times[mid];
+        // sdt_t[] times;
+        // auto events = event_collection
+        //     .filter!((e) => e !is null)
+        //     .tee!((e) => times ~= e.event_body.time)
+        //     .filter!((e) => !e.event_body.payload.empty)
+        //     .array
+        //     .sort!((a, b) => order_less(a, b, MAX_ORDER_COUNT))
+        //     .release;
+        // times.sort;
+        // const mid = times.length / 2 + (times.length % 1);
+        // const epoch_time = times[mid];
 
-        log.trace("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d time=%s",
-                hashgraph.name, decided_round.number,
-                Event.count, Event.Witness.count, events.length, epoch_time);
+        // log.trace("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d time=%s",
+        //         hashgraph.name, decided_round.number,
+        //         Event.count, Event.Witness.count, events.length, epoch_time);
 
-        finishedEpoch(events, epoch_time, decided_round);
+        // finishedEpoch(events, epoch_time, decided_round);
 
-        excludedNodes(hashgraph._excluded_nodes_mask);
+        // excludedNodes(hashgraph._excluded_nodes_mask);
     }
 
 }
