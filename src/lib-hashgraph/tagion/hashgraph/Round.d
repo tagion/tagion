@@ -460,7 +460,7 @@ class Round {
                 return true;
             }
 
-            pramga(msg, "fixme(bbh) potential fault at boot of network if youngest_son_ancestor[x] = null");
+            pragma(msg, "fixme(bbh) potential fault at boot of network if youngest_son_ancestor[x] = null");
             auto famous_witness_youngest_son_ancestors = famous_witnesses.map!(e => e._youngest_son_ancestors).joiner;
             
             Event[] consensus_son_tide = r._events.find!(e => e !is null).front._youngest_son_ancestors.dup();
