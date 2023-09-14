@@ -64,16 +64,14 @@ class StdRefinement : Refinement {
         // log.trace("epack.event_body.payload.empty %s", epack.event_body.payload.empty);
     }
 
-
-    
     void epoch(Event[] event_collection, const(Round) decided_round) {
 
         import std.bigint;
-        import std.range: retro, back, tee;
-        import std.numeric: gcd;
-        
+        import std.range : retro, back, tee;
+        import std.numeric : gcd;
+
         struct PseudoTime {
-            BigInt num;  //fraction representing the avg received round
+            BigInt num; //fraction representing the avg received round
             BigInt denom;
             BigInt order; //sum of received orders
             sdt_t time; //avg received time
@@ -84,67 +82,71 @@ class StdRefinement : Refinement {
                 this.order = order;
                 this.time = time;
             }
+
             this(int num, int denom, int order, sdt_t time, int round_number, ulong witness_count) {
-                this.num = BigInt(num+denom*round_number);
-                this.denom = BigInt(denom*witness_count);
+                this.num = BigInt(num + denom * round_number);
+                this.denom = BigInt(denom * witness_count);
                 this.order = BigInt(order);
                 this.time = time / witness_count;
             }
 
             PseudoTime opBinary(string op)(PseudoTime other) if (op == "+") {
                 BigInt d = gcd(denom, other.denom);
-                return PseudoTime(other.denom/d*num + denom/d*other.num,
-                                  denom/d*other.denom,
-                                  order + other.order,
-                                  time + other.time);
+                return PseudoTime(other.denom / d * num + denom / d * other.num,
+                        denom / d * other.denom,
+                        order + other.order,
+                        time + other.time);
             }
         }
 
-
         const famous_witnesses = decided_round
-                                        ._events
-                                        .filter!(e => e !is null)
-                                        .filter!(e => decided_round.famous_mask[e.node_id]).array;
+            ._events
+            .filter!(e => e !is null)
+            .filter!(e => decided_round.famous_mask[e.node_id])
+            .array;
 
         PseudoTime calc_pseudo_time(Event event) {
-            
             auto receivers = famous_witnesses
-                                    .map!(e => e[].until!(e => !e.sees(event))
-                                                  .array.back);
-            
+                .map!(e => e[].until!(e => !e.sees(event))
+                .array.back);
+
             return receivers.map!(e => PseudoTime(e.pseudo_time_counter,
-                                                  (e[].retro.filter!(e => e._witness).front._mother.pseudo_time_counter + 1),
-                                                  e.order,
-                                                  e.event_body.time,
-                                                  e.round.number,
-                                                  decided_round.famous_mask.count))
-                                .array.reduce!((a, b) => a + b);
+                    (e[].retro.filter!(e => e._witness)
+                    .front._mother.pseudo_time_counter + 1),
+                    e.order,
+                    e.event_body.time,
+                    e.round.number,
+                    decided_round.famous_mask.count))
+                .array
+                .reduce!((a, b) => a + b);
         }
-        
+
         bool order_less(Event a, Event b) {
             PseudoTime at = calc_pseudo_time(a);
             PseudoTime bt = calc_pseudo_time(b);
 
-            if (at.num*bt.denom == at.denom*bt.num) {
+            if (at.num * bt.denom == at.denom * bt.num) {
                 if (at.order == bt.order) {
                     if (a.order == b.order) {
-                        return a.fingerprint < b.fingerprint; }
-                    return a.order < b.order; }
-                return at.order < bt.order; }
-            return at.num*bt.denom < at.denom*bt.num;
+                        return a.fingerprint < b.fingerprint;
+                    }
+                    return a.order < b.order;
+                }
+                return at.order < bt.order;
+            }
+            return at.num * bt.denom < at.denom * bt.num;
         }
 
-        
         sdt_t[] times;
-        auto events = event_collection            
+        auto events = event_collection
             .tee!((e) => times ~= e.event_body.time)
             .filter!((e) => !e.event_body.payload.empty)
             .array
             .sort!((a, b) => order_less(a, b))
             .release;
-       
+
         times.sort;
-        const epoch_time = times[times.length/2];
+        const epoch_time = times[times.length / 2];
 
         log.trace("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d time=%s",
                 hashgraph.name, decided_round.number,
@@ -155,7 +157,7 @@ class StdRefinement : Refinement {
         excludedNodes(hashgraph._excluded_nodes_mask);
     }
 
-    version(none) //SHOULD NOT BE DELETED SO WE CAN REVERT TO OLD ORDERING IF NEEDED
+    version (none) //SHOULD NOT BE DELETED SO WE CAN REVERT TO OLD ORDERING IF NEEDED
     void epoch(Event[] event_collection, const(Round) decided_round) {
         import std.algorithm;
         import std.range;

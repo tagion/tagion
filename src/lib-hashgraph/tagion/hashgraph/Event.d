@@ -44,7 +44,6 @@ import std.traits;
 
 import std.stdio;
 
-
 /// HashGraph Event
 @safe
 class Event {
@@ -263,7 +262,7 @@ class Event {
             callbacks.round(this);
         }
         _order = (_father && higher(_father.order, _mother.order)) ? _father.order + 1 : _mother.order + 1;
-        
+
         // pseudo_time_counter = (_mother._witness) ? 0 : _mother.pseudo_time_counter;
         // if (_father) { pseudo_time_counter += 1; }
         pseudo_time_counter = (_mother._father) ? _mother.pseudo_time_counter + 1 : _mother.pseudo_time_counter;
@@ -277,7 +276,6 @@ class Event {
             hashgraph._rounds.next_round(this);
         }
 
-        
         // if (hashgraph.__debug_print) {
         //     __write("EVENT: %s, %s", id, _youngest_son_ancestors.filter!(e => e !is null).map!(e => e.id));
         // }
@@ -288,9 +286,10 @@ class Event {
         _witness = new Witness(this, hashgraph.node_size);
 
         pseudo_time_counter = 0;
-        
+
         _witness._prev_strongly_seen_witnesses = strongly_seen_nodes;
-        _witness._prev_seen_witnesses = BitMask(_youngest_son_ancestors.map!(e => (e !is null && !higher(round.number-1, e.round.number))));
+        _witness._prev_seen_witnesses = BitMask(_youngest_son_ancestors.map!(e => (e !is null && !higher(round.number - 1, e
+                .round.number))));
         if (!strongly_seen_nodes.isMajority(hashgraph)) {
             _round.add(this);
         }
@@ -309,11 +308,11 @@ class Event {
     }
 
     private BitMask calc_strongly_seen_nodes(const HashGraph hashgraph) {
-        auto see_through_matrix = _youngest_son_ancestors 
-                                    .filter!(e => e !is null && e.round is round)
-                                    .map!(e => e._youngest_son_ancestors
-                                        .map!(e => e !is null && e.round is round));
-        
+        auto see_through_matrix = _youngest_son_ancestors
+            .filter!(e => e !is null && e.round is round)
+            .map!(e => e._youngest_son_ancestors
+                    .map!(e => e !is null && e.round is round));
+
         scope strongly_seen_votes = new size_t[hashgraph.node_size];
         see_through_matrix.each!(row => row.enumerate.each!(elm => strongly_seen_votes[elm.index] += elm.value));
         return BitMask(strongly_seen_votes.map!(votes => hashgraph.isMajority(votes)));
@@ -387,30 +386,29 @@ class Event {
         _daughter = _son = null;
     }
 
-    
     const bool sees(Event b) {
 
-        if (_youngest_son_ancestors[b.node_id] is null) { 
-            return false; 
+        if (_youngest_son_ancestors[b.node_id] is null) {
+            return false;
         }
-        if (!higher(b.order, _youngest_son_ancestors[b.node_id].order)) { 
-            return true; 
+        if (!higher(b.order, _youngest_son_ancestors[b.node_id].order)) {
+            return true;
         }
-        if (node_id == b.node_id && !higher(b.order, order)) { 
-            return true; 
+        if (node_id == b.node_id && !higher(b.order, order)) {
+            return true;
         }
 
         auto see_through_candidates = b[].retro
-                                        .until!(e => e.pseudo_time_counter != b.pseudo_time_counter)
-                                        .filter!(e => e._son)
-                                        .map!(e => e._son); 
+            .until!(e => e.pseudo_time_counter != b.pseudo_time_counter)
+            .filter!(e => e._son)
+            .map!(e => e._son);
 
         foreach (e; see_through_candidates) {
-            if (_youngest_son_ancestors[e.node_id] is null) { 
-                continue; 
+            if (_youngest_son_ancestors[e.node_id] is null) {
+                continue;
             }
-            if (!higher(e.order, _youngest_son_ancestors[e.node_id].order)) { 
-                return true; 
+            if (!higher(e.order, _youngest_son_ancestors[e.node_id].order)) {
+                return true;
             }
         }
         return false;
@@ -534,8 +532,7 @@ class Event {
          * Gets the event order number 
          * Returns: order
          */
-        int order() const pure nothrow @nogc
-        {
+        int order() const pure nothrow @nogc {
             return _order;
         }
 
