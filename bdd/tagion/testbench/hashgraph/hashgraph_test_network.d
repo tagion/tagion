@@ -306,7 +306,7 @@ static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
         auto refinement = new TestRefinement;
 
         auto h = new HashGraph(N, net, refinement, &authorising.isValidChannel, joining, name);
-        if (testing < 2) {
+        if (testing < 4) {
             testing++;
             if (testing == 1) {
                 h.__debug_print = true;

@@ -264,9 +264,9 @@ class Event {
         }
         _order = (_father && higher(_father.order, _mother.order)) ? _father.order + 1 : _mother.order + 1;
         
-        pseudo_time_counter = (_mother._witness) ? 0 : _mother.pseudo_time_counter;
-        if (_father) { pseudo_time_counter += 1; }
-        
+        // pseudo_time_counter = (_mother._witness) ? 0 : _mother.pseudo_time_counter;
+        // if (_father) { pseudo_time_counter += 1; }
+        pseudo_time_counter = (_mother._father) ? _mother.pseudo_time_counter + 1 : _mother.pseudo_time_counter;
         with (hashgraph) {
             mixin Log!(received_order_statistic);
         }
@@ -276,12 +276,19 @@ class Event {
         if (strongly_seen_nodes.isMajority(hashgraph)) {
             hashgraph._rounds.next_round(this);
         }
+
+        
+        // if (hashgraph.__debug_print) {
+        //     __write("EVENT: %s, %s", id, _youngest_son_ancestors.filter!(e => e !is null).map!(e => e.id));
+        // }
         if (!higher(round.number, mother.round.number)) {
             return;
         }
 
         _witness = new Witness(this, hashgraph.node_size);
-            
+
+        pseudo_time_counter = 0;
+        
         _witness._prev_strongly_seen_witnesses = strongly_seen_nodes;
         _witness._prev_seen_witnesses = BitMask(_youngest_son_ancestors.map!(e => (e !is null && !higher(round.number-1, e.round.number))));
         if (!strongly_seen_nodes.isMajority(hashgraph)) {
