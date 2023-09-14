@@ -185,6 +185,18 @@ class StdRefinement : Refinement {
         // finishedEpoch(events, epoch_time, decided_round);
 
         // excludedNodes(hashgraph._excluded_nodes_mask);
+
+        sdt_t[] times;
+        auto events = event_collection
+            .filter!((e) => e !is null)
+            .tee!((e) => times ~= e.event_body.time)
+            .filter!((e) => !e.event_body.payload.empty)
+            .array
+            .sort!((a, b) => order_less(a, b, MAX_ORDER_COUNT))
+            .release;
+        times.sort;
+        const mid = times.length / 2 + (times.length % 1);
+        const epoch_time = times[mid];
     }
 
     void epoch(Event[] event_collection, const(Round) decided_round) {
