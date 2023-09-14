@@ -386,7 +386,7 @@ class Event {
         _daughter = _son = null;
     }
 
-    const bool sees(Event b) {
+    const bool sees(Event b) pure {
 
         if (_youngest_son_ancestors[b.node_id] is null) {
             return false;
