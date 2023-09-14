@@ -453,12 +453,6 @@ class Round {
 
             auto famous_witnesses = r._events.filter!(e => e && r.famous_mask[e.node_id]);
             
-            bool seen_by_all(Event e) {
-                foreach(w; famous_witnesses) {
-                    if (!w.sees(e)) { return false; }
-                }
-                return true;
-            }
 
             pragma(msg, "fixme(bbh) potential fault at boot of network if youngest_son_ancestor[x] = null");
             auto famous_witness_youngest_son_ancestors = famous_witnesses.map!(e => e._youngest_son_ancestors).joiner;
@@ -466,13 +460,16 @@ class Round {
             Event[] consensus_son_tide = r._events.find!(e => e !is null).front._youngest_son_ancestors.dup();
             
             foreach(son_ancestor; famous_witness_youngest_son_ancestors.filter!(e => e !is null)) {
-                if (consensus_son_tide[son_ancestor.node_id] is null) { continue; }            
+                if (consensus_son_tide[son_ancestor.node_id] is null) { 
+                    continue; 
+                }            
                 if (higher(consensus_son_tide[son_ancestor.node_id].order, son_ancestor.order)) {
                     consensus_son_tide[son_ancestor.node_id] = son_ancestor;
                 }
             }
 
-            auto consensus_tide = consensus_son_tide.map!(e => e[].retro.until!(e => !seen_by_all(e)).array.back);
+            auto consensus_tide = consensus_son_tide.map!(e => e[].retro.until!(e => !famous_witnesses.all!(w => w.sees(e))).array.back);
+
             
             auto event_collection = consensus_tide
                 .map!(e => e[].until!(e => e._round_received !is null))

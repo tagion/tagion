@@ -390,9 +390,15 @@ class Event {
     
     const bool sees(Event b) {
 
-        if (_youngest_son_ancestors[b.node_id] is null) { return false; }
-        if (!higher(b.order, _youngest_son_ancestors[b.node_id].order)) { return true; }
-        if (node_id == b.node_id && !higher(b.order, order)) { return true; }
+        if (_youngest_son_ancestors[b.node_id] is null) { 
+            return false; 
+        }
+        if (!higher(b.order, _youngest_son_ancestors[b.node_id].order)) { 
+            return true; 
+        }
+        if (node_id == b.node_id && !higher(b.order, order)) { 
+            return true; 
+        }
 
         auto see_through_candidates = b[].retro
                                         .until!(e => e.pseudo_time_counter != b.pseudo_time_counter)
@@ -400,8 +406,12 @@ class Event {
                                         .map!(e => e._son); 
 
         foreach (e; see_through_candidates) {
-            if (_youngest_son_ancestors[e.node_id] is null) { continue; }
-            if (!higher(e.order, _youngest_son_ancestors[e.node_id].order)) { return true; }
+            if (_youngest_son_ancestors[e.node_id] is null) { 
+                continue; 
+            }
+            if (!higher(e.order, _youngest_son_ancestors[e.node_id].order)) { 
+                return true; 
+            }
         }
         return false;
     }
