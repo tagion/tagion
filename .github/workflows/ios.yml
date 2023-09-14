@@ -1,9 +1,9 @@
 name: Build libmobile for ios
 on:
   workflow_dispatch:
-  push: 
-    branches: 
-      - current
+    #  push: 
+    #    branches: 
+    #      - current
 
 jobs:
   ios_libmobile:
