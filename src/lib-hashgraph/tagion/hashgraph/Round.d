@@ -458,6 +458,7 @@ class Round {
                 return true;
             }
 
+            //potential fault if at boot of network youngest ancestor is null and gets counted as one being able to see it
             auto famous_witness_youngest_son_ancestors = r._events
                                                             .filter!(e => e !is null && r.famous_mask[e.node_id])
                                                             .map!(e => e._youngest_son_ancestors).joiner;
@@ -471,7 +472,6 @@ class Round {
                 }
             }
 
-            // auto consensus_tide = consensus_son_tide.map!(e => e[].retro.filter!(e => e._son !is null).front);
             auto consensus_tide = consensus_son_tide.map!(e => e[].retro.until!(e => !seen_by_all(e)).array.back);
             
             auto event_collection = consensus_tide
