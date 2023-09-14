@@ -4,11 +4,11 @@ private import tagion.basic.basic : EnumText;
 
 // Keyword list for the HiBON packages
 protected enum _keywords = [
-        // dfmt off
+    // dfmt off
     "pubkey",       // Pubkey
     "signature",        // signature of the block
 //    "altitude",   // altitude
-    "received_order",
+    "order",
     // "tidewave",
     // "wavefront",  // Wave front is the list of events hashs
 //    "ebody",      // Event body
@@ -102,7 +102,7 @@ protected enum _keywords = [
     "data",
     "hirpc"
     // dfmt on
-    ];
+];
 
 // Generated the Keywords and enum string list
 mixin(EnumText!("Keywords", _keywords));

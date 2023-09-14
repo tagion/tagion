@@ -72,7 +72,7 @@ struct Compare {
             }
 
             if (!h1_events.empty && !h2_events.empty) {
-                order_offset = h1_events.front.received_order - h2_events.front.received_order;
+                order_offset = h1_events.front.order - h2_events.front.order;
                 if (!h1_events.front.hasRound || !h2_events.front.hasRound) {
                     return error_callback(null, null, ErrorCode.NODES_DOES_NOT_MATCH);
                 }
@@ -88,7 +88,7 @@ struct Compare {
                     ok &= check(e1.event_body.mother == e2.event_body.mother, MOTHER_NOT_THE_SAME);
                     ok &= check(e1.event_body.father == e2.event_body.father, FATHER_NOT_THE_SAME);
                     ok &= check(e1.altitude == e2.altitude, ALTITUDE_NOT_THE_SAME);
-                    ok &= check(e1.received_order - e2.received_order == order_offset, ORDER_NOT_THE_SAME);
+                    ok &= check(e1.order - e2.order == order_offset, ORDER_NOT_THE_SAME);
                     ok &= check(e1.round.number - e2.round.number == round_offset, ROUND_NOT_THE_SAME);
                     if ((e1.round_received) && (e2.round_received)) {
                         ok &= check(e1.round_received.number - e2.round_received.number == round_offset,

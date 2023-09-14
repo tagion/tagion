@@ -15,13 +15,14 @@ import tagion.crypto.Types : Pubkey;
 import std.algorithm;
 import std.array;
 import tagion.utils.Miscellaneous : cutHex;
-import tagion.dart.DARTOptions;
 import tagion.services.messages;
 import tagion.logger.Logger;
 import tagion.hibon.HiBON;
 import tagion.hibon.HiBONJSON;
 import std.range : empty;
 import tagion.hashgraph.HashGraphBasic;
+import tagion.services.monitor;
+import tagion.services.options : NetworkMode;
 
 import std.stdio;
 
@@ -32,8 +33,8 @@ import tagion.gossip.AddressBook : addressbook, NodeAddress;
 enum feature = Feature(
             "EpochCreator service",
             [
-            "This service is responsbile for resolving the Hashgraph and producing a consensus ordered list of events, an Epoch."
-            ]);
+        "This service is responsbile for resolving the Hashgraph and producing a consensus ordered list of events, an Epoch."
+]);
 
 alias FeatureContext = Tuple!(
         SendPayloadAndCreateEpoch, "SendPayloadAndCreateEpoch",
@@ -47,28 +48,32 @@ class SendPayloadAndCreateEpoch {
         SecureNet net;
         string name;
         EpochCreatorOptions opts;
+        MonitorOptions monitor_opts;
     }
+
+    immutable(size_t) number_of_nodes;
 
     Node[] nodes;
     ActorHandle!EpochCreatorService[] handles;
-    immutable(EpochCreatorOptions) epoch_creator_options;
     Document send_payload;
 
-    this(immutable(EpochCreatorOptions) epoch_creator_options) {
+    this(EpochCreatorOptions epoch_creator_options, MonitorOptions monitor_opts, immutable size_t number_of_nodes) {
         import tagion.services.options;
 
-        this.epoch_creator_options = epoch_creator_options;
-        addressbook.number_of_active_nodes = epoch_creator_options.nodes;
-        foreach (i; 0 .. epoch_creator_options.nodes) {
-            // EpochCreatorOptions local_opts = epoch_creator_options;
+        this.number_of_nodes = number_of_nodes;
+
+        addressbook.number_of_active_nodes = number_of_nodes;
+        foreach (i; 0 .. number_of_nodes) {
             immutable prefix = format("Node_%s", i);
             immutable task_names = TaskNames(prefix);
-            // assert(task_names.epoch_creator == "Node_%s".format(i), "Nodes note names correctly");
             auto net = new StdSecureNet();
             net.generateKeyPair(task_names.epoch_creator);
             writefln("node task name %s", task_names.epoch_creator);
-            nodes ~= Node(net, task_names.epoch_creator, epoch_creator_options);
-            addressbook[net.pubkey] = NodeAddress(task_names.epoch_creator, DARTOptions.init, 0);
+
+            auto monitor_local_options = monitor_opts;
+            monitor_local_options.enable = i == 1 ? true : false;
+            nodes ~= Node(net, task_names.epoch_creator, epoch_creator_options, monitor_local_options);
+            addressbook[net.pubkey] = NodeAddress(task_names.epoch_creator);
         }
 
     }
@@ -81,16 +86,12 @@ class SendPayloadAndCreateEpoch {
             handles ~= spawn!EpochCreatorService(
                     cast(immutable) n.name,
                     cast(immutable) n.opts,
+                    NetworkMode.INTERNAL,
+                    number_of_nodes,
                     cast(immutable) n.net,
+                    cast(immutable) n.monitor_opts,
             );
         }
-        waitforChildren(Ctrl.STARTING);
-
-        foreach (i, handle; handles) {
-            receiveOnly!(AddedChannels);
-        }
-
-        handles.each!(h => h.send(BeginGossip()));
 
         waitforChildren(Ctrl.ALIVE);
         //    writefln("Wait 1 sec");

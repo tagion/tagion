@@ -3,6 +3,7 @@ module tagion.wallet.BIP39;
 import tagion.basic.Version : ver;
 import tagion.basic.Debug;
 import tagion.utils.Miscellaneous : toHexString;
+import tagion.crypto.random.random;
 
 static assert(ver.LittleEndian, "At the moment bip39 only supports Little Endian");
 
@@ -38,6 +39,11 @@ ubyte[] bip39(const(ushort[]) mnemonics) pure nothrow {
     return digest!SHA256(cast(ubyte[]) result_buffer).dup;
 }
 
+void gen_bip39(ref scope ushort[] words) {
+    foreach (ref word; words) {
+        word = getRandom!ushort & 0x800;
+    }
+}
 /*
 https://github.com/bitcoin/bips/blob/master/bip-0039.mediawikiP
 10001111110100110100110001011001100010111110011101010000101001000000110000011001101010001100001000011101110011000100000111111100
