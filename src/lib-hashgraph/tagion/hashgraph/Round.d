@@ -451,35 +451,13 @@ class Round {
         
         package void collect_received_round(Round r, HashGraph hashgraph) {
             
-            bool sees(const(Event) a, Event b) {
-
-                if (a._youngest_son_ancestors[b.node_id] is null) { return false; }
-                if (!higher(b.order, a._youngest_son_ancestors[b.node_id].order)) { return true; }
-
-                auto see_through_candidates = b[].retro
-                                                .until!(e => e.pseudo_time_counter != b.pseudo_time_counter)
-                                                .filter!(e => e._son)
-                                                .map!(e => e._son); 
-
-                foreach (e; see_through_candidates) {
-                    if (a._youngest_son_ancestors[e.node_id] is null) { continue; }
-                    if (!higher(e.order, a._youngest_son_ancestors[e.node_id].order)) { return true; }
-                }
-                return false;
-            }
-
             bool seen_by_all(Event e) {
                 foreach(w; r._events.filter!(e => e !is null && r.famous_mask[e.node_id])) {
-                    if (!sees(w, e)) { return false; }
+                    if (!w.sees(e)) { return false; }
                 }
                 return true;
             }
-            
-            // if (hashgraph.__debug_print) {
-            //     foreach(wit; r._events.filter!(e => e !is null && r.famous_mask[e.node_id])) {
-            //         __write("EVENT: %s, %s PSEUDOTIME: %s", wit.id, wit._youngest_son_ancestors.filter!(e => e !is null).map!(e => e.id), wit.pseudo_time_counter);
-            //     }
-            // }
+
             auto famous_witness_youngest_son_ancestors = r._events
                                                             .filter!(e => e !is null && r.famous_mask[e.node_id])
                                                             .map!(e => e._youngest_son_ancestors).joiner;
@@ -501,9 +479,6 @@ class Round {
                 .joiner.array;
             event_collection.each!(e => e._round_received = r);
 
-            if (hashgraph.__debug_print) {
-                __write("SOMETHING FISHY: %s", r.number);
-            }
             hashgraph.epoch(event_collection, r);
         }
 
