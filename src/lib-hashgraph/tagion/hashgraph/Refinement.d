@@ -94,12 +94,10 @@ class StdRefinement : Refinement {
                 return PseudoTime(other.denom/d*num + denom/d*other.num, denom/d*other.denom);
             }
         }
-
-
         const famous_witnesses = decided_round
                                         ._events
                                         .filter!(e => e !is null)
-                                        .filter!(e => decided_round.famous_mask[e.node_id]).array;
+                                        .filter!(e => decided_round.famous_mask[e.node_id]);
 
         PseudoTime calc_pseudo_time(Event event, bool tie_breaker) {
 
