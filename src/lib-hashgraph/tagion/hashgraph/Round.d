@@ -450,18 +450,18 @@ class Round {
      */
         
         package void collect_received_round(Round r, HashGraph hashgraph) {
+
+            auto famous_witnesses = r._events.filter!(e => e && r.famous_mask[e.node_id]);
             
             bool seen_by_all(Event e) {
-                foreach(w; r._events.filter!(e => e !is null && r.famous_mask[e.node_id])) {
+                foreach(w; famous_witnesses) {
                     if (!w.sees(e)) { return false; }
                 }
                 return true;
             }
 
-            //potential fault if at boot of network youngest ancestor is null and gets counted as one being able to see it
-            auto famous_witness_youngest_son_ancestors = r._events
-                                                            .filter!(e => e !is null && r.famous_mask[e.node_id])
-                                                            .map!(e => e._youngest_son_ancestors).joiner;
+            pramga(msg, "fixme(bbh) potential fault at boot of network if youngest_son_ancestor[x] = null");
+            auto famous_witness_youngest_son_ancestors = famous_witnesses.map!(e => e._youngest_son_ancestors).joiner;
             
             Event[] consensus_son_tide = r._events.find!(e => e !is null).front._youngest_son_ancestors.dup();
             
@@ -477,6 +477,7 @@ class Round {
             auto event_collection = consensus_tide
                 .map!(e => e[].until!(e => e._round_received !is null))
                 .joiner.array;
+            
             event_collection.each!(e => e._round_received = r);
 
             hashgraph.epoch(event_collection, r);
