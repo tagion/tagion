@@ -139,7 +139,9 @@ struct Response(string name) {
 @safe
 unittest {
     thisActor.task_name = "req_resp";
-    register("req_resp", thisTid);
+    scope (exit) {
+        unregister("req_resp");
+    }
     alias Some_req = Request!"some_req";
     void some_responder(Some_req req) {
         req.respond("hello");
@@ -251,7 +253,7 @@ struct ActorHandle(A) {
 
     // Get the status of the task, asserts if the calling task did not spawn it
     Ctrl state() @safe nothrow {
-        if (task_name in thisActor.childrenState) {
+        if ((task_name in thisActor.childrenState) !is null) {
             return thisActor.childrenState[task_name];
         }
         assert(0, "You don't own this task");
