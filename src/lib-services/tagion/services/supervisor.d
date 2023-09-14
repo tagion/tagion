@@ -49,10 +49,12 @@ struct Supervisor {
                 .hirpc_verifier);
         auto services = tuple(dart_handle, hirpc_verifier_handle, inputvalidator_handle);
 
-        if (!waitforChildren(Ctrl.ALIVE)) {
+        if (waitforChildren(Ctrl.ALIVE)) {
+            run(failHandler);
+        }
+        else {
             log.error("Not all children became Alive");
         }
-        run(failHandler);
 
         foreach (service; services) {
             if (service.state is Ctrl.ALIVE) {
