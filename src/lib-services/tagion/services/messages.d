@@ -1,5 +1,6 @@
 // common Message types sent between services
 module tagion.services.messages;
+
 import tagion.actor.actor;
 import tagion.hibon.Document;
 import tagion.script.prior.StandardRecords;
@@ -30,17 +31,3 @@ alias Payload = Msg!"Payload";
 alias ReceivedWavefront = Msg!"ReceivedWavefront";
 alias AddedChannels = Msg!"AddedChannels";
 alias BeginGossip = Msg!"BeginGossip";
-
-@safe
-struct _ContractProduct {
-    immutable(_CollectedSignedContract*) contract;
-    Document[] outputs;
-}
-
-@safe
-struct _CollectedSignedContract {
-    Document[] inputs;
-    Document[] reads;
-    SignedContract contract;
-    //mixin HiBONRecord;
-}
