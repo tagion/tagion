@@ -5,6 +5,7 @@ import core.sys.posix.signal;
 import core.sys.posix.unistd;
 import core.sync.event;
 import core.thread;
+import core.time;
 import std.getopt;
 import std.stdio;
 import std.socket;
@@ -21,8 +22,12 @@ import tagion.tools.revision;
 import tagion.actor;
 import tagion.services.supervisor;
 import tagion.services.options;
+import tagion.services.locator;
 import tagion.GlobalSignals;
 import tagion.utils.JSONCommon;
+import tagion.crypto.SecureNet;
+import tagion.crypto.SecureInterfaceNet;
+import tagion.gossip.AddressBook : addressbook, NodeAddress;
 
 // enum EXAMPLES {
 //     ver = Example("-v"),
@@ -63,6 +68,7 @@ void signal_handler(int _) @trusted nothrow {
         assert(0, format("DID NOT CLOSE PROPERLY \n %s", e));
     }
 }
+
 
 mixin Main!(_main);
 
@@ -111,11 +117,51 @@ int _main(string[] args) {
 
     log.register(baseName(program));
 
-    immutable opts = Options(local_options);
-    enum supervisor_task_name = "supervisor";
-    auto supervisor_handle = spawn!Supervisor(supervisor_task_name, opts);
+    locator_options = new immutable(LocatorOptions)(5, 5);
+    ActorHandle!Supervisor[] supervisor_handles;
 
-    if (waitforChildren(Ctrl.ALIVE)) {
+    immutable wave_options = Options(local_options).wave;
+    if (wave_options.network_mode == NetworkMode.INTERNAL) {
+
+        struct Node {
+            immutable(Options) opts;
+            immutable(string) supervisor_taskname;
+            immutable(SecureNet) net;
+            this(immutable(string) supervisor_taskname, immutable(Options) opts, immutable(SecureNet) net) {
+                this.opts = opts;
+                this.supervisor_taskname = supervisor_taskname;
+                this.net = net;
+            }
+        }
+
+        Node[] nodes;
+
+        foreach (i; 0 .. wave_options.number_of_nodes) {
+            auto opts = Options(local_options);
+            immutable prefix = format("Node_%s", i);
+            immutable task_names = TaskNames(prefix);
+            opts.task_names = task_names;
+            immutable supervisor_taskname = format("%s_supervisor", prefix);
+            opts.inputvalidator.sock_addr = contract_sock_path(prefix);
+            opts.dart.dart_filename = buildPath(".", format("%s_dart.drt", prefix));
+            SecureNet net = new StdSecureNet();
+            net.generateKeyPair(supervisor_taskname);
+
+            nodes ~= Node(supervisor_taskname, opts, cast(immutable) net);
+
+            addressbook[net.pubkey] = NodeAddress(task_names.epoch_creator);
+        }
+
+        /// spawn the nodes
+        foreach (n; nodes) {
+            supervisor_handles ~= spawn!Supervisor(n.supervisor_taskname, n.opts, n.net);
+        }
+
+    } else {
+        assert(0, "NetworkMode not supported");
+    }
+
+    if (waitforChildren(Ctrl.ALIVE, 10.seconds)) {
         log("alive");
         stopsignal.wait;
     }
@@ -124,7 +170,10 @@ int _main(string[] args) {
     }
 
     log("Sending stop signal to supervisor");
-    supervisor_handle.send(Sig.STOP);
+    foreach (supervisor; supervisor_handles) {
+        supervisor.send(Sig.STOP);
+    }
+    // supervisor_handle.send(Sig.STOP);
     waitforChildren(Ctrl.END);
     log("Exiting");
     return 0;

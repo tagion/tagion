@@ -5,22 +5,35 @@ import std.traits;
 import std.format;
 import std.range;
 
-static immutable(string) contract_sock_path() @safe nothrow {
+static immutable(string) contract_sock_path(const string prefix = "") @safe nothrow {
+    import std.exception;
     version (linux) {
-        return "abstract://NEUEWELLE_CONTRACT";
+        return assumeWontThrow(format("abstract://%s_NEUEWELLE_CONTRACT", prefix));
     }
     else version (Posix) {
         import std.path;
         import std.conv;
-        import std.exception;
         import core.sys.posix.unistd : getuid;
 
         const uid = assumeWontThrow(getuid.to!string);
-        return "ipc://" ~ buildPath("/", "run", "user", uid, "tagionwave_contract.sock");
+        return "ipc://" ~ buildPath("/", "run", "user", uid, assumeWontThrow(format("%s_tagionwave_contract.sock", prefix)));
     }
     else {
         assert(0, "Unsupported platform");
     }
+}
+
+enum NetworkMode {
+    INTERNAL,
+    LOCAL,
+    PUB
+}
+@safe
+struct WaveOptions {
+    import tagion.utils.JSONCommon;
+    NetworkMode network_mode = NetworkMode.INTERNAL;
+    size_t number_of_nodes = 5;
+    mixin JSONCommon;
 }
 
 @safe
@@ -72,6 +85,8 @@ struct Options {
     public import tagion.services.collector : CollectorOptions;
     public import tagion.services.transcript : TranscriptOptions;
     public import tagion.services.TVM : TVMOptions;
+    public import tagion.services.epoch_creator : EpochCreatorOptions;
+    public import tagion.services.monitor : MonitorOptions;
 
     InputValidatorOptions inputvalidator;
     HiRPCVerifierOptions hirpc_verifier;
@@ -79,6 +94,9 @@ struct Options {
     CollectorOptions collector;
     TranscriptOptions transcript;
     TVMOptions tvm;
+    EpochCreatorOptions epoch_creator;
+    MonitorOptions monitor;
+    WaveOptions wave;
 
     TaskNames task_names;
     mixin JSONCommon;
@@ -100,7 +118,6 @@ struct Options {
 void setDefault(Opt)(ref Opt opt) nothrow if (is(Opt == struct)) {
     static if (__traits(hasMember, Opt, "setDefault")) {
         opt.setDefault;
-
     }
     static foreach (i, T; Fields!Opt) {
         static if (is(T == struct)) {

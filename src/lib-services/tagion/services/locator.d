@@ -19,10 +19,10 @@ class LocatorException : TagionException {
     }
 }
 
-
+@safe
 struct LocatorOptions {
-    uint max_attempts; // The number of times we try to locate the thread.
-    uint delay; // Delay in msecs between next time we try to locate.
+    uint max_attempts = 5; // The number of times we try to locate the thread.
+    uint delay = 5; // Delay in msecs between next time we try to locate.
 }
 
 public shared static immutable (LocatorOptions)* locator_options;

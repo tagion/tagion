@@ -37,7 +37,7 @@ void mdnsDiscoveryService(
 
         bool stop = false;
 
-        addressbook[pubkey] = NodeAddress(node.LlistenAddress, opts.dart, opts.port_base);
+        addressbook[pubkey] = NodeAddress(node.LlistenAddress, opts.port_base);
         ownerTid.send(Control.LIVE);
         bool addressbook_done;
         while (!stop) {

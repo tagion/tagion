@@ -11,7 +11,7 @@ import std.typecons;
 
 import tagion.actor.exceptions : fatal;
 import tagion.options.HostOptions;
-import tagion.dart.DARTOptions;
+import tagion.prior_services.DARTOptions;
 
 import tagion.basic.Types : Buffer, isBufferType, Control;
 

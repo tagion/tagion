@@ -22,7 +22,7 @@ import tagion.dart.DARTBasic : DARTIndex;
 //import tagion.dart.DARTBasic;
 import tagion.dart.Recorder;
 
-import tagion.dart.DARTOptions : DARTOptions;
+import tagion.prior_services.DARTOptions : DARTOptions;
 import tagion.basic.Types : Buffer, Control;
 import tagion.crypto.Types : Pubkey;
 import tagion.Keywords;
@@ -238,7 +238,7 @@ interface SynchronizationFactory {
 alias ConnectionPoolT = ConnectionPool!(shared p2plib.StreamI, ulong);
 @safe
 class P2pSynchronizationFactory : SynchronizationFactory {
-    import tagion.dart.DARTOptions;
+    import tagion.prior_services.DARTOptions;
     import tagion.basic.basic : tempfile;
 
     protected {
