@@ -5,11 +5,11 @@ import std.traits;
 import std.format;
 import std.range;
 
-static immutable(string) contract_sock_path(const string prefix = "") @safe nothrow {
+static immutable(string) contract_sock_addr(const string prefix = "") @safe nothrow {
     import std.exception;
 
     version (linux) {
-        return assumeWontThrow(format("abstract://%s_NEUEWELLE_CONTRACT", prefix));
+        return assumeWontThrow(format("abstract://%sNEUEWELLE_CONTRACT", prefix));
     }
     else version (Posix) {
         import std.path;
@@ -17,7 +17,7 @@ static immutable(string) contract_sock_path(const string prefix = "") @safe noth
         import core.sys.posix.unistd : getuid;
 
         const uid = assumeWontThrow(getuid.to!string);
-        return "ipc://" ~ buildPath("/", "run", "user", uid, assumeWontThrow(format("%s_tagionwave_contract.sock", prefix)));
+        return "ipc://" ~ buildPath("/", "run", "user", uid, assumeWontThrow(format("%stagionwave_contract.sock", prefix)));
     }
     else {
         assert(0, "Unsupported platform");
@@ -44,6 +44,7 @@ struct TaskNames {
     public import tagion.utils.JSONCommon;
 
     string program = "tagion";
+    string supervisor = "supervisor";
     string inputvalidator = "inputvalidator";
     string dart = "dart";
     string hirpc_verifier = "hirpc_verifier";
@@ -70,7 +71,7 @@ struct TaskNames {
         alias FieldsNames = FieldNameTuple!This;
         static foreach (i, T; Fields!This) {
             static if (is(T == string)) {
-                this.tupleof[i] = assumeWontThrow(format("%s_%s", prefix, this.tupleof[i]));
+                this.tupleof[i] = assumeWontThrow(format("%s%s", prefix, this.tupleof[i]));
             }
         }
     }
@@ -91,6 +92,7 @@ struct Options {
     public import tagion.services.epoch_creator : EpochCreatorOptions;
     public import tagion.services.monitor : MonitorOptions;
 
+    WaveOptions wave;
     InputValidatorOptions inputvalidator;
     HiRPCVerifierOptions hirpc_verifier;
     DARTOptions dart;
@@ -99,7 +101,6 @@ struct Options {
     TVMOptions tvm;
     EpochCreatorOptions epoch_creator;
     MonitorOptions monitor;
-    WaveOptions wave;
 
     TaskNames task_names;
     mixin JSONCommon;
@@ -125,6 +126,18 @@ void setDefault(Opt)(ref Opt opt) nothrow if (is(Opt == struct)) {
     static foreach (i, T; Fields!Opt) {
         static if (is(T == struct)) {
             setDefault(opt.tupleof[i]);
+        }
+    }
+}
+
+@safe
+void setPrefix(Opt)(ref Opt opt, string prefix) nothrow if (is(Opt == struct)) {
+    static if (__traits(hasMember, Opt, "setPrefix")) {
+        opt.setPrefix(prefix);
+    }
+    static foreach (i, T; Fields!Opt) {
+        static if (is(T == struct)) {
+            setPrefix(opt.tupleof[i], prefix);
         }
     }
 }

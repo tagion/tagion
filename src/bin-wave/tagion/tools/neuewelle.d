@@ -124,36 +124,26 @@ int _main(string[] args) {
 
         struct Node {
             immutable(Options) opts;
-            immutable(string) supervisor_taskname;
             immutable(SecureNet) net;
-            this(immutable(string) supervisor_taskname, immutable(Options) opts, immutable(SecureNet) net) {
-                this.opts = opts;
-                this.supervisor_taskname = supervisor_taskname;
-                this.net = net;
-            }
         }
 
         Node[] nodes;
 
         foreach (i; 0 .. wave_options.number_of_nodes) {
+            immutable prefix = format("Node_%s_", i);
             auto opts = Options(local_options);
-            immutable prefix = format("Node_%s", i);
-            immutable task_names = TaskNames(prefix);
-            opts.task_names = task_names;
-            immutable supervisor_taskname = format("%s_supervisor", prefix);
-            opts.inputvalidator.sock_addr = contract_sock_path(prefix);
-            opts.dart.dart_filename = buildPath(".", format("%s_dart.drt", prefix));
+            opts.setPrefix(prefix);
             SecureNet net = new StdSecureNet();
-            net.generateKeyPair(supervisor_taskname);
+            net.generateKeyPair(opts.task_names.supervisor);
 
-            nodes ~= Node(supervisor_taskname, opts, cast(immutable) net);
+            nodes ~= Node(opts, cast(immutable) net);
 
-            addressbook[net.pubkey] = NodeAddress(task_names.epoch_creator);
+            addressbook[net.pubkey] = NodeAddress(opts.task_names.epoch_creator);
         }
 
         /// spawn the nodes
         foreach (n; nodes) {
-            supervisor_handles ~= spawn!Supervisor(n.supervisor_taskname, n.opts, n.net);
+            supervisor_handles ~= spawn!Supervisor(n.opts.task_names.supervisor, n.opts, n.net);
         }
 
     }
@@ -166,7 +156,7 @@ int _main(string[] args) {
         stopsignal.wait;
     }
     else {
-        log("Progam did not start");
+        log("Program did not start");
     }
 
     log("Sending stop signal to supervisor");
