@@ -103,6 +103,9 @@ unittest {
     assert(thisActor.task_name = dummy_name, "setting name failed");
     assert(thisActor.task_name = dummy_name, "setting name seconds time did not fallthrough");
     assert(thisActor.task_name == dummy_name, "name was not the same as we set");
+    concurrency.spawn(() {
+        assert(!(thisActor.task_name = dummy_name), "Should not be able to set the same task name in another tid");
+    });
     assert(locate(thisActor.task_name) == thisTid, "Name not registered");
 
 }
@@ -205,6 +208,18 @@ bool waitforChildren(Ctrl state, Duration timeout = 1.seconds) @safe nothrow {
     catch (Exception e) {
         return false;
     }
+}
+
+unittest {
+    enum task_name = "child_task";
+    assert(waitforChildren(Ctrl.ALIVE, Duration.min), "Waiting for no spawned tid, should always be true");
+    thisActor.childrenState[task_name] = Ctrl.STARTING;
+    assert(!waitforChildren(Ctrl.ALIVE, Duration.min), "should've timed out");
+    thisActor.childrenState[task_name] = Ctrl.ALIVE;
+    assert(waitforChildren(Ctrl.ALIVE, Duration.min));
+    thisActor.childrenState[task_name] = Ctrl.END;
+    assert(waitforChildren(Ctrl.END));
+    assert(thisActor.childrenState.length == 0, "childrenState should be cleaned up when checked that all of them have ended");
 }
 
 /// Checks if a type has the required members to be an actor
