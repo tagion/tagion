@@ -13,7 +13,9 @@ mixin Main!(_main);
 
 int _main(string[] args) {
     if (env.stage == Stage.commit) {
-        automation!collector.run;
+        auto collector_feature = automation!collector;
+        collector_feature.ItWork();
+        collector_feature.run;
     }
 
     return 0;
