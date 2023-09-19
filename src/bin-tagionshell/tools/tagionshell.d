@@ -3,6 +3,8 @@ module tagion.tools.tagionshell;
 import tagion.tools.Basic;
 import std.getopt;
 import tagion.tools.revision;
+import std.file : exists;
+import tagion.tools.shell.shelloptions;
 
 
 import std.stdio;
@@ -16,8 +18,18 @@ int _main(string[] args) {
     bool version_switch;
     GetoptResult main_args;
 
-    try {
 
+    ShellOptions options;
+    
+    auto config_file = "shell.json";
+    if (config_file.exists) {
+        options.load(config_file);
+    } else {
+        options.setDefault;
+    }
+    
+
+    try {
         main_args = getopt(args, std.getopt.config.caseSensitive,
             std.getopt.config.bundling,
             "version", "display the version", &version_switch,
