@@ -91,8 +91,7 @@ int _main(string[] args) {
                 "item|m", "Invoice item select from the invoice file", &item,
                 */
                 "pin|x", "Pincode", &pincode,
-                "amount", "Amount in TGN", &amount,
-                "derive", "Derive code", &derive_code,/*
+                "amount", "Amount in TGN", &amount,/*
                 "port|p", format("Tagion network port : default %d", options.port), &options.port,
                 "url|u", format("Tagion url : default %s", options.addr), &options.addr,
                 "visual|g", "Visual user interface", &wallet_ui,
