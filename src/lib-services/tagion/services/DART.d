@@ -25,6 +25,13 @@ import tagion.services.messages;
 @safe
 struct DARTOptions {
     string dart_filename = buildPath(".", "dart".setExtension(FileExtension.dart));
+
+    void setPrefix(string prefix) nothrow {
+        import std.exception;
+
+        dart_filename = buildPath(".", assumeWontThrow(format("%sdart", prefix)).setExtension(FileExtension.dart));
+    }
+
     mixin JSONCommon;
 }
 
@@ -57,9 +64,13 @@ struct DARTService {
             // empty  
         }
 
-        void modify(dartModifyRR req, immutable(RecordFactory.Recorder) recorder) @safe {
+        void modify_request(dartModifyRR req, immutable(RecordFactory.Recorder) recorder) @safe {
             immutable eye = DARTIndex(db.modify(recorder));
             req.respond(eye);
+        }
+
+        void modify(dartModify, immutable(RecordFactory.Recorder) recorder) @safe {
+            db.modify(recorder);
         }
 
         void bullseye(dartBullseyeRR req) @safe {
@@ -67,8 +78,7 @@ struct DARTService {
             req.respond(eye);
         }
 
-        run(&read, &modify, &bullseye, &checkRead);
-        // run(&read, &rim, &modify, &bullseye);
+        run(&read, &checkRead, &modify_request, &modify, &bullseye);
 
     }
 }

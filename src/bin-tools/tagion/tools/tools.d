@@ -18,6 +18,7 @@ int main(string[] args) {
     import signs = tagion.tools.signs;
     import wasmutil = tagion.tools.wasmutil.wasmutil;
     import geldbeutel = tagion.tools.geldbeutel;
+    import tagionshell = tagion.tools.tagionshell;
 
     alias alltools = AliasSeq!(
             tagionwave,
@@ -32,6 +33,7 @@ int main(string[] args) {
             signs,
             wasmutil,
             geldbeutel,
+            tagionshell,
     );
     mixin doOneMain!(alltools);
     return do_main(args);

@@ -77,8 +77,8 @@ void serverFileDiscoveryService(
             try {
                 post(opts.serverFileDiscovery.url ~ "/node/record",
                         [
-                        "value": json,
-                        ]);
+                    "value": json,
+                ]);
             }
             catch (TagionException e) {
                 fatal(e);
@@ -89,9 +89,9 @@ void serverFileDiscoveryService(
             log("Posting info to %s", opts.serverFileDiscovery.url ~ "/node/erase");
             post(opts.serverFileDiscovery.url ~ "/node/erase",
                     [
-                    "value": (cast(string) pubkey),
-                    "tag": opts.serverFileDiscovery.tag
-                    ]);
+                "value": (cast(string) pubkey),
+                "tag": opts.serverFileDiscovery.tag
+            ]);
         }
 
         scope (exit) {
@@ -118,7 +118,7 @@ void serverFileDiscoveryService(
                         auto addr = doc["address"].get!string;
                         import tagion.utils.Miscellaneous : toHexString, cutHex;
 
-                        auto node_addr = NodeAddress(addr, opts.dart, opts.port_base, true);
+                        auto node_addr = NodeAddress(addr, opts.port_base, true);
                         node_addresses[pkey] = node_addr;
                     }
                 }

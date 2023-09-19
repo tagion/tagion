@@ -44,7 +44,6 @@ import std.traits;
 
 import std.stdio;
 
-
 /// HashGraph Event
 @safe
 class Event {
@@ -57,6 +56,8 @@ class Event {
 
     package Event[] _youngest_son_ancestors;
 
+    package int pseudo_time_counter;
+
     package {
         // This is the internal pointer to the connected Event's
         Event _mother;
@@ -64,7 +65,7 @@ class Event {
         Event _daughter;
         Event _son;
 
-        int _received_order;
+        int _order;
         // The withness mask contains the mask of the nodes
         // Which can be seen by the next rounds witness
         Witness _witness;
@@ -108,12 +109,12 @@ class Event {
                 assert(
                         event_package.event_body.altitude - _mother
                         .event_package.event_body.altitude is 1);
-                assert(_received_order is int.init || (_received_order - _mother._received_order > 0));
+                assert(_order is int.init || (_order - _mother._order > 0));
             }
             if (_father) {
                 pragma(msg, "fixme(bbh) this test should be reimplemented once new witness def works");
                 // assert(_father._son is this, "fathers is not me");
-                assert(_received_order is int.init || (_received_order - _father._received_order > 0));
+                assert(_order is int.init || (_order - _father._order > 0));
             }
         }
     }
@@ -203,10 +204,9 @@ class Event {
 
     immutable size_t node_id; /// Node number of the event
 
-    void initializeReceivedOrder() pure nothrow @nogc {
-        if (_received_order is int.init) {
-            // _received_order = -2;
-            _received_order = -1;
+    void initializeOrder() pure nothrow @nogc {
+        if (order is int.init) {
+            _order = -1;
         }
     }
 
@@ -261,7 +261,11 @@ class Event {
         if (callbacks) {
             callbacks.round(this);
         }
-        _received_order = (_father && higher(_father._received_order, _mother._received_order)) ? _father._received_order + 1 : _mother._received_order + 1;
+        _order = (_father && higher(_father.order, _mother.order)) ? _father.order + 1 : _mother.order + 1;
+
+        // pseudo_time_counter = (_mother._witness) ? 0 : _mother.pseudo_time_counter;
+        // if (_father) { pseudo_time_counter += 1; }
+        pseudo_time_counter = (_mother._father) ? _mother.pseudo_time_counter + 1 : _mother.pseudo_time_counter;
         with (hashgraph) {
             mixin Log!(received_order_statistic);
         }
@@ -271,14 +275,21 @@ class Event {
         if (strongly_seen_nodes.isMajority(hashgraph)) {
             hashgraph._rounds.next_round(this);
         }
+
+        // if (hashgraph.__debug_print) {
+        //     __write("EVENT: %s, %s", id, _youngest_son_ancestors.filter!(e => e !is null).map!(e => e.id));
+        // }
         if (!higher(round.number, mother.round.number)) {
             return;
         }
 
         _witness = new Witness(this, hashgraph.node_size);
 
+        pseudo_time_counter = 0;
+
         _witness._prev_strongly_seen_witnesses = strongly_seen_nodes;
-        _witness._prev_seen_witnesses = BitMask(_youngest_son_ancestors.map!(e => (e !is null && !higher(round.number-1, e.round.number))));
+        _witness._prev_seen_witnesses = BitMask(_youngest_son_ancestors.map!(e => (e !is null && !higher(round.number - 1, e
+                .round.number))));
         if (!strongly_seen_nodes.isMajority(hashgraph)) {
             _round.add(this);
         }
@@ -291,17 +302,17 @@ class Event {
         foreach (i; 0 .. hashgraph.node_size) {
             calc_vote(hashgraph, i);
         }
-        if (hashgraph.__debug_print) {
-            __write("EVENT: %s, Youngest_ancestors: %s", id, _youngest_son_ancestors.filter!(e => e !is null).map!(e => e.id));
-        }
+        // if (hashgraph.__debug_print) {
+        //     __write("EVENT: %s, Youngest_ancestors: %s", id, _youngest_son_ancestors.filter!(e => e !is null).map!(e => e.id));
+        // }
     }
 
     private BitMask calc_strongly_seen_nodes(const HashGraph hashgraph) {
-        auto see_through_matrix = _youngest_son_ancestors 
-                                    .filter!(e => e !is null && e.round is round)
-                                    .map!(e => e._youngest_son_ancestors
-                                        .map!(e => e !is null && e.round is round));
-        
+        auto see_through_matrix = _youngest_son_ancestors
+            .filter!(e => e !is null && e.round is round)
+            .map!(e => e._youngest_son_ancestors
+                    .map!(e => e !is null && e.round is round));
+
         scope strongly_seen_votes = new size_t[hashgraph.node_size];
         see_through_matrix.each!(row => row.enumerate.each!(elm => strongly_seen_votes[elm.index] += elm.value));
         return BitMask(strongly_seen_votes.map!(votes => hashgraph.isMajority(votes)));
@@ -318,7 +329,7 @@ class Event {
         iota(hashgraph.node_size)
             .filter!(node_id => _father._youngest_son_ancestors[node_id]!is null)
             .filter!(node_id => _youngest_son_ancestors[node_id] is null || _father._youngest_son_ancestors[node_id]
-            .received_order > _youngest_son_ancestors[node_id].received_order)
+            .order > _youngest_son_ancestors[node_id].order)
             .each!(node_id => _youngest_son_ancestors[node_id] = _father._youngest_son_ancestors[node_id]);
     }
 
@@ -373,6 +384,34 @@ class Event {
             _son._father = null;
         }
         _daughter = _son = null;
+    }
+
+    const bool sees(Event b) pure {
+
+        if (_youngest_son_ancestors[b.node_id] is null) {
+            return false;
+        }
+        if (!higher(b.order, _youngest_son_ancestors[b.node_id].order)) {
+            return true;
+        }
+        if (node_id == b.node_id && !higher(b.order, order)) {
+            return true;
+        }
+
+        auto see_through_candidates = b[].retro
+            .until!(e => e.pseudo_time_counter != b.pseudo_time_counter)
+            .filter!(e => e._son)
+            .map!(e => e._son);
+
+        foreach (e; see_through_candidates) {
+            if (_youngest_son_ancestors[e.node_id] is null) {
+                continue;
+            }
+            if (!higher(e.order, _youngest_son_ancestors[e.node_id].order)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -493,9 +532,8 @@ class Event {
          * Gets the event order number 
          * Returns: order
          */
-        int received_order() const pure nothrow @nogc
-        {
-            return _received_order;
+        int order() const pure nothrow @nogc {
+            return _order;
         }
 
         /**

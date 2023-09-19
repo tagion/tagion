@@ -22,7 +22,7 @@ import tagion.dart.DARTBasic : DARTIndex;
 //import tagion.dart.DARTBasic;
 import tagion.dart.Recorder;
 
-import tagion.dart.DARTOptions : DARTOptions;
+import tagion.prior_services.DARTOptions : DARTOptions;
 import tagion.basic.Types : Buffer, Control;
 import tagion.crypto.Types : Pubkey;
 import tagion.Keywords;
@@ -238,7 +238,7 @@ interface SynchronizationFactory {
 alias ConnectionPoolT = ConnectionPool!(shared p2plib.StreamI, ulong);
 @safe
 class P2pSynchronizationFactory : SynchronizationFactory {
-    import tagion.dart.DARTOptions;
+    import tagion.prior_services.DARTOptions;
     import tagion.basic.basic : tempfile;
 
     protected {
@@ -330,7 +330,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
                     continue;
                 auto response = syncWith(node_addr.value);
                 if (response[1] is null)
-                continue;
+                    continue;
                 return response;
             }
         }
@@ -695,7 +695,6 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
     private void onComplete(string journal_filename) {
         log("ONCOMPLETE INSERT=%s", journal_filename);
 
-       
         journal_replay.insert(journal_filename);
     }
 

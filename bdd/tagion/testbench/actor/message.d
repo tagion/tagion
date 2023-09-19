@@ -96,8 +96,8 @@ class MessageBetweenSupervisorAndChild {
     Document actorsChild1AndChild2() {
         supervisorHandle = spawn!MySuperActor(supervisor_task_name);
 
-        check(supervisorHandle.tid !is Tid.init, "Supervisor thread is not running");
         check(waitforChildren(Ctrl.ALIVE), "Supervisor did not alive");
+        check(supervisorHandle.tid !is Tid.init, "Supervisor thread is not running");
 
         return result_ok;
     }
@@ -159,8 +159,8 @@ class SendMessageBetweenTwoChildren {
     @Given("a supervisor #super and two child actors #child1 and #child2")
     Document actorsChild1AndChild2() {
         supervisorHandle = spawn!MySuperActor(supervisor_task_name);
-        check(supervisorHandle.tid !is Tid.init, "Supervisor thread is not running");
         check(waitforChildren(Ctrl.ALIVE), "Supervisor is not alive");
+        check(supervisorHandle.tid !is Tid.init, "Supervisor thread is not running");
 
         return result_ok;
     }

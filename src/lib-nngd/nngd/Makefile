@@ -4,7 +4,7 @@
 
 
 DC=dmd
-DCFLAGS=-O -d -m64 -i
+DCFLAGS=-O -d -m64 -i -debug -g
 DINC=nngd extern/libnng/libnng
 DLFLAGS=-Lextern/libnng/extern/nng/build/lib/ -lnng
 

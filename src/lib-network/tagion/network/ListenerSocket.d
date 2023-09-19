@@ -39,7 +39,7 @@ struct ListenerSocket {
         if (task_name) {
             masterTid = locate(task_name);
         }
-        listen_task_name = [task_name, port.to!string].join(commonOptions.separator);
+        listen_task_name = [task_name, port.to!string].join("_");
     }
 
     void stop() {
@@ -47,7 +47,7 @@ struct ListenerSocket {
             stop_listener = true;
             if (listerner_thread !is null) {
                 //BUG: Needs to ping the socket to wake-up the timeout again for making the loop run to exit.
-                auto ping = new TcpSocket(new InternetAddress(commonOptions.url, port));
+                auto ping = new TcpSocket(new InternetAddress(address, port));
                 ping.close;
                 listerner_thread.join();
             }

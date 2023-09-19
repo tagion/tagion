@@ -121,7 +121,7 @@
             "timeout": 0.0
         },
         "hashgraph_test": {
-            "args": ["4", "50"],
+            "args": ["4", "200"],
             "envs": {},
             "stages": [
                 "hashgraph", "acceptance"

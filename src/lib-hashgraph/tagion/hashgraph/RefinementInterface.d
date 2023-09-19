@@ -25,6 +25,4 @@ interface Refinement {
 
     void payload(immutable(EventPackage*) epack);
 
-    void swapNode();
-
 }

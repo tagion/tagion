@@ -24,13 +24,15 @@ alias dartReadRR = Request!"dartRead";
 alias dartCheckReadRR = Request!"dartCheckRead";
 alias dartRimRR = Request!"dartRim";
 alias dartBullseyeRR = Request!"dartBullseye";
-alias dartModifyRR = Request!"dartModify";
+alias dartModifyRR = Request!"dartModifyRequest";
+alias dartModify = Msg!"dartModify";
 
 alias Payload = Msg!"Payload";
 alias ReceivedWavefront = Msg!"ReceivedWavefront";
 alias AddedChannels = Msg!"AddedChannels";
 alias BeginGossip = Msg!"BeginGossip";
 
+/*
 @safe
 struct _ContractProduct {
     immutable(_CollectedSignedContract*) contract;
@@ -44,3 +46,4 @@ struct _CollectedSignedContract {
     SignedContract contract;
     //mixin HiBONRecord;
 }
+*/

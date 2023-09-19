@@ -26,6 +26,20 @@ version (Posix) {
     import core.sys.posix.pthread;
 
     extern (C) int pthread_setname_np(pthread_t, const char*) nothrow;
+
+    /**
+    Set the thread name to the same as the task name
+    Note. Makes it easier to debug because pthread name is the same as th task name
+    */
+    @trusted
+    void setThreadName(string name) nothrow {
+        pthread_setname_np(pthread_self(), toStringz(name));
+    }
+}
+else {
+    @trusted
+    void setThreadName(string _) nothrow {
+    }
 }
 
 /**
@@ -41,6 +55,61 @@ version (Posix) {
 struct Msg(string name) {
 }
 
+private struct ActorInfo {
+    private Ctrl[string] childrenState;
+    private string _task_name;
+    bool stop;
+
+    string task_name() @trusted {
+        return _task_name;
+    }
+
+    bool task_name(const string name) @trusted nothrow {
+        try {
+            const registered = locate(name);
+            const i_am_the_registered = (() @trusted => registered == thisTid)();
+            if (registered is Tid.init) {
+                register(name, thisTid);
+                _task_name = name;
+                setThreadName(name);
+                return true;
+            }
+            else if (i_am_the_registered) {
+                _task_name = name;
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+        catch (Exception e) {
+            import std.stdio;
+
+            printf("Could not set name '%s', \nbecause %s", toStringz(name), toStringz(e.msg));
+            return false;
+        }
+    }
+}
+
+static ActorInfo thisActor;
+
+///
+unittest {
+    assert(thisActor.task_name is string.init, "task_name did not start as init");
+    enum dummy_name = "dummy_name";
+    scope (exit) {
+        unregister(dummy_name);
+    }
+    assert(thisActor.task_name = dummy_name, "setting name failed");
+    assert(thisActor.task_name = dummy_name, "setting name seconds time did not fallthrough");
+    assert(thisActor.task_name == dummy_name, "name was not the same as we set");
+    concurrency.spawn(() {
+        assert(!(thisActor.task_name = dummy_name), "Should not be able to set the same task name in another tid");
+    });
+    assert(locate(thisActor.task_name) == thisTid, "Name not registered");
+
+}
+
 struct Request(string name) {
     Msg!name msg;
     uint id;
@@ -52,6 +121,7 @@ struct Request(string name) {
         Request!name r;
         r.msg = Msg!name();
         r.id = generateId();
+        assert(thisActor.task_name !is string.init, "The requester is not registered as a task");
         r.task_name = thisActor.task_name;
         return r;
     }
@@ -72,7 +142,9 @@ struct Response(string name) {
 @safe
 unittest {
     thisActor.task_name = "req_resp";
-    register("req_resp", thisTid);
+    scope (exit) {
+        unregister("req_resp");
+    }
     alias Some_req = Request!"some_req";
     void some_responder(Some_req req) {
         req.respond("hello");
@@ -99,14 +171,6 @@ enum Ctrl {
 enum Sig {
     STOP,
 }
-
-struct ActorInfo {
-    private Ctrl[string] childrenState;
-    string task_name;
-    bool stop;
-}
-
-static ActorInfo thisActor;
 
 /// Control message sent to a supervisor
 /// contains the Tid of the actor which send it and the state
@@ -144,6 +208,18 @@ bool waitforChildren(Ctrl state, Duration timeout = 1.seconds) @safe nothrow {
     catch (Exception e) {
         return false;
     }
+}
+
+unittest {
+    enum task_name = "child_task";
+    assert(waitforChildren(Ctrl.ALIVE, Duration.min), "Waiting for no spawned tid, should always be true");
+    thisActor.childrenState[task_name] = Ctrl.STARTING;
+    assert(!waitforChildren(Ctrl.ALIVE, Duration.min), "should've timed out");
+    thisActor.childrenState[task_name] = Ctrl.ALIVE;
+    assert(waitforChildren(Ctrl.ALIVE, Duration.min));
+    thisActor.childrenState[task_name] = Ctrl.END;
+    assert(waitforChildren(Ctrl.END));
+    assert(thisActor.childrenState.length == 0, "childrenState should be cleaned up when checked that all of them have ended");
 }
 
 /// Checks if a type has the required members to be an actor
@@ -192,7 +268,7 @@ struct ActorHandle(A) {
 
     // Get the status of the task, asserts if the calling task did not spawn it
     Ctrl state() @safe nothrow {
-        if (task_name in thisActor.childrenState) {
+        if ((task_name in thisActor.childrenState) !is null) {
             return thisActor.childrenState[task_name];
         }
         assert(0, "You don't own this task");
@@ -226,8 +302,8 @@ if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
     try {
         Tid tid;
         tid = concurrency.spawn((immutable(A) _actor, string name, Args args) @trusted nothrow{
-            thisActor.task_name = name;
             log.register(name);
+            // thisActor.task_name(name);
             thisActor.stop = false;
             A actor = cast(A) _actor;
             setState(Ctrl.STARTING); // Tell the owner that you are starting.
@@ -251,12 +327,6 @@ if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
         thisActor.childrenState[name] = Ctrl.UNKNOWN;
         log("spawning %s", name);
         tid.setMaxMailboxSize(int.max, OnCrowding.throwException);
-        if (concurrency.register(name, tid)) {
-            log("%s registered as %s", tid, name);
-        }
-        else {
-            log("could not register %s as %s, name already registered", tid, name);
-        }
         return ActorHandle!A(name);
     }
     catch (Exception e) {
@@ -330,8 +400,9 @@ void sendOwner(T...)(T vals) @safe {
 */
 void fail(Throwable t) @trusted nothrow {
     try {
-        debug (actor)
+        debug (actor) {
             log(t);
+        }
         ownerTid.prioritySend(TaskFailure(thisActor.task_name, cast(immutable) t));
     }
     catch (Exception e) {
@@ -348,6 +419,7 @@ void fail(Throwable t) @trusted nothrow {
 void setState(Ctrl ctrl) @safe nothrow {
     try {
         log("setting state to %s", ctrl);
+        assert(thisActor.task_name !is string.init, "Can not set the state for a task with no name");
         ownerTid.prioritySend(CtrlMsg(thisActor.task_name, ctrl));
     }
     catch (Exception e) {

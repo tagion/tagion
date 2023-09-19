@@ -5,6 +5,7 @@ import core.sys.posix.signal;
 import core.sys.posix.unistd;
 import core.sync.event;
 import core.thread;
+import core.time;
 import std.getopt;
 import std.stdio;
 import std.socket;
@@ -21,8 +22,12 @@ import tagion.tools.revision;
 import tagion.actor;
 import tagion.services.supervisor;
 import tagion.services.options;
+import tagion.services.locator;
 import tagion.GlobalSignals;
 import tagion.utils.JSONCommon;
+import tagion.crypto.SecureNet;
+import tagion.crypto.SecureInterfaceNet;
+import tagion.gossip.AddressBook : addressbook, NodeAddress;
 
 // enum EXAMPLES {
 //     ver = Example("-v"),
@@ -111,21 +116,59 @@ int _main(string[] args) {
 
     log.register(baseName(program));
 
-    immutable opts = Options(local_options);
-    enum supervisor_task_name = "supervisor";
-    auto supervisor_handle = spawn!Supervisor(supervisor_task_name, opts);
+    locator_options = new immutable(LocatorOptions)(5, 5);
+    ActorHandle!Supervisor[] supervisor_handles;
 
-    if (waitforChildren(Ctrl.ALIVE)) {
+    immutable wave_options = Options(local_options).wave;
+    if (wave_options.network_mode == NetworkMode.INTERNAL) {
+
+        struct Node {
+            immutable(Options) opts;
+            immutable(SecureNet) net;
+        }
+
+        Node[] nodes;
+
+        foreach (i; 0 .. wave_options.number_of_nodes) {
+            immutable prefix = format("Node_%s_", i);
+            auto opts = Options(local_options);
+            opts.setPrefix(prefix);
+            SecureNet net = new StdSecureNet();
+            net.generateKeyPair(opts.task_names.supervisor);
+
+            nodes ~= Node(opts, cast(immutable) net);
+
+            addressbook[net.pubkey] = NodeAddress(opts.task_names.epoch_creator);
+        }
+
+        /// spawn the nodes
+        foreach (n; nodes) {
+            supervisor_handles ~= spawn!Supervisor(n.opts.task_names.supervisor, n.opts, n.net);
+        }
+
+    }
+    else {
+        assert(0, "NetworkMode not supported");
+    }
+
+    if (waitforChildren(Ctrl.ALIVE, 10.seconds)) {
         log("alive");
         stopsignal.wait;
     }
     else {
-        log("Progam did not start");
+        log("Program did not start");
+        return 1;
     }
 
     log("Sending stop signal to supervisor");
-    supervisor_handle.send(Sig.STOP);
-    waitforChildren(Ctrl.END);
+    foreach (supervisor; supervisor_handles) {
+        supervisor.send(Sig.STOP);
+    }
+    // supervisor_handle.send(Sig.STOP);
+    if (!waitforChildren(Ctrl.END)) {
+        log("Program did not stop properly");
+        return 1;
+    }
     log("Exiting");
     return 0;
 }

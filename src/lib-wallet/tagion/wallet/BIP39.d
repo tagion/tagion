@@ -3,6 +3,7 @@ module tagion.wallet.BIP39;
 import tagion.basic.Version : ver;
 import tagion.basic.Debug;
 import tagion.utils.Miscellaneous : toHexString;
+import tagion.crypto.random.random;
 
 static assert(ver.LittleEndian, "At the moment bip39 only supports Little Endian");
 
@@ -70,6 +71,12 @@ struct WordList {
             .map!(w => tuple!("index", "value")(w.value, w.index))
             .assocArray;
 
+    }
+
+    void gen(ref scope ushort[] words) @trusted {
+        foreach (ref word; words) {
+            word = getRandom!ushort & 0x800;
+        }
     }
 
     const(ushort[]) list(const(string[]) mnemonics) {
