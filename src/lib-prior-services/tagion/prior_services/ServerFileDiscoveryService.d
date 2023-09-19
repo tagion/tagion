@@ -77,8 +77,8 @@ void serverFileDiscoveryService(
             try {
                 post(opts.serverFileDiscovery.url ~ "/node/record",
                         [
-                        "value": json,
-                        ]);
+                    "value": json,
+                ]);
             }
             catch (TagionException e) {
                 fatal(e);
@@ -89,9 +89,9 @@ void serverFileDiscoveryService(
             log("Posting info to %s", opts.serverFileDiscovery.url ~ "/node/erase");
             post(opts.serverFileDiscovery.url ~ "/node/erase",
                     [
-                    "value": (cast(string) pubkey),
-                    "tag": opts.serverFileDiscovery.tag
-                    ]);
+                "value": (cast(string) pubkey),
+                "tag": opts.serverFileDiscovery.tag
+            ]);
         }
 
         scope (exit) {

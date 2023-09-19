@@ -22,7 +22,7 @@ enum StdNames {
     @label(StdNames.owner) Pubkey owner; // owner key
     mixin HiBONRecord!(
             q{
-                this(TagionCurrency value, const sdt_t time, Pubkey owner) {
+                this(TagionCurrency value, const sdt_t time, Pubkey owner) pure {
                     this.value = value;
                     this.time = time;
                     this.owner = owner; 
@@ -32,26 +32,44 @@ enum StdNames {
 
 @safe
 @recordType("SMC") struct Contract {
-    @label("$in") DARTIndex[] inputs; /// Hash pointer to input (DART)
-    @label("$read", true) DARTIndex[] reads; /// Hash pointer to read-only input (DART)
+    @label("$in") const(DARTIndex)[] inputs; /// Hash pointer to input (DART)
+    @label("$read", true) const(DARTIndex)[] reads; /// Hash pointer to read-only input (DART)
     @label("$run") Document script; // Smart contract 
     bool verify() {
         return (inputs.length > 0);
     }
 
-    mixin HiBONRecord;
+    mixin HiBONRecord!(
+            q{
+                this(const(DARTIndex)[] inputs, const(DARTIndex)[] reads, Document script) @safe pure nothrow {
+                    this.inputs = inputs;
+                    this.reads = reads;
+                    this.script = script; 
+                }
+            });
 }
 
 @safe
 @recordType("SSC") struct SignedContract {
-    @label("$signs") Signature[] signs; /// Signature of all inputs
+    @label("$signs") const(Signature)[] signs; /// Signature of all inputs
     @label("$contract") Contract contract; /// The contract must signed by all inputs
-    mixin HiBONRecord;
+    mixin HiBONRecord!(
+            q{
+                this(const(Signature)[] signs, Contract contract) @safe pure nothrow {
+                    this.signs = signs;
+                    this.contract = contract;
+                }
+            });
 }
 
 @safe
 @recordType("pay")
 struct PayScript {
     @label(StdNames.values) TagionCurrency[] outputs;
-    mixin HiBONRecord;
+    mixin HiBONRecord!(
+            q{
+                this(TagionCurrency[] outputs) @safe pure nothrow {
+                    this.outputs = outputs;
+                }
+            });
 }

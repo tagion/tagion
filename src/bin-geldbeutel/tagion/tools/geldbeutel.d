@@ -115,16 +115,16 @@ int _main(string[] args) {
         //            writeln(logo);
         defaultGetoptPrinter(
                 [
-                // format("%s version %s", program, REVNO),
-                "Documentation: https://tagion.org/",
-                "",
-                "Usage:",
-                format("%s [<option>...] <config.json> <files>", program),
-                "",
+            // format("%s version %s", program, REVNO),
+            "Documentation: https://tagion.org/",
+            "",
+            "Usage:",
+            format("%s [<option>...] <config.json> <files>", program),
+            "",
 
-                "<option>:",
+            "<option>:",
 
-                ].join("\n"),
+        ].join("\n"),
                 main_args.options);
         return 0;
     }

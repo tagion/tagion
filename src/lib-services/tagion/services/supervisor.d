@@ -6,6 +6,7 @@ import std.file;
 import std.stdio;
 import std.socket;
 import std.typecons;
+import core.time;
 
 import tagion.logger.Logger;
 import tagion.actor;
@@ -21,7 +22,6 @@ import tagion.services.DART;
 import tagion.services.inputvalidator;
 import tagion.services.hirpc_verifier;
 import tagion.services.epoch_creator;
-
 
 @safe
 struct Supervisor {
@@ -41,16 +41,20 @@ struct Supervisor {
 
         auto hirpc_verifier_handle = spawn!HiRPCVerifierService(tn.hirpc_verifier, opts.hirpc_verifier, tn.collector, net);
 
-        auto inputvalidator_handle = spawn!InputValidatorService(tn.inputvalidator, opts.inputvalidator, tn.hirpc_verifier);
+        auto inputvalidator_handle = spawn!InputValidatorService(tn.inputvalidator, opts.inputvalidator, tn
+                .hirpc_verifier);
 
-        auto epoch_creator_handle = spawn!EpochCreatorService(tn.epoch_creator, opts.epoch_creator, net);
-        
+        auto epoch_creator_handle = spawn!EpochCreatorService(tn.epoch_creator, opts.epoch_creator, opts.wave
+                .network_mode, opts.wave.number_of_nodes, net, opts.monitor);
+
         auto services = tuple(dart_handle, hirpc_verifier_handle, inputvalidator_handle, epoch_creator_handle);
 
-        if (!waitforChildren(Ctrl.ALIVE)) {
+        if (waitforChildren(Ctrl.ALIVE, 5.seconds)) {
+            run(failHandler);
+        }
+        else {
             log.error("Not all children became Alive");
         }
-        run(failHandler);
 
         foreach (service; services) {
             if (service.state is Ctrl.ALIVE) {

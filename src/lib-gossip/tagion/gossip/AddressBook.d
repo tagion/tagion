@@ -345,10 +345,11 @@ struct NodeAddress {
 
     mixin HiBONRecord!(
             q{
-            this(
-            string address,
-            const ulong port_base,
-            bool marshal = false) {
+            this(string address) {
+                pragma(msg, "fixme(pr): addressbook for mode0 should be created instead");
+                this.address = address;
+            }
+            this(string address, const ulong port_base, bool marshal = false) {
         import std.string;
 
         try {

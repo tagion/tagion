@@ -21,9 +21,9 @@ import std.stdio;
 enum feature = Feature(
             "Actor supervisor test",
             [
-            "This feature should check that when a child catches an exception is sends it up as a failure.",
-            "The supervisour has the abillity to decide whether or not to restart i depending on the exception."
-            ]);
+        "This feature should check that when a child catches an exception is sends it up as a failure.",
+        "The supervisour has the abillity to decide whether or not to restart i depending on the exception."
+]);
 
 alias FeatureContext = Tuple!(
         SupervisorWithFailingChild, "SupervisorWithFailingChild",
@@ -146,9 +146,12 @@ class SupervisorWithFailingChild {
     }
 
     @Then("the #super actor should stop #child and restart it")
-    Document restartIt() {
+    Document restartIt() @trusted {
         childHandle = handle!SetUpForFailure(child_task_name); // FIX: actor handle should be transparent
-        check(locate(child_task_name) !is Tid.init, "Child thread is not running");
+        import core.thread, core.time;
+
+        Thread.sleep(100.msecs);
+        check(childHandle.tid !is Tid.init, "Child thread is not running");
         return result_ok;
     }
 

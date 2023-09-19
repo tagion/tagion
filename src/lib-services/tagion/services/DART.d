@@ -25,6 +25,13 @@ import tagion.services.messages;
 @safe
 struct DARTOptions {
     string dart_filename = buildPath(".", "dart".setExtension(FileExtension.dart));
+
+    void setPrefix(string prefix) nothrow {
+        import std.exception;
+
+        dart_filename = buildPath(".", assumeWontThrow(format("%sdart", prefix)).setExtension(FileExtension.dart));
+    }
+
     mixin JSONCommon;
 }
 

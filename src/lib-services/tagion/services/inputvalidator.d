@@ -27,9 +27,15 @@ import nngd;
 struct InputValidatorOptions {
     string sock_addr;
     void setDefault() nothrow {
-        import tagion.services.options : contract_sock_path;
+        import tagion.services.options : contract_sock_addr;
 
-        sock_addr = contract_sock_path;
+        sock_addr = contract_sock_addr;
+    }
+
+    void setPrefix(string prefix) nothrow {
+        import tagion.services.options : contract_sock_addr;
+
+        sock_addr = contract_sock_addr(prefix);
     }
 
     mixin JSONCommon;

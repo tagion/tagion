@@ -330,7 +330,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
                     continue;
                 auto response = syncWith(node_addr.value);
                 if (response[1] is null)
-                continue;
+                    continue;
                 return response;
             }
         }
@@ -695,7 +695,6 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
     private void onComplete(string journal_filename) {
         log("ONCOMPLETE INSERT=%s", journal_filename);
 
-       
         journal_replay.insert(journal_filename);
     }
 

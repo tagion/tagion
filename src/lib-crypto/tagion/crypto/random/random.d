@@ -9,7 +9,7 @@ static if (ver.linux || ver.Android) {
     enum is_getrandom = true;
     extern (C) size_t getrandom(void* buf, size_t buflen, uint flags) @trusted;
 }
-else static if (ver.iOS) {
+else static if (ver.iOS || ver.OSX) {
     enum is_getrandom = false;
     extern (C) void arc4random_buf(void* buf, size_t buflen) @trusted;
 }

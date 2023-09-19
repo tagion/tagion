@@ -59,36 +59,35 @@ import core.thread;
 @safe
 class MonitorCallBacks : EventMonitorCallbacks {
     protected enum _params = [
-            "altitude",
-            "mother",
-            "father",
-            "order",
-            "number",
-            "payload",
-            "famous",
-            "famous_votes",
-            "remove",
-            "list",
-            "epoch",
-            "strong_votes",
-            "decided",
-            "decided_count",
-            "witness",
-            "witness_mask",
-            "received_number",
-            "coin",
-            "coin_round",
-            "round",
-            "is_grounded",
-            "count",
-        ];
+        "altitude",
+        "mother",
+        "father",
+        "order",
+        "number",
+        "payload",
+        "famous",
+        "famous_votes",
+        "remove",
+        "list",
+        "epoch",
+        "strong_votes",
+        "decided",
+        "decided_count",
+        "witness",
+        "witness_mask",
+        "received_number",
+        "coin",
+        "coin_round",
+        "round",
+        "is_grounded",
+        "count",
+    ];
     mixin(EnumText!("Params", _params));
 
     protected {
         Tid _socket_thread_id;
         //       Tid _network_socket_tread_id;
     }
-    immutable uint _local_node_id;
     // immutable uint _global_node_id;
     immutable FileExtension ext;
 
@@ -154,7 +153,7 @@ class MonitorCallBacks : EventMonitorCallbacks {
 
             try {
                 hibon[Params.altitude] = e.altitude;
-                hibon[Params.order] = e.received_order;
+                hibon[Params.order] = e.order;
                 if (e.hasRound) {
                     hibon[Params.number] = e.round.number;
                 }
@@ -379,11 +378,8 @@ class MonitorCallBacks : EventMonitorCallbacks {
 
     @trusted
     this(Tid socket_thread_id,
-            const uint local_node_id, // const uint global_node_id,
             const FileExtension dataformat) {
         this._socket_thread_id = socket_thread_id;
-        //        this._network_socket_tread_id = locate("network_socket_thread");
-        this._local_node_id = local_node_id;
         this.ext = dataformat;
     }
 

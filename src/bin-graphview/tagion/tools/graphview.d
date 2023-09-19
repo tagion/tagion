@@ -22,25 +22,25 @@ import std.functional : toDelegate;
 import tagion.basic.basic : EnumText;
 
 protected enum _params = [
-        "events",
-        "size",
-    ];
+    "events",
+    "size",
+];
 
 mixin(EnumText!("Params", _params));
 
 //
 
 enum pastel19 = [
-        "#fbb4ae",
-        "#b3cde3",
-        "#ccebc5",
-        "#decde4",
-        "#fed9a6",
-        "#ffffcc",
-        "#e5d8bd",
-        "#fddaec",
-        "#f2f2f2"
-    ];
+    "#fbb4ae",
+    "#b3cde3",
+    "#ccebc5",
+    "#decde4",
+    "#fed9a6",
+    "#ffffcc",
+    "#e5d8bd",
+    "#fddaec",
+    "#f2f2f2"
+];
 
 string color(T)(string[] colors, T index) if (isIntegral!T) {
     import std.math : abs;
@@ -290,23 +290,23 @@ int _main(string[] args) {
     if (main_args.helpWanted) {
         defaultGetoptPrinter(
                 [
-                "Documentation: https://tagion.org/",
-                "",
-                "",
-                "Example:",
-                "graphview Alice.hibon | neato -Tsvg -o outputfile.svg",
-                "Usage:",
-                // format("%s [<option>...] <in-file> <out-file>", program),
-                format("%s [<option>...] <in-file>", program),
-                "",
-                "Where:",
-                "<in-file>           Is an input file in .hibon format",
-                // "<out-file>          Is an output file in .json or .hibon format",
-                // "                    stdout is used of the output is not specifed the",
-                "",
+            "Documentation: https://tagion.org/",
+            "",
+            "",
+            "Example:",
+            "graphview Alice.hibon | neato -Tsvg -o outputfile.svg",
+            "Usage:",
+            // format("%s [<option>...] <in-file> <out-file>", program),
+            format("%s [<option>...] <in-file>", program),
+            "",
+            "Where:",
+            "<in-file>           Is an input file in .hibon format",
+            // "<out-file>          Is an output file in .json or .hibon format",
+            // "                    stdout is used of the output is not specifed the",
+            "",
 
-                "<option>:",
-                ].join("\n"),
+            "<option>:",
+        ].join("\n"),
                 main_args.options);
         return 0;
     }

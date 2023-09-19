@@ -182,7 +182,7 @@ class HashGraph {
 
             _nodes.byValue
                 .map!(n => n.event)
-                .each!(e => e.initializeReceivedOrder);
+                .each!(e => e.initializeOrder);
         }
         scope (failure) {
             _nodes = recovered_nodes;
@@ -319,12 +319,8 @@ class HashGraph {
         return (fingerprint in _event_cache) !is null;
     }
 
-    uint epoch_counts;
     package void epoch(Event[] event_collection, const Round decided_round) {
-        if (epoch_counts > 1) {
-            refinement.epoch(event_collection, decided_round);
-        }
-        epoch_counts++;
+        refinement.epoch(event_collection, decided_round);
         if (scrap_depth > 0) {
             live_events_statistic(Event.count);
             mixin Log!(live_events_statistic);

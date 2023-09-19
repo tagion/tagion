@@ -28,7 +28,7 @@ import tagion.utils.Miscellaneous : cutHex;
 
 @safe @nogc
 int highest(int a, int b) pure nothrow {
-    return higher(a,b) ? a : b;
+    return higher(a, b) ? a : b;
 }
 
 @safe @nogc
@@ -77,9 +77,9 @@ int nextAltitide(const Event event) pure nothrow {
 }
 
 protected enum _params = [
-        "events",
-        "size",
-    ];
+    "events",
+    "size",
+];
 
 mixin(EnumText!("Params", _params));
 

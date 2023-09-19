@@ -138,7 +138,7 @@ struct KeyRecover {
                     include[index]++;
                     local_search(index, size);
                 }
-            else if (index > 0) {
+                else if (index > 0) {
                     include[index - 1]++;
                     local_search(index - 1, size - 1);
                 }

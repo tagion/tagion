@@ -1,0 +1,31 @@
+name: Build libmobile for ios
+on:
+  workflow_dispatch:
+    #  push: 
+    #    branches: 
+    #      - current
+
+jobs:
+  ios_libmobile:
+    runs-on: minmax
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Build
+        run: |
+          make DC=ldc2 PLATFORM=arm64-apple-ios libmobile
+          file ./build/arm64-apple-ios/lib/libmobile.so
+
+      - uses: actions/upload-artifact@v3
+        if: success()
+        with:
+          name: libmobile
+          path: ./build/*/lib/libmobile.dylib
+          if-no-files-found: error
+
+      - name: Cleanup
+        run: 
+          make PLATFORM=arm64-apple-ios clean

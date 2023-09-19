@@ -1,0 +1,138 @@
+module tagion.testbench.services.collector;
+// Default import list for bdd
+import tagion.behaviour;
+import tagion.hibon.Document;
+import std.typecons : Tuple;
+import tagion.testbench.tools.Environment;
+
+import std.path : dirName, setExtension, buildPath;
+import std.file : mkdirRecurse, exists, remove;
+import std.range : iota, zip;
+import std.algorithm.iteration : map;
+import std.format : format;
+import std.array;
+
+import tagion.testbench.actor.util;
+import tagion.crypto.SecureNet;
+import tagion.crypto.Types;
+import tagion.crypto.SecureInterfaceNet;
+import tagion.script.execute;
+import tagion.script.TagionCurrency;
+import tagion.script.common;
+import tagion.actor;
+import tagion.services.messages;
+import tagion.services.collector;
+import tagion.services.DART;
+import tagion.utils.StdTime;
+import tagion.basic.Types : FileExtension, Buffer;
+import tagion.dart.Recorder;
+import tagion.dart.DARTBasic;
+
+enum feature = Feature(
+            "collector services",
+            []);
+
+alias FeatureContext = Tuple!(
+        ItWork, "ItWork",
+        FeatureGroup*, "result"
+);
+
+StdSecureNet[] createNets(uint count, string pass_prefix = "net") @safe {
+    return iota(0, count).map!((i) {
+        auto net = new StdSecureNet();
+        net.generateKeyPair(format("%s_%s", pass_prefix, i));
+        return net;
+    }).array;
+}
+
+TagionBill[] createBills(StdSecureNet[] bill_nets, uint amount) @safe {
+    return bill_nets.map!((net) =>
+            TagionBill(TGN(amount), currentTime, net.pubkey)
+    ).array;
+
+}
+
+const(DARTIndex)[] insertBills(TagionBill[] bills, ref RecordFactory.Recorder rec) @safe {
+    rec.insert(bills.map!(bill => bill.toDoc), Archive.Type.ADD);
+    return rec[].map!((a) => a.fingerprint).array;
+}
+
+@safe @Scenario("it work", [])
+class ItWork {
+    enum dart_service = "dart_service_task";
+    DARTServiceHandle dart_handle;
+    CollectorServiceHandle collector_handle;
+
+    immutable(DARTIndex)[] inputs;
+    StdSecureNet[] input_nets;
+
+    @Given("i have a collector service")
+    Document service() {
+        thisActor.task_name = "collector_tester_task";
+        SecureNet _net = new StdSecureNet();
+        _net.generateKeyPair("very secret");
+        immutable node_net = (() @trusted => cast(immutable) _net)();
+
+        { // Start dart service
+            immutable opts = DARTOptions(
+                    buildPath(env.bdd_results, __MODULE__, "dart".setExtension(FileExtension.dart))
+            );
+            mkdirRecurse(opts.dart_filename.dirName);
+            if (opts.dart_filename.exists) {
+                opts.dart_filename.remove;
+            }
+
+            import tagion.dart.DART;
+
+            DART.create(opts.dart_filename, node_net);
+
+            dart_handle = spawn!DARTService(dart_service, opts, node_net);
+            check(waitforChildren(Ctrl.ALIVE), "dart service did not alive");
+        }
+
+        auto record_factory = RecordFactory(node_net);
+        auto insert_recorder = record_factory.recorder;
+        auto output_recorder = record_factory.recorder;
+
+        input_nets = createNets(10, "input");
+        inputs ~= input_nets.createBills(100_000).insertBills(insert_recorder);
+        dart_handle.send(dartModifyRR(),
+                (() @trusted => cast(immutable) insert_recorder)()
+        );
+        receiveOnlyTimeout!(dartModifyRR.Response, immutable(DARTIndex));
+
+        dart_handle.send(dartBullseyeRR());
+        immutable collector = CollectorService(node_net, dart_service, thisActor.task_name);
+        collector_handle = spawn(collector, "collector_task");
+        check(waitforChildren(Ctrl.ALIVE), "CollectorService never alived");
+
+        return result_ok;
+    }
+
+    @When("i send a contract")
+    Document contract() @trusted {
+        import std.exception;
+
+        immutable outputs = PayScript(iota(0, 10).map!(_ => TGN(100_000)).array).toDoc;
+        immutable contract = cast(immutable) Contract(inputs, immutable(DARTIndex[]).init, outputs);
+        immutable signs = {
+            immutable(Signature)[] signs;
+            foreach (net, fprint; zip(input_nets, inputs)) {
+                signs ~= net.sign(net.calcHash(cast(Buffer) fprint));
+            }
+            return signs;
+        };
+        immutable s_contract = cast(immutable) SignedContract(signs(), cast(immutable) contract);
+        return result_ok;
+    }
+
+    @Then("i receive a `CollectedSignedContract`")
+    Document collectedSignedContract() {
+        dart_handle.send(Sig.STOP);
+        collector_handle.send(Sig.STOP);
+        waitforChildren(Ctrl.END);
+
+        return Document();
+    }
+
+}
