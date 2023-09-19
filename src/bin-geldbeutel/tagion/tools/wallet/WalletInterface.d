@@ -444,8 +444,8 @@ struct WalletInterface {
                         quiz.questions = quiz_list.map!(q => q[0]).array.dup;
                         auto selected_answers = quiz_list.map!(q => q[1]).array;
                         if (selected_answers.length < 3) {
-                            writefln("%1$sThen number of answers must be more than %4$d%2$s%3$s", RED, RESET, CLEAREOL, selected_answers
-                                    .length);
+                            writefln("%1$sThen number of answers must be more than %4$d%2$s%3$s",
+                                    RED, RESET, CLEAREOL, selected_answers.length);
                         }
                         else {
                             if (recover_flag) {

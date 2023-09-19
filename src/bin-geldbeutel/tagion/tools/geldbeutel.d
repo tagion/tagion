@@ -48,6 +48,8 @@ int _main(string[] args) {
     bool create_account;
     bool change_pin;
     bool set_default_quiz;
+    double amount;
+    string derive_code;
     string path;
     string pincode;
     bool wallet_ui;
@@ -65,7 +67,8 @@ int _main(string[] args) {
         main_args = getopt(args, std.getopt.config.caseSensitive,
                 std.getopt.config.bundling,
                 "version", "display the version", &version_switch,
-                "overwrite|O", "Overwrite the config file and exits", &overwrite_switch,
+                "v|verbose", "Enable verbose print-out", &__verbose_switch,
+                "O|overwrite", "Overwrite the config file and exits", &overwrite_switch,
                 "path", format("Set the path for the wallet files : default %s", path), &path,
                 "wallet", format("Wallet file : default %s", options.walletfile), &options.walletfile,
                 "device", format("Device file : default %s", options.devicefile), &options.devicefile,
@@ -87,7 +90,9 @@ int _main(string[] args) {
                 "update|U", "Update your wallet", &update_wallet,
                 "item|m", "Invoice item select from the invoice file", &item,
                 */
-                "pin|x", "Pincode", &pincode, /*
+                "pin|x", "Pincode", &pincode,
+                "amount", "Amount in TGN", &amount,
+                "derive", "Derive code", &derive_code,/*
                 "port|p", format("Tagion network port : default %d", options.port), &options.port,
                 "url|u", format("Tagion url : default %s", options.addr), &options.addr,
                 "visual|g", "Visual user interface", &wallet_ui,
@@ -115,16 +120,16 @@ int _main(string[] args) {
         //            writeln(logo);
         defaultGetoptPrinter(
                 [
-            // format("%s version %s", program, REVNO),
-            "Documentation: https://tagion.org/",
-            "",
-            "Usage:",
-            format("%s [<option>...] <config.json> <files>", program),
-            "",
+                // format("%s version %s", program, REVNO),
+                "Documentation: https://tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...] <config.json> <files>", program),
+                "",
 
-            "<option>:",
+                "<option>:",
 
-        ].join("\n"),
+                ].join("\n"),
                 main_args.options);
         return 0;
     }
@@ -160,6 +165,8 @@ int _main(string[] args) {
             //wallet_interface.quiz.questions = standard_questions.dup;
         }
         writefln("change_pin=%s", change_pin);
+        writefln("pincode=%s", pincode);
+        change_pin = change_pin && !pincode.empty;
         if (create_account) {
             wallet_interface.generateSeed(wallet_interface.quiz.questions, false);
             return 0;
@@ -173,17 +180,20 @@ int _main(string[] args) {
         }
 
         if (wallet_interface.secure_wallet !is WalletInterface.StdSecureWallet.init) {
-            if (pincode) {
+            if (!pincode.empty) {
+                writefln("Login:%s", pincode);
                 const flag = wallet_interface.secure_wallet.login(pincode);
+
                 if (!flag) {
                     stderr.writefln("%sWrong pincode%s", RED, RESET);
                     return 3;
                 }
+                verbose("%1$sLoggedin%2$s", GREEN, RESET);
             }
             else if (!wallet_interface.loginPincode(No.ChangePin)) {
                 wallet_ui = true;
-                writefln("Wallet not loggedin");
-                WalletInterface.pressKey;
+                writefln("%1$sWallet not loggedin%2$s", YELLOW, RESET);
+                //WalletInterface.pressKey;
 
                 return 4;
             }
