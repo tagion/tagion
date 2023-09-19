@@ -8,13 +8,6 @@ PLATFORMS+=$(IOS_ARM64)
 
 ifeq ($(PLATFORM),$(IOS_ARM64))
 
-modify_rpath: $(LIBMOBILE)
-	install_name_tool -id "@rpath/libmobile.dylib" $<
-
-.PHONY: modify_rpath
-
-libmobile: modify_rpath
-
 # ---------------------------------------------------------------------
 # Compiler selection 
 # ---------------------------------------------------------------------
