@@ -151,7 +151,7 @@ struct AccountDetails {
 struct Invoice {
     string name; /// Name of the invoice
     TagionCurrency amount; /// Amount to be payed
-    @label(OwnerKey) Pubkey pkey; /// Key to the payee
+    @label(StdNames.owner) Pubkey pkey; /// Key to the payee
     @label("*", true) Document info; /// Information about the invoice
     mixin HiBONRecord!();
 }
@@ -163,10 +163,11 @@ struct Invoices {
 }
 
 @safe
-@recordType("Payment")
+@recordType("TGNRequest")
 struct PaymentRequest {
     string name; /// Name of the reception
-    @label(OwnerKey) Pubkey owner;
+    @label(StdNames.owner) Pubkey owner;
+    @label(StdNames.derive) string derive;
     @label(VOID, true) TagionCurrency amount;
     @label(VOID, true) Document info;
 }

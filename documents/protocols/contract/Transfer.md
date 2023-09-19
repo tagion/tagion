@@ -3,13 +3,15 @@
 ## Request for payment
 The request for payment include an name of the receiver and seed public key.
 
-### Payment Request(TWPR)
+### Payment Request(TGNRequest)
 
 | Name        | D-Type       | Description            |  Required |
 | ----------- | ------------ | ---------------------- | --------- |
-| `$signs`    | [Buffer]()[] | List of $N$ signature  |    Yes    |
-| `$contract` | [Contract]() | The contract body      |    Yes    |
-
+| `name`      | string       | Owner or alias name    |    Yes    |
+| `$Y`        | [Pubkey]()   | Public key seed        |    Yes    |
+| `$D`        | string       | Deriver                |    Yes    |
+| `$V`        | $TGN$        | Amount in tagion       |    No     |
+| `info`      | [Document]() | Payment information    |    No     |
 
 Request for payment.
 

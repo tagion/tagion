@@ -13,6 +13,7 @@ enum StdNames {
     value = "$V",
     time = "$t",
     values = "$vals",
+    derive = "$D",
 }
 
 @safe
