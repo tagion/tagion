@@ -1,13 +1,16 @@
 module tagion.tools.tagionshell;
 
-import tagion.tools.Basic;
+import std.array : join;
 import std.getopt;
-import tagion.tools.revision;
 import std.file : exists;
+import std.stdio;
+import std.format;
+
+import tagion.tools.Basic;
+import tagion.tools.revision;
 import tagion.tools.shell.shelloptions;
 
 
-import std.stdio;
 
 
 mixin Main!(_main, "shell");
@@ -28,7 +31,6 @@ int _main(string[] args) {
         options.setDefault;
     }
     
-
     try {
         main_args = getopt(args, std.getopt.config.caseSensitive,
             std.getopt.config.bundling,
@@ -41,6 +43,21 @@ int _main(string[] args) {
 
     if (version_switch) {
         revision_text.writeln;
+        return 0;
+    }
+    if (main_args.helpWanted) {
+        defaultGetoptPrinter(
+                [
+            // format("%s version %s", program, REVNO),
+            "Documentation: https://tagion.org/",
+            "",
+            "Usage:",
+            format("%s [<option>...] <config.json> <files>", program),
+            "",
+            "<option>:",
+
+        ].join("\n"),
+                main_args.options);
         return 0;
     }
 

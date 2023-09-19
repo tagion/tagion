@@ -1,3 +1,21 @@
+# Changelog for week 37/38
+
+**Transcript Service**
+The transcript service that is responsible for producing a Recorder for the DART ensuring correct inputs and outputs archives is finished but needs further testing when some of the other components come into play as well.
+
+**Collector Service**
+The collector service which is used for collecting inputs from the DART and ensuring that the data is valid is finished but like the Transcript service it still needs further testing when the components are glued entirely together. 
+
+**Startup flow** 
+We have created the startup flow for mode0. This flow has been greatly improved due to our new actors, which allows us to use supervisors for the different tasks. 
+
+**Monitor**
+The monitor has been integrated into the new epoch creator which allows us to see a visual live representation of the hashgraph while the network is running. This service has also been refactored to use our new actor structure.
+
+**Hashgraph**
+The hashgraph's ordering has been updated to use a new ordering mechanism that uses something we have decided to call pseudotime. We will be posting more about this in the upcoming future.
+
+
 # Changelog for week 36/37
 
 **Hashgraph**

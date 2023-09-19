@@ -7,6 +7,7 @@ struct ShellOptions {
 
 
 
+
     void setDefault() pure nothrow {
         wowo = 10;
     }
