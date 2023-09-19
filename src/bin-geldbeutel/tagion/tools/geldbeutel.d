@@ -23,6 +23,7 @@ import tagion.basic.tagionexceptions;
 import tagion.tools.wallet.WalletOptions;
 import tagion.tools.wallet.WalletInterface;
 import tagion.utils.Term;
+import std.typecons;
 
 mixin Main!(_main, "newwallet");
 
@@ -156,16 +157,22 @@ int _main(string[] args) {
             create_account = true;
             writefln("Wallet dont't exists");
             WalletInterface.pressKey;
-            wallet_interface.quiz.questions = standard_questions.dup;
+            //wallet_interface.quiz.questions = standard_questions.dup;
         }
+        writefln("change_pin=%s", change_pin);
         if (create_account) {
-            wallet_interface.generateSeed(standard_questions.idup, false);
+            wallet_interface.generateSeed(wallet_interface.quiz.questions, false);
+            return 0;
         }
         else if (change_pin) {
-            wallet_interface.changePin;
+            //if (wallet_interface.loginPincode) {
+            wallet_interface.loginPincode(Yes.ChangePin);
+            //                wallet_interface.changePin;
+            //}
+            return 0;
         }
 
-        if (wallet_interface.secure_wallet != WalletInterface.StdSecureWallet.init) {
+        if (wallet_interface.secure_wallet !is WalletInterface.StdSecureWallet.init) {
             if (pincode) {
                 const flag = wallet_interface.secure_wallet.login(pincode);
                 if (!flag) {
@@ -173,7 +180,7 @@ int _main(string[] args) {
                     return 3;
                 }
             }
-            else if (!wallet_interface.loginPincode) {
+            else if (!wallet_interface.loginPincode(No.ChangePin)) {
                 wallet_ui = true;
                 writefln("Wallet not loggedin");
                 WalletInterface.pressKey;

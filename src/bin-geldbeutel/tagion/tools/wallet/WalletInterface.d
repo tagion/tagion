@@ -15,6 +15,7 @@ import core.thread;
 import tagion.basic.Message;
 import tagion.basic.tagionexceptions;
 import tagion.hibon.Document;
+import std.typecons;
 
 /**
  * @brief strip white spaces in begin/end of text
@@ -98,11 +99,11 @@ struct WalletInterface {
                 const quiz_doc = options.quizfile.fread;
                 if (quiz_doc.isInorder) {
                     quiz = Quiz(quiz_doc);
+                    return true;
                 }
-                return false;
             }
-            return true;
         }
+        quiz.questions = options.questions.dup;
         return false;
     }
 
@@ -121,7 +122,7 @@ struct WalletInterface {
     * @brief pseudographical UI interface, pin code reading
     * \return Check pin code result
     */
-    bool loginPincode() {
+    version (none) bool loginPincode() {
         CLEARSCREEN.write;
         foreach (i; 0 .. 3) {
             HOME.write;
@@ -130,7 +131,7 @@ struct WalletInterface {
             writefln("pincode:");
             char[] pincode;
             scope (exit) {
-                scramble(pincode);
+                pincode.scramble;
             }
             readln(pincode);
             pincode.word_strip;
@@ -156,7 +157,7 @@ struct WalletInterface {
     /**
     * @brief wallet pseudographical UI interface
     */
-    void accountView() {
+    version (none) void accountView() {
 
         enum State {
             CREATE_ACCOUNT,
@@ -211,7 +212,8 @@ struct WalletInterface {
                 }
                 else {
                     writefln("%sWrong pin%s", RED, RESET);
-                    writefln("Press %sEnter%s", YELLOW, RESET);
+                    pressKey;
+                    //writefln("Press %sEnter%s", YELLOW, RESET);
                 }
                 break;
             case LOGGEDIN:
@@ -254,61 +256,80 @@ struct WalletInterface {
         readln;
     }
 
+    enum retry = 4;
     /**
-    * @brief chenge pin code interface
+    * @rief chenge pin code interface
     */
-    void changePin() {
+    bool loginPincode(const Flag!"ChangePin" change = Yes.ChangePin) {
         CLEARSCREEN.write;
-        if (secure_wallet.isLoggedin) {
-            foreach (i; 0 .. 3) {
+        char[] old_pincode;
+        char[] new_pincode1;
+        char[] new_pincode2;
+        scope (exit) {
+            // Scramble the code to prevent memory leaks
+            old_pincode.scramble;
+            new_pincode1.scramble;
+            new_pincode2.scramble;
+        }
+        foreach (i; 0 .. retry) {
+            HOME.write;
+            writefln("%1$sAccess code required%2$s", GREEN, RESET);
+            writefln("%1$sEnter empty pincode to proceed recovery%2$s", YELLOW, RESET);
+            writefln("pincode:");
+            scope (exit) {
+                old_pincode.scramble;
+            }
+            readln(old_pincode);
+            old_pincode.word_strip;
+            if (old_pincode.length) {
+                secure_wallet.login(old_pincode);
+                if (secure_wallet.isLoggedin) {
+                    if (No.ChangePin) {
+                        return true;
+                    }
+                    break;
+                }
+                writefln("%1$sWrong pincode%2$s", RED, RESET);
+            }
+        }
+        CLEARSCREEN.write;
+        if (Yes.ChangePin && secure_wallet.isLoggedin) {
+            foreach (i; 0 .. retry) {
                 HOME.write;
                 CLEARSCREEN.write;
                 scope (success) {
                     CLEARSCREEN.write;
                 }
-                writeln("Change you pin code");
+                LINE.writeln;
+                writefln("%1$sChange you pin code%2$s", YELLOW, RESET);
                 LINE.writeln;
                 if (secure_wallet.pin.D) {
-                    char[] old_pincode;
-                    char[] new_pincode1;
-                    char[] new_pincode2;
-                    scope (exit) {
-                        // Scramble the code to prevent memory leaks
-                        old_pincode.scramble;
-                        new_pincode1.scramble;
-                        new_pincode2.scramble;
-                    }
-                    writeln("Current pincode:");
-                    readln(old_pincode);
-                    old_pincode.word_strip;
-                    //            secure_wallet.login(old_pincode);
-                    if (secure_wallet.checkPincode(old_pincode)) {
-                        writefln("%1$sCorrect pin%2$s", GREEN, RESET);
-                        bool ok;
-                        do {
-                            writefln("New pincode:%s", CLEARDOWN);
-                            readln(new_pincode1);
-                            new_pincode1.word_strip;
-                            writefln("Repeate:");
-                            readln(new_pincode2);
-                            new_pincode2.word_strip;
-                            ok = (new_pincode1.length >= 4);
-                            if (ok && (ok = (new_pincode1 == new_pincode2)) is true) {
-                                secure_wallet.changePincode(old_pincode, new_pincode1);
-                                secure_wallet.login(new_pincode1);
-                                options.devicefile.fwrite(secure_wallet.pin);
-                                return;
-                            }
-                            else {
-                                writefln("%1$sPincode to short or does not match%2$s", RED, RESET);
-                            }
+                    do {
+                        writefln("New pincode:%s", CLEARDOWN);
+                        readln(new_pincode1);
+                        new_pincode1.word_strip;
+                        writefln("Repeate:");
+                        readln(new_pincode2);
+                        new_pincode2.word_strip;
+                        ok = (new_pincode1.length >= 4);
+                        if (ok && (ok = (new_pincode1 == new_pincode2)) is true) {
+                            secure_wallet.changePincode(old_pincode, new_pincode1);
+                            secure_wallet.login(new_pincode1);
+                            options.devicefile.fwrite(secure_wallet.pin);
+                            return true;
                         }
-                        while (!ok);
+                        else {
+                            writefln("%1$sPincode to short or does not match%2$s", RED, RESET);
+                        }
                     }
+                    while (!ok);
+                    /*    
+                }
                     else {
                         writefln("%1$sWrong pin%2$s", GREEN, RESET);
                         pressKey;
                     }
+*/
                     return;
                 }
                 writefln("%1$sPin code is missing. You need to recover you keys%2$s", RED, RESET);

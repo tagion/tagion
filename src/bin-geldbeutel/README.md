@@ -22,10 +22,18 @@ geldbeutel [<option>...] <config.json> <files>
 ## Write wallet configuration file `wallet.json`
 This will write a configuration file `wallet.json` and the wallet will be placed in `$HOME/wallet`.  
 ```
-geldbeutel -O --path $HOME/wallet/
+> geldbeutel -O --path $HOME/wallet/
 ```
 
 ## A wallet account can be create as follows
+
+Create the wallet from a list of questions. The questions are listed in the config-file `wallet.json`
+```
+> geldbeutel -C
+
+Wallet dont't exists
+Press Enter
+```
 
 
 

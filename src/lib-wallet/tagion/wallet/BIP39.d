@@ -39,11 +39,6 @@ ubyte[] bip39(const(ushort[]) mnemonics) pure nothrow {
     return digest!SHA256(cast(ubyte[]) result_buffer).dup;
 }
 
-void gen_bip39(ref scope ushort[] words) {
-    foreach (ref word; words) {
-        word = getRandom!ushort & 0x800;
-    }
-}
 /*
 https://github.com/bitcoin/bips/blob/master/bip-0039.mediawikiP
 10001111110100110100110001011001100010111110011101010000101001000000110000011001101010001100001000011101110011000100000111111100
@@ -76,6 +71,12 @@ struct WordList {
             .map!(w => tuple!("index", "value")(w.value, w.index))
             .assocArray;
 
+    }
+
+    void gen(ref scope ushort[] words) @trusted {
+        foreach (ref word; words) {
+            word = getRandom!ushort & 0x800;
+        }
     }
 
     const(ushort[]) list(const(string[]) mnemonics) {
