@@ -7,7 +7,7 @@ import tagion.testbench.tools.Environment;
 
 import std.path : dirName, setExtension, buildPath;
 import std.file : mkdirRecurse, exists, remove;
-import std.range : iota, zip;
+import std.range : iota, zip, take;
 import std.algorithm.iteration : map;
 import std.format : format;
 import std.array;
@@ -49,7 +49,6 @@ TagionBill[] createBills(StdSecureNet[] bill_nets, uint amount) @safe {
     return bill_nets.map!((net) =>
             TagionBill(TGN(amount), currentTime, net.pubkey)
     ).array;
-
 }
 
 const(DARTIndex)[] insertBills(TagionBill[] bills, ref RecordFactory.Recorder rec) @safe {
@@ -66,12 +65,16 @@ class ItWork {
     immutable(DARTIndex)[] inputs;
     StdSecureNet[] input_nets;
 
-    @Given("i have a collector service")
-    Document service() {
-        thisActor.task_name = "collector_tester_task";
+    immutable SecureNet node_net;
+    this() {
         SecureNet _net = new StdSecureNet();
         _net.generateKeyPair("very secret");
-        immutable node_net = (() @trusted => cast(immutable) _net)();
+        node_net = (() @trusted => cast(immutable) _net)();
+    }
+
+    @Given("i have a collector service")
+    Document service() @trusted {
+        thisActor.task_name = "collector_tester_task";
 
         { // Start dart service
             immutable opts = DARTOptions(
@@ -101,7 +104,7 @@ class ItWork {
         );
         receiveOnlyTimeout!(dartModifyRR.Response, immutable(DARTIndex));
 
-        dart_handle.send(dartBullseyeRR());
+        // dart_handle.send(dartBullseyeRR());
         immutable collector = CollectorService(node_net, dart_service, thisActor.task_name);
         collector_handle = spawn(collector, "collector_task");
         check(waitforChildren(Ctrl.ALIVE), "CollectorService never alived");
@@ -117,22 +120,26 @@ class ItWork {
         immutable contract = cast(immutable) Contract(inputs, immutable(DARTIndex[]).init, outputs);
         immutable signs = {
             immutable(Signature)[] signs;
-            foreach (net, fprint; zip(input_nets, inputs)) {
-                signs ~= net.sign(net.calcHash(cast(Buffer) fprint));
+            foreach (fprint; inputs) {
+                signs ~= node_net.sign(node_net.calcHash(cast(Buffer) fprint));
             }
             return signs;
         };
+
+        // check(node_net.verify(insert_recorder[].take(1).dartFingerprint, signs()[0], node_net.pubkey));
         immutable s_contract = cast(immutable) SignedContract(signs(), cast(immutable) contract);
+        collector_handle.send(inputContract(), s_contract);
         return result_ok;
     }
 
     @Then("i receive a `CollectedSignedContract`")
     Document collectedSignedContract() {
+        receiveOnlyTimeout!(signedContract, immutable(CollectedSignedContract)*);
         dart_handle.send(Sig.STOP);
         collector_handle.send(Sig.STOP);
         waitforChildren(Ctrl.END);
 
-        return Document();
+        return result_ok;
     }
 
 }

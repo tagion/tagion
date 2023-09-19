@@ -157,6 +157,7 @@ int _main(string[] args) {
     }
     else {
         log("Program did not start");
+        return 1;
     }
 
     log("Sending stop signal to supervisor");
@@ -164,7 +165,10 @@ int _main(string[] args) {
         supervisor.send(Sig.STOP);
     }
     // supervisor_handle.send(Sig.STOP);
-    waitforChildren(Ctrl.END);
+    if (!waitforChildren(Ctrl.END)) {
+        log("Program did not stop properly");
+        return 1;
+    }
     log("Exiting");
     return 0;
 }

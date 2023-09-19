@@ -24,13 +24,16 @@ struct CollectorOptions {
     mixin JSONCommon;
 }
 
+import std.stdio;
+
 @safe
 struct CollectorService {
     immutable SecureNet net;
     const string dart_task_name;
     const string tvm_task_name;
 
-    Stack!CollectedSignedContract collections;
+    // Queue!CollectedSignedContract collections;
+    CollectedSignedContract[uint] collections;
 
     void task() {
         assert(net !is null, "No secure net");
@@ -48,12 +51,20 @@ struct CollectorService {
     }
 
     void signed_contract(inputContract, immutable(SignedContract) s_contract) @trusted {
-        const req = dartReadRR();
+        auto req = dartReadRR();
 
-        collections.put(req.id, CollectedSignedContract());
-        collections.peek(req.id).sign_contract = cast(SignedContract) s_contract;
+        // collections.put(req.id, CollectedSignedContract());
+        // collections.peek(req.id).sign_contract = cast(SignedContract) s_contract;
+        collections[req.id] = CollectedSignedContract();
+        collections[req.id].sign_contract = cast(SignedContract) s_contract;
 
+        import std.algorithm.iteration : map;
+        import std.range;
+
+        writefln("Reguesting reads: %s", s_contract.contract.reads.map!(a => format("%(%x%)", a)).array);
         locate(dart_task_name).send(req, s_contract.contract.reads);
+        // writefln("Reguesting inputs: %s",  s_contract.contract.inputs.map!(a => format("%(%x%)", a)).array);
+        writefln("Reguesting inputs: %s", s_contract.contract.inputs.map!(a => format("%(%x%)", a)).array);
         locate(dart_task_name).send(req, s_contract.contract.inputs);
     }
 
@@ -62,9 +73,11 @@ struct CollectorService {
         import tagion.dart.DARTBasic : dartFingerprint;
         import std.algorithm.iteration : map;
 
-        auto collection = collections.peek(res.id);
+        // auto collection = collections.peek(res.id);
+        auto collection = res.id in collections;
 
         const archives = recorder[];
+        writefln("recieved fingerprints %s", archives.map!(a => format("%(%x%)", a.fingerprint)).array);
         const s_contract = collection.sign_contract;
         if (s_contract.contract.reads == archives.map!(a => a.fingerprint).array) {
             collection.reads = archives.map!(a => a.toDoc).array.dup;
@@ -74,20 +87,23 @@ struct CollectorService {
                 Pubkey pkey = archive.filed[StdNames.owner].get!Buffer;
                 // bool verify(const Fingerprint message, const Signature signature, const Pubkey pubkey)
                 if (!net.verify(dartFingerprint(dartindex), sign, pkey)) {
+                    writefln("Could not verify \nfingerprint %(%x%) \nsignarture %(%x%) \npkey: %(%x%)\n", dartindex, sign, pkey);
                     return;
                 }
             }
             collection.inputs = archives.map!(a => a.toDoc).array.dup;
         }
-        if (collection.reads !is Document[].init && collection.inputs !is Document[].init) {
+        writefln("%s, %s", collection.inputs is Document[].init, collection.reads is Document[].init);
+        if (collection.inputs.length == 0) {
             return;
         }
 
-        locate(tvm_task_name).send(signedContract(), collections.giveme(res.id));
+        (() @trusted => locate(tvm_task_name).send(signedContract(), cast(immutable) collection))();
+        // locate(tvm_task_name).send(signedContract(), collections.giveme(res.id));
     }
 }
 
-private struct Stack(T) {
+private struct Queue(T) {
     import std.container.dlist;
 
     private struct Data {
