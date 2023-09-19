@@ -161,3 +161,12 @@ struct Invoices {
     Invoice[] list; /// List of invoice (store in the wallet)
     mixin HiBONRecord;
 }
+
+@safe
+@recordType("Payment")
+struct PaymentRequest {
+    string name; /// Name of the reception
+    @label(OwnerKey) Pubkey owner;
+    @label(VOID, true) TagionCurrency amount;
+    @label(VOID, true) Document info;
+}
