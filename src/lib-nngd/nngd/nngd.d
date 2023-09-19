@@ -9,6 +9,7 @@ import std.typecons;
 import std.algorithm;
 import std.datetime.systime;
 import std.traits;
+import std.exception;
 
 import libnng;
 
@@ -97,17 +98,17 @@ struct NNGMessage {
 
     this(ref return scope NNGMessage src){
         auto rc = nng_msg_dup(&msg, src.pointer);
-        assert(rc == 0);
+        enforce(rc == 0);
     }   
     
     this(nng_msg * msgref){
-        assert(msgref != null);
+        enforce(msgref != null);
         msg = msgref;
     }   
 
     this( size_t size ){
         auto rc = nng_msg_alloc(&msg, size);
-        assert(rc == 0);
+        enforce(rc == 0);
     } 
     
     ~this() {
@@ -141,7 +142,7 @@ struct NNGMessage {
     }
 
     @property size_t length() { return nng_msg_len(msg); }
-    @property void length( size_t sz ) { auto rc = nng_msg_realloc(msg, sz); assert(rc == 0); }
+    @property void length( size_t sz ) { auto rc = nng_msg_realloc(msg, sz); enforce(rc == 0); }
     @property size_t header_length() { return nng_msg_header_len(msg); }
     
     void clear() { nng_msg_clear(msg); }
@@ -150,25 +151,25 @@ struct NNGMessage {
         static if (isArray!T){
             static assert((ForeachType!T).sizeof == 1, "None byte size array element are not supported");
             auto rc = nng_msg_append(msg, ptr(data), data.length );
-            assert(rc == 0);
+            enforce(rc == 0);
             return 0;
         }else{            
             static if (T.sizeof == 1){
                 T tmp = data;
                 auto rc = nng_msg_append(msg, cast(void*)&tmp, 1);
-                assert(rc == 0);
+                enforce(rc == 0);
             }                    
             static if (T.sizeof == 2){
                 auto rc = nng_msg_append_u16(msg, data);
-                assert(rc == 0);
+                enforce(rc == 0);
             }
             static if (T.sizeof == 4){
                 auto rc = nng_msg_append_u32(msg, data);
-                assert(rc == 0);
+                enforce(rc == 0);
             }
             static if (T.sizeof == 8){
                 auto rc = nng_msg_append_u64(msg, data);
-                assert(rc == 0);
+                enforce(rc == 0);
             }
             return 0;
         }
@@ -178,25 +179,25 @@ struct NNGMessage {
         static if (isArray!T){
             static assert((ForeachType!T).sizeof == 1, "None byte size array element are not supported");
             auto rc = nng_msg_insert(msg, ptr(data), data.length );
-            assert(rc == 0);
+            enforce(rc == 0);
             return 0;
         } else {
             static if (T.sizeof == 1){
                 T tmp = data;
                 auto rc = nng_msg_insert(msg, cast(void*)&tmp, 1);
-                assert(rc == 0);
+                enforce(rc == 0);
             }
             static if (T.sizeof == 2){
                 auto rc = nng_msg_insert_u16(msg, data);
-                assert(rc == 0);
+                enforce(rc == 0);
             }
             static if (T.sizeof == 4){
                 auto rc = nng_msg_insert_u32(msg, data);
-                assert(rc == 0);
+                enforce(rc == 0);
             }
             static if (T.sizeof == 8){
                 auto rc = nng_msg_insert_u64(msg, data);
-                assert(rc == 0);
+                enforce(rc == 0);
             }
             return 0;
         }            
@@ -208,26 +209,26 @@ struct NNGMessage {
             if(size == 0) size = length;
             T data = cast(T) (bodyptr + (length - size)) [0..size];
             auto rc = nng_msg_chop(msg, size);
-            assert(rc == 0);
+            enforce(rc == 0);
             return data;
         } else {
             T tmp;
             static if (T.sizeof == 1){ 
                 tmp = cast(T)*(bodyptr + (length - 1));
                 auto rc = nng_msg_chop(msg, 1);
-                assert(rc == 0);
+                enforce(rc == 0);
             }
             static if (T.sizeof == 2){
                 auto rc = nng_msg_chop_u16(msg, &tmp);
-                assert(rc == 0);
+                enforce(rc == 0);
             }
             static if (T.sizeof == 4){
                 auto rc = nng_msg_chop_u32(msg, &tmp);
-                assert(rc == 0);
+                enforce(rc == 0);
             }
             static if (T.sizeof == 8){
                 auto rc = nng_msg_chop_u64(msg, &tmp);
-                assert(rc == 0);
+                enforce(rc == 0);
             }
             return tmp;
         }            
@@ -239,26 +240,26 @@ struct NNGMessage {
             if(size == 0) size = length;
             T data = cast(T) (bodyptr) [0..size];
             auto rc = nng_msg_trim(msg, size);
-            assert(rc == 0);
+            enforce(rc == 0);
             return data;
         } else {
             T tmp;
             static if (T.sizeof == 1){
                 tmp = cast(T)*(bodyptr);
                 auto rc = nng_msg_trim(msg, 1);
-                assert(rc == 0);
+                enforce(rc == 0);
             }
             static if (T.sizeof == 2){
                 auto rc = nng_msg_trim_u16(msg, &tmp);
-                assert(rc == 0);
+                enforce(rc == 0);
             }
             static if (T.sizeof == 4){
                 auto rc = nng_msg_trim_u32(msg, &tmp);
-                assert(rc == 0);
+                enforce(rc == 0);
             }
             static if (T.sizeof == 8){
                 auto rc = nng_msg_trim_u64(msg, &tmp);
-                assert(rc == 0);
+                enforce(rc == 0);
             }
             return tmp;
         }            
@@ -268,15 +269,16 @@ struct NNGMessage {
     // TODO: header modification msg_header_* ( will be required for some protocols in raw mode only )
 } // struct NNGMessage
 
+extern (C) alias nng_aio_cb = void function (void *);
+
 struct NNGAio {
     nng_aio* aio;
 
     @disable this();
 
-    extern (C) alias nng_aio_cb = void function (void *);
     this( nng_aio_cb cb, void* arg ){
         auto rc = nng_aio_alloc( &aio,  cb, arg );
-        assert(rc == 0);
+        enforce(rc == 0);
     }
 
     ~this() {
@@ -288,7 +290,7 @@ struct NNGAio {
         if(aio)
             nng_aio_free(aio);
         auto rc = nng_aio_alloc( &aio,  cb, arg );            
-        assert(rc == 0);
+        enforce(rc == 0);
     }
     
     // ---------- pointer prop
@@ -758,6 +760,7 @@ struct NNGSocket {
     @nogc nothrow pure  {
         @property int state() const { return m_state; }
         @property int errno() const { return m_errno; }
+        @property nng_socket_type type() const { return m_type; }
         @property string versionstring() {
             import core.stdc.string : strlen;
             return nng_version[0..strlen(nng_version)]; 
@@ -939,4 +942,109 @@ private:
         }
     } // nothrow
 }   // struct Socket
+
+
+alias nng_pool_callback = void function ( NNGMessage* );
+
+enum nng_worker_state { 
+    NONE = 0, 
+    RECV = 1, 
+    WAIT = 2, 
+    SEND = 4 
+}
+
+struct NNGPoolWorker {
+    int id;
+    nng_worker_state state;
+    NNGMessage msg;
+    NNGAio aio;    
+    Duration delay;
+    nng_ctx ctx;
+    nng_pool_callback cb;
+    this(int iid){
+        this.id = iid;
+        this.state = nng_worker_state.NONE;
+        this.msg = NNGMessage(0);
+        this.aio = NNGAio(null, null);
+        this.delay = msecs(0);
+        this.cb = null;
+    }
+} // struct NNGPoolWorker
+
+extern (C) void nng_pool_stateful ( void* p ){
+    NNGPoolWorker *w = cast(NNGPoolWorker*)p;
+    switch(w.state){
+        case nng_worker_state.NONE:
+            w.state = nng_worker_state.RECV;
+            nng_ctx_recv(w.ctx, w.aio.aio);
+            break;
+        case nng_worker_state.RECV:
+            auto rc = w.aio.result;
+            if(rc != nng_errno.NNG_OK){
+                nng_ctx_recv(w.ctx, w.aio.aio);
+                break;
+            }
+            w.aio.get_msg(&w.msg);
+            w.state = nng_worker_state.WAIT;
+            w.aio.sleep(w.delay);
+            break;
+        case nng_worker_state.WAIT:
+            w.cb(&w.msg);
+            w.aio.set_msg(w.msg);
+            w.state = nng_worker_state.SEND;
+            nng_ctx_send(w.ctx, w.aio.aio);
+            break;
+        case nng_worker_state.SEND:
+            auto rc = w.aio.result;
+            enforce(rc == nng_errno.NNG_OK);
+            w.state = nng_worker_state.RECV;
+            nng_ctx_recv(w.ctx, w.aio.aio);
+            break;
+        default:
+            enforce(false, "Bad pool worker state");
+            break;
+    }
+}
+
+struct NNGPool {
+    NNGSocket *sock;
+    size_t nworkers;
+
+    NNGPoolWorker*[] workers;
+
+    @disable this();
+
+
+    this(NNGSocket *isock, nng_pool_callback cb, size_t n ){
+        enforce(isock.state == nng_socket_state.NNG_STATE_CREATED || isock.state == nng_socket_state.NNG_STATE_CONNECTED);
+        enforce(isock.type == nng_socket_type.NNG_SOCKET_REP); // TODO: extend to surveyou
+        enforce(cb != null);
+        sock = isock;
+        nworkers = n;
+        for(auto i=0; i<n; i++){
+            NNGPoolWorker* w = new NNGPoolWorker(i);
+            w.aio.realloc(cast(nng_aio_cb)(&nng_pool_stateful), cast(void*)w);
+            w.cb = cb;
+            auto rc = nng_ctx_open(&w.ctx, sock.m_socket);
+            enforce(rc == 0);
+            workers ~= w;
+        }
+    }    
+
+    void init () {
+        enforce(nworkers > 0);
+        for(auto i=0; i<nworkers; i++){
+            nng_pool_stateful(workers[i]);
+        }
+    }
+
+    void shutdown() {
+        enforce(nworkers > 0);
+        for(auto i=0; i<nworkers; i++){
+            workers[i].aio.stop();
+        }    
+    }
+
+
+} // struct NNGPool
 
