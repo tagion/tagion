@@ -40,7 +40,7 @@ T receiveOnlyTimeout(T)(Duration d = 1.seconds) @safe {
             (T val) { ret = val; },
             (Variant val) @trusted {
         throw new MessageMismatch(
-            format("Unexpected message got %s of type %s, expected %s", val, val.type.toString(), T
+            format("Unexpected message got \n\t%s \nof type \n\t%s \nexpected %s", val, val.type.toString(), T
             .stringof));
     }
     );
@@ -48,7 +48,7 @@ T receiveOnlyTimeout(T)(Duration d = 1.seconds) @safe {
     if (!received) {
         throw new MessageTimeout(
                 format(
-                "Timed out never received message expected message type: %s".format(T.stringof))
+                "Timed out never received message expected message type: \n\t%s".format(T.stringof))
         );
     }
 
