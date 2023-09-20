@@ -491,9 +491,9 @@ class NativeSecp256k1 {
     }
 
     version (HASH_SECP256K1) @trusted
-    ubyte[32] calcHash(const const(ubyte[]) data) {
+    static ubyte[] calcHash(const(ubyte[]) data) nothrow {
         secp256k1_sha256 sha;
-        ubyte[32] res;
+        auto res = new ubyte[32];
 
         //ubyte* ret_arr;
 
