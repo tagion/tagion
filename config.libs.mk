@@ -16,6 +16,17 @@ libmobile: LIBS+=$(LIBSECP256K1_STATIC)
 libmobile: DFILES:=${shell find $(DSRC)/lib-mobile -name "*.d"}
 libmobile: $(LIBMOBILE) $(DFILES)
 
+ifeq ($(PLATFORM),$(IOS_ARM64))
+modify_rpath: $(LIBMOBILE)
+	install_name_tool -id "@rpath/libmobile.dylib" $<
+
+
+.PHONY: modify_rpath
+
+libmobile: modify_rpath
+endif
+
+
 clean-libmobile:
 	$(RM) $(LIBMOBILE)
 

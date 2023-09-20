@@ -26,6 +26,8 @@ import tagion.dart.DARTBasic;
 import std.random;
 import tagion.hibon.HiBONRecord;
 import tagion.basic.Types;
+import tagion.communication.HiRPC;
+import tagion.dart.DARTcrud : dartRead, dartBullseye;
 
 enum feature = Feature(
             "see if we can read and write trough the dartservice",
@@ -120,6 +122,17 @@ class WriteAndReadFromDartDb {
         auto read_recorder = read_tuple[1];
 
         check(equal(read_recorder[].map!(a => a.filed), insert_recorder[].map!(a => a.filed)), "Data not the same");
+
+        version (none) {
+            const HiRPC hirpc;
+            auto hirpc_read_request = dartHiRPCRR();
+            immutable read_sender = dartRead(fingerprints, hirpc);
+            handle.send(hirpc_read_request, read_sender);
+
+            auto read_hirpc = receiveOnly!(dartHiRPCRR.Response, immutable(Document));
+            auto read_hirpc_recorder = read_tuple[1];
+            writeln(read_hirpc_recorder);
+        }
 
         return result_ok;
     }

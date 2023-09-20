@@ -70,6 +70,7 @@ class StdRefinement : Refinement {
         import std.range : retro, back, tee;
         import std.numeric : gcd;
 
+        pragma(msg, "fixme(bbh): move pseudotime out and add function labels");
         struct PseudoTime {
             BigInt num; //fraction representing the avg received round
             BigInt denom;

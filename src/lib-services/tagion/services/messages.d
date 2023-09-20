@@ -26,6 +26,7 @@ alias dartRimRR = Request!"dartRim";
 alias dartBullseyeRR = Request!"dartBullseye";
 alias dartModifyRR = Request!"dartModifyRequest";
 alias dartModify = Msg!"dartModify";
+alias dartHiRPCRR = Request!"dartHiRPCRequest";
 
 alias Payload = Msg!"Payload";
 alias ReceivedWavefront = Msg!"ReceivedWavefront";

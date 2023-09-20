@@ -12,11 +12,9 @@ import tagion.testbench.services;
 mixin Main!(_main);
 
 int _main(string[] args) {
-    if (env.stage == Stage.commit) {
-        auto collector_feature = automation!collector;
-        collector_feature.ItWork();
-        collector_feature.run;
-    }
+    auto collector_feature = automation!collector;
+    collector_feature.ItWork();
+    collector_feature.run;
 
     return 0;
 }

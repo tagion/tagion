@@ -55,6 +55,11 @@ ${call DO_BIN,tagionwave,$(LIB_DFILES) ${call BIN_DEPS,priorwave},tagion}
 target-neuewelle: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER) $(LIBNNG)
 ${call DO_BIN,neuewelle,$(LIB_DFILES) ${call BIN_DEPS,wave},tagion}
 
+#
+# Shell
+#
+target-tagionshell: LIBS+= $(LIBNNG)
+${call DO_BIN,tagionshell,$(LIB_DFILES) ${call BIN_DEPS,tagionshell},tagion}
 
 #
 # New Wallet
@@ -144,6 +149,7 @@ TAGION_TOOLS+=recorderchain
 TAGION_TOOLS+=signs
 TAGION_TOOLS+=wasmutil
 TAGION_TOOLS+=geldbeutel
+TAGION_TOOLS+=tagionshell
 
 TAGION_BINS=$(foreach tools,$(TAGION_TOOLS), ${call BIN_DEPS,$(tools)} )
 
