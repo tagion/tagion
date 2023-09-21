@@ -87,18 +87,18 @@ int _main(string[] args) {
         writeln(logo);
         defaultGetoptPrinter(
                 [
-            "Documentation: https://tagion.org/",
-            "",
-            "Usage:",
-            format("%s [<option>...] <in-file>", program),
-            "",
-            "Where:",
-            "<in-file>           Is an input file in .json or .hibon format",
-            "",
+                "Documentation: https://tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...] <in-file>", program),
+                "",
+                "Where:",
+                "<in-file>           Is an input file in .json or .hibon format",
+                "",
 
-            "<option>:",
+                "<option>:",
 
-        ].join("\n"),
+                ].join("\n"),
                 main_args.options);
         return 0;
     }
@@ -176,21 +176,6 @@ int _main(string[] args) {
 
             stderr.writeln("Error: output not specified");
             return 1;
-
-            // else {
-            //     try {
-            //         if (standard_output) {
-            //             stdout.rawWrite(hibon.serialize);
-            //         }
-            //         else {
-            //             outputfilename.setExtension(FileExtension.hibon).fwrite(hibon.serialize);
-            //         }
-            //     }
-            //     catch (Exception e) {
-            //         error(e);
-            //         return 1;
-            //     }
-            // }
         }
 
         stderr.writefln("Input file missing");
