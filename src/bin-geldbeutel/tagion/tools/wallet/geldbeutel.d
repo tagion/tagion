@@ -77,7 +77,7 @@ int _main(string[] args) {
                 "quiz", format("Quiz file : default %s", options.quizfile), &options.quizfile,
                 "C|create", "Create a new account", &create_account,
                 "c|changepin", "Change pin-code", &change_pin,
-                "o", "Output filename", &output_filename,//"questions", "Questions for wallet creation", &questions_str,
+                "o|output", "Output filename", &output_filename, //"questions", "Questions for wallet creation", &questions_str,
                 //"answers", "Answers for wallet creation", &answers_str,
                 /*
                 "path", format("Set the path for the wallet files : default %s", path), &path,
@@ -94,7 +94,7 @@ int _main(string[] args) {
                 "item|m", "Invoice item select from the invoice file", &item,
                 */
                 "pin|x", "Pincode", &pincode,
-                "amount", "Create an payment request in tagion", &amount,/*
+                "amount", "Create an payment request in tagion", &amount, /*
                 "port|p", format("Tagion network port : default %d", options.port), &options.port,
                 "url|u", format("Tagion url : default %s", options.addr), &options.addr,
                 "visual|g", "Visual user interface", &wallet_ui,
@@ -106,7 +106,7 @@ int _main(string[] args) {
                 "nossl", "Disable ssl encryption", &none_ssl_socket,
     */
 
-                
+        
 
         );
     }
@@ -211,6 +211,7 @@ int _main(string[] args) {
     }
     catch (Exception e) {
         writefln("%1$sError: %3$s%2$s", RED, RESET, e.msg);
+        return 1;
     }
     return 0;
 }
