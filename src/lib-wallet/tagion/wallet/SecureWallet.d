@@ -586,10 +586,13 @@ struct SecureWallet(Net : SecureNet) {
         bill.nonce = nonce.idup;
         auto derive = net.HMAC(bill.toDoc.serialize);
         bill.owner = net.derivePubkey(derive);
-        account.bills ~= bill;
-        account.derives[bill.owner] = derive;
-        account.requested[bill.owner] = true;
+        //account.bills ~= bill;
+        account.requestBill(bill, derive);
         return bill;
+    }
+
+    TagionBill addBill(const Document doc) {
+        return account.add_bill(doc);
     }
 
     @trusted

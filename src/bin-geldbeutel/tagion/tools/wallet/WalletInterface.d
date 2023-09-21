@@ -107,8 +107,8 @@ struct WalletInterface {
         return false;
     }
 
-    void save(const(char[]) pincode, const bool recover_flag) {
-        secure_wallet.login(pincode);
+    void save(const bool recover_flag) {
+        // secure_wallet.login(pincode);
 
         if (secure_wallet.isLoggedin) {
             options.walletfile.fwrite(secure_wallet.wallet);
@@ -116,42 +116,10 @@ struct WalletInterface {
             if (!recover_flag) {
                 options.quizfile.fwrite(quiz);
             }
-        }
-    }
-    /**
-    * @brief pseudographical UI interface, pin code reading
-    * \return Check pin code result
-    */
-    version (none) bool loginPincode() {
-        CLEARSCREEN.write;
-        foreach (i; 0 .. 3) {
-            HOME.write;
-            writefln("%1$sAccess code required%2$s", GREEN, RESET);
-            writefln("%1$sEnter empty pincode to proceed recovery%2$s", YELLOW, RESET);
-            writefln("pincode:");
-            char[] pincode;
-            scope (exit) {
-                pincode.scramble;
-            }
-            readln(pincode);
-            pincode.word_strip;
-            //writefln("pincode.length=%d", pincode.length);
-            if (pincode.length) {
-                secure_wallet.login(pincode);
-                if (secure_wallet.isLoggedin) {
-                    return true;
-                }
-                writefln("%1$sWrong pincode%2$s", RED, RESET);
-            }
-            else {
-
-                //                writefln("quiz.questions=%s", quiz.questions);
-                generateSeed(quiz.questions, true);
-                return secure_wallet.isLoggedin;
+            if (secure_wallet.account !is AccountDetails.init) {
+                options.accountfile.fwrite(secure_wallet.account);
             }
         }
-        CLEARSCREEN.write;
-        return false;
     }
 
     /**
@@ -493,7 +461,7 @@ struct WalletInterface {
                                         const ok = secure_wallet.recover(quiz.questions, selected_answers, pincode1);
                                         if (ok) {
                                             writefln("%1$sWallet recovered%2$s", GREEN, RESET);
-                                            save(pincode1, recover_flag);
+                                            save(recover_flag);
                                         }
                                         else {
                                             writefln("%1$sWallet NOT recovered%2$s", RED, RESET);
@@ -502,7 +470,7 @@ struct WalletInterface {
                                     else {
                                         secure_wallet = StdSecureWallet.createWallet(
                                                 quiz.questions, selected_answers, confidence, pincode1);
-                                        save(pincode1, recover_flag);
+                                        save(recover_flag);
                                     }
                                 }
                             }
