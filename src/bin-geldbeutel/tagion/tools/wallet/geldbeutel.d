@@ -1,4 +1,4 @@
-module tagion.tools.geldbeutel;
+module tagion.tools.wallet.geldbeutel;
 import core.thread;
 import std.format;
 import std.getopt;

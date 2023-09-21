@@ -67,6 +67,13 @@ ${call DO_BIN,tagionshell,$(LIB_DFILES) ${call BIN_DEPS,tagionshell},tagion}
 target-geldbeutel: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER) 
 ${call DO_BIN,geldbeutel,$(LIB_DFILES) ${call BIN_DEPS,geldbeutel},tagion}
 
+#
+# New tagion boot
+#
+target-steifel: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER) 
+${call DO_BIN,steifel,$(LIB_DFILES) ${call BIN_DEPS,steifel},tagion}
+
+
 
 #
 # HiBON utility
@@ -150,6 +157,7 @@ TAGION_TOOLS+=signs
 TAGION_TOOLS+=wasmutil
 TAGION_TOOLS+=geldbeutel
 TAGION_TOOLS+=tagionshell
+TAGION_TOOLS+=stiefel
 
 TAGION_BINS=$(foreach tools,$(TAGION_TOOLS), ${call BIN_DEPS,$(tools)} )
 
@@ -157,6 +165,12 @@ target-tagion: DFLAGS+=$(DVERSION)=ONETOOL
 target-tagion: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER) $(LIBNNG)
 ${call DO_BIN,tagion,$(LIB_DFILES) $(TAGION_BINS)}
 
+env-tools:
+	$(PRECMD)
+	$(call log.header, $@ :: env)
+	$(call log.env, TAGION_TOOLS, $(TAGION_TOOLS))
+	$(call log.env, TAGION_BINS, $(TAGION_BINS))
+	$(call log.close)
 
 #
 # Binary of BBD generator tool
