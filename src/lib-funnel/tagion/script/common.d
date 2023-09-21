@@ -12,6 +12,7 @@ enum StdNames {
     owner = "$Y",
     value = "$V",
     time = "$t",
+    nonce = "$x",
     values = "$vals",
     derive = "$D",
 }
@@ -21,12 +22,14 @@ enum StdNames {
     @label(StdNames.value) TagionCurrency value; /// Tagion bill 
     @label(StdNames.time) sdt_t time; // Time stamp
     @label(StdNames.owner) Pubkey owner; // owner key
+    @label(StdNames.nonce, true) Buffer nonce; // extra nonce 
     mixin HiBONRecord!(
             q{
-                this(TagionCurrency value, const sdt_t time, Pubkey owner) pure {
+                this(TagionCurrency value, const sdt_t time, Pubkey owner, Buffer nonce) pure {
                     this.value = value;
                     this.time = time;
-                    this.owner = owner; 
+                    this.owner = owner;
+                    this.nonce = nonce;
                 }
             });
 }

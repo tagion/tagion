@@ -24,7 +24,7 @@ import tagion.dart.DARTBasic;
 import tagion.basic.basic : basename, isinit;
 import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Pubkey;
-import tagion.script.prior.StandardRecords : SignedContract, StandardBill, globals, Script;
+import tagion.script.prior.StandardRecords : SignedContract, globals, Script;
 import tagion.crypto.SecureNet : scramble;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 
@@ -42,6 +42,7 @@ import tagion.wallet.Basic : saltHash;
 import tagion.script.common;
 import tagion.basic.tagionexceptions : Check;
 import tagion.crypto.Cipher;
+import tagion.crypto.random.random;
 import tagion.utils.StdTime;
 
 alias check = Check!(WalletException);
@@ -341,18 +342,22 @@ struct SecureWallet(Net : SecureNet) {
      *   invoice = invoice to be registered
      */
     void registerInvoice(ref Invoice invoice) {
-        checkLogin;
-        string current_time = MonoTime.currTime.toString;
-        scope seed = new ubyte[net.hashSize];
-        scramble(seed);
-        account.derive_state = net.rawCalcHash(
-                seed ~ account.derive_state ~ current_time.representation);
-        scramble(seed);
-        auto pkey = net.derivePubkey(account.derive_state);
-        invoice.pkey = pkey;
-        account.derives[pkey] = account.derive_state;
+        //checkLogin;
+        //   string current_time = MonoTime.currTime.toString;
+        //   scope seed = new ubyte[net.hashSize];
+        //   scramble(seed);
+        //account.derive_state = net.HMAC(account.derive_state~net.pubkey);
+        //     scramble(seed);
+        //auto pkey = net.derivePubkey(account.derive_state);
+        invoice.pkey = derivePubkey;
+        account.derives[invoice.pkey] = account.derive_state;
     }
 
+    Pubkey derivePubkey() {
+        checkLogin;
+        account.derive_state = net.HMAC(account.derive_state ~ net.pubkey);
+        return net.derivePubkey(account.derive_state);
+    }
     /**
      * Create a new invoice which can be send to a payee 
      * Params:
@@ -367,6 +372,16 @@ struct SecureWallet(Net : SecureNet) {
         new_invoice.amount = amount;
         new_invoice.info = info;
         return new_invoice;
+    }
+
+    PaymentInfo paymentInfo(string label, TagionCurrency amount = TagionCurrency.init, Document info = Document.init) {
+        PaymentInfo new_request;
+        new_request.name = label;
+        new_request.amount = amount;
+        new_request.info = info;
+        const derive = net.HMAC(label.representation ~ net.pubkey ~ info.serialize);
+        new_request.owner = net.derivePubkey(derive);
+        return new_request;
     }
 
     /**
@@ -540,7 +555,7 @@ struct SecureWallet(Net : SecureNet) {
      *   bills = list of bills 
      * Returns: total amount
      */
-    static TagionCurrency calcTotal(const(StandardBill[]) bills) pure {
+    static TagionCurrency calcTotal(const(TagionBill[]) bills) pure {
         return bills.map!(b => b.value).sum;
     }
 
@@ -559,6 +574,22 @@ struct SecureWallet(Net : SecureNet) {
 
     Buffer getDeriversState() {
         return this.account.derive_state;
+    }
+
+    TagionBill requestBill(TagionCurrency amount) {
+        check(amount > 0.TGN, "Requested bill should have a positive value");
+        TagionBill bill;
+        bill.value = amount;
+        bill.time = currentTime;
+        auto nonce = new ubyte[4];
+        getRandom(nonce);
+        bill.nonce = nonce.idup;
+        auto derive = net.HMAC(bill.toDoc.serialize);
+        bill.owner = net.derivePubkey(derive);
+        account.bills ~= bill;
+        account.derives[bill.owner] = derive;
+        account.requested[bill.owner] = true;
+        return bill;
     }
 
     @trusted
@@ -707,7 +738,6 @@ struct SecureWallet(Net : SecureNet) {
 
         { // Create a number of bills in the seneder_wallet
             auto bill_amounts = [4, 1, 100, 40, 956, 42, 354, 7, 102355].map!(a => a.TGN);
-            auto gene = cast(Buffer) net.calcHash("gene".representation);
             const uint epoch = 42;
 
             const label = "some_name";
@@ -721,7 +751,8 @@ struct SecureWallet(Net : SecureNet) {
                 bills = zip(bill_amounts, derives.byKey).map!(bill_derive => TagionBill(
                         bill_derive[0],
                         currentTime,
-                        bill_derive[1])).array;
+                        bill_derive[1],
+                        Buffer.init)).array;
             }
 
             assert(sender_wallet.available_balance == bill_amounts.sum);

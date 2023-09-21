@@ -2,7 +2,8 @@ module tagion.wallet.AccountDetails;
 
 import tagion.basic.Types;
 import tagion.crypto.Types;
-import tagion.script.prior.StandardRecords;
+
+//import tagion.script.prior.StandardRecords;
 import tagion.dart.DARTBasic;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
@@ -15,6 +16,7 @@ struct AccountDetails {
     @label("$bills") TagionBill[] bills;
     @label("$state") Buffer derive_state;
     @label("$locked") bool[Pubkey] activated; /// locked bills
+    @label("$requested") bool[Pubkey] requested; /// locked bills
     import std.algorithm : map, sum, filter, any, each;
 
     bool remove_bill(Pubkey pk) {
@@ -152,8 +154,8 @@ struct Invoice {
     string name; /// Name of the invoice
     TagionCurrency amount; /// Amount to be payed
     @label(StdNames.owner) Pubkey pkey; /// Key to the payee
-    @label("*", true) Document info; /// Information about the invoice
-    mixin HiBONRecord!();
+    @label(VOID, true) Document info; /// Information about the invoice
+    mixin HiBONRecord;
 }
 
 @safe
@@ -163,11 +165,11 @@ struct Invoices {
 }
 
 @safe
-@recordType("Request")
-struct PaymentRequest {
+@recordType("PayInfo")
+struct PaymentInfo {
     string name; /// Name of the reception
     @label(StdNames.owner) Pubkey owner;
-    @label(StdNames.derive) string derive;
+    // @label(StdNames.derive) string derive;
     @label(StdNames.value, true) TagionCurrency amount;
     @label(VOID, true) Document info;
 }

@@ -47,7 +47,7 @@ StdSecureNet[] createNets(uint count, string pass_prefix = "net") @safe {
 
 TagionBill[] createBills(StdSecureNet[] bill_nets, uint amount) @safe {
     return bill_nets.map!((net) =>
-            TagionBill(TGN(amount), currentTime, net.pubkey)
+            TagionBill(TGN(amount), currentTime, net.pubkey, Buffer.init)
     ).array;
 }
 
