@@ -207,7 +207,7 @@ struct Currency(string _UNIT, long _BASE_UNIT = 1_000_000_000, long MAX_VALUE_IN
 
     }
 
-    static string toValue(const long units) pure {
+    static string toValue(const long units) pure nothrow {
         long value = units;
         if (units < 0) {
             value = -value;
@@ -216,7 +216,7 @@ struct Currency(string _UNIT, long _BASE_UNIT = 1_000_000_000, long MAX_VALUE_IN
         return only(sign, (value / BASE_UNIT).to!string, ".", (value % BASE_UNIT).to!string).join;
     }
 
-    string toString() {
+    string toString() pure const nothrow {
         return toValue(_units);
     }
 }

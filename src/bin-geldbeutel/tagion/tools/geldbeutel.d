@@ -22,6 +22,7 @@ import tagion.hibon.Document;
 import tagion.basic.tagionexceptions;
 import tagion.tools.wallet.WalletOptions;
 import tagion.tools.wallet.WalletInterface;
+import tagion.script.TagionCurrency;
 import tagion.utils.Term;
 import std.typecons;
 
@@ -49,6 +50,7 @@ int _main(string[] args) {
     bool change_pin;
     bool set_default_quiz;
     double amount;
+    string output_filename;
     string derive_code;
     string path;
     string pincode;
@@ -74,7 +76,8 @@ int _main(string[] args) {
                 "device", format("Device file : default %s", options.devicefile), &options.devicefile,
                 "quiz", format("Quiz file : default %s", options.quizfile), &options.quizfile,
                 "C|create", "Create a new account", &create_account,
-                "c|changepin", "Change pin-code", &change_pin, //"questions", "Questions for wallet creation", &questions_str,
+                "c|changepin", "Change pin-code", &change_pin,
+                "o", "Output filename", &output_filename,//"questions", "Questions for wallet creation", &questions_str,
                 //"answers", "Answers for wallet creation", &answers_str,
                 /*
                 "path", format("Set the path for the wallet files : default %s", path), &path,
@@ -91,7 +94,7 @@ int _main(string[] args) {
                 "item|m", "Invoice item select from the invoice file", &item,
                 */
                 "pin|x", "Pincode", &pincode,
-                "amount", "Amount in TGN", &amount,/*
+                "amount", "Create an payment request in tagion", &amount,/*
                 "port|p", format("Tagion network port : default %d", options.port), &options.port,
                 "url|u", format("Tagion url : default %s", options.addr), &options.addr,
                 "visual|g", "Visual user interface", &wallet_ui,
@@ -103,7 +106,7 @@ int _main(string[] args) {
                 "nossl", "Disable ssl encryption", &none_ssl_socket,
     */
 
-        
+                
 
         );
     }
@@ -195,6 +198,14 @@ int _main(string[] args) {
                 //WalletInterface.pressKey;
 
                 return 4;
+            }
+        }
+        if (wallet_interface.secure_wallet.isLoggedin) {
+            if (amount !is amount.init) {
+                const bill = wallet_interface.secure_wallet.requestBill(amount.TGN);
+                output_filename = (output_filename.empty) ? "bill".setExtension(FileExtension.hibon) : output_filename;
+                output_filename.fwrite(bill);
+                writefln("%1$sCreated %3$s%2$s of %4$s", GREEN, RESET, output_filename, bill.value.toString);
             }
         }
     }
