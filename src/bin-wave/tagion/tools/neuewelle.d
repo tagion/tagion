@@ -135,6 +135,9 @@ int _main(string[] args) {
             opts.setPrefix(prefix);
             SecureNet net = new StdSecureNet();
             net.generateKeyPair(opts.task_names.supervisor);
+            if (i == 0) {
+                opts.monitor.enable = true;
+            }
 
             nodes ~= Node(opts, cast(immutable) net);
 
