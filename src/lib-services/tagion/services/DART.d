@@ -57,7 +57,7 @@ struct DARTService {
 
         void checkRead(dartCheckReadRR req, immutable(DARTIndex)[] fingerprints) @safe {
             auto check_read = db.checkload(fingerprints);
-            req.respond(check_read);
+            (() @trusted => req.respond(cast(immutable) check_read))();
         }
 
         version (none) {
