@@ -50,6 +50,7 @@ int _main(string[] args) {
     bool change_pin;
     bool set_default_quiz;
     bool force;
+    bool list;
     double amount;
     string output_filename;
     string derive_code;
@@ -78,7 +79,8 @@ int _main(string[] args) {
                 "quiz", format("Quiz file : default %s", options.quizfile), &options.quizfile,
                 "C|create", "Create a new account", &create_account,
                 "c|changepin", "Change pin-code", &change_pin,
-                "o|output", "Output filename", &output_filename, //"questions", "Questions for wallet creation", &questions_str,
+                "o|output", "Output filename", &output_filename,
+                "l|list", "List wallet content", &list, //"questions", "Questions for wallet creation", &questions_str,
                 //"answers", "Answers for wallet creation", &answers_str,
                 /*
                 "path", format("Set the path for the wallet files : default %s", path), &path,
@@ -203,21 +205,31 @@ int _main(string[] args) {
             }
         }
         if (wallet_interface.secure_wallet.isLoggedin) {
+            bool save_wallet;
             scope (success) {
-                wallet_interface.save(false);
+                if (save_wallet) {
+                    wallet_interface.save(false);
+                }
             }
             if (amount !is amount.init) {
                 const bill = wallet_interface.secure_wallet.requestBill(amount.TGN);
                 output_filename = (output_filename.empty) ? "bill".setExtension(FileExtension.hibon) : output_filename;
                 output_filename.fwrite(bill);
                 writefln("%1$sCreated %3$s%2$s of %4$s", GREEN, RESET, output_filename, bill.value.toString);
-                return 0;
+                save_wallet = true;
+                //return 0;
             }
             if (force) {
                 foreach (file; args[1 .. $]) {
                     const doc = file.fread;
                     const bill = wallet_interface.secure_wallet.addBill(doc);
+                    writefln("%s", wallet_interface.toText(bill));
+                    save_wallet = true;
                 }
+
+            }
+            if (list) {
+                wallet_interface.listAccount(stdout);
             }
         }
     }
