@@ -28,6 +28,7 @@ import tagion.hibon.HiBONRecord;
 import tagion.basic.Types;
 import tagion.communication.HiRPC;
 import tagion.dart.DARTcrud : dartRead, dartBullseye;
+import tagion.dart.DARTFile : DARTFile;
 import tagion.hibon.HiBONJSON;
 
 enum feature = Feature(
@@ -51,6 +52,7 @@ class WriteAndReadFromDartDb {
     Document[] docs;
     RecordFactory.Recorder insert_recorder;
     RecordFactory record_factory;
+    HiRPC hirpc;
 
     struct SimpleDoc {
         ulong n;
@@ -107,6 +109,18 @@ class WriteAndReadFromDartDb {
 
         check(bullseye_tuple[1]!is DARTIndex.init, "Bullseye not updated");
 
+        handle.send(dartBullseyeRR());
+        const bullseye_res = receiveOnly!(dartBullseyeRR.Response, immutable(DARTIndex));
+        check(bullseye_res[1] == bullseye_tuple[1], "bullseyes not the same");
+
+        Document bullseye_sender = dartBullseye(hirpc).toDoc;
+
+        handle.send(dartHiRPCRR(), bullseye_sender);
+        auto hirpc_bullseye_res = receiveOnly!(dartHiRPCRR.Response, Document);
+        auto hirpc_bullseye = hirpc_bullseye_res[1][DARTFile.Params.bullseye].get!DARTIndex;
+
+        check(bullseye_tuple[1] == hirpc_bullseye, "hirpc bullseye not the same");
+
         return result_ok;
     }
 
@@ -125,16 +139,14 @@ class WriteAndReadFromDartDb {
 
         check(equal(read_recorder[].map!(a => a.filed), insert_recorder[].map!(a => a.filed)), "Data not the same");
 
-        const HiRPC hirpc;
         Document read_sender = dartRead(fingerprints, hirpc).toDoc;
 
         handle.send(dartHiRPCRR(), read_sender);
 
         auto read_hirpc = receiveOnly!(dartHiRPCRR.Response, Document);
         auto read_hirpc_recorder = read_hirpc[1];
-        writeln(read_hirpc_recorder.toPretty);
+        // writeln(read_hirpc_recorder.toPretty);
 
-        pragma(msg, "WOWO RECORDER: ", typeof(read_hirpc_recorder));
         const hirpc_recorder = record_factory.recorder(read_hirpc_recorder);
 
         check(equal(hirpc_recorder[].map!(a => a.filed), insert_recorder[].map!(a => a.filed)), "hirpc data not the same as insertion");

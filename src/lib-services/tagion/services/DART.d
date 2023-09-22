@@ -23,6 +23,7 @@ import tagion.hibon.Document;
 import tagion.services.messages;
 import tagion.communication.HiRPC;
 import tagion.hibon.HiBONRecord : isRecord;
+import tagion.logger.Logger;
 
 @safe
 struct DARTOptions {
@@ -66,6 +67,8 @@ struct DARTService {
         import tagion.Keywords;
 
         void dartHiRPC(dartHiRPCRR req, Document doc) {
+            log("Received HiRPC request");
+
             if (!doc.isRecord!(HiRPC.Sender)) {
                 import tagion.hibon.HiBONJSON;
                 assert(0, format("wrong request sent to dartservice. Expected HiRPC.Sender got %s", doc.toPretty));
@@ -73,7 +76,8 @@ struct DARTService {
 
             immutable receiver = empty_hirpc.receive(doc);
 
-            assert(receiver.method.name == DART.Queries.dartRead || receiver.method.name == DART.Queries.dartRim, "unsupported hirpc request");
+            assert(receiver.method.name == DART.Queries.dartRead || receiver.method.name == DART.Queries.dartBullseye, "unsupported hirpc request");
+
 
             auto result = db(receiver, false);
             req.respond(result.message[Keywords.result].get!Document);
