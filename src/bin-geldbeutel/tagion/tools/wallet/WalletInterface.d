@@ -400,8 +400,13 @@ struct WalletInterface {
         import std.format;
         import tagion.hibon.HiBONtoText;
 
-        return format("%2$s%3$s %4$s %5$sTGN%1$s", RESET, mark, bill.time.toText, secure_wallet.net.calcHash(bill)
-                .encodeBase64, bill.value);
+        const value = format("%10.3f", bill.value.value);
+        return format("%2$s%3$s %4$s %5$13.6fTGN%1$s",
+                RESET, mark,
+                bill.time.toText,
+                secure_wallet.net.calcHash(bill)
+                .encodeBase64,
+                bill.value.value);
     }
 
     void listAccount(File fout) {
@@ -412,7 +417,7 @@ struct WalletInterface {
 
         bills.sort!(q{a.time < b.time});
         foreach (i, bill; bills) {
-            string mark;
+            string mark = GREEN;
             if (bill.owner in secure_wallet.account.requested) {
                 mark = RED;
             }
@@ -422,5 +427,14 @@ struct WalletInterface {
             writefln("%4s] %s", i, toText(bill, mark));
         }
         fout.writeln(line);
+    }
+
+    void sumAccount(File fout) {
+        with (secure_wallet.account) {
+            fout.writefln("Available : %13.6fTGN", available.value);
+            fout.writefln("Locked    : %13.6fTGN", locked.value);
+            fout.writefln("Total     : %13.6fTGN", total.value);
+
+        }
     }
 }

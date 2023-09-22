@@ -51,6 +51,7 @@ int _main(string[] args) {
     bool set_default_quiz;
     bool force;
     bool list;
+    bool sum;
     double amount;
     string output_filename;
     string derive_code;
@@ -81,6 +82,7 @@ int _main(string[] args) {
                 "c|changepin", "Change pin-code", &change_pin,
                 "o|output", "Output filename", &output_filename,
                 "l|list", "List wallet content", &list, //"questions", "Questions for wallet creation", &questions_str,
+                "s|sum", "Sum of the wallet", &sum, //"questions", "Questions for wallet creation", &questions_str,
                 //"answers", "Answers for wallet creation", &answers_str,
                 /*
                 "path", format("Set the path for the wallet files : default %s", path), &path,
@@ -230,6 +232,10 @@ int _main(string[] args) {
             }
             if (list) {
                 wallet_interface.listAccount(stdout);
+                sum = true;
+            }
+            if (sum) {
+                wallet_interface.sumAccount(stdout);
             }
         }
     }
