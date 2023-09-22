@@ -51,7 +51,7 @@ struct DARTService {
         }
 
         void read(dartReadRR req, immutable(DARTIndex)[] fingerprints) @safe {
-            RecordFactory.Recorder read_recorder = db.loads(fingerprints);
+            RecordFactory.Recorder read_recorder = db.loads(fingerprints, Archive.Type.NONE);
             req.respond(RecordFactory.uniqueRecorder(read_recorder));
         }
 

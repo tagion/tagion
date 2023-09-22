@@ -14,8 +14,8 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBON;
 import nngd.nngd;
 
-
 mixin Main!(_main, "shell");
+
 int _main(string[] args) {
     immutable program = args[0];
     bool version_switch;
@@ -63,6 +63,7 @@ int _main(string[] args) {
                 main_args.options);
         return 0;
     }
+
 
     // NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
     // sock.sendtimeout = msecs(1000);
