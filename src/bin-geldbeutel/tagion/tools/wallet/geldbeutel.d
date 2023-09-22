@@ -49,6 +49,7 @@ int _main(string[] args) {
     bool create_account;
     bool change_pin;
     bool set_default_quiz;
+    bool force;
     double amount;
     string output_filename;
     string derive_code;
@@ -94,7 +95,8 @@ int _main(string[] args) {
                 "item|m", "Invoice item select from the invoice file", &item,
                 */
                 "pin|x", "Pincode", &pincode,
-                "amount", "Create an payment request in tagion", &amount, /*
+                "amount", "Create an payment request in tagion", &amount,
+                "force", "Force input bill", &force, /*
                 "port|p", format("Tagion network port : default %d", options.port), &options.port,
                 "url|u", format("Tagion url : default %s", options.addr), &options.addr,
                 "visual|g", "Visual user interface", &wallet_ui,
@@ -201,11 +203,21 @@ int _main(string[] args) {
             }
         }
         if (wallet_interface.secure_wallet.isLoggedin) {
+            scope (success) {
+                wallet_interface.save(false);
+            }
             if (amount !is amount.init) {
                 const bill = wallet_interface.secure_wallet.requestBill(amount.TGN);
                 output_filename = (output_filename.empty) ? "bill".setExtension(FileExtension.hibon) : output_filename;
                 output_filename.fwrite(bill);
                 writefln("%1$sCreated %3$s%2$s of %4$s", GREEN, RESET, output_filename, bill.value.toString);
+                return 0;
+            }
+            if (force) {
+                foreach (file; args[1 .. $]) {
+                    const doc = file.fread;
+                    const bill = wallet_interface.secure_wallet.addBill(doc);
+                }
             }
         }
     }

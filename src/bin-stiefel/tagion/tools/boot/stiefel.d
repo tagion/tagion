@@ -32,7 +32,7 @@ int _main(string[] args) {
                 std.getopt.config.bundling,
                 "version", "display the version", &version_switch, //        "invoice|i","Sets the HiBON input file name", &invoicefile,
                 "c|stdout", "Print to standard output", &standard_output,
-                "o|output", format("Output filename : Default %s", output_filename), &output_filename, // //        "output_filename|o", format("Sets the output file name: default : %s", output_filenamename), &output_filenamename,
+                "o|output", format("Output filename : Default %s", output_filename), &output_filename,// //        "output_filename|o", format("Sets the output file name: default : %s", output_filenamename), &output_filenamename,
                 //         "bills|b", "Generate bills", &number_of_bills,
                 // "value|V", format("Bill value : default: %d", value), &value,
                 // "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase

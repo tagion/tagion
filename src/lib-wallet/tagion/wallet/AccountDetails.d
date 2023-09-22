@@ -1,5 +1,5 @@
 module tagion.wallet.AccountDetails;
-
+import std.format;
 import tagion.basic.Types;
 import tagion.crypto.Types;
 
@@ -16,7 +16,7 @@ struct AccountDetails {
     @label("$bills") TagionBill[] bills;
     @label("$state") Buffer derive_state;
     @label("$locked") bool[Pubkey] activated; /// locked bills
-    @label("$requested") bool[Pubkey] requested; /// locked bills
+    @label("$requested") TagionBill[Pubkey] requested; /// Requested bills
     import std.algorithm : map, sum, filter, any, each;
 
     bool remove_bill(Pubkey pk) {
@@ -89,10 +89,31 @@ struct AccountDetails {
         return TagionCurrency(0);
     }
 
-    void add_bill(TagionBill bill) {
+    version (none) void add_bill(TagionBill bill) {
         bills ~= bill;
     }
 
+    void add_bill(TagionBill bill) {
+        if (bill.owner in requested) {
+            // bills~=bill;
+            bills ~= requested[bill.owner];
+            requested.remove(bill.owner);
+
+        }
+    }
+
+    TagionBill add_bill(const Document doc) {
+        auto bill = TagionBill(doc);
+        add_bill(bill);
+        return bill;
+    }
+
+    void requestBill(TagionBill bill, Buffer derive) {
+        check((bill.owner in derives) is null, format("Bill %(%x%) already exists", bill.owner));
+        derives[bill.owner] = derive;
+        requested[bill.owner] = bill;
+
+    }
     /++
          Clear up the Account
          Remove used bills
