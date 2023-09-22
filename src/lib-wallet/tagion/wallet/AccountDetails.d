@@ -109,7 +109,7 @@ struct AccountDetails {
     }
 
     void requestBill(TagionBill bill, Buffer derive) {
-        check((bill.owner in derives) !is null, format("Bill %(%x%) allready exists", bill.owner));
+        check((bill.owner in derives) is null, format("Bill %(%x%) already exists", bill.owner));
         derives[bill.owner] = derive;
         requested[bill.owner] = bill;
 

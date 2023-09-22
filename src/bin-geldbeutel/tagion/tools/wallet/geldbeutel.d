@@ -96,7 +96,7 @@ int _main(string[] args) {
                 */
                 "pin|x", "Pincode", &pincode,
                 "amount", "Create an payment request in tagion", &amount,
-                "force", "Force input bill", &force,/*
+                "force", "Force input bill", &force, /*
                 "port|p", format("Tagion network port : default %d", options.port), &options.port,
                 "url|u", format("Tagion url : default %s", options.addr), &options.addr,
                 "visual|g", "Visual user interface", &wallet_ui,
@@ -203,6 +203,9 @@ int _main(string[] args) {
             }
         }
         if (wallet_interface.secure_wallet.isLoggedin) {
+            scope (success) {
+                wallet_interface.save(false);
+            }
             if (amount !is amount.init) {
                 const bill = wallet_interface.secure_wallet.requestBill(amount.TGN);
                 output_filename = (output_filename.empty) ? "bill".setExtension(FileExtension.hibon) : output_filename;
