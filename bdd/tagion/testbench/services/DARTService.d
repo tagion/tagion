@@ -28,6 +28,7 @@ import tagion.hibon.HiBONRecord;
 import tagion.basic.Types;
 import tagion.communication.HiRPC;
 import tagion.dart.DARTcrud : dartRead, dartBullseye;
+import tagion.hibon.HiBONJSON;
 
 enum feature = Feature(
             "see if we can read and write trough the dartservice",
@@ -49,6 +50,7 @@ class WriteAndReadFromDartDb {
     RandomArchives random_archives;
     Document[] docs;
     RecordFactory.Recorder insert_recorder;
+    RecordFactory record_factory;
 
     struct SimpleDoc {
         ulong n;
@@ -64,6 +66,7 @@ class WriteAndReadFromDartDb {
         this.opts = opts;
         net = new StdSecureNet();
         net.generateKeyPair("very secret");
+        record_factory = RecordFactory(net);
 
         gen = Mt19937(1234);
 
@@ -81,8 +84,8 @@ class WriteAndReadFromDartDb {
 
     @Given("I have an dart actor with said db")
     Document saidDb() {
-        thisActor.task_name = "wowo";
-        register("wowo", thisTid);
+        thisActor.task_name = "dart_supervisor";
+        register(thisActor.task_name, thisTid);
 
         handle = (() @trusted => spawn!DARTService("DartService", cast(immutable) opts, cast(immutable) net))();
         waitforChildren(Ctrl.ALIVE);
@@ -94,7 +97,6 @@ class WriteAndReadFromDartDb {
     Document toAdd() {
 
         random_archives = RandomArchives(gen.front, 4, 10);
-        auto record_factory = RecordFactory(net);
         insert_recorder = record_factory.recorder;
         docs = (() @trusted => cast(Document[]) random_archives.values.map!(a => SimpleDoc(a).toDoc).array)();
 
@@ -123,16 +125,22 @@ class WriteAndReadFromDartDb {
 
         check(equal(read_recorder[].map!(a => a.filed), insert_recorder[].map!(a => a.filed)), "Data not the same");
 
-        version (none) {
-            const HiRPC hirpc;
-            auto hirpc_read_request = dartHiRPCRR();
-            immutable read_sender = dartRead(fingerprints, hirpc);
-            handle.send(hirpc_read_request, read_sender);
+        const HiRPC hirpc;
+        Document read_sender = dartRead(fingerprints, hirpc).toDoc;
 
-            auto read_hirpc = receiveOnly!(dartHiRPCRR.Response, immutable(Document));
-            auto read_hirpc_recorder = read_tuple[1];
-            writeln(read_hirpc_recorder);
-        }
+        handle.send(dartHiRPCRR(), read_sender);
+
+        auto read_hirpc = receiveOnly!(dartHiRPCRR.Response, Document);
+        auto read_hirpc_recorder = read_hirpc[1];
+        writeln(read_hirpc_recorder.toPretty);
+
+        pragma(msg, "WOWO RECORDER: ", typeof(read_hirpc_recorder));
+        const hirpc_recorder = record_factory.recorder(read_hirpc_recorder);
+
+        check(equal(hirpc_recorder[].map!(a => a.filed), insert_recorder[].map!(a => a.filed)), "hirpc data not the same as insertion");
+
+
+        
 
         return result_ok;
     }

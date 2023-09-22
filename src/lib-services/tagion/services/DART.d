@@ -22,6 +22,7 @@ import tagion.dart.DARTBasic : DARTIndex;
 import tagion.hibon.Document;
 import tagion.services.messages;
 import tagion.communication.HiRPC;
+import tagion.hibon.HiBONRecord : isRecord;
 
 @safe
 struct DARTOptions {
@@ -60,22 +61,26 @@ struct DARTService {
             (() @trusted => req.respond(cast(immutable) check_read))();
         }
 
-        version (none) {
-            auto hirpc = HiRPC(net);
-            auto empty_hirpc = HiRPC(null);
-            import tagion.Keywords;
+        auto hirpc = HiRPC(net);
+        auto empty_hirpc = HiRPC(null);
+        import tagion.Keywords;
 
-            void dartHiRPC(dartHiRPCRR req, immutable(HiRPC.Sender) sender) {
-                immutable receiver = empty_hirpc.receive(sender);
-
-                assert(receiver.method.name == DART.Quries.dartRead || receiver.method.name == DART.Quries.dartRim, "unsupported hirpc request");
-
-                auto result = db(receiver, false);
-                req.respond(result.message[Keywords.result].get!Document);
-
+        void dartHiRPC(dartHiRPCRR req, Document doc) {
+            writeln("INSIDE DARTHIRPC");
+            if (!doc.isRecord!(HiRPC.Sender)) {
+                import tagion.hibon.HiBONJSON;
+                assert(0, format("wrong request sent to dartservice. Expected HiRPC.Sender got %s", doc.toPretty));
             }
 
+            immutable receiver = empty_hirpc.receive(doc);
+
+            assert(receiver.method.name == DART.Quries.dartRead || receiver.method.name == DART.Quries.dartRim, "unsupported hirpc request");
+
+            auto result = db(receiver, false);
+            req.respond(result.message[Keywords.result].get!Document);
         }
+
+        
         // only used from the outside
         void rim(dartRimRR req, DART.Rims rims) {
 
@@ -96,7 +101,7 @@ struct DARTService {
             req.respond(eye);
         }
 
-        run(&read, &checkRead, &modify_request, &modify, &bullseye);
+        run(&read, &checkRead, &modify_request, &modify, &bullseye, &dartHiRPC);
 
     }
 }
