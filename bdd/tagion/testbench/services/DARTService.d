@@ -30,6 +30,7 @@ import tagion.communication.HiRPC;
 import tagion.dart.DARTcrud : dartRead, dartBullseye;
 import tagion.dart.DARTFile : DARTFile;
 import tagion.hibon.HiBONJSON;
+import tagion.Keywords;
 
 enum feature = Feature(
             "see if we can read and write trough the dartservice",
@@ -69,6 +70,7 @@ class WriteAndReadFromDartDb {
         net = new StdSecureNet();
         net.generateKeyPair("very secret");
         record_factory = RecordFactory(net);
+        hirpc = HiRPC(net);
 
         gen = Mt19937(1234);
 
@@ -114,10 +116,26 @@ class WriteAndReadFromDartDb {
         check(bullseye_res[1] == bullseye_tuple[1], "bullseyes not the same");
 
         Document bullseye_sender = dartBullseye(hirpc).toDoc;
+        writefln("request: %s", bullseye_sender.toPretty);
 
         handle.send(dartHiRPCRR(), bullseye_sender);
         auto hirpc_bullseye_res = receiveOnly!(dartHiRPCRR.Response, Document);
-        auto hirpc_bullseye = hirpc_bullseye_res[1][DARTFile.Params.bullseye].get!DARTIndex;
+        writefln("response %s", hirpc_bullseye_res[1].toPretty);
+        
+        
+        // auto hirpc_bullseye = hirpc_bullseye_res[1].message[Keywords.result][DARTFile.Params.bullseye].get!DARTIndex;
+        auto hirpc_bullseye_receiver = hirpc.receive(hirpc_bullseye_res[1]);
+        // writefln("receiver: %s", hirpc_bullseye_receiver);
+        // writefln("receiver message: %s", hirpc_bullseye_receiver.message.toPretty);
+        auto hirpc_message = hirpc_bullseye_receiver.message[Keywords.result].get!Document;
+        auto hirpc_bullseye = hirpc_message[DARTFile.Params.bullseye].get!DARTIndex;
+
+        writefln("hirpc stuff %s", hirpc_bullseye);
+
+        // auto hirpc_bullseye = hirpc_bullseye_receiver.message[Keywords.result][DARTFile.Params.bullseye].get!DARTIndex;
+        
+        // writefln("receiver: %s", hirpc_bullseye_receiver.message[Keywords.result][DARTFile.Params.bullsey].get!DARTIndex);
+        
 
         check(bullseye_tuple[1] == hirpc_bullseye, "hirpc bullseye not the same");
 
@@ -150,9 +168,6 @@ class WriteAndReadFromDartDb {
         const hirpc_recorder = record_factory.recorder(read_hirpc_recorder);
 
         check(equal(hirpc_recorder[].map!(a => a.filed), insert_recorder[].map!(a => a.filed)), "hirpc data not the same as insertion");
-
-
-        
 
         return result_ok;
     }

@@ -79,8 +79,10 @@ struct DARTService {
             assert(receiver.method.name == DART.Queries.dartRead || receiver.method.name == DART.Queries.dartBullseye, "unsupported hirpc request");
 
 
-            auto result = db(receiver, false);
-            req.respond(result.message[Keywords.result].get!Document);
+            Document result = db(receiver, false).toDoc;
+            req.respond(result);
+            // auto result = db(receiver, false);
+            // req.respond(result.message[Keywords.result].get!Document);
         }
 
         void modify_request(dartModifyRR req, immutable(RecordFactory.Recorder) recorder) @safe {
