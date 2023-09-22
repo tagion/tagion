@@ -315,7 +315,7 @@ class DART : DARTFile {
         }
     }
 
-    mixin(EnumText!(q{Quries}, Callers!DART));
+    mixin(EnumText!(q{Queries}, Callers!DART));
 
     /**
      * Rim selecter
@@ -603,7 +603,7 @@ received = the HiRPC received package
     }
 
     /**
-     * This function handels HPRC quries to the DART
+     * This function handels HPRC Queries to the DART
      * Params:
      *     received = Request HiRPC object
      * If read_only is true deleting and erasing data in the DART will return an error

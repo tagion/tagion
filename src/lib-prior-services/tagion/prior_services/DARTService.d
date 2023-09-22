@@ -203,10 +203,10 @@ void dartServiceTask(Net : SecureNet)(
                 dart_sync_tid.send(sender);
             }
 
-            if (receiver.method.name == DART.Quries.dartRead) {
+            if (receiver.method.name == DART.Queries.dartRead) {
                 readDART();
             }
-            else if (receiver.method.name == DART.Quries.dartModify) {
+            else if (receiver.method.name == DART.Queries.dartModify) {
                 modifyDART();
             }
         }

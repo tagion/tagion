@@ -66,7 +66,6 @@ struct DARTService {
         import tagion.Keywords;
 
         void dartHiRPC(dartHiRPCRR req, Document doc) {
-            writeln("INSIDE DARTHIRPC");
             if (!doc.isRecord!(HiRPC.Sender)) {
                 import tagion.hibon.HiBONJSON;
                 assert(0, format("wrong request sent to dartservice. Expected HiRPC.Sender got %s", doc.toPretty));
@@ -74,17 +73,10 @@ struct DARTService {
 
             immutable receiver = empty_hirpc.receive(doc);
 
-            assert(receiver.method.name == DART.Quries.dartRead || receiver.method.name == DART.Quries.dartRim, "unsupported hirpc request");
+            assert(receiver.method.name == DART.Queries.dartRead || receiver.method.name == DART.Queries.dartRim, "unsupported hirpc request");
 
             auto result = db(receiver, false);
             req.respond(result.message[Keywords.result].get!Document);
-        }
-
-        
-        // only used from the outside
-        void rim(dartRimRR req, DART.Rims rims) {
-
-            // empty  
         }
 
         void modify_request(dartModifyRR req, immutable(RecordFactory.Recorder) recorder) @safe {
