@@ -9,6 +9,7 @@ import tagion.wallet.AccountDetails;
 import tagion.crypto.SecureNet;
 import std.file : exists, mkdir;
 import tagion.hibon.HiBONRecord : fwrite, fread;
+import std.format;
 import std.algorithm;
 import std.range;
 import core.thread;
@@ -16,6 +17,8 @@ import tagion.basic.Message;
 import tagion.basic.tagionexceptions;
 import tagion.hibon.Document;
 import std.typecons;
+import std.range;
+import tagion.tools.Basic;
 
 /**
  * @brief strip white spaces in begin/end of text
@@ -77,31 +80,18 @@ struct WalletInterface {
 
     bool load() {
         if (options.walletfile.exists) {
-            Document wallet_doc;
-            try {
-                wallet_doc = options.walletfile.fread;
-            }
-            catch (TagionException e) {
-                writeln(e.msg);
-                return false;
-            }
+            const wallet_doc = options.walletfile.fread;
             const pin_doc = options.devicefile.exists ? options.devicefile.fread : Document.init;
             if (wallet_doc.isInorder && pin_doc.isInorder) {
-                try {
-                    secure_wallet = WalletInterface.StdSecureWallet(wallet_doc, pin_doc);
-                }
-                catch (TagionException e) {
-                    writefln(e.msg);
-                    return false;
-                }
+                secure_wallet = WalletInterface.StdSecureWallet(wallet_doc, pin_doc);
             }
             if (options.quizfile.exists) {
-                const quiz_doc = options.quizfile.fread;
-                if (quiz_doc.isInorder) {
-                    quiz = Quiz(quiz_doc);
-                    return true;
-                }
+                quiz = options.quizfile.fread!Quiz;
             }
+            if (options.accountfile.exists) {
+                secure_wallet.account = options.accountfile.fread!AccountDetails;
+            }
+            return true;
         }
         quiz.questions = options.questions.dup;
         return false;
@@ -111,106 +101,18 @@ struct WalletInterface {
         // secure_wallet.login(pincode);
 
         if (secure_wallet.isLoggedin) {
+            verbose("Write %s", options.walletfile);
+
             options.walletfile.fwrite(secure_wallet.wallet);
+            verbose("Write %s", options.devicefile);
             options.devicefile.fwrite(secure_wallet.pin);
             if (!recover_flag) {
+                verbose("Write %s", options.quizfile);
                 options.quizfile.fwrite(quiz);
             }
             if (secure_wallet.account !is AccountDetails.init) {
+                verbose("Write %s", options.accountfile);
                 options.accountfile.fwrite(secure_wallet.account);
-            }
-        }
-    }
-
-    /**
-    * @brief wallet pseudographical UI interface
-    */
-    version (none) void accountView() {
-
-        enum State {
-            CREATE_ACCOUNT,
-            WAIT_LOGIN,
-            LOGGEDIN
-        }
-
-        State state;
-
-        int ch;
-        KeyStroke key;
-        CLEARSCREEN.write;
-        while (ch != 'q') {
-            HOME.write;
-            warning();
-            writefln(" Account overview ");
-
-            LINE.writeln;
-            const processed = secure_wallet.account.processed;
-            if (!processed) {
-                writefln("                                 available %s", secure_wallet
-                        .account.available);
-                writefln("                                    locked %s", secure_wallet
-                        .account.locked);
-            }
-            (processed ? GREEN : RED).write;
-            writefln("                                     total %s", secure_wallet.account.total);
-            RESET.write;
-            LINE.writeln;
-            with (State) final switch (state) {
-            case CREATE_ACCOUNT:
-                if (secure_wallet.isLoggedin) {
-                    writefln("%1$sq%2$s:quit %1$sa%2$s:account %1$sp%2$s:change pin%3$s", FKEY, RESET, CLEARDOWN);
-                }
-                else {
-                    writefln("%1$sq%2$s:quit %1$sa%2$s:account %1$sc%2$s:create%3$s", FKEY, RESET, CLEARDOWN);
-                }
-                break;
-            case WAIT_LOGIN:
-                writefln("Pincode:%s", CLEARDOWN);
-                char[] pincode;
-                pincode.length = MAX_PINCODE_SIZE;
-                readln(pincode);
-                word_strip(pincode);
-                scope (exit) {
-                    scramble(pincode);
-                }
-                secure_wallet.login(pincode);
-                if (secure_wallet.isLoggedin) {
-                    state = LOGGEDIN;
-                    continue;
-                }
-                else {
-                    writefln("%sWrong pin%s", RED, RESET);
-                    pressKey;
-                    //writefln("Press %sEnter%s", YELLOW, RESET);
-                }
-                break;
-            case LOGGEDIN:
-                writefln("%1$sq%2$s:quit %1$sa%2$s:account %1$sr%2$s:recover%3$s", FKEY, RESET, CLEARDOWN);
-                break;
-            }
-            CLEARDOWN.writeln;
-            const keycode = key.getKey(ch);
-            switch (ch) {
-            case 'a':
-                if (options.walletfile.exists) {
-                    version (none)
-                        accounting;
-                }
-                else {
-                    writeln("Account doesn't exists");
-                    Thread.sleep(1.seconds);
-                }
-                break;
-            case 'c':
-                if (!secure_wallet.isLoggedin) {
-                    generateSeed(options.questions, false);
-                }
-                break;
-            case 'p':
-                changePin;
-                break;
-            default:
-                // ignore
             }
         }
     }
@@ -489,5 +391,36 @@ struct WalletInterface {
             }
 
         }
+    }
+
+    import tagion.script.common : TagionBill;
+
+    string toText(const TagionBill bill, string mark = null) {
+        import tagion.utils.StdTime : toText;
+        import std.format;
+        import tagion.hibon.HiBONtoText;
+
+        return format("%2$s%3$s %4$s %5$sTGN%1$s", RESET, mark, bill.time.toText, secure_wallet.net.calcHash(bill)
+                .encodeBase64, bill.value);
+    }
+
+    void listAccount(File fout) {
+        const line = format("%-(%s%)", "- ".repeat(40));
+        fout.writefln("%-5s %-27s %-45s %-40s", "No", "Date", "Fingerprint", "Value");
+        fout.writeln(line);
+        auto bills = secure_wallet.account.bills ~ secure_wallet.account.requested.values;
+
+        bills.sort!(q{a.time < b.time});
+        foreach (i, bill; bills) {
+            string mark;
+            if (bill.owner in secure_wallet.account.requested) {
+                mark = RED;
+            }
+            else if (bill.owner in secure_wallet.account.activated) {
+                mark = YELLOW;
+            }
+            writefln("%4s] %s", i, toText(bill, mark));
+        }
+        fout.writeln(line);
     }
 }
