@@ -76,7 +76,7 @@ struct DARTService {
 
             immutable receiver = empty_hirpc.receive(doc);
 
-            assert(receiver.method.name == DART.Queries.dartRead || receiver.method.name == DART.Queries.dartRim || receiver.method.name == DART.Queries.dartBullseye, "unsupported hirpc request");
+            assert(receiver.method.name == DART.Queries.dartRead || receiver.method.name == DART.Queries.dartBullseye, "unsupported hirpc request");
 
 
             auto result = db(receiver, false);
