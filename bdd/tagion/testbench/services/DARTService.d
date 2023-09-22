@@ -123,20 +123,9 @@ class WriteAndReadFromDartDb {
         writefln("response %s", hirpc_bullseye_res[1].toPretty);
         
         
-        // auto hirpc_bullseye = hirpc_bullseye_res[1].message[Keywords.result][DARTFile.Params.bullseye].get!DARTIndex;
         auto hirpc_bullseye_receiver = hirpc.receive(hirpc_bullseye_res[1]);
-        // writefln("receiver: %s", hirpc_bullseye_receiver);
-        // writefln("receiver message: %s", hirpc_bullseye_receiver.message.toPretty);
         auto hirpc_message = hirpc_bullseye_receiver.message[Keywords.result].get!Document;
         auto hirpc_bullseye = hirpc_message[DARTFile.Params.bullseye].get!DARTIndex;
-
-        writefln("hirpc stuff %s", hirpc_bullseye);
-
-        // auto hirpc_bullseye = hirpc_bullseye_receiver.message[Keywords.result][DARTFile.Params.bullseye].get!DARTIndex;
-        
-        // writefln("receiver: %s", hirpc_bullseye_receiver.message[Keywords.result][DARTFile.Params.bullsey].get!DARTIndex);
-        
-
         check(bullseye_tuple[1] == hirpc_bullseye, "hirpc bullseye not the same");
 
         return result_ok;
@@ -162,10 +151,10 @@ class WriteAndReadFromDartDb {
         handle.send(dartHiRPCRR(), read_sender);
 
         auto read_hirpc = receiveOnly!(dartHiRPCRR.Response, Document);
-        auto read_hirpc_recorder = read_hirpc[1];
-        // writeln(read_hirpc_recorder.toPretty);
-
-        const hirpc_recorder = record_factory.recorder(read_hirpc_recorder);
+        auto read_hirpc_recorder = hirpc.receive(read_hirpc[1]);
+        auto hirpc_recorder_message = read_hirpc_recorder.message[Keywords.result].get!Document;
+        
+        const hirpc_recorder = record_factory.recorder(hirpc_recorder_message);
 
         check(equal(hirpc_recorder[].map!(a => a.filed), insert_recorder[].map!(a => a.filed)), "hirpc data not the same as insertion");
 
