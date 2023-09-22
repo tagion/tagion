@@ -51,6 +51,7 @@ class WriteAndReadFromDartDb {
     Document[] docs;
     RecordFactory.Recorder insert_recorder;
     RecordFactory record_factory;
+    HiRPC hirpc;
 
     struct SimpleDoc {
         ulong n;
@@ -107,6 +108,12 @@ class WriteAndReadFromDartDb {
 
         check(bullseye_tuple[1]!is DARTIndex.init, "Bullseye not updated");
 
+        handle.send(dartBullseyeRR());
+        const bullseye_res = receiveOnly!(dartBullseyeRR.Response, immutable(DARTIndex));
+        check(bullseye_res[1] == bullseye_tuple[1], "bullseyes not the same");
+
+
+
         return result_ok;
     }
 
@@ -125,7 +132,6 @@ class WriteAndReadFromDartDb {
 
         check(equal(read_recorder[].map!(a => a.filed), insert_recorder[].map!(a => a.filed)), "Data not the same");
 
-        const HiRPC hirpc;
         Document read_sender = dartRead(fingerprints, hirpc).toDoc;
 
         handle.send(dartHiRPCRR(), read_sender);
@@ -134,7 +140,6 @@ class WriteAndReadFromDartDb {
         auto read_hirpc_recorder = read_hirpc[1];
         writeln(read_hirpc_recorder.toPretty);
 
-        pragma(msg, "WOWO RECORDER: ", typeof(read_hirpc_recorder));
         const hirpc_recorder = record_factory.recorder(read_hirpc_recorder);
 
         check(equal(hirpc_recorder[].map!(a => a.filed), insert_recorder[].map!(a => a.filed)), "hirpc data not the same as insertion");
