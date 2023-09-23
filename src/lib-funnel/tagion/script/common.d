@@ -1,9 +1,12 @@
 module tagion.script.common;
-
+import std.algorithm;
+import std.range;
+import std.array;
 import tagion.script.TagionCurrency;
 import tagion.utils.StdTime;
 import tagion.basic.Types;
 import tagion.crypto.Types;
+import tagion.crypto.SecureInterfaceNet;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
 import tagion.dart.DARTBasic;
@@ -76,4 +79,22 @@ struct PayScript {
                     this.outputs = outputs;
                 }
             });
+}
+
+@safe
+const(Signature)[] sign(const(SecureNet[]) nets, const(Contract) contract) {
+    const fingerprint = nets[0].calcHash(contract);
+    return nets
+        .map!(net => net.sign(fingerprint))
+        .array;
+}
+
+@safe
+bool verify(const(SecureNet) net, const(SignedContract) signed_contract, const(Pubkey[]) owners) {
+    const fingerprint = net.calcHash(signed_contract.contract);
+    if (signed_contract.contract.inputs.length == owners.length) {
+        return zip(signed_contract.signs, owners)
+            .all!((a) => net.verify(fingerprint, a[0], a[1]));
+    }
+    return false;
 }
