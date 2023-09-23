@@ -49,10 +49,7 @@ int _main(string[] args) {
     bool create_account;
     bool change_pin;
     bool set_default_quiz;
-    bool force;
-    bool list;
-    bool sum;
-    double amount;
+
     string output_filename;
     string derive_code;
     string path;
@@ -60,6 +57,7 @@ int _main(string[] args) {
     bool wallet_ui;
     GetoptResult main_args;
     WalletOptions options;
+    WalletInterface.Switch wallet_switch;
     auto config_file = "wallet.json";
     if (config_file.exists) {
         options.load(config_file);
@@ -80,9 +78,9 @@ int _main(string[] args) {
                 "quiz", format("Quiz file : default %s", options.quizfile), &options.quizfile,
                 "C|create", "Create a new account", &create_account,
                 "c|changepin", "Change pin-code", &change_pin,
-                "o|output", "Output filename", &output_filename,
-                "l|list", "List wallet content", &list, //"questions", "Questions for wallet creation", &questions_str,
-                "s|sum", "Sum of the wallet", &sum, //"questions", "Questions for wallet creation", &questions_str,
+                "o|output", "Output filename", &wallet_switch.output_filename,
+                "l|list", "List wallet content", &wallet_switch.list, //"questions", "Questions for wallet creation", &questions_str,
+                "s|sum", "Sum of the wallet", &wallet_switch.sum, //"questions", "Questions for wallet creation", &questions_str,
                 //"answers", "Answers for wallet creation", &answers_str,
                 /*
                 "path", format("Set the path for the wallet files : default %s", path), &path,
@@ -99,8 +97,8 @@ int _main(string[] args) {
                 "item|m", "Invoice item select from the invoice file", &item,
                 */
                 "pin|x", "Pincode", &pincode,
-                "amount", "Create an payment request in tagion", &amount,
-                "force", "Force input bill", &force, /*
+                "amount", "Create an payment request in tagion", &wallet_switch.amount,
+                "force", "Force input bill", &wallet_switch.force, /*
                 "port|p", format("Tagion network port : default %d", options.port), &options.port,
                 "url|u", format("Tagion url : default %s", options.addr), &options.addr,
                 "visual|g", "Visual user interface", &wallet_ui,
@@ -206,38 +204,7 @@ int _main(string[] args) {
                 return 4;
             }
         }
-        if (wallet_interface.secure_wallet.isLoggedin) {
-            bool save_wallet;
-            scope (success) {
-                if (save_wallet) {
-                    wallet_interface.save(false);
-                }
-            }
-            if (amount !is amount.init) {
-                const bill = wallet_interface.secure_wallet.requestBill(amount.TGN);
-                output_filename = (output_filename.empty) ? "bill".setExtension(FileExtension.hibon) : output_filename;
-                output_filename.fwrite(bill);
-                writefln("%1$sCreated %3$s%2$s of %4$s", GREEN, RESET, output_filename, bill.value.toString);
-                save_wallet = true;
-                //return 0;
-            }
-            if (force) {
-                foreach (file; args[1 .. $]) {
-                    const doc = file.fread;
-                    const bill = wallet_interface.secure_wallet.addBill(doc);
-                    writefln("%s", wallet_interface.toText(bill));
-                    save_wallet = true;
-                }
-
-            }
-            if (list) {
-                wallet_interface.listAccount(stdout);
-                sum = true;
-            }
-            if (sum) {
-                wallet_interface.sumAccount(stdout);
-            }
-        }
+        wallet_interface.operate(wallet_switch, args);
     }
     catch (Exception e) {
         writefln("%1$sError: %3$s%2$s", RED, RESET, e.msg);

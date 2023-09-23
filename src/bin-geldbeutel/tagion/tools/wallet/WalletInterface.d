@@ -6,9 +6,12 @@ import tagion.wallet.KeyRecover;
 import tagion.wallet.WalletRecords;
 import tagion.utils.Term;
 import tagion.wallet.AccountDetails;
+import tagion.script.TagionCurrency;
 import tagion.crypto.SecureNet;
+import tagion.basic.Types : FileExtension;
 import std.file : exists, mkdir;
 import tagion.hibon.HiBONRecord : fwrite, fread;
+import std.path;
 import std.format;
 import std.algorithm;
 import std.range;
@@ -435,6 +438,55 @@ struct WalletInterface {
             fout.writefln("Locked    : %13.6fTGN", locked.value);
             fout.writefln("Total     : %13.6fTGN", total.value);
 
+        }
+    }
+
+    struct Switch {
+        bool force;
+        bool list;
+        bool sum;
+        bool pay;
+        double amount;
+        string output_filename;
+    }
+
+    void operate(Switch wallet_switch, const(string[]) args) {
+        if (secure_wallet.isLoggedin) {
+            with (wallet_switch) {
+                bool save_wallet;
+                scope (success) {
+                    if (save_wallet) {
+                        save(false);
+                    }
+                }
+                if (amount !is amount.init) {
+                    const bill = secure_wallet.requestBill(amount.TGN);
+                    output_filename = (output_filename.empty) ? "bill".setExtension(FileExtension.hibon) : output_filename;
+                    output_filename.fwrite(bill);
+                    writefln("%1$sCreated %3$s%2$s of %4$s", GREEN, RESET, output_filename, bill.value.toString);
+                    save_wallet = true;
+                    //return 0;
+                }
+                if (force) {
+                    foreach (file; args[1 .. $]) {
+                        const doc = file.fread;
+                        const bill = secure_wallet.addBill(doc);
+                        writefln("%s", toText(bill));
+                        save_wallet = true;
+                    }
+
+                }
+                if (list) {
+                    listAccount(stdout);
+                    sum = true;
+                }
+                if (sum) {
+                    sumAccount(stdout);
+                }
+                if (pay) {
+
+                }
+            }
         }
     }
 }
