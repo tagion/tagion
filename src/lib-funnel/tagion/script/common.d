@@ -10,6 +10,7 @@ import tagion.crypto.SecureInterfaceNet;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
 import tagion.dart.DARTBasic;
+import tagion.script.ScriptException;
 
 enum StdNames {
     owner = "$Y",
@@ -82,19 +83,55 @@ struct PayScript {
 }
 
 @safe
-const(Signature)[] sign(const(SecureNet[]) nets, const(Contract) contract) {
-    const fingerprint = nets[0].calcHash(contract);
+Signature[] sign(const(SecureNet[]) nets, const(Contract) contract) {
+    const message = nets[0].calcHash(contract);
     return nets
-        .map!(net => net.sign(fingerprint))
+        .map!(net => net.sign(message))
         .array;
 }
 
 @safe
-bool verify(const(SecureNet) net, const(SignedContract) signed_contract, const(Pubkey[]) owners) {
-    const fingerprint = net.calcHash(signed_contract.contract);
-    if (signed_contract.contract.inputs.length == owners.length) {
-        return zip(signed_contract.signs, owners)
-            .all!((a) => net.verify(fingerprint, a[0], a[1]));
+const(SignedContract) sign(const(SecureNet[]) nets, const(Document[]) inputs, const(Document[]) reads, const(Document) script) {
+    check(nets.length == inputs.length, "Number of signature does not match the number of inputs");
+    const net = nets[0];
+    SignedContract result;
+    const x = net.dartIndex(inputs[0]);
+    result.contract = Contract(
+            inputs
+            .map!(doc => net.dartIndex(doc))
+            .array,
+            reads
+            .map!(doc => net.dartIndex(doc))
+            .array,
+            Document(script.data)
+    );
+    const message = net.calcHash(result.contract);
+    result.signs = sign(nets, result.contract);
+    return result;
+}
+
+@safe
+bool verify(const(SecureNet) net, const(SignedContract) signed_contract, const(Pubkey[]) owners) nothrow {
+    try {
+        if (signed_contract.contract.inputs.length == owners.length) {
+            const message = net.calcHash(signed_contract.contract);
+            return zip(signed_contract.signs, owners)
+                .all!((a) => net.verify(message, a[0], a[1]));
+        }
+    }
+    catch (Exception e) {
+        // ignore
+    }
+    return false;
+}
+
+@safe
+bool verify(const(SecureNet) net, const(SignedContract) signed_contract, const(Document[]) inputs) nothrow {
+    try {
+        return verify(net, signed_contract, inputs.map!(doc => doc[StdNames.owner].get!Pubkey).array);
+    }
+    catch (Exception e) {
+        //ignore
     }
     return false;
 }
