@@ -95,7 +95,6 @@ const(SignedContract) sign(const(SecureNet[]) nets, const(Document[]) inputs, co
     check(nets.length == inputs.length, "Number of signature does not match the number of inputs");
     const net = nets[0];
     SignedContract result;
-    const x = net.dartIndex(inputs[0]);
     result.contract = Contract(
             inputs
             .map!(doc => net.dartIndex(doc))

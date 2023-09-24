@@ -175,10 +175,12 @@ struct Currency(string _UNIT, long _BASE_UNIT = 1_000_000_000, long MAX_VALUE_IN
             return 0;
         }
 
+        @property
         long units() {
             return _units;
         }
 
+        @property
         long axios() {
             if (_units < 0) {
                 return -(-_units % BASE_UNIT);
@@ -186,6 +188,7 @@ struct Currency(string _UNIT, long _BASE_UNIT = 1_000_000_000, long MAX_VALUE_IN
             return _units % BASE_UNIT;
         }
 
+        @property
         long whole() {
             if (_units < 0) {
                 return -(-_units / BASE_UNIT);
@@ -193,6 +196,7 @@ struct Currency(string _UNIT, long _BASE_UNIT = 1_000_000_000, long MAX_VALUE_IN
             return _units / BASE_UNIT;
         }
 
+        @property
         double value() {
             return double(_units) / BASE_UNIT;
         }

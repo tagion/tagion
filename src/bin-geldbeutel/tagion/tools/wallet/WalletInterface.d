@@ -17,13 +17,18 @@ import std.algorithm;
 import std.range;
 import core.thread;
 import tagion.basic.Message;
-import tagion.basic.tagionexceptions;
+
+//import tagion.basic.tagionexceptions : check;
 import tagion.hibon.Document;
 import std.typecons;
 import std.range;
 import tagion.tools.Basic;
 import tagion.script.common;
+import tagion.wallet.SecureWallet : check;
+import tagion.script.execute : ContractExecution;
+import tagion.script.Currency : totalAmount;
 
+//import tagion.wallet.WalletException : check;
 /**
  * @brief strip white spaces in begin/end of text
  * @param word - input parameter with out
@@ -490,20 +495,31 @@ struct WalletInterface {
                         .map!(file => file.fread)
                         .map!(doc => TagionBill(doc))
                         .array;
-                    /+ 
-                    const amount_to_pay=pay_script.outputs
-                    .map!(bill => bill.value)
-                    .sum;
+
+                    const amount_to_pay = pay_script.outputs
+                        .map!(bill => bill.value)
+                        .totalAmount;
                     TagionBill[] collect_bills;
-                +/
-                    //const can_pay=secure_wallet.collect_bills(amount_to_pay, collect_bills);
-                    /+
-                     check(can_pay, format("Is unable to pay the amount %10.6fTGN", amount_to_pay.value));
-                    const derivers=collect_bills
-                    .map!(bill => bill.owner in secure_wallet.account.derivers);
+                    const estimated_fees = ContractExecution.billFees(10);
+                    const can_pay = secure_wallet.collect_bills(amount_to_pay + estimated_fees, collect_bills);
+                    pragma(msg, "can_pay ", typeof(can_pay));
+                    pragma(msg, "amount_to_pay ", typeof(amount_to_pay.value));
+                    check(can_pay, format("Is unable to pay the amount %10.6fTGN", amount_to_pay.value));
+                    auto derivers = collect_bills
+                        .map!(bill => bill.owner in secure_wallet.account.derivers);
+
                     check(derivers.all!(deriver => deriver !is null), "Missing deriver of some of the bills");
-//                    const nets=secure_wallet.
-+/
+                    const amount_to_redraw = collect_bills
+                        .map!(bill => bill.value)
+                        .totalAmount;
+                    const fees = ContractExecution.billFees(collect_bills.length + 1);
+                    const amount_remainder = amount_to_redraw - amount_to_pay - fees;
+                    check(amount_remainder >= 0, "Fees too small");
+                    const bill_remain = secure_wallet.requestBill(amount_remainder);
+                    //                    const nets=secure_wallet.net
+
+                    //                  const
+                    //const nets=secure_wallet.
 
                 }
             }
