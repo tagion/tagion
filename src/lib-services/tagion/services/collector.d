@@ -68,12 +68,7 @@ struct CollectorService {
     void recorder(dartReadRR.Response res, immutable(RecordFactory.Recorder) recorder) @trusted {
         import std.range;
         import std.algorithm.iteration : map;
-        import tagion.hibon.HiBONJSON;
-        import tagion.hibon.HiBONtoText;
-        import tagion.dart.DARTBasic;
 
-        // const s_contract = collection.sign_contract;
-        // if (s_contract.contract.reads == recorder[].map!(a => a.fingerprint).array) {
         if ((res.id in reads) !is null) {
             scope (exit) {
                 // TODO: dereference;
@@ -92,35 +87,19 @@ struct CollectorService {
             foreach (index, sign; zip(s_contract.contract.inputs, s_contract.signs)) {
                 const archive = find(recorder, index);
                 if (archive is null) {
-                    writeln("the archive doesn't exist");
                     return;
                 }
 
-                if (!archive.filed.isRecord!TagionBill) {
-                    import tagion.hibon.HiBONJSON;
-
-                    writefln("Document is not a bill\n%s", archive.filed.toPretty);
-                    return;
-                }
-                immutable bill = TagionBill(archive.filed);
-                immutable pkey = bill.owner;
-
-                writefln("f:%s", archive.fingerprint.encodeBase64);
-                writefln("s:%s", sign.encodeBase64);
-                writefln("p:%s", pkey.encodeBase64);
-                // bool verify(const Fingerprint message, const Signature signature, const Pubkey pubkey)
+                Pubkey pkey = archive.filed[StdNames.owner].get!Buffer;
                 if (!net.verify(contract_hash, sign, pkey)) {
-                    writeln("Could not be verified");
                     return;
                 }
             }
             collection.inputs = recorder[].map!(a => a.toDoc).array.dup;
-            writefln("%s, %s", collection.inputs is Document[].init, collection.reads is Document[].init);
             if (collection.inputs.length == 0) {
                 return;
             }
 
-            writeln("sending to tvm");
             (() @trusted => locate(tvm_task_name).send(signedContract(), cast(immutable) collection))();
         }
     }

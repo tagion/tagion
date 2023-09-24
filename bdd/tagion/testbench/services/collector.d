@@ -121,11 +121,11 @@ class ItWork {
         collector_handle = spawn(collector, "collector_task");
         check(waitforChildren(Ctrl.ALIVE), "CollectorService never alived");
 
-        //         return result_ok;
-        //     }
-        // 
-        //     @When("i send a contract")
-        //     Document contract() @trusted {
+        return result_ok;
+    }
+
+    @When("i send a contract")
+    Document contract() @trusted {
         import std.exception;
 
         immutable outputs = PayScript(iota(0, 10).map!(_ => TGN(100_000)).array).toDoc;
@@ -141,27 +141,9 @@ class ItWork {
             }
             return _signs.assumeUnique;
         }();
-        check(signs !is null, "Signs is null");
+        check(signs !is null, "No signatures");
 
         immutable s_contract = immutable(SignedContract)(signs, contract);
-
-        writeln("Input order");
-        const contract_hash = node_net.calcHash(contract.toDoc);
-        foreach (index, sign; zip(s_contract.contract.inputs, s_contract.signs)) {
-            const archive = find(insert_recorder, index);
-            check(archive !is null, format("Archive %s, did not exist in recorder", index));
-
-            immutable bill = TagionBill(archive.filed);
-            writefln("f:%s", archive.fingerprint.encodeBase64);
-            writefln("s:%s", sign.encodeBase64);
-            writefln("p:%s", bill.owner.encodeBase64);
-
-            // bool verify(const fingerprint message, const signature signature, const pubkey pubkey)
-            if (!node_net.verify(contract_hash, sign, bill.owner)) {
-                writeln("could not be verified");
-                check(false, "could not be verified");
-            }
-        }
 
         import tagion.communication.HiRPC;
 
