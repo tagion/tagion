@@ -13,8 +13,16 @@ import tagion.services.messages;
 
 @safe
 struct ReplicatorOptions {
-    string folder_path = "/tmp/test/";
     import tagion.utils.JSONCommon;
+    import std.format;
+
+    string folder_path = ".";
+
+    void setPrefix(string prefix) nothrow {
+        import std.path : buildPath;
+        import std.exception;
+        folder_path = assumeWontThrow(buildPath(".", format("%srecorder", prefix)));
+    }
     mixin JSONCommon;
 }
 
@@ -40,6 +48,7 @@ struct ReplicatorService {
 
         run(&receiveRecorder);
     }
+
 
 }
 

@@ -52,6 +52,7 @@ struct TaskNames {
     string transcript = "transcript";
     string tvm = "tvm";
     string epoch_creator = "epoch_creator";
+    string replicator = "replicator";
 
     mixin JSONCommon;
 
@@ -91,6 +92,7 @@ struct Options {
     public import tagion.services.TVM : TVMOptions;
     public import tagion.services.epoch_creator : EpochCreatorOptions;
     public import tagion.services.monitor : MonitorOptions;
+    public import tagion.services.replicator : ReplicatorOptions;
 
     WaveOptions wave;
     InputValidatorOptions inputvalidator;
@@ -101,6 +103,7 @@ struct Options {
     TVMOptions tvm;
     EpochCreatorOptions epoch_creator;
     MonitorOptions monitor;
+    ReplicatorOptions replicator;
 
     TaskNames task_names;
     mixin JSONCommon;

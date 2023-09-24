@@ -27,6 +27,7 @@ import tagion.utils.StdTime;
 import tagion.basic.Types : FileExtension, Buffer;
 import tagion.dart.Recorder;
 import tagion.dart.DARTBasic;
+import tagion.services.replicator : ReplicatorOptions;
 
 enum feature = Feature(
             "collector services",
@@ -80,7 +81,12 @@ class ItWork {
             immutable opts = DARTOptions(
                     buildPath(env.bdd_results, __MODULE__, "dart".setExtension(FileExtension.dart))
             );
+            immutable replicator_folder = buildPath(opts.dart_filename.dirName, "replicator");
+            immutable replicator_opts = ReplicatorOptions(replicator_folder);
+
+            mkdirRecurse(replicator_folder);
             mkdirRecurse(opts.dart_filename.dirName);
+
             if (opts.dart_filename.exists) {
                 opts.dart_filename.remove;
             }
@@ -89,7 +95,7 @@ class ItWork {
 
             DART.create(opts.dart_filename, node_net);
 
-            dart_handle = spawn!DARTService(dart_service, opts, node_net);
+            dart_handle = spawn!DARTService(dart_service, opts, replicator_opts, node_net);
             check(waitforChildren(Ctrl.ALIVE), "dart service did not alive");
         }
 

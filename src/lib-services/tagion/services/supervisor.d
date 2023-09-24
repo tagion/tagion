@@ -37,7 +37,7 @@ struct Supervisor {
         }
 
         immutable tn = opts.task_names;
-        auto dart_handle = spawn!DARTService(tn.dart, opts.dart, net);
+        auto dart_handle = spawn!DARTService(tn.dart, opts.dart, opts.replicator, net);
 
         auto hirpc_verifier_handle = spawn!HiRPCVerifierService(tn.hirpc_verifier, opts.hirpc_verifier, tn.collector, net);
 

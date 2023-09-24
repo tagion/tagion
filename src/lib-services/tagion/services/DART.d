@@ -24,6 +24,7 @@ import tagion.services.messages;
 import tagion.communication.HiRPC;
 import tagion.hibon.HiBONRecord : isRecord;
 import tagion.logger.Logger;
+import tagion.services.replicator;
 
 @safe
 struct DARTOptions {
@@ -40,7 +41,7 @@ struct DARTOptions {
 
 @safe
 struct DARTService {
-    void task(immutable(DARTOptions) opts, immutable(SecureNet) net) {
+    void task(immutable(DARTOptions) opts, immutable(ReplicatorOptions) replicator_opts, immutable(SecureNet) net) {
         DART db;
         Exception dart_exception;
         db = new DART(net, opts.dart_filename);
@@ -51,6 +52,10 @@ struct DARTService {
         scope (exit) {
             db.close();
         }
+        
+        ReplicatorServiceHandle replicator = spawn!ReplicatorService("replicator", replicator_opts, net);
+
+        waitforChildren(Ctrl.ALIVE);
 
         void read(dartReadRR req, immutable(DARTIndex)[] fingerprints) @safe {
             RecordFactory.Recorder read_recorder = db.loads(fingerprints, Archive.Type.NONE);
