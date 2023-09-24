@@ -525,7 +525,8 @@ struct WalletInterface {
                             .array,
                             null,
                             pay_script.toDoc);
-
+                    output_filename = (output_filename.empty) ? "submit".setExtension(FileExtension.hibon) : output_filename;
+                    output_filename.fwrite(signed_contract);
                     //                  const
                     //const nets=secure_wallet.
 
