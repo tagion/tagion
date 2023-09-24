@@ -86,13 +86,12 @@ struct DARTService {
 
             Document result = db(receiver, false).toDoc;
             req.respond(result);
-            // auto result = db(receiver, false);
-            // req.respond(result.message[Keywords.result].get!Document);
         }
 
         void modify(dartModify, immutable(RecordFactory.Recorder) recorder, immutable(int) epoch_number) @safe {
+            auto eye = Fingerprint(db.modify(recorder));
 
-            db.modify(recorder);
+            locate(replicator_task_name).send(SendRecorder(), recorder, eye, epoch_number);
         }
 
         void bullseye(dartBullseyeRR req) @safe {
