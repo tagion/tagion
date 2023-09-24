@@ -77,7 +77,7 @@ struct HiRPCVerifierService {
                 case DART.Queries.dartRead, DART.Queries.dartBullseye:
                     auto dart_hirpc = dartHiRPCRR();
                     pragma(msg, "TODO(pr): relay to shell service?");
-                    locate(dart_task_name).send(dart_hirpc, doc);
+                    // locate(dart_task_name).send(dart_hirpc, doc);
                     break;
                 default:
                     reject(RejectReason.invalidMethod, doc);
