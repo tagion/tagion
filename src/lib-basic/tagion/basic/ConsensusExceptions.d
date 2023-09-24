@@ -66,6 +66,7 @@ enum ConsensusFailCode {
     SECURITY_PUBLIC_KEY_TWEAK_MULT_FAULT,
     SECURITY_PUBLIC_KEY_COMPRESS_SIZE_FAULT,
     SECURITY_PUBLIC_KEY_UNCOMPRESS_SIZE_FAULT,
+    SECURITY_PRIVATE_KEY_INVALID,
 
     SECURITY_EDCH_FAULT,
 
@@ -239,6 +240,7 @@ class SmartScriptException : ConsensusException {
             SECURITY_PRIVATE_KEY_TWEAK_MULT_FAULT       : "Failed to tweak mult private key",
             SECURITY_PUBLIC_KEY_TWEAK_ADD_FAULT         : "Failed to tweak add public key",
             SECURITY_PUBLIC_KEY_TWEAK_MULT_FAULT        : "Failed to tweak mult public key",
+            SECURITY_PRIVATE_KEY_INVALID                : "Invalid private key",
 
             SECURITY_MASK_VECTOR_IS_ZERO                : "Mask vector must be different from zero",
             SECURITY_MESSAGE_HASH_KEY                   : "A message containg a hash-kye can not be signed",

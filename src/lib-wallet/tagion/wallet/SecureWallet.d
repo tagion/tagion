@@ -353,7 +353,7 @@ struct SecureWallet(Net : SecureNet) {
         //     scramble(seed);
         //auto pkey = _net.derivePubkey(account.derive_state);
         invoice.pkey = derivePubkey;
-        account.derives[invoice.pkey] = account.derive_state;
+        account.derivers[invoice.pkey] = account.derive_state;
     }
 
     Pubkey derivePubkey() {
@@ -424,9 +424,9 @@ struct SecureWallet(Net : SecureNet) {
                 auto bill_net = new Net;
                 // Sign all inputs
                 result.signs = contract_bills
-                    .filter!(b => b.owner in account.derives)
+                    .filter!(b => b.owner in account.derivers)
                     .map!((b) {
-                        immutable tweak_code = account.derives[b.owner];
+                        immutable tweak_code = account.derivers[b.owner];
                         bill_net.derive(tweak_code, shared_net);
                         return bill_net.sign(message);
                     })
@@ -479,7 +479,7 @@ struct SecureWallet(Net : SecureNet) {
     const(HiRPC.Sender) getRequestUpdateWallet() const {
         HiRPC hirpc;
         auto h = new HiBON;
-        h = account.derives.byKey.map!(p => cast(Buffer) p);
+        h = account.derivers.byKey.map!(p => cast(Buffer) p);
         return hirpc.search(h);
     }
 
@@ -572,7 +572,7 @@ struct SecureWallet(Net : SecureNet) {
     }
 
     struct DeriverState {
-        Buffer[Pubkey] derives;
+        Buffer[Pubkey] derivers;
         Buffer derive_state;
         mixin HiBONRecord;
     }
@@ -603,16 +603,16 @@ struct SecureWallet(Net : SecureNet) {
     @trusted
     const(CiphDoc) getEncrDerivers() {
         DeriverState derive_state;
-        derive_state.derives = this.account.derives;
+        derive_state.derivers = this.account.derivers;
         derive_state.derive_state = this.account.derive_state;
         return Cipher.encrypt(this._net, derive_state.toDoc);
     }
 
     void setEncrDerivers(const(CiphDoc) cipher_doc) {
         Cipher cipher;
-        const derive_state_doc = cipher.decrypt(this._net, cipher_doc); //this._net, getEncrDerivesList(
+        const derive_state_doc = cipher.decrypt(this._net, cipher_doc); //this._net, getEncrderiversList(
         DeriverState derive_state = DeriverState(derive_state_doc);
-        this.account.derives = derive_state.derives;
+        this.account.derivers = derive_state.derivers;
         this.account.derive_state = derive_state.derive_state;
     }
 
@@ -756,7 +756,7 @@ struct SecureWallet(Net : SecureNet) {
 
             // Add the bulls to the account with the derive keys
             with (sender_wallet.account) {
-                bills = zip(bill_amounts, derives.byKey).map!(bill_derive => TagionBill(
+                bills = zip(bill_amounts, derivers.byKey).map!(bill_derive => TagionBill(
                         bill_derive[0],
                         currentTime,
                         bill_derive[1],

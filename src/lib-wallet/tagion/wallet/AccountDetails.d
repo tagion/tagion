@@ -12,7 +12,7 @@ import tagion.script.common;
 
 @safe
 struct AccountDetails {
-    @label("$derives") Buffer[Pubkey] derives;
+    @label("$derivers") Buffer[Pubkey] derivers;
     @label("$bills") TagionBill[] bills;
     @label("$state") Buffer derive_state;
     @label("$locked") bool[Pubkey] activated; /// locked bills
@@ -109,8 +109,8 @@ struct AccountDetails {
     }
 
     void requestBill(TagionBill bill, Buffer derive) {
-        check((bill.owner in derives) is null, format("Bill %(%x%) already exists", bill.owner));
-        derives[bill.owner] = derive;
+        check((bill.owner in derivers) is null, format("Bill %(%x%) already exists", bill.owner));
+        derivers[bill.owner] = derive;
         requested[bill.owner] = bill;
 
     }
@@ -120,8 +120,8 @@ struct AccountDetails {
          +/
     void clearup() pure {
         bills
-            .filter!(b => b.owner in derives)
-            .each!(b => derives.remove(b.owner));
+            .filter!(b => b.owner in derivers)
+            .each!(b => derivers.remove(b.owner));
         bills
             .filter!(b => b.owner in activated)
             .each!(b => activated.remove(b.owner));

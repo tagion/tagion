@@ -184,6 +184,7 @@ class StdSecureNet : StdHashNet, SecureNet {
     void derive(string tweak_word, shared(SecureNet) secure_net) {
         const tweak_code = HMAC(tweak_word.representation);
         derive(tweak_code, secure_net);
+
     }
 
     @trusted
@@ -200,18 +201,27 @@ class StdSecureNet : StdHashNet, SecureNet {
         }
     }
 
+    const(SecureNet) derive(const(ubyte[]) tweak_code) {
+        ubyte[] tweak_privkey;
+        _secret.tweakMul(tweak_code, tweak_privkey);
+        auto result = new StdSecureNet;
+        result.createKeyPair(tweak_privkey);
+        return result;
+    }
+
     final bool secKeyVerify(scope const(ubyte[]) privkey) const {
         return _crypt.secKeyVerify(privkey);
     }
 
     final void createKeyPair(ref ubyte[] privkey)
     in {
-        assert(_crypt.secKeyVerify(privkey));
         assert(_secret is null);
     }
     do {
         import std.digest.sha : SHA256;
         import std.string : representation;
+
+        check(secKeyVerify(privkey), ConsensusFailCode.SECURITY_PRIVATE_KEY_INVALID);
 
         alias AES = AESCrypto!256;
         _pubkey = _crypt.computePubkey(privkey);
