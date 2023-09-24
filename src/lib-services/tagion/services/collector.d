@@ -75,7 +75,7 @@ struct CollectorService {
                 collection = null;
                 reads.remove(res.id);
             }
-            collection.reads = recorder[].map!(a => a.toDoc).array.dup;
+            collection.reads ~= recorder[].map!(a => a.toDoc).array;
             return;
         }
         else if ((res.id in collections) !is null) {
@@ -97,7 +97,7 @@ struct CollectorService {
                     return;
                 }
             }
-            collection.inputs = recorder[].map!(a => a.toDoc).array.dup;
+            collection.inputs ~= recorder[].map!(a => a.toDoc).array;
             if (collection.inputs.length == 0) {
                 return;
             }
