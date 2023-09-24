@@ -50,7 +50,7 @@ struct CollectorService {
         signed_contract(inputContract(), cast(immutable) SignedContract(doc));
     }
 
-    void signed_contract(inputContract, immutable(SignedContract) s_contract) @safe {
+    void signed_contract(inputContract, immutable(SignedContract) s_contract) {
         auto inputs_req = dartReadRR();
         CollectedSignedContract collected;
         collected.sign_contract = s_contract;
@@ -65,7 +65,7 @@ struct CollectorService {
         locate(dart_task_name).send(inputs_req, s_contract.contract.inputs);
     }
 
-    void recorder(dartReadRR.Response res, immutable(RecordFactory.Recorder) recorder) @safe {
+    void recorder(dartReadRR.Response res, immutable(RecordFactory.Recorder) recorder) {
         import std.range;
         import std.algorithm.iteration : map;
 
