@@ -1,4 +1,4 @@
-module tagion.services.recorder;
+module tagion.services.replicator;
 
 import tagion.actor;
 import tagion.utils.Miscellaneous : cutHex;
@@ -12,7 +12,7 @@ import tagion.services.messages;
 
 
 @safe
-struct RecorderOptions {
+struct ReplicatorOptions {
     string folder_path = "/tmp/test/";
     import tagion.utils.JSONCommon;
     mixin JSONCommon;
@@ -20,9 +20,9 @@ struct RecorderOptions {
 
 
 @safe
-struct RecorderService {
+struct ReplicatorService {
 
-    void task(immutable(RecorderOptions) opts, immutable(SecureNet) net) {
+    void task(immutable(ReplicatorOptions) opts, immutable(SecureNet) net) {
         RecorderChainStorage storage = new RecorderChainFileStorage(opts.folder_path, net);
         RecorderChain recorder_chain = new RecorderChain(storage);
 
@@ -43,5 +43,5 @@ struct RecorderService {
 
 }
 
-alias RecorderServiceHandle = ActorHandle!RecorderService;
+alias ReplicatorServiceHandle = ActorHandle!ReplicatorService;
 

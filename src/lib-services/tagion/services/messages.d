@@ -33,7 +33,7 @@ alias ReceivedWavefront = Msg!"ReceivedWavefront";
 alias AddedChannels = Msg!"AddedChannels";
 alias BeginGossip = Msg!"BeginGossip";
 
-// Recorder 
+// Replicator Recorder 
 alias SendRecorder = Msg!"SendRecorder";
 
 

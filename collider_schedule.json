@@ -211,7 +211,7 @@
             ],
             "timeout": 0.0
         },
-        "recorder_service": {
+        "replicator_service": {
             "args": [],
             "envs": {},
             "stages": [

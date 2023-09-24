@@ -1,4 +1,4 @@
-module tagion.testbench.recorder_service;
+module tagion.testbench.replicator_service;
 
 import tagion.tools.Basic;
 import tagion.behaviour.Behaviour;
@@ -7,7 +7,7 @@ import tagion.testbench.tools.Environment;
 import std.file;
 import std.path : buildPath;
 
-import tagion.services.recorder : RecorderOptions;
+import tagion.services.replicator: ReplicatorOptions;
 
 mixin Main!(_main);
 
@@ -17,7 +17,7 @@ int _main(string[] args) {
         rmdirRecurse(module_path);
     }
     mkdirRecurse(module_path);
-    immutable opts = RecorderOptions(module_path);
+    immutable opts = ReplicatorOptions(module_path);
     auto recorder_service_feature = automation!(recorder_service);
     recorder_service_feature.StoreOfTheRecorderChain(opts);
     recorder_service_feature.run();
