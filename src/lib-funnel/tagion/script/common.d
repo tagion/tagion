@@ -46,6 +46,10 @@ enum StdNames {
                     this.reads = reads;
                     this.script = script; 
                 }
+                this(immutable(DARTIndex)[] inputs, immutable(DARTIndex)[] reads, immutable(Document) script) @safe immutable nothrow {
+                    this.inputs = inputs;
+                    this.script = script; 
+                }
             });
 }
 
@@ -56,6 +60,10 @@ enum StdNames {
     mixin HiBONRecord!(
             q{
                 this(const(Signature)[] signs, Contract contract) @safe pure nothrow {
+                    this.signs = signs;
+                    this.contract = contract;
+                }
+                this(immutable(Signature)[] signs, immutable(Contract) contract) @safe nothrow immutable {
                     this.signs = signs;
                     this.contract = contract;
                 }
