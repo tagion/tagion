@@ -503,14 +503,16 @@ struct SecureWallet(Net : SecureNet) {
         auto none_locked = account.bills.filter!(b => !(b.owner in account.activated));
 
         // Check if we have enough money
-        const enough = !none_locked.map!(b => b.value)
+        const enough = !none_locked
+            .map!(b => b.value)
             .cumulativeFold!((a, b) => a + b)
             .filter!(a => a >= amount)
             .takeOne
             .empty;
         if (enough) {
             TagionCurrency rest = amount;
-            locked_bills = none_locked.filter!(b => b.value <= rest)
+            locked_bills = none_locked
+                .filter!(b => b.value <= rest)
                 .until!(b => rest <= 0)
                 .tee!((b) { rest -= b.value; account.activated[b.owner] = true; })
                 .array;

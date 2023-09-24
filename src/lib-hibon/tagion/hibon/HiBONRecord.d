@@ -1480,7 +1480,7 @@ mixin template HiBONRecord(string CTOR = "") {
  Returns:
  The Document read from the file
  +/
-@trusted const(Document) fread(const(char[]) filename) {
+@trusted Document fread(const(char[]) filename) {
     import tagion.hibon.HiBONException : check;
 
     immutable data = assumeUnique(cast(ubyte[]) file.read(filename));
