@@ -92,7 +92,7 @@ struct ContractExecution {
             .map!(doc => TagionBill(doc).value)
 
             .totalAmount;
-        const output_amount = pay_script.outputs.totalAmount;
+        const output_amount = pay_script.outputs.map!(bill => bill.value).totalAmount;
         pragma(msg, "Outputs ", typeof(pay_script.outputs.map!(v => v.toDoc).array));
         const result = new immutable(ContractProduct)(
                 exec_contract,

@@ -485,16 +485,13 @@ struct WalletInterface {
                     sumAccount(stdout);
                 }
                 if (pay) {
-                    /+
                     PayScript pay_script;
-                    pay_script.outputs=args[1..$]
-                    .map!(file => file.fread)
-                    .array;
-                +/
-                    /+
+                    pay_script.outputs = args[1 .. $]
+                        .map!(file => file.fread)
+                        .map!(doc => TagionBill(doc))
+                        .array;
+                    /+ 
                     const amount_to_pay=pay_script.outputs
-                    .filter!(doc => isRecord!TagionBill(doc))
-                    .map!(doc => TagionBill(doc))
                     .map!(bill => bill.value)
                     .sum;
                     TagionBill[] collect_bills;

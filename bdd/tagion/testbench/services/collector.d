@@ -116,7 +116,7 @@ class ItWork {
     Document contract() @trusted {
         import std.exception;
 
-        immutable outputs = PayScript(iota(0, 10).map!(_ => TGN(100_000)).array).toDoc;
+        immutable outputs = PayScript(iota(0, 10).map!(_ => TagionBill.init).array).toDoc;
         immutable contract = cast(immutable) Contract(inputs, immutable(DARTIndex[]).init, outputs);
         immutable signs = {
             immutable(Signature)[] signs;

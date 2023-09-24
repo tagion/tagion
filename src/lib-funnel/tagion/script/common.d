@@ -73,10 +73,10 @@ enum StdNames {
 @safe
 @recordType("pay")
 struct PayScript {
-    @label(StdNames.values) TagionCurrency[] outputs;
+    @label(StdNames.values) TagionBill[] outputs;
     mixin HiBONRecord!(
             q{
-                this(TagionCurrency[] outputs) @safe pure nothrow {
+                this(TagionBill[] outputs) @safe pure nothrow {
                     this.outputs = outputs;
                 }
             });
