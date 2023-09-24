@@ -87,18 +87,6 @@ enum FileExtension {
 
 enum DOT = '.'; /// File extension separator
 
-version (none) @safe
-string withDot(FileExtension ext) pure nothrow {
-
-    //return DOT ~ ext;
-    return ext;
-}
-
-version (none) @safe
-unittest {
-    assert(FileExtension.markdown.withDot == ".md");
-}
-
 @safe
 bool hasExtension(const(char[]) filename, const(FileExtension) ext) pure nothrow {
     import std.path : extension;
