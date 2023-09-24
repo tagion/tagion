@@ -50,12 +50,15 @@ alias ContractProductResult = Result!(immutable(ContractProduct)*, Exception);
 class StdCheckContract : CheckContract {
     TagionCurrency storage_fees; /// Fees per bytes
     TagionCurrency gas_price; /// Fees per TVM instruction
+    TagionCurrency calcFees(in GasUse use) pure {
+        return use.gas * gas_price + use.storage * storage_fees;
+    }
+
     const(TagionCurrency) calcFees(
             immutable(CollectedSignedContract)* exec_contract,
             in TagionCurrency amount,
             in GasUse use) {
-        return use.gas * gas_price + use.storage * storage_fees;
-
+        return calcFees(use);
     }
 
     bool validAmout(immutable(CollectedSignedContract)* exec_contract,
@@ -71,6 +74,8 @@ class StdCheckContract : CheckContract {
 @safe
 struct ContractExecution {
     static StdCheckContract check_contract;
+    enum pay_gas = 1000;
+    enum bill_price = 200;
     ContractProductResult opCall(immutable(CollectedSignedContract)* exec_contract) nothrow {
         const script_doc = exec_contract.sign_contract.contract.script;
         try {
@@ -84,6 +89,11 @@ struct ContractExecution {
         }
     }
 
+    static TagionCurrency billFees(const size_t number_of_bills) {
+        const use = GasUse(pay_gas, number_of_bills + bill_price);
+        return check_contract.calcFees(use);
+    }
+
     immutable(ContractProduct)* pay(immutable(CollectedSignedContract)* exec_contract) {
         import std.exception;
 
@@ -92,13 +102,19 @@ struct ContractExecution {
             .map!(doc => TagionBill(doc).value)
 
             .totalAmount;
-        const output_amount = pay_script.outputs.totalAmount;
+        const output_amount = pay_script.outputs.map!(bill => bill.value).totalAmount;
         pragma(msg, "Outputs ", typeof(pay_script.outputs.map!(v => v.toDoc).array));
         const result = new immutable(ContractProduct)(
                 exec_contract,
                 pay_script.outputs.map!(v => v.toDoc).array);
         check(check_contract.validAmout(exec_contract, input_ammount, output_amount,
-                GasUse(1000, result.outputs.map!(doc => doc.full_size).sum)), "Invalid amount");
+                GasUse(pay_gas, result.outputs.map!(doc => doc.full_size).sum)), "Invalid amount");
         return result;
     }
+}
+
+shared static this() {
+    ContractExecution.check_contract = new StdCheckContract;
+    ContractExecution.check_contract.storage_fees = 1.TGN;
+    ContractExecution.check_contract.gas_price = 0.1.TGN;
 }

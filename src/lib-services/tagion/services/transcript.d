@@ -98,7 +98,8 @@ struct TranscriptService {
                 used ~= s_contract.contract.inputs;
             }
 
-            locate(dart_task_name).send(dartModify(), RecordFactory.uniqueRecorder(recorder));
+            pragma(msg, "fixme(pr): add epoch_number");
+            locate(dart_task_name).send(dartModify(), RecordFactory.uniqueRecorder(recorder), immutable int(0));
 
         }
 

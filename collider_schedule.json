@@ -210,8 +210,15 @@
                 "services"
             ],
             "timeout": 0.0
+        },
+        "replicator_service": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "commit", "recorder_service",
+                "services"
+            ],
+            "timeout": 0.0
         }
-    
     }
-
 }

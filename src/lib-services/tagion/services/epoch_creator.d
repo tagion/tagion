@@ -57,7 +57,6 @@ struct EpochCreatorService {
             import tagion.monitor.Monitor : MonitorCallBacks;
             import tagion.hashgraph.Event : Event;
 
-            log("BEFORE SPAWN");
             auto monitor_socket_tid = spawn(&monitorServiceTask, monitor_opts);
             Event.callbacks = new MonitorCallBacks(
                     monitor_socket_tid, monitor_opts.dataformat);

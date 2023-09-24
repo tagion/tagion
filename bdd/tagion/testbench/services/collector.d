@@ -27,12 +27,7 @@ import tagion.utils.StdTime;
 import tagion.basic.Types : FileExtension, Buffer;
 import tagion.dart.Recorder;
 import tagion.dart.DARTBasic;
-
-debug {
-    import std.stdio;
-    import tagion.hibon.HiBONJSON;
-    import tagion.hibon.HiBONtoText;
-}
+import tagion.services.replicator : ReplicatorOptions;
 
 enum feature = Feature(
             "collector services",
@@ -51,13 +46,9 @@ StdSecureNet[] createNets(uint count, string pass_prefix = "net") @safe {
     }).array;
 }
 
-TagionBill[] createBills(StdSecureNet[] bill_nets, uint amount) @trusted {
-    import core.thread;
-    import core.time;
-
-    Thread.sleep(10.msecs);
+TagionBill[] createBills(StdSecureNet[] bill_nets, uint amount) @safe {
     return bill_nets.map!((net) =>
-            TagionBill(TGN(amount), currentTime, net.pubkey)
+            TagionBill(TGN(amount), currentTime, net.pubkey, Buffer.init)
     ).array;
 }
 
@@ -91,7 +82,12 @@ class ItWork {
             immutable opts = DARTOptions(
                     buildPath(env.bdd_results, __MODULE__, "dart".setExtension(FileExtension.dart))
             );
+            immutable replicator_folder = buildPath(opts.dart_filename.dirName, "replicator");
+            immutable replicator_opts = ReplicatorOptions(replicator_folder);
+
+            mkdirRecurse(replicator_folder);
             mkdirRecurse(opts.dart_filename.dirName);
+
             if (opts.dart_filename.exists) {
                 opts.dart_filename.remove;
             }
@@ -100,7 +96,7 @@ class ItWork {
 
             DART.create(opts.dart_filename, node_net);
 
-            dart_handle = spawn!DARTService(dart_service, opts, node_net);
+            dart_handle = spawn!DARTService(dart_service, opts, replicator_opts, "replicator", node_net);
             check(waitforChildren(Ctrl.ALIVE), "dart service did not alive");
         }
 
@@ -112,10 +108,9 @@ class ItWork {
         input_bills.insertBills(insert_recorder);
         inputs ~= input_bills.map!(a => node_net.dartIndex(a.toDoc)).array;
         check(inputs !is null, "Inputs were null");
-        dart_handle.send(dartModifyRR(),
+        dart_handle.send(dartModify(),
                 (() @trusted => cast(immutable) insert_recorder)()
         );
-        receiveOnlyTimeout!(dartModifyRR.Response, immutable(DARTIndex));
 
         immutable collector = CollectorService(node_net, dart_service, thisActor.task_name);
         collector_handle = spawn(collector, "collector_task");
@@ -128,11 +123,8 @@ class ItWork {
     Document contract() @trusted {
         import std.exception;
 
-        immutable outputs = PayScript(iota(0, 10).map!(_ => TGN(100_000)).array).toDoc;
-        immutable contract = immutable(Contract)(inputs, immutable(DARTIndex[]).init, outputs);
-        check(Contract(contract.toDoc).inputs == contract.inputs, "Input bills and ordered inputs bills were not the same");
-        import std.algorithm.sorting;
-
+        immutable outputs = PayScript(iota(0, 10).map!(_ => TagionBill.init).array).toDoc;
+        immutable contract = cast(immutable) Contract(inputs, immutable(DARTIndex[]).init, outputs);
         immutable signs = {
             Signature[] _signs;
             const contract_hash = node_net.calcHash(contract.toDoc);

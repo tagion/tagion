@@ -25,6 +25,8 @@ import tagion.hibon.Document;
     @label("") Fingerprint fingerprint;
     /** Bullseye of DART database */
     @label("eye") Fingerprint bullseye;
+    /** Epoch number */
+    @label("epoch_number") int epoch_number;
     /** Fingerprint of the previous block */
     @label("previous") Fingerprint previous;
     /** Recorder with database changes of this block */
@@ -44,11 +46,13 @@ import tagion.hibon.Document;
                 Document recorder_doc,
                 Fingerprint previous,
                 Fingerprint bullseye,
+                int epoch_number,
                 const(HashNet) net)
             {
                 this.recorder_doc = recorder_doc;
                 this.previous = previous;
                 this.bullseye = bullseye;
+                this.epoch_number = epoch_number;
 
                 this.fingerprint = net.calcHash(toDoc);
             }
@@ -89,10 +93,11 @@ unittest {
 
     Fingerprint bullseye = [1, 2, 3, 4, 5, 6, 7, 8];
     Fingerprint previous = [1, 2, 4, 8, 16, 32, 64, 128];
+    int epoch_number = 0;
 
     /// RecorderChainBlock_create_block
     {
-        auto block = new RecorderChainBlock(doc_recorder, previous, bullseye, net);
+        auto block = new RecorderChainBlock(doc_recorder, previous, bullseye, epoch_number, net);
 
         assert(block.previous == previous);
         assert(block.bullseye == bullseye);
@@ -107,7 +112,7 @@ unittest {
         enum recorderLabel = GetLabel!(RecorderChainBlock.recorder_doc).name;
         enum bullseyeLabel = GetLabel!(RecorderChainBlock.bullseye).name;
 
-        auto block = new RecorderChainBlock(doc_recorder, previous, bullseye, net);
+        auto block = new RecorderChainBlock(doc_recorder, previous, bullseye, epoch_number, net);
 
         assert(block.toHiBON[previousLabel].get!Buffer == previous);
         assert(block.toHiBON[bullseyeLabel].get!Buffer == bullseye);
@@ -118,7 +123,7 @@ unittest {
 
     /// RecorderChainBlock_restore_from_doc
     {
-        auto block = new RecorderChainBlock(doc_recorder, previous, bullseye, net);
+        auto block = new RecorderChainBlock(doc_recorder, previous, bullseye, epoch_number, net);
         auto restored_block = new RecorderChainBlock(block.toDoc);
 
         assert(block.toDoc.serialize == restored_block.toDoc.serialize);
@@ -126,7 +131,7 @@ unittest {
 
     /// RecorderChainBlock_from_doc_no_member
     {
-        auto block = new RecorderChainBlock(doc_recorder, previous, bullseye, net);
+        auto block = new RecorderChainBlock(doc_recorder, previous, bullseye, epoch_number, net);
         auto block_hibon = block.toHiBON;
         block_hibon.remove(GetLabel!(RecorderChainBlock.bullseye).name);
 

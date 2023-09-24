@@ -62,14 +62,22 @@ struct HiRPCVerifierService {
             }
 
             const receiver = hirpc.receive(doc);
-            with (ContractMethods) switch (receiver.method.name) {
-            case submit:
+
+            import tagion.dart.DART;
+
+            switch (receiver.method.name) {
+            case ContractMethods.submit:
                 if (receiver.signed is HiRPC.SignedState.VALID) {
                     locate(collector_task).send(inputHiRPC(), receiver);
                 }
                 else {
                     reject(RejectReason.notSigned, doc);
                 }
+                break;
+            case DART.Queries.dartRead, DART.Queries.dartBullseye:
+                auto dart_hirpc = dartHiRPCRR();
+                pragma(msg, "TODO(pr): relay to shell service?");
+                // locate(dart_task_name).send(dart_hirpc, doc);
                 break;
             default:
                 reject(RejectReason.invalidMethod, doc);

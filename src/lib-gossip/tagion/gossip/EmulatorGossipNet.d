@@ -213,11 +213,6 @@ class NewEmulatorGossipNet : GossipNet {
     }
 
     @property
-    void time(const(sdt_t) t) {
-        _current_time = sdt_t(t);
-    }
-
-    @property
     const(sdt_t) time() pure const {
         return _current_time;
     }

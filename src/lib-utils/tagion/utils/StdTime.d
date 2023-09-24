@@ -11,3 +11,9 @@ alias sdt_t = Typedef!(long, long.init, SDT);
 sdt_t currentTime() {
     return sdt_t(Clock.currStdTime);
 }
+
+@safe
+string toText(const sdt_t time) {
+    SysTime sys_time = SysTime(cast(long) time);
+    return sys_time.toISOExtString;
+}

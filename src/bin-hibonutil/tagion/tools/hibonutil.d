@@ -176,21 +176,6 @@ int _main(string[] args) {
 
             stderr.writeln("Error: output not specified");
             return 1;
-
-            // else {
-            //     try {
-            //         if (standard_output) {
-            //             stdout.rawWrite(hibon.serialize);
-            //         }
-            //         else {
-            //             outputfilename.setExtension(FileExtension.hibon).fwrite(hibon.serialize);
-            //         }
-            //     }
-            //     catch (Exception e) {
-            //         error(e);
-            //         return 1;
-            //     }
-            // }
         }
 
         stderr.writefln("Input file missing");

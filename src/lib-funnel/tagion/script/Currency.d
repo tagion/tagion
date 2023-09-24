@@ -47,7 +47,7 @@ struct Currency(string _UNIT, long _BASE_UNIT = 1_000_000_000, long MAX_VALUE_IN
     enum long BASE_UNIT = _BASE_UNIT;
     enum long UNIT_MAX = MAX_VALUE_IN_BASE_UNITS * BASE_UNIT;
     enum UNIT = _UNIT;
-    enum type_name = _UNIT;
+    //    enum type_name = _UNIT;
     protected {
         @label("$") long _units;
     }
@@ -91,6 +91,7 @@ struct Currency(string _UNIT, long _BASE_UNIT = 1_000_000_000, long MAX_VALUE_IN
 
     Currency opBinary(string OP, T)(T rhs) const pure
     if (isIntegral!T && (["+", "-", "*", "%", "/"].canFind(OP))) {
+        pragma(msg, "OP ", T);
         enum code = format(q{return Currency(_units %s rhs);}, OP);
         mixin(code);
     }
@@ -174,10 +175,12 @@ struct Currency(string _UNIT, long _BASE_UNIT = 1_000_000_000, long MAX_VALUE_IN
             return 0;
         }
 
+        @property
         long units() {
             return _units;
         }
 
+        @property
         long axios() {
             if (_units < 0) {
                 return -(-_units % BASE_UNIT);
@@ -185,6 +188,7 @@ struct Currency(string _UNIT, long _BASE_UNIT = 1_000_000_000, long MAX_VALUE_IN
             return _units % BASE_UNIT;
         }
 
+        @property
         long whole() {
             if (_units < 0) {
                 return -(-_units / BASE_UNIT);
@@ -192,6 +196,7 @@ struct Currency(string _UNIT, long _BASE_UNIT = 1_000_000_000, long MAX_VALUE_IN
             return _units / BASE_UNIT;
         }
 
+        @property
         double value() {
             return double(_units) / BASE_UNIT;
         }
@@ -207,7 +212,7 @@ struct Currency(string _UNIT, long _BASE_UNIT = 1_000_000_000, long MAX_VALUE_IN
 
     }
 
-    static string toValue(const long units) pure {
+    static string toValue(const long units) pure nothrow {
         long value = units;
         if (units < 0) {
             value = -value;
@@ -216,7 +221,7 @@ struct Currency(string _UNIT, long _BASE_UNIT = 1_000_000_000, long MAX_VALUE_IN
         return only(sign, (value / BASE_UNIT).to!string, ".", (value % BASE_UNIT).to!string).join;
     }
 
-    string toString() {
+    string toString() pure const nothrow {
         return toValue(_units);
     }
 }

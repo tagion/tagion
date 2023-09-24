@@ -315,7 +315,7 @@ class DART : DARTFile {
         }
     }
 
-    mixin(EnumText!(q{Quries}, Callers!DART));
+    mixin(EnumText!(q{Queries}, Callers!DART));
 
     /**
      * Rim selecter
@@ -451,6 +451,27 @@ received = the HiRPC received package
         const recorder = loads(fingerprints, Archive.Type.ADD);
         return hirpc.result(received, recorder.toDoc);
     }
+
+    version (none) @HiRPCMethod private const(HiRPC.Sender) dartCheckRead(
+            ref const(HiRPC.Receiver) received,
+            const bool read_only)
+    in {
+        mixin FUNCTION_NAME;
+        assert(received.method.name == __FUNCTION_NAME__);
+    }
+    do {
+        auto doc_fingerprints = received.method.params[Params.fingerprints].get!(Document);
+        auto fingerprints = doc_fingerprints.range!(DARTIndex[]);
+        pragma(msg, "HIRPC checkread ", typeof(fingerprints));
+        auto not_in_dart = (() @trusted => checkload(fingerprints))();
+
+        auto params = new HiBON;
+        pragma(msg, "HIRPCMETHOD: ", typeof(not_in_dart));
+        // params[DART.Params.fingerprints] = not_in_dart[];
+
+        return hirpc.result(received, params.toDoc);
+    }
+
     /**
      *  The dartRim method is called from opCall function
      *
@@ -580,7 +601,7 @@ received = the HiRPC received package
     }
 
     /**
-     * This function handels HPRC quries to the DART
+     * This function handels HPRC Queries to the DART
      * Params:
      *     received = Request HiRPC object
      * If read_only is true deleting and erasing data in the DART will return an error

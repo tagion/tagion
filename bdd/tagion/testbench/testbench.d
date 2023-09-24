@@ -29,6 +29,7 @@ int main(string[] args) {
     import collector = tagion.testbench.collector;
     import tvm_service = tagion.testbench.tvm_service;
     import transcript_service = tagion.testbench.transcript_service;
+    import replicator_service = tagion.testbench.replicator_service;
 
     alias alltools = AliasSeq!(
             collector,
@@ -55,6 +56,7 @@ int main(string[] args) {
             epoch_creator,
             tvm_service,
             transcript_service,
+            replicator_service,
     );
     mixin doOneMain!(alltools);
     return do_main(args);

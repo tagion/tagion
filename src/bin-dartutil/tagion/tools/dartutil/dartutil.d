@@ -112,27 +112,27 @@ int _main(string[] args) {
             writeln(logo);
             defaultGetoptPrinter(
                     [
-                    // format("%s version %s", program, REVNO),
-                    "Documentation: https://tagion.org/",
-                    "",
-                    "Usage:",
-                    format("%s [<option>...] file.drt <files>", program),
-                    "",
-                    "Example synchronizing src.drt on to dst.drt",
-                    format("%s --sync src.drt dst.drt", program),
-                    "",
+                // format("%s version %s", program, REVNO),
+                "Documentation: https://tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...] file.drt <files>", program),
+                "",
+                "Example synchronizing src.drt on to dst.drt",
+                format("%s --sync src.drt dst.drt", program),
+                "",
 
-                    "<option>:",
+                "<option>:",
 
-                    ].join("\n"),
+            ].join("\n"),
                     main_args.options);
             return 0;
         }
-        if (dartfilename != dartfilename.init) {
+        if (!dartfilename.empty) {
             writefln("Deprecation notice: the -d / --dartfilename is deprecated. \n Please use dartutil FILENAME switches instead");
         }
 
-        if (inputfilename != inputfilename.init) {
+        if (!inputfilename.empty) {
             writefln("Deprecation notice: the -i / --inputfilename is deprecated. \n Please use dartutil FILENAME switches instead");
         }
         //        dartread = !dartread_args.empty;

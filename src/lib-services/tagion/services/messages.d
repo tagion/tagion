@@ -24,7 +24,7 @@ alias dartReadRR = Request!"dartRead";
 alias dartCheckReadRR = Request!"dartCheckRead";
 alias dartRimRR = Request!"dartRim";
 alias dartBullseyeRR = Request!"dartBullseye";
-alias dartModifyRR = Request!"dartModifyRequest";
+// alias dartModifyRR = Request!"dartModifyRequest";
 alias dartModify = Msg!"dartModify";
 alias dartHiRPCRR = Request!"dartHiRPCRequest";
 
@@ -32,6 +32,9 @@ alias Payload = Msg!"Payload";
 alias ReceivedWavefront = Msg!"ReceivedWavefront";
 alias AddedChannels = Msg!"AddedChannels";
 alias BeginGossip = Msg!"BeginGossip";
+
+// Replicator Recorder 
+alias SendRecorder = Msg!"SendRecorder";
 
 /*
 @safe

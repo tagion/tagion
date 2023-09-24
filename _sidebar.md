@@ -36,11 +36,13 @@
 		- [HiBON_Record](/documents/protocols/hibon/HiBON_Record.md)
     - [Contract](/documents/protocols/contract/Contract.md)
         - [Methods](/documents/protocols/contract/hirpcmethods.md)
-	- DART
+	    - [Bill](/documents/protocols/contract/Bill.md)
+    - DART
 		- [Recorder](/documents/modules/dart/recorder.md)
 		- [BlockFile and Recycler](/documents/modules/dart/block_file_recycler.md)
 	- Wallet
 		- [Wallet](/documents/modules/wallet/wallet.md)
+        - [Simple payment](/documents/protocols/contract/Transfer.md)
 	- Actors
 		- [Actor](/documents/modules/actor/actor_requirement.md)
 

@@ -114,7 +114,7 @@ class StdSecureNet : StdHashNet, SecureNet {
     @safe
     interface SecretMethods {
         immutable(ubyte[]) sign(const(ubyte[]) message) const;
-        void tweakMul(const(ubyte[]) tweek_code, ref ubyte[] tweak_privkey);
+        void tweakMul(const(ubyte[]) tweek_code, ref ubyte[] tweak_privkey) const;
         void tweakAdd(const(ubyte[]) tweek_code, ref ubyte[] tweak_privkey);
         immutable(ubyte[]) ECDHSecret(scope const(Pubkey) pubkey) const;
         Buffer mask(const(ubyte[]) _mask) const;
@@ -181,10 +181,10 @@ class StdSecureNet : StdHashNet, SecureNet {
         return _secret.mask(_mask);
     }
 
-    @trusted
     void derive(string tweak_word, shared(SecureNet) secure_net) {
         const tweak_code = HMAC(tweak_word.representation);
         derive(tweak_code, secure_net);
+
     }
 
     @trusted
@@ -201,18 +201,27 @@ class StdSecureNet : StdHashNet, SecureNet {
         }
     }
 
+    const(SecureNet) derive(const(ubyte[]) tweak_code) const {
+        ubyte[] tweak_privkey;
+        _secret.tweakMul(tweak_code, tweak_privkey);
+        auto result = new StdSecureNet;
+        result.createKeyPair(tweak_privkey);
+        return result;
+    }
+
     final bool secKeyVerify(scope const(ubyte[]) privkey) const {
         return _crypt.secKeyVerify(privkey);
     }
 
     final void createKeyPair(ref ubyte[] privkey)
     in {
-        assert(_crypt.secKeyVerify(privkey));
         assert(_secret is null);
     }
     do {
         import std.digest.sha : SHA256;
         import std.string : representation;
+
+        check(secKeyVerify(privkey), ConsensusFailCode.SECURITY_PRIVATE_KEY_INVALID);
 
         alias AES = AESCrypto!256;
         _pubkey = _crypt.computePubkey(privkey);
@@ -266,7 +275,7 @@ class StdSecureNet : StdHashNet, SecureNet {
                 return result;
             }
 
-            void tweakMul(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey) {
+            void tweakMul(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey) const {
                 do_secret_stuff((const(ubyte[]) privkey) @safe {
                     _crypt.privKeyTweakMul(privkey, tweak_code, tweak_privkey);
                 });

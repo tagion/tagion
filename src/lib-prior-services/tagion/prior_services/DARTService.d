@@ -203,10 +203,10 @@ void dartServiceTask(Net : SecureNet)(
                 dart_sync_tid.send(sender);
             }
 
-            if (receiver.method.name == DART.Quries.dartRead) {
+            if (receiver.method.name == DART.Queries.dartRead) {
                 readDART();
             }
-            else if (receiver.method.name == DART.Quries.dartModify) {
+            else if (receiver.method.name == DART.Queries.dartModify) {
                 modifyDART();
             }
         }
@@ -237,7 +237,7 @@ void dartServiceTask(Net : SecureNet)(
                 }
 
                 auto response = ResponseHandler.Response!uint(message_doc[Keywords.id].get!uint,
-                    resp.data);
+                resp.data);
                 requestPool.setResponse(response);
 
             },
