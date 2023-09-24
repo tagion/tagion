@@ -4,11 +4,10 @@ import tagion.behaviour;
 import tagion.hibon.Document;
 import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
-import tagion.services.recorder;
+import tagion.services.replicator;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.actor;
-import tagion.services.recorder;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.testbench.dart.dart_helper_functions;
 import tagion.services.messages;
@@ -38,9 +37,9 @@ alias FeatureContext = Tuple!(
 @safe @Scenario("store of the recorder chain",
         [])
 class StoreOfTheRecorderChain {
-    immutable(RecorderOptions) recorder_opts;
-    SecureNet recorder_net;
-    RecorderServiceHandle handle;
+    immutable(ReplicatorOptions) replicator_opts;
+    SecureNet replicator_net;
+    ReplicatorServiceHandle handle;
     Mt19937 gen;
     RandomArchives random_archives;
     RecordFactory.Recorder insert_recorder;
@@ -57,11 +56,11 @@ class StoreOfTheRecorderChain {
         });
     }
 
-    this(immutable(RecorderOptions) recorder_opts) {
-        this.recorder_opts = recorder_opts;
-        recorder_net = new StdSecureNet();
-        record_factory = RecordFactory(recorder_net);
-        recorder_net.generateKeyPair("recordernet very secret");
+    this(immutable(ReplicatorOptions) replicator_opts) {
+        this.replicator_opts = replicator_opts;
+        replicator_net = new StdSecureNet();
+        record_factory = RecordFactory(replicator_net);
+        replicator_net.generateKeyPair("recordernet very secret");
         gen = Mt19937(4321);
     }
     
@@ -70,7 +69,7 @@ class StoreOfTheRecorderChain {
     Document received() {
         thisActor.task_name = "recorder_supervisor";
         register(thisActor.task_name, thisTid);
-        handle = (() @trusted => spawn!RecorderService("RecorderService", recorder_opts, cast(immutable) recorder_net))();
+        handle = (() @trusted => spawn!ReplicatorService("ReplicatorService", replicator_opts, cast(immutable) replicator_net))();
         waitforChildren(Ctrl.ALIVE);
 
 
@@ -82,7 +81,7 @@ class StoreOfTheRecorderChain {
         auto send_recorder = SendRecorder();
 
         Fingerprint dummy_bullseye = Fingerprint([1,2,3,4]);
-        block = new RecorderChainBlock(insert_recorder.toDoc, Fingerprint.init, dummy_bullseye,0, recorder_net);
+        block = new RecorderChainBlock(insert_recorder.toDoc, Fingerprint.init, dummy_bullseye,0, replicator_net);
 
 
         (() @trusted => handle.send(send_recorder, cast(immutable) insert_recorder, dummy_bullseye, immutable int(0)))();
@@ -96,7 +95,7 @@ class StoreOfTheRecorderChain {
 
     @When("the recorder has been store to a file")
     Document file() @trusted {
-        RecorderChainStorage storage = new RecorderChainFileStorage(recorder_opts.folder_path, recorder_net);
+        RecorderChainStorage storage = new RecorderChainFileStorage(replicator_opts.folder_path, replicator_net);
         RecorderChain recorder_chain = new RecorderChain(storage);
 
         check(recorder_chain.getLastBlock.getHash == block.getHash, "read block not the same");

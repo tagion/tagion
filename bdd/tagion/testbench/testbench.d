@@ -28,7 +28,7 @@ int main(string[] args) {
     import epoch_creator = tagion.testbench.epoch_creator;
     import tvm_service = tagion.testbench.tvm_service;
     import transcript_service = tagion.testbench.transcript_service;
-    import recorder_service = tagion.testbench.recorder_service;
+    import replicator_service = tagion.testbench.replicator_service;
 
     alias alltools = AliasSeq!(
             ssl_server,
@@ -54,7 +54,7 @@ int main(string[] args) {
             epoch_creator,
             tvm_service,
             transcript_service,
-            recorder_service,
+            replicator_service,
     );
     mixin doOneMain!(alltools);
     return do_main(args);
