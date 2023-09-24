@@ -79,7 +79,7 @@ class StoreOfTheRecorderChain {
         auto send_recorder = SendRecorder();
 
 
-        (() @trusted => handle.send(send_recorder, cast(immutable) insert_recorder, Fingerprint([1,2,3,4]), immutable uint(0)))();
+        (() @trusted => handle.send(send_recorder, cast(immutable) insert_recorder, Fingerprint([1,2,3,4]), immutable int(0)))();
 
 
         

@@ -16,6 +16,7 @@ mixin Main!(_main);
 
 int _main(string [] args) {
     auto module_path = env.bdd_log.buildPath(__MODULE__);
+    rmdirRecurse(module_path);
     mkdirRecurse(module_path);
     immutable opts = RecorderOptions(module_path);
     auto recorder_service_feature = automation!(recorder_service);

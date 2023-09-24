@@ -26,13 +26,13 @@ struct RecorderService {
         RecorderChainStorage storage = new RecorderChainFileStorage(opts.folder_path, net);
         RecorderChain recorder_chain = new RecorderChain(storage);
 
-        void receiveRecorder(SendRecorder, immutable(RecordFactory.Recorder) recorder, Fingerprint bullseye, immutable(uint) epoch_number) {
-            log.trace("received block for adding");
+        void receiveRecorder(SendRecorder, immutable(RecordFactory.Recorder) recorder, Fingerprint bullseye, immutable(int) epoch_number) {
             auto last_block = recorder_chain.getLastBlock;
             auto block = new RecorderChainBlock(
                 recorder.toDoc,
                 last_block ? last_block.fingerprint : Fingerprint.init,
                 bullseye,
+                epoch_number,
                 net);
             recorder_chain.append(block);
             log.trace("Added recorder chain block with hash '%s'", block.getHash.cutHex);
