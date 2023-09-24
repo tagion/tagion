@@ -26,6 +26,7 @@ import tagion.dart.DARTBasic;
 import std.random;
 import tagion.hibon.HiBONRecord;
 import tagion.basic.Types;
+import tagion.crypto.Types;
 import tagion.communication.HiRPC;
 import tagion.dart.DARTcrud : dartRead, dartBullseye;
 import tagion.dart.DARTFile : DARTFile;
@@ -122,8 +123,8 @@ class WriteAndReadFromDartDb {
         // check(bullseye_tuple[1]!is DARTIndex.init, "Bullseye not updated");
 
         handle.send(dartBullseyeRR());
-        const bullseye_res = receiveOnly!(dartBullseyeRR.Response, immutable(DARTIndex));
-        check(bullseye_res[1] !is DARTIndex.init, "bullseyes not the same");
+        const bullseye_res = receiveOnly!(dartBullseyeRR.Response, Fingerprint);
+        check(bullseye_res[1] !is Fingerprint.init, "bullseyes not the same");
 
         Document bullseye_sender = dartBullseye(hirpc).toDoc;
 
