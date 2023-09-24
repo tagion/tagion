@@ -59,7 +59,7 @@ struct DARTService {
         waitforChildren(Ctrl.ALIVE);
 
         void read(dartReadRR req, immutable(DARTIndex)[] fingerprints) @safe {
-            RecordFactory.Recorder read_recorder = db.loads(fingerprints, Archive.Type.NONE);
+            RecordFactory.Recorder read_recorder = db.loads(fingerprints);
             req.respond(RecordFactory.uniqueRecorder(read_recorder));
         }
 

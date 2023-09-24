@@ -108,9 +108,7 @@ class ItWork {
         input_bills.insertBills(insert_recorder);
         inputs ~= input_bills.map!(a => node_net.dartIndex(a.toDoc)).array;
         check(inputs !is null, "Inputs were null");
-        dart_handle.send(dartModify(),
-                (() @trusted => cast(immutable) insert_recorder)()
-        );
+        dart_handle.send(dartModify(), RecordFactory.uniqueRecorder(insert_recorder), immutable int(0));
 
         immutable collector = CollectorService(node_net, dart_service, thisActor.task_name);
         collector_handle = spawn(collector, "collector_task");
