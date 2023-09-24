@@ -13,6 +13,8 @@ import tagion.crypto.SecureInterfaceNet;
 @safe
 struct RecorderOptions {
     string folder_path = "/tmp/test/";
+    import tagion.utils.JSONCommon;
+    mixin JSONCommon;
 }
 
 
@@ -37,5 +39,26 @@ struct RecorderService {
 
         run(&receiveRecorder);
     }
+
+}
+
+
+unittest {
+
+    // import tagion.basic.basic;
+    // immutable temp_folder = tempfile ~ "/";
+    // writefln("RECORDER FOLDER = %s", temp_folder);
+    // immutable RecorderOptions opts = RecorderOptions(temp_folder);
+
+    // scope (exit) {
+    //     import std.file : rmdirRecurse;
+
+    //     rmdirRecurse(temp_folder);
+    // }
+
+    // thisActor.task_name = "recorder_supervisor";
+    // register(thisActor.task_
+    
+    // auto recorder_service_handle = spawn!
 
 }

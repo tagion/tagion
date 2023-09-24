@@ -210,8 +210,15 @@
                 "services"
             ],
             "timeout": 0.0
+        },
+        "recorder_service": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "recorder_service",
+                "services"
+            ],
+            "timeout": 0.0
         }
-    
     }
-
 }
