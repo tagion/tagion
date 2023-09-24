@@ -41,7 +41,7 @@ struct DARTOptions {
 
 @safe
 struct DARTService {
-    void task(immutable(DARTOptions) opts, immutable(ReplicatorOptions) replicator_opts, immutable(SecureNet) net) {
+    void task(immutable(DARTOptions) opts, immutable(ReplicatorOptions) replicator_opts, immutable(string) replicator_task_name, immutable(SecureNet) net) {
         DART db;
         Exception dart_exception;
         db = new DART(net, opts.dart_filename);
@@ -53,7 +53,7 @@ struct DARTService {
             db.close();
         }
         
-        ReplicatorServiceHandle replicator = spawn!ReplicatorService("replicator", replicator_opts, net);
+        ReplicatorServiceHandle replicator = spawn!ReplicatorService(replicator_task_name, replicator_opts, net);
 
         waitforChildren(Ctrl.ALIVE);
 

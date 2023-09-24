@@ -98,7 +98,7 @@ class WriteAndReadFromDartDb {
         thisActor.task_name = "dart_supervisor";
         register(thisActor.task_name, thisTid);
 
-        handle = (() @trusted => spawn!DARTService("DartService", cast(immutable) opts, cast(immutable) replicator_opts, cast(immutable) dart_net))();
+        handle = (() @trusted => spawn!DARTService("DartService", cast(immutable) opts, cast(immutable) replicator_opts, "replicator", cast(immutable) dart_net))();
         waitforChildren(Ctrl.ALIVE);
 
         return result_ok;
