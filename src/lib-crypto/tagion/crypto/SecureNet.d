@@ -114,7 +114,7 @@ class StdSecureNet : StdHashNet, SecureNet {
     @safe
     interface SecretMethods {
         immutable(ubyte[]) sign(const(ubyte[]) message) const;
-        void tweakMul(const(ubyte[]) tweek_code, ref ubyte[] tweak_privkey);
+        void tweakMul(const(ubyte[]) tweek_code, ref ubyte[] tweak_privkey) const;
         void tweakAdd(const(ubyte[]) tweek_code, ref ubyte[] tweak_privkey);
         immutable(ubyte[]) ECDHSecret(scope const(Pubkey) pubkey) const;
         Buffer mask(const(ubyte[]) _mask) const;
@@ -201,7 +201,7 @@ class StdSecureNet : StdHashNet, SecureNet {
         }
     }
 
-    const(SecureNet) derive(const(ubyte[]) tweak_code) {
+    const(SecureNet) derive(const(ubyte[]) tweak_code) const {
         ubyte[] tweak_privkey;
         _secret.tweakMul(tweak_code, tweak_privkey);
         auto result = new StdSecureNet;
@@ -275,7 +275,7 @@ class StdSecureNet : StdHashNet, SecureNet {
                 return result;
             }
 
-            void tweakMul(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey) {
+            void tweakMul(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey) const {
                 do_secret_stuff((const(ubyte[]) privkey) @safe {
                     _crypt.privKeyTweakMul(privkey, tweak_code, tweak_privkey);
                 });
