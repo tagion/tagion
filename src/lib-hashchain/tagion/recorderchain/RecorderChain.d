@@ -82,7 +82,7 @@ unittest {
             auto last_block = recorder_chain.getLastBlock;
             auto previous_hash = last_block is null ? Fingerprint.init : last_block.getHash;
             recorder_chain.append(new RecorderChainBlock(bills_recorder.toDoc,
-                    previous_hash, Fingerprint(dart.fingerprint), net));
+                    previous_hash, Fingerprint(dart.fingerprint), int(0), net));
         }
 
         assert(recorder_chain.isValidChain);
@@ -146,7 +146,7 @@ unittest {
             auto previous_hash = last_block is null ? Fingerprint.init : last_block.getHash;
             recorder_chain.append(new RecorderChainBlock(bills_recorder.toDoc,
                     previous_hash,
-                    Fingerprint(dart.fingerprint), net));
+                    Fingerprint(dart.fingerprint), int(0), net));
         }
 
         assert(recorder_chain.isValidChain);
@@ -209,6 +209,7 @@ unittest {
                     bills_recorder.toDoc,
                     previous_hash,
                     Fingerprint(dart.fingerprint),
+                    int(0),
                     net));
 
             // In the middle of the chain copy dart that will be "outdated"
@@ -279,6 +280,7 @@ unittest {
                     bills_recorder.toDoc,
                     previous_hash,
                     Fingerprint(dart.fingerprint),
+                    int(0),
                     net));
         }
 

@@ -33,6 +33,10 @@ alias ReceivedWavefront = Msg!"ReceivedWavefront";
 alias AddedChannels = Msg!"AddedChannels";
 alias BeginGossip = Msg!"BeginGossip";
 
+// Recorder 
+alias SendRecorder = Msg!"SendRecorder";
+
+
 /*
 @safe
 struct _ContractProduct {
