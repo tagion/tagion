@@ -42,23 +42,5 @@ struct RecorderService {
 
 }
 
+alias RecorderServiceHandle = ActorHandle!RecorderService;
 
-unittest {
-
-    // import tagion.basic.basic;
-    // immutable temp_folder = tempfile ~ "/";
-    // writefln("RECORDER FOLDER = %s", temp_folder);
-    // immutable RecorderOptions opts = RecorderOptions(temp_folder);
-
-    // scope (exit) {
-    //     import std.file : rmdirRecurse;
-
-    //     rmdirRecurse(temp_folder);
-    // }
-
-    // thisActor.task_name = "recorder_supervisor";
-    // register(thisActor.task_
-    
-    // auto recorder_service_handle = spawn!
-
-}

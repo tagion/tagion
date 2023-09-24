@@ -5,6 +5,11 @@ import tagion.hibon.Document;
 import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
 import tagion.services.recorder;
+import tagion.crypto.SecureInterfaceNet;
+import tagion.crypto.SecureNet : StdSecureNet;
+import tagion.actor;
+import tagion.services.recorder;
+import tagion.utils.pretend_safe_concurrency;
 
 enum feature = Feature(
             "Recorder chain service",
@@ -22,15 +27,23 @@ alias FeatureContext = Tuple!(
         [])
 class StoreOfTheRecorderChain {
     immutable(RecorderOptions) recorder_opts;
+    SecureNet recorder_net;
+    RecorderServiceHandle handle;
 
     this(immutable(RecorderOptions) recorder_opts) {
         this.recorder_opts = recorder_opts;
+        recorder_net = new StdSecureNet();
+        recorder_net.generateKeyPair("recordernet very secret");
     }
     
 
     @Given("a epoch recorder with epoch number has been received")
     Document received() {
-        return Document();
+        thisActor.task_name = "recorder_supervisor";
+        register(thisActor.task_name, thisTid);
+        handle = (() @trusted => spawn!RecorderService("RecorderService", recorder_opts, cast(immutable) recorder_net))();
+        waitforChildren(Ctrl.ALIVE);
+        return result_ok;
     }
 
     @When("the recorder has been store to a file")
@@ -40,7 +53,9 @@ class StoreOfTheRecorderChain {
 
     @Then("the file should be checked")
     Document checked() {
-        return Document();
+        handle.send(Sig.STOP);
+        waitforChildren(Ctrl.END);
+        return result_ok;
     }
 
 }
