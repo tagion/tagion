@@ -46,7 +46,8 @@ alias FeatureContext = Tuple!(
 class WriteAndReadFromDartDb {
 
     DARTServiceHandle handle;
-    SecureNet net;
+    SecureNet dart_net;
+    SecureNet supervisor_net;
     DARTOptions opts;
     Mt19937 gen;
     RandomArchives random_archives;
@@ -67,10 +68,13 @@ class WriteAndReadFromDartDb {
     this(DARTOptions opts) {
 
         this.opts = opts;
-        net = new StdSecureNet();
-        net.generateKeyPair("very secret");
-        record_factory = RecordFactory(net);
-        hirpc = HiRPC(net);
+        dart_net = new StdSecureNet();
+        dart_net.generateKeyPair("dartnet very secret");
+        supervisor_net = new StdSecureNet();
+        supervisor_net.generateKeyPair("supervisor very secret");
+
+        record_factory = RecordFactory(supervisor_net);
+        hirpc = HiRPC(supervisor_net);
 
         gen = Mt19937(1234);
 
@@ -82,7 +86,7 @@ class WriteAndReadFromDartDb {
             opts.dart_filename.remove;
         }
 
-        DART.create(opts.dart_filename, net);
+        DART.create(opts.dart_filename, dart_net);
         return result_ok;
     }
 
@@ -91,7 +95,7 @@ class WriteAndReadFromDartDb {
         thisActor.task_name = "dart_supervisor";
         register(thisActor.task_name, thisTid);
 
-        handle = (() @trusted => spawn!DARTService("DartService", cast(immutable) opts, cast(immutable) net))();
+        handle = (() @trusted => spawn!DARTService("DartService", cast(immutable) opts, cast(immutable) dart_net))();
         waitforChildren(Ctrl.ALIVE);
 
         return result_ok;
@@ -116,11 +120,11 @@ class WriteAndReadFromDartDb {
         check(bullseye_res[1] == bullseye_tuple[1], "bullseyes not the same");
 
         Document bullseye_sender = dartBullseye(hirpc).toDoc;
-        writefln("request: %s", bullseye_sender.toPretty);
 
         handle.send(dartHiRPCRR(), bullseye_sender);
+        writefln("SENDER: %s", bullseye_sender.toPretty);
         auto hirpc_bullseye_res = receiveOnly!(dartHiRPCRR.Response, Document);
-        writefln("response %s", hirpc_bullseye_res[1].toPretty);
+        writefln("RECEIVER %s", hirpc_bullseye_res[1].toPretty);
         
         
         auto hirpc_bullseye_receiver = hirpc.receive(hirpc_bullseye_res[1]);
@@ -136,7 +140,7 @@ class WriteAndReadFromDartDb {
         import std.exception : assumeUnique;
 
         auto fingerprints = docs
-            .map!(d => net.dartIndex(d))
+            .map!(d => supervisor_net.dartIndex(d))
             .array;
 
         auto read_request = dartReadRR();
