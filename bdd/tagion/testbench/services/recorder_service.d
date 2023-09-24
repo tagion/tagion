@@ -15,6 +15,8 @@ import tagion.services.messages;
 import tagion.crypto.Types;
 import tagion.dart.Recorder;
 import tagion.hibon.HiBONRecord;
+import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock;
+import tagion.recorderchain.RecorderChain;
 
 import std.algorithm;
 import std.random;
@@ -44,6 +46,7 @@ class StoreOfTheRecorderChain {
     RecordFactory.Recorder insert_recorder;
     Document[] docs;
     RecordFactory record_factory;
+    RecorderChainBlock block;
 
     struct SimpleDoc {
         ulong n;
@@ -78,17 +81,21 @@ class StoreOfTheRecorderChain {
         insert_recorder.insert(docs, Archive.Type.ADD);
         auto send_recorder = SendRecorder();
 
+        Fingerprint dummy_bullseye = Fingerprint([1,2,3,4]);
+        auto block = new RecorderChainBlock(insert_recorder.toDoc, Fingerprint.init, dummy_bullseye,0, recorder_net);
 
-        (() @trusted => handle.send(send_recorder, cast(immutable) insert_recorder, Fingerprint([1,2,3,4]), immutable int(0)))();
+        (() @trusted => handle.send(send_recorder, cast(immutable) insert_recorder, dummy_bullseye, immutable int(0)))();
 
-
-        
         return result_ok;
     }
 
     @When("the recorder has been store to a file")
-    Document file() {
-        return Document();
+    Document file() @trusted {
+        RecorderChainStorage storage = new RecorderChainFileStorage(recorder_opts.folder_path, recorder_net);
+        RecorderChain recorder_chain = new RecorderChain(storage);
+
+        check(recorder_chain.getLastBlock == block, "read block not the same");
+        return result_ok;
     }
 
     @Then("the file should be checked")

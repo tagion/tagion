@@ -36,7 +36,6 @@ struct RecorderService {
                 net);
             recorder_chain.append(block);
             log.trace("Added recorder chain block with hash '%s'", block.getHash.cutHex);
-
         }
 
         run(&receiveRecorder);
