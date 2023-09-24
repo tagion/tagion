@@ -8,6 +8,7 @@ import tagion.recorderchain.RecorderChain;
 import tagion.crypto.Types : Fingerprint;
 import tagion.dart.Recorder : RecordFactory;
 import tagion.crypto.SecureInterfaceNet;
+import tagion.services.messages;
 
 
 @safe
@@ -25,7 +26,8 @@ struct RecorderService {
         RecorderChainStorage storage = new RecorderChainFileStorage(opts.folder_path, net);
         RecorderChain recorder_chain = new RecorderChain(storage);
 
-        void receiveRecorder(immutable(RecordFactory.Recorder) recorder, immutable(Fingerprint) bullseye, immutable(uint) epoch_number) {
+        void receiveRecorder(SendRecorder, immutable(RecordFactory.Recorder) recorder, Fingerprint bullseye, immutable(uint) epoch_number) {
+            log.trace("received block for adding");
             auto last_block = recorder_chain.getLastBlock;
             auto block = new RecorderChainBlock(
                 recorder.toDoc,

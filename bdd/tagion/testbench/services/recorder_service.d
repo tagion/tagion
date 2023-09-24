@@ -10,6 +10,16 @@ import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.actor;
 import tagion.services.recorder;
 import tagion.utils.pretend_safe_concurrency;
+import tagion.testbench.dart.dart_helper_functions;
+import tagion.services.messages;
+import tagion.crypto.Types;
+import tagion.dart.Recorder;
+import tagion.hibon.HiBONRecord;
+
+import std.algorithm;
+import std.random;
+import std.array;
+import std.stdio;
 
 enum feature = Feature(
             "Recorder chain service",
@@ -29,11 +39,27 @@ class StoreOfTheRecorderChain {
     immutable(RecorderOptions) recorder_opts;
     SecureNet recorder_net;
     RecorderServiceHandle handle;
+    Mt19937 gen;
+    RandomArchives random_archives;
+    RecordFactory.Recorder insert_recorder;
+    Document[] docs;
+    RecordFactory record_factory;
+
+    struct SimpleDoc {
+        ulong n;
+        mixin HiBONRecord!(q{
+            this(ulong n) {
+                this.n = n;
+            }
+        });
+    }
 
     this(immutable(RecorderOptions) recorder_opts) {
         this.recorder_opts = recorder_opts;
         recorder_net = new StdSecureNet();
+        record_factory = RecordFactory(recorder_net);
         recorder_net.generateKeyPair("recordernet very secret");
+        gen = Mt19937(4321);
     }
     
 
@@ -43,6 +69,20 @@ class StoreOfTheRecorderChain {
         register(thisActor.task_name, thisTid);
         handle = (() @trusted => spawn!RecorderService("RecorderService", recorder_opts, cast(immutable) recorder_net))();
         waitforChildren(Ctrl.ALIVE);
+
+
+        random_archives = RandomArchives(gen.front, 4, 10);
+        insert_recorder = record_factory.recorder;
+        docs = (() @trusted => cast(Document[]) random_archives.values.map!(a => SimpleDoc(a).toDoc).array)();
+
+        insert_recorder.insert(docs, Archive.Type.ADD);
+        auto send_recorder = SendRecorder();
+
+
+        (() @trusted => handle.send(send_recorder, cast(immutable) insert_recorder, Fingerprint([1,2,3,4]), immutable uint(0)))();
+
+
+        
         return result_ok;
     }
 
