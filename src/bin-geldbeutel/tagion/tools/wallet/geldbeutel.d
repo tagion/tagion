@@ -11,7 +11,7 @@ import std.algorithm;
 import std.range;
 import tagion.tools.revision;
 import tagion.tools.Basic;
-import tagion.basic.Types : FileExtension;
+import tagion.basic.Types : hasExtension, FileExtension;
 import tagion.wallet.KeyRecover;
 import tagion.utils.Term;
 import tagion.wallet.SecureWallet;
@@ -99,7 +99,7 @@ int _main(string[] args) {
                 "pin|x", "Pincode", &pincode,
                 "amount", "Create an payment request in tagion", &wallet_switch.amount,
                 "force", "Force input bill", &wallet_switch.force,
-                "pay", "Creates a payment contract", &wallet_switch.pay,/*
+                "pay", "Creates a payment contract", &wallet_switch.pay, /*
                 "port|p", format("Tagion network port : default %d", options.port), &options.port,
                 "url|u", format("Tagion url : default %s", options.addr), &options.addr,
                 "visual|g", "Visual user interface", &wallet_ui,
@@ -159,6 +159,9 @@ int _main(string[] args) {
             }
         }
         if (new_config) {
+            const new_config_file = args
+                .countUntil!(file => file.hasExtension(FileExtension.json) && !file.exists);
+            config_file = (new_config_file < 0) ? config_file : args[new_config_file];
             options.save(config_file);
             if (overwrite_switch) {
                 return 0;
@@ -171,8 +174,6 @@ int _main(string[] args) {
             WalletInterface.pressKey;
             //wallet_interface.quiz.questions = standard_questions.dup;
         }
-        writefln("change_pin=%s", change_pin);
-        writefln("pincode=%s", pincode);
         change_pin = change_pin && !pincode.empty;
         if (create_account) {
             wallet_interface.generateSeed(wallet_interface.quiz.questions, false);
