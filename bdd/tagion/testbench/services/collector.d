@@ -95,7 +95,7 @@ class ItWork {
 
             DART.create(opts.dart_filename, node_net);
 
-            dart_handle = spawn!DARTService(dart_service, opts, replicator_opts, node_net);
+            dart_handle = spawn!DARTService(dart_service, opts, replicator_opts, "replicator",node_net);
             check(waitforChildren(Ctrl.ALIVE), "dart service did not alive");
         }
 

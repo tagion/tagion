@@ -138,6 +138,7 @@ int _main(string[] args) {
             if (i == 0) {
                 opts.monitor.enable = true;
             }
+            opts.epoch_creator.timeout = 1000;
 
             nodes ~= Node(opts, cast(immutable) net);
 
