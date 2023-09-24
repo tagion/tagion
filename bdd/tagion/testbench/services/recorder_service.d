@@ -82,9 +82,14 @@ class StoreOfTheRecorderChain {
         auto send_recorder = SendRecorder();
 
         Fingerprint dummy_bullseye = Fingerprint([1,2,3,4]);
-        auto block = new RecorderChainBlock(insert_recorder.toDoc, Fingerprint.init, dummy_bullseye,0, recorder_net);
+        block = new RecorderChainBlock(insert_recorder.toDoc, Fingerprint.init, dummy_bullseye,0, recorder_net);
+
 
         (() @trusted => handle.send(send_recorder, cast(immutable) insert_recorder, dummy_bullseye, immutable int(0)))();
+
+        import core.thread;
+        import core.time;
+        (() @trusted => Thread.sleep(5.msecs))();
 
         return result_ok;
     }
@@ -94,7 +99,7 @@ class StoreOfTheRecorderChain {
         RecorderChainStorage storage = new RecorderChainFileStorage(recorder_opts.folder_path, recorder_net);
         RecorderChain recorder_chain = new RecorderChain(storage);
 
-        check(recorder_chain.getLastBlock == block, "read block not the same");
+        check(recorder_chain.getLastBlock.getHash == block.getHash, "read block not the same");
         return result_ok;
     }
 

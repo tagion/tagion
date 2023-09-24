@@ -215,7 +215,7 @@
             "args": [],
             "envs": {},
             "stages": [
-                "recorder_service",
+                "commit", "recorder_service",
                 "services"
             ],
             "timeout": 0.0
