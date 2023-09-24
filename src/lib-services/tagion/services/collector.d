@@ -50,12 +50,12 @@ struct CollectorService {
         signed_contract(inputContract(), cast(immutable) SignedContract(doc));
     }
 
-    void signed_contract(inputContract, immutable(SignedContract) s_contract) @trusted {
+    void signed_contract(inputContract, immutable(SignedContract) s_contract) @safe {
         auto inputs_req = dartReadRR();
-
         CollectedSignedContract collected;
         collected.sign_contract = s_contract;
         collections[inputs_req.id] = collected;
+
         if (s_contract.contract.reads !is DARTIndex[].init) {
             auto reads_req = dartReadRR();
             reads[reads_req.id] = inputs_req.id in collections;
@@ -65,23 +65,25 @@ struct CollectorService {
         locate(dart_task_name).send(inputs_req, s_contract.contract.inputs);
     }
 
-    void recorder(dartReadRR.Response res, immutable(RecordFactory.Recorder) recorder) @trusted {
+    void recorder(dartReadRR.Response res, immutable(RecordFactory.Recorder) recorder) @safe {
         import std.range;
         import std.algorithm.iteration : map;
 
         if ((res.id in reads) !is null) {
-            scope (exit) {
-                // TODO: dereference;
-            }
             auto collection = *(res.id in reads);
+            scope (exit) {
+                collection = null;
+                reads.remove(res.id);
+            }
             collection.reads = recorder[].map!(a => a.toDoc).array.dup;
             return;
         }
         else if ((res.id in collections) !is null) {
-            scope (exit) {
-                //dereference
-            }
             auto collection = res.id in collections;
+            scope (exit) {
+                collection = null;
+                collections.remove(res.id);
+            }
             const s_contract = collection.sign_contract;
             immutable contract_hash = net.calcHash(s_contract.contract);
             foreach (index, sign; zip(s_contract.contract.inputs, s_contract.signs)) {
@@ -100,17 +102,25 @@ struct CollectorService {
                 return;
             }
 
-            (() @trusted => locate(tvm_task_name).send(signedContract(), cast(immutable) collection))();
+            locate(tvm_task_name).send(signedContract(), collections.giveme(res.id));
         }
     }
 }
 
 alias CollectorServiceHandle = ActorHandle!CollectorService;
 
+private immutable(CollectedSignedContract*) giveme(ref CollectedSignedContract[uint] aa, uint key) @trusted nothrow {
+    scope (exit) {
+        aa.remove(key);
+    }
+    CollectedSignedContract* val = key in aa;
+    return cast(immutable) val;
+}
+
 // The find funtion in dart.recorder doest not work with an immutable recorder;
 import tagion.dart.DARTBasic : DARTIndex;
 
-const(Archive) find(const(RecordFactory.Recorder) rec, const(DARTIndex) index) {
+private const(Archive) find(const(RecordFactory.Recorder) rec, const(DARTIndex) index) @safe nothrow {
     foreach (_archive; rec[]) {
         if (_archive.fingerprint == index) {
             return _archive;

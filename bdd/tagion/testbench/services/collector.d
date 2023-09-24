@@ -84,7 +84,7 @@ class ItWork {
     }
 
     @Given("i have a collector service")
-    Document service() @trusted {
+    Document service() @safe {
         thisActor.task_name = "collector_tester_task";
 
         { // Start dart service
