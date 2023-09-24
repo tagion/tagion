@@ -31,6 +31,7 @@ import tagion.dart.DARTcrud : dartRead, dartBullseye;
 import tagion.dart.DARTFile : DARTFile;
 import tagion.hibon.HiBONJSON;
 import tagion.Keywords;
+import tagion.services.replicator;
 
 enum feature = Feature(
             "see if we can read and write trough the dartservice",
@@ -49,6 +50,7 @@ class WriteAndReadFromDartDb {
     SecureNet dart_net;
     SecureNet supervisor_net;
     DARTOptions opts;
+    ReplicatorOptions replicator_opts;
     Mt19937 gen;
     RandomArchives random_archives;
     Document[] docs;
@@ -65,9 +67,10 @@ class WriteAndReadFromDartDb {
         });
     }
 
-    this(DARTOptions opts) {
+    this(DARTOptions opts, ReplicatorOptions replicator_opts) {
 
         this.opts = opts;
+        this.replicator_opts = replicator_opts;
         dart_net = new StdSecureNet();
         dart_net.generateKeyPair("dartnet very secret");
         supervisor_net = new StdSecureNet();
@@ -95,7 +98,7 @@ class WriteAndReadFromDartDb {
         thisActor.task_name = "dart_supervisor";
         register(thisActor.task_name, thisTid);
 
-        handle = (() @trusted => spawn!DARTService("DartService", cast(immutable) opts, cast(immutable) dart_net))();
+        handle = (() @trusted => spawn!DARTService("DartService", cast(immutable) opts, cast(immutable) replicator_opts, cast(immutable) dart_net))();
         waitforChildren(Ctrl.ALIVE);
 
         return result_ok;
