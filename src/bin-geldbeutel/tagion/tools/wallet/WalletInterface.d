@@ -516,8 +516,17 @@ struct WalletInterface {
                     const amount_remainder = amount_to_redraw - amount_to_pay - fees;
                     check(amount_remainder >= 0, "Fees too small");
                     const bill_remain = secure_wallet.requestBill(amount_remainder);
-                    //                    const nets=secure_wallet.net
-
+                    const nets = derivers
+                        .map!(deriver => secure_wallet.net.derive(*deriver))
+                        .array;
+                    const signed_contract = sign(
+                            nets,
+                            collect_bills.map!(bill => bill.toDoc)
+                            .array,
+                            null,
+                            pay_script.toDoc);
+                    output_filename = (output_filename.empty) ? "submit".setExtension(FileExtension.hibon) : output_filename;
+                    output_filename.fwrite(signed_contract);
                     //                  const
                     //const nets=secure_wallet.
 

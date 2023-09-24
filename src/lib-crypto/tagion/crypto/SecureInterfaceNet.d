@@ -98,6 +98,7 @@ interface SecureNet : HashNet {
     void derive(const(ubyte[]) tweak_code, shared(SecureNet) secure_net);
     void derive(string tweak_word, ref ubyte[] tweak_privkey);
     void derive(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey);
+    const(SecureNet) derive(const(ubyte[]) tweak_code) const;
     Pubkey derivePubkey(const(ubyte[]) tweak_code);
     Pubkey derivePubkey(string tweak_word);
 
