@@ -33,6 +33,7 @@ import tagion.hibon.HiBONJSON;
 import tagion.Keywords;
 import tagion.services.replicator;
 
+
 enum feature = Feature(
             "see if we can read and write trough the dartservice",
             []);
@@ -112,28 +113,30 @@ class WriteAndReadFromDartDb {
         docs = (() @trusted => cast(Document[]) random_archives.values.map!(a => SimpleDoc(a).toDoc).array)();
 
         insert_recorder.insert(docs, Archive.Type.ADD);
-        auto modify_request = dartModifyRR();
-        (() @trusted => handle.send(modify_request, cast(immutable) insert_recorder))();
-        const bullseye_tuple = receiveOnly!(dartModifyRR.Response, immutable(DARTIndex));
+        auto modify_send = dartModify();
+        (() @trusted => handle.send(modify_send, cast(immutable) insert_recorder, immutable int(0)))();
 
-        check(bullseye_tuple[1]!is DARTIndex.init, "Bullseye not updated");
+
+        // // const bullseye_tuple = receiveOnly!(dartModifyRR.Response, immutable(DARTIndex));
+
+        // check(bullseye_tuple[1]!is DARTIndex.init, "Bullseye not updated");
 
         handle.send(dartBullseyeRR());
         const bullseye_res = receiveOnly!(dartBullseyeRR.Response, immutable(DARTIndex));
-        check(bullseye_res[1] == bullseye_tuple[1], "bullseyes not the same");
+        check(bullseye_res[1] !is DARTIndex.init, "bullseyes not the same");
 
         Document bullseye_sender = dartBullseye(hirpc).toDoc;
 
         handle.send(dartHiRPCRR(), bullseye_sender);
-        writefln("SENDER: %s", bullseye_sender.toPretty);
+        // writefln("SENDER: %s", bullseye_sender.toPretty);
         auto hirpc_bullseye_res = receiveOnly!(dartHiRPCRR.Response, Document);
-        writefln("RECEIVER %s", hirpc_bullseye_res[1].toPretty);
+        // writefln("RECEIVER %s", hirpc_bullseye_res[1].toPretty);
         
         
         auto hirpc_bullseye_receiver = hirpc.receive(hirpc_bullseye_res[1]);
         auto hirpc_message = hirpc_bullseye_receiver.message[Keywords.result].get!Document;
         auto hirpc_bullseye = hirpc_message[DARTFile.Params.bullseye].get!DARTIndex;
-        check(bullseye_tuple[1] == hirpc_bullseye, "hirpc bullseye not the same");
+        check(bullseye_res[1] == hirpc_bullseye, "hirpc bullseye not the same");
 
         return result_ok;
     }

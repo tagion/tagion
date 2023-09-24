@@ -105,10 +105,12 @@ class ItWork {
 
         input_nets = createNets(10, "input");
         inputs ~= input_nets.createBills(100_000).insertBills(insert_recorder);
-        dart_handle.send(dartModifyRR(),
-                (() @trusted => cast(immutable) insert_recorder)()
+        dart_handle.send(dartModify(),
+                (() @trusted => cast(immutable) insert_recorder)(), immutable int(0)
         );
-        receiveOnlyTimeout!(dartModifyRR.Response, immutable(DARTIndex));
+        import core.time;
+        import core.thread;
+        (() @trusted => Thread.sleep(5.msecs))();
 
         // dart_handle.send(dartBullseyeRR());
         immutable collector = CollectorService(node_net, dart_service, thisActor.task_name);

@@ -90,12 +90,12 @@ struct DARTService {
             // req.respond(result.message[Keywords.result].get!Document);
         }
 
-        void modify_request(dartModifyRR req, immutable(RecordFactory.Recorder) recorder) @safe {
-            immutable eye = DARTIndex(db.modify(recorder));
-            req.respond(eye);
-        }
+        // void modify_request(dartModifyRR req, immutable(RecordFactory.Recorder) recorder) @safe {
+        //     immutable eye = DARTIndex(db.modify(recorder));
+        //     req.respond(eye);
+        // }
 
-        void modify(dartModify, immutable(RecordFactory.Recorder) recorder) @safe {
+        void modify(dartModify, immutable(RecordFactory.Recorder) recorder, immutable(int) epoch_number) @safe {
             db.modify(recorder);
         }
 
@@ -104,7 +104,7 @@ struct DARTService {
             req.respond(eye);
         }
 
-        run(&read, &checkRead, &modify_request, &modify, &bullseye, &dartHiRPC);
+        run(&read, &checkRead, &modify, &bullseye, &dartHiRPC);
 
     }
 }
