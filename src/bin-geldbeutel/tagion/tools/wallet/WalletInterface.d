@@ -10,7 +10,7 @@ import tagion.script.TagionCurrency;
 import tagion.crypto.SecureNet;
 import tagion.basic.Types : FileExtension;
 import std.file : exists, mkdir;
-import tagion.hibon.HiBONRecord : fwrite, fread;
+import tagion.hibon.HiBONRecord : fwrite, fread, isRecord;
 import std.path;
 import std.format;
 import std.algorithm;
@@ -22,6 +22,7 @@ import tagion.hibon.Document;
 import std.typecons;
 import std.range;
 import tagion.tools.Basic;
+import tagion.script.common;
 
 /**
  * @brief strip white spaces in begin/end of text
@@ -465,7 +466,7 @@ struct WalletInterface {
                     output_filename.fwrite(bill);
                     writefln("%1$sCreated %3$s%2$s of %4$s", GREEN, RESET, output_filename, bill.value.toString);
                     save_wallet = true;
-                    //return 0;
+                    return;
                 }
                 if (force) {
                     foreach (file; args[1 .. $]) {
@@ -484,6 +485,25 @@ struct WalletInterface {
                     sumAccount(stdout);
                 }
                 if (pay) {
+                    PayScript pay_script;
+                    pay_script.outputs = args[1 .. $]
+                        .map!(file => file.fread)
+                        .map!(doc => TagionBill(doc))
+                        .array;
+                    /+ 
+                    const amount_to_pay=pay_script.outputs
+                    .map!(bill => bill.value)
+                    .sum;
+                    TagionBill[] collect_bills;
+                +/
+                    //const can_pay=secure_wallet.collect_bills(amount_to_pay, collect_bills);
+                    /+
+                     check(can_pay, format("Is unable to pay the amount %10.6fTGN", amount_to_pay.value));
+                    const derivers=collect_bills
+                    .map!(bill => bill.owner in secure_wallet.account.derivers);
+                    check(derivers.all!(deriver => deriver !is null), "Missing deriver of some of the bills");
+//                    const nets=secure_wallet.
++/
 
                 }
             }

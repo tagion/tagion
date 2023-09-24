@@ -91,6 +91,7 @@ struct Currency(string _UNIT, long _BASE_UNIT = 1_000_000_000, long MAX_VALUE_IN
 
     Currency opBinary(string OP, T)(T rhs) const pure
     if (isIntegral!T && (["+", "-", "*", "%", "/"].canFind(OP))) {
+        pragma(msg, "OP ", T);
         enum code = format(q{return Currency(_units %s rhs);}, OP);
         mixin(code);
     }

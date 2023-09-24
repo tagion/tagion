@@ -181,7 +181,6 @@ class StdSecureNet : StdHashNet, SecureNet {
         return _secret.mask(_mask);
     }
 
-    @trusted
     void derive(string tweak_word, shared(SecureNet) secure_net) {
         const tweak_code = HMAC(tweak_word.representation);
         derive(tweak_code, secure_net);
