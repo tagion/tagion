@@ -188,7 +188,7 @@ int _main(string[] args) {
             return 1;
         }
         switch (inputfilename.extension) {
-        case FileExtension.hibon:
+        case FileExtension.hibon, FileExtension.recchainblock:
             immutable data = assumeUnique(cast(ubyte[]) fread(inputfilename));
             const doc = Document(data);
             const error_code = doc.valid(
