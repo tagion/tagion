@@ -91,7 +91,9 @@ struct CollectorService {
                 if (archive is null) {
                     return;
                 }
-
+                if (!archive.filed.hasMember(StdNames.owner)) {
+                    return;
+                }
                 Pubkey pkey = archive.filed[StdNames.owner].get!Buffer;
                 if (!net.verify(contract_hash, sign, pkey)) {
                     return;
