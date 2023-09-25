@@ -14,6 +14,7 @@ import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.Types;
 import tagion.basic.Types;
 import tagion.utils.pretend_safe_concurrency;
+import tagion.services.options : TaskNames;
 
 import std.typecons;
 
@@ -29,15 +30,13 @@ import std.stdio;
 @safe
 struct CollectorService {
     immutable SecureNet net;
-    const string dart_task_name;
-    const string tvm_task_name;
+    immutable TaskNames task_names;
 
     CollectedSignedContract[uint] collections;
     CollectedSignedContract*[uint] reads;
 
     void task() {
         assert(net !is null, "No secure net");
-        assert(dart_task_name !is string.init && tvm_task_name !is string.init, "no task names");
         run(&signed_contract, &recorder, &rpc_contract);
     }
 
@@ -59,10 +58,10 @@ struct CollectorService {
         if (s_contract.contract.reads !is DARTIndex[].init) {
             auto reads_req = dartReadRR();
             reads[reads_req.id] = inputs_req.id in collections;
-            locate(dart_task_name).send(reads_req, s_contract.contract.reads);
+            locate(task_names.dart).send(reads_req, s_contract.contract.reads);
         }
 
-        locate(dart_task_name).send(inputs_req, s_contract.contract.inputs);
+        locate(task_names.dart).send(inputs_req, s_contract.contract.inputs);
     }
 
     void recorder(dartReadRR.Response res, immutable(RecordFactory.Recorder) recorder) {
@@ -104,7 +103,7 @@ struct CollectorService {
                 return;
             }
 
-            locate(tvm_task_name).send(signedContract(), collections.giveme(res.id));
+            locate(task_names.tvm).send(signedContract(), collections.giveme(res.id));
         }
     }
 }

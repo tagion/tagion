@@ -99,7 +99,9 @@ class WriteAndReadFromDartDb {
         thisActor.task_name = "dart_supervisor";
         register(thisActor.task_name, thisTid);
 
-        handle = (() @trusted => spawn!DARTService("DartService", cast(immutable) opts, cast(immutable) replicator_opts, "replicator", cast(
+        import tagion.services.options : TaskNames;
+
+        handle = (() @trusted => spawn!DARTService("DartService", cast(immutable) opts, cast(immutable) replicator_opts, TaskNames(), cast(
                 immutable) dart_net))();
         waitforChildren(Ctrl.ALIVE);
 
@@ -159,11 +161,8 @@ class WriteAndReadFromDartDb {
 
             check(equal(hirpc_recorder[].map!(a => a.filed), insert_recorder[].map!(a => a.filed)), "hirpc data not the same as insertion");
 
-
-
-
         }
-        auto dummy_index = [DARTIndex([1,2,3,4])];
+        auto dummy_index = [DARTIndex([1, 2, 3, 4])];
         Document check_read_sender = dartCheckRead(dummy_index, hirpc).toDoc;
         writefln("read_sender %s", check_read_sender.toPretty);
         handle.send(dartHiRPCRR(), check_read_sender);

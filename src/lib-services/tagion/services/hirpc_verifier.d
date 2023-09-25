@@ -44,8 +44,11 @@ enum RejectReason {
 **/
 @safe
 struct HiRPCVerifierService {
-    void task(immutable(HiRPCVerifierOptions) opts, string collector_task, immutable(SecureNet) net) {
+    import tagion.services.options : TaskNames;
+
+    void task(immutable(HiRPCVerifierOptions) opts, immutable(TaskNames) task_names, immutable(SecureNet) net) {
         const hirpc = HiRPC(net);
+        immutable collector_task = task_names.collector;
 
         void reject(RejectReason reason, lazy Document doc) @safe {
             if (opts.send_rejected_hirpcs) {

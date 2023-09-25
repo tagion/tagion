@@ -20,6 +20,7 @@ import tagion.hibon.HiBONRecord;
 import tagion.communication.HiRPC;
 import tagion.basic.Debug : __write;
 import tagion.utils.JSONCommon;
+import tagion.services.options : TaskNames;
 
 import nngd;
 
@@ -44,12 +45,12 @@ struct InputValidatorOptions {
 /** 
  *  InputValidator actor
  *  Examples: [tagion.testbench.services.inputvalidator]
- *  Sends: (inputDoc, Document) to receiver_task;
+ *  Sends: (inputDoc, Document) to hirpc_verifier;
 **/
 @safe
 struct InputValidatorService {
     pragma(msg, "TODO: Make inputvalidator safe when nng is");
-    void task(immutable(InputValidatorOptions) opts, string receiver_task) @trusted {
+    void task(immutable(InputValidatorOptions) opts, immutable(TaskNames) task_names) @trusted {
         auto rejected = submask.register("inputvalidator/reject");
         NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_PULL);
         ReceiveBuffer buf;
@@ -95,7 +96,7 @@ struct InputValidatorService {
 
             Document doc = Document(assumeUnique(result.data));
             if (doc.isInorder && doc.isRecord!(HiRPC.Sender)) {
-                locate(receiver_task).send(inputDoc(), doc);
+                locate(task_names.hirpc_verifier).send(inputDoc(), doc);
             }
             else {
                 log(rejected, "invalid_doc", doc);

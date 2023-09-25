@@ -25,6 +25,7 @@ import tagion.communication.HiRPC;
 import tagion.hibon.HiBONRecord : isRecord;
 import tagion.logger.Logger;
 import tagion.services.replicator;
+import tagion.services.options : TaskNames;
 
 @safe
 struct DARTOptions {
@@ -41,10 +42,11 @@ struct DARTOptions {
 
 @safe
 struct DARTService {
-    void task(immutable(DARTOptions) opts, immutable(ReplicatorOptions) replicator_opts, immutable(string) replicator_task_name, immutable(
+    void task(immutable(DARTOptions) opts, immutable(ReplicatorOptions) replicator_opts, immutable(TaskNames) task_names, immutable(
             SecureNet) net) {
         DART db;
         Exception dart_exception;
+        immutable replicator_task_name = task_names.replicator;
         db = new DART(net, opts.dart_filename);
         if (dart_exception !is null) {
             throw dart_exception;
@@ -83,7 +85,8 @@ struct DARTService {
 
             immutable receiver = empty_hirpc.receive(doc);
 
-            assert(receiver.method.name == DART.Queries.dartRead || receiver.method.name == DART.Queries.dartBullseye || receiver.method.name == DART.Queries.dartCheckRead, "unsupported hirpc request");
+            assert(receiver.method.name == DART.Queries.dartRead || receiver.method.name == DART.Queries.dartBullseye || receiver
+                    .method.name == DART.Queries.dartCheckRead, "unsupported hirpc request");
 
             Document result = db(receiver, false).toDoc;
             req.respond(result);

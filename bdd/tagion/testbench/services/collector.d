@@ -28,6 +28,7 @@ import tagion.basic.Types : FileExtension, Buffer;
 import tagion.dart.Recorder;
 import tagion.dart.DARTBasic;
 import tagion.services.replicator : ReplicatorOptions;
+import tagion.services.options : TaskNames;
 
 enum feature = Feature(
             "collector services",
@@ -45,6 +46,14 @@ StdSecureNet[] createNets(uint count, string pass_prefix = "net") @safe {
         return net;
     }).array;
 }
+
+// const(StdSecureNet)[] orderNets(StdSecureNet[] nets, Document[] inputs) {
+//     import std.algorithm.sorting;
+//     Fingerprint fingerprint(Document doc) {
+//         nets[0].dartIndex(doc);
+//     }
+//     zip(nets, inputs).sort!((a, b) => RecordFactory.Recorder.archive_sorted(a[1], b[1])).array.map!(a => a[0]);
+// }
 
 TagionBill[] createBills(StdSecureNet[] bill_nets, uint amount) @safe {
     return bill_nets.map!((net) =>
@@ -77,6 +86,7 @@ class ItWork {
     @Given("i have a collector service")
     Document service() @safe {
         thisActor.task_name = "collector_tester_task";
+        immutable task_names = TaskNames();
 
         { // Start dart service
             immutable opts = DARTOptions(
@@ -96,7 +106,7 @@ class ItWork {
 
             DART.create(opts.dart_filename, node_net);
 
-            dart_handle = spawn!DARTService(dart_service, opts, replicator_opts, "replicator", node_net);
+            dart_handle = spawn!DARTService(task_names.dart, opts, replicator_opts, task_names, node_net);
             check(waitforChildren(Ctrl.ALIVE), "dart service did not alive");
         }
 
@@ -110,10 +120,14 @@ class ItWork {
         check(inputs !is null, "Inputs were null");
         dart_handle.send(dartModify(), RecordFactory.uniqueRecorder(insert_recorder), immutable int(0));
 
-        immutable collector = CollectorService(node_net, dart_service, thisActor.task_name);
-        collector_handle = spawn(collector, "collector_task");
-        check(waitforChildren(Ctrl.ALIVE), "CollectorService never alived");
+        {
+            import tagion.utils.pretend_safe_concurrency;
 
+            register(task_names.tvm, thisTid);
+        }
+        immutable collector = CollectorService(node_net, task_names);
+        collector_handle = spawn(collector, task_names.collector);
+        check(waitforChildren(Ctrl.ALIVE), "CollectorService never alived");
         return result_ok;
     }
 
@@ -146,7 +160,17 @@ class ItWork {
 
     @Then("i receive a `CollectedSignedContract`")
     Document collectedSignedContract() {
-        receiveOnlyTimeout!(signedContract, immutable(CollectedSignedContract)*);
+        auto collected = receiveOnlyTimeout!(signedContract, immutable(CollectedSignedContract)*)[1];
+        import std.stdio;
+        import tagion.hibon.HiBONJSON;
+
+        writeln(collected.sign_contract.toPretty);
+        foreach (inp; collected.inputs) {
+            writeln(inp.toPretty);
+        }
+        check(collected !is null, "The collected was nulled");
+        check(collected.inputs.length == inputs.length, "The lenght of inputs were not the same");
+        // check(collected.inputs.map!(a => node_net.dartIndex(a)).array == inputs, "The collected archives did not match the index");
         dart_handle.send(Sig.STOP);
         collector_handle.send(Sig.STOP);
         waitforChildren(Ctrl.END);
