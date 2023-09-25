@@ -244,7 +244,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
                 }
 
                 void serverHandler() {
-                    if (received.method.name == DART.Quries.dartModify) { //Not allowed
+                    if (received.method.name == DART.Queries.dartModify) { //Not allowed
                         closeConnection();
                     }
                     auto request = dart(received);

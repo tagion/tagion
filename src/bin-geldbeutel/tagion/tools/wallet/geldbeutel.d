@@ -1,4 +1,4 @@
-module tagion.tools.geldbeutel;
+module tagion.tools.wallet.geldbeutel;
 import core.thread;
 import std.format;
 import std.getopt;
@@ -11,7 +11,7 @@ import std.algorithm;
 import std.range;
 import tagion.tools.revision;
 import tagion.tools.Basic;
-import tagion.basic.Types : FileExtension;
+import tagion.basic.Types : hasExtension, FileExtension;
 import tagion.wallet.KeyRecover;
 import tagion.utils.Term;
 import tagion.wallet.SecureWallet;
@@ -22,6 +22,7 @@ import tagion.hibon.Document;
 import tagion.basic.tagionexceptions;
 import tagion.tools.wallet.WalletOptions;
 import tagion.tools.wallet.WalletInterface;
+import tagion.script.TagionCurrency;
 import tagion.utils.Term;
 import std.typecons;
 
@@ -48,12 +49,18 @@ int _main(string[] args) {
     bool create_account;
     bool change_pin;
     bool set_default_quiz;
+
+    string output_filename;
+    string derive_code;
     string path;
     string pincode;
     bool wallet_ui;
     GetoptResult main_args;
     WalletOptions options;
-    auto config_file = "wallet.json";
+    WalletInterface.Switch wallet_switch;
+    const user_config_file = args
+        .countUntil!(file => file.hasExtension(FileExtension.json) && file.exists);
+    auto config_file = (user_config_file < 0) ? "wallet.json" : args[user_config_file];
     if (config_file.exists) {
         options.load(config_file);
     }
@@ -65,13 +72,17 @@ int _main(string[] args) {
         main_args = getopt(args, std.getopt.config.caseSensitive,
                 std.getopt.config.bundling,
                 "version", "display the version", &version_switch,
-                "overwrite|O", "Overwrite the config file and exits", &overwrite_switch,
+                "v|verbose", "Enable verbose print-out", &__verbose_switch,
+                "O|overwrite", "Overwrite the config file and exits", &overwrite_switch,
                 "path", format("Set the path for the wallet files : default %s", path), &path,
                 "wallet", format("Wallet file : default %s", options.walletfile), &options.walletfile,
                 "device", format("Device file : default %s", options.devicefile), &options.devicefile,
                 "quiz", format("Quiz file : default %s", options.quizfile), &options.quizfile,
                 "C|create", "Create a new account", &create_account,
-                "c|changepin", "Change pin-code", &change_pin, //"questions", "Questions for wallet creation", &questions_str,
+                "c|changepin", "Change pin-code", &change_pin,
+                "o|output", "Output filename", &wallet_switch.output_filename,
+                "l|list", "List wallet content", &wallet_switch.list, //"questions", "Questions for wallet creation", &questions_str,
+                "s|sum", "Sum of the wallet", &wallet_switch.sum, //"questions", "Questions for wallet creation", &questions_str,
                 //"answers", "Answers for wallet creation", &answers_str,
                 /*
                 "path", format("Set the path for the wallet files : default %s", path), &path,
@@ -87,7 +98,10 @@ int _main(string[] args) {
                 "update|U", "Update your wallet", &update_wallet,
                 "item|m", "Invoice item select from the invoice file", &item,
                 */
-                "pin|x", "Pincode", &pincode, /*
+                "pin|x", "Pincode", &pincode,
+                "amount", "Create an payment request in tagion", &wallet_switch.amount,
+                "force", "Force input bill", &wallet_switch.force,
+                "pay", "Creates a payment contract", &wallet_switch.pay, /*
                 "port|p", format("Tagion network port : default %d", options.port), &options.port,
                 "url|u", format("Tagion url : default %s", options.addr), &options.addr,
                 "visual|g", "Visual user interface", &wallet_ui,
@@ -115,20 +129,21 @@ int _main(string[] args) {
         //            writeln(logo);
         defaultGetoptPrinter(
                 [
-            // format("%s version %s", program, REVNO),
-            "Documentation: https://tagion.org/",
-            "",
-            "Usage:",
-            format("%s [<option>...] <config.json> <files>", program),
-            "",
+                // format("%s version %s", program, REVNO),
+                "Documentation: https://tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...] <config.json> <files>", program),
+                "",
 
-            "<option>:",
+                "<option>:",
 
-        ].join("\n"),
+                ].join("\n"),
                 main_args.options);
         return 0;
     }
     try {
+        verbose("Config file %s", config_file);
         const new_config = (!config_file.exists || overwrite_switch);
         if (path) {
             if (!new_config) {
@@ -147,6 +162,9 @@ int _main(string[] args) {
             }
         }
         if (new_config) {
+            const new_config_file = args
+                .countUntil!(file => file.hasExtension(FileExtension.json) && !file.exists);
+            config_file = (new_config_file < 0) ? config_file : args[new_config_file];
             options.save(config_file);
             if (overwrite_switch) {
                 return 0;
@@ -159,7 +177,7 @@ int _main(string[] args) {
             WalletInterface.pressKey;
             //wallet_interface.quiz.questions = standard_questions.dup;
         }
-        writefln("change_pin=%s", change_pin);
+        change_pin = change_pin && !pincode.empty;
         if (create_account) {
             wallet_interface.generateSeed(wallet_interface.quiz.questions, false);
             return 0;
@@ -173,24 +191,29 @@ int _main(string[] args) {
         }
 
         if (wallet_interface.secure_wallet !is WalletInterface.StdSecureWallet.init) {
-            if (pincode) {
+            if (!pincode.empty) {
+                writefln("Login:%s", pincode);
                 const flag = wallet_interface.secure_wallet.login(pincode);
+
                 if (!flag) {
                     stderr.writefln("%sWrong pincode%s", RED, RESET);
                     return 3;
                 }
+                verbose("%1$sLoggedin%2$s", GREEN, RESET);
             }
             else if (!wallet_interface.loginPincode(No.ChangePin)) {
                 wallet_ui = true;
-                writefln("Wallet not loggedin");
-                WalletInterface.pressKey;
+                writefln("%1$sWallet not loggedin%2$s", YELLOW, RESET);
+                //WalletInterface.pressKey;
 
                 return 4;
             }
         }
+        wallet_interface.operate(wallet_switch, args);
     }
     catch (Exception e) {
         writefln("%1$sError: %3$s%2$s", RED, RESET, e.msg);
+        return 1;
     }
     return 0;
 }

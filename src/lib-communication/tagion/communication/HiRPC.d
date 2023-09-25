@@ -221,7 +221,7 @@ struct HiRPC {
                 this(null, doc);
             }
 
-            this(const SecureNet net, const Document doc)
+            this(const SecureNet net, const Document doc, Pubkey pkey = Pubkey.init)
             in {
                 if (signature.length) {
                     assert(net !is null, "The signature can't be veified because the SecureNet is missing");
@@ -233,7 +233,7 @@ struct HiRPC {
                 type = getType(doc);
                 message = doc[messageName].get!Document;
                 signature = doc.hasMember(signName) ? doc[signName].get!(Signature) : Signature.init;
-                pubkey = doc.hasMember(pubkeyName) ? doc[pubkeyName].get!(Pubkey) : Pubkey.init;
+                pubkey = doc.hasMember(pubkeyName) ? doc[pubkeyName].get!(Pubkey) : pkey;
                 Pubkey used_pubkey;
                 static SignedState verifySignature(const SecureNet net, const Document doc, const Signature sgn, const Pubkey pkey) {
                     if (sgn.length) {
@@ -408,6 +408,7 @@ struct HiRPC {
     **/
     const(uint) generateId() @safe const {
         import rnd = tagion.utils.Random;
+
         return rnd.generateId;
     }
 
@@ -617,5 +618,3 @@ unittest {
         // writefln("recever.verified=%s", recever.verified);
     }
 }
-
-

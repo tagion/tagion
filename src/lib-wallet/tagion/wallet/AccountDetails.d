@@ -1,8 +1,9 @@
 module tagion.wallet.AccountDetails;
-
+import std.format;
 import tagion.basic.Types;
 import tagion.crypto.Types;
-import tagion.script.prior.StandardRecords;
+
+//import tagion.script.prior.StandardRecords;
 import tagion.dart.DARTBasic;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
@@ -11,10 +12,11 @@ import tagion.script.common;
 
 @safe
 struct AccountDetails {
-    @label("$derives") Buffer[Pubkey] derives;
+    @label("$derivers") Buffer[Pubkey] derivers;
     @label("$bills") TagionBill[] bills;
     @label("$state") Buffer derive_state;
     @label("$locked") bool[Pubkey] activated; /// locked bills
+    @label("$requested") TagionBill[Pubkey] requested; /// Requested bills
     import std.algorithm : map, sum, filter, any, each;
 
     bool remove_bill(Pubkey pk) {
@@ -87,18 +89,39 @@ struct AccountDetails {
         return TagionCurrency(0);
     }
 
-    void add_bill(TagionBill bill) {
+    version (none) void add_bill(TagionBill bill) {
         bills ~= bill;
     }
 
+    void add_bill(TagionBill bill) {
+        if (bill.owner in requested) {
+            // bills~=bill;
+            bills ~= requested[bill.owner];
+            requested.remove(bill.owner);
+
+        }
+    }
+
+    TagionBill add_bill(const Document doc) {
+        auto bill = TagionBill(doc);
+        add_bill(bill);
+        return bill;
+    }
+
+    void requestBill(TagionBill bill, Buffer derive) {
+        check((bill.owner in derivers) is null, format("Bill %(%x%) already exists", bill.owner));
+        derivers[bill.owner] = derive;
+        requested[bill.owner] = bill;
+
+    }
     /++
          Clear up the Account
          Remove used bills
          +/
     void clearup() pure {
         bills
-            .filter!(b => b.owner in derives)
-            .each!(b => derives.remove(b.owner));
+            .filter!(b => b.owner in derivers)
+            .each!(b => derivers.remove(b.owner));
         bills
             .filter!(b => b.owner in activated)
             .each!(b => activated.remove(b.owner));
@@ -151,13 +174,23 @@ struct AccountDetails {
 struct Invoice {
     string name; /// Name of the invoice
     TagionCurrency amount; /// Amount to be payed
-    @label(OwnerKey) Pubkey pkey; /// Key to the payee
-    @label("*", true) Document info; /// Information about the invoice
-    mixin HiBONRecord!();
+    @label(StdNames.owner) Pubkey pkey; /// Key to the payee
+    @label(VOID, true) Document info; /// Information about the invoice
+    mixin HiBONRecord;
 }
 
 @safe
 struct Invoices {
     Invoice[] list; /// List of invoice (store in the wallet)
     mixin HiBONRecord;
+}
+
+@safe
+@recordType("PayInfo")
+struct PaymentInfo {
+    string name; /// Name of the reception
+    @label(StdNames.owner) Pubkey owner;
+    // @label(StdNames.derive) string derive;
+    @label(StdNames.value, true) TagionCurrency amount;
+    @label(VOID, true) Document info;
 }

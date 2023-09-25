@@ -18,9 +18,13 @@ int _main(string[] _) {
 
     enum input_test = "input_tester_task";
     register(input_test, thisTid);
+    import tagion.services.options : TaskNames;
+
+    TaskNames _task_names;
+    _task_names.hirpc_verifier = input_test;
 
     immutable opts = InputValidatorOptions(sock_path);
-    auto input_handle = spawn!InputValidatorService("input_validator_task", opts, input_test);
+    auto input_handle = spawn!InputValidatorService("input_validator_task", opts, cast(immutable) _task_names);
     enforce(waitforChildren(Ctrl.ALIVE), "The inputvalidator did not start");
 
     auto inputvalidator_feature = automation!inputvalidator;

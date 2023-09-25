@@ -135,9 +135,9 @@ alias check = Check!DARTException;
     }
 
     protected enum _params = [
-            "fingerprints",
-            "bullseye",
-        ];
+        "fingerprints",
+        "bullseye",
+    ];
 
     mixin(EnumText!("Params", _params));
 
@@ -821,14 +821,17 @@ alias check = Check!DARTException;
         return result;
     }
 
-    // DARTIndex[] checkload(Range)(Range fingerprints)
-    immutable(DARTIndex)[] checkload(Range)(Range fingerprints) if (isInputRange!Range && isBufferType!(ElementType!Range)) {
+    DARTIndex[] checkload(Range)(Range fingerprints) if (isInputRange!Range && isBufferType!(ElementType!Range)) {
         import std.algorithm : canFind;
+        import std.exception : assumeUnique;
 
         auto result = loads(fingerprints)[]
-            .map!(a => DARTIndex(a.fingerprint));
+            .map!(a => a.fingerprint);
 
-        auto not_found = fingerprints.filter!(f => !canFind(result, f)).array;
+        auto not_found = fingerprints
+            .filter!(f => !canFind(result, f))
+            .map!(f => cast(DARTIndex) f)
+            .array;
 
         // return (() @trusted => assumeUnique(not_found))();
         return not_found;
@@ -1022,7 +1025,7 @@ alias check = Check!DARTException;
         .check(modifyrecords.length <= 1 ||
                     !modifyrecords[].slide(2).map!(a => a.front.fingerprint == a.dropOne.front.fingerprint)
                         .any,
-                        "cannot have multiple operations on same fingerprint in one modify");
+                    "cannot have multiple operations on same fingerprint in one modify");
 
         auto range = rimKeyRange!undo(modifyrecords);
         immutable new_root = traverse_dart(range, blockfile.masterBlock.root_index);

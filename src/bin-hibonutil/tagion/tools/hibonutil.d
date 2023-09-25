@@ -176,21 +176,6 @@ int _main(string[] args) {
 
             stderr.writeln("Error: output not specified");
             return 1;
-
-            // else {
-            //     try {
-            //         if (standard_output) {
-            //             stdout.rawWrite(hibon.serialize);
-            //         }
-            //         else {
-            //             outputfilename.setExtension(FileExtension.hibon).fwrite(hibon.serialize);
-            //         }
-            //     }
-            //     catch (Exception e) {
-            //         error(e);
-            //         return 1;
-            //     }
-            // }
         }
 
         stderr.writefln("Input file missing");
@@ -203,7 +188,7 @@ int _main(string[] args) {
             return 1;
         }
         switch (inputfilename.extension) {
-        case FileExtension.hibon:
+        case FileExtension.hibon, FileExtension.recchainblock:
             immutable data = assumeUnique(cast(ubyte[]) fread(inputfilename));
             const doc = Document(data);
             const error_code = doc.valid(

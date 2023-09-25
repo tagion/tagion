@@ -17,8 +17,9 @@ int main(string[] args) {
     import graphview = tagion.tools.graphview;
     import signs = tagion.tools.signs;
     import wasmutil = tagion.tools.wasmutil.wasmutil;
-    import geldbeutel = tagion.tools.geldbeutel;
+    import geldbeutel = tagion.tools.wallet.geldbeutel;
     import tagionshell = tagion.tools.tagionshell;
+    import stiefel = tagion.tools.boot.stiefel;
 
     alias alltools = AliasSeq!(
             tagionwave,
@@ -34,6 +35,7 @@ int main(string[] args) {
             wasmutil,
             geldbeutel,
             tagionshell,
+            stiefel,
     );
     mixin doOneMain!(alltools);
     return do_main(args);

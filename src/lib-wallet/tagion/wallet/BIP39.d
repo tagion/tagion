@@ -8,7 +8,7 @@ import tagion.crypto.random.random;
 static assert(ver.LittleEndian, "At the moment bip39 only supports Little Endian");
 
 @trusted
-ubyte[] bip39(const(ushort[]) mnemonics) pure nothrow {
+ubyte[] bip39(const(ushort[]) mnemonics) nothrow {
     pragma(msg, "fixme(cbr): Fake BIP39 must be fixed later");
     import std.digest.sha : SHA256;
     import std.digest;
@@ -36,7 +36,17 @@ ubyte[] bip39(const(ushort[]) mnemonics) pure nothrow {
     const result_buffer = (cast(ubyte*)&work_buffer[0])[0 .. SIZE_OF_WORK_BUFFER * uint.sizeof];
 
     pragma(msg, "fixme(cbr): PBKDF2 hmac function should be used");
-    return digest!SHA256(cast(ubyte[]) result_buffer).dup;
+
+    version (HASH_SECP256K1) {
+        import tagion.crypto.secp256k1.NativeSecp256k1;
+
+        return NativeSecp256k1.calcHash(result_buffer);
+    }
+    else {
+        return digest!SHA256(cast(ubyte[]) result_buffer).dup;
+
+    }
+
 }
 
 /*

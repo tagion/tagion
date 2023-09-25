@@ -24,7 +24,7 @@ import tagion.dart.DARTBasic;
 import tagion.basic.basic : basename, isinit;
 import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Pubkey;
-import tagion.script.prior.StandardRecords : SignedContract, StandardBill, globals, Script;
+import tagion.script.prior.StandardRecords : SignedContract, globals, Script;
 import tagion.crypto.SecureNet : scramble;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 
@@ -42,6 +42,7 @@ import tagion.wallet.Basic : saltHash;
 import tagion.script.common;
 import tagion.basic.tagionexceptions : Check;
 import tagion.crypto.Cipher;
+import tagion.crypto.random.random;
 import tagion.utils.StdTime;
 
 alias check = Check!(WalletException);
@@ -56,8 +57,11 @@ struct SecureWallet(Net : SecureNet) {
     protected DevicePIN _pin; /// Information to check the Pin code
 
     AccountDetails account; /// Account-details holding the bills and generator
-    protected SecureNet net;
+    protected SecureNet _net;
 
+    const(SecureNet) net() const pure nothrow @nogc {
+        return _net;
+    }
     /**
      * 
      * Params:
@@ -129,9 +133,9 @@ struct SecureWallet(Net : SecureNet) {
     }
     do {
         check(questions.length > 3, "Minimal amount of answers is 4");
-        auto net = new Net();
+        auto _net = new Net();
         //        auto hashnet = new StdHashNet;
-        auto recover = KeyRecover(net);
+        auto recover = KeyRecover(_net);
 
         if (confidence == questions.length) {
             pragma(msg, "fixme(cbr): Due to some bug in KeyRecover");
@@ -142,15 +146,15 @@ struct SecureWallet(Net : SecureNet) {
         recover.createKey(questions, answers, confidence, seed);
         SecureWallet result;
         {
-            auto R = new ubyte[net.hashSize];
+            auto R = new ubyte[_net.hashSize];
             scope (exit) {
                 scramble(R);
             }
             recover.findSecret(R, questions, answers);
-            net.createKeyPair(R);
+            _net.createKeyPair(R);
             auto wallet = RecoverGenerator(recover.toDoc);
             result = SecureWallet(DevicePIN.init, wallet);
-            result.net = net;
+            result._net = _net;
             result.set_pincode(R, pincode);
         }
         return result;
@@ -171,13 +175,13 @@ struct SecureWallet(Net : SecureNet) {
 
         import tagion.wallet.BIP39;
 
-        auto net = new Net;
+        auto _net = new Net;
         SecureWallet result;
         {
             auto R = bip39(mnemonic);
-            result.net = net;
+            result._net = _net;
             result.set_pincode(R, pincode);
-            net.createKeyPair(R);
+            _net.createKeyPair(R);
         }
         return result;
     }
@@ -185,9 +189,9 @@ struct SecureWallet(Net : SecureNet) {
     protected void set_pincode(
             scope const(ubyte[]) R,
     scope const(char[]) pincode)
-    in (!net.isinit)
+    in (!_net.isinit)
     do {
-        auto seed = new ubyte[net.hashSize];
+        auto seed = new ubyte[_net.hashSize];
         scramble(seed);
         /+
         _pin.U = seed.idup;
@@ -196,7 +200,7 @@ struct SecureWallet(Net : SecureNet) {
     _pin.D = xor(R, pinhash);
         _pin.S = recover.checkHash(R);
  +/
-        _pin.setPin(net, R, pincode.representation, seed.idup);
+        _pin.setPin(_net, R, pincode.representation, seed.idup);
     }
 
     /**
@@ -212,9 +216,9 @@ struct SecureWallet(Net : SecureNet) {
         assert(questions.length is answers.length, "Amount of questions should be same as answers");
     }
     do {
-        net = new Net;
-        auto recover = KeyRecover(net, _wallet);
-        scope R = new ubyte[net.hashSize];
+        _net = new Net;
+        auto recover = KeyRecover(_net, _wallet);
+        scope R = new ubyte[_net.hashSize];
         return recover.findSecret(R, questions, answers);
     }
 
@@ -232,16 +236,16 @@ struct SecureWallet(Net : SecureNet) {
         assert(questions.length is answers.length, "Amount of questions should be same as answers");
     }
     do {
-        net = new Net;
-        auto recover = KeyRecover(net, _wallet);
-        auto R = new ubyte[net.hashSize];
+        _net = new Net;
+        auto recover = KeyRecover(_net, _wallet);
+        auto R = new ubyte[_net.hashSize];
         const result = recover.findSecret(R, questions, answers);
         if (result) {
             set_pincode(R, pincode);
-            net.createKeyPair(R);
+            _net.createKeyPair(R);
             return true;
         }
-        net = null;
+        _net = null;
         return false;
     }
 
@@ -250,8 +254,8 @@ struct SecureWallet(Net : SecureNet) {
      * Returns: true if the wallet is loggin
      */
     @nogc bool isLoggedin() pure const nothrow {
-        pragma(msg, "fixme(cbr): Jam the net");
-        return net !is null;
+        pragma(msg, "fixme(cbr): Jam the _net");
+        return _net !is null;
     }
 
     /**
@@ -282,7 +286,7 @@ struct SecureWallet(Net : SecureNet) {
             //  _pin.recover(R, pinhash);
             if (recovered) {
                 login_net.createKeyPair(R);
-                net = login_net;
+                _net = login_net;
                 return true;
             }
         }
@@ -293,7 +297,7 @@ struct SecureWallet(Net : SecureNet) {
      * Removes the key-pair 
      */
     void logout() pure nothrow {
-        net = null;
+        _net = null;
     }
 
     /**
@@ -303,7 +307,7 @@ struct SecureWallet(Net : SecureNet) {
      * Returns: true if the pincode is correct
      */
     bool checkPincode(const(char[]) pincode) {
-        const hashnet = (net.isinit) ? new Net : net;
+        const hashnet = (_net.isinit) ? new Net : _net;
 
         scope R = new ubyte[hashnet.hashSize];
         scope (exit) {
@@ -321,12 +325,12 @@ struct SecureWallet(Net : SecureNet) {
      * Returns: true of the pincode has been change succesfully
      */
     bool changePincode(const(char[]) pincode, const(char[]) new_pincode) {
-        check(!net.isinit, "Key pair has not been created");
+        check(!_net.isinit, "Key pair has not been created");
         //const pinhash = recover.checkHash(pincode.representation, _pin.U);
-        auto R = new ubyte[net.hashSize];
+        auto R = new ubyte[_net.hashSize];
         // xor(R, _pin.D, pinhash);
-        _pin.recover(net, R, pincode.representation);
-        if (_pin.S == net.saltHash(R)) {
+        _pin.recover(_net, R, pincode.representation);
+        if (_pin.S == _net.saltHash(R)) {
             // const new_pinhash = recover.checkHash(new_pincode.representation, _pin.U);
             set_pincode(R, new_pincode);
             logout;
@@ -341,18 +345,22 @@ struct SecureWallet(Net : SecureNet) {
      *   invoice = invoice to be registered
      */
     void registerInvoice(ref Invoice invoice) {
-        checkLogin;
-        string current_time = MonoTime.currTime.toString;
-        scope seed = new ubyte[net.hashSize];
-        scramble(seed);
-        account.derive_state = net.rawCalcHash(
-                seed ~ account.derive_state ~ current_time.representation);
-        scramble(seed);
-        auto pkey = net.derivePubkey(account.derive_state);
-        invoice.pkey = pkey;
-        account.derives[pkey] = account.derive_state;
+        //checkLogin;
+        //   string current_time = MonoTime.currTime.toString;
+        //   scope seed = new ubyte[_net.hashSize];
+        //   scramble(seed);
+        //account.derive_state = _net.HMAC(account.derive_state~_net.pubkey);
+        //     scramble(seed);
+        //auto pkey = _net.derivePubkey(account.derive_state);
+        invoice.pkey = derivePubkey;
+        account.derivers[invoice.pkey] = account.derive_state;
     }
 
+    Pubkey derivePubkey() {
+        checkLogin;
+        account.derive_state = _net.HMAC(account.derive_state ~ _net.pubkey);
+        return _net.derivePubkey(account.derive_state);
+    }
     /**
      * Create a new invoice which can be send to a payee 
      * Params:
@@ -367,6 +375,16 @@ struct SecureWallet(Net : SecureNet) {
         new_invoice.amount = amount;
         new_invoice.info = info;
         return new_invoice;
+    }
+
+    PaymentInfo paymentInfo(string label, TagionCurrency amount = TagionCurrency.init, Document info = Document.init) {
+        PaymentInfo new_request;
+        new_request.name = label;
+        new_request.amount = amount;
+        new_request.info = info;
+        const derive = _net.HMAC(label.representation ~ _net.pubkey ~ info.serialize);
+        new_request.owner = _net.derivePubkey(derive);
+        return new_request;
     }
 
     /**
@@ -390,7 +408,7 @@ struct SecureWallet(Net : SecureNet) {
             if (enough) {
                 const total = contract_bills.map!(b => b.value).sum;
 
-                result.contract.inputs = contract_bills.map!(b => net.dartIndex(b.toDoc)).array;
+                result.contract.inputs = contract_bills.map!(b => _net.dartIndex(b.toDoc)).array;
                 const rest = total - amount;
                 if (rest > 0) {
                     Invoice money_back;
@@ -401,14 +419,14 @@ struct SecureWallet(Net : SecureNet) {
                 orders.each!((o) { result.contract.output[o.pkey] = o.amount.toDoc; });
                 result.contract.script = Script("pay");
 
-                immutable message = net.calcHash(result.contract.toDoc);
-                auto shared_net = (() @trusted { return cast(shared) net; })();
+                immutable message = _net.calcHash(result.contract.toDoc);
+                auto shared_net = (() @trusted { return cast(shared) _net; })();
                 auto bill_net = new Net;
                 // Sign all inputs
                 result.signs = contract_bills
-                    .filter!(b => b.owner in account.derives)
+                    .filter!(b => b.owner in account.derivers)
                     .map!((b) {
-                        immutable tweak_code = account.derives[b.owner];
+                        immutable tweak_code = account.derivers[b.owner];
                         bill_net.derive(tweak_code, shared_net);
                         return bill_net.sign(message);
                     })
@@ -461,7 +479,7 @@ struct SecureWallet(Net : SecureNet) {
     const(HiRPC.Sender) getRequestUpdateWallet() const {
         HiRPC hirpc;
         auto h = new HiBON;
-        h = account.derives.byKey.map!(p => cast(Buffer) p);
+        h = account.derivers.byKey.map!(p => cast(Buffer) p);
         return hirpc.search(h);
     }
 
@@ -485,14 +503,16 @@ struct SecureWallet(Net : SecureNet) {
         auto none_locked = account.bills.filter!(b => !(b.owner in account.activated));
 
         // Check if we have enough money
-        const enough = !none_locked.map!(b => b.value)
+        const enough = !none_locked
+            .map!(b => b.value)
             .cumulativeFold!((a, b) => a + b)
             .filter!(a => a >= amount)
             .takeOne
             .empty;
         if (enough) {
             TagionCurrency rest = amount;
-            locked_bills = none_locked.filter!(b => b.value <= rest)
+            locked_bills = none_locked
+                .filter!(b => b.value <= rest)
                 .until!(b => rest <= 0)
                 .tee!((b) { rest -= b.value; account.activated[b.owner] = true; })
                 .array;
@@ -540,19 +560,19 @@ struct SecureWallet(Net : SecureNet) {
      *   bills = list of bills 
      * Returns: total amount
      */
-    static TagionCurrency calcTotal(const(StandardBill[]) bills) pure {
+    static TagionCurrency calcTotal(const(TagionBill[]) bills) pure {
         return bills.map!(b => b.value).sum;
     }
 
     Buffer getPublicKey() {
         import std.typecons;
 
-        const pkey = net.pubkey;
+        const pkey = _net.pubkey;
         return cast(TypedefType!Pubkey)(pkey);
     }
 
     struct DeriverState {
-        Buffer[Pubkey] derives;
+        Buffer[Pubkey] derivers;
         Buffer derive_state;
         mixin HiBONRecord;
     }
@@ -561,19 +581,38 @@ struct SecureWallet(Net : SecureNet) {
         return this.account.derive_state;
     }
 
+    TagionBill requestBill(TagionCurrency amount) {
+        check(amount > 0.TGN, "Requested bill should have a positive value");
+        TagionBill bill;
+        bill.value = amount;
+        bill.time = currentTime;
+        auto nonce = new ubyte[4];
+        getRandom(nonce);
+        bill.nonce = nonce.idup;
+        auto derive = _net.HMAC(bill.toDoc.serialize);
+        bill.owner = _net.derivePubkey(derive);
+        //account.bills ~= bill;
+        account.requestBill(bill, derive);
+        return bill;
+    }
+
+    TagionBill addBill(const Document doc) {
+        return account.add_bill(doc);
+    }
+
     @trusted
     const(CiphDoc) getEncrDerivers() {
         DeriverState derive_state;
-        derive_state.derives = this.account.derives;
+        derive_state.derivers = this.account.derivers;
         derive_state.derive_state = this.account.derive_state;
-        return Cipher.encrypt(this.net, derive_state.toDoc);
+        return Cipher.encrypt(this._net, derive_state.toDoc);
     }
 
     void setEncrDerivers(const(CiphDoc) cipher_doc) {
         Cipher cipher;
-        const derive_state_doc = cipher.decrypt(this.net, cipher_doc); //this.net, getEncrDerivesList(
+        const derive_state_doc = cipher.decrypt(this._net, cipher_doc); //this._net, getEncrderiversList(
         DeriverState derive_state = DeriverState(derive_state_doc);
-        this.account.derives = derive_state.derives;
+        this.account.derivers = derive_state.derivers;
         this.account.derive_state = derive_state.derive_state;
     }
 
@@ -697,17 +736,16 @@ struct SecureWallet(Net : SecureNet) {
         import tagion.utils.Miscellaneous;
 
         auto sender_wallet = SecureWallet(DevicePIN.init, RecoverGenerator.init);
-        auto net = new Net;
+        auto _net = new Net;
 
         { // Add SecureNet to the wallet
             immutable very_securet = "Very Secret password";
-            net.generateKeyPair(very_securet);
-            sender_wallet.net = net;
+            _net.generateKeyPair(very_securet);
+            sender_wallet._net = _net;
         }
 
         { // Create a number of bills in the seneder_wallet
             auto bill_amounts = [4, 1, 100, 40, 956, 42, 354, 7, 102355].map!(a => a.TGN);
-            auto gene = cast(Buffer) net.calcHash("gene".representation);
             const uint epoch = 42;
 
             const label = "some_name";
@@ -718,10 +756,11 @@ struct SecureWallet(Net : SecureNet) {
 
             // Add the bulls to the account with the derive keys
             with (sender_wallet.account) {
-                bills = zip(bill_amounts, derives.byKey).map!(bill_derive => TagionBill(
+                bills = zip(bill_amounts, derivers.byKey).map!(bill_derive => TagionBill(
                         bill_derive[0],
                         currentTime,
-                        bill_derive[1])).array;
+                        bill_derive[1],
+                        Buffer.init)).array;
             }
 
             assert(sender_wallet.available_balance == bill_amounts.sum);
@@ -734,7 +773,7 @@ struct SecureWallet(Net : SecureNet) {
             auto receiver_net = new Net;
             immutable very_securet = "Very Secret password for the receriver";
             receiver_net.generateKeyPair(very_securet);
-            receiver_wallet.net = receiver_net;
+            receiver_wallet._net = receiver_net;
         }
 
         pragma(msg, "fixme(cbr): The following test is not finished, Need to transfer to money to receiver");

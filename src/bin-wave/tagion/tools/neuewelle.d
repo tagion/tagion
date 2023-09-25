@@ -135,6 +135,10 @@ int _main(string[] args) {
             opts.setPrefix(prefix);
             SecureNet net = new StdSecureNet();
             net.generateKeyPair(opts.task_names.supervisor);
+            if (i == 0) {
+                opts.monitor.enable = true;
+            }
+            opts.epoch_creator.timeout = 1000;
 
             nodes ~= Node(opts, cast(immutable) net);
 

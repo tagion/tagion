@@ -69,19 +69,19 @@ int _main(string[] args) {
             writeln(logo);
             defaultGetoptPrinter(
                     [
-                    // format("%s version %s", program, REVNO),
-                    "Documentation: https://tagion.org/",
-                    "",
-                    "Usage:",
-                    format("%s [<option>...]", program),
-                    "",
-                    "Examples:",
-                    "# To run recorer chain specify 2 required parameters",
-                    format("%s -с chain_directory -d DART_directory -i true", program),
-                    "",
-                    "<option>:",
+                // format("%s version %s", program, REVNO),
+                "Documentation: https://tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...]", program),
+                "",
+                "Examples:",
+                "# To run recorer chain specify 3 required parameters",
+                format("%s -с chain_directory -d new_dart.drt -g genesis_dart.drt", program),
+                "",
+                "<option>:",
 
-                    ].join("\n"),
+            ].join("\n"),
                     main_args.options);
             return 0;
         }

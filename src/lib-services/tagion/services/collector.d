@@ -4,7 +4,7 @@ module tagion.services.collector;
 import tagion.actor.actor;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
-import tagion.dart.Recorder : RecordFactory;
+import tagion.dart.Recorder : RecordFactory, Archive;
 import tagion.services.messages;
 import tagion.script.execute;
 import tagion.script.common;
@@ -14,6 +14,7 @@ import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.Types;
 import tagion.basic.Types;
 import tagion.utils.pretend_safe_concurrency;
+import tagion.services.options : TaskNames;
 
 import std.typecons;
 
@@ -29,116 +30,102 @@ import std.stdio;
 @safe
 struct CollectorService {
     immutable SecureNet net;
-    const string dart_task_name;
-    const string tvm_task_name;
+    immutable TaskNames task_names;
 
-    // Queue!CollectedSignedContract collections;
     CollectedSignedContract[uint] collections;
+    CollectedSignedContract*[uint] reads;
 
     void task() {
         assert(net !is null, "No secure net");
-        assert(dart_task_name !is string.init && tvm_task_name !is string.init, "no task names");
         run(&signed_contract, &recorder, &rpc_contract);
     }
 
     // Input received directly from the HiRPC verifier
     void rpc_contract(inputHiRPC, immutable(HiRPC.Receiver) receiver) @trusted {
-        auto doc = Document(receiver.method.params);
+        immutable doc = Document(receiver.method.params);
         if (!doc.isRecord!SignedContract) {
             return;
         }
         signed_contract(inputContract(), cast(immutable) SignedContract(doc));
     }
 
-    void signed_contract(inputContract, immutable(SignedContract) s_contract) @trusted {
-        auto req = dartReadRR();
+    void signed_contract(inputContract, immutable(SignedContract) s_contract) {
+        auto inputs_req = dartReadRR();
+        CollectedSignedContract collected;
+        collected.sign_contract = s_contract;
+        collections[inputs_req.id] = collected;
 
-        // collections.put(req.id, CollectedSignedContract());
-        // collections.peek(req.id).sign_contract = cast(SignedContract) s_contract;
-        collections[req.id] = CollectedSignedContract();
-        collections[req.id].sign_contract = cast(SignedContract) s_contract;
+        if (s_contract.contract.reads !is DARTIndex[].init) {
+            auto reads_req = dartReadRR();
+            reads[reads_req.id] = inputs_req.id in collections;
+            locate(task_names.dart).send(reads_req, s_contract.contract.reads);
+        }
 
-        import std.algorithm.iteration : map;
-        import std.range;
-
-        writefln("Reguesting reads: %s", s_contract.contract.reads.map!(a => format("%(%x%)", a)).array);
-        locate(dart_task_name).send(req, s_contract.contract.reads);
-        // writefln("Reguesting inputs: %s",  s_contract.contract.inputs.map!(a => format("%(%x%)", a)).array);
-        writefln("Reguesting inputs: %s", s_contract.contract.inputs.map!(a => format("%(%x%)", a)).array);
-        locate(dart_task_name).send(req, s_contract.contract.inputs);
+        locate(task_names.dart).send(inputs_req, s_contract.contract.inputs);
     }
 
-    void recorder(dartReadRR.Response res, immutable(RecordFactory.Recorder) recorder) @safe {
+    void recorder(dartReadRR.Response res, immutable(RecordFactory.Recorder) recorder) {
         import std.range;
-        import tagion.dart.DARTBasic : dartFingerprint;
         import std.algorithm.iteration : map;
 
-        // auto collection = collections.peek(res.id);
-        auto collection = res.id in collections;
-
-        const archives = recorder[];
-        writefln("recieved fingerprints %s", archives.map!(a => format("%(%x%)", a.fingerprint)).array);
-        const s_contract = collection.sign_contract;
-        if (s_contract.contract.reads == archives.map!(a => a.fingerprint).array) {
-            collection.reads = archives.map!(a => a.toDoc).array.dup;
+        if ((res.id in reads) !is null) {
+            auto collection = *(res.id in reads);
+            scope (exit) {
+                collection = null;
+                reads.remove(res.id);
+            }
+            collection.reads ~= recorder[].map!(a => a.toDoc).array;
+            return;
         }
-        if (s_contract.contract.inputs == archives.map!(a => a.fingerprint).array) {
-            foreach (dartindex, sign, archive; zip(s_contract.contract.inputs, s_contract.signs, recorder[])) {
+        else if ((res.id in collections) !is null) {
+            auto collection = res.id in collections;
+            scope (exit) {
+                collection = null;
+                collections.remove(res.id);
+            }
+            const s_contract = collection.sign_contract;
+            immutable contract_hash = net.calcHash(s_contract.contract);
+            foreach (index, sign; zip(s_contract.contract.inputs, s_contract.signs)) {
+                const archive = find(recorder, index);
+                if (archive is null) {
+                    return;
+                }
+                if (!archive.filed.hasMember(StdNames.owner)) {
+                    return;
+                }
                 Pubkey pkey = archive.filed[StdNames.owner].get!Buffer;
-                // bool verify(const Fingerprint message, const Signature signature, const Pubkey pubkey)
-                if (!net.verify(dartFingerprint(dartindex), sign, pkey)) {
-                    writefln("Could not verify \nfingerprint %(%x%) \nsignarture %(%x%) \npkey: %(%x%)\n", dartindex, sign, pkey);
+                if (!net.verify(contract_hash, sign, pkey)) {
                     return;
                 }
             }
-            collection.inputs = archives.map!(a => a.toDoc).array.dup;
-        }
-        writefln("%s, %s", collection.inputs is Document[].init, collection.reads is Document[].init);
-        if (collection.inputs.length == 0) {
-            return;
-        }
-
-        (() @trusted => locate(tvm_task_name).send(signedContract(), cast(immutable) collection))();
-        // locate(tvm_task_name).send(signedContract(), collections.giveme(res.id));
-    }
-}
-
-private struct Queue(T) {
-    import std.container.dlist;
-
-    private struct Data {
-        uint id;
-        T payload;
-    }
-
-    private DList!Data list;
-
-    void put(uint id, T val) {
-        list.insert(Data(id, val));
-    }
-
-    immutable(T*) giveme(uint id) @trusted {
-        scope (exit) {
-            list.removeFront;
-        }
-        while (list.front.id != id && !list.empty) {
-            list.removeFront;
-        }
-
-        if (list.front.id == id) {
-            return &cast(immutable) list.front.payload;
-        }
-        assert(0, format("%s, doesn't exist in stack", id));
-    }
-
-    T peek(uint id) {
-        foreach_reverse (n; list) {
-            if (n.id == id) {
-                return n.payload;
+            collection.inputs ~= recorder[].map!(a => a.toDoc).array;
+            if (collection.inputs.length == 0) {
+                return;
             }
+
+            locate(task_names.tvm).send(signedContract(), collections.giveme(res.id));
         }
-        assert(0, format("%s, doesn't exist in stack", id));
     }
 }
 
 alias CollectorServiceHandle = ActorHandle!CollectorService;
+
+private immutable(CollectedSignedContract*) giveme(ref CollectedSignedContract[uint] aa, uint key) @trusted nothrow {
+    scope (exit) {
+        aa.remove(key);
+    }
+    CollectedSignedContract* val = key in aa;
+    return cast(immutable) val;
+}
+
+// The find funtion in dart.recorder doest not work with an immutable recorder;
+import tagion.dart.DARTBasic : DARTIndex;
+
+private const(Archive) find(const(RecordFactory.Recorder) rec, const(DARTIndex) index) @safe nothrow {
+    foreach (_archive; rec[]) {
+        if (_archive.fingerprint == index) {
+            return _archive;
+        }
+    }
+    return null;
+}

@@ -1,6 +1,6 @@
 # Contract definitions in Tagion Network
 
-A contract is defined as a [HiRPC](/document/protocols/hibon/Hash_Invarian_Remote_Procedure_Call.md)
+A contract is defined as a [HiRPC](documents/protocols/hibon/Hash_invariant_Remote_Procedure_Call.md)
 
  method
 
@@ -19,19 +19,20 @@ A contract is defined as a [HiRPC](/document/protocols/hibon/Hash_Invarian_Remot
 | ----------- | --------------- | ---------------------- | --------- |
 | `$in`       | [Buffer]()[]    | $N$ input fingerprint  |    Yes    |
 | `$read`     | [Buffer]()[]    | Fingerprints to reads  |    No     |
-| `$out`      | [Pubkey]()[]    | List of output pkeys   |    Yes    |
+| `$run`      | [Document]()    | Smart Contract         |    Yes    |
 
 
 ## The HiRPC method send to Network
 
-The network receives a contract via as parameter to a [HiRPC](/document/protocols/hibon/Hash_Invarian_Remote_Procedure_Call.md)
+The network receives a contract via as parameter to a [HiRPC](documents/protocols/hibon/Hash_invariant_Remote_Procedure_Call.md)
+
 
 ### Smart contract Method
 
-| Name     | D-Type             | Description     | 
-| -------- | ------------------ | --------------- | 
-| `method` | string             | RPC method name | 
-| `params` | [SignedContract]() | The actual      | 
+| Name     | D-Type             | Description         | Required | 
+| -------- | ------------------ | ------------------- | -------- |
+| `method` | string="submit"    | RPC method name     |   Yes    |
+| `params` | [SignedContract]() | The actual contract |   Yes    |
 
 
 

@@ -40,6 +40,7 @@ mixin TrustedConcurrency;
                 recorder.toDoc,
                 last_block ? last_block.fingerprint : Fingerprint.init,
                 bullseye,
+                int(0),
                 net);
 
         recorder_chain.append(block);

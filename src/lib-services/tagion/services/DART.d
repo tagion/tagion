@@ -21,6 +21,11 @@ import tagion.dart.Recorder;
 import tagion.dart.DARTBasic : DARTIndex;
 import tagion.hibon.Document;
 import tagion.services.messages;
+import tagion.communication.HiRPC;
+import tagion.hibon.HiBONRecord : isRecord;
+import tagion.logger.Logger;
+import tagion.services.replicator;
+import tagion.services.options : TaskNames;
 
 @safe
 struct DARTOptions {
@@ -37,9 +42,11 @@ struct DARTOptions {
 
 @safe
 struct DARTService {
-    void task(immutable(DARTOptions) opts, immutable(SecureNet) net) {
+    void task(immutable(DARTOptions) opts, immutable(ReplicatorOptions) replicator_opts, immutable(TaskNames) task_names, immutable(
+            SecureNet) net) {
         DART db;
         Exception dart_exception;
+        immutable replicator_task_name = task_names.replicator;
         db = new DART(net, opts.dart_filename);
         if (dart_exception !is null) {
             throw dart_exception;
@@ -49,6 +56,10 @@ struct DARTService {
             db.close();
         }
 
+        ReplicatorServiceHandle replicator = spawn!ReplicatorService(replicator_task_name, replicator_opts, net);
+
+        waitforChildren(Ctrl.ALIVE);
+
         void read(dartReadRR req, immutable(DARTIndex)[] fingerprints) @safe {
             RecordFactory.Recorder read_recorder = db.loads(fingerprints);
             req.respond(RecordFactory.uniqueRecorder(read_recorder));
@@ -56,29 +67,43 @@ struct DARTService {
 
         void checkRead(dartCheckReadRR req, immutable(DARTIndex)[] fingerprints) @safe {
             auto check_read = db.checkload(fingerprints);
-            req.respond(check_read);
+            (() @trusted => req.respond(cast(immutable) check_read))();
         }
 
-        // only used from the outside
-        void rim(dartRimRR req, DART.Rims rims) {
-            // empty  
+        auto hirpc = HiRPC(net);
+        auto empty_hirpc = HiRPC(null);
+        import tagion.Keywords;
+
+        void dartHiRPC(dartHiRPCRR req, Document doc) {
+            log("Received HiRPC request");
+
+            if (!doc.isRecord!(HiRPC.Sender)) {
+                import tagion.hibon.HiBONJSON;
+
+                assert(0, format("wrong request sent to dartservice. Expected HiRPC.Sender got %s", doc.toPretty));
+            }
+
+            immutable receiver = empty_hirpc.receive(doc);
+
+            assert(receiver.method.name == DART.Queries.dartRead || receiver.method.name == DART.Queries.dartBullseye || receiver
+                    .method.name == DART.Queries.dartCheckRead, "unsupported hirpc request");
+
+            Document result = db(receiver, false).toDoc;
+            req.respond(result);
         }
 
-        void modify_request(dartModifyRR req, immutable(RecordFactory.Recorder) recorder) @safe {
-            immutable eye = DARTIndex(db.modify(recorder));
-            req.respond(eye);
-        }
+        void modify(dartModify, immutable(RecordFactory.Recorder) recorder, immutable(int) epoch_number) @safe {
+            auto eye = Fingerprint(db.modify(recorder));
 
-        void modify(dartModify, immutable(RecordFactory.Recorder) recorder) @safe {
-            db.modify(recorder);
+            locate(replicator_task_name).send(SendRecorder(), recorder, eye, epoch_number);
         }
 
         void bullseye(dartBullseyeRR req) @safe {
-            immutable eye = DARTIndex(db.bullseye);
+            auto eye = Fingerprint(db.bullseye);
             req.respond(eye);
         }
 
-        run(&read, &checkRead, &modify_request, &modify, &bullseye);
+        run(&read, &checkRead, &modify, &bullseye, &dartHiRPC);
 
     }
 }

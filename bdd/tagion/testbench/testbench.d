@@ -26,10 +26,13 @@ int main(string[] args) {
     import hashgraph_swap = tagion.testbench.hashgraph_swap;
     import tvm_betterc = tagion.testbench.tvm_betterc;
     import epoch_creator = tagion.testbench.epoch_creator;
+    import collector = tagion.testbench.collector;
     import tvm_service = tagion.testbench.tvm_service;
     import transcript_service = tagion.testbench.transcript_service;
+    import replicator_service = tagion.testbench.replicator_service;
 
     alias alltools = AliasSeq!(
+            collector,
             ssl_server,
             hirpc_verifier,
             inputvalidator,
@@ -53,6 +56,7 @@ int main(string[] args) {
             epoch_creator,
             tvm_service,
             transcript_service,
+            replicator_service,
     );
     mixin doOneMain!(alltools);
     return do_main(args);
