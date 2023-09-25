@@ -14,7 +14,8 @@ We have created the initial version of the HiBON SDK along with a nodejs server 
 You can take a look at the public repo here: https://github.com/tagion/npm-hibonutil/
 
 **dartCrud check archives**
-We have implemented a new dartCRUD command that can be sent with HiRPC. This command works just like dartRead but instead of returning all the archives it returns a list of all the DARTIndexes that were not found in the database. This is very useful for ex. checking if the bills in the DART are still present seen from a wallet perspective. (
+We have implemented a new dartCRUD command that can be sent with HiRPC. This command works just like dartRead but instead of returning all the archives it returns a list of all the DARTIndexes that were not found in the database. This is very useful for ex. checking if the bills in the DART are still present seen from a wallet perspective. 
+
 # Changelog for week 37/38
 
 **Transcript Service**

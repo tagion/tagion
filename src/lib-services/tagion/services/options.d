@@ -119,6 +119,7 @@ struct Options {
         setDefault(opts);
         return opts;
     }
+
 }
 
 @safe
