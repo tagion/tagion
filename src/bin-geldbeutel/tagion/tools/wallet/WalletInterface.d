@@ -466,6 +466,7 @@ struct WalletInterface {
         bool list;
         bool sum;
         bool pay;
+        bool request;
         double amount;
         string output_filename;
     }
@@ -522,6 +523,11 @@ struct WalletInterface {
                 }
                 if (sum) {
                     sumAccount(stdout);
+                }
+                if (request) {
+                    secure_wallet.account.requested.byValue
+                        .each!(bill => secure_wallet.net.dartIndex(bill)
+                                .encodeBase64.setExtension(FileExtension.hibon).fwrite(bill));
                 }
                 if (pay) {
                     PayScript pay_script;
