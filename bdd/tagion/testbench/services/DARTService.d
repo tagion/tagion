@@ -161,13 +161,28 @@ class WriteAndReadFromDartDb {
 
             check(equal(hirpc_recorder[].map!(a => a.filed), insert_recorder[].map!(a => a.filed)), "hirpc data not the same as insertion");
 
+            Document check_read_sender = dartCheckRead(fingerprints, hirpc).toDoc;
+            handle.send(dartHiRPCRR(), check_read_sender);
+            auto read_check_tuple = receiveOnly!(dartHiRPCRR.Response, Document);
+            auto read_check = hirpc.receive(read_check_tuple[1]);
+
+            auto hirpc_check = read_check.message[Keywords.result].get!Document;
+            writefln("hirpc_check %s", hirpc_check.toPretty);
+            auto check_fingerprints = (() @trusted => cast(DARTIndex[]) hirpc_check[DARTFile.Params.fingerprints].get!(Buffer))();
+
+            check(check_fingerprints.length == 0, "should be empty");
+
         }
-        auto dummy_index = [DARTIndex([1, 2, 3, 4])];
-        Document check_read_sender = dartCheckRead(dummy_index, hirpc).toDoc;
+        auto dummy_indexes = [DARTIndex([1, 2, 3, 4]), DARTIndex([2, 3, 4, 5])];
+        Document check_read_sender = dartCheckRead(dummy_indexes, hirpc).toDoc;
         writefln("read_sender %s", check_read_sender.toPretty);
         handle.send(dartHiRPCRR(), check_read_sender);
         auto read_check_tuple = receiveOnly!(dartHiRPCRR.Response, Document);
-        writefln("CHECKREAD %s", read_check_tuple[1].toPretty);
+        auto read_check = hirpc.receive(read_check_tuple[1]);
+
+        auto hirpc_check = read_check.message[Keywords.result].get!Document;
+        auto check_fingerprints = (() @trusted => cast(DARTIndex[]) hirpc_check[DARTFile.Params.fingerprints].get!(Buffer))();
+        check(equal(check_fingerprints, dummy_indexes), "error in hirpc checkread");
 
         return result_ok;
     }
