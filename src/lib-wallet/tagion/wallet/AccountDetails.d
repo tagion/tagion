@@ -89,13 +89,8 @@ struct AccountDetails {
         return TagionCurrency(0);
     }
 
-    version (none) void add_bill(TagionBill bill) {
-        bills ~= bill;
-    }
-
     void add_bill(TagionBill bill) {
         if (bill.owner in requested) {
-            // bills~=bill;
             bills ~= requested[bill.owner];
             requested.remove(bill.owner);
 

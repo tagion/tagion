@@ -8,8 +8,10 @@ import tagion.utils.Term;
 import tagion.wallet.AccountDetails;
 import tagion.script.TagionCurrency;
 import tagion.crypto.SecureNet;
-import tagion.basic.Types : FileExtension;
+import tagion.basic.Types : FileExtension, Buffer, hasExtension;
+import tagion.basic.range : doFront;
 import std.file : exists, mkdir;
+import std.exception : ifThrown;
 import tagion.hibon.HiBONRecord : fwrite, fread, isRecord;
 import std.path;
 import std.format;
@@ -27,6 +29,10 @@ import tagion.script.common;
 import tagion.wallet.SecureWallet : check;
 import tagion.script.execute : ContractExecution;
 import tagion.script.Currency : totalAmount;
+import tagion.hibon.HiBONtoText;
+import tagion.hibon.HiBONJSON : toPretty;
+import tagion.dart.DARTBasic;
+import tagion.crypto.Types : Pubkey;
 
 //import tagion.wallet.WalletException : check;
 /**
@@ -404,6 +410,13 @@ struct WalletInterface {
 
     import tagion.script.common : TagionBill;
 
+    string showBill(in TagionBill bill) {
+        const index = secure_wallet.net.dartIndex(bill);
+        const deriver = secure_wallet.account.derivers.get(bill.owner, Buffer.init);
+        return format("dartIndex %s\nDeriver   %s\n%s",
+                secure_wallet.net.dartIndex(bill).encodeBase64, deriver.encodeBase64, bill.toPretty);
+    }
+
     string toText(const TagionBill bill, string mark = null) {
         import tagion.utils.StdTime : toText;
         import std.format;
@@ -434,6 +447,7 @@ struct WalletInterface {
                 mark = YELLOW;
             }
             writefln("%4s] %s", i, toText(bill, mark));
+            verbose("%s", showBill(bill));
         }
         fout.writeln(line);
     }
@@ -474,13 +488,30 @@ struct WalletInterface {
                     return;
                 }
                 if (force) {
-                    foreach (file; args[1 .. $]) {
-                        const doc = file.fread;
-                        const bill = secure_wallet.addBill(doc);
-                        writefln("%s", toText(bill));
-                        save_wallet = true;
-                    }
+                    foreach (arg; args[1 .. $]) {
+                        TagionBill bill;
+                        if (arg.hasExtension(FileExtension.hibon)) {
+                            bill = arg.fread!TagionBill;
+                        }
+                        if ((arg.extension.empty) && (bill is TagionBill.init)) {
+                            const index = arg.decode.ifThrown(Buffer.init);
+                            check(index is Buffer.init, format("Illegal fingerprint %s", arg));
+                            bill = secure_wallet.account.requested.get(Pubkey(index), TagionBill.init); /// Find bill by owner key     
+                            if (bill is TagionBill.init) {
+                                // Find bill by fingerprint 
+                                bill = secure_wallet.account.requested.byValue
+                                    .filter!(b => index == secure_wallet.net.dartIndex(b))
+                                    .doFront;
 
+                            }
+
+                        }
+                        if (bill !is TagionBill.init) {
+                            writefln("%s", toText(bill));
+                            verbose("%s", showBill(bill));
+                            save_wallet = true;
+                        }
+                    }
                 }
                 if (list) {
                     listAccount(stdout);
@@ -492,6 +523,7 @@ struct WalletInterface {
                 if (pay) {
                     PayScript pay_script;
                     pay_script.outputs = args[1 .. $]
+                        .filter!(file => file.hasExtension(FileExtension.hibon))
                         .map!(file => file.fread)
                         .map!(doc => TagionBill(doc))
                         .array;
@@ -505,6 +537,11 @@ struct WalletInterface {
                     pragma(msg, "can_pay ", typeof(can_pay));
                     pragma(msg, "amount_to_pay ", typeof(amount_to_pay.value));
                     check(can_pay, format("Is unable to pay the amount %10.6fTGN", amount_to_pay.value));
+                    if (verbose_switch) {
+                        foreach (bill; collect_bills) {
+                            verbose("%s\n%s", secure_wallet.net.dartIndex(bill).encodeBase64, bill.toPretty);
+                        }
+                    }
                     auto derivers = collect_bills
                         .map!(bill => bill.owner in secure_wallet.account.derivers);
 

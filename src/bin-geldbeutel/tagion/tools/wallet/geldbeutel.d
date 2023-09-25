@@ -213,6 +213,7 @@ int _main(string[] args) {
     }
     catch (Exception e) {
         writefln("%1$sError: %3$s%2$s", RED, RESET, e.msg);
+        verbose("%s", e.toString);
         return 1;
     }
     return 0;
