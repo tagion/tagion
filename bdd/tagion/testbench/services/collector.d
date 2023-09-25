@@ -53,7 +53,7 @@ TagionBill[] createBills(StdSecureNet[] bill_nets, uint amount) @safe {
 }
 
 const(DARTIndex)[] insertBills(TagionBill[] bills, ref RecordFactory.Recorder rec) @safe {
-    rec.insert(bills.map!(bill => bill.toDoc), Archive.Type.ADD);
+    rec.insert(bills, Archive.Type.ADD);
     return rec[].map!((a) => a.fingerprint).array;
 }
 
@@ -64,6 +64,7 @@ class ItWork {
     CollectorServiceHandle collector_handle;
 
     immutable(DARTIndex)[] inputs;
+    TagionBill[] input_bills;
     StdSecureNet[] input_nets;
 
     immutable SecureNet node_net;
@@ -74,7 +75,7 @@ class ItWork {
     }
 
     @Given("i have a collector service")
-    Document service() @trusted {
+    Document service() @safe {
         thisActor.task_name = "collector_tester_task";
 
         { // Start dart service
@@ -95,24 +96,20 @@ class ItWork {
 
             DART.create(opts.dart_filename, node_net);
 
-            dart_handle = spawn!DARTService(dart_service, opts, replicator_opts, "replicator",node_net);
+            dart_handle = spawn!DARTService(dart_service, opts, replicator_opts, "replicator", node_net);
             check(waitforChildren(Ctrl.ALIVE), "dart service did not alive");
         }
 
         auto record_factory = RecordFactory(node_net);
         auto insert_recorder = record_factory.recorder;
-        auto output_recorder = record_factory.recorder;
 
         input_nets = createNets(10, "input");
-        inputs ~= input_nets.createBills(100_000).insertBills(insert_recorder);
-        dart_handle.send(dartModify(),
-                (() @trusted => cast(immutable) insert_recorder)(), immutable int(0)
-        );
-        import core.time;
-        import core.thread;
-        (() @trusted => Thread.sleep(5.msecs))();
+        input_bills = input_nets.createBills(100_000);
+        input_bills.insertBills(insert_recorder);
+        inputs ~= input_bills.map!(a => node_net.dartIndex(a.toDoc)).array;
+        check(inputs !is null, "Inputs were null");
+        dart_handle.send(dartModify(), RecordFactory.uniqueRecorder(insert_recorder), immutable int(0));
 
-        // dart_handle.send(dartBullseyeRR());
         immutable collector = CollectorService(node_net, dart_service, thisActor.task_name);
         collector_handle = spawn(collector, "collector_task");
         check(waitforChildren(Ctrl.ALIVE), "CollectorService never alived");
@@ -127,16 +124,23 @@ class ItWork {
         immutable outputs = PayScript(iota(0, 10).map!(_ => TagionBill.init).array).toDoc;
         immutable contract = cast(immutable) Contract(inputs, immutable(DARTIndex[]).init, outputs);
         immutable signs = {
-            immutable(Signature)[] signs;
-            foreach (fprint; inputs) {
-                signs ~= node_net.sign(node_net.calcHash(cast(Buffer) fprint));
+            Signature[] _signs;
+            const contract_hash = node_net.calcHash(contract.toDoc);
+            foreach (net; input_nets) {
+                _signs ~= net.sign(contract_hash);
             }
-            return signs;
-        };
+            return _signs.assumeUnique;
+        }();
+        check(signs !is null, "No signatures");
 
-        // check(node_net.verify(insert_recorder[].take(1).dartFingerprint, signs()[0], node_net.pubkey));
-        immutable s_contract = cast(immutable) SignedContract(signs(), cast(immutable) contract);
-        collector_handle.send(inputContract(), s_contract);
+        immutable s_contract = immutable(SignedContract)(signs, contract);
+
+        import tagion.communication.HiRPC;
+
+        const hirpc = HiRPC(node_net);
+        immutable sender = hirpc.sendDaMonies(s_contract);
+        collector_handle.send(inputHiRPC(), hirpc.receive(sender.toDoc));
+
         return result_ok;
     }
 

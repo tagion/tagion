@@ -619,7 +619,7 @@ mixin template HiBONRecord(string CTOR = "") {
                                     basename!(this.tupleof[i])));
                         }
                     }
-                else {
+                    else {
                         enum name = default_name;
                         enum optional = false;
                     }

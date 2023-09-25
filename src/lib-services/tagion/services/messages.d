@@ -36,7 +36,6 @@ alias BeginGossip = Msg!"BeginGossip";
 // Replicator Recorder 
 alias SendRecorder = Msg!"SendRecorder";
 
-
 /*
 @safe
 struct _ContractProduct {

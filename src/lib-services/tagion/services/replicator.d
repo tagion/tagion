@@ -10,7 +10,6 @@ import tagion.dart.Recorder : RecordFactory;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.services.messages;
 
-
 @safe
 struct ReplicatorOptions {
     import tagion.utils.JSONCommon;
@@ -21,11 +20,12 @@ struct ReplicatorOptions {
     void setPrefix(string prefix) nothrow {
         import std.path : buildPath;
         import std.exception;
+
         folder_path = assumeWontThrow(buildPath(".", format("%srecorder", prefix)));
     }
+
     mixin JSONCommon;
 }
-
 
 @safe
 struct ReplicatorService {
@@ -37,11 +37,11 @@ struct ReplicatorService {
         void receiveRecorder(SendRecorder, immutable(RecordFactory.Recorder) recorder, Fingerprint bullseye, immutable(int) epoch_number) {
             auto last_block = recorder_chain.getLastBlock;
             auto block = new RecorderChainBlock(
-                recorder.toDoc,
-                last_block ? last_block.fingerprint : Fingerprint.init,
-                bullseye,
-                epoch_number,
-                net);
+                    recorder.toDoc,
+                    last_block ? last_block.fingerprint : Fingerprint.init,
+                    bullseye,
+                    epoch_number,
+                    net);
             recorder_chain.append(block);
             log.trace("Added recorder chain block with hash '%s'", block.getHash.cutHex);
         }
@@ -49,8 +49,6 @@ struct ReplicatorService {
         run(&receiveRecorder);
     }
 
-
 }
 
 alias ReplicatorServiceHandle = ActorHandle!ReplicatorService;
-

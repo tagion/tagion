@@ -154,12 +154,12 @@
         },
         "tvm_betterc": {
             "args": [
-                "i32.wast", 
+                "i32.wast"
             ], 
             "envs": {
                 "DCOMPILE" : "dmd -I$(REPOROOT)/tvm $(REPOROOT)/tvm/foundation/wasm.d -g -unittest -main",
                 "imports" : "wasm=foundation.wasm",
-                "attributes" : "@safe",
+                "attributes" : "@safe"
             },
             "stages": [
                 "tvm", "commit"
@@ -179,6 +179,14 @@
             "envs": {},
             "stages": [
                 "tvm_service", "services"
+            ],
+            "timeout": 0.0
+        },
+        "collector": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "commit", "collector", "services"
             ],
             "timeout": 0.0
         },

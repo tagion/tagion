@@ -43,8 +43,3 @@ immutable(DARTIndex) dartIndex(const(HashNet) net, const(Document) doc) {
 immutable(DARTIndex) dartIndex(T)(const(HashNet) net, T value) if (isHiBONRecord!T) {
     return net.dartIndex(value.toDoc);
 }
-
-@safe
-Fingerprint dartFingerprint(const(DARTIndex) index) {
-    return cast(Fingerprint) index;
-}

@@ -41,7 +41,8 @@ struct DARTOptions {
 
 @safe
 struct DARTService {
-    void task(immutable(DARTOptions) opts, immutable(ReplicatorOptions) replicator_opts, immutable(string) replicator_task_name, immutable(SecureNet) net) {
+    void task(immutable(DARTOptions) opts, immutable(ReplicatorOptions) replicator_opts, immutable(string) replicator_task_name, immutable(
+            SecureNet) net) {
         DART db;
         Exception dart_exception;
         db = new DART(net, opts.dart_filename);
@@ -52,13 +53,13 @@ struct DARTService {
         scope (exit) {
             db.close();
         }
-        
+
         ReplicatorServiceHandle replicator = spawn!ReplicatorService(replicator_task_name, replicator_opts, net);
 
         waitforChildren(Ctrl.ALIVE);
 
         void read(dartReadRR req, immutable(DARTIndex)[] fingerprints) @safe {
-            RecordFactory.Recorder read_recorder = db.loads(fingerprints, Archive.Type.NONE);
+            RecordFactory.Recorder read_recorder = db.loads(fingerprints);
             req.respond(RecordFactory.uniqueRecorder(read_recorder));
         }
 
@@ -76,13 +77,13 @@ struct DARTService {
 
             if (!doc.isRecord!(HiRPC.Sender)) {
                 import tagion.hibon.HiBONJSON;
+
                 assert(0, format("wrong request sent to dartservice. Expected HiRPC.Sender got %s", doc.toPretty));
             }
 
             immutable receiver = empty_hirpc.receive(doc);
 
             assert(receiver.method.name == DART.Queries.dartRead || receiver.method.name == DART.Queries.dartBullseye, "unsupported hirpc request");
-
 
             Document result = db(receiver, false).toDoc;
             req.respond(result);

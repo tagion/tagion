@@ -135,7 +135,6 @@ class WriteAndReadFromDartDb {
             auto hirpc_bullseye = hirpc_message[DARTFile.Params.bullseye].get!DARTIndex;
             check(bullseye_res[1] == hirpc_bullseye, "hirpc bullseye not the same");
 
-
             /// read the archives
             auto fingerprints = docs
                 .map!(d => supervisor_net.dartIndex(d))

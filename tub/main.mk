@@ -64,11 +64,11 @@ env-prebuild:
 # This is the HOST target platform
 #
 ifdef USEHOST
-HOST=$(USEHOST)
+HOST:=$(USEHOST)
 else
-HOST=${call join-with,-,$(GETARCH) $(GETHOSTOS) $(GETOS)}
+HOST:=${call join-with,-,$(GETARCH) $(GETHOSTOS) $(GETOS)}
 endif
-PLATFORM?=$(HOST)
+PLATFORM:=$(HOST)
 
 #
 # Platform

@@ -135,9 +135,9 @@ alias check = Check!DARTException;
     }
 
     protected enum _params = [
-            "fingerprints",
-            "bullseye",
-        ];
+        "fingerprints",
+        "bullseye",
+    ];
 
     mixin(EnumText!("Params", _params));
 
@@ -1026,7 +1026,7 @@ alias check = Check!DARTException;
         .check(modifyrecords.length <= 1 ||
                     !modifyrecords[].slide(2).map!(a => a.front.fingerprint == a.dropOne.front.fingerprint)
                         .any,
-                        "cannot have multiple operations on same fingerprint in one modify");
+                    "cannot have multiple operations on same fingerprint in one modify");
 
         auto range = rimKeyRange!undo(modifyrecords);
         immutable new_root = traverse_dart(range, blockfile.masterBlock.root_index);
