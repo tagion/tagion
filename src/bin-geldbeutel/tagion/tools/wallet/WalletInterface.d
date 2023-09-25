@@ -12,7 +12,7 @@ import tagion.basic.Types : FileExtension, Buffer, hasExtension;
 import tagion.basic.range : doFront;
 import std.file : exists, mkdir;
 import std.exception : ifThrown;
-import tagion.hibon.HiBONRecord : fwrite, fread, isRecord;
+import tagion.hibon.HiBONRecord : fwrite, fread, isRecord, isHiBONRecord;
 import std.path;
 import std.format;
 import std.algorithm;
@@ -411,11 +411,22 @@ struct WalletInterface {
 
     import tagion.script.common : TagionBill;
 
-    string showBill(in TagionBill bill) {
+    string show(in TagionBill bill) {
         const index = secure_wallet.net.dartIndex(bill);
         const deriver = secure_wallet.account.derivers.get(bill.owner, Buffer.init);
         return format("dartIndex %s\nDeriver   %s\n%s",
-                secure_wallet.net.dartIndex(bill).encodeBase64, deriver.encodeBase64, bill.toPretty);
+                index.encodeBase64, deriver.encodeBase64, bill.toPretty);
+    }
+
+    string show(const Document doc) {
+        const index = secure_wallet.net.calcHash(doc);
+        const deriver = secure_wallet.account.derivers.get(Pubkey(doc[StdNames.owner].get!Buffer), Buffer.init);
+        return format("fingerprint %s\nDeriver   %s\n%s",
+                index.encodeBase64, deriver.encodeBase64, doc.toPretty);
+    }
+
+    string show(T)(T rec) if (isHiBONRecord!T) {
+        return show(rec.toDoc);
     }
 
     string toText(const TagionBill bill, string mark = null) {
@@ -448,7 +459,7 @@ struct WalletInterface {
                 mark = YELLOW;
             }
             writefln("%4s] %s", i, toText(bill, mark));
-            verbose("%s", showBill(bill));
+            verbose("%s", show(bill));
         }
         fout.writeln(line);
     }
@@ -512,7 +523,7 @@ struct WalletInterface {
                         }
                         if (bill !is TagionBill.init) {
                             writefln("%s", toText(bill));
-                            verbose("%s", showBill(bill));
+                            verbose("%s", show(bill));
                             secure_wallet.addBill(bill);
                             save_wallet = true;
                         }
@@ -580,6 +591,8 @@ struct WalletInterface {
                     const hirpc = HiRPC(contract_net);
                     const hirpc_submit = hirpc.submit(signed_contract);
                     output_filename.fwrite(hirpc_submit);
+                    verbose("submit\n%s", show(hirpc_submit));
+
                     //                  const
                     //const nets=secure_wallet.
 

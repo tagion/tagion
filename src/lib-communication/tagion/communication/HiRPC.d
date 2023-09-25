@@ -176,7 +176,7 @@ struct HiRPC {
         static assert(Message.error.id.alignof == Message.id.alignof);
 
         @label("$sign", true) @(filter.Initialized) Signature signature; /// Signature of the message
-        @label("$pkey", true) @(filter.Initialized) Pubkey pubkey; /// Owner key of the message
+        @label("$Y", true) @(filter.Initialized) Pubkey pubkey; /// Owner key of the message
         @label("$msg") Document message; /// the HiRPC message
         @label("") immutable Type type;
 
