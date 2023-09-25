@@ -600,6 +600,10 @@ struct SecureWallet(Net : SecureNet) {
         return account.add_bill(doc);
     }
 
+    void addBill(TagionBill bill) {
+        return account.add_bill(bill);
+    }
+
     @trusted
     const(CiphDoc) getEncrDerivers() {
         DeriverState derive_state;

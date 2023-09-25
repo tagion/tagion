@@ -101,7 +101,8 @@ int _main(string[] args) {
                 "pin|x", "Pincode", &pincode,
                 "amount", "Create an payment request in tagion", &wallet_switch.amount,
                 "force", "Force input bill", &wallet_switch.force,
-                "pay", "Creates a payment contract", &wallet_switch.pay, /*
+                "pay", "Creates a payment contract", &wallet_switch.pay,
+                "dry", "Dry-run this will not save the wallet", &__dry_switch,/*
                 "port|p", format("Tagion network port : default %d", options.port), &options.port,
                 "url|u", format("Tagion url : default %s", options.addr), &options.addr,
                 "visual|g", "Visual user interface", &wallet_ui,

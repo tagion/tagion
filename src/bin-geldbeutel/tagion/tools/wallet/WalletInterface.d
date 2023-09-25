@@ -115,7 +115,7 @@ struct WalletInterface {
     void save(const bool recover_flag) {
         // secure_wallet.login(pincode);
 
-        if (secure_wallet.isLoggedin) {
+        if (secure_wallet.isLoggedin && !dry_switch) {
             verbose("Write %s", options.walletfile);
 
             options.walletfile.fwrite(secure_wallet.wallet);
@@ -494,9 +494,11 @@ struct WalletInterface {
                             bill = arg.fread!TagionBill;
                         }
                         if ((arg.extension.empty) && (bill is TagionBill.init)) {
+                            verbose("index %s", arg);
                             const index = arg.decode.ifThrown(Buffer.init);
-                            check(index is Buffer.init, format("Illegal fingerprint %s", arg));
+                            check(index !is Buffer.init, format("Illegal fingerprint %s", arg));
                             bill = secure_wallet.account.requested.get(Pubkey(index), TagionBill.init); /// Find bill by owner key     
+
                             if (bill is TagionBill.init) {
                                 // Find bill by fingerprint 
                                 bill = secure_wallet.account.requested.byValue
@@ -509,6 +511,7 @@ struct WalletInterface {
                         if (bill !is TagionBill.init) {
                             writefln("%s", toText(bill));
                             verbose("%s", showBill(bill));
+                            secure_wallet.addBill(bill);
                             save_wallet = true;
                         }
                     }
