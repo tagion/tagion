@@ -10,7 +10,7 @@ import std.exception : assumeUnique, assumeWontThrow;
 import std.json;
 import std.range : only;
 import std.conv;
-
+import std.range;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.basic.Types : FileExtension, Buffer;
@@ -18,11 +18,12 @@ import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONtoText : encodeBase64, decodeBase64;
 import std.utf : toUTF8;
 import std.encoding : BOMSeq, BOM;
-
+import tagion.hibon.HiBONRecord;
 import std.array : join;
 
 import tagion.tools.Basic;
 import tagion.tools.revision;
+import std.exception : ifThrown;
 
 mixin Main!_main;
 
@@ -37,6 +38,62 @@ const(BOMSeq) getBOM(string str) @trusted {
     return _getBOM(cast(ubyte[]) str);
 }
 
+import tagion.hibon.HiBONBase;
+
+@safe
+struct Element {
+    int type;
+    int keyPos;
+    uint keyLen;
+    uint valuePos;
+    uint dataSize;
+    uint dataPos;
+    string key;
+    mixin HiBONRecord!(q{
+            this(const(Document.Element) elm, const uint offset) {
+                 type=elm.type;
+                keyPos=elm.keyPos+offset;
+              keyLen=elm.keyLen;
+    valuePos=elm.valuePos+offset;
+                dataPos=elm.dataPos+offset;
+                dataSize=elm.dataSize;
+                key=elm.key; 
+            }
+        });
+
+}
+
+version (none) Document.Element.ErrorCode check_document(const(Document) doc, out Document error_doc) {
+    Document.Element.ErrorCode result;
+    HiBON h_error;
+    static struct ErrorElement {
+        string error_code;
+        Element element;
+        mixin HiBONRecord;
+    }
+
+    ErrorElement[] errors;
+    void error(
+            const(Document) main_doc,
+            const Document.Element.ErrorCode error_code,
+            const(Document.Element) current, const(
+            Document.Element) previous)
+    nothrow {
+        ErrorElement error_element;
+        const offset = cast(uint)(&current.data[0] - &main_doc.data[0]);
+        error_element.error_code = format("%s", error_code); //.to!string.ifThrown!Exception("<Bad error>");
+        error_element.element = Element(current, offset);
+        errors ~= error_element;
+        result = (result is result.init) ? error_code : result;
+    };
+    if (!errors.empty) {
+        auto h_error = new HiBON;
+        h_error["errors"] = errors;
+        error_doc = Document(h_error);
+    }
+    return result;
+}
+
 int _main(string[] args) {
     immutable program = args[0];
     bool version_switch;
@@ -47,6 +104,7 @@ int _main(string[] args) {
     bool pretty;
     bool base64;
     bool sample;
+    bool hibon_check;
     // bool verbose;
     string outputfilename;
     auto logo = import("logo.txt");
@@ -63,6 +121,7 @@ int _main(string[] args) {
                 "v|verbose", "Print more debug information", &__verbose_switch,
                 "o|output", "outputfilename only for stdin", &outputfilename,
                 "sample", "Produce a sample HiBON", &sample,
+                "check", "Check the hibon format", &hibon_check,
         );
     }
     catch (std.getopt.GetOptException e) {

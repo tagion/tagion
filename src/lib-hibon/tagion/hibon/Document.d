@@ -1113,7 +1113,7 @@ static assert(uint.sizeof == 4);
                 
 
                     .check(isIndex, [
-                        "Key '", key.to!string, "' is not an index", key
+                    "Key '", key.to!string, "' is not an index", key
                 ].join);
                 return LEB128.decode!uint(data[keyPos .. $]).value;
             }
@@ -1336,7 +1336,6 @@ static assert(uint.sizeof == 4);
          ErrorCode.NONE means that the element is valid
 
          +/
-        //            @nogc
         @trusted ErrorCode valid() const pure nothrow {
             enum MIN_ELEMENT_SIZE = Type.sizeof + ubyte.sizeof + char.sizeof + ubyte.sizeof;
 
