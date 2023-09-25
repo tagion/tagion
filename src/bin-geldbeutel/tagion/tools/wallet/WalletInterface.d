@@ -33,6 +33,7 @@ import tagion.hibon.HiBONtoText;
 import tagion.hibon.HiBONJSON : toPretty;
 import tagion.dart.DARTBasic;
 import tagion.crypto.Types : Pubkey;
+import tagion.communication.HiRPC;
 
 //import tagion.wallet.WalletException : check;
 /**
@@ -572,7 +573,13 @@ struct WalletInterface {
                             null,
                             pay_script.toDoc);
                     output_filename = (output_filename.empty) ? "submit".setExtension(FileExtension.hibon) : output_filename;
-                    output_filename.fwrite(signed_contract);
+                    //    output_filename.fwrite(signed_contract);
+                    const message = secure_wallet.net.calcHash(signed_contract);
+                    pragma(msg, "Message ", typeof(message));
+                    const contract_net = secure_wallet.net.derive(message);
+                    const hirpc = HiRPC(contract_net);
+                    const hirpc_submit = hirpc.submit(signed_contract);
+                    output_filename.fwrite(hirpc_submit);
                     //                  const
                     //const nets=secure_wallet.
 
