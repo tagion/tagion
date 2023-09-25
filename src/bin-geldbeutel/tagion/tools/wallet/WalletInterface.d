@@ -19,6 +19,7 @@ import std.algorithm;
 import std.range;
 import core.thread;
 import tagion.basic.Message;
+import std.string : representation;
 
 //import tagion.basic.tagionexceptions : check;
 import tagion.hibon.Document;
@@ -34,6 +35,7 @@ import tagion.hibon.HiBONJSON : toPretty;
 import tagion.dart.DARTBasic;
 import tagion.crypto.Types : Pubkey;
 import tagion.communication.HiRPC;
+import tagion.dart.DARTcrud;
 
 //import tagion.wallet.WalletException : check;
 /**
@@ -479,10 +481,12 @@ struct WalletInterface {
         bool sum;
         bool pay;
         bool request;
+        bool update;
         double amount;
         string output_filename;
     }
 
+    enum update_tag = "update";
     void operate(Switch wallet_switch, const(string[]) args) {
         if (secure_wallet.isLoggedin) {
             with (wallet_switch) {
@@ -541,6 +545,18 @@ struct WalletInterface {
                         .each!(bill => secure_wallet.net.dartIndex(bill)
                                 .encodeBase64.setExtension(FileExtension.hibon).fwrite(bill));
                 }
+                if (update) {
+                    const fingerprints = [secure_wallet.account.bills, secure_wallet.account.requested.values]
+                        .joiner
+                        .map!(bill => secure_wallet.net.dartIndex(bill))
+                        .array;
+                    const update_net = secure_wallet.net.derive(update_tag.representation);
+                    const hirpc = HiRPC(update_net);
+                    const dartread = dartRead(fingerprints, hirpc);
+                    output_filename = (output_filename.empty) ? update_tag.setExtension(FileExtension.hibon) : output_filename;
+                    output_filename.fwrite(dartread);
+
+                }
                 if (pay) {
                     PayScript pay_script;
                     pay_script.outputs = args[1 .. $]
@@ -592,7 +608,8 @@ struct WalletInterface {
                     const hirpc_submit = hirpc.submit(signed_contract);
                     output_filename.fwrite(hirpc_submit);
                     verbose("submit\n%s", show(hirpc_submit));
-
+                    secure_wallet.account.hirpcs ~= hirpc_submit.toDoc;
+                    save_wallet = true;
                     //                  const
                     //const nets=secure_wallet.
 

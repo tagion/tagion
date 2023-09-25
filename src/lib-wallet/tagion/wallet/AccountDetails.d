@@ -17,6 +17,7 @@ struct AccountDetails {
     @label("$state") Buffer derive_state;
     @label("$locked") bool[Pubkey] activated; /// locked bills
     @label("$requested") TagionBill[Pubkey] requested; /// Requested bills
+    @label("$hirpc") Document[] hirpcs; /// HiRPC request    
     import std.algorithm : map, sum, filter, any, each;
 
     bool remove_bill(Pubkey pk) {
