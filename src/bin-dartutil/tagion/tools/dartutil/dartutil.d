@@ -112,19 +112,19 @@ int _main(string[] args) {
             writeln(logo);
             defaultGetoptPrinter(
                     [
-                    // format("%s version %s", program, REVNO),
-                    "Documentation: https://tagion.org/",
-                    "",
-                    "Usage:",
-                    format("%s [<option>...] file.drt <files>", program),
-                    "",
-                    "Example synchronizing src.drt on to dst.drt",
-                    format("%s --sync src.drt dst.drt", program),
-                    "",
+                // format("%s version %s", program, REVNO),
+                "Documentation: https://tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...] file.drt <files>", program),
+                "",
+                "Example synchronizing src.drt on to dst.drt",
+                format("%s --sync src.drt dst.drt", program),
+                "",
 
-                    "<option>:",
+                "<option>:",
 
-                    ].join("\n"),
+            ].join("\n"),
                     main_args.options);
             return 0;
         }

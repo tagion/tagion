@@ -408,6 +408,7 @@ struct HiRPC {
     **/
     const(uint) generateId() @safe const {
         import rnd = tagion.utils.Random;
+
         return rnd.generateId;
     }
 
@@ -617,5 +618,3 @@ unittest {
         // writefln("recever.verified=%s", recever.verified);
     }
 }
-
-

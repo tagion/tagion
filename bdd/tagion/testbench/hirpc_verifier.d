@@ -10,6 +10,7 @@ import tagion.crypto.SecureNet;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.services.hirpc_verifier;
 import tagion.utils.pretend_safe_concurrency;
+import tagion.services.options : TaskNames;
 
 mixin Main!(_main);
 
@@ -26,7 +27,10 @@ int _main(string[] _) {
             true,
             hirpc_verifier_rejected,
     );
-    auto hirpc_verifier_handle = spawn!HiRPCVerifierService(hirpc_verifier_name, opts, hirpc_verifier_success, net);
+    TaskNames _task_names;
+    _task_names.collector = hirpc_verifier_success;
+
+    auto hirpc_verifier_handle = spawn!HiRPCVerifierService(hirpc_verifier_name, opts, cast(immutable) _task_names, net);
 
     auto hirpc_verifier_feature = automation!(hirpc_verifier);
     hirpc_verifier_feature.TheDocumentIsNotAHiRPC(hirpc_verifier_handle, hirpc_verifier_success, hirpc_verifier_rejected);

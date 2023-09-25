@@ -146,18 +146,18 @@ int _main(string[] args) {
         writeln(logo);
         defaultGetoptPrinter(
                 [
-                "Documentation: https://tagion.org/",
-                "",
-                "Usage:",
-                format("%s [<option>...] <in-file>", program),
-                "",
-                "Where:",
-                "<in-file>           Is an input file in .json or .hibon format",
-                "",
+            "Documentation: https://tagion.org/",
+            "",
+            "Usage:",
+            format("%s [<option>...] <in-file>", program),
+            "",
+            "Where:",
+            "<in-file>           Is an input file in .json or .hibon format",
+            "",
 
-                "<option>:",
+            "<option>:",
 
-                ].join("\n"),
+        ].join("\n"),
                 main_args.options);
         return 0;
     }
@@ -247,7 +247,7 @@ int _main(string[] args) {
             return 1;
         }
         switch (inputfilename.extension) {
-        case FileExtension.hibon:
+        case FileExtension.hibon, FileExtension.recchainblock:
             immutable data = assumeUnique(cast(ubyte[]) fread(inputfilename));
             const doc = Document(data);
             const error_code = doc.valid(

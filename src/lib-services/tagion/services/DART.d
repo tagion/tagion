@@ -25,6 +25,7 @@ import tagion.communication.HiRPC;
 import tagion.hibon.HiBONRecord : isRecord;
 import tagion.logger.Logger;
 import tagion.services.replicator;
+import tagion.services.options : TaskNames;
 
 @safe
 struct DARTOptions {
@@ -41,9 +42,11 @@ struct DARTOptions {
 
 @safe
 struct DARTService {
-    void task(immutable(DARTOptions) opts, immutable(ReplicatorOptions) replicator_opts, immutable(string) replicator_task_name, immutable(SecureNet) net) {
+    void task(immutable(DARTOptions) opts, immutable(ReplicatorOptions) replicator_opts, immutable(TaskNames) task_names, immutable(
+            SecureNet) net) {
         DART db;
         Exception dart_exception;
+        immutable replicator_task_name = task_names.replicator;
         db = new DART(net, opts.dart_filename);
         if (dart_exception !is null) {
             throw dart_exception;
@@ -52,13 +55,13 @@ struct DARTService {
         scope (exit) {
             db.close();
         }
-        
+
         ReplicatorServiceHandle replicator = spawn!ReplicatorService(replicator_task_name, replicator_opts, net);
 
         waitforChildren(Ctrl.ALIVE);
 
         void read(dartReadRR req, immutable(DARTIndex)[] fingerprints) @safe {
-            RecordFactory.Recorder read_recorder = db.loads(fingerprints, Archive.Type.NONE);
+            RecordFactory.Recorder read_recorder = db.loads(fingerprints);
             req.respond(RecordFactory.uniqueRecorder(read_recorder));
         }
 
@@ -76,35 +79,31 @@ struct DARTService {
 
             if (!doc.isRecord!(HiRPC.Sender)) {
                 import tagion.hibon.HiBONJSON;
+
                 assert(0, format("wrong request sent to dartservice. Expected HiRPC.Sender got %s", doc.toPretty));
             }
 
             immutable receiver = empty_hirpc.receive(doc);
 
-            assert(receiver.method.name == DART.Queries.dartRead || receiver.method.name == DART.Queries.dartBullseye, "unsupported hirpc request");
-
+            assert(receiver.method.name == DART.Queries.dartRead || receiver.method.name == DART.Queries.dartBullseye || receiver
+                    .method.name == DART.Queries.dartCheckRead, "unsupported hirpc request");
 
             Document result = db(receiver, false).toDoc;
             req.respond(result);
-            // auto result = db(receiver, false);
-            // req.respond(result.message[Keywords.result].get!Document);
         }
 
-        void modify_request(dartModifyRR req, immutable(RecordFactory.Recorder) recorder) @safe {
-            immutable eye = DARTIndex(db.modify(recorder));
-            req.respond(eye);
-        }
+        void modify(dartModify, immutable(RecordFactory.Recorder) recorder, immutable(int) epoch_number) @safe {
+            auto eye = Fingerprint(db.modify(recorder));
 
-        void modify(dartModify, immutable(RecordFactory.Recorder) recorder) @safe {
-            db.modify(recorder);
+            locate(replicator_task_name).send(SendRecorder(), recorder, eye, epoch_number);
         }
 
         void bullseye(dartBullseyeRR req) @safe {
-            immutable eye = DARTIndex(db.bullseye);
+            auto eye = Fingerprint(db.bullseye);
             req.respond(eye);
         }
 
-        run(&read, &checkRead, &modify_request, &modify, &bullseye, &dartHiRPC);
+        run(&read, &checkRead, &modify, &bullseye, &dartHiRPC);
 
     }
 }

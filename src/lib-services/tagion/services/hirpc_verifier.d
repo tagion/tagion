@@ -44,8 +44,11 @@ enum RejectReason {
 **/
 @safe
 struct HiRPCVerifierService {
-    void task(immutable(HiRPCVerifierOptions) opts, string collector_task, immutable(SecureNet) net) {
+    import tagion.services.options : TaskNames;
+
+    void task(immutable(HiRPCVerifierOptions) opts, immutable(TaskNames) task_names, immutable(SecureNet) net) {
         const hirpc = HiRPC(net);
+        immutable collector_task = task_names.collector;
 
         void reject(RejectReason reason, lazy Document doc) @safe {
             if (opts.send_rejected_hirpcs) {
@@ -66,22 +69,22 @@ struct HiRPCVerifierService {
             import tagion.dart.DART;
 
             switch (receiver.method.name) {
-                case ContractMethods.submit:
-                    if (receiver.signed is HiRPC.SignedState.VALID) {
-                        locate(collector_task).send(inputHiRPC(), receiver);
-                    }
-                    else {
-                        reject(RejectReason.notSigned, doc);
-                    }
-                    break;
-                case DART.Queries.dartRead, DART.Queries.dartBullseye:
-                    auto dart_hirpc = dartHiRPCRR();
-                    pragma(msg, "TODO(pr): relay to shell service?");
-                    // locate(dart_task_name).send(dart_hirpc, doc);
-                    break;
-                default:
-                    reject(RejectReason.invalidMethod, doc);
-                    break;
+            case ContractMethods.submit:
+                if (receiver.signed is HiRPC.SignedState.VALID) {
+                    locate(collector_task).send(inputHiRPC(), receiver);
+                }
+                else {
+                    reject(RejectReason.notSigned, doc);
+                }
+                break;
+            case DART.Queries.dartRead, DART.Queries.dartBullseye, DART.Queries.dartCheckRead:
+                auto dart_hirpc = dartHiRPCRR();
+                pragma(msg, "TODO(pr): relay to shell service?");
+                // locate(dart_task_name).send(dart_hirpc, doc);
+                break;
+            default:
+                reject(RejectReason.invalidMethod, doc);
+                break;
             }
         }
 

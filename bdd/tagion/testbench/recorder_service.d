@@ -7,7 +7,7 @@ import tagion.testbench.tools.Environment;
 import std.file;
 import std.path : buildPath;
 
-import tagion.services.replicator: ReplicatorOptions;
+import tagion.services.replicator : ReplicatorOptions;
 
 mixin Main!(_main);
 

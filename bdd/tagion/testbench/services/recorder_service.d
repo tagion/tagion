@@ -63,7 +63,6 @@ class StoreOfTheRecorderChain {
         replicator_net.generateKeyPair("recordernet very secret");
         gen = Mt19937(4321);
     }
-    
 
     @Given("a epoch recorder with epoch number has been received")
     Document received() {
@@ -72,7 +71,6 @@ class StoreOfTheRecorderChain {
         handle = (() @trusted => spawn!ReplicatorService("ReplicatorService", replicator_opts, cast(immutable) replicator_net))();
         waitforChildren(Ctrl.ALIVE);
 
-
         random_archives = RandomArchives(gen.front, 4, 10);
         insert_recorder = record_factory.recorder;
         docs = (() @trusted => cast(Document[]) random_archives.values.map!(a => SimpleDoc(a).toDoc).array)();
@@ -80,14 +78,14 @@ class StoreOfTheRecorderChain {
         insert_recorder.insert(docs, Archive.Type.ADD);
         auto send_recorder = SendRecorder();
 
-        Fingerprint dummy_bullseye = Fingerprint([1,2,3,4]);
-        block = new RecorderChainBlock(insert_recorder.toDoc, Fingerprint.init, dummy_bullseye,0, replicator_net);
-
+        Fingerprint dummy_bullseye = Fingerprint([1, 2, 3, 4]);
+        block = new RecorderChainBlock(insert_recorder.toDoc, Fingerprint.init, dummy_bullseye, 0, replicator_net);
 
         (() @trusted => handle.send(send_recorder, cast(immutable) insert_recorder, dummy_bullseye, immutable int(0)))();
 
         import core.thread;
         import core.time;
+
         (() @trusted => Thread.sleep(5.msecs))();
 
         return result_ok;

@@ -191,7 +191,7 @@ static assert(uint.sizeof == 4);
      Returns:
      Number of members in in the Document
      +/
-    @property uint length() const {
+    @property uint length() const pure {
         return cast(uint)(this[].walkLength);
     }
 
@@ -377,7 +377,7 @@ static assert(uint.sizeof == 4);
      Returns:
      Is true if all the keys in ordred numbers
      +/
-    bool isArray() const nothrow {
+    bool isArray() const nothrow pure {
         return .isArray(keys);
     }
 
@@ -653,8 +653,6 @@ static assert(uint.sizeof == 4);
     }
 
     unittest {
-        import std.algorithm.sorting : isSorted;
-
         auto buffer = new ubyte[0x200];
 
         size_t index;
