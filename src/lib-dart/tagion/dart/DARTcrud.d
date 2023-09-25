@@ -9,7 +9,7 @@ import tagion.hibon.HiBON : HiBON;
 import tagion.dart.DART : DART;
 import tagion.dart.Recorder;
 import tagion.dart.DARTBasic : DARTIndex;
-
+import tagion.basic.Types : Buffer, isBufferType;
 /**
        * Constructs a HiRPC method for dartRead 
        * Params:
@@ -33,14 +33,13 @@ const(HiRPC.Sender) dartRead(Range)(
 const(HiRPC.Sender) dartCheckRead(Range)(
         Range fingerprints,
         HiRPC hirpc = HiRPC(null),
-        uint id = 0) @safe if (isInputRange!Range && isBufferType!(ElementType!Range)) {
+        uint id = 0) @safe if (isInputRange!Range && is(ElementType!Range : const(DARTIndex))) {
 
     auto params = new HiBON;
     auto params_fingerprints = new HiBON;
     params_fingerprints = fingerprints.filter!(b => b.length !is 0);
     params[DART.Params.fingerprints] = params_fingerprints;
     return hirpc.dartCheckRead(params, id);
-
 }
 
 /**

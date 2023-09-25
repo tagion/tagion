@@ -28,7 +28,7 @@ import tagion.hibon.HiBONRecord;
 import tagion.basic.Types;
 import tagion.crypto.Types;
 import tagion.communication.HiRPC;
-import tagion.dart.DARTcrud : dartRead, dartBullseye;
+import tagion.dart.DARTcrud : dartRead, dartBullseye, dartCheckRead;
 import tagion.dart.DARTFile : DARTFile;
 import tagion.hibon.HiBONJSON;
 import tagion.Keywords;
@@ -159,7 +159,16 @@ class WriteAndReadFromDartDb {
 
             check(equal(hirpc_recorder[].map!(a => a.filed), insert_recorder[].map!(a => a.filed)), "hirpc data not the same as insertion");
 
+
+
+
         }
+        auto dummy_index = [DARTIndex([1,2,3,4])];
+        Document check_read_sender = dartCheckRead(dummy_index, hirpc).toDoc;
+        writefln("read_sender %s", check_read_sender.toPretty);
+        handle.send(dartHiRPCRR(), check_read_sender);
+        auto read_check_tuple = receiveOnly!(dartHiRPCRR.Response, Document);
+        writefln("CHECKREAD %s", read_check_tuple[1].toPretty);
 
         return result_ok;
     }

@@ -821,7 +821,6 @@ alias check = Check!DARTException;
         return result;
     }
 
-    // DARTIndex[] checkload(Range)(Range fingerprints)
     DARTIndex[] checkload(Range)(Range fingerprints) if (isInputRange!Range && isBufferType!(ElementType!Range)) {
         import std.algorithm : canFind;
         import std.exception : assumeUnique;
