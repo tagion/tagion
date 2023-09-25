@@ -129,16 +129,16 @@ int _main(string[] args) {
         //            writeln(logo);
         defaultGetoptPrinter(
                 [
-                // format("%s version %s", program, REVNO),
-                "Documentation: https://tagion.org/",
-                "",
-                "Usage:",
-                format("%s [<option>...] <config.json> <files>", program),
-                "",
+            // format("%s version %s", program, REVNO),
+            "Documentation: https://tagion.org/",
+            "",
+            "Usage:",
+            format("%s [<option>...] <config.json> <files>", program),
+            "",
 
-                "<option>:",
+            "<option>:",
 
-                ].join("\n"),
+        ].join("\n"),
                 main_args.options);
         return 0;
     }
@@ -216,4 +216,65 @@ int _main(string[] args) {
         return 1;
     }
     return 0;
+}
+
+pragma(msg, "remove trusted when nng is safe");
+void sendHiRPC(Document doc) @trusted {
+    import nngd;
+    import core.time;
+    import core.thread;
+    import tagion.hibon.HiBONJSON;
+    import std.exception;
+    import tagion.hibon.Document;
+
+    void checkSocketError(int rc) {
+        if (rc != 0) {
+            import std.format;
+            throw new Exception(format("Failed to dial %s", nng_errstr(rc)));
+        }
+
+    }
+
+    string dummy_send = "abstract://Node_0_NEUEWELLE_CONTRACT";
+
+    NNGSocket send_sock = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
+    rc = send_sock.dial(dummy_send);
+    send_sock.sendtimeout = 1000.msecs;
+    send_sock.sendbuf = 4096;
+    checkSocketError(rc);
+
+    auto send_doc = doc.serialize;
+    rc = sock.send(send_doc);
+    checkSocketError(rc);
+
+    string dummy_receive = "abstract://OUT_Node_1_NEUEWELLE_CONTRACT";
+    NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_PULL);
+
+    const listening = s.listen(dummy_receive);
+    if (listening == 0) {
+        writefln("listening on addr: %s", dummy_receive);
+    }
+
+    ReceiveBuffer buf;
+    while (true) {
+        Thread.sleep(1.msecs);
+        
+        auto result = buf.append(recv);
+        if (s.m_errno != nng_errno.NNG_OK) {
+            writefln(format("rejected %s, %s", "NNG_ERRNO", s.m_errno);
+            continue;
+        }
+        if (result.data.length <= 0) {
+            writefln("rejected %s %s", "invalid_buf", result.size);
+            continue;
+        }
+
+        Document doc = Document(assumeUnique(result.data));
+        assert(doc.isInorder);
+
+        writefln(doc.toPretty);
+
+    }
+
+
 }

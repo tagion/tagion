@@ -23,6 +23,7 @@ import tagion.services.inputvalidator;
 import tagion.services.hirpc_verifier;
 import tagion.services.epoch_creator;
 import tagion.services.collector;
+import tagion.services.output;
 
 @safe
 struct Supervisor {
@@ -42,7 +43,10 @@ struct Supervisor {
 
         auto hirpc_verifier_handle = spawn!HiRPCVerifierService(tn.hirpc_verifier, opts.hirpc_verifier, tn, net);
 
+        auto output_handle = spawn!OutputService(tn.output, opts.output);
+
         auto inputvalidator_handle = spawn!InputValidatorService(tn.inputvalidator, opts.inputvalidator, tn);
+
 
         auto epoch_creator_handle = spawn!EpochCreatorService(tn.epoch_creator, opts.epoch_creator, opts.wave
                 .network_mode, opts.wave.number_of_nodes, net, opts.monitor);
@@ -50,7 +54,7 @@ struct Supervisor {
         immutable collector_service = CollectorService(net, tn);
         auto collector_handle = spawn(collector_service, tn.collector);
 
-        auto services = tuple(dart_handle, hirpc_verifier_handle, inputvalidator_handle, epoch_creator_handle, collector_handle);
+        auto services = tuple(dart_handle, hirpc_verifier_handle, inputvalidator_handle, output_handle, epoch_creator_handle, collector_handle);
 
         if (waitforChildren(Ctrl.ALIVE, 5.seconds)) {
             run(failHandler);

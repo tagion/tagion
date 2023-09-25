@@ -45,15 +45,17 @@ struct OutputService {
             }
 
         }
-        NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
-        int rc = sock.dial(opts.out_sock_addr);
-        sock.sendtimeout = opts.socket_timeout.msecs;
-        sock.sendbuf = opts.socket_max_buf;
-        checkSocketError(rc);
-
 
         pragma(msg, "remove trusted when nng is safe");
         void push(HiRPCOutput, Document doc) @trusted {
+            int rc;
+
+            NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
+            rc = sock.dial(opts.out_sock_addr);
+            sock.sendtimeout = opts.socket_timeout.msecs;
+            sock.sendbuf = opts.socket_max_buf;
+            checkSocketError(rc);
+
             auto send_doc = doc.serialize;
             rc = sock.send(send_doc);
             checkSocketError(rc);
@@ -62,6 +64,5 @@ struct OutputService {
 
         run(&push);
     }
-
-
 }
+alias OutputServiceHandle = ActorHandle!OutputService;
