@@ -17,6 +17,7 @@ struct AccountDetails {
     @label("$state") Buffer derive_state;
     @label("$locked") bool[Pubkey] activated; /// locked bills
     @label("$requested") TagionBill[Pubkey] requested; /// Requested bills
+    @label("$hirpc") Document[] hirpcs; /// HiRPC request    
     import std.algorithm : map, sum, filter, any, each;
 
     bool remove_bill(Pubkey pk) {
@@ -89,13 +90,8 @@ struct AccountDetails {
         return TagionCurrency(0);
     }
 
-    version (none) void add_bill(TagionBill bill) {
-        bills ~= bill;
-    }
-
     void add_bill(TagionBill bill) {
         if (bill.owner in requested) {
-            // bills~=bill;
             bills ~= requested[bill.owner];
             requested.remove(bill.owner);
 

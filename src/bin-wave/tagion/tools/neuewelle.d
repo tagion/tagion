@@ -86,11 +86,14 @@ int _main(string[] args) {
     sigaction(SIGINT, &sa, null);
 
     bool version_switch;
+    bool override_switch;
+
     auto config_file = "tagionwave.json";
     scope Options local_options = Options.defaultOptions;
 
     auto main_args = getopt(args,
-            "v|version", "Print revision information", &version_switch
+            "v|version", "Print revision information", &version_switch,
+            "O|override", "Override the config file", &override_switch,
     );
 
     if (main_args.helpWanted) {
@@ -103,6 +106,15 @@ int _main(string[] args) {
 
     if (version_switch) {
         revision_text.writeln;
+        return 0;
+    }
+
+    if (override_switch) {
+        if (args.length == 2) {
+            config_file = args[1];
+        }
+        local_options.save(config_file);
+        writefln("Configure file written to %s", config_file);
         return 0;
     }
 

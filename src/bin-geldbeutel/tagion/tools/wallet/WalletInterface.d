@@ -8,15 +8,18 @@ import tagion.utils.Term;
 import tagion.wallet.AccountDetails;
 import tagion.script.TagionCurrency;
 import tagion.crypto.SecureNet;
-import tagion.basic.Types : FileExtension;
+import tagion.basic.Types : FileExtension, Buffer, hasExtension;
+import tagion.basic.range : doFront;
 import std.file : exists, mkdir;
-import tagion.hibon.HiBONRecord : fwrite, fread, isRecord;
+import std.exception : ifThrown;
+import tagion.hibon.HiBONRecord : fwrite, fread, isRecord, isHiBONRecord;
 import std.path;
 import std.format;
 import std.algorithm;
 import std.range;
 import core.thread;
 import tagion.basic.Message;
+import std.string : representation;
 
 //import tagion.basic.tagionexceptions : check;
 import tagion.hibon.Document;
@@ -27,6 +30,12 @@ import tagion.script.common;
 import tagion.wallet.SecureWallet : check;
 import tagion.script.execute : ContractExecution;
 import tagion.script.Currency : totalAmount;
+import tagion.hibon.HiBONtoText;
+import tagion.hibon.HiBONJSON : toPretty;
+import tagion.dart.DARTBasic;
+import tagion.crypto.Types : Pubkey;
+import tagion.communication.HiRPC;
+import tagion.dart.DARTcrud;
 
 //import tagion.wallet.WalletException : check;
 /**
@@ -109,7 +118,7 @@ struct WalletInterface {
     void save(const bool recover_flag) {
         // secure_wallet.login(pincode);
 
-        if (secure_wallet.isLoggedin) {
+        if (secure_wallet.isLoggedin && !dry_switch) {
             verbose("Write %s", options.walletfile);
 
             options.walletfile.fwrite(secure_wallet.wallet);
@@ -404,6 +413,24 @@ struct WalletInterface {
 
     import tagion.script.common : TagionBill;
 
+    string show(in TagionBill bill) {
+        const index = secure_wallet.net.dartIndex(bill);
+        const deriver = secure_wallet.account.derivers.get(bill.owner, Buffer.init);
+        return format("dartIndex %s\nDeriver   %s\n%s",
+                index.encodeBase64, deriver.encodeBase64, bill.toPretty);
+    }
+
+    string show(const Document doc) {
+        const index = secure_wallet.net.calcHash(doc);
+        const deriver = secure_wallet.account.derivers.get(Pubkey(doc[StdNames.owner].get!Buffer), Buffer.init);
+        return format("fingerprint %s\nDeriver   %s\n%s",
+                index.encodeBase64, deriver.encodeBase64, doc.toPretty);
+    }
+
+    string show(T)(T rec) if (isHiBONRecord!T) {
+        return show(rec.toDoc);
+    }
+
     string toText(const TagionBill bill, string mark = null) {
         import tagion.utils.StdTime : toText;
         import std.format;
@@ -434,6 +461,7 @@ struct WalletInterface {
                 mark = YELLOW;
             }
             writefln("%4s] %s", i, toText(bill, mark));
+            verbose("%s", show(bill));
         }
         fout.writeln(line);
     }
@@ -452,10 +480,13 @@ struct WalletInterface {
         bool list;
         bool sum;
         bool pay;
+        bool request;
+        bool update;
         double amount;
         string output_filename;
     }
 
+    enum update_tag = "update";
     void operate(Switch wallet_switch, const(string[]) args) {
         if (secure_wallet.isLoggedin) {
             with (wallet_switch) {
@@ -474,13 +505,33 @@ struct WalletInterface {
                     return;
                 }
                 if (force) {
-                    foreach (file; args[1 .. $]) {
-                        const doc = file.fread;
-                        const bill = secure_wallet.addBill(doc);
-                        writefln("%s", toText(bill));
-                        save_wallet = true;
-                    }
+                    foreach (arg; args[1 .. $]) {
+                        TagionBill bill;
+                        if (arg.hasExtension(FileExtension.hibon)) {
+                            bill = arg.fread!TagionBill;
+                        }
+                        if ((arg.extension.empty) && (bill is TagionBill.init)) {
+                            verbose("index %s", arg);
+                            const index = arg.decode.ifThrown(Buffer.init);
+                            check(index !is Buffer.init, format("Illegal fingerprint %s", arg));
+                            bill = secure_wallet.account.requested.get(Pubkey(index), TagionBill.init); /// Find bill by owner key     
 
+                            if (bill is TagionBill.init) {
+                                // Find bill by fingerprint 
+                                bill = secure_wallet.account.requested.byValue
+                                    .filter!(b => index == secure_wallet.net.dartIndex(b))
+                                    .doFront;
+
+                            }
+
+                        }
+                        if (bill !is TagionBill.init) {
+                            writefln("%s", toText(bill));
+                            verbose("%s", show(bill));
+                            secure_wallet.addBill(bill);
+                            save_wallet = true;
+                        }
+                    }
                 }
                 if (list) {
                     listAccount(stdout);
@@ -489,9 +540,27 @@ struct WalletInterface {
                 if (sum) {
                     sumAccount(stdout);
                 }
+                if (request) {
+                    secure_wallet.account.requested.byValue
+                        .each!(bill => secure_wallet.net.dartIndex(bill)
+                                .encodeBase64.setExtension(FileExtension.hibon).fwrite(bill));
+                }
+                if (update) {
+                    const fingerprints = [secure_wallet.account.bills, secure_wallet.account.requested.values]
+                        .joiner
+                        .map!(bill => secure_wallet.net.dartIndex(bill))
+                        .array;
+                    const update_net = secure_wallet.net.derive(update_tag.representation);
+                    const hirpc = HiRPC(update_net);
+                    const dartread = dartRead(fingerprints, hirpc);
+                    output_filename = (output_filename.empty) ? update_tag.setExtension(FileExtension.hibon) : output_filename;
+                    output_filename.fwrite(dartread);
+
+                }
                 if (pay) {
                     PayScript pay_script;
                     pay_script.outputs = args[1 .. $]
+                        .filter!(file => file.hasExtension(FileExtension.hibon))
                         .map!(file => file.fread)
                         .map!(doc => TagionBill(doc))
                         .array;
@@ -505,6 +574,11 @@ struct WalletInterface {
                     pragma(msg, "can_pay ", typeof(can_pay));
                     pragma(msg, "amount_to_pay ", typeof(amount_to_pay.value));
                     check(can_pay, format("Is unable to pay the amount %10.6fTGN", amount_to_pay.value));
+                    if (verbose_switch) {
+                        foreach (bill; collect_bills) {
+                            verbose("%s\n%s", secure_wallet.net.dartIndex(bill).encodeBase64, bill.toPretty);
+                        }
+                    }
                     auto derivers = collect_bills
                         .map!(bill => bill.owner in secure_wallet.account.derivers);
 
@@ -526,7 +600,16 @@ struct WalletInterface {
                             null,
                             pay_script.toDoc);
                     output_filename = (output_filename.empty) ? "submit".setExtension(FileExtension.hibon) : output_filename;
-                    output_filename.fwrite(signed_contract);
+                    //    output_filename.fwrite(signed_contract);
+                    const message = secure_wallet.net.calcHash(signed_contract);
+                    pragma(msg, "Message ", typeof(message));
+                    const contract_net = secure_wallet.net.derive(message);
+                    const hirpc = HiRPC(contract_net);
+                    const hirpc_submit = hirpc.submit(signed_contract);
+                    output_filename.fwrite(hirpc_submit);
+                    verbose("submit\n%s", show(hirpc_submit));
+                    secure_wallet.account.hirpcs ~= hirpc_submit.toDoc;
+                    save_wallet = true;
                     //                  const
                     //const nets=secure_wallet.
 

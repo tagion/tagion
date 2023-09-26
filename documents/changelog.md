@@ -1,3 +1,21 @@
+# Changelog for week 38/39
+**Replicator Service**
+The replicator service is finished. This service is responsible for saving a chain of the added and removed archives in the DART. This is both used for replaying the DART in case the nodes cannot reach consensus, and for a backup of the database allowing the node to recover from fatal catastrophes.
+**Recorder Chain**
+The Recorder Chain has been updated to include new data such as the epoch number. This is the chain that is used in the Replicator Service. The recorderchain util has also been updated allowing you to replay a DART.
+The data stored is the following.
+Fingerprint - the fingerprint of the block.
+Bullseye - the bullsye of what the database should look like when the following recorder is added.
+Epoch number - the epoch number which is correlated with the bullseye. This is important for also making the hash of the block unique.
+Previous Fingerprint - A hash pointer to the previous block's fingerprint.
+Recorder - The entire recorder that was inserted in the modify command to the dart containing all Adds and Removes of archives.
+**HiBON Service**
+We have created the initial version of the HiBON SDK along with a nodejs server which you can go use now. This allows you to use the HiBON format in nodejs to convert from HiBONJSON to HiBON.
+You can take a look at the public repo here: https://github.com/tagion/npm-hibonutil/
+
+**dartCrud check archives**
+We have implemented a new dartCRUD command that can be sent with HiRPC. This command works just like dartRead but instead of returning all the archives it returns a list of all the DARTIndexes that were not found in the database. This is very useful for ex. checking if the bills in the DART are still present seen from a wallet perspective. 
+
 # Changelog for week 37/38
 
 **Transcript Service**
