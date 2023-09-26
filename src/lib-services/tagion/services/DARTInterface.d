@@ -67,11 +67,11 @@ struct DARTInterfaceService {
         sock.recvtimeout = 1000.msecs;
         sock.sendbuf = opts.sendbuf;
 
-        // NNGPool pool = NNGPool(&sock, &dartHiRPCCallback, ulong(4));
-        // scope(exit) {
-        //     pool.shutdown();
-        // }
-        // pool.init();
+        NNGPool pool = NNGPool(&sock, cast(void function(NNGMessage*)) &dartHiRPCCallback, ulong(4));
+        scope(exit) {
+            pool.shutdown();
+        }
+        pool.init();
         auto rc = sock.listen(opts.sock_addr);
         checkSocketError(rc);
 

@@ -44,7 +44,6 @@ struct Supervisor {
 
         auto hirpc_verifier_handle = spawn!HiRPCVerifierService(tn.hirpc_verifier, opts.hirpc_verifier, tn, net);
 
-        auto output_handle = spawn!OutputService(tn.output, opts.output);
 
         auto inputvalidator_handle = spawn!InputValidatorService(tn.inputvalidator, opts.inputvalidator, tn);
 
@@ -55,7 +54,7 @@ struct Supervisor {
         auto collector_handle = spawn(immutable(CollectorService)(net, tn), tn.collector);
         auto tvm_handle = spawn(immutable(TVMService)(opts.tvm, tn), tn.tvm);
 
-        auto services = tuple(dart_handle, hirpc_verifier_handle, inputvalidator_handle, output_handle, epoch_creator_handle, collector_handle, tvm_handle);
+        auto services = tuple(dart_handle, hirpc_verifier_handle, inputvalidator_handle, epoch_creator_handle, collector_handle, tvm_handle);
 
         if (waitforChildren(Ctrl.ALIVE, 5.seconds)) {
             run(failHandler);
