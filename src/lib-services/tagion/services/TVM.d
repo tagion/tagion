@@ -90,25 +90,42 @@ unittest {
     import tagion.basic.Types : Buffer;
     import std.algorithm.iteration : map;
 
-    const in_bills = iota(0, 10).map!(_ => TagionBill(TGN(100), sdt_t.init, Pubkey.init, Buffer.init).toDoc).array;
+    const in_bills = iota(0, 10).map!(_ => TagionBill(TGN(100), sdt_t.init, Pubkey.init, Buffer.init)).array;
     const out_bills = iota(0, 10).map!(_ => TagionBill(TGN(50), sdt_t.init, Pubkey.init, Buffer.init)).array;
-    auto collected = new CollectedSignedContract();
-    collected.inputs ~= in_bills;
-    collected.sign_contract.contract.script = PayScript(out_bills).toDoc;
 
-    tvm_service.contract(signedContract(), cast(immutable) collected);
-    collected = null;
+    { /// Positive test
+        auto collected = new CollectedSignedContract();
+        collected.inputs ~= in_bills.map!(a => a.toDoc).array;
+        collected.sign_contract.contract.script = PayScript(out_bills).toDoc;
 
-    const received1 = receiveTimeout(
-            Duration.zero,
-            (Payload _, const(Document) __) {}
-    );
-    assert(received1, "Did not receive collected Payload");
+        tvm_service.contract(signedContract(), cast(immutable) collected);
+        collected = null;
 
-    const received2 = receiveTimeout(
-            Duration.zero,
-            (producedContract _, immutable(ContractProduct)* __) {}
-    );
-    assert(received2, "Did not receive collected signedContract *");
+        const received1 = receiveTimeout(
+                Duration.zero,
+                (Payload _, const(Document) __) {}
+        );
+        assert(received1, "Did not receive collected Payload");
 
+        const received2 = receiveTimeout(
+                Duration.zero,
+                (producedContract _, immutable(ContractProduct)* __) {}
+        );
+        assert(received2, "Did not receive collected signedContract *");
+    }
+
+    { // False test
+        auto collected = new CollectedSignedContract();
+        collected.inputs ~= out_bills.map!(a => a.toDoc).array;
+        collected.sign_contract.contract.script = PayScript(in_bills).toDoc;
+        tvm_service.contract(signedContract(), cast(immutable) collected);
+        collected = null;
+
+        const received = receiveTimeout(
+                Duration.zero,
+                (Payload _, const(Document) __) {},
+                (producedContract _, immutable(ContractProduct)* __) {},
+        );
+        assert(!received, "The tvm should send a contract where the output bills are greater than the input");
+    }
 }
