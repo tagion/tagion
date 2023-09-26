@@ -1,4 +1,4 @@
-module kdf.pbkdf2;
+module tagion.pbkdf2.pbkdf2;
 
 import std.digest.sha : SHA1;
 static if (__VERSION__ >= 2080) import std.digest : isDigest, digestLength;
