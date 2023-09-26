@@ -84,7 +84,7 @@ int _main(string[] args) {
                 "o|output", "Output filename", &wallet_switch.output_filename,
                 "l|list", "List wallet content", &wallet_switch.list, //"questions", "Questions for wallet creation", &questions_str,
                 "s|sum", "Sum of the wallet", &wallet_switch.sum, //"questions", "Questions for wallet creation", &questions_str,
-                //"answers", "Answers for wallet creation", &answers_str,
+                "send", "Send a contract to the network", &wallet_switch.send,//"answers", "Answers for wallet creation", &answers_str,
                 /*
                 "path", format("Set the path for the wallet files : default %s", path), &path,
                 "wallet", format("Wallet file : default %s", options.walletfile), &options.walletfile,
@@ -93,7 +93,6 @@ int _main(string[] args) {
                 "invoice|i", format("Invoice file : default %s", invoicefile), &invoicefile,
                 "create-invoice|c", "Create invoice by format LABEL:PRICE. Example: Foreign_invoice:1000", &create_invoice_command,
                 "contract|t", format("Contractfile : default %s", options.contractfile), &options.contractfile,
-                "send|s", "Send contract to the network", &send_flag,
                 "amount", "Display the wallet amount", &print_amount,
                 "pay|I", format("Invoice to be payed : default %s", payfile), &payfile,
                 "update|U", "Update your wallet", &update_wallet,
@@ -105,7 +104,7 @@ int _main(string[] args) {
                 "pay", "Creates a payment contract", &wallet_switch.pay,
                 "dry", "Dry-run this will not save the wallet", &__dry_switch,
                 "req", "List all requested bills", &wallet_switch.request,
-                "update", "Request a wallet updated", &wallet_switch.update,/*
+                "update", "Request a wallet updated", &wallet_switch.update, /*
                 "port|p", format("Tagion network port : default %d", options.port), &options.port,
                 "url|u", format("Tagion url : default %s", options.addr), &options.addr,
                 "visual|g", "Visual user interface", &wallet_ui,
@@ -221,70 +220,4 @@ int _main(string[] args) {
         return 1;
     }
     return 0;
-}
-
-pragma(msg, "remove trusted when nng is safe");
-void sendHiRPC(Document doc) @trusted {
-    import nngd;
-    import core.time;
-    import core.thread;
-    import tagion.hibon.HiBONJSON;
-    import std.exception;
-    import tagion.hibon.Document;
-
-    void checkSocketError(int rc) {
-        if (rc != 0) {
-            import std.format;
-            throw new Exception(format("Failed to dial %s", nng_errstr(rc)));
-        }
-
-    }
-    int rc;
-
-    string dummy_send = "abstract://Node_0_NEUEWELLE_CONTRACT";
-
-    NNGSocket send_sock = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
-    rc = send_sock.dial(dummy_send);
-    send_sock.sendtimeout = 1000.msecs;
-    send_sock.sendbuf = 4096;
-    checkSocketError(rc);
-
-    auto send_doc = doc.serialize;
-    rc = send_sock.send(send_doc);
-    checkSocketError(rc);
-
-    string dummy_receive = "abstract://OUT_Node_1_NEUEWELLE_CONTRACT";
-    NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_PULL);
-    const recv = (scope void[] b) @trusted {
-        size_t ret = s.receivebuf(cast(ubyte[]) b);
-        return (ret < 0) ? 0 : cast(ptrdiff_t) ret;
-    };
-
-    const listening = s.listen(dummy_receive);
-    if (listening == 0) {
-        writefln("listening on addr: %s", dummy_receive);
-    }
-
-    ReceiveBuffer buf;
-    while (true) {
-        Thread.sleep(1.msecs);
-        
-        auto result = buf.append(recv);
-        if (s.m_errno != nng_errno.NNG_OK) {
-            writefln(format("rejected %s, %s", "NNG_ERRNO", s.m_errno));
-            continue;
-        }
-        if (result.data.length <= 0) {
-            writefln("rejected %s %s", "invalid_buf", result.size);
-            continue;
-        }
-
-        Document received_doc = Document(assumeUnique(result.data));
-        assert(doc.isInorder);
-
-        writefln(received_doc.toPretty);
-
-    }
-
-
 }
