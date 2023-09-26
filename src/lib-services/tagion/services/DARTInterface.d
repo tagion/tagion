@@ -30,6 +30,7 @@ import tagion.utils.pretend_safe_concurrency;
 import tagion.logger.Logger;
 import tagion.services.messages;
 import tagion.hibon.Document;
+import tagion.hibon.HiBONRecord : isRecord;
 import tagion.services.options;
 import nngd;
 
@@ -37,22 +38,31 @@ import core.time;
 
 
 
+void dartHiRPCCallback(NNGMessage *msg) @trusted {
+    thisActor.task_name = format("%s", thisTid);
+    log.register(thisActor.task_name);
+
+    import tagion.hibon.HiBONJSON : toPretty;
+    import tagion.communication.HiRPC;
+    Document doc = msg.body_trim!(immutable(ubyte[]))(msg.length);
+    msg.clear();
+    log("Kernel got: %s", doc.toPretty);
+    if (!doc.isRecord!(HiRPC.Sender)) {
+        return;
+    }
+    locate(TaskNames().dart).send(dartHiRPCRR(), doc);
+    auto dart_resp = receiveOnly!(dartHiRPCRR.Response, Document);
+        
+    msg.body_append(dart_resp[1].serialize);
+}
+
+
 @safe 
 struct DARTInterfaceService {
+    immutable(DARTInterfaceOptions) opts;
+    immutable(TaskNames) task_names;
 
-    void task(immutable(DARTInterfaceOptions) opts, immutable(TaskNames) task_names) @trusted {
-
-        void dartHiRPCCallback(NNGMessage *msg) @trusted {
-            import tagion.hibon.HiBONJSON : toPretty;
-            Document doc = msg.body_trim!(immutable(ubyte[]))(msg.length);
-            log("Kernel got: %s", doc.toPretty);
-            msg.clear();
-
-            locate(task_names.dart).send(dartHiRPCRR(), doc);
-            auto dart_resp = receiveOnly!(dartHiRPCRR.Response, Document);
-
-            msg.body_append(dart_resp[1].serialize);
-        }
+    void task() @trusted {
 
         void checkSocketError(int rc) {
             if (rc != 0) {
@@ -67,14 +77,13 @@ struct DARTInterfaceService {
         sock.recvtimeout = 1000.msecs;
         sock.sendbuf = opts.sendbuf;
 
-        NNGPool pool = NNGPool(&sock, cast(void function(NNGMessage*)) &dartHiRPCCallback, ulong(4));
+        NNGPool pool = NNGPool(&sock, &dartHiRPCCallback, 4);
         scope(exit) {
             pool.shutdown();
         }
         pool.init();
         auto rc = sock.listen(opts.sock_addr);
         checkSocketError(rc);
-
 
         setState(Ctrl.ALIVE);
 
@@ -99,6 +108,7 @@ struct DARTInterfaceService {
     }
 
 }
+alias DARTInterfaceServiceHandle = ActorHandle!DARTInterfaceService;
 
 // @safe 
 // void dartClientWorker(string url, Document doc) {

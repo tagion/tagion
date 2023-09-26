@@ -15,7 +15,7 @@ import std.algorithm;
 import std.array;
 import tagion.testbench.dart.dart_helper_functions;
 import tagion.dart.Recorder;
-import tagion.utils.pretend_safe_concurrency;
+import tagion.utils.pretend_safe_concurrency : receiveTimeout, receiveOnly, register, thisTid;
 import tagion.dart.DARTBasic : DARTIndex;
 
 // import tagion.crypto.SecureNet;
@@ -33,6 +33,7 @@ import tagion.dart.DARTFile : DARTFile;
 import tagion.hibon.HiBONJSON;
 import tagion.Keywords;
 import tagion.services.replicator;
+import tagion.services.DARTInterface;
 
 enum feature = Feature(
             "see if we can read and write trough the dartservice",
@@ -43,11 +44,68 @@ alias FeatureContext = Tuple!(
         FeatureGroup*, "result"
 );
 
+
+@safe
+struct DARTWorker {
+    void task(string sock_addr, Document doc) @trusted {
+
+        import nngd;
+        import core.time;
+        int rc;
+        NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
+        s.recvtimeout = 1000.msecs;
+
+        setState(Ctrl.ALIVE);
+        while(!thisActor.stop) {
+
+            writefln("REQ %s to dial...", doc.toPretty);
+            rc = s.dial(sock_addr);
+            if (rc == 0) break;
+            writefln("REQ dial error %s", rc);
+            if (rc == nng_errno.NNG_ECONNREFUSED) {
+                nng_sleep(100.msecs);
+            }
+            check(rc == 0, "NNG error");
+        }
+        while(!thisActor.stop) {
+            const received = receiveTimeout(
+                Duration.zero,
+                &signal,
+                &ownerTerminated,
+                &unknown
+            );
+            if (received) {
+                continue;
+            }
+            rc = s.send!(immutable(ubyte[]))(doc.serialize);
+            check(rc == 0, "NNG error");
+            writefln("sent req");
+            Document received_doc = s.receive!(immutable(ubyte[]))();
+            if (s.errno == 0) {
+                writefln("RECEIVED RESPONSE: %s",received_doc.toPretty);
+                thisActor.stop = true;
+                return;
+            }
+            else {
+                writefln("ERROR %s", s.errno);
+                thisActor.stop = true;
+                return;
+            }
+        }
+    }
+}
+
+
+
+
 @safe @Scenario("write and read from dart db",
         [])
 class WriteAndReadFromDartDb {
 
     DARTServiceHandle handle;
+    DARTInterfaceServiceHandle dart_interface_handle;
+    DARTInterfaceOptions interface_opts;
+    
     SecureNet dart_net;
     SecureNet supervisor_net;
     DARTOptions opts;
@@ -100,9 +158,18 @@ class WriteAndReadFromDartDb {
         register(thisActor.task_name, thisTid);
 
         import tagion.services.options : TaskNames;
+        writeln("DART task name", TaskNames().dart);
 
-        handle = (() @trusted => spawn!DARTService("DartService", cast(immutable) opts, cast(immutable) replicator_opts, TaskNames(), cast(
+        handle = (() @trusted => spawn!DARTService(TaskNames().dart, cast(immutable) opts, cast(immutable) replicator_opts, TaskNames(), cast(
                 immutable) dart_net))();
+
+        
+        interface_opts.setDefault;
+        writeln(interface_opts.sock_addr);
+
+        dart_interface_handle = (() @trusted => spawn(immutable(DARTInterfaceService)(cast(immutable) interface_opts, TaskNames()), "DartInterfaceService"))(); 
+        
+        
         waitforChildren(Ctrl.ALIVE);
 
         return result_ok;
@@ -183,6 +250,14 @@ class WriteAndReadFromDartDb {
         auto hirpc_check = read_check.message[Keywords.result].get!Document;
         auto check_fingerprints = (() @trusted => cast(DARTIndex[]) hirpc_check[DARTFile.Params.fingerprints].get!(Buffer))();
         check(equal(check_fingerprints, dummy_indexes), "error in hirpc checkread");
+
+        
+        auto client_worker = spawn!DARTWorker("dartworker", interface_opts.sock_addr, check_read_sender);
+
+        import core.thread;
+        (() @trusted => Thread.sleep(1000.msecs))();
+        
+        
 
         return result_ok;
     }
