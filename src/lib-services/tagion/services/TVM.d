@@ -29,6 +29,13 @@ struct TVMOptions {
 
 /**
  * TVMService actor
+ * Receives: 
+ *  (signedContract, immutable(CollectedSignedContract)*)
+ *  (consensusContract, immutable(CollectedSignedContract)*)
+ *
+ * Sends:
+ *  (Payload, const(Document)) to TaskNames.epoch_creator
+ *  (producedContract, immutable(ContractProduct)*) to TaskNames.transcript
 **/
 @safe
 struct TVMService {
@@ -51,8 +58,6 @@ struct TVMService {
 
     void consensus_contract(consensusContract, immutable(CollectedSignedContract)* collected) {
         auto result = execute(collected);
-        import std.stdio;
-
         if (result.error) {
             return;
         }
@@ -91,12 +96,19 @@ unittest {
     collected.inputs ~= in_bills;
     collected.sign_contract.contract.script = PayScript(out_bills).toDoc;
 
-    tvm_service.consensus_contract(consensusContract(), cast(immutable) collected);
+    tvm_service.contract(signedContract(), cast(immutable) collected);
     collected = null;
 
-    const received = receiveTimeout(
+    const received1 = receiveTimeout(
+            Duration.zero,
+            (Payload _, const(Document) __) {}
+    );
+    assert(received1, "Did not receive collected Payload");
+
+    const received2 = receiveTimeout(
             Duration.zero,
             (producedContract _, immutable(ContractProduct)* __) {}
     );
-    assert(received, "Did not receive collected signedContract *");
+    assert(received2, "Did not receive collected signedContract *");
+
 }
