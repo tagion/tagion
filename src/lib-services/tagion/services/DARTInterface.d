@@ -37,7 +37,6 @@ import nngd;
 import core.time;
 
 
-
 void dartHiRPCCallback(NNGMessage *msg) @trusted {
     thisActor.task_name = format("%s", thisTid);
     log.register(thisActor.task_name);

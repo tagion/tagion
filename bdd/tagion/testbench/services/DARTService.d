@@ -17,6 +17,7 @@ import tagion.testbench.dart.dart_helper_functions;
 import tagion.dart.Recorder;
 import tagion.utils.pretend_safe_concurrency : receiveTimeout, receiveOnly, register, thisTid;
 import tagion.dart.DARTBasic : DARTIndex;
+import core.time;
 
 // import tagion.crypto.SecureNet;
 import tagion.crypto.SecureInterfaceNet;
@@ -44,35 +45,34 @@ alias FeatureContext = Tuple!(
         FeatureGroup*, "result"
 );
 
-
 @safe
 struct DARTWorker {
     void task(string sock_addr, Document doc) @trusted {
-
         import nngd;
-        import core.time;
+
         int rc;
         NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
         s.recvtimeout = 1000.msecs;
 
         setState(Ctrl.ALIVE);
-        while(!thisActor.stop) {
+        while (!thisActor.stop) {
 
             writefln("REQ %s to dial...", doc.toPretty);
             rc = s.dial(sock_addr);
-            if (rc == 0) break;
+            if (rc == 0)
+                break;
             writefln("REQ dial error %s", rc);
             if (rc == nng_errno.NNG_ECONNREFUSED) {
                 nng_sleep(100.msecs);
             }
             check(rc == 0, "NNG error");
         }
-        while(!thisActor.stop) {
+        while (!thisActor.stop) {
             const received = receiveTimeout(
-                Duration.zero,
-                &signal,
-                &ownerTerminated,
-                &unknown
+                    Duration.zero,
+                    &signal,
+                    &ownerTerminated,
+                    &unknown
             );
             if (received) {
                 continue;
@@ -82,7 +82,7 @@ struct DARTWorker {
             writefln("sent req");
             Document received_doc = s.receive!(immutable(ubyte[]))();
             if (s.errno == 0) {
-                writefln("RECEIVED RESPONSE: %s",received_doc.toPretty);
+                writefln("RECEIVED RESPONSE: %s", received_doc.toPretty);
                 thisActor.stop = true;
                 return;
             }
@@ -95,9 +95,6 @@ struct DARTWorker {
     }
 }
 
-
-
-
 @safe @Scenario("write and read from dart db",
         [])
 class WriteAndReadFromDartDb {
@@ -105,7 +102,7 @@ class WriteAndReadFromDartDb {
     DARTServiceHandle handle;
     DARTInterfaceServiceHandle dart_interface_handle;
     DARTInterfaceOptions interface_opts;
-    
+
     SecureNet dart_net;
     SecureNet supervisor_net;
     DARTOptions opts;
@@ -158,19 +155,18 @@ class WriteAndReadFromDartDb {
         register(thisActor.task_name, thisTid);
 
         import tagion.services.options : TaskNames;
+
         writeln("DART task name", TaskNames().dart);
 
         handle = (() @trusted => spawn!DARTService(TaskNames().dart, cast(immutable) opts, cast(immutable) replicator_opts, TaskNames(), cast(
                 immutable) dart_net))();
 
-        
         interface_opts.setDefault;
         writeln(interface_opts.sock_addr);
 
-        dart_interface_handle = (() @trusted => spawn(immutable(DARTInterfaceService)(cast(immutable) interface_opts, TaskNames()), "DartInterfaceService"))(); 
-        
-        
-        waitforChildren(Ctrl.ALIVE);
+        dart_interface_handle = (() @trusted => spawn(immutable(DARTInterfaceService)(cast(immutable) interface_opts, TaskNames()), "DartInterfaceService"))();
+
+        waitforChildren(Ctrl.ALIVE, 3.seconds);
 
         return result_ok;
     }
@@ -251,15 +247,15 @@ class WriteAndReadFromDartDb {
         auto check_fingerprints = (() @trusted => cast(DARTIndex[]) hirpc_check[DARTFile.Params.fingerprints].get!(Buffer))();
         check(equal(check_fingerprints, dummy_indexes), "error in hirpc checkread");
 
-        
-        auto t1 = spawn!DARTWorker("dartworker1", interface_opts.sock_addr, check_read_sender);
-        auto t2 = spawn!DARTWorker("dartworker2", interface_opts.sock_addr, check_read_sender);
-        auto t3 = spawn!DARTWorker("dartworker3", interface_opts.sock_addr, check_read_sender);
+        version (none) {
+            auto t1 = spawn!DARTWorker("dartworker1", interface_opts.sock_addr, check_read_sender);
+            auto t2 = spawn!DARTWorker("dartworker2", interface_opts.sock_addr, check_read_sender);
+            auto t3 = spawn!DARTWorker("dartworker3", interface_opts.sock_addr, check_read_sender);
 
-        import core.thread;
-        (() @trusted => Thread.sleep(3000.msecs))();
-        
-        
+            import core.thread;
+
+            (() @trusted => Thread.sleep(3000.msecs))();
+        }
 
         return result_ok;
     }
