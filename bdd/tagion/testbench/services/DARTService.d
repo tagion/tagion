@@ -252,10 +252,12 @@ class WriteAndReadFromDartDb {
         check(equal(check_fingerprints, dummy_indexes), "error in hirpc checkread");
 
         
-        auto client_worker = spawn!DARTWorker("dartworker", interface_opts.sock_addr, check_read_sender);
+        auto t1 = spawn!DARTWorker("dartworker1", interface_opts.sock_addr, check_read_sender);
+        auto t2 = spawn!DARTWorker("dartworker2", interface_opts.sock_addr, check_read_sender);
+        auto t3 = spawn!DARTWorker("dartworker3", interface_opts.sock_addr, check_read_sender);
 
         import core.thread;
-        (() @trusted => Thread.sleep(1000.msecs))();
+        (() @trusted => Thread.sleep(3000.msecs))();
         
         
 
