@@ -66,7 +66,7 @@ class StdCheckContract : CheckContract {
             in TagionCurrency output_amount,
             in GasUse use) {
         const gas_cost = calcFees(exec_contract, output_amount, use);
-        return input_amount + gas_cost <= output_amount;
+        return input_amount >= output_amount + gas_cost;
     }
 
 }
