@@ -81,10 +81,10 @@ enum StdNames {
 @safe
 @recordType("pay")
 struct PayScript {
-    @label(StdNames.values) TagionBill[] outputs;
+    @label(StdNames.values) const(TagionBill)[] outputs;
     mixin HiBONRecord!(
             q{
-                this(TagionBill[] outputs) @safe pure nothrow {
+                this(const(TagionBill)[] outputs) @safe pure nothrow {
                     this.outputs = outputs;
                 }
             });
