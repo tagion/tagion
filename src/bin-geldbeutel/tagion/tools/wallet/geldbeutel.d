@@ -25,6 +25,7 @@ import tagion.tools.wallet.WalletInterface;
 import tagion.script.TagionCurrency;
 import tagion.utils.Term;
 import std.typecons;
+import tagion.network.ReceiveBuffer;
 
 mixin Main!(_main, "newwallet");
 
@@ -83,7 +84,7 @@ int _main(string[] args) {
                 "o|output", "Output filename", &wallet_switch.output_filename,
                 "l|list", "List wallet content", &wallet_switch.list, //"questions", "Questions for wallet creation", &questions_str,
                 "s|sum", "Sum of the wallet", &wallet_switch.sum, //"questions", "Questions for wallet creation", &questions_str,
-                //"answers", "Answers for wallet creation", &answers_str,
+                "send", "Send a contract to the network", &wallet_switch.send,//"answers", "Answers for wallet creation", &answers_str,
                 /*
                 "path", format("Set the path for the wallet files : default %s", path), &path,
                 "wallet", format("Wallet file : default %s", options.walletfile), &options.walletfile,
@@ -92,7 +93,6 @@ int _main(string[] args) {
                 "invoice|i", format("Invoice file : default %s", invoicefile), &invoicefile,
                 "create-invoice|c", "Create invoice by format LABEL:PRICE. Example: Foreign_invoice:1000", &create_invoice_command,
                 "contract|t", format("Contractfile : default %s", options.contractfile), &options.contractfile,
-                "send|s", "Send contract to the network", &send_flag,
                 "amount", "Display the wallet amount", &print_amount,
                 "pay|I", format("Invoice to be payed : default %s", payfile), &payfile,
                 "update|U", "Update your wallet", &update_wallet,
@@ -132,16 +132,16 @@ int _main(string[] args) {
         //            writeln(logo);
         defaultGetoptPrinter(
                 [
-                // format("%s version %s", program, REVNO),
-                "Documentation: https://tagion.org/",
-                "",
-                "Usage:",
-                format("%s [<option>...] <config.json> <files>", program),
-                "",
+            // format("%s version %s", program, REVNO),
+            "Documentation: https://tagion.org/",
+            "",
+            "Usage:",
+            format("%s [<option>...] <config.json> <files>", program),
+            "",
 
-                "<option>:",
+            "<option>:",
 
-                ].join("\n"),
+        ].join("\n"),
                 main_args.options);
         return 0;
     }

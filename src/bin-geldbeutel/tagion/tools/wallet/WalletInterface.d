@@ -475,10 +475,34 @@ struct WalletInterface {
         }
     }
 
+    pragma(msg, "Fixme(lr)Remove trusted when nng is safe");
+    void sendHiRPC(string address, Document contract) @trusted {
+        import nngd;
+        import std.exception;
+        import tagion.hibon.Document;
+        import tagion.hibon.HiBONtoText;
+
+        int rc;
+        NNGSocket send_sock = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
+        rc = send_sock.dial(address);
+        if (rc != 0) {
+            throw new Exception(format("Could not dial address %s: %s", address, nng_errstr(rc)));
+        }
+        send_sock.sendtimeout = 1000.msecs;
+        send_sock.sendbuf = 4096;
+
+        rc = send_sock.send(contract.serialize);
+        if (rc != 0) {
+            throw new Exception(format("Could not send bill %s: %s", secure_wallet.net.calcHash(contract).encodeBase64, nng_errstr(
+                    rc)));
+        }
+    }
+
     struct Switch {
         bool force;
         bool list;
         bool sum;
+        bool send;
         bool pay;
         bool request;
         bool update;
@@ -556,6 +580,15 @@ struct WalletInterface {
                     output_filename = (output_filename.empty) ? update_tag.setExtension(FileExtension.hibon) : output_filename;
                     output_filename.fwrite(dartread);
 
+                }
+                if (send) {
+                    const contract = args[1].fread;
+                    if (contract.isRecord!(HiRPC.Sender)) {
+                        sendHiRPC("abstract://Node_0_NEUEWELLE_CONTRACT", contract);
+                    }
+                    else {
+                        throw new Exception("%s is not a hirpc contract".format(args[1]));
+                    }
                 }
                 if (pay) {
                     PayScript pay_script;
