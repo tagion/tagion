@@ -581,16 +581,6 @@ struct WalletInterface {
                     output_filename.fwrite(dartread);
 
                 }
-                version (none)
-                    if (send) {
-                        const contract = args[1].fread;
-                        if (contract.isRecord!(HiRPC.Sender)) {
-                            sendHiRPC("abstract://Node_0_NEUEWELLE_CONTRACT", contract);
-                        }
-                        else {
-                            throw new Exception("%s is not a hirpc contract".format(args[1]));
-                        }
-                    }
                 if (pay) {
                     PayScript pay_script;
                     pay_script.outputs = args[1 .. $]
@@ -605,8 +595,6 @@ struct WalletInterface {
                     TagionBill[] collect_bills;
                     const estimated_fees = ContractExecution.billFees(10);
                     const can_pay = secure_wallet.collect_bills(amount_to_pay + estimated_fees, collect_bills);
-                    pragma(msg, "can_pay ", typeof(can_pay));
-                    pragma(msg, "amount_to_pay ", typeof(amount_to_pay.value));
                     check(can_pay, format("Is unable to pay the amount %10.6fTGN", amount_to_pay.value));
                     if (verbose_switch) {
                         foreach (bill; collect_bills) {
