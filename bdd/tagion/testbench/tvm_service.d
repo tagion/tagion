@@ -21,7 +21,7 @@ int _main(string[] args) {
     Options local_opts;
     local_opts.defaultOptions;
     immutable opts = Options(local_opts);
-    auto handle = spawn!(TVMService)(opts.task_names.tvm, opts.tvm, opts.task_names);
+    auto handle = spawn(immutable(TVMService)(opts.tvm, opts.task_names), opts.task_names.tvm);
 
     waitforChildren(Ctrl.STARTING);
     scope (exit) {
