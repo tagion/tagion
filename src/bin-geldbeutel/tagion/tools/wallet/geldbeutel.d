@@ -25,6 +25,7 @@ import tagion.tools.wallet.WalletInterface;
 import tagion.script.TagionCurrency;
 import tagion.utils.Term;
 import std.typecons;
+import tagion.network.ReceiveBuffer;
 
 mixin Main!(_main, "newwallet");
 
@@ -238,6 +239,7 @@ void sendHiRPC(Document doc) @trusted {
         }
 
     }
+    int rc;
 
     string dummy_send = "abstract://Node_0_NEUEWELLE_CONTRACT";
 
@@ -248,11 +250,15 @@ void sendHiRPC(Document doc) @trusted {
     checkSocketError(rc);
 
     auto send_doc = doc.serialize;
-    rc = sock.send(send_doc);
+    rc = send_sock.send(send_doc);
     checkSocketError(rc);
 
     string dummy_receive = "abstract://OUT_Node_1_NEUEWELLE_CONTRACT";
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_PULL);
+    const recv = (scope void[] b) @trusted {
+        size_t ret = s.receivebuf(cast(ubyte[]) b);
+        return (ret < 0) ? 0 : cast(ptrdiff_t) ret;
+    };
 
     const listening = s.listen(dummy_receive);
     if (listening == 0) {
@@ -265,7 +271,7 @@ void sendHiRPC(Document doc) @trusted {
         
         auto result = buf.append(recv);
         if (s.m_errno != nng_errno.NNG_OK) {
-            writefln(format("rejected %s, %s", "NNG_ERRNO", s.m_errno);
+            writefln(format("rejected %s, %s", "NNG_ERRNO", s.m_errno));
             continue;
         }
         if (result.data.length <= 0) {
@@ -273,10 +279,10 @@ void sendHiRPC(Document doc) @trusted {
             continue;
         }
 
-        Document doc = Document(assumeUnique(result.data));
+        Document received_doc = Document(assumeUnique(result.data));
         assert(doc.isInorder);
 
-        writefln(doc.toPretty);
+        writefln(received_doc.toPretty);
 
     }
 
