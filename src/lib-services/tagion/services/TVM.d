@@ -16,6 +16,7 @@ import tagion.services.messages;
 import tagion.logger.Logger;
 import tagion.script.common;
 import tagion.script.execute;
+import tagion.utils.pretend_safe_concurrency : locate, send;
 
 /// Msg type sent to receiver task along with a hirpc
 //alias contractProduct = Msg!"contract_product";
@@ -31,28 +32,71 @@ struct TVMOptions {
 **/
 @safe
 struct TVMService {
-    void task(immutable(TVMOptions) opts, immutable(TaskNames) task_names) {
+    TVMOptions opts;
+    TaskNames task_names;
+    static ContractExecution execute;
 
-        immutable(ContractProduct*) execute(immutable(CollectedSignedContract*) contract) {
-
-            return new ContractProduct;
-        }
-
-        void contract(signedContract, immutable(CollectedSignedContract)* contract) {
-            auto result = execute(contract);
-
-        }
-
-        void consensus_contract(consensusContract, immutable(CollectedSignedContract)* contract) {
-        }
-
-        void timeout() {
-            log("Time out");
-        }
-
+    void task() {
         run(&contract, &consensus_contract);
-        //runTimeout(100.msecs, &timeout);   
+    }
+
+    void contract(signedContract, immutable(CollectedSignedContract)* collected) {
+        auto result = execute(collected);
+        if (result.error) {
+            return;
+        }
+        locate(task_names.epoch_creator).send(Payload(), collected.sign_contract.contract.toDoc);
+        locate(task_names.transcript).send(producedContract(), result.get);
+    }
+
+    void consensus_contract(consensusContract, immutable(CollectedSignedContract)* collected) {
+        auto result = execute(collected);
+        import std.stdio;
+
+        if (result.error) {
+            return;
+        }
+        locate(task_names.transcript).send(producedContract(), result.get);
     }
 }
 
 alias TVMServiceHandle = ActorHandle!TVMService;
+
+unittest {
+    import tagion.utils.pretend_safe_concurrency;
+    import core.time;
+
+    enum task_names = TaskNames();
+    scope (exit) {
+        unregister(task_names.transcript);
+        unregister(task_names.epoch_creator);
+    }
+    register(task_names.transcript, thisTid);
+    register(task_names.epoch_creator, thisTid);
+    immutable opts = TVMOptions();
+    auto tvm_service = TVMService(opts, task_names);
+
+    import std.range : iota;
+    import tagion.script.common;
+    import tagion.crypto.Types;
+    import tagion.script.TagionCurrency;
+    import std.array;
+    import tagion.utils.StdTime;
+    import tagion.basic.Types : Buffer;
+    import std.algorithm.iteration : map;
+
+    const in_bills = iota(0, 10).map!(_ => TagionBill(TGN(100), sdt_t.init, Pubkey.init, Buffer.init).toDoc).array;
+    const out_bills = iota(0, 10).map!(_ => TagionBill(TGN(50), sdt_t.init, Pubkey.init, Buffer.init)).array;
+    auto collected = new CollectedSignedContract();
+    collected.inputs ~= in_bills;
+    collected.sign_contract.contract.script = PayScript(out_bills).toDoc;
+
+    tvm_service.consensus_contract(consensusContract(), cast(immutable) collected);
+    collected = null;
+
+    const received = receiveTimeout(
+            Duration.zero,
+            (producedContract _, immutable(ContractProduct)* __) {}
+    );
+    assert(received, "Did not receive collected signedContract *");
+}
