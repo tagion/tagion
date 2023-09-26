@@ -476,7 +476,7 @@ struct WalletInterface {
     }
 
     pragma(msg, "Fixme(lr)Remove trusted when nng is safe");
-    void sendHiRPC(string address, Document contract) @trusted {
+    void sendHiRPC(string address, HiRPC.Sender contract) @trusted {
         import nngd;
         import std.exception;
         import tagion.hibon.Document;
@@ -491,7 +491,7 @@ struct WalletInterface {
         send_sock.sendtimeout = 1000.msecs;
         send_sock.sendbuf = 4096;
 
-        rc = send_sock.send(contract.serialize);
+        rc = send_sock.send(contract.toDoc.serialize);
         if (rc != 0) {
             throw new Exception(format("Could not send bill %s: %s", secure_wallet.net.calcHash(contract).encodeBase64, nng_errstr(
                     rc)));
@@ -581,15 +581,16 @@ struct WalletInterface {
                     output_filename.fwrite(dartread);
 
                 }
-                if (send) {
-                    const contract = args[1].fread;
-                    if (contract.isRecord!(HiRPC.Sender)) {
-                        sendHiRPC("abstract://Node_0_NEUEWELLE_CONTRACT", contract);
+                version (none)
+                    if (send) {
+                        const contract = args[1].fread;
+                        if (contract.isRecord!(HiRPC.Sender)) {
+                            sendHiRPC("abstract://Node_0_NEUEWELLE_CONTRACT", contract);
+                        }
+                        else {
+                            throw new Exception("%s is not a hirpc contract".format(args[1]));
+                        }
                     }
-                    else {
-                        throw new Exception("%s is not a hirpc contract".format(args[1]));
-                    }
-                }
                 if (pay) {
                     PayScript pay_script;
                     pay_script.outputs = args[1 .. $]
@@ -632,17 +633,22 @@ struct WalletInterface {
                             .array,
                             null,
                             pay_script.toDoc);
-                    output_filename = (output_filename.empty) ? "submit".setExtension(FileExtension.hibon) : output_filename;
+                    output_filename = (output_filename.empty && !send) ? "submit".setExtension(FileExtension.hibon) : output_filename;
                     //    output_filename.fwrite(signed_contract);
                     const message = secure_wallet.net.calcHash(signed_contract);
                     pragma(msg, "Message ", typeof(message));
                     const contract_net = secure_wallet.net.derive(message);
                     const hirpc = HiRPC(contract_net);
                     const hirpc_submit = hirpc.submit(signed_contract);
-                    output_filename.fwrite(hirpc_submit);
+                    if (!output_filename.empty) {
+                        output_filename.fwrite(hirpc_submit);
+                    }
                     verbose("submit\n%s", show(hirpc_submit));
                     secure_wallet.account.hirpcs ~= hirpc_submit.toDoc;
                     save_wallet = true;
+                    if (send) {
+                        sendHiRPC(options.contract_address, hirpc_submit);
+                    }
                     //                  const
                     //const nets=secure_wallet.
 

@@ -1,4 +1,4 @@
-module tagion.tools.wallet.bip39_english;
+module tagion.wallet.bip39_english;
 
 immutable words = [
     "abandon",

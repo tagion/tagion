@@ -50,7 +50,7 @@ ubyte[] bip39(const(ushort[]) mnemonics) nothrow {
 }
 
 /*
-https://github.com/bitcoin/bips/blob/master/bip-0039.mediawikiP
+https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki
 10001111110100110100110001011001100010111110011101010000101001000000110000011001101010001100001000011101110011000100000111111100
 0111
 
@@ -73,7 +73,7 @@ import tagion.hibon.HiBONRecord;
 @safe
 struct WordList {
     protected ushort[string] table;
-    this(string[] list)
+    this(const(string[]) list)
     in (list.length == 2048)
     do {
         table = list
@@ -83,17 +83,116 @@ struct WordList {
 
     }
 
-    void gen(ref scope ushort[] words) @trusted {
+    void gen(ref scope ushort[] words) const {
         foreach (ref word; words) {
             word = getRandom!ushort & 0x800;
         }
     }
 
-    const(ushort[]) list(const(string[]) mnemonics) {
+    const(ushort[]) opCall(const(string[]) mnemonics) const {
 
         return mnemonics
             .map!(m => table.get(m, ushort.max))
             .array;
 
     }
+
+    @trusted
+    ubyte[] entropy(const(ushort[]) mnemonic_codes) {
+        enum MAX_WORDS = 24; /// Max number of mnemonic word in a string
+        enum MNEMONIC_BITS = 11; /// Bit size of the word number 2^11=2048
+        enum MAX_BITS = MAX_WORDS * MNEMONIC_BITS; /// Total number of bits
+        enum WORK_BITS = 8 * uint.sizeof;
+        enum SIZE_OF_WORK_BUFFER = (MAX_BITS / WORK_BITS) + ((MAX_BITS % WORK_BITS) ? 1 : 0);
+        const total_bits = mnemonic_codes.length * MNEMONIC_BITS;
+        uint[] work_buffer = new uint[SIZE_OF_WORK_BUFFER];
+        ulong* work_slide = cast(ulong*)&work_buffer[0];
+        uint mnemonic_pos;
+        size_t work_pos;
+        foreach (mnemonic; mnemonic_codes) {
+            *work_slide |= ulong(mnemonic) << mnemonic_pos;
+            mnemonic_pos += MNEMONIC_BITS;
+            if (mnemonic_pos >= WORK_BITS) {
+                work_pos++;
+                mnemonic_pos -= WORK_BITS;
+                work_slide = cast(ulong*)&work_buffer[work_pos];
+            }
+        }
+
+        return (cast(ubyte*)&work_buffer[0])[0 .. SIZE_OF_WORK_BUFFER * uint.sizeof];
+
+    }
+
+}
+
+/*
+https://learnmeabitcoin.com/technical/mnemonic
+later echo alcohol essence charge eight feel sweet nephew apple aerobic device
+01111101010010001011110000011000001001101010001001101000100011011101010100110110110111011001010001000001010101000001000010011110
+0101
+*/
+
+@safe
+unittest {
+    import std.stdio;
+    import tagion.wallet.bip39_english;
+    import std.format;
+
+    const wordlist = WordList(words);
+    {
+        const mnemonic = [
+            "punch", "shock", "entire", "north", "file",
+            "identify"/*    
+        "echo",
+            "alcohol",
+
+            "essence",
+            "charge",
+            "eight",
+            "feel",
+            "sweet",
+            "nephew",
+            "apple",
+            "aerobic",
+            "device"
+        */
+        ];
+        const(ushort[]) mnemonic_code = [1390, 1586, 604, 1202, 689, 900];
+        immutable expected_entropy = "101011011101100011001001001011100100101100100101011000101110000100";
+        assert(wordlist(mnemonic) == mnemonic_code);
+        writefln("%(%d %)", wordlist(mnemonic));
+        writefln("%(%011b%)", wordlist(mnemonic));
+        writefln("%s", expected_entropy);
+        string entropy_bits = format("%(%011b%)", wordlist(mnemonic));
+        assert(expected_entropy == entropy_bits);
+
+        //        const =0 
+    }
+    {
+        const mnemonic = [
+            "later",
+            "echo",
+            "alcohol",
+
+            "essence",
+            "charge",
+            "eight",
+            "feel",
+            "sweet",
+            "nephew",
+            "apple",
+            "aerobic",
+            "device"
+        ];
+        //        const(ushort[]) mnemonic_code =[1390, 1586, 604, 1202, 689, 900];
+        immutable expected_entropy = "011111010100100010111100000110000010011010100010011010001000110111010101001101101101110110010100010000010101010000010000100111100101";
+        //assert(wordlist(mnemonic) == mnemonic_code);
+        writefln("%(%d %)", wordlist(mnemonic));
+        writefln("%(%011b%)", wordlist(mnemonic));
+        writefln("%s", expected_entropy);
+        string entropy_bits = format("%(%011b%)", wordlist(mnemonic));
+        assert(expected_entropy == entropy_bits);
+
+    }
+
 }
