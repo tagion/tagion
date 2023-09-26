@@ -1,0 +1,10 @@
+name "pbkdf2"
+description "PBKDF2 implementation for D"
+authors "Tomáš Chaloupka"
+copyright "Copyright © 2016, Tomáš Chaloupka"
+license "BSL-1.0"
+configuration "default" {
+}
+configuration "long" {
+	versions "LongTests"
+}
