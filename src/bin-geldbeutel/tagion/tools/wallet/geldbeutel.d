@@ -84,7 +84,7 @@ int _main(string[] args) {
                 "o|output", "Output filename", &wallet_switch.output_filename,
                 "l|list", "List wallet content", &wallet_switch.list, //"questions", "Questions for wallet creation", &questions_str,
                 "s|sum", "Sum of the wallet", &wallet_switch.sum, //"questions", "Questions for wallet creation", &questions_str,
-                "send", "Send a contract to the network", &wallet_switch.send,//"answers", "Answers for wallet creation", &answers_str,
+                "send", "Send a contract to the network", &wallet_switch.send, //"answers", "Answers for wallet creation", &answers_str,
                 /*
                 "path", format("Set the path for the wallet files : default %s", path), &path,
                 "wallet", format("Wallet file : default %s", options.walletfile), &options.walletfile,
@@ -104,7 +104,9 @@ int _main(string[] args) {
                 "pay", "Creates a payment contract", &wallet_switch.pay,
                 "dry", "Dry-run this will not save the wallet", &__dry_switch,
                 "req", "List all requested bills", &wallet_switch.request,
-                "update", "Request a wallet updated", &wallet_switch.update, /*
+                "update", "Request a wallet updated", &wallet_switch.update,
+                "addr", format("Sets the contract address default: %s", options.contract_address), &options
+                    .contract_address,/*
                 "port|p", format("Tagion network port : default %d", options.port), &options.port,
                 "url|u", format("Tagion url : default %s", options.addr), &options.addr,
                 "visual|g", "Visual user interface", &wallet_ui,
@@ -116,7 +118,7 @@ int _main(string[] args) {
                 "nossl", "Disable ssl encryption", &none_ssl_socket,
     */
 
-        
+                    
 
         );
     }
@@ -132,16 +134,16 @@ int _main(string[] args) {
         //            writeln(logo);
         defaultGetoptPrinter(
                 [
-            // format("%s version %s", program, REVNO),
-            "Documentation: https://tagion.org/",
-            "",
-            "Usage:",
-            format("%s [<option>...] <config.json> <files>", program),
-            "",
+                // format("%s version %s", program, REVNO),
+                "Documentation: https://tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...] <config.json> <files>", program),
+                "",
 
-            "<option>:",
+                "<option>:",
 
-        ].join("\n"),
+                ].join("\n"),
                 main_args.options);
         return 0;
     }
