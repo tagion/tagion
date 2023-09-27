@@ -13,6 +13,8 @@ import std.typecons;
 import std.path;
 import std.concurrency;
 import std.path : baseName;
+import std.file : exists;
+import std.algorithm : countUntil;
 
 import tagion.tools.Basic;
 import tagion.utils.getopt;
@@ -28,6 +30,7 @@ import tagion.utils.JSONCommon;
 import tagion.crypto.SecureNet;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.gossip.AddressBook : addressbook, NodeAddress;
+import tagion.basic.Types : hasExtension, FileExtension;
 
 // enum EXAMPLES {
 //     ver = Example("-v"),
@@ -87,13 +90,24 @@ int _main(string[] args) {
 
     bool version_switch;
     bool override_switch;
+    bool monitor;
 
-    auto config_file = "tagionwave.json";
-    scope Options local_options = Options.defaultOptions;
+    Options local_options;
+    const program_config_file = args
+        .countUntil!(file => file.hasExtension(FileExtension.json) && file.exists);
+    auto config_file = (program_config_file < 0) ? "tagionwave.json" : args[program_config_file];
+    if (config_file.exists) {
+        local_options.load(config_file);
+    } else {
+        local_options = Options.defaultOptions;
+        
+    }
+
 
     auto main_args = getopt(args,
             "v|version", "Print revision information", &version_switch,
             "O|override", "Override the config file", &override_switch,
+            "m|monitor", "Enable the monitor", &monitor,
     );
 
     if (main_args.helpWanted) {
@@ -147,7 +161,7 @@ int _main(string[] args) {
             opts.setPrefix(prefix);
             SecureNet net = new StdSecureNet();
             net.generateKeyPair(opts.task_names.supervisor);
-            if (i == 0) {
+            if (monitor && i == 0) {
                 opts.monitor.enable = true;
             }
             opts.epoch_creator.timeout = 1000;

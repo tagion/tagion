@@ -9,15 +9,7 @@ import std.path : setExtension, buildPath;
 import tagion.basic.Types : FileExtension;
 
 
-import tagion.actor;
-import tagion.services.locator;
-import tagion.logger.Logger;
-import tagion.services.supervisor;
 import tagion.services.options;
-import tagion.GlobalSignals;
-import tagion.crypto.SecureNet;
-import tagion.crypto.SecureInterfaceNet;
-import tagion.gossip.AddressBook : addressbook, NodeAddress;
 import core.time;
 import core.thread;
 import std.stdio;
@@ -33,14 +25,20 @@ int _main(string[] args) {
         rmdirRecurse(module_path);
     }
     mkdirRecurse(module_path);
+    auto config_file = buildPath(module_path, "tagionwave.json");
 
     scope Options local_options = Options.defaultOptions;
-    immutable wave_options = Options(local_options).wave;
-
+    local_options.dart.folder_path = buildPath(module_path, "dart");
+    local_options.replicator.folder_path = buildPath(module_path, "replicator");
+    local_options.save(config_file);
+    
     auto send_contract_feature = automation!(sendcontract);
+
+
 
     string[] neuewelle_command = [
         tools.neuewelle,
+        config_file,
     ];
     
     auto tid = spawnProcess(neuewelle_command, stdin, stdout, stderr);
