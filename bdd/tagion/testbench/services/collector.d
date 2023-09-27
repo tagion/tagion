@@ -243,8 +243,8 @@ class ItWork {
         collector_handle.send(inputHiRPC(), hirpc.receive(sender.toDoc));
 
         auto result = receiveOnlyTimeout!(Topic, string, immutable(RecordFactory.Recorder));
-        // check(result[1] == "archive_no_exist", "did not reject for the expected reason");
-        check(result[1] == "missing_archives", "did not reject for the expected reason");
+        check(result[1] == "archive_no_exist", "did not reject for the expected reason");
+        // check(result[1] == "missing_archives", "did not reject for the expected reason");
 
         return result_ok;
     }
