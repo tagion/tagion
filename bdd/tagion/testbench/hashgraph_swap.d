@@ -3,7 +3,6 @@ module tagion.testbench.hashgraph_swap;
 import tagion.behaviour.Behaviour;
 
 import tagion.behaviour.Behaviour;
-import tagion.testbench.functional;
 import tagion.hibon.HiBONRecord : fwrite;
 import tagion.tools.Basic;
 import tagion.testbench.hashgraph;
@@ -16,7 +15,6 @@ import std.conv;
 import std.format;
 import tagion.testbench.hashgraph.hashgraph_test_network;
 
-
 mixin Main!(_main);
 
 int _main(string[] args) {
@@ -28,10 +26,10 @@ int _main(string[] args) {
     const node_amount = args[1].to!uint;
     const calls = args[2].to!uint;
     string[] node_names;
-    foreach (i; 0..node_amount) {
+    foreach (i; 0 .. node_amount) {
         node_names ~= format("Node%d", i);
     }
-    
+
     auto hashgraph_swap_feature = automation!(swap);
     hashgraph_swap_feature.NodeSwap(node_names, calls, module_path);
     hashgraph_swap_feature.run;

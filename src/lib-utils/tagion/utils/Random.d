@@ -198,12 +198,11 @@ unittest {
 
 }
 
-
 /**
  * Generate a random id 
  * Returns: random id
 **/
-const(uint) generateId() @safe {
+const(uint) generateId() @safe nothrow {
     uint id = 0;
     import stdrnd = std.random;
 
