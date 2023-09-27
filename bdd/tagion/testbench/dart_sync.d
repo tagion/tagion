@@ -1,7 +1,6 @@
 module tagion.testbench.dart_sync;
 
 import tagion.behaviour.Behaviour;
-import tagion.testbench.functional;
 import tagion.hibon.HiBONRecord : fwrite;
 import tagion.tools.Basic;
 import std.traits : moduleName;
@@ -43,8 +42,6 @@ int _main(string[] args) {
     dart_sync_feature.FullSync(dart_info);
     dart_sync_feature.run();
 
-
     return 0;
-
 
 }

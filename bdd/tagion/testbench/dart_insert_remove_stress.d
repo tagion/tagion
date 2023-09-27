@@ -1,7 +1,6 @@
 module tagion.testbench.dart_insert_remove_stress;
 
 import tagion.behaviour.Behaviour;
-import tagion.testbench.functional;
 import tagion.hibon.HiBONRecord : fwrite;
 import tagion.tools.Basic;
 import std.traits : moduleName;
@@ -43,7 +42,7 @@ int _main(string[] args) {
 
         SecureNet net;
 
-        version(REAL_HASHES) {
+        version (REAL_HASHES) {
             net = new StdSecureNet();
             net.generateKeyPair("very secret");
         }
@@ -73,7 +72,7 @@ int _main(string[] args) {
 
         SecureNet net;
 
-        version(REAL_HASHES) {
+        version (REAL_HASHES) {
             net = new StdSecureNet();
             net.generateKeyPair("very secret");
         }

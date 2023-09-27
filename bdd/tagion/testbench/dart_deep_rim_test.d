@@ -1,7 +1,6 @@
 module tagion.testbench.dart_deep_rim_test;
 
 import tagion.behaviour.Behaviour;
-import tagion.testbench.functional;
 import tagion.hibon.HiBONRecord : fwrite;
 import tagion.tools.Basic;
 import std.traits : moduleName;
@@ -46,11 +45,9 @@ int _main(string[] args) {
     dart_deep_rim_feature.RemoveArchive(dart_info);
     auto dart_deep_rim_context = dart_deep_rim_feature.run();
 
-
     auto dart_sync_snap_feature = automation!(dart_sync_snap_back)();
     dart_sync_snap_feature.SyncToAnotherDb(dart_info);
     auto dart_sync_snap_context = dart_sync_snap_feature.run();
-
 
     auto dart_middle_branch_feature = automation!(dart_middle_branch)();
     dart_middle_branch_feature.AddOneArchiveAndSnap(dart_info);
