@@ -60,7 +60,7 @@ private struct ActorInfo {
     private string _task_name;
     bool stop;
 
-    string task_name() @trusted {
+    string task_name() @trusted nothrow {
         return _task_name;
     }
 
@@ -115,7 +115,7 @@ struct Request(string name) {
     uint id;
     string task_name;
 
-    static Request opCall() @safe {
+    static Request opCall() @safe nothrow {
         import tagion.utils.Random;
 
         Request!name r;
