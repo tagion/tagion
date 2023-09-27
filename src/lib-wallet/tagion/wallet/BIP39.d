@@ -106,11 +106,11 @@ struct WordList {
         enum MNEMONIC_BITS = 11; /// Bit size of the word number 2^11=2048
         enum MAX_BITS = MAX_WORDS * MNEMONIC_BITS; /// Total number of bits
         enum WORK_BITS = 8 * uint.sizeof;
-        enum SIZE_OF_WORK_BUFFER = (MAX_BITS / WORK_BITS) + ((MAX_BITS % WORK_BITS) ? 1 : 0);
+        //enum SIZE_OF_WORK_BUFFER = (MAX_BITS / WORK_BITS) + ((MAX_BITS % WORK_BITS) ? 1 : 0);
         const total_bits = mnemonic_codes.length * MNEMONIC_BITS;
-        uint[] work_buffer = new uint[SIZE_OF_WORK_BUFFER];
-        ulong* work_slide = cast(ulong*)&work_buffer[0];
-        uint mnemonic_pos;
+        //uint[] work_buffer = new uint[SIZE_OF_WORK_BUFFER];
+        //ulong* work_slide = cast(ulong*)&work_buffer[0];
+        //uint mnemonic_pos;
         size_t work_pos;
         ubyte[] result = new ubyte[32];
         foreach (i, mnemonic; mnemonic_codes) {
@@ -120,35 +120,26 @@ struct WordList {
             //const mnemonic_bytes=mnemonic.nativeToBigEndian;
             const mnemonic_bytes = (uint(mnemonic) << shift_pos).nativeToBigEndian;
             pragma(msg, "mnemonic_bytes ", typeof(mnemonic_bytes));
+            writeln;
             writefln("byte_pos = %d, bit_pos = %d, shift_pos = %d", byte_pos, bit_pos, shift_pos);
             writefln("mnemonic       %011b", mnemonic);
             writefln("mnemonic_bytes %(%08b %) %2$04x %2$s", mnemonic_bytes, mnemonic);
             // writefln("mnemonic_bytes %032b", mnemonic_bytes[0] << 8 | mnemonic_bytes[1]);
-            *work_slide |= (ulong(mnemonic_bytes[0]) << 8 | ulong(mnemonic_bytes[1])) << mnemonic_pos;
-            writefln("slice          %032b", *work_slide);
-            writefln("slice          %(%08b %)",
-                    (cast(ubyte*)&work_buffer[0])[0 .. 4]);
+            //*work_slide |= (ulong(mnemonic_bytes[0]) << 8 | ulong(mnemonic_bytes[1])) << mnemonic_pos;
+            //writefln("slice          %032b", *work_slide);
+            //writefln("slice          %(%08b %)",
+            //        (cast(ubyte*)&work_buffer[0])[0 .. 4]);
 
             result[byte_pos] |= mnemonic_bytes[0];
-            result[byte_pos + 1] = mnemonic_bytes[1];
-            if (byte_pos + 2 < result.length) {
+            result[byte_pos + 1] |= mnemonic_bytes[1];
+            if (mnemonic_bytes[2]) {
                 result[byte_pos + 2] = mnemonic_bytes[2];
 
             }
-            version (none)
-                foreach (mnemonic_index, mnemonic_byte; mnemonic_bytes[0 .. 3]) {
-                result[byte_pos + mnemonic_index] |= mnemonic_byte;
-            }
-            writefln("new slice      %(%08b %)", result[0 .. 6]);
-            mnemonic_pos += MNEMONIC_BITS;
-            if (mnemonic_pos >= WORK_BITS) {
-                work_pos++;
-                mnemonic_pos -= WORK_BITS;
-                work_slide = cast(ulong*)&work_buffer[work_pos];
-            }
+            writefln("new slice      %(%08b %)", result[0 .. 10]);
         }
-
-        return (cast(ubyte*)&work_buffer[0])[0 .. SIZE_OF_WORK_BUFFER * uint.sizeof];
+        return result;
+        //  return (cast(ubyte*)&work_buffer[0])[0 .. SIZE_OF_WORK_BUFFER * uint.sizeof];
 
     }
 
@@ -191,13 +182,14 @@ unittest {
         assert(wordlist(mnemonic) == mnemonic_code);
         const mnemonic_codes = wordlist(mnemonic);
         writefln("%(%d %)", mnemonic_codes);
-        writefln("%(%011b%)", mnemonic_codes);
-        writefln("%s", expected_entropy);
+        writefln("mnemonic_codes   %(%011b%)", mnemonic_codes);
+        writefln("expected_entropy %s", expected_entropy);
         string mnemonic_codes_bits = format("%(%011b%)", mnemonic_codes);
         assert(expected_entropy == mnemonic_codes_bits);
         const entropy = wordlist.entropy(mnemonic_codes);
-        string entropy_bits = format("%(%b%)", entropy); //[0 .. 12 * mnemonic_code.length];
-        writefln("%s", entropy_bits);
+        string entropy_bits = format("%(%08b%)", entropy)[0 .. 11 * mnemonic_code.length];
+        writefln("expected_entropy %s", expected_entropy);
+        writefln("expected_bits    %s", entropy_bits);
         //        assert(expected_entropy == entropy_bits);
 
         //        const =0 
