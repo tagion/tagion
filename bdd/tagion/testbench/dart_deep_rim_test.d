@@ -1,13 +1,11 @@
 module tagion.testbench.dart_deep_rim_test;
 
 import tagion.behaviour.Behaviour;
-import tagion.testbench.functional;
 import tagion.hibon.HiBONRecord : fwrite;
 import tagion.tools.Basic;
 import std.traits : moduleName;
 
 import tagion.testbench.dart;
-import tagion.testbench.tools.BDDOptions;
 import tagion.testbench.tools.Environment;
 
 import tagion.dart.DARTFakeNet : DARTFakeNet;
@@ -25,11 +23,7 @@ import tagion.basic.Version;
 mixin Main!(_main);
 
 int _main(string[] args) {
-    BDDOptions bdd_options;
-    setDefaultBDDOptions(bdd_options);
-    bdd_options.scenario_name = __MODULE__;
-
-    const string module_path = env.bdd_log.buildPath(bdd_options.scenario_name);
+    const string module_path = env.bdd_log.buildPath(__MODULE__);
     const string dartfilename = buildPath(module_path, "dart_deep_rim_test".setExtension(
             FileExtension.dart));
     const string dartfilename2 = buildPath(module_path, "start_empty_sync_test".setExtension(
@@ -46,11 +40,9 @@ int _main(string[] args) {
     dart_deep_rim_feature.RemoveArchive(dart_info);
     auto dart_deep_rim_context = dart_deep_rim_feature.run();
 
-
     auto dart_sync_snap_feature = automation!(dart_sync_snap_back)();
     dart_sync_snap_feature.SyncToAnotherDb(dart_info);
     auto dart_sync_snap_context = dart_sync_snap_feature.run();
-
 
     auto dart_middle_branch_feature = automation!(dart_middle_branch)();
     dart_middle_branch_feature.AddOneArchiveAndSnap(dart_info);

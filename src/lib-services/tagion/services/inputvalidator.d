@@ -42,6 +42,7 @@ struct InputValidatorOptions {
     mixin JSONCommon;
 }
 
+enum reject_inputvalidator = "reject/inputvalidator";
 /** 
  *  InputValidator actor
  *  Examples: [tagion.testbench.services.inputvalidator]
@@ -51,7 +52,7 @@ struct InputValidatorOptions {
 struct InputValidatorService {
     pragma(msg, "TODO: Make inputvalidator safe when nng is");
     void task(immutable(InputValidatorOptions) opts, immutable(TaskNames) task_names) @trusted {
-        auto rejected = submask.register("inputvalidator/reject");
+        auto rejected = submask.register(reject_inputvalidator);
         NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_PULL);
         ReceiveBuffer buf;
         // s.recvtimeout = opts.socket_select_timeout.msecs;
@@ -96,6 +97,7 @@ struct InputValidatorService {
 
             Document doc = Document(assumeUnique(result.data));
             if (doc.isInorder && doc.isRecord!(HiRPC.Sender)) {
+                log("Sending contract to hirpc_verifier");
                 locate(task_names.hirpc_verifier).send(inputDoc(), doc);
             }
             else {

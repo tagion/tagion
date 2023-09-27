@@ -5,12 +5,15 @@ import tagion.hibon.Document;
 import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
 
+import core.time;
+
 import std.path : dirName, setExtension, buildPath;
 import std.file : mkdirRecurse, exists, remove;
 import std.range : iota, zip, take;
 import std.algorithm.iteration : map;
 import std.format : format;
 import std.array;
+import std.exception;
 
 import tagion.testbench.actor.util;
 import tagion.crypto.SecureNet;
@@ -20,6 +23,8 @@ import tagion.script.execute;
 import tagion.script.TagionCurrency;
 import tagion.script.common;
 import tagion.actor;
+import tagion.utils.pretend_safe_concurrency : receiveOnly, receive, receiveTimeout;
+import tagion.logger.Logger;
 import tagion.services.messages;
 import tagion.services.collector;
 import tagion.services.DART;
@@ -27,6 +32,7 @@ import tagion.utils.StdTime;
 import tagion.basic.Types : FileExtension, Buffer;
 import tagion.dart.Recorder;
 import tagion.dart.DARTBasic;
+import tagion.communication.HiRPC;
 import tagion.services.replicator : ReplicatorOptions;
 import tagion.services.options : TaskNames;
 
@@ -46,14 +52,6 @@ StdSecureNet[] createNets(uint count, string pass_prefix = "net") @safe {
         return net;
     }).array;
 }
-
-// const(StdSecureNet)[] orderNets(StdSecureNet[] nets, Document[] inputs) {
-//     import std.algorithm.sorting;
-//     Fingerprint fingerprint(Document doc) {
-//         nets[0].dartIndex(doc);
-//     }
-//     zip(nets, inputs).sort!((a, b) => RecordFactory.Recorder.archive_sorted(a[1], b[1])).array.map!(a => a[0]);
-// }
 
 TagionBill[] createBills(StdSecureNet[] bill_nets, uint amount) @safe {
     return bill_nets.map!((net) =>
@@ -86,25 +84,28 @@ class ItWork {
     @Given("i have a collector service")
     Document service() @safe {
         thisActor.task_name = "collector_tester_task";
-        immutable task_names = TaskNames();
+        log.registerSubscriptionTask(thisActor.task_name);
+        submask.subscribe(reject_collector);
 
+        immutable task_names = TaskNames();
         { // Start dart service
             immutable opts = DARTOptions(
-                    buildPath(env.bdd_results, __MODULE__, "dart".setExtension(FileExtension.dart))
+                    buildPath(env.bdd_log, __MODULE__),
+                    "dart".setExtension(FileExtension.dart),
             );
-            immutable replicator_folder = buildPath(opts.dart_filename.dirName, "replicator");
+            immutable replicator_folder = buildPath(opts.dart_path.dirName, "replicator");
             immutable replicator_opts = ReplicatorOptions(replicator_folder);
 
             mkdirRecurse(replicator_folder);
             mkdirRecurse(opts.dart_filename.dirName);
 
-            if (opts.dart_filename.exists) {
-                opts.dart_filename.remove;
+            if (opts.dart_path.exists) {
+                opts.dart_path.remove;
             }
 
             import tagion.dart.DART;
 
-            DART.create(opts.dart_filename, node_net);
+            DART.create(opts.dart_path, node_net);
 
             dart_handle = spawn!DARTService(task_names.dart, opts, replicator_opts, task_names, node_net);
             check(waitforChildren(Ctrl.ALIVE), "dart service did not alive");
@@ -133,8 +134,6 @@ class ItWork {
 
     @When("i send a contract")
     Document contract() @trusted {
-        import std.exception;
-
         immutable outputs = PayScript(iota(0, 10).map!(_ => TagionBill.init).array).toDoc;
         immutable contract = cast(immutable) Contract(inputs, immutable(DARTIndex[]).init, outputs);
         immutable signs = {
@@ -149,17 +148,10 @@ class ItWork {
 
         immutable s_contract = immutable(SignedContract)(signs, contract);
 
-        import tagion.communication.HiRPC;
-
         const hirpc = HiRPC(node_net);
         immutable sender = hirpc.sendDaMonies(s_contract);
         collector_handle.send(inputHiRPC(), hirpc.receive(sender.toDoc));
 
-        return result_ok;
-    }
-
-    @Then("i receive a `CollectedSignedContract`")
-    Document collectedSignedContract() {
         auto collected = receiveOnlyTimeout!(signedContract, immutable(CollectedSignedContract)*)[1];
         import std.stdio;
         import tagion.hibon.HiBONJSON;
@@ -168,9 +160,98 @@ class ItWork {
         foreach (inp; collected.inputs) {
             writeln(inp.toPretty);
         }
-        check(collected !is null, "The collected was nulled");
+        check(collected !is null, "The collected was null");
         check(collected.inputs.length == inputs.length, "The lenght of inputs were not the same");
         // check(collected.inputs.map!(a => node_net.dartIndex(a)).array == inputs, "The collected archives did not match the index");
+        return result_ok;
+    }
+
+    @When("i send an contract with no inputs")
+    Document noInputs() @trusted {
+        immutable outputs = PayScript(iota(0, 10).map!(_ => TagionBill.init).array).toDoc;
+        immutable contract = cast(immutable) Contract(immutable(DARTIndex[]).init, immutable(DARTIndex[]).init, outputs);
+        immutable signs = {
+            Signature[] _signs;
+            const contract_hash = node_net.calcHash(contract.toDoc);
+            foreach (net; input_nets) {
+                _signs ~= net.sign(contract_hash);
+            }
+            return _signs.assumeUnique;
+        }();
+        check(signs !is null, "No signatures");
+
+        immutable s_contract = immutable(SignedContract)(signs, contract);
+
+        const hirpc = HiRPC(node_net);
+        immutable sender = hirpc.sendDaMonies(s_contract);
+        //immutable sender = hirpc.sendDaMonies(contract);
+        collector_handle.send(inputHiRPC(), hirpc.receive(sender.toDoc));
+
+        auto result = receiveOnlyTimeout!(Topic, string, immutable(Document));
+        check(result[1] == "hirpc_invalid_signed_contract", "did not reject for the expected reason");
+
+        return result_ok;
+    }
+
+    @When("i send an contract with invalid signatures inputs")
+    Document invalidSignatures() @trusted {
+        immutable outputs = PayScript(iota(0, 10).map!(_ => TagionBill.init).array).toDoc;
+        immutable contract = cast(immutable) Contract(inputs, immutable(DARTIndex[]).init, outputs);
+        immutable signs = {
+            Signature[] _signs;
+            const contract_hash = node_net.calcHash(contract.toDoc);
+            foreach (net; input_nets) {
+                _signs ~= node_net.sign(contract_hash);
+            }
+            return _signs.assumeUnique;
+        }();
+        check(signs !is null, "No signatures");
+
+        immutable s_contract = immutable(SignedContract)(signs, contract);
+        const hirpc = HiRPC(node_net);
+        immutable sender = hirpc.sendDaMonies(s_contract);
+        collector_handle.send(inputHiRPC(), hirpc.receive(sender.toDoc));
+
+        auto result = receiveOnlyTimeout!(Topic, string, Tuple!(const(Fingerprint), const(Signature), Pubkey));
+        check(result[1] == "contract_no_verify", "did not reject for the expected reason");
+
+        return result_ok;
+    }
+
+    @When("i send a contract with input which are not in the dart")
+    Document inTheDart() @trusted {
+        immutable outputs = PayScript(iota(0, 10).map!(_ => TagionBill.init).array).toDoc;
+
+        immutable invalid_inputs = createNets(10, "not_int_dart")
+            .createBills(100_000)
+            .map!(a => node_net.dartIndex(a.toDoc))
+            .array;
+        immutable contract = cast(immutable) Contract(assumeUnique(invalid_inputs), immutable(DARTIndex[]).init, outputs);
+        immutable signs = {
+            Signature[] _signs;
+            const contract_hash = node_net.calcHash(contract.toDoc);
+            foreach (net; input_nets) {
+                _signs ~= net.sign(contract_hash);
+            }
+            return _signs.assumeUnique;
+        }();
+        check(signs !is null, "No signatures");
+
+        immutable s_contract = immutable(SignedContract)(signs, contract);
+
+        const hirpc = HiRPC(node_net);
+        immutable sender = hirpc.sendDaMonies(s_contract);
+        collector_handle.send(inputHiRPC(), hirpc.receive(sender.toDoc));
+
+        auto result = receiveOnlyTimeout!(Topic, string, immutable(RecordFactory.Recorder));
+        check(result[1] == "archive_no_exist", "did not reject for the expected reason");
+        // check(result[1] == "missing_archives", "did not reject for the expected reason");
+
+        return result_ok;
+    }
+
+    @Then("i stop the services")
+    Document collectedSignedContract() {
         dart_handle.send(Sig.STOP);
         collector_handle.send(Sig.STOP);
         waitforChildren(Ctrl.END);

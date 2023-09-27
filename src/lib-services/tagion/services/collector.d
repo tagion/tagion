@@ -3,6 +3,7 @@ module tagion.services.collector;
 
 import tagion.actor.actor;
 import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONException : HiBONRecordException;
 import tagion.hibon.Document;
 import tagion.dart.Recorder : RecordFactory, Archive;
 import tagion.services.messages;
@@ -15,8 +16,10 @@ import tagion.crypto.Types;
 import tagion.basic.Types;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.services.options : TaskNames;
+import tagion.logger.Logger;
 
 import std.typecons;
+import std.exception;
 
 @safe
 struct CollectorOptions {
@@ -25,7 +28,8 @@ struct CollectorOptions {
     mixin JSONCommon;
 }
 
-import std.stdio;
+/// Topic for rejected collector inputs;
+enum reject_collector = "reject/collector";
 
 @safe
 struct CollectorService {
@@ -35,8 +39,10 @@ struct CollectorService {
     CollectedSignedContract[uint] collections;
     CollectedSignedContract*[uint] reads;
 
+    Topic reject;
     void task() {
         assert(net !is null, "No secure net");
+        reject = submask.register(reject_collector);
         run(&signed_contract, &recorder, &rpc_contract);
     }
 
@@ -44,13 +50,25 @@ struct CollectorService {
     void rpc_contract(inputHiRPC, immutable(HiRPC.Receiver) receiver) @trusted {
         immutable doc = Document(receiver.method.params);
         if (!doc.isRecord!SignedContract) {
+            log(reject, "hirpc_not_a_signed_contract", doc);
             return;
         }
-        signed_contract(inputContract(), cast(immutable) SignedContract(doc));
+        try {
+            signed_contract(inputContract(), cast(immutable) SignedContract(doc));
+        }
+        catch (HiBONRecordException e) {
+            log(reject, "hirpc_invalid_signed_contract", doc);
+        }
     }
 
     void signed_contract(inputContract, immutable(SignedContract) s_contract) {
         auto inputs_req = dartReadRR();
+        if (s_contract.signs.length != s_contract.contract.inputs.length) {
+            immutable ulong[2] r = [s_contract.signs.length, s_contract.contract.inputs.length];
+            log(reject, "contract_mismatch_signature_length", r);
+            return;
+        }
+
         CollectedSignedContract collected;
         collected.sign_contract = s_contract;
         collections[inputs_req.id] = collected;
@@ -74,6 +92,11 @@ struct CollectorService {
                 collection = null;
                 reads.remove(res.id);
             }
+            // if (recorder[].map(a => a.fingerprint).array != collection.reads.length) {
+            //     log(reject, "missing_archives", recorder);
+            //      // Remove inputs aswell
+            //     return;
+            // }
             collection.reads ~= recorder[].map!(a => a.toDoc).array;
             return;
         }
@@ -83,23 +106,31 @@ struct CollectorService {
                 collection = null;
                 collections.remove(res.id);
             }
+            // if (recorder[].map(a => a.fingerprint).array != collection.inputs.length) {
+            //     log(reject, "missing_archives", recorder);
+            //     return;
+            // }
             const s_contract = collection.sign_contract;
-            immutable contract_hash = net.calcHash(s_contract.contract);
+            const contract_hash = net.calcHash(s_contract.contract);
             foreach (index, sign; zip(s_contract.contract.inputs, s_contract.signs)) {
-                const archive = find(recorder, index);
+                immutable archive = find(recorder, index);
                 if (archive is null) {
+                    log(reject, "archive_no_exist", recorder);
                     return;
                 }
                 if (!archive.filed.hasMember(StdNames.owner)) {
+                    log(reject, "archive_no_pubkey", archive);
                     return;
                 }
                 Pubkey pkey = archive.filed[StdNames.owner].get!Buffer;
                 if (!net.verify(contract_hash, sign, pkey)) {
+                    log(reject, "contract_no_verify", tuple(contract_hash, sign, pkey));
                     return;
                 }
             }
             collection.inputs ~= recorder[].map!(a => a.toDoc).array;
             if (collection.inputs.length == 0) {
+                log(reject, "contract_no_inputs", immutable(tuple)(collections.giveme(res.id), recorder));
                 return;
             }
 
@@ -110,7 +141,7 @@ struct CollectorService {
 
 alias CollectorServiceHandle = ActorHandle!CollectorService;
 
-private immutable(CollectedSignedContract*) giveme(ref CollectedSignedContract[uint] aa, uint key) @trusted nothrow {
+private immutable(CollectedSignedContract*) giveme(ref CollectedSignedContract[uint] aa, uint key) @trusted nothrow pure {
     scope (exit) {
         aa.remove(key);
     }
@@ -121,8 +152,8 @@ private immutable(CollectedSignedContract*) giveme(ref CollectedSignedContract[u
 // The find funtion in dart.recorder doest not work with an immutable recorder;
 import tagion.dart.DARTBasic : DARTIndex;
 
-private const(Archive) find(const(RecordFactory.Recorder) rec, const(DARTIndex) index) @safe nothrow {
-    foreach (_archive; rec[]) {
+private immutable(Archive) find(immutable(RecordFactory.Recorder) rec, const(DARTIndex) index) @safe nothrow pure {
+    foreach (const _archive; rec[]) {
         if (_archive.fingerprint == index) {
             return _archive;
         }

@@ -181,6 +181,10 @@ class RecordFactory {
             return archives[];
         }
 
+        Archives.ImmutableRange opSlice() pure nothrow immutable {
+            return archives[];
+        }
+
         void removeOutOfRange(ushort from, ushort to) { //TODO: write unit tests
             if (from == to)
                 return;

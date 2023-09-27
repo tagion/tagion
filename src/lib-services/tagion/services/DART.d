@@ -29,12 +29,19 @@ import tagion.services.options : TaskNames;
 
 @safe
 struct DARTOptions {
-    string dart_filename = buildPath(".", "dart".setExtension(FileExtension.dart));
+    string folder_path = buildPath(".");
+    string dart_filename = "dart".setExtension(FileExtension.dart);
+    string dart_path;
+
+    this(string folder_path, string dart_filename) {
+        this.folder_path = folder_path;
+        this.dart_filename = dart_filename;
+        dart_path = buildPath(folder_path, dart_filename);
+    }
 
     void setPrefix(string prefix) nothrow {
-        import std.exception;
-
-        dart_filename = buildPath(".", assumeWontThrow(format("%sdart", prefix)).setExtension(FileExtension.dart));
+        dart_filename = prefix ~ dart_filename;
+        dart_path = buildPath(folder_path, dart_filename);
     }
 
     mixin JSONCommon;
@@ -47,7 +54,7 @@ struct DARTService {
         DART db;
         Exception dart_exception;
         immutable replicator_task_name = task_names.replicator;
-        db = new DART(net, opts.dart_filename);
+        db = new DART(net, opts.dart_path);
         if (dart_exception !is null) {
             throw dart_exception;
         }

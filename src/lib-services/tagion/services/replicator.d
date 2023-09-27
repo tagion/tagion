@@ -21,7 +21,7 @@ struct ReplicatorOptions {
         import std.path : buildPath;
         import std.exception;
 
-        folder_path = assumeWontThrow(buildPath(".", format("%srecorder", prefix)));
+        folder_path = assumeWontThrow(buildPath(folder_path, prefix));
     }
 
     mixin JSONCommon;

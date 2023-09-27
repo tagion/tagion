@@ -227,6 +227,14 @@
                 "services"
             ],
             "timeout": 0.0
+        },
+        "send_contract": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "contract"
+            ],
+            "timeout": 0.0
         }
     }
 }
