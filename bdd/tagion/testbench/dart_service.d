@@ -17,7 +17,7 @@ int _main(string[] args) {
 
     auto module_path = env.bdd_log.buildPath(__MODULE__);
     mkdirRecurse(module_path);
-    auto opts = DARTOptions(buildPath(module_path, "dart".setExtension(FileExtension.dart)));
+    auto opts = DARTOptions(module_path, "dart".setExtension(FileExtension.dart));
     auto replicator_path = buildPath(module_path, "replicator");
     mkdirRecurse(replicator_path);
     auto replicator_opts = ReplicatorOptions(replicator_path);

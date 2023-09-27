@@ -84,12 +84,10 @@ struct DARTWorker {
             if (s.errno == 0) {
                 writefln("RECEIVED RESPONSE: %s", received_doc.toPretty);
                 thisActor.stop = true;
-                return;
             }
             else {
                 writefln("ERROR %s", s.errno);
                 thisActor.stop = true;
-                return;
             }
         }
     }
@@ -141,11 +139,11 @@ class WriteAndReadFromDartDb {
 
     @Given("I have a dart db")
     Document dartDb() {
-        if (opts.dart_filename.exists) {
-            opts.dart_filename.remove;
+        if (opts.dart_path.exists) {
+            opts.dart_path.remove;
         }
 
-        DART.create(opts.dart_filename, dart_net);
+        DART.create(opts.dart_path, dart_net);
         return result_ok;
     }
 
@@ -230,7 +228,7 @@ class WriteAndReadFromDartDb {
             auto read_check = hirpc.receive(read_check_tuple[1]);
 
             auto hirpc_check = read_check.message[Keywords.result].get!Document;
-            writefln("hirpc_check %s", hirpc_check.toPretty);
+            // writefln("hirpc_check %s", hirpc_check.toPretty);
             auto check_fingerprints = (() @trusted => cast(DARTIndex[]) hirpc_check[DARTFile.Params.fingerprints].get!(Buffer))();
 
             check(check_fingerprints.length == 0, "should be empty");

@@ -90,7 +90,8 @@ class ItWork {
 
         { // Start dart service
             immutable opts = DARTOptions(
-                    buildPath(env.bdd_results, __MODULE__, "dart".setExtension(FileExtension.dart))
+                buildPath(env.bdd_results, __MODULE__), 
+                "dart".setExtension(FileExtension.dart),
             );
             immutable replicator_folder = buildPath(opts.dart_filename.dirName, "replicator");
             immutable replicator_opts = ReplicatorOptions(replicator_folder);

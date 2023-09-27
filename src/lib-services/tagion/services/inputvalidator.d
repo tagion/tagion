@@ -96,6 +96,7 @@ struct InputValidatorService {
 
             Document doc = Document(assumeUnique(result.data));
             if (doc.isInorder && doc.isRecord!(HiRPC.Sender)) {
+                log("Sending contract to hirpc_verifier");
                 locate(task_names.hirpc_verifier).send(inputDoc(), doc);
             }
             else {

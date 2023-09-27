@@ -46,7 +46,8 @@ void dartHiRPCCallback(NNGMessage *msg) @trusted {
     Document doc = msg.body_trim!(immutable(ubyte[]))(msg.length);
     msg.clear();
     log("Kernel got: %s", doc.toPretty);
-    if (!doc.isRecord!(HiRPC.Sender)) {
+    if (!doc.isInorder || !doc.isRecord!(HiRPC.Sender)) {
+        log("Non-valid request received");
         return;
     }
     locate(TaskNames().dart).send(dartHiRPCRR(), doc);
@@ -56,6 +57,8 @@ void dartHiRPCCallback(NNGMessage *msg) @trusted {
     }
     auto dart_resp = receiveTimeout(100.msecs, &dartHiRPCResponse);
     if (!dart_resp) {
+        log("Non-valid request received");
+        return;
         // send a error;
     }
     // if (

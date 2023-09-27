@@ -33,10 +33,10 @@ struct Supervisor {
     void task(immutable(Options) opts, immutable(SecureNet) net) @safe {
         // immutable SecureNet net = (() @trusted => cast(immutable) new WaveNet(password))();
 
-        const dart_filename = opts.dart.dart_filename;
+        const dart_path = opts.dart.dart_path;
 
-        if (!dart_filename.exists) {
-            DARTFile.create(dart_filename, net);
+        if (!dart_path.exists) {
+            DARTFile.create(dart_path, net);
         }
 
         immutable tn = opts.task_names;

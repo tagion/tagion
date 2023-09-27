@@ -7,4 +7,5 @@ public import epoch_creator = tagion.testbench.services.epoch_creator;
 public import hirpc_verifier = tagion.testbench.services.hirpc_verifier;
 public import inputvalidator = tagion.testbench.services.inputvalidator;
 public import recorder_service = tagion.testbench.services.recorder_service;
+public import sendcontract = tagion.testbench.services.sendcontract;
 public import transcript = tagion.testbench.services.transcript;
