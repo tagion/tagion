@@ -19,8 +19,11 @@ import tagion.crypto.SecureNet;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.gossip.AddressBook : addressbook, NodeAddress;
 import core.time;
+import core.thread;
+import std.stdio;
 
 
+import std.process;
 
 mixin Main!(_main);
 
@@ -35,6 +38,15 @@ int _main(string[] args) {
     immutable wave_options = Options(local_options).wave;
 
     auto send_contract_feature = automation!(sendcontract);
+
+    string[] neuewelle_command = [
+        tools.neuewelle,
+    ];
+    
+    auto tid = spawnProcess(neuewelle_command, stdin, stdout, stderr);
+    Thread.sleep(10.seconds);
+    
+
     send_contract_feature.run();
 
     return 0;
