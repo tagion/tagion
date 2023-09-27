@@ -98,7 +98,7 @@ struct WordList {
     }
 
     @trusted
-    ubyte[] entropy(const(ushort[]) mnemonic_codes) {
+    ubyte[] entropy(const(ushort[]) mnemonic_codes) const {
         enum MAX_WORDS = 24; /// Max number of mnemonic word in a string
         enum MNEMONIC_BITS = 11; /// Bit size of the word number 2^11=2048
         enum MAX_BITS = MAX_WORDS * MNEMONIC_BITS; /// Total number of bits
@@ -142,7 +142,7 @@ unittest {
     {
         const mnemonic = [
             "punch", "shock", "entire", "north", "file",
-            "identify"/*    
+            "identify" /*    
         "echo",
             "alcohol",
 
@@ -160,11 +160,15 @@ unittest {
         const(ushort[]) mnemonic_code = [1390, 1586, 604, 1202, 689, 900];
         immutable expected_entropy = "101011011101100011001001001011100100101100100101011000101110000100";
         assert(wordlist(mnemonic) == mnemonic_code);
-        writefln("%(%d %)", wordlist(mnemonic));
-        writefln("%(%011b%)", wordlist(mnemonic));
+        const mnemonic_codes = wordlist(mnemonic);
+        writefln("%(%d %)", mnemonic_codes);
+        writefln("%(%011b%)", mnemonic_codes);
         writefln("%s", expected_entropy);
-        string entropy_bits = format("%(%011b%)", wordlist(mnemonic));
-        assert(expected_entropy == entropy_bits);
+        string mnemonic_codes_bits = format("%(%011b%)", mnemonic_codes);
+        assert(expected_entropy == mnemonic_codes_bits);
+        const entropy = wordlist.entropy(mnemonic_codes);
+        string entropy_bits = format("%(%b%)", entropy)[0 .. 12 * mnemonic_code.length];
+        writefln("%s", entropy_bits);
 
         //        const =0 
     }
@@ -193,6 +197,18 @@ unittest {
         string entropy_bits = format("%(%011b%)", wordlist(mnemonic));
         assert(expected_entropy == entropy_bits);
 
+    }
+    { /// PBKDF2 BIP39
+        const mnemonic = [
+            "basket", "actual"
+        ];
+
+        writefln("%(%d %)", wordlist(mnemonic));
+        import tagion.pbkdf2.pbkdf2;
+        import std.digest.sha : SHA512;
+
+        alias pbkdf2_sha512 = pbkdf2!SHA512;
+        //5cf2d4a8b0355e90295bdfc565a022a409af063d5365bb57bf74d9528f494bfa4400f53d8349b80fdae44082d7f9541e1dba2b003bcfec9d0d53781ca676651f
     }
 
 }
