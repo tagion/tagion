@@ -217,6 +217,38 @@ class ItWork {
         return result_ok;
     }
 
+    @When("i send a contract with input which are not in the dart")
+    Document inTheDart() @trusted {
+        immutable outputs = PayScript(iota(0, 10).map!(_ => TagionBill.init).array).toDoc;
+
+        immutable invalid_inputs = createNets(10, "not_int_dart")
+            .createBills(100_000)
+            .map!(a => node_net.dartIndex(a.toDoc))
+            .array;
+        immutable contract = cast(immutable) Contract(assumeUnique(invalid_inputs), immutable(DARTIndex[]).init, outputs);
+        immutable signs = {
+            Signature[] _signs;
+            const contract_hash = node_net.calcHash(contract.toDoc);
+            foreach (net; input_nets) {
+                _signs ~= net.sign(contract_hash);
+            }
+            return _signs.assumeUnique;
+        }();
+        check(signs !is null, "No signatures");
+
+        immutable s_contract = immutable(SignedContract)(signs, contract);
+
+        const hirpc = HiRPC(node_net);
+        immutable sender = hirpc.sendDaMonies(s_contract);
+        collector_handle.send(inputHiRPC(), hirpc.receive(sender.toDoc));
+
+        auto result = receiveOnlyTimeout!(Topic, string, immutable(RecordFactory.Recorder));
+        // check(result[1] == "archive_no_exist", "did not reject for the expected reason");
+        check(result[1] == "missing_archives", "did not reject for the expected reason");
+
+        return result_ok;
+    }
+
     @Then("i stop the services")
     Document collectedSignedContract() {
         dart_handle.send(Sig.STOP);

@@ -94,6 +94,7 @@ struct CollectorService {
             }
             // if (recorder[].map(a => a.fingerprint).array != collection.reads.length) {
             //     log(reject, "missing_archives", recorder);
+            //      // Remove inputs aswell
             //     return;
             // }
             collection.reads ~= recorder[].map!(a => a.toDoc).array;
