@@ -13,6 +13,7 @@ import std.range : iota, zip, take;
 import std.algorithm.iteration : map;
 import std.format : format;
 import std.array;
+import std.exception;
 
 import tagion.testbench.actor.util;
 import tagion.crypto.SecureNet;
@@ -31,6 +32,7 @@ import tagion.utils.StdTime;
 import tagion.basic.Types : FileExtension, Buffer;
 import tagion.dart.Recorder;
 import tagion.dart.DARTBasic;
+import tagion.communication.HiRPC;
 import tagion.services.replicator : ReplicatorOptions;
 import tagion.services.options : TaskNames;
 
@@ -50,14 +52,6 @@ StdSecureNet[] createNets(uint count, string pass_prefix = "net") @safe {
         return net;
     }).array;
 }
-
-// const(StdSecureNet)[] orderNets(StdSecureNet[] nets, Document[] inputs) {
-//     import std.algorithm.sorting;
-//     Fingerprint fingerprint(Document doc) {
-//         nets[0].dartIndex(doc);
-//     }
-//     zip(nets, inputs).sort!((a, b) => RecordFactory.Recorder.archive_sorted(a[1], b[1])).array.map!(a => a[0]);
-// }
 
 TagionBill[] createBills(StdSecureNet[] bill_nets, uint amount) @safe {
     return bill_nets.map!((net) =>
@@ -139,8 +133,6 @@ class ItWork {
 
     @When("i send a contract")
     Document contract() @trusted {
-        import std.exception;
-
         immutable outputs = PayScript(iota(0, 10).map!(_ => TagionBill.init).array).toDoc;
         immutable contract = cast(immutable) Contract(inputs, immutable(DARTIndex[]).init, outputs);
         immutable signs = {
@@ -154,8 +146,6 @@ class ItWork {
         check(signs !is null, "No signatures");
 
         immutable s_contract = immutable(SignedContract)(signs, contract);
-
-        import tagion.communication.HiRPC;
 
         const hirpc = HiRPC(node_net);
         immutable sender = hirpc.sendDaMonies(s_contract);
@@ -177,8 +167,6 @@ class ItWork {
 
     @When("i send an contract with no inputs")
     Document noInputs() @trusted {
-        import std.exception;
-
         immutable outputs = PayScript(iota(0, 10).map!(_ => TagionBill.init).array).toDoc;
         immutable contract = cast(immutable) Contract(immutable(DARTIndex[]).init, immutable(DARTIndex[]).init, outputs);
         immutable signs = {
@@ -193,8 +181,6 @@ class ItWork {
 
         immutable s_contract = immutable(SignedContract)(signs, contract);
 
-        import tagion.communication.HiRPC;
-
         const hirpc = HiRPC(node_net);
         immutable sender = hirpc.sendDaMonies(s_contract);
         //immutable sender = hirpc.sendDaMonies(contract);
@@ -202,6 +188,31 @@ class ItWork {
 
         auto result = receiveOnlyTimeout!(Topic, string, immutable(Document));
         check(result[1] == "hirpc_invalid_signed_contract", "did not reject for the expected reason");
+
+        return result_ok;
+    }
+
+    @When("i send an contract with invalid signatures inputs")
+    Document invalidSignatures() @trusted {
+        immutable outputs = PayScript(iota(0, 10).map!(_ => TagionBill.init).array).toDoc;
+        immutable contract = cast(immutable) Contract(inputs, immutable(DARTIndex[]).init, outputs);
+        immutable signs = {
+            Signature[] _signs;
+            const contract_hash = node_net.calcHash(contract.toDoc);
+            foreach (net; input_nets) {
+                _signs ~= node_net.sign(contract_hash);
+            }
+            return _signs.assumeUnique;
+        }();
+        check(signs !is null, "No signatures");
+
+        immutable s_contract = immutable(SignedContract)(signs, contract);
+        const hirpc = HiRPC(node_net);
+        immutable sender = hirpc.sendDaMonies(s_contract);
+        collector_handle.send(inputHiRPC(), hirpc.receive(sender.toDoc));
+
+        auto result = receiveOnlyTimeout!(Topic, string, Tuple!(const(Fingerprint), const(Signature), Pubkey));
+        check(result[1] == "contract_no_verify", "did not reject for the expected reason");
 
         return result_ok;
     }
