@@ -30,6 +30,7 @@ int main(string[] args) {
     import tvm_service = tagion.testbench.tvm_service;
     import transcript_service = tagion.testbench.transcript_service;
     import replicator_service = tagion.testbench.replicator_service;
+    import send_contract = tagion.testbench.send_contract;
 
     alias alltools = AliasSeq!(
             collector,
@@ -57,6 +58,7 @@ int main(string[] args) {
             tvm_service,
             transcript_service,
             replicator_service,
+            send_contract,
     );
     mixin doOneMain!(alltools);
     return do_main(args);

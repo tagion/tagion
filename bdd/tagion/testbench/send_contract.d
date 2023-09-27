@@ -1,3 +1,4 @@
+module tagion.testbench.send_contract;
 import tagion.tools.Basic;
 import tagion.behaviour.Behaviour;
 import tagion.testbench.services;
@@ -25,72 +26,16 @@ mixin Main!(_main);
 
 int _main(string[] args) {
     auto module_path = env.bdd_log.buildPath(__MODULE__);
+    if (module_path.exists) {
+        rmdirRecurse(module_path);
+    }
     mkdirRecurse(module_path);
-
-
-
-    
-    // import tagion.tools.neuewelle : startLogger;
-    // auto logger_service_tid = startLogger;
-    // scope (exit) {
-    //     import tagion.basic.Types : Control;
-
-    //     logger_service_tid.control(Control.STOP);
-    //     receiveOnly!Control;
-    // }
 
     scope Options local_options = Options.defaultOptions;
     immutable wave_options = Options(local_options).wave;
-    locator_options = new immutable(LocatorOptions)(5, 5);
-    ActorHandle!Supervisor[] supervisor_handles;
 
-    struct Node {
-        immutable(Options) opts;
-        immutable(SecureNet) net;
-    }
-
-    Node[] nodes;
-
-    foreach (i; 0 .. wave_options.number_of_nodes) {
-        immutable prefix = format("Node_%s_", i);
-        auto opts = Options(local_options);
-        opts.dart.folder_path = module_path;
-        opts.replicator.folder_path = buildPath(module_path, "replicator");
-
-        opts.setPrefix(prefix);
-        SecureNet net = new StdSecureNet();
-        net.generateKeyPair(opts.task_names.supervisor);
-        opts.epoch_creator.timeout = 1000;
-
-
-        nodes ~= Node(opts, cast(immutable) net);
-
-        addressbook[net.pubkey] = NodeAddress(opts.task_names.epoch_creator);
-    }
-
-    /// spawn the nodes
-    foreach (n; nodes) {
-        supervisor_handles ~= spawn!Supervisor(n.opts.task_names.supervisor, n.opts, n.net);
-    }
-    if (waitforChildren(Ctrl.ALIVE, 10.seconds)) {
-        log("alive");
-        stopsignal.wait;
-    }
-    else {
-        log("Program did not start");
-        return 1;
-    }
-
-    log("Sending stop signal to supervisor");
-    foreach (supervisor; supervisor_handles) {
-        supervisor.send(Sig.STOP);
-    }
-    // supervisor_handle.send(Sig.STOP);
-    if (!waitforChildren(Ctrl.END)) {
-        log("Program did not stop properly");
-        return 1;
-    }
-    log("Exiting");
+    auto send_contract_feature = automation!(sendcontract);
+    send_contract_feature.run();
 
     return 0;
 
