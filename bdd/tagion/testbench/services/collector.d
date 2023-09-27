@@ -5,6 +5,8 @@ import tagion.hibon.Document;
 import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
 
+import core.time;
+
 import std.path : dirName, setExtension, buildPath;
 import std.file : mkdirRecurse, exists, remove;
 import std.range : iota, zip, take;
@@ -20,6 +22,8 @@ import tagion.script.execute;
 import tagion.script.TagionCurrency;
 import tagion.script.common;
 import tagion.actor;
+import tagion.utils.pretend_safe_concurrency : receiveOnly, receive, receiveTimeout;
+import tagion.logger.Logger;
 import tagion.services.messages;
 import tagion.services.collector;
 import tagion.services.DART;
@@ -86,8 +90,10 @@ class ItWork {
     @Given("i have a collector service")
     Document service() @safe {
         thisActor.task_name = "collector_tester_task";
-        immutable task_names = TaskNames();
+        log.registerSubscriptionTask(thisActor.task_name);
+        submask.subscribe(reject_collector);
 
+        immutable task_names = TaskNames();
         { // Start dart service
             immutable opts = DARTOptions(
                     buildPath(env.bdd_results, __MODULE__, "dart".setExtension(FileExtension.dart))
@@ -155,11 +161,6 @@ class ItWork {
         immutable sender = hirpc.sendDaMonies(s_contract);
         collector_handle.send(inputHiRPC(), hirpc.receive(sender.toDoc));
 
-        return result_ok;
-    }
-
-    @Then("i receive a `CollectedSignedContract`")
-    Document collectedSignedContract() {
         auto collected = receiveOnlyTimeout!(signedContract, immutable(CollectedSignedContract)*)[1];
         import std.stdio;
         import tagion.hibon.HiBONJSON;
@@ -168,9 +169,45 @@ class ItWork {
         foreach (inp; collected.inputs) {
             writeln(inp.toPretty);
         }
-        check(collected !is null, "The collected was nulled");
+        check(collected !is null, "The collected was null");
         check(collected.inputs.length == inputs.length, "The lenght of inputs were not the same");
         // check(collected.inputs.map!(a => node_net.dartIndex(a)).array == inputs, "The collected archives did not match the index");
+        return result_ok;
+    }
+
+    @When("i send an contract with no inputs")
+    Document noInputs() @trusted {
+        import std.exception;
+
+        immutable outputs = PayScript(iota(0, 10).map!(_ => TagionBill.init).array).toDoc;
+        immutable contract = cast(immutable) Contract(immutable(DARTIndex[]).init, immutable(DARTIndex[]).init, outputs);
+        immutable signs = {
+            Signature[] _signs;
+            const contract_hash = node_net.calcHash(contract.toDoc);
+            foreach (net; input_nets) {
+                _signs ~= net.sign(contract_hash);
+            }
+            return _signs.assumeUnique;
+        }();
+        check(signs !is null, "No signatures");
+
+        immutable s_contract = immutable(SignedContract)(signs, contract);
+
+        import tagion.communication.HiRPC;
+
+        const hirpc = HiRPC(node_net);
+        immutable sender = hirpc.sendDaMonies(s_contract);
+        //immutable sender = hirpc.sendDaMonies(contract);
+        collector_handle.send(inputHiRPC(), hirpc.receive(sender.toDoc));
+
+        auto result = receiveOnlyTimeout!(Topic, string, immutable(Document));
+        check(result[1] == "hirpc_invalid_signed_contract", "did not reject for the expected reason");
+
+        return result_ok;
+    }
+
+    @Then("i stop the services")
+    Document collectedSignedContract() {
         dart_handle.send(Sig.STOP);
         collector_handle.send(Sig.STOP);
         waitforChildren(Ctrl.END);
