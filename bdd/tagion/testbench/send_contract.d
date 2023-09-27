@@ -54,9 +54,9 @@ int _main(string[] args) {
     foreach (i; 0 .. wave_options.number_of_nodes) {
         immutable prefix = format("Node_%s_", i);
         auto opts = Options(local_options);
-        
+        opts.dart.folder_path = module_path;
+        opts.replicator.folder_path = buildPath(module_path, "replicator");
 
-        
         opts.setPrefix(prefix);
         SecureNet net = new StdSecureNet();
         net.generateKeyPair(opts.task_names.supervisor);
