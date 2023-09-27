@@ -6,7 +6,6 @@ import tagion.tools.Basic;
 import std.traits : moduleName;
 
 import tagion.testbench.dart;
-import tagion.testbench.tools.BDDOptions;
 import tagion.testbench.tools.Environment;
 
 import tagion.dart.DARTFakeNet : DARTFakeNet;
@@ -26,11 +25,7 @@ import tagion.basic.Version;
 mixin Main!(_main);
 
 int _main(string[] args) {
-    BDDOptions bdd_options;
-    setDefaultBDDOptions(bdd_options);
-    bdd_options.scenario_name = __MODULE__;
-
-    const string module_path = env.bdd_log.buildPath(bdd_options.scenario_name);
+    const string module_path = env.bdd_log.buildPath(__MODULE__);
     const string dartfilename = buildPath(module_path, "dart_pseudo_random_test".setExtension(FileExtension.dart));
     const string dartfilename2 = buildPath(module_path, "dart_pseudo_random_test2".setExtension(FileExtension.dart));
 

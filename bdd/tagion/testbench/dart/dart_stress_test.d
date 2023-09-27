@@ -10,7 +10,6 @@ import std.format : format;
 import std.algorithm : map, filter, each, sort, equal;
 import tagion.communication.HiRPC;
 import tagion.dart.DARTcrud : dartRead;
-import tagion.testbench.tools.BDDOptions;
 
 import tagion.dart.DARTFakeNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
@@ -54,7 +53,6 @@ class AddPseudoRandomData {
     const ulong samples;
     const ulong number_of_records;
     ulong[][] data;
-    BDDOptions bdd_options;
 
     this(DartInfo info, const ulong samples, const ulong number_of_records) {
         check(samples % number_of_records == 0,
