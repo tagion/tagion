@@ -50,9 +50,18 @@ void dartHiRPCCallback(NNGMessage *msg) @trusted {
         return;
     }
     locate(TaskNames().dart).send(dartHiRPCRR(), doc);
-    auto dart_resp = receiveOnly!(dartHiRPCRR.Response, Document);
+
+    void dartHiRPCResponse(dartHiRPCRR.Response res, Document doc) {
+        msg.body_append(doc.serialize);
+    }
+    auto dart_resp = receiveTimeout(100.msecs, &dartHiRPCResponse);
+    if (!dart_resp) {
+        // send a error;
+    }
+    // if (
+    // auto dart_resp = receiveOnly!(dartHiRPCRR.Response, Document);
         
-    msg.body_append(dart_resp[1].serialize);
+    // msg.body_append(dart_resp[1].serialize);
 }
 
 
@@ -109,24 +118,3 @@ struct DARTInterfaceService {
 }
 alias DARTInterfaceServiceHandle = ActorHandle!DARTInterfaceService;
 
-// @safe 
-// void dartClientWorker(string url, Document doc) {
-//     int rc;
-//     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
-//     s.recvtimeout = 1000.msecs;
-//     while(1) {
-//         rc = s.dial(url);
-//         if (rc == 0) break;
-//         if(rc == nng_errno.NNG_ECONNREFUSED) {
-//             nng_sleep(100.msecs);
-//             continue;
-//         }
-
-//         assert(rc = 0);
-//     }
-//     while(1) {
-//         rc = s.send(doc.serialize);
-//         assert(rc = 0);
-//     }
-
-// }
