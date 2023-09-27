@@ -63,6 +63,12 @@ struct CollectorService {
 
     void signed_contract(inputContract, immutable(SignedContract) s_contract) {
         auto inputs_req = dartReadRR();
+        if (s_contract.signs.length != s_contract.contract.inputs.length) {
+            immutable ulong[2] r = [s_contract.signs.length, s_contract.contract.inputs.length];
+            log(reject, "contract_mismatch_signature_length", r);
+            return;
+        }
+
         CollectedSignedContract collected;
         collected.sign_contract = s_contract;
         collections[inputs_req.id] = collected;
@@ -86,6 +92,10 @@ struct CollectorService {
                 collection = null;
                 reads.remove(res.id);
             }
+            // if (recorder[].map(a => a.fingerprint).array != collection.reads.length) {
+            //     log(reject, "missing_archives", recorder);
+            //     return;
+            // }
             collection.reads ~= recorder[].map!(a => a.toDoc).array;
             return;
         }
@@ -95,8 +105,12 @@ struct CollectorService {
                 collection = null;
                 collections.remove(res.id);
             }
+            // if (recorder[].map(a => a.fingerprint).array != collection.inputs.length) {
+            //     log(reject, "missing_archives", recorder);
+            //     return;
+            // }
             const s_contract = collection.sign_contract;
-            immutable contract_hash = net.calcHash(s_contract.contract);
+            const contract_hash = net.calcHash(s_contract.contract);
             foreach (index, sign; zip(s_contract.contract.inputs, s_contract.signs)) {
                 immutable archive = find(recorder, index);
                 if (archive is null) {
