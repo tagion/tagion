@@ -129,7 +129,14 @@ struct WordList {
             writefln("slice          %(%08b %)",
                     (cast(ubyte*)&work_buffer[0])[0 .. 4]);
 
-            foreach (mnemonic_index, mnemonic_byte; mnemonic_bytes[0 .. 3]) {
+            result[byte_pos] |= mnemonic_bytes[0];
+            result[byte_pos + 1] = mnemonic_bytes[1];
+            if (byte_pos + 2 < result.length) {
+                result[byte_pos + 2] = mnemonic_bytes[2];
+
+            }
+            version (none)
+                foreach (mnemonic_index, mnemonic_byte; mnemonic_bytes[0 .. 3]) {
                 result[byte_pos + mnemonic_index] |= mnemonic_byte;
             }
             writefln("new slice      %(%08b %)", result[0 .. 6]);
