@@ -14,10 +14,16 @@ import core.time;
 import core.thread;
 import std.stdio;
 
+import neuewelle = tagion.tools.neuewelle;
 
-import std.process;
+import tagion.utils.pretend_safe_concurrency;
+import tagion.GlobalSignals;
 
 mixin Main!(_main);
+
+void wrap_neuewelle(immutable(string)[] args) {
+    neuewelle._main(cast(string[]) args);
+}
 
 int _main(string[] args) {
     auto module_path = env.bdd_log.buildPath(__MODULE__);
@@ -25,27 +31,27 @@ int _main(string[] args) {
         rmdirRecurse(module_path);
     }
     mkdirRecurse(module_path);
-    auto config_file = buildPath(module_path, "tagionwave.json");
+    string config_file = buildPath(module_path, "tagionwave.json");
 
     scope Options local_options = Options.defaultOptions;
-    local_options.dart.folder_path = buildPath(module_path, "dart");
-    local_options.replicator.folder_path = buildPath(module_path, "replicator");
+    local_options.dart.folder_path = buildPath(module_path);
+    local_options.replicator.folder_path = buildPath(module_path);
     local_options.save(config_file);
     
     auto send_contract_feature = automation!(sendcontract);
 
 
-
-    string[] neuewelle_command = [
-        tools.neuewelle,
-        config_file,
-    ];
-    
-    auto tid = spawnProcess(neuewelle_command, stdin, stdout, stderr);
+    immutable neuewelle_args = [config_file];
+    auto tid = spawn(&wrap_neuewelle, neuewelle_args);
     Thread.sleep(10.seconds);
+
+
+
     
 
     send_contract_feature.run();
+    stopsignal.set;
+    
 
     return 0;
 
