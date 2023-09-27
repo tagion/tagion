@@ -93,7 +93,7 @@ class ItWork {
                 buildPath(env.bdd_results, __MODULE__), 
                 "dart".setExtension(FileExtension.dart),
             );
-            immutable replicator_folder = buildPath(opts.dart_filename.dirName, "replicator");
+            immutable replicator_folder = buildPath(opts.dart_path.dirName, "replicator");
             immutable replicator_opts = ReplicatorOptions(replicator_folder);
 
             mkdirRecurse(replicator_folder);
