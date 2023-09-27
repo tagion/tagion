@@ -97,7 +97,7 @@ class SendNoneHiRPC {
         register("inputvalidator_tester", thisTid);
 
         log.registerSubscriptionTask("inputvalidator_tester");
-        submask.subscribe("inputvalidator/reject");
+        submask.subscribe(reject_inputvalidator);
         return result_ok;
     }
 
@@ -150,7 +150,7 @@ class SendPartialHiBON {
 
         register("inputvalidator_tester", thisTid);
         log.registerSubscriptionTask("inputvalidator_tester");
-        submask.subscribe("inputvalidator/reject");
+        submask.subscribe(reject_inputvalidator);
         return result_ok;
     }
 
