@@ -44,16 +44,23 @@ struct dartWorkerContext {
 }
 void dartHiRPCCallback(NNGMessage *msg, void *ctx) @trusted {
     thisActor.task_name = format("%s", thisTid);
+    log.register(thisActor.task_name);
 
     auto cnt = cast(dartWorkerContext*) ctx;
 
     import tagion.hibon.HiBONJSON : toPretty;
     import tagion.communication.HiRPC;
+
+    if (msg.length == 0) {
+        log("received empty msg");
+        return;
+    }
     Document doc = msg.body_trim!(immutable(ubyte[]))(msg.length);
     msg.clear();
-    // log("Kernel got: %s", doc.toPretty);
+
+    log("Kernel got: %s", doc.toPretty);
     if (!doc.isInorder || !doc.isRecord!(HiRPC.Sender)) {
-        // log("Non-valid request received");
+        log("Non-valid request received");
         return;
     }
     locate(cnt.dart_task_name).send(dartHiRPCRR(), doc);
@@ -67,10 +74,6 @@ void dartHiRPCCallback(NNGMessage *msg, void *ctx) @trusted {
         return;
         // send a error;
     }
-    // if (
-    // auto dart_resp = receiveOnly!(dartHiRPCRR.Response, Document);
-        
-    // msg.body_append(dart_resp[1].serialize);
 }
 
 @safe 
