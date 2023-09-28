@@ -971,9 +971,15 @@ struct NNGPoolWorker {
         this.delay = msecs(0);
         this.cb = null;
     }
+    void shutdown(){
+        this.aio.stop();
+        this.cb = null;
+        this.state = nng_worker_state.NONE;
+    }
 } // struct NNGPoolWorker
 
 extern (C) void nng_pool_stateful ( void* p ){
+    if(p == null) return;
     NNGPoolWorker *w = cast(NNGPoolWorker*)p;
     switch(w.state){
         case nng_worker_state.NONE:
@@ -1045,7 +1051,7 @@ struct NNGPool {
     void shutdown() {
         enforce(nworkers > 0);
         for(auto i=0; i<nworkers; i++){
-            workers[i].aio.stop();
+            workers[i].shutdown();
         }    
     }
 
