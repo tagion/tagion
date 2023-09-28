@@ -947,6 +947,7 @@ private:
 alias nng_pool_callback = void function ( NNGMessage*, void* );
 
 enum nng_worker_state { 
+    EXIT = -1,
     NONE = 0, 
     RECV = 1, 
     WAIT = 2, 
@@ -971,10 +972,12 @@ struct NNGPoolWorker {
         this.delay = msecs(0);
         this.cb = null;
     }
+    void wait(){
+        this.aio.wait();            
+    }
     void shutdown(){
+        this.state = nng_worker_state.EXIT;
         this.aio.stop();
-        this.cb = null;
-        this.state = nng_worker_state.NONE;
     }
 } // struct NNGPoolWorker
 
@@ -982,6 +985,8 @@ extern (C) void nng_pool_stateful ( void* p ){
     if(p == null) return;
     NNGPoolWorker *w = cast(NNGPoolWorker*)p;
     switch(w.state){
+        case nng_worker_state.EXIT:
+            return;
         case nng_worker_state.NONE:
             w.state = nng_worker_state.RECV;
             nng_ctx_recv(w.ctx, w.aio.aio);
@@ -1052,6 +1057,9 @@ struct NNGPool {
         enforce(nworkers > 0);
         for(auto i=0; i<nworkers; i++){
             workers[i].shutdown();
+        }    
+        for(auto i=0; i<nworkers; i++){
+            workers[i].wait();
         }    
     }
 
