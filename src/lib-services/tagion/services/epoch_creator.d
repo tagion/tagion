@@ -95,12 +95,14 @@ struct EpochCreatorService {
         }
 
         void receivePayload(Payload, const(Document) pload) {
-            log.trace("Received Payload");
+            log.trace("Received Payload %s", pload.toPretty);
             payload_queue.write(pload);
         }
 
         void receiveWavefront(ReceivedWavefront, const(Document) wave_doc) {
+            version(EPOCH_LOG) {
             log.trace("Received wavefront");
+            }
             const receiver = HiRPC.Receiver(wave_doc);
             hashgraph.wavefront(
                     receiver,

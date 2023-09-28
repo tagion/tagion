@@ -238,9 +238,8 @@ class NewEmulatorGossipNet : GossipNet {
             const(ChannelFilter) channel_filter,
             const(SenderCallBack) sender) {
         const send_channel = select_channel(channel_filter);
-        log.trace("Selected channel: %s", send_channel.cutHex);
-        if (send_channel is Pubkey.init) {
-            log.trace("CHANNEL IS INININININIT");
+        version(EPOCH_LOG) {
+            log.trace("Selected channel: %s", send_channel.cutHex);
         }
         if (send_channel.length) {
             send(send_channel, sender());
@@ -253,12 +252,13 @@ class NewEmulatorGossipNet : GossipNet {
         import std.algorithm.searching : countUntil;
         import tagion.hibon.HiBONJSON;
 
-        log("Send to %s (Node_%s) %d bytes", channel.cutHex, _pkeys.countUntil(channel), sender
-                .toDoc.serialize.length);
+
         Thread.sleep(duration);
         _tids[channel].send(ReceivedWavefront(), sender.toDoc);
+        version(EPOCH_LOG) {
         log.trace("Successfully sent to %s (Node_%s) %d bytes", channel.cutHex, _pkeys.countUntil(channel), sender
                 .toDoc.serialize.length);
+        }
     }
 
     void start_listening() {

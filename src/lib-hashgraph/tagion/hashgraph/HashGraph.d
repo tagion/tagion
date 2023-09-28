@@ -148,14 +148,18 @@ class HashGraph {
         assert(_owner_node !is null);
     }
     do {
-        writefln("INITTING WITNESSES %s", _owner_node.channel.cutHex);
+        version(EPOCH_LOG) {
+            log("INITTING WITNESSES %s", _owner_node.channel.cutHex);
+        }
         Node[Pubkey] recovered_nodes;
         scope (success) {
             void init_event(immutable(EventPackage*) epack) {
                 auto event = new Event(epack, this);
                 _event_cache[event.fingerprint] = event;
                 event.witness_event(node_size);
-                writefln("init_event time %s", event.event_body.time);
+                version(EPOCH_LOG) {
+                log("init_event time %s", event.event_body.time);
+                }
                 _rounds.last_round.add(event);
                 front_seat(event);
                 event._round_received = _rounds.last_round;
@@ -251,8 +255,9 @@ class HashGraph {
         }
 
         const(HiRPC.Sender) sharp_sender() @safe {
-            log("Send ripple");
-            writefln("SENDING sharp sender: %s", owner_node.channel.cutHex);
+            version(EPOCH_LOG) {
+            log("SENDING sharp sender: %s", owner_node.channel.cutHex);
+            }
 
             const sharp_wavefront = sharpWave();
             const sender = hirpc.wavefront(sharp_wavefront);
@@ -550,10 +555,14 @@ class HashGraph {
 
         auto changes = setDifference!((a, b) => a.fingerprint < b.fingerprint)(received_epacks, own_epacks);
 
-        writefln("owner_epacks %s", own_epacks.length);
+        version(EPOCH_LOG) {
+        log("owner_epacks %s", own_epacks.length);
+        }
         if (!changes.empty) {
             // delta received from sharp should be added to our own node. 
-            writefln("changes found");
+            version(EPOCH_LOG) {
+            log("changes found");
+            }
             foreach (epack; changes) {
                 const epack_node = getNode(epack.pubkey);
                 auto first_event = new Event(epack, this);
@@ -564,7 +573,6 @@ class HashGraph {
                 front_seat(first_event);
             }
         }
-        writefln("after owner_epacks %s", _nodes.byValue.map!((n) => n[]).joiner.array.length);
 
         auto result = setDifference!((a, b) => a.fingerprint < b.fingerprint)(own_epacks, received_epacks).array;
 
@@ -625,9 +633,13 @@ class HashGraph {
         if (Event.callbacks) {
             Event.callbacks.receive(received_wave);
         }
+        version(EPOCH_LOG) {
         log.trace("received_wave(%s <- %s)", received_wave.state, received_node.state);
+        }
         scope (exit) {
+            version(EPOCH_LOG) {
             log.trace("next <- %s", received_node.state);
+            }
         }
         const(Wavefront) wavefront_response() @safe {
             with (ExchangeState) {
@@ -641,7 +653,9 @@ class HashGraph {
                 case SHARP: ///
                     received_node.state = NONE;
                     received_node.sticky_state = SHARP;
-                    writefln("received sharp %s", received_node.channel.cutHex);
+                    version(EPOCH_LOG) {
+                    log("received sharp %s", received_node.channel.cutHex);
+                    }
                     const sharp_response = sharpResponse(received_wave);
                     return sharp_response;
                 case RIPPLE:
@@ -676,21 +690,23 @@ class HashGraph {
                             .joiner
                             .map!((e) => e.event_package)
                             .array;
-                        writefln("%s going to init witnesses, areweingraph %s", _owner_node.channel.cutHex, areWeInGraph);
+                        version(EPOCH_LOG) {
+                            log("%s going to init witnesses, areweingraph %s", _owner_node.channel.cutHex, areWeInGraph);
+                        }
                         initialize_witness(own_epacks);
                     }
                     break;
                 case COHERENT:
                     received_node.state = NONE;
                     received_node.sticky_state = COHERENT;
-                    writefln("received coherent from: %s, self %s", received_node.channel.cutHex, _owner_node.channel
-                            .cutHex);
+                    version(EPOCH_LOG) {
+                    log("received coherent from: %s, self %s", received_node.channel.cutHex, _owner_node.channel.cutHex);
+                    }
                     if (!areWeInGraph) {
                         try {
-                            // received_wave.epacks
-                            //     .map!(epack => epack.event_body)
-                            //     .each!(ebody => ebody.toPretty.writeln);
-                            writefln("GOING to init");
+                            version(EPOCH_LOG) {
+                            log("GOING to init");
+                            }
                             initialize_witness(received_wave.epacks);
                             _owner_node.sticky_state = COHERENT;
                             _joining = No.joining;
