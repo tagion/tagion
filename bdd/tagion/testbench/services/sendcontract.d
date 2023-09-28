@@ -8,6 +8,7 @@ import tagion.services.options;
 
 
 
+import tagion.script.TagionCurrency;
 import tagion.wallet.SecureWallet : SecureWallet;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.SecureNet : StdSecureNet;
@@ -55,7 +56,7 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
     Document wallet1() @trusted {
         // create the hirpc request for checking if the bills are already in the system.
 
-        foreach(wallet; wallets) {
+        foreach(ref wallet; wallets) {
             check(wallet.isLoggedin, "the wallet must be logged in!!!");
 
             const fingerprints = [wallet.account.bills, wallet.account.requested.values]
@@ -90,11 +91,9 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
                 check(s.errno == 0, "Error in response");
 
                 writefln("RECEIVED RESPONSE: %s", received_doc.toPretty);
-
                 auto received = hirpc.receive(received_doc);
-                
-
-                
+                check(wallet.setResponse(received), "wallet not updated succesfully");
+                check(wallet.calcTotal(wallet.account.bills) > 0.TGN, "did not receive money");
                 break;
             }
             
