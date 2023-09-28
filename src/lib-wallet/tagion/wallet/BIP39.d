@@ -4,9 +4,14 @@ import tagion.basic.Version : ver;
 import tagion.basic.Debug;
 import tagion.utils.Miscellaneous : toHexString;
 import tagion.crypto.random.random;
+import tagion.crypto.SecureNet : scramble;
+import std.string : representation;
 
 static assert(ver.LittleEndian, "At the moment bip39 only supports Little Endian");
 
+//ubyte[] bip39(in WordList wordlist, const(ushort[]) mnemonics) {
+//}
+//version(none)
 @trusted
 ubyte[] bip39(const(ushort[]) mnemonics) nothrow {
     pragma(msg, "fixme(cbr): Fake BIP39 must be fixed later");
@@ -72,10 +77,17 @@ import tagion.hibon.HiBONRecord;
 
 @safe
 struct WordList {
-    protected ushort[string] table;
-    this(const(string[]) list)
+    import tagion.pbkdf2.pbkdf2;
+    import std.digest.sha : SHA512;
+
+    alias pbkdf2_sha512 = pbkdf2!SHA512;
+    const(ushort[string]) table;
+    const(string[]) words;
+    enum presalt = "mnemonic";
+    this(const(string[]) list) pure nothrow
     in (list.length == 2048)
     do {
+        words = list;
         table = list
             .enumerate!ushort
             .map!(w => tuple!("index", "value")(w.value, w.index))
@@ -89,12 +101,36 @@ struct WordList {
         }
     }
 
-    const(ushort[]) opCall(const(string[]) mnemonics) const {
+    ushort[] numbers(const(string[]) mnemonics) const pure {
 
         return mnemonics
-            .map!(m => table.get(m, ushort.max))
+            .map!(m => cast(ushort) table.get(m, ushort.max))
             .array;
+    }
 
+    ubyte[] opCall(scope const(ushort[]) mnemonic_codes, scope const(char[]) passphrase) const nothrow {
+        scope word_list = mnemonic_codes[]
+            .map!(mnemonic_code => words[mnemonic_code]);
+        return opCall(word_list, passphrase);
+    }
+
+    enum count = 2048;
+    enum dk_length = 64;
+    ubyte[] opCall(R)(scope R mnemonics, scope const(char[]) passphrase) const nothrow if (isInputRange!R) {
+        scope char[] salt = presalt ~ passphrase;
+        const password_size = mnemonics.map!(m => m.length).sum + mnemonics.length - 1;
+        scope password = new char[password_size];
+        scope (exit) {
+            scramble(password);
+            scramble(salt);
+        }
+        password[] = ' ';
+        uint index;
+        foreach (mnemonic; mnemonics) {
+            password[index .. index + mnemonic.length] = mnemonic;
+            index += mnemonic.length + char.sizeof;
+        }
+        return pbkdf2_sha512(password.representation, salt.representation, count, dk_length);
     }
 
     enum MAX_WORDS = 24; /// Max number of mnemonic word in a string
@@ -108,7 +144,7 @@ struct WordList {
 
         const total_bits = mnemonic_codes.length * MNEMONIC_BITS;
         const total_bytes = total_bits / 8 + ((total_bits & 7) != 0);
-        ubyte[] result = new ubyte[total_bits];
+        ubyte[] result = new ubyte[total_bytes];
 
         foreach (i, mnemonic; mnemonic_codes) {
             const bit_pos = i * MNEMONIC_BITS;
@@ -160,17 +196,17 @@ unittest {
             "device"
         */
         ];
-        const(ushort[]) mnemonic_code = [1390, 1586, 604, 1202, 689, 900];
+        const(ushort[]) expected_mnemonic_codes = [1390, 1586, 604, 1202, 689, 900];
         immutable expected_entropy = "101011011101100011001001001011100100101100100101011000101110000100";
-        assert(wordlist(mnemonic) == mnemonic_code);
-        const mnemonic_codes = wordlist(mnemonic);
+        const mnemonic_codes = wordlist.numbers(mnemonic);
+        assert(expected_mnemonic_codes == mnemonic_codes);
         writefln("%(%d %)", mnemonic_codes);
         writefln("mnemonic_codes   %(%011b%)", mnemonic_codes);
         writefln("expected_entropy %s", expected_entropy);
         string mnemonic_codes_bits = format("%(%011b%)", mnemonic_codes);
         assert(expected_entropy == mnemonic_codes_bits);
         const entropy = wordlist.entropy(mnemonic_codes);
-        string entropy_bits = format("%(%08b%)", entropy)[0 .. 11 * mnemonic_code.length];
+        string entropy_bits = format("%(%08b%)", entropy)[0 .. 11 * expected_mnemonic_codes.length];
         writefln("expected_bits    %s", entropy_bits);
         assert(expected_entropy == entropy_bits);
     }
@@ -192,31 +228,31 @@ unittest {
         ];
         //        const(ushort[]) mnemonic_code =[1390, 1586, 604, 1202, 689, 900];
         immutable expected_entropy = "011111010100100010111100000110000010011010100010011010001000110111010101001101101101110110010100010000010101010000010000100111100101";
-        //assert(wordlist(mnemonic) == mnemonic_code);
-        const mnemonic_codes = wordlist(mnemonic);
+        //assert(wordlist.numbers(mnemonic) == mnemonic_code);
+        const mnemonic_codes = wordlist.numbers(mnemonic);
         writefln("%(%d %)", mnemonic_codes);
         writefln("mnemonic_codes   %(%011b%)", mnemonic_codes);
         writefln("expected_entropy %s", expected_entropy);
-        writefln("%(%011b%)", wordlist(mnemonic));
+        writefln("%(%011b%)", wordlist.numbers(mnemonic));
         writefln("%s", expected_entropy);
-        string entropy_bits = format("%(%011b%)", wordlist(mnemonic));
+        string entropy_bits = format("%(%011b%)", wordlist.numbers(mnemonic));
         writefln("expected_bits    %s", entropy_bits);
         assert(expected_entropy == entropy_bits);
 
     }
     { /// PBKDF2 BIP39
         const mnemonic = [
-            //"basket", "actual"
-            "resist", "lounge",
-            "switch",
+            "basket",
+            "actual"//            "resist", "lounge",
+            //            "switch",
         ];
 
-        writefln("%(%d %)", wordlist(mnemonic));
+        writefln("%(%d %)", wordlist.numbers(mnemonic));
         import tagion.pbkdf2.pbkdf2;
         import std.digest.sha : SHA512;
         import std.bitmanip : nativeToBigEndian;
 
-        const mnemonic_codes = wordlist(mnemonic);
+        const mnemonic_codes = wordlist.numbers(mnemonic);
 
         const entropy = wordlist.entropy(mnemonic_codes);
         string mnemonic_codes_bits = format("%(%011b%)", mnemonic_codes);
@@ -225,11 +261,13 @@ unittest {
         writefln("%s", entropy_bits);
         //  writefln("%(%02x %)", entropy);
         // writefln("%s", mnemonic_codes[0].nativeToBigEndian);
-
+        writefln("mnemonic byte length=%s", mnemonic_codes.length * 11 / 8);
+        writefln("entropy byte length =%s", entropy.length);
         alias pbkdf2_sha512 = pbkdf2!SHA512;
-        string salt; //= "mnemonic".representation;
-        const result = pbkdf2_sha512(entropy, salt.representation, 2048, 64);
-        writefln("%(%02x%)", result);
+        string salt = "mnemonic"; //.representation;
+        const entropy1 = "basket actual".representation;
+        const result1 = pbkdf2_sha512(entropy1, salt.representation, 2048, 64);
+        writefln("%(%02x%)", result1);
         //5cf2d4a8b0355e90295bdfc565a022a409af063d5365bb57bf74d9528f494bfa4400f53d8349b80fdae44082d7f9541e1dba2b003bcfec9d0d53781ca676651f
         //    https://learnmeabitcoin.com/technical/mnemonic 
     }
