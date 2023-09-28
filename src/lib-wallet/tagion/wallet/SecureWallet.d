@@ -20,6 +20,7 @@ import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONException : HiBONRecordException;
 
 import tagion.dart.DARTBasic;
+import tagion.dart.DARTFile;
 
 import tagion.basic.basic : basename, isinit;
 import tagion.basic.Types : Buffer;
@@ -552,6 +553,31 @@ struct SecureWallet(Net : SecureNet) {
             }
         }
         return false;
+    }
+
+    @safe
+    bool setResponse(const(HiRPC.Receiver) receiver) {
+        pragma(msg, "fixme(pr) lookup bills properly");
+
+        if (!receiver.isResponse) {
+            return false;
+        }
+        auto result = 
+            receiver.message[Keywords.result].get!Document;
+        auto fingerprints = (() @trusted => cast(DARTIndex[]) result[DARTFile.Params.fingerprints].get!(Buffer))();
+
+        if (fingerprints.length == 0) {
+            account.bills ~= account.requested.values;
+            (() @trusted => account.requested.clear )();
+            return true;
+        } 
+        return false;
+
+
+
+        
+
+
     }
 
     /**
