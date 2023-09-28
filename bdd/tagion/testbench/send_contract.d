@@ -25,11 +25,6 @@ void wrap_neuewelle(immutable(string)[] args) {
 }
 
 
-
-
-
-
-
 int _main(string[] args) {
     auto module_path = env.bdd_log.buildPath(__MODULE__);
     if (module_path.exists) {
@@ -49,10 +44,14 @@ int _main(string[] args) {
     import std.algorithm;
     import std.stdio;
     import tagion.crypto.SecureNet : StdSecureNet;
+    import tagion.crypto.SecureInterfaceNet;
+    import tagion.dart.DARTFile;
+    import tagion.dart.DART;
     import tagion.wallet.SecureWallet;
     import tagion.script.common : TagionBill;
     alias StdSecureWallet = SecureWallet!StdSecureNet;
     import tagion.script.TagionCurrency;
+    import tagion.dart.Recorder;
 
     StdSecureWallet[] wallets;
     // create the wallets
@@ -67,19 +66,32 @@ int _main(string[] args) {
         wallets ~= secure_wallet;
     }
 
+    // bills for the dart on startup
     TagionBill[] bills;
-    // bills for the dart
     foreach(wallet; wallets) {
         auto bill = wallet.requestBill(1000.TGN);
+        wallet.addBill(bill);
         bills ~= bill;
     }
 
-    writeln(bills);
+    // create the recorder
+    SecureNet net = new StdSecureNet();
+    net.generateKeyPair("very_secret");
+
+    auto factory = RecordFactory(net);
+    auto recorder = factory.recorder;
+    recorder.insert(bills, Archive.Type.ADD);
 
 
-
-
-    
+    // create the databases
+    foreach(i; 0..local_options.wave.number_of_nodes) {
+        immutable prefix = format(local_options.wave.prefix_format, i);
+        const path = buildPath(local_options.dart.folder_path, prefix ~ local_options.dart.dart_filename);
+        writeln(path);
+        DARTFile.create(path, net);
+        auto db = new DART(net, path);
+        db.modify(recorder);
+    }
 
     immutable neuewelle_args = [config_file];
     auto tid = spawn(&wrap_neuewelle, neuewelle_args);
