@@ -64,14 +64,14 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
                 .array;
             writeln(fingerprints);
             const hirpc = HiRPC(wallet.net);
-            auto dartread = dartRead(fingerprints, hirpc);
-            writeln("going to send dartRead ");
+            auto dartcheckread = dartCheckRead(fingerprints, hirpc);
+            writeln("going to send dartcheckread ");
 
             NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
             s.recvtimeout = 1000.msecs;
             int rc;
             while(1) {
-                writefln("REQ %s to dial...", dartread.toPretty);
+                writefln("REQ %s to dial...", dartcheckread.toPretty);
                 rc = s.dial(sock_addr);
                 if (rc == 0) {
                     break;
@@ -84,11 +84,17 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
             }
             while(1) {
 
-                rc = s.send!(immutable(ubyte[]))(dartread.toDoc.serialize);
+                rc = s.send!(immutable(ubyte[]))(dartcheckread.toDoc.serialize);
                 check(rc == 0, "NNG error");
                 Document received_doc = s.receive!(immutable(ubyte[]))();
-                writefln("RECEIVED RESPONSE: %s", received_doc.toPretty);
                 check(s.errno == 0, "Error in response");
+
+                writefln("RECEIVED RESPONSE: %s", received_doc.toPretty);
+
+                auto received = hirpc.receive(received_doc);
+                
+
+                
                 break;
             }
             

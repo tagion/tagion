@@ -576,10 +576,9 @@ struct WalletInterface {
                         .array;
                     const update_net = secure_wallet.net.derive(update_tag.representation);
                     const hirpc = HiRPC(update_net);
-                    const dartread = dartRead(fingerprints, hirpc);
+                    const dartcheckread = dartCheckRead(fingerprints, hirpc);
                     output_filename = (output_filename.empty) ? update_tag.setExtension(FileExtension.hibon) : output_filename;
-                    output_filename.fwrite(dartread);
-
+                    output_filename.fwrite(dartcheckread);
                 }
                 if (pay) {
                     PayScript pay_script;
