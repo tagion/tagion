@@ -245,15 +245,13 @@ class WriteAndReadFromDartDb {
         auto check_fingerprints = (() @trusted => cast(DARTIndex[]) hirpc_check[DARTFile.Params.fingerprints].get!(Buffer))();
         check(equal(check_fingerprints, dummy_indexes), "error in hirpc checkread");
 
-        // version (none) {
-            auto t1 = spawn!DARTWorker("dartworker1", interface_opts.sock_addr, check_read_sender);
-            auto t2 = spawn!DARTWorker("dartworker2", interface_opts.sock_addr, check_read_sender);
-            auto t3 = spawn!DARTWorker("dartworker3", interface_opts.sock_addr, check_read_sender);
+        auto t1 = spawn!DARTWorker("dartworker1", interface_opts.sock_addr, check_read_sender);
+        auto t2 = spawn!DARTWorker("dartworker2", interface_opts.sock_addr, check_read_sender);
+        auto t3 = spawn!DARTWorker("dartworker3", interface_opts.sock_addr, check_read_sender);
 
-            import core.thread;
+        import core.thread;
 
-            (() @trusted => Thread.sleep(3000.msecs))();
-        // }
+        (() @trusted => Thread.sleep(3000.msecs))();
 
         return result_ok;
     }
