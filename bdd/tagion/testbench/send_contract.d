@@ -82,7 +82,8 @@ int _main(string[] args) {
     auto recorder = factory.recorder;
     recorder.insert(bills, Archive.Type.ADD);
 
-    string sock_addr;
+    string dart_interface_sock_addr;
+    string inputvalidator_sock_addr;
     // create the databases
     foreach(i; 0..local_options.wave.number_of_nodes) {
         immutable prefix = format(local_options.wave.prefix_format, i);
@@ -90,7 +91,8 @@ int _main(string[] args) {
         if (i == 0) {
             auto _opts = Options(local_options);
             _opts.setPrefix(prefix);
-            sock_addr = _opts.dart_interface.sock_addr;
+            dart_interface_sock_addr = _opts.dart_interface.sock_addr;
+            inputvalidator_sock_addr = _opts.inputvalidator.sock_addr;
         }        
         const path = buildPath(local_options.dart.folder_path, prefix ~ local_options.dart.dart_filename);
         writeln(path);
@@ -109,7 +111,7 @@ int _main(string[] args) {
     Thread.sleep(10.seconds);
 
     auto send_contract_feature = automation!(sendcontract);
-    send_contract_feature.SendASingleTransactionFromAWalletToAnotherWallet(local_options, wallets, sock_addr); 
+    send_contract_feature.SendASingleTransactionFromAWalletToAnotherWallet(local_options, wallets, dart_interface_sock_addr, inputvalidator_sock_addr); 
     send_contract_feature.run();
 
 

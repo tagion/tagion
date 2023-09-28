@@ -44,13 +44,15 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
 
     Options opts;
     StdSecureWallet[] wallets;
-    string sock_addr;
+    string dart_interface_sock_addr;
+    string inputvalidator_sock_addr;
         
 
-    this(Options opts, StdSecureWallet[] wallets, string sock_addr) {
+    this(Options opts, StdSecureWallet[] wallets, string dart_interface_sock_addr, string inputvalidator_sock_addr) {
         this.opts = opts;
         this.wallets = wallets;
-        this.sock_addr = sock_addr;
+        this.dart_interface_sock_addr = dart_interface_sock_addr;
+        this.dart_interface_sock_addr = dart_interface_sock_addr;
         
     }
 
@@ -75,7 +77,7 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
             int rc;
             while(1) {
                 writefln("REQ %s to dial...", dartcheckread.toPretty);
-                rc = s.dial(sock_addr);
+                rc = s.dial(dart_interface_sock_addr);
                 if (rc == 0) {
                     break;
                 }
@@ -126,33 +128,6 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
 
         writefln("HIRPC_SUBMIT %s", hirpc_submit.toDoc.toPretty);
-
-
-        // auto payment_request = wallet2.requestBill(100.TGN);
-        
-        // pay_script.outputs= [payment_request];
-
-        // const amount_to_pay = pay_script.outputs
-        //                 .map!(bill => bill.value)
-        //                 .totalAmount;
-
-        // TagionBill[] collect_bills;
-
-
-
-        
-        // const estimated_fees = ContractExecution.billFees(10);
-        // const can_pay = secure_wallet.collect_bills(amount_to_pay + estimated_fees, collect_bills);
-        // auto derivers = collect_bills
-        //     .map!(bill => bill.owner in secure_wallet.account.derivers);
-
-        // check(derivers.all!(deriver => deriver !is null), "Missing deriver of some of the bills");
-        
-
-
-
-
-
 
         
         return Document();
