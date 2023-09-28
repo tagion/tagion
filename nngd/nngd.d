@@ -944,7 +944,7 @@ private:
 }   // struct Socket
 
 
-alias nng_pool_callback = void function ( NNGMessage* );
+alias nng_pool_callback = void function ( NNGMessage*, void* );
 
 enum nng_worker_state { 
     NONE = 0, 
@@ -960,9 +960,11 @@ struct NNGPoolWorker {
     NNGAio aio;    
     Duration delay;
     nng_ctx ctx;
+    void *context;
     nng_pool_callback cb;
-    this(int iid){
+    this(int iid, void *icontext){
         this.id = iid;
+        this.context = icontext;
         this.state = nng_worker_state.NONE;
         this.msg = NNGMessage(0);
         this.aio = NNGAio(null, null);
@@ -989,7 +991,7 @@ extern (C) void nng_pool_stateful ( void* p ){
             w.aio.sleep(w.delay);
             break;
         case nng_worker_state.WAIT:
-            w.cb(&w.msg);
+            w.cb(&w.msg, w.context);
             w.aio.set_msg(w.msg);
             w.state = nng_worker_state.SEND;
             nng_ctx_send(w.ctx, w.aio.aio);
@@ -1008,6 +1010,7 @@ extern (C) void nng_pool_stateful ( void* p ){
 
 struct NNGPool {
     NNGSocket *sock;
+    void *context;
     size_t nworkers;
 
     NNGPoolWorker*[] workers;
@@ -1015,14 +1018,15 @@ struct NNGPool {
     @disable this();
 
 
-    this(NNGSocket *isock, nng_pool_callback cb, size_t n ){
+    this(NNGSocket *isock, nng_pool_callback cb, size_t n, void* icontext ){
         enforce(isock.state == nng_socket_state.NNG_STATE_CREATED || isock.state == nng_socket_state.NNG_STATE_CONNECTED);
         enforce(isock.type == nng_socket_type.NNG_SOCKET_REP); // TODO: extend to surveyou
         enforce(cb != null);
         sock = isock;
+        context = icontext;
         nworkers = n;
         for(auto i=0; i<n; i++){
-            NNGPoolWorker* w = new NNGPoolWorker(i);
+            NNGPoolWorker* w = new NNGPoolWorker(i, icontext);
             w.aio.realloc(cast(nng_aio_cb)(&nng_pool_stateful), cast(void*)w);
             w.cb = cb;
             auto rc = nng_ctx_open(&w.ctx, sock.m_socket);
@@ -1044,7 +1048,6 @@ struct NNGPool {
             workers[i].aio.stop();
         }    
     }
-
 
 } // struct NNGPool
 
