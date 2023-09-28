@@ -45,6 +45,7 @@ struct dartWorkerContext {
 void dartHiRPCCallback(NNGMessage *msg, void *ctx) @trusted {
     thisActor.task_name = format("%s", thisTid);
     // log.register(thisActor.task_name);
+    import std.stdio;
 
     auto cnt = cast(dartWorkerContext*) ctx;
 
@@ -52,13 +53,13 @@ void dartHiRPCCallback(NNGMessage *msg, void *ctx) @trusted {
     import tagion.communication.HiRPC;
 
     if (msg.length == 0) {
-        // log("received empty msg");
+        writeln("received empty msg");
         return;
     }
     Document doc = msg.body_trim!(immutable(ubyte[]))(msg.length);
     msg.clear();
 
-    // log("Kernel got: %s", doc.toPretty);
+    writefln("Kernel got: %s", doc.toPretty);
     if (!doc.isInorder || !doc.isRecord!(HiRPC.Sender)) {
         // log("Non-valid request received");
         return;
@@ -70,7 +71,7 @@ void dartHiRPCCallback(NNGMessage *msg, void *ctx) @trusted {
     }
     auto dart_resp = receiveTimeout(100.msecs, &dartHiRPCResponse);
     if (!dart_resp) {
-        // log("Non-valid request received");
+        writefln("Non-valid request received");
         return;
         // send a error;
     }
