@@ -21,7 +21,8 @@ else
  * Authors: T. Chaloupka
  */
 @safe
-ubyte[] pbkdf2(H = SHA1)(in ubyte[] data, in ubyte[] salt, uint iterations = 4096, uint dkLen = 256) if (isDigest!H)
+ubyte[] pbkdf2(H = SHA1)(in ubyte[] data, in ubyte[] salt, uint iterations = 4096, uint dkLen = 256) pure nothrow 
+        if (isDigest!H)
 in {
     import std.exception;
 
@@ -147,4 +148,153 @@ unittest {
 
     res = pbkdf2!SHA256("pass\0word".representation, "sa\0lt".representation, 4096, 16).toHexString!(LetterCase.lower);
     assert(res == "89b69d0516f829893c696226650a8687");
+}
+
+@safe
+unittest {
+    /// pbkdf2 SHA512 test-sample taken from
+    /// https://stackoverflow.com/questions/15593184/pbkdf2-hmac-sha-512-test-vectors
+    import std.digest.sha; // : SHA512;
+    import std.stdio;
+    import std.string : representation;
+
+    alias pbkdf2_sha256 = pbkdf2!SHA512;
+    auto password = "password".representation;
+    auto salt = "salt".representation;
+    {
+        /*
+Input:
+  P = "password"
+  S = "salt"
+  c = 1
+  dkLen = 64
+
+Output:
+  DK = 86 7f 70 cf 1a de 02 cf 
+       f3 75 25 99 a3 a5 3d c4 
+       af 34 c7 a6 69 81 5a e5 
+       d5 13 55 4e 1c 8c f2 52 
+       c0 2d 47 0a 28 5a 05 01 
+       ba d9 99 bf e9 43 c0 8f 
+       05 02 35 d7 d6 8b 1d a5 
+       5e 63 f7 3b 60 a5 7f ce 
+*/
+        immutable(ubyte[]) expected = [
+            0x86, 0x7f, 0x70, 0xcf, 0x1a, 0xde, 0x02, 0xcf,
+            0xf3, 0x75, 0x25, 0x99, 0xa3, 0xa5, 0x3d, 0xc4,
+            0xaf, 0x34, 0xc7, 0xa6, 0x69, 0x81, 0x5a, 0xe5,
+            0xd5, 0x13, 0x55, 0x4e, 0x1c, 0x8c, 0xf2, 0x52,
+            0xc0, 0x2d, 0x47, 0x0a, 0x28, 0x5a, 0x05, 0x01,
+            0xba, 0xd9, 0x99, 0xbf, 0xe9, 0x43, 0xc0, 0x8f,
+            0x05, 0x02, 0x35, 0xd7, 0xd6, 0x8b, 0x1d, 0xa5,
+            0x5e, 0x63, 0xf7, 0x3b, 0x60, 0xa5, 0x7f, 0xce,
+        ];
+        const count = 1;
+        const result =
+            pbkdf2_sha256(password, salt, count, 64);
+        assert(result == expected);
+    }
+    {
+        /*
+Input:
+  P = "password"
+  S = "salt"
+  c = 2
+  dkLen = 64
+
+Output:
+  DK = e1 d9 c1 6a a6 81 70 8a 
+       45 f5 c7 c4 e2 15 ce b6 
+       6e 01 1a 2e 9f 00 40 71 
+       3f 18 ae fd b8 66 d5 3c 
+       f7 6c ab 28 68 a3 9b 9f 
+       78 40 ed ce 4f ef 5a 82 
+       be 67 33 5c 77 a6 06 8e 
+       04 11 27 54 f2 7c cf 4e 
+*/
+        immutable(ubyte[]) expected = [
+            0xe1, 0xd9, 0xc1, 0x6a, 0xa6, 0x81, 0x70, 0x8a,
+            0x45, 0xf5, 0xc7, 0xc4, 0xe2, 0x15, 0xce, 0xb6,
+            0x6e, 0x01, 0x1a, 0x2e, 0x9f, 0x00, 0x40, 0x71,
+            0x3f, 0x18, 0xae, 0xfd, 0xb8, 0x66, 0xd5, 0x3c,
+            0xf7, 0x6c, 0xab, 0x28, 0x68, 0xa3, 0x9b, 0x9f,
+            0x78, 0x40, 0xed, 0xce, 0x4f, 0xef, 0x5a, 0x82,
+            0xbe, 0x67, 0x33, 0x5c, 0x77, 0xa6, 0x06, 0x8e,
+            0x04, 0x11, 0x27, 0x54, 0xf2, 0x7c, 0xcf, 0x4e,
+        ];
+        const count = 2;
+        const result =
+            pbkdf2_sha256(password, salt, count, 64);
+        assert(result == expected);
+    }
+    {
+        /*
+Input:
+  P = "password"
+  S = "salt"
+  c = 4096
+  dkLen = 64
+
+Output:
+  DK = d1 97 b1 b3 3d b0 14 3e 
+       01 8b 12 f3 d1 d1 47 9e 
+       6c de bd cc 97 c5 c0 f8 
+       7f 69 02 e0 72 f4 57 b5 
+       14 3f 30 60 26 41 b3 d5 
+       5c d3 35 98 8c b3 6b 84 
+       37 60 60 ec d5 32 e0 39 
+       b7 42 a2 39 43 4a f2 d5 
+*/
+        immutable(ubyte[]) expected = [
+            0xd1, 0x97, 0xb1, 0xb3, 0x3d, 0xb0, 0x14, 0x3e,
+            0x01, 0x8b, 0x12, 0xf3, 0xd1, 0xd1, 0x47, 0x9e,
+            0x6c, 0xde, 0xbd, 0xcc, 0x97, 0xc5, 0xc0, 0xf8,
+            0x7f, 0x69, 0x02, 0xe0, 0x72, 0xf4, 0x57, 0xb5,
+            0x14, 0x3f, 0x30, 0x60, 0x26, 0x41, 0xb3, 0xd5,
+            0x5c, 0xd3, 0x35, 0x98, 0x8c, 0xb3, 0x6b, 0x84,
+            0x37, 0x60, 0x60, 0xec, 0xd5, 0x32, 0xe0, 0x39,
+            0xb7, 0x42, 0xa2, 0x39, 0x43, 0x4a, 0xf2, 0xd5,
+        ];
+        const count = 4096;
+        const result =
+            pbkdf2_sha256(password, salt, count, 64);
+        assert(result == expected);
+
+    }
+    {
+        /*
+Input:
+  P = "passwordPASSWORDpassword"
+  S = "saltSALTsaltSALTsaltSALTsaltSALTsalt"
+  c = 4096
+  dkLen = 64
+
+
+Output:
+  DK = 8c 05 11 f4 c6 e5 97 c6 
+       ac 63 15 d8 f0 36 2e 22 
+       5f 3c 50 14 95 ba 23 b8 
+       68 c0 05 17 4d c4 ee 71 
+       11 5b 59 f9 e6 0c d9 53 
+       2f a3 3e 0f 75 ae fe 30 
+       22 5c 58 3a 18 6c d8 2b 
+       d4 da ea 97 24 a3 d3 b8 
+*/
+        immutable(ubyte[]) expected = [
+            0x8c, 0x05, 0x11, 0xf4, 0xc6, 0xe5, 0x97, 0xc6,
+            0xac, 0x63, 0x15, 0xd8, 0xf0, 0x36, 0x2e, 0x22,
+            0x5f, 0x3c, 0x50, 0x14, 0x95, 0xba, 0x23, 0xb8,
+            0x68, 0xc0, 0x05, 0x17, 0x4d, 0xc4, 0xee, 0x71,
+            0x11, 0x5b, 0x59, 0xf9, 0xe6, 0x0c, 0xd9, 0x53,
+            0x2f, 0xa3, 0x3e, 0x0f, 0x75, 0xae, 0xfe, 0x30,
+            0x22, 0x5c, 0x58, 0x3a, 0x18, 0x6c, 0xd8, 0x2b,
+            0xd4, 0xda, 0xea, 0x97, 0x24, 0xa3, 0xd3, 0xb8,
+        ];
+        password = "passwordPASSWORDpassword".representation;
+        salt = "saltSALTsaltSALTsaltSALTsaltSALTsalt".representation;
+        const count = 4096;
+        const result =
+            pbkdf2_sha256(password, salt, count, 64);
+        assert(result == expected);
+    }
 }
