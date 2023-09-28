@@ -10,12 +10,18 @@ import std.regex;
 import nngd;
 import nngtestutil;
 
+struct worker_context {
+    int id;
+    string name;
+}
 
 // REP
-void server_callback(NNGMessage *msg)
+void server_callback(NNGMessage *msg, void *ctx)
 {
     log("SERVER CALLBACK");
+    auto cnt = cast(worker_context*)ctx;
     auto s = msg.body_trim!string(msg.length);
+    log("SERVER CONTEXT NAME: "~cnt.name);
     log("SERVER GOT: " ~ s);
     msg.clear();
     if(indexOf(s,"What time is it?") == 0){
@@ -76,13 +82,17 @@ int main()
     string uri = "tcp://127.0.0.1:31200";
     immutable string[] tags = ["TAG0", "TAG1", "TAG2", "TAG3"];
 
+    worker_context ctx;
+    ctx.id = 1;
+    ctx.name = "Context name";
+
     
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REP);
     s.sendtimeout = msecs(1000);
     s.recvtimeout = msecs(1000);
     s.sendbuf = 4096;
 
-    NNGPool pool = NNGPool(&s, &server_callback, 4);
+    NNGPool pool = NNGPool(&s, &server_callback, 4, &ctx);
     pool.init();
 
     auto rc = s.listen(uri);
