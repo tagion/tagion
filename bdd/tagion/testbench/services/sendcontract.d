@@ -109,11 +109,27 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
 
     @Given("i make a payment request from wallet2.")
     Document wallet2() {
-        // ref wallet2 = wallets[2];
+        auto wallet1 = wallets[1];
+        auto wallet2 = wallets[2];
+        auto payment_request = wallet2.requestBill(100.TGN);
+
+
+        SignedContract signed_contract;
+        check(wallet1.createPayment([payment_request], signed_contract), "Error creating wallet");
+        check(signed_contract !is SignedContract.init, "contract not updated");
+
+
+        const message = wallet1.net.calcHash(signed_contract);
+        const contract_net = wallet1.net.derive(message);
+
+        auto wallet1_hirpc = HiRPC(wallet1.net); 
+        auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
+
+        writefln("HIRPC_SUBMIT %s", hirpc_submit.toDoc.toPretty);
+
 
         // auto payment_request = wallet2.requestBill(100.TGN);
         
-        PayScript pay_script;
         // pay_script.outputs= [payment_request];
 
         // const amount_to_pay = pay_script.outputs
