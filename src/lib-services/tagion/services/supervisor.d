@@ -19,6 +19,7 @@ import tagion.utils.JSONCommon;
 import tagion.utils.pretend_safe_concurrency : locate, send;
 import tagion.services.options;
 import tagion.services.DART;
+import tagion.services.DARTInterface;
 import tagion.services.inputvalidator;
 import tagion.services.hirpc_verifier;
 import tagion.services.epoch_creator;
@@ -54,7 +55,9 @@ struct Supervisor {
         auto collector_handle = spawn(immutable(CollectorService)(net, tn), tn.collector);
         auto tvm_handle = spawn(immutable(TVMService)(opts.tvm, tn), tn.tvm);
 
-        auto services = tuple(dart_handle, hirpc_verifier_handle, inputvalidator_handle, epoch_creator_handle, collector_handle, tvm_handle);
+        auto dart_interface_handle = spawn(immutable(DARTInterfaceService)(opts.dart_interface, tn), tn.dart_interface);
+
+        auto services = tuple(dart_handle, hirpc_verifier_handle, inputvalidator_handle, epoch_creator_handle, collector_handle, tvm_handle, dart_interface_handle);
 
         if (waitforChildren(Ctrl.ALIVE, 5.seconds)) {
             run(failHandler);

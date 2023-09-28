@@ -36,6 +36,7 @@ int _main(string[] args) {
     scope Options local_options = Options.defaultOptions;
     local_options.dart.folder_path = buildPath(module_path);
     local_options.replicator.folder_path = buildPath(module_path);
+    local_options.epoch_creator.timeout = 100;
     local_options.save(config_file);
 
     import std.format;
@@ -49,7 +50,7 @@ int _main(string[] args) {
     import tagion.dart.DART;
     import tagion.wallet.SecureWallet;
     import tagion.script.common : TagionBill;
-    alias StdSecureWallet = SecureWallet!StdSecureNet;
+    import tagion.testbench.services.sendcontract;
     import tagion.script.TagionCurrency;
     import tagion.dart.Recorder;
 
@@ -68,9 +69,8 @@ int _main(string[] args) {
 
     // bills for the dart on startup
     TagionBill[] bills;
-    foreach(wallet; wallets) {
+    foreach(ref wallet; wallets) {
         auto bill = wallet.requestBill(1000.TGN);
-        wallet.addBill(bill);
         bills ~= bill;
     }
 
@@ -82,10 +82,16 @@ int _main(string[] args) {
     auto recorder = factory.recorder;
     recorder.insert(bills, Archive.Type.ADD);
 
-
+    string sock_addr;
     // create the databases
     foreach(i; 0..local_options.wave.number_of_nodes) {
         immutable prefix = format(local_options.wave.prefix_format, i);
+
+        if (i == 0) {
+            auto _opts = Options(local_options);
+            _opts.setPrefix(prefix);
+            sock_addr = _opts.dart_interface.sock_addr;
+        }        
         const path = buildPath(local_options.dart.folder_path, prefix ~ local_options.dart.dart_filename);
         writeln(path);
         DARTFile.create(path, net);
@@ -93,16 +99,18 @@ int _main(string[] args) {
         db.modify(recorder);
     }
 
+    
+    import tagion.services.DARTInterface : dartinterface_dart;
+    dartinterface_dart = "Node_0_dart";
+    
+
     immutable neuewelle_args = [config_file];
     auto tid = spawn(&wrap_neuewelle, neuewelle_args);
     Thread.sleep(10.seconds);
 
     auto send_contract_feature = automation!(sendcontract);
+    send_contract_feature.SendASingleTransactionFromAWalletToAnotherWallet(local_options, wallets, sock_addr); 
     send_contract_feature.run();
-
-
-    import tagion.hibon.HiBONRecord;
-    import tagion.hibon.HiBONRecord;
 
 
     stopsignal.set;

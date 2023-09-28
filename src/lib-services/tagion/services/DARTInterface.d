@@ -36,28 +36,30 @@ import nngd;
 
 import core.time;
 
+pragma(msg, "fixme(pr): temporary shared name");
+shared static dartinterface_dart = "dart";
 
 void dartHiRPCCallback(NNGMessage *msg) @trusted {
     thisActor.task_name = format("%s", thisTid);
-    log.register(thisActor.task_name);
+    // log.register(thisActor.task_name);
 
     import tagion.hibon.HiBONJSON : toPretty;
     import tagion.communication.HiRPC;
     Document doc = msg.body_trim!(immutable(ubyte[]))(msg.length);
     msg.clear();
-    log("Kernel got: %s", doc.toPretty);
+    // log("Kernel got: %s", doc.toPretty);
     if (!doc.isInorder || !doc.isRecord!(HiRPC.Sender)) {
-        log("Non-valid request received");
+        // log("Non-valid request received");
         return;
     }
-    locate(TaskNames().dart).send(dartHiRPCRR(), doc);
+    locate(dartinterface_dart).send(dartHiRPCRR(), doc);
 
     void dartHiRPCResponse(dartHiRPCRR.Response res, Document doc) {
         msg.body_append(doc.serialize);
     }
     auto dart_resp = receiveTimeout(100.msecs, &dartHiRPCResponse);
     if (!dart_resp) {
-        log("Non-valid request received");
+        // log("Non-valid request received");
         return;
         // send a error;
     }
