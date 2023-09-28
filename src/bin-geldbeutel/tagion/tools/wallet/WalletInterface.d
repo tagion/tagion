@@ -581,6 +581,7 @@ struct WalletInterface {
                     output_filename.fwrite(dartcheckread);
                 }
                 if (pay) {
+                    pragma(msg, "fixme: use function createPayment instead");
                     PayScript pay_script;
                     pay_script.outputs = args[1 .. $]
                         .filter!(file => file.hasExtension(FileExtension.hibon))
@@ -610,6 +611,8 @@ struct WalletInterface {
                     const fees = ContractExecution.billFees(collect_bills.length + 1);
                     const amount_remainder = amount_to_redraw - amount_to_pay - fees;
                     check(amount_remainder >= 0, "Fees too small");
+
+                    pragma(msg, "fixme(cbr): bill remain not used");
                     const bill_remain = secure_wallet.requestBill(amount_remainder);
                     const nets = derivers
                         .map!(deriver => secure_wallet.net.derive(*deriver))

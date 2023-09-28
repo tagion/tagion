@@ -18,6 +18,8 @@ import tagion.dart.DARTBasic;
 import nngd;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.Document;
+import tagion.script.common;
+import tagion.script.execute;
 
 import std.algorithm;
 import std.array;
@@ -101,11 +103,42 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
         }
 
         
-        return Document();
+        return result_ok;
     }
+
 
     @Given("i make a payment request from wallet2.")
     Document wallet2() {
+        // ref wallet2 = wallets[2];
+
+        // auto payment_request = wallet2.requestBill(100.TGN);
+        
+        PayScript pay_script;
+        // pay_script.outputs= [payment_request];
+
+        // const amount_to_pay = pay_script.outputs
+        //                 .map!(bill => bill.value)
+        //                 .totalAmount;
+
+        // TagionBill[] collect_bills;
+
+
+
+        
+        // const estimated_fees = ContractExecution.billFees(10);
+        // const can_pay = secure_wallet.collect_bills(amount_to_pay + estimated_fees, collect_bills);
+        // auto derivers = collect_bills
+        //     .map!(bill => bill.owner in secure_wallet.account.derivers);
+
+        // check(derivers.all!(deriver => deriver !is null), "Missing deriver of some of the bills");
+        
+
+
+
+
+
+
+        
         return Document();
     }
 

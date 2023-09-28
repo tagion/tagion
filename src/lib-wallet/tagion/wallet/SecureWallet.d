@@ -6,7 +6,7 @@ import tagion.utils.Miscellaneous;
 
 import std.format;
 import std.string : representation;
-import std.algorithm : map, max, min, sum, until, each, filter, cache;
+import std.algorithm : all, map, max, min, sum, until, each, filter, cache;
 import std.range : tee;
 import std.array;
 import std.exception : assumeUnique;
@@ -25,7 +25,9 @@ import tagion.dart.DARTFile;
 import tagion.basic.basic : basename, isinit;
 import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Pubkey;
-import tagion.script.prior.StandardRecords : SignedContract, globals, Script;
+// import tagion.script.prior.StandardRecords : SignedContract, globals, Script;
+import PriorStandardRecords = tagion.script.prior.StandardRecords;
+
 import tagion.crypto.SecureNet : scramble;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 
@@ -396,13 +398,13 @@ struct SecureWallet(Net : SecureNet) {
      *   result = Signed payment
      * Returns: 
      */
-    bool payment(const(Invoice[]) orders, ref SignedContract result) {
+    bool payment(const(Invoice[]) orders, ref PriorStandardRecords.SignedContract result) {
         checkLogin;
         const topay = orders.map!(b => b.amount).sum;
 
         if (topay > 0) {
             pragma(msg, "fixme(cbr): Storage fee needs to be estimated");
-            const fees = globals.fees();
+            const fees = PriorStandardRecords.globals.fees();
             const amount = topay + fees;
             TagionBill[] contract_bills;
             const enough = collect_bills(amount, contract_bills);
@@ -418,7 +420,7 @@ struct SecureWallet(Net : SecureNet) {
                     result.contract.output[money_back.pkey] = rest.toDoc;
                 }
                 orders.each!((o) { result.contract.output[o.pkey] = o.amount.toDoc; });
-                result.contract.script = Script("pay");
+                result.contract.script = PriorStandardRecords.Script("pay");
 
                 immutable message = _net.calcHash(result.contract.toDoc);
                 auto shared_net = (() @trusted { return cast(shared) _net; })();
@@ -572,14 +574,48 @@ struct SecureWallet(Net : SecureNet) {
             return true;
         } 
         return false;
-
-
-
-        
-
-
     }
 
+
+    bool createPayment(TagionBill[] to_pay, ref SignedContract signed_contract) {
+        import tagion.script.Currency : totalAmount;
+        import tagion.script.execute;
+
+        PayScript pay_script;
+        pay_script.outputs = to_pay;
+
+        const amount_to_pay = pay_script.outputs
+            .map!(bill => bill.value)
+            .totalAmount;
+        TagionBill[] collected_bills;
+        const estimated_fees = ContractExecution.billFees(10);
+        const can_pay = collect_bills(amount_to_pay + estimated_fees, collected_bills);
+        check(can_pay, format("Is unable to pay the amount %10.6fTGN", amount_to_pay.value));
+
+        auto derivers = collected_bills
+            .map!(bill => bill.owner in account.derivers);
+
+        check(derivers.all!(deriver => deriver !is null), "Missing deriver of some of the bills");
+        const amount_to_redraw = collected_bills
+            .map!(bill => bill.value)
+            .totalAmount;
+        const fees = ContractExecution.billFees(collected_bills.length + 1);
+        const amount_remainder = amount_to_redraw - amount_to_pay - fees;
+
+        check(amount_remainder >= 0, "Fees too small");
+
+        const bill_remain = requestBill(amount_remainder);
+        const nets = derivers
+            .map!(deriver => net.derive(*deriver))
+            .array;
+        signed_contract = sign(
+                nets,
+                collected_bills.map!(bill => bill.toDoc)
+                .array,
+                null,
+                pay_script.toDoc);
+        return true;
+    }
     /**
      * Calculates the amount in a list of bills
      * Params:
@@ -807,7 +843,7 @@ struct SecureWallet(Net : SecureNet) {
         }
 
         pragma(msg, "fixme(cbr): The following test is not finished, Need to transfer to money to receiver");
-        SignedContract contract_1;
+        PriorStandardRecords.SignedContract contract_1;
         { // The receiver_wallet creates an invoice to the sender_wallet
             auto invoice = SecureWallet.createInvoice("To sender 1", 13.TGN);
             receiver_wallet.registerInvoice(invoice);
@@ -817,7 +853,7 @@ struct SecureWallet(Net : SecureNet) {
             //writefln("contract_1=%s", contract_1.toPretty);
         }
 
-        SignedContract contract_2;
+        PriorStandardRecords.SignedContract contract_2;
         { // The receiver_wallet creates an invoice to the sender_wallet
             auto invoice = SecureWallet.createInvoice("To sender 2", 53.TGN);
             receiver_wallet.registerInvoice(invoice);
