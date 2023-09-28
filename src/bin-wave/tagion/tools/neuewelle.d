@@ -156,7 +156,7 @@ int _main(string[] args) {
         Node[] nodes;
 
         foreach (i; 0 .. wave_options.number_of_nodes) {
-            immutable prefix = format("Node_%s_", i);
+            immutable prefix = format(wave_options.prefix_format, i);
             auto opts = Options(local_options);
             opts.setPrefix(prefix);
             SecureNet net = new StdSecureNet();

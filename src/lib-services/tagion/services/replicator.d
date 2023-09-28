@@ -15,13 +15,14 @@ struct ReplicatorOptions {
     import tagion.utils.JSONCommon;
     import std.format;
 
-    string folder_path = ".";
+    string folder_path = "./recorder";
 
     void setPrefix(string prefix) nothrow {
         import std.path : buildPath;
         import std.exception;
 
-        folder_path = assumeWontThrow(buildPath(folder_path, prefix));
+        folder_path = folder_path ~ prefix;
+        // assumeWontThrow(buildPath(folder_path, prefix));
     }
 
     mixin JSONCommon;
