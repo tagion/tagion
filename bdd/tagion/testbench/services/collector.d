@@ -90,8 +90,8 @@ class ItWork {
         immutable task_names = TaskNames();
         { // Start dart service
             immutable opts = DARTOptions(
-                buildPath(env.bdd_results, __MODULE__), 
-                "dart".setExtension(FileExtension.dart),
+                    buildPath(env.bdd_log, __MODULE__),
+                    "dart".setExtension(FileExtension.dart),
             );
             immutable replicator_folder = buildPath(opts.dart_path.dirName, "replicator");
             immutable replicator_opts = ReplicatorOptions(replicator_folder);
@@ -99,13 +99,13 @@ class ItWork {
             mkdirRecurse(replicator_folder);
             mkdirRecurse(opts.dart_filename.dirName);
 
-            if (opts.dart_filename.exists) {
-                opts.dart_filename.remove;
+            if (opts.dart_path.exists) {
+                opts.dart_path.remove;
             }
 
             import tagion.dart.DART;
 
-            DART.create(opts.dart_filename, node_net);
+            DART.create(opts.dart_path, node_net);
 
             dart_handle = spawn!DARTService(task_names.dart, opts, replicator_opts, task_names, node_net);
             check(waitforChildren(Ctrl.ALIVE), "dart service did not alive");
