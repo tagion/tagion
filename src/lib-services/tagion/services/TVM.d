@@ -49,7 +49,7 @@ struct TVMService {
 
     void contract(signedContract, immutable(CollectedSignedContract)* collected) {
         import std.algorithm;
-        log("received signed contract %s\n inputs %s", collected.sign_contract.toPretty, collected.inputs.map!(i => i.toPretty));
+        log("received signed contract");
 
         auto result = execute(collected);
         if (result.error) {
