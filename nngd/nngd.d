@@ -1009,7 +1009,9 @@ extern (C) void nng_pool_stateful ( void* p ){
             break;
         case nng_worker_state.SEND:
             auto rc = w.aio.result;
-            enforce(rc == nng_errno.NNG_OK);
+            if(rc != nng_errno.NNG_OK){
+                return;
+            }
             w.state = nng_worker_state.RECV;
             nng_ctx_recv(w.ctx, w.aio.aio);
             break;
