@@ -133,7 +133,7 @@ struct CollectorService {
                     return;
                 }
             }
-            collection.inputs ~= recorder[].map!(a => a.toDoc).array;
+            collection.inputs ~= recorder[].map!(a => a.filed).array;
             if (collection.inputs.length == 0) {
                 log(reject, "contract_no_inputs", immutable(tuple)(collections.giveme(res.id), recorder));
                 return;

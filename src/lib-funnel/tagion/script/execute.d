@@ -9,6 +9,8 @@ import tagion.hibon.HiBONRecord : isRecord, getType;
 import tagion.script.TagionCurrency;
 import tagion.script.ScriptException;
 
+import tagion.logger.Logger;
+
 @safe
 struct ContractProduct {
     immutable(CollectedSignedContract*) contract;

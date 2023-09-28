@@ -48,10 +48,12 @@ struct TVMService {
     }
 
     void contract(signedContract, immutable(CollectedSignedContract)* collected) {
-        log("received signed contract");
+        import std.algorithm;
+        log("received signed contract %s\n inputs %s", collected.sign_contract.toPretty, collected.inputs.map!(i => i.toPretty));
+
         auto result = execute(collected);
         if (result.error) {
-            log("Execution error - aborting");
+            log("Execution error - aborting %s", result.e);
             return;
         }
         log("sending pload to epoch creator");
@@ -101,7 +103,7 @@ unittest {
         auto collected = new CollectedSignedContract();
         collected.inputs ~= in_bills.map!(a => a.toDoc).array;
         collected.sign_contract.contract.script = PayScript(out_bills).toDoc;
-
+        
         tvm_service.contract(signedContract(), cast(immutable) collected);
         collected = null;
 
