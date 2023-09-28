@@ -36,7 +36,6 @@ int _main(string[] args) {
     scope Options local_options = Options.defaultOptions;
     local_options.dart.folder_path = buildPath(module_path);
     local_options.replicator.folder_path = buildPath(module_path);
-    local_options.epoch_creator.timeout = 100;
     local_options.save(config_file);
 
     import std.format;
@@ -108,11 +107,13 @@ int _main(string[] args) {
 
     immutable neuewelle_args = [config_file];
     auto tid = spawn(&wrap_neuewelle, neuewelle_args);
-    Thread.sleep(10.seconds);
+    Thread.sleep(15.seconds);
+
 
     auto send_contract_feature = automation!(sendcontract);
     send_contract_feature.SendASingleTransactionFromAWalletToAnotherWallet(local_options, wallets, dart_interface_sock_addr, inputvalidator_sock_addr); 
     send_contract_feature.run();
+    Thread.sleep(5.seconds);
 
 
     stopsignal.set;

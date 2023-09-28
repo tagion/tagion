@@ -24,7 +24,10 @@ import tagion.script.execute;
 import std.algorithm;
 import std.array;
 import core.time;
+import core.thread;
 import std.stdio;
+import std.format;
+
 
 
 
@@ -52,7 +55,7 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
         this.opts = opts;
         this.wallets = wallets;
         this.dart_interface_sock_addr = dart_interface_sock_addr;
-        this.dart_interface_sock_addr = dart_interface_sock_addr;
+        this.inputvalidator_sock_addr = inputvalidator_sock_addr;
         
     }
 
@@ -110,7 +113,7 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
 
 
     @Given("i make a payment request from wallet2.")
-    Document wallet2() {
+    Document wallet2() @trusted {
         auto wallet1 = wallets[1];
         auto wallet2 = wallets[2];
         auto payment_request = wallet2.requestBill(100.TGN);
@@ -127,10 +130,20 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
         auto wallet1_hirpc = HiRPC(wallet1.net); 
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
 
-        writefln("HIRPC_SUBMIT %s", hirpc_submit.toDoc.toPretty);
 
-        
-        return Document();
+        int rc;
+        NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
+        s.sendtimeout = 1000.msecs;
+        s.sendbuf = 4096;
+        rc = s.dial(inputvalidator_sock_addr);
+        check(rc == 0, format("Failed to dial %s", nng_errstr(rc)));
+
+        rc = s.send(hirpc_submit.toDoc.serialize);
+        check(rc == 0, format("Failed to send %s", nng_errstr(rc)));
+        Thread.sleep(10.seconds);
+
+
+        return result_ok;
     }
 
     @When("wallet1 pays contract to wallet2 and sends it to the network.")

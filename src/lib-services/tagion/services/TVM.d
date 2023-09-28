@@ -48,11 +48,15 @@ struct TVMService {
     }
 
     void contract(signedContract, immutable(CollectedSignedContract)* collected) {
+        log("received signed contract");
         auto result = execute(collected);
         if (result.error) {
+            log("Execution error - aborting");
             return;
         }
+        log("sending pload to epoch creator");
         locate(task_names.epoch_creator).send(Payload(), collected.sign_contract.contract.toDoc);
+        log("sending produced contract to transcript");
         locate(task_names.transcript).send(producedContract(), result.get);
     }
 

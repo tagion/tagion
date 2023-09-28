@@ -49,6 +49,7 @@ struct CollectorService {
     // Input received directly from the HiRPC verifier
     void rpc_contract(inputHiRPC, immutable(HiRPC.Receiver) receiver) @trusted {
         immutable doc = Document(receiver.method.params);
+        log("collector received receiver");
         if (!doc.isRecord!SignedContract) {
             log(reject, "hirpc_not_a_signed_contract", doc);
             return;
@@ -76,9 +77,12 @@ struct CollectorService {
         if (s_contract.contract.reads !is DARTIndex[].init) {
             auto reads_req = dartReadRR();
             reads[reads_req.id] = inputs_req.id in collections;
+            log("sending contract read request to dart");
             locate(task_names.dart).send(reads_req, s_contract.contract.reads);
         }
 
+
+        log("sending contract input request to dart");
         locate(task_names.dart).send(inputs_req, s_contract.contract.inputs);
     }
 
@@ -86,6 +90,7 @@ struct CollectorService {
         import std.range;
         import std.algorithm.iteration : map;
 
+        log("received dartRead response");
         if ((res.id in reads) !is null) {
             auto collection = *(res.id in reads);
             scope (exit) {
@@ -134,6 +139,7 @@ struct CollectorService {
                 return;
             }
 
+            log("sending to tvm");
             locate(task_names.tvm).send(signedContract(), collections.giveme(res.id));
         }
     }
