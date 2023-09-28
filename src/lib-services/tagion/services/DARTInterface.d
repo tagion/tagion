@@ -37,11 +37,15 @@ import nngd;
 import core.time;
 
 pragma(msg, "fixme(pr): temporary shared name");
-shared static dartinterface_dart = "dart";
 
-void dartHiRPCCallback(NNGMessage *msg) @trusted {
+
+struct dartWorkerContext {
+    string dart_task_name;
+}
+void dartHiRPCCallback(NNGMessage *msg, void *ctx) @trusted {
     thisActor.task_name = format("%s", thisTid);
-    // log.register(thisActor.task_name);
+
+    auto cnt = cast(dartWorkerContext*) ctx;
 
     import tagion.hibon.HiBONJSON : toPretty;
     import tagion.communication.HiRPC;
@@ -52,7 +56,7 @@ void dartHiRPCCallback(NNGMessage *msg) @trusted {
         // log("Non-valid request received");
         return;
     }
-    locate(dartinterface_dart).send(dartHiRPCRR(), doc);
+    locate(cnt.dart_task_name).send(dartHiRPCRR(), doc);
 
     void dartHiRPCResponse(dartHiRPCRR.Response res, Document doc) {
         msg.body_append(doc.serialize);
@@ -69,7 +73,6 @@ void dartHiRPCCallback(NNGMessage *msg) @trusted {
     // msg.body_append(dart_resp[1].serialize);
 }
 
-
 @safe 
 struct DARTInterfaceService {
     immutable(DARTInterfaceOptions) opts;
@@ -85,12 +88,15 @@ struct DARTInterfaceService {
 
         }
 
+        dartWorkerContext ctx;
+        ctx.dart_task_name = task_names.dart;
+
         NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_REP);
         sock.sendtimeout = opts.sendtimeout.msecs;
         sock.recvtimeout = 1000.msecs;
         sock.sendbuf = opts.sendbuf;
 
-        NNGPool pool = NNGPool(&sock, &dartHiRPCCallback, 4);
+        NNGPool pool = NNGPool(&sock, &dartHiRPCCallback, 4, &ctx);
         scope(exit) {
             pool.shutdown();
         }

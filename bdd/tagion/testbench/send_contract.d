@@ -100,11 +100,6 @@ int _main(string[] args) {
         db.modify(recorder);
     }
 
-    
-    import tagion.services.DARTInterface : dartinterface_dart;
-    dartinterface_dart = "Node_0_dart";
-    
-
     immutable neuewelle_args = [config_file];
     auto tid = spawn(&wrap_neuewelle, neuewelle_args);
     Thread.sleep(15.seconds);
