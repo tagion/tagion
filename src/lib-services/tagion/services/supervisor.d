@@ -45,12 +45,10 @@ struct Supervisor {
 
         auto hirpc_verifier_handle = spawn!HiRPCVerifierService(tn.hirpc_verifier, opts.hirpc_verifier, tn, net);
 
-
         auto inputvalidator_handle = spawn!InputValidatorService(tn.inputvalidator, opts.inputvalidator, tn);
 
-
         auto epoch_creator_handle = spawn!EpochCreatorService(tn.epoch_creator, opts.epoch_creator, opts.wave
-                .network_mode, opts.wave.number_of_nodes, net, opts.monitor);
+                .network_mode, opts.wave.number_of_nodes, net, opts.monitor, tn);
 
         auto collector_handle = spawn(immutable(CollectorService)(net, tn), tn.collector);
         auto tvm_handle = spawn(immutable(TVMService)(opts.tvm, tn), tn.tvm);

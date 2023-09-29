@@ -22,6 +22,7 @@ import std.stdio;
 import std.algorithm : map, filter, sort, reduce, until;
 import std.array;
 import tagion.utils.pretend_safe_concurrency;
+import tagion.services.options : TaskNames;
 import tagion.script.common : StdNames;
 import tagion.hibon.HiBONRecord;
 
@@ -51,12 +52,17 @@ class StdRefinement : Refinement {
     enum MAX_ORDER_COUNT = 10; /// Max recursion count for order_less function
     protected {
         HashGraph hashgraph;
+        TaskNames task_names;
     }
 
     void setOwner(HashGraph hashgraph)
     in (this.hashgraph is null)
     do {
         this.hashgraph = hashgraph;
+    }
+
+    void setTasknames(TaskNames task_names) {
+        this.task_names = task_names;
     }
 
     Tid collector_service;
@@ -71,8 +77,9 @@ class StdRefinement : Refinement {
         if (events.length > 0) {
             auto event_payload = FinishedEpoch(events, epoch_time);
             log(epoch_created, "epoch_succesful", event_payload.toDoc);
-        }
 
+        }
+        log("Epoch_created");
     }
 
     void excludedNodes(ref BitMask excluded_mask) {

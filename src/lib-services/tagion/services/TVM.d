@@ -49,7 +49,8 @@ struct TVMService {
 
     void contract(signedContract, immutable(CollectedSignedContract)* collected) {
         import std.algorithm;
-        log("received signed contract %s\n inputs %s", collected.sign_contract.toPretty, collected.inputs.map!(i => i.toPretty));
+
+        log("received signed contract");
 
         auto result = execute(collected);
         if (result.error) {
@@ -103,7 +104,7 @@ unittest {
         auto collected = new CollectedSignedContract();
         collected.inputs ~= in_bills.map!(a => a.toDoc).array;
         collected.sign_contract.contract.script = PayScript(out_bills).toDoc;
-        
+
         tvm_service.contract(signedContract(), cast(immutable) collected);
         collected = null;
 

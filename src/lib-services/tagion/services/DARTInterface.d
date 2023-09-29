@@ -2,7 +2,6 @@ module tagion.services.DARTInterface;
 
 import tagion.utils.JSONCommon;
 
-
 @safe
 struct DARTInterfaceOptions {
     string sock_addr;
@@ -25,6 +24,7 @@ struct DARTInterfaceOptions {
     mixin JSONCommon;
 
 }
+
 import tagion.actor;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.logger.Logger;
@@ -37,40 +37,48 @@ import nngd;
 import core.time;
 
 pragma(msg, "fixme(pr): temporary shared name");
-shared static dartinterface_dart = "dart";
 
-void dartHiRPCCallback(NNGMessage *msg) @trusted {
+struct dartWorkerContext {
+    string dart_task_name;
+}
+
+void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
     thisActor.task_name = format("%s", thisTid);
     // log.register(thisActor.task_name);
+    import std.stdio;
+
+    auto cnt = cast(dartWorkerContext*) ctx;
 
     import tagion.hibon.HiBONJSON : toPretty;
     import tagion.communication.HiRPC;
+
+    if (msg.length == 0) {
+        writeln("received empty msg");
+        return;
+    }
     Document doc = msg.body_trim!(immutable(ubyte[]))(msg.length);
     msg.clear();
-    // log("Kernel got: %s", doc.toPretty);
+
+    writefln("Kernel got: %s", doc.toPretty);
     if (!doc.isInorder || !doc.isRecord!(HiRPC.Sender)) {
         // log("Non-valid request received");
         return;
     }
-    locate(dartinterface_dart).send(dartHiRPCRR(), doc);
+    locate(cnt.dart_task_name).send(dartHiRPCRR(), doc);
 
     void dartHiRPCResponse(dartHiRPCRR.Response res, Document doc) {
         msg.body_append(doc.serialize);
     }
+
     auto dart_resp = receiveTimeout(100.msecs, &dartHiRPCResponse);
     if (!dart_resp) {
-        // log("Non-valid request received");
+        writefln("Non-valid request received");
         return;
         // send a error;
     }
-    // if (
-    // auto dart_resp = receiveOnly!(dartHiRPCRR.Response, Document);
-        
-    // msg.body_append(dart_resp[1].serialize);
 }
 
-
-@safe 
+@safe
 struct DARTInterfaceService {
     immutable(DARTInterfaceOptions) opts;
     immutable(TaskNames) task_names;
@@ -80,18 +88,22 @@ struct DARTInterfaceService {
         void checkSocketError(int rc) {
             if (rc != 0) {
                 import std.format;
+
                 throw new Exception(format("Failed to dial %s", nng_errstr(rc)));
             }
 
         }
+
+        dartWorkerContext ctx;
+        ctx.dart_task_name = task_names.dart;
 
         NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_REP);
         sock.sendtimeout = opts.sendtimeout.msecs;
         sock.recvtimeout = 1000.msecs;
         sock.sendbuf = opts.sendbuf;
 
-        NNGPool pool = NNGPool(&sock, &dartHiRPCCallback, 4);
-        scope(exit) {
+        NNGPool pool = NNGPool(&sock, &dartHiRPCCallback, 4, &ctx);
+        scope (exit) {
             pool.shutdown();
         }
         pool.init();
@@ -103,10 +115,10 @@ struct DARTInterfaceService {
         while (!thisActor.stop) {
 
             const received = receiveTimeout(
-                Duration.zero,
-                &signal,
-                &ownerTerminated,
-                &unknown
+                    Duration.zero,
+                    &signal,
+                    &ownerTerminated,
+                    &unknown
             );
             if (received) {
                 continue;
@@ -116,10 +128,8 @@ struct DARTInterfaceService {
 
         }
 
-
-
     }
 
 }
-alias DARTInterfaceServiceHandle = ActorHandle!DARTInterfaceService;
 
+alias DARTInterfaceServiceHandle = ActorHandle!DARTInterfaceService;

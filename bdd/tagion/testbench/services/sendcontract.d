@@ -6,8 +6,6 @@ import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
 import tagion.services.options;
 
-
-
 import tagion.script.TagionCurrency;
 import tagion.wallet.SecureWallet : SecureWallet;
 import tagion.crypto.SecureInterfaceNet;
@@ -28,9 +26,6 @@ import core.thread;
 import std.stdio;
 import std.format;
 
-
-
-
 alias StdSecureWallet = SecureWallet!StdSecureNet;
 enum feature = Feature(
             "send a contract to the network.",
@@ -49,21 +44,20 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
     StdSecureWallet[] wallets;
     string dart_interface_sock_addr;
     string inputvalidator_sock_addr;
-        
 
     this(Options opts, StdSecureWallet[] wallets, string dart_interface_sock_addr, string inputvalidator_sock_addr) {
         this.opts = opts;
         this.wallets = wallets;
         this.dart_interface_sock_addr = dart_interface_sock_addr;
         this.inputvalidator_sock_addr = inputvalidator_sock_addr;
-        
+
     }
 
     @Given("i have a dart database with already existing bills linked to wallet1.")
     Document wallet1() @trusted {
         // create the hirpc request for checking if the bills are already in the system.
 
-        foreach(ref wallet; wallets) {
+        foreach (ref wallet; wallets) {
             check(wallet.isLoggedin, "the wallet must be logged in!!!");
 
             const fingerprints = [wallet.account.bills, wallet.account.requested.values]
@@ -78,19 +72,19 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
             NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
             s.recvtimeout = 1000.msecs;
             int rc;
-            while(1) {
+            while (1) {
                 writefln("REQ %s to dial...", dartcheckread.toPretty);
                 rc = s.dial(dart_interface_sock_addr);
                 if (rc == 0) {
                     break;
                 }
-                
+
                 if (rc == nng_errno.NNG_ECONNREFUSED) {
                     nng_sleep(100.msecs);
                 }
                 check(rc == 0, "NNG error");
             }
-            while(1) {
+            while (1) {
 
                 rc = s.send!(immutable(ubyte[]))(dartcheckread.toDoc.serialize);
                 check(rc == 0, "NNG error");
@@ -103,14 +97,11 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
                 check(wallet.calcTotal(wallet.account.bills) > 0.TGN, "did not receive money");
                 break;
             }
-            
 
         }
 
-        
         return result_ok;
     }
-
 
     @Given("i make a payment request from wallet2.")
     Document wallet2() @trusted {
@@ -118,18 +109,15 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
         auto wallet2 = wallets[2];
         auto payment_request = wallet2.requestBill(100.TGN);
 
-
         SignedContract signed_contract;
         check(wallet1.createPayment([payment_request], signed_contract), "Error creating wallet");
         check(signed_contract !is SignedContract.init, "contract not updated");
 
-
         const message = wallet1.net.calcHash(signed_contract);
         const contract_net = wallet1.net.derive(message);
 
-        auto wallet1_hirpc = HiRPC(wallet1.net); 
+        auto wallet1_hirpc = HiRPC(wallet1.net);
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
-
 
         int rc;
         NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
@@ -140,8 +128,7 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
 
         rc = s.send(hirpc_submit.toDoc.serialize);
         check(rc == 0, format("Failed to send %s", nng_errstr(rc)));
-        Thread.sleep(10.seconds);
-
+        Thread.sleep(20.seconds);
 
         return result_ok;
     }

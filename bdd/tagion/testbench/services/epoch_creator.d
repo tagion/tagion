@@ -9,6 +9,7 @@ import tagion.utils.pretend_safe_concurrency;
 import tagion.actor;
 import tagion.actor.exceptions;
 import tagion.services.epoch_creator;
+import tagion.services.options;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.crypto.Types : Pubkey;
@@ -90,6 +91,7 @@ class SendPayloadAndCreateEpoch {
                     number_of_nodes,
                     cast(immutable) n.net,
                     cast(immutable) n.monitor_opts,
+                    TaskNames(),
             );
         }
 

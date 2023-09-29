@@ -25,6 +25,7 @@ import tagion.utils.BitMask;
 import std.conv;
 import tagion.hashgraph.Refinement;
 import std.typecons;
+import tagion.services.options;
 
 class TestRefinement : StdRefinement {
 

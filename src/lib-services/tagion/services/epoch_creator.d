@@ -26,7 +26,7 @@ import tagion.hibon.HiBONJSON;
 import tagion.utils.Miscellaneous : cutHex;
 import tagion.services.messages;
 import tagion.services.monitor;
-import tagion.services.options : NetworkMode;
+import tagion.services.options : TaskNames, NetworkMode;
 
 // core
 import core.time;
@@ -49,7 +49,7 @@ struct EpochCreatorOptions {
 struct EpochCreatorService {
 
     void task(immutable(EpochCreatorOptions) opts, immutable(NetworkMode) network_mode, immutable(size_t) number_of_nodes, immutable(
-            SecureNet) net, immutable(MonitorOptions) monitor_opts) {
+            SecureNet) net, immutable(MonitorOptions) monitor_opts, immutable(TaskNames) task_names) {
 
         assert(network_mode == NetworkMode.INTERNAL, "Unsupported network mode");
 
@@ -76,6 +76,7 @@ struct EpochCreatorService {
         log.trace("Beginning gossip");
 
         auto refinement = new StdRefinement;
+        refinement.setTasknames(task_names);
 
         HashGraph hashgraph = new HashGraph(number_of_nodes, net, refinement, &gossip_net.isValidChannel, No.joining);
         hashgraph.scrap_depth = opts.scrap_depth;
@@ -100,8 +101,8 @@ struct EpochCreatorService {
         }
 
         void receiveWavefront(ReceivedWavefront, const(Document) wave_doc) {
-            version(EPOCH_LOG) {
-            log.trace("Received wavefront");
+            version (EPOCH_LOG) {
+                log.trace("Received wavefront");
             }
             const receiver = HiRPC.Receiver(wave_doc);
             hashgraph.wavefront(
