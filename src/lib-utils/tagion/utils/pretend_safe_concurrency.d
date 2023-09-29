@@ -16,6 +16,7 @@ public import std.concurrency : Tid,
     TidMissingException,
     thisTid,
     PriorityMessageException,
+    MailboxFull,
     OnCrowding,
     MessageMismatch,
     Variant;

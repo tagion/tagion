@@ -465,6 +465,10 @@ if (allSatisfy!(isSafe, Args)) {
                     &unknown,
             );
         }
+        catch (MailboxFull t) {
+            fail(t);
+            thisActor.stop = true;
+        }
         catch (Exception t) {
             fail(t);
         }
@@ -507,6 +511,10 @@ if (allSatisfy!(isSafe, Args)) {
             if (!message) {
                 timeout();
             }
+        }
+        catch (MailboxFull t) {
+            fail(t);
+            thisActor.stop = true;
         }
         catch (Exception t) {
             fail(t);
