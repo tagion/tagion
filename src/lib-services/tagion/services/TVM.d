@@ -48,28 +48,34 @@ struct TVMService {
     }
 
     void contract(signedContract, immutable(CollectedSignedContract)* collected) {
-        import std.algorithm;
+        if (!engine(collected)) {
+            return;
+        }
+        locate(task_names.epoch_creator).send(Payload(), collected.sign_contract.contract.toDoc);
+    }
 
+    void consensus_contract(consensusContract, immutable(CollectedSignedContract)* collected) {
+        engine(collected);
+    }
+
+    bool engine(immutable(CollectedSignedContract)* collected) {
         log("received signed contract");
+        if (!collected.sign_contract.contract.script.isRecord!PayScript) {
+            log("unsuported script");
+            return false;
+        }
 
         auto result = execute(collected);
         if (result.error) {
             log("Execution error - aborting %s", result.e);
-            return;
+            return false;
         }
         log("sending pload to epoch creator");
-        locate(task_names.epoch_creator).send(Payload(), collected.sign_contract.contract.toDoc);
         log("sending produced contract to transcript");
         locate(task_names.transcript).send(producedContract(), result.get);
+        return true;
     }
 
-    void consensus_contract(consensusContract, immutable(CollectedSignedContract)* collected) {
-        auto result = execute(collected);
-        if (result.error) {
-            return;
-        }
-        locate(task_names.transcript).send(producedContract(), result.get);
-    }
 }
 
 alias TVMServiceHandle = ActorHandle!TVMService;
@@ -89,7 +95,6 @@ unittest {
     auto tvm_service = TVMService(opts, task_names);
 
     import std.range : iota;
-    import tagion.script.common;
     import tagion.crypto.Types;
     import tagion.script.TagionCurrency;
     import std.array;
@@ -108,17 +113,14 @@ unittest {
         tvm_service.contract(signedContract(), cast(immutable) collected);
         collected = null;
 
-        const received1 = receiveTimeout(
-                Duration.zero,
-                (Payload _, const(Document) __) {}
-        );
-        assert(received1, "Did not receive collected Payload");
-
-        const received2 = receiveTimeout(
-                Duration.zero,
-                (producedContract _, immutable(ContractProduct)* __) {}
-        );
-        assert(received2, "Did not receive collected signedContract *");
+        foreach (_; 0 .. 2) {
+            const received = receiveTimeout(
+                    Duration.zero,
+                    (Payload _, const(Document) __) {},
+                    (producedContract _, immutable(ContractProduct)* __) {},
+            );
+            assert(received, "TVM did not send the contract or payload");
+        }
     }
 
     { // False test
@@ -133,6 +135,6 @@ unittest {
                 (Payload _, const(Document) __) {},
                 (producedContract _, immutable(ContractProduct)* __) {},
         );
-        assert(!received, "The tvm should send a contract where the output bills are greater than the input");
+        assert(!received, "The tvm should not send a contract where the output bills are greater than the input");
     }
 }
