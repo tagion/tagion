@@ -28,9 +28,6 @@ import core.thread;
 import std.stdio;
 import std.format;
 
-
-
-
 alias StdSecureWallet = SecureWallet!StdSecureNet;
 enum feature = Feature(
             "send a contract to the network.",
@@ -106,7 +103,6 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
             
 
         }
-
         
         return result_ok;
     }
@@ -140,7 +136,7 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
 
         rc = s.send(hirpc_submit.toDoc.serialize);
         check(rc == 0, format("Failed to send %s", nng_errstr(rc)));
-        Thread.sleep(10.seconds);
+        Thread.sleep(20.seconds);
 
 
         return result_ok;

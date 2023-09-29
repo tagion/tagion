@@ -22,6 +22,7 @@ import std.stdio;
 import std.algorithm : map, filter, sort, reduce, until;
 import std.array;
 import tagion.utils.pretend_safe_concurrency;
+import tagion.services.options : TaskNames;
 
 @safe
 class StdRefinement : Refinement {
@@ -29,12 +30,16 @@ class StdRefinement : Refinement {
     enum MAX_ORDER_COUNT = 10; /// Max recursion count for order_less function
     protected {
         HashGraph hashgraph;
+        TaskNames task_names;
     }
 
     void setOwner(HashGraph hashgraph)
     in (this.hashgraph is null)
     do {
         this.hashgraph = hashgraph;
+    }
+    void setTasknames(TaskNames task_names) {
+        this.task_names = task_names;
     }
 
     Tid collector_service;
@@ -53,6 +58,7 @@ class StdRefinement : Refinement {
             .array;
 
         log(epoch_created, "epoch succesful", epoch_events);
+        log("Epoch_created");
 
     }
 

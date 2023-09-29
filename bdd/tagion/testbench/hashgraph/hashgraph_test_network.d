@@ -25,6 +25,7 @@ import tagion.utils.BitMask;
 import std.conv;
 import tagion.hashgraph.Refinement;
 import std.typecons;
+import tagion.services.options;
 
 class TestRefinement : StdRefinement {
 
@@ -50,6 +51,7 @@ class TestRefinement : StdRefinement {
         sdt_t epoch_time;
         Round decided_round;
     }
+
 
     static Epoch[][Pubkey] epoch_events;
     override void finishedEpoch(const(Event[]) events, const sdt_t epoch_time, const Round decided_round) {
