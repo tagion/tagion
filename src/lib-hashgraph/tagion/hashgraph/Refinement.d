@@ -22,9 +22,31 @@ import std.stdio;
 import std.algorithm : map, filter, sort, reduce, until;
 import std.array;
 import tagion.utils.pretend_safe_concurrency;
+import tagion.script.common : StdNames;
+import tagion.hibon.HiBONRecord;
+
+@recordType("finishedEpoch")
+struct FinishedEpoch {
+    @label("events") const(EventPackage)[] events;
+    @label(StdNames.time) sdt_t time;
+    mixin HiBONRecord!(q{
+        this(const(Event)[] events, sdt_t time) pure {
+            this.events = events
+                .map!((e) => *(e.event_package))
+                .array;
+
+            this.time = time;
+        }
+    });
+}
 
 @safe
 class StdRefinement : Refinement {
+
+    Topic epoch_created;
+    this() {
+        epoch_created = submask.register("epoch_creator/epoch_created");
+    }
 
     enum MAX_ORDER_COUNT = 10; /// Max recursion count for order_less function
     protected {
@@ -45,14 +67,11 @@ class StdRefinement : Refinement {
         }
     }
 
-    void finishedEpoch(const(Event[]) events, const sdt_t epoch_time, const Round decided_round) {
-        auto epoch_created = submask.register("epoch_creator/epoch_created");
-
-        immutable epoch_events = events
-            .map!((e) => e.event_package)
-            .array;
-
-        log(epoch_created, "epoch succesful", epoch_events);
+    void finishedEpoch(const(Event[]) events, const sdt_t epoch_time, const Round decided_round) @trusted {
+        if (events.length > 0) {
+            auto event_payload = FinishedEpoch(events, epoch_time);
+            log(epoch_created, "epoch_succesful", event_payload.toDoc);
+        }
 
     }
 
