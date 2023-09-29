@@ -65,8 +65,7 @@ struct CollectorService {
     void signed_contract(inputContract, immutable(SignedContract) s_contract) {
         auto inputs_req = dartReadRR();
         if (s_contract.signs.length != s_contract.contract.inputs.length) {
-            immutable ulong[2] r = [s_contract.signs.length, s_contract.contract.inputs.length];
-            log(reject, "contract_mismatch_signature_length", r);
+            log(reject, "contract_mismatch_signature_length", Document.init);
             return;
         }
 
@@ -80,7 +79,6 @@ struct CollectorService {
             log("sending contract read request to dart");
             locate(task_names.dart).send(reads_req, s_contract.contract.reads);
         }
-
 
         log("sending contract input request to dart");
         locate(task_names.dart).send(inputs_req, s_contract.contract.inputs);
@@ -124,18 +122,18 @@ struct CollectorService {
                     return;
                 }
                 if (!archive.filed.hasMember(StdNames.owner)) {
-                    log(reject, "archive_no_pubkey", archive);
+                    log(reject, "archive_no_pubkey", recorder);
                     return;
                 }
                 Pubkey pkey = archive.filed[StdNames.owner].get!Buffer;
                 if (!net.verify(contract_hash, sign, pkey)) {
-                    log(reject, "contract_no_verify", tuple(contract_hash, sign, pkey));
+                    log(reject, "contract_no_verify", recorder);
                     return;
                 }
             }
             collection.inputs ~= recorder[].map!(a => a.filed).array;
             if (collection.inputs.length == 0) {
-                log(reject, "contract_no_inputs", immutable(tuple)(collections.giveme(res.id), recorder));
+                log(reject, "contract_no_inputs", recorder);
                 return;
             }
 

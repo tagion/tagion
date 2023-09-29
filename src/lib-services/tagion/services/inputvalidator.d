@@ -83,7 +83,7 @@ struct InputValidatorService {
 
             auto result = buf.append(recv);
             if (s.m_errno != nng_errno.NNG_OK) {
-                log(rejected, "NNG_ERRNO", s.m_errno);
+                log(rejected, "NNG_ERRNO", cast(int) s.m_errno);
                 continue;
             }
 

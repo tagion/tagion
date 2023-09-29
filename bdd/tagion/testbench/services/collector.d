@@ -187,7 +187,7 @@ class ItWork {
         //immutable sender = hirpc.sendDaMonies(contract);
         collector_handle.send(inputHiRPC(), hirpc.receive(sender.toDoc));
 
-        auto result = receiveOnlyTimeout!(Topic, string, immutable(Document));
+        auto result = receiveOnlyTimeout!(Topic, string, const(Document));
         check(result[1] == "hirpc_invalid_signed_contract", "did not reject for the expected reason");
 
         return result_ok;
@@ -212,7 +212,7 @@ class ItWork {
         immutable sender = hirpc.sendDaMonies(s_contract);
         collector_handle.send(inputHiRPC(), hirpc.receive(sender.toDoc));
 
-        auto result = receiveOnlyTimeout!(Topic, string, Tuple!(const(Fingerprint), const(Signature), Pubkey));
+        auto result = receiveOnlyTimeout!(Topic, string, const(Document));
         check(result[1] == "contract_no_verify", "did not reject for the expected reason");
 
         return result_ok;
@@ -243,7 +243,7 @@ class ItWork {
         immutable sender = hirpc.sendDaMonies(s_contract);
         collector_handle.send(inputHiRPC(), hirpc.receive(sender.toDoc));
 
-        auto result = receiveOnlyTimeout!(Topic, string, immutable(RecordFactory.Recorder));
+        auto result = receiveOnlyTimeout!(Topic, string, const(Document));
         check(result[1] == "archive_no_exist", "did not reject for the expected reason");
         // check(result[1] == "missing_archives", "did not reject for the expected reason");
 
