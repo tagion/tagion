@@ -36,8 +36,8 @@ struct CollectorService {
     immutable SecureNet net;
     immutable TaskNames task_names;
 
-    immutable(SignedContract)[uint] contracts;
-    immutable(RecordFactory.Recorder)[uint] reads;
+    immutable(SignedContract)*[uint] contracts;
+    immutable(Document)[][uint] reads;
     uint[uint] readsmap;
 
     Topic reject;
@@ -48,7 +48,7 @@ struct CollectorService {
     }
 
     // Input received directly from the HiRPC verifier
-    void rpc_contract(inputHiRPC, immutable(HiRPC.Receiver) receiver) @trusted {
+    void rpc_contract(inputHiRPC, immutable(HiRPC.Receiver) receiver) @safe {
         immutable doc = Document(receiver.method.params);
         log("collector received receiver");
         if (!doc.isRecord!SignedContract) {
@@ -56,31 +56,40 @@ struct CollectorService {
             return;
         }
         try {
-            signed_contract(inputContract(), cast(immutable) SignedContract(doc));
+            // No immutable construct on this HiBONRecord
+            immutable s_contract = (() @trusted => (cast(immutable) new SignedContract(doc)))();
+            signed_contract(inputContract(), s_contract);
         }
         catch (HiBONRecordException e) {
             log(reject, "hirpc_invalid_signed_contract", doc);
         }
     }
 
-    void signed_contract(inputContract, immutable(SignedContract) s_contract) {
+    void signed_contract(inputContract, immutable(SignedContract)* s_contract) {
         auto inputs_req = dartReadRR();
+        auto reads_req = dartReadRR();
         if (s_contract.signs.length != s_contract.contract.inputs.length) {
             log(reject, "contract_mismatch_signature_length", Document.init);
             return;
         }
 
-        auto contract_ptr = inputs_req.id in contracts;
-        contract_ptr = &s_contract;
+        // auto contract_ptr = inputs_req.id in contracts;
+        // contract_ptr = &s_contract;
+
+        contracts[inputs_req.id] = s_contract;
+        scope (failure) {
+            contracts.remove(inputs_req.id);
+            readsmap.remove(reads_req.id);
+        }
+        log("Set the signed_contract %s", (inputs_req.id in contracts) !is null);
         if (s_contract.contract.reads !is DARTIndex[].init) {
-            auto reads_req = dartReadRR();
             readsmap[reads_req.id] = inputs_req.id;
             log("sending contract read request to dart");
-            locate(task_names.dart).send(reads_req, s_contract.contract.reads);
+            locate(task_names.dart).send(reads_req, (*s_contract).contract.reads);
         }
 
         log("sending contract input request to dart");
-        locate(task_names.dart).send(inputs_req, s_contract.contract.inputs);
+        locate(task_names.dart).send(inputs_req, (*s_contract).contract.inputs);
     }
 
     void recorder(dartReadRR.Response res, immutable(RecordFactory.Recorder) recorder) {
@@ -98,22 +107,20 @@ struct CollectorService {
             //     return;
             // }
             const contract_id = readsmap[res.id];
-            auto reads_ptr = contract_id in reads;
-            reads_ptr = &recorder;
+            reads[contract_id] = recorder[].map!(a => a.filed).array;
             return;
         }
         else if ((res.id in contracts) !is null) {
+            log("Received and input response");
             scope (exit) {
                 contracts.remove(res.id);
-                if ((res.id in reads) !is null) {
-                    reads.remove(res.id);
-                }
+                reads.remove(res.id);
             }
             // if (recorder[].map(a => a.fingerprint).array != collection.inputs.length) {
             //     log(reject, "missing_archives", recorder);
             //     return;
             // }
-            immutable s_contract = contracts[res.id];
+            immutable s_contract = *(contracts[res.id]);
             const contract_hash = net.calcHash(s_contract.contract);
             foreach (index, sign; zip(s_contract.contract.inputs, s_contract.signs)) {
                 immutable archive = find(recorder, index);
@@ -137,16 +144,22 @@ struct CollectorService {
                 return;
             }
 
-            immutable reads_recorder =
-                ((res.id in reads) !is null) ?
-                reads[res.id] : RecordFactory.Recorder.init;
-
-            immutable collection = new immutable(CollectedSignedContract)(s_contract, recorder, reads_recorder);
+            immutable inputs = recorder[].map!(a => a.filed).array;
+            assert(inputs !is Document[].init, "Recorder should've contained inputs at this point");
+            immutable collection =
+                ((res.id in reads) !is null)
+                ? new immutable(CollectedSignedContract)(s_contract, inputs, reads[res.id]) : new immutable(
+                    CollectedSignedContract)(s_contract, inputs);
 
             log("sending to tvm");
             locate(task_names.tvm).send(signedContract(), collection);
+            return;
+        }
+        else {
+            log("Response did not match any of the requests");
         }
     }
+
 }
 
 alias CollectorServiceHandle = ActorHandle!CollectorService;
