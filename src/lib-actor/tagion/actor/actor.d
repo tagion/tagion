@@ -278,6 +278,10 @@ struct ActorHandle(A) {
 
     /// Send a message to this task
     void send(T...)(T args) @safe {
+        if (this.tid is Tid.init) {
+            log("Could not delive message to %s:\n\t%(%s, %)", task_name, args);
+            return;
+        }
         concurrency.send(this.tid, args);
     }
 }
