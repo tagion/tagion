@@ -21,12 +21,21 @@ struct ContractProduct {
     }
 }
 
+import tagion.dart.Recorder;
+
 @safe
 struct CollectedSignedContract {
-    Document[] inputs;
-    Document[] reads;
     SignedContract sign_contract;
+    const(Document)[] inputs;
+    const(Document)[] reads;
     //mixin HiBONRecord;
+    this(immutable(SignedContract) sign_contract, immutable(RecordFactory.Recorder) rec_inputs, immutable(RecordFactory
+            .Recorder) rec_reads) immutable {
+        // Check if fingerpitn correct order;
+        this.sign_contract = sign_contract;
+        this.inputs = rec_inputs[].map!(a => a.filed).array;
+        this.reads = rec_reads[].map!(a => a.filed).array;
+    }
 }
 
 @safe

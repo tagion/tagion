@@ -36,8 +36,9 @@ struct CollectorService {
     immutable SecureNet net;
     immutable TaskNames task_names;
 
-    CollectedSignedContract[uint] collections;
-    CollectedSignedContract*[uint] reads;
+    immutable(SignedContract)[uint] contracts;
+    immutable(RecordFactory.Recorder)[uint] reads;
+    uint[uint] readsmap;
 
     Topic reject;
     void task() {
@@ -69,13 +70,11 @@ struct CollectorService {
             return;
         }
 
-        CollectedSignedContract collected;
-        collected.sign_contract = s_contract;
-        collections[inputs_req.id] = collected;
-
+        auto contract_ptr = inputs_req.id in contracts;
+        contract_ptr = &s_contract;
         if (s_contract.contract.reads !is DARTIndex[].init) {
             auto reads_req = dartReadRR();
-            reads[reads_req.id] = inputs_req.id in collections;
+            readsmap[reads_req.id] = inputs_req.id;
             log("sending contract read request to dart");
             locate(task_names.dart).send(reads_req, s_contract.contract.reads);
         }
@@ -89,31 +88,32 @@ struct CollectorService {
         import std.algorithm.iteration : map;
 
         log("received dartRead response");
-        if ((res.id in reads) !is null) {
-            auto collection = *(res.id in reads);
+        if ((res.id in readsmap) !is null) {
             scope (exit) {
-                collection = null;
-                reads.remove(res.id);
+                readsmap.remove(res.id);
             }
             // if (recorder[].map(a => a.fingerprint).array != collection.reads.length) {
             //     log(reject, "missing_archives", recorder);
             //      // Remove inputs aswell
             //     return;
             // }
-            collection.reads ~= recorder[].map!(a => a.toDoc).array;
+            const contract_id = readsmap[res.id];
+            auto reads_ptr = contract_id in reads;
+            reads_ptr = &recorder;
             return;
         }
-        else if ((res.id in collections) !is null) {
-            auto collection = res.id in collections;
+        else if ((res.id in contracts) !is null) {
             scope (exit) {
-                collection = null;
-                collections.remove(res.id);
+                contracts.remove(res.id);
+                if ((res.id in reads) !is null) {
+                    reads.remove(res.id);
+                }
             }
             // if (recorder[].map(a => a.fingerprint).array != collection.inputs.length) {
             //     log(reject, "missing_archives", recorder);
             //     return;
             // }
-            const s_contract = collection.sign_contract;
+            immutable s_contract = contracts[res.id];
             const contract_hash = net.calcHash(s_contract.contract);
             foreach (index, sign; zip(s_contract.contract.inputs, s_contract.signs)) {
                 immutable archive = find(recorder, index);
@@ -131,27 +131,25 @@ struct CollectorService {
                     return;
                 }
             }
-            collection.inputs ~= recorder[].map!(a => a.filed).array;
-            if (collection.inputs.length == 0) {
+
+            if (recorder is RecordFactory.init) {
                 log(reject, "contract_no_inputs", recorder);
                 return;
             }
 
+            immutable reads_recorder =
+                ((res.id in reads) !is null) ?
+                reads[res.id] : RecordFactory.Recorder.init;
+
+            immutable collection = new immutable(CollectedSignedContract)(s_contract, recorder, reads_recorder);
+
             log("sending to tvm");
-            locate(task_names.tvm).send(signedContract(), collections.giveme(res.id));
+            locate(task_names.tvm).send(signedContract(), collection);
         }
     }
 }
 
 alias CollectorServiceHandle = ActorHandle!CollectorService;
-
-private immutable(CollectedSignedContract*) giveme(ref CollectedSignedContract[uint] aa, uint key) @trusted nothrow pure {
-    scope (exit) {
-        aa.remove(key);
-    }
-    CollectedSignedContract* val = key in aa;
-    return cast(immutable) val;
-}
 
 // The find funtion in dart.recorder doest not work with an immutable recorder;
 import tagion.dart.DARTBasic : DARTIndex;
