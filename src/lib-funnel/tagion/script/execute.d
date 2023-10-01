@@ -21,11 +21,13 @@ struct ContractProduct {
     }
 }
 
+import tagion.dart.Recorder;
+
 @safe
 struct CollectedSignedContract {
-    Document[] inputs;
-    Document[] reads;
     SignedContract sign_contract;
+    const(Document)[] inputs;
+    const(Document)[] reads;
     //mixin HiBONRecord;
 }
 

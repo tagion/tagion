@@ -64,6 +64,7 @@ const(DARTIndex)[] insertBills(TagionBill[] bills, ref RecordFactory.Recorder re
     return rec[].map!((a) => a.fingerprint).array;
 }
 
+// alias StdSecureWallet = SecureWallet!StdSecureNet;
 @safe @Scenario("it work", [])
 class ItWork {
     enum dart_service = "dart_service_task";
