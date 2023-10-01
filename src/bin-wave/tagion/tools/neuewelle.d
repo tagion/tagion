@@ -195,7 +195,7 @@ int _main(string[] args) {
         supervisor.send(Sig.STOP);
     }
     // supervisor_handle.send(Sig.STOP);
-    if (!waitforChildren(Ctrl.END)) {
+    if (!waitforChildren(Ctrl.END, 5.seconds)) {
         log("Program did not stop properly");
         return 1;
     }

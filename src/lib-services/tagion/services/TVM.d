@@ -54,7 +54,7 @@ struct TVMService {
             return;
         }
         log("sending pload to epoch creator");
-        locate(task_names.epoch_creator).send(Payload(), collected.sign_contract.contract.toDoc);
+        locate(task_names.epoch_creator).send(Payload(), collected.sign_contract.toDoc);
     }
 
     void consensus_contract(consensusContract, immutable(CollectedSignedContract)* collected) {

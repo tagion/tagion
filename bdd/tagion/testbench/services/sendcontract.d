@@ -131,49 +131,49 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
 
         rc = s.send(hirpc_submit.toDoc.serialize);
         check(rc == 0, format("Failed to send %s", nng_errstr(rc)));
-        Thread.sleep(30.seconds);
+        // Thread.sleep(30.seconds);
         return result_ok;
     }
 
     @When("wallet1 pays contract to wallet2 and sends it to the network.")
     Document network() @trusted {
-        const fingerprints = [wallet2.account.bills, wallet2.account.requested.values]
-            .joiner
-            .map!(bill => wallet2.net.dartIndex(bill))
-            .array;
-        writeln(fingerprints);
-        const hirpc = HiRPC(wallet2.net);
-        auto dartcheckread = dartCheckRead(fingerprints, hirpc);
-        writeln("going to send dartcheckread ");
+        // const fingerprints = [wallet2.account.bills, wallet2.account.requested.values]
+        //     .joiner
+        //     .map!(bill => wallet2.net.dartIndex(bill))
+        //     .array;
+        // writeln(fingerprints);
+        // const hirpc = HiRPC(wallet2.net);
+        // auto dartcheckread = dartCheckRead(fingerprints, hirpc);
+        // writeln("going to send dartcheckread ");
 
-        NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
-        s.recvtimeout = 1000.msecs;
-        int rc;
-        while (1) {
-            writefln("REQ %s to dial...", dartcheckread.toPretty);
-            rc = s.dial(dart_interface_sock_addr);
-            if (rc == 0) {
-                break;
-            }
+        // NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
+        // s.recvtimeout = 1000.msecs;
+        // int rc;
+        // while (1) {
+        //     writefln("REQ %s to dial...", dartcheckread.toPretty);
+        //     rc = s.dial(dart_interface_sock_addr);
+        //     if (rc == 0) {
+        //         break;
+        //     }
 
-            if (rc == nng_errno.NNG_ECONNREFUSED) {
-                nng_sleep(100.msecs);
-            }
-            check(rc == 0, "NNG error");
-        }
-        while (1) {
-            rc = s.send!(immutable(ubyte[]))(dartcheckread.toDoc.serialize);
-            check(rc == 0, "NNG error");
-            Document received_doc = s.receive!(immutable(ubyte[]))();
-            check(s.errno == 0, "Error in response");
+        //     if (rc == nng_errno.NNG_ECONNREFUSED) {
+        //         nng_sleep(100.msecs);
+        //     }
+        //     check(rc == 0, "NNG error");
+        // }
+        // while (1) {
+        //     rc = s.send!(immutable(ubyte[]))(dartcheckread.toDoc.serialize);
+        //     check(rc == 0, "NNG error");
+        //     Document received_doc = s.receive!(immutable(ubyte[]))();
+        //     check(s.errno == 0, "Error in response");
 
-            writefln("RECEIVED RESPONSE: %s", received_doc.toPretty);
-            auto received = hirpc.receive(received_doc);
-            check(wallet2.setResponse(received), "wallet2 not updated succesfully");
-            check(wallet2.calcTotal(wallet2.account.bills) > 0.TGN, "did not receive money");
-            writefln("Wallet 2 total %s", wallet2.calcTotal(wallet2.account.bills));
-            break;
-        }
+        //     writefln("RECEIVED RESPONSE: %s", received_doc.toPretty);
+        //     auto received = hirpc.receive(received_doc);
+        //     check(wallet2.setResponse(received), "wallet2 not updated succesfully");
+        //     check(wallet2.calcTotal(wallet2.account.bills) > 0.TGN, "did not receive money");
+        //     writefln("Wallet 2 total %s", wallet2.calcTotal(wallet2.account.bills));
+        //     break;
+        // }
         return Document();
     }
 

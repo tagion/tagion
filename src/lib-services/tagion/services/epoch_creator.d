@@ -104,7 +104,16 @@ struct EpochCreatorService {
             version (EPOCH_LOG) {
                 log.trace("Received wavefront");
             }
+            
             const receiver = HiRPC.Receiver(wave_doc);
+
+            // const received_wave = received.params!(Wavefront)(net);
+
+            // auto events = received_wave.epacks.map!(e => e.event_body.payload)
+
+
+
+
             hashgraph.wavefront(
                     receiver,
                     gossip_net.time,

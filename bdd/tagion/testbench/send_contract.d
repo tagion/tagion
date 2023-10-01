@@ -102,13 +102,15 @@ int _main(string[] args) {
     immutable neuewelle_args = [config_file];
     auto tid = spawn(&wrap_neuewelle, neuewelle_args);
     Thread.sleep(15.seconds);
-
+    writeln("going to run test");
     auto send_contract_feature = automation!(sendcontract);
     send_contract_feature.SendASingleTransactionFromAWalletToAnotherWallet(local_options, wallets, dart_interface_sock_addr, inputvalidator_sock_addr);
     send_contract_feature.run();
-    Thread.sleep(5.seconds);
+    writefln("finished test execution");
+    Thread.sleep(20.seconds);
 
-    stopsignal.set;
+    neuewelle.signal_handler(0);
+    // stopsignal.set;
 
     return 0;
 

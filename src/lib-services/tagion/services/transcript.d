@@ -47,7 +47,7 @@ struct TranscriptService {
         auto rec_factory = RecordFactory(net);
 
         struct EpochContracts {
-            Contract[] contracts;
+            SignedContract[] signed_contracts;
         }
 
         EpochContracts[uint] epoch_contracts;
@@ -62,17 +62,17 @@ struct TranscriptService {
 
             log("epoch type %s", epacks[0].event_body.payload.toPretty);
             
-            Contract[] contracts = epacks
-                .map!(epack => Contract(epack.event_body.payload))
+            SignedContract[] signed_contracts = epacks
+                .map!(epack => SignedContract(epack.event_body.payload))
                 .array;
 
-            auto inputs = contracts
-                .map!(contract => contract.inputs)
+            auto inputs = signed_contracts
+                .map!(signed_contract => signed_contract.contract.inputs)
                 .join
                 .array;
 
             auto req = dartCheckReadRR();
-            epoch_contracts[req.id] = EpochContracts(contracts);
+            epoch_contracts[req.id] = EpochContracts(signed_contracts);
 
             (() @trusted => locate(task_names.dart).send(req, cast(immutable(DARTIndex)[]) inputs))();
         }
@@ -91,28 +91,33 @@ struct TranscriptService {
             assert(epoch_contract !is EpochContracts.init, "unlinked data received from DART");
             scope (exit) {
                 epoch_contracts.remove(res.id);
+                log("removed %s from epoch_contracts", res.id);
             }
 
             DARTIndex[] used;
             auto recorder = rec_factory.recorder;
 
-            foreach (contract; epoch_contract.contracts) {
-                foreach (input; contract.inputs) {
+            foreach (signed_contract; epoch_contract.signed_contracts) {
+                foreach (input; signed_contract.contract.inputs) {
                     if (used.canFind(input)) {
                         assert(0, "input already in used list");
                     }
                 }
 
-                const tvm_contract_outputs = products.get(net.dartIndex(contract), null);
-
+                const tvm_contract_outputs = products.get(net.dartIndex(signed_contract.contract), null);
                 if (tvm_contract_outputs is null) {
+                    log("contract not found asserting");
                     assert(0, "what should we do here");
+                }
+
+                scope(exit) { 
+                    products.remove(net.dartIndex(signed_contract.contract));
                 }
 
                 recorder.insert(tvm_contract_outputs.outputs, Archive.Type.ADD);
                 recorder.insert(tvm_contract_outputs.contract.inputs, Archive.Type.REMOVE);
 
-                used ~= contract.inputs;
+                used ~= signed_contract.contract.inputs;
             }
 
             pragma(msg, "fixme(pr): add epoch_number");
