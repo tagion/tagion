@@ -75,6 +75,7 @@ class StdRefinement : Refinement {
 
     void finishedEpoch(const(Event[]) events, const sdt_t epoch_time, const Round decided_round) @trusted {
         if (events.length > 0) {
+            log("WOWOWOWOWOWOWOOWOWOWOWWOOWOWOWOWOWOWOWO");
             auto event_payload = FinishedEpoch(events, epoch_time);
             log(epoch_created, "epoch_succesful", event_payload.toDoc);
 

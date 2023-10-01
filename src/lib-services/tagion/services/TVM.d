@@ -48,9 +48,12 @@ struct TVMService {
     }
 
     void contract(signedContract, immutable(CollectedSignedContract)* collected) {
+
         if (!engine(collected)) {
+            log("!engine(collected");
             return;
         }
+        log("sending pload to epoch creator");
         locate(task_names.epoch_creator).send(Payload(), collected.sign_contract.contract.toDoc);
     }
 
@@ -70,7 +73,6 @@ struct TVMService {
             log("Execution error - aborting %s", result.e);
             return false;
         }
-        log("sending pload to epoch creator");
         log("sending produced contract to transcript");
         locate(task_names.transcript).send(producedContract(), result.get);
         return true;

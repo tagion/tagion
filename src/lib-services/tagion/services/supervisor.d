@@ -26,6 +26,7 @@ import tagion.services.epoch_creator;
 import tagion.services.collector;
 import tagion.services.output;
 import tagion.services.TVM;
+import tagion.services.transcript;
 
 @safe
 struct Supervisor {
@@ -53,9 +54,11 @@ struct Supervisor {
         auto collector_handle = spawn(immutable(CollectorService)(net, tn), tn.collector);
         auto tvm_handle = spawn(immutable(TVMService)(opts.tvm, tn), tn.tvm);
 
+        auto transcript_handle = spawn!TranscriptService(tn.transcript, opts.transcript, net, tn);
+
         auto dart_interface_handle = spawn(immutable(DARTInterfaceService)(opts.dart_interface, tn), tn.dart_interface);
 
-        auto services = tuple(dart_handle, hirpc_verifier_handle, inputvalidator_handle, epoch_creator_handle, collector_handle, tvm_handle, dart_interface_handle);
+        auto services = tuple(dart_handle, hirpc_verifier_handle, inputvalidator_handle, epoch_creator_handle, collector_handle, tvm_handle, dart_interface_handle, transcript_handle);
 
         if (waitforChildren(Ctrl.ALIVE, 5.seconds)) {
             run(failHandler);

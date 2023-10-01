@@ -25,6 +25,7 @@ import tagion.utils.StdTime;
 import tagion.script.common;
 import std.algorithm;
 import tagion.dart.Recorder;
+import tagion.services.options : TaskNames;
 
 @safe
 struct TranscriptOptions {
@@ -38,7 +39,7 @@ struct TranscriptOptions {
 **/
 @safe
 struct TranscriptService {
-    void task(immutable(TranscriptOptions) opts, const string dart_task_name, immutable(SecureNet) net) {
+    void task(immutable(TranscriptOptions) opts, immutable(SecureNet) net, immutable(TaskNames) task_names) {
 
         immutable(ContractProduct)*[DARTIndex] products;
         auto rec_factory = RecordFactory(net);
@@ -61,7 +62,7 @@ struct TranscriptService {
             const req = dartCheckReadRR();
             epoch_contracts[req.id] = EpochContracts(s_contracts);
 
-            (() @trusted => locate(dart_task_name).send(req, cast(immutable(DARTIndex[])) inputs))();
+            (() @trusted => locate(task_names.dart).send(req, cast(immutable(DARTIndex[])) inputs))();
         }
 
         void create_recorder(dartCheckReadRR.Response res, immutable(DARTIndex)[] not_in_dart) {
@@ -99,13 +100,15 @@ struct TranscriptService {
             }
 
             pragma(msg, "fixme(pr): add epoch_number");
-            locate(dart_task_name).send(dartModify(), RecordFactory.uniqueRecorder(recorder), immutable int(0));
+            locate(task_names.dart).send(dartModify(), RecordFactory.uniqueRecorder(recorder), immutable int(0));
 
         }
 
         void produceContract(producedContract, immutable(ContractProduct)* product) {
-            const product_index = net.dartIndex(product.contract.sign_contract.contract);
+            log("received ContractProduct");
+            auto product_index = net.dartIndex(product.contract.sign_contract.contract);
             products[product_index] = product;
+
         }
 
         run(&epoch, &produceContract);
