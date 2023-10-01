@@ -101,17 +101,29 @@ struct EpochCreatorService {
         }
 
         void receiveWavefront(ReceivedWavefront, const(Document) wave_doc) {
+            import tagion.hashgraph.HashGraphBasic;
+            import tagion.hibon.HiBONRecord : isRecord;
+            import tagion.script.common : SignedContract;
+            import std.array;
+
             version (EPOCH_LOG) {
                 log.trace("Received wavefront");
             }
             
             const receiver = HiRPC.Receiver(wave_doc);
 
-            // const received_wave = received.params!(Wavefront)(net);
+            const received_wave = receiver.params!(Wavefront)(net);
 
-            // auto events = received_wave.epacks.map!(e => e.event_body.payload)
+            immutable received_signed_contracts = received_wave.epacks
+                .map!(e => e.event_body.payload)
+                .filter!(p => p.isRecord!SignedContract)
+                .map!(s => (() @trusted => cast(immutable) SignedContract(s))())
+                .array;
 
-
+            if (received_signed_contracts.length != 0) {
+                log("would have send to collector %s", received_signed_contracts.map!(s => s.toPretty));
+                // locate(task_names.collector).send(consensusContract(), received_signed_contracts);
+            }
 
 
             hashgraph.wavefront(
