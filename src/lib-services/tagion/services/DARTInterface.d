@@ -56,6 +56,7 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
         writeln("received empty msg");
         return;
     }
+
     Document doc = msg.body_trim!(immutable(ubyte[]))(msg.length);
     msg.clear();
 

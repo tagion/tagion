@@ -14,6 +14,7 @@ import tagion.logger.Logger;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON;
+import tagion.services.messages : consensusEpoch;
 
 import tagion.basic.Debug;
 
@@ -77,9 +78,16 @@ class StdRefinement : Refinement {
         if (events.length > 0) {
             auto event_payload = FinishedEpoch(events, epoch_time);
             log(epoch_created, "epoch_succesful", event_payload.toDoc);
-
         }
         log("Epoch_created");
+        if (task_names is TaskNames.init) {
+            return;
+        }
+
+        immutable(EventPackage*)[] epacks = events
+                .map!((e) => e.event_package)
+                .array;
+        locate(task_names.transcript).send(consensusEpoch(), epacks);
     }
 
     void excludedNodes(ref BitMask excluded_mask) {

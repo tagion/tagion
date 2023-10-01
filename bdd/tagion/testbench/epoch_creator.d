@@ -9,7 +9,7 @@ import tagion.tools.Basic;
 mixin Main!(_main);
 
 int _main(string[] args) {
-    auto epoch_creator_options = EpochCreatorOptions(15, 5);
+    auto epoch_creator_options = EpochCreatorOptions(100, 5);
     MonitorOptions monitor_options;
     import tagion.services.locator;
 
