@@ -73,8 +73,11 @@ struct DARTService {
         }
 
         void checkRead(dartCheckReadRR req, immutable(DARTIndex)[] fingerprints) @safe {
-            auto check_read = db.checkload(fingerprints);
-            (() @trusted => req.respond(cast(immutable) check_read))();
+            import tagion.utils.Miscellaneous : toHexString;
+            log("Received checkread response %s", fingerprints.map!(f => f.toHexString));
+            immutable(DARTIndex)[] check_read = (() @trusted => cast(immutable) db.checkload(fingerprints))();
+
+            req.respond(check_read);
         }
 
         auto hirpc = HiRPC(net);
@@ -100,6 +103,8 @@ struct DARTService {
         }
 
         void modify(dartModify, immutable(RecordFactory.Recorder) recorder, immutable(int) epoch_number) @safe {
+            log("received modify with %s archives", recorder.length);
+
             auto eye = Fingerprint(db.modify(recorder));
 
             locate(replicator_task_name).send(SendRecorder(), recorder, eye, epoch_number);
