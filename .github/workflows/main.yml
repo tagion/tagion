@@ -310,22 +310,3 @@ jobs:
           rm -rf build || echo "build directory already deleted"
           rm  *.tar.gz || echo "No such file or directory"
           
-  deploy_tagionwave:
-    runs-on: neuewelle
-    needs: [finish_workflow]
-    steps:
-      - name: get artifact and restart service
-        run: | 
-          rm -rf *
-          export GH_TOKEN=${{ env.GITBOT_TOKEN }}
-          gh run download -n successful_artifact --repo tagion/tagion
-          tar -xzf *.tar.gz
-          cd build/x86_64-linux/bin
-          ls
-          systemctl stop --user neuewelle.service
-          mkdir -p ~/.local/share/wave
-          mkdir -p ~/.config/systemd/user
-          cp tagion ~/.local/share/wave
-          cp neuewelle.service ~/.config/systemd/user
-          systemctl --user daemon-reload
-          systemctl restart --user neuewelle.service
