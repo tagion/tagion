@@ -559,12 +559,14 @@ struct SecureWallet(Net : SecureNet) {
 
     @safe
     bool setResponse(const(HiRPC.Receiver) receiver) {
+        import tagion.dart.DART;
         pragma(msg, "fixme(pr) lookup bills properly");
 
         if (!receiver.isResponse) {
             return false;
         }
-        auto not_in_dart = receiver.response.result[].map!(f => f.get!Buffer);
+
+        auto not_in_dart = receiver.response.result[DART.Params.fingerprints].get!Document[].map!(d => d.get!Buffer);
 
         foreach (not_found; not_in_dart) {
             const bill_index = account.bills

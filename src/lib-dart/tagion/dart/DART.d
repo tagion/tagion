@@ -462,11 +462,19 @@ received = the HiRPC received package
     do {
         auto doc_fingerprints = received.method.params[Params.fingerprints].get!(Document);
         auto fingerprints = doc_fingerprints.range!(DARTIndex[]);
-        auto not_in_dart = (() @trusted => checkload(fingerprints))();
+        auto not_in_dart = checkload(fingerprints);
+        import tagion.hibon.HiBONtoText;
+        import std.array;
+        writefln("DARTCHECKREAD response %s", not_in_dart.map!(d => d.encodeBase64));
 
         auto params = new HiBON;
+        auto params_fingerprints = new HiBON;
+        params_fingerprints = not_in_dart.map!(f => cast(Buffer) f);
+        params[Params.fingerprints] = params_fingerprints;
 
-        params[Params.fingerprints] = (() @trusted => cast(Buffer) not_in_dart)();
+        // Buffer[] res = not_in_dart.map!(f => cast(Buffer) f).array;
+        // params[Params.fingerprints] = res;
+        // params[Params.fingerprints] = (() @trusted => cast(Buffer) not_in_dart)();
 
 
         return hirpc.result(received, params);

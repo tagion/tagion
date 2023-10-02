@@ -94,10 +94,11 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
                 Document received_doc = s.receive!(immutable(ubyte[]))();
                 check(s.errno == 0, "Error in response");
 
-                writefln("RECEIVED RESPONSE: %s", received_doc.toPretty);
+                // writefln("RECEIVED RESPONSE: %s", received_doc.toPretty);
                 auto received = hirpc.receive(received_doc);
                 check(wallet.setResponse(received), "wallet not updated succesfully");
                 check(wallet.calcTotal(wallet.account.bills) > 0.TGN, "did not receive money");
+                check(wallet.calcTotal(wallet.account.bills) == 3000.TGN, "money not correct");
                 break;
             }
 
@@ -116,8 +117,8 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
         check(wallet1.createPayment([payment_request], signed_contract), "Error creating wallet");
         check(signed_contract !is SignedContract.init, "contract not updated");
 
-        const message = wallet1.net.calcHash(signed_contract);
-        const contract_net = wallet1.net.derive(message);
+        // const message = wallet1.net.calcHash(signed_contract);
+        // const contract_net = wallet1.net.derive(message);
 
         auto wallet1_hirpc = HiRPC(wallet1.net);
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
@@ -140,6 +141,7 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
 
     @When("wallet1 pays contract to wallet2 and sends it to the network.")
     Document network() @trusted {
+        writeln("WALLET 1 request");
         const fingerprints = [wallet1.account.bills, wallet1.account.requested.values]
             .joiner
             .map!(bill => wallet1.net.dartIndex(bill))
@@ -168,9 +170,8 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
             rc = s.send!(immutable(ubyte[]))(dartcheckread.toDoc.serialize);
             check(rc == 0, "NNG error");
             Document received_doc = s.receive!(immutable(ubyte[]))();
-            writefln("wallet1 received: %s", received_doc.toPretty);
-            check(s.errno == 0, format("Error in response [%03d] %s", received_doc.length, received_doc.toPretty));
             writefln("RECEIVED RESPONSE: %s", received_doc.toPretty);
+            check(s.errno == 0, format("Error in response [%03d] %s", received_doc.length, received_doc.toPretty));
             auto received = hirpc.receive(received_doc);
             check(wallet1.setResponse(received), "wallet1 not updated succesfully");
             check(wallet1.calcTotal(wallet1.account.bills) > 0.TGN, "did not receive money");
