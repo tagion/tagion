@@ -116,6 +116,7 @@ struct EpochCreatorService {
 
             immutable received_signed_contracts = received_wave.epacks
                 .map!(e => e.event_body.payload)
+                .filter!((p) => !p.empty)
                 .filter!(p => p.isRecord!SignedContract)
                 .map!(s => (() @trusted => cast(immutable) SignedContract(s))())
                 .array;
@@ -124,8 +125,6 @@ struct EpochCreatorService {
                 log("would have send to collector %s", received_signed_contracts.map!(s => s.toPretty));
                 // locate(task_names.collector).send(consensusContract(), received_signed_contracts);
             }
-
-
             hashgraph.wavefront(
                     receiver,
                     gossip_net.time,
