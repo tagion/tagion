@@ -62,7 +62,7 @@ struct InputValidatorService {
         }
         else {
             log.error("Failed to listen on addr: %s, %s", opts.sock_addr, nng_errstr(listening));
-            assert(0); // fixme
+            throw new Exception("Failed to listen on addr: %s, %s".format(opts.sock_addr, nng_errstr(listening)));
         }
         const recv = (scope void[] b) @trusted {
             size_t ret = s.receivebuf(cast(ubyte[]) b);
