@@ -591,7 +591,7 @@ struct SecureWallet(Net : SecureNet) {
         }
         foreach (request_bill; account.requested.byValue) {
             if (fingerprints.canFind(net.dartIndex(request_bill))) {
-                account.bills ~= request_bill;
+                //account.bills ~= request_bill;
                 account.requested.remove(request_bill.owner);
             }
         }
