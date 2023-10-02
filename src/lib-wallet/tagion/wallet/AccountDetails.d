@@ -14,6 +14,7 @@ import tagion.script.common;
 struct AccountDetails {
     @label("$derivers") Buffer[Pubkey] derivers;
     @label("$bills") TagionBill[] bills;
+    @label("$used") TagionBill[] used_bills;
     @label("$state") Buffer derive_state;
     @label("$locked") bool[Pubkey] activated; /// locked bills
     @label("$requested") TagionBill[Pubkey] requested; /// Requested bills

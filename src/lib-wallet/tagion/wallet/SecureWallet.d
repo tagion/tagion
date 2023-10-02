@@ -3,10 +3,9 @@
 */
 module tagion.wallet.SecureWallet;
 import tagion.utils.Miscellaneous;
-
 import std.format;
 import std.string : representation;
-import std.algorithm : all, map, max, min, sum, until, each, filter, cache;
+import std.algorithm : countUntil, all, remove, map, max, min, sum, until, each, filter, cache, find, canFind;
 import std.range : tee;
 import std.array;
 import std.exception : assumeUnique;
@@ -25,6 +24,7 @@ import tagion.dart.DARTFile;
 import tagion.basic.basic : basename, isinit;
 import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Pubkey;
+
 // import tagion.script.prior.StandardRecords : SignedContract, globals, Script;
 import PriorStandardRecords = tagion.script.prior.StandardRecords;
 
@@ -564,18 +564,52 @@ struct SecureWallet(Net : SecureNet) {
         if (!receiver.isResponse) {
             return false;
         }
+        auto fingerprints = receiver.response.result[].map!(f => f.get!Buffer);
+        // auto bill_hashs=account.bills
+        //.map!(bill => net.dartIndex(bill)
+        //.array;
+
+        foreach (fingerprint; fingerprints) {
+            const bill_index = account.bills
+                .countUntil!(bill => net.dartIndex(bill) == fingerprint);
+            if (bill_index >= 0) {
+                account.used_bills ~= account.bills[bill_index];
+                account.bills = account.bills.remove(bill_index);
+                continue;
+            }
+            /*
+            auto request=account.requested.byValue
+        
+        .find!(bill => net.dartIndex(bill) == fingerprint);
+            if (request.empty) {
+                auto requested_bill= request.front;
+                account.requested.remove(requested_bill.owner);
+                account.bills~=requested_bill;
+        }
+*/
+
+        }
+        foreach (request_bill; account.requested.byValue) {
+            if (fingerprints.canFind(net.dartIndex(request_bill))) {
+                account.bills ~= request_bill;
+                account.requested.remove(request_bill.owner);
+            }
+        }
+        /*
         auto result = 
             receiver.message[Keywords.result].get!Document;
         auto fingerprints = (() @trusted => cast(DARTIndex[]) result[DARTFile.Params.fingerprints].get!(Buffer))();
 
+        auto fingerprints =
+    version(none) 
         if (fingerprints.length == 0) {
             account.bills ~= account.requested.values;
             (() @trusted => account.requested.clear )();
             return true;
-        } 
+        }
+*/
         return false;
     }
-
 
     bool createPayment(TagionBill[] to_pay, ref SignedContract signed_contract) {
         import tagion.script.Currency : totalAmount;
