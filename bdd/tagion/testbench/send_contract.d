@@ -68,8 +68,8 @@ int _main(string[] args) {
     // bills for the dart on startup
     TagionBill[] bills;
     foreach (ref wallet; wallets) {
-        auto bill = wallet.requestBill(1000.TGN);
-        bills ~= bill;
+        bills ~= wallet.requestBill(1000.TGN);
+        bills ~= wallet.requestBill(2000.TGN);
     }
 
     // create the recorder

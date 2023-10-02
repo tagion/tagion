@@ -60,11 +60,11 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
     Document doc = msg.body_trim!(immutable(ubyte[]))(msg.length);
     msg.clear();
 
-    writefln("Kernel got: %s", doc.toPretty);
     if (!doc.isInorder || !doc.isRecord!(HiRPC.Sender)) {
-        // log("Non-valid request received");
+        writeln("Non-valid request received");
         return;
     }
+    writefln("Kernel got: %s", doc.toPretty);
     locate(cnt.dart_task_name).send(dartHiRPCRR(), doc);
 
     void dartHiRPCResponse(dartHiRPCRR.Response res, Document doc) {
@@ -103,7 +103,7 @@ struct DARTInterfaceService {
         sock.recvtimeout = 1000.msecs;
         sock.sendbuf = opts.sendbuf;
 
-        NNGPool pool = NNGPool(&sock, &dartHiRPCCallback, 4, &ctx);
+        NNGPool pool = NNGPool(&sock, &dartHiRPCCallback, 12, &ctx);
         scope (exit) {
             pool.shutdown();
         }
@@ -114,7 +114,6 @@ struct DARTInterfaceService {
         setState(Ctrl.ALIVE);
 
         while (!thisActor.stop) {
-
             const received = receiveTimeout(
                     Duration.zero,
                     &signal,
@@ -124,7 +123,6 @@ struct DARTInterfaceService {
             if (received) {
                 continue;
             }
-
             // Document doc = sock.receive!Document;
 
         }
