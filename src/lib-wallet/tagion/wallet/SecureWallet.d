@@ -595,6 +595,7 @@ struct SecureWallet(Net : SecureNet) {
     bool createPayment(TagionBill[] to_pay, ref SignedContract signed_contract) {
         import tagion.script.Currency : totalAmount;
         import tagion.script.execute;
+        import std.stdio;
 
         PayScript pay_script;
         pay_script.outputs = to_pay;
@@ -615,11 +616,14 @@ struct SecureWallet(Net : SecureNet) {
             .map!(bill => bill.value)
             .totalAmount;
         const fees = ContractExecution.billFees(collected_bills.length + 1);
+        writeln("FEE AMOUNT = %s", fees.value);
         const amount_remainder = amount_to_redraw - amount_to_pay - fees;
 
         check(amount_remainder >= 0, "Fees too small");
 
         const bill_remain = requestBill(amount_remainder);
+        pay_script.outputs ~= bill_remain;
+
         const nets = derivers
             .map!(deriver => net.derive(*deriver))
             .array;
