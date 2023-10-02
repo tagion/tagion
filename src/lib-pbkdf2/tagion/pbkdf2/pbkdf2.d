@@ -21,14 +21,14 @@ else
  * Authors: T. Chaloupka
  */
 @safe
-ubyte[] pbkdf2(H = SHA1)(in ubyte[] data, in ubyte[] salt, uint iterations = 4096, uint dkLen = 256) pure nothrow 
-        if (isDigest!H)
+ubyte[] pbkdf2(H = SHA1)(in ubyte[] data, in ubyte[] salt, uint iterations = 4096, uint dkLen = 256) pure nothrow
+if (isDigest!H)
 in {
     import std.exception;
 
     enforce(dkLen < (2 ^ 32 - 1) * digestLength!H, "Derived key too long");
 }
-body {
+do {
     auto f(PRF)(PRF prf, in ubyte[] salt, uint c, uint block) {
         import std.bitmanip : nativeToBigEndian;
 

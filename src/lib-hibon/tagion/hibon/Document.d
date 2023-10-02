@@ -58,7 +58,7 @@ static assert(uint.sizeof == 4);
     /++
      Creates a HiBON Document from a buffer
      +/
-    @nogc this(immutable(ubyte[]) data) pure nothrow {
+    @nogc this(immutable(ubyte[]) data) pure nothrow scope {
         this._data = data;
     }
 
@@ -68,7 +68,7 @@ static assert(uint.sizeof == 4);
      Params:
      doc is the Document which is replicated
      +/
-    @nogc this(const Document doc) pure nothrow {
+    @nogc this(const Document doc) pure nothrow scope {
         this._data = doc._data;
     }
 
