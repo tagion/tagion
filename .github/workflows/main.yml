@@ -322,6 +322,7 @@ jobs:
           tar -xzf *.tar.gz
           cd build/x86_64-linux/bin
           ls
+          whoami
           systemctl stop --user neuewelle.service
           mkdir -p ~/.local/share/wave
           mkdir -p ~/.config/systemd/user
