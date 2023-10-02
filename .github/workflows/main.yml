@@ -317,7 +317,7 @@ jobs:
       - name: get artifact and restart service
         run: | 
           rm -rf *
-          export GH_TOKEN=${{ env.GITBOT_TOKEN }}
+          loginctl enable-linger moonbase
           gh run download -n successful_artifact --repo tagion/tagion
           tar -xzf *.tar.gz
           cd build/x86_64-linux/bin
