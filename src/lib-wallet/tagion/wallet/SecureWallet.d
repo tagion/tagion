@@ -564,51 +564,30 @@ struct SecureWallet(Net : SecureNet) {
         if (!receiver.isResponse) {
             return false;
         }
-        auto fingerprints = receiver.response.result[].map!(f => f.get!Buffer);
-        // auto bill_hashs=account.bills
-        //.map!(bill => net.dartIndex(bill)
-        //.array;
+        auto not_in_dart = receiver.response.result[].map!(f => f.get!Buffer);
 
-        foreach (fingerprint; fingerprints) {
+        foreach (not_found; not_in_dart) {
             const bill_index = account.bills
-                .countUntil!(bill => net.dartIndex(bill) == fingerprint);
+                .countUntil!(bill => net.dartIndex(bill) == not_found);
+
             if (bill_index >= 0) {
-                account.used_bills ~= account.bills[bill_index];
+
+                auto used_bill = account.bills[bill_index];
+                account.used_bills ~= used_bill;
                 account.bills = account.bills.remove(bill_index);
-                continue;
+                if (used_bill.owner in account.activated) {
+                    account.activated.remove(used_bill.owner);
+                }
             }
-            /*
-            auto request=account.requested.byValue
-        
-        .find!(bill => net.dartIndex(bill) == fingerprint);
-            if (request.empty) {
-                auto requested_bill= request.front;
-                account.requested.remove(requested_bill.owner);
-                account.bills~=requested_bill;
-        }
-*/
 
         }
         foreach (request_bill; account.requested.byValue) {
-            if (fingerprints.canFind(net.dartIndex(request_bill))) {
-                //account.bills ~= request_bill;
+            if (!not_in_dart.canFind(net.dartIndex(request_bill))) {
+                account.bills ~= request_bill;
                 account.requested.remove(request_bill.owner);
             }
         }
-        /*
-        auto result = 
-            receiver.message[Keywords.result].get!Document;
-        auto fingerprints = (() @trusted => cast(DARTIndex[]) result[DARTFile.Params.fingerprints].get!(Buffer))();
-
-        auto fingerprints =
-    version(none) 
-        if (fingerprints.length == 0) {
-            account.bills ~= account.requested.values;
-            (() @trusted => account.requested.clear )();
-            return true;
-        }
-*/
-        return false;
+        return true;
     }
 
     bool createPayment(TagionBill[] to_pay, ref SignedContract signed_contract) {
