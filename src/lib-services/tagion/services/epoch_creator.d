@@ -109,7 +109,7 @@ struct EpochCreatorService {
             version (EPOCH_LOG) {
                 log.trace("Received wavefront");
             }
-            
+
             const receiver = HiRPC.Receiver(wave_doc);
 
             const received_wave = receiver.params!(Wavefront)(net);
@@ -118,12 +118,12 @@ struct EpochCreatorService {
                 .map!(e => e.event_body.payload)
                 .filter!((p) => !p.empty)
                 .filter!(p => p.isRecord!SignedContract)
-                .map!(s => (() @trusted => cast(immutable) SignedContract(s))())
+                .map!(s => (() @trusted => cast(immutable) new SignedContract(s))())
                 .array;
 
             if (received_signed_contracts.length != 0) {
-                log("would have send to collector %s", received_signed_contracts.map!(s => s.toPretty));
-                // locate(task_names.collector).send(consensusContract(), received_signed_contracts);
+                log("would have send to collector %s", received_signed_contracts.map!(s => (*s).toPretty));
+                locate(task_names.collector).send(consensusContract(), received_signed_contracts);
             }
             hashgraph.wavefront(
                     receiver,

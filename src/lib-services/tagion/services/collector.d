@@ -37,6 +37,7 @@ struct CollectorService {
     immutable TaskNames task_names;
 
     immutable(SignedContract)*[uint] contracts;
+    bool[uint] is_consensus_contract;
     immutable(Document)[][uint] reads;
     uint[uint] readsmap;
 
@@ -44,7 +45,45 @@ struct CollectorService {
     void task() {
         assert(net !is null, "No secure net");
         reject = submask.register(reject_collector);
-        run(&signed_contract, &recorder, &rpc_contract);
+        run(&receive_recorder, &signed_contract, &consensus_signed_contract, &rpc_contract);
+    }
+
+    // Makes the read calls to the dart service;
+    void read_indices(dartReadRR inputs_req, immutable(SignedContract)* s_contract) {
+        auto reads_req = dartReadRR();
+        if (s_contract.signs.length != s_contract.contract.inputs.length) {
+            log(reject, "contract_mismatch_signature_length", Document.init);
+            return;
+        }
+
+        contracts[inputs_req.id] = s_contract;
+        scope (failure) {
+            contracts.remove(inputs_req.id);
+            readsmap.remove(reads_req.id);
+        }
+        log("Set the signed_contract %s", (inputs_req.id in contracts) !is null);
+        if (s_contract.contract.reads !is DARTIndex[].init) {
+            readsmap[reads_req.id] = inputs_req.id;
+            log("sending contract read request to dart");
+            locate(task_names.dart).send(reads_req, (*s_contract).contract.reads);
+        }
+
+        log("sending contract input request to dart");
+        locate(task_names.dart).send(inputs_req, (*s_contract).contract.inputs);
+    }
+
+    void consensus_signed_contract(consensusContract, immutable(SignedContract)*[] signed_contracts) {
+        foreach (s_contract; signed_contracts) {
+            auto inputs_req = dartReadRR();
+            is_consensus_contract[inputs_req.id] = true;
+            read_indices(inputs_req, s_contract);
+        }
+    }
+
+    void signed_contract(inputContract, immutable(SignedContract)* s_contract) {
+        auto inputs_req = dartReadRR();
+        is_consensus_contract[inputs_req.id] = false;
+        read_indices(inputs_req, s_contract);
     }
 
     // Input received directly from the HiRPC verifier
@@ -65,34 +104,8 @@ struct CollectorService {
         }
     }
 
-    void signed_contract(inputContract, immutable(SignedContract)* s_contract) {
-        auto inputs_req = dartReadRR();
-        auto reads_req = dartReadRR();
-        if (s_contract.signs.length != s_contract.contract.inputs.length) {
-            log(reject, "contract_mismatch_signature_length", Document.init);
-            return;
-        }
-
-        // auto contract_ptr = inputs_req.id in contracts;
-        // contract_ptr = &s_contract;
-
-        contracts[inputs_req.id] = s_contract;
-        scope (failure) {
-            contracts.remove(inputs_req.id);
-            readsmap.remove(reads_req.id);
-        }
-        log("Set the signed_contract %s", (inputs_req.id in contracts) !is null);
-        if (s_contract.contract.reads !is DARTIndex[].init) {
-            readsmap[reads_req.id] = inputs_req.id;
-            log("sending contract read request to dart");
-            locate(task_names.dart).send(reads_req, (*s_contract).contract.reads);
-        }
-
-        log("sending contract input request to dart");
-        locate(task_names.dart).send(inputs_req, (*s_contract).contract.inputs);
-    }
-
-    void recorder(dartReadRR.Response res, immutable(RecordFactory.Recorder) recorder) {
+    // Receives the read Documents from the dart and constructs the CollectedSignedContract
+    void receive_recorder(dartReadRR.Response res, immutable(RecordFactory.Recorder) recorder) {
         import std.range;
         import std.algorithm.iteration : map;
 
@@ -113,6 +126,7 @@ struct CollectorService {
         else if ((res.id in contracts) !is null) {
             log("Received and input response");
             scope (exit) {
+                is_consensus_contract.remove(res.id);
                 contracts.remove(res.id);
                 reads.remove(res.id);
             }
@@ -152,7 +166,12 @@ struct CollectorService {
                     CollectedSignedContract)(s_contract, inputs);
 
             log("sending to tvm");
-            locate(task_names.tvm).send(signedContract(), collection);
+            if (is_consensus_contract[res.id]) {
+                locate(task_names.tvm).send(consensusContract(), collection);
+            }
+            else {
+                locate(task_names.tvm).send(signedContract(), collection);
+            }
             return;
         }
         else {
