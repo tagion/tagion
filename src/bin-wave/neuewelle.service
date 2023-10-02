@@ -1,0 +1,11 @@
+[Unit]
+Description="Test deployment of tagionwave"
+
+[Service]
+WorkingDirectory=%h/.local/share/wave/
+ExecStart=%h/.local/share/wave/neuewelle
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=default.target
