@@ -72,7 +72,7 @@ struct CollectorService {
         locate(task_names.dart).send(inputs_req, (*s_contract).contract.inputs);
     }
 
-    void consensus_signed_contract(consensusContract, immutable(SignedContract)*[] signed_contracts) {
+    void consensus_signed_contract(consensusContract, immutable(SignedContract*)[] signed_contracts) {
         foreach (s_contract; signed_contracts) {
             auto inputs_req = dartReadRR();
             is_consensus_contract[inputs_req.id] = true;
