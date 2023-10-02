@@ -321,12 +321,11 @@ jobs:
           gh run download -n successful_artifact --repo tagion/tagion
           tar -xzf *.tar.gz
           cd build/x86_64-linux/bin
-          ./tagion -f
           ls
           systemctl stop --user neuewelle.service
           mkdir -p ~/.local/share/wave
           mkdir -p ~/.config/systemd/user
-          cp neuewelle ~/.local/share/wave
+          cp tagion ~/.local/share/wave
           cp neuewelle.service ~/.config/systemd/user
           systemctl --user daemon-reload
           systemctl restart --user neuewelle.service
