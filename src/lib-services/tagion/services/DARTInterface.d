@@ -7,6 +7,7 @@ struct DARTInterfaceOptions {
     string sock_addr;
     string dart_prefix = "DART_";
     int sendtimeout = 1000;
+    uint pool_size = 12;
     uint sendbuf = 4096;
 
     void setDefault() nothrow {
@@ -103,7 +104,7 @@ struct DARTInterfaceService {
         sock.recvtimeout = 1000.msecs;
         sock.sendbuf = opts.sendbuf;
 
-        NNGPool pool = NNGPool(&sock, &dartHiRPCCallback, 12, &ctx);
+        NNGPool pool = NNGPool(&sock, &dartHiRPCCallback, opts.pool_size, &ctx);
         scope (exit) {
             pool.shutdown();
         }
