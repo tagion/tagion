@@ -1,7 +1,6 @@
 module tagion.services.subscription;
 
 import std.variant;
-import std.conv;
 
 import tagion.actor;
 import tagion.logger;
@@ -15,24 +14,35 @@ import core.time : msecs;
 struct SubscriptionServiceOptions {
     import tagion.utils.JSONCommon;
 
+    string[] tags;
     string address = "abstract://tagion_subscription";
     mixin JSONCommon;
 }
 
 @safe
 struct SubscriptionService {
-    void task(SubscriptionServiceOptions opts) @trusted {
+    void task(immutable(SubscriptionServiceOptions) opts) @trusted {
+
+        log.registerSubscriptionTask(thisActor.task_name);
+        foreach (tag; opts.tags) {
+            submask.subscribe(tag);
+        }
+
         NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_PUB);
         sock.sendtimeout = 1000.msecs;
         sock.sendbuf = 4096;
 
+        HiRPC hirpc;
+
         void receiveSubscription(Topic topic, string identifier, const(Document) data) @trusted {
             immutable(ubyte)[] payload;
             topic.name.length = 32;
-            payload = topic.name.to!(immutable(ubyte)[]);
+            payload = cast(immutable(ubyte)[]) topic.name;
 
-            const s = SubscriptionPayload(data);
-            payload ~= s.toDoc.serialize;
+            HiBON hibon = new HiBON;
+            hibon[identifier] = data;
+            auto sender = hirpc.log(hibon);
+            payload ~= sender.toDoc.serialize;
             int rc = sock.send(payload);
         }
 
@@ -42,12 +52,4 @@ struct SubscriptionService {
         }
         run(&receiveSubscription);
     }
-}
-
-/// Make a hirpc
-import tagion.hibon.HiBONRecord;
-
-struct SubscriptionPayload {
-    Document data;
-    mixin HiBONRecord;
 }
