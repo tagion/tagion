@@ -53,8 +53,6 @@ struct TranscriptService {
         EpochContracts[uint] epoch_contracts;
 
         void epoch(consensusEpoch, immutable(EventPackage*)[] epacks, immutable(int) epoch_number) {
-            log("Received finished epoch");
-
             if (epacks.length == 0) {
                 return;
             }

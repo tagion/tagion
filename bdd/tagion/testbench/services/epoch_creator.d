@@ -70,9 +70,7 @@ class SendPayloadAndCreateEpoch {
             auto net = new StdSecureNet();
             net.generateKeyPair(task_names.epoch_creator);
             writefln("node task name %s", task_names.epoch_creator);
-
             auto monitor_local_options = monitor_opts;
-            monitor_local_options.enable = i == 1 ? true : false;
             nodes ~= Node(net, task_names.epoch_creator, epoch_creator_options, monitor_local_options);
             addressbook[net.pubkey] = NodeAddress(task_names.epoch_creator);
         }

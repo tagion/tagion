@@ -27,6 +27,7 @@ import tagion.utils.Miscellaneous : cutHex;
 import tagion.services.messages;
 import tagion.services.monitor;
 import tagion.services.options : TaskNames, NetworkMode;
+import tagion.utils.StdTime;
 
 // core
 import core.time;
@@ -69,6 +70,8 @@ struct EpochCreatorService {
         GossipNet gossip_net;
         gossip_net = new NewEmulatorGossipNet(net.pubkey, opts.timeout.msecs);
         Pubkey[] channels = addressbook.activeNodeChannels;
+        Random!size_t random;
+        random.seed(123456789);
 
         foreach (channel; channels) {
             gossip_net.add_channel(channel);
@@ -87,6 +90,7 @@ struct EpochCreatorService {
             const nonce = cast(Buffer) net.calcHash(buf);
             auto eva_event = hashgraph.createEvaEvent(gossip_net.time, nonce);
         }
+
 
         const(Document) payload() {
             if (!hashgraph.active || payload_queue.empty) {
@@ -127,19 +131,17 @@ struct EpochCreatorService {
             }
             hashgraph.wavefront(
                     receiver,
-                    gossip_net.time,
+                    currentTime,
                     (const(HiRPC.Sender) return_wavefront) { gossip_net.send(receiver.pubkey, return_wavefront); },
                     &payload);
         }
 
-        Random!size_t random;
-        random.seed(123456789);
         void timeout() {
             const init_tide = random.value(0, 2) is 1;
             if (!init_tide) {
                 return;
             }
-            hashgraph.init_tide(&gossip_net.gossip, &payload, gossip_net.time);
+            hashgraph.init_tide(&gossip_net.gossip, &payload, currentTime);
         }
 
         runTimeout(opts.timeout.msecs, &timeout, &receivePayload, &receiveWavefront);
