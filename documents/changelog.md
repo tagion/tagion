@@ -1,3 +1,19 @@
+# Changelog for week 39/40
+**Merging new services**
+The following week was spent gluing the last parts of our new service infrastructure together and further testing of the different components. We can now say that all our different services are communicating with each other and running. This means that refactoring of the service layer is mostly finished now and we are even able to send tagions through the new system.
+
+**DARTInterface service**
+We have created a new service for the shell to communicate effiecently with the dart. This is done via a NNGPool that has a fixed number of slots and allows multiple clients to open a REQ/REP socket. The NNGPool then manages when the sockets can bind and get an answer from the dart.
+This in return means that the updates for the wallets will be much quicker as they do not have to go through the entire contract execution pipeline.
+
+**TVM service**
+We have created a new service for the TVM ("Tagion Virtual Machine"). The service is responsible for executing the instructions in the contract ensuring the contracts are compliant with Consensus Rules.
+
+**BIP39**
+We have updated our implementation of BIP39 mnemonic seed phrases to use pkbdf2 as the standard suggests. This is important because it gurantees that if you use the same keys on other wallets you will generate the same seed phrase. 
+We did though find the standard implementation of BIP39 to be a bit weird in the sense that it does not use the index of the words in the words list for creating the hash but rather all the words?!. Using the words provides no benefits other than making the implementation more language indenpendent.
+Though instead of diverging from the standard we have now implemented it according to the standard as well.
+
 # Changelog for week 38/39
 **Replicator Service**
 The replicator service is finished. This service is responsible for saving a chain of the added and removed archives in the DART. This is both used for replaying the DART in case the nodes cannot reach consensus, and for a backup of the database allowing the node to recover from fatal catastrophes.
