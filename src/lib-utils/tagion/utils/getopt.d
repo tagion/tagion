@@ -1,6 +1,6 @@
 module tagion.utils.getopt;
 
-import std.getopt;
+public import std.getopt;
 import std.typecons;
 import std.process : environment;
 import std.path;

@@ -1,4 +1,4 @@
-# HiBON Remote Procedure Call (HiPRC)
+# HiBON Remote Procedure Call (HiRPC)
 
 HiRPC is a RPC which can including digital signatures and it is base on HiBON data format.
 
