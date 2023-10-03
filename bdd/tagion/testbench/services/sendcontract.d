@@ -44,14 +44,18 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
     StdSecureWallet[] wallets;
     string dart_interface_sock_addr;
     string inputvalidator_sock_addr;
+    TagionCurrency fee;
+    TagionCurrency amount;
+    TagionCurrency start_amount;
 
     StdSecureWallet wallet1;
     StdSecureWallet wallet2;
 
-    this(Options opts, StdSecureWallet[] wallets, string dart_interface_sock_addr, string inputvalidator_sock_addr) {
+    this(Options opts, StdSecureWallet[] wallets, string dart_interface_sock_addr, string inputvalidator_sock_addr, TagionCurrency start_amount) {
         this.opts = opts;
         this.wallets = wallets;
         this.dart_interface_sock_addr = dart_interface_sock_addr;
+        this.start_amount = start_amount;
         this.inputvalidator_sock_addr = inputvalidator_sock_addr;
 
     }
@@ -94,10 +98,11 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
                 Document received_doc = s.receive!(immutable(ubyte[]))();
                 check(s.errno == 0, "Error in response");
 
-                writefln("RECEIVED RESPONSE: %s", received_doc.toPretty);
+                // writefln("RECEIVED RESPONSE: %s", received_doc.toPretty);
                 auto received = hirpc.receive(received_doc);
-                check(wallet.setResponse(received), "wallet not updated succesfully");
+                check(wallet.setResponseUpdateWallet(received), "wallet not updated succesfully");
                 check(wallet.calcTotal(wallet.account.bills) > 0.TGN, "did not receive money");
+                check(wallet.calcTotal(wallet.account.bills) == start_amount, "money not correct");
                 break;
             }
 
@@ -110,14 +115,17 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
     Document _wallet2() @trusted {
         wallet1 = wallets[1];
         wallet2 = wallets[2];
-        auto payment_request = wallet2.requestBill(100.TGN);
+        amount = 100.TGN;
+        auto payment_request = wallet2.requestBill(amount);
 
         SignedContract signed_contract;
         check(wallet1.createPayment([payment_request], signed_contract), "Error creating wallet");
         check(signed_contract !is SignedContract.init, "contract not updated");
+        import tagion.script.execute;
 
-        const message = wallet1.net.calcHash(signed_contract);
-        const contract_net = wallet1.net.derive(message);
+        pragma(msg, "fixme(cbr): use the execute calculation");
+        fee = ContractExecution.billFees(signed_contract.contract.inputs.length, 0);
+        writefln("FEE: %s", fee);
 
         auto wallet1_hirpc = HiRPC(wallet1.net);
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
@@ -132,7 +140,6 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
         rc = s.send(hirpc_submit.toDoc.serialize);
         check(rc == 0, format("Failed to send %s", nng_errstr(rc)));
 
-
         writefln("GOING TO SLEEP 30");
         Thread.sleep(30.seconds);
         return result_ok;
@@ -140,6 +147,7 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
 
     @When("wallet1 pays contract to wallet2 and sends it to the network.")
     Document network() @trusted {
+        writeln("WALLET 1 request");
         const fingerprints = [wallet1.account.bills, wallet1.account.requested.values]
             .joiner
             .map!(bill => wallet1.net.dartIndex(bill))
@@ -168,16 +176,20 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
             rc = s.send!(immutable(ubyte[]))(dartcheckread.toDoc.serialize);
             check(rc == 0, "NNG error");
             Document received_doc = s.receive!(immutable(ubyte[]))();
-            writefln("wallet1 received: %s", received_doc.toPretty);
-            check(s.errno == 0, format("Error in response [%03d] %s", received_doc.length, received_doc.toPretty));
             writefln("RECEIVED RESPONSE: %s", received_doc.toPretty);
+            check(s.errno == 0, format("Error in response [%03d] %s", received_doc.length, received_doc.toPretty));
             auto received = hirpc.receive(received_doc);
-            check(wallet1.setResponse(received), "wallet1 not updated succesfully");
-            check(wallet1.calcTotal(wallet1.account.bills) > 0.TGN, "did not receive money");
-            writefln("Wallet 1 total %s", wallet1.calcTotal(wallet1.account.bills));
+            check(wallet1.setResponseUpdateWallet(received), "wallet1 not updated succesfully");
+
+            auto wallet1_amount = wallet1.calcTotal(wallet1.account.bills);
+            check(wallet1_amount < start_amount, format("no money withdrawn had %s", wallet1_amount));
+
+            auto wallet1_expected = start_amount - amount - fee;
+            writefln("Wallet 1 total %s", wallet1_amount);
+            check(wallet1_amount == wallet1_expected, format("Wallet1 amount not correct had: %s expected: %s", wallet1_amount, wallet1_expected));
             break;
         }
-        return Document();
+        return result_ok;
 
     }
 
@@ -216,12 +228,13 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
 
             writefln("RECEIVED RESPONSE: %s", received_doc.toPretty);
             auto received = hirpc.receive(received_doc);
-            check(wallet2.setResponse(received), "wallet2 not updated succesfully");
+            check(wallet2.setResponseUpdateWallet(received), "wallet2 not updated succesfully");
             check(wallet2.calcTotal(wallet2.account.bills) > 0.TGN, "did not receive money");
+            check(wallet2.calcTotal(wallet2.account.bills) == start_amount + amount, "did not receive correct amount of tagion");
             writefln("Wallet 2 total %s", wallet2.calcTotal(wallet2.account.bills));
             break;
         }
-        return Document();
+        return result_ok;
     }
 
 }

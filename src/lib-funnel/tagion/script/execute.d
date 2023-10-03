@@ -93,9 +93,10 @@ struct ContractExecution {
         }
     }
 
-    static TagionCurrency billFees(const size_t number_of_bills) {
-        const use = GasUse(pay_gas, number_of_bills + bill_price);
-        return check_contract.calcFees(use);
+    static TagionCurrency billFees(const size_t number_of_input_bills, const size_t number_of_output_bills) {
+
+        return check_contract.calcFees(GasUse(pay_gas, number_of_output_bills)) -
+            check_contract.calcFees(GasUse(0, number_of_input_bills * bill_price));
     }
 
     immutable(ContractProduct)* pay(immutable(CollectedSignedContract)* exec_contract) {

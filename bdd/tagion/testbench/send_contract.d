@@ -71,6 +71,7 @@ int _main(string[] args) {
         bills ~= wallet.requestBill(1000.TGN);
         bills ~= wallet.requestBill(2000.TGN);
     }
+    const start_amount = 3000.TGN;
 
     // create the recorder
     SecureNet net = new StdSecureNet();
@@ -104,7 +105,7 @@ int _main(string[] args) {
     Thread.sleep(15.seconds);
     writeln("going to run test");
     auto send_contract_feature = automation!(sendcontract);
-    send_contract_feature.SendASingleTransactionFromAWalletToAnotherWallet(local_options, wallets, dart_interface_sock_addr, inputvalidator_sock_addr);
+    send_contract_feature.SendASingleTransactionFromAWalletToAnotherWallet(local_options, wallets, dart_interface_sock_addr, inputvalidator_sock_addr, start_amount);
     send_contract_feature.run();
     writefln("finished test execution");
     Thread.sleep(20.seconds);
