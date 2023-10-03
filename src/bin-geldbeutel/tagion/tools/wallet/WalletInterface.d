@@ -623,7 +623,8 @@ struct WalletInterface {
                 if (pay) {
                     SignedContract signed_contract;
                     TagionBill[] to_pay;
-                    auto created_payment = secure_wallet.createPayment(to_pay, signed_contract);
+                    TagionCurrency fees;
+                    auto created_payment = secure_wallet.createPayment(to_pay, signed_contract, fees);
                     check(created_payment, "payment was not successful");
 
                     output_filename = (output_filename.empty && !send) ? "submit".setExtension(FileExtension.hibon) : output_filename;

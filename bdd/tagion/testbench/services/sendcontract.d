@@ -119,12 +119,11 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
         auto payment_request = wallet2.requestBill(amount);
 
         SignedContract signed_contract;
-        check(wallet1.createPayment([payment_request], signed_contract), "Error creating wallet");
+        check(wallet1.createPayment([payment_request], signed_contract, fee), "Error creating wallet");
         check(signed_contract !is SignedContract.init, "contract not updated");
         import tagion.script.execute;
 
         pragma(msg, "fixme(cbr): use the execute calculation");
-        fee = ContractExecution.billFees(signed_contract.contract.inputs.length, 0);
         writefln("FEE: %s", fee);
 
         auto wallet1_hirpc = HiRPC(wallet1.net);
@@ -140,13 +139,14 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
         rc = s.send(hirpc_submit.toDoc.serialize);
         check(rc == 0, format("Failed to send %s", nng_errstr(rc)));
 
-        writefln("GOING TO SLEEP 30");
-        Thread.sleep(30.seconds);
         return result_ok;
     }
 
     @When("wallet1 pays contract to wallet2 and sends it to the network.")
     Document network() @trusted {
+        writefln("GOING TO SLEEP 30");
+        Thread.sleep(30.seconds);
+
         writeln("WALLET 1 request");
         const fingerprints = [wallet1.account.bills, wallet1.account.requested.values]
             .joiner

@@ -497,6 +497,7 @@ struct SecureWallet(Net : SecureNet) {
         import std.algorithm.sorting : isSorted, sort;
         import std.algorithm.iteration : cumulativeFold;
         import std.range : takeOne, tee;
+        import std.stdio;
 
         if (!account.bills.isSorted!q{a.value > b.value}) {
             account.bills.sort!q{a.value > b.value};
@@ -505,6 +506,8 @@ struct SecureWallet(Net : SecureNet) {
         // Select all bills not in use
         auto none_locked = account.bills.filter!(b => !(b.owner in account.activated));
 
+        writefln("collect_bills %(%s %)", none_locked.map!(n => n.value));
+
         // Check if we have enough money
         const enough = !none_locked
             .map!(b => b.value)
@@ -512,14 +515,22 @@ struct SecureWallet(Net : SecureNet) {
             .filter!(a => a >= amount)
             .takeOne
             .empty;
+        writefln("collect_bills enough: %s", enough);
         if (enough) {
             TagionCurrency rest = amount;
             locked_bills = none_locked
                 .filter!(b => b.value <= rest)
-                .tee!((b) => rest -= b.value)
                 .until!(b => rest <= 0)
+                .tee!((b) => rest -= b.value)
                 .array;
-            return (rest <= 0);
+
+            if (rest > 0) {
+                TagionBill extra_bill;
+                none_locked.each!(b => extra_bill = b);
+                locked_bills ~= extra_bill;
+                return true;
+            }
+            writefln("collect_bills rest: %s, amount %s", rest, amount);
         }
         return false;
     }
@@ -562,7 +573,7 @@ struct SecureWallet(Net : SecureNet) {
         return true;
     }
 
-    bool createPayment(TagionBill[] to_pay, ref SignedContract signed_contract) {
+    bool createPayment(TagionBill[] to_pay, ref SignedContract signed_contract, out TagionCurrency fees) {
         import tagion.script.Currency : totalAmount;
         import tagion.script.execute;
         import std.stdio;
@@ -570,7 +581,6 @@ struct SecureWallet(Net : SecureNet) {
         PayScript pay_script;
         pay_script.outputs = to_pay;
         TagionBill[] collected_bills;
-        TagionCurrency fees;
         TagionCurrency amount_remainder;
         do {
             collected_bills.length = 0;
@@ -590,19 +600,31 @@ struct SecureWallet(Net : SecureNet) {
             amount_remainder = amount_to_redraw - amount_to_pay - fees;
         }
         while (amount_remainder < 0);
-        writeln("FEE AMOUNT = %s", fees.value);
+        writefln("FEE AMOUNT = %s", fees.value);
+        writefln("collected bills length = %s", collected_bills.length);
+        import tagion.hibon.HiBONtoText;
+        writefln("collected bills pkeys %s", collected_bills.map!(b => b.owner.encodeBase64));
+        writefln("account derivers %s", account.derivers.byKey.map!(k => k.encodeBase64));
 
-        const bill_remain = requestBill(amount_remainder);
-        pay_script.outputs ~= bill_remain;
-        lock_bills(collected_bills);
         auto derivers = collected_bills
-            .map!(bill => bill.owner in account.derivers);
+            .map!(bill => bill.owner in account.derivers).array;
 
-        check(derivers.all!(deriver => deriver !is null), "Missing deriver of some of the bills");
+        writefln("bill derivers %s", derivers.map!(d => (*d).encodeBase64));
+        writefln("derivers %s", account.derivers.length);
+
+        check(!derivers.empty, "Derivers empty");
+        check(derivers.save.all!(deriver => deriver !is null), "Missing deriver of some of the bills");
 
         const nets = derivers
             .map!(deriver => net.derive(*deriver))
             .array;
+
+        const bill_remain = requestBill(amount_remainder);
+        pay_script.outputs ~= bill_remain;
+        lock_bills(collected_bills);
+
+        check(nets.length == collected_bills.length, format("number of bills does not match number of signatures nets %s, collected_bills %s", nets.length, collected_bills.length));
+        
         signed_contract = sign(
                 nets,
                 collected_bills.map!(bill => bill.toDoc)
