@@ -516,46 +516,17 @@ struct SecureWallet(Net : SecureNet) {
             TagionCurrency rest = amount;
             locked_bills = none_locked
                 .filter!(b => b.value <= rest)
+                .tee!((b) => rest -= b.value)
                 .until!(b => rest <= 0)
-                .tee!((b) { rest -= b.value; account.activated[b.owner] = true; })
                 .array;
-            if (rest > 0) {
-                // Take an extra larger bill if not enough
-                TagionBill extra_bill;
-                none_locked.each!(b => extra_bill = b);
-                account.activated[extra_bill.owner] = true;
-                locked_bills ~= extra_bill;
-            }
-            assert(rest > 0);
-            return true;
+            return (rest <= 0);
         }
         return false;
     }
 
-    // /**
-    //  * Update the the wallet for a request update
-    //  * Params:
-    //  *   receiver = response to the wallet
-    //  * Returns: ture if the wallet was updated
-    //  */
-    // @trusted
-    // bool setResponseUpdateWallet(const(HiRPC.Receiver) receiver) nothrow {
-    //     if (receiver.isResponse) {
-    //         try {
-    //             account.bills = receiver.response.result[].map!(e => TagionBill(e.get!Document))
-    //                 .array;
-    //             return true;
-    //         }
-    //         catch (Exception e) {
-    //             import std.stdio;
-    //             import std.exception : assumeWontThrow;
-
-    //             assumeWontThrow(() => writeln("Error on setresponse: %s", e.msg));
-    //             // Ingore
-    //         }
-    //     }
-    //     return false;
-    // }
+    private void lock_bills(out TagionBill[] locked_bills) {
+        locked_bills.each!(b => account.activated[b.owner] = true);
+    }
 
     @safe
     bool setResponseUpdateWallet(const(HiRPC.Receiver) receiver) {
@@ -598,30 +569,36 @@ struct SecureWallet(Net : SecureNet) {
 
         PayScript pay_script;
         pay_script.outputs = to_pay;
-
-        const amount_to_pay = pay_script.outputs
-            .map!(bill => bill.value)
-            .totalAmount;
         TagionBill[] collected_bills;
-        const estimated_fees = ContractExecution.billFees(10);
-        const can_pay = collect_bills(amount_to_pay + estimated_fees, collected_bills);
-        check(can_pay, format("Is unable to pay the amount %10.6fTGN", amount_to_pay.value));
+        TagionCurrency fees;
+        TagionCurrency amount_remainder;
+        do {
+            collected_bills.length = 0;
+            const amount_to_pay = pay_script.outputs
+                .map!(bill => bill.value)
+                .totalAmount;
 
+            /*
+        const estimated_fees = ContractExecution.billFees(10);
+*/
+            const can_pay = collect_bills(amount_to_pay, collected_bills);
+            check(can_pay, format("Is unable to pay the amount %10.6fTGN", amount_to_pay.value));
+            const amount_to_redraw = collected_bills
+                .map!(bill => bill.value)
+                .totalAmount;
+            fees = ContractExecution.billFees(collected_bills.length, pay_script.outputs.length + 1);
+            amount_remainder = amount_to_redraw - amount_to_pay - fees;
+        }
+        while (amount_remainder < 0);
+        writeln("FEE AMOUNT = %s", fees.value);
+
+        const bill_remain = requestBill(amount_remainder);
+        pay_script.outputs ~= bill_remain;
+        lock_bills(collected_bills);
         auto derivers = collected_bills
             .map!(bill => bill.owner in account.derivers);
 
         check(derivers.all!(deriver => deriver !is null), "Missing deriver of some of the bills");
-        const amount_to_redraw = collected_bills
-            .map!(bill => bill.value)
-            .totalAmount;
-        const fees = ContractExecution.billFees(collected_bills.length + 1);
-        writeln("FEE AMOUNT = %s", fees.value);
-        const amount_remainder = amount_to_redraw - amount_to_pay - fees;
-
-        check(amount_remainder >= 0, "Fees too small");
-
-        const bill_remain = requestBill(amount_remainder);
-        pay_script.outputs ~= bill_remain;
 
         const nets = derivers
             .map!(deriver => net.derive(*deriver))

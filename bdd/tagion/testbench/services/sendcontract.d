@@ -122,7 +122,9 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
         check(wallet1.createPayment([payment_request], signed_contract), "Error creating wallet");
         check(signed_contract !is SignedContract.init, "contract not updated");
         import tagion.script.execute;
-        fee = ContractExecution.billFees(signed_contract.contract.inputs.length);
+
+        pragma(msg, "fixme(cbr): use the execute calculation");
+        fee = ContractExecution.billFees(signed_contract.contract.inputs.length, 0);
         writefln("FEE: %s", fee);
 
         auto wallet1_hirpc = HiRPC(wallet1.net);
@@ -137,7 +139,6 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
 
         rc = s.send(hirpc_submit.toDoc.serialize);
         check(rc == 0, format("Failed to send %s", nng_errstr(rc)));
-
 
         writefln("GOING TO SLEEP 30");
         Thread.sleep(30.seconds);
