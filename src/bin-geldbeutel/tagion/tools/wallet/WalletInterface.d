@@ -621,50 +621,12 @@ struct WalletInterface {
                     
                 }
                 if (pay) {
-                    pragma(msg, "fixme: use function createPayment instead");
-                    PayScript pay_script;
-                    pay_script.outputs = args[1 .. $]
-                        .filter!(file => file.hasExtension(FileExtension.hibon))
-                        .map!(file => file.fread)
-                        .map!(doc => TagionBill(doc))
-                        .array;
+                    SignedContract signed_contract;
+                    TagionBill[] to_pay;
+                    auto created_payment = secure_wallet.createPayment(to_pay, signed_contract);
+                    check(created_payment, "payment was not successful");
 
-                    const amount_to_pay = pay_script.outputs
-                        .map!(bill => bill.value)
-                        .totalAmount;
-                    TagionBill[] collect_bills;
-                    const estimated_fees = ContractExecution.billFees(10);
-                    const can_pay = secure_wallet.collect_bills(amount_to_pay + estimated_fees, collect_bills);
-                    check(can_pay, format("Is unable to pay the amount %10.6fTGN", amount_to_pay.value));
-                    if (verbose_switch) {
-                        foreach (bill; collect_bills) {
-                            verbose("%s\n%s", secure_wallet.net.dartIndex(bill).encodeBase64, bill.toPretty);
-                        }
-                    }
-                    auto derivers = collect_bills
-                        .map!(bill => bill.owner in secure_wallet.account.derivers);
-
-                    check(derivers.all!(deriver => deriver !is null), "Missing deriver of some of the bills");
-                    const amount_to_redraw = collect_bills
-                        .map!(bill => bill.value)
-                        .totalAmount;
-                    const fees = ContractExecution.billFees(collect_bills.length + 1);
-                    const amount_remainder = amount_to_redraw - amount_to_pay - fees;
-                    check(amount_remainder >= 0, "Fees too small");
-
-                    pragma(msg, "fixme(cbr): bill remain not used");
-                    const bill_remain = secure_wallet.requestBill(amount_remainder);
-                    const nets = derivers
-                        .map!(deriver => secure_wallet.net.derive(*deriver))
-                        .array;
-                    const signed_contract = sign(
-                            nets,
-                            collect_bills.map!(bill => bill.toDoc)
-                            .array,
-                            null,
-                            pay_script.toDoc);
                     output_filename = (output_filename.empty && !send) ? "submit".setExtension(FileExtension.hibon) : output_filename;
-                    //    output_filename.fwrite(signed_contract);
                     const message = secure_wallet.net.calcHash(signed_contract);
                     pragma(msg, "Message ", typeof(message));
                     const contract_net = secure_wallet.net.derive(message);
@@ -679,9 +641,6 @@ struct WalletInterface {
                     if (send) {
                         sendSubmitHiRPC(options.contract_address, hirpc_submit);
                     }
-                    //                  const
-                    //const nets=secure_wallet.
-
                 }
             }
         }
