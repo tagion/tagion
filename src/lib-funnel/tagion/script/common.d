@@ -81,10 +81,10 @@ enum StdNames {
 @safe
 @recordType("pay")
 struct PayScript {
-    @label(StdNames.values) TagionBill[] outputs;
+    @label(StdNames.values) const(TagionBill)[] outputs;
     mixin HiBONRecord!(
             q{
-                this(TagionBill[] outputs) @safe pure nothrow {
+                this(const(TagionBill)[] outputs) @safe pure nothrow {
                     this.outputs = outputs;
                 }
             });
@@ -104,15 +104,10 @@ const(SignedContract) sign(const(SecureNet[]) nets, const(Document[]) inputs, co
     const net = nets[0];
     SignedContract result;
     result.contract = Contract(
-            inputs
-            .map!(doc => net.dartIndex(doc))
-            .array,
-            reads
-            .map!(doc => net.dartIndex(doc))
-            .array,
-            Document(script.data)
+            inputs.map!(doc => net.dartIndex(doc)).array,
+            reads.map!(doc => net.dartIndex(doc)).array,
+            Document(script),
     );
-    const message = net.calcHash(result.contract);
     result.signs = sign(nets, result.contract);
     return result;
 }

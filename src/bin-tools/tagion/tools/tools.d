@@ -7,6 +7,7 @@ import tagion.tools.OneMain;
 int main(string[] args) {
     import tagionwave = tagion.tools.tagionwave;
     import neuewelle = tagion.tools.neuewelle;
+    import subscribe = tagion.tools.subscribe;
     import dartutil = tagion.tools.dartutil.dartutil;
     import hibonutil = tagion.tools.hibonutil;
     import tagionwallet = tagion.tools.tagionwallet;
@@ -23,6 +24,7 @@ int main(string[] args) {
 
     alias alltools = AliasSeq!(
             tagionwave,
+            subscribe,
             neuewelle,
             dartutil,
             hibonutil,

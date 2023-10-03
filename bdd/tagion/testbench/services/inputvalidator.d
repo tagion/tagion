@@ -97,7 +97,7 @@ class SendNoneHiRPC {
         register("inputvalidator_tester", thisTid);
 
         log.registerSubscriptionTask("inputvalidator_tester");
-        submask.subscribe("inputvalidator/reject");
+        submask.subscribe(reject_inputvalidator);
         return result_ok;
     }
 
@@ -122,7 +122,7 @@ class SendNoneHiRPC {
         import tagion.testbench.actor.util;
 
         check(!concurrency.receiveTimeout(100.msecs, (inputDoc _, Document __) {}), "should not have received a doc");
-        const received = concurrency.receiveTimeout(100.msecs, (Topic t, string s, Document d) {
+        const received = concurrency.receiveTimeout(100.msecs, (Topic t, string s, const(Document) d) {
             writefln("Received rejected ", d);
         });
         check(received, "Didn't received rejected");
@@ -150,7 +150,7 @@ class SendPartialHiBON {
 
         register("inputvalidator_tester", thisTid);
         log.registerSubscriptionTask("inputvalidator_tester");
-        submask.subscribe("inputvalidator/reject");
+        submask.subscribe(reject_inputvalidator);
         return result_ok;
     }
 
@@ -173,7 +173,7 @@ class SendPartialHiBON {
     @Then("the inputvalidator rejects")
     Document rejects() {
         check(!concurrency.receiveTimeout(100.msecs, (inputDoc _, Document __) {}), "should not have received a doc");
-        const received = receiveOnlyTimeout!(Topic, string, const(long)); // Subscribed rejected data
+        const received = receiveOnlyTimeout!(Topic, string, const(Document)); // Subscribed rejected data
         check(received !is typeof(received).init, "Didn't received rejected");
         return result_ok;
     }

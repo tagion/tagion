@@ -15,8 +15,9 @@ import std.algorithm;
 import std.array;
 import tagion.testbench.dart.dart_helper_functions;
 import tagion.dart.Recorder;
-import tagion.utils.pretend_safe_concurrency;
+import tagion.utils.pretend_safe_concurrency : receiveTimeout, receiveOnly, register, thisTid;
 import tagion.dart.DARTBasic : DARTIndex;
+import core.time;
 
 // import tagion.crypto.SecureNet;
 import tagion.crypto.SecureInterfaceNet;
@@ -33,6 +34,7 @@ import tagion.dart.DARTFile : DARTFile;
 import tagion.hibon.HiBONJSON;
 import tagion.Keywords;
 import tagion.services.replicator;
+import tagion.services.DARTInterface;
 
 enum feature = Feature(
             "see if we can read and write trough the dartservice",
@@ -43,11 +45,62 @@ alias FeatureContext = Tuple!(
         FeatureGroup*, "result"
 );
 
+@safe
+struct DARTWorker {
+    void task(string sock_addr, Document doc) @trusted {
+        import nngd;
+
+        int rc;
+        NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
+        s.recvtimeout = 1000.msecs;
+
+        setState(Ctrl.ALIVE);
+        while (!thisActor.stop) {
+
+            writefln("REQ %s to dial...", doc.toPretty);
+            rc = s.dial(sock_addr);
+            if (rc == 0)
+                break;
+            writefln("REQ dial error %s", rc);
+            if (rc == nng_errno.NNG_ECONNREFUSED) {
+                nng_sleep(100.msecs);
+            }
+            check(rc == 0, "NNG error");
+        }
+        while (!thisActor.stop) {
+            const received = receiveTimeout(
+                    Duration.zero,
+                    &signal,
+                    &ownerTerminated,
+                    &unknown
+            );
+            if (received) {
+                continue;
+            }
+            rc = s.send!(immutable(ubyte[]))(doc.serialize);
+            check(rc == 0, "NNG error");
+            writefln("sent req");
+            Document received_doc = s.receive!(immutable(ubyte[]))();
+            if (s.errno == 0) {
+                writefln("RECEIVED RESPONSE: %s", received_doc.toPretty);
+                thisActor.stop = true;
+            }
+            else {
+                writefln("ERROR %s", s.errno);
+                thisActor.stop = true;
+            }
+        }
+    }
+}
+
 @safe @Scenario("write and read from dart db",
         [])
 class WriteAndReadFromDartDb {
 
     DARTServiceHandle handle;
+    DARTInterfaceServiceHandle dart_interface_handle;
+    DARTInterfaceOptions interface_opts;
+
     SecureNet dart_net;
     SecureNet supervisor_net;
     DARTOptions opts;
@@ -86,11 +139,11 @@ class WriteAndReadFromDartDb {
 
     @Given("I have a dart db")
     Document dartDb() {
-        if (opts.dart_filename.exists) {
-            opts.dart_filename.remove;
+        if (opts.dart_path.exists) {
+            opts.dart_path.remove;
         }
 
-        DART.create(opts.dart_filename, dart_net);
+        DART.create(opts.dart_path, dart_net);
         return result_ok;
     }
 
@@ -101,9 +154,17 @@ class WriteAndReadFromDartDb {
 
         import tagion.services.options : TaskNames;
 
-        handle = (() @trusted => spawn!DARTService("DartService", cast(immutable) opts, cast(immutable) replicator_opts, TaskNames(), cast(
+        writeln("DART task name", TaskNames().dart);
+
+        handle = (() @trusted => spawn!DARTService(TaskNames().dart, cast(immutable) opts, cast(immutable) replicator_opts, TaskNames(), cast(
                 immutable) dart_net))();
-        waitforChildren(Ctrl.ALIVE);
+
+        interface_opts.setDefault;
+        writeln(interface_opts.sock_addr);
+
+        dart_interface_handle = (() @trusted => spawn(immutable(DARTInterfaceService)(cast(immutable) interface_opts, TaskNames()), "DartInterfaceService"))();
+
+        waitforChildren(Ctrl.ALIVE, 3.seconds);
 
         return result_ok;
     }
@@ -166,9 +227,7 @@ class WriteAndReadFromDartDb {
             auto read_check_tuple = receiveOnly!(dartHiRPCRR.Response, Document);
             auto read_check = hirpc.receive(read_check_tuple[1]);
 
-            auto hirpc_check = read_check.message[Keywords.result].get!Document;
-            writefln("hirpc_check %s", hirpc_check.toPretty);
-            auto check_fingerprints = (() @trusted => cast(DARTIndex[]) hirpc_check[DARTFile.Params.fingerprints].get!(Buffer))();
+            auto check_fingerprints = read_check.response.result[DART.Params.fingerprints].get!Document[].map!(d => d.get!DARTIndex).array;
 
             check(check_fingerprints.length == 0, "should be empty");
 
@@ -180,9 +239,18 @@ class WriteAndReadFromDartDb {
         auto read_check_tuple = receiveOnly!(dartHiRPCRR.Response, Document);
         auto read_check = hirpc.receive(read_check_tuple[1]);
 
-        auto hirpc_check = read_check.message[Keywords.result].get!Document;
-        auto check_fingerprints = (() @trusted => cast(DARTIndex[]) hirpc_check[DARTFile.Params.fingerprints].get!(Buffer))();
+        auto check_fingerprints = read_check.response.result[DART.Params.fingerprints].get!Document[].map!(d => d.get!DARTIndex).array;
+
+        
         check(equal(check_fingerprints, dummy_indexes), "error in hirpc checkread");
+
+        auto t1 = spawn!DARTWorker("dartworker1", interface_opts.sock_addr, check_read_sender);
+        auto t2 = spawn!DARTWorker("dartworker2", interface_opts.sock_addr, check_read_sender);
+        auto t3 = spawn!DARTWorker("dartworker3", interface_opts.sock_addr, check_read_sender);
+
+        import core.thread;
+
+        (() @trusted => Thread.sleep(3000.msecs))();
 
         return result_ok;
     }

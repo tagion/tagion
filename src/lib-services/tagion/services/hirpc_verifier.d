@@ -71,6 +71,7 @@ struct HiRPCVerifierService {
             switch (receiver.method.name) {
             case ContractMethods.submit:
                 if (receiver.signed is HiRPC.SignedState.VALID) {
+                    log("sending contract to collector");
                     locate(collector_task).send(inputHiRPC(), receiver);
                 }
                 else {

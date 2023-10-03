@@ -5,8 +5,6 @@
 ---
 
 - [Home](README.md)
-- Continous Integration / Continours Delivery
-	- [Systemic overview](documents/continous_integration_and_delivery/systemic_overview.md)
 - Network
 	- [Modes](documents/architecture/Network_Modes.md)
 	- [bootstrap](documents/architecture/Network_bootstrap.md)
@@ -46,10 +44,11 @@
 	- Actors
 		- [Actor](/documents/modules/actor/actor_requirement.md)
 
-- Tagion API's
+- API's
     - [HiBON API](/documents/protocols/api/hibon_api.md)
 
 - Testing
+    - [CI/CD](documents/continous_integration_and_delivery/systemic_overview.md)
 	- Behaviour tests
 		- [BDD_Process](documents/behaviour/BDD_Process.md)
 		- [BDDLogger](documents/behaviour/BDDLogger.md)
@@ -63,8 +62,12 @@
     - [collider](/src/bin-collider/README.md)
     - [geldbeutel](/src/bin-geldbeutel/README.md)
 
-- Project goals
+- Network Setup 
+    - [Initialize DART](documents/network_setup/initialize_dart.md)
+
+- Project
+    - [Goals 2022](documents/project_goals_2022.md)
 	- [Goals Q1-Q2 2023](documents/project/project_goals_2023_Q1_Q2.md)
 
 - [Modules](src/)
-- [Relase_notes](documents/Relase_notes.md)
+- [Changelog](documents/changelog.md)

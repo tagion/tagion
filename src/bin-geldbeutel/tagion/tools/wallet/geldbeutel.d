@@ -25,6 +25,7 @@ import tagion.tools.wallet.WalletInterface;
 import tagion.script.TagionCurrency;
 import tagion.utils.Term;
 import std.typecons;
+import tagion.network.ReceiveBuffer;
 
 mixin Main!(_main, "newwallet");
 
@@ -83,7 +84,7 @@ int _main(string[] args) {
                 "o|output", "Output filename", &wallet_switch.output_filename,
                 "l|list", "List wallet content", &wallet_switch.list, //"questions", "Questions for wallet creation", &questions_str,
                 "s|sum", "Sum of the wallet", &wallet_switch.sum, //"questions", "Questions for wallet creation", &questions_str,
-                //"answers", "Answers for wallet creation", &answers_str,
+                "send", "Send a contract to the network", &wallet_switch.send, //"answers", "Answers for wallet creation", &answers_str,
                 /*
                 "path", format("Set the path for the wallet files : default %s", path), &path,
                 "wallet", format("Wallet file : default %s", options.walletfile), &options.walletfile,
@@ -92,7 +93,6 @@ int _main(string[] args) {
                 "invoice|i", format("Invoice file : default %s", invoicefile), &invoicefile,
                 "create-invoice|c", "Create invoice by format LABEL:PRICE. Example: Foreign_invoice:1000", &create_invoice_command,
                 "contract|t", format("Contractfile : default %s", options.contractfile), &options.contractfile,
-                "send|s", "Send contract to the network", &send_flag,
                 "amount", "Display the wallet amount", &print_amount,
                 "pay|I", format("Invoice to be payed : default %s", payfile), &payfile,
                 "update|U", "Update your wallet", &update_wallet,
@@ -101,7 +101,12 @@ int _main(string[] args) {
                 "pin|x", "Pincode", &pincode,
                 "amount", "Create an payment request in tagion", &wallet_switch.amount,
                 "force", "Force input bill", &wallet_switch.force,
-                "pay", "Creates a payment contract", &wallet_switch.pay, /*
+                "pay", "Creates a payment contract", &wallet_switch.pay,
+                "dry", "Dry-run this will not save the wallet", &__dry_switch,
+                "req", "List all requested bills", &wallet_switch.request,
+                "update", "Request a wallet updated", &wallet_switch.update,
+                "addr", format("Sets the contract address default: %s", options.contract_address), &options
+                    .contract_address,/*
                 "port|p", format("Tagion network port : default %d", options.port), &options.port,
                 "url|u", format("Tagion url : default %s", options.addr), &options.addr,
                 "visual|g", "Visual user interface", &wallet_ui,
@@ -113,7 +118,7 @@ int _main(string[] args) {
                 "nossl", "Disable ssl encryption", &none_ssl_socket,
     */
 
-        
+                    
 
         );
     }
@@ -192,7 +197,6 @@ int _main(string[] args) {
 
         if (wallet_interface.secure_wallet !is WalletInterface.StdSecureWallet.init) {
             if (!pincode.empty) {
-                writefln("Login:%s", pincode);
                 const flag = wallet_interface.secure_wallet.login(pincode);
 
                 if (!flag) {
@@ -213,6 +217,7 @@ int _main(string[] args) {
     }
     catch (Exception e) {
         writefln("%1$sError: %3$s%2$s", RED, RESET, e.msg);
+        verbose("%s", e.toString);
         return 1;
     }
     return 0;

@@ -14,6 +14,7 @@ import tagion.logger.Logger;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON;
+import tagion.services.messages : consensusEpoch;
 
 import tagion.basic.Debug;
 
@@ -22,19 +23,47 @@ import std.stdio;
 import std.algorithm : map, filter, sort, reduce, until;
 import std.array;
 import tagion.utils.pretend_safe_concurrency;
+import tagion.services.options : TaskNames;
+import tagion.script.common : StdNames;
+import tagion.hibon.HiBONRecord;
+
+@recordType("finishedEpoch")
+struct FinishedEpoch {
+    @label("events") const(EventPackage)[] events;
+    @label(StdNames.time) sdt_t time;
+    mixin HiBONRecord!(q{
+        this(const(Event)[] events, sdt_t time) pure {
+            this.events = events
+                .map!((e) => *(e.event_package))
+                .array;
+
+            this.time = time;
+        }
+    });
+}
 
 @safe
 class StdRefinement : Refinement {
 
+    Topic epoch_created;
+    this() {
+        epoch_created = submask.register("epoch_creator/epoch_created");
+    }
+
     enum MAX_ORDER_COUNT = 10; /// Max recursion count for order_less function
     protected {
         HashGraph hashgraph;
+        TaskNames task_names;
     }
 
     void setOwner(HashGraph hashgraph)
     in (this.hashgraph is null)
     do {
         this.hashgraph = hashgraph;
+    }
+
+    void setTasknames(TaskNames task_names) {
+        this.task_names = task_names;
     }
 
     Tid collector_service;
@@ -45,15 +74,20 @@ class StdRefinement : Refinement {
         }
     }
 
-    void finishedEpoch(const(Event[]) events, const sdt_t epoch_time, const Round decided_round) {
-        auto epoch_created = submask.register("epoch_creator/epoch_created");
+    void finishedEpoch(const(Event[]) events, const sdt_t epoch_time, const Round decided_round) @trusted {
+        if (events.length > 0) {
+            auto event_payload = FinishedEpoch(events, epoch_time);
+            log(epoch_created, "epoch_succesful", event_payload.toDoc);
+        }
+        log("Epoch_created");
+        if (task_names is TaskNames.init) {
+            return;
+        }
 
-        immutable epoch_events = events
-            .map!((e) => e.event_package)
-            .array;
-
-        log(epoch_created, "epoch succesful", epoch_events);
-
+        immutable(EventPackage*)[] epacks = events
+                .map!((e) => e.event_package)
+                .array;
+        locate(task_names.transcript).send(consensusEpoch(), epacks);
     }
 
     void excludedNodes(ref BitMask excluded_mask) {

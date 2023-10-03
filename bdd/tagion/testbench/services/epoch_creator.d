@@ -9,6 +9,7 @@ import tagion.utils.pretend_safe_concurrency;
 import tagion.actor;
 import tagion.actor.exceptions;
 import tagion.services.epoch_creator;
+import tagion.services.options;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.crypto.Types : Pubkey;
@@ -90,12 +91,13 @@ class SendPayloadAndCreateEpoch {
                     number_of_nodes,
                     cast(immutable) n.net,
                     cast(immutable) n.monitor_opts,
+                    TaskNames(),
             );
         }
 
         waitforChildren(Ctrl.ALIVE);
         //    writefln("Wait 1 sec");
-        Thread.sleep(20.seconds);
+        Thread.sleep(15.seconds);
 
         return result_ok;
     }
@@ -126,21 +128,26 @@ class SendPayloadAndCreateEpoch {
         const max_attempts = 10;
         uint counter;
         do {
-            const received = receiveOnly!(Topic, string, immutable(EventPackage*)[]);
+            const received = receiveOnly!(Topic, string, const(Document));
+            check(received[1] == "epoch_succesful", "Event should have been epoch_succesful");
             const epoch = received[2];
-            writefln("received epoch %s%s", epoch, epoch.length);
 
-            if (epoch.length > 0) {
-                check(epoch.length == 1, format("should only have received one event got %s", epoch.length));
+            import tagion.hashgraph.Refinement : FinishedEpoch;
+            import tagion.hibon.HiBONRecord;
 
-                const received_payload = epoch[0].event_body.payload;
-                check(received_payload == send_payload, "Payloads not the same");
-                stop = true;
-            }
+            check(epoch.isRecord!FinishedEpoch, "received event should be an FinishedEpoch record");
+            writefln("Received epoch %s", epoch.toPretty);
+            const events = FinishedEpoch(epoch).events;
+            check(events.length == 1, format("should only have received one event got %s", epoch.length));
+
+            const received_payload = events[0].event_body.payload;
+            check(received_payload == send_payload, "Payloads not the same");
+            stop = true;
+
             counter++;
 
         }
-        while (!stop || counter < max_attempts);
+        while (!stop && counter < max_attempts);
         check(stop, "no epoch found");
 
         foreach (handle; handles) {

@@ -10,6 +10,7 @@ endif
 NO_UNITDATA=-a -not -path "*/unitdata/*"
 EXCLUDED_DIRS+=-a -not -path "*/lib-betterc/*"
 EXCLUDED_DIRS+=-a -not -path "*/tests/*"
+EXCLUDED_DIRS+=-a -not -path "*/.dub/*"
 
 LIB_DFILES:=${shell find $(DSRC) -name "*.d" -a -path "*/lib-*" $(EXCLUDED_DIRS) $(NO_UNITDATA) }
 
@@ -70,8 +71,8 @@ ${call DO_BIN,geldbeutel,$(LIB_DFILES) ${call BIN_DEPS,geldbeutel},tagion}
 #
 # New tagion boot
 #
-target-steifel: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER) 
-${call DO_BIN,steifel,$(LIB_DFILES) ${call BIN_DEPS,steifel},tagion}
+target-stiefel: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER) 
+${call DO_BIN,stiefel,$(LIB_DFILES) ${call BIN_DEPS,stiefel},tagion}
 
 
 

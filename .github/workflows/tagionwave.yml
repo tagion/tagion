@@ -1,0 +1,27 @@
+name: Test Tagionwave
+on: 
+  workflow_dispatch:
+
+jobs:
+  deploy_tagionwave:
+    runs-on: neuewelle
+    steps:
+      - name: get artifact and restart service
+        run: | 
+          rm -rf *
+          loginctl enable-linger moonbase
+          gh run download -n successful_artifact --repo tagion/tagion
+          tar -xzf *.tar.gz
+          cd build/x86_64-linux/bin
+          ls
+          whoami
+          export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1001/bus
+          export XDG_RUNTIME_DIR=/run/user/1001
+          systemctl stop --user neuewelle.service
+          mkdir -p ~/.local/share/wave
+          mkdir -p ~/.config/systemd/user
+          cp tagion ~/.local/share/wave
+          cp neuewelle.service ~/.config/systemd/user
+          systemctl --user daemon-reload
+          systemctl restart --user neuewelle.service
+

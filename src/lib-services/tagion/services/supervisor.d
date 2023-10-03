@@ -19,10 +19,13 @@ import tagion.utils.JSONCommon;
 import tagion.utils.pretend_safe_concurrency : locate, send;
 import tagion.services.options;
 import tagion.services.DART;
+import tagion.services.DARTInterface;
 import tagion.services.inputvalidator;
 import tagion.services.hirpc_verifier;
 import tagion.services.epoch_creator;
 import tagion.services.collector;
+import tagion.services.TVM;
+import tagion.services.transcript;
 
 @safe
 struct Supervisor {
@@ -31,10 +34,10 @@ struct Supervisor {
     void task(immutable(Options) opts, immutable(SecureNet) net) @safe {
         // immutable SecureNet net = (() @trusted => cast(immutable) new WaveNet(password))();
 
-        const dart_filename = opts.dart.dart_filename;
+        const dart_path = opts.dart.dart_path;
 
-        if (!dart_filename.exists) {
-            DARTFile.create(dart_filename, net);
+        if (!dart_path.exists) {
+            DARTFile.create(dart_path, net);
         }
 
         immutable tn = opts.task_names;
@@ -45,12 +48,16 @@ struct Supervisor {
         auto inputvalidator_handle = spawn!InputValidatorService(tn.inputvalidator, opts.inputvalidator, tn);
 
         auto epoch_creator_handle = spawn!EpochCreatorService(tn.epoch_creator, opts.epoch_creator, opts.wave
-                .network_mode, opts.wave.number_of_nodes, net, opts.monitor);
+                .network_mode, opts.wave.number_of_nodes, net, opts.monitor, tn);
 
-        immutable collector_service = CollectorService(net, tn);
-        auto collector_handle = spawn(collector_service, tn.collector);
+        auto collector_handle = spawn(immutable(CollectorService)(net, tn), tn.collector);
+        auto tvm_handle = spawn(immutable(TVMService)(opts.tvm, tn), tn.tvm);
 
-        auto services = tuple(dart_handle, hirpc_verifier_handle, inputvalidator_handle, epoch_creator_handle, collector_handle);
+        auto transcript_handle = spawn!TranscriptService(tn.transcript, opts.transcript, net, tn);
+
+        auto dart_interface_handle = spawn(immutable(DARTInterfaceService)(opts.dart_interface, tn), tn.dart_interface);
+
+        auto services = tuple(dart_handle, hirpc_verifier_handle, inputvalidator_handle, epoch_creator_handle, collector_handle, tvm_handle, dart_interface_handle, transcript_handle);
 
         if (waitforChildren(Ctrl.ALIVE, 5.seconds)) {
             run(failHandler);

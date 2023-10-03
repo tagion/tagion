@@ -1,13 +1,11 @@
 module tagion.testbench.dart_insert_remove_stress;
 
 import tagion.behaviour.Behaviour;
-import tagion.testbench.functional;
 import tagion.hibon.HiBONRecord : fwrite;
 import tagion.tools.Basic;
 import std.traits : moduleName;
 
 import tagion.testbench.dart;
-import tagion.testbench.tools.BDDOptions;
 import tagion.testbench.tools.Environment;
 
 import tagion.dart.DARTFakeNet : DARTFakeNet;
@@ -33,17 +31,13 @@ mixin Main!(_main);
 int _main(string[] args) {
 
     if (env.stage == Stage.performance) {
-        BDDOptions bdd_options;
-        setDefaultBDDOptions(bdd_options);
-        bdd_options.scenario_name = __MODULE__;
-
-        const string module_path = env.bdd_log.buildPath(bdd_options.scenario_name);
+        const string module_path = env.bdd_log.buildPath(__MODULE__);
         const string dartfilename = buildPath(module_path, "dart_insert_remove_stress_test".setExtension(FileExtension
                 .dart));
 
         SecureNet net;
 
-        version(REAL_HASHES) {
+        version (REAL_HASHES) {
             net = new StdSecureNet();
             net.generateKeyPair("very secret");
         }
@@ -63,17 +57,13 @@ int _main(string[] args) {
     }
 
     if (env.stage == Stage.commit) {
-        BDDOptions bdd_options;
-        setDefaultBDDOptions(bdd_options);
-        bdd_options.scenario_name = __MODULE__;
-
-        const string module_path = env.bdd_log.buildPath(bdd_options.scenario_name);
+        const string module_path = env.bdd_log.buildPath(__MODULE__);
         const string dartfilename = buildPath(module_path, "dart_insert_remove_stress_test".setExtension(FileExtension
                 .dart));
 
         SecureNet net;
 
-        version(REAL_HASHES) {
+        version (REAL_HASHES) {
             net = new StdSecureNet();
             net.generateKeyPair("very secret");
         }

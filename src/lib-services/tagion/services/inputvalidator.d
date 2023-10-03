@@ -42,6 +42,7 @@ struct InputValidatorOptions {
     mixin JSONCommon;
 }
 
+enum reject_inputvalidator = "reject/inputvalidator";
 /** 
  *  InputValidator actor
  *  Examples: [tagion.testbench.services.inputvalidator]
@@ -51,7 +52,7 @@ struct InputValidatorOptions {
 struct InputValidatorService {
     pragma(msg, "TODO: Make inputvalidator safe when nng is");
     void task(immutable(InputValidatorOptions) opts, immutable(TaskNames) task_names) @trusted {
-        auto rejected = submask.register("inputvalidator/reject");
+        auto rejected = submask.register(reject_inputvalidator);
         NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_PULL);
         ReceiveBuffer buf;
         // s.recvtimeout = opts.socket_select_timeout.msecs;
@@ -61,7 +62,7 @@ struct InputValidatorService {
         }
         else {
             log.error("Failed to listen on addr: %s, %s", opts.sock_addr, nng_errstr(listening));
-            assert(0); // fixme
+            throw new Exception("Failed to listen on addr: %s, %s".format(opts.sock_addr, nng_errstr(listening)));
         }
         const recv = (scope void[] b) @trusted {
             size_t ret = s.receivebuf(cast(ubyte[]) b);
@@ -82,7 +83,7 @@ struct InputValidatorService {
 
             auto result = buf.append(recv);
             if (s.m_errno != nng_errno.NNG_OK) {
-                log(rejected, "NNG_ERRNO", s.m_errno);
+                log(rejected, "NNG_ERRNO", cast(int) s.m_errno);
                 continue;
             }
 
@@ -96,6 +97,7 @@ struct InputValidatorService {
 
             Document doc = Document(assumeUnique(result.data));
             if (doc.isInorder && doc.isRecord!(HiRPC.Sender)) {
+                log("Sending contract to hirpc_verifier");
                 locate(task_names.hirpc_verifier).send(inputDoc(), doc);
             }
             else {

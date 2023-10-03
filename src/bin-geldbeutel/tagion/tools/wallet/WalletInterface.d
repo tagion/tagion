@@ -8,15 +8,18 @@ import tagion.utils.Term;
 import tagion.wallet.AccountDetails;
 import tagion.script.TagionCurrency;
 import tagion.crypto.SecureNet;
-import tagion.basic.Types : FileExtension;
+import tagion.basic.Types : FileExtension, Buffer, hasExtension;
+import tagion.basic.range : doFront;
 import std.file : exists, mkdir;
-import tagion.hibon.HiBONRecord : fwrite, fread, isRecord;
+import std.exception : ifThrown;
+import tagion.hibon.HiBONRecord : fwrite, fread, isRecord, isHiBONRecord;
 import std.path;
 import std.format;
 import std.algorithm;
 import std.range;
 import core.thread;
 import tagion.basic.Message;
+import std.string : representation;
 
 //import tagion.basic.tagionexceptions : check;
 import tagion.hibon.Document;
@@ -27,6 +30,12 @@ import tagion.script.common;
 import tagion.wallet.SecureWallet : check;
 import tagion.script.execute : ContractExecution;
 import tagion.script.Currency : totalAmount;
+import tagion.hibon.HiBONtoText;
+import tagion.hibon.HiBONJSON : toPretty;
+import tagion.dart.DARTBasic;
+import tagion.crypto.Types : Pubkey;
+import tagion.communication.HiRPC;
+import tagion.dart.DARTcrud;
 
 //import tagion.wallet.WalletException : check;
 /**
@@ -109,7 +118,7 @@ struct WalletInterface {
     void save(const bool recover_flag) {
         // secure_wallet.login(pincode);
 
-        if (secure_wallet.isLoggedin) {
+        if (secure_wallet.isLoggedin && !dry_switch) {
             verbose("Write %s", options.walletfile);
 
             options.walletfile.fwrite(secure_wallet.wallet);
@@ -404,6 +413,24 @@ struct WalletInterface {
 
     import tagion.script.common : TagionBill;
 
+    string show(in TagionBill bill) {
+        const index = secure_wallet.net.dartIndex(bill);
+        const deriver = secure_wallet.account.derivers.get(bill.owner, Buffer.init);
+        return format("dartIndex %s\nDeriver   %s\n%s",
+                index.encodeBase64, deriver.encodeBase64, bill.toPretty);
+    }
+
+    string show(const Document doc) {
+        const index = secure_wallet.net.calcHash(doc);
+        const deriver = secure_wallet.account.derivers.get(Pubkey(doc[StdNames.owner].get!Buffer), Buffer.init);
+        return format("fingerprint %s\nDeriver   %s\n%s",
+                index.encodeBase64, deriver.encodeBase64, doc.toPretty);
+    }
+
+    string show(T)(T rec) if (isHiBONRecord!T) {
+        return show(rec.toDoc);
+    }
+
     string toText(const TagionBill bill, string mark = null) {
         import tagion.utils.StdTime : toText;
         import std.format;
@@ -434,6 +461,7 @@ struct WalletInterface {
                 mark = YELLOW;
             }
             writefln("%4s] %s", i, toText(bill, mark));
+            verbose("%s", show(bill));
         }
         fout.writeln(line);
     }
@@ -447,15 +475,74 @@ struct WalletInterface {
         }
     }
 
+    pragma(msg, "Fixme(lr)Remove trusted when nng is safe");
+    void sendSubmitHiRPC(string address, HiRPC.Sender contract) @trusted {
+        import nngd;
+        import std.exception;
+        import tagion.hibon.Document;
+        import tagion.hibon.HiBONtoText;
+
+        int rc;
+        NNGSocket send_sock = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
+        rc = send_sock.dial(address);
+        if (rc != 0) {
+            throw new Exception(format("Could not dial address %s: %s", address, nng_errstr(rc)));
+        }
+        send_sock.sendtimeout = 1000.msecs;
+        send_sock.sendbuf = 4096;
+
+        rc = send_sock.send(contract.toDoc.serialize);
+        if (rc != 0) {
+            throw new Exception(format("Could not send bill %s: %s", secure_wallet.net.calcHash(contract).encodeBase64, nng_errstr(
+                    rc)));
+        }
+    }
+
+    pragma(msg, "Fixme(lr)Remove trusted when nng is safe");
+    Document sendDARTHiRPC(string address, HiRPC.Sender dart_req) @trusted {
+        import nngd;
+        import std.exception;
+
+
+        int rc;
+        NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
+        s.recvtimeout = 1000.msecs;
+        while(1) {
+            writefln("REQ to dial...");
+            rc = s.dial(address);
+            if (rc == 0) {
+                break;
+            }
+            if (rc == nng_errno.NNG_ECONNREFUSED) {
+                nng_sleep(100.msecs);
+            }
+            if (rc != 0) {
+                throw new Exception(format("Could not dial kernel %s", nng_errstr(rc)));
+            }
+        }
+        while (1) {
+            rc = s.send!(immutable(ubyte[]))(dart_req.toDoc.serialize);
+            if (s.errno != 0) {
+                throw new Exception("error in response");
+            }
+            Document received_doc = s.receive!(immutable(ubyte[]))();
+            return received_doc;
+        }
+    }
+
     struct Switch {
         bool force;
         bool list;
         bool sum;
+        bool send;
         bool pay;
+        bool request;
+        bool update;
         double amount;
         string output_filename;
     }
 
+    enum update_tag = "update";
     void operate(Switch wallet_switch, const(string[]) args) {
         if (secure_wallet.isLoggedin) {
             with (wallet_switch) {
@@ -474,13 +561,33 @@ struct WalletInterface {
                     return;
                 }
                 if (force) {
-                    foreach (file; args[1 .. $]) {
-                        const doc = file.fread;
-                        const bill = secure_wallet.addBill(doc);
-                        writefln("%s", toText(bill));
-                        save_wallet = true;
-                    }
+                    foreach (arg; args[1 .. $]) {
+                        TagionBill bill;
+                        if (arg.hasExtension(FileExtension.hibon)) {
+                            bill = arg.fread!TagionBill;
+                        }
+                        if ((arg.extension.empty) && (bill is TagionBill.init)) {
+                            verbose("index %s", arg);
+                            const index = arg.decode.ifThrown(Buffer.init);
+                            check(index !is Buffer.init, format("Illegal fingerprint %s", arg));
+                            bill = secure_wallet.account.requested.get(Pubkey(index), TagionBill.init); /// Find bill by owner key     
 
+                            if (bill is TagionBill.init) {
+                                // Find bill by fingerprint 
+                                bill = secure_wallet.account.requested.byValue
+                                    .filter!(b => index == secure_wallet.net.dartIndex(b))
+                                    .doFront;
+
+                            }
+
+                        }
+                        if (bill !is TagionBill.init) {
+                            writefln("%s", toText(bill));
+                            verbose("%s", show(bill));
+                            secure_wallet.addBill(bill);
+                            save_wallet = true;
+                        }
+                    }
                 }
                 if (list) {
                     listAccount(stdout);
@@ -489,47 +596,52 @@ struct WalletInterface {
                 if (sum) {
                     sumAccount(stdout);
                 }
+                if (request) {
+                    secure_wallet.account.requested.byValue
+                        .each!(bill => secure_wallet.net.dartIndex(bill)
+                                .encodeBase64.setExtension(FileExtension.hibon).fwrite(bill));
+                }
+                if (update) {
+                    const fingerprints = [secure_wallet.account.bills, secure_wallet.account.requested.values]
+                        .joiner
+                        .map!(bill => secure_wallet.net.dartIndex(bill))
+                        .array;
+                    const update_net = secure_wallet.net.derive(update_tag.representation);
+                    const hirpc = HiRPC(update_net);
+                    const dartcheckread = dartCheckRead(fingerprints, hirpc);
+
+                    if (output_filename !is string.init) {
+                        output_filename.fwrite(dartcheckread);
+                    }
+                    if (send) {
+                        auto receiver = hirpc.receive(sendDARTHiRPC(options.dart_address, dartcheckread));
+                        auto res = secure_wallet.setResponseUpdateWallet(receiver);
+                        writeln(res ? "wallet updated succesfully" : "wallet not updated succesfully");
+                    }
+                    
+                }
                 if (pay) {
-                    PayScript pay_script;
-                    pay_script.outputs = args[1 .. $]
-                        .map!(file => file.fread)
-                        .map!(doc => TagionBill(doc))
-                        .array;
+                    SignedContract signed_contract;
+                    TagionBill[] to_pay;
+                    TagionCurrency fees;
+                    auto created_payment = secure_wallet.createPayment(to_pay, signed_contract, fees);
+                    check(created_payment, "payment was not successful");
 
-                    const amount_to_pay = pay_script.outputs
-                        .map!(bill => bill.value)
-                        .totalAmount;
-                    TagionBill[] collect_bills;
-                    const estimated_fees = ContractExecution.billFees(10);
-                    const can_pay = secure_wallet.collect_bills(amount_to_pay + estimated_fees, collect_bills);
-                    pragma(msg, "can_pay ", typeof(can_pay));
-                    pragma(msg, "amount_to_pay ", typeof(amount_to_pay.value));
-                    check(can_pay, format("Is unable to pay the amount %10.6fTGN", amount_to_pay.value));
-                    auto derivers = collect_bills
-                        .map!(bill => bill.owner in secure_wallet.account.derivers);
-
-                    check(derivers.all!(deriver => deriver !is null), "Missing deriver of some of the bills");
-                    const amount_to_redraw = collect_bills
-                        .map!(bill => bill.value)
-                        .totalAmount;
-                    const fees = ContractExecution.billFees(collect_bills.length + 1);
-                    const amount_remainder = amount_to_redraw - amount_to_pay - fees;
-                    check(amount_remainder >= 0, "Fees too small");
-                    const bill_remain = secure_wallet.requestBill(amount_remainder);
-                    const nets = derivers
-                        .map!(deriver => secure_wallet.net.derive(*deriver))
-                        .array;
-                    const signed_contract = sign(
-                            nets,
-                            collect_bills.map!(bill => bill.toDoc)
-                            .array,
-                            null,
-                            pay_script.toDoc);
-                    output_filename = (output_filename.empty) ? "submit".setExtension(FileExtension.hibon) : output_filename;
-                    output_filename.fwrite(signed_contract);
-                    //                  const
-                    //const nets=secure_wallet.
-
+                    output_filename = (output_filename.empty && !send) ? "submit".setExtension(FileExtension.hibon) : output_filename;
+                    const message = secure_wallet.net.calcHash(signed_contract);
+                    pragma(msg, "Message ", typeof(message));
+                    const contract_net = secure_wallet.net.derive(message);
+                    const hirpc = HiRPC(contract_net);
+                    const hirpc_submit = hirpc.submit(signed_contract);
+                    if (!output_filename.empty) {
+                        output_filename.fwrite(hirpc_submit);
+                    }
+                    verbose("submit\n%s", show(hirpc_submit));
+                    secure_wallet.account.hirpcs ~= hirpc_submit.toDoc;
+                    save_wallet = true;
+                    if (send) {
+                        sendSubmitHiRPC(options.contract_address, hirpc_submit);
+                    }
                 }
             }
         }

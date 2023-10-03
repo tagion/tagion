@@ -9,6 +9,8 @@ import tagion.hibon.HiBONRecord : isRecord, getType;
 import tagion.script.TagionCurrency;
 import tagion.script.ScriptException;
 
+import tagion.logger.Logger;
+
 @safe
 struct ContractProduct {
     immutable(CollectedSignedContract*) contract;
@@ -19,18 +21,20 @@ struct ContractProduct {
     }
 }
 
+import tagion.dart.Recorder;
+
 @safe
 struct CollectedSignedContract {
-    Document[] inputs;
-    Document[] reads;
     SignedContract sign_contract;
+    const(Document)[] inputs;
+    const(Document)[] reads;
     //mixin HiBONRecord;
 }
 
 @safe
 interface CheckContract {
     const(TagionCurrency) calcFees(immutable(CollectedSignedContract)* exec_contract, in TagionCurrency amount, in GasUse gas_use);
-    bool validAmout(immutable(CollectedSignedContract)* exec_contract,
+    bool validAmount(immutable(CollectedSignedContract)* exec_contract,
             in TagionCurrency input_amount,
             in TagionCurrency output_amount,
             in GasUse use);
@@ -61,12 +65,12 @@ class StdCheckContract : CheckContract {
         return calcFees(use);
     }
 
-    bool validAmout(immutable(CollectedSignedContract)* exec_contract,
+    bool validAmount(immutable(CollectedSignedContract)* exec_contract,
             in TagionCurrency input_amount,
             in TagionCurrency output_amount,
             in GasUse use) {
         const gas_cost = calcFees(exec_contract, output_amount, use);
-        return input_amount + gas_cost <= output_amount;
+        return input_amount >= output_amount + gas_cost;
     }
 
 }
@@ -89,31 +93,33 @@ struct ContractExecution {
         }
     }
 
-    static TagionCurrency billFees(const size_t number_of_bills) {
-        const use = GasUse(pay_gas, number_of_bills + bill_price);
-        return check_contract.calcFees(use);
+    static TagionCurrency billFees(const size_t number_of_input_bills, const size_t number_of_output_bills) {
+
+        return check_contract.calcFees(GasUse(pay_gas, number_of_output_bills)) -
+            check_contract.calcFees(GasUse(0, number_of_input_bills * bill_price));
     }
 
     immutable(ContractProduct)* pay(immutable(CollectedSignedContract)* exec_contract) {
         import std.exception;
 
-        const pay_script = PayScript(exec_contract.sign_contract.contract.script);
-        const input_ammount = exec_contract.inputs
+        const input_amount = exec_contract.inputs
             .map!(doc => TagionBill(doc).value)
-
             .totalAmount;
+
+        const pay_script = PayScript(exec_contract.sign_contract.contract.script);
         const output_amount = pay_script.outputs.map!(bill => bill.value).totalAmount;
-        pragma(msg, "Outputs ", typeof(pay_script.outputs.map!(v => v.toDoc).array));
+        // pragma(msg, "Outputs ", typeof(pay_script.outputs.map!(v => v.toDoc).array));
         const result = new immutable(ContractProduct)(
                 exec_contract,
                 pay_script.outputs.map!(v => v.toDoc).array);
-        check(check_contract.validAmout(exec_contract, input_ammount, output_amount,
+
+        check(check_contract.validAmount(exec_contract, input_amount, output_amount,
                 GasUse(pay_gas, result.outputs.map!(doc => doc.full_size).sum)), "Invalid amount");
         return result;
     }
 }
 
-shared static this() {
+static this() {
     ContractExecution.check_contract = new StdCheckContract;
     ContractExecution.check_contract.storage_fees = 1.TGN;
     ContractExecution.check_contract.gas_price = 0.1.TGN;

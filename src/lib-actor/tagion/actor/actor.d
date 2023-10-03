@@ -60,7 +60,7 @@ private struct ActorInfo {
     private string _task_name;
     bool stop;
 
-    string task_name() @trusted {
+    string task_name() @trusted nothrow {
         return _task_name;
     }
 
@@ -115,7 +115,7 @@ struct Request(string name) {
     uint id;
     string task_name;
 
-    static Request opCall() @safe {
+    static Request opCall() @safe nothrow {
         import tagion.utils.Random;
 
         Request!name r;
@@ -278,6 +278,10 @@ struct ActorHandle(A) {
 
     /// Send a message to this task
     void send(T...)(T args) @safe {
+        if (this.tid is Tid.init) {
+            log("Could not delive message to %s:\n\t%(%s, %)", task_name, args);
+            return;
+        }
         concurrency.send(this.tid, args);
     }
 }
@@ -465,6 +469,10 @@ if (allSatisfy!(isSafe, Args)) {
                     &unknown,
             );
         }
+        catch (MailboxFull t) {
+            fail(t);
+            thisActor.stop = true;
+        }
         catch (Exception t) {
             fail(t);
         }
@@ -507,6 +515,10 @@ if (allSatisfy!(isSafe, Args)) {
             if (!message) {
                 timeout();
             }
+        }
+        catch (MailboxFull t) {
+            fail(t);
+            thisActor.stop = true;
         }
         catch (Exception t) {
             fail(t);

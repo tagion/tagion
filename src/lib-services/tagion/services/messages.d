@@ -36,6 +36,9 @@ alias BeginGossip = Msg!"BeginGossip";
 // Replicator Recorder 
 alias SendRecorder = Msg!"SendRecorder";
 
+// NNG socket hirpc output push
+alias HiRPCOutput = Msg!"OutputPush";
+
 /*
 @safe
 struct _ContractProduct {

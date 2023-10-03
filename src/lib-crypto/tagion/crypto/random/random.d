@@ -7,11 +7,11 @@ import std.traits;
 
 static if (ver.linux || ver.Android) {
     enum is_getrandom = true;
-    extern (C) size_t getrandom(void* buf, size_t buflen, uint flags) @trusted;
+    extern (C) size_t getrandom(void* buf, size_t buflen, uint flags) nothrow;
 }
 else static if (ver.iOS || ver.OSX) {
     enum is_getrandom = false;
-    extern (C) void arc4random_buf(void* buf, size_t buflen) @trusted;
+    extern (C) void arc4random_buf(void* buf, size_t buflen) nothrow;
 }
 else {
     static assert(0, format("Random function not support for %s", os));
@@ -21,7 +21,7 @@ else {
      + getRandom - runs platform specific random function.
      +/
 @trusted
-void getRandom(ref scope ubyte[] buf)
+void getRandom(ref scope ubyte[] buf) nothrow
 in (buf.length > 0 && buf.length <= 256)
 do {
 
@@ -38,7 +38,8 @@ do {
     } // TODO: add other platforms
 }
 
-T getRandom(T)() if (isBasicType!T) {
+@trusted
+T getRandom(T)() nothrow if (isBasicType!T) {
     T result;
     auto buf = (cast(ubyte*)&result)[0 .. T.sizeof];
     getRandom(buf);

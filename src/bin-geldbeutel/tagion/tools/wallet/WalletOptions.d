@@ -4,6 +4,7 @@ import tagion.utils.JSONCommon;
 import tagion.basic.Types : FileExtension;
 import std.path;
 import tagion.wallet.KeyRecover : standard_questions;
+import tagion.services.options;
 
 /**
 *
@@ -31,10 +32,13 @@ struct WalletOptions {
     ushort port;
 
     string[] questions;
+
+    string contract_address;
+    string dart_address;
     /**
     * @brief set default values for wallet
     */
-    void setDefault() pure nothrow {
+    void setDefault() nothrow {
         accountfile = "account".setExtension(FileExtension.hibon);
         walletfile = "wallet".setExtension(FileExtension.hibon);
         quizfile = "quiz".setExtension(FileExtension.hibon);
@@ -44,6 +48,8 @@ struct WalletOptions {
         devicefile = "device".setExtension(FileExtension.hibon);
         addr = "localhost";
         questions = standard_questions.dup;
+        contract_address = contract_sock_addr("Node_0_");
+        dart_address = contract_sock_addr("DART_" ~ "Node_0_");
         port = 10800;
     }
 

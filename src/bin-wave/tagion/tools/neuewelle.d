@@ -13,6 +13,8 @@ import std.typecons;
 import std.path;
 import std.concurrency;
 import std.path : baseName;
+import std.file : exists;
+import std.algorithm : countUntil;
 
 import tagion.tools.Basic;
 import tagion.utils.getopt;
@@ -28,6 +30,7 @@ import tagion.utils.JSONCommon;
 import tagion.crypto.SecureNet;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.gossip.AddressBook : addressbook, NodeAddress;
+import tagion.basic.Types : hasExtension, FileExtension;
 
 // enum EXAMPLES {
 //     ver = Example("-v"),
@@ -86,11 +89,25 @@ int _main(string[] args) {
     sigaction(SIGINT, &sa, null);
 
     bool version_switch;
-    auto config_file = "tagionwave.json";
-    scope Options local_options = Options.defaultOptions;
+    bool override_switch;
+    bool monitor;
+
+    Options local_options;
+    const program_config_file = args
+        .countUntil!(file => file.hasExtension(FileExtension.json) && file.exists);
+    auto config_file = (program_config_file < 0) ? "tagionwave.json" : args[program_config_file];
+    if (config_file.exists) {
+        local_options.load(config_file);
+    } else {
+        local_options = Options.defaultOptions;
+        
+    }
+
 
     auto main_args = getopt(args,
-            "v|version", "Print revision information", &version_switch
+            "v|version", "Print revision information", &version_switch,
+            "O|override", "Override the config file", &override_switch,
+            "m|monitor", "Enable the monitor", &monitor,
     );
 
     if (main_args.helpWanted) {
@@ -103,6 +120,15 @@ int _main(string[] args) {
 
     if (version_switch) {
         revision_text.writeln;
+        return 0;
+    }
+
+    if (override_switch) {
+        if (args.length == 2) {
+            config_file = args[1];
+        }
+        local_options.save(config_file);
+        writefln("Configure file written to %s", config_file);
         return 0;
     }
 
@@ -130,15 +156,15 @@ int _main(string[] args) {
         Node[] nodes;
 
         foreach (i; 0 .. wave_options.number_of_nodes) {
-            immutable prefix = format("Node_%s_", i);
+            immutable prefix = format(wave_options.prefix_format, i);
             auto opts = Options(local_options);
             opts.setPrefix(prefix);
             SecureNet net = new StdSecureNet();
             net.generateKeyPair(opts.task_names.supervisor);
-            if (i == 0) {
+            if (monitor && i == 0) {
                 opts.monitor.enable = true;
             }
-            opts.epoch_creator.timeout = 1000;
+            opts.epoch_creator.timeout = 100;
 
             nodes ~= Node(opts, cast(immutable) net);
 
@@ -169,7 +195,7 @@ int _main(string[] args) {
         supervisor.send(Sig.STOP);
     }
     // supervisor_handle.send(Sig.STOP);
-    if (!waitforChildren(Ctrl.END)) {
+    if (!waitforChildren(Ctrl.END, 5.seconds)) {
         log("Program did not stop properly");
         return 1;
     }

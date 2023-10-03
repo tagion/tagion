@@ -26,7 +26,7 @@ import tagion.hibon.HiBONJSON;
 import tagion.utils.Miscellaneous : cutHex;
 import tagion.services.messages;
 import tagion.services.monitor;
-import tagion.services.options : NetworkMode;
+import tagion.services.options : TaskNames, NetworkMode;
 
 // core
 import core.time;
@@ -49,7 +49,7 @@ struct EpochCreatorOptions {
 struct EpochCreatorService {
 
     void task(immutable(EpochCreatorOptions) opts, immutable(NetworkMode) network_mode, immutable(size_t) number_of_nodes, immutable(
-            SecureNet) net, immutable(MonitorOptions) monitor_opts) {
+            SecureNet) net, immutable(MonitorOptions) monitor_opts, immutable(TaskNames) task_names) {
 
         assert(network_mode == NetworkMode.INTERNAL, "Unsupported network mode");
 
@@ -76,6 +76,7 @@ struct EpochCreatorService {
         log.trace("Beginning gossip");
 
         auto refinement = new StdRefinement;
+        refinement.setTasknames(task_names);
 
         HashGraph hashgraph = new HashGraph(number_of_nodes, net, refinement, &gossip_net.isValidChannel, No.joining);
         hashgraph.scrap_depth = opts.scrap_depth;
@@ -95,13 +96,35 @@ struct EpochCreatorService {
         }
 
         void receivePayload(Payload, const(Document) pload) {
-            log.trace("Received Payload");
+            log.trace("Received Payload %s", pload.toPretty);
             payload_queue.write(pload);
         }
 
         void receiveWavefront(ReceivedWavefront, const(Document) wave_doc) {
-            log.trace("Received wavefront");
+            import tagion.hashgraph.HashGraphBasic;
+            import tagion.hibon.HiBONRecord : isRecord;
+            import tagion.script.common : SignedContract;
+            import std.array;
+
+            version (EPOCH_LOG) {
+                log.trace("Received wavefront");
+            }
+
             const receiver = HiRPC.Receiver(wave_doc);
+
+            const received_wave = receiver.params!(Wavefront)(net);
+
+            immutable received_signed_contracts = received_wave.epacks
+                .map!(e => e.event_body.payload)
+                .filter!((p) => !p.empty)
+                .filter!(p => p.isRecord!SignedContract)
+                .map!(s => (() @trusted => cast(immutable) new SignedContract(s))())
+                .array;
+
+            if (received_signed_contracts.length != 0) {
+                log("would have send to collector %s", received_signed_contracts.map!(s => (*s).toPretty));
+                locate(task_names.collector).send(consensusContract(), received_signed_contracts);
+            }
             hashgraph.wavefront(
                     receiver,
                     gossip_net.time,

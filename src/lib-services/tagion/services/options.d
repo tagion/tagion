@@ -36,6 +36,7 @@ struct WaveOptions {
 
     NetworkMode network_mode = NetworkMode.INTERNAL;
     size_t number_of_nodes = 5;
+    string prefix_format = "Node_%s_";
     mixin JSONCommon;
 }
 
@@ -53,6 +54,7 @@ struct TaskNames {
     string tvm = "tvm";
     string epoch_creator = "epoch_creator";
     string replicator = "replicator";
+    string dart_interface = "dartinterface";
 
     mixin JSONCommon;
 
@@ -86,6 +88,7 @@ struct Options {
 
     public import tagion.services.inputvalidator : InputValidatorOptions;
     public import tagion.services.DART : DARTOptions;
+    public import tagion.services.DARTInterface : DARTInterfaceOptions;
     public import tagion.services.hirpc_verifier : HiRPCVerifierOptions;
     public import tagion.services.collector : CollectorOptions;
     public import tagion.services.transcript : TranscriptOptions;
@@ -93,6 +96,7 @@ struct Options {
     public import tagion.services.epoch_creator : EpochCreatorOptions;
     public import tagion.services.monitor : MonitorOptions;
     public import tagion.services.replicator : ReplicatorOptions;
+
 
     WaveOptions wave;
     InputValidatorOptions inputvalidator;
@@ -104,6 +108,7 @@ struct Options {
     EpochCreatorOptions epoch_creator;
     MonitorOptions monitor;
     ReplicatorOptions replicator;
+    DARTInterfaceOptions dart_interface;
 
     TaskNames task_names;
     mixin JSONCommon;
@@ -119,6 +124,7 @@ struct Options {
         setDefault(opts);
         return opts;
     }
+
 }
 
 @safe

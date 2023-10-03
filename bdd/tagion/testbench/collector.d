@@ -4,7 +4,6 @@ import tagion.behaviour.Behaviour;
 import tagion.tools.Basic;
 import std.traits : moduleName;
 
-import tagion.testbench.tools.BDDOptions;
 import tagion.testbench.tools.Environment;
 
 import tagion.testbench.services;
