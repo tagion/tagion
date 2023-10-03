@@ -60,9 +60,9 @@ struct SecureWallet(Net : SecureNet) {
     protected DevicePIN _pin; /// Information to check the Pin code
 
     AccountDetails account; /// Account-details holding the bills and generator
-    protected Net _net;
+    protected SecureNet _net;
 
-    const(Net) net() const pure nothrow @nogc {
+    const(SecureNet) net() const pure nothrow @nogc {
         return _net;
     }
     /**
