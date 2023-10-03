@@ -15,8 +15,6 @@ import tagion.hibon.Document : Document;
 import tagion.logger.LogRecords;
 import tagion.basic.Version : ver;
 
-extern (C) int pthread_setname_np(pthread_t, const char*) nothrow;
-
 /// Is a but mask for the logger
 enum LogLevel {
     NONE = 0, /// No log is e
