@@ -227,9 +227,7 @@ class WriteAndReadFromDartDb {
             auto read_check_tuple = receiveOnly!(dartHiRPCRR.Response, Document);
             auto read_check = hirpc.receive(read_check_tuple[1]);
 
-            auto hirpc_check = read_check.message[Keywords.result].get!Document;
-            // writefln("hirpc_check %s", hirpc_check.toPretty);
-            auto check_fingerprints = (() @trusted => cast(DARTIndex[]) hirpc_check[DARTFile.Params.fingerprints].get!(Buffer))();
+            auto check_fingerprints = read_check.response.result[DART.Params.fingerprints].get!Document[].map!(d => d.get!DARTIndex).array;
 
             check(check_fingerprints.length == 0, "should be empty");
 
@@ -241,8 +239,9 @@ class WriteAndReadFromDartDb {
         auto read_check_tuple = receiveOnly!(dartHiRPCRR.Response, Document);
         auto read_check = hirpc.receive(read_check_tuple[1]);
 
-        auto hirpc_check = read_check.message[Keywords.result].get!Document;
-        auto check_fingerprints = (() @trusted => cast(DARTIndex[]) hirpc_check[DARTFile.Params.fingerprints].get!(Buffer))();
+        auto check_fingerprints = read_check.response.result[DART.Params.fingerprints].get!Document[].map!(d => d.get!DARTIndex).array;
+
+        
         check(equal(check_fingerprints, dummy_indexes), "error in hirpc checkread");
 
         auto t1 = spawn!DARTWorker("dartworker1", interface_opts.sock_addr, check_read_sender);
