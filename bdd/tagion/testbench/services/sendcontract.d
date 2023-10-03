@@ -100,7 +100,7 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
 
                 // writefln("RECEIVED RESPONSE: %s", received_doc.toPretty);
                 auto received = hirpc.receive(received_doc);
-                check(wallet.setResponse(received), "wallet not updated succesfully");
+                check(wallet.setResponseUpdateWallet(received), "wallet not updated succesfully");
                 check(wallet.calcTotal(wallet.account.bills) > 0.TGN, "did not receive money");
                 check(wallet.calcTotal(wallet.account.bills) == start_amount, "money not correct");
                 break;
@@ -178,7 +178,7 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
             writefln("RECEIVED RESPONSE: %s", received_doc.toPretty);
             check(s.errno == 0, format("Error in response [%03d] %s", received_doc.length, received_doc.toPretty));
             auto received = hirpc.receive(received_doc);
-            check(wallet1.setResponse(received), "wallet1 not updated succesfully");
+            check(wallet1.setResponseUpdateWallet(received), "wallet1 not updated succesfully");
 
             auto wallet1_amount = wallet1.calcTotal(wallet1.account.bills);
             check(wallet1_amount < start_amount, format("no money withdrawn had %s", wallet1_amount));
@@ -227,7 +227,7 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
 
             writefln("RECEIVED RESPONSE: %s", received_doc.toPretty);
             auto received = hirpc.receive(received_doc);
-            check(wallet2.setResponse(received), "wallet2 not updated succesfully");
+            check(wallet2.setResponseUpdateWallet(received), "wallet2 not updated succesfully");
             check(wallet2.calcTotal(wallet2.account.bills) > 0.TGN, "did not receive money");
             check(wallet2.calcTotal(wallet2.account.bills) == start_amount + amount, "did not receive correct amount of tagion");
             writefln("Wallet 2 total %s", wallet2.calcTotal(wallet2.account.bills));

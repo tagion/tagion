@@ -34,6 +34,7 @@ struct WalletOptions {
     string[] questions;
 
     string contract_address;
+    string dart_address;
     /**
     * @brief set default values for wallet
     */
@@ -48,6 +49,7 @@ struct WalletOptions {
         addr = "localhost";
         questions = standard_questions.dup;
         contract_address = contract_sock_addr("Node_0_");
+        dart_address = contract_sock_addr("DART_" ~ "Node_0_");
         port = 10800;
     }
 

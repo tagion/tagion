@@ -476,7 +476,7 @@ struct WalletInterface {
     }
 
     pragma(msg, "Fixme(lr)Remove trusted when nng is safe");
-    void sendHiRPC(string address, HiRPC.Sender contract) @trusted {
+    void sendSubmitHiRPC(string address, HiRPC.Sender contract) @trusted {
         import nngd;
         import std.exception;
         import tagion.hibon.Document;
@@ -495,6 +495,38 @@ struct WalletInterface {
         if (rc != 0) {
             throw new Exception(format("Could not send bill %s: %s", secure_wallet.net.calcHash(contract).encodeBase64, nng_errstr(
                     rc)));
+        }
+    }
+
+    pragma(msg, "Fixme(lr)Remove trusted when nng is safe");
+    Document sendDARTHiRPC(string address, HiRPC.Sender dart_req) @trusted {
+        import nngd;
+        import std.exception;
+
+
+        int rc;
+        NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
+        s.recvtimeout = 1000.msecs;
+        while(1) {
+            writefln("REQ to dial...");
+            rc = s.dial(address);
+            if (rc == 0) {
+                break;
+            }
+            if (rc == nng_errno.NNG_ECONNREFUSED) {
+                nng_sleep(100.msecs);
+            }
+            if (rc != 0) {
+                throw new Exception(format("Could not dial kernel %s", nng_errstr(rc)));
+            }
+        }
+        while (1) {
+            rc = s.send!(immutable(ubyte[]))(dart_req.toDoc.serialize);
+            if (s.errno != 0) {
+                throw new Exception("error in response");
+            }
+            Document received_doc = s.receive!(immutable(ubyte[]))();
+            return received_doc;
         }
     }
 
@@ -577,8 +609,16 @@ struct WalletInterface {
                     const update_net = secure_wallet.net.derive(update_tag.representation);
                     const hirpc = HiRPC(update_net);
                     const dartcheckread = dartCheckRead(fingerprints, hirpc);
-                    output_filename = (output_filename.empty) ? update_tag.setExtension(FileExtension.hibon) : output_filename;
-                    output_filename.fwrite(dartcheckread);
+
+                    if (output_filename !is string.init) {
+                        output_filename.fwrite(dartcheckread);
+                    }
+                    if (send) {
+                        auto receiver = hirpc.receive(sendDARTHiRPC(options.dart_address, dartcheckread));
+                        auto res = secure_wallet.setResponseUpdateWallet(receiver);
+                        writeln(res ? "wallet updated succesfully" : "wallet not updated succesfully");
+                    }
+                    
                 }
                 if (pay) {
                     pragma(msg, "fixme: use function createPayment instead");
@@ -637,7 +677,7 @@ struct WalletInterface {
                     secure_wallet.account.hirpcs ~= hirpc_submit.toDoc;
                     save_wallet = true;
                     if (send) {
-                        sendHiRPC(options.contract_address, hirpc_submit);
+                        sendSubmitHiRPC(options.contract_address, hirpc_submit);
                     }
                     //                  const
                     //const nets=secure_wallet.

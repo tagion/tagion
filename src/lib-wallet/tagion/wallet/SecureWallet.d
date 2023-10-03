@@ -532,35 +532,34 @@ struct SecureWallet(Net : SecureNet) {
         return false;
     }
 
-    /**
-     * Update the the wallet for a request update
-     * Params:
-     *   receiver = response to the wallet
-     * Returns: ture if the wallet was updated
-     */
-    @trusted
-    bool setResponseUpdateWallet(const(HiRPC.Receiver) receiver) nothrow {
-        if (receiver.isResponse) {
-            try {
-                account.bills = receiver.response.result[].map!(e => TagionBill(e.get!Document))
-                    .array;
-                return true;
-            }
-            catch (Exception e) {
-                import std.stdio;
-                import std.exception : assumeWontThrow;
+    // /**
+    //  * Update the the wallet for a request update
+    //  * Params:
+    //  *   receiver = response to the wallet
+    //  * Returns: ture if the wallet was updated
+    //  */
+    // @trusted
+    // bool setResponseUpdateWallet(const(HiRPC.Receiver) receiver) nothrow {
+    //     if (receiver.isResponse) {
+    //         try {
+    //             account.bills = receiver.response.result[].map!(e => TagionBill(e.get!Document))
+    //                 .array;
+    //             return true;
+    //         }
+    //         catch (Exception e) {
+    //             import std.stdio;
+    //             import std.exception : assumeWontThrow;
 
-                assumeWontThrow(() => writeln("Error on setresponse: %s", e.msg));
-                // Ingore
-            }
-        }
-        return false;
-    }
+    //             assumeWontThrow(() => writeln("Error on setresponse: %s", e.msg));
+    //             // Ingore
+    //         }
+    //     }
+    //     return false;
+    // }
 
     @safe
-    bool setResponse(const(HiRPC.Receiver) receiver) {
+    bool setResponseUpdateWallet(const(HiRPC.Receiver) receiver) {
         import tagion.dart.DART;
-        pragma(msg, "fixme(pr) lookup bills properly");
 
         if (!receiver.isResponse) {
             return false;
