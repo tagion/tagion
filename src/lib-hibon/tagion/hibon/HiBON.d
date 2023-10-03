@@ -1,7 +1,7 @@
 /**
  * Implements HiBON
  * Hash-invariant Binary Object Notation
- * Is inspired by BSON but us not compatible
+ * Is inspired by BSON but is not compatible
  *
  * See_Also:
  *  $(LINK2 http://bsonspec.org/, BSON - Binary JSON)
