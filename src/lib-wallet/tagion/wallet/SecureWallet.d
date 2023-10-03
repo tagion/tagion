@@ -60,9 +60,9 @@ struct SecureWallet(Net : SecureNet) {
     protected DevicePIN _pin; /// Information to check the Pin code
 
     AccountDetails account; /// Account-details holding the bills and generator
-    protected SecureNet _net;
+    protected Net _net;
 
-    const(SecureNet) net() const pure nothrow @nogc {
+    const(Net) net() const pure nothrow @nogc {
         return _net;
     }
     /**
@@ -185,6 +185,19 @@ struct SecureWallet(Net : SecureNet) {
             result._net = _net;
             result.set_pincode(R, pincode);
             _net.createKeyPair(R);
+        }
+        return result;
+    }
+
+    static SecureWallet createWallet(const(char[]) passphrase, const(char[]) pincode) {
+        SecureWallet result;
+        {
+            auto _net = new Net;
+            auto R = _net.calcHash(passphrase.representation).dup;
+            result._net = _net;
+            result.set_pincode(R, pincode);
+            _net.createKeyPair(R);
+
         }
         return result;
     }
@@ -486,6 +499,12 @@ struct SecureWallet(Net : SecureNet) {
         return hirpc.search(h);
     }
 
+    private const(SecureNet[]) collectNets(const(TagionBill[]) bills) {
+        return bills
+            .map!(bill => bill.owner in account.derivers)
+            .map!((deriver) => (deriver is null) ? _net.init : _net.derive(*deriver))
+            .array;
+    }
     /**
      * Collects the bills for the amount
      * Params:
@@ -493,7 +512,7 @@ struct SecureWallet(Net : SecureNet) {
      *   locked_bills = the list of bills
      * Returns: true if wallet has enough to pay the amount
      */
-    bool collect_bills(const TagionCurrency amount, out TagionBill[] locked_bills) {
+    private bool collect_bills(const TagionCurrency amount, out TagionBill[] locked_bills) {
         import std.algorithm.sorting : isSorted, sort;
         import std.algorithm.iteration : cumulativeFold;
         import std.range : takeOne, tee;
@@ -535,7 +554,7 @@ struct SecureWallet(Net : SecureNet) {
         return false;
     }
 
-    private void lock_bills(out TagionBill[] locked_bills) {
+    private void lock_bills(const(TagionBill[]) locked_bills) {
         locked_bills.each!(b => account.activated[b.owner] = true);
     }
 
@@ -603,9 +622,11 @@ struct SecureWallet(Net : SecureNet) {
         writefln("FEE AMOUNT = %s", fees.value);
         writefln("collected bills length = %s", collected_bills.length);
         import tagion.hibon.HiBONtoText;
+
         writefln("collected bills pkeys %s", collected_bills.map!(b => b.owner.encodeBase64));
         writefln("account derivers %s", account.derivers.byKey.map!(k => k.encodeBase64));
 
+        /*
         auto derivers = collected_bills
             .map!(bill => bill.owner in account.derivers).array;
 
@@ -618,13 +639,18 @@ struct SecureWallet(Net : SecureNet) {
         const nets = derivers
             .map!(deriver => net.derive(*deriver))
             .array;
-
+*/
+        const nets = collectNets(collected_bills);
+        writefln("Nets %s", nets.length);
+        check(nets.all!(net => net !is net.init), "Missing deriver of some of the bills");
         const bill_remain = requestBill(amount_remainder);
         pay_script.outputs ~= bill_remain;
+        writefln("collect_bills %d nets %d", collected_bills.length, nets.length);
         lock_bills(collected_bills);
+        writefln("collect_bills %d nets %d", collected_bills.length, nets.length);
+        check(nets.length == collected_bills.length, format("number of bills does not match number of signatures nets %s, collected_bills %s", nets
+                .length, collected_bills.length));
 
-        check(nets.length == collected_bills.length, format("number of bills does not match number of signatures nets %s, collected_bills %s", nets.length, collected_bills.length));
-        
         signed_contract = sign(
                 nets,
                 collected_bills.map!(bill => bill.toDoc)
@@ -882,9 +908,71 @@ struct SecureWallet(Net : SecureNet) {
     }
 }
 
-unittest {
+version (unittest) {
     import tagion.crypto.SecureNet;
+    import std.exception;
+    import std.stdio;
+    import tagion.script.execute;
 
     alias StdSecureWallet = SecureWallet!StdSecureNet;
+
+}
+@safe
+unittest {
+    auto wallet1 = StdSecureWallet.createWallet("some words", "1234");
+    const bill1 = wallet1.requestBill(1000.TGN);
+    const bill2 = wallet1.requestBill(2000.TGN);
+    const bill3 = wallet1.requestBill(3000.TGN);
+    assert(wallet1.account.requested.length == 3);
+
+    assert(wallet1.account.bills.length == 0);
+    wallet1.account.add_bill(bill1);
+    assert(wallet1.account.bills.length == 1);
+    assert(wallet1.total_balance == 1000.TGN);
+    assert(wallet1.available_balance == 1000.TGN);
+    assert(wallet1.locked_balance == 0.TGN);
+
+    {
+        TagionBill[] locked_bills;
+        const can_collect = wallet1.collect_bills(1200.TGN, locked_bills);
+        assert(!can_collect);
+        assert(locked_bills.length == 0);
+    }
+
+    {
+        TagionBill[] locked_bills;
+        const can_collect = wallet1.collect_bills(500.TGN, locked_bills);
+        assert(can_collect);
+        assert(locked_bills.length == 1);
+        const nets = wallet1.collectNets(locked_bills);
+
+        assert(nets.length == nets.length);
+        assert(nets.all!(net => net !is net.init));
+    }
+
+    auto wallet2 = StdSecureWallet.createWallet("some other words", "4321");
+    const w2_bill1 = wallet2.requestBill(1500.TGN);
+    { /// faild
+        SignedContract signed_contract;
+        TagionCurrency fees;
+        assertThrown!WalletException(
+                wallet1.createPayment([w2_bill1], signed_contract, fees));
+        //assert(!can_pay, "Should not be able to pay");   
+
+    }
+    wallet1.account.add_bill(bill2);
+
+    { ///
+
+        SignedContract signed_contract;
+        TagionCurrency fees;
+        const can_pay = wallet1.createPayment([w2_bill1], signed_contract, fees);
+
+        const expected_fees = ContractExecution.billFees(1, 2);
+        writefln("!!!Fees %f %f", fees.value, expected_fees.value);
+
+        assert(can_pay, "Unable to pay");
+    }
+    // assert(wallet.account.
 
 }
