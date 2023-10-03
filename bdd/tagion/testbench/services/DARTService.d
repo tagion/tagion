@@ -56,6 +56,12 @@ struct DARTWorker {
 
         setState(Ctrl.ALIVE);
         while (!thisActor.stop) {
+            const received = receiveTimeout(
+                    Duration.zero,
+                    &signal,
+                    &ownerTerminated,
+                    &unknown
+            );
 
             writefln("REQ %s to dial...", doc.toPretty);
             rc = s.dial(sock_addr);

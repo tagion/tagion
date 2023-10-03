@@ -52,11 +52,10 @@ struct TranscriptService {
 
         EpochContracts[uint] epoch_contracts;
 
-        void epoch(consensusEpoch, immutable(EventPackage*)[] epacks) {
+        void epoch(consensusEpoch, immutable(EventPackage*)[] epacks, immutable(int) epoch_number) {
             log("Received finished epoch");
 
             if (epacks.length == 0) {
-                log("empty epoch");
                 return;
             }
 
@@ -72,6 +71,7 @@ struct TranscriptService {
                 .array;
 
             auto req = dartCheckReadRR();
+            req.id = cast(uint) epoch_number;
             epoch_contracts[req.id] = EpochContracts(signed_contracts);
 
             (() @trusted => locate(task_names.dart).send(req, cast(immutable(DARTIndex)[]) inputs))();
@@ -121,7 +121,7 @@ struct TranscriptService {
             }
 
             pragma(msg, "fixme(pr): add epoch_number");
-            locate(task_names.dart).send(dartModify(), RecordFactory.uniqueRecorder(recorder), immutable int(0));
+            locate(task_names.dart).send(dartModify(), RecordFactory.uniqueRecorder(recorder), cast(immutable(int)) res.id);
 
         }
 

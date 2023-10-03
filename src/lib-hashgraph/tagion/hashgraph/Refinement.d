@@ -79,7 +79,6 @@ class StdRefinement : Refinement {
             auto event_payload = FinishedEpoch(events, epoch_time);
             log(epoch_created, "epoch_succesful", event_payload.toDoc);
         }
-        log("Epoch_created");
         if (task_names is TaskNames.init) {
             return;
         }
@@ -87,7 +86,7 @@ class StdRefinement : Refinement {
         immutable(EventPackage*)[] epacks = events
                 .map!((e) => e.event_package)
                 .array;
-        locate(task_names.transcript).send(consensusEpoch(), epacks);
+        locate(task_names.transcript).send(consensusEpoch(), epacks, decided_round.number);
     }
 
     void excludedNodes(ref BitMask excluded_mask) {
