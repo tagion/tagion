@@ -561,6 +561,7 @@ struct SecureWallet(Net : SecureNet) {
     @safe
     bool setResponseUpdateWallet(const(HiRPC.Receiver) receiver) {
         import tagion.dart.DART;
+        import std.stdio;
 
         if (!receiver.isResponse) {
             return false;
@@ -581,9 +582,8 @@ struct SecureWallet(Net : SecureNet) {
                     account.activated.remove(used_bill.owner);
                 }
             }
-
         }
-        foreach (request_bill; account.requested.byValue) {
+        foreach (request_bill; account.requested.byValue.array.dup) {
             if (!not_in_dart.canFind(net.dartIndex(request_bill))) {
                 account.bills ~= request_bill;
                 account.requested.remove(request_bill.owner);

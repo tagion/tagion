@@ -619,9 +619,8 @@ struct WalletInterface {
                     }
                     if (send) {
                         auto received_doc = sendDARTHiRPC(options.dart_address, dartcheckread);
+                        check(received_doc.isRecord!(HiRPC.Receiver), "Error in response. Aborting");
                         auto receiver = hirpc.receive(received_doc);
-                        writefln("Received response %s", received_doc.toPretty);
-
                         auto res = secure_wallet.setResponseUpdateWallet(receiver);
                         writeln(res ? "wallet updated succesfully" : "wallet not updated succesfully");
                         listAccount(stdout);
