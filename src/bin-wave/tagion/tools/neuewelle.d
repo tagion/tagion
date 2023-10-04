@@ -134,6 +134,7 @@ int _main(string[] args) {
     if (config_file.exists) {
         try {
             local_options.load(config_file);
+            log("Running with config file %s", config_file);
         }
         catch (Exception e) {
             stderr.writefln("Error loading config file %s, %s", config_file, e.msg);
@@ -142,6 +143,7 @@ int _main(string[] args) {
     }
     else {
         local_options = Options.defaultOptions;
+        log("Running with default options");
     }
 
     if (override_switch) {
