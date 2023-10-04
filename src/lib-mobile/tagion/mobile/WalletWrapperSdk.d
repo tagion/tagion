@@ -421,13 +421,12 @@ extern (C) {
             auto messageDoc = contractDoc[messageTag].get!Document;
             auto paramsDoc = messageDoc[paramsTag].get!Document;
             auto sContract = SignedContract(paramsDoc);
+            const outputs = PayScript(sContract.contract.script).outputs.map!(output => output.toDoc).array;
 
-            version (none) {
-                int status = __secure_wallet.account.check_contract_payment(
-                        sContract.contract.inputs, sContract.contract.output);
+            int status = __secure_wallet.account.check_contract_payment(
+                    sContract.contract.inputs, outputs);
 
-                *statusPtr = cast(uint8_t) status;
-            }
+            *statusPtr = cast(uint8_t) status;
             return 1;
         }
         return 0;

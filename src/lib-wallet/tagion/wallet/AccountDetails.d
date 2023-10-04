@@ -55,7 +55,7 @@ struct AccountDetails {
         activated.remove(bills[index].owner);
     }
 
-    int check_contract_payment(const(DARTIndex)[] inputs, Document[Pubkey] outputs) {
+    int check_contract_payment(const(DARTIndex)[] inputs, const(Document[]) outputs) {
         import std.algorithm : countUntil;
         import tagion.crypto.SecureNet : StdHashNet;
 
@@ -72,7 +72,7 @@ struct AccountDetails {
         }
         // Proceed if inputs are not matched.
         // Look for outputs matches. Return 1 from func if found or 2 if not.
-        foreach (outputPubkey; outputs.keys) {
+        foreach (outputPubkey; outputs.map!(output => output[StdNames.owner].get!Pubkey)) {
             const index = countUntil!"a.owner == b"(bills, outputPubkey);
             if (index >= 0) {
                 return 1;
