@@ -33,6 +33,7 @@ import tagion.crypto.SecureNet;
 import tagion.wallet.KeyRecover;
 import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN;
 import tagion.crypto.Cipher;
+import tagion.utils.StdTime;
 
 /// Used for describing the d-runtime status
 enum DrtStatus {
@@ -195,8 +196,8 @@ extern (C) {
             invoice.amount = TagionCurrency(amount);
 
             SignedContract signed_contract;
-
-            if (__secure_wallet.payment([invoice], signed_contract)) {
+            TagionCurrency fees;
+            if (__secure_wallet.payment([invoice], signed_contract, fees)) {
                 HiRPC hirpc;
                 const sender = hirpc.action("transaction", signed_contract.toHiBON);
                 const contractDocId = recyclerDoc.create(Document(sender.toHiBON));
@@ -421,13 +422,12 @@ extern (C) {
             auto messageDoc = contractDoc[messageTag].get!Document;
             auto paramsDoc = messageDoc[paramsTag].get!Document;
             auto sContract = SignedContract(paramsDoc);
+            const outputs = PayScript(sContract.contract.script).outputs.map!(output => output.toDoc).array;
 
-            version (none) {
-                int status = __secure_wallet.account.check_contract_payment(
-                        sContract.contract.inputs, sContract.contract.output);
+            int status = __secure_wallet.account.check_contract_payment(
+                    sContract.contract.inputs, outputs);
 
-                *statusPtr = cast(uint8_t) status;
-            }
+            *statusPtr = cast(uint8_t) status;
             return 1;
         }
         return 0;
@@ -584,17 +584,19 @@ unittest {
 
     auto bill_amounts = [200, 500, 100].map!(a => a.TGN);
     const net = new StdHashNet;
-    auto gene = cast(Buffer) net.calcHash("gene".representation);
-    const uint epoch = 42;
+    //auto gene = cast(Buffer) net.calcHash("gene".representation);
 
     import tagion.utils.Miscellaneous : hex;
 
     // Add the bills to the account with the derive keys
-    version (none)
-        with (__secure_wallet.account) {
-            bills = zip(bill_amounts, derivers.byKey).map!(bill_derive => TagionBill(bill_derive[0],
-            epoch, bill_derive[1], gene)).array;
-        }
+    with (__secure_wallet.account) {
+        bills = zip(bill_amounts, derivers.byKey)
+            .map!(bill_derive => TagionBill(
+                    bill_derive[0],
+                    currentTime,
+                    bill_derive[1],
+                    Buffer.init)).array;
+    }
 
     auto invoiceDoc = recyclerDoc(invoiceDocId);
 
