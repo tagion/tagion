@@ -174,7 +174,7 @@ jobs:
 
       - name: Cleanup
         run: 
-          make PLATFORM=aarch64-linux-android clean
+          make PLATFORM=${{ matrix.arch }}-linux-android clean
 
   ddoc_push:
     runs-on: CD

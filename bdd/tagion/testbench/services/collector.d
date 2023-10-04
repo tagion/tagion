@@ -157,10 +157,6 @@ class ItWork {
         import std.stdio;
         import tagion.hibon.HiBONJSON;
 
-        writeln(collected.sign_contract.toPretty);
-        foreach (inp; collected.inputs) {
-            writeln(inp.toPretty);
-        }
         check(collected !is null, "The collected was null");
         check(collected.inputs.length == inputs.length, "The lenght of inputs were not the same");
         // check(collected.inputs.map!(a => node_net.dartIndex(a)).array == inputs, "The collected archives did not match the index");
@@ -259,5 +255,4 @@ class ItWork {
 
         return result_ok;
     }
-
 }

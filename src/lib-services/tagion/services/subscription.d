@@ -27,6 +27,11 @@ struct SubscriptionService {
         foreach (tag; opts.tags) {
             submask.subscribe(tag);
         }
+        scope (exit) {
+            foreach (tag; opts.tags) {
+                submask.unsubscribe(tag);
+            }
+        }
 
         NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_PUB);
         sock.sendtimeout = 1000.msecs;
