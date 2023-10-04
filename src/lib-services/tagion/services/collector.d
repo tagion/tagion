@@ -134,7 +134,7 @@ struct CollectorService {
             //     log(reject, "missing_archives", recorder);
             //     return;
             // }
-            immutable s_contract = *(contracts[res.id]);
+            immutable s_contract = contracts[res.id];
             const contract_hash = net.calcHash(s_contract.contract);
             foreach (index, sign; zip(s_contract.contract.inputs, s_contract.signs)) {
                 immutable archive = find(recorder, index);

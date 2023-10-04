@@ -66,7 +66,7 @@ endif
 
 # Define flag for gdc other
 ifeq ($(COMPILER),gdc)
-    DCFLAGS    = -O2
+    DFLAGS    = -O2
     LINKERFLAG= -Xlinker
     OUTPUT    = -o
     HF        = -fintfc-file=
@@ -74,7 +74,7 @@ ifeq ($(COMPILER),gdc)
     NO_OBJ    = -fsyntax-only
     DDOC_MACRO= -fdoc-inc=
 else
-    DCFLAGS    = -O
+    DFLAGS    = -O
     LINKERFLAG= -L
     OUTPUT    = -of
     HF        = -Hf
@@ -141,9 +141,9 @@ ifndef MODEL
 endif
 
 ifeq ($(MODEL), 64)
-    DCFLAGS  += -m64
+    DFLAGS  += -m64
     LDCFLAGS += -m64
 else
-    DCFLAGS  += -m32
+    DFLAGS  += -m32
     LDCFLAGS += -m32
 endif
