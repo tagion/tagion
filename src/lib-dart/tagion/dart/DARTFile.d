@@ -2468,7 +2468,7 @@ unittest {
         recorder_A.insert(bills, Archive.Type.ADD);
         dart_A.modify(recorder_A);
 
-        dart_A.dump;
+        // dart_A.dump;
         import tagion.crypto.SecureInterfaceNet;
         import tagion.crypto.SecureNet;
 
