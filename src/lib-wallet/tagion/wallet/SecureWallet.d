@@ -413,8 +413,12 @@ struct SecureWallet(Net : SecureNet) {
      */
     bool payment(const(Invoice[]) orders, ref SignedContract result) {
         checkLogin;
-        const topay = orders.map!(b => b.amount).sum;
+        import tagion.utils.StdTime;
 
+        TagionCurrency fees;
+        auto bills = orders.map!((order) => TagionBill(order.amount, currentTime, order.pkey, Buffer.init)).array;
+        //return createPayment(bills, result, fees); 
+        //const topay = orders.map!(b => b.amount).sum;
         version (none)
             if (topay > 0) {
                 pragma(msg, "fixme(cbr): Storage fee needs to be estimated");
