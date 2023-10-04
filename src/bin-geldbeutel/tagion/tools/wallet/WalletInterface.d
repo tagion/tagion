@@ -227,6 +227,10 @@ struct WalletInterface {
         return false;
     }
 
+    void generateSeedFromPassphrase(const(string) passphrase, string pincode) {
+        secure_wallet = StdSecureWallet.createWallet(passphrase, pincode);
+    }
+
     /**
     * @brief generate q/a pair keys
     * @param questions - string array
