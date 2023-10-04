@@ -541,6 +541,7 @@ struct WalletInterface {
         bool pay;
         bool request;
         bool update;
+        bool trt_update;
         double amount;
         string output_filename;
     }
