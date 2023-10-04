@@ -542,6 +542,7 @@ struct WalletInterface {
         bool pay;
         bool request;
         bool update;
+        bool trt_update;
         double amount;
         string output_filename;
     }
@@ -605,28 +606,36 @@ struct WalletInterface {
                         .each!(bill => secure_wallet.net.dartIndex(bill)
                                 .encodeBase64.setExtension(FileExtension.hibon).fwrite(bill));
                 }
-                if (update) {
-                    const fingerprints = [secure_wallet.account.bills, secure_wallet.account.requested.values]
-                        .joiner
-                        .map!(bill => secure_wallet.net.dartIndex(bill))
-                        .array;
+                if (update || trt_update) {
                     const update_net = secure_wallet.net.derive(update_tag.representation);
                     const hirpc = HiRPC(update_net);
-                    const dartcheckread = dartCheckRead(fingerprints, hirpc);
+
+
+                    const(HiRPC.Sender) request() {
+                        if (update) {
+                            const fingerprints = [secure_wallet.account.bills, secure_wallet.account.requested.values]
+                                .joiner
+                                .map!(bill => secure_wallet.net.dartIndex(bill))
+                                .array;
+                            return dartCheckRead(fingerprints, hirpc);
+                        }
+                        return secure_wallet.getRequestUpdateWallet();
+                    }
+                    const dart_req = request();
 
                     if (output_filename !is string.init) {
-                        output_filename.fwrite(dartcheckread);
+                        output_filename.fwrite(dart_req);
                     }
                     if (send) {
-                        auto received_doc = sendDARTHiRPC(options.dart_address, dartcheckread);
+                        auto received_doc = sendDARTHiRPC(options.dart_address, dart_req);
                         check(received_doc.isRecord!(HiRPC.Receiver), "Error in response. Aborting");
                         auto receiver = hirpc.receive(received_doc);
-                        auto res = secure_wallet.setResponseCheckRead(receiver);
+                        auto res = update ? secure_wallet.setResponseCheckRead(receiver) : secure_wallet.setResponseUpdateWallet(receiver);
+
                         writeln(res ? "wallet updated succesfully" : "wallet not updated succesfully");
                         listAccount(stdout);
                         save_wallet=true;
                     }
-                    
                 }
                 if (pay) {
                     SignedContract signed_contract;
