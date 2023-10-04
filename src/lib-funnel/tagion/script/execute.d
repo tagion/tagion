@@ -25,7 +25,7 @@ import tagion.dart.Recorder;
 
 @safe
 struct CollectedSignedContract {
-    SignedContract sign_contract;
+    immutable(SignedContract)* sign_contract;
     const(Document)[] inputs;
     const(Document)[] reads;
     //mixin HiBONRecord;
