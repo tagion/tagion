@@ -411,11 +411,10 @@ struct SecureWallet(Net : SecureNet) {
      *   result = Signed payment
      * Returns: 
      */
-    bool payment(const(Invoice[]) orders, ref SignedContract result) {
+    bool payment(const(Invoice[]) orders, ref SignedContract result, out TagionCurrency fees) {
         checkLogin;
         import tagion.utils.StdTime;
 
-        TagionCurrency fees;
         auto bills = orders.map!((order) => TagionBill(order.amount, currentTime, order.pkey, Buffer.init)).array;
         //return createPayment(bills, result, fees); 
         //const topay = orders.map!(b => b.amount).sum;
@@ -895,8 +894,9 @@ struct SecureWallet(Net : SecureNet) {
         { // The receiver_wallet creates an invoice to the sender_wallet
             auto invoice = SecureWallet.createInvoice("To sender 1", 13.TGN);
             receiver_wallet.registerInvoice(invoice);
+            TagionCurrency fees;
             // Give the invoice to the sender_wallet and create payment
-            sender_wallet.payment([invoice], contract_1);
+            sender_wallet.payment([invoice], contract_1, fees);
 
             //writefln("contract_1=%s", contract_1.toPretty);
         }
@@ -905,8 +905,9 @@ struct SecureWallet(Net : SecureNet) {
         { // The receiver_wallet creates an invoice to the sender_wallet
             auto invoice = SecureWallet.createInvoice("To sender 2", 53.TGN);
             receiver_wallet.registerInvoice(invoice);
+            TagionCurrency fees;
             // Give the invoice to the sender_wallet and create payment
-            sender_wallet.payment([invoice], contract_2);
+            sender_wallet.payment([invoice], contract_2, fees);
 
             //writefln("contract_2=%s", contract_2.toPretty);
         }
