@@ -56,7 +56,7 @@ int _main(string[] args) {
     // create the wallets
     foreach (i; 0 .. 10) {
         StdSecureWallet secure_wallet;
-        secure_wallet = StdSecureWallet.createWallet(
+        secure_wallet = StdSecureWallet(
                 iota(0, 5).map!(n => format("%dquestion%d", i, n)).array,
                 iota(0, 5).map!(n => format("%danswer%d", i, n)).array,
                 4,

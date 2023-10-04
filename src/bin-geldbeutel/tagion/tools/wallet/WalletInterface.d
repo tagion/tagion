@@ -228,7 +228,7 @@ struct WalletInterface {
     }
 
     void generateSeedFromPassphrase(const(string) passphrase, string pincode) {
-        secure_wallet = StdSecureWallet.createWallet(passphrase, pincode);
+        secure_wallet = StdSecureWallet(passphrase, pincode);
     }
 
     /**
@@ -392,7 +392,7 @@ struct WalletInterface {
                                         }
                                     }
                                     else {
-                                        secure_wallet = StdSecureWallet.createWallet(
+                                        secure_wallet = StdSecureWallet(
                                                 quiz.questions, selected_answers, confidence, pincode1);
                                         save(recover_flag);
                                     }
@@ -507,11 +507,10 @@ struct WalletInterface {
         import nngd;
         import std.exception;
 
-
         int rc;
         NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
         s.recvtimeout = 1000.msecs;
-        while(1) {
+        while (1) {
             writefln("REQ to dial...");
             rc = s.dial(address);
             if (rc == 0) {
@@ -624,9 +623,9 @@ struct WalletInterface {
                         auto res = secure_wallet.setResponseCheckRead(receiver);
                         writeln(res ? "wallet updated succesfully" : "wallet not updated succesfully");
                         listAccount(stdout);
-                        save_wallet=true;
+                        save_wallet = true;
                     }
-                    
+
                 }
                 if (pay) {
                     SignedContract signed_contract;

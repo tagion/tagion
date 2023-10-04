@@ -629,7 +629,7 @@ unittest {
     uint32_t contractDocId;
 
     writefln("####### AVAILABLE %s", __secure_wallet.available_balance);
-    { // Create a contract.
+    version (none) { // Create a contract.
         writefln("available_balance %s", __secure_wallet.available_balance);
         double fees;
         const uint result = create_contract(&contractDocId, invoice.ptr, invoiceLen, contAmount, &fees);

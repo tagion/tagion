@@ -409,6 +409,7 @@ struct SecureWallet(Net : SecureNet) {
     bool payment(const(Invoice[]) orders, ref SignedContract result, out TagionCurrency fees) {
         checkLogin;
         import tagion.utils.StdTime;
+        import std.stdio;
 
         auto bills = orders.map!((order) => TagionBill(order.amount, currentTime, order.pkey, Buffer.init)).array;
         scope (exit) {
