@@ -560,7 +560,7 @@ struct SecureWallet(Net : SecureNet) {
     }
 
     @safe
-    bool setResponseUpdateWallet(const(HiRPC.Receiver) receiver) {
+    bool setResponseCheckRead(const(HiRPC.Receiver) receiver) {
         import tagion.dart.DART;
         import std.stdio;
 
@@ -591,6 +591,31 @@ struct SecureWallet(Net : SecureNet) {
             }
         }
         return true;
+    }
+    /**
+     * Update the the wallet for a request update
+     * Params:
+     *   receiver = response to the wallet
+     * Returns: ture if the wallet was updated
+     */
+    @trusted
+    bool setResponseUpdateWallet(const(HiRPC.Receiver) receiver) nothrow {
+        if (!receiver.isResponse) {
+            return false;
+        }
+        try {
+            account.bills = receiver.response.result[].map!(e => TagionBill(e.get!Document))
+                .array;
+            return true;
+        }
+        catch (Exception e) {
+            import std.stdio;
+            import std.exception : assumeWontThrow;
+
+            assumeWontThrow(() => writeln("Error on setresponse: %s", e.msg));
+            // Ingore
+        }
+        return false;
     }
 
     bool createPayment(TagionBill[] to_pay, ref SignedContract signed_contract, out TagionCurrency fees) {
