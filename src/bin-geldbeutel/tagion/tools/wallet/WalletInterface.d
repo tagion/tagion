@@ -618,9 +618,14 @@ struct WalletInterface {
                         output_filename.fwrite(dartcheckread);
                     }
                     if (send) {
-                        auto receiver = hirpc.receive(sendDARTHiRPC(options.dart_address, dartcheckread));
+                        auto received_doc = sendDARTHiRPC(options.dart_address, dartcheckread);
+                        auto receiver = hirpc.receive(received_doc);
+                        writefln("Received response %s", received_doc.toPretty);
+
                         auto res = secure_wallet.setResponseUpdateWallet(receiver);
                         writeln(res ? "wallet updated succesfully" : "wallet not updated succesfully");
+                        listAccount(stdout);
+                        save_wallet=true;
                     }
                     
                 }
