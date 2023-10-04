@@ -35,7 +35,7 @@ private {
     import tagion.dart.Recorder;
     import tagion.dart.DARTException : DARTException;
     import tagion.dart.DARTBasic;
-    import tagion.crypto.SecureInterfaceNet : HashNet;
+    import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
 
     //import tagion.basic.basic;
     import tagion.basic.tagionexceptions : Check;
@@ -1125,6 +1125,32 @@ alias check = Check!DARTException;
 
     package Document cacheLoad(const Index index) {
         return Document(blockfile.cacheLoad(index));
+    }
+
+    HiBON search(Buffer[] owners, immutable(SecureNet) net) {
+        import tagion.script.common;
+        import std.algorithm : canFind;
+
+
+        TagionBill[] bills;
+        auto result_doc = Document(loadAll());
+
+        foreach(archive_doc; result_doc[]) {
+            auto archive = new Archive(net, archive_doc.get!Document);
+            if (!TagionBill.isRecord(archive.filed)) {
+                continue;
+            }
+            auto bill = TagionBill(archive.filed);
+
+            if (owners.canFind(bill.owner)) {
+                bills ~= bill;
+            }
+        }
+        HiBON params = new HiBON;
+        foreach(i, bill; bills) {
+            params[i] = bill.toHiBON;
+        }
+        return params;
     }
 
     version (unittest) {
@@ -2418,5 +2444,41 @@ unittest {
         assert(dart_A.bullseye == bullseye, "should have been reverted to previoius bullseye");
 
     }
+
+    {
+        filename_A.forceRemove;
+        DARTFile.create(filename_A, net);
+        auto dart_A = new DARTFile(net, filename_A);
+        import tagion.script.common;
+        import tagion.script.TagionCurrency;
+        import tagion.utils.StdTime;
+        import tagion.crypto.Types;
+        RecordFactory.Recorder recorder_A;
+
+        TagionBill[] bills;
+
+        Pubkey pkey1 = Pubkey([1,2,3,4]);
+        Pubkey pkey2 = Pubkey([2,3,4,5]);
+
+        bills ~= TagionBill(100.TGN, currentTime, pkey1, Buffer.init);
+        bills ~= TagionBill(100.TGN, currentTime, pkey2, Buffer.init);
+
+        recorder_A = dart_A.recorder;
+
+        recorder_A.insert(bills, Archive.Type.ADD);
+        dart_A.modify(recorder_A);
+
+        dart_A.dump;
+        import tagion.crypto.SecureInterfaceNet;
+        import tagion.crypto.SecureNet;
+
+        SecureNet _net = new StdSecureNet();
+        import tagion.crypto.SecureNet : StdSecureNet;
+
+        _net.generateKeyPair("wowo");
+        auto h = dart_A.search([pkey1, pkey2].map!(b => cast(Buffer) b).array, (() @trusted => cast(immutable)_net )());
+    }
+    
+
 
 }

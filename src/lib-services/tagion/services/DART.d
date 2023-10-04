@@ -85,15 +85,39 @@ struct DARTService {
         import tagion.Keywords;
 
         void dartHiRPC(dartHiRPCRR req, Document doc) {
+                import tagion.hibon.HiBONJSON;
             log("Received HiRPC request");
 
             if (!doc.isRecord!(HiRPC.Sender)) {
                 import tagion.hibon.HiBONJSON;
 
+                log("received wrong request");
                 assert(0, format("wrong request sent to dartservice. Expected HiRPC.Sender got %s", doc.toPretty));
             }
 
             immutable receiver = empty_hirpc.receive(doc);
+
+            if (receiver.method.name == "search") {
+                log("SEARCH REQUEST");
+                log("%s", receiver.method.params.toPretty);
+
+                import tagion.basic.Types;
+                log("params %s", receiver.method.params);
+
+                auto owner_doc = receiver.method.params;
+                Buffer[] owner_pkeys;
+                foreach (owner; owner_doc[]) {
+                    owner_pkeys ~= owner.get!Buffer;
+                }
+                log("OWNER PKEYS %s", owner_pkeys);
+                auto res = db.search(owner_pkeys, net);
+                log("FUUUCK %s", Document(res).toPretty);
+                
+                Document response = hirpc.result(receiver, Document(res)).toDoc;
+                log("FUCK YOU METHOD %s", response.toPretty);
+                req.respond(response);
+                return;
+            }
 
             assert(receiver.method.name == DART.Queries.dartRead || receiver.method.name == DART.Queries.dartBullseye || receiver
                     .method.name == DART.Queries.dartCheckRead, "unsupported hirpc request");

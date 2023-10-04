@@ -638,8 +638,8 @@ received = the HiRPC received package
         immutable message = format("Method '%s' not supported", method.name);
         return hirpc.error(received, message, 22);
     }
-
-    /** 
+    
+ /** 
  * Recorder journal
  */
     @recordType("Journal") struct Journal {
