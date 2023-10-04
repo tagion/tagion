@@ -465,6 +465,7 @@ received = the HiRPC received package
         auto not_in_dart = checkload(fingerprints);
         import tagion.hibon.HiBONtoText;
         import std.array;
+
         writefln("DARTCHECKREAD response %s", not_in_dart.map!(d => d.encodeBase64));
 
         auto params = new HiBON;
@@ -475,7 +476,6 @@ received = the HiRPC received package
         // Buffer[] res = not_in_dart.map!(f => cast(Buffer) f).array;
         // params[Params.fingerprints] = res;
         // params[Params.fingerprints] = (() @trusted => cast(Buffer) not_in_dart)();
-
 
         return hirpc.result(received, params);
     }

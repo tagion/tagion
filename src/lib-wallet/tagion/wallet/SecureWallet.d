@@ -610,22 +610,35 @@ struct SecureWallet(Net : SecureNet) {
      */
     @trusted
     bool setResponseUpdateWallet(const(HiRPC.Receiver) receiver) nothrow {
+        import std.exception : assumeWontThrow;
+
         if (!receiver.isResponse) {
             return false;
         }
-        try {
-            account.bills = receiver.response.result[].map!(e => TagionBill(e.get!Document))
-                .array;
-            return true;
-        }
-        catch (Exception e) {
-            import std.stdio;
-            import std.exception : assumeWontThrow;
+        const found_bills = assumeWontThrow(receiver.response
+                .result[]
+                .map!(e => TagionBill(e.get!Document))
+                .array);
 
-            assumeWontThrow(() => writeln("Error on setresponse: %s", e.msg));
-            // Ingore
+        foreach (found; found_bills) {
+            if (!account.bills.canFind(found)) {
+                account.bills ~= found;
+            }
+            account.requested.remove(found.owner);
         }
-        return false;
+        return true;
+        // try {
+        //     account.bills = receiver.response.result[].map!(e => TagionBill(e.get!Document))
+        //         .array;
+        //     return true;
+        // }
+        // catch (Exception e) {
+        //     import std.stdio;
+        //     import std.exception : assumeWontThrow;
+
+        //     assumeWontThrow(() => writeln("Error on setresponse: %s", e.msg));
+        //     // Ingore
+        // }
     }
 
     bool createPayment(TagionBill[] to_pay, ref SignedContract signed_contract, out TagionCurrency fees) {

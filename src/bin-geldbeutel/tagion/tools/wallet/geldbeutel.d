@@ -45,6 +45,7 @@ static void set_path(ref string file, string path) {
 
 int _main(string[] args) {
     import tagion.wallet.SecureWallet : check;
+
     immutable program = args[0];
     bool version_switch;
     bool overwrite_switch; /// Overwrite the config file
@@ -87,8 +88,7 @@ int _main(string[] args) {
                 "l|list", "List wallet content", &wallet_switch.list, //"questions", "Questions for wallet creation", &questions_str,
                 "s|sum", "Sum of the wallet", &wallet_switch.sum, //"questions", "Questions for wallet creation", &questions_str,
                 "send", "Send a contract to the network", &wallet_switch.send, //"answers", "Answers for wallet creation", &answers_str,
-                "P|passphrase", "Set the wallet passphrase", &passphrase,
-                /*
+                "P|passphrase", "Set the wallet passphrase", &passphrase,/*
                 "path", format("Set the path for the wallet files : default %s", path), &path,
                 "wallet", format("Wallet file : default %s", options.walletfile), &options.walletfile,
                 "device", format("Device file : default %s", options.devicefile), &options.devicefile,
@@ -108,8 +108,10 @@ int _main(string[] args) {
                 "dry", "Dry-run this will not save the wallet", &__dry_switch,
                 "req", "List all requested bills", &wallet_switch.request,
                 "update", "Request a wallet updated", &wallet_switch.update,
-                "addr", format("Sets the contract address default: %s", options.contract_address), &options
-                    .contract_address,/*
+                "trt-update", "Request a update on all derivers", &wallet_switch.trt_update,
+                "addr", format(
+                    "Sets the contract address default: %s", options.contract_address), &options
+                    .contract_address, /*
                 "port|p", format("Tagion network port : default %d", options.port), &options.port,
                 "url|u", format("Tagion url : default %s", options.addr), &options.addr,
                 "visual|g", "Visual user interface", &wallet_ui,
@@ -179,7 +181,7 @@ int _main(string[] args) {
             }
         }
         auto wallet_interface = WalletInterface(options);
-        if(!passphrase.empty) {
+        if (!passphrase.empty) {
             check(!pincode.empty, "Missing pincode");
             wallet_interface.generateSeedFromPassphrase(passphrase, pincode);
             wallet_interface.save(false);
@@ -193,7 +195,6 @@ int _main(string[] args) {
         }
         change_pin = change_pin && !pincode.empty;
 
-        
         if (create_account) {
             wallet_interface.generateSeed(wallet_interface.quiz.questions, false);
             return 0;
