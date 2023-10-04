@@ -952,7 +952,7 @@ unittest {
 
     auto wallet2 = StdSecureWallet.createWallet("some other words", "4321");
     const w2_bill1 = wallet2.requestBill(1500.TGN);
-    { /// faild
+    { /// faild not enouch money
         SignedContract signed_contract;
         TagionCurrency fees;
         assertThrown!WalletException(
@@ -962,16 +962,24 @@ unittest {
     }
     wallet1.account.add_bill(bill2);
 
-    { ///
+    { /// succces payment
 
         SignedContract signed_contract;
         TagionCurrency fees;
         const can_pay = wallet1.createPayment([w2_bill1], signed_contract, fees);
 
-        const expected_fees = ContractExecution.billFees(1, 2);
+        const expected_fees = ContractExecution.billFees(1, 1);
         writefln("!!!Fees %f %f", fees.value, expected_fees.value);
-
+        assert(fees == expected_fees);
         assert(can_pay, "Unable to pay");
+        writefln("total     %f", wallet1.total_balance.value);
+        writefln("locked    %f", wallet1.locked_balance.value);
+
+        writefln("available %f", wallet1.available_balance.value);
+        assert(wallet1.total_balance == 3000.TGN);
+        assert(wallet1.locked_balance == 1000.TGN);
+        assert(wallet1.available_balance == 2000.TGN);
+
     }
     // assert(wallet.account.
 
