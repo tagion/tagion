@@ -108,6 +108,7 @@ int _main(string[] args) {
                 "dry", "Dry-run this will not save the wallet", &__dry_switch,
                 "req", "List all requested bills", &wallet_switch.request,
                 "update", "Request a wallet updated", &wallet_switch.update,
+                "trt-update", "Request a update on all derivers", &wallet_switch.trt_update,
                 "addr", format("Sets the contract address default: %s", options.contract_address), &options
                     .contract_address,/*
                 "port|p", format("Tagion network port : default %d", options.port), &options.port,
