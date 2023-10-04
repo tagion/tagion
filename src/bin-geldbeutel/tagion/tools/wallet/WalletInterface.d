@@ -618,15 +618,23 @@ struct WalletInterface {
                         output_filename.fwrite(dartcheckread);
                     }
                     if (send) {
-                        auto receiver = hirpc.receive(sendDARTHiRPC(options.dart_address, dartcheckread));
+                        auto received_doc = sendDARTHiRPC(options.dart_address, dartcheckread);
+                        check(received_doc.isRecord!(HiRPC.Receiver), "Error in response. Aborting");
+                        auto receiver = hirpc.receive(received_doc);
                         auto res = secure_wallet.setResponseUpdateWallet(receiver);
                         writeln(res ? "wallet updated succesfully" : "wallet not updated succesfully");
+                        listAccount(stdout);
+                        save_wallet=true;
                     }
                     
                 }
                 if (pay) {
                     SignedContract signed_contract;
-                    TagionBill[] to_pay;
+                    TagionBill[] to_pay = args[1 .. $]
+                        .filter!(file => file.hasExtension(FileExtension.hibon))
+                        .map!(file => file.fread)
+                        .map!(doc => TagionBill(doc))
+                        .array;
                     TagionCurrency fees;
                     auto created_payment = secure_wallet.createPayment(to_pay, signed_contract, fees);
                     check(created_payment, "payment was not successful");
