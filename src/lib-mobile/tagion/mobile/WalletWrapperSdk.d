@@ -184,28 +184,38 @@ extern (C) {
     }
 
     export uint create_contract(
-            uint8_t* contractPtr,
+            uint32_t* contractPtr,
             const uint8_t* invoicePtr,
             const uint32_t invoiceLen,
-            const double amount) {
+            const double amount,
+            double* fees) {
 
         immutable invoiceBuff = cast(immutable)(invoicePtr[0 .. invoiceLen]);
+        TagionCurrency tgn_fees;
+        scope (exit) {
+            *fees = tgn_fees.value;
+
+        }
 
         if (__secure_wallet.isLoggedin()) {
             auto invoice = Invoice(Document(invoiceBuff));
             invoice.amount = TagionCurrency(amount);
 
             SignedContract signed_contract;
-            TagionCurrency fees;
-            if (__secure_wallet.payment([invoice], signed_contract, fees)) {
+            const can_pay =
+                __secure_wallet.payment([invoice], signed_contract, tgn_fees);
+            writefln("can_pay=%s", can_pay);
+            if (can_pay) {
+                /*
                 HiRPC hirpc;
                 const sender = hirpc.action("transaction", signed_contract.toHiBON);
                 const contractDocId = recyclerDoc.create(Document(sender.toHiBON));
-
+*/
+                const contractDocId = recyclerDoc.create(signed_contract.toDoc);
                 // Save wallet state to file.
                 __wallet_storage.write(__secure_wallet);
 
-                *contractPtr = cast(uint8_t) contractDocId;
+                *contractPtr = contractDocId;
                 return 1;
             }
         }
@@ -559,6 +569,15 @@ unittest {
         assert(result != 0, "Expected non-zero result");
         assert(__secure_wallet.isLoggedin, "Expected wallet stays logged in");
     }
+}
+
+unittest {
+    import tagion.hibon.HiBONtoText;
+
+    const work_path = new_test_path;
+    scope (success) {
+        work_path.rmdirRecurse;
+    }
 
     // Create input data
     const uint64_t invAmount = 100;
@@ -566,6 +585,7 @@ unittest {
     const uint32_t labelLen = cast(uint32_t) label.length;
     uint8_t invoiceDocId;
 
+    writefln("AVAILABLE = %s", __secure_wallet.available_balance);
     { // Create invoice.
 
         // Call the create_invoice function
@@ -590,6 +610,7 @@ unittest {
 
     // Add the bills to the account with the derive keys
     with (__secure_wallet.account) {
+        writefln("!!!!!!!!!! derivers = %s", derivers.byKey.map!(deriver => deriver.encodeBase64));
         bills = zip(bill_amounts, derivers.byKey)
             .map!(bill_derive => TagionBill(
                     bill_derive[0],
@@ -605,10 +626,14 @@ unittest {
     const uint32_t invoiceLen = cast(uint32_t) invoice.length;
     const uint64_t contAmount = 100;
 
-    uint8_t contractDocId;
+    uint32_t contractDocId;
 
-    version (none) { // Create a contract.
-        const uint result = create_contract(&contractDocId, invoice.ptr, invoiceLen, contAmount);
+    writefln("####### AVAILABLE %s", __secure_wallet.available_balance);
+    { // Create a contract.
+        writefln("available_balance %s", __secure_wallet.available_balance);
+        double fees;
+        const uint result = create_contract(&contractDocId, invoice.ptr, invoiceLen, contAmount, &fees);
+        writefln("fees=%s", fees);
 
         // Check the result
         assert(result == 1, "Expected result to be 1");
