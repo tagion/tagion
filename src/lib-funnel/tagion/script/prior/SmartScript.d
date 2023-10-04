@@ -9,7 +9,7 @@ import std.algorithm.searching : all;
 import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 import tagion.basic.ConsensusExceptions : SmartScriptException, ConsensusFailCode, Check;
 import tagion.basic.tagionexceptions : TagionException;
-import tagion.script.prior.StandardRecords : SignedContract, StandardBill, PayContract, OwnerKey, Contract, Script, Globals, globals;
+import tagion.script.prior.StandardRecords : _SignedContract, StandardBill, PayContract, OwnerKey, Contract, Script, Globals, globals;
 import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Pubkey, Signature, Fingerprint;
 import tagion.script.TagionCurrency;
@@ -34,8 +34,8 @@ const(TagionCurrency) calcTotal(const(StandardBill[]) bills) pure {
 
 @safe
 class SmartScript {
-    const SignedContract signed_contract;
-    this(const SignedContract signed_contract) {
+    const _SignedContract signed_contract;
+    this(const _SignedContract signed_contract) {
         this.signed_contract = signed_contract;
     }
 
@@ -44,7 +44,7 @@ class SmartScript {
     }
 
     @trusted
-    static void check(const SecureNet net, const SignedContract signed_contract)
+    static void check(const SecureNet net, const _SignedContract signed_contract)
     in {
         assert(net);
     }
@@ -141,10 +141,10 @@ unittest {
     bills ~= StandardBill(1200.TGN, epoch, alice.derivePubkey("alice0"), null);
     bills ~= StandardBill(3000.TGN, epoch, alice.derivePubkey("alice1"), null);
     bills ~= StandardBill(4300.TGN, epoch, alice.derivePubkey("alice2"), null);
-    SignedContract createSSC(TagionCurrency amount) {
+    _SignedContract createSSC(TagionCurrency amount) {
         auto input_bill = StandardBill(1000.TGN, epoch, alice.pubkey, null);
 
-        SignedContract ssc;
+        _SignedContract ssc;
         Contract contract;
 
         contract.inputs = [net.HashNet.dartIndex(input_bill)];
@@ -162,7 +162,7 @@ unittest {
             const StandardBill[] input_bills,
             const StandardBill[] output_bills,
             const SecureNet net,
-            ref SignedContract signed_contract) {
+            ref _SignedContract signed_contract) {
         Contract contract;
         contract.inputs = input_bills.map!(b => net.dartIndex(b.toDoc)).array;
         foreach (bill; output_bills) {
@@ -218,8 +218,8 @@ unittest {
     StandardBill[] outputbills;
     /// Output bills with same owner get diffrent gene
     {
-        SignedContract signed_contract_1;
-        SignedContract signed_contract_2;
+        _SignedContract signed_contract_1;
+        _SignedContract signed_contract_2;
         outputbills ~= StandardBill(100.TGN, epoch, bob.pubkey, null);
         sign_all_bills([bills[0]], outputbills, alice, signed_contract_1);
         signed_contract_1.inputs ~= bills[0];

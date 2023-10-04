@@ -24,7 +24,7 @@ import tagion.dart.DARTBasic;
 import tagion.basic.basic : basename, isinit;
 import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Pubkey;
-import tagion.script.prior.StandardRecords : SignedContract, StandardBill,  globals, Script;
+import tagion.script.prior.StandardRecords : _SignedContract, StandardBill, globals, Script;
 import tagion.crypto.SecureNet : scramble;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 
@@ -338,7 +338,7 @@ struct SecureWallet(Net : SecureNet) {
      * Params:
      *   invoice = invoice to be registered
      */
-    void registerInvoice(ref Invoice invoice) {
+    void registerInvoice(ref _Invoice invoice) {
         checkLogin;
         string current_time = MonoTime.currTime.toString;
         scope seed = new ubyte[net.hashSize];
@@ -359,8 +359,8 @@ struct SecureWallet(Net : SecureNet) {
      *   info = Invoce information
      * Returns: The created invoice
      */
-    static Invoice createInvoice(string label, TagionCurrency amount, Document info = Document.init) {
-        Invoice new_invoice;
+    static _Invoice createInvoice(string label, TagionCurrency amount, Document info = Document.init) {
+        _Invoice new_invoice;
         new_invoice.name = label;
         new_invoice.amount = amount;
         new_invoice.info = info;
@@ -375,7 +375,7 @@ struct SecureWallet(Net : SecureNet) {
      *   result = Signed payment
      * Returns: 
      */
-    bool payment(const(Invoice[]) orders, ref SignedContract result) {
+    bool payment(const(_Invoice[]) orders, ref _SignedContract result) {
         checkLogin;
         const topay = orders.map!(b => b.amount).sum;
 
@@ -391,7 +391,7 @@ struct SecureWallet(Net : SecureNet) {
                 result.contract.inputs = contract_bills.map!(b => net.dartIndex(b.toDoc)).array;
                 const rest = total - amount;
                 if (rest > 0) {
-                    Invoice money_back;
+                    _Invoice money_back;
                     money_back.amount = rest;
                     registerInvoice(money_back);
                     result.contract.output[money_back.pkey] = rest.toDoc;
@@ -734,7 +734,7 @@ struct SecureWallet(Net : SecureNet) {
         }
 
         pragma(msg, "fixme(cbr): The following test is not finished, Need to transfer to money to receiver");
-        SignedContract contract_1;
+        _SignedContract contract_1;
         { // The receiver_wallet creates an invoice to the sender_wallet
             auto invoice = SecureWallet.createInvoice("To sender 1", 13.TGN);
             receiver_wallet.registerInvoice(invoice);
@@ -744,7 +744,7 @@ struct SecureWallet(Net : SecureNet) {
             //writefln("contract_1=%s", contract_1.toPretty);
         }
 
-        SignedContract contract_2;
+        _SignedContract contract_2;
         { // The receiver_wallet creates an invoice to the sender_wallet
             auto invoice = SecureWallet.createInvoice("To sender 2", 53.TGN);
             receiver_wallet.registerInvoice(invoice);

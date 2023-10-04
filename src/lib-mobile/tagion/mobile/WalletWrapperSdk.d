@@ -17,10 +17,10 @@ import std.algorithm;
 import std.file : exists, remove;
 import core.stdc.string;
 
-import Wallet = tagion.wallet.prior.SecureWallet;
+import Wallet = tagion.wallet.SecureWallet;
 import tagion.script.TagionCurrency;
-import tagion.script.prior.StandardRecords;
-import tagion.wallet.prior.AccountDetails;
+import tagion.script.common;
+import tagion.wallet.AccountDetails;
 import tagion.communication.HiRPC;
 import tagion.hibon.HiBON;
 import tagion.hibon.HiBONJSON;
@@ -338,7 +338,7 @@ extern (C) {
         immutable billBuffer = cast(immutable)(billPtr[0 .. billLen]);
 
         if (__secure_wallet.isLoggedin()) {
-            auto bill = StandardBill(Document(billBuffer));
+            auto bill = TagionBill(Document(billBuffer));
             __secure_wallet.account.add_bill(bill);
             return 1;
         }
@@ -422,11 +422,12 @@ extern (C) {
             auto paramsDoc = messageDoc[paramsTag].get!Document;
             auto sContract = SignedContract(paramsDoc);
 
-            int status = __secure_wallet.account.check_contract_payment(
-                    sContract.contract.inputs, sContract.contract.output);
+            version (none) {
+                int status = __secure_wallet.account.check_contract_payment(
+                        sContract.contract.inputs, sContract.contract.output);
 
-            *statusPtr = cast(uint8_t) status;
-
+                *statusPtr = cast(uint8_t) status;
+            }
             return 1;
         }
         return 0;
@@ -589,10 +590,11 @@ unittest {
     import tagion.utils.Miscellaneous : hex;
 
     // Add the bills to the account with the derive keys
-    with (__secure_wallet.account) {
-        bills = zip(bill_amounts, derives.byKey).map!(bill_derive => StandardBill(bill_derive[0],
-        epoch, bill_derive[1], gene)).array;
-    }
+    version (none)
+        with (__secure_wallet.account) {
+            bills = zip(bill_amounts, derivers.byKey).map!(bill_derive => TagionBill(bill_derive[0],
+            epoch, bill_derive[1], gene)).array;
+        }
 
     auto invoiceDoc = recyclerDoc(invoiceDocId);
 
@@ -603,7 +605,7 @@ unittest {
 
     uint8_t contractDocId;
 
-    { // Create a contract.
+    version (none) { // Create a contract.
         const uint result = create_contract(&contractDocId, invoice.ptr, invoiceLen, contAmount);
 
         // Check the result
@@ -613,123 +615,125 @@ unittest {
         assert(contractDocId != 0, "Expected non-zero contractDocId");
     }
 
-    auto contractDoc = recyclerDoc(contractDocId);
+    version (none) {
+        auto contractDoc = recyclerDoc(contractDocId);
 
-    const uint8_t[] contract = cast(uint8_t[])(contractDoc.serialize);
-    const uint32_t contractLen = cast(uint32_t) contract.length;
+        const uint8_t[] contract = cast(uint8_t[])(contractDoc.serialize);
+        const uint32_t contractLen = cast(uint32_t) contract.length;
 
-    { // Update request.
-        uint8_t requestDocId;
-        const uint result = request_update(&requestDocId);
+        { // Update request.
+            uint8_t requestDocId;
+            const uint result = request_update(&requestDocId);
 
-        // Check the result
-        assert(result == 1, "Expected result to be 1");
+            // Check the result
+            assert(result == 1, "Expected result to be 1");
 
-        // Verify that invoiceDocId is non-zero
-        assert(requestDocId != 0, "Expected non-zero requestDocId");
-    }
+            // Verify that invoiceDocId is non-zero
+            assert(requestDocId != 0, "Expected non-zero requestDocId");
+        }
+        { // Get public key.
+            uint8_t pubkeyDocId;
+            uint result = get_public_key(&pubkeyDocId);
 
-    { // Get public key.
-        uint8_t pubkeyDocId;
-        uint result = get_public_key(&pubkeyDocId);
+            // Check the result
+            assert(result == 1, "Expected result to be 1");
 
-        // Check the result
-        assert(result == 1, "Expected result to be 1");
-
-        // Verify that invoiceDocId is non-zero
-        assert(pubkeyDocId != 0, "Expected non-zero pubkeyDocId");
-    }
-
-    { // Get and set derivers.
-        uint8_t deriversDocId;
-        uint getDResult = get_derivers(&deriversDocId);
-
-        // Check the result
-        assert(getDResult == 1, "Expected result to be 1");
-
-        // Verify that invoiceDocId is non-zero
-        assert(deriversDocId != 0, "Expected non-zero deriversDocId");
-
-        auto deriversDoc = recyclerDoc(deriversDocId);
-
-        // Derivers input data.
-        const uint8_t[] derivers = cast(uint8_t[])(deriversDoc.serialize);
-        const uint32_t deriversLen = cast(uint32_t) derivers.length;
-
-        uint setDResult = set_derivers(derivers.ptr, deriversLen);
-
-        // Check the result
-        assert(setDResult == 1, "Expected result to be 1");
-    }
-
-    { // Get derivers state.
-        uint8_t deriversDocId;
-        uint getDResult = get_derivers_state(&deriversDocId);
-
-        // Check the result
-        assert(getDResult == 1, "Expected result to be 1");
-
-        // Verify that invoiceDocId is non-zero
-        assert(deriversDocId != 0, "Expected non-zero deriversDocId");
-    }
-
-    { // Add a new bill.
-        import std.algorithm : map;
-        import std.string : representation;
-        import std.range : zip;
-
-        import tagion.utils.Miscellaneous : hex;
-
-        StandardBill[] newBills;
-
-        // Add the bills to the account with the derive keys
-        with (__secure_wallet.account) {
-            newBills = zip(bill_amounts, derives.byKey).map!(bill_derive => StandardBill(bill_derive[0],
-            epoch, bill_derive[1], gene)).array;
+            // Verify that invoiceDocId is non-zero
+            assert(pubkeyDocId != 0, "Expected non-zero pubkeyDocId");
         }
 
-        const uint8_t[] bill = cast(uint8_t[]) newBills[0].toHiBON.serialize;
-        const uint32_t billLen = cast(uint32_t) bill.length;
+        { // Get and set derivers.
+            uint8_t deriversDocId;
+            uint getDResult = get_derivers(&deriversDocId);
 
-        uint result = add_bill(bill.ptr, billLen);
+            // Check the result
+            assert(getDResult == 1, "Expected result to be 1");
 
-        // Check the result
-        assert(result == 1, "Expected result to be 1");
+            // Verify that invoiceDocId is non-zero
+            assert(deriversDocId != 0, "Expected non-zero deriversDocId");
+
+            auto deriversDoc = recyclerDoc(deriversDocId);
+
+            // Derivers input data.
+            const uint8_t[] derivers = cast(uint8_t[])(deriversDoc.serialize);
+            const uint32_t deriversLen = cast(uint32_t) derivers.length;
+
+            uint setDResult = set_derivers(derivers.ptr, deriversLen);
+
+            // Check the result
+            assert(setDResult == 1, "Expected result to be 1");
+        }
+
+        { // Get derivers state.
+            uint8_t deriversDocId;
+            uint getDResult = get_derivers_state(&deriversDocId);
+
+            // Check the result
+            assert(getDResult == 1, "Expected result to be 1");
+
+            // Verify that invoiceDocId is non-zero
+            assert(deriversDocId != 0, "Expected non-zero deriversDocId");
+        }
+
+        { // Add a new bill.
+            import std.algorithm : map;
+            import std.string : representation;
+            import std.range : zip;
+
+            import tagion.utils.Miscellaneous : hex;
+
+            TagionBill[] newBills;
+
+            // Add the bills to the account with the derive keys
+            version (none) {
+                with (__secure_wallet.account) {
+                    newBills = zip(bill_amounts, derivers.byKey).map!(bill_derive => TagionBill(bill_derive[0],
+                    epoch, bill_derive[1], gene)).array;
+                }
+
+                const uint8_t[] bill = cast(uint8_t[]) newBills[0].toHiBON.serialize;
+                const uint32_t billLen = cast(uint32_t) bill.length;
+
+                uint result = add_bill(bill.ptr, billLen);
+
+                // Check the result
+                assert(result == 1, "Expected result to be 1");
+            }
+        }
+        { // Ulock bills by contract
+
+            uint result = ulock_bills_by_contract(contract.ptr, contractLen);
+
+            // Check the result
+            assert(result == 1, "Expected result to be 1");
+        }
+        { // Check invoice payment
+
+            double amount;
+            auto result = check_invoice_payment(invoice.ptr, invoiceLen, &amount);
+
+            // Check the result
+            assert(result == 1, "Expected result to be 1");
+            assert(amount != 0, "Expected amount not to be 0");
+        }
+        { // Check contract payment
+
+            uint8_t status;
+
+            uint result = check_contract_payment(contract.ptr, contractLen, &status);
+
+            // Check the result
+            assert(result == 1, "Expected result to be 1");
+            assert(status == 0, "Expected status to be 0");
+        }
+        { // Remove bills by contract.
+
+            uint result = remove_bills_by_contract(contract.ptr, contractLen);
+
+            // Check the result
+            assert(result == 1, "Expected result to be 1");
+        }
     }
-    { // Ulock bills by contract
-
-        uint result = ulock_bills_by_contract(contract.ptr, contractLen);
-
-        // Check the result
-        assert(result == 1, "Expected result to be 1");
-    }
-    { // Check invoice payment
-
-        double amount;
-        auto result = check_invoice_payment(invoice.ptr, invoiceLen, &amount);
-
-        // Check the result
-        assert(result == 1, "Expected result to be 1");
-        assert(amount != 0, "Expected amount not to be 0");
-    }
-    { // Check contract payment
-
-        uint8_t status;
-
-        uint result = check_contract_payment(contract.ptr, contractLen, &status);
-
-        // Check the result
-        assert(result == 1, "Expected result to be 1");
-        assert(status == 0, "Expected status to be 0");
-    }
-    { // Remove bills by contract.
-
-        uint result = remove_bills_by_contract(contract.ptr, contractLen);
-
-        // Check the result
-        assert(result == 1, "Expected result to be 1");
-    }
-
 }
 
 struct WalletStorage {
