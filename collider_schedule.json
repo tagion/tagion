@@ -232,7 +232,7 @@
             "args": [],
             "envs": {},
             "stages": [
-                "contract"
+                "commit", "contract", "services"
             ],
             "timeout": 0.0
         }

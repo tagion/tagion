@@ -108,7 +108,6 @@ int _main(string[] args) {
     send_contract_feature.SendASingleTransactionFromAWalletToAnotherWallet(local_options, wallets, dart_interface_sock_addr, inputvalidator_sock_addr, start_amount);
     send_contract_feature.run();
     writefln("finished test execution");
-    Thread.sleep(20.seconds);
 
     neuewelle.signal_handler(0);
     // stopsignal.set;
