@@ -11,6 +11,7 @@ import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
 import tagion.dart.DARTBasic;
 import tagion.script.ScriptException;
+import tagion.basic.Types : Buffer;
 
 enum StdNames {
     owner = "$Y",
@@ -56,6 +57,7 @@ enum StdNames {
                 }
                 this(immutable(DARTIndex)[] inputs, immutable(DARTIndex)[] reads, immutable(Document) script) @safe immutable nothrow {
                     this.inputs = inputs;
+                    this.reads = reads;
                     this.script = script; 
                 }
             });
@@ -100,15 +102,24 @@ Signature[] sign(const(SecureNet[]) nets, const(Contract) contract) {
 
 @safe
 const(SignedContract) sign(const(SecureNet[]) nets, const(Document[]) inputs, const(Document[]) reads, const(Document) script) {
+    check(nets.length > 0, "At least one input contract");
     check(nets.length == inputs.length, "Number of signature does not match the number of inputs");
     const net = nets[0];
     SignedContract result;
+    auto sorted_inputs = inputs
+        .map!((input) => cast(DARTIndex) net.dartIndex(input))
+        .enumerate
+        .array
+        .sort!((a, b) => a.value < b.value)
+        .array;
+
     result.contract = Contract(
-            inputs.map!(doc => net.dartIndex(doc)).array,
+            sorted_inputs
+            .map!((input) => input.value).array,
             reads.map!(doc => net.dartIndex(doc)).array,
             Document(script),
     );
-    result.signs = sign(nets, result.contract);
+    result.signs = sign(sorted_inputs.map!((input) => nets[input.index]).array, result.contract);
     return result;
 }
 
