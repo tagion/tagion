@@ -16,7 +16,7 @@ import tagion.logger.Logger;
 import tagion.basic.tagionexceptions;
 import tagion.actor.exceptions;
 import tagion.script.prior.SmartScript;
-import tagion.script.prior.StandardRecords : Contract, SignedContract, PayContract, StandardBill;
+import tagion.script.prior.StandardRecords : Contract, _SignedContract, PayContract, StandardBill;
 import tagion.basic.ConsensusExceptions : ConsensusException;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.crypto.Types : Fingerprint;
@@ -117,7 +117,7 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
 
         Fingerprint last_bullseye = requestBullseye();
         log("Start with bullseye: %s", last_bullseye.toHexString);
-        bool to_smart_script(ref const(SignedContract) signed_contract, ref uint index) nothrow {
+        bool to_smart_script(ref const(_SignedContract) signed_contract, ref uint index) nothrow {
             try {
                 auto smart_script = new SmartScript(signed_contract);
                 smart_script.check(net);
@@ -168,11 +168,11 @@ void transcriptServiceTask(string task_name, string dart_task_name, string recor
                 long dump_count = 0;
                 foreach (payload_el; payload_doc[]) {
                     immutable doc = payload_el.get!Document;
-                    if (!SignedContract.isRecord(doc)) {
+                    if (!_SignedContract.isRecord(doc)) {
                         continue;
                     }
 
-                    scope signed_contract = SignedContract(doc);
+                    scope signed_contract = _SignedContract(doc);
                     log("Executing contract: %s", doc.toJSON);
                     auto inputs_recorder = requestInputs(signed_contract.contract.inputs);
                     signed_contract.inputs = [];

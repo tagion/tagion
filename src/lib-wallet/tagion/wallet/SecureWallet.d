@@ -26,7 +26,7 @@ import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Pubkey;
 
 // import tagion.script.prior.StandardRecords : SignedContract, globals, Script;
-import PriorStandardRecords = tagion.script.prior.StandardRecords;
+//import PriorStandardRecords = tagion.script.prior.StandardRecords;
 
 import tagion.crypto.SecureNet : scramble;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
@@ -411,47 +411,48 @@ struct SecureWallet(Net : SecureNet) {
      *   result = Signed payment
      * Returns: 
      */
-    bool payment(const(Invoice[]) orders, ref PriorStandardRecords.SignedContract result) {
+    bool payment(const(Invoice[]) orders, ref SignedContract result) {
         checkLogin;
         const topay = orders.map!(b => b.amount).sum;
 
-        if (topay > 0) {
-            pragma(msg, "fixme(cbr): Storage fee needs to be estimated");
-            const fees = PriorStandardRecords.globals.fees();
-            const amount = topay + fees;
-            TagionBill[] contract_bills;
-            const enough = collect_bills(amount, contract_bills);
-            if (enough) {
-                const total = contract_bills.map!(b => b.value).sum;
+        version (none)
+            if (topay > 0) {
+                pragma(msg, "fixme(cbr): Storage fee needs to be estimated");
+                const fees = PriorStandardRecords.globals.fees();
+                const amount = topay + fees;
+                TagionBill[] contract_bills;
+                const enough = collect_bills(amount, contract_bills);
+                if (enough) {
+                    const total = contract_bills.map!(b => b.value).sum;
 
-                result.contract.inputs = contract_bills.map!(b => _net.dartIndex(b.toDoc)).array;
-                const rest = total - amount;
-                if (rest > 0) {
-                    Invoice money_back;
-                    money_back.amount = rest;
-                    registerInvoice(money_back);
-                    result.contract.output[money_back.pkey] = rest.toDoc;
+                    result.contract.inputs = contract_bills.map!(b => _net.dartIndex(b.toDoc)).array;
+                    const rest = total - amount;
+                    if (rest > 0) {
+                        Invoice money_back;
+                        money_back.amount = rest;
+                        registerInvoice(money_back);
+                        result.contract.output[money_back.pkey] = rest.toDoc;
+                    }
+                    orders.each!((o) { result.contract.output[o.pkey] = o.amount.toDoc; });
+                    result.contract.script = PriorStandardRecords.Script("pay");
+
+                    immutable message = _net.calcHash(result.contract.toDoc);
+                    auto shared_net = (() @trusted { return cast(shared) _net; })();
+                    auto bill_net = new Net;
+                    // Sign all inputs
+                    result.signs = contract_bills
+                        .filter!(b => b.owner in account.derivers)
+                        .map!((b) {
+                            immutable tweak_code = account.derivers[b.owner];
+                            bill_net.derive(tweak_code, shared_net);
+                            return bill_net.sign(message);
+                        })
+                        .array;
+                    return true;
                 }
-                orders.each!((o) { result.contract.output[o.pkey] = o.amount.toDoc; });
-                result.contract.script = PriorStandardRecords.Script("pay");
-
-                immutable message = _net.calcHash(result.contract.toDoc);
-                auto shared_net = (() @trusted { return cast(shared) _net; })();
-                auto bill_net = new Net;
-                // Sign all inputs
-                result.signs = contract_bills
-                    .filter!(b => b.owner in account.derivers)
-                    .map!((b) {
-                        immutable tweak_code = account.derivers[b.owner];
-                        bill_net.derive(tweak_code, shared_net);
-                        return bill_net.sign(message);
-                    })
-                    .array;
-                return true;
+                result = result.init;
+                return false;
             }
-            result = result.init;
-            return false;
-        }
 
         return false;
     }
@@ -886,7 +887,7 @@ struct SecureWallet(Net : SecureNet) {
         }
 
         pragma(msg, "fixme(cbr): The following test is not finished, Need to transfer to money to receiver");
-        PriorStandardRecords.SignedContract contract_1;
+        SignedContract contract_1;
         { // The receiver_wallet creates an invoice to the sender_wallet
             auto invoice = SecureWallet.createInvoice("To sender 1", 13.TGN);
             receiver_wallet.registerInvoice(invoice);
@@ -896,7 +897,7 @@ struct SecureWallet(Net : SecureNet) {
             //writefln("contract_1=%s", contract_1.toPretty);
         }
 
-        PriorStandardRecords.SignedContract contract_2;
+        SignedContract contract_2;
         { // The receiver_wallet creates an invoice to the sender_wallet
             auto invoice = SecureWallet.createInvoice("To sender 2", 53.TGN);
             receiver_wallet.registerInvoice(invoice);
