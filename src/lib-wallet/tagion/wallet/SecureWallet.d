@@ -401,12 +401,12 @@ struct SecureWallet(Net : SecureNet) {
      *   result = Signed payment
      * Returns: 
      */
-    Result!bool payment(const(Invoice[]) orders, ref SignedContract signed_contract, out TagionCurrency fees) {
-        checkLogin;
+    Result!bool payment(const(Invoice[]) orders, ref SignedContract signed_contract, out TagionCurrency fees) nothrow {
         import tagion.utils.StdTime;
         import std.stdio;
 
         try {
+            checkLogin;
             auto bills = orders.map!((order) => TagionBill(order.amount, currentTime, order.pkey, Buffer.init)).array;
             scope (exit) {
                 import tagion.hibon.HiBONJSON;
@@ -601,7 +601,7 @@ struct SecureWallet(Net : SecureNet) {
         // }
     }
 
-    Result!bool createPayment(TagionBill[] to_pay, ref SignedContract signed_contract, out TagionCurrency fees) {
+    Result!bool createPayment(TagionBill[] to_pay, ref SignedContract signed_contract, out TagionCurrency fees) nothrow {
         import tagion.script.Currency : totalAmount;
         import tagion.script.execute;
         import std.stdio;
