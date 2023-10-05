@@ -85,7 +85,8 @@ version (none) Document.Element.ErrorCode check_document(const(Document) doc, ou
         error_element.element = Element(current, offset);
         errors ~= error_element;
         result = (result is result.init) ? error_code : result;
-    };
+    }
+
     if (!errors.empty) {
         auto h_error = new HiBON;
         h_error["errors"] = errors;
