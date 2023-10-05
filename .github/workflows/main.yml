@@ -253,40 +253,6 @@ jobs:
           rm ${{needs.acceptance_stage.outputs.tarball}}
           rm -rf *
           
-  update_dartservice:
-    runs-on: dartservice-back
-    # environment: Prod-manual
-    needs: [finish_workflow]
-    steps:    
-      - name: get artifact and restart service
-        run: |
-          source ~/.bashrc
-          rm -rf *
-          loginctl enable-linger gitbot
-          gh run download -n successful_artifact --repo tagion/tagion
-          tar -xzf *.tar.gz
-          cd build/x86_64-linux/integration
-          systemctl stop --user dart_api.service
-          ./install.sh
-          systemctl restart --user dart_api.service
-  
-  update_dev_dartservice:
-    runs-on: dev-dartservice-back
-    needs: [finish_workflow]
-    steps:    
-      - name: get artifact and restart service
-        run: |
-          source ~/.bashrc
-          rm -rf *
-          loginctl enable-linger gitbot
-          gh run download -n successful_artifact --repo tagion/tagion
-          tar -xzf *.tar.gz
-          cd build/x86_64-linux/integration
-          ls
-          systemctl stop --user dart_api.service
-          ./install.sh
-          systemctl restart --user dart_api.service
-          
   deploy_testnet_container:
     runs-on: testnet1-local
     needs: [finish_workflow]
