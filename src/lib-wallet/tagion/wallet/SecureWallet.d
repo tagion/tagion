@@ -352,21 +352,13 @@ struct SecureWallet(Net : SecureNet) {
      *   invoice = invoice to be registered
      */
     void registerInvoice(ref Invoice invoice) {
-        //checkLogin;
-        //   string current_time = MonoTime.currTime.toString;
-        //   scope seed = new ubyte[_net.hashSize];
-        //   scramble(seed);
-        //account.derive_state = _net.HMAC(account.derive_state~_net.pubkey);
-        //     scramble(seed);
-        //auto pkey = _net.derivePubkey(account.derive_state);
+        scope seed = new ubyte[_net.hashSize];
+        scramble(seed);
+        account.derive_state = _net.HMAC(account.derive_state~_net.pubkey);
+        scramble(seed);
+        auto pkey = _net.derivePubkey(account.derive_state);
         invoice.pkey = derivePubkey;
         account.derivers[invoice.pkey] = account.derive_state;
-    }
-
-    Pubkey derivePubkey() {
-        checkLogin;
-        account.derive_state = _net.HMAC(account.derive_state ~ _net.pubkey);
-        return _net.derivePubkey(account.derive_state);
     }
     /**
      * Create a new invoice which can be send to a payee 
@@ -384,15 +376,21 @@ struct SecureWallet(Net : SecureNet) {
         return new_invoice;
     }
 
-    PaymentInfo paymentInfo(string label, TagionCurrency amount = TagionCurrency.init, Document info = Document.init) {
-        PaymentInfo new_request;
-        new_request.name = label;
-        new_request.amount = amount;
-        new_request.info = info;
-        const derive = _net.HMAC(label.representation ~ _net.pubkey ~ info.serialize);
-        new_request.owner = _net.derivePubkey(derive);
-        return new_request;
+    Pubkey derivePubkey() {
+        checkLogin;
+        account.derive_state = _net.HMAC(account.derive_state ~ _net.pubkey);
+        return _net.derivePubkey(account.derive_state);
     }
+
+    // PaymentInfo paymentInfo(string label, TagionCurrency amount = TagionCurrency.init, Document info = Document.init) {
+    //     PaymentInfo new_request;
+    //     new_request.name = label;
+    //     new_request.amount = amount;
+    //     new_request.info = info;
+    //     const derive = _net.HMAC(label.representation ~ _net.pubkey ~ info.serialize);
+    //     new_request.owner = _net.derivePubkey(derive);
+    //     return new_request;
+    // }
 
     /**
      * Create a payment to a list of Invoices and produces a signed-contract

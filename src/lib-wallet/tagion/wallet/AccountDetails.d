@@ -182,12 +182,3 @@ struct Invoices {
     mixin HiBONRecord;
 }
 
-@safe
-@recordType("PayInfo")
-struct PaymentInfo {
-    string name; /// Name of the reception
-    @label(StdNames.owner) Pubkey owner;
-    // @label(StdNames.derive) string derive;
-    @label(StdNames.value, true) TagionCurrency amount;
-    @label(VOID, true) Document info;
-}
