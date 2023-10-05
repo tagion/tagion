@@ -53,14 +53,14 @@ auto startLogger() {
     stderr.writeln("Logger started");
     if (response !is Control.LIVE) {
         stderr.writeln("ERROR:Logger %s", response);
-        _exit(1);
+        throw new Exception("Could not start the logger");
     }
     return logger_service_tid;
 }
 
 static abort = false;
 extern (C)
-void signal_handler(int sig) nothrow {
+void signal_handler(int _) nothrow {
     try {
         if (abort) {
             printf("Terminating\n");
@@ -161,14 +161,15 @@ int _main(string[] args) {
         receiveOnly!Control;
     }
 
+    SubscriptionServiceHandle sub_handle;
     { // Spawn logger subscription service
         import tagion.services.inputvalidator;
         import tagion.services.collector;
 
-        immutable subopts = SubscriptionServiceOptions([
-            reject_inputvalidator, reject_collector, "epoch_creator/epoch_created", "children_state"
-        ]);
-        spawn!SubscriptionService("logger_sub", subopts);
+        immutable subopts = SubscriptionServiceOptions([]);
+        sub_handle = spawn!SubscriptionService("logger_sub", subopts);
+        waitforChildren(Ctrl.ALIVE);
+        log.registerSubscriptionTask("logger_sub");
     }
 
     log.register(baseName(program));
@@ -221,6 +222,7 @@ int _main(string[] args) {
         return 1;
     }
 
+    sub_handle.send(Sig.STOP);
     log("Sending stop signal to supervisor");
     foreach (supervisor; supervisor_handles) {
         supervisor.send(Sig.STOP);
