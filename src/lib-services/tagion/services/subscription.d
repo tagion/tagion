@@ -16,14 +16,16 @@ struct SubscriptionServiceOptions {
 
     string[] tags;
     string address = "abstract://tagion_subscription";
+    uint sendtimeout = 1000;
+    uint sendbufsize = 4096;
     mixin JSONCommon;
 }
 
 @safe
 struct SubscriptionService {
     void task(immutable(SubscriptionServiceOptions) opts) @trusted {
-
         log.registerSubscriptionTask(thisActor.task_name);
+        log("Subscribing to tags");
         foreach (tag; opts.tags) {
             submask.subscribe(tag);
         }
@@ -32,15 +34,27 @@ struct SubscriptionService {
                 submask.unsubscribe(tag);
             }
         }
+        log("Subscribed to tags");
 
         NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_PUB);
-        sock.sendtimeout = 1000.msecs;
-        sock.sendbuf = 4096;
+        sock.sendtimeout = opts.sendtimeout.msecs;
+        sock.sendbuf = opts.sendbufsize;
 
         HiRPC hirpc;
 
+        int rc;
+        rc = sock.listen(opts.address);
+        if (rc != 0) {
+            log.error("Could not listen to url %s: %s", opts.address, rc.nng_errstr);
+            return;
+            // throw new Exception(format("Could not listen to url %s: %s", opts.address, rc.nng_errstr));
+        }
+
+        log("Publishing on %s", opts.address);
+
         void receiveSubscription(Topic topic, string identifier, const(Document) data) @trusted {
             immutable(ubyte)[] payload;
+
             topic.name.length = 32;
             payload = cast(immutable(ubyte)[]) topic.name;
 
@@ -48,13 +62,13 @@ struct SubscriptionService {
             hibon[identifier] = data;
             auto sender = hirpc.log(hibon);
             payload ~= sender.toDoc.serialize;
-            int rc = sock.send(payload);
+
+            rc = sock.send(payload);
+            log("%s: %s, %s", identifier, data.length, nng_errstr(rc));
         }
 
-        int rc = sock.listen(opts.address);
-        if (rc != 0) {
-            throw new Exception(format("Could not listen to url %s: %s", opts.address, rc.nng_errstr));
-        }
         run(&receiveSubscription);
     }
 }
+
+alias SubscriptionServiceHandle = ActorHandle!SubscriptionService;
