@@ -166,9 +166,7 @@ int _main(string[] args) {
         import tagion.services.inputvalidator;
         import tagion.services.collector;
 
-        immutable subopts = SubscriptionServiceOptions([
-            "actor_event", reject_inputvalidator, reject_collector, "epoch_creator/epoch_created",
-        ]);
+        immutable subopts = SubscriptionServiceOptions([]);
         sub_handle = spawn!SubscriptionService("logger_sub", subopts);
         waitforChildren(Ctrl.ALIVE);
         log.registerSubscriptionTask("logger_sub");
