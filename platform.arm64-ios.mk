@@ -15,7 +15,6 @@ ifeq ($(PLATFORM),$(IOS_ARM64))
 CCC = clang++ -O0
 CC  = clang -O0
 
-DFLAGS+=$(DVERSION)=MOBILE
 CROSS_ENABLED=1
 CROSS_OS=ios
 CROSS_ARCH = arm64
