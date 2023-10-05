@@ -110,9 +110,11 @@ int _main(string[] args) {
                 "req", "List all requested bills", &wallet_switch.request,
                 "update", "Request a wallet updated", &wallet_switch.update,
                 "trt-update", "Request a update on all derivers", &wallet_switch.trt_update,
-                "addr", format(
+                "contract-addr", format(
                     "Sets the contract address default: %s", options.contract_address), &options
-                    .contract_address, /*
+                    .contract_address, 
+                "dart-addr", format("Sets the dart address default: %s", options.dart_address), &options.dart_address,
+                /*
                 "port|p", format("Tagion network port : default %d", options.port), &options.port,
                 "url|u", format("Tagion url : default %s", options.addr), &options.addr,
                 "visual|g", "Visual user interface", &wallet_ui,
