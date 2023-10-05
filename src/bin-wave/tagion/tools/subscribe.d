@@ -13,6 +13,7 @@ import tagion.tools.revision;
 
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
+import tagion.services.subscription : SubscriptionServiceOptions;
 
 import nngd;
 
@@ -21,7 +22,7 @@ mixin Main!(_main);
 int _main(string[] args) {
     immutable program = args[0];
 
-    string address = "abstract://tagion_subscription";
+    string address = SubscriptionServiceOptions().address;
     bool version_switch;
     string[] tags;
     bool watch;
@@ -63,7 +64,7 @@ int _main(string[] args) {
             if (rc == 0) {
                 break;
             }
-            stderr.writefln("Dial error, %s: %s", address, rc);
+            stderr.writefln("Dial error, %s: (%s)%s", address, rc, rc.nng_errstr);
             if (rc == nng_errno.NNG_ECONNREFUSED) {
                 nng_sleep(msecs(100));
                 continue;
@@ -74,14 +75,13 @@ int _main(string[] args) {
         while (1) {
             auto data = sock.receive!(immutable(ubyte)[]);
 
-            if (sock.errno != 0) {
-                stderr.writefln("Error string: %s", nng_errstr(sock.errno));
+            if (sock.errno != 0 && sock.errno != 5) {
+                stderr.writefln("Error string: (%s)%s", sock.errno, nng_errstr(sock.errno));
             }
-            else if (data.length >= 32) {
-                string tag = data[0 .. 32].to!string;
-                auto doc = Document(data[33 .. $]);
+            else if (data.length >= 33) {
+                string tag = cast(string) data[0 .. 31];
+                auto doc = Document(data[32 .. $]);
                 stderr.writefln("%s:\n%s", tag, doc.toPretty);
-                // stderr.writefln("%s: No document", tag);
             }
         }
     }
