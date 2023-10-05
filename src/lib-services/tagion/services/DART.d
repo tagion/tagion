@@ -74,6 +74,7 @@ struct DARTService {
 
         void checkRead(dartCheckReadRR req, immutable(DARTIndex)[] fingerprints) @safe {
             import tagion.utils.Miscellaneous : toHexString;
+
             log("Received checkread response %s", fingerprints.map!(f => f.toHexString));
             immutable(DARTIndex)[] check_read = (() @trusted => cast(immutable) db.checkload(fingerprints))();
 
@@ -85,7 +86,8 @@ struct DARTService {
         import tagion.Keywords;
 
         void dartHiRPC(dartHiRPCRR req, Document doc) {
-                import tagion.hibon.HiBONJSON;
+            import tagion.hibon.HiBONJSON;
+
             log("Received HiRPC request");
 
             if (!doc.isRecord!(HiRPC.Sender)) {
@@ -102,6 +104,7 @@ struct DARTService {
                 log("%s", receiver.method.params.toPretty);
 
                 import tagion.basic.Types;
+
                 log("params %s", receiver.method.params);
 
                 auto owner_doc = receiver.method.params;
@@ -112,7 +115,7 @@ struct DARTService {
                 log("OWNER PKEYS %s", owner_pkeys);
                 auto res = db.search(owner_pkeys, net);
                 log("FUUUCK %s", Document(res).toPretty);
-                
+
                 Document response = hirpc.result(receiver, Document(res)).toDoc;
                 log("FUCK YOU METHOD %s", response.toPretty);
                 req.respond(response);

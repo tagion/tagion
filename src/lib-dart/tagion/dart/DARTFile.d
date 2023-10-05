@@ -135,9 +135,9 @@ alias check = Check!DARTException;
     }
 
     protected enum _params = [
-        "fingerprints",
-        "bullseye",
-    ];
+            "fingerprints",
+            "bullseye",
+        ];
 
     mixin(EnumText!("Params", _params));
 
@@ -1025,7 +1025,7 @@ alias check = Check!DARTException;
         .check(modifyrecords.length <= 1 ||
                     !modifyrecords[].slide(2).map!(a => a.front.fingerprint == a.dropOne.front.fingerprint)
                         .any,
-                    "cannot have multiple operations on same fingerprint in one modify");
+                        "cannot have multiple operations on same fingerprint in one modify");
 
         auto range = rimKeyRange!undo(modifyrecords);
         immutable new_root = traverse_dart(range, blockfile.masterBlock.root_index);
@@ -1159,7 +1159,7 @@ alias check = Check!DARTException;
 
         local_load(blockfile.masterBlock.root_index);
         HiBON params = new HiBON;
-        foreach(i, bill; bills) {
+        foreach (i, bill; bills) {
             params[i] = bill.toHiBON;
         }
         return params;
@@ -2466,12 +2466,13 @@ unittest {
         import tagion.script.TagionCurrency;
         import tagion.utils.StdTime;
         import tagion.crypto.Types;
+
         RecordFactory.Recorder recorder_A;
 
         TagionBill[] bills;
 
-        Pubkey pkey1 = Pubkey([1,2,3,4]);
-        Pubkey pkey2 = Pubkey([2,3,4,5]);
+        Pubkey pkey1 = Pubkey([1, 2, 3, 4]);
+        Pubkey pkey2 = Pubkey([2, 3, 4, 5]);
 
         bills ~= TagionBill(100.TGN, currentTime, pkey1, Buffer.init);
         bills ~= TagionBill(100.TGN, currentTime, pkey2, Buffer.init);
@@ -2489,9 +2490,7 @@ unittest {
         import tagion.crypto.SecureNet : StdSecureNet;
 
         _net.generateKeyPair("wowo");
-        auto h = dart_A.search([pkey1, pkey2].map!(b => cast(Buffer) b).array, (() @trusted => cast(immutable)_net )());
+        auto h = dart_A.search([pkey1, pkey2].map!(b => cast(Buffer) b).array, (() @trusted => cast(immutable) _net)());
     }
-    
-
 
 }

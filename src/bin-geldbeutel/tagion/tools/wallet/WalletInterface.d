@@ -228,7 +228,7 @@ struct WalletInterface {
     }
 
     void generateSeedFromPassphrase(const(string) passphrase, string pincode) {
-        secure_wallet = StdSecureWallet.createWallet(passphrase, pincode);
+        secure_wallet = StdSecureWallet(passphrase, pincode);
     }
 
     /**
@@ -392,7 +392,7 @@ struct WalletInterface {
                                         }
                                     }
                                     else {
-                                        secure_wallet = StdSecureWallet.createWallet(
+                                        secure_wallet = StdSecureWallet(
                                                 quiz.questions, selected_answers, confidence, pincode1);
                                         save(recover_flag);
                                     }
@@ -507,11 +507,10 @@ struct WalletInterface {
         import nngd;
         import std.exception;
 
-
         int rc;
         NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
         s.recvtimeout = 1000.msecs;
-        while(1) {
+        while (1) {
             writefln("REQ to dial...");
             rc = s.dial(address);
             if (rc == 0) {
@@ -606,36 +605,28 @@ struct WalletInterface {
                         .each!(bill => secure_wallet.net.dartIndex(bill)
                                 .encodeBase64.setExtension(FileExtension.hibon).fwrite(bill));
                 }
-                if (update || trt_update) {
+                if (update) {
+                    const fingerprints = [secure_wallet.account.bills, secure_wallet.account.requested.values]
+                        .joiner
+                        .map!(bill => secure_wallet.net.dartIndex(bill))
+                        .array;
                     const update_net = secure_wallet.net.derive(update_tag.representation);
                     const hirpc = HiRPC(update_net);
-
-
-                    const(HiRPC.Sender) request() {
-                        if (update) {
-                            const fingerprints = [secure_wallet.account.bills, secure_wallet.account.requested.values]
-                                .joiner
-                                .map!(bill => secure_wallet.net.dartIndex(bill))
-                                .array;
-                            return dartCheckRead(fingerprints, hirpc);
-                        }
-                        return secure_wallet.getRequestUpdateWallet();
-                    }
-                    const dart_req = request();
+                    const dartcheckread = dartCheckRead(fingerprints, hirpc);
 
                     if (output_filename !is string.init) {
-                        output_filename.fwrite(dart_req);
+                        output_filename.fwrite(dartcheckread);
                     }
                     if (send) {
-                        auto received_doc = sendDARTHiRPC(options.dart_address, dart_req);
+                        auto received_doc = sendDARTHiRPC(options.dart_address, dartcheckread);
                         check(received_doc.isRecord!(HiRPC.Receiver), "Error in response. Aborting");
                         auto receiver = hirpc.receive(received_doc);
-                        auto res = update ? secure_wallet.setResponseCheckRead(receiver) : secure_wallet.setResponseUpdateWallet(receiver);
-
+                        auto res = secure_wallet.setResponseCheckRead(receiver);
                         writeln(res ? "wallet updated succesfully" : "wallet not updated succesfully");
                         listAccount(stdout);
-                        save_wallet=true;
+                        save_wallet = true;
                     }
+
                 }
                 if (pay) {
                     SignedContract signed_contract;
