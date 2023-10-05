@@ -578,18 +578,6 @@ struct SecureWallet(Net : SecureNet) {
 
         }
         return true;
-        // try {
-        //     account.bills = receiver.response.result[].map!(e => TagionBill(e.get!Document))
-        //         .array;
-        //     return true;
-        // }
-        // catch (Exception e) {
-        //     import std.stdio;
-        //     import std.exception : assumeWontThrow;
-
-        //     assumeWontThrow(() => writeln("Error on setresponse: %s", e.msg));
-        //     // Ingore
-        // }
     }
 
     Result!bool createPayment(TagionBill[] to_pay, ref SignedContract signed_contract, out TagionCurrency fees) nothrow {
