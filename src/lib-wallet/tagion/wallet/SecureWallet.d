@@ -171,22 +171,18 @@ struct SecureWallet(Net : SecureNet) {
      * Returns: 
      *   Create an new wallet with the input
      */
-    static SecureWallet createWallet(
+    this(
             const(ushort[]) mnemonic,
     const(char[]) pincode) {
         check(mnemonic.length >= 12, "Mnemonic is empty");
 
         import tagion.wallet.BIP39;
 
-        auto _net = new Net;
-        SecureWallet result;
-        {
-            auto R = bip39(mnemonic);
-            result._net = _net;
-            result.set_pincode(R, pincode);
-            _net.createKeyPair(R);
-        }
-        return result;
+        _net = new Net;
+        auto R = bip39(mnemonic);
+        _net = _net;
+        set_pincode(R, pincode);
+        _net.createKeyPair(R);
     }
 
     this(const(char[]) passphrase, const(char[]) pincode) {
@@ -878,7 +874,7 @@ struct SecureWallet(Net : SecureNet) {
             const test_pin_code = "1234";
             const test_mnemonic = cast(ushort[])[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
             // Create first wallet.
-            auto secure_wallet_1 = SecureWallet.createWallet(test_mnemonic, test_pin_code);
+            auto secure_wallet_1 = SecureWallet(test_mnemonic, test_pin_code);
             const pubkey_1_create = secure_wallet_1.getPublicKey;
             secure_wallet_1.logout;
             const wallet_1_loggedin = secure_wallet_1.login(test_pin_code);
@@ -887,7 +883,7 @@ struct SecureWallet(Net : SecureNet) {
 
             assert(pubkey_1_create == pubkey_1);
             // Create second wallet.
-            auto secure_wallet_2 = SecureWallet.createWallet(test_mnemonic, test_pin_code);
+            auto secure_wallet_2 = SecureWallet(test_mnemonic, test_pin_code);
             const pubkey_2_create = secure_wallet_2.getPublicKey;
 
             const wallet_2_loggedin = secure_wallet_2.login(test_pin_code);
