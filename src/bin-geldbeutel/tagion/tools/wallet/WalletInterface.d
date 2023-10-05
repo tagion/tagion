@@ -571,7 +571,6 @@ struct WalletInterface {
                         check(new_invoice.amount > 0, "Invoice amount not valid");
                         secure_wallet.registerInvoice(new_invoice);
                         request = new_invoice.toDoc;
-                        writefln(request.toPretty);
                     }
                     else {
                         auto bill = secure_wallet.requestBill(amount.TGN);
