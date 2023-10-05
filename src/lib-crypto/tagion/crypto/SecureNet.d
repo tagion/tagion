@@ -28,11 +28,11 @@ class StdHashNet : HashNet {
     import std.format;
 
     enum HASH_SIZE = 32;
-    @nogc final uint hashSize() const pure nothrow {
+    @nogc final uint hashSize() const pure nothrow scope {
         return HASH_SIZE;
     }
 
-    immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const {
+    immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const scope {
         import std.digest.sha : SHA256;
         import std.digest;
 
@@ -313,27 +313,35 @@ class StdSecureNet : StdHashNet, SecureNet {
         _secret = new LocalSecret;
     }
 
-    final void generateKeyPair(string passphrase)
+    /**
+    Params:
+    passphrase = Passphrase is compatible with bip39
+    salt = In bip39 the salt should be "mnemonic"~word 
+*/
+    void generateKeyPair(
+            scope const(char[]) passphrase,
+    scope const(char[]) salt = null,
+    void delegate(scope const(ubyte[]) data) @safe dg = null)
     in {
         assert(_secret is null);
     }
     do {
-        import std.digest.sha : SHA256;
-        import std.digest.hmac : digestHMAC = HMAC;
-        import std.string : representation;
+        import tagion.pbkdf2.pbkdf2;
+        import std.digest.sha : SHA512;
 
-        alias AES = AESCrypto!256;
+        enum count = 2048;
+        enum dk_length = 64;
 
-        scope hmac = digestHMAC!SHA256(passphrase.representation);
-        auto data = hmac.finish.dup;
-
-        // Generate Key pair
-        do {
-            data = hmac.put(data).finish.dup;
+        alias pbkdf2_sha512 = pbkdf2!SHA512;
+        auto data = pbkdf2_sha512(passphrase.representation, salt.representation, count, dk_length);
+        scope (exit) {
+            if (dg !is null) {
+                dg(data);
+            }
+            scramble(data);
         }
-        while (!_crypt.secKeyVerify(data));
-
-        createKeyPair(data);
+        auto _priv_key = data[0 .. 32];
+        createKeyPair(_priv_key);
     }
 
     immutable(ubyte[]) ECDHSecret(scope const(ubyte[]) seckey, scope const(

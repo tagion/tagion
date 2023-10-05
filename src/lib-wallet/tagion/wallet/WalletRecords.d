@@ -36,7 +36,7 @@ struct DevicePIN {
         return S == net.saltHash(R);
     }
 
-    void setPin(const HashNet net, scope const(ubyte[]) R, scope const(ubyte[]) P, Buffer salt) {
+    void setPin(scope const HashNet net, scope const(ubyte[]) R, scope const(ubyte[]) P, Buffer salt) scope {
         import tagion.utils.Miscellaneous : xor;
 
         U = salt;

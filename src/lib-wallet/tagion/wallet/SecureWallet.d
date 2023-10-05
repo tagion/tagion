@@ -186,17 +186,27 @@ struct SecureWallet(Net : SecureNet) {
         _net.createKeyPair(R);
     }
 
-    this(const(char[]) passphrase, const(char[]) pincode) {
+    this(scope const(char[]) passphrase, scope const(char[]) pincode, scope const(char[]) salt = null) {
         _net = new Net;
+        enum size_of_privkey = 32;
+        ubyte[] R;
+        scope (exit) {
+            set_pincode(R, pincode);
+            scramble(R);
+        }
+        _net.generateKeyPair(passphrase, salt,
+                (scope const(ubyte[]) data) { R = data[0 .. size_of_privkey].dup; });
+        /*
+    _net = new Net;
         auto R = _net.calcHash(passphrase.representation).dup;
         set_pincode(R, pincode);
         _net.createKeyPair(R);
-
+*/
     }
 
     protected void set_pincode(
             scope const(ubyte[]) R,
-    scope const(char[]) pincode)
+    scope const(char[]) pincode) scope
     in (!_net.isinit)
     do {
         auto seed = new ubyte[_net.hashSize];
@@ -568,7 +578,7 @@ struct SecureWallet(Net : SecureNet) {
                 account.bills ~= found;
             }
             account.requested.remove(found.owner);
-            
+
             const invoice_index = account.requested_invoices
                 .countUntil!(invoice => invoice.pkey == found.owner);
 

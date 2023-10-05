@@ -13,14 +13,14 @@ alias check = Check!SecurityConsensusException;
 
 @safe
 interface HashNet {
-    uint hashSize() const pure nothrow;
+    uint hashSize() const pure nothrow scope;
 
     final Fingerprint calcHash(B)(scope const(B) data) const
     if (isBufferType!B) {
         return Fingerprint(rawCalcHash(cast(TypedefType!B) data));
     }
 
-    immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const;
+    immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const scope;
     immutable(Buffer) HMAC(scope const(ubyte[]) data) const pure;
     /++
      Hash used for Merkle tree
@@ -82,7 +82,10 @@ interface SecureNet : HashNet {
     }
 
     void createKeyPair(ref ubyte[] privkey);
-    void generateKeyPair(string passphrase);
+    void generateKeyPair(
+            scope const(char[]) passphrase,
+    scope const(char[]) salt = null,
+    void delegate(scope const(ubyte[]) data) @safe dg = null);
     bool secKeyVerify(scope const(ubyte[]) privkey) const;
     void eraseKey() pure nothrow;
 

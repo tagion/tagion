@@ -115,6 +115,30 @@ extern (C) {
 
     }
 
+    export uint wallet_create(
+            const uint8_t* pincodePtr,
+            const uint32_t pincodeLen,
+            const uint8_t* mnemonicPtr,
+            const uint32_t mnemonicLen,
+            const uint8_t* saltPtr,
+            const uint32_t saltLen) {
+        auto pincode = cast(char[])(pincodePtr[0 .. pincodeLen]);
+        auto mnemonic = cast(char[]) mnemonicPtr[0 .. mnemonicLen];
+        auto salt = cast(char[]) saltPtr[0 .. saltLen];
+        scope (exit) {
+            scramble(pincode);
+            scramble(mnemonic);
+            scramble(salt);
+        }
+        // Create a wallet from inputs.
+        __wallet_storage.wallet = StdSecureWallet(
+                mnemonic,
+                pincode,
+                salt
+        );
+        return __wallet_storage.write;
+    }
+
     export uint wallet_login(const uint8_t* pincodePtr, const uint32_t pincodeLen) {
 
         // Restore data from ponters.
