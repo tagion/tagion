@@ -115,6 +115,14 @@ extern (C) {
 
     }
 
+    version (none) export uint wallet_create(
+            const uint8_t* pincodePtr,
+            const uint32_t pincodeLen,
+            const uint16_t* mnemonicPtr,
+            const uint32_t mnemonicLen) {
+        return __wallet_storage.write;
+    }
+
     export uint wallet_login(const uint8_t* pincodePtr, const uint32_t pincodeLen) {
 
         // Restore data from ponters.

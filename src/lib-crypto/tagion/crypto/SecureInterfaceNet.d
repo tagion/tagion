@@ -82,7 +82,10 @@ interface SecureNet : HashNet {
     }
 
     void createKeyPair(ref ubyte[] privkey);
-    void generateKeyPair(const(char[]) passphrase, const(char[]) salt = null);
+    void generateKeyPair(
+            const(char[]) passphrase,
+    const(char[]) salt = null,
+    void delegate(scope const(ubyte[]) data) @safe dg = null);
     bool secKeyVerify(scope const(ubyte[]) privkey) const;
     void eraseKey() pure nothrow;
 
