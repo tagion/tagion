@@ -76,7 +76,7 @@ static void rest_handler(nng_aio* aio){
     }
 
     if(jd["todo"].str == "dir"){
-        jr["dir"] = _WD;
+        jr["dir"] = buildPath(_WD,"htdocs");
         jr["tree"] = scandir(buildPath(_WD,"htdocs"));
     }
     
