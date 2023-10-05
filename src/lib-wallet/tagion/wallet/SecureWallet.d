@@ -360,6 +360,7 @@ struct SecureWallet(Net : SecureNet) {
         auto pkey = _net.derivePubkey(account.derive_state);
         invoice.pkey = derivePubkey;
         account.derivers[invoice.pkey] = account.derive_state;
+        account.requested_invoices ~= invoice;
     }
     /**
      * Create a new invoice which can be send to a payee 
@@ -567,6 +568,14 @@ struct SecureWallet(Net : SecureNet) {
                 account.bills ~= found;
             }
             account.requested.remove(found.owner);
+            
+            const invoice_index = account.requested_invoices
+                .countUntil!(invoice => invoice.pkey == found.owner);
+
+            if (invoice_index >= 0) {
+                account.requested_invoices = account.requested_invoices.remove(invoice_index);
+            }
+
         }
         return true;
         // try {

@@ -2,9 +2,7 @@
 
 ci:
 	$(MAKE) -S clean-trunk -f$(DTUB)/main.mk
-	$(MAKE) -S clean-dartapi -f$(DTUB)/main.mk
 	$(MAKE) -S bins -f$(DTUB)/main.mk
-	$(MAKE) -S dartapi -f$(DTUB)/main.mk
 	$(MAKE) -S bddtest unittest-cov TESTBENCH_FLAGS=--silent -f$(DTUB)/main.mk
 	$(MAKE) -S release -f$(DTUB)/main.mk
 	$(MAKE) -S ddoc -f$(DTUB)/main.mk

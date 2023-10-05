@@ -143,11 +143,6 @@ include $(TARGETS)/install.mk
 include $(TARGETS)/ddoc.mk
 
 #
-# Vibe.d DART API service
-#
-include $(TARGETS)/vibeapi.mk
-
-#
 # Enable cleaning
 #
 include $(DTUB)/clean.mk

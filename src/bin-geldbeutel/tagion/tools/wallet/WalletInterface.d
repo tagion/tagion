@@ -471,6 +471,19 @@ struct WalletInterface {
         fout.writeln(line);
     }
 
+    void listInvoices(File fout) {
+        const invoices = secure_wallet.account.requested_invoices;
+        if (invoices.empty) { return; }
+
+        fout.writeln("Outstanding invoice requests");
+        const line = format("%-(%s%)", "- ".repeat(40));
+        fout.writefln("%-5s %-10s %-45s","No","Label","Deriver");
+        foreach(i, invoice; invoices) {
+            fout.writefln("%4s] %-10s %s", i, invoice.name, invoice.pkey.encodeBase64);
+        }
+        fout.writeln(line);
+    }
+
     void sumAccount(File fout) {
         with (secure_wallet.account) {
             fout.writefln("Available : %13.6fTGN", available.value);
@@ -615,6 +628,7 @@ struct WalletInterface {
                 }
                 if (list) {
                     listAccount(stdout);
+                    listInvoices(stdout);
                     sum = true;
                 }
                 if (sum) {
@@ -625,23 +639,33 @@ struct WalletInterface {
                         .each!(bill => secure_wallet.net.dartIndex(bill)
                                 .encodeBase64.setExtension(FileExtension.hibon).fwrite(bill));
                 }
-                if (update) {
-                    const fingerprints = [secure_wallet.account.bills, secure_wallet.account.requested.values]
-                        .joiner
-                        .map!(bill => secure_wallet.net.dartIndex(bill))
-                        .array;
+                if (update || trt_update) {
+
                     const update_net = secure_wallet.net.derive(update_tag.representation);
                     const hirpc = HiRPC(update_net);
-                    const dartcheckread = dartCheckRead(fingerprints, hirpc);
+
+                    const(HiRPC.Sender) getRequest() {
+                        if (trt_update) {
+                            return secure_wallet.getRequestUpdateWallet();
+                        }
+                        const fingerprints = [secure_wallet.account.bills, secure_wallet.account.requested.values]
+                            .joiner
+                            .map!(bill => secure_wallet.net.dartIndex(bill))
+                            .array;
+                        return dartCheckRead(fingerprints, hirpc);
+                    }
+
+                    const req = getRequest();
 
                     if (output_filename !is string.init) {
-                        output_filename.fwrite(dartcheckread);
+                        output_filename.fwrite(req);
                     }
                     if (send) {
-                        auto received_doc = sendDARTHiRPC(options.dart_address, dartcheckread);
+                        auto received_doc = sendDARTHiRPC(options.dart_address, req);
                         check(received_doc.isRecord!(HiRPC.Receiver), "Error in response. Aborting");
                         auto receiver = hirpc.receive(received_doc);
-                        auto res = secure_wallet.setResponseCheckRead(receiver);
+
+                        auto res = trt_update ? secure_wallet.setResponseUpdateWallet(receiver) : secure_wallet.setResponseCheckRead(receiver);
                         writeln(res ? "wallet updated succesfully" : "wallet not updated succesfully");
                         listAccount(stdout);
                         save_wallet = true;
