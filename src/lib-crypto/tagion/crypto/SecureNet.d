@@ -313,27 +313,21 @@ class StdSecureNet : StdHashNet, SecureNet {
         _secret = new LocalSecret;
     }
 
-    final void generateKeyPair(string passphrase)
+    final void generateKeyPair(const(char[]) passphrase, const(char[]) salt = null)
     in {
         assert(_secret is null);
     }
     do {
-        import std.digest.sha : SHA256;
-        import std.digest.hmac : digestHMAC = HMAC;
-        import std.string : representation;
+        import tagion.pbkdf2.pbkdf2;
+        import std.digest.sha : SHA512;
 
-        alias AES = AESCrypto!256;
-
-        scope hmac = digestHMAC!SHA256(passphrase.representation);
-        auto data = hmac.finish.dup;
-
-        // Generate Key pair
-        do {
-            data = hmac.put(data).finish.dup;
+        alias pbkdf2_sha512 = pbkdf2!SHA512;
+        auto data = pbkdf2_sha512(passphrase.representation, salt.representation, 2048, 64);
+        scope (exit) {
+            scramble(data);
         }
-        while (!_crypt.secKeyVerify(data));
-
-        createKeyPair(data);
+        auto _priv_key = data[0 .. 32];
+        createKeyPair(_priv_key);
     }
 
     immutable(ubyte[]) ECDHSecret(scope const(ubyte[]) seckey, scope const(
