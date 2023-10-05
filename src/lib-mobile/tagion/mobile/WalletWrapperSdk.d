@@ -205,7 +205,6 @@ extern (C) {
             SignedContract signed_contract;
             const can_pay =
                 __wallet_storage.wallet.payment([invoice], signed_contract, tgn_fees);
-            writefln("can_pay=%s", can_pay);
             if (can_pay) {
                 /*
                 HiRPC hirpc;

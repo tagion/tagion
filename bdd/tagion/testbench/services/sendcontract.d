@@ -119,7 +119,7 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
         auto payment_request = wallet2.requestBill(amount);
 
         SignedContract signed_contract;
-        check(wallet1.createPayment([payment_request], signed_contract, fee), "Error creating wallet");
+        check(wallet1.createPayment([payment_request], signed_contract, fee).value, "Error creating wallet");
         check(signed_contract !is SignedContract.init, "contract not updated");
         import tagion.script.execute;
 

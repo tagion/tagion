@@ -3,6 +3,7 @@
 */
 module tagion.wallet.SecureWallet;
 import tagion.utils.Miscellaneous;
+import tagion.utils.Result;
 import std.format;
 import std.string : representation;
 import std.algorithm : countUntil, all, remove, map, max, min, sum, until, each, filter, cache, find, canFind;
@@ -354,7 +355,7 @@ struct SecureWallet(Net : SecureNet) {
     void registerInvoice(ref Invoice invoice) {
         scope seed = new ubyte[_net.hashSize];
         scramble(seed);
-        account.derive_state = _net.HMAC(account.derive_state~_net.pubkey);
+        account.derive_state = _net.HMAC(account.derive_state ~ _net.pubkey);
         scramble(seed);
         auto pkey = _net.derivePubkey(account.derive_state);
         invoice.pkey = derivePubkey;
@@ -400,63 +401,28 @@ struct SecureWallet(Net : SecureNet) {
      *   result = Signed payment
      * Returns: 
      */
-    bool payment(const(Invoice[]) orders, ref SignedContract result, out TagionCurrency fees) {
+    Result!bool payment(const(Invoice[]) orders, ref SignedContract signed_contract, out TagionCurrency fees) {
         checkLogin;
         import tagion.utils.StdTime;
         import std.stdio;
 
-        auto bills = orders.map!((order) => TagionBill(order.amount, currentTime, order.pkey, Buffer.init)).array;
-        scope (exit) {
-            import tagion.hibon.HiBONJSON;
+        try {
+            auto bills = orders.map!((order) => TagionBill(order.amount, currentTime, order.pkey, Buffer.init)).array;
+            scope (exit) {
+                import tagion.hibon.HiBONJSON;
 
-            bills.each!(bill => bill.toPretty.writeln);
-            writefln("- - - - bills %s fees=%s", bills.map!(bill => bill.value.value), fees.value);
-            writefln("Contract %s", result.toPretty);
-        }
-        const topay = orders.map!(b => b.amount).sum;
-        writefln("ToPay  %s[%d][%d] total %s", topay, orders.length, bills.length, total_balance);
-        return createPayment(bills, result, fees);
-        //const topay = orders.map!(b => b.amount).sum;
-        version (none)
-            if (topay > 0) {
-                pragma(msg, "fixme(cbr): Storage fee needs to be estimated");
-                const fees = PriorStandardRecords.globals.fees();
-                const amount = topay + fees;
-                TagionBill[] contract_bills;
-                const enough = collect_bills(amount, contract_bills);
-                if (enough) {
-                    const total = contract_bills.map!(b => b.value).sum;
-
-                    result.contract.inputs = contract_bills.map!(b => _net.dartIndex(b.toDoc)).array;
-                    const rest = total - amount;
-                    if (rest > 0) {
-                        Invoice money_back;
-                        money_back.amount = rest;
-                        registerInvoice(money_back);
-                        result.contract.output[money_back.pkey] = rest.toDoc;
-                    }
-                    orders.each!((o) { result.contract.output[o.pkey] = o.amount.toDoc; });
-                    result.contract.script = PriorStandardRecords.Script("pay");
-
-                    immutable message = _net.calcHash(result.contract.toDoc);
-                    auto shared_net = (() @trusted { return cast(shared) _net; })();
-                    auto bill_net = new Net;
-                    // Sign all inputs
-                    result.signs = contract_bills
-                        .filter!(b => b.owner in account.derivers)
-                        .map!((b) {
-                            immutable tweak_code = account.derivers[b.owner];
-                            bill_net.derive(tweak_code, shared_net);
-                            return bill_net.sign(message);
-                        })
-                        .array;
-                    return true;
-                }
-                result = result.init;
-                return false;
+                bills.each!(bill => bill.toPretty.writeln);
+                writefln("- - - - bills %s fees=%s", bills.map!(bill => bill.value.value), fees.value);
+                writefln("Contract %s", signed_contract.toPretty);
             }
-
-        return false;
+            const topay = orders.map!(b => b.amount).sum;
+            writefln("ToPay  %s[%d][%d] total %s", topay, orders.length, bills.length, total_balance);
+            return createPayment(bills, signed_contract, fees);
+        }
+        catch (Exception e) {
+            return Result!bool(e);
+        }
+        return result(true);
     }
 
     /**
@@ -635,52 +601,53 @@ struct SecureWallet(Net : SecureNet) {
         // }
     }
 
-    bool createPayment(TagionBill[] to_pay, ref SignedContract signed_contract, out TagionCurrency fees) {
+    Result!bool createPayment(TagionBill[] to_pay, ref SignedContract signed_contract, out TagionCurrency fees) {
         import tagion.script.Currency : totalAmount;
         import tagion.script.execute;
         import std.stdio;
 
-        writeln("Called %s", __FUNCTION__);
-        PayScript pay_script;
-        pay_script.outputs = to_pay;
-        TagionBill[] collected_bills;
-        TagionCurrency amount_remainder;
-        size_t previous_bill_count = size_t.max;
-        do {
-            if (collected_bills.length == previous_bill_count) {
-                return false;
-            }
-            collected_bills.length = 0;
-            const amount_to_pay = pay_script.outputs
-                .map!(bill => bill.value)
-                .totalAmount;
+        try {
+            writeln("Called %s", __FUNCTION__);
+            PayScript pay_script;
+            pay_script.outputs = to_pay;
+            TagionBill[] collected_bills;
+            TagionCurrency amount_remainder;
+            size_t previous_bill_count = size_t.max;
+            do {
+                if (collected_bills.length == previous_bill_count) {
+                    return result(false);
+                }
+                collected_bills.length = 0;
+                const amount_to_pay = pay_script.outputs
+                    .map!(bill => bill.value)
+                    .totalAmount;
 
-            /*
+                /*
         const estimated_fees = ContractExecution.billFees(10);
 */
-            const can_pay = collect_bills(amount_to_pay, collected_bills);
-            writefln("Collected %s ", collected_bills.map!(bill => bill.value));
-            check(can_pay, format("Is unable to pay the amount %10.6fTGN available %10.6fTGN", amount_to_pay.value, available_balance
-                    .value));
-            const amount_to_redraw = collected_bills
-                .map!(bill => bill.value)
-                .totalAmount;
-            fees = ContractExecution.billFees(collected_bills.length, pay_script.outputs.length + 1);
-            amount_remainder = amount_to_redraw - amount_to_pay - fees;
-            writefln("while available_balance=%s amount_remainder=%s amount_to_pay=%s fees=%s",
-                    available_balance, amount_remainder, amount_to_pay, fees);
-            previous_bill_count = collected_bills.length;
+                const can_pay = collect_bills(amount_to_pay, collected_bills);
+                writefln("Collected %s ", collected_bills.map!(bill => bill.value));
+                check(can_pay, format("Is unable to pay the amount %10.6fTGN available %10.6fTGN", amount_to_pay.value, available_balance
+                        .value));
+                const amount_to_redraw = collected_bills
+                    .map!(bill => bill.value)
+                    .totalAmount;
+                fees = ContractExecution.billFees(collected_bills.length, pay_script.outputs.length + 1);
+                amount_remainder = amount_to_redraw - amount_to_pay - fees;
+                writefln("while available_balance=%s amount_remainder=%s amount_to_pay=%s fees=%s",
+                        available_balance, amount_remainder, amount_to_pay, fees);
+                previous_bill_count = collected_bills.length;
 
-        }
-        while (amount_remainder < 0);
-        writefln("FEE AMOUNT = %s", fees.value);
-        writefln("collected bills length = %s", collected_bills.length);
-        import tagion.hibon.HiBONtoText;
+            }
+            while (amount_remainder < 0);
+            writefln("FEE AMOUNT = %s", fees.value);
+            writefln("collected bills length = %s", collected_bills.length);
+            import tagion.hibon.HiBONtoText;
 
-        writefln("collected bills pkeys %s", collected_bills.map!(b => b.owner.encodeBase64));
-        writefln("account derivers %s", account.derivers.byKey.map!(k => k.encodeBase64));
+            writefln("collected bills pkeys %s", collected_bills.map!(b => b.owner.encodeBase64));
+            writefln("account derivers %s", account.derivers.byKey.map!(k => k.encodeBase64));
 
-        /*
+            /*
         auto derivers = collected_bills
             .map!(bill => bill.owner in account.derivers).array;
 
@@ -694,27 +661,31 @@ struct SecureWallet(Net : SecureNet) {
             .map!(deriver => net.derive(*deriver))
             .array;
 */
-        const nets = collectNets(collected_bills);
-        writefln("Nets %s", nets.length);
-        check(nets.all!(net => net !is net.init), "Missing deriver of some of the bills");
-        if (amount_remainder != 0) {
-            const bill_remain = requestBill(amount_remainder);
-            pay_script.outputs ~= bill_remain;
-        }
-        writefln("collect_bills %d nets %d", collected_bills.length, nets.length);
-        lock_bills(collected_bills);
-        writefln("collect_bills %d nets %d", collected_bills.length, nets.length);
-        check(nets.length == collected_bills.length, format("number of bills does not match number of signatures nets %s, collected_bills %s", nets
-                .length, collected_bills.length));
+            const nets = collectNets(collected_bills);
+            writefln("Nets %s", nets.length);
+            check(nets.all!(net => net !is net.init), "Missing deriver of some of the bills");
+            if (amount_remainder != 0) {
+                const bill_remain = requestBill(amount_remainder);
+                pay_script.outputs ~= bill_remain;
+            }
+            writefln("collect_bills %d nets %d", collected_bills.length, nets.length);
+            lock_bills(collected_bills);
+            writefln("collect_bills %d nets %d", collected_bills.length, nets.length);
+            check(nets.length == collected_bills.length, format("number of bills does not match number of signatures nets %s, collected_bills %s", nets
+                    .length, collected_bills.length));
 
-        writefln("Contract Inputs %s", collected_bills.map!(bills => bills.value.value));
-        signed_contract = sign(
-                nets,
-                collected_bills.map!(bill => bill.toDoc)
-                .array,
-                null,
-                pay_script.toDoc);
-        return true;
+            writefln("Contract Inputs %s", collected_bills.map!(bills => bills.value.value));
+            signed_contract = sign(
+                    nets,
+                    collected_bills.map!(bill => bill.toDoc)
+                    .array,
+                    null,
+                    pay_script.toDoc);
+        }
+        catch (Exception e) {
+            return Result!bool(e);
+        }
+        return result(true);
     }
     /**
      * Calculates the amount in a list of bills
@@ -1014,8 +985,10 @@ unittest {
     { /// faild not enouch money
         SignedContract signed_contract;
         TagionCurrency fees;
-        assertThrown!WalletException(
-                wallet1.createPayment([w2_bill1], signed_contract, fees));
+        const result = wallet1.createPayment([w2_bill1], signed_contract, fees);
+
+        writefln("result=%s msg=%s", result.value, result.msg);
+        assert(!result);
         //assert(!can_pay, "Should not be able to pay");   
 
     }
@@ -1030,7 +1003,7 @@ unittest {
         const expected_fees = ContractExecution.billFees(1, 1);
         writefln("!!!Fees %f %f", fees.value, expected_fees.value);
         assert(fees == expected_fees);
-        assert(can_pay, "Unable to pay");
+        assert(can_pay.value, "Unable to pay");
         writefln("total     %f", wallet1.total_balance.value);
         writefln("locked    %f", wallet1.locked_balance.value);
 

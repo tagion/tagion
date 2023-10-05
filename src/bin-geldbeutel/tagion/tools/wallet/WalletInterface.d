@@ -563,9 +563,10 @@ struct WalletInterface {
                     if (invoice !is invoice.init) {
                         scope invoice_args = invoice.splitter(":");
                         import tagion.basic.range : eatOne;
+
                         auto new_invoice = secure_wallet.createInvoice(
-                            invoice_args.eatOne,
-                            invoice_args.eatOne.to!double.TGN
+                                invoice_args.eatOne,
+                                invoice_args.eatOne.to!double.TGN
                         );
                         check(new_invoice.name !is string.init, "Invalid name on invoice");
                         check(new_invoice.amount > 0, "Invoice amount not valid");
@@ -656,8 +657,9 @@ struct WalletInterface {
                         .map!(doc => TagionBill(doc))
                         .array;
                     TagionCurrency fees;
-                    auto created_payment = secure_wallet.createPayment(to_pay, signed_contract, fees);
-                    check(created_payment, "payment was not successful");
+                    secure_wallet.createPayment(to_pay, signed_contract, fees).get;
+
+                    //   check(created_payment, "payment was not successful");
 
                     output_filename = (output_filename.empty && !send) ? "submit".setExtension(FileExtension.hibon) : output_filename;
                     const message = secure_wallet.net.calcHash(signed_contract);
