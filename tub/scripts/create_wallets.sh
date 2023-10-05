@@ -6,6 +6,11 @@ if [ $# -ne 1 ]; then
   exit 1
 fi
 
+get_abs_filename() {
+  # $1 : relative filename
+  echo "$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
+}
+
 # Extract the number of wallets from the command line argument
 num_wallets=$1
 num_bills=10
@@ -15,13 +20,13 @@ number_of_nodes=5
 # Create the wallets in a loop
 for ((i = 1; i <= num_wallets; i++)); 
 do
-  wallet_dir="./wallet$i"
+  wallet_dir=$(get_abs_filename "./wallet$i")
   wallet_config="wallet$i.json"
   password="password$i"
   pincode=$(printf "%04d" $i)
 
   # Step 1: Create wallet directory and config file
-  geldbeutel -O --path "./$wallet_dir" "$wallet_config"
+  geldbeutel -O --path "$wallet_dir" "$wallet_config"
 
   # Step 2: Generate wallet passphrase and pincode
   geldbeutel "$wallet_config" -P "$password" -x "$pincode"

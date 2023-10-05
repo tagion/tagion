@@ -88,13 +88,14 @@ int _main(string[] args) {
                 "l|list", "List wallet content", &wallet_switch.list, //"questions", "Questions for wallet creation", &questions_str,
                 "s|sum", "Sum of the wallet", &wallet_switch.sum, //"questions", "Questions for wallet creation", &questions_str,
                 "send", "Send a contract to the network", &wallet_switch.send, //"answers", "Answers for wallet creation", &answers_str,
-                "P|passphrase", "Set the wallet passphrase", &passphrase,/*
+                "P|passphrase", "Set the wallet passphrase", &passphrase,
+                "create-invoice", "Create invoice by format LABEL:PRICE. Example: Foreign_invoice:1000", &wallet_switch.invoice,
+                /*
                 "path", format("Set the path for the wallet files : default %s", path), &path,
                 "wallet", format("Wallet file : default %s", options.walletfile), &options.walletfile,
                 "device", format("Device file : default %s", options.devicefile), &options.devicefile,
                 "quiz", format("Quiz file : default %s", options.quizfile), &options.quizfile,
                 "invoice|i", format("Invoice file : default %s", invoicefile), &invoicefile,
-                "create-invoice|c", "Create invoice by format LABEL:PRICE. Example: Foreign_invoice:1000", &create_invoice_command,
                 "contract|t", format("Contractfile : default %s", options.contractfile), &options.contractfile,
                 "amount", "Display the wallet amount", &print_amount,
                 "pay|I", format("Invoice to be payed : default %s", payfile), &payfile,

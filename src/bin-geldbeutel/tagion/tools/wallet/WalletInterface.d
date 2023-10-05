@@ -20,6 +20,7 @@ import std.range;
 import core.thread;
 import tagion.basic.Message;
 import std.string : representation;
+import std.conv : to;
 
 //import tagion.basic.tagionexceptions : check;
 import tagion.hibon.Document;
@@ -543,6 +544,7 @@ struct WalletInterface {
         bool update;
         bool trt_update;
         double amount;
+        string invoice;
         string output_filename;
     }
 
@@ -556,11 +558,29 @@ struct WalletInterface {
                         save(false);
                     }
                 }
-                if (amount !is amount.init) {
-                    const bill = secure_wallet.requestBill(amount.TGN);
-                    output_filename = (output_filename.empty) ? "bill".setExtension(FileExtension.hibon) : output_filename;
-                    output_filename.fwrite(bill);
-                    writefln("%1$sCreated %3$s%2$s of %4$s", GREEN, RESET, output_filename, bill.value.toString);
+                if (amount !is amount.init || invoice !is invoice.init) {
+                    Document request;
+                    if (invoice !is invoice.init) {
+                        scope invoice_args = invoice.splitter(":");
+                        import tagion.basic.range : eatOne;
+                        auto new_invoice = secure_wallet.createInvoice(
+                            invoice_args.eatOne,
+                            invoice_args.eatOne.to!double.TGN
+                        );
+                        check(new_invoice.name !is string.init, "Invalid name on invoice");
+                        check(new_invoice.amount > 0, "Invoice amount not valid");
+                        secure_wallet.registerInvoice(new_invoice);
+                        request = new_invoice.toDoc;
+                        writefln(request.toPretty);
+                    }
+                    else {
+                        auto bill = secure_wallet.requestBill(amount.TGN);
+                        request = bill.toDoc;
+                    }
+                    const default_name = invoice ? "invoice" : "bill";
+                    output_filename = (output_filename.empty) ? default_name.setExtension(FileExtension.hibon) : output_filename;
+                    output_filename.fwrite(request);
+                    writefln("%1$sCreated %3$s%2$s", GREEN, RESET, output_filename);
                     save_wallet = true;
                     return;
                 }
