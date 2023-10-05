@@ -110,7 +110,7 @@ extern (C) {
                 pincode
         );
 
-        return __wallet_storage.write(__wallet_storage.wallet);
+        return __wallet_storage.write;
 
     }
 
@@ -174,7 +174,7 @@ extern (C) {
 
         if (__wallet_storage.wallet.isLoggedin()) {
             if (__wallet_storage.wallet.changePincode(pincode, newPincode)) {
-                __wallet_storage.write(__wallet_storage.wallet);
+                __wallet_storage.write;
                 // Since secure_wallet do logout after pincode change
                 // we need to perform a login manualy.
                 __wallet_storage.wallet.login(newPincode);
@@ -214,7 +214,7 @@ extern (C) {
 */
                 const contractDocId = recyclerDoc.create(signed_contract.toDoc);
                 // Save wallet state to file.
-                __wallet_storage.write(__wallet_storage.wallet);
+                __wallet_storage.write;
 
                 *contractPtr = contractDocId;
                 return 1;
@@ -238,7 +238,7 @@ extern (C) {
 
             const invoiceDocId = recyclerDoc.create(invoice.toDoc);
             // Save wallet state to file.
-            __wallet_storage.write(__wallet_storage.wallet);
+            __wallet_storage.write;
 
             *invoicePtr = cast(uint8_t) invoiceDocId;
             return 1;
@@ -270,7 +270,7 @@ extern (C) {
 
             if (result) {
                 // Save wallet state to file.
-                __wallet_storage.write(__wallet_storage.wallet);
+                __wallet_storage.write;
                 return 1;
             }
         }
@@ -790,13 +790,13 @@ struct WalletStorage {
             .any;
     }
 
-    bool write(const StdSecureWallet secure_wallet) const {
+    bool write() const {
         // Create a hibon for wallet data.
         try {
 
-            path(devicefile).fwrite(secure_wallet.pin);
-            path(accountfile).fwrite(secure_wallet.account);
-            path(walletfile).fwrite(secure_wallet.wallet);
+            path(devicefile).fwrite(wallet.pin);
+            path(accountfile).fwrite(wallet.account);
+            path(walletfile).fwrite(wallet.wallet);
             return true;
         }
         catch (Exception e) {
@@ -853,10 +853,7 @@ unittest {
 
         auto strg = new WalletStorage(walletDataPath);
 
-        const secure_wallet = StdSecureWallet(DevicePIN.init,
-                RecoverGenerator.init, AccountDetails.init);
-
-        bool result = strg.write(secure_wallet);
+        bool result = strg.write;
         assert(result, "Expect write result is true");
     }
 
