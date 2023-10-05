@@ -28,11 +28,11 @@ class StdHashNet : HashNet {
     import std.format;
 
     enum HASH_SIZE = 32;
-    @nogc final uint hashSize() const pure nothrow {
+    @nogc final uint hashSize() const pure nothrow scope {
         return HASH_SIZE;
     }
 
-    immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const {
+    immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const scope {
         import std.digest.sha : SHA256;
         import std.digest;
 
@@ -319,8 +319,8 @@ class StdSecureNet : StdHashNet, SecureNet {
     salt = In bip39 the salt should be "mnemonic"~word 
 */
     void generateKeyPair(
-            const(char[]) passphrase,
-    const(char[]) salt = null,
+            scope const(char[]) passphrase,
+    scope const(char[]) salt = null,
     void delegate(scope const(ubyte[]) data) @safe dg = null)
     in {
         assert(_secret is null);

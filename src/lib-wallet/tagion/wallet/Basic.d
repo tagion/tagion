@@ -11,6 +11,6 @@ import tagion.basic.Types : Buffer;
      * Returns: the double hash
      */
 @safe
-Buffer saltHash(const HashNet net, scope const(ubyte[]) value, scope const(ubyte[]) salt = null) {
+Buffer saltHash(scope const HashNet net, scope const(ubyte[]) value, scope const(ubyte[]) salt = null) scope {
     return net.rawCalcHash(net.rawCalcHash(value) ~ salt);
 }
