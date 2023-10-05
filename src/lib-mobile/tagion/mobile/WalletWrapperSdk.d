@@ -10,7 +10,8 @@ import std.stdint;
 import std.string : toStringz, fromStringz;
 import std.array;
 import std.random;
-import std.stdio;
+
+//import std.stdio;
 import std.path;
 import std.range;
 import std.algorithm;
@@ -587,7 +588,6 @@ unittest {
     const uint32_t labelLen = cast(uint32_t) label.length;
     uint8_t invoiceDocId;
 
-    writefln("AVAILABLE = %s", __wallet_storage.wallet.available_balance);
     { // Create invoice.
 
         // Call the create_invoice function
@@ -618,7 +618,6 @@ unittest {
     // Add the bills to the account with the derive keys
     with (__wallet_storage.wallet.account) {
 
-        writefln("!!!!!!!!!! derivers = %s", derivers.byKey.map!(deriver => deriver.encodeBase64));
         bills = zip(bill_amounts, derivers.byKey)
             .map!(bill_derive => TagionBill(
                     bill_derive[0],
@@ -636,13 +635,9 @@ unittest {
 
     uint32_t contractDocId;
 
-    writefln("####### AVAILABLE %s", __wallet_storage.wallet.available_balance);
     { // Create a contract.
-        writefln("available_balance %s", __wallet_storage.wallet.available_balance);
         double fees;
         const uint result = create_contract(&contractDocId, invoice.ptr, invoiceLen, contAmount, &fees);
-        writefln("fees=%s result=%d", fees, result);
-
         // Check the result
         assert(result == 1, "Expected result to be 1");
 
@@ -833,7 +828,6 @@ struct WalletStorage {
             }
             catch (Exception e) {
                 last_error = e;
-                writefln("%s", e);
                 return false;
             }
         }

@@ -893,7 +893,8 @@ struct SecureWallet(Net : SecureNet) {
 version (unittest) {
     import tagion.crypto.SecureNet;
     import std.exception;
-    import std.stdio;
+
+    //    import std.stdio;
     import tagion.script.execute;
 
     alias StdSecureWallet = SecureWallet!StdSecureNet;
@@ -939,7 +940,6 @@ unittest {
         TagionCurrency fees;
         const result = wallet1.createPayment([w2_bill1], signed_contract, fees);
 
-        writefln("result=%s msg=%s", result.value, result.msg);
         assert(!result);
         //assert(!can_pay, "Should not be able to pay");   
 
@@ -953,18 +953,12 @@ unittest {
         const can_pay = wallet1.createPayment([w2_bill1], signed_contract, fees);
 
         const expected_fees = ContractExecution.billFees(1, 1);
-        writefln("!!!Fees %f %f", fees.value, expected_fees.value);
         assert(fees == expected_fees);
         assert(can_pay.value, "Unable to pay");
-        writefln("total     %f", wallet1.total_balance.value);
-        writefln("locked    %f", wallet1.locked_balance.value);
-
-        writefln("available %f", wallet1.available_balance.value);
         assert(wallet1.total_balance == 3000.TGN);
         assert(wallet1.locked_balance == 1000.TGN);
         assert(wallet1.available_balance == 2000.TGN);
 
     }
-    // assert(wallet.account.
 
 }
