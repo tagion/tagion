@@ -568,6 +568,13 @@ struct SecureWallet(Net : SecureNet) {
                 account.bills ~= found;
             }
             account.requested.remove(found.owner);
+            
+            const invoice_index = account.requested_invoices
+                .countUntil!(invoice => invoice.pkey == found.owner);
+            if (invoice_index >= 0) {
+                account.requested_invoices.remove(invoice_index);
+            }
+
         }
         return true;
         // try {
