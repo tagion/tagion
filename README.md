@@ -114,8 +114,7 @@ make env-<topic>
 
 ```bash
 # Showing the default values
-WOLFSSL=1 # Use wolfssl as ssl implementation, otherwise use openssl
-ONETOOL=1 # Everything is statically linked in to a single executable
+ONETOOL=1 # ALL tools linked in to a single executable
           # and individual tools are symbolic links to that binary
 OLD=1     # Uses and old transaction system
 DC=       # D compiler to use, default will try to pick between dmd and ldc2
