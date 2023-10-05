@@ -471,6 +471,19 @@ struct WalletInterface {
         fout.writeln(line);
     }
 
+    void listInvoices(File fout) {
+        const invoices = secure_wallet.account.requested_invoices;
+        if (invoices.empty) { return; }
+
+        fout.writeln("Outstanding invoice requests");
+        const line = format("%-(%s%)", "- ".repeat(40));
+        fout.writefln("%-5s %-10s %-45s","No","Label","Deriver");
+        foreach(i, invoice; invoices) {
+            fout.writefln("%4s] %-10s %s", i, invoice.name, invoice.pkey.encodeBase64);
+        }
+        fout.writeln(line);
+    }
+
     void sumAccount(File fout) {
         with (secure_wallet.account) {
             fout.writefln("Available : %13.6fTGN", available.value);
@@ -614,6 +627,7 @@ struct WalletInterface {
                 }
                 if (list) {
                     listAccount(stdout);
+                    listInvoices(stdout);
                     sum = true;
                 }
                 if (sum) {

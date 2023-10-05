@@ -359,6 +359,7 @@ struct SecureWallet(Net : SecureNet) {
         auto pkey = _net.derivePubkey(account.derive_state);
         invoice.pkey = derivePubkey;
         account.derivers[invoice.pkey] = account.derive_state;
+        account.requested_invoices ~= invoice;
     }
     /**
      * Create a new invoice which can be send to a payee 
