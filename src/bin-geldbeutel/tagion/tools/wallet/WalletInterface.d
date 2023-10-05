@@ -648,12 +648,28 @@ struct WalletInterface {
 
                 }
                 if (pay) {
-                    SignedContract signed_contract;
-                    TagionBill[] to_pay = args[1 .. $]
+
+                    Document[] requests_to_pay = args[1 .. $]
                         .filter!(file => file.hasExtension(FileExtension.hibon))
                         .map!(file => file.fread)
-                        .map!(doc => TagionBill(doc))
                         .array;
+
+                    TagionBill[] to_pay;
+                    foreach(doc; requests_to_pay) {
+                        if (doc.isRecord!TagionBill) {
+                            to_pay ~= TagionBill(doc);
+                        }
+                        else if (doc.isRecord!Invoice) {
+                            import tagion.utils.StdTime : currentTime;
+                            auto read_invoice = Invoice(doc);
+                            to_pay ~= TagionBill(read_invoice.amount, currentTime, read_invoice.pkey, Buffer.init);
+                        }
+                        else {
+                            check(0, "File supplied not TagionBill or Invoice");
+                        }
+                    }
+                    
+                    SignedContract signed_contract;
                     TagionCurrency fees;
                     auto created_payment = secure_wallet.createPayment(to_pay, signed_contract, fees);
                     check(created_payment, "payment was not successful");
