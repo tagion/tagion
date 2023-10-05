@@ -1,4 +1,3 @@
-// demo tool for signing a chain of events for unicef
 module tagion.tools.signs;
 import tagion.tools.Basic;
 import tagion.tools.revision;
@@ -139,18 +138,18 @@ int _main(string[] args) {
         writeln(logo);
         defaultGetoptPrinter(
                 [
-                "Documentation: https://tagion.org/",
-                "",
-                "Usage:",
-                format("%s [<option>...] <in-file>", program),
-                "",
-                "Where:",
-                "<in-file>           Is an input file in .json or .hibon format",
-                "",
+            "Documentation: https://tagion.org/",
+            "",
+            "Usage:",
+            format("%s [<option>...] <in-file>", program),
+            "",
+            "Where:",
+            "<in-file>           Is an input file in .json or .hibon format",
+            "",
 
-                "<option>:",
+            "<option>:",
 
-                ].join("\n"),
+        ].join("\n"),
                 main_args.options);
         return 0;
     }
@@ -233,7 +232,9 @@ int _main(string[] args) {
             "OK",
             Clock.currTime.toISOExtString,
             receiver, //new token owner
+
             
+
     );
 
     if (standard_output) {

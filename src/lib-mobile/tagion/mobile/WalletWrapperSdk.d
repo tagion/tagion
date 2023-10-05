@@ -94,7 +94,7 @@ extern (C) {
         return __wallet_storage.isWalletExist();
     }
 
-    export uint wallet_create(
+    version (none) export uint wallet_create(
             const uint8_t* pincodePtr,
             const uint32_t pincodeLen,
             const uint16_t* mnemonicPtr,
@@ -129,6 +129,7 @@ extern (C) {
             scramble(pincode);
             scramble(mnemonic);
             scramble(salt);
+            //if(saltPtr !is null) scramble(salt);
         }
         // Create a wallet from inputs.
         __wallet_storage.wallet = StdSecureWallet(
@@ -511,11 +512,13 @@ unittest {
         // Create input data
         const uint8_t[] pincode = cast(uint8_t[]) "1234".dup;
         const uint32_t pincodeLen = cast(uint32_t) pincode.length;
-        const uint16_t[] mnemonic = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+        const uint8_t[] mnemonic = cast(uint8_t[]) "some words".dup;
         const uint32_t mnemonicLen = cast(uint32_t) mnemonic.length;
+        const uint8_t[] salt = cast(uint8_t[]) "salt".dup;
+        const uint32_t saltLen = cast(uint32_t) salt.length;
 
         // Call the wallet_create function
-        const uint result = wallet_create(pincode.ptr, pincodeLen, mnemonic.ptr, mnemonicLen);
+        const uint result = wallet_create(pincode.ptr, pincodeLen, mnemonic.ptr, mnemonicLen, salt.ptr, saltLen);
 
         // Check the result
         assert(result != 0, "Expected non-zero result");
@@ -567,12 +570,12 @@ unittest {
 
         const uint8_t[] pincode = cast(uint8_t[]) "1234".dup;
         const uint32_t pincodeLen = cast(uint32_t) pincode.length;
-        const uint16_t[] mnemonic = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+        const uint8_t[] mnemonic = cast(uint8_t[]) "some words".dup;
         const uint32_t mnemonicLen = cast(uint32_t) mnemonic.length;
         uint8_t[] pin_copy;
         // Call the wallet_create function
         pin_copy = pincode.dup;
-        wallet_create(pin_copy.ptr, pincodeLen, mnemonic.ptr, mnemonicLen);
+        wallet_create(pin_copy.ptr, pincodeLen, mnemonic.ptr, mnemonicLen, const(uint8_t*).init, uint32_t.init);
         pin_copy = pincode.dup;
         wallet_login(pin_copy.ptr, pincodeLen);
 

@@ -7,7 +7,7 @@ import std.traits;
 
 static if (ver.linux || ver.Android) {
     enum is_getrandom = true;
-    extern (C) size_t getrandom(void* buf, size_t buflen, uint flags) nothrow;
+    extern (C) ptrdiff_t getrandom(void* buf, size_t buflen, uint flags) nothrow;
 }
 else static if (ver.iOS || ver.OSX) {
     enum is_getrandom = false;
@@ -22,16 +22,19 @@ else {
      +/
 @trusted
 void getRandom(ref scope ubyte[] buf) nothrow
-in (buf.length > 0 && buf.length <= 256)
+in (buf.length <= 256)
 do {
 
+    if (buf.length == 0) {
+        return;
+    }
     static if (is_getrandom) {
         // GRND_NONBLOCK = 0x0001. Don't block and return EAGAIN instead
         // GRND_RANDOM   = 0x0002. No effect
         // GRND_INSECURE = 0x0004. Return non-cryptographic random bytes
 
         const size = getrandom(&buf[0], buf.length, 0x0002);
-        assert(size == buf.length);
+        assert(size == buf.length, "Problem with random generation");
     }
     else {
         arc4random_buf(&buf[0], buf.length);

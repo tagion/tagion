@@ -24,7 +24,7 @@ $(TOOLS)/.way:
 	touch $(TOOLS)/.way
 
 $(TOOLS)/$(LDC_HOST)/.done:
-	cd $(TOOLS); wget https://github.com/ldc-developers/ldc/releases/download/v1.29.0/${LDC_HOST_TAR} -O ${LDC_HOST_TAR}
+	cd $(TOOLS); wget https://github.com/ldc-developers/ldc/releases/download/v${LDC_VERSION}/${LDC_HOST_TAR} -O ${LDC_HOST_TAR}
 	cd $(TOOLS); tar xf $(LDC_HOST_TAR)
 	touch $@
 
@@ -35,7 +35,7 @@ $(LDC_HOST): $(TOOLS)/$(LDC_HOST)/.done
 $(LDC_HOST): $(TOOLS)/$(LDC_HOST)/etc/ldc2.conf
 
 $(TOOLS)/$(LDC_TARGET)/.done:
-	cd $(TOOLS); wget https://github.com/ldc-developers/ldc/releases/download/v1.29.0/${LDC_TARGET_TAR} -O ${LDC_TARGET_TAR}
+	cd $(TOOLS); wget https://github.com/ldc-developers/ldc/releases/download/v${LDC_VERSION}/${LDC_TARGET_TAR} -O ${LDC_TARGET_TAR}
 	cd $(TOOLS); tar xf $(LDC_TARGET_TAR)
 	touch $@
 
