@@ -1,7 +1,7 @@
 #!/bin/env bash
 
 # Check if the number of wallets argument is provided
-if [ $# -ne 1 ]; then
+if [ $# -ne 3 ]; then
   echo "Usage: $0 <number_of_wallets>"
   exit 1
 fi
@@ -13,9 +13,14 @@ get_abs_filename() {
 
 # Extract the number of wallets from the command line argument
 num_wallets=$1
+network_folder=$2
+shared_folder=$3
+
 num_bills=10
-network_folder="network"
 number_of_nodes=5
+
+
+cd $shared_folder
 
 # Create the wallets in a loop
 for ((i = 1; i <= num_wallets; i++)); 
@@ -53,3 +58,7 @@ do
   dartutil --initialize "$dartfilename"
   dartutil "$dartfilename" dart_recorder.hibon -m
 done
+
+rm -rf bill*.hibon
+
+cd -
