@@ -103,7 +103,9 @@ string setCursor(immutable uint row, immutable uint column) {
 enum saveCursorPos = "\u001b[s"; /// Saves the current cursor position
 enum restoreCursorPos = "\u001b[u"; /// Restores the cursor to the last saved position
 
-version (Posix) {
+version (MOBILE) {
+}
+else {
     private import core.stdc.stdio;
     private import core.sys.posix.termios;
 
