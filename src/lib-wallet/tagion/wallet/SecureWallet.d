@@ -549,7 +549,7 @@ struct SecureWallet(Net : SecureNet) {
                 .tee!((b) => rest -= b.value)
                 .array;
             writefln("rest=%s", rest);
-            if (rest > 0) {
+            if (rest >= 0) {
                 TagionBill extra_bill;
                 none_locked.each!(b => extra_bill = b);
                 locked_bills ~= extra_bill;
@@ -661,7 +661,9 @@ struct SecureWallet(Net : SecureNet) {
         const estimated_fees = ContractExecution.billFees(10);
 */
             const can_pay = collect_bills(amount_to_pay, collected_bills);
-            check(can_pay, format("Is unable to pay the amount %10.6fTGN", amount_to_pay.value));
+            writefln("Collected %s ", collected_bills.map!(bill => bill.value));
+            check(can_pay, format("Is unable to pay the amount %10.6fTGN available %10.6fTGN", amount_to_pay.value, available_balance
+                    .value));
             const amount_to_redraw = collected_bills
                 .map!(bill => bill.value)
                 .totalAmount;
@@ -697,8 +699,10 @@ struct SecureWallet(Net : SecureNet) {
         const nets = collectNets(collected_bills);
         writefln("Nets %s", nets.length);
         check(nets.all!(net => net !is net.init), "Missing deriver of some of the bills");
-        const bill_remain = requestBill(amount_remainder);
-        pay_script.outputs ~= bill_remain;
+        if (amount_remainder != 0) {
+            const bill_remain = requestBill(amount_remainder);
+            pay_script.outputs ~= bill_remain;
+        }
         writefln("collect_bills %d nets %d", collected_bills.length, nets.length);
         lock_bills(collected_bills);
         writefln("collect_bills %d nets %d", collected_bills.length, nets.length);
@@ -742,7 +746,7 @@ struct SecureWallet(Net : SecureNet) {
     }
 
     TagionBill requestBill(TagionCurrency amount) {
-        check(amount > 0.TGN, "Requested bill should have a positive value");
+        check(amount > 0.TGN, format("Requested bill should have a positive value and not %10.6fTGN", amount.value));
         TagionBill bill;
         bill.value = amount;
         bill.time = currentTime;

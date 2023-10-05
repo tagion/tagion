@@ -606,6 +606,11 @@ unittest {
     import std.range : zip;
 
     auto bill_amounts = [200, 500, 100].map!(a => a.TGN);
+    [200, 500, 100]
+        .map!(value => value.TGN)
+        .map!(value => __wallet_storage.wallet.requestBill(value))
+        .each!(bill => __wallet_storage.wallet.addBill(bill));
+
     const net = new StdHashNet;
     //auto gene = cast(Buffer) net.calcHash("gene".representation);
 
@@ -613,6 +618,7 @@ unittest {
 
     // Add the bills to the account with the derive keys
     with (__wallet_storage.wallet.account) {
+
         writefln("!!!!!!!!!! derivers = %s", derivers.byKey.map!(deriver => deriver.encodeBase64));
         bills = zip(bill_amounts, derivers.byKey)
             .map!(bill_derive => TagionBill(
@@ -632,11 +638,11 @@ unittest {
     uint32_t contractDocId;
 
     writefln("####### AVAILABLE %s", __wallet_storage.wallet.available_balance);
-    version (none) { // Create a contract.
+    { // Create a contract.
         writefln("available_balance %s", __wallet_storage.wallet.available_balance);
         double fees;
         const uint result = create_contract(&contractDocId, invoice.ptr, invoiceLen, contAmount, &fees);
-        writefln("fees=%s", fees);
+        writefln("fees=%s result=%d", fees, result);
 
         // Check the result
         assert(result == 1, "Expected result to be 1");
