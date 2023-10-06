@@ -200,14 +200,14 @@ unittest {
         immutable expected_entropy = "101011011101100011001001001011100100101100100101011000101110000100";
         const mnemonic_codes = wordlist.numbers(mnemonic);
         assert(expected_mnemonic_codes == mnemonic_codes);
-        writefln("%(%d %)", mnemonic_codes);
-        writefln("mnemonic_codes   %(%011b%)", mnemonic_codes);
-        writefln("expected_entropy %s", expected_entropy);
+        // writefln("%(%d %)", mnemonic_codes);
+        // writefln("mnemonic_codes   %(%011b%)", mnemonic_codes);
+        // writefln("expected_entropy %s", expected_entropy);
         string mnemonic_codes_bits = format("%(%011b%)", mnemonic_codes);
         assert(expected_entropy == mnemonic_codes_bits);
         const entropy = wordlist.entropy(mnemonic_codes);
         string entropy_bits = format("%(%08b%)", entropy)[0 .. 11 * expected_mnemonic_codes.length];
-        writefln("expected_bits    %s", entropy_bits);
+        // writefln("expected_bits    %s", entropy_bits);
         assert(expected_entropy == entropy_bits);
     }
     {

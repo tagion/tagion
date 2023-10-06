@@ -926,6 +926,11 @@ unittest {
     assert(wallet1.createPayment([payment_request], signed_contract, fee).value, "error creating payment");
 
     import std.algorithm;
+    import tagion.hibon.HiBONJSON;
+
+    writefln("%s", signed_contract.toPretty);
+
+    
     assert(signed_contract.contract.inputs.uniq.array.length == signed_contract.contract.inputs.length, "signed contract inputs invalid");
 
 }
