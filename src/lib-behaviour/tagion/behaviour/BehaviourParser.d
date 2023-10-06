@@ -192,8 +192,6 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
                 case State.Start:
                     break TokenSwitch;
                 }
-                check_error(0, format("No valid action has %s", match[1]));
-                break;
             case SCENARIO:
                 check_error(got_feature, "Scenario without feature");
                 if (state != State.Feature) {

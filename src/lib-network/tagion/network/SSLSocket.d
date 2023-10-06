@@ -291,7 +291,6 @@ class SSLSocket : Socket {
                     else {
                         throw new SSLSocketException(errorText(ssl_error), ssl_error);
                     }
-                    break SSLErrorCase;
                 }
             }
         }

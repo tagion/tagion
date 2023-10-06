@@ -237,9 +237,6 @@ int _main(string[] args) {
             stderr.writeln("Error: output not specified");
             return 1;
         }
-
-        stderr.writefln("Input file missing");
-        return 1;
     }
 
     foreach (inputfilename; args[1 .. $]) {

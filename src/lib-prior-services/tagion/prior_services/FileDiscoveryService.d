@@ -73,8 +73,6 @@ void fileDiscoveryService(
                         break;
                     case UpdateTable:
                         throw new TagionException(format("DiscoveryRequestCommand %s has not function", request));
-                        break;
-
                     }
                 }
             }

@@ -228,7 +228,6 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                                 ssl_relay.send(send_buffer);
                             }
                             return true;
-                            break;
                         default:
                         }
                     }
