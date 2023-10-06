@@ -120,16 +120,15 @@ int _main(string[] args) {
         return 0;
     }
 
-    string config_file;
+    string config_file = "tagionwave.json";
     if (args.length >= 2 && args[1].hasExtension(".json")) {
         config_file = args[1];
-        if (!config_file.exists) {
-            stderr.writefln("Config file '%s' doesn't exist", config_file);
-            return 1;
-        }
     }
-    else {
-        config_file = "tagionwave.json";
+
+    if (override_switch) {
+        Options.defaultOptions.save(config_file);
+        writefln("Configure file written to %s", config_file);
+        return 0;
     }
 
     Options local_options;
@@ -145,13 +144,7 @@ int _main(string[] args) {
     }
     else {
         local_options = Options.defaultOptions;
-        log("Running with default options");
-    }
-
-    if (override_switch) {
-        local_options.save(config_file);
-        writefln("Configure file written to %s", config_file);
-        return 0;
+        stderr.writefln("No config file exits, running with default options");
     }
 
     // Spawn logger service
