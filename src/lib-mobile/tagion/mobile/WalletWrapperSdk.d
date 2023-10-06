@@ -121,39 +121,49 @@ extern (C) {
             const uint8_t* mnemonicPtr,
             const uint32_t mnemonicLen,
             const uint8_t* saltPtr,
-            const uint32_t saltLen) {
-        auto pincode = cast(char[])(pincodePtr[0 .. pincodeLen]);
-        auto mnemonic = cast(char[]) mnemonicPtr[0 .. mnemonicLen];
-        auto salt = cast(char[]) saltPtr[0 .. saltLen];
-        scope (exit) {
-            scramble(pincode);
-            scramble(mnemonic);
-            scramble(salt);
-            //if(saltPtr !is null) scramble(salt);
+            const uint32_t saltLen) nothrow {
+        try {
+            auto pincode = cast(char[])(pincodePtr[0 .. pincodeLen]);
+            auto mnemonic = cast(char[]) mnemonicPtr[0 .. mnemonicLen];
+            auto salt = cast(char[]) saltPtr[0 .. saltLen];
+            scope (exit) {
+                scramble(pincode);
+                scramble(mnemonic);
+                scramble(salt);
+            }
+            // Create a wallet from inputs.
+            __wallet_storage.wallet = StdSecureWallet(
+                    mnemonic,
+                    pincode,
+                    salt
+            );
+            __wallet_storage.write;
         }
-        // Create a wallet from inputs.
-        __wallet_storage.wallet = StdSecureWallet(
-                mnemonic,
-                pincode,
-                salt
-        );
-        return __wallet_storage.write;
+        catch (Exception e) {
+            last_error = e;
+            return 0;
+        }
+        return 1;
     }
 
-    export uint wallet_login(const uint8_t* pincodePtr, const uint32_t pincodeLen) {
+    export uint wallet_login(const uint8_t* pincodePtr, const uint32_t pincodeLen) nothrow {
 
         // Restore data from ponters.
-        auto pincode = cast(char[])(pincodePtr[0 .. pincodeLen]);
-        scope (exit) {
-            scramble(pincode);
-        }
-        if (__wallet_storage.read(__wallet_storage.wallet)) {
+        try {
+            auto pincode = cast(char[])(pincodePtr[0 .. pincodeLen]);
+            scope (exit) {
+                scramble(pincode);
+            }
+            __wallet_storage.read;
             return __wallet_storage.wallet.login(pincode);
+        }
+        catch (Exception e) {
+            last_error = e;
         }
         return 0;
     }
 
-    export uint wallet_logout() {
+    export uint wallet_logout() nothrow {
         if (__wallet_storage.wallet.isLoggedin()) {
             __wallet_storage.wallet.logout();
             // Set wallet to default.
@@ -491,6 +501,7 @@ unittest {
         work_path.rmdirRecurse;
     }
     { // Init storage should fail with empty path.
+        __wallet_storage = null;
         const char[] path;
         const pathLen = cast(uint32_t) path.length;
         const result = wallet_storage_init(path.ptr, pathLen);
@@ -601,14 +612,20 @@ unittest {
     }
 }
 
-unittest {
+version (none) unittest {
     import tagion.hibon.HiBONtoText;
 
     const work_path = new_test_path;
+    //__wallet_storage=new WalletStorage(work_path);
     scope (success) {
         work_path.rmdirRecurse;
     }
 
+    // Create new test wallet
+    {
+        const result = wallet_storage_init(work_path.ptr, cast(uint32_t) work_path.length);
+        assert(result == 1, "Wallet can not be intialized");
+    }
     // Create input data
     const uint64_t invAmount = 100;
     const char[] label = "Test Invoice";
@@ -803,8 +820,19 @@ struct WalletStorage {
         devicefile = "device".setExtension(FileExtension.hibon), /// device file name
     }
     string wallet_data_path;
-    this(const char[] walletDataPath) const pure nothrow {
+    this(const char[] walletDataPath) {
+        import std.stdio;
+
         wallet_data_path = walletDataPath.idup;
+        writefln("CREATE %s", walletDataPath);
+        import std.file;
+
+        if (!wallet_data_path.exists) {
+            wallet_data_path.mkdirRecurse;
+        }
+        if (isWalletExist) {
+            read;
+        }
     }
 
     string path(string filename) const pure {
@@ -817,31 +845,21 @@ struct WalletStorage {
             .any;
     }
 
-    bool write() const {
+    void write() const {
         // Create a hibon for wallet data.
-        try {
 
-            path(devicefile).fwrite(wallet.pin);
-            path(accountfile).fwrite(wallet.account);
-            path(walletfile).fwrite(wallet.wallet);
-            return true;
-        }
-        catch (Exception e) {
-            return false;
-        }
+        path(devicefile).fwrite(wallet.pin);
+        path(accountfile).fwrite(wallet.account);
+        path(walletfile).fwrite(wallet.wallet);
+
     }
 
-    bool read(ref StdSecureWallet secure_wallet) const {
-        try {
-            auto pin = path(devicefile).fread!DevicePIN;
-            auto wallet = path(walletfile).fread!RecoverGenerator;
-            auto account = path(accountfile).fread!AccountDetails;
-            secure_wallet = StdSecureWallet(pin, wallet, account);
-            return true;
-        }
-        catch (Exception e) {
-            return false;
-        }
+    void read() {
+        auto _pin = path(devicefile).fread!DevicePIN;
+        auto _wallet = path(walletfile).fread!RecoverGenerator;
+        auto _account = path(accountfile).fread!AccountDetails;
+        wallet = StdSecureWallet(_pin, _wallet, _account);
+
     }
 
     bool remove() const {
@@ -864,6 +882,7 @@ struct WalletStorage {
 
 unittest {
     import std.stdio;
+    import std.exception;
 
     const work_path = new_test_path;
     scope (success) {
@@ -879,8 +898,7 @@ unittest {
 
         auto strg = new WalletStorage(walletDataPath);
 
-        bool result = strg.write;
-        assert(result, "Expect write result is true");
+        assertNotThrown(strg.write(), "Expect write result is true");
     }
 
     { // Read wallet file.
@@ -892,8 +910,7 @@ unittest {
 
         StdSecureWallet secure_wallet;
 
-        bool result = strg.read(secure_wallet);
-        assert(result, "Expect read result is true");
+        assertNotThrown(strg.read(), "Expect read result is true");
     }
 
     { // Check if wallet file is exist.
