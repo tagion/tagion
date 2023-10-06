@@ -20,10 +20,6 @@ ${error REPOROOT must be defined}
 endif
 #export REPOROOT := ${abspath ${DTUB}/../}
 
-ifeq (prebuild,$(MAKECMDGOALS))
-PREBUILD=1
-endif
-
 #
 # Used for temp scripts
 #
@@ -72,7 +68,6 @@ include $(TARGETS)/host.mk
 include $(TARGETS)/platform.mk
 include $(TARGETS)/auxiliary.mk
 include $(TARGETS)/cov.mk
-include $(DTUB)/devnet/devnet.mk
 
 #
 # Packages
