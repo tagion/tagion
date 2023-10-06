@@ -89,8 +89,6 @@ env: env-dstep
 
 # clean-dstep: clean-dstep-$1
 
-# proper: clean-dstep-$1
-
 }
 endef
 

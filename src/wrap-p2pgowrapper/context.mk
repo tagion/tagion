@@ -13,42 +13,33 @@ endif
 
 prebuild1: $(LIBP2PGOWRAPPER)
 
+libp2p: $(LIBP2PGOWRAPPER)
 p2pgowrapper: $(LIBP2PGOWRAPPER)
 
-# clean-p2pgowrapper:
-# 	$(PRECMD)
-# 	${call log.header, $@ :: p2pgowrapper}
-# 	$(RM) $(LIBP2PGOWRAPPER)
-
-# clean: clean-p2pgowrapper
-
+proper-libp2p: proper-p2pgowrapper
 proper-p2pgowrapper:
 	$(PRECMD)
 	${call log.header, $@ :: proper}
 	$(RMDIR) $(DTMP_P2PGOWRAPPER)
+	$(RM) $(LIBP2PGOWRAPPER)
 
 
 .PHONY: proper-p2pgowrapper
 
-proper: proper-p2pgowrapper
-
 ${addprefix $(DTMP_P2PGOWRAPPER)/, c_helper.h libp2pgowrapper.h}: $(LIBP2PGOWRAPPER)
 
-$(LIBP2PGOWRAPPER): | $(DTMP_P2PGOWRAPPER)/.way
+P2PGOWRAPPER_HEAD := $(REPOROOT)/.git/modules/src/wrap-p2pgowrapper/p2pwrapper/HEAD
+P2PGOWRAPPER_GIT_MODULE := $(DSRC_P2PGOWRAPPER)/.git
+
+$(P2PGOWRAPPER_GIT_MODULE): 
+	git submodule update --init --depth=1 $(DSRC_P2PGOWRAPPER)
+
+$(LIBP2PGOWRAPPER): | $(DTMP_P2PGOWRAPPER)/.way $(P2PGOWRAPPER_HEAD) $(P2PGOWRAPPER_GIT_MODULE)
 	$(PRECMD)
 	${call log.kvp, build, $(@F)}
 	$(CP) $(DSRC_P2PGOWRAPPER)/* $(DTMP_P2PGOWRAPPER)
 	$(CD) $(DTMP_P2PGOWRAPPER); $(GO) $(GO_FLAGS) -o $(LIBP2PGOWRAPPER)
 	$(MV) $(DTMP)/libp2pgowrapper.h $(DTMP_P2PGOWRAPPER)
-
-
-#		echo $(DTMP_P2PGOWRAPPER)
-#	echo $@
-#	$(CD) $(DTMP_P2PGOWRAPPER); $(MV) $(DTMP_P2PGOWRAPPER)/libp2pgowrapper.a $(LIBP2PGOWRAPPER)
-
-#	$(CD) $(DTMP_P2PGOWRAPPER); $(GO) $(GO_FLAGS) -o $@
-#
-#	$(CD) $(DTMP_P2PGOWRAPPER); $(MV) $(DTMP_P2PGOWRAPPER)/libp2pgowrapper.a $(LIBP2PGOWRAPPER)
 
 env-p2pgowrapper:
 	$(PRECMD)

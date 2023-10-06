@@ -25,19 +25,27 @@ proper-openssl:
 	$(RM) $(LIBOPENSSL)
 	$(RMDIR) $(DTMP_OPENSSL)
 
-proper: proper-openssl
+OPENSSL_HEAD := $(REPOROOT)/.git/modules/src/wrap-openssl/openssl/HEAD 
+OPENSSL_GIT_MODULE := $(DSRC_OPENSSL)/.git
 
-$(DTMP_OPENSSL)/.configured: $(DTMP)/.way
-	$(PRECMD)$(CP) $(DSRC_OPENSSL) $(DTMP_OPENSSL)
-	$(PRECMD)cd $(DTMP_OPENSSL); ./config $(CONFIGUREFLAGS_OPENSSL)
-	$(PRECMD)cd $(DTMP_OPENSSL); make build_generated
-	$(PRECMD)touch $@
+$(OPENSSL_GIT_MODULE):
+	git submodule update --init --depth=1 $(DSRC_OPENSSL)
+
+$(DTMP_OPENSSL)/.configured: $(DTMP)/.way $(OPENSSL_HEAD) $(OPENSSL_GIT_MODULE)
+	$(PRECMD)
+	$(CP) $(DSRC_OPENSSL) $(DTMP_OPENSSL)
+	$(CD) $(DTMP_OPENSSL)
+	./config $(CONFIGUREFLAGS_OPENSSL)
+	$(MAKE) build_generated
+	touch $@
 
 $(DTMP)/libcrypto.a: $(DTMP_OPENSSL)/.configured
-	$(PRECMD)cd $(DTMP_OPENSSL); make libcrypto.a
-	$(PRECMD)cp $(DTMP_OPENSSL)/libcrypto.a $(DTMP)/libcrypto.a
+	$(PRECMD)
+	$(CD) $(DTMP_OPENSSL); make libcrypto.a
+	$(CP) $(DTMP_OPENSSL)/libcrypto.a $(DTMP)/libcrypto.a
 
 
 $(DTMP)/libssl.a: $(DTMP_OPENSSL)/.configured
-	$(PRECMD)cd $(DTMP_OPENSSL); make libssl.a
-	$(PRECMD)cp $(DTMP_OPENSSL)/libssl.a $(DTMP)/libssl.a
+	$(PRECMD)
+	$(CD) $(DTMP_OPENSSL); make libssl.a
+	$(CP) $(DTMP_OPENSSL)/libssl.a $(DTMP)/libssl.a

@@ -22,17 +22,22 @@ proper-wolfssl:
 	${call log.header, $@ :: wolfssl}
 	$(RMDIR) $(DTMP_WOLFSSL)
 
-proper: proper-wolfssl
-
 wolfssl: $(LIBWOLFSSL)
 
-$(LIBWOLFSSL): $(DTMP)/.way
+WOLFSSL_HEAD := $(REPOROOT)/.git/modules/src/wrap-wolfssl/wolfssl/HEAD
+WOLFSSL_GIT_MODULE := $(DSRC_WOLFSSL)/.git
+
+$(WOLFSSL_GIT_MODULE):
+	git submodule update --init --depth=1 $(DSRC_WOLFSSL)
+
+$(LIBWOLFSSL): $(DTMP)/.way $(WOLFSSL_HEAD) $(WOLFSSL_GIT_MODULE)
 	$(PRECMD)
 	${call log.kvp, $@}
 	$(CP) $(DSRC_WOLFSSL) $(DTMP_WOLFSSL)
-	$(PRECMD)cd $(DTMP_WOLFSSL); sh autogen.sh
-	$(PRECMD)cd $(DTMP_WOLFSSL); ./configure $(CONFIGUREFLAGS_WOLFSSL)
-	$(PRECMD)cd $(DTMP_WOLFSSL); make CFLAGS=-O2
+	$(CD) $(DTMP_WOLFSSL)
+	sh autogen.sh
+	./configure $(CONFIGUREFLAGS_WOLFSSL)
+	$(MAKE) CFLAGS=-O2
 
 env-wolfssl:
 	$(PRECMD)

@@ -3,7 +3,14 @@ DTMP_NNG := $(DTMP)/nng
 
 LIBNNG := $(DTMP_NNG)/libnng.a
 
-$(LIBNNG): $(DTMP_NNG)/.way $(REPOROOT)/.git/modules/src/wrap-nng/nng/HEAD
+# Used to check if the submodule has been updated
+NNG_HEAD := $(REPOROOT)/.git/modules/src/wrap-nng/nng/HEAD 
+NNG_GIT_MODULE := $(DSRC_NNG)/.git
+
+$(NNG_GIT_MODULE):
+	git submodule update --init --depth=1 $(DSRC_NNG)
+
+$(LIBNNG): $(DTMP_NNG)/.way $(NNG_HEAD) $(NNG_GIT_MODULE)
 	cd $(DTMP_NNG)
 	cmake $(DSRC_NNG)
 	$(MAKE)
@@ -42,7 +49,3 @@ proper-nng:
 	$(PRECMD)
 	${call log.header, $@ :: nng}
 	$(RMDIR) $(DTMP_NNG)
-
-proper: proper-nng
-
-

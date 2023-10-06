@@ -16,6 +16,7 @@ DTMP_SECP256K1 := $(DTMP)/secp256k1
 
 LIBSECP256K1:=$(DTMP_SECP256K1)/.libs/$(LIBSECP256K1_FILE)
 LIBSECP256K1_STATIC:=$(DTMP_SECP256K1)/.libs/$(LIBSECP256K1_NAME).$(STAEXT)
+LIBSECP256K1_SHARED:=$(DTMP_SECP256K1)/.libs/$(LIBSECP256K1_NAME).$(DLLEXT)
 LIBSECP256K1_OBJ:=$(DTMP_SECP256K1)/src/libsecp256k1_la-secp256k1.o
 
 CONFIGUREFLAGS_SECP256K1 += --enable-module-ecdh
@@ -25,11 +26,15 @@ CONFIGUREFLAGS_SECP256K1 += --enable-module-schnorrsig
 CONFIGUREFLAGS_SECP256K1 += CRYPTO_LIBS=$(DTMP)/ CRYPTO_CFLAGS=$(DSRC_OPENSSL)/include/
 CONFIGUREFLAGS_SECP256K1 += --prefix=$(DLIB)
 CONFIGUREFLAGS_SECP256K1 += CFLAGS=-fPIC
+
+SECP256K1_HEAD := $(REPOROOT)/.git/modules/src/wrap-secp256k1/secp256k1/HEAD 
+SECP256K1_GIT_MODULE := $(DSRC_SECP256K1)/.git
+
 include ${call dir.resolve, cross.mk}
 
 secp256k1: $(LIBSECP256K1) $(DSRC_SECP256K1)/include/secp256k1_hash.h
 
-
+$(DSRC_SECP256K1)/src/hash.h: $(SECP256K1_GIT_MODULE)
 $(DSRC_SECP256K1)/include/secp256k1_hash.h: $(DSRC_SECP256K1)/src/hash.h
 	$(PRECMD)
 	ln -s $< $@
@@ -41,7 +46,10 @@ proper-secp256k1:
 	$(RM) $(LIBSECP256K1)
 	$(RMDIR) $(DTMP_SECP256K1)
 
-$(DTMP_SECP256K1)/.libs/$(LIBSECP256K1_NAME).%: $(DTMP)/.way $(DLIB)/.way
+$(SECP256K1_GIT_MODULE):
+	git submodule update --init --depth=1 $(DSRC_SECP256K1)
+
+build_secp256k1: $(DTMP)/.way $(DLIB)/.way $(SECP256K1_HEAD) $(SECP256K1_GIT_MODULE)
 	$(PRECMD)
 	${call log.kvp, $@}
 	$(CP) $(DSRC_SECP256K1) $(DTMP_SECP256K1)
@@ -50,6 +58,9 @@ $(DTMP_SECP256K1)/.libs/$(LIBSECP256K1_NAME).%: $(DTMP)/.way $(DLIB)/.way
 	./configure $(CONFIGUREFLAGS_SECP256K1)
 	$(MAKE) clean
 	$(MAKE)
+
+$(LIBSECP256K1_STATIC): build_secp256k1
+$(LIBSECP256K1_SHARED): build_secp256k1
 
 env-secp256k1:
 	$(PRECMD)

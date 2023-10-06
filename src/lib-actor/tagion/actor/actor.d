@@ -15,11 +15,29 @@ import core.thread;
 import core.time;
 
 import concurrency = tagion.utils.pretend_safe_concurrency;
-import tagion.logger.Logger;
+import tagion.logger;
 import tagion.utils.Result;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.actor.exceptions;
 import tagion.basic.tagionexceptions : TagionException;
+
+import tagion.hibon.HiBONRecord;
+
+@safe
+@recordType("childrenState")
+struct ChildrenRecord {
+    @label("state") Ctrl[string] childrenState;
+    mixin HiBONRecord!(q{
+            this(Ctrl[string] state) {
+            this.childrenState = state;
+        }
+    });
+}
+
+static Topic actor_event;
+static this() {
+    actor_event = submask.register("actor_event");
+}
 
 version (Posix) {
     import std.string : toStringz;
@@ -57,14 +75,14 @@ struct Msg(string name) {
 
 private struct ActorInfo {
     private Ctrl[string] childrenState;
-    private string _task_name;
+    protected string _task_name;
     bool stop;
 
-    string task_name() @trusted nothrow {
+    string task_name() @safe nothrow {
         return _task_name;
     }
 
-    bool task_name(const string name) @trusted nothrow {
+    bool task_name(const string name) @safe nothrow {
         try {
             const registered = locate(name);
             const i_am_the_registered = (() @trusted => registered == thisTid)();
@@ -83,9 +101,6 @@ private struct ActorInfo {
             }
         }
         catch (Exception e) {
-            import std.stdio;
-
-            printf("Could not set name '%s', \nbecause %s", toStringz(name), toStringz(e.msg));
             return false;
         }
     }
@@ -192,11 +207,15 @@ bool statusChildren(Ctrl ctrl) @safe nothrow {
  */
 bool waitforChildren(Ctrl state, Duration timeout = 1.seconds) @safe nothrow {
     auto limit = MonoTime.currTime + timeout;
+    // Topic event_children_state = submask.register("children_state");
     try {
         while (!statusChildren(state) && MonoTime.currTime <= limit) {
             receiveTimeout(
                     timeout / thisActor.childrenState.length,
-                    (CtrlMsg msg) { thisActor.childrenState[msg.task_name] = msg.ctrl; }
+                    (CtrlMsg msg) {
+                // log(event_children_state, "state", ChildrenRecord(thisActor.childrenState));
+                thisActor.childrenState[msg.task_name] = msg.ctrl;
+            },
             );
         }
         log("%s", thisActor.childrenState);
