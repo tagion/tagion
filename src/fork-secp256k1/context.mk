@@ -49,7 +49,8 @@ proper-secp256k1:
 $(SECP256K1_GIT_MODULE):
 	git submodule update --init --depth=1 $(DSRC_SECP256K1)
 
-build_secp256k1: $(DTMP)/.way $(DLIB)/.way $(SECP256K1_HEAD) $(SECP256K1_GIT_MODULE)
+$(SECP256K1_HEAD): $(SECP256K1_GIT_MODULE)
+build_secp256k1: $(DTMP)/.way $(DLIB)/.way $(SECP256K1_HEAD)
 	$(PRECMD)
 	${call log.kvp, $@}
 	$(CP) $(DSRC_SECP256K1) $(DTMP_SECP256K1)

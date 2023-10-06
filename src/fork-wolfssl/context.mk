@@ -30,7 +30,9 @@ WOLFSSL_GIT_MODULE := $(DSRC_WOLFSSL)/.git
 $(WOLFSSL_GIT_MODULE):
 	git submodule update --init --depth=1 $(DSRC_WOLFSSL)
 
-$(LIBWOLFSSL): $(DTMP)/.way $(WOLFSSL_HEAD) $(WOLFSSL_GIT_MODULE)
+$(WOLFSSL_HEAD): $(WOLFSSL_GIT_MODULE)
+
+$(LIBWOLFSSL): $(DTMP)/.way $(WOLFSSL_HEAD)
 	$(PRECMD)
 	${call log.kvp, $@}
 	$(CP) $(DSRC_WOLFSSL) $(DTMP_WOLFSSL)

@@ -31,7 +31,8 @@ OPENSSL_GIT_MODULE := $(DSRC_OPENSSL)/.git
 $(OPENSSL_GIT_MODULE):
 	git submodule update --init --depth=1 $(DSRC_OPENSSL)
 
-$(DTMP_OPENSSL)/.configured: $(DTMP)/.way $(OPENSSL_HEAD) $(OPENSSL_GIT_MODULE)
+$(OPENSSL_HEAD): $(OPENSSL_GIT_MODULE)
+$(DTMP_OPENSSL)/.configured: $(DTMP)/.way $(OPENSSL_HEAD)
 	$(PRECMD)
 	$(CP) $(DSRC_OPENSSL) $(DTMP_OPENSSL)
 	$(CD) $(DTMP_OPENSSL)

@@ -10,7 +10,9 @@ NNG_GIT_MODULE := $(DSRC_NNG)/.git
 $(NNG_GIT_MODULE):
 	git submodule update --init --depth=1 $(DSRC_NNG)
 
-$(LIBNNG): $(DTMP_NNG)/.way $(NNG_HEAD) $(NNG_GIT_MODULE)
+$(NNG_HEAD): $(NNG_GIT_MODULE)
+
+$(LIBNNG): $(DTMP_NNG)/.way $(NNG_HEAD)
 	cd $(DTMP_NNG)
 	cmake $(DSRC_NNG)
 	$(MAKE)
