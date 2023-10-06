@@ -26,6 +26,7 @@ import tagion.script.TagionCurrency;
 import tagion.utils.Term;
 import std.typecons;
 import tagion.network.ReceiveBuffer;
+import tagion.wallet.BIP39;
 
 mixin Main!(_main, "newwallet");
 
@@ -57,10 +58,16 @@ int _main(string[] args) {
     string derive_code;
     string path;
     string pincode;
-    string passphrase;
-    string salt;
     uint bip39;
     bool wallet_ui;
+    string _passphrase;
+    string _salt;
+    char[] passphrase;
+    char[] salt;
+    scope (exit) {
+        scramble(passphrase);
+        scramble(salt);
+    }
     GetoptResult main_args;
     WalletOptions options;
     WalletInterface.Switch wallet_switch;
@@ -90,7 +97,7 @@ int _main(string[] args) {
                 "l|list", "List wallet content", &wallet_switch.list, //"questions", "Questions for wallet creation", &questions_str,
                 "s|sum", "Sum of the wallet", &wallet_switch.sum, //"questions", "Questions for wallet creation", &questions_str,
                 "send", "Send a contract to the network", &wallet_switch.send, //"answers", "Answers for wallet creation", &answers_str,
-                "P|passphrase", "Set the wallet passphrase", &passphrase,
+                "P|passphrase", "Set the wallet passphrase", &_passphrase,
                 "create-invoice", "Create invoice by format LABEL:PRICE. Example: Foreign_invoice:1000", &wallet_switch
                     .invoice,/*
                 "path", format("Set the path for the wallet files : default %s", path), &path,
@@ -117,7 +124,7 @@ int _main(string[] args) {
                     .contract_address,
                     "dart-addr", format("Sets the dart address default: %s", options.dart_address), &options.dart_address,
                 "bip39", "Generate bip39 set the number of words", &bip39,
-                "salt", format(`Add a salt to the bip39 word list (Default "%s")`, salt), &salt,/*
+                "salt", format(`Add a salt to the bip39 word list (Default "%s")`, _salt), &_salt,/*
                 "port|p", format("Tagion network port : default %d", options.port), &options.port,
                 "url|u", format("Tagion url : default %s", options.addr), &options.addr,
                 "visual|g", "Visual user interface", &wallet_ui,
@@ -188,13 +195,26 @@ int _main(string[] args) {
         }
         auto wallet_interface = WalletInterface(options);
         if (bip39 > 0) {
-            import tagion.wallet.BIP39;
             import tagion.wallet.bip39_english : words;
 
             const number_of_words = [12, 24];
             check(number_of_words.canFind(bip39), format("Invalid number of word %d should be (%(%d, %))", bip39, number_of_words));
             const wordlist = WordList(words);
-            return 0;
+            passphrase = wordlist.passphrase(bip39);
+
+            printf("%.*s\n", passphrase.length, &passphrase[0]); //5 here refers to # of characters 
+
+            //return 0;
+        }
+        else {
+            (() @trusted { passphrase = cast(char[]) _passphrase; }());
+        }
+        if (!_salt.empty) {
+            auto salt_tmp = (() @trusted => cast(char[]) _salt)();
+            scope (exit) {
+                scramble(salt_tmp);
+            }
+            salt ~= WordList.presalt ~ _salt;
         }
         if (!passphrase.empty) {
             check(!pincode.empty, "Missing pincode");

@@ -228,8 +228,8 @@ struct WalletInterface {
         return false;
     }
 
-    void generateSeedFromPassphrase(const(string) passphrase, string pincode) {
-        secure_wallet = StdSecureWallet(passphrase, pincode);
+    void generateSeedFromPassphrase(const(char[]) passphrase, const(char[]) pincode, const(char[]) salt = null) {
+        secure_wallet = StdSecureWallet(passphrase, pincode, salt);
     }
 
     /**
@@ -473,12 +473,14 @@ struct WalletInterface {
 
     void listInvoices(File fout) {
         const invoices = secure_wallet.account.requested_invoices;
-        if (invoices.empty) { return; }
+        if (invoices.empty) {
+            return;
+        }
 
         fout.writeln("Outstanding invoice requests");
         const line = format("%-(%s%)", "- ".repeat(40));
-        fout.writefln("%-5s %-10s %-45s","No","Label","Deriver");
-        foreach(i, invoice; invoices) {
+        fout.writefln("%-5s %-10s %-45s", "No", "Label", "Deriver");
+        foreach (i, invoice; invoices) {
             fout.writefln("%4s] %-10s %s", i, invoice.name, invoice.pkey.encodeBase64);
         }
         fout.writeln(line);
@@ -665,7 +667,8 @@ struct WalletInterface {
                         check(received_doc.isRecord!(HiRPC.Receiver), "Error in response. Aborting");
                         auto receiver = hirpc.receive(received_doc);
 
-                        auto res = trt_update ? secure_wallet.setResponseUpdateWallet(receiver) : secure_wallet.setResponseCheckRead(receiver);
+                        auto res = trt_update ? secure_wallet.setResponseUpdateWallet(
+                                receiver) : secure_wallet.setResponseCheckRead(receiver);
                         writeln(res ? "wallet updated succesfully" : "wallet not updated succesfully");
                         listAccount(stdout);
                         save_wallet = true;
@@ -680,12 +683,13 @@ struct WalletInterface {
                         .array;
 
                     TagionBill[] to_pay;
-                    foreach(doc; requests_to_pay) {
+                    foreach (doc; requests_to_pay) {
                         if (doc.isRecord!TagionBill) {
                             to_pay ~= TagionBill(doc);
                         }
                         else if (doc.isRecord!Invoice) {
                             import tagion.utils.StdTime : currentTime;
+
                             auto read_invoice = Invoice(doc);
                             to_pay ~= TagionBill(read_invoice.amount, currentTime, read_invoice.pkey, Buffer.init);
                         }
@@ -693,7 +697,7 @@ struct WalletInterface {
                             check(0, "File supplied not TagionBill or Invoice");
                         }
                     }
-                    
+
                     SignedContract signed_contract;
                     TagionCurrency fees;
                     secure_wallet.createPayment(to_pay, signed_contract, fees).get;

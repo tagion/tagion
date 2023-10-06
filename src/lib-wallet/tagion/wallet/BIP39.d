@@ -94,9 +94,9 @@ struct WordList {
 
     }
 
-    void gen(ref scope ushort[] words) const {
+    void gen(ref scope ushort[] words) const nothrow {
         foreach (ref word; words) {
-            word = getRandom!ushort & 0x800;
+            word = getRandom!ushort & 0x7FF;
         }
     }
 
@@ -113,22 +113,18 @@ struct WordList {
         return opCall(word_list, passphrase);
     }
 
-    char[] passphrase(uint number_of_words, const(char[]) salt) {
+    char[] passphrase(const uint number_of_words) const nothrow {
         scope ushort[] mnemonic_codes;
         mnemonic_codes.length = number_of_words;
         scope (exit) {
             scramble(mnemonic_codes);
         }
         gen(mnemonic_codes);
-        scope char[] extra_salt = presalt ~ salt;
         const password_size = mnemonic_codes
             .map!(code => words[code])
             .map!(m => m.length)
             .sum + mnemonic_codes.length - 1;
         auto result = new char[password_size];
-        scope (exit) {
-            scramble(extra_salt);
-        }
         result[] = ' ';
         uint index;
         foreach (code; mnemonic_codes) {
