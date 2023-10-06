@@ -595,6 +595,9 @@ struct SecureWallet(Net : SecureNet) {
         import tagion.script.Currency : totalAmount;
         import tagion.script.execute;
 
+        import std.stdio;
+        import tagion.hibon.HiBONtoText;
+
         try {
             PayScript pay_script;
             pay_script.outputs = to_pay;
@@ -610,10 +613,8 @@ struct SecureWallet(Net : SecureNet) {
                     .map!(bill => bill.value)
                     .totalAmount;
 
-                /*
-        const estimated_fees = ContractExecution.billFees(10);
-*/
                 const can_pay = collect_bills(amount_to_pay, collected_bills);
+                writefln("collected_bills %s", collected_bills.map!(b => net.calcHash(b).encodeBase64));
                 check(can_pay, format("Is unable to pay the amount %10.6fTGN available %10.6fTGN", amount_to_pay.value, available_balance
                         .value));
                 const amount_to_redraw = collected_bills
@@ -908,6 +909,36 @@ version (unittest) {
     alias StdSecureWallet = SecureWallet!StdSecureNet;
 
 }
+
+version (WALLET_SAME_BILL) {
+
+    @safe
+    unittest {
+        import std.algorithm;
+        import tagion.hibon.HiBONJSON;
+        import std.stdio;
+
+        auto wallet1 = StdSecureWallet("some words", "1234");
+        auto wallet2 = StdSecureWallet("some words2", "4321");
+        const bill1 = wallet1.requestBill(1000.TGN);
+        const bill2 = wallet1.requestBill(2000.TGN);
+
+        wallet1.addBill(bill1);
+        wallet1.addBill(bill2);
+        assert(wallet1.available_balance == 3000.TGN);
+
+        auto payment_request = wallet2.requestBill(1500.TGN);
+
+        SignedContract signed_contract;
+        TagionCurrency fee;
+        assert(wallet1.createPayment([payment_request], signed_contract, fee).value, "error creating payment");
+
+        writefln("%s", signed_contract.toPretty);
+
+        assert(signed_contract.contract.inputs.uniq.array.length == signed_contract.contract.inputs.length, "signed contract inputs invalid");
+    }
+}
+
 @safe
 unittest {
     auto wallet1 = StdSecureWallet("some words", "1234");

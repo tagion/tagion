@@ -18,9 +18,7 @@ jobs:
           export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1001/bus
           export XDG_RUNTIME_DIR=/run/user/1001
           systemctl stop --user neuewelle.service
-          rm -rf ~/.local/share/wave
           mkdir -p ~/.local/share/wave
-          create_wallets 5 ~/.local/share/wave ~/.local/share 
           mkdir -p ~/.config/systemd/user
           cp tagion ~/.local/share/wave
           cp neuewelle.service ~/.config/systemd/user

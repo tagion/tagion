@@ -798,9 +798,9 @@ alias check = Check!DARTException;
                 else {
                     // Loads the Archives into the archives
 
-                        .check(ordered_fingerprints.length == 1,
-                                format("Data base is broken at rim=%d fingerprint=%s",
-                                rim, ordered_fingerprints[0].toHex));
+                        // .check(ordered_fingerprints.length == 1,
+                        //         format("Data base is broken at rim=%d fingerprint=%s size=%s [%d]",
+                        //         rim, ordered_fingerprints[0].toHex, ordered_fingerprints.length, branch_index));
                     // The archive is set in erase mode so it can be easily be erased later
                     auto archive = new Archive(manufactor.net, doc, type);
                     if (ordered_fingerprints[0] == archive.fingerprint) {

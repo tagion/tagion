@@ -67,6 +67,8 @@ struct TVMService {
             log("unsuported script");
             return false;
         }
+        import std.algorithm;
+        collected.inputs.each!(d => writefln("%s", d.toPretty));
 
         auto result = execute(collected);
         if (result.error) {
