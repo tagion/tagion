@@ -3,6 +3,7 @@ module tagion.tools.subscribe;
 import std.stdio;
 import std.conv;
 import std.format;
+import std.algorithm : countUntil;
 
 import core.time;
 
@@ -71,17 +72,28 @@ int _main(string[] args) {
             }
             assert(rc == 0);
         }
+        stderr.writefln("Listening on, %s", address);
 
-        while (1) {
+        while (true) {
             auto data = sock.receive!(immutable(ubyte)[]);
-
             if (sock.errno != 0 && sock.errno != 5) {
                 stderr.writefln("Error string: (%s)%s", sock.errno, nng_errstr(sock.errno));
+                continue;
             }
-            else if (data.length >= 33) {
-                string tag = cast(string) data[0 .. 31];
-                auto doc = Document(data[32 .. $]);
+
+            long index = data.countUntil(cast(ubyte) '\0');
+            if (index == -1) {
+                continue;
+            }
+
+            string tag = cast(immutable(char)[]) data[0 .. index];
+
+            if (data.length > index + 1) {
+                auto doc = Document(data[index + 1 .. $]);
                 stderr.writefln("%s:\n%s", tag, doc.toPretty);
+            }
+            else {
+                stderr.writefln("%s", tag);
             }
         }
     }
