@@ -118,13 +118,19 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
         amount = 1500.TGN;
         auto payment_request = wallet2.requestBill(amount);
 
+        
+        import tagion.hibon.HiBONtoText;
+        
+        wallet1.account.bills
+            .each!(b => writefln("WALLET1 %s %s", wallet1.net.calcHash(b).encodeBase64, b.toPretty));
         SignedContract signed_contract;
         check(wallet1.createPayment([payment_request], signed_contract, fee).value, "Error creating wallet");
         check(signed_contract !is SignedContract.init, "contract not updated");
-        import tagion.script.execute;
+        check(signed_contract.contract.inputs.uniq.array.length == signed_contract.contract.inputs.length, "signed contract inputs invalid");
+        
+        writefln("WALLET1 created contract: %s", signed_contract.toPretty);
 
-        pragma(msg, "fixme(cbr): use the execute calculation");
-        writefln("FEE: %s", fee);
+        
 
         auto wallet1_hirpc = HiRPC(wallet1.net);
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
