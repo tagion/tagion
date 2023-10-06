@@ -172,7 +172,7 @@ later echo alcohol essence charge eight feel sweet nephew apple aerobic device
 
 @safe
 unittest {
-    import std.stdio;
+    //    import std.stdio;
     import tagion.wallet.bip39_english;
     import std.format;
     import std.string : representation;
@@ -200,14 +200,14 @@ unittest {
         immutable expected_entropy = "101011011101100011001001001011100100101100100101011000101110000100";
         const mnemonic_codes = wordlist.numbers(mnemonic);
         assert(expected_mnemonic_codes == mnemonic_codes);
-        writefln("%(%d %)", mnemonic_codes);
-        writefln("mnemonic_codes   %(%011b%)", mnemonic_codes);
-        writefln("expected_entropy %s", expected_entropy);
+        //       writefln("%(%d %)", mnemonic_codes);
+        //       writefln("mnemonic_codes   %(%011b%)", mnemonic_codes);
+        //       writefln("expected_entropy %s", expected_entropy);
         string mnemonic_codes_bits = format("%(%011b%)", mnemonic_codes);
         assert(expected_entropy == mnemonic_codes_bits);
         const entropy = wordlist.entropy(mnemonic_codes);
         string entropy_bits = format("%(%08b%)", entropy)[0 .. 11 * expected_mnemonic_codes.length];
-        writefln("expected_bits    %s", entropy_bits);
+        //      writefln("expected_bits    %s", entropy_bits);
         assert(expected_entropy == entropy_bits);
     }
     {
@@ -230,24 +230,24 @@ unittest {
         immutable expected_entropy = "011111010100100010111100000110000010011010100010011010001000110111010101001101101101110110010100010000010101010000010000100111100101";
         //assert(wordlist.numbers(mnemonic) == mnemonic_code);
         const mnemonic_codes = wordlist.numbers(mnemonic);
-        writefln("%(%d %)", mnemonic_codes);
-        writefln("mnemonic_codes   %(%011b%)", mnemonic_codes);
-        writefln("expected_entropy %s", expected_entropy);
-        writefln("%(%011b%)", wordlist.numbers(mnemonic));
-        writefln("%s", expected_entropy);
+        //    writefln("%(%d %)", mnemonic_codes);
+        //    writefln("mnemonic_codes   %(%011b%)", mnemonic_codes);
+        //    writefln("expected_entropy %s", expected_entropy);
+        //    writefln("%(%011b%)", wordlist.numbers(mnemonic));
+        //   writefln("%s", expected_entropy);
         string entropy_bits = format("%(%011b%)", wordlist.numbers(mnemonic));
-        writefln("expected_bits    %s", entropy_bits);
+        //  writefln("expected_bits    %s", entropy_bits);
         assert(expected_entropy == entropy_bits);
 
     }
     { /// PBKDF2 BIP39
         const mnemonic = [
             "basket",
-            "actual"//            "resist", "lounge",
+            "actual" //            "resist", "lounge",
             //            "switch",
         ];
 
-        writefln("%(%d %)", wordlist.numbers(mnemonic));
+        // writefln("%(%d %)", wordlist.numbers(mnemonic));
         import tagion.pbkdf2.pbkdf2;
         import std.digest.sha : SHA512;
         import std.bitmanip : nativeToBigEndian;
@@ -257,17 +257,17 @@ unittest {
         const entropy = wordlist.entropy(mnemonic_codes);
         string mnemonic_codes_bits = format("%(%011b%)", mnemonic_codes);
         string entropy_bits = format("%(%08b%)", entropy); //[0 .. 12 * mnemonic_codes.length];
-        writefln("%s", mnemonic_codes_bits);
-        writefln("%s", entropy_bits);
+        //     writefln("%s", mnemonic_codes_bits);
+        //     writefln("%s", entropy_bits);
         //  writefln("%(%02x %)", entropy);
         // writefln("%s", mnemonic_codes[0].nativeToBigEndian);
-        writefln("mnemonic byte length=%s", mnemonic_codes.length * 11 / 8);
-        writefln("entropy byte length =%s", entropy.length);
+        //     writefln("mnemonic byte length=%s", mnemonic_codes.length * 11 / 8);
+        //     writefln("entropy byte length =%s", entropy.length);
         alias pbkdf2_sha512 = pbkdf2!SHA512;
         string salt = "mnemonic"; //.representation;
         const entropy1 = "basket actual".representation;
         const result1 = pbkdf2_sha512(entropy1, salt.representation, 2048, 64);
-        writefln("%(%02x%)", result1);
+        //     writefln("%(%02x%)", result1);
         //5cf2d4a8b0355e90295bdfc565a022a409af063d5365bb57bf74d9528f494bfa4400f53d8349b80fdae44082d7f9541e1dba2b003bcfec9d0d53781ca676651f
         //    https://learnmeabitcoin.com/technical/mnemonic 
     }
