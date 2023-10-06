@@ -11,8 +11,7 @@ static assert(ver.LittleEndian, "At the moment bip39 only supports Little Endian
 
 //ubyte[] bip39(in WordList wordlist, const(ushort[]) mnemonics) {
 //}
-//version(none)
-@trusted
+version (none) @trusted
 ubyte[] bip39(const(ushort[]) mnemonics) nothrow {
     pragma(msg, "fixme(cbr): Fake BIP39 must be fixed later");
     import std.digest.sha : SHA256;
@@ -112,6 +111,31 @@ struct WordList {
         scope word_list = mnemonic_codes[]
             .map!(mnemonic_code => words[mnemonic_code]);
         return opCall(word_list, passphrase);
+    }
+
+    char[] passphrase(uint number_of_words, const(char[]) salt) {
+        scope ushort[] mnemonic_codes;
+        mnemonic_codes.length = number_of_words;
+        scope (exit) {
+            scramble(mnemonic_codes);
+        }
+        gen(mnemonic_codes);
+        scope char[] extra_salt = presalt ~ salt;
+        const password_size = mnemonic_codes
+            .map!(code => words[code])
+            .map!(m => m.length)
+            .sum + mnemonic_codes.length - 1;
+        auto result = new char[password_size];
+        scope (exit) {
+            scramble(extra_salt);
+        }
+        result[] = ' ';
+        uint index;
+        foreach (code; mnemonic_codes) {
+            result[index .. index + words[code].length] = words[code];
+            index += words[code].length + char.sizeof;
+        }
+        return result;
     }
 
     enum count = 2048;

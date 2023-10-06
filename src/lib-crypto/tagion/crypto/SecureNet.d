@@ -21,6 +21,11 @@ in (xor.empty || data.length == xor.length) {
     }
 }
 
+void scramble(T)(scope ref T[] data) @trusted if (T.sizeof > ubyte.sizeof) {
+    scope ubyte_data = cast(ubyte[]) data;
+    scramble(ubyte_data);
+}
+
 package alias check = Check!SecurityConsensusException;
 
 @safe

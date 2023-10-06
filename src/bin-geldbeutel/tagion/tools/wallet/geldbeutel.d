@@ -58,6 +58,8 @@ int _main(string[] args) {
     string path;
     string pincode;
     string passphrase;
+    string salt;
+    uint bip39;
     bool wallet_ui;
     GetoptResult main_args;
     WalletOptions options;
@@ -89,8 +91,8 @@ int _main(string[] args) {
                 "s|sum", "Sum of the wallet", &wallet_switch.sum, //"questions", "Questions for wallet creation", &questions_str,
                 "send", "Send a contract to the network", &wallet_switch.send, //"answers", "Answers for wallet creation", &answers_str,
                 "P|passphrase", "Set the wallet passphrase", &passphrase,
-                "create-invoice", "Create invoice by format LABEL:PRICE. Example: Foreign_invoice:1000", &wallet_switch.invoice,
-                /*
+                "create-invoice", "Create invoice by format LABEL:PRICE. Example: Foreign_invoice:1000", &wallet_switch
+                    .invoice,/*
                 "path", format("Set the path for the wallet files : default %s", path), &path,
                 "wallet", format("Wallet file : default %s", options.walletfile), &options.walletfile,
                 "device", format("Device file : default %s", options.devicefile), &options.devicefile,
@@ -102,19 +104,20 @@ int _main(string[] args) {
                 "update|U", "Update your wallet", &update_wallet,
                 "item|m", "Invoice item select from the invoice file", &item,
                 */
-                "pin|x", "Pincode", &pincode,
-                "amount", "Create an payment request in tagion", &wallet_switch.amount,
-                "force", "Force input bill", &wallet_switch.force,
-                "pay", "Creates a payment contract", &wallet_switch.pay,
-                "dry", "Dry-run this will not save the wallet", &__dry_switch,
-                "req", "List all requested bills", &wallet_switch.request,
-                "update", "Request a wallet updated", &wallet_switch.update,
-                "trt-update", "Request a update on all derivers", &wallet_switch.trt_update,
-                "contract-addr", format(
-                    "Sets the contract address default: %s", options.contract_address), &options
-                    .contract_address, 
-                "dart-addr", format("Sets the dart address default: %s", options.dart_address), &options.dart_address,
-                /*
+                    "pin|x", "Pincode", &pincode,
+                    "amount", "Create an payment request in tagion", &wallet_switch.amount,
+                    "force", "Force input bill", &wallet_switch.force,
+                    "pay", "Creates a payment contract", &wallet_switch.pay,
+                    "dry", "Dry-run this will not save the wallet", &__dry_switch,
+                    "req", "List all requested bills", &wallet_switch.request,
+                    "update", "Request a wallet updated", &wallet_switch.update,
+                    "trt-update", "Request a update on all derivers", &wallet_switch.trt_update,
+                    "contract-addr", format(
+                        "Sets the contract address default: %s", options.contract_address), &options
+                    .contract_address,
+                    "dart-addr", format("Sets the dart address default: %s", options.dart_address), &options.dart_address,
+                "bip39", "Generate bip39 set the number of words", &bip39,
+                "salt", format(`Add a salt to the bip39 word list (Default "%s")`, salt), &salt,/*
                 "port|p", format("Tagion network port : default %d", options.port), &options.port,
                 "url|u", format("Tagion url : default %s", options.addr), &options.addr,
                 "visual|g", "Visual user interface", &wallet_ui,
@@ -126,7 +129,7 @@ int _main(string[] args) {
                 "nossl", "Disable ssl encryption", &none_ssl_socket,
     */
 
-                    
+        
 
         );
     }
@@ -184,6 +187,15 @@ int _main(string[] args) {
             }
         }
         auto wallet_interface = WalletInterface(options);
+        if (bip39 > 0) {
+            import tagion.wallet.BIP39;
+            import tagion.wallet.bip39_english : words;
+
+            const number_of_words = [12, 24];
+            check(number_of_words.canFind(bip39), format("Invalid number of word %d should be (%(%d, %))", bip39, number_of_words));
+            const wordlist = WordList(words);
+            return 0;
+        }
         if (!passphrase.empty) {
             check(!pincode.empty, "Missing pincode");
             wallet_interface.generateSeedFromPassphrase(passphrase, pincode);

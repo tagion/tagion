@@ -172,20 +172,21 @@ struct SecureWallet(Net : SecureNet) {
      * Returns: 
      *   Create an new wallet with the input
      */
-    this(
-            const(ushort[]) mnemonic,
-    const(char[]) pincode) {
-        check(mnemonic.length >= 12, "Mnemonic is empty");
+    version (none) {
+        this(
+                const(ushort[]) mnemonic,
+        const(char[]) pincode) {
+            check(mnemonic.length >= 12, "Mnemonic is empty");
 
-        import tagion.wallet.BIP39;
+            import tagion.wallet.BIP39;
 
-        _net = new Net;
-        auto R = bip39(mnemonic);
-        _net = _net;
-        set_pincode(R, pincode);
-        _net.createKeyPair(R);
+            _net = new Net;
+            auto R = bip39(mnemonic);
+            _net = _net;
+            set_pincode(R, pincode);
+            _net.createKeyPair(R);
+        }
     }
-
     this(scope const(char[]) passphrase, scope const(char[]) pincode, scope const(char[]) salt = null) {
         _net = new Net;
         enum size_of_privkey = 32;
@@ -801,7 +802,7 @@ struct SecureWallet(Net : SecureNet) {
             assert(secure_wallet.isLoggedin);
         }
 
-        { // Secure wallet with mnemonic.
+        version (none) { // Secure wallet with mnemonic.
 
             const test_pin_code = "1234";
             const test_mnemonic = cast(ushort[])[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];

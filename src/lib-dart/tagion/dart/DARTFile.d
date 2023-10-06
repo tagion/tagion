@@ -1127,10 +1127,11 @@ alias check = Check!DARTException;
         return Document(blockfile.cacheLoad(index));
     }
 
-    HiBON search(Buffer[] owners, immutable(SecureNet) net) {
+    HiBON search(Buffer[] owners, const(SecureNet) net) {
         import tagion.script.common;
         import std.algorithm : canFind;
         import tagion.hibon.HiBONJSON;
+
         TagionBill[] bills;
 
         void local_load(
@@ -1163,7 +1164,7 @@ alias check = Check!DARTException;
             params[i] = bill.toHiBON;
         }
         return params;
-        
+
     }
 
     version (unittest) {

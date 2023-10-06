@@ -162,7 +162,7 @@ struct SecureWallet(Net : SecureNet) {
      * Returns: 
      *   Create an new wallet with the input
      */
-    static SecureWallet createWallet(
+    version (none) static SecureWallet createWallet(
             const(ushort[]) mnemonic,
     const(char[]) pincode) {
         check(mnemonic.length >= 12, "Mnemonic is empty");
@@ -664,7 +664,7 @@ struct SecureWallet(Net : SecureNet) {
             assert(secure_wallet.isLoggedin);
         }
 
-        { // Secure wallet with mnemonic.
+        version (none) { // Secure wallet with mnemonic.
 
             const test_pin_code = "1234";
             const test_mnemonic = cast(ushort[])[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
