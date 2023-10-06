@@ -115,7 +115,7 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
     Document _wallet2() @trusted {
         wallet1 = wallets[1];
         wallet2 = wallets[2];
-        amount = 1500.TGN;
+        amount = 100.TGN;
         auto payment_request = wallet2.requestBill(amount);
 
         
