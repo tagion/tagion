@@ -907,6 +907,30 @@ version (unittest) {
     alias StdSecureWallet = SecureWallet!StdSecureNet;
 
 }
+
+@safe 
+unittest {
+    auto wallet1 = StdSecureWallet("some words", "1234");
+    auto wallet2 = StdSecureWallet("some words2", "4321");
+    const bill1 = wallet1.requestBill(1000.TGN);
+    const bill2 = wallet1.requestBill(2000.TGN);
+
+    wallet1.addBill(bill1);
+    wallet1.addBill(bill2);
+    assert(wallet1.available_balance == 3000.TGN);
+
+    auto payment_request = wallet2.requestBill(1500.TGN);
+
+    SignedContract signed_contract;
+    TagionCurrency fee;
+    assert(wallet1.createPayment([payment_request], signed_contract, fee).value, "error creating payment");
+
+    import std.algorithm;
+    assert(signed_contract.contract.inputs.uniq.array.length == signed_contract.contract.inputs.length, "signed contract inputs invalid");
+
+}
+
+
 @safe
 unittest {
     auto wallet1 = StdSecureWallet("some words", "1234");
