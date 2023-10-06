@@ -100,7 +100,7 @@ int _main(string[] args) {
         db.modify(recorder);
     }
 
-    immutable neuewelle_args = ["neuewelle", config_file];
+    immutable neuewelle_args = ["send_contract_test", config_file] ~ args;
     auto tid = spawn(&wrap_neuewelle, neuewelle_args);
     Thread.sleep(15.seconds);
     writeln("going to run test");

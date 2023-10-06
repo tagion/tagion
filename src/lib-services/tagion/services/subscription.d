@@ -55,8 +55,7 @@ struct SubscriptionService {
         void receiveSubscription(Topic topic, string identifier, const(Document) data) @trusted {
             immutable(ubyte)[] payload;
 
-            topic.name.length = 32;
-            payload = cast(immutable(ubyte)[]) topic.name;
+            payload = cast(immutable(ubyte)[])(topic.name ~ '\0');
 
             HiBON hibon = new HiBON;
             hibon[identifier] = data;
