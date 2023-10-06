@@ -43,21 +43,6 @@ include $(DTUB)/utilities/log.mk
 include $(DTUB)/tools/*.mk
 include $(TARGETS)/commands.mk
 
-prebuild:
-	$(PRECMD)
-	git submodule update --recursive
-	echo $(WRAPS)
-	${foreach wrap,$(WRAPS),$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) $(wrap);}
-	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) revision
-	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) dstep
-
-env-prebuild:
-	$(PRECMD)
-	${call log.header, $@ :: env}
-	${call log.env, PREBUILD_MK, $(PREBUILD_MK)}
-	${call log.env, WRAPS, $(WRAPS)}
-	${call log.close}
-
 #
 # Native platform
 #
