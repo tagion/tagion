@@ -8,6 +8,7 @@ ci:
 	$(MAKE) -S ddoc -f$(DTUB)/main.mk
 	cp $(REPOROOT)/collider_schedule.json $(DBIN) 
 	cp $(DSRC)/bin-wave/neuewelle.service $(DBIN)
+	cp $(DTUB)/scripts/create_wallets.sh $(DBIN)
 	$(MAKE) -S trunk -f$(DTUB)/main.mk
 	#$(MAKE) -S test unittest-cov trunk bddreport -f$(DTUB)/main.mk
 
