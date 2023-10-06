@@ -97,18 +97,20 @@ int _main(string[] args) {
     bool version_switch;
     bool override_switch;
     bool monitor;
+    immutable(string)[] subscription_tags;
 
     auto main_args = getopt(args,
             "v|version", "Print revision information", &version_switch,
             "O|override", "Override the config file", &override_switch,
             "m|monitor", "Enable the monitor", &monitor,
+            "subscribe", "Log subscription tags to enable", &subscription_tags,
     );
 
     if (main_args.helpWanted) {
         tagionGetoptPrinter(
                 "Help information for tagion wave program\n" ~
-                format("Usage: %s -[%(%c%)] <tagionwave.json>\n", program, main_args.options.map!(o => o.optShort[1])),
-        main_args.options
+                format("Usage: %s <tagionwave.json>\n", program),
+                main_args.options
         );
         return 0;
     }
@@ -118,16 +120,15 @@ int _main(string[] args) {
         return 0;
     }
 
-    string config_file;
+    string config_file = "tagionwave.json";
     if (args.length >= 2 && args[1].hasExtension(".json")) {
         config_file = args[1];
-        if (!config_file.exists) {
-            stderr.writefln("Config file '%s' doesn't exist", config_file);
-            return 1;
-        }
     }
-    else {
-        config_file = "tagionwave.json";
+
+    if (override_switch) {
+        Options.defaultOptions.save(config_file);
+        writefln("Configure file written to %s", config_file);
+        return 0;
     }
 
     Options local_options;
@@ -143,13 +144,7 @@ int _main(string[] args) {
     }
     else {
         local_options = Options.defaultOptions;
-        log("Running with default options");
-    }
-
-    if (override_switch) {
-        local_options.save(config_file);
-        writefln("Configure file written to %s", config_file);
-        return 0;
+        stderr.writefln("No config file exits, running with default options");
     }
 
     // Spawn logger service
@@ -166,7 +161,7 @@ int _main(string[] args) {
         import tagion.services.inputvalidator;
         import tagion.services.collector;
 
-        immutable subopts = SubscriptionServiceOptions([]);
+        immutable subopts = immutable(SubscriptionServiceOptions)(subscription_tags);
         sub_handle = spawn!SubscriptionService("logger_sub", subopts);
         waitforChildren(Ctrl.ALIVE);
         log.registerSubscriptionTask("logger_sub");
