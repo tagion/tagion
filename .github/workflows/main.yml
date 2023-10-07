@@ -36,7 +36,7 @@ jobs:
 
       - name: Run tests
         run: |
-          make clean ci -j DC=${{env.DC}} || make clean proper ci -j DC=${{env.DC}}
+          make ci -j DC=${{env.DC}} || make proper ci -j DC=${{env.DC}}
           
       - name: Report unittests
         run: |
