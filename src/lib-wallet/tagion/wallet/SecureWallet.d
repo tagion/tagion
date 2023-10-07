@@ -425,6 +425,7 @@ struct SecureWallet(Net : SecureNet) {
         catch (Exception e) {
             return Result!bool(e);
         }
+        return result(true);
     }
 
     /**
