@@ -51,29 +51,29 @@ protected Type[string] generateLabelMap(const(string[Type]) typemap) {
 }
 
 enum typeMap = [
-    Type.NONE: NotSupported,
-    Type.VER: NotSupported,
-    Type.FLOAT32: "f32",
-    Type.FLOAT64: "f64",
-    Type.STRING: "$",
-    Type.BINARY: "*",
-    Type.DOCUMENT: "{}",
-    Type.BOOLEAN: "bool",
-    Type.TIME: "time",
-    Type.INT32: "i32",
-    Type.INT64: "i64",
-    Type.UINT32: "u32",
-    Type.UINT64: "u64",
-    Type.BIGINT: "big",
+        Type.NONE: NotSupported,
+        Type.VER: NotSupported,
+        Type.FLOAT32: "f32",
+        Type.FLOAT64: "f64",
+        Type.STRING: "$",
+        Type.BINARY: "*",
+        Type.DOCUMENT: "{}",
+        Type.BOOLEAN: "bool",
+        Type.TIME: "time",
+        Type.INT32: "i32",
+        Type.INT64: "i64",
+        Type.UINT32: "u32",
+        Type.UINT64: "u64",
+        Type.BIGINT: "big",
 
-    Type.DEFINED_NATIVE: NotSupported,
+        Type.DEFINED_NATIVE: NotSupported,
 
-    Type.DEFINED_ARRAY: NotSupported,
-    Type.NATIVE_DOCUMENT: NotSupported,
-    Type.NATIVE_HIBON_ARRAY: NotSupported,
-    Type.NATIVE_DOCUMENT_ARRAY: NotSupported,
-    Type.NATIVE_STRING_ARRAY: NotSupported
-];
+        Type.DEFINED_ARRAY: NotSupported,
+        Type.NATIVE_DOCUMENT: NotSupported,
+        Type.NATIVE_HIBON_ARRAY: NotSupported,
+        Type.NATIVE_DOCUMENT_ARRAY: NotSupported,
+        Type.NATIVE_STRING_ARRAY: NotSupported
+    ];
 
 static unittest {
     static foreach (E; EnumMembers!Type) {
@@ -250,12 +250,13 @@ mixin template JSONString() {
                     else {
                         goto default;
                     }
-                    // break TypeCase;
+                    break TypeCase;
                 }
             default:
                 throw new HiBONException(format("Unsuported HiBON type %s", e.type));
             }
         }
+        return doc_element;
     }
 }
 

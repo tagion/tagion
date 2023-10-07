@@ -324,6 +324,7 @@ static size_t size(U)(const(U[]) array) pure {
                                 const v = value.by!(E);
                                 return Document.sizeT(E, key, v);
                             }
+                            break TypeCase;
                         }
                     }
                 default:

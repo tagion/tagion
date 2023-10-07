@@ -1113,7 +1113,7 @@ static assert(uint.sizeof == 4);
                 
 
                     .check(isIndex, [
-                        "Key '", key.to!string, "' is not an index", key
+                    "Key '", key.to!string, "' is not an index", key
                 ].join);
                 return LEB128.decode!uint(data[keyPos .. $]).value;
             }
@@ -1280,11 +1280,14 @@ static assert(uint.sizeof == 4);
                             else static if (E is Type.NONE) {
                                 goto default;
                             }
+                            break TypeCase;
                         }
                     default:
                         return 0;
                     }
                 }
+                return 0;
+                //                assert(0);
             }
 
             /++

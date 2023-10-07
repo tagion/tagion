@@ -83,12 +83,12 @@ bool error_callback(const Document main_doc, const Document.Element.ErrorCode er
                                         writefln("\tleb128  %d", leb128_size);
                                         hex_dump(
                                                 current.data[current.valuePos
-                                            .. current.valuePos + leb128_size]);
+                                                .. current.valuePos + leb128_size]);
                                     }
                                     else {
                                         hex_dump(
                                                 current.data[current.valuePos
-                                            .. current.valuePos + T.sizeof]);
+                                                .. current.valuePos + T.sizeof]);
                                     }
                                 }
                                 else static if (E is VER) {
@@ -96,7 +96,7 @@ bool error_callback(const Document main_doc, const Document.Element.ErrorCode er
                                             current.data[ubyte.sizeof .. $]);
                                     hex_dump(
                                             current.data[ubyte.sizeof
-                                        .. ubyte.sizeof + leb128_version_size]);
+                                            .. ubyte.sizeof + leb128_version_size]);
                                 }
                                 static if (isHiBONBaseType(E)) {
                                     (() @trusted { writefln("\tvalue  %s", current.by!E); })();
@@ -115,8 +115,10 @@ bool error_callback(const Document main_doc, const Document.Element.ErrorCode er
         return false;
     }
     catch (Exception e) {
-        assumeWontThrow(
+        assumeWontThrow( //        (() @trusted {
         { stdout.flush; writefln("%s", e); });
+        //        })();
         return true;
     }
+    return false;
 }
