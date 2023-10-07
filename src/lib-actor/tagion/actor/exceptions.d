@@ -27,7 +27,7 @@ static void fatal(const(Throwable) e) nothrow {
     import tagion.logger.Logger;
 
     immutable task_e = taskException(e);
-    log(task_e);
+    log(task_e.throwable);
     try {
         task_e.taskfailure;
     }

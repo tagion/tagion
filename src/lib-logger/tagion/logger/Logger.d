@@ -7,8 +7,6 @@ import std.format;
 
 import tagion.utils.pretend_safe_concurrency;
 import tagion.basic.Types : Control;
-import tagion.actor.exceptions;
-import tagion.actor : thisActor;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.Document : Document;
@@ -43,6 +41,36 @@ static struct Logger {
 
     }
 
+    @property
+    string task_name() @nogc @safe nothrow const {
+        return _task_name;
+    }
+
+    @property
+    bool task_name(const string name) @safe nothrow {
+        try {
+            const registered = locate(name);
+            const i_am_the_registered = (() @trusted => registered == thisTid)();
+            if (registered is Tid.init) {
+                
+                    .register(name, thisTid);
+                _task_name = name;
+                setThreadName(name);
+                return true;
+            }
+            else if (i_am_the_registered) {
+                _task_name = name;
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+        catch (Exception e) {
+            return false;
+        }
+    }
+
     shared bool silent; /// If true the log is silened (no logs is process from any tasks)
 
     /**
@@ -61,8 +89,7 @@ static struct Logger {
         try {
             logger_tid = locate(logger_task_name);
 
-            const registered = thisActor.task_name = task_name;
-            _task_name = task_name;
+            const registered = this.task_name = task_name;
 
             if (!registered) {
                 log.error("%s logger not register", _task_name);
@@ -92,14 +119,6 @@ is ready and has been started correctly
     }
     do {
         this.logger_task_name = logger_task_name;
-    }
-
-    /**
-    Returns: the name of the current task registered by the logger
-*/
-    @property @nogc
-    string task_name() pure const nothrow {
-        return _task_name;
     }
 
     /**
@@ -275,21 +294,6 @@ logs the fmt text in INFO level
         report(LogLevel.INFO, fmt, args);
     }
 
-    /**
-    Logs the task fail exception task_e
-*/
-    void opCall(lazy immutable(TaskFailure) task_e) const nothrow {
-        fatal("From task %s '%s'", task_e.task_name, task_e.throwable.msg);
-        scope char[] text;
-        const(char[]) error_text() @trusted {
-            task_e.throwable.toString((buf) { text ~= buf; });
-            return text;
-        }
-
-        fatal("%s", error_text());
-        opCall(task_e.throwable);
-    }
-
     /// Should be rewritten to support subscription
     bool env(T)(
             string symbol_name,
@@ -452,4 +456,25 @@ unittest {
     assert(topic.subscribed, "Topic wasn't subscribed, it should");
     Log_!(some_symbol)(topic);
     assert(true == receiveTimeout(Duration.zero, (Topic _, string __, const(Document)) {}), "Didn't receive subscribed topic");
+}
+
+version (Posix) {
+    import std.string : toStringz;
+    import core.sys.posix.pthread;
+
+    extern (C) int pthread_setname_np(pthread_t, const char*) nothrow;
+
+    /**
+    Set the thread name to the same as the task name
+    Note. Makes it easier to debug because pthread name is the same as th task name
+    */
+    @trusted
+    void setThreadName(string name) nothrow {
+        pthread_setname_np(pthread_self(), toStringz(name));
+    }
+}
+else {
+    @trusted
+    void setThreadName(string _) nothrow {
+    }
 }

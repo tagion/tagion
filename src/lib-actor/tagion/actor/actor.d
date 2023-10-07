@@ -19,46 +19,8 @@ import tagion.logger;
 import tagion.utils.Result;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.actor.exceptions;
-import tagion.basic.tagionexceptions : TagionException;
 
 import tagion.hibon.HiBONRecord;
-
-@safe
-@recordType("childrenState")
-struct ChildrenRecord {
-    @label("state") Ctrl[string] childrenState;
-    mixin HiBONRecord!(q{
-            this(Ctrl[string] state) {
-            this.childrenState = state;
-        }
-    });
-}
-
-static Topic actor_event;
-static this() {
-    actor_event = submask.register("actor_event");
-}
-
-version (Posix) {
-    import std.string : toStringz;
-    import core.sys.posix.pthread;
-
-    extern (C) int pthread_setname_np(pthread_t, const char*) nothrow;
-
-    /**
-    Set the thread name to the same as the task name
-    Note. Makes it easier to debug because pthread name is the same as th task name
-    */
-    @trusted
-    void setThreadName(string name) nothrow {
-        pthread_setname_np(pthread_self(), toStringz(name));
-    }
-}
-else {
-    @trusted
-    void setThreadName(string _) nothrow {
-    }
-}
 
 /**
  * Message "Atom" type
@@ -75,35 +37,18 @@ struct Msg(string name) {
 
 private struct ActorInfo {
     private Ctrl[string] childrenState;
-    protected string _task_name;
     bool stop;
 
-    string task_name() @safe nothrow {
-        return _task_name;
+    @property @safe
+    bool task_name(string name) nothrow const {
+        return log.task_name(name);
     }
 
-    bool task_name(const string name) @safe nothrow {
-        try {
-            const registered = locate(name);
-            const i_am_the_registered = (() @trusted => registered == thisTid)();
-            if (registered is Tid.init) {
-                register(name, thisTid);
-                _task_name = name;
-                setThreadName(name);
-                return true;
-            }
-            else if (i_am_the_registered) {
-                _task_name = name;
-                return true;
-            }
-            else {
-                return false;
-            }
-        }
-        catch (Exception e) {
-            return false;
-        }
+    @property @safe
+    string task_name() const nothrow {
+        return log.task_name;
     }
+
 }
 
 static ActorInfo thisActor;
@@ -212,10 +157,7 @@ bool waitforChildren(Ctrl state, Duration timeout = 1.seconds) @safe nothrow {
         while (!statusChildren(state) && MonoTime.currTime <= limit) {
             receiveTimeout(
                     timeout / thisActor.childrenState.length,
-                    (CtrlMsg msg) {
-                // log(event_children_state, "state", ChildrenRecord(thisActor.childrenState));
-                thisActor.childrenState[msg.task_name] = msg.ctrl;
-            },
+                    (CtrlMsg msg) { thisActor.childrenState[msg.task_name] = msg.ctrl; },
             );
         }
         log("%s", thisActor.childrenState);
