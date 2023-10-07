@@ -32,7 +32,7 @@ jobs:
         with:
           path: |
             ./build/${{env.TARGET}}/tmp/
-          key: ${{ env.TARGET }}-deps
+          key: ${{ env.target }}-deps
 
       - name: Run tests
         run: |
