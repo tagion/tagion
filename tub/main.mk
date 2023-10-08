@@ -20,10 +20,6 @@ ${error REPOROOT must be defined}
 endif
 #export REPOROOT := ${abspath ${DTUB}/../}
 
-ifeq (prebuild,$(MAKECMDGOALS))
-PREBUILD=1
-endif
-
 #
 # Used for temp scripts
 #
@@ -42,21 +38,6 @@ include $(DTUB)/utilities/log.mk
 
 include $(DTUB)/tools/*.mk
 include $(TARGETS)/commands.mk
-
-prebuild:
-	$(PRECMD)
-	git submodule update --recursive
-	echo $(WRAPS)
-	${foreach wrap,$(WRAPS),$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) $(wrap);}
-	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) revision
-	$(MAKE) $(MAKEOVERRIDES) -f $(PREBUILD_MK) dstep
-
-env-prebuild:
-	$(PRECMD)
-	${call log.header, $@ :: env}
-	${call log.env, PREBUILD_MK, $(PREBUILD_MK)}
-	${call log.env, WRAPS, $(WRAPS)}
-	${call log.close}
 
 #
 # Native platform
@@ -87,7 +68,6 @@ include $(TARGETS)/host.mk
 include $(TARGETS)/platform.mk
 include $(TARGETS)/auxiliary.mk
 include $(TARGETS)/cov.mk
-include $(DTUB)/devnet/devnet.mk
 
 #
 # Packages

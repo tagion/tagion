@@ -1,5 +1,3 @@
-
-
 release-%:
 	$(PRECMD)
 	export DFLAGS=$(RELEASE_DFLAGS)
@@ -31,9 +29,3 @@ env-release:
 .PHONY: env-release
 
 env: env-release
-
-
-
-
-
-

@@ -52,4 +52,3 @@ proper-druntime:
 	$(RM) -r $(LDC_BUILD_RUNTIME_TMP)
 
 .PHONY: proper-druntime
-proper: proper-druntime

@@ -15,32 +15,12 @@ import core.thread;
 import core.time;
 
 import concurrency = tagion.utils.pretend_safe_concurrency;
-import tagion.logger.Logger;
+import tagion.logger;
 import tagion.utils.Result;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.actor.exceptions;
-import tagion.basic.tagionexceptions : TagionException;
 
-version (Posix) {
-    import std.string : toStringz;
-    import core.sys.posix.pthread;
-
-    extern (C) int pthread_setname_np(pthread_t, const char*) nothrow;
-
-    /**
-    Set the thread name to the same as the task name
-    Note. Makes it easier to debug because pthread name is the same as th task name
-    */
-    @trusted
-    void setThreadName(string name) nothrow {
-        pthread_setname_np(pthread_self(), toStringz(name));
-    }
-}
-else {
-    @trusted
-    void setThreadName(string _) nothrow {
-    }
-}
+import tagion.hibon.HiBONRecord;
 
 /**
  * Message "Atom" type
@@ -57,38 +37,18 @@ struct Msg(string name) {
 
 private struct ActorInfo {
     private Ctrl[string] childrenState;
-    private string _task_name;
     bool stop;
 
-    string task_name() @trusted nothrow {
-        return _task_name;
+    @property @safe
+    bool task_name(string name) nothrow const {
+        return log.task_name(name);
     }
 
-    bool task_name(const string name) @trusted nothrow {
-        try {
-            const registered = locate(name);
-            const i_am_the_registered = (() @trusted => registered == thisTid)();
-            if (registered is Tid.init) {
-                register(name, thisTid);
-                _task_name = name;
-                setThreadName(name);
-                return true;
-            }
-            else if (i_am_the_registered) {
-                _task_name = name;
-                return true;
-            }
-            else {
-                return false;
-            }
-        }
-        catch (Exception e) {
-            import std.stdio;
-
-            printf("Could not set name '%s', \nbecause %s", toStringz(name), toStringz(e.msg));
-            return false;
-        }
+    @property @safe
+    string task_name() const nothrow {
+        return log.task_name;
     }
+
 }
 
 static ActorInfo thisActor;
@@ -192,11 +152,12 @@ bool statusChildren(Ctrl ctrl) @safe nothrow {
  */
 bool waitforChildren(Ctrl state, Duration timeout = 1.seconds) @safe nothrow {
     auto limit = MonoTime.currTime + timeout;
+    // Topic event_children_state = submask.register("children_state");
     try {
         while (!statusChildren(state) && MonoTime.currTime <= limit) {
             receiveTimeout(
                     timeout / thisActor.childrenState.length,
-                    (CtrlMsg msg) { thisActor.childrenState[msg.task_name] = msg.ctrl; }
+                    (CtrlMsg msg) { thisActor.childrenState[msg.task_name] = msg.ctrl; },
             );
         }
         log("%s", thisActor.childrenState);

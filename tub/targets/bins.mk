@@ -14,6 +14,8 @@ BINS+=$$(_$1)
 
 bins: $1
 
+$3: revision
+
 ifneq ($(and $(ONETOOL),$3),) 
 
 $1: $3

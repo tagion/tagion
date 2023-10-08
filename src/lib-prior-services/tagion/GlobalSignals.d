@@ -26,24 +26,24 @@ __gshared Event stopsignal;
 static shared bool abort = false;
 
 private shared bool fault;
-static if (ver.Posix && not_unittest) {
-    private static extern (C) void shutdown(int sig) @nogc nothrow {
-        if (!fault) {
-            if (sig is SIGINT) {
-                printf("SIGINT=%d SIGTERM=%d\n", SIGINT, SIGTERM);
-                printf("Shutdown sig %d about=%d\n", sig, abort);
-                if (abort) {
-                    exit(0);
-                }
-                printf("Program will now abort\n");
-                abort = true;
-            }
-            else {
-                printf("Ignored sig %d about=%d\n", sig, abort);
-            }
-        }
-    }
-}
+// static if (ver.Posix && not_unittest) {
+//     private static extern (C) void shutdown(int sig) @nogc nothrow {
+//         if (!fault) {
+//             if (sig is SIGINT) {
+//                 printf("SIGINT=%d SIGTERM=%d\n", SIGINT, SIGTERM);
+//                 printf("Shutdown sig %d about=%d\n", sig, abort);
+//                 if (abort) {
+//                     exit(0);
+//                 }
+//                 printf("Program will now abort\n");
+//                 abort = true;
+//             }
+//             else {
+//                 printf("Ignored sig %d about=%d\n", sig, abort);
+//             }
+//         }
+//     }
+// }
 
 shared string call_stack_file;
 
@@ -123,7 +123,7 @@ static if (not_unittest) {
             sigaction(SIGSEGV, &sa, null);
         }
 
-        signal(SIGINT, &shutdown);
-        signal(SIGTERM, &shutdown);
+        // signal(SIGINT, &shutdown);
+        // signal(SIGTERM, &shutdown);
     }
 }

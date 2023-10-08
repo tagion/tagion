@@ -26,8 +26,6 @@ proper-secp256k1-sha256:
 
 .PHONY: proper-secp256k1-sha256
 
-proper: proper-secp256k1-sha256
-
 secp256k1: $(SEC256k1_WRAPPER_OBJ)
 
 endif

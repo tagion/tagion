@@ -35,11 +35,11 @@ pacman -Syu make screen autoconf go clang libtool perl dub cmake
     
 3. Choose a D compiler ldc2 or dmd
         
-- LLVM D compiler - ldc2 (latest working version is 1.29)
+- LLVM D compiler - ldc2 (latest working version is 1.34)
 ```bash
-wget https://github.com/ldc-developers/ldc/releases/download/v1.29.0/ldc2-1.29.0-linux-x86_64.tar.xz
-tar xf ldc2-1.29.0-linux-x86_64.tar.xz
-export PATH="path-to-ldc2/ldc2-1.29.0-linux-x86_64/bin:$PATH"
+wget https://github.com/ldc-developers/ldc/releases/download/v1.34.0/ldc2-1.34.0-linux-x86_64.tar.xz
+tar xf ldc2-1.34.0-linux-x86_64.tar.xz
+export PATH="path-to-ldc2/ldc2-1.34.0-linux-x86_64/bin:$PATH"
 ```
         
 - Reference D compiler - dmd
@@ -61,7 +61,7 @@ tar xf dstep-1.0.0-linux-x86_64.tar.xz
     
 ```bash
 dstep --version # 1.0.0
-ldc2 --version # LDC - the LLVM D compiler (1.29.0): ...
+ldc2 --version # LDC - the LLVM D compiler (1.34.0): ...
 dmd --version
 go version # go version go1.19.5 linux/amd64
 ```
