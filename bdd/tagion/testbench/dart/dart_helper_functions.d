@@ -88,10 +88,12 @@ Document goToSplit(const DART.Rims rim, const HiRPC hirpc, DART db) @safe {
  */
 DARTIndex[] getFingerprints(const Document doc, DART db = null) @safe {
 
+    pragma(msg, "fixme(cbr): Check the that we use the dartIndex and Fingerprint in this test correctetly");
     if (RecordFactory.Recorder.isRecord(doc)) {
         assert(db !is null, "DART needed for this use case");
         auto recorder = db.recorder(doc);
-        return recorder[].map!(a => DARTIndex(a._fingerprint)).array;
+        return recorder[].map!(a => cast(DARTIndex)(a._fingerprint)).array;
+
     }
 
     return DARTFile.Branches(doc).fingerprints

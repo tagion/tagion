@@ -19,6 +19,7 @@ import std.traits : FunctionTypeOf;
 import std.functional : toDelegate;
 
 import tagion.crypto.SecureInterfaceNet : HashNet;
+import tagion.crypto.Types : Fingerprint;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONRecord : label, STUB, isHiBONRecord, GetLabel, isStub, recordType;
@@ -401,7 +402,7 @@ const Neutral = delegate(const(Archive) a) => a.type;
         ADD = 1, /// Archive marked as add instrunction
     }
 
-    @label(STUB, true) const(DARTIndex) _fingerprint; /// Stub hash-pointer used in sharding
+    @label(STUB, true) const(Fingerprint) _fingerprint; /// Stub hash-pointer used in sharding
     @label("$a", true) const Document filed; /// The actual data strute stored 
     @label("$t", true) const(Type) type; /// Acrhive type
     @label("$i", true) const(DARTIndex) dart_index;
@@ -424,8 +425,9 @@ const Neutral = delegate(const(Archive) a) => a.type;
     }
     do {
         if (.isStub(doc)) {
-            _fingerprint = net.dartIndex(doc);
-            dart_index = _fingerprint;
+            _fingerprint = net.calcHash(doc);
+            dart_index = (doc.hasHashKey) ? net.dartIndex(filed) : cast(DARTIndex)(_fingerprint);
+            //dart_index = _fingerprint;
         }
         else {
             if (doc.hasMember(archiveLabel)) {
@@ -434,8 +436,8 @@ const Neutral = delegate(const(Archive) a) => a.type;
             else {
                 filed = doc;
             }
-            _fingerprint = net.dartIndex(filed);
-            dart_index = (doc.hasHashKey) ? net.dartIndex(filed) : _fingerprint;
+            _fingerprint = net.calcHash(filed);
+            dart_index = (doc.hasHashKey) ? net.dartIndex(filed) : cast(DARTIndex)(_fingerprint);
         }
         Type _type = t;
         if (_type is Type.NONE && doc.hasMember(typeLabel)) {
@@ -485,7 +487,7 @@ const Neutral = delegate(const(Archive) a) => a.type;
     *   fingerprint = hash-key to select the archive
     *   t = type must be either REMOVE or NONE 
     */
-    private this(DARTIndex dart_index, const Type t = Type.NONE)
+    private this(const(DARTIndex) dart_index, const Type t = Type.NONE)
     in (!dart_index.empty)
     in (t !is Type.ADD)
     do {
@@ -493,7 +495,7 @@ const Neutral = delegate(const(Archive) a) => a.type;
         filed = Document();
         this.dart_index = dart_index;
         // _fingerprint=null;
-        _fingerprint = dart_index;
+        _fingerprint = cast(Fingerprint) dart_index;
     }
 
     /**
@@ -581,7 +583,7 @@ unittest { // Archive
         hibon["#text"] = "Some text";
         filed_doc = Document(hibon);
     }
-    immutable filed_doc_fingerprint = net.dartIndex(filed_doc);
+    immutable filed_doc_fingerprint = net.calcHash(filed_doc);
     immutable filed_doc_dart_index = net.dartIndex(filed_doc);
 
     Archive a;

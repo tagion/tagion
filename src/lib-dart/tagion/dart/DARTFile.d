@@ -36,6 +36,7 @@ private {
     import tagion.dart.DARTException : DARTException;
     import tagion.dart.DARTBasic;
     import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
+    import tagion.crypto.Types : Fingerprint;
 
     //import tagion.basic.basic;
     import tagion.basic.tagionexceptions : Check;
@@ -310,6 +311,11 @@ alias check = Check!DARTException;
             this(const Index index, Buffer fingerprint) {
                 this.index = index;
                 this.fingerprint = fingerprint;
+
+            }
+            this(const Index index, Fingerprint fingerprint) {
+                this.index = index;
+                this.fingerprint = cast(Buffer)fingerprint;
 
             }
 
