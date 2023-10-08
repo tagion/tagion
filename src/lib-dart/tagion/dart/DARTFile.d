@@ -2474,6 +2474,9 @@ unittest {
     }
 
     {
+        pragma(msg, "fixme(cbr): This unittest does not see to be relavant to DARTFile maybe this should be moved");
+        // At least it should not be dependent on tagion.script
+        // Just make a d Document with $Y owner key
         filename_A.forceRemove;
         DARTFile.create(filename_A, net);
         auto dart_A = new DARTFile(net, filename_A);
@@ -2508,4 +2511,28 @@ unittest {
         auto h = dart_A.search([pkey1, pkey2].map!(b => cast(Buffer) b).array, (() @trusted => cast(immutable) _net)());
     }
 
+    { // Check the #name archives 
+        filename_A.forceRemove;
+        DARTFile.create(filename_A, net);
+        auto dart_A = new DARTFile(net, filename_A);
+        static struct HashDoc {
+            @label("#name") string name;
+            int number;
+            mixin HiBONRecord!(q{
+                this(string name, int n) {
+                    this.name=name;
+                    number=n;
+                }
+        });
+        }
+
+        auto recorder_A = dart_A.recorder;
+        const hashdoc1 = HashDoc("hugo", 42);
+        recorder_A.add(hashdoc1);
+        assert(recorder_A[].front.dart_index != recorder_A[].front._fingerprint, "The dart_index and the fingerprint of a archive should not be the same for a # archive");
+        auto bullseye = dart_A.modify(recorder_A);
+        writefln("bullseye   =%(%02x%)", bullseye);
+        writefln("fingerprint=%(%02x%)", recorder_A[].front._fingerprint);
+        assert(bullseye == recorder_A[].front._fingerprint, "The bullseye for a DART with a single #key archive should be the same as the fingerprint of the archive");
+    }
 }
