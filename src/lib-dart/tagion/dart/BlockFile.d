@@ -64,7 +64,7 @@ class BlockFile {
     enum DEFAULT_BLOCK_SIZE = 0x40;
     immutable uint BLOCK_SIZE;
     //immutable uint DATA_SIZE;
-    alias BlockFileStatistic = Statistic!(uint, Yes.histogram);
+    alias BlockFileStatistic = Statistic!(ulong, Yes.histogram);
     alias RecyclerFileStatistic = Statistic!(ulong, Yes.histogram);
     static bool do_not_write;
     package {
@@ -419,8 +419,8 @@ class BlockFile {
      + Returns:
      +     The number of blocks used to allocate size bytes
      +/
-    uint numberOfBlocks(const size_t size) const pure nothrow @nogc {
-        return cast(uint)((size / BLOCK_SIZE) + ((size % BLOCK_SIZE == 0) ? 0 : 1));
+    ulong numberOfBlocks(const ulong size) const pure nothrow @nogc {
+        return cast(ulong)((size / BLOCK_SIZE) + ((size % BLOCK_SIZE == 0) ? 0 : 1));
     }
 
     /++
@@ -645,7 +645,7 @@ class BlockFile {
             initFront;
         }
 
-        alias BlockSegmentInfo = Tuple!(Index, "index", string, "type", uint, "size", Document, "doc");
+        alias BlockSegmentInfo = Tuple!(Index, "index", string, "type", ulong, "size", Document, "doc");
 
         private void initFront() @trusted {
             import std.format;
@@ -654,7 +654,7 @@ class BlockFile {
             import tagion.utils.Term;
 
             const doc = owner.load(index);
-            uint size;
+            ulong size;
 
             try {
 

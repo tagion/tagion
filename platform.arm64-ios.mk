@@ -30,7 +30,6 @@ SHARED?=1
 OS:=darwin
 DLLEXT:=dylib
 DFLAGS+=$(DDEFAULTLIBSTATIC)
-DFLAGS+=-i
 DFLAGS+=-mtriple=$(TRIPLET)
 DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
 

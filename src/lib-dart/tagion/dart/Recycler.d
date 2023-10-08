@@ -22,7 +22,7 @@ import tagion.hibon.HiBONJSON : toPretty;
 @safe @recordType("R")
 struct RecycleSegment {
     Index next;
-    uint size;
+    ulong size;
     @label("") Index index;
     Index end() const pure nothrow @nogc {
         return Index(index + size);
@@ -30,7 +30,7 @@ struct RecycleSegment {
 
     mixin HiBONRecord!(q{
         @disable this();
-        this(const Index index, const uint size, Index next = Index.init) pure nothrow {
+        this(const Index index, const ulong size, Index next = Index.init) pure nothrow {
             this.index = index;
             this.size = size;
             this.next = next;
@@ -44,7 +44,7 @@ struct RecycleSegment {
             // writeln(doc.toPretty);
             check(RecycleSegment.isRecord(doc), "The loaded segment was not of type segment doc");
             next = doc[GetLabel!(next).name].get!Index;
-            size = doc[GetLabel!(size).name].get!uint;
+            size = doc[GetLabel!(size).name].get!ulong;
             index = _index;
           
         }
@@ -322,7 +322,7 @@ struct Recycler {
      * Returns: 
      *   Index pointer of a free segment
      */
-    const(Index) claim(const uint segment_size) nothrow
+    const(Index) claim(const ulong segment_size) nothrow
     in (segment_size > 0)
 
     out (result) {
@@ -382,7 +382,7 @@ struct Recycler {
      *   index = index to the block
      *   segment_size = in number of blocks.
      */
-    void dispose(const(Index) index, const uint segment_size) nothrow {
+    void dispose(const(Index) index, const ulong segment_size) nothrow {
         // If the index is 0 then it is because we have returned a Leave.init. 
         // This should not be added to the recycler.
         if (index == 0) {
