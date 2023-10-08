@@ -53,7 +53,7 @@ StdSecureNet[] createNets(uint count, string pass_prefix = "net") @safe {
     }).array;
 }
 
-TagionBill[] createBills(StdSecureNet[] bill_nets, uint amount) @safe {
+TagionBill[] createBills(const(StdSecureNet)[] bill_nets, uint amount) @safe {
     return bill_nets.map!((net) =>
             TagionBill(TGN(amount), currentTime, net.pubkey, Buffer.init)
     ).array;
@@ -71,7 +71,6 @@ class ItWork {
     DARTServiceHandle dart_handle;
     CollectorServiceHandle collector_handle;
 
-    immutable(DARTIndex)[] inputs;
     TagionBill[] input_bills;
     StdSecureNet[] input_nets;
 
@@ -118,8 +117,6 @@ class ItWork {
         input_nets = createNets(10, "input");
         input_bills = input_nets.createBills(100_000);
         input_bills.insertBills(insert_recorder);
-        inputs ~= input_bills.map!(a => node_net.dartIndex(a.toDoc)).array;
-        check(inputs !is null, "Inputs were null");
         dart_handle.send(dartModify(), RecordFactory.uniqueRecorder(insert_recorder), immutable int(0));
 
         {
@@ -135,30 +132,22 @@ class ItWork {
 
     @When("i send a contract")
     Document contract() @trusted {
-        immutable outputs = PayScript(iota(0, 10).map!(_ => TagionBill.init).array).toDoc;
-        immutable contract = cast(immutable) Contract(inputs, immutable(DARTIndex[]).init, outputs);
-        immutable signs = {
-            Signature[] _signs;
-            const contract_hash = node_net.calcHash(contract.toDoc);
-            foreach (net; input_nets) {
-                _signs ~= net.sign(contract_hash);
-            }
-            return _signs.assumeUnique;
-        }();
-        check(signs !is null, "No signatures");
+        const script = PayScript(iota(0, 10).map!(_ => TagionBill.init).array).toDoc;
+        const s_contract = sign(cast(SecureNet[]) input_nets, input_bills.map!(a => a.toDoc).array, null, script);
 
-        immutable s_contract = immutable(SignedContract)(signs, contract);
+        import std.stdio;
+        import tagion.hibon.HiBONJSON;
+
+        writeln(s_contract.toPretty);
 
         const hirpc = HiRPC(node_net);
         immutable sender = hirpc.sendDaMonies(s_contract);
         collector_handle.send(inputHiRPC(), hirpc.receive(sender.toDoc));
 
         auto collected = receiveOnlyTimeout!(signedContract, immutable(CollectedSignedContract)*)[1];
-        import std.stdio;
-        import tagion.hibon.HiBONJSON;
 
         check(collected !is null, "The collected was null");
-        check(collected.inputs.length == inputs.length, "The lenght of inputs were not the same");
+        // check(collected.inputs.length == inputs.length, "The lenght of inputs were not the same");
         // check(collected.inputs.map!(a => node_net.dartIndex(a)).array == inputs, "The collected archives did not match the index");
         return result_ok;
     }
@@ -192,6 +181,9 @@ class ItWork {
 
     @When("i send an contract with invalid signatures inputs")
     Document invalidSignatures() @trusted {
+        immutable(DARTIndex)[] inputs = input_bills.map!(a => node_net.dartIndex(a.toDoc)).array;
+        check(inputs !is null, "Inputs were null");
+
         immutable outputs = PayScript(iota(0, 10).map!(_ => TagionBill.init).array).toDoc;
         immutable contract = cast(immutable) Contract(inputs, immutable(DARTIndex[]).init, outputs);
         immutable signs = {

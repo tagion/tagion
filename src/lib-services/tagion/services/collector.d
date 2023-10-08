@@ -135,30 +135,36 @@ struct CollectorService {
             //     return;
             // }
             immutable s_contract = contracts[res.id];
-            const contract_hash = net.calcHash(s_contract.contract);
-            foreach (index, sign; zip(s_contract.contract.inputs, s_contract.signs)) {
-                immutable archive = find(recorder, index);
-                if (archive is null) {
-                    log(reject, "archive_no_exist", recorder);
-                    return;
-                }
-                if (!archive.filed.hasMember(StdNames.owner)) {
-                    log(reject, "archive_no_pubkey", recorder);
-                    return;
-                }
-                Pubkey pkey = archive.filed[StdNames.owner].get!Buffer;
-                if (!net.verify(contract_hash, sign, pkey)) {
-                    log(reject, "contract_no_verify", recorder);
-                    return;
-                }
+            immutable inputs = recorder[].map!(a => a.filed).array;
+
+            if (!verify(net, s_contract, inputs)) {
+                log(reject, "contract_no_verify", recorder);
+                return;
             }
+            // const contract_hash = net.calcHash(s_contract.contract);
+
+            // foreach (index, sign; zip(s_contract.contract.inputs, s_contract.signs)) {
+            //     immutable archive = find(recorder, index);
+            //     if (archive is null) {
+            //         log(reject, "archive_no_exist", recorder);
+            //         return;
+            //     }
+            //     if (!archive.filed.hasMember(StdNames.owner)) {
+            //         log(reject, "archive_no_pubkey", recorder);
+            //         return;
+            //     }
+            //     Pubkey pkey = archive.filed[StdNames.owner].get!Buffer;
+            //     if (!net.verify(contract_hash, sign, pkey)) {
+            //         log(reject, "contract_no_verify", recorder);
+            //         return;
+            //     }
+            // }
 
             if (recorder is RecordFactory.init) {
                 log(reject, "contract_no_inputs", recorder);
                 return;
             }
 
-            immutable inputs = recorder[].map!(a => a.filed).array;
             assert(inputs !is Document[].init, "Recorder should've contained inputs at this point");
             immutable collection =
                 ((res.id in reads) !is null)
@@ -169,7 +175,7 @@ struct CollectorService {
             if (is_consensus_contract[res.id]) {
                 locate(task_names.tvm).send(consensusContract(), collection);
             }
-        else {
+            else {
                 locate(task_names.tvm).send(signedContract(), collection);
             }
             return;
