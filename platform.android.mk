@@ -70,7 +70,6 @@ CROSS_OS:=android
 
 SHARED?=1
 DFLAGS+=$(DDEFAULTLIBSTATIC)
-DFLAGS+=-i
 
 DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
 
