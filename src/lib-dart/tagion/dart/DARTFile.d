@@ -313,6 +313,7 @@ alias check = Check!DARTException;
                 this.fingerprint = fingerprint;
 
             }
+                version(none)
             this(const Index index, Fingerprint fingerprint) {
                 this.index = index;
                 this.fingerprint = cast(Buffer)fingerprint;
