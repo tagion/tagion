@@ -66,14 +66,11 @@ unittest { // Check the #key hash with types
     hash_u64.x = 42;
     import std.stdio;
 
-    writefln("dart_index=%(%02x%)", net.dartIndex(hash_u32));
-    writefln("dart_index=%(%02x%)", net.dartIndex(hash_u64));
     assert(net.dartIndex(hash_u32) != net.dartIndex(hash_u64));
     auto other_hash_u32 = hash_u32;
     other_hash_u32.extra_name = "extra";
-    writefln("dart_index=%(%02x%)", net.dartIndex(other_hash_u32));
-    assert(net.dartIndex(hash_u32) == net.dartIndex(other_hash_u32), "Archives with the same #key should have the same dart-Index");
-    writefln("fingerprint=%(%02x%)", net.calcHash(other_hash_u32));
-    writefln("fingerprint=%(%02x%)", net.calcHash(hash_u32));
-    assert(net.calcHash(hash_u32) != net.calcHash(other_hash_u32), "Two archives with same #key and different data should have different fingerprints");
+    assert(net.dartIndex(hash_u32) == net.dartIndex(other_hash_u32),
+            "Archives with the same #key should have the same dart-Index");
+    assert(net.calcHash(hash_u32) != net.calcHash(other_hash_u32),
+            "Two archives with same #key and different data should have different fingerprints");
 }

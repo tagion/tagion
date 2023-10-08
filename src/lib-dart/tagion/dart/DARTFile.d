@@ -319,7 +319,7 @@ alias check = Check!DARTException;
 
             }
 
-          //      version(none)
+                version(none)
             this(const Index index, DARTIndex hash_pointer) {
                 this.index = index;
                 this.fingerprint = cast(Buffer) hash_pointer;
@@ -2526,15 +2526,34 @@ unittest {
         });
         }
 
-        auto recorder_A = dart_A.recorder;
-        const hashdoc1 = HashDoc("hugo", 42);
-        recorder_A.add(hashdoc1);
-        assert(recorder_A[].front.dart_index != recorder_A[].front._fingerprint,
+        auto recorder_add = dart_A.recorder;
+        const hashdoc = HashDoc("hugo", 42);
+        recorder_add.add(hashdoc);
+        assert(recorder_add[].front.dart_index != recorder_add[].front._fingerprint,
         "The dart_index and the fingerprint of a archive should not be the same for a # archive");
-        auto bullseye = dart_A.modify(recorder_A);
-        writefln("bullseye   =%(%02x%)", bullseye);
-        writefln("fingerprint=%(%02x%)", recorder_A[].front._fingerprint);
-        assert(bullseye == recorder_A[].front._fingerprint,
+        auto bullseye = dart_A.modify(recorder_add);
+        dart_A.dump;
+        // writefln("bullseye   =%(%02x%)", bullseye);
+        // writefln("fingerprint=%(%02x%)", recorder_add[].front._fingerprint);
+        assert(bullseye == recorder_add[].front._fingerprint,
         "The bullseye for a DART with a single #key archive should be the same as the fingerprint of the archive");
+        const hashdoc_change = HashDoc("hugo", 17);
+        /*
+        auto recorder_B = dart_A.recorder;
+        recorder_B.remove(hashdoc_change);
+        dart_A.dump;
+         bullseye = dart_A.modify(recorder_B);
+        */
+        auto recorder_change = dart_A.recorder;
+        recorder_change.add(hashdoc_change);
+        bullseye = dart_A.modify(recorder_change);
+        dart_A.dump;
+        // writefln("bullseye   =%(%02x%)", bullseye);
+        // writefln("dart_index =%(%02x%)", recorder_change[].front.dart_index);
+        // writefln("fingerprint=%(%02x%)", recorder_change[].front._fingerprint);
+        assert(recorder_add[].front.dart_index == recorder_change[].front.dart_index);
+        assert(bullseye == recorder_change[].front._fingerprint,
+        "The bullseye for a DART with a single #key archive should be the same as the fingerprint of the archive");
+
     }
 }
