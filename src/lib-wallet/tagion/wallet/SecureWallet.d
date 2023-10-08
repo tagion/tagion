@@ -20,7 +20,6 @@ import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONException : HiBONRecordException;
 
 import tagion.dart.DARTBasic;
-import tagion.dart.DARTFile;
 
 import tagion.basic.basic : basename, isinit;
 import tagion.basic.Types : Buffer;
