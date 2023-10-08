@@ -2529,10 +2529,12 @@ unittest {
         auto recorder_A = dart_A.recorder;
         const hashdoc1 = HashDoc("hugo", 42);
         recorder_A.add(hashdoc1);
-        assert(recorder_A[].front.dart_index != recorder_A[].front._fingerprint, "The dart_index and the fingerprint of a archive should not be the same for a # archive");
+        assert(recorder_A[].front.dart_index != recorder_A[].front._fingerprint,
+        "The dart_index and the fingerprint of a archive should not be the same for a # archive");
         auto bullseye = dart_A.modify(recorder_A);
         writefln("bullseye   =%(%02x%)", bullseye);
         writefln("fingerprint=%(%02x%)", recorder_A[].front._fingerprint);
-        assert(bullseye == recorder_A[].front._fingerprint, "The bullseye for a DART with a single #key archive should be the same as the fingerprint of the archive");
+        assert(bullseye == recorder_A[].front._fingerprint,
+        "The bullseye for a DART with a single #key archive should be the same as the fingerprint of the archive");
     }
 }
