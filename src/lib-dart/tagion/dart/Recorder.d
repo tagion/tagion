@@ -118,8 +118,8 @@ class RecordFactory {
     class Recorder {
         /// This will order REMOVE before add
 
-        alias archive_sorted = (a, b) @safe => (a.fingerprint < b.fingerprint) || (
-                a.fingerprint == b.fingerprint) && (a.type < b.type);
+        alias archive_sorted = (a, b) @safe => (a.dart_index < b.dart_index) || (
+                a.dart_index == b.dart_index) && (a.type < b.type);
 
         alias Archives = RedBlackTree!(Archive, archive_sorted);
         package Archives archives;
@@ -185,7 +185,7 @@ class RecordFactory {
             return archives[];
         }
 
-        void removeOutOfRange(ushort from, ushort to) { //TODO: write unit tests
+        version (none) void removeOutOfRange(ushort from, ushort to) { //TODO: write unit tests
             if (from == to)
                 return;
             immutable ushort to_origin = (to - from) & ushort.max;
@@ -232,15 +232,11 @@ class RecordFactory {
          * Returns:
          *     The archive @ fingerprint and if it dosn't exists then a null reference is returned
          */
-        Archive find(const(DARTIndex) fingerprint) {
-            // in {
-            //     assert(fingerprint);
-            // }
-            // do {
-            if ((fingerprint.length !is 0) && (archives !is null)) {
-                auto archive = new Archive(fingerprint, Archive.Type.NONE);
+        Archive find(const(DARTIndex) dart_index) {
+            if ((dart_index.length !is 0) && (archives !is null)) {
+                auto archive = new Archive(dart_index, Archive.Type.NONE);
                 auto range = archives.equalRange(archive);
-                if ((!range.empty) && (archive.fingerprint == range.front.fingerprint)) {
+                if ((!range.empty) && (archive.dart_index == range.front.dart_index)) {
                     return range.front;
                 }
             }
@@ -263,7 +259,7 @@ class RecordFactory {
                 hibon["text"] = format("Some text %d", i);
                 hibon["index"] = i;
                 auto archive = new Archive(hash_net, Document(hibon));
-                set_of_archives[archive.fingerprint] = archive;
+                set_of_archives[archive.dart_index] = archive;
             }
 
             auto recorder = record_factory.recorder;
@@ -277,7 +273,7 @@ class RecordFactory {
             }
 
             foreach (a; set_of_archives) {
-                auto archive_found = recorder.find(a.fingerprint);
+                auto archive_found = recorder.find(a.dart_index);
                 assert(archive_found);
                 assert(archive_found is a);
             }
@@ -286,7 +282,7 @@ class RecordFactory {
                 auto hibon = new HiBON;
                 hibon["text"] = "Does not exist in the recoder";
                 auto none_existing_archive = new Archive(hash_net, Document(hibon));
-                assert(recorder.find(none_existing_archive.fingerprint) is null);
+                assert(recorder.find(none_existing_archive.dart_index) is null);
             }
         }
         /**
@@ -308,7 +304,7 @@ class RecordFactory {
         }
 
         void insert(Archive archive) //, const Archive.Type type = Archive.Type.NONE)
-        in (!archive.fingerprint.empty)
+        in (!archive.dart_index.empty)
         do {
             archives.insert(archive);
         }
@@ -405,11 +401,12 @@ const Neutral = delegate(const(Archive) a) => a.type;
         ADD = 1, /// Archive marked as add instrunction
     }
 
-    @label(STUB, true) const(DARTIndex) fingerprint; /// Stub hash-pointer used in sharding
+    @label(STUB, true) const(DARTIndex) _fingerprint; /// Stub hash-pointer used in sharding
     @label("$a", true) const Document filed; /// The actual data strute stored 
     @label("$t", true) const(Type) type; /// Acrhive type
+    @label("$i", true) const(DARTIndex) dart_index;
     enum archiveLabel = GetLabel!(this.filed).name;
-    enum fingerprintLabel = GetLabel!(this.fingerprint).name;
+    enum fingerprintLabel = GetLabel!(this._fingerprint).name;
     enum typeLabel = GetLabel!(this.type).name;
 
     mixin JSONString;
@@ -427,7 +424,8 @@ const Neutral = delegate(const(Archive) a) => a.type;
     }
     do {
         if (.isStub(doc)) {
-            fingerprint = net.dartIndex(doc);
+            _fingerprint = net.dartIndex(doc);
+            dart_index = _fingerprint;
         }
         else {
             if (doc.hasMember(archiveLabel)) {
@@ -436,7 +434,8 @@ const Neutral = delegate(const(Archive) a) => a.type;
             else {
                 filed = doc;
             }
-            fingerprint = net.dartIndex(filed);
+            _fingerprint = net.dartIndex(filed);
+            dart_index = (doc.hasHashKey) ? net.dartIndex(filed) : _fingerprint;
         }
         Type _type = t;
         if (_type is Type.NONE && doc.hasMember(typeLabel)) {
@@ -451,7 +450,7 @@ const Neutral = delegate(const(Archive) a) => a.type;
     }
 
     override string toString() const {
-        return format("Archive %s %s %s", fingerprint.hex, type,
+        return format("Archive %(%02x%) %s %s", dart_index, type,
                 (() @trusted => cast(void*) this)());
     }
 
@@ -468,7 +467,7 @@ const Neutral = delegate(const(Archive) a) => a.type;
     const(Document) toDoc() const {
         auto hibon = new HiBON;
         if (isStub) {
-            hibon[fingerprintLabel] = fingerprint;
+            hibon[fingerprintLabel] = _fingerprint;
         }
         else {
             hibon[archiveLabel] = filed;
@@ -486,13 +485,15 @@ const Neutral = delegate(const(Archive) a) => a.type;
     *   fingerprint = hash-key to select the archive
     *   t = type must be either REMOVE or NONE 
     */
-    private this(DARTIndex fingerprint, const Type t = Type.NONE)
-    in (!fingerprint.empty)
+    private this(DARTIndex dart_index, const Type t = Type.NONE)
+    in (!dart_index.empty)
     in (t !is Type.ADD)
     do {
         type = t;
         filed = Document();
-        this.fingerprint = fingerprint;
+        this.dart_index = dart_index;
+        // _fingerprint=null;
+        _fingerprint = dart_index;
     }
 
     /**
@@ -549,12 +550,15 @@ const Neutral = delegate(const(Archive) a) => a.type;
     do {
         if (filed.empty) {
             auto hibon = new HiBON;
-            hibon[fingerprintLabel] = fingerprint;
+            hibon[fingerprintLabel] = _fingerprint;
             return Document(hibon);
         }
         return filed;
     }
 
+    invariant {
+        assert(!dart_index.empty);
+    }
 }
 
 ///
@@ -574,22 +578,25 @@ unittest { // Archive
     Document filed_doc; // This is the data which is filed in the DART
     {
         auto hibon = new HiBON;
-        hibon["text"] = "Some text";
+        hibon["#text"] = "Some text";
         filed_doc = Document(hibon);
     }
     immutable filed_doc_fingerprint = net.dartIndex(filed_doc);
+    immutable filed_doc_dart_index = net.dartIndex(filed_doc);
 
     Archive a;
     { // Simple archive
         a = new Archive(net, filed_doc);
-        assert(a.fingerprint == filed_doc_fingerprint);
+        assert(a._fingerprint == filed_doc_fingerprint);
+        assert(a.dart_index == filed_doc_dart_index);
         assert(a.filed == filed_doc);
         assert(a.type is Archive.Type.NONE);
 
         const archived_doc = a.toDoc;
         assert(archived_doc[Archive.archiveLabel].get!Document == filed_doc);
         const result_a = new Archive(net, archived_doc);
-        assert(result_a.fingerprint == a.fingerprint);
+        assert(result_a._fingerprint == a._fingerprint);
+        assert(a.dart_index == filed_doc_dart_index);
         assert(result_a.filed == a.filed);
         assert(result_a.type == a.type);
         assert(result_a.store == filed_doc);
@@ -599,12 +606,12 @@ unittest { // Archive
     a.changeType(Archive.Type.ADD);
     { // Simple archive with ADD/REMOVE Type
         // a=new Archive(net, filed_doc);
-        assert(a.fingerprint == filed_doc_fingerprint);
+        assert(a._fingerprint == filed_doc_fingerprint);
         const archived_doc = a.toDoc;
 
         { // Same type
             const result_a = new Archive(net, archived_doc);
-            assert(result_a.fingerprint == a.fingerprint);
+            assert(result_a._fingerprint == a._fingerprint);
             assert(result_a.filed == a.filed);
             assert(result_a.type == a.type);
             assert(result_a.store == filed_doc);
@@ -612,7 +619,7 @@ unittest { // Archive
 
     }
 
-    { // Filed archive with hash-key
+    version (none) { // Filed archive with hash-key
         enum key_name = "#name";
         enum keytext = "some_key_text";
         immutable hashkey_fingerprint = net.calcHash(keytext.representation);

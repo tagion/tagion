@@ -107,7 +107,11 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
              * Gets the current archive in the range
              * Returns: current archive and return null if the range is empty
              */
-            const(Archive) front() {
+            const(Archive) front()
+            out (archive) {
+                assert(!archive.dart_index.empty);
+            }
+            do {
                 if (!added_range.empty && !range.empty) {
                     if (archive_less(added_range.front, range.front)) {
                         return added_range.front;
@@ -184,7 +188,10 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
          */
         private this(RimKeyRange rhs, const uint rim) {
             ctx = rhs.ctx;
-            rim_keys = (rhs.empty) ? Buffer.init : rhs.front.fingerprint[0 .. rim + 1];
+            if (rim + 1 > rhs.front.dart_index.length) {
+                __write("rim=%d  size=%d %(%02X %)", rim, rhs.front.dart_index.length, rhs.front.dart_index);
+            }
+            rim_keys = (rhs.empty) ? Buffer.init : rhs.front.dart_index[0 .. rim + 1];
             this.rim = rim & int.max;
             undo = rhs.undo;
         }
@@ -240,7 +247,7 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
          *   archive = the added element
          */
         void add(const(Archive) archive)
-        in ((rim < 0) || (rim_keys == archive.fingerprint[0 .. rim + 1]))
+        in ((rim < 0) || (rim_keys == archive.dart_index[0 .. rim + 1]))
         do {
             ctx._added_archives ~= archive;
         }
@@ -269,7 +276,7 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
          * Returns: true if empty
          */
         bool empty() @nogc {
-            return ctx.empty || (rim >= 0) && (rim_keys != ctx.front.fingerprint[0 .. rim + 1]);
+            return ctx.empty || (rim >= 0) && (rim_keys != ctx.front.dart_index[0 .. rim + 1]);
         }
 
         /**
@@ -314,7 +321,7 @@ version (unittest) {
     import std.typecons : Tuple;
     import tagion.dart.DARTBasic : DARTIndex;
 
-    alias TraverseData = Tuple!(DARTIndex, "fingerprint", Archive.Type, "type");
+    alias TraverseData = Tuple!(DARTIndex, "dart_index", Archive.Type, "type");
     @safe
     TraverseData[] traverse(
             const(RecordFactory.Recorder) recorder,
@@ -324,11 +331,11 @@ version (unittest) {
         void inner_traverse(RimRange)(RimRange rim_key_range) {
             while (!rim_key_range.empty) {
                 if (rim_key_range.oneLeft) {
-                    result ~= TraverseData(rim_key_range.front.fingerprint, rim_key_range.type);
+                    result ~= TraverseData(rim_key_range.front.dart_index, rim_key_range.type);
                     rim_key_range.popFront;
                 }
                 else if (rim_key_range.front.type == Archive.Type.REMOVE) {
-                    result ~= TraverseData(rim_key_range.front.fingerprint, rim_key_range.type);
+                    result ~= TraverseData(rim_key_range.front.dart_index, rim_key_range.type);
                     rim_key_range.popFront;
                 }
                 else {
@@ -381,9 +388,9 @@ unittest {
             */
             auto rim_key_range = rimKeyRange(rec);
             auto rim_key_range_saved = rim_key_range.save;
-            assert(equal(rec[].map!q{a.fingerprint}, rim_key_range.map!q{a.fingerprint}));
+            assert(equal(rec[].map!q{a.dart_index}, rim_key_range.map!q{a.dart_index}));
             // Check save in forward-range
-            assert(equal(rec[].map!q{a.fingerprint}, rim_key_range_saved.map!q{a.fingerprint}));
+            assert(equal(rec[].map!q{a.dart_index}, rim_key_range_saved.map!q{a.dart_index}));
         }
 
         { // Add one to the rim_key range and check if it is range is ordered correctly
@@ -399,9 +406,9 @@ unittest {
             Archive abcd133656789abc ADD
             */
             auto rim_key_range_saved = rim_key_range.save;
-            assert(equal(rec_copy[].map!q{a.fingerprint}, rim_key_range.map!q{a.fingerprint}));
+            assert(equal(rec_copy[].map!q{a.dart_index}, rim_key_range.map!q{a.dart_index}));
             // Check save in forward-range
-            assert(equal(rec_copy[].map!q{a.fingerprint}, rim_key_range_saved.map!q{a.fingerprint}));
+            assert(equal(rec_copy[].map!q{a.dart_index}, rim_key_range_saved.map!q{a.dart_index}));
 
         }
 
@@ -420,9 +427,9 @@ unittest {
             rec_copy.insert(documents[3 .. 5], Archive.Type.ADD);
 
             auto rim_key_range_saved = rim_key_range.save;
-            assert(equal(rec_copy[].map!q{a.fingerprint}, rim_key_range.map!q{a.fingerprint}));
+            assert(equal(rec_copy[].map!q{a.dart_index}, rim_key_range.map!q{a.dart_index}));
             // Check save in forward-range
-            assert(equal(rec_copy[].map!q{a.fingerprint}, rim_key_range_saved.map!q{a.fingerprint}));
+            assert(equal(rec_copy[].map!q{a.dart_index}, rim_key_range_saved.map!q{a.dart_index}));
 
         }
     }
@@ -485,7 +492,7 @@ unittest {
 
         { // Check that the order of the archives are the same in the rim-key-range
             const result = traverse(rec);
-            assert(equal(rec[].map!q{a.fingerprint}, result.map!q{a.fingerprint}));
+            assert(equal(rec[].map!q{a.dart_index}, result.map!q{a.dart_index}));
             assert(equal(rec[].map!q{a.type}, result.map!q{a.type}));
 
         }
@@ -493,7 +500,7 @@ unittest {
         { // Checks the undo
             // The order should be reversed and the type should be flipped ADD<->REMOVE
             const result = traverse(rec, Yes.undo);
-            assert(equal(rec[].retro.map!q{a.fingerprint}, result.map!q{a.fingerprint}));
+            assert(equal(rec[].retro.map!q{a.dart_index}, result.map!q{a.dart_index}));
             assert(equal(rec[].retro.map!(a => Flip(a)), result.map!q{a.type}));
         }
 

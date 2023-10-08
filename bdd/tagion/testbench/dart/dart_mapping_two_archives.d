@@ -80,7 +80,7 @@ class AddOneArchive {
         auto recorder = db.recorder();
         const doc = DARTFakeNet.fake_doc(info.table[0]);
         recorder.add(doc);
-        doc_fingerprint = DARTIndex(recorder[].front.fingerprint);
+        doc_fingerprint = DARTIndex(recorder[].front._fingerprint);
         bullseye = db.modify(recorder);
         return result_ok;
     }
@@ -126,7 +126,7 @@ class AddAnotherArchive {
         auto recorder = db.recorder();
         const doc = DARTFakeNet.fake_doc(info.table[1]);
         recorder.add(doc);
-        doc_fingerprint = DARTIndex(recorder[].front.fingerprint);
+        doc_fingerprint = DARTIndex(recorder[].front._fingerprint);
         bullseye = db.modify(recorder);
 
         check(doc_fingerprint != bullseye, "Bullseye not updated");

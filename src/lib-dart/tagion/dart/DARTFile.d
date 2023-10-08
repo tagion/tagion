@@ -313,6 +313,7 @@ alias check = Check!DARTException;
 
             }
 
+          //      version(none)
             this(const Index index, DARTIndex hash_pointer) {
                 this.index = index;
                 this.fingerprint = cast(Buffer) hash_pointer;
@@ -767,7 +768,7 @@ alias check = Check!DARTException;
 *   recorder of the read archives
  */
     RecordFactory.Recorder loads(Range)(
-            Range fingerprints,
+            Range dart_indices,
             Archive.Type type = Archive.Type.REMOVE) if (isInputRange!Range && isBufferType!(ElementType!Range)) {
 
         import std.algorithm.comparison : min;
@@ -775,35 +776,35 @@ alias check = Check!DARTException;
         auto result = recorder;
         void traverse_dart(
                 const Index branch_index,
-                Buffer[] ordered_fingerprints,
+                Buffer[] ordered_dart_indices,
                 immutable uint rim = 0) @safe {
-            if ((ordered_fingerprints) && (branch_index !is Index.init)) {
+            if ((ordered_dart_indices) && (branch_index !is Index.init)) {
                 immutable data = blockfile.load(branch_index);
                 const doc = Document(data);
                 if (Branches.isRecord(doc)) {
                     const branches = Branches(doc);
-                    auto selected_fingerprints = ordered_fingerprints;
+                    auto selected_dart_indices = ordered_dart_indices;
                     foreach (rim_key, index; branches._indices) {
                         uint pos;
-                        while ((pos < selected_fingerprints.length) &&
-                                (rim_key is selected_fingerprints[pos].rim_key(rim))) {
+                        while ((pos < selected_dart_indices.length) &&
+                                (rim_key is selected_dart_indices[pos].rim_key(rim))) {
                             pos++;
                         }
                         if (pos > 0) {
-                            traverse_dart(index, selected_fingerprints[0 .. pos], rim + 1);
-                            selected_fingerprints = selected_fingerprints[pos .. $];
+                            traverse_dart(index, selected_dart_indices[0 .. pos], rim + 1);
+                            selected_dart_indices = selected_dart_indices[pos .. $];
                         }
                     }
                 }
                 else {
                     // Loads the Archives into the archives
 
-                        // .check(ordered_fingerprints.length == 1,
-                        //         format("Data base is broken at rim=%d fingerprint=%s size=%s [%d]",
-                        //         rim, ordered_fingerprints[0].toHex, ordered_fingerprints.length, branch_index));
+                    // .check(ordered_dart_indices.length == 1,
+                    //         format("Data base is broken at rim=%d dart_index=%s size=%s [%d]",
+                    //         rim, ordered_dart_indices[0].toHex, ordered_dart_indices.length, branch_index));
                     // The archive is set in erase mode so it can be easily be erased later
                     auto archive = new Archive(manufactor.net, doc, type);
-                    if (ordered_fingerprints[0] == archive.fingerprint) {
+                    if (ordered_dart_indices[0] == archive.dart_index) {
                         result.insert(archive);
                     }
 
@@ -811,24 +812,24 @@ alias check = Check!DARTException;
             }
         }
 
-        auto sorted_fingerprints = fingerprints
+        auto sorted_dart_indices = dart_indices
             .filter!(a => a.length !is 0)
             .map!(a => cast(Buffer) a)
             .array
             .dup;
-        sorted_fingerprints.sort;
-        traverse_dart(blockfile.masterBlock.root_index, sorted_fingerprints);
+        sorted_dart_indices.sort;
+        traverse_dart(blockfile.masterBlock.root_index, sorted_dart_indices);
         return result;
     }
 
-    DARTIndex[] checkload(Range)(Range fingerprints) if (isInputRange!Range && isBufferType!(ElementType!Range)) {
+    DARTIndex[] checkload(Range)(Range dart_indices) if (isInputRange!Range && isBufferType!(ElementType!Range)) {
         import std.algorithm : canFind;
         import std.exception : assumeUnique;
 
-        auto result = loads(fingerprints)[]
-            .map!(a => a.fingerprint);
+        auto result = loads(dart_indices)[]
+            .map!(a => a.dart_index);
 
-        auto not_found = fingerprints
+        auto not_found = dart_indices
             .filter!(f => !canFind(result, f))
             .map!(f => cast(DARTIndex) f)
             .array;
@@ -913,7 +914,11 @@ alias check = Check!DARTException;
 
                 while (!range.empty) {
                     auto sub_range = range.nextRim;
-                    immutable rim_key = sub_range.front.fingerprint.rim_key(sub_range.rim);
+                    if (sub_range.front.dart_index.empty) {
+                        writefln("fingerprint %(%02X%) dart_index=%(%02X%)", sub_range.front._fingerprint, sub_range
+                                .front.dart_index);
+                    }
+                    immutable rim_key = sub_range.front.dart_index.rim_key(sub_range.rim);
                     branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key));
                 }
                 erase_block_index = Index(branch_index);
@@ -934,7 +939,7 @@ alias check = Check!DARTException;
                         branches = Branches(doc);
                         while (!range.empty) {
                             auto sub_range = range.nextRim;
-                            immutable rim_key = sub_range.front.fingerprint.rim_key(sub_range.rim);
+                            immutable rim_key = sub_range.front.dart_index.rim_key(sub_range.rim);
                             branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key));
                         }
                         // if the range is empty then we return a null leave.
@@ -966,7 +971,7 @@ alias check = Check!DARTException;
                             blockfile.dispose(branch_index);
 
                         }
-                        auto sub_range = range.save.filter!(a => a.fingerprint == current_archive.fingerprint);
+                        auto sub_range = range.save.filter!(a => a.dart_index == current_archive.dart_index);
 
                         if (sub_range.empty) {
                             range.add(current_archive);
@@ -981,15 +986,16 @@ alias check = Check!DARTException;
                         range.popFront;
                     }
                     if (range.type == Archive.Type.ADD) {
-                        return Leave(blockfile.save(range.front.store).index, range
-                                .front.fingerprint);
+                        return Leave(
+                                blockfile.save(range.front.store).index,
+                                range.front._fingerprint);
                     }
                     return Leave.init;
                 }
                 /// More than one archive is present. Meaning we have to traverse
                 /// Deeper into the tree.
                 while (!range.empty) {
-                    const rim_key = range.front.fingerprint.rim_key(range.rim + 1);
+                    const rim_key = range.front.dart_index.rim_key(range.rim + 1);
 
                     const leave = traverse_dart(range.nextRim, Index.init);
                     branches[rim_key] = leave;
@@ -1009,8 +1015,9 @@ alias check = Check!DARTException;
                     }
 
                 }
-                return Leave(blockfile.save(branches)
-                        .index, branches.fingerprint(this));
+                return Leave(
+                        blockfile.save(branches).index,
+                        branches.fingerprint(this));
             }
 
         }
@@ -1023,9 +1030,11 @@ alias check = Check!DARTException;
         // This check ensures us that we never have multiple add and deletes on the
         // same archive in the same recorder.
         .check(modifyrecords.length <= 1 ||
-                    !modifyrecords[].slide(2).map!(a => a.front.fingerprint == a.dropOne.front.fingerprint)
+                    !modifyrecords[]
+                        .slide(2)
+                        .map!(a => a.front.dart_index == a.dropOne.front.dart_index)
                         .any,
-                        "cannot have multiple operations on same fingerprint in one modify");
+                        "cannot have multiple operations on same dart-index in one modify");
 
         auto range = rimKeyRange!undo(modifyrecords);
         immutable new_root = traverse_dart(range, blockfile.masterBlock.root_index);
@@ -1171,7 +1180,7 @@ alias check = Check!DARTException;
 
         static {
             bool check(const(RecordFactory.Recorder) A, const(RecordFactory.Recorder) B) {
-                return equal!(q{a.fingerprint == b.fingerprint})(A.archives[], B.archives[]);
+                return equal!(q{a.dart_index == b.dart_index})(A.archives[], B.archives[]);
             }
 
             Buffer write(DARTFile dart, const(ulong[]) table, out RecordFactory.Recorder rec) {
@@ -1179,10 +1188,10 @@ alias check = Check!DARTException;
                 return dart.modify(rec);
             }
 
-            Buffer[] fingerprints(RecordFactory.Recorder recorder) {
+            Buffer[] dart_indices(RecordFactory.Recorder recorder) {
                 Buffer[] results;
                 foreach (a; recorder.archives) {
-                    results ~= cast(Buffer) a.fingerprint;
+                    results ~= cast(Buffer) a.dart_index;
                 }
                 return results;
 
@@ -1191,9 +1200,9 @@ alias check = Check!DARTException;
             bool validate(DARTFile dart, const(ulong[]) table, out RecordFactory
                 .Recorder recorder) {
                 write(dart, table, recorder);
-                auto _fingerprints = fingerprints(recorder);
+                auto _dart_indices = dart_indices(recorder);
 
-                auto find_recorder = dart.loads(_fingerprints);
+                auto find_recorder = dart.loads(_dart_indices);
                 return check(recorder, find_recorder);
             }
 
@@ -1291,7 +1300,7 @@ unittest {
         auto recorder_doc_out = recorder.toDoc;
         auto recorder_out = manufactor.recorder(recorder_doc_out);
         auto recorder_archive = recorder_out.archives[].front;
-        assert(recorder_archive.fingerprint == a_in.fingerprint);
+        assert(recorder_archive.dart_index == a_in.dart_index);
 
     }
 
@@ -1318,7 +1327,7 @@ unittest {
             auto rim_range = root_range.selectRim(3);
 
             i = 0;
-            immutable key = rim_range.front.fingerprint.rim_key(rim);
+            immutable key = rim_range.front.dart_index.rim_key(rim);
             foreach (a; rim_range) {
                 while (net.dartIndex(DARTFakeNet.fake_doc(test_tabel[i])).rim_key(rim) !is key) {
                     i++;
@@ -1573,10 +1582,10 @@ unittest {
         auto recorder = dart_A.recorder;
         const archive_1 = new Archive(net, net.fake_doc(0xABB7_1111_1111_0000UL), Archive
                 .Type.NONE);
-        recorder.remove(archive_1.fingerprint);
+        recorder.remove(archive_1.dart_index);
         const archive_2 = new Archive(net, net.fake_doc(0xABB7_1112_1111_0000UL), Archive
                 .Type.NONE);
-        recorder.remove(archive_2.fingerprint);
+        recorder.remove(archive_2.dart_index);
         dart_B.modify(recorder);
         // dart_B.dump;
         // dart_A.dump;
@@ -1688,14 +1697,14 @@ unittest {
             foreach (doc; docs) {
                 recorder.add(doc);
             }
-            auto remove_fingerprint = DARTIndex(recorder[].front.fingerprint);
-            // writefln("%s", remove_fingerprint);
+            auto remove_dart_index = DARTIndex(recorder[].front.dart_index);
+            // writefln("%s", remove_dart_index);
 
             dart_A.modify(recorder);
             // dart_A.dump();
 
             auto remove_recorder = dart_A.recorder();
-            remove_recorder.remove(remove_fingerprint);
+            remove_recorder.remove(remove_dart_index);
             dart_A.modify(remove_recorder);
             // dart_A.dump();
 
@@ -1721,9 +1730,9 @@ unittest {
             }
             dart_A.modify(recorder);
             // dart_A.dump();
-            auto fingerprints = recorder[].map!(a => cast(immutable) DARTIndex(a.fingerprint)).array;
+            auto dart_indicies = recorder[].map!(a => cast(immutable) DARTIndex(a.dart_index)).array;
 
-            auto empty_load = dart_A.checkload(fingerprints);
+            auto empty_load = dart_A.checkload(dart_indicies);
             assert(empty_load.length == 0);
             // test.map!(f => f.toPretty).writeln;
             const ulong[] not_in_dart = [
@@ -1767,7 +1776,7 @@ unittest {
 
             recorder.add(doc);
 
-            auto fingerprint = DARTIndex(recorder[].front.fingerprint);
+            auto fingerprint = recorder[].front._fingerprint;
             dart_A.modify(recorder);
 
             // dart_A.dump();
@@ -1815,12 +1824,12 @@ unittest {
             foreach (doc; docs) {
                 recorder.add(doc);
             }
-            auto remove_fingerprint = DARTIndex(recorder[].front.fingerprint);
+            auto remove_dart_index = recorder[].front.dart_index;
             dart_A.modify(recorder);
             // dart_A.dump();
 
             auto remove_recorder = dart_A.recorder();
-            remove_recorder.remove(remove_fingerprint);
+            remove_recorder.remove(remove_dart_index);
             dart_A.modify(remove_recorder);
 
             ubyte[] rim_path = [0xAB, 0xB9, 0x13, 0xab];
@@ -1871,13 +1880,13 @@ unittest {
             assert(docs.length == 3);
             recorder.add(docs[0]);
             recorder.add(docs[1]);
-            auto remove_fingerprint = DARTIndex(recorder[].front.fingerprint);
+            auto remove_dart_index = recorder[].front.dart_index;
 
             dart_A.modify(recorder);
             // dart_A.dump();
 
             auto next_recorder = dart_A.recorder();
-            next_recorder.remove(remove_fingerprint);
+            next_recorder.remove(remove_dart_index);
             next_recorder.add(docs[2]);
             // next_recorder[].each!q{a.dump};
             dart_A.modify(next_recorder);
@@ -1930,14 +1939,14 @@ unittest {
                 recorder.add(doc);
             }
 
-            auto fingerprints = recorder[].map!(r => r.fingerprint).array;
-            assert(fingerprints.length == 4);
+            auto dart_indices = recorder[].map!(r => r.dart_index).array;
+            assert(dart_indices.length == 4);
             dart_A.modify(recorder);
             // dart_A.dump();
 
             auto remove_recorder = dart_A.recorder();
-            remove_recorder.remove(fingerprints[0]);
-            remove_recorder.remove(fingerprints[2]);
+            remove_recorder.remove(dart_indices[0]);
+            remove_recorder.remove(dart_indices[2]);
             dart_A.modify(remove_recorder);
             // dart_A.dump();
 
@@ -1995,12 +2004,12 @@ unittest {
             foreach (doc; docs) {
                 recorder.add(doc);
             }
-            auto fingerprints = recorder[].map!(r => r.fingerprint).array;
+            auto dart_indices = recorder[].map!(r => r.dart_index).array;
             dart_A.modify(recorder);
             // dart_A.dump();
 
             auto remove_recorder = dart_A.recorder();
-            remove_recorder.remove(fingerprints[$ - 1]);
+            remove_recorder.remove(dart_indices[$ - 1]);
 
             dart_A.modify(remove_recorder);
             // dart_A.dump();
@@ -2048,12 +2057,12 @@ unittest {
             foreach (doc; docs) {
                 recorder.add(doc);
             }
-            auto fingerprints = recorder[].map!(r => r.fingerprint).array;
+            auto dart_indices = recorder[].map!(r => r.dart_index).array;
             dart_A.modify(recorder);
             // dart_A.dump();
 
             auto remove_recorder = dart_A.recorder();
-            remove_recorder.remove(fingerprints[4]);
+            remove_recorder.remove(dart_indices[4]);
 
             dart_A.modify(remove_recorder);
             // dart_A.dump();
@@ -2086,13 +2095,13 @@ unittest {
             foreach (doc; docs) {
                 recorder.add(doc);
             }
-            auto fingerprints = recorder[].map!(r => r.fingerprint).array;
+            auto dart_indices = recorder[].map!(r => r.dart_index).array;
             dart_A.modify(recorder);
             // dart_A.dump();
 
             auto remove_recorder = dart_A.recorder();
-            remove_recorder.remove(fingerprints[4]);
-            remove_recorder.remove(fingerprints[3]);
+            remove_recorder.remove(dart_indices[4]);
+            remove_recorder.remove(dart_indices[3]);
 
             dart_A.modify(remove_recorder);
             // dart_A.dump();
@@ -2122,13 +2131,13 @@ unittest {
             foreach (doc; docs) {
                 recorder.add(doc);
             }
-            auto fingerprints = recorder[].map!(r => r.fingerprint).array;
+            auto dart_indices = recorder[].map!(r => r.dart_index).array;
             dart_A.modify(recorder);
             // dart_A.dump();
 
             auto remove_recorder = dart_A.recorder();
-            remove_recorder.remove(fingerprints[1]);
-            remove_recorder.remove(fingerprints[2]);
+            remove_recorder.remove(dart_indices[1]);
+            remove_recorder.remove(dart_indices[2]);
 
             dart_A.modify(remove_recorder);
             // dart_A.dump();
@@ -2157,13 +2166,13 @@ unittest {
             foreach (doc; docs) {
                 recorder.add(doc);
             }
-            auto fingerprints = recorder[].map!(r => r.fingerprint).array;
+            auto dart_indices = recorder[].map!(r => r.dart_index).array;
             dart_A.modify(recorder);
             // dart_A.dump();
 
             auto remove_recorder = dart_A.recorder();
-            remove_recorder.remove(fingerprints[0]);
-            remove_recorder.remove(fingerprints[1]);
+            remove_recorder.remove(dart_indices[0]);
+            remove_recorder.remove(dart_indices[1]);
 
             dart_A.modify(remove_recorder);
             // dart_A.dump();
@@ -2194,8 +2203,8 @@ unittest {
             foreach (doc; docs) {
                 recorder.add(doc);
             }
-            auto remove_fingerprint = DARTIndex(recorder[].front.fingerprint);
-            // writefln("%s", remove_fingerprint);
+            auto remove_dart_index = DARTIndex(recorder[].front.dart_index);
+            // writefln("%s", remove_dart_index);
 
             dart_A.modify(recorder);
             // dart_A.dump();
@@ -2205,7 +2214,7 @@ unittest {
             dart_blockfile.close;
 
             auto remove_recorder = dart_A.recorder();
-            remove_recorder.remove(remove_fingerprint);
+            remove_recorder.remove(remove_dart_index);
             dart_A.modify(remove_recorder);
             // writefln("after remove");
             // dart_A.dump();
@@ -2230,10 +2239,10 @@ unittest {
             auto recorder = dart_A.recorder();
             recorder.add(doc);
             dart_A.modify(recorder);
-            assert(dart_A.bullseye == recorder[].front.fingerprint);
+            assert(dart_A.bullseye == recorder[].front._fingerprint);
             dart_A.modify(recorder);
 
-            assert(dart_A.bullseye == recorder[].front.fingerprint);
+            assert(dart_A.bullseye == recorder[].front._fingerprint);
         }
 
         {
@@ -2252,8 +2261,7 @@ unittest {
             foreach (doc; docs) {
                 recorder.add(doc);
             }
-            auto remove_fingerprint = DARTIndex(recorder[].front.fingerprint);
-            // writefln("%s", remove_fingerprint);
+            auto remove_dart_index = DARTIndex(recorder[].front.dart_index);
 
             dart_A.modify(recorder);
             // dart_A.dump();
@@ -2263,7 +2271,7 @@ unittest {
             dart_blockfile.close;
 
             auto remove_recorder = dart_A.recorder();
-            remove_recorder.remove(remove_fingerprint);
+            remove_recorder.remove(remove_dart_index);
             dart_A.modify(remove_recorder);
             // writefln("after remove");
             // dart_A.dump();
@@ -2320,9 +2328,9 @@ unittest {
 
                 dart_A.modify(recorder);
 
-                auto fingerprint = recorder[].front.fingerprint;
+                auto dart_index = recorder[].front.dart_index;
 
-                auto read_recorder = dart_A.loads([DARTIndex(fingerprint)]);
+                auto read_recorder = dart_A.loads([dart_index]);
 
                 auto read_name_record = NameRecord(read_recorder[].front.filed);
                 // writefln(read_name_record.toPretty);
@@ -2342,9 +2350,9 @@ unittest {
                 auto new_name = NameRecord("jens", 'x'.repeat(200).array);
                 new_recorder.add(new_name);
                 dart_A.modify(new_recorder);
-                auto new_fingerprint = new_recorder[].front.fingerprint;
+                auto new_dart_index = new_recorder[].front.dart_index;
 
-                auto new_read_recorder = dart_A.loads([DARTIndex(new_fingerprint)]);
+                auto new_read_recorder = dart_A.loads([new_dart_index]);
                 auto new_read_name = NameRecord(new_read_recorder[].front.filed);
                 // writefln(new_read_name.toPretty);
                 // dart_A.dump;
@@ -2374,8 +2382,8 @@ unittest {
                 recorder.add(name_record);
 
                 dart_A.modify(recorder);
-                auto fingerprint = recorder[].front.fingerprint;
-                auto read_recorder = dart_A.loads([DARTIndex(fingerprint)]);
+                auto dart_index = recorder[].front.dart_index;
+                auto read_recorder = dart_A.loads([dart_index]);
                 auto read_name_record = NameRecord(read_recorder[].front.filed);
                 assert(read_name_record == name_record, "should be the same after reading");
 
@@ -2443,13 +2451,13 @@ unittest {
         dart_A.modify(recorder);
 
         const bullseye = dart_A.bullseye;
-        const fingerprints = recorder[].map!(a => a.fingerprint).array;
+        const dart_indices = recorder[].map!(a => a.dart_index).array;
 
         auto new_doc = DARTFakeNet.fake_doc(0x2345_130b_1234_1234);
         recorder = dart_A.recorder();
         recorder.add(new_doc);
-        foreach (fingerprint; fingerprints) {
-            recorder.remove(fingerprint);
+        foreach (dart_index; dart_indices) {
+            recorder.remove(dart_index);
         }
         dart_A.modify(recorder);
         const new_bullseye = dart_A.bullseye;

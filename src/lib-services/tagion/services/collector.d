@@ -169,7 +169,7 @@ struct CollectorService {
             if (is_consensus_contract[res.id]) {
                 locate(task_names.tvm).send(consensusContract(), collection);
             }
-            else {
+        else {
                 locate(task_names.tvm).send(signedContract(), collection);
             }
             return;
@@ -188,7 +188,7 @@ import tagion.dart.DARTBasic : DARTIndex;
 
 private immutable(Archive) find(immutable(RecordFactory.Recorder) rec, const(DARTIndex) index) @safe nothrow pure {
     foreach (const _archive; rec[]) {
-        if (_archive.fingerprint == index) {
+        if (_archive.dart_index == index) {
             return _archive;
         }
     }

@@ -61,7 +61,7 @@ TagionBill[] createBills(StdSecureNet[] bill_nets, uint amount) @safe {
 
 const(DARTIndex)[] insertBills(TagionBill[] bills, ref RecordFactory.Recorder rec) @safe {
     rec.insert(bills, Archive.Type.ADD);
-    return rec[].map!((a) => a.fingerprint).array;
+    return rec[].map!((a) => a.dart_index).array;
 }
 
 // alias StdSecureWallet = SecureWallet!StdSecureNet;
