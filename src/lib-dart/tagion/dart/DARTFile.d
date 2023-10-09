@@ -337,13 +337,15 @@ alias check = Check!DARTException;
 
         @label("") protected Buffer merkleroot; /// The sparsed Merkle root hash of the branches
         @label("$prints", true) @(record_filter.Initialized) protected Buffer[] _fingerprints; /// Array of all the Leaves hashes
-        @label("") @(record_filter.Initialized) protected DARTIndex[] _fingerprints; /// Array of all the Leaves hashes
+        @label("$indices") @(record_filter.Initialized) protected DARTIndex[] _dart_indices; /// Array of all the Leaves hashes
         @label("$idx", true) @(record_filter.Initialized) protected Index[] _indices; /// Array of index pointer to BlockFile
         @label("") private bool done;
         enum fingerprintsName = GetLabel!(_fingerprints).name;
         enum indicesName = GetLabel!(_indices).name;
         this(Document doc) {
+
             
+
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             if (doc.hasMember(indicesName)) {
                 _indices = new Index[KEY_SPAN];
@@ -384,7 +386,7 @@ alias check = Check!DARTException;
          * Returns:
          *      The fingerprint at key
          */
-        immutable(Buffer) fingerprint(const size_t key) pure const nothrow
+        immutable(Buffer) fingerprint(const size_t key) pure const nothrow @nogc
         in {
             assert(key < KEY_SPAN);
         }
@@ -392,9 +394,15 @@ alias check = Check!DARTException;
             if (_fingerprints) {
                 return _fingerprints[key];
             }
-            return null;
+            return Buffer.init;
         }
 
+        DARTIndex dart_index(const size_t key) pure const nothrow @nogc {
+            if (_dart_indices) {
+                return _dart_indices[key];
+            }
+            return DARTIndex(fingerprint(key));
+        }
         /**
          * Returns:
          *     All the fingerprints to the sub branches and archives
