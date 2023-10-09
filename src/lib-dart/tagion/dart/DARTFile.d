@@ -23,7 +23,7 @@ private {
 
     import tagion.basic.Debug : __write;
     import tagion.basic.Types : Buffer, isBufferType, isTypedef;
-    import tagion.basic.basic : EnumText, assumeTrusted;
+    import tagion.basic.basic : EnumText, assumeTrusted, isinit;
     import tagion.Keywords;
 
     import tagion.hibon.HiBON : HiBON;
@@ -341,6 +341,7 @@ alias check = Check!DARTException;
         @label("$idx", true) @(record_filter.Initialized) protected Index[] _indices; /// Array of index pointer to BlockFile
         @label("") private bool done;
         enum fingerprintsName = GetLabel!(_fingerprints).name;
+        enum dart_indicesName = GetLabel!(_dart_indices).name;
         enum indicesName = GetLabel!(_indices).name;
         this(Document doc) {
 
@@ -357,6 +358,12 @@ alias check = Check!DARTException;
                 _fingerprints = new Buffer[KEY_SPAN];
                 foreach (e; doc[fingerprintsName].get!Document) {
                     _fingerprints[e.index] = e.get!(Buffer).idup;
+                }
+            }
+            if (doc.hasMember(dart_indicesName)) {
+                _dart_indices = new DARTIndex[KEY_SPAN];
+                foreach (e; doc[dart_indicesName].get!Document) {
+                    _dart_indices[e.index] = e.get!(Buffer).idup;
                 }
             }
         }
@@ -466,7 +473,18 @@ alias check = Check!DARTException;
                     hibon_fingerprints[key] = print;
                 }
             }
+            if (_dart_indices) {
+                auto hibon_dart_indices = new HiBON;
+                foreach (key, dart_index; _dart_indices) {
+                    if (!dart_index.isinit) {
+                        hibon_dart_indices[key] = dart_index;
+                    }
 
+                }
+                if (!hibon_dart_indices.empty) {
+                    hibon[dart_indicesName] = hibon_dart_indices;
+                }
+            }
             hibon[fingerprintsName] = hibon_fingerprints;
             hibon[TYPENAME] = type_name;
             return hibon;
