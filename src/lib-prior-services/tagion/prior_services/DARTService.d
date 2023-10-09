@@ -127,13 +127,13 @@ void dartServiceTask(Net : SecureNet)(
             immutable receiver = empty_hirpc.receive(sender);
 
             void readDART() {
-                scope doc_fingerprints = receiver.method.params[DARTFile.Params.fingerprints].get!(
+                scope doc_dart_indices = receiver.method.params[DARTFile.Params.dart_indices].get!(
                         Document);
-                scope fingerprints = doc_fingerprints.range!(Buffer[]);
+                scope dart_indices = doc_dart_indices.range!(Buffer[]);
                 alias bufArr = Buffer[];
                 bufArr[NodeAddress] remote_fp_requests;
                 Buffer[] local_fp;
-                fpIterator: foreach (fp; fingerprints) {
+                fpIterator: foreach (fp; dart_indices) {
                     const rims = DART.Rims(fp);
                     if (sector_range.inRange(rims)) {
                         local_fp ~= fp;
@@ -157,7 +157,7 @@ void dartServiceTask(Net : SecureNet)(
                     throw new TagionException("No address for fp");
                 }
                 // auto recorder=dart.loads(local_fp, DARTFile.Recorder.Archive.Type.ADD);
-                auto rs = cast(ResponseHandler)(new ReadRequestHandler(array(fingerprints),
+                auto rs = cast(ResponseHandler)(new ReadRequestHandler(array(dart_indices),
                         hirpc, taskName, receiver));
                 // if(local_fp.length>0){
                 //     requestPool.setResponse(ResponseHandler.Response!uint(hrpc_id, empty_hirpc.result(receiver, recorder.toHiBON).toHiBON(net).serialize));
@@ -165,13 +165,13 @@ void dartServiceTask(Net : SecureNet)(
                 requestPool.add(receiver.method.id, rs);
                 Buffer requestData(HiRPC hirpc, bufArr fps) {
                     auto params = new HiBON;
-                    auto params_fingerprints = new HiBON;
+                    auto params_dart_indices = new HiBON;
                     foreach (i, b; fps) {
                         if (b.length !is 0) {
-                            params_fingerprints[i] = b;
+                            params_dart_indices[i] = b;
                         }
                     }
-                    params[DARTFile.Params.fingerprints] = params_fingerprints;
+                    params[DARTFile.Params.dart_indices] = params_dart_indices;
                     const request = hirpc.dartRead(params, receiver.method.id);
                     return request.toDoc.serialize;
                 }

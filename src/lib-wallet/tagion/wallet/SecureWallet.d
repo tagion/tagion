@@ -531,7 +531,7 @@ struct SecureWallet(Net : SecureNet) {
             return false;
         }
 
-        auto not_in_dart = receiver.response.result[DART.Params.fingerprints].get!Document[].map!(d => d.get!Buffer);
+        auto not_in_dart = receiver.response.result[DART.Params.dart_indices].get!Document[].map!(d => d.get!Buffer);
 
         foreach (not_found; not_in_dart) {
             const bill_index = account.bills

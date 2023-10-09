@@ -136,7 +136,7 @@ alias check = Check!DARTException;
     }
 
     protected enum _params = [
-            "fingerprints",
+            "dart_indices",
             "bullseye",
         ];
 

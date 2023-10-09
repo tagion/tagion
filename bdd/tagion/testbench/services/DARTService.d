@@ -205,18 +205,18 @@ class WriteAndReadFromDartDb {
             check(bullseye_res[1] == hirpc_bullseye, "hirpc bullseye not the same");
 
             /// read the archives
-            auto fingerprints = docs
+            auto dart_indices = docs
                 .map!(d => supervisor_net.dartIndex(d))
                 .array;
 
             auto read_request = dartReadRR();
-            handle.send(read_request, fingerprints);
+            handle.send(read_request, dart_indices);
             auto read_tuple = receiveOnly!(dartReadRR.Response, immutable(RecordFactory.Recorder));
             auto read_recorder = read_tuple[1];
 
             check(equal(read_recorder[].map!(a => a.filed), insert_recorder[].map!(a => a.filed)), "Data not the same");
 
-            Document read_sender = dartRead(fingerprints, hirpc).toDoc;
+            Document read_sender = dartRead(dart_indices, hirpc).toDoc;
 
             handle.send(dartHiRPCRR(), read_sender);
 
@@ -228,14 +228,15 @@ class WriteAndReadFromDartDb {
 
             check(equal(hirpc_recorder[].map!(a => a.filed), insert_recorder[].map!(a => a.filed)), "hirpc data not the same as insertion");
 
-            Document check_read_sender = dartCheckRead(fingerprints, hirpc).toDoc;
+            Document check_read_sender = dartCheckRead(dart_indices, hirpc).toDoc;
             handle.send(dartHiRPCRR(), check_read_sender);
             auto read_check_tuple = receiveOnly!(dartHiRPCRR.Response, Document);
             auto read_check = hirpc.receive(read_check_tuple[1]);
 
-            auto check_fingerprints = read_check.response.result[DART.Params.fingerprints].get!Document[].map!(d => d.get!DARTIndex).array;
+            auto check_dart_indices = read_check.response.result[DART.Params.dart_indices].get!Document[].map!(
+                    d => d.get!DARTIndex).array;
 
-            check(check_fingerprints.length == 0, "should be empty");
+            check(check_dart_indices.length == 0, "should be empty");
 
         }
         auto dummy_indexes = [DARTIndex([1, 2, 3, 4]), DARTIndex([2, 3, 4, 5])];
@@ -245,10 +246,10 @@ class WriteAndReadFromDartDb {
         auto read_check_tuple = receiveOnly!(dartHiRPCRR.Response, Document);
         auto read_check = hirpc.receive(read_check_tuple[1]);
 
-        auto check_fingerprints = read_check.response.result[DART.Params.fingerprints].get!Document[].map!(d => d.get!DARTIndex).array;
+        auto check_dart_indices = read_check.response.result[DART.Params.dart_indices].get!Document[].map!(d => d.get!DARTIndex)
+            .array;
 
-        
-        check(equal(check_fingerprints, dummy_indexes), "error in hirpc checkread");
+        check(equal(check_dart_indices, dummy_indexes), "error in hirpc checkread");
 
         auto t1 = spawn!DARTWorker("dartworker1", interface_opts.sock_addr, check_read_sender);
         auto t2 = spawn!DARTWorker("dartworker2", interface_opts.sock_addr, check_read_sender);

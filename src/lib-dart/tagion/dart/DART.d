@@ -432,7 +432,7 @@ received = the HiRPC received package
      *           result : {
      *               recoder : <DOCUMENT> // Recorder
      *                   limit   : <UINT32> // Optional
-     *       // This parameter is set if fingerprints list exceeds the limit
+     *       // This parameter is set if dart_indices list exceeds the limit
      *                    }
      *               }
      *   }
@@ -446,9 +446,9 @@ received = the HiRPC received package
         assert(received.method.name == __FUNCTION_NAME__);
     }
     do {
-        const doc_fingerprints = received.method.params[Params.fingerprints].get!(Document);
-        auto fingerprints = doc_fingerprints.range!(Buffer[]);
-        const recorder = loads(fingerprints, Archive.Type.ADD);
+        const doc_dart_indices = received.method.params[Params.dart_indices].get!(Document);
+        auto dart_indices = doc_dart_indices.range!(Buffer[]);
+        const recorder = loads(dart_indices, Archive.Type.ADD);
         return hirpc.result(received, recorder.toDoc);
     }
 
@@ -460,18 +460,18 @@ received = the HiRPC received package
         assert(received.method.name == __FUNCTION_NAME__);
     }
     do {
-        auto doc_fingerprints = received.method.params[Params.fingerprints].get!(Document);
-        auto fingerprints = doc_fingerprints.range!(DARTIndex[]);
-        auto not_in_dart = checkload(fingerprints);
+        auto doc_dart_indices = received.method.params[Params.dart_indices].get!(Document);
+        auto dart_indices = doc_dart_indices.range!(DARTIndex[]);
+        auto not_in_dart = checkload(dart_indices);
         import tagion.hibon.HiBONtoText;
         import std.array;
 
         writefln("DARTCHECKREAD response %s", not_in_dart.map!(d => d.encodeBase64));
 
         auto params = new HiBON;
-        auto params_fingerprints = new HiBON;
-        params_fingerprints = not_in_dart.map!(f => cast(Buffer) f);
-        params[Params.fingerprints] = params_fingerprints;
+        auto params_dart_indices = new HiBON;
+        params_dart_indices = not_in_dart.map!(f => cast(Buffer) f);
+        params[Params.dart_indices] = params_dart_indices;
 
         // Buffer[] res = not_in_dart.map!(f => cast(Buffer) f).array;
         // params[Params.fingerprints] = res;
