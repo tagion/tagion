@@ -114,92 +114,37 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
 
         writeln("WALLET 1 request");
 
-        const fingerprints = [wallet1.account.bills, wallet1.account.requested.values]
-            .joiner
-            .map!(bill => wallet1.net.dartIndex(bill))
-            .array;
-        writeln(fingerprints);
         const hirpc = HiRPC(wallet1.net);
-        auto dartcheckread = dartCheckRead(fingerprints, hirpc);
-        writeln("going to send dartcheckread ");
+        auto dartcheckread = wallet1.getRequestCheckWallet(hirpc);
+        auto received_doc = sendDARTHiRPC(dart_interface_sock_addr, dartcheckread);
 
-        NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
-        s.recvtimeout = 1000.msecs;
-        int rc;
-        while (1) {
-            writefln("REQ %s to dial...", dartcheckread.toPretty);
-            rc = s.dial(dart_interface_sock_addr);
-            if (rc == 0) {
-                break;
-            }
+        writefln("RECEIVED RESPONSE: %s", received_doc.toPretty);
+        auto received = hirpc.receive(received_doc);
+        check(wallet1.setResponseCheckRead(received), "wallet1 not updated succesfully");
 
-            if (rc == nng_errno.NNG_ECONNREFUSED) {
-                nng_sleep(100.msecs);
-            }
-            check(rc == 0, "NNG error");
-        }
-        while (1) {
-            rc = s.send!(immutable(ubyte[]))(dartcheckread.toDoc.serialize);
-            check(rc == 0, "NNG error");
-            Document received_doc = s.receive!(immutable(ubyte[]))();
-            writefln("RECEIVED RESPONSE: %s", received_doc.toPretty);
-            check(s.errno == 0, format("Error in response [%03d] %s", received_doc.length, received_doc.toPretty));
-            auto received = hirpc.receive(received_doc);
-            check(wallet1.setResponseCheckRead(received), "wallet1 not updated succesfully");
+        auto wallet1_amount = wallet1.calcTotal(wallet1.account.bills);
+        check(wallet1_amount < start_amount, format("no money withdrawn had %s", wallet1_amount));
 
-            auto wallet1_amount = wallet1.calcTotal(wallet1.account.bills);
-            check(wallet1_amount < start_amount, format("no money withdrawn had %s", wallet1_amount));
-
-            auto wallet1_expected = start_amount - amount - fee;
-            writefln("Wallet 1 total %s", wallet1_amount);
-            check(wallet1_amount == wallet1_expected, format("Wallet1 amount not correct had: %s expected: %s", wallet1_amount, wallet1_expected));
-            break;
-        }
+        auto wallet1_expected = start_amount - amount - fee;
+        writefln("Wallet 1 total %s", wallet1_amount);
+        check(wallet1_amount == wallet1_expected, format("Wallet1 amount not correct had: %s expected: %s", wallet1_amount, wallet1_expected));
         return result_ok;
 
     }
 
     @Then("wallet2 should receive the payment.")
     Document payment() @trusted {
-        const fingerprints = [wallet2.account.bills, wallet2.account.requested.values]
-            .joiner
-            .map!(bill => wallet2.net.dartIndex(bill))
-            .array;
-        writeln(fingerprints);
         const hirpc = HiRPC(wallet2.net);
-        auto dartcheckread = dartCheckRead(fingerprints, hirpc);
-        writeln("going to send dartcheckread ");
+        auto dartcheckread = wallet2.getRequestCheckWallet(hirpc);
+        auto received_doc = sendDARTHiRPC(dart_interface_sock_addr, dartcheckread);
+        writefln("WALLET2 received: %s", received_doc.toPretty);
 
-        NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
-        s.recvtimeout = 1000.msecs;
-        int rc;
-        while (1) {
-            writefln("REQ %s to dial...", dartcheckread.toPretty);
-            rc = s.dial(dart_interface_sock_addr);
-            if (rc == 0) {
-                break;
-            }
-
-            if (rc == nng_errno.NNG_ECONNREFUSED) {
-                nng_sleep(100.msecs);
-            }
-            check(rc == 0, "NNG error");
-        }
-        while (1) {
-            rc = s.send!(immutable(ubyte[]))(dartcheckread.toDoc.serialize);
-            check(rc == 0, "NNG error");
-            Document received_doc = s.receive!(immutable(ubyte[]))();
-            writefln("WALLET2 received: %s", received_doc.toPretty);
-            check(s.errno == 0, format("Error in response [%03d] %s", received_doc.length, received_doc.toPretty));
-
-            writefln("RECEIVED RESPONSE: %s", received_doc.toPretty);
-            auto received = hirpc.receive(received_doc);
-            check(wallet2.setResponseCheckRead(received), "wallet2 not updated succesfully");
-            check(wallet2.calcTotal(wallet2.account.bills) > 0.TGN, "did not receive money");
-            check(wallet2.calcTotal(wallet2.account.bills) == start_amount + amount, "did not receive correct amount of tagion");
-            writefln("Wallet 2 total %s", wallet2.calcTotal(wallet2.account.bills));
-            break;
-        }
+        writefln("RECEIVED RESPONSE: %s", received_doc.toPretty);
+        auto received = hirpc.receive(received_doc);
+        check(wallet2.setResponseCheckRead(received), "wallet2 not updated succesfully");
+        check(wallet2.calcTotal(wallet2.account.bills) > 0.TGN, "did not receive money");
+        check(wallet2.calcTotal(wallet2.account.bills) == start_amount + amount, "did not receive correct amount of tagion");
+        writefln("Wallet 2 total %s", wallet2.calcTotal(wallet2.account.bills));
         return result_ok;
     }
 
