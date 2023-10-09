@@ -11,6 +11,7 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord : isHiBONRecord;
 import tagion.hibon.HiBONRecord : HiBONPrefix, STUB;
 import std.format;
+import tagion.dart.DARTFile : KEY_SPAN;
 
 /**
 * This is the raw-hash value of a message and is used when message is signed.
@@ -103,4 +104,58 @@ do {
         return h1.idup;
     }
     return net.rawCalcHash(h1 ~ h2);
+}
+/**
+
+ * Calculates the sparsed Merkle root from the branch-table list
+* The size of the table must be KEY_SPAN
+* Leaves in the branch table which doen't exist should have the value null
+ * Params:
+ *   net = The hash object/function used to calculate the hashs
+ *   table = List if hash-value(fingerprint) in the branch
+ * Returns: 
+ *  The Merkle root
+ */
+immutable(Buffer) sparsed_merkletree(const HashNet net, const(Buffer[]) table)
+in {
+    import std.stdio;
+
+    if (table.length != KEY_SPAN) {
+        writefln("table_length: %s", table.length);
+    }
+    assert(table.length == KEY_SPAN);
+}
+do {
+
+    // if (table.length == 0) {
+    //     return null;
+    // }
+    immutable(Buffer) merkletree(
+            const(Buffer[]) left,
+    const(Buffer[]) right) {
+        Buffer _left_fingerprint;
+        Buffer _right_fingerprint;
+        if ((left.length == 1) && (right.length == 1)) {
+            _left_fingerprint = left[0];
+            _right_fingerprint = right[0];
+        }
+        else {
+            immutable left_mid = left.length >> 1;
+            immutable right_mid = right.length >> 1;
+            _left_fingerprint = merkletree(left[0 .. left_mid], left[left_mid .. $]);
+            _right_fingerprint = merkletree(right[0 .. right_mid], right[right_mid .. $]);
+        }
+        if (_left_fingerprint is null) {
+            return _right_fingerprint;
+        }
+        else if (_right_fingerprint is null) {
+            return _left_fingerprint;
+        }
+        else {
+            return net.binaryHash(_left_fingerprint, _right_fingerprint);
+        }
+    }
+
+    immutable mid = table.length >> 1;
+    return merkletree(table[0 .. mid], table[mid .. $]);
 }
