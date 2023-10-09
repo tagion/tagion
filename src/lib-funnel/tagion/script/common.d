@@ -1,4 +1,6 @@
 module tagion.script.common;
+@safe:
+
 import std.algorithm;
 import std.range;
 import std.array;
@@ -22,7 +24,6 @@ enum StdNames {
     derive = "$D",
 }
 
-@safe
 @recordType("TGN") struct TagionBill {
     @label(StdNames.value) TagionCurrency value; /// Tagion bill 
     @label(StdNames.time) sdt_t time; // Time stamp
@@ -39,7 +40,6 @@ enum StdNames {
             });
 }
 
-@safe
 @recordType("SMC") struct Contract {
     @label("$in") const(DARTIndex)[] inputs; /// Hash pointer to input (DART)
     @label("$read", true) const(DARTIndex)[] reads; /// Hash pointer to read-only input (DART)
@@ -50,12 +50,12 @@ enum StdNames {
 
     mixin HiBONRecord!(
             q{
-                this(const(DARTIndex)[] inputs, const(DARTIndex)[] reads, Document script) @safe pure nothrow {
+                this(const(DARTIndex)[] inputs, const(DARTIndex)[] reads, Document script) pure nothrow {
                     this.inputs = inputs;
                     this.reads = reads;
                     this.script = script; 
                 }
-                this(immutable(DARTIndex)[] inputs, immutable(DARTIndex)[] reads, immutable(Document) script) @safe immutable nothrow {
+                this(immutable(DARTIndex)[] inputs, immutable(DARTIndex)[] reads, immutable(Document) script) immutable nothrow {
                     this.inputs = inputs;
                     this.reads = reads;
                     this.script = script; 
@@ -63,36 +63,33 @@ enum StdNames {
             });
 }
 
-@safe
 @recordType("SSC") struct SignedContract {
     @label("$signs") const(Signature)[] signs; /// Signature of all inputs
     @label("$contract") Contract contract; /// The contract must signed by all inputs
     mixin HiBONRecord!(
             q{
-                this(const(Signature)[] signs, Contract contract) @safe pure nothrow {
+                this(const(Signature)[] signs, Contract contract) pure nothrow {
                     this.signs = signs;
                     this.contract = contract;
                 }
-                this(immutable(Signature)[] signs, immutable(Contract) contract) @safe nothrow immutable {
+                this(immutable(Signature)[] signs, immutable(Contract) contract) nothrow immutable {
                     this.signs = signs;
                     this.contract = contract;
                 }
             });
 }
 
-@safe
 @recordType("pay")
 struct PayScript {
     @label(StdNames.values) const(TagionBill)[] outputs;
     mixin HiBONRecord!(
             q{
-                this(const(TagionBill)[] outputs) @safe pure nothrow {
+                this(const(TagionBill)[] outputs) pure nothrow {
                     this.outputs = outputs;
                 }
             });
 }
 
-@safe
 Signature[] sign(const(SecureNet[]) nets, const(Contract) contract) {
     const message = nets[0].calcHash(contract);
     return nets
@@ -100,7 +97,6 @@ Signature[] sign(const(SecureNet[]) nets, const(Contract) contract) {
         .array;
 }
 
-@safe
 const(SignedContract) sign(const(SecureNet[]) nets, const(Document[]) inputs, const(Document[]) reads, const(Document) script) {
     check(nets.length > 0, "At least one input contract");
     check(nets.length == inputs.length, "Number of signature does not match the number of inputs");
@@ -114,8 +110,7 @@ const(SignedContract) sign(const(SecureNet[]) nets, const(Document[]) inputs, co
         .array;
 
     result.contract = Contract(
-            sorted_inputs
-            .map!((input) => input.value).array,
+            sorted_inputs.map!((input) => input.value).array,
             reads.map!(doc => net.dartIndex(doc)).array,
             Document(script),
     );
@@ -123,8 +118,7 @@ const(SignedContract) sign(const(SecureNet[]) nets, const(Document[]) inputs, co
     return result;
 }
 
-@safe
-bool verify(const(SecureNet) net, const(SignedContract) signed_contract, const(Pubkey[]) owners) nothrow {
+bool verify(const(SecureNet) net, const(SignedContract*) signed_contract, const(Pubkey[]) owners) nothrow {
     try {
         if (signed_contract.contract.inputs.length == owners.length) {
             const message = net.calcHash(signed_contract.contract);
@@ -138,8 +132,7 @@ bool verify(const(SecureNet) net, const(SignedContract) signed_contract, const(P
     return false;
 }
 
-@safe
-bool verify(const(SecureNet) net, const(SignedContract) signed_contract, const(Document[]) inputs) nothrow {
+bool verify(const(SecureNet) net, const(SignedContract*) signed_contract, const(Document[]) inputs) nothrow {
     try {
         return verify(net, signed_contract, inputs.map!(doc => doc[StdNames.owner].get!Pubkey).array);
     }
