@@ -8,10 +8,9 @@ import std.conv : ConvException;
 import std.range : empty;
 
 //import std.stdio;
-
+import std.range;
 import std.traits : EnumMembers;
 import std.format : format;
-import std.range : isInputRange, ElementType;
 import std.algorithm.iteration : filter, map;
 
 import tagion.basic.Debug : debugwrite = __write, __format;
@@ -25,7 +24,7 @@ import tagion.hibon.HiBONJSON;
 
 import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
 import tagion.communication.HiRPC : HiRPC, HiRPCMethod, Callers;
-import tagion.basic.basic : EnumText;
+import tagion.basic.basic : EnumText, isinit;
 
 import tagion.utils.Miscellaneous : toHexString, cutHex;
 import tagion.Keywords : isValid;
@@ -755,22 +754,24 @@ received = the HiRPC received package
                     foreach (k, foreign_print; foreign_fingerprints) {
                         immutable key = cast(ubyte) k;
                         immutable sub_rims = Rims(params.rims ~ key);
-                        immutable local_print = local_branches.fingerprint(key);
-                        auto foreign_archive = foreign_recoder.find(foreign_print);
+                        auto local_print = local_branches.fingerprint(key);
+                        pragma(msg, "FOREIGN_PRINT ", typeof(foreign_print));
+                        auto foreign_archive = foreign_recoder.find(cast(Buffer) foreign_print);
                         if (foreign_archive) {
                             if (local_print != foreign_print) {
                                 local_recorder.insert(foreign_archive);
                                 sync.remove_recursive(sub_rims);
                             }
                         }
-                        else if (foreign_print) {
+                        else if (!foreign_print.isinit) {
                             // Foreign is poits to branches
                             if (!local_print.empty) {
                                 const possible_branches_data = load(local_branches, key);
                                 if (!Branches.isRecord(Document(possible_branches_data))) {
                                     // If branch is an archive then it is removed because if it exists in foreign DART
                                     // this archive will be added later
-                                    local_recorder.remove(local_print);
+                                    pragma(msg, "LOCAL_PRINT ", typeof(local_print));
+                                    local_recorder.remove(cast(Buffer) local_print);
                                 }
                             }
                             iterate(sub_rims);
@@ -959,13 +960,13 @@ received = the HiRPC received package
                     default:
                         assert(0);
                     }
-                    // writefln("\n------ %d ------", test_no);
-                    // writefln("dart_A.dump");
-                    // dart_A.dump;
-                    // writefln("dart_B.dump");
-                    // dart_B.dump;
-                    // writefln("dart_A.fingerprint=%s", dart_A.fingerprint.cutHex);
-                    // writefln("dart_B.fingerprint=%s", dart_B.fingerprint.cutHex);
+                    writefln("\n------ %d ------", test_no);
+                    writefln("dart_A.dump");
+                    dart_A.dump;
+                    writefln("dart_B.dump");
+                    dart_B.dump;
+                    writefln("dart_A.fingerprint=%s", dart_A.fingerprint.cutHex);
+                    writefln("dart_B.fingerprint=%s", dart_B.fingerprint.cutHex);
 
                     foreach (sector; dart_A.sectors) {
                         immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
@@ -982,19 +983,19 @@ received = the HiRPC received package
                     foreach (journal_filename; journal_filenames) {
                         dart_A.replay(journal_filename);
                     }
-                    // writefln("dart_A.dump");
-                    // dart_A.dump;
-                    // writefln("dart_B.dump");
-                    // dart_B.dump;
-                    // writefln("dart_A.fingerprint=%s", dart_A.fingerprint.cutHex);
-                    // writefln("dart_B.fingerprint=%s", dart_B.fingerprint.cutHex);
+                    writefln("dart_A.dump");
+                    dart_A.dump;
+                    writefln("dart_B.dump");
+                    dart_B.dump;
+                    writefln("dart_A.fingerprint=%s", dart_A.fingerprint.cutHex);
+                    writefln("dart_B.fingerprint=%s", dart_B.fingerprint.cutHex);
 
                     assert(dart_A.fingerprint == dart_B.fingerprint);
                     if (test_no == 0) {
-                        assert(dart_A.fingerprint is null);
+                        assert(dart_A.fingerprint.isinit);
                     }
                     else {
-                        assert(dart_A.fingerprint !is null);
+                        assert(!dart_A.fingerprint.isinit);
                     }
                 }
             }
@@ -1047,7 +1048,7 @@ received = the HiRPC received package
                 // dart_A.dump;
                 // writefln("dart_B.dump");
                 // dart_B.dump;
-                assert(dart_A.fingerprint !is null);
+                assert(!dart_A.fingerprint.isinit);
                 assert(dart_A.fingerprint == dart_B.fingerprint);
             }
             { // Synchronization of an empty DART 
@@ -1100,7 +1101,7 @@ received = the HiRPC received package
                 // dart_A.dump;
                 // writefln("dart_B.dump");
                 // dart_B.dump;
-                assert(dart_A.fingerprint !is null);
+                assert(!dart_A.fingerprint.isinit);
                 assert(dart_A.fingerprint == dart_B.fingerprint);
 
             }
@@ -1157,7 +1158,7 @@ received = the HiRPC received package
                 // dart_A.dump;
                 // writefln("dart_B.dump");
                 // dart_B.dump;
-                assert(dart_A.fingerprint !is null);
+                assert(!dart_A.fingerprint.isinit);
                 assert(dart_A.fingerprint == dart_B.fingerprint);
 
             }
@@ -1187,7 +1188,7 @@ received = the HiRPC received package
                 // dart_A.dump;
                 // writefln("dart_B.dump");
                 // dart_B.dump;
-                assert(dart_A.fingerprint !is null);
+                assert(!dart_A.fingerprint.isinit);
                 assert(dart_A.fingerprint != dart_B.fingerprint);
 
                 foreach (sector; dart_A.sectors) {
@@ -1210,7 +1211,7 @@ received = the HiRPC received package
                 // dart_A.dump;
                 // writefln("dart_B.dump");
                 // dart_B.dump;
-                assert(dart_A.fingerprint !is null);
+                assert(!dart_A.fingerprint.isinit);
                 assert(dart_A.fingerprint == dart_B.fingerprint);
 
             }
@@ -1241,7 +1242,7 @@ received = the HiRPC received package
                 // dart_A.dump;
                 // writefln("dart_B.dump");
                 // dart_B.dump;
-                assert(dart_A.fingerprint !is null);
+                assert(!dart_A.fingerprint.isinit);
                 assert(dart_A.fingerprint != dart_B.fingerprint);
 
                 foreach (sector; dart_A.sectors) {
@@ -1264,7 +1265,7 @@ received = the HiRPC received package
                 // dart_A.dump;
                 // writefln("dart_B.dump");
                 // dart_B.dump;
-                assert(dart_A.fingerprint !is null);
+                assert(!dart_A.fingerprint.isinit);
                 assert(dart_A.fingerprint == dart_B.fingerprint);
 
             }
@@ -1295,7 +1296,7 @@ received = the HiRPC received package
                 // dart_A.dump;
                 // writefln("dart_B.dump");
                 // dart_B.dump;
-                assert(dart_A.fingerprint !is null);
+                assert(!dart_A.fingerprint.isinit);
                 assert(dart_A.fingerprint != dart_B.fingerprint);
 
                 foreach (sector; dart_A.sectors) {
@@ -1319,7 +1320,7 @@ received = the HiRPC received package
                 // dart_A.dump;
                 // writefln("dart_B.dump");
                 // dart_B.dump;
-                assert(dart_A.fingerprint !is null);
+                assert(!dart_A.fingerprint.isinit);
                 assert(dart_A.fingerprint == dart_B.fingerprint);
             }
 
@@ -1349,7 +1350,7 @@ received = the HiRPC received package
                 // dart_A.dump;
                 // writefln("dart_B.dump");
                 // dart_B.dump;
-                assert(dart_A.fingerprint !is null);
+                assert(!dart_A.fingerprint.isinit);
                 assert(dart_A.fingerprint != dart_B.fingerprint);
 
                 foreach (sector; dart_A.sectors) {
@@ -1371,7 +1372,7 @@ received = the HiRPC received package
                 // dart_A.dump;
                 // writefln("dart_B.dump");
                 // dart_B.dump;
-                assert(dart_A.fingerprint !is null);
+                assert(!dart_A.fingerprint.isinit);
                 assert(dart_A.fingerprint == dart_B.fingerprint);
 
             }
@@ -1402,7 +1403,7 @@ received = the HiRPC received package
                 // dart_A.dump;
                 // writefln("dart_B.dump");
                 // dart_B.dump;
-                assert(dart_A.fingerprint !is null);
+                assert(!dart_A.fingerprint.isinit);
                 assert(dart_A.fingerprint != dart_B.fingerprint);
 
                 foreach (sector; dart_A.sectors) {
@@ -1423,7 +1424,7 @@ received = the HiRPC received package
                 // dart_A.dump;
                 // writefln("dart_B.dump");
                 //dart_B.dump;
-                assert(dart_A.fingerprint !is null);
+                assert(!dart_A.fingerprint.isinit);
                 assert(dart_A.fingerprint == dart_B.fingerprint);
             }
 

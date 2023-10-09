@@ -116,7 +116,7 @@ do {
  * Returns: 
  *  The Merkle root
  */
-immutable(Buffer) sparsed_merkletree(const HashNet net, const(Buffer[]) table)
+Buffer sparsed_merkletree(const HashNet net, const(Buffer[]) table)
 in {
     import std.stdio;
 
@@ -126,10 +126,6 @@ in {
     assert(table.length == KEY_SPAN);
 }
 do {
-
-    // if (table.length == 0) {
-    //     return null;
-    // }
     immutable(Buffer) merkletree(
             const(Buffer[]) left,
     const(Buffer[]) right) {
@@ -158,4 +154,38 @@ do {
 
     immutable mid = table.length >> 1;
     return merkletree(table[0 .. mid], table[mid .. $]);
+}
+
+Fingerprint sparsed_merkletree(const HashNet net, const(Fingerprint[]) table) @trusted {
+    return Fingerprint(sparsed_merkletree(net, cast(const(Buffer[])) table));
+}
+
+unittest { // StdHashNet
+    //import tagion.utils.Miscellaneous : toHex=toHexString;
+    import tagion.hibon.HiBONRecord : isStub, hasHashKey;
+    import std.string : representation;
+    import std.exception : assertThrown;
+    import core.exception : AssertError;
+
+    // import std.stdio;
+
+    import tagion.hibon.HiBON;
+    import tagion.crypto.SecureNet : StdHashNet;
+
+    const net = new StdHashNet;
+    Document doc; // This is the data which is filed in the DART
+    {
+        auto hibon = new HiBON;
+        hibon["text"] = "Some text";
+        doc = Document(hibon);
+    }
+
+    immutable doc_fingerprint = net.rawCalcHash(doc.serialize);
+
+    {
+        assert(net.binaryHash(null, null).length is 0);
+        assert(net.binaryHash(doc_fingerprint, null) == doc_fingerprint);
+        assert(net.binaryHash(null, doc_fingerprint) == doc_fingerprint);
+    }
+
 }

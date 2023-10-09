@@ -43,7 +43,7 @@ class DARTFakeNet : StdSecureNet {
         return Fingerprint(super.rawCalcHash(h));
     }
 
-    override immutable(Buffer) binaryHash(
+    version (none) override immutable(Buffer) binaryHash(
             scope const(ubyte[]) h1,
     scope const(ubyte[]) h2) const {
         scope ubyte[] fake_h1;

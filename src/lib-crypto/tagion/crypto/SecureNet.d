@@ -59,7 +59,7 @@ class StdHashNet : HashNet {
         return assumeUnique(result);
     }
 
-    immutable(Buffer) binaryHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const
+    version (none) immutable(Buffer) binaryHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const
     in {
         assert(h1.length is 0 || h1.length is HASH_SIZE,
                 format("h1 is not a valid hash (length=%d should be 0 or %d", h1.length, HASH_SIZE));
@@ -422,35 +422,6 @@ class StdSecureNet : StdHashNet, SecureNet {
         assertThrown!SecurityConsensusException(net.sign(doc));
         assertThrown!SecurityConsensusException(net.verify(doc, doc_signed.signature, net.pubkey));
 
-    }
-
-}
-
-unittest { // StdHashNet
-    //import tagion.utils.Miscellaneous : toHex=toHexString;
-    import tagion.hibon.HiBONRecord : isStub, hasHashKey;
-    import std.string : representation;
-    import std.exception : assertThrown;
-    import core.exception : AssertError;
-
-    // import std.stdio;
-
-    import tagion.hibon.HiBON;
-
-    const net = new StdHashNet;
-    Document doc; // This is the data which is filed in the DART
-    {
-        auto hibon = new HiBON;
-        hibon["text"] = "Some text";
-        doc = Document(hibon);
-    }
-
-    immutable doc_fingerprint = net.rawCalcHash(doc.serialize);
-
-    {
-        assert(net.binaryHash(null, null).length is 0);
-        assert(net.binaryHash(doc_fingerprint, null) == doc_fingerprint);
-        assert(net.binaryHash(null, doc_fingerprint) == doc_fingerprint);
     }
 
 }
