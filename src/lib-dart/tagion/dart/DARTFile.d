@@ -378,6 +378,41 @@ alias check = Check!DARTException;
             return keys.map!(key => Leave(indices[key], fingerprints[key]));
         }
 
+        DARTIndexRange dart_indices() const pure nothrow @nogc {
+            return DARTIndexRange(this);
+        }
+
+        struct DARTIndexRange {
+            const(Branches) owner;
+            private size_t _key;
+            pure nothrow @nogc {
+                this(const(Branches) owner) {
+                    this.owner = owner;
+                }
+
+                DARTIndex opIndex(const size_t key) const {
+                    return owner.dart_index(key);
+                }
+
+                bool empty() const {
+                    return _key >= owner._dart_indices.length;
+                }
+
+                DARTIndex front() const {
+                    return owner.dart_index(_key);
+                }
+
+                void popFront() {
+                    while (_key < owner._dart_indices.length) {
+                        _key++;
+                        if (!owner._dart_indices.isinit) {
+                            break;
+                        }
+
+                    }
+                }
+            }
+        }
         /* 
      * Check if the Branches has storage indices
      * Returns: true if the branch has BlockFile indices

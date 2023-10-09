@@ -740,7 +740,8 @@ received = the HiRPC received package
                     //
                     const request_archives = CRUD.dartRead(
                             foreign_branches
-                            .fingerprints.map!(f => DARTIndex(f)), hirpc, id);
+                            .fingerprints
+                            .map!(f => DARTIndex(f)), hirpc, id);
                     const result_archives = sync.query(request_archives);
                     auto foreign_recoder = manufactor.recorder(result_archives.response.result);
                     //
