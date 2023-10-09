@@ -6,7 +6,7 @@ import tagion.utils.Miscellaneous;
 import tagion.utils.Result;
 import std.format;
 import std.string : representation;
-import std.algorithm : countUntil, all, remove, map, max, min, sum, until, each, filter, cache, find, canFind;
+import std.algorithm : joiner,countUntil, all, remove, map, max, min, sum, until, each, filter, cache, find, canFind;
 import std.range : tee;
 import std.array;
 import std.exception : assumeUnique;
@@ -463,11 +463,20 @@ struct SecureWallet(Net : SecureNet) {
      * Creates HiRPC to request an wallet update
      * Returns: The command to the the update
      */
-    const(HiRPC.Sender) getRequestUpdateWallet() const {
-        HiRPC hirpc;
+    const(HiRPC.Sender) getRequestUpdateWallet(HiRPC hirpc = HiRPC(null)) const {
         auto h = new HiBON;
         h = account.derivers.byKey.map!(p => cast(Buffer) p);
         return hirpc.search(h);
+    }
+
+    const(HiRPC.Sender) getRequestCheckWallet(HiRPC hirpc = HiRPC(null)) const {
+        import tagion.dart.DARTcrud;
+        const fingerprints = [account.bills, account.requested.values]
+            .joiner
+            .map!(bill => net.dartIndex(bill))
+            .array;
+        return dartCheckRead(fingerprints, hirpc);
+
     }
 
     private const(SecureNet[]) collectNets(const(TagionBill[]) bills) {
