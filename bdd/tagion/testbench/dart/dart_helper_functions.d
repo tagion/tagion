@@ -7,6 +7,7 @@ import tagion.dart.DART : DART;
 import tagion.Keywords;
 import tagion.dart.DARTBasic : DARTIndex;
 import tagion.dart.DARTFile : DARTFile;
+import tagion.basic.basic : isinit;
 import std.range;
 import std.algorithm : map, filter;
 import tagion.hibon.HiBONJSON : toPretty;
@@ -96,9 +97,8 @@ DARTIndex[] getFingerprints(const Document doc, DART db = null) @safe {
 
     }
 
-    return DARTFile.Branches(doc).fingerprints
-        .filter!(f => !f.empty)
-        .map!(f => DARTIndex(f))
+    return DARTFile.Branches(doc).dart_indices
+        .filter!(f => !f.isinit)
         .array;
 }
 

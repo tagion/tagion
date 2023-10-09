@@ -11,11 +11,12 @@ import std.algorithm : map, filter;
 
 import tagion.dart.DARTFakeNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
+import tagion.crypto.Types : Fingerprint;
 import tagion.dart.DART : DART;
 import tagion.dart.DARTFile : DARTFile;
 import tagion.dart.Recorder : Archive, RecordFactory;
 
-import tagion.dart.DARTBasic : DARTIndex, dartIndex;
+import tagion.dart.DARTBasic : DARTIndex, dartIndex, binaryHash;
 import tagion.testbench.tools.Environment;
 import tagion.utils.Miscellaneous : toHexString;
 import tagion.testbench.dart.dartinfo;
@@ -42,16 +43,17 @@ alias FeatureContext = Tuple!(
         FeatureGroup*, "result"
 );
 
-DARTIndex[] fingerprints;
+Fingerprint[] fingerprints;
+DARTIndex[] dart_indices;
 alias Rims = DART.Rims;
 
 @safe @Scenario("Add one archive.",
         ["mark #one_archive"])
 class AddOneArchive {
     DART db;
-
-    DARTIndex doc_fingerprint;
-    DARTIndex bullseye;
+    DARTIndex doc_dart_index;
+    Fingerprint doc_fingerprint;
+    Fingerprint bullseye;
     const DartInfo info;
 
     this(const DartInfo info) {
@@ -79,7 +81,8 @@ class AddOneArchive {
         const doc = DARTFakeNet.fake_doc(info.deep_table[0]);
         recorder.add(doc);
         pragma(msg, "fixme(cbr): Should this be Fingerprint or DARTIndex");
-        doc_fingerprint = cast(DARTIndex)(recorder[].front._fingerprint);
+        doc_dart_index = DARTIndex(cast(Buffer) recorder[].front.dart_index);
+        doc_fingerprint = Fingerprint(cast(Buffer) recorder[].front._fingerprint);
         bullseye = db.modify(recorder);
         return result_ok;
     }
@@ -88,6 +91,7 @@ class AddOneArchive {
     Document checked() {
         check(doc_fingerprint == bullseye, "fingerprint and bullseyes not the same");
         fingerprints ~= doc_fingerprint;
+        dart_indices ~= doc_dart_index;
         db.close();
         return result_ok;
     }
@@ -99,8 +103,9 @@ class AddOneArchive {
 class AddAnotherArchive {
     DART db;
 
-    DARTIndex doc_fingerprint;
-    DARTIndex bullseye;
+    DARTIndex doc_dart_index;
+    Fingerprint doc_fingerprint;
+    Fingerprint bullseye;
     const DartInfo info;
 
     this(const DartInfo info) {
@@ -127,19 +132,21 @@ class AddAnotherArchive {
         const doc = DARTFakeNet.fake_doc(info.deep_table[1]);
         recorder.add(doc);
         pragma(msg, "fixme(cbr): Should this be Fingerprint or DARTIndex");
-        doc_fingerprint = cast(DARTIndex)(recorder[].front._fingerprint);
+        doc_dart_index = DARTIndex(cast(Buffer) recorder[].front.dart_index);
+        doc_fingerprint = Fingerprint(cast(Buffer) recorder[].front._fingerprint);
         bullseye = db.modify(recorder);
 
         check(doc_fingerprint != bullseye, "Bullseye not updated");
 
         fingerprints ~= doc_fingerprint;
+        dart_indices ~= doc_dart_index;
         // db.dump;
         return result_ok;
     }
 
     @Then("both archives should be read and checked.")
     Document checked() {
-        const doc = getRead(fingerprints, info.hirpc, db);
+        const doc = getRead(dart_indices, info.hirpc, db);
 
         const recorder = db.recorder(doc);
 
@@ -182,7 +189,7 @@ class RemoveArchive {
     DART db;
 
     DARTIndex doc_fingerprint;
-    DARTIndex bullseye;
+    Fingerprint bullseye;
     const DartInfo info;
 
     this(const DartInfo info) {
@@ -201,7 +208,7 @@ class RemoveArchive {
     @Given("i remove archive1.")
     Document archive1() {
         auto recorder = db.recorder();
-        recorder.remove(fingerprints[0]);
+        recorder.remove(dart_indices[0]);
         bullseye = db.modify(recorder);
         // db.dump;
         return result_ok;
