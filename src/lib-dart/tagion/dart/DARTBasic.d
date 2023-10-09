@@ -10,6 +10,7 @@ import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord : isHiBONRecord;
 import tagion.hibon.HiBONRecord : HiBONPrefix, STUB;
+import std.format;
 
 /**
 * This is the raw-hash value of a message and is used when message is signed.
@@ -73,4 +74,33 @@ unittest { // Check the #key hash with types
             "Archives with the same #key should have the same dart-Index");
     assert(net.calcHash(hash_u32) != net.calcHash(other_hash_u32),
             "Two archives with same #key and different data should have different fingerprints");
+}
+
+immutable(Buffer) binaryHash(const(HashNet) net, scope const(ubyte[]) h1, scope const(ubyte[]) h2)
+in {
+    assert(h1.length is 0 || h1.length is net.hashSize,
+            format("h1 is not a valid hash (length=%d should be 0 or %d", h1.length, net.hashSize));
+    assert(h2.length is 0 || h2.length is net.hashSize,
+            format("h2 is not a valid hash (length=%d should be 0 or %d", h2.length, net.hashSize));
+}
+out (result) {
+    if (h1.length is 0) {
+        assert(h2 == result);
+    }
+    else if (h2.length is 0) {
+        assert(h1 == result);
+    }
+}
+do {
+    assert(h1.length is 0 || h1.length is net.hashSize,
+            format("h1 is not a valid hash (length=%d should be 0 or %d", h1.length, net.hashSize));
+    assert(h2.length is 0 || h2.length is net.hashSize,
+            format("h2 is not a valid hash (length=%d should be 0 or %d", h2.length, net.hashSize));
+    if (h1.length is 0) {
+        return h2.idup;
+    }
+    if (h2.length is 0) {
+        return h1.idup;
+    }
+    return net.rawCalcHash(h1 ~ h2);
 }
