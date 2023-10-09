@@ -648,13 +648,9 @@ struct WalletInterface {
 
                     const(HiRPC.Sender) getRequest() {
                         if (trt_update) {
-                            return secure_wallet.getRequestUpdateWallet();
+                            return secure_wallet.getRequestUpdateWallet(hirpc);
                         }
-                        const fingerprints = [secure_wallet.account.bills, secure_wallet.account.requested.values]
-                            .joiner
-                            .map!(bill => secure_wallet.net.dartIndex(bill))
-                            .array;
-                        return dartCheckRead(fingerprints, hirpc);
+                        return secure_wallet.getRequestCheckWallet(hirpc);
                     }
 
                     const req = getRequest();
