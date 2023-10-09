@@ -66,14 +66,10 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
 
         foreach (ref wallet; wallets) {
             check(wallet.isLoggedin, "the wallet must be logged in!!!");
+            
 
-            const fingerprints = [wallet.account.bills, wallet.account.requested.values]
-                .joiner
-                .map!(bill => wallet.net.dartIndex(bill))
-                .array;
-            writeln(fingerprints);
             const hirpc = HiRPC(wallet.net);
-            auto dartcheckread = dartCheckRead(fingerprints, hirpc);
+            auto dartcheckread = wallet.getRequestCheckWallet(hirpc);
             writeln("going to send dartcheckread ");
 
             NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
@@ -154,6 +150,7 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
         Thread.sleep(30.seconds);
 
         writeln("WALLET 1 request");
+
         const fingerprints = [wallet1.account.bills, wallet1.account.requested.values]
             .joiner
             .map!(bill => wallet1.net.dartIndex(bill))
