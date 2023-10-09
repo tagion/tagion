@@ -754,8 +754,7 @@ received = the HiRPC received package
                     foreach (k, foreign_print; foreign_fingerprints) {
                         immutable key = cast(ubyte) k;
                         immutable sub_rims = Rims(params.rims ~ key);
-                        auto local_print = local_branches.fingerprint(key);
-                        pragma(msg, "FOREIGN_PRINT ", typeof(foreign_print));
+                        immutable local_print = local_branches.fingerprint(key);
                         auto foreign_archive = foreign_recoder.find(cast(Buffer) foreign_print);
                         if (foreign_archive) {
                             if (local_print != foreign_print) {

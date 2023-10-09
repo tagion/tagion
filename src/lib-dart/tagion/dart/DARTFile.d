@@ -388,7 +388,7 @@ enum KEY_SPAN = ubyte.max + 1;
         }
 
         DARTIndex dart_index(const size_t key) pure const nothrow @nogc {
-            if (_dart_indices) {
+            if (!_dart_indices.empty && !_dart_indices[key].isinit) {
                 return _dart_indices[key];
             }
             return DARTIndex(cast(Buffer) fingerprint(key));
