@@ -337,14 +337,13 @@ alias check = Check!DARTException;
 
         @label("") protected Buffer merkleroot; /// The sparsed Merkle root hash of the branches
         @label("$prints", true) @(record_filter.Initialized) protected Buffer[] _fingerprints; /// Array of all the Leaves hashes
+        @label("") @(record_filter.Initialized) protected DARTIndex[] _fingerprints; /// Array of all the Leaves hashes
         @label("$idx", true) @(record_filter.Initialized) protected Index[] _indices; /// Array of index pointer to BlockFile
         @label("") private bool done;
         enum fingerprintsName = GetLabel!(_fingerprints).name;
         enum indicesName = GetLabel!(_indices).name;
         this(Document doc) {
-
             
-
                 .check(isRecord(doc), format("Document is not a %s", ThisType.stringof));
             if (doc.hasMember(indicesName)) {
                 _indices = new Index[KEY_SPAN];
@@ -355,7 +354,7 @@ alias check = Check!DARTException;
             if (doc.hasMember(fingerprintsName)) {
                 _fingerprints = new Buffer[KEY_SPAN];
                 foreach (e; doc[fingerprintsName].get!Document) {
-                    _fingerprints[e.index] = e.get!(immutable(ubyte)[]).idup;
+                    _fingerprints[e.index] = e.get!(Buffer).idup;
                 }
             }
         }
@@ -1736,9 +1735,9 @@ unittest {
             }
             dart_A.modify(recorder);
             // dart_A.dump();
-            auto dart_indicies = recorder[].map!(a => cast(immutable) DARTIndex(a.dart_index)).array;
+            auto dart_indices = recorder[].map!(a => cast(immutable) DARTIndex(a.dart_index)).array;
 
-            auto empty_load = dart_A.checkload(dart_indicies);
+            auto empty_load = dart_A.checkload(dart_indices);
             assert(empty_load.length == 0);
             // test.map!(f => f.toPretty).writeln;
             const ulong[] not_in_dart = [
