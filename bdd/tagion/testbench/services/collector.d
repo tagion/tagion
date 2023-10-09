@@ -45,15 +45,15 @@ alias FeatureContext = Tuple!(
         FeatureGroup*, "result"
 );
 
-StdSecureNet[] createNets(uint count, string pass_prefix = "net") @safe {
+SecureNet[] createNets(uint count, string pass_prefix = "net") @safe {
     return iota(0, count).map!((i) {
-        auto net = new StdSecureNet();
+        SecureNet net = new StdSecureNet();
         net.generateKeyPair(format("%s_%s", pass_prefix, i));
         return net;
     }).array;
 }
 
-TagionBill[] createBills(const(StdSecureNet)[] bill_nets, uint amount) @safe {
+TagionBill[] createBills(const(SecureNet)[] bill_nets, uint amount) @safe {
     return bill_nets.map!((net) =>
             TagionBill(TGN(amount), currentTime, net.pubkey, Buffer.init)
     ).array;
@@ -64,7 +64,6 @@ const(DARTIndex)[] insertBills(TagionBill[] bills, ref RecordFactory.Recorder re
     return rec[].map!((a) => a.dart_index).array;
 }
 
-// alias StdSecureWallet = SecureWallet!StdSecureNet;
 @safe @Scenario("it work", [])
 class ItWork {
     enum dart_service = "dart_service_task";
@@ -72,7 +71,7 @@ class ItWork {
     CollectorServiceHandle collector_handle;
 
     TagionBill[] input_bills;
-    StdSecureNet[] input_nets;
+    SecureNet[] input_nets;
 
     immutable SecureNet node_net;
     this() {
@@ -131,9 +130,9 @@ class ItWork {
     }
 
     @When("i send a contract")
-    Document contract() @trusted {
+    Document contract() {
         const script = PayScript(iota(0, 10).map!(_ => TagionBill.init).array).toDoc;
-        const s_contract = sign(cast(SecureNet[]) input_nets, input_bills.map!(a => a.toDoc).array, null, script);
+        const s_contract = sign(input_nets, input_bills.map!(a => a.toDoc).array, null, script);
 
         import std.stdio;
         import tagion.hibon.HiBONJSON;
@@ -153,20 +152,10 @@ class ItWork {
     }
 
     @When("i send an contract with no inputs")
-    Document noInputs() @trusted {
-        immutable outputs = PayScript(iota(0, 10).map!(_ => TagionBill.init).array).toDoc;
-        immutable contract = cast(immutable) Contract(immutable(DARTIndex[]).init, immutable(DARTIndex[]).init, outputs);
-        immutable signs = {
-            Signature[] _signs;
-            const contract_hash = node_net.calcHash(contract.toDoc);
-            foreach (net; input_nets) {
-                _signs ~= net.sign(contract_hash);
-            }
-            return _signs.assumeUnique;
-        }();
-        check(signs !is null, "No signatures");
-
-        immutable s_contract = immutable(SignedContract)(signs, contract);
+    Document noInputs() {
+        const outputs = PayScript(iota(0, 10).map!(_ => TagionBill.init).array).toDoc;
+        const contract = Contract(DARTIndex[].init, DARTIndex[].init, outputs);
+        const s_contract = SignedContract(Signature[].init, contract);
 
         const hirpc = HiRPC(node_net);
         immutable sender = hirpc.sendDaMonies(s_contract);
@@ -180,61 +169,39 @@ class ItWork {
     }
 
     @When("i send an contract with invalid signatures inputs")
-    Document invalidSignatures() @trusted {
-        immutable(DARTIndex)[] inputs = input_bills.map!(a => node_net.dartIndex(a.toDoc)).array;
-        check(inputs !is null, "Inputs were null");
+    Document invalidSignatures() {
+        import std.random;
 
-        immutable outputs = PayScript(iota(0, 10).map!(_ => TagionBill.init).array).toDoc;
-        immutable contract = cast(immutable) Contract(inputs, immutable(DARTIndex[]).init, outputs);
-        immutable signs = {
-            Signature[] _signs;
-            const contract_hash = node_net.calcHash(contract.toDoc);
-            foreach (net; input_nets) {
-                _signs ~= node_net.sign(contract_hash);
-            }
-            return _signs.assumeUnique;
-        }();
-        check(signs !is null, "No signatures");
+        const script = PayScript(iota(0, 10).map!(_ => TagionBill.init).array).toDoc;
+        const s_contract = sign(input_nets.randomShuffle, input_bills.map!(a => a.toDoc).array, null, script);
 
-        immutable s_contract = immutable(SignedContract)(signs, contract);
         const hirpc = HiRPC(node_net);
         immutable sender = hirpc.sendDaMonies(s_contract);
         collector_handle.send(inputHiRPC(), hirpc.receive(sender.toDoc));
 
         auto result = receiveOnlyTimeout!(Topic, string, const(Document));
-        check(result[1] == "contract_no_verify", "did not reject for the expected reason");
+        check(result[1] == "contract_no_verify", "did not reject for the expected reason got, %s".format(result[1]));
 
         return result_ok;
     }
 
     @When("i send a contract with input which are not in the dart")
-    Document inTheDart() @trusted {
-        immutable outputs = PayScript(iota(0, 10).map!(_ => TagionBill.init).array).toDoc;
+    Document inTheDart() {
+        const script = PayScript(iota(0, 10).map!(_ => TagionBill.init).array).toDoc;
 
-        immutable invalid_inputs = createNets(10, "not_int_dart")
+        const invalid_inputs = createNets(10, "not_int_dart")
             .createBills(100_000)
-            .map!(a => node_net.dartIndex(a.toDoc))
+            .map!(a => a.toDoc)
             .array;
-        immutable contract = cast(immutable) Contract(assumeUnique(invalid_inputs), immutable(DARTIndex[]).init, outputs);
-        immutable signs = {
-            Signature[] _signs;
-            const contract_hash = node_net.calcHash(contract.toDoc);
-            foreach (net; input_nets) {
-                _signs ~= net.sign(contract_hash);
-            }
-            return _signs.assumeUnique;
-        }();
-        check(signs !is null, "No signatures");
 
-        immutable s_contract = immutable(SignedContract)(signs, contract);
+        const s_contract = sign(input_nets, invalid_inputs, null, script);
 
         const hirpc = HiRPC(node_net);
         immutable sender = hirpc.sendDaMonies(s_contract);
         collector_handle.send(inputHiRPC(), hirpc.receive(sender.toDoc));
 
         auto result = receiveOnlyTimeout!(Topic, string, const(Document));
-        check(result[1] == "archive_no_exist", "did not reject for the expected reason");
-        // check(result[1] == "missing_archives", "did not reject for the expected reason");
+        check(result[1] == "missing_archives", "did not reject for the expected reason");
 
         return result_ok;
     }
