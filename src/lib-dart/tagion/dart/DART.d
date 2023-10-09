@@ -751,8 +751,8 @@ received = the HiRPC received package
                         sync.record(local_recorder);
                     }
                     foreach (const ubyte key; 0 .. KEY_SPAN) {
-                        immutable sub_rims = Rims(params.rims ~ key);
-                        immutable local_print = local_branches.dart_index(key);
+                        const sub_rims = Rims(params.rims ~ key);
+                        const local_print = local_branches.dart_index(key);
                         const foreign_print = foreign_branches.dart_index(key);
                         auto foreign_archive = foreign_recoder.find(foreign_print);
                         if (foreign_archive) {
