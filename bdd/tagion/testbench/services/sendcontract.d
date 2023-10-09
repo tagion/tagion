@@ -99,20 +99,10 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
         
         writefln("WALLET1 created contract: %s", signed_contract.toPretty);
 
-        
-
         auto wallet1_hirpc = HiRPC(wallet1.net);
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
 
-        int rc;
-        NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
-        s.sendtimeout = 1000.msecs;
-        s.sendbuf = 4096;
-        rc = s.dial(inputvalidator_sock_addr);
-        check(rc == 0, format("Failed to dial %s", nng_errstr(rc)));
-
-        rc = s.send(hirpc_submit.toDoc.serialize);
-        check(rc == 0, format("Failed to send %s", nng_errstr(rc)));
+        sendSubmitHiRPC(inputvalidator_sock_addr, hirpc_submit);
 
         return result_ok;
     }
