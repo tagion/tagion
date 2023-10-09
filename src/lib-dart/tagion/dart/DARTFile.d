@@ -1725,7 +1725,7 @@ unittest {
             assert(numberOfArchives(branches, dart_A) == 1, "Branch not snapped back to rim 2");
 
         }
-        // version(none)
+
         {
             filename_A.forceRemove;
             DARTFile.create(filename_A, net);
