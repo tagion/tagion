@@ -82,6 +82,60 @@ void word_strip(scope ref char[] word_strip) pure nothrow @safe @nogc {
 enum MAX_PINCODE_SIZE = 128;
 enum LINE = "------------------------------------------------------";
 
+pragma(msg, "Fixme(lr)Remove trusted when nng is safe");
+void sendSubmitHiRPC(string address, HiRPC.Sender contract) @trusted {
+    import nngd;
+    import std.exception;
+    import tagion.hibon.Document;
+    import tagion.hibon.HiBONtoText;
+
+    int rc;
+    NNGSocket send_sock = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
+    rc = send_sock.dial(address);
+    if (rc != 0) {
+        throw new Exception(format("Could not dial address %s: %s", address, nng_errstr(rc)));
+    }
+    send_sock.sendtimeout = 1000.msecs;
+    send_sock.sendbuf = 4096;
+
+    rc = send_sock.send(contract.toDoc.serialize);
+    if (rc != 0) {
+        throw new Exception(format("Could not send bill %s", nng_errstr(
+                rc)));
+    }
+}
+
+pragma(msg, "Fixme(lr)Remove trusted when nng is safe");
+Document sendDARTHiRPC(string address, HiRPC.Sender dart_req) @trusted {
+    import nngd;
+    import std.exception;
+
+    int rc;
+    NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
+    s.recvtimeout = 1000.msecs;
+    while (1) {
+        writefln("REQ to dial...");
+        rc = s.dial(address);
+        if (rc == 0) {
+            break;
+        }
+        if (rc == nng_errno.NNG_ECONNREFUSED) {
+            nng_sleep(100.msecs);
+        }
+        if (rc != 0) {
+            throw new Exception(format("Could not dial kernel %s", nng_errstr(rc)));
+        }
+    }
+    while (1) {
+        rc = s.send!(immutable(ubyte[]))(dart_req.toDoc.serialize);
+        if (s.errno != 0) {
+            throw new Exception("error in response");
+        }
+        Document received_doc = s.receive!(immutable(ubyte[]))();
+        return received_doc;
+    }
+}
+
 /**
  * \struct WalletInterface
  * Interface struct for wallet
@@ -495,59 +549,6 @@ struct WalletInterface {
         }
     }
 
-    pragma(msg, "Fixme(lr)Remove trusted when nng is safe");
-    void sendSubmitHiRPC(string address, HiRPC.Sender contract) @trusted {
-        import nngd;
-        import std.exception;
-        import tagion.hibon.Document;
-        import tagion.hibon.HiBONtoText;
-
-        int rc;
-        NNGSocket send_sock = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
-        rc = send_sock.dial(address);
-        if (rc != 0) {
-            throw new Exception(format("Could not dial address %s: %s", address, nng_errstr(rc)));
-        }
-        send_sock.sendtimeout = 1000.msecs;
-        send_sock.sendbuf = 4096;
-
-        rc = send_sock.send(contract.toDoc.serialize);
-        if (rc != 0) {
-            throw new Exception(format("Could not send bill %s: %s", secure_wallet.net.calcHash(contract).encodeBase64, nng_errstr(
-                    rc)));
-        }
-    }
-
-    pragma(msg, "Fixme(lr)Remove trusted when nng is safe");
-    Document sendDARTHiRPC(string address, HiRPC.Sender dart_req) @trusted {
-        import nngd;
-        import std.exception;
-
-        int rc;
-        NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
-        s.recvtimeout = 1000.msecs;
-        while (1) {
-            writefln("REQ to dial...");
-            rc = s.dial(address);
-            if (rc == 0) {
-                break;
-            }
-            if (rc == nng_errno.NNG_ECONNREFUSED) {
-                nng_sleep(100.msecs);
-            }
-            if (rc != 0) {
-                throw new Exception(format("Could not dial kernel %s", nng_errstr(rc)));
-            }
-        }
-        while (1) {
-            rc = s.send!(immutable(ubyte[]))(dart_req.toDoc.serialize);
-            if (s.errno != 0) {
-                throw new Exception("error in response");
-            }
-            Document received_doc = s.receive!(immutable(ubyte[]))();
-            return received_doc;
-        }
-    }
 
     struct Switch {
         bool force;

@@ -18,6 +18,7 @@ import tagion.hibon.HiBONJSON;
 import tagion.hibon.Document;
 import tagion.script.common;
 import tagion.script.execute;
+import tagion.tools.wallet.WalletInterface;
 
 import std.algorithm;
 import std.array;
@@ -66,42 +67,14 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
 
         foreach (ref wallet; wallets) {
             check(wallet.isLoggedin, "the wallet must be logged in!!!");
-            
-
             const hirpc = HiRPC(wallet.net);
             auto dartcheckread = wallet.getRequestCheckWallet(hirpc);
             writeln("going to send dartcheckread ");
-
-            NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
-            s.recvtimeout = 1000.msecs;
-            int rc;
-            while (1) {
-                writefln("REQ %s to dial...", dartcheckread.toPretty);
-                rc = s.dial(dart_interface_sock_addr);
-                if (rc == 0) {
-                    break;
-                }
-
-                if (rc == nng_errno.NNG_ECONNREFUSED) {
-                    nng_sleep(100.msecs);
-                }
-                check(rc == 0, "NNG error");
-            }
-            while (1) {
-
-                rc = s.send!(immutable(ubyte[]))(dartcheckread.toDoc.serialize);
-                check(rc == 0, "NNG error");
-                Document received_doc = s.receive!(immutable(ubyte[]))();
-                check(s.errno == 0, "Error in response");
-
-                // writefln("RECEIVED RESPONSE: %s", received_doc.toPretty);
-                auto received = hirpc.receive(received_doc);
-                check(wallet.setResponseCheckRead(received), "wallet not updated succesfully");
-                check(wallet.calcTotal(wallet.account.bills) > 0.TGN, "did not receive money");
-                check(wallet.calcTotal(wallet.account.bills) == start_amount, "money not correct");
-                break;
-            }
-
+            auto received_doc = sendDARTHiRPC(dart_interface_sock_addr, dartcheckread);
+            auto received = hirpc.receive(received_doc);
+            check(wallet.setResponseCheckRead(received), "wallet not updated succesfully");
+            check(wallet.calcTotal(wallet.account.bills) > 0.TGN, "did not receive money");
+            check(wallet.calcTotal(wallet.account.bills) == start_amount, "money not correct");
         }
 
         return result_ok;
