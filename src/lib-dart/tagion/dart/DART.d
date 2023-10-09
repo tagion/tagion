@@ -746,17 +746,15 @@ received = the HiRPC received package
                     // The rest of the fingerprints which are not in the foreign_branches must be sub-branches
                     // 
 
-                    auto foreign_fingerprints = foreign_branches.fingerprints; //.dup;
                     auto local_recorder = recorder;
                     scope (success) {
                         sync.record(local_recorder);
                     }
-                    foreach (k, _foreign_print; foreign_fingerprints) {
-                        immutable key = cast(ubyte) k;
+                    foreach (const ubyte key; 0 .. KEY_SPAN) {
                         immutable sub_rims = Rims(params.rims ~ key);
                         immutable local_print = local_branches.dart_index(key);
                         const foreign_print = foreign_branches.dart_index(key);
-                        auto foreign_archive = foreign_recoder.find(cast(Buffer) foreign_print);
+                        auto foreign_archive = foreign_recoder.find(foreign_print);
                         if (foreign_archive) {
                             if (local_print != foreign_print) {
                                 local_recorder.insert(foreign_archive);
