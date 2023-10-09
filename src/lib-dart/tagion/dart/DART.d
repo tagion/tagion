@@ -746,15 +746,16 @@ received = the HiRPC received package
                     // The rest of the fingerprints which are not in the foreign_branches must be sub-branches
                     // 
 
-                    auto foreign_fingerprints = foreign_branches.fingerprints.dup;
+                    auto foreign_fingerprints = foreign_branches.fingerprints; //.dup;
                     auto local_recorder = recorder;
                     scope (success) {
                         sync.record(local_recorder);
                     }
-                    foreach (k, foreign_print; foreign_fingerprints) {
+                    foreach (k, _foreign_print; foreign_fingerprints) {
                         immutable key = cast(ubyte) k;
                         immutable sub_rims = Rims(params.rims ~ key);
                         immutable local_print = local_branches.dart_index(key);
+                        const foreign_print = foreign_branches.dart_index(key);
                         auto foreign_archive = foreign_recoder.find(cast(Buffer) foreign_print);
                         if (foreign_archive) {
                             if (local_print != foreign_print) {
@@ -769,8 +770,7 @@ received = the HiRPC received package
                                 if (!Branches.isRecord(Document(possible_branches_data))) {
                                     // If branch is an archive then it is removed because if it exists in foreign DART
                                     // this archive will be added later
-                                    pragma(msg, "LOCAL_PRINT ", typeof(local_print));
-                                    local_recorder.remove(cast(Buffer) local_print);
+                                    local_recorder.remove(local_print);
                                 }
                             }
                             iterate(sub_rims);
