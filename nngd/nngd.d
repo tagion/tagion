@@ -1106,7 +1106,7 @@ struct WebData {
     string msg;
 }   
 
-alias webhandler = WebData function ( WebData );
+alias webhandler = WebData function ( WebData, void* );
 
 struct WebApp {
     string name;
@@ -1115,20 +1115,23 @@ struct WebApp {
     nng_aio *aio;
     nng_url *url;
     webhandler[string] routes;
+    void* context;
     
     @disable this();
     
-    this( string iname, string iurl, WebAppConfig iconfig)
+    this( string iname, string iurl, WebAppConfig iconfig, void* icontext = null)
     {
         name = iname;
+        context = icontext;
         auto rc = nng_url_parse(&url, iurl.toStringz());
         enforce(rc==0, "server url parse");
         config = iconfig;
         init();
     }
-    this( string iname, string iurl, JSONValue iconfig)
+    this( string iname, string iurl, JSONValue iconfig, void* icontext = null)
     {
         name = iname;
+        context = icontext;
         auto rc = nng_url_parse(&url, iurl.toStringz());
         enforce(rc==0, "server url parse");
         if("root_path" in iconfig )     config.root_path = iconfig["root_path"].str;
@@ -1196,7 +1199,7 @@ struct WebApp {
 
     }
 
-    static WebData default_handler ( WebData req ){
+    static WebData default_handler ( WebData req, void* ctx ){
         WebData rep = { 
             type : "application/json",
             json : parseJSON("{\"response\": 200}"),
@@ -1279,7 +1282,7 @@ struct WebApp {
         if(handler == null)
             handler = &app.default_handler;
 
-        srep = handler(sreq);
+        srep = handler(sreq, app.context);
         
         nng_http_res_set_status(res, cast(ushort)srep.status);
         if(srep.status != nng_http_status.NNG_HTTP_STATUS_OK)

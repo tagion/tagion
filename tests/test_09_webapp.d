@@ -11,7 +11,7 @@ import std.json;
 import nngd;
 import nngtestutil;
 
-static WebData api_handler1 ( WebData req ){
+static WebData api_handler1 ( WebData req, void* ctx ){
     WebData rep = {
         text: "REPLY TO: "~to!string(req),
         type: "text/plain",
@@ -20,7 +20,7 @@ static WebData api_handler1 ( WebData req ){
     return rep;
 }
 
-static WebData api_handler2 ( WebData req ){
+static WebData api_handler2 ( WebData req, void* ctx ){
     JSONValue data = parseJSON("{}");
     if(req.method == "GET"){
         data["replyto"] = "REPLY TO: "~to!string(req);
@@ -50,7 +50,7 @@ main()
 {
     int rc;
     
-    WebApp app = WebApp("myapp", "http://localhost:8081", parseJSON(`{"root_path":"/home/yv/work/repo/nng/tests/webapp","static_path":"static"}`));
+    WebApp app = WebApp("myapp", "http://localhost:8081", parseJSON(`{"root_path":"/home/yv/work/repo/nng/tests/webapp","static_path":"static"}`), null);
     
     app.route("/api/v1/test1",&api_handler1);
     app.route("/api/v1/test2/*",&api_handler2,["GET","POST"]);
