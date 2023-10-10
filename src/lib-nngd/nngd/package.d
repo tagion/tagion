@@ -1,5 +1,7 @@
 
 module nngd;
 
-public import nngd.nngd;
+public {
+    import nngd.nngd;
+}    
 
