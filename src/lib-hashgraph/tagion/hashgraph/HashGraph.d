@@ -324,13 +324,14 @@ class HashGraph {
         return (fingerprint in _event_cache) !is null;
     }
 
+    Topic topic = Topic("hashgraph_event");
     package void epoch(Event[] event_collection, const Round decided_round) {
         refinement.epoch(event_collection, decided_round);
         if (scrap_depth > 0) {
             live_events_statistic(Event.count);
-            mixin Log!(live_events_statistic);
+            log(topic, live_events_statistic.stringof, live_events_statistic);
             live_witness_statistic(Event.Witness.count);
-            mixin Log!(live_witness_statistic);
+            log(topic, live_witness_statistic.stringof, live_events_statistic);
             _rounds.dustman;
         }
     }
@@ -439,8 +440,8 @@ class HashGraph {
         _register = new Register(received_wave);
 
         scope (exit) {
-            mixin Log!(wavefront_event_package_statistic);
-            mixin Log!(wavefront_event_package_used_statistic);
+            log(topic, wavefront_event_package_statistic.stringof, wavefront_event_package_statistic);
+            log(topic, wavefront_event_package_used_statistic.stringof, wavefront_event_package_statistic);
             _register = null;
         }
 
