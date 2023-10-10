@@ -91,7 +91,7 @@ int _main(string[] args) {
         db.modify(recorder);
     }
 
-    immutable neuewelle_args = ["send_contract_test", config_file]; // ~ args;
+    immutable neuewelle_args = ["send_contract_test", config_file, "--nodeopts", module_path]; // ~ args;
     auto tid = spawn(&wrap_neuewelle, neuewelle_args);
     Thread.sleep(15.seconds);
 
