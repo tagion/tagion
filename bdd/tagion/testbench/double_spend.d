@@ -93,6 +93,17 @@ int _main(string[] args) {
 
     immutable neuewelle_args = ["send_contract_test", config_file, "--nodeopts", module_path]; // ~ args;
     auto tid = spawn(&wrap_neuewelle, neuewelle_args);
+
+    
+    import tagion.utils.JSONCommon : load;
+    Options[] node_opts = iota(0,local_options.wave.number_of_nodes)
+        .map!(n => buildPath(module_path, format(local_options.wave.prefix_format~"opts", n)
+                                            .setExtension(FileExtension.json)))
+        .map!(node_file => load!(Options)(node_file))
+        .array;
+
+    writeln(node_opts);
+
     Thread.sleep(15.seconds);
 
     neuewelle.signal_handler(0);
