@@ -393,11 +393,20 @@ import std.typecons;
 @safe
 struct Topic {
     string name;
+    this(string name) pure nothrow {
+        this.name = name;
+    }
+
     private const(Subscribed)* _subscribed;
+    private bool has_subscribed;
 
     @property
     bool subscribed() nothrow {
-        if (_subscribed is null) {
+        if (!has_subscribed) {
+            _subscribed = submask._register(name);
+            has_subscribed = true;
+        }
+        if(_subscribed is null) {
             return false;
         }
         return (*_subscribed is Subscribed.yes);
@@ -406,18 +415,23 @@ struct Topic {
 }
 
 alias Subscribed = shared(Flag!"subscribed");
+
+@safe
 shared struct SubscriptionMask {
     //      yes|no     topic
     private Subscribed[string] _registered_topics;
 
-    @safe
-    Topic register(string topic) {
+    private const(Subscribed)* _register(string topic) nothrow {
         Subscribed* s = topic in _registered_topics;
         if (s is null) {
             _registered_topics[topic] = Subscribed.no;
             s = topic in _registered_topics;
         }
-        return Topic(topic, s);
+        return s;
+    }
+
+    Topic register(string topic) nothrow {
+        return Topic(topic);
     }
 
     @trusted
