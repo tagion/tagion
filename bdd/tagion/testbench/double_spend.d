@@ -73,6 +73,7 @@ int _main(string[] args) {
     foreach (ref wallet; wallets) {
         bills ~= wallet.requestBill(1000.TGN);
         bills ~= wallet.requestBill(1000.TGN);
+        bills ~= wallet.requestBill(1000.TGN);
     }
 
     SecureNet net = new StdSecureNet();

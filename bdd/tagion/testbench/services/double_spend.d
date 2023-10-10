@@ -7,6 +7,17 @@ import tagion.testbench.tools.Environment;
 import tagion.wallet.SecureWallet : SecureWallet;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.SecureNet : StdSecureNet;
+import tagion.tools.wallet.WalletInterface;
+import tagion.services.options;
+import tagion.hibon.Document;
+import tagion.script.TagionCurrency;
+import tagion.script.common;
+import tagion.script.execute;
+import tagion.script.Currency : totalAmount;
+
+import std.range;
+import std.algorithm;
+import std.format;
 
 alias StdSecureWallet = SecureWallet!StdSecureNet;
 enum feature = Feature(
@@ -29,8 +40,55 @@ alias FeatureContext = Tuple!(
         [])
 class SameInputsSpendOnOneContract {
 
+    Options opts;
+    StdSecureWallet wallet1;
+    StdSecureWallet wallet2;
+
+    this(Options opts, ref StdSecureWallet wallet1, ref StdSecureWallet wallet2) {
+        this.wallet1 = wallet1;
+        this.wallet2 = wallet2;
+        this.opts = opts;
+    }
+
     @Given("i have a malformed contract with two inputs which are the same")
     Document same() {
+        const amount_to_pay = 1100.TGN;
+        auto payment_request = wallet2.requestBill(amount_to_pay);
+
+        auto wallet1_bill = wallet1.account.bills.front;
+        check(wallet1_bill.value == 1000.TGN, "should be 1000 tgn");
+
+        PayScript pay_script;
+        pay_script.outputs = [payment_request];
+        
+        TagionBill[] collected_bills = [wallet1_bill, wallet1_bill];
+        const fees = ContractExecution.billFees(collected_bills.length, pay_script.outputs.length+1);
+
+        const total_collected_amount = collected_bills
+            .map!(bill => bill.value)
+            .totalAmount;
+
+        const amount_remainder = total_collected_amount - amount_to_pay - fees;
+        const nets = wallet1.collectNets(collected_bills);
+        const bill_remain = wallet1.requestBill(amount_remainder);
+        pay_script.outputs ~= bill_remain;
+        wallet1.lock_bills(collected_bills);
+        
+        check(nets.length == collected_bills.length, format("number of bills does not match number of signatures nets %s, collected_bills %s", nets
+                    .length, collected_bills.length));
+        
+        SignedContract signed_contract = sign(
+            nets,
+            collected_bills.map!(bill => bill.toDoc)
+            .array,
+            null,
+            pay_script.toDoc
+        );
+
+
+        
+        
+
         return Document();
     }
 
@@ -49,6 +107,8 @@ class SameInputsSpendOnOneContract {
 @safe @Scenario("one contract where some bills are used twice.",
         [])
 class OneContractWhereSomeBillsAreUsedTwice {
+
+
 
     @Given("i have a malformed contract with three inputs where to are the same.")
     Document same() {

@@ -457,7 +457,7 @@ struct SecureWallet(Net : SecureNet) {
 
     }
 
-    private const(SecureNet[]) collectNets(const(TagionBill[]) bills) {
+    const(SecureNet[]) collectNets(const(TagionBill[]) bills) {
         return bills
             .map!(bill => bill.owner in account.derivers)
             .map!((deriver) => (deriver is null) ? _net.init : _net.derive(*deriver))
@@ -510,7 +510,7 @@ struct SecureWallet(Net : SecureNet) {
         return false;
     }
 
-    private void lock_bills(const(TagionBill[]) locked_bills) {
+    void lock_bills(const(TagionBill[]) locked_bills) {
         locked_bills.each!(b => account.activated[b.owner] = true);
     }
 
@@ -889,7 +889,6 @@ unittest {
     import tagion.hibon.HiBONJSON;
     import std.stdio;
 
-    writeln("STARTING -------");
     auto wallet1 = StdSecureWallet("some words", "1234");
     auto wallet2 = StdSecureWallet("some words2", "4321");
     const bill1 = wallet1.requestBill(1000.TGN);
@@ -904,9 +903,6 @@ unittest {
     SignedContract signed_contract;
     TagionCurrency fee;
     assert(wallet1.createPayment([payment_request], signed_contract, fee).value, "error creating payment");
-
-    
-
 
     assert(signed_contract.contract.inputs.uniq.array.length == signed_contract.contract.inputs.length, "signed contract inputs invalid");
 }
