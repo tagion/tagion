@@ -9,11 +9,6 @@ ifeq ($(PLATFORM),$(LINUX_X86_64))
 DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
 #DFILES?=${shell find $(DSRC) -type f -name "*.d" -path "*src/lib-*" -a -not -path "*/tests/*" -a -not -path "*/c/*" -a -not -path "*/unitdata/*"}
 
-WRAPS+=secp256k1 p2pgowrapper $(SSLIMPLEMENTATION) nng
-
-
-.PHONY: prebuild-linux
-
 $(UNITTEST_BIN): $(DFILES)
 
 proto-unittest-build: LIBS+=$(SSLIMPLEMENTATION)

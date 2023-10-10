@@ -8,8 +8,6 @@ PLATFORMS+=$(DARWIN_arm64)
 ifeq ($(PLATFORM),$(DARWIN_arm64))
 DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
 
-WRAPS+=secp256k1 p2pgowrapper $(SSLIMPLEMENTATION)
-
 $(UNITTEST_BIN): $(DFILES)
 
 proto-unittest-build: LIBS+=$(SSLIMPLEMENTATION)
