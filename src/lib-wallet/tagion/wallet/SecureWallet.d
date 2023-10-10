@@ -491,7 +491,6 @@ struct SecureWallet(Net : SecureNet) {
             .takeOne
             .empty;
 
-        writefln("collecting amount %s", amount);
         if (enough) {
             TagionCurrency rest = amount;
             locked_bills = none_locked
@@ -500,13 +499,10 @@ struct SecureWallet(Net : SecureNet) {
                 .tee!((b) => rest -= b.value) // add them to the rest amount
                 .array;
             if (rest > 0) {
-                writefln("rest is greater than 0: %s", rest);
-                // we need to take a bill that is greater.
 
                 TagionBill extra_bill;
                 none_locked.filter!(b => !locked_bills.canFind(b))
                 .each!(b => extra_bill = b);
-                writefln("extra bill %s", extra_bill.value);
                 locked_bills ~= extra_bill;
                 return true;
             }
@@ -612,19 +608,15 @@ struct SecureWallet(Net : SecureNet) {
 
                 const can_pay = collect_bills(amount_to_pay+amount_remainder, collected_bills);
 
-                // writefln("collected_bills %s", collected_bills.map!(b => format("%s:%s", net.calcHash(b).encodeBase64, b.value)));
                 check(can_pay, format("Is unable to pay the amount %10.6fTGN available %10.6fTGN", amount_to_pay.value, available_balance
                         .value));
                 const total_collected_amount = collected_bills
                     .map!(bill => bill.value)
                     .totalAmount;
-                // writefln("total collected amount %s", total_collected_amount);
 
                 fees = ContractExecution.billFees(collected_bills.length, pay_script.outputs.length+1);
-                // writefln("FEE %s", fees);
 
                 amount_remainder = total_collected_amount - amount_to_pay - fees;
-                // writefln("Amount remainder %s", amount_remainder);
                 previous_bill_count = collected_bills.length;
 
             }
@@ -913,12 +905,9 @@ unittest {
     TagionCurrency fee;
     assert(wallet1.createPayment([payment_request], signed_contract, fee).value, "error creating payment");
 
-    writefln("FEE: %s", fee);
     
 
-    writefln("%s", signed_contract.toPretty);
 
-    writeln("STOPPING");
     assert(signed_contract.contract.inputs.uniq.array.length == signed_contract.contract.inputs.length, "signed contract inputs invalid");
 }
 
