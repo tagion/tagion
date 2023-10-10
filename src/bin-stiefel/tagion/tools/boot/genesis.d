@@ -13,9 +13,10 @@ import tagion.hibon.Document;
 import tagion.script.common;
 
 @safe:
-void createGenesis(const(string[]) nodes_param, Document testamony) {
+Document[] createGenesis(const(string[]) nodes_param, Document testamony) {
     import std.stdio;
 
+    Document[] result;
     static struct NodeSettings {
         string name;
         Pubkey owner;
@@ -65,10 +66,9 @@ void createGenesis(const(string[]) nodes_param, Document testamony) {
     name_cards.each!((name_card) => writefln("%s", name_card.toPretty));
     node_records.each!((name_card) => writefln("%s", name_card.toPretty));
     writefln("%s", genesis_epoch.toPretty);
-    version (none) {
-        const nodekeys = nodekey_text
-            .map!(key => Pubkey(key.decode))
-            .array;
-        writefln("nodekeys=%(%(%02x%) %)", nodekeys);
-    }
+    result ~= name_cards.map!((name_card) => name_card.toDoc).array;
+
+    result ~= node_records.map!(node_record => node_record.toDoc).array;
+    result ~= genesis_epoch.toDoc;
+    return result;
 }
