@@ -490,7 +490,8 @@ struct SecureWallet(Net : SecureNet) {
             .empty;
         if (enough) {
             TagionCurrency rest = amount;
-            locked_bills = none_locked.filter!(b => b.value <= rest)
+            locked_bills = none_locked
+                .filter!(b => b.value <= rest)
                 .until!(b => rest <= 0)
                 .tee!((b) { rest -= b.value; account.activated[b.owner] = true; })
                 .array;

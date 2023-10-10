@@ -72,7 +72,7 @@ int _main(string[] args) {
     TagionBill[] bills;
     foreach (ref wallet; wallets) {
         bills ~= wallet.requestBill(1000.TGN);
-        bills ~= wallet.requestBill(2000.TGN);
+        bills ~= wallet.requestBill(1000.TGN);
     }
 
     SecureNet net = new StdSecureNet();
@@ -101,6 +101,7 @@ int _main(string[] args) {
                                             .setExtension(FileExtension.json)))
         .map!(node_file => load!(Options)(node_file))
         .array;
+
 
 
 
