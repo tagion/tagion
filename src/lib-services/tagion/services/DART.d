@@ -105,19 +105,14 @@ struct DARTService {
 
                 import tagion.basic.Types;
 
-                log("params %s", receiver.method.params);
-
                 auto owner_doc = receiver.method.params;
                 Buffer[] owner_pkeys;
                 foreach (owner; owner_doc[]) {
                     owner_pkeys ~= owner.get!Buffer;
                 }
-                log("OWNER PKEYS %s", owner_pkeys);
                 auto res = db.search(owner_pkeys, net);
-                log("FUUUCK %s", Document(res).toPretty);
 
                 Document response = hirpc.result(receiver, Document(res)).toDoc;
-                log("FUCK YOU METHOD %s", response.toPretty);
                 req.respond(response);
                 return;
             }
