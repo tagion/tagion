@@ -17,47 +17,6 @@ const int NNG_MAXADDRLEN = 128;
 
 int NNG_PROTOCOL_NUMBER (int maj, int min) { return maj *16 + min; }
 
-/+
-version(none)
-enum nng_errno {
-    NNG_EINTR        = 1,
-    NNG_ENOMEM       = 2,
-    NNG_EINVAL       = 3,
-    NNG_EBUSY        = 4,
-    NNG_ETIMEDOUT    = 5,
-    NNG_ECONNREFUSED = 6,
-    NNG_ECLOSED      = 7,
-    NNG_EAGAIN       = 8,
-    NNG_ENOTSUP      = 9,
-    NNG_EADDRINUSE   = 10,
-    NNG_ESTATE       = 11,
-    NNG_ENOENT       = 12,
-    NNG_EPROTO       = 13,
-    NNG_EUNREACHABLE = 14,
-    NNG_EADDRINVAL   = 15,
-    NNG_EPERM        = 16,
-    NNG_EMSGSIZE     = 17,
-    NNG_ECONNABORTED = 18,
-    NNG_ECONNRESET   = 19,
-    NNG_ECANCELED    = 20,
-    NNG_ENOFILES     = 21,
-    NNG_ENOSPC       = 22,
-    NNG_EEXIST       = 23,
-    NNG_EREADONLY    = 24,
-    NNG_EWRITEONLY   = 25,
-    NNG_ECRYPTO      = 26,
-    NNG_EPEERAUTH    = 27,
-    NNG_ENOARG       = 28,
-    NNG_EAMBIGUOUS   = 29,
-    NNG_EBADTYPE     = 30,
-    NNG_ECONNSHUT    = 31,
-    NNG_EINTERNAL    = 1000,
-    NNG_ESYSERR      = 0x10000000,
-    NNG_ETRANERR     = 0x20000000
-};
-+/
-
-
 enum nng_errno : int {
         @("Ok!") NNG_OK = 0,
         @("Interrupted system call") NNG_EINTR = 1,
@@ -112,56 +71,6 @@ string nng_errstr(nng_errno errno) {
 string nng_errstr( int errno ){
     return nng_errstr(cast(nng_errno)errno);
 }
-
-
-/+
-version(none)
-string nng_errstr ( int ierrno ) {
-    immutable string[int] _nng_errstr = [
-         1:            "NNG_EINTR"
-        ,2:            "NNG_ENOMEM - Insufficient free memory exists."
-        ,3:            "NNG_EINVAL - An invalid URL or other data was supplied."
-        ,4:            "NNG_EBUSY - Server instance is running."
-        ,5:            "NNG_ETIMEDOUT - The operation timed out."
-        ,6:            "NNG_ECONNREFUSED - The remote peer refused the connection."
-        ,7:            "NNG_ECLOSED - At least one of the sockets is not open."
-        ,8:            "NNG_EAGAIN"
-        ,9:            "NNG_ENOTSUP - The option or protocol is not supported."
-        ,10:           "NNG_EADDRINUSE - The address is already in use."
-        ,11:           "NNG_ESTATE - The context/dialer/listener cannot do what your want state."
-        ,12:           "NNG_ENOENT - Handler is not registered with server."
-        ,13:           "NNG_EPROTO - A protocol error occurred."
-        ,14:           "NNG_EUNREACHABLE - The remote address is not reachable."
-        ,15:           "NNG_EADDRINVAL - The address is invalid or unavailable."
-        ,16:           "NNG_EPERM - No permission to read the file."
-        ,17:           "NNG_EMSGSIZE - The message is too large."
-        ,18:           "NNG_ECONNABORTED"
-        ,19:           "NNG_ECONNRESET - The connection was reset by the peer."
-        ,20:           "NNG_ECANCELED - The operation was aborted."
-        ,21:           "NNG_ENOFILES"
-        ,22:           "NNG_ENOSPC"
-        ,23:           "NNG_EEXIST"
-        ,24:           "NNG_EREADONLY - The option may not be modified."
-        ,25:           "NNG_EWRITEONLY - The option may not read."
-        ,26:           "NNG_ECRYPTO"
-        ,27:           "NNG_EPEERAUTH - Authentication or authorization failure."
-        ,28:           "NNG_ENOARG - Option requires an argument: but one is not present."
-        ,29:           "NNG_EAMBIGUOUS - Parsed option matches more than one specification."
-        ,30:           "NNG_EBADTYPE - Incorrect type for option."
-        ,31:           "NNG_ECONNSHUT - Remote peer shutdown after sending data."
-        ,1000:         "NNG_EINTERNAL"
-        ,0x10000000:   "NNG_ESYSERR"
-        ,0x20000000:   "NNG_ETRANERR"
-    ];
-    return (ierrno in _nng_errstr) ? _nng_errstr[ierrno] : "";
-}
-
-version(none)
-string nng_errstr ( nng_errno e ){
-    return nng_errstr(cast(int)e);
-}
-+/
-
 
 enum nng_flag {
      NNG_FLAG_ALLOC = 1 
@@ -660,12 +569,218 @@ int nng_respondent0_open_raw(nng_socket *);
 alias nng_respondent_open = nng_respondent0_open;
 alias nng_respondent_open_raw = nng_respondent0_open_raw;
 
+// ------------------------------------- HTTP functions
+
+enum nng_http_status {
+    NNG_HTTP_STATUS_CONTINUE                 = 100,
+    NNG_HTTP_STATUS_SWITCHING                = 101,
+    NNG_HTTP_STATUS_PROCESSING               = 102,
+    NNG_HTTP_STATUS_OK                       = 200,
+    NNG_HTTP_STATUS_CREATED                  = 201,
+    NNG_HTTP_STATUS_ACCEPTED                 = 202,
+    NNG_HTTP_STATUS_NOT_AUTHORITATIVE        = 203,
+    NNG_HTTP_STATUS_NO_CONTENT               = 204,
+    NNG_HTTP_STATUS_RESET_CONTENT            = 205,
+    NNG_HTTP_STATUS_PARTIAL_CONTENT          = 206,
+    NNG_HTTP_STATUS_MULTI_STATUS             = 207,
+    NNG_HTTP_STATUS_ALREADY_REPORTED         = 208,
+    NNG_HTTP_STATUS_IM_USED                  = 226,
+    NNG_HTTP_STATUS_MULTIPLE_CHOICES         = 300,
+    NNG_HTTP_STATUS_STATUS_MOVED_PERMANENTLY = 301,
+    NNG_HTTP_STATUS_FOUND                    = 302,
+    NNG_HTTP_STATUS_SEE_OTHER                = 303,
+    NNG_HTTP_STATUS_NOT_MODIFIED             = 304,
+    NNG_HTTP_STATUS_USE_PROXY                = 305,
+    NNG_HTTP_STATUS_TEMPORARY_REDIRECT       = 307,
+    NNG_HTTP_STATUS_PERMANENT_REDIRECT       = 308,
+    NNG_HTTP_STATUS_BAD_REQUEST              = 400,
+    NNG_HTTP_STATUS_UNAUTHORIZED             = 401,
+    NNG_HTTP_STATUS_PAYMENT_REQUIRED         = 402,
+    NNG_HTTP_STATUS_FORBIDDEN                = 403,
+    NNG_HTTP_STATUS_NOT_FOUND                = 404,
+    NNG_HTTP_STATUS_METHOD_NOT_ALLOWED       = 405,
+    NNG_HTTP_STATUS_NOT_ACCEPTABLE           = 406,
+    NNG_HTTP_STATUS_PROXY_AUTH_REQUIRED      = 407,
+    NNG_HTTP_STATUS_REQUEST_TIMEOUT          = 408,
+    NNG_HTTP_STATUS_CONFLICT                 = 409,
+    NNG_HTTP_STATUS_GONE                     = 410,
+    NNG_HTTP_STATUS_LENGTH_REQUIRED          = 411,
+    NNG_HTTP_STATUS_PRECONDITION_FAILED      = 412,
+    NNG_HTTP_STATUS_PAYLOAD_TOO_LARGE        = 413,
+    NNG_HTTP_STATUS_ENTITY_TOO_LONG          = 414,
+    NNG_HTTP_STATUS_UNSUPPORTED_MEDIA_TYPE   = 415,
+    NNG_HTTP_STATUS_RANGE_NOT_SATISFIABLE    = 416,
+    NNG_HTTP_STATUS_EXPECTATION_FAILED       = 417,
+    NNG_HTTP_STATUS_TEAPOT                   = 418,
+    NNG_HTTP_STATUS_UNPROCESSABLE_ENTITY     = 422,
+    NNG_HTTP_STATUS_LOCKED                   = 423,
+    NNG_HTTP_STATUS_FAILED_DEPENDENCY        = 424,
+    NNG_HTTP_STATUS_UPGRADE_REQUIRED         = 426,
+    NNG_HTTP_STATUS_PRECONDITION_REQUIRED    = 428,
+    NNG_HTTP_STATUS_TOO_MANY_REQUESTS        = 429,
+    NNG_HTTP_STATUS_HEADERS_TOO_LARGE        = 431,
+    NNG_HTTP_STATUS_UNAVAIL_LEGAL_REASONS    = 451,
+    NNG_HTTP_STATUS_INTERNAL_SERVER_ERROR    = 500,
+    NNG_HTTP_STATUS_NOT_IMPLEMENTED          = 501,
+    NNG_HTTP_STATUS_BAD_GATEWAY              = 502,
+    NNG_HTTP_STATUS_SERVICE_UNAVAILABLE      = 503,
+    NNG_HTTP_STATUS_GATEWAY_TIMEOUT          = 504,
+    NNG_HTTP_STATUS_HTTP_VERSION_NOT_SUPP    = 505,
+    NNG_HTTP_STATUS_VARIANT_ALSO_NEGOTIATES  = 506,
+    NNG_HTTP_STATUS_INSUFFICIENT_STORAGE     = 507,
+    NNG_HTTP_STATUS_LOOP_DETECTED            = 508,
+    NNG_HTTP_STATUS_NOT_EXTENDED             = 510,
+    NNG_HTTP_STATUS_NETWORK_AUTH_REQUIRED    = 511,
+};
+enum nng_tls_mode {
+    NNG_TLS_MODE_CLIENT = 0,
+    NNG_TLS_MODE_SERVER = 1,
+};
+enum nng_tls_auth_mode {
+    NNG_TLS_AUTH_MODE_NONE     = 0,
+    NNG_TLS_AUTH_MODE_OPTIONAL = 1,
+    NNG_TLS_AUTH_MODE_REQUIRED = 2,
+};
+enum nng_tls_version {
+    NNG_TLS_1_0 = 0x301,
+    NNG_TLS_1_1 = 0x302,
+    NNG_TLS_1_2 = 0x303,
+    NNG_TLS_1_3 = 0x304
+};
+
+// http structures
+struct nng_http_req {};
+struct nng_http_res {};
+struct nng_http_conn {};
+struct nng_http_handler {};
+struct nng_http_client {};
+struct nng_http_server {};
+struct nng_tls_config {};
+
+struct nng_url {
+    char *u_rawurl;   // never NULL
+    char *u_scheme;   // never NULL
+    char *u_userinfo; // will be NULL if not specified
+    char *u_host;     // including colon and port
+    char *u_hostname; // name only, will be "" if not specified
+    char *u_port;     // port, will be "" if not specified
+    char *u_path;     // path, will be "" if not specified
+    char *u_query;    // without '?', will be NULL if not specified
+    char *u_fragment; // without '#', will be NULL if not specified
+    char *u_requri;   // includes query and fragment, "" if not specified
+};
+
+// http url api
+int nng_url_parse(nng_url **, const char *);
+void nng_url_free(nng_url *);
+int nng_url_clone(nng_url **, const nng_url *);
+
+// http tls api
+int nng_tls_config_alloc(nng_tls_config **, nng_tls_mode);
+void nng_tls_config_hold(nng_tls_config *);
+void nng_tls_config_free(nng_tls_config *);
+int nng_tls_config_server_name(nng_tls_config *, const char *);
+int nng_tls_config_ca_chain(nng_tls_config *, const char *, const char *);
+int nng_tls_config_own_cert(nng_tls_config *, const char *, const char *, const char *);
+int nng_tls_config_key(nng_tls_config *, const ubyte *, size_t);
+int nng_tls_config_pass(nng_tls_config *, const char *);
+int nng_tls_config_auth_mode(nng_tls_config *, nng_tls_auth_mode);
+int nng_tls_config_ca_file(nng_tls_config *, const char *);
+int nng_tls_config_cert_key_file(nng_tls_config *, const char *, const char *);
+int nng_tls_config_version(nng_tls_config *, nng_tls_version, nng_tls_version);
+char* nng_tls_engine_name();
+char* nng_tls_engine_description();
+bool nng_tls_engine_fips_mode();
 
 
+// http request api
+int nng_http_req_alloc(nng_http_req **, const nng_url *);
+void nng_http_req_free(nng_http_req *);
+char* nng_http_req_get_method(nng_http_req *);
+char* nng_http_req_get_version(nng_http_req *);
+char* nng_http_req_get_uri(nng_http_req *);
+int nng_http_req_set_header(nng_http_req *, const char *, const char *);
+int nng_http_req_add_header(nng_http_req *, const char *, const char *);
+int nng_http_req_del_header(nng_http_req *, const char *);
+char* nng_http_req_get_header(nng_http_req *, const char *);
+int nng_http_req_set_method(nng_http_req *, const char *);
+int nng_http_req_set_version(nng_http_req *, const char *);
+int nng_http_req_set_uri(nng_http_req *, const char *);
+int nng_http_req_set_data(nng_http_req *, const void *, size_t);
+int nng_http_req_copy_data(nng_http_req *, const void *, size_t);
+void nng_http_req_get_data(nng_http_req *, void **, size_t *);
+void nng_http_req_reset(nng_http_req *);
 
+// http reply api
+int nng_http_res_alloc(nng_http_res **);
+int nng_http_res_alloc_error(nng_http_res **, ushort);
+void nng_http_res_free(nng_http_res *);
+ushort nng_http_res_get_status(nng_http_res *);
+int nng_http_res_set_status(nng_http_res *, ushort);
+char* nng_http_res_get_reason(nng_http_res *);
+int nng_http_res_set_reason(nng_http_res *, const char *);
+int nng_http_res_set_header(nng_http_res *, const char *, const char *);
+int nng_http_res_add_header(nng_http_res *, const char *, const char *);
+int nng_http_res_del_header(nng_http_res *, const char *);
+char* nng_http_res_get_header(nng_http_res *, const char *);
+int nng_http_res_set_version(nng_http_res *, const char *);
+char* nng_http_res_get_version(nng_http_res *);
+void nng_http_res_get_data(nng_http_res *, void **, size_t *);
+int nng_http_res_set_data(nng_http_res *, const void *, size_t);
+int nng_http_res_copy_data(nng_http_res *, const void *, size_t);
+void nng_http_res_reset(nng_http_res *);
 
+// http connection api
+void nng_http_conn_close(nng_http_conn *);
+void nng_http_conn_read(nng_http_conn *, nng_aio *);
+void nng_http_conn_read_all(nng_http_conn *, nng_aio *);
+void nng_http_conn_write(nng_http_conn *, nng_aio *);
+void nng_http_conn_write_all(nng_http_conn *, nng_aio *);
+void nng_http_conn_write_req(nng_http_conn *, nng_http_req *, nng_aio *);
+void nng_http_conn_write_res(nng_http_conn *, nng_http_res *, nng_aio *);
+void nng_http_conn_read_req(nng_http_conn *, nng_http_req *, nng_aio *);
+void nng_http_conn_read_res(nng_http_conn *, nng_http_res *, nng_aio *);
+void nng_http_conn_transact(nng_http_conn *, nng_http_req *, nng_http_res *, nng_aio *);
 
+// http handler api
+int nng_http_handler_alloc(nng_http_handler **, const char *, void function (nng_aio *));
+int nng_http_handler_alloc(nng_http_handler **, const char *, void delegate (nng_aio *));
+int nng_http_handler_alloc_file(nng_http_handler **, const char *, const char *);
+int nng_http_handler_alloc_static(nng_http_handler **, const char *, const void *, size_t, const char *);
+int nng_http_handler_alloc_redirect(nng_http_handler **, const char *, ushort, const char *);
+int nng_http_handler_alloc_directory(nng_http_handler **, const char *, const char *);
+void nng_http_handler_free(nng_http_handler *);
+int nng_http_handler_set_method(nng_http_handler *, const char *);
+int nng_http_handler_set_host(nng_http_handler *, const char *);
+int nng_http_handler_collect_body(nng_http_handler *, bool, size_t);
+int nng_http_handler_set_tree(nng_http_handler *);
+int nng_http_handler_set_tree_exclusive(nng_http_handler *);
+int nng_http_handler_set_data(nng_http_handler *, void *, void function (void *));
+void *nng_http_handler_get_data(nng_http_handler *);
 
+// http server api
+int nng_http_server_hold(nng_http_server **, const nng_url *);
+void nng_http_server_release(nng_http_server *);
+int nng_http_server_start(nng_http_server *);
+void nng_http_server_stop(nng_http_server *);
+int nng_http_server_add_handler(nng_http_server *, nng_http_handler *);
+int nng_http_server_del_handler(nng_http_server *, nng_http_handler *);
+int nng_http_server_set_tls(nng_http_server *, nng_tls_config *);
+int nng_http_server_get_tls(nng_http_server *, nng_tls_config **);
+int nng_http_server_get_addr(nng_http_server *, nng_sockaddr *);
+int nng_http_server_set_error_page(nng_http_server *, ushort, const char *);
+int nng_http_server_set_error_file(nng_http_server *, ushort, const char *);
+int nng_http_server_res_error(nng_http_server *, nng_http_res *);
+
+int nng_http_hijack(nng_http_conn *);
+
+// http client api
+int nng_http_client_alloc(nng_http_client **, const nng_url *);
+void nng_http_client_free(nng_http_client *);
+int nng_http_client_set_tls(nng_http_client *, nng_tls_config *);
+int nng_http_client_get_tls(nng_http_client *, nng_tls_config **);
+void nng_http_client_connect(nng_http_client *, nng_aio *);
+void nng_http_client_transact(nng_http_client *, nng_http_req *, nng_http_res *, nng_aio *);
 
 
 }

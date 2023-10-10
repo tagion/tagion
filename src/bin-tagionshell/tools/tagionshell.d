@@ -16,6 +16,26 @@ import nngd.nngd;
 
 mixin Main!(_main, "shell");
 
+WebData contract_handler ( WebData req, void* ctx ){
+    int rc;
+    ShellOptions* opt = cast(ShellOptions*) ctx;
+    if(req.type != "application/octet-stream"){
+        WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "invalid data type" };    
+        return res;
+    }
+    NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
+    s.recvtimeout = msecs(30000);
+    rc = s.dial(opt.tagion_sock_addr);
+    enforce(rc==0, "contract_handler: socket dial");
+    rc = s.send(req.rawdata);
+    enforce(rc==0, "contract_handler: send");
+    ubyte[4096] buf;
+    size_t len = s.receivebuf(buf, 4096);
+    s.close(); 
+    WebData res = {status: nng_http_status.NNG_HTTP_STATUS_OK, type: "applicaion/octet-stream", rawdata: buf[0..len].idup };
+    return res;
+}
+
 int _main(string[] args) {
     immutable program = args[0];
     bool version_switch;
@@ -63,6 +83,17 @@ int _main(string[] args) {
                 main_args.options);
         return 0;
     }
+
+    WebApp app = WebApp("ContractProxy", options.contract_endpoint, parseJSON("{}"), &options);
+
+    app.route("/api/v1/contract", &contract_handler, ["POST"]);
+
+    app.start();
+
+    while(true)
+        nng_sleep(1000.msecs);
+
+
 
     // NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
     // sock.sendtimeout = msecs(1000);
