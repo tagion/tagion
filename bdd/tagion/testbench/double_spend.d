@@ -102,7 +102,7 @@ int _main(string[] args) {
         .map!(node_file => load!(Options)(node_file))
         .array;
 
-    writeln(node_opts);
+
 
     Thread.sleep(15.seconds);
 
