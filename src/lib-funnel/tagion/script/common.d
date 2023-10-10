@@ -14,15 +14,7 @@ import tagion.hibon.Document;
 import tagion.dart.DARTBasic;
 import tagion.script.ScriptException;
 import tagion.basic.Types : Buffer;
-
-enum StdNames {
-    owner = "$Y",
-    value = "$V",
-    time = "$t",
-    nonce = "$x",
-    values = "$vals",
-    derive = "$D",
-}
+import tagion.script.standardnames;
 
 @recordType("TGN") struct TagionBill {
     @label(StdNames.value) TagionCurrency value; /// Tagion bill 
@@ -140,4 +132,32 @@ bool verify(const(SecureNet) net, const(SignedContract*) signed_contract, const(
         //ignore
     }
     return false;
+}
+
+@recordType("$@G")
+struct GenesisEpoch {
+    @label(StdNames.epoch) long epoch_number;
+    mixin HiBONRecord;
+}
+
+@recordType("$@E")
+struct Epoch {
+    @label(StdNames.epoch) long epoch_number;
+    sdt_t time; /// Epoch concensus time
+    @label(StdNames.bullseye) Fingerprint bullseye;
+    @label(StdNames.previous) Fingerprint previous;
+    mixin HiBONRecord;
+}
+
+@recordType("$@Tagion")
+struct TagionHead {
+    @label(StdNames.tagion) string name; // Default name should always be "tagion"
+    TagionGlobals global;
+    mixin HiBONRecord;
+}
+
+struct TagionGlobals {
+    long epoch;
+    @label("events") Fingerprint[] event_prints;
+    mixin HiBONRecord;
 }

@@ -24,7 +24,7 @@ import std.algorithm : map, filter, sort, reduce, until;
 import std.array;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.services.options : TaskNames;
-import tagion.script.common : StdNames;
+import tagion.script.standardnames;
 import tagion.hibon.HiBONRecord;
 
 @recordType("finishedEpoch")
@@ -45,10 +45,7 @@ struct FinishedEpoch {
 @safe
 class StdRefinement : Refinement {
 
-    Topic epoch_created;
-    this() {
-        epoch_created = submask.register("epoch_creator/epoch_created");
-    }
+    Topic epoch_created = Topic("epoch_creator/epoch_created");
 
     enum MAX_ORDER_COUNT = 10; /// Max recursion count for order_less function
     protected {
@@ -84,8 +81,8 @@ class StdRefinement : Refinement {
         }
 
         immutable(EventPackage*)[] epacks = events
-                .map!((e) => e.event_package)
-                .array;
+            .map!((e) => e.event_package)
+            .array;
         locate(task_names.transcript).send(consensusEpoch(), epacks, decided_round.number);
     }
 
@@ -146,11 +143,11 @@ class StdRefinement : Refinement {
 
             return receivers.map!(e => PseudoTime(e.pseudo_time_counter,
                     (e[].retro.filter!(e => e._witness)
-                    .front._mother.pseudo_time_counter + 1),
-                    e.order,
-                    e.event_body.time,
-                    e.round.number,
-                    decided_round.famous_mask.count))
+                .front._mother.pseudo_time_counter + 1),
+            e.order,
+            e.event_body.time,
+            e.round.number,
+            decided_round.famous_mask.count))
                 .array
                 .reduce!((a, b) => a + b);
         }

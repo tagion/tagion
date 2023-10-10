@@ -201,29 +201,6 @@ is ready and has been started correctly
         }
     }
 
-    /// This function should be rewritte it' for the event logging
-    deprecated("use Topic based subscription")
-    @trusted
-    void report(T)(string symbol_name, T h) const nothrow if (isHiBONRecord!T) {
-        version (unittest)
-            return;
-        import std.exception : assumeWontThrow;
-
-        if (isLoggerServiceRegistered) {
-            try {
-                immutable info = LogInfo(_task_name, symbol_name);
-                immutable doc = h.toDoc;
-                logger_tid.send(info, doc);
-            }
-            catch (Exception e) {
-                import std.stdio;
-
-                assumeWontThrow({ stderr.writefln("%s", e.msg); stderr.writefln("\t%s:%s env", task_name, symbol_name); }());
-
-            }
-        }
-    }
-
     /// Conditional subscription logging
     @trusted
     void report(Topic topic, lazy string identifier, lazy const(Document) data) const nothrow {
@@ -294,21 +271,6 @@ logs the fmt text in INFO level
         report(LogLevel.INFO, fmt, args);
     }
 
-    /// Should be rewritten to support subscription
-    bool env(T)(
-            string symbol_name,
-            T h,
-            string file = __FILE__,
-            size_t line = __LINE__) nothrow if (isHiBONRecord!T) {
-        static bool registered;
-        if (!registered) {
-            // Register the task name and the symbol_name
-        }
-        report(symbol_name, h);
-
-        return registered;
-    }
-
     @trusted
     void opCall(lazy const(Throwable) t) const nothrow {
         import std.exception;
@@ -361,43 +323,27 @@ logs the fmt text in INFO level
     }
 }
 
-mixin template Log(alias name) {
-    mixin(format(q{const bool %1$s_logger = log.env("%1$s", %1$s);}, __traits(identifier, name)));
-}
-
-template Log_(alias name) {
-    void Log_(Topic topic) {
-        log.report(topic, __traits(identifier, name), name);
-    }
-}
-
 static Logger log;
-
-unittest {
-    import tagion.hibon.HiBONRecord;
-
-    static struct S {
-        int x;
-        mixin HiBONRecord!(
-                q{this(int x) {this.x = x;}}
-        );
-    }
-
-    const s = S(10);
-    mixin Log!s;
-
-}
 
 import std.typecons;
 
 @safe
 struct Topic {
     string name;
+    this(string name) pure nothrow {
+        this.name = name;
+    }
+
     private const(Subscribed)* _subscribed;
+    private bool has_subscribed;
 
     @property
     bool subscribed() nothrow {
-        if (_subscribed is null) {
+        if (!has_subscribed) {
+            _subscribed = submask._register(name);
+            has_subscribed = true;
+        }
+        if(_subscribed is null) {
             return false;
         }
         return (*_subscribed is Subscribed.yes);
@@ -406,18 +352,19 @@ struct Topic {
 }
 
 alias Subscribed = shared(Flag!"subscribed");
+
+@safe
 shared struct SubscriptionMask {
     //      yes|no     topic
     private Subscribed[string] _registered_topics;
 
-    @safe
-    Topic register(string topic) {
+    private const(Subscribed)* _register(string topic) nothrow {
         Subscribed* s = topic in _registered_topics;
         if (s is null) {
             _registered_topics[topic] = Subscribed.no;
             s = topic in _registered_topics;
         }
-        return Topic(topic, s);
+        return s;
     }
 
     @trusted
@@ -444,17 +391,16 @@ static shared SubscriptionMask submask;
 unittest {
     import core.time;
 
-    Topic topic = submask.register("some_tag");
+    Topic topic = Topic("some_tag");
     assert(!topic.subscribed, "Topic was subscribed, it shouldn't");
     register("log_sub_task", thisTid);
     log.registerSubscriptionTask("log_sub_task");
     auto some_symbol = Document.init;
-    Log_!(some_symbol)(topic);
+    log(topic, "", some_symbol);
     assert(false == receiveTimeout(Duration.zero, (Topic _, string __, const(Document)) {}), "Received an unsubscribed topic");
-    // receiveTimeout(Duration.zero, (Topic _, string __, typeof(some_symbol)) {});
     submask.subscribe(topic.name);
     assert(topic.subscribed, "Topic wasn't subscribed, it should");
-    Log_!(some_symbol)(topic);
+    log(topic, "", some_symbol);
     assert(true == receiveTimeout(Duration.zero, (Topic _, string __, const(Document)) {}), "Didn't receive subscribed topic");
 }
 

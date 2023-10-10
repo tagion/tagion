@@ -39,10 +39,9 @@ struct CollectorService {
     bool[uint] is_consensus_contract;
     immutable(Document)[][uint] reads;
 
-    Topic reject;
+    Topic reject = Topic(reject_collector);
     void task() {
         assert(net !is null, "No secure net");
-        reject = submask.register(reject_collector);
         run(&receive_recorder, &signed_contract, &consensus_signed_contract, &rpc_contract);
     }
 
