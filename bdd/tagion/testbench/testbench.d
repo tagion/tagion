@@ -28,6 +28,7 @@ int main(string[] args) {
     import transcript_service = tagion.testbench.transcript_service;
     import replicator_service = tagion.testbench.replicator_service;
     import send_contract = tagion.testbench.send_contract;
+    import double_spend = tagion.testbench.double_spend;
 
     alias alltools = AliasSeq!(
             collector,
@@ -53,6 +54,7 @@ int main(string[] args) {
             transcript_service,
             replicator_service,
             send_contract,
+            double_spend,
     );
     mixin doOneMain!(alltools);
     return do_main(args);

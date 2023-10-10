@@ -235,6 +235,15 @@
                 "commit", "contract", "services"
             ],
             "timeout": 0.0
+        },
+        "double_spend": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "double_spend"
+            ],
+            "timeout": 0.0
         }
+
     }
 }
