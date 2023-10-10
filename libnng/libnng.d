@@ -744,6 +744,7 @@ void nng_http_conn_transact(nng_http_conn *, nng_http_req *, nng_http_res *, nng
 
 // http handler api
 int nng_http_handler_alloc(nng_http_handler **, const char *, void function (nng_aio *));
+int nng_http_handler_alloc(nng_http_handler **, const char *, void delegate (nng_aio *));
 int nng_http_handler_alloc_file(nng_http_handler **, const char *, const char *);
 int nng_http_handler_alloc_static(nng_http_handler **, const char *, const void *, size_t, const char *);
 int nng_http_handler_alloc_redirect(nng_http_handler **, const char *, ushort, const char *);

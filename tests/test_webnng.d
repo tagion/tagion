@@ -41,7 +41,7 @@ static JSONValue scandir(string path){
 }
 
 extern(C)
-static void rest_handler(nng_aio* aio){
+void rest_handler(nng_aio* aio){
     int rc = 0;
     nng_http_res *res;
     void *reqbody;
