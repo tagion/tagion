@@ -93,7 +93,7 @@ DARTIndex[] getFingerprints(const Document doc, DART db = null) @safe {
     if (RecordFactory.Recorder.isRecord(doc)) {
         assert(db !is null, "DART needed for this use case");
         auto recorder = db.recorder(doc);
-        return recorder[].map!(a => cast(DARTIndex)(a.fingerprint)).array;
+        return recorder[].map!(a => cast(DARTIndex)(a._fingerprint)).array;
 
     }
 

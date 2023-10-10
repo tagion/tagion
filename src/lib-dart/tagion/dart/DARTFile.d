@@ -459,8 +459,7 @@ enum KEY_SPAN = ubyte.max + 1;
             if (_dart_indices) {
                 auto hibon_dart_indices = new HiBON;
                 foreach (key, dart_index; _dart_indices) {
-                    if (!dart_index.isinit && fingerprints[key] != dart_index) {
-
+                    if (!dart_index.isinit) {
                         hibon_dart_indices[key] = dart_index;
                     }
 
@@ -928,7 +927,7 @@ enum KEY_SPAN = ubyte.max + 1;
                 while (!range.empty) {
                     auto sub_range = range.nextRim;
                     if (sub_range.front.dart_index.empty) {
-                        writefln("fingerprint %(%02X%) dart_index=%(%02X%)", sub_range.front.fingerprint, sub_range
+                        writefln("fingerprint %(%02X%) dart_index=%(%02X%)", sub_range.front._fingerprint, sub_range
                                 .front.dart_index);
                     }
                     immutable rim_key = sub_range.front.dart_index.rim_key(sub_range.rim);
@@ -1001,7 +1000,7 @@ enum KEY_SPAN = ubyte.max + 1;
                     if (range.type == Archive.Type.ADD) {
                         return Leave(
                                 blockfile.save(range.front.store).index,
-                                range.front.fingerprint);
+                                range.front._fingerprint);
                     }
                     return Leave.init;
                 }
@@ -1789,7 +1788,7 @@ unittest {
 
             recorder.add(doc);
 
-            auto fingerprint = recorder[].front.fingerprint;
+            auto fingerprint = recorder[].front._fingerprint;
             dart_A.modify(recorder);
 
             // dart_A.dump();
@@ -2252,10 +2251,10 @@ unittest {
             auto recorder = dart_A.recorder();
             recorder.add(doc);
             dart_A.modify(recorder);
-            assert(dart_A.bullseye == recorder[].front.fingerprint);
+            assert(dart_A.bullseye == recorder[].front._fingerprint);
             dart_A.modify(recorder);
 
-            assert(dart_A.bullseye == recorder[].front.fingerprint);
+            assert(dart_A.bullseye == recorder[].front._fingerprint);
         }
 
         {
@@ -2536,13 +2535,13 @@ unittest {
         auto recorder_add = dart_A.recorder;
         const hashdoc = HashDoc("hugo", 42);
         recorder_add.add(hashdoc);
-        assert(recorder_add[].front.dart_index != recorder_add[].front.fingerprint,
+        assert(recorder_add[].front.dart_index != recorder_add[].front._fingerprint,
         "The dart_index and the fingerprint of a archive should not be the same for a # archive");
         auto bullseye = dart_A.modify(recorder_add);
         dart_A.dump;
         // writefln("bullseye   =%(%02x%)", bullseye);
-        // writefln("fingerprint=%(%02x%)", recorder_add[].front.fingerprint);
-        assert(bullseye == recorder_add[].front.fingerprint,
+        // writefln("fingerprint=%(%02x%)", recorder_add[].front._fingerprint);
+        assert(bullseye == recorder_add[].front._fingerprint,
         "The bullseye for a DART with a single #key archive should be the same as the fingerprint of the archive");
         const hashdoc_change = HashDoc("hugo", 17);
         /*
@@ -2557,9 +2556,9 @@ unittest {
         dart_A.dump;
         // writefln("bullseye   =%(%02x%)", bullseye);
         // writefln("dart_index =%(%02x%)", recorder_change[].front.dart_index);
-        // writefln("fingerprint=%(%02x%)", recorder_change[].front.fingerprint);
+        // writefln("fingerprint=%(%02x%)", recorder_change[].front._fingerprint);
         assert(recorder_add[].front.dart_index == recorder_change[].front.dart_index);
-        assert(bullseye == recorder_change[].front.fingerprint,
+        assert(bullseye == recorder_change[].front._fingerprint,
         "The bullseye for a DART with a single #key archive should be the same as the fingerprint of the archive");
 
     }

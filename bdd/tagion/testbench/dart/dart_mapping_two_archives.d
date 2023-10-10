@@ -25,7 +25,7 @@ import tagion.testbench.dart.dartinfo;
 import tagion.communication.HiRPC;
 import tagion.hibon.HiBONJSON : toPretty;
 import tagion.Keywords;
-import tagion.basic.Types : Buffer, mut;
+import tagion.basic.Types : Buffer;
 import std.range;
 import tagion.basic.basic : forceRemove;
 
@@ -83,8 +83,8 @@ class AddOneArchive {
         auto recorder = db.recorder();
         const doc = DARTFakeNet.fake_doc(info.table[0]);
         recorder.add(doc);
-        doc_dart_index = recorder[].front.dart_index.mut;
-        doc_fingerprint = recorder[].front.fingerprint.mut;
+        doc_dart_index = DARTIndex(cast(Buffer) recorder[].front.dart_index);
+        doc_fingerprint = Fingerprint(cast(Buffer) recorder[].front._fingerprint);
         bullseye = db.modify(recorder);
         return result_ok;
     }
@@ -133,8 +133,8 @@ class AddAnotherArchive {
         auto recorder = db.recorder();
         const doc = DARTFakeNet.fake_doc(info.table[1]);
         recorder.add(doc);
-        doc_dart_index = recorder[].front.dart_index.mut;
-        doc_fingerprint = recorder[].front.fingerprint.mut;
+        doc_dart_index = DARTIndex(cast(Buffer) recorder[].front.dart_index);
+        doc_fingerprint = Fingerprint(cast(Buffer) recorder[].front._fingerprint);
         bullseye = db.modify(recorder);
 
         check(doc_fingerprint != bullseye, "Bullseye not updated");

@@ -11,7 +11,7 @@ import std.algorithm : map, filter;
 import tagion.dart.DARTFakeNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 import tagion.crypto.Types : Fingerprint;
-import tagion.basic.Types : Buffer, mut;
+import tagion.basic.Types : Buffer;
 import tagion.dart.DART : DART;
 import tagion.dart.DARTFile : DARTFile;
 import tagion.dart.Recorder : Archive, RecordFactory;
@@ -79,8 +79,8 @@ class AddOneArchiveAndSnap {
         const doc = DARTFakeNet.fake_doc(info.deep_table[2]);
         recorder.add(doc);
         pragma(msg, "fixme(cbr): Should this be Fingerprint or DARTIndex");
-        doc_dart_index = recorder[].front.dart_index.mut;
-        doc_fingerprint = recorder[].front.fingerprint.mut;
+        doc_dart_index = DARTIndex(cast(Buffer) recorder[].front.dart_index);
+        doc_fingerprint = Fingerprint(cast(Buffer) recorder[].front._fingerprint);
         bullseye = db.modify(recorder);
 
         check(doc_fingerprint != bullseye, "Bullseye not updated");
