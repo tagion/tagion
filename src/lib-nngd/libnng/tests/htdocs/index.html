@@ -1,0 +1,67 @@
+<html>
+<head>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+<script>
+    function a2object(arr){
+        var fo = {};
+        $(arr).each(function(index, obj){
+            if(fo.hasOwnProperty(obj.name)){
+                if(Array.isArray(fo[obj.name])){
+                    fo[obj.name].push(obj.value);
+                }else{
+                    fo[obj.name] = [fo[obj.name], obj.value];
+                }
+            }else{
+                fo[obj.name] = obj.value;
+            }
+        });
+        return fo;
+    }
+    $(function() {
+        $("#dosend").click((e)=>{
+            e.preventDefault();
+            var data = a2object($(e.target).closest('form').serializeArray());
+            $.ajax({
+                url: "api/v1/doit",
+                type: "POST",
+                data: JSON.stringify(data),
+                dataType: "json",
+                contentType: 'application/json; charset=utf-8',
+                success: function(res) {
+                    console.log("ok", res);
+                    $("#output").text(JSON.stringify(res, null, 4));
+                },
+                error:function (xhr, ajaxOptions, thrownError){
+                    console.log(xhr.responseText);
+                }                    
+            });
+        });            
+    });
+</script>
+</head>
+<body>
+<h1>It works... But why?!</h1>
+<h2>Full-size threaded HTTP server in pure D</h2>
+<div style="width:25%; vertical-align: top; display: inline-block;">
+<h3>Test static file access:</h3>
+<a href="onedir/readme.txt">README.txt</a>
+<h3>Test REST API:</h3>
+<form>
+<select name="todo">
+    <option value="time">What time is it?</option>
+    <option value="dir">Get file list</option>
+</select>
+<button type="button" id="dosend">Send!</button>
+</form>
+<div style="width:100%; height:16em; min-height:16em; padding-left:1em; border:1px dashed gray;">
+<code><pre id="output">
+>
+</pre></code>
+</div>
+</div>
+<div style="vertical-align: top; display: inline-block;">
+<img src="meditate.png" width="480px" />
+</div>
+</body>
+</html>
+
