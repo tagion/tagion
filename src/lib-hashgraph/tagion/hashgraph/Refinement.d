@@ -45,10 +45,7 @@ struct FinishedEpoch {
 @safe
 class StdRefinement : Refinement {
 
-    Topic epoch_created;
-    this() {
-        epoch_created = submask.register("epoch_creator/epoch_created");
-    }
+    Topic epoch_created = Topic("epoch_creator/epoch_created");
 
     enum MAX_ORDER_COUNT = 10; /// Max recursion count for order_less function
     protected {

@@ -52,7 +52,7 @@ enum reject_inputvalidator = "reject/inputvalidator";
 struct InputValidatorService {
     pragma(msg, "TODO: Make inputvalidator safe when nng is");
     void task(immutable(InputValidatorOptions) opts, immutable(TaskNames) task_names) @trusted {
-        auto rejected = submask.register(reject_inputvalidator);
+        auto rejected = Topic(reject_inputvalidator);
         NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_PULL);
         ReceiveBuffer buf;
         // s.recvtimeout = opts.socket_select_timeout.msecs;

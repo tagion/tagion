@@ -430,10 +430,6 @@ shared struct SubscriptionMask {
         return s;
     }
 
-    Topic register(string topic) nothrow {
-        return Topic(topic);
-    }
-
     @trusted
     void subscribe(string topic) {
         if (thisTid == log.logger_subscription_tid) {
@@ -458,7 +454,7 @@ static shared SubscriptionMask submask;
 unittest {
     import core.time;
 
-    Topic topic = submask.register("some_tag");
+    Topic topic = Topic("some_tag");
     assert(!topic.subscribed, "Topic was subscribed, it shouldn't");
     register("log_sub_task", thisTid);
     log.registerSubscriptionTask("log_sub_task");
