@@ -9,9 +9,11 @@ import tagion.utils.StdTime;
 import tagion.script.namerecords;
 import tagion.hibon.HiBONJSON;
 import tagion.basic.Types;
+import tagion.hibon.Document;
+import tagion.script.common;
 
 @safe:
-void createGenesis(const(string[]) nodes_param) {
+void createGenesis(const(string[]) nodes_param, Document testamony) {
     import std.stdio;
 
     static struct NodeSettings {
@@ -52,8 +54,17 @@ void createGenesis(const(string[]) nodes_param) {
         node_record.address = node_setting.address;
         node_records ~= node_record;
     }
+    GenesisEpoch genesis_epoch;
+    genesis_epoch.epoch_number = 0;
+    genesis_epoch.nodes = node_settings
+        .map!((node_setting) => node_setting.owner.mut)
+        .array;
+    //.sort;
+    genesis_epoch.time = cast(sdt_t) time;
+    genesis_epoch.testamony = testamony;
     name_cards.each!((name_card) => writefln("%s", name_card.toPretty));
     node_records.each!((name_card) => writefln("%s", name_card.toPretty));
+    writefln("%s", genesis_epoch.toPretty);
     version (none) {
         const nodekeys = nodekey_text
             .map!(key => Pubkey(key.decode))

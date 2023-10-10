@@ -35,7 +35,7 @@ int _main(string[] args) {
                 "version", "display the version", &version_switch, //        "invoice|i","Sets the HiBON input file name", &invoicefile,
                 "c|stdout", "Print to standard output", &standard_output,
                 "o|output", format("Output filename : Default %s", output_filename), &output_filename, // //        "output_filename|o", format("Sets the output file name: default : %s", output_filenamename), &output_filenamename,
-                "p|nodekey", "Node channel key(Pubkey) ", &nodekeys,//         "bills|b", "Generate bills", &number_of_bills,
+                "p|nodekey", "Node channel key(Pubkey) ", &nodekeys, //         "bills|b", "Generate bills", &number_of_bills,
                 // "value|V", format("Bill value : default: %d", value), &value,
                 // "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase
                 //"initbills|b", "Testing mode", &initbills,
@@ -73,7 +73,7 @@ int _main(string[] args) {
         auto factory = RecordFactory(net);
         auto recorder = factory.recorder;
         if (!nodekeys.empty) {
-            createGenesis(nodekeys);
+            createGenesis(nodekeys, Document.init);
             return 0;
         }
         if (args.length == 1) {
