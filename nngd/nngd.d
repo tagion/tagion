@@ -9,9 +9,12 @@ import std.typecons;
 import std.algorithm;
 import std.datetime.systime;
 import std.traits;
+import std.json;
+import std.file;
+import std.path;
 import std.exception;
 
-import libnng;
+private import libnng;
 
 import std.stdio;
 
@@ -1066,4 +1069,250 @@ struct NNGPool {
     }
 
 } // struct NNGPool
+
+
+// ------------------ WebApp classes
+
+alias nng_http_status = libnng.nng_http_status;
+alias http_status = nng_http_status;
+alias nng_tls_mode = libnng.nng_tls_mode;
+alias nng_tls_auth_mode = libnng.nng_tls_auth_mode;
+alias nng_tls_version = libnng.nng_tls_version;
+
+alias nng_http_req = libnng.nng_http_req;
+alias nng_http_res = libnng.nng_http_res;
+
+struct WebAppConfig {
+    string root_path = "";
+    string static_path = "";
+    string static_url = "";
+    string template_path = "";
+    string prefix_url = "";
+    this(ref return scope WebAppConfig rhs) {}
+};
+
+struct WebData {
+    string route;
+    string uri;
+    string[] path;
+    string[string] param;
+    string type;
+    size_t length;
+    string method;
+    ubyte[] rawdata;
+    string text;
+    JSONValue json;
+    http_status status;
+    string msg;
+}   
+
+alias webhandler = WebData function ( WebData );
+
+struct WebApp {
+    string name;
+    WebAppConfig config;
+    nng_http_server *server;    
+    nng_aio *aio;
+    nng_url *url;
+    webhandler[string] routes;
+    
+    @disable this();
+    
+    this( string iname, string iurl, WebAppConfig iconfig)
+    {
+        name = iname;
+        auto rc = nng_url_parse(&url, iurl.toStringz());
+        enforce(rc==0, "server url parse");
+        config = iconfig;
+        init();
+    }
+    this( string iname, string iurl, JSONValue iconfig)
+    {
+        name = iname;
+        auto rc = nng_url_parse(&url, iurl.toStringz());
+        enforce(rc==0, "server url parse");
+        if("root_path" in iconfig )     config.root_path = iconfig["root_path"].str;
+        if("static_path" in iconfig )   config.static_path = iconfig["static_path"].str;
+        if("static_url" in iconfig )    config.static_url = iconfig["static_url"].str;
+        if("template_path" in iconfig ) config.template_path = iconfig["template_path"].str;
+        if("prefix_url" in iconfig )    config.prefix_url = iconfig["prefix_url"].str;
+        init();
+    }
+    
+    void route (string path, webhandler handler, string[] methods = ["GET"]){
+        int rc;
+        bool wildcard = false;
+        if(path.endsWith("/*")){
+            path = path[0..$-2];
+            wildcard = true;
+        }
+        foreach(m; methods){
+            foreach(r; sort(routes.keys)){
+                enforce(m~":"~path != r, "router path already registered: " ~ m~":"~path);
+            }
+            routes[m~":"~path] = handler;
+            nng_http_handler *hr;
+            rc = nng_http_handler_alloc(&hr, toStringz(config.prefix_url~path), &router);
+            enforce(rc==0,"route handler alloc");
+            rc = nng_http_handler_set_method(hr, m.toStringz());
+            enforce(rc==0,"route handler set method");
+            rc = nng_http_handler_set_data(hr, &this, null);
+            enforce(rc==0,"route handler set context");
+            if(wildcard){
+                rc = nng_http_handler_set_tree(hr);
+                enforce(rc==0,"route handler tree");
+            }            
+            rc = nng_http_server_add_handler(server, hr);
+            enforce(rc==0,"route handler add");
+        }            
+    }
+
+    void start(){
+        auto rc = nng_http_server_start(server);
+        enforce(rc==0, "server start");
+    }
+
+    private:
+    
+    void init(){
+        int rc;
+        if(config.root_path == "")
+            config.root_path = __FILE__.absolutePath.dirName;
+        if(config.static_path == "")
+            config.static_path = "/";
+        if(config.static_url == "")
+            config.static_url = config.static_path;
+        rc = nng_http_server_hold(&server, url);
+        enforce(rc==0,"server hold");
+        
+        nng_http_handler *hs;
+        rc = nng_http_handler_alloc_directory(&hs, toStringz(config.prefix_url~"/"~config.static_path), buildPath(config.root_path,config.static_url).toStringz());
+        enforce(rc==0,"static handler alloc");
+        rc = nng_http_server_add_handler(server, hs);
+        enforce(rc==0,"static handler add");
+        
+        rc = nng_aio_alloc(&aio, null, null);                    
+        enforce(rc==0,"aio alloc");
+
+    }
+
+    static WebData default_handler ( WebData req ){
+        WebData rep = { 
+            type : "application/json",
+            json : parseJSON("{\"response\": 200}"),
+            status : nng_http_status.NNG_HTTP_STATUS_OK
+        };
+        return rep;
+    }
+        
+    extern(C) static void router (nng_aio* aio) {
+        int rc;
+        nng_http_res *res;
+        nng_http_req *req;
+        nng_http_handler *h;
+        void *reqbody;
+        size_t reqbodylen;
+        
+        WebData sreq, srep;
+        WebApp *app;
+
+        rc = nng_http_res_alloc(&res);
+        enforce(rc == 0, "router: res alloc");
+
+        scope(failure){
+            nng_http_res_free(res);
+            nng_aio_finish(aio, rc);
+            return;
+        }
+
+        scope(exit){
+            nng_aio_set_output(aio, 0, res);
+            nng_aio_finish(aio, 0);
+        }
+        
+        req = cast(nng_http_req*)nng_aio_get_input(aio, 0);
+        enforce(req != null, "router: req extract");
+        
+        h = cast(nng_http_handler*)nng_aio_get_input(aio, 1);
+        enforce(req != null, "router: handler extract");
+        
+        app = cast(WebApp*)nng_http_handler_get_data(h);
+        enforce(app != null, "router: app extract");
+
+        nng_http_req_get_data(req, &reqbody, &reqbodylen);
+
+        sreq.method = to!string(nng_http_req_get_method(req));
+        sreq.type = to!string(nng_http_req_get_header(req, toStringz("Content-type")));
+        sreq.uri = to!string(nng_http_req_get_uri(req));
+        nng_url *u;
+        rc = nng_url_parse(&u,("http://localhost"~sreq.uri).toStringz());
+        enforce(rc==0, "router: url parse");
+        sreq.route = to!string(u.u_path);
+        sreq.path = to!string(u.u_path).split("/");
+        if(sreq.path.length > 1 && sreq.path[0] == "")
+            sreq.path = sreq.path[1..$];
+        foreach(p; to!string(u.u_query).split("&")){
+            auto a = p.split("=");
+            if(a[0] != "")
+                sreq.param[a[0]] = a[1];
+        }
+
+        sreq.rawdata = cast(ubyte[])(reqbody[0..reqbodylen].idup);
+        
+        if(sreq.type.startsWith("application/json")){
+            sreq.json = parseJSON(to!string(cast(char*)reqbody[0..reqbodylen].idup));
+        }
+        
+        if(sreq.type.startsWith("text/")){
+            sreq.text = to!string(cast(char*)reqbody[0..reqbodylen].idup);
+        }
+
+        
+        // TODO: implement full CEF parser for routes
+        webhandler handler = null;    
+        foreach(r; sort(app.routes.keys)){
+            if(r.startsWith(sreq.method~":"~sreq.route)){
+                handler = app.routes[r];
+                break;
+            }                
+        }
+        if(handler == null)
+            handler = &app.default_handler;
+
+        srep = handler(sreq);
+        
+        nng_http_res_set_status(res, cast(ushort)srep.status);
+        if(srep.status != nng_http_status.NNG_HTTP_STATUS_OK)
+            return;
+        
+        if(srep.type.startsWith("application/json")){
+            string buf = srep.json.toString();
+            rc = nng_http_res_copy_data(res, buf.toStringz(), buf.length);
+            enforce(rc==0, "router: copy json rep");
+        }
+        else if(srep.type.startsWith("text")){
+            rc = nng_http_res_copy_data(res, srep.text.toStringz(), srep.text.length);
+            enforce(rc==0, "router: copy text rep");
+        }else{
+            rc = nng_http_res_copy_data(res, srep.rawdata.ptr, srep.rawdata.length);
+            enforce(rc==0, "router: copy data rep");
+        }
+
+    }
+
+} // struct WebApp
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
