@@ -14,10 +14,14 @@ import tagion.script.TagionCurrency;
 import tagion.script.common;
 import tagion.script.execute;
 import tagion.script.Currency : totalAmount;
+import tagion.communication.HiRPC;
 
 import std.range;
 import std.algorithm;
 import std.format;
+import core.time;
+import core.thread;
+import std.stdio;
 
 alias StdSecureWallet = SecureWallet!StdSecureNet;
 enum feature = Feature(
@@ -43,6 +47,8 @@ class SameInputsSpendOnOneContract {
     Options opts;
     StdSecureWallet wallet1;
     StdSecureWallet wallet2;
+    //
+    SignedContract signed_contract;
 
     this(Options opts, ref StdSecureWallet wallet1, ref StdSecureWallet wallet2) {
         this.wallet1 = wallet1;
@@ -77,7 +83,7 @@ class SameInputsSpendOnOneContract {
         check(nets.length == collected_bills.length, format("number of bills does not match number of signatures nets %s, collected_bills %s", nets
                     .length, collected_bills.length));
         
-        SignedContract signed_contract = sign(
+        signed_contract = sign(
             nets,
             collected_bills.map!(bill => bill.toDoc)
             .array,
@@ -85,16 +91,23 @@ class SameInputsSpendOnOneContract {
             pay_script.toDoc
         );
 
-
-        
-        
-
-        return Document();
+        check(signed_contract.contract.inputs.length == 2, "should contain two inputs");
+        return result_ok;
     }
 
     @When("i send the contract to the network")
     Document network() {
-        return Document();
+
+        auto wallet1_hirpc = HiRPC(wallet1.net);
+        auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
+        writefln("---SUBMIT ADDRESS--- %s", opts.inputvalidator.sock_addr); 
+        sendSubmitHiRPC(opts.inputvalidator.sock_addr, hirpc_submit);
+
+        writeln("Going to sleep");
+        (() @trusted => Thread.sleep(20.seconds))();
+        writeln("Finished sleep");
+
+        return result_ok;
     }
 
     @Then("the inputs should be deleted from the dart.")

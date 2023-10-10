@@ -69,11 +69,17 @@ int _main(string[] args) {
     }
 
     // bills for the dart on startup
+
+    void requestAndForce(ref StdSecureWallet w, TagionCurrency amount) {
+        auto b = w.requestBill(amount);
+        w.addBill(b);
+    }
+    
     TagionBill[] bills;
     foreach (ref wallet; wallets) {
-        bills ~= wallet.requestBill(1000.TGN);
-        bills ~= wallet.requestBill(1000.TGN);
-        bills ~= wallet.requestBill(1000.TGN);
+        foreach(i; 0..3) {
+            requestAndForce(wallet, 1000.TGN);
+        }
     }
 
     SecureNet net = new StdSecureNet();
@@ -97,16 +103,35 @@ int _main(string[] args) {
 
     
     import tagion.utils.JSONCommon : load;
-    Options[] node_opts = iota(0,local_options.wave.number_of_nodes)
-        .map!(n => buildPath(module_path, format(local_options.wave.prefix_format~"opts", n)
-                                            .setExtension(FileExtension.json)))
-        .map!(node_file => load!(Options)(node_file))
-        .array;
 
+    Options[] node_opts;
+    
+    Thread.sleep(5.seconds);
+    foreach(i; 0..local_options.wave.number_of_nodes) {
 
+        const filename = buildPath(module_path, format(local_options.wave.prefix_format~"opts", i).setExtension(FileExtension.json));
+        writeln(filename);
+        Options node_opt = load!(Options)(filename);
+        writefln("NODE OPTTIONS %s",node_opt);
+        node_opts ~= node_opt;
+    }
+    
+    // Options[] node_opts = iota(0,local_options.wave.number_of_nodes)
+    //     .map!(n => buildPath(module_path, format(local_options.wave.prefix_format~"opts", n)
+    //                                         .setExtension(FileExtension.json)))
+    //     .map!(node_file => load!(Options)(node_file))
+    //     .array;
 
+    writefln("INPUT SOCKET ADDRESS %s", node_opts[0].inputvalidator.sock_addr);
 
     Thread.sleep(15.seconds);
+    auto feature = automation!(double_spend);
+    feature.SameInputsSpendOnOneContract(node_opts[0], wallets[0], wallets[1]);
+
+
+    feature.run();
+
+
 
     neuewelle.signal_handler(0);
     return 0;

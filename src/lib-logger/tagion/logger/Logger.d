@@ -204,7 +204,7 @@ is ready and has been started correctly
     /// Conditional subscription logging
     @trusted
     void report(Topic topic, lazy string identifier, lazy const(Document) data) const nothrow {
-        report(LogLevel.INFO, "%s|%s| %s", topic.name, identifier, data.toPretty);
+        // report(LogLevel.INFO, "%s|%s| %s", topic.name, identifier, data.toPretty);
         if (topic.subscribed && log.isLoggerSubRegistered) {
             try {
                 logger_subscription_tid.send(topic, identifier, data);
