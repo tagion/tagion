@@ -54,9 +54,9 @@ int _main(string[] args) {
 
     StdSecureWallet[] wallets;
     // create the wallets
-    foreach (i; 0 .. 10) {
+    foreach (i; 0 .. 5) {
         StdSecureWallet secure_wallet;
-        secure_wallet = StdSecureWallet.createWallet(
+        secure_wallet = StdSecureWallet(
                 iota(0, 5).map!(n => format("%dquestion%d", i, n)).array,
                 iota(0, 5).map!(n => format("%danswer%d", i, n)).array,
                 4,
@@ -100,7 +100,8 @@ int _main(string[] args) {
         db.modify(recorder);
     }
 
-    immutable neuewelle_args = [config_file];
+    immutable neuewelle_args = ["send_contract_test", config_file]; // ~ args;
+
     auto tid = spawn(&wrap_neuewelle, neuewelle_args);
     Thread.sleep(15.seconds);
     writeln("going to run test");
@@ -108,7 +109,6 @@ int _main(string[] args) {
     send_contract_feature.SendASingleTransactionFromAWalletToAnotherWallet(local_options, wallets, dart_interface_sock_addr, inputvalidator_sock_addr, start_amount);
     send_contract_feature.run();
     writefln("finished test execution");
-    Thread.sleep(20.seconds);
 
     neuewelle.signal_handler(0);
     // stopsignal.set;

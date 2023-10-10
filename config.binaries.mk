@@ -162,6 +162,7 @@ TAGION_TOOLS+=stiefel
 
 TAGION_BINS=$(foreach tools,$(TAGION_TOOLS), ${call BIN_DEPS,$(tools)} )
 
+target-tagion: ssl nng secp256k1 libp2p
 target-tagion: DFLAGS+=$(DVERSION)=ONETOOL
 target-tagion: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER) $(LIBNNG)
 ${call DO_BIN,tagion,$(LIB_DFILES) $(TAGION_BINS)}

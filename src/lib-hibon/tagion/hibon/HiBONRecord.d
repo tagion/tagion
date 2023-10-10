@@ -619,7 +619,7 @@ mixin template HiBONRecord(string CTOR = "") {
                                     basename!(this.tupleof[i])));
                         }
                     }
-                    else {
+                else {
                         enum name = default_name;
                         enum optional = false;
                     }
@@ -1534,10 +1534,10 @@ unittest {
     static struct Simple {
         int x;
         mixin HiBONRecord!(q{
-    this(int _x) {
-        x = _x;
-    }
-    });
+            this(int _x) {
+                x = _x;
+            }
+        });
     }
 
     auto fout = File(deleteme, "w");

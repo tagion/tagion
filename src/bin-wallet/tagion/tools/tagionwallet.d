@@ -648,14 +648,14 @@ int _main(string[] args) {
                 "wallet", format("Wallet file : default %s", options.walletfile), &options.walletfile,
                 "device", format("Device file : default %s", options.devicefile), &options.devicefile,
                 "quiz", format("Quiz file : default %s", options.quizfile), &options.quizfile,
-                "invoice|i", format("Invoice file : default %s", invoicefile), &invoicefile,
+                "invoice|i", format("_Invoice file : default %s", invoicefile), &invoicefile,
                 "create-invoice|c", "Create invoice by format LABEL:PRICE. Example: Foreign_invoice:1000", &create_invoice_command,
                 "contract|t", format("Contractfile : default %s", options.contractfile), &options.contractfile,
                 "send|s", "Send contract to the network", &send_flag,
                 "amount", "Display the wallet amount", &print_amount,
-                "pay|I", format("Invoice to be payed : default %s", payfile), &payfile,
+                "pay|I", format("_Invoice to be payed : default %s", payfile), &payfile,
                 "update|U", "Update your wallet", &update_wallet,
-                "item|m", "Invoice item select from the invoice file", &item,
+                "item|m", "_Invoice item select from the invoice file", &item,
                 "pin|x", "Pincode", &pincode,
                 "port|p", format("Tagion network port : default %d", options.port), &options.port,
                 "url|u", format("Tagion url : default %s", options.addr), &options.addr,
@@ -865,12 +865,12 @@ int _main(string[] args) {
     }
 
     Invoices orders;
-    Invoice invoice_to_pay;
+    _Invoice invoice_to_pay;
 
     if (payfile.exists) {
         try {
             // orders = payfile.fread!Invoices;
-            invoice_to_pay = payfile.fread!Invoice;
+            invoice_to_pay = payfile.fread!_Invoice;
             //            orders = Invoices(order_doc);
         }
         catch (TagionException e) {
@@ -880,7 +880,7 @@ int _main(string[] args) {
         }
     }
     else if (payfile.length) {
-        writeln("Invoice file " ~ payfile ~ " not found");
+        writeln("_Invoice file " ~ payfile ~ " not found");
     }
     if (unlock_bills) {
         wallet_interface.secure_wallet.unlockBills;
@@ -978,7 +978,7 @@ int _main(string[] args) {
         }
         else if (invoice_to_pay !is invoice_to_pay.init) {
             writeln("payment");
-            SignedContract signed_contract;
+            _SignedContract signed_contract;
             const flag = wallet_interface.secure_wallet.payment([invoice_to_pay], signed_contract);
             options.accountfile.fwrite(wallet_interface.secure_wallet.account);
 

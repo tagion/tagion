@@ -2,10 +2,6 @@
 include ${call dir.resolve, dstep.mk}
 
 
-ifdef TINY_AES
-DCFLAGS+=$(DVERSION)=TINY_AES
-endif
-
 DFILES_NATIVESECP256K1=${shell find $(DSRC)/lib-crypto -name "*.d"}
 
 ifdef SECP256K1_HASH
@@ -29,8 +25,6 @@ proper-secp256k1-sha256:
 	$(RM) $(SEC256k1_WRAPPER_OBJ)
 
 .PHONY: proper-secp256k1-sha256
-
-proper: proper-secp256k1-sha256
 
 secp256k1: $(SEC256k1_WRAPPER_OBJ)
 

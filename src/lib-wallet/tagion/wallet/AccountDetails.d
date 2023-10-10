@@ -18,6 +18,7 @@ struct AccountDetails {
     @label("$state") Buffer derive_state;
     @label("$locked") bool[Pubkey] activated; /// locked bills
     @label("$requested") TagionBill[Pubkey] requested; /// Requested bills
+    @label("$requested_invoices") Invoice[] requested_invoices;
     @label("$hirpc") Document[] hirpcs; /// HiRPC request    
     import std.algorithm : map, sum, filter, any, each;
 
@@ -55,7 +56,7 @@ struct AccountDetails {
         activated.remove(bills[index].owner);
     }
 
-    int check_contract_payment(const(DARTIndex)[] inputs, Document[Pubkey] outputs) {
+    int check_contract_payment(const(DARTIndex)[] inputs, const(Document[]) outputs) {
         import std.algorithm : countUntil;
         import tagion.crypto.SecureNet : StdHashNet;
 
@@ -72,7 +73,7 @@ struct AccountDetails {
         }
         // Proceed if inputs are not matched.
         // Look for outputs matches. Return 1 from func if found or 2 if not.
-        foreach (outputPubkey; outputs.keys) {
+        foreach (outputPubkey; outputs.map!(output => output[StdNames.owner].get!Pubkey)) {
             const index = countUntil!"a.owner == b"(bills, outputPubkey);
             if (index >= 0) {
                 return 1;
@@ -182,12 +183,3 @@ struct Invoices {
     mixin HiBONRecord;
 }
 
-@safe
-@recordType("PayInfo")
-struct PaymentInfo {
-    string name; /// Name of the reception
-    @label(StdNames.owner) Pubkey owner;
-    // @label(StdNames.derive) string derive;
-    @label(StdNames.value, true) TagionCurrency amount;
-    @label(VOID, true) Document info;
-}

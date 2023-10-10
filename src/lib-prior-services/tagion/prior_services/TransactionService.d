@@ -22,7 +22,7 @@ import tagion.basic.Types : Control, Buffer;
 import tagion.hibon.Document;
 import tagion.communication.HiRPC;
 import tagion.hibon.HiBON;
-import tagion.script.prior.StandardRecords : Contract, SignedContract, PayContract;
+import tagion.script.prior.StandardRecords : Contract, _SignedContract, PayContract;
 import tagion.script.prior.SmartScript;
 import tagion.crypto.SecureNet : StdSecureNet;
 
@@ -170,7 +170,7 @@ void transactionServiceTask(immutable(Options) opts) nothrow {
                         case "transaction":
                             // Should be EXTERNAL
                             try {
-                                auto signed_contract = SignedContract(params);
+                                auto signed_contract = _SignedContract(params);
                                 //                            if (signed_contract.valid) {
                                 //
                                 // Load inputs to the contract from the DART

@@ -1,14 +1,11 @@
 module tagion.utils.Result;
 
-import tagion.basic.tagionexceptions;
-
-@safe class UtilException : TagionException {
-    this(string msg, string file = __FILE__, size_t line = __LINE__) pure nothrow {
-        super(msg, file, line);
-    }
+@safe
+Result!V result(V)(V val) {
+    return Result!V(val);
 }
 
-@safe struct Result(V, Except = UtilException) {
+@safe struct Result(V, Except = Exception) {
     V value;
     Except e;
     @disable this();
@@ -31,8 +28,16 @@ import tagion.basic.tagionexceptions;
         this.e = e;
     }
 
+    @nogc string msg() pure const nothrow {
+        return (e is null) ? null : e.msg;
+    }
+
     @nogc bool error() pure const nothrow {
         return e !is null;
+    }
+
+    bool opCast(T)() pure const nothrow if (is(T == bool)) {
+        return (e is null) && (value !is V.init);
     }
 
     V get() {

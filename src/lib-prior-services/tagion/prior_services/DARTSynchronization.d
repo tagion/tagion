@@ -112,10 +112,10 @@ class ReadRequestHandler : ResponseHandler {
         auto received = hirpc.receive(doc);
         const foreign_recoder = manufactor.recorder(received.method.params);
         foreach (archive; foreign_recoder[]) {
-            fp_result[archive.fingerprint] = archive.toDoc;
+            fp_result[archive.dart_index] = archive.toDoc;
             import std.algorithm : arrRemove = remove, countUntil;
 
-            requested_fp = requested_fp.arrRemove(countUntil(requested_fp, archive.fingerprint));
+            requested_fp = requested_fp.arrRemove(countUntil(requested_fp, archive.dart_index));
         }
     }
 
@@ -330,7 +330,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
                     continue;
                 auto response = syncWith(node_addr.value);
                 if (response[1] is null)
-                    continue;
+                continue;
                 return response;
             }
         }
@@ -629,7 +629,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
             if (result[1] is null) {
                 onFailure(root); //TODO: or just ignore?
             }
-            else {
+        else {
                 handlerPool.add(result[0], result[1], true);
                 sync_sectors[root] = true;
             }
@@ -642,7 +642,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
                 if (result[1] is null) {
                     onFailure(sector); //TODO: or just ignore?
                 }
-                else {
+        else {
                     sync_sectors[sector] = true;
                     handlerPool.add(result[0], result[1], true);
                 }

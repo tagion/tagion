@@ -43,28 +43,6 @@ class DARTFakeNet : StdSecureNet {
         return Fingerprint(super.rawCalcHash(h));
     }
 
-    override immutable(Buffer) binaryHash(
-            scope const(ubyte[]) h1,
-    scope const(ubyte[]) h2) const {
-        scope ubyte[] fake_h1;
-        scope ubyte[] fake_h2;
-        if (h1.length is ulong.sizeof) {
-            fake_h1.length = hashSize;
-            fake_h1[0 .. ulong.sizeof] = h1;
-        }
-        else {
-            fake_h1 = h1.dup;
-        }
-        if (h2.length is ulong.sizeof) {
-            fake_h2.length = hashSize;
-            fake_h2[0 .. ulong.sizeof] = h2;
-        }
-        else {
-            fake_h2 = h2.dup;
-        }
-        return super.binaryHash(fake_h1, fake_h2);
-    }
-
     @trusted
     override Fingerprint calcHash(const(Document) doc) const {
         import tagion.hibon.HiBONBase : Type;

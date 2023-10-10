@@ -20,6 +20,7 @@ import std.range;
 import core.thread;
 import tagion.basic.Message;
 import std.string : representation;
+import std.conv : to;
 
 //import tagion.basic.tagionexceptions : check;
 import tagion.hibon.Document;
@@ -80,6 +81,60 @@ void word_strip(scope ref char[] word_strip) pure nothrow @safe @nogc {
 
 enum MAX_PINCODE_SIZE = 128;
 enum LINE = "------------------------------------------------------";
+
+pragma(msg, "Fixme(lr)Remove trusted when nng is safe");
+void sendSubmitHiRPC(string address, HiRPC.Sender contract) @trusted {
+    import nngd;
+    import std.exception;
+    import tagion.hibon.Document;
+    import tagion.hibon.HiBONtoText;
+
+    int rc;
+    NNGSocket send_sock = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
+    rc = send_sock.dial(address);
+    if (rc != 0) {
+        throw new Exception(format("Could not dial address %s: %s", address, nng_errstr(rc)));
+    }
+    send_sock.sendtimeout = 1000.msecs;
+    send_sock.sendbuf = 4096;
+
+    rc = send_sock.send(contract.toDoc.serialize);
+    if (rc != 0) {
+        throw new Exception(format("Could not send bill %s", nng_errstr(
+                rc)));
+    }
+}
+
+pragma(msg, "Fixme(lr)Remove trusted when nng is safe");
+Document sendDARTHiRPC(string address, HiRPC.Sender dart_req) @trusted {
+    import nngd;
+    import std.exception;
+
+    int rc;
+    NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
+    s.recvtimeout = 1000.msecs;
+    while (1) {
+        writefln("REQ to dial...");
+        rc = s.dial(address);
+        if (rc == 0) {
+            break;
+        }
+        if (rc == nng_errno.NNG_ECONNREFUSED) {
+            nng_sleep(100.msecs);
+        }
+        if (rc != 0) {
+            throw new Exception(format("Could not dial kernel %s", nng_errstr(rc)));
+        }
+    }
+    while (1) {
+        rc = s.send!(immutable(ubyte[]))(dart_req.toDoc.serialize);
+        if (s.errno != 0) {
+            throw new Exception("error in response");
+        }
+        Document received_doc = s.receive!(immutable(ubyte[]))();
+        return received_doc;
+    }
+}
 
 /**
  * \struct WalletInterface
@@ -225,6 +280,10 @@ struct WalletInterface {
             }
         }
         return false;
+    }
+
+    void generateSeedFromPassphrase(const(char[]) passphrase, const(char[]) pincode, const(char[]) salt = null) {
+        secure_wallet = StdSecureWallet(passphrase, pincode, salt);
     }
 
     /**
@@ -388,7 +447,7 @@ struct WalletInterface {
                                         }
                                     }
                                     else {
-                                        secure_wallet = StdSecureWallet.createWallet(
+                                        secure_wallet = StdSecureWallet(
                                                 quiz.questions, selected_answers, confidence, pincode1);
                                         save(recover_flag);
                                     }
@@ -466,6 +525,21 @@ struct WalletInterface {
         fout.writeln(line);
     }
 
+    void listInvoices(File fout) {
+        const invoices = secure_wallet.account.requested_invoices;
+        if (invoices.empty) {
+            return;
+        }
+
+        fout.writeln("Outstanding invoice requests");
+        const line = format("%-(%s%)", "- ".repeat(40));
+        fout.writefln("%-5s %-10s %-45s", "No", "Label", "Deriver");
+        foreach (i, invoice; invoices) {
+            fout.writefln("%4s] %-10s %s", i, invoice.name, invoice.pkey.encodeBase64);
+        }
+        fout.writeln(line);
+    }
+
     void sumAccount(File fout) {
         with (secure_wallet.account) {
             fout.writefln("Available : %13.6fTGN", available.value);
@@ -475,60 +549,6 @@ struct WalletInterface {
         }
     }
 
-    pragma(msg, "Fixme(lr)Remove trusted when nng is safe");
-    void sendSubmitHiRPC(string address, HiRPC.Sender contract) @trusted {
-        import nngd;
-        import std.exception;
-        import tagion.hibon.Document;
-        import tagion.hibon.HiBONtoText;
-
-        int rc;
-        NNGSocket send_sock = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
-        rc = send_sock.dial(address);
-        if (rc != 0) {
-            throw new Exception(format("Could not dial address %s: %s", address, nng_errstr(rc)));
-        }
-        send_sock.sendtimeout = 1000.msecs;
-        send_sock.sendbuf = 4096;
-
-        rc = send_sock.send(contract.toDoc.serialize);
-        if (rc != 0) {
-            throw new Exception(format("Could not send bill %s: %s", secure_wallet.net.calcHash(contract).encodeBase64, nng_errstr(
-                    rc)));
-        }
-    }
-
-    pragma(msg, "Fixme(lr)Remove trusted when nng is safe");
-    Document sendDARTHiRPC(string address, HiRPC.Sender dart_req) @trusted {
-        import nngd;
-        import std.exception;
-
-
-        int rc;
-        NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
-        s.recvtimeout = 1000.msecs;
-        while(1) {
-            writefln("REQ to dial...");
-            rc = s.dial(address);
-            if (rc == 0) {
-                break;
-            }
-            if (rc == nng_errno.NNG_ECONNREFUSED) {
-                nng_sleep(100.msecs);
-            }
-            if (rc != 0) {
-                throw new Exception(format("Could not dial kernel %s", nng_errstr(rc)));
-            }
-        }
-        while (1) {
-            rc = s.send!(immutable(ubyte[]))(dart_req.toDoc.serialize);
-            if (s.errno != 0) {
-                throw new Exception("error in response");
-            }
-            Document received_doc = s.receive!(immutable(ubyte[]))();
-            return received_doc;
-        }
-    }
 
     struct Switch {
         bool force;
@@ -538,7 +558,9 @@ struct WalletInterface {
         bool pay;
         bool request;
         bool update;
+        bool trt_update;
         double amount;
+        string invoice;
         string output_filename;
     }
 
@@ -552,11 +574,29 @@ struct WalletInterface {
                         save(false);
                     }
                 }
-                if (amount !is amount.init) {
-                    const bill = secure_wallet.requestBill(amount.TGN);
-                    output_filename = (output_filename.empty) ? "bill".setExtension(FileExtension.hibon) : output_filename;
-                    output_filename.fwrite(bill);
-                    writefln("%1$sCreated %3$s%2$s of %4$s", GREEN, RESET, output_filename, bill.value.toString);
+                if (amount !is amount.init || invoice !is invoice.init) {
+                    Document request;
+                    if (invoice !is invoice.init) {
+                        scope invoice_args = invoice.splitter(":");
+                        import tagion.basic.range : eatOne;
+
+                        auto new_invoice = secure_wallet.createInvoice(
+                                invoice_args.eatOne,
+                                invoice_args.eatOne.to!double.TGN
+                        );
+                        check(new_invoice.name !is string.init, "Invalid name on invoice");
+                        check(new_invoice.amount > 0, "Invoice amount not valid");
+                        secure_wallet.registerInvoice(new_invoice);
+                        request = new_invoice.toDoc;
+                    }
+                    else {
+                        auto bill = secure_wallet.requestBill(amount.TGN);
+                        request = bill.toDoc;
+                    }
+                    const default_name = invoice ? "invoice" : "bill";
+                    output_filename = (output_filename.empty) ? default_name.setExtension(FileExtension.hibon) : output_filename;
+                    output_filename.fwrite(request);
+                    writefln("%1$sCreated %3$s%2$s", GREEN, RESET, output_filename);
                     save_wallet = true;
                     return;
                 }
@@ -591,6 +631,7 @@ struct WalletInterface {
                 }
                 if (list) {
                     listAccount(stdout);
+                    listInvoices(stdout);
                     sum = true;
                 }
                 if (sum) {
@@ -601,31 +642,64 @@ struct WalletInterface {
                         .each!(bill => secure_wallet.net.dartIndex(bill)
                                 .encodeBase64.setExtension(FileExtension.hibon).fwrite(bill));
                 }
-                if (update) {
-                    const fingerprints = [secure_wallet.account.bills, secure_wallet.account.requested.values]
-                        .joiner
-                        .map!(bill => secure_wallet.net.dartIndex(bill))
-                        .array;
+                if (update || trt_update) {
+
                     const update_net = secure_wallet.net.derive(update_tag.representation);
                     const hirpc = HiRPC(update_net);
-                    const dartcheckread = dartCheckRead(fingerprints, hirpc);
+
+                    const(HiRPC.Sender) getRequest() {
+                        if (trt_update) {
+                            return secure_wallet.getRequestUpdateWallet(hirpc);
+                        }
+                        return secure_wallet.getRequestCheckWallet(hirpc);
+                    }
+
+                    const req = getRequest();
 
                     if (output_filename !is string.init) {
-                        output_filename.fwrite(dartcheckread);
+                        output_filename.fwrite(req);
                     }
                     if (send) {
-                        auto receiver = hirpc.receive(sendDARTHiRPC(options.dart_address, dartcheckread));
-                        auto res = secure_wallet.setResponseUpdateWallet(receiver);
+                        auto received_doc = sendDARTHiRPC(options.dart_address, req);
+                        check(received_doc.isRecord!(HiRPC.Receiver), "Error in response. Aborting");
+                        auto receiver = hirpc.receive(received_doc);
+
+                        auto res = trt_update ? secure_wallet.setResponseUpdateWallet(
+                                receiver) : secure_wallet.setResponseCheckRead(receiver);
                         writeln(res ? "wallet updated succesfully" : "wallet not updated succesfully");
+                        listAccount(stdout);
+                        save_wallet = true;
                     }
-                    
+
                 }
                 if (pay) {
-                    SignedContract signed_contract;
+
+                    Document[] requests_to_pay = args[1 .. $]
+                        .filter!(file => file.hasExtension(FileExtension.hibon))
+                        .map!(file => file.fread)
+                        .array;
+
                     TagionBill[] to_pay;
+                    foreach (doc; requests_to_pay) {
+                        if (doc.isRecord!TagionBill) {
+                            to_pay ~= TagionBill(doc);
+                        }
+                        else if (doc.isRecord!Invoice) {
+                            import tagion.utils.StdTime : currentTime;
+
+                            auto read_invoice = Invoice(doc);
+                            to_pay ~= TagionBill(read_invoice.amount, currentTime, read_invoice.pkey, Buffer.init);
+                        }
+                        else {
+                            check(0, "File supplied not TagionBill or Invoice");
+                        }
+                    }
+
+                    SignedContract signed_contract;
                     TagionCurrency fees;
-                    auto created_payment = secure_wallet.createPayment(to_pay, signed_contract, fees);
-                    check(created_payment, "payment was not successful");
+                    secure_wallet.createPayment(to_pay, signed_contract, fees).get;
+
+                    //   check(created_payment, "payment was not successful");
 
                     output_filename = (output_filename.empty && !send) ? "submit".setExtension(FileExtension.hibon) : output_filename;
                     const message = secure_wallet.net.calcHash(signed_contract);

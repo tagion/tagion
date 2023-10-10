@@ -1,5 +1,6 @@
 /// [Documentation documents/architecture/InputValidator](https://docs.tagion.org/#/documents/architecture/Collector)
 module tagion.services.collector;
+@safe:
 
 import tagion.actor.actor;
 import tagion.hibon.HiBONRecord;
@@ -21,7 +22,6 @@ import tagion.logger.Logger;
 import std.typecons;
 import std.exception;
 
-@safe
 struct CollectorOptions {
     import tagion.utils.JSONCommon;
 
@@ -31,7 +31,6 @@ struct CollectorOptions {
 /// Topic for rejected collector inputs;
 enum reject_collector = "reject/collector";
 
-@safe
 struct CollectorService {
     immutable SecureNet net;
     immutable TaskNames task_names;
@@ -39,7 +38,6 @@ struct CollectorService {
     immutable(SignedContract)*[uint] contracts;
     bool[uint] is_consensus_contract;
     immutable(Document)[][uint] reads;
-    uint[uint] readsmap;
 
     Topic reject;
     void task() {
@@ -49,41 +47,39 @@ struct CollectorService {
     }
 
     // Makes the read calls to the dart service;
-    void read_indices(dartReadRR inputs_req, immutable(SignedContract)* s_contract) {
-        auto reads_req = dartReadRR();
+    void read_indices(dartReadRR req, immutable(SignedContract)* s_contract) {
         if (s_contract.signs.length != s_contract.contract.inputs.length) {
             log(reject, "contract_mismatch_signature_length", Document.init);
             return;
         }
 
-        contracts[inputs_req.id] = s_contract;
+        contracts[req.id] = s_contract;
         scope (failure) {
-            contracts.remove(inputs_req.id);
-            readsmap.remove(reads_req.id);
+            contracts.remove(req.id);
+            reads.remove(req.id);
         }
-        log("Set the signed_contract %s", (inputs_req.id in contracts) !is null);
+        log("Set the signed_contract %s", (req.id in contracts) !is null);
         if (s_contract.contract.reads !is DARTIndex[].init) {
-            readsmap[reads_req.id] = inputs_req.id;
             log("sending contract read request to dart");
-            locate(task_names.dart).send(reads_req, (*s_contract).contract.reads);
+            locate(task_names.dart).send(req, (*s_contract).contract.reads);
         }
 
         log("sending contract input request to dart");
-        locate(task_names.dart).send(inputs_req, (*s_contract).contract.inputs);
+        locate(task_names.dart).send(req, (*s_contract).contract.inputs);
     }
 
     void consensus_signed_contract(consensusContract, immutable(SignedContract*)[] signed_contracts) {
         foreach (s_contract; signed_contracts) {
-            auto inputs_req = dartReadRR();
-            is_consensus_contract[inputs_req.id] = true;
-            read_indices(inputs_req, s_contract);
+            auto req = dartReadRR();
+            is_consensus_contract[req.id] = true;
+            read_indices(req, s_contract);
         }
     }
 
     void signed_contract(inputContract, immutable(SignedContract)* s_contract) {
-        auto inputs_req = dartReadRR();
-        is_consensus_contract[inputs_req.id] = false;
-        read_indices(inputs_req, s_contract);
+        auto req = dartReadRR();
+        is_consensus_contract[req.id] = false;
+        read_indices(req, s_contract);
     }
 
     // Input received directly from the HiRPC verifier
@@ -104,61 +100,45 @@ struct CollectorService {
         }
     }
 
+    private void clean(uint id) {
+        is_consensus_contract.remove(id);
+        contracts.remove(id);
+        reads.remove(id);
+    }
+
     // Receives the read Documents from the dart and constructs the CollectedSignedContract
     void receive_recorder(dartReadRR.Response res, immutable(RecordFactory.Recorder) recorder) {
         import std.range;
         import std.algorithm.iteration : map;
 
-        log("received dartRead response");
-        if ((res.id in readsmap) !is null) {
-            scope (exit) {
-                readsmap.remove(res.id);
-            }
-            // if (recorder[].map(a => a.fingerprint).array != collection.reads.length) {
-            //     log(reject, "missing_archives", recorder);
-            //      // Remove inputs aswell
-            //     return;
-            // }
-            const contract_id = readsmap[res.id];
-            reads[contract_id] = recorder[].map!(a => a.filed).array;
+        scope (failure) {
+            clean(res.id);
+        }
+        log("received dartresponse");
+
+        if (!(res.id in contracts)) {
             return;
         }
-        else if ((res.id in contracts) !is null) {
+
+        immutable s_contract = contracts[res.id];
+        auto fingerprints = recorder[].map!(a => a.dart_index).array;
+        if (s_contract.contract.reads !is null && fingerprints == contracts[res.id].contract.reads) {
+            reads[res.id] = recorder[].map!(a => a.filed).array;
+            return;
+        }
+        else if (fingerprints == contracts[res.id].contract.inputs) {
             log("Received and input response");
             scope (exit) {
-                is_consensus_contract.remove(res.id);
-                contracts.remove(res.id);
-                reads.remove(res.id);
-            }
-            // if (recorder[].map(a => a.fingerprint).array != collection.inputs.length) {
-            //     log(reject, "missing_archives", recorder);
-            //     return;
-            // }
-            immutable s_contract = *(contracts[res.id]);
-            const contract_hash = net.calcHash(s_contract.contract);
-            foreach (index, sign; zip(s_contract.contract.inputs, s_contract.signs)) {
-                immutable archive = find(recorder, index);
-                if (archive is null) {
-                    log(reject, "archive_no_exist", recorder);
-                    return;
-                }
-                if (!archive.filed.hasMember(StdNames.owner)) {
-                    log(reject, "archive_no_pubkey", recorder);
-                    return;
-                }
-                Pubkey pkey = archive.filed[StdNames.owner].get!Buffer;
-                if (!net.verify(contract_hash, sign, pkey)) {
-                    log(reject, "contract_no_verify", recorder);
-                    return;
-                }
-            }
-
-            if (recorder is RecordFactory.init) {
-                log(reject, "contract_no_inputs", recorder);
-                return;
+                clean(res.id);
             }
 
             immutable inputs = recorder[].map!(a => a.filed).array;
+
+            if (!verify(net, s_contract, inputs)) {
+                log(reject, "contract_no_verify", recorder);
+                return;
+            }
+
             assert(inputs !is Document[].init, "Recorder should've contained inputs at this point");
             immutable collection =
                 ((res.id in reads) !is null)
@@ -175,7 +155,9 @@ struct CollectorService {
             return;
         }
         else {
-            log("Response did not match any of the requests");
+            clean(res.id);
+            log(reject, "missing_archives", recorder);
+            return;
         }
     }
 
@@ -188,7 +170,7 @@ import tagion.dart.DARTBasic : DARTIndex;
 
 private immutable(Archive) find(immutable(RecordFactory.Recorder) rec, const(DARTIndex) index) @safe nothrow pure {
     foreach (const _archive; rec[]) {
-        if (_archive.fingerprint == index) {
+        if (_archive.dart_index == index) {
             return _archive;
         }
     }

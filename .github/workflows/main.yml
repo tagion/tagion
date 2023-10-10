@@ -46,9 +46,8 @@ jobs:
           echo -e "### :heavy_check_mark: Unittests passed \n $RESULT" >> $GITHUB_STEP_SUMMARY
       - name: Report bddtests
         run: | 
-          RESULT=$(./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/commit/results)
-          echo $RESULT | grep "Test result success!"
           ./build/${{env.TARGET}}/bin/collider reporter -o /dev/stdout logs/${{ env.TARGET }}/bdd/commit/results >> $GITHUB_STEP_SUMMARY
+          ./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/commit/results | grep "Test result success!"
                
       - name: Upload  code coverage results
         run: |
@@ -161,7 +160,7 @@ jobs:
 
       - name: Build
         run: |
-          export PATH="tools/ldc2-1.29.0-linux-x86_64/bin:$PATH"
+          export PATH="tools/ldc2-1.34.0-linux-x86_64/bin:$PATH"
           make DC=ldc2 PLATFORM=${{ matrix.arch }}-linux-android libmobile
           file ./build/${{ matrix.arch }}-linux-android/lib/libmobile.so
 
@@ -174,7 +173,7 @@ jobs:
 
       - name: Cleanup
         run: 
-          make PLATFORM=aarch64-linux-android clean
+          make PLATFORM=${{ matrix.arch }}-linux-android clean
 
   ddoc_push:
     runs-on: CD
@@ -252,40 +251,6 @@ jobs:
         run: |
           rm ${{needs.acceptance_stage.outputs.tarball}}
           rm -rf *
-          
-  update_dartservice:
-    runs-on: dartservice-back
-    # environment: Prod-manual
-    needs: [finish_workflow]
-    steps:    
-      - name: get artifact and restart service
-        run: |
-          source ~/.bashrc
-          rm -rf *
-          loginctl enable-linger gitbot
-          gh run download -n successful_artifact --repo tagion/tagion
-          tar -xzf *.tar.gz
-          cd build/x86_64-linux/integration
-          systemctl stop --user dart_api.service
-          ./install.sh
-          systemctl restart --user dart_api.service
-  
-  update_dev_dartservice:
-    runs-on: dev-dartservice-back
-    needs: [finish_workflow]
-    steps:    
-      - name: get artifact and restart service
-        run: |
-          source ~/.bashrc
-          rm -rf *
-          loginctl enable-linger gitbot
-          gh run download -n successful_artifact --repo tagion/tagion
-          tar -xzf *.tar.gz
-          cd build/x86_64-linux/integration
-          ls
-          systemctl stop --user dart_api.service
-          ./install.sh
-          systemctl restart --user dart_api.service
           
   deploy_testnet_container:
     runs-on: testnet1-local

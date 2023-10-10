@@ -64,12 +64,12 @@ export LD:=$(ANDROID_TOOLCHAIN)/bin/ld.ldd
 export RANLIB:=$(ANDROID_TOOLCHAIN)/bin/llvm-ranlib
 export STRIP:=$(ANDROID_TOOLCHAIN)/bin/llvm-strip
 
-CROSS_ENABLED=1
-CROSS_OS=android
+DFLAGS+=$(DVERSION)=MOBILE
+CROSS_ENABLED:=1
+CROSS_OS:=android
 
 SHARED?=1
 DFLAGS+=$(DDEFAULTLIBSTATIC)
-DFLAGS+=-i
 
 DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
 

@@ -258,7 +258,7 @@ mixin template JSONConfig() {
         }
     }
 
-    void save(string config_file) @safe {
+    void save(const string config_file) @safe const {
         config_file.write(stringify);
     }
 }

@@ -7,6 +7,7 @@ import tagion.dart.DART : DART;
 import tagion.Keywords;
 import tagion.dart.DARTBasic : DARTIndex;
 import tagion.dart.DARTFile : DARTFile;
+import tagion.basic.basic : isinit;
 import std.range;
 import std.algorithm : map, filter;
 import tagion.hibon.HiBONJSON : toPretty;
@@ -88,15 +89,16 @@ Document goToSplit(const DART.Rims rim, const HiRPC hirpc, DART db) @safe {
  */
 DARTIndex[] getFingerprints(const Document doc, DART db = null) @safe {
 
+    pragma(msg, "fixme(cbr): Check the that we use the dartIndex and Fingerprint in this test correctetly");
     if (RecordFactory.Recorder.isRecord(doc)) {
         assert(db !is null, "DART needed for this use case");
         auto recorder = db.recorder(doc);
-        return recorder[].map!(a => DARTIndex(a.fingerprint)).array;
+        return recorder[].map!(a => cast(DARTIndex)(a.fingerprint)).array;
+
     }
 
-    return DARTFile.Branches(doc).fingerprints
-        .filter!(f => !f.empty)
-        .map!(f => DARTIndex(f))
+    return DARTFile.Branches(doc).dart_indices
+        .filter!(f => !f.isinit)
         .array;
 }
 
@@ -110,7 +112,7 @@ DARTIndex[] getFingerprints(const Document doc, DART db = null) @safe {
  */
 
 DARTIndex[] randomAdd(const Sequence!ulong[] states, MinstdRand0 rnd, DART db) @safe {
-    DARTIndex[] fingerprints;
+    DARTIndex[] dart_indexs;
 
     foreach (state; states.dup.randomShuffle(rnd)) {
         auto recorder = db.recorder();
@@ -118,43 +120,43 @@ DARTIndex[] randomAdd(const Sequence!ulong[] states, MinstdRand0 rnd, DART db) @
         const(Document[]) docs = state.list.map!(r => DARTFakeNet.fake_doc(r)).array;
         foreach (doc; docs) {
             recorder.add(doc);
-            fingerprints ~= DARTIndex(recorder[].front.fingerprint);
+            dart_indexs ~= DARTIndex(recorder[].front.dart_index);
         }
         db.modify(recorder);
     }
-    return fingerprints;
+    return dart_indexs;
 }
 
 DARTIndex[] randomAdd(T)(T ranges, MinstdRand0 rnd, DART db) @safe
         if (isRandomAccessRange!T && isInputRange!(ElementType!T) && is(
             ElementType!(ElementType!T) : const(ulong))) {
-    DARTIndex[] fingerprints;
+    DARTIndex[] dart_indexs;
     foreach (range; ranges.randomShuffle(rnd)) {
         auto recorder = db.recorder();
         auto docs = range.map!(r => DARTFakeNet.fake_doc(r));
         foreach (doc; docs) {
             recorder.add(doc);
-            fingerprints ~= DARTIndex(recorder[].front.fingerprint);
+            dart_indexs ~= DARTIndex(recorder[].front.dart_index);
         }
         db.modify(recorder);
     }
-    return fingerprints;
+    return dart_indexs;
 }
 
 /** 
  * Removes archive in a random order.
  * Params:
- *   fingerprints = The fingerprints to remove
+ *   dart_indexs = The dart_indexs to remove
  *   rnd = the random seed
  *   db = the database
  */
-void randomRemove(const DARTIndex[] fingerprints, MinstdRand0 rnd, DART db) @safe {
+void randomRemove(const DARTIndex[] dart_indexs, MinstdRand0 rnd, DART db) @safe {
     auto recorder = db.recorder();
 
-    const random_order_fingerprints = fingerprints.dup.randomShuffle(rnd);
-    foreach (fingerprint; random_order_fingerprints) {
-        writefln("removing %s", fingerprint.toHexString);
-        recorder.remove(fingerprint);
+    const random_order_dart_indexs = dart_indexs.dup.randomShuffle(rnd);
+    foreach (dart_index; random_order_dart_indexs) {
+        writefln("removing %s", dart_index.toHexString);
+        recorder.remove(dart_index);
     }
     db.modify(recorder);
 }

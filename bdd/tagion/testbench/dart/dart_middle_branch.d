@@ -8,9 +8,10 @@ import std.stdio : writefln;
 import std.format : format;
 import std.algorithm : map, filter;
 
-
 import tagion.dart.DARTFakeNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
+import tagion.crypto.Types : Fingerprint;
+import tagion.basic.Types : Buffer, mut;
 import tagion.dart.DART : DART;
 import tagion.dart.DARTFile : DARTFile;
 import tagion.dart.Recorder : Archive, RecordFactory;
@@ -30,27 +31,27 @@ import tagion.hibon.HiBONRecord;
 import tagion.testbench.dart.dart_helper_functions : getRim, getRead, goToSplit, getFingerprints;
 
 enum feature = Feature(
-        "Dart snap middle branch",
-        [
-        "All test in this bdd should use dart fakenet. This test covers after a archive has been removed, if when adding a new archive on top, that the branch snaps back."
-]);
+            "Dart snap middle branch",
+            [
+            "All test in this bdd should use dart fakenet. This test covers after a archive has been removed, if when adding a new archive on top, that the branch snaps back."
+            ]);
 
 alias FeatureContext = Tuple!(
-    AddOneArchiveAndSnap, "AddOneArchiveAndSnap",
-    FeatureGroup*, "result"
+        AddOneArchiveAndSnap, "AddOneArchiveAndSnap",
+        FeatureGroup*, "result"
 );
 
 alias Rims = DART.Rims;
 
-
 @safe @Scenario("Add one archive and snap.",
-    [])
+        [])
 class AddOneArchiveAndSnap {
 
     DART db;
 
-    DARTIndex doc_fingerprint;
-    DARTIndex bullseye;
+    DARTIndex doc_dart_index;
+    Fingerprint doc_fingerprint;
+    Fingerprint bullseye;
     const DartInfo info;
 
     this(const DartInfo info) {
@@ -67,7 +68,6 @@ class AddOneArchiveAndSnap {
         const doc = DARTFakeNet.fake_doc(info.deep_table[1]);
         const doc_bullseye = dartIndex(info.net, doc);
 
-
         check(bullseye == doc_bullseye, "Bullseye not equal to doc");
         // db.dump;
         return result_ok;
@@ -78,7 +78,9 @@ class AddOneArchiveAndSnap {
         auto recorder = db.recorder();
         const doc = DARTFakeNet.fake_doc(info.deep_table[2]);
         recorder.add(doc);
-        doc_fingerprint = DARTIndex(recorder[].front.fingerprint);
+        pragma(msg, "fixme(cbr): Should this be Fingerprint or DARTIndex");
+        doc_dart_index = recorder[].front.dart_index.mut;
+        doc_fingerprint = recorder[].front.fingerprint.mut;
         bullseye = db.modify(recorder);
 
         check(doc_fingerprint != bullseye, "Bullseye not updated");
@@ -96,7 +98,7 @@ class AddOneArchiveAndSnap {
 
         foreach (i, data; recorder[].enumerate) {
             const(ulong) archive = data.filed[info.FAKE].get!ulong;
-            check(archive == info.deep_table[i+1], "Retrieved data not the same");
+            check(archive == info.deep_table[i + 1], "Retrieved data not the same");
         }
 
         auto rim_fingerprints = DARTFile.Branches(doc)
@@ -104,11 +106,10 @@ class AddOneArchiveAndSnap {
             .filter!(f => !f.empty)
             .array;
 
-
-        foreach(i; 0..2) {
-            const rim = Rims(rim_fingerprints[i][0..3]);
+        foreach (i; 0 .. 2) {
+            const rim = Rims(rim_fingerprints[i][0 .. 3]);
             const rim_doc = getRim(rim, info.hirpc, db);
-            
+
             check(RecordFactory.Recorder.isRecord(rim_doc), format("branch %s not snapped back", rim));
         }
 

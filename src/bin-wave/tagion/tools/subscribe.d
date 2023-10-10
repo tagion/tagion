@@ -3,6 +3,7 @@ module tagion.tools.subscribe;
 import std.stdio;
 import std.conv;
 import std.format;
+import std.algorithm : countUntil;
 
 import core.time;
 
@@ -13,6 +14,7 @@ import tagion.tools.revision;
 
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
+import tagion.services.subscription : SubscriptionServiceOptions;
 
 import nngd;
 
@@ -21,7 +23,7 @@ mixin Main!(_main);
 int _main(string[] args) {
     immutable program = args[0];
 
-    string address = "abstract://tagion_subscription";
+    string address = SubscriptionServiceOptions().address;
     bool version_switch;
     string[] tags;
     bool watch;
@@ -63,25 +65,35 @@ int _main(string[] args) {
             if (rc == 0) {
                 break;
             }
-            stderr.writefln("Dial error, %s: %s", address, rc);
+            stderr.writefln("Dial error, %s: (%s)%s", address, rc, rc.nng_errstr);
             if (rc == nng_errno.NNG_ECONNREFUSED) {
                 nng_sleep(msecs(100));
                 continue;
             }
             assert(rc == 0);
         }
+        stderr.writefln("Listening on, %s", address);
 
-        while (1) {
+        while (true) {
             auto data = sock.receive!(immutable(ubyte)[]);
-
-            if (sock.errno != 0) {
-                stderr.writefln("Error string: %s", nng_errstr(sock.errno));
+            if (sock.errno != 0 && sock.errno != 5) {
+                stderr.writefln("Error string: (%s)%s", sock.errno, nng_errstr(sock.errno));
+                continue;
             }
-            else if (data.length >= 32) {
-                string tag = data[0 .. 32].to!string;
-                auto doc = Document(data[33 .. $]);
+
+            long index = data.countUntil(cast(ubyte) '\0');
+            if (index == -1) {
+                continue;
+            }
+
+            string tag = cast(immutable(char)[]) data[0 .. index];
+
+            if (data.length > index + 1) {
+                auto doc = Document(data[index + 1 .. $]);
                 stderr.writefln("%s:\n%s", tag, doc.toPretty);
-                // stderr.writefln("%s: No document", tag);
+            }
+            else {
+                stderr.writefln("%s", tag);
             }
         }
     }

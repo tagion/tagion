@@ -101,8 +101,8 @@ class AddPseudoRandomData {
             recorders ~= recorder;
 
             recorder.insert(docs, Archive.Type.ADD);
-            auto fingerprints = recorder[]
-                .map!(a => a.fingerprint);
+            auto dart_indexs = recorder[]
+                .map!(a => a.dart_index);
 
             ulong[] insert_add_single_time;
             insert_watch.start();
@@ -110,7 +110,7 @@ class AddPseudoRandomData {
             insert_watch.stop();
             insert_add_single_time ~= insert_watch.peek.total!"msecs";
             read_watch.start();
-            auto sender = dartRead(fingerprints, info.hirpc);
+            auto sender = dartRead(dart_indexs, info.hirpc);
             auto receiver = info.hirpc.receive(sender.toDoc);
             auto result = db1(receiver, false);
             const doc = result.message[Keywords.result].get!Document;

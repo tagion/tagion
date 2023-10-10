@@ -34,7 +34,7 @@ import tagion.dart.DARTBasic;
 //import tagion.revision;
 import std.array : join;
 
-Invoice[] invoices;
+_Invoice[] invoices;
 
 enum REVNO = 0;
 enum HASH = "xxx";
@@ -187,11 +187,11 @@ int _main(string[] args) {
             }
             const invoice_doc = file.fread;
             if (!invoice_doc.isInorder) {
-                writefln("Invoice file %s is not a HiBON file", file);
+                writefln("_Invoice file %s is not a HiBON file", file);
                 return 1;
             }
 
-            const invoice = Invoice(invoice_doc);
+            const invoice = _Invoice(invoice_doc);
 
             const bill = StandardBill(invoice.amount, 0, invoice.pkey, init_gene);
 

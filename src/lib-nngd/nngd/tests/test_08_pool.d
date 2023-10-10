@@ -16,64 +16,66 @@ struct worker_context {
 }
 
 // REP
-void server_callback(NNGMessage* msg, void* ctx) {
+void server_callback(NNGMessage *msg, void *ctx)
+{
     log("SERVER CALLBACK");
-    auto cnt = cast(worker_context*) ctx;
+    auto cnt = cast(worker_context*)ctx;
     auto s = msg.body_trim!string(msg.length);
-    log("SERVER CONTEXT NAME: " ~ cnt.name);
+    log("SERVER CONTEXT NAME: "~cnt.name);
     log("SERVER GOT: " ~ s);
     msg.clear();
-    if (indexOf(s, "What time is it?") == 0) {
+    if(indexOf(s,"What time is it?") == 0){
         log("Going to send time");
-        msg.body_append(cast(ubyte[]) format("It`s %f o`clock.", timestamp()));
-    }
-    else {
+        msg.body_append(cast(ubyte[])format("It`s %f o`clock.",timestamp()));
+    }else{
         log("Going to stop sender");
-        msg.body_append(cast(ubyte[]) "END");
+        msg.body_append(cast(ubyte[])"END");
     }
 }
 
+
 // REQ
-void client_worker(string url, string tag) {
+void client_worker(string url, string tag)
+{
     int rc;
     string line;
     int k = 0;
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
     s.recvtimeout = msecs(1000);
-    while (1) {
-        log("REQ(" ~ tag ~ "): to dial...");
+    while(1){
+        log("REQ("~tag~"): to dial...");
         rc = s.dial(url);
-        if (rc == 0)
-            break;
-        log("REQ(" ~ tag ~ "): Dial error: ", toString(rc));
-        if (rc == nng_errno.NNG_ECONNREFUSED) {
+        if(rc == 0) break;
+        log("REQ("~tag~"): Dial error: ",toString(rc));
+        if(rc == nng_errno.NNG_ECONNREFUSED){
             nng_sleep(msecs(100));
             continue;
         }
         assert(rc == 0);
     }
-    while (1) {
+    while(1){
         k++;
-        line = format("What time is it? :: from(%s)[%d]", tag, k);
-        if (k > 16)
+        line = format("What time is it? :: from(%s)[%d]", tag,k);            
+        if(k > 16)
             line = "Maybe that's enough?";
         rc = s.send!string(line);
         assert(rc == 0);
-        log("REQ(" ~ tag ~ "): SENT: " ~ line);
+        log("REQ("~tag~"): SENT: " ~ line);
         auto str = s.receive!string();
-        if (s.errno == 0) {
-            log(format("REQ(" ~ tag ~ ") RECV [%03d]: %s", str.length, str));
-        }
-        else {
-            log("REQ(" ~ tag ~ "): Error string: " ~ toString(s.errno));
-        }
-        if (str == "END")
+        if(s.errno == 0){
+            log(format("REQ("~tag~") RECV [%03d]: %s", str.length, str));
+        }else{
+            log("REQ("~tag~"): Error string: " ~ toString(s.errno));
+        }    
+        if(str == "END")
             break;
     }
-    log("REQ(" ~ tag ~ "): bye!");
+    log("REQ("~tag~"): bye!");
 }
 
-int main() {
+
+int main()
+{
     writeln("Hello NNGD!");
     writeln("Pool req-rep test in async mode");
 
@@ -84,6 +86,7 @@ int main() {
     ctx.id = 1;
     ctx.name = "Context name";
 
+    
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REP);
     s.sendtimeout = msecs(1000);
     s.recvtimeout = msecs(1000);
@@ -95,8 +98,9 @@ int main() {
     auto rc = s.listen(uri);
     assert(rc == 0);
 
-    auto tid02 = spawn(&client_worker, uri, tags[0]); // client for exact tag
-    auto tid03 = spawn(&client_worker, uri, tags[1]); // ...
+
+    auto tid02 = spawn(&client_worker, uri, tags[0]);      // client for exact tag
+    auto tid03 = spawn(&client_worker, uri, tags[1]);      // ...
     auto tid04 = spawn(&client_worker, uri, tags[2]);
     auto tid05 = spawn(&client_worker, uri, tags[3]);
     thread_joinAll();
@@ -107,3 +111,4 @@ int main() {
 
     return 0;
 }
+

@@ -230,7 +230,7 @@ enum OwnerKey = "$Y";
         mixin HiBONRecord;
     }
 
-    @recordType("SSC") struct SignedContract {
+    @recordType("SSC") struct _SignedContract {
         @label("$signs") Signature[] signs; /// Signature of all inputs
         @label("$contract") Contract contract; /// The contract must signed by all inputs
         @label("$in", true) StandardBill[] inputs; /// The actual inputs

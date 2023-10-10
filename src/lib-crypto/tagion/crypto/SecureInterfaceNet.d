@@ -13,25 +13,15 @@ alias check = Check!SecurityConsensusException;
 
 @safe
 interface HashNet {
-    uint hashSize() const pure nothrow;
+    uint hashSize() const pure nothrow scope;
 
     final Fingerprint calcHash(B)(scope const(B) data) const
     if (isBufferType!B) {
         return Fingerprint(rawCalcHash(cast(TypedefType!B) data));
     }
 
-    immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const;
+    immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const scope;
     immutable(Buffer) HMAC(scope const(ubyte[]) data) const pure;
-    /++
-     Hash used for Merkle tree
-     +/
-    immutable(Buffer) binaryHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const;
-
-    final immutable(Buffer) binaryHash(B)(scope const(B) h1, scope const(B) h2) const
-    if (isBufferType!B) {
-        return binaryHash(cast(TypedefType!B) h1, cast(TypedefType!B) h2);
-    }
-
     Fingerprint calcHash(const(Document) doc) const;
 
     final Fingerprint calcHash(T)(T value) const if (isHiBONRecord!T) {
@@ -82,7 +72,10 @@ interface SecureNet : HashNet {
     }
 
     void createKeyPair(ref ubyte[] privkey);
-    void generateKeyPair(string passphrase);
+    void generateKeyPair(
+            scope const(char[]) passphrase,
+    scope const(char[]) salt = null,
+    void delegate(scope const(ubyte[]) data) @safe dg = null);
     bool secKeyVerify(scope const(ubyte[]) privkey) const;
     void eraseKey() pure nothrow;
 

@@ -21,6 +21,11 @@ in (xor.empty || data.length == xor.length) {
     }
 }
 
+void scramble(T)(scope ref T[] data) @trusted if (T.sizeof > ubyte.sizeof) {
+    scope ubyte_data = cast(ubyte[]) data;
+    scramble(ubyte_data);
+}
+
 package alias check = Check!SecurityConsensusException;
 
 @safe
@@ -28,11 +33,11 @@ class StdHashNet : HashNet {
     import std.format;
 
     enum HASH_SIZE = 32;
-    @nogc final uint hashSize() const pure nothrow {
+    @nogc final uint hashSize() const pure nothrow scope {
         return HASH_SIZE;
     }
 
-    immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const {
+    immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const scope {
         import std.digest.sha : SHA256;
         import std.digest;
 
@@ -52,35 +57,6 @@ class StdHashNet : HashNet {
         scope hmac = digestHMAC!SHA256(data);
         auto result = hmac.finish.dup;
         return assumeUnique(result);
-    }
-
-    immutable(Buffer) binaryHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const
-    in {
-        assert(h1.length is 0 || h1.length is HASH_SIZE,
-                format("h1 is not a valid hash (length=%d should be 0 or %d", h1.length, HASH_SIZE));
-        assert(h2.length is 0 || h2.length is HASH_SIZE,
-                format("h2 is not a valid hash (length=%d should be 0 or %d", h2.length, HASH_SIZE));
-    }
-    out (result) {
-        if (h1.length is 0) {
-            assert(h2 == result);
-        }
-        else if (h2.length is 0) {
-            assert(h1 == result);
-        }
-    }
-    do {
-        assert(h1.length is 0 || h1.length is HASH_SIZE,
-                format("h1 is not a valid hash (length=%d should be 0 or %d", h1.length, HASH_SIZE));
-        assert(h2.length is 0 || h2.length is HASH_SIZE,
-                format("h2 is not a valid hash (length=%d should be 0 or %d", h2.length, HASH_SIZE));
-        if (h1.length is 0) {
-            return h2.idup;
-        }
-        if (h2.length is 0) {
-            return h1.idup;
-        }
-        return rawCalcHash(h1 ~ h2);
     }
 
     Fingerprint calcHash(const(Document) doc) const {
@@ -313,27 +289,35 @@ class StdSecureNet : StdHashNet, SecureNet {
         _secret = new LocalSecret;
     }
 
-    final void generateKeyPair(string passphrase)
+    /**
+    Params:
+    passphrase = Passphrase is compatible with bip39
+    salt = In bip39 the salt should be "mnemonic"~word 
+*/
+    void generateKeyPair(
+            scope const(char[]) passphrase,
+    scope const(char[]) salt = null,
+    void delegate(scope const(ubyte[]) data) @safe dg = null)
     in {
         assert(_secret is null);
     }
     do {
-        import std.digest.sha : SHA256;
-        import std.digest.hmac : digestHMAC = HMAC;
-        import std.string : representation;
+        import tagion.pbkdf2.pbkdf2;
+        import std.digest.sha : SHA512;
 
-        alias AES = AESCrypto!256;
+        enum count = 2048;
+        enum dk_length = 64;
 
-        scope hmac = digestHMAC!SHA256(passphrase.representation);
-        auto data = hmac.finish.dup;
-
-        // Generate Key pair
-        do {
-            data = hmac.put(data).finish.dup;
+        alias pbkdf2_sha512 = pbkdf2!SHA512;
+        auto data = pbkdf2_sha512(passphrase.representation, salt.representation, count, dk_length);
+        scope (exit) {
+            if (dg !is null) {
+                dg(data);
+            }
+            scramble(data);
         }
-        while (!_crypt.secKeyVerify(data));
-
-        createKeyPair(data);
+        auto _priv_key = data[0 .. 32];
+        createKeyPair(_priv_key);
     }
 
     immutable(ubyte[]) ECDHSecret(scope const(ubyte[]) seckey, scope const(
@@ -409,35 +393,6 @@ class StdSecureNet : StdHashNet, SecureNet {
         assertThrown!SecurityConsensusException(net.sign(doc));
         assertThrown!SecurityConsensusException(net.verify(doc, doc_signed.signature, net.pubkey));
 
-    }
-
-}
-
-unittest { // StdHashNet
-    //import tagion.utils.Miscellaneous : toHex=toHexString;
-    import tagion.hibon.HiBONRecord : isStub, hasHashKey;
-    import std.string : representation;
-    import std.exception : assertThrown;
-    import core.exception : AssertError;
-
-    // import std.stdio;
-
-    import tagion.hibon.HiBON;
-
-    const net = new StdHashNet;
-    Document doc; // This is the data which is filed in the DART
-    {
-        auto hibon = new HiBON;
-        hibon["text"] = "Some text";
-        doc = Document(hibon);
-    }
-
-    immutable doc_fingerprint = net.rawCalcHash(doc.serialize);
-
-    {
-        assert(net.binaryHash(null, null).length is 0);
-        assert(net.binaryHash(doc_fingerprint, null) == doc_fingerprint);
-        assert(net.binaryHash(null, doc_fingerprint) == doc_fingerprint);
     }
 
 }

@@ -67,6 +67,8 @@ struct TVMService {
             log("unsuported script");
             return false;
         }
+        import std.algorithm;
+        collected.inputs.each!(d => writefln("%s", d.toPretty));
 
         auto result = execute(collected);
         if (result.error) {
@@ -82,6 +84,7 @@ struct TVMService {
 
 alias TVMServiceHandle = ActorHandle!TVMService;
 
+@safe
 unittest {
     import tagion.utils.pretend_safe_concurrency;
     import core.time;
@@ -99,21 +102,29 @@ unittest {
     import std.range : iota;
     import tagion.crypto.Types;
     import tagion.script.TagionCurrency;
-    import std.array;
     import tagion.utils.StdTime;
     import tagion.basic.Types : Buffer;
     import std.algorithm.iteration : map;
+    import std.array;
 
-    const in_bills = iota(0, 10).map!(_ => TagionBill(TGN(100), sdt_t.init, Pubkey.init, Buffer.init)).array;
-    const out_bills = iota(0, 10).map!(_ => TagionBill(TGN(50), sdt_t.init, Pubkey.init, Buffer.init)).array;
+    auto createCollected(uint input, uint output) {
+        immutable(Document)[] in_bills;
+        in_bills ~= iota(0, 10).map!(_ => TagionBill(TGN(input), sdt_t.init, Pubkey.init, Buffer.init).toDoc).array;
+        immutable(TagionBill)[] out_bills;
+        out_bills ~= iota(0, 10).map!(_ => TagionBill(TGN(output), sdt_t.init, Pubkey.init, Buffer.init)).array;
+
+        auto contract = immutable(Contract)(null, null, PayScript(out_bills).toDoc);
+        auto s_contract = new immutable(SignedContract)(null, contract);
+        return new immutable(CollectedSignedContract)(
+                s_contract,
+                in_bills,
+                null,
+        );
+    }
 
     { /// Positive test
-        auto collected = new CollectedSignedContract();
-        collected.inputs ~= in_bills.map!(a => a.toDoc).array;
-        collected.sign_contract.contract.script = PayScript(out_bills).toDoc;
-
-        tvm_service.contract(signedContract(), cast(immutable) collected);
-        collected = null;
+        auto collected = createCollected(100, 50);
+        tvm_service.contract(signedContract(), collected);
 
         foreach (_; 0 .. 2) {
             const received = receiveTimeout(
@@ -126,11 +137,8 @@ unittest {
     }
 
     { // False test
-        auto collected = new CollectedSignedContract();
-        collected.inputs ~= out_bills.map!(a => a.toDoc).array;
-        collected.sign_contract.contract.script = PayScript(in_bills).toDoc;
-        tvm_service.contract(signedContract(), cast(immutable) collected);
-        collected = null;
+        auto collected = createCollected(50, 100);
+        tvm_service.contract(signedContract(), collected);
 
         const received = receiveTimeout(
                 Duration.zero,

@@ -1,14 +1,15 @@
 # tools directory
 TOOLS:=tools
 
+LDC_VERSION:=1.34.0
 TARGET_ARCH:=aarch64
 ifeq ($(TARGET_ARCH),x86_64)
 # There is no distribution for android x86_64, however the libs are included with aarch64
-LDC_TARGET:=ldc2-1.29.0-android-aarch64
+LDC_TARGET:=ldc2-${LDC_VERSION}-android-aarch64
 else
-LDC_TARGET:=ldc2-1.29.0-android-$(TARGET_ARCH)
+LDC_TARGET:=ldc2-${LDC_VERSION}-android-$(TARGET_ARCH)
 endif
-LDC_HOST:=ldc2-1.29.0-linux-x86_64
+LDC_HOST:=ldc2-${LDC_VERSION}-linux-x86_64
 LDC_HOST_TAR:=$(LDC_HOST).tar.xz
 LDC_TARGET_TAR:=$(LDC_TARGET).tar.xz
 
@@ -23,7 +24,7 @@ $(TOOLS)/.way:
 	touch $(TOOLS)/.way
 
 $(TOOLS)/$(LDC_HOST)/.done:
-	cd $(TOOLS); wget https://github.com/ldc-developers/ldc/releases/download/v1.29.0/${LDC_HOST_TAR} -O ${LDC_HOST_TAR}
+	cd $(TOOLS); wget https://github.com/ldc-developers/ldc/releases/download/v${LDC_VERSION}/${LDC_HOST_TAR} -O ${LDC_HOST_TAR}
 	cd $(TOOLS); tar xf $(LDC_HOST_TAR)
 	touch $@
 
@@ -34,7 +35,7 @@ $(LDC_HOST): $(TOOLS)/$(LDC_HOST)/.done
 $(LDC_HOST): $(TOOLS)/$(LDC_HOST)/etc/ldc2.conf
 
 $(TOOLS)/$(LDC_TARGET)/.done:
-	cd $(TOOLS); wget https://github.com/ldc-developers/ldc/releases/download/v1.29.0/${LDC_TARGET_TAR} -O ${LDC_TARGET_TAR}
+	cd $(TOOLS); wget https://github.com/ldc-developers/ldc/releases/download/v${LDC_VERSION}/${LDC_TARGET_TAR} -O ${LDC_TARGET_TAR}
 	cd $(TOOLS); tar xf $(LDC_TARGET_TAR)
 	touch $@
 

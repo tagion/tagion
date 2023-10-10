@@ -10,35 +10,36 @@ import tagion.dart.DART : DART;
 import tagion.dart.Recorder;
 import tagion.dart.DARTBasic : DARTIndex;
 import tagion.basic.Types : Buffer, isBufferType;
+
 /**
        * Constructs a HiRPC method for dartRead 
        * Params:
-       *   fingerprints = List of hash-pointers 
+       *   dart_indices = List of hash-pointers 
        *   hirpc = HiRPC credentials 
        *   id = HiRPC id 
        * Returns: 
        *   HiRPC Sender
        */
 const(HiRPC.Sender) dartRead(Range)(
-        Range fingerprints,
+        Range dart_indices,
         HiRPC hirpc = HiRPC(null),
         uint id = 0) @safe if (isInputRange!Range && is(ElementType!Range : const(DARTIndex))) {
     auto params = new HiBON;
-    auto params_fingerprints = new HiBON;
-    params_fingerprints = fingerprints.filter!(b => b.length !is 0);
-    params[DART.Params.fingerprints] = params_fingerprints;
+    auto params_dart_indices = new HiBON;
+    params_dart_indices = dart_indices.filter!(b => b.length !is 0);
+    params[DART.Params.dart_indices] = params_dart_indices;
     return hirpc.dartRead(params, id);
 }
 
 const(HiRPC.Sender) dartCheckRead(Range)(
-        Range fingerprints,
+        Range dart_indices,
         HiRPC hirpc = HiRPC(null),
         uint id = 0) @safe if (isInputRange!Range && is(ElementType!Range : const(DARTIndex))) {
 
     auto params = new HiBON;
-    auto params_fingerprints = new HiBON;
-    params_fingerprints = fingerprints.filter!(b => b.length !is 0);
-    params[DART.Params.fingerprints] = params_fingerprints;
+    auto params_dart_indices = new HiBON;
+    params_dart_indices = dart_indices.filter!(b => b.length !is 0);
+    params[DART.Params.dart_indices] = params_dart_indices;
     return hirpc.dartCheckRead(params, id);
 }
 

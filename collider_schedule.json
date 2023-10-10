@@ -170,7 +170,7 @@
             "args": [],
             "envs": {},
             "stages": [
-                "acceptance", "epoch"
+                "commit", "epoch"
             ],
             "timeout": 0.0
         },
@@ -232,7 +232,7 @@
             "args": [],
             "envs": {},
             "stages": [
-                "contract"
+                "commit", "contract", "services"
             ],
             "timeout": 0.0
         }

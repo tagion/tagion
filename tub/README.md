@@ -99,24 +99,6 @@ $(DBIN)/$(PROGRAM).test: $(DTMP)/libsecp256k1.a
 $(DBIN)/$(PROGRAM).test: $(DTMP)/libssl.a
 ```
 
-## Tub structure
-
-### Flow
-
-![Tub flow diagram](./figs/tub-flow.drawio.svg)
-
-> 👨‍💻 The flow diagram can be edited in VSCode using [Drawio Integration](https://marketplace.visualstudio.com/items?itemName=hediet.vscode-drawio).
-
-### Supporting scripts
-
-```
-./check_regex.d
-./copy_env.d
-./ddeps.d
-./dmangle.d
-./gits.d
-```
-
 ## Maintainers
 
 - [@cbleser](https://github.com/cbleser)

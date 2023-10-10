@@ -1,3 +1,31 @@
+# Changelog for week 40/41
+**NNG http proxy**
+We have created a wrapper on NNG allowing us to create http-endpoint wrappers which can use underlying nng sockets. This is very smart, and you can now start a webserver by doing the following.
+```
+    WebApp app = WebApp("ContractProxy", options.contract_endpoint, parseJSON("{}"), &options);
+    app.route("/api/v1/contract", &contract_handler, ["POST"]);
+    app.start();
+```
+The structure is heavily inspired by FLASK python. All the code for creating the webapp can be found in https://github.com/tagion/libnng repo. 
+
+**Archive Hash key**
+Since the DART is a sparsed merkle tree, there can be some scenarios where it is quite difficult to use raw. For an example if I want to create a DNS-like structure containing a domain name and a IP the hash of the archive will change every time I update the IP, making it difficult to use. Therefore we have implemented Archive Hash keys which allows us to create a relationship between two datapoints. This means that our epoch-chain will also be much simpler, since you will be able to lookup epoch 4234 directly without running through a chain.
+It works by using an archive member named "#<name>" as the dartindex instead of the hash of the archive.
+
+**Collector Service**
+The collector has been updated so that the list it receives of archives is ordered. This makes the logic for the collector much simpler, since it does not have to do unneccesary sorting work.
+
+**Build flow updates**
+We are always striving for better workflows in order to minimize time spent compiling etc. This week we have optimized our make flow even more which have drastically reduced our build times.
+
+**HiBON npm package**
+We have finished our NPM package, which is now also open-sourced and can be found here: https://www.npmjs.com/package/hibonutil-wrapper.
+This allows you to interact with HiBON in node-js. An example of a use case is parsing HiBONJSON into a HiBON structure.
+```
+  const hibon = new HiBON(JSON.stringify(req.body));
+```
+We are very excited about this because it will make it easier to use HiBON for all other developers.  
+
 # Changelog for week 39/40
 **Merging new services**
 The following week was spent gluing the last parts of our new service infrastructure together and further testing of the different components. We can now say that all our different services are communicating with each other and running. This means that refactoring of the service layer is mostly finished now and we are even able to send tagions through the new system.

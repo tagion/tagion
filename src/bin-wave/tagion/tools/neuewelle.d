@@ -1,6 +1,7 @@
 /// New wave implementation of the tagion node
 module tagion.tools.neuewelle;
 
+import core.stdc.stdlib : exit;
 import core.sys.posix.signal;
 import core.sys.posix.unistd;
 import core.sync.event;
@@ -14,7 +15,7 @@ import std.path;
 import std.concurrency;
 import std.path : baseName;
 import std.file : exists;
-import std.algorithm : countUntil;
+import std.algorithm : countUntil, map;
 
 import tagion.tools.Basic;
 import tagion.utils.getopt;
@@ -24,18 +25,14 @@ import tagion.tools.revision;
 import tagion.actor;
 import tagion.services.supervisor;
 import tagion.services.options;
+import tagion.services.subscription;
 import tagion.services.locator;
-import tagion.GlobalSignals;
+import tagion.GlobalSignals : stopsignal;
 import tagion.utils.JSONCommon;
 import tagion.crypto.SecureNet;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.gossip.AddressBook : addressbook, NodeAddress;
 import tagion.basic.Types : hasExtension, FileExtension;
-
-// enum EXAMPLES {
-//     ver = Example("-v"),
-//     db = Tuple("%s -d %s", program_name, file),
-// }
 
 // TODO: 
 pragma(msg, "TODO(lr) rewrite logger with the 4th implementation of a taskwrapper");
@@ -56,16 +53,22 @@ auto startLogger() {
     stderr.writeln("Logger started");
     if (response !is Control.LIVE) {
         stderr.writeln("ERROR:Logger %s", response);
-        _exit(1);
+        throw new Exception("Could not start the logger");
     }
     return logger_service_tid;
 }
 
+static abort = false;
 extern (C)
-void signal_handler(int _) @trusted nothrow {
+void signal_handler(int _) nothrow {
     try {
+        if (abort) {
+            printf("Terminating\n");
+            exit(1);
+        }
         stopsignal.set;
-        writeln("Received stop signal");
+        abort = true;
+        printf("Received stop signal, telling services to stop\n");
     }
     catch (Exception e) {
         assert(0, format("DID NOT CLOSE PROPERLY \n %s", e));
@@ -81,38 +84,34 @@ int _main(string[] args) {
         return 1;
     }
     stopsignal.initialize(true, false);
-    sigaction_t sa;
-    sa.sa_handler = &signal_handler;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
-    // Register the signal handler for SIGINT
-    sigaction(SIGINT, &sa, null);
+
+    { // Handle sigint
+        sigaction_t sa;
+        sa.sa_handler = &signal_handler;
+        sigemptyset(&sa.sa_mask);
+        sa.sa_flags = 0;
+        // Register the signal handler for SIGINT
+        sigaction(SIGINT, &sa, null);
+    }
 
     bool version_switch;
     bool override_switch;
     bool monitor;
-
-    Options local_options;
-    const program_config_file = args
-        .countUntil!(file => file.hasExtension(FileExtension.json) && file.exists);
-    auto config_file = (program_config_file < 0) ? "tagionwave.json" : args[program_config_file];
-    if (config_file.exists) {
-        local_options.load(config_file);
-    } else {
-        local_options = Options.defaultOptions;
-        
-    }
-
+    string node_opts;
+    immutable(string)[] subscription_tags;
 
     auto main_args = getopt(args,
             "v|version", "Print revision information", &version_switch,
             "O|override", "Override the config file", &override_switch,
+            "nodeopts", "Generate single node opts files for mode0", &node_opts,
             "m|monitor", "Enable the monitor", &monitor,
+            "subscribe", "Log subscription tags to enable", &subscription_tags,
     );
 
     if (main_args.helpWanted) {
         tagionGetoptPrinter(
-                format("Help information for %s\n", program),
+                "Help information for tagion wave program\n" ~
+                format("Usage: %s <tagionwave.json>\n", program),
                 main_args.options
         );
         return 0;
@@ -123,21 +122,51 @@ int _main(string[] args) {
         return 0;
     }
 
+    string config_file = "tagionwave.json";
+    if (args.length >= 2 && args[1].hasExtension(".json")) {
+        config_file = args[1];
+    }
+
     if (override_switch) {
-        if (args.length == 2) {
-            config_file = args[1];
-        }
-        local_options.save(config_file);
+        Options.defaultOptions.save(config_file);
         writefln("Configure file written to %s", config_file);
         return 0;
     }
 
+    Options local_options;
+    if (config_file.exists) {
+        try {
+            local_options.load(config_file);
+            log("Running with config file %s", config_file);
+        }
+        catch (Exception e) {
+            stderr.writefln("Error loading config file %s, %s", config_file, e.msg);
+            return 1;
+        }
+    }
+    else {
+        local_options = Options.defaultOptions;
+        stderr.writefln("No config file exits, running with default options");
+    }
+
+    // Spawn logger service
     auto logger_service_tid = startLogger;
     scope (exit) {
         import tagion.basic.Types : Control;
 
         logger_service_tid.control(Control.STOP);
         receiveOnly!Control;
+    }
+
+    SubscriptionServiceHandle sub_handle;
+    { // Spawn logger subscription service
+        import tagion.services.inputvalidator;
+        import tagion.services.collector;
+
+        immutable subopts = immutable(SubscriptionServiceOptions)(subscription_tags);
+        sub_handle = spawn!SubscriptionService("logger_sub", subopts);
+        waitforChildren(Ctrl.ALIVE);
+        log.registerSubscriptionTask("logger_sub");
     }
 
     log.register(baseName(program));
@@ -171,6 +200,12 @@ int _main(string[] args) {
             addressbook[net.pubkey] = NodeAddress(opts.task_names.epoch_creator);
         }
 
+        if (node_opts) {
+            foreach(i, n; nodes) {
+                n.opts.save(buildPath(node_opts, format(n.opts.wave.prefix_format~"opts", i).setExtension(FileExtension.json)));
+            }
+        }
+
         /// spawn the nodes
         foreach (n; nodes) {
             supervisor_handles ~= spawn!Supervisor(n.opts.task_names.supervisor, n.opts, n.net);
@@ -190,15 +225,16 @@ int _main(string[] args) {
         return 1;
     }
 
+    sub_handle.send(Sig.STOP);
     log("Sending stop signal to supervisor");
     foreach (supervisor; supervisor_handles) {
         supervisor.send(Sig.STOP);
     }
     // supervisor_handle.send(Sig.STOP);
     if (!waitforChildren(Ctrl.END, 5.seconds)) {
-        log("Program did not stop properly");
+        log("Timed out before all services stopped");
         return 1;
     }
-    log("Exiting");
+    log("Bye bye! ^.^");
     return 0;
 }

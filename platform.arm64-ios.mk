@@ -15,6 +15,7 @@ ifeq ($(PLATFORM),$(IOS_ARM64))
 CCC = clang++ -O0
 CC  = clang -O0
 
+DFLAGS+=$(DVERSION)=MOBILE
 CROSS_ENABLED=1
 CROSS_OS=ios
 CROSS_ARCH = arm64
@@ -29,7 +30,6 @@ SHARED?=1
 OS:=darwin
 DLLEXT:=dylib
 DFLAGS+=$(DDEFAULTLIBSTATIC)
-DFLAGS+=-i
 DFLAGS+=-mtriple=$(TRIPLET)
 DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
 

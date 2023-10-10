@@ -74,6 +74,7 @@ struct DARTService {
 
         void checkRead(dartCheckReadRR req, immutable(DARTIndex)[] fingerprints) @safe {
             import tagion.utils.Miscellaneous : toHexString;
+
             log("Received checkread response %s", fingerprints.map!(f => f.toHexString));
             immutable(DARTIndex)[] check_read = (() @trusted => cast(immutable) db.checkload(fingerprints))();
 
@@ -85,15 +86,36 @@ struct DARTService {
         import tagion.Keywords;
 
         void dartHiRPC(dartHiRPCRR req, Document doc) {
+            import tagion.hibon.HiBONJSON;
+
             log("Received HiRPC request");
 
             if (!doc.isRecord!(HiRPC.Sender)) {
                 import tagion.hibon.HiBONJSON;
 
+                log("received wrong request");
                 assert(0, format("wrong request sent to dartservice. Expected HiRPC.Sender got %s", doc.toPretty));
             }
 
             immutable receiver = empty_hirpc.receive(doc);
+
+            if (receiver.method.name == "search") {
+                log("SEARCH REQUEST");
+                log("%s", receiver.method.params.toPretty);
+
+                import tagion.basic.Types;
+
+                auto owner_doc = receiver.method.params;
+                Buffer[] owner_pkeys;
+                foreach (owner; owner_doc[]) {
+                    owner_pkeys ~= owner.get!Buffer;
+                }
+                auto res = db.search(owner_pkeys, net);
+
+                Document response = hirpc.result(receiver, Document(res)).toDoc;
+                req.respond(response);
+                return;
+            }
 
             assert(receiver.method.name == DART.Queries.dartRead || receiver.method.name == DART.Queries.dartBullseye || receiver
                     .method.name == DART.Queries.dartCheckRead, "unsupported hirpc request");

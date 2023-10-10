@@ -101,6 +101,9 @@ static size_t size(U)(const(U[]) array) pure {
         }
     }
 
+    bool empty() const pure {
+        return _members.empty;
+    }
     /++
      Calculated the size in bytes of serialized HiBON
      Returns:
