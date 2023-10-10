@@ -1,6 +1,7 @@
 module tagion.script.namerecords;
 
-import tagion.script.common;
+//import tagion.script.common;
+import tagion.script.standardnames;
 import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Pubkey, Signature, Fingerprint;
 import tagion.hibon.HiBONRecord;
@@ -9,10 +10,10 @@ import tagion.dart.DARTBasic;
 
 @safe
 @recordType("NNC") struct NetworkNameCard {
-    @label("#name") string name; /// Tagion domain name
+    @label(StdNames.name) string name; /// Tagion domain name
     @label(StdNames.owner) Pubkey pubkey; /// NNC pubkey
     @label("$lang") string lang; /// Language used for the #name
-    @label("$time") ulong time; /// Time-stamp of
+    @label(StdNames.time) ulong time; /// Time-stamp of
     @label("$record") DARTIndex record; /// Hash pointer to NRC
     mixin HiBONRecord;
 
@@ -29,14 +30,13 @@ import tagion.dart.DARTBasic;
 @safe
 @recordType("NRC") struct NetworkNameRecord {
     @label("$name") DARTIndex name; /// Hash of the NNC.name
-    @label("$prev") Buffer previous; /// Hash pointer to the previuos NRC
+    @label(StdNames.previous) Buffer previous; /// Hash pointer to the previuos NRC
     @label("$index") uint index; /// Current index previous.index+1
-    @label("$node") DARTIndex node; /// Hash pointer to NNR
-    @label("$payload", true) Document payload; /// Hash pointer to payload
+    @label("$payload", true) Document payload;
     mixin HiBONRecord;
 }
 
-@safe
+version (none) @safe
 @recordType("HL") struct HashLock {
     import tagion.crypto.SecureInterfaceNet;
 
@@ -65,7 +65,7 @@ import tagion.dart.DARTBasic;
 
 }
 
-@safe
+version (none) @safe
 unittest {
     import tagion.crypto.SecureNet : StdHashNet;
     import tagion.script.ScriptException : ScriptException;
@@ -108,7 +108,7 @@ unittest {
 
 }
 
-version (none) @recordType("NNR") struct NetworkNodeRecord {
+version (none) @recordType("$@NNR") struct NetworkNodeRecord {
     enum State {
         PROSPECT,
         STANDBY,
@@ -116,12 +116,10 @@ version (none) @recordType("NNR") struct NetworkNodeRecord {
         STERILE
     }
 
-    //        @label("#node") Buffer node; /// Hash point of the public key
-    @label("$name") Buffer name; /// Hash pointer to the
-    @label("$time") ulong time;
-    @label("$sign") uint sign; /// Signature of
+    @label("$name") string name;
+    @label(StdNames.time) ulong time;
+    //  @label("$sign") uint sign; /// Signature of
     @label("$state") State state;
-    @label("$gene") Buffer gene;
     @label("$addr") string address;
     mixin HiBONRecord;
 }

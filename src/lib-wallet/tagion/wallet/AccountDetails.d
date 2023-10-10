@@ -9,6 +9,7 @@ import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
 import tagion.script.TagionCurrency;
 import tagion.script.common;
+import tagion.script.standardnames;
 
 @safe
 struct AccountDetails {
@@ -182,4 +183,3 @@ struct Invoices {
     Invoice[] list; /// List of invoice (store in the wallet)
     mixin HiBONRecord;
 }
-

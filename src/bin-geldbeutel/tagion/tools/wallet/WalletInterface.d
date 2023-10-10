@@ -28,6 +28,7 @@ import std.typecons;
 import std.range;
 import tagion.tools.Basic;
 import tagion.script.common;
+import tagion.script.standardnames;
 import tagion.wallet.SecureWallet : check;
 import tagion.script.execute : ContractExecution;
 import tagion.script.Currency : totalAmount;
@@ -548,7 +549,6 @@ struct WalletInterface {
 
         }
     }
-
 
     struct Switch {
         bool force;
