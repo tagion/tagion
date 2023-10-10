@@ -1,6 +1,7 @@
 module tagion.services.subscription;
 
 import std.variant;
+import std.array;
 
 import tagion.actor;
 import tagion.logger;
@@ -14,7 +15,7 @@ import core.time : msecs;
 struct SubscriptionServiceOptions {
     import tagion.utils.JSONCommon;
 
-    string[] tags;
+    string tags;
     string address = "abstract://tagion_subscription";
     uint sendtimeout = 1000;
     uint sendbufsize = 4096;
@@ -26,11 +27,11 @@ struct SubscriptionService {
     void task(immutable(SubscriptionServiceOptions) opts) @trusted {
         log.registerSubscriptionTask(thisActor.task_name);
         log("Subscribing to tags");
-        foreach (tag; opts.tags) {
+        foreach (tag; opts.tags.split(':')) {
             submask.subscribe(tag);
         }
         scope (exit) {
-            foreach (tag; opts.tags) {
+            foreach (tag; opts.tags.split(':')) {
                 submask.unsubscribe(tag);
             }
         }

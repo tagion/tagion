@@ -105,7 +105,6 @@ int _main(string[] args) {
             "O|override", "Override the config file", &override_switch,
             "nodeopts", "Generate single node opts files for mode0", &node_opts,
             "m|monitor", "Enable the monitor", &monitor,
-            "subscribe", "Log subscription tags to enable", &subscription_tags,
     );
 
     if (main_args.helpWanted) {
@@ -160,10 +159,7 @@ int _main(string[] args) {
 
     SubscriptionServiceHandle sub_handle;
     { // Spawn logger subscription service
-        import tagion.services.inputvalidator;
-        import tagion.services.collector;
-
-        immutable subopts = immutable(SubscriptionServiceOptions)(subscription_tags);
+        immutable subopts = Options(local_options).subscription;
         sub_handle = spawn!SubscriptionService("logger_sub", subopts);
         waitforChildren(Ctrl.ALIVE);
         log.registerSubscriptionTask("logger_sub");
