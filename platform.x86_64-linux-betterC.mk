@@ -24,14 +24,6 @@ DFILES?=${shell find $(DSRC) -type f -name "*.d" \( -path "*src/lib-betterC/*" -
 endif
 
 
-WRAPS+=secp256k1
-WRAPS+=druntime
-
-
-prebuild-extern-linux: $(DBUILD)/.way
-
-.PHONY: prebuild-linux
-
 $(UNITTEST_BIN): $(DFILES)
 
 unittest: LIBS+=$(LIBSECP256K1)

@@ -11,8 +11,6 @@ LIBP2PGOWRAPPER:=$(DTMP)/libp2pgowrapper.$(STAEXT)
 $(LIBP2PGOWRAPPER): GO_FLAGS= build -buildmode=c-archive
 endif
 
-prebuild1: $(LIBP2PGOWRAPPER)
-
 libp2p: $(LIBP2PGOWRAPPER)
 p2pgowrapper: $(LIBP2PGOWRAPPER)
 
