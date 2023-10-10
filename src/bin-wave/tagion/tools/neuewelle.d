@@ -97,11 +97,13 @@ int _main(string[] args) {
     bool version_switch;
     bool override_switch;
     bool monitor;
+    string node_opts;
     immutable(string)[] subscription_tags;
 
     auto main_args = getopt(args,
             "v|version", "Print revision information", &version_switch,
             "O|override", "Override the config file", &override_switch,
+            "nodeopts", "Generate single node opts files for mode0", &node_opts,
             "m|monitor", "Enable the monitor", &monitor,
             "subscribe", "Log subscription tags to enable", &subscription_tags,
     );
@@ -196,6 +198,12 @@ int _main(string[] args) {
             nodes ~= Node(opts, cast(immutable) net);
 
             addressbook[net.pubkey] = NodeAddress(opts.task_names.epoch_creator);
+        }
+
+        if (node_opts) {
+            foreach(i, n; nodes) {
+                n.opts.save(buildPath(node_opts, format(n.opts.wave.prefix_format~"opts", i).setExtension(FileExtension.json)));
+            }
         }
 
         /// spawn the nodes
