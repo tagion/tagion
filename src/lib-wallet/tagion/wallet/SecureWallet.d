@@ -6,7 +6,7 @@ import tagion.utils.Miscellaneous;
 import tagion.utils.Result;
 import std.format;
 import std.string : representation;
-import std.algorithm : joiner,countUntil, all, remove, map, max, min, sum, until, each, filter, cache, find, canFind;
+import std.algorithm : joiner, countUntil, all, remove, map, max, min, sum, until, each, filter, cache, find, canFind;
 import std.range : tee;
 import std.array;
 import std.exception : assumeUnique;
@@ -163,29 +163,6 @@ struct SecureWallet(Net : SecureNet) {
         //return result;
     }
 
-    /**
-     * Creates a wallet from a mnemonic
-     * Params:
-     *   mnemonic = generated deterministic key 
-     *   pincode = Devices pin code
-     * Returns: 
-     *   Create an new wallet with the input
-     */
-    version (none) {
-        this(
-                const(ushort[]) mnemonic,
-        const(char[]) pincode) {
-            check(mnemonic.length >= 12, "Mnemonic is empty");
-
-            import tagion.wallet.BIP39;
-
-            _net = new Net;
-            auto R = bip39(mnemonic);
-            _net = _net;
-            set_pincode(R, pincode);
-            _net.createKeyPair(R);
-        }
-    }
     this(scope const(char[]) passphrase, scope const(char[]) pincode, scope const(char[]) salt = null) {
         _net = new Net;
         enum size_of_privkey = 32;
@@ -471,6 +448,7 @@ struct SecureWallet(Net : SecureNet) {
 
     const(HiRPC.Sender) getRequestCheckWallet(HiRPC hirpc = HiRPC(null)) const {
         import tagion.dart.DARTcrud;
+
         const fingerprints = [account.bills, account.requested.values]
             .joiner
             .map!(bill => net.dartIndex(bill))
@@ -809,30 +787,6 @@ struct SecureWallet(Net : SecureNet) {
             assert(!secure_wallet.isLoggedin);
             secure_wallet.login(new_pincode);
             assert(secure_wallet.isLoggedin);
-        }
-
-        version (none) { // Secure wallet with mnemonic.
-
-            const test_pin_code = "1234";
-            const test_mnemonic = cast(ushort[])[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
-            // Create first wallet.
-            auto secure_wallet_1 = SecureWallet(test_mnemonic, test_pin_code);
-            const pubkey_1_create = secure_wallet_1.getPublicKey;
-            secure_wallet_1.logout;
-            const wallet_1_loggedin = secure_wallet_1.login(test_pin_code);
-            assert(wallet_1_loggedin);
-            const pubkey_1 = secure_wallet_1.getPublicKey();
-
-            assert(pubkey_1_create == pubkey_1);
-            // Create second wallet.
-            auto secure_wallet_2 = SecureWallet(test_mnemonic, test_pin_code);
-            const pubkey_2_create = secure_wallet_2.getPublicKey;
-
-            const wallet_2_loggedin = secure_wallet_2.login(test_pin_code);
-            assert(wallet_2_loggedin);
-            const pubkey_2 = secure_wallet_2.getPublicKey();
-
-            assert(pubkey_1 == pubkey_2);
         }
 
     }

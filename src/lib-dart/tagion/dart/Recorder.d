@@ -402,12 +402,12 @@ const Neutral = delegate(const(Archive) a) => a.type;
         ADD = 1, /// Archive marked as add instrunction
     }
 
-    @label(STUB, true) const(Fingerprint) _fingerprint; /// Stub hash-pointer used in sharding
+    @label(STUB, true) const(Fingerprint) fingerprint; /// Stub hash-pointer used in sharding
     @label("$a", true) const Document filed; /// The actual data strute stored 
     @label("$t", true) const(Type) type; /// Acrhive type
     @label("$i", true) const(DARTIndex) dart_index;
     enum archiveLabel = GetLabel!(this.filed).name;
-    enum fingerprintLabel = GetLabel!(this._fingerprint).name;
+    enum fingerprintLabel = GetLabel!(this.fingerprint).name;
     enum typeLabel = GetLabel!(this.type).name;
 
     mixin JSONString;
@@ -425,9 +425,9 @@ const Neutral = delegate(const(Archive) a) => a.type;
     }
     do {
         if (.isStub(doc)) {
-            _fingerprint = net.calcHash(doc);
-            dart_index = (doc.hasHashKey) ? net.dartIndex(filed) : cast(DARTIndex)(_fingerprint);
-            //dart_index = _fingerprint;
+            fingerprint = net.calcHash(doc);
+            dart_index = (doc.hasHashKey) ? net.dartIndex(filed) : cast(DARTIndex)(fingerprint);
+            //dart_index = fingerprint;
         }
         else {
             if (doc.hasMember(archiveLabel)) {
@@ -436,8 +436,8 @@ const Neutral = delegate(const(Archive) a) => a.type;
             else {
                 filed = doc;
             }
-            _fingerprint = net.calcHash(filed);
-            dart_index = (doc.hasHashKey) ? net.dartIndex(filed) : cast(DARTIndex)(_fingerprint);
+            fingerprint = net.calcHash(filed);
+            dart_index = (doc.hasHashKey) ? net.dartIndex(filed) : cast(DARTIndex)(fingerprint);
         }
         Type _type = t;
         if (_type is Type.NONE && doc.hasMember(typeLabel)) {
@@ -469,7 +469,7 @@ const Neutral = delegate(const(Archive) a) => a.type;
     const(Document) toDoc() const {
         auto hibon = new HiBON;
         if (isStub) {
-            hibon[fingerprintLabel] = _fingerprint;
+            hibon[fingerprintLabel] = fingerprint;
         }
         else {
             hibon[archiveLabel] = filed;
@@ -494,8 +494,8 @@ const Neutral = delegate(const(Archive) a) => a.type;
         type = t;
         filed = Document();
         this.dart_index = dart_index;
-        // _fingerprint=null;
-        _fingerprint = cast(Fingerprint) dart_index;
+        // fingerprint=null;
+        fingerprint = cast(Fingerprint) dart_index;
     }
 
     /**
@@ -552,7 +552,7 @@ const Neutral = delegate(const(Archive) a) => a.type;
     do {
         if (filed.empty) {
             auto hibon = new HiBON;
-            hibon[fingerprintLabel] = _fingerprint;
+            hibon[fingerprintLabel] = fingerprint;
             return Document(hibon);
         }
         return filed;
@@ -589,7 +589,7 @@ unittest { // Archive
     Archive a;
     { // Simple archive
         a = new Archive(net, filed_doc);
-        assert(a._fingerprint == filed_doc_fingerprint);
+        assert(a.fingerprint == filed_doc_fingerprint);
         assert(a.dart_index == filed_doc_dart_index);
         assert(a.filed == filed_doc);
         assert(a.type is Archive.Type.NONE);
@@ -597,7 +597,7 @@ unittest { // Archive
         const archived_doc = a.toDoc;
         assert(archived_doc[Archive.archiveLabel].get!Document == filed_doc);
         const result_a = new Archive(net, archived_doc);
-        assert(result_a._fingerprint == a._fingerprint);
+        assert(result_a.fingerprint == a.fingerprint);
         assert(a.dart_index == filed_doc_dart_index);
         assert(result_a.filed == a.filed);
         assert(result_a.type == a.type);
@@ -608,31 +608,17 @@ unittest { // Archive
     a.changeType(Archive.Type.ADD);
     { // Simple archive with ADD/REMOVE Type
         // a=new Archive(net, filed_doc);
-        assert(a._fingerprint == filed_doc_fingerprint);
+        assert(a.fingerprint == filed_doc_fingerprint);
         const archived_doc = a.toDoc;
 
         { // Same type
             const result_a = new Archive(net, archived_doc);
-            assert(result_a._fingerprint == a._fingerprint);
+            assert(result_a.fingerprint == a.fingerprint);
             assert(result_a.filed == a.filed);
             assert(result_a.type == a.type);
             assert(result_a.store == filed_doc);
         }
 
-    }
-
-    version (none) { // Filed archive with hash-key
-        enum key_name = "#name";
-        enum keytext = "some_key_text";
-        immutable hashkey_fingerprint = net.calcHash(keytext.representation);
-        Document filed_hash;
-        {
-            auto hibon = new HiBON;
-            hibon[key_name] = keytext;
-            filed_hash = Document(hibon);
-        }
-        auto hash = new Archive(net, filed_hash, Archive.Type.NONE);
-        assert(hash.fingerprint == hashkey_fingerprint);
     }
 
 }

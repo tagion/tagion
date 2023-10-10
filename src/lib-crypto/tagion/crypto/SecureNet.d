@@ -59,35 +59,6 @@ class StdHashNet : HashNet {
         return assumeUnique(result);
     }
 
-    version (none) immutable(Buffer) binaryHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const
-    in {
-        assert(h1.length is 0 || h1.length is HASH_SIZE,
-                format("h1 is not a valid hash (length=%d should be 0 or %d", h1.length, HASH_SIZE));
-        assert(h2.length is 0 || h2.length is HASH_SIZE,
-                format("h2 is not a valid hash (length=%d should be 0 or %d", h2.length, HASH_SIZE));
-    }
-    out (result) {
-        if (h1.length is 0) {
-            assert(h2 == result);
-        }
-        else if (h2.length is 0) {
-            assert(h1 == result);
-        }
-    }
-    do {
-        assert(h1.length is 0 || h1.length is HASH_SIZE,
-                format("h1 is not a valid hash (length=%d should be 0 or %d", h1.length, HASH_SIZE));
-        assert(h2.length is 0 || h2.length is HASH_SIZE,
-                format("h2 is not a valid hash (length=%d should be 0 or %d", h2.length, HASH_SIZE));
-        if (h1.length is 0) {
-            return h2.idup;
-        }
-        if (h2.length is 0) {
-            return h1.idup;
-        }
-        return rawCalcHash(h1 ~ h2);
-    }
-
     Fingerprint calcHash(const(Document) doc) const {
         return Fingerprint(rawCalcHash(doc.serialize));
     }

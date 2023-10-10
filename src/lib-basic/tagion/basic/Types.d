@@ -1,7 +1,9 @@
 module tagion.basic.Types;
 
 import std.typecons : Typedef, TypedefType;
+import std.traits : Unqual;
 
+@safe:
 enum BillType {
     NON_USABLE,
     TAGIONS,
@@ -22,8 +24,10 @@ true if T is a Buffer (immutable(ubyte))
 */
 enum isBuffer(T) = is(T : immutable(ubyte[])) || is(TypedefType!T : immutable(ubyte[]));
 
-static unittest {
+version (unittest) {
     alias MyBuf = Typedef!(Buffer, null, "MyBuf");
+}
+static unittest {
     static assert(isBufferType!(immutable(ubyte[])));
     static assert(isBufferType!(immutable(ubyte)[]));
     static assert(isBufferType!(const(ubyte)[]));
@@ -40,6 +44,14 @@ static unittest {
 
 }
 
+Unqual!T mut(T)(T buf) nothrow pure @nogc if (is(TypedefType!(T) : Buffer)) {
+    return Unqual!T(cast(Buffer) buf);
+}
+
+unittest {
+    const(MyBuf) buf = [1, 2, 3, 4];
+    MyBuf mut_buf = buf.mut;
+}
 /++
  Genera signal
 +/
@@ -87,14 +99,12 @@ enum FileExtension {
 
 enum DOT = '.'; /// File extension separator
 
-@safe
 bool hasExtension(const(char[]) filename, const(FileExtension) ext) pure nothrow {
     import std.path : extension;
 
     return ext == filename.extension;
 }
 
-@safe
 bool hasExtension(const(char[]) filename, const(char[]) ext) pure nothrow {
     import std.path : extension;
 

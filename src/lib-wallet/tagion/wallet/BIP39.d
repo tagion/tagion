@@ -9,50 +9,6 @@ import std.string : representation;
 
 static assert(ver.LittleEndian, "At the moment bip39 only supports Little Endian");
 
-//ubyte[] bip39(in WordList wordlist, const(ushort[]) mnemonics) {
-//}
-version (none) @trusted
-ubyte[] bip39(const(ushort[]) mnemonics) nothrow {
-    pragma(msg, "fixme(cbr): Fake BIP39 must be fixed later");
-    import std.digest.sha : SHA256;
-    import std.digest;
-
-    enum MAX_WORDS = 24; /// Max number of mnemonic word in a string
-    enum MNEMONIC_BITS = 11; /// Bit size of the word number 2^11=2048
-    enum MAX_BITS = MAX_WORDS * MNEMONIC_BITS; /// Total number of bits
-    enum WORK_BITS = 8 * uint.sizeof;
-    enum SIZE_OF_WORK_BUFFER = (MAX_BITS / WORK_BITS) + ((MAX_BITS % WORK_BITS) ? 1 : 0);
-    const total_bits = mnemonics.length * MNEMONIC_BITS;
-    uint[SIZE_OF_WORK_BUFFER] work_buffer;
-    ulong* work_slide = cast(ulong*)&work_buffer[0];
-    uint mnemonic_pos;
-    size_t work_pos;
-    foreach (mnemonic; mnemonics) {
-        *work_slide |= ulong(mnemonic) << mnemonic_pos;
-        mnemonic_pos += MNEMONIC_BITS;
-        if (mnemonic_pos >= WORK_BITS) {
-            work_pos++;
-            mnemonic_pos -= WORK_BITS;
-            work_slide = cast(ulong*)&work_buffer[work_pos];
-        }
-    }
-
-    const result_buffer = (cast(ubyte*)&work_buffer[0])[0 .. SIZE_OF_WORK_BUFFER * uint.sizeof];
-
-    pragma(msg, "fixme(cbr): PBKDF2 hmac function should be used");
-
-    version (HASH_SECP256K1) {
-        import tagion.crypto.secp256k1.NativeSecp256k1;
-
-        return NativeSecp256k1.calcHash(result_buffer);
-    }
-    else {
-        return digest!SHA256(cast(ubyte[]) result_buffer).dup;
-
-    }
-
-}
-
 /*
 https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki
 10001111110100110100110001011001100010111110011101010000101001000000110000011001101010001100001000011101110011000100000111111100

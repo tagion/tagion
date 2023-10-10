@@ -22,17 +22,6 @@ interface HashNet {
 
     immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const scope;
     immutable(Buffer) HMAC(scope const(ubyte[]) data) const pure;
-    /++
-     Hash used for Merkle tree
-     +/
-    version (none) {
-        immutable(Buffer) binaryHash(scope const(ubyte[]) h1, scope const(ubyte[]) h2) const;
-
-        final immutable(Buffer) binaryHash(B)(scope const(B) h1, scope const(B) h2) const
-        if (isBufferType!B) {
-            return binaryHash(cast(TypedefType!B) h1, cast(TypedefType!B) h2);
-        }
-    }
     Fingerprint calcHash(const(Document) doc) const;
 
     final Fingerprint calcHash(T)(T value) const if (isHiBONRecord!T) {
