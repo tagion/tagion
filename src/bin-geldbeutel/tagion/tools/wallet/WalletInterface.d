@@ -8,6 +8,7 @@ import tagion.utils.Term;
 import tagion.wallet.AccountDetails;
 import tagion.script.TagionCurrency;
 import tagion.crypto.SecureNet;
+import tagion.crypto.SecureInterfaceNet;
 import tagion.basic.Types : FileExtension, Buffer, hasExtension;
 import tagion.basic.range : doFront;
 import std.file : exists, mkdir;
@@ -84,26 +85,36 @@ enum MAX_PINCODE_SIZE = 128;
 enum LINE = "------------------------------------------------------";
 
 pragma(msg, "Fixme(lr)Remove trusted when nng is safe");
-void sendSubmitHiRPC(string address, HiRPC.Sender contract) @trusted {
+HiRPC.Receiver sendSubmitHiRPC(string address, HiRPC.Sender contract, const(SecureNet) net) @trusted {
     import nngd;
     import std.exception;
     import tagion.hibon.Document;
     import tagion.hibon.HiBONtoText;
 
     int rc;
-    NNGSocket send_sock = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
-    rc = send_sock.dial(address);
+    NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
+    rc = sock.dial(address);
     if (rc != 0) {
         throw new Exception(format("Could not dial address %s: %s", address, nng_errstr(rc)));
     }
-    send_sock.sendtimeout = 1000.msecs;
-    send_sock.sendbuf = 4096;
+    sock.sendtimeout = 1000.msecs;
+    sock.sendbuf = 4096;
 
-    rc = send_sock.send(contract.toDoc.serialize);
+    rc = sock.send(contract.toDoc.serialize);
     if (rc != 0) {
-        throw new Exception(format("Could not send bill %s", nng_errstr(
+        throw new Exception(format("Could not send bill to network %s", nng_errstr(
                 rc)));
     }
+
+    auto response_data = sock.receive!(immutable(ubyte[]));
+    auto response_doc = Document(response_data);
+    // We should probably change these exceptions so it always returns a HiRPC.Response error instead?
+    if(!response_doc.isRecord!(HiRPC.Receiver) || sock.m_errno != 0) {
+        throw new Exception("Error response when sending bill");
+    }
+
+    HiRPC hirpc = HiRPC(net);
+    return hirpc.receive(response_doc);
 }
 
 pragma(msg, "Fixme(lr)Remove trusted when nng is safe");
@@ -714,7 +725,7 @@ struct WalletInterface {
                     secure_wallet.account.hirpcs ~= hirpc_submit.toDoc;
                     save_wallet = true;
                     if (send) {
-                        sendSubmitHiRPC(options.contract_address, hirpc_submit);
+                        sendSubmitHiRPC(options.contract_address, hirpc_submit, contract_net);
                     }
                 }
             }
