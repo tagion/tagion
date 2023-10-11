@@ -57,7 +57,7 @@ int _main(string[] args) {
 
     StdSecureWallet[] wallets;
     // create the wallets
-    foreach (i; 0 .. 5) {
+    foreach (i; 0 .. 10) {
         StdSecureWallet secure_wallet;
         secure_wallet = StdSecureWallet(
                 iota(0, 5).map!(n => format("%dquestion%d", i, n)).array,
@@ -117,17 +117,15 @@ int _main(string[] args) {
         node_opts ~= node_opt;
     }
     
-    // Options[] node_opts = iota(0,local_options.wave.number_of_nodes)
-    //     .map!(n => buildPath(module_path, format(local_options.wave.prefix_format~"opts", n)
-    //                                         .setExtension(FileExtension.json)))
-    //     .map!(node_file => load!(Options)(node_file))
-    //     .array;
 
     writefln("INPUT SOCKET ADDRESS %s", node_opts[0].inputvalidator.sock_addr);
 
     Thread.sleep(15.seconds);
     auto feature = automation!(double_spend);
     feature.SameInputsSpendOnOneContract(node_opts[0], wallets[0], wallets[1]);
+    feature.OneContractWhereSomeBillsAreUsedTwice(node_opts[0], wallets[1], wallets[0]);
+    feature.DifferentContractsDifferentNodes(node_opts[0], node_opts[1], wallets[2], wallets[3]);
+    feature.SameContractDifferentNodes(node_opts[0], node_opts[1], wallets[4], wallets[5]); 
 
 
     feature.run();
