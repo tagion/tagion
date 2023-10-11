@@ -239,6 +239,12 @@ mixin template JSONCommon() {
 
 }
 
+static T load(T)(string config_file) if(__traits(hasMember,T, "load")) {
+    T result;
+    result.load(config_file);
+    return result;
+}
+
 mixin template JSONConfig() {
     import JSON = std.json;
     import std.file;
@@ -257,7 +263,6 @@ mixin template JSONConfig() {
             save(config_file);
         }
     }
-
     void save(const string config_file) @safe const {
         config_file.write(stringify);
     }

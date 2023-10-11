@@ -69,10 +69,18 @@ int _main(string[] args) {
     }
 
     // bills for the dart on startup
+
+    TagionBill requestAndForce(ref StdSecureWallet w, TagionCurrency amount) {
+        auto b = w.requestBill(amount);
+        w.addBill(b);
+        return b;
+    }
+    
     TagionBill[] bills;
     foreach (ref wallet; wallets) {
-        bills ~= wallet.requestBill(1000.TGN);
-        bills ~= wallet.requestBill(2000.TGN);
+        foreach(i; 0..3) {
+            bills ~= requestAndForce(wallet, 1000.TGN);
+        }
     }
 
     SecureNet net = new StdSecureNet();
@@ -93,7 +101,38 @@ int _main(string[] args) {
 
     immutable neuewelle_args = ["send_contract_test", config_file, "--nodeopts", module_path]; // ~ args;
     auto tid = spawn(&wrap_neuewelle, neuewelle_args);
+
+    
+    import tagion.utils.JSONCommon : load;
+
+    Options[] node_opts;
+    
+    Thread.sleep(5.seconds);
+    foreach(i; 0..local_options.wave.number_of_nodes) {
+
+        const filename = buildPath(module_path, format(local_options.wave.prefix_format~"opts", i).setExtension(FileExtension.json));
+        writeln(filename);
+        Options node_opt = load!(Options)(filename);
+        writefln("NODE OPTTIONS %s",node_opt);
+        node_opts ~= node_opt;
+    }
+    
+    // Options[] node_opts = iota(0,local_options.wave.number_of_nodes)
+    //     .map!(n => buildPath(module_path, format(local_options.wave.prefix_format~"opts", n)
+    //                                         .setExtension(FileExtension.json)))
+    //     .map!(node_file => load!(Options)(node_file))
+    //     .array;
+
+    writefln("INPUT SOCKET ADDRESS %s", node_opts[0].inputvalidator.sock_addr);
+
     Thread.sleep(15.seconds);
+    auto feature = automation!(double_spend);
+    feature.SameInputsSpendOnOneContract(node_opts[0], wallets[0], wallets[1]);
+
+
+    feature.run();
+
+
 
     neuewelle.signal_handler(0);
     return 0;

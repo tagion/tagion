@@ -70,6 +70,7 @@ struct TVMService {
         import std.algorithm;
         collected.inputs.each!(d => writefln("%s", d.toPretty));
 
+        log("before sending to tvm");
         auto result = execute(collected);
         if (result.error) {
             log("Execution error - aborting %s", result.e);

@@ -119,6 +119,7 @@ struct CollectorService {
             return;
         }
 
+
         immutable s_contract = contracts[res.id];
         auto fingerprints = recorder[].map!(a => a.dart_index).array;
         if (s_contract.contract.reads !is null && fingerprints == contracts[res.id].contract.reads) {
