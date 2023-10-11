@@ -128,6 +128,8 @@ int _main(string[] args) {
     Thread.sleep(15.seconds);
     auto feature = automation!(double_spend);
     feature.SameInputsSpendOnOneContract(node_opts[0], wallets[0], wallets[1]);
+    feature.OneContractWhereSomeBillsAreUsedTwice(node_opts[0], wallets[1], wallets[0]);
+
 
 
     feature.run();

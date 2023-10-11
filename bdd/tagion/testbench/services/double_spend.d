@@ -58,6 +58,7 @@ class SameInputsSpendOnOneContract {
         this.wallet2 = wallet2;
         this.opts = opts;
     }
+    import tagion.services.collector : reject_collector;
 
     @Given("i have a malformed contract with two inputs which are the same")
     Document same() {
@@ -104,16 +105,11 @@ class SameInputsSpendOnOneContract {
     @When("i send the contract to the network")
     Document network() {
 
-        import tagion.services.collector : reject_collector;
         submask.subscribe(reject_collector);
         auto wallet1_hirpc = HiRPC(wallet1.net);
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
         writefln("---SUBMIT ADDRESS--- %s", opts.inputvalidator.sock_addr); 
         sendSubmitHiRPC(opts.inputvalidator.sock_addr, hirpc_submit);
-
-        // writeln("Going to sleep");
-        // (() @trusted => Thread.sleep(20.seconds))();
-        // writeln("Finished sleep");
 
         return result_ok;
     }
@@ -122,6 +118,7 @@ class SameInputsSpendOnOneContract {
     Document dart() {
         auto result = receiveOnlyTimeout!(Topic, string, const(Document));
         check(result[1] == "missing_archives", "did not reject for the expected reason");
+        submask.unsubscribe(reject_collector);
         return result_ok;
     }
 
@@ -130,22 +127,78 @@ class SameInputsSpendOnOneContract {
 @safe @Scenario("one contract where some bills are used twice.",
         [])
 class OneContractWhereSomeBillsAreUsedTwice {
+    Options opts;
+    StdSecureWallet wallet1;
+    StdSecureWallet wallet2;
+    //
+    SignedContract signed_contract;
 
+    this(Options opts, ref StdSecureWallet wallet1, ref StdSecureWallet wallet2) {
+        this.wallet1 = wallet1;
+        this.wallet2 = wallet2;
+        this.opts = opts;
+    }
 
-
+    import tagion.services.collector : reject_collector;
     @Given("i have a malformed contract with three inputs where to are the same.")
     Document same() {
-        return Document();
+        const amount_to_pay = 2500.TGN;
+        auto payment_request = wallet2.requestBill(amount_to_pay);
+
+        auto wallet1_bill = wallet1.account.bills[0];
+        auto wallet2_bill = wallet1.account.bills[1];
+        check(wallet1_bill.value == 1000.TGN, "should be 1000 tgn");
+        check(wallet2_bill.value == 1000.TGN, "should be 1000 tgn");
+
+        PayScript pay_script;
+        pay_script.outputs = [payment_request];
+        
+        TagionBill[] collected_bills = [wallet1_bill, wallet1_bill, wallet2_bill];
+        const fees = ContractExecution.billFees(collected_bills.length, pay_script.outputs.length+1);
+
+        const total_collected_amount = collected_bills
+            .map!(bill => bill.value)
+            .totalAmount;
+
+        const amount_remainder = total_collected_amount - amount_to_pay - fees;
+        const nets = wallet1.collectNets(collected_bills);
+        const bill_remain = wallet1.requestBill(amount_remainder);
+        pay_script.outputs ~= bill_remain;
+        wallet1.lock_bills(collected_bills);
+        
+        check(nets.length == collected_bills.length, format("number of bills does not match number of signatures nets %s, collected_bills %s", nets
+                    .length, collected_bills.length));
+        
+        signed_contract = sign(
+            nets,
+            collected_bills.map!(bill => bill.toDoc)
+            .array,
+            null,
+            pay_script.toDoc
+        );
+
+        check(signed_contract.contract.inputs.length == 3, "should contain two inputs");
+        check(signed_contract.contract.inputs.uniq.array.length == 2, "should be malformed and contain two identical and one different bill");
+        return result_ok;
     }
 
     @When("i send the contract to the network")
     Document network() {
-        return Document();
+        submask.subscribe(reject_collector);
+        auto wallet1_hirpc = HiRPC(wallet1.net);
+        auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
+        writefln("---SUBMIT ADDRESS--- %s", opts.inputvalidator.sock_addr); 
+        sendSubmitHiRPC(opts.inputvalidator.sock_addr, hirpc_submit);
+
+        return result_ok;
     }
 
     @Then("all the inputs should be deleted from the dart.")
     Document dart() {
-        return Document();
+        auto result = receiveOnlyTimeout!(Topic, string, const(Document));
+        check(result[1] == "missing_archives", "did not reject for the expected reason");
+        submask.unsubscribe(reject_collector);
+        return result_ok;
     }
 
 }
