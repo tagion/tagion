@@ -5,7 +5,7 @@ INSTALLEDCOLLIDER=$(INSTALL)/collider
 
 
 install: ONETOOL=1
-install: target-tagion
+install: tagion
 install: $(INSTALLEDTOOL)
 install: collider
 
