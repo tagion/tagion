@@ -42,7 +42,7 @@ class SendADocumentToTheSocket {
     NNGSocket sock;
     const string sock_path;
     this(string _sock_path) @trusted {
-        sock = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
+        sock = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
         sock_path = _sock_path;
     }
 
@@ -58,7 +58,7 @@ class SendADocumentToTheSocket {
     Document aSocket() @trusted {
         sock.sendtimeout = msecs(1000);
         sock.sendbuf = 4096;
-        int rc = sock.dial(sock_path);
+        int rc = sock.dial(sock_path /* nonblock : true */);
         check(rc == 0, format("Failed to dial %s", nng_errstr(rc)));
         HiRPC hirpc;
         auto hibon = new HiBON();
@@ -67,7 +67,7 @@ class SendADocumentToTheSocket {
         doc = sender.toDoc;
         rc = sock.send(doc.serialize);
         check(rc == 0, format("Failed to send %s", nng_errstr(rc)));
-
+        sock.receive!(immutable(ubyte[]));
         return result_ok;
     }
 
@@ -97,7 +97,7 @@ class SendNoneHiRPC {
         register("inputvalidator_tester", thisTid);
 
         log.registerSubscriptionTask("inputvalidator_tester");
-        submask.subscribe(reject_inputvalidator);
+        submask.subscribe(InputValidatorService.rejected);
         return result_ok;
     }
 
@@ -114,6 +114,7 @@ class SendNoneHiRPC {
 
         rc = sock.send(hibon.serialize);
         check(rc == 0, format("Failed to send %s", rc));
+        sock.receive!(immutable(ubyte[]));
         return result_ok;
     }
 
@@ -122,10 +123,7 @@ class SendNoneHiRPC {
         import tagion.testbench.actor.util;
 
         check(!concurrency.receiveTimeout(100.msecs, (inputDoc _, Document __) {}), "should not have received a doc");
-        const received = concurrency.receiveTimeout(100.msecs, (Topic t, string s, const(Document) d) {
-            writefln("Received rejected ", d);
-        });
-        check(received, "Didn't received rejected");
+        receiveOnlyTimeout!(Topic, string, const(Document));
 
         return result_ok;
     }
@@ -150,7 +148,7 @@ class SendPartialHiBON {
 
         register("inputvalidator_tester", thisTid);
         log.registerSubscriptionTask("inputvalidator_tester");
-        submask.subscribe(reject_inputvalidator);
+        submask.subscribe(InputValidatorService.rejected);
         return result_ok;
     }
 
@@ -167,6 +165,7 @@ class SendPartialHiBON {
         writefln("Buf lenght %s %s", partial_buf.length, Document(partial_buf).valid);
         rc = sock.send(partial_buf);
         check(rc == 0, format("Failed to send %s", nng_errstr(rc)));
+        sock.receive!(immutable(ubyte[]));
         return result_ok;
     }
 

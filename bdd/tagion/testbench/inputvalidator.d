@@ -40,7 +40,7 @@ int _main(string[] _) {
 
     import nngd;
 
-    auto sock = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
+    auto sock = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
     int rc = sock.dial(sock_path);
     enforce(rc == 0, format("Failed to dial %s", nng_errstr(rc)));
     sock.send("end");
