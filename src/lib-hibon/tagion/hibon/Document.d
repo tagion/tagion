@@ -211,6 +211,7 @@ static assert(uint.sizeof == 4);
             const(Element) current,
             const(Element) previous) nothrow @safe;
 
+    alias Reserved = Flag!"Reserved";
     /++
      This function check's if the Document is a valid HiBON format
      Params:
@@ -218,7 +219,8 @@ static assert(uint.sizeof == 4);
      Returns:
      Error code of the validation
      +/
-    Element.ErrorCode valid(ErrorCallback error_callback = null) const nothrow {
+    Element.ErrorCode valid(ErrorCallback error_callback = null,
+            const Reserved reserved = Yes.Reserved) const nothrow {
         Element.ErrorCode inner_valid(const Document sub_doc,
                 ErrorCallback error_callback = null) const nothrow {
             import tagion.basic.tagionexceptions : TagionException;
@@ -235,7 +237,7 @@ static assert(uint.sizeof == 4);
                 }
             }
             foreach (ref e; sub_doc[]) {
-                error_code = e.valid;
+                error_code = e.valid(reserved);
                 if (not_first) {
                     if (e.data is previous.data) {
                         if (error_callback) {
@@ -1336,7 +1338,7 @@ static assert(uint.sizeof == 4);
          ErrorCode.NONE means that the element is valid
 
          +/
-        @trusted ErrorCode valid() const pure nothrow {
+        @trusted ErrorCode valid(const Reserved reserved) const pure nothrow {
             enum MIN_ELEMENT_SIZE = Type.sizeof + ubyte.sizeof + char.sizeof + ubyte.sizeof;
 
             with (ErrorCode) {
@@ -1389,7 +1391,7 @@ static assert(uint.sizeof == 4);
                     if (type is Type.STRING) {
                         const len = LEB128.decode!uint(data[valuePos .. $]);
                         const type_name = data[valuePos + len.size .. valuePos + len.size + len.value];
-                        if (type_name.length >= TYPENAME.length &&
+                        if (reserved && type_name.length >= TYPENAME.length &&
                                 type_name[0 .. TYPENAME.length] == TYPENAME) {
                             return RESERVED_HIBON_TYPE;
                         }

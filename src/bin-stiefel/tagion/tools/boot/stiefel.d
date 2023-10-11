@@ -25,10 +25,12 @@ int _main(string[] args) {
     immutable program = args[0];
     bool version_switch;
     bool standard_output;
+    bool standard_input;
     string[] nodekeys;
     string output_filename = "dart".setExtension(FileExtension.hibon);
     const net = new StdHashNet;
     try {
+        standard_input = (args.length == 1);
         auto main_args = getopt(args,
                 std.getopt.config.caseSensitive,
                 std.getopt.config.bundling,
@@ -73,10 +75,13 @@ int _main(string[] args) {
         auto factory = RecordFactory(net);
         auto recorder = factory.recorder;
         if (!nodekeys.empty) {
-            createGenesis(nodekeys, Document.init);
-            return 0;
+            auto genesis_list = createGenesis(nodekeys, Document.init);
+            recorder.insert(genesis_list, Archive.Type.ADD);
+            writefln("standard_input=%s", standard_input);
+            writefln("standard_output=%s", standard_output);
+            // return 0;
         }
-        if (args.length == 1) {
+        if (standard_input) {
             auto fin = stdin;
             ubyte[1024] buf;
             Buffer data;
