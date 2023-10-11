@@ -5,12 +5,7 @@ module tagion.behaviour.BehaviourResult;
 
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
-
-@safe
-@recordType("OK")
-struct ResultOk {
-    mixin HiBONRecord!();
-}
+public import tagion.communication.HiRPC: ResultOk;
 
 static Document result_ok = result(ResultOk()).toDoc; /// This
 
