@@ -80,7 +80,7 @@ unittest { // Check the #key hash with types
 DARTIndex dartKey(T)(const(HashNet) net, const(char[]) name, T val) {
     import tagion.hibon.HiBON;
 
-    const key = ((name[0] == HiBONPrefix.HASH) ? HiBONPrefix.HASH ~ name : name).idup;
+    const key = (name[0] == HiBONPrefix.HASH) ? name.idup : (HiBONPrefix.HASH ~ name).idup;
     auto h = new HiBON;
     h[key] = val;
     return net.dartIndex(Document(h));
@@ -91,20 +91,30 @@ unittest {
     import tagion.hibon.BigNumber;
     import tagion.utils.StdTime;
     import tagion.hibon.HiBONBase : Type;
+    import tagion.crypto.SecureNet : StdHashNet;
+    import tagion.hibon.HiBONRecord : HiBONRecord, label;
+    import std.format;
+    import std.traits;
+
+    const net = new StdHashNet;
 
     static struct DARTKey(T) {
         @label("#key") T key;
         int x;
 
         mixin HiBONRecord!(q{
-            this(T key, inx x) {
+            this(T key, int x) {
                 this.key=key;
                 this.x=x;
             }
         });
     }
 
-    alias table = Tuple!(
+    auto dartKeyT(T)(T key, int x) {
+        return DARTKey!T(key, x);
+    }
+
+    alias Table = Tuple!(
             BigNumber, Type.BIGINT.stringof,
             bool, Type.BOOLEAN.stringof,
             float, Type.FLOAT32.stringof,
@@ -120,7 +130,7 @@ unittest {
     );
     // dfmt on
 
-    table test_table;
+    Table test_table;
     test_table.FLOAT32 = 1.23;
     test_table.FLOAT64 = 1.23e200;
     test_table.INT32 = -42;
@@ -132,9 +142,30 @@ unittest {
     test_table.TIME = 1001;
     test_table.BINARY = [1, 2, 3];
     test_table.STRING = "Text";
+    import std.stdio;
 
-    //static foreach(i, t; test_table 
+    foreach (i, t; test_table) {
+        writefln("%s]", i);
+        const dart_index = net.dartKey("#key", t);
+        const dart_key = dartKeyT(t, 42);
+        writefln("%s %(%02x%)", FieldNameTuple!Table[i], dart_index);
+        writefln("%s %(%02x%)", FieldNameTuple!Table[i], net.dartIndex(dart_key));
+        writefln("%s %(%02x%)", FieldNameTuple!Table[i], net.calcHash(dart_key.toDoc));
+        assert(dart_index == net.dartIndex(dart_key), format("%s dartKey failed", Fields!Table[i].stringof));
+        assert(dart_index != net.calcHash(dart_key.toDoc), format("%s dart_index should not be equal to the fingerpint", Fields!Table[i]
+            .stringof));
+    }
+    /*
+    static foreach(i, t; test_table) {{
+    //    writefln("%s]%s",i, t.stringof); 
+//        const dart_index=net.dartKey("#key", t);
+       // alias DARTKeyT=DARTKey!(Fields!Table[i]);
+      //  const dart_key=DARTKeyT(t, 42);
+        //writefln("%s %(%02x%)", FieldNameTuple!Table[i], dart_index);
+        //writefln("%s %(%02x%)", FieldNameTuple!Table[i], net.dartIndex(dart_key));
 
+    }}
+*/
 }
 
 DARTIndex dartIndexDecode(const(HashNet) net, const(char[]) str) {

@@ -680,7 +680,7 @@ static assert(uint.sizeof == 4);
         }
 
         // dfmt off
-        alias table = Tuple!(
+        alias Table = Tuple!(
             BigNumber, Type.BIGINT.stringof,
             bool,   Type.BOOLEAN.stringof,
             float,  Type.FLOAT32.stringof,
@@ -694,7 +694,7 @@ static assert(uint.sizeof == 4);
             );
         // dfmt on
 
-        table test_table;
+        Table test_table;
         test_table.FLOAT32 = 1.23;
         test_table.FLOAT64 = 1.23e200;
         test_table.INT32 = -42;
