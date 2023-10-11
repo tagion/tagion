@@ -188,12 +188,26 @@ DARTIndex dartIndexDecode(const(HashNet) net, const(char[]) str) {
                             Buffer buf = list[2].decode;
                             return net.dartKey(name, buf);
                         }
-                        else if (E == Type.DOCUMENT) {
+                        else static if (E == Type.DOCUMENT) {
                             const doc = list[2].fread;
                             return net.dartKey(name, doc.mut);
                         }
-                        else {
+                        else static if (E == Type.STRING) {
+                            return net.dartKey(name, list[2].idup);
+                        }
+                        else static if (E == Type.TIME) {
+                            import std.datetime;
 
+                            return net.dartKey(name, SysTime.fromISOExtString(list[2]).stdTime);
+                        }
+                        else {
+                            alias Value = ValueT!(false, void, void);
+                            alias T = Unqual!(Value.TypeT!E);
+                            pragma(msg, "VALUE TYPE ", T);
+                            import std.conv : to;
+
+                            auto val = list[2].to!T;
+                            return net.dartKey(name, val);
                         }
                         break case_type;
                     }
@@ -202,9 +216,9 @@ DARTIndex dartIndexDecode(const(HashNet) net, const(char[]) str) {
             default:
             // empty
         }
-
-        return DARTIndex.init;
+        return net.dartKey(name, list[1].idup);
     }
+
     return DARTIndex(misc.decode(str));
 }
 
