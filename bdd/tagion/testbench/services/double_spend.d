@@ -417,7 +417,7 @@ class SameContractInDifferentEpochs {
         int epoch_number;
         do {
             writeln("receiveonly");
-            auto epoch_before = receiveOnly!(Topic, string, const(Document));
+            auto epoch_before = receiveOnlyTimeout!(Topic, string, const(Document))(10.seconds);
             writefln("epoch_before %s", epoch_before[1]);
             check(epoch_before[2].isRecord!FinishedEpoch, "not correct subscription received");
             if (epoch_before[1].canFind(opts1.task_names.epoch_creator)) {
@@ -433,7 +433,7 @@ class SameContractInDifferentEpochs {
         int new_epoch_number;
         do {
             writeln("receiveonly");
-            auto new_epoch = receiveOnly!(Topic, string, const(Document));
+            auto new_epoch = receiveOnlyTimeout!(Topic, string, const(Document))(10.seconds);
             writefln("new_epoch %s", new_epoch[1]);
             check(new_epoch[2].isRecord!FinishedEpoch, "not correct subscription received");
             if (!new_epoch[1].canFind(opts1.task_names.epoch_creator)) {
