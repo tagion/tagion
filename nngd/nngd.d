@@ -818,8 +818,13 @@ struct NNGSocket {
             return getopt_string(NNG_OPT_URL,nng_property_base.NNG_BASE_SOCKET); 
     }
 
-    @property Duration maxttl() { return getopt_duration(NNG_OPT_MAXTTL); } 
-    @property void maxttl(Duration val){ setopt_duration(NNG_OPT_MAXTTL,val); }
+    @property int maxttl() { return getopt_int(NNG_OPT_MAXTTL); } 
+    /// MAXTTL a value between 0 and 255, inclusive. Where 0 is infinite
+    @property void maxttl(uint val)
+    in (val <= 255, "MAXTTL, hops cannot be greater than 255")
+    do { 
+        setopt_int(NNG_OPT_MAXTTL,val);
+    }
     
     @property int recvmaxsz() { return getopt_int(NNG_OPT_RECVMAXSZ); } 
     @property void recvmaxsz(int val) { return setopt_int(NNG_OPT_RECVMAXSZ,val); } 
