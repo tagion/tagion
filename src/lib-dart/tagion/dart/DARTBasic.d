@@ -77,15 +77,67 @@ unittest { // Check the #key hash with types
             "Two archives with same #key and different data should have different fingerprints");
 }
 
-DARTIndex dartKey(T)(const(char[]) name, T val) {
-    string key;
-    key = (name[0] == HiBONPrefix.HASH) ? HiBONPrefix.HASH ~ name : name;
+DARTIndex dartKey(T)(const(HashNet) net, const(char[]) name, T val) {
+    import tagion.hibon.HiBON;
+
+    const key = ((name[0] == HiBONPrefix.HASH) ? HiBONPrefix.HASH ~ name : name).idup;
     auto h = new HiBON;
     h[key] = val;
-    return dartIndex(h.toDoc);
+    return net.dartIndex(Document(h));
 }
 
-version (none) DARTIndex dartIndexDecode(const(char[]) str) pure {
+unittest {
+    import std.typecons;
+    import tagion.hibon.BigNumber;
+    import tagion.utils.StdTime;
+    import tagion.hibon.HiBONBase : Type;
+
+    static struct DARTKey(T) {
+        @label("#key") T key;
+        int x;
+
+        mixin HiBONRecord!(q{
+            this(T key, inx x) {
+                this.key=key;
+                this.x=x;
+            }
+        });
+    }
+
+    alias table = Tuple!(
+            BigNumber, Type.BIGINT.stringof,
+            bool, Type.BOOLEAN.stringof,
+            float, Type.FLOAT32.stringof,
+            double, Type.FLOAT64.stringof,
+            int, Type.INT32.stringof,
+            long, Type.INT64.stringof,
+            sdt_t, Type.TIME.stringof,
+            uint, Type.UINT32.stringof,
+            ulong, Type.UINT64.stringof,
+            immutable(ubyte)[], Type.BINARY.stringof,
+            string, Type.STRING.stringof,
+
+    );
+    // dfmt on
+
+    table test_table;
+    test_table.FLOAT32 = 1.23;
+    test_table.FLOAT64 = 1.23e200;
+    test_table.INT32 = -42;
+    test_table.INT64 = -0x0123_3456_789A_BCDF;
+    test_table.UINT32 = 42;
+    test_table.UINT64 = 0x0123_3456_789A_BCDF;
+    test_table.BIGINT = BigNumber("-1234_5678_9123_1234_5678_9123_1234_5678_9123");
+    test_table.BOOLEAN = true;
+    test_table.TIME = 1001;
+    test_table.BINARY = [1, 2, 3];
+    test_table.STRING = "Text";
+
+    //static foreach(i, t; test_table 
+
+}
+
+DARTIndex dartIndexDecode(const(HashNet) net, const(char[]) str) {
     import tagion.hibon.HiBONtoText;
     import misc = tagion.utils.Miscellaneous;
     import std.base64;
@@ -93,6 +145,7 @@ version (none) DARTIndex dartIndexDecode(const(char[]) str) pure {
     import std.array : split;
     import tagion.hibon.HiBONJSON : typeMap, NotSupported;
     import tagion.hibon.HiBONBase;
+    import tagion.hibon.HiBONRecord : fread;
     import std.traits;
 
     if (isBase64Prefix(str)) {
@@ -117,11 +170,11 @@ version (none) DARTIndex dartIndexDecode(const(char[]) str) pure {
 
                         static if (E == Type.BINARY) {
                             Buffer buf = list[2].decode;
-                            return dartKey(name, buf);
+                            return net.dartKey(name, buf);
                         }
                         else if (E == Type.DOCUMENT) {
                             const doc = list[2].fread;
-                            return dartKey(name, doc);
+                            return net.dartKey(name, doc.mut);
                         }
                         else {
 
