@@ -680,7 +680,7 @@ static assert(uint.sizeof == 4);
         }
 
         // dfmt off
-        alias Tabel = Tuple!(
+        alias Table = Tuple!(
             BigNumber, Type.BIGINT.stringof,
             bool,   Type.BOOLEAN.stringof,
             float,  Type.FLOAT32.stringof,
@@ -694,56 +694,56 @@ static assert(uint.sizeof == 4);
             );
         // dfmt on
 
-        Tabel test_tabel;
-        test_tabel.FLOAT32 = 1.23;
-        test_tabel.FLOAT64 = 1.23e200;
-        test_tabel.INT32 = -42;
-        test_tabel.INT64 = -0x0123_3456_789A_BCDF;
-        test_tabel.UINT32 = 42;
-        test_tabel.UINT64 = 0x0123_3456_789A_BCDF;
-        test_tabel.BIGINT = BigNumber("-1234_5678_9123_1234_5678_9123_1234_5678_9123");
-        test_tabel.BOOLEAN = true;
-        test_tabel.TIME = 1001;
+        Table test_table;
+        test_table.FLOAT32 = 1.23;
+        test_table.FLOAT64 = 1.23e200;
+        test_table.INT32 = -42;
+        test_table.INT64 = -0x0123_3456_789A_BCDF;
+        test_table.UINT32 = 42;
+        test_table.UINT64 = 0x0123_3456_789A_BCDF;
+        test_table.BIGINT = BigNumber("-1234_5678_9123_1234_5678_9123_1234_5678_9123");
+        test_table.BOOLEAN = true;
+        test_table.TIME = 1001;
 
-        alias TabelArray = Tuple!(
+        alias tableArray = Tuple!(
                 immutable(ubyte)[], Type.BINARY.stringof,
                 string, Type.STRING.stringof,
         );
 
-        TabelArray test_tabel_array;
-        test_tabel_array.BINARY = [1, 2, 3];
-        test_tabel_array.STRING = "Text";
+        tableArray test_table_array;
+        test_table_array.BINARY = [1, 2, 3];
+        test_table_array.STRING = "Text";
 
         { // Document with simple types
             index = 0;
 
             { // Document with a single value
-                index = make(buffer, test_tabel, 1);
+                index = make(buffer, test_table, 1);
                 immutable data = buffer[0 .. index].idup;
                 const doc = Document(data);
                 assert(doc.length is 1);
-                // assert(doc[Type.FLOAT32.stringof].get!float == test_tabel[0]);
+                // assert(doc[Type.FLOAT32.stringof].get!float == test_table[0]);
             }
 
             { // Document including basic types
-                index = make(buffer, test_tabel);
+                index = make(buffer, test_table);
                 immutable data = buffer[0 .. index].idup;
                 const doc = Document(data);
                 assert(doc.keys.is_key_ordered);
 
                 auto keys = doc.keys;
-                foreach (i, t; test_tabel) {
-                    enum name = test_tabel.fieldNames[i];
-                    alias U = test_tabel.Types[i];
+                foreach (i, t; test_table) {
+                    enum name = test_table.fieldNames[i];
+                    alias U = test_table.Types[i];
                     enum E = Value.asType!U;
                     assert(doc.hasMember(name));
                     const e = doc[name];
-                    assert(e.get!U == test_tabel[i]);
+                    assert(e.get!U == test_table[i]);
                     assert(keys.front == name);
                     keys.popFront;
 
                     auto e_in = name in doc;
-                    assert(e.get!U == test_tabel[i]);
+                    assert(e.get!U == test_table[i]);
 
                     assert(e.type is E);
                     assert(e.isType!U);
@@ -755,17 +755,17 @@ static assert(uint.sizeof == 4);
             }
 
             { // Document which includes basic arrays and string
-                index = make(buffer, test_tabel_array);
+                index = make(buffer, test_table_array);
                 immutable data = buffer[0 .. index].idup;
                 const doc = Document(data);
                 assert(doc.keys.is_key_ordered);
 
-                foreach (i, t; test_tabel_array) {
-                    enum name = test_tabel_array.fieldNames[i];
-                    alias U = test_tabel_array.Types[i];
+                foreach (i, t; test_table_array) {
+                    enum name = test_table_array.fieldNames[i];
+                    alias U = test_table_array.Types[i];
                     const v = doc[name].get!U;
 
-                    assert(v == test_tabel_array[i]);
+                    assert(v == test_table_array[i]);
                     import traits = std.traits; // : isArray;
                     const e = doc[name];
                 }
@@ -773,7 +773,7 @@ static assert(uint.sizeof == 4);
 
             { // Document which includes sub-documents
                 auto buffer_subdoc = new ubyte[0x200];
-                index = make(buffer_subdoc, test_tabel);
+                index = make(buffer_subdoc, test_table);
                 immutable data_sub_doc = buffer_subdoc[0 .. index].idup;
                 const sub_doc = Document(data_sub_doc);
 
@@ -830,18 +830,18 @@ static assert(uint.sizeof == 4);
                     assert(under_doc.data.length == data_sub_doc.length);
 
                     auto keys = under_doc.keys;
-                    foreach (i, t; test_tabel) {
-                        enum name = test_tabel.fieldNames[i];
-                        alias U = test_tabel.Types[i];
+                    foreach (i, t; test_table) {
+                        enum name = test_table.fieldNames[i];
+                        alias U = test_table.Types[i];
                         enum E = Value.asType!U;
                         assert(under_doc.hasMember(name));
                         const e = under_doc[name];
-                        assert(e.get!U == test_tabel[i]);
+                        assert(e.get!U == test_table[i]);
                         assert(keys.front == name);
                         keys.popFront;
 
                         auto e_in = name in doc;
-                        assert(e.get!U == test_tabel[i]);
+                        assert(e.get!U == test_table[i]);
                     }
                 }
 
@@ -1432,4 +1432,15 @@ unittest { // Bugfix (Fails in isInorder);
         assert(!doc.isInorder);
         assert(doc.valid is Document.Element.ErrorCode.DOCUMENT_OVERFLOW);
     }
+}
+
+@safe
+Document mut(D)(D doc) pure nothrow if (is(D : const(Document))) {
+    return Document(doc.data);
+}
+
+@safe
+unittest {
+    immutable imu_doc = Document.init;
+    Document doc = imu_doc.mut;
 }
