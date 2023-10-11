@@ -934,6 +934,7 @@ unittest {
 
     import std.algorithm;
     import tagion.hibon.HiBONJSON;
+    import std.exception;
     import std.stdio;
 
     auto wallet1 = StdSecureWallet("some words", "1234");
@@ -946,8 +947,11 @@ unittest {
     assert(wallet1.available_balance == 3000.TGN);
 
     auto payment_request = wallet2.requestBill(1500.TGN);
+    auto too_big_request = wallet2.requestBill(10000.TGN);
 
     TagionCurrency expected_fee;
+    assert(!wallet1.getFee([too_big_request], expected_fee).value, "should throw on too big value");
+    
     assert(wallet1.getFee([payment_request], expected_fee).value, "error in getFee");
     assert(wallet1.available_balance == 3000.TGN, "getfee should not change any balances");
 
