@@ -77,9 +77,6 @@ int _main(string[] args) {
         if (!nodekeys.empty) {
             auto genesis_list = createGenesis(nodekeys, Document.init);
             recorder.insert(genesis_list, Archive.Type.ADD);
-            writefln("standard_input=%s", standard_input);
-            writefln("standard_output=%s", standard_output);
-            // return 0;
         }
         if (standard_input) {
             auto fin = stdin;

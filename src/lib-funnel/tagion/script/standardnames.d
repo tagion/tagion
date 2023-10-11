@@ -12,7 +12,7 @@ enum StdNames {
     derive = "$D",
     epoch = "#$epoch",
     bullseye = "$eye",
-    name = "#$name",
+    name = "#name",
     previous = "$prev",
     tagion = "#tagion",
     nodekey = "#$node",

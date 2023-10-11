@@ -288,8 +288,8 @@ static assert(uint.sizeof == 4);
      true if the Document is inorder
      +/
     // @trusted
-    bool isInorder() const nothrow {
-        return valid() is Element.ErrorCode.NONE;
+    bool isInorder(const Reserved reserved = Yes.Reserved) const nothrow {
+        return valid(null, reserved) is Element.ErrorCode.NONE;
     }
 
     /++
@@ -1432,9 +1432,4 @@ unittest { // Bugfix (Fails in isInorder);
         assert(!doc.isInorder);
         assert(doc.valid is Document.Element.ErrorCode.DOCUMENT_OVERFLOW);
     }
-}
-
-@safe
-unittest {
-
 }

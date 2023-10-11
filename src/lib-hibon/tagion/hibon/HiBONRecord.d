@@ -5,7 +5,7 @@ import tagion.hibon.HiBONJSON;
 
 import file = std.file;
 import std.exception : assumeUnique, assumeWontThrow;
-import std.typecons : Tuple;
+import std.typecons : Tuple, Yes, No;
 import std.traits;
 
 import tagion.basic.basic : basename, EnumContinuousSequency;
@@ -1477,11 +1477,13 @@ mixin template HiBONRecord(string CTOR = "") {
  The Document read from the file
  +/
 @trusted Document fread(const(char[]) filename) {
+    import std.format;
     import tagion.hibon.HiBONException : check;
 
     immutable data = assumeUnique(cast(ubyte[]) file.read(filename));
     const doc = Document(data);
-    check(doc.isInorder, "HiBON Document format failed");
+    const error_code = doc.valid(null, No.Reserved);
+    check(error_code is Document.Element.ErrorCode.NONE, format("HiBON Document format %s failed in %s", error_code, filename));
     return doc;
 }
 
