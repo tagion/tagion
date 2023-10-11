@@ -145,27 +145,12 @@ unittest {
     import std.stdio;
 
     foreach (i, t; test_table) {
-        writefln("%s]", i);
         const dart_index = net.dartKey("#key", t);
         const dart_key = dartKeyT(t, 42);
-        writefln("%s %(%02x%)", FieldNameTuple!Table[i], dart_index);
-        writefln("%s %(%02x%)", FieldNameTuple!Table[i], net.dartIndex(dart_key));
-        writefln("%s %(%02x%)", FieldNameTuple!Table[i], net.calcHash(dart_key.toDoc));
         assert(dart_index == net.dartIndex(dart_key), format("%s dartKey failed", Fields!Table[i].stringof));
         assert(dart_index != net.calcHash(dart_key.toDoc), format("%s dart_index should not be equal to the fingerpint", Fields!Table[i]
             .stringof));
     }
-    /*
-    static foreach(i, t; test_table) {{
-    //    writefln("%s]%s",i, t.stringof); 
-//        const dart_index=net.dartKey("#key", t);
-       // alias DARTKeyT=DARTKey!(Fields!Table[i]);
-      //  const dart_key=DARTKeyT(t, 42);
-        //writefln("%s %(%02x%)", FieldNameTuple!Table[i], dart_index);
-        //writefln("%s %(%02x%)", FieldNameTuple!Table[i], net.dartIndex(dart_key));
-
-    }}
-*/
 }
 
 DARTIndex dartIndexDecode(const(HashNet) net, const(char[]) str) {
