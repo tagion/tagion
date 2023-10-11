@@ -77,6 +77,68 @@ unittest { // Check the #key hash with types
             "Two archives with same #key and different data should have different fingerprints");
 }
 
+DARTIndex dartKey(T)(const(char[]) name, T val) {
+    string key;
+    key = (name[0] == HiBONPrefix.HASH) ? HiBONPrefix.HASH ~ name : name;
+    auto h = new HiBON;
+    h[key] = val;
+    return dartIndex(h.toDoc);
+}
+
+version (none) DARTIndex dartIndexDecode(const(char[]) str) pure {
+    import tagion.hibon.HiBONtoText;
+    import misc = tagion.utils.Miscellaneous;
+    import std.base64;
+    import std.algorithm;
+    import std.array : split;
+    import tagion.hibon.HiBONJSON : typeMap, NotSupported;
+    import tagion.hibon.HiBONBase;
+    import std.traits;
+
+    if (isBase64Prefix(str)) {
+        return DARTIndex(Base64URL.decode(str[1 .. $]).idup);
+    }
+    else if (isHexPrefix(str)) {
+        return DARTIndex(misc.decode(str[hex_prefix.length .. $]));
+    }
+    else if (str.canFind(":")) {
+        const list = str.split(":");
+        const name = list[0];
+        if (list.length == 2) {
+
+        }
+    case_type:
+        switch (list[1]) {
+            static foreach (E; EnumMembers!Type) {
+                {
+                    enum type_name = typeMap[E];
+                    static if (type_name != NotSupported) {
+                    case type_name:
+
+                        static if (E == Type.BINARY) {
+                            Buffer buf = list[2].decode;
+                            return dartKey(name, buf);
+                        }
+                        else if (E == Type.DOCUMENT) {
+                            const doc = list[2].fread;
+                            return dartKey(name, doc);
+                        }
+                        else {
+
+                        }
+                        break case_type;
+                    }
+                }
+            }
+            default:
+            // empty
+        }
+
+        return DARTIndex.init;
+    }
+    return DARTIndex(misc.decode(str));
+}
+
 immutable(Buffer) binaryHash(const(HashNet) net, scope const(ubyte[]) h1, scope const(ubyte[]) h2)
 in {
     assert(h1.length is 0 || h1.length is net.hashSize,

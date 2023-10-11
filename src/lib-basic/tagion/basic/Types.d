@@ -52,6 +52,10 @@ unittest {
     const(MyBuf) buf = [1, 2, 3, 4];
     MyBuf mut_buf = buf.mut;
 }
+
+Unqual!T mut(T)(T data) nothrow pure @nogc if (is(T == struct) && !isTypedef!T) {
+    return cast(Unqual!T) data;
+}
 /++
  Genera signal
 +/

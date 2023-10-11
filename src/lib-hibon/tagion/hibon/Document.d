@@ -1433,3 +1433,14 @@ unittest { // Bugfix (Fails in isInorder);
         assert(doc.valid is Document.Element.ErrorCode.DOCUMENT_OVERFLOW);
     }
 }
+
+@safe
+Document mut(D)(D doc) pure nothrow if (is(D : const(Document))) {
+    return Document(doc.data);
+}
+
+@safe
+unittest {
+    immutable imu_doc = Document.init;
+    Document doc = imu_doc.mut;
+}
