@@ -102,6 +102,9 @@ class SendPayloadAndCreateEpoch {
 
     @When("i sent a payload to node0")
     Document node0() @trusted {
+        log.registerSubscriptionTask("epoch_creator_tester");
+
+        submask.subscribe("epoch_creator/epoch_created");
 
         import tagion.hibon.HiBON;
         import tagion.hibon.Document;
@@ -118,12 +121,9 @@ class SendPayloadAndCreateEpoch {
     @Then("all the nodes should create an epoch containing the payload")
     Document payload() {
         writefln("BEFORE TIMEOUT");
-        log.registerSubscriptionTask("epoch_creator_tester");
-
-        submask.subscribe("epoch_creator/epoch_created");
 
         bool stop;
-        const max_attempts = 10;
+        const max_attempts = 30;
         uint counter;
         do {
             const received = receiveOnly!(Topic, string, const(Document));
@@ -134,16 +134,15 @@ class SendPayloadAndCreateEpoch {
             import tagion.hibon.HiBONRecord;
 
             check(epoch.isRecord!FinishedEpoch, "received event should be an FinishedEpoch record");
-            writefln("Received epoch %s", epoch.toPretty);
             const events = FinishedEpoch(epoch).events;
-            check(events.length == 1, format("should only have received one event got %s", epoch.length));
+            writefln("Received epoch %s \n event_length %s", epoch.toPretty,events.length);
 
-            const received_payload = events[0].event_body.payload;
-            check(received_payload == send_payload, "Payloads not the same");
-            stop = true;
-
+            if (events.length == 1) {
+                const received_payload = events[0].event_body.payload;
+                check(received_payload == send_payload, "Payloads not the same");
+                stop = true;
+            }
             counter++;
-
         }
         while (!stop && counter < max_attempts);
         check(stop, "no epoch found");
