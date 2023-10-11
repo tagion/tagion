@@ -70,15 +70,16 @@ int _main(string[] args) {
 
     // bills for the dart on startup
 
-    void requestAndForce(ref StdSecureWallet w, TagionCurrency amount) {
+    TagionBill requestAndForce(ref StdSecureWallet w, TagionCurrency amount) {
         auto b = w.requestBill(amount);
         w.addBill(b);
+        return b;
     }
     
     TagionBill[] bills;
     foreach (ref wallet; wallets) {
         foreach(i; 0..3) {
-            requestAndForce(wallet, 1000.TGN);
+            bills ~= requestAndForce(wallet, 1000.TGN);
         }
     }
 

@@ -80,6 +80,8 @@ struct DARTService {
 
             req.respond(check_read);
         }
+        import tagion.utils.Miscellaneous : toHexString;
+        log("Starting dart with %s", db.bullseye.toHexString);
 
         auto hirpc = HiRPC(net);
         auto empty_hirpc = HiRPC(null);

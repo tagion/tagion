@@ -15,10 +15,13 @@ import tagion.script.common;
 import tagion.script.execute;
 import tagion.script.Currency : totalAmount;
 import tagion.communication.HiRPC;
+import tagion.utils.pretend_safe_concurrency : receiveOnly, receiveTimeout;
+import tagion.logger.Logger;
+import tagion.actor;
+import tagion.testbench.actor.util;
 
 import std.range;
 import std.algorithm;
-import std.format;
 import core.time;
 import core.thread;
 import std.stdio;
@@ -58,6 +61,9 @@ class SameInputsSpendOnOneContract {
 
     @Given("i have a malformed contract with two inputs which are the same")
     Document same() {
+        thisActor.task_name = "malformed_contract_task";
+        log.registerSubscriptionTask(thisActor.task_name);
+
         const amount_to_pay = 1100.TGN;
         auto payment_request = wallet2.requestBill(amount_to_pay);
 
@@ -98,21 +104,25 @@ class SameInputsSpendOnOneContract {
     @When("i send the contract to the network")
     Document network() {
 
+        import tagion.services.collector : reject_collector;
+        submask.subscribe(reject_collector);
         auto wallet1_hirpc = HiRPC(wallet1.net);
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
         writefln("---SUBMIT ADDRESS--- %s", opts.inputvalidator.sock_addr); 
         sendSubmitHiRPC(opts.inputvalidator.sock_addr, hirpc_submit);
 
-        writeln("Going to sleep");
-        (() @trusted => Thread.sleep(20.seconds))();
-        writeln("Finished sleep");
+        // writeln("Going to sleep");
+        // (() @trusted => Thread.sleep(20.seconds))();
+        // writeln("Finished sleep");
 
         return result_ok;
     }
 
     @Then("the inputs should be deleted from the dart.")
     Document dart() {
-        return Document();
+        auto result = receiveOnlyTimeout!(Topic, string, const(Document));
+        check(result[1] == "missing_archives", "did not reject for the expected reason");
+        return result_ok;
     }
 
 }
