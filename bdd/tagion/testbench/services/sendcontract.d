@@ -102,7 +102,7 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
         auto wallet1_hirpc = HiRPC(wallet1.net);
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
 
-        sendSubmitHiRPC(inputvalidator_sock_addr, hirpc_submit);
+        sendSubmitHiRPC(inputvalidator_sock_addr, hirpc_submit, wallet1.net);
 
         return result_ok;
     }
