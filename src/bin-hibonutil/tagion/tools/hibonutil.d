@@ -128,10 +128,8 @@ int _main(string[] args) {
         );
         if (sample) {
             string sample_file_name = "sample".setExtension(FileExtension.hibon);
-            writefln("Write %s", sample_file_name);
             sample_file_name.fwrite(sampleHiBON.serialize);
             sample_file_name = "sample_array".setExtension(FileExtension.hibon);
-            writefln("Write %s", sample_file_name);
             sample_file_name.fwrite(sampleHiBON(true).serialize);
             return 0;
         }

@@ -63,9 +63,11 @@ Document[] createGenesis(const(string[]) nodes_param, Document testamony) {
     //.sort;
     genesis_epoch.time = cast(sdt_t) time;
     genesis_epoch.testamony = testamony;
-    name_cards.each!((name_card) => writefln("%s", name_card.toPretty));
-    node_records.each!((name_card) => writefln("%s", name_card.toPretty));
-    writefln("%s", genesis_epoch.toPretty);
+    (() @trusted {
+        name_cards.each!((name_card) => stderr.writefln("%s", name_card.toPretty));
+        node_records.each!((name_card) => stderr.writefln("%s", name_card.toPretty));
+        stderr.writefln("%s", genesis_epoch.toPretty);
+    })();
     result ~= name_cards.map!((name_card) => name_card.toDoc).array;
 
     result ~= node_records.map!(node_record => node_record.toDoc).array;

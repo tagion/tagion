@@ -15,4 +15,4 @@ update_modules:
 
 .PHONY: update_modules
 
-%: update_modules
+%: update_modules revision
