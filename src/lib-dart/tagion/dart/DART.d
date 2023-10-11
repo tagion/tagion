@@ -446,7 +446,7 @@ received = the HiRPC received package
     }
     do {
         const doc_dart_indices = received.method.params[Params.dart_indices].get!(Document);
-        auto dart_indices = doc_dart_indices.range!(Buffer[]);
+        auto dart_indices = doc_dart_indices.range!(DARTIndex[]);
         const recorder = loads(dart_indices, Archive.Type.ADD);
         return hirpc.result(received, recorder.toDoc);
     }
