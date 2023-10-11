@@ -127,7 +127,7 @@ class SendPayloadAndCreateEpoch {
         uint counter;
         do {
             const received = receiveOnly!(Topic, string, const(Document));
-            check(received[1] == "epoch_succesful", "Event should have been epoch_succesful");
+            check(received[1].canFind("epoch_succesful"), "Event should have been epoch_succesful");
             const epoch = received[2];
 
             import tagion.hashgraph.Refinement : FinishedEpoch;

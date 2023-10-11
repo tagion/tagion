@@ -74,7 +74,8 @@ class StdRefinement : Refinement {
     void finishedEpoch(const(Event[]) events, const sdt_t epoch_time, const Round decided_round) @trusted {
         if (events.length > 0) {
             auto event_payload = FinishedEpoch(events, epoch_time);
-            log(epoch_created, "epoch_succesful", event_payload.toDoc);
+            import std.format;
+            log(epoch_created, format("%s:epoch_succesful", task_names.epoch_creator), event_payload.toDoc);
         }
         if (task_names is TaskNames.init) {
             return;

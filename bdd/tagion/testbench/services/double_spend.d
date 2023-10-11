@@ -368,14 +368,56 @@ class SameContractDifferentNodes {
         [])
 class SameContractInDifferentEpochs {
 
+    Options opts1;
+    Options opts2;
+    StdSecureWallet wallet1;
+    StdSecureWallet wallet2;
+    //
+    SignedContract signed_contract;
+    TagionCurrency amount;
+    TagionCurrency fee;
+
+    HiRPC wallet1_hirpc;
+    HiRPC wallet2_hirpc;
+    TagionCurrency start_amount1;
+    TagionCurrency start_amount2;
+
+    this(Options opts1, Options opts2, ref StdSecureWallet wallet1, ref StdSecureWallet wallet2) {
+        this.wallet1 = wallet1;
+        this.wallet2 = wallet2;
+        this.opts1 = opts1;
+        this.opts2 = opts2;
+        wallet1_hirpc = HiRPC(wallet1.net);
+        wallet2_hirpc = HiRPC(wallet2.net);
+        start_amount1 = wallet1.calcTotal(wallet1.account.bills);
+        start_amount2 = wallet2.calcTotal(wallet2.account.bills);
+    }
     @Given("i have a correctly signed contract.")
     Document contract() {
-        return Document();
+        writefln("SAME CONTRACT different epoch");
+        amount = 1500.TGN;
+        auto payment_request = wallet2.requestBill(amount);
+        check(wallet1.createPayment([payment_request], signed_contract, fee).value, "Error creating wallet");
+        check(signed_contract.contract.inputs.uniq.array.length == signed_contract.contract.inputs.length, "signed contract inputs invalid");
+
+        return result_ok;
     }
 
     @When("i send the contract to the network in different epochs to the same node.")
     Document node() {
-        return Document();
+        submask.subscribe("epoch_creator/epoch_created");
+        auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
+        sendSubmitHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit);
+
+        // wait one or two epochs
+        const received = receiveOnly!(Topic, string, const(Document));
+        // const received = receiveOnly!(Topic, string, const(Document));
+
+
+
+
+        (() @trusted => Thread.sleep(25.seconds))();
+        return result_ok;
     }
 
     @Then("the first contract should go through and the second one should be rejected.")
