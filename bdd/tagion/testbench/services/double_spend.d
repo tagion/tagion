@@ -69,6 +69,9 @@ class SameInputsSpendOnOneContract {
     @Given("i have a malformed contract with two inputs which are the same")
     Document same() {
 
+        thisActor.task_name = "malformed_contract_task";
+        log.registerSubscriptionTask(thisActor.task_name);
+
         const amount_to_pay = 1100.TGN;
         auto payment_request = wallet2.requestBill(amount_to_pay);
 
@@ -318,8 +321,6 @@ class SameContractDifferentNodes {
 
     @Given("i have a correctly signed contract.")
     Document contract() {
-        thisActor.task_name = "malformed_contract_task";
-        log.registerSubscriptionTask(thisActor.task_name);
 
         
         writefln("SAME CONTRACT DIFFERENT NODES");
@@ -399,6 +400,8 @@ class SameContractInDifferentEpochs {
     }
     @Given("i have a correctly signed contract.")
     Document contract() {
+        submask.subscribe("epoch_creator/epoch_created");
+
         writefln("SAME CONTRACT different epoch");
         amount = 1500.TGN;
         auto payment_request = wallet2.requestBill(amount);
@@ -411,19 +414,16 @@ class SameContractInDifferentEpochs {
     @When("i send the contract to the network in different epochs to the same node.")
     Document node() {
         import tagion.hashgraph.Refinement : FinishedEpoch;
-        submask.subscribe("epoch_creator/epoch_created");
-
 
         int epoch_number;
         do {
-            writeln("receiveonly");
             auto epoch_before = receiveOnlyTimeout!(Topic, string, const(Document))(10.seconds);
-            writefln("epoch_before %s", epoch_before[1]);
+            writefln("epoch_before %s looking for %s", epoch_before[1], opts1.task_names.epoch_creator);
             check(epoch_before[2].isRecord!FinishedEpoch, "not correct subscription received");
             if (epoch_before[1].canFind(opts1.task_names.epoch_creator)) {
                 epoch_number = FinishedEpoch(epoch_before[2]).epoch;
             }
-        } while(epoch_number !is int.init);
+        } while(epoch_number is int.init);
 
         writeln("EPOCH NUMBER %s", epoch_number);
 
@@ -432,14 +432,14 @@ class SameContractInDifferentEpochs {
 
         int new_epoch_number;
         do {
-            writeln("receiveonly");
             auto new_epoch = receiveOnlyTimeout!(Topic, string, const(Document))(10.seconds);
-            writefln("new_epoch %s", new_epoch[1]);
+            writefln("new_epoch %s %s", new_epoch[1], opts1.task_names.epoch_creator);
             check(new_epoch[2].isRecord!FinishedEpoch, "not correct subscription received");
-            if (!new_epoch[1].canFind(opts1.task_names.epoch_creator)) {
+            if (new_epoch[1].canFind(opts1.task_names.epoch_creator)) {
+                writefln("UPDATING NEW EPOCH_NUMBER");
                 new_epoch_number = FinishedEpoch(new_epoch[2]).epoch;
             }
-        } while(new_epoch_number !is int.init);
+        } while(new_epoch_number is int.init);
 
         writeln("EPOCH NUMBER updated %s", new_epoch_number);
         check(epoch_number < new_epoch_number, "epoch number not updated");
@@ -472,6 +472,7 @@ class SameContractInDifferentEpochs {
         auto wallet2_amount = wallet2.calcTotal(wallet2.account.bills);
         writefln("WALLET 2 amount: %s", wallet2_amount);
         check(wallet2_amount == start_amount2+amount, "did not receive money");
+
         return result_ok;
     }
 
