@@ -179,9 +179,11 @@ class StdRefinement : Refinement {
         times.sort;
         const epoch_time = times[times.length / 2];
 
+        version(EPOCH_LOG) {
         log.trace("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d time=%s",
                 hashgraph.name, decided_round.number,
                 Event.count, Event.Witness.count, events.length, epoch_time);
+        }
 
         finishedEpoch(events, epoch_time, decided_round);
 

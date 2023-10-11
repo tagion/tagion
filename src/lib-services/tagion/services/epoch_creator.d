@@ -126,7 +126,7 @@ struct EpochCreatorService {
                 .array;
 
             if (received_signed_contracts.length != 0) {
-                log("would have send to collector %s", received_signed_contracts.map!(s => (*s).toPretty));
+                // log("would have send to collector %s", received_signed_contracts.map!(s => (*s).toPretty));
                 locate(task_names.collector).send(consensusContract(), received_signed_contracts);
             }
             hashgraph.wavefront(

@@ -37,7 +37,6 @@ import nngd;
 
 import core.time;
 
-pragma(msg, "fixme(pr): temporary shared name");
 
 struct dartWorkerContext {
     string dart_task_name;

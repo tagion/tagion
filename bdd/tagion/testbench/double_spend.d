@@ -57,7 +57,7 @@ int _main(string[] args) {
 
     StdSecureWallet[] wallets;
     // create the wallets
-    foreach (i; 0 .. 5) {
+    foreach (i; 0 .. 10) {
         StdSecureWallet secure_wallet;
         secure_wallet = StdSecureWallet(
                 iota(0, 5).map!(n => format("%dquestion%d", i, n)).array,
@@ -125,7 +125,7 @@ int _main(string[] args) {
     feature.SameInputsSpendOnOneContract(node_opts[0], wallets[0], wallets[1]);
     feature.OneContractWhereSomeBillsAreUsedTwice(node_opts[0], wallets[1], wallets[0]);
     feature.DifferentContractsDifferentNodes(node_opts[0], node_opts[1], wallets[2], wallets[3]);
-    feature.SameContractDifferentNodes(node_opts[0], node_opts[1], wallets[2], wallets[3]); 
+    feature.SameContractDifferentNodes(node_opts[0], node_opts[1], wallets[4], wallets[5]); 
 
 
     feature.run();
