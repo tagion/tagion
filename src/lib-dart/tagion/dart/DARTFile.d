@@ -1,4 +1,4 @@
-/// Handles the lower level operation of DART databasee
+/// Handles the lower level operation of DART database
 module tagion.dart.DARTFile;
 
 private {
@@ -451,7 +451,6 @@ enum KEY_SPAN = ubyte.max + 1;
                     hibon_fingerprints[key] = print;
                 }
             }
-            hibon["__darts"] = _dart_indices.length;
             if (_dart_indices) {
                 auto hibon_dart_indices = new HiBON;
                 foreach (key, dart_index; _dart_indices) {
@@ -465,7 +464,6 @@ enum KEY_SPAN = ubyte.max + 1;
                     hibon[dart_indicesName] = hibon_dart_indices;
                 }
             }
-            hibon["Make"] = "Here!!!";
             hibon[fingerprintsName] = hibon_fingerprints;
             hibon[TYPENAME] = type_name;
             return hibon;

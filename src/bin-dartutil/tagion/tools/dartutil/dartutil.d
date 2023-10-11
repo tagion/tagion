@@ -236,7 +236,6 @@ int _main(string[] args) {
         }
         if (dartread) {
             DARTIndex[] dart_indices;
-            writefln("%s", dartread_args);
             foreach (read_arg; dartread_args) {
                 import tagion.dart.DARTBasic : dartIndexDecode;
 
