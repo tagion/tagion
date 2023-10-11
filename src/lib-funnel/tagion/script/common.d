@@ -23,7 +23,7 @@ import tagion.script.standardnames;
     @label(StdNames.nonce, true) Buffer nonce; // extra nonce 
     mixin HiBONRecord!(
             q{
-                this(const(TagionCurrency) value, const sdt_t time, Pubkey owner, Buffer nonce) pure {
+                this(const(TagionCurrency) value, const sdt_t time, Pubkey owner, Buffer nonce) pure nothrow {
                     this.value = value;
                     this.time = time;
                     this.owner = owner;

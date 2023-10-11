@@ -623,6 +623,10 @@ struct SecureWallet(Net : SecureNet) {
         auto bills = assumeWontThrow(orders.map!((order) => TagionBill(order.amount, currentTime, order.pkey, Buffer.init)).array);
         return getFee(bills, fees);
     }
+    Result!bool getFee(TagionCurrency amount, out TagionCurrency fees) nothrow {
+        auto bill = TagionBill(amount, sdt_t.init, Pubkey.init, Buffer.init);
+        return getFee([bill], fees); 
+    }
     
     Result!bool createPayment(TagionBill[] to_pay, ref SignedContract signed_contract, out TagionCurrency fees) nothrow {
         import tagion.script.Currency : totalAmount;
@@ -951,10 +955,11 @@ unittest {
 
     TagionCurrency expected_fee;
     assert(!wallet1.getFee([too_big_request], expected_fee).value, "should throw on too big value");
+    assert(!wallet1.getFee(10000.TGN, expected_fee).value, "should throw on too big value");
+    assert(wallet1.getFee(100.TGN, expected_fee).value, "should be able to pay amount");
     
     assert(wallet1.getFee([payment_request], expected_fee).value, "error in getFee");
     assert(wallet1.available_balance == 3000.TGN, "getfee should not change any balances");
-
     
     SignedContract signed_contract;
     TagionCurrency fee;
