@@ -395,7 +395,7 @@ struct SecureWallet(Net : SecureNet) {
         try {
             checkLogin;
             auto bills = orders.map!((order) => TagionBill(order.amount, currentTime, order.pkey, Buffer.init)).array;
-            const topay = orders.map!(b => b.amount).sum;
+            // const topay = orders.map!(b => b.amount).sum;
             return createPayment(bills, signed_contract, fees);
         }
         catch (Exception e) {
@@ -581,6 +581,49 @@ struct SecureWallet(Net : SecureNet) {
         return true;
     }
 
+    Result!bool getFee(TagionBill[] to_pay, out TagionCurrency fees) nothrow {
+        import tagion.script.Currency : totalAmount;
+        import tagion.script.execute;
+        try {
+            PayScript pay_script;
+            pay_script.outputs = to_pay;
+            TagionBill[] collected_bills;
+            TagionCurrency amount_remainder = 0.TGN;
+            size_t previous_bill_count = size_t.max;
+
+            const amount_to_pay = pay_script.outputs
+                .map!(bill => bill.value)
+                .totalAmount;
+        
+            do {
+                if (collected_bills.length == previous_bill_count) {
+                    return result(false);
+                }
+                collected_bills.length = 0;
+                const can_pay = collect_bills(amount_to_pay+amount_remainder, collected_bills);
+                check(can_pay, format("Is unable to pay the amount %10.6fTGN available %10.6fTGN", amount_to_pay.value, available_balance
+                        .value));
+                const total_collected_amount = collected_bills
+                    .map!(bill => bill.value)
+                    .totalAmount;
+                fees = ContractExecution.billFees(collected_bills.length, pay_script.outputs.length+1);
+                amount_remainder = total_collected_amount - amount_to_pay - fees;
+                previous_bill_count = collected_bills.length;
+            }
+            while (amount_remainder < 0);
+        } catch (Exception e) {
+            return Result!bool(e);
+        }
+        return result(true);
+    }
+
+    Result!bool getFee(const(Invoice[]) orders, out TagionCurrency fees) nothrow {
+        import tagion.utils.StdTime;
+        import std.exception;
+        auto bills = assumeWontThrow(orders.map!((order) => TagionBill(order.amount, currentTime, order.pkey, Buffer.init)).array);
+        return getFee(bills, fees);
+    }
+    
     Result!bool createPayment(TagionBill[] to_pay, ref SignedContract signed_contract, out TagionCurrency fees) nothrow {
         import tagion.script.Currency : totalAmount;
         import tagion.script.execute;
@@ -853,7 +896,11 @@ struct SecureWallet(Net : SecureNet) {
             receiver_wallet.registerInvoice(invoice);
             TagionCurrency fees;
             // Give the invoice to the sender_wallet and create payment
+            TagionCurrency expected_fee;
+            sender_wallet.getFee([invoice], expected_fee);
+
             sender_wallet.payment([invoice], contract_1, fees);
+            assert(expected_fee == fees, "fee for get fee and expected fee should be the same");
 
             //writefln("contract_1=%s", contract_1.toPretty);
         }
@@ -900,9 +947,16 @@ unittest {
 
     auto payment_request = wallet2.requestBill(1500.TGN);
 
+    TagionCurrency expected_fee;
+    assert(wallet1.getFee([payment_request], expected_fee).value, "error in getFee");
+    assert(wallet1.available_balance == 3000.TGN, "getfee should not change any balances");
+
+    
     SignedContract signed_contract;
     TagionCurrency fee;
     assert(wallet1.createPayment([payment_request], signed_contract, fee).value, "error creating payment");
+
+    assert(fee == expected_fee, format("fees not the same %s, %s", fee, expected_fee));
 
     assert(signed_contract.contract.inputs.uniq.array.length == signed_contract.contract.inputs.length, "signed contract inputs invalid");
 }
