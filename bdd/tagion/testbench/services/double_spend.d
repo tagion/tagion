@@ -453,25 +453,24 @@ class SameContractInDifferentEpochs {
     Document rejected() {
         auto wallet1_dartcheckread = wallet1.getRequestCheckWallet(wallet1_hirpc);
         auto wallet1_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet1_dartcheckread);
-
-        // writefln("RECEIVED RESPONSE: %s", wallet1_received_doc.toPretty);
         auto wallet1_received = wallet1_hirpc.receive(wallet1_received_doc);
         check(wallet1.setResponseCheckRead(wallet1_received), "wallet1 not updated succesfully");
 
-        auto wallet1_amount = wallet1.calcTotal(wallet1.account.bills);
-        writefln("WALLET 1 amount: %s", wallet1_amount);
-        check(wallet1_amount == start_amount1-amount-fee, "wallet 1 did not lose correct amount of money");
-
         auto wallet2_dartcheckread = wallet2.getRequestCheckWallet(wallet2_hirpc);
         auto wallet2_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet2_dartcheckread);
-
-        // writefln("RECEIVED RESPONSE: %s", wallet2_received_doc.toPretty);
         auto wallet2_received = wallet2_hirpc.receive(wallet2_received_doc);
         check(wallet2.setResponseCheckRead(wallet2_received), "wallet2 not updated succesfully");
         
+        auto wallet1_amount = wallet1.calcTotal(wallet1.account.bills);
         auto wallet2_amount = wallet2.calcTotal(wallet2.account.bills);
+        writefln("WALLET 1 amount: %s", wallet1_amount);
         writefln("WALLET 2 amount: %s", wallet2_amount);
-        check(wallet2_amount == start_amount2+amount, "did not receive money");
+
+        const expected_amount1 = start_amount1-amount-fee;
+        const expected_amount2 = start_amount2 + amount;
+        check(wallet1_amount == expected_amount1, format("wallet 1 did not lose correct amount of money should have %s had %s", expected_amount1, wallet1_amount));
+        check(wallet2_amount == expected_amount2, format("wallet 2 did not lose correct amount of money should have %s had %s", expected_amount2, wallet2_amount));
+
 
         return result_ok;
     }
