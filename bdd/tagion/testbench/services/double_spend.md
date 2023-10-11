@@ -10,6 +10,11 @@ Given i have a malformed contract with three inputs where to are the same.
 When i send the contract to the network
 Then all the inputs should be deleted from the dart.
 
+Scenario: Different contracts different nodes.
+Given i have two correctly signed contracts.
+When i send the contracts to the network at the same time.
+Then both contracts should go through.
+
 Scenario: Same contract different nodes.
 Given i have a correctly signed contract.
 When i send the same contract to two different nodes.

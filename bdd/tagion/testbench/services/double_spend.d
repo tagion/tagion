@@ -19,6 +19,8 @@ import tagion.utils.pretend_safe_concurrency : receiveOnly, receiveTimeout;
 import tagion.logger.Logger;
 import tagion.actor;
 import tagion.testbench.actor.util;
+import tagion.dart.DARTcrud;
+import tagion.hibon.HiBONJSON;
 
 import std.range;
 import std.algorithm;
@@ -34,6 +36,7 @@ enum feature = Feature(
 alias FeatureContext = Tuple!(
         SameInputsSpendOnOneContract, "SameInputsSpendOnOneContract",
         OneContractWhereSomeBillsAreUsedTwice, "OneContractWhereSomeBillsAreUsedTwice",
+        DifferentContractsDifferentNodes, "DifferentContractsDifferentNodes",
         SameContractDifferentNodes, "SameContractDifferentNodes",
         SameContractInDifferentEpochs, "SameContractInDifferentEpochs",
         SameContractInDifferentEpochsDifferentNode, "SameContractInDifferentEpochsDifferentNode",
@@ -203,23 +206,157 @@ class OneContractWhereSomeBillsAreUsedTwice {
 
 }
 
+@safe @Scenario("Different contracts different nodes.",
+        [])
+class DifferentContractsDifferentNodes {
+    Options opts1;
+    Options opts2;
+    StdSecureWallet wallet1;
+    StdSecureWallet wallet2;
+    //
+    SignedContract signed_contract1;
+    SignedContract signed_contract2;
+    TagionCurrency amount;
+    TagionCurrency fee;
+
+    HiRPC wallet1_hirpc;
+    HiRPC wallet2_hirpc;
+    TagionCurrency start_amount1;
+    TagionCurrency start_amount2;
+
+    this(Options opts1, Options opts2, ref StdSecureWallet wallet1, ref StdSecureWallet wallet2) {
+        this.wallet1 = wallet1;
+        this.wallet2 = wallet2;
+        this.opts1 = opts1;
+        this.opts2 = opts2;
+
+        wallet1_hirpc = HiRPC(wallet1.net);
+        wallet2_hirpc = HiRPC(wallet2.net);
+        start_amount1 = wallet1.calcTotal(wallet1.account.bills);
+        start_amount2 = wallet2.calcTotal(wallet2.account.bills);
+        
+    }
+    @Given("i have two correctly signed contracts.")
+    Document contracts() {
+
+        amount = 100.TGN;
+        auto payment_request1 = wallet1.requestBill(amount);
+        auto payment_request2 = wallet2.requestBill(amount);
+
+
+        check(wallet1.createPayment([payment_request2], signed_contract1, fee).value, "Error creating payment wallet");
+
+        check(wallet2.createPayment([payment_request1], signed_contract2, fee).value, "Error creating payment wallet");
+        return result_ok;
+    }
+
+    @When("i send the contracts to the network at the same time.")
+    Document time() {
+        sendSubmitHiRPC(opts1.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract1));
+        sendSubmitHiRPC(opts2.inputvalidator.sock_addr, wallet2_hirpc.submit(signed_contract2));
+        return result_ok;
+    }
+
+    @Then("both contracts should go through.")
+    Document through() {
+        (() @trusted => Thread.sleep(25.seconds))();
+
+        auto wallet1_dartcheckread = wallet1.getRequestCheckWallet(wallet1_hirpc);
+        auto wallet1_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet1_dartcheckread);
+
+        writefln("RECEIVED RESPONSE: %s", wallet1_received_doc.toPretty);
+        auto wallet1_received = wallet1_hirpc.receive(wallet1_received_doc);
+        check(wallet1.setResponseCheckRead(wallet1_received), "wallet1 not updated succesfully");
+
+        auto wallet1_amount = wallet1.calcTotal(wallet1.account.bills);
+        writefln("WALLET 1 amount: %s", wallet1_amount);
+        check(wallet1_amount == start_amount1 - fee, "did not receive tx");
+
+        auto wallet2_dartcheckread = wallet2.getRequestCheckWallet(wallet2_hirpc);
+        auto wallet2_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet2_dartcheckread);
+
+        writefln("RECEIVED RESPONSE: %s", wallet2_received_doc.toPretty);
+        auto wallet2_received = wallet2_hirpc.receive(wallet2_received_doc);
+        check(wallet2.setResponseCheckRead(wallet2_received), "wallet2 not updated succesfully");
+        
+        auto wallet2_amount = wallet1.calcTotal(wallet1.account.bills);
+        writefln("WALLET 2 amount: %s", wallet2_amount);
+        check(wallet2_amount == start_amount2 - fee, "did not receive tx");
+        return result_ok;
+    }
+
+}
+
+
 @safe @Scenario("Same contract different nodes.",
         [])
 class SameContractDifferentNodes {
+    Options opts1;
+    Options opts2;
+    StdSecureWallet wallet1;
+    StdSecureWallet wallet2;
+    //
+    SignedContract signed_contract;
+    TagionCurrency amount;
+    TagionCurrency fee;
+
+    this(Options opts1, Options opts2, ref StdSecureWallet wallet1, ref StdSecureWallet wallet2) {
+        this.wallet1 = wallet1;
+        this.wallet2 = wallet2;
+        this.opts1 = opts1;
+        this.opts2 = opts2;
+    }
 
     @Given("i have a correctly signed contract.")
     Document contract() {
-        return Document();
+        // amount = 1500.TGN;
+        // auto payment_request = wallet2.requestBill(amount);
+        // check(wallet1.createPayment([payment_request], signed_contract, fee).value, "Error creating wallet");
+        // check(signed_contract.contract.inputs.uniq.array.length == signed_contract.contract.inputs.length, "signed contract inputs invalid");
+
+        return result_ok;
     }
 
     @When("i send the same contract to two different nodes.")
     Document nodes() {
-        return Document();
+        // auto wallet1_hirpc = HiRPC(wallet1.net);
+        // auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
+        // sendSubmitHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit);
+        // sendSubmitHiRPC(opts2.inputvalidator.sock_addr, hirpc_submit);
+
+        // (() @trusted => Thread.sleep(20.seconds))();
+        return result_ok;
     }
 
     @Then("the first contract should go through and the second one should be rejected.")
     Document rejected() {
-        return Document();
+        // const wallet1_hirpc = HiRPC(wallet1.net);
+        // auto wallet1_dartcheckread = wallet1.getRequestCheckWallet(wallet1_hirpc);
+        // auto wallet1_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet1_dartcheckread);
+
+        // writefln("RECEIVED RESPONSE: %s", wallet1_received_doc.toPretty);
+        // auto wallet1_received = wallet1_hirpc.receive(wallet1_received_doc);
+        // check(wallet1.setResponseCheckRead(wallet1_received), "wallet1 not updated succesfully");
+
+        // auto wallet1_amount = wallet1.calcTotal(wallet1.account.bills);
+        // check(wallet1_amount == amount - fee, "wallet 1 did not lose correct amount of money");
+        // writefln("WALLET 1 amount: %s", wallet1_amount);
+
+        // const wallet2_hirpc = HiRPC(wallet2.net);
+        // auto wallet2_dartcheckread = wallet2.getRequestCheckWallet(wallet2_hirpc);
+        // auto wallet2_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet2_dartcheckread);
+
+        // writefln("RECEIVED RESPONSE: %s", wallet2_received_doc.toPretty);
+        // auto wallet2_received = wallet2_hirpc.receive(wallet2_received_doc);
+        // check(wallet2.setResponseCheckRead(wallet2_received), "wallet2 not updated succesfully");
+        
+        // auto wallet2_amount = wallet1.calcTotal(wallet1.account.bills);
+        // check(wallet2_amount == 3000.TGN+amount, "did not receive money");
+        // writefln("WALLET 2 amount: %s", wallet2_amount);
+
+
+        
+        return result_ok;
     }
 
 }

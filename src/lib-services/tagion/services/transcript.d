@@ -118,7 +118,6 @@ struct TranscriptService {
                 used ~= signed_contract.contract.inputs;
             }
 
-            pragma(msg, "fixme(pr): add epoch_number");
             locate(task_names.dart).send(dartModify(), RecordFactory.uniqueRecorder(recorder), cast(immutable(int)) res.id);
 
         }
