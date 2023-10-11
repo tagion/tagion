@@ -137,6 +137,9 @@ bool verify(const(SecureNet) net, const(SignedContract*) signed_contract, const(
 @recordType("$@G")
 struct GenesisEpoch {
     @label(StdNames.epoch) long epoch_number;
+    Pubkey[] nodes;
+    Document testamony;
+    @label(StdNames.time) sdt_t time;
     mixin HiBONRecord;
 }
 
@@ -146,6 +149,9 @@ struct Epoch {
     sdt_t time; /// Epoch concensus time
     @label(StdNames.bullseye) Fingerprint bullseye;
     @label(StdNames.previous) Fingerprint previous;
+    @label(VOID, true) Pubkey[] active; /// Sorted keys
+    @label(VOID, true) Pubkey[] deactive;
+
     mixin HiBONRecord;
 }
 

@@ -170,10 +170,6 @@ template GetLabel(alias member) {
     }
 }
 
-// bool hasHashKey(T)(T value) if (isHiBONRecord!T) {
-//     return value.keys[0] is HiBONPrefix.HASH;
-// }
-
 enum TYPENAME = HiBONPrefix.PARAM ~ "@";
 enum VOID = "*";
 

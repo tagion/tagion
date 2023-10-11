@@ -12,9 +12,9 @@ import tagion.utils.StdTime;
 @safe:
 @recordType("NNC") struct NetworkNameCard {
     @label(StdNames.name) string name; /// Tagion domain name (TDN) 
-    @label(StdNames.owner) Pubkey pubkey; /// NNC pubkey
+    @label(StdNames.owner) Pubkey owner; /// NNC pubkey
     @label("$lang") string lang; /// Language used for the #name
-    @label(StdNames.time) ulong time; /// Time-stamp of
+    @label(StdNames.time) sdt_t time; /// Time-stamp of
     @label("$record") DARTIndex record; /// Hash pointer to NRC
     mixin HiBONRecord;
 }
@@ -30,10 +30,11 @@ import tagion.utils.StdTime;
 @recordType("$@NNR")
 struct NetworkNodeRecord {
     enum State {
+        STERILE,
+        LOCKED,
         PROSPECT,
         STANDBY,
-        LOCKED,
-        STERILE
+        ACTIVE,
     }
 
     @label(StdNames.nodekey) Pubkey channel; /// Node public 

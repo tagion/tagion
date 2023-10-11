@@ -10,10 +10,10 @@ enum StdNames {
     nonce = "$x",
     values = "$vals",
     derive = "$D",
-    epoch = "#@epoch",
+    epoch = "#$epoch",
     bullseye = "$eye",
-    name = "#name",
+    name = "#$name",
     previous = "$prev",
     tagion = "#tagion",
-    nodekey = "#@node",
+    nodekey = "#$node",
 }
