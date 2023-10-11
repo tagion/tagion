@@ -31,13 +31,15 @@ import tagion.hibon.HiBONRecord;
 struct FinishedEpoch {
     @label("events") const(EventPackage)[] events;
     @label(StdNames.time) sdt_t time;
+    @label("epoch") int epoch;
     mixin HiBONRecord!(q{
-        this(const(Event)[] events, sdt_t time) pure {
+        this(const(Event)[] events, sdt_t time, int epoch) pure {
             this.events = events
                 .map!((e) => *(e.event_package))
                 .array;
 
             this.time = time;
+            this.epoch = epoch;
         }
     });
 }
@@ -73,7 +75,7 @@ class StdRefinement : Refinement {
 
     void finishedEpoch(const(Event[]) events, const sdt_t epoch_time, const Round decided_round) @trusted {
         if (events.length > 0) {
-            auto event_payload = FinishedEpoch(events, epoch_time);
+            auto event_payload = FinishedEpoch(events, epoch_time, decided_round.number);
             import std.format;
             log(epoch_created, format("%s:epoch_succesful", task_names.epoch_creator), event_payload.toDoc);
         }
@@ -180,11 +182,11 @@ class StdRefinement : Refinement {
         times.sort;
         const epoch_time = times[times.length / 2];
 
-        version(EPOCH_LOG) {
+        // version(EPOCH_LOG) {
         log.trace("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d time=%s",
                 hashgraph.name, decided_round.number,
                 Event.count, Event.Witness.count, events.length, epoch_time);
-        }
+        // }
 
         finishedEpoch(events, epoch_time, decided_round);
 

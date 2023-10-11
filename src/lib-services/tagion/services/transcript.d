@@ -78,11 +78,11 @@ struct TranscriptService {
         void createRecorder(dartCheckReadRR.Response res, immutable(DARTIndex)[] not_in_dart) {
             log("received response from dart %s", not_in_dart);
 
+            DARTIndex[] used;
 
             if (not_in_dart.length != 0) {
-                pragma(msg, "fixme(pr): figure out what to do if some archives were not in the dart");
                 log("Received not in dart response: %s. Must be implemented", not_in_dart.map!(f => f.toHexString));
-                assert(0, "must be implemented");
+                used ~= not_in_dart;
             }
 
             const epoch_contract = epoch_contracts.get(res.id, EpochContracts.init);
@@ -94,7 +94,6 @@ struct TranscriptService {
                 log("removed %s from epoch_contracts", res.id);
             }
 
-            DARTIndex[] used;
             auto recorder = rec_factory.recorder;
 
             loop_signed_contracts:
