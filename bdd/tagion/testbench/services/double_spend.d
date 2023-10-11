@@ -21,6 +21,7 @@ import tagion.actor;
 import tagion.testbench.actor.util;
 import tagion.dart.DARTcrud;
 import tagion.hibon.HiBONJSON;
+import tagion.hibon.HiBONRecord;
 
 import std.range;
 import std.algorithm;
@@ -29,6 +30,8 @@ import core.thread;
 import std.stdio;
 
 alias StdSecureWallet = SecureWallet!StdSecureNet;
+enum CONTRACT_TIMEOUT = 25.seconds;
+
 enum feature = Feature(
             "double spend scenarios",
             []);
@@ -65,6 +68,7 @@ class SameInputsSpendOnOneContract {
 
     @Given("i have a malformed contract with two inputs which are the same")
     Document same() {
+
         thisActor.task_name = "malformed_contract_task";
         log.registerSubscriptionTask(thisActor.task_name);
 
@@ -259,7 +263,7 @@ class DifferentContractsDifferentNodes {
 
     @Then("both contracts should go through.")
     Document through() {
-        (() @trusted => Thread.sleep(25.seconds))();
+        (() @trusted => Thread.sleep(CONTRACT_TIMEOUT))();
 
         auto wallet1_dartcheckread = wallet1.getRequestCheckWallet(wallet1_hirpc);
         auto wallet1_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet1_dartcheckread);
@@ -317,6 +321,8 @@ class SameContractDifferentNodes {
 
     @Given("i have a correctly signed contract.")
     Document contract() {
+
+        
         writefln("SAME CONTRACT DIFFERENT NODES");
         amount = 1500.TGN;
         auto payment_request = wallet2.requestBill(amount);
@@ -332,7 +338,7 @@ class SameContractDifferentNodes {
         sendSubmitHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit);
         sendSubmitHiRPC(opts2.inputvalidator.sock_addr, hirpc_submit);
 
-        (() @trusted => Thread.sleep(25.seconds))();
+        (() @trusted => Thread.sleep(CONTRACT_TIMEOUT))();
         return result_ok;
     }
 
@@ -368,19 +374,105 @@ class SameContractDifferentNodes {
         [])
 class SameContractInDifferentEpochs {
 
+    Options opts1;
+    Options opts2;
+    StdSecureWallet wallet1;
+    StdSecureWallet wallet2;
+    //
+    SignedContract signed_contract;
+    TagionCurrency amount;
+    TagionCurrency fee;
+
+    HiRPC wallet1_hirpc;
+    HiRPC wallet2_hirpc;
+    TagionCurrency start_amount1;
+    TagionCurrency start_amount2;
+
+    this(Options opts1, Options opts2, ref StdSecureWallet wallet1, ref StdSecureWallet wallet2) {
+        this.wallet1 = wallet1;
+        this.wallet2 = wallet2;
+        this.opts1 = opts1;
+        this.opts2 = opts2;
+        wallet1_hirpc = HiRPC(wallet1.net);
+        wallet2_hirpc = HiRPC(wallet2.net);
+        start_amount1 = wallet1.calcTotal(wallet1.account.bills);
+        start_amount2 = wallet2.calcTotal(wallet2.account.bills);
+    }
     @Given("i have a correctly signed contract.")
     Document contract() {
-        return Document();
+        submask.subscribe("epoch_creator/epoch_created");
+
+        writefln("SAME CONTRACT different epoch");
+        amount = 1500.TGN;
+        auto payment_request = wallet2.requestBill(amount);
+        check(wallet1.createPayment([payment_request], signed_contract, fee).value, "Error creating wallet");
+        check(signed_contract.contract.inputs.uniq.array.length == signed_contract.contract.inputs.length, "signed contract inputs invalid");
+
+        return result_ok;
     }
 
     @When("i send the contract to the network in different epochs to the same node.")
     Document node() {
-        return Document();
+        import tagion.hashgraph.Refinement : FinishedEpoch;
+
+        int epoch_number;
+        do {
+            auto epoch_before = receiveOnlyTimeout!(Topic, string, const(Document))(10.seconds);
+            writefln("epoch_before %s looking for %s", epoch_before[1], opts1.task_names.epoch_creator);
+            check(epoch_before[2].isRecord!FinishedEpoch, "not correct subscription received");
+            if (epoch_before[1].canFind(opts1.task_names.epoch_creator)) {
+                epoch_number = FinishedEpoch(epoch_before[2]).epoch;
+            }
+        } while(epoch_number is int.init);
+
+        writeln("EPOCH NUMBER %s", epoch_number);
+
+        auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
+        sendSubmitHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit);
+
+        int new_epoch_number;
+        do {
+            auto new_epoch = receiveOnlyTimeout!(Topic, string, const(Document))(10.seconds);
+            writefln("new_epoch %s %s", new_epoch[1], opts1.task_names.epoch_creator);
+            check(new_epoch[2].isRecord!FinishedEpoch, "not correct subscription received");
+            if (new_epoch[1].canFind(opts1.task_names.epoch_creator)) {
+                writefln("UPDATING NEW EPOCH_NUMBER");
+                new_epoch_number = FinishedEpoch(new_epoch[2]).epoch;
+            }
+        } while(new_epoch_number is int.init);
+
+        writeln("EPOCH NUMBER updated %s", new_epoch_number);
+        check(epoch_number < new_epoch_number, "epoch number not updated");
+        sendSubmitHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit);
+        
+        (() @trusted => Thread.sleep(CONTRACT_TIMEOUT))();
+        return result_ok;
     }
 
     @Then("the first contract should go through and the second one should be rejected.")
     Document rejected() {
-        return Document();
+        auto wallet1_dartcheckread = wallet1.getRequestCheckWallet(wallet1_hirpc);
+        auto wallet1_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet1_dartcheckread);
+        auto wallet1_received = wallet1_hirpc.receive(wallet1_received_doc);
+        check(wallet1.setResponseCheckRead(wallet1_received), "wallet1 not updated succesfully");
+
+        auto wallet2_dartcheckread = wallet2.getRequestCheckWallet(wallet2_hirpc);
+        auto wallet2_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet2_dartcheckread);
+        auto wallet2_received = wallet2_hirpc.receive(wallet2_received_doc);
+        check(wallet2.setResponseCheckRead(wallet2_received), "wallet2 not updated succesfully");
+        
+        auto wallet1_amount = wallet1.calcTotal(wallet1.account.bills);
+        auto wallet2_amount = wallet2.calcTotal(wallet2.account.bills);
+        writefln("WALLET 1 amount: %s", wallet1_amount);
+        writefln("WALLET 2 amount: %s", wallet2_amount);
+
+        const expected_amount1 = start_amount1-amount-fee;
+        const expected_amount2 = start_amount2 + amount;
+        check(wallet1_amount == expected_amount1, format("wallet 1 did not lose correct amount of money should have %s had %s", expected_amount1, wallet1_amount));
+        check(wallet2_amount == expected_amount2, format("wallet 2 did not lose correct amount of money should have %s had %s", expected_amount2, wallet2_amount));
+
+
+        return result_ok;
     }
 
 }

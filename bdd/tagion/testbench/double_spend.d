@@ -126,13 +126,13 @@ int _main(string[] args) {
     feature.OneContractWhereSomeBillsAreUsedTwice(node_opts[0], wallets[1], wallets[0]);
     feature.DifferentContractsDifferentNodes(node_opts[0], node_opts[1], wallets[2], wallets[3]);
     feature.SameContractDifferentNodes(node_opts[0], node_opts[1], wallets[4], wallets[5]); 
-
-
+    feature.SameContractInDifferentEpochs(node_opts[0], node_opts[1], wallets[6], wallets[7]); 
     feature.run();
 
 
 
     neuewelle.signal_handler(0);
+    Thread.sleep(6.seconds);
     return 0;
 }
 

@@ -220,6 +220,16 @@ extern (C) {
         return 0;
     }
 
+    export uint get_fee(const double amount, double* fees) {
+        TagionCurrency tgn_fees;
+        scope(exit) {
+            *fees = tgn_fees.value;
+        }
+
+        const can_pay = __wallet_storage.wallet.getFee(TagionCurrency(amount), tgn_fees);
+        return can_pay ? 1 : 0;
+    }
+
     export uint create_contract(
             uint32_t* contractPtr,
             const uint8_t* invoicePtr,
