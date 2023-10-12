@@ -2,7 +2,7 @@ module tagion.tools.shell.shelloptions;
 import tagion.utils.JSONCommon;
 import tagion.services.options : contract_sock_addr;
 
-enum mode0_prefix = "Node_1_";
+enum mode0_prefix = "Node_1_CONTRACT_";
 
 @safe
 struct ShellOptions {

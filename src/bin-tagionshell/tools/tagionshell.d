@@ -28,6 +28,7 @@ WebData contract_handler ( WebData req, void* ctx ){
     writeln(format("WH: contract: with %d bytes for %s",req.rawdata.length, opt.tagion_sock_addr));
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
     s.recvtimeout = msecs(10000);
+    writeln(format("WH: trying to dial %s", opt.tagion_sock_addr));
     while(true){
         rc = s.dial(opt.tagion_sock_addr);
         if(rc == 0)
