@@ -400,7 +400,7 @@ shared struct SubscriptionMask {
 
 static shared SubscriptionMask submask;
 
-version (none) unittest {
+unittest {
     import core.time;
 
     Topic topic = Topic("some_tag");
