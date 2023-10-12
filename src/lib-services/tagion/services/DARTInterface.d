@@ -16,7 +16,7 @@ struct DARTInterfaceOptions {
     }
 
     void setPrefix(string prefix) nothrow {
-        sock_addr = contract_sock_addr(dart_prefix ~ prefix);
+        sock_addr = contract_sock_addr(prefix ~ dart_prefix);
     }
 
     mixin JSONCommon;
