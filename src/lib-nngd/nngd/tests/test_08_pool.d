@@ -70,6 +70,7 @@ void client_worker(string url, string tag)
         if(str == "END")
             break;
     }
+    s.close();
     log("REQ("~tag~"): bye!");
 }
 

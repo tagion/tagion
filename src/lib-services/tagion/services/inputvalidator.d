@@ -35,16 +35,13 @@ struct InputValidatorOptions {
     uint sock_send_timeout = 200;
     uint sock_send_buf = 1024;
 
+    import tagion.services.options : contract_sock_addr;
     void setDefault() nothrow {
-        import tagion.services.options : contract_sock_addr;
-
-        sock_addr = contract_sock_addr;
+        sock_addr = contract_sock_addr("CONTRACT_");
     }
 
     void setPrefix(string prefix) nothrow {
-        import tagion.services.options : contract_sock_addr;
-
-        sock_addr = contract_sock_addr(prefix);
+        sock_addr = contract_sock_addr(prefix ~ "CONTRACT_");
     }
 
     mixin JSONCommon;

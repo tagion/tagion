@@ -1,4 +1,5 @@
 module tagion.services.subscription;
+@safe:
 
 import std.variant;
 import std.array;
@@ -16,13 +17,18 @@ struct SubscriptionServiceOptions {
     import tagion.utils.JSONCommon;
 
     string tags;
-    string address = "abstract://tagion_subscription";
+    string address;
+
+    import tagion.services.options : contract_sock_addr;
+    void setDefault() nothrow {
+        address = contract_sock_addr("SUBSCRIPTION");
+    }
+
     uint sendtimeout = 1000;
     uint sendbufsize = 4096;
     mixin JSONCommon;
 }
 
-@safe
 struct SubscriptionService {
     void task(immutable(SubscriptionServiceOptions) opts) @trusted {
         log.registerSubscriptionTask(thisActor.task_name);

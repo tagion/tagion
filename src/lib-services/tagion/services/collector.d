@@ -31,6 +31,14 @@ struct CollectorOptions {
 /// Topic for rejected collector inputs;
 enum reject_collector = "reject/collector";
 
+
+/**
+ * Collector Service actor
+ * Sends:
+ *  (dartReadRR, immutable(DARTIndex)[]) to TaskNames.dart
+ *  (consensusContract(), immutable(CollectedSignedContract)*) to TaskNames.tvm 
+ *  (signedContract(), immutable(CollectedSignedContract)*) to TaskNames.tvm 
+**/
 struct CollectorService {
     immutable SecureNet net;
     immutable TaskNames task_names;

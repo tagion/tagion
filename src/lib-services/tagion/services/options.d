@@ -9,7 +9,7 @@ static immutable(string) contract_sock_addr(const string prefix = "") @safe noth
     import std.exception;
 
     version (linux) {
-        return assumeWontThrow(format("abstract://%sNEUEWELLE_CONTRACT", prefix));
+        return assumeWontThrow(format("abstract://%sNEUEWELLE", prefix));
     }
     else version (Posix) {
         import std.path;
