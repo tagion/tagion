@@ -407,11 +407,11 @@ unittest {
     log.registerSubscriptionTask("log_sub_task");
     auto some_symbol = Document.init;
     log(topic, "", some_symbol);
-    assert(false == receiveTimeout(Duration.zero, (Topic _, string __, const(Document)) {}), "Received an unsubscribed topic");
+    assert(false == receiveTimeout(Duration.zero, (LogInfo _, const(Document) __) {}), "Received an unsubscribed topic");
     submask.subscribe(topic.name);
     assert(topic.subscribed, "Topic wasn't subscribed, it should");
     log(topic, "", some_symbol);
-    assert(true == receiveTimeout(Duration.zero, (Topic _, string __, const(Document)) {}), "Didn't receive subscribed topic");
+    assert(true == receiveTimeout(Duration.zero, (LogInfo _, const(Document) __) {}), "Didn't receive subscribed topic");
 }
 
 version (Posix) {
