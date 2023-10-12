@@ -414,6 +414,8 @@ class SameContractInDifferentEpochs {
         import tagion.hashgraph.Refinement : FinishedEpoch;
 
         int epoch_number;
+        uint max_tries = 20;
+        uint counter;
         do {
             auto epoch_before = receiveOnlyTimeout!(LogInfo, const(Document))(10.seconds);
             writefln("epoch_before %s looking for %s", epoch_before[1], opts1.task_names.epoch_creator);
@@ -421,7 +423,9 @@ class SameContractInDifferentEpochs {
             if (epoch_before[0].topic_name.canFind(opts1.task_names.epoch_creator)) {
                 epoch_number = FinishedEpoch(epoch_before[1]).epoch;
             }
-        } while(epoch_number is int.init);
+            counter++;
+        } while(counter < max_tries && epoch_number is int.init);
+        check(counter < max_tries, "did not receive epoch in max tries");
 
         writefln("EPOCH NUMBER %s", epoch_number);
 
@@ -429,6 +433,7 @@ class SameContractInDifferentEpochs {
         sendSubmitHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit,wallet1.net);
 
         int new_epoch_number;
+        counter = 0;
         do {
             auto new_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(10.seconds);
             writefln("new_epoch %s %s", new_epoch[0].topic_name, opts1.task_names.epoch_creator);
@@ -437,7 +442,9 @@ class SameContractInDifferentEpochs {
                 writefln("UPDATING NEW EPOCH_NUMBER");
                 new_epoch_number = FinishedEpoch(new_epoch[1]).epoch;
             }
-        } while(new_epoch_number is int.init);
+            counter++;
+        } while(counter < max_tries && new_epoch_number is int.init);
+        check(counter < max_tries, "did not receive epoch in max tries");
 
         writefln("EPOCH NUMBER updated %s", new_epoch_number);
         check(epoch_number < new_epoch_number, "epoch number not updated");
@@ -519,6 +526,8 @@ class SameContractInDifferentEpochsDifferentNode {
     @When("i send the contract to the network in different epochs to different nodes.")
     Document nodes() {
         import tagion.hashgraph.Refinement : FinishedEpoch;
+        uint max_tries = 20;
+        uint counter;
 
         int epoch_number;
         do {
@@ -528,7 +537,9 @@ class SameContractInDifferentEpochsDifferentNode {
             if (epoch_before[1].canFind(opts1.task_names.epoch_creator)) {
                 epoch_number = FinishedEpoch(epoch_before[2]).epoch;
             }
-        } while(epoch_number is int.init);
+            counter++;
+        } while(counter < max_tries && epoch_number is int.init);
+        check(counter < max_tries, "did not receive epoch in max tries");
 
         writeln("EPOCH NUMBER %s", epoch_number);
 
@@ -536,6 +547,7 @@ class SameContractInDifferentEpochsDifferentNode {
         sendSubmitHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit, wallet1.net);
 
         int new_epoch_number;
+        counter = 0;
         do {
             auto new_epoch = receiveOnlyTimeout!(Topic, string, const(Document))(10.seconds);
             writefln("new_epoch %s %s", new_epoch[1], opts1.task_names.epoch_creator);
@@ -547,7 +559,9 @@ class SameContractInDifferentEpochsDifferentNode {
                     new_epoch_number = _new_epoch_number;
                 }
             }
-        } while(new_epoch_number is int.init);
+            counter++;
+        } while(counter < max_tries && new_epoch_number is int.init);
+        check(counter < max_tries, "did not receive epoch in max tries");
 
         writeln("EPOCH NUMBER updated %s", new_epoch_number);
         sendSubmitHiRPC(opts2.inputvalidator.sock_addr, hirpc_submit, wallet1.net);
