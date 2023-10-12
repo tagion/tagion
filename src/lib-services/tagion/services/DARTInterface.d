@@ -4,6 +4,7 @@ import tagion.utils.JSONCommon;
 
 @safe
 struct DARTInterfaceOptions {
+    import tagion.services.options : contract_sock_addr;
     string sock_addr;
     string dart_prefix = "DART_";
     int sendtimeout = 1000;
@@ -11,14 +12,10 @@ struct DARTInterfaceOptions {
     uint sendbuf = 4096;
 
     void setDefault() nothrow {
-        import tagion.services.options : contract_sock_addr;
-
         sock_addr = contract_sock_addr(dart_prefix);
     }
 
     void setPrefix(string prefix) nothrow {
-        import tagion.services.options : contract_sock_addr;
-
         sock_addr = contract_sock_addr(dart_prefix ~ prefix);
     }
 

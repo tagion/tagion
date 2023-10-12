@@ -13,7 +13,7 @@ import tagion.basic.basic : TrustedConcurrency;
 import tagion.basic.Types : Control;
 import tagion.actor.exceptions : fatal, taskfailure;
 import tagion.communication.HiRPC : HiRPC;
-import tagion.logger.Logger : log, LogLevel;
+import tagion.logger.Logger : log, LogLevel, Topic;
 import tagion.logger.LogRecords;
 import tagion.prior_services.Options : Options;
 import tagion.hibon.Document : Document;
@@ -136,7 +136,7 @@ unittest {
     {
         auto log_text2_info = LogInfo(task3, LogLevel.INFO);
         auto log_text1_info = LogInfo(task1, LogLevel.INFO);
-        auto log_symbol1_info = LogInfo(task1, symbol1);
+        auto log_symbol1_info = LogInfo(Topic(), task1, symbol1);
 
         assert(test_info.getInterestedSubscribers(log_text2_info) == []);
         assert(test_info.getInterestedSubscribers(log_text1_info) == [2]);

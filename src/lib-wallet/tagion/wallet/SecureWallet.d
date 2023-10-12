@@ -723,11 +723,11 @@ struct SecureWallet(Net : SecureNet) {
         return this.account.derive_state;
     }
 
-    TagionBill requestBill(TagionCurrency amount) {
+    TagionBill requestBill(TagionCurrency amount, sdt_t bill_time = currentTime) {
         check(amount > 0.TGN, format("Requested bill should have a positive value and not %10.6fTGN", amount.value));
         TagionBill bill;
         bill.value = amount;
-        bill.time = currentTime;
+        bill.time = bill_time;
         auto nonce = new ubyte[4];
         getRandom(nonce);
         bill.nonce = nonce.idup;

@@ -188,7 +188,7 @@ is ready and has been started correctly
             }
             else {
                 try {
-                    immutable info = LogInfo(_task_name, level);
+                    immutable info = LogInfo(task_name, level);
                     immutable doc = TextLog(text).toDoc;
                     logger_tid.send(info, doc);
                 }
@@ -207,7 +207,8 @@ is ready and has been started correctly
         // report(LogLevel.INFO, "%s|%s| %s", topic.name, identifier, data.toPretty);
         if (topic.subscribed && log.isLoggerSubRegistered) {
             try {
-                logger_subscription_tid.send(topic, identifier, data);
+                auto info = LogInfo(topic, task_name, identifier);
+                logger_subscription_tid.send(info, data);
             }
             catch (Exception e) {
                 import std.stdio;

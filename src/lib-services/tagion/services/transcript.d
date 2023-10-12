@@ -29,6 +29,10 @@ import tagion.services.options : TaskNames;
 import tagion.hibon.HiBONJSON;
 import tagion.utils.Miscellaneous : toHexString;
 
+
+enum BUFFER_TIME_SECONDS = 30;
+
+
 @safe
 struct TranscriptOptions {
     mixin JSONCommon;
@@ -48,11 +52,12 @@ struct TranscriptService {
 
         struct EpochContracts {
             SignedContract[] signed_contracts;
+            sdt_t epoch_time;
         }
 
         EpochContracts[uint] epoch_contracts;
 
-        void epoch(consensusEpoch, immutable(EventPackage*)[] epacks, immutable(int) epoch_number) {
+        void epoch(consensusEpoch, immutable(EventPackage*)[] epacks, immutable(int) epoch_number, const(sdt_t) epoch_time) {
             if (epacks.length == 0) {
                 return;
             }
@@ -70,7 +75,7 @@ struct TranscriptService {
 
             auto req = dartCheckReadRR();
             req.id = cast(uint) epoch_number;
-            epoch_contracts[req.id] = EpochContracts(signed_contracts);
+            epoch_contracts[req.id] = EpochContracts(signed_contracts, epoch_time);
 
             (() @trusted => locate(task_names.dart).send(req, cast(immutable(DARTIndex)[]) inputs))();
         }
@@ -81,7 +86,6 @@ struct TranscriptService {
             DARTIndex[] used;
 
             if (not_in_dart.length != 0) {
-                log("Received not in dart response: %s. Must be implemented", not_in_dart.map!(f => f.toHexString));
                 used ~= not_in_dart;
             }
 
@@ -95,7 +99,6 @@ struct TranscriptService {
             }
 
             auto recorder = rec_factory.recorder;
-
             loop_signed_contracts:
             foreach (signed_contract; epoch_contract.signed_contracts) {
                 foreach (input; signed_contract.contract.inputs) {
@@ -111,12 +114,32 @@ struct TranscriptService {
                     assert(0, "what should we do here");
                 }
 
+                import tagion.utils.StdTime;
+                import core.time;
+                import std.datetime;
+
+                const max_time = sdt_t((SysTime(cast(long) epoch_contract.epoch_time) + BUFFER_TIME_SECONDS.seconds).stdTime);
+                
+                foreach(doc; tvm_contract_outputs.outputs) {
+                    if (!doc.isRecord!TagionBill) {
+                        continue;
+                    }
+                    const bill_time = TagionBill(doc).time;
+                    if (bill_time > max_time) {
+                        log("tagion bill timestamp too new bill_time: %s, epoch_time %s", bill_time.toText, max_time);
+                        continue loop_signed_contracts;
+                    }
+                }
+
+
                 recorder.insert(tvm_contract_outputs.outputs, Archive.Type.ADD);
                 recorder.insert(tvm_contract_outputs.contract.inputs, Archive.Type.REMOVE);
 
                 used ~= signed_contract.contract.inputs;
                 products.remove(net.dartIndex(signed_contract.contract));
             }
+
+            
 
             locate(task_names.dart).send(dartModify(), RecordFactory.uniqueRecorder(recorder), cast(immutable(int)) res.id);
 

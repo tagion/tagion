@@ -1,10 +1,12 @@
 module tagion.services.subscription;
+@safe:
 
 import std.variant;
 import std.array;
 
 import tagion.actor;
 import tagion.logger;
+import tagion.logger.LogRecords;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON;
 import tagion.communication.HiRPC;
@@ -16,13 +18,21 @@ struct SubscriptionServiceOptions {
     import tagion.utils.JSONCommon;
 
     string tags;
-    string address = "abstract://tagion_subscription";
+    string address;
+
+    import tagion.services.options : contract_sock_addr;
+    void setDefault() nothrow {
+        address = contract_sock_addr("SUBSCRIPTION");
+    }
+
     uint sendtimeout = 1000;
     uint sendbufsize = 4096;
     mixin JSONCommon;
 }
 
-@safe
+struct SubscriptionPayload {
+}
+
 struct SubscriptionService {
     void task(immutable(SubscriptionServiceOptions) opts) @trusted {
         log.registerSubscriptionTask(thisActor.task_name);
@@ -53,18 +63,18 @@ struct SubscriptionService {
 
         log("Publishing on %s", opts.address);
 
-        void receiveSubscription(Topic topic, string identifier, const(Document) data) @trusted {
+        void receiveSubscription(LogInfo info, const(Document) data) @trusted {
             immutable(ubyte)[] payload;
 
-            payload = cast(immutable(ubyte)[])(topic.name ~ '\0');
+            payload = cast(immutable(ubyte)[])(info.topic_name ~ '\0');
 
             HiBON hibon = new HiBON;
-            hibon[identifier] = data;
+            hibon[info.symbol_name] = data;
             auto sender = hirpc.log(hibon);
             payload ~= sender.toDoc.serialize;
 
             rc = sock.send(payload);
-            log("%s: %s, %s", identifier, data.length, nng_errstr(rc));
+            log("%s: %s, %s", info.symbol_name, data.length, nng_errstr(rc));
         }
 
         run(&receiveSubscription);

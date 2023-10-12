@@ -240,7 +240,7 @@
             "args": [],
             "envs": {},
             "stages": [
-                "double_spend"
+                "acceptance","double_spend"
             ],
             "timeout": 0.0
         }

@@ -38,6 +38,10 @@ int _main(string[] args) {
     scope Options local_options = Options.defaultOptions;
     local_options.dart.folder_path = buildPath(module_path);
     local_options.replicator.folder_path = buildPath(module_path);
+    local_options.wave.prefix_format = "DoubleSpend Node_%s_";
+    local_options.subscription.address = contract_sock_addr("DOUBLE_SPEND_SUBSCRIPTION");
+
+    
     local_options.save(config_file);
 
     import std.format;
@@ -57,7 +61,7 @@ int _main(string[] args) {
 
     StdSecureWallet[] wallets;
     // create the wallets
-    foreach (i; 0 .. 10) {
+    foreach (i; 0 .. 20) {
         StdSecureWallet secure_wallet;
         secure_wallet = StdSecureWallet(
                 iota(0, 5).map!(n => format("%dquestion%d", i, n)).array,
@@ -126,7 +130,10 @@ int _main(string[] args) {
     feature.OneContractWhereSomeBillsAreUsedTwice(node_opts[0], wallets[1], wallets[0]);
     feature.DifferentContractsDifferentNodes(node_opts[0], node_opts[1], wallets[2], wallets[3]);
     feature.SameContractDifferentNodes(node_opts[0], node_opts[1], wallets[4], wallets[5]); 
-    feature.SameContractInDifferentEpochs(node_opts[0], node_opts[1], wallets[6], wallets[7]); 
+    feature.SameContractInDifferentEpochs(node_opts[0], wallets[6], wallets[7]); 
+    feature.SameContractInDifferentEpochsDifferentNode(node_opts[2], node_opts[3], wallets[8], wallets[9]);
+    feature.TwoContractsSameOutput(node_opts[3], node_opts[4], wallets[10], wallets[11], wallets[12]);    
+    feature.BillAge(node_opts[3], wallets[13], wallets[14]);
     feature.run();
 
 

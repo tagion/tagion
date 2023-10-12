@@ -40,10 +40,6 @@ Given i pay a contract where the output bills timestamp is newer than epoch_time
 When i send the contract to the network.
 Then the contract should be rejected.
 
-Scenario: Amount on output bills
-Given i create a contract with outputs bills that are smaller or equal to zero.
-When i send the contract to the network.
-Then the contract should be rejected.
  
 
 

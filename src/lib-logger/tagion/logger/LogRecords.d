@@ -3,7 +3,7 @@
 module tagion.logger.LogRecords;
 
 import tagion.hibon.HiBONRecord;
-import tagion.logger.Logger : LogLevel;
+import tagion.logger.Logger : LogLevel, Topic;
 
 /** @brief Definitions of auxiliary structs and types for working with logs
  */
@@ -152,8 +152,6 @@ enum LogFiltersAction {
     const string task_name;
     /** Log level */
     const LogLevel level;
-    /** Symbol name */
-    const string symbol_name;
 
     /** Ctor for text logs
      *     @param task_name - task name
@@ -166,12 +164,17 @@ enum LogFiltersAction {
         _is_text_log = true;
     }
 
+    const string topic_name;
+    /** Symbol name */
+    const string symbol_name;
+
     /** Ctor for symbol logs
      *     @param task_name - task name
      *     @param symbol_name - symbol name
      */
-    this(string task_name, string symbol_name) {
+    this(Topic topic, string task_name, string symbol_name) {
         this.task_name = task_name;
+        this.topic_name = topic.name;
         this.symbol_name = symbol_name;
 
         _is_text_log = false;
@@ -236,9 +239,9 @@ unittest {
 
     /// LogFilter_match_symbol_log_info
     {
-        assert(LogFilter(task1, symbol1).match(LogInfo(task1, symbol1)));
+        assert(LogFilter(task1, symbol1).match(LogInfo(Topic(""), task1, symbol1)));
 
-        assert(!LogFilter(task1, symbol1).match(LogInfo(task1, symbol2)));
+        assert(!LogFilter(task1, symbol1).match(LogInfo(Topic(""), task1, symbol2)));
         assert(!LogFilter(task1, symbol1).match(LogInfo(task1, LogLevel.ALL)));
     }
 
@@ -256,7 +259,7 @@ unittest {
         assert(LogInfo(task1, LogLevel.ERROR).isTextLog);
         assert(LogInfo(task1, LogLevel.NONE).isTextLog);
 
-        assert(!LogInfo(task1, symbol1).isTextLog);
-        assert(!LogInfo(task1, "").isTextLog);
+        assert(!LogInfo(Topic(), task1, symbol1).isTextLog);
+        assert(!LogInfo(Topic(), task1, "").isTextLog);
     }
 }
