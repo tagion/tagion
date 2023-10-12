@@ -424,9 +424,9 @@ const Neutral = delegate(const(Archive) a) => a.type;
         assert(!doc.empty, "Archive can not be empty");
     }
     do {
-        if (.isStub(doc)) {
+        if (doc.isStub) {
             fingerprint = net.calcHash(doc);
-            dart_index = (doc.hasHashKey) ? net.dartIndex(filed) : cast(DARTIndex)(fingerprint);
+            dart_index = (doc.hasHashKey) ? net.dartIndex(doc) : cast(DARTIndex)(fingerprint);
             //dart_index = fingerprint;
         }
         else {
@@ -437,7 +437,7 @@ const Neutral = delegate(const(Archive) a) => a.type;
                 filed = doc;
             }
             fingerprint = net.calcHash(filed);
-            dart_index = (doc.hasHashKey) ? net.dartIndex(filed) : cast(DARTIndex)(fingerprint);
+            dart_index = (filed.hasHashKey) ? net.dartIndex(filed) : cast(DARTIndex)(fingerprint);
         }
         Type _type = t;
         if (_type is Type.NONE && doc.hasMember(typeLabel)) {
@@ -452,8 +452,12 @@ const Neutral = delegate(const(Archive) a) => a.type;
     }
 
     override string toString() const {
-        return format("Archive %(%02x%) %s %s", dart_index, type,
-                (() @trusted => cast(void*) this)());
+        const _ptr_addr = (() @trusted => cast(void*) this)();
+        if (filed.hasHashKey) {
+            return format("Archive # %(%02x%) - %s [%s] %(%02x%)", dart_index, type, _ptr_addr, fingerprint);
+        }
+
+        return format("Archive # %(%02x%) - %s [%s]", dart_index, type, _ptr_addr);
     }
 
     version (unittest) {
@@ -561,6 +565,7 @@ const Neutral = delegate(const(Archive) a) => a.type;
     invariant {
         assert(!dart_index.empty);
     }
+
 }
 
 ///
