@@ -423,7 +423,7 @@ class SameContractInDifferentEpochs {
             }
         } while(epoch_number is int.init);
 
-        writeln("EPOCH NUMBER %s", epoch_number);
+        writefln("EPOCH NUMBER %s", epoch_number);
 
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
         sendSubmitHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit,wallet1.net);
@@ -439,7 +439,7 @@ class SameContractInDifferentEpochs {
             }
         } while(new_epoch_number is int.init);
 
-        writeln("EPOCH NUMBER updated %s", new_epoch_number);
+        writefln("EPOCH NUMBER updated %s", new_epoch_number);
         check(epoch_number < new_epoch_number, "epoch number not updated");
         sendSubmitHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit, wallet1.net);
         
@@ -510,7 +510,7 @@ class SameContractInDifferentEpochsDifferentNode {
         writefln("SAME CONTRACT different node different epoch");
         amount = 1500.TGN;
         auto payment_request = wallet2.requestBill(amount);
-        check(wallet1.createPayment([payment_request], signed_contract, fee).value, "Error creating wallet");
+        check(wallet1.createPayment([payment_request], signed_contract, fee).value, "Error creating payment");
         check(signed_contract.contract.inputs.uniq.array.length == signed_contract.contract.inputs.length, "signed contract inputs invalid");
 
         return result_ok;
@@ -686,20 +686,82 @@ class TwoContractsSameOutput {
 @safe @Scenario("Bill age",
         [])
 class BillAge {
+    Options opts1;
+    StdSecureWallet wallet1;
+    StdSecureWallet wallet2;
+    //
+    SignedContract signed_contract;
+    TagionCurrency amount;
+    TagionCurrency fee;
+
+    HiRPC wallet1_hirpc;
+    HiRPC wallet2_hirpc;
+    TagionCurrency start_amount1;
+    TagionCurrency start_amount2;
+
+    this(Options opts1, ref StdSecureWallet wallet1, ref StdSecureWallet wallet2) {
+        this.wallet1 = wallet1;
+        this.wallet2 = wallet2;
+        this.opts1 = opts1;
+
+        wallet1_hirpc = HiRPC(wallet1.net);
+        wallet2_hirpc = HiRPC(wallet2.net);
+        start_amount1 = wallet1.calcTotal(wallet1.account.bills);
+        start_amount2 = wallet2.calcTotal(wallet2.account.bills);
+        
+    }
 
     @Given("i pay a contract where the output bills timestamp is newer than epoch_time + constant.")
     Document constant() {
-        return Document();
+
+        import tagion.utils.StdTime;
+        import std.datetime;
+        import tagion.services.transcript : BUFFER_TIME_SECONDS;
+
+        amount = 100.TGN;
+        auto new_time = sdt_t((SysTime(cast(long) currentTime) + BUFFER_TIME_SECONDS.seconds + 100.seconds).stdTime);
+
+        auto payment_request = wallet2.requestBill(amount, new_time);
+
+        check(wallet1.createPayment([payment_request], signed_contract, fee).value, "Error creating payment");
+        check(signed_contract.contract.inputs.uniq.array.length == signed_contract.contract.inputs.length, "signed contract inputs invalid");
+
+        return result_ok;
     }
 
     @When("i send the contract to the network.")
     Document network() {
-        return Document();
+        sendSubmitHiRPC(opts1.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1.net);
+        return result_ok;
     }
 
     @Then("the contract should be rejected.")
     Document rejected() {
-        return Document();
+        (() @trusted => Thread.sleep(CONTRACT_TIMEOUT))();
+
+        auto wallet1_dartcheckread = wallet1.getRequestCheckWallet(wallet1_hirpc);
+        auto wallet1_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet1_dartcheckread);
+
+        writefln("RECEIVED RESPONSE: %s", wallet1_received_doc.toPretty);
+        auto wallet1_received = wallet1_hirpc.receive(wallet1_received_doc);
+        check(wallet1.setResponseCheckRead(wallet1_received), "wallet1 not updated succesfully");
+
+
+        auto wallet1_total_amount = wallet1.account.total;
+        writefln("WALLET 1 TOTAL amount: %s", wallet1_total_amount);
+        check(wallet1_total_amount == start_amount1, format("wallet total amount not correct. expected: %s, had %s", start_amount1, wallet1_total_amount));
+
+        auto wallet2_dartcheckread = wallet2.getRequestCheckWallet(wallet2_hirpc);
+        auto wallet2_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet2_dartcheckread);
+
+        auto wallet2_received = wallet2_hirpc.receive(wallet2_received_doc);
+        check(wallet2.setResponseCheckRead(wallet2_received), "wallet2 not updated succesfully");
+        
+        auto wallet2_amount = wallet2.calcTotal(wallet2.account.bills);
+        writefln("WALLET 2 amount: %s", wallet2_amount);
+        check(wallet2_amount == start_amount2, "should not receive new money");
+        
+        return result_ok;
     }
 
 }

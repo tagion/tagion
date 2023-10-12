@@ -129,6 +129,7 @@ int _main(string[] args) {
     feature.SameContractInDifferentEpochs(node_opts[0], wallets[6], wallets[7]); 
     feature.SameContractInDifferentEpochsDifferentNode(node_opts[2], node_opts[3], wallets[8], wallets[9]);
     feature.TwoContractsSameOutput(node_opts[3], node_opts[4], wallets[10], wallets[11], wallets[12]);    
+    feature.BillAge(node_opts[3], wallets[13], wallets[14]);
     feature.run();
 
 

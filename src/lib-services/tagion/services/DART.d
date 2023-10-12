@@ -127,7 +127,6 @@ struct DARTService {
         }
 
         void modify(dartModify, immutable(RecordFactory.Recorder) recorder, immutable(int) epoch_number) @safe {
-            log("received modify with %s archives", recorder.length);
 
             auto eye = Fingerprint(db.modify(recorder));
 
