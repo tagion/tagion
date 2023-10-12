@@ -506,6 +506,25 @@ struct NNGSocket {
 
     } // this
 
+    int close(){
+        int rc;
+        m_errno = cast(nng_errno)0;
+        foreach(ctx; m_ctx){
+            rc = nng_ctx_close(ctx);
+            if(rc != 0){
+                m_errno = cast(nng_errno)rc;
+                return rc;
+            }                
+        }
+        rc = nng_close(m_socket);
+        if(rc == 0){
+            m_state = nng_socket_state.NNG_STATE_NONE;
+        } else {
+            m_errno = cast(nng_errno)rc;
+        }    
+        return rc;
+    }
+
     // setup listener
 
     int listener_create(const(string) url){
