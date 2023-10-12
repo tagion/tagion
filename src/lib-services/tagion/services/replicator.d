@@ -28,6 +28,7 @@ struct ReplicatorOptions {
     mixin JSONCommon;
 }
 
+
 @safe
 struct ReplicatorService {
     static Topic modify_recorder = Topic("modify/replicator");
