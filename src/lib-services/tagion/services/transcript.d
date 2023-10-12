@@ -86,7 +86,6 @@ struct TranscriptService {
             DARTIndex[] used;
 
             if (not_in_dart.length != 0) {
-                log("Received not in dart response: %s. Must be implemented", not_in_dart.map!(f => f.toHexString));
                 used ~= not_in_dart;
             }
 
