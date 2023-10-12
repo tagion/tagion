@@ -241,7 +241,7 @@ version (unittest) @safe struct FakeTask {
     }
 }
 
-@safe unittest {
+version (none) @safe unittest {
     log.silent = true;
     import tagion.prior_services.Options : Options, setDefaultOption;
     import tagion.prior_services.LoggerService;

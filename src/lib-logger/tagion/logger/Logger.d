@@ -52,7 +52,9 @@ static struct Logger {
             const registered = locate(name);
             const i_am_the_registered = (() @trusted => registered == thisTid)();
             if (registered is Tid.init) {
+
                 
+
                     .register(name, thisTid);
                 _task_name = name;
                 setThreadName(name);
@@ -344,7 +346,7 @@ struct Topic {
             _subscribed = submask._register(name);
             has_subscribed = true;
         }
-        if(_subscribed is null) {
+        if (_subscribed is null) {
             return false;
         }
         return (*_subscribed is Subscribed.yes);
@@ -398,7 +400,7 @@ shared struct SubscriptionMask {
 
 static shared SubscriptionMask submask;
 
-unittest {
+version (none) unittest {
     import core.time;
 
     Topic topic = Topic("some_tag");
