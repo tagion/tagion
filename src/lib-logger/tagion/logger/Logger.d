@@ -376,6 +376,10 @@ shared struct SubscriptionMask {
         assert(0, "Only the logger subscription task can control the subscription");
     }
 
+    void subscribe(Topic topic) {
+        subscribe(topic.name);
+    }
+
     @trusted
     void unsubscribe(string topic) {
         if (thisTid == log.logger_subscription_tid) {
@@ -384,6 +388,11 @@ shared struct SubscriptionMask {
         }
         assert(0, "Only the logger subscription task can control the subscription");
     }
+
+    void unsubscribe(Topic topic) {
+        unsubscribe(topic.name);
+    }
+
 }
 
 static shared SubscriptionMask submask;
