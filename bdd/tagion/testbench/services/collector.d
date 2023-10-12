@@ -25,6 +25,7 @@ import tagion.script.common;
 import tagion.actor;
 import tagion.utils.pretend_safe_concurrency : receiveOnly, receive, receiveTimeout;
 import tagion.logger.Logger;
+import tagion.logger.LogRecords : LogInfo;
 import tagion.services.messages;
 import tagion.services.collector;
 import tagion.services.DART;
@@ -162,8 +163,8 @@ class ItWork {
         //immutable sender = hirpc.sendDaMonies(contract);
         collector_handle.send(inputHiRPC(), hirpc.receive(sender.toDoc));
 
-        auto result = receiveOnlyTimeout!(Topic, string, const(Document));
-        check(result[1] == "hirpc_invalid_signed_contract", "did not reject for the expected reason");
+        auto result = receiveOnlyTimeout!(LogInfo, const(Document));
+        check(result[0].symbol_name == "hirpc_invalid_signed_contract", "did not reject for the expected reason, got %s".format(result[0].symbol_name));
 
         return result_ok;
     }
@@ -179,8 +180,8 @@ class ItWork {
         immutable sender = hirpc.sendDaMonies(s_contract);
         collector_handle.send(inputHiRPC(), hirpc.receive(sender.toDoc));
 
-        auto result = receiveOnlyTimeout!(Topic, string, const(Document));
-        check(result[1] == "contract_no_verify", "did not reject for the expected reason got, %s".format(result[1]));
+        auto result = receiveOnlyTimeout!(LogInfo, const(Document));
+        check(result[0].symbol_name == "contract_no_verify", "did not reject for the expected reason got, %s".format(result[0].symbol_name));
 
         return result_ok;
     }
@@ -200,8 +201,8 @@ class ItWork {
         immutable sender = hirpc.sendDaMonies(s_contract);
         collector_handle.send(inputHiRPC(), hirpc.receive(sender.toDoc));
 
-        auto result = receiveOnlyTimeout!(Topic, string, const(Document));
-        check(result[1] == "missing_archives", "did not reject for the expected reason");
+        auto result = receiveOnlyTimeout!(LogInfo, const(Document));
+        check(result[0].symbol_name == "missing_archives", "did not reject for the expected reason");
 
         return result_ok;
     }

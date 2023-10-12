@@ -4,6 +4,8 @@ import std.array : join;
 import std.getopt;
 import std.file : exists;
 import std.stdio : stderr, writeln, writefln;
+import std.json;
+import std.exception;
 import core.time;
 
 import tagion.tools.Basic;
@@ -15,6 +17,36 @@ import tagion.hibon.HiBON;
 import nngd.nngd;
 
 mixin Main!(_main, "shell");
+
+WebData contract_handler ( WebData req, void* ctx ){
+    int rc;
+    ShellOptions* opt = cast(ShellOptions*) ctx;
+    if(req.type != "application/octet-stream"){
+        WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "invalid data type" };    
+        return res;
+    }
+    writeln(format("WH: contract: with %d bytes for %s",req.rawdata.length, opt.tagion_sock_addr));
+    NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
+    s.recvtimeout = msecs(10000);
+    while(true){
+        rc = s.dial(opt.tagion_sock_addr);
+        if(rc == 0)
+            break;
+    }
+    rc = s.send(req.rawdata);
+    if(rc != 0){
+        writeln("contract_handler: send: ", nng_errstr(rc));
+        WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "socket error" };
+        return res;
+    }        
+    ubyte[4096] buf;
+    size_t len = s.receivebuf(buf, 4096);
+    writeln(format("WH: contract: received %d bytes",len));
+    s.close(); 
+    WebData res = {status: nng_http_status.NNG_HTTP_STATUS_OK, type: "applicaion/octet-stream", rawdata: buf[0..len] };
+    return res;
+}
+
 
 int _main(string[] args) {
     immutable program = args[0];
@@ -63,6 +95,18 @@ int _main(string[] args) {
                 main_args.options);
         return 0;
     }
+
+    WebApp app = WebApp("ContractProxy", options.contract_endpoint, parseJSON("{}"), &options);
+
+    app.route("/api/v1/contract", &contract_handler, ["POST"]);
+
+    app.start();
+
+    writeln("TagionShell web service\nlListening at "~options.contract_endpoint~"\n\t/api/v1/contract\t= POST contract hibon");
+
+    while(true)
+        nng_sleep(1000.msecs);
+
 
     // NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
     // sock.sendtimeout = msecs(1000);
