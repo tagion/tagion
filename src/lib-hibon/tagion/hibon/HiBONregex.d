@@ -147,5 +147,6 @@ unittest {
         assert(HiBONregex(string.init, string.init, Type.STRING).match(doc));
         assert(!HiBONregex(string.init, string.init, Type.BINARY).match(doc));
         assert(HiBONregex(string.init, string.init, [Type.BINARY, Type.STRING]).match(doc));
+        assert(!HiBONregex(string.init, string.init, [Type.BINARY, Type.BIGINT]).match(doc));
     }
 }
