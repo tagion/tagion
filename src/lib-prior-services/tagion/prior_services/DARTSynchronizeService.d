@@ -26,6 +26,7 @@ import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 
 import tagion.prior_services.DARTSynchronization;
 import tagion.prior_services.ResponseRequest;
+import tagion.dart.DARTBasic : DARTIndex;
 
 version (unittest) import tagion.dart.BlockFile : fileId;
 import tagion.hibon.HiBONJSON;
@@ -214,7 +215,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
             }
         }
 
-        void dartRead(immutable(DARTReadRequest)* resp, Buffer[][] fingerprints) @trusted {
+        void dartRead(immutable(DARTReadRequest)* resp, DARTIndex[][] fingerprints) @trusted {
             import std.algorithm : joiner;
 
             immutable result = cast(immutable)(dart.loads(fingerprints.joiner, Archive.Type.NONE));

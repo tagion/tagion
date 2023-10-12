@@ -64,10 +64,5 @@
 
 - Network Setup 
     - [Initialize DART](documents/network_setup/initialize_dart.md)
-
-- Project
-    - [Goals 2022](documents/project_goals_2022.md)
-	- [Goals Q1-Q2 2023](documents/project/project_goals_2023_Q1_Q2.md)
-
 - [Modules](src/)
 - [Changelog](documents/changelog.md)

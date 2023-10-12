@@ -38,7 +38,7 @@ import tagion.hibon.HiBON;
 import tagion.hibon.HiBONRecord;
 
 //import tagion.utils.Miscellaneous;
-import tagion.hibon.HiBONtoText : decode;
+import tagion.hibon.HiBONtoText : decode, encodeBase64;
 import tagion.Keywords;
 import tagion.dart.Recorder;
 import tagion.script.prior.StandardRecords;
@@ -86,8 +86,7 @@ int _main(string[] args) {
         main_args = getopt(args,
                 std.getopt.config.caseSensitive,
                 std.getopt.config.bundling,
-                "version", "display the version", &version_switch,
-                "dartfilename|d", format("Sets the dartfile: default %s", dartfilename), &dartfilename,
+                "version", "display the version", &version_switch, //   "dartfilename|d", format("Sets the dartfile: default %s", dartfilename), &dartfilename,
                 "i|inputfile", "Sets the HiBON input file name", &inputfilename,
                 "I|initialize", "Create a dart file", &initialize,
                 "o|outputfile", "Sets the output file name", &outputfilename,
@@ -112,19 +111,19 @@ int _main(string[] args) {
             writeln(logo);
             defaultGetoptPrinter(
                     [
-                // format("%s version %s", program, REVNO),
-                "Documentation: https://tagion.org/",
-                "",
-                "Usage:",
-                format("%s [<option>...] file.drt <files>", program),
-                "",
-                "Example synchronizing src.drt on to dst.drt",
-                format("%s --sync src.drt dst.drt", program),
-                "",
+                    // format("%s version %s", program, REVNO),
+                    "Documentation: https://tagion.org/",
+                    "",
+                    "Usage:",
+                    format("%s [<option>...] file.drt <files>", program),
+                    "",
+                    "Example synchronizing src.drt on to dst.drt",
+                    format("%s --sync src.drt dst.drt", program),
+                    "",
 
-                "<option>:",
+                    "<option>:",
 
-            ].join("\n"),
+                    ].join("\n"),
                     main_args.options);
             return 0;
         }
@@ -236,11 +235,16 @@ int _main(string[] args) {
             return 0;
         }
         if (dartread) {
-            DARTIndex[] fingerprints;
-            fingerprints = dartread_args
-                .map!(hash => DARTIndex(decode(hash))).array;
+            DARTIndex[] dart_indices;
+            foreach (read_arg; dartread_args) {
+                import tagion.dart.DARTBasic : dartIndexDecode;
 
-            const sender = dartRead(fingerprints, hirpc);
+                auto dart_index = net.dartIndexDecode(read_arg);
+                verbose("%s\n%s\n%(%02x%)", read_arg, dart_index.encodeBase64, dart_index);
+                dart_indices ~= dart_index;
+            }
+
+            const sender = dartRead(dart_indices, hirpc);
             auto receiver = hirpc.receive(sender.toDoc);
             auto result = db(receiver, false);
             auto tosend = hirpc.toHiBON(result);

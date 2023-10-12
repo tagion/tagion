@@ -12,6 +12,7 @@ import tagion.hibon.HiBONRecord : isHiBONRecord;
 import tagion.hibon.HiBONRecord : HiBONPrefix, STUB;
 import std.format;
 import tagion.dart.DARTFile : KEY_SPAN;
+import std.traits;
 
 /**
 * This is the raw-hash value of a message and is used when message is signed.
@@ -79,10 +80,14 @@ unittest { // Check the #key hash with types
 
 DARTIndex dartKey(T)(const(HashNet) net, const(char[]) name, T val) {
     import tagion.hibon.HiBON;
+    import std.stdio;
 
     const key = (name[0] == HiBONPrefix.HASH) ? name.idup : (HiBONPrefix.HASH ~ name).idup;
     auto h = new HiBON;
     h[key] = val;
+    static if (isIntegral!T) {
+        writefln("%s %s", key, val);
+    }
     return net.dartIndex(Document(h));
 }
 
@@ -163,7 +168,9 @@ DARTIndex dartIndexDecode(const(HashNet) net, const(char[]) str) {
     import tagion.hibon.HiBONBase;
     import tagion.hibon.HiBONRecord : fread;
     import std.traits;
+    import std.stdio;
 
+    writefln("<%s>", str.split(":"));
     if (isBase64Prefix(str)) {
         return DARTIndex(Base64URL.decode(str[1 .. $]).idup);
     }
@@ -171,7 +178,9 @@ DARTIndex dartIndexDecode(const(HashNet) net, const(char[]) str) {
         return DARTIndex(misc.decode(str[hex_prefix.length .. $]));
     }
     else if (str.canFind(":")) {
+
         const list = str.split(":");
+        writefln("list = %s %s", list, str);
         const name = list[0];
         if (list.length == 2) {
 
@@ -203,7 +212,6 @@ DARTIndex dartIndexDecode(const(HashNet) net, const(char[]) str) {
                         else {
                             alias Value = ValueT!(false, void, void);
                             alias T = Unqual!(Value.TypeT!E);
-                            pragma(msg, "VALUE TYPE ", T);
                             import std.conv : to;
 
                             auto val = list[2].to!T;

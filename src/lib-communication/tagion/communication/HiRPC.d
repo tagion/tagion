@@ -9,6 +9,7 @@ import std.exception : assumeWontThrow;
 
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONException;
+import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONJSON;
 
@@ -323,7 +324,7 @@ struct HiRPC {
             }
 
             const(T) result(T, Args...)(Args args) const if (isHiBONRecord!T) {
-                return T(response.result);
+                return T(response.result, args);
             }
 
             @trusted
@@ -526,6 +527,13 @@ struct HiRPC {
         auto receiver = Receiver(net, sender.toDoc);
         return receiver;
     }
+}
+
+
+@safe
+@recordType("OK")
+struct ResultOk {
+    mixin HiBONRecord!();
 }
 
 ///
