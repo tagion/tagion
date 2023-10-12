@@ -45,7 +45,6 @@ alias FeatureContext = Tuple!(
         SameContractInDifferentEpochsDifferentNode, "SameContractInDifferentEpochsDifferentNode",
         TwoContractsSameOutput, "TwoContractsSameOutput",
         BillAge, "BillAge",
-        AmountOnOutputBills, "AmountOnOutputBills",
         FeatureGroup*, "result"
 );
 
@@ -766,23 +765,3 @@ class BillAge {
 
 }
 
-@safe @Scenario("Amount on output bills",
-        [])
-class AmountOnOutputBills {
-
-    @Given("i create a contract with outputs bills that are smaller or equal to zero.")
-    Document zero() {
-        return Document();
-    }
-
-    @When("i send the contract to the network.")
-    Document network() {
-        return Document();
-    }
-
-    @Then("the contract should be rejected.")
-    Document rejected() {
-        return Document();
-    }
-
-}
