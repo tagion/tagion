@@ -2574,7 +2574,23 @@ unittest {
             auto dart_reload = new DARTFile(net, filename_A);
             auto reload_recorder = dart_reload.loads(recorder_change[].map!(a => a.dart_index));
             writefln("reload_recorder=%(%02x%)", reload_recorder[].front.dart_index);
+            dart_reload.dump;
+        }
 
+        version (none) {
+            const recorder_doc = recorder_add.toDoc;
+            writefln("recorder_doc=%s", recorder_doc.toPretty);
+            auto factory = RecordFactory(net);
+            auto recorder_from_doc = factory.recorder(recorder_doc);
+            writefln("!archive\n%s", recorder_add[].front.toPretty);
+            writefln("!fingerprit =%(%02x%)", recorder_add[].front.fingerprint);
+            writefln("!dart_index =%(%02x%)", recorder_add[].front.dart_index);
+            recorder_add[].each!(a => writefln("%s", a));
+            writefln("- - - - -");
+            writefln(" archive\n%s", recorder_from_doc[].front.toPretty);
+            writefln(" fingerprit =%(%02x%)", recorder_from_doc[].front.fingerprint);
+            writefln(" dart_index =%(%02x%)", recorder_from_doc[].front.dart_index);
+            recorder_from_doc[].each!(a => writefln("%s", a));
         }
 
     }
