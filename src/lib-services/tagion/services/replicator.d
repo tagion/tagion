@@ -28,10 +28,11 @@ struct ReplicatorOptions {
     mixin JSONCommon;
 }
 
+enum modify_log = "modify/replicator";
 
 @safe
 struct ReplicatorService {
-    static Topic modify_recorder = Topic("modify/replicator");
+    static Topic modify_recorder = Topic(modify_log);
     void task(immutable(ReplicatorOptions) opts, immutable(SecureNet) net) {
         RecorderChainStorage storage = new RecorderChainFileStorage(opts.folder_path, net);
         RecorderChain recorder_chain = new RecorderChain(storage);
