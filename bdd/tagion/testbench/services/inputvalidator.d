@@ -22,6 +22,7 @@ import tagion.hibon.HiBON;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONBase;
 import tagion.logger.Logger;
+import tagion.logger.LogRecords: LogInfo;
 import tagion.utils.pretend_safe_concurrency;
 
 enum feature = Feature(
@@ -123,7 +124,7 @@ class SendNoneHiRPC {
         import tagion.testbench.actor.util;
 
         check(!concurrency.receiveTimeout(100.msecs, (inputDoc _, Document __) {}), "should not have received a doc");
-        receiveOnlyTimeout!(Topic, string, const(Document));
+        receiveOnlyTimeout!(LogInfo, const(Document));
 
         return result_ok;
     }
@@ -172,8 +173,7 @@ class SendPartialHiBON {
     @Then("the inputvalidator rejects")
     Document rejects() {
         check(!concurrency.receiveTimeout(100.msecs, (inputDoc _, Document __) {}), "should not have received a doc");
-        const received = receiveOnlyTimeout!(Topic, string, const(Document)); // Subscribed rejected data
-        check(received !is typeof(received).init, "Didn't received rejected");
+        receiveOnlyTimeout!(LogInfo, const(Document)); // Subscribed rejected data
         return result_ok;
     }
 

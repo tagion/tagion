@@ -6,6 +6,7 @@ import std.array;
 
 import tagion.actor;
 import tagion.logger;
+import tagion.logger.LogRecords;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON;
 import tagion.communication.HiRPC;
@@ -27,6 +28,9 @@ struct SubscriptionServiceOptions {
     uint sendtimeout = 1000;
     uint sendbufsize = 4096;
     mixin JSONCommon;
+}
+
+struct SubscriptionPayload {
 }
 
 struct SubscriptionService {
@@ -59,18 +63,18 @@ struct SubscriptionService {
 
         log("Publishing on %s", opts.address);
 
-        void receiveSubscription(Topic topic, string identifier, const(Document) data) @trusted {
+        void receiveSubscription(LogInfo info, const(Document) data) @trusted {
             immutable(ubyte)[] payload;
 
-            payload = cast(immutable(ubyte)[])(topic.name ~ '\0');
+            payload = cast(immutable(ubyte)[])(info.topic_name ~ '\0');
 
             HiBON hibon = new HiBON;
-            hibon[identifier] = data;
+            hibon[info.symbol_name] = data;
             auto sender = hirpc.log(hibon);
             payload ~= sender.toDoc.serialize;
 
             rc = sock.send(payload);
-            log("%s: %s, %s", identifier, data.length, nng_errstr(rc));
+            log("%s: %s, %s", info.symbol_name, data.length, nng_errstr(rc));
         }
 
         run(&receiveSubscription);

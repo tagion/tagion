@@ -17,6 +17,7 @@ import tagion.script.Currency : totalAmount;
 import tagion.communication.HiRPC;
 import tagion.utils.pretend_safe_concurrency : receiveOnly, receiveTimeout;
 import tagion.logger.Logger;
+import tagion.logger.LogRecords : LogInfo;
 import tagion.actor;
 import tagion.testbench.actor.util;
 import tagion.dart.DARTcrud;
@@ -122,8 +123,8 @@ class SameInputsSpendOnOneContract {
 
     @Then("the inputs should be deleted from the dart.")
     Document dart() {
-        auto result = receiveOnlyTimeout!(Topic, string, const(Document));
-        check(result[1] == "missing_archives", "did not reject for the expected reason");
+        auto result = receiveOnlyTimeout!(LogInfo, const(Document));
+        check(result[0].topic_name == "missing_archives", "did not reject for the expected reason");
         submask.unsubscribe(reject_collector);
         return result_ok;
     }
@@ -201,8 +202,8 @@ class OneContractWhereSomeBillsAreUsedTwice {
 
     @Then("all the inputs should be deleted from the dart.")
     Document dart() {
-        auto result = receiveOnlyTimeout!(Topic, string, const(Document));
-        check(result[1] == "missing_archives", "did not reject for the expected reason");
+        auto result = receiveOnlyTimeout!(LogInfo, const(Document));
+        check(result[0].topic_name == "missing_archives", "did not reject for the expected reason");
         submask.unsubscribe(reject_collector);
         return result_ok;
     }
@@ -414,11 +415,11 @@ class SameContractInDifferentEpochs {
 
         int epoch_number;
         do {
-            auto epoch_before = receiveOnlyTimeout!(Topic, string, const(Document))(10.seconds);
+            auto epoch_before = receiveOnlyTimeout!(LogInfo, const(Document))(10.seconds);
             writefln("epoch_before %s looking for %s", epoch_before[1], opts1.task_names.epoch_creator);
-            check(epoch_before[2].isRecord!FinishedEpoch, "not correct subscription received");
-            if (epoch_before[1].canFind(opts1.task_names.epoch_creator)) {
-                epoch_number = FinishedEpoch(epoch_before[2]).epoch;
+            check(epoch_before[1].isRecord!FinishedEpoch, "not correct subscription received");
+            if (epoch_before[0].topic_name.canFind(opts1.task_names.epoch_creator)) {
+                epoch_number = FinishedEpoch(epoch_before[1]).epoch;
             }
         } while(epoch_number is int.init);
 
@@ -429,12 +430,12 @@ class SameContractInDifferentEpochs {
 
         int new_epoch_number;
         do {
-            auto new_epoch = receiveOnlyTimeout!(Topic, string, const(Document))(10.seconds);
-            writefln("new_epoch %s %s", new_epoch[1], opts1.task_names.epoch_creator);
-            check(new_epoch[2].isRecord!FinishedEpoch, "not correct subscription received");
-            if (new_epoch[1].canFind(opts1.task_names.epoch_creator)) {
+            auto new_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(10.seconds);
+            writefln("new_epoch %s %s", new_epoch[0].topic_name, opts1.task_names.epoch_creator);
+            check(new_epoch[1].isRecord!FinishedEpoch, "not correct subscription received");
+            if (new_epoch[0].topic_name.canFind(opts1.task_names.epoch_creator)) {
                 writefln("UPDATING NEW EPOCH_NUMBER");
-                new_epoch_number = FinishedEpoch(new_epoch[2]).epoch;
+                new_epoch_number = FinishedEpoch(new_epoch[1]).epoch;
             }
         } while(new_epoch_number is int.init);
 
