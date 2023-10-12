@@ -9,15 +9,20 @@ import std.range;
 import std.algorithm;
 import tagion.basic.basic;
 
+import tagion.hibon.HiBONJSON;
+import std.stdio;
+
 struct HiBONregex {
     alias RegexT = Regex!char;
     uint[] types;
     string name;
-    string hibon_type;
+    string record_type;
     RegexT regex_name;
-    RegexT regex_hibon_type;
-    this(Name, HType, Types)(Name name, HType hibon_type = string.init, Types types = Type.init) pure
+    RegexT regex_record_type;
+    this(Name, HType, Types)(Name name, HType record_type, Types types) pure
+
     
+
             if ((is(Name == string) || is(Name == RegexT)) &&
                 (is(HType == string) || is(HType == RegexT)) &&
                 (is(Types
@@ -29,23 +34,44 @@ struct HiBONregex {
             regex_name = name;
         }
         static if (is(HType == string)) {
-            this.hibon_type = hibon_type;
+            this.record_type = record_type;
         }
         else {
-            regex_hibon_type = hibon_type;
+            regex_record_type = record_type;
         }
-        this.types ~= types;
+        import std.algorithm : filter;
+        import std.array;
+
+        Type[] _types;
+        _types ~= types;
+        this.types = _types
+            .filter!(type => type !is Type.NONE)
+            .map!(type => cast(uint) type)
+            .array;
+    }
+
+    this(Name)(Name name) pure {
+        this(name, string.init, Type.init);
+    }
+
+    this(Name, HType)(Name name, HType record_type) pure {
+        this(name, record_type, Type.init);
     }
 
     bool match(const Document doc) const {
         bool result;
-        if (!hibon_type.empty) {
-            if (doc.getType != hibon_type) {
+        if (!record_type.empty) {
+            if (record_type == "!") {
+                writefln("'%s'\n%s\n%s", doc.getType, doc.getType.isinit, doc.toPretty);
+
+                return doc.getType.isinit;
+            }
+            if (doc.getType != record_type) {
                 return false;
             }
         }
-        else if (!regex_hibon_type.isinit) {
-            if (doc.getType.matchFirst(regex_hibon_type).empty) {
+        else if (!regex_record_type.isinit) {
+            if (doc.getType.matchFirst(regex_record_type).empty) {
                 return false;
             }
         }
@@ -60,7 +86,8 @@ struct HiBONregex {
                     return false;
                 }
             }
-            if (types.empty) {
+            if (!types.empty) {
+                writefln("types=%s", types);
                 if (!types.canFind(elm.type)) {
                     return false;
                 }
@@ -78,7 +105,8 @@ struct HiBONregex {
 
 ///
 unittest {
-    @recordType("Sometype")
+    enum record_type_name = "Some_type";
+    @recordType(record_type_name)
     static struct RegexDoc {
         string name;
         int x;
@@ -92,6 +120,12 @@ unittest {
         });
     }
 
+    static struct NoRecordType {
+        int x;
+        mixin HiBONRecord;
+    }
+
+    const no_record_type_doc = NoRecordType.init.toDoc;
     const regex_doc = RegexDoc("text", 42, false);
     const doc = regex_doc.toDoc;
     { // Test hibon key name match
@@ -102,6 +136,16 @@ unittest {
 
     }
     { // Test hibon record type match
-
+        assert(HiBONregex(string.init, record_type_name).match(doc));
+        assert(!HiBONregex(string.init, "Not found").match(doc));
+        assert(HiBONregex(string.init, regex(`_\w+`)).match(doc));
+        assert(!HiBONregex(string.init, regex(`_\d+`)).match(doc));
+        assert(!HiBONregex(string.init, "!").match(doc));
+        assert(HiBONregex(string.init, "!").match(no_record_type_doc));
+    }
+    { // Test hibon record type match
+        assert(HiBONregex(string.init, string.init, Type.STRING).match(doc));
+        assert(!HiBONregex(string.init, string.init, Type.BINARY).match(doc));
+        assert(HiBONregex(string.init, string.init, [Type.BINARY, Type.STRING]).match(doc));
     }
 }
