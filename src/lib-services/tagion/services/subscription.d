@@ -13,6 +13,7 @@ import tagion.communication.HiRPC;
 import tagion.hibon.HiBONRecord;
 
 import nngd;
+import std.format;
 import core.time : msecs;
 
 struct SubscriptionServiceOptions {

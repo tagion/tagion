@@ -27,6 +27,7 @@ import tagion.services.monitor;
 import tagion.services.options : NetworkMode;
 
 import std.stdio;
+import std.format;
 
 import core.time;
 import core.thread;

@@ -32,6 +32,7 @@ import tagion.hibon.HiBONRecord : isRecord;
 import tagion.services.options;
 import nngd;
 
+import std.format;
 import core.time;
 
 
