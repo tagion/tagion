@@ -9,9 +9,6 @@ import std.range;
 import std.algorithm;
 import tagion.basic.basic;
 
-import tagion.hibon.HiBONJSON;
-import std.stdio;
-
 struct HiBONregex {
     alias RegexT = Regex!char;
     uint[] types;
@@ -62,8 +59,6 @@ struct HiBONregex {
         bool result;
         if (!record_type.empty) {
             if (record_type == "!") {
-                writefln("'%s'\n%s\n%s", doc.getType, doc.getType.isinit, doc.toPretty);
-
                 return doc.getType.isinit;
             }
             if (doc.getType != record_type) {
@@ -87,7 +82,6 @@ struct HiBONregex {
                 }
             }
             if (!types.empty) {
-                writefln("types=%s", types);
                 if (!types.canFind(elm.type)) {
                     return false;
                 }
