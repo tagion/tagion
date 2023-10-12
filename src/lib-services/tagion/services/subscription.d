@@ -10,6 +10,7 @@ import tagion.logger.LogRecords;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON;
 import tagion.communication.HiRPC;
+import tagion.hibon.HiBONRecord;
 
 import nngd;
 import core.time : msecs;
@@ -22,7 +23,7 @@ struct SubscriptionServiceOptions {
 
     import tagion.services.options : contract_sock_addr;
     void setDefault() nothrow {
-        address = contract_sock_addr("SUBSCRIPTION");
+        address = contract_sock_addr("SUBSCRIPTION_");
     }
 
     uint sendtimeout = 1000;
@@ -30,7 +31,21 @@ struct SubscriptionServiceOptions {
     mixin JSONCommon;
 }
 
+@recordType("sub_payload")
 struct SubscriptionPayload {
+    @label("topic") string topic_name;
+    @label("task") string task_name;
+    @label("symbol") string symbol_name;
+    @label("data") Document data;
+
+    mixin HiBONRecord!(q{
+            this(LogInfo info, const(Document) data) {
+                this.topic_name = info.topic_name;
+                this.task_name = info.task_name;
+                this.symbol_name = info.symbol_name;
+                this.data = data;
+            }
+    });
 }
 
 struct SubscriptionService {
@@ -56,9 +71,7 @@ struct SubscriptionService {
         int rc;
         rc = sock.listen(opts.address);
         if (rc != 0) {
-            log.error("Could not listen to url %s: %s", opts.address, rc.nng_errstr);
-            return;
-            // throw new Exception(format("Could not listen to url %s: %s", opts.address, rc.nng_errstr));
+            throw new Exception(format("Could not listen to url %s: %s", opts.address, rc.nng_errstr));
         }
 
         log("Publishing on %s", opts.address);
@@ -68,13 +81,11 @@ struct SubscriptionService {
 
             payload = cast(immutable(ubyte)[])(info.topic_name ~ '\0');
 
-            HiBON hibon = new HiBON;
-            hibon[info.symbol_name] = data;
+            auto hibon = SubscriptionPayload(info, data);
             auto sender = hirpc.log(hibon);
             payload ~= sender.toDoc.serialize;
 
             rc = sock.send(payload);
-            log("%s: %s, %s", info.symbol_name, data.length, nng_errstr(rc));
         }
 
         run(&receiveSubscription);
