@@ -44,7 +44,6 @@ private {
 
     import std.stdio : writeln, writefln;
     import tagion.hibon.HiBONRecord;
-    import tagion.hibon.HiBONJSON : toPretty;
 
     import tagion.dart.RimKeyRange : rimKeyRange;
 }
@@ -2537,7 +2536,7 @@ unittest {
         assert(recorder_add[].front.dart_index != recorder_add[].front.fingerprint,
         "The dart_index and the fingerprint of a archive should not be the same for a # archive");
         auto bullseye = dart_A.modify(recorder_add);
-        dart_A.dump;
+        // dart_A.dump;
         // writefln("bullseye   =%(%02x%)", bullseye);
         // writefln("fingerprint=%(%02x%)", recorder_add[].front.fingerprint);
         assert(bullseye == recorder_add[].front.fingerprint,
@@ -2545,12 +2544,12 @@ unittest {
         const hashdoc_change = HashDoc("hugo", 17);
         auto recorder_B = dart_A.recorder;
         recorder_B.remove(hashdoc_change);
-        dart_A.dump;
+        // dart_A.dump;
         bullseye = dart_A.modify(recorder_B);
         auto recorder_change = dart_A.recorder;
         recorder_change.add(hashdoc_change);
         bullseye = dart_A.modify(recorder_change);
-        dart_A.dump;
+        // dart_A.dump;
         // writefln("bullseye   =%(%02x%)", bullseye);
         // writefln("dart_index =%(%02x%)", recorder_change[].front.dart_index);
         // writefln("fingerprint=%(%02x%)", recorder_change[].front.fingerprint);
@@ -2564,7 +2563,7 @@ unittest {
                     load_recorder[].map!(a => a.dart_index),
                     recorder_change[].map!(a => a.dart_index)));
         }
-        writefln("filename_A %s", filename_A);
+        // writefln("filename_A %s", filename_A);
         const hashdoc_extra = HashDoc("boerge", 42);
         auto recorder_C = dart_A.recorder;
         recorder_C.add(hashdoc_extra);
@@ -2573,24 +2572,9 @@ unittest {
         {
             auto dart_reload = new DARTFile(net, filename_A);
             auto reload_recorder = dart_reload.loads(recorder_change[].map!(a => a.dart_index));
-            writefln("reload_recorder=%(%02x%)", reload_recorder[].front.dart_index);
-            dart_reload.dump;
-        }
-
-        version (none) {
-            const recorder_doc = recorder_add.toDoc;
-            writefln("recorder_doc=%s", recorder_doc.toPretty);
-            auto factory = RecordFactory(net);
-            auto recorder_from_doc = factory.recorder(recorder_doc);
-            writefln("!archive\n%s", recorder_add[].front.toPretty);
-            writefln("!fingerprit =%(%02x%)", recorder_add[].front.fingerprint);
-            writefln("!dart_index =%(%02x%)", recorder_add[].front.dart_index);
-            recorder_add[].each!(a => writefln("%s", a));
-            writefln("- - - - -");
-            writefln(" archive\n%s", recorder_from_doc[].front.toPretty);
-            writefln(" fingerprit =%(%02x%)", recorder_from_doc[].front.fingerprint);
-            writefln(" dart_index =%(%02x%)", recorder_from_doc[].front.dart_index);
-            recorder_from_doc[].each!(a => writefln("%s", a));
+            //writefln("reload_recorder=%(%02x%)", reload_recorder[].front.dart_index);
+            // dart_reload.dump;
+            assert(equal(recorder_change[].map!(a => a.filed), reload_recorder[].map!(a => a.filed)));
         }
 
     }

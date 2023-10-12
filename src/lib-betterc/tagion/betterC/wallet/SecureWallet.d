@@ -57,7 +57,7 @@ struct SecureWallet(Net) {
     }
 
     static SecureWallet createWallet(scope const(string[]) questions,
-            scope const(char[][]) answers, uint confidence, const(char[]) pincode)
+    scope const(char[][]) answers, uint confidence, const(char[]) pincode)
     in {
         assert(questions.length > 3, "Minimal amount of answers is 3");
         assert(questions.length is answers.length, "Amount of questions should be same as answers");
@@ -478,8 +478,6 @@ struct SecureWallet(Net) {
     //         receiver_wallet.registerInvoice(invoice);
     //         // Give the invoice to the sender_wallet and create payment
     //         sender_wallet.payment([invoice], contract_1);
-
-    //         //writefln("contract_1=%s", contract_1.toPretty);
     //     }
 
     //     SignedContract contract_2;
@@ -488,8 +486,6 @@ struct SecureWallet(Net) {
     //         receiver_wallet.registerInvoice(invoice);
     //         // Give the invoice to the sender_wallet and create payment
     //         sender_wallet.payment([invoice], contract_2);
-
-    //         //writefln("contract_2=%s", contract_2.toPretty);
     //     }
     // }
 }
