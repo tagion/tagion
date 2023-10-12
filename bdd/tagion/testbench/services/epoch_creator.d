@@ -18,6 +18,7 @@ import std.array;
 import tagion.utils.Miscellaneous : cutHex;
 import tagion.services.messages;
 import tagion.logger.Logger;
+import tagion.logger.LogRecords : LogInfo;
 import tagion.hibon.HiBON;
 import tagion.hibon.HiBONJSON;
 import std.range : empty;
@@ -126,9 +127,9 @@ class SendPayloadAndCreateEpoch {
         const max_attempts = 30;
         uint counter;
         do {
-            const received = receiveOnly!(Topic, string, const(Document));
-            check(received[1].canFind("epoch_succesful"), "Event should have been epoch_succesful");
-            const epoch = received[2];
+            const received = receiveOnly!(LogInfo, const(Document));
+            check(received[0].symbol_name.canFind("epoch_succesful"), "Event should have been epoch_succesful");
+            const epoch = received[1];
 
             import tagion.hashgraph.Refinement : FinishedEpoch;
             import tagion.hibon.HiBONRecord;
