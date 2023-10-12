@@ -476,6 +476,7 @@ struct SecureWallet(Net : SecureNet) {
         import std.range : takeOne, tee;
 
         import std.stdio;
+
         if (!account.bills.isSorted!q{a.value > b.value}) {
             account.bills.sort!q{a.value > b.value};
         }
@@ -502,7 +503,7 @@ struct SecureWallet(Net : SecureNet) {
 
                 TagionBill extra_bill;
                 none_locked.filter!(b => !locked_bills.canFind(b))
-                .each!(b => extra_bill = b);
+                    .each!(b => extra_bill = b);
                 locked_bills ~= extra_bill;
                 return true;
             }
@@ -584,6 +585,7 @@ struct SecureWallet(Net : SecureNet) {
     Result!bool getFee(TagionBill[] to_pay, out TagionCurrency fees) nothrow {
         import tagion.script.Currency : totalAmount;
         import tagion.script.execute;
+
         try {
             PayScript pay_script;
             pay_script.outputs = to_pay;
@@ -594,24 +596,25 @@ struct SecureWallet(Net : SecureNet) {
             const amount_to_pay = pay_script.outputs
                 .map!(bill => bill.value)
                 .totalAmount;
-        
+
             do {
                 if (collected_bills.length == previous_bill_count) {
                     return result(false);
                 }
                 collected_bills.length = 0;
-                const can_pay = collect_bills(amount_to_pay+amount_remainder, collected_bills);
+                const can_pay = collect_bills(amount_to_pay + amount_remainder, collected_bills);
                 check(can_pay, format("Is unable to pay the amount %10.6fTGN available %10.6fTGN", amount_to_pay.value, available_balance
                         .value));
                 const total_collected_amount = collected_bills
                     .map!(bill => bill.value)
                     .totalAmount;
-                fees = ContractExecution.billFees(collected_bills.length, pay_script.outputs.length+1);
+                fees = ContractExecution.billFees(collected_bills.length, pay_script.outputs.length + 1);
                 amount_remainder = total_collected_amount - amount_to_pay - fees;
                 previous_bill_count = collected_bills.length;
             }
             while (amount_remainder < 0);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             return Result!bool(e);
         }
         return result(true);
@@ -620,14 +623,17 @@ struct SecureWallet(Net : SecureNet) {
     Result!bool getFee(const(Invoice[]) orders, out TagionCurrency fees) nothrow {
         import tagion.utils.StdTime;
         import std.exception;
-        auto bills = assumeWontThrow(orders.map!((order) => TagionBill(order.amount, currentTime, order.pkey, Buffer.init)).array);
+
+        auto bills = assumeWontThrow(orders.map!((order) => TagionBill(order.amount, currentTime, order.pkey, Buffer.init))
+                .array);
         return getFee(bills, fees);
     }
+
     Result!bool getFee(TagionCurrency amount, out TagionCurrency fees) nothrow {
         auto bill = TagionBill(amount, sdt_t.init, Pubkey.init, Buffer.init);
-        return getFee([bill], fees); 
+        return getFee([bill], fees);
     }
-    
+
     Result!bool createPayment(TagionBill[] to_pay, ref SignedContract signed_contract, out TagionCurrency fees) nothrow {
         import tagion.script.Currency : totalAmount;
         import tagion.script.execute;
@@ -646,14 +652,13 @@ struct SecureWallet(Net : SecureNet) {
                 .map!(bill => bill.value)
                 .totalAmount;
 
-            
             do {
                 if (collected_bills.length == previous_bill_count) {
                     return result(false);
                 }
                 collected_bills.length = 0;
 
-                const can_pay = collect_bills(amount_to_pay+amount_remainder, collected_bills);
+                const can_pay = collect_bills(amount_to_pay + amount_remainder, collected_bills);
 
                 check(can_pay, format("Is unable to pay the amount %10.6fTGN available %10.6fTGN", amount_to_pay.value, available_balance
                         .value));
@@ -661,7 +666,7 @@ struct SecureWallet(Net : SecureNet) {
                     .map!(bill => bill.value)
                     .totalAmount;
 
-                fees = ContractExecution.billFees(collected_bills.length, pay_script.outputs.length+1);
+                fees = ContractExecution.billFees(collected_bills.length, pay_script.outputs.length + 1);
 
                 amount_remainder = total_collected_amount - amount_to_pay - fees;
                 previous_bill_count = collected_bills.length;
@@ -905,8 +910,6 @@ struct SecureWallet(Net : SecureNet) {
 
             sender_wallet.payment([invoice], contract_1, fees);
             assert(expected_fee == fees, "fee for get fee and expected fee should be the same");
-
-            //writefln("contract_1=%s", contract_1.toPretty);
         }
 
         SignedContract contract_2;
@@ -916,8 +919,6 @@ struct SecureWallet(Net : SecureNet) {
             TagionCurrency fees;
             // Give the invoice to the sender_wallet and create payment
             sender_wallet.payment([invoice], contract_2, fees);
-
-            //writefln("contract_2=%s", contract_2.toPretty);
         }
     }
 }
@@ -957,10 +958,10 @@ unittest {
     assert(!wallet1.getFee([too_big_request], expected_fee).value, "should throw on too big value");
     assert(!wallet1.getFee(10000.TGN, expected_fee).value, "should throw on too big value");
     assert(wallet1.getFee(100.TGN, expected_fee).value, "should be able to pay amount");
-    
+
     assert(wallet1.getFee([payment_request], expected_fee).value, "error in getFee");
     assert(wallet1.available_balance == 3000.TGN, "getfee should not change any balances");
-    
+
     SignedContract signed_contract;
     TagionCurrency fee;
     assert(wallet1.createPayment([payment_request], signed_contract, fee).value, "error creating payment");
@@ -969,7 +970,6 @@ unittest {
 
     assert(signed_contract.contract.inputs.uniq.array.length == signed_contract.contract.inputs.length, "signed contract inputs invalid");
 }
-
 
 @safe
 unittest {
@@ -1020,6 +1020,7 @@ unittest {
     { /// succces payment
 
         import std.stdio;
+
         SignedContract signed_contract;
         TagionCurrency fees;
         writefln("WALLET 1 total balance %s", wallet1.total_balance);

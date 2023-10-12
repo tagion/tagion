@@ -657,7 +657,6 @@ mixin template HiBONRecord(string CTOR = "") {
                         }
                         static if (is(BaseT == enum)) {
                             m = doc[name].get!BaseT;
-                            //                            static if (isIntegral!(OriginalType
                         }
                         else static if (Document.isDocTypedef!BaseT) {
                             m = doc[name].get!BaseT;

@@ -85,9 +85,6 @@ DARTIndex dartKey(T)(const(HashNet) net, const(char[]) name, T val) {
     const key = (name[0] == HiBONPrefix.HASH) ? name.idup : (HiBONPrefix.HASH ~ name).idup;
     auto h = new HiBON;
     h[key] = val;
-    static if (isIntegral!T) {
-        writefln("%s %s", key, val);
-    }
     return net.dartIndex(Document(h));
 }
 

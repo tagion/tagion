@@ -741,8 +741,6 @@ struct SecureWallet(Net : SecureNet) {
             receiver_wallet.registerInvoice(invoice);
             // Give the invoice to the sender_wallet and create payment
             sender_wallet.payment([invoice], contract_1);
-
-            //writefln("contract_1=%s", contract_1.toPretty);
         }
 
         _SignedContract contract_2;
@@ -751,8 +749,6 @@ struct SecureWallet(Net : SecureNet) {
             receiver_wallet.registerInvoice(invoice);
             // Give the invoice to the sender_wallet and create payment
             sender_wallet.payment([invoice], contract_2);
-
-            //writefln("contract_2=%s", contract_2.toPretty);
         }
     }
 }

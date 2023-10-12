@@ -52,7 +52,9 @@ static struct Logger {
             const registered = locate(name);
             const i_am_the_registered = (() @trusted => registered == thisTid)();
             if (registered is Tid.init) {
+
                 
+
                     .register(name, thisTid);
                 _task_name = name;
                 setThreadName(name);
@@ -344,7 +346,7 @@ struct Topic {
             _subscribed = submask._register(name);
             has_subscribed = true;
         }
-        if(_subscribed is null) {
+        if (_subscribed is null) {
             return false;
         }
         return (*_subscribed is Subscribed.yes);
@@ -407,11 +409,11 @@ unittest {
     log.registerSubscriptionTask("log_sub_task");
     auto some_symbol = Document.init;
     log(topic, "", some_symbol);
-    assert(false == receiveTimeout(Duration.zero, (Topic _, string __, const(Document)) {}), "Received an unsubscribed topic");
+    assert(false == receiveTimeout(Duration.zero, (LogInfo _, const(Document) __) {}), "Received an unsubscribed topic");
     submask.subscribe(topic.name);
     assert(topic.subscribed, "Topic wasn't subscribed, it should");
     log(topic, "", some_symbol);
-    assert(true == receiveTimeout(Duration.zero, (Topic _, string __, const(Document)) {}), "Didn't receive subscribed topic");
+    assert(true == receiveTimeout(Duration.zero, (LogInfo _, const(Document) __) {}), "Didn't receive subscribed topic");
 }
 
 version (Posix) {

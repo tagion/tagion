@@ -109,7 +109,7 @@ HiRPC.Receiver sendSubmitHiRPC(string address, HiRPC.Sender contract, const(Secu
     auto response_data = sock.receive!(immutable(ubyte[]));
     auto response_doc = Document(response_data);
     // We should probably change these exceptions so it always returns a HiRPC.Response error instead?
-    if(!response_doc.isRecord!(HiRPC.Receiver) || sock.m_errno != 0) {
+    if (!response_doc.isRecord!(HiRPC.Receiver) || sock.m_errno != 0) {
         throw new Exception("Error response when sending bill");
     }
 
@@ -714,7 +714,6 @@ struct WalletInterface {
 
                     output_filename = (output_filename.empty && !send) ? "submit".setExtension(FileExtension.hibon) : output_filename;
                     const message = secure_wallet.net.calcHash(signed_contract);
-                    pragma(msg, "Message ", typeof(message));
                     const contract_net = secure_wallet.net.derive(message);
                     const hirpc = HiRPC(contract_net);
                     const hirpc_submit = hirpc.submit(signed_contract);
