@@ -55,7 +55,8 @@ enum nng_errno : int {
         @("") NNG_ETRANERR = 0x2000_0000,
 }
 
-string nng_errstr(nng_errno errno) {
+string nng_errstr(int err) {
+    nng_errno errno = cast(nng_errno) err;
     switch(errno) { 
         static foreach(E; EnumMembers!nng_errno) {
             case E:
@@ -66,10 +67,6 @@ string nng_errstr(nng_errno errno) {
         return null;
     }
     assert(0);
-}
-
-string nng_errstr( int errno ){
-    return nng_errstr(cast(nng_errno)errno);
 }
 
 enum nng_flag {
