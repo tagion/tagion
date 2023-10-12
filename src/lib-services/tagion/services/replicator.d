@@ -31,7 +31,6 @@ struct ReplicatorOptions {
 @safe
 struct ReplicatorService {
     static Topic modify_recorder = Topic("modify/replicator");
-
     void task(immutable(ReplicatorOptions) opts, immutable(SecureNet) net) {
         RecorderChainStorage storage = new RecorderChainFileStorage(opts.folder_path, net);
         RecorderChain recorder_chain = new RecorderChain(storage);
