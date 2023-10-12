@@ -785,7 +785,7 @@ enum KEY_SPAN = ubyte.max + 1;
  */
     RecordFactory.Recorder loads(Range)(
             Range dart_indices,
-            Archive.Type type = Archive.Type.REMOVE) if (isInputRange!Range && isBufferType!(ElementType!Range)) {
+            Archive.Type type = Archive.Type.REMOVE) if (isInputRange!Range && is(ElementType!Range : const(DARTIndex))) {
 
         import std.algorithm.comparison : min;
 
@@ -1152,7 +1152,6 @@ enum KEY_SPAN = ubyte.max + 1;
     HiBON search(Buffer[] owners, const(SecureNet) net) {
         import tagion.script.common;
         import std.algorithm : canFind;
-        import tagion.hibon.HiBONJSON;
 
         TagionBill[] bills;
 
@@ -1170,7 +1169,6 @@ enum KEY_SPAN = ubyte.max + 1;
                         }
                     }
                 }
-                writefln("%s", doc.toPretty);
                 if (TagionBill.isRecord(doc)) {
                     auto bill = TagionBill(doc);
                     if (owners.canFind(bill.owner)) {
@@ -1201,10 +1199,10 @@ enum KEY_SPAN = ubyte.max + 1;
                 return dart.modify(rec);
             }
 
-            Buffer[] dart_indices(RecordFactory.Recorder recorder) {
-                Buffer[] results;
+            DARTIndex[] dart_indices(RecordFactory.Recorder recorder) {
+                DARTIndex[] results;
                 foreach (a; recorder.archives) {
-                    results ~= cast(Buffer) a.dart_index;
+                    results ~= a.dart_index;
                 }
                 return results;
 
@@ -1214,7 +1212,7 @@ enum KEY_SPAN = ubyte.max + 1;
                 .Recorder recorder) {
                 write(dart, table, recorder);
                 auto _dart_indices = dart_indices(recorder);
-
+                pragma(msg, "VALIDATE ", typeof(dart_indices));
                 auto find_recorder = dart.loads(_dart_indices);
                 return check(recorder, find_recorder);
             }

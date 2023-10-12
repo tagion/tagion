@@ -143,8 +143,7 @@ class AddRemoveAndReadTheResult {
             .map!(d => d.values)
             .join
             .map!(a => DARTFakeNet.fake_doc(a))
-            .map!(a => info.net.calcHash(a))
-            .map!(b => cast(Buffer) b)
+            .map!(a => info.net.dartIndex(a))
             .array;
 
         writefln("###");
