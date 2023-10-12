@@ -257,7 +257,7 @@ class DifferentContractsDifferentNodes {
     @When("i send the contracts to the network at the same time.")
     Document time() {
         sendSubmitHiRPC(opts1.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract1), wallet1.net);
-        sendSubmitHiRPC(opts2.inputvalidator.sock_addr, wallet2_hirpc.submit(signed_contract2), wallet1.net);
+        sendSubmitHiRPC(opts2.inputvalidator.sock_addr, wallet2_hirpc.submit(signed_contract2), wallet2.net);
         return result_ok;
     }
 
@@ -335,8 +335,8 @@ class SameContractDifferentNodes {
     @When("i send the same contract to two different nodes.")
     Document nodes() {
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
-        sendSubmitHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit, wallet1.net);
-        sendSubmitHiRPC(opts2.inputvalidator.sock_addr, hirpc_submit, wallet1.net);
+        sendSubmitHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit,wallet1.net);
+        sendSubmitHiRPC(opts2.inputvalidator.sock_addr, hirpc_submit,wallet1.net);
 
         (() @trusted => Thread.sleep(CONTRACT_TIMEOUT))();
         return result_ok;
@@ -426,7 +426,7 @@ class SameContractInDifferentEpochs {
         writeln("EPOCH NUMBER %s", epoch_number);
 
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
-        sendSubmitHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit, wallet1.net);
+        sendSubmitHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit,wallet1.net);
 
         int new_epoch_number;
         do {
@@ -507,7 +507,7 @@ class SameContractInDifferentEpochsDifferentNode {
     Document contract() {
         submask.subscribe("epoch_creator/epoch_created");
 
-        writefln("SAME CONTRACT different epoch");
+        writefln("SAME CONTRACT different node different epoch");
         amount = 1500.TGN;
         auto payment_request = wallet2.requestBill(amount);
         check(wallet1.createPayment([payment_request], signed_contract, fee).value, "Error creating wallet");
@@ -533,7 +533,7 @@ class SameContractInDifferentEpochsDifferentNode {
         writeln("EPOCH NUMBER %s", epoch_number);
 
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
-        sendSubmitHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit);
+        sendSubmitHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit, wallet1.net);
 
         int new_epoch_number;
         do {
@@ -550,7 +550,7 @@ class SameContractInDifferentEpochsDifferentNode {
         } while(new_epoch_number is int.init);
 
         writeln("EPOCH NUMBER updated %s", new_epoch_number);
-        sendSubmitHiRPC(opts2.inputvalidator.sock_addr, hirpc_submit);
+        sendSubmitHiRPC(opts2.inputvalidator.sock_addr, hirpc_submit, wallet1.net);
         
         (() @trusted => Thread.sleep(CONTRACT_TIMEOUT))();
         return result_ok;
@@ -578,6 +578,7 @@ class SameContractInDifferentEpochsDifferentNode {
         check(wallet1_amount == expected_amount1, format("wallet 1 did not lose correct amount of money should have %s had %s", expected_amount1, wallet1_amount));
         check(wallet2_amount == expected_amount2, format("wallet 2 did not lose correct amount of money should have %s had %s", expected_amount2, wallet2_amount));
 
+        submask.unsubscribe("epoch_creator/epoch_created");
 
         return result_ok;
     }
@@ -587,20 +588,97 @@ class SameContractInDifferentEpochsDifferentNode {
 @safe @Scenario("Two contracts same output",
         [])
 class TwoContractsSameOutput {
+    Options opts1;
+    Options opts2;
+    StdSecureWallet wallet1;
+    StdSecureWallet wallet2;
+    StdSecureWallet wallet3;
+    //
+    SignedContract signed_contract1;
+    SignedContract signed_contract2;
+    TagionCurrency amount;
+    TagionCurrency fee;
+
+    HiRPC wallet1_hirpc;
+    HiRPC wallet2_hirpc;
+    HiRPC wallet3_hirpc;
+    TagionCurrency start_amount1;
+    TagionCurrency start_amount2;
+    TagionCurrency start_amount3;
+
+    this(Options opts1,Options opts2, ref StdSecureWallet wallet1, ref StdSecureWallet wallet2, ref StdSecureWallet wallet3) {
+        this.wallet1 = wallet1;
+        this.wallet2 = wallet2;
+        this.wallet3 = wallet3;
+        this.opts1 = opts1;
+        this.opts2 = opts2;
+        wallet1_hirpc = HiRPC(wallet1.net);
+        wallet2_hirpc = HiRPC(wallet2.net);
+        wallet3_hirpc = HiRPC(wallet3.net);
+        start_amount1 = wallet1.calcTotal(wallet1.account.bills);
+        start_amount2 = wallet2.calcTotal(wallet2.account.bills);
+        start_amount3 = wallet3.calcTotal(wallet3.account.bills);
+    }
 
     @Given("i have a payment request containing a bill.")
     Document bill() {
-        return Document();
+        amount = 333.TGN;
+        auto payment_request = wallet3.requestBill(amount);
+        check(wallet1.createPayment([payment_request], signed_contract1, fee).value, "Error paying wallet");
+        check(wallet2.createPayment([payment_request], signed_contract2, fee).value, "Error paying wallet");
+
+        check(signed_contract1.contract.inputs.uniq.array.length == signed_contract1.contract.inputs.length, "signed contract inputs invalid");
+        check(signed_contract2.contract.inputs.uniq.array.length == signed_contract2.contract.inputs.length, "signed contract inputs invalid");
+
+        return result_ok;
     }
 
     @When("i pay the bill from two different wallets.")
     Document wallets() {
-        return Document();
+        auto hirpc_submit1 = wallet1_hirpc.submit(signed_contract1);
+        auto hirpc_submit2 = wallet2_hirpc.submit(signed_contract2);
+        sendSubmitHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit1, wallet1.net);
+        sendSubmitHiRPC(opts2.inputvalidator.sock_addr, hirpc_submit2, wallet2.net);
+
+
+        (() @trusted => Thread.sleep(CONTRACT_TIMEOUT))();
+        return result_ok;
     }
 
     @Then("only one output should be produced.")
     Document produced() {
-        return Document();
+        auto wallet1_dartcheckread = wallet1.getRequestCheckWallet(wallet1_hirpc);
+        auto wallet1_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet1_dartcheckread);
+
+        // writefln("RECEIVED RESPONSE: %s", wallet1_received_doc.toPretty);
+        auto wallet1_received = wallet1_hirpc.receive(wallet1_received_doc);
+        check(wallet1.setResponseCheckRead(wallet1_received), "wallet1 not updated succesfully");
+
+        auto wallet1_amount = wallet1.calcTotal(wallet1.account.bills);
+        writefln("WALLET 1 amount: %s", wallet1_amount);
+        check(wallet1_amount == start_amount1-amount-fee, "wallet 1 did not lose correct amount of money");
+
+        auto wallet2_dartcheckread = wallet2.getRequestCheckWallet(wallet2_hirpc);
+        auto wallet2_received_doc = sendDARTHiRPC(opts2.dart_interface.sock_addr, wallet2_dartcheckread);
+
+        auto wallet2_received = wallet2_hirpc.receive(wallet2_received_doc);
+        check(wallet2.setResponseCheckRead(wallet2_received), "wallet2 not updated succesfully");
+
+        auto wallet2_amount = wallet2.calcTotal(wallet2.account.bills);
+        writefln("WALLET 2 amount: %s", wallet2_amount);
+        check(wallet2_amount == start_amount2-amount-fee, "wallet 2 did not lose correct amount of money");
+
+        auto wallet3_dartcheckread = wallet3.getRequestCheckWallet(wallet3_hirpc);
+        auto wallet3_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet3_dartcheckread);
+
+        // writefln("RECEIVED RESPONSE: %s", wallet3_received_doc.toPretty);
+        auto wallet3_received = wallet3_hirpc.receive(wallet3_received_doc);
+        check(wallet3.setResponseCheckRead(wallet3_received), "wallet3 not updated succesfully");
+        
+        auto wallet3_amount = wallet3.calcTotal(wallet3.account.bills);
+        writefln("WALLET 3 amount: %s", wallet3_amount);
+        check(wallet3_amount == start_amount3+amount, format("did not receive money correct amount of money should have %s had %s", start_amount3+amount, wallet3_amount));
+        return result_ok;
     }
 
 }
