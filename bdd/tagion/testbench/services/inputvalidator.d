@@ -10,6 +10,7 @@ import tagion.testbench.actor.util;
 import nngd;
 import core.time;
 import std.typecons;
+import std.format;
 import std.stdio;
 import tagion.actor;
 import tagion.actor.exceptions;

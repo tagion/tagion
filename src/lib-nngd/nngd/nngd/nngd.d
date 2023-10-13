@@ -584,21 +584,24 @@ struct NNGSocket {
     }
 
     int unsubscribe ( string tag ) {
-        if(!m_subscriptions.canFind(tag))
+        size_t i = m_subscriptions.countUntil(tag);
+        if(i < 0)
             return 0;
         setopt_buf(NNG_OPT_SUB_UNSUBSCRIBE,cast(ubyte[])(tag.dup));                
         if(m_errno == 0)
-            m_subscriptions.remove(tag);
+            m_subscriptions = m_subscriptions[0..i]~m_subscriptions[i+1..$];
         return m_errno;    
     }
 
     int clearsubscribe (){
+        size_t i;
         foreach(tag; m_subscriptions){
+            i = m_subscriptions.countUntil(tag);
+            if(i < 0) continue;
             setopt_buf(NNG_OPT_SUB_UNSUBSCRIBE,cast(ubyte[])(tag.dup));
             if(m_errno != 0)
                 return m_errno;
-            if(m_subscriptions.canFind(tag))    
-                m_subscriptions.remove(tag);    
+            m_subscriptions = m_subscriptions[0..i]~m_subscriptions[i+1..$];
         }
         return 0;
     }
@@ -1249,7 +1252,6 @@ struct WebApp {
         scope(failure){
             nng_http_res_free(res);
             nng_aio_finish(aio, rc);
-            return;
         }
 
         scope(exit){

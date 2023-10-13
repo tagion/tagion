@@ -29,6 +29,7 @@ import std.algorithm;
 import core.time;
 import core.thread;
 import std.stdio;
+import std.format;
 
 alias StdSecureWallet = SecureWallet!StdSecureNet;
 enum CONTRACT_TIMEOUT = 25.seconds;

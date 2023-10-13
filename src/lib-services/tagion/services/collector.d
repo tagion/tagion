@@ -93,10 +93,6 @@ struct CollectorService {
     void rpc_contract(inputHiRPC, immutable(HiRPC.Receiver) receiver) @safe {
         immutable doc = Document(receiver.method.params);
         log("collector received receiver");
-        if (!doc.isRecord!SignedContract) {
-            log(reject, "hirpc_not_a_signed_contract", doc);
-            return;
-        }
         try {
             // No immutable construct on this HiBONRecord
             immutable s_contract = (() @trusted => (cast(immutable) new SignedContract(doc)))();
