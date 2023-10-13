@@ -13,6 +13,7 @@ import tagion.gossip.GossipNet;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.crypto.Types : Pubkey;
+import tagion.crypto.random.random;
 import tagion.basic.Types : Buffer;
 import tagion.hashgraph.Refinement;
 import tagion.gossip.InterfaceNet : GossipNet;
@@ -71,7 +72,8 @@ struct EpochCreatorService {
         gossip_net = new NewEmulatorGossipNet(net.pubkey, opts.timeout.msecs);
         Pubkey[] channels = addressbook.activeNodeChannels;
         Random!size_t random;
-        random.seed(123456789);
+        const _seed = getRandom!size_t;
+        random.seed(_seed);
 
         foreach (channel; channels) {
             gossip_net.add_channel(channel);
