@@ -472,6 +472,24 @@ mixin template HiBONRecord(string CTOR = "") {
 
     enum keys = _keys;
 
+
+// version(none) {
+//     alias KeyType = Tuple!(string, "key", string, "type");
+
+//     static auto getKeyType() {
+//         alias ThisTuple = typeof(ThisType.tupleof);
+        
+    
+//     }
+
+//     static bool isValid() pure nothrow {
+
+
+//         return 
+//     }
+// }
+
+
     static if (!NO_DEFAULT_CTOR) {
         @safe this(const HiBON hibon) {
             this(Document(hibon.serialize));
