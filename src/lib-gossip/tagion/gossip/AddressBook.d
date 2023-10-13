@@ -12,6 +12,7 @@ import std.path : setExtension;
 import core.thread : Thread;
 import std.format;
 import std.random;
+import tagion.dart.DARTRim;
 
 import tagion.basic.tagionexceptions;
 
@@ -341,7 +342,7 @@ struct NodeAddress {
     /** node port */
     uint port;
     /** DART sector */
-    DART.SectorRange sector;
+    SectorRange sector;
 
     mixin HiBONRecord!(
             q{
@@ -363,7 +364,7 @@ struct NodeAddress {
 
                 const node_number = this.port - port_base;
                 
-                sector = DART.SectorRange(0, 0);
+                sector = SectorRange(0, 0);
                 
             }
             else if (address[0..intrn_token.length] != intrn_token) {

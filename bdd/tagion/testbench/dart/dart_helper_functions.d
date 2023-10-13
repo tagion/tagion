@@ -22,6 +22,7 @@ import tagion.utils.Miscellaneous : toHexString;
 import std.stdio : writefln, writeln;
 import std.format;
 import tagion.dart.BlockFile : BlockFile;
+import tagion.dart.DARTRim;
 
 /** 
  * Takes a Rim and returns the document.
@@ -31,7 +32,7 @@ import tagion.dart.BlockFile : BlockFile;
  *   db = The dart 
  * Returns: Result Document with branches and or records.
  */
-Document getRim(DART.Rims rim, HiRPC hirpc, DART db) @safe {
+Document getRim(Rims rim, HiRPC hirpc, DART db) @safe {
     const rim_sender = dartRim(rim, hirpc);
     auto rim_receiver = hirpc.receive(rim_sender.toDoc);
     auto rim_result = db(rim_receiver, false);
@@ -61,7 +62,7 @@ Document getRead(const DARTIndex[] fingerprints, HiRPC hirpc, DART db) @safe {
  *   db = 
  * Returns: Document with split, or the last document able to be retrieved if no splits.
  */
-Document goToSplit(const DART.Rims rim, const HiRPC hirpc, DART db) @safe {
+Document goToSplit(const Rims rim, const HiRPC hirpc, DART db) @safe {
     const rim_doc = getRim(rim, hirpc, db);
 
     if (DARTFile.Branches.isRecord(rim_doc)) {
@@ -74,7 +75,7 @@ Document goToSplit(const DART.Rims rim, const HiRPC hirpc, DART db) @safe {
         if (rim_fingerprints.length > 1) {
             return rim_doc;
         }
-        return goToSplit(DART.Rims(rim, rim_fingerprints.front.index), hirpc, db);
+        return goToSplit(Rims(rim, rim_fingerprints.front.index), hirpc, db);
     }
 
     return rim_doc;
@@ -235,13 +236,13 @@ void syncDarts(DART db1, DART db2, const ushort from, const ushort to) @safe {
     enum TEST_BLOCK_SIZE = 0x80;
     string[] journal_filenames;
 
-    foreach (sector; DART.SectorRange(from, to)) {
+    foreach (sector; SectorRange(from, to)) {
         immutable journal_filename = format("%s.%04x.dart_journal", tempfile, sector);
         journal_filenames ~= journal_filename;
         BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
         auto synch = new TestSynchronizer(journal_filename, db2, db1);
 
-        auto db2_synchronizer = db2.synchronizer(synch, DART.Rims(sector));
+        auto db2_synchronizer = db2.synchronizer(synch, Rims(sector));
         // D!(sector, "%x");
         while (!db2_synchronizer.empty) {
             (() @trusted => db2_synchronizer.call)();

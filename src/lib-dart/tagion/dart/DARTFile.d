@@ -46,6 +46,7 @@ private {
     import tagion.hibon.HiBONRecord;
 
     import tagion.dart.RimKeyRange : rimKeyRange;
+    import tagion.dart.DARTRim;
 }
 
 /// Hash null definition (all zero values)
@@ -773,6 +774,7 @@ enum KEY_SPAN = ubyte.max + 1;
         }
         return result;
     }
+
     /**
  * Loads all the archives in the list of fingerprints
  * 
@@ -926,8 +928,8 @@ enum KEY_SPAN = ubyte.max + 1;
                 while (!range.empty) {
                     auto sub_range = range.nextRim;
                     if (sub_range.front.dart_index.empty) {
-                        writefln("fingerprint %(%02X%) dart_index=%(%02X%)", sub_range.front.fingerprint, sub_range
-                                .front.dart_index);
+                        writefln("fingerprint %(%02X%) dart_index=%(%02X%)",
+                                sub_range.front.fingerprint, sub_range.front.dart_index);
                     }
                     immutable rim_key = sub_range.front.dart_index.rim_key(sub_range.rim);
                     branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key));
@@ -1078,7 +1080,7 @@ enum KEY_SPAN = ubyte.max + 1;
      * Returns:
      *   the branches a the rim_path
      */
-    Branches branches(const(ubyte[]) rim_path) {
+    Branches branches(const(ubyte[]) rim_path, const(Index)* index = null) {
         Branches search(const(ubyte[]) rim_path, const Index index, const uint rim = 0) {
             const doc = blockfile.load(index);
             if (Branches.isRecord(doc)) {
@@ -1094,12 +1096,11 @@ enum KEY_SPAN = ubyte.max + 1;
                     return branches;
                 }
             }
-            // Return empty branches
-            return Branches();
+            return Branches.init;
         }
 
         if (blockfile.masterBlock.root_index is Index.init) {
-            return Branches();
+            return Branches.init;
         }
         return search(rim_path, blockfile.masterBlock.root_index);
     }
@@ -1110,7 +1111,7 @@ enum KEY_SPAN = ubyte.max + 1;
      * Params:
      *   full = true for full DART
      */
-    void dump(bool full = false) {
+    void dump(const SectorRange sectors = SectorRange.init, bool full = false) {
         import std.stdio;
 
         writeln("EYE: ", _fingerprint.hex);
@@ -1139,6 +1140,11 @@ enum KEY_SPAN = ubyte.max + 1;
                     writefln("%s%s [%d]%s", indent, dart_index[0 .. lastRing].hex, branch_index, hash_marker);
                 }
             }
+        }
+
+        Index index = blockfile.masterBlock.root_index;
+        if (!sectors.isinit) {
+
         }
 
         local_dump(blockfile.masterBlock.root_index);
@@ -1237,6 +1243,7 @@ enum KEY_SPAN = ubyte.max + 1;
         }
 
     }
+
 }
 
 version (unittest) {
