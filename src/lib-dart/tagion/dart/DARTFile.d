@@ -1085,42 +1085,55 @@ enum KEY_SPAN = ubyte.max + 1;
      * Params:
      *   full = true for full DART
      */
-    void dump(const SectorRange sectors = SectorRange.init, bool full = false) {
+    void dump(
+            const SectorRange sectors = SectorRange.init,
+            const Flag!"full" full = No.full,
+            const uint depth = 0
+    ) {
         import std.stdio;
 
         writeln("EYE: ", _fingerprint.hex);
         void local_dump(const Index branch_index,
                 const ubyte rim_key = 0,
                 const uint rim = 0,
+                Buffer rim_path = null,
                 string indent = null) @safe {
-            if (branch_index !is Index.init) {
+            if (!branch_index.isinit &&
+                     //        sectors.inRange(Rims(rim_path)) &&
+                    ((depth == 0) || (rim <= depth))) {
                 immutable data = blockfile.load(branch_index);
                 const doc = Document(data);
                 if (Branches.isRecord(doc)) {
                     auto branches = Branches(doc);
                     string _indent;
                     if (rim > 0) {
+                        rim_path ~= rim_key;
+                        if (!sectors.inRange(Rims(rim_path))) {
+                            return;
+                        }
                         writefln("%s| %02X [%d]", indent, rim_key, branch_index);
                         _indent = indent ~ indent_tab;
                     }
                     foreach (key, index; branches._indices) {
-                        local_dump(index, cast(ubyte) key, rim + 1, _indent);
+                        local_dump(index, cast(ubyte) key, rim + 1, rim_path, _indent);
                     }
                 }
                 else {
                     immutable dart_index = manufactor.net.dartIndex(doc);
                     auto lastRing = full ? dart_index.length : rim + 1;
                     const hash_marker = doc.hasHashKey ? " #" : "";
-                    writefln("%s%s [%d]%s", indent, dart_index[0 .. lastRing].hex, branch_index, hash_marker);
+                    writefln("%s%s [%d]%s",
+                            indent, dart_index[0 .. lastRing].hex, branch_index, hash_marker);
                 }
             }
         }
 
         Index index = blockfile.masterBlock.root_index;
         if (!sectors.isinit) {
-            const start_rims = Rims(sectors.from_sector).rims;
+            Buffer start_rims = Rims(sectors.from_sector).rims;
             branches(start_rims[0 .. 1], &index);
-            local_dump(index, start_rims[0], 1, indent_tab);
+
+            local_dump(index, start_rims[0], 0, null);
             return;
         }
 

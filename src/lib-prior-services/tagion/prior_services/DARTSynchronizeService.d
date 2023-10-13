@@ -43,6 +43,7 @@ import tagion.gossip.AddressBook : NodeAddress, addressbook;
 import tagion.basic.tagionexceptions;
 import tagion.actor.exceptions;
 import tagion.dart.DARTRim;
+import std.typecons;
 
 alias HiRPCSender = HiRPC.HiRPCSender;
 alias HiRPCReceiver = HiRPC.HiRPCReceiver;
@@ -363,7 +364,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
                 else {
                     subscription.stop();
                     recorderReplayFiber.clear();
-                    dart.dump(SectorRange.init, true);
+                    dart.dump(SectorRange.init, Yes.full);
                     log("DART generated: bullseye: %s", dart.fingerprint.toHexString);
                     state.setState(DARTSynchronizeState.READY);
                 }

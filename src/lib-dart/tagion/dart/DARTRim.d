@@ -8,6 +8,7 @@ import std.format;
 import tagion.utils.Miscellaneous : toHexString;
 
 @safe:
+enum RIMS_IN_SECTOR = 2;
 /** 
      * Sector range 
      */
@@ -67,7 +68,7 @@ static struct SectorRange {
          * Returns: 
          */
     bool inRange(const Rims rims) const pure nothrow {
-        return sectorInRange(rims.sector, _from_sector, _to_sector);
+        return (rims.rims.length == 0) || sectorInRange(rims.sector, _from_sector, _to_sector);
     }
 
     /**
@@ -106,11 +107,21 @@ static struct SectorRange {
     void popFront() {
         if (!empty) {
             _sector++;
-            if (_sector == _from_sector)
+            if (_sector == _from_sector) {
                 flag = true;
+            }
         }
     }
 
+    void opOpAssign(string OP : "+")(const ushort inc) {
+        if (!empty) {
+            _sector += inc;
+            if (!inRange(_sector)) {
+                _sector = _to_sector;
+                flag = true;
+            }
+        }
+    }
     /**
          * Gets the current sector
          * Returns: current sector
@@ -124,7 +135,7 @@ static struct SectorRange {
          * Returns: text of angle span
          */
     string toString() const pure {
-        return format("(%d, %d)", _from_sector, _to_sector);
+        return format("(%04X, %04X)", _from_sector, _to_sector);
     }
 
     ///
@@ -181,9 +192,11 @@ struct Rims {
     in {
         pragma(msg, "fixme(vp) have to be check: rims is root_rim");
 
-        assert(rims.length >= ushort.sizeof || rims.length == 0,
-                __format("Rims size must be %d or more ubytes contain a sector but contains %d", ushort.sizeof, rims
-                .length));
+        version (none)
+            assert(rims.length >= ushort.sizeof || rims.length == 0,
+                    __format(
+                    "Rims size must be %d or more ubytes contain a sector but contains %d",
+                    ushort.sizeof, rims.length));
     }
     do {
         if (rims.length == 0) {

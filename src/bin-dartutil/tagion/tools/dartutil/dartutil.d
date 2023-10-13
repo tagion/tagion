@@ -73,6 +73,7 @@ int _main(string[] args) {
     //   bool dartread;
     string[] dartread_args;
     string angle_range;
+    uint depth;
     bool dartmodify;
     bool dartrim;
     bool dartrpc;
@@ -104,6 +105,7 @@ int _main(string[] args) {
                 "sync", "Synchronize src.drt to dest.drt", &sync,
                 "P|passphrase", format("Passphrase of the keypair : default: %s", passphrase), &passphrase,
                 "R|range", "Sets angle range from:to (Default is full range)", &angle_range,
+                "depth", "Set limit on dart rim depth", &depth,
                 "verbose|v", "Print output to console", &__verbose_switch,
                 "fake", format("Use fakenet instead of real hashes : default :%s", fake), &fake,
         );
@@ -223,7 +225,7 @@ int _main(string[] args) {
         }
 
         if (dump) {
-            db.dump(SectorRange.init, true);
+            db.dump(sectors, Yes.full, depth);
         }
         else if (eye) {
             writefln("EYE: %s", db.fingerprint.hex);
