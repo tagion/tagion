@@ -10,7 +10,12 @@ import tagion.utils.Term;
 
 __gshared static bool __verbose_switch;
 __gshared static bool __dry_switch;
+__gshared static File vout;
 //static uint verbose_mask;
+
+shared static this() {
+    vout = stdout;
+}
 
 @trusted
 bool verbose_switch() nothrow @nogc {
@@ -22,31 +27,35 @@ bool dry_switch() nothrow @nogc {
     return __dry_switch;
 }
 
+@trusted
+private void __verbosef(Args...)(string fmt, Args args) {
+    vout.writef(fmt, args);
+}
+
+@trusted
+private void __verbose(Args...)(string fmt, Args args) {
+    vout.writefln(fmt, args);
+}
+
 @safe
 void verbose(Args...)(string fmt, Args args) {
-    import std.stdio;
-
     if (verbose_switch) {
-        writefln(fmt, args);
+        __verbose(fmt, args);
     }
 }
 
 @trusted
 void noboseln(Args...)(string fmt, Args args) {
-    import std.stdio;
-
     if (!verbose_switch) {
-        writefln(fmt, args);
+        __verbose(fmt, args);
         stdout.flush;
     }
 }
 
 @trusted
 void nobose(Args...)(string fmt, Args args) {
-    import std.stdio;
-
     if (!verbose_switch) {
-        writef(fmt, args);
+        __verbosef(fmt, args);
         stdout.flush;
     }
 }
@@ -90,7 +99,7 @@ int forceSymLink(const SubTools sub_tools) {
                 return 1;
             }
         }
-        writefln("%s -> %s", toolname, thisExePath);
+        __verbose("%s -> %s", toolname, thisExePath);
         symlink(thisExePath, symlink_filename);
     }
     return 0;

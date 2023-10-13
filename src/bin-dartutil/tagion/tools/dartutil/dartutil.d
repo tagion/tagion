@@ -140,13 +140,13 @@ int _main(string[] args) {
                     .ifThrown(0);
             tools.check(fields == 2,
                     format("Angle range shoud be ex. --range A0F0:B0F8 not %s", angle_range));
-            verbose("from %04x to %04x", _from, _to);
-            return 0;
+            verbose("Angle from %04x to %04x", _from, _to);
+            sectors = DART.SectorRange(_from, _to);
         }
-        //        dartread = !dartread_args.empty;
         foreach (file; args[1 .. $]) {
             if (file.hasExtension(FileExtension.hibon)) {
-                tools.check(inputfilename is null, format("Input file '%s' has already been declared", inputfilename));
+                tools.check(inputfilename is null,
+                        format("Input file '%s' has already been declared", inputfilename));
                 inputfilename = file;
                 continue;
             }
