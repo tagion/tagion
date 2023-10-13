@@ -117,6 +117,22 @@ HiRPC.Receiver sendSubmitHiRPC(string address, HiRPC.Sender contract, const(Secu
     return hirpc.receive(response_doc);
 }
 
+HiRPC.Receiver sendShellSubmitHiRPC(string address, HiRPC.Sender contract, const(SecureNet) net) {
+    import std.net.curl;
+
+    writeln(address);
+    immutable response_data = cast(immutable) post!(ubyte)(address, contract.toDoc.serialize);
+    Document response_doc = Document(response_data);
+    
+    if (!response_doc.isRecord!(HiRPC.Receiver)) {
+        throw new Exception("Error response when sending bill");
+    }
+
+    HiRPC hirpc = HiRPC(net);
+    return hirpc.receive(response_doc);
+
+}
+
 pragma(msg, "Fixme(lr)Remove trusted when nng is safe");
 Document sendDARTHiRPC(string address, HiRPC.Sender dart_req) @trusted {
     import nngd;
@@ -126,7 +142,7 @@ Document sendDARTHiRPC(string address, HiRPC.Sender dart_req) @trusted {
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
     s.recvtimeout = 1000.msecs;
     while (1) {
-        writefln("REQ to dial...");
+        writefln("REQ to dial... %s", address);
         rc = s.dial(address);
         if (rc == 0) {
             break;
@@ -566,6 +582,7 @@ struct WalletInterface {
         bool list;
         bool sum;
         bool send;
+        bool sendkernel;
         bool pay;
         bool request;
         bool update;
@@ -670,7 +687,7 @@ struct WalletInterface {
                     if (output_filename !is string.init) {
                         output_filename.fwrite(req);
                     }
-                    if (send) {
+                    if (sendkernel) {
                         auto received_doc = sendDARTHiRPC(options.dart_address, req);
                         check(received_doc.isRecord!(HiRPC.Receiver), "Error in response. Aborting");
                         auto receiver = hirpc.receive(received_doc);
@@ -712,7 +729,7 @@ struct WalletInterface {
 
                     //   check(created_payment, "payment was not successful");
 
-                    output_filename = (output_filename.empty && !send) ? "submit".setExtension(FileExtension.hibon) : output_filename;
+                    output_filename = (output_filename.empty) ? "submit".setExtension(FileExtension.hibon) : output_filename;
                     const message = secure_wallet.net.calcHash(signed_contract);
                     const contract_net = secure_wallet.net.derive(message);
                     const hirpc = HiRPC(contract_net);
@@ -724,6 +741,9 @@ struct WalletInterface {
                     secure_wallet.account.hirpcs ~= hirpc_submit.toDoc;
                     save_wallet = true;
                     if (send) {
+                        sendShellSubmitHiRPC(options.contract_shell_address, hirpc_submit, contract_net);
+                    }
+                    else if (sendkernel) {
                         sendSubmitHiRPC(options.contract_address, hirpc_submit, contract_net);
                     }
                 }
