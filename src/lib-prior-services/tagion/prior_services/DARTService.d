@@ -21,6 +21,7 @@ import tagion.actor.exceptions;
 import tagion.utils.Miscellaneous : toHexString, cutHex;
 import tagion.dart.DARTFile;
 import tagion.dart.DART;
+import tagion.dart.DARTRim;
 
 version (unittest) {
     import tagion.dart.BlockFile : fileId;
@@ -52,7 +53,7 @@ void dartServiceTask(Net : SecureNet)(
         immutable(Options) opts,
         shared(p2plib.Node) node,
         shared(Net) master_net,
-        immutable(DART.SectorRange) sector_range) nothrow {
+        immutable(SectorRange) sector_range) nothrow {
     try {
         scope (success) {
             ownerTid.prioritySend(Control.END);
@@ -134,7 +135,7 @@ void dartServiceTask(Net : SecureNet)(
                 bufArr[NodeAddress] remote_fp_requests;
                 Buffer[] local_fp;
                 fpIterator: foreach (fp; dart_indices) {
-                    const rims = DART.Rims(fp);
+                    const rims = Rims(fp);
                     if (sector_range.inRange(rims)) {
                         local_fp ~= fp;
                         continue fpIterator;

@@ -47,6 +47,7 @@ import tagion.utils.Random;
 import tagion.utils.Queue;
 import tagion.utils.StdTime;
 import tagion.utils.Miscellaneous : cutHex;
+import tagion.dart.DARTRim;
 
 shared(p2plib.Node) initialize_node(immutable Options opts) {
     import std.array : split;
@@ -111,7 +112,7 @@ void tagionService(NetworkMode net_mode, Options opts) nothrow {
             }
         }
 
-        auto sector_range = DART.SectorRange(0, 0);
+        auto sector_range = SectorRange(0, 0);
         shared(p2plib.Node) p2pnode;
 
         auto master_net = new StdSecureNet;

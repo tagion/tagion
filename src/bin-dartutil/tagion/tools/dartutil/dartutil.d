@@ -49,6 +49,7 @@ import tagion.dart.DARTFakeNet;
 import tagion.tools.revision;
 import std.uni : toLower;
 import std.exception;
+import tagion.dart.DARTRim;
 
 /**
  * @brief tool for working with local DART database
@@ -84,7 +85,7 @@ int _main(string[] args) {
     string passphrase = "verysecret";
 
     GetoptResult main_args;
-    DART.SectorRange sectors;
+    SectorRange sectors;
     try {
         main_args = getopt(args,
                 std.getopt.config.caseSensitive,
@@ -141,7 +142,7 @@ int _main(string[] args) {
             tools.check(fields == 2,
                     format("Angle range shoud be ex. --range A0F0:B0F8 not %s", angle_range));
             verbose("Angle from %04x to %04x", _from, _to);
-            sectors = DART.SectorRange(_from, _to);
+            sectors = SectorRange(_from, _to);
         }
         foreach (file; args[1 .. $]) {
             if (file.hasExtension(FileExtension.hibon)) {
@@ -222,7 +223,7 @@ int _main(string[] args) {
         }
 
         if (dump) {
-            db.dump(true);
+            db.dump(SectorRange.init, true);
         }
         else if (eye) {
             writefln("EYE: %s", db.fingerprint.hex);
