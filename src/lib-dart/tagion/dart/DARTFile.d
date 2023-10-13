@@ -73,36 +73,6 @@ ubyte rim_key(F)(F rim_keys, const uint rim) pure if (isBufferType!F) {
     return rim_keys[rim];
 }
 
-/++
- + Sector is the little ending value the first two bytes of an fingerprint
- + Returns:
- +     Sector number of a fingerpint
- +/
-@safe
-ushort sector(F)(const(F) fingerprint) pure nothrow @nogc if (isBufferType!F)
-in (fingerprint.length >= ubyte.sizeof)
-do {
-    ushort result = ushort(fingerprint[0]) << 8;
-    if (fingerprint.length > ubyte.sizeof) {
-        result |= fingerprint[1];
-
-    }
-    return result;
-}
-
-@safe
-unittest {
-    import tagion.crypto.Types : Fingerprint;
-    import std.stdio;
-
-    ubyte[] buf1 = [0xA7];
-    assert(sector(buf1) == 0xA700);
-    assert(sector(cast(Fingerprint)[0xA7, 0x15]) == 0xA715);
-    Buffer buf2 = [0xA7, 0x15, 0xE3];
-    assert(sector(buf2) == 0xA715);
-
-}
-
 enum SECTOR_MAX_SIZE = 1 << (ushort.sizeof * 8);
 
 import std.algorithm;
@@ -1080,7 +1050,7 @@ enum KEY_SPAN = ubyte.max + 1;
      * Returns:
      *   the branches a the rim_path
      */
-    Branches branches(const(ubyte[]) rim_path, const(Index)* index = null) {
+    Branches branches(const(ubyte[]) rim_path, scope Index* branch_index = null) {
         Branches search(const(ubyte[]) rim_path, const Index index, const uint rim = 0) {
             const doc = blockfile.load(index);
             if (Branches.isRecord(doc)) {
@@ -1093,6 +1063,10 @@ enum KEY_SPAN = ubyte.max + 1;
                     }
                 }
                 else {
+                    if (branch_index !is null) {
+                        *branch_index = Index(index);
+
+                    }
                     return branches;
                 }
             }
@@ -1144,10 +1118,13 @@ enum KEY_SPAN = ubyte.max + 1;
 
         Index index = blockfile.masterBlock.root_index;
         if (!sectors.isinit) {
-
+            const start_rims = Rims(sectors.from_sector).rims;
+            branches(start_rims[0 .. 1], &index);
+            local_dump(index, start_rims[0], 1, indent_tab);
+            return;
         }
 
-        local_dump(blockfile.masterBlock.root_index);
+        local_dump(index);
     }
 
     package Document cacheLoad(const Index index) {
