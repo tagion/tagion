@@ -18,6 +18,7 @@ import std.file : exists;
 import std.algorithm : countUntil, map;
 import std.range : iota;
 import std.array;
+import std.format;
 
 import tagion.tools.Basic;
 import tagion.utils.getopt;
@@ -169,10 +170,10 @@ int _main(string[] args) {
     log.register(baseName(program));
 
     locator_options = new immutable(LocatorOptions)(5, 5);
-    ActorHandle!Supervisor[] supervisor_handles;
+    SupervisorHandle[] supervisor_handles;
 
     if (local_options.wave.network_mode == NetworkMode.INTERNAL) {
-        Options[] node_options = get_mode_0_options(local_options, monitor);
+        auto node_options = get_mode_0_options(local_options, monitor);
         network_mode0(node_options, supervisor_handles);
 
         if (mode0_node_opts_path) {
@@ -208,7 +209,7 @@ int _main(string[] args) {
     return 0;
 }
 
-int network_mode0(Options[] node_options, ref ActorHandle!Supervisor[] supervisor_handles) {
+int network_mode0(const(Options)[] node_options, ref ActorHandle!Supervisor[] supervisor_handles) {
     struct Node {
         immutable(Options) opts;
         immutable(SecureNet) net;
@@ -231,7 +232,7 @@ int network_mode0(Options[] node_options, ref ActorHandle!Supervisor[] superviso
     return 0;
 }
 
-Options[] get_mode_0_options(const(Options) options, bool monitor) {
+const(Options)[] get_mode_0_options(const(Options) options, bool monitor = false) {
     const number_of_nodes = options.wave.number_of_nodes;
     const prefix_f = options.wave.prefix_format;
     Options[] all_opts;

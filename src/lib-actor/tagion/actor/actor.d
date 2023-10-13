@@ -2,7 +2,6 @@
 /// Examles: [tagion.testbench.services]
 module tagion.actor.actor;
 
-import std.format : format;
 import std.typecons;
 import std.exception;
 import std.traits;

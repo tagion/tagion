@@ -5,6 +5,7 @@ import tagion.testbench.services;
 
 import tagion.tools.Basic;
 
+import std.format;
 import tagion.actor;
 import tagion.services.inputvalidator;
 import std.concurrency;

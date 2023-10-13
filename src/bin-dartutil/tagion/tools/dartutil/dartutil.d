@@ -47,6 +47,8 @@ import tagion.script.NameCardScripts : readStandardRecord;
 import tagion.tools.Basic;
 import tagion.dart.DARTFakeNet;
 import tagion.tools.revision;
+import std.uni : toLower;
+import std.exception;
 
 /**
  * @brief tool for working with local DART database
@@ -69,6 +71,7 @@ int _main(string[] args) {
 
     //   bool dartread;
     string[] dartread_args;
+    string angle_range;
     bool dartmodify;
     bool dartrim;
     bool dartrpc;
@@ -81,13 +84,13 @@ int _main(string[] args) {
     string passphrase = "verysecret";
 
     GetoptResult main_args;
-
+    DART.SectorRange sectors;
     try {
         main_args = getopt(args,
                 std.getopt.config.caseSensitive,
                 std.getopt.config.bundling,
                 "version", "display the version", &version_switch, //   "dartfilename|d", format("Sets the dartfile: default %s", dartfilename), &dartfilename,
-                "i|inputfile", "Sets the HiBON input file name", &inputfilename,
+                //                "i|inputfile", "Sets the HiBON input file name", &inputfilename,
                 "I|initialize", "Create a dart file", &initialize,
                 "o|outputfile", "Sets the output file name", &outputfilename,
                 "r|read", "Excutes a DART read sequency", &dartread_args,
@@ -99,6 +102,7 @@ int _main(string[] args) {
                 "eye", "Prints the bullseye", &eye,
                 "sync", "Synchronize src.drt to dest.drt", &sync,
                 "P|passphrase", format("Passphrase of the keypair : default: %s", passphrase), &passphrase,
+                "R|range", "Sets angle range from:to (Default is full range)", &angle_range,
                 "verbose|v", "Print output to console", &__verbose_switch,
                 "fake", format("Use fakenet instead of real hashes : default :%s", fake), &fake,
         );
@@ -127,12 +131,17 @@ int _main(string[] args) {
                     main_args.options);
             return 0;
         }
-        if (!dartfilename.empty) {
-            writefln("Deprecation notice: the -d / --dartfilename is deprecated. \n Please use dartutil FILENAME switches instead");
-        }
 
-        if (!inputfilename.empty) {
-            writefln("Deprecation notice: the -i / --inputfilename is deprecated. \n Please use dartutil FILENAME switches instead");
+        if (!angle_range.empty) {
+            ushort _from, _to;
+            auto angle_range_decimal = angle_range;
+            const fields =
+                angle_range.formattedRead("%x:%x", _from, _to)
+                    .ifThrown(0);
+            tools.check(fields == 2,
+                    format("Angle range shoud be ex. --range A0F0:B0F8 not %s", angle_range));
+            verbose("from %04x to %04x", _from, _to);
+            return 0;
         }
         //        dartread = !dartread_args.empty;
         foreach (file; args[1 .. $]) {

@@ -25,6 +25,8 @@ import tagion.utils.JSONCommon;
 import tagion.services.options : TaskNames;
 import tagion.crypto.SecureInterfaceNet;
 
+import std.format;
+
 import nngd;
 
 @safe
