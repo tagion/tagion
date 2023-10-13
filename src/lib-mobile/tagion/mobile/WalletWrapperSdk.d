@@ -367,7 +367,7 @@ extern (C) {
         return 0;
     }
 
-    export uint get_derivers(uint8_t* deriversPtr) {
+    version (none) export uint get_derivers(uint8_t* deriversPtr) {
         if (__wallet_storage.wallet.isLoggedin()) {
             const encrDerivers = __wallet_storage.wallet.getEncrDerivers();
             const deviversDocId = recyclerDoc.create(Document(encrDerivers.toHiBON));
@@ -379,12 +379,36 @@ extern (C) {
         return 0;
     }
 
-    export uint set_derivers(const uint8_t* deriversPtr, const uint32_t deriversLen) {
+    version (none) export uint set_derivers(const uint8_t* deriversPtr, const uint32_t deriversLen) {
 
         immutable encDerivers = cast(immutable)(deriversPtr[0 .. deriversLen]);
 
         if (__wallet_storage.wallet.isLoggedin()) {
             __wallet_storage.wallet.setEncrDerivers(Cipher.CipherDocument(Document(encDerivers)));
+            return 1;
+        }
+        return 0;
+    }
+
+    export uint get_backup(uint8_t* backupPtr) {
+        if (__wallet_storage.wallet.isLoggedin()) {
+            const account = __wallet_storage.wallet.account;
+            const backupDocId = recyclerDoc.create(account.toDoc);
+
+            *backupPtr = cast(uint8_t) backupDocId;
+
+            return 1;
+        }
+        return 0;
+    }
+
+    export uint set_backup(const uint8_t* backupPtr, const uint32_t backupLen) {
+
+        immutable account = cast(immutable)(backupPtr[0 .. backupLen]);
+
+        if (__wallet_storage.wallet.isLoggedin()) {
+            __wallet_storage.wallet.account = AccountDetails(Document(account));
+            __wallet_storage.write;
             return 1;
         }
         return 0;
