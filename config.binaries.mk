@@ -74,6 +74,12 @@ ${call DO_BIN,geldbeutel,$(LIB_DFILES) ${call BIN_DEPS,geldbeutel},tagion}
 target-stiefel: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER) 
 ${call DO_BIN,stiefel,$(LIB_DFILES) ${call BIN_DEPS,stiefel},tagion}
 
+#
+#  HiBON reqular expression print
+#
+target-hirep: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER) 
+${call DO_BIN,hirep,$(LIB_DFILES) ${call BIN_DEPS,hirep},tagion}
+
 
 
 #
@@ -159,6 +165,7 @@ TAGION_TOOLS+=wasmutil
 TAGION_TOOLS+=geldbeutel
 TAGION_TOOLS+=tagionshell
 TAGION_TOOLS+=stiefel
+TAGION_TOOLS+=hirep
 
 TAGION_BINS=$(foreach tools,$(TAGION_TOOLS), ${call BIN_DEPS,$(tools)} )
 

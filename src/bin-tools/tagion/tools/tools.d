@@ -21,6 +21,7 @@ int main(string[] args) {
     import geldbeutel = tagion.tools.wallet.geldbeutel;
     import tagionshell = tagion.tools.tagionshell;
     import stiefel = tagion.tools.boot.stiefel;
+    import hirep = tagion.tools.hirep.hirep;
 
     alias alltools = AliasSeq!(
             tagionwave,
@@ -38,6 +39,7 @@ int main(string[] args) {
             geldbeutel,
             tagionshell,
             stiefel,
+            hirep,
     );
     mixin doOneMain!(alltools);
     return do_main(args);
