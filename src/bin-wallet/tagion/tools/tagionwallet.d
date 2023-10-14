@@ -18,6 +18,7 @@ import core.thread;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONFile : fread, fwrite;
 import tagion.hibon.HiBONJSON;
 
 import tagion.basic.Types : Buffer;

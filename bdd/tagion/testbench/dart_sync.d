@@ -1,7 +1,7 @@
 module tagion.testbench.dart_sync;
 
 import tagion.behaviour.Behaviour;
-import tagion.hibon.HiBONRecord : fwrite;
+import tagion.hibon.HiBONFile : fwrite;
 import tagion.tools.Basic;
 import std.traits : moduleName;
 

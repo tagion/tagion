@@ -163,7 +163,7 @@ DARTIndex dartIndexDecode(const(HashNet) net, const(char[]) str) {
     import std.array : split;
     import tagion.hibon.HiBONJSON : typeMap, NotSupported;
     import tagion.hibon.HiBONBase;
-    import tagion.hibon.HiBONRecord : fread;
+    import tagion.hibon.HiBONFile : fread;
     import std.traits;
     import std.stdio;
 

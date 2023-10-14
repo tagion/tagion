@@ -13,7 +13,7 @@ import tagion.basic.Types : FileExtension, DOT;
 
 import tagion.behaviour.BehaviourFeature;
 import tagion.behaviour.BehaviourReporter;
-import tagion.hibon.HiBONRecord : fwrite;
+import tagion.hibon.HiBONFile : fwrite;
 
 import std.stdio;
 

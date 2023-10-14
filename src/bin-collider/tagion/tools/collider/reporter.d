@@ -6,7 +6,8 @@ module tagion.tools.collider.reporter;
  */
 import tagion.tools.Basic : Main;
 
-import tagion.hibon.HiBONRecord : fwrite, fread, isRecord;
+import tagion.hibon.HiBONRecord : isRecord;
+import tagion.hibon.HiBONFile : fwrite, fread;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.Document : Document;
 import tagion.tools.revision : revision_text;
@@ -59,7 +60,9 @@ int _main(string[] args) {
     }
 
     auto result_files = dirEntries(log_dir, SpanMode.depth).filter!(dirEntry => dirEntry.name.endsWith(".hibon"))
-        .map!(dirEntry => dirEntry.name).array.sort;
+        .map!(dirEntry => dirEntry.name)
+        .array
+        .sort;
 
     if (result_files.length == 0) {
         stderr.writeln("No hibon result files found");
@@ -98,12 +101,13 @@ MdString toMd(FeatureGroup fg) {
     }
 
     uint successful = 0;
-    foreach(scenario; fg.scenarios) {
+    foreach (scenario; fg.scenarios) {
         if (scenario.info.result.isRecord!Result) {
             successful += 1;
         }
     }
-    const summary = format("<summary> %s (%s/%s) %s </summary>\n\n", result_type, successful, fg.scenarios.length, fg.info.name);
+    const summary = format("<summary> %s (%s/%s) %s </summary>\n\n", result_type, successful, fg.scenarios.length, fg
+            .info.name);
 
     // result_md.put(format("%s\n\n", result_type));
 

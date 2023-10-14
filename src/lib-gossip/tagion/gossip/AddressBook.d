@@ -2,6 +2,7 @@ module tagion.gossip.AddressBook;
 
 import tagion.crypto.Types : Pubkey;
 import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONFile;
 import tagion.dart.DART : DART;
 import tagion.prior_services.DARTOptions : DARTOptions;
 import tagion.logger.Logger : log;

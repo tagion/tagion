@@ -113,15 +113,6 @@ static struct SectorRange {
         }
     }
 
-    void opOpAssign(string OP : "+")(const ushort inc) {
-        if (!empty) {
-            _sector += inc;
-            if (!inRange(_sector)) {
-                _sector = _to_sector;
-                flag = true;
-            }
-        }
-    }
     /**
          * Gets the current sector
          * Returns: current sector

@@ -6,7 +6,7 @@ import std.stdio;
 import std.array;
 import std.path;
 import std.file : exists, mkdir;
-import tagion.hibon.HiBONRecord : fwrite, fread;
+import tagion.hibon.HiBONFile : fwrite, fread;
 import std.algorithm;
 import std.range;
 import tagion.tools.revision;

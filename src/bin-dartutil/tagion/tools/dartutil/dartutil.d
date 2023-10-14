@@ -36,6 +36,7 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBON;
 import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONFile : fread, fwrite;
 
 //import tagion.utils.Miscellaneous;
 import tagion.hibon.HiBONtoText : decode, encodeBase64;

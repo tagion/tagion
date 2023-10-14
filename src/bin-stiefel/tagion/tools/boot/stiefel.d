@@ -11,7 +11,7 @@ import tagion.dart.Recorder;
 import tagion.tools.revision;
 import tagion.basic.Types : FileExtension, Buffer;
 import tagion.tools.Basic;
-import tagion.hibon.HiBONRecord : fwrite, fread;
+import tagion.hibon.HiBONFile : fwrite, fread;
 import tagion.basic.tagionexceptions;
 import tagion.utils.Term;
 import tagion.hibon.Document;

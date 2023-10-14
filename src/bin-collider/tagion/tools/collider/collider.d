@@ -30,7 +30,7 @@ import tagion.behaviour.Emendation : emendation, suggestModuleName;
 import tagion.behaviour.BehaviourFeature;
 import tagion.behaviour.Behaviour : TestCode, testCode, testColor, getBDDErrors;
 
-import tagion.hibon.HiBONRecord : fwrite, fread;
+import tagion.hibon.HiBONFile : fwrite, fread;
 
 import tagion.utils.Term;
 
