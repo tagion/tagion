@@ -60,7 +60,7 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONRecord!T) {
 Document fread(ref File file) {
     import LEB128 = tagion.utils.LEB128;
 
-    enum LEB128_SIZE = ulong.sizeof + 2;
+    enum LEB128_SIZE = LEB128.DataSize!size_t;
     ubyte[LEB128_SIZE] _buf;
     ubyte[] buf = _buf;
     const doc_start = file.tell;
@@ -114,5 +114,32 @@ unittest {
         fout = File(deleteme, "r");
         const result = fout.fread!Simple;
         assert(expected_s == result);
+    }
+}
+
+struct HiBONFile {
+    File file;
+    Document doc;
+    private ubyte[] buf;
+    @property
+    bool empty() pure const {
+        return file.eof;
+    }
+
+    Document front() pure nothrow const @nogc {
+        return doc;
+    }
+
+    void popFront() {
+        if (!empty) {
+            buf.length = LEB128.DataSize!size_t;
+            const doc_start = file.tell;
+            file.rawRead(buf);
+            const doc_size = LEB128.decode!size_t(buf);
+            buf.length = doc_size.size + doc_size.value;
+            file.seek(doc_start);
+            file.rawRead(buf);
+            doc = Document(buf.idup);
+        }
     }
 }
