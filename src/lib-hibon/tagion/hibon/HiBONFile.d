@@ -126,6 +126,7 @@ struct HiBONFile {
         return file.eof;
     }
 
+    @property
     Document front() pure nothrow const @nogc {
         return doc;
     }
@@ -133,12 +134,10 @@ struct HiBONFile {
     void popFront() {
         if (!empty) {
             buf.length = LEB128.DataSize!size_t;
-            const doc_start = file.tell;
-            file.rawRead(buf);
+            const read_size = file.rawRead(buf).length;
             const doc_size = LEB128.decode!size_t(buf);
             buf.length = doc_size.size + doc_size.value;
-            file.seek(doc_start);
-            file.rawRead(buf);
+            file.rawRead(buf[read_size .. $]);
             doc = Document(buf.idup);
         }
     }

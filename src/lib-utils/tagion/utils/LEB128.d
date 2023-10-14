@@ -7,9 +7,8 @@ import tagion.basic.tagionexceptions;
 import std.algorithm.comparison : min;
 import std.algorithm.iteration : map, sum;
 
-//import std.stdio;
-
-@safe @nogc
+@safe:
+@nogc
 class LEB128Exception : TagionException {
     this(string msg, string file = __FILE__, size_t line = __LINE__) pure nothrow {
         super(msg, file, line);
@@ -23,7 +22,7 @@ alias check = Check!LEB128Exception;
  The size in bytes of the LEB128
  No error size 0 is returned
 +/
-@safe @nogc
+@nogc
 size_t calc_size(const(ubyte[]) data) pure nothrow {
     foreach (i, d; data) {
         if ((d & 0x80) == 0) {
@@ -36,7 +35,7 @@ size_t calc_size(const(ubyte[]) data) pure nothrow {
     return data.length;
 }
 
-@safe @nogc
+@nogc
 size_t calc_size(T)(const T v) pure nothrow if (isUnsigned!(T)) {
     size_t result;
     ulong value = v;
@@ -58,7 +57,7 @@ template DataSize(T) if (isIntegral!T) {
     }
 }
 
-@safe @nogc
+@nogc
 size_t calc_size(T)(const T v) pure nothrow if (isSigned!(T)) {
     if (v == T.min) {
         return T.sizeof + (is(T == int) ? 1 : 2);
@@ -83,7 +82,6 @@ size_t calc_size(T)(const T v) pure nothrow if (isSigned!(T)) {
     return result;
 }
 
-@safe
 immutable(ubyte[]) encode(T)(const T v) pure if (isUnsigned!T && isIntegral!T) {
     ubyte[DataSize!T] data;
     alias BaseT = TypedefType!T;
@@ -99,7 +97,6 @@ immutable(ubyte[]) encode(T)(const T v) pure if (isUnsigned!T && isIntegral!T) {
     assert(0);
 }
 
-@safe
 immutable(ubyte[]) encode(T)(const T v) pure if (isSigned!T && isIntegral!T) {
     enum DATA_SIZE = (T.sizeof * 9 + 1) / 8 + 1;
     ubyte[DataSize!T] data;
@@ -132,7 +129,7 @@ enum ErrorValue(T) = DecodeLEB128!T(T.init, 0);
  The value and the size
  In case of an error this size is set to zero
 +/
-@safe @nogc
+@nogc
 DecodeLEB128!T decode(T = ulong)(const(ubyte[]) data) pure nothrow
 if (isUnsigned!T) {
     alias BaseT = TypedefType!T;
@@ -165,7 +162,7 @@ if (isUnsigned!T) {
  The value and the size
  In case of an error this size is set to zero
 +/
-@safe @nogc
+@nogc
 DecodeLEB128!T decode(T = long)(const(ubyte[]) data) pure nothrow if (isSigned!T) {
     alias BaseT = TypedefType!T;
     long result;
@@ -257,7 +254,6 @@ unittest {
     }
 }
 
-@safe @nogc
 DecodeLEB128!T read(T, U:
         const(ubyte))(ref U[] data) pure nothrow {
     const result = decode!T(data);
@@ -266,7 +262,6 @@ DecodeLEB128!T read(T, U:
 }
 
 ///
-@safe
 unittest {
     const(ubyte)[] buf;
     { // read of empty
@@ -290,5 +285,40 @@ unittest {
         const dec_range = read!long(buf);
         assert(dec_range.value == -0x1245);
         assert(dec_range.size == 2);
+    }
+}
+
+bool isInvariant(T)(const(ubyte[]) data) pure nothrow @nogc if (isIntegral!T) {
+    import std.algorithm;
+
+    bool result = (data.length > 0) && ((data[0] != 0x80) || ((data.length > 1) && data[0 .. 2] != [0x80, 0x00]));
+    static if (isSigned!T) {
+        if (result) {
+            const negative_count = data.countUntil(0xFF);
+            return (negative_count < 0) || ((negative_count + 1 < data.length) && data[negative_count] == 0x7F);
+        }
+    }
+    return result;
+}
+
+unittest {
+    const(ubyte[]) correct_buf = [0];
+    const(ubyte[]) not_correct_buf = [0x80, 0];
+    { /// Unsigned data invariant LEB128
+        assert(correct_buf.decode!uint.value == not_correct_buf.decode!uint.value);
+        assert(correct_buf.isInvariant!uint);
+        assert(!not_correct_buf.isInvariant!uint);
+    }
+
+    {
+        assert(correct_buf.isInvariant!int);
+        assert(!not_correct_buf.isInvariant!int);
+        const(ubyte[]) correct_buf_negative = [0x7F];
+        const(ubyte[]) not_correct_buf_negative = [0xFF, 0x7F];
+        const(ubyte[]) not_correct_buf_negative_2 = [0xFF, 0xFF, 0xFF, 0x7F];
+        assert(correct_buf_negative.isInvariant!int);
+        assert(!not_correct_buf_negative.isInvariant!int);
+        assert(!not_correct_buf_negative_2.isInvariant!int);
+
     }
 }
