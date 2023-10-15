@@ -138,7 +138,6 @@ int _main(string[] args) {
 
         if (!angle_range.empty) {
             ushort _from, _to;
-            auto angle_range_decimal = angle_range;
             const fields =
                 angle_range.formattedRead("%x:%x", _from, _to)
                     .ifThrown(0);

@@ -15,6 +15,8 @@ import tagion.dart.DARTException : BlockFileException;
 import std.algorithm;
 import std.range;
 import tagion.hibon.HiBONJSON : toPretty;
+import tools = tagion.tools.toolsexception;
+import std.exception;
 
 mixin Main!_main;
 
@@ -136,38 +138,35 @@ int _main(string[] args) {
     bool ignore; /// Ignore blockfile format errors
     ulong block_number; /// Block number to read (block_number > 0)
     bool sequency; /// Prints the sequency on the next header
-    bool dump_recycler;
-    bool dump_recycler_statistic;
-    bool dump_statistic;
-    bool dump_graph;
+    bool print_recycler;
+    bool print_recycler_statistic;
+    bool print_statistic;
+    bool print_graph;
     bool dump_doc;
-    bool dump_header;
+    bool print_header;
     ulong dump_index;
-
+    bool dump;
+    string index_range;
     string output_filename;
     enum logo = import("logo.txt");
-    void _report(string msg) {
-        writefln("Error: %s", msg);
-    }
-
     string filename;
     try {
 
         auto main_args = getopt(args,
                 std.getopt.config.caseSensitive,
                 std.getopt.config.bundling,
-                "version", "Display the version", &version_switch, // "info", "Display blockfile metadata", &display_meta,
+                "version", "Display the version", &version_switch,
                 "v|verbose", "Prints more debug information", &__verbose_switch,
+                "R|range", "Sets range of block indices (Default is full range)", &index_range,
                 "print", "Prints the entire blockfile", &print,
-                "dumprecycler", "Dumps the recycler", &dump_recycler,
-                "r|recyclerstatistic", "Dumps the recycler statistic block", &dump_recycler_statistic,
-                "s|statistic", "Dumps the statistic block", &dump_statistic,
-                "g|dumpgraph", "Dump the blockfile in graphviz format", &dump_graph,
+                "print-recycler", "Dumps the recycler", &print_recycler,
+                "r|recyclerstatistic", "Dumps the recycler statistic block", &print_recycler_statistic,
+                "s|statistic", "Dumps the statistic block", &print_statistic,
+                "g|print-graph", "Dump the blockfile in graphviz format", &print_graph,
                 "d|dumpdoc", "Dump the document located at an specific index", &dump_doc,
-                "H|header", "Dump the header block", &dump_header,
-                "i|index", "the index to dump the document from", &dump_index, // "inspect|c", "Inspect the blockfile format", &inspect,
-
-                
+                "H|header", "Dump the header block", &print_header,
+                "i|index", "the index to dump the document from", &dump_index,
+                "dump", "Dumps the blocks as a HiBON sequency to stdout or a file", &dump,
 
         );
 
@@ -198,33 +197,52 @@ int _main(string[] args) {
         }
 
         if (args.length !is HAS_BLOCK_FILE_ARG) {
-            stderr.writeln("Missing blockfile");
+            error("Missing blockfile");
             return ExitCode.MISSING_BLOCKFILE;
         }
 
         filename = args[1]; /// First argument is the blockfile name
         analyzer.blockfile = BlockFile(filename);
+        size_t index_from, index_to;
+        if (!index_range.empty) {
+            vout = stderr;
+            const fields =
+                index_range.formattedRead("%d:%d", index_from, index_to)
+                    .ifThrown(0);
+            tools.check(fields == 2,
+                    format("Angle range shoud be ex. --range 42:117 not %s", index_range));
+            verbose("Angle from [%d:%d]", index_from, index_to);
+            //sectors = SectorRange(index_from, index_to);
+
+            return 0;
+        }
+
+        if (dump) {
+            vout = stderr;
+
+            return 0;
+        }
         if (print) {
             analyzer.dump;
         }
 
-        if (dump_header) {
+        if (print_header) {
             analyzer.dumpHeader;
         }
 
-        if (dump_recycler) {
+        if (print_recycler) {
             analyzer.recycleDump;
         }
 
-        if (dump_recycler_statistic) {
+        if (print_recycler_statistic) {
             analyzer.recycleStatisticDump;
         }
 
-        if (dump_statistic) {
+        if (print_statistic) {
             analyzer.dumpStatistic;
         }
 
-        if (dump_graph) {
+        if (print_graph) {
             analyzer.dumpGraph;
         }
 
