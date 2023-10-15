@@ -131,7 +131,7 @@ int _main(string[] args) {
     immutable program = args[0];
     bool version_switch;
     bool display_meta;
-    bool dump; /// Dumps the block map
+    bool list; /// lists the block map
     bool inspect;
     bool ignore; /// Ignore blockfile format errors
     ulong block_number; /// Block number to read (block_number > 0)
@@ -150,109 +150,100 @@ int _main(string[] args) {
         writefln("Error: %s", msg);
     }
 
-    auto main_args = getopt(args,
-            std.getopt.config.caseSensitive,
-            std.getopt.config.bundling,
-            "version", "Display the version", &version_switch, // "info", "Display blockfile metadata", &display_meta,
-            "dump", "Dumps the entire blockfile", &dump,
-            "dumprecycler", "Dumps the recycler", &dump_recycler,
-            "r|recyclerstatistic", "Dumps the recycler statistic block", &dump_recycler_statistic,
-            "s|statistic", "Dumps the statistic block", &dump_statistic,
-            "g|dumpgraph", "Dump the blockfile in graphviz format", &dump_graph,
-            "d|dumpdoc", "Dump the document located at an specific index", &dump_doc,
-            "H|header", "Dump the header block", &dump_header,
-            "i|index", "the index to dump the document from", &dump_index, // "inspect|c", "Inspect the blockfile format", &inspect,
-
-            
-
-    );
-
-    if (version_switch) {
-        revision_text.writeln;
-        return ExitCode.NOERROR;
-    }
-
-    if (main_args.helpWanted) {
-        writeln(logo);
-        defaultGetoptPrinter(
-                [
-                revision_text,
-                "Documentation: https://tagion.org/",
-                "",
-                "Usage:",
-                format("%s <file> [<option>...]", program),
-                "",
-                "Where:",
-                //            "<command>           one of [--read, --rim, --modify, --rpc]",
-                "",
-
-                "<option>:",
-
-                ].join("\n"),
-                main_args.options);
-        return ExitCode.NOERROR;
-    }
-
-    if (args.length !is HAS_BLOCK_FILE_ARG) {
-        stderr.writeln("Missing blockfile");
-        return ExitCode.MISSING_BLOCKFILE;
-    }
-
-    immutable filename = args[1]; /// First argument is the blockfile name
-    // if (inspect || ignore) {
-    //     if (!analyzer.blockfile) {
-    //         analyzer.blockfile = BlockFile.Inspect(filename, &report, analyzer
-    //                 .max_block_iteration);
-    //     }
-    //     if (inspect) {
-    //         analyzer.blockfile.inspect(&analyzer.trace);
-    //     }
-    // }
-    // else {
+    string filename;
     try {
+
+        auto main_args = getopt(args,
+                std.getopt.config.caseSensitive,
+                std.getopt.config.bundling,
+                "version", "Display the version", &version_switch, // "info", "Display blockfile metadata", &display_meta,
+                "list", "lists the entire blockfile", &list,
+                "dumprecycler", "Dumps the recycler", &dump_recycler,
+                "r|recyclerstatistic", "Dumps the recycler statistic block", &dump_recycler_statistic,
+                "s|statistic", "Dumps the statistic block", &dump_statistic,
+                "g|dumpgraph", "Dump the blockfile in graphviz format", &dump_graph,
+                "d|dumpdoc", "Dump the document located at an specific index", &dump_doc,
+                "H|header", "Dump the header block", &dump_header,
+                "i|index", "the index to dump the document from", &dump_index, // "inspect|c", "Inspect the blockfile format", &inspect,
+                "verbose|v", "Print output to console", &__verbose_switch,
+
+        );
+
+        if (version_switch) {
+            revision_text.writeln;
+            return ExitCode.NOERROR;
+        }
+
+        if (main_args.helpWanted) {
+            writeln(logo);
+            defaultGetoptPrinter(
+                    [
+                    revision_text,
+                    "Documentation: https://tagion.org/",
+                    "",
+                    "Usage:",
+                    format("%s <file> [<option>...]", program),
+                    "",
+                    "Where:",
+                    //            "<command>           one of [--read, --rim, --modify, --rpc]",
+                    "",
+
+                    "<option>:",
+
+                    ].join("\n"),
+                    main_args.options);
+            return ExitCode.NOERROR;
+        }
+
+        if (args.length !is HAS_BLOCK_FILE_ARG) {
+            stderr.writeln("Missing blockfile");
+            return ExitCode.MISSING_BLOCKFILE;
+        }
+
+        filename = args[1]; /// First argument is the blockfile name
         analyzer.blockfile = BlockFile(filename);
+        if (list) {
+            analyzer.dump;
+        }
+
+        if (dump_header) {
+            analyzer.dumpHeader;
+        }
+
+        if (dump_recycler) {
+            analyzer.recycleDump;
+        }
+
+        if (dump_recycler_statistic) {
+            analyzer.recycleStatisticDump;
+        }
+
+        if (dump_statistic) {
+            analyzer.dumpStatistic;
+        }
+
+        if (dump_graph) {
+            analyzer.dumpGraph;
+        }
+
+        if (dump_index !is 0) {
+            if (dump_doc) {
+                analyzer.dumpIndexDoc(Index(dump_index));
+            }
+        }
     }
     catch (BlockFileException e) {
         stderr.writefln("Error: Bad blockfile format for %s", filename);
-        stderr.writeln(e.msg);
+        error(e);
         stderr.writefln(
                 "Try to use the --inspect or --ignore switch to analyze the blockfile format");
         return ExitCode.BAD_BLOCKFILE;
     }
     catch (Exception e) {
         stderr.writefln("Error: Unable to open file %s", filename);
-        stderr.writeln(e.msg);
+        error(e);
         return ExitCode.OPEN_FILE_FAILED;
     }
 
-    if (dump) {
-        analyzer.dump;
-    }
-
-    if (dump_header) {
-        analyzer.dumpHeader;
-    }
-
-    if (dump_recycler) {
-        analyzer.recycleDump;
-    }
-
-    if (dump_recycler_statistic) {
-        analyzer.recycleStatisticDump;
-    }
-
-    if (dump_statistic) {
-        analyzer.dumpStatistic;
-    }
-
-    if (dump_graph) {
-        analyzer.dumpGraph;
-    }
-
-    if (dump_index !is 0) {
-        if (dump_doc) {
-            analyzer.dumpIndexDoc(Index(dump_index));
-        }
-    }
     return ExitCode.NOERROR;
 }

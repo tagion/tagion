@@ -69,7 +69,7 @@ int _main(string[] args) {
     bool version_switch;
     const logo = import("logo.txt");
 
-    bool dump;
+    bool list;
 
     //   bool dartread;
     string[] dartread_args;
@@ -101,7 +101,7 @@ int _main(string[] args) {
                 "m|modify", "Excutes a DART modify sequency", &dartmodify,
                 "f|force", "Force erase and create journal and destination DART", &force,
                 "rpc", "Excutes a HiPRC on the DART", &dartrpc,
-                "dump", "Dumps all the archives with in the given angle", &dump,
+                "list", "Lists all the archives with in the given angle", &list,
                 "eye", "Prints the bullseye", &eye,
                 "sync", "Synchronize src.drt to dest.drt", &sync,
                 "P|passphrase", format("Passphrase of the keypair : default: %s", passphrase), &passphrase,
@@ -225,7 +225,7 @@ int _main(string[] args) {
             return 0;
         }
 
-        if (dump) {
+        if (list) {
             db.dump(sectors, Yes.full, depth);
         }
         else if (eye) {
