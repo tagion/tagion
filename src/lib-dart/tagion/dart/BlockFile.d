@@ -655,8 +655,10 @@ class BlockFile {
             this.owner = owner;
             index = from;
             last_index = to;
+            writefln("[%s:%s]", index, last_index);
             index = (owner.lastBlockIndex == 0) ? Index.init : Index(1UL);
             findNextValidIndex(index);
+            writefln("[%s:%s]", index, last_index);
             initFront;
         }
 
@@ -734,7 +736,12 @@ class BlockFile {
     }
 
     BlockSegmentRange opSlice(I)(I from, I to) if (isIntegral!I || is(I : const(Index))) {
-        return BlockSegmentRange(this, from, to);
+        writefln("--- Block Range (%s, %s)", Index(from), Index(to));
+        if (from.isinit && to.isinit) {
+            return opSlice();
+        }
+        writefln("Block Range (%s, %s)", Index(from), Index(to));
+        return BlockSegmentRange(this, Index(from), Index(to));
     }
     /**
      * Used for debuging only to dump the Block's

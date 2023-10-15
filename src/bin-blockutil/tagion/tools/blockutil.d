@@ -34,28 +34,29 @@ struct BlockFileAnalyzer {
     private BlockFile blockfile;
     uint inspect_iterations = uint.max;
     uint max_block_iteration = 1000;
-
+    Index index_from;
+    Index index_to;
     ~this() {
         if (blockfile) {
             blockfile.close;
         }
     }
 
-    void dump() {
+    void print() {
         writeln("Block map");
         blockfile.dump();
     }
 
-    void recycleDump() {
+    void recyclePrint() {
         writeln("Recycler map");
         blockfile.recycleDump;
     }
 
-    void recycleStatisticDump() {
+    void recycleStatisticPrint() {
         blockfile.recycleStatisticDump;
     }
 
-    void dumpStatistic() {
+    void printStatistic() {
         blockfile.statisticDump;
     }
 
@@ -201,27 +202,34 @@ int _main(string[] args) {
             return ExitCode.MISSING_BLOCKFILE;
         }
 
+        if (dump) {
+            vout = stderr;
+        }
         filename = args[1]; /// First argument is the blockfile name
         analyzer.blockfile = BlockFile(filename);
         size_t index_from, index_to;
         if (!index_range.empty) {
-            vout = stderr;
             const fields =
                 index_range.formattedRead("%d:%d", index_from, index_to)
                     .ifThrown(0);
             tools.check(fields == 2,
                     format("Angle range shoud be ex. --range 42:117 not %s", index_range));
             verbose("Angle from [%d:%d]", index_from, index_to);
-            return 0;
+            analyzer.index_from = index_from;
+            analyzer.index_to = index_to;
+            //return 0;
+
         }
 
         if (dump) {
             vout = stderr;
-
+            foreach (block_segment; analyzer.blockfile[index_from .. index_to]) {
+                writefln("doc\n%s", block_segment.doc.toPretty);
+            }
             return 0;
         }
         if (print) {
-            analyzer.dump;
+            analyzer.print;
         }
 
         if (print_header) {
@@ -229,15 +237,15 @@ int _main(string[] args) {
         }
 
         if (print_recycler) {
-            analyzer.recycleDump;
+            analyzer.recyclePrint;
         }
 
         if (print_recycler_statistic) {
-            analyzer.recycleStatisticDump;
+            analyzer.recycleStatisticPrint;
         }
 
         if (print_statistic) {
-            analyzer.dumpStatistic;
+            analyzer.printStatistic;
         }
 
         if (print_graph) {
