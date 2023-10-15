@@ -1035,3 +1035,19 @@ unittest {
     }
 
 }
+
+// check that the public key is deterministic
+unittest {
+    const words = "long second damp volcano laptop friend noble citizen hip cake safe gown";
+    const pin = "1234";
+    
+    auto wallet1 = StdSecureWallet(words, pin);
+    auto wallet2 = StdSecureWallet(words, pin);
+    assert(wallet1.getPublicKey == wallet2.getPublicKey, "should have generated the same publickey");
+
+    auto wallet3 = StdSecureWallet("Some other words", pin);
+    assert(wallet1.getPublicKey != wallet3.getPublicKey);
+
+    auto wallet4 = StdSecureWallet(words, "5432");
+    assert(wallet1.getPublicKey == wallet4.getPublicKey, "should have generated the same publickey");
+}
