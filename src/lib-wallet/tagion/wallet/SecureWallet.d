@@ -1051,3 +1051,30 @@ unittest {
     auto wallet4 = StdSecureWallet(words, "5432");
     assert(wallet1.getPublicKey == wallet4.getPublicKey, "should have generated the same publickey");
 }
+
+
+// check pubkey is the same after login/logout
+unittest {
+    import std.stdio;
+    const words = "long second damp volcano laptop friend noble citizen hip cake safe gown";
+    const pin = "1234";
+
+
+    writefln("CREATING WALLET");
+    auto wallet1 = StdSecureWallet(words, pin);
+    auto pkey_before = wallet1.getPublicKey.idup;
+    writefln("CREATE PKEY: %(%02x%)", pkey_before);
+    
+
+    writefln("LOGGING IN");
+    wallet1.logout;
+    auto pindup = pin.dup;
+    assert(wallet1.login(pindup));
+    auto pkey_after = wallet1.getPublicKey;
+    writefln("PKEY LOGIN: %(%02x%)", pkey_after);
+
+
+    writefln("PKEY BEFORE: %(%02x%)\nPKEY AFTER: %(%02x%)", pkey_before, pkey_after);
+    assert(pkey_before == pkey_after, "public key not the same after login/logout");
+
+}
