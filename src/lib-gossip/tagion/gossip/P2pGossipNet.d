@@ -24,7 +24,8 @@ import tagion.utils.LRU;
 import tagion.utils.Queue;
 
 import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.HiBONRecord : HiBONRecord, recordType, fread, fwrite, isSpecialKeyType;
+import tagion.hibon.HiBONFile : fread, fwrite;
+import tagion.hibon.HiBONRecord : HiBONRecord, recordType, isSpecialKeyType;
 import tagion.hibon.Document : Document;
 import tagion.gossip.InterfaceNet;
 import tagion.gossip.AddressBook : NodeAddress, addressbook;

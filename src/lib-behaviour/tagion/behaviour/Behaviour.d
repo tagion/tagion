@@ -186,7 +186,7 @@ FeatureGroup getFeature(alias M)() if (isFeature!M) {
 
 @safe
 unittest { //
-    import tagion.hibon.HiBONRecord;
+    import tagion.hibon.HiBONFile : fread;
     import tagion.basic.basic : unitfile;
     import core.demangle : mangle;
 

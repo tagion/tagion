@@ -1,7 +1,6 @@
 module tagion.testbench.dart_test;
 
 import tagion.behaviour.Behaviour;
-import tagion.hibon.HiBONRecord : fwrite;
 import tagion.tools.Basic;
 import std.traits : moduleName;
 

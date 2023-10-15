@@ -9,6 +9,7 @@ import tagion.dart.Recorder;
 import tagion.dart.DART;
 import tagion.dart.BlockFile;
 import tagion.hibon.Document;
+import tagion.dart.DARTRim;
 
 /**
 * Interface to the DART synchronizer
@@ -32,7 +33,7 @@ interface Synchronizer {
         * Params:
         *   rims = path to the selected rim
         */
-    void remove_recursive(const DART.Rims rims);
+    void remove_recursive(const Rims rims);
     /**
         * This function is called when the SynchronizationFiber run function finishes
         */
@@ -92,7 +93,7 @@ abstract class StdSynchronizer : Synchronizer {
         * Params:
         *   selected_rims = selected rims to be removed
         */
-    void remove_recursive(const DART.Rims selected_rims) {
+    void remove_recursive(const Rims selected_rims) {
         auto rim_walker = owner.rimWalkerRange(selected_rims.rims);
         uint count = 0;
         auto recorder_worker = owner.recorder;

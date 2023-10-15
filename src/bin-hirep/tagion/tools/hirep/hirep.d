@@ -1,4 +1,4 @@
-module tagion.tools.boot.stiefel;
+module tagion.tools.hirep.hirep;
 
 import std.format;
 import std.getopt;
@@ -7,7 +7,6 @@ import std.stdio;
 import std.array;
 import std.file : exists;
 import tagion.crypto.SecureNet;
-import tagion.dart.Recorder;
 import tagion.tools.revision;
 import tagion.basic.Types : FileExtension, Buffer;
 import tagion.tools.Basic;
@@ -26,18 +25,15 @@ int _main(string[] args) {
     bool version_switch;
     bool standard_output;
     bool standard_input;
-    string[] nodekeys;
-    string output_filename = "dart".setExtension(FileExtension.hibon);
-    const net = new StdHashNet;
+    string output_filename;
     try {
         standard_input = (args.length == 1);
         auto main_args = getopt(args,
                 std.getopt.config.caseSensitive,
                 std.getopt.config.bundling,
                 "version", "display the version", &version_switch, //        "invoice|i","Sets the HiBON input file name", &invoicefile,
-                "c|stdout", "Print to standard output", &standard_output,
-                "o|output", format("Output filename : Default %s", output_filename), &output_filename, // //        "output_filename|o", format("Sets the output file name: default : %s", output_filenamename), &output_filenamename,
-                "p|nodekey", "Node channel key(Pubkey) ", &nodekeys, //         "bills|b", "Generate bills", &number_of_bills,
+                "c|stdout", "Print to standard output", &standard_output,//               "o|output", format("Output filename : Default %s", output_filename), &output_filename, // //        "output_filename|o", format("Sets the output file name: default : %s", output_filenamename), &output_filenamename,
+                //                "p|nodekey", "Node channel key(Pubkey) ", &nodekeys, //         "bills|b", "Generate bills", &number_of_bills,
                 // "value|V", format("Bill value : default: %d", value), &value,
                 // "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase
                 //"initbills|b", "Testing mode", &initbills,
@@ -72,41 +68,41 @@ int _main(string[] args) {
                     main_args.options);
             return 0;
         }
-        auto factory = RecordFactory(net);
-        auto recorder = factory.recorder;
-        if (!nodekeys.empty) {
-            auto genesis_list = createGenesis(nodekeys, Document.init);
-            recorder.insert(genesis_list, Archive.Type.ADD);
-        }
-        if (standard_input) {
-            auto fin = stdin;
-            ubyte[1024] buf;
-            Buffer data;
-
-            for (;;) {
-                const read_buffer = fin.rawRead(buf);
-                if (read_buffer.length is 0) {
-                    break;
-                }
-                data ~= read_buffer;
+        version (none) {
+            if (!nodekeys.empty) {
+                auto genesis_list = createGenesis(nodekeys, Document.init);
+                recorder.insert(genesis_list, Archive.Type.ADD);
             }
+            if (standard_input) {
+                auto fin = stdin;
+                ubyte[1024] buf;
+                Buffer data;
 
-            const doc = Document(data);
-            recorder.add(doc);
-        }
-        else {
-            foreach (file; args[1 .. $]) {
-                check(file.exists, format("File %s not found!", file));
-                const doc = file.fread;
+                for (;;) {
+                    const read_buffer = fin.rawRead(buf);
+                    if (read_buffer.length is 0) {
+                        break;
+                    }
+                    data ~= read_buffer;
+                }
+
+                const doc = Document(data);
                 recorder.add(doc);
             }
-        }
-        if (standard_output) {
-            stdout.rawWrite(recorder.toDoc.serialize);
-            return 0;
-        }
+            else {
+                foreach (file; args[1 .. $]) {
+                    check(file.exists, format("File %s not found!", file));
+                    const doc = file.fread;
+                    recorder.add(doc);
+                }
+            }
+            if (standard_output) {
+                stdout.rawWrite(recorder.toDoc.serialize);
+                return 0;
+            }
 
-        output_filename.fwrite(recorder);
+            output_filename.fwrite(recorder);
+        }
     }
     catch (Exception e) {
         writefln("%1$sError: %3$s%2$s", RED, RESET, e.msg);

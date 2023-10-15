@@ -36,6 +36,7 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBON;
 import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONFile : fread, fwrite;
 
 //import tagion.utils.Miscellaneous;
 import tagion.hibon.HiBONtoText : decode, encodeBase64;
@@ -49,6 +50,7 @@ import tagion.dart.DARTFakeNet;
 import tagion.tools.revision;
 import std.uni : toLower;
 import std.exception;
+import tagion.dart.DARTRim;
 
 /**
  * @brief tool for working with local DART database
@@ -67,11 +69,12 @@ int _main(string[] args) {
     bool version_switch;
     const logo = import("logo.txt");
 
-    bool dump;
+    bool print;
 
     //   bool dartread;
     string[] dartread_args;
     string angle_range;
+    uint depth;
     bool dartmodify;
     bool dartrim;
     bool dartrpc;
@@ -84,7 +87,7 @@ int _main(string[] args) {
     string passphrase = "verysecret";
 
     GetoptResult main_args;
-    DART.SectorRange sectors;
+    SectorRange sectors;
     try {
         main_args = getopt(args,
                 std.getopt.config.caseSensitive,
@@ -98,12 +101,13 @@ int _main(string[] args) {
                 "m|modify", "Excutes a DART modify sequency", &dartmodify,
                 "f|force", "Force erase and create journal and destination DART", &force,
                 "rpc", "Excutes a HiPRC on the DART", &dartrpc,
-                "dump", "Dumps all the archives with in the given angle", &dump,
+                "print", "prints all the archives with in the given angle", &print,
                 "eye", "Prints the bullseye", &eye,
                 "sync", "Synchronize src.drt to dest.drt", &sync,
                 "P|passphrase", format("Passphrase of the keypair : default: %s", passphrase), &passphrase,
                 "R|range", "Sets angle range from:to (Default is full range)", &angle_range,
-                "verbose|v", "Print output to console", &__verbose_switch,
+                "depth", "Set limit on dart rim depth", &depth,
+                "verbose|v", "Prints verbose information to console", &__verbose_switch,
                 "fake", format("Use fakenet instead of real hashes : default :%s", fake), &fake,
         );
         if (version_switch) {
@@ -134,19 +138,18 @@ int _main(string[] args) {
 
         if (!angle_range.empty) {
             ushort _from, _to;
-            auto angle_range_decimal = angle_range;
             const fields =
                 angle_range.formattedRead("%x:%x", _from, _to)
                     .ifThrown(0);
             tools.check(fields == 2,
                     format("Angle range shoud be ex. --range A0F0:B0F8 not %s", angle_range));
-            verbose("from %04x to %04x", _from, _to);
-            return 0;
+            verbose("Angle from %04x to %04x", _from, _to);
+            sectors = SectorRange(_from, _to);
         }
-        //        dartread = !dartread_args.empty;
         foreach (file; args[1 .. $]) {
             if (file.hasExtension(FileExtension.hibon)) {
-                tools.check(inputfilename is null, format("Input file '%s' has already been declared", inputfilename));
+                tools.check(inputfilename is null,
+                        format("Input file '%s' has already been declared", inputfilename));
                 inputfilename = file;
                 continue;
             }
@@ -221,8 +224,8 @@ int _main(string[] args) {
             return 0;
         }
 
-        if (dump) {
-            db.dump(true);
+        if (print) {
+            db.dump(sectors, Yes.full, depth);
         }
         else if (eye) {
             writefln("EYE: %s", db.fingerprint.hex);

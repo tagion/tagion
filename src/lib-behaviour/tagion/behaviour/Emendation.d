@@ -232,9 +232,9 @@ bool isUnique(string[] list_of_names) nothrow {
         (list_of_names
                 .all!(name => name.length != 0) &&
                 list_of_names
-                .array
-                .sort
-                .isStrictlyMonotonic);
+                    .array
+                    .sort
+                    .isStrictlyMonotonic);
 }
 
 ///Examples:  Test of the isUnique
@@ -309,7 +309,7 @@ version (unittest) {
     import std.path;
     import std.file : fwrite = write;
     import tagion.hibon.HiBONJSON;
-    import tagion.hibon.HiBONRecord : fwrite, fread;
+    import tagion.hibon.HiBONFile : fwrite, fread;
     import tagion.basic.basic : unitfile;
     import tagion.behaviour.BehaviourParser;
 }

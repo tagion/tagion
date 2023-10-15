@@ -25,6 +25,7 @@ import tagion.basic.tagionexceptions : Check;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONFile;
 import tagion.logger.Statistic;
 import tagion.dart.DARTException : BlockFileException;
 import tagion.dart.Recycler : Recycler;

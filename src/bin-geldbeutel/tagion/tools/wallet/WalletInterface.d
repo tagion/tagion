@@ -13,7 +13,8 @@ import tagion.basic.Types : FileExtension, Buffer, hasExtension;
 import tagion.basic.range : doFront;
 import std.file : exists, mkdir;
 import std.exception : ifThrown;
-import tagion.hibon.HiBONRecord : fwrite, fread, isRecord, isHiBONRecord;
+import tagion.hibon.HiBONRecord : isRecord, isHiBONRecord;
+import tagion.hibon.HiBONFile : fwrite, fread;
 import std.path;
 import std.format;
 import std.algorithm;
@@ -123,7 +124,7 @@ HiRPC.Receiver sendShellSubmitHiRPC(string address, HiRPC.Sender contract, const
     writefln("Dialing address %s", address);
     immutable response_data = cast(immutable) post!(ubyte)(address, contract.toDoc.serialize);
     Document response_doc = Document(response_data);
-    
+
     if (!response_doc.isRecord!(HiRPC.Receiver)) {
         throw new Exception("Error response when sending bill");
     }

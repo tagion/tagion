@@ -25,6 +25,7 @@ import tagion.communication.HiRPC;
 import tagion.hibon.HiBONJSON : toPretty;
 import tagion.Keywords;
 import std.range;
+import tagion.dart.DARTRim;
 
 import tagion.hibon.HiBONRecord;
 
@@ -40,8 +41,6 @@ alias FeatureContext = Tuple!(
         AddOneArchiveAndSnap, "AddOneArchiveAndSnap",
         FeatureGroup*, "result"
 );
-
-alias Rims = DART.Rims;
 
 @safe @Scenario("Add one archive and snap.",
         [])

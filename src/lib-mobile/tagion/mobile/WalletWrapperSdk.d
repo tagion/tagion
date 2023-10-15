@@ -25,7 +25,8 @@ import tagion.wallet.AccountDetails;
 import tagion.communication.HiRPC;
 import tagion.hibon.HiBON;
 import tagion.hibon.HiBONJSON;
-import tagion.hibon.HiBONRecord : fwrite, fread, HiBONRecord;
+import tagion.hibon.HiBONRecord : HiBONRecord;
+import tagion.hibon.HiBONFile : fwrite, fread;
 import tagion.basic.Types : Buffer, FileExtension;
 import tagion.crypto.Types : Pubkey;
 import tagion.crypto.aes.AESCrypto;
@@ -222,7 +223,7 @@ extern (C) {
 
     export uint get_fee(const double amount, double* fees) {
         TagionCurrency tgn_fees;
-        scope(exit) {
+        scope (exit) {
             *fees = tgn_fees.value;
         }
 

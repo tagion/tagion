@@ -32,6 +32,7 @@ import tagion.basic.basic : forceRemove;
 import tagion.testbench.dart.dart_helper_functions : getRim, getRead, goToSplit, getFingerprints;
 
 import tagion.hibon.HiBONRecord;
+import tagion.dart.DARTRim;
 
 enum feature = Feature(
             "Dart mapping of two archives",
@@ -46,8 +47,6 @@ alias FeatureContext = Tuple!(
 
 Fingerprint[] fingerprints;
 DARTIndex[] dart_indices;
-
-alias Rims = DART.Rims;
 
 @safe @Scenario("Add one archive.",
         ["mark #one_archive"])

@@ -10,6 +10,7 @@ import tagion.dart.DART : DART;
 import tagion.dart.Recorder;
 import tagion.dart.DARTBasic : DARTIndex;
 import tagion.basic.Types : Buffer, isBufferType;
+import tagion.dart.DARTRim;
 
 /**
        * Constructs a HiRPC method for dartRead 
@@ -53,7 +54,7 @@ const(HiRPC.Sender) dartCheckRead(Range)(
         *   HiRPC sender
         */
 const(HiRPC.Sender) dartRim(
-        ref const DART.Rims rims,
+        ref const Rims rims,
         HiRPC hirpc = HiRPC(null),
         uint id = 0) @safe {
     return hirpc.dartRim(rims, id);
