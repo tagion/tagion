@@ -125,7 +125,7 @@ class SameInputsSpendOnOneContract {
     @Then("the inputs should be deleted from the dart.")
     Document dart() {
         auto result = receiveOnlyTimeout!(LogInfo, const(Document));
-        check(result[0].topic_name == "missing_archives", "did not reject for the expected reason");
+        check(result[0].topic_name == "missing_archives", format("did not reject for the expected reason %s", result[0].topic_name));
         submask.unsubscribe(reject_collector);
         return result_ok;
     }
@@ -204,7 +204,7 @@ class OneContractWhereSomeBillsAreUsedTwice {
     @Then("all the inputs should be deleted from the dart.")
     Document dart() {
         auto result = receiveOnlyTimeout!(LogInfo, const(Document));
-        check(result[0].topic_name == "missing_archives", "did not reject for the expected reason");
+        check(result[0].topic_name == "missing_archives", format("did not reject for the expected reason %s", result[0].topic_name));
         submask.unsubscribe(reject_collector);
         return result_ok;
     }

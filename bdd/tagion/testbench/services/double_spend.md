@@ -1,12 +1,12 @@
 Feature: double spend scenarios
 
 Scenario: Same inputs spend on one contract
-Given i have a malformed contract with two inputs which are the same
+Given i have a malformed contract correctly signed with two inputs which are the same
 When i send the contract to the network
 Then the inputs should be deleted from the dart.
 
 Scenario: one contract where some bills are used twice.
-Given i have a malformed contract with three inputs where to are the same.
+Given i have a malformed contract correctly signed with three inputs where to are the same.
 When i send the contract to the network
 Then all the inputs should be deleted from the dart.
 
