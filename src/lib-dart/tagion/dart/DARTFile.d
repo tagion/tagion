@@ -112,7 +112,7 @@ enum KEY_SPAN = ubyte.max + 1;
     mixin(EnumText!("Params", _params));
 
     enum MIN_BLOCK_SIZE = 0x80;
-    static create(string filename, const HashNet net, const uint block_size = MIN_BLOCK_SIZE)
+    static create(string filename, const HashNet net, const uint block_size = MIN_BLOCK_SIZE, const uint max_index = 0x80)
     in {
         assert(block_size >= MIN_BLOCK_SIZE,
                 format("Block size is too small for %s, %d must be langer than %d", filename, block_size, MIN_BLOCK_SIZE));
