@@ -36,6 +36,7 @@ import tagion.wallet.KeyRecover;
 import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN;
 import tagion.crypto.Cipher;
 import tagion.utils.StdTime;
+import tagion.wallet.WalletException;
 
 /// Used for describing the d-runtime status
 enum DrtStatus {
@@ -126,6 +127,9 @@ extern (C) {
         try {
             auto pincode = cast(char[])(pincodePtr[0 .. pincodeLen]);
             auto mnemonic = cast(char[]) mnemonicPtr[0 .. mnemonicLen];
+
+            check(saltPtr is null && saltLen is 0 || saltPtr !is null, "Casting went wrong");
+
             auto salt = cast(char[]) saltPtr[0 .. saltLen];
             scope (exit) {
                 scramble(pincode);

@@ -121,7 +121,7 @@ HiRPC.Receiver sendSubmitHiRPC(string address, HiRPC.Sender contract, const(Secu
 HiRPC.Receiver sendShellSubmitHiRPC(string address, HiRPC.Sender contract, const(SecureNet) net) {
     import std.net.curl;
 
-    writeln(address);
+    writefln("Dialing address %s", address);
     immutable response_data = cast(immutable) post!(ubyte)(address, contract.toDoc.serialize);
     Document response_doc = Document(response_data);
 

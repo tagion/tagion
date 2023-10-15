@@ -125,7 +125,7 @@ class SameInputsSpendOnOneContract {
     @Then("the inputs should be deleted from the dart.")
     Document dart() {
         auto result = receiveOnlyTimeout!(LogInfo, const(Document));
-        check(result[0].topic_name == "missing_archives", "did not reject for the expected reason");
+        check(result[0].symbol_name == "missing_archives", format("did not reject for the expected reason %s", result[0].symbol_name));
         submask.unsubscribe(reject_collector);
         return result_ok;
     }
@@ -204,7 +204,7 @@ class OneContractWhereSomeBillsAreUsedTwice {
     @Then("all the inputs should be deleted from the dart.")
     Document dart() {
         auto result = receiveOnlyTimeout!(LogInfo, const(Document));
-        check(result[0].topic_name == "missing_archives", "did not reject for the expected reason");
+        check(result[0].symbol_name== "missing_archives", format("did not reject for the expected reason %s", result[0].symbol_name));
         submask.unsubscribe(reject_collector);
         return result_ok;
     }
@@ -421,7 +421,8 @@ class SameContractInDifferentEpochs {
             auto epoch_before = receiveOnlyTimeout!(LogInfo, const(Document))(10.seconds);
             writefln("epoch_before %s looking for %s", epoch_before[1], opts1.task_names.epoch_creator);
             check(epoch_before[1].isRecord!FinishedEpoch, "not correct subscription received");
-            if (epoch_before[0].topic_name.canFind(opts1.task_names.epoch_creator)) {
+            if (epoch_before[0].task_name == opts1.task_names.epoch_creator) {
+                writefln("################### CAME IN ################");
                 epoch_number = FinishedEpoch(epoch_before[1]).epoch;
             }
             counter++;
@@ -439,7 +440,7 @@ class SameContractInDifferentEpochs {
             auto new_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(10.seconds);
             writefln("new_epoch %s %s", new_epoch[0].topic_name, opts1.task_names.epoch_creator);
             check(new_epoch[1].isRecord!FinishedEpoch, "not correct subscription received");
-            if (new_epoch[0].topic_name.canFind(opts1.task_names.epoch_creator)) {
+            if (new_epoch[0].task_name == opts1.task_names.epoch_creator) {
                 writefln("UPDATING NEW EPOCH_NUMBER");
                 new_epoch_number = FinishedEpoch(new_epoch[1]).epoch;
             }
@@ -532,11 +533,11 @@ class SameContractInDifferentEpochsDifferentNode {
 
         int epoch_number;
         do {
-            auto epoch_before = receiveOnlyTimeout!(Topic, string, const(Document))(10.seconds);
+            auto epoch_before = receiveOnlyTimeout!(LogInfo, const(Document))(10.seconds);
             writefln("epoch_before %s looking for %s", epoch_before[1], opts1.task_names.epoch_creator);
-            check(epoch_before[2].isRecord!FinishedEpoch, "not correct subscription received");
-            if (epoch_before[1].canFind(opts1.task_names.epoch_creator)) {
-                epoch_number = FinishedEpoch(epoch_before[2]).epoch;
+            check(epoch_before[1].isRecord!FinishedEpoch, "not correct subscription received");
+            if (epoch_before[0].task_name == opts1.task_names.epoch_creator) {
+                epoch_number = FinishedEpoch(epoch_before[1]).epoch;
             }
             counter++;
         } while(counter < max_tries && epoch_number is int.init);
@@ -550,12 +551,12 @@ class SameContractInDifferentEpochsDifferentNode {
         int new_epoch_number;
         counter = 0;
         do {
-            auto new_epoch = receiveOnlyTimeout!(Topic, string, const(Document))(10.seconds);
+            auto new_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(10.seconds);
             writefln("new_epoch %s %s", new_epoch[1], opts1.task_names.epoch_creator);
-            check(new_epoch[2].isRecord!FinishedEpoch, "not correct subscription received");
-            if (new_epoch[1].canFind(opts2.task_names.epoch_creator)) {
+            check(new_epoch[1].isRecord!FinishedEpoch, "not correct subscription received");
+            if (new_epoch[0].task_name == opts2.task_names.epoch_creator) {
                 writefln("UPDATING NEW EPOCH_NUMBER");
-                int _new_epoch_number = FinishedEpoch(new_epoch[2]).epoch;
+                int _new_epoch_number = FinishedEpoch(new_epoch[1]).epoch;
                 if (_new_epoch_number > epoch_number) {
                     new_epoch_number = _new_epoch_number;
                 }
