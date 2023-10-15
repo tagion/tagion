@@ -39,7 +39,7 @@ import std.typecons : No;
  Returns:
  The Document read from the file
  +/
-@trusted Document fread(const(char[]) filename) {
+@trusted Document fread(const(char[]) filename, const size_t max_size = 0) {
     import std.format;
     import tagion.hibon.HiBONException : check;
 
@@ -57,8 +57,10 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONRecord!T) {
 }
 
 @safe
-Document fread(ref File file) {
+Document fread(ref File file, const size_t max_size = 0) {
     import LEB128 = tagion.utils.LEB128;
+    import tagion.hibon.HiBONException : check;
+    import std.format;
 
     enum LEB128_SIZE = LEB128.DataSize!size_t;
     ubyte[LEB128_SIZE] _buf;
@@ -66,6 +68,8 @@ Document fread(ref File file) {
     const doc_start = file.tell;
     file.rawRead(buf);
     const doc_size = LEB128.read!size_t(buf);
+    const data_size = doc_size.size + doc_size.value;
+    check(max_size == 0 || (data_size <= max_size), format("Document size exceeds the max limit of %d", max_size));
     auto data = new ubyte[doc_size.size + doc_size.value];
     file.seek(doc_start);
     file.rawRead(data);

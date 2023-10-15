@@ -390,7 +390,6 @@ class BlockFile {
             return assumeWontThrow([
                 "Master Block",
                 format("Root       @ %d", root_index),
-                //       format("First      @ %d", first_index),
                 format("Recycle    @ %d", recycle_header_index),
                 format("Statistic  @ %d", statistic_index),
             ].join("\n"));
@@ -656,14 +655,13 @@ class BlockFile {
         }
 
         alias BlockSegmentInfo = Tuple!(Index, "index", string, "type", ulong, "size", Document, "doc");
-
         /+
         private void findNextValidIndex(ref Index index) {
           do {
-                const block_segment
+                const block_segment=
             }
         }
-        +/
++/
         private void initFront() @trusted {
             import std.format;
             import core.exception : ArraySliceError;
