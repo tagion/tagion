@@ -30,6 +30,8 @@ import tagion.logger.Statistic;
 import tagion.dart.DARTException : BlockFileException;
 import tagion.dart.Recycler : Recycler;
 import tagion.dart.BlockSegment;
+import std.exception : ifThrown;
+import tagion.basic.basic : isinit;
 
 ///
 import tagion.logger.Logger;
@@ -655,13 +657,18 @@ class BlockFile {
         }
 
         alias BlockSegmentInfo = Tuple!(Index, "index", string, "type", ulong, "size", Document, "doc");
-        /+
         private void findNextValidIndex(ref Index index) {
-          do {
-                const block_segment=
+            while (index < owner.lastBlockIndex) {
+                const doc = owner.load(index)
+                    .ifThrown(Document.init);
+                if (!doc.isinit) {
+                    break;
+                }
+                index += 1;
+
             }
         }
-+/
+
         private void initFront() @trusted {
             import std.format;
             import core.exception : ArraySliceError;
