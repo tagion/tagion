@@ -173,12 +173,6 @@ struct SecureWallet(Net : SecureNet) {
         }
         _net.generateKeyPair(passphrase, salt,
                 (scope const(ubyte[]) data) { R = data[0 .. size_of_privkey].dup; });
-        /*
-    _net = new Net;
-        auto R = _net.calcHash(passphrase.representation).dup;
-        set_pincode(R, pincode);
-        _net.createKeyPair(R);
-*/
     }
 
     protected void set_pincode(
