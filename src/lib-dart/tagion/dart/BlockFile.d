@@ -30,6 +30,8 @@ import tagion.logger.Statistic;
 import tagion.dart.DARTException : BlockFileException;
 import tagion.dart.Recycler : Recycler;
 import tagion.dart.BlockSegment;
+import std.exception : ifThrown;
+import tagion.basic.basic : isinit;
 
 ///
 import tagion.logger.Logger;
@@ -390,7 +392,6 @@ class BlockFile {
             return assumeWontThrow([
                 "Master Block",
                 format("Root       @ %d", root_index),
-                //       format("First      @ %d", first_index),
                 format("Recycle    @ %d", recycle_header_index),
                 format("Statistic  @ %d", statistic_index),
             ].join("\n"));
@@ -652,18 +653,26 @@ class BlockFile {
 
         this(BlockFile owner, Index from, Index to) {
             this.owner = owner;
-
+            index = from;
+            last_index = to;
+            index = (owner.lastBlockIndex == 0) ? Index.init : Index(1UL);
+            findNextValidIndex(index);
+            initFront;
         }
 
         alias BlockSegmentInfo = Tuple!(Index, "index", string, "type", ulong, "size", Document, "doc");
-
-        /+
         private void findNextValidIndex(ref Index index) {
-          do {
-                const block_segment
+            while (index < owner.lastBlockIndex) {
+                const doc = owner.load(index)
+                    .ifThrown(Document.init);
+                if (!doc.isinit) {
+                    break;
+                }
+                index += 1;
+
             }
         }
-        +/
+
         private void initFront() @trusted {
             import std.format;
             import core.exception : ArraySliceError;
@@ -724,6 +733,9 @@ class BlockFile {
         return BlockSegmentRange(this);
     }
 
+    BlockSegmentRange opSlice(I)(I from, I to) if (isIntegral!I || is(I : const(Index))) {
+        return BlockSegmentRange(this, from, to);
+    }
     /**
      * Used for debuging only to dump the Block's
      */
