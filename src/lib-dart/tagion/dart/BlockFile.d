@@ -653,7 +653,11 @@ class BlockFile {
 
         this(BlockFile owner, Index from, Index to) {
             this.owner = owner;
-
+            index = from;
+            last_index = to;
+            index = (owner.lastBlockIndex == 0) ? Index.init : Index(1UL);
+            findNextValidIndex(index);
+            initFront;
         }
 
         alias BlockSegmentInfo = Tuple!(Index, "index", string, "type", ulong, "size", Document, "doc");
@@ -729,6 +733,9 @@ class BlockFile {
         return BlockSegmentRange(this);
     }
 
+    BlockSegmentRange opSlice(I)(I from, I to) if (isIntegral!I || is(I : const(Index))) {
+        return BlockSegmentRange(this, from, to);
+    }
     /**
      * Used for debuging only to dump the Block's
      */
