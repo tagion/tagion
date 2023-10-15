@@ -212,8 +212,6 @@ int _main(string[] args) {
             tools.check(fields == 2,
                     format("Angle range shoud be ex. --range 42:117 not %s", index_range));
             verbose("Angle from [%d:%d]", index_from, index_to);
-            //sectors = SectorRange(index_from, index_to);
-
             return 0;
         }
 
