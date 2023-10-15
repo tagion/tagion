@@ -655,10 +655,8 @@ class BlockFile {
             this.owner = owner;
             index = from;
             last_index = to;
-            writefln("[%s:%s]", index, last_index);
             index = (owner.lastBlockIndex == 0) ? Index.init : Index(1UL);
             findNextValidIndex(index);
-            writefln("[%s:%s]", index, last_index);
             initFront;
         }
 
@@ -714,7 +712,8 @@ class BlockFile {
 
         bool empty() {
 
-            if (index == Index.init || current_segment == BlockSegmentInfo.init) {
+            if (index == Index.init || current_segment == BlockSegmentInfo.init ||
+                    (!last_index.isinit && index >= last_index)) {
                 return true;
             }
 
@@ -736,20 +735,21 @@ class BlockFile {
     }
 
     BlockSegmentRange opSlice(I)(I from, I to) if (isIntegral!I || is(I : const(Index))) {
-        writefln("--- Block Range (%s, %s)", Index(from), Index(to));
         if (from.isinit && to.isinit) {
             return opSlice();
         }
-        writefln("Block Range (%s, %s)", Index(from), Index(to));
         return BlockSegmentRange(this, Index(from), Index(to));
     }
     /**
      * Used for debuging only to dump the Block's
      */
-    void dump(const uint segments_per_line = 6, File fout = stdout) {
+    void dump(const uint segments_per_line = 6,
+            const Index from = Index.init,
+            const Index to = Index.init,
+            File fout = stdout) {
         fout.writefln("|TYPE [INDEX]SIZE");
 
-        BlockSegmentRange seg_range = opSlice();
+        BlockSegmentRange seg_range = opSlice(from, to);
         uint pos = 0;
         foreach (seg; seg_range) {
             if (pos == segments_per_line) {

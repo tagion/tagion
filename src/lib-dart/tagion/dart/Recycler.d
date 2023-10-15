@@ -1010,7 +1010,8 @@ unittest {
         deleteme.remove;
     }
 
-    blockfile.dump(6, fout);
+    blockfile.dump(segments_per_line : 6, fout:
+            fout);
     blockfile.recycleDump(fout);
     blockfile.statisticDump(fout);
     blockfile.recycleStatisticDump(fout);
