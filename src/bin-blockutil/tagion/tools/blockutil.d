@@ -131,7 +131,7 @@ int _main(string[] args) {
     immutable program = args[0];
     bool version_switch;
     bool display_meta;
-    bool list; /// lists the block map
+    bool print; /// prints the block map
     bool inspect;
     bool ignore; /// Ignore blockfile format errors
     ulong block_number; /// Block number to read (block_number > 0)
@@ -146,7 +146,7 @@ int _main(string[] args) {
 
     string output_filename;
     enum logo = import("logo.txt");
-    void report(string msg) {
+    void _report(string msg) {
         writefln("Error: %s", msg);
     }
 
@@ -157,7 +157,8 @@ int _main(string[] args) {
                 std.getopt.config.caseSensitive,
                 std.getopt.config.bundling,
                 "version", "Display the version", &version_switch, // "info", "Display blockfile metadata", &display_meta,
-                "list", "lists the entire blockfile", &list,
+                "v|verbose", "Prints more debug information", &__verbose_switch,
+                "print", "Prints the entire blockfile", &print,
                 "dumprecycler", "Dumps the recycler", &dump_recycler,
                 "r|recyclerstatistic", "Dumps the recycler statistic block", &dump_recycler_statistic,
                 "s|statistic", "Dumps the statistic block", &dump_statistic,
@@ -165,7 +166,8 @@ int _main(string[] args) {
                 "d|dumpdoc", "Dump the document located at an specific index", &dump_doc,
                 "H|header", "Dump the header block", &dump_header,
                 "i|index", "the index to dump the document from", &dump_index, // "inspect|c", "Inspect the blockfile format", &inspect,
-                "verbose|v", "Print output to console", &__verbose_switch,
+
+                
 
         );
 
@@ -202,7 +204,7 @@ int _main(string[] args) {
 
         filename = args[1]; /// First argument is the blockfile name
         analyzer.blockfile = BlockFile(filename);
-        if (list) {
+        if (print) {
             analyzer.dump;
         }
 
