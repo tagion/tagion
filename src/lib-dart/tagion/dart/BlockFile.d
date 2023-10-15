@@ -712,7 +712,8 @@ class BlockFile {
 
         bool empty() {
 
-            if (index == Index.init || current_segment == BlockSegmentInfo.init) {
+            if (index == Index.init || current_segment == BlockSegmentInfo.init ||
+                    (!last_index.isinit && index >= last_index)) {
                 return true;
             }
 
@@ -734,15 +735,21 @@ class BlockFile {
     }
 
     BlockSegmentRange opSlice(I)(I from, I to) if (isIntegral!I || is(I : const(Index))) {
-        return BlockSegmentRange(this, from, to);
+        if (from.isinit && to.isinit) {
+            return opSlice();
+        }
+        return BlockSegmentRange(this, Index(from), Index(to));
     }
     /**
      * Used for debuging only to dump the Block's
      */
-    void dump(const uint segments_per_line = 6, File fout = stdout) {
+    void dump(const uint segments_per_line = 6,
+            const Index from = Index.init,
+            const Index to = Index.init,
+            File fout = stdout) {
         fout.writefln("|TYPE [INDEX]SIZE");
 
-        BlockSegmentRange seg_range = opSlice();
+        BlockSegmentRange seg_range = opSlice(from, to);
         uint pos = 0;
         foreach (seg; seg_range) {
             if (pos == segments_per_line) {

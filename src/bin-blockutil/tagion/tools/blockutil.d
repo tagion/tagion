@@ -34,28 +34,30 @@ struct BlockFileAnalyzer {
     private BlockFile blockfile;
     uint inspect_iterations = uint.max;
     uint max_block_iteration = 1000;
-
+    Index index_from;
+    Index index_to;
     ~this() {
         if (blockfile) {
             blockfile.close;
         }
     }
 
-    void dump() {
+    void print() {
         writeln("Block map");
-        blockfile.dump();
+        blockfile.dump(from : index_from, to:
+                index_to);
     }
 
-    void recycleDump() {
+    void recyclePrint() {
         writeln("Recycler map");
         blockfile.recycleDump;
     }
 
-    void recycleStatisticDump() {
+    void recycleStatisticPrint() {
         blockfile.recycleStatisticDump;
     }
 
-    void dumpStatistic() {
+    void printStatistic() {
         blockfile.statisticDump;
     }
 
@@ -69,7 +71,7 @@ struct BlockFileAnalyzer {
             `e [shape=record label="{`,
         ];
 
-        BlockFile.BlockSegmentRange seg_range = blockfile.opSlice();
+        BlockFile.BlockSegmentRange seg_range = blockfile[index_from .. index_to];
         const uint segments_per_line = 16;
         uint pos = 0;
         string[] line = ["{"];
@@ -112,7 +114,7 @@ struct BlockFileAnalyzer {
     }
 
     void dumpIndexDoc(const(Index) index) {
-        auto seg_range = blockfile.opSlice();
+        auto seg_range = blockfile[index_from .. index_to];
         auto segment_on_index_range = seg_range.filter!(segment => segment.index == index);
         if (segment_on_index_range.empty) {
             writefln("Error: No segment with Index %s found", index);
@@ -166,6 +168,7 @@ int _main(string[] args) {
                 "d|dumpdoc", "Dump the document located at an specific index", &dump_doc,
                 "H|header", "Dump the header block", &print_header,
                 "i|index", "the index to dump the document from", &dump_index,
+                "o|output", "Output filename (Default stdout)", &output_filename,
                 "dump", "Dumps the blocks as a HiBON sequency to stdout or a file", &dump,
 
         );
@@ -201,27 +204,42 @@ int _main(string[] args) {
             return ExitCode.MISSING_BLOCKFILE;
         }
 
+        if (dump) {
+            vout = stderr;
+        }
         filename = args[1]; /// First argument is the blockfile name
         analyzer.blockfile = BlockFile(filename);
         size_t index_from, index_to;
         if (!index_range.empty) {
-            vout = stderr;
             const fields =
                 index_range.formattedRead("%d:%d", index_from, index_to)
                     .ifThrown(0);
             tools.check(fields == 2,
                     format("Angle range shoud be ex. --range 42:117 not %s", index_range));
             verbose("Angle from [%d:%d]", index_from, index_to);
-            return 0;
+            analyzer.index_from = index_from;
+            analyzer.index_to = index_to;
+            //return 0;
+
         }
 
         if (dump) {
-            vout = stderr;
-
+            File fout = stdout;
+            if (!output_filename.empty) {
+                fout = File(output_filename, "w");
+            }
+            scope (exit) {
+                if (fout !is stdout) {
+                    fout.close;
+                }
+            }
+            foreach (block_segment; analyzer.blockfile[index_from .. index_to]) {
+                fout.writefln("doc\n%s", block_segment.doc.toPretty);
+            }
             return 0;
         }
         if (print) {
-            analyzer.dump;
+            analyzer.print;
         }
 
         if (print_header) {
@@ -229,15 +247,15 @@ int _main(string[] args) {
         }
 
         if (print_recycler) {
-            analyzer.recycleDump;
+            analyzer.recyclePrint;
         }
 
         if (print_recycler_statistic) {
-            analyzer.recycleStatisticDump;
+            analyzer.recycleStatisticPrint;
         }
 
         if (print_statistic) {
-            analyzer.dumpStatistic;
+            analyzer.printStatistic;
         }
 
         if (print_graph) {
