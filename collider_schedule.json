@@ -243,6 +243,14 @@
                 "acceptance","double_spend"
             ],
             "timeout": 0.0
+        },
+        "spam_double_spend": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "acceptance","spam_double_spend"
+            ],
+            "timeout": 0.0
         }
 
     }
