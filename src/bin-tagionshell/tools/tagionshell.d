@@ -6,6 +6,7 @@ import std.file : exists;
 import std.stdio : stderr, writeln, writefln;
 import std.json;
 import std.exception;
+import std.concurrency;
 import std.format;
 import core.time;
 
@@ -18,6 +19,26 @@ import nngd.nngd;
 
 mixin Main!(_main, "shell");
 
+void dart_worker( ShellOptions opt ){
+    int rc;
+    NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_SUB);
+    s.recvtimeout = msecs(1000);
+    s.subscribe("");
+    writeln("DS: subscribed");
+    while(true){
+        rc = s.dial(opt.tagion_subscription);
+        if(rc == 0)
+            break;
+        nng_sleep(100.msecs);    
+    }
+    writeln("DS: connected");
+    while(true){
+        Document received_doc = s.receive!(immutable(ubyte[]))();
+        writeln(format("DS: received %d bytes", received_doc.length));
+    }
+}
+
+
 WebData contract_handler ( WebData req, void* ctx ){
     int rc;
     ShellOptions* opt = cast(ShellOptions*) ctx;
@@ -28,7 +49,7 @@ WebData contract_handler ( WebData req, void* ctx ){
     writeln(format("WH: contract: with %d bytes for %s",req.rawdata.length, opt.tagion_sock_addr));
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
     s.recvtimeout = msecs(10000);
-    writeln(format("WH: trying to dial %s", opt.tagion_sock_addr));
+    writeln(format("WH: contract: trying to dial %s", opt.tagion_sock_addr));
     while(true){
         rc = s.dial(opt.tagion_sock_addr);
         if(rc == 0)
@@ -42,9 +63,51 @@ WebData contract_handler ( WebData req, void* ctx ){
     }        
     ubyte[4096] buf;
     size_t len = s.receivebuf(buf, 4096);
-    writeln(format("WH: contract: received %d bytes",len));
+    writeln(format("WH: dart: received %d bytes",len));
     s.close(); 
-    WebData res = {status: nng_http_status.NNG_HTTP_STATUS_OK, type: "applicaion/octet-stream", rawdata: buf[0..len] };
+    WebData res = {
+        status: (len>0) ? nng_http_status.NNG_HTTP_STATUS_OK : nng_http_status.NNG_HTTP_STATUS_NO_CONTENT, 
+        type: "applicaion/octet-stream", rawdata: (len>0) ? buf[0..len] : null 
+    };
+    return res;
+}
+
+WebData dart_handler ( WebData req, void* ctx ){
+    int rc;
+    ShellOptions* opt = cast(ShellOptions*) ctx;
+    if(req.type != "application/octet-stream"){
+        WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "invalid data type" };    
+        return res;
+    }
+    writeln(format("WH: dart: with %d bytes for %s",req.rawdata.length, opt.tagion_dart_sock_addr));
+    NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
+    s.recvtimeout = msecs(10000);
+    writeln(format("WH: dart: trying to dial %s", opt.tagion_dart_sock_addr));
+    while(true){
+        rc = s.dial(opt.tagion_dart_sock_addr);
+        if(rc == 0)
+            break;
+    }
+    rc = s.send(req.rawdata);
+    if(rc != 0){
+        writeln("dart_handler: send: ", nng_errstr(rc));
+        WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "socket error" };
+        return res;
+    }        
+    ubyte[4096] buf;
+    size_t len = s.receivebuf(buf, 4096);
+    if(len < 0){
+        writeln("dart_handler: recv: ", nng_errstr(rc));
+        WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "socket error" };
+        return res;
+    }
+    writeln(format("WH: dart: received %d bytes",len));
+    s.close(); 
+    WebData res = {
+        status: (len>0) ? nng_http_status.NNG_HTTP_STATUS_OK : nng_http_status.NNG_HTTP_STATUS_NO_CONTENT, 
+        type: "applicaion/octet-stream", rawdata: (len>0) ? buf[0..len] : null 
+    };
+    writeln("WH: dart: res ",res);
     return res;
 }
 
@@ -97,13 +160,26 @@ int _main(string[] args) {
         return 0;
     }
 
-    WebApp app = WebApp("ContractProxy", options.contract_endpoint, parseJSON("{}"), &options);
+    //auto ds_tid = spawn(&dart_worker, options);
 
-    app.route("/api/v1/contract", &contract_handler, ["POST"]);
+
+    WebApp app = WebApp("ShellApp", options.shell_uri, parseJSON("{}"), &options);
+
+    app.route(options.shell_api_prefix~options.contract_endpoint, &contract_handler, ["POST"]);
+    app.route(options.shell_api_prefix~options.dart_endpoint, &dart_handler, ["POST"]);
 
     app.start();
 
-    writeln("TagionShell web service\nlListening at "~options.contract_endpoint~"\n\t/api/v1/contract\t= POST contract hibon");
+    writeln("\nTagionShell web service\nListening at "
+        ~options.shell_uri~"\n\t"
+        ~options.shell_api_prefix
+        ~options.contract_endpoint
+        ~"\t= POST contract hibon\n\t"
+        ~options.shell_api_prefix
+        ~options.dart_endpoint
+        ~"\t\t= POST dart request hibon\n"
+
+    );
 
     while(true)
         nng_sleep(1000.msecs);
