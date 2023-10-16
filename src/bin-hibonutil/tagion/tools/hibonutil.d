@@ -109,6 +109,7 @@ int _main(string[] args) {
     bool version_switch;
 
     bool standard_output;
+    bool stream_output;
     bool pretty;
     bool sample;
     bool hibon_check;
@@ -128,7 +129,8 @@ int _main(string[] args) {
                 "version", "display the version", &version_switch,
                 "v|verbose", "Prints more debug information", &__verbose_switch,
                 "c|stdout", "Print to standard output", &standard_output,
-                "o|output", "Output filename only for stdin", &outputfilename,
+                "s|stream", "Parse .hibon file to stdout", &stream_output,
+                "o|output", "Output filename only for stdin data", &outputfilename,
                 "r|reserved", "Check reserved keys and types enabled", &reserved,
                 "p|pretty", format("JSON Pretty print: Default: %s", pretty), &pretty,
                 "j|json", "Convert to json output", &output_json,
@@ -171,7 +173,7 @@ int _main(string[] args) {
         }
         tools.check(!input_json || !input_text, "Input stream can not be defined as both JSON and text-format");
         tools.check(!output_json || !output_base64, "Output stream can not be defined as both JSON and text-format");
-        if (standard_output) {
+        if (standard_output || stream_output) {
             vout = stderr;
         }
         const reserved_flag = cast(Document.Reserved) reserved;
@@ -333,16 +335,17 @@ int _main(string[] args) {
 
                     continue loop_files;
                 }
-                if (output_json || pretty || standard_output) {
-                    auto json = doc.toJSON;
-                    auto json_stringify = (pretty) ? json.toPrettyString : json.toString;
-                    if (standard_output) {
-                        writefln("%s", json_stringify);
-                        continue loop_files;
-                    }
-                    inputfilename.setExtension(FileExtension.json).fwrite(json_stringify);
+                if (stream_output) {
+                    stdout.rawWrite(doc.serialize);
+                    continue loop_files;
                 }
-                stdout.rawWrite(doc.serialize);
+                auto json = doc.toJSON;
+                auto json_stringify = (pretty) ? json.toPrettyString : json.toString;
+                if (standard_output) {
+                    writefln("%s", json_stringify);
+                    continue loop_files;
+                }
+                inputfilename.setExtension(FileExtension.json).fwrite(json_stringify);
                 break;
             case FileExtension.json:
                 string text;
