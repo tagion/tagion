@@ -23,6 +23,7 @@ import std.array : join;
 
 import tagion.tools.Basic;
 import tagion.tools.revision;
+import tools = tagion.tools.toolsexception;
 import std.exception : ifThrown;
 
 mixin Main!_main;
@@ -36,6 +37,14 @@ const(BOMSeq) getBOM(string str) @trusted {
     import std.encoding : _getBOM = getBOM;
 
     return _getBOM(cast(ubyte[]) str);
+}
+
+extern (C) {
+    int ungetc(int c, FILE* stream);
+}
+
+void unget(ref File f, const(char) ch) @trusted {
+    ungetc(cast(int) ch, f.getFP);
 }
 
 import tagion.hibon.HiBONBase;
@@ -107,6 +116,8 @@ int _main(string[] args) {
     bool sample;
     bool hibon_check;
     bool reserved;
+    bool input_json;
+    bool input_text;
     // bool verbose;
     string outputfilename;
     auto logo = import("logo.txt");
@@ -119,10 +130,12 @@ int _main(string[] args) {
                 "version", "display the version", &version_switch,
                 "v|verbose", "Prints more debug information", &__verbose_switch,
                 "c|stdout", "Print to standard output", &standard_output,
-                "pretty|p", format("JSON Pretty print: Default: %s", pretty), &pretty,
+                "p|pretty|p", format("JSON Pretty print: Default: %s", pretty), &pretty,
                 "b|base64", "Convert to base64 string", &base64,
                 "o|output", "outputfilename only for stdin", &outputfilename,
                 "r|reserved", "Check reserved keys and types enabled", &reserved,
+                "J|json", "Input stream format json", &input_json,
+                "T|text", "Input stream base64 or hex-string", &input_text, // "s|stream", "Input stream (from stdin)", &input_stream,
                 "sample", "Produce a sample HiBON", &sample,
                 "check", "Check the hibon format", &hibon_check,
         );
@@ -157,9 +170,23 @@ int _main(string[] args) {
                     main_args.options);
             return 0;
         }
+        tools.check(!input_json || !input_text, "Input stream can not be defined as both JSON and text-format");
+        if (standard_output) {
+            vout = stderr;
+        }
         const reserved_flag = cast(Document.Reserved) reserved;
         if (args.length == 1) {
             auto fin = stdin;
+            if (input_text) {
+                foreach (no, line; fin.byLine.enumerate(1)) {
+                    writefln("%d:%s", no, line);
+                }
+                return 0;
+            }
+            else if (input_json) {
+                return 0;
+            }
+
             ubyte[1024] buf;
             Buffer data;
 
@@ -237,13 +264,13 @@ int _main(string[] args) {
             return 1;
         }
 
-        foreach (inputfilename; args[1 .. $]) {
+        loop_files: foreach (inputfilename; args[1 .. $]) {
             if (!inputfilename.exists) {
                 stderr.writefln("Error: file %s does not exist", inputfilename);
                 return 1;
             }
             switch (inputfilename.extension) {
-            case FileExtension.hibon, FileExtension.recchainblock:
+            case FileExtension.hibon:
                 immutable data = assumeUnique(cast(ubyte[]) fread(inputfilename));
                 const doc = Document(data);
                 const error_code = doc.valid(
@@ -261,20 +288,19 @@ int _main(string[] args) {
                     const text_output = encodeBase64(doc);
                     if (standard_output) {
                         writefln("%s", text_output);
-                        return 0;
+                        continue loop_files;
                     }
                     inputfilename.setExtension(FileExtension.text).fwrite(text_output);
 
-                    return 0;
+                    continue loop_files;
                 }
                 auto json = doc.toJSON;
                 auto json_stringify = (pretty) ? json.toPrettyString : json.toString;
                 if (standard_output) {
                     writefln("%s", json_stringify);
+                    continue loop_files;
                 }
-                else {
-                    inputfilename.setExtension(FileExtension.json).fwrite(json_stringify);
-                }
+                inputfilename.setExtension(FileExtension.json).fwrite(json_stringify);
                 break;
             case FileExtension.json:
                 string text;
@@ -295,7 +321,6 @@ int _main(string[] args) {
                 HiBON hibon;
                 try {
                     auto parse = text.parseJSON;
-                    // writefln("%s", text);
                     hibon = parse.toHiBON;
                 }
                 catch (HiBON2JSONException e) {
@@ -309,34 +334,30 @@ int _main(string[] args) {
                     return 1;
                 }
                 catch (Exception e) {
-                    stderr.writeln(e.msg);
+                    error(e);
                     return 1;
                 }
                 if (standard_output) {
                     stdout.rawWrite(hibon.serialize);
+                    continue loop_files;
                 }
-                else {
-                    if (standard_output) {
-                        stdout.rawWrite(hibon.serialize);
-                    }
-                    else {
-                        inputfilename.setExtension(FileExtension.hibon).fwrite(hibon.serialize);
-                    }
-                }
+                inputfilename.setExtension(FileExtension.hibon).fwrite(hibon.serialize);
                 break;
             case FileExtension.text:
                 string text;
                 text = inputfilename.readText;
+                writefln("...");
                 Document doc;
                 doc = decodeBase64(text);
                 if (standard_output) {
                     stdout.rawWrite(doc.serialize);
-                    return 0;
+                    continue loop_files;
                 }
+
                 inputfilename.setExtension(FileExtension.hibon).fwrite(doc.serialize);
-                return 0;
+                break;
             default:
-                stderr.writefln("File %s not valid (only %(.%s %))",
+                error("File %s not valid (only %(.%s %))",
                         inputfilename, only(FileExtension.hibon, FileExtension.json, FileExtension.text));
                 return 1;
             }
