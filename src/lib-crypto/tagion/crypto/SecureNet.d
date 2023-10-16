@@ -311,12 +311,13 @@ class StdSecureNet : StdHashNet, SecureNet {
         alias pbkdf2_sha512 = pbkdf2!SHA512;
         auto data = pbkdf2_sha512(passphrase.representation, salt.representation, count, dk_length);
         scope (exit) {
-            if (dg !is null) {
-                dg(data);
-            }
             scramble(data);
         }
         auto _priv_key = data[0 .. 32];
+
+        if (dg !is null) {
+            dg(_priv_key);
+        }
         createKeyPair(_priv_key);
     }
 

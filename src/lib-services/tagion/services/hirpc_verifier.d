@@ -15,6 +15,7 @@ import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord;
 import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet;
+import tagion.script.common : SignedContract;
 
 struct HiRPCVerifierOptions {
     /// Rejected documents won be discarded and instead sent to rejected_contracts_task
@@ -34,6 +35,7 @@ enum RejectReason {
     notAHiRPC, // The Document received was not a vald HiRPC
     invalidMethod, // The method was not one of the accepted methods
     notSigned, // The rpc was not signed when it should have been
+    invalidType, // the rpc was not a SignedContract record 
 }
 
 /**
@@ -70,6 +72,10 @@ struct HiRPCVerifierService {
 
             switch (receiver.method.name) {
             case ContractMethods.submit:
+                if (!(Document(receiver.method.params).isRecord!SignedContract)) {
+                    reject(RejectReason.invalidType, doc);
+                    return;
+                }
                 if (receiver.signed is HiRPC.SignedState.VALID) {
                     log("sending contract to collector");
                     locate(collector_task).send(inputHiRPC(), receiver);

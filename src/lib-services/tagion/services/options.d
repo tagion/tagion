@@ -9,7 +9,7 @@ static immutable(string) contract_sock_addr(const string prefix = "") @safe noth
     import std.exception;
 
     version (linux) {
-        return assumeWontThrow(format("abstract://%sNEUEWELLE_CONTRACT", prefix));
+        return assumeWontThrow(format("abstract://%sNEUEWELLE", prefix));
     }
     else version (Posix) {
         import std.path;
@@ -96,6 +96,7 @@ struct Options {
     public import tagion.services.epoch_creator : EpochCreatorOptions;
     public import tagion.services.monitor : MonitorOptions;
     public import tagion.services.replicator : ReplicatorOptions;
+    public import tagion.services.subscription : SubscriptionServiceOptions;
 
 
     WaveOptions wave;
@@ -109,6 +110,7 @@ struct Options {
     MonitorOptions monitor;
     ReplicatorOptions replicator;
     DARTInterfaceOptions dart_interface;
+    SubscriptionServiceOptions subscription;
 
     TaskNames task_names;
     mixin JSONCommon;

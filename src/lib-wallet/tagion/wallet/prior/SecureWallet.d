@@ -490,7 +490,8 @@ struct SecureWallet(Net : SecureNet) {
             .empty;
         if (enough) {
             TagionCurrency rest = amount;
-            locked_bills = none_locked.filter!(b => b.value <= rest)
+            locked_bills = none_locked
+                .filter!(b => b.value <= rest)
                 .until!(b => rest <= 0)
                 .tee!((b) { rest -= b.value; account.activated[b.owner] = true; })
                 .array;
@@ -740,8 +741,6 @@ struct SecureWallet(Net : SecureNet) {
             receiver_wallet.registerInvoice(invoice);
             // Give the invoice to the sender_wallet and create payment
             sender_wallet.payment([invoice], contract_1);
-
-            //writefln("contract_1=%s", contract_1.toPretty);
         }
 
         _SignedContract contract_2;
@@ -750,8 +749,6 @@ struct SecureWallet(Net : SecureNet) {
             receiver_wallet.registerInvoice(invoice);
             // Give the invoice to the sender_wallet and create payment
             sender_wallet.payment([invoice], contract_2);
-
-            //writefln("contract_2=%s", contract_2.toPretty);
         }
     }
 }

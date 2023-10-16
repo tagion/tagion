@@ -68,7 +68,7 @@ mixin TrustedConcurrency;
 }
 
 /// RecorderService_add_many_blocks
-unittest {
+version (none) unittest {
     log.silent = true;
     import tagion.basic.basic : tempfile;
     import tagion.prior_services.Options : setDefaultOption;

@@ -1,3 +1,23 @@
+# Changelog for week 41/42
+**Shell with HTTP proxy**
+The shell has been updated to use our NNG http proxy now so that it is possible to send a transaction through with http. 
+
+**Double spend scenarios**
+We are working on different testing scenarios currently, and the last week was spent doing testing around double spending which went very well :-). 
+
+**Subscription Service**
+We have implemented a subscription service that wraps our internal subscription and allows external clients to subscribe to different events with NNG. This could for an example be every time we create a modify transaction to the DART.
+
+**Tooling on genesis block**
+We have created and updated tools to support functionality for the genesis block. This includes asking the database to retrieve all bills with regex searching among many other things.
+
+**Epoch creator**
+The epoch creator has been updated to use true randomness making the communication with other nodes more unpredictable. This is important for security of the nodes, because it helps prevents malicious actors in contructing for an example coin-round scenarios.
+
+**LEB128 check for invariant numbers**
+We only support the shortest form to write numbers with LEB128 in order to make HiBON truly hash invariant. In order to achieve this we have to make sure that the LEB128 number is always represented in the shortest way possible. The number 0x80 and 0x00 are ex. both equal to 0x00.
+
+
 # Changelog for week 40/41
 **NNG http proxy**
 We have created a wrapper on NNG allowing us to create http-endpoint wrappers which can use underlying nng sockets. This is very smart, and you can now start a webserver by doing the following.

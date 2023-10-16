@@ -269,7 +269,7 @@ unittest { /// Convert ProtoDBBTestComments to Feature
     immutable hibon_filename = markdown_filename
         .setExtension(FileExtension.hibon);
 
-    import tagion.hibon.HiBONRecord : fwrite, fread;
+    import tagion.hibon.HiBONFile : fwrite, fread;
 
     hibon_filename.fwrite(feature);
 

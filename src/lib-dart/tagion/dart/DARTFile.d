@@ -1,4 +1,4 @@
-/// Handles the lower level operation of DART database 
+/// Handles the lower level operation of DART database
 module tagion.dart.DARTFile;
 
 private {
@@ -22,7 +22,7 @@ private {
     import std.range.primitives : isInputRange, ElementType;
 
     import tagion.basic.Debug : __write;
-    import tagion.basic.Types : Buffer, isBufferType, isTypedef;
+    import tagion.basic.Types : Buffer, isBufferType, isTypedef, mut;
     import tagion.basic.basic : EnumText, assumeTrusted, isinit;
     import tagion.Keywords;
 
@@ -44,9 +44,9 @@ private {
 
     import std.stdio : writeln, writefln;
     import tagion.hibon.HiBONRecord;
-    import tagion.hibon.HiBONJSON : toPretty;
 
     import tagion.dart.RimKeyRange : rimKeyRange;
+    import tagion.dart.DARTRim;
 }
 
 /// Hash null definition (all zero values)
@@ -71,36 +71,6 @@ ubyte rim_key(F)(F rim_keys, const uint rim) pure if (isBufferType!F) {
         debug __write("%s rim=%d", rim_keys.hex, rim);
     }
     return rim_keys[rim];
-}
-
-/++
- + Sector is the little ending value the first two bytes of an fingerprint
- + Returns:
- +     Sector number of a fingerpint
- +/
-@safe
-ushort sector(F)(const(F) fingerprint) pure nothrow @nogc if (isBufferType!F)
-in (fingerprint.length >= ubyte.sizeof)
-do {
-    ushort result = ushort(fingerprint[0]) << 8;
-    if (fingerprint.length > ubyte.sizeof) {
-        result |= fingerprint[1];
-
-    }
-    return result;
-}
-
-@safe
-unittest {
-    import tagion.crypto.Types : Fingerprint;
-    import std.stdio;
-
-    ubyte[] buf1 = [0xA7];
-    assert(sector(buf1) == 0xA700);
-    assert(sector(cast(Fingerprint)[0xA7, 0x15]) == 0xA715);
-    Buffer buf2 = [0xA7, 0x15, 0xE3];
-    assert(sector(buf2) == 0xA715);
-
 }
 
 enum SECTOR_MAX_SIZE = 1 << (ushort.sizeof * 8);
@@ -142,7 +112,7 @@ enum KEY_SPAN = ubyte.max + 1;
     mixin(EnumText!("Params", _params));
 
     enum MIN_BLOCK_SIZE = 0x80;
-    static create(string filename, const HashNet net, const uint block_size = MIN_BLOCK_SIZE)
+    static create(string filename, const HashNet net, const uint block_size = MIN_BLOCK_SIZE, const uint max_index = 0x80)
     in {
         assert(block_size >= MIN_BLOCK_SIZE,
                 format("Block size is too small for %s, %d must be langer than %d", filename, block_size, MIN_BLOCK_SIZE));
@@ -249,15 +219,16 @@ enum KEY_SPAN = ubyte.max + 1;
 
         Index index;
         Buffer fingerprint;
-
+        DARTIndex dart_index;
         bool empty() pure const nothrow {
             return (index is Index.init) && (fingerprint is null);
         }
 
         mixin HiBONRecord!(q{
-            this(const Index index, const(Fingerprint) fingerprint) {
+            this(const Index index, const(Fingerprint) fingerprint, const(DARTIndex) dart_index) {
                 this.index = index;
                 this.fingerprint = cast(Buffer)fingerprint;
+                this.dart_index = dart_index;
 
             }
         });
@@ -272,7 +243,7 @@ enum KEY_SPAN = ubyte.max + 1;
 
         @label("") protected Fingerprint merkleroot; /// The sparsed Merkle root hash of the branches
         @label("$prints", true) @(record_filter.Initialized) protected Fingerprint[] _fingerprints; /// Array of all the Leaves hashes
-        @label("$indices") @(record_filter.Initialized) protected DARTIndex[] _dart_indices; /// Array of all the Leaves hashes
+        @label("$darts") @(record_filter.Initialized) protected DARTIndex[] _dart_indices; /// Array of all the Leaves hashes
         @label("$idx", true) @(record_filter.Initialized) protected Index[] _indices; /// Array of index pointer to BlockFile
         @label("") private bool done;
         enum fingerprintsName = GetLabel!(_fingerprints).name;
@@ -309,8 +280,15 @@ enum KEY_SPAN = ubyte.max + 1;
                 .map!(f => f.index);
         }
 
+        protected DARTIndex get_dart_index(const size_t key) pure nothrow {
+            if (_dart_indices) {
+                return _dart_indices[key];
+            }
+            return DARTIndex.init;
+        }
+
         auto opSlice() {
-            return keys.map!(key => Leave(indices[key], fingerprints[key]));
+            return keys.map!(key => Leave(indices[key], fingerprints[key], get_dart_index(key)));
         }
 
         DARTIndexRange dart_indices() const pure nothrow @nogc {
@@ -452,7 +430,7 @@ enum KEY_SPAN = ubyte.max + 1;
                     }
 
                 }
-                if (!hibon_dart_indices.empty) {
+                if (hibon_dart_indices.length) {
                     hibon[dart_indicesName] = hibon_dart_indices;
                 }
             }
@@ -507,6 +485,14 @@ enum KEY_SPAN = ubyte.max + 1;
             if (_fingerprints.isinit) {
                 _fingerprints = new Fingerprint[KEY_SPAN];
             }
+            if (!leave.dart_index.isinit) {
+                if (_dart_indices.isinit) {
+                    _dart_indices = new DARTIndex[KEY_SPAN];
+
+                }
+                _dart_indices[key] = leave.dart_index.mut;
+
+            }
             _indices[key] = Index(leave.index);
             _fingerprints[key] = leave.fingerprint;
         }
@@ -523,7 +509,7 @@ enum KEY_SPAN = ubyte.max + 1;
             if (empty) {
                 return Leave.init;
             }
-            return Leave(_indices[key], _fingerprints[key]);
+            return Leave(_indices[key], _fingerprints[key], get_dart_index(key));
         }
 
         /** 
@@ -758,6 +744,7 @@ enum KEY_SPAN = ubyte.max + 1;
         }
         return result;
     }
+
     /**
  * Loads all the archives in the list of fingerprints
  * 
@@ -769,14 +756,14 @@ enum KEY_SPAN = ubyte.max + 1;
  */
     RecordFactory.Recorder loads(Range)(
             Range dart_indices,
-            Archive.Type type = Archive.Type.REMOVE) if (isInputRange!Range && isBufferType!(ElementType!Range)) {
+            Archive.Type type = Archive.Type.REMOVE) if (isInputRange!Range && is(ElementType!Range : const(DARTIndex))) {
 
         import std.algorithm.comparison : min;
 
         auto result = recorder;
         void traverse_dart(
                 const Index branch_index,
-                Buffer[] ordered_dart_indices,
+                DARTIndex[] ordered_dart_indices,
                 immutable uint rim = 0) @safe {
             if ((ordered_dart_indices) && (branch_index !is Index.init)) {
                 immutable data = blockfile.load(branch_index);
@@ -799,10 +786,6 @@ enum KEY_SPAN = ubyte.max + 1;
                 else {
                     // Loads the Archives into the archives
 
-                    // .check(ordered_dart_indices.length == 1,
-                    //         format("Data base is broken at rim=%d dart_index=%s size=%s [%d]",
-                    //         rim, ordered_dart_indices[0].toHex, ordered_dart_indices.length, branch_index));
-                    // The archive is set in erase mode so it can be easily be erased later
                     auto archive = new Archive(manufactor.net, doc, type);
                     if (ordered_dart_indices[0] == archive.dart_index) {
                         result.insert(archive);
@@ -814,7 +797,7 @@ enum KEY_SPAN = ubyte.max + 1;
 
         auto sorted_dart_indices = dart_indices
             .filter!(a => a.length !is 0)
-            .map!(a => cast(Buffer) a)
+            .map!(a => DARTIndex(cast(Buffer) a))
             .array
             .dup;
         sorted_dart_indices.sort;
@@ -915,8 +898,8 @@ enum KEY_SPAN = ubyte.max + 1;
                 while (!range.empty) {
                     auto sub_range = range.nextRim;
                     if (sub_range.front.dart_index.empty) {
-                        writefln("fingerprint %(%02X%) dart_index=%(%02X%)", sub_range.front.fingerprint, sub_range
-                                .front.dart_index);
+                        writefln("fingerprint %(%02X%) dart_index=%(%02X%)",
+                                sub_range.front.fingerprint, sub_range.front.dart_index);
                     }
                     immutable rim_key = sub_range.front.dart_index.rim_key(sub_range.rim);
                     branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key));
@@ -928,7 +911,7 @@ enum KEY_SPAN = ubyte.max + 1;
                 }
 
                 return Leave(blockfile.save(branches).index,
-                        branches.fingerprint(this));
+                        branches.fingerprint(this), DARTIndex.init);
 
             }
             // Section for going through branches that are not in the sectors.
@@ -957,7 +940,7 @@ enum KEY_SPAN = ubyte.max + 1;
                             }
 
                         }
-                        return Leave(blockfile.save(branches).index, branches.fingerprint(this));
+                        return Leave(blockfile.save(branches).index, branches.fingerprint(this), DARTIndex.init);
                     }
                     else {
                         // This is a standalone archive ("single").
@@ -988,7 +971,7 @@ enum KEY_SPAN = ubyte.max + 1;
                     if (range.type == Archive.Type.ADD) {
                         return Leave(
                                 blockfile.save(range.front.store).index,
-                                range.front.fingerprint);
+                                range.front.fingerprint, range.front.dart_index);
                     }
                     return Leave.init;
                 }
@@ -1017,7 +1000,7 @@ enum KEY_SPAN = ubyte.max + 1;
                 }
                 return Leave(
                         blockfile.save(branches).index,
-                        branches.fingerprint(this));
+                        branches.fingerprint(this), DARTIndex.init);
             }
 
         }
@@ -1067,7 +1050,7 @@ enum KEY_SPAN = ubyte.max + 1;
      * Returns:
      *   the branches a the rim_path
      */
-    Branches branches(const(ubyte[]) rim_path) {
+    Branches branches(const(ubyte[]) rim_path, scope Index* branch_index = null) {
         Branches search(const(ubyte[]) rim_path, const Index index, const uint rim = 0) {
             const doc = blockfile.load(index);
             if (Branches.isRecord(doc)) {
@@ -1080,15 +1063,18 @@ enum KEY_SPAN = ubyte.max + 1;
                     }
                 }
                 else {
+                    if (branch_index !is null) {
+                        *branch_index = Index(index);
+
+                    }
                     return branches;
                 }
             }
-            // Return empty branches
-            return Branches();
+            return Branches.init;
         }
 
         if (blockfile.masterBlock.root_index is Index.init) {
-            return Branches();
+            return Branches.init;
         }
         return search(rim_path, blockfile.masterBlock.root_index);
     }
@@ -1099,37 +1085,59 @@ enum KEY_SPAN = ubyte.max + 1;
      * Params:
      *   full = true for full DART
      */
-    void dump(bool full = false) {
+    void dump(
+            const SectorRange sectors = SectorRange.init,
+            const Flag!"full" full = No.full,
+            const uint depth = 0
+    ) {
         import std.stdio;
 
         writeln("EYE: ", _fingerprint.hex);
         void local_dump(const Index branch_index,
                 const ubyte rim_key = 0,
                 const uint rim = 0,
+                Buffer rim_path = null,
                 string indent = null) @safe {
-            if (branch_index !is Index.init) {
+            if (!branch_index.isinit &&
+                     //        sectors.inRange(Rims(rim_path)) &&
+                    ((depth == 0) || (rim <= depth))) {
                 immutable data = blockfile.load(branch_index);
                 const doc = Document(data);
                 if (Branches.isRecord(doc)) {
                     auto branches = Branches(doc);
                     string _indent;
                     if (rim > 0) {
+                        rim_path ~= rim_key;
+                        if (!sectors.inRange(Rims(rim_path))) {
+                            return;
+                        }
                         writefln("%s| %02X [%d]", indent, rim_key, branch_index);
                         _indent = indent ~ indent_tab;
                     }
                     foreach (key, index; branches._indices) {
-                        local_dump(index, cast(ubyte) key, rim + 1, _indent);
+                        local_dump(index, cast(ubyte) key, rim + 1, rim_path, _indent);
                     }
                 }
                 else {
-                    immutable fingerprint = manufactor.net.dartIndex(doc);
-                    auto lastRing = full ? fingerprint.length : rim + 1;
-                    writefln("%s%s [%d]", indent, fingerprint[0 .. lastRing].hex, branch_index);
+                    immutable dart_index = manufactor.net.dartIndex(doc);
+                    auto lastRing = full ? dart_index.length : rim + 1;
+                    const hash_marker = doc.hasHashKey ? " #" : "";
+                    writefln("%s%s [%d]%s",
+                            indent, dart_index[0 .. lastRing].hex, branch_index, hash_marker);
                 }
             }
         }
 
-        local_dump(blockfile.masterBlock.root_index);
+        Index index = blockfile.masterBlock.root_index;
+        if (!sectors.isinit) {
+            Buffer start_rims = Rims(sectors.from_sector).rims;
+            branches(start_rims[0 .. 1], &index);
+
+            local_dump(index, start_rims[0], 0, null);
+            return;
+        }
+
+        local_dump(index);
     }
 
     package Document cacheLoad(const Index index) {
@@ -1139,7 +1147,6 @@ enum KEY_SPAN = ubyte.max + 1;
     HiBON search(Buffer[] owners, const(SecureNet) net) {
         import tagion.script.common;
         import std.algorithm : canFind;
-        import tagion.hibon.HiBONJSON;
 
         TagionBill[] bills;
 
@@ -1157,7 +1164,6 @@ enum KEY_SPAN = ubyte.max + 1;
                         }
                     }
                 }
-                writefln("%s", doc.toPretty);
                 if (TagionBill.isRecord(doc)) {
                     auto bill = TagionBill(doc);
                     if (owners.canFind(bill.owner)) {
@@ -1188,10 +1194,10 @@ enum KEY_SPAN = ubyte.max + 1;
                 return dart.modify(rec);
             }
 
-            Buffer[] dart_indices(RecordFactory.Recorder recorder) {
-                Buffer[] results;
+            DARTIndex[] dart_indices(RecordFactory.Recorder recorder) {
+                DARTIndex[] results;
                 foreach (a; recorder.archives) {
-                    results ~= cast(Buffer) a.dart_index;
+                    results ~= a.dart_index;
                 }
                 return results;
 
@@ -1201,7 +1207,7 @@ enum KEY_SPAN = ubyte.max + 1;
                 .Recorder recorder) {
                 write(dart, table, recorder);
                 auto _dart_indices = dart_indices(recorder);
-
+                pragma(msg, "VALIDATE ", typeof(dart_indices));
                 auto find_recorder = dart.loads(_dart_indices);
                 return check(recorder, find_recorder);
             }
@@ -1227,6 +1233,7 @@ enum KEY_SPAN = ubyte.max + 1;
         }
 
     }
+
 }
 
 version (unittest) {
@@ -2526,28 +2533,47 @@ unittest {
         assert(recorder_add[].front.dart_index != recorder_add[].front.fingerprint,
         "The dart_index and the fingerprint of a archive should not be the same for a # archive");
         auto bullseye = dart_A.modify(recorder_add);
-        dart_A.dump;
+        // dart_A.dump;
         // writefln("bullseye   =%(%02x%)", bullseye);
         // writefln("fingerprint=%(%02x%)", recorder_add[].front.fingerprint);
         assert(bullseye == recorder_add[].front.fingerprint,
         "The bullseye for a DART with a single #key archive should be the same as the fingerprint of the archive");
         const hashdoc_change = HashDoc("hugo", 17);
-        /*
         auto recorder_B = dart_A.recorder;
         recorder_B.remove(hashdoc_change);
-        dart_A.dump;
-         bullseye = dart_A.modify(recorder_B);
-        */
+        // dart_A.dump;
+        bullseye = dart_A.modify(recorder_B);
         auto recorder_change = dart_A.recorder;
         recorder_change.add(hashdoc_change);
         bullseye = dart_A.modify(recorder_change);
-        dart_A.dump;
+        // dart_A.dump;
         // writefln("bullseye   =%(%02x%)", bullseye);
         // writefln("dart_index =%(%02x%)", recorder_change[].front.dart_index);
         // writefln("fingerprint=%(%02x%)", recorder_change[].front.fingerprint);
         assert(recorder_add[].front.dart_index == recorder_change[].front.dart_index);
         assert(bullseye == recorder_change[].front.fingerprint,
         "The bullseye for a DART with a single #key archive should be the same as the fingerprint of the archive");
+        { // read the dart_index from the dart and check the dart_index 
+            auto load_recorder = dart_A.loads(recorder_change[].map!(a => a.dart_index));
+            //writefln("load_recorder=%(%02x%)", load_recorder[].front.dart_index);
+            assert(equal(
+                    load_recorder[].map!(a => a.dart_index),
+                    recorder_change[].map!(a => a.dart_index)));
+        }
+        // writefln("filename_A %s", filename_A);
+        const hashdoc_extra = HashDoc("boerge", 42);
+        auto recorder_C = dart_A.recorder;
+        recorder_C.add(hashdoc_extra);
+        bullseye = dart_A.modify(recorder_C);
+        dart_A.close;
+        {
+            auto dart_reload = new DARTFile(net, filename_A);
+            auto reload_recorder = dart_reload.loads(recorder_change[].map!(a => a.dart_index));
+            //writefln("reload_recorder=%(%02x%)", reload_recorder[].front.dart_index);
+            // dart_reload.dump;
+            assert(equal(recorder_change[].map!(a => a.filed), reload_recorder[].map!(a => a.filed)));
+        }
 
     }
+
 }

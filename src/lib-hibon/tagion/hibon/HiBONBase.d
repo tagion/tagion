@@ -88,46 +88,6 @@ static unittest {
     static assert(Type.VER < SPACE);
 }
 
-version (none) @safe struct DataBlock {
-    protected {
-        uint _type;
-        immutable(ubyte)[] _data;
-    }
-    @nogc pure nothrow {
-        @property uint type() const {
-            return _type;
-        }
-
-        @property immutable(ubyte[]) data() const {
-            return _data;
-        }
-
-        this(const DataBlock x) {
-            _type = x._type;
-            _data = x._data;
-        }
-
-        this(const uint type, immutable(ubyte[]) data) {
-            _type = type;
-            _data = data;
-        }
-
-        this(immutable(ubyte[]) data) {
-            const leb128 = LEB128.decode!uint(data);
-            _type = leb128.value;
-            this._data = data[leb128.size .. $];
-        }
-
-        @property size_t size() const {
-            return LEB128.calc_size(_type) + _data.length;
-        }
-    }
-
-    immutable(ubyte[]) serialize() pure const nothrow {
-        return LEB128.encode(_type) ~ _data;
-    }
-}
-
 //alias HashDoc = DataBlock; //!(Type.HASHDOC);
 
 //enum isDataBlock(T) = is(T : const(DataBlock));

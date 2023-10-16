@@ -36,9 +36,10 @@ import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBON;
 import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONFile : fread, fwrite;
 
 //import tagion.utils.Miscellaneous;
-import tagion.hibon.HiBONtoText : decode;
+import tagion.hibon.HiBONtoText : decode, encodeBase64;
 import tagion.Keywords;
 import tagion.dart.Recorder;
 import tagion.script.prior.StandardRecords;
@@ -47,6 +48,9 @@ import tagion.script.NameCardScripts : readStandardRecord;
 import tagion.tools.Basic;
 import tagion.dart.DARTFakeNet;
 import tagion.tools.revision;
+import std.uni : toLower;
+import std.exception;
+import tagion.dart.DARTRim;
 
 /**
  * @brief tool for working with local DART database
@@ -65,10 +69,12 @@ int _main(string[] args) {
     bool version_switch;
     const logo = import("logo.txt");
 
-    bool dump;
+    bool print;
 
     //   bool dartread;
     string[] dartread_args;
+    string angle_range;
+    uint depth;
     bool dartmodify;
     bool dartrim;
     bool dartrpc;
@@ -81,14 +87,13 @@ int _main(string[] args) {
     string passphrase = "verysecret";
 
     GetoptResult main_args;
-
+    SectorRange sectors;
     try {
         main_args = getopt(args,
                 std.getopt.config.caseSensitive,
                 std.getopt.config.bundling,
-                "version", "display the version", &version_switch,
-                "dartfilename|d", format("Sets the dartfile: default %s", dartfilename), &dartfilename,
-                "i|inputfile", "Sets the HiBON input file name", &inputfilename,
+                "version", "display the version", &version_switch, //   "dartfilename|d", format("Sets the dartfile: default %s", dartfilename), &dartfilename,
+                //                "i|inputfile", "Sets the HiBON input file name", &inputfilename,
                 "I|initialize", "Create a dart file", &initialize,
                 "o|outputfile", "Sets the output file name", &outputfilename,
                 "r|read", "Excutes a DART read sequency", &dartread_args,
@@ -96,11 +101,13 @@ int _main(string[] args) {
                 "m|modify", "Excutes a DART modify sequency", &dartmodify,
                 "f|force", "Force erase and create journal and destination DART", &force,
                 "rpc", "Excutes a HiPRC on the DART", &dartrpc,
-                "dump", "Dumps all the archives with in the given angle", &dump,
+                "print", "prints all the archives with in the given angle", &print,
                 "eye", "Prints the bullseye", &eye,
                 "sync", "Synchronize src.drt to dest.drt", &sync,
                 "P|passphrase", format("Passphrase of the keypair : default: %s", passphrase), &passphrase,
-                "verbose|v", "Print output to console", &__verbose_switch,
+                "R|range", "Sets angle range from:to (Default is full range)", &angle_range,
+                "depth", "Set limit on dart rim depth", &depth,
+                "verbose|v", "Prints verbose information to console", &__verbose_switch,
                 "fake", format("Use fakenet instead of real hashes : default :%s", fake), &fake,
         );
         if (version_switch) {
@@ -112,33 +119,37 @@ int _main(string[] args) {
             writeln(logo);
             defaultGetoptPrinter(
                     [
-                // format("%s version %s", program, REVNO),
-                "Documentation: https://tagion.org/",
-                "",
-                "Usage:",
-                format("%s [<option>...] file.drt <files>", program),
-                "",
-                "Example synchronizing src.drt on to dst.drt",
-                format("%s --sync src.drt dst.drt", program),
-                "",
+                    // format("%s version %s", program, REVNO),
+                    "Documentation: https://tagion.org/",
+                    "",
+                    "Usage:",
+                    format("%s [<option>...] file.drt <files>", program),
+                    "",
+                    "Example synchronizing src.drt on to dst.drt",
+                    format("%s --sync src.drt dst.drt", program),
+                    "",
 
-                "<option>:",
+                    "<option>:",
 
-            ].join("\n"),
+                    ].join("\n"),
                     main_args.options);
             return 0;
         }
-        if (!dartfilename.empty) {
-            writefln("Deprecation notice: the -d / --dartfilename is deprecated. \n Please use dartutil FILENAME switches instead");
-        }
 
-        if (!inputfilename.empty) {
-            writefln("Deprecation notice: the -i / --inputfilename is deprecated. \n Please use dartutil FILENAME switches instead");
+        if (!angle_range.empty) {
+            ushort _from, _to;
+            const fields =
+                angle_range.formattedRead("%x:%x", _from, _to)
+                    .ifThrown(0);
+            tools.check(fields == 2,
+                    format("Angle range shoud be ex. --range A0F0:B0F8 not %s", angle_range));
+            verbose("Angle from %04x to %04x", _from, _to);
+            sectors = SectorRange(_from, _to);
         }
-        //        dartread = !dartread_args.empty;
         foreach (file; args[1 .. $]) {
             if (file.hasExtension(FileExtension.hibon)) {
-                tools.check(inputfilename is null, format("Input file '%s' has already been declared", inputfilename));
+                tools.check(inputfilename is null,
+                        format("Input file '%s' has already been declared", inputfilename));
                 inputfilename = file;
                 continue;
             }
@@ -213,8 +224,8 @@ int _main(string[] args) {
             return 0;
         }
 
-        if (dump) {
-            db.dump(true);
+        if (print) {
+            db.dump(sectors, Yes.full, depth);
         }
         else if (eye) {
             writefln("EYE: %s", db.fingerprint.hex);
@@ -236,11 +247,16 @@ int _main(string[] args) {
             return 0;
         }
         if (dartread) {
-            DARTIndex[] fingerprints;
-            fingerprints = dartread_args
-                .map!(hash => DARTIndex(decode(hash))).array;
+            DARTIndex[] dart_indices;
+            foreach (read_arg; dartread_args) {
+                import tagion.dart.DARTBasic : dartIndexDecode;
 
-            const sender = dartRead(fingerprints, hirpc);
+                auto dart_index = net.dartIndexDecode(read_arg);
+                verbose("%s\n%s\n%(%02x%)", read_arg, dart_index.encodeBase64, dart_index);
+                dart_indices ~= dart_index;
+            }
+
+            const sender = dartRead(dart_indices, hirpc);
             auto receiver = hirpc.receive(sender.toDoc);
             auto result = db(receiver, false);
             auto tosend = hirpc.toHiBON(result);

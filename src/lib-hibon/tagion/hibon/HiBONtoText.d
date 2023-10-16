@@ -1,5 +1,5 @@
 module tagion.hibon.HiBONtoText;
-
+@safe:
 /**
  HiBON Base64 with  ':' added in the front of the string as an indetifyer
  is base64 base on the flowing ASCII characters
@@ -31,26 +31,26 @@ enum {
     HEX_PREFIX = "0X"
 }
 
-@safe string encodeBase64(const(ubyte[]) data) pure {
+string encodeBase64(const(ubyte[]) data) pure {
     const result = BASE64Indetifyer ~ Base64URL.encode(data);
     return result.idup;
 }
 
-@safe string encodeBase64(const(Document) doc) pure {
+string encodeBase64(const(Document) doc) pure {
     return encodeBase64(doc.data);
 }
 
-@safe string encodeBase64(T)(const(T) t) pure
+string encodeBase64(T)(const(T) t) pure
 if (isHiBONRecord!T) {
     return encodeBase64(t.serialize);
 }
 
-@safe string encodeBase64(T)(const(T) t) pure
+string encodeBase64(T)(const(T) t) pure
 if (isBufferTypedef!T) {
     return encodeBase64(cast(TypedefType!T) t);
 }
 
-@nogc @safe bool isHexPrefix(const(char[]) str) pure nothrow {
+@nogc bool isHexPrefix(const(char[]) str) pure nothrow {
     if (str.length >= hex_prefix.length) {
         return (str[0 .. hex_prefix.length] == hex_prefix)
             || (str[0 .. HEX_PREFIX.length] == HEX_PREFIX);
@@ -58,12 +58,12 @@ if (isBufferTypedef!T) {
     return false;
 }
 
-@nogc @safe bool isBase64Prefix(const(char[]) str) pure nothrow {
+@nogc bool isBase64Prefix(const(char[]) str) pure nothrow {
     return (str.length > 0) && (str[0] is BASE64Indetifyer);
 }
 
-@safe immutable(ubyte[]) decode(const(char[]) str) pure {
-    if (str[0] is BASE64Indetifyer) {
+immutable(ubyte[]) decode(const(char[]) str) pure {
+    if (isBase64Prefix(str)) {
         return Base64URL.decode(str[1 .. $]).idup;
     }
     else if (isHexPrefix(str)) {
@@ -72,6 +72,6 @@ if (isBufferTypedef!T) {
     return misc.decode(str);
 }
 
-@safe Document decodeBase64(const(char[]) str) pure {
+Document decodeBase64(const(char[]) str) pure {
     return Document(decode(str));
 }

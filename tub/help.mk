@@ -18,8 +18,6 @@ help-main:
 	${call log.help, "make proper-all", "Cleans all"}
 	${call log.help, "make proper", "Cleans the current platform"}
 	${call log.line}
-	${call log.help, "make prebuild", "Executes the prebuild"}
-	${call log.line}
 	${call log.help, "make env", "Show Make environment"}
 
 	${call log.help, "make unittest", "Runs all unittests"}

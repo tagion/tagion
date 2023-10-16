@@ -25,7 +25,8 @@ import tagion.wallet.AccountDetails;
 import tagion.communication.HiRPC;
 import tagion.hibon.HiBON;
 import tagion.hibon.HiBONJSON;
-import tagion.hibon.HiBONRecord : fwrite, fread, HiBONRecord;
+import tagion.hibon.HiBONRecord : HiBONRecord;
+import tagion.hibon.HiBONFile : fwrite, fread;
 import tagion.basic.Types : Buffer, FileExtension;
 import tagion.crypto.Types : Pubkey;
 import tagion.crypto.aes.AESCrypto;
@@ -35,6 +36,7 @@ import tagion.wallet.KeyRecover;
 import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN;
 import tagion.crypto.Cipher;
 import tagion.utils.StdTime;
+import tagion.wallet.WalletException;
 
 /// Used for describing the d-runtime status
 enum DrtStatus {
@@ -125,6 +127,9 @@ extern (C) {
         try {
             auto pincode = cast(char[])(pincodePtr[0 .. pincodeLen]);
             auto mnemonic = cast(char[]) mnemonicPtr[0 .. mnemonicLen];
+
+            check(saltPtr is null && saltLen is 0 || saltPtr !is null, "Casting went wrong");
+
             auto salt = cast(char[]) saltPtr[0 .. saltLen];
             scope (exit) {
                 scramble(pincode);
@@ -218,6 +223,16 @@ extern (C) {
             }
         }
         return 0;
+    }
+
+    export uint get_fee(const double amount, double* fees) {
+        TagionCurrency tgn_fees;
+        scope (exit) {
+            *fees = tgn_fees.value;
+        }
+
+        const can_pay = __wallet_storage.wallet.getFee(TagionCurrency(amount), tgn_fees);
+        return can_pay ? 1 : 0;
     }
 
     export uint create_contract(
@@ -357,7 +372,7 @@ extern (C) {
         return 0;
     }
 
-    export uint get_derivers(uint8_t* deriversPtr) {
+    version (none) export uint get_derivers(uint8_t* deriversPtr) {
         if (__wallet_storage.wallet.isLoggedin()) {
             const encrDerivers = __wallet_storage.wallet.getEncrDerivers();
             const deviversDocId = recyclerDoc.create(Document(encrDerivers.toHiBON));
@@ -369,12 +384,36 @@ extern (C) {
         return 0;
     }
 
-    export uint set_derivers(const uint8_t* deriversPtr, const uint32_t deriversLen) {
+    version (none) export uint set_derivers(const uint8_t* deriversPtr, const uint32_t deriversLen) {
 
         immutable encDerivers = cast(immutable)(deriversPtr[0 .. deriversLen]);
 
         if (__wallet_storage.wallet.isLoggedin()) {
             __wallet_storage.wallet.setEncrDerivers(Cipher.CipherDocument(Document(encDerivers)));
+            return 1;
+        }
+        return 0;
+    }
+
+    export uint get_backup(uint8_t* backupPtr) {
+        if (__wallet_storage.wallet.isLoggedin()) {
+            const account = __wallet_storage.wallet.account;
+            const backupDocId = recyclerDoc.create(account.toDoc);
+
+            *backupPtr = cast(uint8_t) backupDocId;
+
+            return 1;
+        }
+        return 0;
+    }
+
+    export uint set_backup(const uint8_t* backupPtr, const uint32_t backupLen) {
+
+        immutable account = cast(immutable)(backupPtr[0 .. backupLen]);
+
+        if (__wallet_storage.wallet.isLoggedin()) {
+            __wallet_storage.wallet.account = AccountDetails(Document(account));
+            __wallet_storage.write;
             return 1;
         }
         return 0;

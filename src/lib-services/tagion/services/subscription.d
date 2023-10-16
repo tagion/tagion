@@ -1,36 +1,63 @@
 module tagion.services.subscription;
+@safe:
 
 import std.variant;
+import std.array;
 
 import tagion.actor;
 import tagion.logger;
+import tagion.logger.LogRecords;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON;
 import tagion.communication.HiRPC;
+import tagion.hibon.HiBONRecord;
 
 import nngd;
+import std.format;
 import core.time : msecs;
 
 struct SubscriptionServiceOptions {
     import tagion.utils.JSONCommon;
 
-    string[] tags;
-    string address = "abstract://tagion_subscription";
+    string tags;
+    string address;
+
+    import tagion.services.options : contract_sock_addr;
+    void setDefault() nothrow {
+        address = contract_sock_addr("SUBSCRIPTION_");
+    }
+
     uint sendtimeout = 1000;
     uint sendbufsize = 4096;
     mixin JSONCommon;
 }
 
-@safe
+@recordType("sub_payload")
+struct SubscriptionPayload {
+    @label("topic") string topic_name;
+    @label("task") string task_name;
+    @label("symbol") string symbol_name;
+    @label("data") Document data;
+
+    mixin HiBONRecord!(q{
+            this(LogInfo info, const(Document) data) {
+                this.topic_name = info.topic_name;
+                this.task_name = info.task_name;
+                this.symbol_name = info.symbol_name;
+                this.data = data;
+            }
+    });
+}
+
 struct SubscriptionService {
     void task(immutable(SubscriptionServiceOptions) opts) @trusted {
         log.registerSubscriptionTask(thisActor.task_name);
         log("Subscribing to tags");
-        foreach (tag; opts.tags) {
+        foreach (tag; opts.tags.split(':')) {
             submask.subscribe(tag);
         }
         scope (exit) {
-            foreach (tag; opts.tags) {
+            foreach (tag; opts.tags.split(':')) {
                 submask.unsubscribe(tag);
             }
         }
@@ -45,25 +72,21 @@ struct SubscriptionService {
         int rc;
         rc = sock.listen(opts.address);
         if (rc != 0) {
-            log.error("Could not listen to url %s: %s", opts.address, rc.nng_errstr);
-            return;
-            // throw new Exception(format("Could not listen to url %s: %s", opts.address, rc.nng_errstr));
+            throw new Exception(format("Could not listen to url %s: %s", opts.address, rc.nng_errstr));
         }
 
         log("Publishing on %s", opts.address);
 
-        void receiveSubscription(Topic topic, string identifier, const(Document) data) @trusted {
+        void receiveSubscription(LogInfo info, const(Document) data) @trusted {
             immutable(ubyte)[] payload;
 
-            payload = cast(immutable(ubyte)[])(topic.name ~ '\0');
+            payload = cast(immutable(ubyte)[])(info.topic_name ~ '\0');
 
-            HiBON hibon = new HiBON;
-            hibon[identifier] = data;
+            auto hibon = SubscriptionPayload(info, data);
             auto sender = hirpc.log(hibon);
             payload ~= sender.toDoc.serialize;
 
             rc = sock.send(payload);
-            log("%s: %s, %s", identifier, data.length, nng_errstr(rc));
         }
 
         run(&receiveSubscription);

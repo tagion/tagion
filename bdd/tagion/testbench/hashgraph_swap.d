@@ -3,7 +3,6 @@ module tagion.testbench.hashgraph_swap;
 import tagion.behaviour.Behaviour;
 
 import tagion.behaviour.Behaviour;
-import tagion.hibon.HiBONRecord : fwrite;
 import tagion.tools.Basic;
 import tagion.testbench.hashgraph;
 import tagion.testbench.tools.Environment;

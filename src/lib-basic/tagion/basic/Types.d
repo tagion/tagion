@@ -52,6 +52,7 @@ unittest {
     const(MyBuf) buf = [1, 2, 3, 4];
     MyBuf mut_buf = buf.mut;
 }
+
 /++
  Genera signal
 +/

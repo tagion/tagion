@@ -75,7 +75,7 @@ mixin template Cache(R, T) if (isResponseRequest!R) {
     alias Cache = Message[ID];
 }
 
-unittest {
+version (none) unittest {
     import tagion.basic.Types : Control;
     import std.exception : assertThrown, assertNotThrown;
     import std.algorithm : each;

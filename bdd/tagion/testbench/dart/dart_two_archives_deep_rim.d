@@ -27,6 +27,7 @@ import tagion.hibon.HiBONJSON : toPretty;
 import tagion.Keywords;
 import tagion.basic.Types : Buffer, mut;
 import std.range;
+import tagion.dart.DARTRim;
 
 import tagion.hibon.HiBONRecord;
 
@@ -45,7 +46,6 @@ alias FeatureContext = Tuple!(
 
 Fingerprint[] fingerprints;
 DARTIndex[] dart_indices;
-alias Rims = DART.Rims;
 
 @safe @Scenario("Add one archive.",
         ["mark #one_archive"])

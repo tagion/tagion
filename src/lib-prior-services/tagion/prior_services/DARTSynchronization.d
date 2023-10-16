@@ -31,6 +31,7 @@ import tagion.hibon.HiBONJSON;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.logger.Logger;
+import tagion.dart.DARTRim;
 
 import tagion.communication.HiRPC;
 import tagion.communication.HandlerPool;
@@ -225,12 +226,12 @@ class ReplayPool(T) {
 
 @safe
 interface SynchronizationFactory {
-    alias OnFailure = void delegate(const DART.Rims sector) @safe;
+    alias OnFailure = void delegate(const Rims sector) @safe;
     alias OnComplete = void delegate(string) @safe;
     alias SyncSectorResponse = Tuple!(uint, ResponseHandler);
     bool canSynchronize();
     SyncSectorResponse syncSector(
-            const DART.Rims sector,
+            const Rims sector,
             const OnComplete oncomplete,
             const OnFailure onfailure);
 }
@@ -278,7 +279,7 @@ class P2pSynchronizationFactory : SynchronizationFactory {
     }
 
     SyncSectorResponse syncSector(
-            const DART.Rims sector,
+            const Rims sector,
             const OnComplete oncomplete,
             const OnFailure onfailure) {
 
@@ -520,7 +521,7 @@ version (none) unittest {
         auto sync_factory = new P2pSynchronizationFactory(dart, node, connectionPool, opts, pkey);
         sync_factory.setNodeTable(address_table);
         mixin controlFuncs;
-        auto result = sync_factory.syncSector(DART.Rims(), &oncomplete, &onfailed);
+        auto result = sync_factory.syncSector(Rims(), &oncomplete, &onfailed);
         assert(result[1]!is null);
         assert(node.connect_counter == 1);
         assert(node.fake_stream.write_counter == 1);
@@ -547,7 +548,7 @@ version (none) unittest {
 +/
 @safe
 class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)) : Fiber { //TODO: move fiber inside as a field
-    enum root = DART.Rims.root;
+    enum root = Rims.root;
     bool fast_load;
     enum State {
         READY,
@@ -595,10 +596,10 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
     protected SynchronizationFactory sync_factory;
     protected ReplayPool!string journal_replay;
 
-    protected bool[DART.Rims] sync_sectors;
-    protected DART.Rims[] failed_sync_sectors;
+    protected bool[Rims] sync_sectors;
+    protected Rims[] failed_sync_sectors;
     HiRPC hirpc;
-    this(DART.SectorRange sectors, ReplayPool!string journal_replay, immutable(DARTOptions) dart_opts) @trusted {
+    this(SectorRange sectors, ReplayPool!string journal_replay, immutable(DARTOptions) dart_opts) @trusted {
         this.fast_load = dart_opts.fast_load;
         // writefln("Fast load: %s", fast_load);
         if (fast_load) {
@@ -611,7 +612,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
         this.handlerPool = new THandlerPool(dart_opts.sync.host.timeout.msecs);
         if (!fast_load) {
             foreach (i; sectors) {
-                sync_sectors[DART.Rims(i)] = false;
+                sync_sectors[Rims(i)] = false;
             }
         }
         else {
@@ -625,7 +626,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
         import std.array : array;
 
         if (fast_load) {
-            auto result = sync_factory.syncSector(DART.Rims.root, &onComplete, &onFailure);
+            auto result = sync_factory.syncSector(Rims.root, &onComplete, &onFailure);
             if (result[1] is null) {
                 onFailure(root); //TODO: or just ignore?
             }
@@ -698,7 +699,7 @@ class DARTSynchronizationPool(THandlerPool : HandlerPool!(ResponseHandler, uint)
         journal_replay.insert(journal_filename);
     }
 
-    private void onFailure(const DART.Rims sector) {
+    private void onFailure(const Rims sector) {
         if (checkState(State.FIBER_RUNNING)) {
             failed_sync_sectors ~= sector;
         }
@@ -755,7 +756,7 @@ unittest {
         private SyncSectorResponse mockReturn;
         private uint sync_counter = 0;
         SyncSectorResponse syncSector(
-                const DART.Rims sector,
+                const Rims sector,
                 OnComplete oncomplete,
                 OnFailure onfailure) {
             sync_counter++;
@@ -803,7 +804,7 @@ unittest {
 
     { //DARTSynchronizationPool: reconect on synchronizer failed after fiber finish
         auto pool = new DARTSynchronizationPool!(FakeHandlerPool!(ResponseHandler, uint))(
-                DART.SectorRange(0, 5), journal_replay, dart_opts);
+                SectorRange(0, 5), journal_replay, dart_opts);
         auto sync_factory = new FakeSynchronizationFactory();
         sync_factory.mockReturn = tuple(1, new FakeResponseHandler());
         pool.start(sync_factory);
@@ -814,7 +815,7 @@ unittest {
         }
         while (iterations <= 5);
 
-        pool.onFailure(DART.Rims(0));
+        pool.onFailure(Rims(0));
 
         assert(sync_factory.sync_counter == 5);
         assert(pool.isError);
@@ -828,7 +829,7 @@ unittest {
 
     { //DARTSynchronizationPool: reconect on synchronizer failed before fiber finish
         auto pool = new DARTSynchronizationPool!(
-                FakeHandlerPool!(ResponseHandler, uint))(DART.SectorRange(0, 5), journal_replay, dart_opts);
+                FakeHandlerPool!(ResponseHandler, uint))(SectorRange(0, 5), journal_replay, dart_opts);
         auto sync_factory = new FakeSynchronizationFactory();
         sync_factory.mockReturn = tuple(1, new FakeResponseHandler());
         pool.start(sync_factory);
@@ -836,7 +837,7 @@ unittest {
         do {
             iterations++;
             if (iterations == 2) {
-                pool.onFailure(DART.Rims(0));
+                pool.onFailure(Rims(0));
             }
             pool.tick;
         }
@@ -854,7 +855,7 @@ unittest {
 
     { //DARTSynchronizationPool: synchronization over
         auto pool = new DARTSynchronizationPool!(FakeHandlerPool!(ResponseHandler, uint))(
-                DART.SectorRange(0, 5), journal_replay, dart_opts);
+                SectorRange(0, 5), journal_replay, dart_opts);
         auto sync_factory = new FakeSynchronizationFactory();
         sync_factory.mockReturn = tuple(1, new FakeResponseHandler());
         pool.start(sync_factory);

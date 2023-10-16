@@ -54,6 +54,7 @@ alias ContractProductResult = Result!(immutable(ContractProduct)*, Exception);
 class StdCheckContract : CheckContract {
     TagionCurrency storage_fees; /// Fees per bytes
     TagionCurrency gas_price; /// Fees per TVM instruction
+
     TagionCurrency calcFees(in GasUse use) pure {
         return use.gas * gas_price + use.storage * storage_fees;
     }
@@ -94,10 +95,9 @@ struct ContractExecution {
     }
 
     static TagionCurrency billFees(const size_t number_of_input_bills, const size_t number_of_output_bills) {
-
-        return check_contract.calcFees(GasUse(pay_gas, number_of_output_bills * bill_price)) -
-            check_contract.calcFees(
-                    GasUse(0, number_of_input_bills * bill_price));
+        const output_fee = check_contract.calcFees(GasUse(pay_gas, number_of_output_bills * bill_price)); 
+        const input_fee = check_contract.calcFees(GasUse(0, number_of_input_bills * bill_price));
+        return output_fee - input_fee;
     }
 
     immutable(ContractProduct)* pay(immutable(CollectedSignedContract)* exec_contract) {
@@ -109,13 +109,13 @@ struct ContractExecution {
 
         const pay_script = PayScript(exec_contract.sign_contract.contract.script);
         const output_amount = pay_script.outputs.map!(bill => bill.value).totalAmount;
-        // pragma(msg, "Outputs ", typeof(pay_script.outputs.map!(v => v.toDoc).array));
         const result = new immutable(ContractProduct)(
                 exec_contract,
                 pay_script.outputs.map!(v => v.toDoc).array);
 
-        check(check_contract.validAmount(exec_contract, input_amount, output_amount,
-                GasUse(pay_gas, result.outputs.map!(doc => doc.full_size).sum)), "Invalid amount");
+        const bill_fees = billFees(exec_contract.inputs.length, pay_script.outputs.length);
+
+        check(input_amount >= (output_amount + bill_fees), "Invalid amount");
         return result;
     }
 }

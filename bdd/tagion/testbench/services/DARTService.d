@@ -35,6 +35,10 @@ import tagion.hibon.HiBONJSON;
 import tagion.Keywords;
 import tagion.services.replicator;
 import tagion.services.DARTInterface;
+import tagion.services.replicator : modify_log;
+import tagion.logger.Logger;
+import tagion.logger.LogRecords : LogInfo;
+import tagion.testbench.actor.util;
 
 enum feature = Feature(
             "see if we can read and write trough the dartservice",
@@ -170,6 +174,7 @@ class WriteAndReadFromDartDb {
 
         dart_interface_handle = (() @trusted => spawn(immutable(DARTInterfaceService)(cast(immutable) interface_opts, TaskNames()), "DartInterfaceService"))();
 
+
         waitforChildren(Ctrl.ALIVE, 3.seconds);
 
         return result_ok;
@@ -177,7 +182,9 @@ class WriteAndReadFromDartDb {
 
     @When("I send a dartModify command with a recorder containing changes to add")
     Document toAdd() {
-
+        log.registerSubscriptionTask(thisActor.task_name);
+        submask.subscribe(modify_log);
+        
         foreach (i; 0 .. 100) {
             gen.popFront;
             random_archives = RandomArchives(gen.front, 4, 10);
@@ -187,6 +194,9 @@ class WriteAndReadFromDartDb {
             insert_recorder.insert(docs, Archive.Type.ADD);
             auto modify_send = dartModify();
             (() @trusted => handle.send(modify_send, cast(immutable) insert_recorder, immutable int(0)))();
+
+            auto modify_log_result = receiveOnlyTimeout!(LogInfo, const(Document));
+            check(modify_log_result[1].isRecord!(RecordFactory.Recorder), "Did not receive recorder");
 
             handle.send(dartBullseyeRR());
             const bullseye_res = receiveOnly!(dartBullseyeRR.Response, Fingerprint);
@@ -239,6 +249,8 @@ class WriteAndReadFromDartDb {
             check(check_dart_indices.length == 0, "should be empty");
 
         }
+        submask.unsubscribe(modify_log);
+
         auto dummy_indexes = [DARTIndex([1, 2, 3, 4]), DARTIndex([2, 3, 4, 5])];
         Document check_read_sender = dartCheckRead(dummy_indexes, hirpc).toDoc;
         writefln("read_sender %s", check_read_sender.toPretty);

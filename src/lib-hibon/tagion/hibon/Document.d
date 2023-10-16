@@ -211,6 +211,7 @@ static assert(uint.sizeof == 4);
             const(Element) current,
             const(Element) previous) nothrow @safe;
 
+    alias Reserved = Flag!"Reserved";
     /++
      This function check's if the Document is a valid HiBON format
      Params:
@@ -218,7 +219,8 @@ static assert(uint.sizeof == 4);
      Returns:
      Error code of the validation
      +/
-    Element.ErrorCode valid(ErrorCallback error_callback = null) const nothrow {
+    Element.ErrorCode valid(ErrorCallback error_callback = null,
+            const Reserved reserved = Yes.Reserved) const nothrow {
         Element.ErrorCode inner_valid(const Document sub_doc,
                 ErrorCallback error_callback = null) const nothrow {
             import tagion.basic.tagionexceptions : TagionException;
@@ -235,7 +237,7 @@ static assert(uint.sizeof == 4);
                 }
             }
             foreach (ref e; sub_doc[]) {
-                error_code = e.valid;
+                error_code = e.valid(reserved);
                 if (not_first) {
                     if (e.data is previous.data) {
                         if (error_callback) {
@@ -286,8 +288,8 @@ static assert(uint.sizeof == 4);
      true if the Document is inorder
      +/
     // @trusted
-    bool isInorder() const nothrow {
-        return valid() is Element.ErrorCode.NONE;
+    bool isInorder(const Reserved reserved = Yes.Reserved) const nothrow {
+        return valid(null, reserved) is Element.ErrorCode.NONE;
     }
 
     /++
@@ -678,7 +680,7 @@ static assert(uint.sizeof == 4);
         }
 
         // dfmt off
-        alias Tabel = Tuple!(
+        alias Table = Tuple!(
             BigNumber, Type.BIGINT.stringof,
             bool,   Type.BOOLEAN.stringof,
             float,  Type.FLOAT32.stringof,
@@ -692,56 +694,56 @@ static assert(uint.sizeof == 4);
             );
         // dfmt on
 
-        Tabel test_tabel;
-        test_tabel.FLOAT32 = 1.23;
-        test_tabel.FLOAT64 = 1.23e200;
-        test_tabel.INT32 = -42;
-        test_tabel.INT64 = -0x0123_3456_789A_BCDF;
-        test_tabel.UINT32 = 42;
-        test_tabel.UINT64 = 0x0123_3456_789A_BCDF;
-        test_tabel.BIGINT = BigNumber("-1234_5678_9123_1234_5678_9123_1234_5678_9123");
-        test_tabel.BOOLEAN = true;
-        test_tabel.TIME = 1001;
+        Table test_table;
+        test_table.FLOAT32 = 1.23;
+        test_table.FLOAT64 = 1.23e200;
+        test_table.INT32 = -42;
+        test_table.INT64 = -0x0123_3456_789A_BCDF;
+        test_table.UINT32 = 42;
+        test_table.UINT64 = 0x0123_3456_789A_BCDF;
+        test_table.BIGINT = BigNumber("-1234_5678_9123_1234_5678_9123_1234_5678_9123");
+        test_table.BOOLEAN = true;
+        test_table.TIME = 1001;
 
-        alias TabelArray = Tuple!(
+        alias tableArray = Tuple!(
                 immutable(ubyte)[], Type.BINARY.stringof,
                 string, Type.STRING.stringof,
         );
 
-        TabelArray test_tabel_array;
-        test_tabel_array.BINARY = [1, 2, 3];
-        test_tabel_array.STRING = "Text";
+        tableArray test_table_array;
+        test_table_array.BINARY = [1, 2, 3];
+        test_table_array.STRING = "Text";
 
         { // Document with simple types
             index = 0;
 
             { // Document with a single value
-                index = make(buffer, test_tabel, 1);
+                index = make(buffer, test_table, 1);
                 immutable data = buffer[0 .. index].idup;
                 const doc = Document(data);
                 assert(doc.length is 1);
-                // assert(doc[Type.FLOAT32.stringof].get!float == test_tabel[0]);
+                // assert(doc[Type.FLOAT32.stringof].get!float == test_table[0]);
             }
 
             { // Document including basic types
-                index = make(buffer, test_tabel);
+                index = make(buffer, test_table);
                 immutable data = buffer[0 .. index].idup;
                 const doc = Document(data);
                 assert(doc.keys.is_key_ordered);
 
                 auto keys = doc.keys;
-                foreach (i, t; test_tabel) {
-                    enum name = test_tabel.fieldNames[i];
-                    alias U = test_tabel.Types[i];
+                foreach (i, t; test_table) {
+                    enum name = test_table.fieldNames[i];
+                    alias U = test_table.Types[i];
                     enum E = Value.asType!U;
                     assert(doc.hasMember(name));
                     const e = doc[name];
-                    assert(e.get!U == test_tabel[i]);
+                    assert(e.get!U == test_table[i]);
                     assert(keys.front == name);
                     keys.popFront;
 
                     auto e_in = name in doc;
-                    assert(e.get!U == test_tabel[i]);
+                    assert(e.get!U == test_table[i]);
 
                     assert(e.type is E);
                     assert(e.isType!U);
@@ -753,17 +755,17 @@ static assert(uint.sizeof == 4);
             }
 
             { // Document which includes basic arrays and string
-                index = make(buffer, test_tabel_array);
+                index = make(buffer, test_table_array);
                 immutable data = buffer[0 .. index].idup;
                 const doc = Document(data);
                 assert(doc.keys.is_key_ordered);
 
-                foreach (i, t; test_tabel_array) {
-                    enum name = test_tabel_array.fieldNames[i];
-                    alias U = test_tabel_array.Types[i];
+                foreach (i, t; test_table_array) {
+                    enum name = test_table_array.fieldNames[i];
+                    alias U = test_table_array.Types[i];
                     const v = doc[name].get!U;
 
-                    assert(v == test_tabel_array[i]);
+                    assert(v == test_table_array[i]);
                     import traits = std.traits; // : isArray;
                     const e = doc[name];
                 }
@@ -771,7 +773,7 @@ static assert(uint.sizeof == 4);
 
             { // Document which includes sub-documents
                 auto buffer_subdoc = new ubyte[0x200];
-                index = make(buffer_subdoc, test_tabel);
+                index = make(buffer_subdoc, test_table);
                 immutable data_sub_doc = buffer_subdoc[0 .. index].idup;
                 const sub_doc = Document(data_sub_doc);
 
@@ -828,18 +830,18 @@ static assert(uint.sizeof == 4);
                     assert(under_doc.data.length == data_sub_doc.length);
 
                     auto keys = under_doc.keys;
-                    foreach (i, t; test_tabel) {
-                        enum name = test_tabel.fieldNames[i];
-                        alias U = test_tabel.Types[i];
+                    foreach (i, t; test_table) {
+                        enum name = test_table.fieldNames[i];
+                        alias U = test_table.Types[i];
                         enum E = Value.asType!U;
                         assert(under_doc.hasMember(name));
                         const e = under_doc[name];
-                        assert(e.get!U == test_tabel[i]);
+                        assert(e.get!U == test_table[i]);
                         assert(keys.front == name);
                         keys.popFront;
 
                         auto e_in = name in doc;
-                        assert(e.get!U == test_tabel[i]);
+                        assert(e.get!U == test_table[i]);
                     }
                 }
 
@@ -1336,7 +1338,7 @@ static assert(uint.sizeof == 4);
          ErrorCode.NONE means that the element is valid
 
          +/
-        @trusted ErrorCode valid() const pure nothrow {
+        @trusted ErrorCode valid(const Reserved reserved) const pure nothrow {
             enum MIN_ELEMENT_SIZE = Type.sizeof + ubyte.sizeof + char.sizeof + ubyte.sizeof;
 
             with (ErrorCode) {
@@ -1389,7 +1391,7 @@ static assert(uint.sizeof == 4);
                     if (type is Type.STRING) {
                         const len = LEB128.decode!uint(data[valuePos .. $]);
                         const type_name = data[valuePos + len.size .. valuePos + len.size + len.value];
-                        if (type_name.length >= TYPENAME.length &&
+                        if (reserved && type_name.length >= TYPENAME.length &&
                                 type_name[0 .. TYPENAME.length] == TYPENAME) {
                             return RESERVED_HIBON_TYPE;
                         }
@@ -1433,6 +1435,12 @@ unittest { // Bugfix (Fails in isInorder);
 }
 
 @safe
-unittest {
+Document mut(D)(D doc) pure nothrow if (is(D : const(Document))) {
+    return Document(doc.data);
+}
 
+@safe
+unittest {
+    immutable imu_doc = Document.init;
+    Document doc = imu_doc.mut;
 }

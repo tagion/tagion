@@ -55,7 +55,8 @@ enum nng_errno : int {
         @("") NNG_ETRANERR = 0x2000_0000,
 }
 
-string nng_errstr(nng_errno errno) {
+string nng_errstr(int err) {
+    nng_errno errno = cast(nng_errno) err;
     switch(errno) { 
         static foreach(E; EnumMembers!nng_errno) {
             case E:
@@ -66,10 +67,6 @@ string nng_errstr(nng_errno errno) {
         return null;
     }
     assert(0);
-}
-
-string nng_errstr( int errno ){
-    return nng_errstr(cast(nng_errno)errno);
 }
 
 enum nng_flag {
@@ -744,7 +741,6 @@ void nng_http_conn_transact(nng_http_conn *, nng_http_req *, nng_http_res *, nng
 
 // http handler api
 int nng_http_handler_alloc(nng_http_handler **, const char *, void function (nng_aio *));
-int nng_http_handler_alloc(nng_http_handler **, const char *, void delegate (nng_aio *));
 int nng_http_handler_alloc_file(nng_http_handler **, const char *, const char *);
 int nng_http_handler_alloc_static(nng_http_handler **, const char *, const void *, size_t, const char *);
 int nng_http_handler_alloc_redirect(nng_http_handler **, const char *, ushort, const char *);

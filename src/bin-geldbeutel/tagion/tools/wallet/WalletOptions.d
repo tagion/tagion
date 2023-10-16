@@ -35,6 +35,7 @@ struct WalletOptions {
 
     string contract_address;
     string dart_address;
+    string contract_shell_address;
     /**
     * @brief set default values for wallet
     */
@@ -48,8 +49,9 @@ struct WalletOptions {
         devicefile = "device".setExtension(FileExtension.hibon);
         addr = "localhost";
         questions = standard_questions.dup;
-        contract_address = contract_sock_addr("Node_0_");
-        dart_address = contract_sock_addr("DART_" ~ "Node_0_");
+        contract_address = contract_sock_addr("Node_0_" ~ "CONTRACT_");
+        contract_shell_address = "http://localhost:8088/api/v1/contract";
+        dart_address = contract_sock_addr("Node_0_" ~ "DART_");
         port = 10800;
     }
 

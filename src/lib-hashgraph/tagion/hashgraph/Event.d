@@ -79,6 +79,8 @@ class Event {
 
     bool error;
 
+    Topic topic = Topic("hashgraph_event");
+
     /**
      * Builds an event from an eventpackage
      * Params:
@@ -267,7 +269,7 @@ class Event {
         // if (_father) { pseudo_time_counter += 1; }
         pseudo_time_counter = (_mother._father) ? _mother.pseudo_time_counter + 1 : _mother.pseudo_time_counter;
         with (hashgraph) {
-            mixin Log!(received_order_statistic);
+            log(topic, received_order_statistic.stringof, received_order_statistic);
         }
 
         calc_youngest_son_ancestors(hashgraph);
@@ -294,7 +296,7 @@ class Event {
             _round.add(this);
         }
         with (hashgraph) {
-            mixin Log!(strong_seeing_statistic);
+            log(topic, strong_seeing_statistic.stringof, strong_seeing_statistic);
         }
         if (callbacks) {
             callbacks.witness(this);

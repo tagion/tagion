@@ -76,10 +76,14 @@ struct DARTService {
             import tagion.utils.Miscellaneous : toHexString;
 
             log("Received checkread response %s", fingerprints.map!(f => f.toHexString));
+            
             immutable(DARTIndex)[] check_read = (() @trusted => cast(immutable) db.checkload(fingerprints))();
+            log("after checkread response");
 
             req.respond(check_read);
         }
+        import tagion.utils.Miscellaneous : toHexString;
+        log("Starting dart with %s", db.bullseye.toHexString);
 
         auto hirpc = HiRPC(net);
         auto empty_hirpc = HiRPC(null);
@@ -125,7 +129,7 @@ struct DARTService {
         }
 
         void modify(dartModify, immutable(RecordFactory.Recorder) recorder, immutable(int) epoch_number) @safe {
-            log("received modify with %s archives", recorder.length);
+            log("Received modify request with length=%s", recorder.length);
 
             auto eye = Fingerprint(db.modify(recorder));
 

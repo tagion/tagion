@@ -5,6 +5,8 @@ module tagion.services.inputvalidator;
 import std.socket;
 import std.stdio;
 import std.algorithm : remove;
+import std.conv : to;
+import std.exception : assumeWontThrow;
 
 import core.time;
 
@@ -21,28 +23,39 @@ import tagion.communication.HiRPC;
 import tagion.basic.Debug : __write;
 import tagion.utils.JSONCommon;
 import tagion.services.options : TaskNames;
+import tagion.crypto.SecureInterfaceNet;
+
+import std.format;
 
 import nngd;
 
 @safe
 struct InputValidatorOptions {
     string sock_addr;
-    void setDefault() nothrow {
-        import tagion.services.options : contract_sock_addr;
+    uint sock_recv_timeout = 1000;
+    uint sock_recv_buf = 4096;
+    uint sock_send_timeout = 200;
+    uint sock_send_buf = 1024;
 
-        sock_addr = contract_sock_addr;
+    import tagion.services.options : contract_sock_addr;
+    void setDefault() nothrow {
+        sock_addr = contract_sock_addr("CONTRACT_");
     }
 
     void setPrefix(string prefix) nothrow {
-        import tagion.services.options : contract_sock_addr;
-
-        sock_addr = contract_sock_addr(prefix);
+        sock_addr = contract_sock_addr(prefix ~ "CONTRACT_");
     }
 
     mixin JSONCommon;
 }
 
-enum reject_inputvalidator = "reject/inputvalidator";
+enum ResponseError {
+    Internal,
+    InvalidBuf,
+    InvalidDoc,
+}
+
+
 /** 
  *  InputValidator actor
  *  Examples: [tagion.testbench.services.inputvalidator]
@@ -50,13 +63,34 @@ enum reject_inputvalidator = "reject/inputvalidator";
 **/
 @safe
 struct InputValidatorService {
+    const SecureNet net;
+    static Topic rejected = Topic("reject/inputvalidator");
+
     pragma(msg, "TODO: Make inputvalidator safe when nng is");
     void task(immutable(InputValidatorOptions) opts, immutable(TaskNames) task_names) @trusted {
-        auto rejected = submask.register(reject_inputvalidator);
-        NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_PULL);
+        HiRPC hirpc = HiRPC(net);
+
+        void reject(T)(ResponseError err_type, T data = Document()) const {
+            hirpc.Error message;
+            message.code = err_type;
+            message.message = err_type.to!string;
+            // message.data = data;
+            const sender = hirpc.Sender(net, message);
+            sock.send(sender.toDoc.serialize);
+            log(rejected, err_type.to!string, data);
+        }
+
+        NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_REP);
+
+        sock.sendtimeout = opts.sock_send_timeout.msecs;
+        sock.recvtimeout = opts.sock_recv_timeout.msecs;
+        sock.recvbuf = opts.sock_recv_buf;
+        sock.sendbuf = opts.sock_send_buf;
+
         ReceiveBuffer buf;
-        // s.recvtimeout = opts.socket_select_timeout.msecs;
-        const listening = s.listen(opts.sock_addr);
+        buf.max_size = opts.sock_recv_buf;
+
+        const listening = sock.listen(opts.sock_addr);
         if (listening == 0) {
             log("listening on addr: %s", opts.sock_addr);
         }
@@ -65,7 +99,7 @@ struct InputValidatorService {
             throw new Exception("Failed to listen on addr: %s, %s".format(opts.sock_addr, nng_errstr(listening)));
         }
         const recv = (scope void[] b) @trusted {
-            size_t ret = s.receivebuf(cast(ubyte[]) b);
+            size_t ret = sock.receivebuf(cast(ubyte[]) b);
             return (ret < 0) ? 0 : cast(ptrdiff_t) ret;
         };
         setState(Ctrl.ALIVE);
@@ -82,26 +116,33 @@ struct InputValidatorService {
             }
 
             auto result = buf.append(recv);
-            if (s.m_errno != nng_errno.NNG_OK) {
-                log(rejected, "NNG_ERRNO", cast(int) s.m_errno);
+            scope(failure) {
+                reject(ResponseError.Internal);
+            }
+
+            if (sock.m_errno != nng_errno.NNG_OK) {
+                log(rejected, "NNG_ERRNO", cast(int) sock.m_errno);
                 continue;
             }
 
             // Fixme ReceiveBuffer .size doesn't always return correct lenght
             if (result.data.length <= 0) {
-                log(rejected, "invalid_buf", result.size);
+                reject(ResponseError.InvalidBuf);
                 continue;
             }
 
             import std.exception;
 
             Document doc = Document(assumeUnique(result.data));
-            if (doc.isInorder && doc.isRecord!(HiRPC.Sender)) {
+            if (doc.isInorder && doc.isRecord!(hirpc.Sender)) {
                 log("Sending contract to hirpc_verifier");
                 locate(task_names.hirpc_verifier).send(inputDoc(), doc);
+                const receiver = hirpc.receive(doc);
+                auto response_ok = hirpc.result(receiver, ResultOk());
+                sock.send(response_ok.toDoc.serialize);
             }
             else {
-                log(rejected, "invalid_doc", doc);
+                reject(ResponseError.InvalidDoc, doc);
             }
         }
     }

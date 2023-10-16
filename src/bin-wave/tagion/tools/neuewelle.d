@@ -16,6 +16,9 @@ import std.concurrency;
 import std.path : baseName;
 import std.file : exists;
 import std.algorithm : countUntil, map;
+import std.range : iota;
+import std.array;
+import std.format;
 
 import tagion.tools.Basic;
 import tagion.utils.getopt;
@@ -97,15 +100,13 @@ int _main(string[] args) {
     bool version_switch;
     bool override_switch;
     bool monitor;
-    string node_opts;
-    immutable(string)[] subscription_tags;
+    string mode0_node_opts_path;
 
     auto main_args = getopt(args,
             "v|version", "Print revision information", &version_switch,
             "O|override", "Override the config file", &override_switch,
-            "nodeopts", "Generate single node opts files for mode0", &node_opts,
+            "nodeopts", "Generate single node opts files for mode0", &mode0_node_opts_path,
             "m|monitor", "Enable the monitor", &monitor,
-            "subscribe", "Log subscription tags to enable", &subscription_tags,
     );
 
     if (main_args.helpWanted) {
@@ -129,7 +130,7 @@ int _main(string[] args) {
 
     if (override_switch) {
         Options.defaultOptions.save(config_file);
-        writefln("Configure file written to %s", config_file);
+        writefln("Config file written to %s", config_file);
         return 0;
     }
 
@@ -160,10 +161,7 @@ int _main(string[] args) {
 
     SubscriptionServiceHandle sub_handle;
     { // Spawn logger subscription service
-        import tagion.services.inputvalidator;
-        import tagion.services.collector;
-
-        immutable subopts = immutable(SubscriptionServiceOptions)(subscription_tags);
+        immutable subopts = Options(local_options).subscription;
         sub_handle = spawn!SubscriptionService("logger_sub", subopts);
         waitforChildren(Ctrl.ALIVE);
         log.registerSubscriptionTask("logger_sub");
@@ -172,45 +170,17 @@ int _main(string[] args) {
     log.register(baseName(program));
 
     locator_options = new immutable(LocatorOptions)(5, 5);
-    ActorHandle!Supervisor[] supervisor_handles;
+    SupervisorHandle[] supervisor_handles;
 
-    immutable wave_options = Options(local_options).wave;
-    if (wave_options.network_mode == NetworkMode.INTERNAL) {
+    if (local_options.wave.network_mode == NetworkMode.INTERNAL) {
+        auto node_options = get_mode_0_options(local_options, monitor);
+        network_mode0(node_options, supervisor_handles);
 
-        struct Node {
-            immutable(Options) opts;
-            immutable(SecureNet) net;
-        }
-
-        Node[] nodes;
-
-        foreach (i; 0 .. wave_options.number_of_nodes) {
-            immutable prefix = format(wave_options.prefix_format, i);
-            auto opts = Options(local_options);
-            opts.setPrefix(prefix);
-            SecureNet net = new StdSecureNet();
-            net.generateKeyPair(opts.task_names.supervisor);
-            if (monitor && i == 0) {
-                opts.monitor.enable = true;
-            }
-            opts.epoch_creator.timeout = 100;
-
-            nodes ~= Node(opts, cast(immutable) net);
-
-            addressbook[net.pubkey] = NodeAddress(opts.task_names.epoch_creator);
-        }
-
-        if (node_opts) {
-            foreach(i, n; nodes) {
-                n.opts.save(buildPath(node_opts, format(n.opts.wave.prefix_format~"opts", i).setExtension(FileExtension.json)));
+        if (mode0_node_opts_path) {
+            foreach(i, opt; node_options) {
+                opt.save(buildPath(mode0_node_opts_path, format(opt.wave.prefix_format~"opts", i).setExtension(FileExtension.json)));
             }
         }
-
-        /// spawn the nodes
-        foreach (n; nodes) {
-            supervisor_handles ~= spawn!Supervisor(n.opts.task_names.supervisor, n.opts, n.net);
-        }
-
     }
     else {
         assert(0, "NetworkMode not supported");
@@ -237,4 +207,45 @@ int _main(string[] args) {
     }
     log("Bye bye! ^.^");
     return 0;
+}
+
+int network_mode0(const(Options)[] node_options, ref ActorHandle!Supervisor[] supervisor_handles) {
+    struct Node {
+        immutable(Options) opts;
+        immutable(SecureNet) net;
+    }
+
+    Node[] nodes;
+
+    foreach (i, opts; node_options) {
+        SecureNet net = new StdSecureNet();
+        net.generateKeyPair(opts.task_names.supervisor);
+        nodes ~= Node(opts, cast(immutable) net);
+        addressbook[net.pubkey] = NodeAddress(opts.task_names.epoch_creator);
+    }
+
+    /// spawn the nodes
+    foreach (n; nodes) {
+        supervisor_handles ~= spawn!Supervisor(n.opts.task_names.supervisor, n.opts, n.net);
+    }
+
+    return 0;
+}
+
+const(Options)[] get_mode_0_options(const(Options) options, bool monitor = false) {
+    const number_of_nodes = options.wave.number_of_nodes;
+    const prefix_f = options.wave.prefix_format;
+    Options[] all_opts;
+    foreach(node_n; 0..number_of_nodes) {
+        auto opt = Options(options);
+        opt.setPrefix(format(prefix_f, node_n));
+        opt.epoch_creator.timeout = 100;
+        all_opts ~= opt;
+    }
+
+    if (monitor) {
+        all_opts[0].monitor.enable = true;
+    }
+
+    return all_opts;
 }

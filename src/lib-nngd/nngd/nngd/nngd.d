@@ -506,6 +506,25 @@ struct NNGSocket {
 
     } // this
 
+    int close(){
+        int rc;
+        m_errno = cast(nng_errno)0;
+        foreach(ctx; m_ctx){
+            rc = nng_ctx_close(ctx);
+            if(rc != 0){
+                m_errno = cast(nng_errno)rc;
+                return rc;
+            }                
+        }
+        rc = nng_close(m_socket);
+        if(rc == 0){
+            m_state = nng_socket_state.NNG_STATE_NONE;
+        } else {
+            m_errno = cast(nng_errno)rc;
+        }    
+        return rc;
+    }
+
     // setup listener
 
     int listener_create(const(string) url){
@@ -565,21 +584,24 @@ struct NNGSocket {
     }
 
     int unsubscribe ( string tag ) {
-        if(!m_subscriptions.canFind(tag))
+        size_t i = m_subscriptions.countUntil(tag);
+        if(i < 0)
             return 0;
         setopt_buf(NNG_OPT_SUB_UNSUBSCRIBE,cast(ubyte[])(tag.dup));                
         if(m_errno == 0)
-            m_subscriptions.remove(tag);
+            m_subscriptions = m_subscriptions[0..i]~m_subscriptions[i+1..$];
         return m_errno;    
     }
 
     int clearsubscribe (){
+        size_t i;
         foreach(tag; m_subscriptions){
+            i = m_subscriptions.countUntil(tag);
+            if(i < 0) continue;
             setopt_buf(NNG_OPT_SUB_UNSUBSCRIBE,cast(ubyte[])(tag.dup));
             if(m_errno != 0)
                 return m_errno;
-            if(m_subscriptions.canFind(tag))    
-                m_subscriptions.remove(tag);    
+            m_subscriptions = m_subscriptions[0..i]~m_subscriptions[i+1..$];
         }
         return 0;
     }
@@ -818,8 +840,13 @@ struct NNGSocket {
             return getopt_string(NNG_OPT_URL,nng_property_base.NNG_BASE_SOCKET); 
     }
 
-    @property Duration maxttl() { return getopt_duration(NNG_OPT_MAXTTL); } 
-    @property void maxttl(Duration val){ setopt_duration(NNG_OPT_MAXTTL,val); }
+    @property int maxttl() { return getopt_int(NNG_OPT_MAXTTL); } 
+    /// MAXTTL a value between 0 and 255, inclusive. Where 0 is infinite
+    @property void maxttl(uint val)
+    in (val <= 255, "MAXTTL, hops cannot be greater than 255")
+    do { 
+        setopt_int(NNG_OPT_MAXTTL,val);
+    }
     
     @property int recvmaxsz() { return getopt_int(NNG_OPT_RECVMAXSZ); } 
     @property void recvmaxsz(int val) { return setopt_int(NNG_OPT_RECVMAXSZ,val); } 
@@ -1225,7 +1252,6 @@ struct WebApp {
         scope(failure){
             nng_http_res_free(res);
             nng_aio_finish(aio, rc);
-            return;
         }
 
         scope(exit){

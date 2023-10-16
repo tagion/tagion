@@ -11,10 +11,11 @@ import tagion.dart.Recorder;
 import tagion.tools.revision;
 import tagion.basic.Types : FileExtension, Buffer;
 import tagion.tools.Basic;
-import tagion.hibon.HiBONRecord : fwrite, fread;
+import tagion.hibon.HiBONFile : fwrite, fread;
 import tagion.basic.tagionexceptions;
 import tagion.utils.Term;
 import tagion.hibon.Document;
+import tagion.tools.boot.genesis;
 
 alias check = Check!TagionException;
 
@@ -24,16 +25,19 @@ int _main(string[] args) {
     immutable program = args[0];
     bool version_switch;
     bool standard_output;
+    bool standard_input;
+    string[] nodekeys;
     string output_filename = "dart".setExtension(FileExtension.hibon);
     const net = new StdHashNet;
     try {
+        standard_input = (args.length == 1);
         auto main_args = getopt(args,
                 std.getopt.config.caseSensitive,
                 std.getopt.config.bundling,
                 "version", "display the version", &version_switch, //        "invoice|i","Sets the HiBON input file name", &invoicefile,
                 "c|stdout", "Print to standard output", &standard_output,
                 "o|output", format("Output filename : Default %s", output_filename), &output_filename, // //        "output_filename|o", format("Sets the output file name: default : %s", output_filenamename), &output_filenamename,
-                //         "bills|b", "Generate bills", &number_of_bills,
+                "p|nodekey", "Node channel key(Pubkey) ", &nodekeys, //         "bills|b", "Generate bills", &number_of_bills,
                 // "value|V", format("Bill value : default: %d", value), &value,
                 // "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase
                 //"initbills|b", "Testing mode", &initbills,
@@ -52,26 +56,29 @@ int _main(string[] args) {
             //       writeln(logo);
             defaultGetoptPrinter(
                     [
-                //                format("%s version %s", program, REVNO),
-                "Documentation: https://tagion.org/",
-                "",
-                "Usage:",
-                format("%s [<option>...] <hibon-files> ...", program),
-                "",
-                "Where:",
-                format("<file>           hibon outfile (Default %s)", output_filename),
-                "",
+                    //                format("%s version %s", program, REVNO),
+                    "Documentation: https://tagion.org/",
+                    "",
+                    "Usage:",
+                    format("%s [<option>...] <hibon-files> ...", program),
+                    "",
+                    "Where:",
+                    format("<file>           hibon outfile (Default %s)", output_filename),
+                    "",
 
-                "<option>:",
+                    "<option>:",
 
-            ].join("\n"),
+                    ].join("\n"),
                     main_args.options);
             return 0;
         }
         auto factory = RecordFactory(net);
         auto recorder = factory.recorder;
-
-        if (args.length == 1) {
+        if (!nodekeys.empty) {
+            auto genesis_list = createGenesis(nodekeys, Document.init);
+            recorder.insert(genesis_list, Archive.Type.ADD);
+        }
+        if (standard_input) {
             auto fin = stdin;
             ubyte[1024] buf;
             Buffer data;

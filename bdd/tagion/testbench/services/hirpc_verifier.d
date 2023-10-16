@@ -104,16 +104,33 @@ class CorrectHiRPCFormatAndPermission {
         }
     }
 
+
     Document doc;
 
     @Given("a correctly formatted transaction.")
     Document transaction() {
+        import std.range : iota;
+        import tagion.script.common;
+        import tagion.script.TagionCurrency;
+        import tagion.utils.StdTime;
+        import std.algorithm : map;
+        import tagion.crypto.Types;
+        import tagion.basic.Types : Buffer;
+        import std.array;
         writeln(thisTid);
         check(waitforChildren(Ctrl.ALIVE), "ContractService never alived");
         check(hirpc_verifier_handle.tid !is Tid.init, "Contract thread is not running");
-        auto params = new HiBON;
-        params["test"] = 42;
-        const sender = hirpc.action(ContractMethods.submit, params);
+
+
+        Document[] in_bills;
+        in_bills ~= iota(0, 10).map!(_ => TagionBill(10.TGN, sdt_t.init, Pubkey.init, Buffer.init).toDoc).array;
+        immutable(TagionBill)[] out_bills;
+        out_bills ~= iota(0, 10).map!(_ => TagionBill(5.TGN, sdt_t.init, Pubkey.init, Buffer.init)).array;
+        auto contract = immutable(Contract)(null, null, PayScript(out_bills).toDoc);
+        SignedContract signed_contract = SignedContract(null, contract);
+        
+
+        const sender = hirpc.submit(signed_contract);
         doc = sender.toDoc;
         hirpc_verifier_handle.send(inputDoc(), doc);
 
@@ -183,7 +200,7 @@ class CorrectHiRPCWithPermissionDenied {
     @When("do scenario \'#permission\'")
     Document scenarioPermission() {
         const receiveTuple = receiveOnlyTimeout!(RejectReason, Document);
-        check(receiveTuple[0] == RejectReason.notSigned, "The docuemnt was not rejected for the correct reason");
+        check(receiveTuple[0] == RejectReason.invalidType, "The docuemnt was not rejected for the correct reason");
         check(receiveTuple[1] == invalid_doc, "The rejected doc was not the same as was sent");
  
         return result_ok;

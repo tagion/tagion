@@ -13,6 +13,7 @@ import tagion.gossip.GossipNet;
 import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.crypto.Types : Pubkey;
+import tagion.crypto.random.random;
 import tagion.basic.Types : Buffer;
 import tagion.hashgraph.Refinement;
 import tagion.gossip.InterfaceNet : GossipNet;
@@ -71,7 +72,8 @@ struct EpochCreatorService {
         gossip_net = new NewEmulatorGossipNet(net.pubkey, opts.timeout.msecs);
         Pubkey[] channels = addressbook.activeNodeChannels;
         Random!size_t random;
-        random.seed(123456789);
+        const _seed = getRandom!size_t;
+        random.seed(_seed);
 
         foreach (channel; channels) {
             gossip_net.add_channel(channel);
@@ -102,6 +104,7 @@ struct EpochCreatorService {
         void receivePayload(Payload, const(Document) pload) {
             log.trace("Received Payload %s", pload.toPretty);
             payload_queue.write(pload);
+            hashgraph.init_tide(&gossip_net.gossip, &payload, currentTime);
         }
 
         void receiveWavefront(ReceivedWavefront, const(Document) wave_doc) {
@@ -126,7 +129,7 @@ struct EpochCreatorService {
                 .array;
 
             if (received_signed_contracts.length != 0) {
-                log("would have send to collector %s", received_signed_contracts.map!(s => (*s).toPretty));
+                // log("would have send to collector %s", received_signed_contracts.map!(s => (*s).toPretty));
                 locate(task_names.collector).send(consensusContract(), received_signed_contracts);
             }
             hashgraph.wavefront(

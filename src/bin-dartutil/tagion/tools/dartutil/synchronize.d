@@ -9,6 +9,7 @@ import tagion.tools.Basic : verbose, nobose, noboseln;
 import std.file : remove;
 import tagion.dart.synchronizer;
 import tagion.utils.Term;
+import tagion.dart.DARTRim;
 
 @safe
 class DARTUtilSynchronizer : JournalSynchronizer {
@@ -87,7 +88,7 @@ string[] synchronize(DART destination, DART source, string journal_basename) {
         }
         auto synch = new DARTUtilSynchronizer(journalfile, destination, source);
 
-        auto destination_synchronizer = destination.synchronizer(synch, DART.Rims([cast(ubyte) _rim]));
+        auto destination_synchronizer = destination.synchronizer(synch, Rims([cast(ubyte) _rim]));
         while (!destination_synchronizer.empty) {
             (() @trusted { destination_synchronizer.call; })();
         }

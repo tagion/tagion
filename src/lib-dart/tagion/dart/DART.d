@@ -37,6 +37,7 @@ import tagion.dart.DARTBasic : DARTIndex;
 import CRUD = tagion.dart.DARTcrud;
 import tagion.dart.BlockFile : Index;
 import tagion.dart.synchronizer : Synchronizer, JournalSynchronizer;
+import tagion.dart.DARTRim;
 
 /**
  * Calculates the to-angle on the angle circle 
@@ -156,225 +157,7 @@ class DART : DARTFile {
         return SectorRange(from_sector, to_sector);
     }
 
-    /** 
-     * Sector range 
-     */
-    static struct SectorRange {
-        private {
-            @label("") ushort _sector;
-            @label("from") ushort _from_sector;
-            @label("to") ushort _to_sector;
-        }
-        /**
-        * The start start sector
-        * Returns: start angle
-        */
-        @property ushort from_sector() inout {
-            return _from_sector;
-        }
-
-        /**
-         * The end sector
-         * Returns: end angle 
-         */
-        @property ushort to_sector() inout {
-            return _to_sector;
-        }
-
-        @label("") protected bool flag;
-        mixin HiBONRecord!(q{
-                this(const ushort from_sector, const ushort to_sector) pure nothrow @nogc {
-                    _from_sector = from_sector;
-                    _to_sector = to_sector;
-                    _sector = from_sector;
-                }
-            });
-
-        /**
-         * Checks if the range is a full angle dart (0x0000 to 0xFFFF)
-         * Returns: true if it a full-range=full-angle
-         */
-        bool isFullRange() const pure nothrow {
-            return _from_sector == _to_sector;
-        }
-
-        /** 
-         * Checks if the sector is within the sector-range
-         * Params:
-         *   sector = sector number
-         * Returns: true if sector is within the range
-         */
-        bool inRange(const ushort sector) const pure nothrow {
-            return sectorInRange(sector, _from_sector, _to_sector);
-        }
-
-        /** 
-         * Checks if the sector of a rim is within the sector-range
-         * Params:
-         *   rims = a rim path 
-         * Returns: 
-         */
-        bool inRange(const Rims rims) const pure nothrow {
-            return sectorInRange(rims.sector, _from_sector, _to_sector);
-        }
-
-        /**
-         * Checks if sector is within range 
-         * Params:
-         *   sector = sector number
-         *   from_sector = sector start angle
-         *   to_sector = sector end angle
-         * Returns: true if the sector is within the angle-span 
-         */
-        static bool sectorInRange(
-                const ushort sector,
-                const ushort from_sector,
-                const ushort to_sector) pure nothrow {
-            if (to_sector == from_sector) {
-                return true;
-            }
-            else {
-                immutable ushort sector_origin = (sector - from_sector) & ushort.max;
-                immutable ushort to_origin = (to_sector - from_sector) & ushort.max;
-                return (sector_origin < to_origin);
-            }
-        }
-
-        /**
-         * Check if current sector has reached the end
-         * Returns: true of the sector reach the end of the angle-span
-         */
-        bool empty() const pure nothrow {
-            return !inRange(_sector) || flag;
-        }
-
-        /** 
-         * Progress one sector
-         */
-        void popFront() {
-            if (!empty) {
-                _sector++;
-                if (_sector == _from_sector)
-                    flag = true;
-            }
-        }
-
-        /**
-         * Gets the current sector
-         * Returns: current sector
-         */
-        ushort front() const pure nothrow {
-            return _sector;
-        }
-
-        /** 
-         * Gives an representation of the angle span
-         * Returns: text of angle span
-         */
-        string toString() const pure {
-            return format("(%d, %d)", _from_sector, _to_sector);
-        }
-
-        ///
-        unittest {
-            enum full_dart_sectors_count = ushort.max + 1;
-            { //SectorRange: full sector iterator
-                auto sector_range = SectorRange(0, 0);
-                auto iteration = 0;
-                foreach (sector; sector_range) {
-                    iteration++;
-
-                    if (iteration > full_dart_sectors_count)
-                        assert(0, "Range overflow");
-                }
-                assert(iteration == full_dart_sectors_count);
-            }
-            { //SectorRange: full sector iterator
-                auto sector_range = SectorRange(5, 5);
-                auto iteration = 0;
-                foreach (sector; sector_range) {
-                    iteration++;
-
-                    if (iteration > full_dart_sectors_count)
-                        assert(0, "Range overflow");
-                }
-                assert(iteration == full_dart_sectors_count);
-            }
-            { //SectorRange:
-                auto sector_range = SectorRange(1, 10);
-                auto iteration = 0;
-                foreach (sector; sector_range) {
-                    iteration++;
-
-                    if (iteration > 9)
-                        assert(0, "Range overflow");
-                }
-                assert(iteration == 9);
-            }
-        }
-    }
-
     mixin(EnumText!(q{Queries}, Callers!DART));
-
-    /**
-     * Rim selecter
-     */
-    @recordType("Rims")
-    struct Rims {
-        Buffer rims;
-        protected enum root_rim = [];
-        static immutable root = Rims(root_rim);
-        /**
-         * Returns: sector of the selected rims
-         */
-        ushort sector() const pure nothrow
-        in {
-            pragma(msg, "fixme(vp) have to be check: rims is root_rim");
-
-            assert(rims.length >= ushort.sizeof || rims.length == 0,
-                    __format("Rims size must be %d or more ubytes contain a sector but contains %d", ushort.sizeof, rims
-                    .length));
-        }
-        do {
-            if (rims.length == 0) {
-                return ushort.init;
-            }
-            return .sector(rims);
-        }
-
-        mixin HiBONRecord!(
-                q{
-                this(Buffer r) {
-                    rims=r;
-                }
-
-                this(const ushort sector)
-                out {
-                    assert(rims.length is ushort.sizeof);
-                }
-                do  {
-                    rims=[sector >> 8*ubyte.sizeof, sector & ubyte.max];
-                }
-                this(I)(const Rims rim, const I key) if (isIntegral!I) 
-                in (key >= 0 && key <= ubyte.max) 
-                do {
-
-                    rims = rim.rims ~ cast(ubyte) key;
-                }
-            });
-
-        /**
-         * Rims as hex value
-         * Returns: hex string
-         */
-        string toString() const pure nothrow {
-            if (rims.length == 0) {
-                return "XXXX";
-            }
-            return rims.toHexString;
-        }
-    }
-
     /**
      * The dartBullseye method is called from opCall function
      * This function return current database bullseye.
@@ -446,7 +229,7 @@ received = the HiRPC received package
     }
     do {
         const doc_dart_indices = received.method.params[Params.dart_indices].get!(Document);
-        auto dart_indices = doc_dart_indices.range!(Buffer[]);
+        auto dart_indices = doc_dart_indices.range!(DARTIndex[]);
         const recorder = loads(dart_indices, Archive.Type.ADD);
         return hirpc.result(received, recorder.toDoc);
     }
@@ -971,7 +754,7 @@ received = the HiRPC received package
                         BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
                         auto journalfile = BlockFile(journal_filename);
                         auto synch = new TestSynchronizer(journalfile, dart_A, dart_B);
-                        auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
+                        auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
                         // D!(sector, "%x");
                         while (!dart_A_synchronizer.empty) {
                             (() @trusted => dart_A_synchronizer.call)();
@@ -1032,7 +815,7 @@ received = the HiRPC received package
                     BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
                     auto journalfile = BlockFile(journal_filename);
                     auto synch = new TestSynchronizer(journalfile, dart_A, dart_B);
-                    auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
+                    auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
                         (() @trusted => dart_A_synchronizer.call)();
@@ -1085,7 +868,7 @@ received = the HiRPC received package
                     BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
                     auto journalfile = BlockFile(journal_filename);
                     auto synch = new TestSynchronizer(journalfile, dart_A, dart_B);
-                    auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
+                    auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
                         (() @trusted => dart_A_synchronizer.call)();
@@ -1142,7 +925,7 @@ received = the HiRPC received package
                     BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
                     auto journalfile = BlockFile(journal_filename);
                     auto synch = new TestSynchronizer(journalfile, dart_A, dart_B);
-                    auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
+                    auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
                         (() @trusted => dart_A_synchronizer.call)();
@@ -1194,7 +977,7 @@ received = the HiRPC received package
                     BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
                     auto journalfile = BlockFile(journal_filename);
                     auto synch = new TestSynchronizer(journalfile, dart_A, dart_B);
-                    auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
+                    auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
                         (() @trusted { dart_A_synchronizer.call; })();
@@ -1248,7 +1031,7 @@ received = the HiRPC received package
                     BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
                     auto journalfile = BlockFile(journal_filename);
                     auto synch = new TestSynchronizer(journalfile, dart_A, dart_B);
-                    auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
+                    auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
                         (() @trusted { dart_A_synchronizer.call; })();
@@ -1302,7 +1085,7 @@ received = the HiRPC received package
                     BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
                     auto journalfile = BlockFile(journal_filename);
                     auto synch = new TestSynchronizer(journalfile, dart_A, dart_B);
-                    auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
+                    auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
                     // D!(sector, "%x");
                     while (!dart_A_synchronizer.empty) {
                         (() @trusted { dart_A_synchronizer.call; })();
@@ -1356,7 +1139,7 @@ received = the HiRPC received package
                     BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
                     auto journalfile = BlockFile(journal_filename);
                     auto synch = new TestSynchronizer(journalfile, dart_A, dart_B);
-                    auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
+                    auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
                     while (!dart_A_synchronizer.empty) {
                         (() @trusted { dart_A_synchronizer.call; })();
                     }
@@ -1408,7 +1191,7 @@ received = the HiRPC received package
                     journal_filenames ~= journal_filename;
                     BlockFile.create(journal_filename, DART.stringof, TEST_BLOCK_SIZE);
                     auto synch = new TestSynchronizer(journal_filename, dart_A, dart_B);
-                    auto dart_A_synchronizer = dart_A.synchronizer(synch, DART.Rims(sector));
+                    auto dart_A_synchronizer = dart_A.synchronizer(synch, Rims(sector));
                     while (!dart_A_synchronizer.empty) {
                         (() @trusted { dart_A_synchronizer.call; })();
                     }

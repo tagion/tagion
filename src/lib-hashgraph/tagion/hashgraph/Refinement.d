@@ -24,20 +24,22 @@ import std.algorithm : map, filter, sort, reduce, until;
 import std.array;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.services.options : TaskNames;
-import tagion.script.common : StdNames;
+import tagion.script.standardnames;
 import tagion.hibon.HiBONRecord;
 
 @recordType("finishedEpoch")
 struct FinishedEpoch {
     @label("events") const(EventPackage)[] events;
     @label(StdNames.time) sdt_t time;
+    @label("epoch") int epoch;
     mixin HiBONRecord!(q{
-        this(const(Event)[] events, sdt_t time) pure {
+        this(const(Event)[] events, sdt_t time, int epoch) pure {
             this.events = events
                 .map!((e) => *(e.event_package))
                 .array;
 
             this.time = time;
+            this.epoch = epoch;
         }
     });
 }
@@ -45,10 +47,7 @@ struct FinishedEpoch {
 @safe
 class StdRefinement : Refinement {
 
-    Topic epoch_created;
-    this() {
-        epoch_created = submask.register("epoch_creator/epoch_created");
-    }
+    Topic epoch_created = Topic("epoch_creator/epoch_created");
 
     enum MAX_ORDER_COUNT = 10; /// Max recursion count for order_less function
     protected {
@@ -75,18 +74,18 @@ class StdRefinement : Refinement {
     }
 
     void finishedEpoch(const(Event[]) events, const sdt_t epoch_time, const Round decided_round) @trusted {
-        if (events.length > 0) {
-            auto event_payload = FinishedEpoch(events, epoch_time);
-            log(epoch_created, "epoch_succesful", event_payload.toDoc);
-        }
+        auto event_payload = FinishedEpoch(events, epoch_time, decided_round.number);
+        import std.format;
+        log(epoch_created, "epoch_succesful", event_payload.toDoc);
+
         if (task_names is TaskNames.init) {
             return;
         }
 
         immutable(EventPackage*)[] epacks = events
-                .map!((e) => e.event_package)
-                .array;
-        locate(task_names.transcript).send(consensusEpoch(), epacks, decided_round.number);
+            .map!((e) => e.event_package)
+            .array;
+        locate(task_names.transcript).send(consensusEpoch(), epacks, decided_round.number, epoch_time);
     }
 
     void excludedNodes(ref BitMask excluded_mask) {
@@ -146,11 +145,11 @@ class StdRefinement : Refinement {
 
             return receivers.map!(e => PseudoTime(e.pseudo_time_counter,
                     (e[].retro.filter!(e => e._witness)
-                    .front._mother.pseudo_time_counter + 1),
-                    e.order,
-                    e.event_body.time,
-                    e.round.number,
-                    decided_round.famous_mask.count))
+                .front._mother.pseudo_time_counter + 1),
+            e.order,
+            e.event_body.time,
+            e.round.number,
+            decided_round.famous_mask.count))
                 .array
                 .reduce!((a, b) => a + b);
         }
@@ -182,9 +181,11 @@ class StdRefinement : Refinement {
         times.sort;
         const epoch_time = times[times.length / 2];
 
+        // version(EPOCH_LOG) {
         log.trace("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d time=%s",
                 hashgraph.name, decided_round.number,
                 Event.count, Event.Witness.count, events.length, epoch_time);
+        // }
 
         finishedEpoch(events, epoch_time, decided_round);
 

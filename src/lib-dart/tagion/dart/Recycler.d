@@ -10,9 +10,9 @@ import std.format;
 
 import tagion.basic.Types : Buffer;
 import tagion.dart.BlockFile : BlockFile, Index, check;
-import tagion.hibon.HiBONRecord : HiBONRecord, label, recordType, fwrite, fread;
+import tagion.hibon.HiBONRecord : HiBONRecord, label, recordType;
+import tagion.hibon.HiBONFile : fwrite, fread;
 import std.algorithm;
-import tagion.hibon.HiBONJSON : toPretty;
 
 /** 
  * The segments used for the recycler.
@@ -41,7 +41,6 @@ struct RecycleSegment {
         {
             blockfile.seek(_index);
             const doc = blockfile.file.fread();
-            // writeln(doc.toPretty);
             check(RecycleSegment.isRecord(doc), "The loaded segment was not of type segment doc");
             next = doc[GetLabel!(next).name].get!Index;
             size = doc[GetLabel!(size).name].get!ulong;
@@ -542,13 +541,13 @@ unittest {
     add_indices =
         [
             new RecycleSegment(Index(10UL), 5)
-    ];
+        ];
     recycler.recycle(add_indices);
     // recycler.dump;
     add_indices =
         [
             new RecycleSegment(Index(2UL), 8)
-    ];
+        ];
     recycler.recycle(add_indices);
 
     assert(recycler.indices.length == 1, "should have merged segments");
@@ -559,7 +558,7 @@ unittest {
     add_indices =
         [
             new RecycleSegment(Index(15UL), 5)
-    ];
+        ];
     recycler.recycle(add_indices);
     assert(recycler.indices.length == 1, "should have merged segments");
     assert(recycler.indices.front.index == Index(
@@ -588,13 +587,13 @@ unittest {
     add_indices =
         [
             new RecycleSegment(Index(10UL), 5)
-    ];
+        ];
     recycler.recycle(add_indices);
     // recycler.dump;
     add_indices =
         [
             new RecycleSegment(Index(2UL), 5)
-    ];
+        ];
     recycler.recycle(
             add_indices);
 
@@ -607,7 +606,7 @@ unittest {
     add_indices =
         [
             new RecycleSegment(Index(25UL), 5)
-    ];
+        ];
     recycler.recycle(
             add_indices[]);
     assert(recycler.indices.length == 3, "Should not have merged");
@@ -636,13 +635,13 @@ unittest {
         [
             new RecycleSegment(Index(10UL), 5),
             new RecycleSegment(Index(1UL), 1)
-    ];
+        ];
     recycler.recycle(add_indices);
     // recycler.dump;
     add_indices =
         [
             new RecycleSegment(Index(5UL), 5)
-    ];
+        ];
     recycler.recycle(add_indices);
     // recycler.dump;
     assert(recycler.indices.length == 2, "should have merged segments");
@@ -651,12 +650,12 @@ unittest {
     add_indices =
         [
             new RecycleSegment(Index(25UL), 5)
-    ];
+        ];
     recycler.recycle(add_indices);
     add_indices =
         [
             new RecycleSegment(Index(17UL), 2)
-    ];
+        ];
     recycler.recycle(
             add_indices);
     assert(
@@ -680,7 +679,7 @@ unittest {
     RecycleSegment*[] add_indices =
         [
             new RecycleSegment(Index(10UL), 5),
-    ];
+        ];
     recycler.recycle(add_indices);
 
     recycler.claim(5);
@@ -1011,7 +1010,8 @@ unittest {
         deleteme.remove;
     }
 
-    blockfile.dump(6, fout);
+    blockfile.dump(segments_per_line : 6, fout:
+            fout);
     blockfile.recycleDump(fout);
     blockfile.statisticDump(fout);
     blockfile.recycleStatisticDump(fout);

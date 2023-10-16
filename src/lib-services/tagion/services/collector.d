@@ -31,6 +31,14 @@ struct CollectorOptions {
 /// Topic for rejected collector inputs;
 enum reject_collector = "reject/collector";
 
+
+/**
+ * Collector Service actor
+ * Sends:
+ *  (dartReadRR, immutable(DARTIndex)[]) to TaskNames.dart
+ *  (consensusContract(), immutable(CollectedSignedContract)*) to TaskNames.tvm 
+ *  (signedContract(), immutable(CollectedSignedContract)*) to TaskNames.tvm 
+**/
 struct CollectorService {
     immutable SecureNet net;
     immutable TaskNames task_names;
@@ -39,10 +47,9 @@ struct CollectorService {
     bool[uint] is_consensus_contract;
     immutable(Document)[][uint] reads;
 
-    Topic reject;
+    Topic reject = Topic(reject_collector);
     void task() {
         assert(net !is null, "No secure net");
-        reject = submask.register(reject_collector);
         run(&receive_recorder, &signed_contract, &consensus_signed_contract, &rpc_contract);
     }
 
@@ -86,10 +93,6 @@ struct CollectorService {
     void rpc_contract(inputHiRPC, immutable(HiRPC.Receiver) receiver) @safe {
         immutable doc = Document(receiver.method.params);
         log("collector received receiver");
-        if (!doc.isRecord!SignedContract) {
-            log(reject, "hirpc_not_a_signed_contract", doc);
-            return;
-        }
         try {
             // No immutable construct on this HiBONRecord
             immutable s_contract = (() @trusted => (cast(immutable) new SignedContract(doc)))();
@@ -119,6 +122,7 @@ struct CollectorService {
         if (!(res.id in contracts)) {
             return;
         }
+
 
         immutable s_contract = contracts[res.id];
         auto fingerprints = recorder[].map!(a => a.dart_index).array;

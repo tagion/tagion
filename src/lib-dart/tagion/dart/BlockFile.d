@@ -25,10 +25,13 @@ import tagion.basic.tagionexceptions : Check;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONFile;
 import tagion.logger.Statistic;
 import tagion.dart.DARTException : BlockFileException;
 import tagion.dart.Recycler : Recycler;
 import tagion.dart.BlockSegment;
+import std.exception : ifThrown;
+import tagion.basic.basic : isinit;
 
 ///
 import tagion.logger.Logger;
@@ -138,7 +141,7 @@ class BlockFile {
      *   BLOCK_SIZE = set the block size of the underlying BlockFile.
      *   file_label = Used to set the type and version 
      */
-    static void create(string filename, string description, immutable uint BLOCK_SIZE, string file_label = null) {
+    static void create(string filename, string description, immutable uint BLOCK_SIZE, string file_label = null, const uint max_size = 0x80) {
         import std.file : exists;
 
         check(!filename.exists, format("Error: File %s already exists", filename));
@@ -147,7 +150,7 @@ class BlockFile {
         scope (exit) {
             blockfile.close;
         }
-        blockfile.createHeader(description, file_label);
+        blockfile.createHeader(description, file_label, max_size);
         blockfile.writeMasterBlock;
     }
 
@@ -210,7 +213,7 @@ class BlockFile {
      * Params:
      *   name = name of the header
      */
-    protected void createHeader(string name, string file_label) {
+    protected void createHeader(string name, string file_label, const uint max_size) {
         check(!hasHeader, "Header is already created");
         check(file.size == 0, "Header can not be created the file is not empty");
         check(name.length < headerblock.id.length,
@@ -226,6 +229,7 @@ class BlockFile {
         headerblock.id = ubyte.max;
         headerblock.label[0 .. file_label.length] = file_label;
         headerblock.block_size = BLOCK_SIZE;
+        headerblock.max_size = max_size;
         headerblock.id[0 .. name.length] = name;
         headerblock.create_time = Clock.currTime.toUnixTime!long;
         headerblock.write(file);
@@ -262,6 +266,7 @@ class BlockFile {
         enum LABEL_SIZE = 16;
         char[LABEL_SIZE] label; /// Label to set the BlockFile type
         uint block_size; /// Size of the block's
+        uint max_size; /// Max size of one blocksegment in block
         long create_time; /// Time of creation
         char[ID_SIZE] id; /// Short description string
 
@@ -312,6 +317,7 @@ class BlockFile {
                 format("Label      : %s", label[].until(char.max)),
                 format("ID         : %s", id[].until(char.max)),
                 format("Block size : %d", block_size),
+                format("Max  size  : %d", max_size),
                 format("Created    : %s", SysTime.fromUnixTime(create_time).toSimpleString),
             ].join("\n");
         }
@@ -386,7 +392,6 @@ class BlockFile {
             return assumeWontThrow([
                 "Master Block",
                 format("Root       @ %d", root_index),
-                //       format("First      @ %d", first_index),
                 format("Recycle    @ %d", recycle_header_index),
                 format("Statistic  @ %d", statistic_index),
             ].join("\n"));
@@ -637,6 +642,7 @@ class BlockFile {
         BlockFile owner;
 
         Index index;
+        Index last_index;
         BlockSegmentInfo current_segment;
 
         this(BlockFile owner) {
@@ -645,7 +651,27 @@ class BlockFile {
             initFront;
         }
 
+        this(BlockFile owner, Index from, Index to) {
+            this.owner = owner;
+            index = from;
+            last_index = to;
+            index = (owner.lastBlockIndex == 0) ? Index.init : Index(1UL);
+            findNextValidIndex(index);
+            initFront;
+        }
+
         alias BlockSegmentInfo = Tuple!(Index, "index", string, "type", ulong, "size", Document, "doc");
+        private void findNextValidIndex(ref Index index) {
+            while (index < owner.lastBlockIndex) {
+                const doc = owner.load(index)
+                    .ifThrown(Document.init);
+                if (!doc.isinit) {
+                    break;
+                }
+                index += 1;
+
+            }
+        }
 
         private void initFront() @trusted {
             import std.format;
@@ -686,7 +712,8 @@ class BlockFile {
 
         bool empty() {
 
-            if (index == Index.init || current_segment == BlockSegmentInfo.init) {
+            if (index == Index.init || current_segment == BlockSegmentInfo.init ||
+                    (!last_index.isinit && index >= last_index)) {
                 return true;
             }
 
@@ -707,13 +734,22 @@ class BlockFile {
         return BlockSegmentRange(this);
     }
 
+    BlockSegmentRange opSlice(I)(I from, I to) if (isIntegral!I || is(I : const(Index))) {
+        if (from.isinit && to.isinit) {
+            return opSlice();
+        }
+        return BlockSegmentRange(this, Index(from), Index(to));
+    }
     /**
      * Used for debuging only to dump the Block's
      */
-    void dump(const uint segments_per_line = 6, File fout = stdout) {
+    void dump(const uint segments_per_line = 6,
+            const Index from = Index.init,
+            const Index to = Index.init,
+            File fout = stdout) {
         fout.writefln("|TYPE [INDEX]SIZE");
 
-        BlockSegmentRange seg_range = opSlice();
+        BlockSegmentRange seg_range = opSlice(from, to);
         uint pos = 0;
         foreach (seg; seg_range) {
             if (pos == segments_per_line) {
@@ -794,7 +830,7 @@ class BlockFile {
             auto blockfile = new BlockFile(_file, SMALL_BLOCK_SIZE);
 
             assert(!blockfile.hasHeader);
-            blockfile.createHeader("This is a Blockfile unittest", "ID");
+            blockfile.createHeader("This is a Blockfile unittest", "ID", 0x80);
             assert(blockfile.hasHeader);
             _file.close;
         }

@@ -66,6 +66,7 @@ struct Supervisor {
             log.error("Not all children became Alive");
         }
 
+        log("Supervisor stopping services");
         foreach (service; services) {
             if (service.state is Ctrl.ALIVE) {
                 service.send(Sig.STOP);
@@ -73,13 +74,17 @@ struct Supervisor {
         }
         (() @trusted { // NNG shoould be safe
             import nngd;
+            import core.time;
 
-            NNGSocket input_sock = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
+            NNGSocket input_sock = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
             input_sock.dial(opts.inputvalidator.sock_addr);
+            input_sock.maxttl = 1;
+            input_sock.recvtimeout = 1.msecs;
             input_sock.send("End!"); // Send arbitrary data to the inputvalidator so releases the socket and checks its mailbox
         })();
-        log("Supervisor stopping services");
         waitforChildren(Ctrl.END);
         log("All services stopped");
     }
 }
+
+alias SupervisorHandle = ActorHandle!Supervisor;

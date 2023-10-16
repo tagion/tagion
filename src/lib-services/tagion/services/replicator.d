@@ -2,7 +2,7 @@ module tagion.services.replicator;
 
 import tagion.actor;
 import tagion.utils.Miscellaneous : cutHex;
-import tagion.logger.Logger : log;
+import tagion.logger.Logger;
 import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock;
 import tagion.recorderchain.RecorderChain;
 import tagion.crypto.Types : Fingerprint;
@@ -28,9 +28,11 @@ struct ReplicatorOptions {
     mixin JSONCommon;
 }
 
+enum modify_log = "modify/replicator";
+
 @safe
 struct ReplicatorService {
-
+    static Topic modify_recorder = Topic(modify_log);
     void task(immutable(ReplicatorOptions) opts, immutable(SecureNet) net) {
         RecorderChainStorage storage = new RecorderChainFileStorage(opts.folder_path, net);
         RecorderChain recorder_chain = new RecorderChain(storage);
@@ -45,6 +47,7 @@ struct ReplicatorService {
                     net);
             recorder_chain.append(block);
             log.trace("Added recorder chain block with hash '%s'", block.getHash.cutHex);
+            log(modify_recorder, "modify", recorder);
         }
 
         run(&receiveRecorder);

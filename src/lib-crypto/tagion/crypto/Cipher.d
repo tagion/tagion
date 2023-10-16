@@ -156,7 +156,7 @@ struct Cipher {
                     passed[0] = true;
                     if (encrypted_doc.isInorder) {
                         import std.stdio : writefln;
-                        import tagion.hibon.HiBONRecord : fwrite;
+                        import tagion.hibon.HiBONFile : fwrite;
 
                         immutable filename = fileId!Cipher(FileExtension.hibon, encrypted_doc
                                 .stringof).fullpath;

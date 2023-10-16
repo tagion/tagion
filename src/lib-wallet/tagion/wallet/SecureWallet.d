@@ -173,12 +173,6 @@ struct SecureWallet(Net : SecureNet) {
         }
         _net.generateKeyPair(passphrase, salt,
                 (scope const(ubyte[]) data) { R = data[0 .. size_of_privkey].dup; });
-        /*
-    _net = new Net;
-        auto R = _net.calcHash(passphrase.representation).dup;
-        set_pincode(R, pincode);
-        _net.createKeyPair(R);
-*/
     }
 
     protected void set_pincode(
@@ -395,7 +389,7 @@ struct SecureWallet(Net : SecureNet) {
         try {
             checkLogin;
             auto bills = orders.map!((order) => TagionBill(order.amount, currentTime, order.pkey, Buffer.init)).array;
-            const topay = orders.map!(b => b.amount).sum;
+            // const topay = orders.map!(b => b.amount).sum;
             return createPayment(bills, signed_contract, fees);
         }
         catch (Exception e) {
@@ -457,7 +451,7 @@ struct SecureWallet(Net : SecureNet) {
 
     }
 
-    private const(SecureNet[]) collectNets(const(TagionBill[]) bills) {
+    const(SecureNet[]) collectNets(const(TagionBill[]) bills) {
         return bills
             .map!(bill => bill.owner in account.derivers)
             .map!((deriver) => (deriver is null) ? _net.init : _net.derive(*deriver))
@@ -475,12 +469,14 @@ struct SecureWallet(Net : SecureNet) {
         import std.algorithm.iteration : cumulativeFold;
         import std.range : takeOne, tee;
 
+        import std.stdio;
+
         if (!account.bills.isSorted!q{a.value > b.value}) {
             account.bills.sort!q{a.value > b.value};
         }
 
         // Select all bills not in use
-        auto none_locked = account.bills.filter!(b => !(b.owner in account.activated));
+        auto none_locked = account.bills.filter!(b => !(b.owner in account.activated)).array;
 
         // Check if we have enough money
         const enough = !none_locked
@@ -489,16 +485,19 @@ struct SecureWallet(Net : SecureNet) {
             .filter!(a => a >= amount)
             .takeOne
             .empty;
+
         if (enough) {
             TagionCurrency rest = amount;
             locked_bills = none_locked
-                .filter!(b => b.value <= rest)
-                .until!(b => rest <= 0)
-                .tee!((b) => rest -= b.value)
+                .filter!(b => b.value <= rest) // take all bills smaller than the rest
+                .until!(b => rest <= 0) // do it until the rest smaller than zero. 
+                .tee!((b) => rest -= b.value) // add them to the rest amount
                 .array;
-            if (rest >= 0) {
+            if (rest > 0) {
+
                 TagionBill extra_bill;
-                none_locked.each!(b => extra_bill = b);
+                none_locked.filter!(b => !locked_bills.canFind(b))
+                    .each!(b => extra_bill = b);
                 locked_bills ~= extra_bill;
                 return true;
             }
@@ -506,7 +505,7 @@ struct SecureWallet(Net : SecureNet) {
         return false;
     }
 
-    private void lock_bills(const(TagionBill[]) locked_bills) {
+    void lock_bills(const(TagionBill[]) locked_bills) {
         locked_bills.each!(b => account.activated[b.owner] = true);
     }
 
@@ -577,6 +576,58 @@ struct SecureWallet(Net : SecureNet) {
         return true;
     }
 
+    Result!bool getFee(TagionBill[] to_pay, out TagionCurrency fees) nothrow {
+        import tagion.script.Currency : totalAmount;
+        import tagion.script.execute;
+
+        try {
+            PayScript pay_script;
+            pay_script.outputs = to_pay;
+            TagionBill[] collected_bills;
+            TagionCurrency amount_remainder = 0.TGN;
+            size_t previous_bill_count = size_t.max;
+
+            const amount_to_pay = pay_script.outputs
+                .map!(bill => bill.value)
+                .totalAmount;
+
+            do {
+                if (collected_bills.length == previous_bill_count) {
+                    return result(false);
+                }
+                collected_bills.length = 0;
+                const can_pay = collect_bills(amount_to_pay + amount_remainder, collected_bills);
+                check(can_pay, format("Is unable to pay the amount %10.6fTGN available %10.6fTGN", amount_to_pay.value, available_balance
+                        .value));
+                const total_collected_amount = collected_bills
+                    .map!(bill => bill.value)
+                    .totalAmount;
+                fees = ContractExecution.billFees(collected_bills.length, pay_script.outputs.length + 1);
+                amount_remainder = total_collected_amount - amount_to_pay - fees;
+                previous_bill_count = collected_bills.length;
+            }
+            while (amount_remainder < 0);
+        }
+        catch (Exception e) {
+            return Result!bool(e);
+        }
+        return result(true);
+    }
+
+    Result!bool getFee(const(Invoice[]) orders, out TagionCurrency fees) nothrow {
+        import tagion.utils.StdTime;
+        import std.exception;
+
+        auto bills = assumeWontThrow(orders.map!((order) => TagionBill(order.amount, currentTime, order.pkey, Buffer.init))
+                .array);
+        return getFee(bills, fees);
+    }
+
+    Result!bool getFee(TagionCurrency amount, out TagionCurrency fees) nothrow {
+        auto bill = TagionBill(amount, sdt_t.init, Pubkey.init, Buffer.init);
+        return getFee([bill], fees);
+    }
+
     Result!bool createPayment(TagionBill[] to_pay, ref SignedContract signed_contract, out TagionCurrency fees) nothrow {
         import tagion.script.Currency : totalAmount;
         import tagion.script.execute;
@@ -588,30 +639,35 @@ struct SecureWallet(Net : SecureNet) {
             PayScript pay_script;
             pay_script.outputs = to_pay;
             TagionBill[] collected_bills;
-            TagionCurrency amount_remainder;
+            TagionCurrency amount_remainder = 0.TGN;
             size_t previous_bill_count = size_t.max;
+
+            const amount_to_pay = pay_script.outputs
+                .map!(bill => bill.value)
+                .totalAmount;
+
             do {
                 if (collected_bills.length == previous_bill_count) {
                     return result(false);
                 }
                 collected_bills.length = 0;
-                const amount_to_pay = pay_script.outputs
+
+                const can_pay = collect_bills(amount_to_pay + amount_remainder, collected_bills);
+
+                check(can_pay, format("Is unable to pay the amount %10.6fTGN available %10.6fTGN", amount_to_pay.value, available_balance
+                        .value));
+                const total_collected_amount = collected_bills
                     .map!(bill => bill.value)
                     .totalAmount;
 
-                const can_pay = collect_bills(amount_to_pay, collected_bills);
-                writefln("collected_bills %s", collected_bills.map!(b => net.calcHash(b).encodeBase64));
-                check(can_pay, format("Is unable to pay the amount %10.6fTGN available %10.6fTGN", amount_to_pay.value, available_balance
-                        .value));
-                const amount_to_redraw = collected_bills
-                    .map!(bill => bill.value)
-                    .totalAmount;
                 fees = ContractExecution.billFees(collected_bills.length, pay_script.outputs.length + 1);
-                amount_remainder = amount_to_redraw - amount_to_pay - fees;
+
+                amount_remainder = total_collected_amount - amount_to_pay - fees;
                 previous_bill_count = collected_bills.length;
 
             }
             while (amount_remainder < 0);
+
             const nets = collectNets(collected_bills);
             check(nets.all!(net => net !is net.init), "Missing deriver of some of the bills");
             if (amount_remainder != 0) {
@@ -661,11 +717,11 @@ struct SecureWallet(Net : SecureNet) {
         return this.account.derive_state;
     }
 
-    TagionBill requestBill(TagionCurrency amount) {
+    TagionBill requestBill(TagionCurrency amount, sdt_t bill_time = currentTime) {
         check(amount > 0.TGN, format("Requested bill should have a positive value and not %10.6fTGN", amount.value));
         TagionBill bill;
         bill.value = amount;
-        bill.time = currentTime;
+        bill.time = bill_time;
         auto nonce = new ubyte[4];
         getRandom(nonce);
         bill.nonce = nonce.idup;
@@ -843,9 +899,11 @@ struct SecureWallet(Net : SecureNet) {
             receiver_wallet.registerInvoice(invoice);
             TagionCurrency fees;
             // Give the invoice to the sender_wallet and create payment
-            sender_wallet.payment([invoice], contract_1, fees);
+            TagionCurrency expected_fee;
+            sender_wallet.getFee([invoice], expected_fee);
 
-            //writefln("contract_1=%s", contract_1.toPretty);
+            sender_wallet.payment([invoice], contract_1, fees);
+            assert(expected_fee == fees, "fee for get fee and expected fee should be the same");
         }
 
         SignedContract contract_2;
@@ -855,8 +913,6 @@ struct SecureWallet(Net : SecureNet) {
             TagionCurrency fees;
             // Give the invoice to the sender_wallet and create payment
             sender_wallet.payment([invoice], contract_2, fees);
-
-            //writefln("contract_2=%s", contract_2.toPretty);
         }
     }
 }
@@ -872,33 +928,41 @@ version (unittest) {
 
 }
 
-version (WALLET_SAME_BILL) {
+@safe
+unittest {
 
-    @safe
-    unittest {
-        import std.algorithm;
-        import tagion.hibon.HiBONJSON;
-        import std.stdio;
+    import std.algorithm;
+    import tagion.hibon.HiBONJSON;
+    import std.exception;
+    import std.stdio;
 
-        auto wallet1 = StdSecureWallet("some words", "1234");
-        auto wallet2 = StdSecureWallet("some words2", "4321");
-        const bill1 = wallet1.requestBill(1000.TGN);
-        const bill2 = wallet1.requestBill(2000.TGN);
+    auto wallet1 = StdSecureWallet("some words", "1234");
+    auto wallet2 = StdSecureWallet("some words2", "4321");
+    const bill1 = wallet1.requestBill(1000.TGN);
+    const bill2 = wallet1.requestBill(2000.TGN);
 
-        wallet1.addBill(bill1);
-        wallet1.addBill(bill2);
-        assert(wallet1.available_balance == 3000.TGN);
+    wallet1.addBill(bill1);
+    wallet1.addBill(bill2);
+    assert(wallet1.available_balance == 3000.TGN);
 
-        auto payment_request = wallet2.requestBill(1500.TGN);
+    auto payment_request = wallet2.requestBill(1500.TGN);
+    auto too_big_request = wallet2.requestBill(10000.TGN);
 
-        SignedContract signed_contract;
-        TagionCurrency fee;
-        assert(wallet1.createPayment([payment_request], signed_contract, fee).value, "error creating payment");
+    TagionCurrency expected_fee;
+    assert(!wallet1.getFee([too_big_request], expected_fee).value, "should throw on too big value");
+    assert(!wallet1.getFee(10000.TGN, expected_fee).value, "should throw on too big value");
+    assert(wallet1.getFee(100.TGN, expected_fee).value, "should be able to pay amount");
 
-        writefln("%s", signed_contract.toPretty);
+    assert(wallet1.getFee([payment_request], expected_fee).value, "error in getFee");
+    assert(wallet1.available_balance == 3000.TGN, "getfee should not change any balances");
 
-        assert(signed_contract.contract.inputs.uniq.array.length == signed_contract.contract.inputs.length, "signed contract inputs invalid");
-    }
+    SignedContract signed_contract;
+    TagionCurrency fee;
+    assert(wallet1.createPayment([payment_request], signed_contract, fee).value, "error creating payment");
+
+    assert(fee == expected_fee, format("fees not the same %s, %s", fee, expected_fee));
+
+    assert(signed_contract.contract.inputs.uniq.array.length == signed_contract.contract.inputs.length, "signed contract inputs invalid");
 }
 
 @safe
@@ -949,17 +1013,51 @@ unittest {
 
     { /// succces payment
 
+        import std.stdio;
+
         SignedContract signed_contract;
         TagionCurrency fees;
+        writefln("WALLET 1 total balance %s", wallet1.total_balance);
         const can_pay = wallet1.createPayment([w2_bill1], signed_contract, fees);
 
-        const expected_fees = ContractExecution.billFees(1, 1);
+        const expected_fees = ContractExecution.billFees(2, 2);
         assert(fees == expected_fees);
-        assert(can_pay.value, "Unable to pay");
         assert(wallet1.total_balance == 3000.TGN);
-        assert(wallet1.locked_balance == 1000.TGN);
-        assert(wallet1.available_balance == 2000.TGN);
+        assert(wallet1.locked_balance == 3000.TGN);
+        assert(wallet1.available_balance == 0.TGN);
 
     }
 
+}
+
+// check that the public key is deterministic
+unittest {
+    const words = "long second damp volcano laptop friend noble citizen hip cake safe gown";
+    const pin = "1234";
+    
+    auto wallet1 = StdSecureWallet(words, pin);
+    auto wallet2 = StdSecureWallet(words, pin);
+    assert(wallet1.getPublicKey == wallet2.getPublicKey, "should have generated the same publickey");
+
+    auto wallet3 = StdSecureWallet("Some other words", pin);
+    assert(wallet1.getPublicKey != wallet3.getPublicKey);
+
+    auto wallet4 = StdSecureWallet(words, "5432");
+    assert(wallet1.getPublicKey == wallet4.getPublicKey, "should have generated the same publickey");
+}
+
+
+// check pubkey is the same after login/logout
+unittest {
+    import std.stdio;
+    const words = "long second damp volcano laptop friend noble citizen hip cake safe gown";
+    const pin = "1234";
+
+    auto wallet1 = StdSecureWallet(words, pin);
+    auto pkey_before = wallet1.getPublicKey.idup;
+    wallet1.logout;
+    auto pindup = pin.dup;
+    assert(wallet1.login(pindup));
+    auto pkey_after = wallet1.getPublicKey;
+    assert(pkey_before == pkey_after, "public key not the same after login/logout");
 }

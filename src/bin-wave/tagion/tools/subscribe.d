@@ -23,7 +23,9 @@ mixin Main!(_main);
 int _main(string[] args) {
     immutable program = args[0];
 
-    string address = SubscriptionServiceOptions().address;
+    auto default_sub_opts = SubscriptionServiceOptions();
+    default_sub_opts.setDefault();
+    string address = default_sub_opts.address;
     bool version_switch;
     string[] tags;
     bool watch;

@@ -6,7 +6,7 @@ import std.stdio;
 import std.array;
 import std.path;
 import std.file : exists, mkdir;
-import tagion.hibon.HiBONRecord : fwrite, fread;
+import tagion.hibon.HiBONFile : fwrite, fread;
 import std.algorithm;
 import std.range;
 import tagion.tools.revision;
@@ -96,10 +96,11 @@ int _main(string[] args) {
                 "o|output", "Output filename", &wallet_switch.output_filename,
                 "l|list", "List wallet content", &wallet_switch.list, //"questions", "Questions for wallet creation", &questions_str,
                 "s|sum", "Sum of the wallet", &wallet_switch.sum, //"questions", "Questions for wallet creation", &questions_str,
-                "send", "Send a contract to the network", &wallet_switch.send, //"answers", "Answers for wallet creation", &answers_str,
+                "send", "Send a contract to the shell", &wallet_switch.send, //"answers", "Answers for wallet creation", &answers_str,
+                "sendkernel", "Send a contract to the kernel", &wallet_switch.sendkernel, //"answers", "Answers for wallet creation", &answers_str,
                 "P|passphrase", "Set the wallet passphrase", &_passphrase,
                 "create-invoice", "Create invoice by format LABEL:PRICE. Example: Foreign_invoice:1000", &wallet_switch
-                    .invoice,/*
+                    .invoice, /*
                 "path", format("Set the path for the wallet files : default %s", path), &path,
                 "wallet", format("Wallet file : default %s", options.walletfile), &options.walletfile,
                 "device", format("Device file : default %s", options.devicefile), &options.devicefile,
@@ -124,7 +125,7 @@ int _main(string[] args) {
                     .contract_address,
                     "dart-addr", format("Sets the dart address default: %s", options.dart_address), &options.dart_address,
                 "bip39", "Generate bip39 set the number of words", &bip39,
-                "salt", format(`Add a salt to the bip39 word list (Default "%s")`, _salt), &_salt,/*
+                "salt", format(`Add a salt to the bip39 word list (Default "%s")`, _salt), &_salt, /*
                 "port|p", format("Tagion network port : default %d", options.port), &options.port,
                 "url|u", format("Tagion url : default %s", options.addr), &options.addr,
                 "visual|g", "Visual user interface", &wallet_ui,
@@ -202,7 +203,7 @@ int _main(string[] args) {
             const wordlist = WordList(words);
             passphrase = wordlist.passphrase(bip39);
 
-            printf("%.*s\n", passphrase.length, &passphrase[0]); //5 here refers to # of characters 
+            printf("%.*s\n", cast(int) passphrase.length, &passphrase[0]); //5 here refers to # of characters 
 
             //return 0;
         }

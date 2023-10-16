@@ -26,6 +26,7 @@ import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
 
 import tagion.prior_services.DARTSynchronization;
 import tagion.prior_services.ResponseRequest;
+import tagion.dart.DARTBasic : DARTIndex;
 
 version (unittest) import tagion.dart.BlockFile : fileId;
 import tagion.hibon.HiBONJSON;
@@ -41,6 +42,8 @@ import tagion.gossip.AddressBook : NodeAddress, addressbook;
 
 import tagion.basic.tagionexceptions;
 import tagion.actor.exceptions;
+import tagion.dart.DARTRim;
+import std.typecons;
 
 alias HiRPCSender = HiRPC.HiRPCSender;
 alias HiRPCReceiver = HiRPC.HiRPCReceiver;
@@ -81,7 +84,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
         immutable(Options) opts,
         shared(p2plib.NodeI) node,
         shared(Net) master_net,
-        immutable(DART.SectorRange) sector_range) nothrow {
+        immutable(SectorRange) sector_range) nothrow {
     try {
         scope (success) {
             ownerTid.prioritySend(Control.END);
@@ -214,7 +217,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
             }
         }
 
-        void dartRead(immutable(DARTReadRequest)* resp, Buffer[][] fingerprints) @trusted {
+        void dartRead(immutable(DARTReadRequest)* resp, DARTIndex[][] fingerprints) @trusted {
             import std.algorithm : joiner;
 
             immutable result = cast(immutable)(dart.loads(fingerprints.joiner, Archive.Type.NONE));
@@ -361,7 +364,7 @@ void dartSynchronizeServiceTask(Net : SecureNet)(
                 else {
                     subscription.stop();
                     recorderReplayFiber.clear();
-                    dart.dump(true);
+                    dart.dump(SectorRange.init, Yes.full);
                     log("DART generated: bullseye: %s", dart.fingerprint.toHexString);
                     state.setState(DARTSynchronizeState.READY);
                 }
