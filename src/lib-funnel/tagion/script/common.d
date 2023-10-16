@@ -165,6 +165,7 @@ struct TagionHead {
 struct TagionGlobals {
     long epoch;
     @label("events") Fingerprint[] event_prints;
+    @label("total") TagionCurrency total;
     mixin HiBONRecord;
 }
 

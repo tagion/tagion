@@ -28,24 +28,24 @@ bool dry_switch() nothrow @nogc {
 }
 
 @trusted
-private void __verbosef(Args...)(string fmt, Args args) {
+private void __verbosef(Args...)(string fmt, lazy Args args) {
     vout.writef(fmt, args);
 }
 
 @trusted
-private void __verbose(Args...)(string fmt, Args args) {
+private void __verbose(Args...)(string fmt, lazy Args args) {
     vout.writefln(fmt, args);
 }
 
 @safe
-void verbose(Args...)(string fmt, Args args) {
+void verbose(Args...)(string fmt, lazy Args args) {
     if (verbose_switch) {
         __verbose(fmt, args);
     }
 }
 
 @trusted
-void noboseln(Args...)(string fmt, Args args) {
+void noboseln(Args...)(string fmt, lazy Args args) {
     if (!verbose_switch) {
         __verbose(fmt, args);
         stdout.flush;
@@ -53,7 +53,7 @@ void noboseln(Args...)(string fmt, Args args) {
 }
 
 @trusted
-void nobose(Args...)(string fmt, Args args) {
+void nobose(Args...)(string fmt, lazy Args args) {
     if (!verbose_switch) {
         __verbosef(fmt, args);
         stdout.flush;
@@ -68,7 +68,7 @@ void error(const Exception e) {
     }
 }
 
-void error(Args...)(string fmt, Args args) @trusted {
+void error(Args...)(string fmt, lazy Args args) @trusted {
     import std.format;
 
     stderr.writefln("%sError: %s%s", RED, format(fmt, args), RESET);

@@ -125,6 +125,7 @@ struct HiBONRange {
     File file;
     this(File file) {
         this.file = file;
+        popFront;
     }
 
     Document doc;
