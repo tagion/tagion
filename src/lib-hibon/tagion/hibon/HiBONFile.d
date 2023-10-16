@@ -121,8 +121,12 @@ unittest {
     }
 }
 
-struct HiBONFile {
+struct HiBONRange {
     File file;
+    this(File file) {
+        this.file = file;
+    }
+
     Document doc;
     private ubyte[] buf;
     @property

@@ -112,12 +112,13 @@ int _main(string[] args) {
     bool standard_output;
     //    string outputfilename;
     bool pretty;
-    bool base64;
     bool sample;
     bool hibon_check;
     bool reserved;
     bool input_json;
     bool input_text;
+    bool output_json;
+    bool output_base64;
     // bool verbose;
     string outputfilename;
     auto logo = import("logo.txt");
@@ -130,12 +131,13 @@ int _main(string[] args) {
                 "version", "display the version", &version_switch,
                 "v|verbose", "Prints more debug information", &__verbose_switch,
                 "c|stdout", "Print to standard output", &standard_output,
-                "p|pretty|p", format("JSON Pretty print: Default: %s", pretty), &pretty,
-                "b|base64", "Convert to base64 string", &base64,
-                "o|output", "outputfilename only for stdin", &outputfilename,
+                "o|output", "Output filename only for stdin", &outputfilename,
                 "r|reserved", "Check reserved keys and types enabled", &reserved,
-                "J|json", "Input stream format json", &input_json,
-                "T|text", "Input stream base64 or hex-string", &input_text, // "s|stream", "Input stream (from stdin)", &input_stream,
+                "p|pretty", format("JSON Pretty print: Default: %s", pretty), &pretty,
+                "j|json", "Convert to json output", &output_json,
+                "J", "Input stream format json", &input_json,
+                "t|base64", "Convert to base64 output", &output_base64,
+                "T|text", "Input stream base64 or hex-string", &input_text,
                 "sample", "Produce a sample HiBON", &sample,
                 "check", "Check the hibon format", &hibon_check,
         );
@@ -171,22 +173,62 @@ int _main(string[] args) {
             return 0;
         }
         tools.check(!input_json || !input_text, "Input stream can not be defined as both JSON and text-format");
+        tools.check(!output_json || !output_base64, "Output stream can not be defined as both JSON and text-format");
         if (standard_output) {
             vout = stderr;
         }
         const reserved_flag = cast(Document.Reserved) reserved;
         if (args.length == 1) {
             auto fin = stdin;
+            File fout;
+            fout = stdout;
+            if (!outputfilename.empty) {
+                fout = File(outputfilename, "w");
+            }
+            scope (exit) {
+                if (fout !is stdout) {
+                    fout.close;
+                }
+            }
+            void print(const(Document) doc) {
+                if (output_base64) {
+                    fout.writefln(doc.encodeBase64);
+                    return;
+                }
+                if (output_json) {
+                    const json_stringify = (pretty) ? doc.toPretty : doc.toJSON.toString;
+                    fout.writeln(json_stringify);
+                    return;
+                }
+                fout.rawWrite(doc.serialize);
+
+            }
+
             if (input_text) {
                 foreach (no, line; fin.byLine.enumerate(1)) {
-                    writefln("%d:%s", no, line);
+                    immutable data = line.decodeBase64;
+                    const doc = Document(data);
+                    verbose("%d:%s", no, line);
+                    print(doc);
                 }
                 return 0;
             }
-            else if (input_json) {
+            if (input_json) {
+                foreach (no, json_stringify; fin.byLine.enumerate(1)) {
+                    const doc = json_stringify.toDoc; //parseJSON.toHiBON;
+                    verbose("%d:%s", no, json_stringify);
+                    print(doc);
+                }
                 return 0;
             }
 
+            import tagion.hibon.HiBONFile : HiBONRange;
+
+            foreach (no, doc; HiBONRange(fin).enumerate) {
+                verbose("%d: doc-size=%d", no, doc.full_size);
+                print(doc);
+            }
+            return 0;
             ubyte[1024] buf;
             Buffer data;
 
@@ -284,7 +326,7 @@ int _main(string[] args) {
                     stderr.writefln("Error: Document errorcode %s", error_code);
                     return 1;
                 }
-                if (base64) {
+                if (output_base64) {
                     const text_output = encodeBase64(doc);
                     if (standard_output) {
                         writefln("%s", text_output);
