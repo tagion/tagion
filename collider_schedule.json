@@ -248,7 +248,7 @@
             "args": [],
             "envs": {},
             "stages": [
-                "acceptance","spam_double_spend"
+                "spam_double_spend"
             ],
             "timeout": 0.0
         }

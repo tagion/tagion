@@ -67,7 +67,7 @@ class SameInputsSpendOnOneContract {
     }
     import tagion.services.collector : reject_collector;
 
-    @Given("i have a malformed contract with two inputs which are the same")
+    @Given("i have a malformed contract correctly signed with two inputs which are the same")
     Document same() {
 
         thisActor.task_name = "malformed_contract_task";
@@ -121,8 +121,7 @@ class SameInputsSpendOnOneContract {
 
         return result_ok;
     }
-
-    @Then("the inputs should be deleted from the dart.")
+    @Then("the contract should be rejected.")
     Document dart() {
         auto result = receiveOnlyTimeout!(LogInfo, const(Document));
         check(result[0].symbol_name == "missing_archives", format("did not reject for the expected reason %s", result[0].symbol_name));
@@ -148,7 +147,7 @@ class OneContractWhereSomeBillsAreUsedTwice {
     }
 
     import tagion.services.collector : reject_collector;
-    @Given("i have a malformed contract with three inputs where to are the same.")
+    @Given("i have a malformed contract correctly signed with three inputs where to are the same.")
     Document same() {
         const amount_to_pay = 2500.TGN;
         auto payment_request = wallet2.requestBill(amount_to_pay);
@@ -200,8 +199,7 @@ class OneContractWhereSomeBillsAreUsedTwice {
 
         return result_ok;
     }
-
-    @Then("all the inputs should be deleted from the dart.")
+    @Then("the contract should be rejected.")
     Document dart() {
         auto result = receiveOnlyTimeout!(LogInfo, const(Document));
         check(result[0].symbol_name== "missing_archives", format("did not reject for the expected reason %s", result[0].symbol_name));
