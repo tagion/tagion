@@ -124,6 +124,7 @@ int _main(string[] args) {
     Thread.sleep(15.seconds);
     auto feature = automation!(spam_double_spend);
     feature.SpamOneNodeUntil10EpochsHaveOccured(node_opts, wallets[0], wallets[1]);
+    feature.SpamMultipleNodesUntil10EpochsHaveOccured(node_opts, wallets[2], wallets[3]);
 
     feature.run();
 
