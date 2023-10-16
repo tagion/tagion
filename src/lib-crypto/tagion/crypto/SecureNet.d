@@ -316,7 +316,7 @@ class StdSecureNet : StdHashNet, SecureNet {
         auto _priv_key = data[0 .. 32];
 
         if (dg !is null) {
-            dg(data);
+            dg(_priv_key);
         }
         createKeyPair(_priv_key);
     }

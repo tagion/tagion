@@ -155,14 +155,13 @@ Document sendDARTHiRPC(string address, HiRPC.Sender dart_req) @trusted {
             throw new Exception(format("Could not dial kernel %s", nng_errstr(rc)));
         }
     }
-    while (1) {
-        rc = s.send!(immutable(ubyte[]))(dart_req.toDoc.serialize);
-        if (s.errno != 0) {
-            throw new Exception("error in response");
-        }
-        Document received_doc = s.receive!(immutable(ubyte[]))();
-        return received_doc;
+    rc = s.send!(immutable(ubyte[]))(dart_req.toDoc.serialize);
+    if (s.errno != 0) {
+        throw new Exception("error in response");
     }
+    Document received_doc = s.receive!(immutable(ubyte[]))();
+    s.close();
+    return received_doc;
 }
 
 /**
