@@ -108,9 +108,7 @@ int _main(string[] args) {
     immutable program = args[0];
     bool version_switch;
 
-    //    string inputfilename;
     bool standard_output;
-    //    string outputfilename;
     bool pretty;
     bool sample;
     bool hibon_check;
@@ -119,7 +117,6 @@ int _main(string[] args) {
     bool input_text;
     bool output_json;
     bool output_base64;
-    // bool verbose;
     string outputfilename;
     auto logo = import("logo.txt");
 
@@ -336,13 +333,16 @@ int _main(string[] args) {
 
                     continue loop_files;
                 }
-                auto json = doc.toJSON;
-                auto json_stringify = (pretty) ? json.toPrettyString : json.toString;
-                if (standard_output) {
-                    writefln("%s", json_stringify);
-                    continue loop_files;
+                if (output_json || pretty || standard_output) {
+                    auto json = doc.toJSON;
+                    auto json_stringify = (pretty) ? json.toPrettyString : json.toString;
+                    if (standard_output) {
+                        writefln("%s", json_stringify);
+                        continue loop_files;
+                    }
+                    inputfilename.setExtension(FileExtension.json).fwrite(json_stringify);
                 }
-                inputfilename.setExtension(FileExtension.json).fwrite(json_stringify);
+                stdout.rawWrite(doc.serialize);
                 break;
             case FileExtension.json:
                 string text;
