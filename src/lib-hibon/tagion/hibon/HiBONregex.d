@@ -1,4 +1,4 @@
-module tagion.hinon.HiBONregex;
+module tagion.hibon.HiBONregex;
 
 @safe:
 import tagion.hibon.HiBONBase;

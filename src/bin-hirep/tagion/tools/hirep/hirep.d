@@ -18,6 +18,7 @@ import tagion.hibon.Document;
 import tagion.tools.boot.genesis;
 import tagion.hibon.HiBONFile : HiBONRange;
 import tagion.hibon.HiBONJSON : toPretty;
+import tagion.hibon.HiBONregex : HiBONregex;
 
 alias check = Check!TagionException;
 
@@ -28,15 +29,22 @@ int _main(string[] args) {
     bool version_switch;
     bool standard_output;
     bool standard_input;
+    bool not_flag;
     string output_filename;
+    string name;
+    string record_type;
+    string[] types;
     try {
-        standard_input = (args.length == 1);
         auto main_args = getopt(args,
                 std.getopt.config.caseSensitive,
                 std.getopt.config.bundling,
                 "version", "display the version", &version_switch, //        "invoice|i","Sets the HiBON input file name", &invoicefile,
                 "v|verbose", "Prints more debug information", &__verbose_switch,
-                "c|stdout", "Print to standard output", &standard_output,//               "o|output", format("Output filename : Default %s", output_filename), &output_filename, // //        "output_filename|o", format("Sets the output file name: default : %s", output_filenamename), &output_filenamename,
+                "c|stdout", "Print to standard output", &standard_output,
+                "n|name", "HiBON member name (name as text or regex as `regex`)", &name,
+                "r|recordtype", "HiBON recordtype (name as text or regex as `regex`)", &record_type,
+                "t|type", "HiBON data types", &types,
+                "not", "Filter out match", &not_flag, //               "o|output", format("Output filename : Default %s", output_filename), &output_filename, // //        "output_filename|o", format("Sets the output file name: default : %s", output_filenamename), &output_filenamename,
                 //                "p|nodekey", "Node channel key(Pubkey) ", &nodekeys, //         "bills|b", "Generate bills", &number_of_bills,
                 // "value|V", format("Bill value : default: %d", value), &value,
                 // "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase
@@ -73,13 +81,28 @@ int _main(string[] args) {
             return 0;
         }
 
+        if (name) {
+            writefln("%s", name);
+            writefln("%s", record_type);
+            writefln("%s", types);
+        }
+        HiBONregex hibon_regex;
+        if (name) {
+            hibon_regex.name = name;
+        }
+        if (record_type) {
+            hibon_regex.record_type = record_type;
+        }
         if (args.length == 1) {
             File fin;
             fin = stdin;
             File fout;
             fout = stdout;
             foreach (no, doc; HiBONRange(fin).enumerate) {
-                fout.writefln("%d:%s", no, doc.toPretty);
+                if (hibon_regex.match(doc)) {
+                    verbose("%d\n%s", no, doc.toPretty);
+                    fout.rawWrite(doc.serialize);
+                }
             }
         }
     }
