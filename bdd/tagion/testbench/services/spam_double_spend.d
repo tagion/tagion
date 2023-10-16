@@ -34,7 +34,7 @@ import std.stdio;
 import std.format;
 
 alias StdSecureWallet = SecureWallet!StdSecureNet;
-enum CONTRACT_TIMEOUT = 25.seconds;
+enum CONTRACT_TIMEOUT = 25;
 
 enum feature = Feature(
             "Spam the network with the same contracts until we know it does not go through.",
@@ -109,7 +109,7 @@ class SpamOneNodeUntil10EpochsHaveOccured {
             writefln("epoch_number %s, CURRENT EPOCH %s",epoch_number, current_epoch_number);
         }
 
-        (() @trusted => Thread.sleep(25.seconds))();
+        (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
         return result_ok;
     }
 
@@ -260,7 +260,7 @@ class SpamMultipleNodesUntil10EpochsHaveOccured {
         writefln("waiting for end");
         waitforChildren(Ctrl.END);
 
-        (() @trusted => Thread.sleep(25.seconds))();
+        (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
         return result_ok;
     }
 

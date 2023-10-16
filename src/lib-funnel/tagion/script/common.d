@@ -167,3 +167,12 @@ struct TagionGlobals {
     @label("events") Fingerprint[] event_prints;
     mixin HiBONRecord;
 }
+
+
+@recordType("@$Vote")
+struct ConsensusVoting {
+    long epoch;
+    @label(StdNames.owner) Pubkey owner;
+    @label(StdNames.signed) Signature signed_bullseye;
+    mixin HiBONRecord;
+}
