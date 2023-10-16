@@ -35,7 +35,6 @@ jobs:
           git clean -f && git restore . 
           git checkout current
           git pull
-          source ~/dlang/dmd-2.105.2/activate
 
       - name: Run tests
         run: |
