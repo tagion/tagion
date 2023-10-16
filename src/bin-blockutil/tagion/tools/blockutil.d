@@ -234,7 +234,8 @@ int _main(string[] args) {
                 }
             }
             foreach (block_segment; analyzer.blockfile[index_from .. index_to]) {
-                fout.writefln("doc\n%s", block_segment.doc.toPretty);
+                fout.rawWrite(block_segment.doc.serialize);
+                //fout.writefln("doc\n%s", block_segment.doc.toPretty);
             }
             return 0;
         }
