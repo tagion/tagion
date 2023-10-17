@@ -236,6 +236,9 @@ static assert(uint.sizeof == 4);
                     return error_code;
                 }
             }
+            if (!LEB128.isInvariant!size_t(data)) {
+                return Element.ErrorCode.DOCUMENT_SIZE_INVALID_LEB128;
+            }
             foreach (ref e; sub_doc[]) {
                 error_code = e.valid(reserved);
                 if (not_first) {
@@ -1309,6 +1312,7 @@ static assert(uint.sizeof == 4);
                 //DOCUMENT_TYPE,  /// Warning document type
                 DOCUMENT_OVERFLOW, /// Document length extends the length of the buffer
                 DOCUMENT_ITERATION, /// Document can not be iterated because of a Document format fail
+                DOCUMENT_SIZE_INVALID_LEB128, /// The size of the document is not leb128 minimum invarinat
                 VALUE_POS_OVERFLOW, /// Start position of the a value extends the length of the buffer
                 TOO_SMALL, /// Data stream is too small to contain valid data
                 ILLEGAL_TYPE, /// Use of internal types is illegal
@@ -1323,6 +1327,10 @@ static assert(uint.sizeof == 4);
                 BAD_SUB_DOCUMENT, /// Error convering sub document
                 NOT_AN_ARRAY, /// Not an Document array
                 KEY_ZERO_SIZE, /// Invalid zero key size
+                KEY_INVALID_LEB128, /// Key size is not leb128 minimum invariant
+                KEY_INDEX_INVALID_LEB128, /// The key index is not leb128 minimum invarinat
+                ELEMENT_SIZE_INVALID_LEB128, /// Size of Element is not leb128 minimum invariant  
+                VALUE_SIZE_INVALID_LEB128, /// The size of the value element is not leb128 minimun invarinat
                 RESERVED_KEY, /// Name of the key is reserved 
                 RESERVED_HIBON_TYPE, /// HiBON type name is reserved for internal use
                 UNKNOW_TAGION, /// Unknow error (used when some underlaying function thows an TagionException
@@ -1342,9 +1350,6 @@ static assert(uint.sizeof == 4);
             enum MIN_ELEMENT_SIZE = Type.sizeof + ubyte.sizeof + char.sizeof + ubyte.sizeof;
 
             with (ErrorCode) {
-                // if ( type is Type.DOCUMENT ) {
-                //     return DOCUMENT_TYPE;
-                // }
                 if (data.length < MIN_ELEMENT_SIZE) {
                     if (data.length !is ubyte.sizeof) {
                         return TOO_SMALL;
@@ -1352,9 +1357,15 @@ static assert(uint.sizeof == 4);
                     else if (data[0]!is 0) {
                         return INVALID_NULL;
                     }
+                else if (!LEB128.isInvariant!(uint)(data)) {
+                        return ELEMENT_SIZE_INVALID_LEB128;
+                    }
                 }
                 if (keyPos >= data.length) {
                     return KEY_POS_OVERFLOW;
+                }
+                if (!LEB128.isInvariant!(uint)(data[keyPos .. $])) {
+                    return KEY_INVALID_LEB128;
                 }
                 if (valuePos >= data.length) {
                     return VALUE_POS_OVERFLOW;
@@ -1362,9 +1373,9 @@ static assert(uint.sizeof == 4);
                 if (key.length is 0) {
                     return KEY_ZERO_SIZE;
                 }
-                // if (key.length >= data.length) {
-                //     return KEY_SIZE_OVERFLOW;
-                // }
+                if (isIndex && !LEB128.isInvariant!uint(data[keyPos .. $])) {
+                    return KEY_INDEX_INVALID_LEB128;
+                }
                 if (!key.is_key_valid) {
                     return KEY_INVALID;
                 }
@@ -1376,6 +1387,10 @@ static assert(uint.sizeof == 4);
                     return OVERFLOW;
                 }
                 if (type is Type.BINARY) {
+                    if (!LEB128.isInvariant!ulong(data[valuePos .. $])) {
+                        return VALUE_SIZE_INVALID_LEB128;
+                    }
+
                     const leb128_size = LEB128.decode!ulong(data[valuePos .. $]);
                     if (leb128_size.value > uint.max) {
                         return OVERFLOW;
@@ -1389,6 +1404,10 @@ static assert(uint.sizeof == 4);
                         return RESERVED_KEY;
                     }
                     if (type is Type.STRING) {
+                        if (!LEB128.isInvariant!ulong(data[valuePos .. $])) {
+                            return VALUE_SIZE_INVALID_LEB128;
+                        }
+
                         const len = LEB128.decode!uint(data[valuePos .. $]);
                         const type_name = data[valuePos + len.size .. valuePos + len.size + len.value];
                         if (reserved && type_name.length >= TYPENAME.length &&
