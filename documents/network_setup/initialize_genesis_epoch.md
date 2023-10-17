@@ -52,3 +52,55 @@ EYE: 462ee54f0468b9de0456c56642c8e59e71c3a52397a907013fd7949ee9f3542c
 | .. | .. fe9fb2737fde1dac8ec0815142381ff9e26a2fdf5e2b73a956dd6b6b5283f7d3 [22] #
 ```
 
+The genesis epoch is locates at named-key `#$epoch` `0` and because the epoch number is a 64bits signed the type is `i64`.
+
+The dartutil will as default return the result as an dart-recorder. 
+
+Note. that '$' and '#' sigens needs an escape '\'.
+```
+dartutil dart.drt -r\#\$epoch:i64:0 |hibonutil -pc
+{
+    "$@": "HiRPC",
+    "$Y": [
+        "*",
+        "@Av2fcgwMGh3blxvHL9mnVz81SZ9AC_-zVhNK1MD2Asea"
+    ],
+    "$msg": {
+        "result": {
+            "$@": "Recorder",
+            "0": {
+                "$a": {
+                    "#$epoch": [
+                        "i64",
+                        "0x0"
+                    ],
+                    "$@": "$@G",
+                    "$t": [
+                        "time",
+                        "2023-10-17T16:28:24.5068743"
+                    ],
+                    "nodes": [
+                        [
+                            "*",
+                            "@XfA0RRS0ayy31OUHos807Vw80j_G8WQx7Ddh_JXJWm0="
+                        ],
+                        [
+                            "*",
+                            "@Ql-fwHnQrq9tD8V9fCLeI7QNoL1YR1qvIbRf8yD0etY="
+                        ]
+                    ],
+                    "testamony": {}
+                },
+                "$t": [
+                    "i32",
+                    1
+                ]
+            }
+        }
+    },
+    "$sign": [
+        "*",
+        "@zOJ95RwclkGfr5oFMCWbFn-YHfLwAaJ2QMFBha24sdo1dGlzOoMN4Fa4_Qz3-UB4GlF-05SmSErIRLYFY_crvQ=="
+    ]
+}
+```

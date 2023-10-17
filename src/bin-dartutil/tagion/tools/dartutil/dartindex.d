@@ -5,6 +5,8 @@ import tagion.basic.Types : Buffer;
 import tagion.hibon.Document;
 import tagion.dart.DARTBasic : DARTIndex, dartKey;
 import tagion.crypto.SecureInterfaceNet : HashNet;
+import tagion.tools.toolsexception;
+import tagion.tools.Basic;
 
 DARTIndex dartIndexDecode(const(HashNet) net, const(char[]) str) {
     import tagion.hibon.HiBONtoText;
@@ -17,6 +19,7 @@ DARTIndex dartIndexDecode(const(HashNet) net, const(char[]) str) {
     import tagion.hibon.HiBONFile : fread;
     import std.traits;
 
+    verbose("dart-index %s", str);
     //    import std.stdio;
 
     if (isBase64Prefix(str)) {
@@ -30,7 +33,7 @@ DARTIndex dartIndexDecode(const(HashNet) net, const(char[]) str) {
         const list = str.split(":");
         const name = list[0];
         if (list.length == 2) {
-
+            return net.dartKey(name, list[1].idup);
         }
     case_type:
         switch (list[1]) {
@@ -69,6 +72,7 @@ DARTIndex dartIndexDecode(const(HashNet) net, const(char[]) str) {
                 }
             }
             default:
+            check(0, format("DART search %s not supported expected name:Type:value or name:text", str));
             // empty
         }
         return net.dartKey(name, list[1].idup);
