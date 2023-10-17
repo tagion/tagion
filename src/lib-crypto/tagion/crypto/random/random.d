@@ -5,7 +5,10 @@ import std.system : os;
 import std.format;
 import std.traits;
 
-static if (ver.linux || ver.Android) {
+static if (ver.USE_BUILD_IN_RANDOM_FOR_MOBILE_SHOULD_BE_REMOVED) {
+    enum is_getrandom = "Dummy declaration";
+}
+else static if (ver.linux || ver.Android) {
     enum is_getrandom = true;
     extern (C) ptrdiff_t getrandom(void* buf, size_t buflen, uint flags) nothrow;
 }
@@ -16,7 +19,6 @@ else static if (ver.iOS || ver.OSX) {
 else {
     static assert(0, format("Random function not support for %s", os));
 }
-
 /++
      + getRandom - runs platform specific random function.
      +/
@@ -28,7 +30,16 @@ do {
     if (buf.length == 0) {
         return;
     }
-    static if (is_getrandom) {
+    static if (ver.USE_BUILD_IN_RANDOM_FOR_MOBILE_SHOULD_BE_REMOVED) {
+        pragma(msg, "fixme(cbr);Insecure random is used. This should be fixed");
+        import std.random;
+        import std.algorithm;
+        import std.exception : assumeWontThrow;
+
+        auto rnd = Random(unpredictableSeed);
+        assumeWontThrow(buf.each!((ref b) => b = uniform!("[]", ubyte, ubyte)(0, ubyte.max, rnd)));
+    }
+    else static if (is_getrandom) {
         // GRND_NONBLOCK = 0x0001. Don't block and return EAGAIN instead
         // GRND_RANDOM   = 0x0002. No effect
         // GRND_INSECURE = 0x0004. Return non-cryptographic random bytes
