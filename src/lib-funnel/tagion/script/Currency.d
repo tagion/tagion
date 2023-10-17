@@ -70,7 +70,7 @@ struct Currency(string _UNIT, long _BASE_UNIT = 1_000_000_000, long MAX_VALUE_IN
         });
 
     bool verify() const pure nothrow {
-        return _units > -UNIT_MAX && _units < UNIT_MAX;
+        return _units >= -UNIT_MAX && _units <= UNIT_MAX;
     }
 
     void check_range() const pure {
