@@ -158,17 +158,17 @@ struct Epoch {
 @recordType("$@Tagion")
 struct TagionHead {
     @label(StdNames.tagion) string name; // Default name should always be "tagion"
-    TagionGlobals global;
+    TagionGlobals globals;
     mixin HiBONRecord;
 }
 
 struct TagionGlobals {
     long epoch;
     @label("events") Fingerprint[] event_prints;
+    pragma(msg, "fixme(cbr): Should be change to BigNumber");
     @label("total") TagionCurrency total;
     mixin HiBONRecord;
 }
-
 
 @recordType("@$Vote")
 struct ConsensusVoting {

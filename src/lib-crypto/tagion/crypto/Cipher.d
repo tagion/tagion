@@ -151,10 +151,9 @@ struct Cipher {
                 const secret_cipher_doc = Cipher.encrypt(dummy_net, wrong_net.pubkey, secret_doc);
                 const encrypted_doc = Cipher.decrypt(net, secret_cipher_doc)
                     .ifThrown!ConsensusException(Document());
-                //                writefln("encrypted_doc.full_size %d", encrypted_doc.full_size);
                 assert(secret_doc != encrypted_doc);
                 if (!encrypted_doc.empty) {
-                    break;
+                    break; /// Run the loop until the decrypt does not fail
                 }
             }
         }
