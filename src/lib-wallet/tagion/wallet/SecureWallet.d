@@ -628,6 +628,30 @@ struct SecureWallet(Net : SecureNet) {
         return getFee([bill], fees);
     }
 
+    // version (none) Result!bool createSignedContract(
+    //     Contract unsigned_contract,
+    //     ref SignedContract signed_contract){
+    //     import tagion.script.execute;
+
+    //     try {
+    //         PayScript pay_script = unsigned_contract.script;
+    //         TagionBill[] bills_to_sign = pay_script.outputs;
+            
+    //         const nets = collectNets(bills_to_sign);
+
+    //         signed_contract = sign(
+    //                 nets,
+    //                 bills_to_sign.map!(bill => bill.toDoc)
+    //                 .array,
+    //                 null,
+    //                 pay_script.toDoc);
+    //     }
+    //     catch (Exception e) {
+    //         return Result!bool(e);
+    //     }
+    //     return result(true);
+    // }
+
     Result!bool createPayment(TagionBill[] to_pay, ref SignedContract signed_contract, out TagionCurrency fees) nothrow {
         import tagion.script.Currency : totalAmount;
         import tagion.script.execute;
