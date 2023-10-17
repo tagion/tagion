@@ -157,13 +157,23 @@ struct TranscriptService {
             }
 
             
+            auto req = dartModifyRR();
+            req.id = res.id;
 
             locate(task_names.dart).send(dartModifyRR(), RecordFactory.uniqueRecorder(recorder), cast(immutable(int)) res.id);
 
         }
 
-        void receiveBullseye(dartModifyRR.Response, Fingerprint) {
-            return;
+        void receiveBullseye(dartModifyRR.Response res, Fingerprint bullseye) {
+            log("transcript received bullseye");
+            ConsensusVoting own_vote = ConsensusVoting(
+                cast(long) res.id,
+                net.pubkey,
+                net.sign(bullseye)
+            );
+            
+            log("signed bullseye vote: %s", own_vote.toDoc.toPretty);
+            locate(task_names.epoch_creator).send(Payload(), own_vote.toDoc);
         }
 
         void produceContract(producedContract, immutable(ContractProduct)* product) {
