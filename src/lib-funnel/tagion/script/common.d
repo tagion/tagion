@@ -15,6 +15,7 @@ import tagion.dart.DARTBasic;
 import tagion.script.ScriptException;
 import tagion.basic.Types : Buffer;
 import tagion.script.standardnames;
+import tagion.hibon.BigNumber;
 
 @recordType("TGN") struct TagionBill {
     @label(StdNames.value) TagionCurrency value; /// Tagion bill 
@@ -166,7 +167,7 @@ struct TagionGlobals {
     long epoch;
     @label("events") Fingerprint[] event_prints;
     pragma(msg, "fixme(cbr): Should be change to BigNumber");
-    @label("total") TagionCurrency total;
+    @label("total") BigNumber total;
     mixin HiBONRecord;
 }
 

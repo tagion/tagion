@@ -20,6 +20,7 @@ import tagion.hibon.HiBONFile;
 import tagion.script.common;
 import tagion.script.standardnames;
 import tagion.basic.basic : isinit;
+import tagion.script.TagionCurrency;
 
 alias check = Check!TagionException;
 
@@ -39,7 +40,7 @@ int _main(string[] args) {
                 std.getopt.config.caseSensitive,
                 std.getopt.config.bundling,
                 "version", "display the version", &version_switch,
-                "v|verbose", "Prints more debug information", &__verbose_switch,//"c|stdout", "Print to standard output", &standard_output,
+                "v|verbose", "Prints more debug information", &__verbose_switch, //"c|stdout", "Print to standard output", &standard_output,
                 "o|output", format("Output filename : Default %s", output_filename), &output_filename, // //        "output_filename|o", format("Sets the output file name: default : %s", output_filenamename), &output_filenamename,
                 "p|nodekey", "Node channel key(Pubkey) ", &nodekeys,
                 "a|account", "Accumulates all bills in the input", &account, //         "bills|b", "Generate bills", &number_of_bills,
@@ -96,7 +97,7 @@ int _main(string[] args) {
                 if (account) {
                     if (TagionBill.isRecord(doc)) {
                         const bill = TagionBill(doc);
-                        tagion_head.globals.total += bill.value;
+                        tagion_head.globals.total += bill.value.units;
                     }
                 }
                 else {
@@ -106,7 +107,8 @@ int _main(string[] args) {
             }
             if (!tagion_head.isinit) {
                 tagion_head.name = TagionDomain;
-                verbose("Total %10.6fTGN", tagion_head.globals.total.value);
+                const total = tagion_head.globals.total;
+                verbose("Total %s.%09sTGN", total / TagionCurrency.BASE_UNIT, total % TagionCurrency.BASE_UNIT);
                 recorder.add(tagion_head);
             }
         }
