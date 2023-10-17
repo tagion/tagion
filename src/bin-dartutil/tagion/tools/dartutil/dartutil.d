@@ -249,7 +249,7 @@ int _main(string[] args) {
         if (dartread) {
             DARTIndex[] dart_indices;
             foreach (read_arg; dartread_args) {
-                import tagion.dart.DARTBasic : dartIndexDecode;
+                import tagion.tools.dartutil.dartindex : dartIndexDecode;
 
                 auto dart_index = net.dartIndexDecode(read_arg);
                 verbose("%s\n%s\n%(%02x%)", read_arg, dart_index.encodeBase64, dart_index);
