@@ -48,7 +48,7 @@ struct TranscriptOptions {
 **/
 @safe
 struct TranscriptService {
-    void task(immutable(TranscriptOptions) opts, immutable(SecureNet) net, immutable(TaskNames) task_names) {
+    void task(immutable(TranscriptOptions) opts, immutable(size_t) number_of_nodes, immutable(SecureNet) net, immutable(TaskNames) task_names) {
 
         immutable(ContractProduct)*[DARTIndex] products;
         auto rec_factory = RecordFactory(net);

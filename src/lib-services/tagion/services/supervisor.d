@@ -53,7 +53,7 @@ struct Supervisor {
         auto collector_handle = spawn(immutable(CollectorService)(net, tn), tn.collector);
         auto tvm_handle = spawn(immutable(TVMService)(opts.tvm, tn), tn.tvm);
 
-        auto transcript_handle = spawn!TranscriptService(tn.transcript, opts.transcript, net, tn);
+        auto transcript_handle = spawn!TranscriptService(tn.transcript, opts.transcript, opts.wave.number_of_nodes, net,tn);
 
         auto dart_interface_handle = spawn(immutable(DARTInterfaceService)(opts.dart_interface, tn), tn.dart_interface);
 
