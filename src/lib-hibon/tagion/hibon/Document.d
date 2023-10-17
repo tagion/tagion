@@ -236,6 +236,9 @@ static assert(uint.sizeof == 4);
                     return error_code;
                 }
             }
+            if (!LEB128.isInvariant!size_t(data)) {
+                return Element.ErrorCode.DOCUMENT_SIZE_INVALID_LEB128;
+            }
             foreach (ref e; sub_doc[]) {
                 error_code = e.valid(reserved);
                 if (not_first) {
@@ -1309,6 +1312,7 @@ static assert(uint.sizeof == 4);
                 //DOCUMENT_TYPE,  /// Warning document type
                 DOCUMENT_OVERFLOW, /// Document length extends the length of the buffer
                 DOCUMENT_ITERATION, /// Document can not be iterated because of a Document format fail
+                DOCUMENT_SIZE_INVALID_LEB128, /// The size of the document is not leb128 minimum invarinat
                 VALUE_POS_OVERFLOW, /// Start position of the a value extends the length of the buffer
                 TOO_SMALL, /// Data stream is too small to contain valid data
                 ILLEGAL_TYPE, /// Use of internal types is illegal
@@ -1346,9 +1350,6 @@ static assert(uint.sizeof == 4);
             enum MIN_ELEMENT_SIZE = Type.sizeof + ubyte.sizeof + char.sizeof + ubyte.sizeof;
 
             with (ErrorCode) {
-                // if ( type is Type.DOCUMENT ) {
-                //     return DOCUMENT_TYPE;
-                // }
                 if (data.length < MIN_ELEMENT_SIZE) {
                     if (data.length !is ubyte.sizeof) {
                         return TOO_SMALL;
@@ -1375,9 +1376,6 @@ static assert(uint.sizeof == 4);
                 if (isIndex && !LEB128.isInvariant!uint(data[keyPos .. $])) {
                     return KEY_INDEX_INVALID_LEB128;
                 }
-                // if (key.length >= data.length) {
-                //     return KEY_SIZE_OVERFLOW;
-                // }
                 if (!key.is_key_valid) {
                     return KEY_INVALID;
                 }
