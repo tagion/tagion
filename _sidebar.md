@@ -64,5 +64,6 @@
 
 - Network Setup 
     - [Initialize DART](documents/network_setup/initialize_dart.md)
+    - [Initialize Genesis](documents/network_setup/initialize_genesis_epoch.md)
 - [Modules](src/)
 - [Changelog](documents/changelog.md)
