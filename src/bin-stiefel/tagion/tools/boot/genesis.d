@@ -11,6 +11,7 @@ import tagion.hibon.HiBONJSON;
 import tagion.basic.Types;
 import tagion.hibon.Document;
 import tagion.script.common;
+import tagion.tools.Basic;
 
 @safe:
 Document[] createGenesis(const(string[]) nodes_param, Document testamony) {
@@ -34,7 +35,6 @@ Document[] createGenesis(const(string[]) nodes_param, Document testamony) {
     const node_settings = nodes_param
         .map!((param) => NodeSettings(param))
         .array;
-    writefln("%s", node_settings);
 
     const time = currentTime;
     NetworkNameCard[] name_cards;
@@ -63,11 +63,9 @@ Document[] createGenesis(const(string[]) nodes_param, Document testamony) {
     //.sort;
     genesis_epoch.time = cast(sdt_t) time;
     genesis_epoch.testamony = testamony;
-    (() @trusted {
-        name_cards.each!((name_card) => stderr.writefln("%s", name_card.toPretty));
-        node_records.each!((name_card) => stderr.writefln("%s", name_card.toPretty));
-        stderr.writefln("%s", genesis_epoch.toPretty);
-    })();
+    name_cards.each!((name_card) => verbose("%s", name_card.toPretty));
+    node_records.each!((name_card) => verbose("%s", name_card.toPretty));
+    verbose("%s", genesis_epoch.toPretty);
     result ~= name_cards.map!((name_card) => name_card.toDoc).array;
 
     result ~= node_records.map!(node_record => node_record.toDoc).array;

@@ -35,12 +35,11 @@ int _main(string[] args) {
     string output_filename = "dart".setExtension(FileExtension.hibon);
     const net = new StdHashNet;
     try {
-        standard_input = (args.length == 1);
         auto main_args = getopt(args,
                 std.getopt.config.caseSensitive,
                 std.getopt.config.bundling,
-                "version", "display the version", &version_switch, //        "invoice|i","Sets the HiBON input file name", &invoicefile,
-                "c|stdout", "Print to standard output", &standard_output,
+                "version", "display the version", &version_switch,
+                "v|verbose", "Prints more debug information", &__verbose_switch,//"c|stdout", "Print to standard output", &standard_output,
                 "o|output", format("Output filename : Default %s", output_filename), &output_filename, // //        "output_filename|o", format("Sets the output file name: default : %s", output_filenamename), &output_filenamename,
                 "p|nodekey", "Node channel key(Pubkey) ", &nodekeys,
                 "a|account", "Accumulates all bills in the input", &account, //         "bills|b", "Generate bills", &number_of_bills,
@@ -80,6 +79,11 @@ int _main(string[] args) {
         }
         auto factory = RecordFactory(net);
         auto recorder = factory.recorder;
+        standard_input = (args.length == 1) && (nodekeys.empty);
+        standard_output = output_filename.empty;
+        if (standard_output) {
+            vout = stderr;
+        }
         if (!nodekeys.empty) {
             auto genesis_list = createGenesis(nodekeys, Document.init);
             recorder.insert(genesis_list, Archive.Type.ADD);
@@ -102,7 +106,8 @@ int _main(string[] args) {
             }
             if (!tagion_head.isinit) {
                 tagion_head.name = TagionDomain;
-                verbose("Total %10.6sTGN", tagion_head.globals.total.value);
+                verbose("Total %10.6fTGN", tagion_head.globals.total.value);
+                recorder.add(tagion_head);
             }
         }
         else {
@@ -120,7 +125,7 @@ int _main(string[] args) {
         output_filename.fwrite(recorder);
     }
     catch (Exception e) {
-        writefln("%1$sError: %3$s%2$s", RED, RESET, e.msg);
+        error(e);
         return 1;
 
     }
