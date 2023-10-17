@@ -28,6 +28,7 @@ import tagion.dart.Recorder;
 import tagion.services.options : TaskNames;
 import tagion.hibon.HiBONJSON;
 import tagion.utils.Miscellaneous : toHexString;
+import tagion.crypto.Types;
 
 
 enum BUFFER_TIME_SECONDS = 30;
@@ -157,8 +158,12 @@ struct TranscriptService {
 
             
 
-            locate(task_names.dart).send(dartModify(), RecordFactory.uniqueRecorder(recorder), cast(immutable(int)) res.id);
+            locate(task_names.dart).send(dartModifyRR(), RecordFactory.uniqueRecorder(recorder), cast(immutable(int)) res.id);
 
+        }
+
+        void receiveBullseye(dartModifyRR.Response, Fingerprint) {
+            return;
         }
 
         void produceContract(producedContract, immutable(ContractProduct)* product) {
@@ -168,7 +173,7 @@ struct TranscriptService {
 
         }
 
-        run(&epoch, &produceContract, &createRecorder);
+        run(&epoch, &produceContract, &createRecorder, &receiveBullseye);
     }
 }
 
