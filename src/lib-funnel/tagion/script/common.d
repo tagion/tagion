@@ -166,7 +166,6 @@ struct TagionHead {
 struct TagionGlobals {
     long epoch;
     @label("events") Fingerprint[] event_prints;
-    pragma(msg, "fixme(cbr): Should be change to BigNumber");
     @label("total") BigNumber total;
     mixin HiBONRecord;
 }
