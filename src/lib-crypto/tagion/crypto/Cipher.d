@@ -4,7 +4,7 @@ import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Pubkey;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
-import std.exception : assumeUnique;
+import std.exception : assumeUnique, ifThrown;
 
 //import std.stdio;
 // import tagion.utils.Miscellaneous: toHexString, decode;
@@ -15,7 +15,7 @@ struct Cipher {
     import tagion.crypto.SecureNet : scramble, check;
     import tagion.crypto.SecureInterfaceNet : SecureNet;
     import tagion.crypto.aes.AESCrypto : AESCrypto;
-    import tagion.basic.ConsensusExceptions : ConsensusFailCode, SecurityConsensusException;
+    import tagion.basic.ConsensusExceptions : ConsensusFailCode, SecurityConsensusException, ConsensusException;
     import std.digest.crc : crc32Of;
 
     alias AES = AESCrypto!256;
@@ -147,12 +147,16 @@ struct Cipher {
             auto wrong_net = new StdSecureNet;
             immutable wrong_passphrase = "wrong word";
             wrong_net.generateKeyPair(wrong_passphrase);
-            const secret_cipher_doc = Cipher.encrypt(dummy_net, wrong_net.pubkey, secret_doc);
-            const encrypted_doc = Cipher.decrypt(net, secret_cipher_doc);
-            //                writefln("encrypted_doc.full_size %d", encrypted_doc.full_size);
-            assert(secret_doc != encrypted_doc);
-
-            //            assert(passed);
+            for (;;) {
+                const secret_cipher_doc = Cipher.encrypt(dummy_net, wrong_net.pubkey, secret_doc);
+                const encrypted_doc = Cipher.decrypt(net, secret_cipher_doc)
+                    .ifThrown!ConsensusException(Document());
+                //                writefln("encrypted_doc.full_size %d", encrypted_doc.full_size);
+                assert(secret_doc != encrypted_doc);
+                if (!encrypted_doc.empty) {
+                    break;
+                }
+            }
         }
 
         { // Encrypt and Decrypt secrte message with owner privat-key
