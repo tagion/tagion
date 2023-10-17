@@ -110,4 +110,5 @@ List the archive in the `dart.drt`.
 }
 ```
 
+*Continued* [Initialize Genesis Epoch](/documents/network_setup/initialize_genesis_epoch.md)
 
