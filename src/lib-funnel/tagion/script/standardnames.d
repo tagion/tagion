@@ -16,4 +16,5 @@ enum StdNames {
     previous = "$prev",
     tagion = "#tagion",
     nodekey = "#$node",
+    signed = "$signed",
 }

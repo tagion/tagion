@@ -168,3 +168,12 @@ struct TagionGlobals {
     @label("total") TagionCurrency total;
     mixin HiBONRecord;
 }
+
+
+@recordType("@$Vote")
+struct ConsensusVoting {
+    long epoch;
+    @label(StdNames.owner) Pubkey owner;
+    @label(StdNames.signed) Signature signed_bullseye;
+    mixin HiBONRecord;
+}

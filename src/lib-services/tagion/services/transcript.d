@@ -11,7 +11,7 @@ import tagion.utils.pretend_safe_concurrency;
 import tagion.actor.actor;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
-import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONRecord : isRecord, HiBONRecord;
 import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.services.messages;
@@ -38,6 +38,9 @@ struct TranscriptOptions {
     mixin JSONCommon;
 }
 
+
+
+
 /**
  * TranscriptService actor
  * Receives: (inputDoc, Document)
@@ -57,14 +60,27 @@ struct TranscriptService {
 
         EpochContracts[uint] epoch_contracts;
 
+        ConsensusVoting[][long] votes;
+        
+
         void epoch(consensusEpoch, immutable(EventPackage*)[] epacks, immutable(int) epoch_number, const(sdt_t) epoch_time) {
             if (epacks.length == 0) {
                 return;
             }
 
+            ConsensusVoting[] received_votes = epacks
+                .filter!(epack => epack.event_body.payload.isRecord!ConsensusVoting)
+                .map!(epack => ConsensusVoting(epack.event_body.payload))
+                .array;
+
+            foreach(v; received_votes) {
+                votes[v.epoch] ~= v;
+            }
+
             log("epoch type %s", epacks[0].event_body.payload.toPretty);
             
             SignedContract[] signed_contracts = epacks
+                .filter!(epack => epack.event_body.payload.isRecord!SignedContract)
                 .map!(epack => SignedContract(epack.event_body.payload))
                 .array;
 
