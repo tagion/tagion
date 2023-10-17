@@ -165,9 +165,9 @@ DARTIndex dartIndexDecode(const(HashNet) net, const(char[]) str) {
     import tagion.hibon.HiBONBase;
     import tagion.hibon.HiBONFile : fread;
     import std.traits;
-    import std.stdio;
 
-    writefln("<%s>", str.split(":"));
+    //    import std.stdio;
+
     if (isBase64Prefix(str)) {
         return DARTIndex(Base64URL.decode(str[1 .. $]).idup);
     }
@@ -177,7 +177,6 @@ DARTIndex dartIndexDecode(const(HashNet) net, const(char[]) str) {
     else if (str.canFind(":")) {
 
         const list = str.split(":");
-        writefln("list = %s %s", list, str);
         const name = list[0];
         if (list.length == 2) {
 

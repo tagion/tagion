@@ -5,10 +5,10 @@
 Create two initial wallets wallet via `geldbeutel`.
 
 ```
-~> mkdir wallets
-~> cd wallets/
-~/wallets> geldbeutel -O --path ~/wallets/wallet1 wallet1.json
-~/wallets> geldbeutel -O --path ~/wallets/wallet2 wallet2.json
+mkdir wallets
+cd wallets/
+geldbeutel -O --path ~/wallets/wallet1 wallet1.json
+geldbeutel -O --path ~/wallets/wallet2 wallet2.json
 ```
 
 The `wallet1.json` and `wallet2.json` is the config file for the wallet.
@@ -16,60 +16,61 @@ The `wallet1.json` and `wallet2.json` is the config file for the wallet.
 Use the UI to create passphrase for the wallets.
 
 ```
-~/wallets> geldbeutel -C wallet1.json
-~/wallets> geldbeutel -C wallet2.json
+geldbeutel -C wallet1.json
+geldbeutel -C wallet2.json
 ```
 
 Check the passphrase.
 ```
-~/wallets> geldbeutel wallet1.json -x 1234 -v
-Pincode correct
+geldbeutel wallet1.json -x 0001 -v
+# Config file wallet1.json
+# Loggedin
 ```
 
 ## Add a bill to the DART
 Create a simple bill.
 ```
-~/wallets> geldbeutel wallet1.json -x 1234 --amount 10000 -o give_me.hibon
-Created give_me.hibon of 10000.0
-~/wallets> geldbeutel wallet1.json -x 1234 --amount 20000 -o give_me_2.hibon
-Created give_me_2.hibon of 20000.0
+geldbeutel wallet1.json -x 0001 --amount 1000000000 -o give_me.hibon
+# Created give_me.hibon
+geldbeutel wallet2.json -x 0002 --amount 900000000 -o give_me_2.hibon
+# Created give_me_2.hibon
 ```
 
 Generate a DART-recorder.
 ```
-~/wallets> stiefel give_me.hibon give_me_2.hibon -o dart_recorder.hibon
+stiefel give_me.hibon give_me_2.hibon -o dart_recorder.hibon
 ```
 
 Create a DART database.
 ```
-~/wallets> dartutil --initialize dart.drt
+dartutil --initialize dart.drt
 ```
 
 Add the `dart_recorder.hibon` to `dart.drt`.
 ```
-~/wallets> dartutil dart.drt dart_recorder.hibon -m 
+dartutil dart.drt dart_recorder.hibon -m 
 ```
 
 Check the content of the DART db.
 ```
-carsten@spacepot ~/wallets> dartutil --dump dart.drt
-EYE: 32c9c8e19d707d29161ffd73c907156e431de490a0b598292287e2915bdd4c26
-| 07 [3]
-| .. | 17 [2]
-| .. | .. 0717863f3ac292a9cd78350b10714a512e558ec40212e39ad29a26c44b4a0f3c [1]
-| 4E [6]
-| .. | ED [5]
-| .. | .. 4eedda1433a8ec363fd66fd2c9b9b03b3c46fc97eb9df67eff0c7f4a992a4732 [4]
+dartutil --dump dart.drt
+EYE: ee8e750cfa2a1a3ef17e52fd922ffd5564e716ae1b2d7c9b4cbc108bb2594f9f
+| 42 [3]
+| .. | 5F [2]
+| .. | .. 425f9fc079d0aeaf6d0fc57d7c22de23b40da0bd58475aaf21b45ff320f47ad6 [1]
+| 5D [6]
+| .. | F0 [5]
+| .. | .. 5df0344514b46b2cb7d4e507a2cf34ed5c3cd23fc6f16431ec3761fc95c95a6d [4]
 ```
 
 List the archive in the `dart.drt`.
 ```
-~/wallets [0|1]> dartutil dart.drt -r 0717863f3ac292a9cd78350b10714a512e558ec40212e39ad29a26c44b4a0f3c|hibonutil -p
+dartutil dart.drt -r 425f9fc079d0aeaf6d0fc57d7c22de23b40da0bd58475aaf21b45ff320f47ad6|hibonutil -cp
 {
     "$@": "HiRPC",
     "$Y": [
         "*",
-        "@A6QHQRVMJr44VN7Sj4kL3aQB0WIov9QDgvzsBRtEGqcI"
+        "@Av2fcgwMGh3blxvHL9mnVz81SZ9AC_-zVhNK1MD2Asea"
     ],
     "$msg": {
         "result": {
@@ -80,20 +81,20 @@ List the archive in the `dart.drt`.
                     "$V": {
                         "$": [
                             "i64",
-                            "0x9184e72a000"
+                            "0xc7d713b49da0000"
                         ]
                     },
                     "$Y": [
                         "*",
-                        "@A-qiTidDR5cSqwNoLwMf0pIh3FK4b02uinKWqgn-nWUF"
+                        "@AxExkkpbuNSj3Pb_9L3PQVrgP5OdZUJC6HSgZCdutRRN"
                     ],
                     "$t": [
                         "time",
-                        "2023-09-26T19:05:51.3632001"
+                        "2023-10-17T15:50:16.6598183"
                     ],
                     "$x": [
                         "*",
-                        "@12zZAA=="
+                        "@SVFf4Q=="
                     ]
                 },
                 "$t": [
@@ -105,9 +106,10 @@ List the archive in the `dart.drt`.
     },
     "$sign": [
         "*",
-        "@5NdjJubhEYwHBLWV1B8iSLmivjn9AQYfGl4n5P7rLhl5QLYbHOlAFf9rIOm_bstA1bGvkF1iqjog3Boyv4DkWw=="
+        "@q3TFaoVOI5YuQekvP7KKWE8t4YDyoY4x2S5F1VFIJIFeWjmxBrV_NxABudjeCiKNz4Lo3UBxG9MGnsYzp4OwjA=="
     ]
 }
 ```
 
+*Continued* [Initialize Genesis Epoch](/documents/network_setup/initialize_genesis_epoch.md)
 
