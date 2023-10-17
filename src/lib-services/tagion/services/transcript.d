@@ -75,6 +75,7 @@ struct TranscriptService {
                 .array;
 
             foreach(v; received_votes) {
+                log("adding vote");
                 votes[v.epoch] ~= v;
             }
 
