@@ -57,12 +57,17 @@ WebData contract_handler ( WebData req, void* ctx ){
     }
     rc = s.send(req.rawdata);
     if(rc != 0){
-        writeln("contract_handler: send: ", nng_errstr(rc));
+        writeln("contract_handler: send: ", nng_errstr(s.errno));
         WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "socket error" };
         return res;
     }        
     ubyte[4096] buf;
     size_t len = s.receivebuf(buf, 4096);
+    if(len == size_t.max && s.errno != 0){
+        writeln("contract_handler: recv: ", nng_errstr(s.errno));
+        WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "socket error" };
+        return res;
+    }
     writeln(format("WH: dart: received %d bytes",len));
     s.close(); 
     WebData res = {
@@ -94,18 +99,25 @@ WebData dart_handler ( WebData req, void* ctx ){
         WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "socket error" };
         return res;
     }        
+    writeln(format("WH: dart: sent %d bytes",req.rawdata.length));
     ubyte[4096] buf;
-    size_t len = s.receivebuf(buf, 4096);
-    if(len < 0){
-        writeln("dart_handler: recv: ", nng_errstr(rc));
-        WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "socket error" };
-        return res;
-    }
-    writeln(format("WH: dart: received %d bytes",len));
+    ubyte[] docbuf;
+    size_t len = 0, doclen = 0; 
+    do { 
+        len = s.receivebuf(buf, 4096);
+        if(len == size_t.max && s.errno != 0){
+            writeln("dart_handler: recv: ", nng_errstr(s.errno));
+            WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "socket error" };
+            return res;
+        }
+        writeln(format("WH: dart: received %d bytes",len));
+        docbuf ~= buf[0..len];
+        doclen += len;
+    }while(len > 4095);    
     s.close(); 
     WebData res = {
-        status: (len>0) ? nng_http_status.NNG_HTTP_STATUS_OK : nng_http_status.NNG_HTTP_STATUS_NO_CONTENT, 
-        type: "applicaion/octet-stream", rawdata: (len>0) ? buf[0..len] : null 
+        status: (doclen>0) ? nng_http_status.NNG_HTTP_STATUS_OK : nng_http_status.NNG_HTTP_STATUS_NO_CONTENT, 
+        type: "applicaion/octet-stream", rawdata: (doclen>0) ? docbuf[0..doclen] : null 
     };
     writeln("WH: dart: res ",res);
     return res;
