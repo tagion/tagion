@@ -28,8 +28,6 @@ local.*
 
 # Auto generated C interface files
 *.i
-# Revision file
-revision.d
 
 # Local backup
 *.parked*
