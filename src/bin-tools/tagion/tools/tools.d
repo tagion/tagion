@@ -11,7 +11,6 @@ int main(string[] args) {
     import hibonutil = tagion.tools.hibonutil;
     import blockutil = tagion.tools.blockutil;
     import tprofview = tagion.tools.tprofview;
-    import recorderchain = tagion.tools.recorderchain;
     import graphview = tagion.tools.graphview;
     import signs = tagion.tools.signs;
     import wasmutil = tagion.tools.wasmutil.wasmutil;
@@ -27,7 +26,6 @@ int main(string[] args) {
             hibonutil,
             blockutil,
             tprofview,
-            recorderchain,
             graphview,
             signs,
             wasmutil,
