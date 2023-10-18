@@ -69,6 +69,7 @@ struct TranscriptService {
                 return;
             }
 
+
             ConsensusVoting[] received_votes = epacks
                 .filter!(epack => epack.event_body.payload.isRecord!ConsensusVoting)
                 .map!(epack => ConsensusVoting(epack.event_body.payload))
@@ -78,8 +79,10 @@ struct TranscriptService {
                 log("adding vote");
                 votes[v.epoch] ~= v;
             }
+            if (received_votes.length == number_of_nodes) {
+                log("ALL VOTES RECEIVED");   
+            }
 
-            log("epoch type %s", epacks[0].event_body.payload.toPretty);
             
             SignedContract[] signed_contracts = epacks
                 .filter!(epack => epack.event_body.payload.isRecord!SignedContract)
@@ -174,7 +177,9 @@ struct TranscriptService {
             );
             
             log("signed bullseye vote: %s", own_vote.toDoc.toPretty);
+            // if (["Node_0_transcript", "Node_1_transcript"].canFind(task_names.transcript)) {
             locate(task_names.epoch_creator).send(Payload(), own_vote.toDoc);
+            // }
         }
 
         void produceContract(producedContract, immutable(ContractProduct)* product) {

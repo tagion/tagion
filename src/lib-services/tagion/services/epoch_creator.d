@@ -95,8 +95,8 @@ struct EpochCreatorService {
 
 
         const(Document) payload() {
-            if (!hashgraph.active || payload_queue.empty) {
-                return Document();
+            if (payload_queue.empty) {
+                return Document.init;
             }
             return payload_queue.read;
         }
@@ -114,7 +114,7 @@ struct EpochCreatorService {
             import std.array;
 
             version (EPOCH_LOG) {
-                log.trace("Received wavefront");
+                log.trace("Received wavefront %s");
             }
 
             const receiver = HiRPC.Receiver(wave_doc);

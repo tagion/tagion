@@ -17,6 +17,13 @@ import tagion.communication.HiRPC : HiRPC;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONJSON : JSONString;
 import tagion.utils.StdTime;
+import tagion.logger.Logger;
+
+
+// DEBUG REMOVE ME
+                    import std.stdio;
+                    import tagion.hibon.HiBONJSON;
+                    import tagion.script.common : ConsensusVoting;
 
 import tagion.hibon.Document : Document;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
@@ -200,6 +207,17 @@ struct EventPackage {
                 consensus_check(signature.length !is 0, ConsensusFailCode.EVENT_MISSING_SIGNATURE);
                 auto _fingerprint=net.calcHash(event_body);
                 fingerprint = cast(Buffer) _fingerprint;
+
+                if (event_body.payload.isRecord!(ConsensusVoting)) {
+                    if (net.verify(_fingerprint, signature, pubkey)) {
+                        log("OK: DOC_EPACK: %s", doc_epack.toPretty);
+
+                    } else {
+                        log("NOT OK DOC_EPACK: %s", doc_epack.toPretty);
+                    }
+                } 
+
+    
                 consensus_check(net.verify(_fingerprint, signature, pubkey), ConsensusFailCode.EVENT_BAD_SIGNATURE);
             }
 
@@ -212,6 +230,9 @@ struct EventPackage {
                 auto _fingerprint=net.calcHash(event_body);
                 fingerprint = cast(Buffer) _fingerprint;
                 signature=net.sign(_fingerprint);
+                if (ebody.payload.isRecord!ConsensusVoting) {
+                    log("PRODUCED EPACK: %s", this.toPretty);
+                }
             }
 
             this(const SecureNet net, const Pubkey pkey, const Signature signature, immutable(EventBody) ebody) {
