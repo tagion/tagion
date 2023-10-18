@@ -5,7 +5,6 @@ import std.meta;
 import tagion.tools.OneMain;
 
 int main(string[] args) {
-    import tagionwave = tagion.tools.tagionwave;
     import neuewelle = tagion.tools.neuewelle;
     import subscribe = tagion.tools.subscribe;
     import dartutil = tagion.tools.dartutil.dartutil;
@@ -22,7 +21,6 @@ int main(string[] args) {
     import hirep = tagion.tools.hirep.hirep;
 
     alias alltools = AliasSeq!(
-            tagionwave,
             subscribe,
             neuewelle,
             dartutil,
