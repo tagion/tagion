@@ -24,7 +24,7 @@ import tagion.script.TagionCurrency;
 
 alias check = Check!TagionException;
 
-mixin Main!(_main);
+mixin Main!(_main, "tagionboot");
 
 int _main(string[] args) {
     immutable program = args[0];

@@ -22,7 +22,6 @@ import tagion.dart.DARTcrud : dartRead, dartModify;
 import tagion.basic.basic : tempfile;
 
 import tagion.communication.HiRPC;
-import tagion.prior_services.DARTSynchronization;
 
 import tagion.gossip.GossipNet;
 import tagion.gossip.AddressBook;

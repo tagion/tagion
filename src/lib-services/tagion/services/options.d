@@ -97,7 +97,7 @@ struct Options {
     public import tagion.services.monitor : MonitorOptions;
     public import tagion.services.replicator : ReplicatorOptions;
     public import tagion.services.subscription : SubscriptionServiceOptions;
-
+    public import tagion.logger.LoggerOptions : LoggerOptions;
 
     WaveOptions wave;
     InputValidatorOptions inputvalidator;
@@ -111,6 +111,7 @@ struct Options {
     ReplicatorOptions replicator;
     DARTInterfaceOptions dart_interface;
     SubscriptionServiceOptions subscription;
+    LoggerOptions logger;
 
     TaskNames task_names;
     mixin JSONCommon;
