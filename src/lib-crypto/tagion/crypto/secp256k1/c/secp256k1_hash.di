@@ -13,8 +13,8 @@ nothrow:
 struct secp256k1_sha256
 {
     uint[8] s;
-    uint[16] buf; /* In big endian */
-    size_t bytes;
+    ubyte[64] buf;
+    ulong bytes;
 }
 
 void secp256k1_sha256_initialize (secp256k1_sha256* hash);
