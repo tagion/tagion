@@ -107,14 +107,6 @@ ${call DO_BIN,blockutil,$(LIB_DFILES) ${call BIN_DEPS,blockutil},tagion}
 target-wasmutil: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
 ${call DO_BIN,wasmutil,$(LIB_DFILES) ${call BIN_DEPS,wasmutil},tagion}
 
-#
-# WASM utility
-#
-target-tagionwallet: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-${call DO_BIN,tagionwallet,$(LIB_DFILES) ${call BIN_DEPS,tagionwallet},tagion}
-
-wallet: target-tagionwallet
-
 
 target-signs: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
 ${call DO_BIN,signs,$(LIB_DFILES) ${call BIN_DEPS,signs},tagion}
