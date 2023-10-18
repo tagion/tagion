@@ -10,7 +10,6 @@ int main(string[] args) {
     import subscribe = tagion.tools.subscribe;
     import dartutil = tagion.tools.dartutil.dartutil;
     import hibonutil = tagion.tools.hibonutil;
-    import tagionboot = tagion.tools.tagionboot;
     import blockutil = tagion.tools.blockutil;
     import tprofview = tagion.tools.tprofview;
     import recorderchain = tagion.tools.recorderchain;
@@ -28,8 +27,8 @@ int main(string[] args) {
             neuewelle,
             dartutil,
             hibonutil,
-            tagionboot,
-            blockutil, tprofview,
+            blockutil,
+            tprofview,
             recorderchain,
             graphview,
             signs,
