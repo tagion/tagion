@@ -235,32 +235,30 @@ extern (C) {
         return can_pay ? 1 : 0;
     }
 
-    // version (none) export uint create_signed_contract(
-    //         uint32_t signedContractPtr,
-    //         uint8_t* contractPtr,
-    //         const uint32_t contractLen){
+    export uint create_nft_contract(
+            uint32_t* signedContractPtr,
+            uint8_t* nftPtr,
+            const uint32_t nftLen){
         
-    //     immutable contractBuff = cast(immutable)(contractPtr[0 .. contractLen]);
+        immutable nftBuff = cast(immutable)(nftPtr[0 .. nftLen]);
         
-    //     if (__wallet_storage.wallet.isLoggedin()) {
-    //         auto contract = Contract(Document(contractBuff));
+        if (__wallet_storage.wallet.isLoggedin()) {
+            auto nft = Document(nftBuff);
 
-    //         SignedContract signed_contract;
+            SignedContract signed_contract;
 
-    //         const is_created =
-    //             __wallet_storage.wallet.createSignedContract(contract, signed_contract);
-    //         if (is_created) {
-                
-    //             const contractDocId = recyclerDoc.create(signed_contract.toDoc);
-    //             // Save wallet state to file.
-    //             __wallet_storage.write;
+            const is_created = __wallet_storage.wallet.createNFT(nft, signed_contract);
+            if (is_created) {
+                const nftDocId = recyclerDoc.create(signed_contract.toDoc);
+                // Save wallet state to file.
+                __wallet_storage.write;
 
-    //             *contractPtr = contractDocId;
-    //             return 1;
-    //         }
-    //     }
-    //     return 0;
-    // }
+                *signedContractPtr = nftDocId;
+                return 1;
+            }
+        }
+        return 0;
+    }
 
     export uint create_contract(
             uint32_t* contractPtr,

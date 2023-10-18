@@ -628,29 +628,34 @@ struct SecureWallet(Net : SecureNet) {
         return getFee([bill], fees);
     }
 
-    // version (none) Result!bool createSignedContract(
-    //     Contract unsigned_contract,
-    //     ref SignedContract signed_contract){
-    //     import tagion.script.execute;
+    // stupid function for testing
+    Result!bool createNFT(
+        Document nft_data,
+        ref SignedContract signed_contract){
+        import tagion.script.execute;
+        import tagion.script.standardnames;
 
-    //     try {
-    //         PayScript pay_script = unsigned_contract.script;
-    //         TagionBill[] bills_to_sign = pay_script.outputs;
-            
-    //         const nets = collectNets(bills_to_sign);
+        try {
+            HiBON dummy_input = new HiBON;
+            dummy_input[StdNames.owner] = net.pubkey;
+            dummy_input["NFT"] = nft_data;
+            Document[] inputs;
 
-    //         signed_contract = sign(
-    //                 nets,
-    //                 bills_to_sign.map!(bill => bill.toDoc)
-    //                 .array,
-    //                 null,
-    //                 pay_script.toDoc);
-    //     }
-    //     catch (Exception e) {
-    //         return Result!bool(e);
-    //     }
-    //     return result(true);
-    // }
+            inputs ~= Document(dummy_input);
+            SecureNet[] nets;
+            nets ~= (() @trusted => cast(SecureNet) net )();
+
+            signed_contract = sign(
+                    nets,
+                    inputs,
+                    null,
+                    Document.init);
+        }
+        catch (Exception e) {
+            return Result!bool(e);
+        }
+        return result(true);
+    }
 
     Result!bool createPayment(TagionBill[] to_pay, ref SignedContract signed_contract, out TagionCurrency fees) nothrow {
         import tagion.script.Currency : totalAmount;
