@@ -117,7 +117,8 @@ class ItWork {
         input_nets = createNets(10, "input");
         input_bills = input_nets.createBills(100_000);
         input_bills.insertBills(insert_recorder);
-        dart_handle.send(dartModify(), RecordFactory.uniqueRecorder(insert_recorder), immutable int(0));
+        dart_handle.send(dartModifyRR(), RecordFactory.uniqueRecorder(insert_recorder), immutable int(0));
+        receiveOnlyTimeout!(dartModifyRR.Response, Fingerprint);
 
         {
             import tagion.utils.pretend_safe_concurrency;

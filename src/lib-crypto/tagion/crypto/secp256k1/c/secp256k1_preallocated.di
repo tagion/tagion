@@ -53,6 +53,8 @@ size_t secp256k1_context_preallocated_size (uint flags);
  *                     bytes, as detailed above.
  *           flags:    which parts of the context to initialize.
  *
+ *  See secp256k1_context_create (in secp256k1.h) for further details.
+ *
  *  See also secp256k1_context_randomize (in secp256k1.h)
  *  and secp256k1_context_preallocated_destroy.
  */
@@ -79,8 +81,11 @@ size_t secp256k1_context_preallocated_clone_size (
  *  the lifetime of this context object, see the description of
  *  secp256k1_context_preallocated_create for details.
  *
+ *  Cloning secp256k1_context_static is not possible, and should not be emulated by
+ *  the caller (e.g., using memcpy). Create a new context instead.
+ *
  *  Returns: a newly created context object.
- *  Args:    ctx:      an existing context to copy.
+ *  Args:    ctx:      an existing context to copy (not secp256k1_context_static).
  *  In:      prealloc: a pointer to a rewritable contiguous block of memory of
  *                     size at least secp256k1_context_preallocated_size(flags)
  *                     bytes, as detailed above.
@@ -107,7 +112,8 @@ secp256k1_context* secp256k1_context_preallocated_clone (
  *
  *  Args:   ctx: an existing context to destroy, constructed using
  *               secp256k1_context_preallocated_create or
- *               secp256k1_context_preallocated_clone.
+ *               secp256k1_context_preallocated_clone
+ *               (i.e., not secp256k1_context_static).
  */
 void secp256k1_context_preallocated_destroy (secp256k1_context* ctx);
 

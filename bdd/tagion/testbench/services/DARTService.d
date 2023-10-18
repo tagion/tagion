@@ -192,8 +192,11 @@ class WriteAndReadFromDartDb {
             docs = (() @trusted => cast(Document[]) random_archives.values.map!(a => SimpleDoc(a).toDoc).array)();
 
             insert_recorder.insert(docs, Archive.Type.ADD);
-            auto modify_send = dartModify();
+            auto modify_send = dartModifyRR();
             (() @trusted => handle.send(modify_send, cast(immutable) insert_recorder, immutable int(0)))();
+
+            auto modify = receiveOnlyTimeout!(dartModifyRR.Response, Fingerprint);
+
 
             auto modify_log_result = receiveOnlyTimeout!(LogInfo, const(Document));
             check(modify_log_result[1].isRecord!(RecordFactory.Recorder), "Did not receive recorder");

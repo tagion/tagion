@@ -38,7 +38,7 @@ DIFILES+=$$(DIFILES.$1)
 
 DIFILES_DEPS+=$4
 
-ifdef ($(DSTEP))
+#ifdef ($(DSTEP))
 
 $$(DESTROOT.$1)/%.di: $$(HPATH.$1)/%.h | $$(DESTROOT.$1)
 	$$(PRECMD)${call log.kvp, dstep, $$(@F)}
@@ -49,7 +49,7 @@ $$(DESTROOT.$1)/%.di: $$(HPATH.$1)/%.h | $$(DESTROOT.$1)
 	$$(LN) $$(@F) $$(basename $$(@F)).d 
 	fi
 
-endif # End dstep tool is avaliable
+#endif # End dstep tool is avaliable
 
 $$(DESTROOT.$1):
 	$$(PRECMD)mkdir -p $$@
@@ -68,8 +68,8 @@ env-dstep-$1:
 	$${call log.kvp, SRCDIR,$2}
 	$${call log.kvp, DESTDIR,$3}
 	$${call log.env, HFILES.$1, $$(HFILES.$1)}
-	$${call log.env, HPATH.$1, $$(HPATH.$1)}
-	$${call log.env, DESTROOT.$1, $$(DESTROOT.$1)}
+	$${call log.kvp, HPATH.$1, $$(HPATH.$1)}
+	$${call log.kvp, DESTROOT.$1, $$(DESTROOT.$1)}
 	$${call log.env, DFILES, $4}
 	$${call log.env, DIFILES.$1, $$(DIFILES.$1)}
 	$${call log.env, DSTEP_ATTRIBUTES, $$(DSTEP_ATTRIBUTES)}
@@ -82,12 +82,12 @@ env: env-dstep
 
 # clean: clean-dstep-$1
 
-# clean-dstep-$1:
-# 	$$(PRECMD)
-# 	$${call log.header, $$@ :: $1}
-# 	$$(RM) $$(DIFILES.$1)
+clean-dstep-$1:
+	$$(PRECMD)
+	$${call log.header, $$@ :: $1}
+	$$(RM) $$(DIFILES.$1)
 
-# clean-dstep: clean-dstep-$1
+clean-dstep: clean-dstep-$1
 
 }
 endef

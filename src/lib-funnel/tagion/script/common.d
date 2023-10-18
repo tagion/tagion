@@ -175,5 +175,12 @@ struct ConsensusVoting {
     long epoch;
     @label(StdNames.owner) Pubkey owner;
     @label(StdNames.signed) Signature signed_bullseye;
-    mixin HiBONRecord;
+    mixin HiBONRecord!(
+        q{
+            this(long epoch, Pubkey owner, Signature signed_bullseye) {
+                this.owner = owner;
+                this.signed_bullseye = signed_bullseye;
+                this.epoch = epoch;
+            }
+        });
 }

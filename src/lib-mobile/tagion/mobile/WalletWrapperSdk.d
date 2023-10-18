@@ -424,8 +424,8 @@ extern (C) {
 
     export uint get_backup(uint8_t* backupPtr) {
         if (__wallet_storage.wallet.isLoggedin()) {
-            const account = __wallet_storage.wallet.account;
-            const backupDocId = recyclerDoc.create(account.toDoc);
+            const encrAccount = __wallet_storage.wallet.getEncrAccount();
+            const backupDocId = recyclerDoc.create(encrAccount.toDoc);
 
             *backupPtr = cast(uint8_t) backupDocId;
 
@@ -439,7 +439,7 @@ extern (C) {
         immutable account = cast(immutable)(backupPtr[0 .. backupLen]);
 
         if (__wallet_storage.wallet.isLoggedin()) {
-            __wallet_storage.wallet.account = AccountDetails(Document(account));
+            __wallet_storage.wallet.setEncrAccount(Cipher.CipherDocument(Document(account)));
             __wallet_storage.write;
             return 1;
         }

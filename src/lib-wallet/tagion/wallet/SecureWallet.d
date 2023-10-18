@@ -780,6 +780,17 @@ struct SecureWallet(Net : SecureNet) {
         this.account.derive_state = derive_state.derive_state;
     }
 
+    @trusted
+    const(CiphDoc) getEncrAccount() {
+        return Cipher.encrypt(this._net, this.account.toDoc);
+    }
+
+    void setEncrAccount(const(CiphDoc) cipher_doc) {
+        Cipher cipher;
+        const account_doc = cipher.decrypt(this._net, cipher_doc);
+        this.account = AccountDetails(account_doc);
+    }
+
     unittest {
         import std.stdio;
         import tagion.hibon.HiBONJSON;
