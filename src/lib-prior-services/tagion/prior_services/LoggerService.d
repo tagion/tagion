@@ -18,7 +18,8 @@ import tagion.basic.tagionexceptions;
 import tagion.GlobalSignals : abort;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONRecord;
-import tagion.prior_services.LogSubscriptionService : logSubscriptionServiceTask;
+
+//import tagion.prior_services.LogSubscriptionService : logSubscriptionServiceTask;
 import tagion.prior_services.Options : Options, setOptions, options;
 import tagion.logger.Logger;
 import tagion.logger.LogRecords;
@@ -170,9 +171,10 @@ private {
 
         pragma(msg, "fixme(ib) Pass mask to Logger to not pass not necessary data");
 
-        if (options.logsubscription.enable) {
-            logSubscriptionTid = spawn(&logSubscriptionServiceTask, options);
-        }
+        version (none)
+            if (options.logsubscription.enable) {
+                logSubscriptionTid = spawn(&logSubscriptionServiceTask, options);
+            }
         scope (exit) {
             import std.stdio;
 
