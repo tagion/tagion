@@ -45,12 +45,6 @@ BIN_DEPS=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-$1/*" $(EXCLUDED_D
 #
 
 #
-# Core program
-#
-target-tagionwave: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-${call DO_BIN,tagionwave,$(LIB_DFILES) ${call BIN_DEPS,priorwave},tagion}
-
-#
 # New Wave
 #
 target-neuewelle: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER) $(LIBNNG)
@@ -112,19 +106,6 @@ target-signs: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
 ${call DO_BIN,signs,$(LIB_DFILES) ${call BIN_DEPS,signs},tagion}
 
 #
-# Recorderchain utility
-#
-#target-recorderchain: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-#${call DO_BIN,recorderchain,$(LIB_DFILES) ${call BIN_DEPS,recorderchain},tagion}
-
-#
-# Boot utility
-#
-# fixme(cbr): When ddeps.mk work those libs are not needed
-target-tagionboot: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
-${call DO_BIN,tagionboot,$(LIB_DFILES) ${call BIN_DEPS,boot},tagion}
-
-#
 # Profile view
 #
 # fixme(cbr): When ddeps.mk work those libs are not needed
@@ -141,17 +122,14 @@ ${call DO_BIN,graphview,$(LIB_DFILES) ${call BIN_DEPS,graphview},tagion}
 #
 # Tagion onetool
 #
-TAGION_TOOLS+=priorwave
 TAGION_TOOLS+=wave # New wave
 TAGION_TOOLS+=dartutil
 TAGION_TOOLS+=blockutil
 TAGION_TOOLS+=hibonutil
 TAGION_TOOLS+=wallet
 TAGION_TOOLS+=tprofview
-TAGION_TOOLS+=boot
 TAGION_TOOLS+=tools
 TAGION_TOOLS+=graphview
-TAGION_TOOLS+=recorderchain
 TAGION_TOOLS+=signs
 TAGION_TOOLS+=wasmutil
 TAGION_TOOLS+=geldbeutel

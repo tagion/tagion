@@ -28,7 +28,7 @@ import std.typecons;
 import tagion.network.ReceiveBuffer;
 import tagion.wallet.BIP39;
 
-mixin Main!(_main, "newwallet");
+mixin Main!(_main, "wallet");
 
 import tagion.crypto.SecureNet;
 
