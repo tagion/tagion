@@ -35,10 +35,6 @@ import tagion.basic.Debug;
 import tagion.utils.Miscellaneous : cutHex;
 
 
-/// REMOVE ME
-import tagion.hibon.HiBONRecord : isRecord;
-import tagion.hibon.HiBONJSON;
-import tagion.script.common;
 
 
 
@@ -248,14 +244,6 @@ class HashGraph {
             lazy const sdt_t time) {
         const(HiRPC.Sender) payload_sender() @safe {
             const doc = payload();
-            
-
-            if(doc.isRecord!ConsensusVoting) {
-                log("##### %s", doc.toPretty);
-            }
-
-            
-            // writefln("init_tide time: %s", time);
             immutable epack = event_pack(time, null, doc);
 
 
@@ -293,9 +281,6 @@ class HashGraph {
 
     immutable(EventPackage*) event_pack(lazy const sdt_t time, const(Event) father_event, const Document doc) @trusted {
 
-        if(doc.isRecord!ConsensusVoting) {
-            log("creating event package %s", doc.toPretty);
-        }
         const mother_event = getNode(channel).event;
         immutable ebody = EventBody(doc, mother_event, father_event, time);
 

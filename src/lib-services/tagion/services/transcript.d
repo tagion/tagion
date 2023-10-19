@@ -98,7 +98,7 @@ struct TranscriptService {
             req.id = cast(uint) epoch_number;
             epoch_contracts[req.id] = EpochContracts(signed_contracts, epoch_time);
 
-            (() @trusted => locate(task_names.dart).send(req, cast(immutable(DARTIndex)[]) inputs))();
+            (() @trusted => locate(task_names.dart).send(req, cast(immutable) inputs))();
         }
 
         void createRecorder(dartCheckReadRR.Response res, immutable(DARTIndex)[] not_in_dart) {
@@ -106,9 +106,7 @@ struct TranscriptService {
 
             DARTIndex[] used;
 
-            if (not_in_dart.length != 0) {
-                used ~= not_in_dart;
-            }
+            used ~= not_in_dart;
 
             const epoch_contract = epoch_contracts.get(res.id, EpochContracts.init);
             if (epoch_contract is EpochContracts.init) {
@@ -132,7 +130,6 @@ struct TranscriptService {
                 const tvm_contract_outputs = products.get(net.dartIndex(signed_contract.contract), null);
                 if (tvm_contract_outputs is null) {
                     log("contract not found asserting");
-                    assert(0, "what should we do here");
                 }
 
                 import tagion.utils.StdTime;
@@ -164,12 +161,15 @@ struct TranscriptService {
             auto req = dartModifyRR();
             req.id = res.id;
 
-            locate(task_names.dart).send(dartModifyRR(), RecordFactory.uniqueRecorder(recorder), cast(immutable(int)) res.id);
+            if(recorder.empty) {
+                return;
+            }
+            locate(task_names.dart).send(req, RecordFactory.uniqueRecorder(recorder), cast(immutable(int)) res.id);
 
         }
 
         void receiveBullseye(dartModifyRR.Response res, Fingerprint bullseye) {
-            log("transcript received bullseye");
+            log("transcript received bullseye %s");
             ConsensusVoting own_vote = ConsensusVoting(
                 cast(long) res.id,
                 net.pubkey,
