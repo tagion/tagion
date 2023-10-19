@@ -162,8 +162,7 @@ class Round {
      * Params:
      *   hashgraph = the hashgraph owning the events/rounds
      */
-    @trusted
-    private void scrap(HashGraph hashgraph)
+    private void scrap(HashGraph hashgraph) @trusted
     in {
         assert(!_previous, "Round can not be scrapped due that a previous round still exists");
     }
@@ -515,8 +514,7 @@ class Round {
         @nogc
         struct Range(bool CONST = true) {
             private Round round;
-            @trusted
-            this(const Round round) pure nothrow {
+            this(const Round round) pure nothrow @trusted {
                 this.round = cast(Round) round;
             }
 

@@ -162,7 +162,7 @@ class HashGraph {
             _rounds.erase;
             _rounds = Round.Rounder(this);
             _rounds.last_decided_round = _rounds.last_round;
-            (() @trusted { _event_cache.clear; })();
+            _event_cache = null;
             init_event(_owner_node.event.event_package);
             // front_seat(owen_event);
             foreach (epack; epacks) {
@@ -212,7 +212,6 @@ class HashGraph {
         return hirpc.net.pubkey;
     }
 
-    @trusted
     const(Pubkey[]) channels() const pure nothrow {
         return _nodes.keys;
     }
@@ -273,7 +272,7 @@ class HashGraph {
         }
     }
 
-    immutable(EventPackage*) event_pack(
+    immutable(EventPackage)* event_pack(
             lazy const sdt_t time,
             const(Event) father_event,
             const Document doc) {
@@ -333,7 +332,7 @@ class HashGraph {
         EventCache _event_cache;
     }
 
-    void eliminate(scope const(Buffer) fingerprint) {
+    void eliminate(scope const(Buffer) fingerprint) pure nothrow {
         _event_cache.remove(fingerprint);
     }
 
@@ -957,12 +956,11 @@ class HashGraph {
         return event_id;
     }
 
-    @trusted
     size_t next_node_id() const pure nothrow {
         if (_nodes.length is 0) {
             return 0;
         }
-        scope BitMask used_nodes;
+        BitMask used_nodes;
         _nodes.byValue
             .map!(a => a.node_id)
             .each!((n) { used_nodes[n] = true; });
@@ -977,7 +975,6 @@ class HashGraph {
     /++
      Dumps all events in the Hashgraph to a file
      +/
-    //   @trusted
     void fwrite(string filename, Pubkey[string] node_labels = null) {
         import tagion.hibon.HiBONFile : fwrite;
         import tagion.hashgraphview.EventView;
