@@ -377,6 +377,8 @@ class StdSecureNet : StdHashNet, SecureNet {
 
         const doc_signed = net.sign(doc);
 
+        assert(net.rawCalcHash(doc.serialize) == net.calcHash(doc.serialize), "should produce same hash");
+
         assert(doc_signed.message == net.rawCalcHash(doc.serialize));
         assert(net.verify(doc, doc_signed.signature, net.pubkey));
 
@@ -396,7 +398,33 @@ class StdSecureNet : StdHashNet, SecureNet {
 
     }
 
+    unittest {
+        import tagion.hibon.HiBONRecord;
+        SecureNet net = new StdSecureNet;
+        net.generateKeyPair("Secret password");
+
+        static struct RandomRecord {
+            int x;
+
+            mixin HiBONRecord;
+        }
+
+        RandomRecord data;
+        data.x = 20;
+
+        auto fingerprint = net.calcHash(data);
+        auto second_fingerprint = net.calcHash(data.toDoc.serialize);
+        assert(fingerprint == second_fingerprint);
+
+        auto sig = net.sign(data).signature;
+        auto second_sig = net.sign(data.toDoc).signature;
+        assert(sig == second_sig);
+
+        assert(net.verify(fingerprint, sig, net.pubkey));
+
+    }
 }
+
 
 @safe
 class BadSecureNet : StdSecureNet {
