@@ -1109,6 +1109,85 @@ alias nng_tls_version = libnng.nng_tls_version;
 alias nng_http_req = libnng.nng_http_req;
 alias nng_http_res = libnng.nng_http_res;
 
+struct WebTLS {
+    nng_tls_config* tls;
+    
+    @disable this();
+    
+    this(ref return scope WebTLS rhs) {}
+    
+    this( nng_tls_mode imode  ){
+        int rc;
+        rc = nng_tls_config_alloc(&tls, imode);
+        enforce(rc == 0, "TLS config init");
+        nng_tls_config_hold(tls);
+    }
+    
+
+    ~this(){
+        nng_tls_config_free(tls);
+    }
+
+    void set_server_name ( string iname ) {
+        auto rc = nng_tls_config_server_name(tls, iname.toStringz());
+        enforce(rc == 0);
+    }
+    
+    void set_ca_chain ( string pem, string crl = "" ) {
+        auto rc = nng_tls_config_ca_chain(tls, pem.toStringz(), crl.toStringz());
+        enforce(rc == 0);
+    }
+
+    void set_own_cert ( string pem, string key, string pwd = "" ) {
+        auto rc = nng_tls_config_own_cert(tls, pem.toStringz(), key.toStringz(), pwd.toStringz());
+        enforce(rc == 0);
+    }
+    
+    void set_pass ( string ipass ) {
+        auto rc = nng_tls_config_pass(tls, ipass.toStringz());
+        enforce(rc == 0);
+    }
+    
+    void set_key ( ubyte[] ipass ) {
+        auto rc = nng_tls_config_key(tls, ipass.ptr, ipass.length);
+        enforce(rc == 0);
+    }
+    
+    void set_auth_mode ( nng_tls_auth_mode imode ) {
+        auto rc = nng_tls_config_auth_mode(tls, imode);
+        enforce(rc == 0);
+    }
+    
+    void set_ca_file ( string ica ) {
+        auto rc = nng_tls_config_ca_file(tls, ica.toStringz());
+        enforce(rc == 0);
+    }
+
+    void set_cert_key_file ( string ipem , string ikey ) {
+        auto rc = nng_tls_config_cert_key_file(tls, ipem.toStringz(), ikey.toStringz());
+        enforce(rc == 0);
+    }
+
+    void set_version( nng_tls_version iminversion, nng_tls_version imaxversion ) {
+        auto rc = nng_tls_config_version(tls, iminversion, imaxversion);
+        enforce(rc == 0);
+    }
+
+    string engine_name(){
+        char* buf = nng_tls_engine_name();
+        return to!string(buf);
+    }
+
+    string engine_description(){
+        char* buf = nng_tls_engine_description();
+        return to!string(buf);
+    }
+
+    bool fips_mode(){
+        return nng_tls_engine_fips_mode();
+    }
+}
+
 struct WebAppConfig {
     string root_path = "";
     string static_path = "";
@@ -1169,6 +1248,11 @@ struct WebApp {
         init();
     }
     
+    void set_tls ( WebTLS tls ){
+        auto rc = nng_http_server_set_tls(server, tls.tls);
+        enforce(rc==0, "server set tls");
+    }
+
     void route (string path, webhandler handler, string[] methods = ["GET"]){
         int rc;
         bool wildcard = false;
