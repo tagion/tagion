@@ -584,7 +584,7 @@ struct NNGSocket {
     }
 
     int unsubscribe ( string tag ) {
-        size_t i = m_subscriptions.countUntil(tag);
+        long i = m_subscriptions.countUntil(tag);
         if(i < 0)
             return 0;
         setopt_buf(NNG_OPT_SUB_UNSUBSCRIBE,cast(ubyte[])(tag.dup));                
@@ -594,7 +594,7 @@ struct NNGSocket {
     }
 
     int clearsubscribe (){
-        size_t i;
+        long i;
         foreach(tag; m_subscriptions){
             i = m_subscriptions.countUntil(tag);
             if(i < 0) continue;
@@ -719,11 +719,11 @@ struct NNGSocket {
             sz =(sz==0)?data.length:sz;
             m_errno = (() @trusted => cast(nng_errno)nng_recv(m_socket, ptr(data), &sz, nonblock ? nng_flag.NNG_FLAG_NONBLOCK : 0 ))();
             if (m_errno !is nng_errno.init) {    
-                return -1;
+                return size_t.max;
             }
             return sz;
         }
-        return -1;
+        return size_t.max;
     }
 
     /*

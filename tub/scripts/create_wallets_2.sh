@@ -150,7 +150,16 @@ cat << EOF > $ndir/tagionwave.json
         "network_mode": "INTERNAL",
         "number_of_nodes": $nodes,
         "prefix_format": "Node_%s_"
+    },
+    "logger": {
+        "file_name": "",
+        "flush": false,
+        "mask": 0,
+        "task_name": "",
+        "to_console": false,
+        "trunc_size": 0
     }
+
 }
 EOF
 
