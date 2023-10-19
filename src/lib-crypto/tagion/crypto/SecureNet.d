@@ -400,27 +400,32 @@ class StdSecureNet : StdHashNet, SecureNet {
 
     unittest {
         import tagion.hibon.HiBONRecord;
+        import std.format;
+
         SecureNet net = new StdSecureNet;
         net.generateKeyPair("Secret password");
 
         static struct RandomRecord {
-            int x;
+            string x;
+
 
             mixin HiBONRecord;
         }
 
-        RandomRecord data;
-        data.x = 20;
+        foreach(i; 0..1000) {
+            RandomRecord data;
+            data.x = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX20%s".format(i);
 
-        auto fingerprint = net.calcHash(data);
-        auto second_fingerprint = net.calcHash(data.toDoc.serialize);
-        assert(fingerprint == second_fingerprint);
+            auto fingerprint = net.calcHash(data);
+            auto second_fingerprint = net.calcHash(data.toDoc.serialize);
+            assert(fingerprint == second_fingerprint);
 
-        auto sig = net.sign(data).signature;
-        auto second_sig = net.sign(data.toDoc).signature;
-        assert(sig == second_sig);
+            auto sig = net.sign(data).signature;
+            auto second_sig = net.sign(data.toDoc).signature;
+            assert(sig == second_sig);
 
-        assert(net.verify(fingerprint, sig, net.pubkey));
+            assert(net.verify(fingerprint, sig, net.pubkey));
+        }
 
     }
 }
