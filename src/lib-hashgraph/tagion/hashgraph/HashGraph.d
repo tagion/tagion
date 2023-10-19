@@ -34,11 +34,6 @@ import tagion.hibon.HiBONJSON;
 import tagion.basic.Debug;
 import tagion.utils.Miscellaneous : cutHex;
 
-
-
-
-
-
 version (unittest) {
     version = hashgraph_fibertest;
 }
@@ -246,7 +241,6 @@ class HashGraph {
             const doc = payload();
             immutable epack = event_pack(time, null, doc);
 
-
             const registrated = registerEventPackage(epack);
 
             assert(registrated, "Should not fail here");
@@ -279,12 +273,16 @@ class HashGraph {
         }
     }
 
-    immutable(EventPackage*) event_pack(lazy const sdt_t time, const(Event) father_event, const Document doc) @trusted {
+    immutable(EventPackage*) event_pack(
+            lazy const sdt_t time,
+            const(Event) father_event,
+            const Document doc) {
 
         const mother_event = getNode(channel).event;
+
         immutable ebody = EventBody(doc, mother_event, father_event, time);
 
-        immutable result = cast(immutable) new EventPackage(hirpc.net, ebody);
+        immutable result = new immutable(EventPackage)(hirpc.net, ebody);
 
         import tagion.hibon.HiBONJSON;
         import tagion.hibon.HiBONtoText;
@@ -292,7 +290,7 @@ class HashGraph {
 
         if (doc !is Document.init) {
             log("Not Init CTOR: doc: %s, sig: %s", doc.toPretty, result.signature.encodeBase64);
-            auto _fingerprint= hirpc.net.calcHash(ebody);
+            auto _fingerprint = hirpc.net.calcHash(ebody);
             auto sig = hirpc.net.sign(ebody).signature;
 
             if (!(hirpc.net.verify(_fingerprint, sig, hirpc.net.pubkey))) {
@@ -300,8 +298,10 @@ class HashGraph {
             }
 
             if (!(hirpc.net.verify(_fingerprint, result.signature, hirpc.net.pubkey))) {
-                log("CTOR BAD SIGNATURE event_body: %s \n epack \n sig: %s just signed %s", ebody.toPretty, result.signature.encodeBase64, sig.encodeBase64);
-            } else {
+                log("CTOR BAD SIGNATURE event_body: %s \n epack \n sig: %s just signed %s", ebody.toPretty, result
+                        .signature.encodeBase64, sig.encodeBase64);
+            }
+            else {
                 log("GOOD signature");
             }
         }
@@ -309,10 +309,10 @@ class HashGraph {
         return result;
     }
 
-    immutable(EventPackage*) eva_pack(lazy const sdt_t time, const Buffer nonce) @trusted {
+    immutable(EventPackage*) eva_pack(lazy const sdt_t time, const Buffer nonce) {
         const payload = EvaPayload(channel, nonce);
         immutable eva_event_body = EventBody(payload.toDoc, null, null, time);
-        immutable epack = cast(immutable) new EventPackage(hirpc.net, eva_event_body);
+        immutable epack = new immutable(EventPackage)(hirpc.net, eva_event_body);
         return epack;
     }
 
