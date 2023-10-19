@@ -64,42 +64,6 @@ struct TranscriptService {
         ConsensusVoting[][long] votes;
         
 
-        void epoch(consensusEpoch, immutable(EventPackage*)[] epacks, immutable(int) epoch_number, const(sdt_t) epoch_time) {
-            if (epacks.length == 0) {
-                return;
-            }
-
-
-            ConsensusVoting[] received_votes = epacks
-                .filter!(epack => epack.event_body.payload.isRecord!ConsensusVoting)
-                .map!(epack => ConsensusVoting(epack.event_body.payload))
-                .array;
-
-            foreach(v; received_votes) {
-                log("adding vote");
-                votes[v.epoch] ~= v;
-            }
-            if (received_votes.length == number_of_nodes) {
-                log("ALL VOTES RECEIVED");   
-            }
-
-            
-            SignedContract[] signed_contracts = epacks
-                .filter!(epack => epack.event_body.payload.isRecord!SignedContract)
-                .map!(epack => SignedContract(epack.event_body.payload))
-                .array;
-
-            auto inputs = signed_contracts
-                .map!(signed_contract => signed_contract.contract.inputs)
-                .join
-                .array;
-
-            auto req = dartCheckReadRR();
-            req.id = cast(uint) epoch_number;
-            epoch_contracts[req.id] = EpochContracts(signed_contracts, epoch_time);
-
-            (() @trusted => locate(task_names.dart).send(req, cast(immutable) inputs))();
-        }
 
         void createRecorder(dartCheckReadRR.Response res, immutable(DARTIndex)[] not_in_dart) {
             log("received response from dart %s", not_in_dart);
@@ -148,8 +112,6 @@ struct TranscriptService {
                         continue loop_signed_contracts;
                     }
                 }
-
-
                 recorder.insert(tvm_contract_outputs.outputs, Archive.Type.ADD);
                 recorder.insert(tvm_contract_outputs.contract.inputs, Archive.Type.REMOVE);
 
@@ -161,25 +123,65 @@ struct TranscriptService {
             auto req = dartModifyRR();
             req.id = res.id;
 
-            if(recorder.empty) {
-                return;
-            }
+            // if(recorder.empty) {
+            //     return;
+            // }
             locate(task_names.dart).send(req, RecordFactory.uniqueRecorder(recorder), cast(immutable(int)) res.id);
 
         }
 
+        void epoch(consensusEpoch, immutable(EventPackage*)[] epacks, immutable(int) epoch_number, const(sdt_t) epoch_time) {
+            // if (epacks.length == 0) {
+            //     return;
+            // }
+
+
+            ConsensusVoting[] received_votes = epacks
+                .filter!(epack => epack.event_body.payload.isRecord!ConsensusVoting)
+                .map!(epack => ConsensusVoting(epack.event_body.payload))
+                .array;
+
+            foreach(v; received_votes) {
+                log("adding vote");
+                votes[v.epoch] ~= v;
+            }
+
+            
+            SignedContract[] signed_contracts = epacks
+                .filter!(epack => epack.event_body.payload.isRecord!SignedContract)
+                .map!(epack => SignedContract(epack.event_body.payload))
+                .array;
+
+            auto inputs = signed_contracts
+                .map!(signed_contract => signed_contract.contract.inputs)
+                .join
+                .array;
+
+            auto req = dartCheckReadRR();
+            req.id = cast(uint) epoch_number;
+            epoch_contracts[req.id] = EpochContracts(signed_contracts, epoch_time);
+
+            if (inputs.length == 0) {
+                createRecorder(req.Response(req.msg, req.id), (()@trusted => cast(immutable) inputs)());
+                return;
+            }
+            
+            (() @trusted => locate(task_names.dart).send(req, cast(immutable) inputs))();
+        }
+
         void receiveBullseye(dartModifyRR.Response res, Fingerprint bullseye) {
-            log("transcript received bullseye %s");
+            import tagion.utils.Miscellaneous : cutHex;
+            log("transcript received bullseye %s", bullseye.cutHex);
+
             ConsensusVoting own_vote = ConsensusVoting(
                 cast(long) res.id,
                 net.pubkey,
                 net.sign(bullseye)
             );
             
-            log("signed bullseye vote: %s", own_vote.toDoc.toPretty);
-            // if (["Node_0_transcript", "Node_1_transcript"].canFind(task_names.transcript)) {
+            // log("signed bullseye vote: %s", own_vote.toDoc.toPretty);
+            const doc = Document.init;
             locate(task_names.epoch_creator).send(Payload(), own_vote.toDoc);
-            // }
         }
 
         void produceContract(producedContract, immutable(ContractProduct)* product) {

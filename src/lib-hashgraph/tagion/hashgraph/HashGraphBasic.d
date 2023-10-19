@@ -204,7 +204,12 @@ struct EventPackage {
                 auto _fingerprint=net.calcHash(event_body);
                 fingerprint = cast(Buffer) _fingerprint;
 
-  
+                  
+                import tagion.hibon.HiBONJSON;
+                if (!(net.verify(_fingerprint, signature, pubkey))) {
+                    log("BAD SIGNATURE doc_epack: %s", doc_epack.toPretty);
+                }
+
                 consensus_check(net.verify(_fingerprint, signature, pubkey), ConsensusFailCode.EVENT_BAD_SIGNATURE);
             }
 
