@@ -117,6 +117,7 @@ struct label {
     bool optional; /// This flag is set to true if this paramer is optional
 }
 
+struct optional;
 /++
  filter attribute for toHiBON
  +/
@@ -252,7 +253,7 @@ mixin template HiBONRecord(string CTOR = "") {
     import tagion.basic.tagionexceptions : Check;
     import tagion.hibon.HiBONException : HiBONRecordException;
     import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType,
-        label, GetLabel, filter, fixed, inspect, VOID;
+        label, optional, GetLabel, filter, fixed, inspect, VOID;
     import HiBONRecord = tagion.hibon.HiBONRecord;
 
     import tagion.hibon.HiBONBase : TypedefBase;
@@ -615,8 +616,8 @@ mixin template HiBONRecord(string CTOR = "") {
                     static if (hasUDA!(this.tupleof[i], label)) {
                         alias label = GetLabel!(this.tupleof[i]);
                         enum name = (label.name == VOID) ? default_name : label.name;
-                        enum optional = label.optional;
-                        static if (label.optional) {
+                        enum optional_flag = label.optional || hasUDA!(this.tupleof[i], optional);
+                        static if (optional_flag) {
                             if (!doc.hasMember(name)) {
                                 continue ForeachTuple;
                             }
@@ -630,14 +631,14 @@ mixin template HiBONRecord(string CTOR = "") {
                     }
                 else {
                         enum name = default_name;
-                        enum optional = false;
+                        enum optional_flag = false;
                     }
                     static if (name.length) {
                         static if (hasUDA!(this.tupleof[i], fixed)) {
                             alias assigns = getUDAs!(this.tupleof[i], fixed);
                             static assert(assigns.length is 1,
                                     "Only one fixed UDA allowed per member");
-                            static assert(!optional, "The optional parameter in label can not be used in connection with the fixed attribute");
+                            static assert(!optional_flag, "The optional parameter in label can not be used in connection with the fixed attribute");
                             enum code = format(q{this.tupleof[i]=%s;}, assigns[0].code);
                             if (!doc.hasMember(name)) {
                                 mixin(code);
@@ -649,7 +650,7 @@ mixin template HiBONRecord(string CTOR = "") {
                         //alias BaseT = TypedefBase!MemberT;
                         alias BaseT = MemberT;
                         alias UnqualT = Unqual!BaseT;
-                        static if (optional) {
+                        static if (optional_flag) {
                             if (!doc.hasMember(name)) {
                                 continue ForeachTuple;
                             }
@@ -786,7 +787,7 @@ mixin template HiBONRecord(string CTOR = "") {
         static struct SimpelOption {
             int not_an_option;
             @label("s", true) int s;
-            @label(VOID, true) string text;
+            @label(VOID) @optional string text;
             mixin HiBONRecord!();
         }
     }
@@ -895,12 +896,12 @@ mixin template HiBONRecord(string CTOR = "") {
         template NotBoth(bool FILTER) {
             @recordType("NotBoth") static struct NotBoth {
                 static if (FILTER) {
-                    @label("*", true) @(filter.Initialized) int x;
-                    @label("*", true) @(filter.Initialized) @filter(q{a < 42}) int y;
+                    @label("*") @optional @(filter.Initialized) int x;
+                    @label("*") @optional @(filter.Initialized) @filter(q{a < 42}) int y;
                 }
                 else {
-                    @label("*", true) int x;
-                    @label("*", true) int y;
+                    @label("*") @optional int x;
+                    @label("*") @optional int y;
                 }
                 bool valid(const Document doc) {
                     return doc.hasMember("x") ^ doc.hasMember("y");
