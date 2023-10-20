@@ -44,7 +44,7 @@ struct Supervisor {
         immutable tn = opts.task_names;
         auto dart_handle = spawn!DARTService(tn.dart, opts.dart, opts.replicator, tn, net);
 
-        auto hirpc_verifier_handle = spawn!HiRPCVerifierService(tn.hirpc_verifier, opts.hirpc_verifier, tn, net);
+        auto hirpc_verifier_handle = spawn!HiRPCVerifierService(tn.hirpc_verifier, opts.hirpc_verifier, tn);
 
         auto inputvalidator_handle = spawn!InputValidatorService(tn.inputvalidator, opts.inputvalidator, tn);
 
@@ -52,9 +52,9 @@ struct Supervisor {
         auto epoch_creator_handle = spawn!EpochCreatorService(tn.epoch_creator, opts.epoch_creator, opts.wave
                 .network_mode, opts.wave.number_of_nodes, net, opts.monitor, tn);
 
-        // signs hirpc
-        // hashes in dart
+        // verifies signature
         auto collector_handle = spawn(immutable(CollectorService)(tn), tn.collector);
+
         auto tvm_handle = spawn(immutable(TVMService)(opts.tvm, tn), tn.tvm);
 
         // signs data

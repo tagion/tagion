@@ -30,7 +30,7 @@ int _main(string[] _) {
     TaskNames _task_names;
     _task_names.collector = hirpc_verifier_success;
 
-    auto hirpc_verifier_handle = spawn!HiRPCVerifierService(hirpc_verifier_name, opts, cast(immutable) _task_names, net);
+    auto hirpc_verifier_handle = spawn!HiRPCVerifierService(hirpc_verifier_name, opts, cast(immutable) _task_names);
 
     auto hirpc_verifier_feature = automation!(hirpc_verifier);
     hirpc_verifier_feature.TheDocumentIsNotAHiRPC(hirpc_verifier_handle, hirpc_verifier_success, hirpc_verifier_rejected);
