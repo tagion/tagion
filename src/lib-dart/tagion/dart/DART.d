@@ -245,20 +245,11 @@ received = the HiRPC received package
         auto doc_dart_indices = received.method.params[Params.dart_indices].get!(Document);
         auto dart_indices = doc_dart_indices.range!(DARTIndex[]);
         auto not_in_dart = checkload(dart_indices);
-        import tagion.hibon.HiBONtoText;
-        import std.array;
-
-        writefln("DARTCHECKREAD response %s", not_in_dart.map!(d => d.encodeBase64));
 
         auto params = new HiBON;
         auto params_dart_indices = new HiBON;
         params_dart_indices = not_in_dart.map!(f => cast(Buffer) f);
         params[Params.dart_indices] = params_dart_indices;
-
-        // Buffer[] res = not_in_dart.map!(f => cast(Buffer) f).array;
-        // params[Params.fingerprints] = res;
-        // params[Params.fingerprints] = (() @trusted => cast(Buffer) not_in_dart)();
-
         return hirpc.result(received, params);
     }
 

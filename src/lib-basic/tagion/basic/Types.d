@@ -129,3 +129,26 @@ static unittest {
     static assert(isTypedef!MyInt);
     static assert(!isTypedef!int);
 }
+
+enum BASE64Indetifyer = '@';
+import std.base64;
+
+string encodeBase64(const(ubyte[]) data) pure {
+    const result = BASE64Indetifyer ~ Base64URL.encode(data);
+    return result.idup;
+}
+
+string encodeBase64(T)(const(T) buf) pure if (isBufferTypedef!T) {
+    return encodeBase64(cast(TypedefType!T) buf);
+}
+
+unittest {
+    const(Buffer) buf = [1, 2, 3];
+    import std.stdio;
+
+    const buf_base64 = buf.encodeBase64;
+    const(MyBuf) my_buf = [1, 2, 3];
+    const my_buf_base64 = my_buf.encodeBase64;
+    assert(buf_base64 == "@AQID");
+    assert(buf_base64 == my_buf_base64);
+}

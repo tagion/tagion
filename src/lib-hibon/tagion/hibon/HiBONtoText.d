@@ -19,21 +19,15 @@ import std.format;
 import std.base64;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
-import tagion.basic.Types : isBufferTypedef;
+public import tagion.basic.Types;
+import tagion.basic.Types : encodeBase64;
 import std.typecons : TypedefType;
 
 alias toHex = misc.toHexString;
 
-enum BASE64Indetifyer = '@';
-
 enum {
     hex_prefix = "0x",
     HEX_PREFIX = "0X"
-}
-
-string encodeBase64(const(ubyte[]) data) pure {
-    const result = BASE64Indetifyer ~ Base64URL.encode(data);
-    return result.idup;
 }
 
 string encodeBase64(const(Document) doc) pure {
@@ -43,11 +37,6 @@ string encodeBase64(const(Document) doc) pure {
 string encodeBase64(T)(const(T) t) pure
 if (isHiBONRecord!T) {
     return encodeBase64(t.serialize);
-}
-
-string encodeBase64(T)(const(T) t) pure
-if (isBufferTypedef!T) {
-    return encodeBase64(cast(TypedefType!T) t);
 }
 
 @nogc bool isHexPrefix(const(char[]) str) pure nothrow {
