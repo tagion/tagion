@@ -16,6 +16,7 @@ import tagion.basic.Types : FileExtension;
 import tagion.actor;
 import tagion.crypto.Types;
 import tagion.crypto.SecureInterfaceNet;
+import tagion.crypto.SecureNet : StdHashNet;
 import tagion.dart.DART;
 import tagion.dart.Recorder;
 import tagion.dart.DARTBasic : DARTIndex;
@@ -54,6 +55,7 @@ struct DARTService {
         DART db;
         Exception dart_exception;
         immutable replicator_task_name = task_names.replicator;
+
         db = new DART(net, opts.dart_path);
         if (dart_exception !is null) {
             throw dart_exception;
@@ -63,7 +65,7 @@ struct DARTService {
             db.close();
         }
 
-        ReplicatorServiceHandle replicator = spawn!ReplicatorService(replicator_task_name, replicator_opts, net);
+        ReplicatorServiceHandle replicator = spawn!ReplicatorService(replicator_task_name, replicator_opts);
 
         waitforChildren(Ctrl.ALIVE);
 
