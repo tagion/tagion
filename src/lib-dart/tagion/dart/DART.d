@@ -231,11 +231,7 @@ received = the HiRPC received package
         const doc_dart_indices = received.method.params[Params.dart_indices].get!(Document);
         auto dart_indices = doc_dart_indices.range!(DARTIndex[]);
         const recorder = loads(dart_indices, Archive.Type.ADD);
-        const result = hirpc.result(received, recorder.toDoc);
-        import tagion.hibon.HiBONJSON;
-
-        writefln("dartRead result=%J", result);
-        return result;
+        return hirpc.result(received, recorder.toDoc);
     }
 
     @HiRPCMethod private const(HiRPC.Sender) dartCheckRead(

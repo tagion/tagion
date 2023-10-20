@@ -94,6 +94,7 @@ class StdSecureNet : StdHashNet, SecureNet {
         void tweakAdd(const(ubyte[]) tweek_code, ref ubyte[] tweak_privkey);
         immutable(ubyte[]) ECDHSecret(scope const(Pubkey) pubkey) const;
         Buffer mask(const(ubyte[]) _mask) const;
+        void clone(StdSecureNet net) const;
     }
 
     protected SecretMethods _secret;
@@ -284,6 +285,13 @@ class StdSecureNet : StdHashNet, SecureNet {
                 });
                 return result;
             }
+
+            void clone(StdSecureNet net) const {
+                do_secret_stuff((const(ubyte[]) privkey) @safe {
+                    auto _privkey = privkey.dup;
+                    net.createKeyPair(_privkey); // Not createKeyPair scrambles the privkey
+                });
+            }
         }
 
         _secret = new LocalSecret;
@@ -336,6 +344,19 @@ class StdSecureNet : StdHashNet, SecureNet {
 
     this() nothrow {
         _crypt = new NativeSecp256k1;
+    }
+
+    private this(const StdSecureNet other) {
+        _crypt = new NativeSecp256k1;
+        other._secret.clone(this);
+    }
+
+    unittest {
+        auto other_net = new StdSecureNet;
+        other_net.generateKeyPair("Secret password to be copied");
+        SecureNet copy_net = new StdSecureNet(other_net);
+        assert(other_net.pubkey == copy_net.pubkey);
+
     }
 
     void eraseKey() pure nothrow {
@@ -408,11 +429,10 @@ class StdSecureNet : StdHashNet, SecureNet {
         static struct RandomRecord {
             string x;
 
-
             mixin HiBONRecord;
         }
 
-        foreach(i; 0..1000) {
+        foreach (i; 0 .. 1000) {
             RandomRecord data;
             data.x = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX20%s".format(i);
 
@@ -429,7 +449,6 @@ class StdSecureNet : StdHashNet, SecureNet {
 
     }
 }
-
 
 @safe
 class BadSecureNet : StdSecureNet {

@@ -269,11 +269,11 @@ int _main(string[] args) {
 
             const sender = CRUD.dartRead(dart_indices, hirpc);
             auto receiver = hirpc.receive(sender);
-            auto db_read = db(receiver, false);
-            pragma(msg, "Response ", typeof(db_read));
+            auto response = db(receiver, false);
+            pragma(msg, "Response ", typeof(response));
             //writefln("response_sender\n%s", response_sender.toPretty);
             //auto response = hirpc.receiver(db(receiver, false));
-            writefln("response\n%s", db_read.toPretty);
+            writefln("response\n%s", response.toPretty);
             //const result=response.result;
             //auto tosend = hirpc.toHiBON(result);
             //const recorder_doc = tosend.method.params;
