@@ -54,12 +54,24 @@ struct TranscriptService {
         struct EpochContracts {
             SignedContract[] signed_contracts;
             sdt_t epoch_time;
-
         }
 
         immutable(EpochContracts)*[uint] epoch_contracts;
 
-        ConsensusVoting[][long] votes;
+        struct Votes {
+            ConsensusVoting[] votes;
+            Fingerprint bullseye;
+            this(Fingerprint bullseye) {
+                this.bullseye = bullseye;
+            }
+
+            bool addVote(ConsensusVoting vote) {
+                votes ~= vote;
+                return votes.length == number_of_nodes;
+            }
+        }
+        Votes[long] votes;
+        // ConsensusVoting[][long] votes;
 
         void createRecorder(dartCheckReadRR.Response res, immutable(DARTIndex)[] not_in_dart) {
             log("received response from dart %s", not_in_dart);
@@ -127,9 +139,6 @@ struct TranscriptService {
         }
 
         void epoch(consensusEpoch, immutable(EventPackage*)[] epacks, immutable(int) epoch_number, const(sdt_t) epoch_time) @safe {
-            // if (epacks.length == 0) {
-            //     return;
-            // }
 
             ConsensusVoting[] received_votes = epacks
                 .filter!(epack => epack.event_body.payload.isRecord!ConsensusVoting)
@@ -138,10 +147,13 @@ struct TranscriptService {
 
             foreach (v; received_votes) {
                 log("adding vote");
-                votes[v.epoch] ~= v;
+                if (votes[v.epoch].addVote(v)) {
+                    const same_bullseyes = votes[v.epoch].votes.all!(_v => _v.verifyBullseye(net, votes[v.epoch].bullseye));
+
+                    log("ALL VOTES RECEIVED [%s]", same_bullseyes);
+                }
             }
 
-            //    immutable(SignedContract*)[]  
             auto signed_contracts = epacks
                 .filter!(epack => epack.event_body.payload.isRecord!SignedContract)
                 .map!(epack => immutable(SignedContract)(epack.event_body.payload))
@@ -174,13 +186,15 @@ struct TranscriptService {
 
             log("transcript received bullseye %s", bullseye.cutHex);
 
+            auto epoch_number = cast(long) res.id;
             ConsensusVoting own_vote = ConsensusVoting(
-                    cast(long) res.id,
+                    epoch_number,
                     net.pubkey,
                     net.sign(bullseye)
             );
 
-            // log("signed bullseye vote: %s", own_vote.toDoc.toPretty);
+            votes[epoch_number] = Votes(bullseye);
+
             locate(task_names.epoch_creator).send(Payload(), own_vote.toDoc);
         }
 

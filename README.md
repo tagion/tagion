@@ -44,8 +44,8 @@ export PATH="path-to-ldc2/ldc2-1.34.0-linux-x86_64/bin:$PATH"
         
 - Reference D compiler - dmd
 ```bash
-wget https://downloads.dlang.org/pre-releases/2.x/2.102.0/dmd.2.102.0-rc.1.linux.tar.xz
-tar xf dmd.2.102.0-rc.1.linux.tar.xz
+wget https://downloads.dlang.org/releases/2.x/2.105.2/dmd.2.105.2.linux.tar.xz
+tar xf dmd.2.105.2.linux.tar.xz
 export PATH="path-to-dmd2/dmd2/linux/bin64:$PATH"
 ```
 

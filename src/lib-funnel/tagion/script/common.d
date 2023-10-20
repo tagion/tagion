@@ -180,6 +180,8 @@ struct ConsensusVoting {
     long epoch;
     @label(StdNames.owner) Pubkey owner;
     @label(StdNames.signed) Signature signed_bullseye;
+
+    
     mixin HiBONRecord!(
             q{
             this(long epoch, Pubkey owner, Signature signed_bullseye) {
@@ -188,4 +190,8 @@ struct ConsensusVoting {
                 this.epoch = epoch;
             }
         });
+
+    bool verifyBullseye(const(SecureNet) net, const(Fingerprint) bullseye) {
+        return net.verify(bullseye, signed_bullseye, owner);
+    }
 }
