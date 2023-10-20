@@ -14,6 +14,7 @@ import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord : isRecord, HiBONRecord;
 import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet;
+import tagion.crypto.SecureNet;
 import tagion.services.messages;
 import tagion.script.execute : ContractProduct;
 import tagion.dart.DARTBasic : DARTIndex, dartIndex;
@@ -44,7 +45,8 @@ struct TranscriptOptions {
  * Sends: (inputHiRPC, HiRPC.Receiver) to receiver_task, where Document is a correctly formatted HiRPC
 **/
 struct TranscriptService {
-    void task(immutable(TranscriptOptions) opts, immutable(size_t) number_of_nodes, immutable(SecureNet) net, immutable(TaskNames) task_names) {
+    void task(immutable(TranscriptOptions) opts, immutable(size_t) number_of_nodes, shared(StdSecureNet) shared_net, immutable(TaskNames) task_names) {
+        const net = new StdSecureNet(shared_net);
 
         immutable(ContractProduct)*[DARTIndex] products;
         auto rec_factory = RecordFactory(net);

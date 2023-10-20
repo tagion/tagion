@@ -48,7 +48,7 @@ alias FeatureContext = Tuple!(
         [])
 class SendPayloadAndCreateEpoch {
     struct Node {
-        SecureNet net;
+        shared(StdSecureNet) node_net;
         string name;
         EpochCreatorOptions opts;
         MonitorOptions monitor_opts;
@@ -71,9 +71,13 @@ class SendPayloadAndCreateEpoch {
             immutable task_names = TaskNames(prefix);
             auto net = new StdSecureNet();
             net.generateKeyPair(task_names.epoch_creator);
+            shared shared_net = (()@trusted => cast(shared) net)();
+            scope(exit) {
+                net = null;
+            }
             writefln("node task name %s", task_names.epoch_creator);
             auto monitor_local_options = monitor_opts;
-            nodes ~= Node(net, task_names.epoch_creator, epoch_creator_options, monitor_local_options);
+            nodes ~= Node(shared_net, task_names.epoch_creator, epoch_creator_options, monitor_local_options);
             addressbook[net.pubkey] = NodeAddress(task_names.epoch_creator);
         }
 
@@ -89,7 +93,7 @@ class SendPayloadAndCreateEpoch {
                     cast(immutable) n.opts,
                     NetworkMode.INTERNAL,
                     number_of_nodes,
-                    cast(immutable) n.net,
+                    n.node_net,
                     cast(immutable) n.monitor_opts,
                     TaskNames(),
             );

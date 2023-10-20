@@ -213,15 +213,22 @@ int _main(string[] args) {
 int network_mode0(const(Options)[] node_options, ref ActorHandle!Supervisor[] supervisor_handles) {
     struct Node {
         immutable(Options) opts;
-        immutable(SecureNet) net;
+        shared(StdSecureNet) net;
     }
 
     Node[] nodes;
 
     foreach (i, opts; node_options) {
-        SecureNet net = new StdSecureNet();
+        auto net = new StdSecureNet();
         net.generateKeyPair(opts.task_names.supervisor);
-        nodes ~= Node(opts, cast(immutable) net);
+
+        scope(exit) {
+            net = null;
+        }
+        
+        shared shared_net = (()@trusted => cast(shared) net)();
+        
+        nodes ~= Node(opts, shared_net);
         addressbook[net.pubkey] = NodeAddress(opts.task_names.epoch_creator);
     }
 

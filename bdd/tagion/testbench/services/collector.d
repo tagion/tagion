@@ -107,7 +107,10 @@ class ItWork {
 
             DART.create(opts.dart_path, node_net);
 
-            dart_handle = spawn!DARTService(task_names.dart, opts, replicator_opts, task_names, node_net);
+
+            auto dart_net = new StdSecureNet;
+            dart_net.generateKeyPair("dartnet");
+            dart_handle = (() @trusted => spawn!DARTService(task_names.dart, opts, replicator_opts, task_names, cast(shared) dart_net))();
             check(waitforChildren(Ctrl.ALIVE), "dart service did not alive");
         }
 

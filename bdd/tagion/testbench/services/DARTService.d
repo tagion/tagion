@@ -21,7 +21,7 @@ import core.time;
 
 // import tagion.crypto.SecureNet;
 import tagion.crypto.SecureInterfaceNet;
-import tagion.crypto.SecureNet : StdSecureNet;
+import tagion.crypto.SecureNet : StdHashNet, StdSecureNet;
 import tagion.dart.DART;
 import tagion.dart.DARTBasic;
 import std.random;
@@ -111,7 +111,6 @@ class WriteAndReadFromDartDb {
     DARTInterfaceServiceHandle dart_interface_handle;
     DARTInterfaceOptions interface_opts;
 
-    SecureNet dart_net;
     SecureNet supervisor_net;
     DARTOptions opts;
     ReplicatorOptions replicator_opts;
@@ -135,8 +134,6 @@ class WriteAndReadFromDartDb {
 
         this.opts = opts;
         this.replicator_opts = replicator_opts;
-        dart_net = new StdSecureNet();
-        dart_net.generateKeyPair("dartnet very secret");
         supervisor_net = new StdSecureNet();
         supervisor_net.generateKeyPair("supervisor very secret");
 
@@ -153,7 +150,8 @@ class WriteAndReadFromDartDb {
             opts.dart_path.remove;
         }
 
-        DART.create(opts.dart_path, dart_net);
+        auto hash_net = new StdHashNet;
+        DART.create(opts.dart_path, hash_net);
         return result_ok;
     }
 
@@ -166,8 +164,12 @@ class WriteAndReadFromDartDb {
 
         writeln("DART task name", TaskNames().dart);
 
+        auto net = new StdSecureNet();
+        net.generateKeyPair("dartnet very secret");
+
+        
         handle = (() @trusted => spawn!DARTService(TaskNames().dart, cast(immutable) opts, cast(immutable) replicator_opts, TaskNames(), cast(
-                immutable) dart_net))();
+                shared) net))();
 
         interface_opts.setDefault;
         writeln(interface_opts.sock_addr);

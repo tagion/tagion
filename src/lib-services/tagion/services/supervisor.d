@@ -31,18 +31,24 @@ import tagion.services.transcript;
 struct Supervisor {
     auto failHandler = (TaskFailure tf) { log("Supervisor caught exception: \n%s", tf); };
 
-    void task(immutable(Options) opts, immutable(SecureNet) net) @safe {
+    void task(immutable(Options) opts, shared(StdSecureNet) shared_net) @safe {
         // immutable SecureNet net = (() @trusted => cast(immutable) new WaveNet(password))();
+
+        // const _net = new StdSecureNet(shared_net);
 
         const dart_path = opts.dart.dart_path;
 
         if (!dart_path.exists) {
-            DARTFile.create(dart_path, net);
+            const hash_net = new StdHashNet;
+            DARTFile.create(dart_path, hash_net);
         }
 
         // 
         immutable tn = opts.task_names;
-        auto dart_handle = spawn!DARTService(tn.dart, opts.dart, opts.replicator, tn, net);
+
+        
+        // signs data for hirpc response
+        auto dart_handle = spawn!DARTService(tn.dart, opts.dart, opts.replicator, tn, shared_net);
 
         auto hirpc_verifier_handle = spawn!HiRPCVerifierService(tn.hirpc_verifier, opts.hirpc_verifier, tn);
 
@@ -50,7 +56,7 @@ struct Supervisor {
 
         // signs data
         auto epoch_creator_handle = spawn!EpochCreatorService(tn.epoch_creator, opts.epoch_creator, opts.wave
-                .network_mode, opts.wave.number_of_nodes, net, opts.monitor, tn);
+                .network_mode, opts.wave.number_of_nodes, shared_net, opts.monitor, tn);
 
         // verifies signature
         auto collector_handle = spawn(immutable(CollectorService)(tn), tn.collector);
@@ -58,7 +64,7 @@ struct Supervisor {
         auto tvm_handle = spawn(immutable(TVMService)(opts.tvm, tn), tn.tvm);
 
         // signs data
-        auto transcript_handle = spawn!TranscriptService(tn.transcript, opts.transcript, opts.wave.number_of_nodes, net,tn);
+        auto transcript_handle = spawn!TranscriptService(tn.transcript, opts.transcript, opts.wave.number_of_nodes, shared_net,tn);
 
         auto dart_interface_handle = spawn(immutable(DARTInterfaceService)(opts.dart_interface, tn), tn.dart_interface);
 

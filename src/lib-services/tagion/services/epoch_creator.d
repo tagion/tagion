@@ -50,9 +50,11 @@ struct EpochCreatorOptions {
 @safe
 struct EpochCreatorService {
 
-    void task(immutable(EpochCreatorOptions) opts, immutable(NetworkMode) network_mode, immutable(size_t) number_of_nodes, immutable(
-            SecureNet) net, immutable(MonitorOptions) monitor_opts, immutable(TaskNames) task_names) {
+    void task(immutable(EpochCreatorOptions) opts, immutable(NetworkMode) network_mode, immutable(size_t) number_of_nodes, shared(StdSecureNet) shared_net, immutable(MonitorOptions) monitor_opts, immutable(TaskNames) task_names) {
 
+        const net = new StdSecureNet(shared_net);
+
+        
         assert(network_mode == NetworkMode.INTERNAL, "Unsupported network mode");
 
         if (monitor_opts.enable) {

@@ -16,7 +16,7 @@ import tagion.basic.Types : FileExtension;
 import tagion.actor;
 import tagion.crypto.Types;
 import tagion.crypto.SecureInterfaceNet;
-import tagion.crypto.SecureNet : StdHashNet;
+import tagion.crypto.SecureNet;
 import tagion.dart.DART;
 import tagion.dart.Recorder;
 import tagion.dart.DARTBasic : DARTIndex;
@@ -50,11 +50,17 @@ struct DARTOptions {
 
 @safe
 struct DARTService {
-    void task(immutable(DARTOptions) opts, immutable(ReplicatorOptions) replicator_opts, immutable(TaskNames) task_names, immutable(
-            SecureNet) net) {
+    void task(immutable(DARTOptions) opts, 
+        immutable(ReplicatorOptions) replicator_opts, 
+        immutable(TaskNames) task_names, 
+        shared(StdSecureNet) shared_net) {
+
         DART db;
         Exception dart_exception;
         immutable replicator_task_name = task_names.replicator;
+
+        const net = new StdSecureNet(shared_net);
+        
 
         db = new DART(net, opts.dart_path);
         if (dart_exception !is null) {
