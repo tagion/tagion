@@ -18,8 +18,7 @@ import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONJSON : JSONString;
 import tagion.utils.StdTime;
 import tagion.logger.Logger;
-
-
+import tagion.crypto.Types;
 
 import tagion.hibon.Document : Document;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
@@ -80,9 +79,9 @@ int nextAltitide(const Event event) pure nothrow {
 }
 
 protected enum _params = [
-    "events",
-    "size",
-];
+        "events",
+        "size",
+    ];
 
 mixin(EnumText!("Params", _params));
 
@@ -197,26 +196,31 @@ struct EventPackage {
             /++
              Used when a Event is receved from another node
              +/
-            this(const SecureNet net, const(Document) doc_epack) {
-                this(doc_epack);
+            this(const SecureNet net, const(Document) doc_epack) immutable  {
+                immutable _this=EventPackage(doc_epack);
+                //this(doc_epack);
+                this.signature=_this.signature;
+                this.pubkey=_this.pubkey;
+                this.event_body=_this.event_body;
+                fingerprint=cast(Buffer)net.calcHash(_this.event_body);
                 consensus_check(pubkey.length !is 0, ConsensusFailCode.EVENT_MISSING_PUBKEY);
                 consensus_check(signature.length !is 0, ConsensusFailCode.EVENT_MISSING_SIGNATURE);
-                auto _fingerprint=net.calcHash(event_body);
-                fingerprint = cast(Buffer) _fingerprint;
+               // auto _fingerprint=net.calcHash(event_body);
+               // fingerprint = cast(Buffer) _fingerprint;
 
                   
                 import tagion.hibon.HiBONJSON;
-                if (!(net.verify(_fingerprint, signature, pubkey))) {
+                if (!(net.verify(Fingerprint(fingerprint), signature, pubkey))) {
                     log("BAD SIGNATURE doc_epack: %s", doc_epack.toPretty);
                 }
 
-                consensus_check(net.verify(_fingerprint, signature, pubkey), ConsensusFailCode.EVENT_BAD_SIGNATURE);
+                consensus_check(net.verify(Fingerprint(fingerprint), signature, pubkey), ConsensusFailCode.EVENT_BAD_SIGNATURE);
             }
 
             /++
              Create a EventPackage from a body
              +/
-            this(const SecureNet net, immutable(EventBody) ebody) {
+            this(const SecureNet net, immutable(EventBody) ebody) immutable {
                 pubkey=net.pubkey;
                 event_body=ebody;
                 auto sig = net.sign(event_body);
@@ -278,10 +282,7 @@ struct Wavefront {
         if (doc.hasMember(epacksName)) {
             const sub_doc = doc[epacksName].get!Document;
             foreach (e; sub_doc[]) {
-                (() @trusted {
-                    immutable epack = cast(immutable)(new EventPackage(net, e.get!Document));
-                    event_packages ~= epack;
-                })();
+                (() @trusted { immutable epack = new immutable(EventPackage)(net, e.get!Document); event_packages ~= epack; })();
             }
         }
         epacks = event_packages;

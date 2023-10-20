@@ -69,6 +69,11 @@ import tagion.hibon.BigNumber;
                     this.signs = signs;
                     this.contract = contract;
                 }
+                this(const(Document) doc) immutable @trusted {
+                    immutable _this=cast(immutable)SignedContract(doc);
+                    this.signs=_this.signs;
+                    this.contract=_this.contract;
+                }
             });
 }
 
@@ -176,7 +181,7 @@ struct ConsensusVoting {
     @label(StdNames.owner) Pubkey owner;
     @label(StdNames.signed) Signature signed_bullseye;
     mixin HiBONRecord!(
-        q{
+            q{
             this(long epoch, Pubkey owner, Signature signed_bullseye) {
                 this.owner = owner;
                 this.signed_bullseye = signed_bullseye;

@@ -34,11 +34,6 @@ import tagion.hibon.HiBONJSON;
 import tagion.basic.Debug;
 import tagion.utils.Miscellaneous : cutHex;
 
-
-
-
-
-
 version (unittest) {
     version = hashgraph_fibertest;
 }
@@ -167,7 +162,7 @@ class HashGraph {
             _rounds.erase;
             _rounds = Round.Rounder(this);
             _rounds.last_decided_round = _rounds.last_round;
-            (() @trusted { _event_cache.clear; })();
+            _event_cache = null;
             init_event(_owner_node.event.event_package);
             // front_seat(owen_event);
             foreach (epack; epacks) {
@@ -217,7 +212,6 @@ class HashGraph {
         return hirpc.net.pubkey;
     }
 
-    @trusted
     const(Pubkey[]) channels() const pure nothrow {
         return _nodes.keys;
     }
@@ -245,7 +239,6 @@ class HashGraph {
         const(HiRPC.Sender) payload_sender() @safe {
             const doc = payload();
             immutable epack = event_pack(time, null, doc);
-
 
             const registrated = registerEventPackage(epack);
 
@@ -279,12 +272,16 @@ class HashGraph {
         }
     }
 
-    immutable(EventPackage*) event_pack(lazy const sdt_t time, const(Event) father_event, scope const Document doc) @trusted {
+    immutable(EventPackage)* event_pack(
+            lazy const sdt_t time,
+            const(Event) father_event,
+            const Document doc) {
 
         const mother_event = getNode(channel).event;
+
         immutable ebody = EventBody(doc, mother_event, father_event, time);
 
-        immutable result = cast(immutable) new EventPackage(hirpc.net, ebody);
+        immutable result = new immutable(EventPackage)(hirpc.net, ebody);
 
         import tagion.hibon.HiBONJSON;
         import tagion.hibon.HiBONtoText;
@@ -292,7 +289,7 @@ class HashGraph {
 
         if (doc !is Document.init) {
             log("Not Init CTOR: doc: %s, sig: %s", doc.toPretty, result.signature.encodeBase64);
-            auto _fingerprint= hirpc.net.calcHash(ebody);
+            auto _fingerprint = hirpc.net.calcHash(ebody);
             auto sig = hirpc.net.sign(ebody).signature;
 
             if (!(hirpc.net.verify(_fingerprint, sig, hirpc.net.pubkey))) {
@@ -301,8 +298,10 @@ class HashGraph {
             }
 
             if (!(hirpc.net.verify(_fingerprint, result.signature, hirpc.net.pubkey))) {
-                log("CTOR BAD SIGNATURE event_body: %s \n epack \n sig: %s just signed %s", ebody.toPretty, result.signature.encodeBase64, sig.encodeBase64);
-            } else {
+                log("CTOR BAD SIGNATURE event_body: %s \n epack \n sig: %s just signed %s", ebody.toPretty, result
+                        .signature.encodeBase64, sig.encodeBase64);
+            }
+            else {
                 log("GOOD signature");
             }
         }
@@ -310,10 +309,10 @@ class HashGraph {
         return result;
     }
 
-    immutable(EventPackage*) eva_pack(lazy const sdt_t time, const Buffer nonce) @trusted {
+    immutable(EventPackage*) eva_pack(lazy const sdt_t time, const Buffer nonce) {
         const payload = EvaPayload(channel, nonce);
         immutable eva_event_body = EventBody(payload.toDoc, null, null, time);
-        immutable epack = cast(immutable) new EventPackage(hirpc.net, eva_event_body);
+        immutable epack = new immutable(EventPackage)(hirpc.net, eva_event_body);
         return epack;
     }
 
@@ -334,7 +333,7 @@ class HashGraph {
         EventCache _event_cache;
     }
 
-    void eliminate(scope const(Buffer) fingerprint) {
+    void eliminate(scope const(Buffer) fingerprint) pure nothrow {
         _event_cache.remove(fingerprint);
     }
 
@@ -958,12 +957,11 @@ class HashGraph {
         return event_id;
     }
 
-    @trusted
     size_t next_node_id() const pure nothrow {
         if (_nodes.length is 0) {
             return 0;
         }
-        scope BitMask used_nodes;
+        BitMask used_nodes;
         _nodes.byValue
             .map!(a => a.node_id)
             .each!((n) { used_nodes[n] = true; });
@@ -978,7 +976,6 @@ class HashGraph {
     /++
      Dumps all events in the Hashgraph to a file
      +/
-    //   @trusted
     void fwrite(string filename, Pubkey[string] node_labels = null) {
         import tagion.hibon.HiBONFile : fwrite;
         import tagion.hashgraphview.EventView;
