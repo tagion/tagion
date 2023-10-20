@@ -17,7 +17,6 @@ import tagion.communication.HiRPC : HiRPC;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONJSON : JSONString;
 import tagion.utils.StdTime;
-import tagion.logger.Logger;
 import tagion.crypto.Types;
 
 import tagion.hibon.Document : Document;
@@ -205,15 +204,6 @@ struct EventPackage {
                 fingerprint=cast(Buffer)net.calcHash(_this.event_body);
                 consensus_check(pubkey.length !is 0, ConsensusFailCode.EVENT_MISSING_PUBKEY);
                 consensus_check(signature.length !is 0, ConsensusFailCode.EVENT_MISSING_SIGNATURE);
-               // auto _fingerprint=net.calcHash(event_body);
-               // fingerprint = cast(Buffer) _fingerprint;
-
-                  
-                import tagion.hibon.HiBONJSON;
-                if (!(net.verify(Fingerprint(fingerprint), signature, pubkey))) {
-                    log("BAD SIGNATURE doc_epack: %s", doc_epack.toPretty);
-                }
-
                 consensus_check(net.verify(Fingerprint(fingerprint), signature, pubkey), ConsensusFailCode.EVENT_BAD_SIGNATURE);
             }
 

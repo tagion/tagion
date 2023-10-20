@@ -282,30 +282,6 @@ class HashGraph {
         immutable ebody = EventBody(doc, mother_event, father_event, time);
 
         immutable result = new immutable(EventPackage)(hirpc.net, ebody);
-
-        import tagion.hibon.HiBONJSON;
-        import tagion.hibon.HiBONtoText;
-        import tagion.crypto.Types;
-
-        if (doc !is Document.init) {
-            log("Not Init CTOR: doc: %s, sig: %s", doc.toPretty, result.signature.encodeBase64);
-            auto _fingerprint = hirpc.net.calcHash(ebody);
-            auto sig = hirpc.net.sign(ebody).signature;
-
-            if (!(hirpc.net.verify(_fingerprint, sig, hirpc.net.pubkey))) {
-                const aretheythesame = (sig == result.signature);
-                log("SIKKE NOGET RIGTIGTIGTIGTI SKIDT %s hash: %s", aretheythesame, hirpc.net.calcHash(ebody).encodeBase64);
-            }
-
-            if (!(hirpc.net.verify(_fingerprint, result.signature, hirpc.net.pubkey))) {
-                log("CTOR BAD SIGNATURE event_body: %s \n epack \n sig: %s just signed %s", ebody.toPretty, result
-                        .signature.encodeBase64, sig.encodeBase64);
-            }
-            else {
-                log("GOOD signature");
-            }
-        }
-
         return result;
     }
 
