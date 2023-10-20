@@ -40,6 +40,7 @@ import tagion.basic.Message : message;
 import tagion.basic.Types : Buffer, isTypedef;
 import tagion.basic.basic : CastTo;
 import LEB128 = tagion.utils.LEB128;
+public import tagion.hibon.HiBONJSON;
 
 //import std.stdio;
 

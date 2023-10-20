@@ -116,6 +116,7 @@ mixin template JSONString() {
         import tagion.hibon.HiBON;
         import tagion.hibon.HiBONJSON;
         import tagion.hibon.HiBONRecord;
+        import tagion.basic.Types;
 
         static if (isHiBONRecord!ThisT) {
             const doc = this.toDoc;
@@ -140,6 +141,15 @@ mixin template JSONString() {
             break;
         case 's':
             sink(doc.serialize.to!string);
+            break;
+        case '@':
+            sink(doc.serialize.encodeBase64);
+            break;
+        case 'x':
+            sink(format("%(%02x%)", doc.serialize));
+            break;
+        case 'X':
+            sink(format("%(%02x%)", doc.serialize));
             break;
         default:
             throw new HiBON2JSONException("Unknown format specifier: %" ~ fmt.spec);

@@ -144,8 +144,6 @@ string encodeBase64(T)(const(T) buf) pure if (isBufferTypedef!T) {
 
 unittest {
     const(Buffer) buf = [1, 2, 3];
-    import std.stdio;
-
     const buf_base64 = buf.encodeBase64;
     const(MyBuf) my_buf = [1, 2, 3];
     const my_buf_base64 = my_buf.encodeBase64;
