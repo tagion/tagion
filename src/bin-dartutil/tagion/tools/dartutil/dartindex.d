@@ -18,6 +18,7 @@ DARTIndex dartIndexDecode(const(HashNet) net, const(char[]) str) {
     import tagion.hibon.HiBONBase;
     import tagion.hibon.HiBONFile : fread;
     import std.traits;
+    import tagion.hibon.Document : mut;
 
     verbose("dart-index %s", str);
     //    import std.stdio;

@@ -1,7 +1,6 @@
 module tagion.hibon.HiBONJSON;
 
-//import std.stdio;
-
+@safe:
 import std.json;
 import std.conv : to;
 import std.format;
@@ -30,7 +29,7 @@ import tagion.utils.StdTime;
 /**
  * Exception type used by tagion.hibon.HiBON module
  */
-@safe class HiBON2JSONException : HiBONException {
+class HiBON2JSONException : HiBONException {
     this(string msg, string file = __FILE__, size_t line = __LINE__) pure {
         super(msg, file, line);
     }
@@ -88,15 +87,15 @@ enum {
     VALUE = 1,
 }
 
-@safe JSONValue toJSON(Document doc) {
+JSONValue toJSON(Document doc) {
     return toJSONT!true(doc);
 }
 
-@safe JSONValue toJSON(T)(T value) if (isHiBONRecord!T) {
+JSONValue toJSON(T)(T value) if (isHiBONRecord!T) {
     return toJSONT!true(value.toDoc);
 }
 
-@safe string toPretty(T)(T value) {
+string toPretty(T)(T value) {
     static if (is(T : const(HiBON))) {
         const doc = Document(value);
         return doc.toJSON.toPrettyString;
@@ -110,7 +109,7 @@ mixin template JSONString() {
     import std.format;
     import std.conv : to;
 
-    @trusted void toString(scope void delegate(scope const(char)[]) @system sink,
+    void toString(scope void delegate(scope const(char)[]) @safe sink,
     const FormatSpec!char fmt) const {
         alias ThisT = typeof(this);
         import tagion.hibon.Document;
@@ -148,7 +147,7 @@ mixin template JSONString() {
     }
 }
 
-@safe struct toJSONT(bool HASHSAFE) {
+struct toJSONT(bool HASHSAFE) {
     @trusted static JSONValue opCall(const Document doc) {
         JSONValue result;
         immutable isarray = doc.isArray && !doc.empty;
@@ -260,7 +259,7 @@ mixin template JSONString() {
     }
 }
 
-@safe HiBON toHiBON(scope const JSONValue json) {
+HiBON toHiBON(scope const JSONValue json) {
     static const(T) get(T)(scope JSONValue jvalue) {
         alias UnqualT = Unqual!T;
         static if (is(UnqualT == bool)) {
@@ -444,24 +443,21 @@ mixin template JSONString() {
     return Obj(json);
 }
 
-@safe
 HiBON toHiBON(const(char[]) json_text) {
     const json = json_text.parseJSON;
     return json.toHiBON;
 }
 
-@safe
 Document toDoc(scope const JSONValue json) {
     return Document(json.toHiBON);
 }
 
-@safe
 Document toDoc(const(char[]) json_text) {
     const json = parseJSON(json_text);
     return json.toDoc;
 }
 
-@safe unittest {
+unittest {
     //    import std.stdio;
     import tagion.hibon.HiBON : HiBON;
     import std.typecons : Tuple;
@@ -594,7 +590,6 @@ Document toDoc(const(char[]) json_text) {
     }
 }
 
-@safe
 unittest {
     import tagion.hibon.HiBONRecord;
     import std.stdio;
