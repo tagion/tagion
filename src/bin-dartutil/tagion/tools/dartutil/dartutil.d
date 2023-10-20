@@ -17,7 +17,7 @@ import tagion.dart.DART : DART;
 import tagion.dart.DARTFile;
 import tagion.basic.Types : Buffer, FileExtension, hasExtension;
 import tagion.dart.DARTBasic : DARTIndex;
-import tagion.dart.DARTcrud : dartRead, dartModify;
+import CRUD = tagion.dart.DARTcrud; // : dartRead, dartModify;
 
 import tagion.basic.basic : tempfile;
 
@@ -267,10 +267,13 @@ int _main(string[] args) {
                 dart_indices ~= dart_index;
             }
 
-            const sender = dartRead(dart_indices, hirpc);
+            const sender = CRUD.dartRead(dart_indices, hirpc);
             auto receiver = hirpc.receive(sender);
-            auto response = hirpc.receiver(db(receiver, false));
-            writefln("%s", response.toPretty);
+            auto db_read = db(receiver, false);
+            pragma(msg, "Response ", typeof(db_read));
+            //writefln("response_sender\n%s", response_sender.toPretty);
+            //auto response = hirpc.receiver(db(receiver, false));
+            writefln("response\n%s", db_read.toPretty);
             //const result=response.result;
             //auto tosend = hirpc.toHiBON(result);
             //const recorder_doc = tosend.method.params;
@@ -284,7 +287,8 @@ int _main(string[] args) {
                 }
             }
             if (strip) {
-                auto recorder = db.recorder(response.toDoc);
+
+                auto recorder = db.recorder(response.result);
                 foreach (arcive; recorder[]) {
                     fout.rawWrite(arcive.filed.serialize);
                 }
@@ -330,7 +334,7 @@ int _main(string[] args) {
             const doc = inputfilename.fread;
             auto factory = RecordFactory(net);
             auto recorder = factory.recorder(doc);
-            auto sended = dartModify(recorder, hirpc);
+            auto sended = CRUD.dartModify(recorder, hirpc);
             auto received = hirpc.receive(sended);
             auto result = db(received, false);
             auto tosend = hirpc.toHiBON(result);

@@ -312,21 +312,6 @@ struct HiRPC {
                 return _message.method;
             }
 
-            /** 
-             * Create T with the method params and the arguments.
-             *  T(args, method.param)
-             * Params:
-             *   args = arguments to the
-             * Returns: the constructed T
-             */
-            const(T) params(T, Args...)(Args args) const if (isHiBONRecord!T) {
-                return T(args, method.params);
-            }
-
-            const(T) result(T, Args...)(Args args) const if (isHiBONRecord!T) {
-                return T(response.result, args);
-            }
-
             @trusted
             bool isRecord(T)() const {
                 with (Type) {
@@ -392,6 +377,34 @@ struct HiRPC {
             @nogc bool isSigned() const pure nothrow {
                 return (signature.length !is 0);
             }
+        }
+
+        /** 
+             * Create T with the method params and the arguments.
+             *  T(args, method.param)
+             * Params:
+             *   args = arguments to the
+             * Returns: the constructed T
+             */
+        const(T) params(T, Args...)(Args args) const if (isHiBONRecord!T) {
+            check(type is Type.method, format("Message type %s expected not %s", Type.method, type));
+            return T(args, method.params);
+        }
+
+        Document params() const {
+            check(type is Type.method, format("Message type %s expected not %s", Type.method, type));
+            return method.params;
+        }
+
+        const(T) result(T, Args...)(Args args) const if (isHiBONRecord!T) {
+            check(type is Type.result, format("Message type %s expected not %s", Type.result, type));
+            return T(response.result, args);
+        }
+
+        Document result() const {
+            check(type is Type.result, format("Message type %s expected not %s", Type.result, type));
+
+            return response.result;
         }
 
         mixin HiBONRecord!("{}");
@@ -528,7 +541,6 @@ struct HiRPC {
         return receiver;
     }
 }
-
 
 @safe
 @recordType("OK")
