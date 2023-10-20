@@ -21,7 +21,6 @@ DARTIndex dartIndexDecode(const(HashNet) net, const(char[]) str) {
     import tagion.hibon.Document : mut;
 
     verbose("dart-index %s", str);
-    //    import std.stdio;
 
     if (isBase64Prefix(str)) {
         return DARTIndex(Base64URL.decode(str[1 .. $]).idup);

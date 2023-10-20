@@ -1,6 +1,6 @@
 // DART database build on DARTFile including CRUD commands and synchronization
 module tagion.dart.DART;
-
+@safe:
 import std.stdio;
 import core.thread : Fiber;
 import core.exception : RangeError;
@@ -47,12 +47,10 @@ import tagion.dart.DARTRim;
  * Returns: 
  *   to angle
  */
-@safe
 uint calc_to_value(const ushort from_sector, const ushort to_sector) pure nothrow @nogc {
     return to_sector + ((from_sector >= to_sector) ? SECTOR_MAX_SIZE : 0);
 }
 
-@safe
 unittest {
     // One sector
     assert(calc_to_value(0x46A6, 0x46A7) == 0x46A7);
@@ -71,14 +69,12 @@ unittest {
      * Returns: 
      *   sector size
      */
-@safe
 uint calc_sector_size(const ushort from_sector, const ushort to_sector) pure nothrow @nogc {
     immutable from = from_sector;
     immutable to = calc_to_value(from_sector, to_sector);
     return to - from;
 }
 
-@safe
 unittest { // check calc_sector_size
     // Full round
     assert(calc_sector_size(0x543A, 0x543A) == SECTOR_MAX_SIZE);
@@ -94,7 +90,6 @@ unittest { // check calc_sector_size
  * DART include support for synchronization
  * Examples: [tagion.testbench.dart]
  */
-@safe
 class DART : DARTFile {
     immutable ushort from_sector;
     immutable ushort to_sector;

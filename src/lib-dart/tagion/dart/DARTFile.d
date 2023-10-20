@@ -1,6 +1,6 @@
 /// Handles the lower level operation of DART database
 module tagion.dart.DARTFile;
-
+@safe:
 private {
     import std.format;
     import std.exception : assumeWontThrow;
@@ -65,7 +65,6 @@ shared static this() @trusted {
  + Returns;
  +     fingerprint[rim]
  +/
-@safe
 ubyte rim_key(F)(F rim_keys, const uint rim) pure if (isBufferType!F) {
     if (rim >= rim_keys.length) {
         debug __write("%s rim=%d", rim_keys.hex, rim);
@@ -91,7 +90,7 @@ enum KEY_SPAN = ubyte.max + 1;
  + Doens't branche out it contais a Leave which contains a Archive
  +
  +/
-@safe class DARTFile {
+class DARTFile {
 
     import tagion.dart.BlockFile : Index;
 
@@ -214,7 +213,7 @@ enum KEY_SPAN = ubyte.max + 1;
         return manufactor.recorder(archives);
     }
 
-    @safe struct Leave {
+    struct Leave {
         import tagion.hibon.HiBONRecord;
 
         Index index;
@@ -581,7 +580,6 @@ enum KEY_SPAN = ubyte.max + 1;
         return Document.init;
     }
 
-    @safe
     class RimWalkerFiber : Fiber {
         immutable(Buffer) rim_paths;
         protected Document doc;
@@ -1242,7 +1240,6 @@ version (unittest) {
     import std.internal.math.biguintx86;
 }
 ///
-@safe
 unittest {
     import std.algorithm.sorting : sort;
 
