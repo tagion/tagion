@@ -631,7 +631,7 @@ mixin template HiBONRecord(string CTOR = "") {
                     }
                 else {
                         enum name = default_name;
-                        enum optional_flag = false;
+                        enum optional_flag = hasUDA!(this.tupleof[i], optional);
                     }
                     static if (name.length) {
                         static if (hasUDA!(this.tupleof[i], fixed)) {
@@ -786,8 +786,8 @@ mixin template HiBONRecord(string CTOR = "") {
         @recordType(LABEL)
         static struct SimpelOption {
             int not_an_option;
-            @label("s", true) int s;
-            @label(VOID) @optional string text;
+            @label("s") @optional int s;
+            @optional string text;
             mixin HiBONRecord!();
         }
     }
