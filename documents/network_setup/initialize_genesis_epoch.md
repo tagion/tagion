@@ -56,9 +56,10 @@ The genesis epoch is locates at named-key `#$epoch` `0` and because the epoch nu
 
 The dartutil will as default return the result as an dart-recorder. 
 
-Note. that '$' and '#' sigens needs an escape '\'.
+- Note. that '$' and '#' sigens needs an escape '\\'.
 ```
 dartutil dart.drt -r\#\$epoch:i64:0 |hibonutil -pc
+
 {
     "$@": "HiRPC",
     "$Y": [
@@ -101,6 +102,54 @@ dartutil dart.drt -r\#\$epoch:i64:0 |hibonutil -pc
     "$sign": [
         "*",
         "@zOJ95RwclkGfr5oFMCWbFn-YHfLwAaJ2QMFBha24sdo1dGlzOoMN4Fa4_Qz3-UB4GlF-05SmSErIRLYFY_crvQ=="
+    ]
+}
+```
+
+The name record for "node_name_1" can be read for the as follows.
+
+- Note: the --strip removed the *HiPRC* header.
+
+```
+dartutil dart.drt -r name:node_name_1 --strip|hibonutil -pc
+
+{
+    "#name": "node_name_1",
+    "$@": "NNC",
+    "$Y": [
+        "*",
+        "@XfA0RRS0ayy31OUHos807Vw80j_G8WQx7Ddh_JXJWm0="
+    ],
+    "$lang": "en",
+    "$record": [
+        "*",
+        "@"
+    ],
+    "$t": [
+        "time",
+        "2023-10-17T16:28:24.5068743"
+    ]
+}
+```
+The node-record can be read from the DART with the nodes public key as:
+
+```
+dartutil dart.drt -r\#\$node:\*:@Ql-fwHnQrq9tD8V9fCLeI7QNoL1YR1qvIbRf8yD0etY= --strip |hibonutil -pc
+{
+    "#$node": [
+        "*",
+        "@Ql-fwHnQrq9tD8V9fCLeI7QNoL1YR1qvIbRf8yD0etY="
+    ],
+    "$@": "$@NNR",
+    "$addr": "http:\/\/tagion.org",
+    "$name": "node_name1",
+    "$state": [
+        "i32",
+        4
+    ],
+    "$t": [
+        "time",
+        "2023-10-17T16:28:24.5068743"
     ]
 }
 ```

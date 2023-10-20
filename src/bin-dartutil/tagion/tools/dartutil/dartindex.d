@@ -42,7 +42,7 @@ DARTIndex dartIndexDecode(const(HashNet) net, const(char[]) str) {
                     enum type_name = typeMap[E];
                     static if (type_name != NotSupported) {
                     case type_name:
-
+                        verbose("Htype %s -> %s", type_name, E);
                         static if (E == Type.BINARY) {
                             Buffer buf = list[2].decode;
                             return net.dartKey(name, buf);

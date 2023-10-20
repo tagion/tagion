@@ -270,10 +270,10 @@ int _main(string[] args) {
             const sender = CRUD.dartRead(dart_indices, hirpc);
             auto receiver = hirpc.receive(sender);
             auto response = db(receiver, false);
-            pragma(msg, "Response ", typeof(response));
+            //pragma(msg, "Response ", typeof(response));
             //writefln("response_sender\n%s", response_sender.toPretty);
             //auto response = hirpc.receiver(db(receiver, false));
-            writefln("response\n%s", response.toPretty);
+            // writefln("response\n%J", response);
             //const result=response.result;
             //auto tosend = hirpc.toHiBON(result);
             //const recorder_doc = tosend.method.params;
