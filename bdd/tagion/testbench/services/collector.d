@@ -125,7 +125,7 @@ class ItWork {
 
             register(task_names.tvm, thisTid);
         }
-        immutable collector = CollectorService(node_net, task_names);
+        immutable collector = CollectorService(task_names);
         collector_handle = spawn(collector, task_names.collector);
         check(waitforChildren(Ctrl.ALIVE), "CollectorService never alived");
         return result_ok;

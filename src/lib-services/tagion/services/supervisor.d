@@ -40,6 +40,7 @@ struct Supervisor {
             DARTFile.create(dart_path, net);
         }
 
+        // 
         immutable tn = opts.task_names;
         auto dart_handle = spawn!DARTService(tn.dart, opts.dart, opts.replicator, tn, net);
 
@@ -47,12 +48,16 @@ struct Supervisor {
 
         auto inputvalidator_handle = spawn!InputValidatorService(tn.inputvalidator, opts.inputvalidator, tn);
 
+        // signs data
         auto epoch_creator_handle = spawn!EpochCreatorService(tn.epoch_creator, opts.epoch_creator, opts.wave
                 .network_mode, opts.wave.number_of_nodes, net, opts.monitor, tn);
 
-        auto collector_handle = spawn(immutable(CollectorService)(net, tn), tn.collector);
+        // signs hirpc
+        // hashes in dart
+        auto collector_handle = spawn(immutable(CollectorService)(tn), tn.collector);
         auto tvm_handle = spawn(immutable(TVMService)(opts.tvm, tn), tn.tvm);
 
+        // signs data
         auto transcript_handle = spawn!TranscriptService(tn.transcript, opts.transcript, opts.wave.number_of_nodes, net,tn);
 
         auto dart_interface_handle = spawn(immutable(DARTInterfaceService)(opts.dart_interface, tn), tn.dart_interface);
