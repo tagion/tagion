@@ -346,15 +346,19 @@ class StdSecureNet : StdHashNet, SecureNet {
         _crypt = new NativeSecp256k1;
     }
 
-    private this(const StdSecureNet other) {
+    this(shared(StdSecureNet) other_net) @trusted {
         _crypt = new NativeSecp256k1;
-        other._secret.clone(this);
+        synchronized (other_net) {
+            auto unshared_secure_net = cast(StdSecureNet) other_net;
+            unshared_secure_net._secret.clone(this);
+        }
     }
 
     unittest {
         auto other_net = new StdSecureNet;
         other_net.generateKeyPair("Secret password to be copied");
-        SecureNet copy_net = new StdSecureNet(other_net);
+        auto shared_net = (() @trusted => cast(shared) other_net)();
+        SecureNet copy_net = new StdSecureNet(shared_net);
         assert(other_net.pubkey == copy_net.pubkey);
 
     }
