@@ -279,7 +279,7 @@ class HashGraph {
         }
     }
 
-    immutable(EventPackage*) event_pack(lazy const sdt_t time, const(Event) father_event, const Document doc) @trusted {
+    immutable(EventPackage*) event_pack(lazy const sdt_t time, const(Event) father_event, scope const Document doc) @trusted {
 
         const mother_event = getNode(channel).event;
         immutable ebody = EventBody(doc, mother_event, father_event, time);
@@ -296,7 +296,8 @@ class HashGraph {
             auto sig = hirpc.net.sign(ebody).signature;
 
             if (!(hirpc.net.verify(_fingerprint, sig, hirpc.net.pubkey))) {
-                log("SIKKE NOGET RIGTIGTIGTIGTI SKIDT");
+                const aretheythesame = (sig == result.signature);
+                log("SIKKE NOGET RIGTIGTIGTIGTI SKIDT %s hash: %s", aretheythesame, hirpc.net.calcHash(ebody).encodeBase64);
             }
 
             if (!(hirpc.net.verify(_fingerprint, result.signature, hirpc.net.pubkey))) {

@@ -96,7 +96,7 @@ struct EpochCreatorService {
 
         const(Document) payload() {
             if (payload_queue.empty) {
-                return Document.init;
+                return Document();
             }
             return payload_queue.read;
         }
@@ -104,7 +104,7 @@ struct EpochCreatorService {
         void receivePayload(Payload, const(Document) pload) {
             log.trace("Received Payload %s", pload.toPretty);
             payload_queue.write(pload);
-            hashgraph.init_tide(&gossip_net.gossip, &payload, currentTime);
+            // hashgraph.init_tide(&gossip_net.gossip, &payload, currentTime);
         }
 
         void receiveWavefront(ReceivedWavefront, const(Document) wave_doc) {

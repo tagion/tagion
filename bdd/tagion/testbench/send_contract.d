@@ -35,6 +35,7 @@ int _main(string[] args) {
     scope Options local_options = Options.defaultOptions;
     local_options.dart.folder_path = buildPath(module_path);
     local_options.replicator.folder_path = buildPath(module_path);
+    local_options.epoch_creator.timeout = 1000;
     local_options.save(config_file);
 
     import std.format;

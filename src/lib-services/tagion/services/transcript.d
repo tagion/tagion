@@ -122,10 +122,11 @@ struct TranscriptService {
             
             auto req = dartModifyRR();
             req.id = res.id;
+            log("CREATING REQUEST");
 
-            if(recorder.empty) {
-                return;
-            }
+            // if(recorder.empty) {
+            //     return;
+            // }
             locate(task_names.dart).send(req, RecordFactory.uniqueRecorder(recorder), cast(immutable(int)) res.id);
 
         }
@@ -179,8 +180,13 @@ struct TranscriptService {
                 net.sign(bullseye)
             );
             
-            // log("signed bullseye vote: %s", own_vote.toDoc.toPretty);
-            locate(task_names.epoch_creator).send(Payload(), own_vote.toDoc);
+            log("signed bullseye vote: %s", own_vote.toDoc.toPretty);
+
+
+            if (task_names.transcript == "Node_0_transcript") {
+                locate(task_names.epoch_creator).send(Payload(), const Document());
+
+            }
         }
 
         void produceContract(producedContract, immutable(ContractProduct)* product) {

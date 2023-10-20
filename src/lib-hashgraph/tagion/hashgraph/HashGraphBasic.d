@@ -219,9 +219,9 @@ struct EventPackage {
             this(const SecureNet net, immutable(EventBody) ebody) {
                 pubkey=net.pubkey;
                 event_body=ebody;
-                auto _fingerprint=net.calcHash(event_body);
-                fingerprint = cast(Buffer) _fingerprint;
-                signature=net.sign(_fingerprint);
+                auto sig = net.sign(event_body);
+                signature = sig.signature;
+                fingerprint = cast(Buffer) sig.message;
             }
 
             this(const SecureNet net, const Pubkey pkey, const Signature signature, immutable(EventBody) ebody) {
