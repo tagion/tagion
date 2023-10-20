@@ -6,7 +6,7 @@
 DC=dmd
 DCFLAGS=-O -d -m64 -i
 DINC=libnng
-DLFLAGS=-Lextern/nng/build/lib/ -lnng
+DLFLAGS=-Lextern/nng/build/lib/ -lnng -Lextern/mbedtls/build/lib/ -lmbedtls -lmbedcrypto -lmbedx509
 
 DTESTS=$(wildcard tests/*.d)
 DTARGETS=$(basename $(DTESTS))
