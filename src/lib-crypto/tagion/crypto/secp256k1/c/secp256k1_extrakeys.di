@@ -1,5 +1,7 @@
 module tagion.crypto.secp256k1.c.secp256k1_extrakeys;
 
+import tagion.crypto.secp256k1.c.secp256k1;
+
 extern (C):
 nothrow:
 @nogc:

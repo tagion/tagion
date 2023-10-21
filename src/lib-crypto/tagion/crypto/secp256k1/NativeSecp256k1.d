@@ -19,6 +19,7 @@ module tagion.crypto.secp256k1.NativeSecp256k1;
 private import tagion.crypto.secp256k1.c.secp256k1;
 private import tagion.crypto.secp256k1.c.secp256k1_ecdh;
 private import tagion.crypto.secp256k1.c.secp256k1_hash;
+private import tagion.crypto.secp256k1.c.secp256k1_schnorrsig;
 
 import std.exception : assumeUnique;
 import tagion.basic.ConsensusExceptions;
