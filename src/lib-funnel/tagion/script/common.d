@@ -155,8 +155,8 @@ struct Epoch {
     sdt_t time; /// Epoch concensus time
     @label(StdNames.bullseye) Fingerprint bullseye;
     @label(StdNames.previous) Fingerprint previous;
-    @label(VOID) @optional Pubkey[] active; /// Sorted keys
-    @label(VOID) @optional Pubkey[] deactive;
+    @optional Pubkey[] active; /// Sorted keys
+    @optional Pubkey[] deactive;
 
     mixin HiBONRecord;
 }

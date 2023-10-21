@@ -100,9 +100,9 @@ enum isActionGroup(alias I) = __traits(isSame, TemplateOf!I, ActionGroup);
 struct ScenarioGroup {
     @("Scenario") Info!Scenario info;
     ActionGroup!(Given) given; /// Given actions
-    @label(VOID) @optional ActionGroup!(When) when; /// When actions
+    @optional ActionGroup!(When) when; /// When actions
     ActionGroup!(Then) then; /// Then actions
-    @label(VOID) @optional ActionGroup!(But) but; /// But actions
+    @optional ActionGroup!(But) but; /// But actions
     mixin HiBONRecord!();
 }
 
@@ -111,7 +111,7 @@ struct ScenarioGroup {
  */
 @safe
 struct FeatureGroup {
-    @label(VOID) @optional string alternative;
+    @optional string alternative;
     Info!Feature info; /// Information of the Feature
     ScenarioGroup[] scenarios; /// This all the information of each Sceanrio
     mixin HiBONRecord!();
