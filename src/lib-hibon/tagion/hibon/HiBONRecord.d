@@ -614,10 +614,11 @@ mixin template HiBONRecord(string CTOR = "") {
             ForeachTuple: foreach (i, ref m; this.tupleof) {
                 static if (__traits(compiles, typeof(m))) {
                     enum default_name = basename!(this.tupleof[i]);
+                    enum optional_flag = hasUDA!(this.tupleof[i], optional);
                     static if (hasUDA!(this.tupleof[i], label)) {
                         alias label = GetLabel!(this.tupleof[i]);
                         enum name = (label.name == VOID) ? default_name : label.name;
-                        enum optional_flag = label.optional || hasUDA!(this.tupleof[i], optional);
+                        //enum optional_flag = label.optional || hasUDA!(this.tupleof[i], optional);
                         static if (optional_flag) {
                             if (!doc.hasMember(name)) {
                                 continue ForeachTuple;
@@ -632,7 +633,6 @@ mixin template HiBONRecord(string CTOR = "") {
                     }
                 else {
                         enum name = default_name;
-                        enum optional_flag = hasUDA!(this.tupleof[i], optional);
                     }
                     static if (name.length) {
                         static if (hasUDA!(this.tupleof[i], fixed)) {
