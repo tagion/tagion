@@ -501,12 +501,25 @@ class NativeSecp256k1T(bool Schnorr) {
     }
 
     @trusted
-    immutable(ubyte[]) sign_schnorr(const(ubyte[]) msg, const(ubyte[]) keypair, const(ubyte[]) aux_random)
+    immutable(ubyte[]) sign_schnorr(
+            const(ubyte[]) msg,
+    const(ubyte[]) keypair,
+    const(ubyte[]) aux_random)
     in (msg.length == 32)
     in (keypair.length == 96)
+    in (aux_random.length == 32)
     do {
+        scope (exit) {
+            randomizeContext;
+        }
+        auto _keypair = cast(secp256k1_keypair*)(&keypair[0]);
+        static assert(_keypair.data.offsetof == 0);
+        auto signature = new ubyte[64];
+        const rt = secp256k1_schnorrsig_sign32(_ctx, &signature[0], &msg[0], _keypair, &aux_random[0]);
+        if (rt != 0) {
+            return assumeUnique(signature);
+        }
         return null;
-
     }
 }
 
