@@ -179,7 +179,7 @@ struct HiRPC {
         @label("$sign") @optional @(filter.Initialized) Signature signature; /// Signature of the message
         @label("$Y") @optional @(filter.Initialized) Pubkey pubkey; /// Owner key of the message
         @label("$msg") Document message; /// the HiRPC message
-        @label("") immutable Type type;
+        @exclude immutable Type type;
 
         @nogc const pure nothrow {
             /// Returns: true if the message is a method
@@ -213,8 +213,8 @@ struct HiRPC {
         }
 
         static if (DIRECTION is Direction.RECEIVE) {
-            @label("") protected Message _message;
-            @label("") immutable SignedState signed;
+            @exclude protected Message _message;
+            @exclude immutable SignedState signed;
             enum signName = GetLabel!(signature).name;
             enum pubkeyName = GetLabel!(pubkey).name;
             enum messageName = GetLabel!(message).name;
