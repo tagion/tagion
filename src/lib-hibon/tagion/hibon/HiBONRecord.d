@@ -114,10 +114,9 @@ template isSpecialKeyType(T) {
  +/
 struct label {
     string name; /// Name of the HiBON member
-    bool optional; /// This flag is set to true if this paramer is optional
 }
 
-struct optional;
+struct optional; /// This flag is set to true if this paramer is optional
 /++
  filter attribute for toHiBON
  +/
@@ -159,7 +158,7 @@ template GetLabel(alias member) {
     static if (hasUDA!(member, label)) {
         enum _label = getUDAs!(member, label)[0];
         static if (_label.name == VOID) {
-            enum GetLabel = label(basename!(member), _label.optional);
+            enum GetLabel = label(basename!(member));
         }
         else {
             enum GetLabel = _label;
