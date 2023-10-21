@@ -15,7 +15,7 @@ module tagion.crypto.secp256k1.NativeSecp256k1;
  + See the License for the specific language governing permissions and
  + limitations under the License.
  +/
-
+@safe:
 private import tagion.crypto.secp256k1.c.secp256k1;
 private import tagion.crypto.secp256k1.c.secp256k1_ecdh;
 private import tagion.crypto.secp256k1.c.secp256k1_hash;
@@ -52,6 +52,7 @@ enum SECP256K1 : uint {
     TAG_PUBKEY_HYBRID_ODD = SECP256K1_TAG_PUBKEY_HYBRID_ODD
 }
 
+alias NativeSecp256k1 = NativeSecp256k1T!false;
 /++
  + <p>This class holds native methods to handle ECDSA verification.</p>
  +
@@ -63,10 +64,8 @@ enum SECP256K1 : uint {
  + or point the JVM to the folder containing it with -Djava.library.path
  + </p>
  +/
-@safe
-class NativeSecp256k1 {
-    @safe
-    static void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) {
+class NativeSecp256k1T(bool Schnorr) {
+    static void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         if (!flag) {
             throw new SecurityConsensusException(code, file, line);
         }
@@ -182,6 +181,10 @@ class NativeSecp256k1 {
         const secKey = sec.ptr;
         secp256k1_ecdsa_signature sig_array;
         secp256k1_ecdsa_signature* sig = &sig_array;
+        scope (exit) {
+            assert(randomize_context);
+
+        }
 
         int ret = secp256k1_ecdsa_sign(_ctx, sig, msgdata, secKey, null, null);
         check(ret == 1, ConsensusFailCode.SECURITY_SIGN_FAULT);
@@ -466,48 +469,16 @@ class NativeSecp256k1 {
      + @param seed 32-byte random seed
      +/
     @trusted
-    bool randomize(immutable(ubyte[]) seed)
-    in {
-        assert(seed.length == 32 || seed is null);
-    }
-    do {
-        //        auto ctx=getContext();
-        immutable(ubyte)* _seed = seed.ptr;
-        return secp256k1_context_randomize(_ctx, _seed) == 1;
-    }
+    bool randomize_context() nothrow const {
+        import tagion.crypto.random.random;
 
-    // Function to generate a secure random number
-    version (RANDOM) @trusted
-    pure ulong secureRandom() {
-
-        // Generate a random 256-bit private key
-        ubyte[32] privateKey;
-        // To cbleser: secp256k1_rand256 is not found but supposed to be somewhere in the project.
-        secp256k1_rand256(privateKey.ptr);
-
-        // Interpret the private key as an unsigned long
-        ulong randomNum = *cast(ulong*) privateKey.ptr;
-
-        return randomNum;
+        ubyte[] ctx_randomize;
+        ctx_randomize.length = 32;
+        getRandom(ctx_randomize);
+        auto __ctx = cast(secp256k1_context*) _ctx;
+        return secp256k1_context_randomize(__ctx, &ctx_randomize[0]) == 1;
     }
 
-    version (HASH_SECP256K1) @trusted
-    static ubyte[] calcHash(const(ubyte[]) data) nothrow {
-        secp256k1_sha256 sha;
-        auto res = new ubyte[32];
-
-        //ubyte* ret_arr;
-
-        secp256k1_sha256_initialize_w(&sha);
-        secp256k1_sha256_write_w(&sha, &data[0], data.length);
-        secp256k1_sha256_finalize_w(&sha, &res[0]);
-        /*
-        for (int i = 0; i < 32; i++) {
-            res[i] = *(ret_arr + i);
-        }
-*/
-        return res;
-    }
 }
 
 //@safe
@@ -704,10 +675,9 @@ unittest {
  + This tests seed randomization
  +/
     {
-        auto seed = decode("A441B15FE9A3CF5661190A0B93B9DEC7D04127288CC87250967CF3B52894D110"); //sha256hash of "random"
         try {
             auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.DER, NativeSecp256k1.Format.DER);
-            auto result = crypt.randomize(seed);
+            auto result = crypt.randomize_context;
             assert(result);
         }
         catch (ConsensusException e) {
