@@ -14,7 +14,7 @@ enum RIMS_IN_SECTOR = 2;
      */
 static struct SectorRange {
     private {
-        @label("") ushort _sector;
+        @exclude ushort _sector;
         @label("from") ushort _from_sector;
         @label("to") ushort _to_sector;
     }
@@ -34,7 +34,7 @@ static struct SectorRange {
         return _to_sector;
     }
 
-    @label("") protected bool flag;
+    @exclude protected bool flag;
     mixin HiBONRecord!(q{
                 this(const ushort from_sector, const ushort to_sector) pure nothrow @nogc {
                     _from_sector = from_sector;

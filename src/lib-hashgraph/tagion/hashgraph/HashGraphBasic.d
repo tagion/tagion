@@ -182,7 +182,7 @@ struct EventBody {
 
 @safe
 struct EventPackage {
-    @label("") Buffer fingerprint;
+    @exclude Buffer fingerprint;
     @label("$sign") Signature signature;
     @label("$pkey") Pubkey pubkey;
     @label("$body") EventBody event_body;

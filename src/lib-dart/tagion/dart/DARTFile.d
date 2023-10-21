@@ -28,7 +28,7 @@ private {
 
     import tagion.hibon.HiBON : HiBON;
 
-    import tagion.hibon.HiBONRecord : label, record_filter = filter, GetLabel, recordType;
+    import tagion.hibon.HiBONRecord : label, exclude, record_filter = filter, GetLabel, recordType;
     import tagion.hibon.Document : Document;
 
     import tagion.dart.BlockFile;
@@ -240,11 +240,11 @@ class DARTFile {
         import std.stdio;
         import tagion.hibon.HiBONJSON;
 
-        @label("") protected Fingerprint merkleroot; /// The sparsed Merkle root hash of the branches
+        @exclude protected Fingerprint merkleroot; /// The sparsed Merkle root hash of the branches
         @label("$prints") @optional @(record_filter.Initialized) protected Fingerprint[] _fingerprints; /// Array of all the Leaves hashes
         @label("$darts") @(record_filter.Initialized) protected DARTIndex[] _dart_indices; /// Array of all the Leaves hashes
         @label("$idx") @optional @(record_filter.Initialized) protected Index[] _indices; /// Array of index pointer to BlockFile
-        @label("") private bool done;
+        @exclude private bool done;
         enum fingerprintsName = GetLabel!(_fingerprints).name;
         enum dart_indicesName = GetLabel!(_dart_indices).name;
         enum indicesName = GetLabel!(_indices).name;
