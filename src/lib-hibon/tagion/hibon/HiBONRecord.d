@@ -377,7 +377,9 @@ mixin template HiBONRecord(string CTOR = "") {
                         }
                     }
                 }
-                static if (name.length && !exclude_flag) {
+                static assert(name.length > 0,
+                        format("Label for %s can not be empty", default_name));
+                static if (!exclude_flag) {
                     alias MemberT = typeof(m);
                     alias BaseT = TypedefBase!MemberT;
                     alias UnqualT = Unqual!BaseT;
@@ -638,7 +640,9 @@ mixin template HiBONRecord(string CTOR = "") {
                 else {
                         enum name = default_name;
                     }
-                    static if (name.length > 0 && !exclude_flag) {
+                    static assert(name.length > 0,
+                            format("Label for %s can not be empty", default_name));
+                    static if (!exclude_flag) {
                         static if (hasUDA!(this.tupleof[i], fixed)) {
                             alias assigns = getUDAs!(this.tupleof[i], fixed);
                             static assert(assigns.length is 1,
