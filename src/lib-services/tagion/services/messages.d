@@ -2,7 +2,6 @@
 module tagion.services.messages;
 import tagion.actor.actor;
 import tagion.hibon.Document;
-import tagion.script.prior.StandardRecords;
 
 /// Msg Type sent to actors who receive the document
 alias inputDoc = Msg!"inputDoc";

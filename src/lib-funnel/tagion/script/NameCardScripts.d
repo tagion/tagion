@@ -14,7 +14,6 @@ import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONJSON;
 
 import tagion.dart.Recorder;
-import tagion.script.prior.StandardRecords;
 
 Nullable!T readStandardRecord(T)(
         const(HashNet) net,
