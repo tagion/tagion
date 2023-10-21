@@ -204,12 +204,13 @@ mixin template HiBONRecordType() {
  TYPE = is used to set a HiBON record type (TYPENAME)
  Examples:
  --------------------
+@recodeType("TEST") // Set the HiBONRecord type name
  struct Test {
- @label("$X") uint x; // The member in HiBON is "$X"
- string name;         // The member in HiBON is "name"
- @label("num", true); // The member in HiBON is "num" and is optional
- @label("") bool dummy; // This parameter is not included in the HiBON
- HiBONRecord!("TEST");   // The "$type" is set to "TEST"
+ @label("$X") uint x;     // The member in HiBON is "$X"
+ string name;             // The member in HiBON is "name"
+ @label("num") int num;   // The member in HiBON is "num" and is optional
+ @optional  string text;  // optional hibon member 
+ @label("") bool dummy;   // This parameter is not included in the HiBON
  }
  --------------------
  CTOR = is used for constructor

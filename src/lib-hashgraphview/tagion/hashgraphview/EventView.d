@@ -8,17 +8,17 @@ import tagion.hibon.HiBONRecord;
 struct EventView {
     enum eventsName = "$events";
     uint id;
-    @label("$m", true) @(filter.Initialized) uint mother;
-    @label("$f", true) @(filter.Initialized) uint father;
+    @label("$m") @optional @(filter.Initialized) uint mother;
+    @label("$f") @optional @(filter.Initialized) uint father;
     @label("$n") size_t node_id;
     @label("$a") int altitude;
     @label("$o") int order;
     @label("$r") int round;
     @label("$rec") int round_received;
-    @label("$w", true) @(filter.Initialized) bool witness;
-    @label("$famous", true) @(filter.Initialized) bool famous;
+    @label("$w") @optional @(filter.Initialized) bool witness;
+    @label("$famous") @optional @(filter.Initialized) bool famous;
     @label("$received") uint[] round_received_mask;
-    @label("$error", true) bool error;
+    @label("$error") @optional bool error;
     bool father_less;
 
     mixin HiBONRecord!(

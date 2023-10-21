@@ -21,7 +21,7 @@ import tagion.hibon.Document;
 @safe:
 mixin template Property() {
     string description;
-    @label(VOID, true) string[] comments;
+    @label(VOID) @optional string[] comments;
     mixin HiBONRecord!(q{
             this(string description, string[] comments=null ) pure nothrow {
                 this.description = description;
@@ -100,9 +100,9 @@ enum isActionGroup(alias I) = __traits(isSame, TemplateOf!I, ActionGroup);
 struct ScenarioGroup {
     @("Scenario") Info!Scenario info;
     ActionGroup!(Given) given; /// Given actions
-    @label(VOID, true) ActionGroup!(When) when; /// When actions
+    @label(VOID) @optional ActionGroup!(When) when; /// When actions
     ActionGroup!(Then) then; /// Then actions
-    @label(VOID, true) ActionGroup!(But) but; /// But actions
+    @label(VOID) @optional ActionGroup!(But) but; /// But actions
     mixin HiBONRecord!();
 }
 
@@ -111,7 +111,7 @@ struct ScenarioGroup {
  */
 @safe
 struct FeatureGroup {
-    @label(VOID, true) string alternative;
+    @label(VOID) @optional string alternative;
     Info!Feature info; /// Information of the Feature
     ScenarioGroup[] scenarios; /// This all the information of each Sceanrio
     mixin HiBONRecord!();

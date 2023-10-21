@@ -23,7 +23,7 @@ import tagion.utils.StdTime;
     @label("$name") string name; /// Hash of the NNC.name
     @label(StdNames.previous) Fingerprint previous; /// Hash pointer to the previuos NRC
     @label("$index") uint index; /// Current index previous.index+1
-    @label("$payload", true) Document payload;
+    @label("$payload") @optional Document payload;
     mixin HiBONRecord;
 }
 

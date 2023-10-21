@@ -18,8 +18,8 @@ struct Assert {
     string name;
     Method method;
     Buffer invoke;
-    @label("*", true) Buffer result;
-    @label("*", true) string message;
+    @label("*") @optional Buffer result;
+    @label("*") @optional string message;
 
     mixin HiBONRecord;
     void serialize(ref OutBuffer bout) const {
