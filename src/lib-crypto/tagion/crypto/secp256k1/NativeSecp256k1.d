@@ -504,7 +504,7 @@ class NativeSecp256k1T(bool Schnorr) {
     immutable(ubyte[]) sign_schnorr(
             const(ubyte[]) msg,
     const(ubyte[]) keypair,
-    const(ubyte[]) aux_random)
+    const(ubyte[]) aux_random) const nothrow
     in (msg.length == 32)
     in (keypair.length == 96)
     in (aux_random.length == 32)
@@ -520,6 +520,19 @@ class NativeSecp256k1T(bool Schnorr) {
             return assumeUnique(signature);
         }
         return null;
+    }
+
+    @trusted
+    bool verify_schnorr(const(ubyte[]) signature, const(ubyte[]) msg, const(ubyte[]) pubkey) const nothrow
+    in (signature.length == 64)
+    in (msg.length == 32)
+    in (pubkey.length == 32)
+    do {
+        secp256k1_xonly_pubkey xonly_pubkey;
+        secp256k1_xonly_pubkey_parse(_ctx, &xonly_pubkey, &pubkey[0]);
+
+        const rt = secp256k1_schnorrsig_verify(_ctx, &signature[0], &msg[0], 32, &xonly_pubkey);
+        return (rt == 1);
     }
 }
 
