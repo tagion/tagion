@@ -76,7 +76,7 @@ struct HiRPC {
 
     /// HiRPC error response for a method
     struct Error {
-        @label("*") @optional @(filter.Initialized) uint id; /// RPC response id, if given by the method 
+        @optional @(filter.Initialized) uint id; /// RPC response id, if given by the method 
         @label("$data") @optional @filter(q{!a.empty}) Document data; /// Optional error response package
         @label("$msg") @optional @(filter.Initialized) string message; /// Optional Error text message
         @label("$code") @optional @(filter.Initialized) int code; /// Optional error code

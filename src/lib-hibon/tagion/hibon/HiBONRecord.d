@@ -896,12 +896,12 @@ mixin template HiBONRecord(string CTOR = "") {
         template NotBoth(bool FILTER) {
             @recordType("NotBoth") static struct NotBoth {
                 static if (FILTER) {
-                    @label("*") @optional @(filter.Initialized) int x;
-                    @label("*") @optional @(filter.Initialized) @filter(q{a < 42}) int y;
+                    @optional @(filter.Initialized) int x;
+                    @optional @(filter.Initialized) @filter(q{a < 42}) int y;
                 }
                 else {
-                    @label("*") @optional int x;
-                    @label("*") @optional int y;
+                    @optional int x;
+                    @optional int y;
                 }
                 bool valid(const Document doc) {
                     return doc.hasMember("x") ^ doc.hasMember("y");
