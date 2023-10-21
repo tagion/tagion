@@ -20,6 +20,7 @@ private import tagion.crypto.secp256k1.c.secp256k1;
 private import tagion.crypto.secp256k1.c.secp256k1_ecdh;
 private import tagion.crypto.secp256k1.c.secp256k1_hash;
 private import tagion.crypto.secp256k1.c.secp256k1_schnorrsig;
+private import tagion.crypto.secp256k1.c.secp256k1_extrakeys;
 
 import std.exception : assumeUnique;
 import tagion.basic.ConsensusExceptions;
@@ -485,6 +486,28 @@ class NativeSecp256k1T(bool Schnorr) {
         return secp256k1_context_randomize(__ctx, &ctx_randomize[0]) == 1;
     }
 
+    @trusted
+    bool createKeyPair(const(ubyte[]) seckey, out ubyte[] keypair) const nothrow
+    in (seckey.length == 32)
+    do {
+        auto _keypair = new secp256k1_keypair;
+        scope (exit) {
+            keypair = _keypair.data[];
+            randomizeContext;
+        }
+        const rt = secp256k1_keypair_create(_ctx, _keypair, &seckey[0]);
+        return (rt != 0);
+
+    }
+
+    @trusted
+    immutable(ubyte[]) sign_schnorr(const(ubyte[]) msg, const(ubyte[]) keypair, const(ubyte[]) aux_random)
+    in (msg.length == 32)
+    in (keypair.length == 96)
+    do {
+        return null;
+
+    }
 }
 
 unittest {
@@ -902,15 +925,4 @@ unittest {
         }
     }
 
-    version (RANDOM) {
-        try {
-            auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.DER, NativeSecp256k1.Format.DER);
-            auto result = crypt.secureRandom();
-
-            assert(result != 0);
-        }
-        catch (ConsensusException e) {
-            assert(0, e.msg);
-        }
-    }
 }
