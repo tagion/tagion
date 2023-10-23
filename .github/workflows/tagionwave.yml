@@ -26,7 +26,7 @@ on:
 
 jobs:
   deploy_tagionwave:
-    runs-on: testnet-mobile
+    runs-on: testnet
       # environment:
       #   name: testnet-mobile
         # url: https://github.com
