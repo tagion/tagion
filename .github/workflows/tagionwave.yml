@@ -49,7 +49,7 @@ jobs:
         run: |
           export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1001/bus
           export XDG_RUNTIME_DIR=/run/user/1001
-          systemctl stop --user neuewelle.service
+          systemctl stop --user neuewelle.service | echo "No service was running"
           mkdir -p ~/.local/share/wave
           mkdir -p ~/.config/systemd/user
           cp tagion ~/.local/share/wave
