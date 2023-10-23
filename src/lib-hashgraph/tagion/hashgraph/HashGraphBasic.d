@@ -111,9 +111,9 @@ struct EventBody {
     protected alias check = Check!HashGraphConsensusException;
     import std.traits : getSymbolsByUDA, OriginalType, Unqual, hasMember;
 
-    @label("$p", true) @filter(q{!a.empty}) Document payload; // Transaction
-    @label("$m", true) @(filter.Initialized) Buffer mother; // Hash of the self-parent
-    @label("$f", true) @(filter.Initialized) Buffer father; // Hash of the other-parent
+    @label("$p") @optional @filter(q{!a.empty}) Document payload; // Transaction
+    @label("$m") @optional @(filter.Initialized) Buffer mother; // Hash of the self-parent
+    @label("$f") @optional @(filter.Initialized) Buffer father; // Hash of the other-parent
     @label("$a") int altitude;
     @label("$t") sdt_t time;
     bool verify() {
@@ -182,7 +182,7 @@ struct EventBody {
 
 @safe
 struct EventPackage {
-    @label("") Buffer fingerprint;
+    @exclude Buffer fingerprint;
     @label("$sign") Signature signature;
     @label("$pkey") Pubkey pubkey;
     @label("$body") EventBody event_body;
@@ -234,8 +234,8 @@ alias Tides = int[Pubkey];
 
 @recordType("Wavefront") @safe
 struct Wavefront {
-    @label("$tides", true) @filter(q{a.length is 0}) private Tides _tides;
-    @label("$events", true) @filter(q{a.length is 0}) const(immutable(EventPackage)*[]) epacks;
+    @label("$tides") @optional @filter(q{a.length is 0}) private Tides _tides;
+    @label("$events") @optional @filter(q{a.length is 0}) const(immutable(EventPackage)*[]) epacks;
     @label("$state") ExchangeState state;
     enum tidesName = GetLabel!(_tides).name;
     enum epacksName = GetLabel!(epacks).name;

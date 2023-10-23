@@ -20,14 +20,14 @@ version (none) {
 
     @safe
     struct EventBodyCompact {
-        @label("p", true) @filter(q{!a.empty}) Document payload; // Transaction
+        @label("p") @optional @filter(q{!a.empty}) Document payload; // Transaction
         @label("m") @filter(q{a != -1}) @fixed(q{-1}) int mother; // Hash of the self-parent
         @label("f") @filter(q{a != -1}) @fixed(q{-1}) int father; // Hash of the other-parent
         @label("a") int altitude;
         @label("t") sdt_t time;
-        @label("M", true) @(filter.Initialized) Buffer mother_fingerprint; /// This event is connect to the previous mother
-        @label("F", true) @(filter.Initialized) Buffer father_fingerprint; /// This event is connect to the previous father
-        @label("C", true) @(filter.Initialized) Pubkey channel; /// Event Channel (Pubkey of the node);
+        @label("M") @optional @(filter.Initialized) Buffer mother_fingerprint; /// This event is connect to the previous mother
+        @label("F") @optional @(filter.Initialized) Buffer father_fingerprint; /// This event is connect to the previous father
+        @label("C") @optional @(filter.Initialized) Pubkey channel; /// Event Channel (Pubkey of the node);
         mixin HiBONRecord;
     }
 

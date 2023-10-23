@@ -14,7 +14,6 @@ import tagion.actor;
 import tagion.services.messages;
 import tagion.logger.Logger;
 import tagion.utils.pretend_safe_concurrency;
-import tagion.script.prior.StandardRecords;
 import tagion.network.ReceiveBuffer;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
@@ -24,7 +23,7 @@ import tagion.basic.Debug : __write;
 import tagion.utils.JSONCommon;
 import tagion.services.options : TaskNames;
 import tagion.crypto.SecureInterfaceNet;
-
+import tagion.script.namerecords;
 import std.format;
 
 import nngd;
@@ -38,6 +37,7 @@ struct InputValidatorOptions {
     uint sock_send_buf = 1024;
 
     import tagion.services.options : contract_sock_addr;
+
     void setDefault() nothrow {
         sock_addr = contract_sock_addr("CONTRACT_");
     }
@@ -54,7 +54,6 @@ enum ResponseError {
     InvalidBuf,
     InvalidDoc,
 }
-
 
 /** 
  *  InputValidator actor
@@ -116,7 +115,7 @@ struct InputValidatorService {
             }
 
             auto result = buf.append(recv);
-            scope(failure) {
+            scope (failure) {
                 reject(ResponseError.Internal);
             }
 

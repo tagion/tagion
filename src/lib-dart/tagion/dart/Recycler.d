@@ -10,7 +10,7 @@ import std.format;
 
 import tagion.basic.Types : Buffer;
 import tagion.dart.BlockFile : BlockFile, Index, check;
-import tagion.hibon.HiBONRecord : HiBONRecord, label, recordType;
+import tagion.hibon.HiBONRecord : HiBONRecord, label, exclude, recordType;
 import tagion.hibon.HiBONFile : fwrite, fread;
 import std.algorithm;
 
@@ -23,7 +23,7 @@ import std.algorithm;
 struct RecycleSegment {
     Index next;
     ulong size;
-    @label("") Index index;
+    @exclude Index index;
     Index end() const pure nothrow @nogc {
         return Index(index + size);
     }

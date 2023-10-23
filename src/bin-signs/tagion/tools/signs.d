@@ -15,7 +15,6 @@ import tagion.basic.Types : FileExtension;
 import tagion.hibon.HiBONRecord;
 import tagion.crypto.Types;
 import tagion.basic.Types;
-import tagion.script.prior.StandardRecords;
 import std.datetime;
 import tagion.utils.StdTime;
 import core.time;
@@ -26,6 +25,7 @@ import tagion.crypto.SecureNet : StdSecureNet;
 import tagion.dart.DARTBasic;
 import tagion.hibon.HiBONtoText : encodeBase64, decode;
 import tagion.hibon.HiBONJSON : toPretty;
+import tagion.script.standardnames;
 
 @recordType("DeliveryOrder")
 struct DeliveryOrder {
@@ -38,7 +38,7 @@ struct DeliveryOrder {
     string startTime;
     string endTime;
     int payment;
-    @label(OwnerKey) Pubkey owner; // new token owner       
+    @label(StdNames.owner) Pubkey owner; // new token owner       
     Pubkey finalReceiver;
 
     mixin HiBONRecord!(q{
@@ -51,7 +51,7 @@ struct DeliveryOrder {
             string startTime,
             string endTime,
             int payment,
-            @label(OwnerKey) Pubkey owner, // new token owner       
+             Pubkey owner, // new token owner       
             Pubkey finalReceiver,
         ) {
             this.vaccineType = vaccineType;
@@ -74,7 +74,7 @@ struct DeliveryEvent {
     DARTIndex deliveryEvent;
     string temp;
     string timeStamp;
-    @label(OwnerKey) Pubkey owner; // new token owner
+    @label(StdNames.owner) Pubkey owner; // new token owner
 
     mixin HiBONRecord!(q{
         this(
@@ -138,18 +138,18 @@ int _main(string[] args) {
         writeln(logo);
         defaultGetoptPrinter(
                 [
-            "Documentation: https://tagion.org/",
-            "",
-            "Usage:",
-            format("%s [<option>...] <in-file>", program),
-            "",
-            "Where:",
-            "<in-file>           Is an input file in .json or .hibon format",
-            "",
+                "Documentation: https://tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...] <in-file>", program),
+                "",
+                "Where:",
+                "<in-file>           Is an input file in .json or .hibon format",
+                "",
 
-            "<option>:",
+                "<option>:",
 
-        ].join("\n"),
+                ].join("\n"),
                 main_args.options);
         return 0;
     }

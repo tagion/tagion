@@ -1,6 +1,6 @@
 // DART database build on DARTFile including CRUD commands and synchronization
 module tagion.dart.DART;
-
+@safe:
 import std.stdio;
 import core.thread : Fiber;
 import core.exception : RangeError;
@@ -47,12 +47,10 @@ import tagion.dart.DARTRim;
  * Returns: 
  *   to angle
  */
-@safe
 uint calc_to_value(const ushort from_sector, const ushort to_sector) pure nothrow @nogc {
     return to_sector + ((from_sector >= to_sector) ? SECTOR_MAX_SIZE : 0);
 }
 
-@safe
 unittest {
     // One sector
     assert(calc_to_value(0x46A6, 0x46A7) == 0x46A7);
@@ -71,14 +69,12 @@ unittest {
      * Returns: 
      *   sector size
      */
-@safe
 uint calc_sector_size(const ushort from_sector, const ushort to_sector) pure nothrow @nogc {
     immutable from = from_sector;
     immutable to = calc_to_value(from_sector, to_sector);
     return to - from;
 }
 
-@safe
 unittest { // check calc_sector_size
     // Full round
     assert(calc_sector_size(0x543A, 0x543A) == SECTOR_MAX_SIZE);
@@ -94,7 +90,6 @@ unittest { // check calc_sector_size
  * DART include support for synchronization
  * Examples: [tagion.testbench.dart]
  */
-@safe
 class DART : DARTFile {
     immutable ushort from_sector;
     immutable ushort to_sector;
@@ -245,20 +240,11 @@ received = the HiRPC received package
         auto doc_dart_indices = received.method.params[Params.dart_indices].get!(Document);
         auto dart_indices = doc_dart_indices.range!(DARTIndex[]);
         auto not_in_dart = checkload(dart_indices);
-        import tagion.hibon.HiBONtoText;
-        import std.array;
-
-        writefln("DARTCHECKREAD response %s", not_in_dart.map!(d => d.encodeBase64));
 
         auto params = new HiBON;
         auto params_dart_indices = new HiBON;
         params_dart_indices = not_in_dart.map!(f => cast(Buffer) f);
         params[Params.dart_indices] = params_dart_indices;
-
-        // Buffer[] res = not_in_dart.map!(f => cast(Buffer) f).array;
-        // params[Params.fingerprints] = res;
-        // params[Params.fingerprints] = (() @trusted => cast(Buffer) not_in_dart)();
-
         return hirpc.result(received, params);
     }
 

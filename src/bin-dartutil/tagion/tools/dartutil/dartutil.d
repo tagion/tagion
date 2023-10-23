@@ -41,7 +41,6 @@ import tagion.hibon.HiBONFile : fread, fwrite;
 import tagion.hibon.HiBONtoText : decode, encodeBase64;
 import tagion.Keywords;
 import tagion.dart.Recorder;
-import tagion.script.prior.StandardRecords;
 import tagion.script.NameCardScripts : readStandardRecord;
 
 import tagion.tools.Basic;

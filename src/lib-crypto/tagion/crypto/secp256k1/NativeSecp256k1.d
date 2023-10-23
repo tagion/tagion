@@ -15,10 +15,12 @@ module tagion.crypto.secp256k1.NativeSecp256k1;
  + See the License for the specific language governing permissions and
  + limitations under the License.
  +/
-
+@safe:
 private import tagion.crypto.secp256k1.c.secp256k1;
 private import tagion.crypto.secp256k1.c.secp256k1_ecdh;
 private import tagion.crypto.secp256k1.c.secp256k1_hash;
+private import tagion.crypto.secp256k1.c.secp256k1_schnorrsig;
+private import tagion.crypto.secp256k1.c.secp256k1_extrakeys;
 
 import std.exception : assumeUnique;
 import tagion.basic.ConsensusExceptions;
@@ -51,6 +53,7 @@ enum SECP256K1 : uint {
     TAG_PUBKEY_HYBRID_ODD = SECP256K1_TAG_PUBKEY_HYBRID_ODD
 }
 
+alias NativeSecp256k1 = NativeSecp256k1T!false;
 /++
  + <p>This class holds native methods to handle ECDSA verification.</p>
  +
@@ -62,10 +65,8 @@ enum SECP256K1 : uint {
  + or point the JVM to the folder containing it with -Djava.library.path
  + </p>
  +/
-@safe
-class NativeSecp256k1 {
-    @safe
-    static void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) {
+class NativeSecp256k1T(bool Schnorr) {
+    static void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         if (!flag) {
             throw new SecurityConsensusException(code, file, line);
         }
@@ -97,6 +98,9 @@ class NativeSecp256k1 {
     }
     do {
         _ctx = secp256k1_context_create(flag);
+        scope (exit) {
+            randomizeContext;
+        }
         _format_verify = format_verify;
         _format_sign = format_sign;
     }
@@ -110,8 +114,9 @@ class NativeSecp256k1 {
      +       signature)     = The signature
      +       pub            =  The public key which did the signing
      +/
+    alias verify = verify_ecdsa;
     @trusted
-    bool verify(const(ubyte[]) data, const(ubyte[]) signature, const(ubyte[]) pub) const
+    bool verify_ecdsa(const(ubyte[]) data, const(ubyte[]) signature, const(ubyte[]) pub) const
     in {
         assert(data.length == 32);
         assert(signature.length <= 520);
@@ -170,8 +175,9 @@ class NativeSecp256k1 {
      + Return values
      + @param sig byte array of signature
      +/
+    alias sign = sign_ecdsa;
     @trusted
-    immutable(ubyte[]) sign(const(ubyte[]) data, const(ubyte[]) sec) const
+    immutable(ubyte[]) sign_ecdsa(const(ubyte[]) data, const(ubyte[]) sec) const
     in {
         assert(data.length == 32);
         assert(sec.length <= 32);
@@ -181,6 +187,10 @@ class NativeSecp256k1 {
         const secKey = sec.ptr;
         secp256k1_ecdsa_signature sig_array;
         secp256k1_ecdsa_signature* sig = &sig_array;
+        scope (exit) {
+            randomizeContext;
+
+        }
 
         int ret = secp256k1_ecdsa_sign(_ctx, sig, msgdata, secKey, null, null);
         check(ret == 1, ConsensusFailCode.SECURITY_SIGN_FAULT);
@@ -446,14 +456,15 @@ class NativeSecp256k1 {
 
         secp256k1_pubkey pubkey_result;
         ubyte[32] result;
-        ubyte* _result = result.ptr;
+        ubyte* _result = &result[0];
 
         int ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey_result, pubdata, publen);
         check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_PARSE_FAULT);
 
-        //if (ret) {
         ret = secp256k1_ecdh(_ctx, _result, &pubkey_result, secdata, null, null);
-        //}
+        scope (exit) {
+            randomizeContext;
+        }
         check(ret == 1, ConsensusFailCode.SECURITY_EDCH_FAULT);
 
         return result.idup;
@@ -465,57 +476,72 @@ class NativeSecp256k1 {
      + @param seed 32-byte random seed
      +/
     @trusted
-    bool randomize(immutable(ubyte[]) seed)
-    in {
-        assert(seed.length == 32 || seed is null);
+    bool randomizeContext() nothrow const {
+        import tagion.crypto.random.random;
+
+        ubyte[] ctx_randomize;
+        ctx_randomize.length = 32;
+        getRandom(ctx_randomize);
+        auto __ctx = cast(secp256k1_context*) _ctx;
+        return secp256k1_context_randomize(__ctx, &ctx_randomize[0]) == 1;
     }
+
+    @trusted
+    bool createKeyPair(const(ubyte[]) seckey, out ubyte[] keypair) const nothrow
+    in (seckey.length == 32)
     do {
-        //        auto ctx=getContext();
-        immutable(ubyte)* _seed = seed.ptr;
-        return secp256k1_context_randomize(_ctx, _seed) == 1;
-    }
-
-    // Function to generate a secure random number
-    version (RANDOM) @trusted
-    pure ulong secureRandom() {
-
-        // Generate a random 256-bit private key
-        ubyte[32] privateKey;
-        // To cbleser: secp256k1_rand256 is not found but supposed to be somewhere in the project.
-        secp256k1_rand256(privateKey.ptr);
-
-        // Interpret the private key as an unsigned long
-        ulong randomNum = *cast(ulong*) privateKey.ptr;
-
-        return randomNum;
-    }
-
-    version (HASH_SECP256K1) @trusted
-    static ubyte[] calcHash(const(ubyte[]) data) nothrow {
-        secp256k1_sha256 sha;
-        auto res = new ubyte[32];
-
-        //ubyte* ret_arr;
-
-        secp256k1_sha256_initialize_w(&sha);
-        secp256k1_sha256_write_w(&sha, &data[0], data.length);
-        secp256k1_sha256_finalize_w(&sha, &res[0]);
-        /*
-        for (int i = 0; i < 32; i++) {
-            res[i] = *(ret_arr + i);
+        auto _keypair = new secp256k1_keypair;
+        scope (exit) {
+            keypair = _keypair.data[];
+            randomizeContext;
         }
-*/
-        return res;
+        const rt = secp256k1_keypair_create(_ctx, _keypair, &seckey[0]);
+        return (rt != 0);
+
+    }
+
+    @trusted
+    immutable(ubyte[]) sign_schnorr(
+            const(ubyte[]) msg,
+    const(ubyte[]) keypair,
+    const(ubyte[]) aux_random) const nothrow
+    in (msg.length == 32)
+    in (keypair.length == 96)
+    in (aux_random.length == 32)
+    do {
+        scope (exit) {
+            randomizeContext;
+        }
+        auto _keypair = cast(secp256k1_keypair*)(&keypair[0]);
+        static assert(_keypair.data.offsetof == 0);
+        auto signature = new ubyte[64];
+        const rt = secp256k1_schnorrsig_sign32(_ctx, &signature[0], &msg[0], _keypair, &aux_random[0]);
+        if (rt != 0) {
+            return assumeUnique(signature);
+        }
+        return null;
+    }
+
+    @trusted
+    bool verify_schnorr(const(ubyte[]) signature, const(ubyte[]) msg, const(ubyte[]) pubkey) const nothrow
+    in (signature.length == 64)
+    in (msg.length == 32)
+    in (pubkey.length == 32)
+    do {
+        secp256k1_xonly_pubkey xonly_pubkey;
+        secp256k1_xonly_pubkey_parse(_ctx, &xonly_pubkey, &pubkey[0]);
+
+        const rt = secp256k1_schnorrsig_verify(_ctx, &signature[0], &msg[0], 32, &xonly_pubkey);
+        return (rt == 1);
     }
 }
 
-//@safe
 unittest {
     import tagion.utils.Miscellaneous : toHexString, decode;
     import std.traits;
 
     /+
- + This tests verify() for a valid signature
+ + This tests verify_ecdsa() for a valid signature
  +/{
         auto data = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90"); //sha256hash of "testing"
         auto sig = decode("3044022079BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F817980220294F14E883B3F525B5367756C2A11EF6CF84B730B36C17CB0C56F0AAB2C98589");
@@ -523,7 +549,7 @@ unittest {
         try {
             auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.DER);
 
-            auto result = crypt.verify(data, sig, pub);
+            auto result = crypt.verify_ecdsa(data, sig, pub);
             assert(result);
         }
         catch (ConsensusException e) {
@@ -532,7 +558,7 @@ unittest {
     }
 
     /++
- + This tests verify() for a non-valid signature
+ + This tests verify_ecdsa() for a non-valid signature
  +/
     {
         auto data = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A91"); //sha256hash of "testing"
@@ -540,7 +566,7 @@ unittest {
         auto pub = decode("040A629506E1B65CD9D2E0BA9C75DF9C4FED0DB16DC9625ED14397F0AFC836FAE595DC53F8B0EFE61E703075BD9B143BAC75EC0E19F82A2208CAEB32BE53414C40");
         try {
             auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.DER);
-            auto result = crypt.verify(data, sig, pub);
+            auto result = crypt.verify_ecdsa(data, sig, pub);
             assert(!result);
         }
         catch (ConsensusException e) {
@@ -549,7 +575,7 @@ unittest {
     }
 
     /++
- + This tests secret key verify() for a valid secretkey
+ + This tests secret key verify_ecdsa() for a valid secretkey
  +/
     {
         auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
@@ -564,7 +590,7 @@ unittest {
     }
 
     /++
- + This tests secret key verify() for an invalid secretkey
+ + This tests secret key verify_ecdsa() for an invalid secretkey
  +/
     {
         auto sec = decode("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
@@ -604,7 +630,7 @@ unittest {
         auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
         try {
             auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.DER, NativeSecp256k1.Format.DER);
-            auto resultArr = crypt.sign(data, sec);
+            auto resultArr = crypt.sign_ecdsa(data, sec);
             auto sigString = resultArr.toHexString!true;
             assert(sigString == "30440220182A108E1448DC8F1FB467D06A0F3BB8EA0533584CB954EF8DA112F1D60E39A202201C66F36DA211C087F3AF88B50EDF4F9BDAA6CF5FD6817E74DCA34DB12390C6E9");
         }
@@ -621,7 +647,7 @@ unittest {
         auto sec = decode("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
         try {
             auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.DER, NativeSecp256k1.Format.DER);
-            auto resultArr = crypt.sign(data, sec);
+            auto resultArr = crypt.sign_ecdsa(data, sec);
             assert(0, "This test should throw an ConsensusException");
         }
         catch (ConsensusException e) {
@@ -703,10 +729,9 @@ unittest {
  + This tests seed randomization
  +/
     {
-        auto seed = decode("A441B15FE9A3CF5661190A0B93B9DEC7D04127288CC87250967CF3B52894D110"); //sha256hash of "random"
         try {
             auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.DER, NativeSecp256k1.Format.DER);
-            auto result = crypt.randomize(seed);
+            auto result = crypt.randomizeContext;
             assert(result);
         }
         catch (ConsensusException e) {
@@ -731,8 +756,8 @@ unittest {
             immutable privkey = data.idup;
             immutable pubkey = crypt.computePubkey(privkey);
 
-            immutable signature = crypt.sign(message, privkey);
-            assert(crypt.verify(message, signature, pubkey));
+            immutable signature = crypt.sign_ecdsa(message, privkey);
+            assert(crypt.verify_ecdsa(message, signature, pubkey));
         }
         catch (ConsensusException e) {
             assert(0, e.msg);
@@ -750,8 +775,8 @@ unittest {
 
         // Message
         auto message = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90");
-        auto signature = crypt.sign(message, privkey);
-        assert(crypt.verify(message, signature, pubkey));
+        auto signature = crypt.sign_ecdsa(message, privkey);
+        assert(crypt.verify_ecdsa(message, signature, pubkey));
 
         // Drived key a
         const drive = decode("ABCDEF");
@@ -760,8 +785,8 @@ unittest {
         assert(privkey != privkey_a_drived);
         auto pubkey_a_drived = crypt.pubKeyTweakMul(pubkey, drive);
         assert(pubkey != pubkey_a_drived);
-        auto signature_a_drived = crypt.sign(message, privkey_a_drived);
-        assert(crypt.verify(message, signature_a_drived, pubkey_a_drived));
+        auto signature_a_drived = crypt.sign_ecdsa(message, privkey_a_drived);
+        assert(crypt.verify_ecdsa(message, signature_a_drived, pubkey_a_drived));
 
         // Drive key b from key a
         ubyte[] privkey_b_drived;
@@ -769,8 +794,8 @@ unittest {
         assert(privkey_b_drived != privkey_a_drived);
         auto pubkey_b_drived = crypt.pubKeyTweakMul(pubkey_a_drived, drive);
         assert(pubkey_b_drived != pubkey_a_drived);
-        auto signature_b_drived = crypt.sign(message, privkey_b_drived);
-        assert(crypt.verify(message, signature_b_drived, pubkey_b_drived));
+        auto signature_b_drived = crypt.sign_ecdsa(message, privkey_b_drived);
+        assert(crypt.verify_ecdsa(message, signature_b_drived, pubkey_b_drived));
 
     }
 
@@ -785,8 +810,8 @@ unittest {
 
         // Message
         auto message = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90");
-        auto signature = crypt.sign(message, privkey);
-        assert(crypt.verify(message, signature, pubkey));
+        auto signature = crypt.sign_ecdsa(message, privkey);
+        assert(crypt.verify_ecdsa(message, signature, pubkey));
 
     }
 
@@ -800,8 +825,8 @@ unittest {
 
         // Message
         auto message = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90");
-        auto signature = crypt.sign(message, privkey);
-        assert(crypt.verify(message, signature, pubkey));
+        auto signature = crypt.sign_ecdsa(message, privkey);
+        assert(crypt.verify_ecdsa(message, signature, pubkey));
 
     }
 
@@ -815,8 +840,8 @@ unittest {
 
         // Message
         auto message = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90");
-        auto signature = crypt.sign(message, privkey);
-        assert(crypt.verify(message, signature, pubkey));
+        auto signature = crypt.sign_ecdsa(message, privkey);
+        assert(crypt.verify_ecdsa(message, signature, pubkey));
 
     }
 
@@ -831,8 +856,8 @@ unittest {
 
         // Message
         auto message = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90");
-        auto signature = crypt.sign(message, privkey);
-        assert(crypt.verify(message, signature, pubkey));
+        auto signature = crypt.sign_ecdsa(message, privkey);
+        assert(crypt.verify_ecdsa(message, signature, pubkey));
 
     }
 
@@ -846,9 +871,9 @@ unittest {
 
         // Message
         auto message = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90");
-        auto signature = crypt.sign(message, privkey);
+        auto signature = crypt.sign_ecdsa(message, privkey);
 
-        assert(crypt.verify(message, signature, pubkey));
+        assert(crypt.verify_ecdsa(message, signature, pubkey));
 
     }
 
@@ -926,15 +951,4 @@ unittest {
         }
     }
 
-    version (RANDOM) {
-        try {
-            auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.DER, NativeSecp256k1.Format.DER);
-            auto result = crypt.secureRandom();
-
-            assert(result != 0);
-        }
-        catch (ConsensusException e) {
-            assert(0, e.msg);
-        }
-    }
 }

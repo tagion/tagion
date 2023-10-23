@@ -21,7 +21,7 @@ import tagion.hibon.BigNumber;
     @label(StdNames.value) TagionCurrency value; /// Tagion bill 
     @label(StdNames.time) sdt_t time; // Time stamp
     @label(StdNames.owner) Pubkey owner; // owner key
-    @label(StdNames.nonce, true) Buffer nonce; // extra nonce 
+    @label(StdNames.nonce) @optional Buffer nonce; // extra nonce 
     mixin HiBONRecord!(
             q{
                 this(const(TagionCurrency) value, const sdt_t time, Pubkey owner, Buffer nonce) pure nothrow {
@@ -35,7 +35,7 @@ import tagion.hibon.BigNumber;
 
 @recordType("SMC") struct Contract {
     @label("$in") const(DARTIndex)[] inputs; /// Hash pointer to input (DART)
-    @label("$read", true) const(DARTIndex)[] reads; /// Hash pointer to read-only input (DART)
+    @label("$read") @optional const(DARTIndex)[] reads; /// Hash pointer to read-only input (DART)
     @label("$run") Document script; // Smart contract 
     bool verify() {
         return (inputs.length > 0);
@@ -155,8 +155,8 @@ struct Epoch {
     sdt_t time; /// Epoch concensus time
     @label(StdNames.bullseye) Fingerprint bullseye;
     @label(StdNames.previous) Fingerprint previous;
-    @label(VOID, true) Pubkey[] active; /// Sorted keys
-    @label(VOID, true) Pubkey[] deactive;
+    @optional Pubkey[] active; /// Sorted keys
+    @optional Pubkey[] deactive;
 
     mixin HiBONRecord;
 }
@@ -181,7 +181,6 @@ struct ConsensusVoting {
     @label(StdNames.owner) Pubkey owner;
     @label(StdNames.signed) Signature signed_bullseye;
 
-    
     mixin HiBONRecord!(
             q{
             this(long epoch, Pubkey owner, Signature signed_bullseye) {

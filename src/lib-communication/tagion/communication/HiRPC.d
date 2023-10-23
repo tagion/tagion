@@ -61,25 +61,25 @@ struct HiRPC {
 
     /// HiRPC call method 
     struct Method {
-        @label("*", true) @(filter.Initialized) uint id; /// RPC identifier
-        @label("*", true) @filter(q{!a.empty}) Document params; /// RPC arguments
+        @optional @(filter.Initialized) uint id; /// RPC identifier
+        @optional @filter(q{!a.empty}) Document params; /// RPC arguments
         @label("method") @(inspect.Initialized) string name; /// RPC method name
 
         mixin HiBONRecord;
     }
     /// HiRPC result from a method
     struct Response {
-        @label("*", true) @(filter.Initialized) uint id; /// RPC response id, if given by the method
+        @optional @(filter.Initialized) uint id; /// RPC response id, if given by the method
         Document result; /// Return data from the method request
         mixin HiBONRecord;
     }
 
     /// HiRPC error response for a method
     struct Error {
-        @label("*", true) @(filter.Initialized) uint id; /// RPC response id, if given by the method 
-        @label("$data", true) @filter(q{!a.empty}) Document data; /// Optional error response package
-        @label("$msg", true) @(filter.Initialized) string message; /// Optional Error text message
-        @label("$code", true) @(filter.Initialized) int code; /// Optional error code
+        @optional @(filter.Initialized) uint id; /// RPC response id, if given by the method 
+        @label("$data") @optional @filter(q{!a.empty}) Document data; /// Optional error response package
+        @label("$msg") @optional @(filter.Initialized) string message; /// Optional Error text message
+        @label("$code") @optional @(filter.Initialized) int code; /// Optional error code
 
         static bool valid(const Document doc) {
             enum codeName = GetLabel!(code).name;
@@ -176,10 +176,10 @@ struct HiRPC {
         static assert(Message.response.id.alignof == Message.id.alignof);
         static assert(Message.error.id.alignof == Message.id.alignof);
 
-        @label("$sign", true) @(filter.Initialized) Signature signature; /// Signature of the message
-        @label("$Y", true) @(filter.Initialized) Pubkey pubkey; /// Owner key of the message
+        @label("$sign") @optional @(filter.Initialized) Signature signature; /// Signature of the message
+        @label("$Y") @optional @(filter.Initialized) Pubkey pubkey; /// Owner key of the message
         @label("$msg") Document message; /// the HiRPC message
-        @label("") immutable Type type;
+        @exclude immutable Type type;
 
         @nogc const pure nothrow {
             /// Returns: true if the message is a method
@@ -213,8 +213,8 @@ struct HiRPC {
         }
 
         static if (DIRECTION is Direction.RECEIVE) {
-            @label("") protected Message _message;
-            @label("") immutable SignedState signed;
+            @exclude protected Message _message;
+            @exclude immutable SignedState signed;
             enum signName = GetLabel!(signature).name;
             enum pubkeyName = GetLabel!(pubkey).name;
             enum messageName = GetLabel!(message).name;

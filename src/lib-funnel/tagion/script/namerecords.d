@@ -10,7 +10,8 @@ import tagion.dart.DARTBasic;
 import tagion.utils.StdTime;
 
 @safe:
-@recordType("NNC") struct NetworkNameCard {
+@recordType("$@NNC")
+struct NetworkNameCard {
     @label(StdNames.name) string name; /// Tagion domain name (TDN) 
     @label(StdNames.owner) Pubkey owner; /// NNC pubkey
     @label("$lang") string lang; /// Language used for the #name
@@ -19,11 +20,12 @@ import tagion.utils.StdTime;
     mixin HiBONRecord;
 }
 
-@recordType("NRC") struct NetworkNameRecord {
+@recordType("$@NRC")
+struct NetworkNameRecord {
     @label("$name") string name; /// Hash of the NNC.name
     @label(StdNames.previous) Fingerprint previous; /// Hash pointer to the previuos NRC
     @label("$index") uint index; /// Current index previous.index+1
-    @label("$payload", true) Document payload;
+    @label("$payload") @optional Document payload;
     mixin HiBONRecord;
 }
 
