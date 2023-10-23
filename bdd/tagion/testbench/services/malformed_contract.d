@@ -12,7 +12,9 @@ enum feature = Feature(
 alias FeatureContext = Tuple!(
         ContractTypeWithoutCorrectInformation, "ContractTypeWithoutCorrectInformation",
         InputsAreNotBillsInDart, "InputsAreNotBillsInDart",
+        NoInputBillsInContract, "NoInputBillsInContract",
         NegativeAmountAndZeroAmountOnOutputBills, "NegativeAmountAndZeroAmountOnOutputBills",
+        ContractWhereInputIsSmallerThanOutput, "ContractWhereInputIsSmallerThanOutput",
         FeatureGroup*, "result"
 );
 
@@ -58,6 +60,27 @@ class InputsAreNotBillsInDart {
 
 }
 
+@safe @Scenario("no input bills in contract",
+        [])
+class NoInputBillsInContract {
+
+    @Given("i have a malformed payment contract withtout any tagion bills.")
+    Document bills() {
+        return Document();
+    }
+
+    @When("i send the contract to the network.")
+    Document network() {
+        return Document();
+    }
+
+    @Then("the contract should be rejected.")
+    Document rejected() {
+        return Document();
+    }
+
+}
+
 @safe @Scenario("Negative amount and zero amount on output bills.",
         [])
 class NegativeAmountAndZeroAmountOnOutputBills {
@@ -73,6 +96,27 @@ class NegativeAmountAndZeroAmountOnOutputBills {
     }
 
     @Then("the contracts should be rejected.")
+    Document rejected() {
+        return Document();
+    }
+
+}
+
+@safe @Scenario("Contract where input is smaller than output.",
+        [])
+class ContractWhereInputIsSmallerThanOutput {
+
+    @Given("i have a contract where the input bill is smaller than the output bill.")
+    Document bill() {
+        return Document();
+    }
+
+    @When("i send the contract to the network.")
+    Document network() {
+        return Document();
+    }
+
+    @Then("the contract should be rejected.")
     Document rejected() {
         return Document();
     }
