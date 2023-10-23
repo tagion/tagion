@@ -37,9 +37,6 @@ jobs:
           loginctl enable-linger moonbase
           gh run download -n successful_artifact --repo tagion/tagion
           tar -xzf *.tar.gz
-          cd build/x86_64-linux/bin
-          ls
-          whoami
 
       - name: Initialize network bills
         run: |
@@ -47,6 +44,7 @@ jobs:
 
       - name: start service
         run: |
+          cd build/x86_64-linux/bin
           export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1001/bus
           export XDG_RUNTIME_DIR=/run/user/1001
           systemctl stop --user neuewelle.service | echo "No service was running"
