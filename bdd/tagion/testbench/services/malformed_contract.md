@@ -10,8 +10,18 @@ Given i have a malformed contract where the inputs are another type than bills.
 When i send the contract to the network.
 Then the contract should be rejected.
 
+Scenario: no input bills in contract
+Given i have a malformed payment contract withtout any tagion bills.
+When i send the contract to the network.
+Then the contract should be rejected.
+
 Scenario: Negative amount and zero amount on output bills.
 Given i have three contracts. One with output that is zero. Another where it is negative. And one with a negative and a valid output.
 When i send the contracts to the network.
 Then the contracts should be rejected.
+
+Scenario: Contract where input is smaller than output.
+Given i have a contract where the input bill is smaller than the output bill.
+When i send the contract to the network.
+Then the contract should be rejected.
 

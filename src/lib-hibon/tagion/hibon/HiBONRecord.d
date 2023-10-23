@@ -114,9 +114,11 @@ template isSpecialKeyType(T) {
  +/
 struct label {
     string name; /// Name of the HiBON member
-    bool optional; /// This flag is set to true if this paramer is optional
 }
 
+struct optional; /// This flag is set to true if this paramer is optional
+
+struct exclude; // Exclude the member from the HiBONRecord
 /++
  filter attribute for toHiBON
  +/
@@ -158,7 +160,7 @@ template GetLabel(alias member) {
     static if (hasUDA!(member, label)) {
         enum _label = getUDAs!(member, label)[0];
         static if (_label.name == VOID) {
-            enum GetLabel = label(basename!(member), _label.optional);
+            enum GetLabel = label(basename!(member));
         }
         else {
             enum GetLabel = _label;
@@ -203,12 +205,13 @@ mixin template HiBONRecordType() {
  TYPE = is used to set a HiBON record type (TYPENAME)
  Examples:
  --------------------
+@recodeType("TEST") // Set the HiBONRecord type name
  struct Test {
- @label("$X") uint x; // The member in HiBON is "$X"
- string name;         // The member in HiBON is "name"
- @label("num", true); // The member in HiBON is "num" and is optional
- @label("") bool dummy; // This parameter is not included in the HiBON
- HiBONRecord!("TEST");   // The "$type" is set to "TEST"
+ @label("$X") uint x;     // The member in HiBON is "$X"
+ string name;             // The member in HiBON is "name"
+ @label("num") int num;   // The member in HiBON is "num" and is optional
+ @optional  string text;  // optional hibon member 
+ @exclude bool dummy;   // This parameter is not included in the HiBON
  }
  --------------------
  CTOR = is used for constructor
@@ -252,7 +255,7 @@ mixin template HiBONRecord(string CTOR = "") {
     import tagion.basic.tagionexceptions : Check;
     import tagion.hibon.HiBONException : HiBONRecordException;
     import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType,
-        label, GetLabel, filter, fixed, inspect, VOID;
+        label, exclude, optional, GetLabel, filter, fixed, inspect, VOID;
     import HiBONRecord = tagion.hibon.HiBONRecord;
 
     import tagion.hibon.HiBONBase : TypedefBase;
@@ -355,6 +358,8 @@ mixin template HiBONRecord(string CTOR = "") {
         MemberLoop: foreach (i, m; this.tupleof) {
             static if (__traits(compiles, typeof(m))) {
                 enum default_name = basename!(this.tupleof[i]);
+                enum optional_flag = hasUDA!(this.tupleof[i], optional);
+                enum exclude_flag = hasUDA!(this.tupleof[i], exclude);
                 alias label = GetLabel!(this.tupleof[i]);
                 enum name = label.name;
                 // }
@@ -372,7 +377,9 @@ mixin template HiBONRecord(string CTOR = "") {
                         }
                     }
                 }
-                static if (name.length) {
+                static assert(name.length > 0,
+                        format("Label for %s can not be empty", default_name));
+                static if (!exclude_flag) {
                     alias MemberT = typeof(m);
                     alias BaseT = TypedefBase!MemberT;
                     alias UnqualT = Unqual!BaseT;
@@ -401,7 +408,7 @@ mixin template HiBONRecord(string CTOR = "") {
                         }
                         else {
                             static assert(is(BaseT == HiBON) || is(BaseT : const(Document)),
-                                    format(`A sub class/struct '%s' of type %s must have a toHiBON or must be ingnored with @label("") UDA tag`,
+                                    format(`A sub class/struct '%s' of type %s must have a toHiBON or must be ingnored with @exclude UDA tag`,
                                     name, BaseT.stringof));
                             hibon[name] = cast(BaseT) m;
                         }
@@ -612,11 +619,13 @@ mixin template HiBONRecord(string CTOR = "") {
             ForeachTuple: foreach (i, ref m; this.tupleof) {
                 static if (__traits(compiles, typeof(m))) {
                     enum default_name = basename!(this.tupleof[i]);
+                    enum optional_flag = hasUDA!(this.tupleof[i], optional);
+                    enum exclude_flag = hasUDA!(this.tupleof[i], exclude);
                     static if (hasUDA!(this.tupleof[i], label)) {
                         alias label = GetLabel!(this.tupleof[i]);
                         enum name = (label.name == VOID) ? default_name : label.name;
-                        enum optional = label.optional;
-                        static if (label.optional) {
+                        //enum optional_flag = label.optional || hasUDA!(this.tupleof[i], optional);
+                        static if (optional_flag) {
                             if (!doc.hasMember(name)) {
                                 continue ForeachTuple;
                             }
@@ -630,14 +639,15 @@ mixin template HiBONRecord(string CTOR = "") {
                     }
                 else {
                         enum name = default_name;
-                        enum optional = false;
                     }
-                    static if (name.length) {
+                    static assert(name.length > 0,
+                            format("Label for %s can not be empty", default_name));
+                    static if (!exclude_flag) {
                         static if (hasUDA!(this.tupleof[i], fixed)) {
                             alias assigns = getUDAs!(this.tupleof[i], fixed);
                             static assert(assigns.length is 1,
                                     "Only one fixed UDA allowed per member");
-                            static assert(!optional, "The optional parameter in label can not be used in connection with the fixed attribute");
+                            static assert(!optional_flag, "The optional parameter in label can not be used in connection with the fixed attribute");
                             enum code = format(q{this.tupleof[i]=%s;}, assigns[0].code);
                             if (!doc.hasMember(name)) {
                                 mixin(code);
@@ -649,7 +659,7 @@ mixin template HiBONRecord(string CTOR = "") {
                         //alias BaseT = TypedefBase!MemberT;
                         alias BaseT = MemberT;
                         alias UnqualT = Unqual!BaseT;
-                        static if (optional) {
+                        static if (optional_flag) {
                             if (!doc.hasMember(name)) {
                                 continue ForeachTuple;
                             }
@@ -785,8 +795,8 @@ mixin template HiBONRecord(string CTOR = "") {
         @recordType(LABEL)
         static struct SimpelOption {
             int not_an_option;
-            @label("s", true) int s;
-            @label(VOID, true) string text;
+            @label("s") @optional int s;
+            @optional string text;
             mixin HiBONRecord!();
         }
     }
@@ -895,12 +905,12 @@ mixin template HiBONRecord(string CTOR = "") {
         template NotBoth(bool FILTER) {
             @recordType("NotBoth") static struct NotBoth {
                 static if (FILTER) {
-                    @label("*", true) @(filter.Initialized) int x;
-                    @label("*", true) @(filter.Initialized) @filter(q{a < 42}) int y;
+                    @optional @(filter.Initialized) int x;
+                    @optional @(filter.Initialized) @filter(q{a < 42}) int y;
                 }
                 else {
-                    @label("*", true) int x;
-                    @label("*", true) int y;
+                    @optional int x;
+                    @optional int y;
                 }
                 bool valid(const Document doc) {
                     return doc.hasMember("x") ^ doc.hasMember("y");

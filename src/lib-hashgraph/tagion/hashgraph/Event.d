@@ -144,7 +144,6 @@ class Event {
          *   owner_event = the event which is voted to be a witness
          *   seeing_witness_in_previous_round_mask = The witness seen from this event to the privious witness.
          */
-        @trusted
         this(Event owner_event, ulong node_size) nothrow
         in {
             assert(owner_event);
@@ -367,8 +366,7 @@ class Event {
      * Params:
      *   hashgraph = event owner
      */
-    @trusted
-    final package void disconnect(HashGraph hashgraph)
+    final package void disconnect(HashGraph hashgraph) nothrow @trusted
     in {
         assert(!_mother, "Event with a mother can not be disconnected");
     }
@@ -620,11 +618,16 @@ class Event {
     @nogc
     struct Range(bool CONST = true) {
         private Event current;
-        @trusted
-        this(const Event event) pure nothrow {
-            current = cast(Event) event;
+        static if (CONST) {
+            this(const Event event) pure nothrow @trusted {
+                current = cast(Event) event;
+            }
         }
-
+        else {
+            this(Event event) pure nothrow {
+                current = event;
+            }
+        }
         pure nothrow {
             bool empty() const {
                 return current is null;

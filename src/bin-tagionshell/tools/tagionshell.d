@@ -6,6 +6,7 @@ import std.file : exists;
 import std.stdio : stderr, writeln, writefln;
 import std.json;
 import std.exception;
+import std.concurrency;
 import std.format;
 import core.time;
 
@@ -14,9 +15,50 @@ import tagion.tools.revision;
 import tagion.tools.shell.shelloptions;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON;
+import tagion.hibon.HiBONFile : fread, fwrite;
+
+import tagion.script.common;
+import tagion.script.TagionCurrency;
+
+import tagion.basic.Types : FileExtension, Buffer, hasExtension;
+import tagion.basic.range : doFront;
+
+import tagion.utils.StdTime : currentTime;
+
+import tagion.crypto.SecureNet;
+import tagion.crypto.SecureInterfaceNet;
+
+import tagion.tools.wallet.WalletOptions;
+import tagion.tools.wallet.WalletInterface;
+
+import tagion.communication.HiRPC;
+import tagion.wallet.SecureWallet;
+import tagion.wallet.AccountDetails;
+
+
 import nngd.nngd;
 
 mixin Main!(_main, "shell");
+
+void dart_worker( ShellOptions opt ){
+    int rc;
+    NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_SUB);
+    s.recvtimeout = msecs(1000);
+    s.subscribe("");
+    writeln("DS: subscribed");
+    while(true){
+        rc = s.dial(opt.tagion_subscription);
+        if(rc == 0)
+            break;
+        nng_sleep(100.msecs);    
+    }
+    writeln("DS: connected");
+    while(true){
+        Document received_doc = s.receive!(immutable(ubyte[]))();
+        writeln(format("DS: received %d bytes", received_doc.length));
+    }
+}
+
 
 WebData contract_handler ( WebData req, void* ctx ){
     int rc;
@@ -28,7 +70,7 @@ WebData contract_handler ( WebData req, void* ctx ){
     writeln(format("WH: contract: with %d bytes for %s",req.rawdata.length, opt.tagion_sock_addr));
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
     s.recvtimeout = msecs(10000);
-    writeln(format("WH: trying to dial %s", opt.tagion_sock_addr));
+    writeln(format("WH: contract: trying to dial %s", opt.tagion_sock_addr));
     while(true){
         rc = s.dial(opt.tagion_sock_addr);
         if(rc == 0)
@@ -36,15 +78,128 @@ WebData contract_handler ( WebData req, void* ctx ){
     }
     rc = s.send(req.rawdata);
     if(rc != 0){
-        writeln("contract_handler: send: ", nng_errstr(rc));
+        writeln("contract_handler: send: ", nng_errstr(s.errno));
         WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "socket error" };
         return res;
     }        
     ubyte[4096] buf;
     size_t len = s.receivebuf(buf, 4096);
-    writeln(format("WH: contract: received %d bytes",len));
+    if(len == size_t.max && s.errno != 0){
+        writeln("contract_handler: recv: ", nng_errstr(s.errno));
+        WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "socket error" };
+        return res;
+    }
+    writeln(format("WH: dart: received %d bytes",len));
     s.close(); 
-    WebData res = {status: nng_http_status.NNG_HTTP_STATUS_OK, type: "applicaion/octet-stream", rawdata: buf[0..len] };
+    WebData res = {
+        status: (len>0) ? nng_http_status.NNG_HTTP_STATUS_OK : nng_http_status.NNG_HTTP_STATUS_NO_CONTENT, 
+        type: "applicaion/octet-stream", rawdata: (len>0) ? buf[0..len] : null 
+    };
+    return res;
+}
+
+WebData dart_handler ( WebData req, void* ctx ){
+    int rc;
+    ShellOptions* opt = cast(ShellOptions*) ctx;
+    if(req.type != "application/octet-stream"){
+        WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "invalid data type" };    
+        return res;
+    }
+    writeln(format("WH: dart: with %d bytes for %s",req.rawdata.length, opt.tagion_dart_sock_addr));
+    NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
+    s.recvtimeout = msecs(60000);
+    writeln(format("WH: dart: trying to dial %s", opt.tagion_dart_sock_addr));
+    while(true){
+        rc = s.dial(opt.tagion_dart_sock_addr);
+        if(rc == 0)
+            break;
+    }
+    rc = s.send(req.rawdata);
+    if(rc != 0){
+        writeln("dart_handler: send: ", nng_errstr(rc));
+        WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "socket error" };
+        return res;
+    }        
+    writeln(format("WH: dart: sent %d bytes",req.rawdata.length));
+    ubyte[4096] buf;
+    ubyte[] docbuf;
+    size_t len = 0, doclen = 0; 
+    do { 
+        len = s.receivebuf(buf, 4096);
+        if(len == size_t.max && s.errno != 0){
+            writeln("dart_handler: recv: ", nng_errstr(s.errno));
+            WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "socket error" };
+            return res;
+        }
+        writeln(format("WH: dart: received %d bytes",len));
+        docbuf ~= buf[0..len];
+        doclen += len;
+    }while(len > 4095);    
+    s.close(); 
+    WebData res = {
+        status: (doclen>0) ? nng_http_status.NNG_HTTP_STATUS_OK : nng_http_status.NNG_HTTP_STATUS_NO_CONTENT, 
+        type: "applicaion/octet-stream", rawdata: (doclen>0) ? docbuf[0..doclen] : null 
+    };
+    writeln("WH: dart: res ",res);
+    return res;
+}
+
+WebData i2p_handler ( WebData req, void* ctx ){
+    int rc;
+    ShellOptions* opt = cast(ShellOptions*) ctx;
+    if(req.type != "application/octet-stream"){
+        WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "invalid data type" };    
+        return res;
+    }
+    writeln(format("WH: invoice2pay: with %d bytes",req.rawdata.length));
+ 
+    WalletOptions options;
+    auto wallet_config_file = opt.default_i2p_wallet ~ "/wallet.json";
+    if (wallet_config_file.exists) {
+        options.load(wallet_config_file);
+    }else{
+        writeln("i2p: invalid wallet dir");
+        WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "invalid wallet dir" };    
+        return res;
+    }
+    auto wallet_interface = WalletInterface(options);
+    SecureWallet!StdSecureNet secure_wallet;
+    const wallet_doc = (opt.default_i2p_wallet ~ "/" ~ options.walletfile).fread;
+    const pin_doc = (opt.default_i2p_wallet ~ "/" ~ options.devicefile).exists ? (opt.default_i2p_wallet ~ "/" ~ options.devicefile).fread : Document.init;
+    if (wallet_doc.isInorder && pin_doc.isInorder) {
+        secure_wallet = WalletInterface.StdSecureWallet(wallet_doc, pin_doc);
+        secure_wallet.login(opt.default_i2p_wallet_pin);
+    }else{
+        writeln("i2p: invalid wallet load");
+        WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "invalid wallet load" };    
+        return res;
+    }   
+    if(!secure_wallet.isLoggedin){
+        writeln("i2p: invalid wallet login");
+        WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "invalid wallet login" };    
+        return res;
+    }
+    
+    Invoice[] invoices;
+    invoices ~=  Invoice(Document(cast(immutable(ubyte[]))req.rawdata));
+
+    SignedContract signed_contract;
+    TagionCurrency fees;
+    secure_wallet.payment(invoices, signed_contract, fees);
+    const message = secure_wallet.net.calcHash(signed_contract);
+    const contract_net = secure_wallet.net.derive(message);
+    const hirpc = HiRPC(contract_net);
+    const hirpc_submit = hirpc.submit(signed_contract);
+    secure_wallet.account.hirpcs ~= hirpc_submit.toDoc;
+
+    sendSubmitHiRPC(options.contract_address, hirpc_submit, contract_net);
+
+    writeln("i2p: payment sent");   
+
+    WebData res = {
+        status: nng_http_status.NNG_HTTP_STATUS_OK, 
+        type: "applicaion/octet-stream", rawdata: cast(ubyte[])(hirpc_submit.toDoc.serialize)
+    };
     return res;
 }
 
@@ -97,13 +252,30 @@ int _main(string[] args) {
         return 0;
     }
 
-    WebApp app = WebApp("ContractProxy", options.contract_endpoint, parseJSON("{}"), &options);
+    //auto ds_tid = spawn(&dart_worker, options);
 
-    app.route("/api/v1/contract", &contract_handler, ["POST"]);
+
+    WebApp app = WebApp("ShellApp", options.shell_uri, parseJSON("{}"), &options);
+
+    app.route(options.shell_api_prefix~options.contract_endpoint, &contract_handler, ["POST"]);
+    app.route(options.shell_api_prefix~options.dart_endpoint, &dart_handler, ["POST"]);
+    app.route(options.shell_api_prefix~options.i2p_endpoint, &i2p_handler, ["POST"]);
 
     app.start();
 
-    writeln("TagionShell web service\nlListening at "~options.contract_endpoint~"\n\t/api/v1/contract\t= POST contract hibon");
+    writeln("\nTagionShell web service\nListening at "
+        ~options.shell_uri~"\n\t"
+        ~options.shell_api_prefix
+        ~options.contract_endpoint
+        ~"\t= POST contract hibon\n\t"
+        ~options.shell_api_prefix
+        ~options.dart_endpoint
+        ~"\t\t= POST dart request hibon\n\t"
+        ~options.shell_api_prefix
+        ~options.i2p_endpoint
+        ~"\t= POST invoice-to-pay hibon\n\t"
+
+    );
 
     while(true)
         nng_sleep(1000.msecs);

@@ -1,6 +1,6 @@
 /// Handles the lower level operation of DART database
 module tagion.dart.DARTFile;
-
+@safe:
 private {
     import std.format;
     import std.exception : assumeWontThrow;
@@ -28,7 +28,7 @@ private {
 
     import tagion.hibon.HiBON : HiBON;
 
-    import tagion.hibon.HiBONRecord : label, record_filter = filter, GetLabel, recordType;
+    import tagion.hibon.HiBONRecord : label, exclude, record_filter = filter, GetLabel, recordType;
     import tagion.hibon.Document : Document;
 
     import tagion.dart.BlockFile;
@@ -65,7 +65,6 @@ shared static this() @trusted {
  + Returns;
  +     fingerprint[rim]
  +/
-@safe
 ubyte rim_key(F)(F rim_keys, const uint rim) pure if (isBufferType!F) {
     if (rim >= rim_keys.length) {
         debug __write("%s rim=%d", rim_keys.hex, rim);
@@ -91,7 +90,7 @@ enum KEY_SPAN = ubyte.max + 1;
  + Doens't branche out it contais a Leave which contains a Archive
  +
  +/
-@safe class DARTFile {
+class DARTFile {
 
     import tagion.dart.BlockFile : Index;
 
@@ -214,7 +213,7 @@ enum KEY_SPAN = ubyte.max + 1;
         return manufactor.recorder(archives);
     }
 
-    @safe struct Leave {
+    struct Leave {
         import tagion.hibon.HiBONRecord;
 
         Index index;
@@ -241,11 +240,11 @@ enum KEY_SPAN = ubyte.max + 1;
         import std.stdio;
         import tagion.hibon.HiBONJSON;
 
-        @label("") protected Fingerprint merkleroot; /// The sparsed Merkle root hash of the branches
-        @label("$prints", true) @(record_filter.Initialized) protected Fingerprint[] _fingerprints; /// Array of all the Leaves hashes
+        @exclude protected Fingerprint merkleroot; /// The sparsed Merkle root hash of the branches
+        @label("$prints") @optional @(record_filter.Initialized) protected Fingerprint[] _fingerprints; /// Array of all the Leaves hashes
         @label("$darts") @(record_filter.Initialized) protected DARTIndex[] _dart_indices; /// Array of all the Leaves hashes
-        @label("$idx", true) @(record_filter.Initialized) protected Index[] _indices; /// Array of index pointer to BlockFile
-        @label("") private bool done;
+        @label("$idx") @optional @(record_filter.Initialized) protected Index[] _indices; /// Array of index pointer to BlockFile
+        @exclude private bool done;
         enum fingerprintsName = GetLabel!(_fingerprints).name;
         enum dart_indicesName = GetLabel!(_dart_indices).name;
         enum indicesName = GetLabel!(_indices).name;
@@ -581,7 +580,6 @@ enum KEY_SPAN = ubyte.max + 1;
         return Document.init;
     }
 
-    @safe
     class RimWalkerFiber : Fiber {
         immutable(Buffer) rim_paths;
         protected Document doc;
@@ -1242,7 +1240,6 @@ version (unittest) {
     import std.internal.math.biguintx86;
 }
 ///
-@safe
 unittest {
     import std.algorithm.sorting : sort;
 

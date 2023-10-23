@@ -30,9 +30,10 @@ unittest {
     import tagion.crypto.Types : Fingerprint;
     import tagion.dart.DART : DART;
     import tagion.dart.Recorder;
-    import tagion.script.prior.StandardRecords : StandardBill;
+    import tagion.script.common : TagionBill;
     import tagion.script.TagionCurrency : TGN;
     import tagion.utils.Miscellaneous : toHexString;
+    import tagion.utils.StdTime;
 
     const temp_folder = tempfile ~ "/";
 
@@ -45,18 +46,19 @@ unittest {
 
     net.generateKeyPair("very secret password");
 
-    StandardBill[] makeBills(uint epoch) {
+    TagionBill[] makeBills(uint epoch) {
         SecureNet secure_net = new StdSecureNet;
         {
             secure_net.generateKeyPair("secure_net secret password");
         }
 
-        StandardBill[] bills;
+        TagionBill[] bills;
+        // bills ~= TagionBill(1000.TGN, currentTime, securenet);
 
-        bills ~= StandardBill((1000).TGN, epoch, secure_net.pubkey, null);
-        bills ~= StandardBill((1200).TGN, epoch, secure_net.derivePubkey("secure_net0"), null);
-        bills ~= StandardBill((3000).TGN, epoch, secure_net.derivePubkey("secure_net1"), null);
-        bills ~= StandardBill((4300).TGN, epoch, secure_net.derivePubkey("secure_net2"), null);
+        bills ~= TagionBill((1000).TGN, currentTime, secure_net.pubkey, null);
+        bills ~= TagionBill((1200).TGN, currentTime, secure_net.derivePubkey("secure_net0"), null);
+        bills ~= TagionBill((3000).TGN, currentTime, secure_net.derivePubkey("secure_net1"), null);
+        bills ~= TagionBill((4300).TGN, currentTime, secure_net.derivePubkey("secure_net2"), null);
 
         return bills;
     }
@@ -280,7 +282,7 @@ unittest {
                     bills_recorder.toDoc,
                     previous_hash,
                     Fingerprint(dart.fingerprint),
-                    int(0),
+                    i,
                     net));
         }
 

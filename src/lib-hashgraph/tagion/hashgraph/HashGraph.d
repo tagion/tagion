@@ -92,12 +92,6 @@ class HashGraph {
 
     const HiRPC hirpc;
 
-    // function not used
-    @nogc
-    bool active() pure const nothrow {
-        return true;
-    }
-
     @nogc
     const(BitMask) excluded_nodes_mask() const pure nothrow {
         return _excluded_nodes_mask;
@@ -218,7 +212,6 @@ class HashGraph {
         return hirpc.net.pubkey;
     }
 
-    @trusted
     const(Pubkey[]) channels() const pure nothrow {
         return _nodes.keys;
     }
@@ -245,8 +238,8 @@ class HashGraph {
             lazy const sdt_t time) {
         const(HiRPC.Sender) payload_sender() @safe {
             const doc = payload();
-            // writefln("init_tide time: %s", time);
             immutable epack = event_pack(time, null, doc);
+
             const registrated = registerEventPackage(epack);
 
             assert(registrated, "Should not fail here");
@@ -279,16 +272,23 @@ class HashGraph {
         }
     }
 
-    immutable(EventPackage*) event_pack(lazy const sdt_t time, const(Event) father_event, const Document doc) @trusted {
+    immutable(EventPackage)* event_pack(
+            lazy const sdt_t time,
+            const(Event) father_event,
+            const Document doc) {
+
         const mother_event = getNode(channel).event;
+
         immutable ebody = EventBody(doc, mother_event, father_event, time);
-        return cast(immutable) new EventPackage(hirpc.net, ebody);
+
+        immutable result = new immutable(EventPackage)(hirpc.net, ebody);
+        return result;
     }
 
-    immutable(EventPackage*) eva_pack(lazy const sdt_t time, const Buffer nonce) @trusted {
+    immutable(EventPackage*) eva_pack(lazy const sdt_t time, const Buffer nonce) {
         const payload = EvaPayload(channel, nonce);
         immutable eva_event_body = EventBody(payload.toDoc, null, null, time);
-        immutable epack = cast(immutable) new EventPackage(hirpc.net, eva_event_body);
+        immutable epack = new immutable(EventPackage)(hirpc.net, eva_event_body);
         return epack;
     }
 
@@ -309,7 +309,7 @@ class HashGraph {
         EventCache _event_cache;
     }
 
-    void eliminate(scope const(Buffer) fingerprint) {
+    void eliminate(scope const(Buffer) fingerprint) pure nothrow {
         _event_cache.remove(fingerprint);
     }
 
@@ -933,12 +933,11 @@ class HashGraph {
         return event_id;
     }
 
-    @trusted
     size_t next_node_id() const pure nothrow {
         if (_nodes.length is 0) {
             return 0;
         }
-        scope BitMask used_nodes;
+        BitMask used_nodes;
         _nodes.byValue
             .map!(a => a.node_id)
             .each!((n) { used_nodes[n] = true; });
@@ -953,7 +952,6 @@ class HashGraph {
     /++
      Dumps all events in the Hashgraph to a file
      +/
-    //   @trusted
     void fwrite(string filename, Pubkey[string] node_labels = null) {
         import tagion.hibon.HiBONFile : fwrite;
         import tagion.hashgraphview.EventView;

@@ -17,6 +17,7 @@ import tagion.communication.HiRPC : HiRPC;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONJSON : JSONString;
 import tagion.utils.StdTime;
+import tagion.crypto.Types;
 
 import tagion.hibon.Document : Document;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
@@ -77,9 +78,9 @@ int nextAltitide(const Event event) pure nothrow {
 }
 
 protected enum _params = [
-    "events",
-    "size",
-];
+        "events",
+        "size",
+    ];
 
 mixin(EnumText!("Params", _params));
 
@@ -110,9 +111,9 @@ struct EventBody {
     protected alias check = Check!HashGraphConsensusException;
     import std.traits : getSymbolsByUDA, OriginalType, Unqual, hasMember;
 
-    @label("$p", true) @filter(q{!a.empty}) Document payload; // Transaction
-    @label("$m", true) @(filter.Initialized) Buffer mother; // Hash of the self-parent
-    @label("$f", true) @(filter.Initialized) Buffer father; // Hash of the other-parent
+    @label("$p") @optional @filter(q{!a.empty}) Document payload; // Transaction
+    @label("$m") @optional @(filter.Initialized) Buffer mother; // Hash of the self-parent
+    @label("$f") @optional @(filter.Initialized) Buffer father; // Hash of the other-parent
     @label("$a") int altitude;
     @label("$t") sdt_t time;
     bool verify() {
@@ -181,7 +182,7 @@ struct EventBody {
 
 @safe
 struct EventPackage {
-    @label("") Buffer fingerprint;
+    @exclude Buffer fingerprint;
     @label("$sign") Signature signature;
     @label("$pkey") Pubkey pubkey;
     @label("$body") EventBody event_body;
@@ -194,24 +195,27 @@ struct EventPackage {
             /++
              Used when a Event is receved from another node
              +/
-            this(const SecureNet net, const(Document) doc_epack) {
-                this(doc_epack);
+            this(const SecureNet net, const(Document) doc_epack) immutable  {
+                immutable _this=EventPackage(doc_epack);
+                //this(doc_epack);
+                this.signature=_this.signature;
+                this.pubkey=_this.pubkey;
+                this.event_body=_this.event_body;
+                fingerprint=cast(Buffer)net.calcHash(_this.event_body);
                 consensus_check(pubkey.length !is 0, ConsensusFailCode.EVENT_MISSING_PUBKEY);
                 consensus_check(signature.length !is 0, ConsensusFailCode.EVENT_MISSING_SIGNATURE);
-                auto _fingerprint=net.calcHash(event_body);
-                fingerprint = cast(Buffer) _fingerprint;
-                consensus_check(net.verify(_fingerprint, signature, pubkey), ConsensusFailCode.EVENT_BAD_SIGNATURE);
+                consensus_check(net.verify(Fingerprint(fingerprint), signature, pubkey), ConsensusFailCode.EVENT_BAD_SIGNATURE);
             }
 
             /++
              Create a EventPackage from a body
              +/
-            this(const SecureNet net, immutable(EventBody) ebody) {
+            this(const SecureNet net, immutable(EventBody) ebody) immutable {
                 pubkey=net.pubkey;
                 event_body=ebody;
-                auto _fingerprint=net.calcHash(event_body);
-                fingerprint = cast(Buffer) _fingerprint;
-                signature=net.sign(_fingerprint);
+                auto sig = net.sign(event_body);
+                signature = sig.signature;
+                fingerprint = cast(Buffer) sig.message;
             }
 
             this(const SecureNet net, const Pubkey pkey, const Signature signature, immutable(EventBody) ebody) {
@@ -230,8 +234,8 @@ alias Tides = int[Pubkey];
 
 @recordType("Wavefront") @safe
 struct Wavefront {
-    @label("$tides", true) @filter(q{a.length is 0}) private Tides _tides;
-    @label("$events", true) @filter(q{a.length is 0}) const(immutable(EventPackage)*[]) epacks;
+    @label("$tides") @optional @filter(q{a.length is 0}) private Tides _tides;
+    @label("$events") @optional @filter(q{a.length is 0}) const(immutable(EventPackage)*[]) epacks;
     @label("$state") ExchangeState state;
     enum tidesName = GetLabel!(_tides).name;
     enum epacksName = GetLabel!(epacks).name;
@@ -268,10 +272,7 @@ struct Wavefront {
         if (doc.hasMember(epacksName)) {
             const sub_doc = doc[epacksName].get!Document;
             foreach (e; sub_doc[]) {
-                (() @trusted {
-                    immutable epack = cast(immutable)(new EventPackage(net, e.get!Document));
-                    event_packages ~= epack;
-                })();
+                (() @trusted { immutable epack = new immutable(EventPackage)(net, e.get!Document); event_packages ~= epack; })();
             }
         }
         epacks = event_packages;

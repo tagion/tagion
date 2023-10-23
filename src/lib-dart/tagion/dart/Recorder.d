@@ -22,7 +22,7 @@ import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.crypto.Types : Fingerprint;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.HiBONRecord : label, STUB, isHiBONRecord, GetLabel, isStub, recordType;
+import tagion.hibon.HiBONRecord : label, optional, STUB, isHiBONRecord, GetLabel, isStub, recordType;
 import tagion.basic.Types : Buffer;
 import tagion.basic.Message;
 
@@ -402,10 +402,10 @@ const Neutral = delegate(const(Archive) a) => a.type;
         ADD = 1, /// Archive marked as add instrunction
     }
 
-    @label(STUB, true) const(Fingerprint) fingerprint; /// Stub hash-pointer used in sharding
-    @label("$a", true) const Document filed; /// The actual data strute stored 
-    @label("$t", true) const(Type) type; /// Acrhive type
-    @label("$i", true) const(DARTIndex) dart_index;
+    @label(STUB) @optional const(Fingerprint) fingerprint; /// Stub hash-pointer used in sharding
+    @label("$a") @optional const Document filed; /// The actual data strute stored 
+    @label("$t") @optional const(Type) type; /// Acrhive type
+    @label("$i") @optional const(DARTIndex) dart_index;
     enum archiveLabel = GetLabel!(this.filed).name;
     enum fingerprintLabel = GetLabel!(this.fingerprint).name;
     enum typeLabel = GetLabel!(this.type).name;

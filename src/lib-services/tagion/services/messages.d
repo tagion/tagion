@@ -2,7 +2,6 @@
 module tagion.services.messages;
 import tagion.actor.actor;
 import tagion.hibon.Document;
-import tagion.script.prior.StandardRecords;
 
 /// Msg Type sent to actors who receive the document
 alias inputDoc = Msg!"inputDoc";
@@ -25,7 +24,7 @@ alias dartCheckReadRR = Request!"dartCheckRead";
 alias dartRimRR = Request!"dartRim";
 alias dartBullseyeRR = Request!"dartBullseye";
 // alias dartModifyRR = Request!"dartModifyRequest";
-alias dartModify = Msg!"dartModify";
+alias dartModifyRR = Request!"dartModify";
 alias dartHiRPCRR = Request!"dartHiRPCRequest";
 
 alias Payload = Msg!"Payload";

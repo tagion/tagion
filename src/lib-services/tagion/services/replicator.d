@@ -9,6 +9,7 @@ import tagion.crypto.Types : Fingerprint;
 import tagion.dart.Recorder : RecordFactory;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.services.messages;
+import tagion.crypto.SecureNet : StdHashNet;
 
 @safe
 struct ReplicatorOptions {
@@ -33,7 +34,10 @@ enum modify_log = "modify/replicator";
 @safe
 struct ReplicatorService {
     static Topic modify_recorder = Topic(modify_log);
-    void task(immutable(ReplicatorOptions) opts, immutable(SecureNet) net) {
+    
+    void task(immutable(ReplicatorOptions) opts) {
+        HashNet net = new StdHashNet;
+        
         RecorderChainStorage storage = new RecorderChainFileStorage(opts.folder_path, net);
         RecorderChain recorder_chain = new RecorderChain(storage);
 

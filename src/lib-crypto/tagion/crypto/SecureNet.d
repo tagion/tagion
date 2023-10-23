@@ -94,6 +94,7 @@ class StdSecureNet : StdHashNet, SecureNet {
         void tweakAdd(const(ubyte[]) tweek_code, ref ubyte[] tweak_privkey);
         immutable(ubyte[]) ECDHSecret(scope const(Pubkey) pubkey) const;
         Buffer mask(const(ubyte[]) _mask) const;
+        void clone(StdSecureNet net) const;
     }
 
     protected SecretMethods _secret;
@@ -284,6 +285,13 @@ class StdSecureNet : StdHashNet, SecureNet {
                 });
                 return result;
             }
+
+            void clone(StdSecureNet net) const {
+                do_secret_stuff((const(ubyte[]) privkey) @safe {
+                    auto _privkey = privkey.dup;
+                    net.createKeyPair(_privkey); // Not createKeyPair scrambles the privkey
+                });
+            }
         }
 
         _secret = new LocalSecret;
@@ -338,6 +346,23 @@ class StdSecureNet : StdHashNet, SecureNet {
         _crypt = new NativeSecp256k1;
     }
 
+    this(shared(StdSecureNet) other_net) @trusted {
+        _crypt = new NativeSecp256k1;
+        synchronized (other_net) {
+            auto unshared_secure_net = cast(StdSecureNet) other_net;
+            unshared_secure_net._secret.clone(this);
+        }
+    }
+
+    unittest {
+        auto other_net = new StdSecureNet;
+        other_net.generateKeyPair("Secret password to be copied");
+        auto shared_net = (() @trusted => cast(shared) other_net)();
+        SecureNet copy_net = new StdSecureNet(shared_net);
+        assert(other_net.pubkey == copy_net.pubkey);
+
+    }
+
     void eraseKey() pure nothrow {
         _crypt = null;
     }
@@ -377,6 +402,8 @@ class StdSecureNet : StdHashNet, SecureNet {
 
         const doc_signed = net.sign(doc);
 
+        assert(net.rawCalcHash(doc.serialize) == net.calcHash(doc.serialize), "should produce same hash");
+
         assert(doc_signed.message == net.rawCalcHash(doc.serialize));
         assert(net.verify(doc, doc_signed.signature, net.pubkey));
 
@@ -396,6 +423,35 @@ class StdSecureNet : StdHashNet, SecureNet {
 
     }
 
+    unittest {
+        import tagion.hibon.HiBONRecord;
+        import std.format;
+
+        SecureNet net = new StdSecureNet;
+        net.generateKeyPair("Secret password");
+
+        static struct RandomRecord {
+            string x;
+
+            mixin HiBONRecord;
+        }
+
+        foreach (i; 0 .. 1000) {
+            RandomRecord data;
+            data.x = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX20%s".format(i);
+
+            auto fingerprint = net.calcHash(data);
+            auto second_fingerprint = net.calcHash(data.toDoc.serialize);
+            assert(fingerprint == second_fingerprint);
+
+            auto sig = net.sign(data).signature;
+            auto second_sig = net.sign(data.toDoc).signature;
+            assert(sig == second_sig);
+
+            assert(net.verify(fingerprint, sig, net.pubkey));
+        }
+
+    }
 }
 
 @safe

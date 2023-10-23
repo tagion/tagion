@@ -50,9 +50,11 @@ struct EpochCreatorOptions {
 @safe
 struct EpochCreatorService {
 
-    void task(immutable(EpochCreatorOptions) opts, immutable(NetworkMode) network_mode, immutable(size_t) number_of_nodes, immutable(
-            SecureNet) net, immutable(MonitorOptions) monitor_opts, immutable(TaskNames) task_names) {
+    void task(immutable(EpochCreatorOptions) opts, immutable(NetworkMode) network_mode, immutable(size_t) number_of_nodes, shared(StdSecureNet) shared_net, immutable(MonitorOptions) monitor_opts, immutable(TaskNames) task_names) {
 
+        const net = new StdSecureNet(shared_net);
+
+        
         assert(network_mode == NetworkMode.INTERNAL, "Unsupported network mode");
 
         if (monitor_opts.enable) {
@@ -95,16 +97,16 @@ struct EpochCreatorService {
 
 
         const(Document) payload() {
-            if (!hashgraph.active || payload_queue.empty) {
+            if (payload_queue.empty) {
                 return Document();
             }
             return payload_queue.read;
         }
 
         void receivePayload(Payload, const(Document) pload) {
-            log.trace("Received Payload %s", pload.toPretty);
+            log.trace("Received Payload");
             payload_queue.write(pload);
-            hashgraph.init_tide(&gossip_net.gossip, &payload, currentTime);
+            // hashgraph.init_tide(&gossip_net.gossip, &payload, currentTime);
         }
 
         void receiveWavefront(ReceivedWavefront, const(Document) wave_doc) {
@@ -114,7 +116,7 @@ struct EpochCreatorService {
             import std.array;
 
             version (EPOCH_LOG) {
-                log.trace("Received wavefront");
+                log.trace("Received wavefront %s");
             }
 
             const receiver = HiRPC.Receiver(wave_doc);

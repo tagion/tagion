@@ -17,12 +17,11 @@ import tagion.dart.DART : DART;
 import tagion.dart.DARTFile;
 import tagion.basic.Types : Buffer, FileExtension, hasExtension;
 import tagion.dart.DARTBasic : DARTIndex;
-import tagion.dart.DARTcrud : dartRead, dartModify;
+import CRUD = tagion.dart.DARTcrud; // : dartRead, dartModify;
 
 import tagion.basic.basic : tempfile;
 
 import tagion.communication.HiRPC;
-import tagion.prior_services.DARTSynchronization;
 
 import tagion.gossip.GossipNet;
 import tagion.gossip.AddressBook;
@@ -42,7 +41,6 @@ import tagion.hibon.HiBONFile : fread, fwrite;
 import tagion.hibon.HiBONtoText : decode, encodeBase64;
 import tagion.Keywords;
 import tagion.dart.Recorder;
-import tagion.script.prior.StandardRecords;
 import tagion.script.NameCardScripts : readStandardRecord;
 
 import tagion.tools.Basic;
@@ -71,10 +69,12 @@ int _main(string[] args) {
 
     bool print;
 
+    bool standard_output;
     //   bool dartread;
     string[] dartread_args;
     string angle_range;
     uint depth;
+    bool strip;
     bool dartmodify;
     bool dartrim;
     bool dartrpc;
@@ -97,6 +97,7 @@ int _main(string[] args) {
                 "I|initialize", "Create a dart file", &initialize,
                 "o|outputfile", "Sets the output file name", &outputfilename,
                 "r|read", "Excutes a DART read sequency", &dartread_args,
+                "strip", "Strips the dart-recoder dumps archives", &strip,
                 "rim", "Performs DART rim read", &dartrim,
                 "m|modify", "Excutes a DART modify sequency", &dartmodify,
                 "f|force", "Force erase and create journal and destination DART", &force,
@@ -108,13 +109,18 @@ int _main(string[] args) {
                 "R|range", "Sets angle range from:to (Default is full range)", &angle_range,
                 "depth", "Set limit on dart rim depth", &depth,
                 "verbose|v", "Prints verbose information to console", &__verbose_switch,
-                "fake", format("Use fakenet instead of real hashes : default :%s", fake), &fake,
+                "fake", format(
+                    "Use fakenet instead of real hashes : default :%s", fake), &fake,
         );
         if (version_switch) {
             revision_text.writeln;
             return 0;
         }
 
+        standard_output = (outputfilename.empty);
+        if (standard_output) {
+            vout = stderr;
+        }
         if (main_args.helpWanted) {
             writeln(logo);
             defaultGetoptPrinter(
@@ -193,7 +199,7 @@ int _main(string[] args) {
         Exception dart_exception;
         auto db = new DART(net, dartfilename, dart_exception);
         if (dart_exception !is null) {
-            writefln("Fail to open DART: %s. Abort.", dartfilename);
+            stderr.writefln("Fail to open DART: %s. Abort.", dartfilename);
             error(dart_exception);
             return 1;
         }
@@ -247,25 +253,47 @@ int _main(string[] args) {
             return 0;
         }
         if (dartread) {
+            File fout;
+            fout = stdout;
             DARTIndex[] dart_indices;
+            //("%s", dartread_args);
             foreach (read_arg; dartread_args) {
-                import tagion.dart.DARTBasic : dartIndexDecode;
+                import tagion.tools.dartutil.dartindex : dartIndexDecode;
 
+                //   writefln("read %s", read_arg);
                 auto dart_index = net.dartIndexDecode(read_arg);
                 verbose("%s\n%s\n%(%02x%)", read_arg, dart_index.encodeBase64, dart_index);
                 dart_indices ~= dart_index;
             }
 
-            const sender = dartRead(dart_indices, hirpc);
-            auto receiver = hirpc.receive(sender.toDoc);
-            auto result = db(receiver, false);
-            auto tosend = hirpc.toHiBON(result);
-            const tosendResult = tosend.method.params;
-            if (outputfilename.empty) {
-                stdout.rawWrite(tosendResult.serialize);
+            const sender = CRUD.dartRead(dart_indices, hirpc);
+            auto receiver = hirpc.receive(sender);
+            auto response = db(receiver, false);
+            //pragma(msg, "Response ", typeof(response));
+            //writefln("response_sender\n%s", response_sender.toPretty);
+            //auto response = hirpc.receiver(db(receiver, false));
+            // writefln("response\n%J", response);
+            //const result=response.result;
+            //auto tosend = hirpc.toHiBON(result);
+            //const recorder_doc = tosend.method.params;
+
+            if (!outputfilename.empty) {
+                fout = File(outputfilename, "w");
+            }
+            scope (exit) {
+                if (fout !is stdout) {
+                    fout.close;
+                }
+            }
+            if (strip) {
+
+                auto recorder = db.recorder(response.result);
+                foreach (arcive; recorder[]) {
+                    fout.rawWrite(arcive.filed.serialize);
+                }
                 return 0;
             }
-            outputfilename.fwrite(tosendResult);
+            fout.rawWrite(response.toDoc.serialize);
             return 0;
         }
         if (dartrim) {
@@ -305,7 +333,7 @@ int _main(string[] args) {
             const doc = inputfilename.fread;
             auto factory = RecordFactory(net);
             auto recorder = factory.recorder(doc);
-            auto sended = dartModify(recorder, hirpc);
+            auto sended = CRUD.dartModify(recorder, hirpc);
             auto received = hirpc.receive(sended);
             auto result = db(received, false);
             auto tosend = hirpc.toHiBON(result);

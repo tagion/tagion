@@ -235,6 +235,31 @@ extern (C) {
         return can_pay ? 1 : 0;
     }
 
+    export uint create_nft_contract(
+            uint32_t* signedContractPtr,
+            uint8_t* nftPtr,
+            const uint32_t nftLen){
+        
+        immutable nftBuff = cast(immutable)(nftPtr[0 .. nftLen]);
+        
+        if (__wallet_storage.wallet.isLoggedin()) {
+            auto nft = Document(nftBuff);
+
+            SignedContract signed_contract;
+
+            const is_created = __wallet_storage.wallet.createNFT(nft, signed_contract);
+            if (is_created) {
+                const nftDocId = recyclerDoc.create(signed_contract.toDoc);
+                // Save wallet state to file.
+                __wallet_storage.write;
+
+                *signedContractPtr = nftDocId;
+                return 1;
+            }
+        }
+        return 0;
+    }
+
     export uint create_contract(
             uint32_t* contractPtr,
             const uint8_t* invoicePtr,
@@ -397,8 +422,8 @@ extern (C) {
 
     export uint get_backup(uint8_t* backupPtr) {
         if (__wallet_storage.wallet.isLoggedin()) {
-            const account = __wallet_storage.wallet.account;
-            const backupDocId = recyclerDoc.create(account.toDoc);
+            const encrAccount = __wallet_storage.wallet.getEncrAccount();
+            const backupDocId = recyclerDoc.create(encrAccount.toDoc);
 
             *backupPtr = cast(uint8_t) backupDocId;
 
@@ -412,7 +437,7 @@ extern (C) {
         immutable account = cast(immutable)(backupPtr[0 .. backupLen]);
 
         if (__wallet_storage.wallet.isLoggedin()) {
-            __wallet_storage.wallet.account = AccountDetails(Document(account));
+            __wallet_storage.wallet.setEncrAccount(Cipher.CipherDocument(Document(account)));
             __wallet_storage.write;
             return 1;
         }

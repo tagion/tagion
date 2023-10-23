@@ -40,7 +40,6 @@ enum reject_collector = "reject/collector";
  *  (signedContract(), immutable(CollectedSignedContract)*) to TaskNames.tvm 
 **/
 struct CollectorService {
-    immutable SecureNet net;
     immutable TaskNames task_names;
 
     immutable(SignedContract)*[uint] contracts;
@@ -48,7 +47,9 @@ struct CollectorService {
     immutable(Document)[][uint] reads;
 
     Topic reject = Topic(reject_collector);
+    SecureNet net;
     void task() {
+        net = new StdSecureNet;
         assert(net !is null, "No secure net");
         run(&receive_recorder, &signed_contract, &consensus_signed_contract, &rpc_contract);
     }

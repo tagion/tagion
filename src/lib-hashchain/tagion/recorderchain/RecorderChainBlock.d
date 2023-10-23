@@ -8,7 +8,7 @@ import tagion.crypto.Types : Fingerprint;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.dart.Recorder;
 import tagion.hashchain.HashChainBlock : HashChainBlock;
-import tagion.hibon.HiBONRecord : label, GetLabel, HiBONRecord, recordType;
+import tagion.hibon.HiBONRecord : label, exclude, GetLabel, HiBONRecord, recordType;
 import tagion.hibon.HiBONJSON : JSONString;
 import tagion.hibon.Document;
 
@@ -22,7 +22,7 @@ import tagion.hibon.Document;
 @recordType("RCB")
 @safe class RecorderChainBlock : HashChainBlock {
     /** Fingerprint of this block */
-    @label("") Fingerprint fingerprint;
+    @exclude Fingerprint fingerprint;
     /** Bullseye of DART database */
     @label("eye") Fingerprint bullseye;
     /** Epoch number */

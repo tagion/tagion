@@ -107,7 +107,10 @@ class ItWork {
 
             DART.create(opts.dart_path, node_net);
 
-            dart_handle = spawn!DARTService(task_names.dart, opts, replicator_opts, task_names, node_net);
+
+            auto dart_net = new StdSecureNet;
+            dart_net.generateKeyPair("dartnet");
+            dart_handle = (() @trusted => spawn!DARTService(task_names.dart, opts, replicator_opts, task_names, cast(shared) dart_net))();
             check(waitforChildren(Ctrl.ALIVE), "dart service did not alive");
         }
 
@@ -117,14 +120,15 @@ class ItWork {
         input_nets = createNets(10, "input");
         input_bills = input_nets.createBills(100_000);
         input_bills.insertBills(insert_recorder);
-        dart_handle.send(dartModify(), RecordFactory.uniqueRecorder(insert_recorder), immutable int(0));
+        dart_handle.send(dartModifyRR(), RecordFactory.uniqueRecorder(insert_recorder), immutable int(0));
+        receiveOnlyTimeout!(dartModifyRR.Response, Fingerprint);
 
         {
             import tagion.utils.pretend_safe_concurrency;
 
             register(task_names.tvm, thisTid);
         }
-        immutable collector = CollectorService(node_net, task_names);
+        immutable collector = CollectorService(task_names);
         collector_handle = spawn(collector, task_names.collector);
         check(waitforChildren(Ctrl.ALIVE), "CollectorService never alived");
         return result_ok;

@@ -16,6 +16,7 @@ import tagion.basic.Types : FileExtension;
 import tagion.actor;
 import tagion.crypto.Types;
 import tagion.crypto.SecureInterfaceNet;
+import tagion.crypto.SecureNet;
 import tagion.dart.DART;
 import tagion.dart.Recorder;
 import tagion.dart.DARTBasic : DARTIndex;
@@ -49,11 +50,18 @@ struct DARTOptions {
 
 @safe
 struct DARTService {
-    void task(immutable(DARTOptions) opts, immutable(ReplicatorOptions) replicator_opts, immutable(TaskNames) task_names, immutable(
-            SecureNet) net) {
+    void task(immutable(DARTOptions) opts, 
+        immutable(ReplicatorOptions) replicator_opts, 
+        immutable(TaskNames) task_names, 
+        shared(StdSecureNet) shared_net) {
+
         DART db;
         Exception dart_exception;
         immutable replicator_task_name = task_names.replicator;
+
+        const net = new StdSecureNet(shared_net);
+        
+
         db = new DART(net, opts.dart_path);
         if (dart_exception !is null) {
             throw dart_exception;
@@ -63,7 +71,7 @@ struct DARTService {
             db.close();
         }
 
-        ReplicatorServiceHandle replicator = spawn!ReplicatorService(replicator_task_name, replicator_opts, net);
+        ReplicatorServiceHandle replicator = spawn!ReplicatorService(replicator_task_name, replicator_opts);
 
         waitforChildren(Ctrl.ALIVE);
 
@@ -121,6 +129,7 @@ struct DARTService {
                 return;
             }
 
+            pragma(msg, "remove assert");
             assert(receiver.method.name == DART.Queries.dartRead || receiver.method.name == DART.Queries.dartBullseye || receiver
                     .method.name == DART.Queries.dartCheckRead, "unsupported hirpc request");
 
@@ -128,10 +137,12 @@ struct DARTService {
             req.respond(result);
         }
 
-        void modify(dartModify, immutable(RecordFactory.Recorder) recorder, immutable(int) epoch_number) @safe {
+        void modify(dartModifyRR req, immutable(RecordFactory.Recorder) recorder, immutable(int) epoch_number) @safe {
             log("Received modify request with length=%s", recorder.length);
 
             auto eye = Fingerprint(db.modify(recorder));
+
+            req.respond(eye);
 
             locate(replicator_task_name).send(SendRecorder(), recorder, eye, epoch_number);
         }

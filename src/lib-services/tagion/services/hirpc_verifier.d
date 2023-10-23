@@ -15,6 +15,7 @@ import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord;
 import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet;
+import tagion.crypto.SecureNet;
 import tagion.script.common : SignedContract;
 
 struct HiRPCVerifierOptions {
@@ -48,7 +49,9 @@ enum RejectReason {
 struct HiRPCVerifierService {
     import tagion.services.options : TaskNames;
 
-    void task(immutable(HiRPCVerifierOptions) opts, immutable(TaskNames) task_names, immutable(SecureNet) net) {
+    void task(immutable(HiRPCVerifierOptions) opts, immutable(TaskNames) task_names) {
+
+        SecureNet net = new StdSecureNet;
         const hirpc = HiRPC(net);
         immutable collector_task = task_names.collector;
 

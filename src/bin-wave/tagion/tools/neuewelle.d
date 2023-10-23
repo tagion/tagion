@@ -78,7 +78,7 @@ void signal_handler(int _) nothrow {
     }
 }
 
-mixin Main!(_main);
+mixin Main!(_main, "tagionwave");
 
 int _main(string[] args) {
     immutable program = args[0];
@@ -177,8 +177,9 @@ int _main(string[] args) {
         network_mode0(node_options, supervisor_handles);
 
         if (mode0_node_opts_path) {
-            foreach(i, opt; node_options) {
-                opt.save(buildPath(mode0_node_opts_path, format(opt.wave.prefix_format~"opts", i).setExtension(FileExtension.json)));
+            foreach (i, opt; node_options) {
+                opt.save(buildPath(mode0_node_opts_path, format(opt.wave.prefix_format ~ "opts", i).setExtension(FileExtension
+                        .json)));
             }
         }
     }
@@ -212,15 +213,22 @@ int _main(string[] args) {
 int network_mode0(const(Options)[] node_options, ref ActorHandle!Supervisor[] supervisor_handles) {
     struct Node {
         immutable(Options) opts;
-        immutable(SecureNet) net;
+        shared(StdSecureNet) net;
     }
 
     Node[] nodes;
 
     foreach (i, opts; node_options) {
-        SecureNet net = new StdSecureNet();
+        auto net = new StdSecureNet();
         net.generateKeyPair(opts.task_names.supervisor);
-        nodes ~= Node(opts, cast(immutable) net);
+
+        scope(exit) {
+            net = null;
+        }
+        
+        shared shared_net = (()@trusted => cast(shared) net)();
+        
+        nodes ~= Node(opts, shared_net);
         addressbook[net.pubkey] = NodeAddress(opts.task_names.epoch_creator);
     }
 
@@ -236,7 +244,7 @@ const(Options)[] get_mode_0_options(const(Options) options, bool monitor = false
     const number_of_nodes = options.wave.number_of_nodes;
     const prefix_f = options.wave.prefix_format;
     Options[] all_opts;
-    foreach(node_n; 0..number_of_nodes) {
+    foreach (node_n; 0 .. number_of_nodes) {
         auto opt = Options(options);
         opt.setPrefix(format(prefix_f, node_n));
         opt.epoch_creator.timeout = 100;

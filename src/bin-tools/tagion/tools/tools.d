@@ -5,16 +5,12 @@ import std.meta;
 import tagion.tools.OneMain;
 
 int main(string[] args) {
-    import tagionwave = tagion.tools.tagionwave;
     import neuewelle = tagion.tools.neuewelle;
     import subscribe = tagion.tools.subscribe;
     import dartutil = tagion.tools.dartutil.dartutil;
     import hibonutil = tagion.tools.hibonutil;
-    import tagionwallet = tagion.tools.tagionwallet;
-    import tagionboot = tagion.tools.tagionboot;
     import blockutil = tagion.tools.blockutil;
     import tprofview = tagion.tools.tprofview;
-    import recorderchain = tagion.tools.recorderchain;
     import graphview = tagion.tools.graphview;
     import signs = tagion.tools.signs;
     import wasmutil = tagion.tools.wasmutil.wasmutil;
@@ -22,17 +18,15 @@ int main(string[] args) {
     import tagionshell = tagion.tools.tagionshell;
     import stiefel = tagion.tools.boot.stiefel;
     import hirep = tagion.tools.hirep.hirep;
+    import recorderchain = tagion.tools.recorderchain;
 
     alias alltools = AliasSeq!(
-            tagionwave,
             subscribe,
             neuewelle,
             dartutil,
             hibonutil,
-            tagionwallet,
-            tagionboot,
-            blockutil, tprofview,
-            recorderchain,
+            blockutil,
+            tprofview,
             graphview,
             signs,
             wasmutil,
@@ -40,6 +34,7 @@ int main(string[] args) {
             tagionshell,
             stiefel,
             hirep,
+            recorderchain,
     );
     mixin doOneMain!(alltools);
     return do_main(args);

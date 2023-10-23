@@ -108,18 +108,15 @@ int _main(string[] args) {
     immutable program = args[0];
     bool version_switch;
 
-    //    string inputfilename;
     bool standard_output;
-    //    string outputfilename;
+    bool stream_output;
     bool pretty;
     bool sample;
     bool hibon_check;
     bool reserved;
     bool input_json;
     bool input_text;
-    bool output_json;
     bool output_base64;
-    // bool verbose;
     string outputfilename;
     auto logo = import("logo.txt");
 
@@ -131,10 +128,10 @@ int _main(string[] args) {
                 "version", "display the version", &version_switch,
                 "v|verbose", "Prints more debug information", &__verbose_switch,
                 "c|stdout", "Print to standard output", &standard_output,
-                "o|output", "Output filename only for stdin", &outputfilename,
+                "s|stream", "Parse .hibon file to stdout", &stream_output,
+                "o|output", "Output filename only for stdin data", &outputfilename,
                 "r|reserved", "Check reserved keys and types enabled", &reserved,
                 "p|pretty", format("JSON Pretty print: Default: %s", pretty), &pretty,
-                "j|json", "Convert to json output", &output_json,
                 "J", "Input stream format json", &input_json,
                 "t|base64", "Convert to base64 output", &output_base64,
                 "T|text", "Input stream base64 or hex-string", &input_text,
@@ -173,8 +170,7 @@ int _main(string[] args) {
             return 0;
         }
         tools.check(!input_json || !input_text, "Input stream can not be defined as both JSON and text-format");
-        tools.check(!output_json || !output_base64, "Output stream can not be defined as both JSON and text-format");
-        if (standard_output) {
+        if (standard_output || stream_output) {
             vout = stderr;
         }
         const reserved_flag = cast(Document.Reserved) reserved;
@@ -195,7 +191,7 @@ int _main(string[] args) {
                     fout.writefln(doc.encodeBase64);
                     return;
                 }
-                if (output_json) {
+                if (pretty || standard_output) {
                     const json_stringify = (pretty) ? doc.toPretty : doc.toJSON.toString;
                     fout.writeln(json_stringify);
                     return;
@@ -226,84 +222,17 @@ int _main(string[] args) {
 
             foreach (no, doc; HiBONRange(fin).enumerate) {
                 verbose("%d: doc-size=%d", no, doc.full_size);
+                const error_code = doc.valid(
+                        (
+                        const(Document) sub_doc,
+                        const Document.Element.ErrorCode error_code,
+                        const(Document.Element) current, const(
+                        Document.Element) previous) nothrow{ return true; }, reserved_flag);
+                tools.check(error_code is Document.Element.ErrorCode.NONE,
+                        format("Streamed document %d faild with %s", no, error_code));
                 print(doc);
             }
             return 0;
-            ubyte[1024] buf;
-            Buffer data;
-
-            for (;;) {
-                const read_buffer = fin.rawRead(buf);
-                if (read_buffer.length is 0) {
-                    break;
-                }
-                data ~= read_buffer;
-            }
-
-            const doc = Document(data);
-
-            const error_code = doc.valid(
-                    (
-                    const(Document) sub_doc,
-                    const Document.Element.ErrorCode error_code,
-                    const(Document.Element) current, const(
-                    Document.Element) previous) nothrow{ return true; }, reserved_flag);
-            if (error_code is Document.Element.ErrorCode.NONE) {
-                auto json = doc.toJSON;
-                auto json_stringify = (pretty) ? json.toPrettyString : json.toString;
-                if (standard_output) {
-                    writefln("%s", json_stringify);
-                    return 1;
-                }
-                if (outputfilename) {
-                    outputfilename.setExtension(FileExtension.json).fwrite(json_stringify);
-                    return 1;
-                }
-                json_stringify.writeln;
-
-                return 1;
-            }
-            else {
-                HiBON hibon;
-                const text = cast(string) data;
-                try {
-                    auto parse = text.parseJSON;
-                    hibon = parse.toHiBON;
-                }
-                catch (HiBON2JSONException e) {
-                    stderr.writefln("Error: HiBON-JSON format in the %s file", outputfilename);
-                    error(e);
-                    return 1;
-                }
-                catch (JSONException e) {
-                    stderr.writeln("Error: JSON syntax");
-                    stderr.writefln("Error: HiBONError Document errorcode %s", error_code);
-                    error(e);
-                    return 1;
-                }
-                catch (Exception e) {
-                    error(e);
-                    stderr.writefln("Error: HiBONError Document errorcode %s", error_code);
-
-                    return 1;
-                }
-                if (standard_output) {
-                    stdout.rawWrite(hibon.serialize);
-                    return 1;
-                }
-
-                if (outputfilename) {
-                    outputfilename.setExtension(FileExtension.hibon).fwrite(hibon.serialize);
-                    return 1;
-
-                }
-
-                stderr.writeln("Error: output not specified");
-                return 1;
-            }
-
-            stderr.writefln("Input file missing");
-            return 1;
         }
 
         loop_files: foreach (inputfilename; args[1 .. $]) {
@@ -334,6 +263,10 @@ int _main(string[] args) {
                     }
                     inputfilename.setExtension(FileExtension.text).fwrite(text_output);
 
+                    continue loop_files;
+                }
+                if (stream_output) {
+                    stdout.rawWrite(doc.serialize);
                     continue loop_files;
                 }
                 auto json = doc.toJSON;

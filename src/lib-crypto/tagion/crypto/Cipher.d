@@ -4,7 +4,7 @@ import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Pubkey;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
-import std.exception : assumeUnique;
+import std.exception : assumeUnique, ifThrown;
 
 //import std.stdio;
 // import tagion.utils.Miscellaneous: toHexString, decode;
@@ -15,7 +15,7 @@ struct Cipher {
     import tagion.crypto.SecureNet : scramble, check;
     import tagion.crypto.SecureInterfaceNet : SecureNet;
     import tagion.crypto.aes.AESCrypto : AESCrypto;
-    import tagion.basic.ConsensusExceptions : ConsensusFailCode, SecurityConsensusException;
+    import tagion.basic.ConsensusExceptions : ConsensusFailCode, SecurityConsensusException, ConsensusException;
     import std.digest.crc : crc32Of;
 
     alias AES = AESCrypto!256;
@@ -147,37 +147,15 @@ struct Cipher {
             auto wrong_net = new StdSecureNet;
             immutable wrong_passphrase = "wrong word";
             wrong_net.generateKeyPair(wrong_passphrase);
-            bool[3] passed;
-            do {
-                try {
-                    const secret_cipher_doc = Cipher.encrypt(dummy_net, wrong_net.pubkey, secret_doc);
-                    const encrypted_doc = Cipher.decrypt(net, secret_cipher_doc);
-                    //                writefln("encrypted_doc.full_size %d", encrypted_doc.full_size);
-                    passed[0] = true;
-                    if (encrypted_doc.isInorder) {
-                        import std.stdio : writefln;
-                        import tagion.hibon.HiBONFile : fwrite;
-
-                        immutable filename = fileId!Cipher(FileExtension.hibon, encrypted_doc
-                                .stringof).fullpath;
-                        writefln("Cipher unittest file %s", filename);
-                        filename.fwrite(encrypted_doc);
-                    }
-                    assert(!encrypted_doc.isInorder);
-                    passed[1] = true;
-                    // assert(encrypted_doc.full_size != secret_doc.full_size);
-                    // passed[2] = true;
+            for (;;) {
+                const secret_cipher_doc = Cipher.encrypt(dummy_net, wrong_net.pubkey, secret_doc);
+                const encrypted_doc = Cipher.decrypt(net, secret_cipher_doc)
+                    .ifThrown!ConsensusException(Document());
+                assert(secret_doc != encrypted_doc);
+                if (!encrypted_doc.empty) {
+                    break; /// Run the loop until the decrypt does not fail
                 }
-                catch (SecurityConsensusException e) {
-                    passed[2] = true;
-                    //                passed = true;
-                }
-                //            writefln("any %s ", passed); //(a => !a));
-                //            writefln("any %s ", passed[].any!(a => !a));
             }
-            while (passed[].any!q{!a});
-
-            //            assert(passed);
         }
 
         { // Encrypt and Decrypt secrte message with owner privat-key

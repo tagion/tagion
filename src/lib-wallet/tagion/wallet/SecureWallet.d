@@ -628,6 +628,35 @@ struct SecureWallet(Net : SecureNet) {
         return getFee([bill], fees);
     }
 
+    // stupid function for testing
+    Result!bool createNFT(
+        Document nft_data,
+        ref SignedContract signed_contract){
+        import tagion.script.execute;
+        import tagion.script.standardnames;
+
+        try {
+            HiBON dummy_input = new HiBON;
+            dummy_input[StdNames.owner] = net.pubkey;
+            dummy_input["NFT"] = nft_data;
+            Document[] inputs;
+
+            inputs ~= Document(dummy_input);
+            SecureNet[] nets;
+            nets ~= (() @trusted => cast(SecureNet) net )();
+
+            signed_contract = sign(
+                    nets,
+                    inputs,
+                    null,
+                    Document.init);
+        }
+        catch (Exception e) {
+            return Result!bool(e);
+        }
+        return result(true);
+    }
+
     Result!bool createPayment(TagionBill[] to_pay, ref SignedContract signed_contract, out TagionCurrency fees) nothrow {
         import tagion.script.Currency : totalAmount;
         import tagion.script.execute;
@@ -754,6 +783,17 @@ struct SecureWallet(Net : SecureNet) {
         DeriverState derive_state = DeriverState(derive_state_doc);
         this.account.derivers = derive_state.derivers;
         this.account.derive_state = derive_state.derive_state;
+    }
+
+    @trusted
+    const(CiphDoc) getEncrAccount() {
+        return Cipher.encrypt(this._net, this.account.toDoc);
+    }
+
+    void setEncrAccount(const(CiphDoc) cipher_doc) {
+        Cipher cipher;
+        const account_doc = cipher.decrypt(this._net, cipher_doc);
+        this.account = AccountDetails(account_doc);
     }
 
     unittest {

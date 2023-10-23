@@ -59,7 +59,7 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
     msg.clear();
 
     if (!doc.isInorder || !doc.isRecord!(HiRPC.Sender)) {
-        writeln("Non-valid request received");
+        log("Non-valid request received");
         return;
     }
     writefln("Kernel got: %s", doc.toPretty);

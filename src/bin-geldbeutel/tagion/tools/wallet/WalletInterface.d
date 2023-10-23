@@ -121,18 +121,19 @@ HiRPC.Receiver sendSubmitHiRPC(string address, HiRPC.Sender contract, const(Secu
 HiRPC.Receiver sendShellSubmitHiRPC(string address, HiRPC.Sender contract, const(SecureNet) net) {
     import std.net.curl;
 
-    writefln("Dialing address %s", address);
-    immutable response_data = cast(immutable) post!(ubyte)(address, contract.toDoc.serialize);
-    Document response_doc = Document(response_data);
+    Document response_doc;
+    writeln(address);
+    auto http = HTTP(address);
+    auto data = contract.toDoc.serialize;
+    http.setPostData(data, "application/octet-stream");
+    http.onReceive = (ubyte[] data) { response_doc = Document(data.idup); return data.length; };
+    http.perform();
 
-    if (!response_doc.isRecord!(HiRPC.Receiver)) {
-        throw new Exception("Error response when sending bill");
-    }
-
+    response_doc.toPretty;
     HiRPC hirpc = HiRPC(net);
     return hirpc.receive(response_doc);
-
 }
+
 
 pragma(msg, "Fixme(lr)Remove trusted when nng is safe");
 Document sendDARTHiRPC(string address, HiRPC.Sender dart_req) @trusted {

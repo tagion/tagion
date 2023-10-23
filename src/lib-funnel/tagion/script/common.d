@@ -15,12 +15,13 @@ import tagion.dart.DARTBasic;
 import tagion.script.ScriptException;
 import tagion.basic.Types : Buffer;
 import tagion.script.standardnames;
+import tagion.hibon.BigNumber;
 
 @recordType("TGN") struct TagionBill {
     @label(StdNames.value) TagionCurrency value; /// Tagion bill 
     @label(StdNames.time) sdt_t time; // Time stamp
     @label(StdNames.owner) Pubkey owner; // owner key
-    @label(StdNames.nonce, true) Buffer nonce; // extra nonce 
+    @label(StdNames.nonce) @optional Buffer nonce; // extra nonce 
     mixin HiBONRecord!(
             q{
                 this(const(TagionCurrency) value, const sdt_t time, Pubkey owner, Buffer nonce) pure nothrow {
@@ -34,7 +35,7 @@ import tagion.script.standardnames;
 
 @recordType("SMC") struct Contract {
     @label("$in") const(DARTIndex)[] inputs; /// Hash pointer to input (DART)
-    @label("$read", true) const(DARTIndex)[] reads; /// Hash pointer to read-only input (DART)
+    @label("$read") @optional const(DARTIndex)[] reads; /// Hash pointer to read-only input (DART)
     @label("$run") Document script; // Smart contract 
     bool verify() {
         return (inputs.length > 0);
@@ -67,6 +68,11 @@ import tagion.script.standardnames;
                 this(immutable(Signature)[] signs, immutable(Contract) contract) nothrow immutable {
                     this.signs = signs;
                     this.contract = contract;
+                }
+                this(const(Document) doc) immutable @trusted {
+                    immutable _this=cast(immutable)SignedContract(doc);
+                    this.signs=_this.signs;
+                    this.contract=_this.contract;
                 }
             });
 }
@@ -149,8 +155,8 @@ struct Epoch {
     sdt_t time; /// Epoch concensus time
     @label(StdNames.bullseye) Fingerprint bullseye;
     @label(StdNames.previous) Fingerprint previous;
-    @label(VOID, true) Pubkey[] active; /// Sorted keys
-    @label(VOID, true) Pubkey[] deactive;
+    @optional Pubkey[] active; /// Sorted keys
+    @optional Pubkey[] deactive;
 
     mixin HiBONRecord;
 }
@@ -158,12 +164,33 @@ struct Epoch {
 @recordType("$@Tagion")
 struct TagionHead {
     @label(StdNames.tagion) string name; // Default name should always be "tagion"
-    TagionGlobals global;
+    TagionGlobals globals;
     mixin HiBONRecord;
 }
 
 struct TagionGlobals {
     long epoch;
     @label("events") Fingerprint[] event_prints;
+    @label("total") BigNumber total;
     mixin HiBONRecord;
+}
+
+@recordType("@$Vote")
+struct ConsensusVoting {
+    long epoch;
+    @label(StdNames.owner) Pubkey owner;
+    @label(StdNames.signed) Signature signed_bullseye;
+
+    mixin HiBONRecord!(
+            q{
+            this(long epoch, Pubkey owner, Signature signed_bullseye) {
+                this.owner = owner;
+                this.signed_bullseye = signed_bullseye;
+                this.epoch = epoch;
+            }
+        });
+
+    bool verifyBullseye(const(SecureNet) net, const(Fingerprint) bullseye) {
+        return net.verify(bullseye, signed_bullseye, owner);
+    }
 }

@@ -6,6 +6,7 @@ import std.path;
 import std.stdio;
 import std.array;
 import std.file : exists;
+import std.range;
 import tagion.crypto.SecureNet;
 import tagion.tools.revision;
 import tagion.basic.Types : FileExtension, Buffer;
@@ -15,6 +16,9 @@ import tagion.basic.tagionexceptions;
 import tagion.utils.Term;
 import tagion.hibon.Document;
 import tagion.tools.boot.genesis;
+import tagion.hibon.HiBONFile : HiBONRange;
+import tagion.hibon.HiBONJSON : toPretty;
+import tagion.hibon.HiBONregex : HiBONregex;
 
 alias check = Check!TagionException;
 
@@ -25,14 +29,22 @@ int _main(string[] args) {
     bool version_switch;
     bool standard_output;
     bool standard_input;
+    bool not_flag;
     string output_filename;
+    string name;
+    string record_type;
+    string[] types;
     try {
-        standard_input = (args.length == 1);
         auto main_args = getopt(args,
                 std.getopt.config.caseSensitive,
                 std.getopt.config.bundling,
                 "version", "display the version", &version_switch, //        "invoice|i","Sets the HiBON input file name", &invoicefile,
-                "c|stdout", "Print to standard output", &standard_output,//               "o|output", format("Output filename : Default %s", output_filename), &output_filename, // //        "output_filename|o", format("Sets the output file name: default : %s", output_filenamename), &output_filenamename,
+                "v|verbose", "Prints more debug information", &__verbose_switch,
+                "c|stdout", "Print to standard output", &standard_output,
+                "n|name", "HiBON member name (name as text or regex as `regex`)", &name,
+                "r|recordtype", "HiBON recordtype (name as text or regex as `regex`)", &record_type,
+                "t|type", "HiBON data types", &types,
+                "not", "Filter out match", &not_flag, //               "o|output", format("Output filename : Default %s", output_filename), &output_filename, // //        "output_filename|o", format("Sets the output file name: default : %s", output_filenamename), &output_filenamename,
                 //                "p|nodekey", "Node channel key(Pubkey) ", &nodekeys, //         "bills|b", "Generate bills", &number_of_bills,
                 // "value|V", format("Bill value : default: %d", value), &value,
                 // "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase
@@ -68,44 +80,34 @@ int _main(string[] args) {
                     main_args.options);
             return 0;
         }
-        version (none) {
-            if (!nodekeys.empty) {
-                auto genesis_list = createGenesis(nodekeys, Document.init);
-                recorder.insert(genesis_list, Archive.Type.ADD);
-            }
-            if (standard_input) {
-                auto fin = stdin;
-                ubyte[1024] buf;
-                Buffer data;
 
-                for (;;) {
-                    const read_buffer = fin.rawRead(buf);
-                    if (read_buffer.length is 0) {
-                        break;
-                    }
-                    data ~= read_buffer;
-                }
-
-                const doc = Document(data);
-                recorder.add(doc);
-            }
-            else {
-                foreach (file; args[1 .. $]) {
-                    check(file.exists, format("File %s not found!", file));
-                    const doc = file.fread;
-                    recorder.add(doc);
+        if (name) {
+            writefln("%s", name);
+            writefln("%s", record_type);
+            writefln("%s", types);
+        }
+        HiBONregex hibon_regex;
+        if (name) {
+            hibon_regex.name = name;
+        }
+        if (record_type) {
+            hibon_regex.record_type = record_type;
+        }
+        if (args.length == 1) {
+            File fin;
+            fin = stdin;
+            File fout;
+            fout = stdout;
+            foreach (no, doc; HiBONRange(fin).enumerate) {
+                if (hibon_regex.match(doc)) {
+                    verbose("%d\n%s", no, doc.toPretty);
+                    fout.rawWrite(doc.serialize);
                 }
             }
-            if (standard_output) {
-                stdout.rawWrite(recorder.toDoc.serialize);
-                return 0;
-            }
-
-            output_filename.fwrite(recorder);
         }
     }
     catch (Exception e) {
-        writefln("%1$sError: %3$s%2$s", RED, RESET, e.msg);
+        error(e);
         return 1;
 
     }

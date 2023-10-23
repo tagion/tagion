@@ -163,11 +163,11 @@ import tagion.utils.Miscellaneous : decode;
 }
 
 version (unittest) {
-    import tagion.hibon.HiBONRecord : HiBONRecord, recordType, label;
+    import tagion.hibon.HiBONRecord : HiBONRecord, recordType, label, exclude;
     import tagion.crypto.SecureInterfaceNet : HashNet;
 
     @safe class DummyBlock : HashChainBlock {
-        @label("") Fingerprint hash;
+        @exclude Fingerprint hash;
         @label("prev") Fingerprint previous;
         @label("dummy") int dummy;
 

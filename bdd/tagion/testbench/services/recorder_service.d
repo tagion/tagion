@@ -68,7 +68,7 @@ class StoreOfTheRecorderChain {
     Document received() {
         thisActor.task_name = "recorder_supervisor";
         register(thisActor.task_name, thisTid);
-        handle = (() @trusted => spawn!ReplicatorService("ReplicatorService", replicator_opts, cast(immutable) replicator_net))();
+        handle = spawn!ReplicatorService("ReplicatorService", replicator_opts);
         waitforChildren(Ctrl.ALIVE);
 
         random_archives = RandomArchives(gen.front, 4, 10);

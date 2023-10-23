@@ -27,6 +27,7 @@ import tagion.services.options : TaskNames;
 import tagion.script.standardnames;
 import tagion.hibon.HiBONRecord;
 
+@safe
 @recordType("finishedEpoch")
 struct FinishedEpoch {
     @label("events") const(EventPackage)[] events;
@@ -73,9 +74,13 @@ class StdRefinement : Refinement {
         }
     }
 
-    void finishedEpoch(const(Event[]) events, const sdt_t epoch_time, const Round decided_round) @trusted {
+    void finishedEpoch(
+            const(Event[]) events,
+    const sdt_t epoch_time,
+    const Round decided_round) {
         auto event_payload = FinishedEpoch(events, epoch_time, decided_round.number);
         import std.format;
+
         log(epoch_created, "epoch_succesful", event_payload.toDoc);
 
         if (task_names is TaskNames.init) {
@@ -85,7 +90,7 @@ class StdRefinement : Refinement {
         immutable(EventPackage*)[] epacks = events
             .map!((e) => e.event_package)
             .array;
-        locate(task_names.transcript).send(consensusEpoch(), epacks, decided_round.number, epoch_time);
+        (() @trusted => locate(task_names.transcript).send(consensusEpoch(), epacks, decided_round.number, epoch_time))();
     }
 
     void excludedNodes(ref BitMask excluded_mask) {
