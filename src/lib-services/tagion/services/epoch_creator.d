@@ -104,7 +104,7 @@ struct EpochCreatorService {
         }
 
         void receivePayload(Payload, const(Document) pload) {
-            log.trace("Received Payload %s", pload.toPretty);
+            log.trace("Received Payload");
             payload_queue.write(pload);
             // hashgraph.init_tide(&gossip_net.gossip, &payload, currentTime);
         }
