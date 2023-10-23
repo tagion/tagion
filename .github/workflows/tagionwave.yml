@@ -27,9 +27,7 @@ on:
 jobs:
   deploy_tagionwave:
     runs-on: testnet
-      environment:
-        name: testnet-mobile
-        url: 10.210.2.10
+    environment: testnet-mobile
     steps:
       - name: get artifact
         run: |
