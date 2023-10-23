@@ -162,7 +162,7 @@ class HashGraph {
             _rounds.erase;
             _rounds = Round.Rounder(this);
             _rounds.last_decided_round = _rounds.last_round;
-            _event_cache = null;
+            (() @trusted { _event_cache.clear; })();
             init_event(_owner_node.event.event_package);
             // front_seat(owen_event);
             foreach (epack; epacks) {

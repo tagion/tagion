@@ -106,6 +106,13 @@ target-signs: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
 ${call DO_BIN,signs,$(LIB_DFILES) ${call BIN_DEPS,signs},tagion}
 
 #
+# Recorderchain utility
+#
+target-recorderchain: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+${call DO_BIN,recorderchain,$(LIB_DFILES) ${call BIN_DEPS,recorderchain},tagion}
+
+
+#
 # Profile view
 #
 # fixme(cbr): When ddeps.mk work those libs are not needed
@@ -131,6 +138,7 @@ TAGION_TOOLS+=tprofview
 TAGION_TOOLS+=tools
 TAGION_TOOLS+=graphview
 TAGION_TOOLS+=signs
+TAGION_TOOLS+=recorderhchain
 TAGION_TOOLS+=wasmutil
 TAGION_TOOLS+=geldbeutel
 TAGION_TOOLS+=tagionshell

@@ -129,6 +129,7 @@ struct DARTService {
                 return;
             }
 
+            pragma(msg, "remove assert");
             assert(receiver.method.name == DART.Queries.dartRead || receiver.method.name == DART.Queries.dartBullseye || receiver
                     .method.name == DART.Queries.dartCheckRead, "unsupported hirpc request");
 
