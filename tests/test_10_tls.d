@@ -4,6 +4,8 @@ import std.string;
 import std.concurrency;
 import core.thread;
 import std.datetime.systime;
+import std.path;
+import std.file;
 import std.uuid;
 import std.regex;
 import std.json;
@@ -49,13 +51,16 @@ int
 main()
 {
     int rc;
-    string wd = thisExePath();
+    const wd = dirName(thisExePath());
 
     WebApp app = WebApp("myapp", "https://localhost:8081", parseJSON(`{"root_path":"`~wd~`/../../webapp","static_path":"static"}`), null);
     
     WebTLS tls = WebTLS(nng_tls_mode.NNG_TLS_MODE_SERVER);    
     tls.set_server_name("localhost");
-    tls.set_cert_key_file(wd~"/../ssl/../cert.pem", wd~"/../../ssl/key.pem");
+    tls.set_auth_mode(nng_tls_auth_mode.NNG_TLS_AUTH_MODE_NONE);
+    tls.set_version(nng_tls_version.NNG_TLS_1_0, nng_tls_version.NNG_TLS_1_3);
+    writeln(wd~"/../../ssl/cert.crt");
+    tls.set_cert_key_file(wd~"/../../ssl/cert.crt", wd~"/../../ssl/key.key");
 
     app.set_tls(tls);
 

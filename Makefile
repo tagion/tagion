@@ -6,7 +6,7 @@
 DC=dmd
 DCFLAGS=-O -d -m64 -i -debug -g
 DINC=nngd extern/libnng/libnng
-DLFLAGS=-Lextern/libnng/extern/nng/build/lib/ -lnng
+DLFLAGS=-Lextern/libnng/extern/nng/build/lib/ -Lextern/libnng/extern/mbedtls/build/lib/ -lnng -lmbedtls -lmbedcrypto -lmbedx509
 
 DTESTS=$(wildcard tests/test*.d)
 
