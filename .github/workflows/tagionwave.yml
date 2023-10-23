@@ -1,13 +1,38 @@
 name: Test Tagionwave
 on: 
   workflow_dispatch:
+    #    inputs:
+    #      logLevel:
+    #        description: 'Log level'
+    #        required: true
+    #        default: 'warning'
+    #        type: choice
+    #        options:
+    #          - info
+    #          - warning
+    #          - debug
+    #      print_tags:
+    #        description: 'True to print to STDOUT'
+    #        required: true
+    #        type: boolean
+    #      tags:
+    #        description: 'Test scenario tags'
+    #        required: true
+    #        type: string
+    #      environment:
+    #        description: 'Environment to run tests against'
+    #        type: environment
+    #        required: true
 
 jobs:
   deploy_tagionwave:
-    runs-on: neuewelle
+    runs-on: testnet-mobile
+    environment:
+      name: testnet-mobile
+        # url: https://github.com
     steps:
-      - name: get artifact and restart service
-        run: | 
+      - name: get artifact
+        run: |
           rm -rf *
           loginctl enable-linger moonbase
           gh run download -n successful_artifact --repo tagion/tagion
@@ -15,6 +40,13 @@ jobs:
           cd build/x86_64-linux/bin
           ls
           whoami
+
+      - name: Initialize network bills
+        run: |
+          echo "hello"
+
+      - name: start service
+        run: |
           export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1001/bus
           export XDG_RUNTIME_DIR=/run/user/1001
           systemctl stop --user neuewelle.service
@@ -24,4 +56,3 @@ jobs:
           cp neuewelle.service ~/.config/systemd/user
           systemctl --user daemon-reload
           systemctl restart --user neuewelle.service
-
