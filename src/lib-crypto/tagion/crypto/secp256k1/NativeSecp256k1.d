@@ -334,7 +334,6 @@ class NativeSecp256k1T(bool Schnorr) {
         assert(privkey.length == 32);
     }
     do {
-        //        auto ctx=getContext();
         pragma(msg, "fixme(cbr): privkey must be scrambled");
         tweak_privkey = privkey.dup;
         ubyte* _privkey = tweak_privkey.ptr;
@@ -404,7 +403,6 @@ class NativeSecp256k1T(bool Schnorr) {
         assert(pubkey.length == COMPRESSED_PUBKEY_SIZE || pubkey.length == UNCOMPRESSED_PUBKEY_SIZE);
     }
     do {
-        //        auto ctx=getContext();
         ubyte[] pubkey_array = pubkey.dup;
         ubyte* _pubkey = pubkey_array.ptr;
         const(ubyte)* _tweak = tweak.ptr;
@@ -486,8 +484,9 @@ class NativeSecp256k1T(bool Schnorr) {
         return secp256k1_context_randomize(__ctx, &ctx_randomize[0]) == 1;
     }
 
+    enum XONLY_PUBKEY_SIZE = 32;
     @trusted
-    bool createKeyPair(const(ubyte[]) seckey, out ubyte[] keypair) const nothrow
+    void createKeyPair(const(ubyte[]) seckey, out ubyte[] keypair) const
     in (seckey.length == 32)
     do {
         auto _keypair = new secp256k1_keypair;
@@ -496,7 +495,7 @@ class NativeSecp256k1T(bool Schnorr) {
             randomizeContext;
         }
         const rt = secp256k1_keypair_create(_ctx, _keypair, &seckey[0]);
-        return (rt != 0);
+        check(rt == 1, ConsensusFailCode.SECURITY_FAILD_TO_CREATE_KEYPAIR);
 
     }
 
@@ -504,7 +503,7 @@ class NativeSecp256k1T(bool Schnorr) {
     immutable(ubyte[]) sign_schnorr(
             const(ubyte[]) msg,
     const(ubyte[]) keypair,
-    const(ubyte[]) aux_random) const nothrow
+    const(ubyte[]) aux_random) const
     in (msg.length == 32)
     in (keypair.length == 96)
     in (aux_random.length == 32)
@@ -516,17 +515,15 @@ class NativeSecp256k1T(bool Schnorr) {
         static assert(_keypair.data.offsetof == 0);
         auto signature = new ubyte[64];
         const rt = secp256k1_schnorrsig_sign32(_ctx, &signature[0], &msg[0], _keypair, &aux_random[0]);
-        if (rt != 0) {
-            return assumeUnique(signature);
-        }
-        return null;
+        check(rt == 1, ConsensusFailCode.SECURITY_FAILD_TO_SIGN_MESSAGE);
+        return assumeUnique(signature);
     }
 
     @trusted
     bool verify_schnorr(const(ubyte[]) signature, const(ubyte[]) msg, const(ubyte[]) pubkey) const nothrow
     in (signature.length == 64)
     in (msg.length == 32)
-    in (pubkey.length == 32)
+    in (pubkey.length == XONLY_PUBKEY_SIZE)
     do {
         secp256k1_xonly_pubkey xonly_pubkey;
         secp256k1_xonly_pubkey_parse(_ctx, &xonly_pubkey, &pubkey[0]);
@@ -534,10 +531,35 @@ class NativeSecp256k1T(bool Schnorr) {
         const rt = secp256k1_schnorrsig_verify(_ctx, &signature[0], &msg[0], 32, &xonly_pubkey);
         return (rt == 1);
     }
+
+    @trusted
+    immutable(ubyte[]) xonly_pubkey(scope const(ubyte[]) keypair) const
+    in (keypair.length == 96)
+    do {
+        static assert(secp256k1_xonly_pubkey.data.offsetof == 0);
+        //static assert(secp256k1_xonly_pubkey.sizeof == XONLY_PUBKEY_SIZE);
+        secp256k1_xonly_pubkey xonly_pubkey;
+        //auto xonly_pubkey = cast(secp256k1_xonly_pubkey*)(&pubkey[0]);
+        const _keypair = cast(secp256k1_keypair*)(&keypair[0]);
+        {
+            const rt = secp256k1_keypair_xonly_pub(_ctx, &xonly_pubkey, null, _keypair);
+            check(rt == 1, ConsensusFailCode.SECURITY_FAILD_PUBKEY_FROM_KEYPAIR);
+        }
+        auto pubkey = new ubyte[XONLY_PUBKEY_SIZE];
+        {
+            const rt = secp256k1_xonly_pubkey_serialize(_ctx, &pubkey[0], &xonly_pubkey);
+            check(rt == 1, ConsensusFailCode.SECURITY_FAILD_PUBKEY_FROM_KEYPAIR);
+        }
+        return assumeUnique(pubkey);
+
+    }
+}
+
+version (unittest) {
+    import tagion.utils.Miscellaneous : toHexString, decode;
 }
 
 unittest {
-    import tagion.utils.Miscellaneous : toHexString, decode;
     import std.traits;
 
     /+
@@ -900,55 +922,30 @@ unittest {
         assert(aliceResult == bobResult);
     }
 
-    version (none) { // Test 1 ECDH
-        auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.RAW, NativeSecp256k1.Format.RAW);
-        import std.stdio;
+}
 
-        //writefln("%d", "039c28258a97c779c88212a0e37a74ec90898c63b60df60a7d05d0424f6f6780".length);
-        const privKey = decode("039c28258a97c779c88212a0e37a74ec90898c63b60df60a7d05d0424f6f6780");
+unittest { /// Schnorr test generated from the secp256k1/examples/schnorr.c 
 
-        //        writefln(
-        const pubKey = crypt.computePubkey(privKey, false);
-        writefln("privKey=%s", privKey.toHexString!true);
-        writefln("privKey=%s", pubKey.toHexString!true);
-        writefln("       =%s", "049E35EFD4390AB5AB1CBD5C273D0D23E6D46C8CCF966C2CC62A4196AC58967AB9   7735ACB05E8646C557EF824F118C9B66AF162FCFAD14B91A145BC55693C342E6");
-        assert(pubKey.toHexString!true == "049E35EFD4390AB5AB1CBD5C273D0D23E6D46C8CCF966C2CC62A4196AC58967AB97735ACB05E8646C557EF824F118C9B66AF162FCFAD14B91A145BC55693C342E6");
+    //import std.stdio;
 
-        const ciphertextPrivKey = decode(
-                "f2785178d20217ed89e982ddca6491ed21d598d8545db503f1dee5e09c747164");
-
-        ubyte[] sharedECCKey;
-
-        //const sharedECCKey = crypt.computePubkey(ciphertextPrivKey, false);
-        crypt.privKeyTweakMul(ciphertextPrivKey, pubKey, sharedECCKey);
-        //crypt.privKeyTweakMul(ciphertextPrivKey, pubKey, sharedECCKey);
-        writefln("ciphertextPrivKey %s", ciphertextPrivKey.toHexString!true);
-        writefln("sharedECCKey %s", sharedECCKey.toHexString!true);
-        writefln("             %s", "46defe934a709bf55328ad593b62884079f908d6a6ebbc2bdbc93b77e3506181   6e287b5665a9b5f0fdb08a1f3f63557849525df1e4ece2c717fd0de1e0a7330f");
-
-        secp256k1_pubkey sharedECCKey1;
-        //        ubyte[] sharedECCKey1;
-        auto sharedECCKey1_ptr = &sharedECCKey1; //sharedECCKey1[0];
-        const(ubyte*) ciphertextPrivKey_ptr = &ciphertextPrivKey[0];
-        int ret = secp256k1_ec_pubkey_create(crypt._ctx, sharedECCKey1_ptr, ciphertextPrivKey_ptr);
-        writefln("sharedECCKey1 %s", sharedECCKey1.data.toHexString!true);
-
-        //  "f2785178d20217ed89e982ddca6491ed21d598d8545db503f1dee5e09c747164");
-    }
-
-    version (HASH) {
-        import std.string : representation;
-        import std.stdio;
-
-        try {
-            auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.DER, NativeSecp256k1.Format.DER);
-            auto resultArr = crypt.calcHash("testing".representation);
-
-            assert(resultArr.toHexString == "CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90"); //sha256hash of "testing"
-        }
-        catch (ConsensusException e) {
-            assert(0, e.msg);
-        }
-    }
-
+    const aux_random = decode("b0d8d9a460ddcea7ae5dc37a1b5511eb2ab829abe9f2999e490beba20ff3509a");
+    const msg_hash = decode("1bd69c075dd7b78c4f20a698b22a3fb9d7461525c39827d6aaf7a1628be0a283");
+    const secret_key = decode("e46b4b2b99674889342c851f890862264a872d4ac53a039fbdab91fd68ed4e71");
+    const expected_pubkey = decode("ecd21d66cf97843d467c9d02c5781ec1ec2b369620605fd847bd23472afc7e74");
+    const expected_signature = decode("021e9a32a12ead3144bb230a81794913a856296ed369159d01b8f57d6d7e7d3630e34f84d49ec054d5251ff6539f24b21097a9c39329eaab2e9429147d6d82f8");
+    const expected_keypair = decode("e46b4b2b99674889342c851f890862264a872d4ac53a039fbdab91fd68ed4e71747efc2a4723bd47d85f602096362becc11e78c5029d7c463d8497cf661dd2eca89c1820ccc2dd9b0e0e5ab13b1454eb3c37c31308ae20dd8d2aca2199ff4e6b");
+    auto crypt = new NativeSecp256k1;
+    ubyte[] keypair;
+    crypt.createKeyPair(secret_key, keypair);
+    //writefln("keypair %(%02x%)", keypair);
+    assert(keypair == expected_keypair);
+    const signature = crypt.sign_schnorr(msg_hash, keypair, aux_random);
+    assert(signature == expected_signature);
+    //writefln("expected_pubkey %(%02x%)", expected_pubkey);
+    const pubkey = crypt.xonly_pubkey(keypair);
+    //writefln("         pubkey %(%02x%)", pubkey);
+    assert(pubkey == expected_pubkey);
+    const signature_ok = crypt.verify_schnorr(signature, msg_hash, pubkey);
+    //writefln("Signed %s", signature_ok);
+    assert(signature_ok, "Schnorr signing failded");
 }
