@@ -18,6 +18,7 @@ import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONJSON : JSONString;
 import tagion.utils.StdTime;
 import tagion.crypto.Types;
+import std.traits : isSigned;
 
 import tagion.hibon.Document : Document;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
@@ -28,12 +29,12 @@ enum minimum_nodes = 3;
 import tagion.utils.Miscellaneous : cutHex;
 
 @safe @nogc
-int highest(int a, int b) pure nothrow {
+T highest(T)(T a, T b) pure nothrow if (isSigned!(T)) {
     return higher(a, b) ? a : b;
 }
 
 @safe @nogc
-bool higher(int a, int b) pure nothrow {
+bool higher(T)(T a, T b) pure nothrow if (isSigned!(T)) {
     return a - b > 0;
 }
 
