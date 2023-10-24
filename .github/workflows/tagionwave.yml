@@ -36,12 +36,17 @@ jobs:
           gh run download -n successful_artifact --repo tagion/tagion
           tar -xzf *.tar.gz
 
+      - name: Backup old data
+        run: |
+          cd build/x86_64-linux/bin
+          DIR_EPOCH=stat -c%W ~/.local/share/tagion && \
+          OLD_DIR_NAME=~/.local/share/tagion_$(date -d @$(stat -c%W ~/.local/share/tagion) +%F_%H:%M) && \
+          mv ~/.local/share/tagion $OLD_DIR_NAME || \
+          echo "No old data to backup"
+
       - name: Initialize network bills
         run: |
           cd build/x86_64-linux/bin
-          OLD_DIR_NAME=~/.local/share/tagion_$(date -d @$(stat -c%W ~/.local/share/tagion) +%F_%H:%M) && \
-          mv ~/.local/share/tagion $OLD_DIR_NAME || \
-          echo "No existing tagion data"
           ./create_wallets_2.sh -b $PWD -k ~/.local/share/tagion/wave -t ~/.local/share/tagion/wallet -w 5 -n 5
 
       - name: start service
