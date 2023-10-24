@@ -39,14 +39,14 @@ jobs:
       name: testnet-mobile
       url: http://10.210.2.10:8088
 
-    - name: get artifact
-      run: |
-        rm -rf *
-        loginctl enable-linger moonbase
-        gh run download -n successful_artifact --repo tagion/tagion
-        tar -xzf *.tar.gz
-
     steps:
+      - name: get artifact
+        run: |
+          rm -rf *
+          loginctl enable-linger moonbase
+          gh run download -n successful_artifact --repo tagion/tagion
+          tar -xzf *.tar.gz
+
       - name: Backup old data and Create new bills
         if: ${{ inputs.clean }}
         run: |
