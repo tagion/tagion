@@ -2,15 +2,15 @@ name: Test Tagionwave
 on: 
   workflow_dispatch:
     #    inputs:
-    #      logLevel:
-    #        description: 'Log level'
+    #      mode:
+    #        description: 'Network Mode'
     #        required: true
-    #        default: 'warning'
+    #        default: 'INTERNAL'
     #        type: choice
     #        options:
-    #          - info
-    #          - warning
-    #          - debug
+    #          - INTERNAL
+    #          - LOCAL
+    #          - PUB
     #      print_tags:
     #        description: 'True to print to STDOUT'
     #        required: true
@@ -29,7 +29,7 @@ jobs:
     runs-on: testnet
     environment: 
       name: testnet-mobile
-      url: 10.210.2.10
+      url: http://10.210.2.10:8088
 
     steps:
       - name: Backup old data
