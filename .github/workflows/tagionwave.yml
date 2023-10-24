@@ -47,19 +47,21 @@ jobs:
         run: |
           cd build/x86_64-linux/bin
           ./tagion -s
-          ./create_wallets_2.sh -b $PWD -k ~/.local/share/tagion/wave -t ~/.local/share/tagion/wallet -w 5 -n 5
+          ./create_wallets_2.sh -b $PWD -k ~/.local/share/tagion/wave -t ~/.local/share/tagion/wallets -w 5 -n 5
 
       - name: start service
         run: |
           cd build/x86_64-linux/bin
           export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1001/bus
           export XDG_RUNTIME_DIR=/run/user/1001
-          systemctl stop --user neuewelle.service | echo "No service was running"
+          systemctl stop --user neuewelle.service | echo "No wave service was running"
+          systemctl stop --user tagionshell.service | echo "No shell service was running"
           mkdir -p ~/.local/share/bin
           mkdir -p ~/.config/systemd/user
           cp tagion ~/.local/share/bin/
           echo "Deploying revision" >> $GITHUB_STEP_SUMMARY
           ~/.local/share/bin/tagion --version >> $GITHUB_STEP_SUMMARY
-          cp neuewelle.service ~/.config/systemd/user
+          cp tagionshell.service neuewelle.service ~/.config/systemd/user
           systemctl --user daemon-reload
           systemctl restart --user neuewelle.service
+          systemctl restart --user tagionshell.service
