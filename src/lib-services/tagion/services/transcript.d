@@ -78,6 +78,11 @@ struct TranscriptService {
 
         immutable(EpochContracts)*[uint] epoch_contracts;
 
+
+        void checkLeaks() {
+            log("EPOCH_CONTRACTS: %s, VOTES %s, PRODUCTS %s", epoch_contracts.length, votes.length, products.length);
+        }
+
         void createRecorder(dartCheckReadRR.Response res, immutable(DARTIndex)[] not_in_dart) {
             log("received response from dart %s", not_in_dart);
 
@@ -132,6 +137,7 @@ struct TranscriptService {
                 products.remove(net.dartIndex(signed_contract.contract));
             }
 
+            checkLeaks();
             auto req = dartModifyRR();
             req.id = res.id;
             log("CREATING REQUEST");
@@ -186,6 +192,7 @@ struct TranscriptService {
                 return;
             }
 
+            checkLeaks();
             (() @trusted => locate(task_names.dart).send(req, inputs))();
 
         }
@@ -204,6 +211,7 @@ struct TranscriptService {
 
             votes[epoch_number] = Votes(bullseye, epoch_number);
 
+            checkLeaks();
             locate(task_names.epoch_creator).send(Payload(), own_vote.toDoc);
         }
 
@@ -211,6 +219,7 @@ struct TranscriptService {
             log("received ContractProduct");
             auto product_index = net.dartIndex(product.contract.sign_contract.contract);
             products[product_index] = product;
+            checkLeaks();
 
         }
 
