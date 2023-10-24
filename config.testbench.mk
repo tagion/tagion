@@ -19,6 +19,7 @@ testbench: DINC+=$(DSRC)/bin-wave/
 # Binary testbench 
 #
 testbench: bddfiles
+target-testbench: ssl nng secp256k1 libp2p
 target-testbench: DFLAGS+=$(DVERSION)=ONETOOL
 target-testbench: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER) $(LIBNNG)
 target-testbench: DFLAGS+=$(DEBUG_FLAGS)

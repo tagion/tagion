@@ -176,6 +176,7 @@ jobs:
           make PLATFORM=${{ matrix.arch }}-linux-android clean
 
   ddoc_push:
+    if: false
     runs-on: CD
     needs: acceptance_stage 
     steps:
@@ -226,7 +227,7 @@ jobs:
 
   finish_workflow:
     runs-on: CD
-    needs: [acceptance_stage, ddoc_push, docs_build]
+    needs: [acceptance_stage, docs_build]
     steps:    
       - name: Copy Artifact to local machine
         run: |

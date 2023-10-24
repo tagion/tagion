@@ -5,10 +5,10 @@ ci:
 	$(MAKE) -S bins -f$(DTUB)/main.mk
 	$(MAKE) -S bddtest unittest-cov TESTBENCH_FLAGS=--silent -f$(DTUB)/main.mk
 	$(MAKE) -S release -f$(DTUB)/main.mk
-	$(MAKE) -S ddoc -f$(DTUB)/main.mk
 	cp $(REPOROOT)/collider_schedule.json $(DBIN) 
 	cp $(DSRC)/bin-wave/neuewelle.service $(DBIN)
-	cp $(DTUB)/scripts/create_wallets.sh $(DBIN)
+	cp $(DSRC)/bin-tagionshell/tagionshell.service $(DBIN)
+	cp $(DTUB)/scripts/create_wallets_2.sh $(DBIN)
 	$(MAKE) -S trunk -f$(DTUB)/main.mk
 	#$(MAKE) -S test unittest-cov trunk bddreport -f$(DTUB)/main.mk
 
@@ -23,7 +23,3 @@ help-ci:
 .PHONY: help-ci
 
 help: help-ci
-
-
-
-

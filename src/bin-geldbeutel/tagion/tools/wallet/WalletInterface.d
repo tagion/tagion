@@ -129,9 +129,21 @@ HiRPC.Receiver sendShellSubmitHiRPC(string address, HiRPC.Sender contract, const
     http.onReceive = (ubyte[] data) { response_doc = Document(data.idup); return data.length; };
     http.perform();
 
-    response_doc.toPretty;
     HiRPC hirpc = HiRPC(net);
     return hirpc.receive(response_doc);
+}
+
+Document sendShellHiRPC(string address, Document dart_req) {
+    import std.net.curl;
+    Document response_doc;
+    writeln(address);
+    auto http = HTTP(address);
+    auto data = dart_req.serialize;
+    http.setPostData(data, "application/octet-stream");
+    http.onReceive = (ubyte[] data) { response_doc = Document(data.idup); return data.length; };
+    http.perform();
+
+    return response_doc;
 }
 
 
@@ -589,6 +601,7 @@ struct WalletInterface {
         bool update;
         bool trt_update;
         double amount;
+        bool faucet;
         string invoice;
         string output_filename;
     }
@@ -617,6 +630,9 @@ struct WalletInterface {
                         check(new_invoice.amount > 0, "Invoice amount not valid");
                         secure_wallet.registerInvoice(new_invoice);
                         request = new_invoice.toDoc;
+                        if (faucet) {
+                            sendShellHiRPC(options.addr ~ options.faucet, request);
+                        }
                     }
                     else {
                         auto bill = secure_wallet.requestBill(amount.TGN);
@@ -688,8 +704,14 @@ struct WalletInterface {
                     if (output_filename !is string.init) {
                         output_filename.fwrite(req);
                     }
-                    if (sendkernel) {
-                        auto received_doc = sendDARTHiRPC(options.dart_address, req);
+                    if (send || sendkernel) {
+                        Document received_doc;
+                        if (sendkernel) {
+                            received_doc = sendDARTHiRPC(options.dart_address, req);
+                        }
+                        if (send) {
+                            received_doc = sendShellHiRPC(options.addr ~ options.dart_shell_address, req.toDoc);
+                        }
                         check(received_doc.isRecord!(HiRPC.Receiver), "Error in response. Aborting");
                         auto receiver = hirpc.receive(received_doc);
 
@@ -701,6 +723,7 @@ struct WalletInterface {
                     }
 
                 }
+                
                 if (pay) {
 
                     Document[] requests_to_pay = args[1 .. $]
@@ -745,7 +768,7 @@ struct WalletInterface {
                         sendShellSubmitHiRPC(options.contract_shell_address, hirpc_submit, contract_net);
                     }
                     else if (sendkernel) {
-                        sendSubmitHiRPC(options.contract_address, hirpc_submit, contract_net);
+                        sendSubmitHiRPC(options.addr ~ options.contract_address, hirpc_submit, contract_net);
                     }
                 }
             }

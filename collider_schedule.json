@@ -251,6 +251,14 @@
                 "acceptance", "spam_double_spend"
             ],
             "timeout": 0.0
+        },
+        "malformed_contract": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "malformed_contract"
+            ],
+            "timeout": 0.0
         }
 
     }

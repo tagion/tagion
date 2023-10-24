@@ -11,6 +11,7 @@ import tagion.tools.Basic;
 import tagion.utils.getopt;
 import tagion.basic.Version;
 import tagion.tools.revision;
+import tagion.basic.Types;
 
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
@@ -77,7 +78,7 @@ int _main(string[] args) {
         stderr.writefln("Listening on, %s", address);
 
         while (true) {
-            auto data = sock.receive!(immutable(ubyte)[]);
+            auto data = sock.receive!Buffer;
             if (sock.errno != 0 && sock.errno != 5) {
                 stderr.writefln("Error string: (%s)%s", sock.errno, nng_errstr(sock.errno));
                 continue;

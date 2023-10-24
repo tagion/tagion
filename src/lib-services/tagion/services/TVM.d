@@ -4,6 +4,7 @@ module tagion.services.TVM;
 
 import std.stdio;
 import core.time;
+import std.conv : to;
 
 import tagion.logger.Logger;
 import tagion.basic.Debug : __write;
@@ -27,6 +28,12 @@ struct TVMOptions {
     mixin JSONCommon;
 }
 
+
+enum ResponseError {
+    UnsupportedScript,
+    ExecutionError,
+}
+
 /**
  * TVMService actor
  * Receives: 
@@ -42,6 +49,7 @@ struct TVMService {
     TVMOptions opts;
     TaskNames task_names;
     static ContractExecution execute;
+    static Topic tvm_error = Topic("error/tvm");
 
     void task() {
         run(&contract, &consensus_contract);
@@ -50,7 +58,7 @@ struct TVMService {
     void contract(signedContract, immutable(CollectedSignedContract)* collected) {
 
         if (!engine(collected)) {
-            log("!engine(collected");
+            log(tvm_error, ResponseError.UnsupportedScript.to!string, Document());
             return;
         }
         log("sending pload to epoch creator");
@@ -64,7 +72,7 @@ struct TVMService {
     bool engine(immutable(CollectedSignedContract)* collected) {
         log("received signed contract");
         if (!collected.sign_contract.contract.script.isRecord!PayScript) {
-            log("unsuported script");
+            log(tvm_error, ResponseError.UnsupportedScript.to!string);
             return false;
         }
         // import std.algorithm;
@@ -73,6 +81,7 @@ struct TVMService {
         log("before sending to tvm");
         auto result = execute(collected);
         if (result.error) {
+            log(tvm_error, ResponseError.ExecutionError.to!string, Document());
             log("Execution error - aborting %s", result.e);
             return false;
         }

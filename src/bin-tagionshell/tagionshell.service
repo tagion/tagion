@@ -1,0 +1,11 @@
+[Unit]
+Description="Test deployment of tagionshell"
+
+[Service]
+WorkingDirectory=%h/.local/share/tagion/
+ExecStart=%h/.local/share/bin/tagion shell
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=default.target
