@@ -4,9 +4,15 @@
 
 
 DC=dmd
-DCFLAGS=-O -d -m64 -i
 DINC=libnng
-DLFLAGS=-Lextern/nng/build/lib/ -lnng -Lextern/mbedtls/build/lib/ -lmbedtls -lmbedcrypto -lmbedx509
+
+ifdef NNG_WITH_MBEDTLS
+	DCFLAGS=-O -d -m64 -i -version withtls
+	DLFLAGS=-Lextern/nng/build/lib/ -Lextern/mbedtls/build/lib/ -lnng -lmbedtls -lmbedcrypto -lmbedx509
+else
+	DCFLAGS=-O -d -m64 -i
+	DLFLAGS=-Lextern/nng/build/lib/ -lnng
+endif
 
 DTESTS=$(wildcard tests/*.d)
 DTARGETS=$(basename $(DTESTS))
@@ -17,7 +23,7 @@ all: lib test
 test: extern $(DTESTS)
 
 extern:
-	git submodule update --init --checkout --recursive --remote --force && \
+	git submodule update --init --recursive && \
 	$(MAKE) -C extern/
 
 $(DTESTS): 
