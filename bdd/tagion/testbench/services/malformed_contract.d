@@ -121,21 +121,26 @@ class ContractTypeWithoutCorrectInformation {
 
 
         writefln("signed_contract %s", signed_contract.toDoc.toPretty);
-
-
         
         return result_ok;
     }
 
     @When("i send the contract to the network.")
     Document network() {
+        thisActor.task_name = "spam_contract_task";
+        log.registerSubscriptionTask(thisActor.task_name);
+        submask.subscribe("error/tvm");
+
         sendSubmitHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1.net);
         return result_ok;
     }
 
     @Then("the contract should be rejected.")
     Document rejected() {
-        (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
+        auto error = receiveOnlyTimeout!(LogInfo, const(Document))(CONTRACT_TIMEOUT.seconds);
+
+
+        writefln("WOWOWOWOWOWOWOWOW %s", error);
         return result_ok;
     }
 
