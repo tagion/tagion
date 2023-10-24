@@ -13,7 +13,7 @@ import std.json;
 import nngd;
 import nngtestutil;
 
-static void client_handler ( WebData res, void* ctx ){
+static void client_handler ( WebData *res, void* ctx ){
     log("===> Client handler:");
     writeln(res.toString());
     stdout.flush();
@@ -48,9 +48,9 @@ main()
 
     log("TEST3 ---------------------------------------------------  async http get ");
     
-    //NNGAio aio = WebClient.get_async("http://httpbin.org/get", null, &client_handler );
-    //aio.wait();        
-
+    WebClient c = WebClient("");
+    NNGAio a = c.get_async("http://httpbin.org/get", null, &client_handler );
+    a.wait();
     log("...passed");        
 
     writeln("Bye!");
