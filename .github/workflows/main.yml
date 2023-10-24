@@ -176,6 +176,7 @@ jobs:
           make PLATFORM=${{ matrix.arch }}-linux-android clean
 
   ddoc_push:
+    if: false
     runs-on: CD
     needs: acceptance_stage 
     steps:
