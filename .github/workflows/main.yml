@@ -227,7 +227,7 @@ jobs:
 
   finish_workflow:
     runs-on: CD
-    needs: [acceptance_stage, ddoc_push, docs_build]
+    needs: [acceptance_stage, docs_build]
     steps:    
       - name: Copy Artifact to local machine
         run: |
