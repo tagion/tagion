@@ -11,6 +11,8 @@ NO_UNITDATA=-a -not -path "*/unitdata/*"
 EXCLUDED_DIRS+=-a -not -path "*/lib-betterc/*"
 EXCLUDED_DIRS+=-a -not -path "*/tests/*"
 EXCLUDED_DIRS+=-a -not -path "*/.dub/*"
+EXCLUDED_DIRS+=-a -not -path "*/lib-p2pgowrapper/*"
+EXCLUDED_DIRS+=-a -not -path "*/lib-network/*"
 
 LIB_DFILES:=${shell find $(DSRC) -name "*.d" -a -path "*/lib-*" $(EXCLUDED_DIRS) $(NO_UNITDATA) }
 
@@ -147,9 +149,9 @@ TAGION_TOOLS+=hirep
 
 TAGION_BINS=$(foreach tools,$(TAGION_TOOLS), ${call BIN_DEPS,$(tools)} )
 
-target-tagion: ssl nng secp256k1 libp2p
+target-tagion: nng secp256k1
 target-tagion: DFLAGS+=$(DVERSION)=ONETOOL
-target-tagion: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER) $(LIBNNG)
+target-tagion: LIBS+= $(LIBSECP256K1) $(LIBNNG)
 ${call DO_BIN,tagion,$(LIB_DFILES) $(TAGION_BINS)}
 
 env-tools:
