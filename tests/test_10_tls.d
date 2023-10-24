@@ -55,14 +55,15 @@ main()
 
     WebApp app = WebApp("myapp", "https://localhost:8081", parseJSON(`{"root_path":"`~wd~`/../../webapp","static_path":"static"}`), null);
     
-    WebTLS tls = WebTLS(nng_tls_mode.NNG_TLS_MODE_SERVER);    
-    tls.set_server_name("localhost");
-    tls.set_auth_mode(nng_tls_auth_mode.NNG_TLS_AUTH_MODE_NONE);
-    tls.set_version(nng_tls_version.NNG_TLS_1_0, nng_tls_version.NNG_TLS_1_3);
-    writeln(wd~"/../../ssl/cert.crt");
-    tls.set_cert_key_file(wd~"/../../ssl/cert.crt", wd~"/../../ssl/key.key");
-
-    app.set_tls(tls);
+    version(withtls){
+        WebTLS tls = WebTLS(nng_tls_mode.NNG_TLS_MODE_SERVER);    
+        tls.set_server_name("localhost");
+        tls.set_auth_mode(nng_tls_auth_mode.NNG_TLS_AUTH_MODE_NONE);
+        tls.set_version(nng_tls_version.NNG_TLS_1_0, nng_tls_version.NNG_TLS_1_3);
+        writeln(wd~"/../../ssl/cert.crt");
+        tls.set_cert_key_file(wd~"/../../ssl/cert.crt", wd~"/../../ssl/key.key");
+        app.set_tls(tls);
+    }
 
     app.route("/api/v1/test1",&api_handler1);
     app.route("/api/v1/test2/*",&api_handler2,["GET","POST"]);

@@ -2,6 +2,8 @@
 .ONESHELL:
 .NOTPARALLEL:
 
+# default is ON
+NNG_WITH_MBEDTLS?=ON
 
 DC=dmd
 DCFLAGS=-O -d -m64 -i -debug -g
@@ -33,9 +35,9 @@ $(DTESTS):
 lib: extern
 	$(DC) $(DCFLAGS) -lib -of=build/libnngd.a -H -Hd=build/ ${addprefix -I,$(DINC)} ${addprefix -L,$(DLFLAGS)} nngd/nngd.d
 
-clean: clean-local
+clean: clean-extern clean-local
 
-proper: clean-extern clean-local
+proper: proper-extern clean-local
 
 clean-local:
 	rm -rf ./build && \
@@ -43,6 +45,9 @@ clean-local:
 
 clean-extern:
 	$(MAKE) clean -C extern/
+
+proper-extern:
+	$(MAKE) proper -C extern/
 
 .PHONY: all extern lib clean $(DTESTS)
 
