@@ -3,6 +3,10 @@ name: Test Tagionwave
 on: 
   workflow_dispatch:
     inputs:
+      run_id:
+        description: 'Artifact run id'
+        required: false
+        type: number
       clean:
         description: 'Reset network bills'
         required: true
@@ -44,7 +48,7 @@ jobs:
         run: |
           rm -rf *
           loginctl enable-linger moonbase
-          gh run download -n successful_artifact --repo tagion/tagion
+          gh run download ${{ inputs.artifact_run_id }} -n successful_artifact --repo tagion/tagion
           tar -xzf *.tar.gz
 
       - name: Backup old data and Create new bills
