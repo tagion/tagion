@@ -1100,6 +1100,7 @@ unittest {
     import std.traits;
     import std.json;
 
+    @safe
     static struct TestData {
         const(ubyte[][]) privKeys;
         const(ubyte[][]) pubKeys;
@@ -1111,10 +1112,10 @@ unittest {
         const(ubyte[][]) commitments;
         const(ubyte[][]) secretKeys;
         const(ubyte[][]) secretNonces;
-        const(ubyte[][]) nonceCombined;
+        const(ubyte[]) nonceCombined;
         const(ubyte[][]) partialSigs;
         const(ubyte[]) signature;
-        this(JSONValue json) {
+        this(JSONValue json) @trusted {
             static foreach (i, name; [FieldNameTuple!TestData]) {
                 {
                     auto sub_json = json[name];
@@ -1122,10 +1123,12 @@ unittest {
                         this.tupleof[i] = sub_json.str.decode;
                     }
                     else {
+                        //                    this.tupleof[i]= this.tupleof[i].init;
                         this.tupleof[i] = sub_json.array[]
                             .map!(json => json.str)
                             .map!(hex => hex.decode)
                             .array;
+
                     }
                 }
             }
@@ -1137,7 +1140,8 @@ unittest {
     auto list_of_tests = (() @trusted => text_data.parseJSON.array[])()
         .map!(json => TestData(json));
 
-    bool check_musig(
+    list_of_tests.popFront;
+    bool _check_musig(
             const(ubyte[]) message,
     const(ubyte[][]) privkeys,
     const(ubyte[][]) expected_pubkeys,
@@ -1166,7 +1170,7 @@ unittest {
         return true;
     }
 
-    check_musig(
+    _check_musig(
             "3f017f66d864aef5916d869aba6e51493e394d8088b4443a16b5e23a21ff8a62".decode,
             [
             "defa2eec61678704aee7a245d67a23ac5563ea5c1bb391d34cb5500f9d1cd859",
@@ -1184,4 +1188,31 @@ unittest {
             "7e775d210e2b7164e0580c729b1951a7bff6102e459237c244841db8d1cb8341".decode
     );
 
+    @safe
+    void check_musig(TestData test_data) {
+        with (test_data) {
+            NativeSecp256k1[] crypts = iota(privKeys.length)
+                .map!(i => new NativeSecp256k1)
+                .array;
+            ubyte[][] keypairs;
+            keypairs.length = crypts.length;
+            crypts.enumerate
+                .each!((iter) => iter.value.createKeyPair(privKeys[iter.index], keypairs[iter.index]));
+            const created_pubKeys = crypts.enumerate
+                .map!((iter) => iter.value.xonly_pubkey(keypairs[iter.index]))
+                .array;
+            pubKeys.each!(pkey => writefln("%(%02x%)", pkey));
+            created_pubKeys.each!(pkey => writefln("%(%02x%)", pkey));
+            assert(equal(pubKeys, created_pubKeys));
+            // Step 1 Combine public keys
+            const created_pubKeyHash = sha256(created_pubKeys.join);
+            writefln("pubKeyHash=%(%02x%)", created_pubKeyHash);
+            writefln("pubKeyHash=%(%02x%)", ell);
+            //assert(expected_pubKeyHash == pubKeyHash);
+
+        }
+    }
+
+    pragma(msg, "pubKeyHash ", typeof(list_of_tests.front));
+    check_musig(list_of_tests.front);
 }
