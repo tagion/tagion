@@ -15,7 +15,7 @@ sourceFiles "@tub/dub/dheaders.txt" \
   platform="linux-x86_64"
 
 libs "secp256k1" "crypto" "ssl" "p2pgowrapper"
-dflags "-dip25" "-dip1000" "-preview=inclusiveincontracts"
+dflags "-dip1000" "-preview=inclusiveincontracts"
 versions "REDBLACKTREE_SAFE_PROBLEM" "SYNC_BLOCKFILE_WORKING" "TINY_AES" "WOLFSSL" "OLD_TRANSACTION" "ONETOOL" 
 stringImportPaths "tub/logos/" "/home/lucas/wrk/tagion/build/x86_64-linux"
 

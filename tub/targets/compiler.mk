@@ -110,7 +110,6 @@ OUTPUTDIR = -od
 VERRORS=-verrors=context
 endif
 
-DIP25 := $(DIP)25
 DIP1000 := $(DIP)1000
 
 # Define relocation model for ldc or other
@@ -177,7 +176,6 @@ env-compiler:
 	${call log.kvp, LINKERFLAG, $(LINKERFLAG)}
 	${call log.kvp, DMAIN, $(DMAIN)}
 	${call log.kvp, DIP, $(DIP)}
-	${call log.kvp, DIP25, $(DIP25)}
 	${call log.kvp, DIP1000, $(DIP1000)}
 	${call log.kvp, DPREVIEW, $(DPREVIEW)}
 	${call log.kvp, DFPIC, $(DFPIC)}

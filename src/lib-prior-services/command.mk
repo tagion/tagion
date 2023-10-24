@@ -103,7 +103,6 @@ else
     DIP         := -dip
 endif
 
-DIP25   := $(DIP)25
 DIP1000 := $(DIP)1000
 #DIP1021 := $(DIP)1021
 
