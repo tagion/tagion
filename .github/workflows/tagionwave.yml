@@ -28,8 +28,8 @@ jobs:
   deploy_tagionwave:
     runs-on: testnet
     environment: 
-      - name: testnet-mobile
-        url: 10.210.2.10
+      name: testnet-mobile
+      url: 10.210.2.10
 
     steps:
       - name: Backup old data
