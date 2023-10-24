@@ -1,23 +1,23 @@
 name: Test Tagionwave
 
 on: 
-workflow_dispatch:
-  inputs:
-    clean:
-      description: 'Reset network bills'
-      required: true
-      default: true
-      type: boolean
-    wallets:
-      description: 'How many wallets'
-      required: true
-      type: number
-      default: 5
-    nodes:
-      description: 'Amount of nodes'
-      required: true
-      type: number
-      default: 5
+  workflow_dispatch:
+    inputs:
+      clean:
+        description: 'Reset network bills'
+        required: true
+        default: true
+        type: boolean
+      wallets:
+        description: 'How many wallets'
+        required: true
+        type: number
+        default: 5
+      nodes:
+        description: 'Amount of nodes'
+        required: true
+        type: number
+        default: 5
           #      mode:
           #        description: 'Network Mode'
           #        required: true
