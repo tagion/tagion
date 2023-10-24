@@ -58,6 +58,8 @@ jobs:
           mkdir -p ~/.local/share/bin
           mkdir -p ~/.config/systemd/user
           cp tagion ~/.local/share/bin/
+          echo "Deploying revision" >> $GITHUB_STEP_SUMMARY
+          ~/.local/share/bin/tagion --version >> $GITHUB_STEP_SUMMARY
           cp neuewelle.service ~/.config/systemd/user
           systemctl --user daemon-reload
           systemctl restart --user neuewelle.service
