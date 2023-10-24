@@ -40,7 +40,7 @@ jobs:
         run: |
           cd build/x86_64-linux/bin
           DIR_EPOCH=stat -c%W ~/.local/share/tagion && \
-          OLD_DIR_NAME=~/.local/share/tagion_$(date -d @$(stat -c%W ~/.local/share/tagion) +%F_%H:%M) && \
+          OLD_DIR_NAME=~/.local/share/tagion_$(date -d @$DIR_EPOCH +%F_%H:%M) && \
           mv ~/.local/share/tagion $OLD_DIR_NAME || \
           echo "No old data to backup"
 
