@@ -200,6 +200,9 @@ struct TranscriptService {
         void receiveBullseye(dartModifyRR.Response res, Fingerprint bullseye) {
             import tagion.utils.Miscellaneous : cutHex;
 
+            if (bullseye is Fingerprint.init) {
+                return;
+            }
             log("transcript received bullseye %s", bullseye.cutHex);
 
             auto epoch_number = cast(long) res.id;
