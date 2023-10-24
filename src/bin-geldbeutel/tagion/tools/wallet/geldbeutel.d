@@ -112,18 +112,20 @@ int _main(string[] args) {
                 "update|U", "Update your wallet", &update_wallet,
                 "item|m", "Invoice item select from the invoice file", &item,
                 */
-                    "pin|x", "Pincode", &pincode,
-                    "amount", "Create an payment request in tagion", &wallet_switch.amount,
-                    "force", "Force input bill", &wallet_switch.force,
-                    "pay", "Creates a payment contract", &wallet_switch.pay,
-                    "dry", "Dry-run this will not save the wallet", &__dry_switch,
-                    "req", "List all requested bills", &wallet_switch.request,
-                    "update", "Request a wallet updated", &wallet_switch.update,
-                    "trt-update", "Request a update on all derivers", &wallet_switch.trt_update,
-                    "contract-addr", format(
-                        "Sets the contract address default: %s", options.contract_address), &options
-                    .contract_address,
-                    "dart-addr", format("Sets the dart address default: %s", options.dart_address), &options.dart_address,
+                "pin|x", "Pincode", &pincode,
+                "amount", "Create an payment request in tagion", &wallet_switch.amount,
+                "force", "Force input bill", &wallet_switch.force,
+                "pay", "Creates a payment contract", &wallet_switch.pay,
+                "dry", "Dry-run this will not save the wallet", &__dry_switch,
+                "req", "List all requested bills", &wallet_switch.request,
+                "update", "Request a wallet updated", &wallet_switch.update,
+                "trt-update", "Request a update on all derivers", &wallet_switch.trt_update,
+                
+                "address", format(
+                    "Sets the address default: %s", options.contract_address), &options
+                    .addr,
+                "faucet", "request money from the faucet", &wallet_switch.faucet,
+                    // "dart-addr", format("Sets the dart address default: %s", options.dart_address), &options.dart_address,
                 "bip39", "Generate bip39 set the number of words", &bip39,
                 "salt", format(`Add a salt to the bip39 word list (Default "%s")`, _salt), &_salt, /*
                 "port|p", format("Tagion network port : default %d", options.port), &options.port,
