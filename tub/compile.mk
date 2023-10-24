@@ -4,7 +4,7 @@ DFLAGS+=$(DCOV)
 DRTFLAGS+=$(COVOPT)
 COVWAY=$(DLOGCOV)/.way
 endif
-DFLAGS+=$(DIP25) $(DIP1000)
+DFLAGS+=$(DIP1000)
 
 ifneq ($(COMPILER),gdc)
 DFLAGS+=$(DPREVIEW)=inclusiveincontracts
