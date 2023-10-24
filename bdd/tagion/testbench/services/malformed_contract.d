@@ -105,7 +105,6 @@ class ContractTypeWithoutCorrectInformation {
 
         // the bill to pay
         const malicious_bill = MaliciousBill(10.TGN,sdt_t.init, Pubkey([1,2,3,4]), null);
-        
         MaliciousPayScript pay_script;
         pay_script.outputs = [malicious_bill];
 
