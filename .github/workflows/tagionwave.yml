@@ -1,35 +1,36 @@
 name: Test Tagionwave
+
 on: 
-  workflow_dispatch:
-    inputs:
-      clean:
-          description: 'Reset network bills'
-          required: true
-          default: true
-          type: boolean
-      wallets:
-        description: 'How many wallets'
-        required: true
-        type: number
-        default: 5
-      nodes:
-        description: 'Amount of nodes'
-        required: true
-        type: number
-        default: 5
-    #      mode:
-    #        description: 'Network Mode'
-    #        required: true
-    #        default: 'INTERNAL'
-    #        type: choice
-    #        options:
-    #          - INTERNAL
-    #          - LOCAL
-    #          - PUB
-    #      environment:
-    #        description: 'Environment to run tests against'
-    #        type: environment
-    #        required: true
+workflow_dispatch:
+  inputs:
+    clean:
+      description: 'Reset network bills'
+      required: true
+      default: true
+      type: boolean
+    wallets:
+      description: 'How many wallets'
+      required: true
+      type: number
+      default: 5
+    nodes:
+      description: 'Amount of nodes'
+      required: true
+      type: number
+      default: 5
+          #      mode:
+          #        description: 'Network Mode'
+          #        required: true
+          #        default: 'INTERNAL'
+          #        type: choice
+          #        options:
+          #          - INTERNAL
+          #          - LOCAL
+          #          - PUB
+          #      environment:
+          #        description: 'Environment to run tests against'
+          #        type: environment
+          #        required: true
 
 jobs:
   deploy_tagionwave:
