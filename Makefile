@@ -6,8 +6,8 @@
 DC=dmd
 DINC=libnng
 
-ifdef NNG_WITH_MBEDTLS
-	DCFLAGS=-O -d -m64 -i -version withtls
+ifeq ($(NNG_WITH_MBEDTLS),ON)
+	DCFLAGS=-O -d -m64 -i -version=withtls
 	DLFLAGS=-Lextern/nng/build/lib/ -Lextern/mbedtls/build/lib/ -lnng -lmbedtls -lmbedcrypto -lmbedx509
 else
 	DCFLAGS=-O -d -m64 -i
@@ -26,7 +26,7 @@ extern:
 	git submodule update --init --recursive && \
 	$(MAKE) -C extern/
 
-$(DTESTS): 
+$(DTESTS):
 	$(DC) $(DCFLAGS) -of=$(basename $@) ${addprefix -I,$(DINC)} ${addprefix -L,$(DLFLAGS)} $@
 
 lib:
@@ -34,10 +34,14 @@ lib:
 
 clean: clean-local
 
+proper: clean-local clean-extern
+
 clean-local:
 	rm -rf ./build && \
 	rm -f $(DTARGETS) $(addsuffix .o,$(DTARGETS))
- 
+
+clean-extern:
+	$(MAKE) clean -C extern/
 
 .PHONY: all extern lib clean $(DTESTS)
 
