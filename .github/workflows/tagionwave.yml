@@ -38,7 +38,11 @@ jobs:
 
       - name: Initialize network bills
         run: |
-          echo "hello"
+          cd build/x86_64-linux/bin
+          OLD_DIR_NAME=~/.local/share/tagion_$(date -d @$(stat -c%W ~/.local/share/tagion) +%F_%H:%M) && \
+          mv ~/.local/share/tagion $OLD_DIR_NAME || \
+          echo "No existing tagion data"
+          ./create_wallets_2.sh -b $PWD -k ~/.local/share/tagion/wave -t ~/.local/share/tagion/wallet -w 5 -n 5
 
       - name: start service
         run: |
@@ -46,9 +50,9 @@ jobs:
           export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1001/bus
           export XDG_RUNTIME_DIR=/run/user/1001
           systemctl stop --user neuewelle.service | echo "No service was running"
-          mkdir -p ~/.local/share/wave
+          mkdir -p ~/.local/share/bin
           mkdir -p ~/.config/systemd/user
-          cp tagion ~/.local/share/wave
+          cp tagion ~/.local/share/bin/
           cp neuewelle.service ~/.config/systemd/user
           systemctl --user daemon-reload
           systemctl restart --user neuewelle.service
