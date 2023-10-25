@@ -167,13 +167,17 @@ jobs:
       - uses: actions/upload-artifact@v3
         if: success()
         with:
-          name: android-libmobile
+          name: libmobile
           path: ./build/*/lib/libmobile.so
           if-no-files-found: error
 
       - name: Cleanup
         run: 
           make PLATFORM=${{ matrix.arch }}-linux-android clean
+
+  ios_libmobile:
+    needs: acceptance_stage
+    uses: ./.github/workflows/ios.yml
 
   ddoc_push:
     if: false
