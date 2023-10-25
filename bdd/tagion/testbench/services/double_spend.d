@@ -15,7 +15,8 @@ import tagion.script.common;
 import tagion.script.execute;
 import tagion.script.Currency : totalAmount;
 import tagion.communication.HiRPC;
-import tagion.utils.pretend_safe_concurrency : receiveOnly, receiveTimeout;
+import tagion.utils.pretend_safe_concurrency : register, receiveOnly, receiveTimeout;
+import std.concurrency : thisTid;
 import tagion.logger.Logger;
 import tagion.logger.LogRecords : LogInfo;
 import tagion.actor;
@@ -23,6 +24,7 @@ import tagion.testbench.actor.util;
 import tagion.dart.DARTcrud;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord;
+import tagion.hashgraph.Refinement;
 
 import std.range;
 import std.algorithm;
@@ -70,8 +72,7 @@ class SameInputsSpendOnOneContract {
     @Given("i have a malformed contract correctly signed with two inputs which are the same")
     Document same() {
 
-        thisActor.task_name = "malformed_contract_task";
-        log.registerSubscriptionTask(thisActor.task_name);
+
 
         const amount_to_pay = 1100.TGN;
         auto payment_request = wallet2.requestBill(amount_to_pay);
@@ -397,7 +398,7 @@ class SameContractInDifferentEpochs {
     }
     @Given("i have a correctly signed contract.")
     Document contract() {
-        submask.subscribe("epoch_creator/epoch_created");
+        submask.subscribe(StdRefinement.epoch_created);
 
         writefln("SAME CONTRACT different epoch");
         amount = 1500.TGN;
@@ -410,6 +411,15 @@ class SameContractInDifferentEpochs {
 
     @When("i send the contract to the network in different epochs to the same node.")
     Document node() {
+
+
+        (()@trusted => Thread.sleep(5.seconds))();
+        writefln("WAITING FOR STUPID LOGGER SHITSHOW");
+        auto TEST = receiveOnlyTimeout!(LogInfo, const(Document))(30.seconds);
+        writefln("%s", TEST);
+
+
+        
         import tagion.hashgraph.Refinement : FinishedEpoch;
 
         int epoch_number;
@@ -512,7 +522,7 @@ class SameContractInDifferentEpochsDifferentNode {
 
     @Given("i have a correctly signed contract.")
     Document contract() {
-        submask.subscribe("epoch_creator/epoch_created");
+        submask.subscribe(StdRefinement.epoch_created);
 
         writefln("SAME CONTRACT different node different epoch");
         amount = 1500.TGN;
@@ -592,7 +602,7 @@ class SameContractInDifferentEpochsDifferentNode {
         check(wallet1_amount == expected_amount1, format("wallet 1 did not lose correct amount of money should have %s had %s", expected_amount1, wallet1_amount));
         check(wallet2_amount == expected_amount2, format("wallet 2 did not lose correct amount of money should have %s had %s", expected_amount2, wallet2_amount));
 
-        submask.unsubscribe("epoch_creator/epoch_created");
+        submask.unsubscribe(StdRefinement.epoch_created);
 
         return result_ok;
     }

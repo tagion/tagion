@@ -42,7 +42,7 @@ static struct Logger {
     }
 
     @property
-    private Tid logger_subscription_tid() @trusted const nothrow {
+    Tid logger_subscription_tid() @trusted const nothrow {
         import std.exception : assumeWontThrow;
 
         if (_logger_subscription_tid is Tid.init) {
@@ -220,6 +220,8 @@ is ready and has been started correctly
         if (topic.subscribed && log.isLoggerSubRegistered) {
             try {
                 auto info = LogInfo(topic, task_name, identifier);
+                import std.stdio;
+                writefln("sending to TID=%s task_name=%s", _tid, logger_subscription_name);
                 _tid.send(info, data);
             }
             catch (Exception e) {
@@ -383,6 +385,8 @@ shared struct SubscriptionMask {
     @trusted
     void subscribe(string topic) {
         if (thisTid == log.logger_subscription_tid) {
+            import std.stdio;
+            writeln("SUBSCRIBED TO topic: ", topic);
             _registered_topics[topic] = Subscribed.yes;
             return;
         }
