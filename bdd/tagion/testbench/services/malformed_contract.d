@@ -43,7 +43,6 @@ enum feature = Feature(
 alias FeatureContext = Tuple!(
         ContractTypeWithoutCorrectInformation, "ContractTypeWithoutCorrectInformation",
         InputsAreNotBillsInDart, "InputsAreNotBillsInDart",
-        NoInputBillsInContract, "NoInputBillsInContract",
         NegativeAmountAndZeroAmountOnOutputBills, "NegativeAmountAndZeroAmountOnOutputBills",
         ContractWhereInputIsSmallerThanOutput, "ContractWhereInputIsSmallerThanOutput",
         FeatureGroup*, "result"
@@ -198,27 +197,6 @@ class InputsAreNotBillsInDart {
         auto error = receiveOnlyTimeout!(LogInfo, const(Document))(CONTRACT_TIMEOUT.seconds);
         submask.unsubscribe("error/tvm");
         return result_ok;
-    }
-
-}
-
-@safe @Scenario("no input bills in contract",
-        [])
-class NoInputBillsInContract {
-
-    @Given("i have a malformed payment contract withtout any tagion bills.")
-    Document bills() {
-        return Document();
-    }
-
-    @When("i send the contract to the network.")
-    Document network() {
-        return Document();
-    }
-
-    @Then("the contract should be rejected.")
-    Document rejected() {
-        return Document();
     }
 
 }
