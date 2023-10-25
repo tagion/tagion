@@ -1,12 +1,17 @@
 name: Test Tagionwave
+
 on: 
   workflow_dispatch:
     inputs:
+      run_id:
+        description: 'Artifact run id'
+        required: false
+        type: number
       clean:
-          description: 'Reset network bills'
-          required: true
-          default: true
-          type: boolean
+        description: 'Reset network bills'
+        required: true
+        default: true
+        type: boolean
       wallets:
         description: 'How many wallets'
         required: true
@@ -17,19 +22,19 @@ on:
         required: true
         type: number
         default: 5
-    #      mode:
-    #        description: 'Network Mode'
-    #        required: true
-    #        default: 'INTERNAL'
-    #        type: choice
-    #        options:
-    #          - INTERNAL
-    #          - LOCAL
-    #          - PUB
-    #      environment:
-    #        description: 'Environment to run tests against'
-    #        type: environment
-    #        required: true
+          #      mode:
+          #        description: 'Network Mode'
+          #        required: true
+          #        default: 'INTERNAL'
+          #        type: choice
+          #        options:
+          #          - INTERNAL
+          #          - LOCAL
+          #          - PUB
+          #      environment:
+          #        description: 'Environment to run tests against'
+          #        type: environment
+          #        required: true
 
 jobs:
   deploy_tagionwave:
@@ -38,19 +43,19 @@ jobs:
       name: testnet-mobile
       url: http://10.210.2.10:8088
 
-    - name: get artifact
-      run: |
-        rm -rf *
-        loginctl enable-linger moonbase
-        gh run download -n successful_artifact --repo tagion/tagion
-        tar -xzf *.tar.gz
-
     steps:
+      - name: get artifact
+        run: |
+          rm -rf *
+          loginctl enable-linger moonbase
+          gh run download ${{ inputs.artifact_run_id }} -n successful_artifact --repo tagion/tagion
+          tar -xzf *.tar.gz
+
       - name: Backup old data and Create new bills
         if: ${{ inputs.clean }}
         run: |
-          DIR_EPOCH=stat -c%W ~/.local/share/tagion && \
-          OLD_DIR_NAME=~/.local/share/tagion_$(date -d @$DIR_EPOCH +%F_%H:%M) && \
+          DIR_EPOCH=$(stat -c%W ~/.local/share/tagion) && \
+          OLD_DIR_NAME=~/.local/share/tagion_$(date -d @$DIR_EPOCH +%F_%H-%M) && \
           mv ~/.local/share/tagion $OLD_DIR_NAME || \
           echo "No old data to backup"
           cd build/x86_64-linux/bin

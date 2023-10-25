@@ -485,9 +485,12 @@ class NativeSecp256k1T(bool Schnorr) {
     }
 
     enum XONLY_PUBKEY_SIZE = 32;
+    enum MSG_SIZE = 32;
+    enum KEYPAIR_SIZE = secp256k1_keypair.sizeof;
+    enum SECREY_SIZE = 32;
     @trusted
     void createKeyPair(const(ubyte[]) seckey, out ubyte[] keypair) const
-    in (seckey.length == 32)
+    in (seckey.length == SECREY_SIZE)
     do {
         auto _keypair = new secp256k1_keypair;
         scope (exit) {
@@ -504,16 +507,16 @@ class NativeSecp256k1T(bool Schnorr) {
             const(ubyte[]) msg,
     const(ubyte[]) keypair,
     const(ubyte[]) aux_random) const
-    in (msg.length == 32)
-    in (keypair.length == 96)
-    in (aux_random.length == 32)
+    in (msg.length == MSG_SIZE)
+    in (keypair.length == KEYPAIR_SIZE)
+    in (aux_random.length == MSG_SIZE)
     do {
         scope (exit) {
             randomizeContext;
         }
         auto _keypair = cast(secp256k1_keypair*)(&keypair[0]);
         static assert(_keypair.data.offsetof == 0);
-        auto signature = new ubyte[64];
+        auto signature = new ubyte[SIGNATURE_SIZE];
         const rt = secp256k1_schnorrsig_sign32(_ctx, &signature[0], &msg[0], _keypair, &aux_random[0]);
         check(rt == 1, ConsensusFailCode.SECURITY_FAILD_TO_SIGN_MESSAGE);
         return assumeUnique(signature);
@@ -521,8 +524,8 @@ class NativeSecp256k1T(bool Schnorr) {
 
     @trusted
     bool verify_schnorr(const(ubyte[]) signature, const(ubyte[]) msg, const(ubyte[]) pubkey) const nothrow
-    in (signature.length == 64)
-    in (msg.length == 32)
+    in (signature.length == SIGNATURE_SIZE)
+    in (msg.length == MSG_SIZE)
     in (pubkey.length == XONLY_PUBKEY_SIZE)
     do {
         secp256k1_xonly_pubkey xonly_pubkey;
@@ -534,12 +537,10 @@ class NativeSecp256k1T(bool Schnorr) {
 
     @trusted
     immutable(ubyte[]) xonly_pubkey(scope const(ubyte[]) keypair) const
-    in (keypair.length == 96)
+    in (keypair.length == KEYPAIR_SIZE)
     do {
         static assert(secp256k1_xonly_pubkey.data.offsetof == 0);
-        //static assert(secp256k1_xonly_pubkey.sizeof == XONLY_PUBKEY_SIZE);
         secp256k1_xonly_pubkey xonly_pubkey;
-        //auto xonly_pubkey = cast(secp256k1_xonly_pubkey*)(&pubkey[0]);
         const _keypair = cast(secp256k1_keypair*)(&keypair[0]);
         {
             const rt = secp256k1_keypair_xonly_pub(_ctx, &xonly_pubkey, null, _keypair);
@@ -553,6 +554,32 @@ class NativeSecp256k1T(bool Schnorr) {
         return assumeUnique(pubkey);
 
     }
+
+    @trusted
+    immutable(ubyte[]) xonly_pubkey_tweak(
+            scope const(ubyte[]) internal_pubkey,
+    scope const(ubyte[]) tweak)
+    in (internal_pubkey.length == XONLY_PUBKEY_SIZE)
+    in (tweak.length == 32)
+    do {
+        import std.stdio;
+
+        secp256k1_xonly_pubkey xonly_pubkey;
+        secp256k1_xonly_pubkey_parse(_ctx, &xonly_pubkey, &internal_pubkey[0]);
+
+        secp256k1_pubkey output_pubkey;
+        const rt = secp256k1_xonly_pubkey_tweak_add(_ctx, &output_pubkey, &xonly_pubkey, &tweak[0]);
+        writefln("output_pubkey=%(%02x%)", output_pubkey.data);
+        return null;
+    }
+    /+
+    SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_xonly_pubkey_tweak_add(
+    const secp256k1_context *ctx,
+    secp256k1_pubkey *output_pubkey,
+    const secp256k1_xonly_pubkey *internal_pubkey,
+    const unsigned char *tweak32
+) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(3) SECP256K1_ARG_NONNULL(4);
+    +/
 }
 
 version (unittest) {
@@ -948,4 +975,244 @@ unittest { /// Schnorr test generated from the secp256k1/examples/schnorr.c
     const signature_ok = crypt.verify_schnorr(signature, msg_hash, pubkey);
     //writefln("Signed %s", signature_ok);
     assert(signature_ok, "Schnorr signing failded");
+}
+
+version (unittest) {
+    const(ubyte[]) sha256(scope const(ubyte[]) data) {
+        import std.digest.sha : SHA256;
+        import std.digest;
+
+        return digest!SHA256(data).dup;
+    }
+}
+
+unittest {
+    import std.algorithm;
+    import std.array;
+    import std.range;
+    import std.stdio;
+
+    //https://github.com/guggero/bip-schnorr.github
+    const privkeys = [
+        "b2b084220e17de5bb85c6b33fe4630dc0cc3a0382c49509461a26341bc3c27e4",
+        "704550de854bdac387698eac6fb959f72c9a7aac064ec2a6bceb10a875b9cc6e",
+        "e37c7c6335cb98a4c229b975c66c9b60351b26c6c227f66a2c854fb7c0be58be"
+    ]
+        .map!(hex => decode(hex))
+        .array;
+
+    const expected_pubkeys = [
+        "1b34e02fbfab6153513c7578de070e1c9f2654b88109fb3906bb7f63dffd957d",
+        "bdaa2178ad0db31880dc326b1f8a6a383efd9a579962aac7008d8af738fa814d",
+        "8810e83afc4412af9070102e22305c8ae85aad98aa84263db47149f1c9790500"
+    ]
+        .map!(hex => decode(hex))
+        .array;
+
+    const coefficients = [
+        "3260a9a6c5a36e6e539cdfe022f9eee5beebdfd9c84f1f9a8673c00c2f488fab",
+        "eb78a85820fa35c5cf1685602294b12423a2d7a789542839b0f1a490eb0893a8",
+        "7da6ad28e2400fba5a14c3c2aaed0b69c0c25b38a7eb4f6109544d3bc9cc5cdb"
+    ]
+        .map!(hex => decode(hex))
+        .array;
+
+    const ell = "310c965e674daa3d91ccd77817e104b0a15c12749bb08c90adcc13b3a554add8".decode;
+
+    const pubKeyCombined = "8a58f1ae3b94700e82803522dfac149ea31b270c0ff0187efc060f67138e6b9d".decode;
+    const message = "746869735f636f756c645f62655f7468655f686173685f6f665f615f6d736721".decode;
+
+    const sessionIds = [
+        "bbd16447f4f4aa718c5b156863bb7c4f14761789dc3b861941d2eea9a8696c08",
+        "096882f29d12a54360530088f0f533ac471431e1976b707fc93df166db12ec91",
+        "7cd8e69d70829983b61c045a0d7421468a0e9473c4097ade659623ef247ba27a"
+    ]
+        .map!(hex => decode(hex))
+        .array;
+
+    const commitments = [
+        "c9813f85fd47c5fea9ee81ab70de1a1ad29789ff654b4f14f3c130f136e0c51e",
+        "73076409318d4b6f68a41ef631d38d0ef5a2bdebc230ece7f0274f7e5f845abd",
+        "13ea03ceef690298f14b02831f3c25cc28efd6967a5d5e0b6449009a7e8edca5"
+    ]
+        .map!(hex => decode(hex))
+        .array;
+
+    const secretKeys = [
+        "3aa16f18ec8c3dcbf8dd9c8f9ff504bd87b27d81d0ab2cb9026de18853db9274",
+        "df954a3b7af8fba50f7e0834d2e214ffb43050104c6ae0bcbc2e9bcab93c280c",
+        "be1df607cd9969d583cf6c93585483d87d28e9ba285f6b56336ca187550cb8ae"
+    ]
+        .map!(hex => decode(hex))
+        .array;
+
+    const secretNonces = [
+        "8b222c19b413c19d7acf9c541dae7ceed687edd3151e800750e9e0def14e7ade",
+        "b2a0a71f2427ef436097204d8c4bd10209d9a497c9b7ea52b86a04cbb0a03c6b",
+        "c838b589b2c6b78753d3e659f5e0f985ca6e616a6076b76b074b76cbcdc6a7e4"
+    ]
+        .map!(hex => decode(hex))
+        .array;
+
+    const nonceCombined = "4bcc50fce8d9ff8ddf1539446e2bea9a62101267c7894ca3193b7fd73505a0d0".decode;
+
+    const partialSigs = [
+        "beeef9e49bf554534a96116999e49f9123f417828c949702e3ee1679663ec913",
+        "788dfaf7a335e37d705b56637ca3062839cebef529cd11b10fea9d3432be15e6",
+        "752f03f84ef70713016cb38031d56725f10bfab013513c2cba66e62b0cfc7ade"
+    ]
+        .map!(hex => decode(hex))
+        .array;
+
+    const signature = "4bcc50fce8d9ff8ddf1539446e2bea9a62101267c7894ca3193b7fd73505a0d0acabf8d48e223ee3bc5e1b4d485d0ce0941ff4411a6a44a4ee6d3b4bd5c31896"
+        .decode;
+
+    NativeSecp256k1[] crypts = iota(privkeys.length)
+        .map!(i => new NativeSecp256k1)
+        .array;
+    ubyte[][] keypairs;
+    keypairs.length = crypts.length;
+    crypts.enumerate
+        .each!((iter) => iter.value.createKeyPair(privkeys[iter.index], keypairs[iter.index]));
+
+    const pubkeys = crypts.enumerate
+        .map!((iter) => iter.value.xonly_pubkey(keypairs[iter.index]))
+        .array;
+
+    expected_pubkeys.each!(pkey => writefln("%(%02x%)", pkey));
+    pubkeys.each!(pkey => writefln("%(%02x%)", pkey));
+    assert(equal(expected_pubkeys, pubkeys));
+
+    const combined = sha256(pubkeys.join);
+    writefln("combined=%(%02x%)", combined);
+    assert(combined == ell);
+
+}
+
+unittest {
+    // https://guggero.github.io/cryptography-toolkit/#!/mu-sig
+    import std.algorithm;
+    import std.array;
+    import std.range;
+    import std.stdio;
+    import tagion.basic.basic : unitfile;
+    import std.file : readText;
+    import std.traits;
+    import std.json;
+
+    @safe
+    static struct TestData {
+        const(ubyte[][]) privKeys;
+        const(ubyte[][]) pubKeys;
+        const(ubyte[][]) coefficients;
+        const(ubyte[]) ell;
+        const(ubyte[]) pubKeyCombined;
+        const(ubyte[]) message;
+        const(ubyte[][]) sessionIds;
+        const(ubyte[][]) commitments;
+        const(ubyte[][]) secretKeys;
+        const(ubyte[][]) secretNonces;
+        const(ubyte[]) nonceCombined;
+        const(ubyte[][]) partialSigs;
+        const(ubyte[]) signature;
+        this(JSONValue json) @trusted {
+            static foreach (i, name; [FieldNameTuple!TestData]) {
+                {
+                    auto sub_json = json[name];
+                    static if (is(Fields!TestData[i] == const(ubyte[]))) {
+                        this.tupleof[i] = sub_json.str.decode;
+                    }
+                    else {
+                        //                    this.tupleof[i]= this.tupleof[i].init;
+                        this.tupleof[i] = sub_json.array[]
+                            .map!(json => json.str)
+                            .map!(hex => hex.decode)
+                            .array;
+
+                    }
+                }
+            }
+        }
+    }
+
+    immutable text_data = unitfile("test-vectors-mu-sig.json").readText;
+
+    auto list_of_tests = (() @trusted => text_data.parseJSON.array[])()
+        .map!(json => TestData(json));
+
+    list_of_tests.popFront;
+    bool _check_musig(
+            const(ubyte[]) message,
+    const(ubyte[][]) privkeys,
+    const(ubyte[][]) expected_pubkeys,
+    const(ubyte[]) expected_pubKeyHash,
+    const(ubyte[]) expected_pubKeyCombinde)
+    in (privkeys.length == expected_pubkeys.length)
+    do {
+        NativeSecp256k1[] crypts = iota(privkeys.length)
+            .map!(i => new NativeSecp256k1)
+            .array;
+        ubyte[][] keypairs;
+        keypairs.length = crypts.length;
+        crypts.enumerate
+            .each!((iter) => iter.value.createKeyPair(privkeys[iter.index], keypairs[iter.index]));
+        const pubkeys = crypts.enumerate
+            .map!((iter) => iter.value.xonly_pubkey(keypairs[iter.index]))
+            .array;
+        expected_pubkeys.each!(pkey => writefln("%(%02x%)", pkey));
+        pubkeys.each!(pkey => writefln("%(%02x%)", pkey));
+        assert(equal(expected_pubkeys, pubkeys));
+        // Step 1 Combine public keys
+        const pubKeyHash = sha256(pubkeys.join);
+        writefln("pubKeyHash=%(%02x%)", pubKeyHash);
+        assert(expected_pubKeyHash == pubKeyHash);
+
+        return true;
+    }
+
+    _check_musig(
+            "3f017f66d864aef5916d869aba6e51493e394d8088b4443a16b5e23a21ff8a62".decode,
+            [
+            "defa2eec61678704aee7a245d67a23ac5563ea5c1bb391d34cb5500f9d1cd859",
+            "323dc37bcf03cbc45872e4d807ed3c58287024d8bc50c9ab440c15de4ddfcf27"
+            ]
+            .map!(hex => hex.decode)
+            .array,
+            [
+                "bf8b15c55a90b38a7e54d98f2ef4df5d50b8a5346b57e54c5cad699814186fa3",
+                "1d8346c1809142078a2f92f3c37c9b30dc1f989f2c2b07737a919407b1842bf6"
+            ]
+            .map!(hex => hex.decode)
+            .array,
+            "6e8bad6ea03e077f1a31f6c0769a87ef4a90426043f80329e1f56ab61836d4fd".decode,
+            "7e775d210e2b7164e0580c729b1951a7bff6102e459237c244841db8d1cb8341".decode
+    );
+
+    @safe
+    void check_musig(TestData test_data) {
+        with (test_data) {
+            NativeSecp256k1[] crypts = iota(privKeys.length)
+                .map!(i => new NativeSecp256k1)
+                .array;
+            ubyte[][] keypairs;
+            keypairs.length = crypts.length;
+            crypts.enumerate
+                .each!((iter) => iter.value.createKeyPair(privKeys[iter.index], keypairs[iter.index]));
+            const created_pubKeys = crypts.enumerate
+                .map!((iter) => iter.value.xonly_pubkey(keypairs[iter.index]))
+                .array;
+            pubKeys.each!(pkey => writefln("%(%02x%)", pkey));
+            created_pubKeys.each!(pkey => writefln("%(%02x%)", pkey));
+            assert(equal(pubKeys, created_pubKeys));
+            // Step 1 Combine public keys
+            const created_pubKeyHash = sha256(created_pubKeys.join);
+            writefln("pubKeyHash=%(%02x%)", created_pubKeyHash);
+            writefln("pubKeyHash=%(%02x%)", ell);
+            //assert(expected_pubKeyHash == pubKeyHash);
+
+        }
+    }
+
+    pragma(msg, "pubKeyHash ", typeof(list_of_tests.front));
+    check_musig(list_of_tests.front);
 }
