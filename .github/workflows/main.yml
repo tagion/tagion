@@ -176,6 +176,7 @@ jobs:
           make PLATFORM=${{ matrix.arch }}-linux-android clean
 
   ios_libmobile:
+    needs: acceptance_stage
     uses: ./.github/workflows/ios.yml
 
   ddoc_push:
