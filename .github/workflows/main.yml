@@ -120,8 +120,8 @@ jobs:
       - uses: actions/upload-artifact@v3
         if: failure() 
         with:
-          name: failed-run
-          path: ./${{needs.commit_stage.outputs.tarball}}
+          name: acceptance-failed-run
+          path: build logs
           if-no-files-found: error
 
       - name: Upload to shared directory
