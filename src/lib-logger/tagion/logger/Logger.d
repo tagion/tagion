@@ -37,23 +37,8 @@ static struct Logger {
         string _task_name; /// Logger task name
         uint[] masks; /// Logger mask stack
         __gshared string logger_task_name; /// Logger task name
-        __gshared string logger_subscription_name;
-        static Tid _logger_subscription_tid;
-    }
+        __gshared Tid logger_subscription_tid;
 
-    @property
-    Tid logger_subscription_tid() @trusted const nothrow {
-        import std.exception : assumeWontThrow;
-
-        if (_logger_subscription_tid is Tid.init) {
-            _logger_subscription_tid = assumeWontThrow(locate(logger_subscription_name));
-        }
-        return _logger_subscription_tid;
-    }
-
-    @property
-    private bool isLoggerSubRegistered() @nogc nothrow const {
-        return _logger_subscription_tid !is Tid.init;
     }
 
     @property
@@ -150,7 +135,12 @@ is ready and has been started correctly
 
     @trusted
     void registerSubscriptionTask(string task_name) {
-        logger_subscription_name = task_name;
+        logger_subscription_tid = locate(task_name);
+    }
+
+    @trusted
+    bool isLoggerSubRegistered() nothrow {
+        return logger_subscription_tid !is Tid.init;
     }
 
     /**
@@ -216,13 +206,11 @@ is ready and has been started correctly
     /// Conditional subscription logging
     @trusted
     void report(Topic topic, lazy string identifier, lazy const(Document) data) const nothrow {
-        auto _tid = logger_subscription_tid;
+        // report(LogLevel.INFO, "%s|%s| %s", topic.name, identifier, data.toPretty);
         if (topic.subscribed && log.isLoggerSubRegistered) {
             try {
                 auto info = LogInfo(topic, task_name, identifier);
-                import std.stdio;
-                writefln("sending to TID=%s task_name=%s", _tid, logger_subscription_name);
-                _tid.send(info, data);
+                logger_subscription_tid.send(info, data);
             }
             catch (Exception e) {
                 import std.stdio;
@@ -249,10 +237,10 @@ is ready and has been started correctly
     }
 
     import std.traits : isBasicType;
-    import tagion.hibon.HiBON;
 
     void opCall(T)(Topic topic, lazy string identifier, lazy T data) const nothrow if (isBasicType!T && !is(T : void)) {
-        logger_subscription_tid;
+        import tagion.hibon.HiBON;
+
         if (topic.subscribed && log.isLoggerSubRegistered) {
             try {
                 auto hibon = new HiBON;
