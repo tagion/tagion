@@ -320,26 +320,55 @@ class NegativeAmountAndZeroAmountOnOutputBills {
 
         return result_ok;
     }
-
 }
 
 @safe @Scenario("Contract where input is smaller than output.",
         [])
 class ContractWhereInputIsSmallerThanOutput {
+    Options node1_opts;
+    StdSecureWallet wallet1;
+    SignedContract signed_contract;
+    HiRPC wallet1_hirpc;
+    TagionCurrency start_amount1;
+
+    this(Options opts, ref StdSecureWallet wallet1) {
+        this.wallet1 = wallet1;
+        this.node1_opts = opts;
+        wallet1_hirpc = HiRPC(wallet1.net);
+        start_amount1 = wallet1.calcTotal(wallet1.account.bills);
+    }
 
     @Given("i have a contract where the input bill is smaller than the output bill.")
     Document bill() {
-        return Document();
+        auto bill = wallet1.requestBill(100_000.TGN);
+
+        PayScript pay_script;
+        pay_script.outputs = [bill];
+
+        const input_bill = wallet1.account.bills[0];
+        wallet1.lock_bills([input_bill]);
+
+        const nets = wallet1.collectNets([input_bill]);
+        check(nets.all!(net => net !is net.init), "Missing deriver of some of the bills");
+        signed_contract = sign(
+            nets,
+            [input_bill].map!(bill => bill.toDoc).array,
+            null,
+            pay_script.toDoc
+        );
+        return result_ok;
     }
 
     @When("i send the contract to the network.")
     Document network() {
-        return Document();
+        sendSubmitHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1.net);
+        return result_ok;
     }
 
     @Then("the contract should be rejected.")
     Document rejected() {
-        return Document();
+        auto error = receiveOnlyTimeout!(LogInfo, const(Document))(CONTRACT_TIMEOUT.seconds);
+        return result_ok;
     }
 
 }
