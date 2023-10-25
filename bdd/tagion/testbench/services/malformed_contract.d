@@ -24,6 +24,8 @@ import tagion.testbench.actor.util;
 import tagion.dart.DARTcrud;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord;
+import tagion.crypto.Types;
+import tagion.basic.Types;
 
 
 import std.range;
@@ -226,7 +228,6 @@ class NegativeAmountAndZeroAmountOnOutputBills {
     Document output() {
         import tagion.script.common;
         import tagion.utils.StdTime;
-        import tagion.crypto.Types;
         import tagion.hibon.HiBONtoText;
 
 
@@ -287,26 +288,35 @@ class NegativeAmountAndZeroAmountOnOutputBills {
 
     @When("i send the contracts to the network.")
     Document network() {
+        submask.subscribe("error/tvm");
         foreach(contract; [zero_contract, negative_contract, combined_contract]) {
             sendSubmitHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(contract), wallet1.net);
 
-            (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
-            // add catch of errror;
+            auto error = receiveOnlyTimeout!(LogInfo, const(Document))(CONTRACT_TIMEOUT.seconds);
         }
+        (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
        
-        return Document();
+        return result_ok;
     }
 
     @Then("the contracts should be rejected.")
     Document rejected() {
+        import tagion.dart.DART;
         auto req = wallet1.getRequestCheckWallet(wallet1_hirpc, used_bills);
         auto received_doc = sendDARTHiRPC(node1_opts.dart_interface.sock_addr, req);
 
-        writefln("wowo %s",received_doc.toPretty);
+        auto received = wallet1_hirpc.receive(received_doc);
+        auto not_in_dart = received.response.result[DART.Params.dart_indices].get!Document[].map!(d => d.get!Buffer).array;
+        check(not_in_dart.length == 0, "all the inputs should still be in the dart");
 
         auto output_req = wallet1.getRequestCheckWallet(wallet1_hirpc, output_bills);
         auto output_received_doc = sendDARTHiRPC(node1_opts.dart_interface.sock_addr, output_req);
+        auto output_received = wallet1_hirpc.receive(output_received_doc);
+        auto output_not_in_dart = output_received.response.result[DART.Params.dart_indices].get!Document[].map!(d => d.get!Buffer).array;
+
+
         writefln("wowo OUTPUT %s",output_received_doc.toPretty);
+        check(output_not_in_dart.length == 2, format("No inputs should have been added %s", output_not_in_dart.length));
 
         return result_ok;
     }

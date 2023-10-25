@@ -130,3 +130,6 @@ static this() {
     ContractExecution.check_contract.storage_fees = 1.TGN;
     ContractExecution.check_contract.gas_price = 0.1.TGN;
 }
+
+
+
