@@ -157,7 +157,7 @@ enum LogFiltersAction {
      *     @param task_name - task name
      *     @param level - log level
      */
-    this(string task_name, LogLevel level) {
+    this(string task_name, LogLevel level) nothrow pure {
         this.task_name = task_name;
         this.level = level;
 
@@ -172,7 +172,7 @@ enum LogFiltersAction {
      *     @param task_name - task name
      *     @param symbol_name - symbol name
      */
-    this(Topic topic, string task_name, string symbol_name) {
+    this(Topic topic, string task_name, string symbol_name) nothrow pure {
         this.task_name = task_name;
         this.topic_name = topic.name;
         this.symbol_name = symbol_name;
