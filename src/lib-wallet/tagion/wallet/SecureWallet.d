@@ -440,14 +440,21 @@ struct SecureWallet(Net : SecureNet) {
         return hirpc.search(h);
     }
 
-    const(HiRPC.Sender) getRequestCheckWallet(HiRPC hirpc = HiRPC(null)) const {
-        import tagion.dart.DARTcrud;
-
-        const fingerprints = [account.bills, account.requested.values]
-            .joiner
+    const(DARTIndex[]) billIndexes(const(TagionBill)[] bills) const {
+        return bills
             .map!(bill => net.dartIndex(bill))
             .array;
-        return dartCheckRead(fingerprints, hirpc);
+    }
+
+    const(HiRPC.Sender) getRequestCheckWallet(
+        HiRPC hirpc = HiRPC(null), 
+        const(TagionBill)[] to_check = null) 
+    const {
+        import tagion.dart.DARTcrud;
+        if (to_check is null) {
+            to_check = account.bills ~ account.requested.values;
+        }
+        return dartCheckRead(billIndexes(to_check), hirpc);
 
     }
 

@@ -126,7 +126,7 @@ int _main(string[] args) {
 
     Options[] node_opts;
     
-    Thread.sleep(5.seconds);
+    Thread.sleep(10.seconds);
     foreach(i; 0..local_options.wave.number_of_nodes) {
         const filename = buildPath(module_path, format(local_options.wave.prefix_format~"opts", i).setExtension(FileExtension.json));
         writeln(filename);
@@ -141,6 +141,7 @@ int _main(string[] args) {
     auto feature = automation!(malformed_contract);
     feature.ContractTypeWithoutCorrectInformation(node_opts[0], wallets[0]);
     feature.InputsAreNotBillsInDart(node_opts[1], wallets[1], random_doc);
+    feature.NegativeAmountAndZeroAmountOnOutputBills(node_opts[2], wallets[2]);
 
 
     

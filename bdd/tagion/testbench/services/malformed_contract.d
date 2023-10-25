@@ -204,20 +204,111 @@ class InputsAreNotBillsInDart {
 @safe @Scenario("Negative amount and zero amount on output bills.",
         [])
 class NegativeAmountAndZeroAmountOnOutputBills {
+    Options node1_opts;
+    StdSecureWallet wallet1;
+    SignedContract zero_contract;
+    SignedContract negative_contract;
+    SignedContract combined_contract;
+    HiRPC wallet1_hirpc;
+    TagionCurrency start_amount1;
+
+    TagionBill[] used_bills;
+    TagionBill[] output_bills;
+    
+    this(Options opts, ref StdSecureWallet wallet1) {
+        this.wallet1 = wallet1;
+        this.node1_opts = opts;
+        wallet1_hirpc = HiRPC(wallet1.net);
+        start_amount1 = wallet1.calcTotal(wallet1.account.bills);
+    }
 
     @Given("i have three contracts. One with output that is zero. Another where it is negative. And one with a negative and a valid output.")
     Document output() {
-        return Document();
+        import tagion.script.common;
+        import tagion.utils.StdTime;
+        import tagion.crypto.Types;
+        import tagion.hibon.HiBONtoText;
+
+
+
+        const zero_bill = TagionBill(0.TGN,currentTime, Pubkey([1,2,3,4]), null);
+        const negative_bill = TagionBill(-1000.TGN, currentTime, Pubkey([4,3,2,1]), null);
+
+        writefln("zero_bill = %s", zero_bill.toDoc.encodeBase64);
+        writefln("negative_bill = %s", negative_bill.toDoc.encodeBase64);
+
+        PayScript zero_script;
+        PayScript negative_script;
+        PayScript combined_script;
+        negative_script.outputs = [negative_bill];
+        zero_script.outputs = [zero_bill];
+        combined_script.outputs = [zero_bill, negative_bill];
+
+        output_bills = [zero_bill, negative_bill];
+
+
+        TagionBill[] input_bills1 = [wallet1.account.bills[0]];
+        TagionBill[] input_bills2 = [wallet1.account.bills[1]];
+        TagionBill[] input_bills3 = [wallet1.account.bills[2]];
+
+        
+        used_bills = input_bills1 ~ input_bills2 ~ input_bills3;
+        wallet1.lock_bills(used_bills);
+
+        const nets1 = wallet1.collectNets(input_bills1);
+        check(nets1.all!(net => net !is net.init), "Missing deriver of some of the bills");
+        zero_contract = sign(
+            nets1,
+            input_bills1.map!(bill => bill.toDoc).array,
+            null,
+            zero_script.toDoc
+        );
+        const nets2 = wallet1.collectNets(input_bills2);
+        check(nets2.all!(net => net !is net.init), "Missing deriver of some of the bills");
+        negative_contract = sign(
+            nets2,
+            input_bills2.map!(bill => bill.toDoc).array,
+            null,
+            negative_script.toDoc
+        );
+        const nets3 = wallet1.collectNets(input_bills3);
+        check(nets3.all!(net => net !is net.init), "Missing deriver of some of the bills");
+        combined_contract = sign(
+            nets3,
+            input_bills3.map!(bill => bill.toDoc).array,
+            null,
+            combined_script.toDoc
+        );
+
+        writefln("zero_contract %s \n negative contract %s \n combined contract %s", zero_contract.toPretty, negative_contract.toPretty, combined_contract.toPretty);
+        
+        return result_ok;
     }
 
     @When("i send the contracts to the network.")
     Document network() {
+        foreach(contract; [zero_contract, negative_contract, combined_contract]) {
+            sendSubmitHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(contract), wallet1.net);
+
+            (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
+            // add catch of errror;
+        }
+       
         return Document();
     }
 
     @Then("the contracts should be rejected.")
     Document rejected() {
-        return Document();
+        auto req = wallet1.getRequestCheckWallet(wallet1_hirpc, used_bills);
+        auto received_doc = sendDARTHiRPC(node1_opts.dart_interface.sock_addr, req);
+
+        writefln("wowo %s",received_doc.toPretty);
+
+        auto output_req = wallet1.getRequestCheckWallet(wallet1_hirpc, output_bills);
+        auto output_received_doc = sendDARTHiRPC(node1_opts.dart_interface.sock_addr, output_req);
+        writefln("wowo OUTPUT %s",output_received_doc.toPretty);
+
+        return result_ok;
     }
 
 }
