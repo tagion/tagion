@@ -1,18 +1,13 @@
 name: Build libmobile for ios
 on:
   workflow_dispatch:
-    #  push: 
-    #    branches: 
-    #      - current
+  workflow_call:
 
 jobs:
   ios_libmobile:
-    runs-on: minmax
+    runs-on: macOS
     steps:
-      - name: Checkout repository and submodules
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
+      - uses: actions/checkout@v4
 
       - name: Build
         run: |

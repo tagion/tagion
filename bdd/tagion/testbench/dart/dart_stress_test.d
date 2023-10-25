@@ -65,6 +65,8 @@ class AddPseudoRandomData {
     @Given("I have one dartfile.")
     Document dartfile() {
         mkdirRecurse(info.module_path);
+        import std.file : remove;
+        info.dartfilename.remove;
         // create the dartfile
         DART.create(info.dartfilename, info.net);
 

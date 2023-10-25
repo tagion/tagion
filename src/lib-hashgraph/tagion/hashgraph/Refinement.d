@@ -48,7 +48,7 @@ struct FinishedEpoch {
 @safe
 class StdRefinement : Refinement {
 
-    Topic epoch_created = Topic("epoch_creator/epoch_created");
+    static Topic epoch_created = Topic("epoch_creator/epoch_created");
 
     enum MAX_ORDER_COUNT = 10; /// Max recursion count for order_less function
     protected {
@@ -79,9 +79,8 @@ class StdRefinement : Refinement {
     const sdt_t epoch_time,
     const Round decided_round) {
         auto event_payload = FinishedEpoch(events, epoch_time, decided_round.number);
-        import std.format;
 
-        log(epoch_created, "epoch_succesful", event_payload.toDoc);
+        log(epoch_created, "epoch_succesful", event_payload);
 
         if (task_names is TaskNames.init) {
             return;
@@ -90,7 +89,7 @@ class StdRefinement : Refinement {
         immutable(EventPackage*)[] epacks = events
             .map!((e) => e.event_package)
             .array;
-        (() @trusted => locate(task_names.transcript).send(consensusEpoch(), epacks, decided_round.number, epoch_time))();
+        locate(task_names.transcript).send(consensusEpoch(), epacks, decided_round.number, epoch_time);
     }
 
     void excludedNodes(ref BitMask excluded_mask) {

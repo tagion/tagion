@@ -13,6 +13,8 @@ import tagion.services.options;
 import core.time;
 import core.thread;
 import std.stdio;
+import tagion.actor;
+import tagion.logger.Logger;
 
 import neuewelle = tagion.tools.neuewelle;
 
@@ -58,6 +60,9 @@ int _main(string[] args) {
     import tagion.testbench.services.sendcontract;
     import tagion.script.TagionCurrency;
     import tagion.dart.Recorder;
+    import tagion.hibon.HiBON;
+    import tagion.dart.DARTBasic;
+    import tagion.hibon.Document;
 
     StdSecureWallet[] wallets;
     // create the wallets
@@ -94,6 +99,18 @@ int _main(string[] args) {
     auto recorder = factory.recorder;
     recorder.insert(bills, Archive.Type.ADD);
 
+    // put a random archive in that is not a bill.
+
+    auto random_data = new HiBON;
+    random_data["wowo"] = "test";
+
+    const random_doc = Document(random_data);
+    recorder.insert(random_doc, Archive.Type.ADD);
+
+    immutable(DARTIndex) random_fingerprint = wallets[0].net.dartIndex(random_doc);
+    writefln("RANDOM FINGERPRINT %(%02x%)", random_fingerprint);
+    
+
     foreach (i; 0 .. local_options.wave.number_of_nodes) {
         immutable prefix = format(local_options.wave.prefix_format, i);
         const path = buildPath(local_options.dart.folder_path, prefix ~ local_options.dart.dart_filename);
@@ -111,7 +128,7 @@ int _main(string[] args) {
 
     Options[] node_opts;
     
-    Thread.sleep(5.seconds);
+    Thread.sleep(10.seconds);
     foreach(i; 0..local_options.wave.number_of_nodes) {
         const filename = buildPath(module_path, format(local_options.wave.prefix_format~"opts", i).setExtension(FileExtension.json));
         writeln(filename);
@@ -121,10 +138,18 @@ int _main(string[] args) {
     }
     
 
+    auto name = "malformed_testing";
+    register(name, thisTid);
+    log.registerSubscriptionTask(name);
+   
+
     writefln("INPUT SOCKET ADDRESS %s", node_opts[0].inputvalidator.sock_addr);
 
     auto feature = automation!(malformed_contract);
     feature.ContractTypeWithoutCorrectInformation(node_opts[0], wallets[0]);
+    feature.InputsAreNotBillsInDart(node_opts[1], wallets[1], random_doc);
+    feature.NegativeAmountAndZeroAmountOnOutputBills(node_opts[2], wallets[2]);
+    feature.ContractWhereInputIsSmallerThanOutput(node_opts[3], wallets[3]);
 
 
     
