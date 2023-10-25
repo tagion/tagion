@@ -142,6 +142,7 @@ int _main(string[] args) {
     feature.ContractTypeWithoutCorrectInformation(node_opts[0], wallets[0]);
     feature.InputsAreNotBillsInDart(node_opts[1], wallets[1], random_doc);
     feature.NegativeAmountAndZeroAmountOnOutputBills(node_opts[2], wallets[2]);
+    feature.ContractWhereInputIsSmallerThanOutput(node_opts[3], wallets[3]);
 
 
     

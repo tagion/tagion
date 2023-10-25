@@ -24,6 +24,8 @@ import tagion.testbench.actor.util;
 import tagion.dart.DARTcrud;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord;
+import tagion.crypto.Types;
+import tagion.basic.Types;
 
 
 import std.range;
@@ -226,7 +228,6 @@ class NegativeAmountAndZeroAmountOnOutputBills {
     Document output() {
         import tagion.script.common;
         import tagion.utils.StdTime;
-        import tagion.crypto.Types;
         import tagion.hibon.HiBONtoText;
 
 
@@ -287,49 +288,87 @@ class NegativeAmountAndZeroAmountOnOutputBills {
 
     @When("i send the contracts to the network.")
     Document network() {
+        submask.subscribe("error/tvm");
         foreach(contract; [zero_contract, negative_contract, combined_contract]) {
             sendSubmitHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(contract), wallet1.net);
 
-            (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
-            // add catch of errror;
+            auto error = receiveOnlyTimeout!(LogInfo, const(Document))(CONTRACT_TIMEOUT.seconds);
         }
+        (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
        
-        return Document();
+        return result_ok;
     }
 
     @Then("the contracts should be rejected.")
     Document rejected() {
+        import tagion.dart.DART;
         auto req = wallet1.getRequestCheckWallet(wallet1_hirpc, used_bills);
         auto received_doc = sendDARTHiRPC(node1_opts.dart_interface.sock_addr, req);
 
-        writefln("wowo %s",received_doc.toPretty);
+        auto received = wallet1_hirpc.receive(received_doc);
+        auto not_in_dart = received.response.result[DART.Params.dart_indices].get!Document[].map!(d => d.get!Buffer).array;
+        check(not_in_dart.length == 0, "all the inputs should still be in the dart");
 
         auto output_req = wallet1.getRequestCheckWallet(wallet1_hirpc, output_bills);
         auto output_received_doc = sendDARTHiRPC(node1_opts.dart_interface.sock_addr, output_req);
+        auto output_received = wallet1_hirpc.receive(output_received_doc);
+        auto output_not_in_dart = output_received.response.result[DART.Params.dart_indices].get!Document[].map!(d => d.get!Buffer).array;
+
+
         writefln("wowo OUTPUT %s",output_received_doc.toPretty);
+        check(output_not_in_dart.length == 2, format("No inputs should have been added %s", output_not_in_dart.length));
 
         return result_ok;
     }
-
 }
 
 @safe @Scenario("Contract where input is smaller than output.",
         [])
 class ContractWhereInputIsSmallerThanOutput {
+    Options node1_opts;
+    StdSecureWallet wallet1;
+    SignedContract signed_contract;
+    HiRPC wallet1_hirpc;
+    TagionCurrency start_amount1;
+
+    this(Options opts, ref StdSecureWallet wallet1) {
+        this.wallet1 = wallet1;
+        this.node1_opts = opts;
+        wallet1_hirpc = HiRPC(wallet1.net);
+        start_amount1 = wallet1.calcTotal(wallet1.account.bills);
+    }
 
     @Given("i have a contract where the input bill is smaller than the output bill.")
     Document bill() {
-        return Document();
+        auto bill = wallet1.requestBill(100_000.TGN);
+
+        PayScript pay_script;
+        pay_script.outputs = [bill];
+
+        const input_bill = wallet1.account.bills[0];
+        wallet1.lock_bills([input_bill]);
+
+        const nets = wallet1.collectNets([input_bill]);
+        check(nets.all!(net => net !is net.init), "Missing deriver of some of the bills");
+        signed_contract = sign(
+            nets,
+            [input_bill].map!(bill => bill.toDoc).array,
+            null,
+            pay_script.toDoc
+        );
+        return result_ok;
     }
 
     @When("i send the contract to the network.")
     Document network() {
-        return Document();
+        sendSubmitHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1.net);
+        return result_ok;
     }
 
     @Then("the contract should be rejected.")
     Document rejected() {
-        return Document();
+        auto error = receiveOnlyTimeout!(LogInfo, const(Document))(CONTRACT_TIMEOUT.seconds);
+        return result_ok;
     }
 
 }
