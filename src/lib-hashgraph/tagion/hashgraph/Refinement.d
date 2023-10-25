@@ -80,8 +80,6 @@ class StdRefinement : Refinement {
     const Round decided_round) {
         auto event_payload = FinishedEpoch(events, epoch_time, decided_round.number);
 
-        log("SENDING LOGGING INFORMATION %s", epoch_created.subscribed);
-        log("subscription TID: %s", log.logger_subscription_tid);
         log(epoch_created, "epoch_succesful", event_payload);
 
         if (task_names is TaskNames.init) {

@@ -411,15 +411,6 @@ class SameContractInDifferentEpochs {
 
     @When("i send the contract to the network in different epochs to the same node.")
     Document node() {
-
-
-        (()@trusted => Thread.sleep(5.seconds))();
-        writefln("WAITING FOR STUPID LOGGER SHITSHOW");
-        auto TEST = receiveOnlyTimeout!(LogInfo, const(Document))(30.seconds);
-        writefln("%s", TEST);
-
-
-        
         import tagion.hashgraph.Refinement : FinishedEpoch;
 
         int epoch_number;
