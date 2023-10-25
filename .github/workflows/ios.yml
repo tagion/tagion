@@ -7,7 +7,7 @@ on:
 
 jobs:
   ios_libmobile:
-    runs-on: minmax
+    runs-on: macOS
     steps:
       - name: Checkout repository and submodules
         uses: actions/checkout@v4
