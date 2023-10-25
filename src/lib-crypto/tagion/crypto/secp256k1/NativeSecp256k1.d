@@ -1099,6 +1099,8 @@ unittest {
     import std.file : readText;
     import std.traits;
     import std.json;
+    import std.bitmanip : nativeToLittleEndian;
+    import std.string : representation;
 
     @safe
     static struct TestData {
@@ -1188,6 +1190,7 @@ unittest {
             "7e775d210e2b7164e0580c729b1951a7bff6102e459237c244841db8d1cb8341".decode
     );
 
+    const BTC_MUSIG_TAG = sha256("MuSig coefficient".representation);
     @safe
     void check_musig(TestData test_data) {
         with (test_data) {
@@ -1204,12 +1207,28 @@ unittest {
             pubKeys.each!(pkey => writefln("%(%02x%)", pkey));
             created_pubKeys.each!(pkey => writefln("%(%02x%)", pkey));
             assert(equal(pubKeys, created_pubKeys));
+            //
             // Step 1 Combine public keys
+            //
             const created_pubKeyHash = sha256(created_pubKeys.join);
             writefln("pubKeyHash=%(%02x%)", created_pubKeyHash);
             writefln("pubKeyHash=%(%02x%)", ell);
-            //assert(expected_pubKeyHash == pubKeyHash);
+            assert(created_pubKeyHash == ell);
 
+            auto created_coefficients = iota(cast(uint) crypts.length)
+                .map!(index =>
+                        sha256(
+                            only(BTC_MUSIG_TAG, BTC_MUSIG_TAG,
+                            created_pubKeyHash,
+                            nativeToLittleEndian(index))
+                            .join
+                        )
+            );
+            writeln("coefficients");
+            coefficients.each!(coef => writefln("%(%02x%)", coef));
+            writeln("created_coefficients");
+            created_coefficients.each!(coef => writefln("%(%02x%)", coef));
+            assert(equal(created_coefficients, coefficients));
         }
     }
 
