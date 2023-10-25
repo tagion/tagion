@@ -138,9 +138,7 @@ class ContractTypeWithoutCorrectInformation {
     @Then("the contract should be rejected.")
     Document rejected() {
         auto error = receiveOnlyTimeout!(LogInfo, const(Document))(CONTRACT_TIMEOUT.seconds);
-
-
-        writefln("WOWOWOWOWOWOWOWOW %s", error);
+        submask.unsubscribe("error/tvm");
         return result_ok;
     }
 
@@ -150,19 +148,56 @@ class ContractTypeWithoutCorrectInformation {
         [])
 class InputsAreNotBillsInDart {
 
+    Options node1_opts;
+    StdSecureWallet wallet1;
+    SignedContract signed_contract;
+    HiRPC wallet1_hirpc;
+    TagionCurrency start_amount1;
+    const(Document) random_data;
+
+    this(Options opts, ref StdSecureWallet wallet1, const(Document) random_data) {
+        this.wallet1 = wallet1;
+        this.node1_opts = opts;
+        wallet1_hirpc = HiRPC(wallet1.net);
+        start_amount1 = wallet1.calcTotal(wallet1.account.bills);
+        this.random_data = random_data;
+    }
+    
+
     @Given("i have a malformed contract where the inputs are another type than bills.")
     Document bills() {
-        return Document();
+        import tagion.script.common;
+
+
+        const bill = wallet1.requestBill(100.TGN);
+        PayScript pay_script;
+        pay_script.outputs = [bill];
+
+        signed_contract = sign(
+            [wallet1.net],
+            [random_data],
+            null,
+            pay_script.toDoc
+        );
+
+        writefln("NOTBILL signed_contract %s", signed_contract.toDoc.toPretty);
+
+        return result_ok;
+            
     }
 
     @When("i send the contract to the network.")
     Document network() {
-        return Document();
+        submask.subscribe("error/tvm");
+        sendSubmitHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1.net);
+        return result_ok;
     }
 
     @Then("the contract should be rejected.")
     Document rejected() {
-        return Document();
+        auto error = receiveOnlyTimeout!(LogInfo, const(Document))(CONTRACT_TIMEOUT.seconds);
+        submask.unsubscribe("error/tvm");
+        return result_ok;
     }
 
 }
