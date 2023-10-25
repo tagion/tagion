@@ -1,4 +1,5 @@
 module tagion.crypto.secp256k1.NativeSecp256k1;
+
 /++
  + Copyright 2013 Google Inc.
  + Copyright 2014-2016 the libsecp256k1 contributors
@@ -595,15 +596,15 @@ class NativeSecp256k1T(bool Schnorr) {
         const ret = secp256k1_ec_pubkey_combine(_ctx, output_pubkey, &pubkeys[0], pubkeys.length);
         return output_pubkey;
     }
-    /+
-    SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int secp256k1_xonly_pubkey_tweak_add(
-    const secp256k1_context *ctx,
-    secp256k1_pubkey *output_pubkey,
-    const secp256k1_xonly_pubkey *internal_pubkey,
-    const unsigned char *tweak32
-) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(3) SECP256K1_ARG_NONNULL(4);
-    +/
 
+    @trusted
+    const(ubyte[]) xonly_pubkey_serialize(
+            const(secp256k1_xonly_pubkey*) xonly_pubkey) const {
+        auto pubkey = new ubyte[XONLY_PUBKEY_SIZE];
+        secp256k1_xonly_pubkey_serialize(_ctx, &pubkey[0], xonly_pubkey);
+        return pubkey;
+
+    }
 }
 
 version (unittest) {
@@ -1212,8 +1213,7 @@ unittest {
                             only(
                             BTC_MUSIG_TAG, BTC_MUSIG_TAG,
                             created_pubKeyHash,
-                            nativeToLittleEndian(
-                            index))
+                            nativeToLittleEndian(index))
                             .join
                         )
             );
@@ -1236,7 +1236,9 @@ unittest {
                     .xonly_pubkey_tweak(pubkey, coefficient);
                 tweaked_pubkeys ~= tweaked_pubkey;
                 const xonly_pubkey = common_crypt.xonly_from_pubkey(tweaked_pubkey);
-                //writefln("%d xonly_pubkey %(%02x%)", i,
+                writefln("%d xonly_pubkey %(%02x%)", i, xonly_pubkey.data);
+                const pubkey_32 = common_crypt.xonly_pubkey_serialize(xonly_pubkey);
+                writefln("%d xonly 32     %(%02x%)", i, pubkey_32);
             }
             tweaked_pubkeys.each!(pkey => writefln("%(%02x%)", pkey.data));
             const created_pubKeyCombined = common_crypt.pubkey_combine(tweaked_pubkeys);
