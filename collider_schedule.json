@@ -256,7 +256,7 @@
             "args": [],
             "envs": {},
             "stages": [
-                "malformed_contract"
+                "acceptance", "malformed_contract"
             ],
             "timeout": 0.0
         }
