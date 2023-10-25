@@ -13,6 +13,8 @@ import tagion.services.options;
 import core.time;
 import core.thread;
 import std.stdio;
+import tagion.actor;
+import tagion.logger.Logger;
 
 import neuewelle = tagion.tools.neuewelle;
 
@@ -135,6 +137,11 @@ int _main(string[] args) {
         node_opts ~= node_opt;
     }
     
+
+    auto name = "malformed_testing";
+    register(name, thisTid);
+    log.registerSubscriptionTask(name);
+   
 
     writefln("INPUT SOCKET ADDRESS %s", node_opts[0].inputvalidator.sock_addr);
 

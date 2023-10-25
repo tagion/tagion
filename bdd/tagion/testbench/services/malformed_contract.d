@@ -128,8 +128,6 @@ class ContractTypeWithoutCorrectInformation {
 
     @When("i send the contract to the network.")
     Document network() {
-        thisActor.task_name = "spam_contract_task";
-        log.registerSubscriptionTask(thisActor.task_name);
         submask.subscribe("error/tvm");
 
         sendSubmitHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1.net);
