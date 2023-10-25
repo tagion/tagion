@@ -12,9 +12,10 @@ clean: clean-libtagion
 
 LIBMOBILE:=$(DLIB)/libmobile.$(LIBEXT)
 libmobile: DFLAGS+=-i
-libmobile: secp256k1
 libmobile: LIBS+=$(LIBSECP256K1_STATIC)
 libmobile: DFILES:=${shell find $(DSRC)/lib-mobile -name "*.d"}
+
+$(LIBMOBILE): secp256k1
 libmobile: $(LIBMOBILE) $(DFILES)
 
 ifeq ($(PLATFORM),$(IOS_ARM64))
