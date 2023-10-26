@@ -126,7 +126,7 @@ unittest {
     NativeSecp256k1[] crypts = iota(secret_passphrases.length)
         .map!(index => new NativeSecp256k1)
         .array;
-    ubyte[][] keypairs;
+    secp256k1_keypair[] keypairs;
     keypairs.length = crypts.length;
     foreach (i, crypt, secret; zip(crypts, secret_passphrases).enumerate) {
         crypt.createKeyPair(secret, keypairs[i]);

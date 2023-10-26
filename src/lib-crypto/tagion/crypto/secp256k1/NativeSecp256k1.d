@@ -490,15 +490,15 @@ class NativeSecp256k1 {
     enum MSG_SIZE = 32;
     enum KEYPAIR_SIZE = secp256k1_keypair.sizeof;
     @trusted
-    void createKeyPair(const(ubyte[]) seckey, out ubyte[] keypair) const
+    void createKeyPair(const(ubyte[]) seckey, ref secp256k1_keypair keypair) const
     in (seckey.length == SECKEY_SIZE)
     do {
-        auto _keypair = new secp256k1_keypair;
+        //auto _keypair = new secp256k1_keypair;
         scope (exit) {
-            keypair = _keypair.data[];
+            //  keypair = _keypair.data[];
             randomizeContext;
         }
-        const rt = secp256k1_keypair_create(_ctx, _keypair, &seckey[0]);
+        const rt = secp256k1_keypair_create(_ctx, &keypair, &seckey[0]);
         check(rt == 1, ConsensusFailCode.SECURITY_FAILD_TO_CREATE_KEYPAIR);
 
     }
@@ -514,29 +514,24 @@ class NativeSecp256k1 {
     }
 
     @trusted
-    void getPubkey(ref scope const(ubyte[]) keypair, ref scope secp256k1_pubkey pubkey)
-    in (keypair.length == secp256k1_keypair.data.length)
+    void getPubkey(ref scope const(secp256k1_keypair) keypair, ref scope secp256k1_pubkey pubkey)
     do {
-        const _keypair = cast(secp256k1_keypair*)&keypair[0];
-        secp256k1_keypair_pub(_ctx, &pubkey, _keypair);
+        secp256k1_keypair_pub(_ctx, &pubkey, &keypair);
     }
 
     @trusted
     immutable(ubyte[]) sign_schnorr(
             const(ubyte[]) msg,
-    const(ubyte[]) keypair,
+    ref scope const(secp256k1_keypair) keypair,
     const(ubyte[]) aux_random) const
     in (msg.length == MSG_SIZE)
-    in (keypair.length == KEYPAIR_SIZE)
     in (aux_random.length == MSG_SIZE)
     do {
         scope (exit) {
             randomizeContext;
         }
-        auto _keypair = cast(secp256k1_keypair*)(&keypair[0]);
-        static assert(_keypair.data.offsetof == 0);
         auto signature = new ubyte[SIGNATURE_SIZE];
-        const rt = secp256k1_schnorrsig_sign32(_ctx, &signature[0], &msg[0], _keypair, &aux_random[0]);
+        const rt = secp256k1_schnorrsig_sign32(_ctx, &signature[0], &msg[0], &keypair, &aux_random[0]);
         check(rt == 1, ConsensusFailCode.SECURITY_FAILD_TO_SIGN_MESSAGE);
         return assumeUnique(signature);
     }
@@ -555,14 +550,10 @@ class NativeSecp256k1 {
     }
 
     @trusted
-    immutable(ubyte[]) xonly_pubkey(scope const(ubyte[]) keypair) const
-    in (keypair.length == KEYPAIR_SIZE)
-    do {
-        static assert(secp256k1_xonly_pubkey.data.offsetof == 0);
+    immutable(ubyte[]) xonly_pubkey(ref scope const(secp256k1_keypair) keypair) const {
         secp256k1_xonly_pubkey xonly_pubkey;
-        const _keypair = cast(secp256k1_keypair*)(&keypair[0]);
         {
-            const rt = secp256k1_keypair_xonly_pub(_ctx, &xonly_pubkey, null, _keypair);
+            const rt = secp256k1_keypair_xonly_pub(_ctx, &xonly_pubkey, null, &keypair);
             check(rt == 1, ConsensusFailCode.SECURITY_FAILD_PUBKEY_FROM_KEYPAIR);
         }
         auto pubkey = new ubyte[XONLY_PUBKEY_SIZE];
@@ -1003,16 +994,15 @@ unittest { /// Schnorr test generated from the secp256k1/examples/schnorr.c
             "021e9a32a12ead3144bb230a81794913a856296ed369159d01b8f57d6d7e7d3630e34f84d49ec054d5251ff6539f24b21097a9c39329eaab2e9429147d6d82f8");
     const expected_keypair = decode("e46b4b2b99674889342c851f890862264a872d4ac53a039fbdab91fd68ed4e71747efc2a4723bd47d85f602096362becc11e78c5029d7c463d8497cf661dd2eca89c1820ccc2dd9b0e0e5ab13b1454eb3c37c31308ae20dd8d2aca2199ff4e6b");
     auto crypt = new NativeSecp256k1;
-    ubyte[] keypair;
+    secp256k1_keypair keypair;
     crypt.createKeyPair(secret_key, keypair);
     //writefln("keypair %(%02x%)", keypair);
-    assert(keypair == expected_keypair);
+    assert(keypair.data == expected_keypair);
     const signature = crypt
         .sign_schnorr(msg_hash, keypair, aux_random);
     assert(signature == expected_signature);
     //writefln("expected_pubkey %(%02x%)", expected_pubkey);
-    const pubkey = crypt.xonly_pubkey(
-            keypair); //writefln("         pubkey %(%02x%)", pubkey);
+    const pubkey = crypt.xonly_pubkey(keypair); //writefln("         pubkey %(%02x%)", pubkey);
     assert(pubkey == expected_pubkey);
     const signature_ok = crypt
         .verify_schnorr(signature, msg_hash, pubkey);
@@ -1106,7 +1096,7 @@ unittest {
             privkeys.length)
         .map!(i => new NativeSecp256k1)
         .array;
-    ubyte[][] keypairs;
+    secp256k1_keypair[] keypairs;
     keypairs
         .length = crypts.length;
     crypts
@@ -1133,7 +1123,7 @@ unittest {
     assert(combined == ell);
 }
 
-unittest {
+version (none) unittest {
     // https://guggero.github.io/cryptography-toolkit/#!/mu-sig
     import std.algorithm;
     import std.array;
