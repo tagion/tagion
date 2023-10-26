@@ -768,7 +768,7 @@ struct WalletInterface {
                         sendShellSubmitHiRPC(options.contract_shell_address, hirpc_submit, contract_net);
                     }
                     else if (sendkernel) {
-                        sendSubmitHiRPC(options.addr ~ options.contract_address, hirpc_submit, contract_net);
+                        sendSubmitHiRPC(options.contract_address, hirpc_submit, contract_net);
                     }
                 }
             }
