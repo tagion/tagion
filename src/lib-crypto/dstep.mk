@@ -10,6 +10,9 @@ $(LCRYPTO_DIROOT)/secp256k1_ecdh.di: DSTEPFLAGS += --global-import=$(LCRYPTO_PAC
 $(LCRYPTO_DIROOT)/secp256k1_schnorrsig.di: DSTEPFLAGS += --global-import=$(LCRYPTO_PACKAGE).secp256k1
 $(LCRYPTO_DIROOT)/secp256k1_schnorrsig.di: DSTEPFLAGS += --global-import=$(LCRYPTO_PACKAGE).secp256k1_extrakeys
 $(LCRYPTO_DIROOT)/secp256k1_extrakeys.di: DSTEPFLAGS += --global-import=$(LCRYPTO_PACKAGE).secp256k1
+$(LCRYPTO_DIROOT)/secp256k1_musig.di: DSTEPFLAGS += --global-import=$(LCRYPTO_PACKAGE).secp256k1
+$(LCRYPTO_DIROOT)/secp256k1_musig.di: DSTEPFLAGS += --global-import=$(LCRYPTO_PACKAGE).secp256k1_schnorrsig
+$(LCRYPTO_DIROOT)/secp256k1_musig.di: DSTEPFLAGS += --global-import=$(LCRYPTO_PACKAGE).secp256k1_extrakeys
 
 ${call DSTEP_DO,$(LCRYPTO_PACKAGE),$(DSRC_SECP256K1)/include,$(LCRYPTO_DIROOT),$(CRYPTO_DFILES)}
 
