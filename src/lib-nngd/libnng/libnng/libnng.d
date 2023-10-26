@@ -629,30 +629,16 @@ enum nng_http_status {
     NNG_HTTP_STATUS_NOT_EXTENDED             = 510,
     NNG_HTTP_STATUS_NETWORK_AUTH_REQUIRED    = 511,
 };
-enum nng_tls_mode {
-    NNG_TLS_MODE_CLIENT = 0,
-    NNG_TLS_MODE_SERVER = 1,
-};
-enum nng_tls_auth_mode {
-    NNG_TLS_AUTH_MODE_NONE     = 0,
-    NNG_TLS_AUTH_MODE_OPTIONAL = 1,
-    NNG_TLS_AUTH_MODE_REQUIRED = 2,
-};
-enum nng_tls_version {
-    NNG_TLS_1_0 = 0x301,
-    NNG_TLS_1_1 = 0x302,
-    NNG_TLS_1_2 = 0x303,
-    NNG_TLS_1_3 = 0x304
-};
+
 
 // http structures
+struct nng_http_server {};
 struct nng_http_req {};
 struct nng_http_res {};
 struct nng_http_conn {};
 struct nng_http_handler {};
 struct nng_http_client {};
-struct nng_http_server {};
-struct nng_tls_config {};
+
 
 struct nng_url {
     char *u_rawurl;   // never NULL
@@ -672,22 +658,6 @@ int nng_url_parse(nng_url **, const char *);
 void nng_url_free(nng_url *);
 int nng_url_clone(nng_url **, const nng_url *);
 
-// http tls api
-int nng_tls_config_alloc(nng_tls_config **, nng_tls_mode);
-void nng_tls_config_hold(nng_tls_config *);
-void nng_tls_config_free(nng_tls_config *);
-int nng_tls_config_server_name(nng_tls_config *, const char *);
-int nng_tls_config_ca_chain(nng_tls_config *, const char *, const char *);
-int nng_tls_config_own_cert(nng_tls_config *, const char *, const char *, const char *);
-int nng_tls_config_key(nng_tls_config *, const ubyte *, size_t);
-int nng_tls_config_pass(nng_tls_config *, const char *);
-int nng_tls_config_auth_mode(nng_tls_config *, nng_tls_auth_mode);
-int nng_tls_config_ca_file(nng_tls_config *, const char *);
-int nng_tls_config_cert_key_file(nng_tls_config *, const char *, const char *);
-int nng_tls_config_version(nng_tls_config *, nng_tls_version, nng_tls_version);
-char* nng_tls_engine_name();
-char* nng_tls_engine_description();
-bool nng_tls_engine_fips_mode();
 
 
 // http request api
@@ -761,8 +731,6 @@ int nng_http_server_start(nng_http_server *);
 void nng_http_server_stop(nng_http_server *);
 int nng_http_server_add_handler(nng_http_server *, nng_http_handler *);
 int nng_http_server_del_handler(nng_http_server *, nng_http_handler *);
-int nng_http_server_set_tls(nng_http_server *, nng_tls_config *);
-int nng_http_server_get_tls(nng_http_server *, nng_tls_config **);
 int nng_http_server_get_addr(nng_http_server *, nng_sockaddr *);
 int nng_http_server_set_error_page(nng_http_server *, ushort, const char *);
 int nng_http_server_set_error_file(nng_http_server *, ushort, const char *);
@@ -773,10 +741,55 @@ int nng_http_hijack(nng_http_conn *);
 // http client api
 int nng_http_client_alloc(nng_http_client **, const nng_url *);
 void nng_http_client_free(nng_http_client *);
-int nng_http_client_set_tls(nng_http_client *, nng_tls_config *);
-int nng_http_client_get_tls(nng_http_client *, nng_tls_config **);
 void nng_http_client_connect(nng_http_client *, nng_aio *);
 void nng_http_client_transact(nng_http_client *, nng_http_req *, nng_http_res *, nng_aio *);
+
+
+version(withtls){
+
+    enum nng_tls_mode {
+        NNG_TLS_MODE_CLIENT = 0,
+        NNG_TLS_MODE_SERVER = 1,
+    };
+    enum nng_tls_auth_mode {
+        NNG_TLS_AUTH_MODE_NONE     = 0,
+        NNG_TLS_AUTH_MODE_OPTIONAL = 1,
+        NNG_TLS_AUTH_MODE_REQUIRED = 2,
+    };
+    enum nng_tls_version {
+        NNG_TLS_1_0 = 0x301,
+        NNG_TLS_1_1 = 0x302,
+        NNG_TLS_1_2 = 0x303,
+        NNG_TLS_1_3 = 0x304
+    };
+
+    struct nng_tls_config {};
+
+    // http tls api
+    int nng_tls_config_alloc(nng_tls_config **, nng_tls_mode);
+    void nng_tls_config_hold(nng_tls_config *);
+    void nng_tls_config_free(nng_tls_config *);
+    int nng_tls_config_server_name(nng_tls_config *, const char *);
+    int nng_tls_config_ca_chain(nng_tls_config *, const char *, const char *);
+    int nng_tls_config_own_cert(nng_tls_config *, const char *, const char *, const char *);
+    int nng_tls_config_key(nng_tls_config *, const ubyte *, size_t);
+    int nng_tls_config_pass(nng_tls_config *, const char *);
+    int nng_tls_config_auth_mode(nng_tls_config *, nng_tls_auth_mode);
+    int nng_tls_config_ca_file(nng_tls_config *, const char *);
+    int nng_tls_config_cert_key_file(nng_tls_config *, const char *, const char *);
+    int nng_tls_config_version(nng_tls_config *, nng_tls_version, nng_tls_version);
+    char* nng_tls_engine_name();
+    char* nng_tls_engine_description();
+    bool nng_tls_engine_fips_mode();
+
+    int nng_http_server_set_tls(nng_http_server *, nng_tls_config *);
+    int nng_http_server_get_tls(nng_http_server *, nng_tls_config **);
+    int nng_http_client_set_tls(nng_http_client *, nng_tls_config *);
+    int nng_http_client_get_tls(nng_http_client *, nng_tls_config **);
+
+}
+
+
 
 
 }

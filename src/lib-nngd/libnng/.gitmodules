@@ -1,0 +1,8 @@
+[submodule "extern/nng"]
+    path = extern/nng
+    url = git@github.com:nanomsg/nng.git
+    ignore = dirty
+[submodule "extern/mbedtls"]
+    path = extern/mbedtls
+    url = git@github.com:Mbed-TLS/mbedtls.git
+    ignore = dirty
