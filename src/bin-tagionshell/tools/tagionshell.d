@@ -218,6 +218,7 @@ int _main(string[] args) {
     else {
         options.setDefault;
     }
+    string address;
 
     try {
         main_args = getopt(args, std.getopt.config.caseSensitive,
@@ -229,6 +230,11 @@ int _main(string[] args) {
         stderr.writeln(e.msg);
         return 1;
     }
+
+    // if (address !is address.init) {
+    //     options.shell_uri = address;
+
+    // }
 
     if (version_switch) {
         revision_text.writeln;

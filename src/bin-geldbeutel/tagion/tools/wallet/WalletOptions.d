@@ -49,7 +49,7 @@ struct WalletOptions {
         billsfile = "bills".setExtension(FileExtension.hibon);
         paymentrequestsfile = "paymentrequests".setExtension(FileExtension.hibon);
         devicefile = "device".setExtension(FileExtension.hibon);
-        addr = "http://localhost:8080";
+        addr = "http://0.0.0.0:8080";
         questions = standard_questions.dup;
         contract_address = contract_sock_addr("Node_0_" ~ "CONTRACT_");
         dart_address = contract_sock_addr("Node_0_" ~ "DART_");
