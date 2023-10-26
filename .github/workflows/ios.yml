@@ -15,7 +15,8 @@ jobs:
           file ./build/arm64-apple-ios/lib/libmobile.so
 
       - name: Check output binaries
-        run: !nm build/*/lib/libmobile.dylib | grep __dyld_get_image_slide
+        run: |
+          ! nm build/*/lib/libmobile.dylib | grep __dyld_get_image_slide
 
       - uses: actions/upload-artifact@v3
         if: success()
@@ -25,5 +26,5 @@ jobs:
           if-no-files-found: error
 
       - name: Cleanup
-        run: 
+        run: |
           make PLATFORM=arm64-apple-ios clean
