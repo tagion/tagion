@@ -10,16 +10,15 @@ enum TWEAK_SIZE = 32;
 enum MESSAGE_SIZE = 32;
 enum SESSION_ID_SIZE = 32;
 enum SECNONCE_SIZE = 32;
-struct NativeMusig {
-    const NativeSecp256k1 crypt;
+class NativeMusig : NativeSecp256k1 {
+    // const NativeSecp256k1 crypt;
     const ubyte[TWEAK_SIZE] xonly_tweak;
     const ubyte[TWEAK_SIZE] plain_tweak;
-    @disable this();
-    this(const NativeSecp256k1 crypt, string plain_tweak, string xonly_tweak)
+    this(string plain_tweak, string xonly_tweak) nothrow
     in (plain_tweak.length <= TWEAK_SIZE)
     in (xonly_tweak.length <= TWEAK_SIZE)
     do {
-        this.crypt = crypt;
+        super();
         this.plain_tweak[0 .. plain_tweak.length] = plain_tweak.representation;
         this.xonly_tweak[0 .. xonly_tweak.length] = xonly_tweak.representation;
     }
@@ -31,17 +30,17 @@ struct NativeMusig {
         secp256k1_pubkey output_pk;
         {
             const ret =
-                secp256k1_musig_pubkey_ec_tweak_add(crypt._ctx, null, &cache, &plain_tweak[0]);
+                secp256k1_musig_pubkey_ec_tweak_add(_ctx, null, &cache, &plain_tweak[0]);
             if (!ret)
                 return false;
         }
         {
-            const ret = secp256k1_musig_pubkey_xonly_tweak_add(crypt._ctx, &output_pk, &cache, &xonly_tweak[0]);
+            const ret = secp256k1_musig_pubkey_xonly_tweak_add(_ctx, &output_pk, &cache, &xonly_tweak[0]);
             if (!ret)
                 return false;
         }
         {
-            const ret = secp256k1_xonly_pubkey_from_pubkey(crypt._ctx, &agg_pk, null, &output_pk);
+            const ret = secp256k1_xonly_pubkey_from_pubkey(_ctx, &agg_pk, null, &output_pk);
             if (!ret)
                 return false;
         }
@@ -56,7 +55,7 @@ struct NativeMusig {
         ubyte[NativeSecp256k1.SECKEY_SIZE] seckey;
         {
             const ret = secp256k1_keypair_sec(
-                    crypt._ctx,
+                    _ctx,
                     &seckey[0],
                     &signer_secret.keypair);
             if (ret == 0)
@@ -64,14 +63,14 @@ struct NativeMusig {
         }
         {
             const ret = secp256k1_musig_nonce_gen(
-                    crypt._ctx,
+                    _ctx,
                     &signer_secret.secnonce,
                     &signer.pubnonce,
                     &session_id[0],
                     &seckey[0],
                     &signer.pubkey,
                     &msg[0],
-                    cast(secp256k1_musig_keyagg_cache*) null, null);
+                    null, null);
             if (ret == 0)
                 return false;
         }
