@@ -78,7 +78,7 @@ class NativeSecp256k1T(bool Schnorr) {
     enum DER_SIGNATURE_SIZE = 72;
     enum SIGNATURE_SIZE = 64;
 
-    private secp256k1_context* _ctx;
+    package secp256k1_context* _ctx;
 
     enum Format {
         DER = 1,
