@@ -21,12 +21,12 @@ struct ShellOptions {
         tagion_sock_addr = contract_sock_addr(mode0_prefix~"CONTRACT_");
         tagion_dart_sock_addr = contract_sock_addr(mode0_prefix~"DART_");
         tagion_subscription = contract_sock_addr("SUBSCRIPTION_");
-        shell_uri = "http://localhost:8080";
+        shell_uri = "http://0.0.0.0:8080";
         shell_api_prefix = "/api/v1";
         contract_endpoint = "/contract";
         dart_endpoint = "/dart";
         i2p_endpoint = "/invoice2pay";
-        default_i2p_wallet = "./wallets/wallet1";
+        default_i2p_wallet = "./wallets";
         default_i2p_wallet_pin = "0001";
     }
 

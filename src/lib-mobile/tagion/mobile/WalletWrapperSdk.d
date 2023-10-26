@@ -353,6 +353,18 @@ extern (C) {
         return 0;
     }
 
+    export void toPretty(uint8_t* docPtr, uint32_t responseLen, char* resultPtr, uint32_t* resultLen) {
+        immutable res = cast(immutable)(docPtr[0 .. responseLen]);
+        Document doc = Document(res);
+
+        import tagion.hibon.HiBONJSON : toPretty;
+
+        string result = doc.toPretty;
+        resultPtr = cast(char*) &result[0];
+        *resultLen = cast(uint32_t) result.length;
+    }
+
+
     @safe
     export double get_locked_balance() {
         const balance = __wallet_storage.wallet.locked_balance();

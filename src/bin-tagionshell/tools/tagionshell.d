@@ -145,6 +145,12 @@ WebData dart_handler ( WebData req, void* ctx ){
 }
 
 WebData i2p_handler ( WebData req, void* ctx ){
+    import core.thread;
+
+    thread_attachThis();
+    rt_moduleTlsCtor();
+
+    
     int rc;
     ShellOptions* opt = cast(ShellOptions*) ctx;
     if(req.type != "application/octet-stream"){
@@ -154,7 +160,7 @@ WebData i2p_handler ( WebData req, void* ctx ){
     writeln(format("WH: invoice2pay: with %d bytes",req.rawdata.length));
  
     WalletOptions options;
-    auto wallet_config_file = opt.default_i2p_wallet ~ "/wallet.json";
+    auto wallet_config_file = opt.default_i2p_wallet ~ "/wallet1.json";
     if (wallet_config_file.exists) {
         options.load(wallet_config_file);
     }else{
@@ -163,43 +169,100 @@ WebData i2p_handler ( WebData req, void* ctx ){
         return res;
     }
     auto wallet_interface = WalletInterface(options);
-    SecureWallet!StdSecureNet secure_wallet;
-    const wallet_doc = (opt.default_i2p_wallet ~ "/" ~ options.walletfile).fread;
-    const pin_doc = (opt.default_i2p_wallet ~ "/" ~ options.devicefile).exists ? (opt.default_i2p_wallet ~ "/" ~ options.devicefile).fread : Document.init;
-    if (wallet_doc.isInorder && pin_doc.isInorder) {
-        secure_wallet = WalletInterface.StdSecureWallet(wallet_doc, pin_doc);
-        secure_wallet.login(opt.default_i2p_wallet_pin);
-    }else{
-        writeln("i2p: invalid wallet load");
-        WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "invalid wallet load" };    
+
+    if (!wallet_interface.load) {
+        writeln("i2p: Wallet does not exist");
+        WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "wallet does not exist" };    
         return res;
-    }   
-    if(!secure_wallet.isLoggedin){
+    }
+    const flag = wallet_interface.secure_wallet.login(opt.default_i2p_wallet_pin);
+    if (!flag) {
+        writeln("i2p: Wallet wrong pincode");
+        WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "Faucet invalid pin code" };    
+        return res;
+    }
+
+    if(!wallet_interface.secure_wallet.isLoggedin){
         writeln("i2p: invalid wallet login");
         WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "invalid wallet login" };    
         return res;
     }
+
+
     
-    Invoice[] invoices;
-    invoices ~=  Invoice(Document(cast(immutable(ubyte[]))req.rawdata));
+    // // if (wallet_interface.secure_wallet !is WalletInterface.StdSecureWallet.init) {
+    // //     writeln("i2p: invalid wallet load");
+    // //     WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "invalid wallet load" };    
+    // //     return res;
+    // // }
+   
+    // // SecureWallet!StdSecureNet secure_wallet;
+    // // const wallet_doc = (opt.default_i2p_wallet ~ "/" ~ options.walletfile).fread;
+    // // const pin_doc = (opt.default_i2p_wallet ~ "/" ~ options.devicefile).exists ? (opt.default_i2p_wallet ~ "/" ~ options.devicefile).fread : Document.init;
+
+    // if (wallet_doc.isInorder && pin_doc.isInorder) {
+    //     secure_wallet = WalletInterface.StdSecureWallet(wallet_doc, pin_doc);
+    //     secure_wallet.login(opt.default_i2p_wallet_pin);
+    // }else{
+    //     writeln("i2p: invalid wallet load");
+    //     WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "invalid wallet load" };    
+    //     return res;
+    // // }   
+    // if(!secure_wallet.isLoggedin){
+    //     writeln("i2p: invalid wallet login");
+    //     WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "invalid wallet login" };    
+    //     return res;
+    // }
+    writeln("Before creating of invoices");
+
+    Document[] requests_to_pay;
+    requests_to_pay ~= Document(cast(immutable(ubyte[]))req.rawdata);
+    TagionBill[] to_pay;
+    import tagion.hibon.HiBONRecord;
+    foreach (doc; requests_to_pay) {
+        if (doc.isRecord!TagionBill) {
+            to_pay ~= TagionBill(doc);
+        }
+        else if (doc.isRecord!Invoice) {
+            import tagion.utils.StdTime : currentTime;
+
+            auto read_invoice = Invoice(doc);
+            to_pay ~= TagionBill(read_invoice.amount, currentTime, read_invoice.pkey, Buffer.init);
+        }
+        else {
+            WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "invalid faucet request" };    
+            return res;
+        }
+    }
+
+    writeln(to_pay[0].toPretty);
+
+    // Invoice[] invoices;
+    // invoices ~=  Invoice(Document(cast(immutable(ubyte[]))req.rawdata));
 
     SignedContract signed_contract;
     TagionCurrency fees;
-    secure_wallet.payment(invoices, signed_contract, fees);
-    const message = secure_wallet.net.calcHash(signed_contract);
-    const contract_net = secure_wallet.net.derive(message);
+    wallet_interface.secure_wallet.createPayment(to_pay, signed_contract, fees);
+    writeln(signed_contract.toPretty);
+    
+    const message = wallet_interface.secure_wallet.net.calcHash(signed_contract);
+    const contract_net = wallet_interface.secure_wallet.net.derive(message);
     const hirpc = HiRPC(contract_net);
     const hirpc_submit = hirpc.submit(signed_contract);
-    secure_wallet.account.hirpcs ~= hirpc_submit.toDoc;
+    wallet_interface.secure_wallet.account.hirpcs ~= hirpc_submit.toDoc;
 
-    sendSubmitHiRPC(options.contract_address, hirpc_submit, contract_net);
+    auto receiver = sendSubmitHiRPC(options.contract_address, hirpc_submit, contract_net);
+    wallet_interface.save(false);
 
     writeln("i2p: payment sent");   
-
     WebData res = {
         status: nng_http_status.NNG_HTTP_STATUS_OK, 
-        type: "applicaion/octet-stream", rawdata: cast(ubyte[])(hirpc_submit.toDoc.serialize)
+        type: "applicaion/octet-stream", rawdata: cast(ubyte[])(receiver.toDoc.serialize)
     };
+
+    thread_detachThis();
+    rt_moduleTlsDtor();
+    
     return res;
 }
 
@@ -218,6 +281,7 @@ int _main(string[] args) {
     else {
         options.setDefault;
     }
+    string address;
 
     try {
         main_args = getopt(args, std.getopt.config.caseSensitive,
@@ -229,6 +293,11 @@ int _main(string[] args) {
         stderr.writeln(e.msg);
         return 1;
     }
+
+    // if (address !is address.init) {
+    //     options.shell_uri = address;
+
+    // }
 
     if (version_switch) {
         revision_text.writeln;
