@@ -489,10 +489,9 @@ class NativeSecp256k1 {
     enum XONLY_PUBKEY_SIZE = 32;
     enum MSG_SIZE = 32;
     enum KEYPAIR_SIZE = secp256k1_keypair.sizeof;
-    enum SECREY_SIZE = 32;
     @trusted
     void createKeyPair(const(ubyte[]) seckey, out ubyte[] keypair) const
-    in (seckey.length == SECREY_SIZE)
+    in (seckey.length == SECKEY_SIZE)
     do {
         auto _keypair = new secp256k1_keypair;
         scope (exit) {
@@ -502,6 +501,13 @@ class NativeSecp256k1 {
         const rt = secp256k1_keypair_create(_ctx, _keypair, &seckey[0]);
         check(rt == 1, ConsensusFailCode.SECURITY_FAILD_TO_CREATE_KEYPAIR);
 
+    }
+
+    @trusted
+    void getSecretKey(ref scope const(secp256k1_keypair) keypay, out ubyte[] seckey) nothrow {
+        seckey.length = SECKEY_SIZE;
+        const ret = secp256k1_keypair_sec(_ctx, &seckey[0], &keypay);
+        assert(ret is 1);
     }
 
     @trusted

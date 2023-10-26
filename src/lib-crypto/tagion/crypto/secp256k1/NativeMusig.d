@@ -7,6 +7,9 @@ import tagion.crypto.secp256k1.c.secp256k1;
 import tagion.crypto.secp256k1.c.secp256k1_extrakeys;
 
 enum TWEAK_SIZE = 32;
+enum MESSAGE_SIZE = 32;
+enum SESSION_ID_SIZE = 32;
+enum SECNONCE_SIZE = 32;
 struct NativeMusig {
     const NativeSecp256k1 crypt;
     const ubyte[TWEAK_SIZE] xonly_tweak;
@@ -44,6 +47,47 @@ struct NativeMusig {
         }
         return true;
     }
+
+    @trusted
+    bool nonceGenerate(ref Signer signer, ref SignerSecret signer_secret, scope const(ubyte[]) session_id, scope const(ubyte[]) msg)
+    in (session_id.length == SESSION_ID_SIZE)
+    in (msg.length == MESSAGE_SIZE)
+    do {
+        ubyte[NativeSecp256k1.SECKEY_SIZE] seckey;
+        {
+            const ret = secp256k1_keypair_sec(
+                    crypt._ctx,
+                    &seckey[0],
+                    &signer_secret.keypair);
+            if (ret == 0)
+                return false;
+        }
+        {
+            const ret = secp256k1_musig_nonce_gen(
+                    crypt._ctx,
+                    &signer_secret.secnonce,
+                    &signer.pubnonce,
+                    &session_id[0],
+                    &seckey[0],
+                    &signer.pubkey,
+                    &msg[0],
+                    cast(secp256k1_musig_keyagg_cache*) null, null);
+            if (ret == 0)
+                return false;
+        }
+        return true;
+    }
+}
+
+struct Signer {
+    secp256k1_pubkey pubkey;
+    secp256k1_musig_pubnonce pubnonce;
+    secp256k1_musig_partial_sig partial_sig;
+}
+
+struct SignerSecret {
+    secp256k1_keypair keypair;
+    secp256k1_musig_secnonce secnonce;
 }
 
 version (unittest) {
@@ -51,12 +95,6 @@ version (unittest) {
     import std.range;
     import std.array;
     import std.format;
-
-    struct Signer {
-        secp256k1_pubkey pubkey;
-        secp256k1_musig_pubnonce pubnonce;
-        secp256k1_musig_partial_sig partial_sig;
-    }
 
 }
 unittest {
@@ -93,7 +131,7 @@ unittest {
         .map!(buf => sha256(buf))
         .array;
     //
-    // 
+    // Signers informations 
     //
     Signer[] signers;
     signers.length = crypts.length;
