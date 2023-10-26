@@ -48,16 +48,8 @@ tools/*
 #
 # Temporary wallet files
 #
-device.hibon
-quiz.hibon
-tagionwallet.hibon
-tagionwallet.json
+*.hibon
 
-# Devnet
-/devnet
-
-# C Header files
-src/wrap-secp256k1/secp256k1/include/secp256k1_hash.h
 
 # Auto-generated .pem files
 pem_files
