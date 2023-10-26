@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 usage() { echo "Usage: $0 -b <bindir> [-n <nodes=5>] [-w <wallets=5>] [-k <network dir = ./network>] [-t <wallets dir = ./wallets>]" 1>&2; exit 1; }
 
