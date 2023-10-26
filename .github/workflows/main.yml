@@ -112,10 +112,9 @@ jobs:
         if: failure() || success()
         run: |
           ./build/${{ env.TARGET }}/bin/collider reporter -o $GITHUB_STEP_SUMMARY logs/${{ env.TARGET }}/bdd/acceptance/results
-          ./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/acceptance/results | grep "Test result success!"
 
       - name: Create tar ball
-        run: tar -czf ${{needs.commit_stage.outputs.tarball}} --exclude='*.o' logs/ build/ 
+        run: tar -vczf ${{needs.commit_stage.outputs.tarball}} --exclude='*.o' logs/ build/ 
         
       - uses: actions/upload-artifact@v3
         if: failure() 
