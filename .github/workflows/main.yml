@@ -121,7 +121,7 @@ jobs:
         if: failure() 
         with:
           name: acceptance-failed-run
-          path: build logs
+          path: ${{needs.commit_stage.outputs.tarball}}
           if-no-files-found: error
 
       - name: Upload to shared directory
