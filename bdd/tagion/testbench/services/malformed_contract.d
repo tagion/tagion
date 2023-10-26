@@ -290,6 +290,8 @@ class NegativeAmountAndZeroAmountOnOutputBills {
         foreach(contract; [zero_contract, negative_contract, combined_contract]) {
             sendSubmitHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(contract), wallet1.net);
 
+            // auto error = receiveOnlyTimeout!(LogInfo, const(Document))(CONTRACT_TIMEOUT.seconds);
+            pragma(msg, "fixme(pr): consider adding log for exception");
         }
         (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
        
