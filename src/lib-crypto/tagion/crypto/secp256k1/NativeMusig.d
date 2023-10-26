@@ -18,7 +18,7 @@ class NativeMusig : NativeSecp256k1 {
     in (plain_tweak.length <= TWEAK_SIZE)
     in (xonly_tweak.length <= TWEAK_SIZE)
     do {
-        super();
+        super(flag : SECP256K1.CONTEXT_NONE);
         this.plain_tweak[0 .. plain_tweak.length] = plain_tweak.representation;
         this.xonly_tweak[0 .. xonly_tweak.length] = xonly_tweak.representation;
     }
@@ -79,7 +79,9 @@ class NativeMusig : NativeSecp256k1 {
 
     @trusted
     bool partialSign(ref Signer signer, ref SignerSecret signer_secret, ref const(secp256k1_musig_session) session) const
+
     
+
     do {
         const ret = secp256k1_musig_partial_sign(
                 _ctx,
@@ -118,7 +120,6 @@ unittest {
         .map!(text => text.representation)
         .map!(buf => sha256(buf))
         .array;
-
     //
     // Create the keypairs
     //
@@ -130,6 +131,11 @@ unittest {
     foreach (i, crypt, secret; zip(crypts, secret_passphrases).enumerate) {
         crypt.createKeyPair(secret, keypairs[i]);
     }
+    // Extracted the pubkeys
+    secp256k1_pubkey[] pubkeys;
+    pubkeys.length = keypairs.length;
+    iota(crypts.length) //.each!((i) => crypts[i].xxx(keypairs[i]));
+        .each!((i) => crypts[i].getPubkey(keypairs[i], pubkeys[i]));
     //
     const message_samples = iota(3)
         .map!(index => format("message %d", index))

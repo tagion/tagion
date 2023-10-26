@@ -504,10 +504,21 @@ class NativeSecp256k1 {
     }
 
     @trusted
-    void getSecretKey(ref scope const(secp256k1_keypair) keypay, out ubyte[] seckey) nothrow {
+    void getSecretKey(ref scope const(ubyte[]) keypair, out ubyte[] seckey) nothrow
+    in (keypair.length == secp256k1_keypair.data.length)
+    do {
         seckey.length = SECKEY_SIZE;
-        const ret = secp256k1_keypair_sec(_ctx, &seckey[0], &keypay);
+        const _keypair = cast(secp256k1_keypair*)&keypair[0];
+        const ret = secp256k1_keypair_sec(_ctx, &seckey[0], _keypair);
         assert(ret is 1);
+    }
+
+    @trusted
+    void getPubkey(ref scope const(ubyte[]) keypair, ref scope secp256k1_pubkey pubkey)
+    in (keypair.length == secp256k1_keypair.data.length)
+    do {
+        const _keypair = cast(secp256k1_keypair*)&keypair[0];
+        secp256k1_keypair_pub(_ctx, &pubkey, _keypair);
     }
 
     @trusted
