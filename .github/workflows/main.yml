@@ -110,12 +110,14 @@ jobs:
           export DLOG=$PWD/logs/${{ env.TARGET }}
           export COLLIDER_ROOT=$PWD/logs/${{ env.TARGET }}/bdd
           export PATH=$DBIN:$PATH
-  # ./build/${{ env.TARGET }}/bin/collider --silent -r acceptance -j ${{env.CD_PARALLEL}} -b build/${{ env.TARGET }}/bin/testbench -s build/${{ env.TARGET }}/bin/collider_schedule.json  
+          ./build/${{ env.TARGET }}/bin/collider --silent -r acceptance -j ${{env.CD_PARALLEL}} -b build/${{ env.TARGET }}/bin/testbench -s build/${{ env.TARGET }}/bin/collider_schedule.json  
       - name: Generate reports
         if: failure() || success()
         run: |
-  # ./build/${{ env.TARGET }}/bin/collider reporter -o $GITHUB_STEP_SUMMARY logs/${{ env.TARGET }}/bdd/acceptance/results
-
+          sleep 5
+          ./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/acceptance/results
+          ./build/${{ env.TARGET }}/bin/collider reporter -o $GITHUB_STEP_SUMMARY logs/${{ env.TARGET }}/bdd/acceptance/results
+          ./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/acceptance/results | grep "Test result success!"
       - name: Create tar ball
         run: tar -vczf ${{needs.commit_stage.outputs.tarball}} --exclude='*.o' logs/ build/ 
         
