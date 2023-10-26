@@ -56,7 +56,6 @@ enum SECP256K1 : uint {
     TAG_PUBKEY_HYBRID_ODD = SECP256K1_TAG_PUBKEY_HYBRID_ODD
 }
 
-alias NativeSecp256k1 = NativeSecp256k1T!false;
 /++
  + <p>This class holds native methods to handle ECDSA verification.</p>
  +
@@ -68,7 +67,7 @@ alias NativeSecp256k1 = NativeSecp256k1T!false;
  + or point the JVM to the folder containing it with -Djava.library.path
  + </p>
  +/
-class NativeSecp256k1T(bool Schnorr) {
+class NativeSecp256k1 {
     static void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         if (!flag) {
             throw new SecurityConsensusException(code, file, line);
