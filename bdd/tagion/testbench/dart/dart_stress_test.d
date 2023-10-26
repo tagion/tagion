@@ -64,16 +64,12 @@ class AddPseudoRandomData {
 
     @Given("I have one dartfile.")
     Document dartfile() {
-        mkdirRecurse(info.module_path);
-        import std.file : remove;
-        info.dartfilename.remove;
-        // create the dartfile
-        DART.create(info.dartfilename, info.net);
-
+        writeln(info.dartfilename);
+        DARTFile.create(info.dartfilename, info.net);
         Exception dart_exception;
         db1 = new DART(info.net, info.dartfilename, dart_exception);
-        check(dart_exception is null, format("Failed to open DART %s", dart_exception.msg));
-
+        check(dart_exception is null, format("Failed to open DART %s %s",info.dartfilename, dart_exception.msg));
+        writeln("after opening");
         return result_ok;
     }
 
