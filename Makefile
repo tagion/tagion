@@ -20,7 +20,7 @@ else
 endif
 
 
-all: lib test
+all: extern lib test
 	@echo "All done!"
 
 test: $(DTESTS)
@@ -32,7 +32,7 @@ extern:
 $(DTESTS):
 	$(DC) $(DCFLAGS) -od=tests/build -of=tests/build/$(basename $@) ${addprefix -I,$(DINC)} -Itests ${addprefix -L,$(DLFLAGS)} $@
 
-lib: extern
+lib: 
 	$(DC) $(DCFLAGS) -lib -of=build/libnngd.a -H -Hd=build/ ${addprefix -I,$(DINC)} ${addprefix -L,$(DLFLAGS)} nngd/nngd.d
 
 clean: clean-extern clean-local
