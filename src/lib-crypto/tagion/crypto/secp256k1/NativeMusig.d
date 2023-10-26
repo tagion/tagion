@@ -48,7 +48,7 @@ class NativeMusig : NativeSecp256k1 {
     }
 
     @trusted
-    bool nonceGenerate(ref Signer signer, ref SignerSecret signer_secret, scope const(ubyte[]) session_id, scope const(ubyte[]) msg)
+    bool nonceGenerate(ref Signer signer, ref SignerSecret signer_secret, scope const(ubyte[]) session_id, scope const(ubyte[]) msg) const
     in (session_id.length == SESSION_ID_SIZE)
     in (msg.length == MESSAGE_SIZE)
     do {
@@ -75,6 +75,21 @@ class NativeMusig : NativeSecp256k1 {
                 return false;
         }
         return true;
+    }
+
+    @trusted
+    bool partialSign(ref Signer signer, ref SignerSecret signer_secret, ref const(secp256k1_musig_session) session) const
+    
+    do {
+        const ret = secp256k1_musig_partial_sign(
+                _ctx,
+                &signer.partial_sig,
+                &signer_secret.secnonce,
+                &signer_secret.keypair,
+                &cache,
+                &session);
+        return !ret;
+
     }
 }
 
