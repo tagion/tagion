@@ -11,8 +11,8 @@ jobs:
 
       - name: Build
         run: |
+          export PATH="/Users/piss/tools/ldc2-1.35.0-osx-arm64/bin/:$PATH"
           which ldc2
-          ldc2 --version
           make DC=ldc2 PLATFORM=arm64-apple-ios libmobile
           file ./build/arm64-apple-ios/lib/libmobile.dylib
 
