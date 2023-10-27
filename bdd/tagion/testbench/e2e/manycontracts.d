@@ -11,9 +11,13 @@ import std.format;
 import std.algorithm;
 import std.range;
 import std.stdio;
+import std.path;
 
 import tagion.tools.wallet.WalletOptions : WalletOptions;
-import tagion.tools.wallet.WalletInterface : WalletInterface;
+import tagion.tools.wallet.WalletInterface;
+import tagion.script.common;
+import tagion.script.TagionCurrency;
+import tagion.communication.HiRPC;
 
 enum feature = Feature(
         "send multiple contracts through the network",
@@ -30,12 +34,16 @@ class SendNContractsFromwallet1Towallet2
 {
     WalletInterface[] wallets;
 
+    this(WalletInterface[] wallets) {
+        this.wallets = wallets;
+    }
+
     @Given("i have a network")
     Document network() @trusted
     {
-        auto wallet_switch = WalletInterface.Switch(update: true, send: true);
+        const wallet_switch = WalletInterface.Switch(update: true, sendkernel: true);
 
-        foreach(w; wallets) {
+        foreach(ref w; wallets) {
             w.operate(wallet_switch, []);
         }
 
@@ -45,19 +53,42 @@ class SendNContractsFromwallet1Towallet2
     @When("i send N many valid contracts from `wallet1` to `wallet2`")
     Document wallet2()
     {
-        return Document();
+        const invoice = wallets[0].secure_wallet.createInvoice("Invoice", 1000.TGN);
+
+        SignedContract signed_contract;
+        TagionCurrency fees;
+
+        with(wallets[1]) {
+            auto result = secure_wallet.payment([invoice], signed_contract, fees);
+
+            const message = secure_wallet.net.calcHash(signed_contract);
+            const contract_net = secure_wallet.net.derive(message);
+            const hirpc = HiRPC(contract_net);
+            const hirpc_submit = hirpc.submit(signed_contract);
+
+            sendSubmitHiRPC(options.contract_address, hirpc_submit, contract_net);
+
+            result.get;
+        }
+
+        return result_ok;
     }
 
     @When("all the contracts have been executed")
     Document executed()
     {
-        return Document();
+        return result_ok;
     }
 
     @Then("wallet1 and wallet2 balances should be updated")
-    Document updated()
+    Document updated() @trusted
     {
-        return Document();
+        const wallet_switch = WalletInterface.Switch(update: true, sendkernel: true);
+        
+        foreach(ref w; wallets) {
+            w.operate(wallet_switch, []);
+        }
+        return result_ok;
     }
 
 }
@@ -65,10 +96,6 @@ class SendNContractsFromwallet1Towallet2
 alias manycontracts = tagion.testbench.e2e.manycontracts;
 
 mixin Main!(_main);
-
-int _main(string[] a) {
-    return 1;
-}
 
 // import std.range;
 // import std.path : setExtension, buildPath;
@@ -169,7 +196,6 @@ int _main(string[] args) {
 import std.getopt;
 import std.file;
 
-version(none)
 int _main(string[] args) {
     const program = args[0];
     string[] wallet_config_files;
@@ -193,8 +219,10 @@ int _main(string[] args) {
         return 0;
     }
 
+    import std.process : environment;
+    const HOME = environment.get("HOME");
     if(wallet_config_files.empty) {
-        wallet_config_files = dirEntries("$HOME/.local/share/tagion/wallets/wallet*.json", SpanMode.shallow).map!(a => a.name).array;
+        wallet_config_files = dirEntries(buildPath(HOME, ".local/share/tagion/wallets/"), "wallet*.json", SpanMode.shallow).map!(a => a.name).array.sort.array;
         if(wallet_config_files.empty) {
             writeln("No wallet configs available");
             return 0;
@@ -203,7 +231,7 @@ int _main(string[] args) {
 
     if(wallet_pins.empty) {
         foreach(i, _; wallet_config_files) {
-            wallet_pins ~= format("%04d", i);
+            wallet_pins ~= format("%04d", i+1);
         }
     }
 
@@ -216,8 +244,10 @@ int _main(string[] args) {
         opts.load(c);
         wallet_options ~= opts;
         auto wallet_interface = WalletInterface(opts);
-        wallet_interface.secure_wallet.login(wallet_pins[i]);
+        check(wallet_interface.load, "Wallet %s could not be loaded".format(i));
+        check(wallet_interface.secure_wallet.login(wallet_pins[i]), "Wallet %s, %s, %s not logged in".format(i, wallet_pins[i], c));
         wallet_interfaces ~= wallet_interface;
+        writefln("Wallet logged in %s", wallet_interface.secure_wallet.isLoggedin);
     }
 
     auto manycontracts_feature = automation!manycontracts;
