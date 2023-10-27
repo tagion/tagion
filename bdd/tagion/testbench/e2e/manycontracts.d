@@ -12,12 +12,79 @@ import std.algorithm;
 import std.range;
 import std.stdio;
 import std.path;
+import std.getopt;
+import std.file;
+
 
 import tagion.tools.wallet.WalletOptions : WalletOptions;
 import tagion.tools.wallet.WalletInterface;
 import tagion.script.common;
 import tagion.script.TagionCurrency;
 import tagion.communication.HiRPC;
+
+alias manycontracts = tagion.testbench.e2e.manycontracts;
+
+mixin Main!(_main);
+
+int _main(string[] args) {
+    const program = args[0];
+    string[] wallet_config_files;
+    string[] wallet_pins;
+
+    arraySep = ",";
+    auto main_args = getopt(args,
+            "w", "wallet config files", &wallet_config_files,
+            "x", "wallet pins", &wallet_pins,
+            // "n", "network config file", &network_config,
+    );
+
+    if (main_args.helpWanted) {
+        defaultGetoptPrinter(
+                [
+                "Usage:",
+                format("%s [<option>...] <config.json> <files>", program),
+                "<option>:",
+                ].join("\n"),
+                main_args.options);
+        return 0;
+    }
+
+    import std.process : environment;
+    const HOME = environment.get("HOME");
+    if(wallet_config_files.empty) {
+        wallet_config_files = dirEntries(buildPath(HOME, ".local/share/tagion/wallets/"), "wallet*.json", SpanMode.shallow).map!(a => a.name).array.sort.array;
+        if(wallet_config_files.empty) {
+            writeln("No wallet configs available");
+            return 0;
+        }
+    }
+
+    if(wallet_pins.empty) {
+        foreach(i, _; wallet_config_files) {
+            wallet_pins ~= format("%04d", i+1);
+        }
+    }
+
+    check(wallet_pins.length == wallet_config_files.length, "wallet configs and wallet pins were not the same amount");
+
+    WalletOptions[] wallet_options;
+    WalletInterface[] wallet_interfaces;
+    foreach(i, c; wallet_config_files) {
+        WalletOptions opts;
+        opts.load(c);
+        wallet_options ~= opts;
+        auto wallet_interface = WalletInterface(opts);
+        check(wallet_interface.load, "Wallet %s could not be loaded".format(i));
+        check(wallet_interface.secure_wallet.login(wallet_pins[i]), "Wallet %s, %s, %s not logged in".format(i, wallet_pins[i], c));
+        wallet_interfaces ~= wallet_interface;
+        writefln("Wallet logged in %s", wallet_interface.secure_wallet.isLoggedin);
+    }
+
+    auto manycontracts_feature = automation!manycontracts;
+    manycontracts_feature.SendNContractsFromwallet1Towallet2(wallet_interfaces);
+    manycontracts_feature.run;
+    return 1;
+}
 
 enum feature = Feature(
         "send multiple contracts through the network",
@@ -91,71 +158,4 @@ class SendNContractsFromwallet1Towallet2
         return result_ok;
     }
 
-}
-
-alias manycontracts = tagion.testbench.e2e.manycontracts;
-
-mixin Main!(_main);
-
-import std.getopt;
-import std.file;
-
-int _main(string[] args) {
-    const program = args[0];
-    string[] wallet_config_files;
-    string[] wallet_pins;
-
-    arraySep = ",";
-    auto main_args = getopt(args,
-            "w", "wallet config files", &wallet_config_files,
-            "x", "wallet pins", &wallet_pins,
-            // "n", "network config file", &network_config,
-    );
-
-    if (main_args.helpWanted) {
-        defaultGetoptPrinter(
-                [
-                "Usage:",
-                format("%s [<option>...] <config.json> <files>", program),
-                "<option>:",
-                ].join("\n"),
-                main_args.options);
-        return 0;
-    }
-
-    import std.process : environment;
-    const HOME = environment.get("HOME");
-    if(wallet_config_files.empty) {
-        wallet_config_files = dirEntries(buildPath(HOME, ".local/share/tagion/wallets/"), "wallet*.json", SpanMode.shallow).map!(a => a.name).array.sort.array;
-        if(wallet_config_files.empty) {
-            writeln("No wallet configs available");
-            return 0;
-        }
-    }
-
-    if(wallet_pins.empty) {
-        foreach(i, _; wallet_config_files) {
-            wallet_pins ~= format("%04d", i+1);
-        }
-    }
-
-    check(wallet_pins.length == wallet_config_files.length, "wallet configs and wallet pins were not the same amount");
-
-    WalletOptions[] wallet_options;
-    WalletInterface[] wallet_interfaces;
-    foreach(i, c; wallet_config_files) {
-        WalletOptions opts;
-        opts.load(c);
-        wallet_options ~= opts;
-        auto wallet_interface = WalletInterface(opts);
-        check(wallet_interface.load, "Wallet %s could not be loaded".format(i));
-        check(wallet_interface.secure_wallet.login(wallet_pins[i]), "Wallet %s, %s, %s not logged in".format(i, wallet_pins[i], c));
-        wallet_interfaces ~= wallet_interface;
-        writefln("Wallet logged in %s", wallet_interface.secure_wallet.isLoggedin);
-    }
-
-    auto manycontracts_feature = automation!manycontracts;
-    manycontracts_feature.SendNContractsFromwallet1Towallet2(wallet_interfaces[0..2]);
-    manycontracts_feature.run;
-    return 1;
 }
