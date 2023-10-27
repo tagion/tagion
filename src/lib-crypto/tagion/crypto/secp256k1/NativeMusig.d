@@ -25,7 +25,7 @@ class NativeMusig : NativeSecp256k1 {
         this.xonly_tweak[0 .. xonly_tweak.length] = xonly_tweak.representation;
     }
 
-    @trusted
+    version (none) @trusted
     bool nonceGenerate(ref Signer signer, ref SignerSecret signer_secret, scope const(ubyte[]) session_id, scope const(ubyte[]) msg) const
     in (session_id.length == SESSION_ID_SIZE)
     in (msg.length == MESSAGE_SIZE)
@@ -57,19 +57,19 @@ class NativeMusig : NativeSecp256k1 {
 
     @trusted
     bool partialSign(
-            ref secp256k1_musig_keyagg_cache cache,
-            ref Signer signer,
-            ref SignerSecret signer_secret,
-            ref const(secp256k1_musig_session) session) const {
+            ref const(secp256k1_musig_keyagg_cache) cache,
+            ref secp256k1_musig_partial_sig partial_sig,
+            ref secp256k1_musig_secnonce secnonce,
+            ref scope const(secp256k1_keypair) keypair,
+            ref scope const(secp256k1_musig_session) session) const nothrow {
         const ret = secp256k1_musig_partial_sign(
                 _ctx,
-                &signer.partial_sig,
-                &signer_secret.secnonce,
-                &signer_secret.keypair,
+                &partial_sig,
+                &secnonce,
+                &keypair,
                 &cache,
                 &session);
         return !ret;
-
     }
 
     @trusted
@@ -230,18 +230,19 @@ class NativeMusig : NativeSecp256k1 {
   */
 }
 
-struct Signer {
-    secp256k1_pubkey pubkey;
-    secp256k1_musig_pubnonce pubnonce;
-    secp256k1_musig_partial_sig partial_sig;
-}
-
-struct SignerSecret {
-    secp256k1_keypair keypair;
-    secp256k1_musig_secnonce secnonce;
-}
-
 version (unittest) {
+
+    struct Signer {
+        secp256k1_pubkey pubkey;
+        secp256k1_musig_pubnonce pubnonce;
+        secp256k1_musig_partial_sig partial_sig;
+    }
+
+    struct SignerSecret {
+        secp256k1_keypair keypair;
+        secp256k1_musig_secnonce secnonce;
+    }
+
     import std.algorithm;
     import std.range;
     import std.array;
