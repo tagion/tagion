@@ -14,9 +14,9 @@ enum SESSION_ID_SIZE = 32;
 enum SECNONCE_SIZE = 32;
 class NativeMusig : NativeSecp256k1 {
     // const NativeSecp256k1 crypt;
-    const ubyte[TWEAK_SIZE] xonly_tweak;
-    const ubyte[TWEAK_SIZE] plain_tweak;
-    this(string plain_tweak, string xonly_tweak) nothrow
+    //const ubyte[TWEAK_SIZE] xonly_tweak;
+    //const ubyte[TWEAK_SIZE] plain_tweak;
+    version (none) this(string plain_tweak, string xonly_tweak) nothrow
     in (plain_tweak.length <= TWEAK_SIZE)
     in (xonly_tweak.length <= TWEAK_SIZE)
     do {
@@ -25,9 +25,9 @@ class NativeMusig : NativeSecp256k1 {
         this.xonly_tweak[0 .. xonly_tweak.length] = xonly_tweak.representation;
     }
 
-    secp256k1_musig_keyagg_cache cache;
-    secp256k1_xonly_pubkey agg_pk;
-    @trusted
+    //secp256k1_musig_keyagg_cache cache;
+    //secp256k1_xonly_pubkey agg_pk;
+    version (none) @trusted
     bool tweak() {
         secp256k1_pubkey output_pk;
         {
@@ -80,7 +80,11 @@ class NativeMusig : NativeSecp256k1 {
     }
 
     @trusted
-    bool partialSign(ref Signer signer, ref SignerSecret signer_secret, ref const(secp256k1_musig_session) session) const {
+    bool partialSign(
+            ref secp256k1_musig_keyagg_cache cache,
+            ref Signer signer,
+            ref SignerSecret signer_secret,
+            ref const(secp256k1_musig_session) session) const {
         const ret = secp256k1_musig_partial_sign(
                 _ctx,
                 &signer.partial_sig,
@@ -152,8 +156,7 @@ class NativeMusig : NativeSecp256k1 {
     bool musigXonlyPubkeyTweakAdd(
             ref secp256k1_musig_keyagg_cache cache,
             const(ubyte[]) tweak,
-    secp256k1_pubkey* output_pubkey = null
-    )
+    secp256k1_pubkey* output_pubkey = null)
     in (tweak.length == TWEAK_SIZE)
     do {
         const ret = secp256k1_musig_pubkey_xonly_tweak_add(
@@ -164,6 +167,37 @@ class NativeMusig : NativeSecp256k1 {
         return !ret;
 
     }
+
+    @trusted
+    bool musigNonceGen(
+            ref secp256k1_musig_secnonce secnonce,
+            ref secp256k1_musig_pubnonce pubnonce,
+            const(ubyte[]) session_id,
+    ref scope const(secp256k1_pubkey) pubkey,
+    const(ubyte[]) msg,
+    const(ubyte[]) seckey = null)
+    in (session_id.length == SESSION_ID_SIZE)
+    in (msg.length == MESSAGE_SIZE)
+    in (seckey.length == SECKEY_SIZE || seckey.length == 0)
+    do {
+        const(ubyte)* _seckey;
+        if (!seckey.empty) {
+            _seckey = &seckey[0];
+        }
+        const ret = secp256k1_musig_nonce_gen(
+                _ctx,
+                &secnonce,
+                &pubnonce,
+                &session_id[0],
+                _seckey,
+                &pubkey,
+                &msg[0],
+                null,
+                null);
+        return !ret;
+
+    }
+
     /* 
     @trusted 
     void tweak(ref secp256k1_xonly_pubkey pubkey,  
