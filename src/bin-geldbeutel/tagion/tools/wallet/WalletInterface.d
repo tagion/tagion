@@ -120,22 +120,8 @@ HiRPC.Receiver sendSubmitHiRPC(string address, HiRPC.Sender contract, const(Secu
 
 HiRPC.Receiver sendShellSubmitHiRPC(string address, HiRPC.Sender contract, const(SecureNet) net) {
     import nngd;
-
-    // WebData rep = WebClient.post(address, contract.toDoc.serialize, 
     WebData rep = WebClient.post(address, cast(ubyte[]) contract.toDoc.serialize, ["Content-type": "application/octet-stream"]);
-    
     Document response_doc = Document(cast(immutable) rep.rawdata);
-    
-    // import std.net.curl;
-
-    // Document response_doc;
-    // writeln(address);
-    // auto http = HTTP(address);
-    // auto data = contract.toDoc.serialize;
-    // http.setPostData(data, "application/octet-stream");
-    // http.onReceive = (ubyte[] data) { response_doc = Document(data.idup); return data.length; };
-    // http.perform();
-
     HiRPC hirpc = HiRPC(net);
     return hirpc.receive(response_doc);
 }
@@ -143,22 +129,9 @@ HiRPC.Receiver sendShellSubmitHiRPC(string address, HiRPC.Sender contract, const
 Document sendShellHiRPC(string address, Document dart_req) {
     import nngd;
 
-    // WebData rep = WebClient.post(address, contract.toDoc.serialize, 
     WebData rep = WebClient.post(address, cast(ubyte[]) dart_req.serialize, ["Content-type": "application/octet-stream"]);
     
     Document response_doc = Document(cast(immutable) rep.rawdata);
-    writeln(response_doc.toPretty);
-    writefln("%s", rep);
-
-    
-    // import std.net.curl;
-    // Document response_doc;
-    // writeln(address);
-    // auto http = HTTP(address);
-    // auto data = dart_req.serialize;
-    // http.setPostData(data, "application/octet-stream");
-    // http.onReceive = (ubyte[] data) { response_doc = Document(data.idup); return data.length; };
-    // http.perform();
 
     return response_doc;
 }
@@ -782,7 +755,7 @@ struct WalletInterface {
                     secure_wallet.account.hirpcs ~= hirpc_submit.toDoc;
                     save_wallet = true;
                     if (send) {
-                        sendShellSubmitHiRPC(options.contract_shell_address, hirpc_submit, contract_net);
+                        sendShellSubmitHiRPC(options.addr ~ options.contract_shell_address, hirpc_submit, contract_net);
                     }
                     else if (sendkernel) {
                         sendSubmitHiRPC(options.contract_address, hirpc_submit, contract_net);
