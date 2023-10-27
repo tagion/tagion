@@ -12,48 +12,7 @@ enum TWEAK_SIZE = 32;
 enum MESSAGE_SIZE = 32;
 enum SESSION_ID_SIZE = 32;
 enum SECNONCE_SIZE = 32;
-class NativeMusig : NativeSecp256k1 {
-    // const NativeSecp256k1 crypt;
-    //const ubyte[TWEAK_SIZE] xonly_tweak;
-    //const ubyte[TWEAK_SIZE] plain_tweak;
-    version (none) this(string plain_tweak, string xonly_tweak) nothrow
-    in (plain_tweak.length <= TWEAK_SIZE)
-    in (xonly_tweak.length <= TWEAK_SIZE)
-    do {
-        super(flag : SECP256K1.CONTEXT_NONE);
-        this.plain_tweak[0 .. plain_tweak.length] = plain_tweak.representation;
-        this.xonly_tweak[0 .. xonly_tweak.length] = xonly_tweak.representation;
-    }
-
-    version (none) @trusted
-    bool nonceGenerate(ref Signer signer, ref SignerSecret signer_secret, scope const(ubyte[]) session_id, scope const(ubyte[]) msg) const
-    in (session_id.length == SESSION_ID_SIZE)
-    in (msg.length == MESSAGE_SIZE)
-    do {
-        ubyte[NativeSecp256k1.SECKEY_SIZE] seckey;
-        {
-            const ret = secp256k1_keypair_sec(
-                    _ctx,
-                    &seckey[0],
-                    &signer_secret.keypair);
-            if (ret == 0)
-                return false;
-        }
-        {
-            const ret = secp256k1_musig_nonce_gen(
-                    _ctx,
-                    &signer_secret.secnonce,
-                    &signer.pubnonce,
-                    &session_id[0],
-                    &seckey[0],
-                    &signer.pubkey,
-                    &msg[0],
-                    null, null);
-            if (ret == 0)
-                return false;
-        }
-        return true;
-    }
+class NativeSecp256k1Musig : NativeSecp256k1 {
 
     @trusted
     bool partialSign(
