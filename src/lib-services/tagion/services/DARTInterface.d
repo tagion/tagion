@@ -69,7 +69,7 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
         msg.body_append(doc.serialize);
     }
 
-    auto dart_resp = receiveTimeout(100.msecs, &dartHiRPCResponse);
+    auto dart_resp = receiveTimeout(1000.msecs, &dartHiRPCResponse);
     if (!dart_resp) {
         writefln("Non-valid request received");
         return;
