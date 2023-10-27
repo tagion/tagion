@@ -61,7 +61,7 @@ jobs:
           cd ~/.local/share/
           OLD_TAR_NAME=tagion_$(date -d @$DIR_EPOCH +%F_%H-%M) && \
             tar czf $OLD_TAR_NAME tagion/ && \
-            rm tagion || \
+            rm -r tagion || \
             echo "No old data to backup"
 
       - name: Create new bills
