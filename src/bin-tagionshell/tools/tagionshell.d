@@ -38,6 +38,7 @@ import tagion.wallet.AccountDetails;
 
 
 import nngd.nngd;
+import core.thread;
 
 mixin Main!(_main, "shell");
 
@@ -153,7 +154,6 @@ WebData dart_handler ( WebData req, void* ctx ){
 }
 
 WebData i2p_handler ( WebData req, void* ctx ){
-    import core.thread;
 
     thread_attachThis();
     rt_moduleTlsCtor();

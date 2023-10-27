@@ -119,7 +119,9 @@ jobs:
           ./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/acceptance/results
           ./build/${{ env.TARGET }}/bin/collider reporter -o $GITHUB_STEP_SUMMARY logs/${{ env.TARGET }}/bdd/acceptance/results
           ./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/acceptance/results | grep "Test result success!"
+
       - name: Create tar ball
+        if: success() || failure()
         run: tar -vczf ${{needs.commit_stage.outputs.tarball}} --exclude='*.o' logs/ build/ 
         
       - uses: actions/upload-artifact@v3
