@@ -1,6 +1,8 @@
 module tagion.crypto.secp256k1.NativeMusig;
 @safe:
 import std.string : representation;
+import std.range;
+import std.algorithm;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 import tagion.crypto.secp256k1.c.secp256k1_musig;
 import tagion.crypto.secp256k1.c.secp256k1;
@@ -78,11 +80,7 @@ class NativeMusig : NativeSecp256k1 {
     }
 
     @trusted
-    bool partialSign(ref Signer signer, ref SignerSecret signer_secret, ref const(secp256k1_musig_session) session) const
-
-    
-
-    do {
+    bool partialSign(ref Signer signer, ref SignerSecret signer_secret, ref const(secp256k1_musig_session) session) const {
         const ret = secp256k1_musig_partial_sign(
                 _ctx,
                 &signer.partial_sig,
@@ -93,6 +91,22 @@ class NativeMusig : NativeSecp256k1 {
         return !ret;
 
     }
+
+    @trusted
+    bool pubkeyAggregate(ref secp256k1_xonly_pubkey pubkey_agg, ref scope const(secp256k1_pubkey[]) pubkeys) nothrow {
+        const _pubkeys = pubkeys.map!((ref pkey) => &pkey).array;
+        const ret = secp256k1_musig_pubkey_agg(
+                _ctx,
+                null,
+                &pubkey_agg,
+                &cache,
+                &_pubkeys[0],
+                pubkeys.length);
+        return !ret;
+    }
+
+    //  @trusted
+
 }
 
 struct Signer {
