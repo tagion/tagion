@@ -232,7 +232,7 @@ struct WalletInterface {
 
     enum retry = 4;
     /**
-    * @rief chenge pin code interface
+    * @brief change pin code interface
     */
     bool loginPincode(const Flag!"ChangePin" change = Yes.ChangePin) {
         CLEARSCREEN.write;
