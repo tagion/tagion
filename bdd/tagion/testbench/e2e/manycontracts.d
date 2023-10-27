@@ -14,9 +14,10 @@ import std.stdio;
 import std.path;
 
 import tagion.tools.wallet.WalletOptions : WalletOptions;
-import tagion.tools.wallet.WalletInterface : WalletInterface;
+import tagion.tools.wallet.WalletInterface;
 import tagion.script.common;
 import tagion.script.TagionCurrency;
+import tagion.communication.HiRPC;
 
 enum feature = Feature(
         "send multiple contracts through the network",
@@ -40,7 +41,7 @@ class SendNContractsFromwallet1Towallet2
     @Given("i have a network")
     Document network() @trusted
     {
-        auto wallet_switch = WalletInterface.Switch(update: true, sendkernel: true);
+        const wallet_switch = WalletInterface.Switch(update: true, sendkernel: true);
 
         foreach(ref w; wallets) {
             w.operate(wallet_switch, []);
@@ -54,10 +55,21 @@ class SendNContractsFromwallet1Towallet2
     {
         const invoice = wallets[0].secure_wallet.createInvoice("Invoice", 1000.TGN);
 
-        SignedContract s_contract;
+        SignedContract signed_contract;
         TagionCurrency fees;
-        auto result = wallets[1].secure_wallet.payment([invoice], s_contract, fees);
-        result.get;
+
+        with(wallets[1]) {
+            auto result = secure_wallet.payment([invoice], signed_contract, fees);
+
+            const message = secure_wallet.net.calcHash(signed_contract);
+            const contract_net = secure_wallet.net.derive(message);
+            const hirpc = HiRPC(contract_net);
+            const hirpc_submit = hirpc.submit(signed_contract);
+
+            sendSubmitHiRPC(options.contract_address, hirpc_submit, contract_net);
+
+            result.get;
+        }
 
         return result_ok;
     }
@@ -65,13 +77,18 @@ class SendNContractsFromwallet1Towallet2
     @When("all the contracts have been executed")
     Document executed()
     {
-        return Document();
+        return result_ok;
     }
 
     @Then("wallet1 and wallet2 balances should be updated")
-    Document updated()
+    Document updated() @trusted
     {
-        return Document();
+        const wallet_switch = WalletInterface.Switch(update: true, sendkernel: true);
+        
+        foreach(ref w; wallets) {
+            w.operate(wallet_switch, []);
+        }
+        return result_ok;
     }
 
 }
