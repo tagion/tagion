@@ -76,7 +76,7 @@
             "args": [],
             "envs": {},
             "stages": [
-                "performance", "acceptance"
+                "dart_stress", "performance", "acceptance"
             ],
             "timeout": 0.0
         },

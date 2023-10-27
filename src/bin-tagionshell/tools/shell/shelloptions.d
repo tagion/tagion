@@ -26,7 +26,7 @@ struct ShellOptions {
         contract_endpoint = "/contract";
         dart_endpoint = "/dart";
         i2p_endpoint = "/invoice2pay";
-        default_i2p_wallet = "./wallets";
+        default_i2p_wallet = "./wallets/wallet1.json";
         default_i2p_wallet_pin = "0001";
     }
 
