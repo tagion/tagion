@@ -83,14 +83,15 @@ struct AccountDetails {
         return 2;
     }
 
-    TagionCurrency check_invoice_payment(Pubkey invoicePubkey) {
+    bool check_invoice_payment(Pubkey invoicePubkey, ref TagionCurrency amount) {
         import std.algorithm : countUntil;
 
         const index = countUntil!"a.owner == b"(bills, invoicePubkey);
         if (index >= 0) {
-            return bills[index].value;
+            amount = bills[index].value;
+            return true;
         }
-        return TagionCurrency(0);
+        return false;
     }
 
     void add_bill(TagionBill bill) {
