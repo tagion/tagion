@@ -1213,20 +1213,20 @@ struct WebAppConfig {
 };
 
 struct WebData {
-    string route;
-    string rawuri;
-    string uri;
-    string[] path;
-    string[string] param;
-    string[string] headers;
-    string type;
-    size_t length;
-    string method;
-    ubyte[] rawdata;
-    string text;
-    JSONValue json;
-    http_status status;
-    string msg;
+    string route = null;
+    string rawuri = null;
+    string uri = null;
+    string[] path = null;
+    string[string] param = null;
+    string[string] headers = null;
+    string type = "text/html";
+    size_t length = 0;
+    string method = null;
+    ubyte[] rawdata = null;
+    string text = null;
+    JSONValue json = null;
+    http_status status = http_status.NNG_HTTP_STATUS_NOT_IMPLEMENTED;
+    string msg = null;
 
     void clear(){
         route = "";   
@@ -1237,7 +1237,7 @@ struct WebData {
         path = [];    
         param = null;   
         headers = null; 
-        type = "";    
+        type = "text/html";    
         length = 0;  
         method = "";  
         rawdata = [];
@@ -1536,13 +1536,21 @@ struct WebApp {
         sreq.rawdata = cast(ubyte[])(reqbody[0..reqbodylen].idup);
         
         if(sreq.type.startsWith("application/json")){
-            sreq.json = parseJSON(to!string(cast(char*)reqbody[0..reqbodylen].idup));
+            try{
+                sreq.json = parseJSON(to!string(cast(char*)reqbody[0..reqbodylen].idup));
+            }catch(JSONException e){
+                nng_http_res_reset(res);
+                rc = nng_http_res_alloc_error( &res, cast(ushort)nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST);
+                enforce(rc==0, "router: set json error");
+                rc = nng_http_res_set_reason(res, toStringz("Invalid json"));
+                enforce(rc==0, "router: set json error reason");
+                return;
+            }    
         }
-        
+
         if(sreq.type.startsWith("text/")){
             sreq.text = to!string(cast(char*)reqbody[0..reqbodylen].idup);
         }
-
         
         // TODO: implement full CEF parser for routes
         webhandler handler = null;    
@@ -1556,24 +1564,29 @@ struct WebApp {
             handler = &app.default_handler;
 
         srep = handler(sreq, app.context);
-        
-        nng_http_res_set_status(res, cast(ushort)srep.status);
-        if(srep.status != nng_http_status.NNG_HTTP_STATUS_OK)
-            return;
-        
-        if(srep.type.startsWith("application/json")){
-            string buf = srep.json.toString();
-            rc = nng_http_res_copy_data(res, buf.toStringz(), buf.length);
-            enforce(rc==0, "router: copy json rep");
-        }
-        else if(srep.type.startsWith("text")){
-            rc = nng_http_res_copy_data(res, srep.text.toStringz(), srep.text.length);
-            enforce(rc==0, "router: copy text rep");
-        }else{
-            rc = nng_http_res_copy_data(res, srep.rawdata.ptr, srep.rawdata.length);
-            enforce(rc==0, "router: copy data rep");
-        }
 
+        if(srep.status != nng_http_status.NNG_HTTP_STATUS_OK){
+            nng_http_res_reset(res);
+            rc = nng_http_res_alloc_error( &res, cast(ushort)srep.status );
+            enforce(rc==0, "router: res set error");
+            rc = nng_http_res_set_reason(res, srep.msg.toStringz());
+            enforce(rc==0, "router: res set message");
+        }else{
+            rc = nng_http_res_set_status(res, cast(ushort)srep.status);
+            enforce(rc==0, "router: res set satus");
+            if(srep.type.startsWith("application/json")){
+                string buf = srep.json.toString();
+                rc = nng_http_res_copy_data(res, buf.toStringz(), buf.length);
+                enforce(rc==0, "router: copy json rep");
+            }
+            else if(srep.type.startsWith("text")){
+                rc = nng_http_res_copy_data(res, srep.text.toStringz(), srep.text.length);
+                enforce(rc==0, "router: copy text rep");
+            }else{
+                rc = nng_http_res_copy_data(res, srep.rawdata.ptr, srep.rawdata.length);
+                enforce(rc==0, "router: copy data rep");
+            }
+        }
     }
 } // struct WebApp
 
