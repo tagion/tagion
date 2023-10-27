@@ -17,3 +17,5 @@
 [submodule "bdd/tagion/testbench/tvm/testsuite"]
     path = bdd/tagion/testbench/tvm/testsuite
     url = git@github.com:WebAssembly/testsuite.git
+[submodule "src/fork-secp256k1/secp256k1/"]
+	branch = tagion
