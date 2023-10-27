@@ -72,7 +72,7 @@ jobs:
       - uses: actions/upload-artifact@v3
         if: success() || failure()
         with:
-          name: succesful_artifact
+          name: successful_artifact
           path: ./${{steps.create_tar.outputs.tar_filename}}
           if-no-files-found: error
       
