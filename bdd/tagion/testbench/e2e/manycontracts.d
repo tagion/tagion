@@ -106,8 +106,7 @@ class SendNContractsFromwallet1Towallet2
     }
 
     @Given("i have a network")
-    Document network() @trusted
-    {
+    Document network() @trusted {
         const wallet_switch = WalletInterface.Switch(update: true, sendkernel: true);
 
         foreach(ref w; wallets) {
@@ -118,8 +117,7 @@ class SendNContractsFromwallet1Towallet2
     }
 
     @When("i send N many valid contracts from `wallet1` to `wallet2`")
-    Document wallet2()
-    {
+    Document wallet2() @trusted {
         const invoice = wallets[0].secure_wallet.createInvoice("Invoice", 1000.TGN);
 
         SignedContract signed_contract;
@@ -142,8 +140,10 @@ class SendNContractsFromwallet1Towallet2
     }
 
     @When("all the contracts have been executed")
-    Document executed()
-    {
+    Document executed() @trusted {
+        import core.time;
+        import core.thread;
+        Thread.sleep(5.seconds);
         return result_ok;
     }
 
