@@ -92,8 +92,33 @@ class NativeMusig : NativeSecp256k1 {
 
     }
 
+    /**
+    This function is if only the aggregated pubkey is need and no signing
+*/
     @trusted
-    bool pubkeyAggregate(ref secp256k1_xonly_pubkey pubkey_agg, ref scope const(secp256k1_pubkey[]) pubkeys) nothrow {
+    bool musigPubkeyAggregated(
+            ref secp256k1_xonly_pubkey pubkey_agg,
+            const(secp256k1_pubkey[]) pubkeys) const {
+        const _pubkeys = pubkeys.map!((ref pkey) => &pkey).array;
+        const ret = secp256k1_musig_pubkey_agg(
+                _ctx,
+                null,
+                &pubkey_agg,
+                null,
+                &_pubkeys[0],
+                pubkeys.length);
+        return !ret;
+
+    }
+
+    /**
+    Ditto except that it produce a cache which can be used for musig signing
+*/
+    @trusted
+    bool musigPubkeyAggregated(
+            ref secp256k1_musig_keyagg_cache cache,
+            ref secp256k1_xonly_pubkey pubkey_agg,
+            const(secp256k1_pubkey[]) pubkeys) const {
         const _pubkeys = pubkeys.map!((ref pkey) => &pkey).array;
         const ret = secp256k1_musig_pubkey_agg(
                 _ctx,
@@ -103,10 +128,30 @@ class NativeMusig : NativeSecp256k1 {
                 &_pubkeys[0],
                 pubkeys.length);
         return !ret;
+
     }
 
-    //  @trusted
+    @trusted
+    bool musigPubkeyTweakAdd(
+            ref secp256k1_musig_keyagg_cache cache,
+            out secp256k1_pubkey output_pubkey,
+            const(ubyte[]) tweak) const nothrow
+    in (tweak.length == TWEAK_SIZE)
+    do {
+        const ret = secp256k1_musig_pubkey_ec_tweak_add(
+                _ctx,
+                &output_pubkey,
+                &cache,
+                &tweak[0]);
+        return !ret;
 
+    }
+
+    /* 
+    @trusted 
+    void tweak(ref secp256k1_xonly_pubkey pubkey,  
+    //  @trusted
+  */
 }
 
 struct Signer {
