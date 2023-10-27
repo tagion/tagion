@@ -12,6 +12,9 @@ import std.algorithm;
 import std.range;
 import std.stdio;
 import std.path;
+import std.getopt;
+import std.file;
+
 
 import tagion.tools.wallet.WalletOptions : WalletOptions;
 import tagion.tools.wallet.WalletInterface;
@@ -19,182 +22,9 @@ import tagion.script.common;
 import tagion.script.TagionCurrency;
 import tagion.communication.HiRPC;
 
-enum feature = Feature(
-        "send multiple contracts through the network",
-        []);
-
-alias FeatureContext = Tuple!(
-    SendNContractsFromwallet1Towallet2, "SendNContractsFromwallet1Towallet2",
-    FeatureGroup*, "result"
-);
-
-@safe @Scenario("send N contracts from `wallet1` to `wallet2`",
-    [])
-class SendNContractsFromwallet1Towallet2
-{
-    WalletInterface[] wallets;
-
-    this(WalletInterface[] wallets) {
-        this.wallets = wallets;
-    }
-
-    @Given("i have a network")
-    Document network() @trusted
-    {
-        const wallet_switch = WalletInterface.Switch(update: true, sendkernel: true);
-
-        foreach(ref w; wallets) {
-            w.operate(wallet_switch, []);
-        }
-
-        return result_ok;
-    }
-
-    @When("i send N many valid contracts from `wallet1` to `wallet2`")
-    Document wallet2()
-    {
-        const invoice = wallets[0].secure_wallet.createInvoice("Invoice", 1000.TGN);
-
-        SignedContract signed_contract;
-        TagionCurrency fees;
-
-        with(wallets[1]) {
-            auto result = secure_wallet.payment([invoice], signed_contract, fees);
-
-            const message = secure_wallet.net.calcHash(signed_contract);
-            const contract_net = secure_wallet.net.derive(message);
-            const hirpc = HiRPC(contract_net);
-            const hirpc_submit = hirpc.submit(signed_contract);
-
-            sendSubmitHiRPC(options.contract_address, hirpc_submit, contract_net);
-
-            result.get;
-        }
-
-        return result_ok;
-    }
-
-    @When("all the contracts have been executed")
-    Document executed()
-    {
-        return result_ok;
-    }
-
-    @Then("wallet1 and wallet2 balances should be updated")
-    Document updated() @trusted
-    {
-        const wallet_switch = WalletInterface.Switch(update: true, sendkernel: true);
-        
-        foreach(ref w; wallets) {
-            w.operate(wallet_switch, []);
-        }
-        return result_ok;
-    }
-
-}
-
 alias manycontracts = tagion.testbench.e2e.manycontracts;
 
 mixin Main!(_main);
-
-// import std.range;
-// import std.path : setExtension, buildPath;
-// import std.algorithm;
-// import std.stdio;
-// import std.format;
-// import std.file : mkdirRecurse, exists, rmdirRecurse;
-// import core.time : seconds;
-// 
-// import tagion.wallet.SecureWallet;
-// import tagion.services.options;
-// import tagion.services.supervisor: SupervisorHandle;
-// import tagion.dart.Recorder;
-// import tagion.dart.DARTBasic;
-// import tagion.dart.DARTFile;
-// import tagion.dart.DART;
-// import tagion.crypto.SecureNet : StdSecureNet;
-// import tagion.crypto.SecureInterfaceNet;
-// import tagion.script.common : TagionBill;
-// import tagion.script.TagionCurrency;
-// import tagion.testbench.tools.Environment;
-// import tagion.actor;
-// 
-// alias StdSecureWallet = SecureWallet!StdSecureNet;
-
-version(none)
-int _main(string[] args) {
-    auto module_path = env.bdd_log.buildPath(__MODULE__);
-    if (module_path.exists) {
-        rmdirRecurse(module_path);
-    }
-    mkdirRecurse(module_path);
-
-    import tagion.tools.neuewelle;
-
-    StdSecureWallet[] wallets;
-    // create the wallets
-    foreach (i; 0 .. 2) {
-        StdSecureWallet secure_wallet;
-        secure_wallet = StdSecureWallet(
-                iota(0, 5).map!(n => format("%dquestion%d", i, n)).array,
-                iota(0, 5).map!(n => format("%danswer%d", i, n)).array,
-                4,
-                format("%04d", i),
-        );
-        wallets ~= secure_wallet;
-    }
-
-    // bills for the dart on startup
-    TagionBill[] bills;
-    foreach (_; 0 .. 100) {
-        bills ~= wallets[0].requestBill(1000.TGN);
-    }
-
-    // create the recorder
-    SecureNet net = new StdSecureNet();
-    net.generateKeyPair("very_secret");
-
-    auto factory = RecordFactory(net);
-    auto recorder = factory.recorder;
-    recorder.insert(bills, Archive.Type.ADD);
-
-    // string dart_interface_sock_addr;
-    // string inputvalidator_sock_addr;
-
-    auto local_options = Options();
-    local_options.setDefault;
-    local_options.dart.folder_path = buildPath(env.bdd_log, __MODULE__);
-    if (local_options.dart.folder_path.exists) {
-        rmdirRecurse(local_options.dart.folder_path);
-    }
-    mkdirRecurse(local_options.dart.folder_path);
-
-    auto all_node_options = get_mode_0_options(local_options);
-    // create the databases
-    foreach (opt; all_node_options) {
-        const path = buildPath(opt.dart.folder_path, opt.dart.dart_filename);
-        writeln(path);
-        DARTFile.create(path, net);
-        auto db = new DART(net, path);
-        db.modify(recorder);
-    }
-
-    SupervisorHandle[] handles;
-    network_mode0(all_node_options, handles);
-
-    waitforChildren(Ctrl.ALIVE, 15.seconds);
-
-    auto manycontracts_feature = automation!manycontracts;
-    manycontracts_feature.run;
-
-    while(true){
-    }
-
-    return 0;
-}
-
-import std.getopt;
-import std.file;
 
 int _main(string[] args) {
     const program = args[0];
@@ -254,4 +84,78 @@ int _main(string[] args) {
     manycontracts_feature.SendNContractsFromwallet1Towallet2(wallet_interfaces);
     manycontracts_feature.run;
     return 1;
+}
+
+enum feature = Feature(
+        "send multiple contracts through the network",
+        []);
+
+alias FeatureContext = Tuple!(
+    SendNContractsFromwallet1Towallet2, "SendNContractsFromwallet1Towallet2",
+    FeatureGroup*, "result"
+);
+
+@safe @Scenario("send N contracts from `wallet1` to `wallet2`",
+    [])
+class SendNContractsFromwallet1Towallet2
+{
+    WalletInterface[] wallets;
+
+    this(WalletInterface[] wallets) {
+        this.wallets = wallets;
+    }
+
+    @Given("i have a network")
+    Document network() @trusted {
+        const wallet_switch = WalletInterface.Switch(update: true, sendkernel: true);
+
+        foreach(ref w; wallets) {
+            w.operate(wallet_switch, []);
+        }
+
+        return result_ok;
+    }
+
+    @When("i send N many valid contracts from `wallet1` to `wallet2`")
+    Document wallet2() @trusted {
+        const invoice = wallets[0].secure_wallet.createInvoice("Invoice", 1000.TGN);
+
+        SignedContract signed_contract;
+        TagionCurrency fees;
+
+        with(wallets[1]) {
+            auto result = secure_wallet.payment([invoice], signed_contract, fees);
+
+            const message = secure_wallet.net.calcHash(signed_contract);
+            const contract_net = secure_wallet.net.derive(message);
+            const hirpc = HiRPC(contract_net);
+            const hirpc_submit = hirpc.submit(signed_contract);
+
+            sendSubmitHiRPC(options.contract_address, hirpc_submit, contract_net);
+
+            result.get;
+        }
+
+        return result_ok;
+    }
+
+    @When("all the contracts have been executed")
+    Document executed() @trusted {
+        import core.time;
+        import core.thread;
+        Thread.sleep(5.seconds);
+        return result_ok;
+    }
+
+    @Then("wallet1 and wallet2 balances should be updated")
+    Document updated() @trusted
+    {
+        const wallet_switch = WalletInterface.Switch(update: true, sendkernel: true);
+        
+        foreach(ref w; wallets) {
+            w.operate(wallet_switch, []);
+        }
+        return result_ok;
+    }
+
 }
