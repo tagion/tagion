@@ -32,14 +32,19 @@ static WebData api_handler2 ( WebData req, void* ctx ){
         return rep;
     }
     if(req.method == "POST"){
-        data["datalength"] = req.rawdata.length;
-        data["datatype"] = req.type;
-        WebData rep = {
-            json: data,
-            type: "application/json",
-            status: nng_http_status.NNG_HTTP_STATUS_OK
-        };
-        return rep;
+        if(req.type == "application/octet-stream"){
+            data["datalength"] = req.rawdata.length;
+            data["datatype"] = req.type;
+            WebData rep = {
+                json: data,
+                type: "application/json",
+                status: nng_http_status.NNG_HTTP_STATUS_OK
+            };
+            return rep;
+        }else{
+            WebData rep = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "Invalid request"};
+            return rep;
+        }
     }
     return WebData();
 }
@@ -49,7 +54,8 @@ int
 main()
 {
     int rc;
-    
+ 
+
     WebApp app = WebApp("myapp", "http://localhost:8081", parseJSON(`{"root_path":"/home/yv/work/repo/nng/tests/webapp","static_path":"static"}`), null);
     
     app.route("/api/v1/test1",&api_handler1);
