@@ -1,4 +1,4 @@
-module tagion.crypto.secp256k1.NativeMusig;
+module tagion.crypto.secp256k1.NativeSecp256k1Musig;
 @safe:
 import std.string : representation;
 import std.range;
