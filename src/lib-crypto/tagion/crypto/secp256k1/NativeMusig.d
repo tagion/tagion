@@ -173,7 +173,7 @@ class NativeMusig : NativeSecp256k1 {
             ref secp256k1_musig_secnonce secnonce,
             ref secp256k1_musig_pubnonce pubnonce,
             ref scope const(secp256k1_pubkey) pubkey,
-            const(ubyte[]) msg,
+            scope const(ubyte[]) msg,
     const(ubyte[]) session_id,
     const(ubyte[]) seckey = null) const nothrow
     in (session_id.length == SESSION_ID_SIZE)
@@ -201,13 +201,32 @@ class NativeMusig : NativeSecp256k1 {
     @trusted
     bool musigNonceAgg(
             ref secp256k1_musig_aggnonce aggnonce,
-            const(secp256k1_musig_pubnonce[]) pubnonces) const nothrow {
+            scope const(secp256k1_musig_pubnonce[]) pubnonces) const nothrow {
         const _pubnonces = pubnonces.map!((ref pnonce) => &pnonce).array;
         const ret = secp256k1_musig_nonce_agg(
                 _ctx,
                 &aggnonce,
                 &_pubnonces[0],
                 pubnonces.length);
+        return !ret;
+    }
+
+    @trusted
+    bool musigNonceProcess(
+            ref secp256k1_musig_session session,
+            ref scope const(secp256k1_musig_aggnonce) aggnonce,
+            const(ubyte[]) msg,
+    const(secp256k1_musig_keyagg_cache) cache) const nothrow
+    in (msg.length == MESSAGE_SIZE)
+    do {
+        const ret = secp256k1_musig_nonce_process(
+                _ctx,
+                &session,
+                &aggnonce,
+                &msg[0],
+                &cache,
+                null);
+
         return !ret;
     }
 
