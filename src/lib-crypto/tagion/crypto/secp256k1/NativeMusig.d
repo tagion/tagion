@@ -172,9 +172,9 @@ class NativeMusig : NativeSecp256k1 {
     bool musigNonceGen(
             ref secp256k1_musig_secnonce secnonce,
             ref secp256k1_musig_pubnonce pubnonce,
-            const(ubyte[]) session_id,
-    ref scope const(secp256k1_pubkey) pubkey,
-    const(ubyte[]) msg,
+            ref scope const(secp256k1_pubkey) pubkey,
+            const(ubyte[]) msg,
+    const(ubyte[]) session_id,
     const(ubyte[]) seckey = null)
     in (session_id.length == SESSION_ID_SIZE)
     in (msg.length == MESSAGE_SIZE)
