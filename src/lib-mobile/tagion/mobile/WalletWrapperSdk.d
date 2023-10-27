@@ -559,13 +559,15 @@ extern (C) {
         immutable invoiceBuffer = cast(immutable)(invoicePtr[0 .. invoiceLen]);
 
         if (__wallet_storage.wallet.isLoggedin()) {
-
+            
+            auto amount = TagionCurrency(0);
             auto invoice = Invoice(Document(invoiceBuffer));
-            auto amount = __wallet_storage.wallet.account.check_invoice_payment(invoice.pkey);
+            auto isExist = __wallet_storage.wallet.account.check_invoice_payment(invoice.pkey, amount);
 
-            *amountPtr = amount.value;
-
-            return 1;
+            if(isExist){
+                *amountPtr = amount.value;
+                return 1;
+            }
         }
         return 0;
     }
