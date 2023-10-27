@@ -70,9 +70,9 @@ jobs:
           echo "tar_filename=$tar_filename" >> $GITHUB_OUTPUT
 
       - uses: actions/upload-artifact@v3
-        if: failure()
+        if: success || failure()
         with:
-          name: failed-run
+          name: succesful_artifact
           path: ./${{steps.create_tar.outputs.tar_filename}}
           if-no-files-found: error
       
