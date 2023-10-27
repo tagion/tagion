@@ -25,30 +25,6 @@ class NativeMusig : NativeSecp256k1 {
         this.xonly_tweak[0 .. xonly_tweak.length] = xonly_tweak.representation;
     }
 
-    //secp256k1_musig_keyagg_cache cache;
-    //secp256k1_xonly_pubkey agg_pk;
-    version (none) @trusted
-    bool tweak() {
-        secp256k1_pubkey output_pk;
-        {
-            const ret =
-                secp256k1_musig_pubkey_ec_tweak_add(_ctx, null, &cache, &plain_tweak[0]);
-            if (!ret)
-                return false;
-        }
-        {
-            const ret = secp256k1_musig_pubkey_xonly_tweak_add(_ctx, &output_pk, &cache, &xonly_tweak[0]);
-            if (!ret)
-                return false;
-        }
-        {
-            const ret = secp256k1_xonly_pubkey_from_pubkey(_ctx, &agg_pk, null, &output_pk);
-            if (!ret)
-                return false;
-        }
-        return true;
-    }
-
     @trusted
     bool nonceGenerate(ref Signer signer, ref SignerSecret signer_secret, scope const(ubyte[]) session_id, scope const(ubyte[]) msg) const
     in (session_id.length == SESSION_ID_SIZE)
@@ -94,6 +70,23 @@ class NativeMusig : NativeSecp256k1 {
                 &session);
         return !ret;
 
+    }
+
+    @trusted
+    bool partialVerify(
+            ref const(secp256k1_musig_keyagg_cache) cache,
+            ref const(secp256k1_musig_partial_sig) partial_sig,
+            ref const(secp256k1_musig_pubnonce) pubnonce,
+            ref const(secp256k1_pubkey) pubkey,
+            ref const(secp256k1_musig_session) session) const nothrow {
+        const ret = secp256k1_musig_partial_sig_verify(
+                _ctx,
+                &partial_sig,
+                &pubnonce,
+                &pubkey,
+                &cache,
+                &session);
+        return !ret;
     }
 
     /**
