@@ -353,15 +353,22 @@ extern (C) {
         return 0;
     }
 
-    export void toPretty(uint8_t* docPtr, uint32_t responseLen, char* resultPtr, uint32_t* resultLen) {
+    // export void toPretty(uint8_t* docPtr, uint32_t responseLen, char* resultPtr, uint32_t* resultLen) {
+    export void toPretty(uint8_t* docPtr, uint32_t responseLen, uint8_t* resultPtr) {
         immutable res = cast(immutable)(docPtr[0 .. responseLen]);
         Document doc = Document(res);
 
         import tagion.hibon.HiBONJSON : toPretty;
 
-        string result = doc.toPretty;
-        resultPtr = cast(char*) &result[0];
-        *resultLen = cast(uint32_t) result.length;
+        string docToPretty = doc.toPretty;
+
+        auto result = new HiBON();
+        result["pretty"] = docToPretty;
+
+        const resultDocId = recyclerDoc.create(Document(result));
+        *resultPtr = cast(uint8_t) resultDocId;
+        // resultPtr = cast(char*) &result[0];
+        // *resultLen = cast(uint32_t) result.length;
     }
 
 
