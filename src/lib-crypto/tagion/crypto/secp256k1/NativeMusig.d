@@ -134,19 +134,36 @@ class NativeMusig : NativeSecp256k1 {
     @trusted
     bool musigPubkeyTweakAdd(
             ref secp256k1_musig_keyagg_cache cache,
-            out secp256k1_pubkey output_pubkey,
-            const(ubyte[]) tweak) const nothrow
+            const(ubyte[]) tweak,
+    secp256k1_pubkey* output_pubkey = null
+    ) const nothrow
     in (tweak.length == TWEAK_SIZE)
     do {
         const ret = secp256k1_musig_pubkey_ec_tweak_add(
                 _ctx,
-                &output_pubkey,
+                output_pubkey,
                 &cache,
                 &tweak[0]);
         return !ret;
 
     }
 
+    @trusted
+    bool musigXonlyPubkeyTweakAdd(
+            ref secp256k1_musig_keyagg_cache cache,
+            const(ubyte[]) tweak,
+    secp256k1_pubkey* output_pubkey = null
+    )
+    in (tweak.length == TWEAK_SIZE)
+    do {
+        const ret = secp256k1_musig_pubkey_xonly_tweak_add(
+                _ctx,
+                output_pubkey,
+                &cache,
+                &tweak[0]);
+        return !ret;
+
+    }
     /* 
     @trusted 
     void tweak(ref secp256k1_xonly_pubkey pubkey,  
