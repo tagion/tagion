@@ -14,6 +14,7 @@
       with import nixpkgs { system = "x86_64-linux"; };
       stdenv.mkDerivation {
 
+        configure = "";
         buildInputs = [
             autoconf
             automake
@@ -35,7 +36,6 @@
         name = "tagion";
         src = self;
         buildPhase = "make tagion";
-        installPhase = "INSTALL=$out/bin make install";
       };
   };
 }
