@@ -16,6 +16,7 @@
             wolfssl
             nng
             secp256k1
+            mbedtls
         ];
 
         nativeBuildInputs = [
@@ -33,6 +34,7 @@
           automake
           autoreconfHook
           cmake
+          pkg-config
         ];
 
         src = self;

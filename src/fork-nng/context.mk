@@ -1,8 +1,18 @@
 DSRC_NNG := ${call dir.resolve, nng}
 DTMP_NNG := $(DTMP)/nng
 
-LD_NNG+=-lnng
+
+ifdef USE_SYSTEM_LIBS
+# NNG Does not provide a .pc file,
+# so you'll have to configure it manually if nng not in the regular LD search path
+# We'll keep this here in case they make one in the future
+LD_NNG+=${shell pkg-config --libs nng}
+LD_NNG+=-lmbedtls -lmbedx509 -lmbedcrypto
+else
 LD_NNG+=-L$(DTMP_NNG)
+endif
+LD_NNG+=-lnng
+
 LIBNNG := $(DTMP_NNG)/libnng.a
 
 # Used to check if the submodule has been updated
