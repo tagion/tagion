@@ -13,8 +13,6 @@ SCRIPT:=$(REPOROOT)/tub
 include $(REPOROOT)/tub/main.mk
 
 update_modules:
-	echo ${REPOROOT}
-	echo $(MAKEFILE_LIST)
 	git submodule update
 
 .PHONY: update_modules
