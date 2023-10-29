@@ -6,11 +6,15 @@
 # Presumable because the compilers can not read all files at the same time
 .NOTPARALLEL: bins
 
-export REPOROOT:=${shell git rev-parse --show-toplevel}
+mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
+export REPOROOT := $(dir $(mkfile_path))
 SCRIPT:=$(REPOROOT)/tub
+
 include $(REPOROOT)/tub/main.mk
 
 update_modules:
+	echo ${REPOROOT}
+	echo $(MAKEFILE_LIST)
 	git submodule update
 
 .PHONY: update_modules
