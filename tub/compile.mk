@@ -61,7 +61,7 @@ $(DBIN)/%:
 	echo ${filter %.d,$^} > /tmp/$*_dfiles_q.mk
 	echo $(DFILES) > /tmp/$*_dfiles.mk
 	echo $(DFLAGS) $(DFLAGS_DEBUG) > /tmp/$*_dflags.mk
-	$(DC) $(DFLAGS_DEBUG) $(DFLAGS) ${addprefix -I,$(DINC)} ${sort $(DFILES) ${filter %.d,$^}} ${LDFLAGS} $(LIBS) $(OBJS) $(OUTPUT)$@
+	$(DC) $(DFLAGS_DEBUG) $(DFLAGS) ${addprefix -L,$(LDFLAGS)} ${addprefix -I,$(DINC)} ${sort $(DFILES) ${filter %.d,$^}} $(LIBS) $(OBJS) $(OUTPUT)$@
 
 
 # Object Clear"

@@ -1,6 +1,8 @@
 DSRC_NNG := ${call dir.resolve, nng}
 DTMP_NNG := $(DTMP)/nng
 
+LD_NNG+=-lnng
+LD_NNG+=-L$(DTMP_NNG)
 LIBNNG := $(DTMP_NNG)/libnng.a
 
 # Used to check if the submodule has been updated

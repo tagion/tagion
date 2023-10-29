@@ -15,7 +15,12 @@ endif
 
 .PHONY: wolfssl
 
-LIBWOLFSSL := $(DTMP_WOLFSSL)/src/.libs/libwolfssl.a
+LD_WOLFSSL+=-lwolfssl
+LD_WOLFSSL+=-L$(DTMP_WOLFSSL)/src/.libs/
+ifdef WOLFSSL
+LD_SSL:=$(LD_WOLFSSL)
+endif
+LIBWOLFSSL:=$(DTMP_WOLFSSL)/src/.libs/libwolfssl.a
 
 proper-wolfssl:
 	$(PRECMD)

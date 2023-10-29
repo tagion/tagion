@@ -10,6 +10,9 @@ export SEED:=$(shell git rev-parse HEAD)
 
 RELEASE_DFLAGS+=$(DOPT)
 
+# Link 3rd party libraries statically
+LDFLAGS+=-Bstatic
+
 #DFLAGS+=-s
 ifndef DEBUG_DISABLE
 DFLAGS+=$(DDEBUG_SYMBOLS)
