@@ -5,25 +5,22 @@
 
   outputs = { self, nixpkgs }: {
 
-    # packages.x86_64-linux.hello = nixpkgs.legacyPackages.x86_64-linux.hello;
-
-    # packages.x86_64-linux.default = self.packages.x86_64-linux.hello;
-
-
     formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixpkgs-fmt;
+
     defaultPackage.x86_64-linux =
       # Notice the reference to nixpkgs here.
       with import nixpkgs { system = "x86_64-linux"; };
-      stdenv.mkDerivation {
+      stdenv.mkDerivation rec {
 
         buildInputs = [
-          autoconf
-          automake
-          autoreconfHook
-          cmake
+            wolfssl
+            nng
+            secp256k1
+        ];
+
+        nativeBuildInputs = [
           dub
           dmd
-          dfmt
           dtools
           go
           git
@@ -32,11 +29,17 @@
           ldc
           libtool
           llvmPackages_15.clang-unwrapped
+          autoconf
+          automake
+          autoreconfHook
+          cmake
         ];
 
-        name = "tagion";
         src = self;
-        buildPhase = "make tagion";
+        name = "tagion";
+        buildPhase = ''
+            make DC=dmd tagion
+        '';
       };
   };
 }
