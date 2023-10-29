@@ -16,9 +16,41 @@
         "type": "github"
       }
     },
+    "nixpkgs_2": {
+      "locked": {
+        "lastModified": 1698318101,
+        "narHash": "sha256-gUihHt3yPD7bVqg+k/UVHgngyaJ3DMEBchbymBMvK1E=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "63678e9f3d3afecfeafa0acead6239cdb447574c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "secp256k1-zkp": "secp256k1-zkp"
+      }
+    },
+    "secp256k1-zkp": {
+      "inputs": {
+        "nixpkgs": "nixpkgs_2"
+      },
+      "locked": {
+        "lastModified": 1,
+        "narHash": "sha256-Dky0Y8Ysm8i8DQ+RyS3iyBDkqBVNpk9lhd6wPh0MBZY=",
+        "path": "/nix/store/fvaffd9qwbnnclmaa8fwazyr6k9qb6gd-source/src/fork-secp256k1",
+        "type": "path"
+      },
+      "original": {
+        "path": "/nix/store/fvaffd9qwbnnclmaa8fwazyr6k9qb6gd-source/src/fork-secp256k1",
+        "type": "path"
       }
     }
   },

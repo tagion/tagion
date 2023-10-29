@@ -1,9 +1,12 @@
 {
   description = "Tagion is a decentrialized monetary system";
 
-  inputs.nixpkgs.url = github:NixOS/nixpkgs/nixos-unstable;
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    secp256k1-zkp.url = "./src/fork-secp256k1";
+  };
 
-  outputs = { self, nixpkgs }: {
+  outputs = { self, nixpkgs, secp256k1-zkp }: {
 
     formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixpkgs-fmt;
 
@@ -11,13 +14,10 @@
       # Notice the reference to nixpkgs here.
       with import nixpkgs { system = "x86_64-linux"; };
       stdenv.mkDerivation rec {
+        name = "tagion";
 
-        buildInputs = [
-            wolfssl
-            nng
-            secp256k1
-            mbedtls
-        ];
+        buildInputs =
+          [ wolfssl nng secp256k1-zkp.defaultPackage.x86_64-linux mbedtls ];
 
         nativeBuildInputs = [
           dub
@@ -38,9 +38,8 @@
         ];
 
         src = self;
-        name = "tagion";
         buildPhase = ''
-            make DC=dmd tagion
+          make DC=dmd tagion
         '';
       };
   };

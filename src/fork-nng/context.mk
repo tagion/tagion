@@ -7,7 +7,9 @@ ifdef USE_SYSTEM_LIBS
 # so you'll have to configure it manually if nng not in the regular LD search path
 # We'll keep this here in case they make one in the future
 LD_NNG+=${shell pkg-config --libs nng}
+ifdef NNG_ENABLE_TLS
 LD_NNG+=-lmbedtls -lmbedx509 -lmbedcrypto
+endif
 else
 LD_NNG+=-L$(DTMP_NNG)
 endif
