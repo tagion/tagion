@@ -2,6 +2,8 @@
 /// [Documentation](https://docs.tagion.org/#/documents/architecture/TVM)
 module tagion.services.TVM;
 
+@safe:
+
 import std.stdio;
 import core.time;
 import std.conv : to;
@@ -21,7 +23,6 @@ import tagion.utils.pretend_safe_concurrency : locate, send;
 
 /// Msg type sent to receiver task along with a hirpc
 //alias contractProduct = Msg!"contract_product";
-@safe
 struct TVMOptions {
     import tagion.utils.JSONCommon;
 
@@ -44,7 +45,6 @@ enum ResponseError {
  *  (Payload, const(Document)) to TaskNames.epoch_creator
  *  (producedContract, immutable(ContractProduct)*) to TaskNames.transcript
 **/
-@safe
 struct TVMService {
     TVMOptions opts;
     TaskNames task_names;
@@ -94,7 +94,6 @@ struct TVMService {
 
 alias TVMServiceHandle = ActorHandle!TVMService;
 
-@safe
 unittest {
     import tagion.utils.pretend_safe_concurrency;
     import core.time;

@@ -45,6 +45,7 @@ struct TranscriptOptions {
  * Receives: (inputDoc, Document)
  * Sends: (inputHiRPC, HiRPC.Receiver) to receiver_task, where Document is a correctly formatted HiRPC
 **/
+pragma(msg, "fixme, transcript needs to be updated with the hashgraph to use long as id");
 struct TranscriptService {
     void task(immutable(TranscriptOptions) opts, immutable(size_t) number_of_nodes, shared(StdSecureNet) shared_net, immutable(TaskNames) task_names) {
         const net = new StdSecureNet(shared_net);
