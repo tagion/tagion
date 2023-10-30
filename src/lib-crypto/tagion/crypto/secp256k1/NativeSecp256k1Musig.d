@@ -284,11 +284,11 @@ unittest {
         const ret = crypt.musigXonlyPubkeyTweakAdd(cache, xonly_tweak, &tweaked_pubkey);
         assert(ret, "Tweak of the pubkey failed");
     }
-    //secp256k1_xonly_pubkey _agg_pubkey;
+    secp256k1_xonly_pubkey tweaked_xonly_pubkey;
     {
-        const ret = crypt.xonlyPubkey(tweaked_pubkey, agg_pubkey);
+        const ret = crypt.xonlyPubkey(tweaked_pubkey, tweaked_xonly_pubkey);
         assert(ret, "Could not produce xonly pubkey");
-        writefln("xonly_pubkey=%(%02x%)", agg_pubkey.data);
+        writefln("xonly_pubkey=%(%02x%)", tweaked_xonly_pubkey.data);
     }
 
 }
