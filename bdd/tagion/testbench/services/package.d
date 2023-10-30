@@ -5,6 +5,7 @@ public import TVM = tagion.testbench.services.TVM;
 public import collector = tagion.testbench.services.collector;
 public import double_spend = tagion.testbench.services.double_spend;
 public import epoch_creator = tagion.testbench.services.epoch_creator;
+public import genesis_test = tagion.testbench.services.genesis_test;
 public import hirpc_verifier = tagion.testbench.services.hirpc_verifier;
 public import inputvalidator = tagion.testbench.services.inputvalidator;
 public import malformed_contract = tagion.testbench.services.malformed_contract;
