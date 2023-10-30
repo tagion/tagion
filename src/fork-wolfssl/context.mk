@@ -15,14 +15,29 @@ endif
 
 .PHONY: wolfssl
 
-LIBWOLFSSL := $(DTMP_WOLFSSL)/src/.libs/libwolfssl.a
+ifdef USE_SYSTEM_LIBS
+LD_WOLFSSL+=${shell pkg-config --libs wolfssl}
+else
+LD_WOLFSSL+=-lwolfssl
+LD_WOLFSSL+=-L$(DTMP_WOLFSSL)/src/.libs/
+endif
+
+ifdef WOLFSSL
+LD_SSL:=$(LD_WOLFSSL)
+endif
+LIBWOLFSSL:=$(DTMP_WOLFSSL)/src/.libs/libwolfssl.a
 
 proper-wolfssl:
 	$(PRECMD)
 	${call log.header, $@ :: wolfssl}
 	$(RMDIR) $(DTMP_WOLFSSL)
 
+ifdef USE_SYSTEM_LIBS
+wolfssl: # NOTHING TO BUILD
+.PHONY: wolfssl
+else
 wolfssl: $(LIBWOLFSSL)
+endif
 
 WOLFSSL_HEAD := $(REPOROOT)/.git/modules/src/wrap-wolfssl/wolfssl/HEAD
 WOLFSSL_GIT_MODULE := $(DSRC_WOLFSSL)/.git

@@ -9,10 +9,28 @@ CONFIGUREFLAGS_OPENSSL += --prefix=$(DPREFIX_OPENSSL)
 CONFIGUREFLAGS_OPENSSL += --openssldir=$(DEXTRA_OPENSSL)
 
 include ${call dir.resolve, cross.mk}
-LIBOPENSSL+=$(DTMP)/libssl.a
-LIBOPENSSL+=$(DTMP)/libcrypto.a
 
+ifdef USE_SYSTEM_LIBS
+LD_OPENSSL+=${shell pkg-config --libs openssl}
+else
+LD_OPENSSL+=-lcrypto
+LD_OPENSSL+=-lssl
+LD_OPENSSL+=-L$(DTMP_OPENSSL)
+endif
+
+ifndef WOLFSSL
+LD_SSL:=$(LD_OPENSSL)
+endif
+
+
+LIBOPENSSL+=$(DTMP_OPENSSL)/libssl.a
+LIBOPENSSL+=$(DTMP_OPENSSL)/libcrypto.a
+
+ifdef USE_SYSTEM_LIBS
+openssl: # NOTHING TO BUILD
+else
 openssl: $(LIBOPENSSL)
+endif
 
 .PHONY: openssl
 
@@ -40,13 +58,11 @@ $(DTMP_OPENSSL)/.configured: $(DTMP)/.way $(OPENSSL_HEAD)
 	$(MAKE) build_generated
 	touch $@
 
-$(DTMP)/libcrypto.a: $(DTMP_OPENSSL)/.configured
+$(DTMP_OPENSSL)/libcrypto.a: $(DTMP_OPENSSL)/.configured
 	$(PRECMD)
-	$(CD) $(DTMP_OPENSSL); make libcrypto.a
-	$(CP) $(DTMP_OPENSSL)/libcrypto.a $(DTMP)/libcrypto.a
+	$(CD) $(DTMP_OPENSSL); $(MAKE) libcrypto.a
 
 
-$(DTMP)/libssl.a: $(DTMP_OPENSSL)/.configured
+$(DTMP_OPENSSL)/libssl.a: $(DTMP_OPENSSL)/.configured
 	$(PRECMD)
-	$(CD) $(DTMP_OPENSSL); make libssl.a
-	$(CP) $(DTMP_OPENSSL)/libssl.a $(DTMP)/libssl.a
+	$(CD) $(DTMP_OPENSSL); $(MAKE) libssl.a

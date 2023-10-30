@@ -40,7 +40,7 @@ $(UNITTEST_BIN): $(UNITTEST_DFILES)
 	$(PRECMD)
 	echo deps $?
 	${call log.env, UNITTEST_DFILES,${filter %.d,$^}}
-	$(DC) $(UNITTEST_FLAGS) $(DFLAGS) $(DRTFLAGS) ${addprefix -I,$(DINC)} ${sort ${filter %.d,$^}} $(LIBS) $(LDFLAGS) $(OUTPUT)$@
+	$(DC) $(UNITTEST_FLAGS) $(DFLAGS) $(DRTFLAGS) ${addprefix -I,$(DINC)} ${sort ${filter %.d,$^}} $(LIBS) ${addprefix -L,$(LDFLAGS)} $(OUTPUT)$@
 
 unittest: revision $(REPOROOT)/default.mk
 

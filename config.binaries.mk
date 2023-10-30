@@ -150,7 +150,7 @@ TAGION_BINS=$(foreach tools,$(TAGION_TOOLS), ${call BIN_DEPS,$(tools)} )
 
 target-tagion: ssl nng secp256k1
 target-tagion: DFLAGS+=$(DVERSION)=ONETOOL
-target-tagion: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBNNG)
+target-tagion: LDFLAGS+=$(LD_SECP256K1) $(LD_NNG) $(LD_SSL)
 ${call DO_BIN,tagion,$(LIB_DFILES) $(TAGION_BINS)}
 
 env-tools:
