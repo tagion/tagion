@@ -36,6 +36,7 @@ import tagion.crypto.SecureNet;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.gossip.AddressBook : addressbook, NodeAddress;
 import tagion.basic.Types : hasExtension, FileExtension;
+import tagion.hibon.Document;
 
 // TODO: 
 pragma(msg, "TODO(lr) rewrite logger with the 4th implementation of a taskwrapper");
@@ -210,10 +211,18 @@ int _main(string[] args) {
     return 0;
 }
 
-int network_mode0(const(Options)[] node_options, ref ActorHandle!Supervisor[] supervisor_handles) {
+int network_mode0(const(Options)[] node_options, ref ActorHandle!Supervisor[] supervisor_handles, Document epoch_head = Document.init) {
+
+    import tagion.crypto.Types;
+    import tagion.hibon.HiBONRecord;
+    import tagion.script.common : GenesisEpoch, Epoch;
+    import std.range : zip;
+
+
     struct Node {
         immutable(Options) opts;
         shared(StdSecureNet) net;
+        Pubkey pkey;
     }
 
     Node[] nodes;
@@ -225,11 +234,27 @@ int network_mode0(const(Options)[] node_options, ref ActorHandle!Supervisor[] su
         scope(exit) {
             net = null;
         }
-        
+    
         shared shared_net = (()@trusted => cast(shared) net)();
-        
-        nodes ~= Node(opts, shared_net);
-        addressbook[net.pubkey] = NodeAddress(opts.task_names.epoch_creator);
+    
+        nodes ~= Node(opts, shared_net, net.pubkey);
+    }
+
+    if (epoch_head is Document.init) {
+        foreach(n; zip(nodes, node_options)) {
+            addressbook[n[0].pkey] = NodeAddress(n[1].task_names.epoch_creator);
+        }
+    } else {
+        Pubkey[] keys;
+        if (epoch_head.isRecord!Epoch) {
+            keys = Epoch(epoch_head).active;
+        } else {
+            keys = GenesisEpoch(epoch_head).nodes;
+        }
+
+        foreach(node_info; zip(keys, node_options)) {
+            addressbook[node_info[0]] = NodeAddress(node_info[1].task_names.epoch_creator);
+        }
     }
 
     /// spawn the nodes
