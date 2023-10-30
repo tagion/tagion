@@ -231,16 +231,22 @@ unittest {
     // Create the keypairs
     //
     const crypt = new NativeSecp256k1Musig;
-    secp256k1_keypair[] keypairs;
-    keypairs.length = secret_passphrases.length;
+    //
+    // Set the secret for each signer  
+    //
+    SignerSecret[] signer_secrets;
+    signer_secrets.length = secret_passphrases.length;
+    //     secp256k1_keypair[] keypairs;
+    //   keypairs.length = secret_passphrases.length;
     foreach (i, secret; secret_passphrases) {
-        crypt.createKeyPair(secret, keypairs[i]);
+        crypt.createKeyPair(secret, signer_secrets[i].keypair);
     }
+    Signer[] signers;
     // Extracted the pubkeys
-    secp256k1_pubkey[] pubkeys;
-    pubkeys.length = keypairs.length;
+    signers.length = secret_passphrases.length;
     iota(secret_passphrases.length)
-        .each!((i) => crypt.getPubkey(keypairs[i], pubkeys[i]));
+        .each!((i) => crypt.getPubkey(signer_secrets[i].keypair, signers[i].pubkey));
+    const pubkeys = signers.map!((signer) => signer.pubkey).array;
     //
     // Aggregated common pubkey
     //
@@ -253,21 +259,11 @@ unittest {
         assert(ret, "Could not aggregated the pubkeys");
     }
     //
-    // Generate nonce session id
-    //
-    const session_ids = iota(secret_passphrases.length)
-        .map!(index => format("Session id nonce %d", index))
-        .map!(text => text.representation)
-        .map!(buf => sha256(buf))
-        .array;
-    //
     // Signers informations 
     //
     const plain_tweak = sha256("plain text tweak".representation);
     const xonly_tweak = sha256("xonly tweak".representation);
 
-    Signer[] signers;
-    signers.length = secret_passphrases.length;
     //
     // Plain text tweak can be use for BIP32 
     // Note. The aggregated pubkey is stored in the chache
@@ -290,5 +286,17 @@ unittest {
         assert(ret, "Could not produce xonly pubkey");
         writefln("xonly_pubkey=%(%02x%)", tweaked_xonly_pubkey.data);
     }
+
+    //
+    // Generate nonce session id (Should only be used one in the unittest it's fixed)
+    //
+    const session_ids = iota(secret_passphrases.length)
+        .map!(index => format("Session id nonce %d", index))
+        .map!(text => text.representation)
+        .map!(buf => sha256(buf))
+        .array;
+
+    // Signer[] signers;
+    // signers.length = secret_passphrases.length;
 
 }
