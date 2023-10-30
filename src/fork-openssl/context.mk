@@ -26,7 +26,11 @@ endif
 LIBOPENSSL+=$(DTMP_OPENSSL)/libssl.a
 LIBOPENSSL+=$(DTMP_OPENSSL)/libcrypto.a
 
+ifdef USE_SYSTEM_LIBS
+openssl: # NOTHING TO BUILD
+else
 openssl: $(LIBOPENSSL)
+endif
 
 .PHONY: openssl
 

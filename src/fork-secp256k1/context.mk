@@ -41,7 +41,12 @@ SECP256K1_GIT_MODULE := $(DSRC_SECP256K1)/.git
 
 include ${call dir.resolve, cross.mk}
 
+ifdef USE_SYSTEM_LIBS
+secp256k1: # NOTHING TO BUILD
+.PHONY: secp256k1
+else
 secp256k1: $(LIBSECP256K1) $(DSRC_SECP256K1)/include/secp256k1_hash.h
+endif
 
 $(DSRC_SECP256K1)/src/hash.h: $(SECP256K1_GIT_MODULE)
 $(DSRC_SECP256K1)/include/secp256k1_hash.h: $(DSRC_SECP256K1)/src/hash.h

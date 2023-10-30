@@ -32,7 +32,12 @@ proper-wolfssl:
 	${call log.header, $@ :: wolfssl}
 	$(RMDIR) $(DTMP_WOLFSSL)
 
+ifdef USE_SYSTEM_LIBS
+wolfssl: # NOTHING TO BUILD
+.PHONY: wolfssl
+else
 wolfssl: $(LIBWOLFSSL)
+endif
 
 WOLFSSL_HEAD := $(REPOROOT)/.git/modules/src/wrap-wolfssl/wolfssl/HEAD
 WOLFSSL_GIT_MODULE := $(DSRC_WOLFSSL)/.git

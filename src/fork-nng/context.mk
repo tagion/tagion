@@ -6,7 +6,7 @@ ifdef USE_SYSTEM_LIBS
 # NNG Does not provide a .pc file,
 # so you'll have to configure it manually if nng not in the regular LD search path
 # We'll keep this here in case they make one in the future
-LD_NNG+=${shell pkg-config --libs nng}
+# LD_NNG+=${shell pkg-config --libs nng}
 ifdef NNG_ENABLE_TLS
 LD_NNG+=-lmbedtls -lmbedx509 -lmbedcrypto
 endif
@@ -31,7 +31,12 @@ $(LIBNNG): $(DTMP_NNG)/.way $(NNG_HEAD)
 	cmake $(DSRC_NNG)
 	$(MAKE)
 
+ifdef USE_SYSTEM_LIBS
+nng: # NOTHING TO BUILD
+.PHONY: nng
+else
 nng: $(LIBNNG)
+endif
 
 
 env-nng:
