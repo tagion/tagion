@@ -15,7 +15,8 @@ ifdef USE_SYSTEM_LIBS
 NNG_ENABLE_TLS=1
 else
 # Link 3rd party libraries statically
-LDFLAGS+=-Bstatic
+# LDFLAGS+=-Bstatic
+LDFLAGS+=-static
 endif
 
 #DFLAGS+=-s
