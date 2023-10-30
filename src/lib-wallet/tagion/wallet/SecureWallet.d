@@ -514,24 +514,6 @@ struct SecureWallet(Net : SecureNet) {
             return true;
         }
         return false;
-
-        // if (enough) {
-        //     TagionCurrency rest = amount;
-        //     locked_bills = none_locked
-        //         .filter!(b => b.value <= rest) // take all bills smaller than the rest
-        //         .until!(b => rest <= 0) // do it until the rest smaller than zero. 
-        //         .tee!((b) => rest -= b.value) // add them to the rest amount
-        //         .array;
-        //     if (rest > 0) {
-
-        //         TagionBill extra_bill;
-        //         none_locked.filter!(b => !locked_bills.canFind(b))
-        //             .each!(b => extra_bill = b);
-        //         locked_bills ~= extra_bill;
-        //         return true;
-        //     }
-        // }
-        // return false;
     }
 
     void lock_bills(const(TagionBill[]) locked_bills) {
