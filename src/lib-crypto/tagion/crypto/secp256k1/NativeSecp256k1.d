@@ -515,7 +515,9 @@ class NativeSecp256k1 {
 
     @trusted
     void getPubkey(ref scope const(secp256k1_keypair) keypair, ref scope secp256k1_pubkey pubkey) const
+
     
+
     do {
         secp256k1_keypair_pub(_ctx, &pubkey, &keypair);
     }
@@ -612,6 +614,12 @@ class NativeSecp256k1 {
         secp256k1_xonly_pubkey_serialize(_ctx, &pubkey[0], xonly_pubkey);
         return pubkey;
 
+    }
+
+    @trusted
+    bool xonlyPubkey(ref scope const(secp256k1_pubkey) pubkey, ref secp256k1_xonly_pubkey xonly_pubkey) const nothrow @nogc {
+        const ret = secp256k1_xonly_pubkey_from_pubkey(_ctx, &xonly_pubkey, null, &pubkey);
+        return ret != 0;
     }
 }
 

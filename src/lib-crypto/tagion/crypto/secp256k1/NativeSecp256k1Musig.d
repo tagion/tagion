@@ -28,7 +28,7 @@ class NativeSecp256k1Musig : NativeSecp256k1 {
                 &keypair,
                 &cache,
                 &session);
-        return !ret;
+        return ret != 0;
     }
 
     @trusted
@@ -45,7 +45,7 @@ class NativeSecp256k1Musig : NativeSecp256k1 {
                 &pubkey,
                 &cache,
                 &session);
-        return !ret;
+        return ret != 0;
     }
 
     /**
@@ -63,7 +63,7 @@ class NativeSecp256k1Musig : NativeSecp256k1 {
                 null,
                 &_pubkeys[0],
                 pubkeys.length);
-        return !ret;
+        return ret != 0;
 
     }
 
@@ -83,7 +83,7 @@ class NativeSecp256k1Musig : NativeSecp256k1 {
                 &cache,
                 &_pubkeys[0],
                 pubkeys.length);
-        return !ret;
+        return ret != 0;
 
     }
 
@@ -100,7 +100,7 @@ class NativeSecp256k1Musig : NativeSecp256k1 {
                 output_pubkey,
                 &cache,
                 &tweak[0]);
-        return !ret;
+        return ret != 0;
 
     }
 
@@ -116,7 +116,7 @@ class NativeSecp256k1Musig : NativeSecp256k1 {
                 output_pubkey,
                 &cache,
                 &tweak[0]);
-        return !ret;
+        return ret != 0;
 
     }
 
@@ -146,7 +146,7 @@ class NativeSecp256k1Musig : NativeSecp256k1 {
                 &msg[0],
                 null,
                 null);
-        return !ret;
+        return ret != 0;
 
     }
 
@@ -160,7 +160,7 @@ class NativeSecp256k1Musig : NativeSecp256k1 {
                 &aggnonce,
                 &_pubnonces[0],
                 pubnonces.length);
-        return !ret;
+        return ret != 0;
     }
 
     @trusted
@@ -179,7 +179,7 @@ class NativeSecp256k1Musig : NativeSecp256k1 {
                 &cache,
                 null);
 
-        return !ret;
+        return ret != 0;
     }
 
     /* 
@@ -208,7 +208,8 @@ version (unittest) {
     import std.format;
     import std.stdio;
 }
-version (none) unittest {
+
+unittest {
     enum num_of_signers = 4;
     //
     // Generate a list of messages for the sign/verify test
@@ -282,6 +283,12 @@ version (none) unittest {
     {
         const ret = crypt.musigXonlyPubkeyTweakAdd(cache, xonly_tweak, &tweaked_pubkey);
         assert(ret, "Tweak of the pubkey failed");
+    }
+    //secp256k1_xonly_pubkey _agg_pubkey;
+    {
+        const ret = crypt.xonlyPubkey(tweaked_pubkey, agg_pubkey);
+        assert(ret, "Could not produce xonly pubkey");
+        writefln("xonly_pubkey=%(%02x%)", agg_pubkey.data);
     }
 
 }
