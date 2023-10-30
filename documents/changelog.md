@@ -1,3 +1,14 @@
+# Changelog for week 43/44
+**Malformed Contract scenarios**
+We have implemented various scenarios where the user tries to send an invalid contract. This could be where some fields of the contract are missing. Or when it comes to transactions, the user could send an input that is not a bill, among many others.
+
+**Faucet shell integration**
+We have integrated a faucet functionality into the test version of the shell, allowing us to easier test the wallets since they now can request test-tagions.
+
+**Secp256k1 multisig and change of library**
+We have updated our library from the secp256k1 library located in bitcoin core to https://github.com/BlockstreamResearch/secp256k1-zkp. The reason why we have made this change, is because we want to support multisig for various parts, and this is a functionality that is good to get into the system before it is running in its final state because it is very difficult to update. We have therefore started to implement schnoor signatures for signing.
+
+
 # Changelog for week 42/43
 **Shell Client**
 We have commited a WebClient with TLS support. See [github.com/tagion/nng](http://github.com/tagion/nng) test example test_11_webclient.d. This makes for a very small and easy to use webclient for our CLI wallet among other places. Currently only synchronous GET and POST methods are available.

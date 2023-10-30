@@ -15,17 +15,17 @@ endif
 
 .PHONY: wolfssl
 
+LIBWOLFSSL:=$(DTMP_WOLFSSL)/src/.libs/libwolfssl.a
+
 ifdef USE_SYSTEM_LIBS
 LD_WOLFSSL+=${shell pkg-config --libs wolfssl}
 else
-LD_WOLFSSL+=-lwolfssl
-LD_WOLFSSL+=-L$(DTMP_WOLFSSL)/src/.libs/
+LD_WOLFSSL+=$(LIBWOLFSSL)
 endif
 
 ifdef WOLFSSL
 LD_SSL:=$(LD_WOLFSSL)
 endif
-LIBWOLFSSL:=$(DTMP_WOLFSSL)/src/.libs/libwolfssl.a
 
 proper-wolfssl:
 	$(PRECMD)

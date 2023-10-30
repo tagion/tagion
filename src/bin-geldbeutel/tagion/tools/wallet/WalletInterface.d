@@ -621,7 +621,7 @@ struct WalletInterface {
                         secure_wallet.registerInvoice(new_invoice);
                         request = new_invoice.toDoc;
                         if (faucet) {
-                            sendShellHiRPC(options.addr ~ options.faucet, request);
+                            sendShellHiRPC(options.addr ~ options.faucet_shell_endpoint, request);
                         }
                     }
                     else {
@@ -700,7 +700,7 @@ struct WalletInterface {
                             received_doc = sendDARTHiRPC(options.dart_address, req);
                         }
                         if (send) {
-                            received_doc = sendShellHiRPC(options.addr ~ options.dart_shell_address, req.toDoc);
+                            received_doc = sendShellHiRPC(options.addr ~ options.dart_shell_endpoint, req.toDoc);
                         }
                         check(received_doc.isRecord!(HiRPC.Receiver), "Error in response. Aborting");
                         auto receiver = hirpc.receive(received_doc);
@@ -755,7 +755,7 @@ struct WalletInterface {
                     secure_wallet.account.hirpcs ~= hirpc_submit.toDoc;
                     save_wallet = true;
                     if (send) {
-                        sendShellSubmitHiRPC(options.addr ~ options.contract_shell_address, hirpc_submit, contract_net);
+                        sendShellSubmitHiRPC(options.addr ~ options.contract_shell_endpoint, hirpc_submit, contract_net);
                     }
                     else if (sendkernel) {
                         sendSubmitHiRPC(options.contract_address, hirpc_submit, contract_net);

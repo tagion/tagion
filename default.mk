@@ -13,9 +13,6 @@ RELEASE_DFLAGS+=$(DOPT)
 
 ifdef USE_SYSTEM_LIBS
 NNG_ENABLE_TLS=1
-else
-# Link 3rd party libraries statically
-LDFLAGS+=-Bstatic
 endif
 
 #DFLAGS+=-s

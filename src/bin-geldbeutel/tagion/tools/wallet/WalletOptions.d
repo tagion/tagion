@@ -35,9 +35,9 @@ struct WalletOptions {
 
     string contract_address;
     string dart_address;
-    string dart_shell_address;
-    string contract_shell_address;
-    string faucet;
+    string dart_shell_endpoint;
+    string contract_shell_endpoint;
+    string faucet_shell_endpoint;
     /**
     * @brief set default values for wallet
     */
@@ -53,9 +53,9 @@ struct WalletOptions {
         questions = standard_questions.dup;
         contract_address = contract_sock_addr("Node_0_" ~ "CONTRACT_");
         dart_address = contract_sock_addr("Node_0_" ~ "DART_");
-        dart_shell_address = "/api/v1/dart";
-        contract_shell_address = "/api/v1/contract";
-        faucet = "/api/v1/invoice2pay";
+        dart_shell_endpoint = "/api/v1/dart";
+        contract_shell_endpoint = "/api/v1/contract";
+        faucet_shell_endpoint = "/api/v1/invoice2pay";
 
         port = 10800;
     }

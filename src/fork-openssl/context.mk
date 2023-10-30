@@ -10,21 +10,18 @@ CONFIGUREFLAGS_OPENSSL += --openssldir=$(DEXTRA_OPENSSL)
 
 include ${call dir.resolve, cross.mk}
 
+LIBOPENSSL+=$(DTMP_OPENSSL)/libssl.a
+LIBOPENSSL+=$(DTMP_OPENSSL)/libcrypto.a
+
 ifdef USE_SYSTEM_LIBS
 LD_OPENSSL+=${shell pkg-config --libs openssl}
 else
-LD_OPENSSL+=-lcrypto
-LD_OPENSSL+=-lssl
-LD_OPENSSL+=-L$(DTMP_OPENSSL)
+LD_OPENSSL+=$(LIBOPENSSL)
 endif
 
 ifndef WOLFSSL
 LD_SSL:=$(LD_OPENSSL)
 endif
-
-
-LIBOPENSSL+=$(DTMP_OPENSSL)/libssl.a
-LIBOPENSSL+=$(DTMP_OPENSSL)/libcrypto.a
 
 ifdef USE_SYSTEM_LIBS
 openssl: # NOTHING TO BUILD
