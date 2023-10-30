@@ -1,10 +1,13 @@
 /// Pseudo random range
 module tagion.utils.Random;
+@safe:
+
 import std.format;
 import std.range;
+import std.traits : isNumeric;
 
 /// Generates a pseudo random sequence
-@safe @nogc
+@nogc
 struct Random(T = uint) {
     @nogc {
         private T m_z;
@@ -107,7 +110,6 @@ struct Random(T = uint) {
 }
 
 ///
-@safe
 unittest {
     import std.range : take, drop;
     import std.algorithm.comparison : equal;
@@ -125,7 +127,7 @@ unittest {
 }
 
 /// This data type can be used to group a sequence of pseudo random sequency
-@nogc @safe
+@nogc
 struct Sequence(T = uint) {
     import std.range;
 
@@ -154,7 +156,6 @@ struct Sequence(T = uint) {
 }
 
 ///
-@safe
 unittest {
     import std.stdio;
     import std.range;
@@ -202,14 +203,14 @@ unittest {
  * Generate a random id 
  * Returns: random id
 **/
-const(uint) generateId() @safe nothrow {
-    uint id = 0;
+const(T) generateId(T = uint)() nothrow if(isNumeric!T) {
+    T id = 0;
     import stdrnd = std.random;
 
-    auto rnd = Random!uint(stdrnd.unpredictableSeed);
+    auto rnd = Random!T(stdrnd.unpredictableSeed);
     do {
         id = rnd.value();
     }
-    while (id is 0 || id is uint.max);
+    while (id is 0 || id is T.max);
     return id;
 }

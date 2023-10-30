@@ -21,7 +21,7 @@ bddtagion: tagion
 	$(DBIN)/tagion -f
 
 
-bddfiles: $(DLOG)/.bddfiles
+bddfiles: collider $(DLOG)/.bddfiles
 
 $(DLOG)/.bddfiles:  $(DLOG)/.way $(BDD_MD_FILES)
 	$(PRECMD)

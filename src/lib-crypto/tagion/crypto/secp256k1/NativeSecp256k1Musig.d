@@ -28,7 +28,7 @@ class NativeSecp256k1Musig : NativeSecp256k1 {
                 &keypair,
                 &cache,
                 &session);
-        return !ret;
+        return ret != 0;
     }
 
     @trusted
@@ -45,7 +45,7 @@ class NativeSecp256k1Musig : NativeSecp256k1 {
                 &pubkey,
                 &cache,
                 &session);
-        return !ret;
+        return ret != 0;
     }
 
     /**
@@ -63,7 +63,7 @@ class NativeSecp256k1Musig : NativeSecp256k1 {
                 null,
                 &_pubkeys[0],
                 pubkeys.length);
-        return !ret;
+        return ret != 0;
 
     }
 
@@ -83,7 +83,7 @@ class NativeSecp256k1Musig : NativeSecp256k1 {
                 &cache,
                 &_pubkeys[0],
                 pubkeys.length);
-        return !ret;
+        return ret != 0;
 
     }
 
@@ -91,7 +91,7 @@ class NativeSecp256k1Musig : NativeSecp256k1 {
     bool musigPubkeyTweakAdd(
             ref secp256k1_musig_keyagg_cache cache,
             const(ubyte[]) tweak,
-    secp256k1_pubkey* output_pubkey = null
+    scope secp256k1_pubkey* output_pubkey = null
     ) const nothrow
     in (tweak.length == TWEAK_SIZE)
     do {
@@ -100,7 +100,7 @@ class NativeSecp256k1Musig : NativeSecp256k1 {
                 output_pubkey,
                 &cache,
                 &tweak[0]);
-        return !ret;
+        return ret != 0;
 
     }
 
@@ -108,7 +108,7 @@ class NativeSecp256k1Musig : NativeSecp256k1 {
     bool musigXonlyPubkeyTweakAdd(
             ref secp256k1_musig_keyagg_cache cache,
             const(ubyte[]) tweak,
-    secp256k1_pubkey* output_pubkey = null)
+    scope secp256k1_pubkey* output_pubkey = null) const nothrow
     in (tweak.length == TWEAK_SIZE)
     do {
         const ret = secp256k1_musig_pubkey_xonly_tweak_add(
@@ -116,7 +116,7 @@ class NativeSecp256k1Musig : NativeSecp256k1 {
                 output_pubkey,
                 &cache,
                 &tweak[0]);
-        return !ret;
+        return ret != 0;
 
     }
 
@@ -146,7 +146,7 @@ class NativeSecp256k1Musig : NativeSecp256k1 {
                 &msg[0],
                 null,
                 null);
-        return !ret;
+        return ret != 0;
 
     }
 
@@ -160,7 +160,7 @@ class NativeSecp256k1Musig : NativeSecp256k1 {
                 &aggnonce,
                 &_pubnonces[0],
                 pubnonces.length);
-        return !ret;
+        return ret != 0;
     }
 
     @trusted
@@ -179,7 +179,7 @@ class NativeSecp256k1Musig : NativeSecp256k1 {
                 &cache,
                 null);
 
-        return !ret;
+        return ret != 0;
     }
 
     /* 
@@ -206,10 +206,22 @@ version (unittest) {
     import std.range;
     import std.array;
     import std.format;
-
+    import std.stdio;
 }
+
 unittest {
     enum num_of_signers = 4;
+    //
+    // Generate a list of messages for the sign/verify test
+    //
+    const message_samples = iota(3)
+        .map!(index => format("message %d", index))
+        .map!(text => text.representation)
+        .map!(buf => sha256(buf))
+        .array;
+    //
+    // This of secret passphrases use to generate keypairs
+    //
     const secret_passphrases = iota(num_of_signers)
         .map!(index => format("very secret word %d", index))
         .map!(text => text.representation)
@@ -218,29 +230,32 @@ unittest {
     //
     // Create the keypairs
     //
-    NativeSecp256k1[] crypts = iota(secret_passphrases.length)
-        .map!(index => new NativeSecp256k1)
-        .array;
+    const crypt = new NativeSecp256k1Musig;
     secp256k1_keypair[] keypairs;
-    keypairs.length = crypts.length;
-    foreach (i, crypt, secret; zip(crypts, secret_passphrases).enumerate) {
+    keypairs.length = secret_passphrases.length;
+    foreach (i, secret; secret_passphrases) {
         crypt.createKeyPair(secret, keypairs[i]);
     }
     // Extracted the pubkeys
     secp256k1_pubkey[] pubkeys;
     pubkeys.length = keypairs.length;
-    iota(crypts.length) //.each!((i) => crypts[i].xxx(keypairs[i]));
-        .each!((i) => crypts[i].getPubkey(keypairs[i], pubkeys[i]));
+    iota(secret_passphrases.length)
+        .each!((i) => crypt.getPubkey(keypairs[i], pubkeys[i]));
     //
-    const message_samples = iota(3)
-        .map!(index => format("message %d", index))
-        .map!(text => text.representation)
-        .map!(buf => sha256(buf))
-        .array;
+    // Aggregated common pubkey
+    //
+    secp256k1_musig_keyagg_cache cache;
+    secp256k1_xonly_pubkey agg_pubkey;
+    {
+        const ret = crypt.musigPubkeyAggregated(cache, agg_pubkey, pubkeys);
+        writefln("Agg pubkey %(%02x%)", agg_pubkey.data);
+        writefln("ret=%s", ret);
+        assert(ret, "Could not aggregated the pubkeys");
+    }
     //
     // Generate nonce session id
     //
-    const session_ids = iota(crypts.length)
+    const session_ids = iota(secret_passphrases.length)
         .map!(index => format("Session id nonce %d", index))
         .map!(text => text.representation)
         .map!(buf => sha256(buf))
@@ -248,7 +263,32 @@ unittest {
     //
     // Signers informations 
     //
+    const plain_tweak = sha256("plain text tweak".representation);
+    const xonly_tweak = sha256("xonly tweak".representation);
+
     Signer[] signers;
-    signers.length = crypts.length;
+    signers.length = secret_passphrases.length;
+    //
+    // Plain text tweak can be use for BIP32 
+    // Note. The aggregated pubkey is stored in the chache
+    //
+    {
+        const ret = crypt.musigPubkeyTweakAdd(cache, plain_tweak);
+        assert(ret, "Tweak of the pubkey failed");
+    }
+    //
+    // Tweak again with and produce an xonly-pubkey
+    //
+    secp256k1_pubkey tweaked_pubkey;
+    {
+        const ret = crypt.musigXonlyPubkeyTweakAdd(cache, xonly_tweak, &tweaked_pubkey);
+        assert(ret, "Tweak of the pubkey failed");
+    }
+    secp256k1_xonly_pubkey tweaked_xonly_pubkey;
+    {
+        const ret = crypt.xonlyPubkey(tweaked_pubkey, tweaked_xonly_pubkey);
+        assert(ret, "Could not produce xonly pubkey");
+        writefln("xonly_pubkey=%(%02x%)", tweaked_xonly_pubkey.data);
+    }
 
 }

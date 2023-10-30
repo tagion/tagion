@@ -2,6 +2,8 @@
 /// [Documentation documents/architecture/InputValidator](https://docs.tagion.org/#/documents/architecture/InputValidator)
 module tagion.services.inputvalidator;
 
+@safe:
+
 import std.socket;
 import std.stdio;
 import std.algorithm : remove;
@@ -28,7 +30,6 @@ import std.format;
 
 import nngd;
 
-@safe
 struct InputValidatorOptions {
     string sock_addr;
     uint sock_recv_timeout = 1000;
@@ -60,7 +61,6 @@ enum ResponseError {
  *  Examples: [tagion.testbench.services.inputvalidator]
  *  Sends: (inputDoc, Document) to hirpc_verifier;
 **/
-@safe
 struct InputValidatorService {
     const SecureNet net;
     static Topic rejected = Topic("reject/inputvalidator");
@@ -133,7 +133,7 @@ struct InputValidatorService {
             import std.exception;
 
             Document doc = Document(assumeUnique(result.data));
-            if (doc.isInorder && doc.isRecord!(hirpc.Sender)) {
+            if (doc.isInorder && doc.isRecord!(HiRPC.Sender)) {
                 log("Sending contract to hirpc_verifier");
                 locate(task_names.hirpc_verifier).send(inputDoc(), doc);
                 const receiver = hirpc.receive(doc);

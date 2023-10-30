@@ -43,9 +43,13 @@ clean-wolfssl-link:
 	$(RM) $(DSRC_WOLFSSL)/wolfssl/wolfssl_version.h
 	$(RM) $(DSRC_WOLFSSL)/wolfssl/wolfcrypt/error_crypt.h
 
+
 .PHONY: clean-wolfssl-link
 
 clean-dstep: clean-wolfssl-link
+
+xxxx:
+	echo ok
 
 $(WOLFSSL_DIROOT)/ssl.di: DSTEP_DLINK=1
 $(WOLFSSL_DIROOT)/ssl.di: DSTEPFLAGS+=--collision-action=ignore
