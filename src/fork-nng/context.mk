@@ -1,21 +1,20 @@
 DSRC_NNG := ${call dir.resolve, nng}
 DTMP_NNG := $(DTMP)/nng
 
+LIBNNG := $(DTMP_NNG)/libnng.a
 
 ifdef USE_SYSTEM_LIBS
 # NNG Does not provide a .pc file,
 # so you'll have to configure it manually if nng not in the regular LD search path
 # We'll keep this here in case they make one in the future
 # LD_NNG+=${shell pkg-config --libs nng}
+LD_NNG+=-lnng
 ifdef NNG_ENABLE_TLS
 LD_NNG+=-lmbedtls -lmbedx509 -lmbedcrypto
 endif
 else
-LD_NNG+=-L$(DTMP_NNG)
+LD_NNG+=$(LIBNNG)
 endif
-LD_NNG+=-lnng
-
-LIBNNG := $(DTMP_NNG)/libnng.a
 
 # Used to check if the submodule has been updated
 NNG_HEAD := $(REPOROOT)/.git/modules/src/wrap-nng/nng/HEAD 

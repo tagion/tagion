@@ -13,18 +13,16 @@ endif
 
 DSRC_SECP256K1 := ${call dir.resolve, secp256k1}
 DTMP_SECP256K1 := $(DTMP)/secp256k1
-
-ifdef USE_SYSTEM_LIBS
-LD_SECP256K1+=${shell pkg-config --libs libsecp256k1}
-else
-LD_SECP256K1+=-L$(DTMP_SECP256K1)/.libs/
-LD_SECP256K1+=-lsecp256k1
-endif
-
 LIBSECP256K1:=$(DTMP_SECP256K1)/.libs/$(LIBSECP256K1_FILE)
 LIBSECP256K1_STATIC:=$(DTMP_SECP256K1)/.libs/$(LIBSECP256K1_NAME).$(STAEXT)
 LIBSECP256K1_SHARED:=$(DTMP_SECP256K1)/.libs/$(LIBSECP256K1_NAME).$(DLLEXT)
 LIBSECP256K1_OBJ:=$(DTMP_SECP256K1)/src/libsecp256k1_la-secp256k1.o
+
+ifdef USE_SYSTEM_LIBS
+LD_SECP256K1+=${shell pkg-config --libs libsecp256k1}
+else
+LD_SECP256K1+=$(LIBSECP256K1)
+endif
 
 CONFIGUREFLAGS_SECP256K1 += --enable-module-ecdh
 CONFIGUREFLAGS_SECP256K1 += --enable-experimental
