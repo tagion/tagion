@@ -164,6 +164,7 @@ struct Epoch {
 @recordType("$@Tagion")
 struct TagionHead {
     @label(StdNames.tagion) string name; // Default name should always be "tagion"
+    @label(StdNames.epoch) long current_epoch;
     TagionGlobals globals;
     mixin HiBONRecord;
 }
