@@ -9,8 +9,9 @@ jobs:
     steps:
 
       - name: Checkout ddoc
+        env: 
+          GITHUB_TOKEN: ${{ secrets.GITBOT_TOKEN }}
         run: |
-          export GH_TOKEN=${{ secrets.GITBOT_TOKEN }}
           git config user.email "gitbot@decard.io"
           git config user.name "gitbot"
           gh auth setup-git
@@ -31,6 +32,8 @@ jobs:
           make ddoc
 
       - name: update ddoc repo
+        env: 
+          GITHUB_TOKEN: ${{ secrets.GITBOT_TOKEN }}
         run: |
 
           cp ./tagion/build/ddoc/ ddoc/
