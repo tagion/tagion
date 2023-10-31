@@ -7,14 +7,17 @@ jobs:
   ddoc:
     runs-on: ubuntu-latest
     steps:
+
       - uses: actions/checkout@v4
         with: 
           path: "./tagion"
+
       - uses: actions/checkout@v4
         with: 
-          path: "./ddoc"
+          path: './ddoc'
           repository: 'tagion/ddoc'
-          token: secrets.GITBOT_TOKEN
+          ref: 'current'
+          token: ${{ secrets.GITBOT_TOKEN }}
 
       - uses: dlang-community/setup-dlang@v1
         with:
