@@ -109,6 +109,7 @@ int _main(string[] args) {
     import tagion.hibon.HiBON;
     import tagion.utils.StdTime;
     import tagion.crypto.Types;
+    import tagion.hibon.HiBONtoText;
 
     // const total_amount = BigNumber(bills.map!(b => b.value).sum);
     const total_amount = BigNumber(__VERY_UGLY);
@@ -119,7 +120,17 @@ int _main(string[] args) {
     const globals = TagionGlobals([event_print], total_amount, const BigNumber(0), number_of_bills, const long(0));
 
     const tagion_head = TagionHead(TagionDomain, 0, globals);
-    const(Pubkey)[] keys;
+
+    
+    Pubkey[] keys;
+    foreach(i; 0..local_options.wave.number_of_nodes) {
+        auto _net = new StdSecureNet();
+        const pswd = format(local_options.wave.prefix_format, i)~"supervisor";
+        writefln("bdd: %s", pswd);
+        _net.generateKeyPair(pswd); 
+        keys ~= _net.pubkey;
+        writefln("pkey: %s", _net.pubkey.encodeBase64);
+    }
 
 
     HiBON testamony = new HiBON;

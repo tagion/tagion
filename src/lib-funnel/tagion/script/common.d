@@ -143,11 +143,11 @@ bool verify(const(SecureNet) net, const(SignedContract*) signed_contract, const(
 @recordType("$@G")
 struct GenesisEpoch {
     @label(StdNames.epoch) long epoch_number;//should always be zero
-    const(Pubkey)[] nodes;
+    Pubkey[] nodes;
     Document testamony;
     @label(StdNames.time) sdt_t time;
     mixin HiBONRecord!(q{
-        this(const(long) epoch_number, const(Pubkey)[] nodes, const(Document) testamony, const(sdt_t) time) {
+        this(const(long) epoch_number, Pubkey[] nodes, const(Document) testamony, const(sdt_t) time) {
             this.epoch_number = epoch_number;
             this.nodes = nodes;
             this.testamony = testamony;
