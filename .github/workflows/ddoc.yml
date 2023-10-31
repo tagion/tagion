@@ -1,0 +1,41 @@
+name: Build D code docmentation
+
+env:
+  GITBOT_TOKEN: ${{ secrets.GITBOT_TOKEN }}
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+  ddoc:
+    runs-on: ubuuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: 
+          path: "./tagion"
+      - uses: actions/checkout@v4
+        with: 
+          path: "./ddoc"
+          repository: 'tagion/ddoc'
+
+      - uses: dlang-community/setup-dlang@v1
+        with:
+          compiler: dmd-latest
+
+      - name: Build docmentation
+        run: |
+          cd tagion
+          make ddoc
+
+      - name: update ddoc repo
+        run: |
+          export GH_TOKEN=${{ env.GITBOT_TOKEN }}
+          git config user.email "gitbot@decard.io"
+          git config user.name "gitbot"
+          gh auth setup-git
+
+          cp ./tagion/build/ddoc/ ddoc/
+          cd ddoc
+          git add .
+          git commit -m "ddocs updated" || echo "nothing to commit"
+          git push
