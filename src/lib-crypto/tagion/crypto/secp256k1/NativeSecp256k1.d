@@ -563,7 +563,7 @@ class NativeSecp256k1 {
     }
 
     @trusted
-    immutable(ubyte[]) xonly_pubkey(ref scope const(secp256k1_keypair) keypair) const {
+    immutable(ubyte[]) xonlyPubkey(ref scope const(secp256k1_keypair) keypair) const {
         secp256k1_xonly_pubkey xonly_pubkey;
         {
             const rt = secp256k1_keypair_xonly_pub(_ctx, &xonly_pubkey, null, &keypair);
@@ -1002,9 +1002,6 @@ unittest {
 }
 
 unittest { /// Schnorr test generated from the secp256k1/examples/schnorr.c 
-
-    //import std.stdio;
-
     const aux_random = decode("b0d8d9a460ddcea7ae5dc37a1b5511eb2ab829abe9f2999e490beba20ff3509a");
     const msg_hash = decode("1bd69c075dd7b78c4f20a698b22a3fb9d7461525c39827d6aaf7a1628be0a283");
     const secret_key = decode("e46b4b2b99674889342c851f890862264a872d4ac53a039fbdab91fd68ed4e71");
@@ -1020,7 +1017,7 @@ unittest { /// Schnorr test generated from the secp256k1/examples/schnorr.c
     const signature = crypt.sign_schnorr(msg_hash, keypair, aux_random);
     assert(signature == expected_signature);
     //writefln("expected_pubkey %(%02x%)", expected_pubkey);
-    const pubkey = crypt.xonly_pubkey(keypair); //writefln("         pubkey %(%02x%)", pubkey);
+    const pubkey = crypt.xonlyPubkey(keypair); //writefln("         pubkey %(%02x%)", pubkey);
     assert(pubkey == expected_pubkey);
     const signature_ok = crypt.verify_schnorr(signature, msg_hash, pubkey);
     assert(signature_ok, "Schnorr signing failded");
