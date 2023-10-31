@@ -487,7 +487,7 @@ class NativeSecp256k1 {
     }
 
     enum XONLY_PUBKEY_SIZE = 32;
-    enum MSG_SIZE = 32;
+    enum MESSAGE_SIZE = 32;
     enum KEYPAIR_SIZE = secp256k1_keypair.sizeof;
     @trusted
     void createKeyPair(const(ubyte[]) seckey, ref secp256k1_keypair keypair) const
@@ -527,8 +527,8 @@ class NativeSecp256k1 {
             const(ubyte[]) msg,
     ref scope const(secp256k1_keypair) keypair,
     const(ubyte[]) aux_random) const
-    in (msg.length == MSG_SIZE)
-    in (aux_random.length == MSG_SIZE)
+    in (msg.length == MESSAGE_SIZE)
+    in (aux_random.length == MESSAGE_SIZE)
     do {
         scope (exit) {
             randomizeContext;
@@ -541,23 +541,19 @@ class NativeSecp256k1 {
 
     @trusted
     bool verify_schnorr(const(ubyte[]) signature, const(ubyte[]) msg, const(ubyte[]) pubkey) const nothrow
-    in (signature.length == SIGNATURE_SIZE)
-    in (msg.length == MSG_SIZE)
     in (pubkey.length == XONLY_PUBKEY_SIZE)
     do {
         secp256k1_xonly_pubkey xonly_pubkey;
         secp256k1_xonly_pubkey_parse(_ctx, &xonly_pubkey, &pubkey[0]);
-
-        const rt = secp256k1_schnorrsig_verify(_ctx, &signature[0], &msg[0], 32, &xonly_pubkey);
-        return (rt == 1);
+        return verify_schnorr(signature, msg, xonly_pubkey);
     }
 
     @trusted
     bool verify_schnorr(const(ubyte[]) signature, const(ubyte[]) msg, ref scope const(secp256k1_xonly_pubkey) xonly_pubkey) const nothrow
     in (signature.length == SIGNATURE_SIZE)
-    in (msg.length == MSG_SIZE)
+    in (msg.length == MESSAGE_SIZE)
     do {
-        const ret = secp256k1_schnorrsig_verify(_ctx, &signature[0], &msg[0], MSG_SIZE, &xonly_pubkey);
+        const ret = secp256k1_schnorrsig_verify(_ctx, &signature[0], &msg[0], MESSAGE_SIZE, &xonly_pubkey);
         return ret != 0;
 
     }
@@ -575,54 +571,6 @@ class NativeSecp256k1 {
             check(rt == 1, ConsensusFailCode.SECURITY_FAILD_PUBKEY_FROM_KEYPAIR);
         }
         return assumeUnique(pubkey);
-
-    }
-
-    @trusted
-    const(secp256k1_pubkey*) xonly_pubkey_tweak(
-            scope const(ubyte[]) internal_pubkey,
-    scope const(ubyte[]) tweak) const
-    in (internal_pubkey.length == XONLY_PUBKEY_SIZE)
-    in (tweak.length == 32)
-    do {
-        import std.stdio;
-
-        secp256k1_xonly_pubkey xonly_pubkey;
-        secp256k1_xonly_pubkey_parse(_ctx, &xonly_pubkey, &internal_pubkey[0]);
-
-        auto output_pubkey = new secp256k1_pubkey;
-        const rt = secp256k1_xonly_pubkey_tweak_add(_ctx, output_pubkey, &xonly_pubkey, &tweak[0]);
-        return output_pubkey;
-    }
-
-    @trusted
-    const(secp256k1_xonly_pubkey*) xonly_from_pubkey(
-            const(secp256k1_pubkey*) pubkey,
-            int* pk_parity = null) const {
-        auto xonly_pubkey = new secp256k1_xonly_pubkey;
-        const ret = secp256k1_xonly_pubkey_from_pubkey(_ctx, xonly_pubkey, pk_parity, pubkey);
-        return xonly_pubkey;
-    }
-
-    @trusted
-    const(secp256k1_pubkey*) pubkey_combine(
-            scope const(secp256k1_pubkey*[]) pubkeys) const {
-        //const _pubkeys=&pubkeys;
-        //auto _pubkeys = pubkeys.map!(pkey => cast(secp256k1_pubkey*)&pkey[0]).array;
-        pragma(msg, "__pubkeys ", typeof(&pubkeys[0]));
-        //pragma(msg, "X__pubkeys ", typeof(&((&_pubkeys[0])[0])));
-        //    pragma(msg, "X__pubkeys ", typeof(&pubkeys[0]));
-        auto output_pubkey = new secp256k1_pubkey;
-        const ret = secp256k1_ec_pubkey_combine(_ctx, output_pubkey, &pubkeys[0], pubkeys.length);
-        return output_pubkey;
-    }
-
-    @trusted
-    const(ubyte[]) xonly_pubkey_serialize(
-            const(secp256k1_xonly_pubkey*) xonly_pubkey) const {
-        auto pubkey = new ubyte[XONLY_PUBKEY_SIZE];
-        secp256k1_xonly_pubkey_serialize(_ctx, &pubkey[0], xonly_pubkey);
-        return pubkey;
 
     }
 
