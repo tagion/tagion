@@ -142,7 +142,7 @@ bool verify(const(SecureNet) net, const(SignedContract*) signed_contract, const(
 
 @recordType("$@G")
 struct GenesisEpoch {
-    @label(StdNames.epoch) long epoch_number;
+    @label(StdNames.epoch) long epoch_number;//should always be zero
     Pubkey[] nodes;
     Document testamony;
     @label(StdNames.time) sdt_t time;
@@ -163,7 +163,7 @@ struct Epoch {
 
 @recordType("$@Tagion")
 struct TagionHead {
-    @label(StdNames.tagion) string name; // Default name should always be "tagion"
+    @label(StdNames.name) string name; // Default name should always be "tagion"
     @label(StdNames.epoch) long current_epoch;
     TagionGlobals globals;
     mixin HiBONRecord;

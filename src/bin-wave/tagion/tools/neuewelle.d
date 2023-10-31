@@ -178,35 +178,57 @@ int _main(string[] args) {
 
 
         import tagion.dart.DART;
+        import tagion.dart.DARTBasic;
+        import CRUD = tagion.dart.DARTcrud;
         import tagion.crypto.Types : Fingerprint;
         import std.algorithm : all;
+        import tagion.communication.HiRPC;
+        import tagion.script.standardnames;
+        import tagion.script.common : TagionHead;
 
-
-        Fingerprint[] bullseyes;
 
         auto __net = new StdSecureNet();
+        __net.generateKeyPair("wowo");
+
+        // extra check for mode0
+        Fingerprint[] bullseyes;
         foreach(node_opt; node_options) {
             DART db = new DART(__net, node_opt.dart.dart_path);
             scope(exit) {
                 db.close();
             }
             bullseyes ~= Fingerprint(db.bullseye);
-            assert(bullseyes.all!(b => b == bullseyes[0]), "DATABASES must be booted with same bullseye - Abort");
 
+            // check that all bullseyes are the same before boot
+            assert(bullseyes.all!(b => b == bullseyes[0]), "DATABASES must be booted with same bullseye - Abort");
         }
-        // Document epoch = get_epoch_from_head(node_options);
-        // first check that we are starting with the same bullseye
+
+        
+        // we only need to read one head since all bullseyes are the same:
+        DART db = new DART(__net, node_options[0].dart.dart_path);        
 
         // read the databases TAGIONHEAD
-        // check that the tagion head is the same for all the nodes
-        // lookup either the genesis-epoch or epoch.
-        // find the nodes pubkeys in it and start the network with these keys.
+        DARTIndex tagion_index = __net.dartKey(StdNames.name, TagionDomain); 
+        auto hirpc = HiRPC(__net);
+        const sender = CRUD.dartRead([tagion_index], hirpc);
+        const receiver = hirpc.receive(sender);
+        auto response = db(receiver, false);
+        auto recorder = db.recorder(response.result);
         
+        Document doc;
+        if (!recorder.empty) {
+            const head = TagionHead(recorder[].front.filed);
+            DARTIndex epoch_index = __net.dartKey(StdNames.epoch, head.current_epoch);
 
+            const _sender = CRUD.dartRead([epoch_index], hirpc);
+            const _receiver = hirpc.receive(_sender);
+            auto epoch_response = db(receiver, false);
+            auto epoch_recorder = db.recorder(epoch_response.result);
+            doc = epoch_recorder[].front.filed;
+        }
 
-
-        
-        network_mode0(node_options, supervisor_handles);
+        db.close;
+        network_mode0(node_options, supervisor_handles, doc);
 
         if (mode0_node_opts_path) {
             foreach (i, opt; node_options) {
