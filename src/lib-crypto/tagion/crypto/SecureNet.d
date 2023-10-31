@@ -206,7 +206,8 @@ class StdSecureNet : StdHashNet, SecureNet {
         //scramble(seed);
         getRandom(seed);
         // CBR: Note AES need to be change to beable to handle const keys
-        auto aes_key = rawCalcHash(seed).dup;
+        // auto aes_key = rawCalcHash(seed).dup;
+        auto aes_key = seed.dup;
         scramble(seed);
         auto aes_iv = rawCalcHash(seed)[4 .. 4 + AES.BLOCK_SIZE].dup;
 
