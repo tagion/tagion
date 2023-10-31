@@ -8,16 +8,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
+      - name: Checkout ddoc
+        run: |
+          export GH_TOKEN=${{ secrets.GITBOT_TOKEN }}
+          git config user.email "gitbot@decard.io"
+          git config user.name "gitbot"
+          gh auth setup-git
+
+          gh repo clone tagion/ddoc -- --depth=1
+
       - uses: actions/checkout@v4
         with: 
-          path: './ddoc'
-          repository: 'tagion/ddoc'
-          ref: 'current'
+          path: ./ddoc
+          repository: tagion/ddoc
+          ref: current
           token: ${{ secrets.GITBOT_TOKEN }}
 
       - uses: actions/checkout@v4
         with: 
-          path: "./tagion"
+          path: ./tagion
 
       - uses: dlang-community/setup-dlang@v1
         with:
@@ -30,10 +39,6 @@ jobs:
 
       - name: update ddoc repo
         run: |
-          export GH_TOKEN=${{ secrets.GITBOT_TOKEN }}
-          git config user.email "gitbot@decard.io"
-          git config user.name "gitbot"
-          gh auth setup-git
 
           cp ./tagion/build/ddoc/ ddoc/
           cd ddoc
