@@ -1,0 +1,42 @@
+name: Build D code docmentation
+on:
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  ddoc:
+    runs-on: ubuntu-latest
+    steps:
+
+      - uses: actions/checkout@v4
+        with: 
+          path: './ddoc'
+          repository: 'tagion/ddoc'
+          ref: 'current'
+          token: ${{ secrets.GITBOT_TOKEN }}
+
+      - uses: actions/checkout@v4
+        with: 
+          path: "./tagion"
+
+      - uses: dlang-community/setup-dlang@v1
+        with:
+          compiler: dmd-latest
+
+      - name: Build docmentation
+        run: |
+          cd tagion
+          make ddoc
+
+      - name: update ddoc repo
+        run: |
+          export GH_TOKEN=${{ secrets.GITBOT_TOKEN }}
+          git config user.email "gitbot@decard.io"
+          git config user.name "gitbot"
+          gh auth setup-git
+
+          cp ./tagion/build/ddoc/ ddoc/
+          cd ddoc
+          git add .
+          git commit -m "ddocs updated" || echo "nothing to commit"
+          git push
