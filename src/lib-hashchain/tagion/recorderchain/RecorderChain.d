@@ -313,10 +313,9 @@ unittest {
                     dart_recovered.modify(block_recorder);
                 });
             }
+            // Bullseyes should not be the same
+            assert(dart.fingerprint != dart_recovered.fingerprint);
         }
-
-        // Bullseyes should not be the same
-        assert(dart.fingerprint != dart_recovered.fingerprint);
 
         rmdirRecurse(temp_folder);
         remove(dart_filename);
