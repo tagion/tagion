@@ -4,9 +4,8 @@ module tagion.services.epoch_creator;
 
 // tagion
 import tagion.logger.Logger;
-import tagion.actor;
+import tagion.actor : runTimeout, ActorHandle, Ctrl;
 import tagion.communication.HiRPC;
-import tagion.hibon.Document;
 import tagion.utils.JSONCommon;
 import tagion.hashgraph.HashGraph;
 import tagion.gossip.GossipNet;
@@ -15,6 +14,7 @@ import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.crypto.Types : Pubkey;
 import tagion.crypto.random.random;
 import tagion.basic.Types : Buffer;
+import tagion.basic.basic : isinit;
 import tagion.hashgraph.Refinement;
 import tagion.gossip.InterfaceNet : GossipNet;
 import tagion.gossip.EmulatorGossipNet;
@@ -24,6 +24,8 @@ import tagion.utils.pretend_safe_concurrency;
 import tagion.utils.Miscellaneous : cutHex;
 import tagion.gossip.AddressBook;
 import tagion.hibon.HiBONJSON;
+import tagion.hibon.Document;
+import tagion.hibon.HiBONException;
 import tagion.utils.Miscellaneous : cutHex;
 import tagion.services.messages;
 import tagion.services.monitor;
@@ -37,6 +39,7 @@ import core.time;
 import std.algorithm;
 import std.typecons : No;
 import std.stdio;
+import std.exception : handle, RangePrimitive;
 
 alias PayloadQueue = Queue!Document;
 
@@ -67,8 +70,6 @@ struct EpochCreatorService {
 
             assert(receiveOnly!Ctrl is Ctrl.ALIVE);
         }
-
-        const hirpc = HiRPC(net);
 
         GossipNet gossip_net;
         gossip_net = new NewEmulatorGossipNet(net.pubkey, opts.timeout.msecs);
@@ -128,11 +129,20 @@ struct EpochCreatorService {
                 immutable s = new immutable(SignedContract)(doc);
                 return s;
             }
-            immutable received_signed_contracts = received_wave.epacks
+            auto received_signed_contracts_range = received_wave.epacks
                 .map!(e => e.event_body.payload)
                 .filter!((p) => !p.empty)
                 .filter!(p => p.isRecord!SignedContract)
-                .map!(i_s_contract) //:1
+                .map!(i_s_contract); //:1
+
+            immutable received_signed_contracts = received_signed_contracts_range
+                .handle!(HiBONException, RangePrimitive.front,
+                    (e, r) {
+                        log("invalid SignedContract from hashgraph");
+                        return null;
+                    }
+                )
+                .filter!(s => !s.isinit)
                 .array;
 
             if (received_signed_contracts.length != 0) {
