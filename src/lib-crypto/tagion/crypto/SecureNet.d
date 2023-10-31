@@ -124,7 +124,7 @@ class StdSecureNet : StdHashNet, SecureNet {
     bool verify(const Fingerprint message, const Signature signature, const Pubkey pubkey) const {
         consensusCheck!(SecurityConsensusException)(signature.length != 0 && signature.length <= 520,
                 ConsensusFailCode.SECURITY_SIGNATURE_SIZE_FAULT);
-        return _crypt.verify(cast(Buffer) message, cast(Buffer) signature, cast(Buffer) pubkey);
+        return _crypt.verify_ecdsa(cast(Buffer) message, cast(Buffer) signature, cast(Buffer) pubkey);
     }
 
     Signature sign(const Fingerprint message) const

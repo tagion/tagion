@@ -116,7 +116,6 @@ class NativeSecp256k1 {
      +       signature)     = The signature
      +       pub            =  The public key which did the signing
      +/
-    alias verify = verify_ecdsa;
     @trusted
     bool verify_ecdsa(const(ubyte[]) data, const(ubyte[]) signature, const(ubyte[]) pub) const
     in {
@@ -802,7 +801,7 @@ unittest {
             immutable pubkey = crypt.computePubkey(privkey);
 
             immutable signature = crypt.sign_ecdsa(message, privkey);
-            assert(crypt.verify(message, signature, pubkey));
+            assert(crypt.verify_ecdsa(message, signature, pubkey));
         }
         catch (ConsensusException e) {
             assert(0, e.msg);
@@ -821,7 +820,7 @@ unittest {
         // Message
         auto message = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90");
         auto signature = crypt.sign_ecdsa(message, privkey);
-        assert(crypt.verify(message, signature, pubkey));
+        assert(crypt.verify_ecdsa(message, signature, pubkey));
 
         // Drived key a
         const drive = decode("ABCDEF");
@@ -831,7 +830,7 @@ unittest {
         auto pubkey_a_drived = crypt.pubKeyTweakMul(pubkey, drive);
         assert(pubkey != pubkey_a_drived);
         auto signature_a_drived = crypt.sign_ecdsa(message, privkey_a_drived);
-        assert(crypt.verify(message, signature_a_drived, pubkey_a_drived));
+        assert(crypt.verify_ecdsa(message, signature_a_drived, pubkey_a_drived));
 
         // Drive key b from key a
         ubyte[] privkey_b_drived;
@@ -840,7 +839,7 @@ unittest {
         auto pubkey_b_drived = crypt.pubKeyTweakMul(pubkey_a_drived, drive);
         assert(pubkey_b_drived != pubkey_a_drived);
         auto signature_b_drived = crypt.sign_ecdsa(message, privkey_b_drived);
-        assert(crypt.verify(message, signature_b_drived, pubkey_b_drived));
+        assert(crypt.verify_ecdsa(message, signature_b_drived, pubkey_b_drived));
 
     }
 
@@ -856,7 +855,7 @@ unittest {
         // Message
         auto message = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90");
         auto signature = crypt.sign_ecdsa(message, privkey);
-        assert(crypt.verify(message, signature, pubkey));
+        assert(crypt.verify_ecdsa(message, signature, pubkey));
 
     }
 
@@ -871,7 +870,7 @@ unittest {
         // Message
         auto message = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90");
         auto signature = crypt.sign_ecdsa(message, privkey);
-        assert(crypt.verify(message, signature, pubkey));
+        assert(crypt.verify_ecdsa(message, signature, pubkey));
 
     }
 
@@ -886,7 +885,7 @@ unittest {
         // Message
         auto message = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90");
         auto signature = crypt.sign_ecdsa(message, privkey);
-        assert(crypt.verify(message, signature, pubkey));
+        assert(crypt.verify_ecdsa(message, signature, pubkey));
 
     }
 
@@ -902,7 +901,7 @@ unittest {
         // Message
         auto message = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90");
         auto signature = crypt.sign_ecdsa(message, privkey);
-        assert(crypt.verify(message, signature, pubkey));
+        assert(crypt.verify_ecdsa(message, signature, pubkey));
 
     }
 
@@ -918,7 +917,7 @@ unittest {
         auto message = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90");
         auto signature = crypt.sign_ecdsa(message, privkey);
 
-        assert(crypt.verify(message, signature, pubkey));
+        assert(crypt.verify_ecdsa(message, signature, pubkey));
 
     }
 
