@@ -308,7 +308,7 @@ int network_mode0(const(Options)[] node_options, ref ActorHandle!Supervisor[] su
         if (epoch_head.isRecord!Epoch) {
             keys = Epoch(epoch_head).active;
         } else {
-            keys = GenesisEpoch(epoch_head).nodes;
+            keys = cast(Pubkey[]) GenesisEpoch(epoch_head).nodes;
         }
 
         foreach(node_info; zip(keys, node_options)) {

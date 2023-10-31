@@ -86,9 +86,11 @@ int _main(string[] args) {
     }
     
     TagionBill[] bills;
+    long __VERY_UGLY;
     foreach (ref wallet; wallets) {
         foreach(i; 0..3) {
             bills ~= requestAndForce(wallet, 1000.TGN);
+            __VERY_UGLY += 1000;
 
         }
     }
@@ -108,24 +110,24 @@ int _main(string[] args) {
     import tagion.utils.StdTime;
     import tagion.crypto.Types;
 
-    const total_amount = BigNumber(cast(long) bills.map!(b => b.value).sum);
+    // const total_amount = BigNumber(bills.map!(b => b.value).sum);
+    const total_amount = BigNumber(__VERY_UGLY);
     const number_of_bills = long(bills.length);
 
+    const event_print = Fingerprint([1,2,3,4]);
     
-    const globals = TagionGlobals(null, total_amount, BigNumber(0), number_of_bills, 0);
+    const globals = TagionGlobals([event_print], total_amount, const BigNumber(0), number_of_bills, const long(0));
+
     const tagion_head = TagionHead(TagionDomain, 0, globals);
-    Pubkey[] keys;
+    const(Pubkey)[] keys;
 
 
     HiBON testamony = new HiBON;
     testamony["hola"] = "Hallo ich bin philip. VERY OFFICIAL TAGION GENESIS BLOCK; DO NOT ALTER IN ANY WAYS";
     const genesis_epoch = GenesisEpoch(0, keys, Document(testamony), currentTime);
 
-
-    recorder.insert([tagion_head, genesis_epoch], Archive.Type.ADD);
-
-
-    
+    recorder.add(tagion_head);
+    recorder.add(genesis_epoch);
 
     foreach (i; 0 .. local_options.wave.number_of_nodes) {
         immutable prefix = format(local_options.wave.prefix_format, i);
