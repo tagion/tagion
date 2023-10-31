@@ -9,10 +9,10 @@ import tagion.crypto.Types : Signature, Fingerprint;
 import tagion.hibon.Document : Document;
 import tagion.basic.ConsensusExceptions;
 import std.range;
+import tagion.crypto.random.random;
 
 void scramble(T, B = T[])(scope ref T[] data, scope const(B) xor = null) @safe if (T.sizeof is ubyte.sizeof)
 in (xor.empty || data.length == xor.length) {
-    import tagion.crypto.random.random;
 
     scope buf = cast(ubyte[]) data;
     getRandom(buf);
@@ -94,7 +94,6 @@ class StdSecureNet : StdHashNet, SecureNet {
         void tweakMul(const(ubyte[]) tweek_code, ref ubyte[] tweak_privkey) const;
         void tweakAdd(const(ubyte[]) tweek_code, ref ubyte[] tweak_privkey);
         immutable(ubyte[]) ECDHSecret(scope const(Pubkey) pubkey) const;
-        Buffer mask(const(ubyte[]) _mask) const;
         void clone(StdSecureNet net) const;
     }
 
@@ -155,10 +154,6 @@ class StdSecureNet : StdHashNet, SecureNet {
         _secret.tweakMul(tweak_code, tweak_privkey);
     }
 
-    final Buffer mask(const(ubyte[]) _mask) const {
-        return _secret.mask(_mask);
-    }
-
     void derive(string tweak_word, shared(SecureNet) secure_net) {
         const tweak_code = HMAC(tweak_word.representation);
         derive(tweak_code, secure_net);
@@ -196,7 +191,6 @@ class StdSecureNet : StdHashNet, SecureNet {
         assert(_secret is null);
     }
     do {
-        import std.digest.sha : SHA256;
         import std.string : representation;
 
         check(secKeyVerify(privkey), ConsensusFailCode.SECURITY_PRIVATE_KEY_INVALID);
@@ -204,11 +198,13 @@ class StdSecureNet : StdHashNet, SecureNet {
         alias AES = AESCrypto!256;
         _pubkey = _crypt.computePubkey(privkey);
         // Generate scramble key for the private key
-        import std.random;
+        //import std.random;
 
-        auto seed = new ubyte[32];
-
-        scramble(seed);
+        //auto seed = new ubyte[AES.KEY_SIZE];
+        ubyte[AES.KEY_SIZE] _seed;
+        auto seed = _seed[];
+        //scramble(seed);
+        getRandom(seed);
         // CBR: Note AES need to be change to beable to handle const keys
         auto aes_key = rawCalcHash(seed).dup;
         scramble(seed);
@@ -273,7 +269,7 @@ class StdSecureNet : StdHashNet, SecureNet {
                 return result;
             }
 
-            Buffer mask(const(ubyte[]) _mask) const {
+            version (none) Buffer mask(const(ubyte[]) _mask) const {
                 import std.algorithm.iteration : sum;
 
                 check(sum(_mask) != 0, ConsensusFailCode.SECURITY_MASK_VECTOR_IS_ZERO);

@@ -99,6 +99,4 @@ interface SecureNet : HashNet {
     Pubkey derivePubkey(const(ubyte[]) tweak_code);
     Pubkey derivePubkey(string tweak_word);
 
-    Buffer mask(const(ubyte[]) _mask) const;
-
 }
