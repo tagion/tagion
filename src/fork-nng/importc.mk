@@ -5,10 +5,6 @@ NNG_CINCS+=$(DSRC_NNG)/include
 NNG_CINCS+=$(DSRC_NNG)/src
 NNG_CFLAGS+=-DNNG_PLATFORM_POSIX
 
-test89:
-	echo $(
-	#find $(NNG_SRC) -name "*c" -printf "%p "
-	
 env-nng-importc:
 	$(PRECMD)
 	$(call log.header, $@ :: env)
@@ -17,6 +13,6 @@ env-nng-importc:
 	$(call log.close)
 
 
-importc:
+nng-importc:
 	mkdir -p /tmp/importc
 	dmd $(NNG_CFILES) -c -od=/tmp/importc $(addprefix -P=-I,$(NNG_CINCS)) $(addprefix -P=,$(NNG_CFLAGS)) -v
