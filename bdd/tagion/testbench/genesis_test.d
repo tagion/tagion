@@ -134,7 +134,8 @@ int _main(string[] args) {
 
     writefln("INPUT SOCKET ADDRESS %s", node_opts[0].inputvalidator.sock_addr);
 
-    auto feature = automation!(malformed_contract);
+    auto feature = automation!(genesis_test);
+    feature.run;
 
     
     feature.run;

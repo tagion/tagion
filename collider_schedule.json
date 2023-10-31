@@ -259,6 +259,14 @@
                 "acceptance", "malformed_contract"
             ],
             "timeout": 0.0
+        },
+        "genesis_test": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "genesis"
+            ],
+            "timeout": 0.0
         }
 
     }

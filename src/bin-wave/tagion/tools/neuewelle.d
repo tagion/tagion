@@ -285,6 +285,7 @@ int network_mode0(const(Options)[] node_options, ref ActorHandle!Supervisor[] su
 
     foreach (i, opts; node_options) {
         auto net = new StdSecureNet();
+        writefln("PASSWORD: %s", opts.task_names.supervisor);
         net.generateKeyPair(opts.task_names.supervisor);
 
         scope(exit) {
