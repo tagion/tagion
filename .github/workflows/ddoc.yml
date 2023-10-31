@@ -10,14 +10,14 @@ jobs:
 
       - uses: actions/checkout@v4
         with: 
-          path: "./tagion"
-
-      - uses: actions/checkout@v4
-        with: 
           path: './ddoc'
           repository: 'tagion/ddoc'
           ref: 'current'
           token: ${{ secrets.GITBOT_TOKEN }}
+
+      - uses: actions/checkout@v4
+        with: 
+          path: "./tagion"
 
       - uses: dlang-community/setup-dlang@v1
         with:
