@@ -8,15 +8,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
-      - name: Checkout ddoc
-        env: 
-          GITHUB_TOKEN: ${{ secrets.GITBOT_TOKEN }}
+      - name: Setup Git
         run: |
           git config user.email "gitbot@decard.io"
           git config user.name "gitbot"
           gh auth setup-git
 
+      - name: Checkout ddoc
+        env: 
+          GITHUB_TOKEN: ${{ secrets.GITBOT_TOKEN }}
+        run: |
           gh repo clone tagion/ddoc -- --depth=1
+
 
       - uses: actions/checkout@v4
         with: 
