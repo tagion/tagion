@@ -32,8 +32,7 @@ jobs:
         env: 
           GITHUB_TOKEN: ${{ secrets.GITBOT_TOKEN }}
         run: |
-
-          cp ./tagion/build/ddoc/ ddoc/
+          cp -r ./tagion/build/ddoc/ ddoc/
           cd ddoc
           gh auth setup-git
           git config user.email "gitbot@decard.io"
