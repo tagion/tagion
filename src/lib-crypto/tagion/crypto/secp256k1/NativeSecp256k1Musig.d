@@ -299,9 +299,12 @@ unittest {
     //
     // Initialize sessions and nonces for all signers
     // This process should be done by each signer seperately 
-    // 
-    //const ret=iota(secret_passphrases.length)
-    //.all!((i) => crypt.musigNonceGen(secret_s
+    //
+    {
+        const ret = iota(secret_passphrases.length)
+            .all!((i) => crypt.musigNonceGen(signer_secrets[i].secnonce, signers[i].pubnonce, signers[i].pubkey, message_samples[0], session_ids[i]));
+        assert(ret, "Failed in generating musig nonce");
+    }
     // Signer[] signers;
     // signers.length = secret_passphrases.length;
 
