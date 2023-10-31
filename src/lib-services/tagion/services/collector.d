@@ -95,8 +95,7 @@ struct CollectorService {
         immutable doc = Document(receiver.method.params);
         log("collector received receiver");
         try {
-            // No immutable construct on this HiBONRecord
-            immutable s_contract = (() @trusted => (cast(immutable) new SignedContract(doc)))();
+            immutable s_contract = new immutable(SignedContract)(doc);
             signed_contract(inputContract(), s_contract);
         }
         catch (HiBONRecordException e) {
