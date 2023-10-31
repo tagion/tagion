@@ -248,7 +248,7 @@ class StdSecureNet : StdHashNet, SecureNet {
         @safe class LocalSecret : SecretMethods {
             immutable(ubyte[]) sign(const(ubyte[]) message) const {
                 immutable(ubyte)[] result;
-                do_secret_stuff((const(ubyte[]) privkey) { result = _crypt.sign(message, privkey); });
+                do_secret_stuff((const(ubyte[]) privkey) { result = _crypt.sign_ecdsa(message, privkey); });
                 return result;
             }
 
