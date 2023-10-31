@@ -514,11 +514,9 @@ class NativeSecp256k1 {
     }
 
     @trusted
-    void getPubkey(ref scope const(secp256k1_keypair) keypair, ref scope secp256k1_pubkey pubkey) const
-
-    
-
-    do {
+    void getPubkey(
+            ref scope const(secp256k1_keypair) keypair,
+            ref scope secp256k1_pubkey pubkey) const nothrow {
         secp256k1_keypair_pub(_ctx, &pubkey, &keypair);
     }
 
