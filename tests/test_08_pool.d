@@ -19,6 +19,7 @@ struct worker_context {
 void server_callback(NNGMessage *msg, void *ctx)
 {
     log("SERVER CALLBACK");
+    if(msg is null) return;
     auto cnt = cast(worker_context*)ctx;
     auto s = msg.body_trim!string(msg.length);
     log("SERVER CONTEXT NAME: "~cnt.name);
@@ -48,7 +49,7 @@ void client_worker(string url, string tag)
         if(rc == 0) break;
         log("REQ("~tag~"): Dial error: ",toString(rc));
         if(rc == nng_errno.NNG_ECONNREFUSED){
-            nng_sleep(msecs(100));
+            nng_sleep(msecs(10));
             continue;
         }
         assert(rc == 0);
@@ -56,7 +57,7 @@ void client_worker(string url, string tag)
     while(1){
         k++;
         line = format("What time is it? :: from(%s)[%d]", tag,k);            
-        if(k > 16)
+        if(k > 255)
             line = "Maybe that's enough?";
         rc = s.send!string(line);
         assert(rc == 0);
@@ -93,7 +94,7 @@ int main()
     s.recvtimeout = msecs(1000);
     s.sendbuf = 4096;
 
-    NNGPool pool = NNGPool(&s, &server_callback, 4, &ctx);
+    NNGPool pool = NNGPool(&s, &server_callback, 8, &ctx);
     pool.init();
 
     auto rc = s.listen(uri);
