@@ -92,7 +92,7 @@ struct Request(string name, ID = uint) {
         return r;
     }
 
-    alias Response = .Response!name;
+    alias Response = .Response!(name, ID);
 
     /// Send back some data to the task who sent the request
     void respond(Args...)(Args args) {
