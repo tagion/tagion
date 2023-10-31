@@ -8,12 +8,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
-      - name: Setup Git
-        run: |
-          git config user.email "gitbot@decard.io"
-          git config user.name "gitbot"
-          gh auth setup-git
-
       - name: Checkout ddoc
         env: 
           GITHUB_TOKEN: ${{ secrets.GITBOT_TOKEN }}
@@ -41,6 +35,9 @@ jobs:
 
           cp ./tagion/build/ddoc/ ddoc/
           cd ddoc
+          gh auth setup-git
+          git config user.email "gitbot@decard.io"
+          git config user.name "gitbot"
           git add .
           git commit -m "ddocs updated" || echo "nothing to commit"
           git push
