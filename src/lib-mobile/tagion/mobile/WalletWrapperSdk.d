@@ -353,6 +353,25 @@ extern (C) {
         return 0;
     }
 
+    // export void toPretty(uint8_t* docPtr, uint32_t responseLen, char* resultPtr, uint32_t* resultLen) {
+    export void toPretty(uint8_t* docPtr, uint32_t responseLen, uint8_t* resultPtr) {
+        immutable res = cast(immutable)(docPtr[0 .. responseLen]);
+        Document doc = Document(res);
+
+        import tagion.hibon.HiBONJSON : toPretty;
+
+        string docToPretty = doc.toPretty;
+
+        auto result = new HiBON();
+        result["pretty"] = docToPretty;
+
+        const resultDocId = recyclerDoc.create(Document(result));
+        *resultPtr = cast(uint8_t) resultDocId;
+        // resultPtr = cast(char*) &result[0];
+        // *resultLen = cast(uint32_t) result.length;
+    }
+
+
     @safe
     export double get_locked_balance() {
         const balance = __wallet_storage.wallet.locked_balance();
@@ -547,13 +566,15 @@ extern (C) {
         immutable invoiceBuffer = cast(immutable)(invoicePtr[0 .. invoiceLen]);
 
         if (__wallet_storage.wallet.isLoggedin()) {
-
+            
+            auto amount = TagionCurrency(0);
             auto invoice = Invoice(Document(invoiceBuffer));
-            auto amount = __wallet_storage.wallet.account.check_invoice_payment(invoice.pkey);
+            auto isExist = __wallet_storage.wallet.account.check_invoice_payment(invoice.pkey, amount);
 
-            *amountPtr = amount.value;
-
-            return 1;
+            if(isExist){
+                *amountPtr = amount.value;
+                return 1;
+            }
         }
         return 0;
     }

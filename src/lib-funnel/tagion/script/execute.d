@@ -1,5 +1,6 @@
 module tagion.script.execute;
 import std.algorithm;
+import std.range : tee;
 import tagion.script.common;
 import tagion.script.Currency;
 import std.array;
@@ -95,6 +96,8 @@ struct ContractExecution {
     }
 
     static TagionCurrency billFees(const size_t number_of_input_bills, const size_t number_of_output_bills) {
+        import std.stdio;
+        writefln("check_contract is null: %s", check_contract is null);
         const output_fee = check_contract.calcFees(GasUse(pay_gas, number_of_output_bills * bill_price)); 
         const input_fee = check_contract.calcFees(GasUse(0, number_of_input_bills * bill_price));
         return output_fee - input_fee;
@@ -108,7 +111,11 @@ struct ContractExecution {
             .totalAmount;
 
         const pay_script = PayScript(exec_contract.sign_contract.contract.script);
-        const output_amount = pay_script.outputs.map!(bill => bill.value).totalAmount;
+        const output_amount = pay_script.outputs
+            .map!(bill => bill.value)
+            .tee!(value => check(value > 0.TGN, "Output with 0 TGN not allowed"))
+            .totalAmount;
+
         const result = new immutable(ContractProduct)(
                 exec_contract,
                 pay_script.outputs.map!(v => v.toDoc).array);
@@ -125,3 +132,6 @@ static this() {
     ContractExecution.check_contract.storage_fees = 1.TGN;
     ContractExecution.check_contract.gas_price = 0.1.TGN;
 }
+
+
+

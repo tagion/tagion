@@ -1,23 +1,24 @@
 name: Build libmobile for ios
 on:
   workflow_dispatch:
-    #  push: 
-    #    branches: 
-    #      - current
+  workflow_call:
 
 jobs:
   ios_libmobile:
-    runs-on: minmax
+    runs-on: macOS
     steps:
-      - name: Checkout repository and submodules
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
+      - uses: actions/checkout@v4
 
       - name: Build
         run: |
+          export PATH="/Users/piss/tools/ldc2-1.35.0-osx-arm64/bin/:$PATH"
+          which ldc2
           make DC=ldc2 PLATFORM=arm64-apple-ios libmobile
-          file ./build/arm64-apple-ios/lib/libmobile.so
+          file ./build/arm64-apple-ios/lib/libmobile.dylib
+
+      - name: Check output binaries
+        run: |
+          ! nm build/arm64-apple-ios/lib/libmobile.dylib | grep __dyld_get_image_slide
 
       - uses: actions/upload-artifact@v3
         if: success()
@@ -27,5 +28,5 @@ jobs:
           if-no-files-found: error
 
       - name: Cleanup
-        run: 
+        run: |
           make PLATFORM=arm64-apple-ios clean

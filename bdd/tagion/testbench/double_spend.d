@@ -19,6 +19,9 @@ import neuewelle = tagion.tools.neuewelle;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.GlobalSignals;
 import tagion.testbench.services.double_spend;
+import tagion.logger.Logger;
+
+import tagion.actor;
 
 mixin Main!(_main);
 
@@ -103,7 +106,7 @@ int _main(string[] args) {
         db.modify(recorder);
     }
 
-    immutable neuewelle_args = ["send_contract_test", config_file, "--nodeopts", module_path]; // ~ args;
+    immutable neuewelle_args = ["double_spend", config_file, "--nodeopts", module_path]; // ~ args;
     auto tid = spawn(&wrap_neuewelle, neuewelle_args);
 
     
@@ -125,6 +128,9 @@ int _main(string[] args) {
     writefln("INPUT SOCKET ADDRESS %s", node_opts[0].inputvalidator.sock_addr);
 
     Thread.sleep(15.seconds);
+    auto name = "double_spend_testing";
+    register(name, thisTid);
+    log.registerSubscriptionTask(name);
     auto feature = automation!(double_spend);
     feature.SameInputsSpendOnOneContract(node_opts[0], wallets[0], wallets[1]);
     feature.OneContractWhereSomeBillsAreUsedTwice(node_opts[0], wallets[1], wallets[0]);

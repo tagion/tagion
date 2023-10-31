@@ -20,4 +20,8 @@ unittest: proto-unittest-run
 
 build-unittest: proto-unittest-build
 
+#
+# Platform dependend setting for secp256k1
+#
+CONFIGUREFLAGS_SECP256K1 += --enable-examples 
 endif

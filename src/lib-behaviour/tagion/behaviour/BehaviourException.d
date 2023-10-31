@@ -5,6 +5,8 @@ module tagion.behaviour.BehaviourException;
 
 import tagion.basic.tagionexceptions;
 import tagion.hibon.HiBONRecord;
+import tagion.basic.Debug;
+
 
 /**
  Exception type used by tagion.hibon.HiBON module
@@ -12,6 +14,7 @@ import tagion.hibon.HiBONRecord;
 @safe class BehaviourException : TagionException {
     this(string msg, string file = __FILE__, size_t line = __LINE__) pure {
         super(msg, file, line);
+        __write("BDDERROR: %s %s %s", msg, file, line);
     }
 }
 

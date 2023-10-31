@@ -127,4 +127,13 @@ unittest {
         const x_back_tgn = x_double.TGN;
         assert(x_back_tgn == 5.465);
     }
+
+
+    {
+        const x = 1_000_000_000.TGN;
+        const y = 1_000_000_000.TGN;
+
+        import std.exception;
+        assertThrown([x,y].totalAmount);
+    }
 }

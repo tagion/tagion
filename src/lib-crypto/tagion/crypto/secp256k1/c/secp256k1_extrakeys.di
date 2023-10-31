@@ -230,4 +230,33 @@ int secp256k1_keypair_xonly_tweak_add (
     secp256k1_keypair* keypair,
     const(ubyte)* tweak32);
 
+/** Compare two public keys using lexicographic order of their compressed
+ *  serialization.
+ *
+ *  Returns: <0 if the first public key is less than the second
+ *           >0 if the first public key is greater than the second
+ *           0 if the two public keys are equal
+ *  Args: ctx:      a secp256k1 context object.
+ *  In:   pubkey1:  first public key to compare
+ *        pubkey2:  second public key to compare
+ */
+int secp256k1_pubkey_cmp (
+    const(secp256k1_context)* ctx,
+    const(secp256k1_pubkey)* pk1,
+    const(secp256k1_pubkey)* pk2);
+
+/** Sort public keys using lexicographic order of their compressed
+ *  serialization.
+ *
+ *  Returns: 0 if the arguments are invalid. 1 otherwise.
+ *
+ *  Args:     ctx: pointer to a context object
+ *  In:   pubkeys: array of pointers to pubkeys to sort
+ *      n_pubkeys: number of elements in the pubkeys array
+ */
+int secp256k1_pubkey_sort (
+    const(secp256k1_context)* ctx,
+    const(secp256k1_pubkey*)* pubkeys,
+    size_t n_pubkeys);
+
 /* SECP256K1_EXTRAKEYS_H */

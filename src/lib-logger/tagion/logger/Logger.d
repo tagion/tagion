@@ -373,6 +373,8 @@ shared struct SubscriptionMask {
     @trusted
     void subscribe(string topic) {
         if (thisTid == log.logger_subscription_tid) {
+            import std.stdio;
+            writeln("SUBSCRIBED TO topic: ", topic);
             _registered_topics[topic] = Subscribed.yes;
             return;
         }

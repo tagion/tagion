@@ -4,11 +4,16 @@ WOLFSSL?=1
 ONETOOL?=1
 DEBUGGER?=ddd
 VERBOSE_COMPILER_ERRORS=1
+# USE_SYSTEM_LIBS=1 # Compile with systemdependencies
 
 export TEST_STAGE:=commit
 export SEED:=$(shell git rev-parse HEAD)
 
 RELEASE_DFLAGS+=$(DOPT)
+
+ifdef USE_SYSTEM_LIBS
+NNG_ENABLE_TLS=1
+endif
 
 #DFLAGS+=-s
 ifndef DEBUG_DISABLE

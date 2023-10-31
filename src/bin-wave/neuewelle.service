@@ -2,8 +2,8 @@
 Description="Test deployment of tagionwave"
 
 [Service]
-WorkingDirectory=%h/.local/share/wave/
-ExecStart=%h/.local/share/wave/tagion neuewelle
+WorkingDirectory=%h/.local/share/tagion/wave
+ExecStart=%h/.local/share/bin/tagion neuewelle
 Restart=always
 RestartSec=30
 

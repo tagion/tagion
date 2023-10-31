@@ -4,7 +4,7 @@ DFLAGS+=$(DCOV)
 DRTFLAGS+=$(COVOPT)
 COVWAY=$(DLOGCOV)/.way
 endif
-DFLAGS+=$(DIP25) $(DIP1000)
+DFLAGS+=$(DIP1000)
 
 ifneq ($(COMPILER),gdc)
 DFLAGS+=$(DPREVIEW)=inclusiveincontracts
@@ -48,7 +48,7 @@ else
 $(DLIB)/%.$(LIBEXT):
 	$(PRECMD)
 	${call log.kvp, link$(MODE), $(DMODULE)}
-	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} ${sort $(DFILES)} ${LDFLAGS} $(LIBS) $(OBJS) $(DLIBTYPE) $(OUTPUT)$@
+	$(DC) $(DFLAGS) ${addprefix -I,$(DINC)} ${sort $(DFILES)} ${addprefix -L,$(LDFLAGS)} $(LIBS) $(OBJS) $(DLIBTYPE) $(OUTPUT)$@
 endif
 
 #
@@ -61,7 +61,7 @@ $(DBIN)/%:
 	echo ${filter %.d,$^} > /tmp/$*_dfiles_q.mk
 	echo $(DFILES) > /tmp/$*_dfiles.mk
 	echo $(DFLAGS) $(DFLAGS_DEBUG) > /tmp/$*_dflags.mk
-	$(DC) $(DFLAGS_DEBUG) $(DFLAGS) ${addprefix -I,$(DINC)} ${sort $(DFILES) ${filter %.d,$^}} ${LDFLAGS} $(LIBS) $(OBJS) $(OUTPUT)$@
+	$(DC) $(DFLAGS_DEBUG) $(DFLAGS) ${addprefix -L,$(LDFLAGS)} ${addprefix -I,$(DINC)} ${sort $(DFILES) ${filter %.d,$^}} $(LIBS) $(OBJS) $(OUTPUT)$@
 
 
 # Object Clear"

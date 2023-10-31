@@ -1,3 +1,43 @@
+# Changelog for week 43/44
+**Malformed Contract scenarios**
+We have implemented various scenarios where the user tries to send an invalid contract. This could be where some fields of the contract are missing. Or when it comes to transactions, the user could send an input that is not a bill, among many others.
+
+**Faucet shell integration**
+We have integrated a faucet functionality into the test version of the shell, allowing us to easier test the wallets since they now can request test-tagions.
+
+**Secp256k1 multisig and change of library**
+We have updated our library from the secp256k1 library located in bitcoin core to https://github.com/BlockstreamResearch/secp256k1-zkp. The reason why we have made this change, is because we want to support multisig for various parts, and this is a functionality that is good to get into the system before it is running in its final state because it is very difficult to update. We have therefore started to implement schnoor signatures for signing.
+
+
+# Changelog for week 42/43
+**Shell Client**
+We have commited a WebClient with TLS support. See [github.com/tagion/nng](http://github.com/tagion/nng) test example test_11_webclient.d. This makes for a very small and easy to use webclient for our CLI wallet among other places. Currently only synchronous GET and POST methods are available.
+
+**HiBONRecord @labels**
+We have refactored the way HiBONRecord labels are defined so that it is easier to understand. See the following example:
+
+Now we can do the following:
+```struct Test {
+  @exclude int x;
+  @optional Document d;
+
+  mixin HiBONRecord;
+}```
+
+Instead of:
+```struct Test {
+  @label("") int x;
+  @label(VOID, true) Document d;
+
+  mixin HiBONRecord;
+}```
+**SecureNet Services bug**
+We ran into a problem where our securenet would sometimes return that the signature was not valid event though it was. This only happened when running multithreaded and doing it a lot concurrently. The problem was that due to secp256k1 not being thread safe, we were using the same context for all the threads, which of course is not good. Therefore we now pass a shared net down to all services, where each creates its own context. Also services that do not perform any signing by themselves, but purely check signatures like the HiRPC-verifier now create their own SecureNet.
+
+**Consensus Voting**
+We have implemented the functionality for sending the signed bullseye around after a DARTModify. The reason for doing this is in order to check that all nodes have the same excact state. If more than 1/3 of the nodes do not agree then they will perform a roll-back of the epoch.
+
+
 # Changelog for week 41/42
 **Shell with HTTP proxy**
 The shell has been updated to use our NNG http proxy now so that it is possible to send a transaction through with http. 

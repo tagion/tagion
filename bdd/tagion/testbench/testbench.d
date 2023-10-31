@@ -30,6 +30,8 @@ int main(string[] args) {
     import send_contract = tagion.testbench.send_contract;
     import double_spend = tagion.testbench.double_spend;
     import spam_double_spend = tagion.testbench.spam_double_spend;
+    import malformed_contract = tagion.testbench.malformed_contract; 
+    import manycontracts = tagion.testbench.e2e.manycontracts;
 
 
     alias alltools = AliasSeq!(
@@ -58,6 +60,8 @@ int main(string[] args) {
             send_contract,
             double_spend,
             spam_double_spend,
+            malformed_contract,
+            manycontracts,
     );
     mixin doOneMain!(alltools);
     return do_main(args);

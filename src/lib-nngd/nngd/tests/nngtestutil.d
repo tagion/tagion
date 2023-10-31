@@ -60,5 +60,6 @@ static double timestamp()
 
 static void log(A...)(string fmt, A a){
     writefln("%.6f "~fmt,timestamp,a);
+    stdout.flush();
 }
 

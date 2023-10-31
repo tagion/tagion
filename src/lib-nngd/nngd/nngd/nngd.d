@@ -283,6 +283,11 @@ struct NNGAio {
         auto rc = nng_aio_alloc( &aio,  cb, arg );
         enforce(rc == 0);
     }
+    
+    this( nng_aio* src ){
+        enforce(src != null);
+        pointer(src);
+    }
 
     ~this() {
         if(aio)
@@ -1102,12 +1107,101 @@ struct NNGPool {
 
 alias nng_http_status = libnng.nng_http_status;
 alias http_status = nng_http_status;
-alias nng_tls_mode = libnng.nng_tls_mode;
-alias nng_tls_auth_mode = libnng.nng_tls_auth_mode;
-alias nng_tls_version = libnng.nng_tls_version;
 
 alias nng_http_req = libnng.nng_http_req;
 alias nng_http_res = libnng.nng_http_res;
+
+version(withtls){
+    
+    alias nng_tls_mode = libnng.nng_tls_mode;
+    alias nng_tls_auth_mode = libnng.nng_tls_auth_mode;
+    alias nng_tls_version = libnng.nng_tls_version;
+
+    struct WebTLS {
+        nng_tls_config* tls;
+        
+        @disable this();
+        
+        this(ref return scope WebTLS rhs) {}
+        
+        this( nng_tls_mode imode  ){
+            int rc;
+            rc = nng_tls_config_alloc(&tls, imode);
+            enforce(rc == 0, "TLS config init");
+            nng_tls_config_hold(tls);
+        }
+        
+
+        ~this(){
+            nng_tls_config_free(tls);
+        }
+
+        void set_server_name ( string iname ) {
+            auto rc = nng_tls_config_server_name(tls, iname.toStringz());
+            enforce(rc == 0);
+        }
+        
+        void set_ca_chain ( string pem, string crl = "" ) {
+            auto rc = nng_tls_config_ca_chain(tls, pem.toStringz(), crl.toStringz());
+            enforce(rc == 0);
+        }
+
+        void set_own_cert ( string pem, string key, string pwd = "" ) {
+            auto rc = nng_tls_config_own_cert(tls, pem.toStringz(), key.toStringz(), pwd.toStringz());
+            enforce(rc == 0);
+        }
+
+    // TODO: check why this two excluded from the lib
+    /*
+        void set_pass ( string ipass ) {
+            auto rc = nng_tls_config_pass(tls, ipass.toStringz());
+            enforce(rc == 0);
+        }
+        
+        void set_key ( ubyte[] ipass ) {
+            auto rc = nng_tls_config_key(tls, ipass.ptr, ipass.length);
+            enforce(rc == 0);
+        }
+    */
+
+        void set_auth_mode ( nng_tls_auth_mode imode ) {
+            auto rc = nng_tls_config_auth_mode(tls, imode);
+            enforce(rc == 0);
+        }
+        
+        void set_ca_file ( string ica ) {
+            auto rc = nng_tls_config_ca_file(tls, ica.toStringz());
+            enforce(rc == 0);
+        }
+
+        void set_cert_key_file ( string ipem , string ikey ) {
+            auto rc = nng_tls_config_cert_key_file(tls, ipem.toStringz(), ikey.toStringz());
+            writeln("TDEBUG: ",nng_errstr(rc));
+            enforce(rc == 0);
+        }
+
+        void set_version( nng_tls_version iminversion, nng_tls_version imaxversion ) {
+            auto rc = nng_tls_config_version(tls, iminversion, imaxversion);
+            enforce(rc == 0);
+        }
+
+        string engine_name(){
+            char* buf = nng_tls_engine_name();
+            return to!string(buf);
+        }
+
+        string engine_description(){
+            char* buf = nng_tls_engine_description();
+            return to!string(buf);
+        }
+
+        bool fips_mode(){
+            return nng_tls_engine_fips_mode();
+        }
+    }
+
+}
+
 
 struct WebAppConfig {
     string root_path = "";
@@ -1119,18 +1213,164 @@ struct WebAppConfig {
 };
 
 struct WebData {
-    string route;
-    string uri;
-    string[] path;
-    string[string] param;
-    string type;
-    size_t length;
-    string method;
-    ubyte[] rawdata;
-    string text;
-    JSONValue json;
-    http_status status;
-    string msg;
+    string route = null;
+    string rawuri = null;
+    string uri = null;
+    string[] path = null;
+    string[string] param = null;
+    string[string] headers = null;
+    string type = "text/html";
+    size_t length = 0;
+    string method = null;
+    ubyte[] rawdata = null;
+    string text = null;
+    JSONValue json = null;
+    http_status status = http_status.NNG_HTTP_STATUS_NOT_IMPLEMENTED;
+    string msg = null;
+
+    void clear(){
+        route = "";   
+        rawuri = "";   
+        uri = "";     
+        status = http_status.NNG_HTTP_STATUS_NOT_IMPLEMENTED;   
+        msg = "";     
+        path = [];    
+        param = null;   
+        headers = null; 
+        type = "text/html";    
+        length = 0;  
+        method = "";  
+        rawdata = [];
+        text = "";
+        json = null;
+    }
+
+    string toString(){
+        return format(`
+        <Webdata>
+            route:      %s    
+            rawuri:     %s
+            uri:        %s
+            status:     %s
+            msg:        %s
+            path:       %s
+            param:      %s
+            headers:    %s
+            type:       %s
+            length:     %d
+            method:     %s
+            len(data):  %s
+            text:       %s 
+            json:       %s
+        </WebData>
+        `,
+        route    
+        ,rawuri   
+        ,uri      
+        ,status   
+        ,msg      
+        ,path     
+        ,param    
+        ,headers  
+        ,type     
+        ,length   
+        ,method   
+        ,rawdata.length
+        ,to!string(text)     
+        ,json.toString()     
+        );
+    }
+
+    void parse_req ( nng_http_req *req ){
+        enforce(req != null);
+    }
+
+    // TODO: find the way to list all headers
+
+    void parse_res ( nng_http_res *res ){
+        enforce(res != null);
+        clear();
+        status = cast(http_status)nng_http_res_get_status(res);
+        msg = to!string(nng_http_res_get_reason(res));
+        type = to!string(nng_http_res_get_header(res, toStringz("Content-type")));
+        ubyte *buf;
+        size_t len;
+        nng_http_res_get_data(res, cast(void**)(&buf), &len);
+        if(len > 0){
+            rawdata ~= buf[0..len];
+        }
+        if(type.startsWith("application/json")){
+            json = parseJSON(cast(string)(rawdata[0..len]));
+        }else if(type.startsWith("text")){
+            text = cast(string)(rawdata[0..len]);
+        }
+        length = len;
+        auto hlength = to!long(to!string(nng_http_res_get_header(res, toStringz("Content-length"))));
+        enforce(hlength == length);
+    }
+
+    nng_http_req* export_req(){
+        nng_http_req* req;
+        nng_url *url;
+        int rc;
+        rc = nng_url_parse(&url, ((rawuri.length > 0) ? rawuri : "http://<unknown>"~uri).toStringz());
+        rc = nng_http_req_alloc( &req, url );
+        enforce(rc == 0);
+        rc = nng_http_req_set_method(req, method.toStringz());
+        enforce(rc == 0);
+        rc = nng_http_req_set_header(req, "Content-type", type.toStringz());
+        foreach(k; headers.keys){            
+            rc = nng_http_req_set_header(req, k.toStringz(), headers[k].toStringz());
+        }
+        if(type.startsWith("application/json")){
+            string buf = json.toString();
+            rc = nng_http_req_copy_data(req, buf.toStringz(), buf.length);
+            length = buf.length;
+            enforce(rc==0, "webdata: copy json rep");
+        }
+        else if(type.startsWith("text")){
+            rc = nng_http_req_copy_data(req, text.toStringz(), text.length);
+            length = text.length;
+            enforce(rc==0, "webdata: copy text rep");
+        }else{
+            rc = nng_http_req_copy_data(req, rawdata.ptr, rawdata.length);
+            length = rawdata.length;
+            enforce(rc==0, "webdata: copy data rep");
+        }
+        rc = nng_http_req_set_header(req, "Content-length", to!string(length).toStringz());
+        return req;    
+    }
+
+    nng_http_res* export_res(){
+        nng_http_res *res;
+        int rc;
+        rc = nng_http_res_alloc( &res );
+        enforce(rc==0);
+        rc = nng_http_res_set_status( res, cast(ushort)status );
+        enforce(rc==0);
+        if (status != nng_http_status.NNG_HTTP_STATUS_OK)
+            return res;
+        rc = nng_http_res_set_header(res, "Content-type", type.toStringz());
+        enforce(rc==0);
+        if(type.startsWith("application/json")){
+            string buf = json.toString();
+            rc = nng_http_res_copy_data(res, buf.toStringz(), buf.length);
+            length = buf.length;
+            enforce(rc==0, "webdata: copy json rep");
+        }
+        else if(type.startsWith("text")){
+            rc = nng_http_res_copy_data(res, text.toStringz(), text.length);
+            length = text.length;
+            enforce(rc==0, "webdata: copy text rep");
+        }else{
+            rc = nng_http_res_copy_data(res, rawdata.ptr, rawdata.length);
+            length = rawdata.length;
+            enforce(rc==0, "webdata: copy data rep");
+        }
+        rc = nng_http_res_set_header(res, "Content-length", to!string(length).toStringz());
+        enforce(rc==0);
+        return res;
+    }
 }   
 
 alias webhandler = WebData function ( WebData, void* );
@@ -1169,6 +1409,13 @@ struct WebApp {
         init();
     }
     
+    version(withtls){
+        void set_tls ( WebTLS tls ){
+            auto rc = nng_http_server_set_tls(server, tls.tls);
+            enforce(rc==0, "server set tls");
+        }
+    }
+
     void route (string path, webhandler handler, string[] methods = ["GET"]){
         int rc;
         bool wildcard = false;
@@ -1289,13 +1536,21 @@ struct WebApp {
         sreq.rawdata = cast(ubyte[])(reqbody[0..reqbodylen].idup);
         
         if(sreq.type.startsWith("application/json")){
-            sreq.json = parseJSON(to!string(cast(char*)reqbody[0..reqbodylen].idup));
+            try{
+                sreq.json = parseJSON(to!string(cast(char*)reqbody[0..reqbodylen].idup));
+            }catch(JSONException e){
+                nng_http_res_reset(res);
+                rc = nng_http_res_alloc_error( &res, cast(ushort)nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST);
+                enforce(rc==0, "router: set json error");
+                rc = nng_http_res_set_reason(res, toStringz("Invalid json"));
+                enforce(rc==0, "router: set json error reason");
+                return;
+            }    
         }
-        
+
         if(sreq.type.startsWith("text/")){
             sreq.text = to!string(cast(char*)reqbody[0..reqbodylen].idup);
         }
-
         
         // TODO: implement full CEF parser for routes
         webhandler handler = null;    
@@ -1309,29 +1564,349 @@ struct WebApp {
             handler = &app.default_handler;
 
         srep = handler(sreq, app.context);
-        
-        nng_http_res_set_status(res, cast(ushort)srep.status);
-        if(srep.status != nng_http_status.NNG_HTTP_STATUS_OK)
-            return;
-        
-        if(srep.type.startsWith("application/json")){
-            string buf = srep.json.toString();
-            rc = nng_http_res_copy_data(res, buf.toStringz(), buf.length);
-            enforce(rc==0, "router: copy json rep");
-        }
-        else if(srep.type.startsWith("text")){
-            rc = nng_http_res_copy_data(res, srep.text.toStringz(), srep.text.length);
-            enforce(rc==0, "router: copy text rep");
+
+        if(srep.status != nng_http_status.NNG_HTTP_STATUS_OK){
+            nng_http_res_reset(res);
+            rc = nng_http_res_alloc_error( &res, cast(ushort)srep.status );
+            enforce(rc==0, "router: res set error");
+            rc = nng_http_res_set_reason(res, srep.msg.toStringz());
+            enforce(rc==0, "router: res set message");
         }else{
-            rc = nng_http_res_copy_data(res, srep.rawdata.ptr, srep.rawdata.length);
-            enforce(rc==0, "router: copy data rep");
+            rc = nng_http_res_set_status(res, cast(ushort)srep.status);
+            enforce(rc==0, "router: res set satus");
+            if(srep.type.startsWith("application/json")){
+                string buf = srep.json.toString();
+                rc = nng_http_res_copy_data(res, buf.toStringz(), buf.length);
+                enforce(rc==0, "router: copy json rep");
+            }
+            else if(srep.type.startsWith("text")){
+                rc = nng_http_res_copy_data(res, srep.text.toStringz(), srep.text.length);
+                enforce(rc==0, "router: copy text rep");
+            }else{
+                rc = nng_http_res_copy_data(res, srep.rawdata.ptr, srep.rawdata.length);
+                enforce(rc==0, "router: copy data rep");
+            }
         }
+    }
+} // struct WebApp
+
+// for user defined result handlers
+alias webclienthandler = void function ( WebData*, void* );
+
+// for async client router
+extern (C) struct WebClientAsync {
+    char* uri;
+    nng_http_req *req;
+    nng_http_res *res;
+    nng_aio *aio;
+    void *context;
+    webclienthandler commonhandler;
+    webclienthandler errorhandler;
+}
+
+// common async client router
+extern (C) static void webclientrouter ( void* p ){
+    if(p == null) return;
+    WebClientAsync *a = cast(WebClientAsync*)(p);
+    WebData rep = WebData();
+    rep.parse_res(a.res);
+    rep.rawuri = to!string(a.uri);
+    if(rep.status != nng_http_status.NNG_HTTP_STATUS_OK && a.errorhandler  != null)
+        a.errorhandler(&rep,a.context);
+    else    
+        a.commonhandler(&rep,a.context);
+    nng_http_req_free(a.req);
+    nng_http_res_free(a.res);
+    nng_aio_free(a.aio);
+}
+
+struct WebClient {
+
+    nng_http_client *cli;
+    nng_http_conn *conn;
+    nng_http_req *req;
+    nng_http_res *res;
+    nng_url *url;
+    bool connected;
+
+    // constructor and connector are for future use woth streaming functions
+    // for single transactions use static members (sync or async )
+
+    this(string uri) {
+        int rc; 
+        connected = false;
+        rc = nng_http_res_alloc(&res);
+        enforce(rc == 0);
+        rc = nng_http_req_alloc(&req,null);
+        enforce(rc == 0);
+        if(uri != null && uri != ""){
+            rc = connect(uri);
+            enforce(rc == 0);
+        }    
 
     }
 
-} // struct WebApp
+    int connect( string uri ){
+        int rc;
+        nng_aio *aio;
+        if(cli != null)
+            nng_http_client_free(cli);
+        rc = nng_aio_alloc(&aio,null,null);
+        enforce(rc == 0);
+        rc = nng_url_parse(&url, uri.toStringz());    
+        enforce(rc == 0);
+        rc = nng_http_client_alloc(&cli, url);
+        enforce(rc == 0);
+        nng_http_client_connect(cli, aio);
+        nng_aio_wait(aio);
+        rc = nng_aio_result(aio);
+        enforce(rc == 0);
+        conn = cast(nng_http_conn*)nng_aio_get_output(aio, 0);
+        enforce(conn != null);
+        connected = true;
+        return 0;
+    }
 
+    ~this(){
+        nng_http_client_free(cli);
+        nng_url_free(url);
+        nng_http_req_free(req);
+        nng_http_res_free(res);
+    }
 
+    // static sync get
+    static WebData get ( string uri, string[string] headers, Duration timeout = 30000.msecs ){
+        int rc;
+        nng_http_client *cli;
+        nng_url *url;
+        nng_http_req *req;
+        nng_http_res *res;
+        nng_aio *aio;
+        WebData wd = WebData();
+        rc = nng_url_parse(&url, uri.toStringz());
+        enforce(rc == 0);
+        rc = nng_http_client_alloc(&cli, url);
+        enforce(rc == 0);
+        rc = nng_http_req_alloc(&req, url);
+        enforce(rc == 0);
+        rc = nng_http_res_alloc(&res);
+        enforce(rc == 0);
+        rc = nng_aio_alloc(&aio,null,null);
+        enforce(rc == 0);
+        nng_aio_set_timeout(aio, cast(nng_duration)timeout.total!"msecs");
+        
+        scope(exit){
+            nng_http_client_free(cli);
+            nng_url_free(url);
+            nng_aio_free(aio);
+            nng_http_req_free(req);
+            nng_http_res_free(res);
+        }
+        
+        rc = nng_http_req_set_method(req, toStringz("GET"));
+        enforce(rc == 0);
+        foreach(k; headers.keys){            
+            rc = nng_http_req_set_header(req, k.toStringz(), headers[k].toStringz());
+            enforce(rc == 0);
+        }
+        nng_http_client_transact(cli, req, res, aio);
+        nng_aio_wait(aio);
+        rc = nng_aio_result(aio);
+        if(rc == 0){
+            wd.parse_res(res);
+        }else{
+            wd.status = nng_http_status.NNG_HTTP_STATUS_REQUEST_TIMEOUT;
+            wd.msg = nng_errstr(rc);
+        }
+        return wd;
+    }
+
+    // static sync post
+    static WebData post ( string uri, ubyte[] data, string[string] headers, Duration timeout = 30000.msecs ){
+        int rc;
+        nng_http_client *cli;
+        nng_url *url;
+        nng_http_req *req;
+        nng_http_res *res;
+        nng_aio *aio;
+        WebData wd = WebData();
+        rc = nng_url_parse(&url, uri.toStringz());
+        enforce(rc == 0);
+        rc = nng_http_client_alloc(&cli, url);
+        enforce(rc == 0);
+        rc = nng_http_req_alloc(&req, url);
+        enforce(rc == 0);
+        rc = nng_http_res_alloc(&res);
+        enforce(rc == 0);
+        rc = nng_aio_alloc(&aio,null,null);
+        enforce(rc == 0);
+        nng_aio_set_timeout(aio, cast(nng_duration)timeout.total!"msecs");
+        scope(exit){
+            nng_http_client_free(cli);
+            nng_url_free(url);
+            nng_aio_free(aio);
+            nng_http_req_free(req);
+            nng_http_res_free(res);
+        }
+        rc = nng_http_req_set_method(req, toStringz("POST"));
+        enforce(rc == 0);
+        foreach(k; headers.keys){            
+            rc = nng_http_req_set_header(req, k.toStringz(), headers[k].toStringz());
+            enforce(rc == 0);
+        }
+        rc = nng_http_req_copy_data(req, data.ptr, data.length);
+        enforce(rc == 0);
+        nng_http_client_transact(cli, req, res, aio);
+        nng_aio_wait(aio);
+        rc = nng_aio_result(aio);
+        if(rc == 0){
+            wd.parse_res(res);
+        }else{
+            wd.status = nng_http_status.NNG_HTTP_STATUS_REQUEST_TIMEOUT;
+            wd.msg = nng_errstr(rc);
+        }
+        return wd;
+
+    }
+
+    // static async get
+    static NNGAio get_async ( string uri, string[string] headers, webclienthandler handler, Duration timeout = 30000.msecs, void *context = null ){
+        int rc;
+        nng_aio *aio;
+        nng_http_client *cli;
+        nng_http_req *req;
+        nng_http_res *res;
+        nng_url *url;
+        rc = nng_url_parse(&url, uri.toStringz());
+        enforce(rc == 0);
+        rc = nng_http_client_alloc(&cli, url);
+        enforce(rc == 0);
+        rc = nng_http_req_alloc(&req, url);
+        enforce(rc == 0);
+        rc = nng_http_res_alloc(&res);
+        enforce(rc == 0);
+        rc = nng_aio_alloc(&aio,null,null);
+        enforce(rc == 0);
+        nng_aio_set_timeout(aio, cast(nng_duration)timeout.total!"msecs");
+        WebClientAsync *a = new WebClientAsync();
+        a.uri = cast(char*)uri.dup.toStringz();
+        a.commonhandler = handler;
+        a.context = context;
+        a.req = req;
+        a.res = res;
+        a.aio = aio;
+        rc = nng_aio_alloc(&aio,&webclientrouter,a);
+        enforce(rc == 0);
+        rc = nng_http_req_set_method(req, toStringz("GET"));
+        enforce(rc == 0);
+        foreach(k; headers.keys){            
+            rc = nng_http_req_set_header(req, k.toStringz(), headers[k].toStringz());
+            enforce(rc == 0);
+        }
+        nng_http_client_transact(cli, req, res, aio);
+        return NNGAio(aio);
+    }
+
+    // static async post
+    static NNGAio post_async ( string uri, ubyte[] data, string[string] headers, webclienthandler handler, Duration timeout = 30000.msecs, void *context = null ){
+        int rc;
+        nng_aio *aio;
+        nng_http_client *cli;
+        nng_http_req *req;
+        nng_http_res *res;
+        nng_url *url;
+        rc = nng_url_parse(&url, uri.toStringz());
+        enforce(rc == 0);
+        rc = nng_http_client_alloc(&cli, url);
+        enforce(rc == 0);
+        rc = nng_http_req_alloc(&req, url);
+        enforce(rc == 0);
+        rc = nng_http_res_alloc(&res);
+        enforce(rc == 0);
+        rc = nng_aio_alloc(&aio,null,null);
+        enforce(rc == 0);
+        nng_aio_set_timeout(aio, cast(nng_duration)timeout.total!"msecs");
+        WebClientAsync *a = new WebClientAsync();
+        a.uri = cast(char*)uri.dup.toStringz();
+        a.commonhandler = handler;
+        a.context = context;
+        a.req = req;
+        a.res = res;
+        a.aio = aio;
+        rc = nng_aio_alloc(&aio,&webclientrouter,a);
+        enforce(rc == 0);
+        rc = nng_http_req_set_method(req, toStringz("POST"));
+        enforce(rc == 0);
+        foreach(k; headers.keys){            
+            rc = nng_http_req_set_header(req, k.toStringz(), headers[k].toStringz());
+            enforce(rc == 0);
+        }
+        rc = nng_http_req_copy_data(req, data.ptr, data.length);
+        enforce(rc == 0);
+        nng_http_client_transact(cli, req, res, aio);
+        return NNGAio(aio);
+    }
+
+    // common static method for any request methods and error handler ( inspired by ajax )
+    // if text is not null data is ignored
+    // for methods except POST,PUT,PATCH both text and data are ignored
+    static NNGAio request ( 
+        string method,
+        string uri, 
+        string[string] headers, 
+        string text,
+        ubyte[] data, 
+        webclienthandler onsuccess,
+        webclienthandler onerror,
+        Duration timeout = 30000.msecs, 
+        void *context = null ) 
+    {
+        int rc;
+        nng_aio *aio;
+        nng_http_client *cli;
+        nng_http_req *req;
+        nng_http_res *res;
+        nng_url *url;
+        rc = nng_url_parse(&url, uri.toStringz());
+        enforce(rc == 0);
+        rc = nng_http_client_alloc(&cli, url);
+        enforce(rc == 0);
+        rc = nng_http_req_alloc(&req, url);
+        enforce(rc == 0);
+        rc = nng_http_res_alloc(&res);
+        enforce(rc == 0);
+        rc = nng_aio_alloc(&aio,null,null);
+        enforce(rc == 0);
+        nng_aio_set_timeout(aio, cast(nng_duration)timeout.total!"msecs");
+        WebClientAsync *a = new WebClientAsync();
+        a.uri = cast(char*)uri.dup.toStringz();
+        a.commonhandler = onsuccess;
+        a.errorhandler = onerror;
+        a.context = context;
+        a.req = req;
+        a.res = res;
+        a.aio = aio;
+        rc = nng_aio_alloc(&aio,&webclientrouter,a);
+        enforce(rc == 0);
+        rc = nng_http_req_set_method(req, toStringz(method));
+        enforce(rc == 0);
+        foreach(k; headers.keys){            
+            rc = nng_http_req_set_header(req, k.toStringz(), headers[k].toStringz());
+            enforce(rc == 0);
+        }
+        if( method == "POST" || method == "PUT" || method == "PATCH" ){
+            if(text == null){
+                rc = nng_http_req_copy_data(req, data.ptr, data.length);
+            }else{
+                rc = nng_http_req_copy_data(req, text.toStringz(), text.length);
+            }
+            enforce(rc == 0);
+        }    
+        nng_http_client_transact(cli, req, res, aio);
+        return NNGAio(aio);
+    }
+
+}
 
 
 

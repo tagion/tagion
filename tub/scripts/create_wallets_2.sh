@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 usage() { echo "Usage: $0 -b <bindir> [-n <nodes=5>] [-w <wallets=5>] [-k <network dir = ./network>] [-t <wallets dir = ./wallets>]" 1>&2; exit 1; }
 
@@ -65,6 +65,8 @@ do
     bill_name=$(readlink -m "$wdir/bill$i-$b.hibon")
     $bdir/geldbeutel "$wallet_config" -x "$pincode" --amount 10000 -o "$bill_name" 
     echo "Created bill $bill_name"
+    $bdir/geldbeutel "$wallet_config" -x "$pincode" --force "$bill_name"
+    echo "Forced bill into wallet $bill_name"
   done 
 
 done

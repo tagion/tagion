@@ -68,6 +68,9 @@ enum ConsensusFailCode {
     SECURITY_PUBLIC_KEY_UNCOMPRESS_SIZE_FAULT,
     SECURITY_PRIVATE_KEY_INVALID,
 
+    SECURITY_FAILD_TO_CREATE_KEYPAIR,
+    SECURITY_FAILD_TO_SIGN_MESSAGE,
+    SECURITY_FAILD_PUBKEY_FROM_KEYPAIR,
     SECURITY_EDCH_FAULT,
 
     SECURITY_MASK_VECTOR_IS_ZERO,
@@ -241,7 +244,10 @@ class SmartScriptException : ConsensusException {
             SECURITY_PUBLIC_KEY_TWEAK_ADD_FAULT         : "Failed to tweak add public key",
             SECURITY_PUBLIC_KEY_TWEAK_MULT_FAULT        : "Failed to tweak mult public key",
             SECURITY_PRIVATE_KEY_INVALID                : "Invalid private key",
-
+            
+            SECURITY_FAILD_TO_CREATE_KEYPAIR            : "Faild to create keypair",
+            SECURITY_FAILD_TO_SIGN_MESSAGE              : "Faild to sign message",
+            SECURITY_FAILD_PUBKEY_FROM_KEYPAIR          : "Faild to procude pubkey from keypair",
             SECURITY_MASK_VECTOR_IS_ZERO                : "Mask vector must be different from zero",
             SECURITY_MESSAGE_HASH_KEY                   : "A message containg a hash-kye can not be signed",
 

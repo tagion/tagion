@@ -13,17 +13,23 @@ endif
 
 DSRC_SECP256K1 := ${call dir.resolve, secp256k1}
 DTMP_SECP256K1 := $(DTMP)/secp256k1
-
 LIBSECP256K1:=$(DTMP_SECP256K1)/.libs/$(LIBSECP256K1_FILE)
 LIBSECP256K1_STATIC:=$(DTMP_SECP256K1)/.libs/$(LIBSECP256K1_NAME).$(STAEXT)
 LIBSECP256K1_SHARED:=$(DTMP_SECP256K1)/.libs/$(LIBSECP256K1_NAME).$(DLLEXT)
 LIBSECP256K1_OBJ:=$(DTMP_SECP256K1)/src/libsecp256k1_la-secp256k1.o
 
+ifdef USE_SYSTEM_LIBS
+LD_SECP256K1+=${shell pkg-config --libs libsecp256k1}
+else
+LD_SECP256K1+=$(LIBSECP256K1)
+endif
+
 CONFIGUREFLAGS_SECP256K1 += --enable-module-ecdh
 CONFIGUREFLAGS_SECP256K1 += --enable-experimental
 CONFIGUREFLAGS_SECP256K1 += --enable-module-recovery
 CONFIGUREFLAGS_SECP256K1 += --enable-module-schnorrsig
-CONFIGUREFLAGS_SECP256K1 += --enable-examples
+CONFIGUREFLAGS_SECP256K1 += --enable-module-musig
+# CONFIGUREFLAGS_SECP256K1 += --enable-examples # Android builds don't work work with examples
 CONFIGUREFLAGS_SECP256K1 += CRYPTO_LIBS=$(DTMP)/ CRYPTO_CFLAGS=$(DSRC_OPENSSL)/include/
 CONFIGUREFLAGS_SECP256K1 += --prefix=$(DLIB)
 CONFIGUREFLAGS_SECP256K1 += CFLAGS=-fPIC
@@ -33,7 +39,12 @@ SECP256K1_GIT_MODULE := $(DSRC_SECP256K1)/.git
 
 include ${call dir.resolve, cross.mk}
 
+ifdef USE_SYSTEM_LIBS
+secp256k1: # NOTHING TO BUILD
+.PHONY: secp256k1
+else
 secp256k1: $(LIBSECP256K1) $(DSRC_SECP256K1)/include/secp256k1_hash.h
+endif
 
 $(DSRC_SECP256K1)/src/hash.h: $(SECP256K1_GIT_MODULE)
 $(DSRC_SECP256K1)/include/secp256k1_hash.h: $(DSRC_SECP256K1)/src/hash.h
