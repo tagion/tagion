@@ -175,6 +175,37 @@ int _main(string[] args) {
 
     if (local_options.wave.network_mode == NetworkMode.INTERNAL) {
         auto node_options = get_mode_0_options(local_options, monitor);
+
+
+        import tagion.dart.DART;
+        import tagion.crypto.Types : Fingerprint;
+        import std.algorithm : all;
+
+
+        Fingerprint[] bullseyes;
+
+        auto __net = new StdSecureNet();
+        foreach(node_opt; node_options) {
+            DART db = new DART(__net, node_opt.dart.dart_path);
+            scope(exit) {
+                db.close();
+            }
+            bullseyes ~= Fingerprint(db.bullseye);
+            assert(bullseyes.all!(b => b == bullseyes[0]), "DATABASES must be booted with same bullseye - Abort");
+
+        }
+        // Document epoch = get_epoch_from_head(node_options);
+        // first check that we are starting with the same bullseye
+
+        // read the databases TAGIONHEAD
+        // check that the tagion head is the same for all the nodes
+        // lookup either the genesis-epoch or epoch.
+        // find the nodes pubkeys in it and start the network with these keys.
+        
+
+
+
+        
         network_mode0(node_options, supervisor_handles);
 
         if (mode0_node_opts_path) {
@@ -211,6 +242,9 @@ int _main(string[] args) {
     return 0;
 }
 
+
+
+
 int network_mode0(const(Options)[] node_options, ref ActorHandle!Supervisor[] supervisor_handles, Document epoch_head = Document.init) {
 
     import tagion.crypto.Types;
@@ -244,7 +278,8 @@ int network_mode0(const(Options)[] node_options, ref ActorHandle!Supervisor[] su
         foreach(n; zip(nodes, node_options)) {
             addressbook[n[0].pkey] = NodeAddress(n[1].task_names.epoch_creator);
         }
-    } else {
+    } 
+    else {
         Pubkey[] keys;
         if (epoch_head.isRecord!Epoch) {
             keys = Epoch(epoch_head).active;

@@ -48,7 +48,7 @@ BIN_DEPS=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-$1/*" $(EXCLUDED_D
 #
 # New Wave
 #
-target-neuewelle: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER) $(LIBNNG)
+target-neuewelle: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1)  $(LIBNNG)
 ${call DO_BIN,neuewelle,$(LIB_DFILES) ${call BIN_DEPS,wave},tagion}
 
 #
@@ -60,19 +60,19 @@ ${call DO_BIN,tagionshell,$(LIB_DFILES) ${call BIN_DEPS,tagionshell},tagion}
 #
 # New Wallet
 #
-target-geldbeutel: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER) 
+target-geldbeutel: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1)  
 ${call DO_BIN,geldbeutel,$(LIB_DFILES) ${call BIN_DEPS,geldbeutel},tagion}
 
 #
 # New tagion boot
 #
-target-stiefel: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER) 
+target-stiefel: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1)  
 ${call DO_BIN,stiefel,$(LIB_DFILES) ${call BIN_DEPS,stiefel},tagion}
 
 #
 #  HiBON reqular expression print
 #
-target-hirep: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER) 
+target-hirep: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1)  
 ${call DO_BIN,hirep,$(LIB_DFILES) ${call BIN_DEPS,hirep},tagion}
 
 
@@ -80,36 +80,36 @@ ${call DO_BIN,hirep,$(LIB_DFILES) ${call BIN_DEPS,hirep},tagion}
 #
 # HiBON utility
 #
-target-hibonutil: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+target-hibonutil: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) 
 ${call DO_BIN,hibonutil,$(LIB_DFILES) ${call BIN_DEPS,hibonutil},tagion}
 
 
 #
 # DART utility
 #
-target-dartutil: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+target-dartutil: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) 
 ${call DO_BIN,dartutil,$(LIB_DFILES) ${call BIN_DEPS,dartutil},tagion}
 
 #
 # DART utility
 #
-target-blockutil: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+target-blockutil: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) 
 ${call DO_BIN,blockutil,$(LIB_DFILES) ${call BIN_DEPS,blockutil},tagion}
 
 #
 # WASM utility
 #
-target-wasmutil: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+target-wasmutil: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) 
 ${call DO_BIN,wasmutil,$(LIB_DFILES) ${call BIN_DEPS,wasmutil},tagion}
 
 
-target-signs: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+target-signs: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) 
 ${call DO_BIN,signs,$(LIB_DFILES) ${call BIN_DEPS,signs},tagion}
 
 #
 # Recorderchain utility
 #
-target-recorderchain: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+target-recorderchain: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) 
 ${call DO_BIN,recorderchain,$(LIB_DFILES) ${call BIN_DEPS,recorderchain},tagion}
 
 
@@ -117,14 +117,14 @@ ${call DO_BIN,recorderchain,$(LIB_DFILES) ${call BIN_DEPS,recorderchain},tagion}
 # Profile view
 #
 # fixme(cbr): When ddeps.mk work those libs are not needed
-target-tprofview: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+target-tprofview: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) 
 ${call DO_BIN,tprofview,$(LIB_DFILES) ${call BIN_DEPS,tprofview},tagion}
 
 #
 # Hashgraph view
 #
 # fixme(cbr): When ddeps.mk work those libs are not needed
-target-graphview: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+target-graphview: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) 
 ${call DO_BIN,graphview,$(LIB_DFILES) ${call BIN_DEPS,graphview},tagion}
 
 #
@@ -164,6 +164,6 @@ env-tools:
 # Binary of BBD generator tool
 #
 target-collider: DFLAGS+=$(DVERSION)=ONETOOL
-target-collider: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER) $(LIBNNG)
+target-collider: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1)  $(LIBNNG)
 ${call DO_BIN,collider,$(LIB_DFILES) ${call BIN_DEPS,collider}}
 
