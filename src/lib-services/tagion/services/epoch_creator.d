@@ -124,18 +124,15 @@ struct EpochCreatorService {
 
             const received_wave = receiver.params!(Wavefront)(net);
 
-            //1: Cannot explicitly return immutable container type (*) ?, need assign to immutable container
-            immutable i_s_contract(const(Document) doc) {
-                immutable s = new immutable(SignedContract)(doc);
-                return s;
-            }
-            auto received_signed_contracts_range = received_wave.epacks
+            immutable received_signed_contracts = received_wave.epacks
                 .map!(e => e.event_body.payload)
                 .filter!((p) => !p.empty)
                 .filter!(p => p.isRecord!SignedContract)
-                .map!(i_s_contract); //:1
-
-            immutable received_signed_contracts = received_signed_contracts_range
+                 //Cannot explicitly return immutable container type (*) ?, need assign to immutable container
+                .map!((doc) {
+                    immutable s = new immutable(SignedContract)(doc);
+                    return s;
+                })
                 .handle!(HiBONException, RangePrimitive.front,
                     (e, r) {
                         log("invalid SignedContract from hashgraph");

@@ -184,8 +184,8 @@ int _main(string[] args) {
         import std.algorithm : all;
         import tagion.communication.HiRPC;
         import tagion.script.standardnames;
-        import tagion.script.common : TagionHead;
-
+        import tagion.script.common : TagionHead, GenesisEpoch, Epoch;
+        import tagion.hibon.HiBONRecord : isRecord;
 
         auto __net = new StdSecureNet();
         __net.generateKeyPair("wowo");
@@ -218,13 +218,15 @@ int _main(string[] args) {
         Document doc;
         if (!recorder.empty) {
             const head = TagionHead(recorder[].front.filed);
+            writefln("Found head: %s", head.toPretty);
             DARTIndex epoch_index = __net.dartKey(StdNames.epoch, head.current_epoch);
 
             const _sender = CRUD.dartRead([epoch_index], hirpc);
             const _receiver = hirpc.receive(_sender);
-            auto epoch_response = db(receiver, false);
+            auto epoch_response = db(_receiver, false);
             auto epoch_recorder = db.recorder(epoch_response.result);
             doc = epoch_recorder[].front.filed;
+            writefln("Epoch_found: %s", doc.toPretty);
         }
 
         db.close;
@@ -285,7 +287,6 @@ int network_mode0(const(Options)[] node_options, ref ActorHandle!Supervisor[] su
 
     foreach (i, opts; node_options) {
         auto net = new StdSecureNet();
-        writefln("PASSWORD: %s", opts.task_names.supervisor);
         net.generateKeyPair(opts.task_names.supervisor);
 
         scope(exit) {
@@ -297,6 +298,7 @@ int network_mode0(const(Options)[] node_options, ref ActorHandle!Supervisor[] su
         nodes ~= Node(opts, shared_net, net.pubkey);
     }
 
+    import tagion.hibon.HiBONtoText;
     if (epoch_head is Document.init) {
         foreach(n; zip(nodes, node_options)) {
             addressbook[n[0].pkey] = NodeAddress(n[1].task_names.epoch_creator);
@@ -307,7 +309,9 @@ int network_mode0(const(Options)[] node_options, ref ActorHandle!Supervisor[] su
         if (epoch_head.isRecord!Epoch) {
             keys = Epoch(epoch_head).active;
         } else {
-            keys = GenesisEpoch(epoch_head).nodes;
+            auto genesis = GenesisEpoch(epoch_head);
+            
+            keys = genesis.nodes;
         }
 
         foreach(node_info; zip(keys, node_options)) {

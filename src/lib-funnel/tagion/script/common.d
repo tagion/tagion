@@ -146,7 +146,14 @@ struct GenesisEpoch {
     Pubkey[] nodes;
     Document testamony;
     @label(StdNames.time) sdt_t time;
-    mixin HiBONRecord;
+    mixin HiBONRecord!(q{
+        this(const(long) epoch_number, Pubkey[] nodes, const(Document) testamony, const(sdt_t) time) {
+            this.epoch_number = epoch_number;
+            this.nodes = nodes;
+            this.testamony = testamony;
+            this.time = time;
+        }
+    });
 }
 
 @recordType("$@E")
@@ -164,16 +171,34 @@ struct Epoch {
 @recordType("$@Tagion")
 struct TagionHead {
     @label(StdNames.name) string name; // Default name should always be "tagion"
-    @label(StdNames.epoch) long current_epoch;
+    long current_epoch;
     TagionGlobals globals;
-    mixin HiBONRecord;
+    mixin HiBONRecord!(q{
+        this(const(string) name, const(long) current_epoch, const(TagionGlobals) globals) {
+            this.name = name;
+            this.current_epoch = current_epoch;
+            this.globals = globals;
+        }
+
+    });
 }
 
 struct TagionGlobals {
-    long epoch;
-    @label("events") Fingerprint[] event_prints;
+    @label("events") const(Fingerprint)[] event_prints;
     @label("total") BigNumber total;
-    mixin HiBONRecord;
+    @label("total_burned") BigNumber total_burned;
+    @label("number_of_bills") long number_of_bills; 
+    @label("burnt_bills") long burnt_bills;
+
+    mixin HiBONRecord!(q{
+        this(const(Fingerprint)[] event_prints, const(BigNumber) total, const(BigNumber) total_burned, const(long) number_of_bills, const(long) burnt_bills) {
+            this.event_prints = event_prints;
+            this.total = total;
+            this.total_burned = total_burned;
+            this.number_of_bills = number_of_bills;
+            this.burnt_bills = burnt_bills;
+        }
+    });
 }
 
 @recordType("@$Vote")
