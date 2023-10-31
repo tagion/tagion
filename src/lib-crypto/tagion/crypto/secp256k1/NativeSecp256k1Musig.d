@@ -305,6 +305,16 @@ unittest {
             .all!((i) => crypt.musigNonceGen(signer_secrets[i].secnonce, signers[i].pubnonce, signers[i].pubkey, message_samples[0], session_ids[i]));
         assert(ret, "Failed in generating musig nonce");
     }
+
+    //
+    // Each signer sends the pubnonces to each other in the first Round
+    const pubnonces = signers.map!(signer => signer.pubnonce).array;
+    // Each signer generates a aggregated pubnouce
+    secp256k1_musig_aggnonce agg_pubnonce;
+    {
+        const ret = crypt.musigNonceAgg(agg_pubnonce, pubnonces);
+        assert(ret, "Failed to generates aggregated pubnonce from pubnonces");
+    }
     // Signer[] signers;
     // signers.length = secret_passphrases.length;
 
