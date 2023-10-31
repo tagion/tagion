@@ -48,6 +48,22 @@ class NativeSecp256k1Musig : NativeSecp256k1 {
         return ret != 0;
     }
 
+    @trusted
+    bool musigSignAgg(
+            out ubyte[] signature,
+            ref scope const(secp256k1_musig_partial_sig[]) partial_sig,
+    ref scope const(secp256k1_musig_session) session) const nothrow {
+        signature.length = SIGNATURE_SIZE;
+        const _partial_sig = partial_sig.map!((ref psig) => &psig).array;
+        const ret = secp256k1_musig_partial_sig_agg(
+                _ctx,
+                &signature[0],
+                &session,
+                &_partial_sig[0],
+                partial_sig.length);
+        return ret != 0;
+    }
+
     /**
     This function is if only the aggregated pubkey is need and no signing
 */
@@ -280,11 +296,11 @@ unittest {
         const ret = crypt.musigXonlyPubkeyTweakAdd(cache, xonly_tweak, &tweaked_pubkey);
         assert(ret, "Tweak of the pubkey failed");
     }
-    secp256k1_xonly_pubkey tweaked_xonly_pubkey;
+    //secp256k1_xonly_pubkey tweaked_xonly_pubkey;
     {
-        const ret = crypt.xonlyPubkey(tweaked_pubkey, tweaked_xonly_pubkey);
+        const ret = crypt.xonlyPubkey(tweaked_pubkey, agg_pubkey);
         assert(ret, "Could not produce xonly pubkey");
-        writefln("xonly_pubkey=%(%02x%)", tweaked_xonly_pubkey.data);
+        writefln("xonly_pubkey=%(%02x%)", agg_pubkey.data);
     }
 
     //
@@ -336,7 +352,7 @@ unittest {
         assert(ret, "Failed to partial sign aggregated message");
     }
     //
-    // The signature can be verified individually
+    // The signature can be verified individually (Informations for the Second round)
     //
     {
         const ret = signers
@@ -344,6 +360,23 @@ unittest {
         assert(ret, "Failed to partial verify the signatures");
     }
 
+    //
+    // Produce musig from the partial signatures
+    //
+    const partial_sigs = signers.map!(signer => signer.partial_sig).array;
+    ubyte[] signature;
+    {
+        const ret = crypt.musigSignAgg(signature, partial_sigs, session);
+        assert(ret, "Failed to aggregated sign");
+    }
+
+    //
+    // Verify signature
+    //
+    {
+        const ret = crypt.verify_schnorr(signature, message_samples[0], agg_pubkey);
+        assert(ret, "Failed to verify multi signature");
+    }
     // Signer[] signers;
     // signers.length = secret_passphrases.length;
 
