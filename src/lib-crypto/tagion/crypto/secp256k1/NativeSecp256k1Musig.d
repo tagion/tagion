@@ -315,6 +315,16 @@ unittest {
         const ret = crypt.musigNonceAgg(agg_pubnonce, pubnonces);
         assert(ret, "Failed to generates aggregated pubnonce from pubnonces");
     }
+    //secp256k1_musig_keyagg_cache parial_cache;
+    //
+    // Aggregate all nonces of all signers to a single nonce
+    //
+    secp256k1_musig_session session;
+    {
+        const ret = crypt.musigNonceProcess(session, agg_pubnonce, message_samples[0], cache);
+        assert(ret, "Failed to aggregated all signers nonces");
+    }
+
     // Signer[] signers;
     // signers.length = secret_passphrases.length;
 
