@@ -1,12 +1,12 @@
 name: Build D code docmentation
-
-env:
-  GITBOT_TOKEN: ${{ secrets.GITBOT_TOKEN }}
-
 on:
   workflow_dispatch:
   workflow_call:
 
+env:
+  GITBOT_TOKEN: ${{ secrets.GITBOT_TOKEN }}
+
+jobs:
   ddoc:
     runs-on: ubuuntu-latest
     steps:
