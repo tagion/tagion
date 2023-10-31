@@ -15,7 +15,7 @@ enum SECNONCE_SIZE = 32;
 class NativeSecp256k1Musig : NativeSecp256k1 {
 
     @trusted
-    bool partialSign(
+    bool musigPartialSign(
             ref const(secp256k1_musig_keyagg_cache) cache,
             ref secp256k1_musig_partial_sig partial_sig,
             ref secp256k1_musig_secnonce secnonce,
@@ -325,6 +325,16 @@ unittest {
         assert(ret, "Failed to aggregated all signers nonces");
     }
 
+    //
+    // Each signer can produces a partial signature
+    //
+    {
+        const ret = iota(secret_passphrases.length)
+            .all!((i) => crypt.musigPartialSign(cache, signers[i].partial_sig, signer_secrets[i].secnonce, signer_secrets[i]
+            .keypair, session));
+
+        assert(ret, "Failed to partial sign aggregated message");
+    }
     // Signer[] signers;
     // signers.length = secret_passphrases.length;
 
