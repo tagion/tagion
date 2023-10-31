@@ -217,6 +217,13 @@ version (unittest) {
     import std.array;
     import std.format;
     import std.stdio;
+
+    const(ubyte[]) sha256(scope const(ubyte[]) data) {
+        import std.digest.sha : SHA256;
+        import std.digest;
+
+        return digest!SHA256(data).dup;
+    }
 }
 
 unittest {
