@@ -37,19 +37,3 @@ alias SendRecorder = Msg!"SendRecorder";
 
 // NNG socket hirpc output push
 alias HiRPCOutput = Msg!"OutputPush";
-
-/*
-@safe
-struct _ContractProduct {
-    immutable(_CollectedSignedContract*) contract;
-    Document[] outputs;
-}
-
-@safe
-struct _CollectedSignedContract {
-    Document[] inputs;
-    Document[] reads;
-    SignedContract contract;
-    //mixin HiBONRecord;
-}
-*/

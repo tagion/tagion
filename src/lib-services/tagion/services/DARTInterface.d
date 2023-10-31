@@ -36,8 +36,9 @@ import std.format;
 import core.time;
 
 
-struct dartWorkerContext {
+struct DartWorkerContext {
     string dart_task_name;
+    int dart_worker_timeout;
 }
 
 void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
@@ -45,7 +46,7 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
     // log.register(thisActor.task_name);
     import std.stdio;
 
-    auto cnt = cast(dartWorkerContext*) ctx;
+    auto cnt = cast(DartWorkerContext*) ctx;
 
     import tagion.hibon.HiBONJSON : toPretty;
     import tagion.communication.HiRPC;
@@ -69,7 +70,7 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
         msg.body_append(doc.serialize);
     }
 
-    auto dart_resp = receiveTimeout(1000.msecs, &dartHiRPCResponse);
+    auto dart_resp = receiveTimeout(cnt.dart_worker_timeout.msecs, &dartHiRPCResponse);
     if (!dart_resp) {
         writefln("Non-valid request received");
         return;
@@ -93,8 +94,9 @@ struct DARTInterfaceService {
 
         }
 
-        dartWorkerContext ctx;
+        DartWorkerContext ctx;
         ctx.dart_task_name = task_names.dart;
+        ctx.dart_worker_timeout = opts.sendtimeout;
 
         NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_REP);
         sock.sendtimeout = opts.sendtimeout.msecs;
