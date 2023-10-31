@@ -41,7 +41,7 @@ jobs:
     runs-on: testnet
     environment: 
       name: testnet-mobile
-      url: http://10.210.2.10:8088
+      url: http://10.210.2.10:8080
 
     steps:
       - name: get artifact

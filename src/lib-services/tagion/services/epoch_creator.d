@@ -92,7 +92,7 @@ struct EpochCreatorService {
         {
             immutable buf = cast(Buffer) hashgraph.channel;
             const nonce = cast(Buffer) net.calcHash(buf);
-            auto eva_event = hashgraph.createEvaEvent(gossip_net.time, nonce);
+            hashgraph.createEvaEvent(gossip_net.time, nonce);
         }
 
 
@@ -123,11 +123,16 @@ struct EpochCreatorService {
 
             const received_wave = receiver.params!(Wavefront)(net);
 
+            //1: Cannot explicitly return immutable container type (*) ?, need assign to immutable container
+            immutable i_s_contract(const(Document) doc) {
+                immutable s = new immutable(SignedContract)(doc);
+                return s;
+            }
             immutable received_signed_contracts = received_wave.epacks
                 .map!(e => e.event_body.payload)
                 .filter!((p) => !p.empty)
                 .filter!(p => p.isRecord!SignedContract)
-                .map!(s => (() @trusted => cast(immutable) new SignedContract(s))())
+                .map!(i_s_contract) //:1
                 .array;
 
             if (received_signed_contracts.length != 0) {
