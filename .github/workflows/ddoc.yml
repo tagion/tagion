@@ -8,7 +8,7 @@ env:
 
 jobs:
   ddoc:
-    runs-on: ubuuntu-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with: 
