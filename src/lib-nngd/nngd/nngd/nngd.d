@@ -124,11 +124,13 @@ struct NNGMessage {
         return msg;
     }
 
-    @nogc @safe 
+    @nogc  
     @property void pointer(nng_msg* p) nothrow {
-        if(p) 
-            msg = p;
-        else {
+        if(p){ 
+            if(msg) nng_msg_free(msg);
+            nng_msg_alloc(&msg, nng_msg_len(p));
+            nng_msg_dup(&msg,p);
+        } else {
             if(msg) nng_msg_free(msg);
             msg = null;
         }            
@@ -144,11 +146,11 @@ struct NNGMessage {
         return nng_msg_header(msg);
     }
 
-    @property size_t length() { return nng_msg_len(msg); }
+    @property size_t length() { return (msg) ? nng_msg_len(msg) : 0; }
     @property void length( size_t sz ) { auto rc = nng_msg_realloc(msg, sz); enforce(rc == 0); }
-    @property size_t header_length() { return nng_msg_header_len(msg); }
+    @property size_t header_length() { return (msg) ? nng_msg_header_len(msg) : 0; }
     
-    void clear() { nng_msg_clear(msg); }
+    void clear() { if(msg) nng_msg_clear(msg); }
 
     int body_append (T) ( const(T) data ) if(isArray!T || isUnsigned!T) {
         static if (isArray!T){
@@ -210,6 +212,7 @@ struct NNGMessage {
     T body_chop (T) (size_t size = 0) if(isArray!T || isUnsigned!T){
         static if (isArray!T){
             if(size == 0) size = length;
+            if(size == 0) return [];
             T data = cast(T) (bodyptr + (length - size)) [0..size];
             auto rc = nng_msg_chop(msg, size);
             enforce(rc == 0);
@@ -241,6 +244,7 @@ struct NNGMessage {
     T body_trim (T) (size_t size = 0) if(isArray!T || isUnsigned!T) {
         static if (isArray!T){
             if(size == 0) size = length;
+            if(size == 0) return [];
             T data = cast(T) (bodyptr) [0..size];
             auto rc = nng_msg_trim(msg, size);
             enforce(rc == 0);
@@ -995,6 +999,7 @@ struct NNGPoolWorker {
     NNGMessage msg;
     NNGAio aio;    
     Duration delay;
+    nng_mtx *mtx;
     nng_ctx ctx;
     void *context;
     nng_pool_callback cb;
@@ -1006,6 +1011,14 @@ struct NNGPoolWorker {
         this.aio = NNGAio(null, null);
         this.delay = msecs(0);
         this.cb = null;
+        auto rc = nng_mtx_alloc(&this.mtx);
+        enforce(rc==0, "PW: init");
+    }
+    void lock(){
+        nng_mtx_lock(mtx);
+    }
+    void unlock(){
+        nng_mtx_unlock(mtx);
     }
     void wait(){
         this.aio.wait();            
@@ -1019,8 +1032,10 @@ struct NNGPoolWorker {
 extern (C) void nng_pool_stateful ( void* p ){
     if(p == null) return;
     NNGPoolWorker *w = cast(NNGPoolWorker*)p;
+    w.lock();
     switch(w.state){
         case nng_worker_state.EXIT:
+            w.unlock();
             return;
         case nng_worker_state.NONE:
             w.state = nng_worker_state.RECV;
@@ -1032,7 +1047,17 @@ extern (C) void nng_pool_stateful ( void* p ){
                 nng_ctx_recv(w.ctx, w.aio.aio);
                 break;
             }
-            w.aio.get_msg(&w.msg);
+            try{ // TODO: remove this finding out he reason of exception 
+                auto rm = w.aio.get_msg(&w.msg);
+                if(rm != 0){
+                    nng_ctx_recv(w.ctx, w.aio.aio);
+                    break;
+                }
+            } catch(Exception e) {
+                // log point!
+                nng_ctx_recv(w.ctx, w.aio.aio);
+                break;
+            }    
             w.state = nng_worker_state.WAIT;
             w.aio.sleep(w.delay);
             break;
@@ -1051,9 +1076,11 @@ extern (C) void nng_pool_stateful ( void* p ){
             nng_ctx_recv(w.ctx, w.aio.aio);
             break;
         default:
+            w.unlock();
             enforce(false, "Bad pool worker state");
             break;
     }
+    w.unlock();
 }
 
 struct NNGPool {
