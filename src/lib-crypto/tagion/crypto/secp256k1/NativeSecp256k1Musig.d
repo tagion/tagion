@@ -197,12 +197,6 @@ class NativeSecp256k1Musig : NativeSecp256k1 {
 
         return ret != 0;
     }
-
-    /* 
-    @trusted 
-    void tweak(ref secp256k1_xonly_pubkey pubkey,  
-    //  @trusted
-  */
 }
 
 version (unittest) {
@@ -318,7 +312,12 @@ unittest {
     //
     {
         const ret = iota(secret_passphrases.length)
-            .all!((i) => crypt.musigNonceGen(signer_secrets[i].secnonce, signers[i].pubnonce, signers[i].pubkey, message_samples[0], session_ids[i]));
+            .all!((i) => crypt.musigNonceGen(
+                    signer_secrets[i].secnonce,
+                    signers[i].pubnonce,
+                    signers[i].pubkey,
+                    message_samples[0],
+                    session_ids[i]));
         assert(ret, "Failed in generating musig nonce");
     }
 
@@ -331,7 +330,6 @@ unittest {
         const ret = crypt.musigNonceAgg(agg_pubnonce, pubnonces);
         assert(ret, "Failed to generates aggregated pubnonce from pubnonces");
     }
-    //secp256k1_musig_keyagg_cache parial_cache;
     //
     // Aggregate all nonces of all signers to a single nonce
     //
@@ -346,8 +344,12 @@ unittest {
     //
     {
         const ret = iota(secret_passphrases.length)
-            .all!((i) => crypt.musigPartialSign(cache, signers[i].partial_sig, signer_secrets[i].secnonce, signer_secrets[i]
-            .keypair, session));
+            .all!((i) => crypt.musigPartialSign(
+                    cache,
+                    signers[i].partial_sig,
+                    signer_secrets[i].secnonce,
+                    signer_secrets[i]
+                    .keypair, session));
 
         assert(ret, "Failed to partial sign aggregated message");
     }
@@ -377,7 +379,4 @@ unittest {
         const ret = crypt.verify_schnorr(signature, message_samples[0], agg_pubkey);
         assert(ret, "Failed to verify multi signature");
     }
-    // Signer[] signers;
-    // signers.length = secret_passphrases.length;
-
 }
