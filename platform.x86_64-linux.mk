@@ -13,7 +13,6 @@ $(UNITTEST_BIN): $(DFILES)
 
 proto-unittest-build: LIBS+=$(SSLIMPLEMENTATION)
 proto-unittest-build: LIBS+=$(LIBSECP256K1)
-proto-unittest-build: LIBS+=$(LIBP2PGOWRAPPER)
 proto-unittest-build: LIBS+=$(LIBNNG)
 
 unittest: proto-unittest-run

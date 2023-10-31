@@ -231,16 +231,22 @@ unittest {
     // Create the keypairs
     //
     const crypt = new NativeSecp256k1Musig;
-    secp256k1_keypair[] keypairs;
-    keypairs.length = secret_passphrases.length;
+    //
+    // Set the secret for each signer  
+    //
+    SignerSecret[] signer_secrets;
+    signer_secrets.length = secret_passphrases.length;
+    //     secp256k1_keypair[] keypairs;
+    //   keypairs.length = secret_passphrases.length;
     foreach (i, secret; secret_passphrases) {
-        crypt.createKeyPair(secret, keypairs[i]);
+        crypt.createKeyPair(secret, signer_secrets[i].keypair);
     }
+    Signer[] signers;
     // Extracted the pubkeys
-    secp256k1_pubkey[] pubkeys;
-    pubkeys.length = keypairs.length;
+    signers.length = secret_passphrases.length;
     iota(secret_passphrases.length)
-        .each!((i) => crypt.getPubkey(keypairs[i], pubkeys[i]));
+        .each!((i) => crypt.getPubkey(signer_secrets[i].keypair, signers[i].pubkey));
+    const pubkeys = signers.map!((signer) => signer.pubkey).array;
     //
     // Aggregated common pubkey
     //
@@ -253,21 +259,11 @@ unittest {
         assert(ret, "Could not aggregated the pubkeys");
     }
     //
-    // Generate nonce session id
-    //
-    const session_ids = iota(secret_passphrases.length)
-        .map!(index => format("Session id nonce %d", index))
-        .map!(text => text.representation)
-        .map!(buf => sha256(buf))
-        .array;
-    //
     // Signers informations 
     //
     const plain_tweak = sha256("plain text tweak".representation);
     const xonly_tweak = sha256("xonly tweak".representation);
 
-    Signer[] signers;
-    signers.length = secret_passphrases.length;
     //
     // Plain text tweak can be use for BIP32 
     // Note. The aggregated pubkey is stored in the chache
@@ -290,5 +286,46 @@ unittest {
         assert(ret, "Could not produce xonly pubkey");
         writefln("xonly_pubkey=%(%02x%)", tweaked_xonly_pubkey.data);
     }
+
+    //
+    // Generate nonce session id (Should only be used one in the unittest it's fixed)
+    //
+    const session_ids = iota(secret_passphrases.length)
+        .map!(index => format("Session id nonce %d", index))
+        .map!(text => text.representation)
+        .map!(buf => sha256(buf))
+        .array;
+
+    //
+    // Initialize sessions and nonces for all signers
+    // This process should be done by each signer seperately 
+    //
+    {
+        const ret = iota(secret_passphrases.length)
+            .all!((i) => crypt.musigNonceGen(signer_secrets[i].secnonce, signers[i].pubnonce, signers[i].pubkey, message_samples[0], session_ids[i]));
+        assert(ret, "Failed in generating musig nonce");
+    }
+
+    //
+    // Each signer sends the pubnonces to each other in the first Round
+    const pubnonces = signers.map!(signer => signer.pubnonce).array;
+    // Each signer generates a aggregated pubnouce
+    secp256k1_musig_aggnonce agg_pubnonce;
+    {
+        const ret = crypt.musigNonceAgg(agg_pubnonce, pubnonces);
+        assert(ret, "Failed to generates aggregated pubnonce from pubnonces");
+    }
+    //secp256k1_musig_keyagg_cache parial_cache;
+    //
+    // Aggregate all nonces of all signers to a single nonce
+    //
+    secp256k1_musig_session session;
+    {
+        const ret = crypt.musigNonceProcess(session, agg_pubnonce, message_samples[0], cache);
+        assert(ret, "Failed to aggregated all signers nonces");
+    }
+
+    // Signer[] signers;
+    // signers.length = secret_passphrases.length;
 
 }

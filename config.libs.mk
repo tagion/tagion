@@ -1,8 +1,8 @@
 LIBTAGION:=$(DLIB)/libtagion.$(LIBEXT)
 
-libtagion: DFILES:=${shell find $(DSRC) -name "*.d" -a -path "*/src/lib-*" -a -not -path "*/unitdata/*" -a -not -path "*/tests/*" -a -not -path "*/lib-betterc/*" $(NO_WOLFSSL)}
+libtagion: DFILES:=${shell find $(DSRC) -name "*.d" -a -path "*/src/lib-*" -a -not -path "*/unitdata/*" -a -not -path "*/tests/*" -a -not -path "*/lib-betterc/*" $(NO_WOLFSSL) -a -not -path "*/lib-p2pgowrapper/*"}
 libtagion: $(LIBTAGION) $(DFILES)
-libtagion: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(LIBP2PGOWRAPPER)
+libtagion: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(NNG)
 
 clean-libtagion:
 	$(RM) $(LIBTAGION)
@@ -34,3 +34,17 @@ clean-libmobile:
 
 .PHONY: clean-libmobile
 clean: clean-libmobile
+
+LIBBETTERC:=$(DLIB)/libbetterc.$(LIBEXT)
+$(LIBBETTERC): secp256k1
+libbetterc: DFILES:=${shell find $(DSRC) -name "*.d" -a -path "*/src/lib-betterc/*" -a -not -path "*/unitdata/*" -a -not -path "*/tests/*"}
+libbetterc: DFLAGS+=-i
+libbetterc: DFLAGS+=-betterC
+libbetterc: $(LIBBETTERC) $(DFILES)
+libbetterc: LDFLAGS+=$(LD_SECP256K1)
+
+clean-libbetterc:
+	$(RM) $(LIBBETTERC)
+
+.PHONY: clean-libbetterc
+clean: clean-libbetterc
