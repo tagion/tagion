@@ -78,6 +78,7 @@ int _main(string[] args) {
 
     // bills for the dart on startup
 
+
     TagionBill requestAndForce(ref StdSecureWallet w, TagionCurrency amount) {
         auto b = w.requestBill(amount);
         w.addBill(b);
@@ -85,9 +86,12 @@ int _main(string[] args) {
     }
     
     TagionBill[] bills;
+    long __VERY_UGLY;
     foreach (ref wallet; wallets) {
         foreach(i; 0..3) {
             bills ~= requestAndForce(wallet, 1000.TGN);
+            __VERY_UGLY += 1000;
+
         }
     }
 
@@ -98,7 +102,43 @@ int _main(string[] args) {
     auto recorder = factory.recorder;
     recorder.insert(bills, Archive.Type.ADD);
 
+    // create the tagion head and genesis epoch
+    import tagion.script.common : TagionHead, GenesisEpoch, TagionGlobals;
+    import tagion.script.standardnames;
+    import tagion.hibon.BigNumber;
+    import tagion.hibon.HiBON;
+    import tagion.utils.StdTime;
+    import tagion.crypto.Types;
+    import tagion.hibon.HiBONtoText;
 
+    // const total_amount = BigNumber(bills.map!(b => b.value).sum);
+    const total_amount = BigNumber(__VERY_UGLY);
+    const number_of_bills = long(bills.length);
+
+    const event_print = Fingerprint([1,2,3,4]);
+    
+    const globals = TagionGlobals([event_print], total_amount, const BigNumber(0), number_of_bills, const long(0));
+
+    const tagion_head = TagionHead(TagionDomain, 0, globals);
+
+    
+    Pubkey[] keys;
+    foreach(i; 0..local_options.wave.number_of_nodes) {
+        auto _net = new StdSecureNet();
+        const pswd = format(local_options.wave.prefix_format, i)~"supervisor";
+        writefln("bdd: %s", pswd);
+        _net.generateKeyPair(pswd); 
+        keys ~= _net.pubkey;
+        writefln("pkey: %s", _net.pubkey.encodeBase64);
+    }
+
+
+    HiBON testamony = new HiBON;
+    testamony["hola"] = "Hallo ich bin philip. VERY OFFICIAL TAGION GENESIS BLOCK; DO NOT ALTER IN ANY WAYS";
+    const genesis_epoch = GenesisEpoch(0, keys, Document(testamony), currentTime);
+
+    recorder.add(tagion_head);
+    recorder.add(genesis_epoch);
 
     foreach (i; 0 .. local_options.wave.number_of_nodes) {
         immutable prefix = format(local_options.wave.prefix_format, i);
