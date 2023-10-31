@@ -335,6 +335,15 @@ unittest {
 
         assert(ret, "Failed to partial sign aggregated message");
     }
+    //
+    // The signature can be verified individually
+    //
+    {
+        const ret = signers
+            .all!((signer) => crypt.partialVerify(cache, signer.partial_sig, signer.pubnonce, signer.pubkey, session));
+        assert(ret, "Failed to partial verify the signatures");
+    }
+
     // Signer[] signers;
     // signers.length = secret_passphrases.length;
 
