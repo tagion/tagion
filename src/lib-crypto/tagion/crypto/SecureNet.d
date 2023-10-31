@@ -28,8 +28,9 @@ void scramble(T)(scope ref T[] data) @trusted if (T.sizeof > ubyte.sizeof) {
 
 package alias check = Check!SecurityConsensusException;
 
+alias StdHashNet = StdHashNetT!false;
 @safe
-class StdHashNet : HashNet {
+class StdHashNetT(bool SCHNORR) : HashNet {
     import std.format;
 
     enum HASH_SIZE = 32;
