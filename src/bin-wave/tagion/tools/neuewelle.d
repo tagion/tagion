@@ -218,6 +218,7 @@ int _main(string[] args) {
         Document doc;
         if (!recorder.empty) {
             const head = TagionHead(recorder[].front.filed);
+            writefln("Found head: %s", head.toPretty);
             DARTIndex epoch_index = __net.dartKey(StdNames.epoch, head.current_epoch);
 
             const _sender = CRUD.dartRead([epoch_index], hirpc);

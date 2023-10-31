@@ -164,15 +164,18 @@ struct Epoch {
 @recordType("$@Tagion")
 struct TagionHead {
     @label(StdNames.name) string name; // Default name should always be "tagion"
-    @label(StdNames.epoch) long current_epoch;
+    long current_epoch;
     TagionGlobals globals;
     mixin HiBONRecord;
 }
 
 struct TagionGlobals {
-    long epoch;
     @label("events") Fingerprint[] event_prints;
     @label("total") BigNumber total;
+    @label("total_burned") BigNumber total_burned;
+    @label("number_of_bills") long number_of_bills; 
+    @label("burnt_bills") long burnt_bills;
+
     mixin HiBONRecord;
 }
 
