@@ -20,6 +20,7 @@ import tagion.network.ReceiveBuffer;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONException;
 import tagion.communication.HiRPC;
 import tagion.basic.Debug : __write;
 import tagion.utils.JSONCommon;
@@ -69,14 +70,19 @@ struct InputValidatorService {
     void task(immutable(InputValidatorOptions) opts, immutable(TaskNames) task_names) @trusted {
         HiRPC hirpc = HiRPC(net);
 
-        void reject(T)(ResponseError err_type, T data = Document()) const {
-            hirpc.Error message;
-            message.code = err_type;
-            message.message = err_type.to!string;
-            // message.data = data;
-            const sender = hirpc.Sender(net, message);
-            sock.send(sender.toDoc.serialize);
-            log(rejected, err_type.to!string, data);
+        void reject(T)(ResponseError err_type, T data = Document()) const nothrow {
+            try {
+                hirpc.Error message;
+                message.code = err_type;
+                message.message = err_type.to!string;
+                // message.data = data;
+                const sender = hirpc.Sender(net, message);
+                sock.send(sender.toDoc.serialize);
+                log(rejected, err_type.to!string, data);
+            }
+            catch (Exception e) {
+                log.error("Failed to deliver rejction %s", err_type.to!string);
+            }
         }
 
         NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_REP);
@@ -114,7 +120,7 @@ struct InputValidatorService {
                 continue;
             }
 
-            auto result = buf.append(recv);
+            auto result_buf = buf.append(recv);
             scope (failure) {
                 reject(ResponseError.Internal);
             }
@@ -125,23 +131,24 @@ struct InputValidatorService {
             }
 
             // Fixme ReceiveBuffer .size doesn't always return correct lenght
-            if (result.data.length <= 0) {
+            if (result_buf.data.length <= 0) {
                 reject(ResponseError.InvalidBuf);
                 continue;
             }
 
             import std.exception;
 
-            Document doc = Document(assumeUnique(result.data));
-            if (doc.isInorder && doc.isRecord!(HiRPC.Sender)) {
+            Document doc = Document(assumeUnique(result_buf.data));
+            try {
                 log("Sending contract to hirpc_verifier");
                 locate(task_names.hirpc_verifier).send(inputDoc(), doc);
-                const receiver = hirpc.receive(doc);
+                auto receiver = hirpc.receive(doc);
                 auto response_ok = hirpc.result(receiver, ResultOk());
                 sock.send(response_ok.toDoc.serialize);
             }
-            else {
+            catch (HiBONException _) {
                 reject(ResponseError.InvalidDoc, doc);
+                return;
             }
         }
     }
