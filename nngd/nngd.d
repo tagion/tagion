@@ -124,7 +124,7 @@ struct NNGMessage {
         return msg;
     }
 
-    @nogc @safe 
+    @nogc  
     @property void pointer(nng_msg* p) nothrow {
         if(p){ 
             if(msg) nng_msg_free(msg);
