@@ -191,56 +191,36 @@ class StdSecureNet : StdHashNet, SecureNet {
         assert(_secret is null);
     }
     do {
+        scope (exit) {
+            getRandom(privkey);
+        }
         import std.string : representation;
 
         check(secKeyVerify(privkey), ConsensusFailCode.SECURITY_PRIVATE_KEY_INVALID);
 
         alias AES = AESCrypto!256;
         _pubkey = _crypt.computePubkey(privkey);
-        // Generate scramble key for the private key
-        //import std.random;
-
-        //auto seed = new ubyte[AES.KEY_SIZE];
-        ubyte[AES.KEY_SIZE] _seed;
-        auto seed = _seed[];
-        //scramble(seed);
-        getRandom(seed);
-        // CBR: Note AES need to be change to beable to handle const keys
-        // auto aes_key = rawCalcHash(seed).dup;
-        auto aes_key = seed.dup;
-        scramble(seed);
-        auto aes_iv = rawCalcHash(seed)[4 .. 4 + AES.BLOCK_SIZE].dup;
-
+        auto aes_key_iv = new ubyte[AES.KEY_SIZE + AES.BLOCK_SIZE];
+        getRandom(aes_key_iv);
+        auto aes_key = aes_key_iv[0 .. AES.KEY_SIZE];
+        auto aes_iv = aes_key_iv[AES.KEY_SIZE .. $];
         // Encrypt private key
         auto encrypted_privkey = new ubyte[privkey.length];
         AES.encrypt(aes_key, aes_iv, privkey, encrypted_privkey);
-
-        AES.encrypt(rawCalcHash(seed), aes_iv, encrypted_privkey, privkey);
-        scramble(seed);
-
-        AES.encrypt(aes_key, aes_iv, encrypted_privkey, privkey);
-
-        AES.encrypt(aes_key, aes_iv, privkey, seed);
-
-        AES.encrypt(aes_key, aes_iv, encrypted_privkey, privkey);
-
         @safe
         void do_secret_stuff(scope void delegate(const(ubyte[]) privkey) @safe dg) {
             // CBR:
             // Yes I know it is security by obscurity
             // But just don't want to have the private in clear text in memory
             // for long period of time
-            auto privkey = new ubyte[encrypted_privkey.length];
+            auto tmp_privkey = new ubyte[encrypted_privkey.length];
             scope (exit) {
-                auto seed = new ubyte[32];
-                scramble(seed, aes_key);
-                scramble(aes_key, seed);
-                scramble(aes_iv);
-                AES.encrypt(aes_key, aes_iv, privkey, encrypted_privkey);
-                AES.encrypt(rawCalcHash(seed), aes_iv, encrypted_privkey, privkey);
+                getRandom(aes_key_iv);
+                AES.encrypt(aes_key, aes_iv, tmp_privkey, encrypted_privkey);
+                AES.encrypt(rawCalcHash(encrypted_privkey ~ aes_key_iv), aes_iv, encrypted_privkey, tmp_privkey);
             }
-            AES.decrypt(aes_key, aes_iv, encrypted_privkey, privkey);
-            dg(privkey);
+            AES.decrypt(aes_key, aes_iv, encrypted_privkey, tmp_privkey);
+            dg(tmp_privkey);
         }
 
         @safe class LocalSecret : SecretMethods {
