@@ -14,7 +14,6 @@ enum StdNames {
     bullseye = "$eye",
     name = "#name",
     previous = "$prev",
-    tagion = "#tagion",
     nodekey = "#$node",
     signed = "$signed",
 }
