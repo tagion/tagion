@@ -296,6 +296,12 @@ unittest {
         .map!(buf => sha256(buf))
         .array;
 
+    //
+    // Initialize sessions and nonces for all signers
+    // This process should be done by each signer seperately 
+    // 
+    //const ret=iota(secret_passphrases.length)
+    //.all!((i) => crypt.musigNonceGen(secret_s
     // Signer[] signers;
     // signers.length = secret_passphrases.length;
 

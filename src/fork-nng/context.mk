@@ -1,5 +1,9 @@
+
 DSRC_NNG := ${call dir.resolve, nng}
 DTMP_NNG := $(DTMP)/nng
+
+include ${call dir.resolve, importc.mk} 
+
 
 LIBNNG := $(DTMP_NNG)/libnng.a
 
