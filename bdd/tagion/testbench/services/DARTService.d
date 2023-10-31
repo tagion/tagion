@@ -195,7 +195,7 @@ class WriteAndReadFromDartDb {
 
             insert_recorder.insert(docs, Archive.Type.ADD);
             auto modify_send = dartModifyRR();
-            (() @trusted => handle.send(modify_send, cast(immutable) insert_recorder, immutable int(0)))();
+            (() @trusted => handle.send(modify_send, cast(immutable) insert_recorder, immutable long(0)))();
 
             auto modify = receiveOnlyTimeout!(dartModifyRR.Response, Fingerprint);
 

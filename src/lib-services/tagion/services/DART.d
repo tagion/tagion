@@ -138,7 +138,7 @@ struct DARTService {
             req.respond(result);
         }
 
-        void modify(dartModifyRR req, immutable(RecordFactory.Recorder) recorder, immutable(int) epoch_number) @safe {
+        void modify(dartModifyRR req, immutable(RecordFactory.Recorder) recorder, immutable(long) epoch_number) @safe {
             log("Received modify request with length=%s", recorder.length);
 
             auto eye = Fingerprint(db.modify(recorder));

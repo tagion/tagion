@@ -77,7 +77,7 @@ struct TranscriptService {
             Votes[] previous_votes;
         }
 
-        immutable(EpochContracts)*[uint] epoch_contracts;
+        immutable(EpochContracts)*[long] epoch_contracts;
 
 
         // void checkLeaks() {
@@ -145,11 +145,11 @@ struct TranscriptService {
             // if(recorder.empty) {
             //     return;
             // }
-            locate(task_names.dart).send(req, RecordFactory.uniqueRecorder(recorder), cast(immutable(int)) res.id);
+            locate(task_names.dart).send(req, RecordFactory.uniqueRecorder(recorder), cast(immutable) res.id);
 
         }
 
-        void epoch(consensusEpoch, immutable(EventPackage*)[] epacks, immutable(int) epoch_number, const(sdt_t) epoch_time) @safe {
+        void epoch(consensusEpoch, immutable(EventPackage*)[] epacks, immutable(long) epoch_number, const(sdt_t) epoch_time) @safe {
 
             ConsensusVoting[] received_votes = epacks
                 .filter!(epack => epack.event_body.payload.isRecord!ConsensusVoting)
@@ -182,7 +182,7 @@ struct TranscriptService {
 
             
             auto req = dartCheckReadRR();
-            req.id = cast(uint) epoch_number;
+            req.id = epoch_number;
             epoch_contracts[req.id] = (() @trusted => new immutable(EpochContracts)(signed_contracts, epoch_time, cast(immutable) previous_votes))();
 
             // pragma(msg, "Inputs ", typeof(inputs));
@@ -204,7 +204,7 @@ struct TranscriptService {
             }
             log("transcript received bullseye %s", bullseye.cutHex);
 
-            auto epoch_number = cast(long) res.id;
+            auto epoch_number = res.id;
             ConsensusVoting own_vote = ConsensusVoting(
                     epoch_number,
                     net.pubkey,

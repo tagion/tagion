@@ -26,7 +26,7 @@ import tagion.hibon.Document;
     /** Bullseye of DART database */
     @label("eye") Fingerprint bullseye;
     /** Epoch number */
-    @label("epoch_number") int epoch_number;
+    @label("epoch_number") long epoch_number;
     /** Fingerprint of the previous block */
     @label("previous") Fingerprint previous;
     /** Recorder with database changes of this block */
@@ -46,7 +46,7 @@ import tagion.hibon.Document;
                 Document recorder_doc,
                 Fingerprint previous,
                 Fingerprint bullseye,
-                int epoch_number,
+                long epoch_number,
                 const(HashNet) net)
             {
                 this.recorder_doc = recorder_doc;
