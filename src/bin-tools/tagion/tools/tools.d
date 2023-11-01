@@ -19,6 +19,7 @@ int main(string[] args) {
     import stiefel = tagion.tools.boot.stiefel;
     import hirep = tagion.tools.hirep.hirep;
     import recorderchain = tagion.tools.recorderchain;
+    import callstack = tagion.tools.callstack.callstack;
 
     alias alltools = AliasSeq!(
             subscribe,
@@ -35,6 +36,7 @@ int main(string[] args) {
             stiefel,
             hirep,
             recorderchain,
+            callstack,
     );
     mixin doOneMain!(alltools);
     return do_main(args);

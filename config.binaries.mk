@@ -116,16 +116,20 @@ ${call DO_BIN,recorderchain,$(LIB_DFILES) ${call BIN_DEPS,recorderchain},tagion}
 #
 # Profile view
 #
-# fixme(cbr): When ddeps.mk work those libs are not needed
 target-tprofview: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) 
 ${call DO_BIN,tprofview,$(LIB_DFILES) ${call BIN_DEPS,tprofview},tagion}
 
 #
 # Hashgraph view
 #
-# fixme(cbr): When ddeps.mk work those libs are not needed
 target-graphview: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) 
 ${call DO_BIN,graphview,$(LIB_DFILES) ${call BIN_DEPS,graphview},tagion}
+
+#
+#  callstack
+#
+target-callstack:  
+${call DO_BIN,callstack,$(LIB_DFILES) ${call BIN_DEPS,callstack},tagion}
 
 #
 # Tagion onetool
@@ -145,6 +149,7 @@ TAGION_TOOLS+=geldbeutel
 TAGION_TOOLS+=tagionshell
 TAGION_TOOLS+=stiefel
 TAGION_TOOLS+=hirep
+TAGION_TOOLS+=callstack
 
 TAGION_BINS=$(foreach tools,$(TAGION_TOOLS), ${call BIN_DEPS,$(tools)} )
 

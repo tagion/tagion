@@ -45,7 +45,33 @@ private shared bool fault;
 //     }
 // }
 
-shared string call_stack_file;
+//shared char[] call_stack_file;
+enum CALL_STACK_FILE_SIZE = 0x100;
+version (ONETOOL) {
+    import tagion.tools.OneMain : main_name;
+
+}
+else {
+    private shared static string main_name;
+    shared static this() {
+        import std.file : thisExePath;
+
+        maie_name = thisExePath.idup;
+
+    }
+}
+alias CallStackFile = char[CALL_STACK_FILE_SIZE + 1];
+private const(CallStackFile) call_stack_file() nothrow @nogc {
+    CallStackFile filename;
+    filename[] = '\0';
+    size_t pos; //=main_name.length;
+    filename[0 .. main_name.length] = main_name;
+    pos += main_name.length;
+    filename[pos] = '.';
+    pos++;
+    filename[pos .. pos + backtrace_ext.length] = backtrace_ext;
+    return filename;
+}
 
 static if (ver.Posix && not_unittest) {
     import core.sys.posix.unistd : STDERR_FILENO;
@@ -72,9 +98,10 @@ static if (ver.Posix && not_unittest) {
 
         scope char** messages;
         messages = backtrace_symbols(callstack.ptr, size);
-
+        const filename = call_stack_file;
+        printf("filename %s\n", &filename[0]);
         {
-            auto fp = fopen(call_stack_file.ptr, "w");
+            auto fp = fopen(&filename[0], "w");
             scope (exit) {
                 fclose(fp);
             }
@@ -101,11 +128,10 @@ enum backtrace_ext = "callstack";
 static if (not_unittest) {
     shared static this() {
         import std.path;
-        import std.file : thisExePath;
 
         stopsignal.initialize(true, false);
 
-        call_stack_file = setExtension(thisExePath, backtrace_ext) ~ '\0';
+        //call_stack_file = setExtension(thisExePath, backtrace_ext) ~ '\0';
 
         signal(SIGPIPE, &ignore);
         version (Posix) {

@@ -1,4 +1,4 @@
-#!/usr/bin/rdmd -g
+module tagion.tools.callstack.callstack;
 import std.getopt;
 import std.json;
 import std.stdio;
@@ -15,7 +15,7 @@ import std.conv;
 import std.digest : toHexString;
 import std.file : exists;
 import std.path : setExtension;
-
+import tagion.tools.Basic;
 void call_stack_dump(string exefile, string stacktrace) {
     @safe static class Symbol {
         immutable(string) filename;
@@ -123,9 +123,11 @@ void call_stack_dump(string exefile, string stacktrace) {
     }
 }
 
+mixin Main!_main;
+
 enum backtrace_ext = "callstack";
 
-int main(string[] args) {
+int _main(string[] args) {
     immutable program = args[0];
     bool version_switch;
     string exefile;
@@ -139,13 +141,6 @@ int main(string[] args) {
             
 
     );
-
-    version (none)
-        if (version_switch) {
-            writefln("version %s", REVNO);
-            writefln("Git handle %s", HASH);
-            return 0;
-        }
 
     void help() {
         enum default_program = "tagionwave";
