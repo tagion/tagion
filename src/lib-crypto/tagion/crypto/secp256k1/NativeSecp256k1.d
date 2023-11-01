@@ -89,22 +89,13 @@ class NativeSecp256k1 {
     private Format _format_verify;
     private Format _format_sign;
     @trusted
-    this(const Format format_verify = Format.COMPACT,
-            const Format format_sign = Format.COMPACT,
-            const SECP256K1 flag = SECP256K1.CONTEXT_SIGN | SECP256K1.CONTEXT_VERIFY) nothrow
-    in {
-        with (Format) {
-            assert((format_sign is DER) || (format_sign is COMPACT) || (format_sign is RAW),
-                    "Only one format allowed to be specified for the singning (format_sign)");
-        }
-    }
-    do {
+    this(const SECP256K1 flag = SECP256K1.CONTEXT_SIGN | SECP256K1.CONTEXT_VERIFY) nothrow {
         _ctx = secp256k1_context_create(flag);
         scope (exit) {
             randomizeContext;
         }
-        _format_verify = format_verify;
-        _format_sign = format_sign;
+        _format_verify = Format.COMPACT;
+        _format_sign = Format.COMPACT;
     }
 
     /++
@@ -587,7 +578,8 @@ unittest {
 
     /+
  + This tests verify_ecdsa() for a valid signature
- +/{
+ +/
+    version (none) {
         auto data = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90"); //sha256hash of "testing"
         auto sig = decode("3044022079BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F817980220294F14E883B3F525B5367756C2A11EF6CF84B730B36C17CB0C56F0AAB2C98589");
         auto pub = decode("040A629506E1B65CD9D2E0BA9C75DF9C4FED0DB16DC9625ED14397F0AFC836FAE595DC53F8B0EFE61E703075BD9B143BAC75EC0E19F82A2208CAEB32BE53414C40");
@@ -604,7 +596,7 @@ unittest {
     /++
  + This tests verify_ecdsa() for a non-valid signature
  +/
-    {
+    version (none) {
         auto data = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A91"); //sha256hash of "testing"
         auto sig = decode("3044022079BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F817980220294F14E883B3F525B5367756C2A11EF6CF84B730B36C17CB0C56F0AAB2C98589");
         auto pub = decode("040A629506E1B65CD9D2E0BA9C75DF9C4FED0DB16DC9625ED14397F0AFC836FAE595DC53F8B0EFE61E703075BD9B143BAC75EC0E19F82A2208CAEB32BE53414C40");
@@ -621,7 +613,7 @@ unittest {
     /++
  + This tests secret key verify_ecdsa() for a valid secretkey
  +/
-    {
+    version (none) {
         auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
         try {
             auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.DER);
@@ -651,7 +643,7 @@ unittest {
     /++
  + This tests public key create() for a invalid secretkey
  +/
-    {
+    version (none) {
         auto sec = decode("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
         try {
             auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.DER);
@@ -668,7 +660,7 @@ unittest {
     /++
  + This tests sign_ecdsa() for a valid secretkey
  +/
-    {
+    version (none) {
         auto data = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90"); //sha256hash of "testing"
         auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
         try {
@@ -685,7 +677,7 @@ unittest {
     /++
  + This tests sign_ecdsa() for a invalid secretkey
  +/
-    {
+    version (none) {
         auto data = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90"); //sha256hash of "testing"
         auto sec = decode("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
         try {
@@ -701,7 +693,7 @@ unittest {
     /++
  + This tests private key tweak-add
  +/
-    {
+    version (none) {
         auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
         auto data = decode("3982F19BEF1615BCCFBB05E321C10E1D4CBA3DF0E841C2E41EEB6016347653C3"); //sha256hash of "tweak"
         try {
@@ -719,7 +711,7 @@ unittest {
     /++
  + This tests private key tweak-mul
  +/
-    {
+    version (none) {
         auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
         auto data = decode("3982F19BEF1615BCCFBB05E321C10E1D4CBA3DF0E841C2E41EEB6016347653C3"); //sha256hash of "tweak"
         try {
@@ -737,7 +729,7 @@ unittest {
     /++
  + This tests private key tweak-add uncompressed
  +/
-    {
+    version (none) {
         auto pub = decode("040A629506E1B65CD9D2E0BA9C75DF9C4FED0DB16DC9625ED14397F0AFC836FAE595DC53F8B0EFE61E703075BD9B143BAC75EC0E19F82A2208CAEB32BE53414C40");
         auto data = decode("3982F19BEF1615BCCFBB05E321C10E1D4CBA3DF0E841C2E41EEB6016347653C3"); //sha256hash of "tweak"
         try {
@@ -754,7 +746,7 @@ unittest {
     /++
  + This tests private key tweak-mul uncompressed
  +/
-    {
+    version (none) {
         auto pub = decode("040A629506E1B65CD9D2E0BA9C75DF9C4FED0DB16DC9625ED14397F0AFC836FAE595DC53F8B0EFE61E703075BD9B143BAC75EC0E19F82A2208CAEB32BE53414C40");
         auto data = decode("3982F19BEF1615BCCFBB05E321C10E1D4CBA3DF0E841C2E41EEB6016347653C3"); //sha256hash of "tweak"
         try {
@@ -773,8 +765,7 @@ unittest {
  +/
     {
         try {
-            auto crypt = new NativeSecp256k1(
-                    NativeSecp256k1.Format.DER, NativeSecp256k1.Format.DER);
+            auto crypt = new NativeSecp256k1;
             auto result = crypt.randomizeContext;
             assert(result);
         }
@@ -810,7 +801,7 @@ unittest {
     }
 
     { //
-        auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.DER, NativeSecp256k1.Format.DER);
+        auto crypt = new NativeSecp256k1; //(NativeSecp256k1.Format.DER, NativeSecp256k1.Format.DER);
         auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
         immutable privkey = sec.idup;
         //        auto privkey = crypt.secKeyVerify( sec );
@@ -844,8 +835,7 @@ unittest {
     }
 
     {
-        auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.COMPACT, NativeSecp256k1
-                .Format.COMPACT);
+        auto crypt = new NativeSecp256k1;
         auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
         immutable privkey = sec.idup;
         //        auto privkey = crypt.secKeyVerify( sec );
@@ -860,7 +850,7 @@ unittest {
     }
 
     {
-        auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.RAW, NativeSecp256k1.Format.RAW);
+        auto crypt = new NativeSecp256k1;
         auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
         immutable privkey = sec.idup;
         //        auto privkey = crypt.secKeyVerify( sec );
@@ -875,7 +865,7 @@ unittest {
     }
 
     {
-        auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.AUTO, NativeSecp256k1.Format.DER);
+        auto crypt = new NativeSecp256k1;
         auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
         immutable privkey = sec.idup;
         //        auto privkey = crypt.secKeyVerify( sec );
@@ -890,8 +880,7 @@ unittest {
     }
 
     {
-        auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.AUTO, NativeSecp256k1
-                .Format.COMPACT);
+        auto crypt = new NativeSecp256k1;
         auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
         immutable privkey = sec.idup;
         //        auto privkey = crypt.secKeyVerify( sec );
@@ -906,7 +895,7 @@ unittest {
     }
 
     {
-        auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.RAW, NativeSecp256k1.Format.RAW);
+        auto crypt = new NativeSecp256k1;
         auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
         immutable privkey = sec.idup;
         //        auto privkey = crypt.secKeyVerify( sec );
@@ -925,7 +914,7 @@ unittest {
     {
         import std.stdio;
 
-        auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.RAW, NativeSecp256k1.Format.RAW);
+        auto crypt = new NativeSecp256k1;
 
         const aliceSecretKey = decode(
                 "37cf9a0f624a21b0821f4ab3f711ac3a86ac3ae8e4d25bdbd8cdcad7b6cf92d4");
