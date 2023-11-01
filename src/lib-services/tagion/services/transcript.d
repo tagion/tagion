@@ -94,16 +94,21 @@ struct TranscriptService {
                             .filter!(consensus_vote => consensus_vote.verifyBullseye(net, v.value.bullseye))
                             .walkLength
                             .isMajority(number_of_nodes)
-                        );
+                        ).array;
+
+
+            scope(exit) {
+                foreach(a_vote; aggregated_votes) {
+                    votes.remove(a_vote.value.epoch);
+                    epoch_contracts.remove(a_vote.value.epoch);
+                }
+            }
             // create the epochs
 
             Epoch[] consensus_epochs;
 
             loop_epochs: foreach(a_vote; aggregated_votes) {
                 auto previous_epoch_contract = epoch_contracts.get(a_vote.value.epoch, null);
-                // scope(exit) {
-                //     epoch_contracts.remove(a_vote.value.epoch);
-                // }
 
                 if (previous_epoch_contract is null) {
                     log("UNLINKED EPOCH_CONTRACT %s", a_vote.value.epoch);
@@ -120,8 +125,11 @@ struct TranscriptService {
                                     keys, 
                                     keys);
             }
+            // clean up the arrays
 
-            // log("EPOCH_CONTRACT ids: %s", epoch_contracts.byKey.array);
+
+
+            
             log("EPOCH_CONTRACTS: %s, consensus_epochs %s", epoch_contracts.length, consensus_epochs.length);
 
 
@@ -196,6 +204,7 @@ struct TranscriptService {
 
             // add them to the vote array
             foreach (v; received_votes) {
+
                 votes[v.epoch].votes ~= v;
                 //     // const same_bullseyes = votes[v.epoch].votes.all!(_v => _v.verifyBullseye(net, votes[v.epoch].bullseye));
             }
