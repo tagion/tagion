@@ -90,14 +90,14 @@ class SpamOneNodeUntil10EpochsHaveOccured {
         log.registerSubscriptionTask(thisActor.task_name);
         submask.subscribe("epoch_creator/epoch_created");
 
-        int epoch_number;
+        long epoch_number;
 
         auto epoch_before = receiveOnlyTimeout!(LogInfo, const(Document))(10.seconds);
         check(epoch_before[1].isRecord!FinishedEpoch, "not correct subscription received");
         epoch_number = FinishedEpoch(epoch_before[1]).epoch;
 
 
-        int current_epoch_number;
+        long current_epoch_number;
 
         while (current_epoch_number < epoch_number + 10) {
         sendSubmitHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1.net);
@@ -182,9 +182,9 @@ struct SpamWorker {
         writefln("registrering subscription mask %s", thisActor.task_name);
         log.registerSubscriptionTask(thisActor.task_name);
         submask.subscribe("epoch_creator/epoch_created");
-        int epoch_number;
+        long epoch_number;
 
-        while(!thisActor.stop && epoch_number is int.init) {
+        while(!thisActor.stop && epoch_number is long.init) {
             writefln("WAITING FOR RECEIVE");
             auto epoch_before = receiveOnlyTimeout!(LogInfo, const(Document))(10.seconds);
             writefln("AFTER RECEIVE %s", epoch_before);
@@ -193,7 +193,7 @@ struct SpamWorker {
             }
         }
 
-        int current_epoch_number;
+        long current_epoch_number;
         while (!thisActor.stop && current_epoch_number < epoch_number + 10) {
             sendSubmitHiRPC(opts.inputvalidator.sock_addr, hirpc.submit(signed_contract), net);
             (() @trusted => Thread.sleep(100.msecs))();

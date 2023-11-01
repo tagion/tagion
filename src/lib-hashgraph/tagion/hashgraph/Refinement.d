@@ -32,9 +32,9 @@ import tagion.hibon.HiBONRecord;
 struct FinishedEpoch {
     @label("events") const(EventPackage)[] events;
     @label(StdNames.time) sdt_t time;
-    @label("epoch") int epoch;
+    @label("epoch") long epoch;
     mixin HiBONRecord!(q{
-        this(const(Event)[] events, sdt_t time, int epoch) pure {
+        this(const(Event)[] events, sdt_t time, long epoch) pure {
             this.events = events
                 .map!((e) => *(e.event_package))
                 .array;
@@ -120,7 +120,7 @@ class StdRefinement : Refinement {
                 this.time = time;
             }
 
-            this(int num, int denom, int order, sdt_t time, int round_number, ulong witness_count) {
+            this(int num, int denom, int order, sdt_t time, long round_number, ulong witness_count) {
                 this.num = BigInt(num + denom * round_number);
                 this.denom = BigInt(denom * witness_count);
                 this.order = BigInt(order);

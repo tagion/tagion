@@ -13,8 +13,8 @@ struct EventView {
     @label("$n") size_t node_id;
     @label("$a") int altitude;
     @label("$o") int order;
-    @label("$r") int round;
-    @label("$rec") int round_received;
+    @label("$r") long round;
+    @label("$rec") long round_received;
     @label("$w") @optional @(filter.Initialized) bool witness;
     @label("$famous") @optional @(filter.Initialized) bool famous;
     @label("$received") uint[] round_received_mask;
@@ -50,7 +50,7 @@ struct EventView {
                 if (!event.round_received_mask[].empty) {
                     event.round_received_mask[].each!((n) => round_received_mask~=cast(uint)(n));
                 }
-                round_received=(event.round_received)?event.round_received.number:int.min;
+                round_received=(event.round_received)?event.round_received.number:long.min;
             }
         });
 
