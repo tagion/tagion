@@ -6,6 +6,8 @@ import std.stdio;
 import std.exception;
 import std.array;
 import std.algorithm;
+import std.range;
+import std.format;
 
 import tagion.logger.Logger;
 import tagion.basic.Debug : __write;
@@ -87,52 +89,55 @@ struct TranscriptService {
 
             import tagion.hashgraph.HashGraphBasic : isMajority;
 
-            Votes[] finished;
-            foreach(aggregated_vote; votes.byKeyValue) {
-                // if the length is not majority there is no reason to check the signatures.
-                if (!aggregated_vote.value.votes.length.isMajority(number_of_nodes)) {
-                    continue;
+
+            // find the consensus epochs
+            auto aggregated_votes = votes
+                .byKeyValue
+                .filter!(v => v.value.votes.length.isMajority(number_of_nodes))
+                .filter!(v => v.value.votes
+                            .filter!(consensus_vote => consensus_vote.verifyBullseye(net, v.value.bullseye))
+                            .walkLength
+                            .isMajority(number_of_nodes)
+                        );
+            // create the epochs
+
+            Epoch[] consensus_epochs;
+
+            loop_epochs: foreach(a_vote; aggregated_votes) {
+                auto previous_epoch_contract = epoch_contracts.get(a_vote.value.epoch, null);
+                // scope(exit) {
+                //     epoch_contracts.remove(a_vote.value.epoch);
+                // }
+
+                if (previous_epoch_contract is null) {
+                    log("UNLINKED EPOCH_CONTRACT %s", a_vote.value.epoch);
+                    continue loop_epochs;
                 }
 
-                // filter out all signatures that are not equal to the bullseye we have ourselves.
-                auto valid_votes = aggregated_vote.value.votes
-                    .filter!(consensus_vote => consensus_vote.verifyBullseye(net, aggregated_vote.value.bullseye))
-                    .array;
-
-                // if the length of the valid signatures for the epoch is not majority then continue
-                if (!valid_votes.length.isMajority(number_of_nodes)) {
-                    continue;
-                }
-
-                // now we know that we have majority votes and they are the same. 
-                finished ~= aggregated_vote.value;
+                Pubkey[] keys = [Pubkey([1,2,3,4])];
+                // create the epoch;
+                consensus_epochs ~= Epoch(a_vote.value.epoch, 
+                                    sdt_t(previous_epoch_contract.epoch_time), 
+                                    a_vote.value.bullseye, 
+                                    Fingerprint.init, 
+                                    a_vote.value.votes.map!(v => v.signed_bullseye).array,
+                                    keys, 
+                                    keys);
             }
 
-
-            writefln("length of finished votes: %s", finished.length);
-
-
-            
-            
-            // auto test = votes.byKeyValue.filter!(x => x.value.votes.length == number_of_nodes).array;
-            // log("LENGTH OF SOME STUPID VOTES: %s", test.length);
+            // log("EPOCH_CONTRACT ids: %s", epoch_contracts.byKey.array);
+            log("EPOCH_CONTRACTS: %s, consensus_epochs %s", epoch_contracts.length, consensus_epochs.length);
 
 
-            // foreach(t; test) {
-            //     votes.remove(t.key);
-            // }
-
-
-            
 
             const epoch_contract = epoch_contracts.get(res.id, null);
             if (epoch_contract is null) {
-                log("unlinked data received from dart aborting epoch");
+                throw new Exception(format("unlinked epoch contract %s", res.id));
             }
-            scope (exit) {
-                epoch_contracts.remove(res.id);
-                log("removed %s from epoch_contracts", res.id);
-            }
+            // scope (exit) {
+            //     epoch_contracts.remove(res.id);
+            //     log("removed %s from epoch_contracts", res.id);
+            // }
 
             auto recorder = rec_factory.recorder;
             loop_signed_contracts: foreach (signed_contract; epoch_contract.signed_contracts) {
