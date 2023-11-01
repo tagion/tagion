@@ -58,8 +58,6 @@ struct TranscriptService {
             const(ConsensusVoting)[] votes;
             long epoch;
             Fingerprint bullseye;
-            long epoch;
-            this(Fingerprint bullseye, long epoch) {
             this(Fingerprint bullseye, long epoch) pure {
                 this.bullseye = bullseye;
                 this.epoch = epoch;
@@ -101,16 +99,9 @@ struct TranscriptService {
                         ).array;
 
 
-            scope(exit) {
-                foreach(a_vote; aggregated_votes) {
-                    votes.remove(a_vote.value.epoch);
-                    epoch_contracts.remove(a_vote.value.epoch);
-                }
-            }
+
             // create the epochs
-
             Epoch[] consensus_epochs;
-
             loop_epochs: foreach(a_vote; aggregated_votes) {
                 auto previous_epoch_contract = epoch_contracts.get(a_vote.value.epoch, null);
 
@@ -129,12 +120,16 @@ struct TranscriptService {
                                     keys, 
                                     keys);
             }
+            log("EPOCH_CONTRACTS: %s, consensus_epochs %s agg_votes: %s votes: %s", epoch_contracts.length, consensus_epochs.length, aggregated_votes.length, votes.length);
             // clean up the arrays
+            foreach(a_vote; aggregated_votes) {
+                votes.remove(a_vote.value.epoch);
+                epoch_contracts.remove(a_vote.value.epoch);
+            }
 
 
 
             
-            log("EPOCH_CONTRACTS: %s, consensus_epochs %s", epoch_contracts.length, consensus_epochs.length);
 
 
 
@@ -185,15 +180,9 @@ struct TranscriptService {
                 products.remove(net.dartIndex(signed_contract.contract));
             }
 
-            // log("CONSENSUSVOTES: %s",epoch_contract.previous_votes.length);
-
-            // checkLeaks();
             auto req = dartModifyRR();
             req.id = res.id;
 
-            // if(recorder.empty) {
-            //     return;
-            // }
             locate(task_names.dart).send(req, RecordFactory.uniqueRecorder(recorder), cast(immutable) res.id);
 
         }
@@ -207,9 +196,11 @@ struct TranscriptService {
 
             // add them to the vote array
             foreach (v; received_votes) {
-
-                votes[v.epoch].votes ~= v;
-                //     // const same_bullseyes = votes[v.epoch].votes.all!(_v => _v.verifyBullseye(net, votes[v.epoch].bullseye));
+                if (votes.get(v.epoch, Votes.init) !is Votes.init) {
+                    votes[v.epoch].votes ~= v;
+                } else {
+                    log("VOTE IS INIT %s", v.epoch);
+                }
             }
 
             auto signed_contracts = epacks
