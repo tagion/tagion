@@ -980,6 +980,22 @@ version (unittest) {
 
 }
 
+
+@safe
+unittest {
+    // check get fee greater than user amount
+    
+    auto wallet1 = StdSecureWallet("some words", "1234");
+    const bill1 = wallet1.requestBill(1000.TGN);
+    wallet1.addBill(bill1);
+
+    TagionCurrency fees;
+    const res = wallet1.getFee(10_000.TGN, fees);
+
+    // should fail
+    assert(res.value == false);
+}
+
 @safe
 unittest {
 

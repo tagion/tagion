@@ -232,7 +232,7 @@ extern (C) {
         }
 
         const can_pay = __wallet_storage.wallet.getFee(TagionCurrency(amount), tgn_fees);
-        return can_pay ? 1 : 0;
+        return can_pay.value ? 1 : 0;
     }
 
     export uint create_nft_contract(
