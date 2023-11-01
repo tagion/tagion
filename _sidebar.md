@@ -43,6 +43,8 @@
         - [Simple payment](/documents/protocols/contract/Transfer.md)
 	- Actors
 		- [Actor](/documents/modules/actor/actor_requirement.md)
+	- Consensus Protocol
+		- [Epoch Rules](/documents/protocols/consensus_protocol/EpochRules.md)
 
 - API's
     - [HiBON API](/documents/protocols/api/hibon_api.md)
