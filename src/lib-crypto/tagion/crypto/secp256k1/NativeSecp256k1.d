@@ -470,50 +470,16 @@ version (unittest) {
     }
 }
 
-unittest {
+unittest { /// Test of ECDSA
     import std.traits;
-
-    /+
- + This tests verify_ecdsa() for a valid signature
- +/
-    version (none) {
-        auto data = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90"); //sha256hash of "testing"
-        auto sig = decode("3044022079BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F817980220294F14E883B3F525B5367756C2A11EF6CF84B730B36C17CB0C56F0AAB2C98589");
-        auto pub = decode("040A629506E1B65CD9D2E0BA9C75DF9C4FED0DB16DC9625ED14397F0AFC836FAE595DC53F8B0EFE61E703075BD9B143BAC75EC0E19F82A2208CAEB32BE53414C40");
-        try {
-            auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.DER);
-            auto result = crypt.verify_ecdsa(data, sig, pub);
-            assert(result);
-        }
-        catch (ConsensusException e) {
-            assert(0, e.msg);
-        }
-    }
-
-    /++
- + This tests verify_ecdsa() for a non-valid signature
- +/
-    version (none) {
-        auto data = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A91"); //sha256hash of "testing"
-        auto sig = decode("3044022079BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F817980220294F14E883B3F525B5367756C2A11EF6CF84B730B36C17CB0C56F0AAB2C98589");
-        auto pub = decode("040A629506E1B65CD9D2E0BA9C75DF9C4FED0DB16DC9625ED14397F0AFC836FAE595DC53F8B0EFE61E703075BD9B143BAC75EC0E19F82A2208CAEB32BE53414C40");
-        try {
-            auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.DER);
-            auto result = crypt.verify_ecdsa(data, sig, pub);
-            assert(!result);
-        }
-        catch (ConsensusException e) {
-            assert(0, e.msg);
-        }
-    }
+    import std.stdio;
 
     /++
  + This tests secret key verify_ecdsa() for a valid secretkey
- +/
-    version (none) {
-        auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
+ +/{
+        auto sec = "67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530".decode;
         try {
-            auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.DER);
+            auto crypt = new NativeSecp256k1;
             auto result = crypt.secKeyVerify(sec);
             assert(result);
         }
@@ -526,7 +492,7 @@ unittest {
  + This tests secret key verify_ecdsa() for an invalid secretkey
  +/
     {
-        auto sec = decode("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+        auto sec = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF".decode;
         try {
             auto crypt = new NativeSecp256k1;
             auto result = crypt.secKeyVerify(sec);
@@ -540,11 +506,11 @@ unittest {
     /++
  + This tests public key create() for a invalid secretkey
  +/
-    version (none) {
-        auto sec = decode("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+    {
+        auto sec = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF".decode;
         try {
-            auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.DER);
-            auto resultArr = crypt.computePubkey(sec);
+            auto crypt = new NativeSecp256k1;
+            auto result = crypt.computePubkey(sec);
             assert(0, "This test should throw an ConsensusException");
         }
         catch (ConsensusException e) {
@@ -557,14 +523,14 @@ unittest {
     /++
  + This tests sign_ecdsa() for a valid secretkey
  +/
-    version (none) {
-        auto data = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90"); //sha256hash of "testing"
-        auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
+    {
+        const data = "CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90".decode; //sha256hash of "testing"
+        const sec = "67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530".decode;
         try {
-            auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.DER, NativeSecp256k1.Format.DER);
-            auto resultArr = crypt.sign_ecdsa(data, sec);
-            auto sigString = resultArr.toHexString!true;
-            assert(sigString == "30440220182A108E1448DC8F1FB467D06A0F3BB8EA0533584CB954EF8DA112F1D60E39A202201C66F36DA211C087F3AF88B50EDF4F9BDAA6CF5FD6817E74DCA34DB12390C6E9");
+            const crypt = new NativeSecp256k1;
+            const result = crypt.sign_ecdsa(data, sec);
+            assert(result == "182A108E1448DC8F1FB467D06A0F3BB8EA0533584CB954EF8DA112F1D60E39A21C66F36DA211C087F3AF88B50EDF4F9BDAA6CF5FD6817E74DCA34DB12390C6E9"
+                    .decode);
         }
         catch (ConsensusException e) {
             assert(0, e.msg);
@@ -574,12 +540,12 @@ unittest {
     /++
  + This tests sign_ecdsa() for a invalid secretkey
  +/
-    version (none) {
-        auto data = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90"); //sha256hash of "testing"
-        auto sec = decode("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+    {
+        const data = "CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90".decode; //sha256hash of "testing"
+        const sec = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF".decode;
         try {
-            auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.DER, NativeSecp256k1.Format.DER);
-            auto resultArr = crypt.sign_ecdsa(data, sec);
+            const crypt = new NativeSecp256k1;
+            const result = crypt.sign_ecdsa(data, sec);
             assert(0, "This test should throw an ConsensusException");
         }
         catch (ConsensusException e) {
@@ -590,15 +556,14 @@ unittest {
     /++
  + This tests private key tweak-add
  +/
-    version (none) {
-        auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
-        auto data = decode("3982F19BEF1615BCCFBB05E321C10E1D4CBA3DF0E841C2E41EEB6016347653C3"); //sha256hash of "tweak"
+    {
+        const sec = "67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530".decode;
+        const data = "3982F19BEF1615BCCFBB05E321C10E1D4CBA3DF0E841C2E41EEB6016347653C3".decode; //sha256hash of "tweak"
         try {
-            auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.DER, NativeSecp256k1.Format.DER);
-            ubyte[] resultArr;
-            crypt.privKeyTweakAdd(sec, data, resultArr);
-            auto sigString = resultArr.toHexString!true;
-            assert(sigString == "A168571E189E6F9A7E2D657A4B53AE99B909F7E712D1C23CED28093CD57C88F3");
+            const crypt = new NativeSecp256k1;
+            ubyte[] result;
+            crypt.privKeyTweakAdd(sec, data, result);
+            assert(result == "A168571E189E6F9A7E2D657A4B53AE99B909F7E712D1C23CED28093CD57C88F3".decode);
         }
         catch (ConsensusException e) {
             assert(0, e.msg);
@@ -608,15 +573,14 @@ unittest {
     /++
  + This tests private key tweak-mul
  +/
-    version (none) {
-        auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
-        auto data = decode("3982F19BEF1615BCCFBB05E321C10E1D4CBA3DF0E841C2E41EEB6016347653C3"); //sha256hash of "tweak"
+    {
+        const sec = "67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530".decode;
+        const data = "3982F19BEF1615BCCFBB05E321C10E1D4CBA3DF0E841C2E41EEB6016347653C3".decode; //sha256hash of "tweak"
         try {
-            auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.DER, NativeSecp256k1.Format.DER);
-            ubyte[] resultArr;
-            crypt.privKeyTweakMul(sec, data, resultArr);
-            auto sigString = resultArr.toHexString!true;
-            assert(sigString == "97F8184235F101550F3C71C927507651BD3F1CDB4A5A33B8986ACF0DEE20FFFC");
+            const crypt = new NativeSecp256k1;
+            ubyte[] result;
+            crypt.privKeyTweakMul(sec, data, result);
+            assert(result == "97F8184235F101550F3C71C927507651BD3F1CDB4A5A33B8986ACF0DEE20FFFC".decode);
         }
         catch (ConsensusException e) {
             assert(0, e.msg);
@@ -626,14 +590,15 @@ unittest {
     /++
  + This tests private key tweak-add uncompressed
  +/
-    version (none) {
-        auto pub = decode("040A629506E1B65CD9D2E0BA9C75DF9C4FED0DB16DC9625ED14397F0AFC836FAE595DC53F8B0EFE61E703075BD9B143BAC75EC0E19F82A2208CAEB32BE53414C40");
-        auto data = decode("3982F19BEF1615BCCFBB05E321C10E1D4CBA3DF0E841C2E41EEB6016347653C3"); //sha256hash of "tweak"
+    {
+        const pubkey = "033b691036600deb3e04eb666760352989a734c0d24d93630688f1e45ca1b0deb1".decode;
+        const tweak = "3982F19BEF1615BCCFBB05E321C10E1D4CBA3DF0E841C2E41EEB6016347653C3".decode; //sha256hash of "tweak"
         try {
-            auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.DER, NativeSecp256k1.Format.DER);
-            auto resultArr = crypt.pubKeyTweakAdd(pub, data, false);
-            auto sigString = resultArr.toHexString!true;
-            assert(sigString == "0411C6790F4B663CCE607BAAE08C43557EDC1A4D11D88DFCB3D841D0C6A941AF525A268E2A863C148555C48FB5FBA368E88718A46E205FABC3DBA2CCFFAB0796EF");
+            const crypt = new NativeSecp256k1;
+            const result = crypt.pubKeyTweakAdd(pubkey, tweak);
+            writefln("result = %(%02x%)", result);
+            assert(result != pubkey);
+            assert(result == "0357f2926dd1107f86a3353bc023425c64b5294c70672bd89564a92d79ae128300".decode);
         }
         catch (ConsensusException e) {
             assert(0, e.msg);
@@ -643,14 +608,15 @@ unittest {
     /++
  + This tests private key tweak-mul uncompressed
  +/
-    version (none) {
-        auto pub = decode("040A629506E1B65CD9D2E0BA9C75DF9C4FED0DB16DC9625ED14397F0AFC836FAE595DC53F8B0EFE61E703075BD9B143BAC75EC0E19F82A2208CAEB32BE53414C40");
-        auto data = decode("3982F19BEF1615BCCFBB05E321C10E1D4CBA3DF0E841C2E41EEB6016347653C3"); //sha256hash of "tweak"
+    {
+        const pubkey = "033b691036600deb3e04eb666760352989a734c0d24d93630688f1e45ca1b0deb1".decode;
+        const tweak = "3982F19BEF1615BCCFBB05E321C10E1D4CBA3DF0E841C2E41EEB6016347653C3".decode; //sha256hash of "tweak"
         try {
-            auto crypt = new NativeSecp256k1(NativeSecp256k1.Format.DER, NativeSecp256k1.Format.DER);
-            auto resultArr = crypt.pubKeyTweakMul(pub, data, false);
-            auto sigString = resultArr.toHexString!true;
-            assert(sigString == "04E0FE6FE55EBCA626B98A807F6CAF654139E14E5E3698F01A9A658E21DC1D2791EC060D4F412A794D5370F672BC94B722640B5F76914151CFCA6E712CA48CC589");
+            const crypt = new NativeSecp256k1;
+            const result = crypt.pubKeyTweakMul(pubkey, tweak);
+            assert(result != pubkey);
+            writefln("result = %(%02x%)", result);
+            assert(result == "02a80ffb5f6598b3c223e1917c0b3b93a7e7a39bea126c30d3253240b83ed18b57".decode);
         }
         catch (ConsensusException e) {
             assert(0, e.msg);
@@ -686,7 +652,7 @@ unittest {
             while (!crypt.secKeyVerify(data));
             immutable privkey = data.idup;
             immutable pubkey = crypt.computePubkey(privkey);
-
+            writefln("pubkey = %(%02x%)", pubkey);
             immutable signature = crypt.sign_ecdsa(message, privkey);
             assert(crypt.verify_ecdsa(message, signature, pubkey));
         }
@@ -697,7 +663,7 @@ unittest {
     }
 
     { //
-        auto crypt = new NativeSecp256k1; //(NativeSecp256k1.Format.DER, NativeSecp256k1.Format.DER);
+        auto crypt = new NativeSecp256k1;
         auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
         immutable privkey = sec.idup;
         //        auto privkey = crypt.secKeyVerify( sec );
