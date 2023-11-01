@@ -51,13 +51,11 @@ struct DARTOptions {
 @safe
 struct DARTService {
     void task(immutable(DARTOptions) opts, 
-        immutable(ReplicatorOptions) replicator_opts, 
         immutable(TaskNames) task_names, 
         shared(StdSecureNet) shared_net) {
 
         DART db;
         Exception dart_exception;
-        immutable replicator_task_name = task_names.replicator;
 
         const net = new StdSecureNet(shared_net);
         
@@ -71,7 +69,6 @@ struct DARTService {
             db.close();
         }
 
-        ReplicatorServiceHandle replicator = spawn!ReplicatorService(replicator_task_name, replicator_opts);
 
         waitforChildren(Ctrl.ALIVE);
 
@@ -145,7 +142,7 @@ struct DARTService {
 
             req.respond(eye);
 
-            locate(replicator_task_name).send(SendRecorder(), recorder, eye, epoch_number);
+            locate(task_names.replicator).send(SendRecorder(), recorder, eye, epoch_number);
         }
 
         void bullseye(dartBullseyeRR req) @safe {

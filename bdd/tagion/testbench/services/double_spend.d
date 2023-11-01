@@ -413,7 +413,7 @@ class SameContractInDifferentEpochs {
     Document node() {
         import tagion.hashgraph.Refinement : FinishedEpoch;
 
-        int epoch_number;
+        long epoch_number;
         uint max_tries = 20;
         uint counter;
         do {
@@ -425,7 +425,7 @@ class SameContractInDifferentEpochs {
                 epoch_number = FinishedEpoch(epoch_before[1]).epoch;
             }
             counter++;
-        } while(counter < max_tries && epoch_number is int.init);
+        } while(counter < max_tries && epoch_number is long.init);
         check(counter < max_tries, "did not receive epoch in max tries");
 
         writefln("EPOCH NUMBER %s", epoch_number);
@@ -433,7 +433,7 @@ class SameContractInDifferentEpochs {
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
         sendSubmitHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit,wallet1.net);
 
-        int new_epoch_number;
+        long new_epoch_number;
         counter = 0;
         do {
             auto new_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(10.seconds);
@@ -444,7 +444,7 @@ class SameContractInDifferentEpochs {
                 new_epoch_number = FinishedEpoch(new_epoch[1]).epoch;
             }
             counter++;
-        } while(counter < max_tries && new_epoch_number is int.init);
+        } while(counter < max_tries && new_epoch_number is long.init);
         check(counter < max_tries, "did not receive epoch in max tries");
 
         writefln("EPOCH NUMBER updated %s", new_epoch_number);
@@ -530,7 +530,7 @@ class SameContractInDifferentEpochsDifferentNode {
         uint max_tries = 20;
         uint counter;
 
-        int epoch_number;
+        long epoch_number;
         do {
             auto epoch_before = receiveOnlyTimeout!(LogInfo, const(Document))(10.seconds);
             writefln("epoch_before %s looking for %s", epoch_before[1], opts1.task_names.epoch_creator);
@@ -539,7 +539,7 @@ class SameContractInDifferentEpochsDifferentNode {
                 epoch_number = FinishedEpoch(epoch_before[1]).epoch;
             }
             counter++;
-        } while(counter < max_tries && epoch_number is int.init);
+        } while(counter < max_tries && epoch_number is long.init);
         check(counter < max_tries, "did not receive epoch in max tries");
 
         writeln("EPOCH NUMBER %s", epoch_number);
@@ -547,7 +547,7 @@ class SameContractInDifferentEpochsDifferentNode {
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
         sendSubmitHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit, wallet1.net);
 
-        int new_epoch_number;
+        long new_epoch_number;
         counter = 0;
         do {
             auto new_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(10.seconds);
@@ -555,13 +555,13 @@ class SameContractInDifferentEpochsDifferentNode {
             check(new_epoch[1].isRecord!FinishedEpoch, "not correct subscription received");
             if (new_epoch[0].task_name == opts2.task_names.epoch_creator) {
                 writefln("UPDATING NEW EPOCH_NUMBER");
-                int _new_epoch_number = FinishedEpoch(new_epoch[1]).epoch;
+                long _new_epoch_number = FinishedEpoch(new_epoch[1]).epoch;
                 if (_new_epoch_number > epoch_number) {
                     new_epoch_number = _new_epoch_number;
                 }
             }
             counter++;
-        } while(counter < max_tries && new_epoch_number is int.init);
+        } while(counter < max_tries && new_epoch_number is long.init);
         check(counter < max_tries, "did not receive epoch in max tries");
 
         writeln("EPOCH NUMBER updated %s", new_epoch_number);

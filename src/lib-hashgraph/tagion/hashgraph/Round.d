@@ -56,7 +56,7 @@ class Round {
         Round _next;
         bool _decided;
     }
-    immutable int number;
+    immutable long number;
 
     package Event[] _events;
     public BitMask famous_mask;
@@ -398,7 +398,7 @@ class Round {
      * Returns: number of undecided roundes 
      */
         @nogc
-        int coin_round_distance() pure const nothrow {
+        long coin_round_distance() pure const nothrow {
             return last_round.number - last_decided_round.number;
         }
 
