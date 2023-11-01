@@ -298,40 +298,37 @@ class NativeSecp256k1 {
      + @param pubkey 32-byte seckey
      +/
     @trusted
-    immutable(ubyte[]) pubKeyTweakMul(const(ubyte[]) pubkey, const(ubyte[]) tweak, immutable bool compress = true) const
-    in {
-        assert(pubkey.length == COMPRESSED_PUBKEY_SIZE || pubkey.length == UNCOMPRESSED_PUBKEY_SIZE);
-    }
+    immutable(ubyte[]) pubKeyTweakMul(const(ubyte[]) pubkey, const(ubyte[]) tweak) const
+    in (pubkey.length == COMPRESSED_PUBKEY_SIZE)
     do {
+        enum compress = true;
         ubyte[] pubkey_array = pubkey.dup;
         ubyte* _pubkey = pubkey_array.ptr;
         const(ubyte)* _tweak = tweak.ptr;
         size_t publen = pubkey.length;
 
         secp256k1_pubkey pubkey_result;
-        int ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey_result, _pubkey, publen);
-        check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_PARSE_FAULT);
-
-        ret = secp256k1_ec_pubkey_tweak_mul(_ctx, &pubkey_result, _tweak);
-        check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_TWEAK_MULT_FAULT);
-
-        ubyte[] outputSer_array;
-        SECP256K1 flag;
-        if (compress) {
-            outputSer_array = new ubyte[COMPRESSED_PUBKEY_SIZE];
-            flag = SECP256K1.EC_COMPRESSED;
+        {
+            const ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey_result, _pubkey, publen);
+            check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_PARSE_FAULT);
         }
-        else {
-            outputSer_array = new ubyte[UNCOMPRESSED_PUBKEY_SIZE];
-            flag = SECP256K1.EC_UNCOMPRESSED;
+        {
+            const ret = secp256k1_ec_pubkey_tweak_mul(_ctx, &pubkey_result, _tweak);
+            check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_TWEAK_MULT_FAULT);
         }
+        ubyte[COMPRESSED_PUBKEY_SIZE] output_ser;
+        //ubyte[] outputSer_array;
+        //            outputSer_array = new ubyte[COMPRESSED_PUBKEY_SIZE];
+        enum flag = SECP256K1.EC_COMPRESSED;
+        //ubyte* outputSer = outputSer_array.ptr;
+        size_t outputLen = output_ser.length;
 
-        ubyte* outputSer = outputSer_array.ptr;
-        size_t outputLen = outputSer_array.length;
+        {
+            const ret = secp256k1_ec_pubkey_serialize(_ctx, &output_ser[0], &outputLen, &pubkey_result, flag);
 
-        int ret2 = secp256k1_ec_pubkey_serialize(_ctx, outputSer, &outputLen, &pubkey_result, flag);
-
-        return assumeUnique(outputSer_array);
+            check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_SERIALIZE);
+        }
+        return output_ser.idup;
     }
 
     /++
