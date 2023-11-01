@@ -300,13 +300,6 @@ class NativeSecp256k1 {
     in (pubkey.length == COMPRESSED_PUBKEY_SIZE)
     in (tweak.length == TWEAK_SIZE)
     do {
-        //      enum compress = true;
-        //ubyte[COMPRESSED_PUBKEY_SIZE] pubkey_array;
-        //= pubkey.dup;
-        //        ubyte* _pubkey = pubkey_array.ptr;
-        //        const(ubyte)* _tweak = tweak.ptr;
-        //size_t publen = pubkey.length;
-
         secp256k1_pubkey pubkey_result;
         {
             const ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey_result, &pubkey[0], pubkey.length);
@@ -317,10 +310,7 @@ class NativeSecp256k1 {
             check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_TWEAK_MULT_FAULT);
         }
         ubyte[COMPRESSED_PUBKEY_SIZE] output_ser;
-        //ubyte[] outputSer_array;
-        //            outputSer_array = new ubyte[COMPRESSED_PUBKEY_SIZE];
         enum flag = SECP256K1.EC_COMPRESSED;
-        //ubyte* outputSer = outputSer_array.ptr;
         size_t outputLen = output_ser.length;
 
         {
@@ -338,31 +328,33 @@ class NativeSecp256k1 {
      + @param seckey byte array of secret key used in exponentiaion
      + @param pubkey byte array of public key used in exponentiaion
      +/
-    @trusted immutable(ubyte[]) createECDHSecret(scope const(ubyte[]) seckey, const(
-            ubyte[]) pubkey) const
+    @trusted immutable(ubyte[]) createECDHSecret(
+            scope const(ubyte[]) seckey,
+    const(ubyte[]) pubkey) const
     in {
-        assert(seckey.length <= SECKEY_SIZE);
-        assert(pubkey.length <= UNCOMPRESSED_PUBKEY_SIZE);
+        assert(seckey.length == SECKEY_SIZE);
+        assert(pubkey.length == COMPRESSED_PUBKEY_SIZE);
     }
     do {
-        //        auto ctx=getContext();
-        const secdata = seckey.ptr;
-        const pubdata = pubkey.ptr;
-        size_t publen = pubkey.length;
-
-        secp256k1_pubkey pubkey_result;
-        ubyte[32] result;
-        ubyte* _result = &result[0];
-
-        int ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey_result, pubdata, publen);
-        check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_PARSE_FAULT);
-
-        ret = secp256k1_ecdh(_ctx, _result, &pubkey_result, secdata, null, null);
         scope (exit) {
             randomizeContext;
         }
-        check(ret == 1, ConsensusFailCode.SECURITY_EDCH_FAULT);
+        //        auto ctx=getContext();
+        //const secdata = seckey.ptr;
+        //const pubdata = pubkey.ptr;
+        //size_t publen = pubkey.length;
 
+        secp256k1_pubkey pubkey_result;
+        ubyte[32] result;
+        //ubyte* _result = &result[0];
+        {
+            const ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey_result, &pubkey[0], pubkey.length);
+            check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_PARSE_FAULT);
+        }
+        {
+            const ret = secp256k1_ecdh(_ctx, &result[0], &pubkey_result, &seckey[0], null, null);
+            check(ret == 1, ConsensusFailCode.SECURITY_EDCH_FAULT);
+        }
         return result.idup;
     }
 
