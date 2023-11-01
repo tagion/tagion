@@ -9,10 +9,10 @@ import tagion.crypto.Types : Signature, Fingerprint;
 import tagion.hibon.Document : Document;
 import tagion.basic.ConsensusExceptions;
 import std.range;
+import tagion.crypto.random.random;
 
 void scramble(T, B = T[])(scope ref T[] data, scope const(B) xor = null) @safe if (T.sizeof is ubyte.sizeof)
 in (xor.empty || data.length == xor.length) {
-    import tagion.crypto.random.random;
 
     scope buf = cast(ubyte[]) data;
     getRandom(buf);
@@ -28,8 +28,9 @@ void scramble(T)(scope ref T[] data) @trusted if (T.sizeof > ubyte.sizeof) {
 
 package alias check = Check!SecurityConsensusException;
 
+alias StdHashNet = StdHashNetT!false;
 @safe
-class StdHashNet : HashNet {
+class StdHashNetT(bool SCHNORR) : HashNet {
     import std.format;
 
     enum HASH_SIZE = 32;
@@ -93,7 +94,6 @@ class StdSecureNet : StdHashNet, SecureNet {
         void tweakMul(const(ubyte[]) tweek_code, ref ubyte[] tweak_privkey) const;
         void tweakAdd(const(ubyte[]) tweek_code, ref ubyte[] tweak_privkey);
         immutable(ubyte[]) ECDHSecret(scope const(Pubkey) pubkey) const;
-        Buffer mask(const(ubyte[]) _mask) const;
         void clone(StdSecureNet net) const;
     }
 
@@ -124,7 +124,7 @@ class StdSecureNet : StdHashNet, SecureNet {
     bool verify(const Fingerprint message, const Signature signature, const Pubkey pubkey) const {
         consensusCheck!(SecurityConsensusException)(signature.length != 0 && signature.length <= 520,
                 ConsensusFailCode.SECURITY_SIGNATURE_SIZE_FAULT);
-        return _crypt.verify(cast(Buffer) message, cast(Buffer) signature, cast(Buffer) pubkey);
+        return _crypt.verify_ecdsa(cast(Buffer) message, cast(Buffer) signature, cast(Buffer) pubkey);
     }
 
     Signature sign(const Fingerprint message) const
@@ -152,10 +152,6 @@ class StdSecureNet : StdHashNet, SecureNet {
     }
     do {
         _secret.tweakMul(tweak_code, tweak_privkey);
-    }
-
-    final Buffer mask(const(ubyte[]) _mask) const {
-        return _secret.mask(_mask);
     }
 
     void derive(string tweak_word, shared(SecureNet) secure_net) {
@@ -195,60 +191,42 @@ class StdSecureNet : StdHashNet, SecureNet {
         assert(_secret is null);
     }
     do {
-        import std.digest.sha : SHA256;
+        scope (exit) {
+            getRandom(privkey);
+        }
         import std.string : representation;
 
         check(secKeyVerify(privkey), ConsensusFailCode.SECURITY_PRIVATE_KEY_INVALID);
 
         alias AES = AESCrypto!256;
         _pubkey = _crypt.computePubkey(privkey);
-        // Generate scramble key for the private key
-        import std.random;
-
-        auto seed = new ubyte[32];
-
-        scramble(seed);
-        // CBR: Note AES need to be change to beable to handle const keys
-        auto aes_key = rawCalcHash(seed).dup;
-        scramble(seed);
-        auto aes_iv = rawCalcHash(seed)[4 .. 4 + AES.BLOCK_SIZE].dup;
-
+        auto aes_key_iv = new ubyte[AES.KEY_SIZE + AES.BLOCK_SIZE];
+        getRandom(aes_key_iv);
+        auto aes_key = aes_key_iv[0 .. AES.KEY_SIZE];
+        auto aes_iv = aes_key_iv[AES.KEY_SIZE .. $];
         // Encrypt private key
         auto encrypted_privkey = new ubyte[privkey.length];
         AES.encrypt(aes_key, aes_iv, privkey, encrypted_privkey);
-
-        AES.encrypt(rawCalcHash(seed), aes_iv, encrypted_privkey, privkey);
-        scramble(seed);
-
-        AES.encrypt(aes_key, aes_iv, encrypted_privkey, privkey);
-
-        AES.encrypt(aes_key, aes_iv, privkey, seed);
-
-        AES.encrypt(aes_key, aes_iv, encrypted_privkey, privkey);
-
         @safe
         void do_secret_stuff(scope void delegate(const(ubyte[]) privkey) @safe dg) {
             // CBR:
             // Yes I know it is security by obscurity
             // But just don't want to have the private in clear text in memory
             // for long period of time
-            auto privkey = new ubyte[encrypted_privkey.length];
+            auto tmp_privkey = new ubyte[encrypted_privkey.length];
             scope (exit) {
-                auto seed = new ubyte[32];
-                scramble(seed, aes_key);
-                scramble(aes_key, seed);
-                scramble(aes_iv);
-                AES.encrypt(aes_key, aes_iv, privkey, encrypted_privkey);
-                AES.encrypt(rawCalcHash(seed), aes_iv, encrypted_privkey, privkey);
+                getRandom(aes_key_iv);
+                AES.encrypt(aes_key, aes_iv, tmp_privkey, encrypted_privkey);
+                AES.encrypt(rawCalcHash(encrypted_privkey ~ aes_key_iv), aes_iv, encrypted_privkey, tmp_privkey);
             }
-            AES.decrypt(aes_key, aes_iv, encrypted_privkey, privkey);
-            dg(privkey);
+            AES.decrypt(aes_key, aes_iv, encrypted_privkey, tmp_privkey);
+            dg(tmp_privkey);
         }
 
         @safe class LocalSecret : SecretMethods {
             immutable(ubyte[]) sign(const(ubyte[]) message) const {
                 immutable(ubyte)[] result;
-                do_secret_stuff((const(ubyte[]) privkey) { result = _crypt.sign(message, privkey); });
+                do_secret_stuff((const(ubyte[]) privkey) { result = _crypt.sign_ecdsa(message, privkey); });
                 return result;
             }
 
@@ -272,7 +250,7 @@ class StdSecureNet : StdHashNet, SecureNet {
                 return result;
             }
 
-            Buffer mask(const(ubyte[]) _mask) const {
+            version (none) Buffer mask(const(ubyte[]) _mask) const {
                 import std.algorithm.iteration : sum;
 
                 check(sum(_mask) != 0, ConsensusFailCode.SECURITY_MASK_VECTOR_IS_ZERO);
