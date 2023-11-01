@@ -159,13 +159,22 @@ struct GenesisEpoch {
 @recordType("$@E")
 struct Epoch {
     @label(StdNames.epoch) long epoch_number;
-    sdt_t time; /// Epoch concensus time
+    @label(StdNames.time) sdt_t time; // Time stamp
     @label(StdNames.bullseye) Fingerprint bullseye;
     @label(StdNames.previous) Fingerprint previous;
     @optional Pubkey[] active; /// Sorted keys
     @optional Pubkey[] deactive;
 
-    mixin HiBONRecord;
+    mixin HiBONRecord!(q{
+        this(const(long) epoch_number,const(sdt_t) time, const(Fingerprint) bullseye, const(Fingerprint) previous, Pubkey[] active, Pubkey[] deactive) {
+            this.epoch_number = epoch_number;
+            this.time = time;
+            this.bullseye = bullseye;
+            this.previous = previous;
+            this.active = active;
+            this.deactive = deactive;
+        }
+    });
 }
 
 @recordType("$@Tagion")
