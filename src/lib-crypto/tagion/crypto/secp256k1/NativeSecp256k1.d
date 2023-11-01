@@ -194,26 +194,33 @@ class NativeSecp256k1 {
 
         secp256k1_pubkey pubkey;
 
-        int ret = secp256k1_ec_pubkey_create(_ctx, &pubkey, sec);
-        check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_CREATE_FAULT);
+        {
+            const ret = secp256k1_ec_pubkey_create(_ctx, &pubkey, sec);
+            check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_CREATE_FAULT);
+        }
         // ubyte[pubkey_size] outputSer_array;
-        ubyte[] outputSer_array;
-        SECP256K1 flag;
-        if (compress) {
-            outputSer_array = new ubyte[COMPRESSED_PUBKEY_SIZE];
-            flag = SECP256K1.EC_COMPRESSED;
+        //ubyte[] outputSer_array;
+        //        SECP256K1 flag;
+        ubyte[COMPRESSED_PUBKEY_SIZE] output_ser;
+        version (none) {
+            if (compress) {
+                outputSer_array = new ubyte[COMPRESSED_PUBKEY_SIZE];
+                //          flag = SECP256K1.EC_COMPRESSED;
+            }
+            else {
+                outputSer_array = new ubyte[UNCOMPRESSED_PUBKEY_SIZE];
+                //        flag = SECP256K1.EC_UNCOMPRESSED;
+            }
         }
-        else {
-            outputSer_array = new ubyte[UNCOMPRESSED_PUBKEY_SIZE];
-            flag = SECP256K1.EC_UNCOMPRESSED;
+        enum flag = SECP256K1.EC_COMPRESSED;
+
+        //   ubyte* outputSer = outputSer_array.ptr;
+        size_t outputLen = output_ser.length;
+        {
+            const ret = secp256k1_ec_pubkey_serialize(_ctx, &output_ser[0], &outputLen, &pubkey, flag);
+            check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_CREATE_FAULT);
         }
-        ubyte* outputSer = outputSer_array.ptr;
-        size_t outputLen = outputSer_array.length;
-
-        int ret2 = secp256k1_ec_pubkey_serialize(_ctx, outputSer, &outputLen, &pubkey, flag);
-
-        immutable(ubyte[]) result = outputSer_array[0 .. outputLen].idup;
-        return result;
+        return output_ser.idup;
     }
 
     /++
