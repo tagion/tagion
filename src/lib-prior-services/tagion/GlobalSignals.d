@@ -56,7 +56,7 @@ else {
     shared static this() {
         import std.file : thisExePath;
 
-        maie_name = thisExePath.idup;
+        main_name = thisExePath.idup;
 
     }
 }
