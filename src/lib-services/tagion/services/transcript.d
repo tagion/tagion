@@ -10,7 +10,6 @@ import std.range;
 import std.format;
 
 import tagion.logger.Logger;
-import tagion.basic.Debug : __write;
 import tagion.utils.JSONCommon;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.actor.actor;
@@ -30,8 +29,6 @@ import tagion.utils.StdTime;
 import tagion.script.common;
 import tagion.dart.Recorder;
 import tagion.services.options : TaskNames;
-import tagion.hibon.HiBONJSON;
-import tagion.utils.Miscellaneous : toHexString;
 import tagion.crypto.Types;
 
 @safe:
@@ -47,14 +44,13 @@ struct TranscriptOptions {
  * Receives: (inputDoc, Document)
  * Sends: (inputHiRPC, HiRPC.Receiver) to receiver_task, where Document is a correctly formatted HiRPC
 **/
-pragma(msg, "fixme, transcript needs to be updated with the hashgraph to use long as id");
 struct TranscriptService {
-    void task(immutable(TranscriptOptions) opts, immutable(size_t) number_of_nodes, shared(StdSecureNet) shared_net, immutable(TaskNames) task_names) {
+    void task(immutable(TranscriptOptions) opts, immutable(size_t) number_of_nodes, shared(StdSecureNet) shared_net, immutable(
+            TaskNames) task_names) {
         const net = new StdSecureNet(shared_net);
 
         immutable(ContractProduct)*[DARTIndex] products;
         auto rec_factory = RecordFactory(net);
-
 
         struct Votes {
             ConsensusVoting[] votes;
@@ -214,7 +210,6 @@ struct TranscriptService {
                 .join
                 .array;
 
-            
             auto req = dartCheckReadRR();
             req.id = epoch_number;
             epoch_contracts[req.id] = (() @trusted => new immutable(EpochContracts)(signed_contracts, epoch_time))();

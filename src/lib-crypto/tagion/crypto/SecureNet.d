@@ -316,8 +316,8 @@ class StdSecureNet : StdHashNet, SecureNet {
         return _secret.ECDHSecret(pubkey);
     }
 
-    Pubkey computePubkey(scope const(ubyte[]) seckey, immutable bool compress = true) const {
-        return Pubkey(_crypt.computePubkey(seckey, compress));
+    Pubkey computePubkey(scope const(ubyte[]) seckey) const {
+        return Pubkey(_crypt.computePubkey(seckey));
     }
 
     this() nothrow {
