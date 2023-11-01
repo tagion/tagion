@@ -162,15 +162,17 @@ struct Epoch {
     @label(StdNames.time) sdt_t time; // Time stamp
     @label(StdNames.bullseye) Fingerprint bullseye;
     @label(StdNames.previous) Fingerprint previous;
+    @label("$signs") const(Signature)[] signs; /// Signature of all inputs
     @optional Pubkey[] active; /// Sorted keys
     @optional Pubkey[] deactive;
 
     mixin HiBONRecord!(q{
-        this(const(long) epoch_number,const(sdt_t) time, const(Fingerprint) bullseye, const(Fingerprint) previous, Pubkey[] active, Pubkey[] deactive) {
+        this(const(long) epoch_number,const(sdt_t) time, const(Fingerprint) bullseye, const(Fingerprint) previous,const(Signature)[] signs, Pubkey[] active, Pubkey[] deactive) {
             this.epoch_number = epoch_number;
             this.time = time;
             this.bullseye = bullseye;
             this.previous = previous;
+            this.signs = signs;
             this.active = active;
             this.deactive = deactive;
         }

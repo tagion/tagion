@@ -56,17 +56,11 @@ struct TranscriptService {
 
         struct Votes {
             ConsensusVoting[] votes;
-            long epoch;
             Fingerprint bullseye;
+            long epoch;
             this(Fingerprint bullseye, long epoch) {
                 this.bullseye = bullseye;
                 this.epoch = epoch;
-            }
-
-            bool addVote(ConsensusVoting vote) {
-                // check the vote
-                votes ~= vote;
-                return votes.length == number_of_nodes;
             }
         }
         Votes[long] votes;
@@ -74,15 +68,12 @@ struct TranscriptService {
         struct EpochContracts {
             SignedContract[] signed_contracts;
             sdt_t epoch_time;
-            Votes[] previous_votes;
+
+            // Votes[] previous_votes;
         }
 
         immutable(EpochContracts)*[long] epoch_contracts;
 
-
-        // void checkLeaks() {
-        //     log("EPOCH_CONTRACTS: %s, VOTES %s, PRODUCTS %s", epoch_contracts.length, votes.length, products.length);
-        // }
 
         void createRecorder(dartCheckReadRR.Response res, immutable(DARTIndex)[] not_in_dart) {
             log("received response from dart %s", not_in_dart);
@@ -90,6 +81,49 @@ struct TranscriptService {
             DARTIndex[] used;
 
             used ~= not_in_dart;
+
+            // check the votes here instead
+            // get a list of all epochs where majority of votes with correct signature have been received
+
+            import tagion.hashgraph.HashGraphBasic : isMajority;
+
+            Votes[] finished;
+            foreach(aggregated_vote; votes.byKeyValue) {
+                // if the length is not majority there is no reason to check the signatures.
+                if (!aggregated_vote.value.votes.length.isMajority(number_of_nodes)) {
+                    continue;
+                }
+
+                // filter out all signatures that are not equal to the bullseye we have ourselves.
+                auto valid_votes = aggregated_vote.value.votes
+                    .filter!(consensus_vote => consensus_vote.verifyBullseye(net, aggregated_vote.value.bullseye))
+                    .array;
+
+                // if the length of the valid signatures for the epoch is not majority then continue
+                if (!valid_votes.length.isMajority(number_of_nodes)) {
+                    continue;
+                }
+
+                // now we know that we have majority votes and they are the same. 
+                finished ~= aggregated_vote.value;
+            }
+
+
+            writefln("length of finished votes: %s", finished.length);
+
+
+            
+            
+            // auto test = votes.byKeyValue.filter!(x => x.value.votes.length == number_of_nodes).array;
+            // log("LENGTH OF SOME STUPID VOTES: %s", test.length);
+
+
+            // foreach(t; test) {
+            //     votes.remove(t.key);
+            // }
+
+
+            
 
             const epoch_contract = epoch_contracts.get(res.id, null);
             if (epoch_contract is null) {
@@ -138,6 +172,8 @@ struct TranscriptService {
                 products.remove(net.dartIndex(signed_contract.contract));
             }
 
+            // log("CONSENSUSVOTES: %s",epoch_contract.previous_votes.length);
+
             // checkLeaks();
             auto req = dartModifyRR();
             req.id = res.id;
@@ -151,23 +187,16 @@ struct TranscriptService {
 
         void epoch(consensusEpoch, immutable(EventPackage*)[] epacks, immutable(long) epoch_number, const(sdt_t) epoch_time) @safe {
 
+            // filter out all the votes
             ConsensusVoting[] received_votes = epacks
                 .filter!(epack => epack.event_body.payload.isRecord!ConsensusVoting)
                 .map!(epack => ConsensusVoting(epack.event_body.payload))
                 .array;
 
-            Votes[] previous_votes;
+            // add them to the vote array
             foreach (v; received_votes) {
-                if (votes[v.epoch].addVote(v)) {
-                    const same_bullseyes = votes[v.epoch].votes.all!(_v => _v.verifyBullseye(net, votes[v.epoch].bullseye));
-
-                    if (!same_bullseyes) {
-                        throw new Exception("Signed bullseyes not the same");
-                    }
-                    
-                    previous_votes ~= votes[v.epoch];
-                    votes.remove(v.epoch);
-                }
+                votes[v.epoch].votes ~= v;
+                //     // const same_bullseyes = votes[v.epoch].votes.all!(_v => _v.verifyBullseye(net, votes[v.epoch].bullseye));
             }
 
             auto signed_contracts = epacks
@@ -183,15 +212,13 @@ struct TranscriptService {
             
             auto req = dartCheckReadRR();
             req.id = epoch_number;
-            epoch_contracts[req.id] = (() @trusted => new immutable(EpochContracts)(signed_contracts, epoch_time, cast(immutable) previous_votes))();
+            epoch_contracts[req.id] = (() @trusted => new immutable(EpochContracts)(signed_contracts, epoch_time))();
 
-            // pragma(msg, "Inputs ", typeof(inputs));
             if (inputs.length == 0) {
                 createRecorder(req.Response(req.msg, req.id), inputs);
                 return;
             }
 
-            // checkLeaks();
             (() @trusted => locate(task_names.dart).send(req, inputs))();
 
         }
@@ -221,13 +248,10 @@ struct TranscriptService {
             log("received ContractProduct");
             auto product_index = net.dartIndex(product.contract.sign_contract.contract);
             products[product_index] = product;
-            // checkLeaks();
 
         }
 
-        //run(&epoch);
         run(&epoch, &produceContract, &createRecorder, &receiveBullseye);
-        //run(&produceContract, &createRecorder, &receiveBullseye);
     }
 }
 

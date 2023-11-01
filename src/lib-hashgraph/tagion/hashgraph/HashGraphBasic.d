@@ -62,6 +62,11 @@ bool isMajority(const size_t voting, const size_t node_size) pure nothrow {
     return (node_size >= minimum_nodes) && (3 * voting > 2 * node_size);
 }
 
+bool isMajority(T, S)(T voting, S node_size) pure nothrow {
+    return (node_size >= minimum_nodes) && (3 * voting > 2 * node_size);
+}
+
+
 @safe @nogc
 bool isMajority(const(BitMask) mask, const HashGraph hashgraph) pure nothrow {
     return isMajority(mask.count, hashgraph.node_size);
