@@ -142,7 +142,7 @@ bool verify(const(SecureNet) net, const(SignedContract*) signed_contract, const(
 
 @recordType("$@G")
 struct GenesisEpoch {
-    @label(StdNames.epoch) long epoch_number;//should always be zero
+    @label(StdNames.epoch) long epoch_number; //should always be zero
     Pubkey[] nodes;
     Document testamony;
     @label(StdNames.time) sdt_t time;
@@ -198,7 +198,7 @@ struct TagionGlobals {
     @label("events") const(Fingerprint)[] event_prints;
     @label("total") BigNumber total;
     @label("total_burned") BigNumber total_burned;
-    @label("number_of_bills") long number_of_bills; 
+    @label("number_of_bills") long number_of_bills;
     @label("burnt_bills") long burnt_bills;
 
     mixin HiBONRecord!(q{
@@ -218,16 +218,19 @@ struct ConsensusVoting {
     @label(StdNames.owner) Pubkey owner;
     @label(StdNames.signed) Signature signed_bullseye;
 
-    mixin HiBONRecord!(
-            q{
-            this(long epoch, Pubkey owner, Signature signed_bullseye) {
-                this.owner = owner;
-                this.signed_bullseye = signed_bullseye;
-                this.epoch = epoch;
-            }
-        });
+    mixin HiBONRecord!(q{
+        this(long epoch, Pubkey owner, Signature signed_bullseye) pure {
+            this.owner = owner;
+            this.signed_bullseye = signed_bullseye;
+            this.epoch = epoch;
+        }
+        this(const(Document) doc) immutable @trusted {
+            immutable _this=cast(immutable)ConsensusVoting(doc);
+            this.tupleof = _this.tupleof;
+        }
+    });
 
-    bool verifyBullseye(const(SecureNet) net, const(Fingerprint) bullseye) {
+    bool verifyBullseye(const(SecureNet) net, const(Fingerprint) bullseye) const {
         return net.verify(bullseye, signed_bullseye, owner);
     }
 }

@@ -2,6 +2,8 @@
 /// [Documentation](https://docs.tagion.org/#/documents/architecture/transcript)
 module tagion.services.transcript;
 
+@safe:
+
 import std.stdio;
 import std.exception;
 import std.array;
@@ -53,10 +55,12 @@ struct TranscriptService {
         auto rec_factory = RecordFactory(net);
 
         struct Votes {
-            ConsensusVoting[] votes;
+            const(ConsensusVoting)[] votes;
+            long epoch;
             Fingerprint bullseye;
             long epoch;
             this(Fingerprint bullseye, long epoch) {
+            this(Fingerprint bullseye, long epoch) pure {
                 this.bullseye = bullseye;
                 this.epoch = epoch;
             }
@@ -64,13 +68,13 @@ struct TranscriptService {
         Votes[long] votes;
 
         struct EpochContracts {
-            SignedContract[] signed_contracts;
+            const(SignedContract)[] signed_contracts;
             sdt_t epoch_time;
 
             // Votes[] previous_votes;
         }
 
-        immutable(EpochContracts)*[long] epoch_contracts;
+        const(EpochContracts)*[long] epoch_contracts;
 
 
         void createRecorder(dartCheckReadRR.Response res, immutable(DARTIndex)[] not_in_dart) {
@@ -196,10 +200,9 @@ struct TranscriptService {
 
         void epoch(consensusEpoch, immutable(EventPackage*)[] epacks, immutable(long) epoch_number, const(sdt_t) epoch_time) @safe {
 
-            // filter out all the votes
-            ConsensusVoting[] received_votes = epacks
+            immutable(ConsensusVoting)[] received_votes = epacks
                 .filter!(epack => epack.event_body.payload.isRecord!ConsensusVoting)
-                .map!(epack => ConsensusVoting(epack.event_body.payload))
+                .map!(epack => immutable(ConsensusVoting)(epack.event_body.payload))
                 .array;
 
             // add them to the vote array
@@ -221,7 +224,7 @@ struct TranscriptService {
 
             auto req = dartCheckReadRR();
             req.id = epoch_number;
-            epoch_contracts[req.id] = (() @trusted => new immutable(EpochContracts)(signed_contracts, epoch_time))();
+            epoch_contracts[req.id] = new const EpochContracts(signed_contracts, epoch_time);
 
             if (inputs.length == 0) {
                 createRecorder(req.Response(req.msg, req.id), inputs);
