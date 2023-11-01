@@ -86,7 +86,7 @@ class NativeSecp256k1 {
         AUTO = RAW | DER | COMPACT
     }
 
-    private Format _format_verify;
+    //    private Format _format_verify;
     private Format _format_sign;
     @trusted
     this(const SECP256K1 flag = SECP256K1.CONTEXT_SIGN | SECP256K1.CONTEXT_VERIFY) nothrow {
@@ -94,7 +94,7 @@ class NativeSecp256k1 {
         scope (exit) {
             randomizeContext;
         }
-        _format_verify = Format.COMPACT;
+        //_format_verify = Format.COMPACT;
         _format_sign = Format.COMPACT;
     }
 
@@ -123,32 +123,28 @@ class NativeSecp256k1 {
 
         secp256k1_ecdsa_signature sig;
         secp256k1_pubkey pubkey;
-        if (_format_verify & Format.DER) {
-            ret = secp256k1_ecdsa_signature_parse_der(_ctx, &sig, sigdata, siglen);
-        }
+        version (none)
+            if (_format_verify & Format.DER) {
+                ret = secp256k1_ecdsa_signature_parse_der(_ctx, &sig, sigdata, siglen);
+            }
+        version (none)
+            if (ret) {
+                goto PARSED;
+            }
+            else {
+                check((_format_verify & (Format.COMPACT | Format.RAW)) != 0, ConsensusFailCode
+                        .SECURITY_DER_SIGNATURE_PARSE_FAULT);
+            }
+        ret = secp256k1_ecdsa_signature_parse_compact(_ctx, &sig, sigdata);
         if (ret) {
             goto PARSED;
         }
-        else {
-            check((_format_verify & (Format.COMPACT | Format.RAW)) != 0, ConsensusFailCode
-                    .SECURITY_DER_SIGNATURE_PARSE_FAULT);
-        }
-        if (_format_verify & Format.COMPACT) {
-            ret = secp256k1_ecdsa_signature_parse_compact(_ctx, &sig, sigdata);
-        }
-        if (ret) {
-            goto PARSED;
-        }
-        else {
-            check((_format_verify & Format.RAW) || (_format_verify == 0), ConsensusFailCode
-                    .SECURITY_COMPACT_SIGNATURE_PARSE_FAULT);
-        }
-        if ((_format_verify & Format.RAW) || (_format_verify == 0)) {
-            check(siglen == SIGNATURE_SIZE, ConsensusFailCode.SECURITY_SIGNATURE_SIZE_FAULT);
-            import core.stdc.string : memcpy;
+        //if ((_format_verify & Format.RAW) || (_format_verify == 0)) {
+        check(siglen == SIGNATURE_SIZE, ConsensusFailCode.SECURITY_SIGNATURE_SIZE_FAULT);
+        import core.stdc.string : memcpy;
 
-            memcpy(&(sig.data), sigdata, siglen);
-        }
+        memcpy(&(sig.data), sigdata, siglen);
+        //}
     PARSED:
         auto publen = pub.length;
         ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey, pubdata, publen);
