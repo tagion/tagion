@@ -339,14 +339,8 @@ class NativeSecp256k1 {
         scope (exit) {
             randomizeContext;
         }
-        //        auto ctx=getContext();
-        //const secdata = seckey.ptr;
-        //const pubdata = pubkey.ptr;
-        //size_t publen = pubkey.length;
-
         secp256k1_pubkey pubkey_result;
         ubyte[32] result;
-        //ubyte* _result = &result[0];
         {
             const ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey_result, &pubkey[0], pubkey.length);
             check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_PARSE_FAULT);
@@ -381,9 +375,7 @@ class NativeSecp256k1 {
     void createKeyPair(const(ubyte[]) seckey, ref secp256k1_keypair keypair) const
     in (seckey.length == SECKEY_SIZE)
     do {
-        //auto _keypair = new secp256k1_keypair;
         scope (exit) {
-            //  keypair = _keypair.data[];
             randomizeContext;
         }
         const rt = secp256k1_keypair_create(_ctx, &keypair, &seckey[0]);
