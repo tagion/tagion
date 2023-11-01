@@ -78,25 +78,14 @@ class NativeSecp256k1 {
     enum SIGNATURE_SIZE = 64;
     enum SECKEY_SIZE = 32;
 
-    package secp256k1_context* _ctx;
+    protected secp256k1_context* _ctx;
 
-    enum Format {
-        DER = 1,
-        COMPACT = DER << 1,
-        RAW = COMPACT << 1,
-        AUTO = RAW | DER | COMPACT
-    }
-
-    //    private Format _format_verify;
-    //private Format _format_sign;
     @trusted
     this(const SECP256K1 flag = SECP256K1.CONTEXT_SIGN | SECP256K1.CONTEXT_VERIFY) nothrow {
         _ctx = secp256k1_context_create(flag);
         scope (exit) {
             randomizeContext;
         }
-        //_format_verify = Format.COMPACT;
-        //_format_sign = Format.COMPACT;
     }
 
     /++
@@ -154,13 +143,16 @@ class NativeSecp256k1 {
 
         }
 
-        int ret = secp256k1_ecdsa_sign(_ctx, sig, &msg[0], &seckey[0], null, null);
-        check(ret == 1, ConsensusFailCode.SECURITY_SIGN_FAULT);
-        ubyte[SIGNATURE_SIZE] outputSer_array;
-        ubyte* outputSer = &outputSer_array[0];
-        ret = secp256k1_ecdsa_signature_serialize_compact(_ctx, outputSer, sig);
-        check(ret == 1, ConsensusFailCode.SECURITY_SIGN_FAULT);
-        return outputSer_array.idup;
+        {
+            const ret = secp256k1_ecdsa_sign(_ctx, sig, &msg[0], &seckey[0], null, null);
+            check(ret == 1, ConsensusFailCode.SECURITY_SIGN_FAULT);
+        }
+        ubyte[SIGNATURE_SIZE] output_ser;
+        {
+            const ret = secp256k1_ecdsa_signature_serialize_compact(_ctx, &output_ser[0], sig);
+            check(ret == 1, ConsensusFailCode.SECURITY_SIGN_FAULT);
+        }
+        return output_ser.idup;
     }
 
     /++
@@ -171,7 +163,7 @@ class NativeSecp256k1 {
     @trusted
     bool secKeyVerify(scope const(ubyte[]) seckey) const
     in {
-        assert(seckey.length == 32);
+        assert(seckey.length == SECKEY_SIZE);
     }
     do {
         return secp256k1_ec_seckey_verify(_ctx, &seckey[0]) == 1;
