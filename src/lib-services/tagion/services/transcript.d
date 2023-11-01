@@ -8,7 +8,6 @@ import std.array;
 import std.algorithm;
 
 import tagion.logger.Logger;
-import tagion.basic.Debug : __write;
 import tagion.utils.JSONCommon;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.actor.actor;
@@ -28,8 +27,6 @@ import tagion.utils.StdTime;
 import tagion.script.common;
 import tagion.dart.Recorder;
 import tagion.services.options : TaskNames;
-import tagion.hibon.HiBONJSON;
-import tagion.utils.Miscellaneous : toHexString;
 import tagion.crypto.Types;
 
 @safe:
@@ -45,14 +42,13 @@ struct TranscriptOptions {
  * Receives: (inputDoc, Document)
  * Sends: (inputHiRPC, HiRPC.Receiver) to receiver_task, where Document is a correctly formatted HiRPC
 **/
-pragma(msg, "fixme, transcript needs to be updated with the hashgraph to use long as id");
 struct TranscriptService {
-    void task(immutable(TranscriptOptions) opts, immutable(size_t) number_of_nodes, shared(StdSecureNet) shared_net, immutable(TaskNames) task_names) {
+    void task(immutable(TranscriptOptions) opts, immutable(size_t) number_of_nodes, shared(StdSecureNet) shared_net, immutable(
+            TaskNames) task_names) {
         const net = new StdSecureNet(shared_net);
 
         immutable(ContractProduct)*[DARTIndex] products;
         auto rec_factory = RecordFactory(net);
-
 
         struct Votes {
             ConsensusVoting[] votes;
@@ -69,6 +65,7 @@ struct TranscriptService {
                 return votes.length == number_of_nodes;
             }
         }
+
         Votes[long] votes;
 
         struct EpochContracts {
@@ -78,7 +75,6 @@ struct TranscriptService {
         }
 
         immutable(EpochContracts)*[long] epoch_contracts;
-
 
         // void checkLeaks() {
         //     log("EPOCH_CONTRACTS: %s, VOTES %s, PRODUCTS %s", epoch_contracts.length, votes.length, products.length);
@@ -164,7 +160,7 @@ struct TranscriptService {
                     if (!same_bullseyes) {
                         throw new Exception("Signed bullseyes not the same");
                     }
-                    
+
                     previous_votes ~= votes[v.epoch];
                     votes.remove(v.epoch);
                 }
@@ -180,7 +176,6 @@ struct TranscriptService {
                 .join
                 .array;
 
-            
             auto req = dartCheckReadRR();
             req.id = epoch_number;
             epoch_contracts[req.id] = (() @trusted => new immutable(EpochContracts)(signed_contracts, epoch_time, cast(immutable) previous_votes))();
