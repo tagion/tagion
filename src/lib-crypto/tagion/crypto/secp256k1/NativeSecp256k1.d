@@ -268,9 +268,6 @@ class NativeSecp256k1 {
     immutable(ubyte[]) pubKeyTweakAdd(const(ubyte[]) pubkey, const(ubyte[]) tweak) const
     in (pubkey.length == COMPRESSED_PUBKEY_SIZE)
     in (tweak.length == TWEAK_SIZE)
-    out (result) {
-        assert(result.length == COMPRESSED_PUBKEY_SIZE);
-    }
     do {
         secp256k1_pubkey pubkey_result;
         {
@@ -286,6 +283,7 @@ class NativeSecp256k1 {
         size_t outputLen = output_ser.length;
         {
             const ret = secp256k1_ec_pubkey_serialize(_ctx, &output_ser[0], &outputLen, &pubkey_result, flag);
+            assert(outputLen == COMPRESSED_PUBKEY_SIZE);
             check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_SERIALIZE);
         }
         return output_ser.idup;
@@ -298,40 +296,30 @@ class NativeSecp256k1 {
      + @param pubkey 32-byte seckey
      +/
     @trusted
-    immutable(ubyte[]) pubKeyTweakMul(const(ubyte[]) pubkey, const(ubyte[]) tweak, immutable bool compress = true) const
-    in {
-        assert(pubkey.length == COMPRESSED_PUBKEY_SIZE || pubkey.length == UNCOMPRESSED_PUBKEY_SIZE);
-    }
+    immutable(ubyte[]) pubKeyTweakMul(const(ubyte[]) pubkey, const(ubyte[]) tweak) const
+    in (pubkey.length == COMPRESSED_PUBKEY_SIZE)
+    in (tweak.length == TWEAK_SIZE)
     do {
-        ubyte[] pubkey_array = pubkey.dup;
-        ubyte* _pubkey = pubkey_array.ptr;
-        const(ubyte)* _tweak = tweak.ptr;
-        size_t publen = pubkey.length;
-
         secp256k1_pubkey pubkey_result;
-        int ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey_result, _pubkey, publen);
-        check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_PARSE_FAULT);
-
-        ret = secp256k1_ec_pubkey_tweak_mul(_ctx, &pubkey_result, _tweak);
-        check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_TWEAK_MULT_FAULT);
-
-        ubyte[] outputSer_array;
-        SECP256K1 flag;
-        if (compress) {
-            outputSer_array = new ubyte[COMPRESSED_PUBKEY_SIZE];
-            flag = SECP256K1.EC_COMPRESSED;
+        {
+            const ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey_result, &pubkey[0], pubkey.length);
+            check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_PARSE_FAULT);
         }
-        else {
-            outputSer_array = new ubyte[UNCOMPRESSED_PUBKEY_SIZE];
-            flag = SECP256K1.EC_UNCOMPRESSED;
+        {
+            const ret = secp256k1_ec_pubkey_tweak_mul(_ctx, &pubkey_result, &tweak[0]);
+            check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_TWEAK_MULT_FAULT);
         }
+        ubyte[COMPRESSED_PUBKEY_SIZE] output_ser;
+        enum flag = SECP256K1.EC_COMPRESSED;
+        size_t outputLen = output_ser.length;
 
-        ubyte* outputSer = outputSer_array.ptr;
-        size_t outputLen = outputSer_array.length;
+        {
+            const ret = secp256k1_ec_pubkey_serialize(_ctx, &output_ser[0], &outputLen, &pubkey_result, flag);
 
-        int ret2 = secp256k1_ec_pubkey_serialize(_ctx, outputSer, &outputLen, &pubkey_result, flag);
-
-        return assumeUnique(outputSer_array);
+            assert(outputLen == COMPRESSED_PUBKEY_SIZE);
+            check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_SERIALIZE);
+        }
+        return output_ser.idup;
     }
 
     /++
@@ -340,31 +328,27 @@ class NativeSecp256k1 {
      + @param seckey byte array of secret key used in exponentiaion
      + @param pubkey byte array of public key used in exponentiaion
      +/
-    @trusted immutable(ubyte[]) createECDHSecret(scope const(ubyte[]) seckey, const(
-            ubyte[]) pubkey) const
+    @trusted immutable(ubyte[]) createECDHSecret(
+            scope const(ubyte[]) seckey,
+    const(ubyte[]) pubkey) const
     in {
-        assert(seckey.length <= SECKEY_SIZE);
-        assert(pubkey.length <= UNCOMPRESSED_PUBKEY_SIZE);
+        assert(seckey.length == SECKEY_SIZE);
+        assert(pubkey.length == COMPRESSED_PUBKEY_SIZE);
     }
     do {
-        //        auto ctx=getContext();
-        const secdata = seckey.ptr;
-        const pubdata = pubkey.ptr;
-        size_t publen = pubkey.length;
-
-        secp256k1_pubkey pubkey_result;
-        ubyte[32] result;
-        ubyte* _result = &result[0];
-
-        int ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey_result, pubdata, publen);
-        check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_PARSE_FAULT);
-
-        ret = secp256k1_ecdh(_ctx, _result, &pubkey_result, secdata, null, null);
         scope (exit) {
             randomizeContext;
         }
-        check(ret == 1, ConsensusFailCode.SECURITY_EDCH_FAULT);
-
+        secp256k1_pubkey pubkey_result;
+        ubyte[32] result;
+        {
+            const ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey_result, &pubkey[0], pubkey.length);
+            check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_PARSE_FAULT);
+        }
+        {
+            const ret = secp256k1_ecdh(_ctx, &result[0], &pubkey_result, &seckey[0], null, null);
+            check(ret == 1, ConsensusFailCode.SECURITY_EDCH_FAULT);
+        }
         return result.idup;
     }
 
@@ -391,9 +375,7 @@ class NativeSecp256k1 {
     void createKeyPair(const(ubyte[]) seckey, ref secp256k1_keypair keypair) const
     in (seckey.length == SECKEY_SIZE)
     do {
-        //auto _keypair = new secp256k1_keypair;
         scope (exit) {
-            //  keypair = _keypair.data[];
             randomizeContext;
         }
         const rt = secp256k1_keypair_create(_ctx, &keypair, &seckey[0]);
@@ -479,6 +461,13 @@ class NativeSecp256k1 {
 
 version (unittest) {
     import tagion.utils.Miscellaneous : toHexString, decode;
+
+    const(ubyte[]) sha256(scope const(ubyte[]) data) {
+        import std.digest.sha : SHA256;
+        import std.digest;
+
+        return digest!SHA256(data).dup;
+    }
 }
 
 unittest {
@@ -721,7 +710,7 @@ unittest {
         assert(crypt.verify_ecdsa(message, signature, pubkey));
 
         // Drived key a
-        const drive = decode("ABCDEF");
+        const drive = sha256("ABCDEF".decode);
         ubyte[] privkey_a_drived;
         crypt.privKeyTweakMul(privkey, drive, privkey_a_drived);
         assert(privkey != privkey_a_drived);
