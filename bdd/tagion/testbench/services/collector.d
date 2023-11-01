@@ -34,7 +34,7 @@ import tagion.basic.Types : FileExtension, Buffer;
 import tagion.dart.Recorder;
 import tagion.dart.DARTBasic;
 import tagion.communication.HiRPC;
-import tagion.services.replicator : ReplicatorOptions;
+import tagion.services.replicator;
 import tagion.services.options : TaskNames;
 
 enum feature = Feature(
@@ -70,6 +70,7 @@ class ItWork {
     enum dart_service = "dart_service_task";
     DARTServiceHandle dart_handle;
     CollectorServiceHandle collector_handle;
+    ReplicatorServiceHandle replicator_handle;
 
     TagionBill[] input_bills;
     SecureNet[] input_nets;
@@ -110,7 +111,8 @@ class ItWork {
 
             auto dart_net = new StdSecureNet;
             dart_net.generateKeyPair("dartnet");
-            dart_handle = (() @trusted => spawn!DARTService(task_names.dart, opts, replicator_opts, task_names, cast(shared) dart_net))();
+            dart_handle = (() @trusted => spawn!DARTService(task_names.dart, opts, task_names, cast(shared) dart_net))();
+            replicator_handle = (() @trusted => spawn!ReplicatorService(task_names.replicator, replicator_opts))();
             check(waitforChildren(Ctrl.ALIVE), "dart service did not alive");
         }
 
