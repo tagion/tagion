@@ -2,6 +2,8 @@
 /// [Documentation](https://docs.tagion.org/#/documents/architecture/transcript)
 module tagion.services.transcript;
 
+@safe:
+
 import std.stdio;
 import std.exception;
 import std.array;
@@ -51,15 +53,15 @@ struct TranscriptService {
         auto rec_factory = RecordFactory(net);
 
         struct Votes {
-            ConsensusVoting[] votes;
+            const(ConsensusVoting)[] votes;
             long epoch;
             Fingerprint bullseye;
-            this(Fingerprint bullseye, long epoch) {
+            this(Fingerprint bullseye, long epoch) pure {
                 this.bullseye = bullseye;
                 this.epoch = epoch;
             }
 
-            bool addVote(ConsensusVoting vote) {
+            bool addVote(const(ConsensusVoting) vote) {
                 // check the vote
                 votes ~= vote;
                 return votes.length == number_of_nodes;
@@ -69,12 +71,12 @@ struct TranscriptService {
         Votes[long] votes;
 
         struct EpochContracts {
-            SignedContract[] signed_contracts;
+            const(SignedContract)[] signed_contracts;
             sdt_t epoch_time;
-            Votes[] previous_votes;
+            const(Votes)[] previous_votes;
         }
 
-        immutable(EpochContracts)*[long] epoch_contracts;
+        const(EpochContracts)*[long] epoch_contracts;
 
         // void checkLeaks() {
         //     log("EPOCH_CONTRACTS: %s, VOTES %s, PRODUCTS %s", epoch_contracts.length, votes.length, products.length);
@@ -147,15 +149,18 @@ struct TranscriptService {
 
         void epoch(consensusEpoch, immutable(EventPackage*)[] epacks, immutable(long) epoch_number, const(sdt_t) epoch_time) @safe {
 
-            ConsensusVoting[] received_votes = epacks
+            immutable(ConsensusVoting)[] received_votes = epacks
                 .filter!(epack => epack.event_body.payload.isRecord!ConsensusVoting)
-                .map!(epack => ConsensusVoting(epack.event_body.payload))
+                .map!(epack => immutable(ConsensusVoting)(epack.event_body.payload))
                 .array;
 
-            Votes[] previous_votes;
+            const(Votes)[] previous_votes;
             foreach (v; received_votes) {
                 if (votes[v.epoch].addVote(v)) {
-                    const same_bullseyes = votes[v.epoch].votes.all!(_v => _v.verifyBullseye(net, votes[v.epoch].bullseye));
+                    const same_bullseyes =
+                        votes[v.epoch]
+                            .votes
+                            .all!(_v => _v.verifyBullseye(net, votes[v.epoch].bullseye));
 
                     if (!same_bullseyes) {
                         throw new Exception("Signed bullseyes not the same");
@@ -178,7 +183,7 @@ struct TranscriptService {
 
             auto req = dartCheckReadRR();
             req.id = epoch_number;
-            epoch_contracts[req.id] = (() @trusted => new immutable(EpochContracts)(signed_contracts, epoch_time, cast(immutable) previous_votes))();
+            epoch_contracts[req.id] = new const EpochContracts(signed_contracts, epoch_time, previous_votes);
 
             // pragma(msg, "Inputs ", typeof(inputs));
             if (inputs.length == 0) {
