@@ -43,7 +43,8 @@ jobs:
         if: always()
         run: |
           mkdir -p ${{ env.ARTIFACT_DIR }}
-          cp -r --parents build/${{ env.TARGET }}/bin/ ${{ env.ARTIFACT_DIR }}
+          trunk=$(find build/x86_64-linux/bin -type f -not -name "*.o" -not -path "*/cov/*")
+          cp -r --parents $trunk ${{ env.ARTIFACT_DIR }}
 
           make clean
 
@@ -122,7 +123,8 @@ jobs:
         run: |
           mkdir -p ${{ env.ARTIFACT_DIR }}
           make ci-files
-          cp -r --parents logs/ build/${{ env.TARGET }}/bin/ ${{ env.ARTIFACT_DIR }}
+          trunk=$(find build/${{ env.TARGET }}/bin -type f -not -name "*.o" -not -path "*/cov/*")
+          cp -r --parents logs/ $trunk ${{ env.ARTIFACT_DIR }}
 
           make clean
           rm -r logs/ || echo "no logs"
