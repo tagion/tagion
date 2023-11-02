@@ -521,9 +521,10 @@ class BlockFile {
     }
 
     T load(T)(const Index index) if (isHiBONRecord!T) {
+        import tagion.hibon.HiBONJSON;
         const doc = load(index);
 
-        check(isRecord!T(doc), format("The loaded document is not a %s record", T.stringof));
+        check(isRecord!T(doc), format("The loaded document is not a %s record on index %s. loaded document: %s", T.stringof, index, doc.toPretty));
         return T(doc);
     }
 
