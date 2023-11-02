@@ -173,7 +173,7 @@ jobs:
     steps:
       - name: Create tar ball
         run: |
-          tar -vczf ${{ env.ARTIFACT_DIR }} -o ${{ env.ARTIFACT_DIR }}.tar.gz
+          tar czf ${{ env.ARTIFACT_DIR }}.tar.gz ${{ env.ARTIFACT_DIR }}
         
       - uses: actions/upload-artifact@v3
         if: failure() 
