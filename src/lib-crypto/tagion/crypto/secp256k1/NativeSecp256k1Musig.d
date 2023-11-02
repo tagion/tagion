@@ -8,11 +8,9 @@ import tagion.crypto.secp256k1.c.secp256k1_musig;
 import tagion.crypto.secp256k1.c.secp256k1;
 import tagion.crypto.secp256k1.c.secp256k1_extrakeys;
 
-enum TWEAK_SIZE = 32;
-enum MESSAGE_SIZE = 32;
-enum SESSION_ID_SIZE = 32;
-enum SECNONCE_SIZE = 32;
-class NativeSecp256k1Musig : NativeSecp256k1 {
+class NativeSecp256k1Musig : NativeSecp256k1Schnorr {
+    enum SESSION_ID_SIZE = 32;
+    enum SECNONCE_SIZE = 32;
 
     @trusted
     bool musigPartialSign(
@@ -217,13 +215,6 @@ version (unittest) {
     import std.array;
     import std.format;
     import std.stdio;
-
-    const(ubyte[]) sha256(scope const(ubyte[]) data) {
-        import std.digest.sha : SHA256;
-        import std.digest;
-
-        return digest!SHA256(data).dup;
-    }
 }
 
 unittest {
@@ -383,7 +374,7 @@ unittest {
     // Verify signature
     //
     {
-        const ret = crypt.verify_schnorr(signature, message_samples[0], agg_pubkey);
+        const ret = crypt.verify(signature, message_samples[0], agg_pubkey);
         assert(ret, "Failed to verify multi signature");
     }
 }

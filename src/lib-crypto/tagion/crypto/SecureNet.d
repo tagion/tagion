@@ -28,9 +28,8 @@ void scramble(T)(scope ref T[] data) @trusted if (T.sizeof > ubyte.sizeof) {
 
 package alias check = Check!SecurityConsensusException;
 
-alias StdHashNet = StdHashNetT!false;
 @safe
-class StdHashNetT(bool SCHNORR) : HashNet {
+class StdHashNet : HashNet {
     import std.format;
 
     enum HASH_SIZE = 32;
@@ -70,8 +69,9 @@ class StdHashNetT(bool SCHNORR) : HashNet {
     }
 }
 
+alias StdSecureNet = StdSecureNetT!false;
 @safe
-class StdSecureNet : StdHashNet, SecureNet {
+class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
     import tagion.crypto.secp256k1.NativeSecp256k1;
     import tagion.crypto.Types : Pubkey;
     import tagion.crypto.aes.AESCrypto;
@@ -124,7 +124,7 @@ class StdSecureNet : StdHashNet, SecureNet {
     bool verify(const Fingerprint message, const Signature signature, const Pubkey pubkey) const {
         consensusCheck!(SecurityConsensusException)(signature.length != 0 && signature.length <= 520,
                 ConsensusFailCode.SECURITY_SIGNATURE_SIZE_FAULT);
-        return _crypt.verify_ecdsa(cast(Buffer) message, cast(Buffer) signature, cast(Buffer) pubkey);
+        return _crypt.verify(cast(Buffer) message, cast(Buffer) signature, cast(Buffer) pubkey);
     }
 
     Signature sign(const Fingerprint message) const
@@ -226,7 +226,7 @@ class StdSecureNet : StdHashNet, SecureNet {
         @safe class LocalSecret : SecretMethods {
             immutable(ubyte[]) sign(const(ubyte[]) message) const {
                 immutable(ubyte)[] result;
-                do_secret_stuff((const(ubyte[]) privkey) { result = _crypt.sign_ecdsa(message, privkey); });
+                do_secret_stuff((const(ubyte[]) privkey) { result = _crypt.sign(message, privkey); });
                 return result;
             }
 
@@ -307,8 +307,9 @@ class StdSecureNet : StdHashNet, SecureNet {
         createKeyPair(_priv_key);
     }
 
-    immutable(ubyte[]) ECDHSecret(scope const(ubyte[]) seckey, scope const(
-            Pubkey) pubkey) const {
+    immutable(ubyte[]) ECDHSecret(
+            scope const(ubyte[]) seckey,
+    scope const(Pubkey) pubkey) const {
         return _crypt.createECDHSecret(seckey, cast(Buffer) pubkey);
     }
 
@@ -320,6 +321,7 @@ class StdSecureNet : StdHashNet, SecureNet {
         return Pubkey(_crypt.computePubkey(seckey));
     }
 
+    alias NativeSecp256k1 = NativeSecp256k1T!Schnorr;
     this() nothrow {
         _crypt = new NativeSecp256k1;
     }
