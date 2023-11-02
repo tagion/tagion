@@ -97,7 +97,8 @@ struct TranscriptService {
                             .filter!(consensus_vote => consensus_vote.verifyBullseye(net, v.value.bullseye))
                             .walkLength
                             .isMajority(number_of_nodes)
-                        ).array;
+                        ).array
+                .sort!((a,b) => a.value.epoch < b.value.epoch);
             // clean up the arrays on exit
             scope(exit) {
                 foreach(a_vote; aggregated_votes) {
@@ -106,7 +107,7 @@ struct TranscriptService {
                 }
             }
 
-            // create the epochs
+            // create the epochs. Sort them by epoch number so that we can create the previous link
             Epoch[] consensus_epochs;
             loop_epochs: foreach(a_vote; aggregated_votes) {
                 auto previous_epoch_contract = epoch_contracts.get(a_vote.value.epoch, null);
@@ -135,6 +136,7 @@ struct TranscriptService {
                 Add the epochs to the recorder. We can assume that there will be multiple epochs due
                 to the hashgraph being asynchronous.
             */
+
             recorder.insert(consensus_epochs, Archive.Type.ADD);
             
 
