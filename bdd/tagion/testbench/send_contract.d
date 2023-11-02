@@ -99,6 +99,7 @@ int _main(string[] args) {
         DARTFile.create(path, net);
         auto db = new DART(net, path);
         db.modify(recorder);
+        db.close;
     }
 
     immutable neuewelle_args = ["send_contract_test", config_file]; // ~ args;

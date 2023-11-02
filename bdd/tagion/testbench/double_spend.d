@@ -104,6 +104,7 @@ int _main(string[] args) {
         DARTFile.create(path, net);
         auto db = new DART(net, path);
         db.modify(recorder);
+        db.close;
     }
 
     immutable neuewelle_args = ["double_spend", config_file, "--nodeopts", module_path]; // ~ args;
