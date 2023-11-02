@@ -131,7 +131,7 @@ jobs:
   acceptance_stage:
     runs-on: CD
     timeout-minutes: 7
-    needs: commit_stage unittest build
+    needs: [commit_stage, unittest, build]
     
     steps:
       - name: Copy Artifact to local machine
