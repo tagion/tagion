@@ -1,18 +1,10 @@
 export GODEBUG=cgocheck=0
 
-ifdef WOLFSSL
-SSLIMPLEMENTATION=$(LIBWOLFSSL)
-else
-SSLIMPLEMENTATION=$(LIBOPENSSL)
-NO_WOLFSSL=-a -not -path "*/wolfssl/*"
-endif
-
 NO_UNITDATA=-a -not -path "*/unitdata/*"
 EXCLUDED_DIRS+=-a -not -path "*/lib-betterc/*"
 EXCLUDED_DIRS+=-a -not -path "*/tests/*"
 EXCLUDED_DIRS+=-a -not -path "*/.dub/*"
 EXCLUDED_DIRS+=-a -not -path "*/lib-p2pgowrapper/*"
-EXCLUDED_DIRS+=-a -not -path "*/lib-network/tagion/network/wolfssl/*"
 
 LIB_DFILES:=${shell find $(DSRC) -name "*.d" -a -path "*/lib-*" $(EXCLUDED_DIRS) $(NO_UNITDATA) }
 
@@ -49,7 +41,7 @@ BIN_DEPS=${shell find $(DSRC) -name "*.d" -a -path "*/src/bin-$1/*" $(EXCLUDED_D
 #
 # New Wave
 #
-target-neuewelle: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1)  $(LIBNNG)
+target-neuewelle: LIBS+=  $(LIBSECP256K1)  $(LIBNNG)
 ${call DO_BIN,neuewelle,$(LIB_DFILES) ${call BIN_DEPS,wave},tagion}
 
 #
@@ -61,19 +53,19 @@ ${call DO_BIN,tagionshell,$(LIB_DFILES) ${call BIN_DEPS,tagionshell},tagion}
 #
 # New Wallet
 #
-target-geldbeutel: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1)  
+target-geldbeutel: LIBS+=  $(LIBSECP256K1)  
 ${call DO_BIN,geldbeutel,$(LIB_DFILES) ${call BIN_DEPS,geldbeutel},tagion}
 
 #
 # New tagion boot
 #
-target-stiefel: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1)  
+target-stiefel: LIBS+=  $(LIBSECP256K1)  
 ${call DO_BIN,stiefel,$(LIB_DFILES) ${call BIN_DEPS,stiefel},tagion}
 
 #
 #  HiBON reqular expression print
 #
-target-hirep: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1)  
+target-hirep: LIBS+=  $(LIBSECP256K1)  
 ${call DO_BIN,hirep,$(LIB_DFILES) ${call BIN_DEPS,hirep},tagion}
 
 
@@ -81,49 +73,49 @@ ${call DO_BIN,hirep,$(LIB_DFILES) ${call BIN_DEPS,hirep},tagion}
 #
 # HiBON utility
 #
-target-hibonutil: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) 
+target-hibonutil: LIBS+=  $(LIBSECP256K1) 
 ${call DO_BIN,hibonutil,$(LIB_DFILES) ${call BIN_DEPS,hibonutil},tagion}
 
 
 #
 # DART utility
 #
-target-dartutil: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) 
+target-dartutil: LIBS+=  $(LIBSECP256K1) 
 ${call DO_BIN,dartutil,$(LIB_DFILES) ${call BIN_DEPS,dartutil},tagion}
 
 #
 # DART utility
 #
-target-blockutil: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) 
+target-blockutil: LIBS+=  $(LIBSECP256K1) 
 ${call DO_BIN,blockutil,$(LIB_DFILES) ${call BIN_DEPS,blockutil},tagion}
 
 #
 # WASM utility
 #
-target-wasmutil: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) 
+target-wasmutil: LIBS+=  $(LIBSECP256K1) 
 ${call DO_BIN,wasmutil,$(LIB_DFILES) ${call BIN_DEPS,wasmutil},tagion}
 
 
-target-signs: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) 
+target-signs: LIBS+=  $(LIBSECP256K1) 
 ${call DO_BIN,signs,$(LIB_DFILES) ${call BIN_DEPS,signs},tagion}
 
 #
 # Recorderchain utility
 #
-target-recorderchain: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) 
+target-recorderchain: LIBS+=  $(LIBSECP256K1) 
 ${call DO_BIN,recorderchain,$(LIB_DFILES) ${call BIN_DEPS,recorderchain},tagion}
 
 
 #
 # Profile view
 #
-target-tprofview: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) 
+target-tprofview: LIBS+=  $(LIBSECP256K1) 
 ${call DO_BIN,tprofview,$(LIB_DFILES) ${call BIN_DEPS,tprofview},tagion}
 
 #
 # Hashgraph view
 #
-target-graphview: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1) 
+target-graphview: LIBS+= $(LIBSECP256K1) 
 ${call DO_BIN,graphview,$(LIB_DFILES) ${call BIN_DEPS,graphview},tagion}
 
 #

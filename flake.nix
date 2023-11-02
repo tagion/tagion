@@ -17,7 +17,7 @@
         name = "tagion";
 
         buildInputs =
-          [ wolfssl nng secp256k1-zkp.defaultPackage.x86_64-linux mbedtls ];
+          [ nng secp256k1-zkp.defaultPackage.x86_64-linux mbedtls ];
 
         nativeBuildInputs = [
           dub

@@ -72,18 +72,6 @@
 
 [Multipleclients_server_connections.md](bdd/tagion/testbench/network/Multipleclients_server_connections.md)
 
-[SSL_C_server_C_client_multithread.md](bdd/tagion/testbench/network/SSL_C_server_C_client_multithread.md)
-
-[SSL_DC_Server_test.md](bdd/tagion/testbench/network/SSL_DC_Server_test.md)
-
-[SSL_D_Client_test.md](bdd/tagion/testbench/network/SSL_D_Client_test.md)
-
-[SSL_D_Server_test.md](bdd/tagion/testbench/network/SSL_D_Server_test.md)
-
-[SSL_echo_test.md](bdd/tagion/testbench/network/SSL_echo_test.md)
-
-[SSL_server.md](bdd/tagion/testbench/network/SSL_server.md)
-
 [actor_handler.md](bdd/tagion/testbench/services/actor_handler.md)
 
 [actor_message.md](bdd/tagion/testbench/services/actor_message.md)
