@@ -233,7 +233,7 @@ class NativeSecp256k1T(bool Schnorr) {
         ubyte* _privkey = tweak_privkey.ptr;
         const(ubyte)* _tweak = tweak.ptr;
 
-        int ret = secp256k1_ec_privkey_tweak_mul(_ctx, _privkey, _tweak);
+        int ret = secp256k1_ec_seckey_tweak_mul(_ctx, _privkey, _tweak);
         check(ret == 1, ConsensusFailCode.SECURITY_PRIVATE_KEY_TWEAK_MULT_FAULT);
 
     }
@@ -257,7 +257,7 @@ class NativeSecp256k1T(bool Schnorr) {
         ubyte* _privkey = tweak_privkey.ptr;
         const(ubyte)* _tweak = tweak.ptr;
 
-        int ret = secp256k1_ec_privkey_tweak_add(_ctx, _privkey, _tweak);
+        int ret = secp256k1_ec_seckey_tweak_add(_ctx, _privkey, _tweak);
         check(ret == 1, ConsensusFailCode.SECURITY_PRIVATE_KEY_TWEAK_ADD_FAULT);
     }
 

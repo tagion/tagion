@@ -46,7 +46,6 @@ mixin template doOneMain(alltools...) {
      */
     Result call_main(string tool, string[] args) {
         main_name = tool;
-        writefln("MAIN %s", main_name);
     SelectTool:
         switch (tool) {
             static foreach (toolmod; alltools) {
