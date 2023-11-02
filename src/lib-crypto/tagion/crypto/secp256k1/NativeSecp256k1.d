@@ -105,11 +105,9 @@ class NativeSecp256k1T(bool Schnorr) {
     @trusted
     static if (!Schnorr)
         final bool verify(const(ubyte[]) msg, const(ubyte[]) signature, const(ubyte[]) pub) const
-    in {
-        assert(msg.length == MESSAGE_SIZE);
-        assert(signature.length == SIGNATURE_SIZE);
-        assert(pub.length <= 520);
-    }
+    in (msg.length == MESSAGE_SIZE)
+    in (signature.length == SIGNATURE_SIZE)
+    in (pub.length <= 520)
     do {
         secp256k1_ecdsa_signature sig;
         secp256k1_pubkey pubkey;
@@ -137,10 +135,8 @@ class NativeSecp256k1T(bool Schnorr) {
     @trusted
     static if (!Schnorr)
         immutable(ubyte[]) sign(const(ubyte[]) msg, const(ubyte[]) seckey) const
-    in {
-        assert(msg.length == MESSAGE_SIZE);
-        assert(seckey.length == SECKEY_SIZE);
-    }
+    in (msg.length == MESSAGE_SIZE)
+    in (seckey.length == SECKEY_SIZE)
     do {
         secp256k1_ecdsa_signature sig;
         scope (exit) {
@@ -168,9 +164,7 @@ class NativeSecp256k1T(bool Schnorr) {
     @trusted
     static if (!Schnorr)
         final bool secKeyVerify(scope const(ubyte[]) seckey) const nothrow @nogc
-    in {
-        assert(seckey.length == SECKEY_SIZE);
-    }
+    in (seckey.length == SECKEY_SIZE)
     do {
         return secp256k1_ec_seckey_verify(_ctx, &seckey[0]) == 1;
     }
@@ -187,9 +181,7 @@ class NativeSecp256k1T(bool Schnorr) {
     @trusted
     static if (!Schnorr)
         immutable(ubyte[]) getPubkey(scope const(ubyte[]) seckey) const
-    in {
-        assert(seckey.length == SECKEY_SIZE);
-    }
+    in (seckey.length == SECKEY_SIZE)
     do {
         secp256k1_pubkey pubkey;
 
@@ -258,9 +250,7 @@ class NativeSecp256k1T(bool Schnorr) {
                 const(ubyte[]) privkey,
     const(ubyte[]) tweak,
     ref ubyte[] tweak_privkey) const
-    in {
-        assert(privkey.length == 32);
-    }
+    in (privkey.length == 32)
     do {
         pragma(msg, "fixme(cbr): privkey must be scrambled");
         tweak_privkey = privkey.dup;
@@ -350,10 +340,8 @@ class NativeSecp256k1T(bool Schnorr) {
         final immutable(ubyte[]) createECDHSecret(
             scope const(ubyte[]) seckey,
     const(ubyte[]) pubkey) const
-    in {
-        assert(seckey.length == SECKEY_SIZE);
-        assert(pubkey.length == COMPRESSED_PUBKEY_SIZE);
-    }
+    in (seckey.length == SECKEY_SIZE)
+    in (pubkey.length == COMPRESSED_PUBKEY_SIZE)
     do {
         scope (exit) {
             randomizeContext;
@@ -425,7 +413,7 @@ class NativeSecp256k1T(bool Schnorr) {
 
     @trusted
     static if (Schnorr)
-        final immutable(ubyte[]) sign_schnorr(
+        final immutable(ubyte[]) sign(
             const(ubyte[]) msg,
     ref scope const(secp256k1_keypair) keypair,
     const(ubyte[]) aux_random) const
@@ -839,7 +827,7 @@ unittest { /// Schnorr test generated from the secp256k1/examples/schnorr.c
     crypt.createKeyPair(secret_key, keypair);
     //writefln("keypair %(%02x%)", keypair);
     assert(keypair.data == expected_keypair);
-    const signature = crypt.sign_schnorr(msg_hash, keypair, aux_random);
+    const signature = crypt.sign(msg_hash, keypair, aux_random);
     assert(signature == expected_signature);
     //writefln("expected_pubkey %(%02x%)", expected_pubkey);
     const pubkey = crypt.xonlyPubkey(keypair); //writefln("         pubkey %(%02x%)", pubkey);
