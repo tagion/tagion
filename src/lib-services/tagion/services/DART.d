@@ -70,7 +70,13 @@ struct DARTService {
         }
 
         void read(dartReadRR req, immutable(DARTIndex)[] fingerprints) @safe {
+            import tagion.hibon.HiBONtoText;
+            import std.algorithm;
+            import tagion.utils.Miscellaneous;
+
+            log("DARTREAD: %s", fingerprints.map!(f => f.toHexString));
             RecordFactory.Recorder read_recorder = db.loads(fingerprints);
+            log("%s", read_recorder);
             req.respond(RecordFactory.uniqueRecorder(read_recorder));
         }
 
