@@ -50,7 +50,7 @@ jobs:
           sleep 5
           ./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/commit/results
           ./build/${{env.TARGET}}/bin/collider reporter -o /dev/stdout logs/${{ env.TARGET }}/bdd/commit/results >> $GITHUB_STEP_SUMMARY
-          ./build/${{env.TARGET}}/bin/collider reporter -f "github" logs/${{ env.TARGET }}/bdd/commit/results
+          $PWD/build/${{ env.TARGET }}/bin/bddenv.sh ./build/${{env.TARGET}}/bin/collider reporter -f "github" logs/${{ env.TARGET }}/bdd/commit/results
           ./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/commit/results | grep "Test result success!"
                
       - name: Upload  code coverage results
@@ -119,7 +119,7 @@ jobs:
           sleep 5
           ./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/acceptance/results
           ./build/${{ env.TARGET }}/bin/collider reporter -o $GITHUB_STEP_SUMMARY logs/${{ env.TARGET }}/bdd/acceptance/results
-          ./build/${{ env.TARGET }}/bin/collider reporter -f "github" logs/${{ env.TARGET }}/bdd/acceptance/results
+          $PWD/build/${{ env.TARGET }}/bin/bddenv.sh ./build/${{ env.TARGET }}/bin/collider reporter -f "github" logs/${{ env.TARGET }}/bdd/acceptance/results
           ./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/acceptance/results | grep "Test result success!"
 
       - name: Create tar ball
