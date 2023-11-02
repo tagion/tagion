@@ -159,11 +159,11 @@ jobs:
           $PWD/build/${{ env.TARGET }}/bin/bddenv.sh ./build/${{ env.TARGET }}/bin/collider reporter -f "github" logs/${{ env.TARGET }}/bdd/acceptance/results
           ./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/acceptance/results | grep "Test result success!"
 
-      - name: Post runs
-        run:
+      - name: Post run
+        if: always()
+        run: |
           mkdir -p ${{ env.ARTIFACT_DIR }}
           cp -r --parents logs/ ${{ env.ARTIFACT_DIR }}
-
           find . -mindepth 1 -delete
 
   create_artifact:
