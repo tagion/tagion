@@ -267,6 +267,7 @@ class DifferentContractsDifferentNodes {
 
         auto wallet1_dartcheckread = wallet1.getRequestCheckWallet(wallet1_hirpc);
         auto wallet1_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet1_dartcheckread);
+        check(wallet1_received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", wallet1_received_doc.toPretty)); 
 
         writefln("RECEIVED RESPONSE: %s", wallet1_received_doc.toPretty);
         auto wallet1_received = wallet1_hirpc.receive(wallet1_received_doc);
@@ -278,6 +279,7 @@ class DifferentContractsDifferentNodes {
 
         auto wallet2_dartcheckread = wallet2.getRequestCheckWallet(wallet2_hirpc);
         auto wallet2_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet2_dartcheckread);
+        check(wallet2_received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", wallet2_received_doc.toPretty)); 
 
         writefln("RECEIVED RESPONSE: %s", wallet2_received_doc.toPretty);
         auto wallet2_received = wallet2_hirpc.receive(wallet2_received_doc);
@@ -346,6 +348,7 @@ class SameContractDifferentNodes {
     Document rejected() {
         auto wallet1_dartcheckread = wallet1.getRequestCheckWallet(wallet1_hirpc);
         auto wallet1_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet1_dartcheckread);
+        check(wallet1_received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", wallet1_received_doc.toPretty)); 
 
         // writefln("RECEIVED RESPONSE: %s", wallet1_received_doc.toPretty);
         auto wallet1_received = wallet1_hirpc.receive(wallet1_received_doc);
@@ -357,6 +360,7 @@ class SameContractDifferentNodes {
 
         auto wallet2_dartcheckread = wallet2.getRequestCheckWallet(wallet2_hirpc);
         auto wallet2_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet2_dartcheckread);
+        check(wallet2_received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", wallet2_received_doc.toPretty)); 
 
         // writefln("RECEIVED RESPONSE: %s", wallet2_received_doc.toPretty);
         auto wallet2_received = wallet2_hirpc.receive(wallet2_received_doc);
@@ -459,11 +463,13 @@ class SameContractInDifferentEpochs {
     Document rejected() {
         auto wallet1_dartcheckread = wallet1.getRequestCheckWallet(wallet1_hirpc);
         auto wallet1_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet1_dartcheckread);
+        check(wallet1_received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", wallet1_received_doc.toPretty)); 
         auto wallet1_received = wallet1_hirpc.receive(wallet1_received_doc);
         check(wallet1.setResponseCheckRead(wallet1_received), "wallet1 not updated succesfully");
 
         auto wallet2_dartcheckread = wallet2.getRequestCheckWallet(wallet2_hirpc);
         auto wallet2_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet2_dartcheckread);
+        check(wallet2_received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", wallet2_received_doc.toPretty)); 
         auto wallet2_received = wallet2_hirpc.receive(wallet2_received_doc);
         check(wallet2.setResponseCheckRead(wallet2_received), "wallet2 not updated succesfully");
         

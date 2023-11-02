@@ -117,11 +117,13 @@ class SpamOneNodeUntil10EpochsHaveOccured {
     Document rejected() {
         auto wallet1_dartcheckread = wallet1.getRequestCheckWallet(wallet1_hirpc);
         auto wallet1_received_doc = sendDARTHiRPC(node1_opts.dart_interface.sock_addr, wallet1_dartcheckread);
+        check(wallet1_received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", wallet1_received_doc.toPretty)); 
         auto wallet1_received = wallet1_hirpc.receive(wallet1_received_doc);
         check(wallet1.setResponseCheckRead(wallet1_received), "wallet1 not updated succesfully");
 
         auto wallet2_dartcheckread = wallet2.getRequestCheckWallet(wallet2_hirpc);
         auto wallet2_received_doc = sendDARTHiRPC(node1_opts.dart_interface.sock_addr, wallet2_dartcheckread);
+        check(wallet2_received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", wallet2_received_doc.toPretty)); 
         auto wallet2_received = wallet2_hirpc.receive(wallet2_received_doc);
         check(wallet2.setResponseCheckRead(wallet2_received), "wallet2 not updated succesfully");
         
@@ -149,6 +151,8 @@ class SpamOneNodeUntil10EpochsHaveOccured {
         foreach(opt; opts) {
             auto bullseye_sender = dartBullseye();
             auto received_doc = sendDARTHiRPC(opt.dart_interface.sock_addr, bullseye_sender);
+            check(received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", received_doc.toPretty)); 
+
             writefln(received_doc.toPretty);
             auto hirpc_bullseye_receiver = wallet1_hirpc.receive(received_doc);
             auto hirpc_message = hirpc_bullseye_receiver.message[Keywords.result].get!Document;
@@ -270,11 +274,13 @@ class SpamMultipleNodesUntil10EpochsHaveOccured {
         
         auto wallet1_dartcheckread = wallet1.getRequestCheckWallet(wallet1_hirpc);
         auto wallet1_received_doc = sendDARTHiRPC(node1_opts.dart_interface.sock_addr, wallet1_dartcheckread);
+        check(wallet1_received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", wallet1_received_doc.toPretty)); 
         auto wallet1_received = wallet1_hirpc.receive(wallet1_received_doc);
         check(wallet1.setResponseCheckRead(wallet1_received), "wallet1 not updated succesfully");
 
         auto wallet2_dartcheckread = wallet2.getRequestCheckWallet(wallet2_hirpc);
         auto wallet2_received_doc = sendDARTHiRPC(node1_opts.dart_interface.sock_addr, wallet2_dartcheckread);
+        check(wallet2_received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", wallet2_received_doc.toPretty)); 
         auto wallet2_received = wallet2_hirpc.receive(wallet2_received_doc);
         check(wallet2.setResponseCheckRead(wallet2_received), "wallet2 not updated succesfully");
         
@@ -302,6 +308,7 @@ class SpamMultipleNodesUntil10EpochsHaveOccured {
         foreach(opt; opts) {
             auto bullseye_sender = dartBullseye();
             auto received_doc = sendDARTHiRPC(opt.dart_interface.sock_addr, bullseye_sender);
+            check(received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", received_doc.toPretty)); 
             writefln(received_doc.toPretty);
             auto hirpc_bullseye_receiver = wallet1_hirpc.receive(received_doc);
             auto hirpc_message = hirpc_bullseye_receiver.message[Keywords.result].get!Document;

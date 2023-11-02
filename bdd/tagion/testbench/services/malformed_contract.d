@@ -303,6 +303,7 @@ class NegativeAmountAndZeroAmountOnOutputBills {
         import tagion.dart.DART;
         auto req = wallet1.getRequestCheckWallet(wallet1_hirpc, used_bills);
         auto received_doc = sendDARTHiRPC(node1_opts.dart_interface.sock_addr, req);
+        check(received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", received_doc.toPretty)); 
 
         auto received = wallet1_hirpc.receive(received_doc);
         auto not_in_dart = received.response.result[DART.Params.dart_indices].get!Document[].map!(d => d.get!Buffer).array;
@@ -310,6 +311,7 @@ class NegativeAmountAndZeroAmountOnOutputBills {
 
         auto output_req = wallet1.getRequestCheckWallet(wallet1_hirpc, output_bills);
         auto output_received_doc = sendDARTHiRPC(node1_opts.dart_interface.sock_addr, output_req);
+        check(output_received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", output_received_doc.toPretty)); 
         auto output_received = wallet1_hirpc.receive(output_received_doc);
         auto output_not_in_dart = output_received.response.result[DART.Params.dart_indices].get!Document[].map!(d => d.get!Buffer).array;
 

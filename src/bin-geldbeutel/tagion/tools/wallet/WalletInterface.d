@@ -144,7 +144,7 @@ Document sendDARTHiRPC(string address, HiRPC.Sender dart_req) @trusted {
 
     int rc;
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
-    s.recvtimeout = 1000.msecs;
+    s.recvtimeout = 3000.msecs;
     while (1) {
         writefln("REQ to dial... %s", address);
         rc = s.dial(address);
@@ -163,6 +163,7 @@ Document sendDARTHiRPC(string address, HiRPC.Sender dart_req) @trusted {
         throw new Exception("error in response");
     }
     Document received_doc = s.receive!(immutable(ubyte[]))();
+
     s.close();
     return received_doc;
 }
