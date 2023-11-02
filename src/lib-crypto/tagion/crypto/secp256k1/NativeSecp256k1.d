@@ -435,17 +435,17 @@ class NativeSecp256k1T(bool Schnorr) {
 
     @trusted
     static if (Schnorr)
-        final bool verify_schnorr(const(ubyte[]) signature, const(ubyte[]) msg, const(ubyte[]) pubkey) const nothrow
+        final bool verify(const(ubyte[]) signature, const(ubyte[]) msg, const(ubyte[]) pubkey) const nothrow
     in (pubkey.length == XONLY_PUBKEY_SIZE)
     do {
         secp256k1_xonly_pubkey xonly_pubkey;
         secp256k1_xonly_pubkey_parse(_ctx, &xonly_pubkey, &pubkey[0]);
-        return verify_schnorr(signature, msg, xonly_pubkey);
+        return verify(signature, msg, xonly_pubkey);
     }
 
     @trusted
     static if (Schnorr)
-        final bool verify_schnorr(const(ubyte[]) signature, const(ubyte[]) msg, ref scope const(secp256k1_xonly_pubkey) xonly_pubkey) const nothrow
+        final bool verify(const(ubyte[]) signature, const(ubyte[]) msg, ref scope const(secp256k1_xonly_pubkey) xonly_pubkey) const nothrow
     in (signature.length == SIGNATURE_SIZE)
     in (msg.length == MESSAGE_SIZE)
     do {
@@ -830,6 +830,6 @@ unittest { /// Schnorr test generated from the secp256k1/examples/schnorr.c
     //writefln("expected_pubkey %(%02x%)", expected_pubkey);
     const pubkey = crypt.xonlyPubkey(keypair); //writefln("         pubkey %(%02x%)", pubkey);
     assert(pubkey == expected_pubkey);
-    const signature_ok = crypt.verify_schnorr(signature, msg_hash, pubkey);
+    const signature_ok = crypt.verify(signature, msg_hash, pubkey);
     assert(signature_ok, "Schnorr signing failded");
 }

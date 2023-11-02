@@ -374,7 +374,7 @@ unittest {
     // Verify signature
     //
     {
-        const ret = crypt.verify_schnorr(signature, message_samples[0], agg_pubkey);
+        const ret = crypt.verify(signature, message_samples[0], agg_pubkey);
         assert(ret, "Failed to verify multi signature");
     }
 }
