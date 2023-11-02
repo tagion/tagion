@@ -199,7 +199,7 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
         check(secKeyVerify(privkey), ConsensusFailCode.SECURITY_PRIVATE_KEY_INVALID);
 
         alias AES = AESCrypto!256;
-        _pubkey = _crypt.computePubkey(privkey);
+        _pubkey = _crypt.getPubkey(privkey);
         auto aes_key_iv = new ubyte[AES.KEY_SIZE + AES.BLOCK_SIZE];
         getRandom(aes_key_iv);
         auto aes_key = aes_key_iv[0 .. AES.KEY_SIZE];
@@ -317,8 +317,8 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
         return _secret.ECDHSecret(pubkey);
     }
 
-    Pubkey computePubkey(scope const(ubyte[]) seckey) const {
-        return Pubkey(_crypt.computePubkey(seckey));
+    Pubkey getPubkey(scope const(ubyte[]) seckey) const {
+        return Pubkey(_crypt.getPubkey(seckey));
     }
 
     alias NativeSecp256k1 = NativeSecp256k1T!Schnorr;
