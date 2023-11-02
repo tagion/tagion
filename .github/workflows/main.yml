@@ -13,7 +13,7 @@ env:
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   UNITTEST_COV: unittest-cov
   GITBOT_TOKEN: ${{ secrets.GITBOT_TOKEN }}
-  ARTIFACT_DIR: /mnt/nfs/artifacts/${{ github.sha }}-${{ github.run_attempts }}
+  ARTIFACT_DIR: /mnt/nfs/artifacts/${{ github.sha }}-${{ github.run_attempt }}
 
 permissions:
   contents: read
@@ -82,7 +82,7 @@ jobs:
         if: always()
         run: |
           mkdir -p ${{ env.ARTIFACT_DIR }}
-          cp -r --parents logs/ build/${{ env.TARGET }}/bin/unittest ${{ env.ARTIFACT_DIR }}
+          cp -r --parents logs/ build/${{ env.TARGET }}/bin/unittest-cov ${{ env.ARTIFACT_DIR }}
 
           make clean
           rm -r logs/
