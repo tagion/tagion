@@ -158,7 +158,12 @@ int _main(string[] args) {
         import tagion.basic.Types : Control;
 
         logger_service_tid.control(Control.STOP);
-        receiveOnly!Control;
+        bool received = receiveTimeout(100.msecs, 
+            (Control c) {}
+        );
+        if( !received ) {
+            stderr.writeln("Logger did not stop properly");
+        }
     }
 
     SubscriptionServiceHandle sub_handle;

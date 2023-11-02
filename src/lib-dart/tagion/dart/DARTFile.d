@@ -1139,6 +1139,57 @@ class DARTFile {
         local_dump(index);
     }
 
+    alias TraverseCallback = bool delegate(
+            const(Document) doc,
+            const Index branch_index,
+            const uint rim,
+            Buffer rim_path);
+
+    void traverse(
+            const TraverseCallback dg,
+            const SectorRange sectors = SectorRange.init,
+            const Flag!"full" full = No.full,
+            const uint depth = 0) {
+        void local_traverse(
+                const Index branch_index,
+                const ubyte rim_key = 0,
+                const uint rim = 0,
+                Buffer rim_path = null) @safe {
+            if (!branch_index.isinit &&
+                    ((depth == 0) || (rim <= depth))) {
+                immutable data = blockfile.load(branch_index);
+                const doc = Document(data);
+                if (dg(doc, branch_index, rim, rim_path)) {
+                    return;
+                }
+                if (Branches.isRecord(doc)) {
+                    auto branches = Branches(doc);
+                    string _indent;
+                    if (rim > 0) {
+                        rim_path ~= rim_key;
+                        if (!sectors.inRange(Rims(rim_path))) {
+                            return;
+                        }
+                    }
+                    foreach (key, index; branches._indices) {
+                        local_traverse(index, cast(ubyte) key, rim + 1, rim_path);
+                    }
+                }
+            }
+        }
+
+        Index index = blockfile.masterBlock.root_index;
+        if (!sectors.isinit) {
+            Buffer start_rims = Rims(sectors.from_sector).rims;
+            branches(start_rims[0 .. 1], &index);
+
+            local_traverse(index, start_rims[0], 0, null);
+            return;
+        }
+
+        local_traverse(index);
+    }
+
     package Document cacheLoad(const Index index) {
         return Document(blockfile.cacheLoad(index));
     }

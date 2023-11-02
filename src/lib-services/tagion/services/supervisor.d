@@ -27,24 +27,13 @@ import tagion.services.collector;
 import tagion.services.TVM;
 import tagion.services.transcript;
 import tagion.services.replicator;
+import tagion.GlobalSignals : stopsignal;
 
 @safe
 struct Supervisor {
-    auto failHandler = (TaskFailure tf) { log("Supervisor caught exception: \n%s", tf); };
+    auto failHandler = (TaskFailure tf) { log("Stoping program because Supervisor caught exception: \n%s", tf); };
 
     void task(immutable(Options) opts, shared(StdSecureNet) shared_net) @safe {
-        // immutable SecureNet net = (() @trusted => cast(immutable) new WaveNet(password))();
-
-        // const _net = new StdSecureNet(shared_net);
-
-        const dart_path = opts.dart.dart_path;
-
-        if (!dart_path.exists) {
-            const hash_net = new StdHashNet;
-            DARTFile.create(dart_path, hash_net);
-        }
-
-        // 
         immutable tn = opts.task_names;
 
         auto replicator_handle = spawn!ReplicatorService(tn.replicator, opts.replicator);
@@ -73,7 +62,7 @@ struct Supervisor {
         auto services = tuple(dart_handle, replicator_handle, hirpc_verifier_handle, inputvalidator_handle, epoch_creator_handle, collector_handle, tvm_handle, dart_interface_handle, transcript_handle);
 
         if (waitforChildren(Ctrl.ALIVE, 5.seconds)) {
-            run(failHandler);
+            run;
         }
         else {
             log.error("Not all children became Alive");
@@ -95,7 +84,7 @@ struct Supervisor {
             input_sock.recvtimeout = 1.msecs;
             input_sock.send("End!"); // Send arbitrary data to the inputvalidator so releases the socket and checks its mailbox
         })();
-        waitforChildren(Ctrl.END);
+        waitforChildren(Ctrl.END, 10.seconds);
         log("All services stopped");
     }
 }
