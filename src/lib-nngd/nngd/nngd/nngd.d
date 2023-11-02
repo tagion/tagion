@@ -105,7 +105,6 @@ struct NNGMessage {
     }   
     
     this(nng_msg * msgref){
-        enforce(msgref != null);
         msg = msgref;
     }   
 
@@ -115,8 +114,12 @@ struct NNGMessage {
     } 
     
     ~this() {
-        if(msg != null)
-            nng_msg_free(msg);
+        nng_msg_free(msg);
+    }
+
+    @nogc @safe
+    @property bool empty() nothrow {
+        return (msg is null);
     }
 
     @nogc @safe
@@ -126,13 +129,10 @@ struct NNGMessage {
 
     @nogc  
     @property void pointer(nng_msg* p) nothrow {
-        if(p){ 
-            if(msg) nng_msg_free(msg);
-            nng_msg_alloc(&msg, nng_msg_len(p));
-            nng_msg_dup(&msg,p);
+        if(p != null){ 
+            msg = p;
         } else {
-            if(msg) nng_msg_free(msg);
-            msg = null;
+            nng_msg_clear(msg);
         }            
     }
     
@@ -273,7 +273,126 @@ struct NNGMessage {
     }            
     
     // TODO: body structure map
-    // TODO: header modification msg_header_* ( will be required for some protocols in raw mode only )
+
+
+    int header_append (T) ( const(T) data ) if(isArray!T || isUnsigned!T) {
+        static if (isArray!T){
+            static assert((ForeachType!T).sizeof == 1, "None byte size array element are not supported");
+            auto rc = nng_msg_header_append(msg, ptr(data), data.length );
+            return 0;
+        }else{            
+            static if (T.sizeof == 1){
+                T tmp = data;
+                auto rc = nng_msg_header_append(msg, cast(void*)&tmp, 1);
+                enforce(rc == 0);
+            }                    
+            static if (T.sizeof == 2){
+                auto rc = nng_msg_header_append_u16(msg, data);
+                enforce(rc == 0);
+            }
+            static if (T.sizeof == 4){
+                auto rc = nng_msg_header_append_u32(msg, data);
+                enforce(rc == 0);
+            }
+            static if (T.sizeof == 8){
+                auto rc = nng_msg_header_append_u64(msg, data);
+                enforce(rc == 0);
+            }
+            return 0;
+        }
+    }
+
+    int header_prepend (T) ( const(T) data ) if(isArray!T || isUnsigned!T){
+        static if (isArray!T){
+            static assert((ForeachType!T).sizeof == 1, "None byte size array element are not supported");
+            auto rc = nng_msg_header_insert(msg, ptr(data), data.length );
+            enforce(rc == 0);
+            return 0;
+        } else {
+            static if (T.sizeof == 1){
+                T tmp = data;
+                auto rc = nng_msg_header_insert(msg, cast(void*)&tmp, 1);
+                enforce(rc == 0);
+            }
+            static if (T.sizeof == 2){
+                auto rc = nng_msg_header_insert_u16(msg, data);
+                enforce(rc == 0);
+            }
+            static if (T.sizeof == 4){
+                auto rc = nng_msg_header_insert_u32(msg, data);
+                enforce(rc == 0);
+            }
+            static if (T.sizeof == 8){
+                auto rc = nng_msg_header_insert_u64(msg, data);
+                enforce(rc == 0);
+            }
+            return 0;
+        }            
+    }
+    
+    
+    T header_chop (T) (size_t size = 0) if(isArray!T || isUnsigned!T){
+        static if (isArray!T){
+            if(size == 0) size = header_length;
+            if(size == 0) return [];
+            T data = cast(T) (headerptr + (header_length - size)) [0..size];
+            auto rc = nng_msg_header_chop(msg, size);
+            enforce(rc == 0);
+            return data;
+        } else {
+            T tmp;
+            static if (T.sizeof == 1){ 
+                tmp = cast(T)*(bodyptr + (length - 1));
+                auto rc = nng_msg_header_chop(msg, 1);
+                enforce(rc == 0);
+            }
+            static if (T.sizeof == 2){
+                auto rc = nng_msg_header_chop_u16(msg, &tmp);
+                enforce(rc == 0);
+            }
+            static if (T.sizeof == 4){
+                auto rc = nng_msg_header_chop_u32(msg, &tmp);
+                enforce(rc == 0);
+            }
+            static if (T.sizeof == 8){
+                auto rc = nng_msg_header_chop_u64(msg, &tmp);
+                enforce(rc == 0);
+            }
+            return tmp;
+        }            
+    }            
+
+    
+    T header_trim (T) (size_t size = 0) if(isArray!T || isUnsigned!T) {
+        static if (isArray!T){
+            if(size == 0) size = header_length;
+            if(size == 0) return [];
+            T data = cast(T) (headerptr) [0..size];
+            auto rc = nng_msg_header_trim(msg, size);
+            enforce(rc == 0);
+            return data;
+        } else {
+            T tmp;
+            static if (T.sizeof == 1){
+                tmp = cast(T)*(bodyptr);
+                auto rc = nng_msg_header_trim(msg, 1);
+                enforce(rc == 0);
+            }
+            static if (T.sizeof == 2){
+                auto rc = nng_msg_header_trim_u16(msg, &tmp);
+                enforce(rc == 0);
+            }
+            static if (T.sizeof == 4){
+                auto rc = nng_msg_header_trim_u32(msg, &tmp);
+                enforce(rc == 0);
+            }
+            static if (T.sizeof == 8){
+                auto rc = nng_msg_header_trim_u64(msg, &tmp);
+                enforce(rc == 0);
+            }
+            return tmp;
+        }            
+    }            
 } // struct NNGMessage
 
 extern (C) alias nng_aio_cb = void function (void *);
@@ -402,22 +521,13 @@ struct NNGAio {
 
     // ---------- messages
 
-    int get_msg ( NNGMessage *msg ) {
-        if(aio){
-            nng_msg* p = nng_aio_get_msg(aio);
-            if(p){
-                msg.pointer(null);
-                msg.pointer(p);
-                return 0;
-            }
-            return -1;
-        }    
-        return -1;
+    NNGMessage  get_msg ( ) {
+        nng_msg *m = nng_aio_get_msg(aio);
+        return NNGMessage(m);
     }
     
     void set_msg ( ref NNGMessage msg ) {
-        if(aio)
-            nng_aio_set_msg(aio, msg.pointer);
+        nng_aio_set_msg(aio, msg.pointer);
     }
 
     void clear_msg () {
@@ -1047,17 +1157,11 @@ extern (C) void nng_pool_stateful ( void* p ){
                 nng_ctx_recv(w.ctx, w.aio.aio);
                 break;
             }
-            try{ // TODO: remove this finding out he reason of exception 
-                auto rm = w.aio.get_msg(&w.msg);
-                if(rm != 0){
-                    nng_ctx_recv(w.ctx, w.aio.aio);
-                    break;
-                }
-            } catch(Exception e) {
-                // log point!
+            w.msg = w.aio.get_msg();
+            if(w.msg.empty){
                 nng_ctx_recv(w.ctx, w.aio.aio);
                 break;
-            }    
+            }
             w.state = nng_worker_state.WAIT;
             w.aio.sleep(w.delay);
             break;

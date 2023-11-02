@@ -19,12 +19,22 @@ struct worker_context {
 void server_callback(NNGMessage *msg, void *ctx)
 {
     log("SERVER CALLBACK");
-    if(msg is null) return;
+    if(msg is null){ 
+        log("No message received");
+        return;
+    }    
+    if(msg.empty){
+        log("Empty message received");
+        return;
+    }
+    log("d1");
     auto cnt = cast(worker_context*)ctx;
-    auto s = msg.body_trim!string(msg.length);
+    log("d2");
+    auto s = msg.body_trim!string();
     log("SERVER CONTEXT NAME: "~cnt.name);
     log("SERVER GOT: " ~ s);
     msg.clear();
+    log("d3");
     if(indexOf(s,"What time is it?") == 0){
         log("Going to send time");
         msg.body_append(cast(ubyte[])format("It`s %f o`clock.",timestamp()));

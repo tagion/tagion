@@ -80,6 +80,7 @@ struct TranscriptService {
 
             DARTIndex[] used;
 
+            auto recorder = rec_factory.recorder;
             used ~= not_in_dart;
 
             // check the votes here instead
@@ -96,11 +97,17 @@ struct TranscriptService {
                             .filter!(consensus_vote => consensus_vote.verifyBullseye(net, v.value.bullseye))
                             .walkLength
                             .isMajority(number_of_nodes)
-                        ).array;
+                        ).array
+                .sort!((a,b) => a.value.epoch < b.value.epoch);
+            // clean up the arrays on exit
+            scope(exit) {
+                foreach(a_vote; aggregated_votes) {
+                    votes.remove(a_vote.value.epoch);
+                    epoch_contracts.remove(a_vote.value.epoch);
+                }
+            }
 
-
-
-            // create the epochs
+            // create the epochs. Sort them by epoch number so that we can create the previous link
             Epoch[] consensus_epochs;
             loop_epochs: foreach(a_vote; aggregated_votes) {
                 auto previous_epoch_contract = epoch_contracts.get(a_vote.value.epoch, null);
@@ -110,6 +117,7 @@ struct TranscriptService {
                     continue loop_epochs;
                 }
 
+                pragma(msg, "add proper signatures and pkeys");
                 Pubkey[] keys = [Pubkey([1,2,3,4])];
                 // create the epoch;
                 consensus_epochs ~= Epoch(a_vote.value.epoch, 
@@ -121,14 +129,19 @@ struct TranscriptService {
                                     keys);
             }
             log("EPOCH_CONTRACTS: %s, consensus_epochs %s agg_votes: %s votes: %s", epoch_contracts.length, consensus_epochs.length, aggregated_votes.length, votes.length);
-            // clean up the arrays
-            foreach(a_vote; aggregated_votes) {
-                votes.remove(a_vote.value.epoch);
-                epoch_contracts.remove(a_vote.value.epoch);
-            }
 
 
 
+            /*
+                Add the epochs to the recorder. We can assume that there will be multiple epochs due
+                to the hashgraph being asynchronous.
+            */
+
+            recorder.insert(consensus_epochs, Archive.Type.ADD);
+            
+
+
+            
             
 
 
@@ -137,12 +150,7 @@ struct TranscriptService {
             if (epoch_contract is null) {
                 throw new Exception(format("unlinked epoch contract %s", res.id));
             }
-            // scope (exit) {
-            //     epoch_contracts.remove(res.id);
-            //     log("removed %s from epoch_contracts", res.id);
-            // }
 
-            auto recorder = rec_factory.recorder;
             loop_signed_contracts: foreach (signed_contract; epoch_contract.signed_contracts) {
                 foreach (input; signed_contract.contract.inputs) {
                     if (used.canFind(input)) {
@@ -243,7 +251,6 @@ struct TranscriptService {
 
             votes[epoch_number] = Votes(bullseye, epoch_number);
 
-            // checkLeaks();
             locate(task_names.epoch_creator).send(Payload(), own_vote.toDoc);
         }
 
