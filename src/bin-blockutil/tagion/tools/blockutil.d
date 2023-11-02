@@ -139,7 +139,7 @@ int _main(string[] args) {
     bool print_graph;
     bool dump_doc;
     bool print_header;
-    ulong dump_index;
+    ulong[] indices;
     bool dump;
     string index_range;
     string output_filename;
@@ -160,7 +160,7 @@ int _main(string[] args) {
                 "g|print-graph", "Dump the blockfile in graphviz format", &print_graph,
                 "d|dumpdoc", "Dump the document located at an specific index", &dump_doc,
                 "H|header", "Dump the header block", &print_header,
-                "i|index", "the index to dump the document from", &dump_index,
+                "i|index", "the index to dump the document from", &indices,
                 "o|output", "Output filename (Default stdout)", &output_filename,
                 "dump", "Dumps the blocks as a HiBON sequency to stdout or a file", &dump,
 
@@ -228,7 +228,6 @@ int _main(string[] args) {
             }
             foreach (block_segment; analyzer.blockfile[index_from .. index_to]) {
                 fout.rawWrite(block_segment.doc.serialize);
-                //fout.writefln("doc\n%s", block_segment.doc.toPretty);
             }
             return 0;
         }
@@ -256,7 +255,7 @@ int _main(string[] args) {
             analyzer.dumpGraph;
         }
 
-        if (dump_index !is 0) {
+        if (!indices.empty) {
             File fout = stdout;
             if (!output_filename.empty) {
                 fout = File(output_filename, "w");
@@ -266,13 +265,10 @@ int _main(string[] args) {
                     fout.close;
                 }
             }
-            const doc = analyzer.dumpIndexDoc(Index(dump_index));
-            stderr.writefln(doc.toPretty);
-            const error_code = doc.valid;
-            if (error_code !is Document.Element.ErrorCode.NONE) {
-                stderr.writefln("Error: Document errorcode %s", error_code);
+            foreach (index; indices) {
+                const doc = analyzer.dumpIndexDoc(Index(index));
+                fout.rawWrite(doc.serialize);
             }
-            fout.rawWrite(doc.serialize);
         }
     }
     catch (BlockFileException e) {

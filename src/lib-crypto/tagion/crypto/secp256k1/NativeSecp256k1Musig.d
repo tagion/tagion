@@ -346,8 +346,8 @@ unittest {
                     cache,
                     signers[i].partial_sig,
                     signer_secrets[i].secnonce,
-                    signer_secrets[i]
-                    .keypair, session));
+                    signer_secrets[i].keypair,
+                    session));
 
         assert(ret, "Failed to partial sign aggregated message");
     }
@@ -356,7 +356,12 @@ unittest {
     //
     {
         const ret = signers
-            .all!((signer) => crypt.partialVerify(cache, signer.partial_sig, signer.pubnonce, signer.pubkey, session));
+            .all!((signer) => crypt.partialVerify(
+                    cache,
+                    signer.partial_sig,
+                    signer.pubnonce,
+                    signer.pubkey,
+                    session));
         assert(ret, "Failed to partial verify the signatures");
     }
 
