@@ -1,13 +1,5 @@
 {
     "units": {
-        "ssl_echo_server": {
-            "args": [],
-            "envs": {},
-            "stages": [
-                "none"
-            ],
-            "timeout": 0.0
-        },
         "transaction": {
             "args": [],
             "envs": {},

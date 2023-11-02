@@ -166,9 +166,6 @@ struct Options {
         string protocol_id;
         string task_name; /// Transaction task name
         ushort max;
-        import tagion.network.SSLServiceOptions;
-
-        SSLServiceOptions service; /// SSL Service used by the transaction service
         mixin JSONCommon;
     }
 
@@ -186,9 +183,6 @@ struct Options {
         string task_name; /// Transaction task name
         //        string prefix;
         //    uint timeout; ///.service.server.listerne timeout in msecs
-        import tagion.network.SSLServiceOptions;
-
-        SSLServiceOptions service; /// SSL Service used by the transaction service
         ushort max; // max == 0 means all
         bool enable; // Enable logger subscribtion  service
         mixin JSONCommon;
@@ -324,15 +318,7 @@ static ref auto all_getopt(
 		options.monitor.port),  &(options.monitor.port),
        "monitor|M", format("Enable the HashGraph monitor: default %s", options.monitor.enable), 
    &(options.monitor.enable), 
-        "transaction-ip",  format("Sets the listener transaction ip address: default %s", 
-	options.transaction.service.server.address), &(options.transaction.service.server.address),
-        "transaction-port|p", format("Sets the listener transcation port: default %d", 
-	options.transaction.service.server.port), &(options.transaction.service.server.port),
-        "transaction-queue", format("Sets the listener transcation max queue lenght: default %d", options.transaction.service.server.max_queue_length), &(options.transaction.service.server.max_queue_length),
-        "transaction-maxcon",  format("Sets the maximum number of connections: default: %d", 
-	options.transaction.service.server.max_connections), &(options.transaction.service.server.max_connections),
-        "transaction-maxqueue",  format("Sets the maximum queue length: default: %d", 
-	options.transaction.service.server.max_queue_length), &(options.transaction.service.server.max_queue_length),
+
         "epochs",  format("Sets the number of epochs (0 for infinite): default: %d", 
 	options.epoch_limit), &(options.epoch_limit),
 
@@ -423,27 +409,6 @@ static setDefaultOption(ref Options options)
     {
         max = 0;
         task_name = "transaction";
-        with (service)
-        {
-			with(server) {
-            response_task_name = "trans_response";
-            server_task_name = "trans_server";
-            address = "0.0.0.0";
-            port = 10_800;
-            select_timeout = 300;
-            client_timeout = 4000; // msecs
-            max_buffer_size = 0x4000;
-            max_queue_length = 100;
-            max_connections = 1000;
-			}
-            with (cert)
-            {
-                certificate = "pem_files/domain_trans.pem";
-                private_key = "pem_files/domain_trans.key.pem";
-                days = 365;
-                key_size = 4096;
-            }
-        }
     }
     with (options.transaction)
     {
@@ -455,27 +420,6 @@ static setDefaultOption(ref Options options)
         max = 0;
         task_name = "logsubscription";
         enable = false;
-        with (service)
-        {
-			with(server) {
-            response_task_name = "log_server";
-            server_task_name = "log_server";
-			address = "0.0.0.0";
-            port = 10_700;
-            select_timeout = 300;
-            client_timeout = 4000; // msecs
-            max_buffer_size = 0x4000;
-            max_queue_length = 100;
-            max_connections = 1000;
-			}
-            with (cert)
-            {
-                certificate = "pem_files/domain_log.pem";
-                private_key = "pem_files/domain_log.key.pem";
-                days = 365;
-                key_size = 4096;
-            }
-        }
     }
     // Monitor
     with (options.monitor)

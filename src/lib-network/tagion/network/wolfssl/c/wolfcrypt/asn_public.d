@@ -1,1 +1,0 @@
-asn_public.di

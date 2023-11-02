@@ -9,14 +9,12 @@ excludedSourceFiles "src/lib-behaviour/tagion/behaviour/unitdata/*" "src/lib-bet
 buildRequirements "allowWarnings" "silenceWarnings"
 sourceFiles "@tub/dub/dheaders.txt" \
   "build/x86_64-linux/tmp/secp256k1/.libs/libsecp256k1.a" \
-  "build/x86_64-linux/tmp/libcrypto.a" \
-  "build/x86_64-linux/tmp/libssl.a" \
   "build/x86_64-linux/tmp/libp2pgowrapper.a" \
   platform="linux-x86_64"
 
-libs "secp256k1" "crypto" "ssl" "p2pgowrapper"
+libs "secp256k1" "crypto" "p2pgowrapper"
 dflags "-dip1000" "-preview=inclusiveincontracts"
-versions "REDBLACKTREE_SAFE_PROBLEM" "SYNC_BLOCKFILE_WORKING" "TINY_AES" "WOLFSSL" "OLD_TRANSACTION" "ONETOOL" 
+versions "REDBLACKTREE_SAFE_PROBLEM" "SYNC_BLOCKFILE_WORKING" "OLD_TRANSACTION" "ONETOOL" 
 stringImportPaths "tub/logos/" "/home/lucas/wrk/tagion/build/x86_64-linux"
 
 subPackage {
