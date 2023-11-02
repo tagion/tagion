@@ -30,8 +30,6 @@ import tagion.utils.Miscellaneous : toHexString;
 import std.algorithm;
 import std.array;
 
-enum TWEAK_SIZE = 32;
-
 enum SECP256K1 : uint {
     FLAGS_TYPE_MASK = SECP256K1_FLAGS_TYPE_MASK,
     FLAGS_TYPE_CONTEXT = SECP256K1_FLAGS_TYPE_CONTEXT,
@@ -58,6 +56,8 @@ enum SECP256K1 : uint {
     TAG_PUBKEY_HYBRID_ODD = SECP256K1_TAG_PUBKEY_HYBRID_ODD
 }
 
+alias NativeSecp256k1EDCSA = NativeSecp256k1T!false;
+alias NativeSecp256k1Schnorr = NativeSecp256k1T!true;
 /++
  + <p>This class holds native methods to handle ECDSA verification.</p>
  +
@@ -69,15 +69,19 @@ enum SECP256K1 : uint {
  + or point the JVM to the folder containing it with -Djava.library.path
  + </p>
  +/
-class NativeSecp256k1 {
+class NativeSecp256k1T(bool Schnorr) {
     static void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         if (!flag) {
             throw new SecurityConsensusException(code, file, line);
         }
     }
 
+    enum TWEAK_SIZE = 32;
     enum SIGNATURE_SIZE = 64;
     enum SECKEY_SIZE = 32;
+    enum XONLY_PUBKEY_SIZE = 32;
+    enum MESSAGE_SIZE = 32;
+    enum KEYPAIR_SIZE = secp256k1_keypair.data.length;
 
     protected secp256k1_context* _ctx;
 
@@ -94,12 +98,13 @@ class NativeSecp256k1 {
      + Calling when enabled == false is undefined (probably library not loaded)
 
      + Params:
-     +       LREF data      = The data which was signed, must be exactly 32 bytes
-     +       signature)     = The signature
+     +       msg            = The message which was signed, must be exactly 32 bytes
+     +       signature      = The signature
      +       pub            =  The public key which did the signing
      +/
     @trusted
-    bool verify_ecdsa(const(ubyte[]) msg, const(ubyte[]) signature, const(ubyte[]) pub) const
+    static if (!Schnorr)
+        final bool verify_ecdsa(const(ubyte[]) msg, const(ubyte[]) signature, const(ubyte[]) pub) const
     in {
         assert(msg.length == MESSAGE_SIZE);
         assert(signature.length == SIGNATURE_SIZE);
@@ -129,9 +134,9 @@ class NativeSecp256k1 {
      + Return values
      + @param sig byte array of signature
      +/
-    //alias sign = sign_ecdsa;
     @trusted
-    immutable(ubyte[]) sign_ecdsa(const(ubyte[]) msg, const(ubyte[]) seckey) const
+    static if (!Schnorr)
+        immutable(ubyte[]) sign_ecdsa(const(ubyte[]) msg, const(ubyte[]) seckey) const
     in {
         assert(msg.length == MESSAGE_SIZE);
         assert(seckey.length == SECKEY_SIZE);
@@ -161,7 +166,8 @@ class NativeSecp256k1 {
      + @param seckey ECDSA Secret key, 32 bytes
      +/
     @trusted
-    bool secKeyVerify(scope const(ubyte[]) seckey) const nothrow @nogc
+    static if (!Schnorr)
+        final bool secKeyVerify(scope const(ubyte[]) seckey) const nothrow @nogc
     in {
         assert(seckey.length == SECKEY_SIZE);
     }
@@ -177,11 +183,10 @@ class NativeSecp256k1 {
      + Return values
      + @param pubkey ECDSA Public key, 33 or 65 bytes
      +/
-    //TODO add a 'compressed' arg
-    enum UNCOMPRESSED_PUBKEY_SIZE = 65;
     enum COMPRESSED_PUBKEY_SIZE = 33;
     @trusted
-    immutable(ubyte[]) computePubkey(scope const(ubyte[]) seckey) const
+    static if (!Schnorr)
+        immutable(ubyte[]) computePubkey(scope const(ubyte[]) seckey) const
     in {
         assert(seckey.length == SECKEY_SIZE);
     }
@@ -222,7 +227,8 @@ class NativeSecp256k1 {
      + @param seckey 32-byte seckey
      +/
     @trusted
-    void privKeyTweakMul(const(ubyte[]) privkey, const(ubyte[]) tweak, ref ubyte[] tweak_privkey) const
+    static if (!Schnorr)
+        final void privKeyTweakMul(const(ubyte[]) privkey, const(ubyte[]) tweak, ref ubyte[] tweak_privkey) const
     in {
         assert(privkey.length == 32);
     }
@@ -244,7 +250,8 @@ class NativeSecp256k1 {
      + @param seckey 32-byte seckey
      +/
     @trusted
-    void privKeyTweakAdd(const(ubyte[]) privkey, const(ubyte[]) tweak, ref ubyte[] tweak_privkey) const
+    static if (!Schnorr)
+        final void privKeyTweakAdd(const(ubyte[]) privkey, const(ubyte[]) tweak, ref ubyte[] tweak_privkey) const
     in {
         assert(privkey.length == 32);
     }
@@ -265,7 +272,8 @@ class NativeSecp256k1 {
      + @param pubkey 32-byte seckey
      +/
     @trusted
-    immutable(ubyte[]) pubKeyTweakAdd(const(ubyte[]) pubkey, const(ubyte[]) tweak) const
+    static if (!Schnorr)
+        final immutable(ubyte[]) pubKeyTweakAdd(const(ubyte[]) pubkey, const(ubyte[]) tweak) const
     in (pubkey.length == COMPRESSED_PUBKEY_SIZE)
     in (tweak.length == TWEAK_SIZE)
     do {
@@ -296,7 +304,8 @@ class NativeSecp256k1 {
      + @param pubkey 32-byte seckey
      +/
     @trusted
-    immutable(ubyte[]) pubKeyTweakMul(const(ubyte[]) pubkey, const(ubyte[]) tweak) const
+    static if (!Schnorr)
+        final immutable(ubyte[]) pubKeyTweakMul(const(ubyte[]) pubkey, const(ubyte[]) tweak) const
     in (pubkey.length == COMPRESSED_PUBKEY_SIZE)
     in (tweak.length == TWEAK_SIZE)
     do {
@@ -328,7 +337,9 @@ class NativeSecp256k1 {
      + @param seckey byte array of secret key used in exponentiaion
      + @param pubkey byte array of public key used in exponentiaion
      +/
-    @trusted immutable(ubyte[]) createECDHSecret(
+    @trusted
+    static if (!Schnorr)
+        final immutable(ubyte[]) createECDHSecret(
             scope const(ubyte[]) seckey,
     const(ubyte[]) pubkey) const
     in {
@@ -368,11 +379,11 @@ class NativeSecp256k1 {
         return secp256k1_context_randomize(__ctx, &ctx_randomize[0]) == 1;
     }
 
-    enum XONLY_PUBKEY_SIZE = 32;
-    enum MESSAGE_SIZE = 32;
-    enum KEYPAIR_SIZE = secp256k1_keypair.sizeof;
     @trusted
-    void createKeyPair(const(ubyte[]) seckey, ref secp256k1_keypair keypair) const
+    static if (Schnorr)
+        final void createKeyPair(
+                const(ubyte[]) seckey,
+    ref secp256k1_keypair keypair) const
     in (seckey.length == SECKEY_SIZE)
     do {
         scope (exit) {
@@ -384,7 +395,10 @@ class NativeSecp256k1 {
     }
 
     @trusted
-    void getSecretKey(ref scope const(ubyte[]) keypair, out ubyte[] seckey) nothrow
+    static if (Schnorr)
+        final void getSecretKey(
+                ref scope const(ubyte[]) keypair,
+    out ubyte[] seckey) nothrow
     in (keypair.length == secp256k1_keypair.data.length)
     do {
         seckey.length = SECKEY_SIZE;
@@ -394,14 +408,16 @@ class NativeSecp256k1 {
     }
 
     @trusted
-    void getPubkey(
-            ref scope const(secp256k1_keypair) keypair,
-            ref scope secp256k1_pubkey pubkey) const nothrow {
-        secp256k1_keypair_pub(_ctx, &pubkey, &keypair);
-    }
+    static if (Schnorr)
+        final void getPubkey(
+                ref scope const(secp256k1_keypair) keypair,
+                ref scope secp256k1_pubkey pubkey) const nothrow {
+            secp256k1_keypair_pub(_ctx, &pubkey, &keypair);
+        }
 
     @trusted
-    immutable(ubyte[]) sign_schnorr(
+    static if (Schnorr)
+        final immutable(ubyte[]) sign_schnorr(
             const(ubyte[]) msg,
     ref scope const(secp256k1_keypair) keypair,
     const(ubyte[]) aux_random) const
@@ -418,7 +434,8 @@ class NativeSecp256k1 {
     }
 
     @trusted
-    bool verify_schnorr(const(ubyte[]) signature, const(ubyte[]) msg, const(ubyte[]) pubkey) const nothrow
+    static if (Schnorr)
+        final bool verify_schnorr(const(ubyte[]) signature, const(ubyte[]) msg, const(ubyte[]) pubkey) const nothrow
     in (pubkey.length == XONLY_PUBKEY_SIZE)
     do {
         secp256k1_xonly_pubkey xonly_pubkey;
@@ -427,7 +444,8 @@ class NativeSecp256k1 {
     }
 
     @trusted
-    bool verify_schnorr(const(ubyte[]) signature, const(ubyte[]) msg, ref scope const(secp256k1_xonly_pubkey) xonly_pubkey) const nothrow
+    static if (Schnorr)
+        final bool verify_schnorr(const(ubyte[]) signature, const(ubyte[]) msg, ref scope const(secp256k1_xonly_pubkey) xonly_pubkey) const nothrow
     in (signature.length == SIGNATURE_SIZE)
     in (msg.length == MESSAGE_SIZE)
     do {
@@ -437,26 +455,28 @@ class NativeSecp256k1 {
     }
 
     @trusted
-    immutable(ubyte[]) xonlyPubkey(ref scope const(secp256k1_keypair) keypair) const {
+    static if (Schnorr)
+        final immutable(ubyte[]) xonlyPubkey(ref scope const(secp256k1_keypair) keypair) const {
         secp256k1_xonly_pubkey xonly_pubkey;
         {
             const rt = secp256k1_keypair_xonly_pub(_ctx, &xonly_pubkey, null, &keypair);
             check(rt == 1, ConsensusFailCode.SECURITY_FAILD_PUBKEY_FROM_KEYPAIR);
         }
-        auto pubkey = new ubyte[XONLY_PUBKEY_SIZE];
+        ubyte[XONLY_PUBKEY_SIZE] pubkey;
         {
             const rt = secp256k1_xonly_pubkey_serialize(_ctx, &pubkey[0], &xonly_pubkey);
             check(rt == 1, ConsensusFailCode.SECURITY_FAILD_PUBKEY_FROM_KEYPAIR);
         }
-        return assumeUnique(pubkey);
+        return pubkey.idup;
 
     }
 
     @trusted
-    bool xonlyPubkey(ref scope const(secp256k1_pubkey) pubkey, ref secp256k1_xonly_pubkey xonly_pubkey) const nothrow @nogc {
-        const ret = secp256k1_xonly_pubkey_from_pubkey(_ctx, &xonly_pubkey, null, &pubkey);
-        return ret != 0;
-    }
+    static if (Schnorr)
+        bool xonlyPubkey(ref scope const(secp256k1_pubkey) pubkey, ref secp256k1_xonly_pubkey xonly_pubkey) const nothrow @nogc {
+            const ret = secp256k1_xonly_pubkey_from_pubkey(_ctx, &xonly_pubkey, null, &pubkey);
+            return ret != 0;
+        }
 }
 
 version (unittest) {
@@ -479,7 +499,7 @@ unittest { /// Test of ECDSA
  +/{
         auto sec = "67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530".decode;
         try {
-            auto crypt = new NativeSecp256k1;
+            auto crypt = new NativeSecp256k1EDCSA;
             auto result = crypt.secKeyVerify(sec);
             assert(result);
         }
@@ -494,7 +514,7 @@ unittest { /// Test of ECDSA
     {
         auto sec = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF".decode;
         try {
-            auto crypt = new NativeSecp256k1;
+            auto crypt = new NativeSecp256k1EDCSA;
             auto result = crypt.secKeyVerify(sec);
             assert(!result);
         }
@@ -509,7 +529,7 @@ unittest { /// Test of ECDSA
     {
         auto sec = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF".decode;
         try {
-            auto crypt = new NativeSecp256k1;
+            auto crypt = new NativeSecp256k1EDCSA;
             auto result = crypt.computePubkey(sec);
             assert(0, "This test should throw an ConsensusException");
         }
@@ -527,7 +547,7 @@ unittest { /// Test of ECDSA
         const data = "CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90".decode; //sha256hash of "testing"
         const sec = "67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530".decode;
         try {
-            const crypt = new NativeSecp256k1;
+            const crypt = new NativeSecp256k1EDCSA;
             const result = crypt.sign_ecdsa(data, sec);
             assert(result == "182A108E1448DC8F1FB467D06A0F3BB8EA0533584CB954EF8DA112F1D60E39A21C66F36DA211C087F3AF88B50EDF4F9BDAA6CF5FD6817E74DCA34DB12390C6E9"
                     .decode);
@@ -544,7 +564,7 @@ unittest { /// Test of ECDSA
         const data = "CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90".decode; //sha256hash of "testing"
         const sec = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF".decode;
         try {
-            const crypt = new NativeSecp256k1;
+            const crypt = new NativeSecp256k1EDCSA;
             const result = crypt.sign_ecdsa(data, sec);
             assert(0, "This test should throw an ConsensusException");
         }
@@ -560,7 +580,7 @@ unittest { /// Test of ECDSA
         const sec = "67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530".decode;
         const data = "3982F19BEF1615BCCFBB05E321C10E1D4CBA3DF0E841C2E41EEB6016347653C3".decode; //sha256hash of "tweak"
         try {
-            const crypt = new NativeSecp256k1;
+            const crypt = new NativeSecp256k1EDCSA;
             ubyte[] result;
             crypt.privKeyTweakAdd(sec, data, result);
             assert(result == "A168571E189E6F9A7E2D657A4B53AE99B909F7E712D1C23CED28093CD57C88F3".decode);
@@ -577,7 +597,7 @@ unittest { /// Test of ECDSA
         const sec = "67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530".decode;
         const data = "3982F19BEF1615BCCFBB05E321C10E1D4CBA3DF0E841C2E41EEB6016347653C3".decode; //sha256hash of "tweak"
         try {
-            const crypt = new NativeSecp256k1;
+            const crypt = new NativeSecp256k1EDCSA;
             ubyte[] result;
             crypt.privKeyTweakMul(sec, data, result);
             assert(result == "97F8184235F101550F3C71C927507651BD3F1CDB4A5A33B8986ACF0DEE20FFFC".decode);
@@ -594,9 +614,8 @@ unittest { /// Test of ECDSA
         const pubkey = "033b691036600deb3e04eb666760352989a734c0d24d93630688f1e45ca1b0deb1".decode;
         const tweak = "3982F19BEF1615BCCFBB05E321C10E1D4CBA3DF0E841C2E41EEB6016347653C3".decode; //sha256hash of "tweak"
         try {
-            const crypt = new NativeSecp256k1;
+            const crypt = new NativeSecp256k1EDCSA;
             const result = crypt.pubKeyTweakAdd(pubkey, tweak);
-            writefln("result = %(%02x%)", result);
             assert(result != pubkey);
             assert(result == "0357f2926dd1107f86a3353bc023425c64b5294c70672bd89564a92d79ae128300".decode);
         }
@@ -612,10 +631,9 @@ unittest { /// Test of ECDSA
         const pubkey = "033b691036600deb3e04eb666760352989a734c0d24d93630688f1e45ca1b0deb1".decode;
         const tweak = "3982F19BEF1615BCCFBB05E321C10E1D4CBA3DF0E841C2E41EEB6016347653C3".decode; //sha256hash of "tweak"
         try {
-            const crypt = new NativeSecp256k1;
+            const crypt = new NativeSecp256k1EDCSA;
             const result = crypt.pubKeyTweakMul(pubkey, tweak);
             assert(result != pubkey);
-            writefln("result = %(%02x%)", result);
             assert(result == "02a80ffb5f6598b3c223e1917c0b3b93a7e7a39bea126c30d3253240b83ed18b57".decode);
         }
         catch (ConsensusException e) {
@@ -628,7 +646,7 @@ unittest { /// Test of ECDSA
  +/
     {
         try {
-            auto crypt = new NativeSecp256k1;
+            auto crypt = new NativeSecp256k1EDCSA;
             auto result = crypt.randomizeContext;
             assert(result);
         }
@@ -638,13 +656,13 @@ unittest { /// Test of ECDSA
     }
 
     {
-        auto message = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90");
-        auto seed = decode("A441B15FE9A3CF5661190A0B93B9DEC7D04127288CC87250967CF3B52894D110"); //sha256hash of "random"
+        auto message = "CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90".decode;
+        auto seed = "A441B15FE9A3CF5661190A0B93B9DEC7D04127288CC87250967CF3B52894D110".decode; //sha256hash of "random"
         import tagion.utils.Miscellaneous : toHexString;
         import std.digest.sha;
 
         try {
-            auto crypt = new NativeSecp256k1;
+            auto crypt = new NativeSecp256k1EDCSA;
             auto data = seed.dup;
             do {
                 data = sha256Of(data).dup;
@@ -663,16 +681,16 @@ unittest { /// Test of ECDSA
     }
 
     { //
-        auto crypt = new NativeSecp256k1;
-        auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
+        const crypt = new NativeSecp256k1EDCSA;
+        const sec = "67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530".decode;
         immutable privkey = sec.idup;
         //        auto privkey = crypt.secKeyVerify( sec );
         assert(crypt.secKeyVerify(privkey));
         immutable pubkey = crypt.computePubkey(privkey);
 
         // Message
-        auto message = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90");
-        auto signature = crypt.sign_ecdsa(message, privkey);
+        const message = "CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90".decode;
+        const signature = crypt.sign_ecdsa(message, privkey);
         assert(crypt.verify_ecdsa(message, signature, pubkey));
 
         // Drived key a
@@ -680,92 +698,92 @@ unittest { /// Test of ECDSA
         ubyte[] privkey_a_drived;
         crypt.privKeyTweakMul(privkey, drive, privkey_a_drived);
         assert(privkey != privkey_a_drived);
-        auto pubkey_a_drived = crypt.pubKeyTweakMul(pubkey, drive);
+        const pubkey_a_drived = crypt.pubKeyTweakMul(pubkey, drive);
         assert(pubkey != pubkey_a_drived);
-        auto signature_a_drived = crypt.sign_ecdsa(message, privkey_a_drived);
+        const signature_a_drived = crypt.sign_ecdsa(message, privkey_a_drived);
         assert(crypt.verify_ecdsa(message, signature_a_drived, pubkey_a_drived));
 
         // Drive key b from key a
         ubyte[] privkey_b_drived;
         crypt.privKeyTweakMul(privkey_a_drived, drive, privkey_b_drived);
         assert(privkey_b_drived != privkey_a_drived);
-        auto pubkey_b_drived = crypt.pubKeyTweakMul(pubkey_a_drived, drive);
+        const pubkey_b_drived = crypt.pubKeyTweakMul(pubkey_a_drived, drive);
         assert(pubkey_b_drived != pubkey_a_drived);
-        auto signature_b_drived = crypt.sign_ecdsa(message, privkey_b_drived);
+        const signature_b_drived = crypt.sign_ecdsa(message, privkey_b_drived);
         assert(crypt.verify_ecdsa(message, signature_b_drived, pubkey_b_drived));
 
     }
 
     {
-        auto crypt = new NativeSecp256k1;
-        auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
+        const crypt = new NativeSecp256k1EDCSA;
+        const sec = "67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530".decode;
         immutable privkey = sec.idup;
         //        auto privkey = crypt.secKeyVerify( sec );
         assert(crypt.secKeyVerify(privkey));
         immutable pubkey = crypt.computePubkey(privkey);
 
         // Message
-        auto message = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90");
-        auto signature = crypt.sign_ecdsa(message, privkey);
+        const message = "CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90".decode;
+        const signature = crypt.sign_ecdsa(message, privkey);
         assert(crypt.verify_ecdsa(message, signature, pubkey));
 
     }
 
     {
-        auto crypt = new NativeSecp256k1;
-        auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
+        const crypt = new NativeSecp256k1EDCSA;
+        const sec = "67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530".decode;
         immutable privkey = sec.idup;
         assert(crypt.secKeyVerify(privkey));
         immutable pubkey = crypt.computePubkey(privkey);
 
         // Message
-        auto message = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90");
-        auto signature = crypt.sign_ecdsa(message, privkey);
+        const message = "CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90".decode;
+        const signature = crypt.sign_ecdsa(message, privkey);
         assert(crypt.verify_ecdsa(message, signature, pubkey));
 
     }
 
     {
-        auto crypt = new NativeSecp256k1;
-        auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
-        immutable privkey = sec.idup;
-        //        auto privkey = crypt.secKeyVerify( sec );
-        assert(crypt.secKeyVerify(privkey));
-        immutable pubkey = crypt.computePubkey(privkey);
-
-        // Message
-        auto message = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90");
-        auto signature = crypt.sign_ecdsa(message, privkey);
-        assert(crypt.verify_ecdsa(message, signature, pubkey));
-
-    }
-
-    {
-        auto crypt = new NativeSecp256k1;
-        auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
+        const crypt = new NativeSecp256k1EDCSA;
+        const sec = "67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530".decode;
         immutable privkey = sec.idup;
         //        auto privkey = crypt.secKeyVerify( sec );
         assert(crypt.secKeyVerify(privkey));
         immutable pubkey = crypt.computePubkey(privkey);
 
         // Message
-        auto message = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90");
-        auto signature = crypt.sign_ecdsa(message, privkey);
+        const message = "CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90".decode;
+        const signature = crypt.sign_ecdsa(message, privkey);
         assert(crypt.verify_ecdsa(message, signature, pubkey));
 
     }
 
     {
-        auto crypt = new NativeSecp256k1;
-        auto sec = decode("67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530");
+        const crypt = new NativeSecp256k1EDCSA;
+        const sec = "67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530".decode;
         immutable privkey = sec.idup;
         //        auto privkey = crypt.secKeyVerify( sec );
         assert(crypt.secKeyVerify(privkey));
         immutable pubkey = crypt.computePubkey(privkey);
 
         // Message
-        auto message = decode("CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90");
-        auto signature = crypt.sign_ecdsa(message, privkey);
+        const message = "CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90".decode;
+        const signature = crypt.sign_ecdsa(message, privkey);
+        assert(crypt.verify_ecdsa(message, signature, pubkey));
+
+    }
+
+    {
+        const crypt = new NativeSecp256k1EDCSA;
+        const sec = "67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530".decode;
+        immutable privkey = sec.idup;
+        //        auto privkey = crypt.secKeyVerify( sec );
+        assert(crypt.secKeyVerify(privkey));
+        immutable pubkey = crypt.computePubkey(privkey);
+
+        // Message
+        const message = "CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90".decode;
+        const signature = crypt.sign_ecdsa(message, privkey);
 
         assert(crypt.verify_ecdsa(message, signature, pubkey));
 
@@ -775,7 +793,7 @@ unittest { /// Test of ECDSA
     {
         import std.stdio;
 
-        auto crypt = new NativeSecp256k1;
+        const crypt = new NativeSecp256k1EDCSA;
 
         const aliceSecretKey = "37cf9a0f624a21b0821f4ab3f711ac3a86ac3ae8e4d25bdbd8cdcad7b6cf92d4".decode;
         const alicePublicKey = crypt.computePubkey(aliceSecretKey);
@@ -795,14 +813,14 @@ unittest { /// Test of ECDSA
 }
 
 unittest { /// Schnorr test generated from the secp256k1/examples/schnorr.c 
-    const aux_random = decode("b0d8d9a460ddcea7ae5dc37a1b5511eb2ab829abe9f2999e490beba20ff3509a");
-    const msg_hash = decode("1bd69c075dd7b78c4f20a698b22a3fb9d7461525c39827d6aaf7a1628be0a283");
-    const secret_key = decode("e46b4b2b99674889342c851f890862264a872d4ac53a039fbdab91fd68ed4e71");
-    const expected_pubkey = decode("ecd21d66cf97843d467c9d02c5781ec1ec2b369620605fd847bd23472afc7e74");
-    const expected_signature = decode(
-            "021e9a32a12ead3144bb230a81794913a856296ed369159d01b8f57d6d7e7d3630e34f84d49ec054d5251ff6539f24b21097a9c39329eaab2e9429147d6d82f8");
+    const aux_random = "b0d8d9a460ddcea7ae5dc37a1b5511eb2ab829abe9f2999e490beba20ff3509a".decode;
+    const msg_hash = "1bd69c075dd7b78c4f20a698b22a3fb9d7461525c39827d6aaf7a1628be0a283".decode;
+    const secret_key = "e46b4b2b99674889342c851f890862264a872d4ac53a039fbdab91fd68ed4e71".decode;
+    const expected_pubkey = "ecd21d66cf97843d467c9d02c5781ec1ec2b369620605fd847bd23472afc7e74".decode;
+    const expected_signature = "021e9a32a12ead3144bb230a81794913a856296ed369159d01b8f57d6d7e7d3630e34f84d49ec054d5251ff6539f24b21097a9c39329eaab2e9429147d6d82f8"
+        .decode;
     const expected_keypair = decode("e46b4b2b99674889342c851f890862264a872d4ac53a039fbdab91fd68ed4e71747efc2a4723bd47d85f602096362becc11e78c5029d7c463d8497cf661dd2eca89c1820ccc2dd9b0e0e5ab13b1454eb3c37c31308ae20dd8d2aca2199ff4e6b");
-    auto crypt = new NativeSecp256k1;
+    auto crypt = new NativeSecp256k1Schnorr;
     secp256k1_keypair keypair;
     crypt.createKeyPair(secret_key, keypair);
     //writefln("keypair %(%02x%)", keypair);

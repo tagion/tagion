@@ -28,9 +28,8 @@ void scramble(T)(scope ref T[] data) @trusted if (T.sizeof > ubyte.sizeof) {
 
 package alias check = Check!SecurityConsensusException;
 
-alias StdHashNet = StdHashNetT!false;
 @safe
-class StdHashNetT(bool SCHNORR) : HashNet {
+class StdHashNet : HashNet {
     import std.format;
 
     enum HASH_SIZE = 32;
@@ -70,8 +69,9 @@ class StdHashNetT(bool SCHNORR) : HashNet {
     }
 }
 
+alias StdSecureNet = StdSecureNetT!false;
 @safe
-class StdSecureNet : StdHashNet, SecureNet {
+class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
     import tagion.crypto.secp256k1.NativeSecp256k1;
     import tagion.crypto.Types : Pubkey;
     import tagion.crypto.aes.AESCrypto;
@@ -320,6 +320,7 @@ class StdSecureNet : StdHashNet, SecureNet {
         return Pubkey(_crypt.computePubkey(seckey));
     }
 
+    alias NativeSecp256k1 = NativeSecp256k1T!Schnorr;
     this() nothrow {
         _crypt = new NativeSecp256k1;
     }
