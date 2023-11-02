@@ -7,10 +7,6 @@
 [submodule "src/wrap-p2pgowrapper/p2pwrapper"]
     path = src/wrap-p2pgowrapper/p2pwrapper
     url = git@github.com:tagion/p2pgowrapper.git
-[submodule "src/wrap-wolfssl/wolfssl"]
-    path = src/fork-wolfssl/wolfssl
-    url = git@github.com:tagion/fork-wolfssl.git
-
 [submodule "src/wrap-nng/nng"]
     path = src/fork-nng/nng
     url = git@github.com:tagion/fork-nng.git
