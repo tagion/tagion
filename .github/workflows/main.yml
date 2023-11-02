@@ -176,7 +176,6 @@ jobs:
           tar czf ${{ env.ARTIFACT_DIR }}.tar.gz ${{ env.ARTIFACT_DIR }}
         
       - uses: actions/upload-artifact@v3
-        if: failure() 
         with:
           name: successful_artifact
           path: ${{ env.ARTIFACT_DIR }}.tar.gz
