@@ -36,7 +36,7 @@ jobs:
 
       - name: Build tagion
         run: |
-          EXPORT DC=${{ env.DC }}
+          export DC=${{ env.DC }}
           make tagion release -j || make proper tagion release
 
       - name: Post run
@@ -64,7 +64,7 @@ jobs:
 
       - name: Run unittest
         run: |
-          EXPORT DC=${{ env.DC }}
+          export DC=${{ env.DC }}
           make unittest-cov -j || make proper unittest-cov
 
       - name: Report unittest
