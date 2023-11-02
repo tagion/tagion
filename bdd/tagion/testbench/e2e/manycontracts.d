@@ -15,7 +15,6 @@ import std.path;
 import std.getopt;
 import std.file;
 
-
 import tagion.tools.wallet.WalletOptions : WalletOptions;
 import tagion.tools.wallet.WalletInterface;
 import tagion.script.common;
@@ -30,38 +29,45 @@ int _main(string[] args) {
     const program = args[0];
     string[] wallet_config_files;
     string[] wallet_pins;
+    bool sendkernel = false;
 
     arraySep = ",";
     auto main_args = getopt(args,
-            "w", "wallet config files", &wallet_config_files,
-            "x", "wallet pins", &wallet_pins,
-            // "n", "network config file", &network_config,
+        "w", "wallet config files", &wallet_config_files,
+        "x", "wallet pins", &wallet_pins,
+        "sendkernel", "Send requests directory to the kernel", &sendkernel,// "n", "network config file", &network_config,
+    
     );
 
     if (main_args.helpWanted) {
         defaultGetoptPrinter(
-                [
-                "Usage:",
-                format("%s [<option>...] <config.json> <files>", program),
-                "<option>:",
-                ].join("\n"),
-                main_args.options);
+            [
+            "Usage:",
+            format("%s [<option>...] <config.json> <files>", program),
+            "<option>:",
+        ].join("\n"),
+            main_args.options);
         return 0;
     }
 
     import std.process : environment;
+
     const HOME = environment.get("HOME");
-    if(wallet_config_files.empty) {
-        wallet_config_files = dirEntries(buildPath(HOME, ".local/share/tagion/wallets/"), "wallet*.json", SpanMode.shallow).map!(a => a.name).array.sort.array;
-        if(wallet_config_files.empty) {
+    if (wallet_config_files.empty) {
+        wallet_config_files = dirEntries(buildPath(HOME, ".local/share/tagion/wallets/"), "wallet*.json", SpanMode
+                .shallow).map!(a => a.name).array.sort.array;
+        if (wallet_config_files.empty)
+        {
             writeln("No wallet configs available");
             return 0;
         }
     }
 
-    if(wallet_pins.empty) {
-        foreach(i, _; wallet_config_files) {
-            wallet_pins ~= format("%04d", i+1);
+    if (wallet_pins.empty)
+    {
+        foreach (i, _; wallet_config_files)
+        {
+            wallet_pins ~= format("%04d", i + 1);
         }
     }
 
@@ -69,7 +75,8 @@ int _main(string[] args) {
 
     WalletOptions[] wallet_options;
     WalletInterface[] wallet_interfaces;
-    foreach(i, c; wallet_config_files) {
+    foreach (i, c; wallet_config_files)
+    {
         WalletOptions opts;
         opts.load(c);
         wallet_options ~= opts;
@@ -81,7 +88,7 @@ int _main(string[] args) {
     }
 
     auto manycontracts_feature = automation!manycontracts;
-    manycontracts_feature.SendNContractsFromwallet1Towallet2(wallet_interfaces);
+    manycontracts_feature.SendNContractsFromwallet1Towallet2(wallet_interfaces, sendkernel);
     manycontracts_feature.run;
     return 1;
 }
@@ -100,16 +107,26 @@ alias FeatureContext = Tuple!(
 class SendNContractsFromwallet1Towallet2
 {
     WalletInterface[] wallets;
+    bool sendkernel;
 
-    this(WalletInterface[] wallets) {
+    bool send;
+    this(WalletInterface[] wallets, bool sendkernel
+    )
+    {
         this.wallets = wallets;
+        this.sendkernel = sendkernel;
+        this.send = !sendkernel;
     }
 
     @Given("i have a network")
-    Document network() @trusted {
-        const wallet_switch = WalletInterface.Switch(update: true, sendkernel: true);
+    Document network() @trusted
+    {
+        const wallet_switch = WalletInterface.Switch(update : true, sendkernel:
+            sendkernel, send:
+            send);
 
-        foreach(ref w; wallets) {
+        foreach (ref w; wallets[0 .. 2])
+        {
             w.operate(wallet_switch, []);
         }
 
@@ -117,13 +134,15 @@ class SendNContractsFromwallet1Towallet2
     }
 
     @When("i send N many valid contracts from `wallet1` to `wallet2`")
-    Document wallet2() @trusted {
+    Document wallet2() @trusted
+    {
         const invoice = wallets[0].secure_wallet.createInvoice("Invoice", 1000.TGN);
 
         SignedContract signed_contract;
         TagionCurrency fees;
 
-        with(wallets[1]) {
+        with (wallets[1])
+        {
             auto result = secure_wallet.payment([invoice], signed_contract, fees);
 
             const message = secure_wallet.net.calcHash(signed_contract);
@@ -140,9 +159,11 @@ class SendNContractsFromwallet1Towallet2
     }
 
     @When("all the contracts have been executed")
-    Document executed() @trusted {
+    Document executed() @trusted
+    {
         import core.time;
         import core.thread;
+
         Thread.sleep(5.seconds);
         return result_ok;
     }
@@ -150,9 +171,13 @@ class SendNContractsFromwallet1Towallet2
     @Then("wallet1 and wallet2 balances should be updated")
     Document updated() @trusted
     {
-        const wallet_switch = WalletInterface.Switch(update: true, sendkernel: true);
-        
-        foreach(ref w; wallets) {
+        const wallet_switch = WalletInterface.Switch(
+            trt_update : true, 
+            sendkernel: sendkernel, 
+            send: send);
+
+        foreach (ref w; wallets[0 .. 2])
+        {
             w.operate(wallet_switch, []);
         }
         return result_ok;
