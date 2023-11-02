@@ -269,8 +269,8 @@ int _main(string[] args) {
                         return 1;
                     }
                 }
-                if (output_base64) {
-                    const text_output = encodeBase64(doc);
+                if (output_base64 || output_hex) {
+                    const text_output = (output_hex) ? format("%(%02x%)", doc.serialize) : encodeBase64(doc);
                     if (standard_output) {
                         writefln("%s", text_output);
                         continue loop_files;
