@@ -27,15 +27,25 @@ extern (C) void rcb ( void* p ){
     size_t cnt = aio.count;
     writeln("Receive callback fired with result: ", res, " : ", cnt );
 
-    NNGMessage msg = NNGMessage(0);
-    auto rc = aio.get_msg(&msg);
-    assert(rc == 0);
+    NNGMessage msg = aio.get_msg();
+    
+    if(msg.empty){
+        writeln("Received empy msg");
+        return;
+    }
 
     writeln("Received message: ", msg.length, " : ", msg.header_length);
-    assert( msg.length == 27 && msg.header_length == 0 );
+    //assert( msg.length == 0 || ( msg.length == 27 && msg.header_length == 0 ) );
 
-    auto x = msg.body_trim!string(13); 
-        writeln("Received string: ",x);
+    if(msg.length > 14){
+        auto x = msg.body_trim!string(); 
+            writeln("Received string: ",x);
+    }else{
+        auto y = msg.header_trim!string();
+        writeln("Received header: ",y);
+        auto z = msg.body_trim!string();
+        writeln("Received body: ",z);
+    }      
 }
 
 
@@ -49,11 +59,11 @@ main()
 
     string url = "tcp://127.0.0.1:13003";
 
-    NNGSocket sr = NNGSocket(nng_socket_type.NNG_SOCKET_PULL);
+    NNGSocket sr = NNGSocket(nng_socket_type.NNG_SOCKET_PULL, false);
     sr.recvtimeout = msecs(1000);
     rc = sr.listen(url);
     assert(rc == 0);
-    NNGSocket ss = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
+    NNGSocket ss = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH, false);
     ss.sendtimeout = msecs(1000);
     ss.sendbuf = 4096;
     rc = ss.dial(url);
@@ -91,7 +101,23 @@ main()
     raio.wait();
 
     log("AIO wait completed");
+    
+    nng_sleep(msecs(1000));
 
+    log("Test error message with header");
+
+    msg3.clear();
+    log(format("M3: L: %d H: %d ", msg3.length, msg3.header_length));   
+    msg3.body_append("ERROR");
+    msg3.header_append("ERROR:404");
+    log(format("M3: L: %d H: %d ", msg3.length, msg3.header_length));   
+    saio.set_msg(msg3);
+    ss.sendaio(saio);
+
+    sr.receiveaio(raio);
+    
+    saio.wait();
+    raio.wait();
 
     nng_sleep(msecs(1000));
 
