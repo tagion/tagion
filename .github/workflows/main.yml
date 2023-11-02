@@ -39,6 +39,7 @@ jobs:
 
       - name: Run tests
         run: |
+          rm -vr logs/ || echo "No old logs"
           make clean ci -j DC=${{env.DC}} || make clean proper ci -j DC=${{env.DC}}
           
       - name: Report unittests
@@ -110,6 +111,7 @@ jobs:
           source $PWD/build/${{ env.TARGET }}/bin/bddenv.sh
           export DBIN=$PWD/build/${{ env.TARGET }}/bin
           export DLOG=$PWD/logs/${{ env.TARGET }}
+          rm -r $DLOG || echo "No old logs"
           export COLLIDER_ROOT=$PWD/logs/${{ env.TARGET }}/bdd
           export PATH=$DBIN:$PATH
           ./build/${{ env.TARGET }}/bin/collider --silent -r acceptance -j ${{env.CD_PARALLEL}} -b build/${{ env.TARGET }}/bin/testbench -s build/${{ env.TARGET }}/bin/collider_schedule.json  
