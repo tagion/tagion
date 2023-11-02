@@ -79,16 +79,6 @@ version (WOLFSSL) {
     alias SSL_Cleanup = wolfSSL_Cleanup;
     enum SSLErrorCodes_code = generator_SSLErrorCodes;
     mixin(SSLErrorCodes_code);
-
-    void ERR_error_string_n(int err, char* buf, size_t size) {
-        if (err < wolfSSL_ErrorCodes.min || err > wolfCrypt_ErrorCodes.max) {
-            wolfSSL_ERR_error_string_n(err, buf, size);
-        }
-        else {
-            SetErrorString(err, buf);
-        }
-    }
-
 }
 else {
     extern (C) {
