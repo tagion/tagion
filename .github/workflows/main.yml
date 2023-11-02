@@ -111,6 +111,7 @@ jobs:
           make bddtest -j || make proper bddtest
 
       - name: Report commit stage tests
+        if: always()
         run: | 
           sleep 5
           ./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/commit/results
@@ -153,7 +154,7 @@ jobs:
           ./build/${{ env.TARGET }}/bin/collider --silent -r acceptance -j ${{env.CD_PARALLEL}} -b build/${{ env.TARGET }}/bin/testbench -s build/${{ env.TARGET }}/bin/collider_schedule.json  
 
       - name: Generate reports
-        if: failure() || success()
+        if: always()
         run: |
           sleep 5
           ./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/acceptance/results
