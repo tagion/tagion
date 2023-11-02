@@ -98,8 +98,6 @@ struct TranscriptService {
                             .isMajority(number_of_nodes)
                         ).array;
 
-
-
             // create the epochs
             Epoch[] consensus_epochs;
             loop_epochs: foreach(a_vote; aggregated_votes) {
@@ -122,11 +120,14 @@ struct TranscriptService {
             }
             log("EPOCH_CONTRACTS: %s, consensus_epochs %s agg_votes: %s votes: %s", epoch_contracts.length, consensus_epochs.length, aggregated_votes.length, votes.length);
             // clean up the arrays
-            foreach(a_vote; aggregated_votes) {
-                votes.remove(a_vote.value.epoch);
-                epoch_contracts.remove(a_vote.value.epoch);
-            }
 
+            scope(exit) {
+                foreach(a_vote; aggregated_votes) {
+                    votes.remove(a_vote.value.epoch);
+                    epoch_contracts.remove(a_vote.value.epoch);
+                }
+
+            }
 
 
             
@@ -243,7 +244,6 @@ struct TranscriptService {
 
             votes[epoch_number] = Votes(bullseye, epoch_number);
 
-            // checkLeaks();
             locate(task_names.epoch_creator).send(Payload(), own_vote.toDoc);
         }
 
