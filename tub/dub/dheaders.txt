@@ -1,11 +1,3 @@
 src/lib-crypto/tagion/crypto/secp256k1/c/secp256k1.di
 src/lib-crypto/tagion/crypto/secp256k1/c/secp256k1_ecdh.di
 src/lib-crypto/tagion/crypto/secp256k1/c/secp256k1_hash.di
-src/lib-p2pgowrapper/p2p/cgo/c_helper.di
-src/lib-p2pgowrapper/p2p/cgo/libp2pgowrapper.di
-src/lib-network/tagion/network/wolfssl/c/error_ssl.di
-src/lib-network/tagion/network/wolfssl/c/wolfcrypt/error_crypt.di
-src/lib-network/tagion/network/wolfssl/c/callbacks.di
-src/lib-network/tagion/network/wolfssl/c/wolfcrypt/integer.di
-src/lib-network/tagion/network/wolfssl/c/wolfcrypt/settings.di
-src/lib-network/tagion/network/wolfssl/c/wolfssl_version.di

@@ -33,7 +33,7 @@ unittest-report:
 
 .PHONY: proto-unittest-run proto-unittest-build
 
-$(UNITTEST_BIN): ssl nng secp256k1 libp2p
+$(UNITTEST_BIN): nng secp256k1 libp2p
 $(UNITTEST_BIN): DFLAGS+=$(DIP1000)
 $(UNITTEST_BIN): $(COVWAY) 
 $(UNITTEST_BIN): $(UNITTEST_DFILES) 

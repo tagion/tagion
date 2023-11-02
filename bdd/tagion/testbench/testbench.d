@@ -5,10 +5,8 @@ import std.meta;
 import tagion.tools.OneMain;
 
 int main(string[] args) {
-    import ssl_server = tagion.testbench.ssl_server;
     import hirpc_verifier = tagion.testbench.hirpc_verifier;
     import inputvalidator = tagion.testbench.inputvalidator;
-    import ssl_echo_server = tagion.testbench.ssl_echo_server;
     import dart_test = tagion.testbench.dart_test;
     import dart_deep_rim_test = tagion.testbench.dart_deep_rim_test;
     import dart_pseudo_random_archives = tagion.testbench.dart_pseudo_random_archives;
@@ -37,10 +35,8 @@ int main(string[] args) {
 
     alias alltools = AliasSeq!(
             collector,
-            ssl_server,
             hirpc_verifier,
             inputvalidator,
-            ssl_echo_server,
             dart_test,
             dart_deep_rim_test,
             dart_pseudo_random_archives,

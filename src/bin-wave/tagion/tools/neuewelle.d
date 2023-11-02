@@ -13,8 +13,8 @@ import std.socket;
 import std.typecons;
 import std.path;
 import std.concurrency;
-import std.path : baseName;
-import std.file : exists;
+import std.path : baseName, dirName;
+import std.file : exists, chdir;
 import std.algorithm : countUntil, map;
 import std.range : iota;
 import std.array;
@@ -150,6 +150,7 @@ int _main(string[] args) {
         local_options = Options.defaultOptions;
         stderr.writefln("No config file exits, running with default options");
     }
+    chdir(config_file.dirName);
 
     // Spawn logger service
     auto logger_service_tid = startLogger;
