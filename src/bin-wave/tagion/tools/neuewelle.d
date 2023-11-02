@@ -186,6 +186,8 @@ int _main(string[] args) {
         import tagion.communication.HiRPC;
         import tagion.script.standardnames;
         import tagion.script.common : TagionHead, GenesisEpoch, Epoch;
+        import std.file : copy;
+        import std.stdio : File;
         import tagion.hibon.HiBONRecord : isRecord;
 
         auto __net = new StdSecureNet();
@@ -195,13 +197,15 @@ int _main(string[] args) {
         Fingerprint[] bullseyes;
         foreach(node_opt; node_options) {
             DART db = new DART(__net, node_opt.dart.dart_path);
-            scope(exit) {
-                db.close();
-            }
-            bullseyes ~= Fingerprint(db.bullseye);
+            auto b = Fingerprint(db.bullseye);
+            bullseyes ~= b;
 
             // check that all bullseyes are the same before boot
             assert(bullseyes.all!(b => b == bullseyes[0]), "DATABASES must be booted with same bullseye - Abort");
+            db.close();
+
+            // node_opt.dart.dart_path.copy("BOOT"~node_opt.dart.dart_path);
+
         }
 
         

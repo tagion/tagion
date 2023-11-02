@@ -199,6 +199,7 @@ class BlockFile {
         }
 
         file.close;
+        
     }
 
     bool empty() const pure nothrow {

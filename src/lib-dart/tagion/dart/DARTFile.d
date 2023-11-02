@@ -166,6 +166,7 @@ class DARTFile {
      * Close the DARTFile
      */
     void close() @trusted {
+        writeln("closing file");
         blockfile.close;
         blockfile.destroy;
         blockfile = null;
