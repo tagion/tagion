@@ -54,7 +54,7 @@ struct TranscriptOptions {
 **/
 struct TranscriptService {
     void task(immutable(TranscriptOptions) opts, immutable(size_t) number_of_nodes, shared(StdSecureNet) shared_net, immutable(TaskNames) task_names) {
-        const net = new StdSecureNet(shared_net);
+        const(SecureNet) net = new StdSecureNet(shared_net);
 
         immutable(ContractProduct)*[DARTIndex] products;
         auto rec_factory = RecordFactory(net);
@@ -108,29 +108,27 @@ struct TranscriptService {
 
             }); 
 
-            // now we locate the epoch
-            if (last_head !is TagionHead.init) {
-                immutable epoch_index = net.dartKey(StdNames.epoch, last_head.current_epoch);
-                locate(task_names.dart).send(dartReadRR(),[epoch_index]); 
-                log("SENDING MESSAGE TO DART");
-             
-                receiveTimeout(1.seconds, (dartReadRR.Response _, immutable(RecordFactory.Recorder) epoch_recorder) {
-                    if (!epoch_recorder.empty) {
-                        auto doc = epoch_recorder[].front.filed;
-                        if (doc.isRecord!Epoch) {
-                            last_epoch_number = Epoch(doc).epoch_number;
-                        } 
-                        else if(doc.isRecord!GenesisEpoch) {
-                            last_epoch_number = GenesisEpoch(doc).epoch_number;
-                        } 
-                        else {
-                            log("THROWING EXCEPTION");
-                            throw new Exception("The read epoch was not of type Epoch or GenesisEpoch");
-                        }
-                        previous_epoch = Fingerprint(net.calcHash(doc));
+        // now we locate the epoch
+            immutable epoch_index = net.dartKey(StdNames.epoch, last_head.current_epoch);
+            locate(task_names.dart).send(dartReadRR(),[epoch_index]); 
+            log("SENDING MESSAGE TO DART");
+         
+            receiveTimeout(1.seconds, (dartReadRR.Response _, immutable(RecordFactory.Recorder) epoch_recorder) {
+                if (!epoch_recorder.empty) {
+                    auto doc = epoch_recorder[].front.filed;
+                    if (doc.isRecord!Epoch) {
+                        last_epoch_number = Epoch(doc).epoch_number;
+                    } 
+                    else if(doc.isRecord!GenesisEpoch) {
+                        last_epoch_number = GenesisEpoch(doc).epoch_number;
+                    } 
+                    else {
+                        log("THROWING EXCEPTION");
+                        throw new Exception("The read epoch was not of type Epoch or GenesisEpoch");
                     }
-                }); 
-            }
+                    previous_epoch = Fingerprint(net.calcHash(doc));
+                }
+            }); 
         }
         
 
@@ -181,16 +179,19 @@ struct TranscriptService {
                     continue loop_epochs;
                 }
 
-                pragma(msg, "add proper signatures and pkeys");
+                // update the last epoch number
                 Pubkey[] keys = [Pubkey([1,2,3,4])];
                 // create the epoch;
-                consensus_epochs ~= Epoch(a_vote.value.epoch, 
+                auto new_epoch = Epoch(a_vote.value.epoch, 
                                     sdt_t(previous_epoch_contract.epoch_time), 
                                     a_vote.value.bullseye, 
-                                    Fingerprint.init, 
+                                    previous_epoch, 
                                     a_vote.value.votes.map!(v => v.signed_bullseye).array,
                                     keys, 
                                     keys);
+                consensus_epochs ~= new_epoch, 
+                last_epoch_number = a_vote.value.epoch;
+                previous_epoch = net.calcHash(new_epoch);
             }
             log("EPOCH_CONTRACTS: %s, consensus_epochs %s agg_votes: %s votes: %s", epoch_contracts.length, consensus_epochs.length, aggregated_votes.length, votes.length);
 
@@ -199,11 +200,6 @@ struct TranscriptService {
                 to the hashgraph being asynchronous.
             */
             recorder.insert(consensus_epochs, Archive.Type.ADD);
-            
-
-
-            
-            
 
 
 
@@ -248,6 +244,43 @@ struct TranscriptService {
                 used ~= signed_contract.contract.inputs;
                 products.remove(net.dartIndex(signed_contract.contract));
             }
+
+            // BigNumber total = last_head.globals.total;
+            // long number_of_bills = last_head.global.number_of_bills;
+
+            // void billStatistic(const(Archive) archive) {
+            //     if (!archive.filed.isRecord!TagionBill) {
+            //         return;
+            //     }
+            //     auto bill = TagionBill(archive.filed);
+
+            //     if (archive.Type.REMOVE) {
+            //         total -= bill.value;
+            //         number_of_bills--;
+            //     }
+            //     if (archive.Type.ADD) {
+            //         total += bill.value;
+            //         number_of_bills++;
+            //     }
+            // }
+            // recorder[].each!(a => billStatistic(a));
+
+            // TagionGlobals new_globals = TagionGlobals(
+            //     Fingerprint[].init,
+            //     total,
+            //     number_of_bills,
+                
+            // )
+
+
+        
+
+            
+            // // create the tagionhead and globals.
+            // long number_of_new_bills = recorder[]
+            //     .filter!(d => d.filed.isRecord!(TagionBill))
+            //     .
+
 
             auto req = dartModifyRR();
             req.id = res.id;

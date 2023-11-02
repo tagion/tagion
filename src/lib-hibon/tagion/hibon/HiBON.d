@@ -1130,4 +1130,49 @@ static size_t size(U)(const(U[]) array) pure {
             }
         }
     }
+
+
+}
+
+
+@safe
+unittest {
+    import tagion.hibon.HiBONRecord;
+    import std.stdio;
+    import tagion.hibon.HiBONtoText;
+
+    static struct InnerTest {
+        string inner_string;
+        mixin HiBONRecord;
+    }
+
+    static struct TestName {
+        @label("#name") string name; // Default name should always be "tagion"
+        @label("inner") InnerTest inner_hibon;
+
+        mixin HiBONRecord;
+    }
+
+    TestName test;
+    InnerTest inner;
+
+    inner.inner_string = "wowo";
+    test.name = "tagion";
+    test.inner_hibon = inner;
+
+
+    writefln("%s", test.toPretty);
+    const base64 = test.toDoc.encodeBase64;
+    auto serialized = test.toDoc.serialize;
+    const new_doc = Document(serialized);
+    const valid = new_doc.valid;
+
+    const after_base64 = new_doc.encodeBase64;
+
+    assert(base64 == after_base64);
+
+    writeln(new_doc.valid);
+    assert(valid is Document.Element.ErrorCode.NONE);
+
+
 }

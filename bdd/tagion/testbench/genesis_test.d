@@ -119,7 +119,9 @@ int _main(string[] args) {
     
     const globals = TagionGlobals([event_print], total_amount, const BigNumber(0), number_of_bills, const long(0));
 
+
     const tagion_head = TagionHead(TagionDomain, 0, globals);
+    writefln("CREATED TAGION HEAD: %s", tagion_head.toDoc.encodeBase64);
 
     
     Pubkey[] keys;
@@ -148,6 +150,7 @@ int _main(string[] args) {
         auto db = new DART(net, path);
         db.modify(recorder);
     }
+
 
     immutable neuewelle_args = ["genesis_test", config_file, "--nodeopts", module_path]; // ~ args;
     auto tid = spawn(&wrap_neuewelle, neuewelle_args);

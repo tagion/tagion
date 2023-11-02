@@ -1378,6 +1378,8 @@ static assert(uint.sizeof == 4);
                     return KEY_INDEX_INVALID_LEB128;
                 }
                 if (!key.is_key_valid) {
+                    import tagion.basic.Debug;
+                    __write("KEY INVALID %s", key);
                     return KEY_INVALID;
                 }
 

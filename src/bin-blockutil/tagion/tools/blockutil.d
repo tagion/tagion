@@ -15,6 +15,7 @@ import tagion.dart.DARTException : BlockFileException;
 import std.algorithm;
 import std.range;
 import tagion.hibon.HiBONJSON : toPretty;
+import tagion.hibon.Document;
 import tools = tagion.tools.toolsexception;
 import std.exception;
 
@@ -113,16 +114,8 @@ struct BlockFileAnalyzer {
         text.each!writeln;
     }
 
-    void dumpIndexDoc(const(Index) index) {
-        auto seg_range = blockfile[index_from .. index_to];
-        auto segment_on_index_range = seg_range.filter!(segment => segment.index == index);
-        if (segment_on_index_range.empty) {
-            writefln("Error: No segment with Index %s found", index);
-            writefln("aborting");
-            return;
-        }
-        auto segment_on_index = segment_on_index_range.front;
-        writefln(segment_on_index.doc.toPretty);
+    const(Document) dumpIndexDoc(const(Index) index) {
+        return blockfile.load(index);
     }
 
     void dumpHeader() {
@@ -264,9 +257,22 @@ int _main(string[] args) {
         }
 
         if (dump_index !is 0) {
-            if (dump_doc) {
-                analyzer.dumpIndexDoc(Index(dump_index));
+            File fout = stdout;
+            if (!output_filename.empty) {
+                fout = File(output_filename, "w");
             }
+            scope (exit) {
+                if (fout !is stdout) {
+                    fout.close;
+                }
+            }
+            const doc = analyzer.dumpIndexDoc(Index(dump_index));
+            stderr.writefln(doc.toPretty);
+            const error_code = doc.valid;
+            if (error_code !is Document.Element.ErrorCode.NONE) {
+                stderr.writefln("Error: Document errorcode %s", error_code);
+            }
+            fout.rawWrite(doc.serialize);
         }
     }
     catch (BlockFileException e) {
