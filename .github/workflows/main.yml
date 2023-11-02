@@ -178,7 +178,7 @@ jobs:
         run: |
           cd /mnt/nfs/artifacts
           artifact=${{ github.sha }}-${{ github.run_attempt }}
-          tar czf $artifact.tar.gz $artifact/*
+          tar czf $artifact.tar.gz --directory=$artifact/ .
         
       - uses: actions/upload-artifact@v3
         with:
