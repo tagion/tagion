@@ -53,6 +53,7 @@ class SendADocumentToTheSocket {
     @Given("a inputvalidator")
     Document aInputvalidator() {
         waitforChildren(Ctrl.ALIVE);
+        check(0, " this bad ");
         return result_ok;
     }
 
