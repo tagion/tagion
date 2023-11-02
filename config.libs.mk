@@ -2,7 +2,7 @@ LIBTAGION:=$(DLIB)/libtagion.$(LIBEXT)
 
 libtagion: DFILES:=${shell find $(DSRC) -name "*.d" -a -path "*/src/lib-*" -a -not -path "*/unitdata/*" -a -not -path "*/tests/*" -a -not -path "*/lib-betterc/*" $(NO_WOLFSSL) -a -not -path "*/lib-p2pgowrapper/*"}
 libtagion: $(LIBTAGION) $(DFILES)
-libtagion: LIBS+=$(SSLIMPLEMENTATION) $(LIBSECP256K1) $(NNG)
+libtagion: LIBS+=$(LIBSECP256K1) $(NNG)
 
 clean-libtagion:
 	$(RM) $(LIBTAGION)

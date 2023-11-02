@@ -7,7 +7,7 @@ WOLFSSL_POSTCORRECT=${call dir.match, lib-network/scripts}
 WOLFSSL_PACKAGE := tagion.network.wolfssl.c
 WOLFSSL_DIROOT := ${call dir.match, tagion/network/wolfssl/c}
 
-WOLFSSL_DFILES := ${shell find ${call dir.resolve, tagion/network} -name "*.d" -a -not -path "*/wolfssl/*" }
+# WOLFSSL_DFILES := ${shell find ${call dir.resolve, tagion/network} -name "*.d" -a -not -path "*/wolfssl/*" }
 
 WOLFSSL_DSTEP_FLAGS+=-I$(DSRC_WOLFSSL)
 WOLFSSL_DSTEP_FLAGS+= -DUSE_FAST_MATH=1
@@ -72,7 +72,7 @@ ${call DSTEP_DO,$(WOLFSSL_PACKAGE),$(DSRC_WOLFSSL)/wolfssl,$(WOLFSSL_DIROOT),$(W
 WOLFCRYPT_PACKAGE := tagion.network.wolfssl.c.wolfcrypt
 WOLFCRYPT_DIROOT := ${call dir.match, wolfssl/c/wolfcrypt}
 
-WOLFCRYPT_DFILES := ${shell find ${call dir.resolve, tagion/network} -name "*.d" -a -not -path "*/wolfssl/*" }
+# WOLFCRYPT_DFILES := ${shell find ${call dir.resolve, tagion/network} -name "*.d" -a -not -path "*/wolfssl/*" }
 
 WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/settings.h
 WOLFCRYPT_HFILES+=$(DSRC_WOLFSSL)/wolfssl/wolfcrypt/asn_public.h
@@ -129,7 +129,7 @@ $(WOLFSSL_DIROOT)/wolfcrypt/error_crypt.di: DSTEP_POSTCORRECT+=$(WOLFSSL_POSTCOR
 WOLFSSL_OPENSSL_PACKAGE := tagion.network.wolfssl.c.openssl
 WOLFSSL_OPENSSL_DIROOT := ${call dir.match, wolfssl/c/openssl}
 
-WOLFSSL_OPENSSL_DFILES := ${shell find ${call dir.resolve, tagion/network} -name "*.d" -a -not -path "*/wolfssl/*" }
+# WOLFSSL_OPENSSL_DFILES := ${shell find ${call dir.resolve, tagion/network} -name "*.d" -a -not -path "*/wolfssl/*" }
 
 WOLFSSL_OPENSSL_HFILES+=$(DSRC_WOLFSSL)/wolfssl/openssl/compat_types.h
 
@@ -144,6 +144,6 @@ find_test=${shell find $(REPOROOT) -type d -path "*wolfcrypt"}
 #
 # Adds the .di files as .d modules. For some reason some of the file here need a __ModuleInfo symbol
 #
-DFILES+=${shell find $(WOLFSSL_DIROOT) -name "*.d"}
+# DFILES+=${shell find $(WOLFSSL_DIROOT) -name "*.d"}
 
 endif

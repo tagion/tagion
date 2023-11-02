@@ -12,6 +12,7 @@ EXCLUDED_DIRS+=-a -not -path "*/lib-betterc/*"
 EXCLUDED_DIRS+=-a -not -path "*/tests/*"
 EXCLUDED_DIRS+=-a -not -path "*/.dub/*"
 EXCLUDED_DIRS+=-a -not -path "*/lib-p2pgowrapper/*"
+EXCLUDED_DIRS+=-a -not -path "*/lib-network/tagion/network/wolfssl/*"
 
 LIB_DFILES:=${shell find $(DSRC) -name "*.d" -a -path "*/lib-*" $(EXCLUDED_DIRS) $(NO_UNITDATA) }
 
@@ -153,9 +154,9 @@ TAGION_TOOLS+=callstack
 
 TAGION_BINS=$(foreach tools,$(TAGION_TOOLS), ${call BIN_DEPS,$(tools)} )
 
-target-tagion: ssl nng secp256k1
+target-tagion: nng secp256k1
 target-tagion: DFLAGS+=$(DVERSION)=ONETOOL
-target-tagion: LDFLAGS+=$(LD_SECP256K1) $(LD_NNG) $(LD_SSL)
+target-tagion: LDFLAGS+=$(LD_SECP256K1) $(LD_NNG)
 ${call DO_BIN,tagion,$(LIB_DFILES) $(TAGION_BINS)}
 
 env-tools:
@@ -169,6 +170,6 @@ env-tools:
 # Binary of BBD generator tool
 #
 target-collider: DFLAGS+=$(DVERSION)=ONETOOL
-target-collider: LIBS+= $(SSLIMPLEMENTATION) $(LIBSECP256K1)  $(LIBNNG)
+target-collider: LIBS+= $(LIBSECP256K1)  $(LIBNNG)
 ${call DO_BIN,collider,$(LIB_DFILES) ${call BIN_DEPS,collider}}
 

@@ -1,4 +1,4 @@
-
+TESTMAIN?=testbench
 TESTPROGRAM=$(DBIN)/$(TESTMAIN)
 TESTENV=$(DBIN)/bddenv.sh
 BDDTESTS=${addprefix run-,$(BDDS)}
