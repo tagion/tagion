@@ -105,7 +105,6 @@ struct NNGMessage {
     }   
     
     this(nng_msg * msgref){
-        enforce(msgref != null);
         msg = msgref;
     }   
 
@@ -119,6 +118,11 @@ struct NNGMessage {
     }
 
     @nogc @safe
+    @property bool empty() nothrow {
+        return (msg is null);
+    }
+
+    @nogc @safe
     @property nng_msg* pointer() nothrow {
         return msg;
     }
@@ -126,7 +130,7 @@ struct NNGMessage {
     @nogc  
     @property void pointer(nng_msg* p) nothrow {
         if(p != null){ 
-            nng_msg_dup(&msg,p);
+            msg = p;
         } else {
             nng_msg_clear(msg);
         }            
@@ -389,7 +393,6 @@ struct NNGMessage {
             return tmp;
         }            
     }            
-
 } // struct NNGMessage
 
 extern (C) alias nng_aio_cb = void function (void *);
@@ -519,7 +522,8 @@ struct NNGAio {
     // ---------- messages
 
     NNGMessage  get_msg ( ) {
-        return NNGMessage(nng_aio_get_msg(aio));
+        nng_msg *m = nng_aio_get_msg(aio);
+        return NNGMessage(m);
     }
     
     void set_msg ( ref NNGMessage msg ) {
@@ -1154,7 +1158,7 @@ extern (C) void nng_pool_stateful ( void* p ){
                 break;
             }
             w.msg = w.aio.get_msg();
-            if(w.msg.msg is null){
+            if(w.msg.empty){
                 nng_ctx_recv(w.ctx, w.aio.aio);
                 break;
             }

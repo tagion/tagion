@@ -28,6 +28,11 @@ extern (C) void rcb ( void* p ){
     writeln("Receive callback fired with result: ", res, " : ", cnt );
 
     NNGMessage msg = aio.get_msg();
+    
+    if(msg.empty){
+        writeln("Received empy msg");
+        return;
+    }
 
     writeln("Received message: ", msg.length, " : ", msg.header_length);
     //assert( msg.length == 0 || ( msg.length == 27 && msg.header_length == 0 ) );
