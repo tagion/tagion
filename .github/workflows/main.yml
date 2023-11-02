@@ -43,7 +43,8 @@ jobs:
         if: always()
         run: |
           mkdir -p ${{ env.ARTIFACT_DIR }}
-          cp -r --parents build/${{ env.TARGET }}/bin/ ${{ env.ARTIFACT_DIR }}
+          trunk=$(find build/x86_64-linux/bin -type f -not -name "*.o" -not -path "*/cov/*")
+          cp -r --parents $trunk ${{ env.ARTIFACT_DIR }}
 
           make clean
 
@@ -110,6 +111,7 @@ jobs:
           make bddtest -j || make proper bddtest
 
       - name: Report commit stage tests
+        if: always()
         run: | 
           sleep 5
           ./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/commit/results
@@ -122,7 +124,8 @@ jobs:
         run: |
           mkdir -p ${{ env.ARTIFACT_DIR }}
           make ci-files
-          cp -r --parents logs/ build/${{ env.TARGET }}/bin/ ${{ env.ARTIFACT_DIR }}
+          trunk=$(find build/${{ env.TARGET }}/bin -type f -not -name "*.o" -not -path "*/cov/*")
+          cp -r --parents logs/ $trunk ${{ env.ARTIFACT_DIR }}
 
           make clean
           rm -r logs/ || echo "no logs"
@@ -151,7 +154,7 @@ jobs:
           ./build/${{ env.TARGET }}/bin/collider --silent -r acceptance -j ${{env.CD_PARALLEL}} -b build/${{ env.TARGET }}/bin/testbench -s build/${{ env.TARGET }}/bin/collider_schedule.json  
 
       - name: Generate reports
-        if: failure() || success()
+        if: always()
         run: |
           sleep 5
           ./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/acceptance/results
@@ -173,7 +176,9 @@ jobs:
     steps:
       - name: Create tar ball
         run: |
-          tar czf ${{ env.ARTIFACT_DIR }}.tar.gz ${{ env.ARTIFACT_DIR }}
+          cd /mnt/nfs/artifacts
+          artifact=${{ github.sha }}-${{ github.run_attempt }}
+          tar czf $artifact.tar.gz --directory=$artifact/ .
         
       - uses: actions/upload-artifact@v3
         with:
