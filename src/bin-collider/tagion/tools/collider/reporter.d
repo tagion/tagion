@@ -94,7 +94,7 @@ int _main(string[] args) {
                         outstring.put(
                                 "::error file=%s,line=%s,title=BDD error::%s\n"
                                 .format(
-                                    bdd_err.file.relativePath(REPOROOT),
+                                    bdd_err.file.stripLeft(REPOROOT),
                                     bdd_err.line,
                                     bdd_err.msg,
                         )
