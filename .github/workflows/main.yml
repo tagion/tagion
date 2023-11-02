@@ -13,18 +13,83 @@ env:
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   UNITTEST_COV: unittest-cov
   GITBOT_TOKEN: ${{ secrets.GITBOT_TOKEN }}
+  ARTIFACT_DIR: /mnt/nfs/artifacts/${{ github.sha }}-${{ github.run_attempt }}
+
 permissions:
   contents: read
   pages: write
   id-token: write 
 
 jobs:
+  build:
+    runs-on: CI
+    timeout-minutes: 5
+    steps:
+      - run: |
+          cd ..
+          git clone git@github.com:tagion/tagion.git || echo "repo already exists"
+
+      - run: |
+          git fetch
+          git checkout ${{ github.sha }}
+          git clean -f && git restore . 
+
+      - name: Build tagion
+        run: |
+          export DC=${{ env.DC }}
+          make tagion release -j || make proper tagion release
+
+      - name: Post run
+        if: always()
+        run: |
+          mkdir -p ${{ env.ARTIFACT_DIR }}
+          cp -r --parents build/${{ env.TARGET }}/bin/ ${{ env.ARTIFACT_DIR }}
+
+          make clean
+
+
+  unittest:
+    runs-on: CI
+    timeout-minutes: 3
+    steps:
+      - run: |
+          cd ..
+          git clone git@github.com:tagion/tagion.git || echo "repo already exists"
+
+      - run: |
+          git fetch
+          git checkout ${{ github.sha }}
+          git clean -f && git restore . 
+
+      - name: Run unittest
+        run: |
+          export DC=${{ env.DC }}
+          make unittest-cov -j || make proper unittest-cov
+
+      - name: Report unittest
+        run: |
+          RESULT=$(cat logs/${{ env.TARGET }}/unittest.log | grep -E "^[0-9]+ modules passed unittests")
+          echo -e "### :heavy_check_mark: Unittests passed \n $RESULT" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload code coverage results
+        run: |
+          cp logs/${{env.TARGET}}/cov/* .      
+          bash <(curl -s https://codecov.io/bash) -t ${{ env.CODECOV_TOKEN }} -f "!*/cov/*"
+          rm -- *.lst
+
+      - name: Post run
+        if: always()
+        run: |
+          mkdir -p ${{ env.ARTIFACT_DIR }}
+          cp -r --parents logs/ build/${{ env.TARGET }}/bin/unittest-cov ${{ env.ARTIFACT_DIR }}
+
+          make clean
+          rm -r logs/ || echo "no logs"
+
   commit_stage:
     runs-on: CI
     timeout-minutes: 5
-    outputs:
-      tarball: ${{steps.create_tar.outputs.tar_filename}}
-      stage: "commit"    
+
     steps:
       - name: get repository
         run: |
@@ -33,75 +98,46 @@ jobs:
 
       - name: pull
         run: |
+          git fetch
+          git checkout ${{ github.sha }}
           git clean -f && git restore . 
-          git checkout current
-          git pull
 
-      - name: Run tests
+      - name: Run commit stage tests
         run: |
-          make clean ci -j DC=${{env.DC}} || make clean proper ci -j DC=${{env.DC}}
-          
-      - name: Report unittests
-        run: |
-          RESULT=$(cat logs/${{ env.TARGET }}/unittest.log | grep -E "^[0-9]+ modules passed unittests")
-          echo -e "### :heavy_check_mark: Unittests passed \n $RESULT" >> $GITHUB_STEP_SUMMARY
-      - name: Report bddtests
+          export DC=${{ env.DC }}
+          export TEST_STAGE=commit
+          export TESTBENCH_FLAGS=--silent 
+          make bddtest -j || make proper bddtest
+
+      - name: Report commit stage tests
         run: | 
           sleep 5
           ./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/commit/results
-          ./build/${{env.TARGET}}/bin/collider reporter -o /dev/stdout logs/${{ env.TARGET }}/bdd/commit/results >> $GITHUB_STEP_SUMMARY
+          ./build/${{ env.TARGET }}/bin/collider reporter -o /dev/stdout logs/${{ env.TARGET }}/bdd/commit/results >> $GITHUB_STEP_SUMMARY
           $PWD/build/${{ env.TARGET }}/bin/bddenv.sh ./build/${{env.TARGET}}/bin/collider reporter -f "github" logs/${{ env.TARGET }}/bdd/commit/results
           ./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/commit/results | grep "Test result success!"
-               
-      - name: Upload  code coverage results
-        run: |
-          cp logs/${{env.TARGET}}/cov/* .      
-          bash <(curl -s https://codecov.io/bash) -t ${{ env.CODECOV_TOKEN }} -f "!*/cov/*"
-          rm -- *.lst
-      
-      - name: Create tar ball
-        if: success() || failure()
-        id: create_tar
-        run: |
-          commit_hash=$(git rev-parse --short HEAD)
-          timestamp=$(date +%M-%H-%d-%m-%y)
-          tar_filename="${commit_hash}-${timestamp}.tar.gz"
-          mv build/trunk/trunk.tgz $tar_filename
-          echo -e "\nRelease candidate is: $tar_filename" >> $GITHUB_STEP_SUMMARY
-          echo "tar_filename=$tar_filename" >> $GITHUB_OUTPUT
 
-      - uses: actions/upload-artifact@v3
-        if: failure()
-        with:
-          name: failed-run
-          path: ./${{steps.create_tar.outputs.tar_filename}}
-          if-no-files-found: error
-      
-      - name: Upload to shared directory
-        if: success()
+      - name: Post run
+        if: always()
         run: |
-          folder=/mnt/nfs/commit
-          mkdir -p $folder
-          cp ${{steps.create_tar.outputs.tar_filename}} $folder
-          
-      - name: Cleanup
-        if: success() || failure()
-        run: rm ${{ steps.create_tar.outputs.tar_filename }}
+          mkdir -p ${{ env.ARTIFACT_DIR }}
+          make ci-files
+          cp -r --parents logs/ build/${{ env.TARGET }}/bin/ ${{ env.ARTIFACT_DIR }}
+
+          make clean
+          rm -r logs/ || echo "no logs"
 
   acceptance_stage:
     runs-on: CD
     timeout-minutes: 7
-    needs: commit_stage
-    outputs:
-      tarball: ${{needs.commit_stage.outputs.tarball}}
-      stage: "acceptance"
+    needs: [commit_stage, unittest, build]
     
     steps:
       - name: Copy Artifact to local machine
         run: |
           find . -mindepth 1 -delete
-          cp /mnt/nfs/${{needs.commit_stage.outputs.stage}}/${{needs.commit_stage.outputs.tarball}} .
-          tar -xzf ${{needs.commit_stage.outputs.tarball}}
+          cp -r ${{ env.ARTIFACT_DIR }}/build .
+
       - name: Run collider tests
         run: |
           id
@@ -113,6 +149,7 @@ jobs:
           export COLLIDER_ROOT=$PWD/logs/${{ env.TARGET }}/bdd
           export PATH=$DBIN:$PATH
           ./build/${{ env.TARGET }}/bin/collider --silent -r acceptance -j ${{env.CD_PARALLEL}} -b build/${{ env.TARGET }}/bin/testbench -s build/${{ env.TARGET }}/bin/collider_schedule.json  
+
       - name: Generate reports
         if: failure() || success()
         run: |
@@ -122,29 +159,32 @@ jobs:
           $PWD/build/${{ env.TARGET }}/bin/bddenv.sh ./build/${{ env.TARGET }}/bin/collider reporter -f "github" logs/${{ env.TARGET }}/bdd/acceptance/results
           ./build/${{ env.TARGET }}/bin/collider -c logs/${{ env.TARGET }}/bdd/acceptance/results | grep "Test result success!"
 
+      - name: Post runs
+        run:
+          mkdir -p ${{ env.ARTIFACT_DIR }}
+          cp -r --parents logs/ ${{ env.ARTIFACT_DIR }}
+
+          find . -mindepth 1 -delete
+
+  create_artifact:
+    runs-on: CD
+    needs: acceptance_stage
+    if: always()
+    steps:
       - name: Create tar ball
-        if: success() || failure()
-        run: tar -vczf ${{needs.commit_stage.outputs.tarball}} --exclude='*.o' logs/ build/ 
+        run: |
+          tar czf ${{ env.ARTIFACT_DIR }}.tar.gz ${{ env.ARTIFACT_DIR }}
         
       - uses: actions/upload-artifact@v3
         if: failure() 
         with:
-          name: acceptance-failed-run
-          path: ${{needs.commit_stage.outputs.tarball}}
+          name: successful_artifact
+          path: ${{ env.ARTIFACT_DIR }}.tar.gz
           if-no-files-found: error
 
-      - name: Upload to shared directory
-        if: success()
+      - name: Post run
         run: |
-          folder=/mnt/nfs/acceptance
-          mkdir -p $folder
-          cp ${{needs.commit_stage.outputs.tarball}} $folder
-
-      - name: Cleanup
-        if: success() || failure()
-        run: |
-          rm ${{ needs.commit_stage.outputs.tarball }}
-          rm -rf *
+          rm -r ${{ env.ARTIFACT_DIR }}
 
   android_libmobile:
     needs: acceptance_stage
@@ -218,14 +258,12 @@ jobs:
   docs_build:
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: https://docs.tagion.org
     runs-on: ubuntu-latest
     needs: acceptance_stage
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Setup Pages
-        uses: actions/configure-pages@v3
+      - uses: actions/checkout@v3
+      - uses: actions/configure-pages@v3
       - name: Copy md files
         run: |
           rm -r build/docs/ || echo 'no files to remove'
@@ -238,55 +276,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v1
-
-  finish_workflow:
-    runs-on: CD
-    needs: [acceptance_stage, docs_build]
-    steps:    
-      - name: Copy Artifact to local machine
-        run: |
-          find . -mindepth 1 -delete
-          cp /mnt/nfs/${{needs.acceptance_stage.outputs.stage}}/${{needs.acceptance_stage.outputs.tarball}} .
-          tar -xzf ${{needs.acceptance_stage.outputs.tarball}}
-       
-      - name: Generate report
-        run: |
-          echo -e "# All BDDtests\n" >> $GITHUB_STEP_SUMMARY 
-          ./build/${{ env.TARGET }}/bin/collider reporter -o $GITHUB_STEP_SUMMARY logs/${{ env.TARGET }}/bdd/commit/results 
-
-      - uses: actions/upload-artifact@v3
-        if: success()
-        with:
-          name: successful_artifact
-          path: ./${{needs.acceptance_stage.outputs.tarball}}
-          if-no-files-found: error
-
-      - name: Cleanup
-        if: success() || failure()
-        run: |
-          rm ${{needs.acceptance_stage.outputs.tarball}}
-          rm -rf *
-          
-  deploy_testnet_container:
-    runs-on: testnet1-local
-    needs: [finish_workflow]
-    steps:         
-      - name: get artifact and restart service
-        run: |
-          source ~/.bashrc
-          rm -rf build || echo "build directory already deleted"
-          rm  *.tar.gz || echo "No such file or directory"
-          docker rm -f tagion-dashboard || echo "container not exists"
-          rm -fr ~/opt/* || echo "clean"
-          echo "cleaned"
-          export GH_TOKEN=${{ env.GITBOT_TOKEN }}
-          gh run download -n successful_artifact --repo tagion/tagion
-          tar -xzf *.tar.gz
-          /home/moonbase/actions-runner/_work/tagion/tagion/build/x86_64-linux/bin/tagion --version | head -n 3 | tail -n 2 > revision.txt
-          mkdir -p /opt/tagion/artifact
-          cp build/x86_64-linux/bin/tagion /opt/tagion/artifact
-          cp revision.txt /opt/tagion/
-          /home/moonbase/dashboard.sh
-          rm -rf build || echo "build directory already deleted"
-          rm  *.tar.gz || echo "No such file or directory"
-          

@@ -1,14 +1,15 @@
 
-
-ci:
-	$(MAKE) -S clean-trunk -f$(DTUB)/main.mk
-	$(MAKE) -S bins -f$(DTUB)/main.mk
-	$(MAKE) -S bddtest unittest-cov TESTBENCH_FLAGS=--silent -f$(DTUB)/main.mk
-	$(MAKE) -S release -f$(DTUB)/main.mk
+ci-files:
 	cp $(REPOROOT)/collider_schedule.json $(DBIN) 
 	cp $(DSRC)/bin-wave/neuewelle.service $(DBIN)
 	cp $(DSRC)/bin-tagionshell/tagionshell.service $(DBIN)
 	cp $(DTUB)/scripts/create_wallets_2.sh $(DBIN)
+
+ci: ci-files
+	$(MAKE) -S clean-trunk -f$(DTUB)/main.mk
+	$(MAKE) -S bins -f$(DTUB)/main.mk
+	$(MAKE) -S bddtest unittest-cov TESTBENCH_FLAGS=--silent -f$(DTUB)/main.mk
+	$(MAKE) -S release -f$(DTUB)/main.mk
 	$(MAKE) -S trunk -f$(DTUB)/main.mk
 	#$(MAKE) -S test unittest-cov trunk bddreport -f$(DTUB)/main.mk
 
