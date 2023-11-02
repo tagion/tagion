@@ -173,7 +173,9 @@ jobs:
     steps:
       - name: Create tar ball
         run: |
-          tar czf ${{ env.ARTIFACT_DIR }}.tar.gz ${{ env.ARTIFACT_DIR }}
+          cd /mnt/nfs/artifacts
+          artifact=${{ github.sha }}-${{ github.run_attempt }}
+          tar czf $artifacts.tar.gz $artifact
         
       - uses: actions/upload-artifact@v3
         with:
