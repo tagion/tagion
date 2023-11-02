@@ -124,7 +124,7 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
     bool verify(const Fingerprint message, const Signature signature, const Pubkey pubkey) const {
         consensusCheck!(SecurityConsensusException)(signature.length != 0 && signature.length <= 520,
                 ConsensusFailCode.SECURITY_SIGNATURE_SIZE_FAULT);
-        return _crypt.verify_ecdsa(cast(Buffer) message, cast(Buffer) signature, cast(Buffer) pubkey);
+        return _crypt.verify(cast(Buffer) message, cast(Buffer) signature, cast(Buffer) pubkey);
     }
 
     Signature sign(const Fingerprint message) const
@@ -226,7 +226,7 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
         @safe class LocalSecret : SecretMethods {
             immutable(ubyte[]) sign(const(ubyte[]) message) const {
                 immutable(ubyte)[] result;
-                do_secret_stuff((const(ubyte[]) privkey) { result = _crypt.sign_ecdsa(message, privkey); });
+                do_secret_stuff((const(ubyte[]) privkey) { result = _crypt.sign(message, privkey); });
                 return result;
             }
 
@@ -307,8 +307,9 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
         createKeyPair(_priv_key);
     }
 
-    immutable(ubyte[]) ECDHSecret(scope const(ubyte[]) seckey, scope const(
-            Pubkey) pubkey) const {
+    immutable(ubyte[]) ECDHSecret(
+            scope const(ubyte[]) seckey,
+    scope const(Pubkey) pubkey) const {
         return _crypt.createECDHSecret(seckey, cast(Buffer) pubkey);
     }
 
