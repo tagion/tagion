@@ -46,7 +46,6 @@ jobs:
           cp -r --parents build/${{ env.TARGET }}/bin/ ${{ env.ARTIFACT_DIR }}
 
           make clean
-          rm -r logs/
 
 
   unittest:
@@ -85,7 +84,7 @@ jobs:
           cp -r --parents logs/ build/${{ env.TARGET }}/bin/unittest-cov ${{ env.ARTIFACT_DIR }}
 
           make clean
-          rm -r logs/
+          rm -r logs/ || echo "no logs"
 
   commit_stage:
     runs-on: CI
@@ -126,7 +125,7 @@ jobs:
           cp -r --parents logs/ build/${{ env.TARGET }}/bin/ ${{ env.ARTIFACT_DIR }}
 
           make clean
-          rm -r logs/
+          rm -r logs/ || echo "no logs"
 
   acceptance_stage:
     runs-on: CD
