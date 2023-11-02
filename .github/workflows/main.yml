@@ -167,7 +167,7 @@ jobs:
           find . -mindepth 1 -delete
 
   create_artifact:
-    runs-on: CD
+    runs-on: CI
     needs: acceptance_stage
     if: always()
     steps:
