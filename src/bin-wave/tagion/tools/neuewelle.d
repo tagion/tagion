@@ -26,6 +26,7 @@ import tagion.logger.Logger;
 import tagion.basic.Version;
 import tagion.tools.revision;
 import tagion.actor;
+import tagion.actor.exceptions;
 import tagion.services.supervisor;
 import tagion.services.options;
 import tagion.services.subscription;
@@ -262,7 +263,18 @@ int _main(string[] args) {
 
     if (waitforChildren(Ctrl.ALIVE, 15.seconds)) {
         log("alive");
-        stopsignal.wait;
+        bool signaled;
+        do {
+            signaled = stopsignal.wait(100.msecs);
+            if(!signaled) {
+                signaled = receiveTimeout(
+                    Duration.zero,
+                    (TaskFailure tf) {
+                        log.fatal("Stopping because of unhandled taskfailure \n%s", tf);
+                    }
+                );
+            }
+        } while(!signaled);
     }
     else {
         log("Program did not start");
