@@ -144,7 +144,7 @@ Document sendDARTHiRPC(string address, HiRPC.Sender dart_req) @trusted {
 
     int rc;
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
-    s.recvtimeout = 3000.msecs;
+    s.recvtimeout = 6000.msecs;
     while (1) {
         writefln("REQ to dial... %s", address);
         rc = s.dial(address);
