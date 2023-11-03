@@ -118,8 +118,12 @@ struct BlockFileAnalyzer {
         return blockfile.load(index);
     }
 
-    void dumpHeader() {
+    void printHeader() {
         writefln("%s", blockfile.headerBlock);
+    }
+
+    void printMaster() {
+        writefln("%s", blockfile.masterBlock);
     }
 }
 
@@ -139,6 +143,7 @@ int _main(string[] args) {
     bool print_graph;
     bool dump_doc;
     bool print_header;
+    bool print_master;
     ulong[] indices;
     bool dump;
     string index_range;
@@ -160,6 +165,7 @@ int _main(string[] args) {
                 "g|print-graph", "Dump the blockfile in graphviz format", &print_graph,
                 "d|dumpdoc", "Dump the document located at an specific index", &dump_doc,
                 "H|header", "Dump the header block", &print_header,
+                "M|master", "Dump the master block", &print_master,
                 "i|index", "the index to dump the document from", &indices,
                 "o|output", "Output filename (Default stdout)", &output_filename,
                 "dump", "Dumps the blocks as a HiBON sequency to stdout or a file", &dump,
@@ -236,7 +242,10 @@ int _main(string[] args) {
         }
 
         if (print_header) {
-            analyzer.dumpHeader;
+            analyzer.printHeader;
+        }
+        if (print_master) {
+            analyzer.printMaster;
         }
 
         if (print_recycler) {

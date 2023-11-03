@@ -199,7 +199,7 @@ class BlockFile {
         }
 
         file.close;
-        
+
     }
 
     bool empty() const pure nothrow {
@@ -523,9 +523,11 @@ class BlockFile {
 
     T load(T)(const Index index) if (isHiBONRecord!T) {
         import tagion.hibon.HiBONJSON;
+
         const doc = load(index);
 
-        check(isRecord!T(doc), format("The loaded document is not a %s record on index %s. loaded document: %s", T.stringof, index, doc.toPretty));
+        check(isRecord!T(doc), format("The loaded document is not a %s record on index %s. loaded document: %s", T
+                .stringof, index, doc.toPretty));
         return T(doc);
     }
 
@@ -627,17 +629,20 @@ class BlockFile {
         _recycler_statistic(recycler.length());
         writeRecyclerStatistic;
 
+        scope (exit) {
+            file.flush;
+        }
         scope (success) {
             block_chains.clear;
 
             masterblock.recycle_header_index = recycler.write();
             writeMasterBlock;
-
         }
 
         foreach (block_segment; block_chains) {
             block_segment.write(this);
         }
+
     }
 
     struct BlockSegmentRange {
