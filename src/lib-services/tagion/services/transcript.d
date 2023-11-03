@@ -97,7 +97,7 @@ struct TranscriptService {
             locate(task_names.dart).send(dartReadRR(),[tagion_index]); 
             log("SENDING HEAD REQUEST TO DART");
              
-            receiveTimeout(1.seconds, (dartReadRR.Response _, immutable(RecordFactory.Recorder) head_recorder) {
+            auto received = receiveTimeout(1.seconds, (dartReadRR.Response _, immutable(RecordFactory.Recorder) head_recorder) {
                 if (!head_recorder.empty) {
                     log("FOUND A TAGIONHEAD");
                     // yay we found a head!
@@ -109,6 +109,10 @@ struct TranscriptService {
                 }
 
             }); 
+            if (!received) {
+                throw new Exception("Never received a tagionhead");
+
+            }
 
             if (head_found) {
             // now we locate the epoch
