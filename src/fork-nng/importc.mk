@@ -6,6 +6,7 @@ NNG_HFILES:=$(shell find $(DSRC_NNG) -name "*.h" -a -not -path "*tests*" -printf
 NNG_IMPORTC_SRC:=$(DTMP)/nng/importc
 
 NNG_IMPORTC_CFILES=$(shell find $(NNG_IMPORTC_SRC) -name "*.c" -a -not -path "*/test*" -a -not -name "*test.c" -a -not -path "*windows*" -a -not -name "*tls*"  -a -not -path "*zerotier*"  -a -not -name "pair.c" -a -not -name "tcp.c" -a -not -name "websocket.c" -a -not -name "options.c" -printf "%p ")
+
 NNG_CINCS+=$(DSRC_NNG)/include
 NNG_CINCS+=$(DSRC_NNG)/src
 NNG_CINCS+=$(DSRC_NNG)/src/core
@@ -38,8 +39,8 @@ env-nng-importc:
 nng-importc: copy-nng
 	mkdir -p /tmp/importc
 	echo $(NNG_IMPORTC_CFILES)
-	dmd $(NNG_IMPORTC_CFILES) -cpp=dmpp -c -od=/tmp/importc $(addprefix -P=-I,$(NNG_CINCS)) $(addprefix -P=,$(NNG_CFLAGS)) -v
+	dmd $(NNG_IMPORTC_CFILES) -c -od=/tmp/importc $(addprefix -P=-I,$(NNG_CINCS)) $(addprefix -P=,$(NNG_CFLAGS)) -v
 
 x-nng-importc:
 	mkdir -p /tmp/importc
-	dmd $(NNG_CFILES) -c -od=/tmp/importc $(addprefix -P=-I,$(NNG_CINCS)) $(addprefix -P=,$(NNG_CFLAGS)) -v
+	dmd $(NNG_CFILES) -c $(addprefix -P=-I,$(NNG_CINCS)) $(addprefix -P=,$(NNG_CFLAGS)) -v
