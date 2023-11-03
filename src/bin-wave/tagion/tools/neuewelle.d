@@ -255,7 +255,7 @@ int _main(string[] args) {
         assert(0, "NetworkMode not supported");
     }
 
-    if (waitforChildren(Ctrl.ALIVE, 10.seconds)) {
+    if (waitforChildren(Ctrl.ALIVE, 15.seconds)) {
         log("alive");
         stopsignal.wait;
     }
