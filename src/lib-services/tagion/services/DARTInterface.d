@@ -7,7 +7,7 @@ struct DARTInterfaceOptions {
     import tagion.services.options : contract_sock_addr;
     string sock_addr;
     string dart_prefix = "DART_";
-    int sendtimeout = 5000;
+    int sendtimeout = 1000;
     uint pool_size = 4;
     uint sendbuf = 4096;
 
@@ -41,49 +41,41 @@ struct DartWorkerContext {
     int dart_worker_timeout;
 }
 
-void dartHiRPCCallback(NNGMessage* msg, void* ctx) nothrow @trusted {
+void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
     // log.register(thisActor.task_name);
     import std.stdio;
     import std.exception;
 
+    thisActor.task_name = format("%s", thisTid);
 
+    auto cnt = cast(DartWorkerContext*) ctx;
 
-    try {
-        thisActor.task_name = format("%s", thisTid);
-    
-        auto cnt = cast(DartWorkerContext*) ctx;
+    import tagion.hibon.HiBONJSON : toPretty;
+    import tagion.communication.HiRPC;
 
-        import tagion.hibon.HiBONJSON : toPretty;
-        import tagion.communication.HiRPC;
-
-        if (msg.length == 0) {
-            writeln("received empty msg");
-            return;
-        }
-
-        Document doc = msg.body_trim!(immutable(ubyte[]))(msg.length);
-        msg.clear();
-
-        if (!doc.isInorder || !doc.isRecord!(HiRPC.Sender)) {
-            log("Non-valid request received");
-            return;
-        }
-        writefln("Kernel got: %s", doc.toPretty);
-        locate(cnt.dart_task_name).send(dartHiRPCRR(), doc);
-
-        void dartHiRPCResponse(dartHiRPCRR.Response res, Document doc) {
-            msg.body_append(doc.serialize);
-        }
-
-        auto dart_resp = receiveTimeout(cnt.dart_worker_timeout.msecs, &dartHiRPCResponse);
-        if (!dart_resp) {
-            writefln("Non-valid request received");
-            return;
-            // send a error;
-        }
+    if (msg.length == 0) {
+        writeln("received empty msg");
+        return;
     }
-    catch(Exception e) {
-        assumeWontThrow(writeln(e));
+
+    Document doc = msg.body_trim!(immutable(ubyte[]))(msg.length);
+    msg.clear();
+
+    if (!doc.isInorder || !doc.isRecord!(HiRPC.Sender)) {
+        log("Non-valid request received");
+        return;
+    }
+    writefln("Kernel got: %s", doc.toPretty);
+    locate(cnt.dart_task_name).send(dartHiRPCRR(), doc);
+    void dartHiRPCResponse(dartHiRPCRR.Response res, Document doc) {
+        msg.body_append(doc.serialize);
+    }
+
+    auto dart_resp = receiveTimeout(cnt.dart_worker_timeout.msecs, &dartHiRPCResponse);
+    if (!dart_resp) {
+        writefln("Non-valid request received");
+        return;
+        // send a error;
     }
 }
 
