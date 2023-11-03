@@ -191,7 +191,7 @@ jobs:
           rm -r ${{ env.ARTIFACT_DIR }}
 
   android_libmobile:
-    needs: acceptance_stage
+    needs: commit_stage
     strategy:
       fail-fast: false
       matrix:
