@@ -193,6 +193,7 @@ int _main(string[] args) {
         import tagion.script.common : TagionHead, GenesisEpoch, Epoch;
         import std.file : copy;
         import std.stdio : File;
+        import std.path : baseName, dirName; 
         import tagion.hibon.HiBONRecord : isRecord;
 
         auto __net = new StdSecureNet();
@@ -209,11 +210,12 @@ int _main(string[] args) {
             assert(bullseyes.all!(b => b == bullseyes[0]), "DATABASES must be booted with same bullseye - Abort");
             db.close();
 
-            // node_opt.dart.dart_path.copy("BOOT"~node_opt.dart.dart_path);
+            const new_filename = buildPath(dirName(node_opt.dart.dart_path), format("boot-%s", baseName(node_opt.dart.dart_path)));
+            writefln("copying file %s to %s", db.filename, new_filename);
+            node_opt.dart.dart_path.copy(new_filename);
 
         }
 
-        
         // we only need to read one head since all bullseyes are the same:
         DART db = new DART(__net, node_options[0].dart.dart_path);        
 
