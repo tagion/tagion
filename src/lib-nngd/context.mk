@@ -4,8 +4,6 @@ NNGD_TEST_DFILES+=$(shell find $(DSRC_NNGD) -path "*/nngd/tests/*" -name "*.d" -
 NNGD_DFILES:=$(shell find . -type f -name "*.d" -a -not -path "*/tests/*")
 NNGD_DINC:=$(DSRC_NNGD)nngd/ $(DSRC_NNGD)libnng/ $(DSRC_NNGD)/nngd/tests/
 NNGD_BIN:=$(DTMP)/nng_test
-# NNGD_TEST:=$($(NNGD_TEST_DFILES:.d=):$(DSRC_NNGD)/nngd/tests=$(NNGD_BIN))
-# NNGD_TEST:=$($(NNGD_TEST_DFILES):$(DSRC_NNGD)nngd/tests=$(NNGD_BIN))
 NNGD_TEST:=$(patsubst $(DSRC_NNGD)nngd/tests/%,$(NNGD_BIN)/%,$(NNGD_TEST_DFILES:.d=))
 
 nngd_test: $(NNGD_TEST)
@@ -13,7 +11,7 @@ nngd_test: $(NNGD_TEST)
 .PHONY: nng_test
 
 $(NNGD_BIN)/%: $(DSRC_NNGD)/nngd/tests/%.d nng $(NNGD_FILES) $(NNGD_BIN)/.way
-	$(DC) -i -od=$(NNGD_BIN) ${addprefix -L,$(LD_NNG)} ${addprefix -I,$(NNGD_DINC)} $<
+	$(DC) -i -od=$(NNGD_BIN) -of$@ ${addprefix -L,$(LD_NNG)} ${addprefix -I,$(NNGD_DINC)} $<
 
 env-nngd_test:
 	$(PRECMD)
