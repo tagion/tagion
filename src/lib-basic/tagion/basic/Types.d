@@ -93,7 +93,6 @@ enum FileExtension {
     dart = ".drt", /// DART data-base
     markdown = ".md", /// DART data-base
     dsrc = ".d", /// DART data-base
-    recchainblock = ".rcb", /// Recorder chain block file format
     epochdumpblock = ".epdmp", /// Epoch dump chain block file format
     text = ".txt",
 }
