@@ -124,7 +124,7 @@ class SameInputsSpendOnOneContract {
     }
     @Then("the contract should be rejected.")
     Document dart() {
-        auto result = receiveOnlyTimeout!(LogInfo, const(Document));
+        auto result = receiveOnlyTimeout!(LogInfo, const(Document))(10.seconds);
         check(result[0].symbol_name == "missing_archives", format("did not reject for the expected reason %s", result[0].symbol_name));
         submask.unsubscribe(reject_collector);
         return result_ok;
@@ -202,7 +202,7 @@ class OneContractWhereSomeBillsAreUsedTwice {
     }
     @Then("the contract should be rejected.")
     Document dart() {
-        auto result = receiveOnlyTimeout!(LogInfo, const(Document));
+        auto result = receiveOnlyTimeout!(LogInfo, const(Document))(10.seconds);
         check(result[0].symbol_name== "missing_archives", format("did not reject for the expected reason %s", result[0].symbol_name));
         submask.unsubscribe(reject_collector);
         return result_ok;

@@ -31,7 +31,7 @@ import tagion.GlobalSignals : stopsignal;
 
 @safe
 struct Supervisor {
-    auto failHandler = (TaskFailure tf) { log("Stoping program because Supervisor caught exception: \n%s", tf); };
+    // auto failHandler = (TaskFailure tf) @trusted { log("Stoping program because Supervisor caught exception: \n%s", tf); };
 
     void task(immutable(Options) opts, shared(StdSecureNet) shared_net) @safe {
         immutable tn = opts.task_names;
@@ -40,7 +40,7 @@ struct Supervisor {
         
         // signs data for hirpc response
         auto dart_handle = spawn!DARTService(tn.dart, opts.dart, tn, shared_net);
-
+        
         auto hirpc_verifier_handle = spawn!HiRPCVerifierService(tn.hirpc_verifier, opts.hirpc_verifier, tn);
 
         auto inputvalidator_handle = spawn!InputValidatorService(tn.inputvalidator, opts.inputvalidator, tn);

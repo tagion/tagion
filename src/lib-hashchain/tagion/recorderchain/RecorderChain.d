@@ -292,7 +292,7 @@ unittest {
         {
             auto some_hash = recorder_chain.storage.getHashes[0];
             auto filename = buildPath(temp_folder, some_hash.toHexString.setExtension(
-                    FileExtension.recchainblock));
+                    FileExtension.hibon));
             remove(filename);
 
             // Chain shouldn't be valid anymore

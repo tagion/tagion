@@ -40,7 +40,7 @@ int _main(string[] args) {
 
     scope Options local_options = Options.defaultOptions;
     local_options.dart.folder_path = buildPath(module_path);
-    local_options.replicator.folder_path = buildPath(module_path);
+    local_options.replicator.folder_path = buildPath(module_path, "recorders");
     local_options.wave.prefix_format = "DoubleSpend Node_%s_";
     local_options.subscription.address = contract_sock_addr("DOUBLE_SPEND_SUBSCRIPTION");
 
@@ -121,7 +121,6 @@ int _main(string[] args) {
         const filename = buildPath(module_path, format(local_options.wave.prefix_format~"opts", i).setExtension(FileExtension.json));
         writeln(filename);
         Options node_opt = load!(Options)(filename);
-        writefln("NODE OPTTIONS %s",node_opt);
         node_opts ~= node_opt;
     }
     

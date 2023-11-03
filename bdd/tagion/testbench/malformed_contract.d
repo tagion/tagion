@@ -133,7 +133,6 @@ int _main(string[] args) {
         const filename = buildPath(module_path, format(local_options.wave.prefix_format~"opts", i).setExtension(FileExtension.json));
         writeln(filename);
         Options node_opt = load!(Options)(filename);
-        writefln("NODE OPTTIONS %s",node_opt);
         node_opts ~= node_opt;
     }
     

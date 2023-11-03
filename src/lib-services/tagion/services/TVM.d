@@ -82,7 +82,7 @@ struct TVMService {
         auto result = execute(collected);
         if (result.error) {
             log(tvm_error, ResponseError.ExecutionError.to!string, Document());
-            log("Execution error - aborting %s", result.e);
+            log.trace("Execution error - %s\n%s", result.e.message, result.e);
             return false;
         }
         log("sending produced contract to transcript");
