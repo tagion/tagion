@@ -105,8 +105,8 @@ struct DARTService {
             if (!doc.isRecord!(HiRPC.Sender)) {
                 import tagion.hibon.HiBONJSON;
 
-                log("received wrong request");
-                assert(0, format("wrong request sent to dartservice. Expected HiRPC.Sender got %s", doc.toPretty));
+                log("wrong request sent to dartservice. Expected HiRPC.Sender got %s", doc.toPretty);
+                return;
             }
 
             immutable receiver = empty_hirpc.receive(doc);
