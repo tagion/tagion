@@ -7,7 +7,8 @@ struct DARTInterfaceOptions {
     import tagion.services.options : contract_sock_addr;
     string sock_addr;
     string dart_prefix = "DART_";
-    int sendtimeout = 1000;
+    int sendtimeout = 5000;
+    int receivetimeout = 1000;
     uint pool_size = 4;
     uint sendbuf = 4096;
 
@@ -101,7 +102,7 @@ struct DARTInterfaceService {
 
         NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_REP);
         sock.sendtimeout = opts.sendtimeout.msecs;
-        sock.recvtimeout = 1000.msecs;
+        sock.recvtimeout = opts.receivetimeout.msecs;
         sock.sendbuf = opts.sendbuf;
 
         NNGPool pool = NNGPool(&sock, &dartHiRPCCallback, opts.pool_size, &ctx);
