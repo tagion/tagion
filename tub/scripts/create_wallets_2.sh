@@ -6,7 +6,7 @@ usage() { echo "Usage: $0 -b <bindir> [-n <nodes=5>] [-w <wallets=5>] [-k <netwo
 bdir=""
 nodes=5
 wallets=5
-bills=10
+bills=50
 ndir=$(readlink -m "./network")
 wdir=$(readlink -m "./wallets")
 
