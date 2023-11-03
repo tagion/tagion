@@ -140,6 +140,7 @@ int _main(string[] args) {
         try {
             local_options.load(config_file);
             log("Running with config file %s", config_file);
+            chdir(config_file.dirName);
         }
         catch (Exception e) {
             stderr.writefln("Error loading config file %s, %s", config_file, e.msg);
@@ -150,7 +151,6 @@ int _main(string[] args) {
         local_options = Options.defaultOptions;
         stderr.writefln("No config file exits, running with default options");
     }
-    chdir(config_file.dirName);
 
     // Spawn logger service
     auto logger_service_tid = startLogger;
