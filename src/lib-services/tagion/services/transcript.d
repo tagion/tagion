@@ -201,7 +201,7 @@ struct TranscriptService {
                 Add the epochs to the recorder. We can assume that there will be multiple epochs due
                 to the hashgraph being asynchronous.
             */
-            recorder.insert(consensus_epochs, Archive.Type.ADD);
+            // recorder.insert(consensus_epochs, Archive.Type.ADD);
 
 
 
