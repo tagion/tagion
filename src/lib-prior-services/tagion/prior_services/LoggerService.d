@@ -25,6 +25,7 @@ import tagion.logger.Logger;
 import tagion.logger.LogRecords;
 import tagion.taskwrapper.TaskWrapper;
 import tagion.dart.BlockFile : truncate;
+import tagion.utils.Term;
 
 mixin TrustedConcurrency;
 
@@ -32,9 +33,7 @@ private {
     enum TIMESTAMP_WIDTH = 10;
     enum LOG_LEVEL_MAX_WIDTH = 5;
 
-    enum LOG_FORMAT = "%-" ~ to!string(
-                TIMESTAMP_WIDTH) ~ "s | %-" ~ to!string(
-                LOG_LEVEL_MAX_WIDTH) ~ "s | %s: %s";
+    enum LOG_FORMAT = "%-" ~ to!string( TIMESTAMP_WIDTH) ~ "s | %s%-" ~ to!string( LOG_LEVEL_MAX_WIDTH) ~ "s%s | %s: %s";
 }
 
 /**
@@ -46,9 +45,6 @@ private {
 
     /** Storage of current log filters, received from LogSubscriptionService */
     LogFilter[] commonLogFilters;
-    /** LogSubscriptionService thread id */
-    Tid logSubscriptionTid;
-
     /** Service options */
     Options options;
 
@@ -56,19 +52,6 @@ private {
     File file;
     /** Flag that enables logging output to file */
     bool logging;
-
-    /** Method that helps sending arguments to LogSubscriptionService 
-     *      @param args - arbitrary list of arguments to send to service
-     */
-    void sendToLogSubService(Args...)(Args args) {
-        if (logSubscriptionTid is Tid.init) {
-            logSubscriptionTid = locate(options.logsubscription.task_name);
-        }
-
-        if (logSubscriptionTid !is Tid.init) {
-            logSubscriptionTid.send(args);
-        }
-    }
 
     /** Method that checks whether given log info matches at least one stored filter 
      *      @param info - log info to check
@@ -79,7 +62,17 @@ private {
     }
 
     static string formatLog(LogLevel level, string task_name, string text) {
-        return format(LOG_FORMAT, Clock.currTime().toTimeSpec.tv_sec, level, task_name, text);
+        switch(level) with(LogLevel) {
+            case TRACE:
+                return format(LOG_FORMAT, Clock.currTime().toTimeSpec.tv_sec, WHITE, level, RESET, task_name, text);
+            case WARN:
+                return format(LOG_FORMAT, Clock.currTime().toTimeSpec.tv_sec, YELLOW, level, RESET, task_name, text);
+            case ERROR: 
+            case FATAL:
+                return format(LOG_FORMAT, Clock.currTime().toTimeSpec.tv_sec, RED, level, RESET, task_name, text);
+            default:
+                return format(LOG_FORMAT, Clock.currTime().toTimeSpec.tv_sec, "", level, "", task_name, text);
+        }
     }
 
     /** Task method that receives logs from Logger and sends them to console, file and LogSubscriptionService
@@ -87,10 +80,6 @@ private {
      *      @param doc - log itself, that can be either TextLog or some HiBONRecord variable
      */
     @TaskMethod void receiveLogs(immutable(LogInfo) info, immutable(Document) doc) {
-        if (matchAnyFilter(info)) {
-            sendToLogSubService(info, doc);
-        }
-
         enum _msg = GetLabel!(TextLog.message).name;
         if (info.isTextLog && doc.hasMember(_msg)) {
             string output = formatLog(info.level, info.task_name, doc[_msg].get!string);
@@ -168,25 +157,9 @@ private {
     void opCall(immutable(Options) options) {
         this.options = options;
         setOptions(options);
-
-        pragma(msg, "fixme(ib) Pass mask to Logger to not pass not necessary data");
-
-        version (none)
-            if (options.logsubscription.enable) {
-                logSubscriptionTid = spawn(&logSubscriptionServiceTask, options);
-            }
-        scope (exit) {
-            import std.stdio;
-
-            if (logSubscriptionTid !is Tid.init) {
-                logSubscriptionTid.send(Control.STOP);
-                if (receiveOnly!Control == Control.END) // TODO: can't receive END when stopping after logservicetest, fix it
-                {
-                    writeln("Canceled task LogSubscriptionService");
-                    writeln("Received END from LogSubscriptionService");
-                }
-            }
-        }
+        // import core.sys.posix.unistd : isatty;
+        // const stdout_isatty = isatty(1);
+        // const stderr_isatty = isatty(2);
 
         logging = options.logger.file_name.length != 0;
         if (logging) {
