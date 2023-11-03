@@ -40,7 +40,7 @@ struct Supervisor {
         
         // signs data for hirpc response
         auto dart_handle = spawn!DARTService(tn.dart, opts.dart, tn, shared_net);
-
+        
         auto hirpc_verifier_handle = spawn!HiRPCVerifierService(tn.hirpc_verifier, opts.hirpc_verifier, tn);
 
         auto inputvalidator_handle = spawn!InputValidatorService(tn.inputvalidator, opts.inputvalidator, tn);

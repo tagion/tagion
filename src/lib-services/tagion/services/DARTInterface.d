@@ -42,7 +42,7 @@ struct DartWorkerContext {
     int dart_worker_timeout;
 }
 
-void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
+void dartHiRPCCallback(NNGMessage *msg, void *ctx) @trusted {
     // log.register(thisActor.task_name);
     import std.stdio;
     import std.exception;
@@ -54,7 +54,10 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
     import tagion.hibon.HiBONJSON : toPretty;
     import tagion.communication.HiRPC;
 
-    if (msg.length == 0) {
+    if (msg is null) {
+        writeln("no message received");
+    }
+    if (msg.empty) {
         writeln("received empty msg");
         return;
     }
@@ -74,7 +77,7 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
 
     auto dart_resp = receiveTimeout(cnt.dart_worker_timeout.msecs, &dartHiRPCResponse);
     if (!dart_resp) {
-        writefln("Non-valid request received");
+        writefln("Timeout on dart request");
         return;
         // send a error;
     }
@@ -125,8 +128,6 @@ struct DARTInterfaceService {
             if (received) {
                 continue;
             }
-            // Document doc = sock.receive!Document;
-
         }
 
     }
