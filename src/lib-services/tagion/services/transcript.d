@@ -90,48 +90,48 @@ struct TranscriptService {
 
 
         
-        // {
-        //     bool head_found;
-        //     // start by reading the head
-        //     immutable tagion_index = net.dartKey(StdNames.name, TagionDomain);
-        //     locate(task_names.dart).send(dartReadRR(),[tagion_index]); 
-        //     log("SENDING HEAD REQUEST TO DART");
+        {
+            bool head_found;
+            // start by reading the head
+            immutable tagion_index = net.dartKey(StdNames.name, TagionDomain);
+            locate(task_names.dart).send(dartReadRR(),[tagion_index]); 
+            log("SENDING HEAD REQUEST TO DART");
              
-        //     receiveTimeout(1.seconds, (dartReadRR.Response _, immutable(RecordFactory.Recorder) head_recorder) {
-        //         if (!head_recorder.empty) {
-        //             log("FOUND A TAGIONHEAD");
-        //             // yay we found a head!
-        //             last_head = TagionHead(head_recorder[].front.filed);
-        //             head_found = true;
-        //         }else {
-        //             log("NO HEAD FOUND");
+            receiveTimeout(1.seconds, (dartReadRR.Response _, immutable(RecordFactory.Recorder) head_recorder) {
+                if (!head_recorder.empty) {
+                    log("FOUND A TAGIONHEAD");
+                    // yay we found a head!
+                    last_head = TagionHead(head_recorder[].front.filed);
+                    head_found = true;
+                }else {
+                    log("NO HEAD FOUND");
 
-        //         }
+                }
 
-        //     }); 
+            }); 
 
-        //     if (head_found) {
-        //     // now we locate the epoch
-        //         immutable epoch_index = net.dartKey(StdNames.epoch, last_head.current_epoch);
-        //         locate(task_names.dart).send(dartReadRR(),[epoch_index]); 
-        //         receiveTimeout(1.seconds, (dartReadRR.Response _, immutable(RecordFactory.Recorder) epoch_recorder) {
-        //             if (!epoch_recorder.empty) {
-        //                 auto doc = epoch_recorder[].front.filed;
-        //                 if (doc.isRecord!Epoch) {
-        //                     last_epoch_number = Epoch(doc).epoch_number;
-        //                 } 
-        //                 else if(doc.isRecord!GenesisEpoch) {
-        //                     last_epoch_number = GenesisEpoch(doc).epoch_number;
-        //                 } 
-        //                 else {
-        //                     log("THROWING EXCEPTION");
-        //                     throw new Exception("The read epoch was not of type Epoch or GenesisEpoch");
-        //                 }
-        //                 previous_epoch = Fingerprint(net.calcHash(doc));
-        //             }
-        //         }); 
-        //     }
-        // }
+            if (head_found) {
+            // now we locate the epoch
+                immutable epoch_index = net.dartKey(StdNames.epoch, last_head.current_epoch);
+                locate(task_names.dart).send(dartReadRR(),[epoch_index]); 
+                receiveTimeout(1.seconds, (dartReadRR.Response _, immutable(RecordFactory.Recorder) epoch_recorder) {
+                    if (!epoch_recorder.empty) {
+                        auto doc = epoch_recorder[].front.filed;
+                        if (doc.isRecord!Epoch) {
+                            last_epoch_number = Epoch(doc).epoch_number;
+                        } 
+                        else if(doc.isRecord!GenesisEpoch) {
+                            last_epoch_number = GenesisEpoch(doc).epoch_number;
+                        } 
+                        else {
+                            log("THROWING EXCEPTION");
+                            throw new Exception("The read epoch was not of type Epoch or GenesisEpoch");
+                        }
+                        previous_epoch = Fingerprint(net.calcHash(doc));
+                    }
+                }); 
+            }
+        }
         
 
 
