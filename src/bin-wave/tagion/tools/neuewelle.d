@@ -200,8 +200,13 @@ int _main(string[] args) {
         __net.generateKeyPair("wowo");
 
         // extra check for mode0
+        // Check bullseyes
         Fingerprint[] bullseyes;
         foreach(node_opt; node_options) {
+            if(!node_opt.dart.dart_path.exists) {
+                stderr.writefln("Missing dartfile %s", node_opt.dart.dart_path);
+                return 1;
+            }
             DART db = new DART(__net, node_opt.dart.dart_path);
             auto b = Fingerprint(db.bullseye);
             bullseyes ~= b;
