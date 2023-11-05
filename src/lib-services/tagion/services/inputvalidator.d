@@ -81,7 +81,7 @@ struct InputValidatorService {
                 log(rejected, err_type.to!string, data);
             }
             catch (Exception e) {
-                log.error("Failed to deliver rejction %s", err_type.to!string);
+                log.error("Failed to deliver rejection %s", err_type.to!string);
             }
         }
 

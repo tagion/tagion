@@ -31,6 +31,7 @@ import tagion.services.messages;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord : isRecord;
 import tagion.services.options;
+import tagion.communication.HiRPC;
 import nngd;
 
 import std.format;
@@ -42,6 +43,15 @@ struct DartWorkerContext {
     int dart_worker_timeout;
 }
 
+enum InterfaceError {
+    NullDocument,
+    MsgEmpty,
+    Timeout,
+    InvalidDoc,
+}
+
+
+
 void dartHiRPCCallback(NNGMessage *msg, void *ctx) @trusted {
     // log.register(thisActor.task_name);
     import std.stdio;
@@ -49,15 +59,32 @@ void dartHiRPCCallback(NNGMessage *msg, void *ctx) @trusted {
 
     thisActor.task_name = format("%s", thisTid);
 
+
+    // we use an empty hirpc only for sending errors.
+    HiRPC hirpc = HiRPC(null);
+    void send_error(InterfaceError err_type) {
+        import std.conv;
+        hirpc.Error message;
+        message.code = err_type;
+        message.message = err_type.to!string;
+        const sender = hirpc.Sender(null, message);
+
+        msg.body_append(sender.toDoc.serialize);
+    }
+    
+
     auto cnt = cast(DartWorkerContext*) ctx;
 
     import tagion.hibon.HiBONJSON : toPretty;
     import tagion.communication.HiRPC;
 
     if (msg is null) {
+        send_error(InterfaceError.NullDocument);
         writeln("no message received");
+        return;
     }
     if (msg.empty) {
+        send_error(InterfaceError.MsgEmpty);
         writeln("received empty msg");
         return;
     }
@@ -66,7 +93,8 @@ void dartHiRPCCallback(NNGMessage *msg, void *ctx) @trusted {
     msg.clear();
 
     if (!doc.isInorder || !doc.isRecord!(HiRPC.Sender)) {
-        log("Non-valid request received");
+        send_error(InterfaceError.InvalidDoc);
+        writeln("Non-valid request received");
         return;
     }
     writefln("Kernel got: %s", doc.toPretty);
@@ -77,9 +105,9 @@ void dartHiRPCCallback(NNGMessage *msg, void *ctx) @trusted {
 
     auto dart_resp = receiveTimeout(cnt.dart_worker_timeout.msecs, &dartHiRPCResponse);
     if (!dart_resp) {
+        send_error(InterfaceError.Timeout);
         writefln("Timeout on dart request");
         return;
-        // send a error;
     }
 }
 
