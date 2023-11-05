@@ -38,6 +38,7 @@ import tagion.hibon.BigNumber;
 
 import tagion.script.TagionCurrency;
 import tagion.dart.DARTBasic;
+import tagion.services.locator;
 
 @safe:
 
@@ -89,12 +90,12 @@ struct TranscriptService {
         long last_epoch_number = 0;
 
 
-        
         {
             bool head_found;
             // start by reading the head
             immutable tagion_index = net.dartKey(StdNames.name, TagionDomain);
-            locate(task_names.dart).send(dartReadRR(),[tagion_index]); 
+            auto dart_tid = tryLocate(task_names.dart);
+            dart_tid.send(dartReadRR(),[tagion_index]); 
             log("SENDING HEAD REQUEST TO DART");
              
             auto received = receiveTimeout(1.seconds, (dartReadRR.Response _, immutable(RecordFactory.Recorder) head_recorder) {
@@ -117,7 +118,7 @@ struct TranscriptService {
             if (head_found) {
             // now we locate the epoch
                 immutable epoch_index = net.dartKey(StdNames.epoch, last_head.current_epoch);
-                locate(task_names.dart).send(dartReadRR(),[epoch_index]); 
+                dart_tid.send(dartReadRR(),[epoch_index]); 
                 receiveTimeout(1.seconds, (dartReadRR.Response _, immutable(RecordFactory.Recorder) epoch_recorder) {
                     if (!epoch_recorder.empty) {
                         auto doc = epoch_recorder[].front.filed;
