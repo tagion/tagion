@@ -34,7 +34,8 @@ import std.stdio;
 import std.format;
 
 alias StdSecureWallet = SecureWallet!StdSecureNet;
-enum CONTRACT_TIMEOUT = 25;
+enum CONTRACT_TIMEOUT = 40;
+enum EPOCH_TIMEOUT = 15;
 
 enum feature = Feature(
             "Spam the network with the same contracts until we know it does not go through.",
@@ -92,7 +93,7 @@ class SpamOneNodeUntil10EpochsHaveOccured {
 
         long epoch_number;
 
-        auto epoch_before = receiveOnlyTimeout!(LogInfo, const(Document))(10.seconds);
+        auto epoch_before = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);
         check(epoch_before[1].isRecord!FinishedEpoch, "not correct subscription received");
         epoch_number = FinishedEpoch(epoch_before[1]).epoch;
 
@@ -103,7 +104,7 @@ class SpamOneNodeUntil10EpochsHaveOccured {
         sendSubmitHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1.net);
             (() @trusted => Thread.sleep(100.msecs))();
 
-            auto current_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(10.seconds);
+            auto current_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);
             check(current_epoch[1].isRecord!FinishedEpoch, "not correct subscription received");
             current_epoch_number = FinishedEpoch(current_epoch[1]).epoch;
             writefln("epoch_number %s, CURRENT EPOCH %s",epoch_number, current_epoch_number);
@@ -190,7 +191,7 @@ struct SpamWorker {
 
         while(!thisActor.stop && epoch_number is long.init) {
             writefln("WAITING FOR RECEIVE");
-            auto epoch_before = receiveOnlyTimeout!(LogInfo, const(Document))(10.seconds);
+            auto epoch_before = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);
             writefln("AFTER RECEIVE %s", epoch_before);
             if (epoch_before[0].task_name == opts.task_names.epoch_creator) {
                 epoch_number = FinishedEpoch(epoch_before[1]).epoch;
@@ -202,7 +203,7 @@ struct SpamWorker {
             sendSubmitHiRPC(opts.inputvalidator.sock_addr, hirpc.submit(signed_contract), net);
             (() @trusted => Thread.sleep(100.msecs))();
 
-            auto current_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(10.seconds);
+            auto current_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);
             if (current_epoch[0].task_name != opts.task_names.epoch_creator) {
                 current_epoch_number = FinishedEpoch(current_epoch[1]).epoch;
                 writefln("epoch_number %s, CURRENT EPOCH %s",epoch_number, current_epoch_number);

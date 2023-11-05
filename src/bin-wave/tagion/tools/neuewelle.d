@@ -379,7 +379,7 @@ const(Options)[] get_mode_0_options(const(Options) options, bool monitor = false
     {
         auto opt = Options(options);
         opt.setPrefix(format(prefix_f, node_n));
-        opt.epoch_creator.timeout = 100;
+        opt.epoch_creator.timeout = 500;
         all_opts ~= opt;
     }
 
