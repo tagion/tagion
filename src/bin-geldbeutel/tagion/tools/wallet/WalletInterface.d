@@ -167,7 +167,7 @@ Document sendDARTHiRPC(string address, HiRPC.Sender dart_req) @trusted {
     if (s.errno != 0) {
         throw new Exception("error in response");
     }
-    Document received_doc = s.receive!(immutable(ubyte[]))();
+    Document received_doc = s.receive!Buffer;
     if (s.errno != 0) {
         throw new Exception(format("REQ Socket error after receive: %s", s.errno));
     }
