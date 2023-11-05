@@ -205,7 +205,7 @@ jobs:
       - name: pull
         run: |
           git clean -f && git restore . 
-          git checkout current
+          git checkout ${{ github.sha }}
           git pull
 
       - name: Install android tools
