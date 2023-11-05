@@ -677,7 +677,8 @@ class TwoContractsSameOutput {
 
         auto wallet1_amount = wallet1.calcTotal(wallet1.account.bills);
         writefln("WALLET 1 amount: %s", wallet1_amount);
-        check(wallet1_amount == start_amount1-amount-fee, "wallet 1 did not lose correct amount of money");
+        const expected = start_amount1-amount-fee;
+        check(wallet1_amount == expected, format("wallet 1 did not lose correct amount of money should have %s had %s", expected, wallet1_amount));
 
         auto wallet2_dartcheckread = wallet2.getRequestCheckWallet(wallet2_hirpc);
         auto wallet2_received_doc = sendDARTHiRPC(opts2.dart_interface.sock_addr, wallet2_dartcheckread);
