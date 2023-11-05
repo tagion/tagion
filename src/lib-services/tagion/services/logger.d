@@ -1,5 +1,5 @@
 /// Service for handling both text logs and variable logging
-module tagion.prior_services.LoggerService;
+module tagion.services.logger;
 
 @safe:
 
