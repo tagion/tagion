@@ -19,6 +19,7 @@ import tagion.services.inputvalidator;
 import tagion.services.messages;
 import tagion.communication.HiRPC;
 import tagion.tools.Basic;
+import tagion.basic.Types;
 import tagion.hibon.HiBON;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONBase;
@@ -70,9 +71,9 @@ class SendADocumentToTheSocket {
         doc = sender.toDoc;
         rc = sock.send(doc.serialize);
         check(rc == 0, format("Failed to send %s", nng_errstr(rc)));
-        auto received = sock.receive!(immutable(ubyte[]));
+        auto received = sock.receive!Buffer;
+        check(Document(received) !is Document.init, "Received empty document");
 
-        writefln("Received res1 %s", Document(received).toPretty);
         return result_ok;
     }
 
@@ -121,9 +122,8 @@ class SendNoneHiRPC {
 
         rc = sock.send(hibon.serialize);
         check(rc == 0, format("Failed to send %s", rc));
-        auto received = sock.receive!(immutable(ubyte[]));
-        writefln("Received res1 %s", Document(received).toPretty);
-
+        auto received = sock.receive!Buffer;
+        check(Document(received) !is Document.init, "Received empty document");
 
         return result_ok;
     }
