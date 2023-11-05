@@ -40,7 +40,7 @@ alias FeatureContext = Tuple!(
         FeatureGroup*, "result"
 );
 
-@safe @Scenario("send a document to the socket", [])
+@safe @Scenario("send a HiRPC document to the socket", [])
 class SendADocumentToTheSocket {
     NNGSocket sock;
     const string sock_path;
@@ -57,7 +57,7 @@ class SendADocumentToTheSocket {
         return result_ok;
     }
 
-    @When("we send a `Document` on a socket")
+    @When("we send a HiRPC `Document`")
     Document aSocket() @trusted {
         sock.sendtimeout = msecs(1000);
         sock.sendbuf = 4096;
@@ -72,6 +72,8 @@ class SendADocumentToTheSocket {
         rc = sock.send(doc.serialize);
         check(rc == 0, format("Failed to send %s", nng_errstr(rc)));
         auto received = sock.receive!Buffer;
+        check(sock.m_errno == 0, format("Failed to receive %s", nng_errstr(sock.m_errno)));
+        check(received.length != 0, "Received empty buffer");
         check(Document(received) !is Document.init, "Received empty document");
 
         return result_ok;
@@ -92,7 +94,7 @@ class SendNoneHiRPC {
     NNGSocket sock;
     const string sock_path;
     this(string _sock_path) @trusted {
-        sock = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
+        sock = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
         sock_path = _sock_path;
     }
 
@@ -123,6 +125,8 @@ class SendNoneHiRPC {
         rc = sock.send(hibon.serialize);
         check(rc == 0, format("Failed to send %s", rc));
         auto received = sock.receive!Buffer;
+        check(sock.m_errno == 0, format("Failed to receive %s", nng_errstr(sock.m_errno)));
+        check(received.length != 0, "Received empty buffer");
         check(Document(received) !is Document.init, "Received empty document");
 
         return result_ok;
@@ -132,7 +136,8 @@ class SendNoneHiRPC {
     Document rejects() {
         import tagion.testbench.actor.util;
 
-        check(!concurrency.receiveTimeout(100.msecs, (inputDoc _, Document __) {}), "should not have received a doc");
+        check(!concurrency.receiveTimeout(100.msecs, (inputDoc _, Document __) {}), 
+            "should not have received a doc");
         receiveOnlyTimeout!(LogInfo, const(Document));
 
         return result_ok;
@@ -146,7 +151,7 @@ class SendPartialHiBON {
     NNGSocket sock;
     const string sock_path;
     this(string _sock_path) @trusted {
-        sock = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
+        sock = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
         sock_path = _sock_path;
         sock.sendtimeout = msecs(1000);
         sock.sendbuf = 4096;
@@ -175,7 +180,11 @@ class SendPartialHiBON {
         writefln("Buf lenght %s %s", partial_buf.length, Document(partial_buf).valid);
         rc = sock.send(partial_buf);
         check(rc == 0, format("Failed to send %s", nng_errstr(rc)));
-        sock.receive!(immutable(ubyte[]));
+        auto received = sock.receive!Buffer;
+        check(sock.m_errno == 0, format("Failed to receive %s", nng_errstr(sock.m_errno)));
+        check(received.length != 0, "Received empty buffer");
+        check(Document(received) !is Document.init, "Received empty document");
+
         return result_ok;
     }
 

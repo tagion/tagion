@@ -8,7 +8,7 @@ import std.socket;
 import std.stdio;
 import std.algorithm : remove;
 import std.conv : to;
-import std.exception : assumeWontThrow;
+import std.exception : assumeWontThrow, assumeUnique;
 
 import core.time;
 
@@ -23,6 +23,7 @@ import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONException;
 import tagion.communication.HiRPC;
 import tagion.basic.Debug : __write;
+import tagion.basic.Types;
 import tagion.utils.JSONCommon;
 import tagion.services.options : TaskNames;
 import tagion.crypto.SecureInterfaceNet;
@@ -55,6 +56,7 @@ enum ResponseError {
     Internal,
     InvalidBuf,
     InvalidDoc,
+    NotHiRPCSender,
 }
 
 /** 
@@ -72,12 +74,17 @@ struct InputValidatorService {
 
         void reject(T)(ResponseError err_type, T data = Document()) const nothrow {
             try {
+                log.error("REJECT %s", err_type);
                 hirpc.Error message;
                 message.code = err_type;
                 message.message = err_type.to!string;
-                // message.data = data;
+                message.data = data;
                 const sender = hirpc.Sender(net, message);
-                sock.send(sender.toDoc.serialize);
+                log.error("sending %s", sender.toPretty);
+                int rc = sock.send(sender.toDoc.serialize);
+                if(rc != 0) {
+                    log.error("Failed to responsd with rejection %s: %s", rc.to!string, nng_errstr(rc));
+                }
                 log(rejected, err_type.to!string, data);
             }
             catch (Exception e) {
@@ -121,7 +128,7 @@ struct InputValidatorService {
             }
 
             auto result_buf = buf.append(recv);
-            scope (failure) {
+            scope(failure) {
                 reject(ResponseError.Internal);
             }
 
@@ -136,19 +143,23 @@ struct InputValidatorService {
                 continue;
             }
 
-            import std.exception;
-
             Document doc = Document(assumeUnique(result_buf.data));
+            if(!doc.isRecord!(HiRPC.Sender)) {
+                reject(ResponseError.NotHiRPCSender, doc);
+                continue;
+            }
             try {
                 log("Sending contract to hirpc_verifier");
                 locate(task_names.hirpc_verifier).send(inputDoc(), doc);
+
                 auto receiver = hirpc.receive(doc);
                 auto response_ok = hirpc.result(receiver, ResultOk());
                 sock.send(response_ok.toDoc.serialize);
+                log("LGTM");
             }
             catch (HiBONException _) {
                 reject(ResponseError.InvalidDoc, doc);
-                return;
+                continue;
             }
         }
     }
