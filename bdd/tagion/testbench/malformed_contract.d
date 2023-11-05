@@ -39,7 +39,7 @@ int _main(string[] args) {
 
     scope Options local_options = Options.defaultOptions;
     local_options.dart.folder_path = buildPath(module_path);
-    local_options.replicator.folder_path = buildPath(module_path);
+    local_options.replicator.folder_path = buildPath(module_path, "recorders");
     local_options.wave.prefix_format = "Malformed Contract Node_%s_";
     local_options.subscription.address = contract_sock_addr("MALFORMED_SUBSCRIPTION");
 
