@@ -451,6 +451,7 @@ class SameContractInDifferentEpochs {
         } while(counter < max_tries && new_epoch_number is long.init);
         check(counter < max_tries, "did not receive epoch in max tries");
 
+        submask.unsubscribe(StdRefinement.epoch_created);
         writefln("EPOCH NUMBER updated %s", new_epoch_number);
         check(epoch_number < new_epoch_number, "epoch number not updated");
         sendSubmitHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit, wallet1.net);
