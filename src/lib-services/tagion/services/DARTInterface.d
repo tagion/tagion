@@ -48,6 +48,7 @@ enum InterfaceError {
     MsgEmpty,
     Timeout,
     InvalidDoc,
+    DARTLocate,
 }
 
 
@@ -98,7 +99,14 @@ void dartHiRPCCallback(NNGMessage *msg, void *ctx) @trusted {
         return;
     }
     writefln("Kernel got: %s", doc.toPretty);
-    locate(cnt.dart_task_name).send(dartHiRPCRR(), doc);
+
+    auto dart_tid = locate(cnt.dart_task_name);
+    if (dart_tid is Tid.init) {
+        send_error(InterfaceError.DARTLocate);
+        return;
+    }
+    
+    dart_tid.send(dartHiRPCRR(), doc);
     void dartHiRPCResponse(dartHiRPCRR.Response res, Document doc) {
         msg.body_append(doc.serialize);
     }
