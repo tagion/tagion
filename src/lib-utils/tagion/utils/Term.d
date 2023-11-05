@@ -18,6 +18,8 @@ enum {
     CYAN = Color.Cyan.code,
     WHITE = Color.White.code,
 
+    BOLD = Mode.Bold.code,
+
     BACKGOUND_BLACK = Color.Black.code(true),
     BACKGOUND_RED = Color.Red.code(true),
     BACKGOUND_GREEN = Color.Green.code(true),

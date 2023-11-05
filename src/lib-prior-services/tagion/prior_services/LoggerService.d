@@ -62,16 +62,21 @@ private {
     }
 
     static string formatLog(LogLevel level, string task_name, string text) {
+        string _format(string color) {
+            return format(LOG_FORMAT, Clock.currTime().toTimeSpec.tv_sec, color, level, RESET, task_name, text);
+        }
+
         switch(level) with(LogLevel) {
             case TRACE:
-                return format(LOG_FORMAT, Clock.currTime().toTimeSpec.tv_sec, WHITE, level, RESET, task_name, text);
+                return _format(WHITE);
             case WARN:
-                return format(LOG_FORMAT, Clock.currTime().toTimeSpec.tv_sec, YELLOW, level, RESET, task_name, text);
+                return _format(YELLOW);
             case ERROR: 
+                return _format(RED);
             case FATAL:
-                return format(LOG_FORMAT, Clock.currTime().toTimeSpec.tv_sec, RED, level, RESET, task_name, text);
+                return _format(BOLD ~ RED);
             default:
-                return format(LOG_FORMAT, Clock.currTime().toTimeSpec.tv_sec, "", level, "", task_name, text);
+                return _format("");
         }
     }
 
