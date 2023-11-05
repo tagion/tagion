@@ -22,7 +22,6 @@ int main(string[] args) {
     import tvm_betterc = tagion.testbench.tvm_betterc;
     import epoch_creator = tagion.testbench.epoch_creator;
     import collector = tagion.testbench.collector;
-    import tvm_service = tagion.testbench.tvm_service;
     import transcript_service = tagion.testbench.transcript_service;
     import replicator_service = tagion.testbench.replicator_service;
     import send_contract = tagion.testbench.send_contract;
@@ -51,7 +50,6 @@ int main(string[] args) {
             hashgraph_swap,
             tvm_betterc,
             epoch_creator,
-            tvm_service,
             transcript_service,
             replicator_service,
             send_contract,

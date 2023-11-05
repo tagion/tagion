@@ -631,6 +631,7 @@ class BlockFile {
 
         scope (exit) {
             file.flush;
+            file.sync;
         }
         scope (success) {
             block_chains.clear;

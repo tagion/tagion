@@ -31,7 +31,7 @@ import tagion.GlobalSignals : stopsignal;
 
 @safe
 struct Supervisor {
-    auto failHandler = (TaskFailure tf) { log("Stoping program because Supervisor caught exception: \n%s", tf); };
+    // auto failHandler = (TaskFailure tf) @trusted { log("Stoping program because Supervisor caught exception: \n%s", tf); };
 
     void task(immutable(Options) opts, shared(StdSecureNet) shared_net) @safe {
         immutable tn = opts.task_names;

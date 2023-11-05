@@ -26,6 +26,7 @@ import tagion.logger.Logger;
 import tagion.basic.Version;
 import tagion.tools.revision;
 import tagion.actor;
+import tagion.actor.exceptions;
 import tagion.services.supervisor;
 import tagion.services.options;
 import tagion.services.subscription;
@@ -200,8 +201,13 @@ int _main(string[] args) {
         __net.generateKeyPair("wowo");
 
         // extra check for mode0
+        // Check bullseyes
         Fingerprint[] bullseyes;
         foreach(node_opt; node_options) {
+            if(!node_opt.dart.dart_path.exists) {
+                stderr.writefln("Missing dartfile %s", node_opt.dart.dart_path);
+                return 1;
+            }
             DART db = new DART(__net, node_opt.dart.dart_path);
             auto b = Fingerprint(db.bullseye);
             bullseyes ~= b;
@@ -257,7 +263,18 @@ int _main(string[] args) {
 
     if (waitforChildren(Ctrl.ALIVE, 15.seconds)) {
         log("alive");
-        stopsignal.wait;
+        bool signaled;
+        do {
+            signaled = stopsignal.wait(100.msecs);
+            if(!signaled) {
+                signaled = receiveTimeout(
+                    Duration.zero,
+                    (TaskFailure tf) {
+                        log.fatal("Stopping because of unhandled taskfailure \n%s", tf);
+                    }
+                );
+            }
+        } while(!signaled);
     }
     else {
         log("Program did not start");
