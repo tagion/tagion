@@ -60,6 +60,7 @@ class SendADocumentToTheSocket {
     Document aSocket() @trusted {
         sock.sendtimeout = msecs(1000);
         sock.sendbuf = 4096;
+        sock.recvbuf = 4096;
         int rc = sock.dial(sock_path /* nonblock : true */);
         check(rc == 0, format("Failed to dial %s", nng_errstr(rc)));
         HiRPC hirpc;
@@ -69,7 +70,9 @@ class SendADocumentToTheSocket {
         doc = sender.toDoc;
         rc = sock.send(doc.serialize);
         check(rc == 0, format("Failed to send %s", nng_errstr(rc)));
-        sock.receive!(immutable(ubyte[]));
+        auto received = sock.receive!(immutable(ubyte[]));
+
+        writefln("Received res1 %s", Document(received).toPretty);
         return result_ok;
     }
 
@@ -107,6 +110,8 @@ class SendNoneHiRPC {
     Document socket() @trusted {
         sock.sendtimeout = msecs(1000);
         sock.sendbuf = 4096;
+        sock.recvbuf = 4096;
+        sock.recvtimeout = msecs(1000);
         int rc = sock.dial(sock_path);
         check(rc == 0, format("Failed to dial %s", rc));
 
@@ -116,7 +121,10 @@ class SendNoneHiRPC {
 
         rc = sock.send(hibon.serialize);
         check(rc == 0, format("Failed to send %s", rc));
-        sock.receive!(immutable(ubyte[]));
+        auto received = sock.receive!(immutable(ubyte[]));
+        writefln("Received res1 %s", Document(received).toPretty);
+
+
         return result_ok;
     }
 
