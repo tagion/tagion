@@ -12,7 +12,6 @@ import std.stdio;
 import std.socket;
 import std.typecons;
 import std.path;
-import std.concurrency;
 import std.path : baseName, dirName;
 import std.file : exists, chdir;
 import std.algorithm : countUntil, map;
@@ -20,10 +19,10 @@ import std.range : iota;
 import std.array;
 import std.format;
 
+// import tagion.utils.pretend_safe_concurrency : send;
 import tagion.tools.Basic;
 import tagion.utils.getopt;
 import tagion.logger.Logger;
-import tagion.basic.Version;
 import tagion.tools.revision;
 import tagion.actor;
 import tagion.actor.exceptions;
@@ -31,6 +30,7 @@ import tagion.services.supervisor;
 import tagion.services.options;
 import tagion.services.subscription;
 import tagion.services.locator;
+import tagion.prior_services.LoggerService;
 import tagion.GlobalSignals : stopsignal;
 import tagion.utils.JSONCommon;
 import tagion.crypto.SecureNet;
@@ -38,30 +38,6 @@ import tagion.crypto.SecureInterfaceNet;
 import tagion.gossip.AddressBook : addressbook, NodeAddress;
 import tagion.basic.Types : hasExtension, FileExtension;
 import tagion.hibon.Document;
-
-// TODO: 
-pragma(msg, "TODO(lr) rewrite logger with the 4th implementation of a taskwrapper");
-auto startLogger() {
-    import tagion.taskwrapper.TaskWrapper : Task;
-    import tagion.prior_services.LoggerService;
-    import tagion.basic.Types : Control;
-    import tagion.prior_services.Options;
-    import tagion.options.CommonOptions : setCommonOptions;
-
-    Options options;
-    setDefaultOption(options);
-    auto logger_service_tid = Task!LoggerTask(options.logger.task_name, options);
-    import std.stdio : stderr;
-
-    stderr.writeln("Waiting for logger");
-    const response = receiveOnly!Control;
-    stderr.writeln("Logger started");
-    if (response !is Control.LIVE) {
-        stderr.writeln("ERROR:Logger %s", response);
-        throw new Exception("Could not start the logger");
-    }
-    return logger_service_tid;
-}
 
 static abort = false;
 extern (C)
@@ -154,17 +130,12 @@ int _main(string[] args) {
     }
 
     // Spawn logger service
-    auto logger_service_tid = startLogger;
+    immutable logger = LoggerService(LoggerServiceOptions(LogType.Console));
+    auto logger_service = spawn(logger, "logger");
+    log.set_logger_task(logger_service.task_name);
+    waitforChildren(Ctrl.ALIVE);
     scope (exit) {
-        import tagion.basic.Types : Control;
-
-        logger_service_tid.control(Control.STOP);
-        bool received = receiveTimeout(100.msecs, 
-            (Control c) {}
-        );
-        if( !received ) {
-            stderr.writeln("Logger did not stop properly");
-        }
+        logger_service.send(Sig.STOP);
     }
 
     SubscriptionServiceHandle sub_handle;
@@ -264,6 +235,7 @@ int _main(string[] args) {
     if (waitforChildren(Ctrl.ALIVE, 15.seconds)) {
         log("alive");
         bool signaled;
+        import tagion.utils.pretend_safe_concurrency : receiveTimeout;
         do {
             signaled = stopsignal.wait(100.msecs);
             if(!signaled) {
