@@ -144,9 +144,6 @@ Document sendDARTHiRPC(string address, HiRPC.Sender dart_req) @trusted {
 
     int rc;
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
-    scope(exit) {
-        s.close();
-    }
     s.recvtimeout = 5000.msecs;
 
     while (1) {
@@ -168,10 +165,8 @@ Document sendDARTHiRPC(string address, HiRPC.Sender dart_req) @trusted {
         throw new Exception("error in response");
     }
     Document received_doc = s.receive!(immutable(ubyte[]))();
-    if (s.errno != 0) {
-        throw new Exception(format("REQ Socket error after receive: %s", s.errno));
-    }
 
+    s.close();
     return received_doc;
 }
 
