@@ -72,7 +72,7 @@ struct EpochCreatorService {
         }
 
         GossipNet gossip_net;
-        gossip_net = new NewEmulatorGossipNet(net.pubkey, opts.timeout.msecs);
+        gossip_net = new EmulatorGossipNet(net.pubkey, opts.timeout.msecs);
         Pubkey[] channels = addressbook.activeNodeChannels;
         Random!size_t random;
         const _seed = getRandom!size_t;
