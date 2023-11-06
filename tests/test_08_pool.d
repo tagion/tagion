@@ -6,9 +6,25 @@ import core.thread;
 import std.datetime.systime;
 import std.uuid;
 import std.regex;
+import std.exception;
+import std.algorithm;
+import std.random;
+import std.file;
+import std.base64;
 
 import nngd;
 import nngtestutil;
+
+string rndstr(int len = 32){
+    string s, buf;
+    do {
+        buf = cast(string)(Base64.encode(cast(const(ubyte)[])"/dev/urandom".read(512)));
+        s ~= buf[0..(min(buf.length,len-s.length))];
+    }while(s.length < len);
+    return s[0..len];
+}
+
+
 
 struct worker_context {
     int id;
@@ -23,21 +39,18 @@ void server_callback(NNGMessage *msg, void *ctx)
         log("No message received");
         return;
     }    
-    if(msg.empty){
+    if(msg.length < 1){
         log("Empty message received");
         return;
     }
-    log("d1");
     auto cnt = cast(worker_context*)ctx;
-    log("d2");
     auto s = msg.body_trim!string();
     log("SERVER CONTEXT NAME: "~cnt.name);
-    log("SERVER GOT: " ~ s);
+    log("SERVER GOT: " ~ s[0..min(s.length,48)]);
     msg.clear();
-    log("d3");
     if(indexOf(s,"What time is it?") == 0){
         log("Going to send time");
-        msg.body_append(cast(ubyte[])format("It`s %f o`clock.",timestamp()));
+        msg.body_append(cast(ubyte[])(format("It`s %f o`clock." ~ " DATA: ",timestamp()) ~ rndstr(uniform(4096,32768))));
     }else{
         log("Going to stop sender");
         msg.body_append(cast(ubyte[])"END");
@@ -49,10 +62,10 @@ void server_callback(NNGMessage *msg, void *ctx)
 void client_worker(string url, string tag)
 {
     int rc;
-    string line;
+    string line, str;
     int k = 0;
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
-    s.recvtimeout = msecs(1000);
+    s.recvtimeout = msecs(5000);
     while(1){
         log("REQ("~tag~"): to dial...");
         rc = s.dial(url);
@@ -62,19 +75,20 @@ void client_worker(string url, string tag)
             nng_sleep(msecs(10));
             continue;
         }
-        assert(rc == 0);
+        enforce(rc == 0);
     }
     while(1){
         k++;
         line = format("What time is it? :: from(%s)[%d]", tag,k);            
         if(k > 255)
             line = "Maybe that's enough?";
-        rc = s.send!string(line);
-        assert(rc == 0);
-        log("REQ("~tag~"): SENT: " ~ line);
-        auto str = s.receive!string();
+        auto pl = rndstr(uniform(4096,32768));    
+        rc = s.send!string(line~" DATA: "~pl);
+        enforce(rc == 0);
+        log("REQ("~tag~"): SENT: " ~ line[0..min(line.length,48)]);
+        str = s.receive!string();
         if(s.errno == 0){
-            log(format("REQ("~tag~") RECV [%03d]: %s", str.length, str));
+            log(format("REQ("~tag~") RECV [%03d]: %s", str.length, str[0..min(str.length,48)]));
         }else{
             log("REQ("~tag~"): Error string: " ~ toString(s.errno));
         }    
@@ -100,15 +114,15 @@ int main()
 
     
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REP);
-    s.sendtimeout = msecs(1000);
-    s.recvtimeout = msecs(1000);
-    s.sendbuf = 4096;
+    s.sendtimeout = msecs(5000);
+    s.recvtimeout = msecs(5000);
+    s.sendbuf = 65536;
 
     NNGPool pool = NNGPool(&s, &server_callback, 8, &ctx);
     pool.init();
 
     auto rc = s.listen(uri);
-    assert(rc == 0);
+    enforce(rc == 0);
 
 
     auto tid02 = spawn(&client_worker, uri, tags[0]);      // client for exact tag
@@ -116,7 +130,7 @@ int main()
     auto tid04 = spawn(&client_worker, uri, tags[2]);
     auto tid05 = spawn(&client_worker, uri, tags[3]);
     thread_joinAll();
-
+    log("PLANNING SHUTDOWN");
     pool.shutdown();
 
     writeln("Bye!");

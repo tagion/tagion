@@ -6,6 +6,7 @@ import core.thread;
 import std.datetime.systime;
 import std.uuid;
 import std.regex;
+import std.exception;
 
 import nngd;
 import nngtestutil;
@@ -25,7 +26,7 @@ void server_worker(string url)
     s.sendbuf = 4096;
     log("REP: listening");
     rc = s.listen(url);
-    assert(rc == 0);
+    enforce(rc == 0);
     log(nngtest_socket_properties(s,"REP"));
     while( p < 4 ){
         auto ss = s.receive!string();
@@ -73,14 +74,14 @@ void client_worker(string url, string tag)
             nng_sleep(msecs(100));
             continue;
         }
-        assert(rc == 0);
+        enforce(rc == 0);
     }
     log(nngtest_socket_properties(s,"REQ("~tag~")"));
     while(1){
         k++;
         line = format("Client(%s) request %d", tag, k);            
         rc = s.send!string(line);
-        assert(rc == 0);
+        enforce(rc == 0);
         log("REQ("~tag~"): SENT: " ~ line);
         auto str = s.receive!string();
         if(s.errno == 0){

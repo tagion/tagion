@@ -105,7 +105,12 @@ struct NNGMessage {
     }   
     
     this(nng_msg * msgref){
-        msg = msgref;
+        if(msgref is null){
+            auto rc = nng_msg_alloc(&msg, 0);
+            enforce(rc == 0);
+        } else {            
+            msg = msgref;
+        }            
     }   
 
     this( size_t size ){
@@ -118,18 +123,13 @@ struct NNGMessage {
     }
 
     @nogc @safe
-    @property bool empty() nothrow {
-        return (msg is null);
-    }
-
-    @nogc @safe
     @property nng_msg* pointer() nothrow {
         return msg;
     }
 
     @nogc  
     @property void pointer(nng_msg* p) nothrow {
-        if(p != null){ 
+        if(p !is null){ 
             msg = p;
         } else {
             nng_msg_clear(msg);
@@ -146,11 +146,11 @@ struct NNGMessage {
         return nng_msg_header(msg);
     }
 
-    @property size_t length() { return (msg) ? nng_msg_len(msg) : 0; }
+    @property size_t length() { return nng_msg_len(msg); }
     @property void length( size_t sz ) { auto rc = nng_msg_realloc(msg, sz); enforce(rc == 0); }
-    @property size_t header_length() { return (msg) ? nng_msg_header_len(msg) : 0; }
+    @property size_t header_length() { return nng_msg_header_len(msg); }
     
-    void clear() { if(msg) nng_msg_clear(msg); }
+    void clear() { nng_msg_clear(msg); }
 
     int body_append (T) ( const(T) data ) if(isArray!T || isUnsigned!T) {
         static if (isArray!T){
@@ -408,18 +408,16 @@ struct NNGAio {
     }
     
     this( nng_aio* src ){
-        enforce(src != null);
+        enforce(src !is null);
         pointer(src);
     }
 
     ~this() {
-        if(aio)
-            nng_aio_free(aio);
+        nng_aio_free(aio);
     }
 
     void realloc( nng_aio_cb cb, void* arg ){
-        if(aio)
-            nng_aio_free(aio);
+        nng_aio_free(aio);
         auto rc = nng_aio_alloc( &aio,  cb, arg );            
         enforce(rc == 0);
     }
@@ -431,14 +429,12 @@ struct NNGAio {
 
     @nogc @safe
     @property void pointer( nng_aio* p ) {
-        if(p){
-            if(aio) nng_aio_free(aio);
+        if(p !is null){
+            nng_aio_free(aio);
             aio = p;
-        } else { 
-            if(aio){
-                nng_aio_free(aio);
-                aio = null;
-            }
+        }else{
+            nng_aio_free(aio);
+            nng_aio_alloc( &aio,  null, null );
         }
     }
 
@@ -446,34 +442,31 @@ struct NNGAio {
     
     @nogc @safe
     @property size_t count () nothrow {
-        return (aio) ? nng_aio_count(aio) : 0;
+        return nng_aio_count(aio);
     }
     
     @nogc @safe
     @property nng_errno result () nothrow {
-        return (aio) ? cast(nng_errno) nng_aio_result(aio) : nng_errno.NNG_ENOENT;
+        return cast(nng_errno) nng_aio_result(aio);
     }
 
     @nogc @safe
     @property void timeout ( Duration val ) nothrow {
-        if(aio)
-            nng_aio_set_timeout(aio, cast(nng_duration)val.total!"msecs");
+        nng_aio_set_timeout(aio, cast(nng_duration)val.total!"msecs");
     }        
 
     // ---------- controls
 
     bool begin () {
-        return (aio) ? nng_aio_begin(aio) : false;
+        return nng_aio_begin(aio);
     }
 
     void wait() {
-        if(aio) 
-            nng_aio_wait(aio);
+        nng_aio_wait(aio);
     }
     
     void sleep ( Duration val ) {
-        if(aio)
-            nng_sleep_aio(cast(nng_duration)val.total!"msecs", aio);
+        nng_sleep_aio(cast(nng_duration)val.total!"msecs", aio);
     }
 
 
@@ -481,22 +474,19 @@ struct NNGAio {
         = no callback
     */
     void abort ( nng_errno err ) {
-        if(aio)
-            nng_aio_abort(aio, cast(int) err);
+        nng_aio_abort(aio, cast(int) err);
     }
     
     /*
         = callback
     */
     void finish ( nng_errno err ) {
-        if(aio)
-            nng_aio_finish(aio, cast(int) err);
+        nng_aio_finish(aio, cast(int) err);
     }
 
     extern (C) alias nng_aio_ccb = void function (nng_aio *, void*, int);
     void defer ( nng_aio_ccb cancelcb, void *arg ){
-        if(aio)
-            nng_aio_defer ( aio, cancelcb, arg );
+        nng_aio_defer ( aio, cancelcb, arg );
     }
 
     /*
@@ -505,8 +495,7 @@ struct NNGAio {
         = no wait for abort and callback complete
     */
     void cancel () {
-        if(aio)
-            nng_aio_cancel(aio);
+        nng_aio_cancel(aio);
     }
     
     /*
@@ -515,24 +504,30 @@ struct NNGAio {
         = wait for abort and callback complete
     */
     void stop () {
-        if(aio)
-            nng_aio_stop(aio);
+        nng_aio_stop(aio);
     }
 
     // ---------- messages
 
-    NNGMessage  get_msg ( ) {
+    nng_errno get_msg( ref NNGMessage msg ) {
+        auto err = this.result();
+        if( err != nng_errno.NNG_OK )
+            return err;
         nng_msg *m = nng_aio_get_msg(aio);
-        return NNGMessage(m);
+        if(m is null){
+            return nng_errno.NNG_EINTERNAL;
+        }else{    
+            msg.pointer(m);
+            return nng_errno.NNG_OK;
+        }    
     }
     
-    void set_msg ( ref NNGMessage msg ) {
+    void set_msg( ref NNGMessage msg ) {
         nng_aio_set_msg(aio, msg.pointer);
     }
 
     void clear_msg () {
-        if(aio)
-            nng_aio_set_msg(aio, null);
+        nng_aio_set_msg(aio, null);
     }
 
 
@@ -1139,10 +1134,12 @@ struct NNGPoolWorker {
     }
 } // struct NNGPoolWorker
 
+
 extern (C) void nng_pool_stateful ( void* p ){
-    if(p == null) return;
+    if(p is null) return;
     NNGPoolWorker *w = cast(NNGPoolWorker*)p;
     w.lock();
+    nng_errno rc;
     switch(w.state){
         case nng_worker_state.EXIT:
             w.unlock();
@@ -1152,13 +1149,12 @@ extern (C) void nng_pool_stateful ( void* p ){
             nng_ctx_recv(w.ctx, w.aio.aio);
             break;
         case nng_worker_state.RECV:
-            auto rc = w.aio.result;
-            if(rc != nng_errno.NNG_OK){
+            if(w.aio.result != nng_errno.NNG_OK){
                 nng_ctx_recv(w.ctx, w.aio.aio);
                 break;
             }
-            w.msg = w.aio.get_msg();
-            if(w.msg.empty){
+            rc = w.aio.get_msg( w.msg );
+            if(rc != nng_errno.NNG_OK){
                 nng_ctx_recv(w.ctx, w.aio.aio);
                 break;
             }
@@ -1172,7 +1168,7 @@ extern (C) void nng_pool_stateful ( void* p ){
             nng_ctx_send(w.ctx, w.aio.aio);
             break;
         case nng_worker_state.SEND:
-            auto rc = w.aio.result;
+            rc = w.aio.result;
             if(rc != nng_errno.NNG_OK){
                 return;
             }
@@ -1195,7 +1191,6 @@ struct NNGPool {
     NNGPoolWorker*[] workers;
 
     @disable this();
-
 
     this(NNGSocket *isock, nng_pool_callback cb, size_t n, void* icontext ){
         enforce(isock.state == nng_socket_state.NNG_STATE_CREATED || isock.state == nng_socket_state.NNG_STATE_CONNECTED);
@@ -1230,7 +1225,6 @@ struct NNGPool {
             workers[i].wait();
         }    
     }
-
 } // struct NNGPool
 
 
