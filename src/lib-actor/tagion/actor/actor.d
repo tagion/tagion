@@ -97,7 +97,10 @@ struct Request(string name, ID = uint) {
     /// Send back some data to the task who sent the request
     void respond(Args...)(Args args) {
         auto res = Response(msg, id);
-        locate(task_name).send(res, args);
+        auto tid = locate(task_name);
+        if (tid !is Tid.init) {
+            locate(task_name).send(res, args);
+        }
     }
 }
 

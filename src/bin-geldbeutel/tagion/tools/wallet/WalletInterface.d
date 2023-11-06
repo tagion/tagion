@@ -124,6 +124,7 @@ HiRPC.Receiver sendShellSubmitHiRPC(string address, HiRPC.Sender contract, const
     WebData rep = WebClient.post(address, cast(ubyte[]) contract.toDoc.serialize, ["Content-type": "application/octet-stream"]);
     Document response_doc = Document(cast(immutable) rep.rawdata);
     HiRPC hirpc = HiRPC(net);
+    writefln("%s", response_doc.toPretty);
     return hirpc.receive(response_doc);
 }
 
@@ -142,6 +143,7 @@ HiRPC.Receiver sendShellHiRPC(string address, Document dart_req, HiRPC hirpc) {
     WebData rep = WebClient.post(address, cast(ubyte[]) dart_req.serialize, ["Content-type": "application/octet-stream"]);
     
     Document response_doc = Document(cast(immutable) rep.rawdata);
+    writefln("%s", response_doc.toPretty);
 
     return hirpc.receive(response_doc);
 }

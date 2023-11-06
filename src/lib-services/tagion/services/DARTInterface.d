@@ -49,6 +49,7 @@ enum InterfaceError {
     Timeout,
     InvalidDoc,
     DARTLocate,
+    Context,
 }
 
 
@@ -63,11 +64,11 @@ void dartHiRPCCallback(NNGMessage *msg, void *ctx) @trusted {
 
     // we use an empty hirpc only for sending errors.
     HiRPC hirpc = HiRPC(null);
-    void send_error(InterfaceError err_type) {
+    void send_error(InterfaceError err_type, string extra_msg = "") {
         import std.conv;
         hirpc.Error message;
         message.code = err_type;
-        message.message = err_type.to!string;
+        message.message = err_type.to!string ~ extra_msg;
         const sender = hirpc.Sender(null, message);
         writefln("INTERFACE ERROR: %s", sender.toPretty);
         msg.body_append(sender.toDoc.serialize);
@@ -76,9 +77,15 @@ void dartHiRPCCallback(NNGMessage *msg, void *ctx) @trusted {
 
     auto cnt = cast(DartWorkerContext*) ctx;
 
+
     import tagion.hibon.HiBONJSON : toPretty;
     import tagion.communication.HiRPC;
 
+    if (cnt is null) {
+        send_error(InterfaceError.Context);
+        writeln("the context was nil");
+        return;
+    }
     if (msg is null) {
         send_error(InterfaceError.NullDocument);
         writeln("no message received");
@@ -102,7 +109,7 @@ void dartHiRPCCallback(NNGMessage *msg, void *ctx) @trusted {
 
     auto dart_tid = locate(cnt.dart_task_name);
     if (dart_tid is Tid.init) {
-        send_error(InterfaceError.DARTLocate);
+        send_error(InterfaceError.DARTLocate, cnt.dart_task_name);
         return;
     }
     
