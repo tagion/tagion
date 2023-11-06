@@ -174,7 +174,7 @@ HiRPC.Receiver sendDARTHiRPC(string address, HiRPC.Sender dart_req, HiRPC hirpc)
     }
     rc = s.send(dart_req.toDoc.serialize);
     if (s.errno != 0) {
-        throw new Exception("error in send of darthirpc: %s", s.errno);
+        throw new Exception(format("error in send of darthirpc: %s", s.errno));
     }
     Document received_doc = s.receive!Buffer;
     if (s.errno != 0) {
