@@ -243,20 +243,6 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
                 return result;
             }
 
-            version (none) Buffer mask(const(ubyte[]) _mask) const {
-                import std.algorithm.iteration : sum;
-
-                check(sum(_mask) != 0, ConsensusFailCode.SECURITY_MASK_VECTOR_IS_ZERO);
-                Buffer result;
-                do_secret_stuff((const(ubyte[]) privkey) @safe {
-                    import tagion.utils.Miscellaneous : xor;
-
-                    auto data = xor(privkey, _mask);
-                    result = rawCalcHash(rawCalcHash(data));
-                });
-                return result;
-            }
-
             void clone(StdSecureNet net) const {
                 do_secret_stuff((const(ubyte[]) privkey) @safe {
                     auto _privkey = privkey.dup;
