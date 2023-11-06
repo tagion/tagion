@@ -887,3 +887,7 @@ unittest { /// Schnorr test generated from the secp256k1/examples/schnorr.c
     const signature_ok = crypt.verify(signature, msg_hash, pubkey);
     assert(signature_ok, "Schnorr signing failded");
 }
+
+unittest { /// Schnorr derive/tweak
+
+}

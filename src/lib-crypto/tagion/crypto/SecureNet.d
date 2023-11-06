@@ -91,7 +91,7 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
     @safe
     interface SecretMethods {
         immutable(ubyte[]) sign(const(ubyte[]) message) const;
-        void tweakMul(const(ubyte[]) tweek_code, ref ubyte[] tweak_privkey) const;
+        void tweak(const(ubyte[]) tweek_code, ref ubyte[] tweak_privkey) const;
         immutable(ubyte[]) ECDHSecret(scope const(Pubkey) pubkey) const;
         void clone(StdSecureNet net) const;
     }
@@ -114,7 +114,7 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
     final Pubkey derivePubkey(const(ubyte[]) tweak_code) const {
         Pubkey result;
         const pkey = cast(const(ubyte[])) _pubkey;
-        result = _crypt.pubKeyTweakMul(pkey, tweak_code);
+        result = _crypt.pubKeyTweak(pkey, tweak_code);
         return result;
     }
 
@@ -150,7 +150,7 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
         assert(tweak_privkey.length >= 32);
     }
     do {
-        _secret.tweakMul(tweak_code, tweak_privkey);
+        _secret.tweak(tweak_code, tweak_privkey);
     }
 
     void derive(string tweak_word, shared(SecureNet) secure_net) {
@@ -175,7 +175,7 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
 
     const(SecureNet) derive(const(ubyte[]) tweak_code) const {
         ubyte[] tweak_privkey;
-        _secret.tweakMul(tweak_code, tweak_privkey);
+        _secret.tweak(tweak_code, tweak_privkey);
         auto result = new StdSecureNet;
         result.createKeyPair(tweak_privkey);
         return result;
@@ -229,7 +229,7 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
                 return result;
             }
 
-            void tweakMul(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey) const {
+            void tweak(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey) const {
                 do_secret_stuff((const(ubyte[]) privkey) @safe {
                     _crypt.privKeyTweakMul(privkey, tweak_code, tweak_privkey);
                 });
