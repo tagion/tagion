@@ -20,6 +20,7 @@ import tagion.script.common;
 import tagion.script.execute;
 import tagion.tools.wallet.WalletInterface;
 import tagion.hibon.HiBONRecord;
+import tagion.testbench.services.helper_functions;
 
 import std.algorithm;
 import std.array;
@@ -69,12 +70,7 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
         foreach (ref wallet; wallets) {
             check(wallet.isLoggedin, "the wallet must be logged in!!!");
             const hirpc = HiRPC(wallet.net);
-            auto dartcheckread = wallet.getRequestCheckWallet(hirpc);
-            writeln("going to send dartcheckread ");
-            auto received_doc = sendDARTHiRPC(dart_interface_sock_addr, dartcheckread);
-            check(received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", received_doc.toPretty)); 
-            auto received = hirpc.receive(received_doc);
-            check(wallet.setResponseCheckRead(received), "wallet not updated succesfully");
+            auto amount = getWalletUpdateAmount(wallet, dart_interface_sock_addr, hirpc);
             check(wallet.calcTotal(wallet.account.bills) > 0.TGN, "did not receive money");
             check(wallet.calcTotal(wallet.account.bills) == start_amount, "money not correct");
         }
@@ -118,15 +114,7 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
         writeln("WALLET 1 request");
 
         const hirpc = HiRPC(wallet1.net);
-        auto dartcheckread = wallet1.getRequestCheckWallet(hirpc);
-        auto received_doc = sendDARTHiRPC(dart_interface_sock_addr, dartcheckread);
-        check(received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", received_doc.toPretty)); 
-
-        writefln("RECEIVED RESPONSE: %s", received_doc.toPretty);
-        auto received = hirpc.receive(received_doc);
-        check(wallet1.setResponseCheckRead(received), "wallet1 not updated succesfully");
-
-        auto wallet1_amount = wallet1.calcTotal(wallet1.account.bills);
+        auto wallet1_amount = getWalletUpdateAmount(wallet1, dart_interface_sock_addr, hirpc);
         check(wallet1_amount < start_amount, format("no money withdrawn had %s", wallet1_amount));
 
         auto wallet1_expected = start_amount - amount - fee;
@@ -139,16 +127,9 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
     @Then("wallet2 should receive the payment.")
     Document payment() @trusted {
         const hirpc = HiRPC(wallet2.net);
-        auto dartcheckread = wallet2.getRequestCheckWallet(hirpc);
-        auto received_doc = sendDARTHiRPC(dart_interface_sock_addr, dartcheckread);
-        check(received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", received_doc.toPretty)); 
-        writefln("WALLET2 received: %s", received_doc.toPretty);
-
-        writefln("RECEIVED RESPONSE: %s", received_doc.toPretty);
-        auto received = hirpc.receive(received_doc);
-        check(wallet2.setResponseCheckRead(received), "wallet2 not updated succesfully");
-        check(wallet2.calcTotal(wallet2.account.bills) > 0.TGN, "did not receive money");
-        check(wallet2.calcTotal(wallet2.account.bills) == start_amount + amount, "did not receive correct amount of tagion");
+        auto wallet2_amount = getWalletUpdateAmount(wallet2, dart_interface_sock_addr, hirpc);
+        check(wallet2_amount > 0.TGN, "did not receive money");
+        check(wallet2_amount == start_amount + amount, "did not receive correct amount of tagion");
         writefln("Wallet 2 total %s", wallet2.calcTotal(wallet2.account.bills));
         return result_ok;
     }

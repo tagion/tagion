@@ -26,6 +26,7 @@ import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord;
 import tagion.crypto.Types;
 import tagion.basic.Types;
+import tagion.testbench.services.helper_functions;
 
 
 import std.range;
@@ -302,21 +303,17 @@ class NegativeAmountAndZeroAmountOnOutputBills {
     Document rejected() {
         import tagion.dart.DART;
         auto req = wallet1.getRequestCheckWallet(wallet1_hirpc, used_bills);
-        auto received_doc = sendDARTHiRPC(node1_opts.dart_interface.sock_addr, req);
-        check(received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", received_doc.toPretty)); 
-
-        auto received = wallet1_hirpc.receive(received_doc);
+        auto received = sendDARTHiRPC(node1_opts.dart_interface.sock_addr, req, wallet1_hirpc);
         auto not_in_dart = received.response.result[DART.Params.dart_indices].get!Document[].map!(d => d.get!Buffer).array;
         check(not_in_dart.length == 0, "all the inputs should still be in the dart");
 
+
         auto output_req = wallet1.getRequestCheckWallet(wallet1_hirpc, output_bills);
-        auto output_received_doc = sendDARTHiRPC(node1_opts.dart_interface.sock_addr, output_req);
-        check(output_received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", output_received_doc.toPretty)); 
-        auto output_received = wallet1_hirpc.receive(output_received_doc);
+        auto output_received = sendDARTHiRPC(node1_opts.dart_interface.sock_addr, output_req, wallet1_hirpc);
         auto output_not_in_dart = output_received.response.result[DART.Params.dart_indices].get!Document[].map!(d => d.get!Buffer).array;
 
 
-        writefln("wowo OUTPUT %s",output_received_doc.toPretty);
+        writefln("wowo OUTPUT %s",output_received.toPretty);
         check(output_not_in_dart.length == 2, format("No inputs should have been added %s", output_not_in_dart.length));
 
         return result_ok;

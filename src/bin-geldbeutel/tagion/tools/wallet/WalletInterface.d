@@ -127,19 +127,28 @@ HiRPC.Receiver sendShellSubmitHiRPC(string address, HiRPC.Sender contract, const
     return hirpc.receive(response_doc);
 }
 
-Document sendShellHiRPC(string address, Document dart_req) {
+HiRPC.Receiver sendShellHiRPC(string address, HiRPC.Sender dart_req, HiRPC hirpc) {
+    import nngd;
+
+    WebData rep = WebClient.post(address, cast(ubyte[]) dart_req.toDoc.serialize, ["Content-type": "application/octet-stream"]);
+    
+    Document response_doc = Document(cast(immutable) rep.rawdata);
+
+    return hirpc.receive(response_doc);
+}
+HiRPC.Receiver sendShellHiRPC(string address, Document dart_req, HiRPC hirpc) {
     import nngd;
 
     WebData rep = WebClient.post(address, cast(ubyte[]) dart_req.serialize, ["Content-type": "application/octet-stream"]);
     
     Document response_doc = Document(cast(immutable) rep.rawdata);
 
-    return response_doc;
+    return hirpc.receive(response_doc);
 }
 
 
 pragma(msg, "Fixme(lr)Remove trusted when nng is safe");
-Document sendDARTHiRPC(string address, HiRPC.Sender dart_req) @trusted {
+HiRPC.Receiver sendDARTHiRPC(string address, HiRPC.Sender dart_req, HiRPC hirpc) @trusted {
     import nngd;
     import std.exception;
 
@@ -148,7 +157,7 @@ Document sendDARTHiRPC(string address, HiRPC.Sender dart_req) @trusted {
     scope(exit) {
         s.close();
     }
-    s.recvtimeout = 10_000.msecs;
+    s.recvtimeout = 15_000.msecs;
 
     while (1) {
         writefln("REQ to dial... %s", address);
@@ -172,7 +181,7 @@ Document sendDARTHiRPC(string address, HiRPC.Sender dart_req) @trusted {
         throw new Exception(format("REQ Socket error after receive: %s", s.errno));
     }
 
-    return received_doc;
+    return hirpc.receive(received_doc);
 }
 
 /**
@@ -629,7 +638,7 @@ struct WalletInterface {
                         secure_wallet.registerInvoice(new_invoice);
                         request = new_invoice.toDoc;
                         if (faucet) {
-                            sendShellHiRPC(options.addr ~ options.faucet_shell_endpoint, request);
+                            sendShellHiRPC(options.addr ~ options.faucet_shell_endpoint, request, HiRPC(secure_wallet.net));
                         }
                     }
                     else {
@@ -703,18 +712,11 @@ struct WalletInterface {
                         output_filename.fwrite(req);
                     }
                     if (send || sendkernel) {
-                        Document received_doc;
-                        if (sendkernel) {
-                            received_doc = sendDARTHiRPC(options.dart_address, req);
-                        }
-                        if (send) {
-                            received_doc = sendShellHiRPC(options.addr ~ options.dart_shell_endpoint, req.toDoc);
-                        }
-                        check(received_doc.isRecord!(HiRPC.Receiver), "Error in response. Aborting");
-                        auto receiver = hirpc.receive(received_doc);
+                        HiRPC.Receiver received = sendkernel ? 
+                            sendDARTHiRPC(options.dart_address, req, hirpc) : sendShellHiRPC(options.addr ~ options.dart_shell_endpoint, req, hirpc);
 
                         auto res = trt_update ? secure_wallet.setResponseUpdateWallet(
-                                receiver) : secure_wallet.setResponseCheckRead(receiver);
+                                received) : secure_wallet.setResponseCheckRead(received);
                         writeln(res ? "wallet updated succesfully" : "wallet not updated succesfully");
                         listAccount(stdout);
                         save_wallet = true;

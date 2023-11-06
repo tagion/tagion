@@ -7,9 +7,9 @@ struct DARTInterfaceOptions {
     import tagion.services.options : contract_sock_addr;
     string sock_addr;
     string dart_prefix = "DART_";
-    int sendtimeout = 5000;
+    int sendtimeout = 10_000;
     int receivetimeout = 1000;
-    uint pool_size = 4;
+    uint pool_size = 12;
     uint sendbuf = 4096;
 
     void setDefault() nothrow {

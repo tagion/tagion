@@ -161,6 +161,13 @@ struct EpochCreatorService {
             hashgraph.init_tide(&gossip_net.gossip, &payload, currentTime);
         }
 
+
+        while (!thisActor.stop && !hashgraph.areWeInGraph) {
+            const received = receiveTimeout(Duration.zero, &signal, &ownerTerminated, 
+
+
+        }
+
         runTimeout(opts.timeout.msecs, &timeout, &receivePayload, &receiveWavefront);
     }
 
