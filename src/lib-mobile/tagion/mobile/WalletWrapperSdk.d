@@ -17,6 +17,7 @@ import std.range;
 import std.algorithm;
 import std.file : exists, remove;
 import core.stdc.string;
+import std.string : splitLines;
 
 import Wallet = tagion.wallet.SecureWallet;
 import tagion.script.TagionCurrency;
@@ -37,6 +38,8 @@ import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN;
 import tagion.crypto.Cipher;
 import tagion.utils.StdTime;
 import tagion.wallet.WalletException;
+
+enum TAGION_HASH = import("revision.mixin").splitLines[2];
 
 /// Used for describing the d-runtime status
 enum DrtStatus {
@@ -238,10 +241,10 @@ extern (C) {
     export uint create_nft_contract(
             uint32_t* signedContractPtr,
             uint8_t* nftPtr,
-            const uint32_t nftLen){
-        
+            const uint32_t nftLen) {
+
         immutable nftBuff = cast(immutable)(nftPtr[0 .. nftLen]);
-        
+
         if (__wallet_storage.wallet.isLoggedin()) {
             auto nft = Document(nftBuff);
 
@@ -338,7 +341,6 @@ extern (C) {
 
         immutable response = cast(immutable)(responsePtr[0 .. responseLen]);
 
-
         if (__wallet_storage.wallet.isLoggedin()) {
 
             HiRPC hirpc;
@@ -352,7 +354,8 @@ extern (C) {
                     __wallet_storage.write;
                     return 1;
                 }
-            } catch(HiBONException e) {
+            }
+            catch (HiBONException e) {
                 return 0;
             }
         }
@@ -377,7 +380,6 @@ extern (C) {
         // resultPtr = cast(char*) &result[0];
         // *resultLen = cast(uint32_t) result.length;
     }
-
 
     @safe
     export double get_locked_balance() {
@@ -573,12 +575,12 @@ extern (C) {
         immutable invoiceBuffer = cast(immutable)(invoicePtr[0 .. invoiceLen]);
 
         if (__wallet_storage.wallet.isLoggedin()) {
-            
+
             auto amount = TagionCurrency(0);
             auto invoice = Invoice(Document(invoiceBuffer));
             auto isExist = __wallet_storage.wallet.account.check_invoice_payment(invoice.pkey, amount);
 
-            if(isExist){
+            if (isExist) {
                 *amountPtr = amount.value;
                 return 1;
             }
@@ -854,7 +856,7 @@ version (none) unittest {
             version (none) {
                 with (__wallet_storage.wallet.account) {
                     newBills = zip(bill_amounts, derivers.byKey).map!(bill_derive => TagionBill(bill_derive[0],
-                    epoch, bill_derive[1], gene)).array;
+                            epoch, bill_derive[1], gene)).array;
                 }
 
                 const uint8_t[] bill = cast(uint8_t[]) newBills[0].toHiBON.serialize;
