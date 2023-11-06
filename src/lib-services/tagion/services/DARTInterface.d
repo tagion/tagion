@@ -54,7 +54,7 @@ enum InterfaceError {
 
 
 void dartHiRPCCallback(NNGMessage *msg, void *ctx) @trusted {
-    // log.register(thisActor.task_name);
+
     import std.stdio;
     import std.exception;
 
@@ -64,13 +64,12 @@ void dartHiRPCCallback(NNGMessage *msg, void *ctx) @trusted {
     // we use an empty hirpc only for sending errors.
     HiRPC hirpc = HiRPC(null);
     void send_error(InterfaceError err_type) {
-        writeln("INTERFACE ERROR");
         import std.conv;
         hirpc.Error message;
         message.code = err_type;
         message.message = err_type.to!string;
         const sender = hirpc.Sender(null, message);
-
+        writefln("INTERFACE ERROR: %s", sender.toPretty);
         msg.body_append(sender.toDoc.serialize);
     }
     
