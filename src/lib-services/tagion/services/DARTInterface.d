@@ -114,6 +114,7 @@ void dartHiRPCCallback(NNGMessage *msg, void *ctx) @trusted {
     }
     
     dart_tid.send(dartHiRPCRR(), doc);
+    
     void dartHiRPCResponse(dartHiRPCRR.Response res, Document doc) {
         writefln("Interface response: %s", doc.toPretty); 
         msg.body_append(doc.serialize);
