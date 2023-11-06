@@ -61,6 +61,10 @@ static StdSecureWallet[string] wallets;
 static Exception last_error;
 /// Functions called from d-lang through dart:ffi
 extern (C) {
+    enum : uint {
+        NOT_LOGGED_IN = 9,
+        PAYMENT_ERROR = 2,
+    }
 
     // Staritng d-runtime
     export static int64_t start_rt() {
@@ -277,28 +281,25 @@ extern (C) {
 
         }
 
-        if (__wallet_storage.wallet.isLoggedin()) {
-            auto invoice = Invoice(Document(invoiceBuff));
-            invoice.amount = TagionCurrency(amount);
+        if (!__wallet_storage.wallet.isLoggedin()) {
+            return NOT_LOGGED_IN;
+        }   
 
-            SignedContract signed_contract;
-            const can_pay =
-                __wallet_storage.wallet.payment([invoice], signed_contract, tgn_fees);
-            if (can_pay) {
-                /*
-                HiRPC hirpc;
-                const sender = hirpc.action("transaction", signed_contract.toHiBON);
-                const contractDocId = recyclerDoc.create(Document(sender.toHiBON));
-*/
-                const contractDocId = recyclerDoc.create(signed_contract.toDoc);
-                // Save wallet state to file.
-                __wallet_storage.write;
+        auto invoice = Invoice(Document(invoiceBuff));
+        invoice.amount = TagionCurrency(amount);
 
-                *contractPtr = contractDocId;
-                return 1;
-            }
+        SignedContract signed_contract;
+        const can_pay =
+            __wallet_storage.wallet.payment([invoice], signed_contract, tgn_fees);
+        if (can_pay) {
+            const contractDocId = recyclerDoc.create(signed_contract.toDoc);
+            // Save wallet state to file.
+            __wallet_storage.write;
+
+            *contractPtr = contractDocId;
+            return 1;
         }
-        return 0;
+        return PAYMENT_ERROR;
     }
 
     export uint create_invoice(
@@ -326,14 +327,14 @@ extern (C) {
 
     export uint request_update(uint8_t* requestPtr) {
 
-        if (__wallet_storage.wallet.isLoggedin()) {
-            const request = __wallet_storage.wallet.getRequestUpdateWallet();
-            const requestDocId = recyclerDoc.create(request.toDoc);
-            *requestPtr = cast(uint8_t) requestDocId;
-            return 1;
-        }
-        return 0;
+        if (!__wallet_storage.wallet.isLoggedin()) {
+            return NOT_LOGGED_IN;
 
+        }
+        const request = __wallet_storage.wallet.getRequestUpdateWallet();
+        const requestDocId = recyclerDoc.create(request.toDoc);
+        *requestPtr = cast(uint8_t) requestDocId;
+        return 1;
     }
 
     export uint update_response(uint8_t* responsePtr, uint32_t responseLen) {
@@ -341,25 +342,24 @@ extern (C) {
 
         immutable response = cast(immutable)(responsePtr[0 .. responseLen]);
 
-        if (__wallet_storage.wallet.isLoggedin()) {
-
-            HiRPC hirpc;
-
-            try {
-                auto receiver = hirpc.receive(Document(response));
-                const result = __wallet_storage.wallet.setResponseUpdateWallet(receiver);
-
-                if (result) {
-                    // Save wallet state to file.
-                    __wallet_storage.write;
-                    return 1;
-                }
-            }
-            catch (HiBONException e) {
-                return 0;
-            }
+        if (!__wallet_storage.wallet.isLoggedin()) {
+            return NOT_LOGGED_IN;
         }
 
+        HiRPC hirpc = HiRPC(__wallet_storage.wallet.net);
+        try {
+            auto receiver = hirpc.receive(Document(response));
+            const result = __wallet_storage.wallet.setResponseUpdateWallet(receiver);
+
+            if (result) {
+                // Save wallet state to file.
+                __wallet_storage.write;
+                return 1;
+            }
+        }
+        catch (HiBONException e) {
+            return 0;
+        }
         return 0;
     }
 
