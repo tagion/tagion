@@ -148,7 +148,7 @@ HiRPC.Receiver sendShellHiRPC(string address, Document dart_req, HiRPC hirpc) {
 
 
 pragma(msg, "Fixme(lr)Remove trusted when nng is safe");
-HiRPC.Receiver sendDARTHiRPC(string address, HiRPC.Sender dart_req, HiRPC hirpc) @trusted {
+HiRPC.Receiver sendDARTHiRPC(string address, HiRPC.Sender dart_req, HiRPC hirpc, Duration recv_duration = 15_000.msecs) @trusted {
     import nngd;
     import std.exception;
 
@@ -157,7 +157,7 @@ HiRPC.Receiver sendDARTHiRPC(string address, HiRPC.Sender dart_req, HiRPC hirpc)
     scope(exit) {
         s.close();
     }
-    s.recvtimeout = 15_000.msecs;
+    s.recvtimeout = recv_duration;
 
     while (1) {
         writefln("REQ to dial... %s", address);
