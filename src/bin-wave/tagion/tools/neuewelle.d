@@ -41,12 +41,9 @@ import tagion.hibon.Document;
 
 static abort = false;
 extern (C)
-void signal_handler(int _) nothrow
-{
-    try
-    {
-        if (abort)
-        {
+void signal_handler(int _) nothrow {
+    try {
+        if (abort) {
             printf("Terminating\n");
             exit(1);
         }
@@ -54,19 +51,16 @@ void signal_handler(int _) nothrow
         abort = true;
         printf("Received stop signal, telling services to stop\n");
     }
-    catch (Exception e)
-    {
+    catch (Exception e) {
         assert(0, format("DID NOT CLOSE PROPERLY \n %s", e));
     }
 }
 
 mixin Main!(_main, "tagionwave");
 
-int _main(string[] args)
-{
+int _main(string[] args) {
     immutable program = args[0];
-    if (geteuid == 0)
-    {
+    if (geteuid == 0) {
         stderr.writeln("FATAL: YOU SHALL NOT RUN THIS PROGRAM AS ROOT");
         return 1;
     }
@@ -87,59 +81,51 @@ int _main(string[] args)
     string mode0_node_opts_path;
 
     auto main_args = getopt(args,
-        "v|version", "Print revision information", &version_switch,
-        "O|override", "Override the config file", &override_switch,
-        "nodeopts", "Generate single node opts files for mode0", &mode0_node_opts_path,
-        "m|monitor", "Enable the monitor", &monitor,
+            "v|version", "Print revision information", &version_switch,
+            "O|override", "Override the config file", &override_switch,
+            "nodeopts", "Generate single node opts files for mode0", &mode0_node_opts_path,
+            "m|monitor", "Enable the monitor", &monitor,
     );
 
-    if (main_args.helpWanted)
-    {
+    if (main_args.helpWanted) {
         tagionGetoptPrinter(
-            "Help information for tagion wave program\n" ~
+                "Help information for tagion wave program\n" ~
                 format(
                     "Usage: %s <tagionwave.json>\n", program),
-            main_args.options
+                main_args.options
         );
         return 0;
     }
 
-    if (version_switch)
-    {
+    if (version_switch) {
         revision_text.writeln;
         return 0;
     }
 
     string config_file = "tagionwave.json";
-    if (args.length >= 2 && args[1].hasExtension(".json"))
-    {
+    if (args.length >= 2 && args[1].hasExtension(".json")) {
         config_file = args[1];
     }
 
-    if (override_switch)
-    {
+    if (override_switch) {
         Options.defaultOptions.save(config_file);
         writefln("Config file written to %s", config_file);
         return 0;
     }
 
     Options local_options;
-    if (config_file.exists)
-    {
-        try
-        {
+    if (config_file.exists) {
+        try {
             local_options.load(config_file);
             log("Running with config file %s", config_file);
             chdir(config_file.dirName);
         }
-        catch (Exception e)
-        {
+        catch (Exception e) {
             stderr.writefln("Error loading config file %s, %s", config_file, e.msg);
             return 1;
         }
     }
-    else
-    {
+    else {
         local_options = Options.defaultOptions;
         stderr.writefln("No config file exits, running with default options");
     }
@@ -149,8 +135,7 @@ int _main(string[] args)
     auto logger_service = spawn(logger, "logger");
     log.set_logger_task(logger_service.task_name);
     waitforChildren(Ctrl.ALIVE);
-    scope (exit)
-    {
+    scope (exit) {
         logger_service.send(Sig.STOP);
     }
 
@@ -167,8 +152,7 @@ int _main(string[] args)
     locator_options = new immutable(LocatorOptions)(5, 5);
     SupervisorHandle[] supervisor_handles;
 
-    if (local_options.wave.network_mode == NetworkMode.INTERNAL)
-    {
+    if (local_options.wave.network_mode == NetworkMode.INTERNAL) {
         auto node_options = get_mode_0_options(local_options, monitor);
 
         import tagion.dart.DART;
@@ -190,10 +174,8 @@ int _main(string[] args)
         // extra check for mode0
         // Check bullseyes
         Fingerprint[] bullseyes;
-        foreach (node_opt; node_options)
-        {
-            if (!node_opt.dart.dart_path.exists)
-            {
+        foreach (node_opt; node_options) {
+            if (!node_opt.dart.dart_path.exists) {
                 stderr.writefln("Missing dartfile %s", node_opt.dart.dart_path);
                 return 1;
             }
@@ -224,8 +206,7 @@ int _main(string[] args)
         auto recorder = db.recorder(response.result);
 
         Document doc;
-        if (!recorder.empty)
-        {
+        if (!recorder.empty) {
             const head = TagionHead(recorder[].front.filed);
             writefln("Found head: %s", head.toPretty);
             DARTIndex epoch_index = __net.dartKey(StdNames.epoch, head.current_epoch);
@@ -241,57 +222,46 @@ int _main(string[] args)
         db.close;
         network_mode0(node_options, supervisor_handles, doc);
 
-        if (mode0_node_opts_path)
-        {
-            foreach (i, opt; node_options)
-            {
+        if (mode0_node_opts_path) {
+            foreach (i, opt; node_options) {
                 opt.save(buildPath(mode0_node_opts_path, format(opt.wave.prefix_format ~ "opts", i).setExtension(
                         FileExtension
                         .json)));
             }
         }
     }
-    else
-    {
+    else {
         assert(0, "NetworkMode not supported");
     }
 
-    if (waitforChildren(Ctrl.ALIVE, 15.seconds))
-    {
+    if (waitforChildren(Ctrl.ALIVE, 15.seconds)) {
         log("alive");
         bool signaled;
         import tagion.utils.pretend_safe_concurrency : receiveTimeout;
 
-        do
-        {
+        do {
             signaled = stopsignal.wait(100.msecs);
-            if (!signaled)
-            {
+            if (!signaled) {
                 signaled = receiveTimeout(
-                    Duration.zero,
-                    (TaskFailure tf) {
-                    log.fatal("Stopping because of unhandled taskfailure \n%s", tf);
-                }
+                        Duration.zero,
+                        (TaskFailure tf) { log.fatal("Stopping because of unhandled taskfailure \n%s", tf); }
                 );
             }
         }
         while (!signaled);
     }
-    else
-    {
+    else {
         log("Program did not start");
         return 1;
     }
 
     sub_handle.send(Sig.STOP);
     log("Sending stop signal to supervisor");
-    foreach (supervisor; supervisor_handles)
-    {
+    foreach (supervisor; supervisor_handles) {
         supervisor.send(Sig.STOP);
     }
     // supervisor_handle.send(Sig.STOP);
-    if (!waitforChildren(Ctrl.END, 5.seconds))
-    {
+    if (!waitforChildren(Ctrl.END, 5.seconds)) {
         log("Timed out before all services stopped");
         return 1;
     }
@@ -300,16 +270,14 @@ int _main(string[] args)
 }
 
 int network_mode0(const(Options)[] node_options, ref ActorHandle!Supervisor[] supervisor_handles, Document epoch_head = Document
-    .init)
-{
+        .init) {
 
     import tagion.crypto.Types;
     import tagion.hibon.HiBONRecord;
     import tagion.script.common : GenesisEpoch, Epoch;
     import std.range : zip;
 
-    struct Node
-    {
+    struct Node {
         immutable(Options) opts;
         shared(StdSecureNet) net;
         Pubkey pkey;
@@ -317,13 +285,11 @@ int network_mode0(const(Options)[] node_options, ref ActorHandle!Supervisor[] su
 
     Node[] nodes;
 
-    foreach (i, opts; node_options)
-    {
+    foreach (i, opts; node_options) {
         auto net = new StdSecureNet();
         net.generateKeyPair(opts.task_names.supervisor);
 
-        scope (exit)
-        {
+        scope (exit) {
             net = null;
         }
 
@@ -334,57 +300,47 @@ int network_mode0(const(Options)[] node_options, ref ActorHandle!Supervisor[] su
 
     import tagion.hibon.HiBONtoText;
 
-    if (epoch_head is Document.init)
-    {
-        foreach (n; zip(nodes, node_options))
-        {
+    if (epoch_head is Document.init) {
+        foreach (n; zip(nodes, node_options)) {
             addressbook[n[0].pkey] = NodeAddress(n[1].task_names.epoch_creator);
         }
     }
-    else
-    {
+    else {
         Pubkey[] keys;
-        if (epoch_head.isRecord!Epoch)
-        {
+        if (epoch_head.isRecord!Epoch) {
             keys = Epoch(epoch_head).active;
         }
-        else
-        {
+        else {
             auto genesis = GenesisEpoch(epoch_head);
 
             keys = genesis.nodes;
         }
 
-        foreach (node_info; zip(keys, node_options))
-        {
+        foreach (node_info; zip(keys, node_options)) {
             addressbook[node_info[0]] = NodeAddress(node_info[1].task_names.epoch_creator);
         }
     }
 
     /// spawn the nodes
-    foreach (n; nodes)
-    {
+    foreach (n; nodes) {
         supervisor_handles ~= spawn!Supervisor(n.opts.task_names.supervisor, n.opts, n.net);
     }
 
     return 0;
 }
 
-const(Options)[] get_mode_0_options(const(Options) options, bool monitor = false)
-{
+const(Options)[] get_mode_0_options(const(Options) options, bool monitor = false) {
     const number_of_nodes = options.wave.number_of_nodes;
     const prefix_f = options.wave.prefix_format;
     Options[] all_opts;
-    foreach (node_n; 0 .. number_of_nodes)
-    {
+    foreach (node_n; 0 .. number_of_nodes) {
         auto opt = Options(options);
         opt.setPrefix(format(prefix_f, node_n));
         opt.epoch_creator.timeout = 500;
         all_opts ~= opt;
     }
 
-    if (monitor)
-    {
+    if (monitor) {
         all_opts[0].monitor.enable = true;
     }
 
