@@ -68,15 +68,16 @@ struct DARTService {
         scope (exit) {
             db.close();
         }
+        scope(failure) {
+            log("DART aborting with failure");
+        }
 
         void read(dartReadRR req, immutable(DARTIndex)[] fingerprints) @safe {
             import tagion.hibon.HiBONtoText;
             import std.algorithm;
             import tagion.utils.Miscellaneous;
 
-            log("DARTREAD: %s", fingerprints.map!(f => f.toHexString));
             RecordFactory.Recorder read_recorder = db.loads(fingerprints);
-            log("%s", read_recorder);
             req.respond(RecordFactory.uniqueRecorder(read_recorder));
         }
 
@@ -94,7 +95,6 @@ struct DARTService {
         log("Starting dart with %s", db.bullseye.toHexString);
 
         auto hirpc = HiRPC(net);
-        auto empty_hirpc = HiRPC(null);
         import tagion.Keywords;
 
         void dartHiRPC(dartHiRPCRR req, Document doc) {
@@ -109,7 +109,7 @@ struct DARTService {
                 return;
             }
 
-            immutable receiver = empty_hirpc.receive(doc);
+            immutable receiver = hirpc.receive(doc);
 
             if (receiver.method.name == "search") {
                 log("SEARCH REQUEST");
@@ -135,6 +135,7 @@ struct DARTService {
 
             
             Document result = db(receiver, false).toDoc;
+            log("darthirpc response: %s", result.toPretty);
             req.respond(result);
         }
 
