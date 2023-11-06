@@ -60,6 +60,7 @@ struct HiRPC {
     import tagion.hibon.HiBONRecord;
 
     /// HiRPC call method 
+    @recordType("Method")
     struct Method {
         @optional @(filter.Initialized) uint id; /// RPC identifier
         @optional @filter(q{!a.empty}) Document params; /// RPC arguments
@@ -77,9 +78,9 @@ struct HiRPC {
     /// HiRPC error response for a method
     struct Error {
         @optional @(filter.Initialized) uint id; /// RPC response id, if given by the method 
-        @label("$data") @optional @filter(q{!a.empty}) Document data; /// Optional error response package
-        @label("$msg") @optional @(filter.Initialized) string message; /// Optional Error text message
-        @label("$code") @optional @(filter.Initialized) int code; /// Optional error code
+        @label("data") @optional @filter(q{!a.empty}) Document data; /// Optional error response package
+        @label("text") @optional @(filter.Initialized) string message; /// Optional Error text message
+        @label("code") @optional @(filter.Initialized) int code; /// Optional error code
 
         static bool valid(const Document doc) {
             enum codeName = GetLabel!(code).name;
@@ -153,13 +154,13 @@ struct HiRPC {
 
         enum messageName = GetLabel!(Sender.message).name;
         const message_doc = doc[messageName].get!Document;
-        foreach (E; EnumMembers!(Type)[1 .. $]) {
-            enum name = E.to!string;
-            if (message_doc.hasMember(name)) {
-                return E;
-            }
+        if (message_doc.hasMember(GetLabel!(Method.name).name)) {
+            return Type.method;
         }
-        return Type.none;
+        if (message_doc.hasMember(GetLabel!(Response.result).name)) {
+            return Type.result;
+        }
+        return Type.error;
     }
 
     /// HiRPC Post (Sender,Receiver)
