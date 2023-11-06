@@ -334,6 +334,29 @@ class NativeSecp256k1T(bool Schnorr) {
 
     @trusted
     static if (Schnorr)
+        final void privkeyTweak(
+                scope const(ubyte[]) keypair,
+    scope const(ubyte[]) tweak,
+    scope ubyte[] tweakked_keypair) const
+    in (keypair.length == secp256k1_keypair.data.length)
+    in (tweakked_keypair.length == keypair.length)
+    in (tweak.length == TWEAK_SIZE)
+    do {
+        scope (exit) {
+            randomizeContext;
+        }
+        static assert(secp256k1_keypair.data.offsetof == 0);
+        tweakked_keypair[0 .. $] = keypair[0 .. $];
+        auto _keypair = cast(secp256k1_keypair*)(&keypair[0]);
+        {
+            const ret = secp256k1_keypair_xonly_tweak_add(_ctx, _keypair, &tweak[0]);
+            check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_TWEAK_MULT_FAULT);
+        }
+
+    }
+
+    @trusted
+    static if (Schnorr)
         final immutable(ubyte[]) pubKeyTweak(scope const(ubyte[]) pubkey, scope const(ubyte[]) tweak) const
     in (pubkey.length == XONLY_PUBKEY_SIZE)
     in (tweak.length == TWEAK_SIZE)
@@ -886,4 +909,18 @@ unittest { /// Schnorr test generated from the secp256k1/examples/schnorr.c
     assert(pubkey == expected_pubkey);
     const signature_ok = crypt.verify(signature, msg_hash, pubkey);
     assert(signature_ok, "Schnorr signing failded");
+}
+
+unittest { /// Schnorr tweak
+    const aux_random = "b0d8d9a460ddcea7ae5dc37a1b5511eb2ab829abe9f2999e490beba20ff3509a".decode;
+    const msg_hash = "1bd69c075dd7b78c4f20a698b22a3fb9d7461525c39827d6aaf7a1628be0a283".decode;
+    const secret_key = "e46b4b2b99674889342c851f890862264a872d4ac53a039fbdab91fd68ed4e71".decode;
+    const expected_pubkey = "ecd21d66cf97843d467c9d02c5781ec1ec2b369620605fd847bd23472afc7e74".decode;
+    const expected_keypair = decode("e46b4b2b99674889342c851f890862264a872d4ac53a039fbdab91fd68ed4e71747efc2a4723bd47d85f602096362becc11e78c5029d7c463d8497cf661dd2eca89c1820ccc2dd9b0e0e5ab13b1454eb3c37c31308ae20dd8d2aca2199ff4e6b");
+    auto crypt = new NativeSecp256k1Schnorr;
+    secp256k1_keypair keypair;
+    crypt.createKeyPair(secret_key, keypair);
+    //writefln("keypair %(%02x%)", keypair);
+    assert(keypair.data == expected_keypair);
+
 }
