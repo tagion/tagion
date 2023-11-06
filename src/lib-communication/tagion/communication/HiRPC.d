@@ -60,7 +60,6 @@ struct HiRPC {
     import tagion.hibon.HiBONRecord;
 
     /// HiRPC call method 
-    @recordType("Method")
     struct Method {
         @optional @(filter.Initialized) uint id; /// RPC identifier
         @optional @filter(q{!a.empty}) Document params; /// RPC arguments
