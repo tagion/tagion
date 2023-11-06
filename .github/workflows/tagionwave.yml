@@ -64,6 +64,11 @@ jobs:
             rm -r tagion || \
             echo "No old data to backup"
 
+      - name: Delete old backups
+        if: ${{ inputs.clean }}
+        run: |
+          ls -1t ~/.local/share/tagion_* | tail -n +10 | xargs rm -v || echo "No old backups to be removed"
+
       - name: Create new bills
         if: ${{ inputs.clean }}
         run: |
