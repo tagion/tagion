@@ -64,6 +64,7 @@ void dartHiRPCCallback(NNGMessage *msg, void *ctx) @trusted {
     // we use an empty hirpc only for sending errors.
     HiRPC hirpc = HiRPC(null);
     void send_error(InterfaceError err_type) {
+        writeln("INTERFACE ERROR");
         import std.conv;
         hirpc.Error message;
         message.code = err_type;
@@ -108,6 +109,7 @@ void dartHiRPCCallback(NNGMessage *msg, void *ctx) @trusted {
     
     dart_tid.send(dartHiRPCRR(), doc);
     void dartHiRPCResponse(dartHiRPCRR.Response res, Document doc) {
+        writefln("Interface response: %s", doc.toPretty); 
         msg.body_append(doc.serialize);
     }
 
