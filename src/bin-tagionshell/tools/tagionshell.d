@@ -236,6 +236,7 @@ WebData i2p_handler ( WebData req, void* ctx ){
     if (!payment_status.value) {
         writeit("i2p: faucet is empty");
         WebData res = { status: nng_http_status.NNG_HTTP_STATUS_INTERNAL_SERVER_ERROR, msg: format("faucet createPayment error: %s", payment_status.msg)};
+        return res;
     }
 
     writeit(signed_contract.toPretty);
