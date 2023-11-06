@@ -292,7 +292,10 @@ extern (C) {
         const can_pay =
             __wallet_storage.wallet.payment([invoice], signed_contract, tgn_fees);
         if (can_pay) {
-            const contractDocId = recyclerDoc.create(signed_contract.toDoc);
+            const contract_net = __wallet_storage.wallet.net;
+            const hirpc = HiRPC(contract_net);
+            const contract = hirpc.submit(signed_contract);
+            const contractDocId = recyclerDoc.create(contract.toDoc);
             // Save wallet state to file.
             __wallet_storage.write;
 
