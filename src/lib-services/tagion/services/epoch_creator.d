@@ -162,11 +162,19 @@ struct EpochCreatorService {
         }
 
 
-        while (!thisActor.stop && !hashgraph.areWeInGraph) {
-            const received = receiveTimeout(Duration.zero, &signal, &ownerTerminated, 
-
-
-        }
+        // while (!thisActor.stop && !hashgraph.areWeInGraph) {
+        //     const received = receiveTimeout(
+        //         Duration.zero, 
+        //         &signal, 
+        //         &ownerTerminated, 
+        //         &receiveWavefront,
+        //         &unknown
+        //     );
+        //     if (received) {
+        //         continue;
+        //     }
+        //     timeout();
+        // }
 
         runTimeout(opts.timeout.msecs, &timeout, &receivePayload, &receiveWavefront);
     }
