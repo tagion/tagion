@@ -27,6 +27,7 @@ import tagion.hibon.HiBONRecord : isRecord;
 import tagion.logger.Logger;
 import tagion.services.replicator;
 import tagion.services.options : TaskNames;
+import tagion.dart.DARTException;
 
 @safe
 struct DARTOptions {
@@ -142,11 +143,17 @@ struct DARTService {
         void modify(dartModifyRR req, immutable(RecordFactory.Recorder) recorder, immutable(long) epoch_number) @safe {
             log("Received modify request with length=%s", recorder.length);
 
-            auto eye = Fingerprint(db.modify(recorder));
+            try {
+                auto eye = db.modify(recorder);
+                log("New bullseye is %s", eye.toHexString);
 
-            req.respond(eye);
+                req.respond(eye);
 
-            locate(task_names.replicator).send(SendRecorder(), recorder, eye, epoch_number);
+                locate(task_names.replicator).send(SendRecorder(), recorder, eye, epoch_number);
+            } catch(DARTException e) {
+                log.fatal("DARTModify failed %s \nrecorder that caused failure\n", e, recorder.toDoc.toPretty);
+                throw e;
+            }
         }
 
         void bullseye(dartBullseyeRR req) @safe {

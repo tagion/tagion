@@ -153,6 +153,7 @@ pragma(msg, "Fixme(lr)Remove trusted when nng is safe");
 HiRPC.Receiver sendDARTHiRPC(string address, HiRPC.Sender dart_req, HiRPC hirpc, Duration recv_duration = 15_000.msecs) @trusted {
     import nngd;
     import std.exception;
+    import tagion.hibon.HiBONException;
 
     int rc;
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
@@ -185,7 +186,7 @@ HiRPC.Receiver sendDARTHiRPC(string address, HiRPC.Sender dart_req, HiRPC hirpc,
 
     try {
         hirpc.receive(received_doc);
-    } catch(HiRPCException e) {
+    } catch(HiBONException e) {
         writefln("::error::ERROR in hirpc receive: %s %s",e, received_doc.toPretty);
     }
     
