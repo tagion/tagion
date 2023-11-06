@@ -4,7 +4,7 @@ module tagion.services.epoch_creator;
 
 // tagion
 import tagion.logger.Logger;
-import tagion.actor : runTimeout, ActorHandle, Ctrl;
+import tagion.actor;
 import tagion.communication.HiRPC;
 import tagion.utils.JSONCommon;
 import tagion.hashgraph.HashGraph;
@@ -162,19 +162,19 @@ struct EpochCreatorService {
         }
 
 
-        // while (!thisActor.stop && !hashgraph.areWeInGraph) {
-        //     const received = receiveTimeout(
-        //         Duration.zero, 
-        //         &signal, 
-        //         &ownerTerminated, 
-        //         &receiveWavefront,
-        //         &unknown
-        //     );
-        //     if (received) {
-        //         continue;
-        //     }
-        //     timeout();
-        // }
+        while (!thisActor.stop && !hashgraph.areWeInGraph) {
+            const received = receiveTimeout(
+                opts.timeout.msecs, 
+                &signal, 
+                &ownerTerminated, 
+                &receiveWavefront,
+                &unknown
+            );
+            if (received) {
+                continue;
+            }
+            timeout();
+        }
 
         runTimeout(opts.timeout.msecs, &timeout, &receivePayload, &receiveWavefront);
     }

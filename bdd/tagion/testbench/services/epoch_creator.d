@@ -99,9 +99,7 @@ class SendPayloadAndCreateEpoch {
             );
         }
 
-        waitforChildren(Ctrl.ALIVE);
-        //    writefln("Wait 1 sec");
-        Thread.sleep(15.seconds);
+        waitforChildren(Ctrl.ALIVE, 15.seconds);
 
         return result_ok;
     }
