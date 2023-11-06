@@ -174,13 +174,19 @@ HiRPC.Receiver sendDARTHiRPC(string address, HiRPC.Sender dart_req, HiRPC hirpc)
     }
     rc = s.send(dart_req.toDoc.serialize);
     if (s.errno != 0) {
-        throw new Exception("error in response");
+        throw new Exception("error in send of darthirpc: %s", s.errno);
     }
     Document received_doc = s.receive!Buffer;
     if (s.errno != 0) {
         throw new Exception(format("REQ Socket error after receive: %s", s.errno));
     }
 
+    try {
+        hirpc.receive(received_doc);
+    } catch(HiRPCException e) {
+        writefln("::error::ERROR in hirpc receive: %s %s",e, received_doc.toPretty);
+    }
+    
     return hirpc.receive(received_doc);
 }
 
