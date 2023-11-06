@@ -17,10 +17,16 @@ enum revision_info = import("revision.mixin").splitLines;
 // import std.array : join;
 enum revision_text = zip(
             [
-        "git: %s", "branch: %s", "hash: %s", "revno: %s", "build_date: %s", "builder_name: %s", "builder_email: %s", "CC: %s",
+        "git: %s",
+        "branch: %s",
+        "hash: %s",
+        "revno: %s",
+        "build_date: %s",
+        "builder_name: %s",
+        "builder_email: %s",
+        "CC: %s",
         "DC: %s"
-    ],
-    revision_info)
+],
+            revision_info)
         .map!(a => format(a[0], a[1]))
         .join("\n");
-//     INFO, HASH, REVNO, DATE, USER, EMAIL, CC, DC);
