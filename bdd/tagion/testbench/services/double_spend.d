@@ -332,12 +332,18 @@ class SameContractDifferentNodes {
     Document rejected() {
         auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
         writefln("WALLET 1 amount: %s", wallet1_amount);
-        check(wallet1_amount == start_amount1-amount-fee, "wallet 1 did not lose correct amount of money");
+        const wallet1_expected = start_amount1-amount-fee;
+        check(wallet1_amount == wallet1_expected, format("wallet 1 did not lose correct amount of money, should have %s, had %s", wallet1_expected, wallet1_amount));
 
-        auto wallet2_amount = getWalletUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet2_hirpc);
+        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts1.dart_interface.sock_addr, wallet2_hirpc);
         writefln("WALLET 2 amount: %s", wallet2_amount);
         check(wallet2_amount == start_amount2+amount, "did not receive money");
         return result_ok;
+
+
+        
+        const wallet2_expected = start_amount2+amount;
+        check(wallet2_amount == wallet2_expected, format("wallet 2 did not lose correct amount of money, should have %s, had %s", wallet2_expected, wallet2_amount));
     }
 
 }
