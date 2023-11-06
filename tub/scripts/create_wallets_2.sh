@@ -6,7 +6,7 @@ usage() { echo "Usage: $0 -b <bindir> [-n <nodes=5>] [-w <wallets=5>] [-k <netwo
 bdir=""
 nodes=5
 wallets=5
-bills=10
+bills=50
 ndir=$(readlink -m "./network")
 wdir=$(readlink -m "./wallets")
 
@@ -86,84 +86,10 @@ done
 
 rm -rf $wdir/bill*.hibon
 
-cat << EOF > $ndir/tagionwave.json
-{
-    "collector": null,
-    "dart": {
-        "dart_filename": "dart.drt",
-        "dart_path": "",
-        "folder_path": "${ndir}"
-    },
-    "dart_interface": {
-        "dart_prefix": "DART_",
-        "pool_size": 12,
-        "sendbuf": 4096,
-        "sendtimeout": 1000,
-        "sock_addr": "abstract:\/\/DART_NEUEWELLE"
-    },
-    "epoch_creator": {
-        "scrap_depth": 5,
-        "timeout": 15
-    },
-    "hirpc_verifier": {
-        "rejected_hirpcs": "",
-        "send_rejected_hirpcs": false
-    },
-    "inputvalidator": {
-        "sock_addr": "abstract:\/\/CONTRACT_NEUEWELLE",
-        "sock_recv_buf": 4096,
-        "sock_recv_timeout": 1000,
-        "sock_send_buf": 1024,
-        "sock_send_timeout": 200
-    },
-    "monitor": {
-        "dataformat": "json",
-        "enable": false,
-        "port": 10900,
-        "taskname": "monitor",
-        "timeout": 500,
-        "url": "127.0.0.1"
-    },
-    "replicator": {
-        "folder_path": "${ndir}\/recorder"
-    },
-    "subscription": {
-        "address": "abstract:\/\/SUBSCRIPTION_NEUEWELLE",
-        "sendbufsize": 4096,
-        "sendtimeout": 1000,
-        "tags": ""
-    },
-    "task_names": {
-        "collector": "collector ",
-        "dart": "dart",
-        "dart_interface": "dartinterface",
-        "epoch_creator": "epoch_creator",
-        "hirpc_verifier": "hirpc_verifier",
-        "inputvalidator": "inputvalidator",
-        "program": "tagion",
-        "replicator": "replicator",
-        "supervisor": "supervisor",
-        "transcript": "transcript",
-        "tvm": "tvm"
-    },
-    "transcript": null,
-    "tvm": null,
-    "wave": {
-        "network_mode": "INTERNAL",
-        "number_of_nodes": $nodes,
-        "prefix_format": "Node_%s_"
-    },
-    "logger": {
-        "file_name": "",
-        "flush": false,
-        "mask": 0,
-        "task_name": "",
-        "to_console": false,
-        "trunc_size": 0
-    }
+cd $ndir
 
-}
-EOF
+neuewelle -O
+jq --argjson nodes $nodes '.wave.number_of_nodes = $nodes' tagionwave.json
 
 cd -
 

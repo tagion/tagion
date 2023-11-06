@@ -34,7 +34,7 @@ int _main(string[] args) {
 
     scope Options local_options = Options.defaultOptions;
     local_options.dart.folder_path = buildPath(module_path);
-    local_options.replicator.folder_path = buildPath(module_path);
+    local_options.replicator.folder_path = buildPath(module_path, "recorders");
     local_options.epoch_creator.timeout = 1000;
     local_options.save(config_file);
 
@@ -99,6 +99,7 @@ int _main(string[] args) {
         DARTFile.create(path, net);
         auto db = new DART(net, path);
         db.modify(recorder);
+        db.close;
     }
 
     immutable neuewelle_args = ["send_contract_test", config_file]; // ~ args;

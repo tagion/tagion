@@ -12,54 +12,32 @@ import std.stdio;
 import std.socket;
 import std.typecons;
 import std.path;
-import std.concurrency;
-import std.path : baseName;
-import std.file : exists;
+import std.path : baseName, dirName;
+import std.file : exists, chdir;
 import std.algorithm : countUntil, map;
 import std.range : iota;
 import std.array;
 import std.format;
 
+// import tagion.utils.pretend_safe_concurrency : send;
 import tagion.tools.Basic;
 import tagion.utils.getopt;
 import tagion.logger.Logger;
-import tagion.basic.Version;
 import tagion.tools.revision;
 import tagion.actor;
+import tagion.actor.exceptions;
 import tagion.services.supervisor;
 import tagion.services.options;
 import tagion.services.subscription;
 import tagion.services.locator;
+import tagion.services.logger;
 import tagion.GlobalSignals : stopsignal;
 import tagion.utils.JSONCommon;
 import tagion.crypto.SecureNet;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.gossip.AddressBook : addressbook, NodeAddress;
 import tagion.basic.Types : hasExtension, FileExtension;
-
-// TODO: 
-pragma(msg, "TODO(lr) rewrite logger with the 4th implementation of a taskwrapper");
-auto startLogger() {
-    import tagion.taskwrapper.TaskWrapper : Task;
-    import tagion.prior_services.LoggerService;
-    import tagion.basic.Types : Control;
-    import tagion.prior_services.Options;
-    import tagion.options.CommonOptions : setCommonOptions;
-
-    Options options;
-    setDefaultOption(options);
-    auto logger_service_tid = Task!LoggerTask(options.logger.task_name, options);
-    import std.stdio : stderr;
-
-    stderr.writeln("Waiting for logger");
-    const response = receiveOnly!Control;
-    stderr.writeln("Logger started");
-    if (response !is Control.LIVE) {
-        stderr.writeln("ERROR:Logger %s", response);
-        throw new Exception("Could not start the logger");
-    }
-    return logger_service_tid;
-}
+import tagion.hibon.Document;
 
 static abort = false;
 extern (C)
@@ -112,7 +90,8 @@ int _main(string[] args) {
     if (main_args.helpWanted) {
         tagionGetoptPrinter(
                 "Help information for tagion wave program\n" ~
-                format("Usage: %s <tagionwave.json>\n", program),
+                format(
+                    "Usage: %s <tagionwave.json>\n", program),
                 main_args.options
         );
         return 0;
@@ -139,6 +118,7 @@ int _main(string[] args) {
         try {
             local_options.load(config_file);
             log("Running with config file %s", config_file);
+            chdir(config_file.dirName);
         }
         catch (Exception e) {
             stderr.writefln("Error loading config file %s, %s", config_file, e.msg);
@@ -151,12 +131,12 @@ int _main(string[] args) {
     }
 
     // Spawn logger service
-    auto logger_service_tid = startLogger;
+    immutable logger = LoggerService(LoggerServiceOptions(LogType.Console));
+    auto logger_service = spawn(logger, "logger");
+    log.set_logger_task(logger_service.task_name);
+    waitforChildren(Ctrl.ALIVE);
     scope (exit) {
-        import tagion.basic.Types : Control;
-
-        logger_service_tid.control(Control.STOP);
-        receiveOnly!Control;
+        logger_service.send(Sig.STOP);
     }
 
     SubscriptionServiceHandle sub_handle;
@@ -174,11 +154,78 @@ int _main(string[] args) {
 
     if (local_options.wave.network_mode == NetworkMode.INTERNAL) {
         auto node_options = get_mode_0_options(local_options, monitor);
-        network_mode0(node_options, supervisor_handles);
+
+        import tagion.dart.DART;
+        import tagion.dart.DARTBasic;
+        import CRUD = tagion.dart.DARTcrud;
+        import tagion.crypto.Types : Fingerprint;
+        import std.algorithm : all;
+        import tagion.communication.HiRPC;
+        import tagion.script.standardnames;
+        import tagion.script.common : TagionHead, GenesisEpoch, Epoch;
+        import std.file : copy;
+        import std.stdio : File;
+        import std.path : baseName, dirName;
+        import tagion.hibon.HiBONRecord : isRecord;
+
+        auto __net = new StdSecureNet();
+        __net.generateKeyPair("wowo");
+
+        // extra check for mode0
+        // Check bullseyes
+        Fingerprint[] bullseyes;
+        foreach (node_opt; node_options) {
+            if (!node_opt.dart.dart_path.exists) {
+                stderr.writefln("Missing dartfile %s", node_opt.dart.dart_path);
+                return 1;
+            }
+            DART db = new DART(__net, node_opt.dart.dart_path);
+            auto b = Fingerprint(db.bullseye);
+            bullseyes ~= b;
+
+            // check that all bullseyes are the same before boot
+            assert(bullseyes.all!(b => b == bullseyes[0]), "DATABASES must be booted with same bullseye - Abort");
+            db.close();
+
+            const new_filename = buildPath(dirName(node_opt.dart.dart_path), format("boot-%s", baseName(
+                    node_opt.dart.dart_path)));
+            writefln("copying file %s to %s", db.filename, new_filename);
+            node_opt.dart.dart_path.copy(new_filename);
+
+        }
+
+        // we only need to read one head since all bullseyes are the same:
+        DART db = new DART(__net, node_options[0].dart.dart_path);
+
+        // read the databases TAGIONHEAD
+        DARTIndex tagion_index = __net.dartKey(StdNames.name, TagionDomain);
+        auto hirpc = HiRPC(__net);
+        const sender = CRUD.dartRead([tagion_index], hirpc);
+        const receiver = hirpc.receive(sender);
+        auto response = db(receiver, false);
+        auto recorder = db.recorder(response.result);
+
+        Document doc;
+        if (!recorder.empty) {
+            const head = TagionHead(recorder[].front.filed);
+            writefln("Found head: %s", head.toPretty);
+            DARTIndex epoch_index = __net.dartKey(StdNames.epoch, head.current_epoch);
+
+            const _sender = CRUD.dartRead([epoch_index], hirpc);
+            const _receiver = hirpc.receive(_sender);
+            auto epoch_response = db(_receiver, false);
+            auto epoch_recorder = db.recorder(epoch_response.result);
+            doc = epoch_recorder[].front.filed;
+            writefln("Epoch_found: %s", doc.toPretty);
+        }
+
+        db.close;
+        network_mode0(node_options, supervisor_handles, doc);
 
         if (mode0_node_opts_path) {
             foreach (i, opt; node_options) {
-                opt.save(buildPath(mode0_node_opts_path, format(opt.wave.prefix_format ~ "opts", i).setExtension(FileExtension
+                opt.save(buildPath(mode0_node_opts_path, format(opt.wave.prefix_format ~ "opts", i).setExtension(
+                        FileExtension
                         .json)));
             }
         }
@@ -187,9 +234,21 @@ int _main(string[] args) {
         assert(0, "NetworkMode not supported");
     }
 
-    if (waitforChildren(Ctrl.ALIVE, 10.seconds)) {
+    if (waitforChildren(Ctrl.ALIVE, 15.seconds)) {
         log("alive");
-        stopsignal.wait;
+        bool signaled;
+        import tagion.utils.pretend_safe_concurrency : receiveTimeout;
+
+        do {
+            signaled = stopsignal.wait(100.msecs);
+            if (!signaled) {
+                signaled = receiveTimeout(
+                        Duration.zero,
+                        (TaskFailure tf) { log.fatal("Stopping because of unhandled taskfailure \n%s", tf); }
+                );
+            }
+        }
+        while (!signaled);
     }
     else {
         log("Program did not start");
@@ -210,10 +269,18 @@ int _main(string[] args) {
     return 0;
 }
 
-int network_mode0(const(Options)[] node_options, ref ActorHandle!Supervisor[] supervisor_handles) {
+int network_mode0(const(Options)[] node_options, ref ActorHandle!Supervisor[] supervisor_handles, Document epoch_head = Document
+        .init) {
+
+    import tagion.crypto.Types;
+    import tagion.hibon.HiBONRecord;
+    import tagion.script.common : GenesisEpoch, Epoch;
+    import std.range : zip;
+
     struct Node {
         immutable(Options) opts;
         shared(StdSecureNet) net;
+        Pubkey pkey;
     }
 
     Node[] nodes;
@@ -222,14 +289,36 @@ int network_mode0(const(Options)[] node_options, ref ActorHandle!Supervisor[] su
         auto net = new StdSecureNet();
         net.generateKeyPair(opts.task_names.supervisor);
 
-        scope(exit) {
+        scope (exit) {
             net = null;
         }
-        
-        shared shared_net = (()@trusted => cast(shared) net)();
-        
-        nodes ~= Node(opts, shared_net);
-        addressbook[net.pubkey] = NodeAddress(opts.task_names.epoch_creator);
+
+        shared shared_net = (() @trusted => cast(shared) net)();
+
+        nodes ~= Node(opts, shared_net, net.pubkey);
+    }
+
+    import tagion.hibon.HiBONtoText;
+
+    if (epoch_head is Document.init) {
+        foreach (n; zip(nodes, node_options)) {
+            addressbook[n[0].pkey] = NodeAddress(n[1].task_names.epoch_creator);
+        }
+    }
+    else {
+        Pubkey[] keys;
+        if (epoch_head.isRecord!Epoch) {
+            keys = Epoch(epoch_head).active;
+        }
+        else {
+            auto genesis = GenesisEpoch(epoch_head);
+
+            keys = genesis.nodes;
+        }
+
+        foreach (node_info; zip(keys, node_options)) {
+            addressbook[node_info[0]] = NodeAddress(node_info[1].task_names.epoch_creator);
+        }
     }
 
     /// spawn the nodes
@@ -247,7 +336,7 @@ const(Options)[] get_mode_0_options(const(Options) options, bool monitor = false
     foreach (node_n; 0 .. number_of_nodes) {
         auto opt = Options(options);
         opt.setPrefix(format(prefix_f, node_n));
-        opt.epoch_creator.timeout = 100;
+        opt.epoch_creator.timeout = 500;
         all_opts ~= opt;
     }
 

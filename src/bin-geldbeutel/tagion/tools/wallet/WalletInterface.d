@@ -107,7 +107,7 @@ HiRPC.Receiver sendSubmitHiRPC(string address, HiRPC.Sender contract, const(Secu
                 rc)));
     }
 
-    auto response_data = sock.receive!(immutable(ubyte[]));
+    auto response_data = sock.receive!Buffer;
     auto response_doc = Document(response_data);
     // We should probably change these exceptions so it always returns a HiRPC.Response error instead?
     if (!response_doc.isRecord!(HiRPC.Receiver) || sock.m_errno != 0) {
@@ -120,6 +120,7 @@ HiRPC.Receiver sendSubmitHiRPC(string address, HiRPC.Sender contract, const(Secu
 
 HiRPC.Receiver sendShellSubmitHiRPC(string address, HiRPC.Sender contract, const(SecureNet) net) {
     import nngd;
+    pragma(msg, "Change Web Post and reply so it takes immutable stream");
     WebData rep = WebClient.post(address, cast(ubyte[]) contract.toDoc.serialize, ["Content-type": "application/octet-stream"]);
     Document response_doc = Document(cast(immutable) rep.rawdata);
     HiRPC hirpc = HiRPC(net);
@@ -144,7 +145,11 @@ Document sendDARTHiRPC(string address, HiRPC.Sender dart_req) @trusted {
 
     int rc;
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
-    s.recvtimeout = 1000.msecs;
+    scope(exit) {
+        s.close();
+    }
+    s.recvtimeout = 10_000.msecs;
+
     while (1) {
         writefln("REQ to dial... %s", address);
         rc = s.dial(address);
@@ -158,12 +163,15 @@ Document sendDARTHiRPC(string address, HiRPC.Sender dart_req) @trusted {
             throw new Exception(format("Could not dial kernel %s", nng_errstr(rc)));
         }
     }
-    rc = s.send!(immutable(ubyte[]))(dart_req.toDoc.serialize);
+    rc = s.send(dart_req.toDoc.serialize);
     if (s.errno != 0) {
         throw new Exception("error in response");
     }
-    Document received_doc = s.receive!(immutable(ubyte[]))();
-    s.close();
+    Document received_doc = s.receive!Buffer;
+    if (s.errno != 0) {
+        throw new Exception(format("REQ Socket error after receive: %s", s.errno));
+    }
+
     return received_doc;
 }
 

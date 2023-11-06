@@ -36,7 +36,6 @@ include $(DTUB)/utilities/utils.mk
 include $(DTUB)/utilities/dir.mk
 include $(DTUB)/utilities/log.mk
 
-include $(DTUB)/tools/*.mk
 include $(TARGETS)/commands.mk
 
 #
@@ -99,8 +98,6 @@ include $(DTUB)/compile.mk
 #
 include $(TARGETS)/profile.mk
 include $(TARGETS)/valgrind.mk
-
-include $(TARGETS)/ldc-build-runtime.mk
 
 #
 # Testbench

@@ -277,8 +277,6 @@ synchronized class AddressBook {
         return addresses.length;
     }
 
-    import tagion.prior_services.Options;
-
     /**
      * Check that nodes >= 4 and addresses >= nodes
      * @return true if network ready

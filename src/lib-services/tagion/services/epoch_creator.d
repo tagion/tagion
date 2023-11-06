@@ -4,9 +4,8 @@ module tagion.services.epoch_creator;
 
 // tagion
 import tagion.logger.Logger;
-import tagion.actor;
+import tagion.actor : runTimeout, ActorHandle, Ctrl;
 import tagion.communication.HiRPC;
-import tagion.hibon.Document;
 import tagion.utils.JSONCommon;
 import tagion.hashgraph.HashGraph;
 import tagion.gossip.GossipNet;
@@ -15,6 +14,7 @@ import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.crypto.Types : Pubkey;
 import tagion.crypto.random.random;
 import tagion.basic.Types : Buffer;
+import tagion.basic.basic : isinit;
 import tagion.hashgraph.Refinement;
 import tagion.gossip.InterfaceNet : GossipNet;
 import tagion.gossip.EmulatorGossipNet;
@@ -24,6 +24,8 @@ import tagion.utils.pretend_safe_concurrency;
 import tagion.utils.Miscellaneous : cutHex;
 import tagion.gossip.AddressBook;
 import tagion.hibon.HiBONJSON;
+import tagion.hibon.Document;
+import tagion.hibon.HiBONException;
 import tagion.utils.Miscellaneous : cutHex;
 import tagion.services.messages;
 import tagion.services.monitor;
@@ -37,6 +39,7 @@ import core.time;
 import std.algorithm;
 import std.typecons : No;
 import std.stdio;
+import std.exception : handle, RangePrimitive;
 
 alias PayloadQueue = Queue!Document;
 
@@ -68,10 +71,8 @@ struct EpochCreatorService {
             assert(receiveOnly!Ctrl is Ctrl.ALIVE);
         }
 
-        const hirpc = HiRPC(net);
-
         GossipNet gossip_net;
-        gossip_net = new NewEmulatorGossipNet(net.pubkey, opts.timeout.msecs);
+        gossip_net = new EmulatorGossipNet(net.pubkey, opts.timeout.msecs);
         Pubkey[] channels = addressbook.activeNodeChannels;
         Random!size_t random;
         const _seed = getRandom!size_t;
@@ -92,7 +93,7 @@ struct EpochCreatorService {
         {
             immutable buf = cast(Buffer) hashgraph.channel;
             const nonce = cast(Buffer) net.calcHash(buf);
-            auto eva_event = hashgraph.createEvaEvent(gossip_net.time, nonce);
+            hashgraph.createEvaEvent(gossip_net.time, nonce);
         }
 
 
@@ -127,7 +128,18 @@ struct EpochCreatorService {
                 .map!(e => e.event_body.payload)
                 .filter!((p) => !p.empty)
                 .filter!(p => p.isRecord!SignedContract)
-                .map!(s => (() @trusted => cast(immutable) new SignedContract(s))())
+                 //Cannot explicitly return immutable container type (*) ?, need assign to immutable container
+                .map!((doc) {
+                    immutable s = new immutable(SignedContract)(doc);
+                    return s;
+                })
+                .handle!(HiBONException, RangePrimitive.front,
+                    (e, r) {
+                        log("invalid SignedContract from hashgraph");
+                        return null;
+                    }
+                )
+                .filter!(s => !s.isinit)
                 .array;
 
             if (received_signed_contracts.length != 0) {

@@ -19,6 +19,7 @@ import tagion.hibon.Document;
 import tagion.script.common;
 import tagion.script.execute;
 import tagion.tools.wallet.WalletInterface;
+import tagion.hibon.HiBONRecord;
 
 import std.algorithm;
 import std.array;
@@ -71,6 +72,7 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
             auto dartcheckread = wallet.getRequestCheckWallet(hirpc);
             writeln("going to send dartcheckread ");
             auto received_doc = sendDARTHiRPC(dart_interface_sock_addr, dartcheckread);
+            check(received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", received_doc.toPretty)); 
             auto received = hirpc.receive(received_doc);
             check(wallet.setResponseCheckRead(received), "wallet not updated succesfully");
             check(wallet.calcTotal(wallet.account.bills) > 0.TGN, "did not receive money");
@@ -93,7 +95,7 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
         wallet1.account.bills
             .each!(b => writefln("WALLET1 %s %s", wallet1.net.calcHash(b).encodeBase64, b.toPretty));
         SignedContract signed_contract;
-        check(wallet1.createPayment([payment_request], signed_contract, fee).value, "Error creating wallet");
+        check(wallet1.createPayment([payment_request], signed_contract, fee).value, "Error creating wallet payment");
         check(signed_contract !is SignedContract.init, "contract not updated");
         check(signed_contract.contract.inputs.uniq.array.length == signed_contract.contract.inputs.length, "signed contract inputs invalid");
         
@@ -102,7 +104,8 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
         auto wallet1_hirpc = HiRPC(wallet1.net);
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
 
-        sendSubmitHiRPC(inputvalidator_sock_addr, hirpc_submit, wallet1.net);
+        auto result = sendSubmitHiRPC(inputvalidator_sock_addr, hirpc_submit, wallet1.net);
+        writefln("SUBMIT hirpc result: %s", result.toDoc.toPretty);
 
         return result_ok;
     }
@@ -117,6 +120,7 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
         const hirpc = HiRPC(wallet1.net);
         auto dartcheckread = wallet1.getRequestCheckWallet(hirpc);
         auto received_doc = sendDARTHiRPC(dart_interface_sock_addr, dartcheckread);
+        check(received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", received_doc.toPretty)); 
 
         writefln("RECEIVED RESPONSE: %s", received_doc.toPretty);
         auto received = hirpc.receive(received_doc);
@@ -137,6 +141,7 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
         const hirpc = HiRPC(wallet2.net);
         auto dartcheckread = wallet2.getRequestCheckWallet(hirpc);
         auto received_doc = sendDARTHiRPC(dart_interface_sock_addr, dartcheckread);
+        check(received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", received_doc.toPretty)); 
         writefln("WALLET2 received: %s", received_doc.toPretty);
 
         writefln("RECEIVED RESPONSE: %s", received_doc.toPretty);

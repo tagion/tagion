@@ -117,6 +117,8 @@ int _main(string[] args) {
     bool input_json;
     bool input_text;
     bool output_base64;
+    bool output_hex;
+    bool ignore;
     string outputfilename;
     auto logo = import("logo.txt");
 
@@ -134,9 +136,11 @@ int _main(string[] args) {
                 "p|pretty", format("JSON Pretty print: Default: %s", pretty), &pretty,
                 "J", "Input stream format json", &input_json,
                 "t|base64", "Convert to base64 output", &output_base64,
+                "x|hex", "Convert to hex output", &output_hex,
                 "T|text", "Input stream base64 or hex-string", &input_text,
                 "sample", "Produce a sample HiBON", &sample,
                 "check", "Check the hibon format", &hibon_check,
+                "ignore", "Ignore document valid check", &ignore,
         );
         if (sample) {
             string sample_file_name = "sample".setExtension(FileExtension.hibon);
@@ -188,7 +192,11 @@ int _main(string[] args) {
             }
             void print(const(Document) doc) {
                 if (output_base64) {
-                    fout.writefln(doc.encodeBase64);
+                    fout.writeln(doc.encodeBase64);
+                    return;
+                }
+                if (output_hex) {
+                    fout.writefln("%(%02x%)", doc.serialize);
                     return;
                 }
                 if (pretty || standard_output) {
@@ -222,14 +230,17 @@ int _main(string[] args) {
 
             foreach (no, doc; HiBONRange(fin).enumerate) {
                 verbose("%d: doc-size=%d", no, doc.full_size);
-                const error_code = doc.valid(
-                        (
-                        const(Document) sub_doc,
-                        const Document.Element.ErrorCode error_code,
-                        const(Document.Element) current, const(
-                        Document.Element) previous) nothrow{ return true; }, reserved_flag);
-                tools.check(error_code is Document.Element.ErrorCode.NONE,
-                        format("Streamed document %d faild with %s", no, error_code));
+
+                if (!ignore) {
+                    const error_code = doc.valid(
+                            (
+                            const(Document) sub_doc,
+                            const Document.Element.ErrorCode error_code,
+                            const(Document.Element) current, const(
+                            Document.Element) previous) nothrow{ return true; }, reserved_flag);
+                    tools.check(error_code is Document.Element.ErrorCode.NONE,
+                            format("Streamed document %d faild with %s", no, error_code));
+                }
                 print(doc);
             }
             return 0;
@@ -244,19 +255,22 @@ int _main(string[] args) {
             case FileExtension.hibon:
                 immutable data = assumeUnique(cast(ubyte[]) fread(inputfilename));
                 const doc = Document(data);
-                const error_code = doc.valid(
-                        (
-                        const(Document) sub_doc,
-                        const Document.Element.ErrorCode error_code,
-                        const(Document.Element) current, const(
-                        Document.Element) previous) nothrow{ assumeWontThrow(writefln("%s", current)); return true; },
-                        reserved_flag);
-                if (error_code !is Document.Element.ErrorCode.NONE) {
-                    stderr.writefln("Error: Document errorcode %s", error_code);
-                    return 1;
+
+                if (!ignore) {
+                    const error_code = doc.valid(
+                            (
+                            const(Document) sub_doc,
+                            const Document.Element.ErrorCode error_code,
+                            const(Document.Element) current, const(
+                            Document.Element) previous) nothrow{ assumeWontThrow(writefln("%s", current)); return true; },
+                            reserved_flag);
+                    if (error_code !is Document.Element.ErrorCode.NONE) {
+                        stderr.writefln("Error: Document errorcode %s", error_code);
+                        return 1;
+                    }
                 }
-                if (output_base64) {
-                    const text_output = encodeBase64(doc);
+                if (output_base64 || output_hex) {
+                    const text_output = (output_hex) ? format("%(%02x%)", doc.serialize) : encodeBase64(doc);
                     if (standard_output) {
                         writefln("%s", text_output);
                         continue loop_files;

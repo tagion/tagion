@@ -2,11 +2,13 @@
 /// [Documentation documents/architecture/InputValidator](https://docs.tagion.org/#/documents/architecture/InputValidator)
 module tagion.services.inputvalidator;
 
+@safe:
+
 import std.socket;
 import std.stdio;
 import std.algorithm : remove;
 import std.conv : to;
-import std.exception : assumeWontThrow;
+import std.exception : assumeWontThrow, assumeUnique;
 
 import core.time;
 
@@ -18,8 +20,10 @@ import tagion.network.ReceiveBuffer;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONException;
 import tagion.communication.HiRPC;
 import tagion.basic.Debug : __write;
+import tagion.basic.Types;
 import tagion.utils.JSONCommon;
 import tagion.services.options : TaskNames;
 import tagion.crypto.SecureInterfaceNet;
@@ -28,7 +32,6 @@ import std.format;
 
 import nngd;
 
-@safe
 struct InputValidatorOptions {
     string sock_addr;
     uint sock_recv_timeout = 1000;
@@ -53,6 +56,7 @@ enum ResponseError {
     Internal,
     InvalidBuf,
     InvalidDoc,
+    NotHiRPCSender,
 }
 
 /** 
@@ -60,7 +64,6 @@ enum ResponseError {
  *  Examples: [tagion.testbench.services.inputvalidator]
  *  Sends: (inputDoc, Document) to hirpc_verifier;
 **/
-@safe
 struct InputValidatorService {
     const SecureNet net;
     static Topic rejected = Topic("reject/inputvalidator");
@@ -69,14 +72,24 @@ struct InputValidatorService {
     void task(immutable(InputValidatorOptions) opts, immutable(TaskNames) task_names) @trusted {
         HiRPC hirpc = HiRPC(net);
 
-        void reject(T)(ResponseError err_type, T data = Document()) const {
-            hirpc.Error message;
-            message.code = err_type;
-            message.message = err_type.to!string;
-            // message.data = data;
-            const sender = hirpc.Sender(net, message);
-            sock.send(sender.toDoc.serialize);
-            log(rejected, err_type.to!string, data);
+        void reject(T)(ResponseError err_type, T data = Document()) const nothrow {
+            try {
+                log.error("REJECT %s", err_type);
+                hirpc.Error message;
+                message.code = err_type;
+                message.message = err_type.to!string;
+                message.data = data;
+                const sender = hirpc.Sender(net, message);
+                log.error("sending %s", sender.toPretty);
+                int rc = sock.send(sender.toDoc.serialize);
+                if(rc != 0) {
+                    log.error("Failed to responsd with rejection %s: %s", rc.to!string, nng_errstr(rc));
+                }
+                log(rejected, err_type.to!string, data);
+            }
+            catch (Exception e) {
+                log.error("Failed to deliver rejection %s", err_type.to!string);
+            }
         }
 
         NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_REP);
@@ -114,8 +127,8 @@ struct InputValidatorService {
                 continue;
             }
 
-            auto result = buf.append(recv);
-            scope (failure) {
+            auto result_buf = buf.append(recv);
+            scope(failure) {
                 reject(ResponseError.Internal);
             }
 
@@ -125,23 +138,28 @@ struct InputValidatorService {
             }
 
             // Fixme ReceiveBuffer .size doesn't always return correct lenght
-            if (result.data.length <= 0) {
+            if (result_buf.data.length <= 0) {
                 reject(ResponseError.InvalidBuf);
                 continue;
             }
 
-            import std.exception;
-
-            Document doc = Document(assumeUnique(result.data));
-            if (doc.isInorder && doc.isRecord!(hirpc.Sender)) {
+            Document doc = Document(assumeUnique(result_buf.data));
+            if(!doc.isRecord!(HiRPC.Sender)) {
+                reject(ResponseError.NotHiRPCSender, doc);
+                continue;
+            }
+            try {
                 log("Sending contract to hirpc_verifier");
                 locate(task_names.hirpc_verifier).send(inputDoc(), doc);
-                const receiver = hirpc.receive(doc);
+
+                auto receiver = hirpc.receive(doc);
                 auto response_ok = hirpc.result(receiver, ResultOk());
                 sock.send(response_ok.toDoc.serialize);
+                log("LGTM");
             }
-            else {
+            catch (HiBONException _) {
                 reject(ResponseError.InvalidDoc, doc);
+                continue;
             }
         }
     }

@@ -13,6 +13,7 @@ import tagion.hibon.Document : Document;
 import tagion.tools.revision : revision_text;
 import tagion.behaviour.BehaviourFeature;
 import tagion.behaviour.BehaviourResult;
+
 import std.file;
 import std.getopt;
 import std.format;
@@ -21,15 +22,25 @@ import std.algorithm.iteration;
 import std.algorithm.sorting;
 import std.stdio;
 import std.array;
+import std.traits;
+import std.path;
+import std.process : environment;
 
 mixin Main!(_main);
+
+enum OutputFormat {
+    github = "github",
+    markdown = "markdown",
+}
 
 int _main(string[] args) {
     immutable program = args[0];
     string output;
+    OutputFormat format_style = OutputFormat.markdown;
 
     auto main_args = getopt(args,
             "o|output", "output file", &output,
+            "f|format", format("Format style, one of %s", [EnumMembers!OutputFormat]), &format_style,
     );
 
     if (main_args.helpWanted) {
@@ -50,8 +61,7 @@ int _main(string[] args) {
         log_dir = args[1];
     }
     if (!output) {
-        stderr.writeln("Output file is not specified");
-        return 1;
+        output = "/dev/stdout";
     }
 
     if (!log_dir.exists || !log_dir.isDir) {
@@ -74,8 +84,48 @@ int _main(string[] args) {
     }
 
     auto outstring = appender!string;
-    foreach (fg; featuregroups) {
-        outstring.put(fg.toMd);
+    if (format_style == OutputFormat.github) {
+        const REPOROOT = environment.get("REPOROOT", getcwd());
+        foreach (fg; featuregroups) {
+            foreach (scenario; fg.scenarios) {
+                void printErrors(Info)(Info info) {
+                    if (info.result.isRecord!BehaviourError) {
+                        auto bdd_err = BehaviourError(info.result);
+                        outstring.put(
+                                "::error file=%s,line=%s,title=BDD error::%s\n"
+                                .format(
+                                    bdd_err.file.relativePath(REPOROOT),
+                                    bdd_err.line,
+                                    bdd_err.msg,
+                        )
+                        );
+                        outstring.put("::group::BDD error\n");
+                        foreach (l; bdd_err.trace) {
+                            outstring.put(l ~ '\n');
+                        }
+                        outstring.put("::endgroup::\n");
+                    }
+                }
+
+                foreach (info; scenario.given.infos) {
+                    printErrors(info);
+                }
+                foreach (info; scenario.when.infos) {
+                    printErrors(info);
+                }
+                foreach (info; scenario.then.infos) {
+                    printErrors(info);
+                }
+                foreach (info; scenario.but.infos) {
+                    printErrors(info);
+                }
+            }
+        }
+    }
+    else {
+        foreach (fg; featuregroups) {
+            outstring.put(fg.toMd);
+        }
     }
 
     File(output, "w").write(outstring.data);

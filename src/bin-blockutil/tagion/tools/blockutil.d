@@ -15,6 +15,7 @@ import tagion.dart.DARTException : BlockFileException;
 import std.algorithm;
 import std.range;
 import tagion.hibon.HiBONJSON : toPretty;
+import tagion.hibon.Document;
 import tools = tagion.tools.toolsexception;
 import std.exception;
 
@@ -113,20 +114,16 @@ struct BlockFileAnalyzer {
         text.each!writeln;
     }
 
-    void dumpIndexDoc(const(Index) index) {
-        auto seg_range = blockfile[index_from .. index_to];
-        auto segment_on_index_range = seg_range.filter!(segment => segment.index == index);
-        if (segment_on_index_range.empty) {
-            writefln("Error: No segment with Index %s found", index);
-            writefln("aborting");
-            return;
-        }
-        auto segment_on_index = segment_on_index_range.front;
-        writefln(segment_on_index.doc.toPretty);
+    const(Document) dumpIndexDoc(const(Index) index) {
+        return blockfile.load(index);
     }
 
-    void dumpHeader() {
+    void printHeader() {
         writefln("%s", blockfile.headerBlock);
+    }
+
+    void printMaster() {
+        writefln("%s", blockfile.masterBlock);
     }
 }
 
@@ -146,7 +143,8 @@ int _main(string[] args) {
     bool print_graph;
     bool dump_doc;
     bool print_header;
-    ulong dump_index;
+    bool print_master;
+    ulong[] indices;
     bool dump;
     string index_range;
     string output_filename;
@@ -167,7 +165,8 @@ int _main(string[] args) {
                 "g|print-graph", "Dump the blockfile in graphviz format", &print_graph,
                 "d|dumpdoc", "Dump the document located at an specific index", &dump_doc,
                 "H|header", "Dump the header block", &print_header,
-                "i|index", "the index to dump the document from", &dump_index,
+                "M|master", "Dump the master block", &print_master,
+                "i|index", "the index to dump the document from", &indices,
                 "o|output", "Output filename (Default stdout)", &output_filename,
                 "dump", "Dumps the blocks as a HiBON sequency to stdout or a file", &dump,
 
@@ -235,7 +234,6 @@ int _main(string[] args) {
             }
             foreach (block_segment; analyzer.blockfile[index_from .. index_to]) {
                 fout.rawWrite(block_segment.doc.serialize);
-                //fout.writefln("doc\n%s", block_segment.doc.toPretty);
             }
             return 0;
         }
@@ -244,7 +242,10 @@ int _main(string[] args) {
         }
 
         if (print_header) {
-            analyzer.dumpHeader;
+            analyzer.printHeader;
+        }
+        if (print_master) {
+            analyzer.printMaster;
         }
 
         if (print_recycler) {
@@ -263,9 +264,19 @@ int _main(string[] args) {
             analyzer.dumpGraph;
         }
 
-        if (dump_index !is 0) {
-            if (dump_doc) {
-                analyzer.dumpIndexDoc(Index(dump_index));
+        if (!indices.empty) {
+            File fout = stdout;
+            if (!output_filename.empty) {
+                fout = File(output_filename, "w");
+            }
+            scope (exit) {
+                if (fout !is stdout) {
+                    fout.close;
+                }
+            }
+            foreach (index; indices) {
+                const doc = analyzer.dumpIndexDoc(Index(index));
+                fout.rawWrite(doc.serialize);
             }
         }
     }

@@ -85,7 +85,7 @@ interface SecureNet : HashNet {
 
     immutable(ubyte[]) ECDHSecret(scope const(Pubkey) pubkey) const;
 
-    Pubkey computePubkey(scope const(ubyte[]) seckey, immutable bool compress = true) const;
+    Pubkey getPubkey(scope const(ubyte[]) seckey) const;
 
     void derive(string tweak_word, shared(SecureNet) secure_net);
     void derive(const(ubyte[]) tweak_code, shared(SecureNet) secure_net);
@@ -98,7 +98,5 @@ interface SecureNet : HashNet {
 
     Pubkey derivePubkey(const(ubyte[]) tweak_code);
     Pubkey derivePubkey(string tweak_word);
-
-    Buffer mask(const(ubyte[]) _mask) const;
 
 }

@@ -51,13 +51,11 @@ struct DARTOptions {
 @safe
 struct DARTService {
     void task(immutable(DARTOptions) opts, 
-        immutable(ReplicatorOptions) replicator_opts, 
         immutable(TaskNames) task_names, 
         shared(StdSecureNet) shared_net) {
 
         DART db;
         Exception dart_exception;
-        immutable replicator_task_name = task_names.replicator;
 
         const net = new StdSecureNet(shared_net);
         
@@ -71,12 +69,14 @@ struct DARTService {
             db.close();
         }
 
-        ReplicatorServiceHandle replicator = spawn!ReplicatorService(replicator_task_name, replicator_opts);
-
-        waitforChildren(Ctrl.ALIVE);
-
         void read(dartReadRR req, immutable(DARTIndex)[] fingerprints) @safe {
+            import tagion.hibon.HiBONtoText;
+            import std.algorithm;
+            import tagion.utils.Miscellaneous;
+
+            log("DARTREAD: %s", fingerprints.map!(f => f.toHexString));
             RecordFactory.Recorder read_recorder = db.loads(fingerprints);
+            log("%s", read_recorder);
             req.respond(RecordFactory.uniqueRecorder(read_recorder));
         }
 
@@ -105,8 +105,8 @@ struct DARTService {
             if (!doc.isRecord!(HiRPC.Sender)) {
                 import tagion.hibon.HiBONJSON;
 
-                log("received wrong request");
-                assert(0, format("wrong request sent to dartservice. Expected HiRPC.Sender got %s", doc.toPretty));
+                log("wrong request sent to dartservice. Expected HiRPC.Sender got %s", doc.toPretty);
+                return;
             }
 
             immutable receiver = empty_hirpc.receive(doc);
@@ -138,14 +138,14 @@ struct DARTService {
             req.respond(result);
         }
 
-        void modify(dartModifyRR req, immutable(RecordFactory.Recorder) recorder, immutable(int) epoch_number) @safe {
+        void modify(dartModifyRR req, immutable(RecordFactory.Recorder) recorder, immutable(long) epoch_number) @safe {
             log("Received modify request with length=%s", recorder.length);
 
             auto eye = Fingerprint(db.modify(recorder));
 
             req.respond(eye);
 
-            locate(replicator_task_name).send(SendRecorder(), recorder, eye, epoch_number);
+            locate(task_names.replicator).send(SendRecorder(), recorder, eye, epoch_number);
         }
 
         void bullseye(dartBullseyeRR req) @safe {

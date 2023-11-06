@@ -6,6 +6,17 @@ string[] getMains(alias _package)() {
     return [__traits(allMembers, _package)];
 }
 
+private __gshared string __main_name;
+string main_name() nothrow @nogc {
+    return __main_name;
+}
+
+void main_name(string name) nothrow
+in (__main_name.length is 0)
+do {
+    __main_name = name.idup;
+}
+
 mixin template doOneMain(alltools...) {
     import std.getopt;
     import std.stdio;
@@ -34,6 +45,7 @@ mixin template doOneMain(alltools...) {
      *  The exit-code and if the tool has been executed
      */
     Result call_main(string tool, string[] args) {
+        main_name = tool;
     SelectTool:
         switch (tool) {
             static foreach (toolmod; alltools) {

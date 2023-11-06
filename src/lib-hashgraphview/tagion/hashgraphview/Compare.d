@@ -26,7 +26,7 @@ struct Compare {
     const HashGraph h1, h2;
     const ErrorCallback error_callback;
     int order_offset;
-    int round_offset;
+    long round_offset;
     uint count;
     this(const HashGraph h1, const HashGraph h2, const ErrorCallback error_callback) {
         this.h1 = h1;

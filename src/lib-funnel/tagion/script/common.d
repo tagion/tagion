@@ -142,37 +142,74 @@ bool verify(const(SecureNet) net, const(SignedContract*) signed_contract, const(
 
 @recordType("$@G")
 struct GenesisEpoch {
-    @label(StdNames.epoch) long epoch_number;
+    @label(StdNames.epoch) long epoch_number; //should always be zero
     Pubkey[] nodes;
     Document testamony;
     @label(StdNames.time) sdt_t time;
-    mixin HiBONRecord;
+    mixin HiBONRecord!(q{
+        this(const(long) epoch_number, Pubkey[] nodes, const(Document) testamony, const(sdt_t) time) {
+            this.epoch_number = epoch_number;
+            this.nodes = nodes;
+            this.testamony = testamony;
+            this.time = time;
+        }
+    });
 }
 
 @recordType("$@E")
 struct Epoch {
     @label(StdNames.epoch) long epoch_number;
-    sdt_t time; /// Epoch concensus time
+    @label(StdNames.time) sdt_t time; // Time stamp
     @label(StdNames.bullseye) Fingerprint bullseye;
     @label(StdNames.previous) Fingerprint previous;
+    @label("$signs") const(Signature)[] signs; /// Signature of all inputs
     @optional Pubkey[] active; /// Sorted keys
     @optional Pubkey[] deactive;
 
-    mixin HiBONRecord;
+    mixin HiBONRecord!(q{
+        this(long epoch_number,sdt_t time, Fingerprint bullseye, Fingerprint previous,const(Signature)[] signs, Pubkey[] active, Pubkey[] deactive) {
+            this.epoch_number = epoch_number;
+            this.time = time;
+            this.bullseye = bullseye;
+            this.previous = previous;
+            this.signs = signs;
+            this.active = active;
+            this.deactive = deactive;
+        }
+    });
 }
 
 @recordType("$@Tagion")
 struct TagionHead {
-    @label(StdNames.tagion) string name; // Default name should always be "tagion"
+    @label(StdNames.name) string name; // Default name should always be "tagion"
+    long current_epoch;
     TagionGlobals globals;
-    mixin HiBONRecord;
+    mixin HiBONRecord!(q{
+        this(const(string) name, const(long) current_epoch, const(TagionGlobals) globals) {
+            this.name = name;
+            this.current_epoch = current_epoch;
+            this.globals = globals;
+        }
+
+    });
 }
 
 struct TagionGlobals {
-    long epoch;
-    @label("events") Fingerprint[] event_prints;
+    @label("events") const(Fingerprint)[] event_prints;
     @label("total") BigNumber total;
-    mixin HiBONRecord;
+    @label("total_burned") BigNumber total_burned;
+    @label("number_of_bills") long number_of_bills;
+    @label("burnt_bills") long burnt_bills;
+
+    mixin HiBONRecord!(q{
+        this(const(Fingerprint)[] event_prints, const(BigNumber) total, const(BigNumber) total_burned, const(long) number_of_bills, const(long) burnt_bills) {
+            this.event_prints = event_prints;
+            this.total = total;
+            this.total_burned = total_burned;
+            this.number_of_bills = number_of_bills;
+            this.burnt_bills = burnt_bills;
+        }
+    });
 }
 
 @recordType("@$Vote")
@@ -181,16 +218,19 @@ struct ConsensusVoting {
     @label(StdNames.owner) Pubkey owner;
     @label(StdNames.signed) Signature signed_bullseye;
 
-    mixin HiBONRecord!(
-            q{
-            this(long epoch, Pubkey owner, Signature signed_bullseye) {
-                this.owner = owner;
-                this.signed_bullseye = signed_bullseye;
-                this.epoch = epoch;
-            }
-        });
+    mixin HiBONRecord!(q{
+        this(long epoch, Pubkey owner, Signature signed_bullseye) pure {
+            this.owner = owner;
+            this.signed_bullseye = signed_bullseye;
+            this.epoch = epoch;
+        }
+        this(const(Document) doc) immutable @trusted {
+            immutable _this=cast(immutable)ConsensusVoting(doc);
+            this.tupleof = _this.tupleof;
+        }
+    });
 
-    bool verifyBullseye(const(SecureNet) net, const(Fingerprint) bullseye) {
+    bool verifyBullseye(const(SecureNet) net, const(Fingerprint) bullseye) const {
         return net.verify(bullseye, signed_bullseye, owner);
     }
 }

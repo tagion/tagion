@@ -1,13 +1,5 @@
 {
     "units": {
-        "ssl_echo_server": {
-            "args": [],
-            "envs": {},
-            "stages": [
-                "none"
-            ],
-            "timeout": 0.0
-        },
         "transaction": {
             "args": [],
             "envs": {},
@@ -257,6 +249,14 @@
             "envs": {},
             "stages": [
                 "acceptance", "malformed_contract"
+            ],
+            "timeout": 0.0
+        },
+        "genesis_test": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "genesis"
             ],
             "timeout": 0.0
         }

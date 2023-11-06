@@ -34,7 +34,8 @@ import std.stdio;
 import std.format;
 
 alias StdSecureWallet = SecureWallet!StdSecureNet;
-enum CONTRACT_TIMEOUT = 25;
+enum CONTRACT_TIMEOUT = 40;
+enum EPOCH_TIMEOUT = 15;
 
 enum feature = Feature(
             "Spam the network with the same contracts until we know it does not go through.",
@@ -90,20 +91,20 @@ class SpamOneNodeUntil10EpochsHaveOccured {
         log.registerSubscriptionTask(thisActor.task_name);
         submask.subscribe("epoch_creator/epoch_created");
 
-        int epoch_number;
+        long epoch_number;
 
-        auto epoch_before = receiveOnlyTimeout!(LogInfo, const(Document))(10.seconds);
+        auto epoch_before = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);
         check(epoch_before[1].isRecord!FinishedEpoch, "not correct subscription received");
         epoch_number = FinishedEpoch(epoch_before[1]).epoch;
 
 
-        int current_epoch_number;
+        long current_epoch_number;
 
         while (current_epoch_number < epoch_number + 10) {
         sendSubmitHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1.net);
             (() @trusted => Thread.sleep(100.msecs))();
 
-            auto current_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(10.seconds);
+            auto current_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);
             check(current_epoch[1].isRecord!FinishedEpoch, "not correct subscription received");
             current_epoch_number = FinishedEpoch(current_epoch[1]).epoch;
             writefln("epoch_number %s, CURRENT EPOCH %s",epoch_number, current_epoch_number);
@@ -117,11 +118,13 @@ class SpamOneNodeUntil10EpochsHaveOccured {
     Document rejected() {
         auto wallet1_dartcheckread = wallet1.getRequestCheckWallet(wallet1_hirpc);
         auto wallet1_received_doc = sendDARTHiRPC(node1_opts.dart_interface.sock_addr, wallet1_dartcheckread);
+        check(wallet1_received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", wallet1_received_doc.toPretty)); 
         auto wallet1_received = wallet1_hirpc.receive(wallet1_received_doc);
         check(wallet1.setResponseCheckRead(wallet1_received), "wallet1 not updated succesfully");
 
         auto wallet2_dartcheckread = wallet2.getRequestCheckWallet(wallet2_hirpc);
         auto wallet2_received_doc = sendDARTHiRPC(node1_opts.dart_interface.sock_addr, wallet2_dartcheckread);
+        check(wallet2_received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", wallet2_received_doc.toPretty)); 
         auto wallet2_received = wallet2_hirpc.receive(wallet2_received_doc);
         check(wallet2.setResponseCheckRead(wallet2_received), "wallet2 not updated succesfully");
         
@@ -149,6 +152,8 @@ class SpamOneNodeUntil10EpochsHaveOccured {
         foreach(opt; opts) {
             auto bullseye_sender = dartBullseye();
             auto received_doc = sendDARTHiRPC(opt.dart_interface.sock_addr, bullseye_sender);
+            check(received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", received_doc.toPretty)); 
+
             writefln(received_doc.toPretty);
             auto hirpc_bullseye_receiver = wallet1_hirpc.receive(received_doc);
             auto hirpc_message = hirpc_bullseye_receiver.message[Keywords.result].get!Document;
@@ -182,23 +187,23 @@ struct SpamWorker {
         writefln("registrering subscription mask %s", thisActor.task_name);
         log.registerSubscriptionTask(thisActor.task_name);
         submask.subscribe("epoch_creator/epoch_created");
-        int epoch_number;
+        long epoch_number;
 
-        while(!thisActor.stop && epoch_number is int.init) {
+        while(!thisActor.stop && epoch_number is long.init) {
             writefln("WAITING FOR RECEIVE");
-            auto epoch_before = receiveOnlyTimeout!(LogInfo, const(Document))(10.seconds);
+            auto epoch_before = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);
             writefln("AFTER RECEIVE %s", epoch_before);
             if (epoch_before[0].task_name == opts.task_names.epoch_creator) {
                 epoch_number = FinishedEpoch(epoch_before[1]).epoch;
             }
         }
 
-        int current_epoch_number;
+        long current_epoch_number;
         while (!thisActor.stop && current_epoch_number < epoch_number + 10) {
             sendSubmitHiRPC(opts.inputvalidator.sock_addr, hirpc.submit(signed_contract), net);
             (() @trusted => Thread.sleep(100.msecs))();
 
-            auto current_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(10.seconds);
+            auto current_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);
             if (current_epoch[0].task_name != opts.task_names.epoch_creator) {
                 current_epoch_number = FinishedEpoch(current_epoch[1]).epoch;
                 writefln("epoch_number %s, CURRENT EPOCH %s",epoch_number, current_epoch_number);
@@ -270,11 +275,13 @@ class SpamMultipleNodesUntil10EpochsHaveOccured {
         
         auto wallet1_dartcheckread = wallet1.getRequestCheckWallet(wallet1_hirpc);
         auto wallet1_received_doc = sendDARTHiRPC(node1_opts.dart_interface.sock_addr, wallet1_dartcheckread);
+        check(wallet1_received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", wallet1_received_doc.toPretty)); 
         auto wallet1_received = wallet1_hirpc.receive(wallet1_received_doc);
         check(wallet1.setResponseCheckRead(wallet1_received), "wallet1 not updated succesfully");
 
         auto wallet2_dartcheckread = wallet2.getRequestCheckWallet(wallet2_hirpc);
         auto wallet2_received_doc = sendDARTHiRPC(node1_opts.dart_interface.sock_addr, wallet2_dartcheckread);
+        check(wallet2_received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", wallet2_received_doc.toPretty)); 
         auto wallet2_received = wallet2_hirpc.receive(wallet2_received_doc);
         check(wallet2.setResponseCheckRead(wallet2_received), "wallet2 not updated succesfully");
         
@@ -302,6 +309,7 @@ class SpamMultipleNodesUntil10EpochsHaveOccured {
         foreach(opt; opts) {
             auto bullseye_sender = dartBullseye();
             auto received_doc = sendDARTHiRPC(opt.dart_interface.sock_addr, bullseye_sender);
+            check(received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", received_doc.toPretty)); 
             writefln(received_doc.toPretty);
             auto hirpc_bullseye_receiver = wallet1_hirpc.receive(received_doc);
             auto hirpc_message = hirpc_bullseye_receiver.message[Keywords.result].get!Document;

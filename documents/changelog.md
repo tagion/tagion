@@ -1,3 +1,40 @@
+# Changelog for week 44/45
+
+**Tagion HEAD record**
+The tagion HEAD name record stores all the global statistics about the current network in the DART.
+Like the epochnumber, total money supply, number of bill, etc..
+
+**Genesis Epoch added**
+The Genesis Epoch is the network boot record.
+Where we the system stores all the information required to bootstrap the network.
+
+**Hashgraph epoch number**
+In order to stay clear of future overflows,
+the hashgraph epochnumber and the transcript service has been switchted from an int (32-bit) to a long (64-bit).
+
+**Epoch Votes**
+The epoch is now created based on the votes of the DART bullseye.
+
+**MuSig2**
+The NativeSecp256k1 module now features Schnorr Multi Signatures and has been unittested.
+
+**Fixes & Stabillity improvements**
+ * We have made changes to how the node starts the replicator service. 
+ * Improved the way the transcript stores and cleans votes.
+ * Removed some unsafe type casts.
+ * Fixed error with unflushed DART writes.
+ * Created improvements to the Error replys when sending a contract and making a DART read request.
+ * Fixed the inputvalidator test, which used the wrong socket type.
+ * ...
+
+**Remove legacy code**
+We have removed all of the SSL modules.
+
+**CI Improvements**
+The CI flow now runs in several steps, so we have better error reporting when and which stage fails.
+The worflows times out when a job hangs. And it always produces an artifact so we can inspect the errors.
+
+
 # Changelog for week 43/44
 **Malformed Contract scenarios**
 We have implemented various scenarios where the user tries to send an invalid contract. This could be where some fields of the contract are missing. Or when it comes to transactions, the user could send an input that is not a bill, among many others.
@@ -6,7 +43,7 @@ We have implemented various scenarios where the user tries to send an invalid co
 We have integrated a faucet functionality into the test version of the shell, allowing us to easier test the wallets since they now can request test-tagions.
 
 **Secp256k1 multisig and change of library**
-We have updated our library from the secp256k1 library located in bitcoin core to https://github.com/BlockstreamResearch/secp256k1-zkp. The reason why we have made this change, is because we want to support multisig for various parts, and this is a functionality that is good to get into the system before it is running in its final state because it is very difficult to update. We have therefore started to implement schnoor signatures for signing.
+We have updated our library from the secp256k1 library located in bitcoin core to https://github.com/BlockstreamResearch/secp256k1-zkp. The reason why we have made this change, is because we want to support multisig for various parts, and this is a functionality that is good to get into the system before it is running in its final state because it is very difficult to update. We have therefore started to implement schnorr signatures for signing.
 
 
 # Changelog for week 42/43

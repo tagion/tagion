@@ -514,24 +514,6 @@ struct SecureWallet(Net : SecureNet) {
             return true;
         }
         return false;
-
-        // if (enough) {
-        //     TagionCurrency rest = amount;
-        //     locked_bills = none_locked
-        //         .filter!(b => b.value <= rest) // take all bills smaller than the rest
-        //         .until!(b => rest <= 0) // do it until the rest smaller than zero. 
-        //         .tee!((b) => rest -= b.value) // add them to the rest amount
-        //         .array;
-        //     if (rest > 0) {
-
-        //         TagionBill extra_bill;
-        //         none_locked.filter!(b => !locked_bills.canFind(b))
-        //             .each!(b => extra_bill = b);
-        //         locked_bills ~= extra_bill;
-        //         return true;
-        //     }
-        // }
-        // return false;
     }
 
     void lock_bills(const(TagionBill[]) locked_bills) {
@@ -996,6 +978,22 @@ version (unittest) {
 
     alias StdSecureWallet = SecureWallet!StdSecureNet;
 
+}
+
+
+@safe
+unittest {
+    // check get fee greater than user amount
+    
+    auto wallet1 = StdSecureWallet("some words", "1234");
+    const bill1 = wallet1.requestBill(1000.TGN);
+    wallet1.addBill(bill1);
+
+    TagionCurrency fees;
+    const res = wallet1.getFee(10_000.TGN, fees);
+
+    // should fail
+    assert(res.value == false);
 }
 
 @safe

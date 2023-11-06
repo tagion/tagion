@@ -7,8 +7,9 @@ struct DARTInterfaceOptions {
     import tagion.services.options : contract_sock_addr;
     string sock_addr;
     string dart_prefix = "DART_";
-    int sendtimeout = 1000;
-    uint pool_size = 12;
+    int sendtimeout = 5000;
+    int receivetimeout = 1000;
+    uint pool_size = 4;
     uint sendbuf = 4096;
 
     void setDefault() nothrow {
@@ -30,27 +31,61 @@ import tagion.services.messages;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord : isRecord;
 import tagion.services.options;
+import tagion.communication.HiRPC;
 import nngd;
 
 import std.format;
 import core.time;
 
 
-struct dartWorkerContext {
+struct DartWorkerContext {
     string dart_task_name;
+    int dart_worker_timeout;
 }
 
-void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
-    thisActor.task_name = format("%s", thisTid);
+enum InterfaceError {
+    NullDocument,
+    MsgEmpty,
+    Timeout,
+    InvalidDoc,
+    DARTLocate,
+}
+
+
+
+void dartHiRPCCallback(NNGMessage *msg, void *ctx) @trusted {
     // log.register(thisActor.task_name);
     import std.stdio;
+    import std.exception;
 
-    auto cnt = cast(dartWorkerContext*) ctx;
+    thisActor.task_name = format("%s", thisTid);
+
+
+    // we use an empty hirpc only for sending errors.
+    HiRPC hirpc = HiRPC(null);
+    void send_error(InterfaceError err_type) {
+        import std.conv;
+        hirpc.Error message;
+        message.code = err_type;
+        message.message = err_type.to!string;
+        const sender = hirpc.Sender(null, message);
+
+        msg.body_append(sender.toDoc.serialize);
+    }
+    
+
+    auto cnt = cast(DartWorkerContext*) ctx;
 
     import tagion.hibon.HiBONJSON : toPretty;
     import tagion.communication.HiRPC;
 
-    if (msg.length == 0) {
+    if (msg is null) {
+        send_error(InterfaceError.NullDocument);
+        writeln("no message received");
+        return;
+    }
+    if (msg.empty) {
+        send_error(InterfaceError.MsgEmpty);
         writeln("received empty msg");
         return;
     }
@@ -59,21 +94,28 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
     msg.clear();
 
     if (!doc.isInorder || !doc.isRecord!(HiRPC.Sender)) {
-        log("Non-valid request received");
+        send_error(InterfaceError.InvalidDoc);
+        writeln("Non-valid request received");
         return;
     }
     writefln("Kernel got: %s", doc.toPretty);
-    locate(cnt.dart_task_name).send(dartHiRPCRR(), doc);
 
+    auto dart_tid = locate(cnt.dart_task_name);
+    if (dart_tid is Tid.init) {
+        send_error(InterfaceError.DARTLocate);
+        return;
+    }
+    
+    dart_tid.send(dartHiRPCRR(), doc);
     void dartHiRPCResponse(dartHiRPCRR.Response res, Document doc) {
         msg.body_append(doc.serialize);
     }
 
-    auto dart_resp = receiveTimeout(1000.msecs, &dartHiRPCResponse);
+    auto dart_resp = receiveTimeout(cnt.dart_worker_timeout.msecs, &dartHiRPCResponse);
     if (!dart_resp) {
-        writefln("Non-valid request received");
+        send_error(InterfaceError.Timeout);
+        writefln("Timeout on dart request");
         return;
-        // send a error;
     }
 }
 
@@ -93,12 +135,13 @@ struct DARTInterfaceService {
 
         }
 
-        dartWorkerContext ctx;
+        DartWorkerContext ctx;
         ctx.dart_task_name = task_names.dart;
+        ctx.dart_worker_timeout = opts.sendtimeout;
 
         NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_REP);
         sock.sendtimeout = opts.sendtimeout.msecs;
-        sock.recvtimeout = 1000.msecs;
+        sock.recvtimeout = opts.receivetimeout.msecs;
         sock.sendbuf = opts.sendbuf;
 
         NNGPool pool = NNGPool(&sock, &dartHiRPCCallback, opts.pool_size, &ctx);
@@ -121,8 +164,6 @@ struct DARTInterfaceService {
             if (received) {
                 continue;
             }
-            // Document doc = sock.receive!Document;
-
         }
 
     }

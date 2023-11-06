@@ -1,4 +1,4 @@
-
+TESTMAIN?=testbench
 TESTPROGRAM=$(DBIN)/$(TESTMAIN)
 TESTENV=$(DBIN)/bddenv.sh
 BDDTESTS=${addprefix run-,$(BDDS)}
@@ -21,7 +21,7 @@ bddtagion: tagion
 	$(DBIN)/tagion -f
 
 
-bddfiles: $(DLOG)/.bddfiles
+bddfiles: collider $(DLOG)/.bddfiles
 
 $(DLOG)/.bddfiles:  $(DLOG)/.way $(BDD_MD_FILES)
 	$(PRECMD)

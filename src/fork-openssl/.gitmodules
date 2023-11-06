@@ -1,4 +1,0 @@
-[submodule "src"]
-	path = src
-	url = git@github.com:tagion/fork-openssl.git
-	shallow = true

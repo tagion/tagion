@@ -81,7 +81,7 @@ class StoreOfTheRecorderChain {
         Fingerprint dummy_bullseye = Fingerprint([1, 2, 3, 4]);
         block = new RecorderChainBlock(insert_recorder.toDoc, Fingerprint.init, dummy_bullseye, 0, replicator_net);
 
-        (() @trusted => handle.send(send_recorder, cast(immutable) insert_recorder, dummy_bullseye, immutable int(0)))();
+        (() @trusted => handle.send(send_recorder, cast(immutable) insert_recorder, dummy_bullseye, immutable long(0)))();
 
         import core.thread;
         import core.time;

@@ -16,114 +16,66 @@ struct AESCrypto(int KEY_LENGTH) {
         return ((inputlength / BLOCK_SIZE) + ((inputlength % BLOCK_SIZE == 0) ? 0 : 1)) * BLOCK_SIZE;
     }
 
-    version (TINY_AES) {
-        import tagion.crypto.aes.tiny_aes.tiny_aes;
+    import tagion.crypto.aes.tiny_aes.tiny_aes;
 
-        alias AES = Tiny_AES!(KEY_LENGTH, Mode.CBC);
-        enum BLOCK_SIZE = AES.BLOCK_SIZE;
-        enum KEY_SIZE = AES.KEY_SIZE;
-        static void crypt_parse(bool ENCRYPT = true)(
-                const(ubyte[]) key,
-                ubyte[BLOCK_SIZE] iv,
-                ref ubyte[] data) nothrow
-        in {
-            assert(data);
-            assert(data.length % BLOCK_SIZE == 0, __format("Data must be an equal number of %d bytes but is %d", BLOCK_SIZE, data
-                    .length));
-            assert(key.length is KEY_SIZE, __format("The key size must be %d bytes not %d", KEY_SIZE, key
-                    .length));
-        }
-        do {
-            scope aes = AES(key[0 .. KEY_SIZE], iv);
-            static if (ENCRYPT) {
-                aes.encrypt(data);
-            }
-            else {
-                aes.decrypt(data);
-            }
-        }
-
-        static void crypt(bool ENCRYPT = true)(scope const(ubyte[]) key, scope const(ubyte[]) iv, return scope const(
-                ubyte[]) indata, ref ubyte[] outdata) pure nothrow @safe
-        in {
-            if (outdata.length) {
-                assert(enclength(indata.length) == outdata.length,
-                        __format("Output data must be an equal number of %d bytes", BLOCK_SIZE));
-                assert(iv.length is BLOCK_SIZE,
-                        __format("The iv size must be %d bytes not %d", BLOCK_SIZE, iv.length));
-
-            }
-        }
-        do {
-            if (outdata.length < indata.length) {
-                outdata = indata.dup;
-            }
-            else if (&outdata[0]!is &indata[0]) {
-                outdata[0 .. $] = indata[0 .. $];
-            }
-            size_t old_length;
-            if (outdata.length % BLOCK_SIZE !is 0) {
-                old_length = outdata.length;
-                outdata.length = enclength(outdata.length);
-            }
-            scope (exit) {
-                if (old_length) {
-                    outdata.length = old_length;
-                }
-            }
-            ubyte[BLOCK_SIZE] temp_iv = iv[0 .. BLOCK_SIZE];
-            crypt_parse!ENCRYPT(key, temp_iv, outdata);
-        }
-
-        alias encrypt = crypt!true;
-        alias decrypt = crypt!false;
+    alias AES = Tiny_AES!(KEY_LENGTH, Mode.CBC);
+    enum BLOCK_SIZE = AES.BLOCK_SIZE;
+    enum KEY_SIZE = AES.KEY_SIZE;
+    static void crypt_parse(bool ENCRYPT = true)(
+            const(ubyte[]) key,
+    ubyte[BLOCK_SIZE] iv,
+    ref ubyte[] data) nothrow
+    in {
+        assert(data);
+        assert(data.length % BLOCK_SIZE == 0, __format("Data must be an equal number of %d bytes but is %d", BLOCK_SIZE, data
+                .length));
+        assert(key.length is KEY_SIZE, __format("The key size must be %d bytes not %d", KEY_SIZE, key
+                .length));
     }
-    else {
-        import tagion.crypto.aes.openssl_aes.aes;
+    do {
+        scope aes = AES(key[0 .. KEY_SIZE], iv);
+        static if (ENCRYPT) {
+            aes.encrypt(data);
+        }
+        else {
+            aes.decrypt(data);
+        }
+    }
 
-        enum KEY_SIZE = KEY_LENGTH / 8;
-        enum BLOCK_SIZE = AES_BLOCK_SIZE;
-        static void crypt(bool ENCRYPT = true)(scope const(ubyte[]) key, scope const(ubyte[]) iv, scope const(
-                ubyte[]) indata, ref ubyte[] outdata) @trusted
-        in {
-            assert(indata);
-            if (outdata !is null) {
-                assert(enclength(indata.length) == outdata.length,
-                        __format("Output data must be an equal number of %d bytes", BLOCK_SIZE));
-            }
-            assert(key.length is KEY_SIZE,
-                    __format("The key size must be %d bytes not %d", KEY_SIZE, key.length));
+    static void crypt(bool ENCRYPT = true)(scope const(ubyte[]) key, scope const(ubyte[]) iv, return scope const(
+            ubyte[]) indata, ref ubyte[] outdata) pure nothrow @safe
+    in {
+        if (outdata.length) {
+            assert(enclength(indata.length) == outdata.length,
+                    __format("Output data must be an equal number of %d bytes", BLOCK_SIZE));
             assert(iv.length is BLOCK_SIZE,
                     __format("The iv size must be %d bytes not %d", BLOCK_SIZE, iv.length));
+
         }
-        do {
-            auto aes_key = key.ptr;
-            ubyte[BLOCK_SIZE] mem_iv = iv[0 .. BLOCK_SIZE];
-            AES_KEY crypt_key;
-            if (outdata is null) {
-                outdata = new ubyte[enclength(indata.length)];
-            }
-
-            static if (ENCRYPT) {
-                auto aes_input = indata.ptr;
-                auto enc_output = outdata.ptr;
-                AES_set_encrypt_key(aes_key, KEY_LENGTH, &crypt_key);
-                //writefln("crypt_key=%s", crypt_key.hex);
-                AES_cbc_encrypt(aes_input, enc_output, indata.length, &crypt_key, mem_iv.ptr, AES_ENCRYPT);
-            }
-            else {
-                auto enc_input = indata.ptr;
-                auto dec_output = outdata.ptr;
-                AES_set_decrypt_key(aes_key, KEY_LENGTH, &crypt_key);
-                AES_cbc_encrypt(enc_input, dec_output, enclength(indata.length), &crypt_key, mem_iv.ptr, AES_DECRYPT);
-
-            }
-        }
-
-        alias encrypt = crypt!true;
-        alias decrypt = crypt!false;
-
     }
+    do {
+        if (outdata.length < indata.length) {
+            outdata = indata.dup;
+        }
+        else if (&outdata[0]!is &indata[0]) {
+            outdata[0 .. $] = indata[0 .. $];
+        }
+        size_t old_length;
+        if (outdata.length % BLOCK_SIZE !is 0) {
+            old_length = outdata.length;
+            outdata.length = enclength(outdata.length);
+        }
+        scope (exit) {
+            if (old_length) {
+                outdata.length = old_length;
+            }
+        }
+        ubyte[BLOCK_SIZE] temp_iv = iv[0 .. BLOCK_SIZE];
+        crypt_parse!ENCRYPT(key, temp_iv, outdata);
+    }
+
+    alias encrypt = crypt!true;
+    alias decrypt = crypt!false;
 
     unittest {
         import tagion.utils.Random;

@@ -51,7 +51,7 @@ struct Cipher {
         }
         while (!net.secKeyVerify(secret_key));
         CipherDocument result;
-        result.cipherPubkey = net.computePubkey(secret_key);
+        result.cipherPubkey = net.getPubkey(secret_key);
         scope ubyte[AES.BLOCK_SIZE] nonce_alloc;
         scope ubyte[] nonce = nonce_alloc;
         scramble(nonce);

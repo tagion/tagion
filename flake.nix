@@ -3,7 +3,7 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    secp256k1-zkp.url = "./src/fork-secp256k1";
+    secp256k1-zkp.url = "github:tagion/secp256k1-zkp";
   };
 
   outputs = { self, nixpkgs, secp256k1-zkp }: {
@@ -13,11 +13,14 @@
     defaultPackage.x86_64-linux =
       # Notice the reference to nixpkgs here.
       with import nixpkgs { system = "x86_64-linux"; };
-      stdenv.mkDerivation rec {
+      stdenv.mkDerivation {
         name = "tagion";
 
-        buildInputs =
-          [ wolfssl nng secp256k1-zkp.defaultPackage.x86_64-linux mbedtls ];
+        buildInputs = [
+          nng
+          secp256k1-zkp.defaultPackage.x86_64-linux
+          mbedtls
+        ];
 
         nativeBuildInputs = [
           dub

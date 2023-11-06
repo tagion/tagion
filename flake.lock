@@ -43,14 +43,17 @@
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1,
-        "narHash": "sha256-hgOaRCPul87qvx/ijgggHNVDWZzmt/AV2hSC8+NyqVo=",
-        "path": "/nix/store/k45hiy7v0jcr4w0m2f2xxj5mjihgclic-source/src/fork-secp256k1",
-        "type": "path"
+        "lastModified": 1699017399,
+        "narHash": "sha256-6b4les6vLYJy0D5v4uD8SaMtPDWrW2OgqZYdBEQg2ME=",
+        "owner": "tagion",
+        "repo": "secp256k1-zkp",
+        "rev": "683118912cd9439fde75e520815ec3844a0c36cf",
+        "type": "github"
       },
       "original": {
-        "path": "/nix/store/k45hiy7v0jcr4w0m2f2xxj5mjihgclic-source/src/fork-secp256k1",
-        "type": "path"
+        "owner": "tagion",
+        "repo": "secp256k1-zkp",
+        "type": "github"
       }
     }
   },

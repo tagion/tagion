@@ -98,7 +98,7 @@ import tagion.utils.Miscellaneous : decode, toHexString;
             import tagion.epochain.EpochChainBlock : EpochChainBlock;
 
             static if (is(Block == RecorderChainBlock)) {
-                return FileExtension.recchainblock;
+                return FileExtension.hibon;
             }
             static if (is(Block == EpochChainBlock)) {
                 return FileExtension.epochdumpblock;

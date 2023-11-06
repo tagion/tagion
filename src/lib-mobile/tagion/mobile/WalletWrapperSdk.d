@@ -232,7 +232,7 @@ extern (C) {
         }
 
         const can_pay = __wallet_storage.wallet.getFee(TagionCurrency(amount), tgn_fees);
-        return can_pay ? 1 : 0;
+        return can_pay.value ? 1 : 0;
     }
 
     export uint create_nft_contract(
@@ -334,19 +334,26 @@ extern (C) {
     }
 
     export uint update_response(uint8_t* responsePtr, uint32_t responseLen) {
+        import tagion.hibon.HiBONException;
 
         immutable response = cast(immutable)(responsePtr[0 .. responseLen]);
+
 
         if (__wallet_storage.wallet.isLoggedin()) {
 
             HiRPC hirpc;
-            auto receiver = hirpc.receive(Document(response));
-            const result = __wallet_storage.wallet.setResponseUpdateWallet(receiver);
 
-            if (result) {
-                // Save wallet state to file.
-                __wallet_storage.write;
-                return 1;
+            try {
+                auto receiver = hirpc.receive(Document(response));
+                const result = __wallet_storage.wallet.setResponseUpdateWallet(receiver);
+
+                if (result) {
+                    // Save wallet state to file.
+                    __wallet_storage.write;
+                    return 1;
+                }
+            } catch(HiBONException e) {
+                return 0;
             }
         }
 

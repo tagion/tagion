@@ -19,11 +19,22 @@ struct worker_context {
 void server_callback(NNGMessage *msg, void *ctx)
 {
     log("SERVER CALLBACK");
+    if(msg is null){ 
+        log("No message received");
+        return;
+    }    
+    if(msg.empty){
+        log("Empty message received");
+        return;
+    }
+    log("d1");
     auto cnt = cast(worker_context*)ctx;
-    auto s = msg.body_trim!string(msg.length);
+    log("d2");
+    auto s = msg.body_trim!string();
     log("SERVER CONTEXT NAME: "~cnt.name);
     log("SERVER GOT: " ~ s);
     msg.clear();
+    log("d3");
     if(indexOf(s,"What time is it?") == 0){
         log("Going to send time");
         msg.body_append(cast(ubyte[])format("It`s %f o`clock.",timestamp()));
@@ -48,7 +59,7 @@ void client_worker(string url, string tag)
         if(rc == 0) break;
         log("REQ("~tag~"): Dial error: ",toString(rc));
         if(rc == nng_errno.NNG_ECONNREFUSED){
-            nng_sleep(msecs(100));
+            nng_sleep(msecs(10));
             continue;
         }
         assert(rc == 0);
@@ -56,7 +67,7 @@ void client_worker(string url, string tag)
     while(1){
         k++;
         line = format("What time is it? :: from(%s)[%d]", tag,k);            
-        if(k > 16)
+        if(k > 255)
             line = "Maybe that's enough?";
         rc = s.send!string(line);
         assert(rc == 0);
@@ -93,7 +104,7 @@ int main()
     s.recvtimeout = msecs(1000);
     s.sendbuf = 4096;
 
-    NNGPool pool = NNGPool(&s, &server_callback, 4, &ctx);
+    NNGPool pool = NNGPool(&s, &server_callback, 8, &ctx);
     pool.init();
 
     auto rc = s.listen(uri);

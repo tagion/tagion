@@ -34,7 +34,8 @@ import std.stdio;
 import std.format;
 
 alias StdSecureWallet = SecureWallet!StdSecureNet;
-enum CONTRACT_TIMEOUT = 25.seconds;
+enum CONTRACT_TIMEOUT = 40;
+enum EPOCH_TIMEOUT = 15;
 
 enum feature = Feature(
             "double spend scenarios",
@@ -124,7 +125,7 @@ class SameInputsSpendOnOneContract {
     }
     @Then("the contract should be rejected.")
     Document dart() {
-        auto result = receiveOnlyTimeout!(LogInfo, const(Document));
+        auto result = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);
         check(result[0].symbol_name == "missing_archives", format("did not reject for the expected reason %s", result[0].symbol_name));
         submask.unsubscribe(reject_collector);
         return result_ok;
@@ -202,7 +203,7 @@ class OneContractWhereSomeBillsAreUsedTwice {
     }
     @Then("the contract should be rejected.")
     Document dart() {
-        auto result = receiveOnlyTimeout!(LogInfo, const(Document));
+        auto result = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);
         check(result[0].symbol_name== "missing_archives", format("did not reject for the expected reason %s", result[0].symbol_name));
         submask.unsubscribe(reject_collector);
         return result_ok;
@@ -263,10 +264,11 @@ class DifferentContractsDifferentNodes {
 
     @Then("both contracts should go through.")
     Document through() {
-        (() @trusted => Thread.sleep(CONTRACT_TIMEOUT))();
+        (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
 
         auto wallet1_dartcheckread = wallet1.getRequestCheckWallet(wallet1_hirpc);
         auto wallet1_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet1_dartcheckread);
+        check(wallet1_received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", wallet1_received_doc.toPretty)); 
 
         writefln("RECEIVED RESPONSE: %s", wallet1_received_doc.toPretty);
         auto wallet1_received = wallet1_hirpc.receive(wallet1_received_doc);
@@ -278,6 +280,7 @@ class DifferentContractsDifferentNodes {
 
         auto wallet2_dartcheckread = wallet2.getRequestCheckWallet(wallet2_hirpc);
         auto wallet2_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet2_dartcheckread);
+        check(wallet2_received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", wallet2_received_doc.toPretty)); 
 
         writefln("RECEIVED RESPONSE: %s", wallet2_received_doc.toPretty);
         auto wallet2_received = wallet2_hirpc.receive(wallet2_received_doc);
@@ -338,7 +341,7 @@ class SameContractDifferentNodes {
         sendSubmitHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit,wallet1.net);
         sendSubmitHiRPC(opts2.inputvalidator.sock_addr, hirpc_submit,wallet1.net);
 
-        (() @trusted => Thread.sleep(CONTRACT_TIMEOUT))();
+        (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
         return result_ok;
     }
 
@@ -346,6 +349,7 @@ class SameContractDifferentNodes {
     Document rejected() {
         auto wallet1_dartcheckread = wallet1.getRequestCheckWallet(wallet1_hirpc);
         auto wallet1_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet1_dartcheckread);
+        check(wallet1_received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", wallet1_received_doc.toPretty)); 
 
         // writefln("RECEIVED RESPONSE: %s", wallet1_received_doc.toPretty);
         auto wallet1_received = wallet1_hirpc.receive(wallet1_received_doc);
@@ -357,6 +361,7 @@ class SameContractDifferentNodes {
 
         auto wallet2_dartcheckread = wallet2.getRequestCheckWallet(wallet2_hirpc);
         auto wallet2_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet2_dartcheckread);
+        check(wallet2_received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", wallet2_received_doc.toPretty)); 
 
         // writefln("RECEIVED RESPONSE: %s", wallet2_received_doc.toPretty);
         auto wallet2_received = wallet2_hirpc.receive(wallet2_received_doc);
@@ -413,11 +418,11 @@ class SameContractInDifferentEpochs {
     Document node() {
         import tagion.hashgraph.Refinement : FinishedEpoch;
 
-        int epoch_number;
+        long epoch_number;
         uint max_tries = 20;
         uint counter;
         do {
-            auto epoch_before = receiveOnlyTimeout!(LogInfo, const(Document))(10.seconds);
+            auto epoch_before = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);
             writefln("epoch_before %s looking for %s", epoch_before[1], opts1.task_names.epoch_creator);
             check(epoch_before[1].isRecord!FinishedEpoch, "not correct subscription received");
             if (epoch_before[0].task_name == opts1.task_names.epoch_creator) {
@@ -425,7 +430,7 @@ class SameContractInDifferentEpochs {
                 epoch_number = FinishedEpoch(epoch_before[1]).epoch;
             }
             counter++;
-        } while(counter < max_tries && epoch_number is int.init);
+        } while(counter < max_tries && epoch_number is long.init);
         check(counter < max_tries, "did not receive epoch in max tries");
 
         writefln("EPOCH NUMBER %s", epoch_number);
@@ -433,10 +438,10 @@ class SameContractInDifferentEpochs {
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
         sendSubmitHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit,wallet1.net);
 
-        int new_epoch_number;
+        long new_epoch_number;
         counter = 0;
         do {
-            auto new_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(10.seconds);
+            auto new_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);
             writefln("new_epoch %s %s", new_epoch[0].topic_name, opts1.task_names.epoch_creator);
             check(new_epoch[1].isRecord!FinishedEpoch, "not correct subscription received");
             if (new_epoch[0].task_name == opts1.task_names.epoch_creator) {
@@ -444,14 +449,15 @@ class SameContractInDifferentEpochs {
                 new_epoch_number = FinishedEpoch(new_epoch[1]).epoch;
             }
             counter++;
-        } while(counter < max_tries && new_epoch_number is int.init);
+        } while(counter < max_tries && new_epoch_number is long.init);
         check(counter < max_tries, "did not receive epoch in max tries");
 
+        submask.unsubscribe(StdRefinement.epoch_created);
         writefln("EPOCH NUMBER updated %s", new_epoch_number);
         check(epoch_number < new_epoch_number, "epoch number not updated");
         sendSubmitHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit, wallet1.net);
         
-        (() @trusted => Thread.sleep(CONTRACT_TIMEOUT))();
+        (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
         return result_ok;
     }
 
@@ -459,11 +465,13 @@ class SameContractInDifferentEpochs {
     Document rejected() {
         auto wallet1_dartcheckread = wallet1.getRequestCheckWallet(wallet1_hirpc);
         auto wallet1_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet1_dartcheckread);
+        check(wallet1_received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", wallet1_received_doc.toPretty)); 
         auto wallet1_received = wallet1_hirpc.receive(wallet1_received_doc);
         check(wallet1.setResponseCheckRead(wallet1_received), "wallet1 not updated succesfully");
 
         auto wallet2_dartcheckread = wallet2.getRequestCheckWallet(wallet2_hirpc);
         auto wallet2_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet2_dartcheckread);
+        check(wallet2_received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", wallet2_received_doc.toPretty)); 
         auto wallet2_received = wallet2_hirpc.receive(wallet2_received_doc);
         check(wallet2.setResponseCheckRead(wallet2_received), "wallet2 not updated succesfully");
         
@@ -530,16 +538,16 @@ class SameContractInDifferentEpochsDifferentNode {
         uint max_tries = 20;
         uint counter;
 
-        int epoch_number;
+        long epoch_number;
         do {
-            auto epoch_before = receiveOnlyTimeout!(LogInfo, const(Document))(10.seconds);
+            auto epoch_before = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);
             writefln("epoch_before %s looking for %s", epoch_before[1], opts1.task_names.epoch_creator);
             check(epoch_before[1].isRecord!FinishedEpoch, "not correct subscription received");
             if (epoch_before[0].task_name == opts1.task_names.epoch_creator) {
                 epoch_number = FinishedEpoch(epoch_before[1]).epoch;
             }
             counter++;
-        } while(counter < max_tries && epoch_number is int.init);
+        } while(counter < max_tries && epoch_number is long.init);
         check(counter < max_tries, "did not receive epoch in max tries");
 
         writeln("EPOCH NUMBER %s", epoch_number);
@@ -547,27 +555,27 @@ class SameContractInDifferentEpochsDifferentNode {
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
         sendSubmitHiRPC(opts1.inputvalidator.sock_addr, hirpc_submit, wallet1.net);
 
-        int new_epoch_number;
+        long new_epoch_number;
         counter = 0;
         do {
-            auto new_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(10.seconds);
+            auto new_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);
             writefln("new_epoch %s %s", new_epoch[1], opts1.task_names.epoch_creator);
             check(new_epoch[1].isRecord!FinishedEpoch, "not correct subscription received");
             if (new_epoch[0].task_name == opts2.task_names.epoch_creator) {
                 writefln("UPDATING NEW EPOCH_NUMBER");
-                int _new_epoch_number = FinishedEpoch(new_epoch[1]).epoch;
+                long _new_epoch_number = FinishedEpoch(new_epoch[1]).epoch;
                 if (_new_epoch_number > epoch_number) {
                     new_epoch_number = _new_epoch_number;
                 }
             }
             counter++;
-        } while(counter < max_tries && new_epoch_number is int.init);
+        } while(counter < max_tries && new_epoch_number is long.init);
         check(counter < max_tries, "did not receive epoch in max tries");
 
         writeln("EPOCH NUMBER updated %s", new_epoch_number);
         sendSubmitHiRPC(opts2.inputvalidator.sock_addr, hirpc_submit, wallet1.net);
         
-        (() @trusted => Thread.sleep(CONTRACT_TIMEOUT))();
+        (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
         return result_ok;
     }
 
@@ -656,7 +664,7 @@ class TwoContractsSameOutput {
         sendSubmitHiRPC(opts2.inputvalidator.sock_addr, hirpc_submit2, wallet2.net);
 
 
-        (() @trusted => Thread.sleep(CONTRACT_TIMEOUT))();
+        (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
         return result_ok;
     }
 
@@ -671,7 +679,8 @@ class TwoContractsSameOutput {
 
         auto wallet1_amount = wallet1.calcTotal(wallet1.account.bills);
         writefln("WALLET 1 amount: %s", wallet1_amount);
-        check(wallet1_amount == start_amount1-amount-fee, "wallet 1 did not lose correct amount of money");
+        const expected = start_amount1-amount-fee;
+        check(wallet1_amount == expected, format("wallet 1 did not lose correct amount of money should have %s had %s", expected, wallet1_amount));
 
         auto wallet2_dartcheckread = wallet2.getRequestCheckWallet(wallet2_hirpc);
         auto wallet2_received_doc = sendDARTHiRPC(opts2.dart_interface.sock_addr, wallet2_dartcheckread);
@@ -752,7 +761,7 @@ class BillAge {
 
     @Then("the contract should be rejected.")
     Document rejected() {
-        (() @trusted => Thread.sleep(CONTRACT_TIMEOUT))();
+        (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
 
         auto wallet1_dartcheckread = wallet1.getRequestCheckWallet(wallet1_hirpc);
         auto wallet1_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet1_dartcheckread);

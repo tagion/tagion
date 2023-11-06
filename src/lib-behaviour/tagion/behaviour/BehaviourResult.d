@@ -17,13 +17,17 @@ static Document result_ok = result(ResultOk()).toDoc; /// This
 struct BehaviourError {
     string msg; ///  Error message in the Exception
     string[] trace; ///. Exception line trace of in the exception
+    ulong line; 
+    string file;
     mixin HiBONRecord!(q{
             this(Throwable e) nothrow @trusted {
                 import std.exception : assumeWontThrow;
                 import std.string : splitLines;
                 import std.stdio;
-                msg =e.msg;
-                trace= assumeWontThrow(e.toString.splitLines);
+                msg = e.msg;
+                trace = assumeWontThrow(e.toString.splitLines);
+                line = e.line;
+                file = e.file;
             }
         });
 }

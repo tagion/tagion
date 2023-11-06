@@ -69,35 +69,45 @@ unittest {
 
 }
 
-struct Request(string name) {
+/* 
+ * Reguest type
+ * Will generate a random id if the ID type is a number
+ */
+struct Request(string name, ID = uint) {
     Msg!name msg;
-    uint id;
+    ID id;
     string task_name;
 
     static Request opCall() @safe nothrow {
         import tagion.utils.Random;
+        import std.traits : isNumeric;
 
-        Request!name r;
+        Request!(name, ID) r;
         r.msg = Msg!name();
-        r.id = generateId();
+        static if (isNumeric!ID) {
+            r.id = generateId!ID;
+        }
         assert(thisActor.task_name !is string.init, "The requester is not registered as a task");
         r.task_name = thisActor.task_name;
         return r;
     }
 
-    alias Response = .Response!name;
+    alias Response = .Response!(name, ID);
 
+    /// Send back some data to the task who sent the request
     void respond(Args...)(Args args) {
         auto res = Response(msg, id);
         locate(task_name).send(res, args);
     }
 }
 
-struct Response(string name) {
+/// 
+struct Response(string name, ID = uint) {
     Msg!name msg;
-    uint id;
+    ID id;
 }
 
+///
 @safe
 unittest {
     thisActor.task_name = "req_resp";

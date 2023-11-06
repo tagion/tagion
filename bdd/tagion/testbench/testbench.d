@@ -5,10 +5,8 @@ import std.meta;
 import tagion.tools.OneMain;
 
 int main(string[] args) {
-    import ssl_server = tagion.testbench.ssl_server;
     import hirpc_verifier = tagion.testbench.hirpc_verifier;
     import inputvalidator = tagion.testbench.inputvalidator;
-    import ssl_echo_server = tagion.testbench.ssl_echo_server;
     import dart_test = tagion.testbench.dart_test;
     import dart_deep_rim_test = tagion.testbench.dart_deep_rim_test;
     import dart_pseudo_random_archives = tagion.testbench.dart_pseudo_random_archives;
@@ -24,7 +22,6 @@ int main(string[] args) {
     import tvm_betterc = tagion.testbench.tvm_betterc;
     import epoch_creator = tagion.testbench.epoch_creator;
     import collector = tagion.testbench.collector;
-    import tvm_service = tagion.testbench.tvm_service;
     import transcript_service = tagion.testbench.transcript_service;
     import replicator_service = tagion.testbench.replicator_service;
     import send_contract = tagion.testbench.send_contract;
@@ -32,14 +29,13 @@ int main(string[] args) {
     import spam_double_spend = tagion.testbench.spam_double_spend;
     import malformed_contract = tagion.testbench.malformed_contract; 
     import manycontracts = tagion.testbench.e2e.manycontracts;
+    import genesis_test = tagion.testbench.genesis_test;
 
 
     alias alltools = AliasSeq!(
             collector,
-            ssl_server,
             hirpc_verifier,
             inputvalidator,
-            ssl_echo_server,
             dart_test,
             dart_deep_rim_test,
             dart_pseudo_random_archives,
@@ -54,7 +50,6 @@ int main(string[] args) {
             hashgraph_swap,
             tvm_betterc,
             epoch_creator,
-            tvm_service,
             transcript_service,
             replicator_service,
             send_contract,
@@ -62,6 +57,7 @@ int main(string[] args) {
             spam_double_spend,
             malformed_contract,
             manycontracts,
+            genesis_test,
     );
     mixin doOneMain!(alltools);
     return do_main(args);

@@ -109,6 +109,7 @@ class WriteAndReadFromDartDb {
 
     DARTServiceHandle handle;
     DARTInterfaceServiceHandle dart_interface_handle;
+    ReplicatorServiceHandle replicator_handle;  
     DARTInterfaceOptions interface_opts;
 
     SecureNet supervisor_net;
@@ -168,8 +169,13 @@ class WriteAndReadFromDartDb {
         net.generateKeyPair("dartnet very secret");
 
         
-        handle = (() @trusted => spawn!DARTService(TaskNames().dart, cast(immutable) opts, cast(immutable) replicator_opts, TaskNames(), cast(
+        handle = (() @trusted => spawn!DARTService(TaskNames().dart, cast(immutable) opts, TaskNames(), cast(
                 shared) net))();
+
+        
+        replicator_handle =(() @trusted => spawn!ReplicatorService(
+            TaskNames().replicator, 
+            cast(immutable) replicator_opts))();
 
         interface_opts.setDefault;
         writeln(interface_opts.sock_addr);
@@ -195,7 +201,7 @@ class WriteAndReadFromDartDb {
 
             insert_recorder.insert(docs, Archive.Type.ADD);
             auto modify_send = dartModifyRR();
-            (() @trusted => handle.send(modify_send, cast(immutable) insert_recorder, immutable int(0)))();
+            (() @trusted => handle.send(modify_send, cast(immutable) insert_recorder, immutable long(0)))();
 
             auto modify = receiveOnlyTimeout!(dartModifyRR.Response, Fingerprint);
 

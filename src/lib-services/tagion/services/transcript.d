@@ -2,13 +2,17 @@
 /// [Documentation](https://docs.tagion.org/#/documents/architecture/transcript)
 module tagion.services.transcript;
 
+@safe:
+
 import std.stdio;
 import std.exception;
 import std.array;
 import std.algorithm;
+import std.range;
+import std.format;
+import core.time;
 
 import tagion.logger.Logger;
-import tagion.basic.Debug : __write;
 import tagion.utils.JSONCommon;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.actor.actor;
@@ -28,9 +32,13 @@ import tagion.utils.StdTime;
 import tagion.script.common;
 import tagion.dart.Recorder;
 import tagion.services.options : TaskNames;
-import tagion.hibon.HiBONJSON;
-import tagion.utils.Miscellaneous : toHexString;
 import tagion.crypto.Types;
+import tagion.script.standardnames;
+import tagion.hibon.BigNumber;
+
+import tagion.script.TagionCurrency;
+import tagion.dart.DARTBasic;
+import tagion.services.locator;
 
 @safe:
 
@@ -47,59 +55,166 @@ struct TranscriptOptions {
 **/
 struct TranscriptService {
     void task(immutable(TranscriptOptions) opts, immutable(size_t) number_of_nodes, shared(StdSecureNet) shared_net, immutable(TaskNames) task_names) {
-        const net = new StdSecureNet(shared_net);
+        const(SecureNet) net = new StdSecureNet(shared_net);
 
         immutable(ContractProduct)*[DARTIndex] products;
         auto rec_factory = RecordFactory(net);
 
-
         struct Votes {
-            ConsensusVoting[] votes;
+            const(ConsensusVoting)[] votes;
             long epoch;
             Fingerprint bullseye;
-            this(Fingerprint bullseye, long epoch) {
+            this(Fingerprint bullseye, long epoch) pure {
                 this.bullseye = bullseye;
                 this.epoch = epoch;
-            }
-
-            bool addVote(ConsensusVoting vote) {
-                // check the vote
-                votes ~= vote;
-                return votes.length == number_of_nodes;
             }
         }
         Votes[long] votes;
 
         struct EpochContracts {
-            SignedContract[] signed_contracts;
+            const(SignedContract)[] signed_contracts;
             sdt_t epoch_time;
-            Votes[] previous_votes;
+
+            // Votes[] previous_votes;
         }
 
-        immutable(EpochContracts)*[uint] epoch_contracts;
+        const(EpochContracts)*[long] epoch_contracts;
+
+        HiRPC hirpc = HiRPC(net);
 
 
-        // void checkLeaks() {
-        //     log("EPOCH_CONTRACTS: %s, VOTES %s, PRODUCTS %s", epoch_contracts.length, votes.length, products.length);
-        // }
+
+        
+        TagionHead last_head = TagionHead(TagionDomain, 0, TagionGlobals(null, BigNumber(1000_000_000), BigNumber(0), long(10_000), long(0)));
+        Fingerprint previous_epoch = Fingerprint.init;
+        long last_epoch_number = 0;
+
+
+        {
+            bool head_found;
+            // start by reading the head
+            immutable tagion_index = net.dartKey(StdNames.name, TagionDomain);
+            auto dart_tid = tryLocate(task_names.dart);
+            dart_tid.send(dartReadRR(),[tagion_index]); 
+            log("SENDING HEAD REQUEST TO DART");
+             
+            auto received = receiveTimeout(1.seconds, (dartReadRR.Response _, immutable(RecordFactory.Recorder) head_recorder) {
+                if (!head_recorder.empty) {
+                    log("FOUND A TAGIONHEAD");
+                    // yay we found a head!
+                    last_head = TagionHead(head_recorder[].front.filed);
+                    head_found = true;
+                }else {
+                    log("NO HEAD FOUND");
+
+                }
+
+            }); 
+            if (!received) {
+                throw new Exception("Never received a tagionhead");
+
+            }
+
+            if (head_found) {
+            // now we locate the epoch
+                immutable epoch_index = net.dartKey(StdNames.epoch, last_head.current_epoch);
+                dart_tid.send(dartReadRR(),[epoch_index]); 
+                receiveTimeout(1.seconds, (dartReadRR.Response _, immutable(RecordFactory.Recorder) epoch_recorder) {
+                    if (!epoch_recorder.empty) {
+                        auto doc = epoch_recorder[].front.filed;
+                        if (doc.isRecord!Epoch) {
+                            last_epoch_number = Epoch(doc).epoch_number;
+                        } 
+                        else if(doc.isRecord!GenesisEpoch) {
+                            last_epoch_number = GenesisEpoch(doc).epoch_number;
+                        } 
+                        else {
+                            log("THROWING EXCEPTION");
+                            throw new Exception("The read epoch was not of type Epoch or GenesisEpoch");
+                        }
+                        previous_epoch = Fingerprint(net.calcHash(doc));
+                    }
+                }); 
+            }
+        }
+        
+
+
+
+        
+
 
         void createRecorder(dartCheckReadRR.Response res, immutable(DARTIndex)[] not_in_dart) {
             log("received response from dart %s", not_in_dart);
 
             DARTIndex[] used;
 
+            auto recorder = rec_factory.recorder;
             used ~= not_in_dart;
+
+            // check the votes here instead
+            // get a list of all epochs where majority of votes with correct signature have been received
+
+            import tagion.hashgraph.HashGraphBasic : isMajority;
+
+
+            // find the consensus epochs
+            auto aggregated_votes = votes
+                .byKeyValue
+                .filter!(v => v.value.votes.length.isMajority(number_of_nodes))
+                .filter!(v => v.value.votes
+                            .filter!(consensus_vote => consensus_vote.verifyBullseye(net, v.value.bullseye))
+                            .walkLength
+                            .isMajority(number_of_nodes)
+                        ).array
+                .sort!((a,b) => a.value.epoch < b.value.epoch);
+            // clean up the arrays on exit
+            scope(exit) {
+                foreach(a_vote; aggregated_votes) {
+                    votes.remove(a_vote.value.epoch);
+                    epoch_contracts.remove(a_vote.value.epoch);
+                }
+            }
+
+            // create the epochs. Sort them by epoch number so that we can create the previous link
+            Epoch[] consensus_epochs;
+            loop_epochs: foreach(a_vote; aggregated_votes) {
+                auto previous_epoch_contract = epoch_contracts.get(a_vote.value.epoch, null);
+
+                if (previous_epoch_contract is null) {
+                    log("UNLINKED EPOCH_CONTRACT %s", a_vote.value.epoch);
+                    continue loop_epochs;
+                }
+
+                // update the last epoch number
+                Pubkey[] keys = [Pubkey([1,2,3,4])];
+                // create the epoch;
+                auto new_epoch = Epoch(a_vote.value.epoch, 
+                                    sdt_t(previous_epoch_contract.epoch_time), 
+                                    a_vote.value.bullseye, 
+                                    previous_epoch, 
+                                    a_vote.value.votes.map!(v => v.signed_bullseye).array,
+                                    keys, 
+                                    keys);
+                consensus_epochs ~= new_epoch, 
+                last_epoch_number = a_vote.value.epoch;
+                previous_epoch = net.calcHash(new_epoch);
+            }
+            log("EPOCH_CONTRACTS: %s, consensus_epochs %s agg_votes: %s votes: %s", epoch_contracts.length, consensus_epochs.length, aggregated_votes.length, votes.length);
+
+            /*
+                Add the epochs to the recorder. We can assume that there will be multiple epochs due
+                to the hashgraph being asynchronous.
+            */
+            // recorder.insert(consensus_epochs, Archive.Type.ADD);
+
+
 
             const epoch_contract = epoch_contracts.get(res.id, null);
             if (epoch_contract is null) {
-                log("unlinked data received from dart aborting epoch");
-            }
-            scope (exit) {
-                epoch_contracts.remove(res.id);
-                log("removed %s from epoch_contracts", res.id);
+                throw new Exception(format("unlinked epoch contract %s", res.id));
             }
 
-            auto recorder = rec_factory.recorder;
             loop_signed_contracts: foreach (signed_contract; epoch_contract.signed_contracts) {
                 foreach (input; signed_contract.contract.inputs) {
                     if (used.canFind(input)) {
@@ -137,35 +252,63 @@ struct TranscriptService {
                 products.remove(net.dartIndex(signed_contract.contract));
             }
 
-            // checkLeaks();
+            // BigNumber total = last_head.globals.total;
+            // long number_of_bills = last_head.global.number_of_bills;
+
+            // void billStatistic(const(Archive) archive) {
+            //     if (!archive.filed.isRecord!TagionBill) {
+            //         return;
+            //     }
+            //     auto bill = TagionBill(archive.filed);
+
+            //     if (archive.Type.REMOVE) {
+            //         total -= bill.value;
+            //         number_of_bills--;
+            //     }
+            //     if (archive.Type.ADD) {
+            //         total += bill.value;
+            //         number_of_bills++;
+            //     }
+            // }
+            // recorder[].each!(a => billStatistic(a));
+
+            // TagionGlobals new_globals = TagionGlobals(
+            //     Fingerprint[].init,
+            //     total,
+            //     number_of_bills,
+                
+            // )
+
+
+        
+
+            
+            // // create the tagionhead and globals.
+            // long number_of_new_bills = recorder[]
+            //     .filter!(d => d.filed.isRecord!(TagionBill))
+            //     .
+
+
             auto req = dartModifyRR();
             req.id = res.id;
 
-            // if(recorder.empty) {
-            //     return;
-            // }
-            locate(task_names.dart).send(req, RecordFactory.uniqueRecorder(recorder), cast(immutable(int)) res.id);
+            locate(task_names.dart).send(req, RecordFactory.uniqueRecorder(recorder), cast(immutable) res.id);
 
         }
 
-        void epoch(consensusEpoch, immutable(EventPackage*)[] epacks, immutable(int) epoch_number, const(sdt_t) epoch_time) @safe {
+        void epoch(consensusEpoch, immutable(EventPackage*)[] epacks, immutable(long) epoch_number, const(sdt_t) epoch_time) @safe {
 
-            ConsensusVoting[] received_votes = epacks
+            immutable(ConsensusVoting)[] received_votes = epacks
                 .filter!(epack => epack.event_body.payload.isRecord!ConsensusVoting)
-                .map!(epack => ConsensusVoting(epack.event_body.payload))
+                .map!(epack => immutable(ConsensusVoting)(epack.event_body.payload))
                 .array;
 
-            Votes[] previous_votes;
+            // add them to the vote array
             foreach (v; received_votes) {
-                if (votes[v.epoch].addVote(v)) {
-                    const same_bullseyes = votes[v.epoch].votes.all!(_v => _v.verifyBullseye(net, votes[v.epoch].bullseye));
-
-                    if (!same_bullseyes) {
-                        throw new Exception("Signed bullseyes not the same");
-                    }
-                    
-                    previous_votes ~= votes[v.epoch];
-                    votes.remove(v.epoch);
+                if (votes.get(v.epoch, Votes.init) !is Votes.init) {
+                    votes[v.epoch].votes ~= v;
+                } else {
+                    log("VOTE IS INIT %s", v.epoch);
                 }
             }
 
@@ -179,18 +322,15 @@ struct TranscriptService {
                 .join
                 .array;
 
-            
             auto req = dartCheckReadRR();
-            req.id = cast(uint) epoch_number;
-            epoch_contracts[req.id] = (() @trusted => new immutable(EpochContracts)(signed_contracts, epoch_time, cast(immutable) previous_votes))();
+            req.id = epoch_number;
+            epoch_contracts[req.id] = new const EpochContracts(signed_contracts, epoch_time);
 
-            // pragma(msg, "Inputs ", typeof(inputs));
             if (inputs.length == 0) {
                 createRecorder(req.Response(req.msg, req.id), inputs);
                 return;
             }
 
-            // checkLeaks();
             (() @trusted => locate(task_names.dart).send(req, inputs))();
 
         }
@@ -203,7 +343,7 @@ struct TranscriptService {
             }
             log("transcript received bullseye %s", bullseye.cutHex);
 
-            auto epoch_number = cast(long) res.id;
+            auto epoch_number = res.id;
             ConsensusVoting own_vote = ConsensusVoting(
                     epoch_number,
                     net.pubkey,
@@ -212,7 +352,6 @@ struct TranscriptService {
 
             votes[epoch_number] = Votes(bullseye, epoch_number);
 
-            // checkLeaks();
             locate(task_names.epoch_creator).send(Payload(), own_vote.toDoc);
         }
 
@@ -220,13 +359,10 @@ struct TranscriptService {
             log("received ContractProduct");
             auto product_index = net.dartIndex(product.contract.sign_contract.contract);
             products[product_index] = product;
-            // checkLeaks();
 
         }
 
-        //run(&epoch);
         run(&epoch, &produceContract, &createRecorder, &receiveBullseye);
-        //run(&produceContract, &createRecorder, &receiveBullseye);
     }
 }
 
