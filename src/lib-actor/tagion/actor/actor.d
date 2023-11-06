@@ -72,7 +72,7 @@ unittest {
 /* 
  * Reguest type
  * Will generate a random id if the ID type is a number
- */ 
+ */
 struct Request(string name, ID = uint) {
     Msg!name msg;
     ID id;
@@ -84,7 +84,7 @@ struct Request(string name, ID = uint) {
 
         Request!(name, ID) r;
         r.msg = Msg!name();
-        static if(isNumeric!ID) {
+        static if (isNumeric!ID) {
             r.id = generateId!ID;
         }
         assert(thisActor.task_name !is string.init, "The requester is not registered as a task");

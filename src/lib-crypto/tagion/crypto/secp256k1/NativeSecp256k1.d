@@ -329,6 +329,9 @@ class NativeSecp256k1T(bool Schnorr) {
         return output_ser.idup;
     }
 
+    static if (!Schnorr)
+        alias pubKeyTweak = pubKeyTweakMul;
+
     @trusted
     static if (Schnorr)
         final immutable(ubyte[]) pubKeyTweak(scope const(ubyte[]) pubkey, scope const(ubyte[]) tweak) const
