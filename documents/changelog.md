@@ -2,7 +2,7 @@
 
 **Tagion HEAD record**
 The tagion HEAD name record stores all the global statistics about the current network in the DART.
-Like the epochnumber, total money supply, number of bill, etc..
+Like the epochnumber, total money supply, number of bills, etc..
 
 **Genesis Epoch added**
 The Genesis Epoch is the network boot record.
@@ -15,8 +15,9 @@ the hashgraph epochnumber and the transcript service has been switchted from an 
 **Epoch Votes**
 The epoch is now created based on the votes of the DART bullseye.
 
-**MuSig2**
-The NativeSecp256k1 module now features Schnorr Multi Signatures and has been unittested.
+**Crypto**
+Schnorr signing and verification functions added.
+The NativeSecp256k1 module now features MuSig2 functions for multi signatures utilizing those Schnorr algorithms.
 
 **Fixes & Stabillity improvements**
  * We have made changes to how the node starts the replicator service. 
