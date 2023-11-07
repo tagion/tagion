@@ -240,7 +240,7 @@ jobs:
         target: [apple-ios, apple-ios-simulator]
     runs-on: macOS
     steps:
-      - uses: ./.github/workflows/ios.yml
+      - uses: ./.github/actions/ios
         with:
           platform: ${{ matrix.arch }}-${{ matrix.target }}
 
