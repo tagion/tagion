@@ -70,7 +70,7 @@ enum Schnorr = false;
  + or point the JVM to the folder containing it with -Djava.library.path
  + </p>
  +/
-class StdNativeSecp256k1 { // : NativeSecp256k1 {
+class StdNativeSecp256k1 : NativeSecp256k1 {
     static void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         if (!flag) {
             throw new SecurityConsensusException(code, file, line);
@@ -216,7 +216,7 @@ class StdNativeSecp256k1 { // : NativeSecp256k1 {
      + @param seckey 32-byte seckey
      +/
     @trusted
-    final void privTweakMul(
+    final void privTweak(
             const(ubyte[]) privkey,
     const(ubyte[]) tweak,
     ref ubyte[] tweak_privkey) const
@@ -234,8 +234,7 @@ class StdNativeSecp256k1 { // : NativeSecp256k1 {
 
     }
 
-    static if (!Schnorr)
-        alias privTweak = privTweakMul;
+    alias privTweakMul = privTweak;
     /++
      + libsecp256k1 PrivKey Tweak-Add - Tweak privkey by adding to it
      +
@@ -243,9 +242,8 @@ class StdNativeSecp256k1 { // : NativeSecp256k1 {
      + @param seckey 32-byte seckey
      +/
     @trusted
-    static if (!Schnorr)
-        final void privTweakAdd(
-                const(ubyte[]) privkey,
+    final void privTweakAdd(
+            const(ubyte[]) privkey,
     const(ubyte[]) tweak,
     ref ubyte[] tweak_privkey) const
     in (privkey.length == 32)
@@ -267,8 +265,8 @@ class StdNativeSecp256k1 { // : NativeSecp256k1 {
      +/
     @trusted
     final immutable(ubyte[]) pubTweakAdd(
-            const(ubyte[]) pubkey,
-    const(ubyte[]) tweak) const
+            scope const(ubyte[]) pubkey,
+    scope const(ubyte[]) tweak) const
     in (pubkey.length == COMPRESSED_PUBKEY_SIZE)
     in (tweak.length == TWEAK_SIZE)
     do {
@@ -299,7 +297,7 @@ class StdNativeSecp256k1 { // : NativeSecp256k1 {
      + @param pubkey 32-byte seckey
      +/
     @trusted
-    final immutable(ubyte[]) pubTweakMul(const(ubyte[]) pubkey, const(ubyte[]) tweak) const
+    final immutable(ubyte[]) pubTweak(scope const(ubyte[]) pubkey, scope const(ubyte[]) tweak) const
     in (pubkey.length == COMPRESSED_PUBKEY_SIZE)
     in (tweak.length == TWEAK_SIZE)
     do {
@@ -325,7 +323,7 @@ class StdNativeSecp256k1 { // : NativeSecp256k1 {
         return output_ser.idup;
     }
 
-    alias pubTweak = pubTweakMul;
+    alias pubTweakMul = pubTweak;
 
     /++
      + libsecp256k1 create ECDH secret - constant time ECDH calculation
