@@ -110,6 +110,7 @@ int _main(string[] args) {
 
     Options[] node_opts;
     
+    Thread.sleep(15.seconds);
     foreach(i; 0..local_options.wave.number_of_nodes) {
         const filename = buildPath(module_path, format(local_options.wave.prefix_format~"opts", i).setExtension(FileExtension.json));
         writeln(filename);
@@ -119,8 +120,7 @@ int _main(string[] args) {
     
 
     writefln("INPUT SOCKET ADDRESS %s", node_opts[0].inputvalidator.sock_addr);
-    Thread.sleep(15.seconds);
-    
+
     auto feature = automation!(spam_double_spend);
     feature.SpamOneNodeUntil10EpochsHaveOccured(node_opts, wallets[0], wallets[1]);
     feature.SpamMultipleNodesUntil10EpochsHaveOccured(node_opts, wallets[2], wallets[3]);
