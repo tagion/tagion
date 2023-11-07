@@ -16,6 +16,22 @@ IOS_ARCH:=$(IOS_ARM64)
 TRIPLET=$(IOS_ARCH)
 endif
 
+IOS_SIMULATOR_X86_64:=x86_64-apple-ios-simulator
+PLATFORMS+=$(IOS_SIMULATOR_X86_64)
+ifeq ($(PLATFORM),$(IOS_SIMULATOR_X86_64))
+IOS_ARCH:=$(IOS_SIMULATOR_X86_64)
+TRIPLET:=x86_64-apple-ios
+endif
+
+
+IOS_X86_64:=x86_64-apple-ios
+PLATFORMS+=$(IOS_X86_64)
+ifeq ($(PLATFORM),$(IOS_X86_64))
+IOS_ARCH:=$(IOS_X86_64)
+TRIPLET=$(IOS_X86_64)
+endif
+
+
 ifneq (,$(findstring apple-ios,$(PLATFORM)))
 
 CCC = clang++ -O0
