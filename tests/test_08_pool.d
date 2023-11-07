@@ -15,7 +15,7 @@ import std.base64;
 import nngd;
 import nngtestutil;
 
-string rndstr(int len = 32){
+string rndstr(size_t len = 32){
     string s, buf;
     do {
         buf = cast(string)(Base64.encode(cast(const(ubyte)[])"/dev/urandom".read(512)));
@@ -51,6 +51,12 @@ void server_callback(NNGMessage *msg, void *ctx)
     if(indexOf(s,"What time is it?") == 0){
         log("Going to send time");
         msg.body_append(cast(ubyte[])(format("It`s %f o`clock." ~ " DATA: ",timestamp()) ~ rndstr(uniform(4096,32768))));
+    }else if(indexOf(s,"Swamp me!") == 0){    
+        size_t bsz = 1048576;
+        string buf = rndstr(bsz);
+        msg.length = bsz + 32;
+        msg.body_prepend(cast(ubyte[])("BIG DATA: " ~ buf));
+        log("SERVER: BData set");
     }else{
         log("Going to stop sender");
         msg.body_append(cast(ubyte[])"END");
@@ -79,9 +85,13 @@ void client_worker(string url, string tag)
     }
     while(1){
         k++;
-        line = format("What time is it? :: from(%s)[%d]", tag,k);            
-        if(k > 255)
+        if(k > 255){
             line = "Maybe that's enough?";
+        } else if(k % 16 == 0) {
+            line = "Swamp me!";
+        } else {    
+            line = format("What time is it? :: from(%s)[%d]", tag,k);            
+        }    
         auto pl = rndstr(uniform(4096,32768));    
         rc = s.send!string(line~" DATA: "~pl);
         enforce(rc == 0);
