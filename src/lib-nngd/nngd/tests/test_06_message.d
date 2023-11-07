@@ -6,6 +6,9 @@ import core.thread;
 import std.datetime.systime;
 import std.uuid;
 import std.regex;
+import std.exception;
+import std.file;
+import std.random;
 
 import nngd;
 import nngtestutil;
@@ -21,24 +24,24 @@ main()
 
     NNGMessage msg1 = NNGMessage(0);
     
-    rc = msg1.body_append!ushort(11);  assert(rc == 0);
-    rc = msg1.body_append!uint(12);    assert(rc == 0);
-    rc = msg1.body_append!ulong(13);   assert(rc == 0);
-    rc = msg1.body_prepend(cast(ubyte[])s); assert(rc == 0);
+    rc = msg1.body_append!ushort(11);  enforce(rc == 0);
+    rc = msg1.body_append!uint(12);    enforce(rc == 0);
+    rc = msg1.body_append!ulong(13);   enforce(rc == 0);
+    rc = msg1.body_prepend(cast(ubyte[])s); enforce(rc == 0);
     
-    assert( msg1.length == 27 && msg1.header_length == 0 );
+    enforce( msg1.length == 27 && msg1.header_length == 0 );
 
     auto x1 = msg1.body_chop!ulong(); 
-        assert(x1 == 13);
+        enforce(x1 == 13);
     auto x2 = msg1.body_chop!uint(); 
-        assert(x2 == 12);
+        enforce(x2 == 12);
     auto x3 = msg1.body_chop!ushort(); 
-        assert(x3 == 11);
+        enforce(x3 == 11);
     auto x4 = msg1.body_trim!(ubyte[])(); 
         string x5 = cast(string)x4;
-        assert(x5 == s);
+        enforce(x5 == s);
     
-    assert( msg1.length == 0 && msg1.header_length == 0 );
+    enforce( msg1.length == 0 && msg1.header_length == 0 );
 
     log("...passed");        
     
@@ -49,31 +52,44 @@ main()
     NNGSocket sr = NNGSocket(nng_socket_type.NNG_SOCKET_PULL);
     sr.recvtimeout = msecs(1000);
     rc = sr.listen(url);
-    assert(rc == 0);
+    enforce(rc == 0);
     NNGSocket ss = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
     ss.sendtimeout = msecs(1000);
     ss.sendbuf = 4096;
     rc = ss.dial(url);
-    assert(rc == 0);
+    enforce(rc == 0);
     
     NNGMessage msg2 = NNGMessage(0);
-    rc = msg2.body_append!ushort(11);  assert(rc == 0);
-    rc = msg2.body_append!uint(12);    assert(rc == 0);
-    rc = msg2.body_append!ulong(13);   assert(rc == 0);
-    rc = msg2.body_prepend(cast(ubyte[])s); assert(rc == 0);
+    rc = msg2.body_append!ushort(11);  enforce(rc == 0);
+    rc = msg2.body_append!uint(12);    enforce(rc == 0);
+    rc = msg2.body_append!ulong(13);   enforce(rc == 0);
+    rc = msg2.body_prepend(cast(ubyte[])s); enforce(rc == 0);
     NNGMessage msg3 = NNGMessage(0);
     
     rc = ss.sendmsg(msg2);
-    assert(rc == 0);
+    enforce(rc == 0);
 
     rc = sr.receivemsg(&msg3);
-    assert(rc == 0);
+    enforce(rc == 0);
 
-    assert( msg3.length == 27 && msg3.header_length == 0 );
+    enforce( msg3.length == 27 && msg3.header_length == 0 );
 
     auto x6 = msg3.body_trim!string(s.length); 
-        assert(x6 == s);
+        enforce(x6 == s);
 
+    log("NNGMessage test 3: realloc");
+
+    NNGMessage *msg4 = new NNGMessage(0);
+    
+    ubyte[] data = cast(ubyte[])("/dev/urandom".read(8192));
+    auto rnd = Random(to!int(timestamp));
+    ulong k;
+    for(auto i=0; i<128; i++){
+        k = uniform(0,8192,rnd);
+        msg4.clear();
+        msg4.body_append(data[0..k]);
+        enforce(msg4.length == k);
+    }        
 
     log("...passed");        
 

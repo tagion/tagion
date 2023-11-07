@@ -5,6 +5,7 @@ import std.concurrency;
 import core.thread;
 import std.datetime.systime;
 import std.uuid;
+import std.exception;
 
 import nngd;
 import nngtestutil;
@@ -28,14 +29,14 @@ void sender_worker(string url)
             nng_sleep(msecs(100));
             continue;
         }
-        assert(rc == 0);
+        enforce(rc == 0);
     }
     log(nngtest_socket_properties(s,"sender"));
     while(1){
         line = format("%08d %s",k,randomUUID().toString());
         if(k > 9) line = "END";
         rc = s.send(line);
-        assert(rc == 0);
+        enforce(rc == 0);
         log(format("SS sent [%03d]: %s",line.length,line));
         k++;
         nng_sleep(msecs(200));
@@ -52,7 +53,7 @@ void receiver_worker(string url)
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_PULL);
     s.recvtimeout = msecs(1000);
     rc = s.listen(url);
-    assert(rc == 0);
+    enforce(rc == 0);
     log(nngtest_socket_properties(s,"receiver"));
     while(1){
         auto str = s.receive!string;
