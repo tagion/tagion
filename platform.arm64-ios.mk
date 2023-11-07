@@ -4,17 +4,14 @@
 
 IOS_SIMULATOR_ARM64:=arm64-apple-ios-simulator
 PLATFORMS+=$(IOS_SIMULATOR_ARM64)
-ifeq ($(PLATFORM),$(IOS_ARM64))
-IOS_ARCH=$(IOS_ARM64)
-TRIPLET=$(IOS_ARCH)
+ifeq ($(PLATFORM),$(IOS_SIMULATOR_ARM64))
+IOS_ARCH:=$(IOS_SIMULATOR_ARM64)
 endif
 
-IOS_ARM64:=arm64-apple-ios # 12.0
+IOS_ARM64:=arm64-apple-ios
 PLATFORMS+=$(IOS_ARM64)
-
 ifeq ($(PLATFORM),$(IOS_ARM64))
-IOS_ARCH=$(IOS_ARM64)
-TRIPLET=$(IOS_ARCH)
+IOS_ARCH:=$(IOS_ARM64)
 endif
 
 ifneq (,$(findstring apple-ios,$(PLATFORM)))
@@ -22,6 +19,7 @@ ifneq (,$(findstring apple-ios,$(PLATFORM)))
 CCC = clang++ -O0
 CC  = clang -O0
 
+TRIPLET=$(IOS_ARCH)
 DFLAGS+=$(DVERSION)=MOBILE
 CROSS_ENABLED=1
 CROSS_OS=ios
@@ -47,8 +45,8 @@ else
 CROSS_SYSROOT=$(XCODE_ROOT)/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator$(IPHONE_SDKVERSION).sdk
 endif
 
-CONFIGUREFLAGS_SECP256K1 += CC=$(CC_CROSS)
-CONFIGUREFLAGS_SECP256K1 += CFLAGS="-arch $(CROSS_ARCH) -fpic -g -Os -pipe -isysroot $(CROSS_SYSROOT) -mios-version-min=12.0"
+# CONFIGUREFLAGS_SECP256K1 += CC=$(CC_CROSS)
+CONFIGUREFLAGS_SECP256K1+=CFLAGS="-arch $(CROSS_ARCH) -fpic -g -Os -pipe -isysroot $(CROSS_SYSROOT) -mios-version-min=12.0"
 
 endif
 
@@ -58,4 +56,7 @@ env-ios:
 	$(call log.kvp, XCODE_ROOT, $(XCODE_ROOT))
 	${call log.kvp, OS, $(OS)}
 	${call log.kvp, SHARED, $(SHARED)}
+	${call log.kvp, TRIPLET, $(TRIPLET)}
+	${call log.kvp, IOS_ARCH, $(IOS_ARCH)}
+	${call log.kvp, CROSS_ENABLED, $(CROSS_ENABLED)}
 	$(call log.close)
