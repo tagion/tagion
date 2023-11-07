@@ -430,6 +430,10 @@ if (allSatisfy!(isSafe, Args)) {
         };
     }
 
+    scope (failure) {
+        log("stopped run loop with unknown Error or Assert");
+    }
+
     setState(Ctrl.ALIVE); // Tell the owner that you are running
     while (!thisActor.stop) {
         try {
@@ -471,6 +475,10 @@ if (allSatisfy!(isSafe, Args)) {
                 ownerTid.prioritySend(tf);
             }
         };
+    }
+
+    scope (failure) {
+        log("stopped run loop with unknown Error or Assert");
     }
 
     setState(Ctrl.ALIVE); // Tell the owner that you are running
