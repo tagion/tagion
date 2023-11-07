@@ -114,7 +114,7 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
     final Pubkey derivePubkey(const(ubyte[]) tweak_code) const {
         Pubkey result;
         const pkey = cast(const(ubyte[])) _pubkey;
-        result = _crypt.pubKeyTweak(pkey, tweak_code);
+        result = _crypt.pubTweak(pkey, tweak_code);
         return result;
     }
 
@@ -231,7 +231,7 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
 
             void tweak(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey) const {
                 do_secret_stuff((const(ubyte[]) privkey) @safe {
-                    _crypt.privKeyTweakMul(privkey, tweak_code, tweak_privkey);
+                    _crypt.privTweakMul(privkey, tweak_code, tweak_privkey);
                 });
             }
 
