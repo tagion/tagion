@@ -49,6 +49,10 @@ struct ReplicatorService {
                     bullseye,
                     epoch_number,
                     net);
+
+            if (last_block.getHash == block.getHash) {
+                throw new Exception("trying to add block with same hash");
+            }
             recorder_chain.append(block);
             log.trace("Added recorder chain block with hash '%s'", block.getHash.cutHex);
             log(modify_recorder, "modify", recorder);

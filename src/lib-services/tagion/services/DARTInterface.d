@@ -70,7 +70,7 @@ void dartHiRPCCallback(NNGMessage *msg, void *ctx) @trusted {
         message.code = err_type;
         message.message = err_type.to!string ~ extra_msg;
         const sender = hirpc.Sender(null, message);
-        writefln("INTERFACE ERROR: %s", sender.toPretty);
+        writefln("INTERFACE ERROR: %s", err_type.to!string ~ extra_msg);
         msg.body_append(sender.toDoc.serialize);
     }
     
@@ -78,7 +78,6 @@ void dartHiRPCCallback(NNGMessage *msg, void *ctx) @trusted {
     auto cnt = cast(DartWorkerContext*) ctx;
 
 
-    import tagion.hibon.HiBONJSON : toPretty;
     import tagion.communication.HiRPC;
 
     if (cnt is null) {
@@ -105,7 +104,7 @@ void dartHiRPCCallback(NNGMessage *msg, void *ctx) @trusted {
         writeln("Non-valid request received");
         return;
     }
-    writefln("Kernel got: %s", doc.toPretty);
+    writeln("Kernel received a document");
 
     auto dart_tid = locate(cnt.dart_task_name);
     if (dart_tid is Tid.init) {
@@ -116,14 +115,14 @@ void dartHiRPCCallback(NNGMessage *msg, void *ctx) @trusted {
     dart_tid.send(dartHiRPCRR(), doc);
     
     void dartHiRPCResponse(dartHiRPCRR.Response res, Document doc) {
-        writefln("Interface response: %s", doc.toPretty); 
+        writeln("Interface successful response"); 
         msg.body_append(doc.serialize);
     }
 
     auto dart_resp = receiveTimeout(cnt.dart_worker_timeout.msecs, &dartHiRPCResponse);
     if (!dart_resp) {
         send_error(InterfaceError.Timeout);
-        writefln("Timeout on dart request");
+        writeln("Timeout on dart request");
         return;
     }
 }
