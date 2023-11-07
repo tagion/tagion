@@ -150,10 +150,9 @@ struct DARTService {
 
 
             auto replicator_tid = locate(task_names.replicator);
-            if (replicator_tid is Tid.init) {
-                throw new Exception(format("dartModify replicator tid not found task_name: %s", task_names.replicator));
+            if (replicator_tid !is Tid.init) {
+                replicator_tid.send(SendRecorder(), recorder, eye, epoch_number);
             }
-            replicator_tid.send(SendRecorder(), recorder, eye, epoch_number);
         }
 
         void bullseye(dartBullseyeRR req) @safe {
