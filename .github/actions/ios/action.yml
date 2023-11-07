@@ -8,8 +8,8 @@ inputs:
 runs:
   using: composite
   steps:
-    - shell: bash
     - name: Build
+      shell: bash
       run: |
         export PATH="/Users/piss/tools/ldc2-1.35.0-osx-universal/bin/:$PATH"
         which ldc2
@@ -17,6 +17,7 @@ runs:
         file ./build/arm64-apple-ios/lib/libmobile.dylib
 
     - name: Check output binaries
+      shell: bash
       run: |
         ! nm build/arm64-apple-ios/lib/libmobile.dylib | grep __dyld_get_image_slide
 
@@ -28,5 +29,6 @@ runs:
         if-no-files-found: error
 
     - name: Cleanup
+      shell: bash
       run: |
         make PLATFORM=arm64-apple-ios clean
