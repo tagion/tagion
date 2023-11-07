@@ -399,6 +399,9 @@ void setState(Ctrl ctrl) @safe nothrow {
         assert(thisActor.task_name !is string.init, "Can not set the state for a task with no name");
         ownerTid.prioritySend(CtrlMsg(thisActor.task_name, ctrl));
     }
+    catch (TidMissingException e) {
+        log.error("Failed to set state %s", e.message);
+    }
     catch (Exception e) {
         log.error("Failed to set state");
         log(e);
