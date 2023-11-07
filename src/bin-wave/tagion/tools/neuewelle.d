@@ -153,7 +153,7 @@ int _main(string[] args) {
 
     log.register(baseName(program));
 
-    locator_options = new immutable(LocatorOptions)(5, 5);
+    locator_options = new immutable(LocatorOptions)(20, 5);
     SupervisorHandle[] supervisor_handles;
 
     if (local_options.wave.network_mode == NetworkMode.INTERNAL) {
