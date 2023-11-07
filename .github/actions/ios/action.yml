@@ -8,6 +8,7 @@ inputs:
 runs:
   using: composite
   steps:
+    - shell: bash
     - name: Build
       run: |
         export PATH="/Users/piss/tools/ldc2-1.35.0-osx-universal/bin/:$PATH"
