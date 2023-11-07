@@ -240,6 +240,7 @@ jobs:
         target: [apple-ios, apple-ios-simulator]
     runs-on: macOS
     steps:
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/ios
         with:
           platform: ${{ matrix.arch }}-${{ matrix.target }}
