@@ -70,7 +70,7 @@ enum Schnorr = false;
  + or point the JVM to the folder containing it with -Djava.library.path
  + </p>
  +/
-class StdNativeSecp256k1 : NativeSecp256k1 {
+class NativeSecp256k1ECDSA : NativeSecp256k1 {
     static void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         if (!flag) {
             throw new SecurityConsensusException(code, file, line);
@@ -391,7 +391,7 @@ unittest { /// Test of ECDSA
  +/{
         auto sec = "67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530".decode;
         try {
-            auto crypt = new StdNativeSecp256k1;
+            auto crypt = new NativeSecp256k1ECDSA;
             auto result = crypt.secKeyVerify(sec);
             assert(result);
         }
@@ -406,7 +406,7 @@ unittest { /// Test of ECDSA
     {
         auto sec = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF".decode;
         try {
-            auto crypt = new StdNativeSecp256k1;
+            auto crypt = new NativeSecp256k1ECDSA;
             auto result = crypt.secKeyVerify(sec);
             assert(!result);
         }
@@ -421,7 +421,7 @@ unittest { /// Test of ECDSA
     {
         auto sec = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF".decode;
         try {
-            auto crypt = new StdNativeSecp256k1;
+            auto crypt = new NativeSecp256k1ECDSA;
             auto result = crypt.getPubkey(sec);
             assert(0, "This test should throw an ConsensusException");
         }
@@ -439,7 +439,7 @@ unittest { /// Test of ECDSA
         const data = "CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90".decode; //sha256hash of "testing"
         const sec = "67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530".decode;
         try {
-            const crypt = new StdNativeSecp256k1;
+            const crypt = new NativeSecp256k1ECDSA;
             const result = crypt.sign(data, sec);
             assert(result == "182A108E1448DC8F1FB467D06A0F3BB8EA0533584CB954EF8DA112F1D60E39A21C66F36DA211C087F3AF88B50EDF4F9BDAA6CF5FD6817E74DCA34DB12390C6E9"
                     .decode);
@@ -456,7 +456,7 @@ unittest { /// Test of ECDSA
         const data = "CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90".decode; //sha256hash of "testing"
         const sec = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF".decode;
         try {
-            const crypt = new StdNativeSecp256k1;
+            const crypt = new NativeSecp256k1ECDSA;
             const result = crypt.sign(data, sec);
             assert(0, "This test should throw an ConsensusException");
         }
@@ -472,7 +472,7 @@ unittest { /// Test of ECDSA
         const sec = "67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530".decode;
         const data = "3982F19BEF1615BCCFBB05E321C10E1D4CBA3DF0E841C2E41EEB6016347653C3".decode; //sha256hash of "tweak"
         try {
-            const crypt = new StdNativeSecp256k1;
+            const crypt = new NativeSecp256k1ECDSA;
             ubyte[] result;
             crypt.privTweakAdd(sec, data, result);
             assert(result == "A168571E189E6F9A7E2D657A4B53AE99B909F7E712D1C23CED28093CD57C88F3".decode);
@@ -489,7 +489,7 @@ unittest { /// Test of ECDSA
         const sec = "67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530".decode;
         const data = "3982F19BEF1615BCCFBB05E321C10E1D4CBA3DF0E841C2E41EEB6016347653C3".decode; //sha256hash of "tweak"
         try {
-            const crypt = new StdNativeSecp256k1;
+            const crypt = new NativeSecp256k1ECDSA;
             ubyte[] result;
             crypt.privTweakMul(sec, data, result);
             assert(result == "97F8184235F101550F3C71C927507651BD3F1CDB4A5A33B8986ACF0DEE20FFFC".decode);
@@ -506,7 +506,7 @@ unittest { /// Test of ECDSA
         const pubkey = "033b691036600deb3e04eb666760352989a734c0d24d93630688f1e45ca1b0deb1".decode;
         const tweak = "3982F19BEF1615BCCFBB05E321C10E1D4CBA3DF0E841C2E41EEB6016347653C3".decode; //sha256hash of "tweak"
         try {
-            const crypt = new StdNativeSecp256k1;
+            const crypt = new NativeSecp256k1ECDSA;
             const result = crypt.pubTweakAdd(pubkey, tweak);
             assert(result != pubkey);
             assert(result == "0357f2926dd1107f86a3353bc023425c64b5294c70672bd89564a92d79ae128300".decode);
@@ -523,7 +523,7 @@ unittest { /// Test of ECDSA
         const pubkey = "033b691036600deb3e04eb666760352989a734c0d24d93630688f1e45ca1b0deb1".decode;
         const tweak = "3982F19BEF1615BCCFBB05E321C10E1D4CBA3DF0E841C2E41EEB6016347653C3".decode; //sha256hash of "tweak"
         try {
-            const crypt = new StdNativeSecp256k1;
+            const crypt = new NativeSecp256k1ECDSA;
             const result = crypt.pubTweakMul(pubkey, tweak);
             assert(result != pubkey);
             assert(result == "02a80ffb5f6598b3c223e1917c0b3b93a7e7a39bea126c30d3253240b83ed18b57".decode);
@@ -538,7 +538,7 @@ unittest { /// Test of ECDSA
  +/
     {
         try {
-            auto crypt = new StdNativeSecp256k1;
+            auto crypt = new NativeSecp256k1ECDSA;
             auto result = crypt.randomizeContext;
             assert(result);
         }
@@ -554,7 +554,7 @@ unittest { /// Test of ECDSA
         import std.digest.sha;
 
         try {
-            auto crypt = new StdNativeSecp256k1;
+            auto crypt = new NativeSecp256k1ECDSA;
             auto data = seed.dup;
             do {
                 data = sha256Of(data).dup;
@@ -573,7 +573,7 @@ unittest { /// Test of ECDSA
     }
 
     { //
-        const crypt = new StdNativeSecp256k1;
+        const crypt = new NativeSecp256k1ECDSA;
         const sec = "67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530".decode;
         immutable privkey = sec.idup;
         //        auto privkey = crypt.secKeyVerify( sec );
@@ -607,7 +607,7 @@ unittest { /// Test of ECDSA
     }
 
     {
-        const crypt = new StdNativeSecp256k1;
+        const crypt = new NativeSecp256k1ECDSA;
         const sec = "67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530".decode;
         immutable privkey = sec.idup;
         //        auto privkey = crypt.secKeyVerify( sec );
@@ -622,7 +622,7 @@ unittest { /// Test of ECDSA
     }
 
     {
-        const crypt = new StdNativeSecp256k1;
+        const crypt = new NativeSecp256k1ECDSA;
         const sec = "67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530".decode;
         immutable privkey = sec.idup;
         assert(crypt.secKeyVerify(privkey));
@@ -636,22 +636,7 @@ unittest { /// Test of ECDSA
     }
 
     {
-        const crypt = new StdNativeSecp256k1;
-        const sec = "67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530".decode;
-        immutable privkey = sec.idup;
-        //        auto privkey = crypt.secKeyVerify( sec );
-        assert(crypt.secKeyVerify(privkey));
-        immutable pubkey = crypt.getPubkey(privkey);
-
-        // Message
-        const message = "CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90".decode;
-        const signature = crypt.sign(message, privkey);
-        assert(crypt.verify(message, signature, pubkey));
-
-    }
-
-    {
-        const crypt = new StdNativeSecp256k1;
+        const crypt = new NativeSecp256k1ECDSA;
         const sec = "67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530".decode;
         immutable privkey = sec.idup;
         //        auto privkey = crypt.secKeyVerify( sec );
@@ -666,7 +651,22 @@ unittest { /// Test of ECDSA
     }
 
     {
-        const crypt = new StdNativeSecp256k1;
+        const crypt = new NativeSecp256k1ECDSA;
+        const sec = "67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530".decode;
+        immutable privkey = sec.idup;
+        //        auto privkey = crypt.secKeyVerify( sec );
+        assert(crypt.secKeyVerify(privkey));
+        immutable pubkey = crypt.getPubkey(privkey);
+
+        // Message
+        const message = "CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90".decode;
+        const signature = crypt.sign(message, privkey);
+        assert(crypt.verify(message, signature, pubkey));
+
+    }
+
+    {
+        const crypt = new NativeSecp256k1ECDSA;
         const sec = "67E56582298859DDAE725F972992A07C6C4FB9F62A8FFF58CE3CA926A1063530".decode;
         immutable privkey = sec.idup;
         //        auto privkey = crypt.secKeyVerify( sec );
@@ -685,7 +685,7 @@ unittest { /// Test of ECDSA
     {
         import std.stdio;
 
-        const crypt = new StdNativeSecp256k1;
+        const crypt = new NativeSecp256k1ECDSA;
 
         const aliceSecretKey = "37cf9a0f624a21b0821f4ab3f711ac3a86ac3ae8e4d25bdbd8cdcad7b6cf92d4".decode;
         const alicePublicKey = crypt.getPubkey(aliceSecretKey);

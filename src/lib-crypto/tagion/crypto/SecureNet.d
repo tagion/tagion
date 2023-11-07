@@ -75,7 +75,12 @@ alias StdSecureNetECDSA = StdSecureNetT!false;
 alias StdSecureNet = StdSecureNetT!false;
 @safe
 class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
-    import tagion.crypto.secp256k1.NativeSecp256k1;
+    static if (Schnorr) {
+        import tagion.crypto.secp256k1.NativeSecp256k1;
+    }
+    else {
+        import tagion.crypto.secp256k1.NativeSecp256k1ECDSA : NativeSecp256k1 = NativeSecp256k1ECDSA;
+    }
     import tagion.crypto.Types : Pubkey;
     import tagion.crypto.aes.AESCrypto;
 
@@ -333,7 +338,6 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
         return Pubkey(_crypt.getPubkey(seckey));
     }
 
-    alias NativeSecp256k1 = NativeSecp256k1T!Schnorr;
     this() nothrow {
         _crypt = new NativeSecp256k1;
     }
