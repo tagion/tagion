@@ -76,8 +76,10 @@ struct InputValidatorService {
             try {
                 hirpc.Error message;
                 message.code = err_type;
-                message.message = err_type.to!string;
-                message.data = data;
+                debug {
+                    message.message = err_type.to!string;
+                    message.data = data;
+                }
                 const sender = hirpc.Sender(net, message);
                 int rc = sock.send(sender.toDoc.serialize);
                 if (rc != 0) {

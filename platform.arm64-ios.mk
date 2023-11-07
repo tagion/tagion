@@ -2,15 +2,22 @@
 # Apple arm64 iOS
 #
 
-IOS_ARM64=arm64-apple-ios
-# 12.0
+IOS_SIMULATOR_ARM64:=arm64-apple-ios-simulator
+PLATFORMS+=$(IOS_SIMULATOR_ARM64)
+ifeq ($(PLATFORM),$(IOS_ARM64))
+IOS_ARCH=$(IOS_ARM64)
+TRIPLET=$(IOS_ARCH)
+endif
+
+IOS_ARM64:=arm64-apple-ios # 12.0
 PLATFORMS+=$(IOS_ARM64)
 
 ifeq ($(PLATFORM),$(IOS_ARM64))
+IOS_ARCH=$(IOS_ARM64)
+TRIPLET=$(IOS_ARCH)
+endif
 
-# ---------------------------------------------------------------------
-# Compiler selection 
-# ---------------------------------------------------------------------
+ifneq (,$(findstring apple-ios,$(PLATFORM)))
 
 CCC = clang++ -O0
 CC  = clang -O0
@@ -19,12 +26,6 @@ DFLAGS+=$(DVERSION)=MOBILE
 CROSS_ENABLED=1
 CROSS_OS=ios
 CROSS_ARCH = arm64
-
-IOS_ARCH=$(IOS_ARM64)
-TRIPLET = $(IOS_ARCH)
-
-DFILES: libphobos-arm64-ios
-DFILES: libdruntime-arm64-ios
 
 SHARED?=1
 OS:=darwin
