@@ -104,7 +104,7 @@ class StdNativeSecp256k1 : NativeSecp256k1 {
      +       pub            =  The public key which did the signing
      +/
     @trusted
-    final bool verify(const(ubyte[]) msg, const(ubyte[]) signature, const(ubyte[]) pub) const
+    bool verify(const(ubyte[]) msg, const(ubyte[]) signature, const(ubyte[]) pub) const
     in (msg.length == MESSAGE_SIZE)
     in (signature.length == SIGNATURE_SIZE)
     in (pub.length <= 520)
@@ -161,7 +161,7 @@ class StdNativeSecp256k1 : NativeSecp256k1 {
      + @param seckey ECDSA Secret key, 32 bytes
      +/
     @trusted
-    final bool secKeyVerify(scope const(ubyte[]) seckey) const nothrow @nogc
+    bool secKeyVerify(scope const(ubyte[]) seckey) const nothrow @nogc
     in (seckey.length == SECKEY_SIZE)
     do {
         return secp256k1_ec_seckey_verify(_ctx, &seckey[0]) == 1;
@@ -216,7 +216,7 @@ class StdNativeSecp256k1 : NativeSecp256k1 {
      + @param seckey 32-byte seckey
      +/
     @trusted
-    final void privTweak(
+    void privTweak(
             const(ubyte[]) privkey,
     const(ubyte[]) tweak,
     ref ubyte[] tweak_privkey) const
@@ -264,9 +264,7 @@ class StdNativeSecp256k1 : NativeSecp256k1 {
      + @param pubkey 32-byte seckey
      +/
     @trusted
-    final immutable(ubyte[]) pubTweakAdd(
-            scope const(ubyte[]) pubkey,
-    scope const(ubyte[]) tweak) const
+    final immutable(ubyte[]) pubTweakAdd(scope const(ubyte[]) pubkey, scope const(ubyte[]) tweak) const
     in (pubkey.length == COMPRESSED_PUBKEY_SIZE)
     in (tweak.length == TWEAK_SIZE)
     do {
@@ -297,7 +295,7 @@ class StdNativeSecp256k1 : NativeSecp256k1 {
      + @param pubkey 32-byte seckey
      +/
     @trusted
-    final immutable(ubyte[]) pubTweak(scope const(ubyte[]) pubkey, scope const(ubyte[]) tweak) const
+    immutable(ubyte[]) pubTweak(scope const(ubyte[]) pubkey, scope const(ubyte[]) tweak) const
     in (pubkey.length == COMPRESSED_PUBKEY_SIZE)
     in (tweak.length == TWEAK_SIZE)
     do {
@@ -332,7 +330,7 @@ class StdNativeSecp256k1 : NativeSecp256k1 {
      + @param pubkey byte array of public key used in exponentiaion
      +/
     @trusted
-    final immutable(ubyte[]) createECDHSecret(
+    immutable(ubyte[]) createECDHSecret(
             scope const(ubyte[]) seckey,
     const(ubyte[]) pubkey) const
     in (seckey.length == SECKEY_SIZE)
