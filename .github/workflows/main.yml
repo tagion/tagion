@@ -233,7 +233,15 @@ jobs:
 
   ios_libmobile:
     needs: commit_stage
-    uses: ./.github/workflows/ios.yml
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [arm64]
+        target: [apple-ios, apple-ios-simulator]
+    steps:
+      - uses: ./.github/workflows/ios.yml
+        with:
+          platform: ${{ matrix.arch }}-${{ matrix.target }}
 
   ddoc_push:
     if: false
