@@ -272,7 +272,10 @@ extern (C) {
             const uint8_t* invoicePtr,
             const uint32_t invoiceLen,
             const double amount,
-            double* fees) {
+            double* fees,
+            uint32_t errorLen,
+            uint8_t* errorPtr,
+        ) {
 
         immutable invoiceBuff = cast(immutable)(invoicePtr[0 .. invoiceLen]);
         TagionCurrency tgn_fees;
@@ -301,6 +304,11 @@ extern (C) {
 
             *contractPtr = contractDocId;
             return 1;
+        } else {
+            auto error_result = new HiBON();
+            error_result["error"] = can_pay.msg;
+            const errorDocId = recyclerDoc.create(Document(error_result));
+            *errorPtr = cast(uint8_t) errorDocId;
         }
         return PAYMENT_ERROR;
     }
