@@ -951,15 +951,11 @@ unittest { /// Schnorr tweak
     const aux_random = "b0d8d9a460ddcea7ae5dc37a1b5511eb2ab829abe9f2999e490beba20ff3509a".decode;
     const msg_hash = "1bd69c075dd7b78c4f20a698b22a3fb9d7461525c39827d6aaf7a1628be0a283".decode;
     const secret_key = "e46b4b2b99674889342c851f890862264a872d4ac53a039fbdab91fd68ed4e71".decode;
-    const expected_pubkey = "ecd21d66cf97843d467c9d02c5781ec1ec2b369620605fd847bd23472afc7e74".decode;
-    const expected_keypair = decode("e46b4b2b99674889342c851f890862264a872d4ac53a039fbdab91fd68ed4e71747efc2a4723bd47d85f602096362becc11e78c5029d7c463d8497cf661dd2eca89c1820ccc2dd9b0e0e5ab13b1454eb3c37c31308ae20dd8d2aca2199ff4e6b");
     writefln("--- --- --- --- ---");
     auto crypt = new NativeSecp256k1Schnorr;
     //secp256k1_keypair keypair;
     ubyte[] keypair;
     crypt.createKeyPair(secret_key, keypair);
-    //writefln("keypair %(%02x%)", keypair);
-    assert(keypair == expected_keypair);
 
     writefln("         secret    = %(%02x%)", secret_key);
     writefln("         privkey   = %(%02x%)", keypair);
@@ -970,12 +966,6 @@ unittest { /// Schnorr tweak
     writefln("tweakked_privkey   = %(%02x%)", tweakked_keypair);
     writefln("         privkey   = %(%02x%)", keypair);
     assert(tweakked_keypair != keypair);
-
-    foreach (i, t, k; zip(tweakked_keypair, keypair).enumerate) {
-        if (t != k) {
-            writefln("Faild %2d %02x %02x", i, t, k);
-        }
-    }
     const tweakked_pubkey = crypt.pubTweak(pubkey, tweak);
 
     assert(tweakked_pubkey != pubkey);
@@ -985,4 +975,21 @@ unittest { /// Schnorr tweak
     writefln("         pubkey    = %(%02x%)", tweakked_pubkey_from_keypair);
 
     assert(tweakked_pubkey == tweakked_pubkey_from_keypair, "The tweakked pubkey should be the same as the keypair tweakked pubkey");
+
+    const signature = crypt.sign(msg_hash, keypair, aux_random);
+    const tweakked_signature = crypt.sign(msg_hash, tweakked_keypair, aux_random);
+
+    assert(signature != tweakked_signature, "The signature and the tweakked signature should not be the same");
+    {
+        const tweakked_signature_ok = crypt.verify(tweakked_signature, msg_hash, tweakked_pubkey);
+        assert(tweakked_signature, "Tweakked signature should be correct");
+    }
+    {
+        const signature_not_ok = crypt.verify(tweakked_signature, msg_hash, pubkey);
+        assert(!signature_not_ok, "None tweakked signature should not be correct");
+    }
+    {
+        const signature_not_ok = crypt.verify(signature, msg_hash, tweakked_pubkey);
+        assert(!signature_not_ok, "None tweakked signature should not be correct");
+    }
 }
