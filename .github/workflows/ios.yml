@@ -1,37 +1,33 @@
 name: Build libmobile for ios
-on:
-  workflow_dispatch:
-  workflow_call:
-    inputs:
-      platform:
-        description: 'The target platform'
-        required: true
-        type: number
+inputs:
+  platform:
+    description: 'The target platform'
+    required: true
+    type: number
 
-jobs:
-  ios_libmobile:
-    runs-on: macOS
-    steps:
-      - uses: actions/checkout@v4
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@v4
 
-      - name: Build
-        run: |
-          export PATH="/Users/piss/tools/ldc2-1.35.0-osx-arm64/bin/:$PATH"
-          which ldc2
-          make DC=ldc2 PLATFORM=${{ inputs.platform }} libmobile
-          file ./build/arm64-apple-ios/lib/libmobile.dylib
+    - name: Build
+      run: |
+        export PATH="/Users/piss/tools/ldc2-1.35.0-osx-arm64/bin/:$PATH"
+        which ldc2
+        make DC=ldc2 PLATFORM=${{ inputs.platform }} libmobile
+        file ./build/arm64-apple-ios/lib/libmobile.dylib
 
-      - name: Check output binaries
-        run: |
-          ! nm build/arm64-apple-ios/lib/libmobile.dylib | grep __dyld_get_image_slide
+    - name: Check output binaries
+      run: |
+        ! nm build/arm64-apple-ios/lib/libmobile.dylib | grep __dyld_get_image_slide
 
-      - uses: actions/upload-artifact@v3
-        if: success()
-        with:
-          name: libmobile
-          path: ./build/${{ inputs.platform }}/lib/libmobile.dylib
-          if-no-files-found: error
+    - uses: actions/upload-artifact@v3
+      if: success()
+      with:
+        name: libmobile
+        path: ./build/${{ inputs.platform }}/lib/libmobile.dylib
+        if-no-files-found: error
 
-      - name: Cleanup
-        run: |
-          make PLATFORM=arm64-apple-ios clean
+    - name: Cleanup
+      run: |
+        make PLATFORM=arm64-apple-ios clean
