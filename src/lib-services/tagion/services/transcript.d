@@ -145,7 +145,6 @@ struct TranscriptService {
 
 
         void createRecorder(dartCheckReadRR.Response res, immutable(DARTIndex)[] not_in_dart) {
-            log("received response from dart %s", not_in_dart);
 
             DARTIndex[] used;
 

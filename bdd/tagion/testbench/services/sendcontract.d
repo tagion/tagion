@@ -21,6 +21,11 @@ import tagion.script.execute;
 import tagion.tools.wallet.WalletInterface;
 import tagion.hibon.HiBONRecord;
 import tagion.testbench.services.helper_functions;
+import tagion.logger.Logger;
+import tagion.logger.LogRecords : LogInfo;
+import tagion.hashgraph.Refinement;
+import tagion.utils.pretend_safe_concurrency;
+
 
 import std.algorithm;
 import std.array;
@@ -28,6 +33,8 @@ import core.time;
 import core.thread;
 import std.stdio;
 import std.format;
+
+enum CONTRACT_TIMEOUT = 40;
 
 alias StdSecureWallet = SecureWallet!StdSecureNet;
 enum feature = Feature(
@@ -62,9 +69,18 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
         this.inputvalidator_sock_addr = inputvalidator_sock_addr;
 
     }
+    bool epoch_on_startup;
 
     @Given("i have a dart database with already existing bills linked to wallet1.")
     Document _wallet1() @trusted {
+        // check that we are actually creating epochs;
+        submask.subscribe(StdRefinement.epoch_created);
+        writeln("waiting for epoch");
+        auto received = receiveTimeout(20.seconds, (LogInfo _, const(Document) __) {});
+
+        epoch_on_startup = received;
+        check(epoch_on_startup, "No epoch on startup");
+        
         // create the hirpc request for checking if the bills are already in the system.
 
         foreach (ref wallet; wallets) {
@@ -80,6 +96,7 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
 
     @Given("i make a payment request from wallet2.")
     Document _wallet2() @trusted {
+        check(epoch_on_startup, "No epoch on startup");
         wallet1 = wallets[1];
         wallet2 = wallets[2];
         amount = 1500.TGN;
@@ -108,8 +125,9 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
 
     @When("wallet1 pays contract to wallet2 and sends it to the network.")
     Document network() @trusted {
-        writefln("GOING TO SLEEP 30");
-        Thread.sleep(30.seconds);
+        check(epoch_on_startup, "No epoch on startup");
+        writeln("WAITING FOR TIMEOUT");
+        Thread.sleep(CONTRACT_TIMEOUT.seconds);
 
         writeln("WALLET 1 request");
 
@@ -126,6 +144,7 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
 
     @Then("wallet2 should receive the payment.")
     Document payment() @trusted {
+        check(epoch_on_startup, "No epoch on startup");
         const hirpc = HiRPC(wallet2.net);
         auto wallet2_amount = getWalletUpdateAmount(wallet2, dart_interface_sock_addr, hirpc);
         check(wallet2_amount > 0.TGN, "did not receive money");

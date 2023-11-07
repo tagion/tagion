@@ -149,9 +149,11 @@ struct DARTService {
             req.respond(eye);
 
 
-            auto replicator_tid = locate(task_names.replicator);
-            if (replicator_tid !is Tid.init) {
-                replicator_tid.send(SendRecorder(), recorder, eye, epoch_number);
+            version(REPLICATOR) {
+                auto replicator_tid = locate(task_names.replicator);
+                if (replicator_tid !is Tid.init) {
+                    replicator_tid.send(SendRecorder(), recorder, eye, epoch_number);
+                }
             }
         }
 
