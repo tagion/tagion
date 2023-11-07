@@ -6,12 +6,14 @@ IOS_SIMULATOR_ARM64:=arm64-apple-ios-simulator
 PLATFORMS+=$(IOS_SIMULATOR_ARM64)
 ifeq ($(PLATFORM),$(IOS_SIMULATOR_ARM64))
 IOS_ARCH:=$(IOS_SIMULATOR_ARM64)
+TRIPLET:=arm64-apple-ios
 endif
 
 IOS_ARM64:=arm64-apple-ios
 PLATFORMS+=$(IOS_ARM64)
 ifeq ($(PLATFORM),$(IOS_ARM64))
 IOS_ARCH:=$(IOS_ARM64)
+TRIPLET=$(IOS_ARCH)
 endif
 
 ifneq (,$(findstring apple-ios,$(PLATFORM)))
@@ -19,7 +21,6 @@ ifneq (,$(findstring apple-ios,$(PLATFORM)))
 CCC = clang++ -O0
 CC  = clang -O0
 
-TRIPLET=$(IOS_ARCH)
 DFLAGS+=$(DVERSION)=MOBILE
 CROSS_ENABLED=1
 CROSS_OS=ios
@@ -29,7 +30,7 @@ SHARED?=1
 OS:=darwin
 DLLEXT:=dylib
 DFLAGS+=$(DDEFAULTLIBSTATIC)
-DFLAGS+=-mtriple=$(TRIPLET)
+DFLAGS+=-mtriple=$(IOS_ARCH)
 DINC+=${shell find $(DSRC) -maxdepth 1 -type d -path "*src/lib-*" }
 
 # ---------------------------------------------------------------------
