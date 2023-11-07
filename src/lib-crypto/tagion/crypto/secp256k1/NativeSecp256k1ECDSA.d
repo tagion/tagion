@@ -104,8 +104,7 @@ class StdNativeSecp256k1 { // : NativeSecp256k1 {
      +       pub            =  The public key which did the signing
      +/
     @trusted
-    static if (!Schnorr)
-        final bool verify(const(ubyte[]) msg, const(ubyte[]) signature, const(ubyte[]) pub) const
+    final bool verify(const(ubyte[]) msg, const(ubyte[]) signature, const(ubyte[]) pub) const
     in (msg.length == MESSAGE_SIZE)
     in (signature.length == SIGNATURE_SIZE)
     in (pub.length <= 520)
@@ -134,8 +133,7 @@ class StdNativeSecp256k1 { // : NativeSecp256k1 {
      + @param sig byte array of signature
      +/
     @trusted
-    static if (!Schnorr)
-        immutable(ubyte[]) sign(const(ubyte[]) msg, const(ubyte[]) seckey) const
+    immutable(ubyte[]) sign(const(ubyte[]) msg, const(ubyte[]) seckey) const
     in (msg.length == MESSAGE_SIZE)
     in (seckey.length == SECKEY_SIZE)
     do {
@@ -163,8 +161,7 @@ class StdNativeSecp256k1 { // : NativeSecp256k1 {
      + @param seckey ECDSA Secret key, 32 bytes
      +/
     @trusted
-    static if (!Schnorr)
-        final bool secKeyVerify(scope const(ubyte[]) seckey) const nothrow @nogc
+    final bool secKeyVerify(scope const(ubyte[]) seckey) const nothrow @nogc
     in (seckey.length == SECKEY_SIZE)
     do {
         return secp256k1_ec_seckey_verify(_ctx, &seckey[0]) == 1;
@@ -180,8 +177,7 @@ class StdNativeSecp256k1 { // : NativeSecp256k1 {
      +/
     enum COMPRESSED_PUBKEY_SIZE = 33;
     @trusted
-    static if (!Schnorr)
-        immutable(ubyte[]) getPubkey(scope const(ubyte[]) seckey) const
+    immutable(ubyte[]) getPubkey(scope const(ubyte[]) seckey) const
     in (seckey.length == SECKEY_SIZE)
     do {
         secp256k1_pubkey pubkey;
@@ -220,9 +216,8 @@ class StdNativeSecp256k1 { // : NativeSecp256k1 {
      + @param seckey 32-byte seckey
      +/
     @trusted
-    static if (!Schnorr)
-        final void privTweakMul(
-                const(ubyte[]) privkey,
+    final void privTweakMul(
+            const(ubyte[]) privkey,
     const(ubyte[]) tweak,
     ref ubyte[] tweak_privkey) const
     in {
@@ -271,8 +266,7 @@ class StdNativeSecp256k1 { // : NativeSecp256k1 {
      + @param pubkey 32-byte seckey
      +/
     @trusted
-    static if (!Schnorr)
-        final immutable(ubyte[]) pubTweakAdd(
+    final immutable(ubyte[]) pubTweakAdd(
             const(ubyte[]) pubkey,
     const(ubyte[]) tweak) const
     in (pubkey.length == COMPRESSED_PUBKEY_SIZE)
@@ -305,8 +299,7 @@ class StdNativeSecp256k1 { // : NativeSecp256k1 {
      + @param pubkey 32-byte seckey
      +/
     @trusted
-    static if (!Schnorr)
-        final immutable(ubyte[]) pubTweakMul(const(ubyte[]) pubkey, const(ubyte[]) tweak) const
+    final immutable(ubyte[]) pubTweakMul(const(ubyte[]) pubkey, const(ubyte[]) tweak) const
     in (pubkey.length == COMPRESSED_PUBKEY_SIZE)
     in (tweak.length == TWEAK_SIZE)
     do {
@@ -332,8 +325,7 @@ class StdNativeSecp256k1 { // : NativeSecp256k1 {
         return output_ser.idup;
     }
 
-    static if (!Schnorr)
-        alias pubTweak = pubTweakMul;
+    alias pubTweak = pubTweakMul;
 
     /++
      + libsecp256k1 create ECDH secret - constant time ECDH calculation
@@ -341,9 +333,8 @@ class StdNativeSecp256k1 { // : NativeSecp256k1 {
      + @param seckey byte array of secret key used in exponentiaion
      + @param pubkey byte array of public key used in exponentiaion
      +/
-    static if (!Schnorr)
-        @trusted
-        final immutable(ubyte[]) createECDHSecret(
+    @trusted
+    final immutable(ubyte[]) createECDHSecret(
             scope const(ubyte[]) seckey,
     const(ubyte[]) pubkey) const
     in (seckey.length == SECKEY_SIZE)
