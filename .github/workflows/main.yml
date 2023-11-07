@@ -232,15 +232,16 @@ jobs:
           make PLATFORM=${{ matrix.arch }}-linux-android clean
 
   ios_libmobile:
-    runs-on: macOS
     needs: commit_stage
     strategy:
       fail-fast: false
       matrix:
-        arch: [arm64]
+        arch: [arm64, x86_64]
         target: [apple-ios, apple-ios-simulator]
+    runs-on: macOS
     steps:
-      - uses: ./.github/workflows/ios.yml
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/ios
         with:
           platform: ${{ matrix.arch }}-${{ matrix.target }}
 
