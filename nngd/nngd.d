@@ -427,7 +427,7 @@ struct NNGAio {
     @nogc @safe
     @property nng_aio* pointer() { return aio; }
 
-    @nogc @safe
+    @nogc 
     @property void pointer( nng_aio* p ) {
         if(p !is null){
             nng_aio_free(aio);
