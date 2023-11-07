@@ -232,6 +232,7 @@ jobs:
           make PLATFORM=${{ matrix.arch }}-linux-android clean
 
   ios_libmobile:
+    runs-on: macOS
     needs: commit_stage
     strategy:
       fail-fast: false
