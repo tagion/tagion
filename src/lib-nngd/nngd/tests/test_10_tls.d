@@ -9,6 +9,7 @@ import std.file;
 import std.uuid;
 import std.regex;
 import std.json;
+import std.exception;
 
 import nngd;
 import nngtestutil;

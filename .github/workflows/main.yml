@@ -43,7 +43,7 @@ jobs:
         if: always()
         run: |
           mkdir -p ${{ env.ARTIFACT_DIR }}
-          trunk=$(find build/x86_64-linux/bin -type f -not -name "*.o" -not -path "*/cov/*")
+          trunk=$(find build/${{ env.TARGET }}//bin -type f -not -name "*.o" -not -path "*/cov/*")
           cp -r --parents $trunk ${{ env.ARTIFACT_DIR }}
 
           make clean
@@ -125,7 +125,8 @@ jobs:
           mkdir -p ${{ env.ARTIFACT_DIR }}
           make ci-files
           trunk=$(find build/${{ env.TARGET }}/bin -type f -not -name "*.o" -not -path "*/cov/*")
-          cp -r --parents logs/ $trunk ${{ env.ARTIFACT_DIR }}
+          stacks=$(find -name "*.callstack")
+          cp -r --parents logs/ $trunk $stacks ${{ env.ARTIFACT_DIR }}
 
           make clean
           rm -r logs/ || echo "no logs"
@@ -166,7 +167,8 @@ jobs:
         if: always()
         run: |
           mkdir -p ${{ env.ARTIFACT_DIR }}
-          cp -r --parents logs/ ${{ env.ARTIFACT_DIR }}
+          stacks=$(find -name "*.callstack")
+          cp -r --parents logs/ $stacks ${{ env.ARTIFACT_DIR }}
           find . -mindepth 1 -delete
 
   create_artifact:

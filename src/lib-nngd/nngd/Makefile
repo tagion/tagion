@@ -6,7 +6,7 @@
 NNG_WITH_MBEDTLS?=ON
 
 DC=dmd
-DCFLAGS=-O -d -m64 -i -debug -g -gf -gs -gx
+DCFLAGS=-O -d -m64 -i -debug -g -gf -gs -gx -dip1000
 DINC=nngd extern/libnng/libnng
 
 DTESTS=$(wildcard tests/test*.d)

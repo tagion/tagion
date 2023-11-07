@@ -143,17 +143,17 @@ struct DARTService {
         void modify(dartModifyRR req, immutable(RecordFactory.Recorder) recorder, immutable(long) epoch_number) @safe {
             log("Received modify request with length=%s", recorder.length);
 
-            try {
-                auto eye = db.modify(recorder);
-                log("New bullseye is %s", eye.toHexString);
+            auto eye = db.modify(recorder);
+            log("New bullseye is %s", eye.toHexString);
 
-                req.respond(eye);
+            req.respond(eye);
 
-                locate(task_names.replicator).send(SendRecorder(), recorder, eye, epoch_number);
-            } catch(DARTException e) {
-                log.fatal("DARTModify failed %s \nrecorder that caused failure\n", e, recorder.toDoc.toPretty);
-                throw e;
+
+            auto replicator_tid = locate(task_names.replicator);
+            if (replicator_tid is Tid.init) {
+                throw new Exception(format("dartModify replicator tid not found task_name: %s", task_names.replicator));
             }
+            replicator_tid.send(SendRecorder(), recorder, eye, epoch_number);
         }
 
         void bullseye(dartBullseyeRR req) @safe {

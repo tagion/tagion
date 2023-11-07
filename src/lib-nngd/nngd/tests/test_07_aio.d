@@ -6,6 +6,7 @@ import core.thread;
 import std.datetime.systime;
 import std.uuid;
 import std.regex;
+import std.exception;
 
 import nngd;
 import nngtestutil;
@@ -27,15 +28,14 @@ extern (C) void rcb ( void* p ){
     size_t cnt = aio.count;
     writeln("Receive callback fired with result: ", res, " : ", cnt );
 
-    NNGMessage msg = aio.get_msg();
-    
-    if(msg.empty){
+    NNGMessage msg  = NNGMessage(0);
+    if(aio.get_msg(msg) != nng_errno.NNG_OK){
         writeln("Received empy msg");
         return;
     }
 
     writeln("Received message: ", msg.length, " : ", msg.header_length);
-    //assert( msg.length == 0 || ( msg.length == 27 && msg.header_length == 0 ) );
+    //enforce( msg.length == 0 || ( msg.length == 27 && msg.header_length == 0 ) );
 
     if(msg.length > 14){
         auto x = msg.body_trim!string(); 
@@ -62,18 +62,18 @@ main()
     NNGSocket sr = NNGSocket(nng_socket_type.NNG_SOCKET_PULL, false);
     sr.recvtimeout = msecs(1000);
     rc = sr.listen(url);
-    assert(rc == 0);
+    enforce(rc == 0);
     NNGSocket ss = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH, false);
     ss.sendtimeout = msecs(1000);
     ss.sendbuf = 4096;
     rc = ss.dial(url);
-    assert(rc == 0);
+    enforce(rc == 0);
     
     NNGMessage msg2 = NNGMessage(0);
-    rc = msg2.body_append!ushort(11);  assert(rc == 0);
-    rc = msg2.body_append!uint(12);    assert(rc == 0);
-    rc = msg2.body_append!ulong(13);   assert(rc == 0);
-    rc = msg2.body_prepend(cast(ubyte[])s); assert(rc == 0);
+    rc = msg2.body_append!ushort(11);  enforce(rc == 0);
+    rc = msg2.body_append!uint(12);    enforce(rc == 0);
+    rc = msg2.body_append!ulong(13);   enforce(rc == 0);
+    rc = msg2.body_prepend(cast(ubyte[])s); enforce(rc == 0);
     NNGMessage msg3 = NNGMessage(0);
     
     NNGAio saio = NNGAio(null, null);

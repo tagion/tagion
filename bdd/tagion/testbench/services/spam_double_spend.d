@@ -141,6 +141,7 @@ class SpamOneNodeUntil10EpochsHaveOccured {
         foreach(opt; opts) {
             auto bullseye_sender = dartBullseye();
             auto hirpc_bullseye_receiver = sendDARTHiRPC(opt.dart_interface.sock_addr, bullseye_sender, wallet1_hirpc);
+            check(!hirpc_bullseye_receiver.isError, format("senddarthirpc received error: %s", hirpc_bullseye_receiver.toPretty));
             auto hirpc_message = hirpc_bullseye_receiver.message[Keywords.result].get!Document;
             auto bullseye = hirpc_message[DARTFile.Params.bullseye].get!Buffer;
             eyes ~= bullseye;
@@ -282,6 +283,7 @@ class SpamMultipleNodesUntil10EpochsHaveOccured {
         foreach(opt; opts) {
             auto bullseye_sender = dartBullseye();
             auto hirpc_bullseye_receiver = sendDARTHiRPC(opt.dart_interface.sock_addr, bullseye_sender, wallet1_hirpc);
+            check(!hirpc_bullseye_receiver.isError, format("senddarthirpc received error: %s", hirpc_bullseye_receiver.toPretty));
             auto hirpc_message = hirpc_bullseye_receiver.message[Keywords.result].get!Document;
             auto bullseye = hirpc_message[DARTFile.Params.bullseye].get!Buffer;
             eyes ~= bullseye;
