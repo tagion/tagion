@@ -91,7 +91,7 @@ void dartHiRPCCallback(NNGMessage *msg, void *ctx) @trusted {
         writeln("no message received");
         return;
     }
-    if (msg.empty) {
+    if (msg.length < 1) {
         send_error(InterfaceError.MsgEmpty);
         writeln("received empty msg");
         return;
