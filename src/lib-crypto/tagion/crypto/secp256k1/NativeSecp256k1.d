@@ -238,6 +238,8 @@ class NativeSecp256k1T(bool Schnorr) {
 
     }
 
+    static if (!Schnorr)
+        alias privTweak = privTweakMul;
     /++
      + libsecp256k1 PrivKey Tweak-Add - Tweak privkey by adding to it
      +

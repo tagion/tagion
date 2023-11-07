@@ -69,6 +69,7 @@ class StdHashNet : HashNet {
     }
 }
 
+//alias StdSecureNetSchnorr = StdSecureNetT!true;
 alias StdSecureNet = StdSecureNetT!false;
 @safe
 class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
@@ -223,16 +224,25 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
         }
 
         @safe class LocalSecret : SecretMethods {
-            immutable(ubyte[]) sign(const(ubyte[]) message) const {
-                immutable(ubyte)[] result;
-                do_secret_stuff((const(ubyte[]) privkey) { result = _crypt.sign(message, privkey); });
-                return result;
+            static if (Schnorr) {
+                immutable(ubyte[]) sign(const(ubyte[]) message) const {
+                    immutable(ubyte)[] result;
+                    ubyte[_crypt.MESSAGE_SIZE] _aux_random;
+                    ubyte[] aux_random = _aux_random;
+                    getRandom(aux_random);
+                    do_secret_stuff((const(ubyte[]) privkey) { result = _crypt.sign(message, privkey, aux_random); });
+                    return result;
+                }
             }
-
+            else {
+                immutable(ubyte[]) sign(const(ubyte[]) message) const {
+                    immutable(ubyte)[] result;
+                    do_secret_stuff((const(ubyte[]) privkey) { result = _crypt.sign(message, privkey); });
+                    return result;
+                }
+            }
             void tweak(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey) const {
-                do_secret_stuff((const(ubyte[]) privkey) @safe {
-                    _crypt.privTweakMul(privkey, tweak_code, tweak_privkey);
-                });
+                do_secret_stuff((const(ubyte[]) privkey) @safe { _crypt.privTweak(privkey, tweak_code, tweak_privkey); });
             }
 
             immutable(ubyte[]) ECDHSecret(scope const(Pubkey) pubkey) const {
