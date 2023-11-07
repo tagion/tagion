@@ -4,6 +4,7 @@ import tagion.behaviour.Behaviour;
 import tagion.testbench.services;
 import tagion.testbench.tools.Environment;
 import std.file;
+import tagion.logger.Logger;
 
 import std.path : setExtension, buildPath;
 import tagion.basic.Types : FileExtension;
@@ -104,9 +105,17 @@ int _main(string[] args) {
 
     immutable neuewelle_args = ["send_contract_test", config_file]; // ~ args;
 
+
     auto tid = spawn(&wrap_neuewelle, neuewelle_args);
-    Thread.sleep(15.seconds);
+
+    Thread.sleep(5.seconds);
     writeln("going to run test");
+
+    
+    const task_name = "send_contract_tester";
+    register(task_name, thisTid);
+    log.registerSubscriptionTask(task_name);
+
     auto send_contract_feature = automation!(sendcontract);
     send_contract_feature.SendASingleTransactionFromAWalletToAnotherWallet(local_options, wallets, dart_interface_sock_addr, inputvalidator_sock_addr, start_amount);
     send_contract_feature.run();
