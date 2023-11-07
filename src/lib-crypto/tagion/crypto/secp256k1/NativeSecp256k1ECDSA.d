@@ -23,7 +23,7 @@ private import tagion.crypto.secp256k1.c.secp256k1_hash;
 private import tagion.crypto.secp256k1.c.secp256k1_schnorrsig;
 private import tagion.crypto.secp256k1.c.secp256k1_extrakeys;
 
-//import tagion.crypo.secp256k1.NativeSecp256k1Interface;
+import tagion.crypto.secp256k1.NativeSecp256k1Interface;
 
 import std.exception : assumeUnique;
 import tagion.basic.ConsensusExceptions;
@@ -70,7 +70,7 @@ enum Schnorr = false;
  + or point the JVM to the folder containing it with -Djava.library.path
  + </p>
  +/
-class StdNativeSecp256k1 { //: StdNativeSecp256k1 {
+class StdNativeSecp256k1 { // : NativeSecp256k1 {
     static void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         if (!flag) {
             throw new SecurityConsensusException(code, file, line);
@@ -335,60 +335,6 @@ class StdNativeSecp256k1 { //: StdNativeSecp256k1 {
     static if (!Schnorr)
         alias pubTweak = pubTweakMul;
 
-    @trusted
-    static if (Schnorr)
-        final void privTweak(
-                scope const(ubyte[]) keypair,
-    scope const(ubyte[]) tweak,
-    out ubyte[] tweakked_keypair) const
-    in (keypair.length == secp256k1_keypair.data.length)
-    in (tweak.length == TWEAK_SIZE)
-    do {
-        scope (exit) {
-            randomizeContext;
-        }
-        static assert(secp256k1_keypair.data.offsetof == 0);
-        tweakked_keypair = keypair.dup;
-        auto _keypair = cast(secp256k1_keypair*)(&tweakked_keypair[0]);
-        {
-            const ret = secp256k1_keypair_xonly_tweak_add(_ctx, _keypair, &tweak[0]);
-            check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_TWEAK_MULT_FAULT);
-        }
-
-    }
-
-    @trusted
-    static if (Schnorr)
-        final immutable(ubyte[]) pubTweak(scope const(ubyte[]) pubkey, scope const(ubyte[]) tweak) const
-    in (pubkey.length == XONLY_PUBKEY_SIZE)
-    in (tweak.length == TWEAK_SIZE)
-    do {
-        secp256k1_xonly_pubkey xonly_pubkey;
-        {
-            const ret = secp256k1_xonly_pubkey_parse(_ctx, &xonly_pubkey, &pubkey[0]);
-            check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_SERIALIZE);
-        }
-        secp256k1_pubkey output_pubkey;
-        {
-            const ret = secp256k1_xonly_pubkey_tweak_add(_ctx, &output_pubkey, &xonly_pubkey, &tweak[0]);
-            check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_TWEAK_MULT_FAULT);
-
-        }
-        secp256k1_xonly_pubkey _xonly_pubkey;
-        {
-            const ret = secp256k1_xonly_pubkey_from_pubkey(_ctx, &_xonly_pubkey, null, &output_pubkey);
-            check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_PARSE_FAULT);
-        }
-        ubyte[XONLY_PUBKEY_SIZE] pubkey_result;
-
-        {
-            const ret = secp256k1_xonly_pubkey_serialize(_ctx, &pubkey_result[0], &_xonly_pubkey);
-            check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_PARSE_FAULT);
-
-        }
-
-        return pubkey_result.idup;
-    }
     /++
      + libsecp256k1 create ECDH secret - constant time ECDH calculation
      +
@@ -420,25 +366,6 @@ class StdNativeSecp256k1 { //: StdNativeSecp256k1 {
         return result.idup;
     }
 
-    @trusted
-    static if (Schnorr)
-        final immutable(ubyte[]) createECDHSecret(
-            scope const(ubyte[]) keypair,
-    const(ubyte[]) pubkey) const
-    in (keypair.length == secp256k1_keypair.data.length)
-    in (pubkey.length == XONLY_PUBKEY_SIZE)
-    do {
-        scope (exit) {
-            randomizeContext;
-        }
-        secp256k1_pubkey pubkey_result;
-        {
-
-            // const ret = secp256k1_keypair_xonly_pub(_ctx, 
-        }
-        return null;
-    }
-
     /++
      + libsecp256k1 randomize - updates the context randomization
      +
@@ -454,166 +381,6 @@ class StdNativeSecp256k1 { //: StdNativeSecp256k1 {
         auto __ctx = cast(secp256k1_context*) _ctx;
         return secp256k1_context_randomize(__ctx, &ctx_randomize[0]) == 1;
     }
-
-    @trusted
-    static if (Schnorr)
-        final void createKeyPair(
-                scope const(ubyte[]) seckey,
-    ref secp256k1_keypair keypair) const
-    in (seckey.length == SECKEY_SIZE)
-
-    do {
-        scope (exit) {
-            randomizeContext;
-        }
-        const rt = secp256k1_keypair_create(_ctx, &keypair, &seckey[0]);
-        check(rt == 1, ConsensusFailCode.SECURITY_FAILD_TO_CREATE_KEYPAIR);
-
-    }
-
-    @trusted
-    static if (Schnorr)
-        final void createKeyPair(
-                const(ubyte[]) seckey,
-    out ubyte[] keypair) const
-    in (seckey.length == SECKEY_SIZE)
-    do {
-        keypair.length = secp256k1_keypair.data.length;
-        auto _keypair = cast(secp256k1_keypair*)(&keypair[0]);
-        createKeyPair(seckey, *_keypair);
-    }
-
-    @trusted
-    static if (Schnorr)
-        final void getSecretKey(
-                ref scope const(ubyte[]) keypair,
-    out ubyte[] seckey) nothrow const
-    in (keypair.length == secp256k1_keypair.data.length)
-
-    do {
-        seckey.length = SECKEY_SIZE;
-        const _keypair = cast(secp256k1_keypair*)&keypair[0];
-        const ret = secp256k1_keypair_sec(_ctx, &seckey[0], _keypair);
-        assert(ret is 1);
-    }
-
-    @trusted
-    static if (Schnorr)
-        final void getPubkey(
-                ref scope const(secp256k1_keypair) keypair,
-                ref scope secp256k1_pubkey pubkey) const nothrow {
-            secp256k1_keypair_pub(_ctx, &pubkey, &keypair);
-        }
-
-    /**
-       Takes both a seckey and keypair 
-*/
-    @trusted
-    static if (Schnorr)
-        final immutable(ubyte[]) getPubkey(scope const(ubyte[]) keypair_seckey) const
-    in (keypair_seckey.length == secp256k1_keypair.data.length ||
-            keypair_seckey.length == SECKEY_SIZE)
-
-    do {
-        static assert(secp256k1_keypair.data.offsetof == 0);
-        if (keypair_seckey.length == SECKEY_SIZE) {
-            secp256k1_keypair tmp_keypair;
-            scope (exit) {
-                tmp_keypair.data[] = 0;
-            }
-            createKeyPair(keypair_seckey, tmp_keypair);
-            return getPubkey(tmp_keypair);
-
-        }
-        const _keypair = cast(secp256k1_keypair*)(&keypair_seckey[0]);
-        return getPubkey(*_keypair);
-    }
-
-    @trusted
-    static if (Schnorr)
-        final immutable(ubyte[]) getPubkey(ref scope const(secp256k1_keypair) keypair) const {
-        secp256k1_xonly_pubkey xonly_pubkey;
-        {
-            const rt = secp256k1_keypair_xonly_pub(_ctx, &xonly_pubkey, null, &keypair);
-            check(rt == 1, ConsensusFailCode.SECURITY_FAILD_PUBKEY_FROM_KEYPAIR);
-        }
-        ubyte[XONLY_PUBKEY_SIZE] pubkey;
-        {
-            const rt = secp256k1_xonly_pubkey_serialize(_ctx, &pubkey[0], &xonly_pubkey);
-            check(rt == 1, ConsensusFailCode.SECURITY_FAILD_PUBKEY_FROM_KEYPAIR);
-        }
-        return pubkey.idup;
-
-    }
-
-    @trusted
-    static if (Schnorr)
-        final immutable(ubyte[]) sign(
-            const(ubyte[]) msg,
-    ref scope const(secp256k1_keypair) keypair,
-    scope const(ubyte[]) aux_random) const
-    in (msg.length == MESSAGE_SIZE)
-    in (aux_random.length == MESSAGE_SIZE || aux_random.length == 0)
-
-    do {
-        scope (exit) {
-            randomizeContext;
-        }
-        ubyte[SIGNATURE_SIZE] signature;
-        const rt = secp256k1_schnorrsig_sign32(_ctx, &signature[0], &msg[0], &keypair, &aux_random[0]);
-        check(rt == 1, ConsensusFailCode.SECURITY_FAILD_TO_SIGN_MESSAGE);
-        return signature.idup;
-    }
-
-    @trusted
-    static if (Schnorr)
-        final immutable(ubyte[]) sign(
-            const(ubyte[]) msg,
-    scope const(ubyte[]) keypair,
-    scope const(ubyte[]) aux_random) const
-    in (keypair.length == secp256k1_keypair.data.length)
-    do {
-        const _keypair = cast(secp256k1_keypair*)(&keypair[0]);
-        return sign(msg, *_keypair, aux_random);
-    }
-
-    @trusted
-    static if (Schnorr)
-        final bool verify(
-                const(ubyte[]) msg,
-    const(ubyte[]) signature,
-    const(ubyte[]) pubkey) const nothrow
-    in (pubkey.length == XONLY_PUBKEY_SIZE)
-
-    do {
-        secp256k1_xonly_pubkey xonly_pubkey;
-        secp256k1_xonly_pubkey_parse(_ctx, &xonly_pubkey, &pubkey[0]);
-        return verify(signature, msg, xonly_pubkey);
-    }
-
-    @trusted
-    static if (Schnorr)
-        final bool verify(
-                const(ubyte[]) signature,
-    const(ubyte[]) msg,
-    ref scope const(secp256k1_xonly_pubkey) xonly_pubkey) const nothrow
-    in (signature.length == SIGNATURE_SIZE)
-    in (msg.length == MESSAGE_SIZE)
-
-    do {
-        const ret = secp256k1_schnorrsig_verify(_ctx, &signature[0], &msg[0], MESSAGE_SIZE, &xonly_pubkey);
-        return ret != 0;
-
-    }
-
-    @trusted
-    static if (Schnorr)
-        final bool xonlyPubkey(
-                ref scope const(secp256k1_pubkey) pubkey,
-                ref secp256k1_xonly_pubkey xonly_pubkey) const nothrow @nogc {
-            const ret = secp256k1_xonly_pubkey_from_pubkey(_ctx, &xonly_pubkey, null, &pubkey);
-            return ret != 0;
-        }
 }
 
 version (unittest) {

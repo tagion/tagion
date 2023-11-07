@@ -1,4 +1,4 @@
-module tagion.crypto.secp256k1.NativeSecp256k1nterface;
+module tagion.crypto.secp256k1.NativeSecp256k1Interface;
 
 interface NativeSecp256k1 {
     bool verify(const(ubyte[]) msg, const(ubyte[]) signature, const(ubyte[]) pub) const;
