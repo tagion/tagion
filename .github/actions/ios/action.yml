@@ -12,7 +12,7 @@ runs:
 
     - name: Build
       run: |
-        export PATH="/Users/piss/tools/ldc2-1.35.0-osx-arm64/bin/:$PATH"
+        export PATH="/Users/piss/tools/ldc2-1.35.0-osx-universal/bin/:$PATH"
         which ldc2
         make DC=ldc2 PLATFORM=${{ inputs.platform }} libmobile
         file ./build/arm64-apple-ios/lib/libmobile.dylib
