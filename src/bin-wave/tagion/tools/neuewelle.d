@@ -31,7 +31,7 @@ import tagion.services.options;
 import tagion.services.subscription;
 import tagion.services.locator;
 import tagion.services.logger;
-import tagion.GlobalSignals : stopsignal;
+import tagion.GlobalSignals : stopsignal, segment_fault;
 import tagion.utils.JSONCommon;
 import tagion.crypto.SecureNet;
 import tagion.crypto.SecureInterfaceNet;
@@ -69,10 +69,14 @@ int _main(string[] args) {
     { // Handle sigint
         sigaction_t sa;
         sa.sa_handler = &signal_handler;
+        sa.sa_sigaction = &segment_fault;
         sigemptyset(&sa.sa_mask);
-        sa.sa_flags = 0;
+        sa.sa_flags = SA_RESTART;
         // Register the signal handler for SIGINT
-        sigaction(SIGINT, &sa, null);
+        int rc = sigaction(SIGINT, &sa, null);
+        assert(rc == 0, "sigaction error");
+        rc = sigaction(SIGSEGV, &sa, null);
+        assert(rc == 0, "sigaction error");
     }
 
     bool version_switch;
