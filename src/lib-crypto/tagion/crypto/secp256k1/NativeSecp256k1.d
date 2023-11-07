@@ -365,20 +365,17 @@ class NativeSecp256k1T(bool Schnorr) {
             const ret = secp256k1_xonly_pubkey_parse(_ctx, &xonly_pubkey, &pubkey[0]);
             check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_SERIALIZE);
         }
-        writefln("1) xonly_pubkey    = %(%02x%)", xonly_pubkey.data);
         secp256k1_pubkey output_pubkey;
         {
             const ret = secp256k1_xonly_pubkey_tweak_add(_ctx, &output_pubkey, &xonly_pubkey, &tweak[0]);
             check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_TWEAK_MULT_FAULT);
 
         }
-        writefln("2) secp256k1_pubkey= %(%02x%)", output_pubkey.data);
         secp256k1_xonly_pubkey _xonly_pubkey;
         {
             const ret = secp256k1_xonly_pubkey_from_pubkey(_ctx, &_xonly_pubkey, null, &output_pubkey);
             check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_PARSE_FAULT);
         }
-        writefln("3)_xonly_pubkey    = %(%02x%)", _xonly_pubkey.data);
         ubyte[XONLY_PUBKEY_SIZE] pubkey_result;
 
         {
@@ -386,7 +383,6 @@ class NativeSecp256k1T(bool Schnorr) {
             check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_PARSE_FAULT);
 
         }
-        writefln("3)       pubkey    = %(%02x%)", pubkey_result);
 
         return pubkey_result.idup;
     }
@@ -506,13 +502,11 @@ class NativeSecp256k1T(bool Schnorr) {
             const rt = secp256k1_keypair_xonly_pub(_ctx, &xonly_pubkey, null, &keypair);
             check(rt == 1, ConsensusFailCode.SECURITY_FAILD_PUBKEY_FROM_KEYPAIR);
         }
-        writefln("getPubkey          = %(%02x%)", xonly_pubkey.data);
         ubyte[XONLY_PUBKEY_SIZE] pubkey;
         {
             const rt = secp256k1_xonly_pubkey_serialize(_ctx, &pubkey[0], &xonly_pubkey);
             check(rt == 1, ConsensusFailCode.SECURITY_FAILD_PUBKEY_FROM_KEYPAIR);
         }
-        writefln("getPubkey          = %(%02x%)", pubkey);
         return pubkey.idup;
 
     }
@@ -944,36 +938,25 @@ unittest { /// Schnorr test generated from the secp256k1/examples/schnorr.c
     assert(signature_ok, "Schnorr signing failded");
 }
 
-import std.stdio;
-import std.range;
-
 unittest { /// Schnorr tweak
     const aux_random = "b0d8d9a460ddcea7ae5dc37a1b5511eb2ab829abe9f2999e490beba20ff3509a".decode;
     const msg_hash = "1bd69c075dd7b78c4f20a698b22a3fb9d7461525c39827d6aaf7a1628be0a283".decode;
     const secret_key = "e46b4b2b99674889342c851f890862264a872d4ac53a039fbdab91fd68ed4e71".decode;
-    writefln("--- --- --- --- ---");
     auto crypt = new NativeSecp256k1Schnorr;
     //secp256k1_keypair keypair;
     ubyte[] keypair;
     crypt.createKeyPair(secret_key, keypair);
 
-    writefln("         secret    = %(%02x%)", secret_key);
-    writefln("         privkey   = %(%02x%)", keypair);
     const pubkey = crypt.getPubkey(keypair);
     const tweak = sha256("Some tweak".representation);
     ubyte[] tweakked_keypair;
     crypt.privkeyTweak(keypair, tweak, tweakked_keypair);
-    writefln("tweakked_privkey   = %(%02x%)", tweakked_keypair);
-    writefln("         privkey   = %(%02x%)", keypair);
     assert(tweakked_keypair != keypair);
     const tweakked_pubkey = crypt.pubTweak(pubkey, tweak);
 
     assert(tweakked_pubkey != pubkey);
 
     const tweakked_pubkey_from_keypair = crypt.getPubkey(tweakked_keypair);
-    writefln("tweakked_pubkey    = %(%02x%)", tweakked_pubkey);
-    writefln("         pubkey    = %(%02x%)", tweakked_pubkey_from_keypair);
-
     assert(tweakked_pubkey == tweakked_pubkey_from_keypair, "The tweakked pubkey should be the same as the keypair tweakked pubkey");
 
     const signature = crypt.sign(msg_hash, keypair, aux_random);
