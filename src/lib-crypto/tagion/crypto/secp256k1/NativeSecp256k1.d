@@ -394,8 +394,9 @@ class NativeSecp256k1T(bool Schnorr) {
      + @param seckey byte array of secret key used in exponentiaion
      + @param pubkey byte array of public key used in exponentiaion
      +/
-    @trusted
-    final immutable(ubyte[]) createECDHSecret(
+    static if (!Schnorr)
+        @trusted
+        final immutable(ubyte[]) createECDHSecret(
             scope const(ubyte[]) seckey,
     const(ubyte[]) pubkey) const
     in (seckey.length == SECKEY_SIZE)
@@ -416,6 +417,25 @@ class NativeSecp256k1T(bool Schnorr) {
             check(ret == 1, ConsensusFailCode.SECURITY_EDCH_FAULT);
         }
         return result.idup;
+    }
+
+    @trusted
+    static if (Schnorr)
+        final immutable(ubyte[]) createECDHSecret(
+            scope const(ubyte[]) keypair,
+    const(ubyte[]) pubkey) const
+    in (keypair.length == secp256k1_keypair.data.length)
+    in (pubkey.length == XONLY_PUBKEY_SIZE)
+    do {
+        scope (exit) {
+            randomizeContext;
+        }
+        secp256k1_pubkey pubkey_result;
+        {
+
+            // const ret = secp256k1_keypair_xonly_pub(_ctx, 
+        }
+        return null;
     }
 
     /++
@@ -484,14 +504,27 @@ class NativeSecp256k1T(bool Schnorr) {
             secp256k1_keypair_pub(_ctx, &pubkey, &keypair);
         }
 
+    /**
+       Takes both a seckey and keypair 
+*/
     @trusted
     static if (Schnorr)
-        final immutable(ubyte[]) getPubkey(scope const(ubyte[]) keypair) const
-    in (keypair.length == secp256k1_keypair.data.length)
+        final immutable(ubyte[]) getPubkey(scope const(ubyte[]) keypair_seckey) const
+    in (keypair_seckey.length == secp256k1_keypair.data.length ||
+            keypair_seckey.length == SECKEY_SIZE)
 
     do {
         static assert(secp256k1_keypair.data.offsetof == 0);
-        const _keypair = cast(secp256k1_keypair*)(&keypair[0]);
+        if (keypair_seckey.length == SECKEY_SIZE) {
+            secp256k1_keypair tmp_keypair;
+            scope (exit) {
+                tmp_keypair.data[] = 0;
+            }
+            createKeyPair(keypair_seckey, tmp_keypair);
+            return getPubkey(tmp_keypair);
+
+        }
+        const _keypair = cast(secp256k1_keypair*)(&keypair_seckey[0]);
         return getPubkey(*_keypair);
     }
 
@@ -546,8 +579,8 @@ class NativeSecp256k1T(bool Schnorr) {
     @trusted
     static if (Schnorr)
         final bool verify(
-                const(ubyte[]) signature,
-    const(ubyte[]) msg,
+                const(ubyte[]) msg,
+    const(ubyte[]) signature,
     const(ubyte[]) pubkey) const nothrow
     in (pubkey.length == XONLY_PUBKEY_SIZE)
 
@@ -935,7 +968,7 @@ unittest { /// Schnorr test generated from the secp256k1/examples/schnorr.c
     //writefln("expected_pubkey %(%02x%)", expected_pubkey);
     const pubkey = crypt.getPubkey(keypair); //writefln("         pubkey %(%02x%)", pubkey);
     assert(pubkey == expected_pubkey);
-    const signature_ok = crypt.verify(signature, msg_hash, pubkey);
+    const signature_ok = crypt.verify(msg_hash, signature, pubkey);
     assert(signature_ok, "Schnorr signing failded");
 }
 
@@ -965,15 +998,15 @@ unittest { /// Schnorr tweak
 
     assert(signature != tweakked_signature, "The signature and the tweakked signature should not be the same");
     {
-        const tweakked_signature_ok = crypt.verify(tweakked_signature, msg_hash, tweakked_pubkey);
+        const tweakked_signature_ok = crypt.verify(msg_hash, tweakked_signature, tweakked_pubkey);
         assert(tweakked_signature, "Tweakked signature should be correct");
     }
     {
-        const signature_not_ok = crypt.verify(tweakked_signature, msg_hash, pubkey);
+        const signature_not_ok = crypt.verify(msg_hash, tweakked_signature, pubkey);
         assert(!signature_not_ok, "None tweakked signature should not be correct");
     }
     {
-        const signature_not_ok = crypt.verify(signature, msg_hash, tweakked_pubkey);
+        const signature_not_ok = crypt.verify(msg_hash, signature, tweakked_pubkey);
         assert(!signature_not_ok, "None tweakked signature should not be correct");
     }
 }
