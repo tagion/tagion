@@ -69,7 +69,7 @@ class StdHashNet : HashNet {
     }
 }
 
-//alias StdSecureNetSchnorr = StdSecureNetT!true;
+alias StdSecureNetSchnorr = StdSecureNetT!true;
 alias StdSecureNet = StdSecureNetT!false;
 @safe
 class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
@@ -94,7 +94,7 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
         immutable(ubyte[]) sign(const(ubyte[]) message) const;
         void tweak(const(ubyte[]) tweek_code, ref ubyte[] tweak_privkey) const;
         immutable(ubyte[]) ECDHSecret(scope const(Pubkey) pubkey) const;
-        void clone(StdSecureNet net) const;
+        void clone(StdSecureNetT net) const;
     }
 
     protected SecretMethods _secret;
@@ -177,13 +177,18 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
     const(SecureNet) derive(const(ubyte[]) tweak_code) const {
         ubyte[] tweak_privkey;
         _secret.tweak(tweak_code, tweak_privkey);
-        auto result = new StdSecureNet;
+        auto result = new StdSecureNetT;
         result.createKeyPair(tweak_privkey);
         return result;
     }
 
     final bool secKeyVerify(scope const(ubyte[]) privkey) const {
-        return _crypt.secKeyVerify(privkey);
+        static if (Schnorr) {
+            return true;
+        }
+        else {
+            return _crypt.secKeyVerify(privkey);
+        }
     }
 
     final void createKeyPair(ref ubyte[] privkey)
@@ -248,12 +253,22 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
             immutable(ubyte[]) ECDHSecret(scope const(Pubkey) pubkey) const {
                 Buffer result;
                 do_secret_stuff((const(ubyte[]) privkey) @safe {
-                    result = _crypt.createECDHSecret(privkey, cast(Buffer) pubkey);
+                    static if (Schnorr) {
+                        ubyte[] seckey;
+                        scope (exit) {
+                            seckey[] = 0;
+                        }
+                        _crypt.getSecretKey(privkey, seckey);
+                    }
+                    else {
+                        alias seckey = privkey;
+                    }
+                    result = _crypt.createECDHSecret(seckey, cast(Buffer) pubkey);
                 });
                 return result;
             }
 
-            void clone(StdSecureNet net) const {
+            void clone(StdSecureNetT net) const {
                 do_secret_stuff((const(ubyte[]) privkey) @safe {
                     auto _privkey = privkey.dup;
                     net.createKeyPair(_privkey); // Not createKeyPair scrambles the privkey
@@ -315,10 +330,10 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
         _crypt = new NativeSecp256k1;
     }
 
-    this(shared(StdSecureNet) other_net) @trusted {
+    this(shared(StdSecureNetT) other_net) @trusted {
         _crypt = new NativeSecp256k1;
         synchronized (other_net) {
-            auto unshared_secure_net = cast(StdSecureNet) other_net;
+            auto unshared_secure_net = cast(StdSecureNetT) other_net;
             unshared_secure_net._secret.clone(this);
         }
     }
