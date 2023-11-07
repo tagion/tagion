@@ -10,6 +10,7 @@ import tagion.hibon.Document : Document;
 import tagion.basic.ConsensusExceptions;
 import std.range;
 import tagion.crypto.random.random;
+import std.stdio;
 
 void scramble(T, B = T[])(scope ref T[] data, scope const(B) xor = null) @safe if (T.sizeof is ubyte.sizeof)
 in (xor.empty || data.length == xor.length) {
@@ -70,6 +71,7 @@ class StdHashNet : HashNet {
 }
 
 alias StdSecureNetSchnorr = StdSecureNetT!true;
+alias StdSecureNetECDSA = StdSecureNetT!false;
 alias StdSecureNet = StdSecureNetT!false;
 @safe
 class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
@@ -122,7 +124,8 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
     protected NativeSecp256k1 _crypt;
 
     bool verify(const Fingerprint message, const Signature signature, const Pubkey pubkey) const {
-        consensusCheck!(SecurityConsensusException)(signature.length != 0 && signature.length <= 520,
+        consensusCheck!(SecurityConsensusException)(
+                signature.length == NativeSecp256k1.SIGNATURE_SIZE,
                 ConsensusFailCode.SECURITY_SIGNATURE_SIZE_FAULT);
         return _crypt.verify(cast(Buffer) message, cast(Buffer) signature, cast(Buffer) pubkey);
     }
@@ -191,18 +194,23 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
         }
     }
 
-    final void createKeyPair(ref ubyte[] privkey)
-    in {
-        assert(_secret is null);
-    }
+    final void createKeyPair(ref ubyte[] seckey)
+    in (seckey.length == SECKEY_SIZE)
     do {
         scope (exit) {
-            getRandom(privkey);
+            getRandom(seckey);
         }
         import std.string : representation;
 
-        check(secKeyVerify(privkey), ConsensusFailCode.SECURITY_PRIVATE_KEY_INVALID);
-
+        static if (Schnorr) {
+            ubyte[] privkey;
+            writefln("seckey %d", seckey.length);
+            _crypt.createKeyPair(seckey, privkey);
+        }
+        else {
+            alias privkey = seckey;
+            check(secKeyVerify(privkey), ConsensusFailCode.SECURITY_PRIVATE_KEY_INVALID);
+        }
         alias AES = AESCrypto!256;
         _pubkey = _crypt.getPubkey(privkey);
         auto aes_key_iv = new ubyte[AES.KEY_SIZE + AES.BLOCK_SIZE];
