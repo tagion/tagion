@@ -220,7 +220,7 @@ class NativeSecp256k1T(bool Schnorr) {
      +/
     @trusted
     static if (!Schnorr)
-        final void privKeyTweakMul(
+        final void privTweakMul(
                 const(ubyte[]) privkey,
     const(ubyte[]) tweak,
     ref ubyte[] tweak_privkey) const
@@ -246,7 +246,7 @@ class NativeSecp256k1T(bool Schnorr) {
      +/
     @trusted
     static if (!Schnorr)
-        final void privKeyTweakAdd(
+        final void privTweakAdd(
                 const(ubyte[]) privkey,
     const(ubyte[]) tweak,
     ref ubyte[] tweak_privkey) const
@@ -269,7 +269,7 @@ class NativeSecp256k1T(bool Schnorr) {
      +/
     @trusted
     static if (!Schnorr)
-        final immutable(ubyte[]) pubKeyTweakAdd(
+        final immutable(ubyte[]) pubTweakAdd(
             const(ubyte[]) pubkey,
     const(ubyte[]) tweak) const
     in (pubkey.length == COMPRESSED_PUBKEY_SIZE)
@@ -303,7 +303,7 @@ class NativeSecp256k1T(bool Schnorr) {
      +/
     @trusted
     static if (!Schnorr)
-        final immutable(ubyte[]) pubKeyTweakMul(const(ubyte[]) pubkey, const(ubyte[]) tweak) const
+        final immutable(ubyte[]) pubTweakMul(const(ubyte[]) pubkey, const(ubyte[]) tweak) const
     in (pubkey.length == COMPRESSED_PUBKEY_SIZE)
     in (tweak.length == TWEAK_SIZE)
     do {
@@ -330,7 +330,7 @@ class NativeSecp256k1T(bool Schnorr) {
     }
 
     static if (!Schnorr)
-        alias pubKeyTweak = pubKeyTweakMul;
+        alias pubTweak = pubTweakMul;
 
     @trusted
     static if (Schnorr)
@@ -356,7 +356,7 @@ class NativeSecp256k1T(bool Schnorr) {
 
     @trusted
     static if (Schnorr)
-        final immutable(ubyte[]) pubKeyTweak(scope const(ubyte[]) pubkey, scope const(ubyte[]) tweak) const
+        final immutable(ubyte[]) pubTweak(scope const(ubyte[]) pubkey, scope const(ubyte[]) tweak) const
     in (pubkey.length == XONLY_PUBKEY_SIZE)
     in (tweak.length == TWEAK_SIZE)
     do {
@@ -691,7 +691,7 @@ unittest { /// Test of ECDSA
         try {
             const crypt = new NativeSecp256k1EDCSA;
             ubyte[] result;
-            crypt.privKeyTweakAdd(sec, data, result);
+            crypt.privTweakAdd(sec, data, result);
             assert(result == "A168571E189E6F9A7E2D657A4B53AE99B909F7E712D1C23CED28093CD57C88F3".decode);
         }
         catch (ConsensusException e) {
@@ -708,7 +708,7 @@ unittest { /// Test of ECDSA
         try {
             const crypt = new NativeSecp256k1EDCSA;
             ubyte[] result;
-            crypt.privKeyTweakMul(sec, data, result);
+            crypt.privTweakMul(sec, data, result);
             assert(result == "97F8184235F101550F3C71C927507651BD3F1CDB4A5A33B8986ACF0DEE20FFFC".decode);
         }
         catch (ConsensusException e) {
@@ -724,7 +724,7 @@ unittest { /// Test of ECDSA
         const tweak = "3982F19BEF1615BCCFBB05E321C10E1D4CBA3DF0E841C2E41EEB6016347653C3".decode; //sha256hash of "tweak"
         try {
             const crypt = new NativeSecp256k1EDCSA;
-            const result = crypt.pubKeyTweakAdd(pubkey, tweak);
+            const result = crypt.pubTweakAdd(pubkey, tweak);
             assert(result != pubkey);
             assert(result == "0357f2926dd1107f86a3353bc023425c64b5294c70672bd89564a92d79ae128300".decode);
         }
@@ -741,7 +741,7 @@ unittest { /// Test of ECDSA
         const tweak = "3982F19BEF1615BCCFBB05E321C10E1D4CBA3DF0E841C2E41EEB6016347653C3".decode; //sha256hash of "tweak"
         try {
             const crypt = new NativeSecp256k1EDCSA;
-            const result = crypt.pubKeyTweakMul(pubkey, tweak);
+            const result = crypt.pubTweakMul(pubkey, tweak);
             assert(result != pubkey);
             assert(result == "02a80ffb5f6598b3c223e1917c0b3b93a7e7a39bea126c30d3253240b83ed18b57".decode);
         }
@@ -805,18 +805,18 @@ unittest { /// Test of ECDSA
         // Drived key a
         const drive = sha256("ABCDEF".decode);
         ubyte[] privkey_a_drived;
-        crypt.privKeyTweakMul(privkey, drive, privkey_a_drived);
+        crypt.privTweakMul(privkey, drive, privkey_a_drived);
         assert(privkey != privkey_a_drived);
-        const pubkey_a_drived = crypt.pubKeyTweakMul(pubkey, drive);
+        const pubkey_a_drived = crypt.pubTweakMul(pubkey, drive);
         assert(pubkey != pubkey_a_drived);
         const signature_a_drived = crypt.sign(message, privkey_a_drived);
         assert(crypt.verify(message, signature_a_drived, pubkey_a_drived));
 
         // Drive key b from key a
         ubyte[] privkey_b_drived;
-        crypt.privKeyTweakMul(privkey_a_drived, drive, privkey_b_drived);
+        crypt.privTweakMul(privkey_a_drived, drive, privkey_b_drived);
         assert(privkey_b_drived != privkey_a_drived);
-        const pubkey_b_drived = crypt.pubKeyTweakMul(pubkey_a_drived, drive);
+        const pubkey_b_drived = crypt.pubTweakMul(pubkey_a_drived, drive);
         assert(pubkey_b_drived != pubkey_a_drived);
         const signature_b_drived = crypt.sign(message, privkey_b_drived);
         assert(crypt.verify(message, signature_b_drived, pubkey_b_drived));
@@ -976,7 +976,7 @@ unittest { /// Schnorr tweak
             writefln("Faild %2d %02x %02x", i, t, k);
         }
     }
-    const tweakked_pubkey = crypt.pubKeyTweak(pubkey, tweak);
+    const tweakked_pubkey = crypt.pubTweak(pubkey, tweak);
 
     assert(tweakked_pubkey != pubkey);
 
