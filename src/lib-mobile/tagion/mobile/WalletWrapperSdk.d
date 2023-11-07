@@ -304,12 +304,16 @@ extern (C) {
 
             *contractPtr = contractDocId;
             return 1;
-        } else {
-            auto error_result = new HiBON();
-            error_result["error"] = can_pay.msg;
-            const errorDocId = recyclerDoc.create(Document(error_result));
-            *errorPtr = cast(uint8_t) errorDocId;
         }
+        auto error_result = new HiBON();
+        if (can_pay.msg is null) {
+            error_result["error"] = "error is null?";
+        } else {
+            error_result["error"] = can_pay.msg;
+        }
+        const errorDocId = recyclerDoc.create(Document(error_result));
+        *errorPtr = cast(uint8_t) errorDocId;
+
         return PAYMENT_ERROR;
     }
 
