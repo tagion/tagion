@@ -238,6 +238,8 @@ class NativeSecp256k1T(bool Schnorr) {
 
     }
 
+    static if (!Schnorr)
+        alias privTweak = privTweakMul;
     /++
      + libsecp256k1 PrivKey Tweak-Add - Tweak privkey by adding to it
      +
@@ -334,7 +336,7 @@ class NativeSecp256k1T(bool Schnorr) {
 
     @trusted
     static if (Schnorr)
-        final void privkeyTweak(
+        final void privTweak(
                 scope const(ubyte[]) keypair,
     scope const(ubyte[]) tweak,
     out ubyte[] tweakked_keypair) const
@@ -393,8 +395,7 @@ class NativeSecp256k1T(bool Schnorr) {
      + @param pubkey byte array of public key used in exponentiaion
      +/
     @trusted
-    static if (!Schnorr)
-        final immutable(ubyte[]) createECDHSecret(
+    final immutable(ubyte[]) createECDHSecret(
             scope const(ubyte[]) seckey,
     const(ubyte[]) pubkey) const
     in (seckey.length == SECKEY_SIZE)
@@ -465,7 +466,7 @@ class NativeSecp256k1T(bool Schnorr) {
     static if (Schnorr)
         final void getSecretKey(
                 ref scope const(ubyte[]) keypair,
-    out ubyte[] seckey) nothrow
+    out ubyte[] seckey) nothrow const
     in (keypair.length == secp256k1_keypair.data.length)
 
     do {
@@ -950,7 +951,7 @@ unittest { /// Schnorr tweak
     const pubkey = crypt.getPubkey(keypair);
     const tweak = sha256("Some tweak".representation);
     ubyte[] tweakked_keypair;
-    crypt.privkeyTweak(keypair, tweak, tweakked_keypair);
+    crypt.privTweak(keypair, tweak, tweakked_keypair);
     assert(tweakked_keypair != keypair);
     const tweakked_pubkey = crypt.pubTweak(pubkey, tweak);
 

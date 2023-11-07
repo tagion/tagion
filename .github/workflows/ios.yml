@@ -2,6 +2,11 @@ name: Build libmobile for ios
 on:
   workflow_dispatch:
   workflow_call:
+    inputs:
+      platform:
+        description: 'The target platform'
+        required: true
+        type: number
 
 jobs:
   ios_libmobile:
@@ -13,7 +18,7 @@ jobs:
         run: |
           export PATH="/Users/piss/tools/ldc2-1.35.0-osx-arm64/bin/:$PATH"
           which ldc2
-          make DC=ldc2 PLATFORM=arm64-apple-ios libmobile
+          make DC=ldc2 PLATFORM=${{ inputs.platform }} libmobile
           file ./build/arm64-apple-ios/lib/libmobile.dylib
 
       - name: Check output binaries
@@ -24,7 +29,7 @@ jobs:
         if: success()
         with:
           name: libmobile
-          path: ./build/*/lib/libmobile.dylib
+          path: ./build/${{ inputs.platform }}/lib/libmobile.dylib
           if-no-files-found: error
 
       - name: Cleanup
