@@ -89,7 +89,7 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T) {
         scenario_group.info.result = result_ok;
     }
     catch (Exception e) {
-        stderr, writefln("BDD Caught Exception:\n\n%s", e);
+        stderr.writefln("BDD Caught Exception:\n\n%s", e);
         scenario_group.info.result = BehaviourError(e).toDoc;
     }
     // We want to be able to report asserts as well
