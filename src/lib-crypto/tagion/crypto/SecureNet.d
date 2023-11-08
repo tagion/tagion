@@ -10,7 +10,6 @@ import tagion.hibon.Document : Document;
 import tagion.basic.ConsensusExceptions;
 import std.range;
 import tagion.crypto.random.random;
-import std.stdio;
 
 void scramble(T, B = T[])(scope ref T[] data, scope const(B) xor = null) @safe if (T.sizeof is ubyte.sizeof)
 in (xor.empty || data.length == xor.length) {
@@ -209,7 +208,6 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
 
         static if (Schnorr) {
             ubyte[] privkey;
-            writefln("seckey %d", seckey.length);
             _crypt.createKeyPair(seckey, privkey);
         }
         else {
