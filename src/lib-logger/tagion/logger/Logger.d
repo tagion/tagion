@@ -292,11 +292,11 @@ logs the fmt text in INFO level
         report(LogLevel.TRACE, fmt, args);
     }
 
-    void warning(lazy string text) const nothrow {
+    void warn(lazy string text) const nothrow {
         report(LogLevel.WARN, text);
     }
 
-    void warning(Args...)(string fmt, Args args) const nothrow {
+    void warn(Args...)(string fmt, Args args) const nothrow {
         report(LogLevel.WARN, fmt, args);
     }
 
@@ -374,6 +374,7 @@ shared struct SubscriptionMask {
     void subscribe(string topic) {
         if (thisTid == log.logger_subscription_tid) {
             import std.stdio;
+
             writeln("SUBSCRIBED TO topic: ", topic);
             _registered_topics[topic] = Subscribed.yes;
             return;
