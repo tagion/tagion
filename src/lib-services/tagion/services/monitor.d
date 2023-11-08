@@ -28,10 +28,10 @@ struct MonitorOptions {
 
 void monitorServiceTask(immutable(MonitorOptions) opts) @trusted nothrow {
     try {
-        setState(Ctrl.STARTING);
-        scope (exit) {
-            setState(Ctrl.END);
-        }
+        // setState(Ctrl.STARTING);
+        // scope (exit) {
+        //     setState(Ctrl.END);
+        // }
 
         log.register(opts.taskname);
 
