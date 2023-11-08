@@ -145,6 +145,7 @@ struct DARTService {
             log("Received modify request with length=%s", recorder.length);
 
 
+            immutable fingerprint_before = Fingerprint(db.bullseye);
             import core.exception : AssertError;
             try {
 
@@ -154,7 +155,7 @@ struct DARTService {
 
                 req.respond(eye);
             } catch(AssertError e) {
-                log("Received ASSERT ERROR %s archives that were tried to be added \n%s", e, recorder[].map!(a => a.filed.toPretty));
+                log("Received ASSERT ERROR bullseye before %(%02x%), %s archives that were tried to be added \n%s",fingerprint_before, e, recorder.toPretty);
                 fail(e);
             }
             catch(Error e) {

@@ -854,7 +854,20 @@ class DARTFile {
      * If the function executes succesfully then the DART is updated or else it does not affect the DART
      * The function returns the bullseye of the dart
      */
-    Fingerprint modify(Flag!"undo" undo)(const(RecordFactory.Recorder) modifyrecords) {
+    Fingerprint modify(Flag!"undo" undo)(const(RecordFactory.Recorder) modifyrecords) 
+    // in(blockfile.cache_empty, format("IN: THE CACHE MUST BE EMPTY WHEN PERFORMING NEW MODIFY len=%s", blockfile.cache_len))
+    out 
+    {
+        assert(blockfile.cache_empty, format("OUT THE CACHE MUST BE EMPTY WHEN PERFORMING NEW MODIFY len=%s", blockfile.cache_len));
+    } 
+    do 
+    {
+        blockfile.block_chains.clear;
+        // blockfile.cache_not_in_progress = false;
+        // scope(exit) {
+        //     writeln("setting it true");
+        //     blockfile.cache_not_in_progress = true;
+        // }
         /** 
          * Inner function for the modify function.
          * Note that this function is recursive and called from itself. 
@@ -1030,6 +1043,7 @@ class DARTFile {
             else {
                 blockfile.root_index = new_root.index;
                 blockfile.store;
+                blockfile.block_chains.clear;
             }
         }
         scope (failure) {
