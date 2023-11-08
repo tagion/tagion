@@ -215,41 +215,47 @@ struct TranscriptService {
             }
 
             loop_signed_contracts: foreach (signed_contract; epoch_contract.signed_contracts) {
-                foreach (input; signed_contract.contract.inputs) {
-                    if (used.canFind(input)) {
-                        log("input already in used list");
-                        continue loop_signed_contracts;
+                try {
+                    foreach (input; signed_contract.contract.inputs) {
+                        if (used.canFind(input)) {
+                            log("input already in used list");
+                            continue loop_signed_contracts;
+                        }
                     }
-                }
 
-                const tvm_contract_outputs = products.get(net.dartIndex(signed_contract.contract), null);
-                if (tvm_contract_outputs is null) {
+                    const tvm_contract_outputs = products.get(net.dartIndex(signed_contract.contract), null);
+                    if (tvm_contract_outputs is null) {
+                        continue loop_signed_contracts;
+                        log("contract not found asserting");
+                    }
+
+                    import tagion.utils.StdTime;
+                    import core.time;
+                    import std.datetime;
+
+                    const max_time = sdt_t((SysTime(cast(long) epoch_contract.epoch_time) + BUFFER_TIME_SECONDS.seconds)
+                            .stdTime);
+
+                    foreach (doc; tvm_contract_outputs.outputs) {
+                        if (!doc.isRecord!TagionBill) {
+                            continue;
+                        }
+                        const bill_time = TagionBill(doc).time;
+                        if (bill_time > max_time) {
+                            log("tagion bill timestamp too new bill_time: %s, epoch_time %s", bill_time.toText, max_time);
+                            continue loop_signed_contracts;
+                        }
+                    }
+
+                    recorder.insert(tvm_contract_outputs.outputs, Archive.Type.ADD);
+                    recorder.insert(tvm_contract_outputs.contract.inputs, Archive.Type.REMOVE);
+
+                    used ~= signed_contract.contract.inputs;
+                    products.remove(net.dartIndex(signed_contract.contract));
+                } catch(Exception e) {
+                    log("Contract Exception %s", e);
                     continue loop_signed_contracts;
-                    log("contract not found asserting");
                 }
-
-                import tagion.utils.StdTime;
-                import core.time;
-                import std.datetime;
-
-                const max_time = sdt_t((SysTime(cast(long) epoch_contract.epoch_time) + BUFFER_TIME_SECONDS.seconds)
-                        .stdTime);
-
-                foreach (doc; tvm_contract_outputs.outputs) {
-                    if (!doc.isRecord!TagionBill) {
-                        continue;
-                    }
-                    const bill_time = TagionBill(doc).time;
-                    if (bill_time > max_time) {
-                        log("tagion bill timestamp too new bill_time: %s, epoch_time %s", bill_time.toText, max_time);
-                        continue loop_signed_contracts;
-                    }
-                }
-                recorder.insert(tvm_contract_outputs.outputs, Archive.Type.ADD);
-                recorder.insert(tvm_contract_outputs.contract.inputs, Archive.Type.REMOVE);
-
-                used ~= signed_contract.contract.inputs;
-                products.remove(net.dartIndex(signed_contract.contract));
             }
 
             // BigNumber total = last_head.globals.total;
