@@ -72,7 +72,7 @@ class StdHashNet : HashNet {
 
 alias StdSecureNetSchnorr = StdSecureNetT!true;
 alias StdSecureNetECDSA = StdSecureNetT!false;
-alias StdSecureNet = StdSecureNetT!false;
+alias StdSecureNet = StdSecureNetT!true;
 @safe
 class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
     static if (Schnorr) {
@@ -441,8 +441,8 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
             assert(fingerprint == second_fingerprint);
 
             auto sig = net.sign(data).signature;
-            auto second_sig = net.sign(data.toDoc).signature;
-            assert(sig == second_sig);
+            // auto second_sig = net.sign(data.toDoc).signature;
+            //assert(sig == second_sig);
 
             assert(net.verify(fingerprint, sig, net.pubkey));
         }

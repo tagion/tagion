@@ -201,8 +201,12 @@ class NativeSecp256k1 : NativeSecp256k1Interface {
     final void createKeyPair(
             const(ubyte[]) seckey,
     out ubyte[] keypair) const
-    in (seckey.length == SECKEY_SIZE)
+    in (seckey.length == SECKEY_SIZE || seckey.length == secp256k1_keypair.data.length)
     do {
+        if (seckey.length == secp256k1_keypair.data.length) {
+            keypair = seckey.dup;
+            return;
+        }
         keypair.length = secp256k1_keypair.data.length;
         auto _keypair = cast(secp256k1_keypair*)(&keypair[0]);
         createKeyPair(seckey, *_keypair);

@@ -112,7 +112,7 @@ struct Cipher {
 
     unittest {
         import tagion.utils.Miscellaneous : toHexString, decode;
-        import tagion.crypto.SecureNet : StdSecureNet;
+        import tagion.crypto.SecureNet : StdSecureNet = StdSecureNetECDSA;
         import tagion.hibon.HiBON : HiBON;
         import tagion.hibon.Document : Document;
         import tagion.basic.basic : fileId;
@@ -121,7 +121,7 @@ struct Cipher {
         import std.algorithm.searching : all, any;
 
         immutable passphrase = "Secret pass word";
-        auto net = new StdSecureNet;
+        auto net = new StdSecureNet; /// Only works with ECDSA for now 
         net.generateKeyPair(passphrase);
 
         immutable some_secret_message = "Text to be encrypted by ECC public key and " ~
