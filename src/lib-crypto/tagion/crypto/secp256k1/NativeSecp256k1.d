@@ -143,20 +143,27 @@ class NativeSecp256k1 : NativeSecp256k1Interface {
      +/
     @trusted
     final immutable(ubyte[]) createECDHSecret(
-            scope const(ubyte[]) keypair,
+            scope const(ubyte[]) seckey,
     const(ubyte[]) pubkey) const
-    in (keypair.length == secp256k1_keypair.data.length)
+    in (seckey.length == SECKEY_SIZE)
     in (pubkey.length == XONLY_PUBKEY_SIZE)
     do {
+        assert(0, "This function can't be implemented yet because there is no function which can convert secp256k1_xonly_pubkey -> secp256k1_pubkey");
+        /*
         scope (exit) {
             randomizeContext;
         }
-        secp256k1_pubkey pubkey_result;
+        secp256k1_xonly_pubkey xonly_pubkey;
         {
-
+            const ret=secp256k1_xonly_pubkey_parse(_ctx, &xonly_pubkey, &pubkey[0]);
+            assert(ret == 1);
             // const ret = secp256k1_keypair_xonly_pub(_ctx, 
         }
-        return null;
+        secp256k1_pubkey pubkey_result;
+
+        ubyte[32] result;
+        return result.idup;
+*/
     }
 
     /++
@@ -350,6 +357,35 @@ class NativeSecp256k1 : NativeSecp256k1Interface {
         const ret = secp256k1_xonly_pubkey_from_pubkey(_ctx, &xonly_pubkey, null, &pubkey);
         return ret != 0;
     }
+
+    /// This function is should be removed after createECDHSecret has been implemented
+    @trusted
+    void pubkey_test(const(ubyte[]) seckey) const {
+        assert(seckey.length == SECKEY_SIZE);
+        int pk_key;
+        secp256k1_keypair keypair;
+
+        import std.stdio;
+
+        {
+            const ret = secp256k1_keypair_create(_ctx, &keypair, &seckey[0]);
+            assert(ret == 1);
+        }
+        writefln("  keypair = %(%02x%)", keypair.data);
+        secp256k1_pubkey pubkey;
+        {
+            const ret = secp256k1_keypair_pub(_ctx, &pubkey, &keypair);
+            assert(ret == 1);
+        }
+        writefln("      pubkey = %(%02x%)", pubkey.data);
+
+        secp256k1_xonly_pubkey xonly_pubkey;
+        {
+            const ret = secp256k1_keypair_xonly_pub(_ctx, &xonly_pubkey, &pk_key, &keypair);
+            assert(ret == 1);
+        }
+        writefln("xonly_pubkey = %(%02x%)", xonly_pubkey.data);
+    }
 }
 
 version (unittest) {
@@ -385,6 +421,7 @@ unittest { /// Schnorr test generated from the secp256k1/examples/schnorr.c
     assert(pubkey == expected_pubkey);
     const signature_ok = crypt.verify(msg_hash, signature, pubkey);
     assert(signature_ok, "Schnorr signing failded");
+
 }
 
 unittest { /// Schnorr tweak
@@ -423,5 +460,16 @@ unittest { /// Schnorr tweak
     {
         const signature_not_ok = crypt.verify(msg_hash, signature, tweakked_pubkey);
         assert(!signature_not_ok, "None tweakked signature should not be correct");
+    }
+    version (none) {
+        import std.stdio;
+
+        foreach (i; 0 .. 7) {
+            ubyte[] secret;
+            secret.length = 32;
+            getRandom(secret);
+            writefln("%d --- --- --- ---", i);
+            crypt.pubkey_test(secret);
+        }
     }
 }
