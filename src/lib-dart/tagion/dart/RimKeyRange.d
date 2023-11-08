@@ -247,8 +247,24 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
          *   archive = the added element
          */
         void add(const(Archive) archive)
-        in ((rim < 0) || (rim_keys == archive.dart_index[0 .. rim + 1]))
-        do {
+        // in ((rim < 0) || (rim_keys == archive.dart_index[0 .. rim + 1]))
+        // do 
+        {
+            if (!((rim < 0) || (rim_keys == archive.dart_index[0 .. rim + 1]))) {
+                import std.stdio;
+                import tagion.hibon.HiBONJSON : toPretty;
+                import tagion.utils.Miscellaneous;
+                import tagion.basic.Debug;
+                import std.exception;
+
+                debug
+                __write("ASSERT ERROR rim<0 <%s>, \nrim_keys == archive.dart_index[0 .. rim+1] <%s> \n add dart index: %s\n archive: %s", 
+                rim < 0,
+                rim_keys == archive.dart_index[0 .. rim + 1],
+                archive.dart_index.toHexString, 
+                archive.filed.toPretty);
+                assert(0, "we had an assert error");
+            }
             ctx._added_archives ~= archive;
         }
 
