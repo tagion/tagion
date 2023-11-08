@@ -855,7 +855,6 @@ class DARTFile {
      * The function returns the bullseye of the dart
      */
     Fingerprint modify(Flag!"undo" undo)(const(RecordFactory.Recorder) modifyrecords) {
-
         /** 
          * Inner function for the modify function.
          * Note that this function is recursive and called from itself. 
