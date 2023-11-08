@@ -574,10 +574,21 @@ class BlockFile {
      *   index = Points to an start of a block in the chain of blocks.
      */
     void dispose(const Index index) {
+        if (index is Index.init) {
+            return;
+        }
         import LEB128 = tagion.utils.LEB128;
 
         auto equal_chain = block_chains.equalRange(new const(BlockSegment)(Document.init, index));
-        assert(equal_chain.empty, "We should dispose cached blocks");
+
+        if (!equal_chain.empty) {
+            import std.stdio;
+            import tagion.hibon.HiBONJSON;
+            writefln("TO DISPOSE INDEX %s", index);
+            writefln("equal_range=%s", block_chains[].map!(b => format("index %s, doc %s", b.index, b.doc.toPretty))); 
+        }
+
+        assert(equal_chain.empty, "We should not dispose cached blocks");
         seek(index);
         ubyte[LEB128.DataSize!ulong] _buf;
         ubyte[] buf = _buf;
@@ -630,11 +641,11 @@ class BlockFile {
         writeRecyclerStatistic;
 
         scope (exit) {
+            block_chains.clear;
             file.flush;
             file.sync;
         }
         scope (success) {
-            block_chains.clear;
 
             masterblock.recycle_header_index = recycler.write();
             writeMasterBlock;

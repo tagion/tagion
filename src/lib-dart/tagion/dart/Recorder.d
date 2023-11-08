@@ -421,9 +421,12 @@ const Neutral = delegate(const(Archive) a) => a.type;
     this(const HashNet net, const(Document) doc, const Type t = Type.NONE)
     in {
         assert(net !is null);
-        assert(!doc.empty, "Archive can not be empty");
     }
     do {
+
+        if(doc.empty) {
+            throw new DARTRecorderException("Document cannot be empty");
+        }
         if (doc.isStub) {
             fingerprint = net.calcHash(doc);
             dart_index = (doc.hasHashKey) ? net.dartIndex(doc) : cast(DARTIndex)(fingerprint);

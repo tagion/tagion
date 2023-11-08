@@ -258,11 +258,15 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
                 import std.exception;
 
                 debug
-                __write("ASSERT ERROR rim<0 <%s>, \nrim_keys == archive.dart_index[0 .. rim+1] <%s> \n add dart index: %s\n archive: %s", 
+                __write("ASSERT ERROR rim<0 <%s>, \nrim_keys == archive.dart_index[0 .. rim+1] <%s> \n add dart index: %s, fingerprint: %s, \n archive: %s \n rim=%s rim_keys=%(%02x%)", 
                 rim < 0,
                 rim_keys == archive.dart_index[0 .. rim + 1],
                 archive.dart_index.toHexString, 
-                archive.filed.toPretty);
+                archive.fingerprint.toHexString,
+                archive.filed.toPretty,
+                rim,
+                rim_keys,
+                );
                 assert(0, "we had an assert error");
             }
             ctx._added_archives ~= archive;
