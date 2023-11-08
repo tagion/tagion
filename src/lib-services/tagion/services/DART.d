@@ -140,14 +140,24 @@ struct DARTService {
             req.respond(result);
         }
 
-        void modify(dartModifyRR req, immutable(RecordFactory.Recorder) recorder, immutable(long) epoch_number) @safe {
+        void modify(dartModifyRR req, immutable(RecordFactory.Recorder) recorder, immutable(long) epoch_number) @trusted {
+
             log("Received modify request with length=%s", recorder.length);
 
-            auto eye = db.modify(recorder);
-            log("New bullseye is %s", eye.toHexString);
 
-            req.respond(eye);
+            import core.exception : AssertError;
+            try {
+                auto eye = db.modify(recorder);
+                log("New bullseye is %s", eye.toHexString);
 
+                req.respond(eye);
+            } catch(AssertError e) {
+                log("Received ASSERT ERROR %s", e);
+                fail(e);
+            }
+            catch(Error e) {
+                log("DART Error %s", e);
+            }
 
             version(REPLICATOR) {
                 auto replicator_tid = locate(task_names.replicator);

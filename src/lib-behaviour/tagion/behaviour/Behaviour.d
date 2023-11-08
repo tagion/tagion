@@ -89,16 +89,12 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T) {
         scenario_group.info.result = result_ok;
     }
     catch (Exception e) {
-        debug (bdd) {
-            writefln("BDD Caught Exception:\n\n%s", e);
-        }
+        stderr.writefln("BDD Caught Exception:\n\n%s", e);
         scenario_group.info.result = BehaviourError(e).toDoc;
     }
     // We want to be able to report asserts as well
     catch (AssertError e) {
-        debug (bdd) {
-            writefln("BDD Caught AssertError:\n\n%s", e);
-        }
+        stderr.writefln("BDD Caught AssertError:\n\n%s", e);
         scenario_group.info.result = BehaviourError(e).toDoc;
     }
     return scenario_group;
@@ -310,7 +306,7 @@ auto automation(alias M)() if (isFeature!M) {
                     }
                     else {
                         check(context[i]!is null,
-                        format("Scenario '%s' must be constructed before can be executed in '%s' feature",
+                                format("Scenario '%s' must be constructed before can be executed in '%s' feature",
                                 FeatureContext.fieldNames[i],
                                 moduleName!M));
                     }
