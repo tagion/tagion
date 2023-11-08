@@ -31,7 +31,7 @@ import tagion.utils.Miscellaneous : toHexString;
 import std.algorithm;
 import std.array;
 
-enum Schnorr = true;
+//enum Schnorr = true;
 //alias NativeSecp256k1EDCSA = NativeSecp256k1T!false;
 alias NativeSecp256k1Schnorr = NativeSecp256k1;
 /++
@@ -52,11 +52,6 @@ class NativeSecp256k1 : NativeSecp256k1Interface {
         }
     }
 
-    enum TWEAK_SIZE = 32;
-    enum SIGNATURE_SIZE = 64;
-    enum SECKEY_SIZE = 32;
-    enum XONLY_PUBKEY_SIZE = 32;
-    enum MESSAGE_SIZE = 32;
     enum KEYPAIR_SIZE = secp256k1_keypair.data.length;
 
     protected secp256k1_context* _ctx;
@@ -67,112 +62,6 @@ class NativeSecp256k1 : NativeSecp256k1Interface {
         scope (exit) {
             randomizeContext;
         }
-    }
-
-    /++
-     + Verifies the given secp256k1 signature in native code.
-     + Calling when enabled == false is undefined (probably library not loaded)
-
-     + Params:
-     +       msg            = The message which was signed, must be exactly 32 bytes
-     +       signature      = The signature
-     +       pub            =  The public key which did the signing
-     +/
-    @trusted
-    static if (!Schnorr)
-        final bool verify(const(ubyte[]) msg, const(ubyte[]) signature, const(ubyte[]) pub) const
-    in (msg.length == MESSAGE_SIZE)
-    in (signature.length == SIGNATURE_SIZE)
-    in (pub.length <= 520)
-    do {
-        secp256k1_ecdsa_signature sig;
-        secp256k1_pubkey pubkey;
-        {
-            const ret = secp256k1_ecdsa_signature_parse_compact(_ctx, &sig, &signature[0]);
-            check(ret != 0, ConsensusFailCode.SECURITY_SIGNATURE_SIZE_FAULT);
-        }
-        {
-            const ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey, &pub[0], pub.length);
-            check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_PARSE_FAULT);
-        }
-        const ret = secp256k1_ecdsa_verify(_ctx, &sig, &msg[0], &pubkey);
-        return ret == 1;
-    }
-
-    /++
-     + libsecp256k1 Create an ECDSA signature.
-     +
-     + @param msg Message hash, 32 bytes
-     + @param key Secret key, 32 bytes
-     +
-     + Return values
-     + @param sig byte array of signature
-     +/
-    @trusted
-    static if (!Schnorr)
-        immutable(ubyte[]) sign(const(ubyte[]) msg, const(ubyte[]) seckey) const
-    in (msg.length == MESSAGE_SIZE)
-    in (seckey.length == SECKEY_SIZE)
-    do {
-        secp256k1_ecdsa_signature sig;
-        scope (exit) {
-            randomizeContext;
-
-        }
-
-        {
-            const ret = secp256k1_ecdsa_sign(_ctx, &sig, &msg[0], &seckey[0], null, null);
-            check(ret == 1, ConsensusFailCode.SECURITY_SIGN_FAULT);
-        }
-        ubyte[SIGNATURE_SIZE] output_ser;
-        {
-            const ret = secp256k1_ecdsa_signature_serialize_compact(_ctx, &output_ser[0], &sig);
-            check(ret == 1, ConsensusFailCode.SECURITY_SIGN_FAULT);
-        }
-        return output_ser.idup;
-    }
-
-    /++
-     + libsecp256k1 Seckey Verify - returns true if valid, false if invalid
-     +
-     + @param seckey ECDSA Secret key, 32 bytes
-     +/
-    @trusted
-    static if (!Schnorr)
-        final bool secKeyVerify(scope const(ubyte[]) seckey) const nothrow @nogc
-    in (seckey.length == SECKEY_SIZE)
-    do {
-        return secp256k1_ec_seckey_verify(_ctx, &seckey[0]) == 1;
-    }
-
-    /++
-     + libsecp256k1 Compute Pubkey - computes public key from secret key
-     +
-     + @param seckey ECDSA Secret key, 32 bytes
-     +
-     + Return values
-     + @param pubkey ECDSA Public key, 33 or 65 bytes
-     +/
-    enum COMPRESSED_PUBKEY_SIZE = 33;
-    @trusted
-    static if (!Schnorr)
-        immutable(ubyte[]) getPubkey(scope const(ubyte[]) seckey) const
-    in (seckey.length == SECKEY_SIZE)
-    do {
-        secp256k1_pubkey pubkey;
-
-        {
-            const ret = secp256k1_ec_pubkey_create(_ctx, &pubkey, &seckey[0]);
-            check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_CREATE_FAULT);
-        }
-        ubyte[COMPRESSED_PUBKEY_SIZE] output_ser;
-        enum flag = SECP256K1.EC_COMPRESSED;
-        size_t outputLen = output_ser.length;
-        {
-            const ret = secp256k1_ec_pubkey_serialize(_ctx, &output_ser[0], &outputLen, &pubkey, flag);
-            check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_CREATE_FAULT);
-        }
-        return output_ser.idup;
     }
 
     /++
@@ -189,131 +78,14 @@ class NativeSecp256k1 : NativeSecp256k1Interface {
     }
 
     /++
-     + libsecp256k1 PrivKey Tweak-Mul - Tweak privkey by multiplying to it
-     +
-     + @param tweak some bytes to tweak with
-     + @param seckey 32-byte seckey
-     +/
-    @trusted
-    static if (!Schnorr)
-        final void privTweakMul(
-                const(ubyte[]) privkey,
-    const(ubyte[]) tweak,
-    out ubyte[] tweak_privkey) const
-    in {
-        assert(privkey.length == 32);
-    }
-    do {
-        pragma(msg, "fixme(cbr): privkey must be scrambled");
-        tweak_privkey = privkey.dup;
-        ubyte* _privkey = tweak_privkey.ptr;
-        const(ubyte)* _tweak = tweak.ptr;
-
-        int ret = secp256k1_ec_seckey_tweak_mul(_ctx, _privkey, _tweak);
-        check(ret == 1, ConsensusFailCode.SECURITY_PRIVATE_KEY_TWEAK_MULT_FAULT);
-
-    }
-
-    static if (!Schnorr)
-        alias privTweak = privTweakMul;
-    /++
-     + libsecp256k1 PrivKey Tweak-Add - Tweak privkey by adding to it
-     +
-     + @param tweak some bytes to tweak with
-     + @param seckey 32-byte seckey
-     +/
-    @trusted
-    static if (!Schnorr)
-        final void privTweakAdd(
-                const(ubyte[]) privkey,
-    const(ubyte[]) tweak,
-    out ubyte[] tweak_privkey) const
-    in (privkey.length == 32)
-    do {
-        pragma(msg, "fixme(cbr): privkey must be scrambled");
-        tweak_privkey = privkey.dup;
-        ubyte* _privkey = tweak_privkey.ptr;
-        const(ubyte)* _tweak = tweak.ptr;
-
-        int ret = secp256k1_ec_seckey_tweak_add(_ctx, _privkey, _tweak);
-        check(ret == 1, ConsensusFailCode.SECURITY_PRIVATE_KEY_TWEAK_ADD_FAULT);
-    }
-
-    /++
-     + libsecp256k1 PubKey Tweak-Add - Tweak pubkey by adding to it
-     +
-     + @param tweak some bytes to tweak with
-     + @param pubkey 32-byte seckey
-     +/
-    @trusted
-    static if (!Schnorr)
-        final immutable(ubyte[]) pubTweakAdd(
-            const(ubyte[]) pubkey,
-    const(ubyte[]) tweak) const
-    in (pubkey.length == COMPRESSED_PUBKEY_SIZE)
-    in (tweak.length == TWEAK_SIZE)
-    do {
-        secp256k1_pubkey pubkey_result;
-        {
-            const ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey_result, &pubkey[0], pubkey.length);
-            check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_PARSE_FAULT);
-        }
-        {
-            const ret = secp256k1_ec_pubkey_tweak_add(_ctx, &pubkey_result, &tweak[0]);
-            check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_TWEAK_ADD_FAULT);
-        }
-        ubyte[COMPRESSED_PUBKEY_SIZE] output_ser;
-        enum flag = SECP256K1.EC_COMPRESSED;
-        size_t outputLen = output_ser.length;
-        {
-            const ret = secp256k1_ec_pubkey_serialize(_ctx, &output_ser[0], &outputLen, &pubkey_result, flag);
-            assert(outputLen == COMPRESSED_PUBKEY_SIZE);
-            check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_SERIALIZE);
-        }
-        return output_ser.idup;
-    }
-
-    /++
      + libsecp256k1 PubKey Tweak-Mul - Tweak pubkey by multiplying to it
      +
      + @param tweak some bytes to tweak with
      + @param pubkey 32-byte seckey
      +/
     @trusted
-    static if (!Schnorr)
-        final immutable(ubyte[]) pubTweakMul(const(ubyte[]) pubkey, const(ubyte[]) tweak) const
-    in (pubkey.length == COMPRESSED_PUBKEY_SIZE)
-    in (tweak.length == TWEAK_SIZE)
-    do {
-        secp256k1_pubkey pubkey_result;
-        {
-            const ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey_result, &pubkey[0], pubkey.length);
-            check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_PARSE_FAULT);
-        }
-        {
-            const ret = secp256k1_ec_pubkey_tweak_mul(_ctx, &pubkey_result, &tweak[0]);
-            check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_TWEAK_MULT_FAULT);
-        }
-        ubyte[COMPRESSED_PUBKEY_SIZE] output_ser;
-        enum flag = SECP256K1.EC_COMPRESSED;
-        size_t outputLen = output_ser.length;
-
-        {
-            const ret = secp256k1_ec_pubkey_serialize(_ctx, &output_ser[0], &outputLen, &pubkey_result, flag);
-
-            assert(outputLen == COMPRESSED_PUBKEY_SIZE);
-            check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_SERIALIZE);
-        }
-        return output_ser.idup;
-    }
-
-    static if (!Schnorr)
-        alias pubTweak = pubTweakMul;
-
-    @trusted
-    static if (Schnorr)
-        final void privTweak(
-                scope const(ubyte[]) keypair,
+    final void privTweak(
+            scope const(ubyte[]) keypair,
     scope const(ubyte[]) tweak,
     out ubyte[] tweakked_keypair) const
     in (keypair.length == secp256k1_keypair.data.length)
@@ -333,8 +105,7 @@ class NativeSecp256k1 : NativeSecp256k1Interface {
     }
 
     @trusted
-    static if (Schnorr)
-        final immutable(ubyte[]) pubTweak(scope const(ubyte[]) pubkey, scope const(ubyte[]) tweak) const
+    final immutable(ubyte[]) pubTweak(scope const(ubyte[]) pubkey, scope const(ubyte[]) tweak) const
     in (pubkey.length == XONLY_PUBKEY_SIZE)
     in (tweak.length == TWEAK_SIZE)
     do {
@@ -370,34 +141,8 @@ class NativeSecp256k1 : NativeSecp256k1Interface {
      + @param seckey byte array of secret key used in exponentiaion
      + @param pubkey byte array of public key used in exponentiaion
      +/
-    static if (!Schnorr)
-        @trusted
-        final immutable(ubyte[]) createECDHSecret(
-            scope const(ubyte[]) seckey,
-    const(ubyte[]) pubkey) const
-    in (seckey.length == SECKEY_SIZE)
-    in (pubkey.length == COMPRESSED_PUBKEY_SIZE)
-
-    do {
-        scope (exit) {
-            randomizeContext;
-        }
-        secp256k1_pubkey pubkey_result;
-        ubyte[32] result;
-        {
-            const ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey_result, &pubkey[0], pubkey.length);
-            check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_PARSE_FAULT);
-        }
-        {
-            const ret = secp256k1_ecdh(_ctx, &result[0], &pubkey_result, &seckey[0], null, null);
-            check(ret == 1, ConsensusFailCode.SECURITY_EDCH_FAULT);
-        }
-        return result.idup;
-    }
-
     @trusted
-    static if (Schnorr)
-        final immutable(ubyte[]) createECDHSecret(
+    final immutable(ubyte[]) createECDHSecret(
             scope const(ubyte[]) keypair,
     const(ubyte[]) pubkey) const
     in (keypair.length == secp256k1_keypair.data.length)
@@ -431,9 +176,8 @@ class NativeSecp256k1 : NativeSecp256k1Interface {
     }
 
     @trusted
-    static if (Schnorr)
-        final void createKeyPair(
-                scope const(ubyte[]) seckey,
+    final void createKeyPair(
+            scope const(ubyte[]) seckey,
     ref secp256k1_keypair keypair) const
     in (seckey.length == SECKEY_SIZE)
 
@@ -447,9 +191,8 @@ class NativeSecp256k1 : NativeSecp256k1Interface {
     }
 
     @trusted
-    static if (Schnorr)
-        final void createKeyPair(
-                const(ubyte[]) seckey,
+    final void createKeyPair(
+            const(ubyte[]) seckey,
     out ubyte[] keypair) const
     in (seckey.length == SECKEY_SIZE)
     do {
@@ -459,9 +202,8 @@ class NativeSecp256k1 : NativeSecp256k1Interface {
     }
 
     @trusted
-    static if (Schnorr)
-        final void getSecretKey(
-                ref scope const(ubyte[]) keypair,
+    final void getSecretKey(
+            ref scope const(ubyte[]) keypair,
     out ubyte[] seckey) nothrow const
     in (keypair.length == secp256k1_keypair.data.length)
 
@@ -473,19 +215,17 @@ class NativeSecp256k1 : NativeSecp256k1Interface {
     }
 
     @trusted
-    static if (Schnorr)
-        final void getPubkey(
-                ref scope const(secp256k1_keypair) keypair,
-                ref scope secp256k1_pubkey pubkey) const nothrow {
-            secp256k1_keypair_pub(_ctx, &pubkey, &keypair);
-        }
+    final void getPubkey(
+            ref scope const(secp256k1_keypair) keypair,
+            ref scope secp256k1_pubkey pubkey) const nothrow {
+        secp256k1_keypair_pub(_ctx, &pubkey, &keypair);
+    }
 
     /**
        Takes both a seckey and keypair 
 */
     @trusted
-    static if (Schnorr)
-        final immutable(ubyte[]) getPubkey(scope const(ubyte[]) keypair_seckey) const
+    final immutable(ubyte[]) getPubkey(scope const(ubyte[]) keypair_seckey) const
     in (keypair_seckey.length == secp256k1_keypair.data.length ||
             keypair_seckey.length == SECKEY_SIZE)
 
@@ -505,8 +245,7 @@ class NativeSecp256k1 : NativeSecp256k1Interface {
     }
 
     @trusted
-    static if (Schnorr)
-        final immutable(ubyte[]) getPubkey(ref scope const(secp256k1_keypair) keypair) const {
+    final immutable(ubyte[]) getPubkey(ref scope const(secp256k1_keypair) keypair) const {
         secp256k1_xonly_pubkey xonly_pubkey;
         {
             const rt = secp256k1_keypair_xonly_pub(_ctx, &xonly_pubkey, null, &keypair);
@@ -521,9 +260,17 @@ class NativeSecp256k1 : NativeSecp256k1Interface {
 
     }
 
+    /++
+     + libsecp256k1 Create an ECDSA signature.
+     +
+     + @param msg Message hash, 32 bytes
+     + @param key Secret key, 32 bytes
+     +
+     + Return values
+     + @param sig byte array of signature
+     +/
     @trusted
-    static if (Schnorr)
-        final immutable(ubyte[]) sign(
+    final immutable(ubyte[]) sign(
             const(ubyte[]) msg,
     ref scope const(secp256k1_keypair) keypair,
     scope const(ubyte[]) aux_random) const
@@ -541,8 +288,7 @@ class NativeSecp256k1 : NativeSecp256k1Interface {
     }
 
     @trusted
-    static if (Schnorr)
-        final immutable(ubyte[]) sign(
+    final immutable(ubyte[]) sign(
             const(ubyte[]) msg,
     scope const(ubyte[]) keypair,
     scope const(ubyte[]) aux_random) const
@@ -552,8 +298,7 @@ class NativeSecp256k1 : NativeSecp256k1Interface {
         return sign(msg, *_keypair, aux_random);
     }
 
-    static if (Schnorr)
-        final immutable(ubyte[]) sign(
+    final immutable(ubyte[]) sign(
             const(ubyte[]) msg,
     scope const(ubyte[]) keypair) const {
         ubyte[MESSAGE_SIZE] _aux_random;
@@ -562,10 +307,18 @@ class NativeSecp256k1 : NativeSecp256k1Interface {
         return sign(msg, keypair, aux_random);
     }
 
+    /++
+     + Verifies the given secp256k1 signature in native code.
+     + Calling when enabled == false is undefined (probably library not loaded)
+
+     + Params:
+     +       msg            = The message which was signed, must be exactly 32 bytes
+     +       signature      = The signature
+     +       pub            = The public key which did the signing
+     +/
     @trusted
-    static if (Schnorr)
-        final bool verify(
-                const(ubyte[]) msg,
+    final bool verify(
+            const(ubyte[]) msg,
     const(ubyte[]) signature,
     const(ubyte[]) pubkey) const nothrow
     in (pubkey.length == XONLY_PUBKEY_SIZE)
@@ -577,9 +330,8 @@ class NativeSecp256k1 : NativeSecp256k1Interface {
     }
 
     @trusted
-    static if (Schnorr)
-        final bool verify(
-                const(ubyte[]) signature,
+    final bool verify(
+            const(ubyte[]) signature,
     const(ubyte[]) msg,
     ref scope const(secp256k1_xonly_pubkey) xonly_pubkey) const nothrow
     in (signature.length == SIGNATURE_SIZE)
@@ -592,13 +344,12 @@ class NativeSecp256k1 : NativeSecp256k1Interface {
     }
 
     @trusted
-    static if (Schnorr)
-        final bool xonlyPubkey(
-                ref scope const(secp256k1_pubkey) pubkey,
-                ref secp256k1_xonly_pubkey xonly_pubkey) const nothrow @nogc {
-            const ret = secp256k1_xonly_pubkey_from_pubkey(_ctx, &xonly_pubkey, null, &pubkey);
-            return ret != 0;
-        }
+    final bool xonlyPubkey(
+            ref scope const(secp256k1_pubkey) pubkey,
+            ref secp256k1_xonly_pubkey xonly_pubkey) const nothrow @nogc {
+        const ret = secp256k1_xonly_pubkey_from_pubkey(_ctx, &xonly_pubkey, null, &pubkey);
+        return ret != 0;
+    }
 }
 
 version (unittest) {
