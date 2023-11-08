@@ -224,6 +224,7 @@ struct TranscriptService {
 
                 const tvm_contract_outputs = products.get(net.dartIndex(signed_contract.contract), null);
                 if (tvm_contract_outputs is null) {
+                    continue loop_signed_contracts;
                     log("contract not found asserting");
                 }
 
