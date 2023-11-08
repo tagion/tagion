@@ -28,8 +28,11 @@ struct MonitorOptions {
 
 void monitorServiceTask(immutable(MonitorOptions) opts) @trusted nothrow {
     try {
+        setState(Ctrl.STARTING);
+        scope (exit) {
+            setState(Ctrl.END);
+        }
 
-        // ownerTid.send(Ctrl.STARTING);
         log.register(opts.taskname);
 
         log("SockectThread port=%d addresss=%s", opts.port, opts.url);
@@ -46,15 +49,15 @@ void monitorServiceTask(immutable(MonitorOptions) opts) @trusted nothrow {
             ownerTid.send(t);
         }
 
-        ownerTid.send(Ctrl.ALIVE);
+        setState(Ctrl.ALIVE);
         while (!thisActor.stop) {
             receiveTimeout(500.msecs, //Control the thread
                     &signal,
                     &ownerTerminated,
                     (string json) @trusted { listener_socket.broadcast(json); },
                     (immutable(ubyte)[] hibon_bytes) @trusted { listener_socket.broadcast(hibon_bytes); },
-            (Document doc) @trusted { listener_socket.broadcast(doc); },
-            &taskfailure
+                    (Document doc) @trusted { listener_socket.broadcast(doc); },
+                    &taskfailure
             );
         }
     }
