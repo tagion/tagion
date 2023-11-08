@@ -147,12 +147,14 @@ struct DARTService {
 
             import core.exception : AssertError;
             try {
+
+                
                 auto eye = db.modify(recorder);
                 log("New bullseye is %s", eye.toHexString);
 
                 req.respond(eye);
             } catch(AssertError e) {
-                log("Received ASSERT ERROR %s", e);
+                log("Received ASSERT ERROR %s archives that were tried to be added \n%s", e, recorder[].map!(a => a.filed.toPretty));
                 fail(e);
             }
             catch(Error e) {
