@@ -27,7 +27,7 @@ import tagion.basic.basic : isOneOf;
 @trusted
 ScenarioGroup run(T)(T scenario) if (isScenario!T) {
     ScenarioGroup scenario_group = getScenarioGroup!T;
-    debug (bdd) import std.stdio;
+    import std.stdio;
 
     debug (bdd)
         writefln("Feature: %s", scenario_group.info.property.description);
