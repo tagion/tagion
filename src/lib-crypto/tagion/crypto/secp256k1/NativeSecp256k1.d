@@ -22,39 +22,14 @@ private import tagion.crypto.secp256k1.c.secp256k1_ecdh;
 private import tagion.crypto.secp256k1.c.secp256k1_hash;
 private import tagion.crypto.secp256k1.c.secp256k1_schnorrsig;
 private import tagion.crypto.secp256k1.c.secp256k1_extrakeys;
-
+import tagion.crypto.random.random;
+import tagion.crypto.secp256k1.NativeSecp256k1Interface;
 import std.exception : assumeUnique;
 import tagion.basic.ConsensusExceptions;
 
 import tagion.utils.Miscellaneous : toHexString;
 import std.algorithm;
 import std.array;
-
-enum SECP256K1 : uint {
-    FLAGS_TYPE_MASK = SECP256K1_FLAGS_TYPE_MASK,
-    FLAGS_TYPE_CONTEXT = SECP256K1_FLAGS_TYPE_CONTEXT,
-    FLAGS_TYPE_COMPRESSION = SECP256K1_FLAGS_TYPE_COMPRESSION,
-    /** The higher bits contain the actual data. Do not use directly. */
-    FLAGS_BIT_CONTEXT_VERIFY = SECP256K1_FLAGS_BIT_CONTEXT_VERIFY,
-    FLAGS_BIT_CONTEXT_SIGN = SECP256K1_FLAGS_BIT_CONTEXT_SIGN,
-    FLAGS_BIT_COMPRESSION = FLAGS_BIT_CONTEXT_SIGN,
-
-    /** Flags to pass to secp256k1_context_create. */
-    CONTEXT_VERIFY = SECP256K1_CONTEXT_VERIFY,
-    CONTEXT_SIGN = SECP256K1_CONTEXT_SIGN,
-    CONTEXT_NONE = SECP256K1_CONTEXT_NONE,
-
-    /** Flag to pass to secp256k1_ec_pubkey_serialize and secp256k1_ec_privkey_export. */
-    EC_COMPRESSED = SECP256K1_EC_COMPRESSED,
-    EC_UNCOMPRESSED = SECP256K1_EC_UNCOMPRESSED,
-
-    /** Prefix byte used to tag various encoded curvepoints for specific purposes */
-    TAG_PUBKEY_EVEN = SECP256K1_TAG_PUBKEY_EVEN,
-    TAG_PUBKEY_ODD = SECP256K1_TAG_PUBKEY_ODD,
-    TAG_PUBKEY_UNCOMPRESSED = SECP256K1_TAG_PUBKEY_UNCOMPRESSED,
-    TAG_PUBKEY_HYBRID_EVEN = SECP256K1_TAG_PUBKEY_HYBRID_EVEN,
-    TAG_PUBKEY_HYBRID_ODD = SECP256K1_TAG_PUBKEY_HYBRID_ODD
-}
 
 enum Schnorr = true;
 //alias NativeSecp256k1EDCSA = NativeSecp256k1T!false;
@@ -70,7 +45,7 @@ alias NativeSecp256k1Schnorr = NativeSecp256k1;
  + or point the JVM to the folder containing it with -Djava.library.path
  + </p>
  +/
-class NativeSecp256k1 {
+class NativeSecp256k1 : NativeSecp256k1Interface {
     static void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         if (!flag) {
             throw new SecurityConsensusException(code, file, line);
@@ -224,7 +199,7 @@ class NativeSecp256k1 {
         final void privTweakMul(
                 const(ubyte[]) privkey,
     const(ubyte[]) tweak,
-    ref ubyte[] tweak_privkey) const
+    out ubyte[] tweak_privkey) const
     in {
         assert(privkey.length == 32);
     }
@@ -252,7 +227,7 @@ class NativeSecp256k1 {
         final void privTweakAdd(
                 const(ubyte[]) privkey,
     const(ubyte[]) tweak,
-    ref ubyte[] tweak_privkey) const
+    out ubyte[] tweak_privkey) const
     in (privkey.length == 32)
     do {
         pragma(msg, "fixme(cbr): privkey must be scrambled");
@@ -575,6 +550,16 @@ class NativeSecp256k1 {
     do {
         const _keypair = cast(secp256k1_keypair*)(&keypair[0]);
         return sign(msg, *_keypair, aux_random);
+    }
+
+    static if (Schnorr)
+        final immutable(ubyte[]) sign(
+            const(ubyte[]) msg,
+    scope const(ubyte[]) keypair) const {
+        ubyte[MESSAGE_SIZE] _aux_random;
+        ubyte[] aux_random = _aux_random;
+        getRandom(aux_random);
+        return sign(msg, keypair, aux_random);
     }
 
     @trusted
