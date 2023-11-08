@@ -174,6 +174,17 @@ is ready and has been started correctly
             import std.exception : assumeWontThrow;
             import std.conv : to;
 
+            if (level & LogLevel.STDERR) {
+                import core.stdc.stdio;
+
+                scope const _level = assumeWontThrow(level.to!string);
+                scope const _text = assumeWontThrow(toStringz(text));
+                stderr.fprintf("%.*s:%.*s: %s\n",
+                        cast(int) _task_name.length, _task_name.ptr,
+                        cast(int) _level.length, _level.ptr,
+                        _text);
+            }
+
             if (!isLoggerServiceRegistered) {
                 import core.stdc.stdio;
 
