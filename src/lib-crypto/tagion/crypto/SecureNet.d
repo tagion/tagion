@@ -99,7 +99,7 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
     @safe
     interface SecretMethods {
         immutable(ubyte[]) sign(const(ubyte[]) message) const;
-        void tweak(const(ubyte[]) tweek_code, ref ubyte[] tweak_privkey) const;
+        void tweak(const(ubyte[]) tweek_code, out ubyte[] tweak_privkey) const;
         immutable(ubyte[]) ECDHSecret(scope const(Pubkey) pubkey) const;
         void clone(StdSecureNetT net) const;
     }
@@ -259,7 +259,7 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
                     return result;
                 }
             }
-            void tweak(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey) const {
+            void tweak(const(ubyte[]) tweak_code, out ubyte[] tweak_privkey) const {
                 do_secret_stuff((const(ubyte[]) privkey) @safe { _crypt.privTweak(privkey, tweak_code, tweak_privkey); });
             }
 
