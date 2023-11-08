@@ -40,7 +40,7 @@ import tagion.basic.Types : hasExtension, FileExtension;
 import tagion.hibon.Document;
 
 static abort = false;
-extern (C)
+private extern (C)
 void signal_handler(int _) nothrow {
     try {
         if (abort) {
@@ -278,7 +278,7 @@ int _main(string[] args) {
 }
 
 int network_mode0(const(Options)[] node_options, ref ActorHandle!Supervisor[] supervisor_handles, Document epoch_head = Document
-    .init) {
+        .init) {
 
     import tagion.crypto.Types;
     import tagion.hibon.HiBONRecord;

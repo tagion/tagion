@@ -21,7 +21,6 @@ import neuewelle = tagion.tools.neuewelle;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.GlobalSignals;
 
-
 mixin Main!(_main);
 
 void wrap_neuewelle(immutable(string)[] args) {
@@ -78,17 +77,16 @@ int _main(string[] args) {
 
     // bills for the dart on startup
 
-
     TagionBill requestAndForce(ref StdSecureWallet w, TagionCurrency amount) {
         auto b = w.requestBill(amount);
         w.addBill(b);
         return b;
     }
-    
+
     TagionBill[] bills;
     long __VERY_UGLY;
     foreach (ref wallet; wallets) {
-        foreach(i; 0..3) {
+        foreach (i; 0 .. 3) {
             bills ~= requestAndForce(wallet, 1000.TGN);
             __VERY_UGLY += 1000;
 
@@ -115,25 +113,22 @@ int _main(string[] args) {
     const total_amount = BigNumber(__VERY_UGLY);
     const number_of_bills = long(bills.length);
 
-    const event_print = Fingerprint([1,2,3,4]);
-    
-    const globals = TagionGlobals([event_print], total_amount, const BigNumber(0), number_of_bills, const long(0));
+    const event_print = Fingerprint([1, 2, 3, 4]);
 
+    const globals = TagionGlobals([event_print], total_amount, const BigNumber(0), number_of_bills, const long(0));
 
     const tagion_head = TagionHead(TagionDomain, 0, globals);
     writefln("CREATED TAGION HEAD: %s", tagion_head.toDoc.encodeBase64);
 
-    
     Pubkey[] keys;
-    foreach(i; 0..local_options.wave.number_of_nodes) {
+    foreach (i; 0 .. local_options.wave.number_of_nodes) {
         auto _net = new StdSecureNet();
-        const pswd = format(local_options.wave.prefix_format, i)~"supervisor";
+        const pswd = format(local_options.wave.prefix_format, i) ~ "supervisor";
         writefln("bdd: %s", pswd);
-        _net.generateKeyPair(pswd); 
+        _net.generateKeyPair(pswd);
         keys ~= _net.pubkey;
         writefln("pkey: %s", _net.pubkey.encodeBase64);
     }
-
 
     HiBON testamony = new HiBON;
     testamony["hola"] = "Hallo ich bin philip. VERY OFFICIAL TAGION GENESIS BLOCK; DO NOT ALTER IN ANY WAYS";
@@ -151,40 +146,35 @@ int _main(string[] args) {
         db.modify(recorder);
     }
 
-
     immutable neuewelle_args = ["genesis_test", config_file, "--nodeopts", module_path]; // ~ args;
     auto tid = spawn(&wrap_neuewelle, neuewelle_args);
 
-    
     import tagion.utils.JSONCommon : load;
 
     Options[] node_opts;
-    
+
     Thread.sleep(10.seconds);
-    foreach(i; 0..local_options.wave.number_of_nodes) {
-        const filename = buildPath(module_path, format(local_options.wave.prefix_format~"opts", i).setExtension(FileExtension.json));
+    foreach (i; 0 .. local_options.wave.number_of_nodes) {
+        const filename = buildPath(module_path, format(local_options.wave.prefix_format ~ "opts", i).setExtension(FileExtension
+                .json));
         writeln(filename);
         Options node_opt = load!(Options)(filename);
         node_opts ~= node_opt;
     }
-    
 
     auto name = "genesis_testing";
     register(name, thisTid);
     log.registerSubscriptionTask(name);
-   
 
     writefln("INPUT SOCKET ADDRESS %s", node_opts[0].inputvalidator.sock_addr);
 
     auto feature = automation!(genesis_test);
     feature.run;
 
-    
     feature.run;
     Thread.sleep(15.seconds);
 
-
-    neuewelle.signal_handler(0);
+    stopsignal.set;
     Thread.sleep(6.seconds);
     return 0;
 }
