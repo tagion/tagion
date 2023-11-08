@@ -27,9 +27,7 @@ class DARTFakeNet : StdSecureNet {
     }
 
     this() {
-        import tagion.crypto.secp256k1.NativeSecp256k1;
-
-        this._crypt = new NativeSecp256k1;
+        super();
 
     }
 
