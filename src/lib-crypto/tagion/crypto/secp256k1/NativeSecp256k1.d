@@ -389,6 +389,13 @@ class NativeSecp256k1 : NativeSecp256k1Interface {
             assert(ret == 1);
         }
         writefln("xonly_pubkey = %(%02x%)", xonly_pubkey.data);
+        secp256k1_pubkey from_xonly_pubkey;
+        ubyte[32] tweak;
+        {
+            const ret = secp256k1_xonly_pubkey_tweak_add(_ctx, &from_xonly_pubkey, &xonly_pubkey, &tweak[0]);
+            assert(ret == 1);
+        }
+        writefln(" from_pubkey = %(%02x%)", from_xonly_pubkey.data);
     }
 }
 

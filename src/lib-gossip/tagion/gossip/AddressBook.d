@@ -205,13 +205,8 @@ synchronized class AddressBook {
      * @param pkey - key
      */
     void opIndexAssign(const NodeAddress addr, const Pubkey pkey)
-    in {
-        assert(pkey.length is 33);
-        if ((pkey in addresses) !is null) {
-            log.error(format("Address %s has already been set", pkey.cutHex));
-        }
-        assert((pkey in addresses) is null, format("Address %s has already been set", pkey.cutHex));
-    }
+    in ((pkey in addresses) is null, format("Address %s has already been set", pkey.cutHex))
+
     do {
         import std.stdio;
         import tagion.utils.Miscellaneous : cutHex;
