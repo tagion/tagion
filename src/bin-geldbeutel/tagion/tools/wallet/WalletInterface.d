@@ -33,7 +33,6 @@ import tagion.script.common;
 import tagion.script.standardnames;
 import tagion.wallet.SecureWallet : check;
 import tagion.script.execute : ContractExecution;
-import tagion.script.Currency : totalAmount;
 import tagion.hibon.HiBONtoText;
 import tagion.hibon.HiBONJSON : toPretty;
 import tagion.dart.DARTBasic;
@@ -103,8 +102,7 @@ HiRPC.Receiver sendSubmitHiRPC(string address, HiRPC.Sender contract, const(Secu
 
     rc = sock.send(contract.toDoc.serialize);
     if (rc != 0) {
-        throw new Exception(format("Could not send bill to network %s", nng_errstr(
-                rc)));
+        throw new Exception(format("Could not send bill to network %s", nng_errstr(rc)));
     }
 
     auto response_data = sock.receive!Buffer;
@@ -120,8 +118,11 @@ HiRPC.Receiver sendSubmitHiRPC(string address, HiRPC.Sender contract, const(Secu
 
 HiRPC.Receiver sendShellSubmitHiRPC(string address, HiRPC.Sender contract, const(SecureNet) net) {
     import nngd;
+
     pragma(msg, "Change Web Post and reply so it takes immutable stream");
-    WebData rep = WebClient.post(address, cast(ubyte[]) contract.toDoc.serialize, ["Content-type": "application/octet-stream"]);
+    WebData rep = WebClient.post(address, cast(ubyte[]) contract.toDoc.serialize, [
+        "Content-type": "application/octet-stream"
+    ]);
     Document response_doc = Document(cast(immutable) rep.rawdata);
     HiRPC hirpc = HiRPC(net);
     writefln("%s", response_doc.toPretty);
@@ -131,23 +132,25 @@ HiRPC.Receiver sendShellSubmitHiRPC(string address, HiRPC.Sender contract, const
 HiRPC.Receiver sendShellHiRPC(string address, HiRPC.Sender dart_req, HiRPC hirpc) {
     import nngd;
 
-    WebData rep = WebClient.post(address, cast(ubyte[]) dart_req.toDoc.serialize, ["Content-type": "application/octet-stream"]);
-    
+    WebData rep = WebClient.post(address, cast(ubyte[]) dart_req.toDoc.serialize, [
+        "Content-type": "application/octet-stream"
+    ]);
+
     Document response_doc = Document(cast(immutable) rep.rawdata);
 
     return hirpc.receive(response_doc);
 }
+
 HiRPC.Receiver sendShellHiRPC(string address, Document dart_req, HiRPC hirpc) {
     import nngd;
 
     WebData rep = WebClient.post(address, cast(ubyte[]) dart_req.serialize, ["Content-type": "application/octet-stream"]);
-    
+
     Document response_doc = Document(cast(immutable) rep.rawdata);
     writefln("%s", response_doc.toPretty);
 
     return hirpc.receive(response_doc);
 }
-
 
 pragma(msg, "Fixme(lr)Remove trusted when nng is safe");
 HiRPC.Receiver sendDARTHiRPC(string address, HiRPC.Sender dart_req, HiRPC hirpc, Duration recv_duration = 15_000.msecs) @trusted {
@@ -157,7 +160,7 @@ HiRPC.Receiver sendDARTHiRPC(string address, HiRPC.Sender dart_req, HiRPC hirpc,
 
     int rc;
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
-    scope(exit) {
+    scope (exit) {
         s.close();
     }
     s.recvtimeout = recv_duration;
@@ -186,10 +189,11 @@ HiRPC.Receiver sendDARTHiRPC(string address, HiRPC.Sender dart_req, HiRPC hirpc,
 
     try {
         hirpc.receive(received_doc);
-    } catch(HiBONException e) {
-        writefln("::error::ERROR in hirpc receive: %s %s",e, received_doc.toPretty);
     }
-    
+    catch (HiBONException e) {
+        writefln("::error::ERROR in hirpc receive: %s %s", e, received_doc.toPretty);
+    }
+
     return hirpc.receive(received_doc);
 }
 
@@ -553,7 +557,7 @@ struct WalletInterface {
         import tagion.hibon.HiBONtoText;
 
         const value = format("%10.3f", bill.value.value);
-        return format("%2$s%3$s %4$s %5$13.6fTGN%1$s",
+        return format("%2$s%3$27-s %4$s %5$13.6fTGN%1$s",
                 RESET, mark,
                 bill.time.toText,
                 secure_wallet.net.calcHash(bill)
@@ -721,8 +725,9 @@ struct WalletInterface {
                         output_filename.fwrite(req);
                     }
                     if (send || sendkernel) {
-                        HiRPC.Receiver received = sendkernel ? 
-                            sendDARTHiRPC(options.dart_address, req, hirpc) : sendShellHiRPC(options.addr ~ options.dart_shell_endpoint, req, hirpc);
+                        HiRPC.Receiver received = sendkernel ?
+                            sendDARTHiRPC(options.dart_address, req, hirpc) : sendShellHiRPC(
+                                    options.addr ~ options.dart_shell_endpoint, req, hirpc);
 
                         auto res = trt_update ? secure_wallet.setResponseUpdateWallet(
                                 received) : secure_wallet.setResponseCheckRead(received);
@@ -732,7 +737,7 @@ struct WalletInterface {
                     }
 
                 }
-                
+
                 if (pay) {
 
                     Document[] requests_to_pay = args[1 .. $]

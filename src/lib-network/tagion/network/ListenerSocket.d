@@ -279,7 +279,7 @@ struct ListenerSocket {
                 masterTid.send(e.taskException);
             }
             else {
-                log.warning("Exception caugth: %s", e.taskException);
+                log.warn("Exception caugth: %s", e.taskException);
             }
         }
         catch (Throwable t) {
@@ -290,7 +290,7 @@ struct ListenerSocket {
                 masterTid.send(t.taskException);
             }
             else {
-                log.warning("Exception caugth: %s", t.taskException);
+                log.warn("Exception caugth: %s", t.taskException);
             }
         }
     }

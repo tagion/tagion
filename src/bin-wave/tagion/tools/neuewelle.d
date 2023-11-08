@@ -40,7 +40,7 @@ import tagion.basic.Types : hasExtension, FileExtension;
 import tagion.hibon.Document;
 
 static abort = false;
-extern (C)
+private extern (C)
 void signal_handler(int _) nothrow {
     try {
         if (abort) {
@@ -134,11 +134,15 @@ int _main(string[] args) {
         stderr.writefln("No config file exits, running with default options");
     }
 
+    scope (failure) {
+        log("Bye bye :(");
+    }
+
     // Spawn logger service
     immutable logger = LoggerService(LoggerServiceOptions(LogType.Console));
     auto logger_service = spawn(logger, "logger");
     log.set_logger_task(logger_service.task_name);
-    waitforChildren(Ctrl.ALIVE);
+    writeln("logger started: ", waitforChildren(Ctrl.ALIVE));
     scope (exit) {
         logger_service.send(Sig.STOP);
     }
@@ -147,7 +151,7 @@ int _main(string[] args) {
     { // Spawn logger subscription service
         immutable subopts = Options(local_options).subscription;
         sub_handle = spawn!SubscriptionService("logger_sub", subopts);
-        waitforChildren(Ctrl.ALIVE);
+        writeln("logsub started: ", waitforChildren(Ctrl.ALIVE));
         log.registerSubscriptionTask("logger_sub");
     }
 

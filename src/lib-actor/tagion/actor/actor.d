@@ -276,6 +276,8 @@ ActorHandle!A handle(A)(string task_name) @safe if (isActor!A) {
 
 ActorHandle!A spawn(A, Args...)(immutable(A) actor, string name, Args args) @safe nothrow
 if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
+    import core.exception : AssertError;
+
     try {
         Tid tid;
         tid = concurrency.spawn((immutable(A) _actor, string name, Args args) @trusted nothrow{
@@ -298,6 +300,12 @@ if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
             }
             catch (Exception t) {
                 fail(t);
+            } // This is bad but, We catch assert per thread because there is no message otherwise, when runnning multithreaded
+            catch (AssertError e) {
+                import tagion.GlobalSignals;
+
+                log(e);
+                stopsignal.set;
             }
             end;
         }, actor, name, args);
@@ -434,7 +442,8 @@ if (allSatisfy!(isSafe, Args)) {
     }
 
     scope (failure) {
-        log("stopped run loop with unknown Error or Assert");
+        setState(Ctrl.END);
+        log.fatal("stopped run loop with unknown Error or Assert");
     }
 
     setState(Ctrl.ALIVE); // Tell the owner that you are running
@@ -481,7 +490,8 @@ if (allSatisfy!(isSafe, Args)) {
     }
 
     scope (failure) {
-        log("stopped run loop with unknown Error or Assert");
+        setState(Ctrl.END);
+        log.fatal("stopped run loop with unknown Error or Assert");
     }
 
     setState(Ctrl.ALIVE); // Tell the owner that you are running

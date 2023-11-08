@@ -15,7 +15,13 @@ ifdef USE_SYSTEM_LIBS
 NNG_ENABLE_TLS=1
 endif
 
-#DFLAGS+=-s
+#
+# Set the Digital Signature scheam
+# The default is Schnorr can be switch to ECDSA 
+# With this devsion flag
+#
+#DFLAGS+=$(DVERSION)=SECP256K1_ECDSA
+
 ifndef DEBUG_DISABLE
 DFLAGS+=$(DDEBUG_SYMBOLS)
 endif
@@ -26,11 +32,4 @@ DFLAGS+=$(DVERSION)=REDBLACKTREE_SAFE_PROBLEM
 # Extra DFLAGS for the testbench 
 BDDDFLAGS+=$(DDEBUG_SYMBOLS)
 BDDDFLAGS+=$(DEXPORT_DYN)
-
-DFLAGS+=$(DVERSION)=REAL_HASHES
-
-ifdef HASH_SECP256K1
-DFLAGS+=$(DVERSION)=HASH_SECP256K1
-endif
-
 

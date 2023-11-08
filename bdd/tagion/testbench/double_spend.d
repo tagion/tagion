@@ -44,7 +44,6 @@ int _main(string[] args) {
     local_options.wave.prefix_format = "DoubleSpend Node_%s_";
     local_options.subscription.address = contract_sock_addr("DOUBLE_SPEND_SUBSCRIPTION");
 
-    
     local_options.save(config_file);
 
     import std.format;
@@ -82,10 +81,10 @@ int _main(string[] args) {
         w.addBill(b);
         return b;
     }
-    
+
     TagionBill[] bills;
     foreach (ref wallet; wallets) {
-        foreach(i; 0..3) {
+        foreach (i; 0 .. 3) {
             bills ~= requestAndForce(wallet, 1000.TGN);
         }
     }
@@ -110,20 +109,19 @@ int _main(string[] args) {
     immutable neuewelle_args = ["double_spend", config_file, "--nodeopts", module_path]; // ~ args;
     auto tid = spawn(&wrap_neuewelle, neuewelle_args);
 
-    
     import tagion.utils.JSONCommon : load;
 
     Options[] node_opts;
-    
-    Thread.sleep(5.seconds);
-    foreach(i; 0..local_options.wave.number_of_nodes) {
 
-        const filename = buildPath(module_path, format(local_options.wave.prefix_format~"opts", i).setExtension(FileExtension.json));
+    Thread.sleep(5.seconds);
+    foreach (i; 0 .. local_options.wave.number_of_nodes) {
+
+        const filename = buildPath(module_path, format(local_options.wave.prefix_format ~ "opts", i).setExtension(FileExtension
+                .json));
         writeln(filename);
         Options node_opt = load!(Options)(filename);
         node_opts ~= node_opt;
     }
-    
 
     writefln("INPUT SOCKET ADDRESS %s", node_opts[0].inputvalidator.sock_addr);
 
@@ -135,17 +133,14 @@ int _main(string[] args) {
     feature.SameInputsSpendOnOneContract(node_opts[0], wallets[0], wallets[1]);
     feature.OneContractWhereSomeBillsAreUsedTwice(node_opts[0], wallets[1], wallets[0]);
     feature.DifferentContractsDifferentNodes(node_opts[0], node_opts[1], wallets[2], wallets[3]);
-    feature.SameContractDifferentNodes(node_opts[0], node_opts[1], wallets[4], wallets[5]); 
-    feature.SameContractInDifferentEpochs(node_opts[0], wallets[6], wallets[7]); 
+    feature.SameContractDifferentNodes(node_opts[0], node_opts[1], wallets[4], wallets[5]);
+    feature.SameContractInDifferentEpochs(node_opts[0], wallets[6], wallets[7]);
     feature.SameContractInDifferentEpochsDifferentNode(node_opts[2], node_opts[3], wallets[8], wallets[9]);
-    feature.TwoContractsSameOutput(node_opts[3], node_opts[4], wallets[10], wallets[11], wallets[12]);    
+    feature.TwoContractsSameOutput(node_opts[3], node_opts[4], wallets[10], wallets[11], wallets[12]);
     feature.BillAge(node_opts[3], wallets[13], wallets[14]);
     feature.run();
 
-
-
-    neuewelle.signal_handler(0);
+    stopsignal.set;
     Thread.sleep(6.seconds);
     return 0;
 }
-

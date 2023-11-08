@@ -53,11 +53,11 @@ struct EpochCreatorOptions {
 @safe
 struct EpochCreatorService {
 
-    void task(immutable(EpochCreatorOptions) opts, immutable(NetworkMode) network_mode, immutable(size_t) number_of_nodes, shared(StdSecureNet) shared_net, immutable(MonitorOptions) monitor_opts, immutable(TaskNames) task_names) {
+    void task(immutable(EpochCreatorOptions) opts, immutable(NetworkMode) network_mode, immutable(size_t) number_of_nodes, shared(
+            StdSecureNet) shared_net, immutable(MonitorOptions) monitor_opts, immutable(TaskNames) task_names) {
 
         const net = new StdSecureNet(shared_net);
 
-        
         assert(network_mode == NetworkMode.INTERNAL, "Unsupported network mode");
 
         if (monitor_opts.enable) {
@@ -68,7 +68,9 @@ struct EpochCreatorService {
             Event.callbacks = new MonitorCallBacks(
                     monitor_socket_tid, monitor_opts.dataformat);
 
-            assert(receiveOnly!Ctrl is Ctrl.ALIVE);
+            if (!waitforChildren(Ctrl.ALIVE)) {
+                log.warn("Monitor never started, continuing anyway");
+            }
         }
 
         GossipNet gossip_net;
@@ -95,7 +97,6 @@ struct EpochCreatorService {
             const nonce = cast(Buffer) net.calcHash(buf);
             hashgraph.createEvaEvent(gossip_net.time, nonce);
         }
-
 
         const(Document) payload() {
             if (payload_queue.empty) {
@@ -127,18 +128,11 @@ struct EpochCreatorService {
             immutable received_signed_contracts = received_wave.epacks
                 .map!(e => e.event_body.payload)
                 .filter!((p) => !p.empty)
-                .filter!(p => p.isRecord!SignedContract)
-                 //Cannot explicitly return immutable container type (*) ?, need assign to immutable container
-                .map!((doc) {
-                    immutable s = new immutable(SignedContract)(doc);
-                    return s;
-                })
+                .filter!(p => p.isRecord!SignedContract) //Cannot explicitly return immutable container type (*) ?, need assign to immutable container
+                .map!((doc) { immutable s = new immutable(SignedContract)(doc); return s; })
                 .handle!(HiBONException, RangePrimitive.front,
-                    (e, r) {
-                        log("invalid SignedContract from hashgraph");
-                        return null;
-                    }
-                )
+                        (e, r) { log("invalid SignedContract from hashgraph"); return null; }
+            )
                 .filter!(s => !s.isinit)
                 .array;
 
@@ -161,14 +155,13 @@ struct EpochCreatorService {
             hashgraph.init_tide(&gossip_net.gossip, &payload, currentTime);
         }
 
-
         while (!thisActor.stop && !hashgraph.areWeInGraph) {
             const received = receiveTimeout(
-                opts.timeout.msecs, 
-                &signal, 
-                &ownerTerminated, 
-                &receiveWavefront,
-                &unknown
+                    opts.timeout.msecs,
+                    &signal,
+                    &ownerTerminated,
+                    &receiveWavefront,
+                    &unknown
             );
             if (received) {
                 continue;

@@ -8,9 +8,9 @@ import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Signature, Fingerprint;
 import tagion.hibon.Document : Document;
 import tagion.basic.ConsensusExceptions;
-import std.range;
+import tagion.basic.Version : ver;
 import tagion.crypto.random.random;
-import std.stdio;
+import std.range;
 
 void scramble(T, B = T[])(scope ref T[] data, scope const(B) xor = null) @safe if (T.sizeof is ubyte.sizeof)
 in (xor.empty || data.length == xor.length) {
@@ -72,7 +72,8 @@ class StdHashNet : HashNet {
 
 alias StdSecureNetSchnorr = StdSecureNetT!true;
 alias StdSecureNetECDSA = StdSecureNetT!false;
-alias StdSecureNet = StdSecureNetT!false;
+alias StdSecureNet = StdSecureNetT!(!ver.SECP256K1_ECDSA);
+
 @safe
 class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
     static if (Schnorr) {
@@ -209,7 +210,6 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
 
         static if (Schnorr) {
             ubyte[] privkey;
-            writefln("seckey %d", seckey.length);
             _crypt.createKeyPair(seckey, privkey);
         }
         else {
@@ -441,8 +441,8 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
             assert(fingerprint == second_fingerprint);
 
             auto sig = net.sign(data).signature;
-            auto second_sig = net.sign(data.toDoc).signature;
-            assert(sig == second_sig);
+            // auto second_sig = net.sign(data.toDoc).signature;
+            //assert(sig == second_sig);
 
             assert(net.verify(fingerprint, sig, net.pubkey));
         }

@@ -105,13 +105,11 @@ int _main(string[] args) {
 
     immutable neuewelle_args = ["send_contract_test", config_file]; // ~ args;
 
-
     auto tid = spawn(&wrap_neuewelle, neuewelle_args);
 
     Thread.sleep(5.seconds);
     writeln("going to run test");
 
-    
     const task_name = "send_contract_tester";
     register(task_name, thisTid);
     log.registerSubscriptionTask(task_name);
@@ -121,8 +119,7 @@ int _main(string[] args) {
     send_contract_feature.run();
     writefln("finished test execution");
 
-    neuewelle.signal_handler(0);
-    // stopsignal.set;
+    stopsignal.set;
 
     return 0;
 
