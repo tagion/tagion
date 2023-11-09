@@ -36,7 +36,7 @@ struct Supervisor {
     void task(immutable(Options) opts, shared(StdSecureNet) shared_net) @safe {
         immutable tn = opts.task_names;
 
-        // auto replicator_handle = spawn!ReplicatorService(tn.replicator, opts.replicator);
+        auto replicator_handle = spawn!ReplicatorService(tn.replicator, opts.replicator);
         
         // signs data for hirpc response
         auto dart_handle = spawn!DARTService(tn.dart, opts.dart, tn, shared_net);
@@ -59,8 +59,7 @@ struct Supervisor {
 
         auto dart_interface_handle = spawn(immutable(DARTInterfaceService)(opts.dart_interface, tn), tn.dart_interface);
 
-        auto services = tuple(dart_handle, hirpc_verifier_handle, inputvalidator_handle, epoch_creator_handle, collector_handle, tvm_handle, dart_interface_handle, transcript_handle);
-        // auto services = tuple(dart_handle, replicator_handle, hirpc_verifier_handle, inputvalidator_handle, epoch_creator_handle, collector_handle, tvm_handle, dart_interface_handle, transcript_handle);
+        auto services = tuple(dart_handle, replicator_handle, hirpc_verifier_handle, inputvalidator_handle, epoch_creator_handle, collector_handle, tvm_handle, dart_interface_handle, transcript_handle);
 
         if (waitforChildren(Ctrl.ALIVE, 20.seconds)) {
             run;
