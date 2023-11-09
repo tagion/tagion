@@ -142,6 +142,7 @@ class NativeSecp256k1ECDSA : NativeSecp256k1Interface {
      + Return values
      + @param pubkey ECDSA Public key, 33 or 65 bytes
      +/
+    enum UN_COMPRESSED_PUBKEY_SIZE = 65;
     enum COMPRESSED_PUBKEY_SIZE = 33;
     @trusted
     immutable(ubyte[]) getPubkey(scope const(ubyte[]) seckey) const
