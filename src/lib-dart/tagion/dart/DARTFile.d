@@ -862,12 +862,6 @@ class DARTFile {
     } 
     do 
     {
-        // blockfile.block_chains.clear;
-        // blockfile.cache_not_in_progress = false;
-        // scope(exit) {
-        //     writeln("setting it true");
-        //     blockfile.cache_not_in_progress = true;
-        // }
         /** 
          * Inner function for the modify function.
          * Note that this function is recursive and called from itself. 

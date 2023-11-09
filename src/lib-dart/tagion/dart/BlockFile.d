@@ -639,14 +639,6 @@ class BlockFile {
         return save(rec.toDoc);
     }
 
-    // bool cache_not_in_progress = true;
-    // invariant {
-    //     // writefln("length of cache %s", block_chains.length);
-    //     if (cache_not_in_progress) {
-    //         assert(block_chains.length == 0, "The cache should be empty when not performing modify requests");
-    //     }
-    // }
-
     
     bool cache_empty() {
         return block_chains.empty;
