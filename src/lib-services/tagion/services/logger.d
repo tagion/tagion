@@ -43,29 +43,29 @@ struct LoggerService {
     immutable(LoggerServiceOptions) options;
 
     const(string) formatLog(LogLevel level, string task_name, string text) {
-        string _format(string color) {
-            final switch(options.log_type) {
-                case LogType.Console:
-                    return format(LOG_FORMAT, Clock.currTime().toTimeSpec.tv_sec, color, level, RESET, task_name, text);
-                case LogType.File:
-                    return format(LOG_FORMAT, Clock.currTime().toTimeSpec.tv_sec, level, task_name, text);
+        const _format(string color = string.init) {
+            const _RESET = (color is string.init) ? "" : RESET;
+            final switch (options.log_type) {
+            case LogType.Console:
+                return format(LOG_FORMAT, Clock.currTime().toTimeSpec.tv_sec, color, level, _RESET, task_name, text);
+            case LogType.File:
+                return format(LOG_FORMAT, Clock.currTime().toTimeSpec.tv_sec, level, task_name, text);
             }
         }
 
-        switch(level) with(LogLevel) {
-            case TRACE:
-                return _format(WHITE);
-            case WARN:
-                return _format(YELLOW);
-            case ERROR: 
-                return _format(RED);
-            case FATAL:
-                return _format(BOLD ~ RED);
-            default:
-                return _format("");
+        switch (level) with (LogLevel) {
+        case TRACE:
+            return _format(WHITE);
+        case WARN:
+            return _format(YELLOW);
+        case ERROR:
+            return _format(RED);
+        case FATAL:
+            return _format(BOLD ~ RED);
+        default:
+            return _format();
         }
     }
-
 
     void task() {
         File file;
@@ -78,16 +78,8 @@ struct LoggerService {
             enum _msg = GetLabel!(TextLog.message).name;
             if (info.isTextLog && doc.hasMember(_msg)) {
                 const output = formatLog(info.level, info.task_name, doc[_msg].get!string);
-
-                if(!file.error) {
+                if (!file.error) {
                     file.writeln(output);
-                }
-
-                // Output error log
-                if (info.level & LogLevel.STDERR) {
-                    (() @trusted {
-                        stderr.writefln(output);
-                    })();
                 }
             }
         }

@@ -174,6 +174,17 @@ is ready and has been started correctly
             import std.exception : assumeWontThrow;
             import std.conv : to;
 
+            if (level & LogLevel.STDERR) {
+                import core.stdc.stdio;
+
+                scope const _level = assumeWontThrow(level.to!string);
+                scope const _text = assumeWontThrow(toStringz(text));
+                stderr.fprintf("%.*s:%.*s: %s\n",
+                        cast(int) _task_name.length, _task_name.ptr,
+                        cast(int) _level.length, _level.ptr,
+                        _text);
+            }
+
             if (!isLoggerServiceRegistered) {
                 import core.stdc.stdio;
 
@@ -292,11 +303,11 @@ logs the fmt text in INFO level
         report(LogLevel.TRACE, fmt, args);
     }
 
-    void warning(lazy string text) const nothrow {
+    void warn(lazy string text) const nothrow {
         report(LogLevel.WARN, text);
     }
 
-    void warning(Args...)(string fmt, Args args) const nothrow {
+    void warn(Args...)(string fmt, Args args) const nothrow {
         report(LogLevel.WARN, fmt, args);
     }
 
@@ -374,6 +385,7 @@ shared struct SubscriptionMask {
     void subscribe(string topic) {
         if (thisTid == log.logger_subscription_tid) {
             import std.stdio;
+
             writeln("SUBSCRIBED TO topic: ", topic);
             _registered_topics[topic] = Subscribed.yes;
             return;

@@ -62,7 +62,7 @@ struct Supervisor {
         auto services = tuple(dart_handle, hirpc_verifier_handle, inputvalidator_handle, epoch_creator_handle, collector_handle, tvm_handle, dart_interface_handle, transcript_handle);
         // auto services = tuple(dart_handle, replicator_handle, hirpc_verifier_handle, inputvalidator_handle, epoch_creator_handle, collector_handle, tvm_handle, dart_interface_handle, transcript_handle);
 
-        if (waitforChildren(Ctrl.ALIVE, 5.seconds)) {
+        if (waitforChildren(Ctrl.ALIVE, 20.seconds)) {
             run;
         }
         else {

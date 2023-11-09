@@ -54,7 +54,8 @@ struct TranscriptOptions {
  * Sends: (inputHiRPC, HiRPC.Receiver) to receiver_task, where Document is a correctly formatted HiRPC
 **/
 struct TranscriptService {
-    void task(immutable(TranscriptOptions) opts, immutable(size_t) number_of_nodes, shared(StdSecureNet) shared_net, immutable(TaskNames) task_names) {
+    void task(immutable(TranscriptOptions) opts, immutable(size_t) number_of_nodes, shared(StdSecureNet) shared_net, immutable(
+            TaskNames) task_names) {
         const(SecureNet) net = new StdSecureNet(shared_net);
 
         immutable(ContractProduct)*[DARTIndex] products;
@@ -69,6 +70,7 @@ struct TranscriptService {
                 this.epoch = epoch;
             }
         }
+
         Votes[long] votes;
 
         struct EpochContracts {
@@ -82,67 +84,59 @@ struct TranscriptService {
 
         HiRPC hirpc = HiRPC(net);
 
-
-
-        
-        TagionHead last_head = TagionHead(TagionDomain, 0, TagionGlobals(null, BigNumber(1000_000_000), BigNumber(0), long(10_000), long(0)));
+        TagionHead last_head = TagionHead(TagionDomain, 0, TagionGlobals(null, BigNumber(1000_000_000), BigNumber(0), long(
+                10_000), long(0)));
         Fingerprint previous_epoch = Fingerprint.init;
         long last_epoch_number = 0;
-
 
         {
             bool head_found;
             // start by reading the head
             immutable tagion_index = net.dartKey(StdNames.name, TagionDomain);
             auto dart_tid = tryLocate(task_names.dart);
-            dart_tid.send(dartReadRR(),[tagion_index]); 
+            dart_tid.send(dartReadRR(), [tagion_index]);
             log("SENDING HEAD REQUEST TO DART");
-             
+
             auto received = receiveTimeout(1.seconds, (dartReadRR.Response _, immutable(RecordFactory.Recorder) head_recorder) {
                 if (!head_recorder.empty) {
                     log("FOUND A TAGIONHEAD");
                     // yay we found a head!
                     last_head = TagionHead(head_recorder[].front.filed);
                     head_found = true;
-                }else {
+                }
+                else {
                     log("NO HEAD FOUND");
 
                 }
 
-            }); 
+            });
             if (!received) {
                 throw new Exception("Never received a tagionhead");
 
             }
 
             if (head_found) {
-            // now we locate the epoch
+                // now we locate the epoch
                 immutable epoch_index = net.dartKey(StdNames.epoch, last_head.current_epoch);
-                dart_tid.send(dartReadRR(),[epoch_index]); 
+                dart_tid.send(dartReadRR(), [epoch_index]);
                 receiveTimeout(1.seconds, (dartReadRR.Response _, immutable(RecordFactory.Recorder) epoch_recorder) {
                     if (!epoch_recorder.empty) {
                         auto doc = epoch_recorder[].front.filed;
                         if (doc.isRecord!Epoch) {
                             last_epoch_number = Epoch(doc).epoch_number;
-                        } 
-                        else if(doc.isRecord!GenesisEpoch) {
+                        }
+                        else if (doc.isRecord!GenesisEpoch) {
                             last_epoch_number = GenesisEpoch(doc).epoch_number;
-                        } 
+                        }
                         else {
                             log("THROWING EXCEPTION");
                             throw new Exception("The read epoch was not of type Epoch or GenesisEpoch");
                         }
                         previous_epoch = Fingerprint(net.calcHash(doc));
                     }
-                }); 
+                });
             }
         }
-        
-
-
-
-        
-
 
         void createRecorder(dartCheckReadRR.Response res, immutable(DARTIndex)[] not_in_dart) {
 
@@ -156,20 +150,21 @@ struct TranscriptService {
 
             import tagion.hashgraph.HashGraphBasic : isMajority;
 
-
             // find the consensus epochs
             auto aggregated_votes = votes
                 .byKeyValue
                 .filter!(v => v.value.votes.length.isMajority(number_of_nodes))
                 .filter!(v => v.value.votes
-                            .filter!(consensus_vote => consensus_vote.verifyBullseye(net, v.value.bullseye))
-                            .walkLength
-                            .isMajority(number_of_nodes)
-                        ).array
-                .sort!((a,b) => a.value.epoch < b.value.epoch);
+                        .filter!(consensus_vote => consensus_vote.verifyBullseye(net, v.value.bullseye))
+                        .walkLength
+                        .isMajority(number_of_nodes)
+            )
+                .array
+                .sort!((a, b) => a.value.epoch < b.value.epoch);
+
             // clean up the arrays on exit
-            scope(exit) {
-                foreach(a_vote; aggregated_votes) {
+            scope (exit) {
+                foreach (a_vote; aggregated_votes) {
                     votes.remove(a_vote.value.epoch);
                     epoch_contracts.remove(a_vote.value.epoch);
                 }
@@ -177,7 +172,7 @@ struct TranscriptService {
 
             // create the epochs. Sort them by epoch number so that we can create the previous link
             Epoch[] consensus_epochs;
-            loop_epochs: foreach(a_vote; aggregated_votes) {
+            loop_epochs: foreach (a_vote; aggregated_votes) {
                 auto previous_epoch_contract = epoch_contracts.get(a_vote.value.epoch, null);
 
                 if (previous_epoch_contract is null) {
@@ -186,28 +181,27 @@ struct TranscriptService {
                 }
 
                 // update the last epoch number
-                Pubkey[] keys = [Pubkey([1,2,3,4])];
+                Pubkey[] keys = [Pubkey([1, 2, 3, 4])];
                 // create the epoch;
-                auto new_epoch = Epoch(a_vote.value.epoch, 
-                                    sdt_t(previous_epoch_contract.epoch_time), 
-                                    a_vote.value.bullseye, 
-                                    previous_epoch, 
-                                    a_vote.value.votes.map!(v => v.signed_bullseye).array,
-                                    keys, 
-                                    keys);
-                consensus_epochs ~= new_epoch, 
+                auto new_epoch = Epoch(a_vote.value.epoch,
+                        sdt_t(previous_epoch_contract.epoch_time),
+                        a_vote.value.bullseye,
+                        previous_epoch,
+                        a_vote.value.votes.map!(v => v.signed_bullseye).array,
+                        keys,
+                        keys);
+                consensus_epochs ~= new_epoch,
                 last_epoch_number = a_vote.value.epoch;
                 previous_epoch = net.calcHash(new_epoch);
             }
-            log("EPOCH_CONTRACTS: %s, consensus_epochs %s agg_votes: %s votes: %s", epoch_contracts.length, consensus_epochs.length, aggregated_votes.length, votes.length);
+            log("EPOCH_CONTRACTS: %s, consensus_epochs %s agg_votes: %s votes: %s", epoch_contracts.length, consensus_epochs
+                    .length, aggregated_votes.length, votes.length);
 
             /*
                 Add the epochs to the recorder. We can assume that there will be multiple epochs due
                 to the hashgraph being asynchronous.
             */
             // recorder.insert(consensus_epochs, Archive.Type.ADD);
-
-
 
             const epoch_contract = epoch_contracts.get(res.id, null);
             if (epoch_contract is null) {
@@ -252,7 +246,8 @@ struct TranscriptService {
 
                     used ~= signed_contract.contract.inputs;
                     products.remove(net.dartIndex(signed_contract.contract));
-                } catch(Exception e) {
+                }
+                catch (Exception e) {
                     log("Contract Exception %s", e);
                     continue loop_signed_contracts;
                 }
@@ -282,18 +277,13 @@ struct TranscriptService {
             //     Fingerprint[].init,
             //     total,
             //     number_of_bills,
-                
+
             // )
 
-
-        
-
-            
             // // create the tagionhead and globals.
             // long number_of_new_bills = recorder[]
             //     .filter!(d => d.filed.isRecord!(TagionBill))
             //     .
-
 
             auto req = dartModifyRR();
             req.id = res.id;
@@ -313,7 +303,8 @@ struct TranscriptService {
             foreach (v; received_votes) {
                 if (votes.get(v.epoch, Votes.init) !is Votes.init) {
                     votes[v.epoch].votes ~= v;
-                } else {
+                }
+                else {
                     log("VOTE IS INIT %s", v.epoch);
                 }
             }
@@ -349,7 +340,7 @@ struct TranscriptService {
             }
             log("transcript received bullseye %s", bullseye.cutHex);
 
-            auto epoch_number = res.id;
+            const epoch_number = res.id;
             ConsensusVoting own_vote = ConsensusVoting(
                     epoch_number,
                     net.pubkey,

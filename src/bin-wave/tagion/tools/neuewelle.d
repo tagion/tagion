@@ -40,7 +40,7 @@ import tagion.basic.Types : hasExtension, FileExtension;
 import tagion.hibon.Document;
 
 static abort = false;
-extern (C)
+private extern (C)
 void signal_handler(int _) nothrow {
     try {
         if (abort) {
@@ -242,7 +242,7 @@ int _main(string[] args) {
         assert(0, "NetworkMode not supported");
     }
 
-    if (waitforChildren(Ctrl.ALIVE, 15.seconds)) {
+    if (waitforChildren(Ctrl.ALIVE, 30.seconds)) {
         log("alive");
         bool signaled;
         import tagion.utils.pretend_safe_concurrency : receiveTimeout;
@@ -278,7 +278,7 @@ int _main(string[] args) {
 }
 
 int network_mode0(const(Options)[] node_options, ref ActorHandle!Supervisor[] supervisor_handles, Document epoch_head = Document
-    .init) {
+        .init) {
 
     import tagion.crypto.Types;
     import tagion.hibon.HiBONRecord;

@@ -49,6 +49,9 @@ unittest {
     auto recorder = factory.recorder;
     recorder.insert(bills, Archive.Type.ADD);
 
+    scope(failure) {
+        writeln("failed");
+    }
     dart_A.modify(recorder);
 
     writeln("AFTER INSERT");

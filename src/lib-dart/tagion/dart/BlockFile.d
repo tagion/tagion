@@ -74,10 +74,12 @@ class BlockFile {
         File file;
         Index _last_block_index;
         Recycler recycler;
-        BlockChain block_chains = new BlockChain; // the cache
     }
 
+
     protected {
+
+        BlockChain block_chains; // the cache
         MasterBlock masterblock;
         HeaderBlock headerblock;
         // /bool hasheader;
@@ -100,6 +102,7 @@ class BlockFile {
     protected this() {
         BLOCK_SIZE = DEFAULT_BLOCK_SIZE;
         recycler = Recycler(this);
+        block_chains = new BlockChain;
         //empty
     }
 
@@ -119,6 +122,7 @@ class BlockFile {
     }
 
     protected this(File file, immutable uint SIZE, const bool set_lock = true) {
+        block_chains = new BlockChain;
         scope (failure) {
             file.close;
         }
@@ -584,8 +588,12 @@ class BlockFile {
         if (!equal_chain.empty) {
             import std.stdio;
             import tagion.hibon.HiBONJSON;
+            import tagion.dart.DARTBasic;
+            import tagion.crypto.SecureNet;
+            const net = new StdHashNet();
+            
             writefln("TO DISPOSE INDEX %s", index);
-            writefln("equal_range=%s", block_chains[].map!(b => format("index %s, doc %s", b.index, b.doc.toPretty))); 
+            writefln("equal_range=%s", equal_chain.map!(b => format("index %s, doc %s dartIndex %(%02x%)", b.index, b.doc.toPretty, net.dartIndex(b.doc)))); 
         }
 
         assert(equal_chain.empty, "We should not dispose cached blocks");
@@ -618,6 +626,7 @@ class BlockFile {
      *   doc = Document to be reserved and allocated
      * Returns: a pointer to the blocksegment.
      */
+
     const(BlockSegment*) save(const(Document) doc) {
         auto result = new const(BlockSegment)(doc, claim(doc.full_size));
 
@@ -628,6 +637,14 @@ class BlockFile {
     /// Ditto
     const(BlockSegment*) save(T)(const T rec) if (isHiBONRecord!T) {
         return save(rec.toDoc);
+    }
+
+    
+    bool cache_empty() {
+        return block_chains.empty;
+    }
+    const(size_t) cache_len() {
+        return block_chains.length;
     }
 
     /** 
