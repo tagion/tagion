@@ -202,7 +202,7 @@ jobs:
           cd ${{ env.ARTIFACT_DIR }}
           callstack_files=$(find . -name "*.callstack")
           for file in $callstack_files; do
-            ./build/${{ env.TARGET }}/bin/callstack ./build/${{ env.TARGET }}/bin/callstack -t $file > $file.unstack || echo could not create callstack
+            ./build/${{ env.TARGET }}/bin/tagion callstack ./build/${{ env.TARGET }}/bin/testbench -t $file > $file.unstack || echo could not create callstack
             url=$(gh gist create $file.unstack) || echo could not create gist
             echo "[$(basename $file)]($url)" >> $GITHUB_STEP_SUMMARY
           done
