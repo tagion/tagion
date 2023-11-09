@@ -43,6 +43,10 @@ static abort = false;
 private extern (C)
 void signal_handler(int signal) nothrow {
     try {
+        if (signal !is SIGINT) {
+            return;
+        }
+
         if (abort) {
             printf("Terminating\n");
             exit(1);
