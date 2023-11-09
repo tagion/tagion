@@ -74,12 +74,12 @@ class BlockFile {
         File file;
         Index _last_block_index;
         Recycler recycler;
-        BlockChain block_chains = new BlockChain; // the cache
     }
 
 
     protected {
 
+        BlockChain block_chains; // the cache
         MasterBlock masterblock;
         HeaderBlock headerblock;
         // /bool hasheader;
@@ -102,6 +102,7 @@ class BlockFile {
     protected this() {
         BLOCK_SIZE = DEFAULT_BLOCK_SIZE;
         recycler = Recycler(this);
+        block_chains = new BlockChain;
         //empty
     }
 
@@ -121,6 +122,7 @@ class BlockFile {
     }
 
     protected this(File file, immutable uint SIZE, const bool set_lock = true) {
+        block_chains = new BlockChain;
         scope (failure) {
             file.close;
         }

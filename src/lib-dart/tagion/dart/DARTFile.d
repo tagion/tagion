@@ -862,7 +862,7 @@ class DARTFile {
     } 
     do 
     {
-        blockfile.block_chains.clear;
+        // blockfile.block_chains.clear;
         // blockfile.cache_not_in_progress = false;
         // scope(exit) {
         //     writeln("setting it true");
@@ -1043,7 +1043,7 @@ class DARTFile {
             else {
                 blockfile.root_index = new_root.index;
                 blockfile.store;
-                blockfile.block_chains.clear;
+                // blockfile.block_chains.clear;
             }
         }
         scope (failure) {
