@@ -206,10 +206,8 @@ class WriteAndReadFromDartDb {
             auto modify = receiveOnlyTimeout!(dartModifyRR.Response, Fingerprint);
 
 
-            version(REPLICATOR) {
-                auto modify_log_result = receiveOnlyTimeout!(LogInfo, const(Document));
-                check(modify_log_result[1].isRecord!(RecordFactory.Recorder), "Did not receive recorder");
-            }
+            auto modify_log_result = receiveOnlyTimeout!(LogInfo, const(Document));
+            check(modify_log_result[1].isRecord!(RecordFactory.Recorder), "Did not receive recorder");
 
             handle.send(dartBullseyeRR());
             const bullseye_res = receiveOnly!(dartBullseyeRR.Response, Fingerprint);

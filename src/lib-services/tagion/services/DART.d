@@ -154,6 +154,10 @@ struct DARTService {
                 log("New bullseye is %s", eye.toHexString);
 
                 req.respond(eye);
+                auto replicator_tid = locate(task_names.replicator);
+                if (replicator_tid !is Tid.init) {
+                    replicator_tid.send(SendRecorder(), recorder, eye, epoch_number);
+                }
             } catch(AssertError e) {
                 log("Received ASSERT ERROR bullseye before %(%02x%), %s archives that were tried to be added \n%s",fingerprint_before, e, recorder.toPretty);
                 fail(e);
@@ -162,12 +166,6 @@ struct DARTService {
                 log("DART Error %s", e);
             }
 
-            version(REPLICATOR) {
-                auto replicator_tid = locate(task_names.replicator);
-                if (replicator_tid !is Tid.init) {
-                    replicator_tid.send(SendRecorder(), recorder, eye, epoch_number);
-                }
-            }
         }
 
         void bullseye(dartBullseyeRR req) @safe {
