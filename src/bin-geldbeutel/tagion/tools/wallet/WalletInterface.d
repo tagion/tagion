@@ -123,6 +123,11 @@ HiRPC.Receiver sendShellSubmitHiRPC(string address, HiRPC.Sender contract, const
     WebData rep = WebClient.post(address, cast(ubyte[]) contract.toDoc.serialize, [
         "Content-type": "application/octet-stream"
     ]);
+
+    if (rep.status != http_status.NNG_HTTP_STATUS_OK) {
+        throw new Exception(format("Send shell submit error(%i): %s", rep.status, rep.msg));
+    }
+
     Document response_doc = Document(cast(immutable) rep.rawdata);
     HiRPC hirpc = HiRPC(net);
     writefln("%s", response_doc.toPretty);
@@ -135,6 +140,10 @@ HiRPC.Receiver sendShellHiRPC(string address, HiRPC.Sender dart_req, HiRPC hirpc
     WebData rep = WebClient.post(address, cast(ubyte[]) dart_req.toDoc.serialize, [
         "Content-type": "application/octet-stream"
     ]);
+
+    if (rep.status != http_status.NNG_HTTP_STATUS_OK) {
+        throw new Exception(format("send shell submit error(%i): %s", rep.status, rep.msg));
+    }
 
     Document response_doc = Document(cast(immutable) rep.rawdata);
 
