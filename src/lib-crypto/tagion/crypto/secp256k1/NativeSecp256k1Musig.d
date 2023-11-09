@@ -102,6 +102,27 @@ class NativeSecp256k1Musig : NativeSecp256k1Schnorr {
     }
 
     @trusted
+    immutable(ubyte[]) musigPubkeyAggregated(const(ubyte[][]) pubkeys) const
+    in (pubkeys.all!(pkey => pkey.length == XONLY_PUBKEY_SIZE))
+    do {
+        secp256k1_xonly_pubkey pubkey_agg;
+        //secp256k1_xonly_pubkey[] xonly_pubkey;
+        secp256k1_pubkey[] _pubkeys;
+        _pubkeys.length = pubkeys.length;
+        foreach (i, pkey; pubkeys) {
+            secp256k1_xonly_pubkey xonly_pubkey;
+            {
+                const ret = secp256k1_xonly_pubkey_parse(_ctx, &xonly_pubkey, &pkey[0]);
+                if (ret == 0) {
+                    return null;
+                }
+                int pk_parity;
+            }
+        }
+        return null;
+    }
+
+    @trusted
     bool musigPubkeyTweakAdd(
             ref secp256k1_musig_keyagg_cache cache,
             const(ubyte[]) tweak,
@@ -382,4 +403,37 @@ unittest {
         const ret = crypt.verify(signature, message_samples[0], agg_pubkey);
         assert(ret, "Failed to verify multi signature");
     }
+}
+
+unittest { /// Simple musig sign
+    import std.range;
+    import std.algorithm;
+    import std.array;
+    import std.format;
+    import std.stdio;
+
+    const msg = "Message to be signed".representation.sha256;
+    enum number_of_signers = 4;
+    auto index_range = iota(number_of_signers);
+    const secrets = index_range.map!(index => format("Secret %d", index).representation.sha256).array;
+    auto crypt = new NativeSecp256k1Musig;
+    ubyte[][] keypairs;
+    keypairs.length = secrets.length;
+    index_range
+        .each!(index => crypt.createKeyPair(secrets[index], keypairs[index]));
+
+    const pubkeys = keypairs.map!(keypair => crypt.getPubkey(keypair)).array;
+
+    pubkeys.each!(pubkey => writefln("%(%02x%)", pubkey));
+
+    foreach (number_of_participants; iota(2, number_of_signers + 1)) {
+        writefln("number_of_participants=%s", number_of_participants);
+        secp256k1_musig_keyagg_cache cache;
+        secp256k1_xonly_pubkey agg_pubkey;
+        {
+            //const ret=crypt.musigPubkeyAggregated(cache, agg_pubkey, pubkeys[0..number_of_participants]);
+            //assert(ret, "Failed to aggregate the public keys");
+        }
+    }
+
 }

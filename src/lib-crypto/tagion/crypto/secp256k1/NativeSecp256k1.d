@@ -396,6 +396,22 @@ class NativeSecp256k1 : NativeSecp256k1Interface {
             assert(ret == 1);
         }
         writefln(" from_pubkey = %(%02x%)", from_xonly_pubkey.data);
+        ubyte[32] xonly_pubkey_bytes;
+        {
+            const ret = secp256k1_xonly_pubkey_serialize(_ctx, &xonly_pubkey_bytes[0], &xonly_pubkey);
+
+            assert(ret == 1);
+            writefln(" xonly_bytes = %(%02x%)", xonly_pubkey_bytes);
+        }
+        {
+            ubyte[65] compressed_pubkey;
+            size_t len = 33;
+            const ret = secp256k1_ec_pubkey_serialize(_ctx, &compressed_pubkey[0], &len, &from_xonly_pubkey, SECP256K1
+                .EC_COMPRESSED);
+            assert(ret == 1);
+            assert(len == 33, "Key length should be 33");
+            writefln("Compressed   = %(%02x%)", compressed_pubkey[0 .. len]);
+        }
     }
 }
 
@@ -472,15 +488,16 @@ unittest { /// Schnorr tweak
         const signature_not_ok = crypt.verify(msg_hash, signature, tweakked_pubkey);
         assert(!signature_not_ok, "None tweakked signature should not be correct");
     }
-    version (none) {
+    {
         import std.stdio;
 
-        foreach (i; 0 .. 7) {
-            ubyte[] secret;
-            secret.length = 32;
-            getRandom(secret);
-            writefln("%d --- --- --- ---", i);
-            crypt.pubkey_test(secret);
-        }
+        version (none)
+            foreach (i; 0 .. 7) {
+                ubyte[] secret;
+                secret.length = 32;
+                getRandom(secret);
+                writefln("%d --- --- --- ---", i);
+                crypt.pubkey_test(secret);
+            }
     }
 }
