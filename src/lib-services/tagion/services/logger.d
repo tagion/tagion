@@ -43,10 +43,11 @@ struct LoggerService {
     immutable(LoggerServiceOptions) options;
 
     const(string) formatLog(LogLevel level, string task_name, string text) {
-        string _format(string color) {
+        const _format(string color = string.init) {
+            const _RESET = (color is string.init) ? "" : RESET;
             final switch (options.log_type) {
             case LogType.Console:
-                return format(LOG_FORMAT, Clock.currTime().toTimeSpec.tv_sec, color, level, RESET, task_name, text);
+                return format(LOG_FORMAT, Clock.currTime().toTimeSpec.tv_sec, color, level, _RESET, task_name, text);
             case LogType.File:
                 return format(LOG_FORMAT, Clock.currTime().toTimeSpec.tv_sec, level, task_name, text);
             }
@@ -62,7 +63,7 @@ struct LoggerService {
         case FATAL:
             return _format(BOLD ~ RED);
         default:
-            return _format("");
+            return _format();
         }
     }
 
