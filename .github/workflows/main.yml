@@ -85,7 +85,7 @@ jobs:
           cp -r --parents logs/ build/${{ env.TARGET }}/bin/unittest-cov ${{ env.ARTIFACT_DIR }}
 
           make clean
-          rm -r logs/ || echo "no logs"
+          rm -r *.callstack logs/ || echo "no logs"
 
   commit_stage:
     runs-on: CI
@@ -129,7 +129,7 @@ jobs:
           cp -r --parents logs/ $trunk $stacks ${{ env.ARTIFACT_DIR }}
 
           make clean
-          rm -r logs/ || echo "no logs"
+          rm -r *.callstack logs/ || echo "no logs"
 
   acceptance_stage:
     runs-on: CD
