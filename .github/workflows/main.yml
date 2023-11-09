@@ -188,6 +188,15 @@ jobs:
           path: ${{ env.ARTIFACT_DIR }}.tar.gz
           if-no-files-found: error
 
+      - name: Add logs
+        run: |
+          cd /mnt/nfs/artifacts
+          log_files=$(find logs -name "*.log")
+          for file in $log_files; do
+            url=$(gh gist create $file)
+            echo "[$(basename $file)]($url)" >> $GITHUB_STEP_SUMMARY
+          done
+
       - name: Post run
         run: |
           rm -r ${{ env.ARTIFACT_DIR }}
