@@ -46,7 +46,7 @@ import tagion.services.messages;
 class EmulatorGossipNet : GossipNet {
     private Duration duration;
 
-    private Tid[immutable(Pubkey)] _tids;
+    private string[immutable(Pubkey)] _tids;
     private immutable(Pubkey)[] _pkeys;
     protected uint _send_node_id;
     protected sdt_t _current_time;
@@ -66,10 +66,11 @@ class EmulatorGossipNet : GossipNet {
 
         const task_name = addressbook.getAddress(channel);
 
-        auto task_id = tryLocate(task_name);
+        // we do this command to make sure that everything has started since it will throw if it has not been started.
+        tryLocate(task_name);
 
         _pkeys ~= channel;
-        _tids[channel] = task_id;
+        _tids[channel] = task_name;
 
         log.trace("Add channel: %s tid: %s", channel.cutHex, _tids[channel]);
     }
@@ -129,7 +130,13 @@ class EmulatorGossipNet : GossipNet {
 
 
         Thread.sleep(duration);
-        _tids[channel].send(ReceivedWavefront(), sender.toDoc);
+
+        auto node_tid = locate(_tids[channel]);
+        if (node_tid is Tid.init) {
+            return;
+        }
+        
+        node_tid.send(ReceivedWavefront(), sender.toDoc);
         version(EPOCH_LOG) {
         log.trace("Successfully sent to %s (Node_%s) %d bytes", channel.cutHex, _pkeys.countUntil(channel), sender
                 .toDoc.serialize.length);

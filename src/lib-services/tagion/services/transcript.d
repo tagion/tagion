@@ -167,6 +167,7 @@ struct TranscriptService {
                             .isMajority(number_of_nodes)
                         ).array
                 .sort!((a,b) => a.value.epoch < b.value.epoch);
+
             // clean up the arrays on exit
             scope(exit) {
                 foreach(a_vote; aggregated_votes) {
