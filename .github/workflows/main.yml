@@ -193,9 +193,20 @@ jobs:
           cd ${{ env.ARTIFACT_DIR }}
           log_files=$(find logs -name "*.log")
           for file in $log_files; do
-            url=$(gh gist create $file)
+            url=$(gh gist create $file) || echo could not create gist
             echo "[$(basename $file)]($url)" >> $GITHUB_STEP_SUMMARY
           done
+
+      - name: Add callstacks
+        run: |
+          cd ${{ env.ARTIFACT_DIR }}
+          callstack_files=$(find . -name "*.callstack")
+          for file in $callstack_files; do
+            ./build/${{ env.TARGET }}/bin/callstack ./build/${{ env.TARGET }}/bin/callstack -t $file > $file.unstack || echo could not create callstack
+            url=$(gh gist create $file.unstack) || echo could not create gist
+            echo "[$(basename $file)]($url)" >> $GITHUB_STEP_SUMMARY
+          done
+
 
       - name: Post run
         run: |
