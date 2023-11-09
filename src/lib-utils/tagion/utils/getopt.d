@@ -5,8 +5,6 @@ import std.typecons;
 import std.process : environment;
 import std.path;
 
-import tagion.tools.revision;
-
 immutable logo = import("logo.txt");
 
 /// Wrapper for defaultGetoptPrinter that prints the logo and documentation link
