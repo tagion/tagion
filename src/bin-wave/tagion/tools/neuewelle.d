@@ -41,7 +41,7 @@ import tagion.hibon.Document;
 
 static abort = false;
 private extern (C)
-void signal_handler(int _) nothrow {
+void signal_handler(int signal) nothrow {
     try {
         if (abort) {
             printf("Terminating\n");
@@ -69,13 +69,20 @@ int _main(string[] args) {
     { // Handle sigint
         sigaction_t sa;
         sa.sa_handler = &signal_handler;
-        sa.sa_sigaction = &segment_fault;
+
         sigemptyset(&sa.sa_mask);
-        sa.sa_flags = SA_RESTART;
+        sa.sa_flags = 0;
         // Register the signal handler for SIGINT
         int rc = sigaction(SIGINT, &sa, null);
         assert(rc == 0, "sigaction error");
-        rc = sigaction(SIGSEGV, &sa, null);
+    }
+    { // Handle sigv
+        sigaction_t sa;
+        sa.sa_sigaction = &segment_fault;
+        sigemptyset(&sa.sa_mask);
+        sa.sa_flags = SA_RESTART;
+
+        int rc = sigaction(SIGSEGV, &sa, null);
         assert(rc == 0, "sigaction error");
     }
 
