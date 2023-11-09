@@ -2,8 +2,7 @@ name: Main Flow
 on:
   workflow_dispatch:
   push: 
-    branches: 
-      - current
+
 env:
   TARGET: x86_64-linux
   STAGE: commit
@@ -227,9 +226,9 @@ jobs:
           git clone git@github.com:tagion/tagion.git || echo "repo already exists"
       - name: pull
         run: |
+          git fetch
+          git checkout ${{ github.sha }}
           git clean -f && git restore . 
-          git checkout current
-          git pull
 
       - name: Install android tools
         run: |

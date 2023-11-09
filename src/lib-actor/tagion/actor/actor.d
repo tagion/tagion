@@ -443,7 +443,6 @@ if (allSatisfy!(isSafe, Args)) {
 
     scope (failure) {
         setState(Ctrl.END);
-        log.fatal("stopped run loop with unknown Error or Assert");
     }
 
     setState(Ctrl.ALIVE); // Tell the owner that you are running
@@ -491,7 +490,6 @@ if (allSatisfy!(isSafe, Args)) {
 
     scope (failure) {
         setState(Ctrl.END);
-        log.fatal("stopped run loop with unknown Error or Assert");
     }
 
     setState(Ctrl.ALIVE); // Tell the owner that you are running
