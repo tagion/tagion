@@ -35,10 +35,7 @@ int _main(string[] args) {
     auto main_args = getopt(args,
             "w", "wallet config files", &wallet_config_files,
             "x", "wallet pins", &wallet_pins,
-            "sendkernel", "Send requests directory to the kernel", &sendkernel, // "n", "network config file", &network_config,
-
-            
-
+            "sendkernel", "Send requests directory to the kernel", &sendkernel,
     );
 
     if (main_args.helpWanted) {
