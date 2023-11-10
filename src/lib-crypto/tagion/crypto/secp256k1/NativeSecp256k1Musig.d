@@ -81,6 +81,40 @@ class NativeSecp256k1Musig : NativeSecp256k1Schnorr {
 
     }
 
+    @trusted
+    bool musigPubkeyAggregated(
+        ref secp256k1_xonly_pubkey pubkey_agg,
+        const(ubyte[][]) pubkeys) const
+in(pubkeys.all!((pkey) => pkey.length == XONLY_PUBKEY_SIZE))
+do {
+    secp256k1_pubkey[] xy_pubkeys;
+    xy_pubkeys.length = pubkeys.length;
+
+    foreach(ref xy_pubkey, pubkey; lockstep(xy_pubkeys, pubkeys)) {
+        auto xonly_pubkey=cast(secp256k1_xonly_pubkey*)&xy_pubkey;
+        const ret = secp256k1_xonly_pubkey_parse(_ctx, xonly_pubkey, &pubkey[0]);
+        if (ret == 0) {
+            return false;
+        }
+    }
+/*
+    const not_ok=iota(pubkeys.length)
+    .map!(index => secp256k1_xonly_pubkey_parse(_ctx, 
+    &xy_pubkeys[index],
+    &pubkeys[0][index]));
+        /*
+    .any!(ret => ret == 0);
+        if (not_ok) {
+            return false;
+        }
+    }*/
+     //   writefln("not_ok=%s", not_ok);
+    //}
+    //pubkeys.each!(pkey =>    writefln("   xonly  =%(%02x%)", pkey));
+    //xy_pubkeys.each!(pkey => writefln("xy_pubkeys=%(%02x%)", pkey.data));
+      //  return true;
+    return musigPubkeyAggregated(pubkey_agg, xy_pubkeys);
+}
     /**
     Ditto except that it produce a cache which can be used for musig signing
 */
@@ -246,7 +280,7 @@ unittest {
     const message_samples = iota(3)
         .map!(index => format("message %d", index))
         .map!(text => text.representation)
-        .map!(buf => sha256(buf))
+        .map!(buf => buf.sha256)
         .array;
     //
     // This of secret passphrases use to generate keypairs
@@ -254,7 +288,7 @@ unittest {
     const secret_passphrases = iota(num_of_signers)
         .map!(index => format("very secret word %d", index))
         .map!(text => text.representation)
-        .map!(buf => sha256(buf))
+        .map!(buf => buf.sha256)
         .array;
     //
     // Create the keypairs
@@ -309,12 +343,14 @@ unittest {
         const ret = crypt.musigXonlyPubkeyTweakAdd(cache, xonly_tweak, &tweaked_pubkey);
         assert(ret, "Tweak of the pubkey failed");
     }
-    //secp256k1_xonly_pubkey tweaked_xonly_pubkey;
+    //
+    // secp256k1_xonly_pubkey tweaked_xonly_pubkey;
+    //    
     {
         const ret = crypt.xonlyPubkey(tweaked_pubkey, agg_pubkey);
         assert(ret, "Could not produce xonly pubkey");
-        writefln("xonly_pubkey=%(%02x%)", agg_pubkey.data);
     }
+        writefln("xonly_pubkey=%(%02x%)", agg_pubkey.data);
 
     //
     // Generate nonce session id (Should only be used one in the unittest it's fixed)
@@ -322,7 +358,7 @@ unittest {
     const session_ids = iota(secret_passphrases.length)
         .map!(index => format("Session id nonce %d", index))
         .map!(text => text.representation)
-        .map!(buf => sha256(buf))
+        .map!(buf => buf.sha256)
         .array;
 
     //
@@ -428,12 +464,25 @@ unittest { /// Simple musig sign
 
     foreach (number_of_participants; iota(2, number_of_signers + 1)) {
         writefln("number_of_participants=%s", number_of_participants);
-        secp256k1_musig_keyagg_cache cache;
+        //secp256k1_musig_keyagg_cache cache;
         secp256k1_xonly_pubkey agg_pubkey;
         {
-            //const ret=crypt.musigPubkeyAggregated(cache, agg_pubkey, pubkeys[0..number_of_participants]);
-            //assert(ret, "Failed to aggregate the public keys");
+            const ret=crypt.musigPubkeyAggregated(agg_pubkey, pubkeys[0..number_of_participants]);
+            assert(ret, "Failed to aggregate the public keys");
         }
+        const session=format("Some random nonce %s", number_of_participants)
+        .representation.sha256;
+        secp256k1_musig_partial_sig[] partial_signatures;
+        secp256k1_musig_secnonce[] secnonces;
+        secnonces.length=partial_signatures.length=number_of_participants;
+        //secp256k1_musig_keyagg_cache cache;
+        //iota(number_of_participants)
+        
+        {
+            ubyte[] signature;
+            //const ret=crypt.musigSignAgg(signature
+        }
+
     }
 
 }

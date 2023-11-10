@@ -267,16 +267,16 @@ jobs:
 
   ddoc_push:
     if: false
+      # if: ${{ github.ref == 'refs/heads/current' }}
     runs-on: CD
-    needs: acceptance_stage 
+    needs: acceptance_stage
     steps:
       - name: Copy Artifact to local machine
         run: |
           rm -rf *
-          cp /mnt/nfs/${{needs.acceptance_stage.outputs.stage}}/${{needs.acceptance_stage.outputs.tarball}} .
-          tar -xzf ${{needs.acceptance_stage.outputs.tarball}}
-          echo $(ls build/)     
-      - name: Send ddoc to repository 
+          cp /mnt/nfs/${{ env.ARTIFACT_DIR }} .
+          echo $(ls build/)
+      - name: Send ddoc to repository
         run: |
           ls logs
           git clone https://${{ secrets.API_TOKEN_GITHUB }}@github.com/tagion/ddoc.git
@@ -287,11 +287,14 @@ jobs:
           git add .
           git commit -m "ddocs updated" || echo "nothing to commit"
           git push https://${{ secrets.API_TOKEN_GITHUB }}@github.com/tagion/ddoc.git || echo "repo already up to date"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITBOT_TOKEN }}
 
       - name: clean up
         run: rm -rf *
  
   docs_build:
+    if: ${{ github.ref == 'refs/heads/current' }}
     environment:
       name: github-pages
       url: https://docs.tagion.org
