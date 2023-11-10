@@ -149,7 +149,21 @@ class NativeSecp256k1 : NativeSecp256k1Interface {
     in (pubkey.length == XONLY_PUBKEY_SIZE)
     do {
         assert(0, "This function can't be implemented yet because there is no function which can convert secp256k1_xonly_pubkey -> secp256k1_pubkey");
-        /*
+        scope (exit) {
+            randomizeContext;
+        }
+        secp256k1_pubkey pubkey_result;
+        ubyte[32] result;
+        {
+            const ret = secp256k1_xonly_pubkey_parse(_ctx, cast(secp256k1_xonly_pubkey*)&pubkey_result, &pubkey[0]);
+            check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_PARSE_FAULT);
+        }
+        {
+            const ret = secp256k1_ecdh(_ctx, &result[0], &pubkey_result, &seckey[0], null, null);
+            check(ret == 1, ConsensusFailCode.SECURITY_EDCH_FAULT);
+        }
+        return result.idup;
+ /*
         scope (exit) {
             randomizeContext;
         }
