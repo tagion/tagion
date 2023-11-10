@@ -561,15 +561,21 @@ struct SecureWallet(Net : SecureNet) {
     @trusted
     bool setResponseUpdateWallet(const(HiRPC.Receiver) receiver) nothrow {
         import std.exception : assumeWontThrow;
+        // import tagion.basic.Debug;
 
         if (!receiver.isResponse) {
             return false;
         }
+
+        // __write("%s", assumeWontThrow(receiver.toPretty));
+        
         const found_bills = assumeWontThrow(receiver.response
                 .result[]
                 .map!(e => TagionBill(e.get!Document))
                 .array);
 
+        // bool[Pubkey] new_activated;
+        
         foreach (found; found_bills) {
             if (!account.bills.canFind(found)) {
                 account.bills ~= found;
@@ -583,7 +589,22 @@ struct SecureWallet(Net : SecureNet) {
                 account.requested_invoices = account.requested_invoices.remove(invoice_index);
             }
 
+            // get all the locked pubkeys
+            // const activated_index = account.activated
+            //     .byKeyValue
+            //     .filter!(pv => pv.value == true)
+            //     .map!(pv => pv.key)
+            //     .countUntil!(p => found.owner == p);
+
+            // if (activated_index >= 0) {
+            //     new_activated[found.owner] = true;
+            // }
+
         }
+        // account.activated = new_activated;
+        
+        // go through the locked bills
+
         return true;
     }
 
@@ -685,6 +706,7 @@ struct SecureWallet(Net : SecureNet) {
             const amount_to_pay = pay_script.outputs
                 .map!(bill => bill.value)
                 .totalAmount;
+            check(amount_to_pay < available_balance, "The amount requested for payment should be smaller than the available balance");
 
             do {
                 if (collected_bills.length == previous_bill_count) {
@@ -979,6 +1001,21 @@ version (unittest) {
     alias StdSecureWallet = SecureWallet!StdSecureNet;
 
 }
+
+
+@safe 
+unittest {
+    auto wallet=StdSecureWallet("secret", "1234");
+    const bill1 = wallet.requestBill(1000.TGN);
+    wallet.addBill(bill1);
+    assert(wallet.available_balance == 1000.TGN);
+    // create a payment of excactly 1000 TGN;
+    const bill_to_pay = wallet.requestBill(1000.TGN);
+    SignedContract signed_contract;
+    TagionCurrency fees;
+    assertThrown(wallet.createPayment([bill_to_pay], signed_contract, fees).get); 
+}
+
 
 
 @safe
