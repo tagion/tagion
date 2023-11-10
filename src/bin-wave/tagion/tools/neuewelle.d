@@ -93,6 +93,13 @@ int _main(string[] args) {
     bool version_switch;
     bool override_switch;
     bool monitor;
+    debug {
+        bool fail_fast = true;
+    }
+    else {
+        bool fail_fast;
+    }
+
     string mode0_node_opts_path;
     string[] override_options;
 
@@ -100,6 +107,7 @@ int _main(string[] args) {
             "v|version", "Print revision information", &version_switch,
             "O|override", "Override the config file", &override_switch,
             "option", "Set an option", &override_options,
+            "fail-fast", "Set the fail strategy, fail-fast=%s".format(fail_fast), &fail_fast,
             "nodeopts", "Generate single node opts files for mode0", &mode0_node_opts_path,
             "m|monitor", "Enable the monitor", &monitor,
     );
@@ -290,10 +298,18 @@ int _main(string[] args) {
         do {
             signaled = stopsignal.wait(100.msecs);
             if (!signaled) {
-                signaled = receiveTimeout(
-                        Duration.zero,
-                        (TaskFailure tf) { log.fatal("Stopping because of unhandled taskfailure \n%s", tf); }
-                );
+                if (fail_fast) {
+                    signaled = receiveTimeout(
+                            Duration.zero,
+                            (TaskFailure tf) { log.fatal("Stopping because of unhandled taskfailure\n%s", tf); }
+                    );
+                }
+                else {
+                    receiveTimeout(
+                            Duration.zero,
+                            (TaskFailure tf) { log.error("Received an unhandled taskfailure\n%s", tf); }
+                    );
+                }
             }
         }
         while (!signaled);
