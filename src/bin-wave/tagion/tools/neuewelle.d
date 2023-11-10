@@ -94,10 +94,12 @@ int _main(string[] args) {
     bool override_switch;
     bool monitor;
     string mode0_node_opts_path;
+    string[] override_options;
 
     auto main_args = getopt(args,
             "v|version", "Print revision information", &version_switch,
             "O|override", "Override the config file", &override_switch,
+            "option", "Set an option", &override_options,
             "nodeopts", "Generate single node opts files for mode0", &mode0_node_opts_path,
             "m|monitor", "Enable the monitor", &monitor,
     );
@@ -122,12 +124,6 @@ int _main(string[] args) {
         config_file = args[1];
     }
 
-    if (override_switch) {
-        Options.defaultOptions.save(config_file);
-        writefln("Config file written to %s", config_file);
-        return 0;
-    }
-
     Options local_options;
     if (config_file.exists) {
         try {
@@ -143,6 +139,39 @@ int _main(string[] args) {
     else {
         local_options = Options.defaultOptions;
         stderr.writefln("No config file exits, running with default options");
+    }
+
+    // Experimental!!
+    if (!override_options.empty) {
+        import std.json;
+
+        JSONValue json = local_options.toJSON;
+
+        void set_val(JSONValue j, string[] _key, string val) {
+            if (_key.length == 1) {
+                // alias key_type = j[_key].type;
+                j[_key[0]] = val;
+                return;
+            }
+            set_val(j[_key[0]], _key[1 .. $], val);
+        }
+
+        foreach (option; override_options) {
+            string[] key_value = option.split("=");
+            assert(key_value.length == 2, format("Option '%s' invalid, missing key=value", option));
+            auto value = key_value[1];
+            string[] key = key_value[0].split(".");
+            set_val(json, key, value);
+        }
+
+        json.toPrettyString.writeln;
+        // local_options.parse(json);
+    }
+
+    if (override_switch) {
+        Options.defaultOptions.save(config_file);
+        writefln("Config file written to %s", config_file);
+        return 0;
     }
 
     scope (failure) {
