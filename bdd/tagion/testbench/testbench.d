@@ -27,10 +27,9 @@ int main(string[] args) {
     import send_contract = tagion.testbench.send_contract;
     import double_spend = tagion.testbench.double_spend;
     import spam_double_spend = tagion.testbench.spam_double_spend;
-    import malformed_contract = tagion.testbench.malformed_contract; 
-    import manycontracts = tagion.testbench.e2e.manycontracts;
+    import malformed_contract = tagion.testbench.malformed_contract;
+    import operational = tagion.testbench.e2e.operational;
     import genesis_test = tagion.testbench.genesis_test;
-
 
     alias alltools = AliasSeq!(
             collector,
@@ -56,7 +55,7 @@ int main(string[] args) {
             double_spend,
             spam_double_spend,
             malformed_contract,
-            manycontracts,
+            operational,
             genesis_test,
     );
     mixin doOneMain!(alltools);

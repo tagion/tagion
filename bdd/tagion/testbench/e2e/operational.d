@@ -1,4 +1,4 @@
-module tagion.testbench.e2e.manycontracts;
+module tagion.testbench.e2e.operational;
 // Default import list for bdd
 import tagion.behaviour;
 import tagion.hibon.Document;
@@ -21,7 +21,7 @@ import tagion.script.common;
 import tagion.script.TagionCurrency;
 import tagion.communication.HiRPC;
 
-alias manycontracts = tagion.testbench.e2e.manycontracts;
+alias operational = tagion.testbench.e2e.operational;
 
 mixin Main!(_main);
 
@@ -85,7 +85,7 @@ int _main(string[] args) {
         writefln("Wallet logged in %s", wallet_interface.secure_wallet.isLoggedin);
     }
 
-    auto manycontracts_feature = automation!manycontracts;
+    auto manycontracts_feature = automation!operational;
     manycontracts_feature.SendNContractsFromwallet1Towallet2(wallet_interfaces, sendkernel);
     manycontracts_feature.run;
     return 1;
