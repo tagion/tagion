@@ -35,7 +35,7 @@ struct WaveOptions {
     import tagion.utils.JSONCommon;
 
     NetworkMode network_mode = NetworkMode.INTERNAL;
-    size_t number_of_nodes = 5;
+    uint number_of_nodes = 5;
     string prefix_format = "Node_%s_";
     mixin JSONCommon;
 }
@@ -49,7 +49,7 @@ struct TaskNames {
     string inputvalidator = "inputvalidator";
     string dart = "dart";
     string hirpc_verifier = "hirpc_verifier";
-    string collector = "collector ";
+    string collector = "collector";
     string transcript = "transcript";
     string tvm = "tvm";
     string epoch_creator = "epoch_creator";
@@ -103,9 +103,6 @@ struct Options {
     InputValidatorOptions inputvalidator;
     HiRPCVerifierOptions hirpc_verifier;
     DARTOptions dart;
-    CollectorOptions collector;
-    TranscriptOptions transcript;
-    TVMOptions tvm;
     EpochCreatorOptions epoch_creator;
     MonitorOptions monitor;
     ReplicatorOptions replicator;
