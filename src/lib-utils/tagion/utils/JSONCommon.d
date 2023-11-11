@@ -92,11 +92,11 @@ mixin template JSONCommon() {
                         result[name] = m.to!string;
                     }
                     else static if (is(type : immutable(ubyte[]))) {
-                    result[name] = m.toHexString;
-                }
-            else {
-                    result[name] = m;
-                }
+                        result[name] = m.toHexString;
+                    }
+                    else {
+                        result[name] = m;
+                    }
             }
         }
         return result;
@@ -239,10 +239,34 @@ mixin template JSONCommon() {
 
 }
 
-static T load(T)(string config_file) if(__traits(hasMember,T, "load")) {
+static T load(T)(string config_file) if (__traits(hasMember, T, "load")) {
     T result;
     result.load(config_file);
     return result;
+}
+
+import std.json : JSONType, JSONValue;
+import std.conv;
+
+JSONValue toJSONType(string str, JSONType type) {
+    with (JSONType) final switch (type) {
+    case float_:
+        return JSONValue(str.to!float);
+    case integer:
+        return JSONValue(str.to!int);
+    case uinteger:
+        return JSONValue(str.to!uint);
+    case null_:
+        return JSONValue(null);
+    case object:
+    case array:
+        return JSONValue(str); // best guess
+    case string:
+        return JSONValue(str);
+    case false_:
+    case true_:
+        return JSONValue(str.to!bool);
+    }
 }
 
 mixin template JSONConfig() {
@@ -263,6 +287,7 @@ mixin template JSONConfig() {
             save(config_file);
         }
     }
+
     void save(const string config_file) @safe const {
         config_file.write(stringify);
     }

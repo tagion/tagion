@@ -152,32 +152,31 @@ int _main(string[] args) {
     // Experimental!!
     if (!override_options.empty) {
         import std.json;
+        import tagion.utils.JSONCommon;
 
         JSONValue json = local_options.toJSON;
 
         void set_val(JSONValue j, string[] _key, string val) {
             if (_key.length == 1) {
-                // alias key_type = j[_key].type;
-                j[_key[0]] = val;
+                j[_key[0]] = val.toJSONType(j[_key[0]].type);
                 return;
             }
             set_val(j[_key[0]], _key[1 .. $], val);
         }
 
         foreach (option; override_options) {
-            string[] key_value = option.split("=");
+            string[] key_value = option.split(":");
             assert(key_value.length == 2, format("Option '%s' invalid, missing key=value", option));
             auto value = key_value[1];
             string[] key = key_value[0].split(".");
             set_val(json, key, value);
         }
-
-        json.toPrettyString.writeln;
-        // local_options.parse(json);
+        // If options does not parse as a string then some types will not be interpreted correctly
+        local_options.parseJSON(json.toString);
     }
 
     if (override_switch) {
-        Options.defaultOptions.save(config_file);
+        local_options.save(config_file);
         writefln("Config file written to %s", config_file);
         return 0;
     }
