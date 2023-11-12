@@ -20,6 +20,8 @@ import tagion.tools.wallet.WalletInterface;
 import tagion.script.common;
 import tagion.script.TagionCurrency;
 import tagion.communication.HiRPC;
+import tagion.utils.JSONCommon;
+import tagion.wallet.AccountDetails;
 
 alias operational = tagion.testbench.e2e.operational;
 
@@ -30,7 +32,6 @@ int _main(string[] args) {
     string[] wallet_config_files;
     string[] wallet_pins;
     bool sendkernel = false;
-    TagionCurrency[] wallet_amounts;
 
     arraySep = ",";
     auto main_args = getopt(args,
@@ -105,6 +106,8 @@ class SendNContractsFromwallet1Towallet2 {
     bool sendkernel;
     bool send;
 
+    TagionCurrency[] wallet_amounts;
+
     this(WalletInterface[] wallets, bool sendkernel) {
         this.wallets = wallets;
         this.sendkernel = sendkernel;
@@ -122,7 +125,9 @@ class SendNContractsFromwallet1Towallet2 {
         // dfmt on
 
         foreach (ref w; wallets[0 .. 2]) {
+            check(w.secure_wallet.isLoggedin, "the wallet must be logged in!!!");
             w.operate(wallet_switch, []);
+            wallet_amounts ~= w.secure_wallet.available_balance;
         }
 
         return result_ok;
@@ -130,12 +135,18 @@ class SendNContractsFromwallet1Towallet2 {
 
     @When("i send N many valid contracts from `wallet1` to `wallet2`")
     Document wallet2() @trusted {
-        const invoice = wallets[0].secure_wallet.createInvoice("Invoice", 1000.TGN);
+        Invoice invoice;
+        with (wallets[0].secure_wallet) {
+            invoice = createInvoice("Invoice", 1000.TGN);
+            registerInvoice(invoice);
+        }
+        invoice.toPretty.writeln;
 
         SignedContract signed_contract;
         TagionCurrency fees;
 
         with (wallets[1]) {
+            check(secure_wallet.isLoggedin, "the wallet must be logged in!!!");
             auto result = secure_wallet.payment([invoice], signed_contract, fees);
 
             const message = secure_wallet.net.calcHash(signed_contract);
@@ -171,13 +182,16 @@ class SendNContractsFromwallet1Towallet2 {
     Document updated() @trusted {
         //dfmt off
         const wallet_switch = WalletInterface.Switch(
-            update : true,
+            trt_update : true,
             sendkernel: sendkernel,
             send: send);
 
-        foreach (ref w; wallets[0 .. 2]) {
+        foreach (i, ref w; wallets[0 .. 2]) {
+            check(w.secure_wallet.isLoggedin, "the wallet must be logged in!!!");
             w.operate(wallet_switch, []);
+            check(wallet_amounts[i] == w.secure_wallet.available_balance, "Wallet amount did not change");
         }
+
 
         return result_ok;
     }
