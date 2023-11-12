@@ -744,14 +744,13 @@ struct SecureWallet(Net : SecureNet) {
             while (amount_remainder < 0);
 
             const nets = collectNets(collected_bills);
-            check(nets.all!(net => net !is net.init), "Missing deriver of some of the bills");
+            check(nets.all!(net => net !is net.init), format("Missing deriver of some of the bills length=%s", collected_bills.length));
             if (amount_remainder != 0) {
                 const bill_remain = requestBill(amount_remainder);
                 pay_script.outputs ~= bill_remain;
             }
             lock_bills(collected_bills);
-            check(nets.length == collected_bills.length, format("number of bills does not match number of signatures nets %s, collected_bills %s", nets
-                    .length, collected_bills.length));
+            check(nets.length == collected_bills.length, format("number of bills does not match number of signatures nets %s, collected_bills %s", nets.length, collected_bills.length));
 
             signed_contract = sign(
                     nets,
@@ -1082,7 +1081,11 @@ unittest {
     // writefln("AFTER: available=%s, total=%s, locked=%s", wallet.available_balance, wallet.total_balance, wallet.locked_balance);
     auto should_have = wallet.calcTotal(bills_in_dart);
     assert(should_have == wallet.total_balance, format("should have %s had %s", should_have, wallet.total_balance));
+
     // writefln("WALLET TOTAL: %s", wallet.total_balance);
+
+    // try to create a contract with the information again
+
 
 }
 
