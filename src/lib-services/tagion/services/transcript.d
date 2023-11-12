@@ -201,7 +201,7 @@ struct TranscriptService {
                 Add the epochs to the recorder. We can assume that there will be multiple epochs due
                 to the hashgraph being asynchronous.
             */
-            // recorder.insert(consensus_epochs, Archive.Type.ADD);
+            recorder.insert(consensus_epochs, Archive.Type.ADD);
 
             const epoch_contract = epoch_contracts.get(res.id, null);
             if (epoch_contract is null) {
@@ -253,37 +253,48 @@ struct TranscriptService {
                 }
             }
 
-            // BigNumber total = last_head.globals.total;
-            // long number_of_bills = last_head.global.number_of_bills;
+            BigNumber total = last_head.globals.total;
+            BigNumber total_burned = last_head.globals.total_burned;
+            long number_of_bills = last_head.globals.number_of_bills;
+            long burnt_bills = last_head.globals.burnt_bills;
 
-            // void billStatistic(const(Archive) archive) {
-            //     if (!archive.filed.isRecord!TagionBill) {
-            //         return;
-            //     }
-            //     auto bill = TagionBill(archive.filed);
+            void billStatistic(const(Archive) archive) {
+                if (!archive.filed.isRecord!TagionBill) {
+                    return;
+                }
+                auto bill = TagionBill(archive.filed);
 
-            //     if (archive.Type.REMOVE) {
-            //         total -= bill.value;
-            //         number_of_bills--;
-            //     }
-            //     if (archive.Type.ADD) {
-            //         total += bill.value;
-            //         number_of_bills++;
-            //     }
-            // }
-            // recorder[].each!(a => billStatistic(a));
+                if (archive.Type.REMOVE) {
+                    total -= bill.value.axios;
+                    total_burned += bill.value.axios;
+                    burnt_bills++;
+                    number_of_bills--;
+                }
+                if (archive.Type.ADD) {
+                    total += bill.value.axios;
+                    number_of_bills++;
+                    number_of_bills++;
+                }
+            }
+            recorder[].each!(a => billStatistic(a));
 
-            // TagionGlobals new_globals = TagionGlobals(
-            //     Fingerprint[].init,
-            //     total,
-            //     number_of_bills,
+            TagionGlobals new_globals = TagionGlobals(
+                Fingerprint[].init,
+                total,
+                total_burned,
+                number_of_bills,
+                burnt_bills,
+            );
 
-            // )
+            TagionHead new_head = TagionHead(
+                TagionDomain,
+                last_epoch_number,
+                new_globals,
+            );
 
-            // // create the tagionhead and globals.
-            // long number_of_new_bills = recorder[]
-            //     .filter!(d => d.filed.isRecord!(TagionBill))
-            //     .
+            
+            last_head = new_head;
+            recorder.insert(new_head, Archive.Type.ADD);
 
             auto req = dartModifyRR();
             req.id = res.id;
