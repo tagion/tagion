@@ -115,8 +115,7 @@ int _main(string[] args) {
     if (main_args.helpWanted) {
         tagionGetoptPrinter(
                 "Help information for tagion wave program\n" ~
-                format(
-                    "Usage: %s <tagionwave.json>\n", program),
+                format("Usage: %s <tagionwave.json>\n", program),
                 main_args.options
         );
         return 0;
