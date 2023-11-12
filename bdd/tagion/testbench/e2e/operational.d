@@ -140,7 +140,6 @@ class SendNContractsFromwallet1Towallet2 {
             invoice = createInvoice("Invoice", 1000.TGN);
             registerInvoice(invoice);
         }
-        invoice.toPretty.writeln;
 
         SignedContract signed_contract;
         TagionCurrency fees;
@@ -148,6 +147,7 @@ class SendNContractsFromwallet1Towallet2 {
         with (wallets[1]) {
             check(secure_wallet.isLoggedin, "the wallet must be logged in!!!");
             auto result = secure_wallet.payment([invoice], signed_contract, fees);
+            signed_contract.toPretty.writeln;
 
             const message = secure_wallet.net.calcHash(signed_contract);
             const contract_net = secure_wallet.net.derive(message);
@@ -155,7 +155,7 @@ class SendNContractsFromwallet1Towallet2 {
             const hirpc_submit = hirpc.submit(signed_contract);
 
             if (sendkernel) {
-                auto response = sendSubmitHiRPC(options.addr ~ options.contract_shell_endpoint, hirpc_submit, contract_net);
+                auto response = sendSubmitHiRPC(options.contract_address, hirpc_submit, contract_net);
                 check(!response.isError, "Error when sending submit");
             }
             else {
