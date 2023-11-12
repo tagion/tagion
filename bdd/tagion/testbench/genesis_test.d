@@ -113,9 +113,8 @@ int _main(string[] args) {
     const total_amount = BigNumber(__VERY_UGLY);
     const number_of_bills = long(bills.length);
 
-    const event_print = Fingerprint([1, 2, 3, 4]);
 
-    const globals = TagionGlobals([event_print], total_amount, const BigNumber(0), number_of_bills, const long(0));
+    const globals = TagionGlobals(total_amount, const BigNumber(0), number_of_bills, const long(0));
 
     const tagion_head = TagionHead(TagionDomain, 0, globals);
     writefln("CREATED TAGION HEAD: %s", tagion_head.toDoc.encodeBase64);

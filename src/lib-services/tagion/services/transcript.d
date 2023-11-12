@@ -84,7 +84,7 @@ struct TranscriptService {
 
         HiRPC hirpc = HiRPC(net);
 
-        TagionHead last_head = TagionHead(TagionDomain, 0, TagionGlobals(null, BigNumber(1000_000_000), BigNumber(0), long(
+        TagionHead last_head = TagionHead(TagionDomain, 0, TagionGlobals(BigNumber(1000_000_000), BigNumber(0), long(
                 10_000), long(0)));
         Fingerprint previous_epoch = Fingerprint.init;
         long last_epoch_number = 0;
@@ -279,7 +279,6 @@ struct TranscriptService {
             recorder[].each!(a => billStatistic(a));
 
             TagionGlobals new_globals = TagionGlobals(
-                Fingerprint[].init,
                 total,
                 total_burned,
                 number_of_bills,
