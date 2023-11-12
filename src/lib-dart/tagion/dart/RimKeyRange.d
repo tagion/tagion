@@ -251,22 +251,23 @@ struct RimKeyRange(Range) if (isInputRange!Range && isImplicitlyConvertible!(Ele
         // do 
         {
             if (!((rim < 0) || (rim_keys == archive.dart_index[0 .. rim + 1]))) {
-                import std.stdio;
-                import tagion.hibon.HiBONJSON : toPretty;
-                import tagion.utils.Miscellaneous;
-                import tagion.basic.Debug;
-                import std.exception;
 
-                debug
-                __write("ASSERT ERROR rim<0 <%s>, \nrim_keys == archive.dart_index[0 .. rim+1] <%s> \n add dart index: %s, fingerprint: %s, \n archive: %s \n rim=%s rim_keys=%(%02x%)", 
-                rim < 0,
-                rim_keys == archive.dart_index[0 .. rim + 1],
-                archive.dart_index.toHexString, 
-                archive.fingerprint.toHexString,
-                archive.filed.toPretty,
-                rim,
-                rim_keys,
-                );
+                debug {
+                    import std.stdio;
+                    import tagion.hibon.HiBONJSON : toPretty;
+                    import tagion.utils.Miscellaneous;
+                    import tagion.basic.Debug;
+                    import std.exception;
+                    __write("ASSERT ERROR rim<0 <%s>, \nrim_keys == archive.dart_index[0 .. rim+1] <%s> \n add dart index: %s, fingerprint: %s, \n archive: %s \n rim=%s rim_keys=%(%02x%)", 
+                    rim < 0,
+                    rim_keys == archive.dart_index[0 .. rim + 1],
+                    archive.dart_index.toHexString, 
+                    archive.fingerprint.toHexString,
+                    assumeWontThrow(archive.filed.toPretty),
+                    rim,
+                    rim_keys,
+                    );
+                }
                 assert(0, "we had an assert error");
             }
             ctx._added_archives ~= archive;
