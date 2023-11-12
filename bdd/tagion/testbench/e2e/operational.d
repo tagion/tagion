@@ -30,15 +30,13 @@ int _main(string[] args) {
     string[] wallet_config_files;
     string[] wallet_pins;
     bool sendkernel = false;
+    TagionCurrency[] wallet_amounts;
 
     arraySep = ",";
     auto main_args = getopt(args,
             "w", "wallet config files", &wallet_config_files,
             "x", "wallet pins", &wallet_pins,
-            "sendkernel", "Send requests directory to the kernel", &sendkernel, // "n", "network config file", &network_config,
-
-            
-
+            "sendkernel", "Send requests directory to the kernel", &sendkernel,
     );
 
     if (main_args.helpWanted) {
@@ -105,10 +103,9 @@ alias FeatureContext = Tuple!(
 class SendNContractsFromwallet1Towallet2 {
     WalletInterface[] wallets;
     bool sendkernel;
-
     bool send;
-    this(WalletInterface[] wallets, bool sendkernel
-    ) {
+
+    this(WalletInterface[] wallets, bool sendkernel) {
         this.wallets = wallets;
         this.sendkernel = sendkernel;
         this.send = !sendkernel;
@@ -116,9 +113,13 @@ class SendNContractsFromwallet1Towallet2 {
 
     @Given("i have a network")
     Document network() @trusted {
-        const wallet_switch = WalletInterface.Switch(update : true, sendkernel:
-                sendkernel, send:
-                send);
+        writefln("sendkernel: %s, sendshell: %s", sendkernel, send);
+        // dfmt off
+        const wallet_switch = WalletInterface.Switch(
+                update : true, 
+                sendkernel: sendkernel,
+                send: send);
+        // dfmt on
 
         foreach (ref w; wallets[0 .. 2]) {
             w.operate(wallet_switch, []);
@@ -142,7 +143,14 @@ class SendNContractsFromwallet1Towallet2 {
             const hirpc = HiRPC(contract_net);
             const hirpc_submit = hirpc.submit(signed_contract);
 
-            sendSubmitHiRPC(options.contract_address, hirpc_submit, contract_net);
+            if (sendkernel) {
+                auto response = sendSubmitHiRPC(options.addr ~ options.contract_shell_endpoint, hirpc_submit, contract_net);
+                check(!response.isError, "Error when sending submit");
+            }
+            else {
+                auto response = sendShellSubmitHiRPC(options.contract_address, hirpc_submit, contract_net);
+                check(!response.isError, "Error when sending submit");
+            }
 
             result.get;
         }
@@ -155,22 +163,22 @@ class SendNContractsFromwallet1Towallet2 {
         import core.time;
         import core.thread;
 
-        Thread.sleep(5.seconds);
+        Thread.sleep(10.seconds);
         return result_ok;
     }
 
     @Then("wallet1 and wallet2 balances should be updated")
     Document updated() @trusted {
+        //dfmt off
         const wallet_switch = WalletInterface.Switch(
-    trt_update : true,
-    sendkernel:
-                sendkernel,
-    send:
-                send);
+            update : true,
+            sendkernel: sendkernel,
+            send: send);
 
         foreach (ref w; wallets[0 .. 2]) {
             w.operate(wallet_switch, []);
         }
+
         return result_ok;
     }
 
