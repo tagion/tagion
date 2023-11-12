@@ -466,7 +466,7 @@ class Round {
                 }
             }
 
-            auto consensus_tide = consensus_son_tide.map!(e => e[].retro.until!(e => !famous_witnesses.all!(w => w.sees(e)))
+            auto consensus_tide = consensus_son_tide.filter!(e => e !is null).map!(e => e[].retro.until!(e => !famous_witnesses.all!(w => w.sees(e)))
                 .array.back);
 
             auto event_collection = consensus_tide
