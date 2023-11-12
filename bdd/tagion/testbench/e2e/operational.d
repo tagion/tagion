@@ -133,21 +133,20 @@ class SendNContractsFromwallet1Towallet2 {
         return result_ok;
     }
 
+    Invoice invoice;
+    TagionCurrency fees;
     @When("i send N many valid contracts from `wallet1` to `wallet2`")
     Document wallet2() @trusted {
-        Invoice invoice;
         with (wallets[0].secure_wallet) {
             invoice = createInvoice("Invoice", 1000.TGN);
             registerInvoice(invoice);
         }
 
         SignedContract signed_contract;
-        TagionCurrency fees;
 
         with (wallets[1]) {
             check(secure_wallet.isLoggedin, "the wallet must be logged in!!!");
             auto result = secure_wallet.payment([invoice], signed_contract, fees);
-            signed_contract.toPretty.writeln;
 
             const message = secure_wallet.net.calcHash(signed_contract);
             const contract_net = secure_wallet.net.derive(message);
@@ -174,7 +173,7 @@ class SendNContractsFromwallet1Towallet2 {
         import core.time;
         import core.thread;
 
-        Thread.sleep(10.seconds);
+        Thread.sleep(15.seconds);
         return result_ok;
     }
 
@@ -187,9 +186,22 @@ class SendNContractsFromwallet1Towallet2 {
             send: send);
 
         foreach (i, ref w; wallets[0 .. 2]) {
+            writefln("Checking Wallet_%s", i);
             check(w.secure_wallet.isLoggedin, "the wallet must be logged in!!!");
             w.operate(wallet_switch, []);
-            check(wallet_amounts[i] == w.secure_wallet.available_balance, "Wallet amount did not change");
+            check(wallet_amounts[i] != w.secure_wallet.available_balance, "Wallet amount did not change");
+        }
+
+        with(wallets[0].secure_wallet) {
+            auto expected = wallet_amounts[0] + invoice.amount;
+            check(available_balance == expected, 
+                    format("wallet 0 amount incorrect, expected %s got %s", expected, available_balance));
+        }
+
+        with(wallets[1].secure_wallet) {
+            auto expected = wallet_amounts[1] - (invoice.amount + fees);
+            check(available_balance == expected,
+                    format("wallet 1 amount incorrect, expected %s got %s", expected, available_balance));
         }
 
 
