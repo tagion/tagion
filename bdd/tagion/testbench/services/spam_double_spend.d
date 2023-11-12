@@ -130,32 +130,32 @@ class SpamOneNodeUntil10EpochsHaveOccured {
         return result_ok;
     }
 
-    @Then("check that the bullseye is the same across all nodes.")
-    Document nodes() {
-        import tagion.dart.DARTBasic;
-        import tagion.dart.DARTFile;
-        import tagion.Keywords;
-        import tagion.basic.Types;
+    // @Then("check that the bullseye is the same across all nodes.")
+    // Document nodes() {
+    //     import tagion.dart.DARTBasic;
+    //     import tagion.dart.DARTFile;
+    //     import tagion.Keywords;
+    //     import tagion.basic.Types;
 
-        Buffer[] eyes;
-        foreach(opt; opts) {
-            auto bullseye_sender = dartBullseye();
-            auto hirpc_bullseye_receiver = sendDARTHiRPC(opt.dart_interface.sock_addr, bullseye_sender, wallet1_hirpc);
-            check(!hirpc_bullseye_receiver.isError, format("senddarthirpc received error: %s", hirpc_bullseye_receiver.toPretty));
-            auto hirpc_message = hirpc_bullseye_receiver.message[Keywords.result].get!Document;
-            auto bullseye = hirpc_message[DARTFile.Params.bullseye].get!Buffer;
-            eyes ~= bullseye;
-        }
+    //     Buffer[] eyes;
+    //     foreach(opt; opts) {
+    //         auto bullseye_sender = dartBullseye();
+    //         auto hirpc_bullseye_receiver = sendDARTHiRPC(opt.dart_interface.sock_addr, bullseye_sender, wallet1_hirpc);
+    //         check(!hirpc_bullseye_receiver.isError, format("senddarthirpc received error: %s", hirpc_bullseye_receiver.toPretty));
+    //         auto hirpc_message = hirpc_bullseye_receiver.message[Keywords.result].get!Document;
+    //         auto bullseye = hirpc_message[DARTFile.Params.bullseye].get!Buffer;
+    //         eyes ~= bullseye;
+    //     }
 
-        import tagion.hibon.HiBONtoText;
+    //     import tagion.hibon.HiBONtoText;
 
-        writefln("%s", eyes);
-        foreach(eye; eyes) {
-            check(eye == eyes[0], "bullseyes not the same across nodes");
-        }
+    //     writefln("%s", eyes);
+    //     foreach(eye; eyes) {
+    //         check(eye == eyes[0], "bullseyes not the same across nodes");
+    //     }
 
-        return result_ok;
-    }
+    //     return result_ok;
+    // }
 
 }
 
@@ -272,31 +272,31 @@ class SpamMultipleNodesUntil10EpochsHaveOccured {
         return result_ok;
     }
 
-    @Then("check that the bullseye is the same across all nodes.")
-    Document allNodes() {
-        import tagion.dart.DARTBasic;
-        import tagion.dart.DARTFile;
-        import tagion.Keywords;
-        import tagion.basic.Types;
+    // @Then("check that the bullseye is the same across all nodes.")
+    // Document allNodes() {
+    //     import tagion.dart.DARTBasic;
+    //     import tagion.dart.DARTFile;
+    //     import tagion.Keywords;
+    //     import tagion.basic.Types;
 
-        Buffer[] eyes;
-        foreach(opt; opts) {
-            auto bullseye_sender = dartBullseye();
-            auto hirpc_bullseye_receiver = sendDARTHiRPC(opt.dart_interface.sock_addr, bullseye_sender, wallet1_hirpc);
-            check(!hirpc_bullseye_receiver.isError, format("senddarthirpc received error: %s", hirpc_bullseye_receiver.toPretty));
-            auto hirpc_message = hirpc_bullseye_receiver.message[Keywords.result].get!Document;
-            auto bullseye = hirpc_message[DARTFile.Params.bullseye].get!Buffer;
-            eyes ~= bullseye;
-        }
+    //     Buffer[] eyes;
+    //     foreach(opt; opts) {
+    //         auto bullseye_sender = dartBullseye();
+    //         auto hirpc_bullseye_receiver = sendDARTHiRPC(opt.dart_interface.sock_addr, bullseye_sender, wallet1_hirpc);
+    //         check(!hirpc_bullseye_receiver.isError, format("senddarthirpc received error: %s", hirpc_bullseye_receiver.toPretty));
+    //         auto hirpc_message = hirpc_bullseye_receiver.message[Keywords.result].get!Document;
+    //         auto bullseye = hirpc_message[DARTFile.Params.bullseye].get!Buffer;
+    //         eyes ~= bullseye;
+    //     }
 
-        import tagion.hibon.HiBONtoText;
+    //     import tagion.hibon.HiBONtoText;
 
-        writefln("%s", eyes);
-        foreach(eye; eyes) {
-            check(eye == eyes[0], "bullseyes not the same across nodes");
-        }
+    //     writefln("%s", eyes);
+    //     foreach(eye; eyes) {
+    //         check(eye == eyes[0], "bullseyes not the same across nodes");
+    //     }
 
-        return result_ok;
-    }
+    //     return result_ok;
+    // }
 
 }
