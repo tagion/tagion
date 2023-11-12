@@ -18,6 +18,8 @@ unittest: proto-unittest-run
 
 build-unittest: proto-unittest-build
 
+DFLAGS+=$(DDEBUG)
+
 #
 # Platform dependend setting for secp256k1
 #

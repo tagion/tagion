@@ -88,7 +88,7 @@ rm -rf $wdir/bill*.hibon
 
 cd $ndir
 
-neuewelle -O --option=wave.number_of_nodes:$nodes
+$bdir/neuewelle -O --option=wave.number_of_nodes:$nodes
 
 cd -
 

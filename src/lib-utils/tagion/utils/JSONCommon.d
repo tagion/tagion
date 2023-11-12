@@ -248,7 +248,7 @@ static T load(T)(string config_file) if (__traits(hasMember, T, "load")) {
 import std.json : JSONType, JSONValue;
 import std.conv;
 
-JSONValue toJSONType(string str, JSONType type) {
+JSONValue toJSONType(string str, JSONType type) @safe pure {
     with (JSONType) final switch (type) {
     case float_:
         return JSONValue(str.to!float);
@@ -259,8 +259,7 @@ JSONValue toJSONType(string str, JSONType type) {
     case null_:
         return JSONValue(null);
     case object:
-    case array:
-        return JSONValue(str); // best guess
+    case array: //best guess
     case string:
         return JSONValue(str);
     case false_:
