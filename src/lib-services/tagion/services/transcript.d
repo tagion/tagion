@@ -276,22 +276,22 @@ struct TranscriptService {
                     number_of_bills++;
                 }
             }
+
             recorder[].each!(a => billStatistic(a));
 
             TagionGlobals new_globals = TagionGlobals(
-                total,
-                total_burned,
-                number_of_bills,
-                burnt_bills,
+                    total,
+                    total_burned,
+                    number_of_bills,
+                    burnt_bills,
             );
 
             TagionHead new_head = TagionHead(
-                TagionDomain,
-                last_epoch_number,
-                new_globals,
+                    TagionDomain,
+                    last_epoch_number,
+                    new_globals,
             );
 
-            
             last_head = new_head;
             recorder.insert(new_head, Archive.Type.ADD);
 
@@ -372,5 +372,3 @@ struct TranscriptService {
         run(&epoch, &produceContract, &createRecorder, &receiveBullseye);
     }
 }
-
-alias TranscriptServiceHandle = ActorHandle!TranscriptService;

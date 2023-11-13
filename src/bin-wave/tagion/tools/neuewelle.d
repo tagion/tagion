@@ -193,7 +193,7 @@ int _main(string[] args) {
         logger_service.send(Sig.STOP);
     }
 
-    SubscriptionServiceHandle sub_handle;
+    ActorHandle sub_handle;
     { // Spawn logger subscription service
         immutable subopts = Options(local_options).subscription;
         sub_handle = spawn!SubscriptionService("logger_sub", subopts);
@@ -204,7 +204,7 @@ int _main(string[] args) {
     log.register(baseName(program));
 
     locator_options = new immutable(LocatorOptions)(20, 5);
-    SupervisorHandle[] supervisor_handles;
+    ActorHandle[] supervisor_handles;
 
     if (local_options.wave.network_mode == NetworkMode.INTERNAL) {
         auto node_options = get_mode_0_options(local_options, monitor);
@@ -331,7 +331,7 @@ int _main(string[] args) {
     return 0;
 }
 
-int network_mode0(const(Options)[] node_options, ref ActorHandle!Supervisor[] supervisor_handles, Document epoch_head = Document
+int network_mode0(const(Options)[] node_options, ref ActorHandle[] supervisor_handles, Document epoch_head = Document
         .init) {
 
     import tagion.crypto.Types;

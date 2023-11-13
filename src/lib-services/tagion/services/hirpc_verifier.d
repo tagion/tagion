@@ -101,5 +101,3 @@ struct HiRPCVerifierService {
         run(&contract);
     }
 }
-
-alias HiRPCVerifierServiceHandle = ActorHandle!HiRPCVerifierService;

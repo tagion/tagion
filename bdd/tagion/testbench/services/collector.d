@@ -68,9 +68,9 @@ const(DARTIndex)[] insertBills(TagionBill[] bills, ref RecordFactory.Recorder re
 @safe @Scenario("it work", [])
 class ItWork {
     enum dart_service = "dart_service_task";
-    DARTServiceHandle dart_handle;
-    CollectorServiceHandle collector_handle;
-    ReplicatorServiceHandle replicator_handle;
+    ActorHandle dart_handle;
+    ActorHandle collector_handle;
+    ActorHandle replicator_handle;
 
     TagionBill[] input_bills;
     SecureNet[] input_nets;
@@ -107,7 +107,6 @@ class ItWork {
             import tagion.dart.DART;
 
             DART.create(opts.dart_path, node_net);
-
 
             auto dart_net = new StdSecureNet;
             dart_net.generateKeyPair("dartnet");
@@ -170,7 +169,8 @@ class ItWork {
         collector_handle.send(inputHiRPC(), hirpc.receive(sender.toDoc));
 
         auto result = receiveOnlyTimeout!(LogInfo, const(Document));
-        check(result[0].symbol_name == "hirpc_invalid_signed_contract", "did not reject for the expected reason, got %s".format(result[0].symbol_name));
+        check(result[0].symbol_name == "hirpc_invalid_signed_contract", "did not reject for the expected reason, got %s"
+                .format(result[0].symbol_name));
 
         return result_ok;
     }
@@ -187,7 +187,8 @@ class ItWork {
         collector_handle.send(inputHiRPC(), hirpc.receive(sender.toDoc));
 
         auto result = receiveOnlyTimeout!(LogInfo, const(Document));
-        check(result[0].symbol_name == "contract_no_verify", "did not reject for the expected reason got, %s".format(result[0].symbol_name));
+        check(result[0].symbol_name == "contract_no_verify", "did not reject for the expected reason got, %s".format(result[0]
+                .symbol_name));
 
         return result_ok;
     }

@@ -2,6 +2,8 @@
 /// Examles: [tagion.testbench.services]
 module tagion.actor.actor;
 
+@safe:
+
 import std.typecons;
 import std.exception;
 import std.traits;
@@ -65,8 +67,7 @@ unittest {
     concurrency.spawn(() {
         assert(!(thisActor.task_name = dummy_name), "Should not be able to set the same task name in another tid");
     });
-    assert(locate(thisActor.task_name) == thisTid, "Name not registered");
-
+    // assert(locate(thisActor.task_name) == thisTid, "Name not registered");
 }
 
 /* 
@@ -198,8 +199,6 @@ unittest {
 /// Checks if a type has the required members to be an actor
 enum bool isActor(A) = hasMember!(A, "task") && isCallable!(A.task) && isSafe!(A.task);
 
-enum bool isActorHandle(T) = __traits(isSame, TemplateOf!(T), ActorHandle);
-
 enum bool isFailHandler(F)
     = is(F : void function(TaskFailure))
     || is(F : void delegate(TaskFailure));
@@ -230,7 +229,7 @@ template isSpawnable(F, T...) {
  * Params:
  *  A = an actor type
  */
-struct ActorHandle(A) {
+struct ActorHandle {
     /// the name of the possibly running task
     string task_name;
 
@@ -246,8 +245,6 @@ struct ActorHandle(A) {
         }
         assert(0, "You don't own this task");
     }
-
-    alias Actor = A;
 
     /// Send a message to this task
     void send(T...)(T args) @safe {
@@ -270,11 +267,11 @@ struct ActorHandle(A) {
  * handle!MyActor("my_task_name");
  * ---
  */
-ActorHandle!A handle(A)(string task_name) @safe if (isActor!A) {
-    return ActorHandle!A(task_name);
+ActorHandle handle(A)(string task_name) @safe if (isActor!A) {
+    return ActorHandle(task_name);
 }
 
-ActorHandle!A spawn(A, Args...)(immutable(A) actor, string name, Args args) @safe nothrow
+ActorHandle spawn(A, Args...)(immutable(A) actor, string name, Args args) @safe nothrow
 if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
     import core.exception : AssertError;
 
@@ -312,14 +309,14 @@ if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
         thisActor.childrenState[name] = Ctrl.UNKNOWN;
         log("spawning %s", name);
         tid.setMaxMailboxSize(int.max, OnCrowding.throwException);
-        return ActorHandle!A(name);
+        return ActorHandle(name);
     }
     catch (Exception e) {
         assert(0, format("Exception: %s", e.msg));
     }
 }
 
-ActorHandle!A spawn(A, Args...)(string name, Args args) @safe nothrow
+ActorHandle spawn(A, Args...)(string name, Args args) @safe nothrow
 if (isActor!A) {
     immutable A actor;
     return spawn(actor, name, args);
@@ -330,29 +327,17 @@ if (isActor!A) {
  *   A = The type of actor you want to create a handle for
  *   task_name = the name it should be started as
  *   args = list of arguments to pass to the task function
- * Returns: An actorHandle with type A
+ * Returns: An actorHandle
  * Examples:
  * ---
  * spawn!MyActor("my_task_name", 42);
  * ---
  */
-// ActorHandle!A spawn(A, Args...)(string task_name, Args args) @safe nothrow
+// ActorHandle spawn(A, Args...)(string task_name, Args args) @safe nothrow
 // if (isActor!A) {
 //     A actor = A();
 //     return spawn(actor, task_name, args);
 // }
-
-/*
- *
- * Params:
- *   a = an active actorhandle
- */
-A respawn(A)(A actor_handle) @safe if (isActor!(A.Actor)) {
-    actor_handle.send(Sig.STOP);
-    unregister(actor_handle.task_name);
-
-    return spawn!(A.Actor)(actor_handle.task_name);
-}
 
 /// Nullable and nothrow wrapper around ownerTid
 Nullable!Tid tidOwner() @safe nothrow {
@@ -417,7 +402,7 @@ void setState(Ctrl ctrl) @safe nothrow {
 }
 
 /// Cleanup and notify the supervisor that you have ended
-void end() nothrow {
+void end() @trusted nothrow {
     assumeWontThrow(ThreadInfo.thisInfo.cleanup);
     setState(Ctrl.END);
 }

@@ -34,12 +34,10 @@ struct MyActor {
     }
 }
 
-alias MyActorHandle = ActorHandle!MyActor;
-
 @safe @Scenario("Send a TaskFailure to an actor",
         [])
 class SendATaskFailureToAnActor {
-    MyActorHandle myActor;
+    ActorHandle myActor;
 
     @Given("an #actor")
     Document anActor() {

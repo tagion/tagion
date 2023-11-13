@@ -54,12 +54,10 @@ struct MyActor {
     }
 }
 
-alias ChildHandle = ActorHandle!MyActor;
-
 @safe
 struct MySuperActor {
-    ChildHandle child1Handle;
-    ChildHandle child2Handle;
+    ActorHandle child1Handle;
+    ActorHandle child2Handle;
 
     void receiveStatus(Msg!"response", int status) {
         sendOwner(status);
@@ -83,14 +81,12 @@ struct MySuperActor {
 
 }
 
-alias SupervisorHandle = ActorHandle!MySuperActor;
-
 @safe @Scenario("Message between supervisor and child",
         [])
 class MessageBetweenSupervisorAndChild {
-    SupervisorHandle supervisorHandle;
-    ChildHandle childHandleUno;
-    ChildHandle childHandleDos;
+    ActorHandle supervisorHandle;
+    ActorHandle childHandleUno;
+    ActorHandle childHandleDos;
 
     @Given("a supervisor #super and two child actors #child1 and #child2")
     Document actorsChild1AndChild2() {
@@ -152,9 +148,9 @@ class MessageBetweenSupervisorAndChild {
 @safe @Scenario("send message between two children",
         [])
 class SendMessageBetweenTwoChildren {
-    SupervisorHandle supervisorHandle;
-    ChildHandle childHandleUno;
-    ChildHandle childHandleDos;
+    ActorHandle supervisorHandle;
+    ActorHandle childHandleUno;
+    ActorHandle childHandleDos;
 
     @Given("a supervisor #super and two child actors #child1 and #child2")
     Document actorsChild1AndChild2() {

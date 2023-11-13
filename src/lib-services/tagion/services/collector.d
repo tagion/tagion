@@ -31,7 +31,6 @@ struct CollectorOptions {
 /// Topic for rejected collector inputs;
 enum reject_collector = "reject/collector";
 
-
 /**
  * Collector Service actor
  * Sends:
@@ -123,7 +122,6 @@ struct CollectorService {
             return;
         }
 
-
         immutable s_contract = contracts[res.id];
         auto fingerprints = recorder[].map!(a => a.dart_index).array;
         if (s_contract.contract.reads !is null && fingerprints == contracts[res.id].contract.reads) {
@@ -147,7 +145,7 @@ struct CollectorService {
             immutable collection =
                 ((res.id in reads) !is null)
                 ? new immutable(CollectedSignedContract)(s_contract, inputs, reads[res.id]) : new immutable(
-                    CollectedSignedContract)(s_contract, inputs);
+                        CollectedSignedContract)(s_contract, inputs);
 
             log("sending to tvm");
             if (is_consensus_contract[res.id]) {
@@ -166,8 +164,6 @@ struct CollectorService {
     }
 
 }
-
-alias CollectorServiceHandle = ActorHandle!CollectorService;
 
 // The find funtion in dart.recorder doest not work with an immutable recorder;
 import tagion.dart.DARTBasic : DARTIndex;

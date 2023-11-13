@@ -26,7 +26,6 @@ import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord;
 import tagion.testbench.services.helper_functions;
 
-
 import std.range;
 import std.algorithm;
 import core.time;
@@ -88,6 +87,7 @@ class SpamOneNodeUntil10EpochsHaveOccured {
     @When("i continue to send the same contract with n delay to one node.")
     Document node() {
         import tagion.hashgraph.Refinement : FinishedEpoch;
+
         thisActor.task_name = "spam_contract_task";
         log.registerSubscriptionTask(thisActor.task_name);
         submask.subscribe("epoch_creator/epoch_created");
@@ -98,17 +98,16 @@ class SpamOneNodeUntil10EpochsHaveOccured {
         check(epoch_before[1].isRecord!FinishedEpoch, "not correct subscription received");
         epoch_number = FinishedEpoch(epoch_before[1]).epoch;
 
-
         long current_epoch_number;
 
         while (current_epoch_number < epoch_number + 10) {
-        sendSubmitHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1.net);
+            sendSubmitHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1.net);
             (() @trusted => Thread.sleep(100.msecs))();
 
             auto current_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);
             check(current_epoch[1].isRecord!FinishedEpoch, "not correct subscription received");
             current_epoch_number = FinishedEpoch(current_epoch[1]).epoch;
-            writefln("epoch_number %s, CURRENT EPOCH %s",epoch_number, current_epoch_number);
+            writefln("epoch_number %s, CURRENT EPOCH %s", epoch_number, current_epoch_number);
         }
 
         (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
@@ -122,10 +121,12 @@ class SpamOneNodeUntil10EpochsHaveOccured {
         writefln("WALLET 1 amount: %s", wallet1_amount);
         writefln("WALLET 2 amount: %s", wallet2_amount);
 
-        const expected_amount1 = start_amount1-amount-fee;
+        const expected_amount1 = start_amount1 - amount - fee;
         const expected_amount2 = start_amount2 + amount;
-        check(wallet1_amount == expected_amount1, format("wallet 1 did not lose correct amount of money should have %s had %s", expected_amount1, wallet1_amount));
-        check(wallet2_amount == expected_amount2, format("wallet 2 did not lose correct amount of money should have %s had %s", expected_amount2, wallet2_amount));
+        check(wallet1_amount == expected_amount1, format(
+                "wallet 1 did not lose correct amount of money should have %s had %s", expected_amount1, wallet1_amount));
+        check(wallet2_amount == expected_amount2, format(
+                "wallet 2 did not lose correct amount of money should have %s had %s", expected_amount2, wallet2_amount));
 
         return result_ok;
     }
@@ -164,8 +165,9 @@ import tagion.actor;
 @safe
 struct SpamWorker {
     import tagion.hashgraph.Refinement : FinishedEpoch;
+
     void task(immutable(Options) opts, immutable(SecureNet) net, immutable(SignedContract) signed_contract) {
-        
+
         HiRPC hirpc = HiRPC(net);
 
         setState(Ctrl.ALIVE);
@@ -175,7 +177,7 @@ struct SpamWorker {
         submask.subscribe("epoch_creator/epoch_created");
         long epoch_number;
 
-        while(!thisActor.stop && epoch_number is long.init) {
+        while (!thisActor.stop && epoch_number is long.init) {
             writefln("WAITING FOR RECEIVE");
             auto epoch_before = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);
             writefln("AFTER RECEIVE %s", epoch_before);
@@ -192,7 +194,7 @@ struct SpamWorker {
             auto current_epoch = receiveOnlyTimeout!(LogInfo, const(Document))(EPOCH_TIMEOUT.seconds);
             if (current_epoch[0].task_name != opts.task_names.epoch_creator) {
                 current_epoch_number = FinishedEpoch(current_epoch[1]).epoch;
-                writefln("epoch_number %s, CURRENT EPOCH %s",epoch_number, current_epoch_number);
+                writefln("epoch_number %s, CURRENT EPOCH %s", epoch_number, current_epoch_number);
             }
         }
         submask.unsubscribe("epoch_creator/epoch_created");
@@ -200,9 +202,6 @@ struct SpamWorker {
     }
 
 }
-
-alias SpamHandle = ActorHandle!SpamWorker;
-
 
 @safe @Scenario("Spam multiple nodes until 10 epochs have occured.",
         [])
@@ -241,10 +240,11 @@ class SpamMultipleNodesUntil10EpochsHaveOccured {
 
     @When("i continue to send the same contract with n delay to multiple nodes.")
     Document multipleNodes() @trusted {
-        SpamHandle[] handles;
+        ActorHandle[] handles;
 
-        foreach(i, opt; opts) {
-            handles ~= spawn!SpamWorker(format("spam_worker%s", i), cast(immutable) opt, cast(immutable) wallet1.net, cast(immutable) signed_contract);
+        foreach (i, opt; opts) {
+            handles ~= spawn!SpamWorker(format("spam_worker%s", i), cast(immutable) opt, cast(immutable) wallet1.net, cast(
+                    immutable) signed_contract);
         }
         writefln("waiting for alive");
         waitforChildren(Ctrl.ALIVE, 5.seconds);
@@ -258,16 +258,18 @@ class SpamMultipleNodesUntil10EpochsHaveOccured {
     @Then("only the first contract should go through and the other ones should be rejected.")
     Document beRejected() {
         auto node1_opts = opts[1];
-        
+
         auto wallet1_amount = getWalletUpdateAmount(wallet1, node1_opts.dart_interface.sock_addr, wallet1_hirpc);
         auto wallet2_amount = getWalletUpdateAmount(wallet2, node1_opts.dart_interface.sock_addr, wallet2_hirpc);
         writefln("WALLET 1 amount: %s", wallet1_amount);
         writefln("WALLET 2 amount: %s", wallet2_amount);
 
-        const expected_amount1 = start_amount1-amount-fee;
+        const expected_amount1 = start_amount1 - amount - fee;
         const expected_amount2 = start_amount2 + amount;
-        check(wallet1_amount == expected_amount1, format("wallet 1 did not lose correct amount of money should have %s had %s", expected_amount1, wallet1_amount));
-        check(wallet2_amount == expected_amount2, format("wallet 2 did not lose correct amount of money should have %s had %s", expected_amount2, wallet2_amount));
+        check(wallet1_amount == expected_amount1, format(
+                "wallet 1 did not lose correct amount of money should have %s had %s", expected_amount1, wallet1_amount));
+        check(wallet2_amount == expected_amount2, format(
+                "wallet 2 did not lose correct amount of money should have %s had %s", expected_amount2, wallet2_amount));
 
         return result_ok;
     }

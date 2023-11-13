@@ -107,9 +107,9 @@ struct DARTWorker {
         [])
 class WriteAndReadFromDartDb {
 
-    DARTServiceHandle handle;
-    DARTInterfaceServiceHandle dart_interface_handle;
-    ReplicatorServiceHandle replicator_handle;  
+    ActorHandle handle;
+    ActorHandle dart_interface_handle;
+    ActorHandle replicator_handle;
     DARTInterfaceOptions interface_opts;
 
     SecureNet supervisor_net;
@@ -168,20 +168,17 @@ class WriteAndReadFromDartDb {
         auto net = new StdSecureNet();
         net.generateKeyPair("dartnet very secret");
 
-        
         handle = (() @trusted => spawn!DARTService(TaskNames().dart, cast(immutable) opts, TaskNames(), cast(
                 shared) net))();
 
-        
-        replicator_handle =(() @trusted => spawn!ReplicatorService(
-            TaskNames().replicator, 
-            cast(immutable) replicator_opts))();
+        replicator_handle = (() @trusted => spawn!ReplicatorService(
+                TaskNames().replicator,
+                cast(immutable) replicator_opts))();
 
         interface_opts.setDefault;
         writeln(interface_opts.sock_addr);
 
         dart_interface_handle = (() @trusted => spawn(immutable(DARTInterfaceService)(cast(immutable) interface_opts, TaskNames()), "DartInterfaceService"))();
-
 
         waitforChildren(Ctrl.ALIVE, 3.seconds);
 
@@ -192,7 +189,7 @@ class WriteAndReadFromDartDb {
     Document toAdd() {
         log.registerSubscriptionTask(thisActor.task_name);
         submask.subscribe(modify_log);
-        
+
         foreach (i; 0 .. 100) {
             gen.popFront;
             random_archives = RandomArchives(gen.front, 4, 10);
@@ -204,7 +201,6 @@ class WriteAndReadFromDartDb {
             (() @trusted => handle.send(modify_send, cast(immutable) insert_recorder, immutable long(i)))();
 
             auto modify = receiveOnlyTimeout!(dartModifyRR.Response, Fingerprint);
-
 
             auto modify_log_result = receiveOnlyTimeout!(LogInfo, const(Document));
             check(modify_log_result[1].isRecord!(RecordFactory.Recorder), "Did not receive recorder");

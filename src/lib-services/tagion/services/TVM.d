@@ -29,7 +29,6 @@ struct TVMOptions {
     mixin JSONCommon;
 }
 
-
 enum ResponseError {
     UnsupportedScript,
     ExecutionError,
@@ -91,8 +90,6 @@ struct TVMService {
     }
 
 }
-
-alias TVMServiceHandle = ActorHandle!TVMService;
 
 unittest {
     import tagion.utils.pretend_safe_concurrency;

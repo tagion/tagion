@@ -164,5 +164,3 @@ struct InputValidatorService {
         }
     }
 }
-
-alias InputValidatorHandle = ActorHandle!InputValidatorService;

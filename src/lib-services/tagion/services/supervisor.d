@@ -88,5 +88,3 @@ struct Supervisor {
         log("All services stopped");
     }
 }
-
-alias SupervisorHandle = ActorHandle!Supervisor;
