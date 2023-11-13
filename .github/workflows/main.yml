@@ -211,6 +211,9 @@ jobs:
         run: |
           cd
           rm -r ${{ env.ARTIFACT_DIR }}
+          # Remove older artifacts
+          cd /mnt/nfs/artifacts/
+          ls -1t *.tar.gz | tail -n +100 | xargs rm -v || echo "No old backups to be removed"
 
   android_libmobile:
     needs: commit_stage
