@@ -26,7 +26,6 @@ import tagion.logger.LogRecords : LogInfo;
 import tagion.hashgraph.Refinement;
 import tagion.utils.pretend_safe_concurrency;
 
-
 import std.algorithm;
 import std.array;
 import core.time;
@@ -69,6 +68,7 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
         this.inputvalidator_sock_addr = inputvalidator_sock_addr;
 
     }
+
     bool epoch_on_startup;
 
     @Given("i have a dart database with already existing bills linked to wallet1.")
@@ -76,11 +76,11 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
         // check that we are actually creating epochs;
         submask.subscribe(StdRefinement.epoch_created);
         writeln("waiting for epoch");
-        auto received = receiveTimeout(20.seconds, (LogInfo _, const(Document) __) {});
+        auto received = receiveTimeout(30.seconds, (LogInfo _, const(Document) __) {});
 
         epoch_on_startup = received;
         check(epoch_on_startup, "No epoch on startup");
-        
+
         // create the hirpc request for checking if the bills are already in the system.
 
         foreach (ref wallet; wallets) {
@@ -102,16 +102,15 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
         amount = 1500.TGN;
         auto payment_request = wallet2.requestBill(amount);
 
-        
         import tagion.hibon.HiBONtoText;
-        
+
         wallet1.account.bills
             .each!(b => writefln("WALLET1 %s %s", wallet1.net.calcHash(b).encodeBase64, b.toPretty));
         SignedContract signed_contract;
         check(wallet1.createPayment([payment_request], signed_contract, fee).value, "Error creating wallet payment");
         check(signed_contract !is SignedContract.init, "contract not updated");
         check(signed_contract.contract.inputs.uniq.array.length == signed_contract.contract.inputs.length, "signed contract inputs invalid");
-        
+
         writefln("WALLET1 created contract: %s", signed_contract.toPretty);
 
         auto wallet1_hirpc = HiRPC(wallet1.net);

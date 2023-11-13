@@ -32,6 +32,7 @@ interface NativeSecp256k1Interface {
     enum SIGNATURE_SIZE = 64;
     enum SECKEY_SIZE = 32;
     enum XONLY_PUBKEY_SIZE = 32;
+    enum PUBKEY_SIZE = 33;
     enum MESSAGE_SIZE = 32;
     //   enum KEYPAIR_SIZE = secp256k1_keypair.data.length;
 

@@ -18,7 +18,9 @@ unittest: proto-unittest-run
 
 build-unittest: proto-unittest-build
 
+ifndef DEBUG_DISABLE
 DFLAGS+=$(DDEBUG)
+endif
 
 #
 # Platform dependend setting for secp256k1

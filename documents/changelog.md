@@ -1,3 +1,36 @@
+# Changelog for week 45/46
+
+**Blockfile**
+Fixed an error in the blockfile where the cache would be allocated preruntime,
+meaning that multiple blockfiles would use the same cache, even running in seperate threads;
+This was a cause of multiple derived errors, which has now been fixed.
+
+**Crypto**
+Default signatures are now Schnorr.
+Add xonly public key conversion functions.
+
+**NNG**
+fix NNGMessage allocation
+add tests with larger messsages(1-2MB)
+
+**Shell**
+Initial documentation for the shell caching layer has been added.
+
+**AssertError**
+There is now a top level catch in each actor thread, which catches AssertErrors and stops the program.
+Previously AssertErrors would stop the thread and reach the main thread wihout being reported or stopping the program.
+
+**Wave**
+Add `--option` flag to be able to set individual options.
+Can be used with -O to change the options file permanently
+
+**HiRPC error type**
+The HiRPC error type has been changes so it's always considered an error, if it's not a method or a result.
+
+**CI**
+The CI workflow can now run on any branch.
+Testnet worflow cleans old backups & main worflows cleans old artifacts
+
 # Changelog for week 44/45
 
 **Tagion HEAD record**

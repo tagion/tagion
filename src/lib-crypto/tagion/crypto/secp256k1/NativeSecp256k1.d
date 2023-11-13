@@ -106,12 +106,18 @@ class NativeSecp256k1 : NativeSecp256k1Interface {
 
     @trusted
     final immutable(ubyte[]) pubTweak(scope const(ubyte[]) pubkey, scope const(ubyte[]) tweak) const
-    in (pubkey.length == XONLY_PUBKEY_SIZE)
+    //in (pubkey.length == PUBKEY_SIZE)
     in (tweak.length == TWEAK_SIZE)
     do {
+        secp256k1_pubkey xy_pubkey;
+        {
+            const ret = secp256k1_ec_pubkey_parse(_ctx, &xy_pubkey, &pubkey[0], pubkey.length);
+            check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_SERIALIZE);
+
+    }
         secp256k1_xonly_pubkey xonly_pubkey;
         {
-            const ret = secp256k1_xonly_pubkey_parse(_ctx, &xonly_pubkey, &pubkey[0]);
+            const ret = secp256k1_xonly_pubkey_from_pubkey(_ctx, &xonly_pubkey, null, &xy_pubkey);
             check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_SERIALIZE);
         }
         secp256k1_pubkey output_pubkey;
@@ -120,15 +126,11 @@ class NativeSecp256k1 : NativeSecp256k1Interface {
             check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_TWEAK_MULT_FAULT);
 
         }
-        secp256k1_xonly_pubkey _xonly_pubkey;
-        {
-            const ret = secp256k1_xonly_pubkey_from_pubkey(_ctx, &_xonly_pubkey, null, &output_pubkey);
-            check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_PARSE_FAULT);
-        }
-        ubyte[XONLY_PUBKEY_SIZE] pubkey_result;
+        ubyte[PUBKEY_SIZE] pubkey_result;
 
         {
-            const ret = secp256k1_xonly_pubkey_serialize(_ctx, &pubkey_result[0], &_xonly_pubkey);
+            size_t len=PUBKEY_SIZE; 
+            const ret = secp256k1_ec_pubkey_serialize(_ctx, &pubkey_result[0], &len, &output_pubkey, SECP256K1.EC_COMPRESSED);
             check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_PARSE_FAULT);
 
         }
@@ -146,16 +148,14 @@ class NativeSecp256k1 : NativeSecp256k1Interface {
             scope const(ubyte[]) seckey,
     const(ubyte[]) pubkey) const
     in (seckey.length == SECKEY_SIZE)
-    in (pubkey.length == XONLY_PUBKEY_SIZE)
     do {
-        assert(0, "This function can't be implemented yet because there is no function which can convert secp256k1_xonly_pubkey -> secp256k1_pubkey");
         scope (exit) {
             randomizeContext;
         }
         secp256k1_pubkey pubkey_result;
         ubyte[32] result;
         {
-            const ret = secp256k1_xonly_pubkey_parse(_ctx, cast(secp256k1_xonly_pubkey*)&pubkey_result, &pubkey[0]);
+            const ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey_result, &pubkey[0], pubkey.length);
             check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_PARSE_FAULT);
         }
         {
@@ -163,21 +163,6 @@ class NativeSecp256k1 : NativeSecp256k1Interface {
             check(ret == 1, ConsensusFailCode.SECURITY_EDCH_FAULT);
         }
         return result.idup;
- /*
-        scope (exit) {
-            randomizeContext;
-        }
-        secp256k1_xonly_pubkey xonly_pubkey;
-        {
-            const ret=secp256k1_xonly_pubkey_parse(_ctx, &xonly_pubkey, &pubkey[0]);
-            assert(ret == 1);
-            // const ret = secp256k1_keypair_xonly_pub(_ctx, 
-        }
-        secp256k1_pubkey pubkey_result;
-
-        ubyte[32] result;
-        return result.idup;
-*/
     }
 
     /++
@@ -271,14 +256,15 @@ class NativeSecp256k1 : NativeSecp256k1Interface {
 
     @trusted
     final immutable(ubyte[]) getPubkey(ref scope const(secp256k1_keypair) keypair) const {
-        secp256k1_xonly_pubkey xonly_pubkey;
+        secp256k1_pubkey xy_pubkey;
         {
-            const rt = secp256k1_keypair_xonly_pub(_ctx, &xonly_pubkey, null, &keypair);
+            const rt = secp256k1_keypair_pub(_ctx, &xy_pubkey, &keypair);
             check(rt == 1, ConsensusFailCode.SECURITY_FAILD_PUBKEY_FROM_KEYPAIR);
         }
-        ubyte[XONLY_PUBKEY_SIZE] pubkey;
+        ubyte[PUBKEY_SIZE] pubkey;
         {
-            const rt = secp256k1_xonly_pubkey_serialize(_ctx, &pubkey[0], &xonly_pubkey);
+            size_t len=PUBKEY_SIZE;
+            const rt = secp256k1_ec_pubkey_serialize(_ctx, &pubkey[0], &len, &xy_pubkey, SECP256K1.EC_COMPRESSED);
             check(rt == 1, ConsensusFailCode.SECURITY_FAILD_PUBKEY_FROM_KEYPAIR);
         }
         return pubkey.idup;
@@ -346,24 +332,29 @@ class NativeSecp256k1 : NativeSecp256k1Interface {
             const(ubyte[]) msg,
     const(ubyte[]) signature,
     const(ubyte[]) pubkey) const nothrow
-    in (pubkey.length == XONLY_PUBKEY_SIZE)
+    in (pubkey.length == PUBKEY_SIZE)
 
     do {
-        secp256k1_xonly_pubkey xonly_pubkey;
-        secp256k1_xonly_pubkey_parse(_ctx, &xonly_pubkey, &pubkey[0]);
-        return verify(signature, msg, xonly_pubkey);
+        secp256k1_pubkey xy_pubkey;
+        secp256k1_ec_pubkey_parse(_ctx, &xy_pubkey, &pubkey[0], pubkey.length);
+        return verify(signature, msg, xy_pubkey);
     }
 
     @trusted
     final bool verify(
             const(ubyte[]) signature,
     const(ubyte[]) msg,
-    ref scope const(secp256k1_xonly_pubkey) xonly_pubkey) const nothrow
+    ref scope const(secp256k1_pubkey) pubkey) const nothrow
     in (signature.length == SIGNATURE_SIZE)
     in (msg.length == MESSAGE_SIZE)
 
     do {
-        const ret = secp256k1_schnorrsig_verify(_ctx, &signature[0], &msg[0], MESSAGE_SIZE, &xonly_pubkey);
+        secp256k1_xonly_pubkey xonly_pubkey;
+        int ret = secp256k1_xonly_pubkey_from_pubkey(_ctx, &xonly_pubkey, null, &pubkey);
+        
+    if (ret != 0) {      
+        ret = secp256k1_schnorrsig_verify(_ctx, &signature[0], &msg[0], MESSAGE_SIZE, &xonly_pubkey);
+    }
         return ret != 0;
 
     }
@@ -445,7 +436,7 @@ unittest { /// Schnorr test generated from the secp256k1/examples/schnorr.c
     const aux_random = "b0d8d9a460ddcea7ae5dc37a1b5511eb2ab829abe9f2999e490beba20ff3509a".decode;
     const msg_hash = "1bd69c075dd7b78c4f20a698b22a3fb9d7461525c39827d6aaf7a1628be0a283".decode;
     const secret_key = "e46b4b2b99674889342c851f890862264a872d4ac53a039fbdab91fd68ed4e71".decode;
-    const expected_pubkey = "ecd21d66cf97843d467c9d02c5781ec1ec2b369620605fd847bd23472afc7e74".decode;
+    const expected_pubkey = "02ecd21d66cf97843d467c9d02c5781ec1ec2b369620605fd847bd23472afc7e74".decode;
     const expected_signature = "021e9a32a12ead3144bb230a81794913a856296ed369159d01b8f57d6d7e7d3630e34f84d49ec054d5251ff6539f24b21097a9c39329eaab2e9429147d6d82f8"
         .decode;
     const expected_keypair = decode("e46b4b2b99674889342c851f890862264a872d4ac53a039fbdab91fd68ed4e71747efc2a4723bd47d85f602096362becc11e78c5029d7c463d8497cf661dd2eca89c1820ccc2dd9b0e0e5ab13b1454eb3c37c31308ae20dd8d2aca2199ff4e6b");
@@ -467,7 +458,7 @@ unittest { /// Schnorr test generated from the secp256k1/examples/schnorr.c
 
 unittest { /// Schnorr tweak
     const aux_random = "b0d8d9a460ddcea7ae5dc37a1b5511eb2ab829abe9f2999e490beba20ff3509a".decode;
-    const msg_hash = "1bd69c075dd7b78c4f20a698b22a3fb9d7461525c39827d6aaf7a1628be0a283".decode;
+    const msg_hash   = "1bd69c075dd7b78c4f20a698b22a3fb9d7461525c39827d6aaf7a1628be0a283".decode;
     const secret_key = "e46b4b2b99674889342c851f890862264a872d4ac53a039fbdab91fd68ed4e71".decode;
     auto crypt = new NativeSecp256k1Schnorr;
     //secp256k1_keypair keypair;
@@ -484,6 +475,11 @@ unittest { /// Schnorr tweak
     assert(tweakked_pubkey != pubkey);
 
     const tweakked_pubkey_from_keypair = crypt.getPubkey(tweakked_keypair);
+   
+    //writefln(" tweakked = %(%02x%)", tweakked_pubkey_from_keypair);
+    //writefln("  pubkey = %(%02x%)", tweakked_pubkey);
+
+
     assert(tweakked_pubkey == tweakked_pubkey_from_keypair, "The tweakked pubkey should be the same as the keypair tweakked pubkey");
 
     const signature = crypt.sign(msg_hash, keypair, aux_random);
@@ -501,17 +497,5 @@ unittest { /// Schnorr tweak
     {
         const signature_not_ok = crypt.verify(msg_hash, signature, tweakked_pubkey);
         assert(!signature_not_ok, "None tweakked signature should not be correct");
-    }
-    {
-        import std.stdio;
-
-        version (none)
-            foreach (i; 0 .. 7) {
-                ubyte[] secret;
-                secret.length = 32;
-                getRandom(secret);
-                writefln("%d --- --- --- ---", i);
-                crypt.pubkey_test(secret);
-            }
     }
 }

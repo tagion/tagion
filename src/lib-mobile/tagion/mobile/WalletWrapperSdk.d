@@ -440,12 +440,12 @@ extern (C) {
         return 0;
     }
 
-    version (none) export uint get_derivers(uint8_t* deriversPtr) {
+    export uint get_account(uint8_t* accountPtr) {
         if (__wallet_storage.wallet.isLoggedin()) {
-            const encrDerivers = __wallet_storage.wallet.getEncrDerivers();
-            const deviversDocId = recyclerDoc.create(Document(encrDerivers.toHiBON));
+            
+            const accountDocId = recyclerDoc.create(__wallet_storage.wallet.account.toDoc);
 
-            *deriversPtr = cast(uint8_t) deviversDocId;
+            *accountPtr = cast(uint8_t) accountDocId;
 
             return 1;
         }
