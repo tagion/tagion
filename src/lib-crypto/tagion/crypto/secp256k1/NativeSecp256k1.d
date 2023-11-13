@@ -148,16 +148,14 @@ class NativeSecp256k1 : NativeSecp256k1Interface {
             scope const(ubyte[]) seckey,
     const(ubyte[]) pubkey) const
     in (seckey.length == SECKEY_SIZE)
-    in (pubkey.length == XONLY_PUBKEY_SIZE)
     do {
-        assert(0, "This function can't be implemented yet because there is no function which can convert secp256k1_xonly_pubkey -> secp256k1_pubkey");
         scope (exit) {
             randomizeContext;
         }
         secp256k1_pubkey pubkey_result;
         ubyte[32] result;
         {
-            const ret = secp256k1_xonly_pubkey_parse(_ctx, cast(secp256k1_xonly_pubkey*)&pubkey_result, &pubkey[0]);
+            const ret = secp256k1_ec_pubkey_parse(_ctx, &pubkey_result, &pubkey[0], pubkey.length);
             check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_PARSE_FAULT);
         }
         {
@@ -165,21 +163,6 @@ class NativeSecp256k1 : NativeSecp256k1Interface {
             check(ret == 1, ConsensusFailCode.SECURITY_EDCH_FAULT);
         }
         return result.idup;
- /*
-        scope (exit) {
-            randomizeContext;
-        }
-        secp256k1_xonly_pubkey xonly_pubkey;
-        {
-            const ret=secp256k1_xonly_pubkey_parse(_ctx, &xonly_pubkey, &pubkey[0]);
-            assert(ret == 1);
-            // const ret = secp256k1_keypair_xonly_pub(_ctx, 
-        }
-        secp256k1_pubkey pubkey_result;
-
-        ubyte[32] result;
-        return result.idup;
-*/
     }
 
     /++

@@ -98,23 +98,7 @@ do {
             return false;
         }
     }
-/*
-    const not_ok=iota(pubkeys.length)
-    .map!(index => secp256k1_xonly_pubkey_parse(_ctx, 
-    &xy_pubkeys[index],
-    &pubkeys[0][index]));
-        /*
-    .any!(ret => ret == 0);
-        if (not_ok) {
-            return false;
-        }
-    }*/
-     //   writefln("not_ok=%s", not_ok);
-    //}
-    //pubkeys.each!(pkey =>    writefln("   xonly  =%(%02x%)", pkey));
-    //xy_pubkeys.each!(pkey => writefln("xy_pubkeys=%(%02x%)", pkey.data));
-      //  return true;
-    return musigPubkeyAggregated(pubkey_agg, xy_pubkeys);
+   return musigPubkeyAggregated(pubkey_agg, xy_pubkeys);
 }
     /**
     Ditto except that it produce a cache which can be used for musig signing

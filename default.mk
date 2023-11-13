@@ -20,7 +20,7 @@ endif
 # The default is Schnorr can be switch to ECDSA 
 # With this devsion flag
 #
-DFLAGS+=$(DVERSION)=SECP256K1_ECDSA
+#DFLAGS+=$(DVERSION)=SECP256K1_ECDSA
 
 ifndef DEBUG_DISABLE
 DFLAGS+=$(DDEBUG_SYMBOLS)

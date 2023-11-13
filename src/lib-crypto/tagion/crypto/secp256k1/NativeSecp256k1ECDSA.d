@@ -302,8 +302,6 @@ class NativeSecp256k1ECDSA : NativeSecp256k1Interface {
             scope const(ubyte[]) seckey,
     const(ubyte[]) pubkey) const
     in (seckey.length == SECKEY_SIZE)
-    in (pubkey.length == COMPRESSED_PUBKEY_SIZE)
-
     do {
         scope (exit) {
             randomizeContext;

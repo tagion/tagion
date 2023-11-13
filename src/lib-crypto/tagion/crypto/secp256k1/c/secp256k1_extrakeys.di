@@ -150,22 +150,6 @@ int secp256k1_xonly_pubkey_tweak_add_check (
     const(secp256k1_xonly_pubkey)* internal_pubkey,
     const(ubyte)* tweak32);
 
-/** Converts a secp256k1_pubkey into a secp256k1_xonly_pubkey.
- *
- *  Returns: 0 if the arguments are invalid or the resulting public key would be
- *           invalid (only when the tweak is the negation of the corresponding
- *           secret key). 1 otherwise.
- *
- *  Args:           ctx: pointer to a context object.
- *  Out:  output_pubkey: pointer to a public key to store the result. Will be set
- *                       to an invalid value if this function returns 0.
- *  In: internal_pubkey: pointer to an x-only pubkey to apply the tweak to.
- */
-int secp256k1_pubkey_from_xonly_pubkey (
-    const(secp256k1_context)* ctx,
-    secp256k1_pubkey* output_pubkey,
-    const(secp256k1_xonly_pubkey)* internal_pubkey);
-
 /** Compute the keypair for a secret key.
  *
  *  Returns: 1: secret was valid, keypair is ready to use
