@@ -29,7 +29,7 @@ class NativeSecp256k1Musig : NativeSecp256k1Schnorr {
         return ret != 0;
     }
 
-    /*
+/*    
     @trusted
     immutable(ubyte[]) musigPartialSign(
             ref const(secp256k1_musig_keyagg_cache) cache,
@@ -93,23 +93,31 @@ out(result) {
 */
     @trusted
     bool musigPubkeyAggregated(
-            ref secp256k1_xonly_pubkey pubkey_agg,
-            const(secp256k1_pubkey[]) pubkeys) const {
+            ref secp256k1_pubkey pubkey_agg,
+            const(secp256k1_pubkey[]) pubkeys) const nothrow {
+        secp256k1_musig_keyagg_cache cache;
+        secp256k1_xonly_pubkey xonly_pubkey;
         const _pubkeys = pubkeys.map!((ref pkey) => &pkey).array;
-        const ret = secp256k1_musig_pubkey_agg(
+        int ret = secp256k1_musig_pubkey_agg(
                 _ctx,
                 null,
-                &pubkey_agg,
-                null,
+                &xonly_pubkey,
+                &cache,
                 &_pubkeys[0],
                 pubkeys.length);
+    if (ret) {
+        ret = secp256k1_musig_pubkey_get(
+            _ctx,
+            &pubkey_agg,
+            &cache);
+    }
         return ret != 0;
 
     }
 
     @trusted
     bool musigPubkeyAggregated(
-        ref secp256k1_xonly_pubkey pubkey_agg,
+        ref secp256k1_pubkey pubkey_agg,
         const(ubyte[][]) pubkeys) const
 in(pubkeys.all!((pkey) => pkey.length == PUBKEY_SIZE))
 do {
@@ -480,7 +488,7 @@ unittest { /// Simple musig sign
     foreach (number_of_participants; iota(2, number_of_signers + 1)) {
         writefln("number_of_participants=%s", number_of_participants);
         //secp256k1_musig_keyagg_cache cache;
-        secp256k1_xonly_pubkey agg_pubkey;
+        secp256k1_pubkey agg_pubkey;
         {
             const ret=crypt.musigPubkeyAggregated(agg_pubkey, pubkeys[0..number_of_participants]);
             assert(ret, "Failed to aggregate the public keys");
