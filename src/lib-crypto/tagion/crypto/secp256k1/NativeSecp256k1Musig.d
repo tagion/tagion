@@ -85,7 +85,7 @@ class NativeSecp256k1Musig : NativeSecp256k1Schnorr {
     bool musigPubkeyAggregated(
         ref secp256k1_xonly_pubkey pubkey_agg,
         const(ubyte[][]) pubkeys) const
-in(pubkeys.all!((pkey) => pkey.length == XONLY_PUBKEY_SIZE))
+in(pubkeys.all!((pkey) => pkey.length == PUBKEY_SIZE))
 do {
     secp256k1_pubkey[] xy_pubkeys;
     xy_pubkeys.length = pubkeys.length;
@@ -93,7 +93,7 @@ do {
     foreach(ref xy_pubkey, pubkey; lockstep(xy_pubkeys, pubkeys)) {
 
         //auto xonly_pubkey=cast(secp256k1_xonly_pubkey*)&xy_pubkey;
-        const ret = secp256k1_xonly_pubkey_parse(_ctx, xonly_pubkey, &pubkey[0]);
+        const ret = secp256k1_ec_pubkey_parse(_ctx, &xy_pubkey, &pubkey[0], pubkey.length);
         if (ret == 0) {
             return false;
         }
