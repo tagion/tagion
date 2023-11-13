@@ -29,6 +29,32 @@ class NativeSecp256k1Musig : NativeSecp256k1Schnorr {
         return ret != 0;
     }
 
+    /*
+    @trusted
+    immutable(ubyte[]) musigPartialSign(
+            ref const(secp256k1_musig_keyagg_cache) cache,
+            ref ubyte[] secnonce,
+            scope const(ubyte[]) keypair,
+            scope const(ubyte[]) session) const 
+    in(secnonce.length == secp256k1_musig_secnonce.data.length)
+    in(keypair.length == secp256k1_keypair.data.length)
+    in(session.length == secp256k1_musig_session.data.length)
+out(result) {
+        assert(result.length == 32)
+}
+    do {
+        secp256k1_musig_partial_sig partial_sig;        
+        auto _secnonce=cast(secp256k1_musig_secnonce*)&secnonce[0];
+        const _keypair=cast(secp256k1_keypair*)&keypair[0];
+        const _session=cast(secp256k1_musig_session*)&session[0];
+        
+    //auto _partial_sig=cast(secp256k1_musig_partial_sig*)
+        //cons musigPartialSign(cache, partial_sig, secnonce, keypair, session);    
+        ubyte[32]  
+        return secp256k1_musig_partial_sig.data.idup;
+    }
+*/
+
     @trusted
     bool partialVerify(
             ref const(secp256k1_musig_keyagg_cache) cache,
@@ -464,12 +490,22 @@ unittest { /// Simple musig sign
         secp256k1_musig_partial_sig[] partial_signatures;
         secp256k1_musig_secnonce[] secnonces;
         secnonces.length=partial_signatures.length=number_of_participants;
-        //secp256k1_musig_keyagg_cache cache;
-        //iota(number_of_participants)
-        
+       
+    
+        version(none)
+         {
+            const ret=iota(number_of_participants)
+            .map!((index) => crypt.musigPartialSign(
+partial_signatures[index],
+secnonces[index],
+keypairs[index],
+session))
+            .all!((ret) => ret != 0);
+
+        }
         {
             ubyte[] signature;
-            //const ret=crypt.musigSignAgg(signature
+       //     const ret=crypt.musigSignAgg(signature
         }
 
     }
