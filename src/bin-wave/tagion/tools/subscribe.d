@@ -7,7 +7,7 @@ import std.algorithm : countUntil;
 
 import core.time;
 
-import tagion.tools.Basic;
+import tagion.tools.Basic : Main;
 import tagion.utils.getopt;
 import tagion.basic.Version;
 import tagion.tools.revision;
@@ -18,6 +18,88 @@ import tagion.hibon.HiBONJSON;
 import tagion.services.subscription : SubscriptionServiceOptions;
 
 import nngd;
+
+import std.exception;
+import tagion.crypto.SecureInterfaceNet;
+import tagion.communication.HiRPC;
+import tagion.utils.Result;
+
+struct Subscription {
+    string address;
+    string[] tags;
+    SecureNet net;
+    uint max_attempts = 5;
+
+    private NNGSocket sock;
+    this(string _address, string[] _tags, SecureNet _net = null) @trusted nothrow {
+        address = _address;
+        tags = _tags;
+        net = _net;
+        sock = NNGSocket(nng_socket_type.NNG_SOCKET_SUB);
+        sock.recvtimeout = msecs(1000);
+        foreach (tag; tags) {
+            sock.subscribe(tag);
+        }
+    }
+
+    private bool _isDial;
+
+    Result!bool dial() @trusted nothrow {
+        int rc;
+        foreach (_; 0 .. max_attempts) {
+            rc = sock.dial(address);
+            if (rc == 0) {
+                _isDial = true;
+                return result(true);
+            }
+        }
+        return Result!bool(false, nng_errstr(rc));
+    }
+
+    Result!Document receive() @trusted nothrow {
+        alias _Result = Result!Document;
+        if (!_isDial) {
+            auto d = dial;
+            if (d.error) {
+                return _Result(d.e);
+            }
+        }
+
+        Buffer data;
+        foreach (_; 0 .. max_attempts) {
+            data = sock.receive!Buffer;
+            if (sock.errno != nng_errno.NNG_OK && sock.errno != nng_errno.NNG_ETIMEDOUT) {
+                break;
+            }
+        }
+
+        if (sock.errno != 0) {
+            return _Result(nng_errstr(sock.errno));
+        }
+
+        if (data.length == 0) {
+            return _Result("Received empty data");
+        }
+
+        long index = data.countUntil(cast(ubyte) '\0');
+        if (index == -1) {
+            return _Result("Received data does not begin with a tag");
+        }
+
+        if (data.length <= index + 1) {
+            return _Result("Received data does not contain a document");
+        }
+
+        try {
+            auto _doc = Document(data[index + 1 .. $]);
+            auto _receiver = HiRPC.Receiver(net, _doc);
+            return result(_receiver.message); // This could be a hirpc error
+        }
+        catch (Exception e) {
+            return _Result(e);
+        }
+    }
+}
 
 mixin Main!(_main);
 
