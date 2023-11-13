@@ -4,18 +4,16 @@ module tagion.services.logger;
 @safe:
 
 import std.array;
-import std.stdio;
-import std.format;
-import std.string;
-import std.datetime.systime : Clock;
 import std.conv : to;
-
+import std.datetime.systime : Clock;
+import std.format;
+import std.stdio;
+import std.string;
+import tagion.actor;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONRecord;
-
-import tagion.actor;
-import tagion.logger.Logger;
 import tagion.logger.LogRecords;
+import tagion.logger.Logger;
 import tagion.utils.Term;
 
 private {

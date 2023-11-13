@@ -3,8 +3,8 @@ module tagion.utils.pretend_safe_concurrency;
 private import concurrency = std.concurrency;
 
 import core.time : Duration;
-import std.traits : isSafe;
 import std.meta : allSatisfy;
+import std.traits : isSafe;
 
 /** @brief File contains functions of std.concurrency wrapped in @trusted
  *         to use them in @safe code

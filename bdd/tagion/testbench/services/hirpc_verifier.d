@@ -1,23 +1,21 @@
 /// Test for [tagion.services.hirpc_verifier]_
 module tagion.testbench.services.hirpc_verifier;
 // Default import list for bdd
-import tagion.behaviour;
-import tagion.hibon.Document;
-import std.typecons : Tuple;
-import tagion.testbench.tools.Environment;
-
 import core.time;
-import tagion.hibon.HiBON;
-import tagion.communication.HiRPC;
-import tagion.utils.pretend_safe_concurrency;
-import tagion.crypto.SecureNet;
+import std.stdio;
+import std.typecons : Tuple;
 import tagion.actor;
-import tagion.testbench.actor.util;
 import tagion.actor.exceptions;
+import tagion.behaviour;
+import tagion.communication.HiRPC;
+import tagion.crypto.SecureNet;
+import tagion.hibon.Document;
+import tagion.hibon.HiBON;
 import tagion.services.hirpc_verifier;
 import tagion.services.messages;
-
-import std.stdio;
+import tagion.testbench.actor.util;
+import tagion.testbench.tools.Environment;
+import tagion.utils.pretend_safe_concurrency;
 
 enum feature = Feature(
             "HiRPCInterfaceService.",
@@ -109,14 +107,14 @@ class CorrectHiRPCFormatAndPermission {
 
     @Given("a correctly formatted transaction.")
     Document transaction() {
-        import std.range : iota;
-        import tagion.script.common;
-        import tagion.script.TagionCurrency;
-        import tagion.utils.StdTime;
         import std.algorithm : map;
-        import tagion.crypto.Types;
-        import tagion.basic.Types : Buffer;
         import std.array;
+        import std.range : iota;
+        import tagion.basic.Types : Buffer;
+        import tagion.crypto.Types;
+        import tagion.script.TagionCurrency;
+        import tagion.script.common;
+        import tagion.utils.StdTime;
         writeln(thisTid);
         check(waitforChildren(Ctrl.ALIVE), "ContractService never alived");
         check(hirpc_verifier_handle.tid !is Tid.init, "Contract thread is not running");

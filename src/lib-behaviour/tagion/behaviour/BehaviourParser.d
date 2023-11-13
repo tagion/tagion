@@ -3,21 +3,19 @@ BDD markdown parser
 */
 module tagion.behaviour.BehaviourParser;
 
-import tagion.behaviour.BehaviourFeature;
-
-import std.range.primitives : isInputRange, ElementType;
-import std.traits;
+import std.conv : to;
+import std.format;
+import std.meta;
+import std.range.primitives : ElementType, isInputRange;
 import std.regex;
 import std.string : strip;
-import std.format;
+import std.traits;
 import std.traits : Fields;
-import std.meta;
 import std.uni : toLower;
-import std.conv : to;
-
-import tagion.hibon.HiBONRecord : recordType, GetLabel;
 import tagion.behaviour.BehaviourException;
+import tagion.behaviour.BehaviourFeature;
 import tagion.behaviour.BehaviourFeature : ActionProperties;
+import tagion.hibon.HiBONRecord : GetLabel, recordType;
 
 enum feature_regex = regex([
     `^\W*(feature)\W`, /// Feature
@@ -97,10 +95,10 @@ FeatureGroup parser(string filename, out string[] errors) {
 @trusted
 FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
         if (isInputRange!R && isSomeString!(ElementType!R)) {
-    import std.array;
     import std.algorithm.searching;
-    import std.string;
+    import std.array;
     import std.range : enumerate;
+    import std.string;
 
     FeatureGroup result;
     ScenarioGroup scenario_group;
@@ -243,8 +241,8 @@ FeatureGroup parser(R)(R range, out string[] errors, string localfile = null)
 
 /// Examples: How to parse a markdown file
 unittest { /// Convert ProtoDBBTestComments to Feature
-    import tagion.basic.basic : fileId;
     import std.traits : FunctionTypeOf;
+    import tagion.basic.basic : fileId;
 
     enum bddfile_proto = "ProtoBDDTestComments".unitfile;
     enum bdd_filename = bddfile_proto.setExtension(FileExtension.markdown);
@@ -269,7 +267,7 @@ unittest { /// Convert ProtoDBBTestComments to Feature
     immutable hibon_filename = markdown_filename
         .setExtension(FileExtension.hibon);
 
-    import tagion.hibon.HiBONFile : fwrite, fread;
+    import tagion.hibon.HiBONFile : fread, fwrite;
 
     hibon_filename.fwrite(feature);
 
@@ -285,10 +283,10 @@ unittest { /// Convert ProtoDBBTestComments to Feature
 }
 
 version (unittest) {
-    import io = std.stdio;
-    import tagion.hibon.HiBONJSON;
-    import tagion.basic.basic : unitfile;
-    import tagion.basic.Types : FileExtension;
-    import std.stdio : File;
     import std.path;
+    import io = std.stdio;
+    import std.stdio : File;
+    import tagion.basic.Types : FileExtension;
+    import tagion.basic.basic : unitfile;
+    import tagion.hibon.HiBONJSON;
 }

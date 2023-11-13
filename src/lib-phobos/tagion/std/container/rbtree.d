@@ -56,10 +56,9 @@ module tagion.std.container.rbtree;
     assert(equal(ubt[], [0, 0, 1, 1]));
 }
 
+public import std.container.util;
 import std.format;
 import std.functional : binaryFun;
-
-public import std.container.util;
 
 version (StdUnittest) debug = RBDoChecks;
 
@@ -682,7 +681,7 @@ final class RedBlackTree(T, alias less = "a < b", bool allowDuplicates = false)
     import std.meta : allSatisfy;
     import std.range : Take;
     import std.range.primitives : isInputRange, walkLength;
-    import std.traits : isIntegral, isDynamicArray, isImplicitlyConvertible;
+    import std.traits : isDynamicArray, isImplicitlyConvertible, isIntegral;
 
     alias _less = binaryFun!less;
 
@@ -1790,7 +1789,7 @@ assert(equal(rbt[], [5]));
     alias t = RedBlackTree!T;
 }
 
-import std.range.primitives : isInputRange, ElementType;
+import std.range.primitives : ElementType, isInputRange;
 import std.traits : isArray, isSomeString;
 
 /++

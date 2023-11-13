@@ -1,18 +1,15 @@
 module tagion.hibon.HiBONRecord;
 
-import std.stdio;
-import tagion.hibon.HiBONJSON;
-
 import std.exception : assumeUnique, assumeWontThrow;
-import std.typecons : Tuple, Yes, No;
+import std.stdio;
 import std.traits;
-
-import tagion.basic.basic : basename, EnumContinuousSequency;
-import tagion.hibon.HiBONBase : ValueT;
-
-import tagion.hibon.HiBON : HiBON;
+import std.typecons : No, Tuple, Yes;
+import tagion.basic.basic : EnumContinuousSequency, basename;
 import tagion.hibon.Document : Document;
+import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.HiBONBase : ValueT;
 import tagion.hibon.HiBONException : HiBONRecordException;
+import tagion.hibon.HiBONJSON;
 
 alias DocResult = Tuple!(Document.Element.ErrorCode, "error", string, "key");
 
@@ -74,8 +71,8 @@ bool hasHashKey(T)(T doc) if (is(T : const(HiBON)) || is(T : const(Document))) {
 
 @safe
 unittest {
-    import std.range : iota;
     import std.array : array;
+    import std.range : iota;
 
     Document doc;
     { // Define stub
@@ -98,7 +95,7 @@ unittest {
 }
 
 template isSpecialKeyType(T) {
-    import std.traits : isAssociativeArray, isUnsigned, KeyType;
+    import std.traits : KeyType, isAssociativeArray, isUnsigned;
 
     static if (isAssociativeArray!T) {
         alias KeyT = KeyType!T;
@@ -175,9 +172,9 @@ enum TYPENAME = HiBONPrefix.PARAM ~ "@";
 enum VOID = "*";
 
 mixin template HiBONRecordType() {
+    import std.traits : getUDAs, hasUDA, isIntegral, isUnsigned;
     import tagion.hibon.Document : Document;
     import tagion.hibon.HiBONRecord : TYPENAME, recordType;
-    import std.traits : getUDAs, hasUDA, isIntegral, isUnsigned;
 
     alias ThisType = typeof(this);
 
@@ -238,32 +235,30 @@ mixin template HiBONRecord(string CTOR = "") {
     import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType,
         Unqual, hasMember, isCallable,
         EnumMembers, ForeachType, isArray, isAssociativeArray, KeyType, ValueType;
-    import std.typecons : Tuple;
+    import std.algorithm.iteration : map;
+    import std.array : array, assocArray, join;
     import std.format;
     import std.functional : unaryFun;
-    import std.range : iota, enumerate, lockstep;
+    import std.meta : AliasSeq, staticMap;
+    import std.range : enumerate, iota, lockstep;
     import std.range.primitives : isInputRange;
-    import std.algorithm.iteration : map;
-    import std.meta : staticMap, AliasSeq;
-    import std.array : join, array, assocArray;
-
-    import tagion.basic.basic : basename, EnumContinuousSequency;
+    import std.typecons : Tuple;
+    import tagion.basic.basic : EnumContinuousSequency, basename;
 
     //    import tagion.hibon.HiBONException : check;
     import tagion.basic.Message : message;
-    import tagion.basic.basic : basename, CastTo;
+    import tagion.basic.basic : CastTo, basename;
     import tagion.basic.tagionexceptions : Check;
     import tagion.hibon.HiBONException : HiBONRecordException;
     import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType,
         label, exclude, optional, GetLabel, filter, fixed, inspect, VOID;
-    import HiBONRecord = tagion.hibon.HiBONRecord;
-
     import tagion.hibon.HiBONBase : TypedefBase;
+    import HiBONRecord = tagion.hibon.HiBONRecord;
 
     protected alias check = Check!(HiBONRecordException);
 
-    import tagion.hibon.HiBONJSON : JSONString;
     import tagion.hibon.HiBON : HiBON;
+    import tagion.hibon.HiBONJSON : JSONString;
 
     mixin JSONString;
 
@@ -287,10 +282,10 @@ mixin template HiBONRecord(string CTOR = "") {
     @trusted final inout(HiBON) toHiBON() inout {
         auto hibon = new HiBON;
         static HiBON toList(L)(L list) {
-            import std.array : byPair, array;
             import std.algorithm : sort;
-            import std.range : refRange;
             import std.algorithm.iteration : map;
+            import std.array : array, byPair;
+            import std.range : refRange;
             import std.typecons : tuple;
 
             auto result = new HiBON;
@@ -732,13 +727,13 @@ mixin template HiBONRecord(string CTOR = "") {
 }
 
 @safe unittest {
-    import std.stdio;
+    import std.algorithm.comparison : equal;
+    import std.exception : assertNotThrown, assertThrown;
     import std.format;
-    import std.exception : assertThrown, assertNotThrown;
-    import std.traits : OriginalType, staticMap, Unqual;
     import std.meta : AliasSeq;
     import std.range : lockstep;
-    import std.algorithm.comparison : equal;
+    import std.stdio;
+    import std.traits : OriginalType, Unqual, staticMap;
     import tagion.hibon.HiBONException : HiBONException, HiBONRecordException;
 
     @recordType("SIMPEL") static struct Simpel {
@@ -1292,15 +1287,14 @@ mixin template HiBONRecord(string CTOR = "") {
     }
 
     { // None standard Keys
-        import std.typecons : Typedef;
-        import std.algorithm : map, each;
-        import std.range : tee;
+        import std.algorithm : each, map;
         import std.algorithm : sort;
-        import std.array : array;
-        import std.typecons : tuple;
         import std.algorithm.sorting : isStrictlyMonotonic;
+        import std.array : array;
+        import std.range : tee;
         import std.stdio;
-
+        import std.typecons : Typedef;
+        import std.typecons : tuple;
         import tagion.basic.Types : Buffer;
 
         static void binwrite(Args...)(ubyte[] buf, Args args) @trusted {

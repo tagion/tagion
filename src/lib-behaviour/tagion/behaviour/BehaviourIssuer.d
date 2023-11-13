@@ -1,12 +1,11 @@
 /// \file BehaviourIssue.d
 module tagion.behaviour.BehaviourIssue;
 
-import std.traits;
 import std.algorithm : each, map;
-import std.range : tee, chain;
-import std.array : join, array;
+import std.array : array, join;
 import std.format;
-
+import std.range : chain, tee;
+import std.traits;
 import tagion.behaviour.BehaviourFeature;
 import tagion.utils.Escaper : escaper;
 
@@ -164,8 +163,8 @@ struct DlangT(Stream) {
         preparations ~=
             q{
             // Auto generated imports
-            import tagion.behaviour.BehaviourFeature;
             import tagion.behaviour.BehaviourException;
+            import tagion.behaviour.BehaviourFeature;
             import tagion.behaviour.BehaviourResult;
         };
     }
@@ -286,16 +285,15 @@ unittest {
 version (unittest) {
     import std.algorithm.comparison : equal;
     import std.algorithm.iteration : filter;
-    import std.string : strip, splitLines;
-    import std.file : fwrite = write, freadText = readText;
-    import std.range : zip, enumerate;
-    import std.path;
+    import std.file : freadText = readText, fwrite = write;
     import std.outbuffer;
-
-    import tagion.basic.basic : mangleFunc, unitfile;
+    import std.path;
+    import std.range : enumerate, zip;
+    import std.string : splitLines, strip;
     import tagion.basic.Types : FileExtension;
-    import tagion.behaviour.BehaviourUnittest;
+    import tagion.basic.basic : mangleFunc, unitfile;
     import tagion.behaviour.Behaviour;
+    import tagion.behaviour.BehaviourUnittest;
     import tagion.hibon.Document;
 
     alias MarkdownU = Markdown!OutBuffer;

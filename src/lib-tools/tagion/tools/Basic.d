@@ -1,7 +1,7 @@
 module tagion.tools.Basic;
 
+import std.path : baseName, buildPath, dirName;
 import std.typecons : Tuple;
-import std.path : dirName, buildPath, baseName;
 import std.file : exists, symlink, remove, thisExePath,
     getLinkAttributes, attrIsSymlink, FileException;
 

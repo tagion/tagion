@@ -18,27 +18,24 @@ else {
     import std.container.rbtree : RedBlackTree;
 }
 
+import std.algorithm.iteration : each, fold, map, sum;
 import std.format;
 import std.meta : staticIndexOf;
-import std.algorithm.iteration : map, fold, each, sum;
 import std.traits : EnumMembers, ForeachType, Unqual, isMutable, isBasicType,
     isIntegral, OriginalType, ReturnType, hasMember, isAssociativeArray;
-import std.meta : AliasSeq;
-
 import std.conv : to;
 import std.exception : assumeUnique;
+import std.meta : AliasSeq;
+import std.range : enumerate, isInputRange;
 import std.typecons : TypedefType;
-import std.range : isInputRange, enumerate;
-
+import tagion.basic.Message : message;
+import tagion.basic.Types : Buffer, isTypedef;
+import tagion.basic.basic : CastTo;
 import tagion.hibon.BigNumber;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException;
 import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, isHiBONTypeArray;
-
-import tagion.basic.Message : message;
-import tagion.basic.Types : Buffer, isTypedef;
-import tagion.basic.basic : CastTo;
 import LEB128 = tagion.utils.LEB128;
 public import tagion.hibon.HiBONJSON;
 
@@ -1056,7 +1053,7 @@ static size_t size(U)(const(U[]) array) pure {
     }
 
     unittest { // Override of a key is not allowed
-        import std.exception : assertThrown, assertNotThrown;
+        import std.exception : assertNotThrown, assertThrown;
 
         enum override_key = "okey";
         auto h = new HiBON;
@@ -1072,8 +1069,8 @@ static size_t size(U)(const(U[]) array) pure {
     }
 
     unittest { // Test sdt_t
-        import tagion.utils.StdTime;
         import std.typecons : TypedefType;
+        import tagion.utils.StdTime;
 
         auto h = new HiBON;
         enum time = "$t";
@@ -1137,8 +1134,8 @@ static size_t size(U)(const(U[]) array) pure {
 
 @safe
 unittest {
-    import tagion.hibon.HiBONRecord;
     import std.stdio;
+    import tagion.hibon.HiBONRecord;
     import tagion.hibon.HiBONtoText;
 
     static struct InnerTest {

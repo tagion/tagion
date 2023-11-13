@@ -3,27 +3,24 @@
 */
 module tagion.wallet.KeyRecover;
 
+import std.algorithm.iteration : filter, map;
+import std.algorithm.mutation : copy;
+import std.array : array;
+import std.exception : assumeUnique;
+import std.range : StoppingPolicy, indexed, iota, lockstep;
+import std.string : representation;
+import tagion.basic.Message;
+import tagion.basic.Types : Buffer;
+import tagion.basic.tagionexceptions : Check;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.crypto.SecureNet : scramble;
-import tagion.utils.Miscellaneous : xor;
-import tagion.basic.Types : Buffer;
-import tagion.basic.Message;
-
-import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.Document : Document;
+import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONRecord;
+import tagion.utils.Miscellaneous : xor;
 import tagion.wallet.Basic : saltHash;
-
-import std.exception : assumeUnique;
-import std.string : representation;
-import std.range : lockstep, StoppingPolicy, indexed, iota;
-import std.algorithm.mutation : copy;
-import std.algorithm.iteration : map, filter;
-import std.array : array;
-
-import tagion.wallet.WalletRecords : RecoverGenerator;
 import tagion.wallet.WalletException : KeyRecoverException;
-import tagion.basic.tagionexceptions : Check;
+import tagion.wallet.WalletRecords : RecoverGenerator;
 
 alias check = Check!KeyRecoverException;
 
@@ -296,7 +293,7 @@ out (result) {
     assert(result.length > 0);
 }
 do {
-    import std.ascii : toLower, isAlphaNum;
+    import std.ascii : isAlphaNum, toLower;
 
     return text
         .map!(c => cast(char) toLower(c))
@@ -323,8 +320,8 @@ shared static this() {
 
 ///
 unittest {
-    import tagion.crypto.SecureNet : StdHashNet;
     import std.array : join;
+    import tagion.crypto.SecureNet : StdHashNet;
 
     auto selected_questions = indexed(standard_questions, [0, 2, 3, 7, 8]).array.idup;
     string[] answers = [

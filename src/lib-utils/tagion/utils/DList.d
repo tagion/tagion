@@ -334,8 +334,8 @@ unittest {
 
         assert(l.length == amount);
 
-        import std.stdio;
         import std.algorithm : map;
+        import std.stdio;
 
         { // Backward iteration test
             auto I = l.revert;

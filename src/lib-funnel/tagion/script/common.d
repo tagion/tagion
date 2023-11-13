@@ -2,20 +2,20 @@ module tagion.script.common;
 @safe:
 
 import std.algorithm;
-import std.range;
 import std.array;
-import tagion.script.TagionCurrency;
-import tagion.utils.StdTime;
+import std.range;
 import tagion.basic.Types;
-import tagion.crypto.Types;
-import tagion.crypto.SecureInterfaceNet;
-import tagion.hibon.HiBONRecord;
-import tagion.hibon.Document;
-import tagion.dart.DARTBasic;
-import tagion.script.ScriptException;
 import tagion.basic.Types : Buffer;
-import tagion.script.standardnames;
+import tagion.crypto.SecureInterfaceNet;
+import tagion.crypto.Types;
+import tagion.dart.DARTBasic;
 import tagion.hibon.BigNumber;
+import tagion.hibon.Document;
+import tagion.hibon.HiBONRecord;
+import tagion.script.ScriptException;
+import tagion.script.TagionCurrency;
+import tagion.script.standardnames;
+import tagion.utils.StdTime;
 
 @recordType("TGN") struct TagionBill {
     @label(StdNames.value) TagionCurrency value; /// Tagion bill 

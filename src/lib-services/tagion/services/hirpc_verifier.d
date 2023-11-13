@@ -3,20 +3,19 @@
 module tagion.services.hirpc_verifier;
 
 import std.stdio;
-
-import tagion.services.messages;
-import tagion.logger.Logger;
-import tagion.basic.Debug : __write;
-import tagion.utils.JSONCommon;
-import tagion.utils.pretend_safe_concurrency;
 import tagion.actor.actor;
-import tagion.hibon.Document;
-import tagion.hibon.HiBONJSON;
-import tagion.hibon.HiBONRecord;
+import tagion.basic.Debug : __write;
 import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.SecureNet;
+import tagion.hibon.Document;
+import tagion.hibon.HiBONJSON;
+import tagion.hibon.HiBONRecord;
+import tagion.logger.Logger;
 import tagion.script.common : SignedContract;
+import tagion.services.messages;
+import tagion.utils.JSONCommon;
+import tagion.utils.pretend_safe_concurrency;
 
 struct HiRPCVerifierOptions {
     /// Rejected documents won be discarded and instead sent to rejected_contracts_task

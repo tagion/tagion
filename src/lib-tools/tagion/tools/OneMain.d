@@ -18,17 +18,17 @@ do {
 }
 
 mixin template doOneMain(alltools...) {
+    import std.algorithm.searching : canFind;
+    import std.array : split;
+    import std.array : join;
+    import std.format;
     import std.getopt;
+    import std.path : baseName;
+    import std.range : tail;
     import std.stdio;
     import std.traits;
-    import std.array : split;
-    import std.range : tail;
-    import std.format;
-    import std.path : baseName;
-    import tagion.tools.revision;
-    import std.array : join;
-    import std.algorithm.searching : canFind;
     import tagion.tools.Basic : Result;
+    import tagion.tools.revision;
 
     /*
     * Strips the non package name from a module-name

@@ -1,13 +1,13 @@
 module tagion.hibon.HiBONregex;
 
 @safe:
+import std.algorithm;
+import std.range;
+import std.regex;
+import tagion.basic.basic;
+import tagion.hibon.Document;
 import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONRecord;
-import std.regex;
-import tagion.hibon.Document;
-import std.range;
-import std.algorithm;
-import tagion.basic.basic;
 
 struct HiBONregex {
     alias RegexT = Regex!char;

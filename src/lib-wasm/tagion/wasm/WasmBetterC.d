@@ -1,23 +1,22 @@
 module tagion.wasm.WasmBetterC;
 
-import std.format;
-import std.stdio;
-import std.traits : EnumMembers, PointerTarget, ConstOf, ForeachType;
-import std.typecons : Tuple;
-import std.uni : toLower;
-import std.conv : to;
-import std.range.primitives : isOutputRange;
-import std.range;
 import std.algorithm;
 import std.array;
-import std.typecons;
 import std.array;
-
-import tagion.wasm.WasmReader;
-import tagion.wasm.WasmBase;
-import tagion.wasm.WasmException;
+import std.conv : to;
+import std.format;
+import std.range;
+import std.range.primitives : isOutputRange;
+import std.stdio;
+import std.traits : ConstOf, EnumMembers, ForeachType, PointerTarget;
+import std.typecons : Tuple;
+import std.typecons;
+import std.uni : toLower;
 import tagion.basic.tagionexceptions;
 import tagion.hibon.Document;
+import tagion.wasm.WasmBase;
+import tagion.wasm.WasmException;
+import tagion.wasm.WasmReader;
 import tagion.wasm.WastAssert;
 
 @safe class WasmBetterCException : WasmException {
@@ -662,9 +661,9 @@ shared static this() {
 }
 
 version (none) unittest {
-    import std.stdio;
-    import std.file;
     import std.exception : assumeUnique;
+    import std.file;
+    import std.stdio;
 
     //      import std.file : fread=read, fwrite=write;
 

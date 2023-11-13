@@ -1,27 +1,22 @@
 module tagion.testbench.double_spend;
 
-import tagion.tools.Basic;
-import tagion.behaviour.Behaviour;
-import tagion.testbench.services;
-import tagion.testbench.tools.Environment;
-import std.file;
-
-import std.path : setExtension, buildPath;
-import tagion.basic.Types : FileExtension;
-
-import tagion.services.options;
-import core.time;
 import core.thread;
+import core.time;
+import std.file;
+import std.path : buildPath, setExtension;
 import std.stdio;
-
-import neuewelle = tagion.tools.neuewelle;
-
-import tagion.utils.pretend_safe_concurrency;
 import tagion.GlobalSignals;
-import tagion.testbench.services.double_spend;
-import tagion.logger.Logger;
-
 import tagion.actor;
+import tagion.basic.Types : FileExtension;
+import tagion.behaviour.Behaviour;
+import tagion.logger.Logger;
+import tagion.services.options;
+import tagion.testbench.services;
+import tagion.testbench.services.double_spend;
+import tagion.testbench.tools.Environment;
+import tagion.tools.Basic;
+import neuewelle = tagion.tools.neuewelle;
+import tagion.utils.pretend_safe_concurrency;
 
 mixin Main!(_main);
 
@@ -46,20 +41,20 @@ int _main(string[] args) {
 
     local_options.save(config_file);
 
+    import std.algorithm;
+    import std.array;
     import std.format;
     import std.range;
-    import std.array;
-    import std.algorithm;
     import std.stdio;
-    import tagion.crypto.SecureNet : StdSecureNet;
     import tagion.crypto.SecureInterfaceNet;
-    import tagion.dart.DARTFile;
+    import tagion.crypto.SecureNet : StdSecureNet;
     import tagion.dart.DART;
-    import tagion.wallet.SecureWallet;
+    import tagion.dart.DARTFile;
+    import tagion.dart.Recorder;
+    import tagion.script.TagionCurrency;
     import tagion.script.common : TagionBill;
     import tagion.testbench.services.sendcontract;
-    import tagion.script.TagionCurrency;
-    import tagion.dart.Recorder;
+    import tagion.wallet.SecureWallet;
 
     StdSecureWallet[] wallets;
     // create the wallets

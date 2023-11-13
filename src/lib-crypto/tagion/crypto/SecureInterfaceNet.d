@@ -1,13 +1,11 @@
 module tagion.crypto.SecureInterfaceNet;
 
 import std.typecons : TypedefType;
+import tagion.basic.ConsensusExceptions : Check, ConsensusFailCode, SecurityConsensusException;
 import tagion.basic.Types : Buffer, isBufferType;
-import tagion.crypto.Types : Pubkey, Signature, Fingerprint;
-
-import tagion.hibon.HiBONRecord : isHiBONRecord, HiBONPrefix;
+import tagion.crypto.Types : Fingerprint, Pubkey, Signature;
 import tagion.hibon.Document : Document;
-
-import tagion.basic.ConsensusExceptions : Check, SecurityConsensusException, ConsensusFailCode;
+import tagion.hibon.HiBONRecord : HiBONPrefix, isHiBONRecord;
 
 alias check = Check!SecurityConsensusException;
 

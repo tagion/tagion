@@ -1,35 +1,30 @@
 module tagion.testbench.dart.dart_middle_branch;
 // Default import list for bdd
-import tagion.behaviour;
-import tagion.hibon.Document;
-import std.typecons : Tuple;
+import std.algorithm : filter, map;
 import std.file : mkdirRecurse;
-import std.stdio : writefln;
 import std.format : format;
-import std.algorithm : map, filter;
-
-import tagion.dart.DARTFakeNet;
-import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
-import tagion.crypto.Types : Fingerprint;
+import std.range;
+import std.stdio : writefln;
+import std.typecons : Tuple;
+import tagion.Keywords;
 import tagion.basic.Types : Buffer, mut;
+import tagion.behaviour;
+import tagion.communication.HiRPC;
+import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
+import tagion.crypto.Types : Fingerprint;
 import tagion.dart.DART : DART;
-import tagion.dart.DARTFile : DARTFile;
-import tagion.dart.Recorder : Archive, RecordFactory;
-
 import tagion.dart.DARTBasic : DARTIndex, dartIndex;
+import tagion.dart.DARTFakeNet;
+import tagion.dart.DARTFile : DARTFile;
+import tagion.dart.DARTRim;
+import tagion.dart.Recorder : Archive, RecordFactory;
+import tagion.hibon.Document;
+import tagion.hibon.HiBONJSON : toPretty;
+import tagion.hibon.HiBONRecord;
+import tagion.testbench.dart.dart_helper_functions : getFingerprints, getRead, getRim, goToSplit;
+import tagion.testbench.dart.dartinfo;
 import tagion.testbench.tools.Environment;
 import tagion.utils.Miscellaneous : toHexString;
-import tagion.testbench.dart.dartinfo;
-
-import tagion.communication.HiRPC;
-import tagion.hibon.HiBONJSON : toPretty;
-import tagion.Keywords;
-import std.range;
-import tagion.dart.DARTRim;
-
-import tagion.hibon.HiBONRecord;
-
-import tagion.testbench.dart.dart_helper_functions : getRim, getRead, goToSplit, getFingerprints;
 
 enum feature = Feature(
             "Dart snap middle branch",

@@ -2,15 +2,14 @@
 module tagion.dart.RimKeyRange;
 
 import std.algorithm;
+import std.container.array;
 import std.range;
 import std.traits;
-import std.container.array;
-import std.typecons : Flag, Yes, No;
-
-import tagion.dart.Recorder : RecordFactory, Archive, GetType, Neutral, Flip;
-import tagion.basic.Types : isBufferType, Buffer;
-import tagion.utils.Miscellaneous : hex;
+import std.typecons : Flag, No, Yes;
 import tagion.basic.Debug;
+import tagion.basic.Types : Buffer, isBufferType;
+import tagion.dart.Recorder : Archive, Flip, GetType, Neutral, RecordFactory;
+import tagion.utils.Miscellaneous : hex;
 
 /**
  * Gets the rim key from a buffer
@@ -358,8 +357,8 @@ version (unittest) {
 
 @safe
 unittest {
-    import std.typecons;
     import std.algorithm.searching : until;
+    import std.typecons;
     import tagion.dart.DARTFakeNet;
 
     const net = new DARTFakeNet;

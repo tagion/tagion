@@ -1,40 +1,39 @@
 module tagion.testbench.services.malformed_contract;
 // Default import list for bdd
-import tagion.behaviour;
-import tagion.hibon.Document;
 import std.typecons : Tuple;
-import tagion.testbench.tools.Environment;
-
-import tagion.wallet.SecureWallet : SecureWallet;
+import tagion.actor;
+import tagion.basic.Types;
+import tagion.behaviour;
+import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.SecureNet : StdSecureNet;
-import tagion.tools.wallet.WalletInterface;
-import tagion.services.options;
+import tagion.crypto.Types;
+import tagion.dart.DARTcrud;
 import tagion.hibon.Document;
+import tagion.hibon.Document;
+import tagion.hibon.HiBONJSON;
+import tagion.hibon.HiBONRecord;
+import tagion.logger.LogRecords : LogInfo;
+import tagion.logger.Logger;
+import tagion.script.Currency : totalAmount;
 import tagion.script.TagionCurrency;
 import tagion.script.common;
 import tagion.script.execute;
-import tagion.script.Currency : totalAmount;
-import tagion.communication.HiRPC;
-import tagion.utils.pretend_safe_concurrency : receiveOnly, receiveTimeout;
-import tagion.logger.Logger;
-import tagion.logger.LogRecords : LogInfo;
-import tagion.actor;
+import tagion.services.options;
 import tagion.testbench.actor.util;
-import tagion.dart.DARTcrud;
-import tagion.hibon.HiBONJSON;
-import tagion.hibon.HiBONRecord;
-import tagion.crypto.Types;
-import tagion.basic.Types;
 import tagion.testbench.services.helper_functions;
+import tagion.testbench.tools.Environment;
+import tagion.tools.wallet.WalletInterface;
+import tagion.utils.pretend_safe_concurrency : receiveOnly, receiveTimeout;
+import tagion.wallet.SecureWallet : SecureWallet;
 
 
-import std.range;
-import std.algorithm;
-import core.time;
 import core.thread;
-import std.stdio;
+import core.time;
+import std.algorithm;
 import std.format;
+import std.range;
+import std.stdio;
 
 alias StdSecureWallet = SecureWallet!StdSecureNet;
 enum CONTRACT_TIMEOUT = 25;
@@ -70,12 +69,12 @@ class ContractTypeWithoutCorrectInformation {
     }
 
 
-    import tagion.hibon.HiBONRecord;
-    import tagion.utils.StdTime;
-    import tagion.script.TagionCurrency;
-    import tagion.script.standardnames;
     import tagion.basic.Types : Buffer;
     import tagion.crypto.Types : Pubkey;
+    import tagion.hibon.HiBONRecord;
+    import tagion.script.TagionCurrency;
+    import tagion.script.standardnames;
+    import tagion.utils.StdTime;
 
     @recordType("TGN") struct MaliciousBill {
         @label(StdNames.value) @optional @(filter.Initialized) TagionCurrency value; /// Tagion bill 
@@ -243,9 +242,9 @@ class NegativeAmountAndZeroAmountOnOutputBills {
     @Given("i have three contracts. One with output that is zero. Another where it is negative. And one with a negative and a valid output.")
     Document output() {
         check(epoch_on_startup, "No epoch on startup");
+        import tagion.hibon.HiBONtoText;
         import tagion.script.common;
         import tagion.utils.StdTime;
-        import tagion.hibon.HiBONtoText;
 
 
 

@@ -2,25 +2,24 @@
 module tagion.services.collector;
 @safe:
 
-import tagion.actor.actor;
-import tagion.hibon.HiBONRecord;
-import tagion.hibon.HiBONException : HiBONRecordException;
-import tagion.hibon.Document;
-import tagion.dart.Recorder : RecordFactory, Archive;
-import tagion.services.messages;
-import tagion.script.execute;
-import tagion.script.common;
-import tagion.communication.HiRPC;
-import tagion.crypto.SecureNet;
-import tagion.crypto.SecureInterfaceNet;
-import tagion.crypto.Types;
-import tagion.basic.Types;
-import tagion.utils.pretend_safe_concurrency;
-import tagion.services.options : TaskNames;
-import tagion.logger.Logger;
-
-import std.typecons;
 import std.exception;
+import std.typecons;
+import tagion.actor.actor;
+import tagion.basic.Types;
+import tagion.communication.HiRPC;
+import tagion.crypto.SecureInterfaceNet;
+import tagion.crypto.SecureNet;
+import tagion.crypto.Types;
+import tagion.dart.Recorder : Archive, RecordFactory;
+import tagion.hibon.Document;
+import tagion.hibon.HiBONException : HiBONRecordException;
+import tagion.hibon.HiBONRecord;
+import tagion.logger.Logger;
+import tagion.script.common;
+import tagion.script.execute;
+import tagion.services.messages;
+import tagion.services.options : TaskNames;
+import tagion.utils.pretend_safe_concurrency;
 
 struct CollectorOptions {
     import tagion.utils.JSONCommon;
@@ -111,8 +110,8 @@ struct CollectorService {
 
     // Receives the read Documents from the dart and constructs the CollectedSignedContract
     void receive_recorder(dartReadRR.Response res, immutable(RecordFactory.Recorder) recorder) {
-        import std.range;
         import std.algorithm.iteration : map;
+        import std.range;
 
         scope (failure) {
             clean(res.id);

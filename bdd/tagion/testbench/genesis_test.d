@@ -1,25 +1,21 @@
 module tagion.testbench.genesis_test;
 
-import tagion.tools.Basic;
+import core.thread;
+import core.time;
+import std.file;
+import std.path : buildPath, setExtension;
+import std.stdio;
+import tagion.GlobalSignals;
+import tagion.actor;
+import tagion.basic.Types : FileExtension;
 import tagion.behaviour.Behaviour;
+import tagion.logger.Logger;
+import tagion.services.options;
 import tagion.testbench.services;
 import tagion.testbench.tools.Environment;
-import std.file;
-
-import std.path : setExtension, buildPath;
-import tagion.basic.Types : FileExtension;
-
-import tagion.services.options;
-import core.time;
-import core.thread;
-import std.stdio;
-import tagion.actor;
-import tagion.logger.Logger;
-
+import tagion.tools.Basic;
 import neuewelle = tagion.tools.neuewelle;
-
 import tagion.utils.pretend_safe_concurrency;
-import tagion.GlobalSignals;
 
 mixin Main!(_main);
 
@@ -44,23 +40,23 @@ int _main(string[] args) {
     local_options.subscription.address = contract_sock_addr("GENESIS_SUBSCRIPTION");
     local_options.save(config_file);
 
+    import std.algorithm;
+    import std.array;
     import std.format;
     import std.range;
-    import std.array;
-    import std.algorithm;
     import std.stdio;
-    import tagion.crypto.SecureNet : StdSecureNet;
     import tagion.crypto.SecureInterfaceNet;
-    import tagion.dart.DARTFile;
+    import tagion.crypto.SecureNet : StdSecureNet;
     import tagion.dart.DART;
-    import tagion.wallet.SecureWallet;
+    import tagion.dart.DARTBasic;
+    import tagion.dart.DARTFile;
+    import tagion.dart.Recorder;
+    import tagion.hibon.Document;
+    import tagion.hibon.HiBON;
+    import tagion.script.TagionCurrency;
     import tagion.script.common : TagionBill;
     import tagion.testbench.services.sendcontract;
-    import tagion.script.TagionCurrency;
-    import tagion.dart.Recorder;
-    import tagion.hibon.HiBON;
-    import tagion.dart.DARTBasic;
-    import tagion.hibon.Document;
+    import tagion.wallet.SecureWallet;
 
     StdSecureWallet[] wallets;
     // create the wallets
@@ -101,13 +97,13 @@ int _main(string[] args) {
     recorder.insert(bills, Archive.Type.ADD);
 
     // create the tagion head and genesis epoch
-    import tagion.script.common : TagionHead, GenesisEpoch, TagionGlobals;
-    import tagion.script.standardnames;
+    import tagion.crypto.Types;
     import tagion.hibon.BigNumber;
     import tagion.hibon.HiBON;
-    import tagion.utils.StdTime;
-    import tagion.crypto.Types;
     import tagion.hibon.HiBONtoText;
+    import tagion.script.common : GenesisEpoch, TagionGlobals, TagionHead;
+    import tagion.script.standardnames;
+    import tagion.utils.StdTime;
 
     // const total_amount = BigNumber(bills.map!(b => b.value).sum);
     const total_amount = BigNumber(__VERY_UGLY);

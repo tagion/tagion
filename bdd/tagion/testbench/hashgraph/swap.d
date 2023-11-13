@@ -1,23 +1,21 @@
 module tagion.testbench.hashgraph.swap;
 // Default import list for bdd
-import tagion.behaviour;
-import tagion.hibon.Document;
-import std.typecons : Tuple;
-import tagion.testbench.tools.Environment;
-
-import tagion.testbench.hashgraph.hashgraph_test_network;
-import tagion.crypto.Types : Pubkey;
-import tagion.basic.Types : FileExtension;
-import std.path : buildPath, setExtension, extension;
-import tagion.utils.Miscellaneous : cutHex;
-import tagion.crypto.SecureNet : StdSecureNet;
-import tagion.crypto.SecureInterfaceNet : SecureNet;
-
-import std.stdio;
 import std.algorithm;
-import std.format;
-import std.typecons;
 import std.datetime;
+import std.format;
+import std.path : buildPath, extension, setExtension;
+import std.stdio;
+import std.typecons : Tuple;
+import std.typecons;
+import tagion.basic.Types : FileExtension;
+import tagion.behaviour;
+import tagion.crypto.SecureInterfaceNet : SecureNet;
+import tagion.crypto.SecureNet : StdSecureNet;
+import tagion.crypto.Types : Pubkey;
+import tagion.hibon.Document;
+import tagion.testbench.hashgraph.hashgraph_test_network;
+import tagion.testbench.tools.Environment;
+import tagion.utils.Miscellaneous : cutHex;
 import tagion.utils.Miscellaneous : cutHex;
 
 enum feature = Feature(

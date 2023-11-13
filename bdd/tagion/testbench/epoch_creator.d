@@ -1,9 +1,9 @@
 module tagion.testbench.epoch_creator;
 
 import tagion.behaviour.Behaviour;
-import tagion.testbench.services;
 import tagion.services.epoch_creator;
 import tagion.services.monitor;
+import tagion.testbench.services;
 import tagion.tools.Basic;
 
 mixin Main!(_main);

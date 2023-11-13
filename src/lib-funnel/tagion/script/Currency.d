@@ -1,11 +1,10 @@
 module tagion.script.Currency;
-import std.algorithm.searching : canFind;
-
-import std.traits : isIntegral, isNumeric, isFloatingPoint;
-import std.range;
-import std.format;
-import std.traits;
 import std.algorithm;
+import std.algorithm.searching : canFind;
+import std.format;
+import std.range;
+import std.traits : isFloatingPoint, isIntegral, isNumeric;
+import std.traits;
 import tagion.hibon.HiBONRecord : HiBONRecord, label, recordType;
 import tagion.script.ScriptException : ScriptException, scriptCheck = check;
 

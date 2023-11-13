@@ -1,16 +1,15 @@
-import std.stdio;
-import std.conv;
-import std.string;
-import std.concurrency;
 import core.thread;
-import std.datetime.systime;
-import std.uuid;
-import std.regex;
-import std.json;
-import std.exception;
-
 import nngd;
 import nngtestutil;
+import std.concurrency;
+import std.conv;
+import std.datetime.systime;
+import std.exception;
+import std.json;
+import std.regex;
+import std.stdio;
+import std.string;
+import std.uuid;
 
 static WebData api_handler1 ( WebData req, void* ctx ){
     WebData rep = {
@@ -83,6 +82,5 @@ main()
     writeln("Bye!");
     return 0;
 }
-
 
 

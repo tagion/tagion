@@ -1,37 +1,36 @@
 module tagion.tools.wallet.geldbeutel;
 import core.thread;
+import std.algorithm;
+import std.array;
+import std.file : exists, mkdir;
 import std.format;
 import std.getopt;
-import std.stdio;
-import std.array;
 import std.path;
-import std.file : exists, mkdir;
-import tagion.hibon.HiBONFile : fwrite, fread;
-import std.algorithm;
 import std.range;
-import tagion.tools.revision;
+import std.stdio;
+import std.typecons;
+import tagion.basic.Message;
+import tagion.basic.Types : FileExtension, hasExtension;
+import tagion.basic.tagionexceptions;
+import tagion.hibon.Document;
+import tagion.hibon.HiBONFile : fread, fwrite;
+import tagion.network.ReceiveBuffer;
+import tagion.script.TagionCurrency;
 import tagion.tools.Basic;
-import tagion.basic.Types : hasExtension, FileExtension;
-import tagion.wallet.KeyRecover;
+import tagion.tools.revision;
+import tagion.tools.wallet.WalletInterface;
+import tagion.tools.wallet.WalletOptions;
 import tagion.utils.Term;
+import tagion.utils.Term;
+import tagion.wallet.AccountDetails;
+import tagion.wallet.KeyRecover;
 import tagion.wallet.SecureWallet;
 import tagion.wallet.WalletRecords;
-import tagion.wallet.AccountDetails;
-import tagion.basic.Message;
-import tagion.hibon.Document;
-import tagion.basic.tagionexceptions;
-import tagion.tools.wallet.WalletOptions;
-import tagion.tools.wallet.WalletInterface;
-import tagion.script.TagionCurrency;
-import tagion.utils.Term;
-import std.typecons;
-import tagion.network.ReceiveBuffer;
 import tagion.wallet.BIP39;
 
 mixin Main!(_main, "wallet");
 
 import tagion.crypto.SecureNet;
-
 import Wallet = tagion.wallet.SecureWallet;
 
 /**

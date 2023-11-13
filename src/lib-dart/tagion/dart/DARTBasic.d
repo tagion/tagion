@@ -2,17 +2,16 @@
 module tagion.dart.DARTBasic;
 
 @safe:
+import std.format;
+import std.traits;
 import std.typecons : Typedef;
-
-import tagion.crypto.Types : BufferType, Fingerprint;
 import tagion.basic.Types : Buffer;
 import tagion.crypto.SecureInterfaceNet : HashNet;
+import tagion.crypto.Types : BufferType, Fingerprint;
+import tagion.dart.DARTFile : KEY_SPAN;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord : isHiBONRecord;
 import tagion.hibon.HiBONRecord : HiBONPrefix, STUB;
-import std.format;
-import tagion.dart.DARTFile : KEY_SPAN;
-import std.traits;
 
 /**
 * This is the raw-hash value of a message and is used when message is signed.
@@ -47,9 +46,9 @@ immutable(DARTIndex) dartIndex(T)(const(HashNet) net, T value) if (isHiBONRecord
 }
 
 unittest { // Check the #key hash with types
-    import tagion.crypto.SecureNet : StdHashNet;
     import tagion.crypto.SecureInterfaceNet : HashNet;
-    import tagion.hibon.HiBONRecord : label, HiBONRecord;
+    import tagion.crypto.SecureNet : StdHashNet;
+    import tagion.hibon.HiBONRecord : HiBONRecord, label;
 
     const(HashNet) net = new StdHashNet;
     static struct HashU32 {
@@ -79,8 +78,8 @@ unittest { // Check the #key hash with types
 }
 
 DARTIndex dartKey(T)(const(HashNet) net, const(char[]) name, T val) {
-    import tagion.hibon.HiBON;
     import std.stdio;
+    import tagion.hibon.HiBON;
 
     const key = (name[0] == HiBONPrefix.HASH) ? name.idup : (HiBONPrefix.HASH ~ name).idup;
     auto h = new HiBON;
@@ -89,14 +88,14 @@ DARTIndex dartKey(T)(const(HashNet) net, const(char[]) name, T val) {
 }
 
 unittest {
-    import std.typecons;
-    import tagion.hibon.BigNumber;
-    import tagion.utils.StdTime;
-    import tagion.hibon.HiBONBase : Type;
-    import tagion.crypto.SecureNet : StdHashNet;
-    import tagion.hibon.HiBONRecord : HiBONRecord, label;
     import std.format;
     import std.traits;
+    import std.typecons;
+    import tagion.crypto.SecureNet : StdHashNet;
+    import tagion.hibon.BigNumber;
+    import tagion.hibon.HiBONBase : Type;
+    import tagion.hibon.HiBONRecord : HiBONRecord, label;
+    import tagion.utils.StdTime;
 
     const net = new StdHashNet;
 
@@ -244,15 +243,15 @@ Fingerprint sparsed_merkletree(const HashNet net, const(Fingerprint[]) table) @t
 
 unittest { // StdHashNet
     //import tagion.utils.Miscellaneous : toHex=toHexString;
-    import tagion.hibon.HiBONRecord : isStub, hasHashKey;
-    import std.string : representation;
-    import std.exception : assertThrown;
     import core.exception : AssertError;
+    import std.exception : assertThrown;
+    import std.string : representation;
+    import tagion.hibon.HiBONRecord : hasHashKey, isStub;
 
     // import std.stdio;
 
-    import tagion.hibon.HiBON;
     import tagion.crypto.SecureNet : StdHashNet;
+    import tagion.hibon.HiBON;
 
     const net = new StdHashNet;
     Document doc; // This is the data which is filed in the DART

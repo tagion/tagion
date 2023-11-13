@@ -3,15 +3,15 @@ module tagion.dart.DARTFakeNet;
 import std.typecons : Typedef;
 
 //import tagion.gossip.InterfaceNet : SecureNet, HashNet;
-import tagion.crypto.SecureNet : StdSecureNet;
-import tagion.crypto.Types : Fingerprint, BufferType;
 import tagion.basic.Types : Buffer, Control;
+import tagion.crypto.SecureNet : StdSecureNet;
+import tagion.crypto.Types : BufferType, Fingerprint;
 import tagion.dart.DART;
 import tagion.dart.DARTFile : DARTFile;
 import tagion.dart.Recorder : RecordFactory;
 import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONRecord : HiBONPrefix;
 import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.HiBONRecord : HiBONPrefix;
 
 /**
 * This is the raw-hash value of a message and is used when message is signed.
@@ -43,8 +43,8 @@ class DARTFakeNet : StdSecureNet {
 
     @trusted
     override Fingerprint calcHash(const(Document) doc) const {
-        import tagion.hibon.HiBONBase : Type;
         import std.exception : assumeUnique;
+        import tagion.hibon.HiBONBase : Type;
 
         if (doc.hasMember(FAKE) && (doc[FAKE].type is Type.UINT64)) {
             const x = doc[FAKE].get!ulong;

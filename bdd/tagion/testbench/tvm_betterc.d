@@ -1,15 +1,14 @@
 module tagion.testbench.tvm_betterc;
 
-import tagion.tools.Basic;
+import std.algorithm;
+import std.array;
+import std.path;
+import std.range;
+import std.stdio;
 import tagion.behaviour.Behaviour;
 import tagion.testbench.tools.Environment;
 import tagion.testbench.tvm;
-
-import std.stdio;
-import std.path;
-import std.algorithm;
-import std.array;
-import std.range;
+import tagion.tools.Basic;
 
 mixin Main!(_main);
 

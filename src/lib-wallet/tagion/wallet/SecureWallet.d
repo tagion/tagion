@@ -2,51 +2,49 @@
 * Handles management of key-pair, account-details device-pin
 */
 module tagion.wallet.SecureWallet;
-import tagion.utils.Miscellaneous;
-import tagion.utils.Result;
-import std.format;
-import std.string : representation;
-import std.algorithm : joiner, countUntil, all, remove, map, max, min, sum, until, each, filter, cache, find, canFind;
-import std.range : tee;
+import core.time : MonoTime;
+import std.algorithm : all, cache, canFind, countUntil, each, filter, find, joiner, map, max, min, remove, sum, until;
 import std.array;
 import std.exception : assumeUnique;
-import core.time : MonoTime;
+import std.format;
+import std.range : tee;
+import std.string : representation;
+import tagion.utils.Miscellaneous;
+import tagion.utils.Result;
 
 //import std.stdio;
-import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONRecord;
-import tagion.hibon.HiBONJSON;
-import tagion.hibon.HiBONException : HiBONRecordException;
-
-import tagion.dart.DARTBasic;
-
-import tagion.basic.basic : basename, isinit;
 import tagion.basic.Types : Buffer;
+import tagion.basic.basic : basename, isinit;
 import tagion.crypto.Types : Pubkey;
+import tagion.dart.DARTBasic;
+import tagion.hibon.Document : Document;
+import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.HiBONException : HiBONRecordException;
+import tagion.hibon.HiBONJSON;
+import tagion.hibon.HiBONRecord;
 
 // import tagion.script.prior.StandardRecords : SignedContract, globals, Script;
 //import PriorStandardRecords = tagion.script.prior.StandardRecords;
 
-import tagion.crypto.SecureNet : scramble;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
+import tagion.crypto.SecureNet : scramble;
 
 // import tagion.gossip.GossipNet : StdSecureNet, StdHashNet, scramble;
-import tagion.basic.Message;
-import tagion.utils.Miscellaneous;
 import tagion.Keywords;
-import tagion.script.TagionCurrency;
-import tagion.communication.HiRPC;
-import tagion.wallet.KeyRecover;
-import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN;
-import tagion.wallet.WalletException : WalletException;
-import tagion.wallet.AccountDetails;
-import tagion.wallet.Basic : saltHash;
-import tagion.script.common;
+import tagion.basic.Message;
 import tagion.basic.tagionexceptions : Check;
+import tagion.communication.HiRPC;
 import tagion.crypto.Cipher;
 import tagion.crypto.random.random;
+import tagion.script.TagionCurrency;
+import tagion.script.common;
+import tagion.utils.Miscellaneous;
 import tagion.utils.StdTime;
+import tagion.wallet.AccountDetails;
+import tagion.wallet.Basic : saltHash;
+import tagion.wallet.KeyRecover;
+import tagion.wallet.WalletException : WalletException;
+import tagion.wallet.WalletRecords : DevicePIN, RecoverGenerator;
 
 alias check = Check!(WalletException);
 alias CiphDoc = Cipher.CipherDocument;
@@ -487,7 +485,6 @@ struct SecureWallet(Net : SecureNet) {
         // import std.algorithm.sorting : isSorted, sort;
         // import std.algorithm.iteration : cumulativeFold;
         import std.range : takeOne, tee;
-
         import std.stdio;
 
         if (!account.bills.isSorted!q{a.value > b.value}) {
@@ -664,8 +661,8 @@ struct SecureWallet(Net : SecureNet) {
     }
 
     Result!bool getFee(const(Invoice[]) orders, out TagionCurrency fees) nothrow {
-        import tagion.utils.StdTime;
         import std.exception;
+        import tagion.utils.StdTime;
 
         auto bills = assumeWontThrow(orders.map!((order) => TagionBill(order.amount, currentTime, order.pkey, Buffer.init))
                 .array);
@@ -707,11 +704,10 @@ struct SecureWallet(Net : SecureNet) {
     }
 
     Result!bool createPayment(TagionBill[] to_pay, ref SignedContract signed_contract, out TagionCurrency fees) nothrow {
-        import tagion.script.Currency : totalAmount;
-        import tagion.script.execute;
-
         import std.stdio;
         import tagion.hibon.HiBONtoText;
+        import tagion.script.Currency : totalAmount;
+        import tagion.script.execute;
 
         try {
             PayScript pay_script;
@@ -849,10 +845,10 @@ struct SecureWallet(Net : SecureNet) {
     }
 
     unittest {
+        import std.format;
+        import std.range : iota;
         import std.stdio;
         import tagion.hibon.HiBONJSON;
-        import std.range : iota;
-        import std.format;
 
         const good_pin_code = "1234";
 
@@ -1010,8 +1006,8 @@ struct SecureWallet(Net : SecureNet) {
 }
 
 version (unittest) {
-    import tagion.crypto.SecureNet;
     import std.exception;
+    import tagion.crypto.SecureNet;
 
     //    import std.stdio;
     import tagion.script.execute;
@@ -1112,9 +1108,9 @@ unittest {
 unittest {
 
     import std.algorithm;
-    import tagion.hibon.HiBONJSON;
     import std.exception;
     import std.stdio;
+    import tagion.hibon.HiBONJSON;
 
     auto wallet1 = StdSecureWallet("some words", "1234");
     auto wallet2 = StdSecureWallet("some words2", "4321");
@@ -1149,9 +1145,9 @@ unittest {
 unittest {
 
     import std.algorithm;
-    import tagion.hibon.HiBONJSON;
     import std.exception;
     import std.stdio;
+    import tagion.hibon.HiBONJSON;
 
     auto wallet1 = StdSecureWallet("some words", "1234");
     auto wallet2 = StdSecureWallet("some words2", "4321");

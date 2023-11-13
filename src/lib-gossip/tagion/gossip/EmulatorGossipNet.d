@@ -1,13 +1,12 @@
 module tagion.gossip.EmulatorGossipNet;
 
-import std.stdio;
-import std.concurrency;
-import std.format;
 import std.array : join;
+import std.concurrency;
 import std.conv : to;
-
+import std.format;
+import std.stdio;
 import tagion.basic.Types : Buffer, isBufferType;
-import tagion.basic.basic : EnumText, buf_idup, basename;
+import tagion.basic.basic : EnumText, basename, buf_idup;
 import tagion.crypto.Types : Pubkey;
 
 //import tagion.TagionExceptions : convertEnum, consensusCheck, consensusCheckArguments;
@@ -19,27 +18,25 @@ import tagion.utils.Queue;
 
 //import tagion.Keywords;
 
-import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.Document : Document;
 import tagion.gossip.InterfaceNet;
+import tagion.hibon.Document : Document;
+import tagion.hibon.HiBON : HiBON;
 
 // import tagion.gossip.GossipNet;
 //import tagion.hashgraph.HashGraph;
-import tagion.hashgraph.Event;
 import tagion.basic.ConsensusExceptions;
-
-import tagion.logger.Logger;
-import tagion.options.ServiceNames : get_node_name;
-import tagion.options.CommonOptions;
-
-import tagion.utils.StdTime;
 import tagion.communication.HiRPC;
+import tagion.hashgraph.Event;
+import tagion.logger.Logger;
+import tagion.options.CommonOptions;
+import tagion.options.ServiceNames : get_node_name;
+import tagion.utils.StdTime;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 import core.atomic;
-import std.random : Random, unpredictableSeed, uniform;
+import core.thread;
 import core.time;
 import std.datetime;
-import core.thread;
+import std.random : Random, uniform, unpredictableSeed;
 import tagion.services.messages;
 
 @safe
@@ -60,8 +57,8 @@ class EmulatorGossipNet : GossipNet {
     }
 
     void add_channel(const Pubkey channel) {
-        import tagion.gossip.AddressBook;
         import core.thread;
+        import tagion.gossip.AddressBook;
         import tagion.services.locator;
 
         const task_name = addressbook.getAddress(channel);

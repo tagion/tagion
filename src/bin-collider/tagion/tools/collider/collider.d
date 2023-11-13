@@ -5,37 +5,33 @@ module tagion.tools.collider.collider;
  * @brief tool generate d files from bdd md files and vice versa
 */
 
+import std.algorithm.iteration : each, filter, fold, joiner, map, splitter, uniq;
 import std.algorithm.searching : canFind;
-import std.getopt;
-import std.stdio;
-import std.format;
-import std.path : extension, setExtension, dirName, buildPath;
-import std.file : exists, dirEntries, SpanMode, readText, fwrite = write;
-import std.string : join, strip, splitLines;
-import std.algorithm.iteration : filter, map, joiner, fold, uniq, splitter, each;
 import std.algorithm.sorting : sort;
-import std.regex : regex, matchFirst;
+import std.array : array, join, split;
+import std.file : SpanMode, dirEntries, exists, readText, fwrite = write;
+import std.format;
+import std.getopt;
 import std.parallelism : parallel;
-import std.array : join, split, array;
-import std.process : execute, environment;
+import std.path : buildPath, dirName, extension, setExtension;
+import std.process : environment, execute;
 import std.range;
+import std.regex : matchFirst, regex;
+import std.stdio;
+import std.string : join, splitLines, strip;
 import std.typecons : Tuple;
-
-import tagion.basic.Types : hasExtension, FileExtension, DOT;
-import tagion.tools.Basic;
-import tagion.tools.revision : revision_text;
-import tagion.behaviour.BehaviourParser;
-import tagion.behaviour.BehaviourIssue : Dlang, DlangT, Markdown;
-import tagion.behaviour.Emendation : emendation, suggestModuleName;
+import tagion.basic.Types : DOT, FileExtension, hasExtension;
+import tagion.behaviour.Behaviour : TestCode, getBDDErrors, testCode, testColor;
 import tagion.behaviour.BehaviourFeature;
-import tagion.behaviour.Behaviour : TestCode, testCode, testColor, getBDDErrors;
-
-import tagion.hibon.HiBONFile : fwrite, fread;
-
-import tagion.utils.Term;
-
-import tagion.tools.collider.schedule;
+import tagion.behaviour.BehaviourIssue : Dlang, DlangT, Markdown;
+import tagion.behaviour.BehaviourParser;
+import tagion.behaviour.Emendation : emendation, suggestModuleName;
+import tagion.hibon.HiBONFile : fread, fwrite;
+import tagion.tools.Basic;
 import tagion.tools.collider.BehaviourOptions;
+import tagion.tools.collider.schedule;
+import tagion.tools.revision : revision_text;
+import tagion.utils.Term;
 
 //import shitty=tagion.tools.collider.shitty;
 

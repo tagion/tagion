@@ -4,21 +4,20 @@ module tagion.services.TVM;
 
 @safe:
 
-import std.stdio;
 import core.time;
 import std.conv : to;
-
-import tagion.logger.Logger;
-import tagion.basic.Debug : __write;
+import std.stdio;
 import tagion.actor.actor;
+import tagion.basic.Debug : __write;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord;
-import tagion.services.options;
-import tagion.services.messages;
+import tagion.logger.Logger;
 import tagion.logger.Logger;
 import tagion.script.common;
 import tagion.script.execute;
+import tagion.services.messages;
+import tagion.services.options;
 import tagion.utils.pretend_safe_concurrency : locate, send;
 
 /// Msg type sent to receiver task along with a hirpc
@@ -95,8 +94,8 @@ struct TVMService {
 alias TVMServiceHandle = ActorHandle!TVMService;
 
 unittest {
-    import tagion.utils.pretend_safe_concurrency;
     import core.time;
+    import tagion.utils.pretend_safe_concurrency;
 
     enum task_names = TaskNames();
     scope (exit) {
@@ -108,13 +107,13 @@ unittest {
     immutable opts = TVMOptions();
     auto tvm_service = TVMService(opts, task_names);
 
+    import std.algorithm.iteration : map;
+    import std.array;
     import std.range : iota;
+    import tagion.basic.Types : Buffer;
     import tagion.crypto.Types;
     import tagion.script.TagionCurrency;
     import tagion.utils.StdTime;
-    import tagion.basic.Types : Buffer;
-    import std.algorithm.iteration : map;
-    import std.array;
 
     auto createCollected(uint input, uint output) {
         immutable(Document)[] in_bills;

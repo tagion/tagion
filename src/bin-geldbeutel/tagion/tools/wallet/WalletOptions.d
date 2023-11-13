@@ -1,10 +1,10 @@
 module tagion.tools.wallet.WalletOptions;
 
-import tagion.utils.JSONCommon;
-import tagion.basic.Types : FileExtension;
 import std.path;
-import tagion.wallet.KeyRecover : standard_questions;
+import tagion.basic.Types : FileExtension;
 import tagion.services.options;
+import tagion.utils.JSONCommon;
+import tagion.wallet.KeyRecover : standard_questions;
 
 /**
 *

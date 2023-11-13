@@ -1,21 +1,20 @@
 module tagion.testbench.actor.message;
 
-import tagion.testbench.actor.util;
-import tagion.actor.actor;
 import core.time;
-import std.stdio;
 import std.format : format;
 import std.meta;
+import std.stdio;
 import std.variant : Variant;
+import tagion.actor.actor;
+import tagion.testbench.actor.util;
 import tagion.utils.pretend_safe_concurrency;
 
 // Default import list for bdd
+import core.thread;
+import std.typecons : Tuple;
 import tagion.behaviour;
 import tagion.hibon.Document;
-import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
-
-import core.thread;
 
 enum feature = Feature(
             "Actor messaging",

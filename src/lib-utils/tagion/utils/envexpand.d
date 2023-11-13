@@ -1,8 +1,8 @@
 module tagion.utils.envexpand;
 
-import std.typecons;
 import std.algorithm;
 import std.range;
+import std.typecons;
 
 enum ignore_env_start = "!";
 enum bracket_pairs = [

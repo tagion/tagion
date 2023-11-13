@@ -1,44 +1,37 @@
 module tagion.tools.tagionshell;
 
-import std.array : join;
-import std.getopt;
-import std.file : exists;
-import std.stdio : stdout, stderr, writeln, writefln;
-import std.json;
-import std.exception;
-import std.concurrency;
-import std.format;
-import std.conv;
 import core.time;
-
-import tagion.tools.Basic;
-import tagion.tools.revision;
-import tagion.tools.shell.shelloptions;
+import std.array : join;
+import std.concurrency;
+import std.conv;
+import std.exception;
+import std.file : exists;
+import std.format;
+import std.getopt;
+import std.json;
+import std.stdio : stderr, stdout, writefln, writeln;
+import tagion.basic.Types : Buffer, FileExtension, hasExtension;
+import tagion.basic.range : doFront;
+import tagion.communication.HiRPC;
+import tagion.crypto.SecureInterfaceNet;
+import tagion.crypto.SecureNet;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON;
 import tagion.hibon.HiBONFile : fread, fwrite;
-
-import tagion.script.common;
 import tagion.script.TagionCurrency;
-
-import tagion.basic.Types : FileExtension, Buffer, hasExtension;
-import tagion.basic.range : doFront;
-
-import tagion.utils.StdTime : currentTime;
-
-import tagion.crypto.SecureNet;
-import tagion.crypto.SecureInterfaceNet;
-
-import tagion.tools.wallet.WalletOptions;
+import tagion.script.common;
+import tagion.tools.Basic;
+import tagion.tools.revision;
+import tagion.tools.shell.shelloptions;
 import tagion.tools.wallet.WalletInterface;
-
-import tagion.communication.HiRPC;
-import tagion.wallet.SecureWallet;
+import tagion.tools.wallet.WalletOptions;
+import tagion.utils.StdTime : currentTime;
 import tagion.wallet.AccountDetails;
+import tagion.wallet.SecureWallet;
 
 
-import nngd.nngd;
 import core.thread;
+import nngd.nngd;
 
 mixin Main!(_main, "shell");
 

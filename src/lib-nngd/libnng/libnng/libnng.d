@@ -1,9 +1,9 @@
 module libnng.libnng;
 
-import std.meta : Alias;
 import core.stdc.config;
+import core.stdc.stdio : printf;
+import std.meta : Alias;
 import std.traits;
-import core.stdc.stdio: printf;
 
 @nogc nothrow extern (C)
 {

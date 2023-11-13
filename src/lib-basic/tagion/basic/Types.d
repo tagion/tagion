@@ -1,7 +1,7 @@
 module tagion.basic.Types;
 
-import std.typecons : Typedef, TypedefType;
 import std.traits : Unqual;
+import std.typecons : Typedef, TypedefType;
 
 @safe:
 enum BillType {
@@ -73,8 +73,8 @@ version (none) string fileExtension(string path) {
 }
 
 version (none) unittest {
-    import tagion.basic.Types : FileExtension;
     import std.path : setExtension;
+    import tagion.basic.Types : FileExtension;
 
     // assert(!"somenone_invalid_file.extension".fileExtension);
     immutable valid_filename = "somenone_valid_file".setExtension(FileExtension.hibon);

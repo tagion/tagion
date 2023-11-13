@@ -1,41 +1,38 @@
 module tagion.testbench.services.collector;
 // Default import list for bdd
-import tagion.behaviour;
-import tagion.hibon.Document;
-import std.typecons : Tuple;
-import tagion.testbench.tools.Environment;
-
 import core.time;
-
-import std.path : dirName, setExtension, buildPath;
-import std.file : mkdirRecurse, exists, remove;
-import std.range : iota, zip, take;
 import std.algorithm.iteration : map;
-import std.format : format;
 import std.array;
 import std.exception;
-
-import tagion.testbench.actor.util;
+import std.file : exists, mkdirRecurse, remove;
+import std.format : format;
+import std.path : buildPath, dirName, setExtension;
+import std.range : iota, take, zip;
+import std.typecons : Tuple;
+import tagion.actor;
+import tagion.basic.Types : Buffer, FileExtension;
+import tagion.behaviour;
+import tagion.communication.HiRPC;
+import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.SecureNet;
 import tagion.crypto.Types;
-import tagion.crypto.SecureInterfaceNet;
-import tagion.script.execute;
+import tagion.dart.DARTBasic;
+import tagion.dart.Recorder;
+import tagion.hibon.Document;
+import tagion.logger.LogRecords : LogInfo;
+import tagion.logger.Logger;
 import tagion.script.TagionCurrency;
 import tagion.script.common;
-import tagion.actor;
-import tagion.utils.pretend_safe_concurrency : receiveOnly, receive, receiveTimeout;
-import tagion.logger.Logger;
-import tagion.logger.LogRecords : LogInfo;
-import tagion.services.messages;
-import tagion.services.collector;
+import tagion.script.execute;
 import tagion.services.DART;
-import tagion.utils.StdTime;
-import tagion.basic.Types : FileExtension, Buffer;
-import tagion.dart.Recorder;
-import tagion.dart.DARTBasic;
-import tagion.communication.HiRPC;
-import tagion.services.replicator;
+import tagion.services.collector;
+import tagion.services.messages;
 import tagion.services.options : TaskNames;
+import tagion.services.replicator;
+import tagion.testbench.actor.util;
+import tagion.testbench.tools.Environment;
+import tagion.utils.StdTime;
+import tagion.utils.pretend_safe_concurrency : receive, receiveOnly, receiveTimeout;
 
 enum feature = Feature(
             "collector services",

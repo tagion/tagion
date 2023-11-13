@@ -2,9 +2,9 @@ module tagion.basic.Message;
 
 import std.format;
 import std.json;
+import tagion.basic.Types : FileExtension;
 import tagion.basic.Version;
 import tagion.basic.basic : EnumText;
-import tagion.basic.Types : FileExtension;
 
 enum name_list = [
         "TAGION", /// Name of the tagion environment variable pointing to the tagion directory 
@@ -43,11 +43,11 @@ struct Message {
 
 static immutable Message message;
 
+import std.algorithm : each;
+import std.file : exists, mkdirRecurse, fread = read, tempDir, fwrite = write;
+import std.path;
 import std.process : environment;
 import std.stdio;
-import std.file : tempDir, mkdirRecurse, exists, fwrite = write, fread = read;
-import std.path;
-import std.algorithm : each;
 
 static if (not_unittest) {
     /++

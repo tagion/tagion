@@ -1,13 +1,12 @@
 module tagion.utils.Escaper;
 
-import std.format;
-import std.algorithm.iteration : map, joiner;
+import std.algorithm.iteration : joiner, map;
 import std.array : join;
-import std.range.primitives : isInputRange;
-
-import std.traits : ForeachType;
+import std.format;
 import std.range;
+import std.range.primitives : isInputRange;
 import std.string : indexOf;
+import std.traits : ForeachType;
 
 enum special_chars = "ntr'\"\\"; /// List of special chars which will be escapes
 

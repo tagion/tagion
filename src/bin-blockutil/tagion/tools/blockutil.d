@@ -1,23 +1,22 @@
 //\blockfile.d database blockfile tool
 module tagion.tools.blockutil;
 
-import std.getopt;
-import std.stdio;
-import std.format;
+import std.algorithm;
 import std.array : join;
-import std.traits : EnumMembers;
 import std.conv : to;
-
-import tagion.tools.Basic;
-import tagion.tools.revision;
+import std.exception;
+import std.format;
+import std.getopt;
+import std.range;
+import std.stdio;
+import std.traits : EnumMembers;
 import tagion.dart.BlockFile;
 import tagion.dart.DARTException : BlockFileException;
-import std.algorithm;
-import std.range;
-import tagion.hibon.HiBONJSON : toPretty;
 import tagion.hibon.Document;
+import tagion.hibon.HiBONJSON : toPretty;
+import tagion.tools.Basic;
+import tagion.tools.revision;
 import tools = tagion.tools.toolsexception;
-import std.exception;
 
 mixin Main!_main;
 
@@ -63,8 +62,8 @@ struct BlockFileAnalyzer {
     }
 
     void dumpGraph() {
-        import std.range;
         import std.algorithm;
+        import std.range;
 
         auto text = [
             "```graphviz",

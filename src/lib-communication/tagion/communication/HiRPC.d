@@ -3,21 +3,19 @@
 */
 module tagion.communication.HiRPC;
 
+import std.exception : assumeWontThrow;
 import std.format;
 import std.traits : EnumMembers;
-import std.exception : assumeWontThrow;
-
+import tagion.Keywords;
+import tagion.basic.Types : Buffer;
+import tagion.basic.tagionexceptions : Check;
+import tagion.crypto.SecureInterfaceNet : SecureNet;
+import tagion.crypto.Types : Pubkey, Signature;
+import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONException;
-import tagion.hibon.HiBONRecord;
-import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONJSON;
-
-import tagion.basic.Types : Buffer;
-import tagion.crypto.Types : Pubkey, Signature;
-import tagion.basic.tagionexceptions : Check;
-import tagion.Keywords;
-import tagion.crypto.SecureInterfaceNet : SecureNet;
+import tagion.hibon.HiBONRecord;
 import tagion.utils.Miscellaneous : toHexString;
 
 /// HiRPC format exception
@@ -32,8 +30,8 @@ class HiRPCException : HiBONException {
 enum HiRPCMethod;
 
 private static string[] _Callers(T)() {
-    import std.traits : isCallable, hasUDA;
     import std.meta : ApplyRight, Filter;
+    import std.traits : hasUDA, isCallable;
 
     string[] result;
     static foreach (name; __traits(derivedMembers, T)) {
@@ -198,8 +196,8 @@ struct HiRPC {
         }
 
         bool supports(T)() const {
-            import std.traits : isCallable;
             import std.algorithm.searching : canFind;
+            import std.traits : isCallable;
 
             return (type is Type.method) &&
                 Callers!T.canFind(method.name);
@@ -550,8 +548,8 @@ struct ResultOk {
 
 ///
 unittest {
+    import tagion.crypto.SecureNet : BadSecureNet, StdSecureNet;
     import tagion.hibon.HiBONRecord;
-    import tagion.crypto.SecureNet : StdSecureNet, BadSecureNet;
     import tagion.crypto.secp256k1.NativeSecp256k1;
 
     class HiRPCNet : StdSecureNet {

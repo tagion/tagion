@@ -1,12 +1,10 @@
 module tagion.testbench.collector;
 
-import tagion.behaviour.Behaviour;
-import tagion.tools.Basic;
 import std.traits : moduleName;
-
-import tagion.testbench.tools.Environment;
-
+import tagion.behaviour.Behaviour;
 import tagion.testbench.services;
+import tagion.testbench.tools.Environment;
+import tagion.tools.Basic;
 
 mixin Main!(_main);
 

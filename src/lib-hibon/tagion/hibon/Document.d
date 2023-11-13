@@ -8,23 +8,23 @@ module tagion.hibon.Document;
 import std.meta : AliasSeq, Filter;
 import std.traits : isBasicType, isSomeString, isNumeric, EnumMembers, Unqual, ForeachType,
     isIntegral, hasMember, isArrayT = isArray, isAssociativeArray, OriginalType, isCallable;
-import std.conv : to, emplace;
-import std.algorithm;
-import std.range;
-import std.array : join;
-import std.typecons : TypedefType;
 import core.exception : RangeError;
+import std.algorithm;
+import std.array : join;
+import std.conv : emplace, to;
+import std.range;
+import std.typecons : TypedefType;
 
 //import std.stdio;
 
-import tagion.utils.StdTime;
-import tagion.basic.basic : isOneOf, EnumContinuousSequency;
 import tagion.basic.Message : message;
+import tagion.basic.Types : isTypedef;
+import tagion.basic.basic : EnumContinuousSequency, isOneOf;
 import tagion.hibon.BigNumber;
 import tagion.hibon.HiBONBase;
-import tagion.hibon.HiBONException : check, HiBONException;
+import tagion.hibon.HiBONException : HiBONException, check;
 import tagion.hibon.HiBONRecord : TYPENAME, isHiBONRecord, isHiBONTypeArray;
-import tagion.basic.Types : isTypedef;
+import tagion.utils.StdTime;
 import LEB128 = tagion.utils.LEB128;
 public import tagion.hibon.HiBONJSON;
 
@@ -174,8 +174,8 @@ static assert(uint.sizeof == 4);
     }
 
     unittest { // Document with residual data
-        import tagion.hibon.HiBON;
         import std.algorithm.comparison : equal;
+        import tagion.hibon.HiBON;
 
         auto h = new HiBON;
         h["test"] = 42;

@@ -1,11 +1,11 @@
 module tagion.wallet.BIP39;
 
-import tagion.basic.Version : ver;
-import tagion.basic.Debug;
-import tagion.utils.Miscellaneous : toHexString;
-import tagion.crypto.random.random;
-import tagion.crypto.SecureNet : scramble;
 import std.string : representation;
+import tagion.basic.Debug;
+import tagion.basic.Version : ver;
+import tagion.crypto.SecureNet : scramble;
+import tagion.crypto.random.random;
+import tagion.utils.Miscellaneous : toHexString;
 
 static assert(ver.LittleEndian, "At the moment bip39 only supports Little Endian");
 
@@ -25,8 +25,8 @@ picture sponsor display jump nothing wing twin exotic earth vessel one blur erup
 1137e53d16d7ce04339914da41bdeb24b246f0878494f066a145f8a7f43c8264e177873c54830fa9b0cafdf5846258521b208f6d7fcd0de78ac22bf51040efde
 */
 
-import std.range;
 import std.algorithm;
+import std.range;
 import std.typecons;
 import tagion.hibon.HiBONRecord;
 
@@ -225,8 +225,8 @@ unittest {
 
         // writefln("%(%d %)", wordlist.numbers(mnemonic));
         import tagion.pbkdf2.pbkdf2;
-        import std.digest.sha : SHA512;
         import std.bitmanip : nativeToBigEndian;
+        import std.digest.sha : SHA512;
 
         const mnemonic_codes = wordlist.numbers(mnemonic);
 

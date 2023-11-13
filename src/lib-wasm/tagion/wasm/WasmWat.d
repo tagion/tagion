@@ -1,18 +1,17 @@
 module tagion.wasm.WasmWat;
 
+import std.conv : to;
 import std.format;
+import std.range : StoppingPolicy, enumerate, lockstep;
+import std.range.primitives : isOutputRange;
 import std.stdio;
-import std.traits : EnumMembers, PointerTarget, ConstOf, ForeachType;
+import std.traits : ConstOf, EnumMembers, ForeachType, PointerTarget;
 import std.typecons : Tuple;
 import std.uni : toLower;
-import std.conv : to;
-import std.range.primitives : isOutputRange;
-import std.range : StoppingPolicy, lockstep, enumerate;
-
-import tagion.wasm.WasmReader;
+import tagion.basic.tagionexceptions;
 import tagion.wasm.WasmBase;
 import tagion.wasm.WasmException;
-import tagion.basic.tagionexceptions;
+import tagion.wasm.WasmReader;
 
 @safe class WatException : WasmException {
     this(string msg, string file = __FILE__, size_t line = __LINE__) pure nothrow {
@@ -403,9 +402,9 @@ alias check = Check!WatException;
 }
 
 version (none) unittest {
-    import std.stdio;
-    import std.file;
     import std.exception : assumeUnique;
+    import std.file;
+    import std.stdio;
 
     //      import std.file : fread=read, fwrite=write;
 

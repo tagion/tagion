@@ -4,13 +4,13 @@ import tagion.behaviour.BehaviourFeature;
 
 /// This module is only use to support the unittest
 version (unittest) {
-    import tagion.hibon.HiBON;
-    import tagion.hibon.Document;
+    import std.format;
+    import std.process;
+    import std.typecons : Tuple;
     import tagion.behaviour.BehaviourException;
     import tagion.behaviour.BehaviourResult;
-    import std.format;
-    import std.typecons : Tuple;
-    import std.process;
+    import tagion.hibon.Document;
+    import tagion.hibon.HiBON;
 
     bool pass; /// Pass the test
     bool pass_one; /// Pass only one scenario

@@ -1,30 +1,29 @@
 /// HiBON utility to convert and check HiBON format 
 module tagion.tools.hibonutil;
 
-import std.getopt;
-import std.stdio;
-import std.file : fread = read, fwrite = write, exists, readText;
-import std.path : setExtension, extension;
-import std.format;
-import std.exception : assumeUnique, assumeWontThrow;
-import std.json;
-import std.range : only;
-import std.conv;
-import std.range;
-import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.Document : Document;
-import tagion.basic.Types : FileExtension, Buffer;
-import tagion.hibon.HiBONJSON;
-import tagion.hibon.HiBONtoText : encodeBase64, decodeBase64;
-import std.utf : toUTF8;
-import std.encoding : BOMSeq, BOM;
-import tagion.hibon.HiBONRecord;
 import std.array : join;
-
+import std.conv;
+import std.encoding : BOM, BOMSeq;
+import std.exception : assumeUnique, assumeWontThrow;
+import std.exception : ifThrown;
+import std.file : exists, fread = read, readText, fwrite = write;
+import std.format;
+import std.getopt;
+import std.json;
+import std.path : extension, setExtension;
+import std.range : only;
+import std.range;
+import std.stdio;
+import std.utf : toUTF8;
+import tagion.basic.Types : Buffer, FileExtension;
+import tagion.hibon.Document : Document;
+import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.HiBONJSON;
+import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONtoText : decodeBase64, encodeBase64;
 import tagion.tools.Basic;
 import tagion.tools.revision;
 import tools = tagion.tools.toolsexception;
-import std.exception : ifThrown;
 
 mixin Main!_main;
 
@@ -361,10 +360,10 @@ int _main(string[] args) {
 }
 
 Document sampleHiBON(const bool hibon_array = false) {
+    import std.datetime;
+    import std.typecons;
     import tagion.hibon.BigNumber;
     import tagion.utils.StdTime;
-    import std.typecons;
-    import std.datetime;
 
     auto list = tuple!(
             "BIGINT",

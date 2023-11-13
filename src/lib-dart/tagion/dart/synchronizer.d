@@ -4,12 +4,12 @@ import tagion.communication.HiRPC;
 
 alias HiRPCSender = HiRPC.Sender;
 alias HiRPCReceiver = HiRPC.Receiver;
-import tagion.dart.DARTFile;
-import tagion.dart.Recorder;
-import tagion.dart.DART;
 import tagion.dart.BlockFile;
-import tagion.hibon.Document;
+import tagion.dart.DART;
+import tagion.dart.DARTFile;
 import tagion.dart.DARTRim;
+import tagion.dart.Recorder;
+import tagion.hibon.Document;
 
 /**
 * Interface to the DART synchronizer

@@ -2,14 +2,13 @@ module tagion.betterC.communication.HiRPC;
 
 import std.format;
 import std.traits : EnumMembers;
-
-import tagion.betterC.hibon.HiBON;
-import tagion.betterC.hibon.Document;
-import tagion.betterC.wallet.WalletRecords : GetLabel, Label;
-import tagion.betterC.utils.Memory;
 import tagion.basic.Types : Buffer;
-import tagion.crypto.Types : Pubkey, Signature;
+import tagion.betterC.hibon.Document;
+import tagion.betterC.hibon.HiBON;
+import tagion.betterC.utils.Memory;
 import tagion.betterC.wallet.Net;
+import tagion.betterC.wallet.WalletRecords : GetLabel, Label;
+import tagion.crypto.Types : Pubkey, Signature;
 
 struct HiRPC {
     // import tagion.hibon.HiBONRecord;
@@ -191,8 +190,8 @@ struct HiRPC {
         }
 
         bool supports(T)() const {
-            import std.traits : isCallable;
             import std.algorithm.searching : canFind;
+            import std.traits : isCallable;
 
             return (type is Type.method) &&
                 Callers!T.canFind(method.name);

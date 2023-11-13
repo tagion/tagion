@@ -1,10 +1,10 @@
 /// trace for seeing runtime status of collider
 module tagion.tools.collider.trace;
 
-import tagion.tools.collider.schedule : Runner;
-import std.stdio;
-import tagion.utils.Term;
 import std.range : repeat;
+import std.stdio;
+import tagion.tools.collider.schedule : Runner;
+import tagion.utils.Term;
 
 @safe
 interface ScheduleTrace {

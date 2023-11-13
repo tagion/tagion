@@ -1,20 +1,18 @@
 module tagion.gossip.AddressBook;
 
+import core.thread : Thread;
+import std.file : exists;
+import std.format;
+import std.path : setExtension;
+import std.random;
+import tagion.basic.tagionexceptions;
 import tagion.crypto.Types : Pubkey;
-import tagion.hibon.HiBONRecord;
-import tagion.hibon.HiBONFile;
 import tagion.dart.DART : DART;
+import tagion.dart.DARTRim;
+import tagion.hibon.HiBONFile;
+import tagion.hibon.HiBONRecord;
 import tagion.logger.Logger : log;
 import tagion.utils.Miscellaneous : cutHex;
-
-import std.file : exists;
-import std.path : setExtension;
-import core.thread : Thread;
-import std.format;
-import std.random;
-import tagion.dart.DARTRim;
-
-import tagion.basic.tagionexceptions;
 
 @safe class AddressBookException : TagionException {
     this(string msg, string file = __FILE__, size_t line = __LINE__) pure {

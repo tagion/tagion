@@ -1,44 +1,44 @@
 module tagion.tools.wallet.WalletInterface;
+import core.thread;
+import std.algorithm;
+import std.conv : to;
+import std.exception : ifThrown;
+import std.file : exists, mkdir;
+import std.format;
+import std.path;
+import std.range;
 import std.stdio;
+import std.string : representation;
+import tagion.basic.Message;
+import tagion.basic.Types : Buffer, FileExtension, hasExtension;
+import tagion.basic.range : doFront;
+import tagion.crypto.SecureInterfaceNet;
+import tagion.crypto.SecureNet;
+import tagion.hibon.HiBONFile : fread, fwrite;
+import tagion.hibon.HiBONRecord : isHiBONRecord, isRecord;
+import tagion.script.TagionCurrency;
 import tagion.tools.wallet.WalletOptions;
-import tagion.wallet.SecureWallet;
-import tagion.wallet.KeyRecover;
-import tagion.wallet.WalletRecords;
 import tagion.utils.Term;
 import tagion.wallet.AccountDetails;
-import tagion.script.TagionCurrency;
-import tagion.crypto.SecureNet;
-import tagion.crypto.SecureInterfaceNet;
-import tagion.basic.Types : FileExtension, Buffer, hasExtension;
-import tagion.basic.range : doFront;
-import std.file : exists, mkdir;
-import std.exception : ifThrown;
-import tagion.hibon.HiBONRecord : isRecord, isHiBONRecord;
-import tagion.hibon.HiBONFile : fwrite, fread;
-import std.path;
-import std.format;
-import std.algorithm;
-import std.range;
-import core.thread;
-import tagion.basic.Message;
-import std.string : representation;
-import std.conv : to;
+import tagion.wallet.KeyRecover;
+import tagion.wallet.SecureWallet;
+import tagion.wallet.WalletRecords;
 
 //import tagion.basic.tagionexceptions : check;
-import tagion.hibon.Document;
-import std.typecons;
 import std.range;
-import tagion.tools.Basic;
-import tagion.script.common;
-import tagion.script.standardnames;
-import tagion.wallet.SecureWallet : check;
-import tagion.script.execute : ContractExecution;
-import tagion.hibon.HiBONtoText;
-import tagion.hibon.HiBONJSON : toPretty;
-import tagion.dart.DARTBasic;
-import tagion.crypto.Types : Pubkey;
+import std.typecons;
 import tagion.communication.HiRPC;
+import tagion.crypto.Types : Pubkey;
+import tagion.dart.DARTBasic;
 import tagion.dart.DARTcrud;
+import tagion.hibon.Document;
+import tagion.hibon.HiBONJSON : toPretty;
+import tagion.hibon.HiBONtoText;
+import tagion.script.common;
+import tagion.script.execute : ContractExecution;
+import tagion.script.standardnames;
+import tagion.tools.Basic;
+import tagion.wallet.SecureWallet : check;
 
 //import tagion.wallet.WalletException : check;
 /**
@@ -561,9 +561,9 @@ struct WalletInterface {
     }
 
     string toText(const TagionBill bill, string mark = null) {
-        import tagion.utils.StdTime : toText;
         import std.format;
         import tagion.hibon.HiBONtoText;
+        import tagion.utils.StdTime : toText;
 
         const value = format("%10.3f", bill.value.value);
         return format("%2$s%3$27-s %4$s %5$13.6fTGN%1$s",

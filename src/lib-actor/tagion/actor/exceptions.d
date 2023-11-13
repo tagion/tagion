@@ -1,7 +1,7 @@
 module tagion.actor.exceptions;
 
-import tagion.basic.tagionexceptions : TagionException;
 import std.exception;
+import tagion.basic.tagionexceptions : TagionException;
 
 immutable struct TaskFailure {
     string task_name;

@@ -1,7 +1,7 @@
 module tagion.wallet.Basic;
 
-import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.basic.Types : Buffer;
+import tagion.crypto.SecureInterfaceNet : HashNet;
 
 /**
      * Calculates the check-sum hash

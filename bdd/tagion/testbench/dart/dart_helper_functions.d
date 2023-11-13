@@ -1,28 +1,28 @@
 /// Helper functions for interfacing with the DART. 
 module tagion.testbench.dart.dart_helper_functions;
 
-import tagion.hibon.Document;
-import tagion.communication.HiRPC;
-import tagion.dart.DART : DART;
-import tagion.Keywords;
-import tagion.dart.DARTBasic : DARTIndex;
-import tagion.dart.DARTFile : DARTFile;
-import tagion.basic.basic : isinit;
-import std.range;
-import std.algorithm : map, filter;
-import tagion.hibon.HiBONJSON : toPretty;
-import tagion.dart.Recorder : RecordFactory, Archive;
-import tagion.dart.DARTcrud : dartRead, dartRim;
-import std.random : randomShuffle, MinstdRand0;
-import tagion.utils.Random;
-import tagion.dart.DARTFakeNet;
+import std.algorithm : filter, map;
 import std.algorithm : each;
-import tagion.basic.basic : tempfile;
-import tagion.utils.Miscellaneous : toHexString;
-import std.stdio : writefln, writeln;
 import std.format;
+import std.random : MinstdRand0, randomShuffle;
+import std.range;
+import std.stdio : writefln, writeln;
+import tagion.Keywords;
+import tagion.basic.basic : isinit;
+import tagion.basic.basic : tempfile;
+import tagion.communication.HiRPC;
 import tagion.dart.BlockFile : BlockFile;
+import tagion.dart.DART : DART;
+import tagion.dart.DARTBasic : DARTIndex;
+import tagion.dart.DARTFakeNet;
+import tagion.dart.DARTFile : DARTFile;
 import tagion.dart.DARTRim;
+import tagion.dart.DARTcrud : dartRead, dartRim;
+import tagion.dart.Recorder : Archive, RecordFactory;
+import tagion.hibon.Document;
+import tagion.hibon.HiBONJSON : toPretty;
+import tagion.utils.Miscellaneous : toHexString;
+import tagion.utils.Random;
 
 /** 
  * Takes a Rim and returns the document.
@@ -275,8 +275,8 @@ struct RandomArchives {
 }
 
 unittest {
-    import std.stdio;
     import std.algorithm;
+    import std.stdio;
 
     const seed = 12345UL;
     auto r = RandomArchives(seed, 1, 10);

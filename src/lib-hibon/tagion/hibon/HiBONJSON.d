@@ -1,24 +1,23 @@
 module tagion.hibon.HiBONJSON;
 
 @safe:
-import std.json;
 import std.conv : to;
 import std.format;
-import std.traits : EnumMembers, Unqual, ReturnType, ForeachType;
+import std.json;
 import std.range.primitives : isInputRange;
+import std.traits : EnumMembers, ForeachType, ReturnType, Unqual;
 import std.base64;
 
 //import std.stdio;
 
+import tagion.basic.Message : message;
 import tagion.hibon.BigNumber;
+import tagion.hibon.Document : Document;
+import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException;
-import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONtoText;
 import tagion.hibon.HiBONRecord : isHiBONRecord;
-
-import tagion.basic.Message : message;
+import tagion.hibon.HiBONtoText;
 
 // import tagion.utils.JSONOutStream;
 // import tagion.utils.JSONInStream : JSONType;
@@ -106,17 +105,17 @@ string toPretty(T)(T value) {
 }
 
 mixin template JSONString() {
-    import std.format;
     import std.conv : to;
+    import std.format;
 
     void toString(scope void delegate(scope const(char)[]) @safe sink,
     const FormatSpec!char fmt) const {
         alias ThisT = typeof(this);
+        import tagion.basic.Types;
         import tagion.hibon.Document;
         import tagion.hibon.HiBON;
         import tagion.hibon.HiBONJSON;
         import tagion.hibon.HiBONRecord;
-        import tagion.basic.Types;
 
         static if (isHiBONRecord!ThisT) {
             const doc = this.toDoc;
@@ -469,8 +468,8 @@ Document toDoc(const(char[]) json_text) {
 
 unittest {
     //    import std.stdio;
-    import tagion.hibon.HiBON : HiBON;
     import std.typecons : Tuple;
+    import tagion.hibon.HiBON : HiBON;
 
     alias Tabel = Tuple!(
             float, Type.FLOAT32.stringof,
@@ -601,8 +600,8 @@ unittest {
 }
 
 unittest {
-    import tagion.hibon.HiBONRecord;
     import std.stdio;
+    import tagion.hibon.HiBONRecord;
 
     static struct S {
         int[] a;

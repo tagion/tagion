@@ -2,21 +2,17 @@
 
 module tagion.betterC.wallet.SecureWallet;
 
-import std.string : representation;
-import std.algorithm : map, max, min, sum, until, each, filter, cache;
-
 import core.time : MonoTime;
+import std.algorithm : cache, each, filter, map, max, min, sum, until;
+import std.string : representation;
 import std.traits;
-
+import tagion.betterC.funnel.TagionCurrency;
 import tagion.betterC.hibon.Document : Document;
-import tagion.betterC.wallet.Net;
 import tagion.betterC.utils.BinBuffer;
 import tagion.betterC.utils.Memory;
 import tagion.betterC.utils.Miscellaneous;
-
-import tagion.betterC.funnel.TagionCurrency;
-
 import tagion.betterC.wallet.KeyRecover;
+import tagion.betterC.wallet.Net;
 import tagion.betterC.wallet.WalletRecords : RecoverGenerator, DevicePIN, AccountDetails,
     Invoice, StandardBill, SignedContract;
 

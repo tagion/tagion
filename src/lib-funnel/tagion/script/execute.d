@@ -1,16 +1,15 @@
 module tagion.script.execute;
 import std.algorithm;
-import std.range : tee;
-import tagion.script.common;
-import tagion.script.Currency;
 import std.array;
 import std.format;
+import std.range : tee;
 import tagion.hibon.Document;
-import tagion.hibon.HiBONRecord : isRecord, getType;
-import tagion.script.TagionCurrency;
-import tagion.script.ScriptException;
-
+import tagion.hibon.HiBONRecord : getType, isRecord;
 import tagion.logger.Logger;
+import tagion.script.Currency;
+import tagion.script.ScriptException;
+import tagion.script.TagionCurrency;
+import tagion.script.common;
 
 @safe
 struct ContractProduct {
@@ -130,6 +129,5 @@ static this() {
     ContractExecution.check_contract.storage_fees = 1.TGN;
     ContractExecution.check_contract.gas_price = 0.1.TGN;
 }
-
 
 

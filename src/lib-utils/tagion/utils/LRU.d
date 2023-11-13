@@ -3,12 +3,12 @@ module tagion.utils.LRU;
 // EvictCallback is used to get a callback when a cache entry is evicted
 
 //import std.stdio;
-import tagion.utils.DList;
-import tagion.utils.Result;
+import std.algorithm : map;
 import std.conv;
 import std.format;
 import std.traits;
-import std.algorithm : map;
+import tagion.utils.DList;
+import tagion.utils.Result;
 
 // LRU implements a non-thread safe fixed size LRU cache
 @safe

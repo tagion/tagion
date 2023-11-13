@@ -1,37 +1,33 @@
 // Block files system (file system support for DART)
 module tagion.dart.BlockFile;
 
-import console = std.stdio;
-
-import std.path : setExtension;
-import std.bitmanip : binwrite = write, binread = read;
-import std.stdio;
-import std.file : remove, rename;
-import std.typecons;
 import std.algorithm;
-
-import std.range : isForwardRange, isInputRange;
 import std.array : array, join;
-import std.datetime;
-import std.format;
-import std.conv : to;
-import std.traits;
-import std.exception : assumeWontThrow;
+import std.bitmanip : binread = read, binwrite = write;
 import std.container.rbtree : RedBlackTree, redBlackTree;
-
+import std.conv : to;
+import std.datetime;
+import std.exception : assumeWontThrow;
+import std.exception : ifThrown;
+import std.file : remove, rename;
+import std.format;
+import std.path : setExtension;
+import std.range : isForwardRange, isInputRange;
+import console = std.stdio;
+import std.stdio;
+import std.traits;
+import std.typecons;
 import tagion.basic.Types : Buffer, FileExtension;
+import tagion.basic.basic : isinit;
 import tagion.basic.tagionexceptions : Check;
-
-import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONRecord;
-import tagion.hibon.HiBONFile;
-import tagion.logger.Statistic;
+import tagion.dart.BlockSegment;
 import tagion.dart.DARTException : BlockFileException;
 import tagion.dart.Recycler : Recycler;
-import tagion.dart.BlockSegment;
-import std.exception : ifThrown;
-import tagion.basic.basic : isinit;
+import tagion.hibon.Document : Document;
+import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.HiBONFile;
+import tagion.hibon.HiBONRecord;
+import tagion.logger.Statistic;
 
 ///
 import tagion.logger.Logger;
@@ -699,8 +695,8 @@ class BlockFile {
         }
 
         private void initFront() @trusted {
-            import std.format;
             import core.exception : ArraySliceError;
+            import std.format;
             import tagion.dart.Recycler : RecycleSegment;
             import tagion.utils.Term;
 
@@ -836,7 +832,7 @@ class BlockFile {
         }
 
         {
-            import std.exception : assertThrown, ErrnoException;
+            import std.exception : ErrnoException, assertThrown;
 
             // try to load an index that is out of bounds of the blockfile. 
             const filename = fileId.fullpath;

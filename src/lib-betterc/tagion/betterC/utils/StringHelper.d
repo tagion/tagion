@@ -1,7 +1,7 @@
 module tagion.betterC.utils.StringHelper;
 
-import tagion.betterC.utils.Memory;
 import std.traits;
+import tagion.betterC.utils.Memory;
 
 string int_to_str(T)(T data) if (isIntegral!T) {
     Unqual!T mut_data = data;

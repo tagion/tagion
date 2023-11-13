@@ -1,11 +1,10 @@
-import std.stdio;
-import std.conv;
-import std.string;
-import std.concurrency;
 import core.thread;
-import std.datetime.systime;
-
 import libnng;
+import std.concurrency;
+import std.conv;
+import std.datetime.systime;
+import std.stdio;
+import std.string;
 
 
 static double timestamp()

@@ -24,18 +24,17 @@ struct DARTInterfaceOptions {
 
 }
 
+import core.time;
+import nngd;
+import std.format;
 import tagion.actor;
-import tagion.utils.pretend_safe_concurrency;
-import tagion.logger.Logger;
-import tagion.services.messages;
+import tagion.communication.HiRPC;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord : isRecord;
+import tagion.logger.Logger;
+import tagion.services.messages;
 import tagion.services.options;
-import tagion.communication.HiRPC;
-import nngd;
-
-import std.format;
-import core.time;
+import tagion.utils.pretend_safe_concurrency;
 
 
 struct DartWorkerContext {
@@ -53,8 +52,8 @@ enum InterfaceError {
 
 void dartHiRPCCallback(NNGMessage *msg, void *ctx) @trusted {
 
-    import std.stdio;
     import std.exception;
+    import std.stdio;
     import tagion.communication.HiRPC;
 
     HiRPC hirpc = HiRPC(null);

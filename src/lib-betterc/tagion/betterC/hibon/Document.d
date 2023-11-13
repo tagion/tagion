@@ -4,21 +4,21 @@ module tagion.betterC.hibon.Document;
 
 @nogc:
 //import std.format;
-import std.meta : AliasSeq, Filter;
-import std.traits : isBasicType, isSomeString, isIntegral, isNumeric, getUDAs, EnumMembers, Unqual, ForeachType;
-import std.conv : emplace;
 import std.algorithm.iteration : map;
 import std.algorithm.searching : count;
+import std.conv : emplace;
+import std.meta : AliasSeq, Filter;
+import std.traits : EnumMembers, ForeachType, Unqual, getUDAs, isBasicType, isIntegral, isNumeric, isSomeString;
 
 //import core.stdc.stdio;
 //import std.range.primitives : walkLength;
 
-import tagion.betterC.utils.BinBuffer;
-import tagion.betterC.utils.sdt;
-import tagion.betterC.utils.Text;
-import tagion.betterC.utils.Bailout;
-import tagion.betterC.utils.Memory;
 import tagion.betterC.hibon.HiBON;
+import tagion.betterC.utils.Bailout;
+import tagion.betterC.utils.BinBuffer;
+import tagion.betterC.utils.Memory;
+import tagion.betterC.utils.Text;
+import tagion.betterC.utils.sdt;
 import LEB128 = tagion.betterC.utils.LEB128;
 import tagion.betterC.hibon.BigNumber;
 import tagion.betterC.hibon.HiBONBase;

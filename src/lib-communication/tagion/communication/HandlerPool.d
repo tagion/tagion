@@ -16,7 +16,7 @@ interface ResponseHandler {
         immutable(TKey) key;
         Buffer data;
         this(const TKey key, Buffer data) inout {
-            import std.traits : isBasicType, isArray;
+            import std.traits : isArray, isBasicType;
 
             static if (isBasicType!TKey) {
                 this.key = key;

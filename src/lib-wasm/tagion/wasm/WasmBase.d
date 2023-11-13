@@ -1,17 +1,15 @@
 module tagion.wasm.WasmBase;
 
-import std.traits : EnumMembers, Unqual, isAssociativeArray, ForeachType, ConstOf, isFunctionPointer, getUDAs;
-import std.meta : AliasSeq;
-import std.typecons : Tuple;
+import std.bitmanip : Endian, binpeek = peek, binread = read, binwrite = write;
+import std.conv : emplace, to;
+import std.exception : assumeUnique, assumeWontThrow;
 import std.format;
-import std.uni : toLower;
-import std.conv : to, emplace;
+import std.meta : AliasSeq;
 import std.range.primitives : isInputRange;
-import std.bitmanip : binread = read, binwrite = write, binpeek = peek, Endian;
-
-import std.exception : assumeWontThrow, assumeUnique;
-
 import std.stdio;
+import std.traits : ConstOf, EnumMembers, ForeachType, Unqual, getUDAs, isAssociativeArray, isFunctionPointer;
+import std.typecons : Tuple;
+import std.uni : toLower;
 import tagion.wasm.WasmException;
 
 import LEB128 = tagion.utils.LEB128;
@@ -534,8 +532,8 @@ template toDType(Types t) {
 }
 
 @safe static string typesName(const Types type) pure {
-    import std.uni : toLower;
     import std.conv : to;
+    import std.uni : toLower;
 
     final switch (type) {
         static foreach (E; EnumMembers!Types) {
@@ -576,8 +574,8 @@ enum IndexType : ubyte {
 }
 
 @safe static string indexName(const IndexType idx) pure {
-    import std.uni : toLower;
     import std.conv : to;
+    import std.uni : toLower;
 
     final switch (idx) {
         foreach (E; EnumMembers!IndexType) {

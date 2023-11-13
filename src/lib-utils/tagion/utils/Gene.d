@@ -1,8 +1,8 @@
 module tagion.utils.Gene;
 
+import std.algorithm.iteration : fold;
 import std.exception : assumeUnique;
 import std.range : lockstep;
-import std.algorithm.iteration : fold;
 
 @nogc @safe
 uint gene_count(const ulong bitstring) pure nothrow {

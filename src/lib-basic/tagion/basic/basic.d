@@ -136,8 +136,8 @@ unittest {
 @trusted
 string tempfile() {
     import std.file;
-    import std.random;
     import std.path;
+    import std.random;
     import std.range;
 
     auto rnd = Random(unpredictableSeed);
@@ -212,10 +212,10 @@ import std.typecons : Tuple;
 
 alias FileNames = Tuple!(string, "tempdir", string, "filename", string, "fullpath");
 const(FileNames) fileId(T)(string ext, string prefix = null) @safe {
-    import std.process : environment, thisProcessID;
+    import std.array : join;
     import std.file;
     import std.path;
-    import std.array : join;
+    import std.process : environment, thisProcessID;
 
     //import std.traits;
     FileNames names;
@@ -275,8 +275,8 @@ enum isEqual(T1, T2) = is(T1 == T2);
 //enum isUnqualEqual(T1, T2) = is(Unqual!T1 == T2);
 
 unittest {
-    import std.traits : Unqual;
     import std.meta : ApplyLeft, ApplyRight;
+    import std.traits : Unqual;
 
     static assert(isEqual!(int, int));
     static assert(!isEqual!(int, long));
@@ -387,7 +387,7 @@ template staticSearchIndexOf(alias find, L...) {
 }
 
 static unittest {
-    import std.traits : isIntegral, isFloatingPoint;
+    import std.traits : isFloatingPoint, isIntegral;
 
     alias seq = AliasSeq!(string, int, long, char);
     static assert(staticSearchIndexOf!(long, seq) is 2);

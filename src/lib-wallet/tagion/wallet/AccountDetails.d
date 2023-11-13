@@ -5,8 +5,8 @@ import tagion.crypto.Types;
 
 //import tagion.script.prior.StandardRecords;
 import tagion.dart.DARTBasic;
-import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
+import tagion.hibon.HiBONRecord;
 import tagion.script.TagionCurrency;
 import tagion.script.common;
 import tagion.script.standardnames;
@@ -21,10 +21,10 @@ struct AccountDetails {
     @label("$requested") TagionBill[Pubkey] requested; /// Requested bills
     @label("$requested_invoices") Invoice[] requested_invoices;
     @label("$hirpc") Document[] hirpcs; /// HiRPC request    
-    import std.algorithm : map, sum, filter, any, each;
+    import std.algorithm : any, each, filter, map, sum;
 
     bool remove_bill(Pubkey pk) {
-        import std.algorithm : remove, countUntil;
+        import std.algorithm : countUntil, remove;
 
         const index = countUntil!"a.owner == b"(bills, pk);
         if (index > 0) {
@@ -35,7 +35,7 @@ struct AccountDetails {
     }
 
     void remove_bill_by_hash(const(DARTIndex) billHash) {
-        import std.algorithm : remove, countUntil;
+        import std.algorithm : countUntil, remove;
         import tagion.crypto.SecureNet : StdHashNet;
 
         const net = new StdHashNet;
@@ -46,7 +46,7 @@ struct AccountDetails {
     }
 
     void unlock_bill_by_hash(const(DARTIndex) billHash) {
-        import std.algorithm : remove, countUntil;
+        import std.algorithm : countUntil, remove;
         import tagion.crypto.SecureNet : StdHashNet;
 
         const net = new StdHashNet;

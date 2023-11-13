@@ -1,7 +1,7 @@
 module p2p.callback;
 
-import std.stdio;
 import std.concurrency;
+import std.stdio;
 import p2p.cgo.libp2pgowrapper;
 import p2p.cgo.c_helper;
 import p2p.node;
@@ -32,8 +32,8 @@ shared struct Response(ControlCode code) {
 
 alias HandlerCallback = extern (C) void function(DBuffer, DBuffer, void*, ulong, ControlCode);
 
-import std.traits;
 import std.stdio;
+import std.traits;
 
 extern (C) {
     static void StdHandlerCallback(DBuffer data, DBuffer taskId, void* stream,

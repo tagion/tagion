@@ -1,24 +1,24 @@
 module tagion.tools.hirep.hirep;
 
+import std.array;
+import std.file : exists;
 import std.format;
 import std.getopt;
 import std.path;
-import std.stdio;
-import std.array;
-import std.file : exists;
 import std.range;
-import tagion.crypto.SecureNet;
-import tagion.tools.revision;
-import tagion.basic.Types : FileExtension, Buffer;
-import tagion.tools.Basic;
-import tagion.hibon.HiBONFile : fwrite, fread;
+import std.stdio;
+import tagion.basic.Types : Buffer, FileExtension;
 import tagion.basic.tagionexceptions;
-import tagion.utils.Term;
+import tagion.crypto.SecureNet;
 import tagion.hibon.Document;
-import tagion.tools.boot.genesis;
+import tagion.hibon.HiBONFile : fread, fwrite;
 import tagion.hibon.HiBONFile : HiBONRange;
 import tagion.hibon.HiBONJSON : toPretty;
 import tagion.hibon.HiBONregex : HiBONregex;
+import tagion.tools.Basic;
+import tagion.tools.boot.genesis;
+import tagion.tools.revision;
+import tagion.utils.Term;
 
 alias check = Check!TagionException;
 
