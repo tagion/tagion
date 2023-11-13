@@ -1,4 +1,4 @@
-/// Block files system (file system support for DART)
+// Block files system (file system support for DART)
 module tagion.dart.BlockFile;
 
 import console = std.stdio;
@@ -584,17 +584,6 @@ class BlockFile {
         import LEB128 = tagion.utils.LEB128;
 
         auto equal_chain = block_chains.equalRange(new const(BlockSegment)(Document.init, index));
-
-        if (!equal_chain.empty) {
-            import std.stdio;
-            import tagion.hibon.HiBONJSON;
-            import tagion.dart.DARTBasic;
-            import tagion.crypto.SecureNet;
-            const net = new StdHashNet();
-            
-            writefln("TO DISPOSE INDEX %s", index);
-            writefln("equal_range=%s", equal_chain.map!(b => format("index %s, doc %s dartIndex %(%02x%)", b.index, b.doc.toPretty, net.dartIndex(b.doc)))); 
-        }
 
         assert(equal_chain.empty, "We should not dispose cached blocks");
         seek(index);

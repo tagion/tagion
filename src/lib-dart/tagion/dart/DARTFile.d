@@ -855,11 +855,7 @@ class DARTFile {
      * The function returns the bullseye of the dart
      */
     Fingerprint modify(Flag!"undo" undo)(const(RecordFactory.Recorder) modifyrecords) 
-    // in(blockfile.cache_empty, format("IN: THE CACHE MUST BE EMPTY WHEN PERFORMING NEW MODIFY len=%s", blockfile.cache_len))
-    out 
-    {
-        assert(blockfile.cache_empty, format("OUT THE CACHE MUST BE EMPTY WHEN PERFORMING NEW MODIFY len=%s", blockfile.cache_len));
-    } 
+    in(blockfile.cache_empty, format("IN: THE CACHE MUST BE EMPTY WHEN PERFORMING NEW MODIFY len=%s", blockfile.cache_len))
     do 
     {
         /** 
