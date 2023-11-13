@@ -223,6 +223,7 @@ extern (C) {
         if (__wallet_storage.wallet.isLoggedin()) {
             if (__wallet_storage.wallet.changePincode(pincode, newPincode)) {
                 __wallet_storage.write;
+                __wallet_storage.read;
                 // Since secure_wallet do logout after pincode change
                 // we need to perform a login manualy.
                 __wallet_storage.wallet.login(newPincode);
@@ -485,6 +486,7 @@ extern (C) {
         if (__wallet_storage.wallet.isLoggedin()) {
             __wallet_storage.wallet.setEncrAccount(Cipher.CipherDocument(Document(account)));
             __wallet_storage.write;
+            __wallet_storage.read;
             return 1;
         }
         return 0;
