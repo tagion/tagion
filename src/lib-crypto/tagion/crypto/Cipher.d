@@ -5,6 +5,7 @@ import tagion.crypto.Types : Pubkey;
 import tagion.hibon.HiBONRecord;
 import tagion.hibon.Document;
 import std.exception : assumeUnique, ifThrown;
+import tagion.crypto.random.random;
 
 //import std.stdio;
 // import tagion.utils.Miscellaneous: toHexString, decode;
@@ -39,15 +40,13 @@ struct Cipher {
 
     static const(CipherDocument) encrypt(const(SecureNet) net, const(Pubkey) pubkey, const(Document) msg) {
 
-        //        immutable(ubyte[]) create_secret_key() {
         scope ubyte[32] secret_key_alloc;
         scope ubyte[] secret_key = secret_key_alloc;
         scope (exit) {
-            scramble(secret_key);
+            secret_key[] = 0;
         }
         do {
-            scramble(secret_key);
-            scramble(secret_key, net.HMAC(secret_key));
+            getRandom(secret_key);
         }
         while (!net.secKeyVerify(secret_key));
         CipherDocument result;
@@ -65,7 +64,6 @@ struct Cipher {
         scramble(last_block);
         ciphermsg[0 .. msg.data.length] = msg.data;
         const crc = msg.data.crc32Of;
-        //        writefln("crc %s", crc);
         ciphermsg[msg.data.length .. msg.data.length + CRC_SIZE] = crc;
 
         scope sharedECCKey = net.ECDHSecret(secret_key, pubkey);
@@ -114,7 +112,7 @@ struct Cipher {
 
     unittest {
         import tagion.utils.Miscellaneous : toHexString, decode;
-        import tagion.crypto.SecureNet : StdSecureNet;
+    import tagion.crypto.SecureNet;
         import tagion.hibon.HiBON : HiBON;
         import tagion.hibon.Document : Document;
         import tagion.basic.basic : fileId;
@@ -123,7 +121,7 @@ struct Cipher {
         import std.algorithm.searching : all, any;
 
         immutable passphrase = "Secret pass word";
-        auto net = new StdSecureNet;
+        auto net = new StdSecureNet; /// Only works with ECDSA for now 
         net.generateKeyPair(passphrase);
 
         immutable some_secret_message = "Text to be encrypted by ECC public key and " ~

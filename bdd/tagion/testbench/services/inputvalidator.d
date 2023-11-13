@@ -24,7 +24,7 @@ import tagion.hibon.HiBON;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONBase;
 import tagion.logger.Logger;
-import tagion.logger.LogRecords: LogInfo;
+import tagion.logger.LogRecords : LogInfo;
 import tagion.utils.pretend_safe_concurrency;
 
 enum feature = Feature(
@@ -62,7 +62,7 @@ class SendADocumentToTheSocket {
         sock.sendtimeout = msecs(1000);
         sock.sendbuf = 4096;
         sock.recvbuf = 4096;
-        int rc = sock.dial(sock_path /* nonblock : true */);
+        int rc = sock.dial(sock_path /* nonblock : true */ );
         check(rc == 0, format("Failed to dial %s", nng_errstr(rc)));
         HiRPC hirpc;
         auto hibon = new HiBON();
@@ -71,10 +71,12 @@ class SendADocumentToTheSocket {
         doc = sender.toDoc;
         rc = sock.send(doc.serialize);
         check(rc == 0, format("Failed to send %s", nng_errstr(rc)));
-        auto received = sock.receive!Buffer;
+        Document received = sock.receive!Buffer;
         check(sock.m_errno == 0, format("Failed to receive %s", nng_errstr(sock.m_errno)));
         check(received.length != 0, "Received empty buffer");
         check(Document(received) !is Document.init, "Received empty document");
+        auto receiver = hirpc.receive(received);
+        check(receiver.isResponse, "Expected an error");
 
         return result_ok;
     }
@@ -124,10 +126,13 @@ class SendNoneHiRPC {
 
         rc = sock.send(hibon.serialize);
         check(rc == 0, format("Failed to send %s", rc));
-        auto received = sock.receive!Buffer;
+        Document received = sock.receive!Buffer;
         check(sock.m_errno == 0, format("Failed to receive %s", nng_errstr(sock.m_errno)));
         check(received.length != 0, "Received empty buffer");
-        check(Document(received) !is Document.init, "Received empty document");
+        check(received !is Document.init, "Received empty document");
+        HiRPC hirpc = HiRPC(null);
+        auto receiver = hirpc.receive(received);
+        check(receiver.isError, "Expected an error");
 
         return result_ok;
     }
@@ -136,8 +141,8 @@ class SendNoneHiRPC {
     Document rejects() {
         import tagion.testbench.actor.util;
 
-        check(!concurrency.receiveTimeout(100.msecs, (inputDoc _, Document __) {}), 
-            "should not have received a doc");
+        check(!concurrency.receiveTimeout(100.msecs, (inputDoc _, Document __) {}),
+                "should not have received a doc");
         receiveOnlyTimeout!(LogInfo, const(Document));
 
         return result_ok;
@@ -180,10 +185,12 @@ class SendPartialHiBON {
         writefln("Buf lenght %s %s", partial_buf.length, Document(partial_buf).valid);
         rc = sock.send(partial_buf);
         check(rc == 0, format("Failed to send %s", nng_errstr(rc)));
-        auto received = sock.receive!Buffer;
+        Document received = sock.receive!Buffer;
         check(sock.m_errno == 0, format("Failed to receive %s", nng_errstr(sock.m_errno)));
         check(received.length != 0, "Received empty buffer");
         check(Document(received) !is Document.init, "Received empty document");
+        auto receiver = hirpc.receive(received);
+        check(receiver.isError, "Expected an error");
 
         return result_ok;
     }

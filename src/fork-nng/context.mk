@@ -20,6 +20,10 @@ else
 LD_NNG+=$(LIBNNG)
 endif
 
+ifndef DEBUG_DISABLE
+NNGFLAGS+=-DCMAKE_BUILD_TYPE=Debug
+endif
+
 # Used to check if the submodule has been updated
 NNG_HEAD := $(REPOROOT)/.git/modules/src/wrap-nng/nng/HEAD 
 NNG_GIT_MODULE := $(DSRC_NNG)/.git
@@ -31,8 +35,8 @@ $(NNG_HEAD): $(NNG_GIT_MODULE)
 
 $(LIBNNG): $(DTMP_NNG)/.way $(NNG_HEAD)
 	cd $(DTMP_NNG)
-	cmake $(DSRC_NNG)
-	$(MAKE)
+	cmake $(NNGFLAGS) $(DSRC_NNG)
+	cmake --build $(DTMP_NNG)
 
 ifdef USE_SYSTEM_LIBS
 nng: # NOTHING TO BUILD

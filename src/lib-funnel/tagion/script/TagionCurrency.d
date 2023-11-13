@@ -137,3 +137,24 @@ unittest {
         assertThrown([x,y].totalAmount);
     }
 }
+
+@safe 
+unittest {
+    // subtract tagioncurrency value from bignumber
+    import tagion.hibon.BigNumber;
+
+
+    BigNumber some_big_number = BigNumber(1000);
+    TagionCurrency to_subtract = 10.TGN;
+
+    auto t = some_big_number - to_subtract.axios;
+    // writefln("SOME BIG NUMBER: %s", t);
+
+
+
+
+
+
+
+
+}

@@ -88,8 +88,7 @@ rm -rf $wdir/bill*.hibon
 
 cd $ndir
 
-neuewelle -O
-jq --argjson nodes $nodes '.wave.number_of_nodes = $nodes' tagionwave.json
+$bdir/neuewelle -O --option=wave.number_of_nodes:$nodes
 
 cd -
 

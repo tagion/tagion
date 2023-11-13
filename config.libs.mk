@@ -15,6 +15,7 @@ libmobile: DFLAGS+=-i
 libmobile: LIBS+=$(LIBSECP256K1_STATIC)
 libmobile: DFILES:=${shell find $(DSRC)/lib-mobile -name "*.d"}
 
+$(LIBMOBILE): revision
 $(LIBMOBILE): secp256k1
 libmobile: $(LIBMOBILE) $(DFILES)
 

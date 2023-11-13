@@ -26,6 +26,7 @@ import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord;
 import tagion.crypto.Types;
 import tagion.basic.Types;
+import tagion.testbench.services.helper_functions;
 
 
 import std.range;
@@ -49,6 +50,7 @@ alias FeatureContext = Tuple!(
         ContractWhereInputIsSmallerThanOutput, "ContractWhereInputIsSmallerThanOutput",
         FeatureGroup*, "result"
 );
+import tagion.hashgraph.Refinement;
 
 @safe @Scenario("contract type without correct information",
         [])
@@ -58,6 +60,7 @@ class ContractTypeWithoutCorrectInformation {
     SignedContract signed_contract;
     HiRPC wallet1_hirpc;
     TagionCurrency start_amount1;
+    bool epoch_on_startup; 
 
     this(Options opts, ref StdSecureWallet wallet1) {
         this.wallet1 = wallet1;
@@ -103,6 +106,12 @@ class ContractTypeWithoutCorrectInformation {
     
     @Given("i have a malformed signed contract where the type is correct but the fields are wrong.")
     Document wrong() {
+        submask.subscribe(StdRefinement.epoch_created);
+        writeln("waiting for epoch");
+        epoch_on_startup = receiveTimeout(20.seconds, (LogInfo _, const(Document) __) {});
+        submask.unsubscribe(StdRefinement.epoch_created);
+        check(epoch_on_startup, "No epoch on startup");
+
 
         // the bill to pay
         const malicious_bill = MaliciousBill(10.TGN,sdt_t.init, Pubkey([1,2,3,4]), null);
@@ -128,6 +137,7 @@ class ContractTypeWithoutCorrectInformation {
 
     @When("i send the contract to the network.")
     Document network() {
+        check(epoch_on_startup, "No epoch on startup");
         submask.subscribe("error/tvm");
 
         sendSubmitHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1.net);
@@ -136,6 +146,7 @@ class ContractTypeWithoutCorrectInformation {
 
     @Then("the contract should be rejected.")
     Document rejected() {
+        check(epoch_on_startup, "No epoch on startup");
         auto error = receiveOnlyTimeout!(LogInfo, const(Document))(CONTRACT_TIMEOUT.seconds);
         submask.unsubscribe("error/tvm");
         return result_ok;
@@ -153,18 +164,21 @@ class InputsAreNotBillsInDart {
     HiRPC wallet1_hirpc;
     TagionCurrency start_amount1;
     const(Document) random_data;
+    bool epoch_on_startup;
 
-    this(Options opts, ref StdSecureWallet wallet1, const(Document) random_data) {
+    this(Options opts, ref StdSecureWallet wallet1, const(Document) random_data, bool epoch_on_startup) {
         this.wallet1 = wallet1;
         this.node1_opts = opts;
         wallet1_hirpc = HiRPC(wallet1.net);
         start_amount1 = wallet1.calcTotal(wallet1.account.bills);
         this.random_data = random_data;
+        this.epoch_on_startup = epoch_on_startup;
     }
     
 
     @Given("i have a malformed contract where the inputs are another type than bills.")
     Document bills() {
+        check(epoch_on_startup, "No epoch on startup");
         import tagion.script.common;
 
 
@@ -187,6 +201,7 @@ class InputsAreNotBillsInDart {
 
     @When("i send the contract to the network.")
     Document network() {
+        check(epoch_on_startup, "No epoch on startup");
         submask.subscribe("error/tvm");
         sendSubmitHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1.net);
         return result_ok;
@@ -194,6 +209,7 @@ class InputsAreNotBillsInDart {
 
     @Then("the contract should be rejected.")
     Document rejected() {
+        check(epoch_on_startup, "No epoch on startup");
         auto error = receiveOnlyTimeout!(LogInfo, const(Document))(CONTRACT_TIMEOUT.seconds);
         submask.unsubscribe("error/tvm");
         return result_ok;
@@ -214,16 +230,19 @@ class NegativeAmountAndZeroAmountOnOutputBills {
 
     TagionBill[] used_bills;
     TagionBill[] output_bills;
+    bool epoch_on_startup;
     
-    this(Options opts, ref StdSecureWallet wallet1) {
+    this(Options opts, ref StdSecureWallet wallet1, bool epoch_on_startup) {
         this.wallet1 = wallet1;
         this.node1_opts = opts;
         wallet1_hirpc = HiRPC(wallet1.net);
         start_amount1 = wallet1.calcTotal(wallet1.account.bills);
+        this.epoch_on_startup = epoch_on_startup;
     }
 
     @Given("i have three contracts. One with output that is zero. Another where it is negative. And one with a negative and a valid output.")
     Document output() {
+        check(epoch_on_startup, "No epoch on startup");
         import tagion.script.common;
         import tagion.utils.StdTime;
         import tagion.hibon.HiBONtoText;
@@ -286,6 +305,7 @@ class NegativeAmountAndZeroAmountOnOutputBills {
 
     @When("i send the contracts to the network.")
     Document network() {
+        check(epoch_on_startup, "No epoch on startup");
         submask.subscribe("error/tvm");
         foreach(contract; [zero_contract, negative_contract, combined_contract]) {
             sendSubmitHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(contract), wallet1.net);
@@ -300,23 +320,20 @@ class NegativeAmountAndZeroAmountOnOutputBills {
 
     @Then("the contracts should be rejected.")
     Document rejected() {
+        check(epoch_on_startup, "No epoch on startup");
         import tagion.dart.DART;
         auto req = wallet1.getRequestCheckWallet(wallet1_hirpc, used_bills);
-        auto received_doc = sendDARTHiRPC(node1_opts.dart_interface.sock_addr, req);
-        check(received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", received_doc.toPretty)); 
-
-        auto received = wallet1_hirpc.receive(received_doc);
+        auto received = sendDARTHiRPC(node1_opts.dart_interface.sock_addr, req, wallet1_hirpc);
         auto not_in_dart = received.response.result[DART.Params.dart_indices].get!Document[].map!(d => d.get!Buffer).array;
         check(not_in_dart.length == 0, "all the inputs should still be in the dart");
 
+
         auto output_req = wallet1.getRequestCheckWallet(wallet1_hirpc, output_bills);
-        auto output_received_doc = sendDARTHiRPC(node1_opts.dart_interface.sock_addr, output_req);
-        check(output_received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", output_received_doc.toPretty)); 
-        auto output_received = wallet1_hirpc.receive(output_received_doc);
+        auto output_received = sendDARTHiRPC(node1_opts.dart_interface.sock_addr, output_req, wallet1_hirpc);
         auto output_not_in_dart = output_received.response.result[DART.Params.dart_indices].get!Document[].map!(d => d.get!Buffer).array;
 
 
-        writefln("wowo OUTPUT %s",output_received_doc.toPretty);
+        writefln("wowo OUTPUT %s",output_received.toPretty);
         check(output_not_in_dart.length == 2, format("No inputs should have been added %s", output_not_in_dart.length));
 
         return result_ok;
@@ -331,16 +348,19 @@ class ContractWhereInputIsSmallerThanOutput {
     SignedContract signed_contract;
     HiRPC wallet1_hirpc;
     TagionCurrency start_amount1;
+    bool epoch_on_startup;
 
-    this(Options opts, ref StdSecureWallet wallet1) {
+    this(Options opts, ref StdSecureWallet wallet1, bool epoch_on_startup) {
         this.wallet1 = wallet1;
         this.node1_opts = opts;
         wallet1_hirpc = HiRPC(wallet1.net);
         start_amount1 = wallet1.calcTotal(wallet1.account.bills);
+        this.epoch_on_startup = epoch_on_startup;
     }
 
     @Given("i have a contract where the input bill is smaller than the output bill.")
     Document bill() {
+        check(epoch_on_startup, "No epoch on startup");
         auto bill = wallet1.requestBill(100_000.TGN);
 
         PayScript pay_script;
@@ -362,12 +382,14 @@ class ContractWhereInputIsSmallerThanOutput {
 
     @When("i send the contract to the network.")
     Document network() {
+        check(epoch_on_startup, "No epoch on startup");
         sendSubmitHiRPC(node1_opts.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract), wallet1.net);
         return result_ok;
     }
 
     @Then("the contract should be rejected.")
     Document rejected() {
+        check(epoch_on_startup, "No epoch on startup");
         auto error = receiveOnlyTimeout!(LogInfo, const(Document))(CONTRACT_TIMEOUT.seconds);
         return result_ok;
     }

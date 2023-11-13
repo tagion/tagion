@@ -81,24 +81,67 @@ class NativeSecp256k1Musig : NativeSecp256k1Schnorr {
 
     }
 
+    @trusted
+    bool musigPubkeyAggregated(
+        ref secp256k1_xonly_pubkey pubkey_agg,
+        const(ubyte[][]) pubkeys) const
+in(pubkeys.all!((pkey) => pkey.length == PUBKEY_SIZE))
+do {
+    secp256k1_pubkey[] xy_pubkeys;
+    xy_pubkeys.length = pubkeys.length;
+
+    foreach(ref xy_pubkey, pubkey; lockstep(xy_pubkeys, pubkeys)) {
+
+        //auto xonly_pubkey=cast(secp256k1_xonly_pubkey*)&xy_pubkey;
+        const ret = secp256k1_ec_pubkey_parse(_ctx, &xy_pubkey, &pubkey[0], pubkey.length);
+        if (ret == 0) {
+            return false;
+        }
+    }
+   return musigPubkeyAggregated(pubkey_agg, xy_pubkeys);
+}
     /**
     Ditto except that it produce a cache which can be used for musig signing
 */
     @trusted
     bool musigPubkeyAggregated(
             ref secp256k1_musig_keyagg_cache cache,
-            ref secp256k1_xonly_pubkey pubkey_agg,
+            ref secp256k1_pubkey pubkey_agg,
             const(secp256k1_pubkey[]) pubkeys) const {
         const _pubkeys = pubkeys.map!((ref pkey) => &pkey).array;
-        const ret = secp256k1_musig_pubkey_agg(
+        int ret = secp256k1_musig_pubkey_agg(
                 _ctx,
                 null,
-                &pubkey_agg,
+               null, 
                 &cache,
                 &_pubkeys[0],
                 pubkeys.length);
+        if (ret != 0) {
+            ret =   secp256k1_musig_pubkey_get(_ctx, &pubkey_agg, &cache);  
+    }
         return ret != 0;
 
+    }
+
+    @trusted
+    immutable(ubyte[]) musigPubkeyAggregated(const(ubyte[][]) pubkeys) const
+    in (pubkeys.all!(pkey => pkey.length == XONLY_PUBKEY_SIZE))
+    do {
+        secp256k1_xonly_pubkey pubkey_agg;
+        //secp256k1_xonly_pubkey[] xonly_pubkey;
+        secp256k1_pubkey[] _pubkeys;
+        _pubkeys.length = pubkeys.length;
+        foreach (i, pkey; pubkeys) {
+            secp256k1_xonly_pubkey xonly_pubkey;
+            {
+                const ret = secp256k1_xonly_pubkey_parse(_ctx, &xonly_pubkey, &pkey[0]);
+                if (ret == 0) {
+                    return null;
+                }
+                int pk_parity;
+            }
+        }
+        return null;
     }
 
     @trusted
@@ -225,7 +268,7 @@ unittest {
     const message_samples = iota(3)
         .map!(index => format("message %d", index))
         .map!(text => text.representation)
-        .map!(buf => sha256(buf))
+        .map!(buf => buf.sha256)
         .array;
     //
     // This of secret passphrases use to generate keypairs
@@ -233,7 +276,7 @@ unittest {
     const secret_passphrases = iota(num_of_signers)
         .map!(index => format("very secret word %d", index))
         .map!(text => text.representation)
-        .map!(buf => sha256(buf))
+        .map!(buf => buf.sha256)
         .array;
     //
     // Create the keypairs
@@ -259,13 +302,14 @@ unittest {
     // Aggregated common pubkey
     //
     secp256k1_musig_keyagg_cache cache;
-    secp256k1_xonly_pubkey agg_pubkey;
+    secp256k1_pubkey agg_pubkey;
     {
         const ret = crypt.musigPubkeyAggregated(cache, agg_pubkey, pubkeys);
         writefln("Agg pubkey %(%02x%)", agg_pubkey.data);
         writefln("ret=%s", ret);
         assert(ret, "Could not aggregated the pubkeys");
     }
+        version(none) {
     //
     // Signers informations 
     //
@@ -288,20 +332,22 @@ unittest {
         const ret = crypt.musigXonlyPubkeyTweakAdd(cache, xonly_tweak, &tweaked_pubkey);
         assert(ret, "Tweak of the pubkey failed");
     }
-    //secp256k1_xonly_pubkey tweaked_xonly_pubkey;
+    //
+    // secp256k1_xonly_pubkey tweaked_xonly_pubkey;
+    //    
     {
         const ret = crypt.xonlyPubkey(tweaked_pubkey, agg_pubkey);
         assert(ret, "Could not produce xonly pubkey");
+    }
         writefln("xonly_pubkey=%(%02x%)", agg_pubkey.data);
     }
-
     //
     // Generate nonce session id (Should only be used one in the unittest it's fixed)
     //
     const session_ids = iota(secret_passphrases.length)
         .map!(index => format("Session id nonce %d", index))
         .map!(text => text.representation)
-        .map!(buf => sha256(buf))
+        .map!(buf => buf.sha256)
         .array;
 
     //
@@ -382,4 +428,50 @@ unittest {
         const ret = crypt.verify(signature, message_samples[0], agg_pubkey);
         assert(ret, "Failed to verify multi signature");
     }
+}
+
+unittest { /// Simple musig sign
+    import std.range;
+    import std.algorithm;
+    import std.array;
+    import std.format;
+    import std.stdio;
+
+    const msg = "Message to be signed".representation.sha256;
+    enum number_of_signers = 4;
+    auto index_range = iota(number_of_signers);
+    const secrets = index_range.map!(index => format("Secret %d", index).representation.sha256).array;
+    auto crypt = new NativeSecp256k1Musig;
+    ubyte[][] keypairs;
+    keypairs.length = secrets.length;
+    index_range
+        .each!(index => crypt.createKeyPair(secrets[index], keypairs[index]));
+
+    const pubkeys = keypairs.map!(keypair => crypt.getPubkey(keypair)).array;
+
+    pubkeys.each!(pubkey => writefln("%(%02x%)", pubkey));
+
+    foreach (number_of_participants; iota(2, number_of_signers + 1)) {
+        writefln("number_of_participants=%s", number_of_participants);
+        //secp256k1_musig_keyagg_cache cache;
+        secp256k1_xonly_pubkey agg_pubkey;
+        {
+            const ret=crypt.musigPubkeyAggregated(agg_pubkey, pubkeys[0..number_of_participants]);
+            assert(ret, "Failed to aggregate the public keys");
+        }
+        const session=format("Some random nonce %s", number_of_participants)
+        .representation.sha256;
+        secp256k1_musig_partial_sig[] partial_signatures;
+        secp256k1_musig_secnonce[] secnonces;
+        secnonces.length=partial_signatures.length=number_of_participants;
+        //secp256k1_musig_keyagg_cache cache;
+        //iota(number_of_participants)
+        
+        {
+            ubyte[] signature;
+            //const ret=crypt.musigSignAgg(signature
+        }
+
+    }
+
 }

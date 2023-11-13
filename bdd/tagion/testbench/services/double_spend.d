@@ -25,6 +25,7 @@ import tagion.dart.DARTcrud;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord;
 import tagion.hashgraph.Refinement;
+import tagion.testbench.services.helper_functions;
 
 import std.range;
 import std.algorithm;
@@ -72,9 +73,6 @@ class SameInputsSpendOnOneContract {
 
     @Given("i have a malformed contract correctly signed with two inputs which are the same")
     Document same() {
-
-
-
         const amount_to_pay = 1100.TGN;
         auto payment_request = wallet2.requestBill(amount_to_pay);
 
@@ -266,27 +264,12 @@ class DifferentContractsDifferentNodes {
     Document through() {
         (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
 
-        auto wallet1_dartcheckread = wallet1.getRequestCheckWallet(wallet1_hirpc);
-        auto wallet1_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet1_dartcheckread);
-        check(wallet1_received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", wallet1_received_doc.toPretty)); 
 
-        writefln("RECEIVED RESPONSE: %s", wallet1_received_doc.toPretty);
-        auto wallet1_received = wallet1_hirpc.receive(wallet1_received_doc);
-        check(wallet1.setResponseCheckRead(wallet1_received), "wallet1 not updated succesfully");
-
-        auto wallet1_amount = wallet1.calcTotal(wallet1.account.bills);
+        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
         writefln("WALLET 1 amount: %s", wallet1_amount);
         check(wallet1_amount == start_amount1 - fee, "did not receive tx");
-
-        auto wallet2_dartcheckread = wallet2.getRequestCheckWallet(wallet2_hirpc);
-        auto wallet2_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet2_dartcheckread);
-        check(wallet2_received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", wallet2_received_doc.toPretty)); 
-
-        writefln("RECEIVED RESPONSE: %s", wallet2_received_doc.toPretty);
-        auto wallet2_received = wallet2_hirpc.receive(wallet2_received_doc);
-        check(wallet2.setResponseCheckRead(wallet2_received), "wallet2 not updated succesfully");
         
-        auto wallet2_amount = wallet1.calcTotal(wallet1.account.bills);
+        auto wallet2_amount = getWalletUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet2_hirpc);
         writefln("WALLET 2 amount: %s", wallet2_amount);
         check(wallet2_amount == start_amount2 - fee, "did not receive tx");
         return result_ok;
@@ -347,30 +330,20 @@ class SameContractDifferentNodes {
 
     @Then("the first contract should go through and the second one should be rejected.")
     Document rejected() {
-        auto wallet1_dartcheckread = wallet1.getRequestCheckWallet(wallet1_hirpc);
-        auto wallet1_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet1_dartcheckread);
-        check(wallet1_received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", wallet1_received_doc.toPretty)); 
-
-        // writefln("RECEIVED RESPONSE: %s", wallet1_received_doc.toPretty);
-        auto wallet1_received = wallet1_hirpc.receive(wallet1_received_doc);
-        check(wallet1.setResponseCheckRead(wallet1_received), "wallet1 not updated succesfully");
-
-        auto wallet1_amount = wallet1.calcTotal(wallet1.account.bills);
+        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
         writefln("WALLET 1 amount: %s", wallet1_amount);
-        check(wallet1_amount == start_amount1-amount-fee, "wallet 1 did not lose correct amount of money");
+        const wallet1_expected = start_amount1-amount-fee;
+        check(wallet1_amount == wallet1_expected, format("wallet 1 did not lose correct amount of money, should have %s, had %s", wallet1_expected, wallet1_amount));
 
-        auto wallet2_dartcheckread = wallet2.getRequestCheckWallet(wallet2_hirpc);
-        auto wallet2_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet2_dartcheckread);
-        check(wallet2_received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", wallet2_received_doc.toPretty)); 
-
-        // writefln("RECEIVED RESPONSE: %s", wallet2_received_doc.toPretty);
-        auto wallet2_received = wallet2_hirpc.receive(wallet2_received_doc);
-        check(wallet2.setResponseCheckRead(wallet2_received), "wallet2 not updated succesfully");
-        
-        auto wallet2_amount = wallet2.calcTotal(wallet2.account.bills);
+        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts1.dart_interface.sock_addr, wallet2_hirpc);
         writefln("WALLET 2 amount: %s", wallet2_amount);
         check(wallet2_amount == start_amount2+amount, "did not receive money");
         return result_ok;
+
+
+        
+        const wallet2_expected = start_amount2+amount;
+        check(wallet2_amount == wallet2_expected, format("wallet 2 did not lose correct amount of money, should have %s, had %s", wallet2_expected, wallet2_amount));
     }
 
 }
@@ -463,20 +436,8 @@ class SameContractInDifferentEpochs {
 
     @Then("the first contract should go through and the second one should be rejected.")
     Document rejected() {
-        auto wallet1_dartcheckread = wallet1.getRequestCheckWallet(wallet1_hirpc);
-        auto wallet1_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet1_dartcheckread);
-        check(wallet1_received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", wallet1_received_doc.toPretty)); 
-        auto wallet1_received = wallet1_hirpc.receive(wallet1_received_doc);
-        check(wallet1.setResponseCheckRead(wallet1_received), "wallet1 not updated succesfully");
-
-        auto wallet2_dartcheckread = wallet2.getRequestCheckWallet(wallet2_hirpc);
-        auto wallet2_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet2_dartcheckread);
-        check(wallet2_received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", wallet2_received_doc.toPretty)); 
-        auto wallet2_received = wallet2_hirpc.receive(wallet2_received_doc);
-        check(wallet2.setResponseCheckRead(wallet2_received), "wallet2 not updated succesfully");
-        
-        auto wallet1_amount = wallet1.calcTotal(wallet1.account.bills);
-        auto wallet2_amount = wallet2.calcTotal(wallet2.account.bills);
+        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
+        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts1.dart_interface.sock_addr, wallet2_hirpc);
         writefln("WALLET 1 amount: %s", wallet1_amount);
         writefln("WALLET 2 amount: %s", wallet2_amount);
 
@@ -581,18 +542,8 @@ class SameContractInDifferentEpochsDifferentNode {
 
     @Then("the first contract should go through and the second one should be rejected.")
     Document rejected() {
-        auto wallet1_dartcheckread = wallet1.getRequestCheckWallet(wallet1_hirpc);
-        auto wallet1_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet1_dartcheckread);
-        auto wallet1_received = wallet1_hirpc.receive(wallet1_received_doc);
-        check(wallet1.setResponseCheckRead(wallet1_received), "wallet1 not updated succesfully");
-
-        auto wallet2_dartcheckread = wallet2.getRequestCheckWallet(wallet2_hirpc);
-        auto wallet2_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet2_dartcheckread);
-        auto wallet2_received = wallet2_hirpc.receive(wallet2_received_doc);
-        check(wallet2.setResponseCheckRead(wallet2_received), "wallet2 not updated succesfully");
-        
-        auto wallet1_amount = wallet1.calcTotal(wallet1.account.bills);
-        auto wallet2_amount = wallet2.calcTotal(wallet2.account.bills);
+        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
+        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts1.dart_interface.sock_addr, wallet2_hirpc);
         writefln("WALLET 1 amount: %s", wallet1_amount);
         writefln("WALLET 2 amount: %s", wallet2_amount);
 
@@ -670,36 +621,17 @@ class TwoContractsSameOutput {
 
     @Then("only one output should be produced.")
     Document produced() {
-        auto wallet1_dartcheckread = wallet1.getRequestCheckWallet(wallet1_hirpc);
-        auto wallet1_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet1_dartcheckread);
-
-        // writefln("RECEIVED RESPONSE: %s", wallet1_received_doc.toPretty);
-        auto wallet1_received = wallet1_hirpc.receive(wallet1_received_doc);
-        check(wallet1.setResponseCheckRead(wallet1_received), "wallet1 not updated succesfully");
-
-        auto wallet1_amount = wallet1.calcTotal(wallet1.account.bills);
+        
+        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
         writefln("WALLET 1 amount: %s", wallet1_amount);
         const expected = start_amount1-amount-fee;
         check(wallet1_amount == expected, format("wallet 1 did not lose correct amount of money should have %s had %s", expected, wallet1_amount));
 
-        auto wallet2_dartcheckread = wallet2.getRequestCheckWallet(wallet2_hirpc);
-        auto wallet2_received_doc = sendDARTHiRPC(opts2.dart_interface.sock_addr, wallet2_dartcheckread);
-
-        auto wallet2_received = wallet2_hirpc.receive(wallet2_received_doc);
-        check(wallet2.setResponseCheckRead(wallet2_received), "wallet2 not updated succesfully");
-
-        auto wallet2_amount = wallet2.calcTotal(wallet2.account.bills);
+        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts2.dart_interface.sock_addr, wallet2_hirpc);
         writefln("WALLET 2 amount: %s", wallet2_amount);
         check(wallet2_amount == start_amount2-amount-fee, "wallet 2 did not lose correct amount of money");
 
-        auto wallet3_dartcheckread = wallet3.getRequestCheckWallet(wallet3_hirpc);
-        auto wallet3_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet3_dartcheckread);
-
-        // writefln("RECEIVED RESPONSE: %s", wallet3_received_doc.toPretty);
-        auto wallet3_received = wallet3_hirpc.receive(wallet3_received_doc);
-        check(wallet3.setResponseCheckRead(wallet3_received), "wallet3 not updated succesfully");
-        
-        auto wallet3_amount = wallet3.calcTotal(wallet3.account.bills);
+        auto wallet3_amount = getWalletUpdateAmount(wallet3, opts1.dart_interface.sock_addr, wallet3_hirpc);
         writefln("WALLET 3 amount: %s", wallet3_amount);
         check(wallet3_amount == start_amount3+amount, format("did not receive money correct amount of money should have %s had %s", start_amount3+amount, wallet3_amount));
         return result_ok;
@@ -763,25 +695,12 @@ class BillAge {
     Document rejected() {
         (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
 
-        auto wallet1_dartcheckread = wallet1.getRequestCheckWallet(wallet1_hirpc);
-        auto wallet1_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet1_dartcheckread);
-
-        writefln("RECEIVED RESPONSE: %s", wallet1_received_doc.toPretty);
-        auto wallet1_received = wallet1_hirpc.receive(wallet1_received_doc);
-        check(wallet1.setResponseCheckRead(wallet1_received), "wallet1 not updated succesfully");
-
-
+        auto wallet1_amount = getWalletUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
         auto wallet1_total_amount = wallet1.account.total;
         writefln("WALLET 1 TOTAL amount: %s", wallet1_total_amount);
         check(wallet1_total_amount == start_amount1, format("wallet total amount not correct. expected: %s, had %s", start_amount1, wallet1_total_amount));
 
-        auto wallet2_dartcheckread = wallet2.getRequestCheckWallet(wallet2_hirpc);
-        auto wallet2_received_doc = sendDARTHiRPC(opts1.dart_interface.sock_addr, wallet2_dartcheckread);
-
-        auto wallet2_received = wallet2_hirpc.receive(wallet2_received_doc);
-        check(wallet2.setResponseCheckRead(wallet2_received), "wallet2 not updated succesfully");
-        
-        auto wallet2_amount = wallet2.calcTotal(wallet2.account.bills);
+        auto wallet2_amount = getWalletUpdateAmount(wallet2, opts1.dart_interface.sock_addr, wallet2_hirpc);
         writefln("WALLET 2 amount: %s", wallet2_amount);
         check(wallet2_amount == start_amount2, "should not receive new money");
         

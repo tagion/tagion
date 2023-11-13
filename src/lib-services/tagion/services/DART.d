@@ -27,6 +27,7 @@ import tagion.hibon.HiBONRecord : isRecord;
 import tagion.logger.Logger;
 import tagion.services.replicator;
 import tagion.services.options : TaskNames;
+import tagion.dart.DARTException;
 
 @safe
 struct DARTOptions {
@@ -68,15 +69,16 @@ struct DARTService {
         scope (exit) {
             db.close();
         }
+        scope(failure) {
+            log("DART aborting with failure");
+        }
 
         void read(dartReadRR req, immutable(DARTIndex)[] fingerprints) @safe {
             import tagion.hibon.HiBONtoText;
             import std.algorithm;
             import tagion.utils.Miscellaneous;
 
-            log("DARTREAD: %s", fingerprints.map!(f => f.toHexString));
             RecordFactory.Recorder read_recorder = db.loads(fingerprints);
-            log("%s", read_recorder);
             req.respond(RecordFactory.uniqueRecorder(read_recorder));
         }
 
@@ -94,7 +96,6 @@ struct DARTService {
         log("Starting dart with %s", db.bullseye.toHexString);
 
         auto hirpc = HiRPC(net);
-        auto empty_hirpc = HiRPC(null);
         import tagion.Keywords;
 
         void dartHiRPC(dartHiRPCRR req, Document doc) {
@@ -109,7 +110,7 @@ struct DARTService {
                 return;
             }
 
-            immutable receiver = empty_hirpc.receive(doc);
+            immutable receiver = hirpc.receive(doc);
 
             if (receiver.method.name == "search") {
                 log("SEARCH REQUEST");
@@ -135,17 +136,36 @@ struct DARTService {
 
             
             Document result = db(receiver, false).toDoc;
+            log("darthirpc response: %s", result.toPretty);
             req.respond(result);
         }
 
-        void modify(dartModifyRR req, immutable(RecordFactory.Recorder) recorder, immutable(long) epoch_number) @safe {
+        void modify(dartModifyRR req, immutable(RecordFactory.Recorder) recorder, immutable(long) epoch_number) @trusted {
+
             log("Received modify request with length=%s", recorder.length);
 
-            auto eye = Fingerprint(db.modify(recorder));
 
-            req.respond(eye);
+            immutable fingerprint_before = Fingerprint(db.bullseye);
+            import core.exception : AssertError;
+            try {
 
-            locate(task_names.replicator).send(SendRecorder(), recorder, eye, epoch_number);
+                
+                auto eye = db.modify(recorder);
+                log("New bullseye is %s", eye.toHexString);
+
+                req.respond(eye);
+                auto replicator_tid = locate(task_names.replicator);
+                if (replicator_tid !is Tid.init) {
+                    replicator_tid.send(SendRecorder(), recorder, eye, epoch_number);
+                }
+            } catch(AssertError e) {
+                log("Received ASSERT ERROR bullseye before %(%02x%), %s archives that were tried to be added \n%s",fingerprint_before, e, recorder.toPretty);
+                fail(e);
+            }
+            catch(Error e) {
+                log("DART Error %s", e);
+            }
+
         }
 
         void bullseye(dartBullseyeRR req) @safe {

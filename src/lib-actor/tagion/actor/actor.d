@@ -97,7 +97,10 @@ struct Request(string name, ID = uint) {
     /// Send back some data to the task who sent the request
     void respond(Args...)(Args args) {
         auto res = Response(msg, id);
-        locate(task_name).send(res, args);
+        auto tid = locate(task_name);
+        if (tid !is Tid.init) {
+            locate(task_name).send(res, args);
+        }
     }
 }
 
@@ -273,6 +276,8 @@ ActorHandle!A handle(A)(string task_name) @safe if (isActor!A) {
 
 ActorHandle!A spawn(A, Args...)(immutable(A) actor, string name, Args args) @safe nothrow
 if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
+    import core.exception : AssertError;
+
     try {
         Tid tid;
         tid = concurrency.spawn((immutable(A) _actor, string name, Args args) @trusted nothrow{
@@ -295,6 +300,12 @@ if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
             }
             catch (Exception t) {
                 fail(t);
+            } // This is bad but, We catch assert per thread because there is no message otherwise, when runnning multithreaded
+            catch (AssertError e) {
+                import tagion.GlobalSignals;
+
+                log(e);
+                stopsignal.set;
             }
             end;
         }, actor, name, args);
@@ -396,6 +407,9 @@ void setState(Ctrl ctrl) @safe nothrow {
         assert(thisActor.task_name !is string.init, "Can not set the state for a task with no name");
         ownerTid.prioritySend(CtrlMsg(thisActor.task_name, ctrl));
     }
+    catch (TidMissingException e) {
+        log.error("Failed to set state %s", e.message);
+    }
     catch (Exception e) {
         log.error("Failed to set state");
         log(e);
@@ -425,6 +439,10 @@ if (allSatisfy!(isSafe, Args)) {
                 ownerTid.prioritySend(tf);
             }
         };
+    }
+
+    scope (failure) {
+        setState(Ctrl.END);
     }
 
     setState(Ctrl.ALIVE); // Tell the owner that you are running
@@ -468,6 +486,10 @@ if (allSatisfy!(isSafe, Args)) {
                 ownerTid.prioritySend(tf);
             }
         };
+    }
+
+    scope (failure) {
+        setState(Ctrl.END);
     }
 
     setState(Ctrl.ALIVE); // Tell the owner that you are running

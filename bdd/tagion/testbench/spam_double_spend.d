@@ -24,6 +24,7 @@ mixin Main!(_main);
 void wrap_neuewelle(immutable(string)[] args) {
     neuewelle._main(cast(string[]) args);
 }
+
 int _main(string[] args) {
     auto module_path = env.bdd_log.buildPath(__MODULE__);
 
@@ -39,7 +40,6 @@ int _main(string[] args) {
     local_options.wave.prefix_format = "Spam DoubleSpend Node_%s_";
     local_options.subscription.address = contract_sock_addr("SPAM_SUBSCRIPTION");
 
-    
     local_options.save(config_file);
 
     import std.format;
@@ -77,10 +77,10 @@ int _main(string[] args) {
         w.addBill(b);
         return b;
     }
-    
+
     TagionBill[] bills;
     foreach (ref wallet; wallets) {
-        foreach(i; 0..3) {
+        foreach (i; 0 .. 3) {
             bills ~= requestAndForce(wallet, 1000.TGN);
         }
     }
@@ -105,32 +105,28 @@ int _main(string[] args) {
     immutable neuewelle_args = ["spam_double_spend_test", config_file, "--nodeopts", module_path]; // ~ args;
     auto tid = spawn(&wrap_neuewelle, neuewelle_args);
 
-    
     import tagion.utils.JSONCommon : load;
 
     Options[] node_opts;
-    
-    Thread.sleep(5.seconds);
-    foreach(i; 0..local_options.wave.number_of_nodes) {
-        const filename = buildPath(module_path, format(local_options.wave.prefix_format~"opts", i).setExtension(FileExtension.json));
+
+    Thread.sleep(15.seconds);
+    foreach (i; 0 .. local_options.wave.number_of_nodes) {
+        const filename = buildPath(module_path, format(local_options.wave.prefix_format ~ "opts", i).setExtension(FileExtension
+                .json));
         writeln(filename);
         Options node_opt = load!(Options)(filename);
         node_opts ~= node_opt;
     }
-    
 
     writefln("INPUT SOCKET ADDRESS %s", node_opts[0].inputvalidator.sock_addr);
 
-    Thread.sleep(15.seconds);
     auto feature = automation!(spam_double_spend);
     feature.SpamOneNodeUntil10EpochsHaveOccured(node_opts, wallets[0], wallets[1]);
     feature.SpamMultipleNodesUntil10EpochsHaveOccured(node_opts, wallets[2], wallets[3]);
 
     feature.run();
 
-
-
-    neuewelle.signal_handler(0);
+    stopsignal.set;
     Thread.sleep(6.seconds);
     return 0;
 }

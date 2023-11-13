@@ -17,6 +17,7 @@ import std.range;
 import std.algorithm;
 import std.file : exists, remove;
 import core.stdc.string;
+import std.string : splitLines;
 
 import Wallet = tagion.wallet.SecureWallet;
 import tagion.script.TagionCurrency;
@@ -38,6 +39,8 @@ import tagion.crypto.Cipher;
 import tagion.utils.StdTime;
 import tagion.wallet.WalletException;
 
+enum TAGION_HASH = import("revision.mixin").splitLines[2];
+
 /// Used for describing the d-runtime status
 enum DrtStatus {
     DEFAULT_STS,
@@ -58,6 +61,10 @@ static StdSecureWallet[string] wallets;
 static Exception last_error;
 /// Functions called from d-lang through dart:ffi
 extern (C) {
+    enum : uint {
+        NOT_LOGGED_IN = 9,
+        PAYMENT_ERROR = 2,
+    }
 
     // Staritng d-runtime
     export static int64_t start_rt() {
@@ -238,10 +245,10 @@ extern (C) {
     export uint create_nft_contract(
             uint32_t* signedContractPtr,
             uint8_t* nftPtr,
-            const uint32_t nftLen){
-        
+            const uint32_t nftLen) {
+
         immutable nftBuff = cast(immutable)(nftPtr[0 .. nftLen]);
-        
+
         if (__wallet_storage.wallet.isLoggedin()) {
             auto nft = Document(nftBuff);
 
@@ -265,7 +272,10 @@ extern (C) {
             const uint8_t* invoicePtr,
             const uint32_t invoiceLen,
             const double amount,
-            double* fees) {
+            double* fees,
+            uint32_t errorLen,
+            uint8_t* errorPtr,
+        ) {
 
         immutable invoiceBuff = cast(immutable)(invoicePtr[0 .. invoiceLen]);
         TagionCurrency tgn_fees;
@@ -274,28 +284,37 @@ extern (C) {
 
         }
 
-        if (__wallet_storage.wallet.isLoggedin()) {
-            auto invoice = Invoice(Document(invoiceBuff));
-            invoice.amount = TagionCurrency(amount);
+        if (!__wallet_storage.wallet.isLoggedin()) {
+            return NOT_LOGGED_IN;
+        }   
 
-            SignedContract signed_contract;
-            const can_pay =
-                __wallet_storage.wallet.payment([invoice], signed_contract, tgn_fees);
-            if (can_pay) {
-                /*
-                HiRPC hirpc;
-                const sender = hirpc.action("transaction", signed_contract.toHiBON);
-                const contractDocId = recyclerDoc.create(Document(sender.toHiBON));
-*/
-                const contractDocId = recyclerDoc.create(signed_contract.toDoc);
-                // Save wallet state to file.
-                __wallet_storage.write;
+        auto invoice = Invoice(Document(invoiceBuff));
+        invoice.amount = TagionCurrency(amount);
 
-                *contractPtr = contractDocId;
-                return 1;
-            }
+        SignedContract signed_contract;
+        const can_pay =
+            __wallet_storage.wallet.payment([invoice], signed_contract, tgn_fees);
+        if (can_pay) {
+            const contract_net = __wallet_storage.wallet.net;
+            const hirpc = HiRPC(contract_net);
+            const contract = hirpc.submit(signed_contract);
+            const contractDocId = recyclerDoc.create(contract.toDoc);
+            // Save wallet state to file.
+            __wallet_storage.write;
+
+            *contractPtr = contractDocId;
+            return 1;
         }
-        return 0;
+        auto error_result = new HiBON();
+        if (can_pay.msg is null) {
+            error_result["error"] = "error is null?";
+        } else {
+            error_result["error"] = can_pay.msg;
+        }
+        const errorDocId = recyclerDoc.create(Document(error_result));
+        *errorPtr = cast(uint8_t) errorDocId;
+
+        return PAYMENT_ERROR;
     }
 
     export uint create_invoice(
@@ -323,14 +342,14 @@ extern (C) {
 
     export uint request_update(uint8_t* requestPtr) {
 
-        if (__wallet_storage.wallet.isLoggedin()) {
-            const request = __wallet_storage.wallet.getRequestUpdateWallet();
-            const requestDocId = recyclerDoc.create(request.toDoc);
-            *requestPtr = cast(uint8_t) requestDocId;
-            return 1;
-        }
-        return 0;
+        if (!__wallet_storage.wallet.isLoggedin()) {
+            return NOT_LOGGED_IN;
 
+        }
+        const request = __wallet_storage.wallet.getRequestUpdateWallet();
+        const requestDocId = recyclerDoc.create(request.toDoc);
+        *requestPtr = cast(uint8_t) requestDocId;
+        return 1;
     }
 
     export uint update_response(uint8_t* responsePtr, uint32_t responseLen) {
@@ -338,25 +357,24 @@ extern (C) {
 
         immutable response = cast(immutable)(responsePtr[0 .. responseLen]);
 
-
-        if (__wallet_storage.wallet.isLoggedin()) {
-
-            HiRPC hirpc;
-
-            try {
-                auto receiver = hirpc.receive(Document(response));
-                const result = __wallet_storage.wallet.setResponseUpdateWallet(receiver);
-
-                if (result) {
-                    // Save wallet state to file.
-                    __wallet_storage.write;
-                    return 1;
-                }
-            } catch(HiBONException e) {
-                return 0;
-            }
+        if (!__wallet_storage.wallet.isLoggedin()) {
+            return NOT_LOGGED_IN;
         }
 
+        HiRPC hirpc = HiRPC(__wallet_storage.wallet.net);
+        try {
+            auto receiver = hirpc.receive(Document(response));
+            const result = __wallet_storage.wallet.setResponseUpdateWallet(receiver);
+
+            if (result) {
+                // Save wallet state to file.
+                __wallet_storage.write;
+                return 1;
+            }
+        }
+        catch (HiBONException e) {
+            return 0;
+        }
         return 0;
     }
 
@@ -377,7 +395,6 @@ extern (C) {
         // resultPtr = cast(char*) &result[0];
         // *resultLen = cast(uint32_t) result.length;
     }
-
 
     @safe
     export double get_locked_balance() {
@@ -573,12 +590,12 @@ extern (C) {
         immutable invoiceBuffer = cast(immutable)(invoicePtr[0 .. invoiceLen]);
 
         if (__wallet_storage.wallet.isLoggedin()) {
-            
+
             auto amount = TagionCurrency(0);
             auto invoice = Invoice(Document(invoiceBuffer));
             auto isExist = __wallet_storage.wallet.account.check_invoice_payment(invoice.pkey, amount);
 
-            if(isExist){
+            if (isExist) {
                 *amountPtr = amount.value;
                 return 1;
             }
@@ -854,7 +871,7 @@ version (none) unittest {
             version (none) {
                 with (__wallet_storage.wallet.account) {
                     newBills = zip(bill_amounts, derivers.byKey).map!(bill_derive => TagionBill(bill_derive[0],
-                    epoch, bill_derive[1], gene)).array;
+                            epoch, bill_derive[1], gene)).array;
                 }
 
                 const uint8_t[] bill = cast(uint8_t[]) newBills[0].toHiBON.serialize;

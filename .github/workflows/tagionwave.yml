@@ -54,15 +54,17 @@ jobs:
       - name: Backup old data
         if: ${{ inputs.clean }}
         run: |
-          DIR_EPOCH=$(stat -c%W ~/.local/share/tagion) && \
-          # OLD_DIR_NAME=~/.local/share/tagion_$(date -d @$DIR_EPOCH +%F_%H-%M) && \
-          # mv ~/.local/share/tagion $OLD_DIR_NAME || \
-          # echo "No old data to backup"
+          DIR_EPOCH=$(stat -c%W ~/.local/share/tagion)
           cd ~/.local/share/
           OLD_TAR_NAME=tagion_$(date -d @$DIR_EPOCH +%F_%H-%M).tar.gz && \
             tar czf $OLD_TAR_NAME tagion/ && \
             rm -r tagion || \
             echo "No old data to backup"
+
+      - name: Delete old backups
+        if: ${{ inputs.clean }}
+        run: |
+          ls -1t ~/.local/share/tagion_* | tail -n +10 | xargs rm -v || echo "No old backups to be removed"
 
       - name: Create new bills
         if: ${{ inputs.clean }}

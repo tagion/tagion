@@ -1,4 +1,4 @@
-module tagion.testbench.e2e.manycontracts;
+module tagion.testbench.e2e.operational;
 // Default import list for bdd
 import tagion.behaviour;
 import tagion.hibon.Document;
@@ -20,8 +20,13 @@ import tagion.tools.wallet.WalletInterface;
 import tagion.script.common;
 import tagion.script.TagionCurrency;
 import tagion.communication.HiRPC;
+import tagion.utils.JSONCommon;
+import tagion.wallet.AccountDetails;
 
-alias manycontracts = tagion.testbench.e2e.manycontracts;
+import core.time;
+import core.thread;
+
+alias operational = tagion.testbench.e2e.operational;
 
 mixin Main!(_main);
 
@@ -35,10 +40,7 @@ int _main(string[] args) {
     auto main_args = getopt(args,
             "w", "wallet config files", &wallet_config_files,
             "x", "wallet pins", &wallet_pins,
-            "sendkernel", "Send requests directory to the kernel", &sendkernel, // "n", "network config file", &network_config,
-
-            
-
+            "sendkernel", "Send requests directory to the kernel", &sendkernel,
     );
 
     if (main_args.helpWanted) {
@@ -85,10 +87,15 @@ int _main(string[] args) {
         writefln("Wallet logged in %s", wallet_interface.secure_wallet.isLoggedin);
     }
 
-    auto manycontracts_feature = automation!manycontracts;
-    manycontracts_feature.SendNContractsFromwallet1Towallet2(wallet_interfaces, sendkernel);
-    manycontracts_feature.run;
-    return 1;
+    int run_counter;
+    while (true) {
+        auto operational_feature = automation!operational;
+        operational_feature.SendNContractsFromwallet1Towallet2(wallet_interfaces, sendkernel);
+        operational_feature.run;
+        run_counter++;
+        Thread.sleep(1.seconds);
+    }
+    return 0;
 }
 
 enum feature = Feature(
@@ -105,10 +112,11 @@ alias FeatureContext = Tuple!(
 class SendNContractsFromwallet1Towallet2 {
     WalletInterface[] wallets;
     bool sendkernel;
-
     bool send;
-    this(WalletInterface[] wallets, bool sendkernel
-    ) {
+
+    TagionCurrency[] wallet_amounts;
+
+    this(WalletInterface[] wallets, bool sendkernel) {
         this.wallets = wallets;
         this.sendkernel = sendkernel;
         this.send = !sendkernel;
@@ -116,25 +124,36 @@ class SendNContractsFromwallet1Towallet2 {
 
     @Given("i have a network")
     Document network() @trusted {
-        const wallet_switch = WalletInterface.Switch(update : true, sendkernel:
-                sendkernel, send:
-                send);
+        writefln("sendkernel: %s, sendshell: %s", sendkernel, send);
+        // dfmt off
+        const wallet_switch = WalletInterface.Switch(
+                update : true, 
+                sendkernel: sendkernel,
+                send: send);
+        // dfmt on
 
         foreach (ref w; wallets[0 .. 2]) {
+            check(w.secure_wallet.isLoggedin, "the wallet must be logged in!!!");
             w.operate(wallet_switch, []);
+            wallet_amounts ~= w.secure_wallet.available_balance;
         }
 
         return result_ok;
     }
 
+    Invoice invoice;
+    TagionCurrency fees;
     @When("i send N many valid contracts from `wallet1` to `wallet2`")
     Document wallet2() @trusted {
-        const invoice = wallets[0].secure_wallet.createInvoice("Invoice", 1000.TGN);
+        with (wallets[0].secure_wallet) {
+            invoice = createInvoice("Invoice", 1000.TGN);
+            registerInvoice(invoice);
+        }
 
         SignedContract signed_contract;
-        TagionCurrency fees;
 
         with (wallets[1]) {
+            check(secure_wallet.isLoggedin, "the wallet must be logged in!!!");
             auto result = secure_wallet.payment([invoice], signed_contract, fees);
 
             const message = secure_wallet.net.calcHash(signed_contract);
@@ -142,7 +161,14 @@ class SendNContractsFromwallet1Towallet2 {
             const hirpc = HiRPC(contract_net);
             const hirpc_submit = hirpc.submit(signed_contract);
 
-            sendSubmitHiRPC(options.contract_address, hirpc_submit, contract_net);
+            if (sendkernel) {
+                auto response = sendSubmitHiRPC(options.contract_address, hirpc_submit, contract_net);
+                check(!response.isError, "Error when sending submit");
+            }
+            else {
+                auto response = sendShellSubmitHiRPC(options.contract_address, hirpc_submit, contract_net);
+                check(!response.isError, "Error when sending submit");
+            }
 
             result.get;
         }
@@ -152,25 +178,38 @@ class SendNContractsFromwallet1Towallet2 {
 
     @When("all the contracts have been executed")
     Document executed() @trusted {
-        import core.time;
-        import core.thread;
-
-        Thread.sleep(5.seconds);
+        Thread.sleep(15.seconds);
         return result_ok;
     }
 
     @Then("wallet1 and wallet2 balances should be updated")
     Document updated() @trusted {
+        //dfmt off
         const wallet_switch = WalletInterface.Switch(
-    trt_update : true,
-    sendkernel:
-                sendkernel,
-    send:
-                send);
+            trt_update : true,
+            sendkernel: sendkernel,
+            send: send);
 
-        foreach (ref w; wallets[0 .. 2]) {
+        foreach (i, ref w; wallets[0 .. 2]) {
+            writefln("Checking Wallet_%s", i);
+            check(w.secure_wallet.isLoggedin, "the wallet must be logged in!!!");
             w.operate(wallet_switch, []);
+            check(wallet_amounts[i] != w.secure_wallet.available_balance, "Wallet amount did not change");
         }
+
+        with(wallets[0].secure_wallet) {
+            auto expected = wallet_amounts[0] + invoice.amount;
+            check(available_balance == expected, 
+                    format("wallet 0 amount incorrect, expected %s got %s", expected, available_balance));
+        }
+
+        with(wallets[1].secure_wallet) {
+            auto expected = wallet_amounts[1] - (invoice.amount + fees);
+            check(available_balance == expected,
+                    format("wallet 1 amount incorrect, expected %s got %s", expected, available_balance));
+        }
+
+
         return result_ok;
     }
 

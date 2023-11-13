@@ -2,8 +2,7 @@ name: Main Flow
 on:
   workflow_dispatch:
   push: 
-    branches: 
-      - current
+
 env:
   TARGET: x86_64-linux
   STAGE: commit
@@ -43,7 +42,7 @@ jobs:
         if: always()
         run: |
           mkdir -p ${{ env.ARTIFACT_DIR }}
-          trunk=$(find build/x86_64-linux/bin -type f -not -name "*.o" -not -path "*/cov/*")
+          trunk=$(find build/${{ env.TARGET }}//bin -type f -not -name "*.o" -not -path "*/cov/*")
           cp -r --parents $trunk ${{ env.ARTIFACT_DIR }}
 
           make clean
@@ -85,7 +84,7 @@ jobs:
           cp -r --parents logs/ build/${{ env.TARGET }}/bin/unittest-cov ${{ env.ARTIFACT_DIR }}
 
           make clean
-          rm -r logs/ || echo "no logs"
+          rm -r *.callstack logs/ || echo "no logs"
 
   commit_stage:
     runs-on: CI
@@ -125,10 +124,11 @@ jobs:
           mkdir -p ${{ env.ARTIFACT_DIR }}
           make ci-files
           trunk=$(find build/${{ env.TARGET }}/bin -type f -not -name "*.o" -not -path "*/cov/*")
-          cp -r --parents logs/ $trunk ${{ env.ARTIFACT_DIR }}
+          stacks=$(find -name "*.callstack")
+          cp -r --parents logs/ $trunk $stacks ${{ env.ARTIFACT_DIR }}
 
           make clean
-          rm -r logs/ || echo "no logs"
+          rm -r *.callstack logs/ || echo "no logs"
 
   acceptance_stage:
     runs-on: CD
@@ -166,7 +166,8 @@ jobs:
         if: always()
         run: |
           mkdir -p ${{ env.ARTIFACT_DIR }}
-          cp -r --parents logs/ ${{ env.ARTIFACT_DIR }}
+          stacks=$(find -name "*.callstack")
+          cp -r --parents logs/ $stacks ${{ env.ARTIFACT_DIR }}
           find . -mindepth 1 -delete
 
   create_artifact:
@@ -186,9 +187,33 @@ jobs:
           path: ${{ env.ARTIFACT_DIR }}.tar.gz
           if-no-files-found: error
 
+      - name: Add logs
+        run: |
+          cd ${{ env.ARTIFACT_DIR }}
+          log_files=$(find logs -name "*.log")
+          for file in $log_files; do
+            url=$(gh gist create $file) || echo could not create gist
+            echo "[$(basename $file)]($url)" >> $GITHUB_STEP_SUMMARY
+          done
+
+      - name: Add callstacks
+        run: |
+          cd ${{ env.ARTIFACT_DIR }}
+          callstack_files=$(find . -name "*.callstack")
+          for file in $callstack_files; do
+            ./build/${{ env.TARGET }}/bin/tagion callstack ./build/${{ env.TARGET }}/bin/testbench -t $file > $file.unstack || echo could not create callstack
+            url=$(gh gist create $file.unstack) || echo could not create gist
+            echo "[$(basename $file)]($url)" >> $GITHUB_STEP_SUMMARY
+          done
+
+
       - name: Post run
         run: |
+          cd
           rm -r ${{ env.ARTIFACT_DIR }}
+          # Remove older artifacts
+          cd /mnt/nfs/artifacts/
+          ls -1t *.tar.gz | tail -n +100 | xargs rm -v || echo "No old backups to be removed"
 
   android_libmobile:
     needs: commit_stage
@@ -204,9 +229,9 @@ jobs:
           git clone git@github.com:tagion/tagion.git || echo "repo already exists"
       - name: pull
         run: |
+          git fetch
+          git checkout ${{ github.sha }}
           git clean -f && git restore . 
-          git checkout current
-          git pull
 
       - name: Install android tools
         run: |
@@ -231,20 +256,30 @@ jobs:
 
   ios_libmobile:
     needs: commit_stage
-    uses: ./.github/workflows/ios.yml
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [arm64]
+        target: [apple-ios, apple-ios-simulator]
+    runs-on: macOS
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/ios
+        with:
+          platform: ${{ matrix.arch }}-${{ matrix.target }}
 
   ddoc_push:
     if: false
+      # if: ${{ github.ref == 'refs/heads/current' }}
     runs-on: CD
-    needs: acceptance_stage 
+    needs: acceptance_stage
     steps:
       - name: Copy Artifact to local machine
         run: |
           rm -rf *
-          cp /mnt/nfs/${{needs.acceptance_stage.outputs.stage}}/${{needs.acceptance_stage.outputs.tarball}} .
-          tar -xzf ${{needs.acceptance_stage.outputs.tarball}}
-          echo $(ls build/)     
-      - name: Send ddoc to repository 
+          cp /mnt/nfs/${{ env.ARTIFACT_DIR }} .
+          echo $(ls build/)
+      - name: Send ddoc to repository
         run: |
           ls logs
           git clone https://${{ secrets.API_TOKEN_GITHUB }}@github.com/tagion/ddoc.git
@@ -255,11 +290,14 @@ jobs:
           git add .
           git commit -m "ddocs updated" || echo "nothing to commit"
           git push https://${{ secrets.API_TOKEN_GITHUB }}@github.com/tagion/ddoc.git || echo "repo already up to date"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITBOT_TOKEN }}
 
       - name: clean up
         run: rm -rf *
  
   docs_build:
+    if: ${{ github.ref == 'refs/heads/current' }}
     environment:
       name: github-pages
       url: https://docs.tagion.org

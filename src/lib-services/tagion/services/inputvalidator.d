@@ -74,15 +74,15 @@ struct InputValidatorService {
 
         void reject(T)(ResponseError err_type, T data = Document()) const nothrow {
             try {
-                log.error("REJECT %s", err_type);
                 hirpc.Error message;
                 message.code = err_type;
-                message.message = err_type.to!string;
-                message.data = data;
+                debug {
+                    message.message = err_type.to!string;
+                    message.data = data;
+                }
                 const sender = hirpc.Sender(net, message);
-                log.error("sending %s", sender.toPretty);
                 int rc = sock.send(sender.toDoc.serialize);
-                if(rc != 0) {
+                if (rc != 0) {
                     log.error("Failed to responsd with rejection %s: %s", rc.to!string, nng_errstr(rc));
                 }
                 log(rejected, err_type.to!string, data);
@@ -128,7 +128,7 @@ struct InputValidatorService {
             }
 
             auto result_buf = buf.append(recv);
-            scope(failure) {
+            scope (failure) {
                 reject(ResponseError.Internal);
             }
 
@@ -144,7 +144,7 @@ struct InputValidatorService {
             }
 
             Document doc = Document(assumeUnique(result_buf.data));
-            if(!doc.isRecord!(HiRPC.Sender)) {
+            if (!doc.isRecord!(HiRPC.Sender)) {
                 reject(ResponseError.NotHiRPCSender, doc);
                 continue;
             }

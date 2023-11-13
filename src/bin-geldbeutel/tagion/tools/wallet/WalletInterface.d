@@ -33,7 +33,6 @@ import tagion.script.common;
 import tagion.script.standardnames;
 import tagion.wallet.SecureWallet : check;
 import tagion.script.execute : ContractExecution;
-import tagion.script.Currency : totalAmount;
 import tagion.hibon.HiBONtoText;
 import tagion.hibon.HiBONJSON : toPretty;
 import tagion.dart.DARTBasic;
@@ -103,8 +102,7 @@ HiRPC.Receiver sendSubmitHiRPC(string address, HiRPC.Sender contract, const(Secu
 
     rc = sock.send(contract.toDoc.serialize);
     if (rc != 0) {
-        throw new Exception(format("Could not send bill to network %s", nng_errstr(
-                rc)));
+        throw new Exception(format("Could not send bill to network %s", nng_errstr(rc)));
     }
 
     auto response_data = sock.receive!Buffer;
@@ -120,35 +118,61 @@ HiRPC.Receiver sendSubmitHiRPC(string address, HiRPC.Sender contract, const(Secu
 
 HiRPC.Receiver sendShellSubmitHiRPC(string address, HiRPC.Sender contract, const(SecureNet) net) {
     import nngd;
+
     pragma(msg, "Change Web Post and reply so it takes immutable stream");
-    WebData rep = WebClient.post(address, cast(ubyte[]) contract.toDoc.serialize, ["Content-type": "application/octet-stream"]);
+    WebData rep = WebClient.post(address, cast(ubyte[]) contract.toDoc.serialize, [
+        "Content-type": "application/octet-stream"
+    ]);
+
+    if (rep.status != http_status.NNG_HTTP_STATUS_OK) {
+        throw new Exception(format("Send shell submit error(%i): %s", rep.status, rep.msg));
+    }
+
     Document response_doc = Document(cast(immutable) rep.rawdata);
     HiRPC hirpc = HiRPC(net);
+    writefln("%s", response_doc.toPretty);
     return hirpc.receive(response_doc);
 }
 
-Document sendShellHiRPC(string address, Document dart_req) {
+HiRPC.Receiver sendShellHiRPC(string address, HiRPC.Sender dart_req, HiRPC hirpc) {
+    import nngd;
+
+    WebData rep = WebClient.post(address, cast(ubyte[]) dart_req.toDoc.serialize, [
+        "Content-type": "application/octet-stream"
+    ]);
+
+    if (rep.status != http_status.NNG_HTTP_STATUS_OK) {
+        throw new Exception(format("send shell submit error(%i): %s", rep.status, rep.msg));
+    }
+
+    Document response_doc = Document(cast(immutable) rep.rawdata);
+
+    return hirpc.receive(response_doc);
+}
+
+HiRPC.Receiver sendShellHiRPC(string address, Document dart_req, HiRPC hirpc) {
     import nngd;
 
     WebData rep = WebClient.post(address, cast(ubyte[]) dart_req.serialize, ["Content-type": "application/octet-stream"]);
-    
-    Document response_doc = Document(cast(immutable) rep.rawdata);
 
-    return response_doc;
+    Document response_doc = Document(cast(immutable) rep.rawdata);
+    writefln("%s", response_doc.toPretty);
+
+    return hirpc.receive(response_doc);
 }
 
-
 pragma(msg, "Fixme(lr)Remove trusted when nng is safe");
-Document sendDARTHiRPC(string address, HiRPC.Sender dart_req) @trusted {
+HiRPC.Receiver sendDARTHiRPC(string address, HiRPC.Sender dart_req, HiRPC hirpc, Duration recv_duration = 15_000.msecs) @trusted {
     import nngd;
     import std.exception;
+    import tagion.hibon.HiBONException;
 
     int rc;
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
-    scope(exit) {
+    scope (exit) {
         s.close();
     }
-    s.recvtimeout = 10_000.msecs;
+    s.recvtimeout = recv_duration;
 
     while (1) {
         writefln("REQ to dial... %s", address);
@@ -160,19 +184,26 @@ Document sendDARTHiRPC(string address, HiRPC.Sender dart_req) @trusted {
             nng_sleep(100.msecs);
         }
         if (rc != 0) {
-            throw new Exception(format("Could not dial kernel %s", nng_errstr(rc)));
+            throw new Exception(format("Could not dial kernel %s", address, nng_errstr(rc)));
         }
     }
     rc = s.send(dart_req.toDoc.serialize);
     if (s.errno != 0) {
-        throw new Exception("error in response");
+        throw new Exception(format("error in send of darthirpc: %s", s.errno));
     }
     Document received_doc = s.receive!Buffer;
     if (s.errno != 0) {
         throw new Exception(format("REQ Socket error after receive: %s", s.errno));
     }
 
-    return received_doc;
+    try {
+        hirpc.receive(received_doc);
+    }
+    catch (HiBONException e) {
+        writefln("::error::ERROR in hirpc receive: %s %s", e, received_doc.toPretty);
+    }
+
+    return hirpc.receive(received_doc);
 }
 
 /**
@@ -535,7 +566,7 @@ struct WalletInterface {
         import tagion.hibon.HiBONtoText;
 
         const value = format("%10.3f", bill.value.value);
-        return format("%2$s%3$s %4$s %5$13.6fTGN%1$s",
+        return format("%2$s%3$27-s %4$s %5$13.6fTGN%1$s",
                 RESET, mark,
                 bill.time.toText,
                 secure_wallet.net.calcHash(bill)
@@ -629,7 +660,7 @@ struct WalletInterface {
                         secure_wallet.registerInvoice(new_invoice);
                         request = new_invoice.toDoc;
                         if (faucet) {
-                            sendShellHiRPC(options.addr ~ options.faucet_shell_endpoint, request);
+                            sendShellHiRPC(options.addr ~ options.faucet_shell_endpoint, request, HiRPC(secure_wallet.net));
                         }
                     }
                     else {
@@ -703,25 +734,19 @@ struct WalletInterface {
                         output_filename.fwrite(req);
                     }
                     if (send || sendkernel) {
-                        Document received_doc;
-                        if (sendkernel) {
-                            received_doc = sendDARTHiRPC(options.dart_address, req);
-                        }
-                        if (send) {
-                            received_doc = sendShellHiRPC(options.addr ~ options.dart_shell_endpoint, req.toDoc);
-                        }
-                        check(received_doc.isRecord!(HiRPC.Receiver), "Error in response. Aborting");
-                        auto receiver = hirpc.receive(received_doc);
+                        HiRPC.Receiver received = sendkernel ?
+                            sendDARTHiRPC(options.dart_address, req, hirpc) : sendShellHiRPC(
+                                    options.addr ~ options.dart_shell_endpoint, req, hirpc);
 
                         auto res = trt_update ? secure_wallet.setResponseUpdateWallet(
-                                receiver) : secure_wallet.setResponseCheckRead(receiver);
+                                received) : secure_wallet.setResponseCheckRead(received);
                         writeln(res ? "wallet updated succesfully" : "wallet not updated succesfully");
                         listAccount(stdout);
                         save_wallet = true;
                     }
 
                 }
-                
+
                 if (pay) {
 
                     Document[] requests_to_pay = args[1 .. $]

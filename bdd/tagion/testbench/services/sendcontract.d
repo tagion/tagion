@@ -20,6 +20,11 @@ import tagion.script.common;
 import tagion.script.execute;
 import tagion.tools.wallet.WalletInterface;
 import tagion.hibon.HiBONRecord;
+import tagion.testbench.services.helper_functions;
+import tagion.logger.Logger;
+import tagion.logger.LogRecords : LogInfo;
+import tagion.hashgraph.Refinement;
+import tagion.utils.pretend_safe_concurrency;
 
 import std.algorithm;
 import std.array;
@@ -27,6 +32,8 @@ import core.time;
 import core.thread;
 import std.stdio;
 import std.format;
+
+enum CONTRACT_TIMEOUT = 40;
 
 alias StdSecureWallet = SecureWallet!StdSecureNet;
 enum feature = Feature(
@@ -62,19 +69,24 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
 
     }
 
+    bool epoch_on_startup;
+
     @Given("i have a dart database with already existing bills linked to wallet1.")
     Document _wallet1() @trusted {
+        // check that we are actually creating epochs;
+        submask.subscribe(StdRefinement.epoch_created);
+        writeln("waiting for epoch");
+        auto received = receiveTimeout(30.seconds, (LogInfo _, const(Document) __) {});
+
+        epoch_on_startup = received;
+        check(epoch_on_startup, "No epoch on startup");
+
         // create the hirpc request for checking if the bills are already in the system.
 
         foreach (ref wallet; wallets) {
             check(wallet.isLoggedin, "the wallet must be logged in!!!");
             const hirpc = HiRPC(wallet.net);
-            auto dartcheckread = wallet.getRequestCheckWallet(hirpc);
-            writeln("going to send dartcheckread ");
-            auto received_doc = sendDARTHiRPC(dart_interface_sock_addr, dartcheckread);
-            check(received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", received_doc.toPretty)); 
-            auto received = hirpc.receive(received_doc);
-            check(wallet.setResponseCheckRead(received), "wallet not updated succesfully");
+            auto amount = getWalletUpdateAmount(wallet, dart_interface_sock_addr, hirpc);
             check(wallet.calcTotal(wallet.account.bills) > 0.TGN, "did not receive money");
             check(wallet.calcTotal(wallet.account.bills) == start_amount, "money not correct");
         }
@@ -84,21 +96,21 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
 
     @Given("i make a payment request from wallet2.")
     Document _wallet2() @trusted {
+        check(epoch_on_startup, "No epoch on startup");
         wallet1 = wallets[1];
         wallet2 = wallets[2];
         amount = 1500.TGN;
         auto payment_request = wallet2.requestBill(amount);
 
-        
         import tagion.hibon.HiBONtoText;
-        
+
         wallet1.account.bills
             .each!(b => writefln("WALLET1 %s %s", wallet1.net.calcHash(b).encodeBase64, b.toPretty));
         SignedContract signed_contract;
         check(wallet1.createPayment([payment_request], signed_contract, fee).value, "Error creating wallet payment");
         check(signed_contract !is SignedContract.init, "contract not updated");
         check(signed_contract.contract.inputs.uniq.array.length == signed_contract.contract.inputs.length, "signed contract inputs invalid");
-        
+
         writefln("WALLET1 created contract: %s", signed_contract.toPretty);
 
         auto wallet1_hirpc = HiRPC(wallet1.net);
@@ -112,21 +124,14 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
 
     @When("wallet1 pays contract to wallet2 and sends it to the network.")
     Document network() @trusted {
-        writefln("GOING TO SLEEP 30");
-        Thread.sleep(30.seconds);
+        check(epoch_on_startup, "No epoch on startup");
+        writeln("WAITING FOR TIMEOUT");
+        Thread.sleep(CONTRACT_TIMEOUT.seconds);
 
         writeln("WALLET 1 request");
 
         const hirpc = HiRPC(wallet1.net);
-        auto dartcheckread = wallet1.getRequestCheckWallet(hirpc);
-        auto received_doc = sendDARTHiRPC(dart_interface_sock_addr, dartcheckread);
-        check(received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", received_doc.toPretty)); 
-
-        writefln("RECEIVED RESPONSE: %s", received_doc.toPretty);
-        auto received = hirpc.receive(received_doc);
-        check(wallet1.setResponseCheckRead(received), "wallet1 not updated succesfully");
-
-        auto wallet1_amount = wallet1.calcTotal(wallet1.account.bills);
+        auto wallet1_amount = getWalletUpdateAmount(wallet1, dart_interface_sock_addr, hirpc);
         check(wallet1_amount < start_amount, format("no money withdrawn had %s", wallet1_amount));
 
         auto wallet1_expected = start_amount - amount - fee;
@@ -138,17 +143,11 @@ class SendASingleTransactionFromAWalletToAnotherWallet {
 
     @Then("wallet2 should receive the payment.")
     Document payment() @trusted {
+        check(epoch_on_startup, "No epoch on startup");
         const hirpc = HiRPC(wallet2.net);
-        auto dartcheckread = wallet2.getRequestCheckWallet(hirpc);
-        auto received_doc = sendDARTHiRPC(dart_interface_sock_addr, dartcheckread);
-        check(received_doc.isRecord!(HiRPC.Receiver), format("error with received document from dart should receive receiver received %s", received_doc.toPretty)); 
-        writefln("WALLET2 received: %s", received_doc.toPretty);
-
-        writefln("RECEIVED RESPONSE: %s", received_doc.toPretty);
-        auto received = hirpc.receive(received_doc);
-        check(wallet2.setResponseCheckRead(received), "wallet2 not updated succesfully");
-        check(wallet2.calcTotal(wallet2.account.bills) > 0.TGN, "did not receive money");
-        check(wallet2.calcTotal(wallet2.account.bills) == start_amount + amount, "did not receive correct amount of tagion");
+        auto wallet2_amount = getWalletUpdateAmount(wallet2, dart_interface_sock_addr, hirpc);
+        check(wallet2_amount > 0.TGN, "did not receive money");
+        check(wallet2_amount == start_amount + amount, "did not receive correct amount of tagion");
         writefln("Wallet 2 total %s", wallet2.calcTotal(wallet2.account.bills));
         return result_ok;
     }

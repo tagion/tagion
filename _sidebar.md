@@ -24,6 +24,7 @@
 		- [Logger Subscription](/documents/architecture/LoggerSubscription.md)
 		- [Monitor](/documents/architecture/Monitor.md)
 		- [Epoch Dump](/documents/architecture/EpochDump.md)
+		- [Shell cache](/documents/architecture/DARTCache.md)
 
 - Protocols
 	- [HiBON](documents/protocols/hibon/README.md)

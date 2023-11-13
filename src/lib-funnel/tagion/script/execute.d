@@ -96,8 +96,6 @@ struct ContractExecution {
     }
 
     static TagionCurrency billFees(const size_t number_of_input_bills, const size_t number_of_output_bills) {
-        import std.stdio;
-        writefln("check_contract is null: %s", check_contract is null);
         const output_fee = check_contract.calcFees(GasUse(pay_gas, number_of_output_bills * bill_price)); 
         const input_fee = check_contract.calcFees(GasUse(0, number_of_input_bills * bill_price));
         return output_fee - input_fee;

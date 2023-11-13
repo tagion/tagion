@@ -25,6 +25,7 @@ import std.range : empty;
 import tagion.hashgraph.HashGraphBasic;
 import tagion.services.monitor;
 import tagion.services.options : NetworkMode;
+import tagion.testbench.actor.util;
 
 import std.stdio;
 import std.format;
@@ -71,8 +72,8 @@ class SendPayloadAndCreateEpoch {
             immutable task_names = TaskNames(prefix);
             auto net = new StdSecureNet();
             net.generateKeyPair(task_names.epoch_creator);
-            shared shared_net = (()@trusted => cast(shared) net)();
-            scope(exit) {
+            shared shared_net = (() @trusted => cast(shared) net)();
+            scope (exit) {
                 net = null;
             }
             writefln("node task name %s", task_names.epoch_creator);
@@ -99,9 +100,7 @@ class SendPayloadAndCreateEpoch {
             );
         }
 
-        waitforChildren(Ctrl.ALIVE);
-        //    writefln("Wait 1 sec");
-        Thread.sleep(15.seconds);
+        waitforChildren(Ctrl.ALIVE, 15.seconds);
 
         return result_ok;
     }
@@ -132,7 +131,7 @@ class SendPayloadAndCreateEpoch {
         const max_attempts = 30;
         uint counter;
         do {
-            const received = receiveOnly!(LogInfo, const(Document));
+            const received = receiveOnlyTimeout!(LogInfo, const(Document))(27.seconds);
             check(received[0].symbol_name.canFind("epoch_succesful"), "Event should have been epoch_succesful");
             const epoch = received[1];
 
@@ -141,7 +140,7 @@ class SendPayloadAndCreateEpoch {
 
             check(epoch.isRecord!FinishedEpoch, "received event should be an FinishedEpoch record");
             const events = FinishedEpoch(epoch).events;
-            writefln("Received epoch %s \n event_length %s", epoch.toPretty,events.length);
+            writefln("Received epoch %s \n event_length %s", epoch.toPretty, events.length);
 
             if (events.length == 1) {
                 const received_payload = events[0].event_body.payload;
@@ -160,5 +159,4 @@ class SendPayloadAndCreateEpoch {
         waitforChildren(Ctrl.END);
         return result_ok;
     }
-
 }

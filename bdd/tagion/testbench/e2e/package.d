@@ -1,3 +1,3 @@
 module tagion.testbench.e2e;
 
-public import manycontracts = tagion.testbench.e2e.manycontracts;
+public import operational = tagion.testbench.e2e.operational;

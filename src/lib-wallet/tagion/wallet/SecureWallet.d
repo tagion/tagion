@@ -127,10 +127,10 @@ struct SecureWallet(Net : SecureNet) {
      */
     this(
             scope const(string[]) questions,
-    scope const(char[][]) answers,
-    uint confidence,
-    const(char[]) pincode,
-    scope const(ubyte[]) seed = null)
+            scope const(char[][]) answers,
+            uint confidence,
+            const(char[]) pincode,
+            scope const(ubyte[]) seed = null)
     in {
         assert(questions.length is answers.length, "Amount of questions should be same as answers");
     }
@@ -177,7 +177,7 @@ struct SecureWallet(Net : SecureNet) {
 
     protected void set_pincode(
             scope const(ubyte[]) R,
-    scope const(char[]) pincode) scope
+            scope const(char[]) pincode) scope
     in (!_net.isinit)
     do {
         auto seed = new ubyte[_net.hashSize];
@@ -375,6 +375,16 @@ struct SecureWallet(Net : SecureNet) {
     //     return new_request;
     // }
 
+    TagionBill[] invoices_to_bills(const(Invoice[]) orders) {
+        Buffer getNonce() {
+            scope nonce = new ubyte[4];
+            getRandom(nonce);
+            return nonce.idup;
+        }
+
+        return orders.map!((order) => TagionBill(order.amount, currentTime, order.pkey, getNonce)).array;
+    }
+
     /**
      * Create a payment to a list of Invoices and produces a signed-contract
      * Collect the bill need and sign them in the contract
@@ -388,8 +398,7 @@ struct SecureWallet(Net : SecureNet) {
 
         try {
             checkLogin;
-            auto bills = orders.map!((order) => TagionBill(order.amount, currentTime, order.pkey, Buffer.init)).array;
-            // const topay = orders.map!(b => b.amount).sum;
+            auto bills = invoices_to_bills(orders);
             return createPayment(bills, signed_contract, fees);
         }
         catch (Exception e) {
@@ -447,10 +456,11 @@ struct SecureWallet(Net : SecureNet) {
     }
 
     const(HiRPC.Sender) getRequestCheckWallet(
-        HiRPC hirpc = HiRPC(null), 
-        const(TagionBill)[] to_check = null) 
+            HiRPC hirpc = HiRPC(null),
+            const(TagionBill)[] to_check = null)
     const {
         import tagion.dart.DARTcrud;
+
         if (to_check is null) {
             to_check = account.bills ~ account.requested.values;
         }
@@ -473,6 +483,7 @@ struct SecureWallet(Net : SecureNet) {
      */
     private bool collect_bills(const TagionCurrency amount, out TagionBill[] locked_bills) {
         import std.algorithm;
+
         // import std.algorithm.sorting : isSorted, sort;
         // import std.algorithm.iteration : cumulativeFold;
         import std.range : takeOne, tee;
@@ -499,7 +510,7 @@ struct SecureWallet(Net : SecureNet) {
                 .until!(b => rest <= 0) // do it until the rest is smaller than or equal to zero
                 .tee!((b) => rest -= b.value) // subtract their values from the rest
                 .array;
-    
+
             // Check if there is any remaining rest
             if (rest >= 0) {
                 TagionBill extra_bill;
@@ -561,11 +572,16 @@ struct SecureWallet(Net : SecureNet) {
     @trusted
     bool setResponseUpdateWallet(const(HiRPC.Receiver) receiver) nothrow {
         import std.exception : assumeWontThrow;
+        import tagion.basic.Debug;
+        import tagion.hibon.HiBONtoText;
 
         if (!receiver.isResponse) {
             return false;
         }
-        const found_bills = assumeWontThrow(receiver.response
+
+        // __write("%s", assumeWontThrow(receiver.toPretty));
+
+        auto found_bills = assumeWontThrow(receiver.response
                 .result[]
                 .map!(e => TagionBill(e.get!Document))
                 .array);
@@ -584,6 +600,28 @@ struct SecureWallet(Net : SecureNet) {
             }
 
         }
+
+        auto locked_pkeys = account.activated
+            .byKeyValue
+            .filter!(a => a.value == true)
+            .map!(a => a.key)
+            .array;
+
+        auto found_owners = found_bills.map!(found => found.owner).array;
+        foreach (pkey; locked_pkeys) {
+            if (!(found_owners.canFind(pkey))) {
+                account.activated.remove(pkey);
+                auto bill_index = account.bills.countUntil!(b => b.owner == pkey);
+                if (bill_index >= 0) {
+                    account.bills = account.bills.remove(bill_index);
+                }
+            }
+        }
+
+        // account.activated = new_activated;
+
+        // go through the locked bills
+
         return true;
     }
 
@@ -641,8 +679,8 @@ struct SecureWallet(Net : SecureNet) {
 
     // stupid function for testing
     Result!bool createNFT(
-        Document nft_data,
-        ref SignedContract signed_contract){
+            Document nft_data,
+            ref SignedContract signed_contract) {
         import tagion.script.execute;
         import tagion.script.standardnames;
 
@@ -654,7 +692,7 @@ struct SecureWallet(Net : SecureNet) {
 
             inputs ~= Document(dummy_input);
             SecureNet[] nets;
-            nets ~= (() @trusted => cast(SecureNet) net )();
+            nets ~= (() @trusted => cast(SecureNet) net)();
 
             signed_contract = sign(
                     nets,
@@ -685,6 +723,7 @@ struct SecureWallet(Net : SecureNet) {
             const amount_to_pay = pay_script.outputs
                 .map!(bill => bill.value)
                 .totalAmount;
+            check(amount_to_pay < available_balance, "The amount requested for payment should be smaller than the available balance");
 
             do {
                 if (collected_bills.length == previous_bill_count) {
@@ -710,7 +749,8 @@ struct SecureWallet(Net : SecureNet) {
             while (amount_remainder < 0);
 
             const nets = collectNets(collected_bills);
-            check(nets.all!(net => net !is net.init), "Missing deriver of some of the bills");
+            check(nets.all!(net => net !is net.init), format("Missing deriver of some of the bills length=%s", collected_bills
+                    .length));
             if (amount_remainder != 0) {
                 const bill_remain = requestBill(amount_remainder);
                 pay_script.outputs ~= bill_remain;
@@ -980,11 +1020,83 @@ version (unittest) {
 
 }
 
+@safe
+unittest {
+    auto wallet = StdSecureWallet("secret", "1234");
+    const bill1 = wallet.requestBill(1000.TGN);
+    wallet.addBill(bill1);
+    assert(wallet.available_balance == 1000.TGN);
+    // create a payment of excactly 1000 TGN;
+    const bill_to_pay = wallet.requestBill(1000.TGN);
+    SignedContract signed_contract;
+    TagionCurrency fees;
+    assertThrown(wallet.createPayment([bill_to_pay], signed_contract, fees).get);
+
+    const smaller_bill = wallet.requestBill(999.TGN);
+
+    SignedContract signed_contract1;
+    TagionCurrency fees1;
+    assertThrown(wallet.createPayment([bill_to_pay], signed_contract1, fees1).get);
+}
+
+@safe
+unittest {
+    import std.range;
+
+    // pay invoice to yourself.
+    auto wallet = StdSecureWallet("secret", "1234");
+    const bill1 = wallet.requestBill(1000.TGN);
+    wallet.addBill(bill1);
+
+    auto invoice_to_pay = wallet.createInvoice("wowo", 10.TGN);
+    wallet.registerInvoice(invoice_to_pay);
+
+    SignedContract signed_contract;
+    TagionCurrency fees;
+
+    TagionBill[] bills = wallet.invoices_to_bills([invoice_to_pay]);
+    wallet.createPayment(bills, signed_contract, fees);
+    HiRPC hirpc = HiRPC(null);
+
+    assert(wallet.account.activated.byValue.filter!(b => b == true).walkLength == 1, "should have one locked bill");
+    assert(wallet.locked_balance == 1000.TGN);
+    const req = wallet.getRequestUpdateWallet;
+    const receiver = hirpc.receive(req.toDoc);
+
+    const number_of_bills = receiver.method.params[].array.length;
+    assert(number_of_bills == 3, format("should contain three public keys had %s", number_of_bills));
+
+    // create the response containing the two output bills without the original locked bill.
+    HiBON params = new HiBON;
+
+    import std.stdio;
+    import tagion.hibon.HiBONJSON;
+
+    TagionBill[] bills_in_dart = bills ~ wallet.account.requested.byValue.array;
+    foreach (i, bill; bills_in_dart) {
+        params[i] = bill.toHiBON;
+    }
+    auto dart_response = hirpc.result(receiver, Document(params)).toDoc;
+    const received = hirpc.receive(dart_response);
+    // writefln("received: %s", received.toPretty);
+
+    // writefln("BEFORE: available=%s, total=%s, locked=%s", wallet.available_balance, wallet.total_balance, wallet.locked_balance);
+    wallet.setResponseUpdateWallet(received);
+
+    // writefln("AFTER: available=%s, total=%s, locked=%s", wallet.available_balance, wallet.total_balance, wallet.locked_balance);
+    auto should_have = wallet.calcTotal(bills_in_dart);
+    assert(should_have == wallet.total_balance, format("should have %s had %s", should_have, wallet.total_balance));
+
+    // writefln("WALLET TOTAL: %s", wallet.total_balance);
+
+    // try to create a contract with the information again
+
+}
 
 @safe
 unittest {
     // check get fee greater than user amount
-    
+
     auto wallet1 = StdSecureWallet("some words", "1234");
     const bill1 = wallet1.requestBill(1000.TGN);
     wallet1.addBill(bill1);
@@ -1057,8 +1169,6 @@ unittest {
     TagionCurrency fee;
     auto p = wallet1.createPayment([payment_request], signed_contract, fee);
     assert(p.value, format("ERROR: %s %s", p.value, p.msg));
-    
-
 
     assert(signed_contract.contract.inputs.uniq.array.length == signed_contract.contract.inputs.length, "signed contract inputs invalid");
 }
@@ -1132,7 +1242,7 @@ unittest {
 unittest {
     const words = "long second damp volcano laptop friend noble citizen hip cake safe gown";
     const pin = "1234";
-    
+
     auto wallet1 = StdSecureWallet(words, pin);
     auto wallet2 = StdSecureWallet(words, pin);
     assert(wallet1.getPublicKey == wallet2.getPublicKey, "should have generated the same publickey");
@@ -1144,10 +1254,10 @@ unittest {
     assert(wallet1.getPublicKey == wallet4.getPublicKey, "should have generated the same publickey");
 }
 
-
 // check pubkey is the same after login/logout
 unittest {
     import std.stdio;
+
     const words = "long second damp volcano laptop friend noble citizen hip cake safe gown";
     const pin = "1234";
 

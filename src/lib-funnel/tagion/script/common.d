@@ -195,15 +195,13 @@ struct TagionHead {
 }
 
 struct TagionGlobals {
-    @label("events") const(Fingerprint)[] event_prints;
     @label("total") BigNumber total;
     @label("total_burned") BigNumber total_burned;
     @label("number_of_bills") long number_of_bills;
     @label("burnt_bills") long burnt_bills;
 
     mixin HiBONRecord!(q{
-        this(const(Fingerprint)[] event_prints, const(BigNumber) total, const(BigNumber) total_burned, const(long) number_of_bills, const(long) burnt_bills) {
-            this.event_prints = event_prints;
+        this(const(BigNumber) total, const(BigNumber) total_burned, const(long) number_of_bills, const(long) burnt_bills) {
             this.total = total;
             this.total_burned = total_burned;
             this.number_of_bills = number_of_bills;
@@ -211,6 +209,23 @@ struct TagionGlobals {
         }
     });
 }
+// struct TagionGlobals {
+//     @label("events") const(Fingerprint)[] event_prints;
+//     @label("total") BigNumber total;
+//     @label("total_burned") BigNumber total_burned;
+//     @label("number_of_bills") long number_of_bills;
+//     @label("burnt_bills") long burnt_bills;
+
+//     mixin HiBONRecord!(q{
+//         this(const(Fingerprint)[] event_prints, const(BigNumber) total, const(BigNumber) total_burned, const(long) number_of_bills, const(long) burnt_bills) {
+//             this.event_prints = event_prints;
+//             this.total = total;
+//             this.total_burned = total_burned;
+//             this.number_of_bills = number_of_bills;
+//             this.burnt_bills = burnt_bills;
+//         }
+//     });
+// }
 
 @recordType("@$Vote")
 struct ConsensusVoting {

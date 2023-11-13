@@ -37,10 +37,10 @@ struct Supervisor {
         immutable tn = opts.task_names;
 
         auto replicator_handle = spawn!ReplicatorService(tn.replicator, opts.replicator);
-        
+
         // signs data for hirpc response
         auto dart_handle = spawn!DARTService(tn.dart, opts.dart, tn, shared_net);
-       
+
         auto hirpc_verifier_handle = spawn!HiRPCVerifierService(tn.hirpc_verifier, opts.hirpc_verifier, tn);
 
         auto inputvalidator_handle = spawn!InputValidatorService(tn.inputvalidator, opts.inputvalidator, tn);
@@ -52,16 +52,16 @@ struct Supervisor {
         // verifies signature
         auto collector_handle = spawn(immutable(CollectorService)(tn), tn.collector);
 
-        auto tvm_handle = spawn(immutable(TVMService)(opts.tvm, tn), tn.tvm);
+        auto tvm_handle = spawn(immutable(TVMService)(TVMOptions.init, tn), tn.tvm);
 
         // signs data
-        auto transcript_handle = spawn!TranscriptService(tn.transcript, opts.transcript, opts.wave.number_of_nodes, shared_net,tn);
+        auto transcript_handle = spawn!TranscriptService(tn.transcript, TranscriptOptions.init, opts.wave.number_of_nodes, shared_net, tn);
 
         auto dart_interface_handle = spawn(immutable(DARTInterfaceService)(opts.dart_interface, tn), tn.dart_interface);
 
         auto services = tuple(dart_handle, replicator_handle, hirpc_verifier_handle, inputvalidator_handle, epoch_creator_handle, collector_handle, tvm_handle, dart_interface_handle, transcript_handle);
 
-        if (waitforChildren(Ctrl.ALIVE, 5.seconds)) {
+        if (waitforChildren(Ctrl.ALIVE, 20.seconds)) {
             run;
         }
         else {

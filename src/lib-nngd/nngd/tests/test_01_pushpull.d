@@ -4,6 +4,7 @@ import std.string;
 import std.concurrency;
 import core.thread;
 import std.datetime.systime;
+import std.exception;
 
 import nngd;
 import nngtestutil;
@@ -26,7 +27,7 @@ void sender_worker(string url)
             nng_sleep(msecs(100));
             continue;
         }
-        assert(rc == 0);
+        enforce(rc == 0);
     }
     log(nngtest_socket_properties(s,"sender"));
     while(1){
@@ -34,7 +35,7 @@ void sender_worker(string url)
         if(k > 9) line = "END";
         auto buf = cast(ubyte[])line.dup;
         rc = s.send!(ubyte[])(buf);
-        assert(rc == 0);
+        enforce(rc == 0);
         log("SS sent: ",k," : ",line);
         k++;
         nng_sleep(msecs(500));
@@ -53,7 +54,7 @@ void receiver_worker(string url)
     s.recvtimeout = msecs(1000);
     rc = s.listen(url);
     log("RR: listening");
-    assert(rc == 0);
+    enforce(rc == 0);
     log(nngtest_socket_properties(s,"receiver"));
     while(1){
         sz = s.receivebuf(buf, buf.length);
