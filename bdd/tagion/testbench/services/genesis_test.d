@@ -1,8 +1,8 @@
 module tagion.testbench.services.genesis_test;
 // Default import list for bdd
+import std.typecons : Tuple;
 import tagion.behaviour;
 import tagion.hibon.Document;
-import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
 
 enum feature = Feature(

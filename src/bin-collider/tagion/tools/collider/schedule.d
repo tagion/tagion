@@ -1,26 +1,26 @@
 module tagion.tools.collider.schedule;
 
-import std.traits;
-import std.array;
-import std.typecons : tuple, Tuple;
+import core.thread;
 import std.algorithm;
-import std.process;
+import std.algorithm;
+import std.array;
+import std.array;
 import std.datetime.systime;
+import std.file : exists, mkdirRecurse;
 import std.format;
 import std.path : buildNormalizedPath, setExtension;
-import std.file : mkdirRecurse, exists;
-import std.stdio;
+import std.process;
 import std.range;
-import std.algorithm;
-import std.array;
-import core.thread;
-import tagion.utils.JSONCommon;
-import tagion.tools.collider.trace : ScheduleTrace;
-import tagion.tools.Basic : dry_switch, verbose_switch;
-import tagion.utils.envexpand;
+import std.stdio;
+import std.traits;
+import std.typecons : Tuple, tuple;
 import tagion.hibon.HiBONJSON;
-import tagion.tools.toolsexception;
+import tagion.tools.Basic : dry_switch, verbose_switch;
 import tagion.tools.collider.BehaviourOptions;
+import tagion.tools.collider.trace : ScheduleTrace;
+import tagion.tools.toolsexception;
+import tagion.utils.JSONCommon;
+import tagion.utils.envexpand;
 
 @safe
 struct RunUnit {

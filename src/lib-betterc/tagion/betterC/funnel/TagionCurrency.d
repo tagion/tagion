@@ -1,15 +1,14 @@
 module tagion.betterC.funnel.TagionCurrency;
 
-import std.format;
-import std.traits : isIntegral, isNumeric, isFloatingPoint;
 import std.algorithm.searching : canFind;
+import std.format;
 import std.range : only;
+import std.traits : isFloatingPoint, isIntegral, isNumeric;
 
 // import std.array : join;
 // import std.conv : to;
-import tagion.betterC.hibon.HiBON;
 import tagion.betterC.hibon.Document;
-
+import tagion.betterC.hibon.HiBON;
 import tagion.betterC.wallet.WalletRecords;
 
 // import tagion.hibon.HiBONRecord : HiBONRecord, Label, RecordType;

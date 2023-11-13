@@ -1,15 +1,13 @@
 module tagion.testbench.inputvalidator;
 
-import tagion.behaviour.Behaviour;
-import tagion.testbench.services;
-
-import tagion.tools.Basic;
-
-import std.format;
-import tagion.actor;
-import tagion.services.inputvalidator;
 import std.concurrency;
 import std.exception;
+import std.format;
+import tagion.actor;
+import tagion.behaviour.Behaviour;
+import tagion.services.inputvalidator;
+import tagion.testbench.services;
+import tagion.tools.Basic;
 
 mixin Main!(_main);
 
@@ -38,7 +36,6 @@ int _main(string[] _) {
 
     input_handle.send(Sig.STOP);
     import core.time;
-
     import nngd;
 
     auto sock = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);

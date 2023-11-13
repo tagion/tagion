@@ -3,15 +3,14 @@
 */
 module tagion.wallet.WalletRecords;
 
-import tagion.hibon.HiBONRecord;
-import tagion.wallet.KeyRecover : KeyRecover;
-import tagion.wallet.Basic : saltHash;
-
 import tagion.basic.Types : Buffer;
-import tagion.crypto.Types : Pubkey;
 import tagion.crypto.SecureInterfaceNet : HashNet;
-import tagion.hibon.Document : Document;
+import tagion.crypto.Types : Pubkey;
 import tagion.dart.DARTBasic;
+import tagion.hibon.Document : Document;
+import tagion.hibon.HiBONRecord;
+import tagion.wallet.Basic : saltHash;
+import tagion.wallet.KeyRecover : KeyRecover;
 
 /// Contains the quiz question
 @safe
@@ -51,11 +50,11 @@ struct DevicePIN {
 
 @safe
 unittest {
-    import tagion.crypto.SecureNet : StdHashNet;
-    import std.string : representation;
-    import std.range;
     import std.array;
     import std.random;
+    import std.range;
+    import std.string : representation;
+    import tagion.crypto.SecureNet : StdHashNet;
     import tagion.hibon.HiBONJSON;
     import tagion.utils.Miscellaneous;
 

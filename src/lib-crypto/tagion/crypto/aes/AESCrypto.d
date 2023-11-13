@@ -78,10 +78,10 @@ struct AESCrypto(int KEY_LENGTH) {
     alias decrypt = crypt!false;
 
     unittest {
-        import tagion.utils.Random;
-        import std.range : iota;
         import std.algorithm.iteration : map;
         import std.array : array;
+        import std.range : iota;
+        import tagion.utils.Random;
 
         { // Encrypt
             immutable(ubyte[]) indata = [

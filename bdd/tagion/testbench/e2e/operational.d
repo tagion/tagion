@@ -1,30 +1,26 @@
 module tagion.testbench.e2e.operational;
 // Default import list for bdd
-import tagion.behaviour;
-import tagion.hibon.Document;
-import std.typecons : Tuple;
-import tagion.testbench.tools.Environment;
-
-import tagion.tools.Basic;
-
-import std.format;
+import core.thread;
+import core.time;
 import std.algorithm;
+import std.file;
+import std.format;
+import std.getopt;
+import std.path;
 import std.range;
 import std.stdio;
-import std.path;
-import std.getopt;
-import std.file;
-
-import tagion.tools.wallet.WalletOptions : WalletOptions;
-import tagion.tools.wallet.WalletInterface;
-import tagion.script.common;
-import tagion.script.TagionCurrency;
+import std.typecons : Tuple;
+import tagion.behaviour;
 import tagion.communication.HiRPC;
+import tagion.hibon.Document;
+import tagion.script.TagionCurrency;
+import tagion.script.common;
+import tagion.testbench.tools.Environment;
+import tagion.tools.Basic;
+import tagion.tools.wallet.WalletInterface;
+import tagion.tools.wallet.WalletOptions : WalletOptions;
 import tagion.utils.JSONCommon;
 import tagion.wallet.AccountDetails;
-
-import core.time;
-import core.thread;
 
 alias operational = tagion.testbench.e2e.operational;
 
@@ -88,13 +84,13 @@ int _main(string[] args) {
     }
 
     int run_counter;
-    while (true) {
-        auto operational_feature = automation!operational;
-        operational_feature.SendNContractsFromwallet1Towallet2(wallet_interfaces, sendkernel);
-        operational_feature.run;
-        run_counter++;
-        Thread.sleep(1.seconds);
-    }
+    // while (true) {
+    auto operational_feature = automation!operational;
+    operational_feature.SendNContractsFromwallet1Towallet2(wallet_interfaces, sendkernel);
+    operational_feature.run;
+    run_counter++;
+    Thread.sleep(1.seconds);
+    // }
     return 0;
 }
 
@@ -127,7 +123,7 @@ class SendNContractsFromwallet1Towallet2 {
         writefln("sendkernel: %s, sendshell: %s", sendkernel, send);
         // dfmt off
         const wallet_switch = WalletInterface.Switch(
-                update : true, 
+                update: true, 
                 sendkernel: sendkernel,
                 send: send);
         // dfmt on
@@ -163,11 +159,11 @@ class SendNContractsFromwallet1Towallet2 {
 
             if (sendkernel) {
                 auto response = sendSubmitHiRPC(options.contract_address, hirpc_submit, contract_net);
-                check(!response.isError, "Error when sending submit");
+                check(!response.isError, "Error when sending kernel submit");
             }
             else {
-                auto response = sendShellSubmitHiRPC(options.contract_address, hirpc_submit, contract_net);
-                check(!response.isError, "Error when sending submit");
+                auto response = sendShellSubmitHiRPC(options.addr ~ options.contract_shell_endpoint, hirpc_submit, contract_net);
+                check(!response.isError, "Error when sending shell submit");
             }
 
             result.get;

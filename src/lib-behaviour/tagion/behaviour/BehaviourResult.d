@@ -3,9 +3,9 @@ The standard result types from a BDD
 */
 module tagion.behaviour.BehaviourResult;
 
-import tagion.hibon.HiBONRecord;
+public import tagion.communication.HiRPC : ResultOk;
 import tagion.hibon.Document;
-public import tagion.communication.HiRPC: ResultOk;
+import tagion.hibon.HiBONRecord;
 
 static Document result_ok = result(ResultOk()).toDoc; /// This
 
@@ -22,8 +22,8 @@ struct BehaviourError {
     mixin HiBONRecord!(q{
             this(Throwable e) nothrow @trusted {
                 import std.exception : assumeWontThrow;
-                import std.string : splitLines;
                 import std.stdio;
+                import std.string : splitLines;
                 msg = e.msg;
                 trace = assumeWontThrow(e.toString.splitLines);
                 line = e.line;

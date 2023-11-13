@@ -1,7 +1,6 @@
 module tagion.wasm.WastAssert;
 
 import std.outbuffer;
-
 import tagion.basic.Types;
 import tagion.hibon.HiBONRecord;
 import tagion.wasm.WasmWriter;

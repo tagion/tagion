@@ -1,19 +1,16 @@
 module tagion.script.NameCardScripts;
 
 import std.typecons;
-
+import tagion.basic.Types : Buffer, FileExtension;
+import tagion.communication.HiRPC;
+import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.dart.DART;
 import tagion.dart.DARTFile;
-import tagion.basic.Types : Buffer, FileExtension;
-
-import tagion.communication.HiRPC;
-import tagion.gossip.AddressBook;
-import tagion.crypto.SecureInterfaceNet : HashNet;
-import tagion.hibon.Document;
-import tagion.hibon.HiBONRecord;
-import tagion.hibon.HiBONJSON;
-
 import tagion.dart.Recorder;
+import tagion.gossip.AddressBook;
+import tagion.hibon.Document;
+import tagion.hibon.HiBONJSON;
+import tagion.hibon.HiBONRecord;
 
 Nullable!T readStandardRecord(T)(
         const(HashNet) net,

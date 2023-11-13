@@ -1,23 +1,19 @@
 module tagion.tools.subscribe;
 
-import std.stdio;
+import core.time;
+import nngd;
+import std.algorithm : countUntil;
 import std.conv;
 import std.format;
-import std.algorithm : countUntil;
-
-import core.time;
-
-import tagion.tools.Basic;
-import tagion.utils.getopt;
-import tagion.basic.Version;
-import tagion.tools.revision;
+import std.stdio;
 import tagion.basic.Types;
-
+import tagion.basic.Version;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
 import tagion.services.subscription : SubscriptionServiceOptions;
-
-import nngd;
+import tagion.tools.Basic;
+import tagion.tools.revision;
+import tagion.utils.getopt;
 
 mixin Main!(_main);
 

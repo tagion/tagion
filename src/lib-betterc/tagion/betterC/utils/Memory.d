@@ -1,10 +1,9 @@
 module tagion.betterC.utils.Memory;
 
-import std.traits : isArray, ForeachType, isPointer, PointerTarget, Unqual;
-import tagion.betterC.utils.platform;
-
-import std.conv : emplace;
 import core.stdc.string : memcpy;
+import std.conv : emplace;
+import std.traits : ForeachType, PointerTarget, Unqual, isArray, isPointer;
+import tagion.betterC.utils.platform;
 
 private import tagion.crypto.secp256k1.c.secp256k1;
 private import tagion.crypto.secp256k1.c.secp256k1_ecdh;

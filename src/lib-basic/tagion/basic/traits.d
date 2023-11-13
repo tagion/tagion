@@ -1,9 +1,8 @@
 /// Extension of std.traist used in the tagion project
 module tagion.basic.traits;
-import std.traits : getUDAs, hasUDA;
-import std.range.primitives : isInputRange;
-
 import std.meta : ApplyRight, Filter, staticMap;
+import std.range.primitives : isInputRange;
+import std.traits : getUDAs, hasUDA;
 
 /**
     Similar to .stringof but working on member functions
@@ -12,9 +11,9 @@ import std.meta : ApplyRight, Filter, staticMap;
     Returns: the name of the symbol 
 */
 template getName(alias member) {
-    import std.traits : fullyQualifiedName;
     import std.algorithm.iteration : splitter;
     import std.range : tail;
+    import std.traits : fullyQualifiedName;
 
     enum getName = fullyQualifiedName!(member).splitter('.').tail(1).front;
 }

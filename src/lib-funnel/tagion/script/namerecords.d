@@ -1,12 +1,12 @@
 module tagion.script.namerecords;
 
 //import tagion.script.common;
-import tagion.script.standardnames;
 import tagion.basic.Types : Buffer;
-import tagion.crypto.Types : Pubkey, Signature, Fingerprint;
-import tagion.hibon.HiBONRecord;
-import tagion.hibon.Document;
+import tagion.crypto.Types : Fingerprint, Pubkey, Signature;
 import tagion.dart.DARTBasic;
+import tagion.hibon.Document;
+import tagion.hibon.HiBONRecord;
+import tagion.script.standardnames;
 import tagion.utils.StdTime;
 
 @safe:

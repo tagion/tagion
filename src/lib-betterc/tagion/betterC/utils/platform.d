@@ -34,8 +34,8 @@ public {
     }
     else {
 
-        import core.stdc.stdlib : calloc, realloc, free;
         import core.stdc.stdio;
+        import core.stdc.stdlib : calloc, free, realloc;
     }
 }
 
@@ -95,8 +95,8 @@ extern(C) int main() {
 }
 ++/
 
-import tagion.betterC.utils.RBTree : RBTreeT;
 import tagion.betterC.hibon.HiBON : HiBONT;
+import tagion.betterC.utils.RBTree : RBTreeT;
 
 alias HiBONT_RBTreeT = RBTreeT!(HiBONT.Member*).Node;
 extern (C) HiBONT_RBTreeT _D6tagion7betterC5utils6RBTree__T7RBTreeTTPSQBqQBm5hibon5HiBON6HiBONT6MemberZQBs4NILLSQDgQDcQCxQCu__TQCqTQClZQCy4Node;

@@ -1,21 +1,18 @@
 module tagion.gossip.GossipNet;
 
-import std.concurrency;
-import std.format;
-import std.exception : assumeUnique;
-import std.string : representation;
 import core.time : MonoTime;
-
-import tagion.crypto.Types : Pubkey;
-
-import tagion.hibon.Document : Document;
-
-import tagion.crypto.SecureNet : StdSecureNet;
-import tagion.gossip.InterfaceNet;
-import tagion.hashgraph.HashGraph;
-import tagion.hashgraph.Event;
+import std.concurrency;
+import std.exception : assumeUnique;
+import std.format;
+import std.string : representation;
 import tagion.basic.ConsensusExceptions;
+import tagion.crypto.SecureNet : StdSecureNet;
+import tagion.crypto.Types : Pubkey;
+import tagion.gossip.InterfaceNet;
+import tagion.hashgraph.Event;
+import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.HashGraphBasic;
+import tagion.hibon.Document : Document;
 
 @safe
 abstract class StdGossipNet : StdSecureNet, GossipNet {

@@ -1,33 +1,32 @@
 /// Main node supervisor service for managing and starting other tagion services
 module tagion.services.supervisor;
 
-import std.path;
-import std.file;
-import std.stdio;
-import std.socket;
-import std.typecons;
 import core.time;
-
-import tagion.logger.Logger;
+import std.file;
+import std.path;
+import std.socket;
+import std.stdio;
+import std.typecons;
+import tagion.GlobalSignals : stopsignal;
 import tagion.actor;
 import tagion.actor.exceptions;
-import tagion.crypto.SecureNet;
 import tagion.crypto.SecureInterfaceNet;
-import tagion.dart.DARTFile;
+import tagion.crypto.SecureNet;
 import tagion.dart.DARTBasic : DARTIndex;
-import tagion.utils.JSONCommon;
-import tagion.utils.pretend_safe_concurrency : locate, send;
-import tagion.services.options;
+import tagion.dart.DARTFile;
+import tagion.logger.Logger;
 import tagion.services.DART;
 import tagion.services.DARTInterface;
-import tagion.services.inputvalidator;
-import tagion.services.hirpc_verifier;
-import tagion.services.epoch_creator;
-import tagion.services.collector;
 import tagion.services.TVM;
-import tagion.services.transcript;
+import tagion.services.collector;
+import tagion.services.epoch_creator;
+import tagion.services.hirpc_verifier;
+import tagion.services.inputvalidator;
+import tagion.services.options;
 import tagion.services.replicator;
-import tagion.GlobalSignals : stopsignal;
+import tagion.services.transcript;
+import tagion.utils.JSONCommon;
+import tagion.utils.pretend_safe_concurrency : locate, send;
 
 @safe
 struct Supervisor {
@@ -75,8 +74,8 @@ struct Supervisor {
             }
         }
         (() @trusted { // NNG shoould be safe
-            import nngd;
             import core.time;
+            import nngd;
 
             NNGSocket input_sock = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
             input_sock.dial(opts.inputvalidator.sock_addr);

@@ -1,13 +1,12 @@
 module tagion.testbench.dart.dartinfo;
-import tagion.crypto.SecureInterfaceNet : SecureNet;
-import tagion.communication.HiRPC : HiRPC;
-import tagion.utils.Random;
 import std.algorithm;
+import std.algorithm.iteration : each;
 import std.range;
 import std.stdio;
 import std.traits;
-
-import std.algorithm.iteration : each;
+import tagion.communication.HiRPC : HiRPC;
+import tagion.crypto.SecureInterfaceNet : SecureNet;
+import tagion.utils.Random;
 
 struct DartInfo {
     const string dartfilename;

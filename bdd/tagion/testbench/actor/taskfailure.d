@@ -3,18 +3,17 @@ module tagion.testbench.actor.taskfailure;
 import tagion.testbench.actor.util;
 
 // Default import list for bdd
-import tagion.behaviour;
-import tagion.hibon.Document;
-import std.typecons : Tuple;
-import tagion.testbench.tools.Environment;
-import tagion.utils.pretend_safe_concurrency;
-import std.stdio;
 import core.time;
 import std.format : format;
-
-import tagion.basic.tagionexceptions;
+import std.stdio;
+import std.typecons : Tuple;
 import tagion.actor.actor;
 import tagion.actor.exceptions;
+import tagion.basic.tagionexceptions;
+import tagion.behaviour;
+import tagion.hibon.Document;
+import tagion.testbench.tools.Environment;
+import tagion.utils.pretend_safe_concurrency;
 
 enum feature = Feature(
             "Actor TaskFailure",

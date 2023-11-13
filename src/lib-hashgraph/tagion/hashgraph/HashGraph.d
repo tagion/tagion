@@ -1,37 +1,34 @@
 /// Consensus HashGraph main object 
 module tagion.hashgraph.HashGraph;
 
-import std.stdio;
-import std.conv;
-import std.format;
-import std.exception : assumeWontThrow;
 import std.algorithm;
-import std.range;
 import std.array : array;
-
-import tagion.hashgraph.Event;
-import tagion.hashgraph.Round;
+import std.conv;
+import std.exception : assumeWontThrow;
+import std.format;
+import std.range;
+import std.stdio;
+import std.typecons : Flag, No, Yes;
+import tagion.basic.Debug : __format;
+import tagion.basic.Types : Buffer;
+import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet;
+import tagion.crypto.Types : Privkey, Pubkey, Signature;
+import tagion.gossip.InterfaceNet;
+import tagion.hashgraph.Event;
+import tagion.hashgraph.HashGraphBasic;
+import tagion.hashgraph.RefinementInterface;
+import tagion.hashgraph.Round;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONRecord : isHiBONRecord;
-import tagion.communication.HiRPC;
-import tagion.utils.StdTime;
-import tagion.hashgraph.RefinementInterface;
-
-import tagion.basic.Debug : __format;
-import tagion.basic.Types : Buffer;
-import tagion.crypto.Types : Pubkey, Signature, Privkey;
-import tagion.hashgraph.HashGraphBasic;
-import tagion.utils.BitMask;
-import std.typecons : Flag, Yes, No;
-
 import tagion.logger.Logger;
-import tagion.gossip.InterfaceNet;
+import tagion.utils.BitMask;
+import tagion.utils.StdTime;
 
 // debug
-import tagion.hibon.HiBONJSON;
 import tagion.basic.Debug;
+import tagion.hibon.HiBONJSON;
 import tagion.utils.Miscellaneous : cutHex;
 
 version (unittest) {
@@ -953,8 +950,8 @@ class HashGraph {
      Dumps all events in the Hashgraph to a file
      +/
     void fwrite(string filename, Pubkey[string] node_labels = null) {
-        import tagion.hibon.HiBONFile : fwrite;
         import tagion.hashgraphview.EventView;
+        import tagion.hibon.HiBONFile : fwrite;
 
         size_t[Pubkey] node_id_relocation;
         if (node_labels.length) {
@@ -984,8 +981,8 @@ class HashGraph {
 }
 
 version (unittest) {
-    import basic = tagion.basic.basic;
     import std.range : dropExactly;
+    import basic = tagion.basic.basic;
     import tagion.utils.Miscellaneous : cutHex;
 
     const(basic.FileNames) fileId(T = HashGraph)(string prefix = null) @safe {

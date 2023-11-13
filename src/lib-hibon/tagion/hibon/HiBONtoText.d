@@ -13,15 +13,15 @@ module tagion.hibon.HiBONtoText;
 
 */
 
-import misc = tagion.utils.Miscellaneous;
-import tagion.hibon.HiBONException;
 import std.format;
+import tagion.hibon.HiBONException;
+import misc = tagion.utils.Miscellaneous;
 import std.base64;
-import tagion.hibon.HiBONRecord;
-import tagion.hibon.Document;
+import std.typecons : TypedefType;
 public import tagion.basic.Types;
 import tagion.basic.Types : encodeBase64;
-import std.typecons : TypedefType;
+import tagion.hibon.Document;
+import tagion.hibon.HiBONRecord;
 
 alias toHex = misc.toHexString;
 

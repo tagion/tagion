@@ -3,21 +3,18 @@
 module tagion.betterC.wallet.KeyRecover;
 
 //use net directly
+import tagion.betterC.utils.Memory;
 import tagion.betterC.wallet.Net;
 
-import tagion.betterC.utils.Memory;
-
 // // use better C doc, hibon, hibon record
-import tagion.betterC.hibon.HiBON : HiBONT;
-import tagion.betterC.hibon.Document : Document;
-
-import tagion.basic.Types : Buffer;
 import std.string : representation;
+import tagion.basic.Types : Buffer;
+import tagion.betterC.hibon.Document : Document;
+import tagion.betterC.hibon.HiBON : HiBONT;
 import std.range : iota, indexed, lockstep; // commented stuff produce error no TypeInfo in betterC
+import std.algorithm.iteration : filter, map;
 import std.algorithm.mutation : copy;
-import std.algorithm.iteration : map, filter;
 import tagion.betterC.utils.Miscellaneous;
-
 import tagion.betterC.wallet.WalletRecords : RecoverGenerator;
 
 struct KeyRecover {

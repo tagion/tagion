@@ -3,41 +3,40 @@ module tagion.mobile.WalletWrapperSdk;
 import tagion.mobile.DocumentWrapperApi;
 
 // import tagion.mobile.WalletStorage;
-import tagion.hibon.Document;
 import core.runtime : rt_init, rt_term;
 import core.stdc.stdlib;
-import std.stdint;
-import std.string : toStringz, fromStringz;
 import std.array;
 import std.random;
+import std.stdint;
+import std.string : fromStringz, toStringz;
+import tagion.hibon.Document;
 
 //import std.stdio;
-import std.path;
-import std.range;
+import core.stdc.string;
 import std.algorithm;
 import std.file : exists, remove;
-import core.stdc.string;
+import std.path;
+import std.range;
 import std.string : splitLines;
-
-import Wallet = tagion.wallet.SecureWallet;
-import tagion.script.TagionCurrency;
-import tagion.script.common;
-import tagion.wallet.AccountDetails;
-import tagion.communication.HiRPC;
-import tagion.hibon.HiBON;
-import tagion.hibon.HiBONJSON;
-import tagion.hibon.HiBONRecord : HiBONRecord;
-import tagion.hibon.HiBONFile : fwrite, fread;
 import tagion.basic.Types : Buffer, FileExtension;
+import tagion.communication.HiRPC;
+import tagion.crypto.Cipher;
+import tagion.crypto.SecureNet : BadSecureNet, StdSecureNet;
+import tagion.crypto.SecureNet;
 import tagion.crypto.Types : Pubkey;
 import tagion.crypto.aes.AESCrypto;
-import tagion.crypto.SecureNet : StdSecureNet, BadSecureNet;
-import tagion.crypto.SecureNet;
-import tagion.wallet.KeyRecover;
-import tagion.wallet.WalletRecords : RecoverGenerator, DevicePIN;
-import tagion.crypto.Cipher;
+import tagion.hibon.HiBON;
+import tagion.hibon.HiBONFile : fread, fwrite;
+import tagion.hibon.HiBONJSON;
+import tagion.hibon.HiBONRecord : HiBONRecord;
+import tagion.script.TagionCurrency;
+import tagion.script.common;
 import tagion.utils.StdTime;
+import tagion.wallet.AccountDetails;
+import tagion.wallet.KeyRecover;
+import Wallet = tagion.wallet.SecureWallet;
 import tagion.wallet.WalletException;
+import tagion.wallet.WalletRecords : DevicePIN, RecoverGenerator;
 
 enum TAGION_HASH = import("revision.mixin").splitLines[2];
 
@@ -440,12 +439,12 @@ extern (C) {
         return 0;
     }
 
-    version (none) export uint get_derivers(uint8_t* deriversPtr) {
+    export uint get_account(uint8_t* accountPtr) {
         if (__wallet_storage.wallet.isLoggedin()) {
-            const encrDerivers = __wallet_storage.wallet.getEncrDerivers();
-            const deviversDocId = recyclerDoc.create(Document(encrDerivers.toHiBON));
+            
+            const accountDocId = recyclerDoc.create(__wallet_storage.wallet.account.toDoc);
 
-            *deriversPtr = cast(uint8_t) deviversDocId;
+            *accountPtr = cast(uint8_t) accountDocId;
 
             return 1;
         }
@@ -754,8 +753,8 @@ version (none) unittest {
     }
 
     import std.algorithm : map;
-    import std.string : representation;
     import std.range : zip;
+    import std.string : representation;
 
     auto bill_amounts = [200, 500, 100].map!(a => a.TGN);
     [200, 500, 100]
@@ -860,9 +859,8 @@ version (none) unittest {
 
         { // Add a new bill.
             import std.algorithm : map;
-            import std.string : representation;
             import std.range : zip;
-
+            import std.string : representation;
             import tagion.utils.Miscellaneous : hex;
 
             TagionBill[] newBills;
@@ -990,8 +988,8 @@ struct WalletStorage {
 }
 
 unittest {
-    import std.stdio;
     import std.exception;
+    import std.stdio;
 
     const work_path = new_test_path;
     scope (success) {
@@ -1045,8 +1043,8 @@ unittest {
 }
 
 version (unittest) {
-    import std.file;
     import std.conv : to;
+    import std.file;
 
     string new_test_path(string func = __FUNCTION__, const size_t line = __LINE__) {
         const result_path = [deleteme, func, line.to!string].join("_");

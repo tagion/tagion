@@ -2,19 +2,18 @@ module tagion.testbench.hirpcserver;
 
 import std.algorithm : remove;
 import std.conv : to;
-import std.socket : InternetAddress, Socket, SocketException, SocketSet, TcpSocket;
 import std.format;
+import std.socket : InternetAddress, Socket, SocketException, SocketSet, TcpSocket;
 
 // import std.stdio : writeln, writefln;
 import std.stdio;
-import tagion.communication.HiRPC;
-import tagion.hibon.HiBON;
 import tagion.Keywords;
-import tagion.gossip.GossipNet;
-import tagion.utils.Miscellaneous : toHexString;
 import tagion.basic.Types : Buffer;
-
+import tagion.communication.HiRPC;
+import tagion.gossip.GossipNet;
+import tagion.hibon.HiBON;
 import tagion.tools.Basic;
+import tagion.utils.Miscellaneous : toHexString;
 
 version (none) class HRPCNet : StdSecureNet {
     import tagion.hashgraph.HashGraph;
@@ -33,9 +32,9 @@ version (none) class HRPCNet : StdSecureNet {
 }
 
 import file = std.file;
-import std.file : tempDir, exists;
-import std.stdio;
+import std.file : exists, tempDir;
 import std.path;
+import std.stdio;
 import tagion.utils.Miscellaneous : toHexString;
 
 version (none) struct Bank {
@@ -46,8 +45,8 @@ version (none) struct Bank {
             "accountMakeExchange"
         ];
 
-    import tagion.Base : EnumText;
     import std.traits : EnumMembers;
+    import tagion.Base : EnumText;
 
     mixin(EnumText!("Transactions", _transactions));
 

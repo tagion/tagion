@@ -1,30 +1,29 @@
 /// Test for [tagion.services.inputvalidator]
 module tagion.testbench.services.inputvalidator;
 // Default import list for bdd
-import tagion.behaviour;
-import tagion.hibon.Document;
-import std.typecons : Tuple;
-import tagion.testbench.tools.Environment;
-import tagion.testbench.actor.util;
-
-import nngd;
 import core.time;
-import std.typecons;
+import nngd;
 import std.format;
 import std.stdio;
+import std.typecons : Tuple;
+import std.typecons;
 import tagion.actor;
 import tagion.actor.exceptions;
-import concurrency = tagion.utils.pretend_safe_concurrency;
+import tagion.basic.Types;
+import tagion.behaviour;
+import tagion.communication.HiRPC;
+import tagion.hibon.Document;
+import tagion.hibon.HiBON;
+import tagion.hibon.HiBONBase;
+import tagion.hibon.HiBONJSON;
+import tagion.logger.LogRecords : LogInfo;
+import tagion.logger.Logger;
 import tagion.services.inputvalidator;
 import tagion.services.messages;
-import tagion.communication.HiRPC;
+import tagion.testbench.actor.util;
+import tagion.testbench.tools.Environment;
 import tagion.tools.Basic;
-import tagion.basic.Types;
-import tagion.hibon.HiBON;
-import tagion.hibon.HiBONJSON;
-import tagion.hibon.HiBONBase;
-import tagion.logger.Logger;
-import tagion.logger.LogRecords : LogInfo;
+import concurrency = tagion.utils.pretend_safe_concurrency;
 import tagion.utils.pretend_safe_concurrency;
 
 enum feature = Feature(

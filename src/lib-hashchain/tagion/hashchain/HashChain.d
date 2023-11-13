@@ -3,7 +3,6 @@ module tagion.hashchain.HashChain;
 
 import std.range : empty;
 import std.range.primitives : back, popBack;
-
 import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Fingerprint;
 import tagion.hashchain.HashChainBlock : HashChainBlock;
@@ -163,8 +162,8 @@ import tagion.utils.Miscellaneous : decode;
 }
 
 version (unittest) {
-    import tagion.hibon.HiBONRecord : HiBONRecord, recordType, label, exclude;
     import tagion.crypto.SecureInterfaceNet : HashNet;
+    import tagion.hibon.HiBONRecord : HiBONRecord, exclude, label, recordType;
 
     @safe class DummyBlock : HashChainBlock {
         @exclude Fingerprint hash;
@@ -207,9 +206,8 @@ unittest {
     import std.file : rmdirRecurse;
     import std.path : extension, stripExtension;
     import std.range.primitives : back;
-
-    import tagion.basic.basic : tempfile;
     import tagion.basic.Types : Buffer, FileExtension;
+    import tagion.basic.basic : tempfile;
     import tagion.communication.HiRPC : HiRPC;
     import tagion.crypto.SecureNet : StdHashNet;
     import tagion.dart.Recorder : RecordFactory;

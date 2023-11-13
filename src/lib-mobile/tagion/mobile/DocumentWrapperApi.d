@@ -1,9 +1,8 @@
 module tagion.mobile.DocumentWrapperApi;
 
-import tagion.mobile.Recycle;
-
 import tagion.hibon.Document;
 import tagion.hibon.HiBON;
+import tagion.mobile.Recycle;
 
 // import tagion.basic.Recycle;
 // import tagion.gossip.GossipNet;
@@ -15,7 +14,7 @@ import tagion.crypto.SecureNet : StdHashNet;
 import core.runtime : rt_init, rt_term;
 import core.stdc.stdlib;
 import std.stdint;
-import std.string : toStringz, fromStringz;
+import std.string : fromStringz, toStringz;
 import tagion.basic.Types : Buffer;
 import tagion.hibon.HiBONJSON;
 
@@ -234,7 +233,7 @@ extern (C) {
 pragma(msg, "fixme(cbr): This unittest does not pass");
 version (none) unittest {
     pragma(msg, "fixme(cbr): Fix this unittest ");
-    import std.stdio : writeln, writefln;
+    import std.stdio : writefln, writeln;
     import std.string : fromStringz;
     import tagion.hibon.HiBON : HiBON;
 

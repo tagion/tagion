@@ -1,11 +1,11 @@
 module tagion.crypto.Cipher;
 
+import std.exception : assumeUnique, ifThrown;
 import tagion.basic.Types : Buffer;
 import tagion.crypto.Types : Pubkey;
-import tagion.hibon.HiBONRecord;
-import tagion.hibon.Document;
-import std.exception : assumeUnique, ifThrown;
 import tagion.crypto.random.random;
+import tagion.hibon.Document;
+import tagion.hibon.HiBONRecord;
 
 //import std.stdio;
 // import tagion.utils.Miscellaneous: toHexString, decode;
@@ -13,11 +13,11 @@ import tagion.crypto.random.random;
 @safe
 struct Cipher {
     import tagion.crypto.secp256k1.NativeSecp256k1;
-    import tagion.crypto.SecureNet : scramble, check;
-    import tagion.crypto.SecureInterfaceNet : SecureNet;
-    import tagion.crypto.aes.AESCrypto : AESCrypto;
-    import tagion.basic.ConsensusExceptions : ConsensusFailCode, SecurityConsensusException, ConsensusException;
     import std.digest.crc : crc32Of;
+    import tagion.basic.ConsensusExceptions : ConsensusException, ConsensusFailCode, SecurityConsensusException;
+    import tagion.crypto.SecureInterfaceNet : SecureNet;
+    import tagion.crypto.SecureNet : check, scramble;
+    import tagion.crypto.aes.AESCrypto : AESCrypto;
 
     alias AES = AESCrypto!256;
     enum CRC_SIZE = crc32Of.length;
@@ -111,14 +111,13 @@ struct Cipher {
     }
 
     unittest {
-        import tagion.utils.Miscellaneous : toHexString, decode;
-    import tagion.crypto.SecureNet;
-        import tagion.hibon.HiBON : HiBON;
-        import tagion.hibon.Document : Document;
-        import tagion.basic.basic : fileId;
-        import tagion.basic.Types : FileExtension;
-
         import std.algorithm.searching : all, any;
+        import tagion.basic.Types : FileExtension;
+        import tagion.basic.basic : fileId;
+    import tagion.crypto.SecureNet;
+        import tagion.hibon.Document : Document;
+        import tagion.hibon.HiBON : HiBON;
+        import tagion.utils.Miscellaneous : decode, toHexString;
 
         immutable passphrase = "Secret pass word";
         auto net = new StdSecureNet; /// Only works with ECDSA for now 

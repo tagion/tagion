@@ -1,20 +1,18 @@
 module tagion.tools.tprofview;
 
-import std.getopt;
-import std.stdio;
+import std.algorithm;
+import std.conv : to;
+import std.exception : assumeWontThrow;
 import std.file : exists;
 import std.format;
+import std.getopt;
 import std.range;
-import std.algorithm;
-import std.typecons;
-import std.conv : to;
+import std.stdio;
 import std.traits;
+import std.typecons;
 import std.utf;
-import std.exception : assumeWontThrow;
-
-import tagion.tools.revision;
-
 import tagion.tools.Basic;
+import tagion.tools.revision;
 
 mixin Main!(_main);
 

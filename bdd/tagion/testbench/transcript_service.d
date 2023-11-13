@@ -1,16 +1,16 @@
 module tagion.testbench.transcript_service;
 
-import tagion.tools.Basic;
 import tagion.behaviour.Behaviour;
-import tagion.testbench.tools.Environment;
 import tagion.testbench.services;
+import tagion.testbench.tools.Environment;
+import tagion.tools.Basic;
 
 /*
-import std.stdio;
-import std.path;
 import std.algorithm;
 import std.array;
+import std.path;
 import std.range;
+import std.stdio;
 */
 mixin Main!(_main);
 

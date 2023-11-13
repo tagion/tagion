@@ -1,11 +1,10 @@
 module tagion.logger.Statistic;
 
-import std.typecons : Tuple, Flag, Yes, No;
-import std.meta : AliasSeq;
-import std.format;
-
-import tagion.hibon.HiBONRecord;
 import std.exception : assumeWontThrow;
+import std.format;
+import std.meta : AliasSeq;
+import std.typecons : Flag, No, Tuple, Yes;
+import tagion.hibon.HiBONRecord;
 
 @safe @recordType("S")
 struct Statistic(T, Flag!"histogram" flag = No.histogram) {
@@ -21,7 +20,7 @@ struct Statistic(T, Flag!"histogram" flag = No.histogram) {
     }
 
     void opCall(const T value) pure nothrow {
-        import std.algorithm.comparison : min, max;
+        import std.algorithm.comparison : max, min;
 
         _min = min(_min, value);
         _max = max(_max, value);
@@ -67,9 +66,9 @@ struct Statistic(T, Flag!"histogram" flag = No.histogram) {
     static if (flag == Yes.histogram) {
 
         string histogramString() pure const nothrow {
-            import std.range : repeat;
-            import std.algorithm : sort, min;
+            import std.algorithm : min, sort;
             import std.format;
+            import std.range : repeat;
 
             string[] result;
             foreach (keypair; _histogram.byKeyValue.array.sort!((a, b) => a.key < b.key)) {

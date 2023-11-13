@@ -1,9 +1,9 @@
 module tagion.testbench.actor.util;
 
-import tagion.utils.pretend_safe_concurrency : receiveTimeout, MessageMismatch;
-import tagion.actor.exceptions;
 import core.time;
 import std.variant;
+import tagion.actor.exceptions;
+import tagion.utils.pretend_safe_concurrency : MessageMismatch, receiveTimeout;
 
 private string format(Args...)(Args args) @trusted {
     import f = std.format;

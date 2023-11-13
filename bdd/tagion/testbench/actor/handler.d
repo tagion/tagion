@@ -3,15 +3,14 @@ module tagion.testbench.actor.handler;
 import tagion.testbench.actor.util;
 
 // Default import list for bdd
+import core.time;
+import std.stdio;
+import std.typecons : Tuple;
+import tagion.actor.actor;
 import tagion.behaviour;
 import tagion.hibon.Document;
-import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
-
 import tagion.utils.pretend_safe_concurrency;
-import tagion.actor.actor;
-import std.stdio;
-import core.time;
 
 enum feature = Feature(
             "Actor handler request",

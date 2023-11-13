@@ -1,8 +1,8 @@
 module tagion.crypto.secp256k1.NativeSecp256k1Musig;
 @safe:
-import std.string : representation;
-import std.range;
 import std.algorithm;
+import std.range;
+import std.string : representation;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 import tagion.crypto.secp256k1.c.secp256k1_musig;
 import tagion.crypto.secp256k1.c.secp256k1;
@@ -28,6 +28,32 @@ class NativeSecp256k1Musig : NativeSecp256k1Schnorr {
                 &session);
         return ret != 0;
     }
+
+    /*
+    @trusted
+    immutable(ubyte[]) musigPartialSign(
+            ref const(secp256k1_musig_keyagg_cache) cache,
+            ref ubyte[] secnonce,
+            scope const(ubyte[]) keypair,
+            scope const(ubyte[]) session) const 
+    in(secnonce.length == secp256k1_musig_secnonce.data.length)
+    in(keypair.length == secp256k1_keypair.data.length)
+    in(session.length == secp256k1_musig_session.data.length)
+out(result) {
+        assert(result.length == 32)
+}
+    do {
+        secp256k1_musig_partial_sig partial_sig;        
+        auto _secnonce=cast(secp256k1_musig_secnonce*)&secnonce[0];
+        const _keypair=cast(secp256k1_keypair*)&keypair[0];
+        const _session=cast(secp256k1_musig_session*)&session[0];
+        
+    //auto _partial_sig=cast(secp256k1_musig_partial_sig*)
+        //cons musigPartialSign(cache, partial_sig, secnonce, keypair, session);    
+        ubyte[32]  
+        return secp256k1_musig_partial_sig.data.idup;
+    }
+*/
 
     @trusted
     bool partialVerify(
@@ -254,9 +280,9 @@ version (unittest) {
     }
 
     import std.algorithm;
-    import std.range;
     import std.array;
     import std.format;
+    import std.range;
     import std.stdio;
 }
 
@@ -431,10 +457,10 @@ unittest {
 }
 
 unittest { /// Simple musig sign
-    import std.range;
     import std.algorithm;
     import std.array;
     import std.format;
+    import std.range;
     import std.stdio;
 
     const msg = "Message to be signed".representation.sha256;
@@ -464,12 +490,22 @@ unittest { /// Simple musig sign
         secp256k1_musig_partial_sig[] partial_signatures;
         secp256k1_musig_secnonce[] secnonces;
         secnonces.length=partial_signatures.length=number_of_participants;
-        //secp256k1_musig_keyagg_cache cache;
-        //iota(number_of_participants)
-        
+       
+    
+        version(none)
+         {
+            const ret=iota(number_of_participants)
+            .map!((index) => crypt.musigPartialSign(
+partial_signatures[index],
+secnonces[index],
+keypairs[index],
+session))
+            .all!((ret) => ret != 0);
+
+        }
         {
             ubyte[] signature;
-            //const ret=crypt.musigSignAgg(signature
+       //     const ret=crypt.musigSignAgg(signature
         }
 
     }

@@ -1,26 +1,26 @@
 module tagion.tools.boot.stiefel;
 
+import std.array;
+import std.file : exists;
 import std.format;
 import std.getopt;
 import std.path;
 import std.stdio;
-import std.array;
-import std.file : exists;
+import tagion.basic.Types : Buffer, FileExtension;
+import tagion.basic.basic : isinit;
+import tagion.basic.tagionexceptions;
 import tagion.crypto.SecureNet;
 import tagion.dart.Recorder;
-import tagion.tools.revision;
-import tagion.basic.Types : FileExtension, Buffer;
-import tagion.tools.Basic;
-import tagion.hibon.HiBONFile : fwrite, fread;
-import tagion.basic.tagionexceptions;
-import tagion.utils.Term;
 import tagion.hibon.Document;
-import tagion.tools.boot.genesis;
+import tagion.hibon.HiBONFile : fread, fwrite;
 import tagion.hibon.HiBONFile;
+import tagion.script.TagionCurrency;
 import tagion.script.common;
 import tagion.script.standardnames;
-import tagion.basic.basic : isinit;
-import tagion.script.TagionCurrency;
+import tagion.tools.Basic;
+import tagion.tools.boot.genesis;
+import tagion.tools.revision;
+import tagion.utils.Term;
 
 alias check = Check!TagionException;
 

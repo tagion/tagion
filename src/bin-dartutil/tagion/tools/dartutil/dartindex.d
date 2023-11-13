@@ -2,11 +2,11 @@ module tagion.tools.dartutil.dartindex;
 
 import std.format;
 import tagion.basic.Types : Buffer;
-import tagion.hibon.Document;
-import tagion.dart.DARTBasic : DARTIndex, dartKey;
 import tagion.crypto.SecureInterfaceNet : HashNet;
-import tagion.tools.toolsexception;
+import tagion.dart.DARTBasic : DARTIndex, dartKey;
+import tagion.hibon.Document;
 import tagion.tools.Basic;
+import tagion.tools.toolsexception;
 
 DARTIndex dartIndexDecode(const(HashNet) net, const(char[]) str) {
     import tagion.hibon.HiBONtoText;
@@ -14,11 +14,11 @@ DARTIndex dartIndexDecode(const(HashNet) net, const(char[]) str) {
     import std.base64;
     import std.algorithm;
     import std.array : split;
-    import tagion.hibon.HiBONJSON : typeMap, NotSupported;
-    import tagion.hibon.HiBONBase;
-    import tagion.hibon.HiBONFile : fread;
     import std.traits;
     import tagion.hibon.Document : mut;
+    import tagion.hibon.HiBONBase;
+    import tagion.hibon.HiBONFile : fread;
+    import tagion.hibon.HiBONJSON : NotSupported, typeMap;
 
     verbose("dart-index %s", str);
 

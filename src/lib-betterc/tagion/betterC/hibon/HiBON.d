@@ -18,8 +18,8 @@ import std.meta : staticIndexOf;
 //import std.algorithm.iteration : map, fold, each;
 import std.traits : EnumMembers, ForeachType, Unqual, isMutable, isBasicType, PointerTarget,
     isAssociativeArray;
-import std.range : isInputRange, enumerate;
 import std.meta : AliasSeq;
+import std.range : enumerate, isInputRange;
 
 //import std.conv : to;
 //import std.typecons : TypedefType;
@@ -28,11 +28,11 @@ import tagion.betterC.hibon.BigNumber;
 import tagion.betterC.hibon.Document;
 import tagion.betterC.hibon.HiBONBase;
 import tagion.betterC.utils.Bailout;
-import tagion.betterC.utils.RBTree;
-import tagion.betterC.utils.Memory;
-import tagion.betterC.utils.Text;
-import tagion.betterC.utils.BinBuffer;
 import tagion.betterC.utils.Basic;
+import tagion.betterC.utils.BinBuffer;
+import tagion.betterC.utils.Memory;
+import tagion.betterC.utils.RBTree;
+import tagion.betterC.utils.Text;
 import LEB128 = tagion.betterC.utils.LEB128;
 
 import tagion.betterC.utils.platform;

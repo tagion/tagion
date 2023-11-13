@@ -1,31 +1,30 @@
 /// Consensus HashGraph main object 
 module tagion.testbench.hashgraph.hashgraph_test_network;
 
+import core.memory : pageSize;
+import std.algorithm;
+import std.conv;
+import std.exception : assumeWontThrow;
 import std.format;
 import std.range;
-import std.algorithm;
-
-import tagion.logger.Logger : log;
+import std.stdio;
+import std.typecons;
 import tagion.basic.Types : Buffer;
+import tagion.communication.HiRPC;
 import tagion.crypto.Types;
+import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.HashGraphBasic;
-import tagion.hashgraph.Event;
-import tagion.hashgraph.Round;
-import tagion.communication.HiRPC;
-import tagion.utils.StdTime;
-import tagion.utils.Miscellaneous : cutHex;
-import tagion.hibon.Document;
-import tagion.hibon.HiBONRecord : isHiBONRecord;
-import tagion.hibon.HiBON;
-import std.stdio;
-import std.exception : assumeWontThrow;
-import core.memory : pageSize;
-import tagion.utils.BitMask;
-import std.conv;
 import tagion.hashgraph.Refinement;
-import std.typecons;
+import tagion.hashgraph.Round;
+import tagion.hibon.Document;
+import tagion.hibon.HiBON;
+import tagion.hibon.HiBONRecord : isHiBONRecord;
+import tagion.logger.Logger : log;
 import tagion.services.options;
+import tagion.utils.BitMask;
+import tagion.utils.Miscellaneous : cutHex;
+import tagion.utils.StdTime;
 
 class TestRefinement : StdRefinement {
 
@@ -89,15 +88,14 @@ class TestRefinement : StdRefinement {
 @safe
 static class TestNetwork { //(NodeList) if (is(NodeList == enum)) {
     import core.thread.fiber : Fiber;
-    import tagion.crypto.SecureNet : StdSecureNet;
-
-    import tagion.crypto.SecureInterfaceNet : SecureNet;
-    import tagion.gossip.InterfaceNet : GossipNet;
-    import tagion.utils.Random;
-    import tagion.utils.Queue;
-    import tagion.hibon.HiBONJSON;
-    import std.datetime.systime : SysTime;
     import core.time;
+    import std.datetime.systime : SysTime;
+    import tagion.crypto.SecureInterfaceNet : SecureNet;
+    import tagion.crypto.SecureNet : StdSecureNet;
+    import tagion.gossip.InterfaceNet : GossipNet;
+    import tagion.hibon.HiBONJSON;
+    import tagion.utils.Queue;
+    import tagion.utils.Random;
 
     TestGossipNet authorising;
     Random!size_t random;

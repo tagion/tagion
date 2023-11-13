@@ -1,8 +1,8 @@
 module tagion.basic.Debug;
 
 import std.exception : assumeWontThrow;
-import std.stdio;
 import std.format;
+import std.stdio;
 
 /* 
  * Function used information under debugging

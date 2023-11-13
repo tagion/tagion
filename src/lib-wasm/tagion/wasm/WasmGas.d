@@ -1,18 +1,18 @@
 module tagion.wasm.WasmGas;
 
-import tagion.wasm.WasmWriter;
 import tagion.wasm.WasmBase;
 import tagion.wasm.WasmExpr;
+import tagion.wasm.WasmWriter;
 import tagion.utils.LEB128;
 
-import std.traits : Unqual, TemplateArgsOf, PointerTarget, EnumMembers;
-import std.meta : staticMap;
-import std.outbuffer;
-import std.typecons : Tuple;
 import std.algorithm.comparison : max;
 import std.algorithm.iteration : map;
 import std.array : array;
 import std.format;
+import std.meta : staticMap;
+import std.outbuffer;
+import std.traits : EnumMembers, PointerTarget, TemplateArgsOf, Unqual;
+import std.typecons : Tuple;
 
 // import std.stdio;
 
@@ -286,11 +286,11 @@ struct WasmGas {
 }
 
 version (none) unittest {
-    import std.stdio;
-    import std.file;
     import std.exception : assumeUnique;
-    import tagion.wasm.Wast;
+    import std.file;
+    import std.stdio;
     import tagion.wasm.WasmReader;
+    import tagion.wasm.Wast;
 
     //      import std.file : fread=read, fwrite=write;
 

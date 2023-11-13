@@ -1,18 +1,17 @@
 /// Recycler for the blockfile.
 module tagion.dart.Recycler;
 
+import std.algorithm;
 import std.container.rbtree : RedBlackTree;
+import std.format;
 import std.range;
-import std.typecons : tuple;
 import std.stdio;
 import std.traits : PointerTarget, isImplicitlyConvertible;
-import std.format;
-
+import std.typecons : tuple;
 import tagion.basic.Types : Buffer;
 import tagion.dart.BlockFile : BlockFile, Index, check;
-import tagion.hibon.HiBONRecord : HiBONRecord, label, exclude, recordType;
-import tagion.hibon.HiBONFile : fwrite, fread;
-import std.algorithm;
+import tagion.hibon.HiBONFile : fread, fwrite;
+import tagion.hibon.HiBONRecord : HiBONRecord, exclude, label, recordType;
 
 /** 
  * The segments used for the recycler.
@@ -196,9 +195,9 @@ struct Recycler {
     Returns: true if the segments overlaps in the indices
     */
     private bool noOverlaps() const pure nothrow @nogc {
-        import std.range : slide;
-        import std.algorithm.searching : any;
         import std.algorithm.iteration : map;
+        import std.algorithm.searching : any;
+        import std.range : slide;
 
         if (indices.length <= 1) {
             return true;
@@ -398,11 +397,11 @@ struct Recycler {
 }
 
 version (unittest) {
-    import tagion.dart.BlockFile;
-    import tagion.basic.Types : FileExtension;
-    import std.range : iota;
     import std.algorithm.iteration : map;
+    import std.range : iota;
+    import tagion.basic.Types : FileExtension;
     import tagion.basic.basic : forceRemove;
+    import tagion.dart.BlockFile;
 
     enum SMALL_BLOCK_SIZE = 0x40;
 }

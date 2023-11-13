@@ -4,15 +4,14 @@
  */
 module tagion.behaviour.BehaviourFeature;
 
-import std.traits;
-import std.meta : AliasSeq, Filter, aliasSeqOf, ApplyLeft, ApplyRight, allSatisfy, anySatisfy, Alias, Erase, aliasSeqOf;
 import std.format;
+import std.meta : Alias, AliasSeq, ApplyLeft, ApplyRight, Erase, Filter, aliasSeqOf, aliasSeqOf, allSatisfy, anySatisfy;
+import std.traits;
 import std.typecons;
-import tagion.basic.traits : hasOneMemberUDA;
 import tagion.basic.basic : isOneOf, staticSearchIndexOf;
-
-import tagion.hibon.HiBONRecord;
+import tagion.basic.traits : hasOneMemberUDA;
 import tagion.hibon.Document;
+import tagion.hibon.HiBONRecord;
 
 /* 
  * Set the common property for
@@ -423,11 +422,11 @@ static unittest {
 }
 
 version (unittest) {
-    import BehaviourUnittest = tagion.behaviour.BehaviourUnittest;
-    import std.stdio;
-    import std.algorithm.iteration : map, joiner;
     import std.algorithm.comparison : equal;
-    import std.range : zip, only;
-    import std.typecons;
+    import std.algorithm.iteration : joiner, map;
     import std.array;
+    import std.range : only, zip;
+    import std.stdio;
+    import std.typecons;
+    import BehaviourUnittest = tagion.behaviour.BehaviourUnittest;
 }

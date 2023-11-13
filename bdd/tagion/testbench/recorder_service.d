@@ -1,13 +1,12 @@
 module tagion.testbench.replicator_service;
 
-import tagion.tools.Basic;
-import tagion.behaviour.Behaviour;
-import tagion.testbench.services;
-import tagion.testbench.tools.Environment;
 import std.file;
 import std.path : buildPath;
-
+import tagion.behaviour.Behaviour;
 import tagion.services.replicator : ReplicatorOptions;
+import tagion.testbench.services;
+import tagion.testbench.tools.Environment;
+import tagion.tools.Basic;
 
 mixin Main!(_main);
 

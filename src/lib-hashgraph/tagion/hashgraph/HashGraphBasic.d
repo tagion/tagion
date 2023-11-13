@@ -1,29 +1,26 @@
 /// HashGraph basic support functions
 module tagion.hashgraph.HashGraphBasic;
 
-import std.stdio;
-import std.format;
-import std.typecons : TypedefType;
 import std.exception : assumeWontThrow;
-
+import std.format;
+import std.stdio;
+import std.traits : isSigned;
+import std.typecons : TypedefType;
+import tagion.basic.ConsensusExceptions : ConsensusException, GossipConsensusException, convertEnum;
 import tagion.basic.Types : Buffer;
 import tagion.basic.basic : EnumText;
-import tagion.crypto.Types : Signature, Pubkey, Fingerprint;
+import tagion.communication.HiRPC : HiRPC;
+import tagion.crypto.SecureInterfaceNet : SecureNet;
+import tagion.crypto.Types : Fingerprint, Pubkey, Signature;
+import tagion.crypto.Types;
 import tagion.hashgraph.Event;
 import tagion.hashgraph.HashGraph : HashGraph;
-import tagion.utils.BitMask;
-import tagion.hibon.HiBON : HiBON;
-import tagion.communication.HiRPC : HiRPC;
-import tagion.hibon.HiBONRecord;
-import tagion.hibon.HiBONJSON : JSONString;
-import tagion.utils.StdTime;
-import tagion.crypto.Types;
-import std.traits : isSigned;
-
 import tagion.hibon.Document : Document;
-import tagion.crypto.SecureInterfaceNet : SecureNet;
-
-import tagion.basic.ConsensusExceptions : convertEnum, GossipConsensusException, ConsensusException;
+import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.HiBONJSON : JSONString;
+import tagion.hibon.HiBONRecord;
+import tagion.utils.BitMask;
+import tagion.utils.StdTime;
 
 enum minimum_nodes = 3;
 import tagion.utils.Miscellaneous : cutHex;
@@ -115,7 +112,7 @@ struct EventBody {
     import tagion.basic.ConsensusExceptions;
 
     protected alias check = Check!HashGraphConsensusException;
-    import std.traits : getSymbolsByUDA, OriginalType, Unqual, hasMember;
+    import std.traits : OriginalType, Unqual, getSymbolsByUDA, hasMember;
 
     @label("$p") @optional @filter(q{!a.empty}) Document payload; // Transaction
     @label("$m") @optional @(filter.Initialized) Buffer mother; // Hash of the self-parent
@@ -195,7 +192,7 @@ struct EventPackage {
 
     mixin HiBONRecord!(
             q{
-            import tagion.basic.ConsensusExceptions: ConsensusCheck=Check, EventConsensusException, ConsensusFailCode;
+            import tagion.basic.ConsensusExceptions : ConsensusCheck = Check, ConsensusFailCode, EventConsensusException;
             protected alias consensus_check=ConsensusCheck!EventConsensusException;
             import std.stdio;
             /++

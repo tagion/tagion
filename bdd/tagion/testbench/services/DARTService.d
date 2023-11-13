@@ -1,43 +1,42 @@
 module tagion.testbench.services.DARTService;
 
-import tagion.behaviour;
-import tagion.hibon.Document;
-import std.typecons : Tuple;
-import tagion.testbench.tools.Environment;
-
-import tagion.actor;
-import tagion.services.DART;
-import tagion.services.messages;
-import std.stdio;
-import std.path;
-import std.file : exists, remove;
+import core.time;
 import std.algorithm;
 import std.array;
-import tagion.testbench.dart.dart_helper_functions;
-import tagion.dart.Recorder;
-import tagion.utils.pretend_safe_concurrency : receiveTimeout, receiveOnly, register, thisTid;
+import std.file : exists, remove;
+import std.path;
+import std.stdio;
+import std.typecons : Tuple;
+import tagion.actor;
+import tagion.behaviour;
 import tagion.dart.DARTBasic : DARTIndex;
-import core.time;
+import tagion.dart.Recorder;
+import tagion.hibon.Document;
+import tagion.services.DART;
+import tagion.services.messages;
+import tagion.testbench.dart.dart_helper_functions;
+import tagion.testbench.tools.Environment;
+import tagion.utils.pretend_safe_concurrency : receiveOnly, receiveTimeout, register, thisTid;
 
 // import tagion.crypto.SecureNet;
+import std.random;
+import tagion.Keywords;
+import tagion.basic.Types;
+import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.SecureNet : StdHashNet, StdSecureNet;
+import tagion.crypto.Types;
 import tagion.dart.DART;
 import tagion.dart.DARTBasic;
-import std.random;
-import tagion.hibon.HiBONRecord;
-import tagion.basic.Types;
-import tagion.crypto.Types;
-import tagion.communication.HiRPC;
-import tagion.dart.DARTcrud : dartRead, dartBullseye, dartCheckRead;
 import tagion.dart.DARTFile : DARTFile;
+import tagion.dart.DARTcrud : dartBullseye, dartCheckRead, dartRead;
 import tagion.hibon.HiBONJSON;
-import tagion.Keywords;
-import tagion.services.replicator;
-import tagion.services.DARTInterface;
-import tagion.services.replicator : modify_log;
-import tagion.logger.Logger;
+import tagion.hibon.HiBONRecord;
 import tagion.logger.LogRecords : LogInfo;
+import tagion.logger.Logger;
+import tagion.services.DARTInterface;
+import tagion.services.replicator;
+import tagion.services.replicator : modify_log;
 import tagion.testbench.actor.util;
 
 enum feature = Feature(

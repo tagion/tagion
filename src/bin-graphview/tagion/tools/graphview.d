@@ -1,25 +1,23 @@
 module tagion.tools.graphview;
-import std.getopt;
-import std.file : fread = read, fwrite = write, exists;
-import std.format;
-import std.path : extension;
-import std.exception : assumeUnique;
-import std.traits : EnumMembers;
-import std.array : join;
-import std.outbuffer;
 import std.algorithm : min;
+import std.array : join;
 import std.conv : to;
-
+import std.exception : assumeUnique;
+import std.file : exists, fread = read, fwrite = write;
+import std.format;
+import std.functional : toDelegate;
+import std.getopt;
+import std.outbuffer;
+import std.path : extension;
+import std.traits : EnumMembers;
+import std.traits : isIntegral;
+import tagion.basic.basic : EnumText;
+import tagion.hashgraphview.EventView : EventView;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONValid : error_callback;
-import tagion.hashgraphview.EventView : EventView;
 import tagion.tools.revision;
 import tagion.utils.BitMask;
-import std.traits : isIntegral;
-import std.functional : toDelegate;
-
-import tagion.basic.basic : EnumText;
 
 protected enum _params = [
     "events",

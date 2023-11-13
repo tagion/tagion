@@ -4,23 +4,20 @@ import tagion.betterC.hibon.HiBONBase;
 
 //import tagion.betterC.hibon.HiBONRecord;
 import tagion.betterC.hibon.BigNumber;
-import tagion.betterC.utils.sdt;
-import tagion.betterC.utils.Stack;
-import tagion.betterC.utils.RBTree;
 import tagion.betterC.utils.BinBuffer;
 import tagion.betterC.utils.Memory;
+import tagion.betterC.utils.RBTree;
+import tagion.betterC.utils.Stack;
+import tagion.betterC.utils.sdt;
 import tagion.betterC.utils.LEB128;
+import core.stdc.stdio;
+import tagion.betterC.hibon.Document;
+import tagion.betterC.hibon.HiBON;
+import tagion.betterC.mobile.Recycle;
+import tagion.betterC.mobile.WalletWrapperApi;
 import Bailout = tagion.betterC.utils.Bailout;
 import tagion.betterC.utils.Text;
-import tagion.betterC.hibon.HiBON;
-import tagion.betterC.hibon.Document;
-
-import tagion.betterC.mobile.Recycle;
 import tagion.betterC.wallet.KeyRecover;
-
-import tagion.betterC.mobile.WalletWrapperApi;
-
-import core.stdc.stdio;
 
 static void callUnittest(string parent, Members...)() {
     static foreach (i, x; Members) {

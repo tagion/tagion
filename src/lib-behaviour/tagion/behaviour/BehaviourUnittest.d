@@ -4,10 +4,10 @@ import tagion.behaviour.BehaviourFeature;
 
 /// This module is only use to support the unittest
 version (unittest) {
-    import tagion.hibon.HiBON;
-    import tagion.hibon.Document;
     import std.format;
     import std.process;
+    import tagion.hibon.Document;
+    import tagion.hibon.HiBON;
 
     version (none) {
         immutable(string) REPOROOT;

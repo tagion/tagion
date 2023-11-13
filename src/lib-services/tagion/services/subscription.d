@@ -1,20 +1,18 @@
 module tagion.services.subscription;
 @safe:
 
-import std.variant;
+import core.time : msecs;
+import nngd;
 import std.array;
-
+import std.format;
+import std.variant;
 import tagion.actor;
-import tagion.logger;
-import tagion.logger.LogRecords;
+import tagion.communication.HiRPC;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON;
-import tagion.communication.HiRPC;
 import tagion.hibon.HiBONRecord;
-
-import nngd;
-import std.format;
-import core.time : msecs;
+import tagion.logger;
+import tagion.logger.LogRecords;
 
 struct SubscriptionServiceOptions {
     import tagion.utils.JSONCommon;

@@ -1,7 +1,7 @@
 module tagion.wasm.WastTokenizer;
 
-import tagion.basic.Debug;
 import std.traits;
+import tagion.basic.Debug;
 
 enum Chars : char {
     NUL = '\0',
@@ -62,8 +62,8 @@ struct WastTokenizer {
     }
 
     void check(const bool flag, string msg = null, string file = __FILE__, const size_t code_line = __LINE__) nothrow {
-        import std.stdio;
         import std.exception : assumeWontThrow;
+        import std.stdio;
 
         if (!flag) {
             assumeWontThrow((() {
@@ -75,8 +75,8 @@ struct WastTokenizer {
     }
 
     T get(T)() nothrow if (isIntegral!T) {
-        import std.conv;
         import std.algorithm.comparison : min;
+        import std.conv;
 
         try {
             enum hex_prefix = "0x";
@@ -254,8 +254,8 @@ struct WastTokenizer {
 }
 
 version (unittest) {
-    import tagion.basic.basic : unitfile;
     import std.file : readText;
+    import tagion.basic.basic : unitfile;
 
     immutable(string) wast_text;
     shared static this() {
@@ -296,9 +296,8 @@ version (unittest) {
 
 version (WAST) @safe
 unittest {
-    import tagion.basic.basic;
-
     import std.stdio;
+    import tagion.basic.basic;
 
     //    writefln("Unitfile file %s", mangle!(WastParser)(""));
     //writefln("Unitfile file %s", wast_text);

@@ -11,30 +11,25 @@ version (REDBLACKTREE_SAFE_PROBLEM) {
 else {
     import std.container.rbtree : RedBlackTree;
 }
-import std.range.primitives : isInputRange, ElementType;
 import std.algorithm.iteration : map;
 import std.format;
-import std.range : empty;
-import std.traits : FunctionTypeOf;
 import std.functional : toDelegate;
-
+import std.range : empty;
+import std.range.primitives : ElementType, isInputRange;
+import std.stdio : File, stdout;
+import std.traits : FunctionTypeOf;
+import tagion.basic.Message;
+import tagion.basic.Types : Buffer;
+import tagion.basic.Version : ver;
+import tagion.basic.tagionexceptions : Check;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.crypto.Types : Fingerprint;
+import tagion.dart.DARTBasic;
+import tagion.dart.DARTException : DARTRecorderException;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.HiBONRecord : label, optional, STUB, isHiBONRecord, GetLabel, isStub, recordType;
-import tagion.basic.Types : Buffer;
-import tagion.basic.Message;
-
-import tagion.dart.DARTException : DARTRecorderException;
-import tagion.dart.DARTBasic;
-
-import tagion.basic.tagionexceptions : Check;
-
+import tagion.hibon.HiBONRecord : GetLabel, STUB, isHiBONRecord, isStub, label, optional, recordType;
 import tagion.utils.Miscellaneous : toHexString;
-import tagion.basic.Version : ver;
-
-import std.stdio : stdout, File;
 
 alias hex = toHexString;
 
@@ -576,10 +571,10 @@ const Neutral = delegate(const(Archive) a) => a.type;
 unittest { // Archive
     //    import std.stdio;
     import std.format;
-    import tagion.hibon.HiBONJSON;
-    import tagion.dart.DARTFakeNet;
-    import tagion.utils.Miscellaneous : toHex = toHexString;
     import std.string : representation;
+    import tagion.dart.DARTFakeNet;
+    import tagion.hibon.HiBONJSON;
+    import tagion.utils.Miscellaneous : toHex = toHexString;
 
     auto net = new DARTFakeNet;
     auto manufactor = RecordFactory(net);
@@ -633,14 +628,13 @@ unittest { // Archive
 
 @safe
 unittest { /// RecordFactory.Recorder.insert range
-    import tagion.hibon.HiBONRecord;
-    import tagion.crypto.SecureNet;
-    import std.range : iota, chain;
-    import std.algorithm.sorting : sort;
     import std.algorithm.comparison : equal;
+    import std.algorithm.sorting : sort;
     import std.array : array;
-
+    import std.range : chain, iota;
     import std.stdio : writefln;
+    import tagion.crypto.SecureNet;
+    import tagion.hibon.HiBONRecord;
 
     const net = new StdHashNet;
     auto manufactor = RecordFactory(net);

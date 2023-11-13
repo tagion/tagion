@@ -1,15 +1,15 @@
 module tagion.hibon.HiBONValid;
 
-import tagion.hibon.Document : Document;
 import tagion.basic.Types : Buffer;
+import tagion.hibon.Document : Document;
 
 bool error_callback(const Document main_doc, const Document.Element.ErrorCode error_code,
         const(Document.Element) current, const(Document.Element) previous) nothrow @safe {
     import tagion.hibon.HiBONBase : Type, isHiBONBaseType;
     import LEB128 = tagion.utils.LEB128;
     import std.exception : assumeWontThrow;
-    import std.traits : isIntegral, EnumMembers;
     import std.stdio;
+    import std.traits : EnumMembers, isIntegral;
 
     static void hex_dump(Buffer data) {
         import std.algorithm.comparison : min;

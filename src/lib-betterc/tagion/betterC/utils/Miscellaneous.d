@@ -1,12 +1,12 @@
 module tagion.betterC.utils.Miscellaneous;
 
+import std.range.primitives : isInputRange;
 import tagion.basic.Types : Buffer, isBufferType;
 import tagion.betterC.utils.Memory;
-import std.range.primitives : isInputRange;
 
 // import std.algorithm : map;
 // import std.array : array;
-import std.algorithm.iteration : fold, cumulativeFold;
+import std.algorithm.iteration : cumulativeFold, fold;
 import tagion.betterC.utils.BinBuffer;
 
 void gene_xor(ref scope ulong[] result, scope const(ubyte[]) a, scope const(ubyte[]) b)

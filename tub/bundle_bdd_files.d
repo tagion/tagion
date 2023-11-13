@@ -1,11 +1,11 @@
 #!/usr/bin/env rdmd
 import std.algorithm;
 import std.array;
+import std.conv : to;
 import std.file;
 import std.path;
-import std.stdio;
 import std.process;
-import std.conv : to;
+import std.stdio;
 import std.string;
 
 auto get_md_paths(string pathname) {

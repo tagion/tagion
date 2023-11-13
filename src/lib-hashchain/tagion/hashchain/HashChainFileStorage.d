@@ -1,15 +1,14 @@
 /// \file HashChainFileStorage.d
 module tagion.hashchain.HashChainFileStorage;
 
-import std.array : array;
 import std.algorithm : filter, map;
+import std.array : array;
 import std.file;
 import std.path;
-
-import tagion.crypto.Types : Fingerprint;
 import tagion.basic.Types : Buffer, FileExtension;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.crypto.SecureNet : StdHashNet;
+import tagion.crypto.Types : Fingerprint;
 import tagion.hashchain.HashChainStorage : HashChainStorage;
 import tagion.hibon.HiBONFile : fread, fwrite;
 import tagion.utils.Miscellaneous : decode, toHexString;
@@ -94,8 +93,8 @@ import tagion.utils.Miscellaneous : decode, toHexString;
 
     private {
         static FileExtension getExtension() {
-            import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock;
             import tagion.epochain.EpochChainBlock : EpochChainBlock;
+            import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock;
 
             static if (is(Block == RecorderChainBlock)) {
                 return FileExtension.hibon;

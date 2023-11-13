@@ -1,10 +1,10 @@
 module tagion.dart.DARTRim;
 
-import tagion.hibon.HiBONRecord;
+import std.format;
+import tagion.basic.Debug;
 import tagion.basic.Types;
 import tagion.basic.basic : EnumText;
-import tagion.basic.Debug;
-import std.format;
+import tagion.hibon.HiBONRecord;
 import tagion.utils.Miscellaneous : toHexString;
 
 @safe:
@@ -248,8 +248,8 @@ do {
 
 @safe
 unittest {
-    import tagion.crypto.Types : Fingerprint;
     import std.stdio;
+    import tagion.crypto.Types : Fingerprint;
 
     ubyte[] buf1 = [0xA7];
     assert(sector(buf1) == 0xA700);

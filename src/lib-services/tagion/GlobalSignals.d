@@ -5,9 +5,8 @@ import core.stdc.stdio;
 import core.stdc.stdlib : exit, system;
 import core.stdc.string : strlen;
 import core.sync.event;
-import tagion.logger.Logger;
-
 import tagion.basic.Version;
+import tagion.logger.Logger;
 
 //import core.internal.execinfo;
 // The declaration of the backtrace function in the execinfo.d is not declared @nogc
@@ -74,8 +73,8 @@ private const(CallStackFile) call_stack_file() nothrow @nogc {
 }
 
 static if (ver.Posix && not_unittest) {
-    import core.sys.posix.unistd : STDERR_FILENO;
     import core.sys.posix.signal;
+    import core.sys.posix.unistd : STDERR_FILENO;
 
     enum BACKTRACE_SIZE = 0x80; /// Just big enough to hold the call stack
     static extern (C) void segment_fault(int sig, siginfo_t* ctx, void* ptr) @nogc nothrow {

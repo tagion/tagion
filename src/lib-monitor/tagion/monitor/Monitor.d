@@ -2,35 +2,29 @@ module tagion.monitor.Monitor;
 
 //import std.bitmanip : BitArray;
 
-import tagion.network.ListenerSocket;
-
 import tagion.hashgraph.Event : Event;
-import tagion.hashgraph.Round;
 import tagion.hashgraph.HashGraph : HashGraph;
 import tagion.hashgraph.HashGraphBasic : Tides;
+import tagion.hashgraph.Round;
 import tagion.hashgraphview.EventMonitorCallbacks : EventMonitorCallbacks;
+import tagion.network.ListenerSocket;
 
 //import tagion.hashg : EventMonitorCallbacks; //NetCallbacks;
 //import tagion.gossip.GossipNet : StdGossipNet;
-import tagion.basic.ConsensusExceptions : ConsensusException;
-
-import tagion.basic.Types : FileExtension;
-import tagion.basic.basic : basename, EnumText;
-import tagion.basic.Message;
-
-import tagion.crypto.Types : Pubkey;
-
-import tagion.hibon.HiBON;
-import tagion.hibon.Document;
-import tagion.hibon.HiBONJSON;
-import tagion.basic.tagionexceptions : TagionException;
-import tagion.utils.BitMask;
-import tagion.logger.Logger;
-
-import tagion.Keywords;
-
 import std.format;
 import std.string;
+import tagion.Keywords;
+import tagion.basic.ConsensusExceptions : ConsensusException;
+import tagion.basic.Message;
+import tagion.basic.Types : FileExtension;
+import tagion.basic.basic : EnumText, basename;
+import tagion.basic.tagionexceptions : TagionException;
+import tagion.crypto.Types : Pubkey;
+import tagion.hibon.Document;
+import tagion.hibon.HiBON;
+import tagion.hibon.HiBONJSON;
+import tagion.logger.Logger;
+import tagion.utils.BitMask;
 
 @safe
 class MonitorException : TagionException {
@@ -49,12 +43,11 @@ HiBON bitarray2bool(const(BitMask) bits) @trusted {
 }
 
 //import core.thread : dur, msecs, seconds;
-import std.concurrency;
-import std.stdio : writeln, writefln;
-import std.exception : assumeWontThrow;
-
-import std.socket;
 import core.thread;
+import std.concurrency;
+import std.exception : assumeWontThrow;
+import std.socket;
+import std.stdio : writefln, writeln;
 
 @safe
 class MonitorCallBacks : EventMonitorCallbacks {

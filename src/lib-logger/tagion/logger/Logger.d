@@ -2,16 +2,15 @@
 module tagion.logger.Logger;
 
 import core.sys.posix.pthread;
-import std.string;
 import std.format;
-
-import tagion.utils.pretend_safe_concurrency;
+import std.string;
 import tagion.basic.Types : Control;
-import tagion.hibon.HiBONRecord;
-import tagion.hibon.HiBONJSON;
-import tagion.hibon.Document : Document;
-import tagion.logger.LogRecords;
 import tagion.basic.Version : ver;
+import tagion.hibon.Document : Document;
+import tagion.hibon.HiBONJSON;
+import tagion.hibon.HiBONRecord;
+import tagion.logger.LogRecords;
+import tagion.utils.pretend_safe_concurrency;
 
 /// Is a but mask for the logger
 enum LogLevel {
@@ -171,8 +170,8 @@ is ready and has been started correctly
         version (unittest)
             return;
         if ((masks.length > 0) && (level & masks[$ - 1]) && !silent) {
-            import std.exception : assumeWontThrow;
             import std.conv : to;
+            import std.exception : assumeWontThrow;
 
             if (level & LogLevel.STDERR) {
                 import core.stdc.stdio;
@@ -224,8 +223,8 @@ is ready and has been started correctly
                 logger_subscription_tid.send(info, data);
             }
             catch (Exception e) {
-                import std.stdio;
                 import std.exception : assumeWontThrow;
+                import std.stdio;
 
                 assumeWontThrow({
                     stderr.writefln("%s", e.msg);
@@ -431,8 +430,8 @@ unittest {
 }
 
 version (Posix) {
-    import std.string : toStringz;
     import core.sys.posix.pthread;
+    import std.string : toStringz;
 
     extern (C) int pthread_setname_np(pthread_t, const char*) nothrow;
 

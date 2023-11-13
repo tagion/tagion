@@ -1,20 +1,17 @@
 module tagion.hibon.HiBONBase;
 
-import tagion.basic.basic : isOneOf;
-
-import tagion.utils.StdTime;
-
 import std.format;
 import std.meta : AliasSeq, allSatisfy;
+import tagion.basic.basic : isOneOf;
+import tagion.utils.StdTime;
 import std.traits : isBasicType, isSomeString, isNumeric, isType, EnumMembers,
     Unqual, getUDAs, hasUDA, FieldNameTuple;
-import std.typecons : tuple, TypedefType;
-import std.range.primitives : isInputRange;
-
-import std.system : Endian;
 import bin = std.bitmanip;
-import tagion.hibon.HiBONException;
+import std.range.primitives : isInputRange;
+import std.system : Endian;
+import std.typecons : TypedefType, tuple;
 import tagion.hibon.BigNumber;
+import tagion.hibon.HiBONException;
 import LEB128 = tagion.utils.LEB128;
 
 alias binread(T, R) = bin.read!(T, Endian.littleEndian, R);
@@ -657,9 +654,9 @@ unittest { // Check less_than
 
 ///
 unittest { // Check is_key_valid
+    import std.algorithm.iteration : each, map;
     import std.conv : to;
     import std.range : iota;
-    import std.algorithm.iteration : map, each;
 
     assert(!is_key_valid(""));
     string text = " "; // SPACE

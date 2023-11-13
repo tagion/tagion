@@ -1,12 +1,12 @@
 module tagion.utils.Miscellaneous;
 
-import tagion.basic.Types : Buffer, isBufferType;
-import std.exception;
-import tagion.basic.tagionexceptions : TagionException;
-import std.range.primitives : isInputRange;
 import std.algorithm : map;
+import std.algorithm.iteration : cumulativeFold, fold;
 import std.array;
-import std.algorithm.iteration : fold, cumulativeFold;
+import std.exception;
+import std.range.primitives : isInputRange;
+import tagion.basic.Types : Buffer, isBufferType;
+import tagion.basic.tagionexceptions : TagionException;
 
 @trusted
 string toHexString(bool UCASE = false, BUF)(BUF buffer) pure nothrow

@@ -4,7 +4,7 @@ module tagion.betterC.utils.Text;
 
 @nogc:
 
-import std.traits : isIntegral, isSigned, Unqual;
+import std.traits : Unqual, isIntegral, isSigned;
 import tagion.betterC.utils.Memory;
 import tagion.betterC.utils.platform : calloc;
 

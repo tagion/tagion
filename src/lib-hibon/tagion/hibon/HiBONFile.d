@@ -1,11 +1,11 @@
 module tagion.hibon.HiBONFile;
 import file = std.file;
-import tagion.hibon.HiBON;
 import tagion.hibon.Document;
+import tagion.hibon.HiBON;
 import tagion.hibon.HiBONRecord;
 import LEB128 = tagion.utils.LEB128;
-import std.stdio : File;
 import std.exception : assumeUnique;
+import std.stdio : File;
 import std.typecons : No;
 
 /++
@@ -59,8 +59,8 @@ T fread(T, Args...)(const(char[]) filename, Args args) if (isHiBONRecord!T) {
 @safe
 Document fread(ref File file, const size_t max_size = 0) {
     import LEB128 = tagion.utils.LEB128;
-    import tagion.hibon.HiBONException : check;
     import std.format;
+    import tagion.hibon.HiBONException : check;
 
     enum LEB128_SIZE = LEB128.DataSize!size_t;
     ubyte[LEB128_SIZE] _buf;

@@ -1,18 +1,16 @@
 module tagion.testbench.hashgraph_swap;
 
-import tagion.behaviour.Behaviour;
-
-import tagion.behaviour.Behaviour;
-import tagion.tools.Basic;
-import tagion.testbench.hashgraph;
-import tagion.testbench.tools.Environment;
-import std.stdio;
-import std.path : buildPath;
-import std.file : mkdirRecurse;
-
 import std.conv;
+import std.file : mkdirRecurse;
 import std.format;
+import std.path : buildPath;
+import std.stdio;
+import tagion.behaviour.Behaviour;
+import tagion.behaviour.Behaviour;
+import tagion.testbench.hashgraph;
 import tagion.testbench.hashgraph.hashgraph_test_network;
+import tagion.testbench.tools.Environment;
+import tagion.tools.Basic;
 
 mixin Main!(_main);
 

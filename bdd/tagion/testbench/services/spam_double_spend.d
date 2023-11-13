@@ -1,38 +1,37 @@
 module tagion.testbench.services.spam_double_spend;
 // Default import list for bdd
-import tagion.behaviour;
-import tagion.hibon.Document;
 import std.typecons : Tuple;
-import tagion.testbench.tools.Environment;
-
-import tagion.wallet.SecureWallet : SecureWallet;
+import tagion.actor;
+import tagion.behaviour;
+import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.SecureNet : StdSecureNet;
-import tagion.tools.wallet.WalletInterface;
-import tagion.services.options;
+import tagion.dart.DARTcrud;
 import tagion.hibon.Document;
+import tagion.hibon.Document;
+import tagion.hibon.HiBONJSON;
+import tagion.hibon.HiBONRecord;
+import tagion.logger.LogRecords : LogInfo;
+import tagion.logger.Logger;
+import tagion.script.Currency : totalAmount;
 import tagion.script.TagionCurrency;
 import tagion.script.common;
 import tagion.script.execute;
-import tagion.script.Currency : totalAmount;
-import tagion.communication.HiRPC;
-import tagion.utils.pretend_safe_concurrency : receiveOnly, receiveTimeout;
-import tagion.logger.Logger;
-import tagion.logger.LogRecords : LogInfo;
-import tagion.actor;
+import tagion.services.options;
 import tagion.testbench.actor.util;
-import tagion.dart.DARTcrud;
-import tagion.hibon.HiBONJSON;
-import tagion.hibon.HiBONRecord;
 import tagion.testbench.services.helper_functions;
+import tagion.testbench.tools.Environment;
+import tagion.tools.wallet.WalletInterface;
+import tagion.utils.pretend_safe_concurrency : receiveOnly, receiveTimeout;
+import tagion.wallet.SecureWallet : SecureWallet;
 
 
-import std.range;
-import std.algorithm;
-import core.time;
 import core.thread;
-import std.stdio;
+import core.time;
+import std.algorithm;
 import std.format;
+import std.range;
+import std.stdio;
 
 alias StdSecureWallet = SecureWallet!StdSecureNet;
 enum CONTRACT_TIMEOUT = 40;
