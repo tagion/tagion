@@ -23,6 +23,9 @@ import tagion.communication.HiRPC;
 import tagion.utils.JSONCommon;
 import tagion.wallet.AccountDetails;
 
+import core.time;
+import core.thread;
+
 alias operational = tagion.testbench.e2e.operational;
 
 mixin Main!(_main);
@@ -84,10 +87,15 @@ int _main(string[] args) {
         writefln("Wallet logged in %s", wallet_interface.secure_wallet.isLoggedin);
     }
 
-    auto manycontracts_feature = automation!operational;
-    manycontracts_feature.SendNContractsFromwallet1Towallet2(wallet_interfaces, sendkernel);
-    manycontracts_feature.run;
-    return 1;
+    int run_counter;
+    while (true) {
+        auto operational_feature = automation!operational;
+        operational_feature.SendNContractsFromwallet1Towallet2(wallet_interfaces, sendkernel);
+        operational_feature.run;
+        run_counter++;
+        Thread.sleep(1.seconds);
+    }
+    return 0;
 }
 
 enum feature = Feature(
@@ -170,9 +178,6 @@ class SendNContractsFromwallet1Towallet2 {
 
     @When("all the contracts have been executed")
     Document executed() @trusted {
-        import core.time;
-        import core.thread;
-
         Thread.sleep(15.seconds);
         return result_ok;
     }
