@@ -88,13 +88,13 @@ int _main(string[] args) {
     }
 
     int run_counter;
-    while (true) {
-        auto operational_feature = automation!operational;
-        operational_feature.SendNContractsFromwallet1Towallet2(wallet_interfaces, sendkernel);
-        operational_feature.run;
-        run_counter++;
-        Thread.sleep(1.seconds);
-    }
+    // while (true) {
+    auto operational_feature = automation!operational;
+    operational_feature.SendNContractsFromwallet1Towallet2(wallet_interfaces, sendkernel);
+    operational_feature.run;
+    run_counter++;
+    Thread.sleep(1.seconds);
+    // }
     return 0;
 }
 
@@ -127,7 +127,7 @@ class SendNContractsFromwallet1Towallet2 {
         writefln("sendkernel: %s, sendshell: %s", sendkernel, send);
         // dfmt off
         const wallet_switch = WalletInterface.Switch(
-                update : true, 
+                update: true, 
                 sendkernel: sendkernel,
                 send: send);
         // dfmt on
@@ -163,11 +163,11 @@ class SendNContractsFromwallet1Towallet2 {
 
             if (sendkernel) {
                 auto response = sendSubmitHiRPC(options.contract_address, hirpc_submit, contract_net);
-                check(!response.isError, "Error when sending submit");
+                check(!response.isError, "Error when sending kernel submit");
             }
             else {
-                auto response = sendShellSubmitHiRPC(options.contract_address, hirpc_submit, contract_net);
-                check(!response.isError, "Error when sending submit");
+                auto response = sendShellSubmitHiRPC(options.addr ~ options.contract_shell_endpoint, hirpc_submit, contract_net);
+                check(!response.isError, "Error when sending shell submit");
             }
 
             result.get;
