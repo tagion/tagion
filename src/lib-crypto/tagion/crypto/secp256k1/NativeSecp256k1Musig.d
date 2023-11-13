@@ -91,7 +91,7 @@ out(result) {
     /**
     This function is if only the aggregated pubkey is need and no signing
 */
-    @trusted
+     @trusted
     bool musigPubkeyAggregated(
             ref secp256k1_pubkey pubkey_agg,
             const(secp256k1_pubkey[]) pubkeys) const nothrow {
@@ -115,6 +115,7 @@ out(result) {
 
     }
 
+    version(none)
     @trusted
     bool musigPubkeyAggregated(
         ref secp256k1_pubkey pubkey_agg,
@@ -476,34 +477,37 @@ unittest { /// Simple musig sign
     auto index_range = iota(number_of_signers);
     const secrets = index_range.map!(index => format("Secret %d", index).representation.sha256).array;
     auto crypt = new NativeSecp256k1Musig;
-    ubyte[][] keypairs;
-    keypairs.length = secrets.length;
+    secp256k1_keypair[] keypairs;
+    secp256k1_pubkey[] pubkeys;
+    pubkeys.length=keypairs.length = secrets.length;
     index_range
         .each!(index => crypt.createKeyPair(secrets[index], keypairs[index]));
 
-    const pubkeys = keypairs.map!(keypair => crypt.getPubkey(keypair)).array;
+index_range
+    .each!(index => crypt.getPubkey(keypairs[index], pubkeys[index]));
 
-    pubkeys.each!(pubkey => writefln("%(%02x%)", pubkey));
+    pubkeys.each!(pubkey => writefln("%(%02x%)", pubkey.data));
 
     foreach (number_of_participants; iota(2, number_of_signers + 1)) {
         writefln("number_of_participants=%s", number_of_participants);
-        //secp256k1_musig_keyagg_cache cache;
+        secp256k1_musig_keyagg_cache cache;
         secp256k1_pubkey agg_pubkey;
         {
-            const ret=crypt.musigPubkeyAggregated(agg_pubkey, pubkeys[0..number_of_participants]);
+            const ret=crypt.musigPubkeyAggregated(cache, agg_pubkey, pubkeys[0..number_of_participants]);
             assert(ret, "Failed to aggregate the public keys");
         }
-        const session=format("Some random nonce %s", number_of_participants)
-        .representation.sha256;
+        const session=secp256k1_musig_session(
+            format("Some random nonce %s", number_of_participants)
+        .representation.sha256);
         secp256k1_musig_partial_sig[] partial_signatures;
         secp256k1_musig_secnonce[] secnonces;
         secnonces.length=partial_signatures.length=number_of_participants;
        
     
-        version(none)
          {
             const ret=iota(number_of_participants)
             .map!((index) => crypt.musigPartialSign(
+            cache,
 partial_signatures[index],
 secnonces[index],
 keypairs[index],
