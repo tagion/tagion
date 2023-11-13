@@ -301,6 +301,7 @@ extern (C) {
             const contractDocId = recyclerDoc.create(contract.toDoc);
             // Save wallet state to file.
             __wallet_storage.write;
+            __wallet_storage.read;
 
             *contractPtr = contractDocId;
             return 1;
@@ -333,6 +334,7 @@ extern (C) {
             const invoiceDocId = recyclerDoc.create(invoice.toDoc);
             // Save wallet state to file.
             __wallet_storage.write;
+            __wallet_storage.read;
 
             *invoicePtr = cast(uint8_t) invoiceDocId;
             return 1;
@@ -369,6 +371,7 @@ extern (C) {
             if (result) {
                 // Save wallet state to file.
                 __wallet_storage.write;
+                __wallet_storage.read;
                 return 1;
             }
         }
