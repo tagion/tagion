@@ -264,21 +264,6 @@ struct ActorHandle {
     }
 }
 
-/**
- * Create an actorHandle
- * Params:
- *   A = The type of actor you want to create a handle for
- *   task_name = the task name to search for
- * Returns: Actorhandle with type A
- * Examples:
- * ---
- * handle!MyActor("my_task_name");
- * ---
- */
-ActorHandle handle(A)(string task_name) @safe if (isActor!A) {
-    return ActorHandle(task_name);
-}
-
 ActorHandle spawn(A, Args...)(immutable(A) actor, string name, Args args) @safe nothrow
 if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
 
@@ -327,9 +312,8 @@ ActorHandle _spawn(A, Args...)(string name, Args args) @safe nothrow
 if (isActor!A) {
     try {
         Tid tid;
-        tid = concurrency.spawn((string name, Args args) @trusted nothrow{
+        tid = concurrency.spawn((string name, Args args) @trusted nothrow {
             log.register(name);
-            // thisActor.task_name(name);
             thisActor.stop = false;
             try {
                 A actor = A(args);

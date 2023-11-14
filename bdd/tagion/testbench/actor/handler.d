@@ -65,7 +65,7 @@ class SendAMessageToAnActorYouDontOwn {
 
     @When("#we request the handler for #child")
     Document forChild() {
-        child_handler = handle!MyActor(child_task_name);
+        child_handler = ActorHandle(child_task_name);
         check(child_handler.tid !is Tid.init, "Child task was not running");
         return result_ok;
     }

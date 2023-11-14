@@ -101,8 +101,8 @@ class MessageBetweenSupervisorAndChild {
     Document theChild1AndChild2() {
         // The supervisor should only send alive when it has receive alive from the children.
         // we assign the child handles
-        childHandleUno = handle!MyActor(child1_task_name);
-        childHandleDos = handle!MyActor(child2_task_name);
+        childHandleUno = ActorHandle(child1_task_name);
+        childHandleDos = ActorHandle(child2_task_name);
 
         return result_ok;
     }
@@ -164,8 +164,8 @@ class SendMessageBetweenTwoChildren {
     Document theChild1AndChild2() {
         // The supervisor should only send alive when it has receive alive from the children.
         // we assign the child handles
-        childHandleUno = handle!MyActor(child1_task_name);
-        childHandleDos = handle!MyActor(child2_task_name);
+        childHandleUno = ActorHandle(child1_task_name);
+        childHandleDos = ActorHandle(child2_task_name);
 
         return result_ok;
     }
