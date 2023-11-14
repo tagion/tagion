@@ -34,10 +34,10 @@ alias FeatureContext = Tuple!(
 @safe @Scenario("The Document is not a HiRPC",
         [])
 class TheDocumentIsNotAHiRPC {
-    HiRPCVerifierServiceHandle hirpc_verifier_handle;
+    ActorHandle hirpc_verifier_handle;
     string hirpc_verifier_success;
     string hirpc_verifier_reject;
-    this(HiRPCVerifierServiceHandle _hirpc_verifier_handle, string _success, string _reject) {
+    this(ActorHandle _hirpc_verifier_handle, string _success, string _reject) {
         hirpc_verifier_handle = _hirpc_verifier_handle;
         hirpc_verifier_success = _success; // The name of the service which successfull documents are sent to
         hirpc_verifier_reject = _reject; // The name of the service which rejected documents are sent to
@@ -67,7 +67,7 @@ class TheDocumentIsNotAHiRPC {
     @Then("the doc should be checked that it is a correct HiRPC and if it is not it should be rejected.")
     Document rejected() {
         const receiveTuple = receiveOnlyTimeout!(RejectReason, Document);
-        check(receiveTuple[0] == RejectReason.notAHiRPC,  "Did not reject for the correct reason");
+        check(receiveTuple[0] == RejectReason.notAHiRPC, "Did not reject for the correct reason");
         check(receiveTuple[1] == doc, "The rejected doc was not the same as was sent");
         return result_ok;
     }
@@ -84,11 +84,11 @@ class TheDocumentIsNotAHiRPC {
     "The #permission scenario can be executed with and without correct permission."
 ])
 class CorrectHiRPCFormatAndPermission {
-    HiRPCVerifierServiceHandle hirpc_verifier_handle;
+    ActorHandle hirpc_verifier_handle;
     string contract_success;
     string contract_reject;
     HiRPC hirpc;
-    this(HiRPCVerifierServiceHandle _hirpc_verifier_handle, string _success, string _reject) {
+    this(ActorHandle _hirpc_verifier_handle, string _success, string _reject) {
         hirpc_verifier_handle = _hirpc_verifier_handle;
         contract_success = _success; // The name of the service which successfull documents are sent to
         contract_reject = _reject; // The name of the service which rejected documents are sent to
@@ -102,7 +102,6 @@ class CorrectHiRPCFormatAndPermission {
         }
     }
 
-
     Document doc;
 
     @Given("a correctly formatted transaction.")
@@ -115,10 +114,10 @@ class CorrectHiRPCFormatAndPermission {
         import tagion.script.TagionCurrency;
         import tagion.script.common;
         import tagion.utils.StdTime;
+
         writeln(thisTid);
         check(waitforChildren(Ctrl.ALIVE), "ContractService never alived");
         check(hirpc_verifier_handle.tid !is Tid.init, "Contract thread is not running");
-
 
         Document[] in_bills;
         in_bills ~= iota(0, 10).map!(_ => TagionBill(10.TGN, sdt_t.init, Pubkey.init, Buffer.init).toDoc).array;
@@ -126,7 +125,6 @@ class CorrectHiRPCFormatAndPermission {
         out_bills ~= iota(0, 10).map!(_ => TagionBill(5.TGN, sdt_t.init, Pubkey.init, Buffer.init)).array;
         auto contract = immutable(Contract)(null, null, PayScript(out_bills).toDoc);
         SignedContract signed_contract = SignedContract(null, contract);
-        
 
         const sender = hirpc.submit(signed_contract);
         doc = sender.toDoc;
@@ -171,11 +169,11 @@ class CorrectHiRPCFormatAndPermission {
         [])
 class CorrectHiRPCWithPermissionDenied {
 
-    HiRPCVerifierServiceHandle hirpc_verifier_handle;
+    ActorHandle hirpc_verifier_handle;
     string hirpc_verifier_success;
     string hirpc_verifier_reject;
     HiRPC bad_hirpc;
-    this(HiRPCVerifierServiceHandle _hirpc_verifier_handle, string _success, string _reject) {
+    this(ActorHandle _hirpc_verifier_handle, string _success, string _reject) {
         hirpc_verifier_handle = _hirpc_verifier_handle;
         hirpc_verifier_success = _success; // The name of the service which successfull documents are sent to
         hirpc_verifier_reject = _reject; // The name of the service which rejected documents are sent to
@@ -200,7 +198,7 @@ class CorrectHiRPCWithPermissionDenied {
         const receiveTuple = receiveOnlyTimeout!(RejectReason, Document);
         check(receiveTuple[0] == RejectReason.invalidType, "The docuemnt was not rejected for the correct reason");
         check(receiveTuple[1] == invalid_doc, "The rejected doc was not the same as was sent");
- 
+
         return result_ok;
     }
 

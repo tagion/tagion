@@ -3,16 +3,16 @@ module nngd.nngd;
 
 import core.memory;
 import core.time;
-import std.algorithm;
 import std.conv;
-import std.datetime.systime;
-import std.exception;
-import std.file;
-import std.json;
-import std.path;
 import std.string;
-import std.traits;
 import std.typecons;
+import std.algorithm;
+import std.datetime.systime;
+import std.traits;
+import std.json;
+import std.file;
+import std.path;
+import std.exception;
 
 private import libnng;
 
@@ -551,7 +551,7 @@ struct NNGSocket {
 
     @disable this();
     
-    this(nng_socket_type itype, bool iraw = false){
+    this(nng_socket_type itype, bool iraw = false) nothrow {
         int rc;
         m_type = itype;
         m_raw = iraw;
@@ -620,7 +620,7 @@ struct NNGSocket {
 
     } // this
 
-    int close(){
+    int close() nothrow {
         int rc;
         m_errno = cast(nng_errno)0;
         foreach(ctx; m_ctx){
@@ -688,7 +688,7 @@ struct NNGSocket {
 
     // setup subscriber
 
-    int subscribe ( string tag ){
+    int subscribe ( string tag ) nothrow {
         if(m_subscriptions.canFind(tag))
             return 0;
         setopt_buf(NNG_OPT_SUB_SUBSCRIBE,cast(ubyte[])(tag.dup));
@@ -697,7 +697,7 @@ struct NNGSocket {
         return m_errno;    
     }
 
-    int unsubscribe ( string tag ) {
+    int unsubscribe ( string tag ) nothrow {
         long i = m_subscriptions.countUntil(tag);
         if(i < 0)
             return 0;
@@ -707,7 +707,7 @@ struct NNGSocket {
         return m_errno;    
     }
 
-    int clearsubscribe (){
+    int clearsubscribe () nothrow {
         long i;
         foreach(tag; m_subscriptions){
             i = m_subscriptions.countUntil(tag);
@@ -720,7 +720,7 @@ struct NNGSocket {
         return 0;
     }
 
-    string[] subscriptions(){
+    string[] subscriptions() nothrow {
         return m_subscriptions;
     }
 
@@ -2032,6 +2032,7 @@ struct WebClient {
     }
 
 }
+
 
 
 

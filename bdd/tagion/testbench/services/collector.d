@@ -65,9 +65,9 @@ const(DARTIndex)[] insertBills(TagionBill[] bills, ref RecordFactory.Recorder re
 @safe @Scenario("it work", [])
 class ItWork {
     enum dart_service = "dart_service_task";
-    DARTServiceHandle dart_handle;
-    CollectorServiceHandle collector_handle;
-    ReplicatorServiceHandle replicator_handle;
+    ActorHandle dart_handle;
+    ActorHandle collector_handle;
+    ActorHandle replicator_handle;
 
     TagionBill[] input_bills;
     SecureNet[] input_nets;
@@ -105,7 +105,6 @@ class ItWork {
 
             DART.create(opts.dart_path, node_net);
 
-
             auto dart_net = new StdSecureNet;
             dart_net.generateKeyPair("dartnet");
             dart_handle = (() @trusted => spawn!DARTService(task_names.dart, opts, task_names, cast(shared) dart_net))();
@@ -127,8 +126,7 @@ class ItWork {
 
             register(task_names.tvm, thisTid);
         }
-        immutable collector = CollectorService(task_names);
-        collector_handle = spawn(collector, task_names.collector);
+        collector_handle = _spawn!CollectorService(task_names.collector, task_names);
         check(waitforChildren(Ctrl.ALIVE), "CollectorService never alived");
         return result_ok;
     }
@@ -167,7 +165,8 @@ class ItWork {
         collector_handle.send(inputHiRPC(), hirpc.receive(sender.toDoc));
 
         auto result = receiveOnlyTimeout!(LogInfo, const(Document));
-        check(result[0].symbol_name == "hirpc_invalid_signed_contract", "did not reject for the expected reason, got %s".format(result[0].symbol_name));
+        check(result[0].symbol_name == "hirpc_invalid_signed_contract", "did not reject for the expected reason, got %s"
+                .format(result[0].symbol_name));
 
         return result_ok;
     }
@@ -184,7 +183,8 @@ class ItWork {
         collector_handle.send(inputHiRPC(), hirpc.receive(sender.toDoc));
 
         auto result = receiveOnlyTimeout!(LogInfo, const(Document));
-        check(result[0].symbol_name == "contract_no_verify", "did not reject for the expected reason got, %s".format(result[0].symbol_name));
+        check(result[0].symbol_name == "contract_no_verify", "did not reject for the expected reason got, %s".format(result[0]
+                .symbol_name));
 
         return result_ok;
     }

@@ -87,7 +87,6 @@ struct Options {
     public import tagion.logger.LoggerOptions : LoggerOptions;
     public import tagion.services.DART : DARTOptions;
     public import tagion.services.DARTInterface : DARTInterfaceOptions;
-    public import tagion.services.TVM : TVMOptions;
     public import tagion.services.collector : CollectorOptions;
     public import tagion.services.epoch_creator : EpochCreatorOptions;
     public import tagion.services.hirpc_verifier : HiRPCVerifierOptions;

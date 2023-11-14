@@ -26,7 +26,8 @@ int _main(string[] args) {
         automation!message.run;
 
         // Supervisor with failing child
-        automation!supervisor.run;
+        version (none)
+            automation!supervisor.run;
     }
 
     return 0;

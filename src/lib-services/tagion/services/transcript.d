@@ -287,13 +287,14 @@ struct TranscriptService {
                     number_of_bills++;
                 }
             }
+
             recorder[].each!(a => billStatistic(a));
 
             TagionGlobals new_globals = TagionGlobals(
-                total,
-                total_burned,
-                number_of_bills,
-                burnt_bills,
+                    total,
+                    total_burned,
+                    number_of_bills,
+                    burnt_bills,
             );
             non_voted_epoch.globals = new_globals;
 
@@ -386,5 +387,3 @@ struct TranscriptService {
         run(&epoch, &produceContract, &createRecorder, &receiveBullseye);
     }
 }
-
-alias TranscriptServiceHandle = ActorHandle!TranscriptService;

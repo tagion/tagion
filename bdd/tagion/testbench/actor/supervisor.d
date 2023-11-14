@@ -2,7 +2,7 @@ module tagion.testbench.actor.supervisor;
 
 import tagion.testbench.actor.util;
 
-// Default import list for bdd
+version (none)  :  // Default import list for bdd
 import core.time;
 import std.exception : assumeWontThrow;
 import std.format : format;

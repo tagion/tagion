@@ -53,12 +53,10 @@ struct MyActor {
     }
 }
 
-alias ChildHandle = ActorHandle!MyActor;
-
 @safe
 struct MySuperActor {
-    ChildHandle child1Handle;
-    ChildHandle child2Handle;
+    ActorHandle child1Handle;
+    ActorHandle child2Handle;
 
     void receiveStatus(Msg!"response", int status) {
         sendOwner(status);
@@ -82,14 +80,12 @@ struct MySuperActor {
 
 }
 
-alias SupervisorHandle = ActorHandle!MySuperActor;
-
 @safe @Scenario("Message between supervisor and child",
         [])
 class MessageBetweenSupervisorAndChild {
-    SupervisorHandle supervisorHandle;
-    ChildHandle childHandleUno;
-    ChildHandle childHandleDos;
+    ActorHandle supervisorHandle;
+    ActorHandle childHandleUno;
+    ActorHandle childHandleDos;
 
     @Given("a supervisor #super and two child actors #child1 and #child2")
     Document actorsChild1AndChild2() {
@@ -105,8 +101,8 @@ class MessageBetweenSupervisorAndChild {
     Document theChild1AndChild2() {
         // The supervisor should only send alive when it has receive alive from the children.
         // we assign the child handles
-        childHandleUno = handle!MyActor(child1_task_name);
-        childHandleDos = handle!MyActor(child2_task_name);
+        childHandleUno = ActorHandle(child1_task_name);
+        childHandleDos = ActorHandle(child2_task_name);
 
         return result_ok;
     }
@@ -151,9 +147,9 @@ class MessageBetweenSupervisorAndChild {
 @safe @Scenario("send message between two children",
         [])
 class SendMessageBetweenTwoChildren {
-    SupervisorHandle supervisorHandle;
-    ChildHandle childHandleUno;
-    ChildHandle childHandleDos;
+    ActorHandle supervisorHandle;
+    ActorHandle childHandleUno;
+    ActorHandle childHandleDos;
 
     @Given("a supervisor #super and two child actors #child1 and #child2")
     Document actorsChild1AndChild2() {
@@ -168,8 +164,8 @@ class SendMessageBetweenTwoChildren {
     Document theChild1AndChild2() {
         // The supervisor should only send alive when it has receive alive from the children.
         // we assign the child handles
-        childHandleUno = handle!MyActor(child1_task_name);
-        childHandleDos = handle!MyActor(child2_task_name);
+        childHandleUno = ActorHandle(child1_task_name);
+        childHandleDos = ActorHandle(child2_task_name);
 
         return result_ok;
     }
