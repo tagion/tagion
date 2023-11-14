@@ -62,6 +62,15 @@ struct SecureWallet(Net : SecureNet) {
     const(SecureNet) net() const pure nothrow @nogc {
         return _net;
     }
+
+    version(NET_HACK) {
+        void set_net(SecureNet copy_net) {
+            this._net = copy_net;
+        }
+
+    }
+
+    
     /**
      * 
      * Params:

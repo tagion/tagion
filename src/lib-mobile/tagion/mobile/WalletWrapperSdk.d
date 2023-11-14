@@ -223,6 +223,9 @@ extern (C) {
         if (__wallet_storage.wallet.isLoggedin()) {
             if (__wallet_storage.wallet.changePincode(pincode, newPincode)) {
                 __wallet_storage.write;
+                version(NET_HACK) {
+                __wallet_storage.read;
+                }
                 // Since secure_wallet do logout after pincode change
                 // we need to perform a login manualy.
                 __wallet_storage.wallet.login(newPincode);
@@ -301,6 +304,9 @@ extern (C) {
             const contractDocId = recyclerDoc.create(contract.toDoc);
             // Save wallet state to file.
             __wallet_storage.write;
+            version(NET_HACK) {
+            __wallet_storage.read;
+            }
 
             *contractPtr = contractDocId;
             return 1;
@@ -333,6 +339,9 @@ extern (C) {
             const invoiceDocId = recyclerDoc.create(invoice.toDoc);
             // Save wallet state to file.
             __wallet_storage.write;
+            version(NET_HACK) {
+            __wallet_storage.read;
+            }
 
             *invoicePtr = cast(uint8_t) invoiceDocId;
             return 1;
@@ -369,6 +378,9 @@ extern (C) {
             if (result) {
                 // Save wallet state to file.
                 __wallet_storage.write;
+                version(NET_HACK) {
+                __wallet_storage.read;
+                }
                 return 1;
             }
         }
@@ -482,6 +494,9 @@ extern (C) {
         if (__wallet_storage.wallet.isLoggedin()) {
             __wallet_storage.wallet.setEncrAccount(Cipher.CipherDocument(Document(account)));
             __wallet_storage.write;
+            version(NET_HACK) {
+            __wallet_storage.read;
+            }
             return 1;
         }
         return 0;
@@ -963,10 +978,32 @@ struct WalletStorage {
     }
 
     void read() {
-        auto _pin = path(devicefile).fread!DevicePIN;
-        auto _wallet = path(walletfile).fread!RecoverGenerator;
-        auto _account = path(accountfile).fread!AccountDetails;
-        wallet = StdSecureWallet(_pin, _wallet, _account);
+
+        version(NET_HACK) {
+            if (wallet.net !is null) {
+                auto __net = cast(shared(StdSecureNet)) wallet.net;
+                scope(exit) {
+                    __net = null;
+                }
+                
+                auto copied_net = new StdSecureNet(__net);
+
+                auto _pin = path(devicefile).fread!DevicePIN;
+                auto _wallet = path(walletfile).fread!RecoverGenerator;
+                auto _account = path(accountfile).fread!AccountDetails;
+                wallet = StdSecureWallet(_pin, _wallet, _account);
+                wallet.set_net(copied_net);
+
+            }
+            
+
+
+        } else {
+            auto _pin = path(devicefile).fread!DevicePIN;
+            auto _wallet = path(walletfile).fread!RecoverGenerator;
+            auto _account = path(accountfile).fread!AccountDetails;
+            wallet = StdSecureWallet(_pin, _wallet, _account);
+        }
 
     }
 
