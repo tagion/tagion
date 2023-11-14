@@ -1,16 +1,16 @@
 module tagion.testbench.hirpcclient;
 
-import std.socket : InternetAddress, Socket, SocketException, TcpSocket, getAddress, SocketType, AddressFamily, ProtocolType;
-import std.stdio;
+import core.thread;
 import std.conv : to;
 import std.format;
-import core.thread;
+import std.socket : AddressFamily, InternetAddress, ProtocolType, Socket, SocketException, SocketType, TcpSocket, getAddress;
+import std.stdio;
 import tagion.communication.HiRPC;
+import tagion.gossip.GossipNet;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
-import tagion.gossip.GossipNet;
-import tagion.utils.Random;
 import tagion.tools.Basic;
+import tagion.utils.Random;
 
 version (none) class HRPCNet : StdSecureNet {
     import tagion.hashgraph.HashGraph;
@@ -24,8 +24,8 @@ version (none) class HRPCNet : StdSecureNet {
 
         super(new NativeSecp256k1(NativeSecp256k1.Format.AUTO, NativeSecp256k1.Format.COMPACT));
         generateKeyPair(passphrase);
-        import tagion.utils.Miscellaneous;
         import tagion.Base;
+        import tagion.utils.Miscellaneous;
 
         writefln("public=%s", (cast(Buffer) pubkey).toHexString);
     }

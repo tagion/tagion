@@ -8,12 +8,11 @@ private import tagion.crypto.secp256k1.c.secp256k1_schnorrsig;
 private import tagion.crypto.secp256k1.c.secp256k1_extrakeys;
 import tagion.crypto.random.random;
 import tagion.crypto.secp256k1.NativeSecp256k1Interface;
-import std.exception : assumeUnique;
-import tagion.basic.ConsensusExceptions;
-
-import tagion.utils.Miscellaneous : toHexString;
 import std.algorithm;
 import std.array;
+import std.exception : assumeUnique;
+import tagion.basic.ConsensusExceptions;
+import tagion.utils.Miscellaneous : toHexString;
 
 //enum Schnorr = true;
 //alias NativeSecp256k1EDCSA = NativeSecp256k1T!false;
@@ -405,12 +404,12 @@ class NativeSecp256k1 : NativeSecp256k1Interface {
 }
 
 version (unittest) {
-    import tagion.utils.Miscellaneous : toHexString, decode;
     import std.string : representation;
+    import tagion.utils.Miscellaneous : decode, toHexString;
 
     const(ubyte[]) sha256(scope const(ubyte[]) data) {
-        import std.digest.sha : SHA256;
         import std.digest;
+        import std.digest.sha : SHA256;
 
         return digest!SHA256(data).dup;
     }

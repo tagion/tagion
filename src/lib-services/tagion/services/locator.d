@@ -2,10 +2,10 @@ module tagion.services.locator;
 
 import core.thread;
 import core.time;
-import tagion.utils.pretend_safe_concurrency;
-import tagion.logger.Logger;
-import tagion.basic.tagionexceptions;
 import std.format;
+import tagion.basic.tagionexceptions;
+import tagion.logger.Logger;
+import tagion.utils.pretend_safe_concurrency;
 
 /++
 +/

@@ -1,16 +1,15 @@
 /// Contains all the HiRPC DART crud commands
 module tagion.dart.DARTcrud;
 
-import std.range : isInputRange, ElementType;
 import std.algorithm.iteration : filter;
-
-import tagion.communication.HiRPC;
-import tagion.hibon.HiBON : HiBON;
-import tagion.dart.DART : DART;
-import tagion.dart.Recorder;
-import tagion.dart.DARTBasic : DARTIndex;
+import std.range : ElementType, isInputRange;
 import tagion.basic.Types : Buffer, isBufferType;
+import tagion.communication.HiRPC;
+import tagion.dart.DART : DART;
+import tagion.dart.DARTBasic : DARTIndex;
 import tagion.dart.DARTRim;
+import tagion.dart.Recorder;
+import tagion.hibon.HiBON : HiBON;
 
 /**
        * Constructs a HiRPC method for dartRead 

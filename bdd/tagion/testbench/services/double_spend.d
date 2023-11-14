@@ -1,38 +1,37 @@
 module tagion.testbench.services.double_spend;
 // Default import list for bdd
-import tagion.behaviour;
-import tagion.hibon.Document;
+import core.thread;
+import core.time;
+import std.algorithm;
+import std.concurrency : thisTid;
+import std.format;
+import std.range;
+import std.stdio;
 import std.typecons : Tuple;
-import tagion.testbench.tools.Environment;
-import tagion.wallet.SecureWallet : SecureWallet;
+import tagion.actor;
+import tagion.behaviour;
+import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.SecureNet : StdSecureNet;
-import tagion.tools.wallet.WalletInterface;
-import tagion.services.options;
+import tagion.dart.DARTcrud;
+import tagion.hashgraph.Refinement;
 import tagion.hibon.Document;
+import tagion.hibon.Document;
+import tagion.hibon.HiBONJSON;
+import tagion.hibon.HiBONRecord;
+import tagion.logger.LogRecords : LogInfo;
+import tagion.logger.Logger;
+import tagion.script.Currency : totalAmount;
 import tagion.script.TagionCurrency;
 import tagion.script.common;
 import tagion.script.execute;
-import tagion.script.Currency : totalAmount;
-import tagion.communication.HiRPC;
-import tagion.utils.pretend_safe_concurrency : register, receiveOnly, receiveTimeout;
-import std.concurrency : thisTid;
-import tagion.logger.Logger;
-import tagion.logger.LogRecords : LogInfo;
-import tagion.actor;
+import tagion.services.options;
 import tagion.testbench.actor.util;
-import tagion.dart.DARTcrud;
-import tagion.hibon.HiBONJSON;
-import tagion.hibon.HiBONRecord;
-import tagion.hashgraph.Refinement;
 import tagion.testbench.services.helper_functions;
-
-import std.range;
-import std.algorithm;
-import core.time;
-import core.thread;
-import std.stdio;
-import std.format;
+import tagion.testbench.tools.Environment;
+import tagion.tools.wallet.WalletInterface;
+import tagion.utils.pretend_safe_concurrency : receiveOnly, receiveTimeout, register;
+import tagion.wallet.SecureWallet : SecureWallet;
 
 alias StdSecureWallet = SecureWallet!StdSecureNet;
 enum CONTRACT_TIMEOUT = 40;
@@ -670,9 +669,9 @@ class BillAge {
     @Given("i pay a contract where the output bills timestamp is newer than epoch_time + constant.")
     Document constant() {
 
-        import tagion.utils.StdTime;
         import std.datetime;
         import tagion.services.transcript : BUFFER_TIME_SECONDS;
+        import tagion.utils.StdTime;
 
         amount = 100.TGN;
         auto new_time = sdt_t((SysTime(cast(long) currentTime) + BUFFER_TIME_SECONDS.seconds + 100.seconds).stdTime);
@@ -708,4 +707,3 @@ class BillAge {
     }
 
 }
-

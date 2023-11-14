@@ -1,13 +1,13 @@
 /// \EpochChainBlock.d
 module tagion.epochain.EpochChainBlock;
 
-import tagion.hashchain.HashChainBlock : HashChainBlock;
-import tagion.hibon.HiBONJSON : JSONString;
-import tagion.hibon.Document;
-import tagion.hibon.HiBONRecord : label, exclude, HiBONRecord, recordType;
 import tagion.basic.Types : Buffer, FileExtension;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.crypto.Types : Fingerprint;
+import tagion.hashchain.HashChainBlock : HashChainBlock;
+import tagion.hibon.Document;
+import tagion.hibon.HiBONJSON : JSONString;
+import tagion.hibon.HiBONRecord : HiBONRecord, exclude, label, recordType;
 
 /** @brief File contains class EpochChainBlock
  */
@@ -70,8 +70,8 @@ import tagion.crypto.Types : Fingerprint;
 }
 
 unittest {
-    import tagion.crypto.SecureNet : StdHashNet;
     import std.range : empty;
+    import tagion.crypto.SecureNet : StdHashNet;
 
     /// EpochChainBlock_check_getters
     {

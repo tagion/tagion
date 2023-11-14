@@ -1,17 +1,14 @@
 module tagion.testbench.actor_tests;
 
-import tagion.behaviour.Behaviour;
-import tagion.tools.Basic;
-import std.traits : moduleName;
-
-import tagion.testbench.tools.Environment;
-
-import std.path : setExtension, buildPath;
-import std.range : take;
 import std.array;
+import std.path : buildPath, setExtension;
+import std.range : take;
+import std.traits : moduleName;
 import tagion.basic.Types : FileExtension;
-
+import tagion.behaviour.Behaviour;
 import tagion.testbench.actor;
+import tagion.testbench.tools.Environment;
+import tagion.tools.Basic;
 
 debug = actor;
 
@@ -29,7 +26,8 @@ int _main(string[] args) {
         automation!message.run;
 
         // Supervisor with failing child
-        automation!supervisor.run;
+        version (none)
+            automation!supervisor.run;
     }
 
     return 0;

@@ -5,6 +5,7 @@ import tagion.utils.JSONCommon;
 @safe
 struct DARTInterfaceOptions {
     import tagion.services.options : contract_sock_addr;
+
     string sock_addr;
     string dart_prefix = "DART_";
     int sendtimeout = 10_000;
@@ -24,19 +25,17 @@ struct DARTInterfaceOptions {
 
 }
 
+import core.time;
+import nngd;
+import std.format;
 import tagion.actor;
-import tagion.utils.pretend_safe_concurrency;
-import tagion.logger.Logger;
-import tagion.services.messages;
+import tagion.communication.HiRPC;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord : isRecord;
+import tagion.logger.Logger;
+import tagion.services.messages;
 import tagion.services.options;
-import tagion.communication.HiRPC;
-import nngd;
-
-import std.format;
-import core.time;
-
+import tagion.utils.pretend_safe_concurrency;
 
 struct DartWorkerContext {
     string dart_task_name;
@@ -49,12 +48,10 @@ enum InterfaceError {
     DARTLocate,
 }
 
+void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
 
-
-void dartHiRPCCallback(NNGMessage *msg, void *ctx) @trusted {
-
-    import std.stdio;
     import std.exception;
+    import std.stdio;
     import tagion.communication.HiRPC;
 
     HiRPC hirpc = HiRPC(null);
@@ -63,9 +60,10 @@ void dartHiRPCCallback(NNGMessage *msg, void *ctx) @trusted {
         msg.length = doc.full_size;
         msg.body_prepend(doc.serialize);
     }
-    
+
     void send_error(InterfaceError err_type, string extra_msg = "") @trusted {
         import std.conv;
+
         hirpc.Error message;
         message.code = err_type;
         message.message = err_type.to!string ~ extra_msg;
@@ -74,8 +72,9 @@ void dartHiRPCCallback(NNGMessage *msg, void *ctx) @trusted {
         send_doc(sender.toDoc);
         // msg.body_append(sender.toDoc.serialize);
     }
+
     void dartHiRPCResponse(dartHiRPCRR.Response res, Document doc) @trusted {
-        writeln("Interface successful response"); 
+        writeln("Interface successful response");
         send_doc(doc);
         // msg.body_append(doc.serialize);
     }
@@ -112,7 +111,7 @@ void dartHiRPCCallback(NNGMessage *msg, void *ctx) @trusted {
         send_error(InterfaceError.DARTLocate, cnt.dart_task_name);
         return;
     }
-    
+
     dart_tid.send(dartHiRPCRR(), doc);
     auto dart_resp = receiveTimeout(cnt.dart_worker_timeout.msecs, &dartHiRPCResponse);
     if (!dart_resp) {
@@ -172,5 +171,3 @@ struct DARTInterfaceService {
     }
 
 }
-
-alias DARTInterfaceServiceHandle = ActorHandle!DARTInterfaceService;

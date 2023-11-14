@@ -1,19 +1,19 @@
 module tagion.wasm.WastParser;
 
-import tagion.wasm.WastTokenizer;
-import tagion.wasm.WasmWriter;
-import tagion.wasm.WasmBase;
-import tagion.wasm.WastAssert;
-import tagion.basic.Debug;
-import tagion.wasm.WasmException;
-import std.stdio;
-import std.exception : ifThrown;
 import core.exception : RangeError;
-import std.conv;
-import std.traits;
 import std.algorithm;
 import std.array;
+import std.conv;
+import std.exception : ifThrown;
 import std.format;
+import std.stdio;
+import std.traits;
+import tagion.basic.Debug;
+import tagion.wasm.WasmBase;
+import tagion.wasm.WasmException;
+import tagion.wasm.WasmWriter;
+import tagion.wasm.WastAssert;
+import tagion.wasm.WastTokenizer;
 
 @safe
 struct WastParser {
@@ -73,8 +73,8 @@ struct WastParser {
             ref CodeType code_type,
             ref const(FuncType) func_type,
             ref scope int[string] params) {
-        import tagion.wasm.WasmExpr;
         import std.outbuffer;
+        import tagion.wasm.WasmExpr;
 
         immutable number_of_func_arguments = func_type.params.length;
         scope immutable(Types)[] locals = func_type.params;
@@ -616,9 +616,9 @@ struct WastParser {
 
 version (WAST) @safe
 unittest {
-    import tagion.basic.basic : unitfile;
     import std.file : readText;
     import std.stdio;
+    import tagion.basic.basic : unitfile;
 
     immutable wast_test_files = [
         "i32.wast",

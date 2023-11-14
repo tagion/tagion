@@ -1,17 +1,17 @@
 module tagion.tools.boot.genesis;
 
-import tagion.hibon.HiBONtoText : decode;
-import tagion.crypto.Types : Pubkey;
 import std.algorithm;
 import std.array;
+import tagion.basic.Types;
+import tagion.crypto.Types : Pubkey;
+import tagion.hibon.Document;
+import tagion.hibon.HiBONJSON;
+import tagion.hibon.HiBONtoText : decode;
+import tagion.script.common;
+import tagion.script.namerecords;
+import tagion.tools.Basic;
 import tagion.tools.toolsexception;
 import tagion.utils.StdTime;
-import tagion.script.namerecords;
-import tagion.hibon.HiBONJSON;
-import tagion.basic.Types;
-import tagion.hibon.Document;
-import tagion.script.common;
-import tagion.tools.Basic;
 
 @safe:
 Document[] createGenesis(const(string[]) nodes_param, Document testamony) {

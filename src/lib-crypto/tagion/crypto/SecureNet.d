@@ -1,16 +1,15 @@
 module tagion.crypto.SecureNet;
 
-import std.typecons : TypedefType;
-
-import tagion.crypto.SecureInterfaceNet;
-import tagion.crypto.aes.AESCrypto;
-import tagion.basic.Types : Buffer;
-import tagion.crypto.Types : Signature, Fingerprint;
-import tagion.hibon.Document : Document;
-import tagion.basic.ConsensusExceptions;
-import tagion.basic.Version : ver;
-import tagion.crypto.random.random;
 import std.range;
+import std.typecons : TypedefType;
+import tagion.basic.ConsensusExceptions;
+import tagion.basic.Types : Buffer;
+import tagion.basic.Version : ver;
+import tagion.crypto.SecureInterfaceNet;
+import tagion.crypto.Types : Fingerprint, Signature;
+import tagion.crypto.aes.AESCrypto;
+import tagion.crypto.random.random;
+import tagion.hibon.Document : Document;
 
 void scramble(T, B = T[])(scope ref T[] data, scope const(B) xor = null) @safe if (T.sizeof is ubyte.sizeof)
 in (xor.empty || data.length == xor.length) {
@@ -39,8 +38,8 @@ class StdHashNet : HashNet {
     }
 
     immutable(Buffer) rawCalcHash(scope const(ubyte[]) data) const scope {
-        import std.digest.sha : SHA256;
         import std.digest;
+        import std.digest.sha : SHA256;
 
         return digest!SHA256(data).idup;
     }
@@ -51,9 +50,9 @@ class StdHashNet : HashNet {
 
     @trusted
     final immutable(Buffer) HMAC(scope const(ubyte[]) data) const pure {
-        import std.exception : assumeUnique;
-        import std.digest.sha : SHA256;
         import std.digest.hmac : digestHMAC = HMAC;
+        import std.digest.sha : SHA256;
+        import std.exception : assumeUnique;
 
         scope hmac = digestHMAC!SHA256(data);
         auto result = hmac.finish.dup;
@@ -82,13 +81,11 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
     else {
         import tagion.crypto.secp256k1.NativeSecp256k1ECDSA : Secp256k1 = NativeSecp256k1ECDSA;
     }
-    import tagion.crypto.Types : Pubkey;
-    import tagion.crypto.aes.AESCrypto;
-
-    import tagion.basic.ConsensusExceptions;
-
     import std.format;
     import std.string : representation;
+    import tagion.basic.ConsensusExceptions;
+    import tagion.crypto.Types : Pubkey;
+    import tagion.crypto.aes.AESCrypto;
 
     private Pubkey _pubkey;
     /**
@@ -390,11 +387,10 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
     }
 
     unittest { // StdSecureNet document
-        import tagion.hibon.HiBONJSON;
-
-        import tagion.hibon.HiBON;
         import std.exception : assertThrown;
         import tagion.basic.ConsensusExceptions : SecurityConsensusException;
+        import tagion.hibon.HiBON;
+        import tagion.hibon.HiBONJSON;
 
         SecureNet net = new StdSecureNet;
         net.generateKeyPair("Secret password");
@@ -430,8 +426,8 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
     }
 
     unittest {
-        import tagion.hibon.HiBONRecord;
         import std.format;
+        import tagion.hibon.HiBONRecord;
 
         SecureNet net = new StdSecureNet;
         net.generateKeyPair("Secret password");

@@ -1,33 +1,32 @@
 module tagion.testbench.testbench;
 
 import std.meta;
-
 import tagion.tools.OneMain;
 
 int main(string[] args) {
+    import actor_tests = tagion.testbench.actor_tests;
+    import collector = tagion.testbench.collector;
+    import dart_deep_rim_test = tagion.testbench.dart_deep_rim_test;
+    import dart_insert_remove_stress = tagion.testbench.dart_insert_remove_stress;
+    import dart_partial_sync = tagion.testbench.dart_partial_sync;
+    import dart_pseudo_random_archives = tagion.testbench.dart_pseudo_random_archives;
+    import dart_service = tagion.testbench.dart_service;
+    import dart_stress = tagion.testbench.dart_stress;
+    import dart_sync = tagion.testbench.dart_sync;
+    import dart_sync_stress = tagion.testbench.dart_sync_stress;
+    import dart_test = tagion.testbench.dart_test;
+    import double_spend = tagion.testbench.double_spend;
+    import epoch_creator = tagion.testbench.epoch_creator;
+    import hashgraph_swap = tagion.testbench.hashgraph_swap;
+    import hashgraph_test = tagion.testbench.hashgraph_test;
     import hirpc_verifier = tagion.testbench.hirpc_verifier;
     import inputvalidator = tagion.testbench.inputvalidator;
-    import dart_test = tagion.testbench.dart_test;
-    import dart_deep_rim_test = tagion.testbench.dart_deep_rim_test;
-    import dart_pseudo_random_archives = tagion.testbench.dart_pseudo_random_archives;
-    import dart_sync = tagion.testbench.dart_sync;
-    import dart_partial_sync = tagion.testbench.dart_partial_sync;
-    import dart_stress = tagion.testbench.dart_stress;
-    import actor_tests = tagion.testbench.actor_tests;
-    import dart_insert_remove_stress = tagion.testbench.dart_insert_remove_stress;
-    import dart_sync_stress = tagion.testbench.dart_sync_stress;
-    import dart_service = tagion.testbench.dart_service;
-    import hashgraph_test = tagion.testbench.hashgraph_test;
-    import hashgraph_swap = tagion.testbench.hashgraph_swap;
-    import tvm_betterc = tagion.testbench.tvm_betterc;
-    import epoch_creator = tagion.testbench.epoch_creator;
-    import collector = tagion.testbench.collector;
-    import transcript_service = tagion.testbench.transcript_service;
+    import malformed_contract = tagion.testbench.malformed_contract;
     import replicator_service = tagion.testbench.replicator_service;
     import send_contract = tagion.testbench.send_contract;
-    import double_spend = tagion.testbench.double_spend;
     import spam_double_spend = tagion.testbench.spam_double_spend;
-    import malformed_contract = tagion.testbench.malformed_contract;
+    import transcript_service = tagion.testbench.transcript_service;
+    import tvm_betterc = tagion.testbench.tvm_betterc;
     import operational = tagion.testbench.e2e.operational;
     import genesis_test = tagion.testbench.genesis_test;
 

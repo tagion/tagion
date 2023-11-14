@@ -1,7 +1,7 @@
 module tagion.betterC.mobile.WalletWrapperApi;
 
-import tagion.betterC.mobile.DocumentWrapperApi;
 import tagion.betterC.hibon.Document;
+import tagion.betterC.mobile.DocumentWrapperApi;
 
 // import core.stdc.stdlib;
 import std.stdint;
@@ -10,18 +10,17 @@ import std.stdint;
 import std.array;
 
 // import std.random;
-import tagion.betterC.wallet.SecureWallet;
-import tagion.betterC.wallet.Net : SecureNet, AES;
-import tagion.betterC.hibon.HiBON;
-import tagion.betterC.utils.Miscellaneous : xor;
-import hash = tagion.betterC.wallet.hash;
-import tagion.betterC.utils.StringHelper;
-import tagion.betterC.utils.Memory;
-import tagion.betterC.wallet.WalletRecords;
 import tagion.betterC.communication.HiRPC;
-import tagion.betterC.mobile.Recycle;
-
 import tagion.betterC.funnel.TagionCurrency;
+import tagion.betterC.hibon.HiBON;
+import tagion.betterC.mobile.Recycle;
+import tagion.betterC.utils.Memory;
+import tagion.betterC.utils.Miscellaneous : xor;
+import tagion.betterC.utils.StringHelper;
+import tagion.betterC.wallet.Net : AES, SecureNet;
+import tagion.betterC.wallet.SecureWallet;
+import tagion.betterC.wallet.WalletRecords;
+import hash = tagion.betterC.wallet.hash;
 
 // import tagion.script.StandardRecords;
 // import tagion.communication.HiRPC;

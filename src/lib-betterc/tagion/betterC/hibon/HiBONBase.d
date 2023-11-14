@@ -5,8 +5,8 @@ module tagion.betterC.hibon.HiBONBase;
 @nogc:
 
 import std.meta : AliasSeq;
-import std.traits : isBasicType, isSomeString, isIntegral, isNumeric, isType, Unqual, getUDAs, hasUDA, FieldNameTuple;
 import std.range.primitives : isInputRange;
+import std.traits : FieldNameTuple, Unqual, getUDAs, hasUDA, isBasicType, isIntegral, isNumeric, isSomeString, isType;
 
 version (WebAssembly) {
     pragma(msg, "WebAssembler");
@@ -15,12 +15,12 @@ else {
     import core.stdc.stdio;
 }
 
-import tagion.betterC.hibon.HiBON;
-import tagion.betterC.hibon.Document;
-import tagion.betterC.utils.BinBuffer;
-import tagion.betterC.utils.Basic;
 import tagion.betterC.hibon.BigNumber;
+import tagion.betterC.hibon.Document;
+import tagion.betterC.hibon.HiBON;
 import tagion.betterC.utils.Bailout;
+import tagion.betterC.utils.Basic;
+import tagion.betterC.utils.BinBuffer;
 import tagion.betterC.utils.Memory;
 import tagion.betterC.utils.Text;
 import tagion.betterC.utils.sdt;

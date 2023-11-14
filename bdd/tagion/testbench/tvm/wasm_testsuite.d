@@ -1,22 +1,22 @@
 module tagion.testbench.tvm.wasm_testsuite;
 // Default import list for bdd
-import tagion.behaviour;
-import tagion.hibon.Document;
-import std.typecons : Tuple;
-import std.stdio;
-import tagion.testbench.tools.Environment;
-import std.file : fread = read, fwrite = write, readText, exists;
+import std.array;
+import std.file : exists, fread = read, readText, fwrite = write;
+import std.format;
 import std.path;
 import std.process;
-import std.format;
-import std.array;
-import tagion.wasm.WastTokenizer;
-import tagion.wasm.WasmWriter;
-import tagion.wasm.WasmReader;
-import tagion.wasm.WastParser;
-import tagion.wasm.WasmBetterC;
-import tagion.behaviour : check;
+import std.stdio;
+import std.typecons : Tuple;
 import tagion.basic.Types : FileExtension;
+import tagion.behaviour;
+import tagion.behaviour : check;
+import tagion.hibon.Document;
+import tagion.testbench.tools.Environment;
+import tagion.wasm.WasmBetterC;
+import tagion.wasm.WasmReader;
+import tagion.wasm.WasmWriter;
+import tagion.wasm.WastParser;
+import tagion.wasm.WastTokenizer;
 
 enum feature = Feature(
             "Test of the wasm to betterc execution",

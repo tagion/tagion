@@ -1,16 +1,16 @@
 module tagion.utils.getopt;
 
 public import std.getopt;
-import std.typecons;
-import std.process : environment;
 import std.path;
+import std.process : environment;
+import std.typecons;
 
 immutable logo = import("logo.txt");
 
 /// Wrapper for defaultGetoptPrinter that prints the logo and documentation link
 void tagionGetoptPrinter(string text, Option[] opt) @safe {
-    import std.stdio : stdout;
     import std.format.write : formattedWrite;
+    import std.stdio : stdout;
 
     // stdout global __gshared is trusted with a locked text writer
     auto w = (() @trusted => stdout.lockingTextWriter())();

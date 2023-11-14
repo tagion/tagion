@@ -1,41 +1,38 @@
 module tagion.testbench.services.collector;
 // Default import list for bdd
-import tagion.behaviour;
-import tagion.hibon.Document;
-import std.typecons : Tuple;
-import tagion.testbench.tools.Environment;
-
 import core.time;
-
-import std.path : dirName, setExtension, buildPath;
-import std.file : mkdirRecurse, exists, remove;
-import std.range : iota, zip, take;
 import std.algorithm.iteration : map;
-import std.format : format;
 import std.array;
 import std.exception;
-
-import tagion.testbench.actor.util;
+import std.file : exists, mkdirRecurse, remove;
+import std.format : format;
+import std.path : buildPath, dirName, setExtension;
+import std.range : iota, take, zip;
+import std.typecons : Tuple;
+import tagion.actor;
+import tagion.basic.Types : Buffer, FileExtension;
+import tagion.behaviour;
+import tagion.communication.HiRPC;
+import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.SecureNet;
 import tagion.crypto.Types;
-import tagion.crypto.SecureInterfaceNet;
-import tagion.script.execute;
+import tagion.dart.DARTBasic;
+import tagion.dart.Recorder;
+import tagion.hibon.Document;
+import tagion.logger.LogRecords : LogInfo;
+import tagion.logger.Logger;
 import tagion.script.TagionCurrency;
 import tagion.script.common;
-import tagion.actor;
-import tagion.utils.pretend_safe_concurrency : receiveOnly, receive, receiveTimeout;
-import tagion.logger.Logger;
-import tagion.logger.LogRecords : LogInfo;
-import tagion.services.messages;
-import tagion.services.collector;
+import tagion.script.execute;
 import tagion.services.DART;
-import tagion.utils.StdTime;
-import tagion.basic.Types : FileExtension, Buffer;
-import tagion.dart.Recorder;
-import tagion.dart.DARTBasic;
-import tagion.communication.HiRPC;
-import tagion.services.replicator;
+import tagion.services.collector;
+import tagion.services.messages;
 import tagion.services.options : TaskNames;
+import tagion.services.replicator;
+import tagion.testbench.actor.util;
+import tagion.testbench.tools.Environment;
+import tagion.utils.StdTime;
+import tagion.utils.pretend_safe_concurrency : receive, receiveOnly, receiveTimeout;
 
 enum feature = Feature(
             "collector services",
@@ -68,9 +65,9 @@ const(DARTIndex)[] insertBills(TagionBill[] bills, ref RecordFactory.Recorder re
 @safe @Scenario("it work", [])
 class ItWork {
     enum dart_service = "dart_service_task";
-    DARTServiceHandle dart_handle;
-    CollectorServiceHandle collector_handle;
-    ReplicatorServiceHandle replicator_handle;
+    ActorHandle dart_handle;
+    ActorHandle collector_handle;
+    ActorHandle replicator_handle;
 
     TagionBill[] input_bills;
     SecureNet[] input_nets;
@@ -108,7 +105,6 @@ class ItWork {
 
             DART.create(opts.dart_path, node_net);
 
-
             auto dart_net = new StdSecureNet;
             dart_net.generateKeyPair("dartnet");
             dart_handle = (() @trusted => spawn!DARTService(task_names.dart, opts, task_names, cast(shared) dart_net))();
@@ -130,8 +126,7 @@ class ItWork {
 
             register(task_names.tvm, thisTid);
         }
-        immutable collector = CollectorService(task_names);
-        collector_handle = spawn(collector, task_names.collector);
+        collector_handle = _spawn!CollectorService(task_names.collector, task_names);
         check(waitforChildren(Ctrl.ALIVE), "CollectorService never alived");
         return result_ok;
     }
@@ -170,7 +165,8 @@ class ItWork {
         collector_handle.send(inputHiRPC(), hirpc.receive(sender.toDoc));
 
         auto result = receiveOnlyTimeout!(LogInfo, const(Document));
-        check(result[0].symbol_name == "hirpc_invalid_signed_contract", "did not reject for the expected reason, got %s".format(result[0].symbol_name));
+        check(result[0].symbol_name == "hirpc_invalid_signed_contract", "did not reject for the expected reason, got %s"
+                .format(result[0].symbol_name));
 
         return result_ok;
     }
@@ -187,7 +183,8 @@ class ItWork {
         collector_handle.send(inputHiRPC(), hirpc.receive(sender.toDoc));
 
         auto result = receiveOnlyTimeout!(LogInfo, const(Document));
-        check(result[0].symbol_name == "contract_no_verify", "did not reject for the expected reason got, %s".format(result[0].symbol_name));
+        check(result[0].symbol_name == "contract_no_verify", "did not reject for the expected reason got, %s".format(result[0]
+                .symbol_name));
 
         return result_ok;
     }

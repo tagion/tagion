@@ -1,8 +1,8 @@
 module tagion.crypto.secp256k1.NativeSecp256k1Musig;
 @safe:
-import std.string : representation;
-import std.range;
 import std.algorithm;
+import std.range;
+import std.string : representation;
 import tagion.crypto.secp256k1.NativeSecp256k1;
 import tagion.crypto.secp256k1.c.secp256k1_musig;
 import tagion.crypto.secp256k1.c.secp256k1;
@@ -291,9 +291,9 @@ version (unittest) {
     }
 
     import std.algorithm;
-    import std.range;
     import std.array;
     import std.format;
+    import std.range;
     import std.stdio;
 }
 
@@ -468,10 +468,10 @@ unittest {
 }
 
 unittest { /// Simple musig sign
-    import std.range;
     import std.algorithm;
     import std.array;
     import std.format;
+    import std.range;
     import std.stdio;
 
     const msg = "Message to be signed".representation.sha256;

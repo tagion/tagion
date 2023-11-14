@@ -1,6 +1,6 @@
 module tagion.tools.shell.shelloptions;
-import tagion.utils.JSONCommon;
 import tagion.services.options : contract_sock_addr;
+import tagion.utils.JSONCommon;
 
 enum mode0_prefix = "Node_1_";
 

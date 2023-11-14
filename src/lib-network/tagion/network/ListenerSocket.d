@@ -1,23 +1,22 @@
 module tagion.network.ListenerSocket;
 
 //import std.stdio;
-import std.socket;
-import std.concurrency;
-import std.format;
 import core.thread;
 import std.array : join;
-import std.conv : to;
 import std.bitmanip : binwrite = write;
-
+import std.concurrency;
+import std.conv : to;
+import std.format;
+import std.socket;
 import tagion.basic.Types : Buffer;
 
 //import tagion.services.Options: Options, setOptions, options;
-import tagion.options.CommonOptions : commonOptions;
+import tagion.actor.exceptions : taskException;
+import tagion.basic.tagionexceptions : TagionException;
 import tagion.hibon.Document;
 import tagion.logger.Logger;
 import tagion.network.NetworkExceptions;
-import tagion.basic.tagionexceptions : TagionException;
-import tagion.actor.exceptions : taskException;
+import tagion.options.CommonOptions : commonOptions;
 
 struct ListenerSocket {
     immutable ushort port;

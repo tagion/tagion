@@ -4,46 +4,38 @@ module tagion.hashgraph.Round;
 //import std.stdio;
 
 import std.datetime; // Date, DateTime
-import std.exception : assumeWontThrow;
-import std.conv;
-import std.range;
-import std.format;
-import std.typecons;
+import std.algorithm.iteration : cache, each, filter, fold, joiner, map, reduce;
 import std.algorithm.searching;
-import std.traits : Unqual, ReturnType;
-import std.array : array;
-
+import std.algorithm.searching : all, any, canFind, count, until;
 import std.algorithm.sorting : sort;
-import std.algorithm.iteration : map, each, filter, cache, fold, joiner, reduce;
-import std.algorithm.searching : count, any, all, until, canFind;
-import std.range.primitives : walkLength, isInputRange, isForwardRange, isBidirectionalRange;
+import std.array : array;
+import std.conv;
+import std.exception : assumeWontThrow;
+import std.format;
+import std.range;
 import std.range : enumerate, tee;
-
-import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONRecord;
-
-import tagion.utils.Miscellaneous;
-import tagion.utils.StdTime;
-
-import tagion.basic.Types : Buffer;
-import tagion.basic.basic : this_dot, basename, EnumText, buf_idup;
-import tagion.crypto.Types : Pubkey;
+import std.range.primitives : isBidirectionalRange, isForwardRange, isInputRange, walkLength;
+import std.stdio;
+import std.traits : ReturnType, Unqual;
+import std.traits;
+import std.typecons;
+import std.typecons : No;
 import tagion.Keywords : Keywords;
 import tagion.basic.Debug;
-
-import tagion.logger.Logger;
-import tagion.hashgraph.HashGraphBasic : isMajority, isAllVotes, higher, EventBody, EventPackage, EvaPayload, Tides;
-import tagion.hashgraph.HashGraph : HashGraph;
+import tagion.basic.Types : Buffer;
+import tagion.basic.basic : EnumText, basename, buf_idup, this_dot;
+import tagion.crypto.Types : Pubkey;
 import tagion.hashgraph.Event;
+import tagion.hashgraph.HashGraph : HashGraph;
+import tagion.hashgraph.HashGraphBasic : EvaPayload, EventBody, EventPackage, Tides, higher, isAllVotes, isMajority;
 import tagion.hashgraphview.EventMonitorCallbacks;
+import tagion.hibon.Document : Document;
+import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.HiBONRecord;
+import tagion.logger.Logger;
 import tagion.utils.BitMask : BitMask;
-
-import std.typecons : No;
-
-import std.traits;
-
-import std.stdio;
+import tagion.utils.Miscellaneous;
+import tagion.utils.StdTime;
 
 /// Handles the round information for the events in the Hashgraph
 @safe

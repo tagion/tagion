@@ -1,15 +1,15 @@
 module tagion.tools.dartutil.synchronize;
 
+import std.file : remove;
 import std.format;
 import tagion.communication.HiRPC;
-import tagion.dart.DART;
 import tagion.dart.BlockFile;
-import tagion.hibon.Document;
-import tagion.tools.Basic : verbose, nobose, noboseln;
-import std.file : remove;
-import tagion.dart.synchronizer;
-import tagion.utils.Term;
+import tagion.dart.DART;
 import tagion.dart.DARTRim;
+import tagion.dart.synchronizer;
+import tagion.hibon.Document;
+import tagion.tools.Basic : nobose, noboseln, verbose;
+import tagion.utils.Term;
 
 @safe
 class DARTUtilSynchronizer : JournalSynchronizer {

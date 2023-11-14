@@ -1,15 +1,14 @@
-import std.stdio;
-import std.conv;
-import std.string;
-import std.concurrency;
 import core.thread;
-import std.datetime.systime;
-import std.uuid;
-import std.random;
-import std.exception;
-
 import nngd;
 import nngtestutil;
+import std.concurrency;
+import std.conv;
+import std.datetime.systime;
+import std.exception;
+import std.random;
+import std.stdio;
+import std.string;
+import std.uuid;
 
 
 void pub_worker(string url, const string[] tags)
@@ -99,4 +98,3 @@ int main()
 
     return 0;
 }
-

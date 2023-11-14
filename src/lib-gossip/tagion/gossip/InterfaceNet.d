@@ -1,19 +1,18 @@
 module tagion.gossip.InterfaceNet;
 
-import tagion.hashgraph.HashGraphBasic;
 import tagion.hashgraph.Event;
+import tagion.hashgraph.HashGraphBasic;
+import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONRecord : isHiBONRecord;
-import tagion.hibon.Document : Document;
 
 //import tagion.utils.Queue;
 import tagion.basic.ConsensusExceptions;
-import tagion.crypto.Types : Pubkey;
 import tagion.communication.HiRPC;
-import tagion.utils.StdTime;
-
+import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
-import tagion.communication.HiRPC;
+import tagion.crypto.Types : Pubkey;
+import tagion.utils.StdTime;
 
 alias check = consensusCheck!(GossipConsensusException);
 alias consensus = consensusCheckArguments!(GossipConsensusException);

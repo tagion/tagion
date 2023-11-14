@@ -9,9 +9,9 @@ import tagion.betterC.utils.platform;
 version (WebAssembly) {
 }
 else {
-    import std.bitmanip : nativeToLittleEndian, nativeToBigEndian;
+    import std.bitmanip : nativeToBigEndian, nativeToLittleEndian;
 }
-import std.traits : isNumeric, isArray, Unqual;
+import std.traits : Unqual, isArray, isNumeric;
 import tagion.betterC.utils.Memory;
 import tagion.betterC.utils.sdt;
 

@@ -1,31 +1,28 @@
 module tagion.tools.signs;
-import tagion.tools.Basic;
-import tagion.tools.revision;
-
-import std.getopt;
-import std.stdio;
-import std.file : fread = read, fwrite = write, exists, readText;
-import std.path : setExtension, extension;
-import std.exception : assumeUnique;
-import std.format;
-import std.array : join;
-
-import tagion.basic.Types : FileExtension;
-
-import tagion.hibon.HiBONRecord;
-import tagion.crypto.Types;
-import tagion.basic.Types;
-import std.datetime;
-import tagion.utils.StdTime;
 import core.time;
-import tagion.script.TagionCurrency;
-import tagion.hibon.Document;
+import std.array : join;
+import std.datetime;
+import std.exception : assumeUnique;
+import std.file : exists, fread = read, readText, fwrite = write;
+import std.format;
+import std.getopt;
+import std.path : extension, setExtension;
+import std.stdio;
+import tagion.basic.Types : FileExtension;
+import tagion.basic.Types;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
 import tagion.crypto.SecureNet : StdSecureNet;
+import tagion.crypto.Types;
 import tagion.dart.DARTBasic;
-import tagion.hibon.HiBONtoText : encodeBase64, decode;
+import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON : toPretty;
+import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONtoText : decode, encodeBase64;
+import tagion.script.TagionCurrency;
 import tagion.script.standardnames;
+import tagion.tools.Basic;
+import tagion.tools.revision;
+import tagion.utils.StdTime;
 
 @recordType("DeliveryOrder")
 struct DeliveryOrder {

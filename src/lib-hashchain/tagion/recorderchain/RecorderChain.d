@@ -2,8 +2,8 @@
 module tagion.recorderchain.RecorderChain;
 
 import tagion.hashchain.HashChain : HashChain;
-import tagion.hashchain.HashChainStorage : HashChainStorage;
 import tagion.hashchain.HashChainFileStorage : HashChainFileStorage;
+import tagion.hashchain.HashChainStorage : HashChainStorage;
 import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock;
 
 /** @brief File contains class RecorderChain
@@ -22,16 +22,15 @@ unittest {
     import std.file;
     import std.path;
     import std.range : empty;
-
-    import tagion.basic.basic : tempfile, fileId;
     import tagion.basic.Types : FileExtension;
-    import tagion.crypto.SecureNet : StdSecureNet;
+    import tagion.basic.basic : fileId, tempfile;
     import tagion.crypto.SecureInterfaceNet : SecureNet;
+    import tagion.crypto.SecureNet : StdSecureNet;
     import tagion.crypto.Types : Fingerprint;
     import tagion.dart.DART : DART;
     import tagion.dart.Recorder;
-    import tagion.script.common : TagionBill;
     import tagion.script.TagionCurrency : TGN;
+    import tagion.script.common : TagionBill;
     import tagion.utils.Miscellaneous : toHexString;
     import tagion.utils.StdTime;
 

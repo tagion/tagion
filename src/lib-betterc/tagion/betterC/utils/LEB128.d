@@ -4,14 +4,13 @@ module tagion.betterC.utils.LEB128;
 
 @nogc:
 
-import traits = std.traits : isSigned, isUnsigned, isIntegral;
-import std.typecons;
 import std.format;
+import traits = std.traits : isIntegral, isSigned, isUnsigned;
+import std.typecons;
 
 //import tagion.basic.tagionexceptions;
 import std.algorithm.comparison : min;
 import std.algorithm.iteration : map, sum;
-
 import tagion.betterC.utils.Bailout;
 import tagion.betterC.utils.BinBuffer;
 

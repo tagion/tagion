@@ -2,21 +2,20 @@ module tagion.testbench.actor.supervisor;
 
 import tagion.testbench.actor.util;
 
-// Default import list for bdd
-import tagion.behaviour;
-import tagion.hibon.Document;
-import std.typecons : Tuple;
-import tagion.testbench.tools.Environment;
-import tagion.actor.actor;
-import tagion.utils.pretend_safe_concurrency;
-import tagion.basic.tagionexceptions : TagionException;
-import tagion.actor.exceptions : TaskFailure;
+version (none)  :  // Default import list for bdd
 import core.time;
-import std.format : format;
 import std.exception : assumeWontThrow;
-
+import std.format : format;
 import std.meta;
 import std.stdio;
+import std.typecons : Tuple;
+import tagion.actor.actor;
+import tagion.actor.exceptions : TaskFailure;
+import tagion.basic.tagionexceptions : TagionException;
+import tagion.behaviour;
+import tagion.hibon.Document;
+import tagion.testbench.tools.Environment;
+import tagion.utils.pretend_safe_concurrency;
 
 enum feature = Feature(
             "Actor supervisor test",

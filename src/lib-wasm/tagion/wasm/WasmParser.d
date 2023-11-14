@@ -1,9 +1,9 @@
 module tagion.wasm.WasmParser;
 
-import std.uni : toUpper;
-import std.traits : EnumMembers;
 import std.format;
-import std.range.primitives : isInputRange, isForwardRange;
+import std.range.primitives : isForwardRange, isInputRange;
+import std.traits : EnumMembers;
+import std.uni : toUpper;
 
 import tagion.utils.LEB128;
 

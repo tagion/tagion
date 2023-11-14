@@ -1,43 +1,39 @@
 // DART database build on DARTFile including CRUD commands and synchronization
 module tagion.dart.DART;
 @safe:
-import std.stdio;
-import core.thread : Fiber;
 import core.exception : RangeError;
+import core.thread : Fiber;
 import std.conv : ConvException;
 import std.range : empty;
+import std.stdio;
 
 //import std.stdio;
+import std.algorithm.iteration : filter, map;
+import std.format : format;
 import std.range;
 import std.traits : EnumMembers;
-import std.format : format;
-import std.algorithm.iteration : filter, map;
-
-import tagion.basic.Debug : debugwrite = __write, __format;
-import tagion.basic.basic : FUNCTION_NAME;
-import tagion.basic.Types : Buffer;
 import tagion.Keywords;
-import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.Document : Document;
-import tagion.hibon.HiBONRecord : HiBONRecord, recordType, GetLabel, label;
-import tagion.hibon.HiBONJSON;
-
-import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
-import tagion.communication.HiRPC : HiRPC, HiRPCMethod, Callers;
-import tagion.basic.basic : EnumText, isinit;
-
-import tagion.utils.Miscellaneous : toHexString, cutHex;
 import tagion.Keywords : isValid;
-
+import tagion.basic.Debug : __format, debugwrite = __write;
+import tagion.basic.Types : Buffer;
+import tagion.basic.basic : FUNCTION_NAME;
+import tagion.basic.basic : EnumText, isinit;
 import tagion.basic.tagionexceptions : Check;
+import tagion.communication.HiRPC : Callers, HiRPC, HiRPCMethod;
+import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
 import tagion.dart.BlockFile : BlockFile;
-import tagion.dart.Recorder : RecordFactory, Archive;
-import tagion.dart.DARTFile;
-import tagion.dart.DARTBasic : DARTIndex;
-import CRUD = tagion.dart.DARTcrud;
 import tagion.dart.BlockFile : Index;
-import tagion.dart.synchronizer : Synchronizer, JournalSynchronizer;
+import tagion.dart.DARTBasic : DARTIndex;
+import tagion.dart.DARTFile;
 import tagion.dart.DARTRim;
+import CRUD = tagion.dart.DARTcrud;
+import tagion.dart.Recorder : Archive, RecordFactory;
+import tagion.dart.synchronizer : JournalSynchronizer, Synchronizer;
+import tagion.hibon.Document : Document;
+import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.HiBONJSON;
+import tagion.hibon.HiBONRecord : GetLabel, HiBONRecord, label, recordType;
+import tagion.utils.Miscellaneous : cutHex, toHexString;
 
 /**
  * Calculates the to-angle on the angle circle 
@@ -647,11 +643,11 @@ received = the HiRPC received package
 
     ///Examples: how use the DART
     unittest {
-        import tagion.utils.Random;
+        import tagion.basic.basic : assumeTrusted, tempfile;
         import tagion.dart.BlockFile;
-        import tagion.basic.basic : tempfile, assumeTrusted;
         import tagion.dart.DARTFakeNet : DARTFakeNet;
         import tagion.dart.Recorder;
+        import tagion.utils.Random;
 
         enum TEST_BLOCK_SIZE = 0x80;
 

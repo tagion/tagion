@@ -4,10 +4,10 @@ import lib = p2p.cgo.libp2pgowrapper;
 import p2p.cgo.c_helper;
 import p2p.go_helper;
 import p2p.interfaces;
-import std.stdio;
 import core.time;
 import std.algorithm;
 import std.array;
+import std.stdio;
 
 import p2p.connection;
 import p2p.callback;

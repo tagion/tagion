@@ -3,43 +3,43 @@
 module tagion.services.epoch_creator;
 
 // tagion
-import tagion.logger.Logger;
 import tagion.actor;
-import tagion.communication.HiRPC;
-import tagion.utils.JSONCommon;
-import tagion.hashgraph.HashGraph;
-import tagion.gossip.GossipNet;
-import tagion.crypto.SecureNet : StdSecureNet;
-import tagion.crypto.SecureInterfaceNet : SecureNet;
-import tagion.crypto.Types : Pubkey;
-import tagion.crypto.random.random;
 import tagion.basic.Types : Buffer;
 import tagion.basic.basic : isinit;
-import tagion.hashgraph.Refinement;
-import tagion.gossip.InterfaceNet : GossipNet;
-import tagion.gossip.EmulatorGossipNet;
-import tagion.utils.Queue;
-import tagion.utils.Random;
-import tagion.utils.pretend_safe_concurrency;
-import tagion.utils.Miscellaneous : cutHex;
+import tagion.communication.HiRPC;
+import tagion.crypto.SecureInterfaceNet : SecureNet;
+import tagion.crypto.SecureNet : StdSecureNet;
+import tagion.crypto.Types : Pubkey;
+import tagion.crypto.random.random;
 import tagion.gossip.AddressBook;
-import tagion.hibon.HiBONJSON;
+import tagion.gossip.EmulatorGossipNet;
+import tagion.gossip.GossipNet;
+import tagion.gossip.InterfaceNet : GossipNet;
+import tagion.hashgraph.HashGraph;
+import tagion.hashgraph.Refinement;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONException;
-import tagion.utils.Miscellaneous : cutHex;
+import tagion.hibon.HiBONJSON;
+import tagion.logger.Logger;
 import tagion.services.messages;
 import tagion.services.monitor;
-import tagion.services.options : TaskNames, NetworkMode;
+import tagion.services.options : NetworkMode, TaskNames;
+import tagion.utils.JSONCommon;
+import tagion.utils.Miscellaneous : cutHex;
+import tagion.utils.Miscellaneous : cutHex;
+import tagion.utils.Queue;
+import tagion.utils.Random;
 import tagion.utils.StdTime;
+import tagion.utils.pretend_safe_concurrency;
 
 // core
 import core.time;
 
 // std
 import std.algorithm;
-import std.typecons : No;
+import std.exception : RangePrimitive, handle;
 import std.stdio;
-import std.exception : handle, RangePrimitive;
+import std.typecons : No;
 
 alias PayloadQueue = Queue!Document;
 
@@ -61,8 +61,8 @@ struct EpochCreatorService {
         assert(network_mode == NetworkMode.INTERNAL, "Unsupported network mode");
 
         if (monitor_opts.enable) {
-            import tagion.monitor.Monitor : MonitorCallBacks;
             import tagion.hashgraph.Event : Event;
+            import tagion.monitor.Monitor : MonitorCallBacks;
 
             auto monitor_socket_tid = spawn(&monitorServiceTask, monitor_opts);
             Event.callbacks = new MonitorCallBacks(
@@ -112,10 +112,10 @@ struct EpochCreatorService {
         }
 
         void receiveWavefront(ReceivedWavefront, const(Document) wave_doc) {
+            import std.array;
             import tagion.hashgraph.HashGraphBasic;
             import tagion.hibon.HiBONRecord : isRecord;
             import tagion.script.common : SignedContract;
-            import std.array;
 
             version (EPOCH_LOG) {
                 log.trace("Received wavefront %s");

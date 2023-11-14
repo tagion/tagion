@@ -3,15 +3,14 @@ module tagion.testbench.actor.handler;
 import tagion.testbench.actor.util;
 
 // Default import list for bdd
+import core.time;
+import std.stdio;
+import std.typecons : Tuple;
+import tagion.actor.actor;
 import tagion.behaviour;
 import tagion.hibon.Document;
-import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
-
 import tagion.utils.pretend_safe_concurrency;
-import tagion.actor.actor;
-import std.stdio;
-import core.time;
 
 enum feature = Feature(
             "Actor handler request",
@@ -39,11 +38,9 @@ struct MyActor {
     }
 }
 
-alias MyActorHandle = ActorHandle!MyActor;
-
 @safe
 struct MySuperActor {
-    MyActorHandle childHandle;
+    ActorHandle childHandle;
 
     void task() {
         childHandle = spawn!MyActor(child_task_name);
@@ -52,13 +49,11 @@ struct MySuperActor {
     }
 }
 
-alias MySuperHandle = ActorHandle!MySuperActor;
-
 @safe @Scenario("send a message to an actor you don't own",
         [])
 class SendAMessageToAnActorYouDontOwn {
-    MySuperHandle super_actor_handler;
-    MyActorHandle child_handler;
+    ActorHandle super_actor_handler;
+    ActorHandle child_handler;
 
     @Given("a supervisor #super and one child actor #child")
     Document actorChild() {
@@ -70,7 +65,7 @@ class SendAMessageToAnActorYouDontOwn {
 
     @When("#we request the handler for #child")
     Document forChild() {
-        child_handler = handle!MyActor(child_task_name);
+        child_handler = ActorHandle(child_task_name);
         check(child_handler.tid !is Tid.init, "Child task was not running");
         return result_ok;
     }

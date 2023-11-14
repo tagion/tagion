@@ -1,15 +1,15 @@
 module tagion.testbench.services.helper_functions;
 
-import tagion.communication.HiRPC;
-import tagion.script.TagionCurrency;
-import tagion.wallet.SecureWallet;
-import tagion.behaviour;
-import std.stdio;
-import tagion.hibon.HiBON;
-import tagion.crypto.SecureNet : StdSecureNet;
-import tagion.tools.wallet.WalletInterface;
-import tagion.behaviour.BehaviourException : check;
 import std.format;
+import std.stdio;
+import tagion.behaviour;
+import tagion.behaviour.BehaviourException : check;
+import tagion.communication.HiRPC;
+import tagion.crypto.SecureNet : StdSecureNet;
+import tagion.hibon.HiBON;
+import tagion.script.TagionCurrency;
+import tagion.tools.wallet.WalletInterface;
+import tagion.wallet.SecureWallet;
 
 @safe:
 
@@ -26,6 +26,5 @@ TagionCurrency getWalletUpdateAmount(ref StdSecureWallet wallet, string sock_add
 
     return wallet.calcTotal(wallet.account.bills);
 }
-
 
 

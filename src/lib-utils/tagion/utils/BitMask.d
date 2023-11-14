@@ -16,8 +16,8 @@ size_t word_bitindex(const size_t i) pure nothrow @nogc @safe {
 
 @safe
 struct BitMask {
-    import std.format;
     import std.algorithm;
+    import std.format;
     import std.range;
     import std.traits;
 
@@ -270,8 +270,8 @@ struct BitMask {
     }
 
     version (unittest) {
-        import std.stdio;
         import std.array;
+        import std.stdio;
         import tagion.basic.Debug;
 
         /// Result table
@@ -562,8 +562,8 @@ struct BitMask {
 
     unittest {
         import std.algorithm : equal;
+        import std.algorithm.iteration : fold, uniq;
         import std.algorithm.sorting : merge, sort;
-        import std.algorithm.iteration : uniq, fold;
         import std.stdio;
 
         { // Bit assign

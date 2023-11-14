@@ -1,21 +1,19 @@
 module tagion.testbench.tools.Environment;
 
-import std.process;
-import std.ascii : toUpper;
 import std.algorithm.iteration : map;
 import std.array;
-import std.path;
-import std.exception;
-import std.traits;
+import std.ascii : toUpper;
 import std.conv;
+import std.exception;
 import std.format;
-import tagion.basic.Types : FileExtension, DOT;
-
+import std.path;
+import std.process;
+import std.stdio;
+import std.traits;
+import tagion.basic.Types : DOT, FileExtension;
 import tagion.behaviour.BehaviourFeature;
 import tagion.behaviour.BehaviourReporter;
 import tagion.hibon.HiBONFile : fwrite;
-
-import std.stdio;
 
 void error(Args...)(string fmt, Args args) nothrow @trusted {
     assumeWontThrow(stderr.writefln(fmt, args));
@@ -77,8 +75,8 @@ struct Environment {
     string seed;
 
     const(uint) getSeed() const pure {
-        import tagion.utils.Miscellaneous;
         import std.bitmanip : binread = read;
+        import tagion.utils.Miscellaneous;
 
         auto buf = decode(seed).dup;
         return buf.binread!uint;

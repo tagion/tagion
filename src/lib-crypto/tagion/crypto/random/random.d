@@ -1,9 +1,9 @@
 module tagion.crypto.random.random;
 
-import tagion.basic.Version;
-import std.system : os;
 import std.format;
+import std.system : os;
 import std.traits;
+import tagion.basic.Version;
 
 static if (ver.USE_BUILD_IN_RANDOM_FOR_MOBILE_SHOULD_BE_REMOVED) {
     enum is_getrandom = "Dummy declaration";
@@ -32,9 +32,9 @@ do {
     }
     static if (ver.USE_BUILD_IN_RANDOM_FOR_MOBILE_SHOULD_BE_REMOVED) {
         pragma(msg, "fixme(cbr);Insecure random is used. This should be fixed");
-        import std.random;
         import std.algorithm;
         import std.exception : assumeWontThrow;
+        import std.random;
 
         auto rnd = Random(unpredictableSeed);
         assumeWontThrow(buf.each!((ref b) => b = uniform!("[]", ubyte, ubyte)(0, ubyte.max, rnd)));

@@ -4,41 +4,39 @@ module tagion.services.transcript;
 
 @safe:
 
-import std.stdio;
-import std.exception;
-import std.array;
-import std.algorithm;
-import std.range;
-import std.format;
 import core.time;
-
-import tagion.logger.Logger;
-import tagion.utils.JSONCommon;
-import tagion.utils.pretend_safe_concurrency;
+import std.algorithm;
+import std.array;
+import std.exception;
+import std.format;
+import std.range;
+import std.stdio;
 import tagion.actor.actor;
-import tagion.hibon.Document;
-import tagion.hibon.HiBONJSON;
-import tagion.hibon.HiBONRecord : isRecord, HiBONRecord;
 import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.SecureNet;
-import tagion.services.messages;
-import tagion.script.execute : ContractProduct;
-import tagion.dart.DARTBasic : DARTIndex, dartIndex;
-import tagion.hashgraph.HashGraphBasic : EventPackage;
-import tagion.logger.Logger;
-import tagion.services.options;
-import tagion.utils.StdTime;
-import tagion.script.common;
-import tagion.dart.Recorder;
-import tagion.services.options : TaskNames;
 import tagion.crypto.Types;
-import tagion.script.standardnames;
-import tagion.hibon.BigNumber;
-
-import tagion.script.TagionCurrency;
+import tagion.dart.DARTBasic : DARTIndex, dartIndex;
 import tagion.dart.DARTBasic;
+import tagion.dart.Recorder;
+import tagion.hashgraph.HashGraphBasic : EventPackage;
+import tagion.hibon.BigNumber;
+import tagion.hibon.Document;
+import tagion.hibon.HiBONJSON;
+import tagion.hibon.HiBONRecord : HiBONRecord, isRecord;
+import tagion.logger.Logger;
+import tagion.logger.Logger;
+import tagion.script.TagionCurrency;
+import tagion.script.common;
+import tagion.script.execute : ContractProduct;
+import tagion.script.standardnames;
 import tagion.services.locator;
+import tagion.services.messages;
+import tagion.services.options;
+import tagion.services.options : TaskNames;
+import tagion.utils.JSONCommon;
+import tagion.utils.StdTime;
+import tagion.utils.pretend_safe_concurrency;
 
 @safe:
 
@@ -223,9 +221,9 @@ struct TranscriptService {
                         log("contract not found asserting");
                     }
 
-                    import tagion.utils.StdTime;
                     import core.time;
                     import std.datetime;
+                    import tagion.utils.StdTime;
 
                     const max_time = sdt_t((SysTime(cast(long) epoch_contract.epoch_time) + BUFFER_TIME_SECONDS.seconds)
                             .stdTime);
@@ -276,22 +274,22 @@ struct TranscriptService {
                     number_of_bills++;
                 }
             }
+
             recorder[].each!(a => billStatistic(a));
 
             TagionGlobals new_globals = TagionGlobals(
-                total,
-                total_burned,
-                number_of_bills,
-                burnt_bills,
+                    total,
+                    total_burned,
+                    number_of_bills,
+                    burnt_bills,
             );
 
             TagionHead new_head = TagionHead(
-                TagionDomain,
-                last_epoch_number,
-                new_globals,
+                    TagionDomain,
+                    last_epoch_number,
+                    new_globals,
             );
 
-            
             last_head = new_head;
             recorder.insert(new_head, Archive.Type.ADD);
 
@@ -372,5 +370,3 @@ struct TranscriptService {
         run(&epoch, &produceContract, &createRecorder, &receiveBullseye);
     }
 }
-
-alias TranscriptServiceHandle = ActorHandle!TranscriptService;

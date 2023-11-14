@@ -6,12 +6,11 @@ private import tagion.crypto.secp256k1.c.secp256k1_ecdh;
 
 import tagion.crypto.secp256k1.NativeSecp256k1Interface;
 
-import std.exception : assumeUnique;
-import tagion.basic.ConsensusExceptions;
-
-import tagion.utils.Miscellaneous : toHexString;
 import std.algorithm;
 import std.array;
+import std.exception : assumeUnique;
+import tagion.basic.ConsensusExceptions;
+import tagion.utils.Miscellaneous : toHexString;
 
 /++
  + <p>This class holds native methods to handle ECDSA verification.</p>
@@ -317,20 +316,20 @@ class NativeSecp256k1ECDSA : NativeSecp256k1Interface {
 }
 
 version (unittest) {
-    import tagion.utils.Miscellaneous : toHexString, decode;
     import std.string : representation;
+    import tagion.utils.Miscellaneous : decode, toHexString;
 
     const(ubyte[]) sha256(scope const(ubyte[]) data) {
-        import std.digest.sha : SHA256;
         import std.digest;
+        import std.digest.sha : SHA256;
 
         return digest!SHA256(data).dup;
     }
 }
 
 unittest { /// Test of ECDSA
-    import std.traits;
     import std.stdio;
+    import std.traits;
 
     /++
  + This tests secret key verify() for a valid secretkey
@@ -496,8 +495,8 @@ unittest { /// Test of ECDSA
     {
         auto message = "CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90".decode;
         auto seed = "A441B15FE9A3CF5661190A0B93B9DEC7D04127288CC87250967CF3B52894D110".decode; //sha256hash of "random"
-        import tagion.utils.Miscellaneous : toHexString;
         import std.digest.sha;
+        import tagion.utils.Miscellaneous : toHexString;
 
         try {
             auto crypt = new NativeSecp256k1ECDSA;

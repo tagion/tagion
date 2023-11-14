@@ -1,8 +1,8 @@
 module foundation.wasm;
 
 import core.bitop : bsf, bsr;
-import std.traits;
 public import core.bitop : popcnt;
+import std.traits;
 
 @safe:
 

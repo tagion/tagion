@@ -1,31 +1,30 @@
 /// Module for handling callbacks from the hashgraph
 module tagion.hashgraph.Refinement;
 
-import tagion.hashgraph.RefinementInterface;
-import tagion.crypto.Types : Pubkey;
+import tagion.basic.Debug;
 import tagion.basic.Types : Buffer;
+import tagion.crypto.Types : Pubkey;
 import tagion.hashgraph.Event;
-import tagion.hashgraph.Round;
-import tagion.utils.BitMask;
 import tagion.hashgraph.HashGraph;
 import tagion.hashgraph.HashGraphBasic;
-import tagion.utils.StdTime;
-import tagion.logger.Logger;
-import tagion.hibon.HiBONRecord;
+import tagion.hashgraph.RefinementInterface;
+import tagion.hashgraph.Round;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON;
+import tagion.hibon.HiBONRecord;
+import tagion.logger.Logger;
 import tagion.services.messages : consensusEpoch;
-
-import tagion.basic.Debug;
+import tagion.utils.BitMask;
+import tagion.utils.StdTime;
 
 // std
-import std.stdio;
-import std.algorithm : map, filter, sort, reduce, until;
+import std.algorithm : filter, map, reduce, sort, until;
 import std.array;
-import tagion.utils.pretend_safe_concurrency;
-import tagion.services.options : TaskNames;
-import tagion.script.standardnames;
+import std.stdio;
 import tagion.hibon.HiBONRecord;
+import tagion.script.standardnames;
+import tagion.services.options : TaskNames;
+import tagion.utils.pretend_safe_concurrency;
 
 @safe
 @recordType("finishedEpoch")
@@ -105,8 +104,8 @@ class StdRefinement : Refinement {
     void epoch(Event[] event_collection, const(Round) decided_round) {
 
         import std.bigint;
-        import std.range : retro, back, tee;
         import std.numeric : gcd;
+        import std.range : back, retro, tee;
 
         pragma(msg, "fixme(bbh): move pseudotime out and add function labels");
         struct PseudoTime {

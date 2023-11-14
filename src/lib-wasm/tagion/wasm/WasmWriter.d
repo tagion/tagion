@@ -1,25 +1,23 @@
 module tagion.wasm.WasmWriter;
 
-import std.outbuffer;
 import std.bitmanip : nativeToLittleEndian;
+import std.outbuffer;
 import std.traits : isIntegral, isFloatingPoint, EnumMembers, hasMember, Unqual,
     TemplateArgsOf, PointerTarget, getUDAs, isPointer, ConstOf, ForeachType, FieldNameTuple;
-import std.typecons : Tuple;
-import std.format;
 import std.algorithm;
-import std.range.primitives : isInputRange;
-
-import std.meta : staticMap, Replace;
-import std.exception : assumeUnique;
-import std.range : lockstep;
 import std.array : join;
-
+import std.exception : assumeUnique;
+import std.format;
+import std.meta : Replace, staticMap;
+import std.range : lockstep;
+import std.range.primitives : isInputRange;
 import std.stdio;
+import std.typecons : Tuple;
 
 import LEB128 = tagion.utils.LEB128;
 import tagion.wasm.WasmBase;
-import tagion.wasm.WasmReader;
 import tagion.wasm.WasmException;
+import tagion.wasm.WasmReader;
 
 @safe class WasmWriter {
 
@@ -696,9 +694,9 @@ import tagion.wasm.WasmException;
 }
 
 version (none) unittest {
-    import std.stdio;
-    import std.file;
     import std.exception : assumeUnique;
+    import std.file;
+    import std.stdio;
     import tagion.wavm.Wast;
 
     @trusted static immutable(ubyte[]) fread(R)(R name, size_t upTo = size_t.max) {

@@ -1,26 +1,26 @@
 module tagion.services.replicator;
 
 import tagion.actor;
-import tagion.utils.Miscellaneous : cutHex;
-import tagion.logger.Logger;
-import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock;
-import tagion.recorderchain.RecorderChain;
+import tagion.crypto.SecureInterfaceNet;
+import tagion.crypto.SecureNet : StdHashNet;
 import tagion.crypto.Types : Fingerprint;
 import tagion.dart.Recorder : RecordFactory;
-import tagion.crypto.SecureInterfaceNet;
+import tagion.logger.Logger;
+import tagion.recorderchain.RecorderChain;
+import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock;
 import tagion.services.messages;
-import tagion.crypto.SecureNet : StdHashNet;
+import tagion.utils.Miscellaneous : cutHex;
 
 @safe
 struct ReplicatorOptions {
-    import tagion.utils.JSONCommon;
     import std.format;
+    import tagion.utils.JSONCommon;
 
     string folder_path = "./recorder";
 
     void setPrefix(string prefix) nothrow {
-        import std.path : buildPath;
         import std.exception;
+        import std.path : buildPath;
 
         folder_path = folder_path ~ prefix;
         // assumeWontThrow(buildPath(folder_path, prefix));
@@ -34,10 +34,10 @@ enum modify_log = "modify/replicator";
 @safe
 struct ReplicatorService {
     static Topic modify_recorder = Topic(modify_log);
-    
+
     void task(immutable(ReplicatorOptions) opts) {
         HashNet net = new StdHashNet;
-        
+
         RecorderChainStorage storage = new RecorderChainFileStorage(opts.folder_path, net);
         RecorderChain recorder_chain = new RecorderChain(storage);
 
@@ -58,5 +58,3 @@ struct ReplicatorService {
     }
 
 }
-
-alias ReplicatorServiceHandle = ActorHandle!ReplicatorService;

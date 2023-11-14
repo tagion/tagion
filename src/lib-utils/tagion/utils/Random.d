@@ -93,7 +93,7 @@ struct Random(T = uint) {
             return Random(m_z, m_w);
         }
 
-        import std.range.primitives : isInputRange, isForwardRange, isInfinite;
+        import std.range.primitives : isForwardRange, isInfinite, isInputRange;
 
         static assert(isInputRange!(Random));
         static assert(isForwardRange!(Random));
@@ -111,8 +111,8 @@ struct Random(T = uint) {
 
 ///
 unittest {
-    import std.range : take, drop;
     import std.algorithm.comparison : equal;
+    import std.range : drop, take;
 
     auto r = Random!uint(1234);
     auto r_forward = r.save;
@@ -157,9 +157,9 @@ struct Sequence(T = uint) {
 
 ///
 unittest {
-    import std.stdio;
-    import std.range;
     import std.algorithm;
+    import std.range;
+    import std.stdio;
 
     alias RandomT = Random!uint;
 

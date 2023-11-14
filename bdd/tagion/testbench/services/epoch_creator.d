@@ -1,38 +1,35 @@
 module tagion.testbench.services.epoch_creator;
 // Default import list for bdd
-import tagion.behaviour;
-import tagion.hibon.Document;
-import std.typecons : Tuple;
-import tagion.testbench.tools.Environment;
-
-import tagion.utils.pretend_safe_concurrency;
-import tagion.actor;
-import tagion.actor.exceptions;
-import tagion.services.epoch_creator;
-import tagion.services.options;
-import tagion.crypto.SecureNet : StdSecureNet;
-import tagion.crypto.SecureInterfaceNet : SecureNet;
-import tagion.crypto.Types : Pubkey;
+import core.thread;
+import core.time;
 import std.algorithm;
 import std.array;
-import tagion.utils.Miscellaneous : cutHex;
-import tagion.services.messages;
-import tagion.logger.Logger;
-import tagion.logger.LogRecords : LogInfo;
+import std.format;
+import std.range : empty;
+import std.stdio;
+import std.typecons : Tuple;
+import tagion.actor;
+import tagion.actor.exceptions;
+import tagion.behaviour;
+import tagion.crypto.SecureInterfaceNet : SecureNet;
+import tagion.crypto.SecureNet : StdSecureNet;
+import tagion.crypto.Types : Pubkey;
+import tagion.gossip.AddressBook : NodeAddress, addressbook;
+import tagion.hashgraph.HashGraphBasic;
+import tagion.hibon.Document;
 import tagion.hibon.HiBON;
 import tagion.hibon.HiBONJSON;
-import std.range : empty;
-import tagion.hashgraph.HashGraphBasic;
+import tagion.logger.LogRecords : LogInfo;
+import tagion.logger.Logger;
+import tagion.services.epoch_creator;
+import tagion.services.messages;
 import tagion.services.monitor;
+import tagion.services.options;
 import tagion.services.options : NetworkMode;
 import tagion.testbench.actor.util;
-
-import std.stdio;
-import std.format;
-
-import core.time;
-import core.thread;
-import tagion.gossip.AddressBook : addressbook, NodeAddress;
+import tagion.testbench.tools.Environment;
+import tagion.utils.Miscellaneous : cutHex;
+import tagion.utils.pretend_safe_concurrency;
 
 enum feature = Feature(
             "EpochCreator service",
@@ -58,7 +55,7 @@ class SendPayloadAndCreateEpoch {
     immutable(size_t) number_of_nodes;
 
     Node[] nodes;
-    ActorHandle!EpochCreatorService[] handles;
+    ActorHandle[] handles;
     Document send_payload;
 
     this(EpochCreatorOptions epoch_creator_options, MonitorOptions monitor_opts, immutable size_t number_of_nodes) {
@@ -111,8 +108,8 @@ class SendPayloadAndCreateEpoch {
 
         submask.subscribe("epoch_creator/epoch_created");
 
-        import tagion.hibon.HiBON;
         import tagion.hibon.Document;
+        import tagion.hibon.HiBON;
 
         auto h = new HiBON;
         h["node0"] = "TEST PAYLOAD";

@@ -2,25 +2,24 @@
 module tagion.services.collector;
 @safe:
 
-import tagion.actor.actor;
-import tagion.hibon.HiBONRecord;
-import tagion.hibon.HiBONException : HiBONRecordException;
-import tagion.hibon.Document;
-import tagion.dart.Recorder : RecordFactory, Archive;
-import tagion.services.messages;
-import tagion.script.execute;
-import tagion.script.common;
-import tagion.communication.HiRPC;
-import tagion.crypto.SecureNet;
-import tagion.crypto.SecureInterfaceNet;
-import tagion.crypto.Types;
-import tagion.basic.Types;
-import tagion.utils.pretend_safe_concurrency;
-import tagion.services.options : TaskNames;
-import tagion.logger.Logger;
-
-import std.typecons;
 import std.exception;
+import std.typecons;
+import tagion.actor.actor;
+import tagion.basic.Types;
+import tagion.communication.HiRPC;
+import tagion.crypto.SecureInterfaceNet;
+import tagion.crypto.SecureNet;
+import tagion.crypto.Types;
+import tagion.dart.Recorder : Archive, RecordFactory;
+import tagion.hibon.Document;
+import tagion.hibon.HiBONException : HiBONRecordException;
+import tagion.hibon.HiBONRecord;
+import tagion.logger.Logger;
+import tagion.script.common;
+import tagion.script.execute;
+import tagion.services.messages;
+import tagion.services.options : TaskNames;
+import tagion.utils.pretend_safe_concurrency;
 
 struct CollectorOptions {
     import tagion.utils.JSONCommon;
@@ -31,7 +30,6 @@ struct CollectorOptions {
 /// Topic for rejected collector inputs;
 enum reject_collector = "reject/collector";
 
-
 /**
  * Collector Service actor
  * Sends:
@@ -40,7 +38,13 @@ enum reject_collector = "reject/collector";
  *  (signedContract(), immutable(CollectedSignedContract)*) to TaskNames.tvm 
 **/
 struct CollectorService {
-    immutable TaskNames task_names;
+    ActorHandle dart_handle;
+    ActorHandle tvm_handle;
+
+    this(immutable(TaskNames) tn) nothrow {
+        dart_handle = ActorHandle(tn.dart);
+        tvm_handle = ActorHandle(tn.tvm);
+    }
 
     immutable(SignedContract)*[uint] contracts;
     bool[uint] is_consensus_contract;
@@ -69,11 +73,11 @@ struct CollectorService {
         log("Set the signed_contract %s", (req.id in contracts) !is null);
         if (s_contract.contract.reads !is DARTIndex[].init) {
             log("sending contract read request to dart");
-            locate(task_names.dart).send(req, (*s_contract).contract.reads);
+            dart_handle.send(req, (*s_contract).contract.reads);
         }
 
         log("sending contract input request to dart");
-        locate(task_names.dart).send(req, (*s_contract).contract.inputs);
+        dart_handle.send(req, (*s_contract).contract.inputs);
     }
 
     void consensus_signed_contract(consensusContract, immutable(SignedContract*)[] signed_contracts) {
@@ -111,8 +115,8 @@ struct CollectorService {
 
     // Receives the read Documents from the dart and constructs the CollectedSignedContract
     void receive_recorder(dartReadRR.Response res, immutable(RecordFactory.Recorder) recorder) {
-        import std.range;
         import std.algorithm.iteration : map;
+        import std.range;
 
         scope (failure) {
             clean(res.id);
@@ -122,7 +126,6 @@ struct CollectorService {
         if (!(res.id in contracts)) {
             return;
         }
-
 
         immutable s_contract = contracts[res.id];
         auto fingerprints = recorder[].map!(a => a.dart_index).array;
@@ -147,14 +150,14 @@ struct CollectorService {
             immutable collection =
                 ((res.id in reads) !is null)
                 ? new immutable(CollectedSignedContract)(s_contract, inputs, reads[res.id]) : new immutable(
-                    CollectedSignedContract)(s_contract, inputs);
+                        CollectedSignedContract)(s_contract, inputs);
 
             log("sending to tvm");
             if (is_consensus_contract[res.id]) {
-                locate(task_names.tvm).send(consensusContract(), collection);
+                tvm_handle.send(consensusContract(), collection);
             }
             else {
-                locate(task_names.tvm).send(signedContract(), collection);
+                tvm_handle.send(signedContract(), collection);
             }
             return;
         }
@@ -166,8 +169,6 @@ struct CollectorService {
     }
 
 }
-
-alias CollectorServiceHandle = ActorHandle!CollectorService;
 
 // The find funtion in dart.recorder doest not work with an immutable recorder;
 import tagion.dart.DARTBasic : DARTIndex;

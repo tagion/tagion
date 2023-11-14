@@ -5,26 +5,25 @@ module tagion.tools.recorderchain;
  * @brief tool replay whole recorder chain in DART database
  */
 
-import std.stdio;
+import std.array;
+import std.file : copy, exists;
+import std.format;
 import std.getopt;
 import std.path;
-import std.file : copy, exists;
-import std.array;
-import std.format;
-
-import tagion.basic.tagionexceptions;
+import std.stdio;
 import tagion.basic.Types : FileExtension;
-import tagion.crypto.SecureNet;
+import tagion.basic.tagionexceptions;
 import tagion.crypto.SecureInterfaceNet : SecureNet;
-import tagion.dart.Recorder;
+import tagion.crypto.SecureNet;
 import tagion.dart.BlockFile;
 import tagion.dart.DART;
 import tagion.dart.DARTFile;
+import tagion.dart.Recorder;
 // import tagion.prior_services.RecorderService;
-import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock;
 import tagion.recorderchain.RecorderChain;
+import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock;
 import tagion.tools.Basic;
-import tagion.utils.Miscellaneous : toHexString, cutHex;
+import tagion.utils.Miscellaneous : cutHex, toHexString;
 
 auto logo = import("logo.txt");
 
@@ -182,4 +181,3 @@ int _main(string[] args) {
 
     return 0;
 }
-

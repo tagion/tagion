@@ -1,23 +1,21 @@
 module tagion.behaviour.Behaviour;
 
-public import tagion.behaviour.BehaviourFeature;
-import tagion.hibon.Document;
-
 import core.exception : AssertError;
-import std.traits;
+import std.algorithm.searching : all, any;
+import std.array : join;
+import std.exception : assumeWontThrow;
 import std.format;
 import std.meta : AliasSeq;
 import std.range : only;
-import std.array : join;
-import std.algorithm.searching : any, all;
-import std.exception : assumeWontThrow;
-
-import tagion.behaviour.BehaviourException;
-import tagion.behaviour.BehaviourResult;
-import tagion.behaviour.BehaviourReporter;
+import std.traits;
 import tagion.basic.Types : FileExtension;
-import tagion.hibon.HiBONRecord;
 import tagion.basic.basic : isOneOf;
+import tagion.behaviour.BehaviourException;
+public import tagion.behaviour.BehaviourFeature;
+import tagion.behaviour.BehaviourReporter;
+import tagion.behaviour.BehaviourResult;
+import tagion.hibon.Document;
+import tagion.hibon.HiBONRecord;
 
 /**
    Runs the scenario in Given, When, Then, But order
@@ -103,8 +101,8 @@ ScenarioGroup run(T)(T scenario) if (isScenario!T) {
 ///Examples: How use the rub fuction on a feature
 @safe
 unittest {
-    import std.algorithm.iteration : map;
     import std.algorithm.comparison : equal;
+    import std.algorithm.iteration : map;
     import std.array;
     import tagion.behaviour.BehaviourUnittest;
 
@@ -182,12 +180,11 @@ FeatureGroup getFeature(alias M)() if (isFeature!M) {
 
 @safe
 unittest { //
-    import tagion.hibon.HiBONFile : fread;
-    import tagion.basic.basic : unitfile;
     import core.demangle : mangle;
-
-    import Module = tagion.behaviour.BehaviourUnittest;
     import std.path;
+    import tagion.basic.basic : unitfile;
+    import Module = tagion.behaviour.BehaviourUnittest;
+    import tagion.hibon.HiBONFile : fread;
 
     enum filename = mangle!(FunctionTypeOf!(getFeature!Module))("unittest")
             .unitfile
@@ -199,8 +196,8 @@ unittest { //
 
 @safe
 auto automation(alias M)() if (isFeature!M) {
-    import std.typecons;
     import std.algorithm.searching : any;
+    import std.typecons;
 
     mixin(format(q{import %s;}, moduleName!M));
 
@@ -627,8 +624,8 @@ unittest {
 }
 
 version (unittest) {
-    import tagion.hibon.Document;
-    import tagion.hibon.HiBONRecord;
-    import tagion.hibon.HiBONJSON;
     import std.exception;
+    import tagion.hibon.Document;
+    import tagion.hibon.HiBONJSON;
+    import tagion.hibon.HiBONRecord;
 }

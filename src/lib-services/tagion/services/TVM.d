@@ -4,31 +4,20 @@ module tagion.services.TVM;
 
 @safe:
 
-import std.stdio;
 import core.time;
 import std.conv : to;
-
-import tagion.logger.Logger;
-import tagion.basic.Debug : __write;
+import std.stdio;
 import tagion.actor.actor;
+import tagion.basic.Debug : __write;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord;
-import tagion.services.options;
-import tagion.services.messages;
+import tagion.logger.Logger;
 import tagion.logger.Logger;
 import tagion.script.common;
 import tagion.script.execute;
-import tagion.utils.pretend_safe_concurrency : locate, send;
-
-/// Msg type sent to receiver task along with a hirpc
-//alias contractProduct = Msg!"contract_product";
-struct TVMOptions {
-    import tagion.utils.JSONCommon;
-
-    mixin JSONCommon;
-}
-
+import tagion.services.messages;
+import tagion.services.options;
 
 enum ResponseError {
     UnsupportedScript,
@@ -46,8 +35,14 @@ enum ResponseError {
  *  (producedContract, immutable(ContractProduct)*) to TaskNames.transcript
 **/
 struct TVMService {
-    TVMOptions opts;
-    TaskNames task_names;
+    ActorHandle transcript_handle;
+    ActorHandle epoch_handle;
+
+    this(immutable(TaskNames) tn) nothrow {
+        transcript_handle = ActorHandle(tn.transcript);
+        epoch_handle = ActorHandle(tn.epoch_creator);
+    }
+
     static ContractExecution execute;
     static Topic tvm_error = Topic("error/tvm");
 
@@ -62,7 +57,7 @@ struct TVMService {
             return;
         }
         log("sending pload to epoch creator");
-        locate(task_names.epoch_creator).send(Payload(), collected.sign_contract.toDoc);
+        epoch_handle.send(Payload(), collected.sign_contract.toDoc);
     }
 
     void consensus_contract(consensusContract, immutable(CollectedSignedContract)* collected) {
@@ -86,17 +81,15 @@ struct TVMService {
             return false;
         }
         log("sending produced contract to transcript");
-        locate(task_names.transcript).send(producedContract(), result.get);
+        transcript_handle.send(producedContract(), result.get);
         return true;
     }
 
 }
 
-alias TVMServiceHandle = ActorHandle!TVMService;
-
 unittest {
-    import tagion.utils.pretend_safe_concurrency;
     import core.time;
+    import tagion.utils.pretend_safe_concurrency;
 
     enum task_names = TaskNames();
     scope (exit) {
@@ -105,16 +98,15 @@ unittest {
     }
     register(task_names.transcript, thisTid);
     register(task_names.epoch_creator, thisTid);
-    immutable opts = TVMOptions();
-    auto tvm_service = TVMService(opts, task_names);
+    auto tvm_service = TVMService(task_names);
 
+    import std.algorithm.iteration : map;
+    import std.array;
     import std.range : iota;
+    import tagion.basic.Types : Buffer;
     import tagion.crypto.Types;
     import tagion.script.TagionCurrency;
     import tagion.utils.StdTime;
-    import tagion.basic.Types : Buffer;
-    import std.algorithm.iteration : map;
-    import std.array;
 
     auto createCollected(uint input, uint output) {
         immutable(Document)[] in_bills;

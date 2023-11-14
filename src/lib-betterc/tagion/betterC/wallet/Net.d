@@ -1,13 +1,12 @@
 module tagion.betterC.wallet.Net;
 
 // import tagion.crypto.aes.AESCrypto;
-import tagion.betterC.utils.BinBuffer;
 import std.format;
 import std.string : representation;
+import tagion.betterC.utils.BinBuffer;
 private import tagion.crypto.secp256k1.c.secp256k1;
 private import tagion.crypto.secp256k1.c.secp256k1_ecdh;
 import tagion.betterC.utils.Memory;
-
 import hash = tagion.betterC.wallet.hash;
 
 // import tagion.betterC.hibon.Document;

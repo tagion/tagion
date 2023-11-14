@@ -1,24 +1,19 @@
 module tagion.wasm.WasmReader;
 
-import std.stdio;
-
-import std.format;
-import tagion.wasm.WasmException;
-import tagion.wasm.WasmBase;
-
-import std.meta : AliasSeq;
-import std.traits : EnumMembers, getUDAs, Unqual, PointerTarget, ForeachType;
-
-import std.bitmanip : binread = read, binwrite = write, peek, Endian;
-
-import std.range.primitives : isInputRange, isForwardRange, isRandomAccessRange;
-
-import std.conv : to, emplace;
-import std.uni : toLower;
-import std.exception : assumeUnique;
 import std.array : join;
-import std.range : enumerate;
+import std.bitmanip : Endian, peek, binread = read, binwrite = write;
+import std.conv : emplace, to;
+import std.exception : assumeUnique;
 import std.format;
+import std.format;
+import std.meta : AliasSeq;
+import std.range : enumerate;
+import std.range.primitives : isForwardRange, isInputRange, isRandomAccessRange;
+import std.stdio;
+import std.traits : EnumMembers, ForeachType, PointerTarget, Unqual, getUDAs;
+import std.uni : toLower;
+import tagion.wasm.WasmBase;
+import tagion.wasm.WasmException;
 
 @safe struct WasmReader {
     protected {
@@ -670,9 +665,9 @@ import std.format;
     }
 
     version (none) unittest {
-        import std.stdio;
-        import std.file;
         import std.exception : assumeUnique;
+        import std.file;
+        import std.stdio;
 
         @trusted static immutable(ubyte[]) fread(R)(R name, size_t upTo = size_t.max) {
             import std.file : _read = read;

@@ -4,27 +4,25 @@ module tagion.tools.collider.reporter;
 /**
  * @brief tool generate d files from bdd md files and vice versa
  */
-import tagion.tools.Basic : Main;
-
-import tagion.hibon.HiBONRecord : isRecord;
-import tagion.hibon.HiBONFile : fwrite, fread;
-import tagion.hibon.HiBONJSON;
-import tagion.hibon.Document : Document;
-import tagion.tools.revision : revision_text;
-import tagion.behaviour.BehaviourFeature;
-import tagion.behaviour.BehaviourResult;
-
-import std.file;
-import std.getopt;
-import std.format;
-import std.string;
 import std.algorithm.iteration;
 import std.algorithm.sorting;
-import std.stdio;
 import std.array;
-import std.traits;
+import std.file;
+import std.format;
+import std.getopt;
 import std.path;
 import std.process : environment;
+import std.stdio;
+import std.string;
+import std.traits;
+import tagion.behaviour.BehaviourFeature;
+import tagion.behaviour.BehaviourResult;
+import tagion.hibon.Document : Document;
+import tagion.hibon.HiBONFile : fread, fwrite;
+import tagion.hibon.HiBONJSON;
+import tagion.hibon.HiBONRecord : isRecord;
+import tagion.tools.Basic : Main;
+import tagion.tools.revision : revision_text;
 
 mixin Main!(_main);
 

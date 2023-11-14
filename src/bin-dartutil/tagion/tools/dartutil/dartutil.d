@@ -2,53 +2,48 @@
 
 module tagion.tools.dartutil.dartutil;
 
-import std.getopt;
-import std.stdio;
-import std.file : exists, tempDir, mkdirRecurse, rmdirRecurse;
-import std.path : setExtension, buildPath, baseName, stripExtension, dirName;
-import std.format;
-import std.conv : to;
-import std.array;
 import std.algorithm;
+import std.array;
+import std.conv : to;
+import std.file : exists, mkdirRecurse, rmdirRecurse, tempDir;
+import std.format;
+import std.getopt;
+import std.path : baseName, buildPath, dirName, setExtension, stripExtension;
+import std.stdio;
 import std.typecons;
-
-import tools = tagion.tools.toolsexception;
-import tagion.dart.DART : DART;
-import tagion.dart.DARTFile;
 import tagion.basic.Types : Buffer, FileExtension, hasExtension;
+import tagion.dart.DART : DART;
 import tagion.dart.DARTBasic : DARTIndex;
+import tagion.dart.DARTFile;
+import tools = tagion.tools.toolsexception;
 import CRUD = tagion.dart.DARTcrud; // : dartRead, dartModify;
 
 import tagion.basic.basic : tempfile;
-
 import tagion.communication.HiRPC;
-
-import tagion.gossip.GossipNet;
-import tagion.gossip.AddressBook;
-import tagion.crypto.SecureInterfaceNet : SecureNet, HashNet;
+import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
 import tagion.crypto.SecureNet : StdSecureNet;
-import tagion.dart.DARTFakeNet : DARTFakeNet;
 import tagion.dart.BlockFile : BlockFile;
+import tagion.dart.DARTFakeNet : DARTFakeNet;
+import tagion.gossip.AddressBook;
+import tagion.gossip.GossipNet;
+import tagion.hibon.Document;
+import tagion.hibon.HiBON;
+import tagion.hibon.HiBONFile : fread, fwrite;
+import tagion.hibon.HiBONJSON;
+import tagion.hibon.HiBONRecord;
 import tagion.tools.dartutil.synchronize;
 
-import tagion.hibon.Document;
-import tagion.hibon.HiBONJSON;
-import tagion.hibon.HiBON;
-import tagion.hibon.HiBONRecord;
-import tagion.hibon.HiBONFile : fread, fwrite;
-
 //import tagion.utils.Miscellaneous;
-import tagion.hibon.HiBONtoText : decode, encodeBase64;
-import tagion.Keywords;
-import tagion.dart.Recorder;
-import tagion.script.NameCardScripts : readStandardRecord;
-
-import tagion.tools.Basic;
-import tagion.dart.DARTFakeNet;
-import tagion.tools.revision;
-import std.uni : toLower;
 import std.exception;
+import std.uni : toLower;
+import tagion.Keywords;
+import tagion.dart.DARTFakeNet;
 import tagion.dart.DARTRim;
+import tagion.dart.Recorder;
+import tagion.hibon.HiBONtoText : decode, encodeBase64;
+import tagion.script.NameCardScripts : readStandardRecord;
+import tagion.tools.Basic;
+import tagion.tools.revision;
 
 /**
  * @brief tool for working with local DART database

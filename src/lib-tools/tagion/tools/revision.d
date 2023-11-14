@@ -1,10 +1,10 @@
 module tagion.tools.revision;
 
-import std.string : splitLines;
-import std.format;
-import std.array : join;
 import std.algorithm.iteration : map;
+import std.array : join;
+import std.format;
 import std.range : zip;
+import std.string : splitLines;
 
 enum revision_info = import("revision.mixin").splitLines;
 

@@ -1,11 +1,11 @@
 module tagion.hashgraphview.Compare;
 
-import tagion.hashgraph.Event;
-import tagion.hashgraph.HashGraph;
-import tagion.hashgraph.HashGraphBasic : higher;
 import std.algorithm.iteration : map;
 import std.array : array;
 import std.range : lockstep;
+import tagion.hashgraph.Event;
+import tagion.hashgraph.HashGraph;
+import tagion.hashgraph.HashGraphBasic : higher;
 
 @safe
 struct Compare {

@@ -1,26 +1,25 @@
 module tagion.testbench.services.recorder_service;
 // Default import list for bdd
-import tagion.behaviour;
-import tagion.hibon.Document;
+import std.algorithm;
+import std.array;
+import std.random;
+import std.stdio;
 import std.typecons : Tuple;
-import tagion.testbench.tools.Environment;
-import tagion.services.replicator;
+import tagion.actor;
+import tagion.behaviour;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.SecureNet : StdSecureNet;
-import tagion.actor;
-import tagion.utils.pretend_safe_concurrency;
-import tagion.testbench.dart.dart_helper_functions;
-import tagion.services.messages;
 import tagion.crypto.Types;
 import tagion.dart.Recorder;
+import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord;
-import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock;
 import tagion.recorderchain.RecorderChain;
-
-import std.algorithm;
-import std.random;
-import std.array;
-import std.stdio;
+import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock;
+import tagion.services.messages;
+import tagion.services.replicator;
+import tagion.testbench.dart.dart_helper_functions;
+import tagion.testbench.tools.Environment;
+import tagion.utils.pretend_safe_concurrency;
 
 enum feature = Feature(
             "Recorder chain service",
@@ -39,7 +38,7 @@ alias FeatureContext = Tuple!(
 class StoreOfTheRecorderChain {
     immutable(ReplicatorOptions) replicator_opts;
     SecureNet replicator_net;
-    ReplicatorServiceHandle handle;
+    ActorHandle handle;
     Mt19937 gen;
     RandomArchives random_archives;
     RecordFactory.Recorder insert_recorder;

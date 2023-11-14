@@ -1,25 +1,21 @@
 module tagion.testbench.malformed_contract;
 
-import tagion.tools.Basic;
+import core.thread;
+import core.time;
+import std.file;
+import std.path : buildPath, setExtension;
+import std.stdio;
+import tagion.GlobalSignals;
+import tagion.actor;
+import tagion.basic.Types : FileExtension;
 import tagion.behaviour.Behaviour;
+import tagion.logger.Logger;
+import tagion.services.options;
 import tagion.testbench.services;
 import tagion.testbench.tools.Environment;
-import std.file;
-
-import std.path : setExtension, buildPath;
-import tagion.basic.Types : FileExtension;
-
-import tagion.services.options;
-import core.time;
-import core.thread;
-import std.stdio;
-import tagion.actor;
-import tagion.logger.Logger;
-
+import tagion.tools.Basic;
 import neuewelle = tagion.tools.neuewelle;
-
 import tagion.utils.pretend_safe_concurrency;
-import tagion.GlobalSignals;
 
 mixin Main!(_main);
 
@@ -44,23 +40,23 @@ int _main(string[] args) {
 
     local_options.save(config_file);
 
+    import std.algorithm;
+    import std.array;
     import std.format;
     import std.range;
-    import std.array;
-    import std.algorithm;
     import std.stdio;
-    import tagion.crypto.SecureNet : StdSecureNet;
     import tagion.crypto.SecureInterfaceNet;
-    import tagion.dart.DARTFile;
+    import tagion.crypto.SecureNet : StdSecureNet;
     import tagion.dart.DART;
-    import tagion.wallet.SecureWallet;
+    import tagion.dart.DARTBasic;
+    import tagion.dart.DARTFile;
+    import tagion.dart.Recorder;
+    import tagion.hibon.Document;
+    import tagion.hibon.HiBON;
+    import tagion.script.TagionCurrency;
     import tagion.script.common : TagionBill;
     import tagion.testbench.services.sendcontract;
-    import tagion.script.TagionCurrency;
-    import tagion.dart.Recorder;
-    import tagion.hibon.HiBON;
-    import tagion.dart.DARTBasic;
-    import tagion.hibon.Document;
+    import tagion.wallet.SecureWallet;
 
     StdSecureWallet[] wallets;
     // create the wallets

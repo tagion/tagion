@@ -1,28 +1,27 @@
 module tagion.tools.wasmutil.wasmutil;
 
-import std.getopt;
-import std.stdio;
-import std.file : fread = read, fwrite = write, exists, readText;
-import std.format;
-import std.path : extension, setExtension, baseName;
-import std.traits : EnumMembers;
 import std.exception : assumeUnique;
+import std.file : exists, fread = read, readText, fwrite = write;
+import std.format;
+import std.getopt;
 import std.json;
-import std.range : only, empty;
 import std.meta;
-
-import tagion.hibon.HiBON : HiBON;
-import tagion.hibon.Document : Document;
-import tagion.basic.basic : basename;
+import std.path : baseName, extension, setExtension;
+import std.range : empty, only;
+import std.stdio;
+import std.traits : EnumMembers;
 import tagion.basic.Types : Buffer, FileExtension;
+import tagion.basic.basic : basename;
+import tagion.hibon.Document : Document;
+import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONJSON;
-import tagion.wasm.WasmWat : wat;
-import tagion.wasm.WasmBetterC : wasmBetterC;
-import tagion.wasm.WasmReader;
-import tagion.wasm.WasmWriter;
 import tagion.wasm.WasmBase;
-import tagion.wasm.WasmGas;
+import tagion.wasm.WasmBetterC : wasmBetterC;
 import tagion.wasm.WasmException;
+import tagion.wasm.WasmGas;
+import tagion.wasm.WasmReader;
+import tagion.wasm.WasmWat : wat;
+import tagion.wasm.WasmWriter;
 
 //import tagion.script.StandardRecords;
 import std.array : join;
@@ -203,8 +202,8 @@ int _main(string[] args) {
                 wasm_writer = WasmWriter(wasm_reader);
                 break;
             case wast:
-                import tagion.wasm.WastTokenizer;
                 import tagion.wasm.WastParser;
+                import tagion.wasm.WastTokenizer;
 
                 immutable wast_text = inputfilename.readText;
                 auto tokenizer = WastTokenizer(wast_text);

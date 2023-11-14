@@ -1,3 +1,3 @@
 module tagion.logger;
 
-public import tagion.logger.Logger : log, submask, Topic;
+public import tagion.logger.Logger : Topic, log, submask;

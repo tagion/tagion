@@ -2,15 +2,14 @@
 module tagion.recorderchain.RecorderChainBlock;
 
 import std.array;
-
 import tagion.basic.Types : Buffer, FileExtension;
-import tagion.crypto.Types : Fingerprint;
 import tagion.crypto.SecureInterfaceNet : HashNet;
+import tagion.crypto.Types : Fingerprint;
 import tagion.dart.Recorder;
 import tagion.hashchain.HashChainBlock : HashChainBlock;
-import tagion.hibon.HiBONRecord : label, exclude, GetLabel, HiBONRecord, recordType;
-import tagion.hibon.HiBONJSON : JSONString;
 import tagion.hibon.Document;
+import tagion.hibon.HiBONJSON : JSONString;
+import tagion.hibon.HiBONRecord : GetLabel, HiBONRecord, exclude, label, recordType;
 
 /** @brief File contains class RecorderChainBlock and RecorderChainBlockFactory
  */

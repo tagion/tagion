@@ -1,10 +1,9 @@
 module tagion.wasm.WasmExpr;
 
 import std.bitmanip : nativeToLittleEndian;
-import std.traits : Unqual, isArray, isIntegral, ForeachType;
-import std.outbuffer;
 import std.format;
-
+import std.outbuffer;
+import std.traits : ForeachType, Unqual, isArray, isIntegral;
 import tagion.wasm.WasmBase;
 import tagion.utils.LEB128;
 

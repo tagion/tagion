@@ -2,7 +2,6 @@
 module tagion.crypto.Types;
 
 import std.typecons : Typedef;
-
 import tagion.basic.Types : Buffer;
 
 enum BufferType {

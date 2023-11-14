@@ -1,18 +1,18 @@
 module tagion.behaviour.Emendation;
 
-import tagion.behaviour.BehaviourFeature;
-import std.traits : Fields;
-import std.meta : Filter;
-import std.algorithm.iteration : map, cache, joiner;
-import std.string : join, strip;
 import std.algorithm;
-import std.algorithm.sorting : sort;
+import std.algorithm.iteration : cache, joiner, map;
 import std.algorithm.searching : any;
-import std.typecons : Flag, No, Yes;
-import std.ascii : toUpper, toLower, isAlphaNum, isWhite;
-import std.array : split, array;
-import std.uni : isNumber;
+import std.algorithm.sorting : sort;
+import std.array : array, split;
+import std.ascii : isAlphaNum, isWhite, toLower, toUpper;
+import std.meta : Filter;
 import std.range : empty;
+import std.string : join, strip;
+import std.traits : Fields;
+import std.typecons : Flag, No, Yes;
+import std.uni : isNumber;
+import tagion.behaviour.BehaviourFeature;
 
 /**
 This function tries to add functions name to a feature group for the action description
@@ -118,9 +118,9 @@ unittest {
 @safe
 void takeName(ref string action_name, string description) {
     import std.algorithm.iteration : splitter;
-    import std.range.primitives : walkLength;
     import std.ascii : isWhite;
     import std.range : retro, take;
+    import std.range.primitives : walkLength;
 
     const action_subwords = action_name
         .split!isWhite.walkLength;
@@ -223,10 +223,10 @@ unittest {
  */
 @safe
 bool isUnique(string[] list_of_names) nothrow {
-    import std.algorithm.sorting : isStrictlyMonotonic;
     import std.algorithm.iteration : cache;
-    import std.array : array;
     import std.algorithm.searching : all;
+    import std.algorithm.sorting : isStrictlyMonotonic;
+    import std.array : array;
 
     return (list_of_names.length == 0) ||
         (list_of_names
@@ -261,10 +261,9 @@ unittest {
  */
 @safe
 string suggestModuleName(string filename, const(string)[] paths) {
-    import std.path : stripExtension, absolutePath, pathSplitter;
-
+    import std.path : absolutePath, pathSplitter, stripExtension;
+    import std.range : drop, take;
     import std.range.primitives : walkLength;
-    import std.range : take, drop;
 
     auto filename_path = filename.stripExtension.absolutePath.pathSplitter;
     foreach (path; paths) {
@@ -304,12 +303,12 @@ unittest {
 version (unittest) {
     //    import io = std.stdio;
     import std.exception;
-    import tagion.basic.Types : FileExtension;
-    import std.stdio : File;
-    import std.path;
     import std.file : fwrite = write;
-    import tagion.hibon.HiBONJSON;
-    import tagion.hibon.HiBONFile : fwrite, fread;
+    import std.path;
+    import std.stdio : File;
+    import tagion.basic.Types : FileExtension;
     import tagion.basic.basic : unitfile;
     import tagion.behaviour.BehaviourParser;
+    import tagion.hibon.HiBONFile : fread, fwrite;
+    import tagion.hibon.HiBONJSON;
 }

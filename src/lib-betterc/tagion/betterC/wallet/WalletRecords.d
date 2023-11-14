@@ -1,28 +1,26 @@
 module tagion.betterC.wallet.WalletRecords;
 
-import tagion.betterC.hibon.HiBON;
-import tagion.betterC.hibon.Document : Document;
-import tagion.betterC.wallet.KeyRecover : KeyRecover;
 import tagion.basic.Types : Buffer;
-import tagion.crypto.Types : Pubkey, Signature;
 import tagion.basic.basic : basename;
-import tagion.betterC.utils.Memory;
+import tagion.betterC.hibon.Document : Document;
+import tagion.betterC.hibon.HiBON;
 import tagion.betterC.utils.BinBuffer;
+import tagion.betterC.utils.Memory;
+import tagion.betterC.wallet.KeyRecover : KeyRecover;
+import tagion.crypto.Types : Pubkey, Signature;
 
 // import std.format;
-import std.conv : emplace;
 import core.stdc.string : memcpy;
-
-import std.traits : hasMember, ReturnType, isArray, ForeachType, isUnsigned, isIntegral, Unqual, isAssociativeArray;
-import std.typecons : TypedefType, Tuple;
+import std.conv : emplace;
 import std.range.primitives : isInputRange;
-
+import std.traits : ForeachType, ReturnType, Unqual, hasMember, isArray, isAssociativeArray, isIntegral, isUnsigned;
+import std.typecons : Tuple, TypedefType;
 import tagion.betterC.funnel.TagionCurrency;
 
 // import tagion.script.StandardRecords : StandardBill;
 
 template isSpecialKeyType(T) {
-    import std.traits : isAssociativeArray, isUnsigned, KeyType;
+    import std.traits : KeyType, isAssociativeArray, isUnsigned;
 
     static if (isAssociativeArray!T) {
         alias KeyT = KeyType!T;
@@ -246,7 +244,7 @@ template GetLabel(alias member) {
         @Label("$state") Buffer derive_state;
         // boll[Pubkey]
         @Label("$active") Document activated; /// Actived bills
-        import std.algorithm : map, sum, filter, any, each;
+        import std.algorithm : any, each, filter, map, sum;
 
         this(Document doc) {
             enum derives_name = GetLabel!(derives).name;
@@ -293,7 +291,7 @@ template GetLabel(alias member) {
         }
 
         bool remove_bill(Pubkey pk) {
-            import std.algorithm : remove, countUntil;
+            import std.algorithm : countUntil, remove;
 
             const index = countUntil!"a.owner == b"(bills, pk);
             if (index > 0) {

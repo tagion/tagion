@@ -2,10 +2,10 @@
 module tagion.hashgraphview.EventMonitorCallbacks;
 
 import tagion.crypto.Types : Pubkey;
-import tagion.hashgraph.Round;
 import tagion.hashgraph.Event;
-import tagion.hibon.HiBONRecord;
+import tagion.hashgraph.Round;
 import tagion.hibon.Document : Document;
+import tagion.hibon.HiBONRecord;
 
 /// HashGraph monitor call-back interface
 @safe

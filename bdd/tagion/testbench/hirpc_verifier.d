@@ -1,16 +1,14 @@
 module tagion.testbench.hirpc_verifier;
 
-import tagion.behaviour.Behaviour;
-import tagion.testbench.services;
-
-import tagion.tools.Basic;
-
 import tagion.actor;
-import tagion.crypto.SecureNet;
+import tagion.behaviour.Behaviour;
 import tagion.crypto.SecureInterfaceNet;
+import tagion.crypto.SecureNet;
 import tagion.services.hirpc_verifier;
-import tagion.utils.pretend_safe_concurrency;
 import tagion.services.options : TaskNames;
+import tagion.testbench.services;
+import tagion.tools.Basic;
+import tagion.utils.pretend_safe_concurrency;
 
 mixin Main!(_main);
 

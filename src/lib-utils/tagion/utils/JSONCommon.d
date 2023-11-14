@@ -1,8 +1,8 @@
 module tagion.utils.JSONCommon;
 
-import tagion.basic.tagionexceptions;
 import std.meta : AliasSeq;
 import std.traits : hasMember;
+import tagion.basic.tagionexceptions;
 
 /++
  +/
@@ -23,13 +23,13 @@ mixin template JSONCommon() {
     import tagion.utils.JSONCommon : OptionException;
 
     alias check = Check!OptionException;
-    import tagion.basic.basic : basename, isOneOf, assumeTrusted;
-    import JSON = std.json;
-    import std.traits;
-    import std.format;
     import std.conv : to;
+    import std.format;
+    import JSON = std.json;
     import std.meta : AliasSeq;
     import std.range : ElementType;
+    import std.traits;
+    import tagion.basic.basic : assumeTrusted, basename, isOneOf;
 
     //    import std.traits : isArray;
     alias ArrayElementTypes = AliasSeq!(bool, string, double, int);
@@ -245,8 +245,8 @@ static T load(T)(string config_file) if (__traits(hasMember, T, "load")) {
     return result;
 }
 
-import std.json : JSONType, JSONValue;
 import std.conv;
+import std.json : JSONType, JSONValue;
 
 JSONValue toJSONType(string str, JSONType type) @safe pure {
     with (JSONType) final switch (type) {
@@ -269,8 +269,8 @@ JSONValue toJSONType(string str, JSONType type) @safe pure {
 }
 
 mixin template JSONConfig() {
-    import JSON = std.json;
     import std.file;
+    import JSON = std.json;
 
     void parseJSON(string json_text) @safe {
         auto json = JSON.parseJSON(json_text);
@@ -293,10 +293,10 @@ mixin template JSONConfig() {
 }
 
 version (unittest) {
-    import tagion.basic.Types : FileExtension;
-    import basic = tagion.basic.basic;
     import std.exception : assertThrown;
     import std.json : JSONException;
+    import tagion.basic.Types : FileExtension;
+    import basic = tagion.basic.basic;
 
     const(basic.FileNames) fileId(T)(string prefix = null) @safe {
         return basic.fileId!T(FileExtension.json, prefix);

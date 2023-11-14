@@ -4,9 +4,9 @@ import std.stdio : File;
 
 import LEB128 = tagion.utils.LEB128;
 import std.typecons : Typedef;
-import tagion.hibon.Document;
-import tagion.dart.BlockFile;
 import tagion.basic.Types : Buffer;
+import tagion.dart.BlockFile;
+import tagion.hibon.Document;
 
 @safe
 struct BlockSegment {
@@ -36,8 +36,8 @@ struct BlockSegment {
 }
 
 version (unittest) {
-    import basic = tagion.basic.basic;
     import tagion.basic.Types : FileExtension;
+    import basic = tagion.basic.basic;
 
     const(basic.FileNames) fileId(T = BlockSegment)(string prefix = null) @safe {
         return basic.fileId!T(FileExtension.block, prefix);
@@ -49,10 +49,10 @@ version (unittest) {
 ///
 @safe
 unittest {
-    import std.stdio;
+    import std.algorithm.iteration : map;
     import std.array : array;
     import std.range : iota;
-    import std.algorithm.iteration : map;
+    import std.stdio;
 
     immutable filename = fileId("blocksegment").fullpath;
     // writefln("filename=%s", filename);

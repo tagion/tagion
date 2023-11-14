@@ -2,58 +2,49 @@
 module tagion.dart.DARTFile;
 @safe:
 private {
-    import std.format;
-    import std.exception : assumeWontThrow;
-    import std.stdio : File;
-
-    import std.algorithm.sorting : sort;
-    import std.algorithm.iteration : filter, each;
-    import std.range;
-    import std.algorithm.searching : count, maxElement, all;
-    import std.algorithm.comparison : equal;
-    import std.typecons : Flag, Yes, No;
-
-    import std.array : array;
-
-    import std.traits;
-    import std.typecons;
-    import std.conv : to;
     import core.thread : Fiber;
-    import std.range.primitives : isInputRange, ElementType;
-
+    import std.algorithm.comparison : equal;
+    import std.algorithm.iteration : each, filter;
+    import std.algorithm.searching : all, count, maxElement;
+    import std.algorithm.sorting : sort;
+    import std.array : array;
+    import std.conv : to;
+    import std.exception : assumeWontThrow;
+    import std.format;
+    import std.range;
+    import std.range.primitives : ElementType, isInputRange;
+    import std.stdio : File;
+    import std.traits;
+    import std.typecons : Flag, No, Yes;
+    import std.typecons;
+    import tagion.Keywords;
     import tagion.basic.Debug : __write;
     import tagion.basic.Types : Buffer, isBufferType, isTypedef, mut;
     import tagion.basic.basic : EnumText, assumeTrusted, isinit;
-    import tagion.Keywords;
-
-    import tagion.hibon.HiBON : HiBON;
-
-    import tagion.hibon.HiBONRecord : label, exclude, record_filter = filter, GetLabel, recordType;
-    import tagion.hibon.Document : Document;
-
-    import tagion.dart.BlockFile;
-    import tagion.dart.Recorder;
-    import tagion.dart.DARTException : DARTException;
-    import tagion.dart.DARTBasic;
     import tagion.crypto.SecureInterfaceNet : HashNet, SecureNet;
     import tagion.crypto.Types : Fingerprint;
+    import tagion.dart.BlockFile;
+    import tagion.dart.DARTBasic;
+    import tagion.dart.DARTException : DARTException;
+    import tagion.dart.Recorder;
+    import tagion.hibon.Document : Document;
+    import tagion.hibon.HiBON : HiBON;
+    import tagion.hibon.HiBONRecord : GetLabel, exclude, record_filter = filter, label, recordType;
 
     //import tagion.basic.basic;
+    import std.stdio : writefln, writeln;
     import tagion.basic.tagionexceptions : Check;
-    import tagion.utils.Miscellaneous : toHex = toHexString;
-
-    import std.stdio : writeln, writefln;
-    import tagion.hibon.HiBONRecord;
-
-    import tagion.dart.RimKeyRange : rimKeyRange;
     import tagion.dart.DARTRim;
+    import tagion.dart.RimKeyRange : rimKeyRange;
+    import tagion.hibon.HiBONRecord;
+    import tagion.utils.Miscellaneous : toHex = toHexString;
 }
 
 /// Hash null definition (all zero values)
 immutable(Buffer) hash_null;
 shared static this() @trusted {
-    import tagion.crypto.SecureNet : StdHashNet;
     import std.exception : assumeUnique;
+    import tagion.crypto.SecureNet : StdHashNet;
 
     auto _null = new ubyte[StdHashNet.HASH_SIZE];
     hash_null = assumeUnique(_null);
@@ -855,11 +846,7 @@ class DARTFile {
      * The function returns the bullseye of the dart
      */
     Fingerprint modify(Flag!"undo" undo)(const(RecordFactory.Recorder) modifyrecords) 
-    // in(blockfile.cache_empty, format("IN: THE CACHE MUST BE EMPTY WHEN PERFORMING NEW MODIFY len=%s", blockfile.cache_len))
-    out 
-    {
-        assert(blockfile.cache_empty, format("OUT THE CACHE MUST BE EMPTY WHEN PERFORMING NEW MODIFY len=%s", blockfile.cache_len));
-    } 
+    in(blockfile.cache_empty, format("IN: THE CACHE MUST BE EMPTY WHEN PERFORMING NEW MODIFY len=%s", blockfile.cache_len))
     do 
     {
         /** 
@@ -1201,8 +1188,8 @@ class DARTFile {
     }
 
     HiBON search(Buffer[] owners, const(SecureNet) net) {
-        import tagion.script.common;
         import std.algorithm : canFind;
+        import tagion.script.common;
 
         TagionBill[] bills;
 
@@ -1302,12 +1289,12 @@ unittest {
     import std.algorithm.sorting : sort;
 
     import std.stdio : writefln; //    import tagion.basic.basic;
-    import std.typecons;
-    import tagion.utils.Random;
     import std.bitmanip : BitArray;
-    import tagion.utils.Miscellaneous : cutHex;
-    import tagion.hibon.HiBONJSON : toPretty;
+    import std.typecons;
     import tagion.basic.basic : forceRemove;
+    import tagion.hibon.HiBONJSON : toPretty;
+    import tagion.utils.Miscellaneous : cutHex;
+    import tagion.utils.Random;
 
     auto net = new DARTFakeNet;
     auto manufactor = RecordFactory(net);
@@ -1733,8 +1720,8 @@ unittest {
         //  | .. | .. abb913ab11ef1234000000000000000000000000000000000000000000000000 [7]
 
         import std.algorithm : map;
-        import std.range : empty;
         import std.format;
+        import std.range : empty;
 
         size_t numberOfArchives(DARTFile.Branches branches, DARTFile db) {
             return branches.indices
@@ -2536,10 +2523,10 @@ unittest {
         filename_A.forceRemove;
         DARTFile.create(filename_A, net);
         auto dart_A = new DARTFile(net, filename_A);
-        import tagion.script.common;
-        import tagion.script.TagionCurrency;
-        import tagion.utils.StdTime;
         import tagion.crypto.Types;
+        import tagion.script.TagionCurrency;
+        import tagion.script.common;
+        import tagion.utils.StdTime;
 
         RecordFactory.Recorder recorder_A;
 
