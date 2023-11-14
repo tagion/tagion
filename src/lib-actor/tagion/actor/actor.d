@@ -228,8 +228,6 @@ template isSpawnable(F, T...) {
 
 /**
  * A "reference" to an actor that may or may not be spawned, we will never know
- * Params:
- *  A = an actor type
  */
 struct ActorHandle {
     /// the name of the possibly running task
@@ -355,23 +353,6 @@ if (isActor!A) {
     immutable A actor;
     return spawn(actor, name, args);
 }
-
-/**
- * Params:
- *   A = The type of actor you want to create a handle for
- *   task_name = the name it should be started as
- *   args = list of arguments to pass to the task function
- * Returns: An actorHandle
- * Examples:
- * ---
- * spawn!MyActor("my_task_name", 42);
- * ---
- */
-// ActorHandle spawn(A, Args...)(string task_name, Args args) @safe nothrow
-// if (isActor!A) {
-//     A actor = A();
-//     return spawn(actor, task_name, args);
-// }
 
 /// Nullable and nothrow wrapper around ownerTid
 Nullable!Tid tidOwner() @safe nothrow {
