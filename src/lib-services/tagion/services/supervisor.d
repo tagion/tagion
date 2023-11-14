@@ -51,7 +51,7 @@ struct Supervisor {
         // verifies signature
         auto collector_handle = _spawn!CollectorService(tn.collector, tn);
 
-        auto tvm_handle = spawn(immutable(TVMService)(TVMOptions.init, tn), tn.tvm);
+        auto tvm_handle = _spawn!TVMService(tn.tvm, tn);
 
         // signs data
         auto transcript_handle = spawn!TranscriptService(tn.transcript, TranscriptOptions.init, opts.wave.number_of_nodes, shared_net, tn);
