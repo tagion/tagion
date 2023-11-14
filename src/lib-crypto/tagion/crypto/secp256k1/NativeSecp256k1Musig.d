@@ -7,6 +7,7 @@ import tagion.crypto.secp256k1.NativeSecp256k1;
 import tagion.crypto.secp256k1.c.secp256k1_musig;
 import tagion.crypto.secp256k1.c.secp256k1;
 import tagion.crypto.secp256k1.c.secp256k1_extrakeys;
+import tagion.crypto.secp256k1.NativeSecp256k1Interface;
 
 class NativeSecp256k1Musig : NativeSecp256k1Schnorr {
     enum SESSION_ID_SIZE = 32;
@@ -29,7 +30,7 @@ class NativeSecp256k1Musig : NativeSecp256k1Schnorr {
         return ret != 0;
     }
 
-/*    
+    /*    
     @trusted
     immutable(ubyte[]) musigPartialSign(
             ref const(secp256k1_musig_keyagg_cache) cache,
@@ -91,10 +92,10 @@ out(result) {
     /**
     This function is if only the aggregated pubkey is need and no signing
 */
-     @trusted
+    @trusted
     bool musigPubkeyAggregated(
             ref secp256k1_pubkey pubkey_agg,
-            const(secp256k1_pubkey[]) pubkeys) const nothrow {
+            scope const(secp256k1_pubkey[]) pubkeys) const nothrow {
         secp256k1_musig_keyagg_cache cache;
         secp256k1_xonly_pubkey xonly_pubkey;
         const _pubkeys = pubkeys.map!((ref pkey) => &pkey).array;
@@ -105,36 +106,33 @@ out(result) {
                 &cache,
                 &_pubkeys[0],
                 pubkeys.length);
-    if (ret) {
-        ret = secp256k1_musig_pubkey_get(
-            _ctx,
-            &pubkey_agg,
-            &cache);
-    }
+        if (ret) {
+            ret = secp256k1_musig_pubkey_get(
+                    _ctx,
+                    &pubkey_agg,
+                    &cache);
+        }
         return ret != 0;
 
     }
 
-    version(none)
-    @trusted
+    version (none) @trusted
     bool musigPubkeyAggregated(
-        ref secp256k1_pubkey pubkey_agg,
-        const(ubyte[][]) pubkeys) const
-in(pubkeys.all!((pkey) => pkey.length == PUBKEY_SIZE))
-do {
-    secp256k1_pubkey[] xy_pubkeys;
-    xy_pubkeys.length = pubkeys.length;
+            ref secp256k1_pubkey pubkey_agg,
+            const(ubyte[][]) pubkeys) const
+    in (pubkeys.all!((pkey) => pkey.length == PUBKEY_SIZE))
+    do {
+        secp256k1_pubkey[] xy_pubkeys;
+        xy_pubkeys.length = pubkeys.length;
 
-    foreach(ref xy_pubkey, pubkey; lockstep(xy_pubkeys, pubkeys)) {
-
-        //auto xonly_pubkey=cast(secp256k1_xonly_pubkey*)&xy_pubkey;
-        const ret = secp256k1_ec_pubkey_parse(_ctx, &xy_pubkey, &pubkey[0], pubkey.length);
-        if (ret == 0) {
-            return false;
+        foreach (ref xy_pubkey, pubkey; lockstep(xy_pubkeys, pubkeys)) {
+            const ret = secp256k1_ec_pubkey_parse(_ctx, &xy_pubkey, &pubkey[0], pubkey.length);
+            if (ret == 0) {
+                return false;
+            }
         }
+        return musigPubkeyAggregated(pubkey_agg, xy_pubkeys);
     }
-   return musigPubkeyAggregated(pubkey_agg, xy_pubkeys);
-}
     /**
     Ditto except that it produce a cache which can be used for musig signing
 */
@@ -147,36 +145,40 @@ do {
         int ret = secp256k1_musig_pubkey_agg(
                 _ctx,
                 null,
-               null, 
+                null,
                 &cache,
                 &_pubkeys[0],
                 pubkeys.length);
         if (ret != 0) {
-            ret =   secp256k1_musig_pubkey_get(_ctx, &pubkey_agg, &cache);  
-    }
+            ret = secp256k1_musig_pubkey_get(_ctx, &pubkey_agg, &cache);
+        }
         return ret != 0;
 
     }
 
     @trusted
     immutable(ubyte[]) musigPubkeyAggregated(const(ubyte[][]) pubkeys) const
-    in (pubkeys.all!(pkey => pkey.length == XONLY_PUBKEY_SIZE))
+    
     do {
-        secp256k1_xonly_pubkey pubkey_agg;
-        //secp256k1_xonly_pubkey[] xonly_pubkey;
         secp256k1_pubkey[] _pubkeys;
         _pubkeys.length = pubkeys.length;
-        foreach (i, pkey; pubkeys) {
-            secp256k1_xonly_pubkey xonly_pubkey;
-            {
-                const ret = secp256k1_xonly_pubkey_parse(_ctx, &xonly_pubkey, &pkey[0]);
-                if (ret == 0) {
-                    return null;
-                }
-                int pk_parity;
+        foreach (ref pkey, pkey_input; lockstep(_pubkeys, pubkeys)) {
+            if (secp256k1_ec_pubkey_parse(_ctx, &pkey, &pkey_input[0], pkey_input.length) == 0) {
+                return null;
             }
+
         }
-        return null;
+        secp256k1_musig_keyagg_cache cache;
+        secp256k1_pubkey pubkey_agg;
+        if (musigPubkeyAggregated(cache, pubkey_agg, _pubkeys) == 0) {
+            return null;
+        }
+        ubyte[PUBKEY_SIZE] result;
+        size_t len = PUBKEY_SIZE;
+        if (secp256k1_ec_pubkey_serialize(_ctx, &result[0], &len, &pubkey_agg, SECP256K1.EC_COMPRESSED) == 0) {
+            return null;
+        }
+        return result.idup;
     }
 
     @trusted
@@ -344,36 +346,36 @@ unittest {
         writefln("ret=%s", ret);
         assert(ret, "Could not aggregated the pubkeys");
     }
-        version(none) {
-    //
-    // Signers informations 
-    //
-    const plain_tweak = sha256("plain text tweak".representation);
-    const xonly_tweak = sha256("xonly tweak".representation);
+    version (none) {
+        //
+        // Signers informations 
+        //
+        const plain_tweak = sha256("plain text tweak".representation);
+        const xonly_tweak = sha256("xonly tweak".representation);
 
-    //
-    // Plain text tweak can be use for BIP32 
-    // Note. The aggregated pubkey is stored in the chache
-    //
-    {
-        const ret = crypt.musigPubkeyTweakAdd(cache, plain_tweak);
-        assert(ret, "Tweak of the pubkey failed");
-    }
-    //
-    // Tweak again with and produce an xonly-pubkey
-    //
-    secp256k1_pubkey tweaked_pubkey;
-    {
-        const ret = crypt.musigXonlyPubkeyTweakAdd(cache, xonly_tweak, &tweaked_pubkey);
-        assert(ret, "Tweak of the pubkey failed");
-    }
-    //
-    // secp256k1_xonly_pubkey tweaked_xonly_pubkey;
-    //    
-    {
-        const ret = crypt.xonlyPubkey(tweaked_pubkey, agg_pubkey);
-        assert(ret, "Could not produce xonly pubkey");
-    }
+        //
+        // Plain text tweak can be use for BIP32 
+        // Note. The aggregated pubkey is stored in the chache
+        //
+        {
+            const ret = crypt.musigPubkeyTweakAdd(cache, plain_tweak);
+            assert(ret, "Tweak of the pubkey failed");
+        }
+        //
+        // Tweak again with and produce an xonly-pubkey
+        //
+        secp256k1_pubkey tweaked_pubkey;
+        {
+            const ret = crypt.musigXonlyPubkeyTweakAdd(cache, xonly_tweak, &tweaked_pubkey);
+            assert(ret, "Tweak of the pubkey failed");
+        }
+        //
+        // secp256k1_xonly_pubkey tweaked_xonly_pubkey;
+        //    
+        {
+            const ret = crypt.xonlyPubkey(tweaked_pubkey, agg_pubkey);
+            assert(ret, "Could not produce xonly pubkey");
+        }
         writefln("xonly_pubkey=%(%02x%)", agg_pubkey.data);
     }
     //
@@ -479,12 +481,12 @@ unittest { /// Simple musig sign
     auto crypt = new NativeSecp256k1Musig;
     secp256k1_keypair[] keypairs;
     secp256k1_pubkey[] pubkeys;
-    pubkeys.length=keypairs.length = secrets.length;
+    pubkeys.length = keypairs.length = secrets.length;
     index_range
         .each!(index => crypt.createKeyPair(secrets[index], keypairs[index]));
 
-index_range
-    .each!(index => crypt.getPubkey(keypairs[index], pubkeys[index]));
+    index_range
+        .each!(index => crypt.getPubkey(keypairs[index], pubkeys[index]));
 
     pubkeys.each!(pubkey => writefln("%(%02x%)", pubkey.data));
 
@@ -493,31 +495,30 @@ index_range
         secp256k1_musig_keyagg_cache cache;
         secp256k1_pubkey agg_pubkey;
         {
-            const ret=crypt.musigPubkeyAggregated(cache, agg_pubkey, pubkeys[0..number_of_participants]);
+            const ret = crypt.musigPubkeyAggregated(cache, agg_pubkey, pubkeys[0 .. number_of_participants]);
             assert(ret, "Failed to aggregate the public keys");
         }
-        const session=secp256k1_musig_session(
-            format("Some random nonce %s", number_of_participants)
-        .representation.sha256);
+        secp256k1_musig_session session;
+        //const _s=   format("Some random nonce %s", number_of_participants)
+        //.representation.sha256;
         secp256k1_musig_partial_sig[] partial_signatures;
         secp256k1_musig_secnonce[] secnonces;
-        secnonces.length=partial_signatures.length=number_of_participants;
-       
-    
-         {
-            const ret=iota(number_of_participants)
-            .map!((index) => crypt.musigPartialSign(
-            cache,
-partial_signatures[index],
-secnonces[index],
-keypairs[index],
-session))
-            .all!((ret) => ret != 0);
+        secnonces.length = partial_signatures.length = number_of_participants;
+
+        version (none) {
+            const ret = iota(number_of_participants)
+                .map!((index) => crypt.musigPartialSign(
+                        cache,
+                        partial_signatures[index],
+                        secnonces[index],
+                        keypairs[index],
+                        session))
+                .all!((ret) => ret != 0);
 
         }
         {
             ubyte[] signature;
-       //     const ret=crypt.musigSignAgg(signature
+            //     const ret=crypt.musigSignAgg(signature
         }
 
     }

@@ -77,10 +77,10 @@ alias StdSecureNet = StdSecureNetT!(!ver.SECP256K1_ECDSA);
 @safe
 class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
     static if (Schnorr) {
-        import tagion.crypto.secp256k1.NativeSecp256k1;
+        import tagion.crypto.secp256k1.NativeSecp256k1Musig : Secp256k1 = NativeSecp256k1Musig;
     }
     else {
-        import tagion.crypto.secp256k1.NativeSecp256k1ECDSA : NativeSecp256k1 = NativeSecp256k1ECDSA;
+        import tagion.crypto.secp256k1.NativeSecp256k1ECDSA : Secp256k1 = NativeSecp256k1ECDSA;
     }
     import tagion.crypto.Types : Pubkey;
     import tagion.crypto.aes.AESCrypto;
@@ -127,11 +127,21 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
         return result;
     }
 
-    protected NativeSecp256k1 _crypt;
+    final Pubkey  aggregatePubkey(const(ubyte[][]) pubkeys) const {
+        static if (Schnorr) {
+            const result= _crypt.musigPubkeyAggregated(pubkeys);
+            check(result !is null, ConsensusFailCode.SECURITY_PRIVATE_KEY_INVALID);
+            return Pubkey(result);    
+        }
+        assert(0,
+                format("%s does not support %s", typeof(this).stringof, __FUNCTION__));
+    }
+
+    const Secp256k1 _crypt;
 
     bool verify(const Fingerprint message, const Signature signature, const Pubkey pubkey) const {
         consensusCheck!(SecurityConsensusException)(
-                signature.length == NativeSecp256k1.SIGNATURE_SIZE,
+                signature.length == Secp256k1.SIGNATURE_SIZE,
                 ConsensusFailCode.SECURITY_SIGNATURE_SIZE_FAULT);
         return _crypt.verify(cast(Buffer) message, cast(Buffer) signature, cast(Buffer) pubkey);
     }
@@ -339,11 +349,11 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
     }
 
     this() nothrow {
-        _crypt = new NativeSecp256k1;
+        _crypt = new Secp256k1;
     }
 
     this(shared(StdSecureNetT) other_net) @trusted {
-        _crypt = new NativeSecp256k1;
+        _crypt = new Secp256k1;
         synchronized (other_net) {
             auto unshared_secure_net = cast(StdSecureNetT) other_net;
             unshared_secure_net._secret.clone(this);
@@ -360,7 +370,7 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
     }
 
     void eraseKey() pure nothrow {
-        _crypt = null;
+        _secret = null;
     }
 
     unittest { // StdSecureNet rawSign

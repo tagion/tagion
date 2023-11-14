@@ -67,6 +67,7 @@ enum ConsensusFailCode {
     SECURITY_PUBLIC_KEY_COMPRESS_SIZE_FAULT,
     SECURITY_PUBLIC_KEY_UNCOMPRESS_SIZE_FAULT,
     SECURITY_PUBLIC_KEY_SERIALIZE,
+    SECURITY_PUBLIC_KEY_AGGREGATE,
     SECURITY_PRIVATE_KEY_INVALID,
 
     SECURITY_FAILD_TO_CREATE_KEYPAIR,
@@ -231,7 +232,8 @@ class SmartScriptException : ConsensusException {
             SECURITY_SIGN_FAULT                         : "Sign of message failed",
             SECURITY_PUBLIC_KEY_CREATE_FAULT            : "Failed to create public key",
             SECURITY_PUBLIC_KEY_PARSE_FAULT             : "Failed to parse public key",
-//            SECURITY_DER_SIGNATURE_PARSE_FAULT          : "Failed to parse DER signature",
+            SECURITY_PUBLIC_KEY_AGGREGATE               : "Failed to aggregate public key",             
+        //SECURITY_DER_SIGNATURE_PARSE_FAULT          : "Failed to parse DER signature",
             SECURITY_COMPACT_SIGNATURE_PARSE_FAULT      : "Failed to parse Compact signature",
             SECURITY_SIGNATURE_SIZE_FAULT               : "The size of the signature is wrong",
 
