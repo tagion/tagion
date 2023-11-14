@@ -1,7 +1,7 @@
 /// Tagion DART actor service
 module tagion.services.DART;
 
-import std.algorithm : map;
+import std.algorithm : map, filter;
 import std.array;
 import std.exception;
 import std.file;
@@ -16,7 +16,7 @@ import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.SecureNet;
 import tagion.crypto.Types;
 import tagion.dart.DART;
-import tagion.dart.DARTBasic : DARTIndex;
+import tagion.dart.DARTBasic : DARTIndex, dartIndex;
 import tagion.dart.DARTException;
 import tagion.dart.Recorder;
 import tagion.hibon.Document;

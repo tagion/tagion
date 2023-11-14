@@ -84,10 +84,13 @@ struct TranscriptService {
 
 
 
-        
-        TagionGlobals last_globals = TagionGlobals(BigNumber(1000_000_000), BigNumber(0), long(10_0000), long(0));
 
+        /** 
+         * Get the current head and epoch
+         */
+        TagionGlobals last_globals = TagionGlobals(BigNumber(1000_000_000), BigNumber(0), long(10_0000), long(0));
         TagionHead last_head = TagionHead(TagionDomain, 0);
+        
         Fingerprint previous_epoch = Fingerprint.init;
         long last_epoch_number = 0;
 
@@ -151,65 +154,6 @@ struct TranscriptService {
             auto recorder = rec_factory.recorder;
             used ~= not_in_dart;
 
-            // check the votes here instead
-            // get a list of all epochs where majority of votes with correct signature have been received
-
-            import tagion.hashgraph.HashGraphBasic : isMajority;
-
-            // find the consensus epochs
-            auto aggregated_votes = votes
-                .byKeyValue
-                .filter!(v => v.value.votes.length.isMajority(number_of_nodes))
-                .filter!(v => v.value.votes
-                        .filter!(consensus_vote => consensus_vote.verifyBullseye(net, v.value.bullseye))
-                        .walkLength
-                        .isMajority(number_of_nodes)
-            )
-                .array
-                .sort!((a, b) => a.value.epoch < b.value.epoch);
-
-            // clean up the arrays on exit
-            scope (exit) {
-                foreach (a_vote; aggregated_votes) {
-                    votes.remove(a_vote.value.epoch);
-                    epoch_contracts.remove(a_vote.value.epoch);
-                }
-            }
-
-            // create the epochs. Sort them by epoch number so that we can create the previous link
-            Epoch[] consensus_epochs;
-            loop_epochs: foreach (a_vote; aggregated_votes) {
-                auto previous_epoch_contract = epoch_contracts.get(a_vote.value.epoch, null);
-
-                if (previous_epoch_contract is null) {
-                    log("UNLINKED EPOCH_CONTRACT %s", a_vote.value.epoch);
-                    continue loop_epochs;
-                }
-
-                // update the last epoch number
-                Pubkey[] keys = [Pubkey([1, 2, 3, 4])];
-                // create the epoch;
-                auto new_epoch = Epoch(a_vote.value.epoch,
-                        sdt_t(previous_epoch_contract.epoch_time),
-                        a_vote.value.bullseye,
-                        previous_epoch,
-                        a_vote.value.votes.map!(v => v.signed_bullseye).array,
-                        keys,
-                        keys, 
-                        TagionGlobals.init);
-                consensus_epochs ~= new_epoch,
-                last_epoch_number = a_vote.value.epoch;
-                previous_epoch = net.calcHash(new_epoch);
-            }
-            log("EPOCH_CONTRACTS: %s, consensus_epochs %s agg_votes: %s votes: %s", epoch_contracts.length, consensus_epochs
-                    .length, aggregated_votes.length, votes.length);
-
-            /*
-                Add the epochs to the recorder. We can assume that there will be multiple epochs due
-                to the hashgraph being asynchronous.
-            */
-            recorder.insert(consensus_epochs, Archive.Type.ADD);
-
             const epoch_contract = epoch_contracts.get(res.id, null);
             if (epoch_contract is null) {
                 throw new Exception(format("unlinked epoch contract %s", res.id));
@@ -260,48 +204,71 @@ struct TranscriptService {
                 }
             }
 
-            // BigNumber total = last_head.globals.total;
-            // BigNumber total_burned = last_head.globals.total_burned;
-            // long number_of_bills = last_head.globals.number_of_bills;
-            // long burnt_bills = last_head.globals.burnt_bills;
+            /*
+            Since we write all inromation that is known immediatly we create the epoch chain block here and make it empty.
+            The following information can be added:
+                epoch_number
+                time
+                active
+                deactive
+                globals
+            This will be added to thed DART. We also keep this in our cache in order to make the reads as few as possible.
+            */
+            Epoch non_voted_epoch;
+            non_voted_epoch.epoch_number = res.id;
+            non_voted_epoch.time = sdt_t(epoch_contract.epoch_time);
+            non_voted_epoch.bullseye = Fingerprint.init;
+            non_voted_epoch.previous = Fingerprint.init;
+            non_voted_epoch.signs = Signature[].init;
+            // hack use the real active nodes
+            non_voted_epoch.active = [Pubkey([1,2,3,4])];
+            non_voted_epoch.active = [Pubkey([1,2,3,4])];
 
-            // void billStatistic(const(Archive) archive) {
-            //     if (!archive.filed.isRecord!TagionBill) {
-            //         return;
-            //     }
-            //     auto bill = TagionBill(archive.filed);
+            // create the globals
 
-            //     if (archive.Type.REMOVE) {
-            //         total -= bill.value.axios;
-            //         total_burned += bill.value.axios;
-            //         burnt_bills++;
-            //         number_of_bills--;
-            //     }
-            //     if (archive.Type.ADD) {
-            //         total += bill.value.axios;
-            //         number_of_bills++;
-            //         number_of_bills++;
-            //     }
-            // }
-            // recorder[].each!(a => billStatistic(a));
+            BigNumber total = last_globals.total;
+            BigNumber total_burned = last_globals.total_burned;
+            long number_of_bills = last_globals.number_of_bills;
+            long burnt_bills = last_globals.burnt_bills;
 
-            // TagionGlobals new_globals = TagionGlobals(
-            //     total,
-            //     total_burned,
-            //     number_of_bills,
-            //     burnt_bills,
-            // );
+            void billStatistic(const(Archive) archive) {
+                if (!archive.filed.isRecord!TagionBill) {
+                    return;
+                }
+                auto bill = TagionBill(archive.filed);
 
-            // TagionHead new_head = TagionHead(
-            //     TagionDomain,
-            //     last_epoch_number,
-            //     new_globals,
-            // );
+                if (archive.Type.REMOVE) {
+                    total -= bill.value.axios;
+                    total_burned += bill.value.axios;
+                    burnt_bills++;
+                    number_of_bills--;
+                }
+                if (archive.Type.ADD) {
+                    total += bill.value.axios;
+                    number_of_bills++;
+                    number_of_bills++;
+                }
+            }
+            recorder[].each!(a => billStatistic(a));
+
+            TagionGlobals new_globals = TagionGlobals(
+                total,
+                total_burned,
+                number_of_bills,
+                burnt_bills,
+            );
+            non_voted_epoch.globals = new_globals;
+
+            TagionHead new_head = TagionHead(
+                TagionDomain,
+                res.id,
+            );
+            last_head = new_head;
+            last_globals = new_globals;
+            recorder.insert(new_head, Archive.Type.ADD);
+            recorder.insert(non_voted_epoch, Archive.Type.ADD);
 
             
-            // last_head = new_head;
-            // recorder.insert(new_head, Archive.Type.ADD);
-
             auto req = dartModifyRR();
             req.id = res.id;
 
@@ -311,20 +278,20 @@ struct TranscriptService {
 
         void epoch(consensusEpoch, immutable(EventPackage*)[] epacks, immutable(long) epoch_number, const(sdt_t) epoch_time) @safe {
 
-            immutable(ConsensusVoting)[] received_votes = epacks
-                .filter!(epack => epack.event_body.payload.isRecord!ConsensusVoting)
-                .map!(epack => immutable(ConsensusVoting)(epack.event_body.payload))
-                .array;
+            // immutable(ConsensusVoting)[] received_votes = epacks
+            //     .filter!(epack => epack.event_body.payload.isRecord!ConsensusVoting)
+            //     .map!(epack => immutable(ConsensusVoting)(epack.event_body.payload))
+            //     .array;
 
-            // add them to the vote array
-            foreach (v; received_votes) {
-                if (votes.get(v.epoch, Votes.init) !is Votes.init) {
-                    votes[v.epoch].votes ~= v;
-                }
-                else {
-                    log("VOTE IS INIT %s", v.epoch);
-                }
-            }
+            // // add them to the vote array
+            // foreach (v; received_votes) {
+            //     if (votes.get(v.epoch, Votes.init) !is Votes.init) {
+            //         votes[v.epoch].votes ~= v;
+            //     }
+            //     else {
+            //         log("VOTE IS INIT %s", v.epoch);
+            //     }
+            // }
 
             auto signed_contracts = epacks
                 .filter!(epack => epack.event_body.payload.isRecord!SignedContract)
@@ -352,16 +319,13 @@ struct TranscriptService {
         void receiveBullseye(dartModifyRR.Response res, Fingerprint bullseye) {
             import tagion.utils.Miscellaneous : cutHex;
 
-            if (bullseye is Fingerprint.init) {
-                return;
-            }
             log("transcript received bullseye %s", bullseye.cutHex);
 
             const epoch_number = res.id;
             ConsensusVoting own_vote = ConsensusVoting(
-                    epoch_number,
-                    net.pubkey,
-                    net.sign(bullseye)
+                epoch_number,
+                net.pubkey,
+                net.sign(bullseye)
             );
 
             votes[epoch_number] = Votes(bullseye, epoch_number);

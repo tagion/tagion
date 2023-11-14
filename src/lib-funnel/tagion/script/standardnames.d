@@ -11,6 +11,7 @@ enum StdNames {
     values = "$vals",
     derive = "$D",
     epoch = "#$epoch",
+    locked_epoch = "#$locked_epoch",
     bullseye = "$eye",
     name = "#name",
     previous = "$prev",
