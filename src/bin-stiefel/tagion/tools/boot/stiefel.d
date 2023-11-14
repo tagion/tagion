@@ -91,25 +91,29 @@ int _main(string[] args) {
         }
         if (standard_input) {
             auto fin = stdin;
-            TagionHead tagion_head;
 
-            foreach (doc; HiBONRange(fin)) {
-                if (account) {
-                    if (TagionBill.isRecord(doc)) {
-                        const bill = TagionBill(doc);
-                        tagion_head.globals.total += bill.value.units;
+            pragma(msg, "fixme(disabled old head in stiefel");
+            version(none) {
+                TagionHead tagion_head;
+
+                foreach (doc; HiBONRange(fin)) {
+                    if (account) {
+                        if (TagionBill.isRecord(doc)) {
+                            const bill = TagionBill(doc);
+                            tagion_head.globals.total += bill.value.units;
+                        }
+                    }
+                    else {
+
+                        recorder.add(doc);
                     }
                 }
-                else {
-
-                    recorder.add(doc);
+                if (!tagion_head.isinit) {
+                    tagion_head.name = TagionDomain;
+                    const total = tagion_head.globals.total;
+                    verbose("Total %s.%09sTGN", total / TagionCurrency.BASE_UNIT, total % TagionCurrency.BASE_UNIT);
+                    recorder.add(tagion_head);
                 }
-            }
-            if (!tagion_head.isinit) {
-                tagion_head.name = TagionDomain;
-                const total = tagion_head.globals.total;
-                verbose("Total %s.%09sTGN", total / TagionCurrency.BASE_UNIT, total % TagionCurrency.BASE_UNIT);
-                recorder.add(tagion_head);
             }
         }
         else {

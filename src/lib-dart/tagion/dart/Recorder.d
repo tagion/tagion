@@ -30,6 +30,7 @@ import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONRecord : GetLabel, STUB, isHiBONRecord, isStub, label, optional, recordType;
 import tagion.utils.Miscellaneous : toHexString;
+import tagion.script.standardnames;
 
 alias hex = toHexString;
 
@@ -399,7 +400,7 @@ const Neutral = delegate(const(Archive) a) => a.type;
 
     @label(STUB) @optional const(Fingerprint) fingerprint; /// Stub hash-pointer used in sharding
     @label("$a") @optional const Document filed; /// The actual data strute stored 
-    @label("$t") @optional const(Type) type; /// Acrhive type
+    @label(StdNames.archive_type) @optional const(Type) type; /// Acrhive type
     @label("$i") @optional const(DARTIndex) dart_index;
     enum archiveLabel = GetLabel!(this.filed).name;
     enum fingerprintLabel = GetLabel!(this.fingerprint).name;

@@ -165,7 +165,8 @@ extern (C) {
             scope (exit) {
                 pincode[]=0;
             }
-            __wallet_storage.read;
+            // Commented for test.
+            // __wallet_storage.read;
             return __wallet_storage.wallet.login(pincode);
         }
         catch (Exception e) {
