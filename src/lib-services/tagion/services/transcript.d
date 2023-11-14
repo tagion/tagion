@@ -258,9 +258,6 @@ struct TranscriptService {
             non_voted_epoch.bullseye = Fingerprint.init;
             non_voted_epoch.previous = Fingerprint.init;
             non_voted_epoch.signs = Signature[].init;
-            // hack use the real active nodes
-            non_voted_epoch.active = [Pubkey([1,2,3,4])];
-            non_voted_epoch.active = [Pubkey([1,2,3,4])];
 
             // create the globals
 
