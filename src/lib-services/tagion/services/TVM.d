@@ -28,7 +28,6 @@ struct TVMOptions {
     mixin JSONCommon;
 }
 
-
 enum ResponseError {
     UnsupportedScript,
     ExecutionError,
@@ -90,8 +89,6 @@ struct TVMService {
     }
 
 }
-
-alias TVMServiceHandle = ActorHandle!TVMService;
 
 unittest {
     import core.time;

@@ -50,15 +50,14 @@ struct DARTOptions {
 
 @safe
 struct DARTService {
-    void task(immutable(DARTOptions) opts, 
-        immutable(TaskNames) task_names, 
-        shared(StdSecureNet) shared_net) {
+    void task(immutable(DARTOptions) opts,
+            immutable(TaskNames) task_names,
+            shared(StdSecureNet) shared_net) {
 
         DART db;
         Exception dart_exception;
 
         const net = new StdSecureNet(shared_net);
-        
 
         db = new DART(net, opts.dart_path);
         if (dart_exception !is null) {
@@ -68,7 +67,7 @@ struct DARTService {
         scope (exit) {
             db.close();
         }
-        scope(failure) {
+        scope (failure) {
             log("DART aborting with failure");
         }
 
@@ -85,13 +84,15 @@ struct DARTService {
             import tagion.utils.Miscellaneous : toHexString;
 
             log("Received checkread response %s", fingerprints.map!(f => f.toHexString));
-            
+
             immutable(DARTIndex)[] check_read = (() @trusted => cast(immutable) db.checkload(fingerprints))();
             log("after checkread response");
 
             req.respond(check_read);
         }
+
         import tagion.utils.Miscellaneous : toHexString;
+
         log("Starting dart with %s", db.bullseye.toHexString);
 
         auto hirpc = HiRPC(net);
@@ -128,12 +129,12 @@ struct DARTService {
                 req.respond(response);
                 return;
             }
-            if (!(receiver.method.name == DART.Queries.dartRead || receiver.method.name == DART.Queries.dartBullseye || receiver.method.name == DART.Queries.dartCheckRead)) {
+            if (!(receiver.method.name == DART.Queries.dartRead || receiver.method.name == DART.Queries.dartBullseye || receiver
+                    .method.name == DART.Queries.dartCheckRead)) {
                 log("unsupported request");
                 return;
             }
 
-            
             Document result = db(receiver, false).toDoc;
             log("darthirpc response: %s", result.toPretty);
             req.respond(result);
@@ -143,12 +144,11 @@ struct DARTService {
 
             log("Received modify request with length=%s", recorder.length);
 
-
             immutable fingerprint_before = Fingerprint(db.bullseye);
             import core.exception : AssertError;
+
             try {
 
-                
                 auto eye = db.modify(recorder);
                 log("New bullseye is %s", eye.toHexString);
 
@@ -157,11 +157,13 @@ struct DARTService {
                 if (replicator_tid !is Tid.init) {
                     replicator_tid.send(SendRecorder(), recorder, eye, epoch_number);
                 }
-            } catch(AssertError e) {
-                log("Received ASSERT ERROR bullseye before %(%02x%), %s archives that were tried to be added \n%s",fingerprint_before, e, recorder.toPretty);
+            }
+            catch (AssertError e) {
+                log("Received ASSERT ERROR bullseye before %(%02x%), %s archives that were tried to be added \n%s", fingerprint_before, e, recorder
+                        .toPretty);
                 fail(e);
             }
-            catch(Error e) {
+            catch (Error e) {
                 log("DART Error %s", e);
             }
 
@@ -176,5 +178,3 @@ struct DARTService {
 
     }
 }
-
-alias DARTServiceHandle = ActorHandle!DARTService;

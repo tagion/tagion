@@ -55,7 +55,7 @@ class SendPayloadAndCreateEpoch {
     immutable(size_t) number_of_nodes;
 
     Node[] nodes;
-    ActorHandle!EpochCreatorService[] handles;
+    ActorHandle[] handles;
     Document send_payload;
 
     this(EpochCreatorOptions epoch_creator_options, MonitorOptions monitor_opts, immutable size_t number_of_nodes) {
