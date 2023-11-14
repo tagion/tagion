@@ -980,25 +980,22 @@ struct WalletStorage {
     void read() {
 
         version(NET_HACK) {
+            auto _pin = path(devicefile).fread!DevicePIN;
+            auto _wallet = path(walletfile).fread!RecoverGenerator;
+            auto _account = path(accountfile).fread!AccountDetails;
+            wallet = StdSecureWallet(_pin, _wallet, _account);
+
             if (wallet.net !is null) {
                 auto __net = cast(shared(StdSecureNet)) wallet.net;
                 scope(exit) {
                     __net = null;
                 }
-                
                 auto copied_net = new StdSecureNet(__net);
-
-                auto _pin = path(devicefile).fread!DevicePIN;
-                auto _wallet = path(walletfile).fread!RecoverGenerator;
-                auto _account = path(accountfile).fread!AccountDetails;
-                wallet = StdSecureWallet(_pin, _wallet, _account);
                 wallet.set_net(copied_net);
-
             }
-            
 
-
-        } else {
+        } 
+        else {
             auto _pin = path(devicefile).fread!DevicePIN;
             auto _wallet = path(walletfile).fread!RecoverGenerator;
             auto _account = path(accountfile).fread!AccountDetails;
