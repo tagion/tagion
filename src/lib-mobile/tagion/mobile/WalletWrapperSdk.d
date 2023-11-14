@@ -981,6 +981,9 @@ struct WalletStorage {
 
         version(NET_HACK) {
             if (wallet.net !is null) {
+                scope(exit) {
+                    __net = null;
+                }
                 auto __net = cast(shared(StdSecureNet)) wallet.net;
                 
                 auto copied_net = new StdSecureNet(__net);
