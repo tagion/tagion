@@ -48,16 +48,3 @@ interface GossipNet : P2pNet {
     const(Pubkey) gossip(const(ChannelFilter) channel_filter, const(SenderCallBack) sender);
     const(Pubkey) select_channel(const(ChannelFilter) channel_filter);
 }
-
-@safe
-interface ScriptNet {
-    import std.concurrency;
-
-    @property void transcript_tid(Tid tid);
-
-    @property Tid transcript_tid() pure nothrow;
-
-    @property void scripting_engine_tid(Tid tid);
-
-    @property Tid scripting_engine_tid();
-}
