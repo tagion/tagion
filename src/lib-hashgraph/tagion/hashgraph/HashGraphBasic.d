@@ -59,6 +59,15 @@ bool isMajority(const size_t voting, const size_t node_size) pure nothrow {
     return (node_size >= minimum_nodes) && (3 * voting > 2 * node_size);
 }
 
+@safe
+unittest {
+
+    int[] some_array;
+    assert(!isMajority(some_array.length, ulong(5))); 
+
+
+}
+
 bool isMajority(T, S)(T voting, S node_size) pure nothrow {
     return (node_size >= minimum_nodes) && (3 * voting > 2 * node_size);
 }

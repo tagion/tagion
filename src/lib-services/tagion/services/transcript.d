@@ -19,7 +19,7 @@ import tagion.crypto.Types;
 import tagion.dart.DARTBasic : DARTIndex, dartIndex;
 import tagion.dart.DARTBasic;
 import tagion.dart.Recorder;
-import tagion.hashgraph.HashGraphBasic : EventPackage;
+import tagion.hashgraph.HashGraphBasic : EventPackage, isMajority;
 import tagion.hibon.BigNumber;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON;
@@ -61,8 +61,8 @@ struct TranscriptService {
 
         struct Votes {
             const(ConsensusVoting)[] votes;
+            bool init_bullseye;
             Epoch epoch;
-            Fingerprint bullseye;
         }
 
         Votes[long] votes;
@@ -150,9 +150,51 @@ struct TranscriptService {
             auto recorder = rec_factory.recorder;
             used ~= not_in_dart;
 
+
+
+            /*
+                The vote array is already updated. We must go through all the different vote indices and update the epoch that was stored in the dart if any new votes are found.
+            */
+            foreach(v; votes.byKeyValue) {
+                // add the new signatures to the epoch. We only want to do it if there are new signatures
+                if (v.value.init_bullseye || v.value.epoch.signs.length != v.value.votes.length) {
+                    v.value.init_bullseye = false;
+                    // add the signatures to the epoch. Only add them if the signature match ours
+                    foreach(single_vote; v.value.votes) {
+                        if (single_vote.verifyBullseye(net, v.value.epoch.bullseye)) {
+                            v.value.epoch.signs ~= single_vote.signed_bullseye;
+                        }
+                        else {
+                            pragma(msg, "throw error or what should we do?");
+                            // throw error or what to do
+                        }
+                    }
+
+                    // if the new length of the epoch is majority then we finish the epoch
+                    if (v.value.epoch.signs.length.isMajority(number_of_nodes)) {
+                        v.value.epoch.previous = previous_epoch;
+                        previous_epoch = net.calcHash(v.value.epoch);
+                        votes.remove(v.value.epoch.epoch_number);
+                    }
+
+                    // add the modified epochs to the recorder.
+                    recorder.insert(v.value.epoch, Archive.Type.ADD);
+                }
+
+            }
+            log("VOTES LENGTH=%s", votes.length);
+
+
+
+            
+
+            
             const epoch_contract = epoch_contracts.get(res.id, null);
             if (epoch_contract is null) {
                 throw new Exception(format("unlinked epoch contract %s", res.id));
+            }
+            scope(exit) {
+                epoch_contracts.remove(res.id);
             }
 
             loop_signed_contracts: foreach (signed_contract; epoch_contract.signed_contracts) {
@@ -278,20 +320,20 @@ struct TranscriptService {
 
         void epoch(consensusEpoch, immutable(EventPackage*)[] epacks, immutable(long) epoch_number, const(sdt_t) epoch_time) @safe {
 
-            // immutable(ConsensusVoting)[] received_votes = epacks
-            //     .filter!(epack => epack.event_body.payload.isRecord!ConsensusVoting)
-            //     .map!(epack => immutable(ConsensusVoting)(epack.event_body.payload))
-            //     .array;
+            immutable(ConsensusVoting)[] received_votes = epacks
+                .filter!(epack => epack.event_body.payload.isRecord!ConsensusVoting)
+                .map!(epack => immutable(ConsensusVoting)(epack.event_body.payload))
+                .array;
 
-            // // add them to the vote array
-            // foreach (v; received_votes) {
-            //     if (votes.get(v.epoch, Votes.init) !is Votes.init) {
-            //         votes[v.epoch].votes ~= v;
-            //     }
-            //     else {
-            //         log("VOTE IS INIT %s", v.epoch);
-            //     }
-            // }
+            // add them to the vote array
+            foreach (v; received_votes) {
+                if (votes.get(v.epoch, Votes.init) !is Votes.init) {
+                    votes[v.epoch].votes ~= v;
+                }
+                else {
+                    log("VOTE IS INIT %s", v.epoch);
+                }
+            }
 
             auto signed_contracts = epacks
                 .filter!(epack => epack.event_body.payload.isRecord!SignedContract)
@@ -322,8 +364,9 @@ struct TranscriptService {
             log("transcript received bullseye %s", bullseye.cutHex);
             const epoch_number = res.id;
 
-            votes[epoch_number].bullseye = bullseye;
-            
+            votes[epoch_number].epoch.bullseye = bullseye;
+            votes[epoch_number].init_bullseye = true;
+
             ConsensusVoting own_vote = ConsensusVoting(
                 epoch_number,
                 net.pubkey,
