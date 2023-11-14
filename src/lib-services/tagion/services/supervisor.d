@@ -49,7 +49,7 @@ struct Supervisor {
                 .network_mode, opts.wave.number_of_nodes, shared_net, opts.monitor, tn);
 
         // verifies signature
-        auto collector_handle = spawn(immutable(CollectorService)(tn), tn.collector);
+        auto collector_handle = _spawn!CollectorService(tn.collector, tn);
 
         auto tvm_handle = spawn(immutable(TVMService)(TVMOptions.init, tn), tn.tvm);
 
