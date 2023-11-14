@@ -13,7 +13,7 @@ import tagion.basic.Message;
 import tagion.basic.Types : Buffer;
 import tagion.basic.tagionexceptions : Check;
 import tagion.crypto.SecureInterfaceNet : HashNet;
-import tagion.crypto.SecureNet : scramble;
+import tagion.crypto.random.random;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONRecord;
@@ -176,9 +176,9 @@ struct KeyRecover {
     in (seed.length <= net.hashSize)
     do {
         scope R = new ubyte[net.hashSize];
-        scramble(R);
+        getRandom(R);
         scope (exit) {
-            scramble(R);
+            R[]=0;
         }
         quizSeed(R, A, confidence);
     }

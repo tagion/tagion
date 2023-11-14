@@ -64,8 +64,8 @@ int _main(string[] args) {
     char[] passphrase;
     char[] salt;
     scope (exit) {
-        scramble(passphrase);
-        scramble(salt);
+        passphrase[]=0;
+        salt[]=0;
     }
     GetoptResult main_args;
     WalletOptions options;
@@ -214,7 +214,7 @@ int _main(string[] args) {
         if (!_salt.empty) {
             auto salt_tmp = (() @trusted => cast(char[]) _salt)();
             scope (exit) {
-                scramble(salt_tmp);
+                salt_tmp[]=0;
             }
             salt ~= WordList.presalt ~ _salt;
         }

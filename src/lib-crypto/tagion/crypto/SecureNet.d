@@ -11,20 +11,6 @@ import tagion.crypto.aes.AESCrypto;
 import tagion.crypto.random.random;
 import tagion.hibon.Document : Document;
 
-void scramble(T, B = T[])(scope ref T[] data, scope const(B) xor = null) @safe if (T.sizeof is ubyte.sizeof)
-in (xor.empty || data.length == xor.length) {
-
-    scope buf = cast(ubyte[]) data;
-    getRandom(buf);
-    if (!xor.empty) {
-        data[] ^= xor[];
-    }
-}
-
-void scramble(T)(scope ref T[] data) @trusted if (T.sizeof > ubyte.sizeof) {
-    scope ubyte_data = cast(ubyte[]) data;
-    scramble(ubyte_data);
-}
 
 package alias check = Check!SecurityConsensusException;
 
@@ -120,13 +106,13 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
     final Pubkey derivePubkey(const(ubyte[]) tweak_code) const {
         Pubkey result;
         const pkey = cast(const(ubyte[])) _pubkey;
-        result = _crypt.pubTweak(pkey, tweak_code);
+        result = crypt.pubTweak(pkey, tweak_code);
         return result;
     }
 
     final Pubkey  aggregatePubkey(const(ubyte[][]) pubkeys) const {
         static if (Schnorr) {
-            const result= _crypt.musigPubkeyAggregated(pubkeys);
+            const result= crypt.musigPubkeyAggregated(pubkeys);
             check(result !is null, ConsensusFailCode.SECURITY_PRIVATE_KEY_INVALID);
             return Pubkey(result);    
         }
@@ -134,13 +120,13 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
                 format("%s does not support %s", typeof(this).stringof, __FUNCTION__));
     }
 
-    const Secp256k1 _crypt;
+    const Secp256k1 crypt;
 
     bool verify(const Fingerprint message, const Signature signature, const Pubkey pubkey) const {
         consensusCheck!(SecurityConsensusException)(
                 signature.length == Secp256k1.SIGNATURE_SIZE,
                 ConsensusFailCode.SECURITY_SIGNATURE_SIZE_FAULT);
-        return _crypt.verify(cast(Buffer) message, cast(Buffer) signature, cast(Buffer) pubkey);
+        return crypt.verify(cast(Buffer) message, cast(Buffer) signature, cast(Buffer) pubkey);
     }
 
     Signature sign(const Fingerprint message) const
@@ -203,7 +189,7 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
             return true;
         }
         else {
-            return _crypt.secKeyVerify(privkey);
+            return crypt.secKeyVerify(privkey);
         }
     }
 
@@ -217,14 +203,14 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
 
         static if (Schnorr) {
             ubyte[] privkey;
-            _crypt.createKeyPair(seckey, privkey);
+            crypt.createKeyPair(seckey, privkey);
         }
         else {
             alias privkey = seckey;
             check(secKeyVerify(privkey), ConsensusFailCode.SECURITY_PRIVATE_KEY_INVALID);
         }
         alias AES = AESCrypto!256;
-        _pubkey = _crypt.getPubkey(privkey);
+        _pubkey = crypt.getPubkey(privkey);
         auto aes_key_iv = new ubyte[AES.KEY_SIZE + AES.BLOCK_SIZE];
         getRandom(aes_key_iv);
         auto aes_key = aes_key_iv[0 .. AES.KEY_SIZE];
@@ -252,22 +238,22 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
             static if (Schnorr) {
                 immutable(ubyte[]) sign(const(ubyte[]) message) const {
                     immutable(ubyte)[] result;
-                    ubyte[_crypt.MESSAGE_SIZE] _aux_random;
+                    ubyte[crypt.MESSAGE_SIZE] _aux_random;
                     ubyte[] aux_random = _aux_random;
                     getRandom(aux_random);
-                    do_secret_stuff((const(ubyte[]) privkey) { result = _crypt.sign(message, privkey, aux_random); });
+                    do_secret_stuff((const(ubyte[]) privkey) { result = crypt.sign(message, privkey, aux_random); });
                     return result;
                 }
             }
             else {
                 immutable(ubyte[]) sign(const(ubyte[]) message) const {
                     immutable(ubyte)[] result;
-                    do_secret_stuff((const(ubyte[]) privkey) { result = _crypt.sign(message, privkey); });
+                    do_secret_stuff((const(ubyte[]) privkey) { result = crypt.sign(message, privkey); });
                     return result;
                 }
             }
             void tweak(const(ubyte[]) tweak_code, out ubyte[] tweak_privkey) const {
-                do_secret_stuff((const(ubyte[]) privkey) @safe { _crypt.privTweak(privkey, tweak_code, tweak_privkey); });
+                do_secret_stuff((const(ubyte[]) privkey) @safe { crypt.privTweak(privkey, tweak_code, tweak_privkey); });
             }
 
             immutable(ubyte[]) ECDHSecret(scope const(Pubkey) pubkey) const {
@@ -278,12 +264,12 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
                         scope (exit) {
                             seckey[] = 0;
                         }
-                        _crypt.getSecretKey(privkey, seckey);
+                        crypt.getSecretKey(privkey, seckey);
                     }
                     else {
                         alias seckey = privkey;
                     }
-                    result = _crypt.createECDHSecret(seckey, cast(Buffer) pubkey);
+                    result = crypt.createECDHSecret(seckey, cast(Buffer) pubkey);
                 });
                 return result;
             }
@@ -321,7 +307,7 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
         alias pbkdf2_sha512 = pbkdf2!SHA512;
         auto data = pbkdf2_sha512(passphrase.representation, salt.representation, count, dk_length);
         scope (exit) {
-            scramble(data);
+            data[]=0;
         }
         auto _priv_key = data[0 .. 32];
 
@@ -334,7 +320,7 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
     immutable(ubyte[]) ECDHSecret(
             scope const(ubyte[]) seckey,
     scope const(Pubkey) pubkey) const {
-        return _crypt.createECDHSecret(seckey, cast(Buffer) pubkey);
+        return crypt.createECDHSecret(seckey, cast(Buffer) pubkey);
     }
 
     immutable(ubyte[]) ECDHSecret(scope const(Pubkey) pubkey) const {
@@ -342,15 +328,15 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
     }
 
     Pubkey getPubkey(scope const(ubyte[]) seckey) const {
-        return Pubkey(_crypt.getPubkey(seckey));
+        return Pubkey(crypt.getPubkey(seckey));
     }
 
     this() nothrow {
-        _crypt = new Secp256k1;
+        crypt = new Secp256k1;
     }
 
     this(shared(StdSecureNetT) other_net) @trusted {
-        _crypt = new Secp256k1;
+        this();    
         synchronized (other_net) {
             auto unshared_secure_net = cast(StdSecureNetT) other_net;
             unshared_secure_net._secret.clone(this);
