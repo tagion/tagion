@@ -5,6 +5,7 @@ module tagion.actor.actor;
 @safe:
 
 import std.typecons;
+import core.exception : AssertError;
 import core.thread;
 import core.time;
 import std.exception;
@@ -234,26 +235,32 @@ struct ActorHandle {
     /// the name of the possibly running task
     string task_name;
 
+    private Tid _tid;
     /// the tid of the spawned task
     Tid tid() {
-        return concurrency.locate(task_name);
+        if (_tid is Tid.init) {
+            _tid = concurrency.locate(task_name);
+        }
+        return _tid;
     }
 
     // Get the status of the task, asserts if the calling task did not spawn it
-    Ctrl state() @safe nothrow {
+    Ctrl state() nothrow {
         if ((task_name in thisActor.childrenState) !is null) {
             return thisActor.childrenState[task_name];
         }
-        assert(0, "You don't own this task");
+        return Ctrl.UNKNOWN;
     }
 
     /// Send a message to this task
-    void send(T...)(T args) @safe {
-        if (this.tid is Tid.init) {
-            log("Could not delive message to %s:\n\t%(%s, %)", task_name, args);
-            return;
+    void send(T...)(T args) @trusted {
+        try {
+            concurrency.send(tid, args);
         }
-        concurrency.send(this.tid, args);
+        catch(AssertError _) {
+            _tid = Tid.init;
+            collectException!AssertError(concurrency.send(tid, args));
+        }
     }
 }
 
@@ -274,7 +281,6 @@ ActorHandle handle(A)(string task_name) @safe if (isActor!A) {
 
 ActorHandle spawn(A, Args...)(immutable(A) actor, string name, Args args) @safe nothrow
 if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
-    import core.exception : AssertError;
 
     try {
         Tid tid;
