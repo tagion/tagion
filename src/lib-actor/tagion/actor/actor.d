@@ -323,6 +323,49 @@ if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
     }
 }
 
+ActorHandle _spawn(A, Args...)(string name, Args args) @safe nothrow
+if (isActor!A) {
+    try {
+        Tid tid;
+        tid = concurrency.spawn((string name, Args args) @trusted nothrow{
+            log.register(name);
+            // thisActor.task_name(name);
+            thisActor.stop = false;
+            try {
+                A actor = A(args);
+                setState(Ctrl.STARTING); // Tell the owner that you are starting.
+                actor.task();
+                // If the actor forgets to kill it's children we'll do it anyway
+                if (!statusChildren(Ctrl.END)) {
+                    foreach (child_task_name, ctrl; thisActor.childrenState) {
+                        if (ctrl is Ctrl.ALIVE) {
+                            locate(child_task_name).send(Sig.STOP);
+                        }
+                    }
+                    waitforChildren(Ctrl.END);
+                }
+            }
+            catch (Exception t) {
+                fail(t);
+            } // This is bad but, We catch assert per thread because there is no message otherwise, when runnning multithreaded
+            catch (AssertError e) {
+                import tagion.GlobalSignals;
+
+                log(e);
+                stopsignal.set;
+            }
+            end;
+        }, name, args);
+        thisActor.childrenState[name] = Ctrl.UNKNOWN;
+        log("spawning %s", name);
+        tid.setMaxMailboxSize(int.max, OnCrowding.throwException);
+        return ActorHandle(name);
+    }
+    catch (Exception e) {
+        assert(0, format("Exception: %s", e.msg));
+    }
+}
+
 ActorHandle spawn(A, Args...)(string name, Args args) @safe nothrow
 if (isActor!A) {
     immutable A actor;
