@@ -61,12 +61,8 @@ struct TranscriptService {
 
         struct Votes {
             const(ConsensusVoting)[] votes;
-            long epoch;
+            Epoch epoch;
             Fingerprint bullseye;
-            this(Fingerprint bullseye, long epoch) pure {
-                this.bullseye = bullseye;
-                this.epoch = epoch;
-            }
         }
 
         Votes[long] votes;
@@ -268,7 +264,11 @@ struct TranscriptService {
             recorder.insert(new_head, Archive.Type.ADD);
             recorder.insert(non_voted_epoch, Archive.Type.ADD);
 
-            
+            Votes new_vote;
+            new_vote.epoch = non_voted_epoch;
+
+            votes[non_voted_epoch.epoch_number] = new_vote;
+
             auto req = dartModifyRR();
             req.id = res.id;
 
@@ -320,15 +320,15 @@ struct TranscriptService {
             import tagion.utils.Miscellaneous : cutHex;
 
             log("transcript received bullseye %s", bullseye.cutHex);
-
             const epoch_number = res.id;
+
+            votes[epoch_number].bullseye = bullseye;
+            
             ConsensusVoting own_vote = ConsensusVoting(
                 epoch_number,
                 net.pubkey,
                 net.sign(bullseye)
             );
-
-            votes[epoch_number] = Votes(bullseye, epoch_number);
 
             locate(task_names.epoch_creator).send(Payload(), own_vote.toDoc);
         }
