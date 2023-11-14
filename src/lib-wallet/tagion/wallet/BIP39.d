@@ -3,7 +3,6 @@ module tagion.wallet.BIP39;
 import std.string : representation;
 import tagion.basic.Debug;
 import tagion.basic.Version : ver;
-import tagion.crypto.SecureNet : scramble;
 import tagion.crypto.random.random;
 import tagion.utils.Miscellaneous : toHexString;
 
@@ -73,7 +72,7 @@ struct WordList {
         scope ushort[] mnemonic_codes;
         mnemonic_codes.length = number_of_words;
         scope (exit) {
-            scramble(mnemonic_codes);
+            mnemonic_codes[]=0;
         }
         gen(mnemonic_codes);
         const password_size = mnemonic_codes
@@ -97,8 +96,8 @@ struct WordList {
         const password_size = mnemonics.map!(m => m.length).sum + mnemonics.length - 1;
         scope password = new char[password_size];
         scope (exit) {
-            scramble(password);
-            scramble(salt);
+             password[]=0;
+            salt[]=0;
         }
         password[] = ' ';
         uint index;

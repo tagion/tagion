@@ -138,9 +138,9 @@ extern (C) {
 
             auto salt = cast(char[]) saltPtr[0 .. saltLen];
             scope (exit) {
-                scramble(pincode);
-                scramble(mnemonic);
-                scramble(salt);
+            pincode[]=0;
+            mnemonic[]=0;
+            salt[]=0;
             }
             // Create a wallet from inputs.
             __wallet_storage.wallet = StdSecureWallet(
@@ -163,7 +163,7 @@ extern (C) {
         try {
             auto pincode = cast(char[])(pincodePtr[0 .. pincodeLen]);
             scope (exit) {
-                scramble(pincode);
+                pincode[]=0;
             }
             __wallet_storage.read;
             return __wallet_storage.wallet.login(pincode);

@@ -27,7 +27,6 @@ import tagion.hibon.HiBONRecord;
 //import PriorStandardRecords = tagion.script.prior.StandardRecords;
 
 import tagion.crypto.SecureInterfaceNet : SecureNet;
-import tagion.crypto.SecureNet : scramble;
 
 // import tagion.gossip.GossipNet : StdSecureNet, StdHashNet, scramble;
 import tagion.Keywords;
@@ -149,7 +148,7 @@ struct SecureWallet(Net : SecureNet) {
         // {
         auto R = new ubyte[_net.hashSize];
         scope (exit) {
-            scramble(R);
+            R[]=0;
         }
         recover.findSecret(R, questions, answers);
         _net.createKeyPair(R);
@@ -167,7 +166,7 @@ struct SecureWallet(Net : SecureNet) {
         ubyte[] R;
         scope (exit) {
             set_pincode(R, pincode);
-            scramble(R);
+            R[]=0;
         }
         _net.generateKeyPair(passphrase, salt,
                 (scope const(ubyte[]) data) { R = data[0 .. size_of_privkey].dup; });
@@ -179,14 +178,7 @@ struct SecureWallet(Net : SecureNet) {
     in (!_net.isinit)
     do {
         auto seed = new ubyte[_net.hashSize];
-        scramble(seed);
-        /+
-        _pin.U = seed.idup;
-        const pinhash = recover.checkHash(pincode.representation, _pin.U);
-        writefln("set_pincode pinhash=%s", pinhash.toHexString);    
-    _pin.D = xor(R, pinhash);
-        _pin.S = recover.checkHash(R);
- +/
+        getRandom(seed);
         _pin.setPin(_net, R, pincode.representation, seed.idup);
     }
 
@@ -267,7 +259,7 @@ struct SecureWallet(Net : SecureNet) {
             //  writefln("pinhash = %s", pinhash.toHexString);
             auto R = new ubyte[login_net.hashSize];
             scope (exit) {
-                scramble(R);
+                R[]=0;
             }
             const recovered = _pin.recover(login_net, R, pincode.representation);
             //  _pin.recover(R, pinhash);
@@ -298,7 +290,7 @@ struct SecureWallet(Net : SecureNet) {
 
         scope R = new ubyte[hashnet.hashSize];
         scope (exit) {
-            scramble(R);
+            R[]=0;
         }
         _pin.recover(hashnet, R, pincode.representation);
         return _pin.S == hashnet.saltHash(R);
@@ -332,10 +324,10 @@ struct SecureWallet(Net : SecureNet) {
      *   invoice = invoice to be registered
      */
     void registerInvoice(ref Invoice invoice) {
-        scope seed = new ubyte[_net.hashSize];
-        scramble(seed);
+        //scope seed = new ubyte[_net.hashSize];
+        //getRandom(seed);
         account.derive_state = _net.HMAC(account.derive_state ~ _net.pubkey);
-        scramble(seed);
+        //scramble(seed);
         auto pkey = _net.derivePubkey(account.derive_state);
         invoice.pkey = derivePubkey;
         account.derivers[invoice.pkey] = account.derive_state;

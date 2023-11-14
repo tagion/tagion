@@ -280,9 +280,9 @@ struct WalletInterface {
         char[] new_pincode2;
         scope (exit) {
             // Scramble the code to prevent memory leaks
-            old_pincode.scramble;
-            new_pincode1.scramble;
-            new_pincode2.scramble;
+            old_pincode[]=0;
+            new_pincode1[]=0;
+            new_pincode2[]=0;
         }
         foreach (i; 0 .. retry) {
             HOME.write;
@@ -290,7 +290,7 @@ struct WalletInterface {
             writefln("%1$sEnter empty pincode to proceed recovery%2$s", YELLOW, RESET);
             writefln("pincode:");
             scope (exit) {
-                old_pincode.scramble;
+                old_pincode[]=0;
             }
             readln(old_pincode);
             old_pincode.word_strip;
@@ -453,7 +453,7 @@ struct WalletInterface {
                             // Erase the answer from memory
                             answers
                                 .filter!(a => a.length > 0)
-                                .each!((ref a) { scramble(a); a = null; });
+                                .each!((ref a) { a[]=0; a = null; });
                             pressKey;
                         }
                         auto quiz_list = zip(questions, answers)
@@ -485,8 +485,8 @@ struct WalletInterface {
                                 char[] pincode2;
                                 pincode2.length = MAX_PINCODE_SIZE;
                                 scope (exit) {
-                                    scramble(pincode1);
-                                    scramble(pincode2);
+                                    pincode1[]=0;
+                                    pincode2[]=0;
                                 }
                                 writefln("Pincode:%s", CLEARDOWN);
                                 readln(pincode1);
