@@ -63,6 +63,9 @@ Document[] createGenesis(const(string[]) nodes_param, Document testamony) {
     //.sort;
     genesis_epoch.time = cast(sdt_t) time;
     genesis_epoch.testamony = testamony;
+    genesis_epoch.globals = TagionGlobals.init;
+
+    
     name_cards.each!((name_card) => verbose("%s", name_card.toPretty));
     node_records.each!((name_card) => verbose("%s", name_card.toPretty));
     verbose("%s", genesis_epoch.toPretty);

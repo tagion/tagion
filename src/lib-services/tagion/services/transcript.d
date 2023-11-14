@@ -82,8 +82,12 @@ struct TranscriptService {
 
         HiRPC hirpc = HiRPC(net);
 
-        TagionHead last_head = TagionHead(TagionDomain, 0, TagionGlobals(BigNumber(1000_000_000), BigNumber(0), long(
-                10_000), long(0)));
+
+
+        
+        TagionGlobals last_globals = TagionGlobals(BigNumber(1000_000_000), BigNumber(0), long(10_0000), long(0));
+
+        TagionHead last_head = TagionHead(TagionDomain, 0);
         Fingerprint previous_epoch = Fingerprint.init;
         long last_epoch_number = 0;
 
@@ -121,10 +125,14 @@ struct TranscriptService {
                     if (!epoch_recorder.empty) {
                         auto doc = epoch_recorder[].front.filed;
                         if (doc.isRecord!Epoch) {
-                            last_epoch_number = Epoch(doc).epoch_number;
+                            auto epoch = Epoch(doc);
+                            last_epoch_number = epoch.epoch_number;
+                            last_globals = epoch.globals;
                         }
                         else if (doc.isRecord!GenesisEpoch) {
-                            last_epoch_number = GenesisEpoch(doc).epoch_number;
+                            auto genesis_epoch = GenesisEpoch(doc);
+                            last_epoch_number = genesis_epoch.epoch_number;
+                            last_globals = genesis_epoch.globals;
                         }
                         else {
                             log("THROWING EXCEPTION");
@@ -187,7 +195,8 @@ struct TranscriptService {
                         previous_epoch,
                         a_vote.value.votes.map!(v => v.signed_bullseye).array,
                         keys,
-                        keys);
+                        keys, 
+                        TagionGlobals.init);
                 consensus_epochs ~= new_epoch,
                 last_epoch_number = a_vote.value.epoch;
                 previous_epoch = net.calcHash(new_epoch);
@@ -251,47 +260,47 @@ struct TranscriptService {
                 }
             }
 
-            BigNumber total = last_head.globals.total;
-            BigNumber total_burned = last_head.globals.total_burned;
-            long number_of_bills = last_head.globals.number_of_bills;
-            long burnt_bills = last_head.globals.burnt_bills;
+            // BigNumber total = last_head.globals.total;
+            // BigNumber total_burned = last_head.globals.total_burned;
+            // long number_of_bills = last_head.globals.number_of_bills;
+            // long burnt_bills = last_head.globals.burnt_bills;
 
-            void billStatistic(const(Archive) archive) {
-                if (!archive.filed.isRecord!TagionBill) {
-                    return;
-                }
-                auto bill = TagionBill(archive.filed);
+            // void billStatistic(const(Archive) archive) {
+            //     if (!archive.filed.isRecord!TagionBill) {
+            //         return;
+            //     }
+            //     auto bill = TagionBill(archive.filed);
 
-                if (archive.Type.REMOVE) {
-                    total -= bill.value.axios;
-                    total_burned += bill.value.axios;
-                    burnt_bills++;
-                    number_of_bills--;
-                }
-                if (archive.Type.ADD) {
-                    total += bill.value.axios;
-                    number_of_bills++;
-                    number_of_bills++;
-                }
-            }
-            recorder[].each!(a => billStatistic(a));
+            //     if (archive.Type.REMOVE) {
+            //         total -= bill.value.axios;
+            //         total_burned += bill.value.axios;
+            //         burnt_bills++;
+            //         number_of_bills--;
+            //     }
+            //     if (archive.Type.ADD) {
+            //         total += bill.value.axios;
+            //         number_of_bills++;
+            //         number_of_bills++;
+            //     }
+            // }
+            // recorder[].each!(a => billStatistic(a));
 
-            TagionGlobals new_globals = TagionGlobals(
-                total,
-                total_burned,
-                number_of_bills,
-                burnt_bills,
-            );
+            // TagionGlobals new_globals = TagionGlobals(
+            //     total,
+            //     total_burned,
+            //     number_of_bills,
+            //     burnt_bills,
+            // );
 
-            TagionHead new_head = TagionHead(
-                TagionDomain,
-                last_epoch_number,
-                new_globals,
-            );
+            // TagionHead new_head = TagionHead(
+            //     TagionDomain,
+            //     last_epoch_number,
+            //     new_globals,
+            // );
 
             
-            last_head = new_head;
-            recorder.insert(new_head, Archive.Type.ADD);
+            // last_head = new_head;
+            // recorder.insert(new_head, Archive.Type.ADD);
 
             auto req = dartModifyRR();
             req.id = res.id;

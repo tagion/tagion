@@ -146,12 +146,14 @@ struct GenesisEpoch {
     Pubkey[] nodes;
     Document testamony;
     @label(StdNames.time) sdt_t time;
+    TagionGlobals globals;
     mixin HiBONRecord!(q{
-        this(const(long) epoch_number, Pubkey[] nodes, const(Document) testamony, const(sdt_t) time) {
+        this(const(long) epoch_number, Pubkey[] nodes, const(Document) testamony, const(sdt_t) time, const(TagionGlobals) globals) {
             this.epoch_number = epoch_number;
             this.nodes = nodes;
             this.testamony = testamony;
             this.time = time;
+            this.globals = globals;
         }
     });
 }
@@ -165,9 +167,18 @@ struct Epoch {
     @label("$signs") const(Signature)[] signs; /// Signature of all inputs
     @optional Pubkey[] active; /// Sorted keys
     @optional Pubkey[] deactive;
+    TagionGlobals globals;
 
     mixin HiBONRecord!(q{
-        this(long epoch_number,sdt_t time, Fingerprint bullseye, Fingerprint previous,const(Signature)[] signs, Pubkey[] active, Pubkey[] deactive) {
+        this(long epoch_number,
+            sdt_t time, 
+            Fingerprint bullseye,
+            Fingerprint previous,
+            const(Signature)[] signs,
+            Pubkey[] active,
+            Pubkey[] deactive,
+            const(TagionGlobals) globals) 
+        {
             this.epoch_number = epoch_number;
             this.time = time;
             this.bullseye = bullseye;
@@ -175,6 +186,7 @@ struct Epoch {
             this.signs = signs;
             this.active = active;
             this.deactive = deactive;
+            this.globals = globals;
         }
     });
 }
@@ -183,12 +195,10 @@ struct Epoch {
 struct TagionHead {
     @label(StdNames.name) string name; // Default name should always be "tagion"
     long current_epoch;
-    TagionGlobals globals;
     mixin HiBONRecord!(q{
-        this(const(string) name, const(long) current_epoch, const(TagionGlobals) globals) {
+        this(const(string) name, const(long) current_epoch) {
             this.name = name;
             this.current_epoch = current_epoch;
-            this.globals = globals;
         }
 
     });

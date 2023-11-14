@@ -112,7 +112,7 @@ int _main(string[] args) {
 
     const globals = TagionGlobals(total_amount, const BigNumber(0), number_of_bills, const long(0));
 
-    const tagion_head = TagionHead(TagionDomain, 0, globals);
+    const tagion_head = TagionHead(TagionDomain, 0);
     writefln("CREATED TAGION HEAD: %s", tagion_head.toDoc.encodeBase64);
 
     Pubkey[] keys;
@@ -127,7 +127,7 @@ int _main(string[] args) {
 
     HiBON testamony = new HiBON;
     testamony["hola"] = "Hallo ich bin philip. VERY OFFICIAL TAGION GENESIS BLOCK; DO NOT ALTER IN ANY WAYS";
-    const genesis_epoch = GenesisEpoch(0, keys, Document(testamony), currentTime);
+    const genesis_epoch = GenesisEpoch(0, keys, Document(testamony), currentTime, globals);
 
     recorder.add(tagion_head);
     recorder.add(genesis_epoch);
