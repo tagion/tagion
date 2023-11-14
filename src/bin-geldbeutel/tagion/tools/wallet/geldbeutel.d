@@ -204,9 +204,7 @@ int _main(string[] args) {
             const wordlist = WordList(words);
             passphrase = wordlist.passphrase(bip39);
 
-            printf("%.*s\n", cast(int) passphrase.length, &passphrase[0]); //5 here refers to # of characters 
-
-            //return 0;
+            printf("%.*s\n", cast(int) passphrase.length, &passphrase[0]); 
         }
         else {
             (() @trusted { passphrase = cast(char[]) _passphrase; }());
@@ -228,7 +226,6 @@ int _main(string[] args) {
             create_account = true;
             writefln("Wallet dont't exists");
             WalletInterface.pressKey;
-            //wallet_interface.quiz.questions = standard_questions.dup;
         }
         change_pin = change_pin && !pincode.empty;
 
@@ -237,10 +234,7 @@ int _main(string[] args) {
             return 0;
         }
         else if (change_pin) {
-            //if (wallet_interface.loginPincode) {
             wallet_interface.loginPincode(Yes.ChangePin);
-            //                wallet_interface.changePin;
-            //}
             return 0;
         }
 
@@ -257,8 +251,6 @@ int _main(string[] args) {
             else if (!wallet_interface.loginPincode(No.ChangePin)) {
                 wallet_ui = true;
                 writefln("%1$sWallet not loggedin%2$s", YELLOW, RESET);
-                //WalletInterface.pressKey;
-
                 return 4;
             }
         }
