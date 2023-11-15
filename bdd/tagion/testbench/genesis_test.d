@@ -16,6 +16,7 @@ import tagion.testbench.tools.Environment;
 import tagion.tools.Basic;
 import neuewelle = tagion.tools.neuewelle;
 import tagion.utils.pretend_safe_concurrency;
+import tagion.hibon.BigNumber;
 
 mixin Main!(_main);
 
@@ -80,12 +81,12 @@ int _main(string[] args) {
     }
 
     TagionBill[] bills;
-    long __VERY_UGLY;
+    BigNumber total_start_amount;
     foreach (ref wallet; wallets) {
         foreach (i; 0 .. 3) {
-            bills ~= requestAndForce(wallet, 1000.TGN);
-            __VERY_UGLY += 1000;
-
+            auto bill = requestAndForce(wallet, 1000.TGN);
+            bills ~= bill;
+            total_start_amount += bill.value.axios; 
         }
     }
 
@@ -98,7 +99,6 @@ int _main(string[] args) {
 
     // create the tagion head and genesis epoch
     import tagion.crypto.Types;
-    import tagion.hibon.BigNumber;
     import tagion.hibon.HiBON;
     import tagion.hibon.HiBONtoText;
     import tagion.script.common : GenesisEpoch, TagionGlobals, TagionHead;
@@ -106,11 +106,10 @@ int _main(string[] args) {
     import tagion.utils.StdTime;
 
     // const total_amount = BigNumber(bills.map!(b => b.value).sum);
-    const total_amount = BigNumber(__VERY_UGLY);
     const number_of_bills = long(bills.length);
 
 
-    const globals = TagionGlobals(total_amount, const BigNumber(0), number_of_bills, const long(0));
+    const globals = TagionGlobals(total_start_amount, const BigNumber(0), number_of_bills, const long(0));
 
     const tagion_head = TagionHead(TagionDomain, 0);
     writefln("CREATED TAGION HEAD: %s", tagion_head.toDoc.encodeBase64);
@@ -148,7 +147,7 @@ int _main(string[] args) {
 
     Options[] node_opts;
 
-    Thread.sleep(10.seconds);
+    Thread.sleep(5.seconds);
     foreach (i; 0 .. local_options.wave.number_of_nodes) {
         const filename = buildPath(module_path, format(local_options.wave.prefix_format ~ "opts", i).setExtension(FileExtension
                 .json));
@@ -157,17 +156,15 @@ int _main(string[] args) {
         node_opts ~= node_opt;
     }
 
+    Thread.sleep(15.seconds);
     auto name = "genesis_testing";
     register(name, thisTid);
     log.registerSubscriptionTask(name);
 
-    writefln("INPUT SOCKET ADDRESS %s", node_opts[0].inputvalidator.sock_addr);
 
     auto feature = automation!(genesis_test);
+    feature.NetworkRunningWithGenesisBlockAndEpochChain(node_opts);
     feature.run;
-
-    feature.run;
-    Thread.sleep(15.seconds);
 
     stopsignal.set;
     Thread.sleep(6.seconds);
