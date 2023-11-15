@@ -415,6 +415,7 @@ void setState(Ctrl ctrl) @safe nothrow {
 
 /// Cleanup and notify the supervisor that you have ended
 void end() @trusted nothrow {
+    thisActor.stop = true;
     assumeWontThrow(ThreadInfo.thisInfo.cleanup);
     setState(Ctrl.END);
 }
