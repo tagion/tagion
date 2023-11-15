@@ -23,13 +23,6 @@ struct Cipher {
     alias AES = AESCrypto!256;
     enum CRC_SIZE = crc32Of.length;
 
-    // import std.stdio;
-    // const SecureNet net;
-    // @disable this();
-    // this(const(SecureNet) net) {
-    //     this.net = net;
-    // }
-
     @recordType("TCD")
     struct CipherDocument {
         @label("$m") Buffer ciphermsg;
@@ -46,10 +39,7 @@ struct Cipher {
         scope (exit) {
             secret_key[] = 0;
         }
-        do {
             getRandom(secret_key);
-        }
-        while (!net.secKeyVerify(secret_key));
         CipherDocument result;
         result.cipherPubkey = net.getPubkey(secret_key);
         scope ubyte[AES.BLOCK_SIZE] nonce_alloc;

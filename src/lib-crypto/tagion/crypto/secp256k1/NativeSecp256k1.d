@@ -3,20 +3,41 @@ module tagion.crypto.secp256k1.NativeSecp256k1;
 @safe:
 private import tagion.crypto.secp256k1.c.secp256k1;
 private import tagion.crypto.secp256k1.c.secp256k1_ecdh;
-private import tagion.crypto.secp256k1.c.secp256k1_hash;
 private import tagion.crypto.secp256k1.c.secp256k1_schnorrsig;
 private import tagion.crypto.secp256k1.c.secp256k1_extrakeys;
 import tagion.crypto.random.random;
-import tagion.crypto.secp256k1.NativeSecp256k1Interface;
 import std.algorithm;
 import std.array;
 import std.exception : assumeUnique;
 import tagion.basic.ConsensusExceptions;
 import tagion.utils.Miscellaneous : toHexString;
 
-//enum Schnorr = true;
-//alias NativeSecp256k1EDCSA = NativeSecp256k1T!false;
-alias NativeSecp256k1Schnorr = NativeSecp256k1;
+enum SECP256K1 : uint {
+    FLAGS_TYPE_MASK = SECP256K1_FLAGS_TYPE_MASK,
+    FLAGS_TYPE_CONTEXT = SECP256K1_FLAGS_TYPE_CONTEXT,
+    FLAGS_TYPE_COMPRESSION = SECP256K1_FLAGS_TYPE_COMPRESSION,
+    /** The higher bits contain the actual data. Do not use directly. */
+    FLAGS_BIT_CONTEXT_VERIFY = SECP256K1_FLAGS_BIT_CONTEXT_VERIFY,
+    FLAGS_BIT_CONTEXT_SIGN = SECP256K1_FLAGS_BIT_CONTEXT_SIGN,
+    FLAGS_BIT_COMPRESSION = FLAGS_BIT_CONTEXT_SIGN,
+
+    /** Flags to pass to secp256k1_context_create. */
+    CONTEXT_VERIFY = SECP256K1_CONTEXT_VERIFY,
+    CONTEXT_SIGN = SECP256K1_CONTEXT_SIGN,
+    CONTEXT_NONE = SECP256K1_CONTEXT_NONE,
+
+    /** Flag to pass to secp256k1_ec_pubkey_serialize and secp256k1_ec_privkey_export. */
+    EC_COMPRESSED = SECP256K1_EC_COMPRESSED,
+    EC_UNCOMPRESSED = SECP256K1_EC_UNCOMPRESSED,
+
+    /** Prefix byte used to tag various encoded curvepoints for specific purposes */
+    TAG_PUBKEY_EVEN = SECP256K1_TAG_PUBKEY_EVEN,
+    TAG_PUBKEY_ODD = SECP256K1_TAG_PUBKEY_ODD,
+    TAG_PUBKEY_UNCOMPRESSED = SECP256K1_TAG_PUBKEY_UNCOMPRESSED,
+    TAG_PUBKEY_HYBRID_EVEN = SECP256K1_TAG_PUBKEY_HYBRID_EVEN,
+    TAG_PUBKEY_HYBRID_ODD = SECP256K1_TAG_PUBKEY_HYBRID_ODD
+}
+
 /++
  + <p>This class holds native methods to handle ECDSA verification.</p>
  +
@@ -28,7 +49,13 @@ alias NativeSecp256k1Schnorr = NativeSecp256k1;
  + or point the JVM to the folder containing it with -Djava.library.path
  + </p>
  +/
-class NativeSecp256k1 : NativeSecp256k1Interface {
+class NativeSecp256k1 {
+    enum TWEAK_SIZE = 32;
+    enum SIGNATURE_SIZE = 64;
+    enum SECKEY_SIZE = 32;
+    enum XONLY_PUBKEY_SIZE = 32;
+    enum PUBKEY_SIZE = 33;
+    enum MESSAGE_SIZE = 32;
     static void check(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         if (!flag) {
             throw new SecurityConsensusException(code, file, line);
@@ -255,7 +282,7 @@ class NativeSecp256k1 : NativeSecp256k1Interface {
     }
 
     /++
-     + libsecp256k1 Create an ECDSA signature.
+     + libsecp256k1 Create an Schnorr signature.
      +
      + @param msg Message hash, 32 bytes
      + @param key Secret key, 32 bytes
@@ -423,7 +450,7 @@ unittest { /// Schnorr test generated from the secp256k1/examples/schnorr.c
     const expected_signature = "021e9a32a12ead3144bb230a81794913a856296ed369159d01b8f57d6d7e7d3630e34f84d49ec054d5251ff6539f24b21097a9c39329eaab2e9429147d6d82f8"
         .decode;
     const expected_keypair = decode("e46b4b2b99674889342c851f890862264a872d4ac53a039fbdab91fd68ed4e71747efc2a4723bd47d85f602096362becc11e78c5029d7c463d8497cf661dd2eca89c1820ccc2dd9b0e0e5ab13b1454eb3c37c31308ae20dd8d2aca2199ff4e6b");
-    auto crypt = new NativeSecp256k1Schnorr;
+    auto crypt = new NativeSecp256k1;
     //secp256k1_keypair keypair;
     ubyte[] keypair;
     crypt.createKeyPair(secret_key, keypair);
@@ -443,7 +470,7 @@ unittest { /// Schnorr tweak
     const aux_random = "b0d8d9a460ddcea7ae5dc37a1b5511eb2ab829abe9f2999e490beba20ff3509a".decode;
     const msg_hash   = "1bd69c075dd7b78c4f20a698b22a3fb9d7461525c39827d6aaf7a1628be0a283".decode;
     const secret_key = "e46b4b2b99674889342c851f890862264a872d4ac53a039fbdab91fd68ed4e71".decode;
-    auto crypt = new NativeSecp256k1Schnorr;
+    auto crypt = new NativeSecp256k1;
     //secp256k1_keypair keypair;
     ubyte[] keypair;
     crypt.createKeyPair(secret_key, keypair);
@@ -459,10 +486,6 @@ unittest { /// Schnorr tweak
 
     const tweakked_pubkey_from_keypair = crypt.getPubkey(tweakked_keypair);
    
-    //writefln(" tweakked = %(%02x%)", tweakked_pubkey_from_keypair);
-    //writefln("  pubkey = %(%02x%)", tweakked_pubkey);
-
-
     assert(tweakked_pubkey == tweakked_pubkey_from_keypair, "The tweakked pubkey should be the same as the keypair tweakked pubkey");
 
     const signature = crypt.sign(msg_hash, keypair, aux_random);

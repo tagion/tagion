@@ -64,6 +64,8 @@ mixin Main!(_main, "tagionwave");
 
 int _main(string[] args) {
     immutable program = args[0];
+    string bootkeys_path;
+    string[] bootkeys; /// In mode 0  node_name:password
     if (geteuid == 0) {
         stderr.writeln("FATAL: YOU SHALL NOT RUN THIS PROGRAM AS ROOT");
         return 1;
@@ -109,6 +111,7 @@ int _main(string[] args) {
             "option", "Set an option", &override_options,
             "fail-fast", "Set the fail strategy, fail-fast=%s".format(fail_fast), &fail_fast,
             "nodeopts", "Generate single node opts files for mode0", &mode0_node_opts_path,
+            "p", "Bootkeys for the node/nodes name:password", &bootkeys,
             "m|monitor", "Enable the monitor", &monitor,
     );
 
@@ -273,7 +276,7 @@ int _main(string[] args) {
         }
 
         db.close;
-        network_mode0(node_options, supervisor_handles, doc);
+        network_mode0(node_options, supervisor_handles, bootkeys_path, bootkeys, doc);
 
         if (mode0_node_opts_path) {
             foreach (i, opt; node_options) {
@@ -330,8 +333,12 @@ int _main(string[] args) {
     return 0;
 }
 
-int network_mode0(const(Options)[] node_options, ref ActorHandle[] supervisor_handles, Document epoch_head = Document
-        .init) {
+int network_mode0(
+        const(Options)[] node_options,
+        ref ActorHandle[] supervisor_handles,
+        string bootkeys_path,
+        string[] bootkeys,
+        Document epoch_head = Document.init) {
 
     import std.range : zip;
     import tagion.crypto.Types;
@@ -347,9 +354,14 @@ int network_mode0(const(Options)[] node_options, ref ActorHandle[] supervisor_ha
     Node[] nodes;
 
     foreach (i, opts; node_options) {
-        auto net = new StdSecureNet();
-        net.generateKeyPair(opts.task_names.supervisor);
-
+        StdSecureNet net;
+        if (bootkeys_path.empty) {
+            net = new StdSecureNet;
+            net.generateKeyPair(opts.task_names.supervisor);
+        }
+        else {
+            
+        }
         scope (exit) {
             net = null;
         }
