@@ -9,6 +9,7 @@ import std.getopt;
 import std.path;
 import std.range;
 import std.stdio;
+import std.random;
 import std.typecons : Tuple;
 import tagion.behaviour;
 import tagion.communication.HiRPC;
@@ -71,25 +72,49 @@ int _main(string[] args) {
     check(wallet_pins.length == wallet_config_files.length, "wallet configs and wallet pins were not the same amount");
 
     WalletOptions[] wallet_options;
-    WalletInterface[] wallet_interfaces;
+    WalletInterface*[] wallet_interfaces;
     foreach (i, c; wallet_config_files) {
         WalletOptions opts;
         opts.load(c);
         wallet_options ~= opts;
-        auto wallet_interface = WalletInterface(opts);
+        auto wallet_interface = new WalletInterface(opts);
         check(wallet_interface.load, "Wallet %s could not be loaded".format(i));
         check(wallet_interface.secure_wallet.login(wallet_pins[i]), "Wallet %s, %s, %s not logged in".format(i, wallet_pins[i], c));
         wallet_interfaces ~= wallet_interface;
         writefln("Wallet logged in %s", wallet_interface.secure_wallet.isLoggedin);
     }
 
+    auto rnd = Random(unpredictableSeed);
+    void pickWallets(WalletInterface*[] interfaces, out WalletInterface* wallet1, out WalletInterface* wallet2)
+    in(interfaces.length >= 2) 
+    out(; wallet1 != wallet2)
+    do {
+        ulong index1 = uniform(0, interfaces.length, rnd);
+        ulong index2;
+        do {
+            index2 = uniform(0, interfaces.length, rnd);
+        } while(index1 == index2);
+
+        wallet1 = interfaces[index1];
+        wallet2 = interfaces[index2];
+    }
+
     int run_counter;
+    scope(exit) {
+        writefln("Made %s transactions", run_counter);
+    }
+
     while (true) {
-    auto operational_feature = automation!operational;
-    operational_feature.SendNContractsFromwallet1Towallet2(wallet_interfaces, sendkernel);
-    operational_feature.run;
-    run_counter++;
-    Thread.sleep(1.seconds);
+        auto operational_feature = automation!operational;
+        WalletInterface* receiver;
+        WalletInterface* sender;
+        pickWallets(wallet_interfaces, receiver, sender);
+        assert(receiver != sender);
+
+        operational_feature.SendNContractsFromwallet1Towallet2(sender, receiver, sendkernel);
+        operational_feature.run;
+        run_counter++;
+        Thread.sleep(1.seconds);
     }
     return 0;
 }
@@ -106,14 +131,15 @@ alias FeatureContext = Tuple!(
 @safe @Scenario("send N contracts from `wallet1` to `wallet2`",
         [])
 class SendNContractsFromwallet1Towallet2 {
-    WalletInterface[] wallets;
+    WalletInterface*[] wallets;
     bool sendkernel;
     bool send;
 
     TagionCurrency[] wallet_amounts;
 
-    this(WalletInterface[] wallets, bool sendkernel) {
-        this.wallets = wallets;
+    this(ref WalletInterface* sender, WalletInterface* receiver, bool sendkernel) {
+        this.wallets ~= sender;
+        this.wallets ~= receiver;
         this.sendkernel = sendkernel;
         this.send = !sendkernel;
     }
