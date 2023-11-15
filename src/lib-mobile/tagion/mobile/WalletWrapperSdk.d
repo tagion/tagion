@@ -984,7 +984,7 @@ struct WalletStorage {
             auto _wallet = path(walletfile).fread!RecoverGenerator;
             auto _account = path(accountfile).fread!AccountDetails;
 
-            if (_wallet.net !is null) {
+            if (wallet.net !is null) {
                 auto __net = cast(shared(StdSecureNet)) wallet.net;
                 scope(exit) {
                     __net = null;
