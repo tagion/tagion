@@ -236,9 +236,7 @@ struct ActorHandle {
     private Tid _tid;
     /// the tid of the spawned task
     Tid tid() {
-        if (_tid is Tid.init) {
-            _tid = concurrency.locate(task_name);
-        }
+        _tid = concurrency.locate(task_name);
         return _tid;
     }
 
@@ -253,11 +251,10 @@ struct ActorHandle {
     /// Send a message to this task
     void send(T...)(T args) @trusted {
         try {
-            concurrency.send(tid, args);
+            concurrency.send(_tid, args);
         }
         catch(AssertError _) {
-            _tid = Tid.init;
-            collectException!AssertError(concurrency.send(tid, args));
+            concurrency.send(tid, args).collectException!AssertError;
         }
     }
 }
