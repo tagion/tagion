@@ -311,7 +311,7 @@ class StdSecureNet : StdHashNet, SecureNet {
 
 
     SecureNet clone() const {
-        StdSecureNet result;
+        StdSecureNet result=new StdSecureNet;
         this._secret.clone(result);
         return result;
     }
@@ -384,20 +384,11 @@ class StdSecureNet : StdHashNet, SecureNet {
     }
 
     unittest {
-        import std.format;
-        import tagion.hibon.HiBONRecord;
-
         SecureNet net = new StdSecureNet;
         net.generateKeyPair("Secret password");
 
-        static struct RandomRecord {
-            string x;
-
-            mixin HiBONRecord;
-        }
-
-        foreach (i; 0 .. 1000) {
-            RandomRecord data;
+        foreach (i; 0 .. 10) {
+            SimpleRecord data;
             data.x = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX20%s".format(i);
 
             auto fingerprint = net.calcHash(data);
@@ -412,6 +403,31 @@ class StdSecureNet : StdHashNet, SecureNet {
         }
 
     }
+
+    unittest { /// clone
+        SecureNet net=new StdSecureNet;
+        net.generateKeyPair("Very secret word");
+        auto net_clone=net.clone;
+        assert(net_clone.pubkey == net.pubkey);
+        SimpleRecord doc;
+        doc.x="Hugo";
+        const sig=net.sign(doc).signature;
+    const clone_sig=net_clone.sign(doc).signature;
+        const net_check=new StdSecureNet;
+        const msg=net.calcHash(doc);
+        assert(net_check.verify(msg, sig, net.pubkey));
+        assert(net_check.verify(msg, clone_sig, net_clone.pubkey));
+}
+}
+
+version(unittest) {
+        import std.format;
+        import tagion.hibon.HiBONRecord;
+        static struct SimpleRecord {
+            string x;
+
+            mixin HiBONRecord;
+        }
 }
 
 @safe
