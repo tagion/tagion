@@ -56,17 +56,12 @@ class StdHashNet : HashNet {
 }
 
 alias StdSecureNetSchnorr = StdSecureNetT!true;
-alias StdSecureNetECDSA = StdSecureNetT!false;
+//alias StdSecureNetECDSA = StdSecureNetT!false;
 alias StdSecureNet = StdSecureNetT!(!ver.SECP256K1_ECDSA);
 
 @safe
 class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
-    static if (Schnorr) {
-        import tagion.crypto.secp256k1.NativeSecp256k1Musig : Secp256k1 = NativeSecp256k1Musig;
-    }
-    else {
-        import tagion.crypto.secp256k1.NativeSecp256k1ECDSA : Secp256k1 = NativeSecp256k1ECDSA;
-    }
+        import tagion.crypto.secp256k1.NativeSecp256k1; //: NativeSecp256k1 = NativeNativeSecp256k1Musig;
     import std.format;
     import std.string : representation;
     import tagion.basic.ConsensusExceptions;
@@ -110,31 +105,11 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
         return result;
     }
 
-    final Pubkey  pubkeyAggregate(const(ubyte[][]) pubkeys) const {
-        static if (Schnorr) {
-            const result= crypt.pubkeyAggregate(pubkeys);
-            check(result !is null, ConsensusFailCode.SECURITY_PUBKEY_KEY_INVALID);
-            return Pubkey(result);    
-        }
-        assert(0,
-                format("%s does not support %s", typeof(this).stringof, __FUNCTION__));
-    }
-
-    final Signature signatureAggregate(const(ubyte[][]) signatures) const {
-        static if(Schnorr) {
-            const result=crypt.signatureAggregate(signatures);
-            check(result !is null, ConsensusFailCode.SECURITY_PRIVATE_KEY_INVALID);
-           return Signature(result); 
-        }
-        assert(0,
-                format("%s does not support %s", typeof(this).stringof, __FUNCTION__));
-
-}
-    const Secp256k1 crypt;
+    const NativeSecp256k1 crypt;
 
     bool verify(const Fingerprint message, const Signature signature, const Pubkey pubkey) const {
         consensusCheck!(SecurityConsensusException)(
-                signature.length == Secp256k1.SIGNATURE_SIZE,
+                signature.length == NativeSecp256k1.SIGNATURE_SIZE,
                 ConsensusFailCode.SECURITY_SIGNATURE_SIZE_FAULT);
         return crypt.verify(cast(Buffer) message, cast(Buffer) signature, cast(Buffer) pubkey);
     }
@@ -342,7 +317,7 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
     }
 
     this() nothrow {
-        crypt = new Secp256k1;
+        crypt = new NativeSecp256k1;
     }
 
     this(shared(StdSecureNetT) other_net) @trusted {
