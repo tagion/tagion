@@ -110,16 +110,26 @@ class StdSecureNetT(bool Schnorr) : StdHashNet, SecureNet {
         return result;
     }
 
-    final Pubkey  aggregatePubkey(const(ubyte[][]) pubkeys) const {
+    final Pubkey  pubkeyAggregate(const(ubyte[][]) pubkeys) const {
         static if (Schnorr) {
-            const result= crypt.musigPubkeyAggregated(pubkeys);
-            check(result !is null, ConsensusFailCode.SECURITY_PRIVATE_KEY_INVALID);
+            const result= crypt.pubkeyAggregate(pubkeys);
+            check(result !is null, ConsensusFailCode.SECURITY_PUBKEY_KEY_INVALID);
             return Pubkey(result);    
         }
         assert(0,
                 format("%s does not support %s", typeof(this).stringof, __FUNCTION__));
     }
 
+    final Signature signatureAggregate(const(ubyte[][]) signatures) const {
+        static if(Schnorr) {
+            const result=crypt.signatureAggregate(signatures);
+            check(result !is null, ConsensusFailCode.SECURITY_PRIVATE_KEY_INVALID);
+           return Signature(result); 
+        }
+        assert(0,
+                format("%s does not support %s", typeof(this).stringof, __FUNCTION__));
+
+}
     const Secp256k1 crypt;
 
     bool verify(const Fingerprint message, const Signature signature, const Pubkey pubkey) const {

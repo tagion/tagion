@@ -84,13 +84,13 @@ int _main(string[] args) {
     }
 
     int run_counter;
-    // while (true) {
+    while (true) {
     auto operational_feature = automation!operational;
     operational_feature.SendNContractsFromwallet1Towallet2(wallet_interfaces, sendkernel);
     operational_feature.run;
     run_counter++;
     Thread.sleep(1.seconds);
-    // }
+    }
     return 0;
 }
 
@@ -174,7 +174,7 @@ class SendNContractsFromwallet1Towallet2 {
 
     @When("all the contracts have been executed")
     Document executed() @trusted {
-        Thread.sleep(15.seconds);
+        Thread.sleep(20.seconds);
         return result_ok;
     }
 

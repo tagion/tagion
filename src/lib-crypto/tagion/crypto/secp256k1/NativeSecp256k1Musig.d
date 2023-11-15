@@ -10,7 +10,7 @@ import tagion.crypto.secp256k1.c.secp256k1_extrakeys;
 import tagion.crypto.secp256k1.NativeSecp256k1Interface;
 immutable(ubyte[]) SECP256K1_SCHNORRSIG_EXTRAPARAMS_MAGIC = [ 0xda, 0x6f, 0xb3, 0x8c ];
 
-void parial_sig_from_sig(ref secp256k1_musig_partial_sig partial_sig, const(ubyte[]) signature) nothrow 
+void partial_sig_from_sig(ref secp256k1_musig_partial_sig partial_sig, const(ubyte[]) signature) nothrow 
 in(signature.length==32)
 do {
     partial_sig.data[0..SECP256K1_SCHNORRSIG_EXTRAPARAMS_MAGIC.length]=SECP256K1_SCHNORRSIG_EXTRAPARAMS_MAGIC;
@@ -99,48 +99,40 @@ class NativeSecp256k1Musig : NativeSecp256k1Schnorr {
 
     }
 
-    version (none) @trusted
-    bool musigPubkeyAggregated(
-            ref secp256k1_pubkey pubkey_agg,
-            const(ubyte[][]) pubkeys) const
-    in (pubkeys.all!((pkey) => pkey.length == PUBKEY_SIZE))
-    do {
-        secp256k1_pubkey[] xy_pubkeys;
-        xy_pubkeys.length = pubkeys.length;
-
-        foreach (ref xy_pubkey, pubkey; lockstep(xy_pubkeys, pubkeys)) {
-            const ret = secp256k1_ec_pubkey_parse(_ctx, &xy_pubkey, &pubkey[0], pubkey.length);
-            if (ret == 0) {
-                return false;
-            }
+    @trusted 
+    immutable(ubyte[]) signatureAggregate(const(ubyte[][]) signatures) const 
+in(signatures.all!(sig => sig.length == SIGNATURE_SIZE))
+do
+    {
+      
+    secp256k1_musig_session session;
+        int nonce_parity;
+        if( secp256k1_musig_nonce_parity(
+            _ctx,
+            &nonce_parity,
+            &session) == 0) {
+            return null;
         }
-        return musigPubkeyAggregated(pubkey_agg, xy_pubkeys);
-    }
-    /**
-    Ditto except that it produce a cache which can be used for musig signing
-*/
-    @trusted
-    bool musigPubkeyAggregated(
-            ref secp256k1_musig_keyagg_cache cache,
-            ref secp256k1_pubkey pubkey_agg,
-            const(secp256k1_pubkey[]) pubkeys) const {
-        const _pubkeys = pubkeys.map!((ref pkey) => &pkey).array;
-        int ret = secp256k1_musig_pubkey_agg(
-                _ctx,
-                null,
-                null,
-                &cache,
-                &_pubkeys[0],
-                pubkeys.length);
-        if (ret != 0) {
-            ret = secp256k1_musig_pubkey_get(_ctx, &pubkey_agg, &cache);
+       
+        secp256k1_musig_partial_sig[] partial_sigs;
+        partial_sigs.length=signatures.length;
+        iota(signatures.length)
+        .each!((index) => 
+        partial_sig_from_sig(partial_sigs[index], signatures[index]));
+        auto _partial_sigs=partial_sigs.map!((ref sig) => &sig).array; 
+        ubyte[SIGNATURE_SIZE] signature;
+        if (secp256k1_musig_partial_sig_agg(
+            _ctx,
+            &signature[0],
+            &session,
+            &_partial_sigs[0],
+            partial_sigs.length) == 0) {
+        return null;    
         }
-        return ret != 0;
-
+        return signature.idup;
     }
-
     @trusted
-    immutable(ubyte[]) musigPubkeyAggregated(const(ubyte[][]) pubkeys) const
+    immutable(ubyte[]) pubkeyAggregate(const(ubyte[][]) pubkeys) const
     
     do {
         secp256k1_pubkey[] _pubkeys;
@@ -164,7 +156,31 @@ class NativeSecp256k1Musig : NativeSecp256k1Schnorr {
         return result.idup;
     }
 
+         
+    /**
+    Ditto except that it produce a cache which can be used for musig signing
+*/
     @trusted
+    bool musigPubkeyAggregated(
+            ref secp256k1_musig_keyagg_cache cache,
+            ref secp256k1_pubkey pubkey_agg,
+            const(secp256k1_pubkey[]) pubkeys) const {
+        const _pubkeys = pubkeys.map!((ref pkey) => &pkey).array;
+        int ret = secp256k1_musig_pubkey_agg(
+                _ctx,
+                null,
+                null,
+                &cache,
+                &_pubkeys[0],
+                pubkeys.length);
+        if (ret != 0) {
+            ret = secp256k1_musig_pubkey_get(_ctx, &pubkey_agg, &cache);
+        }
+        return ret != 0;
+
+    }
+
+   @trusted
     bool musigPubkeyTweakAdd(
             ref secp256k1_musig_keyagg_cache cache,
             const(ubyte[]) tweak,

@@ -69,6 +69,7 @@ enum ConsensusFailCode {
     SECURITY_PUBLIC_KEY_SERIALIZE,
     SECURITY_PUBLIC_KEY_AGGREGATE,
     SECURITY_PRIVATE_KEY_INVALID,
+    SECURITY_PUBKEY_KEY_INVALID,
 
     SECURITY_FAILD_TO_CREATE_KEYPAIR,
     SECURITY_FAILD_TO_SIGN_MESSAGE,
@@ -248,6 +249,7 @@ class SmartScriptException : ConsensusException {
             SECURITY_PUBLIC_KEY_TWEAK_ADD_FAULT         : "Failed to tweak add public key",
             SECURITY_PUBLIC_KEY_TWEAK_MULT_FAULT        : "Failed to tweak mult public key",
             SECURITY_PRIVATE_KEY_INVALID                : "Invalid private key",
+            SECURITY_PUBKEY_KEY_INVALID                 : "Invalid pubkey key",
             
             SECURITY_FAILD_TO_CREATE_KEYPAIR            : "Faild to create keypair",
             SECURITY_FAILD_TO_SIGN_MESSAGE              : "Faild to sign message",
