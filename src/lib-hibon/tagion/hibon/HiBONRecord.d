@@ -1519,3 +1519,31 @@ unittest { /// Reseved keys and types
     }
 
 }
+
+
+
+
+@safe
+unittest {
+    import tagion.crypto.Types : Fingerprint;
+
+    static struct M {
+        @label("wowo") int test;
+        @label("something") Fingerprint fingerprint;
+        mixin HiBONRecord;
+    }
+
+    M _m;
+    _m.test = 2;
+    const _doc = _m.toDoc; 
+    writefln("DOC: %s", _doc.toPretty);
+    assert(M(_doc).fingerprint is Fingerprint.init); // fails
+
+    M m;
+    m.test = 2;
+    m.fingerprint = Fingerprint.init;
+    const doc = m.toDoc;
+
+    writefln("DOCUMENT: %s", doc.toPretty);
+    assert(M(doc).fingerprint is Fingerprint.init); // fails
+}
