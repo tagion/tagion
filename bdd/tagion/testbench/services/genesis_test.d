@@ -95,7 +95,7 @@ class NetworkRunningWithGenesisBlockAndEpochChain {
             auto epochs = recorder[]
                     .filter!(a => a.filed.isRecord!Epoch)
                     .map!(a => Epoch(a.filed))
-                    .filter!(e => e.previous !is Fingerprint.init)
+                    .filter!(e => !e.previous.empty)
                     .array;
 
             histories[task_name].epochs ~= epochs;
