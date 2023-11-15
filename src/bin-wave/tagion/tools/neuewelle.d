@@ -245,7 +245,6 @@ int _main(string[] args) {
                     node_opt.dart.dart_path)));
             writefln("copying file %s to %s", db.filename, new_filename);
             node_opt.dart.dart_path.copy(new_filename);
-
         }
 
         // we only need to read one head since all bullseyes are the same:

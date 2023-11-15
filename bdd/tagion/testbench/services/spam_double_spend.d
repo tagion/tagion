@@ -163,7 +163,7 @@ import tagion.actor;
 
 @safe
 struct SpamWorker {
-    import tagion.hashgraph.Refinement : FinishedEpoch;
+    import tagion.hashgraph.Refinement;
 
     void task(immutable(Options) opts, immutable(SecureNet) net, immutable(SignedContract) signed_contract) {
 
@@ -173,7 +173,7 @@ struct SpamWorker {
 
         writefln("registrering subscription mask %s", thisActor.task_name);
         log.registerSubscriptionTask(thisActor.task_name);
-        submask.subscribe("epoch_creator/epoch_created");
+        submask.subscribe(StdRefinement.epoch_created);
         long epoch_number;
 
         while (!thisActor.stop && epoch_number is long.init) {
@@ -196,7 +196,7 @@ struct SpamWorker {
                 writefln("epoch_number %s, CURRENT EPOCH %s", epoch_number, current_epoch_number);
             }
         }
-        submask.unsubscribe("epoch_creator/epoch_created");
+        submask.unsubscribe(StdRefinement.epoch_created);
         thisActor.stop = true;
     }
 

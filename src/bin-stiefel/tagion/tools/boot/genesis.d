@@ -13,6 +13,7 @@ import tagion.tools.Basic;
 import tagion.tools.toolsexception;
 import tagion.utils.StdTime;
 
+
 @safe:
 Document[] createGenesis(const(string[]) nodes_param, Document testamony) {
     import std.stdio;
