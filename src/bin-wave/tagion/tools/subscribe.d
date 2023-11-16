@@ -44,9 +44,15 @@ struct Subscription {
         int rc;
         foreach (_; 0 .. max_attempts) {
             rc = sock.dial(address);
-            if (rc == 0) {
+            switch (rc) with (nng_errno) {
+            case NNG_OK:
                 _isDial = true;
                 return result(true);
+            case NNG_ECONNREFUSED:
+                nng_sleep(msecs(100));
+                continue;
+            default:
+                return Result!bool(false, nng_errstr(rc));
             }
         }
         return Result!bool(false, nng_errstr(rc));
