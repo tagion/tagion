@@ -33,6 +33,7 @@ import tagion.wallet.SecureWallet : SecureWallet;
 import tagion.basic.Types : Buffer;
 import tagion.utils.StdTime;
 import tagion.communication.HiRPC;
+import tagion.hibon.HiBONtoText;
 
 enum EPOCH_TIMEOUT = 15;
 alias StdSecureWallet = SecureWallet!StdSecureNet;
@@ -87,6 +88,8 @@ class NetworkRunningWithGenesisBlockAndEpochChain {
         amount = 500.TGN;
         auto bill_to_pay = TagionBill(amount, currentTime, Pubkey([0]), Buffer.init);
         check(wallet1.createPayment([bill_to_pay], signed_contract, fee).value, "Error creating payment");
+        check(signed_contract.contract.inputs.length == 1, format("should only contain one bill had %s", signed_contract.contract.inputs));
+
         auto wallet1_hirpc = HiRPC(wallet1.net);
         auto hirpc_submit = wallet1_hirpc.submit(signed_contract);
 
@@ -95,7 +98,6 @@ class NetworkRunningWithGenesisBlockAndEpochChain {
         }
 
         writefln("signed_contract: %s", signed_contract.toPretty);
-
 
 
         submask.subscribe(modify_log);
@@ -164,6 +166,7 @@ class NetworkRunningWithGenesisBlockAndEpochChain {
             auto prev_epoch = ref_epochs[i-1];
 
             writefln("comparing %s", i);
+            writefln("prev epoch: %s \n hash_of_prev: %s\n new epoch: %s", prev_epoch.toPretty, net.calcHash(prev_epoch).encodeBase64, ref_epoch.toPretty);
             check(ref_epoch.epoch_number == prev_epoch.epoch_number +1, "The epoch number was not correctly incremented");
             auto previous = net.calcHash(prev_epoch);
             check(previous == ref_epoch.previous, format("The fingerprint was not correct. should be %(%02x%) was %(%02x%)", previous, ref_epoch.previous));
@@ -174,19 +177,24 @@ class NetworkRunningWithGenesisBlockAndEpochChain {
                 
                 // this was the epoch where our tx should have gone through
                 check(ref_epoch.globals.total < prev_epoch.globals.total, format("the total was not decreased previous %s current %s", prev_epoch.globals.total, ref_epoch.globals.total));
-                auto delta_bills = PayScript(signed_contract.contract.script).outputs.length - signed_contract.contract.inputs.length; 
+
+
+                const(TagionBill)[] outputs = PayScript(signed_contract.contract.script).outputs;
+                const(TagionBill)[] inputs = [wallet1.account.bills.front];
+                auto delta_bills = outputs.length - inputs.length; 
                 check(ref_epoch.globals.burnt_bills - 1 == prev_epoch.globals.burnt_bills, "the contract should have burned a bill");
-                check(prev_epoch.globals.total_burned + fee.axios == ref_epoch.globals.total_burned, "the burned amount was not correct");
+
+                TagionCurrency burned = wallet1.calcTotal(inputs) - wallet1.calcTotal(outputs);
+                check(burned > 0, "should have burned more for the contract");
+
+                check(prev_epoch.globals.total_burned + wallet1.calcTotal(inputs).units == ref_epoch.globals.total_burned, format("the burned amount was not correct. prev_epoch burned: %s, new_epoch burned %s burned units %s", prev_epoch.globals.total_burned, ref_epoch.globals.total_burned, burned.units));
                 check(ref_epoch.globals.number_of_bills - delta_bills == prev_epoch.globals.number_of_bills, "We should have updated the number of bills");
             }
-            
-            // check(ref_epoch.globals == prev_epoch.globals, "The globals should not have changed since no tx has gone through");
-
 
             foreach(hist; sorted_histories.byValue) {
-                if (hist.epochs.length < i-1) {
+                if (hist.epochs.length-1 < i) {
                     continue;
-                }
+                } 
                 check(hist.epochs[i] == ref_epoch, "The epoch was different across the nodes");
             }
         }
