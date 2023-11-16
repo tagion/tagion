@@ -155,12 +155,17 @@ struct TranscriptService {
             /*
                 The vote array is already updated. We must go through all the different vote indices and update the epoch that was stored in the dart if any new votes are found.
             */
+            log("VOTES LENGTH BEFORE=%s", votes.byKey.array);
             foreach(v; votes.byKeyValue) {
                 // add the new signatures to the epoch. We only want to do it if there are new signatures
                 if (v.value.init_bullseye || v.value.epoch.signs.length != v.value.votes.length) {
                     v.value.init_bullseye = false;
                     // add the signatures to the epoch. Only add them if the signature match ours
                     foreach(single_vote; v.value.votes) {
+                        // check that we have not already added the signature
+                        if (v.value.epoch.signs.canFind(single_vote.signed_bullseye)) {
+                            continue;
+                        }
                         if (single_vote.verifyBullseye(net, v.value.epoch.bullseye)) {
                             v.value.epoch.signs ~= single_vote.signed_bullseye;
                         }
@@ -182,7 +187,7 @@ struct TranscriptService {
                 }
 
             }
-            log("VOTES LENGTH=%s", votes.length);
+            log("VOTES LENGTH AFTER=%s", votes.length);
 
 
 
