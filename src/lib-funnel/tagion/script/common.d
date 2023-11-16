@@ -246,6 +246,14 @@ struct ConsensusVoting {
 
 @recordType("@Locked")
 struct LockedArchives {
-    @label(StdNames.locked_epoch) long epoch;
-    @label("outputs") DARTIndex[] locked_outputs;
+    @label(StdNames.locked_epoch) long epoch_number;
+    @label("outputs") const(DARTIndex)[] locked_outputs;
+    mixin HiBONRecord!(q{
+        this(long epoch_number, const(DARTIndex)[] locked_outputs) {
+            this.epoch_number = epoch_number;
+            this.locked_outputs = locked_outputs;
+        }
+
+
+    });
 }
