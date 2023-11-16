@@ -312,16 +312,18 @@ struct TranscriptService {
             );
 
             
+
+            recorder.insert(new_head, Archive.Type.ADD);
+            recorder.insert(non_voted_epoch, Archive.Type.ADD);
+
             immutable(DARTIndex)[] locked_indexes = recorder[]
                 .filter!(a => a.type == Archive.Type.ADD)
                 .map!(a => net.dartIndex(a.filed))
                 .array;
 
             LockedArchives outputs = LockedArchives(res.id, locked_indexes);
-
-            recorder.insert(new_head, Archive.Type.ADD);
-            recorder.insert(non_voted_epoch, Archive.Type.ADD);
             recorder.insert(outputs, Archive.Type.ADD);
+
             last_head = new_head;
             last_globals = new_globals;
 
