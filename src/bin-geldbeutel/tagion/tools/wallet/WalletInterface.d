@@ -206,10 +206,6 @@ HiRPC.Receiver sendDARTHiRPC(string address, HiRPC.Sender dart_req, HiRPC hirpc,
     return hirpc.receive(received_doc);
 }
 
-/**
- * \struct WalletInterface
- * Interface struct for wallet
- */
 struct WalletInterface {
     const(WalletOptions) options;
     alias StdSecureWallet = SecureWallet!StdSecureNet;
@@ -217,7 +213,6 @@ struct WalletInterface {
     Invoices payment_requests;
     Quiz quiz;
     this(const WalletOptions options) {
-        //this.secure_wallet=secure_wallet;
         this.options = options;
     }
 

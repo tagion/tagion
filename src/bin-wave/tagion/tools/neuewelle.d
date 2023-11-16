@@ -38,6 +38,10 @@ import tagion.tools.Basic;
 import tagion.tools.revision;
 import tagion.utils.JSONCommon;
 import tagion.utils.getopt;
+import tagion.tools.toolsexception;
+import tagion.tools.wallet.WalletInterface;
+import tagion.tools.wallet.WalletOptions;
+import tagion.utils.Term;
 
 static abort = false;
 private extern (C)
@@ -65,7 +69,17 @@ mixin Main!(_main, "tagionwave");
 int _main(string[] args) {
     immutable program = args[0];
     string bootkeys_path;
-    string[] bootkeys; /// In mode 0  node_name:password
+    /*
+    * Boot key format expected for mode0
+    * nodename0:pincode0
+    * nodename1:pincode1
+    * nodename2:pincode2
+    * ...      : ...
+    * The directory where the wallet config_file should be placed is 
+    * <bootkeys_path>/<nodenameX>/wallet.json
+    *
+    */
+    File fin=stdin; /// Console input for the bootkeys
     if (geteuid == 0) {
         stderr.writeln("FATAL: YOU SHALL NOT RUN THIS PROGRAM AS ROOT");
         return 1;
@@ -111,7 +125,6 @@ int _main(string[] args) {
             "option", "Set an option", &override_options,
             "fail-fast", "Set the fail strategy, fail-fast=%s".format(fail_fast), &fail_fast,
             "nodeopts", "Generate single node opts files for mode0", &mode0_node_opts_path,
-            "p", "Bootkeys for the node/nodes name:password", &bootkeys,
             "m|monitor", "Enable the monitor", &monitor,
     );
 
@@ -276,7 +289,7 @@ int _main(string[] args) {
         }
 
         db.close;
-        network_mode0(node_options, supervisor_handles, bootkeys_path, bootkeys, doc);
+        network_mode0(node_options, supervisor_handles, bootkeys_path, fin, doc);
 
         if (mode0_node_opts_path) {
             foreach (i, opt; node_options) {
@@ -337,7 +350,7 @@ int network_mode0(
         const(Options)[] node_options,
         ref ActorHandle[] supervisor_handles,
         string bootkeys_path,
-        string[] bootkeys,
+        File fin,
         Document epoch_head = Document.init) {
 
     import std.range : zip;
@@ -352,25 +365,42 @@ int network_mode0(
     }
 
     Node[] nodes;
-
+    string[] args;
+   // auto args=fin.byLine.split(":");
     foreach (i, opts; node_options) {
         StdSecureNet net;
+        scope (exit) {
+            net = null;
+        }
+
         if (bootkeys_path.empty) {
             net = new StdSecureNet;
             net.generateKeyPair(opts.task_names.supervisor);
         }
         else {
-            
+            WalletOptions wallet_options;
+            foreach(tries; 0..3) {
+            if (args.front.length != 2) {
+                writefln("%$1sBad format %$3s expected nodename:pincode%$2s", RED, RESET, args.front); 
+            }
+                    string wallet_config_file;
+            //const wallet_config_file=buildPath(bootkeys_path, args.front[0], default_wallet_config_filename);
+            if (!wallet_config_file.exists) {
+              //  writefln("%$1sBoot key file %
+            }
+            check(wallet_config_file.exists, format("Bootkey file %s not found", wallet_config_file));
+            wallet_options.load(wallet_config_file);
+            auto wallet_interface=WalletInterface(wallet_options);
+            wallet_interface.secure_wallet.login(args[1]); 
         }
-        scope (exit) {
-            net = null;
         }
-
         shared shared_net = (() @trusted => cast(shared) net)();
 
         nodes ~= Node(opts, shared_net, net.pubkey);
     }
-
+    if (!bootkeys_path.empty) {
+        return 0;
+    }
     import tagion.hibon.HiBONtoText;
 
     if (epoch_head is Document.init) {

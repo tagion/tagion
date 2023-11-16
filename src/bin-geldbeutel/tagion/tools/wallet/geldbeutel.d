@@ -72,7 +72,7 @@ int _main(string[] args) {
     WalletInterface.Switch wallet_switch;
     const user_config_file = args
         .countUntil!(file => file.hasExtension(FileExtension.json) && file.exists);
-    auto config_file = (user_config_file < 0) ? "wallet.json" : args[user_config_file];
+    auto config_file = (user_config_file < 0) ? default_wallet_config_filename : args[user_config_file];
     if (config_file.exists) {
         options.load(config_file);
     }
