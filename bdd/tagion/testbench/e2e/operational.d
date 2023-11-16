@@ -14,10 +14,11 @@ import std.typecons : Tuple;
 import tagion.behaviour;
 import tagion.communication.HiRPC;
 import tagion.hibon.Document;
+import tagion.hibon.HiBONRecord;
 import tagion.script.TagionCurrency;
 import tagion.script.common;
 import tagion.testbench.tools.Environment;
-import tagion.tools.Basic;
+import tagion.tools.Basic : Main;
 import tagion.tools.wallet.WalletInterface;
 import tagion.tools.wallet.WalletOptions : WalletOptions;
 import tagion.utils.JSONCommon;
@@ -113,9 +114,13 @@ int _main(string[] args) {
         assert(receiver != sender);
 
         operational_feature.SendNContractsFromwallet1Towallet2(sender, receiver, sendkernel);
-        auto result = operational_feature.run;
-        result.writeln;
+        auto feat_group = operational_feature.run;
         run_counter++;
+        if (feat_group.result.hasErrors) {
+            writefln("operational test failed after %s runs", run_counter);
+            return 1;
+        }
+
         Thread.sleep(1.seconds);
     }
     return 0;
@@ -170,7 +175,7 @@ class SendNContractsFromwallet1Towallet2 {
     @When("i send a valid contract from `wallet1` to `wallet2`")
     Document wallet2() @trusted {
         with (wallets[0].secure_wallet) {
-            invoice = createInvoice("Invoice", 700.TGN);
+            invoice = createInvoice("Invoice", 800.TGN);
             registerInvoice(invoice);
         }
 
