@@ -63,6 +63,7 @@ struct TranscriptService {
             const(ConsensusVoting)[] votes;
             bool init_bullseye;
             Epoch epoch;
+            LockedArchives locked_archives;
         }
 
         Votes[long] votes;
@@ -182,6 +183,7 @@ struct TranscriptService {
                         v.value.epoch.previous = previous_epoch;
                         previous_epoch = net.calcHash(v.value.epoch);
                         votes.remove(v.value.epoch.epoch_number);
+                        recorder.insert(v.value.locked_archives, Archive.Type.REMOVE);
                     }
 
                     // add the modified epochs to the recorder.
@@ -308,14 +310,30 @@ struct TranscriptService {
                 TagionDomain,
                 res.id,
             );
+
+            
+            immutable(DARTIndex)[] locked_indexes = recorder[]
+                .filter!(a => a.type == Archive.Type.ADD)
+                .map!(a => net.dartIndex(a.filed))
+                .array;
+
+            LockedArchives outputs = LockedArchives(res.id, locked_indexes);
+
             recorder.insert(new_head, Archive.Type.ADD);
             recorder.insert(non_voted_epoch, Archive.Type.ADD);
+            recorder.insert(outputs, Archive.Type.ADD);
             last_head = new_head;
             last_globals = new_globals;
 
+
+
+            
             Votes new_vote;
             new_vote.epoch = non_voted_epoch;
+            new_vote.locked_archives = outputs;
             votes[non_voted_epoch.epoch_number] = new_vote;
+
+
 
             auto req = dartModifyRR();
             req.id = res.id;
