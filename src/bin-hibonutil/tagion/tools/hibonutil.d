@@ -123,7 +123,7 @@ int _main(string[] args) {
     bool output_dartindex;
     bool ignore;
     string outputfilename;
-    const net=new StdHashNet;
+    const net = new StdHashNet;
     auto logo = import("logo.txt");
 
     GetoptResult main_args;
@@ -179,9 +179,9 @@ int _main(string[] args) {
                     main_args.options);
             return 0;
         }
-                if (output_hash || output_dartindex) {
-                    output_hex=!output_base64;
-                    }
+        if (output_hash || output_dartindex) {
+            output_hex = !output_base64;
+        }
         tools.check(!input_json || !input_text, "Input stream can not be defined as both JSON and text-format");
         if (standard_output || stream_output) {
             vout = stderr;
@@ -200,12 +200,12 @@ int _main(string[] args) {
                 }
             }
             void print(const(Document) doc) {
-                Buffer stream=doc.serialize;
+                Buffer stream = doc.serialize;
                 if (output_hash) {
-                    stream=net.rawCalcHash(stream);
+                    stream = net.rawCalcHash(stream);
                 }
                 else if (output_dartindex) {
-                    stream=cast(Buffer)net.dartIndex(doc);
+                    stream = cast(Buffer) net.dartIndex(doc);
                 }
                 if (output_base64) {
                     fout.writeln(stream.encodeBase64);
@@ -220,7 +220,7 @@ int _main(string[] args) {
                     fout.writeln(json_stringify);
                     return;
                 }
-                fout.rawWrite(doc.serialize);
+                fout.rawWrite(stream);
 
             }
 
@@ -286,14 +286,14 @@ int _main(string[] args) {
                     }
                 }
                 if (output_base64 || output_hex) {
-                        Buffer stream=doc.serialize;
-                if (output_hash) {
-                    stream=net.rawCalcHash(stream);
-                }
-                else if (output_dartindex) {
-                    stream=cast(Buffer)net.dartIndex(doc);
-                }
-                        
+                    Buffer stream = doc.serialize;
+                    if (output_hash) {
+                        stream = net.rawCalcHash(stream);
+                    }
+                    else if (output_dartindex) {
+                        stream = cast(Buffer) net.dartIndex(doc);
+                    }
+
                     const text_output = (output_hex) ? format("%(%02x%)", stream) : stream.encodeBase64;
                     if (standard_output) {
                         writefln("%s", text_output);
