@@ -12,6 +12,11 @@ on:
         required: true
         default: true
         type: boolean
+      backup:
+        description: 'Backup old files'
+        required: true
+        default: true
+        type: boolean
       wallets:
         description: 'How many wallets'
         required: true
@@ -52,7 +57,7 @@ jobs:
           tar -xzf *.tar.gz
 
       - name: Backup old data
-        if: ${{ inputs.clean }}
+        if: ${{ inputs.clean }} && ${{ inputs.backup }}
         run: |
           DIR_EPOCH=$(stat -c%W ~/.local/share/tagion)
           cd ~/.local/share/
