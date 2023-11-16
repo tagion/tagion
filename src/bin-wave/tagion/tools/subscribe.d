@@ -143,9 +143,13 @@ int _main(string[] args) {
             return 1;
         }
 
-        stderr.writefln("Listening on, %s", address);
         auto sub = Subscription(address, tags);
-        sub.dial.get;
+        auto dialed = sub.dial;
+        if (dialed.error) {
+            stderr.writefln("Dial error: %s (%s)", dialed.e.message, address);
+            return 1;
+        }
+        stderr.writefln("Listening on, %s", address);
 
         while (true) {
             auto result = sub.receive;
