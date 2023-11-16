@@ -56,12 +56,12 @@ int _main(string[] args) {
     import tagion.hibon.HiBON;
     import tagion.script.TagionCurrency;
     import tagion.script.common : TagionBill;
-    import tagion.testbench.services.sendcontract;
+    import tagion.testbench.services.genesis_test;
     import tagion.wallet.SecureWallet;
 
     StdSecureWallet[] wallets;
     // create the wallets
-    foreach (i; 0 .. 3) {
+    foreach (i; 0 .. 2) {
         StdSecureWallet secure_wallet;
         secure_wallet = StdSecureWallet(
                 iota(0, 5).map!(n => format("%dquestion%d", i, n)).array,
@@ -86,7 +86,7 @@ int _main(string[] args) {
         foreach (i; 0 .. 3) {
             auto bill = requestAndForce(wallet, 1000.TGN);
             bills ~= bill;
-            total_start_amount += bill.value.axios; 
+            total_start_amount += bill.value.units; 
         }
     }
 
@@ -109,10 +109,6 @@ int _main(string[] args) {
     const number_of_bills = long(bills.length);
 
 
-    const globals = TagionGlobals(total_start_amount, const BigNumber(0), number_of_bills, const long(0));
-
-    const tagion_head = TagionHead(TagionDomain, 0);
-    writefln("CREATED TAGION HEAD: %s", tagion_head.toDoc.encodeBase64);
 
     Pubkey[] keys;
     foreach (i; 0 .. local_options.wave.number_of_nodes) {
@@ -126,10 +122,15 @@ int _main(string[] args) {
 
     HiBON testamony = new HiBON;
     testamony["hola"] = "Hallo ich bin philip. VERY OFFICIAL TAGION GENESIS BLOCK; DO NOT ALTER IN ANY WAYS";
+
+    auto globals = TagionGlobals(total_start_amount, const BigNumber(0), number_of_bills, const long(0));
     const genesis_epoch = GenesisEpoch(0, keys, Document(testamony), currentTime, globals);
+    const tagion_head = TagionHead(TagionDomain, 0);
+    writefln("total start_amount: %s, HEAD: %s \n genesis_epoch: %s",total_start_amount, tagion_head.toPretty, genesis_epoch.toPretty);
 
     recorder.add(tagion_head);
     recorder.add(genesis_epoch);
+
 
     foreach (i; 0 .. local_options.wave.number_of_nodes) {
         immutable prefix = format(local_options.wave.prefix_format, i);
@@ -163,7 +164,7 @@ int _main(string[] args) {
 
 
     auto feature = automation!(genesis_test);
-    feature.NetworkRunningWithGenesisBlockAndEpochChain(node_opts);
+    feature.NetworkRunningWithGenesisBlockAndEpochChain(node_opts, wallets[0], genesis_epoch);
     feature.run;
 
     stopsignal.set;
