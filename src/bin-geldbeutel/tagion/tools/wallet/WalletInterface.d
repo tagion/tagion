@@ -713,7 +713,9 @@ struct WalletInterface {
                 }
                 if (update || trt_update) {
 
-                    const update_net = secure_wallet.net.derive(update_tag.representation);
+                    const update_net = secure_wallet.net.derive(
+                    secure_wallet.net.calcHash(
+                update_tag.representation));
                     const hirpc = HiRPC(update_net);
 
                     const(HiRPC.Sender) getRequest() {
