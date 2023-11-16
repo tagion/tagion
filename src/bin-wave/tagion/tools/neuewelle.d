@@ -120,11 +120,12 @@ int _main(string[] args) {
     string[] override_options;
 
     auto main_args = getopt(args,
-            "v|version", "Print revision information", &version_switch,
+            "version", "Print revision information", &version_switch,
             "O|override", "Override the config file", &override_switch,
             "option", "Set an option", &override_options,
             "fail-fast", "Set the fail strategy, fail-fast=%s".format(fail_fast), &fail_fast,
             "k|keys", "Path to the boot-keys in mode0", &bootkeys_path,
+            "v|verbose", "Enable verbose print-out", &__verbose_switch,
             "n|dry", "Check the parameter without staring the network (dry-run)", &__dry_switch,
             "nodeopts", "Generate single node opts files for mode0", &mode0_node_opts_path,
             "m|monitor", "Enable the monitor", &monitor,
@@ -381,37 +382,52 @@ int network_mode0(
         }
         else {
             WalletOptions wallet_options;
-
+    LoopTry:
             foreach (tries; 1 .. number_of_retry + 1) {
+                verbose("Input boot key %d as nodename:pincode", i);
                 const args = by_line.front.split(":");
+                by_line.popFront;
+                pragma(msg, "Args ", typeof(args));
                 if (args.length != 2) {
-                    writefln("%$1sBad format %$3s expected nodename:pincode%$2s", RED, RESET, args.front);
+                    writefln("%1$sBad format %3$s expected nodename:pincode%2$s", RED, RESET, args.front);
                 }
                 //string wallet_config_file;
-                const wallet_config_file = buildPath(bootkeys_path, args[0], default_wallet_config_filename);
+                const wallet_config_file = buildPath(bootkeys_path, args[0]).setExtension(FileExtension.json);
+                verbose("Wallet path %s", wallet_config_file);
                 if (!wallet_config_file.exists) {
-                    writefln("%$1sBoot key file %$3s not found", wallet_config_file);
+                    writefln("What!!!");
+                    writefln("%1$sBoot key file %3$s not found%2$s", RED, RESET, wallet_config_file);
+                    writefln("Try another node name");
                 }
-                wallet_options.load(wallet_config_file);
-                auto wallet_interface = WalletInterface(wallet_options);
-                wallet_interface.secure_wallet.login(args[1]);
-                by_line.popFront;
-                if (wallet_interface.secure_wallet.isLoggedin) {
-                    net = cast(StdSecureNet) wallet_interface.secure_wallet.net.clone;
-                    break;
+                else {
+                    verbose("Load config");
+                    wallet_options.load(wallet_config_file);
+                    auto wallet_interface = WalletInterface(wallet_options);
+                    verbose("Load wallet");
+                    wallet_interface.load;
+
+                    const loggedin=wallet_interface.secure_wallet.login(args[1]);
+                    if (wallet_interface.secure_wallet.isLoggedin) {
+                        verbose("%1$sNode %3$s successfull%2$s", GREEN, RESET, args[0]);
+                        net = cast(StdSecureNet) wallet_interface.secure_wallet.net.clone;
+                        break LoopTry;
+                    }
+                    else {
+                        writefln("%1$sWrong pincode bootkey %3$s node %4$s%2$s", RED, RESET, i, args[0]);
+                    }
                 }
                 check(tries < number_of_retry, format("Max number of reties is %d", number_of_retry));
 
             }
         }
         if (dry_switch && !bootkeys_path.empty) {
-            writefln("%1$sBoot keys correct%2$s", RED, RESET);
+            writefln("%1$sBoot keys correct%2$s", GREEN, RESET);
         }
         shared shared_net = (() @trusted => cast(shared) net)();
 
         nodes ~= Node(opts, shared_net, net.pubkey);
     }
-    if (!bootkeys_path.empty) {
+    if (dry_switch) {
         return 0;
     }
     import tagion.hibon.HiBONtoText;
