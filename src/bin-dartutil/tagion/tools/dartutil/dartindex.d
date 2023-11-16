@@ -45,19 +45,24 @@ DARTIndex dartIndexDecode(const(HashNet) net, const(char[]) str) {
                         verbose("Htype %s -> %s", type_name, E);
                         static if (E == Type.BINARY) {
                             Buffer buf = list[2].decode;
+                            verbose("Dtype %s name=%s value=%(%02x%)", Document.stringof, name,buf);
                             return net.dartKey(name, buf);
                         }
                         else static if (E == Type.DOCUMENT) {
                             const doc = list[2].fread;
+                            verbose("Dtype %s name=%s value=\n%s", Document.stringof, name,doc.toPretty);
                             return net.dartKey(name, doc.mut);
                         }
                         else static if (E == Type.STRING) {
+                            verbose("Dtype %s name=%s value=%s", string.stringof, name, list[2]);
                             return net.dartKey(name, list[2].idup);
                         }
                         else static if (E == Type.TIME) {
                             import std.datetime;
 
-                            return net.dartKey(name, SysTime.fromISOExtString(list[2]).stdTime);
+                            const val=SysTime.fromISOExtString(list[2]).stdTime;    
+                            verbose("Dtype %s name=%s value=%s", SysTime.stringof, name, val);
+                            return net.dartKey(name,val);
                         }
                         else {
                             alias Value = ValueT!(false, void, void);
@@ -65,6 +70,7 @@ DARTIndex dartIndexDecode(const(HashNet) net, const(char[]) str) {
                             import std.conv : to;
 
                             auto val = list[2].to!T;
+                            verbose("Dtype %s name=%s value=%s", T.stringof, name, val);
                             return net.dartKey(name, val);
                         }
                         break case_type;
@@ -73,8 +79,9 @@ DARTIndex dartIndexDecode(const(HashNet) net, const(char[]) str) {
             }
             default:
             check(0, format("DART search %s not supported expected name:Type:value or name:text", str));
-            // empty
         }
+                            verbose("Dtype %s name=%s value=%s", string.stringof, name, list[2]);
+
         return net.dartKey(name, list[1].idup);
     }
 
