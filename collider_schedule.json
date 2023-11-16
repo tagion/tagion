@@ -256,7 +256,7 @@
             "args": [],
             "envs": {},
             "stages": [
-                "genesis"
+                "acceptance", "genesis"
             ],
             "timeout": 0.0
         }

@@ -110,18 +110,6 @@ struct Environment {
 
 immutable Environment env;
 
-struct Tools {
-    string tagionwave;
-    string tagionwallet;
-    string hibonutil;
-    string dartutil;
-    string tagionboot;
-    string blockutil;
-    string neuewelle;
-}
-
-immutable Tools tools;
-
 import std.stdio;
 
 shared static this() {
@@ -140,12 +128,7 @@ shared static this() {
         }
     }
     env = temp;
-    Tools temp_tools;
 
-    static foreach (name; [__traits(allMembers, Tools)]) {
-        __traits(getMember, temp_tools, name) = env.dbin.buildPath(name);
-    }
-    tools = temp_tools;
     assert(errors is 0, "Environment is not setup correctly");
 
     reporter = new Reporter;

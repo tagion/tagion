@@ -8,6 +8,7 @@ import tagion.hibon.HiBON;
 import tagion.hibon.Document;
 import std.conv;
 
+// Fake Throwable hibon record constructor
 @recordType("throwable")
 struct _Throwable {
     string msg;
@@ -28,11 +29,11 @@ immutable struct TaskFailure {
     string task_name;
     Throwable throwable;
 
-    Document toDoc() @safe const {
+    const(Document) toDoc() @safe const {
         auto hibon = new HiBON;
         hibon["task_name"] = task_name;
         hibon["throwable"] = _Throwable(throwable).toDoc;
-        return Document(hibon);
+        return const(Document)(hibon);
     }
 }
 

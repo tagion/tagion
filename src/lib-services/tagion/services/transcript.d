@@ -132,6 +132,7 @@ struct TranscriptService {
                             auto genesis_epoch = GenesisEpoch(doc);
                             last_epoch_number = genesis_epoch.epoch_number;
                             last_globals = genesis_epoch.globals;
+                            log("FOUND A EPOCH");
                         }
                         else {
                             log("THROWING EXCEPTION");
@@ -142,6 +143,7 @@ struct TranscriptService {
                 });
             }
         }
+        log("Booting with globals: %s\n last_head: %s", last_globals.toPretty, last_head.toPretty);
 
         void createRecorder(dartCheckReadRR.Response res, immutable(DARTIndex)[] not_in_dart) {
 
@@ -275,43 +277,44 @@ struct TranscriptService {
                 if (!archive.filed.isRecord!TagionBill) {
                     return;
                 }
+                // log("GOING TO STAT BILL: %s, type: %s", bill.toPretty, archive.type;
+                
                 auto bill = TagionBill(archive.filed);
 
-                if (archive.Type.REMOVE) {
-                    total -= bill.value.axios;
-                    total_burned += bill.value.axios;
-                    burnt_bills++;
-                    number_of_bills--;
+                if (archive.type == Archive.Type.REMOVE) {
+                    total -= bill.value.units;
+                    total_burned += bill.value.units;
+                    burnt_bills += 1;
+                    number_of_bills -= 1;
                 }
-                if (archive.Type.ADD) {
-                    total += bill.value.axios;
-                    number_of_bills++;
-                    number_of_bills++;
+                if (archive.type == Archive.Type.ADD) {
+                    total += bill.value.units;
+                    number_of_bills += 1;
                 }
             }
 
             recorder[].each!(a => billStatistic(a));
 
             TagionGlobals new_globals = TagionGlobals(
-                    total,
-                    total_burned,
-                    number_of_bills,
-                    burnt_bills,
+                total,
+                total_burned,
+                number_of_bills,
+                burnt_bills,
             );
             non_voted_epoch.globals = new_globals;
+
 
             TagionHead new_head = TagionHead(
                 TagionDomain,
                 res.id,
             );
-            last_head = new_head;
-            last_globals = new_globals;
             recorder.insert(new_head, Archive.Type.ADD);
             recorder.insert(non_voted_epoch, Archive.Type.ADD);
+            last_head = new_head;
+            last_globals = new_globals;
 
             Votes new_vote;
             new_vote.epoch = non_voted_epoch;
-
             votes[non_voted_epoch.epoch_number] = new_vote;
 
             auto req = dartModifyRR();
@@ -364,7 +367,6 @@ struct TranscriptService {
         void receiveBullseye(dartModifyRR.Response res, Fingerprint bullseye) {
             import tagion.utils.Miscellaneous : cutHex;
 
-            log("transcript received bullseye %s", bullseye.cutHex);
             const epoch_number = res.id;
 
             votes[epoch_number].epoch.bullseye = bullseye;
