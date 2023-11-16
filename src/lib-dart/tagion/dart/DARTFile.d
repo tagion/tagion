@@ -1141,7 +1141,6 @@ class DARTFile {
     void traverse(
             const TraverseCallback dg,
             const SectorRange sectors = SectorRange.init,
-            const Flag!"full" full = No.full,
             const uint depth = 0) {
         void local_traverse(
                 const Index branch_index,
