@@ -32,7 +32,7 @@ struct Subscription {
         tags = _tags;
         net = _net;
         sock = NNGSocket(nng_socket_type.NNG_SOCKET_SUB);
-        sock.recvtimeout = msecs(1000);
+        sock.recvtimeout = 100.seconds;
         foreach (tag; tags) {
             sock.subscribe(tag);
         }
