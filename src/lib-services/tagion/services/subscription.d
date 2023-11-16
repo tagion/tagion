@@ -52,11 +52,11 @@ struct SubscriptionService {
     void task(immutable(SubscriptionServiceOptions) opts) @trusted {
         log.registerSubscriptionTask(thisActor.task_name);
         log("Subscribing to tags");
-        foreach (tag; opts.tags.split(':')) {
+        foreach (tag; opts.tags.split(',')) {
             submask.subscribe(tag);
         }
         scope (exit) {
-            foreach (tag; opts.tags.split(':')) {
+            foreach (tag; opts.tags.split(',')) {
                 submask.unsubscribe(tag);
             }
         }
