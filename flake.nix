@@ -26,13 +26,11 @@
           dub
           dmd
           dtools
-          go
           git
           gnumake
-          glibcLocales
           ldc
           libtool
-          llvmPackages_15.clang-unwrapped
+          gcc
           autoconf
           automake
           autoreconfHook
