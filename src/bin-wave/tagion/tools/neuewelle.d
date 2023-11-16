@@ -395,7 +395,6 @@ int network_mode0(
                 const wallet_config_file = buildPath(bootkeys_path, args[0]).setExtension(FileExtension.json);
                 verbose("Wallet path %s", wallet_config_file);
                 if (!wallet_config_file.exists) {
-                    writefln("What!!!");
                     writefln("%1$sBoot key file %3$s not found%2$s", RED, RESET, wallet_config_file);
                     writefln("Try another node name");
                 }
