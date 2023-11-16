@@ -364,16 +364,6 @@ struct SecureWallet(Net : SecureNet) {
         return _net.derivePubkey(account.derive_state);
     }
 
-    // PaymentInfo paymentInfo(string label, TagionCurrency amount = TagionCurrency.init, Document info = Document.init) {
-    //     PaymentInfo new_request;
-    //     new_request.name = label;
-    //     new_request.amount = amount;
-    //     new_request.info = info;
-    //     const derive = _net.HMAC(label.representation ~ _net.pubkey ~ info.serialize);
-    //     new_request.owner = _net.derivePubkey(derive);
-    //     return new_request;
-    // }
-
     TagionBill[] invoices_to_bills(const(Invoice[]) orders) {
         Buffer getNonce() {
             scope nonce = new ubyte[4];

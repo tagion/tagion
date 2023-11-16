@@ -4,17 +4,20 @@ INSTALLEDTOOL=$(INSTALL)/tagion
 INSTALLEDCOLLIDER=$(INSTALL)/collider
 
 
+# Install tagion
 install: ONETOOL=1
-install: tagion
 install: $(INSTALLEDTOOL)
-install: collider
 
-
-$(INSTALLEDTOOL): ONETOOL=1
-$(INSTALLEDTOOL): $(TOOL)
+$(INSTALLEDTOOL): tagion
 	$(PRECMD)
 	$(CP) $(TOOL) $(INSTALLEDTOOL)
 	$(INSTALLEDTOOL) -f
+
+# Install extra development tools
+install-dev: install $(INSTALLEDCOLLIDER)
+
+$(INSTALLEDCOLLIDER): collider
+	$(PRECMD)
 	$(CP) $(COLLIDER) $(INSTALLEDCOLLIDER)
 	$(INSTALLEDCOLLIDER) -f
 

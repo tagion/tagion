@@ -11,7 +11,6 @@ import tagion.crypto.aes.AESCrypto;
 import tagion.crypto.random.random;
 import tagion.hibon.Document : Document;
 
-
 package alias check = Check!SecurityConsensusException;
 
 @safe
@@ -61,7 +60,7 @@ class StdHashNet : HashNet {
 
 @safe
 class StdSecureNet : StdHashNet, SecureNet {
-        import tagion.crypto.secp256k1.NativeSecp256k1; //: NativeSecp256k1 = NativeNativeSecp256k1Musig;
+    import tagion.crypto.secp256k1.NativeSecp256k1; //: NativeSecp256k1 = NativeNativeSecp256k1Musig;
     import std.format;
     import std.string : representation;
     import tagion.basic.ConsensusExceptions;
@@ -169,8 +168,7 @@ class StdSecureNet : StdHashNet, SecureNet {
         return result;
     }
 
-    version(none)
-    final bool secKeyVerify(scope const(ubyte[]) privkey) const {
+    version (none) final bool secKeyVerify(scope const(ubyte[]) privkey) const {
         static if (Schnorr) {
             return true;
         }
@@ -187,8 +185,8 @@ class StdSecureNet : StdHashNet, SecureNet {
         }
         import std.string : representation;
 
-            ubyte[] privkey;
-            crypt.createKeyPair(seckey, privkey);
+        ubyte[] privkey;
+        crypt.createKeyPair(seckey, privkey);
         alias AES = AESCrypto!256;
         _pubkey = crypt.getPubkey(privkey);
         auto aes_key_iv = new ubyte[AES.KEY_SIZE + AES.BLOCK_SIZE];
@@ -215,14 +213,15 @@ class StdSecureNet : StdHashNet, SecureNet {
         }
 
         @safe class LocalSecret : SecretMethods {
-                immutable(ubyte[]) sign(const(ubyte[]) message) const {
-                    immutable(ubyte)[] result;
-                    ubyte[crypt.MESSAGE_SIZE] _aux_random;
-                    ubyte[] aux_random = _aux_random;
-                    getRandom(aux_random);
-                    do_secret_stuff((const(ubyte[]) privkey) { result = crypt.sign(message, privkey, aux_random); });
-                    return result;
-                }
+            immutable(ubyte[]) sign(const(ubyte[]) message) const {
+                immutable(ubyte)[] result;
+                ubyte[crypt.MESSAGE_SIZE] _aux_random;
+                ubyte[] aux_random = _aux_random;
+                getRandom(aux_random);
+                do_secret_stuff((const(ubyte[]) privkey) { result = crypt.sign(message, privkey, aux_random); });
+                return result;
+            }
+
             void tweak(const(ubyte[]) tweak_code, out ubyte[] tweak_privkey) const {
                 do_secret_stuff((const(ubyte[]) privkey) @safe { crypt.privTweak(privkey, tweak_code, tweak_privkey); });
             }
@@ -230,11 +229,11 @@ class StdSecureNet : StdHashNet, SecureNet {
             immutable(ubyte[]) ECDHSecret(scope const(Pubkey) pubkey) const {
                 Buffer result;
                 do_secret_stuff((const(ubyte[]) privkey) @safe {
-                        ubyte[] seckey;
-                        scope (exit) {
-                            seckey[] = 0;
-                        }
-                        crypt.getSecretKey(privkey, seckey);
+                    ubyte[] seckey;
+                    scope (exit) {
+                        seckey[] = 0;
+                    }
+                    crypt.getSecretKey(privkey, seckey);
                     result = crypt.createECDHSecret(seckey, cast(Buffer) pubkey);
                 });
                 return result;
@@ -273,7 +272,7 @@ class StdSecureNet : StdHashNet, SecureNet {
         alias pbkdf2_sha512 = pbkdf2!SHA512;
         auto data = pbkdf2_sha512(passphrase.representation, salt.representation, count, dk_length);
         scope (exit) {
-            data[]=0;
+            data[] = 0;
         }
         auto _priv_key = data[0 .. 32];
 
@@ -302,19 +301,19 @@ class StdSecureNet : StdHashNet, SecureNet {
     }
 
     this(shared(StdSecureNet) other_net) @trusted {
-        this();    
+        this();
         synchronized (other_net) {
             auto unshared_secure_net = cast(StdSecureNet) other_net;
             unshared_secure_net._secret.clone(this);
         }
     }
 
-
     SecureNet clone() const {
-        StdSecureNet result=new StdSecureNet;
+        StdSecureNet result = new StdSecureNet;
         this._secret.clone(result);
         return result;
     }
+
     unittest {
         auto other_net = new StdSecureNet;
         other_net.generateKeyPair("Secret password to be copied");
@@ -405,29 +404,30 @@ class StdSecureNet : StdHashNet, SecureNet {
     }
 
     unittest { /// clone
-        SecureNet net=new StdSecureNet;
+        SecureNet net = new StdSecureNet;
         net.generateKeyPair("Very secret word");
-        auto net_clone=net.clone;
+        auto net_clone = net.clone;
         assert(net_clone.pubkey == net.pubkey);
         SimpleRecord doc;
-        doc.x="Hugo";
-        const sig=net.sign(doc).signature;
-    const clone_sig=net_clone.sign(doc).signature;
-        const net_check=new StdSecureNet;
-        const msg=net.calcHash(doc);
+        doc.x = "Hugo";
+        const sig = net.sign(doc).signature;
+        const clone_sig = net_clone.sign(doc).signature;
+        const net_check = new StdSecureNet;
+        const msg = net.calcHash(doc);
         assert(net_check.verify(msg, sig, net.pubkey));
         assert(net_check.verify(msg, clone_sig, net_clone.pubkey));
-}
+    }
 }
 
-version(unittest) {
-        import std.format;
-        import tagion.hibon.HiBONRecord;
-        static struct SimpleRecord {
-            string x;
+version (unittest) {
+    import std.format;
+    import tagion.hibon.HiBONRecord;
 
-            mixin HiBONRecord;
-        }
+    static struct SimpleRecord {
+        string x;
+
+        mixin HiBONRecord;
+    }
 }
 
 @safe

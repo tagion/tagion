@@ -206,10 +206,6 @@ HiRPC.Receiver sendDARTHiRPC(string address, HiRPC.Sender dart_req, HiRPC hirpc,
     return hirpc.receive(received_doc);
 }
 
-/**
- * \struct WalletInterface
- * Interface struct for wallet
- */
 struct WalletInterface {
     const(WalletOptions) options;
     alias StdSecureWallet = SecureWallet!StdSecureNet;
@@ -217,7 +213,6 @@ struct WalletInterface {
     Invoices payment_requests;
     Quiz quiz;
     this(const WalletOptions options) {
-        //this.secure_wallet=secure_wallet;
         this.options = options;
     }
 
@@ -280,9 +275,9 @@ struct WalletInterface {
         char[] new_pincode2;
         scope (exit) {
             // Scramble the code to prevent memory leaks
-            old_pincode[]=0;
-            new_pincode1[]=0;
-            new_pincode2[]=0;
+            old_pincode[] = 0;
+            new_pincode1[] = 0;
+            new_pincode2[] = 0;
         }
         foreach (i; 0 .. retry) {
             HOME.write;
@@ -290,7 +285,7 @@ struct WalletInterface {
             writefln("%1$sEnter empty pincode to proceed recovery%2$s", YELLOW, RESET);
             writefln("pincode:");
             scope (exit) {
-                old_pincode[]=0;
+                old_pincode[] = 0;
             }
             readln(old_pincode);
             old_pincode.word_strip;
@@ -453,7 +448,7 @@ struct WalletInterface {
                             // Erase the answer from memory
                             answers
                                 .filter!(a => a.length > 0)
-                                .each!((ref a) { a[]=0; a = null; });
+                                .each!((ref a) { a[] = 0; a = null; });
                             pressKey;
                         }
                         auto quiz_list = zip(questions, answers)
@@ -485,8 +480,8 @@ struct WalletInterface {
                                 char[] pincode2;
                                 pincode2.length = MAX_PINCODE_SIZE;
                                 scope (exit) {
-                                    pincode1[]=0;
-                                    pincode2[]=0;
+                                    pincode1[] = 0;
+                                    pincode2[] = 0;
                                 }
                                 writefln("Pincode:%s", CLEARDOWN);
                                 readln(pincode1);
@@ -717,8 +712,9 @@ struct WalletInterface {
                                 .encodeBase64.setExtension(FileExtension.hibon).fwrite(bill));
                 }
                 if (update || trt_update) {
-
-                    const update_net = secure_wallet.net.derive(update_tag.representation);
+                    const update_net = secure_wallet.net.derive(
+                            secure_wallet.net.calcHash(
+                            update_tag.representation));
                     const hirpc = HiRPC(update_net);
 
                     const(HiRPC.Sender) getRequest() {
