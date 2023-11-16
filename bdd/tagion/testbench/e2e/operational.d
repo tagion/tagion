@@ -165,7 +165,7 @@ class SendNContractsFromwallet1Towallet2 {
 
     Invoice invoice;
     TagionCurrency fees;
-    @When("i send N many valid contracts from `wallet1` to `wallet2`")
+    @When("i send a valid contract from `wallet1` to `wallet2`")
     Document wallet2() @trusted {
         with (wallets[0].secure_wallet) {
             invoice = createInvoice("Invoice", 1000.TGN);
@@ -185,11 +185,11 @@ class SendNContractsFromwallet1Towallet2 {
 
             if (sendkernel) {
                 auto response = sendSubmitHiRPC(options.contract_address, hirpc_submit, contract_net);
-                check(!response.isError, "Error when sending kernel submit");
+                check(!response.isError, format("Error when sending kernel submit\n%s", response.toPretty));
             }
             else {
                 auto response = sendShellSubmitHiRPC(options.addr ~ options.contract_shell_endpoint, hirpc_submit, contract_net);
-                check(!response.isError, "Error when sending shell submit");
+                check(!response.isError, format("Error when sending shell submit\n%s", response.toPretty));
             }
 
             result.get;
@@ -198,7 +198,7 @@ class SendNContractsFromwallet1Towallet2 {
         return result_ok;
     }
 
-    @When("all the contracts have been executed")
+    @When("the contract has been executed")
     Document executed() @trusted {
         Thread.sleep(20.seconds);
         return result_ok;

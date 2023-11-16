@@ -44,9 +44,15 @@ struct Subscription {
         int rc;
         foreach (_; 0 .. max_attempts) {
             rc = sock.dial(address);
-            if (rc == 0) {
+            switch (rc) with (nng_errno) {
+            case NNG_OK:
                 _isDial = true;
                 return result(true);
+            case NNG_ECONNREFUSED:
+                nng_sleep(msecs(100));
+                continue;
+            default:
+                return Result!bool(false, nng_errstr(rc));
             }
         }
         return Result!bool(false, nng_errstr(rc));
@@ -137,44 +143,21 @@ int _main(string[] args) {
             return 1;
         }
 
-        foreach (tag; tags) {
-            sock.subscribe(tag);
-        }
-
-        while (1) {
-            int rc = sock.dial(address);
-            if (rc == 0) {
-                break;
-            }
-            stderr.writefln("Dial error, %s: (%s)%s", address, rc, rc.nng_errstr);
-            if (rc == nng_errno.NNG_ECONNREFUSED) {
-                nng_sleep(msecs(100));
-                continue;
-            }
-            assert(rc == 0);
+        auto sub = Subscription(address, tags);
+        auto dialed = sub.dial;
+        if (dialed.error) {
+            stderr.writefln("Dial error: %s (%s)", dialed.e.message, address);
+            return 1;
         }
         stderr.writefln("Listening on, %s", address);
 
         while (true) {
-            auto data = sock.receive!Buffer;
-            if (sock.errno != 0 && sock.errno != 5) {
-                stderr.writefln("Error string: (%s)%s", sock.errno, nng_errstr(sock.errno));
-                continue;
-            }
-
-            long index = data.countUntil(cast(ubyte) '\0');
-            if (index == -1) {
-                continue;
-            }
-
-            string tag = cast(immutable(char)[]) data[0 .. index];
-
-            if (data.length > index + 1) {
-                auto doc = Document(data[index + 1 .. $]);
-                stderr.writefln("%s:\n%s", tag, doc.toPretty);
+            auto result = sub.receive;
+            if (result.error) {
+                stderr.writeln(result.e);
             }
             else {
-                stderr.writefln("%s", tag);
+                writeln(result.get.toPretty);
             }
         }
     }

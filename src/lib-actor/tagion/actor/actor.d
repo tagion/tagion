@@ -375,6 +375,8 @@ void sendOwner(T...)(T vals) @safe {
     }
 }
 
+static Topic taskfailure = Topic("taskfailure");
+
 /** 
  * Send a TaskFailure up to the owner
  * Silently fails if there is no owner
@@ -385,7 +387,9 @@ void fail(Throwable t) @trusted nothrow {
         debug (actor) {
             log(t);
         }
-        ownerTid.prioritySend(TaskFailure(thisActor.task_name, cast(immutable) t));
+        immutable tf = TaskFailure(thisActor.task_name, cast(immutable) t);
+        // log(taskfailure, "taskfailure", tf.toDoc); // taskfailrue event
+        ownerTid.prioritySend(tf);
     }
     catch (Exception e) {
         log.fatal("Failed to deliver TaskFailure: \n
