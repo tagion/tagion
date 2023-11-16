@@ -263,8 +263,6 @@ struct SecureWallet(Net : SecureNet) {
         if (_pin.D) {
             logout;
             auto login_net = new Net;
-            //auto recover = KeyRecover(login_net);
-            // auto pinhash = recover.checkHash(pincode.representation, _pin.U);
             //  writefln("pinhash = %s", pinhash.toHexString);
             auto R = new ubyte[login_net.hashSize];
             scope (exit) {
