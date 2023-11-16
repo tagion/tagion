@@ -79,7 +79,7 @@ int _main(string[] args) {
     * <bootkeys_path>/<nodenameX>/wallet.json
     *
     */
-    File fin=stdin; /// Console input for the bootkeys
+    File fin = stdin; /// Console input for the bootkeys
     if (geteuid == 0) {
         stderr.writeln("FATAL: YOU SHALL NOT RUN THIS PROGRAM AS ROOT");
         return 1;
@@ -124,6 +124,7 @@ int _main(string[] args) {
             "O|override", "Override the config file", &override_switch,
             "option", "Set an option", &override_options,
             "fail-fast", "Set the fail strategy, fail-fast=%s".format(fail_fast), &fail_fast,
+            "k|keys", "Path to the boot-keys in mode0", &bootkeys_path,
             "nodeopts", "Generate single node opts files for mode0", &mode0_node_opts_path,
             "m|monitor", "Enable the monitor", &monitor,
     );
@@ -365,8 +366,8 @@ int network_mode0(
     }
 
     Node[] nodes;
-    string[] args;
-   // auto args=fin.byLine.split(":");
+    auto by_line = fin.byLine;
+    enum number_of_retry = 3;
     foreach (i, opts; node_options) {
         StdSecureNet net;
         scope (exit) {
@@ -379,20 +380,28 @@ int network_mode0(
         }
         else {
             WalletOptions wallet_options;
-            foreach(tries; 0..3) {
-            if (args.front.length != 2) {
-                writefln("%$1sBad format %$3s expected nodename:pincode%$2s", RED, RESET, args.front); 
+
+            foreach (tries; 1 .. number_of_retry + 1) {
+                const args = by_line.front.split(":");
+                if (args.length != 2) {
+                    writefln("%$1sBad format %$3s expected nodename:pincode%$2s", RED, RESET, args.front);
+                }
+                //string wallet_config_file;
+                const wallet_config_file = buildPath(bootkeys_path, args[0], default_wallet_config_filename);
+                if (!wallet_config_file.exists) {
+                    writefln("%$1sBoot key file %$3s not found", wallet_config_file);
+                }
+                wallet_options.load(wallet_config_file);
+                auto wallet_interface = WalletInterface(wallet_options);
+                wallet_interface.secure_wallet.login(args[1]);
+                by_line.popFront;
+                if (wallet_interface.secure_wallet.isLoggedin) {
+                    net = cast(StdSecureNet) wallet_interface.secure_wallet.net.clone;
+                    break;
+                }
+                check(tries < number_of_retry, format("Max number of reties is %d", number_of_retry));
+
             }
-                    string wallet_config_file;
-            //const wallet_config_file=buildPath(bootkeys_path, args.front[0], default_wallet_config_filename);
-            if (!wallet_config_file.exists) {
-              //  writefln("%$1sBoot key file %
-            }
-            check(wallet_config_file.exists, format("Bootkey file %s not found", wallet_config_file));
-            wallet_options.load(wallet_config_file);
-            auto wallet_interface=WalletInterface(wallet_options);
-            wallet_interface.secure_wallet.login(args[1]); 
-        }
         }
         shared shared_net = (() @trusted => cast(shared) net)();
 
