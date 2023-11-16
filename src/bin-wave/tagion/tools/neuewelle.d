@@ -125,6 +125,7 @@ int _main(string[] args) {
             "option", "Set an option", &override_options,
             "fail-fast", "Set the fail strategy, fail-fast=%s".format(fail_fast), &fail_fast,
             "k|keys", "Path to the boot-keys in mode0", &bootkeys_path,
+            "n|dry", "Check the parameter without staring the network (dry-run)", &__dry_switch,
             "nodeopts", "Generate single node opts files for mode0", &mode0_node_opts_path,
             "m|monitor", "Enable the monitor", &monitor,
     );
@@ -402,6 +403,9 @@ int network_mode0(
                 check(tries < number_of_retry, format("Max number of reties is %d", number_of_retry));
 
             }
+        }
+        if (dry_switch && !bootkeys_path.empty) {
+            writefln("%1$sBoot keys correct%2$s", RED, RESET);
         }
         shared shared_net = (() @trusted => cast(shared) net)();
 
