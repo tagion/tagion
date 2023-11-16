@@ -10,7 +10,7 @@
 
     formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixpkgs-fmt;
 
-    defaultPackage.x86_64-linux =
+    packages.x86_64-linux.default =
       # Notice the reference to nixpkgs here.
       with import nixpkgs { system = "x86_64-linux"; };
       stdenv.mkDerivation {
@@ -23,25 +23,40 @@
         ];
 
         nativeBuildInputs = [
-          dub
           dmd
           dtools
-          git
           gnumake
-          ldc
-          libtool
-          gcc
-          autoconf
-          automake
-          autoreconfHook
-          cmake
           pkg-config
         ];
 
         src = self;
+
         buildPhase = ''
-          make DC=dmd tagion
+          make DC=dmd USE_SYSTEM_LIBS=1 tagion
+        '';
+
+        installPhase = ''
+          mkdir -p $out/bin; make INSTALL=$out/bin install
         '';
       };
+
+    devShell.x86_64-linux =
+      # Notice the reference to nixpkgs here.
+      with import nixpkgs { system = "x86_64-linux"; };
+      mkShell {
+        buildInputs = [
+          self.packages.x86_64-linux.default.nativeBuildInputs
+          dub
+          ldc
+          gcc
+          git
+          libtool
+          autoconf
+          automake
+          autoreconfHook
+          cmake
+        ];
+      };
+
   };
 }
