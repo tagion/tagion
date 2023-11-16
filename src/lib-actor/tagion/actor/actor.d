@@ -253,7 +253,7 @@ struct ActorHandle {
         try {
             concurrency.send(_tid, args);
         }
-        catch(AssertError _) {
+        catch (AssertError _) {
             concurrency.send(tid, args).collectException!AssertError;
         }
     }
@@ -307,7 +307,7 @@ ActorHandle _spawn(A, Args...)(string name, Args args) @safe nothrow
 if (isActor!A) {
     try {
         Tid tid;
-        tid = concurrency.spawn((string name, Args args) @trusted nothrow {
+        tid = concurrency.spawn((string name, Args args) @trusted nothrow{
             log.register(name);
             thisActor.stop = false;
             try {
@@ -388,7 +388,7 @@ void fail(Throwable t) @trusted nothrow {
             log(t);
         }
         immutable tf = TaskFailure(thisActor.task_name, cast(immutable) t);
-        // log(taskfailure, "taskfailure", tf.toDoc); // taskfailrue event
+        log(taskfailure, "taskfailure", tf); // taskfailrue event
         ownerTid.prioritySend(tf);
     }
     catch (Exception e) {

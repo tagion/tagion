@@ -86,21 +86,22 @@ int _main(string[] args) {
 
     auto rnd = Random(unpredictableSeed);
     void pickWallets(WalletInterface*[] interfaces, out WalletInterface* wallet1, out WalletInterface* wallet2)
-    in(interfaces.length >= 2) 
-    out(; wallet1 != wallet2)
+    in (interfaces.length >= 2)
+    out (; wallet1 != wallet2)
     do {
         ulong index1 = uniform(0, interfaces.length, rnd);
         ulong index2;
         do {
             index2 = uniform(0, interfaces.length, rnd);
-        } while(index1 == index2);
+        }
+        while (index1 == index2);
 
         wallet1 = interfaces[index1];
         wallet2 = interfaces[index2];
     }
 
     int run_counter;
-    scope(exit) {
+    scope (exit) {
         writefln("Made %s transactions", run_counter);
     }
 
@@ -112,7 +113,8 @@ int _main(string[] args) {
         assert(receiver != sender);
 
         operational_feature.SendNContractsFromwallet1Towallet2(sender, receiver, sendkernel);
-        operational_feature.run;
+        auto result = operational_feature.run;
+        result.writeln;
         run_counter++;
         Thread.sleep(1.seconds);
     }
@@ -168,7 +170,7 @@ class SendNContractsFromwallet1Towallet2 {
     @When("i send a valid contract from `wallet1` to `wallet2`")
     Document wallet2() @trusted {
         with (wallets[0].secure_wallet) {
-            invoice = createInvoice("Invoice", 1000.TGN);
+            invoice = createInvoice("Invoice", 700.TGN);
             registerInvoice(invoice);
         }
 
