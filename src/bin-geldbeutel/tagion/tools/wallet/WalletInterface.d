@@ -737,7 +737,6 @@ struct WalletInterface {
                         auto res = trt_update ? secure_wallet.setResponseUpdateWallet(
                                 received) : secure_wallet.setResponseCheckRead(received);
                         writeln(res ? "wallet updated succesfully" : "wallet not updated succesfully");
-                        listAccount(stdout);
                         save_wallet = true;
                     }
 
