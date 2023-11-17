@@ -99,6 +99,7 @@ int _main(string[] args) {
                     const bill = TagionBill(doc);
                     total += bill.value.units;
                     start_bills += 1;
+                    recorder.insert(bill, Archive.Type.ADD);
                 }
             }
             TagionGlobals genesis_globals;
