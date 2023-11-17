@@ -35,6 +35,7 @@
             echo DC=dmd >> local.mk
             echo USE_SYSTEM_LIBS=1 >> local.mk
             echo INSTALL=$out/bin >> local.mk
+            echo NNG_ENABLE_TLS=1 >> local.mk
         '';
 
         buildPhase = ''
