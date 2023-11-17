@@ -7,16 +7,36 @@ Usage:
 geldbeutel [<option>...] <config.json> <files>
 
 <option>:
-     --version display the version
--O --overwrite Overwrite the config file and exits
-        --path Set the path for the wallet files : default 
-      --wallet Wallet file : default wallet.hibon
-      --device Device file : default device.hibon
-        --quiz Quiz file : default quiz.hibon
--C    --create Create a new account
--c --changepin Change pin-code
--x       --pin Pincode
--h      --help This help information.
+          --version display the version
+-v        --verbose Enable verbose print-out
+-O      --overwrite Overwrite the config file and exits
+             --path Set the path for the wallet files : default 
+           --wallet Wallet file : default wallet.hibon
+           --device Device file : default device.hibon
+             --quiz Quiz file : default quiz.hibon
+-C         --create Create a new account
+-c      --changepin Change pin-code
+-o         --output Output filename
+-l           --list List wallet content
+-s            --sum Sum of the wallet
+             --send Send a contract to the shell
+       --sendkernel Send a contract to the kernel
+-P     --passphrase Set the wallet passphrase
+   --create-invoice Create invoice by format LABEL:PRICE. Example: Foreign_invoice:1000
+-x            --pin Pincode
+           --amount Create an payment request in tagion
+            --force Force input bill
+              --pay Creates a payment contract
+              --dry Dry-run this will not save the wallet
+              --req List all requested bills
+           --update Request a wallet updated
+       --trt-update Request a update on all derivers
+          --address Sets the address default: abstract://Node_0_CONTRACT_NEUEWELLE
+           --faucet request money from the faucet
+            --bip39 Generate bip39 set the number of words
+             --name Sets the account name
+             --info Prints the public key and the name of the account
+-h           --help This help information.o
 ```
 
 ## Write wallet configuration file `wallet.json`
@@ -69,6 +89,16 @@ trt-update. Used for invoices.
 > geldbeutel wallet.json -x 1234 --trt-update --send
 ```
 
+## Sets an account name 
+The account name can be change or set with the `--name` switch
+```
+> geldbeutel -x 0001 /tmp/wallets/wallet1.json --name wallet1
+```
+Check the name and the public key off the account
+```
+> geldbeutel -x 0001 /tmp/wallets/wallet1.json --info
+wallet1:@AsyJ1_tZFNxZemBLF9vlccJcGVatc7G3KISAwJeKbIZf
+```
 
 # Script for automatically generating genesis wallets and darts.
 The following script makes it easier to create wallets and put their bills into the dart.
