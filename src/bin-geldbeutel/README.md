@@ -110,6 +110,6 @@ Just to check the public key for the account
 # Script for automatically generating genesis wallets and darts.
 The following script makes it easier to create wallets and put their bills into the dart.
 ```
-./create_wallets NUMBER OF WALLETS DART_CREATION_PATH WALLET_CREATION_PATH 
-./create_wallets 7 /tmp/test/network /tmp/test
+./create_wallets.sh -b <bindir> [-n <nodes=5>] [-w <wallets=5>] [-k <network dir = ./network>] [-t <wallets dir = ./wallets>]
+./create_wallets build/x86_64-linux -k /tmp/tagion-test/network -t /tmp/tagion-tagion/wallets
 ```

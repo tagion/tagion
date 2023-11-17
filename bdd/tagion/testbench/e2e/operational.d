@@ -8,6 +8,8 @@ import std.format;
 import std.getopt;
 import std.path;
 import std.range;
+import std.conv;
+import std.datetime;
 import std.stdio;
 import std.random;
 import std.typecons : Tuple;
@@ -101,12 +103,29 @@ int _main(string[] args) {
         wallet2 = interfaces[index2];
     }
 
+    // We only want to make one transaction per wallet pair so we can keep track of the balance changes
+    const max_concurrent_runs = (wallet_interfaces.length / 2).to!uint;
+    const max_runtime = 3.days;
+    // Times of the monotomic clock
+    const start_clocktime = MonoTime.currTime;
+    const end_clocktime = start_clocktime + max_runtime;
+
+    // Date for pretty reporting
+    const start_date = cast(DateTime) Clock.currTime;
+    const predicted_end_date = cast(DateTime) Clock.currTime;
+
     int run_counter;
     scope (exit) {
-        writefln("Made %s transactions", run_counter);
+        const end_date = cast(DateTime)(Clock.currTime);
+        writefln("Made %s runs", run_counter);
+        writefln("Test ended on %s %s", end_date, end_date);
     }
 
-    while (true) {
+    writefln("Starting operational test now on\n\t%s\nand will end in %s, on\n\t%s",
+            start_date, max_runtime,
+            predicted_end_date);
+
+    while (MonoTime.currTime <= end_clocktime) {
         auto operational_feature = automation!operational;
         WalletInterface* receiver;
         WalletInterface* sender;

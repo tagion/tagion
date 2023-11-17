@@ -3,7 +3,7 @@ ci-files:
 	cp $(REPOROOT)/collider_schedule.json $(DBIN) 
 	cp $(DSRC)/bin-wave/neuewelle.service $(DBIN)
 	cp $(DSRC)/bin-tagionshell/tagionshell.service $(DBIN)
-	cp $(DTUB)/scripts/create_wallets_2.sh $(DBIN)
+	cp $(DTUB)/scripts/create_wallets.sh $(DBIN)
 
 ci: ci-files
 	$(MAKE) -S clean-trunk -f$(DTUB)/main.mk

@@ -64,8 +64,6 @@
 
 [create_transaction.md](bdd/tagion/testbench/functional/create_transaction.md)
 
-[create_wallets.md](bdd/tagion/testbench/functional/create_wallets.md)
-
 [kill_network.md](bdd/tagion/testbench/functional/kill_network.md)
 
 [receive_epoch_test.md](bdd/tagion/testbench/functional/receive_epoch_test.md)

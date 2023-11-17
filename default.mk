@@ -4,16 +4,17 @@ ONETOOL?=1
 DEBUGGER?=ddd
 VERBOSE_COMPILER_ERRORS=1
 # SECP256K1_DEBUG=1
-# USE_SYSTEM_LIBS=1 # Compile with systemdependencies
 
 export TEST_STAGE:=commit
 export SEED:=$(shell git rev-parse HEAD)
 
 RELEASE_DFLAGS+=$(DOPT)
 
-ifdef USE_SYSTEM_LIBS
-NNG_ENABLE_TLS=1
-endif
+# USE_SYSTEM_LIBS=1 # Compile with system libraries (nng & secp256k1-zkp)
+
+# If youre using system libraries they'll most likely be compiled with mbedtls support
+# So mbedtls needs to be linked as well, so this need to be enabled
+# NNG_ENABLE_TLS=1
 
 ifndef DEBUG_DISABLE
 DFLAGS+=$(DDEBUG_SYMBOLS)
@@ -21,9 +22,6 @@ endif
 
 DFLAGS+=$(DVERSION)=REDBLACKTREE_SAFE_PROBLEM
 DFLAGS+=$(DVERSION)=NET_HACK
-
-
-
 
 # Extra DFLAGS for the testbench 
 BDDDFLAGS+=$(DDEBUG_SYMBOLS)
