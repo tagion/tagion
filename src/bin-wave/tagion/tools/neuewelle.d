@@ -387,7 +387,6 @@ int network_mode0(
                 verbose("Input boot key %d as nodename:pincode", i);
                 const args = by_line.front.split(":");
                 by_line.popFront;
-                pragma(msg, "Args ", typeof(args));
                 if (args.length != 2) {
                     writefln("%1$sBad format %3$s expected nodename:pincode%2$s", RED, RESET, args.front);
                 }

@@ -1134,7 +1134,6 @@ static size_t size(U)(const(U[]) array) pure {
 
 @safe
 unittest {
-    import std.stdio;
     import tagion.hibon.HiBONRecord;
     import tagion.hibon.HiBONtoText;
 
@@ -1158,7 +1157,6 @@ unittest {
     test.inner_hibon = inner;
 
 
-    writefln("%s", test.toPretty);
     const base64 = test.toDoc.encodeBase64;
     auto serialized = test.toDoc.serialize;
     const new_doc = Document(serialized);
@@ -1168,8 +1166,5 @@ unittest {
 
     assert(base64 == after_base64);
 
-    writeln(new_doc.valid);
     assert(valid is Document.Element.ErrorCode.NONE);
-
-
 }

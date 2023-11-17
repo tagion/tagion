@@ -19,7 +19,6 @@ proto-unittest-run: proto-unittest-build
 	$(PRECMD)
 	$(CHEXE) $(TMP_UNITTEST)
 	echo $(PRETOOL) $(PRETOOL_FLAGS) $(UNITTEST_BIN) $(DRT_FLAGS) > $(TMP_UNITTEST) 
-	echo $(TMP_UNITTEST)
 	$(SCRIPT_LOG) $(TMP_UNITTEST) $(UNITTEST_LOG)
 	$(RM) $(TMP_UNITTEST)
 	echo $(INFO)
