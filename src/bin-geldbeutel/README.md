@@ -92,13 +92,19 @@ trt-update. Used for invoices.
 ## Sets an account name 
 The account name can be change or set with the `--name` switch
 ```
-> geldbeutel -x 1234 wallet.json --name wallet1
+> geldbeutel wallet.json --name wallet1
 ```
-Check the name and the public key off the account
+Check the name and the public key for the account
 ```
-> geldbeutel -x 1234 wallet.json --info
+> geldbeutel wallet.json --info
 wallet1:@AsyJ1_tZFNxZemBLF9vlccJcGVatc7G3KISAwJeKbIZf
 ```
+Just to check the public key for the account
+```
+> geldbeutel wallet.json --pubkey
+@AsyJ1_tZFNxZemBLF9vlccJcGVatc7G3KISAwJeKbIZf
+```
+
 
 # Script for automatically generating genesis wallets and darts.
 The following script makes it easier to create wallets and put their bills into the dart.

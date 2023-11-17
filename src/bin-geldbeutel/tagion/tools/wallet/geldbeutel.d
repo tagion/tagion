@@ -60,6 +60,7 @@ int _main(string[] args) {
     uint bip39;
     bool wallet_ui;
     bool info;
+    bool pubkey_info;
     string _passphrase;
     string _salt;
     char[] passphrase;
@@ -119,6 +120,7 @@ int _main(string[] args) {
                 "bip39", "Generate bip39 set the number of words", &bip39,
                 "name", "Sets the account name", &account_name,
                 "info", "Prints the public key and the name of the account", &info,
+                "pubkey", "Prints the public key", &pubkey_info,
 
         );
     }
@@ -207,6 +209,29 @@ int _main(string[] args) {
             writefln("Wallet dont't exists");
             WalletInterface.pressKey;
         }
+        bool info_only;
+        if (info) {
+            if (wallet_interface.secure_wallet.account.name.empty) {
+            writefln("%sAccount name has not been set (use --name)%s", YELLOW, RESET);
+                return 0;
+            }
+            writefln("%s:%s", 
+            wallet_interface.secure_wallet.account.name, 
+            wallet_interface.secure_wallet.account.owner.encodeBase64);
+            info_only=true;
+        }
+        if (pubkey_info) {
+            if (wallet_interface.secure_wallet.account.owner.empty) {
+            writefln("%sAccount pubkey has not been set (use --name)%s", YELLOW, RESET);
+                return 0;
+            }
+             writefln("%s", 
+            wallet_interface.secure_wallet.account.owner.encodeBase64);
+             info_only=true;
+        }
+        if (info_only) {
+            return 0;
+        }
         change_pin = change_pin && !pincode.empty;
 
         if (create_account) {
@@ -234,13 +259,9 @@ int _main(string[] args) {
                 return 4;
             }
         }
-        if (info) {
-            writefln("%s:%s", 
-            wallet_interface.secure_wallet.account.name, 
-            wallet_interface.secure_wallet.net.pubkey.encodeBase64);
-        }
         if (!account_name.empty) {
             wallet_interface.secure_wallet.account.name=account_name;
+            wallet_interface.secure_wallet.account.owner=wallet_interface.secure_wallet.net.pubkey;
             wallet_switch.save_wallet=true;
             
         }
