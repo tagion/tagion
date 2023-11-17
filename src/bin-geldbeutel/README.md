@@ -92,11 +92,11 @@ trt-update. Used for invoices.
 ## Sets an account name 
 The account name can be change or set with the `--name` switch
 ```
-> geldbeutel -x 0001 /tmp/wallets/wallet1.json --name wallet1
+> geldbeutel -x 1234 wallet.json --name wallet1
 ```
 Check the name and the public key off the account
 ```
-> geldbeutel -x 0001 /tmp/wallets/wallet1.json --info
+> geldbeutel -x 1234 wallet.json --info
 wallet1:@AsyJ1_tZFNxZemBLF9vlccJcGVatc7G3KISAwJeKbIZf
 ```
 
