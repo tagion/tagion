@@ -21,6 +21,8 @@ import tagion.tools.Basic;
 import tagion.tools.boot.genesis;
 import tagion.tools.revision;
 import tagion.utils.Term;
+import tagion.hibon.BigNumber;
+import tagion.hibon.HiBONRecord : isRecord;
 
 alias check = Check!TagionException;
 
@@ -80,45 +82,42 @@ int _main(string[] args) {
         }
         auto factory = RecordFactory(net);
         auto recorder = factory.recorder;
-        standard_input = (args.length == 1) && (nodekeys.empty);
+        standard_input = (args.length == 1);
         standard_output = output_filename.empty;
         if (standard_output) {
             vout = stderr;
         }
-        if (!nodekeys.empty) {
-            auto genesis_list = createGenesis(nodekeys, Document.init);
-            recorder.insert(genesis_list, Archive.Type.ADD);
-        }
-        if (standard_input) {
+        verbose("standard_input: %s, args %s", standard_input, args);
+        if (!nodekeys.empty && standard_input) {
             auto fin = stdin;
 
-            pragma(msg, "fixme(disabled old head in stiefel");
-            version(none) {
-                TagionHead tagion_head;
-
-                foreach (doc; HiBONRange(fin)) {
-                    if (account) {
-                        if (TagionBill.isRecord(doc)) {
-                            const bill = TagionBill(doc);
-                            tagion_head.globals.total += bill.value.units;
-                        }
-                    }
-                    else {
-
-                        recorder.add(doc);
-                    }
-                }
-                if (!tagion_head.isinit) {
-                    tagion_head.name = TagionDomain;
-                    const total = tagion_head.globals.total;
-                    verbose("Total %s.%09sTGN", total / TagionCurrency.BASE_UNIT, total % TagionCurrency.BASE_UNIT);
-                    recorder.add(tagion_head);
+            BigNumber total;
+            long start_bills;
+            foreach(doc; HiBONRange(fin)) {
+                if (doc.isRecord!TagionBill) {
+                    const bill = TagionBill(doc);
+                    total += bill.value.units;
+                    start_bills += 1;
                 }
             }
+            TagionGlobals genesis_globals;
+            genesis_globals.total = total;
+            genesis_globals.total_burned = 0;
+            genesis_globals.number_of_bills = start_bills;
+            genesis_globals.burnt_bills = 0;
+            verbose("Total %s.%09sTGN", total / TagionCurrency.BASE_UNIT, total % TagionCurrency.BASE_UNIT);
+
+            auto genesis_list = createGenesis(nodekeys, Document.init, genesis_globals);
+            recorder.insert(genesis_list, Archive.Type.ADD);
+            TagionHead tagion_head;
+            tagion_head.name = TagionDomain;
+            tagion_head.current_epoch = 0;
+            recorder.add(tagion_head);
         }
         else {
             foreach (file; args[1 .. $]) {
                 check(file.exists, format("File %s not found!", file));
+
                 const doc = file.fread;
                 recorder.add(doc);
             }

@@ -83,7 +83,7 @@ struct DARTService {
         void checkRead(dartCheckReadRR req, immutable(DARTIndex)[] fingerprints) @safe {
             import tagion.utils.Miscellaneous : toHexString;
 
-            log("Received checkread response %s", fingerprints.map!(f => f.toHexString));
+            // log("Received checkread response %s", fingerprints.map!(f => f.toHexString));
 
             immutable(DARTIndex)[] check_read = (() @trusted => cast(immutable) db.checkload(fingerprints))();
             log("after checkread response");
