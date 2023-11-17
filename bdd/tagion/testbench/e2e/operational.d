@@ -8,6 +8,7 @@ import std.format;
 import std.getopt;
 import std.path;
 import std.range;
+import std.conv;
 import std.stdio;
 import std.random;
 import std.typecons : Tuple;
@@ -101,9 +102,11 @@ int _main(string[] args) {
         wallet2 = interfaces[index2];
     }
 
+    const max_concurrent_runs = (wallet_interfaces.length / 2).to!uint;
+
     int run_counter;
     scope (exit) {
-        writefln("Made %s transactions", run_counter);
+        writefln("Made %s runs", run_counter);
     }
 
     while (true) {
