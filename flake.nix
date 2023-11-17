@@ -31,12 +31,18 @@
 
         src = self;
 
+        configurePhase = ''
+            echo DC=dmd >> local.mk
+            echo USE_SYSTEM_LIBS=1 >> local.mk
+            echo INSTALL=$out/bin >> local.mk
+        '';
+
         buildPhase = ''
-          make DC=dmd USE_SYSTEM_LIBS=1 tagion
+          make tagion
         '';
 
         installPhase = ''
-          mkdir -p $out/bin; make INSTALL=$out/bin install
+          mkdir -p $out/bin; make install
         '';
       };
 
@@ -46,6 +52,7 @@
       mkShell {
         buildInputs = [
           self.packages.x86_64-linux.default.nativeBuildInputs
+          self.packages.x86_64-linux.default.buildInputs
           dub
           ldc
           gcc
