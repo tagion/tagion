@@ -13,6 +13,7 @@ import std.datetime;
 import std.stdio;
 import std.random;
 import std.typecons : Tuple;
+import std.concurrency : ownerTid, receiveOnly, send, thisTid;
 import tagion.behaviour;
 import tagion.communication.HiRPC;
 import tagion.hibon.Document;
@@ -35,11 +36,13 @@ int _main(string[] args) {
     string wallet_configs_path = "~/.local/share/tagion/wallets";
     string[] wallet_pins;
     bool sendkernel = false;
+    int duration;
 
     arraySep = ",";
     auto main_args = getopt(args,
             "w", "wallet configs path files", &wallet_configs_path,
             "x", "wallet pins", &wallet_pins,
+            "sendkernel", "Send requests directory to the kernel", &sendkernel,
             "sendkernel", "Send requests directory to the kernel", &sendkernel,
     );
 
@@ -100,6 +103,7 @@ int _main(string[] args) {
 
         wallet1 = interfaces[index1];
         wallet2 = interfaces[index2];
+        interfaces = interfaces.remove(index1).remove(index2);
     }
 
     // We only want to make one transaction per wallet pair so we can keep track of the balance changes
@@ -126,31 +130,51 @@ int _main(string[] args) {
 
     uint running_jobs;
 
-    bool new_job(ref WalletInterface*[] interfaces) {
-        running_jobs++;
-        scope (exit) {
-            running_jobs--;
-        }
-        auto operational_feature = automation!operational;
-        WalletInterface* receiver;
-        WalletInterface* sender;
-        pickWallets(interfaces, receiver, sender);
-        assert(receiver != sender);
+    Thread new_job(ref WalletInterface*[] interfaces) {
+        auto thread = new Thread({
+            bool job_failed;
+            scope (exit) {
+                ownerTid.send(job_failed);
+            }
+            auto operational_feature = automation!operational;
+            WalletInterface* receiver;
+            WalletInterface* sender;
+            pickWallets(interfaces, receiver, sender);
+            scope (exit) {
+                interfaces ~= receiver;
+                interfaces ~= sender;
+            }
+            assert(receiver != sender);
 
-        operational_feature.SendNContractsFromwallet1Towallet2(sender, receiver, sendkernel);
-        auto feat_group = operational_feature.run;
-        run_counter++;
-        if (feat_group.result.hasErrors) {
-            writefln("operational test failed after %s runs", run_counter);
-            return false;
-        }
-        return true;
+            operational_feature.SendNContractsFromwallet1Towallet2(sender, receiver, sendkernel);
+            auto feat_group = operational_feature.run;
+
+            if (feat_group.result.hasErrors) {
+                job_failed = true;
+            }
+        });
+        return thread;
     }
 
-    bool job_failed;
-    while (MonoTime.currTime <= end_clocktime || job_failed) {
-        job_failed = !new_job(wallet_interfaces);
-        Thread.sleep(1.seconds);
+    bool stop;
+    thisTid; // Create a message box for main thread
+    while (!stop) {
+        run_counter++;
+
+        while (running_jobs < max_concurrent_jobs) {
+            Thread.sleep(100.msecs);
+            Thread t = new_job(wallet_interfaces);
+            t.start;
+            running_jobs++;
+        }
+        writefln("running jobs %s", running_jobs);
+        bool job_failed = receiveOnly!bool;
+        if (job_failed) {
+            writefln("operational test failed after %s runs", run_counter);
+        }
+        running_jobs--;
+
+        stop = (MonoTime.currTime <= end_clocktime || job_failed);
     }
     return 0;
 }
