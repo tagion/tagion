@@ -91,6 +91,7 @@ int _main(string[] args) {
         if (!nodekeys.empty && standard_input) {
             auto fin = stdin;
 
+
             BigNumber total;
             long start_bills;
             foreach(doc; HiBONRange(fin)) {

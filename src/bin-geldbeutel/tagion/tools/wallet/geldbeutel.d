@@ -215,7 +215,7 @@ int _main(string[] args) {
             writefln("%sAccount name has not been set (use --name)%s", YELLOW, RESET);
                 return 0;
             }
-            writefln("%s:%s", 
+            writefln("%s,%s", 
             wallet_interface.secure_wallet.account.name, 
             wallet_interface.secure_wallet.account.owner.encodeBase64);
             info_only=true;
