@@ -88,8 +88,9 @@ struct TranscriptService {
         TagionGlobals last_globals = TagionGlobals(BigNumber(1000_000_000), BigNumber(0), long(10_0000), long(0));
         TagionHead last_head = TagionHead(TagionDomain, 0);
         
-        Fingerprint previous_epoch = Fingerprint.init;
+        Fingerprint previous_epoch = Fingerprint([1,2,3,4]);
         long last_epoch_number = 0;
+        long last_consensus_epoch = 0;
 
         {
             bool head_found;
@@ -179,11 +180,12 @@ struct TranscriptService {
                     }
 
                     // if the new length of the epoch is majority then we finish the epoch
-                    if (v.value.epoch.signs.length.isMajority(number_of_nodes)) {
+                    if (v.value.epoch.signs.length.isMajority(number_of_nodes) && v.value.epoch.epoch_number == last_consensus_epoch+1) {
                         v.value.epoch.previous = previous_epoch;
                         previous_epoch = net.calcHash(v.value.epoch);
-                        votes.remove(v.value.epoch.epoch_number);
+                        last_consensus_epoch += 1;
                         recorder.insert(v.value.locked_archives, Archive.Type.REMOVE);
+                        votes.remove(v.value.epoch.epoch_number);
                     }
 
                     // add the modified epochs to the recorder.
