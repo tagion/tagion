@@ -71,7 +71,7 @@ jobs:
         run: |
           cd build/x86_64-linux/bin
           ./tagion -s
-          ./create_wallets_2.sh -b $PWD -k ~/.local/share/tagion/wave -t ~/.local/share/tagion/wallets -w ${{ inputs.wallets }} -n ${{ inputs.nodes }}
+          ./create_wallets.sh -b $PWD -k ~/.local/share/tagion/wave -t ~/.local/share/tagion/wallets -w ${{ inputs.wallets }} -n ${{ inputs.nodes }}
 
       - name: start service
         run: |
