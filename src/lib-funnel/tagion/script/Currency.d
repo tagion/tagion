@@ -1,4 +1,5 @@
 module tagion.script.Currency;
+@safe:
 import std.algorithm;
 import std.algorithm.searching : canFind;
 import std.format;
@@ -8,13 +9,11 @@ import std.traits;
 import tagion.hibon.HiBONRecord : HiBONRecord, label, recordType;
 import tagion.script.ScriptException : ScriptException, scriptCheck = check;
 
-@safe
 const(V) totalAmount(R, V = ElementType!R)(R r) if (isInputRange!R && isCurrency!V) {
     scriptCheck(r.all!(v => v.units >= 0), format("Negative currency unit %s ", V.UNIT));
     return r.sum;
 }
 
-@safe
 template isCurrency(alias T) {
     enum isCurrency = __traits(hasMember, T, "units") && is(typeof(T.units()) == long);
 }
@@ -22,12 +21,10 @@ template isCurrency(alias T) {
 version (unittest) {
     alias MyCurrency = Currency!"My";
 }
-@safe
 static unittest {
     static assert(isCurrency!MyCurrency);
 }
 
-@safe
 unittest {
     import std.exception;
 
@@ -39,7 +36,6 @@ unittest {
 
 }
 
-@safe
 struct Currency(string _UNIT, long _BASE_UNIT = 1_000_000_000, long MAX_VALUE_IN_BASE_UNITS = 1_000_000_000) {
     static assert(_BASE_UNIT > 0, "Base unit must be positive");
     static assert(UNIT_MAX > 0, "Max unit mist be positive");
@@ -90,7 +86,6 @@ struct Currency(string _UNIT, long _BASE_UNIT = 1_000_000_000, long MAX_VALUE_IN
 
     Currency opBinary(string OP, T)(T rhs) const pure
     if (isIntegral!T && (["+", "-", "*", "%", "/"].canFind(OP))) {
-        pragma(msg, "OP ", T);
         enum code = format(q{return Currency(_units %s rhs);}, OP);
         mixin(code);
     }

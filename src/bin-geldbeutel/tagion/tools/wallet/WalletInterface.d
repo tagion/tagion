@@ -626,6 +626,7 @@ struct WalletInterface {
         bool trt_update;
         double amount;
         bool faucet;
+        bool save_wallet;
         string invoice;
         string output_filename;
     }
@@ -634,7 +635,6 @@ struct WalletInterface {
     void operate(Switch wallet_switch, const(string[]) args) {
         if (secure_wallet.isLoggedin) {
             with (wallet_switch) {
-                bool save_wallet;
                 scope (success) {
                     if (save_wallet) {
                         save(false);

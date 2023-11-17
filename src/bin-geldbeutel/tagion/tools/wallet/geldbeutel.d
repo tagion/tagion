@@ -27,7 +27,7 @@ import tagion.wallet.KeyRecover;
 import tagion.wallet.SecureWallet;
 import tagion.wallet.WalletRecords;
 import tagion.wallet.BIP39;
-
+import tagion.basic.Types : encodeBase64;
 mixin Main!(_main, "wallet");
 
 import tagion.crypto.SecureNet;
@@ -59,10 +59,12 @@ int _main(string[] args) {
     string pincode;
     uint bip39;
     bool wallet_ui;
+    bool info;
     string _passphrase;
     string _salt;
     char[] passphrase;
     char[] salt;
+    string account_name;
     scope (exit) {
         passphrase[]=0;
         salt[]=0;
@@ -99,19 +101,8 @@ int _main(string[] args) {
                 "sendkernel", "Send a contract to the kernel", &wallet_switch.sendkernel, //"answers", "Answers for wallet creation", &answers_str,
                 "P|passphrase", "Set the wallet passphrase", &_passphrase,
                 "create-invoice", "Create invoice by format LABEL:PRICE. Example: Foreign_invoice:1000", &wallet_switch
-                    .invoice, /*
-                "path", format("Set the path for the wallet files : default %s", path), &path,
-                "wallet", format("Wallet file : default %s", options.walletfile), &options.walletfile,
-                "device", format("Device file : default %s", options.devicefile), &options.devicefile,
-                "quiz", format("Quiz file : default %s", options.quizfile), &options.quizfile,
-                "invoice|i", format("Invoice file : default %s", invoicefile), &invoicefile,
-                "contract|t", format("Contractfile : default %s", options.contractfile), &options.contractfile,
-                "amount", "Display the wallet amount", &print_amount,
-                "pay|I", format("Invoice to be payed : default %s", payfile), &payfile,
-                "update|U", "Update your wallet", &update_wallet,
-                "item|m", "Invoice item select from the invoice file", &item,
-                */
-                "pin|x", "Pincode", &pincode,
+                    .invoice, 
+                "x|pin", "Pincode", &pincode,
                 "amount", "Create an payment request in tagion", &wallet_switch.amount,
                 "force", "Force input bill", &wallet_switch.force,
                 "pay", "Creates a payment contract", &wallet_switch.pay,
@@ -126,19 +117,8 @@ int _main(string[] args) {
                 "faucet", "request money from the faucet", &wallet_switch.faucet,
                     // "dart-addr", format("Sets the dart address default: %s", options.dart_address), &options.dart_address,
                 "bip39", "Generate bip39 set the number of words", &bip39,
-                "salt", format(`Add a salt to the bip39 word list (Default "%s")`, _salt), &_salt, /*
-                "port|p", format("Tagion network port : default %d", options.port), &options.port,
-                "url|u", format("Tagion url : default %s", options.addr), &options.addr,
-                "visual|g", "Visual user interface", &wallet_ui,
-                "questions", "Questions for wallet creation", &questions_str,
-                "answers", "Answers for wallet creation", &answers_str,
-                "generate-wallet", "Create a new wallet", &generate_wallet,
-                "health", "Healthcheck the node", &check_health,
-                "unlock", "Remove lock from all local bills", &unlock_bills,
-                "nossl", "Disable ssl encryption", &none_ssl_socket,
-    */
-
-        
+                "name", "Sets the account name", &account_name,
+                "info", "Prints the public key and the name of the account", &info,
 
         );
     }
@@ -253,6 +233,16 @@ int _main(string[] args) {
                 writefln("%1$sWallet not loggedin%2$s", YELLOW, RESET);
                 return 4;
             }
+        }
+        if (info) {
+            writefln("%s:%s", 
+            wallet_interface.secure_wallet.account.name, 
+            wallet_interface.secure_wallet.net.pubkey.encodeBase64);
+        }
+        if (!account_name.empty) {
+            wallet_interface.secure_wallet.account.name=account_name;
+            wallet_switch.save_wallet=true;
+            
         }
         wallet_interface.operate(wallet_switch, args);
     }

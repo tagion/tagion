@@ -2,6 +2,7 @@
 * Handles management of key-pair, account-details device-pin
 */
 module tagion.wallet.SecureWallet;
+@safe:
 import core.time : MonoTime;
 import std.algorithm : all, cache, canFind, countUntil, each, filter, find, joiner, map, max, min, remove, sum, until;
 import std.array;
@@ -51,7 +52,6 @@ alias CiphDoc = Cipher.CipherDocument;
 import tagion.communication.HiRPC;
 
 /// Function and data to recover, sign transaction and hold the account information
-@safe
 struct SecureWallet(Net : SecureNet) {
     protected RecoverGenerator _wallet; /// Information to recover the seed-generator
     protected DevicePIN _pin; /// Information to check the Pin code
@@ -517,7 +517,6 @@ struct SecureWallet(Net : SecureNet) {
         locked_bills.each!(b => account.activated[b.owner] = true);
     }
 
-    @safe
     bool setResponseCheckRead(const(HiRPC.Receiver) receiver) {
         import tagion.dart.DART;
 
@@ -1005,7 +1004,6 @@ version (unittest) {
 
 }
 
-@safe
 unittest {
     auto wallet = StdSecureWallet("secret", "1234");
     const bill1 = wallet.requestBill(1000.TGN);
@@ -1024,7 +1022,6 @@ unittest {
     assertThrown(wallet.createPayment([bill_to_pay], signed_contract1, fees1).get);
 }
 
-@safe
 unittest {
     import std.range;
 
@@ -1078,7 +1075,6 @@ unittest {
 
 }
 
-@safe
 unittest {
     // check get fee greater than user amount
 
@@ -1093,7 +1089,6 @@ unittest {
     assert(res.value == false);
 }
 
-@safe
 unittest {
 
     import std.algorithm;
@@ -1130,7 +1125,6 @@ unittest {
     assert(signed_contract.contract.inputs.uniq.array.length == signed_contract.contract.inputs.length, "signed contract inputs invalid");
 }
 
-@safe
 unittest {
 
     import std.algorithm;
@@ -1158,7 +1152,6 @@ unittest {
     assert(signed_contract.contract.inputs.uniq.array.length == signed_contract.contract.inputs.length, "signed contract inputs invalid");
 }
 
-@safe
 unittest {
     auto wallet1 = StdSecureWallet("some words", "1234");
     const bill1 = wallet1.requestBill(1000.TGN);
@@ -1197,10 +1190,7 @@ unittest {
         SignedContract signed_contract;
         TagionCurrency fees;
         const result = wallet1.createPayment([w2_bill1], signed_contract, fees);
-
         assert(!result);
-        //assert(!can_pay, "Should not be able to pay");   
-
     }
     wallet1.account.add_bill(bill2);
 

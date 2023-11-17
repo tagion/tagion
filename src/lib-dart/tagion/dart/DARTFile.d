@@ -1249,7 +1249,6 @@ class DARTFile {
                 .Recorder recorder) {
                 write(dart, table, recorder);
                 auto _dart_indices = dart_indices(recorder);
-                pragma(msg, "VALIDATE ", typeof(dart_indices));
                 auto find_recorder = dart.loads(_dart_indices);
                 return check(recorder, find_recorder);
             }
