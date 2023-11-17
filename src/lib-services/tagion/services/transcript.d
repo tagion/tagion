@@ -128,6 +128,7 @@ struct TranscriptService {
                         if (doc.isRecord!Epoch) {
                             auto epoch = Epoch(doc);
                             last_epoch_number = epoch.epoch_number;
+                            last_consensus_epoch = epoch.epoch_number;
                             last_globals = epoch.globals;
                         }
                         else if (doc.isRecord!GenesisEpoch) {
@@ -347,6 +348,7 @@ struct TranscriptService {
         }
 
         void epoch(consensusEpoch, immutable(EventPackage*)[] epacks, immutable(long) epoch_number, const(sdt_t) epoch_time) @safe {
+            last_epoch_number += 1;
 
             immutable(ConsensusVoting)[] received_votes = epacks
                 .filter!(epack => epack.event_body.payload.isRecord!ConsensusVoting)
@@ -374,7 +376,7 @@ struct TranscriptService {
                 .array;
 
             auto req = dartCheckReadRR();
-            req.id = epoch_number;
+            req.id = last_epoch_number;
             epoch_contracts[req.id] = new const EpochContracts(signed_contracts, epoch_time);
 
             if (inputs.length == 0) {
