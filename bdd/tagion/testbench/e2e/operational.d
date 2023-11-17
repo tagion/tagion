@@ -32,13 +32,13 @@ mixin Main!(_main);
 
 int _main(string[] args) {
     const program = args[0];
-    string[] wallet_config_files;
+    string wallet_configs_path = "~/.local/share/tagion/wallets";
     string[] wallet_pins;
     bool sendkernel = false;
 
     arraySep = ",";
     auto main_args = getopt(args,
-            "w", "wallet config files", &wallet_config_files,
+            "w", "wallet configs path files", &wallet_configs_path,
             "x", "wallet pins", &wallet_pins,
             "sendkernel", "Send requests directory to the kernel", &sendkernel,
     );
@@ -57,13 +57,12 @@ int _main(string[] args) {
     import std.process : environment;
 
     const HOME = environment.get("HOME");
+    string[] wallet_config_files = dirEntries(buildPath(HOME, wallet_configs_path), "wallet*.json", SpanMode
+            .shallow).map!(a => a.name).array.sort.array;
+
     if (wallet_config_files.empty) {
-        wallet_config_files = dirEntries(buildPath(HOME, ".local/share/tagion/wallets/"), "wallet*.json", SpanMode
-                .shallow).map!(a => a.name).array.sort.array;
-        if (wallet_config_files.empty) {
-            writeln("No wallet configs available");
-            return 0;
-        }
+        writefln("No wallet configs available in %s", wallet_configs_path);
+        return 1;
     }
 
     if (wallet_pins.empty) {
@@ -104,7 +103,7 @@ int _main(string[] args) {
     }
 
     // We only want to make one transaction per wallet pair so we can keep track of the balance changes
-    const max_concurrent_runs = (wallet_interfaces.length / 2).to!uint;
+    const max_concurrent_jobs = (wallet_interfaces.length / 2).to!uint;
     const max_runtime = 3.days;
     // Times of the monotomic clock
     const start_clocktime = MonoTime.currTime;
@@ -125,11 +124,17 @@ int _main(string[] args) {
             start_date, max_runtime,
             predicted_end_date);
 
-    while (MonoTime.currTime <= end_clocktime) {
+    uint running_jobs;
+
+    bool new_job(ref WalletInterface*[] interfaces) {
+        running_jobs++;
+        scope (exit) {
+            running_jobs--;
+        }
         auto operational_feature = automation!operational;
         WalletInterface* receiver;
         WalletInterface* sender;
-        pickWallets(wallet_interfaces, receiver, sender);
+        pickWallets(interfaces, receiver, sender);
         assert(receiver != sender);
 
         operational_feature.SendNContractsFromwallet1Towallet2(sender, receiver, sendkernel);
@@ -137,9 +142,14 @@ int _main(string[] args) {
         run_counter++;
         if (feat_group.result.hasErrors) {
             writefln("operational test failed after %s runs", run_counter);
-            return 1;
+            return false;
         }
+        return true;
+    }
 
+    bool job_failed;
+    while (MonoTime.currTime <= end_clocktime || job_failed) {
+        job_failed = !new_job(wallet_interfaces);
         Thread.sleep(1.seconds);
     }
     return 0;
