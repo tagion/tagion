@@ -36,7 +36,8 @@ geldbeutel [<option>...] <config.json> <files>
             --bip39 Generate bip39 set the number of words
              --name Sets the account name
              --info Prints the public key and the name of the account
--h           --help This help information.o
+           --pubkey Prints the public key
+-h           --help This help information.
 ```
 
 ## Write wallet configuration file `wallet.json`
