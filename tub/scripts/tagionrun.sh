@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-echo $TAGIONWAVE
-echo $TAGIONCONFIG
-echo $TAGIONLOG
-$TAGIONWAVE $TAGIONCONFIG 2>&1 | tee $TAGIONLOG
