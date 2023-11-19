@@ -14,7 +14,7 @@ import std.datetime;
 import std.stdio;
 import std.random;
 import std.typecons : Tuple;
-import std.concurrency : ownerTid, receiveOnly, send, thisTid;
+import std.concurrency : ownerTid, receiveOnly, send, thisTid, spawn, receive;
 import tagion.behaviour;
 import tagion.communication.HiRPC;
 import tagion.hibon.Document;
@@ -36,6 +36,16 @@ enum DurationUnit {
     minutes,
     hours,
     days,
+}
+
+WalletInterface* createInterface(string config, string pin) {
+    WalletOptions opts;
+    opts.load(config);
+    auto wallet_interface = new WalletInterface(opts);
+    check(wallet_interface.load, "Wallet %s could not be loaded".format(config));
+    check(wallet_interface.secure_wallet.login(pin), "Wallet %s %s, not logged in".format(config, pin));
+    writefln("Wallet logged in %s", wallet_interface.secure_wallet.isLoggedin);
+    return wallet_interface;
 }
 
 int _main(string[] args) {
@@ -141,60 +151,68 @@ int _main(string[] args) {
         configs_and_pins = configs_and_pins.remove(index1).remove(index2);
     }
 
-    WalletInterface* createInterface(ConfigAndPin c_p) {
-        WalletOptions opts;
-        opts.load(c_p.config);
-        auto wallet_interface = new WalletInterface(opts);
-        check(wallet_interface.load, "Wallet %s could not be loaded".format(c_p.config));
-        check(wallet_interface.secure_wallet.login(c_p.pin), "Wallet %s, not logged in".format(c_p));
-        writefln("Wallet logged in %s", wallet_interface.secure_wallet.isLoggedin);
-        return wallet_interface;
+    void new_job(ref ConfigAndPin[] configs_and_pins) {
+        ConfigAndPin sender;
+        ConfigAndPin receiver;
+        pickWallets(configs_and_pins, sender, receiver);
+
+        spawn((string sender_config, string sender_pin, string receiver_config, string receiver_pin, bool sendkernel) {
+            bool job_success;
+            scope (exit) {
+                ownerTid.send(job_success);
+            }
+            auto sender_interface = createInterface(sender_config, sender_pin);
+            auto receiver_interface = createInterface(receiver_config, receiver_pin);
+
+            writefln("Making transaction between sender %s and receiver %s", sender_config, receiver_config);
+
+            auto operational_feature = automation!operational;
+            operational_feature.SendNContractsFromwallet1Towallet2(sender_interface, receiver_interface, sendkernel);
+            auto feat_group = operational_feature.run;
+
+            ownerTid.send(ConfigAndPin(sender_config, sender_pin), ConfigAndPin(receiver_config, receiver_pin));
+            if (feat_group.result.hasErrors) {
+                job_success = false;
+            }
+            else {
+                job_success = true;
+            }
+        }, sender.config, sender.pin, receiver.config, receiver.pin, sendkernel);
     }
 
     uint running_jobs;
-
-    void new_job(ref ConfigAndPin[] configs_and_pins) {
-        bool job_failed;
-        auto operational_feature = automation!operational;
-        ConfigAndPin receiver;
-        ConfigAndPin sender;
-        pickWallets(configs_and_pins, receiver, sender);
-        scope (exit) {
-            configs_and_pins ~= receiver;
-            configs_and_pins ~= sender;
-            writeln("transaction done");
-        }
-
-        auto sender_interface = createInterface(sender);
-        auto receiver_interface = createInterface(receiver);
-
-        writefln("Making transaction between sender %s and receiver %s", sender.config, receiver.config);
-
-        operational_feature.SendNContractsFromwallet1Towallet2(sender_interface, receiver_interface, sendkernel);
-        auto feat_group = operational_feature.run;
-
-        if (feat_group.result.hasErrors) {
-            job_failed = true;
-        }
-    }
-
     bool stop;
-    thisTid; // Create a message box for main thread
+    writefln("Running with max of %s at a time", max_concurrent_jobs);
     while (!stop) {
+        scope (failure) {
+            stop = true;
+        }
         run_counter++;
 
-        // while (running_jobs < max_concurrent_jobs) {
-        new_job(configs_and_pins);
-        running_jobs++;
-        // }
-        writefln("running jobs %s", running_jobs);
-        // bool job_failed = receiveOnly!bool;
-        // if (job_failed) {
-        //     writefln("operational test failed after %s runs", run_counter);
-        // }
-        running_jobs--;
+        while (running_jobs < max_concurrent_jobs) {
+            Thread.sleep(300.msecs);
+            new_job(configs_and_pins);
+            running_jobs++;
+            writefln("running jobs %s", running_jobs);
+        }
+        scope (exit) {
+            running_jobs--;
+        }
 
-        stop = (MonoTime.currTime >= end_clocktime);
+        bool job_stopped;
+        while (!job_stopped) {
+            receive(
+                    (ConfigAndPin r, ConfigAndPin s) { configs_and_pins ~= r; configs_and_pins ~= s; },
+                    (bool job_success) {
+                if (!job_success) {
+                    writefln("transaction failed after %s transactions", run_counter);
+                }
+                stop = (MonoTime.currTime >= end_clocktime || !job_success);
+                job_stopped = true;
+            },
+            );
+
+        }
     }
     return 0;
 }
@@ -230,6 +248,7 @@ class SendNContractsFromwallet1Towallet2 {
         // dfmt off
         const wallet_switch = WalletInterface.Switch(
                 update: true, 
+                sum: true,
                 sendkernel: sendkernel,
                 send: send);
         // dfmt on
@@ -280,7 +299,7 @@ class SendNContractsFromwallet1Towallet2 {
 
     @When("the contract has been executed")
     Document executed() @trusted {
-        Thread.sleep(20.seconds);
+        Thread.sleep(25.seconds);
         return result_ok;
     }
 
@@ -289,6 +308,7 @@ class SendNContractsFromwallet1Towallet2 {
         //dfmt off
         const wallet_switch = WalletInterface.Switch(
             trt_update : true,
+            sum: true,
             sendkernel: sendkernel,
             send: send);
 
