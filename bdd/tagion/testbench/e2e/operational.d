@@ -4,6 +4,7 @@ import core.thread;
 import core.time;
 import std.algorithm;
 import std.file;
+import std.traits;
 import std.format;
 import std.getopt;
 import std.path;
@@ -31,19 +32,27 @@ alias operational = tagion.testbench.e2e.operational;
 
 mixin Main!(_main);
 
+enum DurationUnit {
+    minutes,
+    hours,
+    days,
+}
+
 int _main(string[] args) {
     const program = args[0];
     string wallet_configs_path = "~/.local/share/tagion/wallets";
     string[] wallet_pins;
     bool sendkernel = false;
-    int duration;
+    int duration = 3;
+    DurationUnit duration_unit = DurationUnit.days;
 
     arraySep = ",";
     auto main_args = getopt(args,
             "w", "wallet configs path files", &wallet_configs_path,
             "x", "wallet pins", &wallet_pins,
             "sendkernel", "Send requests directory to the kernel", &sendkernel,
-            "sendkernel", "Send requests directory to the kernel", &sendkernel,
+            "duration", format("The duration the test should run for (current = %s)", duration), &duration,
+            "unit", format("The duration unit on of %s (current = %s)", [EnumMembers!DurationUnit], duration_unit), &duration_unit,
     );
 
     if (main_args.helpWanted) {
@@ -108,7 +117,19 @@ int _main(string[] args) {
 
     // We only want to make one transaction per wallet pair so we can keep track of the balance changes
     const max_concurrent_jobs = (wallet_interfaces.length / 2).to!uint;
-    const max_runtime = 3.days;
+    Duration max_runtime;
+    with (DurationUnit) final switch (duration_unit) {
+    case days:
+        max_runtime = duration.days;
+        break;
+    case hours:
+        max_runtime = duration.hours;
+        break;
+    case minutes:
+        max_runtime = duration.minutes;
+        break;
+    }
+
     // Times of the monotomic clock
     const start_clocktime = MonoTime.currTime;
     const end_clocktime = start_clocktime + max_runtime;
