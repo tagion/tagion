@@ -85,38 +85,12 @@ int _main(string[] args) {
 
     check(wallet_pins.length == wallet_config_files.length, "wallet configs and wallet pins were not the same amount");
 
-    WalletOptions[] wallet_options;
-    WalletInterface*[] wallet_interfaces;
-    foreach (i, c; wallet_config_files) {
-        WalletOptions opts;
-        opts.load(c);
-        wallet_options ~= opts;
-        auto wallet_interface = new WalletInterface(opts);
-        check(wallet_interface.load, "Wallet %s could not be loaded".format(i));
-        check(wallet_interface.secure_wallet.login(wallet_pins[i]), "Wallet %s, %s, %s not logged in".format(i, wallet_pins[i], c));
-        wallet_interfaces ~= wallet_interface;
-        writefln("Wallet logged in %s", wallet_interface.secure_wallet.isLoggedin);
-    }
-
-    auto rnd = Random(unpredictableSeed);
-    void pickWallets(WalletInterface*[] interfaces, out WalletInterface* wallet1, out WalletInterface* wallet2)
-    in (interfaces.length >= 2)
-    out (; wallet1 != wallet2)
-    do {
-        ulong index1 = uniform(0, interfaces.length, rnd);
-        ulong index2;
-        do {
-            index2 = uniform(0, interfaces.length, rnd);
-        }
-        while (index1 == index2);
-
-        wallet1 = interfaces[index1];
-        wallet2 = interfaces[index2];
-        interfaces = interfaces.remove(index1).remove(index2);
-    }
+    alias ConfigAndPin = Tuple!(string, "config", string, "pin");
+    ConfigAndPin[] configs_and_pins
+        = wallet_config_files.zip(wallet_pins).map!(c => ConfigAndPin(c[0], c[1])).array;
 
     // We only want to make one transaction per wallet pair so we can keep track of the balance changes
-    const max_concurrent_jobs = (wallet_interfaces.length / 2).to!uint;
+    const max_concurrent_jobs = (wallet_config_files.length / 2).to!uint;
     Duration max_runtime;
     with (DurationUnit) final switch (duration_unit) {
     case days:
@@ -136,7 +110,7 @@ int _main(string[] args) {
 
     // Date for pretty reporting
     const start_date = cast(DateTime) Clock.currTime;
-    const predicted_end_date = cast(DateTime) Clock.currTime;
+    const predicted_end_date = cast(DateTime)(Clock.currTime + max_runtime);
 
     int run_counter;
     scope (exit) {
@@ -149,32 +123,59 @@ int _main(string[] args) {
             start_date, max_runtime,
             predicted_end_date);
 
+    auto rnd = Random(unpredictableSeed);
+
+    void pickWallets(ref ConfigAndPin[] configs_and_pins, out ConfigAndPin sender, out ConfigAndPin receiver)
+    in (configs_and_pins.length >= 2)
+    out (; sender != receiver)
+    do {
+        ulong index1 = uniform(0, configs_and_pins.length, rnd);
+        ulong index2;
+        do {
+            index2 = uniform(0, configs_and_pins.length, rnd);
+        }
+        while (index1 == index2);
+
+        sender = configs_and_pins[index1];
+        receiver = configs_and_pins[index2];
+        configs_and_pins = configs_and_pins.remove(index1).remove(index2);
+    }
+
+    WalletInterface* createInterface(ConfigAndPin c_p) {
+        WalletOptions opts;
+        opts.load(c_p.config);
+        auto wallet_interface = new WalletInterface(opts);
+        check(wallet_interface.load, "Wallet %s could not be loaded".format(c_p.config));
+        check(wallet_interface.secure_wallet.login(c_p.pin), "Wallet %s, not logged in".format(c_p));
+        writefln("Wallet logged in %s", wallet_interface.secure_wallet.isLoggedin);
+        return wallet_interface;
+    }
+
     uint running_jobs;
 
-    Thread new_job(ref WalletInterface*[] interfaces) {
-        auto thread = new Thread({
-            bool job_failed;
-            scope (exit) {
-                ownerTid.send(job_failed);
-            }
-            auto operational_feature = automation!operational;
-            WalletInterface* receiver;
-            WalletInterface* sender;
-            pickWallets(interfaces, receiver, sender);
-            scope (exit) {
-                interfaces ~= receiver;
-                interfaces ~= sender;
-            }
-            assert(receiver != sender);
+    void new_job(ref ConfigAndPin[] configs_and_pins) {
+        bool job_failed;
+        auto operational_feature = automation!operational;
+        ConfigAndPin receiver;
+        ConfigAndPin sender;
+        pickWallets(configs_and_pins, receiver, sender);
+        scope (exit) {
+            configs_and_pins ~= receiver;
+            configs_and_pins ~= sender;
+            writeln("transaction done");
+        }
 
-            operational_feature.SendNContractsFromwallet1Towallet2(sender, receiver, sendkernel);
-            auto feat_group = operational_feature.run;
+        auto sender_interface = createInterface(sender);
+        auto receiver_interface = createInterface(receiver);
 
-            if (feat_group.result.hasErrors) {
-                job_failed = true;
-            }
-        });
-        return thread;
+        writefln("Making transaction between sender %s and receiver %s", sender.config, receiver.config);
+
+        operational_feature.SendNContractsFromwallet1Towallet2(sender_interface, receiver_interface, sendkernel);
+        auto feat_group = operational_feature.run;
+
+        if (feat_group.result.hasErrors) {
+            job_failed = true;
+        }
     }
 
     bool stop;
@@ -182,20 +183,18 @@ int _main(string[] args) {
     while (!stop) {
         run_counter++;
 
-        while (running_jobs < max_concurrent_jobs) {
-            Thread.sleep(100.msecs);
-            Thread t = new_job(wallet_interfaces);
-            t.start;
-            running_jobs++;
-        }
+        // while (running_jobs < max_concurrent_jobs) {
+        new_job(configs_and_pins);
+        running_jobs++;
+        // }
         writefln("running jobs %s", running_jobs);
-        bool job_failed = receiveOnly!bool;
-        if (job_failed) {
-            writefln("operational test failed after %s runs", run_counter);
-        }
+        // bool job_failed = receiveOnly!bool;
+        // if (job_failed) {
+        //     writefln("operational test failed after %s runs", run_counter);
+        // }
         running_jobs--;
 
-        stop = (MonoTime.currTime <= end_clocktime || job_failed);
+        stop = (MonoTime.currTime >= end_clocktime);
     }
     return 0;
 }
