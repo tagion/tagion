@@ -101,7 +101,6 @@ class StdRefinement : Refinement {
         // log.trace("epack.event_body.payload.empty %s", epack.event_body.payload.empty);
     }
 
-    version(none)
     void epoch(Event[] event_collection, const(Round) decided_round) {
 
         import std.bigint;
@@ -198,7 +197,7 @@ class StdRefinement : Refinement {
         excludedNodes(hashgraph._excluded_nodes_mask);
     }
 
-    // version (none) //SHOULD NOT BE DELETED SO WE CAN REVERT TO OLD ORDERING IF NEEDED
+    version (none) //SHOULD NOT BE DELETED SO WE CAN REVERT TO OLD ORDERING IF NEEDED
     void epoch(Event[] event_collection, const(Round) decided_round) {
         import std.algorithm;
         import std.range;
