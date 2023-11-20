@@ -90,7 +90,7 @@ struct DARTService {
 
         import tagion.utils.Miscellaneous : toHexString;
 
-        log("Starting dart with %s", db.bullseye.toHexString);
+        log("Starting dart with %(%02x%)", db.bullseye);
 
         auto hirpc = HiRPC(net);
         import tagion.Keywords;
