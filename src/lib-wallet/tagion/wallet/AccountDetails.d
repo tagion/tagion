@@ -13,6 +13,8 @@ import tagion.script.standardnames;
 
 @safe
 struct AccountDetails {
+    @optional string name;
+    @label(StdNames.owner) @optional Pubkey owner;
     @label("$derivers") Buffer[Pubkey] derivers;
     @label("$bills") TagionBill[] bills;
     @label("$used") TagionBill[] used_bills;

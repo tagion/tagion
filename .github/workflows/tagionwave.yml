@@ -51,15 +51,21 @@ jobs:
           gh run download ${{ inputs.artifact_run_id }} -n successful_artifact --repo tagion/tagion
           tar -xzf *.tar.gz
 
-      - name: Backup old data
-        if: ${{ inputs.clean }}
+      - name: Delete stuff
         run: |
-          DIR_EPOCH=$(stat -c%W ~/.local/share/tagion)
           cd ~/.local/share/
-          OLD_TAR_NAME=tagion_$(date -d @$DIR_EPOCH +%F_%H-%M).tar.gz && \
-            tar czf $OLD_TAR_NAME tagion/ && \
-            rm -r tagion || \
-            echo "No old data to backup"
+          rm -rf tagion || echo "No data to remove"
+
+      
+      # - name: Backup old data
+      #   if: ${{ inputs.clean }}
+      #   run: |
+      #     DIR_EPOCH=$(stat -c%W ~/.local/share/tagion)
+      #     cd ~/.local/share/
+      #     OLD_TAR_NAME=tagion_$(date -d @$DIR_EPOCH +%F_%H-%M).tar.gz && \
+      #       tar czf $OLD_TAR_NAME tagion/ && \
+      #       rm -r tagion || \
+      #       echo "No old data to backup"
 
       - name: Delete old backups
         if: ${{ inputs.clean }}
@@ -71,7 +77,7 @@ jobs:
         run: |
           cd build/x86_64-linux/bin
           ./tagion -s
-          ./create_wallets_2.sh -b $PWD -k ~/.local/share/tagion/wave -t ~/.local/share/tagion/wallets -w ${{ inputs.wallets }} -n ${{ inputs.nodes }}
+          ./create_wallets.sh -b $PWD -k ~/.local/share/tagion/wave -t ~/.local/share/tagion/wallets -w ${{ inputs.wallets }} -n ${{ inputs.nodes }}
 
       - name: start service
         run: |

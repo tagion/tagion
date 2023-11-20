@@ -15,14 +15,6 @@ public {
         }
     }
 
-    // extern(C) void* __tls_get_addr (void* ptr) {
-    //     import core.stdc.stdio;
-    //     import core.stdc.stdlib;
-
-    //     fprintf(stderr, "__tls_get_addr called\n");
-    //     exit(0);
-    //     return null;
-    // }
 
     version (WebAssembly) {
         pragma(msg, "WebAssembler Memory");
@@ -82,18 +74,6 @@ alias _call_static_ctor(Modules...) = _static_call_all!("_staticCtor", "", Modul
 
 alias _call_static_dtor(Modules...) = _static_call_all!("_staticDtor", "", Modules);
 
-/++
-extern(C) int main() {
-    import static_import_betterc, static_node_betterc;
-    alias parent = __traits(parent, main);
-    alias modules = AliasSeq!(static_import_betterc, static_node_betterc);
-    _call_static_ctor!modules;
-    scope(exit) {
-        _call_static_dtor!modules;
-    }
-    return 0;
-}
-++/
 
 import tagion.betterC.hibon.HiBON : HiBONT;
 import tagion.betterC.utils.RBTree : RBTreeT;
@@ -101,8 +81,3 @@ import tagion.betterC.utils.RBTree : RBTreeT;
 alias HiBONT_RBTreeT = RBTreeT!(HiBONT.Member*).Node;
 extern (C) HiBONT_RBTreeT _D6tagion7betterC5utils6RBTree__T7RBTreeTTPSQBqQBm5hibon5HiBON6HiBONT6MemberZQBs4NILLSQDgQDcQCxQCu__TQCqTQClZQCy4Node;
 
-// extern(C) void  _D6tagion7betterC5utils6RBTree__T7RBTreeTTPSQBqQBm5hibon5HiBON6HiBONT6MemberZQBs20_staticCtor_L50_C5_1FNbNiNfZv() {
-// }
-
-pragma(msg, "HiBONT_RBTreeT ", _D6tagion7betterC5utils6RBTree__T7RBTreeTTPSQBqQBm5hibon5HiBON6HiBONT6MemberZQBs4NILLSQDgQDcQCxQCu__TQCqTQClZQCy4Node
-        .sizeof);

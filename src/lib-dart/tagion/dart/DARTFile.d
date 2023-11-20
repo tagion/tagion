@@ -102,13 +102,13 @@ class DARTFile {
     mixin(EnumText!("Params", _params));
 
     enum MIN_BLOCK_SIZE = 0x80;
-    static create(string filename, const HashNet net, const uint block_size = MIN_BLOCK_SIZE, const uint max_index = 0x80)
+    static create(string filename, const HashNet net, const uint block_size = MIN_BLOCK_SIZE, const uint max_size = 0x80_000)
     in {
         assert(block_size >= MIN_BLOCK_SIZE,
                 format("Block size is too small for %s, %d must be langer than %d", filename, block_size, MIN_BLOCK_SIZE));
     }
     do {
-        BlockFile.create(filename, net.multihash, block_size, DARTFile.stringof);
+        BlockFile.create(filename, net.multihash, block_size, DARTFile.stringof, max_size);
     }
     /++
      + A file set by filename should be create by the BlockFile
@@ -1141,7 +1141,6 @@ class DARTFile {
     void traverse(
             const TraverseCallback dg,
             const SectorRange sectors = SectorRange.init,
-            const Flag!"full" full = No.full,
             const uint depth = 0) {
         void local_traverse(
                 const Index branch_index,
@@ -1250,7 +1249,6 @@ class DARTFile {
                 .Recorder recorder) {
                 write(dart, table, recorder);
                 auto _dart_indices = dart_indices(recorder);
-                pragma(msg, "VALIDATE ", typeof(dart_indices));
                 auto find_recorder = dart.loads(_dart_indices);
                 return check(recorder, find_recorder);
             }

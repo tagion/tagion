@@ -6,8 +6,3 @@ when the network continues to run.
 then it should continue adding blocks to the _epochchain
 then check the chains validity.
 
-Scenario: create a transaction
-given i have a payment request
-when i pay the transaction
-then the networks tagion globals amount should be updated.
-

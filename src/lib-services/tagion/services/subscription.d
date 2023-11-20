@@ -21,6 +21,7 @@ struct SubscriptionServiceOptions {
     string address;
 
     import tagion.services.options : contract_sock_addr;
+
     void setDefault() nothrow {
         address = contract_sock_addr("SUBSCRIPTION_");
     }
@@ -51,11 +52,11 @@ struct SubscriptionService {
     void task(immutable(SubscriptionServiceOptions) opts) @trusted {
         log.registerSubscriptionTask(thisActor.task_name);
         log("Subscribing to tags");
-        foreach (tag; opts.tags.split(':')) {
+        foreach (tag; opts.tags.split(',')) {
             submask.subscribe(tag);
         }
         scope (exit) {
-            foreach (tag; opts.tags.split(':')) {
+            foreach (tag; opts.tags.split(',')) {
                 submask.unsubscribe(tag);
             }
         }
@@ -90,5 +91,3 @@ struct SubscriptionService {
         run(&receiveSubscription);
     }
 }
-
-alias SubscriptionServiceHandle = ActorHandle!SubscriptionService;

@@ -38,6 +38,10 @@ import tagion.tools.Basic;
 import tagion.tools.revision;
 import tagion.utils.JSONCommon;
 import tagion.utils.getopt;
+import tagion.tools.toolsexception;
+import tagion.tools.wallet.WalletInterface;
+import tagion.tools.wallet.WalletOptions;
+import tagion.utils.Term;
 
 static abort = false;
 private extern (C)
@@ -64,6 +68,18 @@ mixin Main!(_main, "tagionwave");
 
 int _main(string[] args) {
     immutable program = args[0];
+    string bootkeys_path;
+    /*
+    * Boot key format expected for mode0
+    * nodename0:pincode0
+    * nodename1:pincode1
+    * nodename2:pincode2
+    * ...      : ...
+    * The directory where the wallet config_file should be placed is 
+    * <bootkeys_path>/<nodenameX>/wallet.json
+    *
+    */
+    File fin = stdin; /// Console input for the bootkeys
     if (geteuid == 0) {
         stderr.writeln("FATAL: YOU SHALL NOT RUN THIS PROGRAM AS ROOT");
         return 1;
@@ -104,10 +120,13 @@ int _main(string[] args) {
     string[] override_options;
 
     auto main_args = getopt(args,
-            "v|version", "Print revision information", &version_switch,
+            "version", "Print revision information", &version_switch,
             "O|override", "Override the config file", &override_switch,
             "option", "Set an option", &override_options,
             "fail-fast", "Set the fail strategy, fail-fast=%s".format(fail_fast), &fail_fast,
+            "k|keys", "Path to the boot-keys in mode0", &bootkeys_path,
+            "v|verbose", "Enable verbose print-out", &__verbose_switch,
+            "n|dry", "Check the parameter without staring the network (dry-run)", &__dry_switch,
             "nodeopts", "Generate single node opts files for mode0", &mode0_node_opts_path,
             "m|monitor", "Enable the monitor", &monitor,
     );
@@ -193,7 +212,7 @@ int _main(string[] args) {
         logger_service.send(Sig.STOP);
     }
 
-    SubscriptionServiceHandle sub_handle;
+    ActorHandle sub_handle;
     { // Spawn logger subscription service
         immutable subopts = Options(local_options).subscription;
         sub_handle = spawn!SubscriptionService("logger_sub", subopts);
@@ -204,7 +223,7 @@ int _main(string[] args) {
     log.register(baseName(program));
 
     locator_options = new immutable(LocatorOptions)(20, 5);
-    SupervisorHandle[] supervisor_handles;
+    ActorHandle[] supervisor_handles;
 
     if (local_options.wave.network_mode == NetworkMode.INTERNAL) {
         auto node_options = get_mode_0_options(local_options, monitor);
@@ -245,7 +264,6 @@ int _main(string[] args) {
                     node_opt.dart.dart_path)));
             writefln("copying file %s to %s", db.filename, new_filename);
             node_opt.dart.dart_path.copy(new_filename);
-
         }
 
         // we only need to read one head since all bullseyes are the same:
@@ -274,7 +292,7 @@ int _main(string[] args) {
         }
 
         db.close;
-        network_mode0(node_options, supervisor_handles, doc);
+        network_mode0(node_options, supervisor_handles, bootkeys_path, fin, doc);
 
         if (mode0_node_opts_path) {
             foreach (i, opt; node_options) {
@@ -331,8 +349,12 @@ int _main(string[] args) {
     return 0;
 }
 
-int network_mode0(const(Options)[] node_options, ref ActorHandle!Supervisor[] supervisor_handles, Document epoch_head = Document
-        .init) {
+int network_mode0(
+        const(Options)[] node_options,
+        ref ActorHandle[] supervisor_handles,
+        string bootkeys_path,
+        File fin,
+        Document epoch_head = Document.init) {
 
     import std.range : zip;
     import tagion.crypto.Types;
@@ -346,20 +368,66 @@ int network_mode0(const(Options)[] node_options, ref ActorHandle!Supervisor[] su
     }
 
     Node[] nodes;
-
+    auto by_line = fin.byLine;
+    enum number_of_retry = 3;
     foreach (i, opts; node_options) {
-        auto net = new StdSecureNet();
-        net.generateKeyPair(opts.task_names.supervisor);
-
+        StdSecureNet net;
         scope (exit) {
             net = null;
         }
 
+        if (bootkeys_path.empty) {
+            net = new StdSecureNet;
+            net.generateKeyPair(opts.task_names.supervisor);
+        }
+        else {
+            WalletOptions wallet_options;
+    LoopTry:
+            foreach (tries; 1 .. number_of_retry + 1) {
+                verbose("Input boot key %d as nodename:pincode", i);
+                const args = by_line.front.split(":");
+                by_line.popFront;
+                if (args.length != 2) {
+                    writefln("%1$sBad format %3$s expected nodename:pincode%2$s", RED, RESET, args.front);
+                }
+                //string wallet_config_file;
+                const wallet_config_file = buildPath(bootkeys_path, args[0]).setExtension(FileExtension.json);
+                verbose("Wallet path %s", wallet_config_file);
+                if (!wallet_config_file.exists) {
+                    writefln("%1$sBoot key file %3$s not found%2$s", RED, RESET, wallet_config_file);
+                    writefln("Try another node name");
+                }
+                else {
+                    verbose("Load config");
+                    wallet_options.load(wallet_config_file);
+                    auto wallet_interface = WalletInterface(wallet_options);
+                    verbose("Load wallet");
+                    wallet_interface.load;
+
+                    const loggedin=wallet_interface.secure_wallet.login(args[1]);
+                    if (wallet_interface.secure_wallet.isLoggedin) {
+                        verbose("%1$sNode %3$s successfull%2$s", GREEN, RESET, args[0]);
+                        net = cast(StdSecureNet) wallet_interface.secure_wallet.net.clone;
+                        break LoopTry;
+                    }
+                    else {
+                        writefln("%1$sWrong pincode bootkey %3$s node %4$s%2$s", RED, RESET, i, args[0]);
+                    }
+                }
+                check(tries < number_of_retry, format("Max number of reties is %d", number_of_retry));
+
+            }
+        }
+        if (dry_switch && !bootkeys_path.empty) {
+            writefln("%1$sBoot keys correct%2$s", GREEN, RESET);
+        }
         shared shared_net = (() @trusted => cast(shared) net)();
 
         nodes ~= Node(opts, shared_net, net.pubkey);
     }
-
+    if (dry_switch) {
+        return 0;
+    }
     import tagion.hibon.HiBONtoText;
 
     if (epoch_head is Document.init) {

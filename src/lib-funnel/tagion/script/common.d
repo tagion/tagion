@@ -146,12 +146,14 @@ struct GenesisEpoch {
     Pubkey[] nodes;
     Document testamony;
     @label(StdNames.time) sdt_t time;
+    TagionGlobals globals;
     mixin HiBONRecord!(q{
-        this(const(long) epoch_number, Pubkey[] nodes, const(Document) testamony, const(sdt_t) time) {
+        this(const(long) epoch_number, Pubkey[] nodes, const(Document) testamony, const(sdt_t) time, const(TagionGlobals) globals) {
             this.epoch_number = epoch_number;
             this.nodes = nodes;
             this.testamony = testamony;
             this.time = time;
+            this.globals = globals;
         }
     });
 }
@@ -165,9 +167,18 @@ struct Epoch {
     @label("$signs") const(Signature)[] signs; /// Signature of all inputs
     @optional Pubkey[] active; /// Sorted keys
     @optional Pubkey[] deactive;
+    TagionGlobals globals;
 
     mixin HiBONRecord!(q{
-        this(long epoch_number,sdt_t time, Fingerprint bullseye, Fingerprint previous,const(Signature)[] signs, Pubkey[] active, Pubkey[] deactive) {
+        this(long epoch_number,
+            sdt_t time, 
+            Fingerprint bullseye,
+            Fingerprint previous,
+            const(Signature)[] signs,
+            Pubkey[] active,
+            Pubkey[] deactive,
+            const(TagionGlobals) globals) 
+        {
             this.epoch_number = epoch_number;
             this.time = time;
             this.bullseye = bullseye;
@@ -175,6 +186,7 @@ struct Epoch {
             this.signs = signs;
             this.active = active;
             this.deactive = deactive;
+            this.globals = globals;
         }
     });
 }
@@ -183,12 +195,10 @@ struct Epoch {
 struct TagionHead {
     @label(StdNames.name) string name; // Default name should always be "tagion"
     long current_epoch;
-    TagionGlobals globals;
     mixin HiBONRecord!(q{
-        this(const(string) name, const(long) current_epoch, const(TagionGlobals) globals) {
+        this(const(string) name, const(long) current_epoch) {
             this.name = name;
             this.current_epoch = current_epoch;
-            this.globals = globals;
         }
 
     });
@@ -209,23 +219,6 @@ struct TagionGlobals {
         }
     });
 }
-// struct TagionGlobals {
-//     @label("events") const(Fingerprint)[] event_prints;
-//     @label("total") BigNumber total;
-//     @label("total_burned") BigNumber total_burned;
-//     @label("number_of_bills") long number_of_bills;
-//     @label("burnt_bills") long burnt_bills;
-
-//     mixin HiBONRecord!(q{
-//         this(const(Fingerprint)[] event_prints, const(BigNumber) total, const(BigNumber) total_burned, const(long) number_of_bills, const(long) burnt_bills) {
-//             this.event_prints = event_prints;
-//             this.total = total;
-//             this.total_burned = total_burned;
-//             this.number_of_bills = number_of_bills;
-//             this.burnt_bills = burnt_bills;
-//         }
-//     });
-// }
 
 @recordType("@$Vote")
 struct ConsensusVoting {
@@ -248,4 +241,19 @@ struct ConsensusVoting {
     bool verifyBullseye(const(SecureNet) net, const(Fingerprint) bullseye) const {
         return net.verify(bullseye, signed_bullseye, owner);
     }
+}
+
+
+@recordType("@Locked")
+struct LockedArchives {
+    @label(StdNames.locked_epoch) long epoch_number;
+    @label("outputs") const(DARTIndex)[] locked_outputs;
+    mixin HiBONRecord!(q{
+        this(long epoch_number, const(DARTIndex)[] locked_outputs) {
+            this.epoch_number = epoch_number;
+            this.locked_outputs = locked_outputs;
+        }
+
+
+    });
 }

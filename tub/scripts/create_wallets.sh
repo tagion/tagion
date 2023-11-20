@@ -44,6 +44,8 @@ mkdir -p $ndir
 mkdir -p $wdir
 
 
+all_infos=""
+
 # Create the wallets in a loop
 for ((i = 1; i <= wallets; i++)); 
 do
@@ -59,6 +61,11 @@ do
   # Step 2: Generate wallet passphrase and pincode
   $bdir/geldbeutel "$wallet_config" -P "$password" -x "$pincode"
   echo "Created wallet $i in $wallet_dir with passphrase: $password and pincode: $pincode"
+  # Step 3: Generate a node name and insert into all infos
+  name="node_$i"
+  $bdir/geldbeutel "$wallet_config" -x "$pincode" --name "$name"
+  address=$($bdir/geldbeutel "$wallet_config" --info) 
+  all_infos+=" -p $address,$name"
 
   for (( b=1; b <= bills; b++)); 
   do
@@ -69,9 +76,19 @@ do
     echo "Forced bill into wallet $bill_name"
   done 
 
+
 done
 
+echo "$all_infos"
+
 bill_files=$(ls $wdir/bill*.hibon)
+# $(cat $wdir/bill*.hibon) |"${bdir}/stiefel" -a "$all_infos" -o ${wdir}/dart_recorder.hibon
+# cat $bill_files| "${bdir}/stiefel" -a -v "$all_infos" -o "${wdir}/dart_recorder.hibon"
+# "${bdir}/stiefel" -a -v "$all_infos" -o "${wdir}/dart_recorder.hibon" < "$bill_files"
+# "${bdir}/stiefel" -a -v "$all_infos" -o "${wdir}/dart_recorder.hibon" < "$(cat "${wdir}/bill*.hibon")"
+# "${bdir}/stiefel" -a "$all_infos" -o "${wdir}/dart_recorder.hibon" < "$wdir/bill*.hibon")"
+# (${bdir}/stiefel -a -p "$all_infos" -o ${wdir}/dart_recorder.hibon < "$wdir/bill*.hibon"
+
 $bdir/stiefel $bill_files -o $wdir/dart_recorder.hibon
 
 mkdir -p $ndir
@@ -84,15 +101,13 @@ do
   $bdir/dartutil "$dartfilename" $wdir/dart_recorder.hibon -m
 done
 
-rm -rf $wdir/bill*.hibon
+# rm -rf $wdir/bill*.hibon
 
 cd $ndir
 
-$bdir/neuewelle -O --option=wave.number_of_nodes:$nodes
+$bdir/neuewelle -O --option=wave.number_of_nodes:$nodes --option=subscription.tags:taskfailure
 
 cd -
 
 echo "Run the network this way:"
 echo "$bdir/neuewelle $ndir/tagionwave.json"
-
-

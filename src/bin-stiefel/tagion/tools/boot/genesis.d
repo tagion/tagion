@@ -13,8 +13,9 @@ import tagion.tools.Basic;
 import tagion.tools.toolsexception;
 import tagion.utils.StdTime;
 
+
 @safe:
-Document[] createGenesis(const(string[]) nodes_param, Document testamony) {
+Document[] createGenesis(const(string[]) nodes_param, Document testamony, TagionGlobals globals) {
     import std.stdio;
 
     Document[] result;
@@ -63,6 +64,9 @@ Document[] createGenesis(const(string[]) nodes_param, Document testamony) {
     //.sort;
     genesis_epoch.time = cast(sdt_t) time;
     genesis_epoch.testamony = testamony;
+    genesis_epoch.globals = globals;
+
+    
     name_cards.each!((name_card) => verbose("%s", name_card.toPretty));
     node_records.each!((name_card) => verbose("%s", name_card.toPretty));
     verbose("%s", genesis_epoch.toPretty);

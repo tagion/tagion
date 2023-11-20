@@ -16,18 +16,12 @@ struct Cipher {
     import std.digest.crc : crc32Of;
     import tagion.basic.ConsensusExceptions : ConsensusException, ConsensusFailCode, SecurityConsensusException;
     import tagion.crypto.SecureInterfaceNet : SecureNet;
-    import tagion.crypto.SecureNet : check, scramble;
+    import tagion.crypto.SecureNet : check;
+    import tagion.crypto.random.random;
     import tagion.crypto.aes.AESCrypto : AESCrypto;
 
     alias AES = AESCrypto!256;
     enum CRC_SIZE = crc32Of.length;
-
-    // import std.stdio;
-    // const SecureNet net;
-    // @disable this();
-    // this(const(SecureNet) net) {
-    //     this.net = net;
-    // }
 
     @recordType("TCD")
     struct CipherDocument {
@@ -45,15 +39,12 @@ struct Cipher {
         scope (exit) {
             secret_key[] = 0;
         }
-        do {
             getRandom(secret_key);
-        }
-        while (!net.secKeyVerify(secret_key));
         CipherDocument result;
         result.cipherPubkey = net.getPubkey(secret_key);
         scope ubyte[AES.BLOCK_SIZE] nonce_alloc;
         scope ubyte[] nonce = nonce_alloc;
-        scramble(nonce);
+        getRandom(nonce);
         result.nonce = nonce.idup;
         // Appand CRC
         auto ciphermsg = new ubyte[AES.enclength(msg.data.length + CRC_SIZE)];
@@ -61,7 +52,7 @@ struct Cipher {
         // writefln("msg.size = %d", msg.size);
         // Put random padding to in the last block
         auto last_block = ciphermsg[$ - AES.BLOCK_SIZE + CRC_SIZE .. $];
-        scramble(last_block);
+        getRandom(last_block);
         ciphermsg[0 .. msg.data.length] = msg.data;
         const crc = msg.data.crc32Of;
         ciphermsg[msg.data.length .. msg.data.length + CRC_SIZE] = crc;

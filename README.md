@@ -14,7 +14,7 @@ This repository is a home for all core units, also containing scripts for cross-
 [DDOC](https://ddoc.tagion.org)
 
 ## Installation
-*Installation tested on ubuntu 22.04, archlinux from 17/05/23*
+*Installation tested on ubuntu 22.04, nixos-unstable*
 
 ### Setup steps & preflight checks
 
@@ -24,21 +24,26 @@ Follow this guide:
 https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent
 
 2. First of all please be sure that you have everything, command
-You can run the following command as root, if you are using arch or ubuntu
+You can run the following commands, if you are using arch, nix or ubuntu
     
 ```bash
 # Ubuntu
-apt-get install make screen autoconf golang clang libclang-dev libtool libssl-dev perl dub cmake
+apt-get install git autoconf build-essential libtool dub cmake
 # Arch
-pacman -Syu make screen autoconf go clang libtool perl dub cmake
+pacman -Syu git make autoconf gcc libtool dub cmake
+# nix
+nix develop
 ```
+
+You can skip the next step if you installed with nix.  
+
     
 3. Choose a D compiler ldc2 or dmd
         
-- LLVM D compiler - ldc2 (latest working version is 1.34)
+- LLVM D compiler - ldc2 (latest working version is 1.35)
 ```bash
-wget https://github.com/ldc-developers/ldc/releases/download/v1.34.0/ldc2-1.34.0-linux-x86_64.tar.xz
-tar xf ldc2-1.34.0-linux-x86_64.tar.xz
+wget https://github.com/ldc-developers/ldc/releases/download/v1.35.0/ldc2-1.35.0-linux-x86_64.tar.xz
+tar xf ldc2-1.35.0-linux-x86_64.tar.xz
 export PATH="path-to-ldc2/ldc2-1.34.0-linux-x86_64/bin:$PATH"
 ```
         
@@ -49,7 +54,8 @@ tar xf dmd.2.105.2.linux.tar.xz
 export PATH="path-to-dmd2/dmd2/linux/bin64:$PATH"
 ```
 
-4. dstep download release binaries (or follow build instruction from https://github.com/jacob-carlborg/dstep)
+4. Install dstep if you need to be able to update c headers to d interface
+Download release binaries (or follow build instruction from https://github.com/jacob-carlborg/dstep)
     
 ```bash
 wget https://github.com/jacob-carlborg/dstep/releases/download/v1.0.0/dstep-1.0.0-linux-x86_64.tar.xz
@@ -62,8 +68,7 @@ tar xf dstep-1.0.0-linux-x86_64.tar.xz
 ```bash
 dstep --version # 1.0.0
 ldc2 --version # LDC - the LLVM D compiler (1.34.0): ...
-dmd --version
-go version # go version go1.19.5 linux/amd64
+dmd --version # v2.105.2
 ```
 
 6. Cloning tagion repo
@@ -74,10 +79,10 @@ git clone git@github.com:tagion/tagion.git
 
 ### Compiling
 
-1. Running unittests
+1. Running tests
 
 ```bash
-make unittest
+make test
 ```
 
 2. Compiling binaries
@@ -90,13 +95,7 @@ make install
 # such that you can use the tools from you shell
 ```
 
-3. Compile binaries and running network in mode0
-
-```bash
-make mode0
-```
-
-4. General info about build flow
+3. General info about build flow
 
 ```bash
 # Help info
@@ -110,13 +109,12 @@ make env
 make env-<topic>
 ```
 
-5. Compilation options, can be specified on the commandline or in a `local.mk` in the project root
+4. Compilation options, can be specified on the commandline or in a `local.mk` in the project root
 
 ```bash
 # Showing the default values
 ONETOOL=1 # ALL tools linked in to a single executable
           # and individual tools are symbolic links to that binary
-OLD=1     # Uses and old transaction system
 DC=       # D compiler to use, default will try to pick between dmd and ldc2
 CC=       # C compiler to use, default will try to pick between gcc and clang
 ```
@@ -153,12 +151,9 @@ Note. The result from the `callgrind` viewed with [Kcachegrind](https://kcachegr
 ./src/
      /lib-* # Library source code
      /bin-* # Executable source code
-     /wrap-* # Vendor library compilation scripts
-
+     /fork-* # Vendor library compilation scripts
 ./bdd/ # behaviour driven tests
 ./tub/ # Build flow scripts
-./Makefile # Pre-build Make file
-./integration # High level integration services
 ```
 
 ## Generating Docs

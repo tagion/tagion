@@ -63,6 +63,6 @@ void monitorServiceTask(immutable(MonitorOptions) opts) @trusted nothrow {
         import std.stdio;
 
         log("%s", t);
-        fatal(t);
+        fail(t);
     }
 }

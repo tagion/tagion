@@ -6,44 +6,72 @@
     secp256k1-zkp.url = "github:tagion/secp256k1-zkp";
   };
 
-  outputs = { self, nixpkgs, secp256k1-zkp }: {
+  outputs = { self, nixpkgs, secp256k1-zkp }:
+    let
+      gitRev =
+        if (builtins.hasAttr "rev" self)
+        then self.rev
+        else "dirty";
+    in
+    {
 
-    formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixpkgs-fmt;
+      formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixpkgs-fmt;
 
-    defaultPackage.x86_64-linux =
-      # Notice the reference to nixpkgs here.
-      with import nixpkgs { system = "x86_64-linux"; };
-      stdenv.mkDerivation {
-        name = "tagion";
+      packages.x86_64-linux.default =
+        # Notice the reference to nixpkgs here.
+        with import nixpkgs { system = "x86_64-linux"; };
+        stdenv.mkDerivation {
+          name = "tagion";
 
-        buildInputs = [
-          nng
-          secp256k1-zkp.defaultPackage.x86_64-linux
-          mbedtls
-        ];
+          buildInputs = [
+            nng
+            secp256k1-zkp.defaultPackage.x86_64-linux
+            mbedtls
+          ];
 
-        nativeBuildInputs = [
-          dub
-          dmd
-          dtools
-          go
-          git
-          gnumake
-          glibcLocales
-          ldc
-          libtool
-          llvmPackages_15.clang-unwrapped
-          autoconf
-          automake
-          autoreconfHook
-          cmake
-          pkg-config
-        ];
+          nativeBuildInputs = [
+            dmd
+            dtools
+            gnumake
+            pkg-config
+          ];
 
-        src = self;
-        buildPhase = ''
-          make DC=dmd tagion
-        '';
-      };
-  };
+          src = self;
+
+          configurePhase = ''
+            echo DC=dmd >> local.mk
+            echo USE_SYSTEM_LIBS=1 >> local.mk
+            echo INSTALL=$out/bin >> local.mk
+            echo NNG_ENABLE_TLS=1 >> local.mk
+          '';
+
+          buildPhase = ''
+            make GIT_HASH=${gitRev} tagion
+          '';
+
+          installPhase = ''
+            mkdir -p $out/bin; make install
+          '';
+        };
+
+      devShell.x86_64-linux =
+        # Notice the reference to nixpkgs here.
+        with import nixpkgs { system = "x86_64-linux"; };
+        mkShell {
+          buildInputs = [
+            self.packages.x86_64-linux.default.nativeBuildInputs
+            self.packages.x86_64-linux.default.buildInputs
+            dub
+            ldc
+            gcc
+            git
+            libtool
+            autoconf
+            automake
+            autoreconfHook
+            cmake
+          ];
+        };
+
+    };
 }

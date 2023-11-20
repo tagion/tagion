@@ -138,9 +138,9 @@ extern (C) {
 
             auto salt = cast(char[]) saltPtr[0 .. saltLen];
             scope (exit) {
-                scramble(pincode);
-                scramble(mnemonic);
-                scramble(salt);
+            pincode[]=0;
+            mnemonic[]=0;
+            salt[]=0;
             }
             // Create a wallet from inputs.
             __wallet_storage.wallet = StdSecureWallet(
@@ -163,8 +163,9 @@ extern (C) {
         try {
             auto pincode = cast(char[])(pincodePtr[0 .. pincodeLen]);
             scope (exit) {
-                scramble(pincode);
+                pincode[]=0;
             }
+        
             __wallet_storage.read;
             return __wallet_storage.wallet.login(pincode);
         }
@@ -222,6 +223,9 @@ extern (C) {
         if (__wallet_storage.wallet.isLoggedin()) {
             if (__wallet_storage.wallet.changePincode(pincode, newPincode)) {
                 __wallet_storage.write;
+                version(NET_HACK) {
+                __wallet_storage.read;
+                }
                 // Since secure_wallet do logout after pincode change
                 // we need to perform a login manualy.
                 __wallet_storage.wallet.login(newPincode);
@@ -300,6 +304,9 @@ extern (C) {
             const contractDocId = recyclerDoc.create(contract.toDoc);
             // Save wallet state to file.
             __wallet_storage.write;
+            version(NET_HACK) {
+            __wallet_storage.read;
+            }
 
             *contractPtr = contractDocId;
             return 1;
@@ -332,6 +339,9 @@ extern (C) {
             const invoiceDocId = recyclerDoc.create(invoice.toDoc);
             // Save wallet state to file.
             __wallet_storage.write;
+            version(NET_HACK) {
+            __wallet_storage.read;
+            }
 
             *invoicePtr = cast(uint8_t) invoiceDocId;
             return 1;
@@ -368,6 +378,9 @@ extern (C) {
             if (result) {
                 // Save wallet state to file.
                 __wallet_storage.write;
+                version(NET_HACK) {
+                __wallet_storage.read;
+                }
                 return 1;
             }
         }
@@ -481,6 +494,9 @@ extern (C) {
         if (__wallet_storage.wallet.isLoggedin()) {
             __wallet_storage.wallet.setEncrAccount(Cipher.CipherDocument(Document(account)));
             __wallet_storage.write;
+            version(NET_HACK) {
+            __wallet_storage.read;
+            }
             return 1;
         }
         return 0;
@@ -718,22 +734,7 @@ unittest {
         assert(result != 0, "Expected non-zero result");
         assert(__wallet_storage.wallet.isLoggedin, "Expected wallet stays logged in");
     }
-}
 
-version (none) unittest {
-    import tagion.hibon.HiBONtoText;
-
-    const work_path = new_test_path;
-    //__wallet_storage=new WalletStorage(work_path);
-    scope (success) {
-        work_path.rmdirRecurse;
-    }
-
-    // Create new test wallet
-    {
-        const result = wallet_storage_init(work_path.ptr, cast(uint32_t) work_path.length);
-        assert(result == 1, "Wallet can not be intialized");
-    }
     // Create input data
     const uint64_t invAmount = 100;
     const char[] label = "Test Invoice";
@@ -784,12 +785,14 @@ version (none) unittest {
     const uint8_t[] invoice = cast(uint8_t[])(invoiceDoc.serialize);
     const uint32_t invoiceLen = cast(uint32_t) invoice.length;
     const uint64_t contAmount = 100;
+    const uint32_t errorLen = 0;
+    uint8_t errorPtr;
 
     uint32_t contractDocId;
 
     { // Create a contract.
         double fees;
-        const uint result = create_contract(&contractDocId, invoice.ptr, invoiceLen, contAmount, &fees);
+        const uint result = create_contract(&contractDocId, invoice.ptr, invoiceLen, contAmount, &fees, errorLen, &errorPtr);
         // Check the result
         assert(result == 1, "Expected result to be 1");
 
@@ -797,123 +800,108 @@ version (none) unittest {
         assert(contractDocId != 0, "Expected non-zero contractDocId");
     }
 
-    version (none) {
-        auto contractDoc = recyclerDoc(contractDocId);
+    auto contractDoc = recyclerDoc(contractDocId);
 
-        const uint8_t[] contract = cast(uint8_t[])(contractDoc.serialize);
-        const uint32_t contractLen = cast(uint32_t) contract.length;
+    const uint8_t[] contract = cast(uint8_t[])(contractDoc.serialize);
+    const uint32_t contractLen = cast(uint32_t) contract.length;
 
-        { // Update request.
-            uint8_t requestDocId;
-            const uint result = request_update(&requestDocId);
+    { // Update request.
+        uint8_t requestDocId;
+        const uint result = request_update(&requestDocId);
 
-            // Check the result
-            assert(result == 1, "Expected result to be 1");
+        // Check the result
+        assert(result == 1, "Expected result to be 1");
 
-            // Verify that invoiceDocId is non-zero
-            assert(requestDocId != 0, "Expected non-zero requestDocId");
-        }
-        { // Get public key.
-            uint8_t pubkeyDocId;
-            uint result = get_public_key(&pubkeyDocId);
+        // Verify that invoiceDocId is non-zero
+        assert(requestDocId != 0, "Expected non-zero requestDocId");
+    }
+    { // Get public key.
+        uint8_t pubkeyDocId;
+        uint result = get_public_key(&pubkeyDocId);
 
-            // Check the result
-            assert(result == 1, "Expected result to be 1");
+        // Check the result
+        assert(result == 1, "Expected result to be 1");
 
-            // Verify that invoiceDocId is non-zero
-            assert(pubkeyDocId != 0, "Expected non-zero pubkeyDocId");
-        }
+        // Verify that invoiceDocId is non-zero
+        assert(pubkeyDocId != 0, "Expected non-zero pubkeyDocId");
+    }
 
-        { // Get and set derivers.
-            uint8_t deriversDocId;
-            uint getDResult = get_derivers(&deriversDocId);
+    { // Get and set derivers.
+        uint8_t backupDocId;
+        uint getBackupResult = get_backup(&backupDocId);
 
-            // Check the result
-            assert(getDResult == 1, "Expected result to be 1");
+        // Check the result
+        assert(getBackupResult == 1, "Expected result to be 1");
 
-            // Verify that invoiceDocId is non-zero
-            assert(deriversDocId != 0, "Expected non-zero deriversDocId");
+        // Verify that invoiceDocId is non-zero
+        assert(backupDocId != 0, "Expected non-zero backupDocId");
 
-            auto deriversDoc = recyclerDoc(deriversDocId);
+        auto backupDoc = recyclerDoc(backupDocId);
 
-            // Derivers input data.
-            const uint8_t[] derivers = cast(uint8_t[])(deriversDoc.serialize);
-            const uint32_t deriversLen = cast(uint32_t) derivers.length;
+        // Derivers input data.
+        const uint8_t[] backup = cast(uint8_t[])(backupDoc.serialize);
+        const uint32_t backupLen = cast(uint32_t) backup.length;
 
-            uint setDResult = set_derivers(derivers.ptr, deriversLen);
+        uint setBackupResult = set_backup(backup.ptr, backupLen);
 
-            // Check the result
-            assert(setDResult == 1, "Expected result to be 1");
-        }
+        // Check the result
+        assert(setBackupResult == 1, "Expected result to be 1");
+    }
 
-        { // Get derivers state.
-            uint8_t deriversDocId;
-            uint getDResult = get_derivers_state(&deriversDocId);
+    { // Get derivers state.
+        uint8_t deriversDocId;
+        uint getDResult = get_derivers_state(&deriversDocId);
 
-            // Check the result
-            assert(getDResult == 1, "Expected result to be 1");
+        // Check the result
+        assert(getDResult == 1, "Expected result to be 1");
 
-            // Verify that invoiceDocId is non-zero
-            assert(deriversDocId != 0, "Expected non-zero deriversDocId");
-        }
+        // Verify that invoiceDocId is non-zero
+        assert(deriversDocId != 0, "Expected non-zero deriversDocId");
+    }
 
-        { // Add a new bill.
-            import std.algorithm : map;
-            import std.range : zip;
-            import std.string : representation;
-            import tagion.utils.Miscellaneous : hex;
+    {   // Get Account
+        uint8_t accountDocId;
+        uint getAResult = get_account(&accountDocId);
 
-            TagionBill[] newBills;
+        // Check the result
+        assert(getAResult == 1, "Expected result to be 1");
 
-            // Add the bills to the account with the derive keys
-            version (none) {
-                with (__wallet_storage.wallet.account) {
-                    newBills = zip(bill_amounts, derivers.byKey).map!(bill_derive => TagionBill(bill_derive[0],
-                            epoch, bill_derive[1], gene)).array;
-                }
+        // Verify that invoiceDocId is non-zero
+        assert(accountDocId != 0, "Expected non-zero accountDocId");
+    }
 
-                const uint8_t[] bill = cast(uint8_t[]) newBills[0].toHiBON.serialize;
-                const uint32_t billLen = cast(uint32_t) bill.length;
+    { // Ulock bills by contract
 
-                uint result = add_bill(bill.ptr, billLen);
+        uint result = ulock_bills_by_contract(contract.ptr, contractLen);
 
-                // Check the result
-                assert(result == 1, "Expected result to be 1");
-            }
-        }
-        { // Ulock bills by contract
+        // Check the result
+        assert(result == 1, "Expected result to be 1");
+    }
+    { // Check invoice payment
 
-            uint result = ulock_bills_by_contract(contract.ptr, contractLen);
+        double amount;
+        auto result = check_invoice_payment(invoice.ptr, invoiceLen, &amount);
 
-            // Check the result
-            assert(result == 1, "Expected result to be 1");
-        }
-        { // Check invoice payment
+        // Check the result
+        assert(result == 1, "Expected result to be 1");
+        assert(amount != 0, "Expected amount not to be 0");
+    }
+    { // Check contract payment
 
-            double amount;
-            auto result = check_invoice_payment(invoice.ptr, invoiceLen, &amount);
+        uint8_t status;
 
-            // Check the result
-            assert(result == 1, "Expected result to be 1");
-            assert(amount != 0, "Expected amount not to be 0");
-        }
-        { // Check contract payment
+        uint result = check_contract_payment(contract.ptr, contractLen, &status);
 
-            uint8_t status;
+        // Check the result
+        assert(result == 1, "Expected result to be 1");
+        assert(status == 0, "Expected status to be 0");
+    }
+    { // Remove bills by contract.
 
-            uint result = check_contract_payment(contract.ptr, contractLen, &status);
+        uint result = remove_bills_by_contract(contract.ptr, contractLen);
 
-            // Check the result
-            assert(result == 1, "Expected result to be 1");
-            assert(status == 0, "Expected status to be 0");
-        }
-        { // Remove bills by contract.
-
-            uint result = remove_bills_by_contract(contract.ptr, contractLen);
-
-            // Check the result
-            assert(result == 1, "Expected result to be 1");
-        }
+        // Check the result
+        assert(result == 1, "Expected result to be 1");
     }
 }
 
@@ -962,10 +950,32 @@ struct WalletStorage {
     }
 
     void read() {
-        auto _pin = path(devicefile).fread!DevicePIN;
-        auto _wallet = path(walletfile).fread!RecoverGenerator;
-        auto _account = path(accountfile).fread!AccountDetails;
-        wallet = StdSecureWallet(_pin, _wallet, _account);
+
+        version(NET_HACK) {
+            if (wallet.net !is null) {
+                auto __net = cast(shared(StdSecureNet)) wallet.net;
+                scope(exit) {
+                    __net = null;
+                }
+                
+                auto copied_net = new StdSecureNet(__net);
+
+                auto _pin = path(devicefile).fread!DevicePIN;
+                auto _wallet = path(walletfile).fread!RecoverGenerator;
+                auto _account = path(accountfile).fread!AccountDetails;
+                wallet = StdSecureWallet(_pin, _wallet, _account);
+                wallet.set_net(copied_net);
+
+            }
+            
+
+
+        } else {
+            auto _pin = path(devicefile).fread!DevicePIN;
+            auto _wallet = path(walletfile).fread!RecoverGenerator;
+            auto _account = path(accountfile).fread!AccountDetails;
+            wallet = StdSecureWallet(_pin, _wallet, _account);
+        }
 
     }
 
