@@ -98,16 +98,11 @@ do {
  +     The 16 first hex digits of the buffer
 +/
 @safe
-string cutHex(bool UCASE = false, BUF)(BUF buf) pure if (isBufferType!BUF) {
+string cutHex( BUF)(BUF buf) pure if (isBufferType!BUF) {
     import std.format;
-
+import std.algorithm : min;
     enum LEN = ulong.sizeof;
-    if (buf.length < LEN) {
-        return buf[0 .. $].toHexString!UCASE;
-    }
-    else {
-        return buf[0 .. LEN].toHexString!UCASE;
-    }
+    return format!"%(%02x%)"(buf[0..min(LEN,buf.length)]);
 }
 
 @safe

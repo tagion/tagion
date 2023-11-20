@@ -341,8 +341,8 @@ class HashGraph {
     in {
         import tagion.utils.Miscellaneous : toHexString;
 
-        assert(event_pack.fingerprint !in _event_cache, format("Event %s has already been registerd", event_pack
-                .fingerprint.toHexString));
+        assert(event_pack.fingerprint !in _event_cache, format("Event %(%02x%) has already been registerd", 
+    event_pack.fingerprint));
     }
     do {
         if (valid_channel(event_pack.pubkey)) {

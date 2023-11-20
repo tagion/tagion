@@ -58,7 +58,7 @@ shared static this() @trusted {
  +/
 ubyte rim_key(F)(F rim_keys, const uint rim) pure if (isBufferType!F) {
     if (rim >= rim_keys.length) {
-        debug __write("%s rim=%d", rim_keys.hex, rim);
+        debug __write("%(%02X%) rim=%d", rim_keys, rim);
     }
     return rim_keys[rim];
 }
@@ -535,7 +535,7 @@ class DARTFile {
 
             foreach (key, index; _indices) {
                 if (index !is Index.init) {
-                    writefln("branches[%02X]=%s", key, _fingerprints[key].toHex);
+                    writefln("branches[%02X]=%(%02x%)", key, _fingerprints[key]);
                 }
             }
 
@@ -1084,7 +1084,7 @@ class DARTFile {
     ) {
         import std.stdio;
 
-        writeln("EYE: ", _fingerprint.hex);
+        writefln("EYE: %(%02x%)", _fingerprint);
         void local_dump(const Index branch_index,
                 const ubyte rim_key = 0,
                 const uint rim = 0,
@@ -1114,8 +1114,8 @@ class DARTFile {
                     immutable dart_index = manufactor.net.dartIndex(doc);
                     auto lastRing = full ? dart_index.length : rim + 1;
                     const hash_marker = doc.hasHashKey ? " #" : "";
-                    writefln("%s%s [%d]%s",
-                            indent, dart_index[0 .. lastRing].hex, branch_index, hash_marker);
+                    writefln("%s%(%02x%) [%d]%s",
+                            indent, dart_index[0 .. lastRing], branch_index, hash_marker);
                 }
             }
         }

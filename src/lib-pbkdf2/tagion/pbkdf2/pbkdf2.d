@@ -16,18 +16,14 @@ else
  * 		data = data to hash
  * 		salt = salt to use to hash data
  * 		iterations = number of iterations to create hash with
- * 		dkLen = intended length of the derived key, at most (2^32 - 1) * hLen
+ * 		dkLen = intended length of the derived key
  *
  * Authors: T. Chaloupka
  */
 @safe
 ubyte[] pbkdf2(H = SHA1)(in ubyte[] data, in ubyte[] salt, uint iterations = 4096, uint dkLen = 256) pure nothrow
-if (isDigest!H)
-in {
-    assert(dkLen < (2 ^ 32 - 1) * digestLength!H, "Derived key too long");
-}
-do {
-    auto f(PRF)(PRF prf, in ubyte[] salt, uint c, uint block) {
+if (isDigest!H) {
+    auto f(PRF)(PRF prf, in ubyte[] salt, const uint c, const uint block) {
         import std.bitmanip : nativeToBigEndian;
 
         auto res = prf.put(salt ~ nativeToBigEndian(block)).finish();
