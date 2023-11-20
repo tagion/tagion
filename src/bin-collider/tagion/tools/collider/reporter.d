@@ -17,6 +17,7 @@ import std.string;
 import std.traits;
 import tagion.behaviour.BehaviourFeature;
 import tagion.behaviour.BehaviourResult;
+import tagion.behaviour.Behaviour;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONFile : fread, fwrite;
 import tagion.hibon.HiBONJSON;
@@ -137,11 +138,11 @@ alias MdString = string;
 MdString toMd(FeatureGroup fg) {
     auto result_md = appender!string;
     string result_type() {
-        if (fg.info.result.isRecord!Result) {
-            return "✔️ ";
-        }
-        else if (fg.info.result.isRecord!BehaviourError) {
+        if (fg.hasErrors) {
             return "❌";
+        }
+        else if (fg.info.result.isRecord!Result) {
+            return "✔️ ";
         }
         else {
             return "❓";
