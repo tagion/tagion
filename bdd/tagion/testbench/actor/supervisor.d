@@ -2,6 +2,9 @@ module tagion.testbench.actor.supervisor;
 
 import tagion.testbench.actor.util;
 
+// This test is disabled because the restart() functionality of the supervisor
+// Was never used and removed, however other parts of the tests are still relevant like the taskfailure handling.
+// So it needs to be updated
 version (none)  :  // Default import list for bdd
 import core.time;
 import std.exception : assumeWontThrow;
