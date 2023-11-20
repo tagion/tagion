@@ -43,7 +43,7 @@ import tagion.services.messages;
 class EmulatorGossipNet : GossipNet {
     private Duration duration;
 
-    private string[immutable(Pubkey)] task_tids;
+    private string[immutable(Pubkey)] task_names;
     private immutable(Pubkey)[] _pkeys;
     protected uint _send_node_id;
     protected sdt_t _current_time;
@@ -67,9 +67,9 @@ class EmulatorGossipNet : GossipNet {
         tryLocate(task_name);
 
         _pkeys ~= channel;
-        task_tids[channel] = task_name;
+        task_names[channel] = task_name;
 
-        log.trace("Add channel: %s tid: %s", channel.cutHex, task_tids[channel]);
+        log.trace("Add channel: %s tid: %s", channel.cutHex, task_names[channel]);
     }
 
     void remove_channel(const Pubkey channel) {
@@ -77,7 +77,7 @@ class EmulatorGossipNet : GossipNet {
 
         const channel_index = countUntil(_pkeys, channel);
         _pkeys = _pkeys[0 .. channel_index] ~ _pkeys[channel_index + 1 .. $];
-        task_tids.remove(channel);
+        task_names.remove(channel);
     }
 
     @safe
@@ -91,14 +91,14 @@ class EmulatorGossipNet : GossipNet {
     }
 
     bool isValidChannel(const(Pubkey) channel) const pure nothrow {
-        return (channel in task_tids) !is null;
+        return (channel in task_names) !is null;
     }
 
     const(Pubkey) select_channel(const(ChannelFilter) channel_filter) {
         import std.range : dropExactly;
 
-        foreach (count; 0 .. task_tids.length * 2) {
-            const node_index = uniform(0, cast(uint) task_tids.length, random);
+        foreach (count; 0 .. task_names.length * 2) {
+            const node_index = uniform(0, cast(uint) task_names.length, random);
             const send_channel = _pkeys[node_index];
             if ((send_channel != mypk) && channel_filter(send_channel)) {
                 return send_channel;
@@ -128,7 +128,7 @@ class EmulatorGossipNet : GossipNet {
 
         Thread.sleep(duration);
 
-        auto node_tid = locate(task_tids[channel]);
+        auto node_tid = locate(task_names[channel]);
         if (node_tid is Tid.init) {
             return;
         }
