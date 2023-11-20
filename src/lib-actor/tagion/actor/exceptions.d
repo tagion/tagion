@@ -1,5 +1,6 @@
 module tagion.actor.exceptions;
 
+import std.traits;
 import std.exception;
 import tagion.basic.tagionexceptions : TagionException;
 
@@ -31,8 +32,8 @@ immutable struct TaskFailure {
 
     const(Document) toDoc() @safe const {
         auto hibon = new HiBON;
-        hibon["task_name"] = task_name;
-        hibon["throwable"] = _Throwable(throwable).toDoc;
+        hibon[(GetLabel!task_name).name] = task_name;
+        hibon[(GetLabel!throwable).name] = _Throwable(throwable).toDoc;
         return Document(hibon);
     }
 }
