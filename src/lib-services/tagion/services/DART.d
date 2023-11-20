@@ -147,7 +147,7 @@ struct DARTService {
             try {
 
                 auto eye = db.modify(recorder);
-                log("New bullseye is %s", eye.toHexString);
+                log("New bullseye is %(%02x%)", eye);
 
                 req.respond(eye);
                 auto replicator_tid = locate(task_names.replicator);
