@@ -67,9 +67,6 @@ struct DARTService {
         scope (exit) {
             db.close();
         }
-        scope (failure) {
-            log("DART aborting with failure");
-        }
 
         void read(dartReadRR req, immutable(DARTIndex)[] fingerprints) @safe {
             import std.algorithm;
