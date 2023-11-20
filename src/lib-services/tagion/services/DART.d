@@ -114,7 +114,7 @@ struct DARTService {
 
             if (receiver.method.name == "search") {
                 log("SEARCH REQUEST");
-                log("%s", receiver.method.params.toPretty);
+                // log("%s", receiver.method.params.toPretty);
 
                 import tagion.basic.Types;
 
