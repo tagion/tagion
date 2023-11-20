@@ -222,10 +222,11 @@ struct Rims {
          * Returns: hex string
          */
     string toString() const pure nothrow {
+    import std.exception : assumeWontThrow;
         if (rims.length == 0) {
             return "XXXX";
         }
-        return rims.toHexString;
+        return assumeWontThrow(format!"%(%02x%)"(rims));
     }
 }
 
