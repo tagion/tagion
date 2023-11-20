@@ -18,6 +18,7 @@ enum StdNames {
     nodekey = "#$node",
     signed = "$signed",
     archive_type = "$T",
+    archive = "$a",
 }
 
 enum TagionDomain = "tagion";

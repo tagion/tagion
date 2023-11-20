@@ -399,7 +399,7 @@ const Neutral = delegate(const(Archive) a) => a.type;
     }
 
     @label(STUB) @optional const(Fingerprint) fingerprint; /// Stub hash-pointer used in sharding
-    @label("$a") @optional const Document filed; /// The actual data strute stored 
+    @label(StdNames.archive) @optional const Document filed; /// The actual data strute stored 
     @label(StdNames.archive_type) @optional const(Type) type; /// Acrhive type
     @label("$i") @optional const(DARTIndex) dart_index;
     enum archiveLabel = GetLabel!(this.filed).name;
