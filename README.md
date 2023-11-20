@@ -115,7 +115,6 @@ make env-<topic>
 # Showing the default values
 ONETOOL=1 # ALL tools linked in to a single executable
           # and individual tools are symbolic links to that binary
-OLD=1     # Uses and old transaction system
 DC=       # D compiler to use, default will try to pick between dmd and ldc2
 CC=       # C compiler to use, default will try to pick between gcc and clang
 ```
@@ -152,12 +151,9 @@ Note. The result from the `callgrind` viewed with [Kcachegrind](https://kcachegr
 ./src/
      /lib-* # Library source code
      /bin-* # Executable source code
-     /wrap-* # Vendor library compilation scripts
-
+     /fork-* # Vendor library compilation scripts
 ./bdd/ # behaviour driven tests
 ./tub/ # Build flow scripts
-./Makefile # Pre-build Make file
-./integration # High level integration services
 ```
 
 ## Generating Docs

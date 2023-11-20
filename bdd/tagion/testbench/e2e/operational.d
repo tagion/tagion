@@ -120,7 +120,7 @@ int _main(string[] args) {
 
     // Date for pretty reporting
     const start_date = cast(DateTime) Clock.currTime;
-    const predicted_end_date = cast(DateTime)(Clock.currTime + max_runtime);
+    const predicted_end_date = start_date + max_runtime;
 
     int run_counter;
     scope (exit) {
