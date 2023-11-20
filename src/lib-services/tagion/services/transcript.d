@@ -160,7 +160,6 @@ struct TranscriptService {
             /*
                 The vote array is already updated. We must go through all the different vote indices and update the epoch that was stored in the dart if any new votes are found.
             */
-            log("VOTES LENGTH BEFORE=%s", votes.byKey.array);
             foreach(v; votes.byKeyValue) {
                 // add the new signatures to the epoch. We only want to do it if there are new signatures
                 if (v.value.init_bullseye || v.value.epoch.signs.length != v.value.votes.length) {
@@ -194,7 +193,6 @@ struct TranscriptService {
                 }
 
             }
-            log("VOTES LENGTH AFTER=%s", votes.length);
 
 
 
