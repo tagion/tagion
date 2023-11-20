@@ -69,7 +69,7 @@ unittest {
     concurrency.spawn(() {
         assert(!(thisActor.task_name = dummy_name), "Should not be able to set the same task name in another tid");
     });
-    // assert(locate(thisActor.task_name) == thisTid, "Name not registered");
+    assert(locate(thisActor.task_name) is thisTid, "Name not registered");
 }
 
 /* 
