@@ -23,7 +23,7 @@ endif
 #
 # Used for temp scripts
 #
-TMP_FILE=${shell mktemp -q /tmp/make.XXXXXXXX.sh}
+TMP_FILE=${shell mktemp -q /tmp/make.XXXXXXXX}
 
 #
 # Local config, ignored by git
