@@ -9,7 +9,7 @@ import tagion.basic.Types : Buffer, isBufferType;
 import tagion.basic.tagionexceptions : TagionException;
 
 @trusted
-string toHexString(bool UCASE = false, BUF)(BUF buffer) pure nothrow
+deprecated("Use built-in %(%02x%) instead") string toHexString(bool UCASE = false, BUF)(BUF buffer) pure nothrow
 if (isBufferType!BUF) {
     static if (UCASE) {
         enum hexdigits = "0123456789ABCDEF";
