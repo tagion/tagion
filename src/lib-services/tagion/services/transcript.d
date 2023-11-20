@@ -77,11 +77,6 @@ struct TranscriptService {
 
         const(EpochContracts)*[long] epoch_contracts;
 
-        HiRPC hirpc = HiRPC(net);
-
-
-
-
         /** 
          * Get the current head and epoch
          */
@@ -265,10 +260,6 @@ struct TranscriptService {
             Epoch non_voted_epoch;
             non_voted_epoch.epoch_number = res.id;
             non_voted_epoch.time = sdt_t(epoch_contract.epoch_time);
-            non_voted_epoch.bullseye = Fingerprint.init;
-            non_voted_epoch.previous = Fingerprint.init;
-            non_voted_epoch.signs = Signature[].init;
-
             // create the globals
 
             BigNumber total = last_globals.total;
