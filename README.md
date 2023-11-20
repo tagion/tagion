@@ -115,7 +115,6 @@ make env-<topic>
 # Showing the default values
 ONETOOL=1 # ALL tools linked in to a single executable
           # and individual tools are symbolic links to that binary
-OLD=1     # Uses and old transaction system
 DC=       # D compiler to use, default will try to pick between dmd and ldc2
 CC=       # C compiler to use, default will try to pick between gcc and clang
 ```
