@@ -33,7 +33,7 @@ immutable struct TaskFailure {
         auto hibon = new HiBON;
         hibon["task_name"] = task_name;
         hibon["throwable"] = _Throwable(throwable).toDoc;
-        return const(Document)(hibon);
+        return Document(hibon);
     }
 }
 
