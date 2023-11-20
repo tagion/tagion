@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: Get week number
         id: week-number
-        run: echo "::set-output name=week::$(date +'%U')"
+        run: echo "week=$(date +'%U')" >> $GITHUB_OUTPUT
       
       - name: Create Pull Request
         run: |
