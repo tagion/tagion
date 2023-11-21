@@ -33,7 +33,6 @@ import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord : GetLabel, HiBONRecord, label, recordType;
-import tagion.utils.Miscellaneous : cutHex, toHexString;
 
 /**
  * Calculates the to-angle on the angle circle 

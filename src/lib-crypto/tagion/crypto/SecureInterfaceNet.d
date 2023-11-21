@@ -50,16 +50,9 @@ interface SecureNet : HashNet {
         return verify(pack.toDoc, signature, pubkey);
     }
 
-    // The private should be added implicite by the GossipNet
-    // The message is a hash of the 'real' message
     Signature sign(const Fingerprint message) const;
 
     final Signed sign(const Document doc) const {
-
-        
-
-            .check(doc.keys.front[0]!is HiBONPrefix.HASH, ConsensusFailCode
-            .SECURITY_MESSAGE_HASH_KEY);
         const fingerprint = calcHash(doc);
         return Signed(sign(fingerprint), fingerprint);
     }
@@ -96,6 +89,4 @@ interface SecureNet : HashNet {
     Pubkey derivePubkey(string tweak_word);
 
     SecureNet clone() const;
-
-
 }

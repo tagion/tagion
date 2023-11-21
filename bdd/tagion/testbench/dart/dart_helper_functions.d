@@ -21,7 +21,6 @@ import tagion.dart.DARTcrud : dartRead, dartRim;
 import tagion.dart.Recorder : Archive, RecordFactory;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON : toPretty;
-import tagion.utils.Miscellaneous : toHexString;
 import tagion.utils.Random;
 
 /** 
@@ -156,7 +155,7 @@ void randomRemove(const DARTIndex[] dart_indexs, MinstdRand0 rnd, DART db) @safe
 
     const random_order_dart_indexs = dart_indexs.dup.randomShuffle(rnd);
     foreach (dart_index; random_order_dart_indexs) {
-        writefln("removing %s", dart_index.toHexString);
+        writefln("removing %(%02x%)", dart_index);
         recorder.remove(dart_index);
     }
     db.modify(recorder);

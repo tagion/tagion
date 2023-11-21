@@ -11,8 +11,7 @@ import tagion.crypto.SecureNet : StdHashNet;
 import tagion.crypto.Types : Fingerprint;
 import tagion.hashchain.HashChainStorage : HashChainStorage;
 import tagion.hibon.HiBONFile : fread, fwrite;
-import tagion.utils.Miscellaneous : decode, toHexString;
-
+import tagion.utils.Miscellaneous : decode;
 /** @brief File contains class HashChainFileStorage
  */
 
@@ -115,9 +114,10 @@ import tagion.utils.Miscellaneous : decode, toHexString;
          *      \return path to block with given fingerprint
          */
         string makePath(const Fingerprint fingerprint) {
+            import std.format;
             return buildPath(
                     folder_path,
-                    fingerprint.toHexString.setExtension(getExtension));
+                    format!"%(%02x%)"(fingerprint).setExtension(getExtension));
         }
     }
 }
