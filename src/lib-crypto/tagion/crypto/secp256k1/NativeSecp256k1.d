@@ -393,12 +393,10 @@ unittest { /// Schnorr test generated from the secp256k1/examples/schnorr.c
     //secp256k1_keypair keypair;
     ubyte[] keypair;
     crypt.createKeyPair(secret_key, keypair);
-    //writefln("keypair %(%02x%)", keypair);
     assert(keypair == expected_keypair);
     const signature = crypt.sign(msg_hash, keypair, aux_random);
     assert(signature == expected_signature);
-    //writefln("expected_pubkey %(%02x%)", expected_pubkey);
-    const pubkey = crypt.getPubkey(keypair); //writefln("         pubkey %(%02x%)", pubkey);
+    const pubkey = crypt.getPubkey(keypair); 
     assert(pubkey == expected_pubkey);
     const signature_ok = crypt.verify(msg_hash, signature, pubkey);
     assert(signature_ok, "Schnorr signing failded");
