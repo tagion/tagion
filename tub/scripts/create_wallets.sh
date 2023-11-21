@@ -8,7 +8,7 @@ wallets=5
 bills=50
 ndir=$(readlink -m "./network")
 wdir=$(readlink -m "./wallets")
-keyfile=$(readlink -m "keys")
+keyfile=$(readlink -m "$ndir/keys")
 
 while getopts "n:w:b:k:t:h:u:" opt
 do
