@@ -6,6 +6,7 @@ import tagion.tools.OneMain;
 int main(string[] args) {
     import blockutil = tagion.tools.blockutil;
     import stiefel = tagion.tools.boot.stiefel;
+    import auszahlung = tagion.tools.auszahlung.auszahlung;
     import callstack = tagion.tools.callstack.callstack;
     import dartutil = tagion.tools.dartutil.dartutil;
     import graphview = tagion.tools.graphview;
@@ -33,6 +34,7 @@ int main(string[] args) {
             geldbeutel,
             tagionshell,
             stiefel,
+            auszahlung,
             hirep,
             recorderchain,
             callstack,

@@ -51,16 +51,22 @@ target-tagionshell: LIBS+= $(LIBNNG)
 ${call DO_BIN,tagionshell,$(LIB_DFILES) ${call BIN_DEPS,tagionshell},tagion}
 
 #
-# New Wallet
+# Tagion Wallet
 #
 target-geldbeutel: LIBS+=  $(LIBSECP256K1)  
 ${call DO_BIN,geldbeutel,$(LIB_DFILES) ${call BIN_DEPS,geldbeutel},tagion}
 
 #
-# New tagion boot
+# Tagion boot
 #
 target-stiefel: LIBS+=  $(LIBSECP256K1)  
 ${call DO_BIN,stiefel,$(LIB_DFILES) ${call BIN_DEPS,stiefel},tagion}
+
+#
+# Tagion payout 
+#
+target-auszahlung: LIBS+=  $(LIBSECP256K1)  
+${call DO_BIN,auszahlung,$(LIB_DFILES) ${call BIN_DEPS,auszahlung},tagion}
 
 #
 #  HiBON reqular expression print
@@ -141,6 +147,7 @@ TAGION_TOOLS+=wasmutil
 TAGION_TOOLS+=geldbeutel
 TAGION_TOOLS+=tagionshell
 TAGION_TOOLS+=stiefel
+TAGION_TOOLS+=auszahlung
 TAGION_TOOLS+=hirep
 TAGION_TOOLS+=callstack
 
