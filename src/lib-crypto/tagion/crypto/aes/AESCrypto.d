@@ -25,13 +25,11 @@ struct AESCrypto(int KEY_LENGTH) {
             const(ubyte[]) key,
     ubyte[BLOCK_SIZE] iv,
     ref ubyte[] data) nothrow
-    in {
-        assert(data);
-        assert(data.length % BLOCK_SIZE == 0, __format("Data must be an equal number of %d bytes but is %d", BLOCK_SIZE, data
-                .length));
-        assert(key.length is KEY_SIZE, __format("The key size must be %d bytes not %d", KEY_SIZE, key
-                .length));
-    }
+        in(data)
+        in(data.length % BLOCK_SIZE == 0, 
+            __format("Data must be an equal number of %d bytes but is %d", BLOCK_SIZE, data.length))
+        in(key.length is KEY_SIZE, 
+__format("The key size must be %d bytes not %d", KEY_SIZE, key.length))
     do {
         scope aes = AES(key[0 .. KEY_SIZE], iv);
         static if (ENCRYPT) {
@@ -42,15 +40,16 @@ struct AESCrypto(int KEY_LENGTH) {
         }
     }
 
-    static void crypt(bool ENCRYPT = true)(scope const(ubyte[]) key, scope const(ubyte[]) iv, return scope const(
-            ubyte[]) indata, ref ubyte[] outdata) pure nothrow @safe
+    static void crypt(bool ENCRYPT = true)(
+scope const(ubyte[]) key, 
+scope const(ubyte[]) iv, 
+return scope const(ubyte[]) indata, ref ubyte[] outdata) pure nothrow @safe
     in {
         if (outdata.length) {
             assert(enclength(indata.length) == outdata.length,
                     __format("Output data must be an equal number of %d bytes", BLOCK_SIZE));
             assert(iv.length is BLOCK_SIZE,
                     __format("The iv size must be %d bytes not %d", BLOCK_SIZE, iv.length));
-
         }
     }
     do {

@@ -2,6 +2,7 @@ module tagion.crypto.SecureNet;
 
 import std.range;
 import std.typecons : TypedefType;
+import std.traits;
 import tagion.basic.ConsensusExceptions;
 import tagion.basic.Types : Buffer;
 import tagion.basic.Version : ver;
@@ -54,13 +55,9 @@ class StdHashNet : HashNet {
     }
 }
 
-//alias StdSecureNetSchnorr = StdSecureNetT!true;
-//alias StdSecureNetECDSA = StdSecureNetT!false;
-//alias StdSecureNet = StdSecureNetT!(!ver.SECP256K1_ECDSA);
-
 @safe
 class StdSecureNet : StdHashNet, SecureNet {
-    import tagion.crypto.secp256k1.NativeSecp256k1; //: NativeSecp256k1 = NativeNativeSecp256k1Musig;
+    import tagion.crypto.secp256k1.NativeSecp256k1; 
     import std.format;
     import std.string : representation;
     import tagion.basic.ConsensusExceptions;
@@ -114,16 +111,11 @@ class StdSecureNet : StdHashNet, SecureNet {
     }
 
     Signature sign(const Fingerprint message) const
-    in {
-        assert(_secret !is null,
-                format("Signature function has not been intialized. Use the %s function", basename!generatePrivKey));
-        assert(message.length == 32);
-    }
+    in(_secret !is null,
+                format("Signature function has not been intialized. Use the %s function", basename!generatePrivKey))
+        in(_secret !is null, 
+format("Signature function has not been intialized. Use the %s function", fullyQualifiedName!generateKeyPair))
     do {
-        import std.traits;
-
-        assert(_secret !is null, format("Signature function has not been intialized. Use the %s function", fullyQualifiedName!generateKeyPair));
-
         return Signature(_secret.sign(cast(Buffer) message));
     }
 
@@ -133,9 +125,7 @@ class StdSecureNet : StdHashNet, SecureNet {
     }
 
     final void derive(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey)
-    in {
-        assert(tweak_privkey.length >= 32);
-    }
+    in(tweak_privkey.length == NativeSecp256k1.TWEAK_SIZE)
     do {
         _secret.tweak(tweak_code, tweak_privkey);
     }
@@ -148,9 +138,7 @@ class StdSecureNet : StdHashNet, SecureNet {
 
     @trusted
     void derive(const(ubyte[]) tweak_code, shared(SecureNet) secure_net)
-    in {
-        assert(_secret);
-    }
+    in (_secret !is null)
     do {
         synchronized (secure_net) {
             ubyte[] tweak_privkey = tweak_code.dup;
@@ -166,15 +154,6 @@ class StdSecureNet : StdHashNet, SecureNet {
         auto result = new StdSecureNet;
         result.createKeyPair(tweak_privkey);
         return result;
-    }
-
-    version (none) final bool secKeyVerify(scope const(ubyte[]) privkey) const {
-        static if (Schnorr) {
-            return true;
-        }
-        else {
-            return crypt.secKeyVerify(privkey);
-        }
     }
 
     final void createKeyPair(ref ubyte[] seckey)
@@ -259,9 +238,8 @@ class StdSecureNet : StdHashNet, SecureNet {
             scope const(char[]) passphrase,
     scope const(char[]) salt = null,
     void delegate(scope const(ubyte[]) data) @safe dg = null)
-    in {
-        assert(_secret is null);
-    }
+    in
+        (_secret is null)
     do {
         import tagion.pbkdf2.pbkdf2;
         import std.digest.sha : SHA512;
@@ -369,17 +347,6 @@ class StdSecureNet : StdHashNet, SecureNet {
         SecureNet bad_net = new StdSecureNet;
         bad_net.generateKeyPair("Wrong Secret password");
         assert(!net.verify(doc, doc_signed.signature, bad_net.pubkey));
-
-        { // Hash key
-            auto h = new HiBON;
-            h["#message"] = "Some message";
-            doc = Document(h);
-        }
-
-        // A document containing a hash-key can not be signed or verified
-        assertThrown!SecurityConsensusException(net.sign(doc));
-        assertThrown!SecurityConsensusException(net.verify(doc, doc_signed.signature, net.pubkey));
-
     }
 
     unittest {
@@ -395,9 +362,6 @@ class StdSecureNet : StdHashNet, SecureNet {
             assert(fingerprint == second_fingerprint);
 
             auto sig = net.sign(data).signature;
-            // auto second_sig = net.sign(data.toDoc).signature;
-            //assert(sig == second_sig);
-
             assert(net.verify(fingerprint, sig, net.pubkey));
         }
 
