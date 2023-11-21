@@ -13,7 +13,6 @@ import tagion.communication.HiRPC;
 import tagion.gossip.GossipNet;
 import tagion.hibon.HiBON;
 import tagion.tools.Basic;
-import tagion.utils.Miscellaneous : toHexString;
 
 version (none) class HRPCNet : StdSecureNet {
     import tagion.hashgraph.HashGraph;
@@ -35,7 +34,6 @@ import file = std.file;
 import std.file : exists, tempDir;
 import std.path;
 import std.stdio;
-import tagion.utils.Miscellaneous : toHexString;
 
 version (none) struct Bank {
     protected enum _transactions = [

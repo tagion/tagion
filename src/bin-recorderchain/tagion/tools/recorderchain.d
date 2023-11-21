@@ -23,7 +23,6 @@ import tagion.dart.Recorder;
 import tagion.recorderchain.RecorderChain;
 import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock;
 import tagion.tools.Basic;
-import tagion.utils.Miscellaneous : cutHex, toHexString;
 
 auto logo = import("logo.txt");
 
@@ -140,7 +139,7 @@ int _main(string[] args) {
     import tagion.hibon.HiBONJSON;
     try {
         recorder_chain.replay((RecorderChainBlock block) {
-            writefln("current bullseye<%s>", dart.bullseye.toHexString);
+            writefln("current bullseye<%(%02x%)>", dart.bullseye);
             if (interactive_mode) {
                 writefln("recorder that will be added:\n%s", block.recorder_doc.toPretty);
                 const input = getchar;
@@ -149,9 +148,9 @@ int _main(string[] args) {
             auto recorder = factory.recorder(block.recorder_doc);
             dart.modify(recorder);
             if (block.bullseye != dart.bullseye) {
-                stderr.writeln(format("ERROR: expected bullseye: %s \ngot %s", 
-                    block.bullseye.toHexString, 
-                    dart.bullseye.toHexString));
+                stderr.writeln(format("ERROR: expected bullseye: %(%02x%) \ngot %(%02x%)", 
+                    block.bullseye, 
+                    dart.bullseye));
             }
         });
     }
@@ -159,25 +158,6 @@ int _main(string[] args) {
         writefln("%s. Abort", e.msg);
         return 1;
     }    
-
-    
-
-    // // Recover DART using blocks
-    // try {
-    //     recorder_chain.replay((RecorderChainBlock block) {
-    //         auto recorder = factory.recorder(block.recorder_doc);
-    //         dart.modify(recorder);
-    //         writefln("replaying %s", block.getHash.toHexString);
-    //         if (block.bullseye != dart.bullseye) {
-    //             throw new TagionException(
-    //                 "DART fingerprint must be the same as recorder block bullseye");
-    //         }
-    //     });
-    // }
-    // catch (TagionException e) {
-    //     writefln("%s. Abort", e.msg);
-    //     return 1;
-    // }
 
     return 0;
 }

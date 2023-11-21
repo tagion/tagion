@@ -15,7 +15,6 @@ import tagion.hibon.HiBONFile : fwrite;
 import tagion.testbench.dart;
 import tagion.testbench.dart.dartinfo;
 import tagion.testbench.tools.Environment;
-import tagion.testbench.tools.Environment;
 import tagion.tools.Basic;
 
 mixin Main!(_main);

@@ -944,8 +944,6 @@ struct SecureWallet(Net : SecureNet) {
             auto list_of_invoices = bill_amounts.map!(a => createInvoice(label, a))
                 .each!(invoice => sender_wallet.registerInvoice(invoice))();
 
-            import tagion.utils.Miscellaneous : hex;
-
             // Add the bulls to the account with the derive keys
             with (sender_wallet.account) {
                 bills = zip(bill_amounts, derivers.byKey).map!(bill_derive => TagionBill(

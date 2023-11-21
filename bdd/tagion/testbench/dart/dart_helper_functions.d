@@ -21,7 +21,6 @@ import tagion.dart.DARTcrud : dartRead, dartRim;
 import tagion.dart.Recorder : Archive, RecordFactory;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON : toPretty;
-import tagion.utils.Miscellaneous : toHexString;
 import tagion.utils.Random;
 
 /** 

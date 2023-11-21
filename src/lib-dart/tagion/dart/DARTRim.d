@@ -5,7 +5,6 @@ import tagion.basic.Debug;
 import tagion.basic.Types;
 import tagion.basic.basic : EnumText;
 import tagion.hibon.HiBONRecord;
-import tagion.utils.Miscellaneous : toHexString;
 
 @safe:
 enum RIMS_IN_SECTOR = 2;

@@ -37,7 +37,6 @@ private {
     import tagion.dart.DARTRim;
     import tagion.dart.RimKeyRange : rimKeyRange;
     import tagion.hibon.HiBONRecord;
-    import tagion.utils.Miscellaneous : toHex = toHexString;
 }
 
 /// Hash null definition (all zero values)
@@ -1084,7 +1083,7 @@ class DARTFile {
     ) {
         import std.stdio;
 
-        writefln("EYE: %(%02x%)", _fingerprint);
+        writefln("EYE: %(%02X%)", _fingerprint);
         void local_dump(const Index branch_index,
                 const ubyte rim_key = 0,
                 const uint rim = 0,

@@ -4,7 +4,6 @@ import std.string : representation;
 import tagion.basic.Debug;
 import tagion.basic.Version : ver;
 import tagion.crypto.random.random;
-import tagion.utils.Miscellaneous : toHexString;
 
 static assert(ver.LittleEndian, "At the moment bip39 only supports Little Endian");
 

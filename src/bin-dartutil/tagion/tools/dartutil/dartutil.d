@@ -230,7 +230,7 @@ int _main(string[] args) {
             db.dump(sectors, Yes.full, depth);
         }
         else if (eye) {
-            writefln("EYE: %s", db.fingerprint.hex);
+            writefln("EYE: %(%02x%)", db.fingerprint);
         }
         else if (dump) {
             File fout;

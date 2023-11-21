@@ -10,7 +10,6 @@ import std.algorithm;
 import std.array;
 import std.exception : assumeUnique;
 import tagion.basic.ConsensusExceptions;
-import tagion.utils.Miscellaneous : toHexString;
 
 enum SECP256K1 : uint {
     FLAGS_TYPE_MASK = SECP256K1_FLAGS_TYPE_MASK,
@@ -432,7 +431,7 @@ class NativeSecp256k1 {
 
 version (unittest) {
     import std.string : representation;
-    import tagion.utils.Miscellaneous : decode, toHexString;
+    import tagion.utils.Miscellaneous : decode;
 
     const(ubyte[]) sha256(scope const(ubyte[]) data) {
         import std.digest;

@@ -27,7 +27,6 @@ import tagion.hibon.HiBONRecord;
 import tagion.testbench.dart.dart_helper_functions : getFingerprints, getRead, getRim, goToSplit;
 import tagion.testbench.dart.dartinfo;
 import tagion.testbench.tools.Environment;
-import tagion.utils.Miscellaneous : toHexString;
 
 enum feature = Feature(
             "Dart mapping of two archives",
