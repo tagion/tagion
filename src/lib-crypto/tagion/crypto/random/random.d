@@ -24,7 +24,8 @@ else {
 bool isGetRandomAvailable() {
     import core.stdc.errno;
     static if(is_getrandom) {
-        const res = getrandom(null, 0, 0x0001);
+        enum GRND_NONBLOCK = 0x0001;
+        const res = getrandom(null, 0, GRND_NONBLOCK);
         if (res < 0) {
             switch (errno) {
                 case ENOSYS:
