@@ -764,10 +764,6 @@ unittest {
         .each!(bill => __wallet_storage.wallet.addBill(bill));
 
     const net = new StdHashNet;
-    //auto gene = cast(Buffer) net.calcHash("gene".representation);
-
-    import tagion.utils.Miscellaneous : hex;
-
     // Add the bills to the account with the derive keys
     with (__wallet_storage.wallet.account) {
 

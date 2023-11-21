@@ -78,19 +78,13 @@ struct DARTService {
         }
 
         void checkRead(dartCheckReadRR req, immutable(DARTIndex)[] fingerprints) @safe {
-            import tagion.utils.Miscellaneous : toHexString;
-
-            // log("Received checkread response %s", fingerprints.map!(f => f.toHexString));
-
             immutable(DARTIndex)[] check_read = (() @trusted => cast(immutable) db.checkload(fingerprints))();
             log("after checkread response");
 
             req.respond(check_read);
         }
 
-        import tagion.utils.Miscellaneous : toHexString;
-
-        log("Starting dart with %s", db.bullseye.toHexString);
+        log("Starting dart with %(%02x%)", db.bullseye);
 
         auto hirpc = HiRPC(net);
         import tagion.Keywords;
@@ -147,7 +141,7 @@ struct DARTService {
             try {
 
                 auto eye = db.modify(recorder);
-                log("New bullseye is %s", eye.toHexString);
+                log("New bullseye is %(%02x%)", eye);
 
                 req.respond(eye);
                 auto replicator_tid = locate(task_names.replicator);

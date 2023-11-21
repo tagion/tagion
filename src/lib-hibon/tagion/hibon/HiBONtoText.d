@@ -23,7 +23,7 @@ import tagion.basic.Types : encodeBase64;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord;
 
-alias toHex = misc.toHexString;
+//alias toHex = misc.toHexString;
 
 enum {
     hex_prefix = "0x",

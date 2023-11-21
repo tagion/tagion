@@ -45,7 +45,7 @@ DARTIndex dartIndexDecode(const(HashNet) net, const(char[]) str) {
                         verbose("Htype %s -> %s", type_name, E);
                         static if (E == Type.BINARY) {
                             Buffer buf = list[2].decode;
-                            verbose("Dtype %s name=%s value=%(%02x%)", Document.stringof, name, buf);
+                            verbose("Dtype %s name=%s value=%(%02x%)", Buffer.stringof, name, buf);
                             return net.dartKey(name, buf);
                         }
                         else static if (E == Type.DOCUMENT) {
