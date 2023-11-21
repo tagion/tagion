@@ -159,7 +159,6 @@ format("Signature function has not been intialized. Use the %s function", fullyQ
         scope (exit) {
             getRandom(seckey);
         }
-        import std.string : representation;
 
         ubyte[] privkey;
         crypt.createKeyPair(seckey, privkey);
