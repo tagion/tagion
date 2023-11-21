@@ -9,9 +9,9 @@ BIN_DIR=$(realpath -m ./build/$HOST/bin)
 TMP_DIR=$(mktemp -d /tmp/tagion_opsXXXX)
 
 # This file is copied over by the ci flow, if you're running this in the source repo then you need to copy it over as well
-$BIN_DIR/create_wallets.sh -b $BIN_DIR -k $TMP_DIR/net -t $TMP_DIR/wallets
+$BIN_DIR/create_wallets.sh -b $BIN_DIR -k $TMP_DIR/net -t $TMP_DIR/wallets -u $TMP_DIR/net/keys
 
-cat $TMP_DIR/net/keys | $BIN_DIR/tagion wave $TMP_DIR/net/tagionwave.json > $TMP_DIR/wave.log &
+cat $TMP_DIR/net/keys | $BIN_DIR/tagion wave $TMP_DIR/net/tagionwave.json -keys $TMP_DIR/wallets < $TMP_DIR/net/keys > $TMP_DIR/wave.log &
 
 echo "waiting for network to start!"
 sleep 20;
