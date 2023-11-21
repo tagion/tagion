@@ -137,9 +137,7 @@ struct SecureWallet(Net : SecureNet) {
             uint confidence,
             const(char[]) pincode,
             scope const(ubyte[]) seed = null)
-    in {
-        assert(questions.length is answers.length, "Amount of questions should be same as answers");
-    }
+    in (questions.length is answers.length, "Amount of questions should be same as answers")
     do {
         check(questions.length > 3, "Minimal amount of answers is 4");
         _net = new Net();
@@ -153,8 +151,6 @@ struct SecureWallet(Net : SecureNet) {
         }
 
         recover.createKey(questions, answers, confidence, seed);
-        //    SecureWallet result;
-        // {
         auto R = new ubyte[_net.hashSize];
         scope (exit) {
             R[]=0;
@@ -162,14 +158,13 @@ struct SecureWallet(Net : SecureNet) {
         recover.findSecret(R, questions, answers);
         _net.createKeyPair(R);
         _wallet = RecoverGenerator(recover.toDoc);
-        //this(DevicePIN.init, wallet);
-        //result._net = _net;
         set_pincode(R, pincode);
-        //}
-        //return result;
     }
 
-    this(scope const(char[]) passphrase, scope const(char[]) pincode, scope const(char[]) salt = null) {
+    this(
+scope const(char[]) passphrase, 
+scope const(char[]) pincode, 
+scope const(char[]) salt = null) {
         _net = new Net;
         enum size_of_privkey = 32;
         ubyte[] R;
@@ -200,9 +195,7 @@ struct SecureWallet(Net : SecureNet) {
      *   True of N=confidence number of answers is correct
      */
     bool correct(const(string[]) questions, const(char[][]) answers)
-    in {
-        assert(questions.length is answers.length, "Amount of questions should be same as answers");
-    }
+    in (questions.length is answers.length, "Amount of questions should be same as answers")
     do {
         _net = new Net;
         auto recover = KeyRecover(_net, _wallet);
@@ -219,10 +212,11 @@ struct SecureWallet(Net : SecureNet) {
      * Returns:
      *   True if the key-pair has been recovered for the quiz or the pincode
      */
-    bool recover(const(string[]) questions, const(char[][]) answers, const(char[]) pincode)
-    in {
-        assert(questions.length is answers.length, "Amount of questions should be same as answers");
-    }
+    bool recover(
+const(string[]) questions, 
+const(char[][]) answers, 
+const(char[]) pincode)
+    in (questions.length is answers.length, "Amount of questions should be same as answers")
     do {
         _net = new Net;
         auto recover = KeyRecover(_net, _wallet);
@@ -242,7 +236,6 @@ struct SecureWallet(Net : SecureNet) {
      * Returns: true if the wallet is loggin
      */
     @nogc bool isLoggedin() pure const nothrow {
-        pragma(msg, "fixme(cbr): Jam the _net");
         return _net !is null;
     }
 
@@ -263,13 +256,11 @@ struct SecureWallet(Net : SecureNet) {
         if (_pin.D) {
             logout;
             auto login_net = new Net;
-            //  writefln("pinhash = %s", pinhash.toHexString);
             auto R = new ubyte[login_net.hashSize];
             scope (exit) {
                 R[]=0;
             }
             const recovered = _pin.recover(login_net, R, pincode.representation);
-            //  _pin.recover(R, pinhash);
             if (recovered) {
                 login_net.createKeyPair(R);
                 _net = login_net;
@@ -312,12 +303,9 @@ struct SecureWallet(Net : SecureNet) {
      */
     bool changePincode(const(char[]) pincode, const(char[]) new_pincode) {
         check(!_net.isinit, "Key pair has not been created");
-        //const pinhash = recover.checkHash(pincode.representation, _pin.U);
         auto R = new ubyte[_net.hashSize];
-        // xor(R, _pin.D, pinhash);
         _pin.recover(_net, R, pincode.representation);
         if (_pin.S == _net.saltHash(R)) {
-            // const new_pinhash = recover.checkHash(new_pincode.representation, _pin.U);
             set_pincode(R, new_pincode);
             logout;
             return true;
@@ -331,10 +319,7 @@ struct SecureWallet(Net : SecureNet) {
      *   invoice = invoice to be registered
      */
     void registerInvoice(ref Invoice invoice) {
-        //scope seed = new ubyte[_net.hashSize];
-        //getRandom(seed);
         account.derive_state = _net.HMAC(account.derive_state ~ _net.pubkey);
-        //scramble(seed);
         auto pkey = _net.derivePubkey(account.derive_state);
         invoice.pkey = derivePubkey;
         account.derivers[invoice.pkey] = account.derive_state;
@@ -1007,7 +992,6 @@ unittest {
     const bill1 = wallet.requestBill(1000.TGN);
     wallet.addBill(bill1);
     assert(wallet.available_balance == 1000.TGN);
-    // create a payment of excactly 1000 TGN;
     const bill_to_pay = wallet.requestBill(1000.TGN);
     SignedContract signed_contract;
     TagionCurrency fees;
@@ -1058,18 +1042,11 @@ unittest {
     }
     auto dart_response = hirpc.result(receiver, Document(params)).toDoc;
     const received = hirpc.receive(dart_response);
-    // writefln("received: %s", received.toPretty);
 
-    // writefln("BEFORE: available=%s, total=%s, locked=%s", wallet.available_balance, wallet.total_balance, wallet.locked_balance);
     wallet.setResponseUpdateWallet(received);
 
-    // writefln("AFTER: available=%s, total=%s, locked=%s", wallet.available_balance, wallet.total_balance, wallet.locked_balance);
     auto should_have = wallet.calcTotal(bills_in_dart);
     assert(should_have == wallet.total_balance, format("should have %s had %s", should_have, wallet.total_balance));
-
-    // writefln("WALLET TOTAL: %s", wallet.total_balance);
-
-    // try to create a contract with the information again
 
 }
 
@@ -1147,7 +1124,8 @@ unittest {
     auto p = wallet1.createPayment([payment_request], signed_contract, fee);
     assert(p.value, format("ERROR: %s %s", p.value, p.msg));
 
-    assert(signed_contract.contract.inputs.uniq.array.length == signed_contract.contract.inputs.length, "signed contract inputs invalid");
+    assert(signed_contract.contract.inputs.uniq.array.length == signed_contract.contract.inputs.length, 
+    "signed contract inputs invalid");
 }
 
 unittest {
