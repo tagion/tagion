@@ -21,7 +21,6 @@ import std.string : splitLines;
 import tagion.basic.Types : Buffer, FileExtension;
 import tagion.communication.HiRPC;
 import tagion.crypto.Cipher;
-import tagion.crypto.SecureNet : BadSecureNet, StdSecureNet;
 import tagion.crypto.SecureNet;
 import tagion.crypto.Types : Pubkey;
 import tagion.crypto.aes.AESCrypto;

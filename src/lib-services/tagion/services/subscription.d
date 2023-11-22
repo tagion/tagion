@@ -71,6 +71,7 @@ struct SubscriptionService {
         int rc;
         rc = sock.listen(opts.address);
         if (rc != 0) {
+            pragma(msg, "REV: Should it be a TagionException");
             throw new Exception(format("Could not listen to url %s: %s", opts.address, rc.nng_errstr));
         }
 

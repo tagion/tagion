@@ -155,7 +155,7 @@ struct DARTService {
                 fail(e);
             }
             catch (Error e) {
-                log("DART Error %s", e);
+                log.error("DART Error %s", e);
             }
 
         }

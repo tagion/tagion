@@ -73,6 +73,7 @@ struct InputValidatorService {
             try {
                 hirpc.Error message;
                 message.code = err_type;
+                pragma(msg, "REV: Why do we set message inside the debug");
                 debug {
                     message.message = err_type.to!string;
                     message.data = data;
