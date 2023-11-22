@@ -26,12 +26,9 @@ struct TRTArchive {
 ///   dart_recorder = The recorder that modified the database
 /// Returns: Recorder for the trt
 void createUpdateRecorder(immutable(RecordFactory.Recorder) dart_recorder, ref RecordFactory.Recorder trt_recorder, const HashNet net) {
-
     // get a range of all the bills
-
     auto archive_bills = dart_recorder[]
         .filter!(a => a.filed.isRecord!TagionBill);
-
     foreach(a_bill; archive_bills) {
         if (a_bill.type == Archive.Type.ADD) {
             const bill = TagionBill(a_bill.filed);
@@ -43,12 +40,23 @@ void createUpdateRecorder(immutable(RecordFactory.Recorder) dart_recorder, ref R
         } else {
             trt_recorder.remove(a_bill.dart_index);
         }
-
     }
 }
 
 
+/// Create the recorder for boot
+void genesisTRT(TagionBill[] bills, ref RecordFactory.Recorder recorder, const HashNet net) {
 
+    foreach(bill; bills) {
+        TRTArchive trt_archive;
+        trt_archive.owner = Pubkey(bill.owner);
+        trt_archive.idx = DARTIndex(net.dartIndex(bill));
+        recorder.insert(trt_archive, Archive.Type.ADD);
+    }
+
+
+
+}
 
 
 
