@@ -259,6 +259,14 @@
                 "acceptance", "genesis"
             ],
             "timeout": 0.0
+        },
+        "trt_service": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "trt"
+            ],
+            "timeout": 0.0
         }
 
     }
