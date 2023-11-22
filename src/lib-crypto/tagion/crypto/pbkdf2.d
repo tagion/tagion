@@ -22,7 +22,7 @@
 * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 * OTHER DEALINGS IN THE SOFTWARE.
 */
-module tagion.pbkdf2.pbkdf2;
+module tagion.crypto.pbkdf2;
 
 import std.digest.sha : SHA1;
 
