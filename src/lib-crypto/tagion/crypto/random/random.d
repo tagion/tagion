@@ -23,7 +23,10 @@ else {
 
 bool isGetRandomAvailable() {
     import core.stdc.errno;
-    static if(is_getrandom) {
+    static if (ver.USE_BUILD_IN_RANDOM_FOR_MOBILE_SHOULD_BE_REMOVED) {
+        return true;
+    }
+    else static if(is_getrandom) {
         enum GRND_NONBLOCK = 0x0001;
         const res = getrandom(null, 0, GRND_NONBLOCK);
         if (res < 0) {
