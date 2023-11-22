@@ -28,6 +28,7 @@ import tagion.wallet.SecureWallet;
 import tagion.wallet.WalletRecords;
 import tagion.wallet.BIP39;
 import tagion.basic.Types : encodeBase64;
+import tagion.basic.range : eatOne;
 mixin Main!(_main, "payout");
 
 import tagion.crypto.SecureNet;
@@ -45,7 +46,7 @@ static void set_path(ref string file, string path) {
 
 int _main(string[] args) {
     import tagion.wallet.SecureWallet : check;
-
+    
     immutable program = args[0];
     bool version_switch;
     /*
@@ -71,12 +72,17 @@ int _main(string[] args) {
         passphrase[]=0;
         salt[]=0;
     }
+*/
     GetoptResult main_args;
     WalletOptions options;
+    WalletOptions[] all_options;
     WalletInterface.Switch wallet_switch;
-    const user_config_file = args
-        .countUntil!(file => file.hasExtension(FileExtension.json) && file.exists);
-    auto config_file = (user_config_file < 0) ? default_wallet_config_filename : args[user_config_file];
+    auto config_files = args
+        .filter!(file => file.hasExtension(FileExtension.json));
+    auto config_file=default_wallet_config_filename;
+    if (!config_files.empty) {
+        config_file=config_files.eatOne;
+    }
     if (config_file.exists) {
         options.load(config_file);
     }
@@ -89,6 +95,9 @@ int _main(string[] args) {
                 std.getopt.config.bundling,
                 "version", "display the version", &version_switch,
                 "v|verbose", "Enable verbose print-out", &__verbose_switch,
+                "dry", "Dry-run this will not save the wallet", &__dry_switch,
+        /*
+        "pay", "Creates a payment contract", &wallet_switch.pay,
                 "O|overwrite", "Overwrite the config file and exits", &overwrite_switch,
                 "path", format("Set the path for the wallet files : default %s", path), &path,
                 "wallet", format("Wallet file : default %s", options.walletfile), &options.walletfile,
@@ -107,7 +116,6 @@ int _main(string[] args) {
                 "x|pin", "Pincode", &pincode,
                 "amount", "Create an payment request in tagion", &wallet_switch.amount,
                 "force", "Force input bill", &wallet_switch.force,
-                "pay", "Creates a payment contract", &wallet_switch.pay,
                 "dry", "Dry-run this will not save the wallet", &__dry_switch,
                 "req", "List all requested bills", &wallet_switch.request,
                 "update", "Request a wallet updated", &wallet_switch.update,
@@ -122,11 +130,11 @@ int _main(string[] args) {
                 "name", "Sets the account name", &account_name,
                 "info", "Prints the public key and the name of the account", &info,
                 "pubkey", "Prints the public key", &pubkey_info,
-
+*/
         );
     }
     catch (GetOptException e) {
-        stderr.writeln(e.msg);
+        error(e.msg);
         return 1;
     }
     if (version_switch) {
@@ -141,7 +149,7 @@ int _main(string[] args) {
                 "Documentation: https://tagion.org/",
                 "",
                 "Usage:",
-                format("%s [<option>...] <config.json> <files>", program),
+                format("%s [<option>...] <wallet.json> ... ", program),
                 "",
 
                 "<option>:",
@@ -151,6 +159,11 @@ int _main(string[] args) {
         return 0;
     }
     try {
+        foreach(file; config_files) {
+            check(file.hasExtension(FileExtension.json), format("%s is not a %s file", file, FileExtension.json));
+            check(file.exists, format("File %s not found", file));
+        }
+        /*
         verbose("Config file %s", config_file);
         const new_config = (!config_file.exists || overwrite_switch);
         if (path) {
@@ -267,12 +280,12 @@ int _main(string[] args) {
             
         }
         wallet_interface.operate(wallet_switch, args);
+        */
     }
     catch (Exception e) {
-        writefln("%1$sError: %3$s%2$s", RED, RESET, e.msg);
+        error("%s",  e.msg);
         verbose("%s", e.toString);
         return 1;
     }
-        */
     return 0;
 }

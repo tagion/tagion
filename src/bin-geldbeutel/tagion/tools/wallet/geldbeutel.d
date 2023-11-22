@@ -116,7 +116,6 @@ int _main(string[] args) {
                     "Sets the address default: %s", options.contract_address), &options
                     .addr,
                 "faucet", "request money from the faucet", &wallet_switch.faucet,
-                    // "dart-addr", format("Sets the dart address default: %s", options.dart_address), &options.dart_address,
                 "bip39", "Generate bip39 set the number of words", &bip39,
                 "name", "Sets the account name", &account_name,
                 "info", "Prints the public key and the name of the account", &info,
