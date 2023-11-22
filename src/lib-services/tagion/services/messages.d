@@ -37,3 +37,7 @@ alias SendRecorder = Msg!"SendRecorder";
 
 // NNG socket hirpc output push
 alias HiRPCOutput = Msg!"OutputPush";
+
+// TRT
+alias trtModify = Msg!"trtModify";
+alias trtReadRR = Request!"trtRead";
