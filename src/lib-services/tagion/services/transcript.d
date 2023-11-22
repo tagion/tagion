@@ -157,7 +157,7 @@ struct TranscriptService {
             */
             foreach(v; votes.byKeyValue) {
                 // add the new signatures to the epoch. We only want to do it if there are new signatures
-                if (v.value.init_bullseye || v.value.epoch.signs.length != v.value.votes.length) {
+                if ((v.value.init_bullseye && v.value.epoch.bullseye !is Fingerprint.init) || (v.value.epoch.signs.length != v.value.votes.length && v.value.epoch.bullseye !is Fingerprint.init)) {
                     v.value.init_bullseye = false;
                     // add the signatures to the epoch. Only add them if the signature match ours
                     foreach(single_vote; v.value.votes) {
