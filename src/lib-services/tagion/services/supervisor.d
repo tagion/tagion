@@ -25,6 +25,7 @@ import tagion.services.inputvalidator;
 import tagion.services.options;
 import tagion.services.replicator;
 import tagion.services.transcript;
+import tagion.services.TRTService;
 import tagion.utils.JSONCommon;
 import tagion.utils.pretend_safe_concurrency : locate, send;
 
@@ -39,6 +40,11 @@ struct Supervisor {
 
         // signs data for hirpc response
         auto dart_handle = spawn!DARTService(tn.dart, opts.dart, tn, shared_net);
+
+        ActorHandle trt_handle;
+        if (opts.trt.enable) {
+            trt_handle = spawn!TRTService(tn.trt, opts.trt, tn, shared_net);
+        }
 
         auto hirpc_verifier_handle = spawn!HiRPCVerifierService(tn.hirpc_verifier, opts.hirpc_verifier, tn);
 
@@ -68,10 +74,14 @@ struct Supervisor {
         }
 
         log("Supervisor stopping services");
+        if (opts.trt.enable) {
+            trt_handle.send(Sig.STOP);
+        }
         foreach (service; services) {
             if (service.state is Ctrl.ALIVE) {
                 service.send(Sig.STOP);
             }
+
         }
         (() @trusted { // NNG shoould be safe
             import core.time;
