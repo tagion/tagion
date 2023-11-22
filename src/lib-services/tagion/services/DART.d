@@ -56,13 +56,13 @@ struct DARTService {
 
         DART db;
         Exception dart_exception;
-
         const net = new StdSecureNet(shared_net);
-
         db = new DART(net, opts.dart_path);
         if (dart_exception !is null) {
             throw dart_exception;
         }
+
+        ActorHandle replicator_handle = ActorHandle(task_names.replicator);
 
         scope (exit) {
             db.close();
@@ -144,10 +144,7 @@ struct DARTService {
                 log("New bullseye is %(%02x%)", eye);
 
                 req.respond(eye);
-                auto replicator_tid = locate(task_names.replicator);
-                if (replicator_tid !is Tid.init) {
-                    replicator_tid.send(SendRecorder(), recorder, eye, epoch_number);
-                }
+                replicator_handle.send(SendRecorder(), recorder, eye, epoch_number);
             }
             catch (AssertError e) {
                 log("Received ASSERT ERROR bullseye before %(%02x%), %s archives that were tried to be added \n%s", fingerprint_before, e, recorder
