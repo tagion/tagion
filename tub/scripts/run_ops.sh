@@ -8,6 +8,8 @@ HOST=x86_64-linux
 BIN_DIR=$(realpath -m ./build/$HOST/bin)
 TMP_DIR=$(mktemp -d /tmp/tagion_opsXXXX)
 
+$BIN_DIR/tagion -s
+
 # This file is copied over by the ci flow, if you're running this in the source repo then you need to copy it over as well
 $BIN_DIR/create_wallets.sh -b $BIN_DIR -k $TMP_DIR/net -t $TMP_DIR/wallets -u $TMP_DIR/net/keys
 
