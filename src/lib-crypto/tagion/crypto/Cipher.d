@@ -7,9 +7,6 @@ import tagion.crypto.random.random;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord;
 
-//import std.stdio;
-// import tagion.utils.Miscellaneous: toHexString, decode;
-// import tagion.hibon.HiBONJSON;
 @safe
 struct Cipher {
     import tagion.crypto.secp256k1.NativeSecp256k1;
@@ -39,7 +36,7 @@ struct Cipher {
         scope (exit) {
             secret_key[] = 0;
         }
-            getRandom(secret_key);
+        getRandom(secret_key);
         CipherDocument result;
         result.cipherPubkey = net.getPubkey(secret_key);
         scope ubyte[AES.BLOCK_SIZE] nonce_alloc;
@@ -83,6 +80,7 @@ struct Cipher {
         check(full_size + CRC_SIZE <= data.length && full_size !is 0, ConsensusFailCode
                 .CIPHER_DECRYPT_ERROR);
 
+        pragma(msg, "FIXME crc size check");
         const crc = data[0 .. full_size].crc32Of;
 
         check(data[0 .. full_size].crc32Of == crc, ConsensusFailCode.CIPHER_DECRYPT_CRC_ERROR);
@@ -93,7 +91,7 @@ struct Cipher {
         import std.algorithm.searching : all, any;
         import tagion.basic.Types : FileExtension;
         import tagion.basic.basic : fileId;
-    import tagion.crypto.SecureNet;
+        import tagion.crypto.SecureNet;
         import tagion.hibon.Document : Document;
         import tagion.hibon.HiBON : HiBON;
         import tagion.utils.Miscellaneous : decode;
