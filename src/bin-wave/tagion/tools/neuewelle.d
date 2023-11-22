@@ -64,7 +64,7 @@ void signal_handler(int signal) nothrow {
     }
 }
 
-mixin Main!(_main, "tagionwave");
+mixin Main!(_main, "wave");
 
 int _main(string[] args) {
     immutable program = args[0];
@@ -382,8 +382,7 @@ int network_mode0(
         }
         else {
             WalletOptions wallet_options;
-    LoopTry:
-            foreach (tries; 1 .. number_of_retry + 1) {
+            LoopTry: foreach (tries; 1 .. number_of_retry + 1) {
                 verbose("Input boot key %d as nodename:pincode", i);
                 const args = by_line.front.split(":");
                 by_line.popFront;
@@ -404,7 +403,7 @@ int network_mode0(
                     verbose("Load wallet");
                     wallet_interface.load;
 
-                    const loggedin=wallet_interface.secure_wallet.login(args[1]);
+                    const loggedin = wallet_interface.secure_wallet.login(args[1]);
                     if (wallet_interface.secure_wallet.isLoggedin) {
                         verbose("%1$sNode %3$s successfull%2$s", GREEN, RESET, args[0]);
                         net = cast(StdSecureNet) wallet_interface.secure_wallet.net.clone;
