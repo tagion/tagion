@@ -80,10 +80,6 @@ int _main(string[] args) {
     *
     */
     File fin = stdin; /// Console input for the bootkeys
-    if (geteuid == 0) {
-        stderr.writeln("FATAL: YOU SHALL NOT RUN THIS PROGRAM AS ROOT");
-        return 1;
-    }
     stopsignal.initialize(true, false);
 
     { // Handle sigint
