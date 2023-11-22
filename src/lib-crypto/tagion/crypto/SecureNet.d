@@ -34,15 +34,12 @@ class StdHashNet : HashNet {
         return Fingerprint(rawCalcHash(data));
     }
 
-    @trusted
     final immutable(Buffer) HMAC(scope const(ubyte[]) data) const pure {
         import std.digest.hmac : digestHMAC = HMAC;
         import std.digest.sha : SHA256;
-        import std.exception : assumeUnique;
 
-        scope hmac = digestHMAC!SHA256(data);
-        auto result = hmac.finish.dup;
-        return assumeUnique(result);
+        auto hmac = digestHMAC!SHA256(data);
+        return hmac.finish.idup;
     }
 
     Fingerprint calcHash(const(Document) doc) const {
@@ -162,7 +159,6 @@ format("Signature function has not been intialized. Use the %s function", fullyQ
         scope (exit) {
             getRandom(seckey);
         }
-        import std.string : representation;
 
         ubyte[] privkey;
         crypt.createKeyPair(seckey, privkey);

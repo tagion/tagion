@@ -12,13 +12,42 @@ else static if (ver.linux || ver.Android) {
     enum is_getrandom = true;
     extern (C) ptrdiff_t getrandom(void* buf, size_t buflen, uint flags) nothrow;
 }
-else static if (ver.iOS || ver.OSX) {
+// Tecnically netbsd and freebsd also provide getrandom(2), so you could use still use that instead
+else static if (ver.iOS || ver.OSX || ver.BSD) {
     enum is_getrandom = false;
     extern (C) void arc4random_buf(void* buf, size_t buflen) nothrow;
 }
 else {
     static assert(0, format("Random function not support for %s", os));
 }
+
+bool isGetRandomAvailable() {
+    import core.stdc.errno;
+    static if(is_getrandom) {
+        enum GRND_NONBLOCK = 0x0001;
+        const res = getrandom(null, 0, GRND_NONBLOCK);
+        if (res < 0) {
+            switch (errno) {
+                case ENOSYS:
+                case EPERM:
+                    return false;
+                default:
+                    return true;
+            }
+        } 
+        else {
+            return true;
+        }
+    }
+    else {
+        return true;
+    }
+}
+
+unittest {
+    assert(isGetRandomAvailable, "hardware random function is not available in this environment");
+}
+
 /++
      + getRandom - runs platform specific random function.
      +/
