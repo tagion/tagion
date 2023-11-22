@@ -354,6 +354,8 @@ struct TranscriptService {
                 .join
                 .array;
 
+            pragma(msg, "fixme(pr): add outputs to checkread");
+
             auto req = dartCheckReadRR();
             req.id = last_epoch_number;
             epoch_contracts[req.id] = new const EpochContracts(signed_contracts, epoch_time);
@@ -376,9 +378,9 @@ struct TranscriptService {
             votes[epoch_number].init_bullseye = true;
 
             ConsensusVoting own_vote = ConsensusVoting(
-                    epoch_number,
-                    net.pubkey,
-                    net.sign(bullseye)
+                epoch_number,
+                net.pubkey,
+                net.sign(bullseye)
             );
 
             locate(task_names.epoch_creator).send(Payload(), own_vote.toDoc);
