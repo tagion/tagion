@@ -161,6 +161,9 @@ format("Signature function has not been intialized. Use the %s function", fullyQ
         }
 
         ubyte[] privkey;
+        scope (exit) {
+            privkey[] = 0;
+        }
         crypt.createKeyPair(seckey, privkey);
         alias AES = AESCrypto!256;
         _pubkey = crypt.getPubkey(privkey);
