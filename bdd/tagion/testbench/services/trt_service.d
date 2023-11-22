@@ -6,6 +6,8 @@ import std.typecons : Tuple;
 import tagion.testbench.tools.Environment;
 import std.file;
 import std.path : buildPath, setExtension;
+import tagion.GlobalSignals;
+import tagion.basic.Types : FileExtension;
 import std.stdio;
 import tagion.behaviour.Behaviour;
 import tagion.services.options;
@@ -13,6 +15,9 @@ import tagion.testbench.services;
 import tagion.tools.Basic;
 import neuewelle = tagion.tools.neuewelle;
 import tagion.utils.pretend_safe_concurrency;
+import core.thread;
+import core.time;
+import tagion.logger.Logger;
 
 mixin Main!(_main);
 
@@ -30,6 +35,7 @@ int _main(string[] args) {
     scope Options local_options = Options.defaultOptions;
     local_options.dart.folder_path = buildPath(module_path);
     local_options.trt.folder_path = buildPath(module_path);
+    local_options.trt.enable = true;
     local_options.replicator.folder_path = buildPath(module_path, "recorders");
     local_options.epoch_creator.timeout = 500;
     local_options.wave.prefix_format = "TRT TEST Node_%s_";
@@ -90,7 +96,7 @@ int _main(string[] args) {
     foreach (i; 0 .. local_options.wave.number_of_nodes) {
         immutable prefix = format(local_options.wave.prefix_format, i);
         const path = buildPath(local_options.dart.folder_path, prefix ~ local_options.dart.dart_filename);
-        const trt_path = buildPath(local_options.trt.folder_path, prefix ~ local_optins.trt.trt_filename);
+        const trt_path = buildPath(local_options.trt.folder_path, prefix ~ local_options.trt.trt_filename);
         writeln(path);
         DARTFile.create(path, net);
         DARTFile.create(trt_path, net);
@@ -102,7 +108,7 @@ int _main(string[] args) {
         trt_db.close;
     }
 
-    immutable neuewelle_args = ["spam_double_spend_test", config_file, "--nodeopts", module_path]; // ~ args;
+    immutable neuewelle_args = ["trt_test", config_file, "--nodeopts", module_path]; // ~ args;
     auto tid = spawn(&wrap_neuewelle, neuewelle_args);
     import tagion.utils.JSONCommon : load;
 
@@ -116,7 +122,20 @@ int _main(string[] args) {
         Options node_opt = load!(Options)(filename);
         node_opts ~= node_opt;
     }
+    auto name = "trt_testing";
+    register(name, thisTid);
+    log.registerSubscriptionTask(name);
     auto feature = automation!(trt_service);
+
+    Thread.sleep(10.seconds);
+
+    
+    feature.run;
+
+    stopsignal.set;
+    Thread.sleep(6.seconds);
+
+    return 0;
 
 }
 
