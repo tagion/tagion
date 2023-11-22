@@ -161,6 +161,9 @@ format("Signature function has not been intialized. Use the %s function", fullyQ
         }
 
         ubyte[] privkey;
+        scope (exit) {
+            privkey[] = 0;
+        }
         crypt.createKeyPair(seckey, privkey);
         alias AES = AESCrypto!256;
         _pubkey = crypt.getPubkey(privkey);
@@ -237,7 +240,7 @@ format("Signature function has not been intialized. Use the %s function", fullyQ
     in
         (_secret is null)
     do {
-        import tagion.pbkdf2.pbkdf2;
+        import tagion.crypto.pbkdf2;
         import std.digest.sha : SHA512;
 
         enum count = 2048;
