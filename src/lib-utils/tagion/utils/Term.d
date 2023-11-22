@@ -85,6 +85,10 @@ string code(immutable Cursor c, immutable uint n = 1) {
     return format("\u001b[%d%s", n, char(c));
 }
 
+string linePos(const size_t pos) {
+    return format("\r\x1B[%dC", pos);
+}
+
 enum Mode {
     None = 0, /// All attributes off
     Bold = 1, /// Bold on
@@ -118,7 +122,14 @@ else {
         termios ostate; /* saved tty state */
         termios nstate; /* values for editor mode */
 
-        int get() {
+        int get()
+        out (ret) {
+            import std.stdio;
+
+            writef("%d ", ret);
+
+        }
+        do {
             // Open stdin in raw mode
             // Adjust output channel
             tcgetattr(1, &ostate); // save old state
@@ -141,7 +152,25 @@ else {
             END,
             PAGEUP,
             PAGEDOWN,
-            ENTER
+            ENTER,
+            DELETE,
+            BACKSPACE,
+            F1,
+            F2,
+            F3,
+            F4,
+            F5,
+            F6,
+            F7,
+            F8,
+            F9,
+            F10,
+            F11,
+            F12,
+            CTRL_A,
+            CTRL_B,
+            CTRL_C,
+            CTRL_D,
         }
 
         struct KeyStrain {
@@ -153,16 +182,34 @@ else {
         }
 
         enum strain = [
-            KeyStrain(KeyCode.UP, [27, 91, 65]),
-            KeyStrain(KeyCode.DOWN, [27, 91, 66]),
-            KeyStrain(KeyCode.RIGHT, [27, 91, 67]),
-            KeyStrain(KeyCode.LEFT, [27, 91, 68]),
-            KeyStrain(KeyCode.HOME, [27, 91, 49, 59, 50, 72]),
-            KeyStrain(KeyCode.END, [27, 91, 49, 59, 50, 70]),
-            KeyStrain(KeyCode.PAGEDOWN, [27, 91, 54, 126]),
-            KeyStrain(KeyCode.PAGEUP, [27, 91, 53, 126]),
-            KeyStrain(KeyCode.ENTER, [13]),
-        ];
+                KeyStrain(KeyCode.UP, [27, 91, 65]),
+                KeyStrain(KeyCode.DOWN, [27, 91, 66]),
+                KeyStrain(KeyCode.RIGHT, [27, 91, 67]),
+                KeyStrain(KeyCode.LEFT, [27, 91, 68]),
+                KeyStrain(KeyCode.HOME, [27, 91, 49, 59, 50, 72]),
+                KeyStrain(KeyCode.END, [27, 91, 49, 59, 50, 70]),
+                KeyStrain(KeyCode.PAGEDOWN, [27, 91, 54, 126]),
+                KeyStrain(KeyCode.PAGEUP, [27, 91, 53, 126]),
+                KeyStrain(KeyCode.DELETE, [27, 91, 51, 126]),
+                KeyStrain(KeyCode.F1, [27, 79, 80]),
+                KeyStrain(KeyCode.F2, [27, 79, 81]),
+                KeyStrain(KeyCode.F3, [27, 79, 82]),
+                KeyStrain(KeyCode.F4, [27, 79, 83]),
+                KeyStrain(KeyCode.F5, [27, 91, 49, 53, 126]),
+                KeyStrain(KeyCode.F6, [27, 91, 49, 55, 126]),
+                KeyStrain(KeyCode.F7, [27, 91, 49, 56, 126]),
+                KeyStrain(KeyCode.F8, [27, 91, 49, 57, 126]),
+                KeyStrain(KeyCode.F9, [27, 91, 50, 48, 126]),
+                KeyStrain(KeyCode.F10, [27, 91, 50, 49, 126]),
+                KeyStrain(KeyCode.F11, [27, 91, 50, 51, 126]),
+                KeyStrain(KeyCode.F12, [27, 91, 50, 52, 126]),
+                KeyStrain(KeyCode.CTRL_A, [1]),
+                KeyStrain(KeyCode.CTRL_B, [2]),
+                KeyStrain(KeyCode.CTRL_C, [3]),
+                KeyStrain(KeyCode.CTRL_D, [4]),
+                KeyStrain(KeyCode.ENTER, [13]),
+                KeyStrain(KeyCode.BACKSPACE, [127]),
+            ];
 
         KeyCode getKey(ref int ch) {
             import std.algorithm;
@@ -178,19 +225,19 @@ else {
                             static if (pos + 1 is sorted_strain[index].branch.length) {
                                 return sorted_strain[index].code;
                             }
-                            else {
+                else {
                                 ch = get;
                                 return select!(index, pos + 1)(ch);
                             }
                         }
-                        else if (ch > sorted_strain[index].branch[pos]) {
+                else if (ch > sorted_strain[index].branch[pos]) {
                             return select!(index + 1, pos)(ch);
                         }
-                        else {
+                else {
                             return KeyCode.NONE;
                         }
                     }
-                    else {
+                else {
                         return select!(index + 1, pos)(ch);
                     }
                 }

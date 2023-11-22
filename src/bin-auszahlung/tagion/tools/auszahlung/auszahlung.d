@@ -29,6 +29,7 @@ import tagion.wallet.WalletRecords;
 import tagion.wallet.BIP39;
 import tagion.basic.Types : encodeBase64;
 import tagion.basic.range : eatOne;
+
 mixin Main!(_main, "payout");
 
 import tagion.crypto.SecureNet;
@@ -46,7 +47,7 @@ static void set_path(ref string file, string path) {
 
 int _main(string[] args) {
     import tagion.wallet.SecureWallet : check;
-    
+
     immutable program = args[0];
     bool version_switch;
     /*
@@ -79,9 +80,9 @@ int _main(string[] args) {
     WalletInterface.Switch wallet_switch;
     auto config_files = args
         .filter!(file => file.hasExtension(FileExtension.json));
-    auto config_file=default_wallet_config_filename;
+    auto config_file = default_wallet_config_filename;
     if (!config_files.empty) {
-        config_file=config_files.eatOne;
+        config_file = config_files.eatOne;
     }
     if (config_file.exists) {
         options.load(config_file);
@@ -95,8 +96,7 @@ int _main(string[] args) {
                 std.getopt.config.bundling,
                 "version", "display the version", &version_switch,
                 "v|verbose", "Enable verbose print-out", &__verbose_switch,
-                "dry", "Dry-run this will not save the wallet", &__dry_switch,
-        /*
+                "dry", "Dry-run this will not save the wallet", &__dry_switch, /*
         "pay", "Creates a payment contract", &wallet_switch.pay,
                 "O|overwrite", "Overwrite the config file and exits", &overwrite_switch,
                 "path", format("Set the path for the wallet files : default %s", path), &path,
@@ -131,6 +131,9 @@ int _main(string[] args) {
                 "info", "Prints the public key and the name of the account", &info,
                 "pubkey", "Prints the public key", &pubkey_info,
 */
+
+        
+
         );
     }
     catch (GetOptException e) {
@@ -159,25 +162,42 @@ int _main(string[] args) {
         return 0;
     }
     try {
-    WalletOptions[] all_options;
-        foreach(file; config_files) {
+        WalletOptions[] all_options;
+        foreach (file; config_files) {
             verbose("file %s", file);
             check(file.hasExtension(FileExtension.json), format("%s is not a %s file", file, FileExtension.json));
             check(file.exists, format("File %s not found", file));
             WalletOptions wallet_options;
             wallet_options.load(file);
-        all_options~=wallet_options;
+            all_options ~= wallet_options;
         }
         verbose("Number of wallets %d", all_options.length);
-        
-        foreach(wallet_option; all_options) {
-            auto wallet_interface=WalletInterface(wallet_option);
+
+        foreach (wallet_option; all_options) {
+            auto wallet_interface = WalletInterface(wallet_option);
             wallet_interface.load;
-            wallet_interfaces~=wallet_interface;
+            wallet_interfaces ~= wallet_interface;
         }
-        foreach(wallet_interface; wallet_interfaces) {
-            writefln("Name %s", wallet_interface.secure_wallet.account.name);
+        import tagion.tools.secretinput;
+            writefln("Press ctrl-A to show the pincode");
+        auto wallets=wallet_interfaces[];
+        while(!wallets.empty) {
+
+            writefln("Name %s", wallets.front.secure_wallet.account.name);
+        char[] pincode;
+    scope(exit) {
+                pincode[]=0;
+            }
+        getSecret("Pincode: ", pincode);
+            if (wallets.front.secure_wallet.login(pincode)) {
+                writefln("%1$sPincode correct%2$s", GREEN, RESET); 
+                wallets.popFront;
+            }
+            else {
+                error("Incorrect pincode");
+            }
         }
+       // writefln("pin '%s' %d", pincode, pincode.length);
         /*
         verbose("Config file %s", config_file);
         const new_config = (!config_file.exists || overwrite_switch);
@@ -298,7 +318,7 @@ int _main(string[] args) {
         */
     }
     catch (Exception e) {
-        error("%s",  e.msg);
+        error("%s", e.msg);
         verbose("%s", e.toString);
         return 1;
     }
