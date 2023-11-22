@@ -6,6 +6,7 @@ import core.thread;
 import std.datetime.systime;
 import std.uuid;
 import std.random;
+import std.exception;
 
 import nngd;
 import nngtestutil;
@@ -21,7 +22,7 @@ void pub_worker(string url, const string[] tags)
     s.sendbuf = 4096;
     log("PUB: listening");
     rc = s.listen(url);
-    assert(rc == 0);
+    enforce(rc == 0);
     log(nngtest_socket_properties(s,"PUB"));
     auto rnd = Random(42);
     while(1){
@@ -30,13 +31,13 @@ void pub_worker(string url, const string[] tags)
             foreach(tag; tags){
                 line = tag ~ " END";
                 rc = s.send(line);
-                assert(rc == 0);
+                enforce(rc == 0);
                 log("PUB sent: ",k," : ",line);
             }
             break;
         }
         rc = s.send(line);
-        assert(rc == 0);
+        enforce(rc == 0);
         log("PUB sent: ",k," : ",line);
         k++;
         nng_sleep(msecs(500));
@@ -50,7 +51,7 @@ void sub_worker(string url, string tag)
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_SUB);
     s.recvtimeout = msecs(1000);
     s.subscribe(tag);
-    assert(rc == 0);
+    enforce(rc == 0);
     log("SUB("~tag~"): subscribed to " ~ tag);
     while(1){
         log("SUB("~tag~"): to dial...");
@@ -61,7 +62,7 @@ void sub_worker(string url, string tag)
             nng_sleep(msecs(100));
             continue;
         }
-        assert(rc == 0);
+        enforce(rc == 0);
     }
     log(nngtest_socket_properties(s,"SUB("~tag~")"));
     log("%s",s.subscriptions());
