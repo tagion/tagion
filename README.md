@@ -67,7 +67,7 @@ tar xf dstep-1.0.0-linux-x86_64.tar.xz
     
 ```bash
 dstep --version # 1.0.0
-ldc2 --version # LDC - the LLVM D compiler (1.34.0): ...
+ldc2 --version # LDC - the LLVM D compiler (1.35.0): ...
 dmd --version # v2.105.2
 ```
 
