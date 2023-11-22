@@ -75,7 +75,7 @@ int _main(string[] args) {
 */
     GetoptResult main_args;
     WalletOptions options;
-    WalletOptions[] all_options;
+    WalletInterface[] wallet_interfaces;
     WalletInterface.Switch wallet_switch;
     auto config_files = args
         .filter!(file => file.hasExtension(FileExtension.json));
@@ -159,9 +159,24 @@ int _main(string[] args) {
         return 0;
     }
     try {
+    WalletOptions[] all_options;
         foreach(file; config_files) {
+            verbose("file %s", file);
             check(file.hasExtension(FileExtension.json), format("%s is not a %s file", file, FileExtension.json));
             check(file.exists, format("File %s not found", file));
+            WalletOptions wallet_options;
+            wallet_options.load(file);
+        all_options~=wallet_options;
+        }
+        verbose("Number of wallets %d", all_options.length);
+        
+        foreach(wallet_option; all_options) {
+            auto wallet_interface=WalletInterface(wallet_option);
+            wallet_interface.load;
+            wallet_interfaces~=wallet_interface;
+        }
+        foreach(wallet_interface; wallet_interfaces) {
+            writefln("Name %s", wallet_interface.secure_wallet.account.name);
         }
         /*
         verbose("Config file %s", config_file);
@@ -184,7 +199,7 @@ int _main(string[] args) {
         }
         if (new_config) {
             const new_config_file = args
-                .countUntil!(file => file.hasExtension(FileExtension.json) && !file.exists);
+                .countUntil!(file => file.tasExtension(FileExtension.json) && !file.exists);
             config_file = (new_config_file < 0) ? config_file : args[new_config_file];
             options.save(config_file);
             if (overwrite_switch) {

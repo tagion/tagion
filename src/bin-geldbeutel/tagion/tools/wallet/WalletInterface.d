@@ -236,8 +236,6 @@ struct WalletInterface {
     }
 
     void save(const bool recover_flag) {
-        // secure_wallet.login(pincode);
-
         if (secure_wallet.isLoggedin && !dry_switch) {
             verbose("Write %s", options.walletfile);
 
