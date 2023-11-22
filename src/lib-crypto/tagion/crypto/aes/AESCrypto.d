@@ -32,6 +32,9 @@ struct AESCrypto(int KEY_LENGTH) {
 __format("The key size must be %d bytes not %d", KEY_SIZE, key.length))
     do {
         scope aes = AES(key[0 .. KEY_SIZE], iv);
+    scope(exit) {
+        aes=aes.init;
+    }
         static if (ENCRYPT) {
             aes.encrypt(data);
         }
