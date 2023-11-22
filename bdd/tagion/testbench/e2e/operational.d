@@ -100,7 +100,8 @@ int _main(string[] args) {
         = wallet_config_files.zip(wallet_pins).map!(c => ConfigAndPin(c[0], c[1])).array;
 
     // We only want to make one transaction per wallet pair so we can keep track of the balance changes
-    const max_concurrent_jobs = (wallet_config_files.length / 2).to!uint;
+    // const max_concurrent_jobs = (wallet_config_files.length / 2).to!uint;
+    const max_concurrent_jobs = 1;
     Duration max_runtime;
     with (DurationUnit) final switch (duration_unit) {
     case days:
@@ -148,7 +149,7 @@ int _main(string[] args) {
 
         sender = configs_and_pins[index1];
         receiver = configs_and_pins[index2];
-        configs_and_pins = configs_and_pins.remove(index1).remove(index2);
+        // configs_and_pins = configs_and_pins.remove(index1).remove(index2);
     }
 
     void new_job(ref ConfigAndPin[] configs_and_pins) {
@@ -202,7 +203,10 @@ int _main(string[] args) {
         bool job_stopped;
         while (!job_stopped) {
             receive(
-                    (ConfigAndPin r, ConfigAndPin s) { configs_and_pins ~= r; configs_and_pins ~= s; },
+                    (ConfigAndPin r, ConfigAndPin s) {
+                        configs_and_pins ~= r; configs_and_pins ~= s;
+                        writeln(configs_and_pins);
+                    },
                     (bool job_success) {
                 if (!job_success) {
                     writefln("transaction failed after %s transactions", run_counter);
