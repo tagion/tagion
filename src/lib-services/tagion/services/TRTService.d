@@ -117,18 +117,29 @@ struct TRTService {
                 return;
             }
             auto owner_doc = receiver.method.params;
-
-            immutable(DARTIndex)[] owner_indexes;
-            foreach(owner; owner_doc[]) {
-                auto pkey = Pubkey(owner.get!Buffer);
-                owner_indexes ~= net.dartKey(TRTLabel, pkey);
+            if (owner_doc[].empty) {
+                // return hirpc error instead;
+                return;
             }
-            // send the request to the dart.
+
+            auto owner_indexes = owner_doc[]
+                .map!(owner => net.dartKey(TRTLabel, Pubkey(owner.get!Buffer)));
+
+
+            auto trt_read_recorder = trt_db.loads(owner_indexes);
+            immutable(DARTIndex)[] indexes = trt_read_recorder[]
+                .map!(a => cast(immutable) DARTIndex(TRTArchive(a.filed).idx)).array;
+
+            if (indexes.empty) {
+                // return hirpc error instead;
+                return;
+            }
+
             
             auto dart_req = dartReadRR();
             requests[dart_req.id] = TRTRequest(client_req, doc);
 
-            dart_handle.send(dart_req, owner_indexes);
+            dart_handle.send(dart_req, indexes);
         }
 
         void modify(trtModify, immutable(RecordFactory.Recorder) dart_recorder) {
