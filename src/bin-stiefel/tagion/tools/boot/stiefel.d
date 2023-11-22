@@ -34,6 +34,7 @@ int _main(string[] args) {
     bool standard_output;
     bool standard_input;
     bool account;
+    bool trt;
     string[] nodekeys;
     string output_filename = "dart".setExtension(FileExtension.hibon);
     const net = new StdHashNet;
@@ -45,7 +46,9 @@ int _main(string[] args) {
                 "v|verbose", "Prints more debug information", &__verbose_switch, //"c|stdout", "Print to standard output", &standard_output,
                 "o|output", format("Output filename : Default %s", output_filename), &output_filename, // //        "output_filename|o", format("Sets the output file name: default : %s", output_filenamename), &output_filenamename,
                 "p|nodekey", "Node channel key(Pubkey) ", &nodekeys,
+                "t|trt", "Generate a recorder from a list of bill files for the trt", &trt,
                 "a|account", "Accumulates all bills in the input", &account, //         "bills|b", "Generate bills", &number_of_bills,
+
                 // "value|V", format("Bill value : default: %d", value), &value,
                 // "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase
                 //"initbills|b", "Testing mode", &initbills,
@@ -115,6 +118,17 @@ int _main(string[] args) {
             tagion_head.name = TagionDomain;
             tagion_head.current_epoch = 0;
             recorder.add(tagion_head);
+        }
+        else if( standard_input && trt) {
+            auto fin = stdin;
+            TagionBill[] bills;
+            foreach(doc; HiBONRange(fin)) {
+                if (doc.isRecord!TagionBill) {
+                    bills ~= TagionBill(doc);
+                }
+            }
+            import tagion.trt.TRT;
+            genesisTRT(bills, recorder, net);
         }
         else {
             foreach (file; args[1 .. $]) {
