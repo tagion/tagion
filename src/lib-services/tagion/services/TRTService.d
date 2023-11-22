@@ -18,7 +18,7 @@ import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.SecureNet;
 import tagion.crypto.Types;
 import tagion.dart.DART;
-import tagion.dart.DARTBasic : DARTIndex, dartIndex;
+import tagion.dart.DARTBasic : DARTIndex, dartIndex, dartKey;
 import tagion.dart.DARTException;
 import tagion.dart.Recorder;
 import tagion.hibon.Document;
@@ -30,6 +30,9 @@ import tagion.services.replicator;
 import tagion.utils.JSONCommon;
 import tagion.utils.pretend_safe_concurrency;
 import tagion.basic.Types;
+import tagion.trt.TRT;
+import tagion.hibon.HiBON;
+import tagion.script.standardnames;
 
 @safe
 struct TRTOptions {
@@ -59,6 +62,9 @@ struct TRTService {
         Exception dart_exception;
 
         const net = new StdSecureNet(shared_net);
+        auto rec_factory = RecordFactory(net);
+        auto hirpc = HiRPC(net);
+        ActorHandle dart_handle = ActorHandle(task_names.dart);
 
         trt_db = new DART(net, opts.trt_path);
         if (dart_exception !is null) {
@@ -70,19 +76,68 @@ struct TRTService {
         }
 
 
-        void trt_read(trtReadRR req, immutable(Buffer)[] owner_keys) {
-
+        struct TRTRequest {
+            trtHiRPCRR req;
+            Document doc;
         }
 
-        void modify(trtModify, immutable(RecordFactory.Recorder) recorder) {
-
-
-        }
+        TRTRequest[uint] requests;
         
 
+        
+        void receive_recorder(dartReadRR.Response res, immutable(RecordFactory.Recorder) recorder){
+            if (!(res.id in requests)) {
+                return;
+            }
+            HiBON params = new HiBON;
+            foreach(i, bill; recorder[].array) {
+                params[i] = bill.filed;
+            }
+
+            auto client_request = requests[res.id];
+            scope(exit) {
+                requests.remove(res.id);
+            }
+
+            immutable receiver = hirpc.receive(client_request.doc);
+            
+            Document response = hirpc.result(receiver, params).toDoc;
+            client_request.req.respond(response);
+        }
 
 
-        run(&modify, &trt_read);
+        void trt_read(trtHiRPCRR client_req, Document doc) {
+            log("received trt request");
+            if (!doc.isRecord!(HiRPC.Sender)) {
+                return;
+            }
+            immutable receiver = hirpc.receive(doc);
+            if (receiver.method.name != "search") {
+                // return hirpc error instead;
+                return;
+            }
+            auto owner_doc = receiver.method.params;
+
+            immutable(DARTIndex)[] owner_indexes;
+            foreach(owner; owner_doc[]) {
+                auto pkey = Pubkey(owner.get!Buffer);
+                owner_indexes ~= net.dartKey(TRTLabel, pkey);
+            }
+            // send the request to the dart.
+            
+            auto dart_req = dartReadRR();
+            requests[dart_req.id] = TRTRequest(client_req, doc);
+
+            dart_handle.send(dart_req, owner_indexes);
+        }
+
+        void modify(trtModify, immutable(RecordFactory.Recorder) dart_recorder) {
+            auto trt_recorder = rec_factory.recorder;
+            createUpdateRecorder(dart_recorder, trt_recorder, net);
+            trt_db.modify(trt_recorder);
+        }
+        
+        run(&modify, &trt_read, &receive_recorder);
 
 
 
