@@ -52,8 +52,10 @@ struct TranscriptOptions {
  * Sends: (inputHiRPC, HiRPC.Receiver) to receiver_task, where Document is a correctly formatted HiRPC
 **/
 struct TranscriptService {
-    void task(immutable(TranscriptOptions) opts, immutable(size_t) number_of_nodes, shared(StdSecureNet) shared_net, immutable(
-            TaskNames) task_names) {
+    void task(immutable(TranscriptOptions) opts,
+            immutable(size_t) number_of_nodes,
+            shared(StdSecureNet) shared_net,
+            immutable(TaskNames) task_names) {
         const(SecureNet) net = new StdSecureNet(shared_net);
 
         immutable(ContractProduct)*[DARTIndex] products;
@@ -82,8 +84,8 @@ struct TranscriptService {
          */
         TagionGlobals last_globals = TagionGlobals(BigNumber(1000_000_000), BigNumber(0), long(10_0000), long(0));
         TagionHead last_head = TagionHead(TagionDomain, 0);
-        
-        Fingerprint previous_epoch = Fingerprint([1,2,3,4]);
+
+        Fingerprint previous_epoch = Fingerprint([1, 2, 3, 4]);
         long last_epoch_number = 0;
         long last_consensus_epoch = 0;
 
@@ -150,17 +152,15 @@ struct TranscriptService {
             auto recorder = rec_factory.recorder;
             used ~= not_in_dart;
 
-
-
             /*
                 The vote array is already updated. We must go through all the different vote indices and update the epoch that was stored in the dart if any new votes are found.
             */
-            foreach(v; votes.byKeyValue) {
+            foreach (v; votes.byKeyValue) {
                 // add the new signatures to the epoch. We only want to do it if there are new signatures
                 if (v.value.init_bullseye || v.value.epoch.signs.length != v.value.votes.length) {
                     v.value.init_bullseye = false;
                     // add the signatures to the epoch. Only add them if the signature match ours
-                    foreach(single_vote; v.value.votes) {
+                    foreach (single_vote; v.value.votes) {
                         // check that we have not already added the signature
                         if (v.value.epoch.signs.canFind(single_vote.signed_bullseye)) {
                             continue;
@@ -175,7 +175,7 @@ struct TranscriptService {
                     }
 
                     // if the new length of the epoch is majority then we finish the epoch
-                    if (v.value.epoch.signs.length.isMajority(number_of_nodes) && v.value.epoch.epoch_number == last_consensus_epoch+1) {
+                    if (v.value.epoch.signs.length.isMajority(number_of_nodes) && v.value.epoch.epoch_number == last_consensus_epoch + 1) {
                         v.value.epoch.previous = previous_epoch;
                         previous_epoch = net.calcHash(v.value.epoch);
                         last_consensus_epoch += 1;
@@ -189,16 +189,11 @@ struct TranscriptService {
 
             }
 
-
-
-            
-
-            
             const epoch_contract = epoch_contracts.get(res.id, null);
             if (epoch_contract is null) {
                 throw new Exception(format("unlinked epoch contract %s", res.id));
             }
-            scope(exit) {
+            scope (exit) {
                 epoch_contracts.remove(res.id);
             }
 
@@ -272,7 +267,7 @@ struct TranscriptService {
                     return;
                 }
                 // log("GOING TO STAT BILL: %s, type: %s", bill.toPretty, archive.type;
-                
+
                 auto bill = TagionBill(archive.filed);
 
                 if (archive.type == Archive.Type.REMOVE) {
@@ -290,20 +285,17 @@ struct TranscriptService {
             recorder[].each!(a => billStatistic(a));
 
             TagionGlobals new_globals = TagionGlobals(
-                total,
-                total_burned,
-                number_of_bills,
-                burnt_bills,
+                    total,
+                    total_burned,
+                    number_of_bills,
+                    burnt_bills,
             );
             non_voted_epoch.globals = new_globals;
 
-
             TagionHead new_head = TagionHead(
-                TagionDomain,
-                res.id,
+                    TagionDomain,
+                    res.id,
             );
-
-            
 
             recorder.insert(new_head, Archive.Type.ADD);
             recorder.insert(non_voted_epoch, Archive.Type.ADD);
@@ -319,15 +311,10 @@ struct TranscriptService {
             last_head = new_head;
             last_globals = new_globals;
 
-
-
-            
             Votes new_vote;
             new_vote.epoch = non_voted_epoch;
             new_vote.locked_archives = outputs;
             votes[non_voted_epoch.epoch_number] = new_vote;
-
-
 
             auto req = dartModifyRR();
             req.id = res.id;
@@ -336,7 +323,10 @@ struct TranscriptService {
 
         }
 
-        void epoch(consensusEpoch, immutable(EventPackage*)[] epacks, immutable(long) epoch_number, const(sdt_t) epoch_time) @safe {
+        void epoch(consensusEpoch,
+                immutable(EventPackage*)[] epacks,
+                immutable(long) epoch_number,
+                const(sdt_t) epoch_time) @safe {
             last_epoch_number += 1;
 
             immutable(ConsensusVoting)[] received_votes = epacks
@@ -386,9 +376,9 @@ struct TranscriptService {
             votes[epoch_number].init_bullseye = true;
 
             ConsensusVoting own_vote = ConsensusVoting(
-                epoch_number,
-                net.pubkey,
-                net.sign(bullseye)
+                    epoch_number,
+                    net.pubkey,
+                    net.sign(bullseye)
             );
 
             locate(task_names.epoch_creator).send(Payload(), own_vote.toDoc);

@@ -233,7 +233,7 @@ struct ConsensusVoting {
             this.epoch = epoch;
         }
         this(const(Document) doc) immutable @trusted {
-            immutable _this=cast(immutable)ConsensusVoting(doc);
+            immutable _this=ConsensusVoting(doc);
             this.tupleof = _this.tupleof;
         }
     });
@@ -242,7 +242,6 @@ struct ConsensusVoting {
         return net.verify(bullseye, signed_bullseye, owner);
     }
 }
-
 
 @recordType("@Locked")
 struct LockedArchives {
