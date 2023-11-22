@@ -52,7 +52,8 @@ struct DARTOptions {
 struct DARTService {
     void task(immutable(DARTOptions) opts,
             immutable(TaskNames) task_names,
-            shared(StdSecureNet) shared_net) {
+            shared(StdSecureNet) shared_net,
+            bool trt_enable) {
 
         DART db;
         Exception dart_exception;
@@ -63,6 +64,7 @@ struct DARTService {
         }
 
         ActorHandle replicator_handle = ActorHandle(task_names.replicator);
+        ActorHandle trt_handle = ActorHandle(task_names.trt);
 
         scope (exit) {
             db.close();
@@ -145,6 +147,9 @@ struct DARTService {
 
                 req.respond(eye);
                 replicator_handle.send(SendRecorder(), recorder, eye, epoch_number);
+                if (trt_enable) {
+                    trt_handle.send(trtModify(), recorder);
+                }
             }
             catch (AssertError e) {
                 log("Received ASSERT ERROR bullseye before %(%02x%), %s archives that were tried to be added \n%s", fingerprint_before, e, recorder

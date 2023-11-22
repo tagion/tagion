@@ -39,7 +39,7 @@ struct Supervisor {
         auto replicator_handle = spawn!ReplicatorService(tn.replicator, opts.replicator);
 
         // signs data for hirpc response
-        auto dart_handle = spawn!DARTService(tn.dart, opts.dart, tn, shared_net);
+        auto dart_handle = spawn!DARTService(tn.dart, opts.dart, tn, shared_net, opts.trt.enable);
 
         ActorHandle trt_handle;
         if (opts.trt.enable) {
