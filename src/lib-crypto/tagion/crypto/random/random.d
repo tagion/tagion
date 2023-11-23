@@ -23,6 +23,7 @@ else {
 
 bool isGetRandomAvailable() nothrow {
     import core.stdc.errno;
+    return true;
     static if (ver.USE_BUILD_IN_RANDOM_FOR_MOBILE_SHOULD_BE_REMOVED) {
         return true;
     }
