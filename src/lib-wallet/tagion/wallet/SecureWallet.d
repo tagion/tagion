@@ -63,14 +63,13 @@ struct SecureWallet(Net : SecureNet) {
         return _net;
     }
 
-    version(NET_HACK) {
+    version (NET_HACK) {
         void set_net(SecureNet copy_net) {
             this._net = copy_net;
         }
 
     }
 
-    
     /**
      * 
      * Params:
@@ -127,16 +126,14 @@ struct SecureWallet(Net : SecureNet) {
      *   answers = List of answers
      *   confidence = Cofindence of the answers
      *   pincode = Devices pin code
-     *   seed = Supplied seed
      * Returns: 
      *   Create an new wallet accouring with the input
      */
     this(
             scope const(string[]) questions,
-            scope const(char[][]) answers,
-            uint confidence,
-            const(char[]) pincode,
-            scope const(ubyte[]) seed = null)
+    scope const(char[][]) answers,
+    uint confidence,
+    const(char[]) pincode)
     in (questions.length is answers.length, "Amount of questions should be same as answers")
     do {
         check(questions.length > 3, "Minimal amount of answers is 4");
@@ -150,10 +147,10 @@ struct SecureWallet(Net : SecureNet) {
             confidence--;
         }
 
-        recover.createKey(questions, answers, confidence, seed);
+        recover.createKey(questions, answers, confidence);
         auto R = new ubyte[_net.hashSize];
         scope (exit) {
-            R[]=0;
+            R[] = 0;
         }
         recover.findSecret(R, questions, answers);
         _net.createKeyPair(R);
@@ -162,15 +159,15 @@ struct SecureWallet(Net : SecureNet) {
     }
 
     this(
-scope const(char[]) passphrase, 
-scope const(char[]) pincode, 
-scope const(char[]) salt = null) {
+            scope const(char[]) passphrase,
+    scope const(char[]) pincode,
+    scope const(char[]) salt = null) {
         _net = new Net;
         enum size_of_privkey = 32;
         ubyte[] R;
         scope (exit) {
             set_pincode(R, pincode);
-            R[]=0;
+            R[] = 0;
         }
         _net.generateKeyPair(passphrase, salt,
                 (scope const(ubyte[]) data) { R = data[0 .. size_of_privkey].dup; });
@@ -178,7 +175,7 @@ scope const(char[]) salt = null) {
 
     protected void set_pincode(
             scope const(ubyte[]) R,
-            scope const(char[]) pincode) scope
+    scope const(char[]) pincode) scope
     in (!_net.isinit)
     do {
         auto seed = new ubyte[_net.hashSize];
@@ -213,9 +210,9 @@ scope const(char[]) salt = null) {
      *   True if the key-pair has been recovered for the quiz or the pincode
      */
     bool recover(
-const(string[]) questions, 
-const(char[][]) answers, 
-const(char[]) pincode)
+            const(string[]) questions,
+    const(char[][]) answers,
+    const(char[]) pincode)
     in (questions.length is answers.length, "Amount of questions should be same as answers")
     do {
         _net = new Net;
@@ -258,7 +255,7 @@ const(char[]) pincode)
             auto login_net = new Net;
             auto R = new ubyte[login_net.hashSize];
             scope (exit) {
-                R[]=0;
+                R[] = 0;
             }
             const recovered = _pin.recover(login_net, R, pincode.representation);
             if (recovered) {
@@ -288,7 +285,7 @@ const(char[]) pincode)
 
         scope R = new ubyte[hashnet.hashSize];
         scope (exit) {
-            R[]=0;
+            R[] = 0;
         }
         _pin.recover(hashnet, R, pincode.representation);
         return _pin.S == hashnet.saltHash(R);
@@ -1124,8 +1121,8 @@ unittest {
     auto p = wallet1.createPayment([payment_request], signed_contract, fee);
     assert(p.value, format("ERROR: %s %s", p.value, p.msg));
 
-    assert(signed_contract.contract.inputs.uniq.array.length == signed_contract.contract.inputs.length, 
-    "signed contract inputs invalid");
+    assert(signed_contract.contract.inputs.uniq.array.length == signed_contract.contract.inputs.length,
+            "signed contract inputs invalid");
 }
 
 unittest {

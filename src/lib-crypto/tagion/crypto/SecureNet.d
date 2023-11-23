@@ -6,7 +6,7 @@ import std.traits;
 import tagion.basic.ConsensusExceptions;
 import tagion.basic.Types : Buffer;
 import tagion.basic.Version : ver;
-import tagion.crypto.SecureInterfaceNet;
+public import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.Types : Fingerprint, Signature;
 import tagion.crypto.aes.AESCrypto;
 import tagion.crypto.random.random;
@@ -54,7 +54,7 @@ class StdHashNet : HashNet {
 
 @safe
 class StdSecureNet : StdHashNet, SecureNet {
-    import tagion.crypto.secp256k1.NativeSecp256k1; 
+    import tagion.crypto.secp256k1.NativeSecp256k1;
     import std.format;
     import std.string : representation;
     import tagion.basic.ConsensusExceptions;
@@ -74,6 +74,7 @@ class StdSecureNet : StdHashNet, SecureNet {
         void tweak(const(ubyte[]) tweek_code, out ubyte[] tweak_privkey) const;
         immutable(ubyte[]) ECDHSecret(scope const(Pubkey) pubkey) const;
         void clone(StdSecureNet net) const;
+        void __expose(out scope ubyte[] _privkey) const ; 
     }
 
     protected SecretMethods _secret;
@@ -108,10 +109,10 @@ class StdSecureNet : StdHashNet, SecureNet {
     }
 
     Signature sign(const Fingerprint message) const
-    in(_secret !is null,
-                format("Signature function has not been intialized. Use the %s function", basename!generatePrivKey))
-        in(_secret !is null, 
-format("Signature function has not been intialized. Use the %s function", fullyQualifiedName!generateKeyPair))
+    in (_secret !is null,
+        format("Signature function has not been intialized. Use the %s function", basename!generatePrivKey))
+    in (_secret !is null,
+        format("Signature function has not been intialized. Use the %s function", fullyQualifiedName!generateKeyPair))
     do {
         return Signature(_secret.sign(cast(Buffer) message));
     }
@@ -122,7 +123,7 @@ format("Signature function has not been intialized. Use the %s function", fullyQ
     }
 
     final void derive(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey)
-    in(tweak_privkey.length == NativeSecp256k1.TWEAK_SIZE)
+    in (tweak_privkey.length == NativeSecp256k1.TWEAK_SIZE)
     do {
         _secret.tweak(tweak_code, tweak_privkey);
     }
@@ -223,10 +224,18 @@ format("Signature function has not been intialized. Use the %s function", fullyQ
                     net.createKeyPair(_privkey); // Not createKeyPair scrambles the privkey
                 });
             }
+
+            void __expose(out scope ubyte[] _privkey) const  {
+                do_secret_stuff((const(ubyte[]) privkey) @safe { _privkey = privkey.dup; });
+            }
         }
 
         _secret = new LocalSecret;
     }
+
+    void __expose(out scope ubyte[] privkey) const {
+        _secret.__expose(privkey);
+}
 
     /**
     Params:
@@ -237,8 +246,7 @@ format("Signature function has not been intialized. Use the %s function", fullyQ
             scope const(char[]) passphrase,
     scope const(char[]) salt = null,
     void delegate(scope const(ubyte[]) data) @safe dg = null)
-    in
-        (_secret is null)
+    in (_secret is null)
     do {
         import tagion.crypto.pbkdf2;
         import std.digest.sha : SHA512;

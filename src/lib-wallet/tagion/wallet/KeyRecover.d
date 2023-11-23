@@ -32,7 +32,7 @@ struct KeyRecover {
     enum MAX_QUESTION = 10;
     enum MAX_SEEDS = 64;
     const HashNet net;
-    protected RecoverGenerator generator;
+     RecoverGenerator generator;
 
     /**
      * 
@@ -135,7 +135,7 @@ struct KeyRecover {
                     include[index]++;
                     local_search(index, size);
                 }
-                else if (index > 0) {
+            else if (index > 0) {
                     include[index - 1]++;
                     local_search(index - 1, size - 1);
                 }
@@ -151,14 +151,12 @@ struct KeyRecover {
      *   questions = List of question 
      *   answers = List of answers
      *   confidence = Confidence of the answers
-     *   seed = optional seed value of the key-pair
      */
     void createKey(
             scope const(string[]) questions,
     scope const(char[][]) answers,
-    const uint confidence,
-    scope const(ubyte[]) seed = null) {
-        createKey(quiz(questions, answers), confidence, seed);
+    const uint confidence) {
+        createKey(quiz(questions, answers), confidence);
     }
 
     /**
@@ -167,18 +165,15 @@ struct KeyRecover {
      * Params:
      *   A = List of hashes
      *   confidence = confidence
-     *   seed = option
      */
     void createKey(
             Buffer[] A,
-            const uint confidence,
-            scope const(ubyte[]) seed)
-    in (seed.length <= net.hashSize)
-    do {
+            const uint confidence)
+    {
         scope R = new ubyte[net.hashSize];
         getRandom(R);
         scope (exit) {
-            R[]=0;
+            R[] = 0;
         }
         quizSeed(R, A, confidence);
     }
@@ -222,7 +217,6 @@ struct KeyRecover {
             generator.Y[count] = xor(R, net.rawCalcHash(
                     xor(list_of_selected_answers_and_the_secret)));
             count++;
-            //            return false;
         }
 
         iterateSeeds(number_of_questions, confidence, &calculate_this_seeds);
@@ -333,7 +327,7 @@ unittest {
     ];
     const net = new StdHashNet;
     auto recover = KeyRecover(net);
-    recover.createKey(selected_questions, answers, 3, null);
+    recover.createKey(selected_questions, answers, 3);
 
     auto R = new ubyte[net.hashSize];
 
