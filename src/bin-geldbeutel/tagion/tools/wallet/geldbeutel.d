@@ -51,10 +51,7 @@ int _main(string[] args) {
     bool overwrite_switch; /// Overwrite the config file
     bool create_account;
     bool change_pin;
-    bool set_default_quiz;
 
-    string output_filename;
-    string derive_code;
     string path;
     string pincode;
     uint bip39;
