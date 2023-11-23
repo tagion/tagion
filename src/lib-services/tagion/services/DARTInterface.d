@@ -36,16 +36,20 @@ import tagion.logger.Logger;
 import tagion.services.messages;
 import tagion.services.options;
 import tagion.utils.pretend_safe_concurrency;
+import tagion.services.TRTService : TRTOptions;
 
 struct DartWorkerContext {
     string dart_task_name;
-    int dart_worker_timeout;
+    int worker_timeout;
+    bool trt_enable;
+    string trt_task_name; 
 }
 
 enum InterfaceError {
     Timeout,
     InvalidDoc,
     DARTLocate,
+    TRTLocate,
 }
 
 void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
@@ -78,6 +82,11 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
         send_doc(doc);
         // msg.body_append(doc.serialize);
     }
+    void trtHiRPCResponse(trtHiRPCRR.Response res, Document doc) @trusted {
+        writeln("Inteface succesful response");
+        send_doc(doc);
+    }
+    
 
     if (msg is null) {
         writeln("no message received");
@@ -106,24 +115,47 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
     }
     writeln("Kernel received a document");
 
-    auto dart_tid = locate(cnt.dart_task_name);
-    if (dart_tid is Tid.init) {
-        send_error(InterfaceError.DARTLocate, cnt.dart_task_name);
-        return;
-    }
 
-    dart_tid.send(dartHiRPCRR(), doc);
-    auto dart_resp = receiveTimeout(cnt.dart_worker_timeout.msecs, &dartHiRPCResponse);
-    if (!dart_resp) {
-        send_error(InterfaceError.Timeout);
-        writeln("Timeout on dart request");
-        return;
+    HiRPC empty_hirpc = HiRPC(null);
+
+    
+    immutable receiver = empty_hirpc.receive(doc);
+    if (receiver.method.name == "search" && cnt.trt_enable) {
+        auto trt_tid = locate(cnt.trt_task_name);
+        if (trt_tid is Tid.init) {
+            send_error(InterfaceError.TRTLocate, cnt.trt_task_name);
+            return;
+        }
+        trt_tid.send(trtHiRPCRR(), doc);
+        auto trt_resp = receiveTimeout(cnt.worker_timeout.msecs, &trtHiRPCResponse);
+        if (!trt_resp) {
+            send_error(InterfaceError.Timeout);
+            writeln("Timeout on trt request");
+            return;
+        }
+
+
+    } else {
+        auto dart_tid = locate(cnt.dart_task_name);
+        if (dart_tid is Tid.init) {
+            send_error(InterfaceError.DARTLocate, cnt.dart_task_name);
+            return;
+        }
+        dart_tid.send(dartHiRPCRR(), doc);
+        auto dart_resp = receiveTimeout(cnt.worker_timeout.msecs, &dartHiRPCResponse);
+        if (!dart_resp) {
+            send_error(InterfaceError.Timeout);
+            writeln("Timeout on dart request");
+            return;
+        }
+
     }
 }
 
 @safe
 struct DARTInterfaceService {
     immutable(DARTInterfaceOptions) opts;
+    immutable(TRTOptions) trt_opts;
     immutable(TaskNames) task_names;
 
     void task() @trusted {
@@ -139,7 +171,9 @@ struct DARTInterfaceService {
 
         DartWorkerContext ctx;
         ctx.dart_task_name = task_names.dart;
-        ctx.dart_worker_timeout = opts.sendtimeout;
+        ctx.worker_timeout = opts.sendtimeout;
+        ctx.trt_task_name = task_names.trt;
+        ctx.trt_enable = trt_opts.enable;
 
         NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_REP);
         sock.sendtimeout = opts.sendtimeout.msecs;

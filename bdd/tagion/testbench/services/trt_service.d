@@ -18,6 +18,13 @@ import tagion.utils.pretend_safe_concurrency;
 import core.thread;
 import core.time;
 import tagion.logger.Logger;
+import tagion.script.TagionCurrency;
+import tagion.script.common;
+import tagion.communication.HiRPC;
+import tagion.testbench.services.sendcontract;
+import tagion.wallet.SecureWallet;
+import tagion.testbench.services.helper_functions;
+import tagion.behaviour.BehaviourException : check;
 
 mixin Main!(_main);
 
@@ -52,10 +59,6 @@ int _main(string[] args) {
     import tagion.dart.DART;
     import tagion.dart.DARTFile;
     import tagion.dart.Recorder;
-    import tagion.script.TagionCurrency;
-    import tagion.script.common : TagionBill;
-    import tagion.testbench.services.sendcontract;
-    import tagion.wallet.SecureWallet;
     StdSecureWallet[] wallets;
     // create the wallets
     foreach (i; 0 .. 5) {
@@ -125,11 +128,13 @@ int _main(string[] args) {
     auto name = "trt_testing";
     register(name, thisTid);
     log.registerSubscriptionTask(name);
-    auto feature = automation!(trt_service);
 
     Thread.sleep(10.seconds);
 
     
+    auto feature = automation!(trt_service);
+    feature.SendAInoiceUsingTheTRT(node_opts[0], wallets[0], wallets[1]);
+
     feature.run;
 
     stopsignal.set;
@@ -154,15 +159,50 @@ alias FeatureContext = Tuple!(
 @safe @Scenario("send a inoice using the TRT",
         [])
 class SendAInoiceUsingTheTRT {
+    Options opts1;
+    StdSecureWallet wallet1;
+    StdSecureWallet wallet2;
+    //
+    SignedContract signed_contract1;
+    SignedContract signed_contract2;
+    TagionCurrency amount;
+    TagionCurrency fee1;
+    TagionCurrency fee2;
+
+    HiRPC wallet1_hirpc;
+    HiRPC wallet2_hirpc;
+    TagionCurrency start_amount1;
+    TagionCurrency start_amount2;
+    this(Options opts1, ref StdSecureWallet wallet1, ref StdSecureWallet wallet2) {
+        this.wallet1 = wallet1;
+        this.wallet2 = wallet2;
+        this.opts1 = opts1;
+
+        wallet1_hirpc = HiRPC(wallet1.net);
+        wallet2_hirpc = HiRPC(wallet2.net);
+        start_amount1 = wallet1.calcTotal(wallet1.account.bills);
+        start_amount2 = wallet2.calcTotal(wallet2.account.bills);
+        
+    }
 
     @Given("i have a running network with a trt")
     Document trt() {
-        return Document();
+        auto wallet1_amount = getWalletInvoiceUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
+        check(wallet1_amount == start_amount1, "balance should not have changed");
+        auto wallet2_amount = getWalletInvoiceUpdateAmount(wallet2, opts1.dart_interface.sock_addr, wallet2_hirpc);
+        check(wallet2_amount == start_amount2, "balance should not have changed");
+        // create a update request
+        return result_ok;
     }
 
     @When("i create and send a invoice")
     Document invoice() {
-        return Document();
+        amount = 100.TGN;
+        auto invoice_to_pay = wallet2.createInvoice("wowo", amount);
+        wallet2.registerInvoice(invoice_to_pay);
+        wallet1.payment([invoice_to_pay], signed_contract1, fee1);
+        wallet1.payment([invoice_to_pay], signed_contract2, fee2);
+        return result_ok;
     }
 
     @When("i update my wallet using the pubkey lookup")
