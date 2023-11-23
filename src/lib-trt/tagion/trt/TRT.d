@@ -4,11 +4,12 @@ module tagion.trt.TRT;
 import tagion.dart.Recorder;
 import tagion.dart.DARTBasic;
 import tagion.script.common : TagionBill;
-import std.algorithm : filter;
+import std.algorithm;
 import tagion.hibon.HiBONRecord : HiBONRecord, isRecord, label;
 import tagion.crypto.SecureInterfaceNet : HashNet;
 import tagion.script.standardnames;
 import tagion.crypto.Types;
+import std.range;
 
 @safe:
 
@@ -18,8 +19,6 @@ struct TRTArchive {
     DARTIndex[] idx;
 
 
-    mixin HiBONRecord;
-    version(none)
     mixin HiBONRecord!(q{
         this(Pubkey owner, DARTIndex[] idx) {
             this.owner = owner;
@@ -28,11 +27,6 @@ struct TRTArchive {
     });
 }
 
-
-version(none)
-unittest {
-    auto archive = TRTArchive(Pubkey.init, [DARTIndex.init]);
-}
 
 
 /// Create a recorder for the trt
@@ -52,17 +46,15 @@ void createUpdateRecorder(
     // create a associative array of the owner to the trtarchive from the ones we read from the dart.
 
     TRTArchive[Pubkey] to_insert;
-    version(none)
     foreach(a; read_recorder) {
         auto trt_archive = TRTArchive(a.filed);
         to_insert[trt_archive.owner] = trt_archive;
     }
 
     // go through all the bills
-    version(none)
     foreach(a_bill; archive_bills) {
         const bill = TagionBill(a_bill.filed);
-        auto bill_index = net.dartIndex(a.filed);
+        auto bill_index = net.dartIndex(a_bill.filed);
 
 
         bool constructed;
@@ -73,6 +65,7 @@ void createUpdateRecorder(
                 if (a_bill.type == Archive.Type.ADD) {
                     return TRTArchive(bill.owner, [bill_index]);
                 }
+                return TRTArchive(bill.owner,DARTIndex[].init);
             }()); 
         if (!constructed) {
             if (a_bill.type == Archive.Type.ADD && !new_archive.idx.canFind(bill_index)) {
@@ -82,13 +75,12 @@ void createUpdateRecorder(
                 // find the index
                 auto to_remove_index = new_archive.idx.countUntil!(d => d == bill_index);
                 if (to_remove_index >= 0) {
-                    to_insert[bill.owner] = new_archive.idx.remove(to_remove_index);
+                    to_insert[bill.owner].idx.remove(to_remove_index);
                 }
             }
         }
     }
     
-    version(none)
     foreach(new_archive; to_insert.byValue) {
         if (new_archive.idx.empty) {
             trt_recorder.insert(new_archive, Archive.Type.REMOVE);
