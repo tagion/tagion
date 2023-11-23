@@ -34,7 +34,7 @@ new_job() {
 usage() { echo "Usage: $0 --clean, --new, -h" 1>&2; exit 1; }
 
 # new_job jobs.txt "$(date -u +%Y-%m-%d)"
-stop_old_jobs jobs.txt
+# stop_old_jobs jobs.txt
 
 while getopts -l "clean:new:" opt
 do
@@ -45,4 +45,3 @@ do
         *)      usage ;;
     esac
 done
-
