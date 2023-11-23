@@ -52,17 +52,19 @@ struct DARTOptions {
 struct DARTService {
     void task(immutable(DARTOptions) opts,
             immutable(TaskNames) task_names,
-            shared(StdSecureNet) shared_net) {
+            shared(StdSecureNet) shared_net,
+            bool trt_enable) {
 
         DART db;
         Exception dart_exception;
-
         const net = new StdSecureNet(shared_net);
-
         db = new DART(net, opts.dart_path);
         if (dart_exception !is null) {
             throw dart_exception;
         }
+
+        ActorHandle replicator_handle = ActorHandle(task_names.replicator);
+        ActorHandle trt_handle = ActorHandle(task_names.trt);
 
         scope (exit) {
             db.close();
@@ -144,9 +146,9 @@ struct DARTService {
                 log("New bullseye is %(%02x%)", eye);
 
                 req.respond(eye);
-                auto replicator_tid = locate(task_names.replicator);
-                if (replicator_tid !is Tid.init) {
-                    replicator_tid.send(SendRecorder(), recorder, eye, epoch_number);
+                replicator_handle.send(SendRecorder(), recorder, eye, epoch_number);
+                if (trt_enable) {
+                    trt_handle.send(trtModify(), recorder);
                 }
             }
             catch (AssertError e) {

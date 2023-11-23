@@ -36,6 +36,7 @@ import tagion.script.standardnames;
 
 @safe
 struct TRTOptions {
+    bool enable = false;
     string folder_path = buildPath(".");
     string trt_filename = "trt".setExtension(FileExtension.dart);
     string trt_path;
@@ -57,7 +58,7 @@ struct TRTOptions {
 
 @safe
 struct TRTService {
-    void task(TRTOptions opts, immutable(TaskNames) task_names, shared(StdSecureNet) shared_net) {
+    void task(immutable(TRTOptions) opts, immutable(TaskNames) task_names, shared(StdSecureNet) shared_net) {
         DART trt_db;
         Exception dart_exception;
 

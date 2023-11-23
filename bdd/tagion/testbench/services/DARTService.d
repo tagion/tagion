@@ -168,7 +168,7 @@ class WriteAndReadFromDartDb {
         net.generateKeyPair("dartnet very secret");
 
         handle = (() @trusted => spawn!DARTService(TaskNames().dart, cast(immutable) opts, TaskNames(), cast(
-                shared) net))();
+                shared) net, false))();
 
         replicator_handle = (() @trusted => spawn!ReplicatorService(
                 TaskNames().replicator,
