@@ -82,6 +82,14 @@ struct AccountDetails {
                 return 1;
             }
         }
+
+        foreach (outputPubkey; outputs.map!(output => output[StdNames.owner].get!Pubkey)) {
+            const index = countUntil!"a.owner == b"(used_bills, outputPubkey);
+            if (index >= 0) {
+                return 1;
+            }
+        }
+
         return 2;
     }
 
