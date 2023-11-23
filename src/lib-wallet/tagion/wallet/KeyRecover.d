@@ -32,7 +32,7 @@ struct KeyRecover {
     enum MAX_QUESTION = 10;
     enum MAX_SEEDS = 64;
     const HashNet net;
-     RecoverGenerator generator;
+    RecoverGenerator generator;
 
     /**
      * 
@@ -83,7 +83,7 @@ struct KeyRecover {
      *   answers = List for answers
      * Returns: List of common hashs of question and answers
      */
-    Buffer[] quiz(scope const(string[]) questions, scope const(char[][]) answers) const @trusted
+    immutable(ubyte)[][] quiz(scope const(string[]) questions, scope const(char[][]) answers) const @trusted
     in {
         assert(questions.length is answers.length);
     }
@@ -167,7 +167,7 @@ struct KeyRecover {
      *   confidence = confidence
      */
     void createKey(
-            Buffer[] A,
+            const(ubyte[][]) A,
             const uint confidence)
     {
         scope R = new ubyte[net.hashSize];
@@ -187,7 +187,7 @@ struct KeyRecover {
      *   confidence = number of minimum correct answern
      */
     void quizSeed(scope ref const(ubyte[]) R,
-    scope Buffer[] A,
+    scope const(ubyte[][]) A,
     const uint confidence) {
         scope (success) {
             generator.confidence = confidence;

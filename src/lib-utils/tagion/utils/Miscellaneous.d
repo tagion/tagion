@@ -66,7 +66,7 @@ import std.algorithm : min;
     return format!"%(%02x%)"(buf[0..min(LEN,buf.length)]);
 }
 
-@safe
+@trusted
 protected Buffer _xor(const(ubyte[]) a, const(ubyte[]) b) pure nothrow
 in {
     assert(a.length == b.length);
@@ -81,7 +81,7 @@ do {
 }
 
 @safe
-const(Buffer) xor(scope const(ubyte[]) a, scope const(ubyte[]) b) pure nothrow
+const(ubyte[]) xor(scope const(ubyte[]) a, scope const(ubyte[]) b) pure nothrow
 in {
     assert(a.length == b.length);
     assert(a.length % ulong.sizeof == 0);
@@ -91,7 +91,7 @@ do {
 
     const _a = cast(const(ulong[])) a;
     const _b = cast(const(ulong[])) b;
-    return cast(Buffer) gene_xor(_a, _b);
+    return cast(ubyte[]) gene_xor(_a, _b);
 }
 
 @nogc @safe
@@ -110,7 +110,7 @@ do {
 }
 
 @safe
-Buffer xor(Range)(scope Range range) pure if (isInputRange!Range) {
+Buffer xor(Range)(scope Range range) pure if (isInputRange!Range && is(ElementType!Range:const(ubyte[]))) {
     import std.array : array;
     import std.range : tail;
 

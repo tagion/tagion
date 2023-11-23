@@ -48,7 +48,7 @@ static void set_path(ref string file, string path) {
     file = buildPath(path, file.baseName);
 }
 
-    enum MIN_WALLETS=3;
+enum MIN_WALLETS = 3;
 int _main(string[] args) {
     import tagion.wallet.SecureWallet : check;
 
@@ -77,8 +77,7 @@ int _main(string[] args) {
                 "version", "display the version", &version_switch,
                 "v|verbose", "Enable verbose print-out", &__verbose_switch,
                 "dry", "Dry-run this will not save the wallet", &__dry_switch,
-                "create", "Create common wallet", &confidence,
-        /*
+                "C|create", "Create the wallet an set the confidence", &confidence, /*
         "pay", "Creates a payment contract", &wallet_switch.pay,
                 "O|overwrite", "Overwrite the config file and exits", &overwrite_switch,
                 "path", format("Set the path for the wallet files : default %s", path), &path,
@@ -162,25 +161,39 @@ int _main(string[] args) {
         }
         import tagion.tools.secretinput;
 
-        writefln("Press ctrl-A to show the pincode");
-{
-        auto wallets = wallet_interfaces[];
-        while (!wallets.empty) {
+        info("Press ctrl-C to break");
+        info("Press ctrl-D to skip pincode");
+        info("Press ctrl-A to show the pincode");
+        {
+            auto wallets = wallet_interfaces[];
+            while (!wallets.empty) {
 
-            writefln("Name %s", wallets.front.secure_wallet.account.name);
-            char[] pincode;
-            scope (exit) {
-                pincode[] = 0;
+                writefln("Name %s", wallets.front.secure_wallet.account.name);
+                char[] pincode;
+                scope (exit) {
+                    pincode[] = 0;
+                }
+                const keycode = getSecret("Pincode: ", pincode);
+                with (KeyStroke.KeyCode) {
+                    switch (keycode) {
+                    case CTRL_C:
+                        error("Break the wallet login");
+                        return 1;
+                    case CTRL_D:
+                        warn("Skip %s", wallets.front.secure_wallet.account.name);
+                        wallets.popFront;
+                        continue;
+                    default:
+                        if (wallets.front.secure_wallet.login(pincode)) {
+                            good("Pincode correct");
+                            wallets.popFront;
+                        }
+                        else {
+                            error("Incorrect pincode");
+                        }
+                    }
+                }
             }
-            getSecret("Pincode: ", pincode);
-            if (wallets.front.secure_wallet.login(pincode)) {
-                writefln("%1$sPincode correct%2$s", GREEN, RESET);
-                wallets.popFront;
-            }
-            else {
-                error("Incorrect pincode");
-            }
-        }
         }
         auto common_wallet_interface = WalletInterface(options);
         if (!confidence.isinit) {
@@ -188,23 +201,25 @@ int _main(string[] args) {
                     "Common wallet has already been created");
             check(wallet_interfaces.length >= MIN_WALLETS, format("More than %d wallets needed", MIN_WALLETS));
             check(wallet_interfaces.all!(wallet => wallet.secure_wallet.isLoggedin),
-            "The pincode of some of the wallet is not correct");
-            check(confidence <= wallet_interfaces.length, format("Confidence can not be greater than number of wallets %d", wallet_interfaces.length)); 
-            writefln("Confidence is %d", confidence); 
+                    "The pincode of some of the wallet is not correct");
+            check(confidence <= wallet_interfaces.length, format(
+                    "Confidence can not be greater than number of wallets %d", wallet_interfaces.length));
+            writefln("Confidence is %d", confidence);
             Buffer[] answers;
-            const(HashNet) hash_net=new StdHashNet;
-            foreach(ref wallet; wallet_interfaces) {
+            const(HashNet) hash_net = new StdHashNet;
+            foreach (ref wallet; wallet_interfaces) {
                 ubyte[] privkey;
-                scope(exit) {
-                    privkey[]=0;
+                scope (exit) {
+                    privkey[] = 0;
                 }
-                const __net=cast(StdSecureNet)(wallet.secure_wallet.net);
+                const __net = cast(StdSecureNet)(wallet.secure_wallet.net);
                 __net.__expose(privkey);
-                answers~=hash_net.rawCalcHash(privkey);
+                answers ~= hash_net.rawCalcHash(privkey);
             }
-            auto key_recover=KeyRecover(hash_net);
+            auto key_recover = KeyRecover(hash_net);
             key_recover.createKey(answers, confidence);
-            common_wallet_interface.secure_wallet=WalletInterface.StdSecureWallet(DevicePIN.init, key_recover.generator);
+            common_wallet_interface.secure_wallet =
+                WalletInterface.StdSecureWallet(DevicePIN.init, key_recover.generator);
 
             common_wallet_interface.save(false);
         }

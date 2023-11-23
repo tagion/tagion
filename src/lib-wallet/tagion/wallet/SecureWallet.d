@@ -158,6 +158,27 @@ struct SecureWallet(Net : SecureNet) {
         set_pincode(R, pincode);
     }
 
+    this(scope const(ubyte)[][] answers, uint confidence, const(char[]) pincode = null) nothrow {
+
+        _net = new Net();
+        auto recover = KeyRecover(_net);
+        if (confidence == answers.length) {
+            confidence--;
+        }
+        recover.createKey(answers, confidence);
+        auto R = new ubyte[_net.hashSize];
+        scope (exit) {
+            R[] = 0;
+        }
+        recover.quizSeed(R, answers, cofindence);
+        _net.createKeyPair(R);
+        _wallet = RecoverGenerator(recover.toDoc);
+        if (!pincode.empty) {
+            set_pincode(R, pincode);
+        }
+
+    }
+
     this(
             scope const(char[]) passphrase,
     scope const(char[]) pincode,

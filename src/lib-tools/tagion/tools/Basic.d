@@ -74,6 +74,24 @@ void error(Args...)(string fmt, lazy Args args) @trusted {
     stderr.writefln("%sError: %s%s", RED, format(fmt, args), RESET);
 }
 
+void warn(Args...)(string fmt, lazy Args args) @trusted {
+    import std.format;
+
+    vout.writefln("%s%s%s", YELLOW, format(fmt, args), RESET);
+}
+
+void info(Args...)(string fmt, lazy Args args) @trusted {
+    import std.format;
+
+    vout.writefln("%s%s%s", BLUE, format(fmt, args), RESET);
+}
+
+void good(Args...)(string fmt, lazy Args args) @trusted {
+    import std.format;
+
+    vout.writefln("%s%s%s", GREEN, format(fmt, args), RESET);
+}
+
 alias SubTools = int function(string[])[string];
 Result subTool(const SubTools sub_tools, string[] args, const size_t index = 0) {
     if (args[index].baseName in sub_tools) {

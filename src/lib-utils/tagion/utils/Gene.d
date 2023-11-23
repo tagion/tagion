@@ -50,11 +50,11 @@ uint gene_count(scope const(ulong[]) bitstream) pure nothrow {
         .fold!((a, b) => a + gene_count(b))(uint(0));
 }
 
-@trusted
-immutable(ulong[]) gene_xor(scope const(ulong[]) a, scope const(ulong[]) b) pure nothrow {
+    @safe
+ulong[] gene_xor(scope const(ulong[]) a, scope const(ulong[]) b) pure nothrow {
     auto result = new ulong[a.length];
     gene_xor(result, a, b);
-    return assumeUnique(result);
+    return result;
 }
 
 @nogc @safe
