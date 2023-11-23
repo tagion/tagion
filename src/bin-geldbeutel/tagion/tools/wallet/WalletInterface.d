@@ -266,7 +266,7 @@ struct WalletInterface {
     /**
     * @brief change pin code interface
     */
-    bool loginPincode(const Flag!"ChangePin" change = Yes.ChangePin) {
+    bool loginPincode(const bool changepin) {
         CLEARSCREEN.write;
         char[] old_pincode;
         char[] new_pincode1;
@@ -290,7 +290,7 @@ struct WalletInterface {
             if (old_pincode.length) {
                 secure_wallet.login(old_pincode);
                 if (secure_wallet.isLoggedin) {
-                    if (No.ChangePin) {
+                    if (!changepin) {
                         return true;
                     }
                     break;
@@ -299,7 +299,7 @@ struct WalletInterface {
             }
         }
         CLEARSCREEN.write;
-        if (Yes.ChangePin && secure_wallet.isLoggedin) {
+        if (changepin && secure_wallet.isLoggedin) {
             foreach (i; 0 .. retry) {
                 HOME.write;
                 CLEARSCREEN.write;
@@ -315,7 +315,7 @@ struct WalletInterface {
                         writefln("New pincode:%s", CLEARDOWN);
                         readln(new_pincode1);
                         new_pincode1.word_strip;
-                        writefln("Repeate:");
+                        writefln("Repeaté:");
                         readln(new_pincode2);
                         new_pincode2.word_strip;
                         ok = (new_pincode1.length >= 4);
