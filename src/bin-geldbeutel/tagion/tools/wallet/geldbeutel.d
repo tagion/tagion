@@ -51,10 +51,7 @@ int _main(string[] args) {
     bool overwrite_switch; /// Overwrite the config file
     bool create_account;
     bool change_pin;
-    bool set_default_quiz;
 
-    string output_filename;
-    string derive_code;
     string path;
     string pincode;
     uint bip39;
@@ -224,21 +221,20 @@ int _main(string[] args) {
             writefln("%sAccount pubkey has not been set (use --name)%s", YELLOW, RESET);
                 return 0;
             }
-             writefln("%s", 
+            writefln("%s", 
             wallet_interface.secure_wallet.account.owner.encodeBase64);
-             info_only=true;
+            info_only=true;
         }
         if (info_only) {
             return 0;
         }
-        change_pin = change_pin && !pincode.empty;
 
         if (create_account) {
             wallet_interface.generateSeed(wallet_interface.quiz.questions, false);
             return 0;
         }
         else if (change_pin) {
-            wallet_interface.loginPincode(Yes.ChangePin);
+            wallet_interface.loginPincode(changepin: true);
             return 0;
         }
 
@@ -252,7 +248,7 @@ int _main(string[] args) {
                 }
                 verbose("%1$sLoggedin%2$s", GREEN, RESET);
             }
-            else if (!wallet_interface.loginPincode(No.ChangePin)) {
+            else if (!wallet_interface.loginPincode(changepin: false)) {
                 wallet_ui = true;
                 writefln("%1$sWallet not loggedin%2$s", YELLOW, RESET);
                 return 4;

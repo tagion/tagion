@@ -82,6 +82,11 @@ struct AccountDetails {
                 return 1;
             }
         }
+
+        if(bills.length == 0){
+            return 1;
+        }
+
         return 2;
     }
 

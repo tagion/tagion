@@ -21,7 +21,7 @@ else {
     static assert(0, format("Random function not support for %s", os));
 }
 
-bool isGetRandomAvailable() {
+bool isGetRandomAvailable() nothrow {
     import core.stdc.errno;
     static if (ver.USE_BUILD_IN_RANDOM_FOR_MOBILE_SHOULD_BE_REMOVED) {
         return true;
@@ -58,6 +58,7 @@ unittest {
 void getRandom(ref scope ubyte[] buf) nothrow
 in (buf.length <= 256)
 do {
+    import std.exception: assumeWontThrow;
 
     if (buf.length == 0) {
         return;
@@ -72,12 +73,30 @@ do {
         assumeWontThrow(buf.each!((ref b) => b = uniform!("[]", ubyte, ubyte)(0, ubyte.max, rnd)));
     }
     else static if (is_getrandom) {
-        // GRND_NONBLOCK = 0x0001. Don't block and return EAGAIN instead
-        // GRND_RANDOM   = 0x0002. No effect
-        // GRND_INSECURE = 0x0004. Return non-cryptographic random bytes
+        enum sikkenogetskidt =  "Problem with random generation";
+        if(isGetRandomAvailable) {
+            // GRND_NONBLOCK = 0x0001. Don't block and return EAGAIN instead
+            // GRND_RANDOM   = 0x0002. No effect
+            // GRND_INSECURE = 0x0004. Return non-cryptographic random bytes
+            const size = getrandom(&buf[0], buf.length, 0x0002);
+            assert(size == buf.length, sikkenogetskidt);
+        }
+        else {
+            import std.stdio;
+            // Sometimes the android sandbox may block the getrandom syscall,
+            // so we fall back to /dev/random
+            try {
+                auto random = File("/dev/random", "r");
+                scope(exit) {
+                    random.close;
+                }
+                assert(random.rawRead(buf).length == buf.length, sikkenogetskidt);
+            }
+            catch(Exception _) {
+                assert(false, sikkenogetskidt);
+            }
+        }
 
-        const size = getrandom(&buf[0], buf.length, 0x0002);
-        assert(size == buf.length, "Problem with random generation");
     }
     else {
         arc4random_buf(&buf[0], buf.length);
