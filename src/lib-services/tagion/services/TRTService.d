@@ -167,6 +167,7 @@ struct TRTService {
         }
 
         void modify(trtModify, immutable(RecordFactory.Recorder) dart_recorder) {
+            log("received modify request from dart");
             auto trt_recorder = rec_factory.recorder;
 
             // get a recorder from all the dartkeys already in the db for the function
@@ -178,6 +179,7 @@ struct TRTService {
             auto already_in_dart = trt_db.loads(index_lookup);
             
             createUpdateRecorder(dart_recorder, already_in_dart, trt_recorder, net);
+            log("trt recorder modify %s", trt_recorder.toPretty);
             trt_db.modify(trt_recorder);
         }
         
