@@ -25,7 +25,9 @@ import tagion.testbench.services.sendcontract;
 import tagion.wallet.SecureWallet;
 import tagion.testbench.services.helper_functions;
 import tagion.behaviour.BehaviourException : check;
+import tagion.tools.wallet.WalletInterface;
 
+enum CONTRACT_TIMEOUT = 40;
 mixin Main!(_main);
 
 void wrap_neuewelle(immutable(string)[] args) {
@@ -201,13 +203,27 @@ class SendAInoiceUsingTheTRT {
         auto invoice_to_pay = wallet2.createInvoice("wowo", amount);
         wallet2.registerInvoice(invoice_to_pay);
         wallet1.payment([invoice_to_pay], signed_contract1, fee1);
+        (() @trusted => Thread.sleep(1.seconds))();
         wallet1.payment([invoice_to_pay], signed_contract2, fee2);
+
+        sendSubmitHiRPC(opts1.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract1), wallet1.net);
+        sendSubmitHiRPC(opts1.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract2), wallet1.net);
+        (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
         return result_ok;
     }
 
     @When("i update my wallet using the pubkey lookup")
     Document lookup() {
-        return Document();
+        import std.format;
+        auto wallet1_amount = getWalletInvoiceUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
+        auto wallet2_amount = getWalletInvoiceUpdateAmount(wallet2, opts1.dart_interface.sock_addr, wallet2_hirpc);
+
+        auto wallet1_expected = start_amount1 - fee1 - fee2 - 2*amount;
+        check(wallet1_amount == wallet1_expected, format("should have %s had %s", wallet1_expected, wallet1_amount));
+        auto wallet2_expected = start_amount2 + 2*amount;
+        check(wallet2_amount == wallet2_expected, format("should have %s had %s", wallet2_expected, wallet2_amount));
+
+        return result_ok;
     }
 
     @Then("the transaction should go through")

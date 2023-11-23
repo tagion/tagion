@@ -83,7 +83,7 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
         // msg.body_append(doc.serialize);
     }
     void trtHiRPCResponse(trtHiRPCRR.Response res, Document doc) @trusted {
-        writeln("Inteface succesful response");
+        writeln("TRT Inteface succesful response");
         send_doc(doc);
     }
     
@@ -121,6 +121,7 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
     
     immutable receiver = empty_hirpc.receive(doc);
     if (receiver.method.name == "search" && cnt.trt_enable) {
+        writeln("TRT SEARCH REQUEST");
         auto trt_tid = locate(cnt.trt_task_name);
         if (trt_tid is Tid.init) {
             send_error(InterfaceError.TRTLocate, cnt.trt_task_name);
