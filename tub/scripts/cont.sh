@@ -31,5 +31,17 @@ new_job() {
     echo $container_name >> $job_file
 }
 
-# new_job jobs.txt $(date)
-stop_old_jobs jobs.txt
+usage() { echo "Usage: $0 --clean, --new, -h" 1>&2; exit 1; }
+
+# new_job jobs.txt "$(date -u +%Y-%m-%d)"
+# stop_old_jobs jobs.txt
+
+while getopts -l "clean:new:" opt
+do
+    case $opt in
+        h)      usage ;;
+        clean)  stop_old_jobs jobs.text ;;
+        new)    new_job jobs.txt "$(date -u +%Y-%m-%d)" ;;
+        *)      usage ;;
+    esac
+done
