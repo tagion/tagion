@@ -155,9 +155,11 @@ struct TranscriptService {
             /*
                 The vote array is already updated. We must go through all the different vote indices and update the epoch that was stored in the dart if any new votes are found.
             */
-            foreach (v; votes.byKeyValue) {
+
+            
+            Wowo: foreach (v; votes.byKeyValue) {
                 // add the new signatures to the epoch. We only want to do it if there are new signatures
-                if ((v.value.init_bullseye && v.value.epoch.bullseye !is Fingerprint.init) || (v.value.epoch.signs.length != v.value.votes.length && v.value.epoch.bullseye !is Fingerprint.init)) {
+                // if ((v.value.init_bullseye && v.value.epoch.bullseye !is Fingerprint.init) || (v.value.epoch.signs.length != v.value.votes.length && v.value.epoch.bullseye !is Fingerprint.init)) {
                     v.value.init_bullseye = false;
                     // add the signatures to the epoch. Only add them if the signature match ours
                     foreach (single_vote; v.value.votes) {
@@ -169,6 +171,7 @@ struct TranscriptService {
                             v.value.epoch.signs ~= single_vote.signed_bullseye;
                         }
                         else {
+                            throw new Exception(format("Bullseyes not the same %s", v.value.epoch.epoch_number));
                             pragma(msg, "throw error or what should we do?");
                             // throw error or what to do
                         }
@@ -181,11 +184,12 @@ struct TranscriptService {
                         last_consensus_epoch += 1;
                         recorder.insert(v.value.locked_archives, Archive.Type.REMOVE);
                         votes.remove(v.value.epoch.epoch_number);
+                        break Wowo;
                     }
 
                     // add the modified epochs to the recorder.
                     recorder.insert(v.value.epoch, Archive.Type.ADD);
-                }
+                // }
 
             }
 
@@ -320,6 +324,9 @@ struct TranscriptService {
             req.id = res.id;
 
             locate(task_names.dart).send(req, RecordFactory.uniqueRecorder(recorder), cast(immutable) res.id);
+
+
+            log("MEMORY: votes: %s", votes.length);
 
         }
 
