@@ -159,6 +159,7 @@ struct TranscriptService {
             
             Wowo: foreach (v; votes.byKeyValue) {
                 // add the new signatures to the epoch. We only want to do it if there are new signatures
+                if (v.value.epoch.bullseye !is Fingerprint.init) {
                 // if ((v.value.init_bullseye && v.value.epoch.bullseye !is Fingerprint.init) || (v.value.epoch.signs.length != v.value.votes.length && v.value.epoch.bullseye !is Fingerprint.init)) {
                     v.value.init_bullseye = false;
                     // add the signatures to the epoch. Only add them if the signature match ours
@@ -178,7 +179,7 @@ struct TranscriptService {
                     }
 
                     // if the new length of the epoch is majority then we finish the epoch
-                    if (v.value.epoch.signs.length.isMajority(number_of_nodes) && v.value.epoch.epoch_number == last_consensus_epoch + 1) {
+                    if (v.value.epoch.signs.length == number_of_nodes && v.value.epoch.epoch_number == last_consensus_epoch + 1) {
                         v.value.epoch.previous = previous_epoch;
                         previous_epoch = net.calcHash(v.value.epoch);
                         last_consensus_epoch += 1;
@@ -188,10 +189,13 @@ struct TranscriptService {
                     }
 
                     // add the modified epochs to the recorder.
-                    recorder.insert(v.value.epoch, Archive.Type.ADD);
-                // }
+                    version(INSERT_ALL) {
+                        recorder.insert(v.value.epoch, Archive.Type.ADD);
+                    }
+                }
 
             }
+
 
             const epoch_contract = epoch_contracts.get(res.id, null);
             if (epoch_contract is null) {
