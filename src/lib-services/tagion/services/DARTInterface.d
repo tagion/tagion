@@ -151,6 +151,16 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
     }
 }
 
+import tagion.services.exception;
+
+void checkSocketError(int rc) {
+    if (rc != 0) {
+        import std.format;
+
+        throw new ServiceException(format("Failed to dial %s", nng_errstr(rc)));
+    }
+}
+
 @safe
 struct DARTInterfaceService {
     immutable(DARTInterfaceOptions) opts;
@@ -158,15 +168,6 @@ struct DARTInterfaceService {
     immutable(TaskNames) task_names;
 
     void task() @trusted {
-
-        void checkSocketError(int rc) {
-            if (rc != 0) {
-                import std.format;
-
-                throw new Exception(format("Failed to dial %s", nng_errstr(rc)));
-            }
-
-        }
 
         DartWorkerContext ctx;
         ctx.dart_task_name = task_names.dart;
