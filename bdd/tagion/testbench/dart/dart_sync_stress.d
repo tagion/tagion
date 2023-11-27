@@ -24,7 +24,6 @@ import tagion.dart.DARTFile : DARTFile;
 import tagion.dart.Recorder : Archive, RecordFactory;
 import tagion.testbench.dart.dart_helper_functions;
 import tagion.testbench.dart.dartinfo;
-import tagion.utils.Miscellaneous : toHexString;
 
 enum feature = Feature(
             "Sync insert random stress test",

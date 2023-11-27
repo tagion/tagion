@@ -6,6 +6,7 @@ import tagion.basic.Types : FileExtension;
 import tagion.behaviour.Behaviour;
 import tagion.services.DART : DARTOptions;
 import tagion.services.replicator : ReplicatorOptions;
+import tagion.services.TRTService : TRTOptions;
 import tagion.testbench.services;
 import tagion.testbench.tools.Environment;
 import tagion.tools.Basic;
@@ -20,10 +21,11 @@ int _main(string[] args) {
     auto replicator_path = buildPath(module_path, "replicator");
     mkdirRecurse(replicator_path);
     auto replicator_opts = ReplicatorOptions(replicator_path);
+    TRTOptions trt_options;
 
     auto dart_service_feature = automation!(DARTService);
 
-    dart_service_feature.WriteAndReadFromDartDb(opts, replicator_opts);
+    dart_service_feature.WriteAndReadFromDartDb(opts, replicator_opts, trt_options);
     dart_service_feature.run();
 
     return 0;

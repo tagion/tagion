@@ -8,51 +8,13 @@ import std.range.primitives : isInputRange;
 import tagion.basic.Types : Buffer, isBufferType;
 import tagion.basic.tagionexceptions : TagionException;
 
-@trusted
-deprecated("Use built-in %(%02x%) instead") string toHexString(bool UCASE = false, BUF)(BUF buffer) pure nothrow
-if (isBufferType!BUF) {
-    static if (UCASE) {
-        enum hexdigits = "0123456789ABCDEF";
-    }
-    else {
-        enum hexdigits = "0123456789abcdef";
-    }
-    uint i = 0;
-    char[] text = new char[buffer.length * 2];
-    foreach (b; buffer) {
-        text[i++] = hexdigits[b >> 4];
-        text[i++] = hexdigits[b & 0xf];
-    }
-
-    return assumeUnique(text);
-}
-
-alias hex = toHexString;
-
-unittest {
-    {
-        enum value = "CF80CD8AED482D5D1527D7DC72FCEFF84E6326592848447D2DC0B0E87DFC9A90";
-        auto buf = decode(value);
-        assert(buf.length * 2 == value.length);
-        assert(buf.toHexString!true == value);
-    }
-    {
-        enum value = "30440220182A108E1448DC8F1FB467D06A0F3BB8EA0533584CB954EF8DA112F1D60E39A202201C66F36DA211C087F3AF88B50EDF4F9BDAA6CF5FD6817E74DCA34DB12390C6E9";
-        auto buf = decode(value);
-        assert(buf.length * 2 == value.length);
-        assert(buf.toHexString!true == value);
-    }
-
-}
-
 enum HEX_SEPARATOR = '_';
 
 @safe Buffer decode(const(char[]) hex) pure
-in {
-    if (hex.replace(HEX_SEPARATOR, "").length % 2 != 0)
+ {
+    if (hex.replace(HEX_SEPARATOR, "").length % 2 != 0) {
         throw new TagionException("Hex string length not even");
-}
-do {
+    }
     int to_hex(const(char) c) {
         if ((c >= '0') && (c <= '9')) {
             return cast(ubyte)(c - '0');
@@ -73,7 +35,6 @@ do {
     ubyte part;
     foreach (c; hex) {
         if (c != HEX_SEPARATOR) {
-            //            writefln("j=%d len=%d", j, result.length);
             part <<= 4;
             part |= to_hex(c);
 
@@ -98,16 +59,11 @@ do {
  +     The 16 first hex digits of the buffer
 +/
 @safe
-string cutHex(bool UCASE = false, BUF)(BUF buf) pure if (isBufferType!BUF) {
+string cutHex( BUF)(BUF buf) pure if (isBufferType!BUF) {
     import std.format;
-
+import std.algorithm : min;
     enum LEN = ulong.sizeof;
-    if (buf.length < LEN) {
-        return buf[0 .. $].toHexString!UCASE;
-    }
-    else {
-        return buf[0 .. LEN].toHexString!UCASE;
-    }
+    return format!"%(%02x%)"(buf[0..min(LEN,buf.length)]);
 }
 
 @safe

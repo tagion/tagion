@@ -63,14 +63,13 @@ struct SecureWallet(Net : SecureNet) {
         return _net;
     }
 
-    version(NET_HACK) {
+    version (NET_HACK) {
         void set_net(SecureNet copy_net) {
             this._net = copy_net;
         }
 
     }
 
-    
     /**
      * 
      * Params:
@@ -127,19 +126,15 @@ struct SecureWallet(Net : SecureNet) {
      *   answers = List of answers
      *   confidence = Cofindence of the answers
      *   pincode = Devices pin code
-     *   seed = Supplied seed
      * Returns: 
      *   Create an new wallet accouring with the input
      */
     this(
             scope const(string[]) questions,
-            scope const(char[][]) answers,
-            uint confidence,
-            const(char[]) pincode,
-            scope const(ubyte[]) seed = null)
-    in {
-        assert(questions.length is answers.length, "Amount of questions should be same as answers");
-    }
+    scope const(char[][]) answers,
+    uint confidence,
+    const(char[]) pincode)
+    in (questions.length is answers.length, "Amount of questions should be same as answers")
     do {
         check(questions.length > 3, "Minimal amount of answers is 4");
         _net = new Net();
@@ -152,30 +147,27 @@ struct SecureWallet(Net : SecureNet) {
             confidence--;
         }
 
-        recover.createKey(questions, answers, confidence, seed);
-        //    SecureWallet result;
-        // {
+        recover.createKey(questions, answers, confidence);
         auto R = new ubyte[_net.hashSize];
         scope (exit) {
-            R[]=0;
+            R[] = 0;
         }
         recover.findSecret(R, questions, answers);
         _net.createKeyPair(R);
         _wallet = RecoverGenerator(recover.toDoc);
-        //this(DevicePIN.init, wallet);
-        //result._net = _net;
         set_pincode(R, pincode);
-        //}
-        //return result;
     }
 
-    this(scope const(char[]) passphrase, scope const(char[]) pincode, scope const(char[]) salt = null) {
+    this(
+            scope const(char[]) passphrase,
+    scope const(char[]) pincode,
+    scope const(char[]) salt = null) {
         _net = new Net;
         enum size_of_privkey = 32;
         ubyte[] R;
         scope (exit) {
             set_pincode(R, pincode);
-            R[]=0;
+            R[] = 0;
         }
         _net.generateKeyPair(passphrase, salt,
                 (scope const(ubyte[]) data) { R = data[0 .. size_of_privkey].dup; });
@@ -183,7 +175,7 @@ struct SecureWallet(Net : SecureNet) {
 
     protected void set_pincode(
             scope const(ubyte[]) R,
-            scope const(char[]) pincode) scope
+    scope const(char[]) pincode) scope
     in (!_net.isinit)
     do {
         auto seed = new ubyte[_net.hashSize];
@@ -200,9 +192,7 @@ struct SecureWallet(Net : SecureNet) {
      *   True of N=confidence number of answers is correct
      */
     bool correct(const(string[]) questions, const(char[][]) answers)
-    in {
-        assert(questions.length is answers.length, "Amount of questions should be same as answers");
-    }
+    in (questions.length is answers.length, "Amount of questions should be same as answers")
     do {
         _net = new Net;
         auto recover = KeyRecover(_net, _wallet);
@@ -219,10 +209,11 @@ struct SecureWallet(Net : SecureNet) {
      * Returns:
      *   True if the key-pair has been recovered for the quiz or the pincode
      */
-    bool recover(const(string[]) questions, const(char[][]) answers, const(char[]) pincode)
-    in {
-        assert(questions.length is answers.length, "Amount of questions should be same as answers");
-    }
+    bool recover(
+            const(string[]) questions,
+    const(char[][]) answers,
+    const(char[]) pincode)
+    in (questions.length is answers.length, "Amount of questions should be same as answers")
     do {
         _net = new Net;
         auto recover = KeyRecover(_net, _wallet);
@@ -242,7 +233,6 @@ struct SecureWallet(Net : SecureNet) {
      * Returns: true if the wallet is loggin
      */
     @nogc bool isLoggedin() pure const nothrow {
-        pragma(msg, "fixme(cbr): Jam the _net");
         return _net !is null;
     }
 
@@ -263,13 +253,11 @@ struct SecureWallet(Net : SecureNet) {
         if (_pin.D) {
             logout;
             auto login_net = new Net;
-            //  writefln("pinhash = %s", pinhash.toHexString);
             auto R = new ubyte[login_net.hashSize];
             scope (exit) {
-                R[]=0;
+                R[] = 0;
             }
             const recovered = _pin.recover(login_net, R, pincode.representation);
-            //  _pin.recover(R, pinhash);
             if (recovered) {
                 login_net.createKeyPair(R);
                 _net = login_net;
@@ -297,7 +285,7 @@ struct SecureWallet(Net : SecureNet) {
 
         scope R = new ubyte[hashnet.hashSize];
         scope (exit) {
-            R[]=0;
+            R[] = 0;
         }
         _pin.recover(hashnet, R, pincode.representation);
         return _pin.S == hashnet.saltHash(R);
@@ -312,12 +300,9 @@ struct SecureWallet(Net : SecureNet) {
      */
     bool changePincode(const(char[]) pincode, const(char[]) new_pincode) {
         check(!_net.isinit, "Key pair has not been created");
-        //const pinhash = recover.checkHash(pincode.representation, _pin.U);
         auto R = new ubyte[_net.hashSize];
-        // xor(R, _pin.D, pinhash);
         _pin.recover(_net, R, pincode.representation);
         if (_pin.S == _net.saltHash(R)) {
-            // const new_pinhash = recover.checkHash(new_pincode.representation, _pin.U);
             set_pincode(R, new_pincode);
             logout;
             return true;
@@ -331,10 +316,7 @@ struct SecureWallet(Net : SecureNet) {
      *   invoice = invoice to be registered
      */
     void registerInvoice(ref Invoice invoice) {
-        //scope seed = new ubyte[_net.hashSize];
-        //getRandom(seed);
         account.derive_state = _net.HMAC(account.derive_state ~ _net.pubkey);
-        //scramble(seed);
         auto pkey = _net.derivePubkey(account.derive_state);
         invoice.pkey = derivePubkey;
         account.derivers[invoice.pkey] = account.derive_state;
@@ -610,7 +592,7 @@ struct SecureWallet(Net : SecureNet) {
         return true;
     }
 
-    Result!bool getFee(TagionBill[] to_pay, out TagionCurrency fees) nothrow {
+    Result!bool getFee(const(TagionBill)[] to_pay, out TagionCurrency fees, bool print = false) nothrow {
         import tagion.script.Currency : totalAmount;
         import tagion.script.execute;
 
@@ -626,11 +608,13 @@ struct SecureWallet(Net : SecureNet) {
                 .totalAmount;
 
             do {
+                collected_bills.length = 0;
+                const can_pay = collect_bills(amount_to_pay + (-1*(amount_remainder)), collected_bills);
+
                 if (collected_bills.length == previous_bill_count) {
                     return result(false);
                 }
-                collected_bills.length = 0;
-                const can_pay = collect_bills(amount_to_pay + amount_remainder, collected_bills);
+
                 check(can_pay, format("Is unable to pay the amount %10.6fTGN available %10.6fTGN", amount_to_pay.value, available_balance
                         .value));
                 const total_collected_amount = collected_bills
@@ -691,7 +675,7 @@ struct SecureWallet(Net : SecureNet) {
         return result(true);
     }
 
-    Result!bool createPayment(TagionBill[] to_pay, ref SignedContract signed_contract, out TagionCurrency fees) nothrow {
+    Result!bool createPayment(const(TagionBill)[] to_pay, ref SignedContract signed_contract, out TagionCurrency fees) nothrow {
         import std.stdio;
         import tagion.hibon.HiBONtoText;
         import tagion.script.Currency : totalAmount;
@@ -710,12 +694,12 @@ struct SecureWallet(Net : SecureNet) {
             check(amount_to_pay < available_balance, "The amount requested for payment should be smaller than the available balance");
 
             do {
+                collected_bills.length = 0;
+                const can_pay = collect_bills(amount_to_pay + (-1*(amount_remainder)), collected_bills);
                 if (collected_bills.length == previous_bill_count) {
                     return result(false);
                 }
-                collected_bills.length = 0;
 
-                const can_pay = collect_bills(amount_to_pay + amount_remainder, collected_bills);
                 import tagion.basic.Debug;
 
                 check(can_pay, format("Is unable to pay the amount %10.6fTGN available %10.6fTGN", amount_to_pay.value, available_balance
@@ -944,8 +928,6 @@ struct SecureWallet(Net : SecureNet) {
             auto list_of_invoices = bill_amounts.map!(a => createInvoice(label, a))
                 .each!(invoice => sender_wallet.registerInvoice(invoice))();
 
-            import tagion.utils.Miscellaneous : hex;
-
             // Add the bulls to the account with the derive keys
             with (sender_wallet.account) {
                 bills = zip(bill_amounts, derivers.byKey).map!(bill_derive => TagionBill(
@@ -1009,7 +991,6 @@ unittest {
     const bill1 = wallet.requestBill(1000.TGN);
     wallet.addBill(bill1);
     assert(wallet.available_balance == 1000.TGN);
-    // create a payment of excactly 1000 TGN;
     const bill_to_pay = wallet.requestBill(1000.TGN);
     SignedContract signed_contract;
     TagionCurrency fees;
@@ -1060,18 +1041,11 @@ unittest {
     }
     auto dart_response = hirpc.result(receiver, Document(params)).toDoc;
     const received = hirpc.receive(dart_response);
-    // writefln("received: %s", received.toPretty);
 
-    // writefln("BEFORE: available=%s, total=%s, locked=%s", wallet.available_balance, wallet.total_balance, wallet.locked_balance);
     wallet.setResponseUpdateWallet(received);
 
-    // writefln("AFTER: available=%s, total=%s, locked=%s", wallet.available_balance, wallet.total_balance, wallet.locked_balance);
     auto should_have = wallet.calcTotal(bills_in_dart);
     assert(should_have == wallet.total_balance, format("should have %s had %s", should_have, wallet.total_balance));
-
-    // writefln("WALLET TOTAL: %s", wallet.total_balance);
-
-    // try to create a contract with the information again
 
 }
 
@@ -1149,7 +1123,8 @@ unittest {
     auto p = wallet1.createPayment([payment_request], signed_contract, fee);
     assert(p.value, format("ERROR: %s %s", p.value, p.msg));
 
-    assert(signed_contract.contract.inputs.uniq.array.length == signed_contract.contract.inputs.length, "signed contract inputs invalid");
+    assert(signed_contract.contract.inputs.uniq.array.length == signed_contract.contract.inputs.length,
+            "signed contract inputs invalid");
 }
 
 unittest {
@@ -1243,4 +1218,42 @@ unittest {
     assert(wallet1.login(pindup));
     auto pkey_after = wallet1.getPublicKey;
     assert(pkey_before == pkey_after, "public key not the same after login/logout");
+}
+
+
+// fee amount
+unittest {
+    import std.stdio;
+    auto wallet1 = StdSecureWallet("some words", "1234");
+    const bill1 = wallet1.requestBill(1000.TGN);
+    const bill2 = wallet1.requestBill(1000.TGN);
+    const bill3 = wallet1.requestBill(1000.TGN);
+    assert(wallet1.account.requested.length == 3);
+    assert(wallet1.account.bills.length == 0);
+    wallet1.account.add_bill(bill1);
+    wallet1.account.add_bill(bill2);
+    wallet1.account.add_bill(bill3);
+    assert(wallet1.account.bills.length == 3);
+
+
+    const to_pay = [TagionBill(2000.TGN, sdt_t.init, Pubkey([1,2,3,4]), Buffer.init)];
+    const to_pay2 = [TagionBill(1999.TGN, sdt_t.init, Pubkey([1,2,3,4]), Buffer.init)];
+
+    TagionCurrency fees;
+    const res = wallet1.getFee(to_pay, fees);
+    check(res.value == true, "Wallet should be able to pay 2000 TGN");
+
+    const res2 = wallet1.getFee(to_pay2, fees, true);
+    check(res2.value == true, format("Wallet should be able to pay 1999 TGN fee: %s", fees));
+
+
+
+    SignedContract signed_contract;
+
+    const can_pay = wallet1.createPayment(to_pay2, signed_contract, fees);
+    check(can_pay.value == true, "should be able to create payment");
+
+    auto pay_script = PayScript(signed_contract.contract.script);
+    writefln("pay_script = %s", pay_script.toPretty);
+    check(pay_script.outputs.length < signed_contract.contract.inputs.length, "should have fewer outputs than inputs");
 }

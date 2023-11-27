@@ -27,4 +27,14 @@ TagionCurrency getWalletUpdateAmount(ref StdSecureWallet wallet, string sock_add
     return wallet.calcTotal(wallet.account.bills);
 }
 
+TagionCurrency getWalletInvoiceUpdateAmount(ref StdSecureWallet wallet, string sock_addr, HiRPC hirpc) {
+    auto owner_keys = wallet.getRequestUpdateWallet(hirpc);
+    auto wallet_received = sendDARTHiRPC(sock_addr, owner_keys, hirpc);
+    writefln("Received res", wallet_received.toPretty);
+    check(!wallet_received.isError, format("Received HiRPC error: %s", wallet_received.toPretty));
+    check(wallet.setResponseUpdateWallet(wallet_received), "wallet not updated succesfully");
+
+    return wallet.calcTotal(wallet.account.bills);
+}
+
 

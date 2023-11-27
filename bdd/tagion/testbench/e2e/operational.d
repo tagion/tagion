@@ -100,7 +100,8 @@ int _main(string[] args) {
         = wallet_config_files.zip(wallet_pins).map!(c => ConfigAndPin(c[0], c[1])).array;
 
     // We only want to make one transaction per wallet pair so we can keep track of the balance changes
-    const max_concurrent_jobs = (wallet_config_files.length / 2).to!uint;
+    // const max_concurrent_jobs = (wallet_config_files.length / 2).to!uint;
+    const max_concurrent_jobs = 1;
     Duration max_runtime;
     with (DurationUnit) final switch (duration_unit) {
     case days:
@@ -148,36 +149,37 @@ int _main(string[] args) {
 
         sender = configs_and_pins[index1];
         receiver = configs_and_pins[index2];
-        configs_and_pins = configs_and_pins.remove(index1).remove(index2);
+        // configs_and_pins = configs_and_pins.remove(index1).remove(index2);
     }
 
-    void new_job(ref ConfigAndPin[] configs_and_pins) {
+    bool  new_job(ref ConfigAndPin[] configs_and_pins) {
         ConfigAndPin sender;
         ConfigAndPin receiver;
         pickWallets(configs_and_pins, sender, receiver);
 
-        spawn((string sender_config, string sender_pin, string receiver_config, string receiver_pin, bool sendkernel) {
+        // spawn((string sender_config, string sender_pin, string receiver_config, string receiver_pin, bool sendkernel) {
             bool job_success;
-            scope (exit) {
-                ownerTid.send(job_success);
-            }
-            auto sender_interface = createInterface(sender_config, sender_pin);
-            auto receiver_interface = createInterface(receiver_config, receiver_pin);
+            // scope (exit) {
+            //     ownerTid.send(job_success);
+            // }
+            auto sender_interface = createInterface(sender.config, sender.pin);
+            auto receiver_interface = createInterface(receiver.config, receiver.pin);
 
-            writefln("Making transaction between sender %s and receiver %s", sender_config, receiver_config);
+            writefln("Making transaction between sender %s and receiver %s", sender.config, receiver.config);
 
             auto operational_feature = automation!operational;
             operational_feature.SendNContractsFromwallet1Towallet2(sender_interface, receiver_interface, sendkernel);
             auto feat_group = operational_feature.run;
 
-            ownerTid.send(ConfigAndPin(sender_config, sender_pin), ConfigAndPin(receiver_config, receiver_pin));
+            // ownerTid.send(ConfigAndPin(sender_config, sender_pin), ConfigAndPin(receiver_config, receiver_pin));
             if (feat_group.result.hasErrors) {
                 job_success = false;
             }
             else {
                 job_success = true;
             }
-        }, sender.config, sender.pin, receiver.config, receiver.pin, sendkernel);
+        // }, sender.config, sender.pin, receiver.config, receiver.pin, sendkernel);
+        return job_success;
     }
 
     uint running_jobs;
@@ -189,30 +191,34 @@ int _main(string[] args) {
         }
         run_counter++;
 
-        while (running_jobs < max_concurrent_jobs) {
-            Thread.sleep(300.msecs);
-            new_job(configs_and_pins);
-            running_jobs++;
-            writefln("running jobs %s", running_jobs);
-        }
-        scope (exit) {
-            running_jobs--;
-        }
+        // while (running_jobs < max_concurrent_jobs) {
+        //     Thread.sleep(300.msecs);
+           stop = new_job(configs_and_pins);
+           stop = (MonoTime.currTime >= end_clocktime);
+        //     running_jobs++;
+        //     writefln("running jobs %s", running_jobs);
+        // }
+        // scope (exit) {
+        //     running_jobs--;
+        // }
 
-        bool job_stopped;
-        while (!job_stopped) {
-            receive(
-                    (ConfigAndPin r, ConfigAndPin s) { configs_and_pins ~= r; configs_and_pins ~= s; },
-                    (bool job_success) {
-                if (!job_success) {
-                    writefln("transaction failed after %s transactions", run_counter);
-                }
-                stop = (MonoTime.currTime >= end_clocktime || !job_success);
-                job_stopped = true;
-            },
-            );
+        // bool job_stopped;
+        // while (!job_stopped) {
+        //     receive(
+        //             (ConfigAndPin r, ConfigAndPin s) {
+        //                 configs_and_pins ~= r; configs_and_pins ~= s;
+        //                 writeln(configs_and_pins);
+        //             },
+        //             (bool job_success) {
+        //         if (!job_success) {
+        //             writefln("transaction failed after %s transactions", run_counter);
+        //         }
+        //         stop = (MonoTime.currTime >= end_clocktime || !job_success);
+        //         job_stopped = true;
+        //     },
+        //     );
 
-        }
+        // }
     }
     return 0;
 }

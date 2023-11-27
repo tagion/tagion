@@ -10,7 +10,6 @@ import std.algorithm;
 import std.array;
 import std.exception : assumeUnique;
 import tagion.basic.ConsensusExceptions;
-import tagion.utils.Miscellaneous : toHexString;
 
 enum SECP256K1 : uint {
     FLAGS_TYPE_MASK = SECP256K1_FLAGS_TYPE_MASK,
@@ -368,71 +367,11 @@ class NativeSecp256k1 {
         return ret != 0;
 
     }
-
-    @trusted
-    final bool xonlyPubkey(
-            ref scope const(secp256k1_pubkey) pubkey,
-            ref secp256k1_xonly_pubkey xonly_pubkey) const nothrow @nogc {
-        const ret = secp256k1_xonly_pubkey_from_pubkey(_ctx, &xonly_pubkey, null, &pubkey);
-        return ret != 0;
-    }
-
-    /// This function is should be removed after createECDHSecret has been implemented
-    @trusted
-    void pubkey_test(const(ubyte[]) seckey) const {
-        assert(seckey.length == SECKEY_SIZE);
-        int pk_key;
-        secp256k1_keypair keypair;
-
-        import std.stdio;
-
-        {
-            const ret = secp256k1_keypair_create(_ctx, &keypair, &seckey[0]);
-            assert(ret == 1);
-        }
-        writefln("  keypair = %(%02x%)", keypair.data);
-        secp256k1_pubkey pubkey;
-        {
-            const ret = secp256k1_keypair_pub(_ctx, &pubkey, &keypair);
-            assert(ret == 1);
-        }
-        writefln("      pubkey = %(%02x%)", pubkey.data);
-
-        secp256k1_xonly_pubkey xonly_pubkey;
-        {
-            const ret = secp256k1_keypair_xonly_pub(_ctx, &xonly_pubkey, &pk_key, &keypair);
-            assert(ret == 1);
-        }
-        writefln("xonly_pubkey = %(%02x%)", xonly_pubkey.data);
-        secp256k1_pubkey from_xonly_pubkey;
-        ubyte[32] tweak;
-        {
-            const ret = secp256k1_xonly_pubkey_tweak_add(_ctx, &from_xonly_pubkey, &xonly_pubkey, &tweak[0]);
-            assert(ret == 1);
-        }
-        writefln(" from_pubkey = %(%02x%)", from_xonly_pubkey.data);
-        ubyte[32] xonly_pubkey_bytes;
-        {
-            const ret = secp256k1_xonly_pubkey_serialize(_ctx, &xonly_pubkey_bytes[0], &xonly_pubkey);
-
-            assert(ret == 1);
-            writefln(" xonly_bytes = %(%02x%)", xonly_pubkey_bytes);
-        }
-        {
-            ubyte[65] compressed_pubkey;
-            size_t len = 33;
-            const ret = secp256k1_ec_pubkey_serialize(_ctx, &compressed_pubkey[0], &len, &from_xonly_pubkey, SECP256K1
-                .EC_COMPRESSED);
-            assert(ret == 1);
-            assert(len == 33, "Key length should be 33");
-            writefln("Compressed   = %(%02x%)", compressed_pubkey[0 .. len]);
-        }
-    }
 }
 
 version (unittest) {
     import std.string : representation;
-    import tagion.utils.Miscellaneous : decode, toHexString;
+    import tagion.utils.Miscellaneous : decode;
 
     const(ubyte[]) sha256(scope const(ubyte[]) data) {
         import std.digest;
@@ -454,12 +393,10 @@ unittest { /// Schnorr test generated from the secp256k1/examples/schnorr.c
     //secp256k1_keypair keypair;
     ubyte[] keypair;
     crypt.createKeyPair(secret_key, keypair);
-    //writefln("keypair %(%02x%)", keypair);
     assert(keypair == expected_keypair);
     const signature = crypt.sign(msg_hash, keypair, aux_random);
     assert(signature == expected_signature);
-    //writefln("expected_pubkey %(%02x%)", expected_pubkey);
-    const pubkey = crypt.getPubkey(keypair); //writefln("         pubkey %(%02x%)", pubkey);
+    const pubkey = crypt.getPubkey(keypair); 
     assert(pubkey == expected_pubkey);
     const signature_ok = crypt.verify(msg_hash, signature, pubkey);
     assert(signature_ok, "Schnorr signing failded");

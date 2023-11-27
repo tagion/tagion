@@ -31,9 +31,8 @@ unittest {
     import tagion.dart.Recorder;
     import tagion.script.TagionCurrency : TGN;
     import tagion.script.common : TagionBill;
-    import tagion.utils.Miscellaneous : toHexString;
     import tagion.utils.StdTime;
-
+import std.format;
     const temp_folder = tempfile ~ "/";
 
     const dart_filename = fileId!RecorderChain(FileExtension.dart, "dart").fullpath;
@@ -290,7 +289,7 @@ unittest {
         // Remove one block from chain
         {
             auto some_hash = recorder_chain.storage.getHashes[0];
-            auto filename = buildPath(temp_folder, some_hash.toHexString.setExtension(
+            auto filename = buildPath(temp_folder, format!"%(%02x%)"(some_hash).setExtension(
                     FileExtension.hibon));
             remove(filename);
 

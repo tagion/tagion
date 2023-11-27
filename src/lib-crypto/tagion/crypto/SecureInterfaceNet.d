@@ -13,7 +13,7 @@ alias check = Check!SecurityConsensusException;
 interface HashNet {
     uint hashSize() const pure nothrow scope;
 
-    final Fingerprint calcHash(B)(scope const(B) data) const
+    Fingerprint calcHash(B)(scope const(B) data) const
     if (isBufferType!B) {
         return Fingerprint(rawCalcHash(cast(TypedefType!B) data));
     }
@@ -22,7 +22,7 @@ interface HashNet {
     immutable(Buffer) HMAC(scope const(ubyte[]) data) const pure;
     Fingerprint calcHash(const(Document) doc) const;
 
-    final Fingerprint calcHash(T)(T value) const if (isHiBONRecord!T) {
+    Fingerprint calcHash(T)(T value) const if (isHiBONRecord!T) {
         return calcHash(value.toDoc);
     }
 
@@ -45,26 +45,19 @@ interface SecureNet : HashNet {
         return verify(message, signature, pubkey);
     }
 
-    final bool verify(T)(T pack, const Signature signature, const Pubkey pubkey) const
+    bool verify(T)(T pack, const Signature signature, const Pubkey pubkey) const
     if (isHiBONRecord!T) {
         return verify(pack.toDoc, signature, pubkey);
     }
 
-    // The private should be added implicite by the GossipNet
-    // The message is a hash of the 'real' message
     Signature sign(const Fingerprint message) const;
 
     final Signed sign(const Document doc) const {
-
-        
-
-            .check(doc.keys.front[0]!is HiBONPrefix.HASH, ConsensusFailCode
-            .SECURITY_MESSAGE_HASH_KEY);
         const fingerprint = calcHash(doc);
         return Signed(sign(fingerprint), fingerprint);
     }
 
-    final Signed sign(T)(T pack) const if (isHiBONRecord!T) {
+    Signed sign(T)(T pack) const if (isHiBONRecord!T) {
         return sign(pack.toDoc);
     }
 
@@ -88,7 +81,7 @@ interface SecureNet : HashNet {
     void derive(string tweak_word, ref ubyte[] tweak_privkey);
     void derive(const(ubyte[]) tweak_code, ref ubyte[] tweak_privkey);
     const(SecureNet) derive(const(ubyte[]) tweak_code) const;
-    final const(SecureNet) derive(B)(const B tweak_code) const if (isBufferType!B) {
+    const(SecureNet) derive(B)(const B tweak_code) const if (isBufferType!B) {
         return derive(cast(TypedefType!B) tweak_code);
     }
 
@@ -96,6 +89,4 @@ interface SecureNet : HashNet {
     Pubkey derivePubkey(string tweak_word);
 
     SecureNet clone() const;
-
-
 }

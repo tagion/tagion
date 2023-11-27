@@ -5,7 +5,6 @@ import tagion.basic.Debug;
 import tagion.basic.Types;
 import tagion.basic.basic : EnumText;
 import tagion.hibon.HiBONRecord;
-import tagion.utils.Miscellaneous : toHexString;
 
 @safe:
 enum RIMS_IN_SECTOR = 2;
@@ -222,10 +221,11 @@ struct Rims {
          * Returns: hex string
          */
     string toString() const pure nothrow {
+    import std.exception : assumeWontThrow;
         if (rims.length == 0) {
             return "XXXX";
         }
-        return rims.toHexString;
+        return assumeWontThrow(format!"%(%02x%)"(rims));
     }
 }
 

@@ -22,3 +22,4 @@ enum StdNames {
 }
 
 enum TagionDomain = "tagion";
+enum TRTLabel = "#" ~ StdNames.owner;

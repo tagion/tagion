@@ -25,8 +25,10 @@ import tagion.services.inputvalidator;
 import tagion.services.options;
 import tagion.services.replicator;
 import tagion.services.transcript;
+import tagion.services.TRTService;
 import tagion.utils.JSONCommon;
 import tagion.utils.pretend_safe_concurrency : locate, send;
+import core.memory;
 
 @safe
 struct Supervisor {
@@ -38,7 +40,12 @@ struct Supervisor {
         auto replicator_handle = spawn!ReplicatorService(tn.replicator, opts.replicator);
 
         // signs data for hirpc response
-        auto dart_handle = spawn!DARTService(tn.dart, opts.dart, tn, shared_net);
+        auto dart_handle = spawn!DARTService(tn.dart, opts.dart, tn, shared_net, opts.trt.enable);
+
+        ActorHandle trt_handle;
+        if (opts.trt.enable) {
+            trt_handle = spawn!TRTService(tn.trt, opts.trt, tn, shared_net);
+        }
 
         auto hirpc_verifier_handle = spawn!HiRPCVerifierService(tn.hirpc_verifier, opts.hirpc_verifier, tn);
 
@@ -56,22 +63,34 @@ struct Supervisor {
         // signs data
         auto transcript_handle = spawn!TranscriptService(tn.transcript, TranscriptOptions.init, opts.wave.number_of_nodes, shared_net, tn);
 
-        auto dart_interface_handle = spawn(immutable(DARTInterfaceService)(opts.dart_interface, tn), tn.dart_interface);
+        auto dart_interface_handle = spawn(immutable(DARTInterfaceService)(opts.dart_interface, opts.trt, tn), tn.dart_interface);
 
         auto services = tuple(dart_handle, replicator_handle, hirpc_verifier_handle, inputvalidator_handle, epoch_creator_handle, collector_handle, tvm_handle, dart_interface_handle, transcript_handle);
 
+
+        
+        // void timeout() @trusted {
+        //     import core.memory;
+        //     GC.collect;
+        // }
+        
         if (waitforChildren(Ctrl.ALIVE, 20.seconds)) {
-            run;
+            // runTimeout(10.seconds, &timeout);
+            run();
         }
         else {
             log.error("Not all children became Alive");
         }
 
         log("Supervisor stopping services");
+        if (opts.trt.enable) {
+            trt_handle.send(Sig.STOP);
+        }
         foreach (service; services) {
             if (service.state is Ctrl.ALIVE) {
                 service.send(Sig.STOP);
             }
+
         }
         (() @trusted { // NNG shoould be safe
             import core.time;

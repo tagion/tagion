@@ -8,17 +8,50 @@ import tagion.basic.Version;
 static if (ver.USE_BUILD_IN_RANDOM_FOR_MOBILE_SHOULD_BE_REMOVED) {
     enum is_getrandom = "Dummy declaration";
 }
-else static if (ver.linux || ver.Android) {
+else static if (ver.linux) {
     enum is_getrandom = true;
     extern (C) ptrdiff_t getrandom(void* buf, size_t buflen, uint flags) nothrow;
 }
-else static if (ver.iOS || ver.OSX) {
+// Tecnically netbsd and freebsd also provide getrandom(2), so you could use still use that instead
+else static if (ver.iOS || ver.OSX || ver.BSD || ver.Android) {
     enum is_getrandom = false;
     extern (C) void arc4random_buf(void* buf, size_t buflen) nothrow;
 }
 else {
     static assert(0, format("Random function not support for %s", os));
 }
+
+bool isGetRandomAvailable() nothrow {
+    import core.stdc.errno;
+
+    static if (ver.USE_BUILD_IN_RANDOM_FOR_MOBILE_SHOULD_BE_REMOVED) {
+        return true;
+    }
+    else static if (is_getrandom) {
+        enum GRND_NONBLOCK = 0x0001;
+        const res = getrandom(null, 0, GRND_NONBLOCK);
+        if (res < 0) {
+            switch (errno) {
+            case ENOSYS:
+            case EPERM:
+                return false;
+            default:
+                return true;
+            }
+        }
+        else {
+            return true;
+        }
+    }
+    else {
+        return true;
+    }
+}
+
+unittest {
+    assert(isGetRandomAvailable, "hardware random function is not available in this environment");
+}
+
 /++
      + getRandom - runs platform specific random function.
      +/
@@ -26,6 +59,7 @@ else {
 void getRandom(ref scope ubyte[] buf) nothrow
 in (buf.length <= 256)
 do {
+    import std.exception : assumeWontThrow;
 
     if (buf.length == 0) {
         return;
@@ -40,12 +74,12 @@ do {
         assumeWontThrow(buf.each!((ref b) => b = uniform!("[]", ubyte, ubyte)(0, ubyte.max, rnd)));
     }
     else static if (is_getrandom) {
+        enum sikkenogetskidt = "Problem with random generation";
         // GRND_NONBLOCK = 0x0001. Don't block and return EAGAIN instead
-        // GRND_RANDOM   = 0x0002. No effect
+        enum GRND_RANDOM = 0x0002; // No effect
         // GRND_INSECURE = 0x0004. Return non-cryptographic random bytes
-
-        const size = getrandom(&buf[0], buf.length, 0x0002);
-        assert(size == buf.length, "Problem with random generation");
+        const size = getrandom(&buf[0], buf.length, GRND_RANDOM);
+        assert(size == buf.length, sikkenogetskidt);
     }
     else {
         arc4random_buf(&buf[0], buf.length);

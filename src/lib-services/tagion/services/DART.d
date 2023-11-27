@@ -52,17 +52,19 @@ struct DARTOptions {
 struct DARTService {
     void task(immutable(DARTOptions) opts,
             immutable(TaskNames) task_names,
-            shared(StdSecureNet) shared_net) {
+            shared(StdSecureNet) shared_net,
+            bool trt_enable) {
 
         DART db;
         Exception dart_exception;
-
         const net = new StdSecureNet(shared_net);
-
         db = new DART(net, opts.dart_path);
         if (dart_exception !is null) {
             throw dart_exception;
         }
+
+        ActorHandle replicator_handle = ActorHandle(task_names.replicator);
+        ActorHandle trt_handle = ActorHandle(task_names.trt);
 
         scope (exit) {
             db.close();
@@ -78,19 +80,13 @@ struct DARTService {
         }
 
         void checkRead(dartCheckReadRR req, immutable(DARTIndex)[] fingerprints) @safe {
-            import tagion.utils.Miscellaneous : toHexString;
-
-            // log("Received checkread response %s", fingerprints.map!(f => f.toHexString));
-
             immutable(DARTIndex)[] check_read = (() @trusted => cast(immutable) db.checkload(fingerprints))();
             log("after checkread response");
 
             req.respond(check_read);
         }
 
-        import tagion.utils.Miscellaneous : toHexString;
-
-        log("Starting dart with %s", db.bullseye.toHexString);
+        log("Starting dart with %(%02x%)", db.bullseye);
 
         auto hirpc = HiRPC(net);
         import tagion.Keywords;
@@ -147,12 +143,12 @@ struct DARTService {
             try {
 
                 auto eye = db.modify(recorder);
-                log("New bullseye is %s", eye.toHexString);
+                log("New bullseye is %(%02x%)", eye);
 
                 req.respond(eye);
-                auto replicator_tid = locate(task_names.replicator);
-                if (replicator_tid !is Tid.init) {
-                    replicator_tid.send(SendRecorder(), recorder, eye, epoch_number);
+                replicator_handle.send(SendRecorder(), recorder, eye, epoch_number);
+                if (trt_enable) {
+                    trt_handle.send(trtModify(), recorder);
                 }
             }
             catch (AssertError e) {
@@ -161,7 +157,7 @@ struct DARTService {
                 fail(e);
             }
             catch (Error e) {
-                log("DART Error %s", e);
+                log.error("DART Error %s", e);
             }
 
         }

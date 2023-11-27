@@ -29,10 +29,7 @@ import tagion.dart.DARTException : DARTRecorderException;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONRecord : GetLabel, STUB, isHiBONRecord, isStub, label, optional, recordType;
-import tagion.utils.Miscellaneous : toHexString;
 import tagion.script.standardnames;
-
-alias hex = toHexString;
 
 private alias check = Check!DARTRecorderException;
 
@@ -575,7 +572,6 @@ unittest { // Archive
     import std.string : representation;
     import tagion.dart.DARTFakeNet;
     import tagion.hibon.HiBONJSON;
-    import tagion.utils.Miscellaneous : toHex = toHexString;
 
     auto net = new DARTFakeNet;
     auto manufactor = RecordFactory(net);

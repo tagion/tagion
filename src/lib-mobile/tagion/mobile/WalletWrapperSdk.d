@@ -21,7 +21,6 @@ import std.string : splitLines;
 import tagion.basic.Types : Buffer, FileExtension;
 import tagion.communication.HiRPC;
 import tagion.crypto.Cipher;
-import tagion.crypto.SecureNet : BadSecureNet, StdSecureNet;
 import tagion.crypto.SecureNet;
 import tagion.crypto.Types : Pubkey;
 import tagion.crypto.aes.AESCrypto;
@@ -764,10 +763,6 @@ unittest {
         .each!(bill => __wallet_storage.wallet.addBill(bill));
 
     const net = new StdHashNet;
-    //auto gene = cast(Buffer) net.calcHash("gene".representation);
-
-    import tagion.utils.Miscellaneous : hex;
-
     // Add the bills to the account with the derive keys
     with (__wallet_storage.wallet.account) {
 
@@ -952,25 +947,25 @@ struct WalletStorage {
     void read() {
 
         version(NET_HACK) {
+            auto _pin = path(devicefile).fread!DevicePIN;
+            auto _wallet = path(walletfile).fread!RecoverGenerator;
+            auto _account = path(accountfile).fread!AccountDetails;
+
             if (wallet.net !is null) {
                 auto __net = cast(shared(StdSecureNet)) wallet.net;
                 scope(exit) {
                     __net = null;
                 }
-                
                 auto copied_net = new StdSecureNet(__net);
-
-                auto _pin = path(devicefile).fread!DevicePIN;
-                auto _wallet = path(walletfile).fread!RecoverGenerator;
-                auto _account = path(accountfile).fread!AccountDetails;
                 wallet = StdSecureWallet(_pin, _wallet, _account);
+
                 wallet.set_net(copied_net);
-
             }
-            
-
-
-        } else {
+            else {
+                wallet = StdSecureWallet(_pin, _wallet, _account);
+            }
+        } 
+        else {
             auto _pin = path(devicefile).fread!DevicePIN;
             auto _wallet = path(walletfile).fread!RecoverGenerator;
             auto _account = path(accountfile).fread!AccountDetails;

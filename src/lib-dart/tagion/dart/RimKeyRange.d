@@ -9,7 +9,6 @@ import std.typecons : Flag, No, Yes;
 import tagion.basic.Debug;
 import tagion.basic.Types : Buffer, isBufferType;
 import tagion.dart.Recorder : Archive, Flip, GetType, Neutral, RecordFactory;
-import tagion.utils.Miscellaneous : hex;
 
 /**
  * Gets the rim key from a buffer

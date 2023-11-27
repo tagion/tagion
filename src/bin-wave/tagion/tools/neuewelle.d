@@ -64,7 +64,7 @@ void signal_handler(int signal) nothrow {
     }
 }
 
-mixin Main!(_main, "tagionwave");
+mixin Main!(_main, "wave");
 
 int _main(string[] args) {
     immutable program = args[0];
@@ -80,10 +80,6 @@ int _main(string[] args) {
     *
     */
     File fin = stdin; /// Console input for the bootkeys
-    if (geteuid == 0) {
-        stderr.writeln("FATAL: YOU SHALL NOT RUN THIS PROGRAM AS ROOT");
-        return 1;
-    }
     stopsignal.initialize(true, false);
 
     { // Handle sigint
@@ -145,10 +141,9 @@ int _main(string[] args) {
         return 0;
     }
 
-    string config_file = "tagionwave.json";
-    if (args.length >= 2 && args[1].hasExtension(".json")) {
-        config_file = args[1];
-    }
+    enum default_wave_config_filename="tagionwave".setExtension(FileExtension.json);
+    const user_config_file = args.countUntil!(file => file.hasExtension(FileExtension.json) && file.exists);
+    auto config_file = (user_config_file < 0) ? default_wave_config_filename : args[user_config_file];
 
     Options local_options;
     if (config_file.exists) {
@@ -382,8 +377,7 @@ int network_mode0(
         }
         else {
             WalletOptions wallet_options;
-    LoopTry:
-            foreach (tries; 1 .. number_of_retry + 1) {
+            LoopTry: foreach (tries; 1 .. number_of_retry + 1) {
                 verbose("Input boot key %d as nodename:pincode", i);
                 const args = by_line.front.split(":");
                 by_line.popFront;
@@ -392,6 +386,7 @@ int network_mode0(
                 }
                 //string wallet_config_file;
                 const wallet_config_file = buildPath(bootkeys_path, args[0]).setExtension(FileExtension.json);
+                writeln("Looking for " ~ wallet_config_file);
                 verbose("Wallet path %s", wallet_config_file);
                 if (!wallet_config_file.exists) {
                     writefln("%1$sBoot key file %3$s not found%2$s", RED, RESET, wallet_config_file);
@@ -404,7 +399,7 @@ int network_mode0(
                     verbose("Load wallet");
                     wallet_interface.load;
 
-                    const loggedin=wallet_interface.secure_wallet.login(args[1]);
+                    const loggedin = wallet_interface.secure_wallet.login(args[1]);
                     if (wallet_interface.secure_wallet.isLoggedin) {
                         verbose("%1$sNode %3$s successfull%2$s", GREEN, RESET, args[0]);
                         net = cast(StdSecureNet) wallet_interface.secure_wallet.net.clone;
