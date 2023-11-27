@@ -232,8 +232,8 @@ struct ConsensusVoting {
             this.signed_bullseye = signed_bullseye;
             this.epoch = epoch;
         }
-        this(const(Document) doc) immutable @trusted {
-            immutable _this=ConsensusVoting(doc);
+        this(const(Document) doc) @safe immutable {
+            immutable _this = ConsensusVoting(doc);
             this.tupleof = _this.tupleof;
         }
     });
