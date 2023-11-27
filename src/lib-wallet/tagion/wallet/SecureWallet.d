@@ -592,7 +592,7 @@ struct SecureWallet(Net : SecureNet) {
         return true;
     }
 
-    Result!bool getFee(TagionBill[] to_pay, out TagionCurrency fees) nothrow {
+    Result!bool getFee(const(TagionBill)[] to_pay, out TagionCurrency fees, bool print = false) nothrow {
         import tagion.script.Currency : totalAmount;
         import tagion.script.execute;
 
@@ -608,11 +608,13 @@ struct SecureWallet(Net : SecureNet) {
                 .totalAmount;
 
             do {
+                collected_bills.length = 0;
+                const can_pay = collect_bills(amount_to_pay + (-1*(amount_remainder)), collected_bills);
+
                 if (collected_bills.length == previous_bill_count) {
                     return result(false);
                 }
-                collected_bills.length = 0;
-                const can_pay = collect_bills(amount_to_pay + amount_remainder, collected_bills);
+
                 check(can_pay, format("Is unable to pay the amount %10.6fTGN available %10.6fTGN", amount_to_pay.value, available_balance
                         .value));
                 const total_collected_amount = collected_bills
@@ -673,7 +675,7 @@ struct SecureWallet(Net : SecureNet) {
         return result(true);
     }
 
-    Result!bool createPayment(TagionBill[] to_pay, ref SignedContract signed_contract, out TagionCurrency fees) nothrow {
+    Result!bool createPayment(const(TagionBill)[] to_pay, ref SignedContract signed_contract, out TagionCurrency fees) nothrow {
         import std.stdio;
         import tagion.hibon.HiBONtoText;
         import tagion.script.Currency : totalAmount;
@@ -692,12 +694,12 @@ struct SecureWallet(Net : SecureNet) {
             check(amount_to_pay < available_balance, "The amount requested for payment should be smaller than the available balance");
 
             do {
+                collected_bills.length = 0;
+                const can_pay = collect_bills(amount_to_pay + (-1*(amount_remainder)), collected_bills);
                 if (collected_bills.length == previous_bill_count) {
                     return result(false);
                 }
-                collected_bills.length = 0;
 
-                const can_pay = collect_bills(amount_to_pay + amount_remainder, collected_bills);
                 import tagion.basic.Debug;
 
                 check(can_pay, format("Is unable to pay the amount %10.6fTGN available %10.6fTGN", amount_to_pay.value, available_balance
@@ -1216,4 +1218,42 @@ unittest {
     assert(wallet1.login(pindup));
     auto pkey_after = wallet1.getPublicKey;
     assert(pkey_before == pkey_after, "public key not the same after login/logout");
+}
+
+
+// fee amount
+unittest {
+    import std.stdio;
+    auto wallet1 = StdSecureWallet("some words", "1234");
+    const bill1 = wallet1.requestBill(1000.TGN);
+    const bill2 = wallet1.requestBill(1000.TGN);
+    const bill3 = wallet1.requestBill(1000.TGN);
+    assert(wallet1.account.requested.length == 3);
+    assert(wallet1.account.bills.length == 0);
+    wallet1.account.add_bill(bill1);
+    wallet1.account.add_bill(bill2);
+    wallet1.account.add_bill(bill3);
+    assert(wallet1.account.bills.length == 3);
+
+
+    const to_pay = [TagionBill(2000.TGN, sdt_t.init, Pubkey([1,2,3,4]), Buffer.init)];
+    const to_pay2 = [TagionBill(1999.TGN, sdt_t.init, Pubkey([1,2,3,4]), Buffer.init)];
+
+    TagionCurrency fees;
+    const res = wallet1.getFee(to_pay, fees);
+    check(res.value == true, "Wallet should be able to pay 2000 TGN");
+
+    const res2 = wallet1.getFee(to_pay2, fees, true);
+    check(res2.value == true, format("Wallet should be able to pay 1999 TGN fee: %s", fees));
+
+
+
+    SignedContract signed_contract;
+
+    const can_pay = wallet1.createPayment(to_pay2, signed_contract, fees);
+    check(can_pay.value == true, "should be able to create payment");
+
+    auto pay_script = PayScript(signed_contract.contract.script);
+    writefln("pay_script = %s", pay_script.toPretty);
+    check(pay_script.outputs.length < signed_contract.contract.inputs.length, "should have fewer outputs than inputs");
 }
