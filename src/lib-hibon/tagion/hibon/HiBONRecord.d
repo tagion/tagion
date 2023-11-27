@@ -250,7 +250,7 @@ mixin template HiBONRecord(string CTOR = "") {
     import tagion.basic.basic : CastTo, basename;
     import tagion.basic.tagionexceptions : Check;
     import tagion.hibon.HiBONException : HiBONRecordException;
-    import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType,
+    import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType, isSpecialKeyType,
         label, exclude, optional, GetLabel, filter, fixed, inspect, VOID;
     import tagion.hibon.HiBONBase : TypedefBase;
     import HiBONRecord = tagion.hibon.HiBONRecord;
@@ -1519,3 +1519,7 @@ unittest { /// Reseved keys and types
     }
 
 }
+
+
+
+

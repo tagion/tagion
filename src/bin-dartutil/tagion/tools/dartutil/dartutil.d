@@ -44,7 +44,7 @@ import tagion.hibon.HiBONtoText : decode, encodeBase64;
 import tagion.script.NameCardScripts : readStandardRecord;
 import tagion.tools.Basic;
 import tagion.tools.revision;
-
+import tagion.dart.BlockFile : Index;
 /**
  * @brief tool for working with local DART database
  */
@@ -65,7 +65,6 @@ int _main(string[] args) {
     bool print;
 
     bool standard_output;
-    //   bool dartread;
     string[] dartread_args;
     string angle_range;
     uint depth;
@@ -77,6 +76,7 @@ int _main(string[] args) {
     bool eye;
     bool fake;
     bool force;
+    bool dump;
 
     bool initialize;
     string passphrase = "verysecret";
@@ -98,6 +98,7 @@ int _main(string[] args) {
                 "f|force", "Force erase and create journal and destination DART", &force,
                 "rpc", "Excutes a HiPRC on the DART", &dartrpc,
                 "print", "prints all the archives with in the given angle", &print,
+                "dump", "Dumps all the archives with in the given angle", &dump,
                 "eye", "Prints the bullseye", &eye,
                 "sync", "Synchronize src.drt to dest.drt", &sync,
                 "P|passphrase", format("Passphrase of the keypair : default: %s", passphrase), &passphrase,
@@ -229,7 +230,17 @@ int _main(string[] args) {
             db.dump(sectors, Yes.full, depth);
         }
         else if (eye) {
-            writefln("EYE: %s", db.fingerprint.hex);
+            writefln("EYE: %(%02x%)", db.fingerprint);
+        }
+        else if (dump) {
+            File fout;
+            fout=stdout;
+            bool dartTraverse(const(Document) doc, const Index index, const uint rim, Buffer rim_path) {
+               fout.rawWrite(doc.serialize); 
+                return false;
+            }
+            db.traverse(&dartTraverse, sectors, depth); 
+            return 0;
         }
 
         const dartread = dartread_args.length > 0;

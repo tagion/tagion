@@ -1,3 +1,27 @@
+# Changelog for week 46/47
+
+**Boot from passkeys**
+The wave program can now boot from passkeys meaning from stdin, meaning that you can use ex. a GPG key to manage the passwords for the network or a usb.
+
+**Epoch chain**
+The Epoch chain implementation is finished, meaning that on each epoch, the epoch including global parameters is written. We have also changed the way that this happens, so that we actually write epochs from the hashgraph immediatly and everytime we add a new vote instead of only writing it once. It is completely finished and includes majority votes. This makes the system more resilient, since if it goes down the votes are stored in the database rather than in memory.
+
+**Crypto**
+We do no longer scramble the privatekey, but instead set all bits to 0. This provides the same security while being much faster since we do not have to create a system call to `getrandom(2)` each time.
+
+**ActorHandles**
+The ActorHandle implementation has been changed so that it is no longer templated, and instead of doing a `locate`, it tries to send immediatly to the previous `tid`. If the `tid` does not exist we set the `tid` and try again. This implementation is faster and safer, since we do not have to do a locate each time and handler errors.
+
+**NNG nothrow**
+Most of NNG is now marked nothrow, which allows functions above to also inherit the nothrow attribute making error handling more clear.
+
+**Operational test**
+A operational test has been created which is essentially a wrapper around a bdd-test which sends a tx from walletA to walletB. This randomly selects two wallets and continiously creates a transaction between these for a specified amount of time.
+
+**General Update from the Core**
+We are very happy to announce that all ground components for the network are finished. This means we are going into Tape-Out mode now and will be doing final reviews on everything and have full focus on operational testing of the system.
+
+
 # Changelog for week 45/46
 
 **Blockfile**

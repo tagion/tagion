@@ -1,3 +1,3 @@
-# P2P library
+# TRT library
 
 > 🚧 This document is still in development.

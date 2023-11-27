@@ -65,22 +65,6 @@ enum Control {
 
 private import std.range;
 
-//private std.range.primitives;
-version (none) string fileExtension(string path) {
-    import std.path : extension;
-
-    return path.extension;
-}
-
-version (none) unittest {
-    import std.path : setExtension;
-    import tagion.basic.Types : FileExtension;
-
-    // assert(!"somenone_invalid_file.extension".fileExtension);
-    immutable valid_filename = "somenone_valid_file".setExtension(FileExtension.hibon);
-    assert(valid_filename.fileExtension);
-    assert(valid_filename.fileExtension == FileExtension.hibon);
-}
 
 enum FileExtension {
     json = ".json", /// JSON File format

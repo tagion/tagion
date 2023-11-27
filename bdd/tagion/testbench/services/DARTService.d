@@ -35,6 +35,7 @@ import tagion.hibon.HiBONRecord;
 import tagion.logger.LogRecords : LogInfo;
 import tagion.logger.Logger;
 import tagion.services.DARTInterface;
+import tagion.services.TRTService;
 import tagion.services.replicator;
 import tagion.services.replicator : modify_log;
 import tagion.testbench.actor.util;
@@ -106,10 +107,11 @@ struct DARTWorker {
         [])
 class WriteAndReadFromDartDb {
 
-    DARTServiceHandle handle;
-    DARTInterfaceServiceHandle dart_interface_handle;
-    ReplicatorServiceHandle replicator_handle;  
+    ActorHandle handle;
+    ActorHandle dart_interface_handle;
+    ActorHandle replicator_handle;
     DARTInterfaceOptions interface_opts;
+    TRTOptions trt_options;
 
     SecureNet supervisor_net;
     DARTOptions opts;
@@ -130,10 +132,11 @@ class WriteAndReadFromDartDb {
         });
     }
 
-    this(DARTOptions opts, ReplicatorOptions replicator_opts) {
+    this(DARTOptions opts, ReplicatorOptions replicator_opts, TRTOptions trt_options) {
 
         this.opts = opts;
         this.replicator_opts = replicator_opts;
+        this.trt_options = trt_options;
         supervisor_net = new StdSecureNet();
         supervisor_net.generateKeyPair("supervisor very secret");
 
@@ -167,20 +170,17 @@ class WriteAndReadFromDartDb {
         auto net = new StdSecureNet();
         net.generateKeyPair("dartnet very secret");
 
-        
         handle = (() @trusted => spawn!DARTService(TaskNames().dart, cast(immutable) opts, TaskNames(), cast(
-                shared) net))();
+                shared) net, false))();
 
-        
-        replicator_handle =(() @trusted => spawn!ReplicatorService(
-            TaskNames().replicator, 
-            cast(immutable) replicator_opts))();
+        replicator_handle = (() @trusted => spawn!ReplicatorService(
+                TaskNames().replicator,
+                cast(immutable) replicator_opts))();
 
         interface_opts.setDefault;
         writeln(interface_opts.sock_addr);
 
-        dart_interface_handle = (() @trusted => spawn(immutable(DARTInterfaceService)(cast(immutable) interface_opts, TaskNames()), "DartInterfaceService"))();
-
+        dart_interface_handle = (() @trusted => spawn(immutable(DARTInterfaceService)(cast(immutable) interface_opts, cast(immutable) trt_options, TaskNames()), "DartInterfaceService"))();
 
         waitforChildren(Ctrl.ALIVE, 3.seconds);
 
@@ -191,7 +191,7 @@ class WriteAndReadFromDartDb {
     Document toAdd() {
         log.registerSubscriptionTask(thisActor.task_name);
         submask.subscribe(modify_log);
-        
+
         foreach (i; 0 .. 100) {
             gen.popFront;
             random_archives = RandomArchives(gen.front, 4, 10);
@@ -203,7 +203,6 @@ class WriteAndReadFromDartDb {
             (() @trusted => handle.send(modify_send, cast(immutable) insert_recorder, immutable long(i)))();
 
             auto modify = receiveOnlyTimeout!(dartModifyRR.Response, Fingerprint);
-
 
             auto modify_log_result = receiveOnlyTimeout!(LogInfo, const(Document));
             check(modify_log_result[1].isRecord!(RecordFactory.Recorder), "Did not receive recorder");

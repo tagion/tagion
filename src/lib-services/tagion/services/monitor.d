@@ -34,8 +34,7 @@ void monitorServiceTask(immutable(MonitorOptions) opts) @trusted nothrow {
         log.register(opts.taskname);
 
         log("SockectThread port=%d addresss=%s", opts.port, opts.url);
-
-        auto listener_socket = ListenerSocket("127.0.0.1",
+        auto listener_socket = ListenerSocket(opts.url,
                 opts.port, opts.timeout, opts.taskname);
         auto listener_socket_thread = listener_socket.start;
 
@@ -49,6 +48,7 @@ void monitorServiceTask(immutable(MonitorOptions) opts) @trusted nothrow {
 
         setState(Ctrl.ALIVE);
         while (!thisActor.stop) {
+            pragma(msg, "REV: Should the 500.msecs be an opts");
             receiveTimeout(500.msecs, //Control the thread
                     &signal,
                     &ownerTerminated,
@@ -62,7 +62,6 @@ void monitorServiceTask(immutable(MonitorOptions) opts) @trusted nothrow {
     catch (Throwable t) {
         import std.stdio;
 
-        log("%s", t);
-        fatal(t);
+        fail(t);
     }
 }

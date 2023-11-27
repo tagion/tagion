@@ -49,6 +49,8 @@ DC:=ldc2
 # You may override this in your local.mk
 ANDROID_NDK:=$(REPOROOT)/tools/android-ndk-r21b/
 
+# DFLAGS+=$(DVERSION)=USE_BUILD_IN_RANDOM_FOR_MOBILE_SHOULD_BE_REMOVED
+
 DFLAGS+=-mtriple=$(PLATFORM)
 
 ANDROID_API?=21

@@ -37,7 +37,6 @@ private {
     import tagion.dart.DARTRim;
     import tagion.dart.RimKeyRange : rimKeyRange;
     import tagion.hibon.HiBONRecord;
-    import tagion.utils.Miscellaneous : toHex = toHexString;
 }
 
 /// Hash null definition (all zero values)
@@ -58,7 +57,7 @@ shared static this() @trusted {
  +/
 ubyte rim_key(F)(F rim_keys, const uint rim) pure if (isBufferType!F) {
     if (rim >= rim_keys.length) {
-        debug __write("%s rim=%d", rim_keys.hex, rim);
+        debug __write("%(%02X%) rim=%d", rim_keys, rim);
     }
     return rim_keys[rim];
 }
@@ -102,13 +101,13 @@ class DARTFile {
     mixin(EnumText!("Params", _params));
 
     enum MIN_BLOCK_SIZE = 0x80;
-    static create(string filename, const HashNet net, const uint block_size = MIN_BLOCK_SIZE, const uint max_index = 0x80)
+    static create(string filename, const HashNet net, const uint block_size = MIN_BLOCK_SIZE, const uint max_size = 0x80_000)
     in {
         assert(block_size >= MIN_BLOCK_SIZE,
                 format("Block size is too small for %s, %d must be langer than %d", filename, block_size, MIN_BLOCK_SIZE));
     }
     do {
-        BlockFile.create(filename, net.multihash, block_size, DARTFile.stringof);
+        BlockFile.create(filename, net.multihash, block_size, DARTFile.stringof, max_size);
     }
     /++
      + A file set by filename should be create by the BlockFile
@@ -535,7 +534,7 @@ class DARTFile {
 
             foreach (key, index; _indices) {
                 if (index !is Index.init) {
-                    writefln("branches[%02X]=%s", key, _fingerprints[key].toHex);
+                    writefln("branches[%02X]=%(%02x%)", key, _fingerprints[key]);
                 }
             }
 
@@ -1084,7 +1083,7 @@ class DARTFile {
     ) {
         import std.stdio;
 
-        writeln("EYE: ", _fingerprint.hex);
+        writefln("EYE: %(%02X%)", _fingerprint);
         void local_dump(const Index branch_index,
                 const ubyte rim_key = 0,
                 const uint rim = 0,
@@ -1114,8 +1113,8 @@ class DARTFile {
                     immutable dart_index = manufactor.net.dartIndex(doc);
                     auto lastRing = full ? dart_index.length : rim + 1;
                     const hash_marker = doc.hasHashKey ? " #" : "";
-                    writefln("%s%s [%d]%s",
-                            indent, dart_index[0 .. lastRing].hex, branch_index, hash_marker);
+                    writefln("%s%(%02x%) [%d]%s",
+                            indent, dart_index[0 .. lastRing], branch_index, hash_marker);
                 }
             }
         }
@@ -1141,7 +1140,6 @@ class DARTFile {
     void traverse(
             const TraverseCallback dg,
             const SectorRange sectors = SectorRange.init,
-            const Flag!"full" full = No.full,
             const uint depth = 0) {
         void local_traverse(
                 const Index branch_index,
@@ -1250,7 +1248,6 @@ class DARTFile {
                 .Recorder recorder) {
                 write(dart, table, recorder);
                 auto _dart_indices = dart_indices(recorder);
-                pragma(msg, "VALIDATE ", typeof(dart_indices));
                 auto find_recorder = dart.loads(_dart_indices);
                 return check(recorder, find_recorder);
             }

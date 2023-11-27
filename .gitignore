@@ -64,3 +64,4 @@ bdd/tagion/testbench/backlog/*.d
 bdd/tagion/testbench/communication/*.d
 *.drt
 *.callstack
+*.direnv

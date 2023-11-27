@@ -24,7 +24,6 @@ import tagion.hibon.HiBONRecord;
 import tagion.testbench.dart.dart_helper_functions;
 import tagion.testbench.dart.dartinfo;
 import tagion.testbench.tools.Environment;
-import tagion.utils.Miscellaneous : toHexString;
 import tagion.utils.Random;
 
 enum feature = Feature(

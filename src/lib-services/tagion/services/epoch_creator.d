@@ -53,8 +53,12 @@ struct EpochCreatorOptions {
 @safe
 struct EpochCreatorService {
 
-    void task(immutable(EpochCreatorOptions) opts, immutable(NetworkMode) network_mode, immutable(size_t) number_of_nodes, shared(
-            StdSecureNet) shared_net, immutable(MonitorOptions) monitor_opts, immutable(TaskNames) task_names) {
+    void task(immutable(EpochCreatorOptions) opts,
+            immutable(NetworkMode) network_mode,
+            immutable(size_t) number_of_nodes,
+            shared(StdSecureNet) shared_net,
+            immutable(MonitorOptions) monitor_opts,
+            immutable(TaskNames) task_names) {
 
         const net = new StdSecureNet(shared_net);
 
@@ -106,7 +110,7 @@ struct EpochCreatorService {
         }
 
         void receivePayload(Payload, const(Document) pload) {
-            log.trace("Received Payload");
+            // log.trace("Received Payload");
             payload_queue.write(pload);
             // hashgraph.init_tide(&gossip_net.gossip, &payload, currentTime);
         }
@@ -128,7 +132,7 @@ struct EpochCreatorService {
             immutable received_signed_contracts = received_wave.epacks
                 .map!(e => e.event_body.payload)
                 .filter!((p) => !p.empty)
-                .filter!(p => p.isRecord!SignedContract) //Cannot explicitly return immutable container type (*) ?, need assign to immutable container
+                .filter!(p => p.isRecord!SignedContract) // Cannot explicitly return immutable container type (*) ?, need assign to immutable container
                 .map!((doc) { immutable s = new immutable(SignedContract)(doc); return s; })
                 .handle!(HiBONException, RangePrimitive.front,
                         (e, r) { log("invalid SignedContract from hashgraph"); return null; }

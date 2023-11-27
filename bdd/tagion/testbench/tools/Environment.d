@@ -10,6 +10,7 @@ import std.path;
 import std.process;
 import std.stdio;
 import std.traits;
+import std.file : getcwd;
 import tagion.basic.Types : DOT, FileExtension;
 import tagion.behaviour.BehaviourFeature;
 import tagion.behaviour.BehaviourReporter;
@@ -63,18 +64,42 @@ enum Stage {
     performance,
 }
 
+@safe
 struct Environment {
-    string dbin;
-    string dlog;
-    string bdd;
-    string bdd_log;
-    string bdd_results;
-    string reporoot;
-    string fund;
-    string test_stage;
-    string seed;
+    enum platform = "x86_64-linux";
+    string dbin() const {
+        return environment.get("DBIN", buildPath(reporoot, "build", platform, "bin"));
+    }
 
-    const(uint) getSeed() const pure {
+    string dlog() const {
+        return environment.get("DLOG", buildPath(reporoot, "logs", platform));
+    }
+
+    string bdd() const {
+        return environment.get("BDD", buildPath(reporoot, "bdd"));
+    }
+
+    string bdd_log() const {
+        return environment.get("BDD_LOG", buildPath(dlog, "bdd", test_stage));
+    }
+
+    string bdd_results() const {
+        return environment.get("BDD_RESULTS", buildPath(bdd_log, "results"));
+    }
+
+    string reporoot() const {
+        return environment.get("REPOROOT", getcwd);
+    }
+    // string fund;
+    string test_stage() const {
+        return environment.get("TEST_STAGE", "commit");
+    }
+
+    string seed() const {
+        return environment.get("SEED", "predictable");
+    }
+
+    const(uint) getSeed() const {
         import std.bitmanip : binread = read;
         import tagion.utils.Miscellaneous;
 
@@ -82,20 +107,17 @@ struct Environment {
         return buf.binread!uint;
     }
 
-    Stage stage() const pure {
+    Stage stage() const {
         switch (test_stage) {
-
             static foreach (E; EnumMembers!Stage) {
         case E.stringof:
                 return E;
             }
-
         default:
             //empty
         }
 
         switch (test_stage.to!uint) {
-
             static foreach (i; 0 .. EnumMembers!Stage.length) {
         case i:
                 return cast(Stage) i;
@@ -110,43 +132,8 @@ struct Environment {
 
 immutable Environment env;
 
-struct Tools {
-    string tagionwave;
-    string tagionwallet;
-    string hibonutil;
-    string dartutil;
-    string tagionboot;
-    string blockutil;
-    string neuewelle;
-}
-
-immutable Tools tools;
-
 import std.stdio;
 
 shared static this() {
-    Environment temp;
-    uint errors;
-    static foreach (name; FieldNameTuple!Environment) {
-        {
-            enum NAME = name.map!(a => cast(char) a.toUpper).array;
-            try {
-                __traits(getMember, temp, name) = environment[NAME];
-            }
-            catch (Exception e) {
-                stderr.writeln(e.msg);
-                errors++;
-            }
-        }
-    }
-    env = temp;
-    Tools temp_tools;
-
-    static foreach (name; [__traits(allMembers, Tools)]) {
-        __traits(getMember, temp_tools, name) = env.dbin.buildPath(name);
-    }
-    tools = temp_tools;
-    assert(errors is 0, "Environment is not setup correctly");
-
     reporter = new Reporter;
 }

@@ -29,6 +29,7 @@ int main(string[] args) {
     import tvm_betterc = tagion.testbench.tvm_betterc;
     import operational = tagion.testbench.e2e.operational;
     import genesis_test = tagion.testbench.genesis_test;
+    import trt_service = tagion.testbench.services.trt_service;
 
     alias alltools = AliasSeq!(
             collector,
@@ -56,6 +57,7 @@ int main(string[] args) {
             malformed_contract,
             operational,
             genesis_test,
+            trt_service,
     );
     mixin doOneMain!(alltools);
     return do_main(args);

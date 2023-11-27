@@ -8,7 +8,7 @@ import core.time;
 import nngd;
 import std.algorithm : remove;
 import std.conv : to;
-import std.exception : assumeUnique, assumeWontThrow;
+import std.exception : assumeUnique;
 import std.format;
 import std.socket;
 import std.stdio;
@@ -74,6 +74,7 @@ struct InputValidatorService {
                 hirpc.Error message;
                 message.code = err_type;
                 debug {
+                    // Altough it's a bit excessive, we send back the invalid data we received in debug mode.
                     message.message = err_type.to!string;
                     message.data = data;
                 }
@@ -104,8 +105,9 @@ struct InputValidatorService {
             log("listening on addr: %s", opts.sock_addr);
         }
         else {
-            log.error("Failed to listen on addr: %s, %s", opts.sock_addr, nng_errstr(listening));
-            throw new Exception("Failed to listen on addr: %s, %s".format(opts.sock_addr, nng_errstr(listening)));
+            import tagion.services.exception;
+
+            check(false, format("Failed to listen on addr: %s, %s", opts.sock_addr, nng_errstr(listening)));
         }
         const recv = (scope void[] b) @trusted {
             size_t ret = sock.receivebuf(cast(ubyte[]) b);
@@ -161,5 +163,3 @@ struct InputValidatorService {
         }
     }
 }
-
-alias InputValidatorHandle = ActorHandle!InputValidatorService;

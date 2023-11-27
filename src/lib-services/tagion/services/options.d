@@ -55,6 +55,7 @@ struct TaskNames {
     string epoch_creator = "epoch_creator";
     string replicator = "replicator";
     string dart_interface = "dartinterface";
+    string trt = "trt";
 
     mixin JSONCommon;
 
@@ -87,7 +88,6 @@ struct Options {
     public import tagion.logger.LoggerOptions : LoggerOptions;
     public import tagion.services.DART : DARTOptions;
     public import tagion.services.DARTInterface : DARTInterfaceOptions;
-    public import tagion.services.TVM : TVMOptions;
     public import tagion.services.collector : CollectorOptions;
     public import tagion.services.epoch_creator : EpochCreatorOptions;
     public import tagion.services.hirpc_verifier : HiRPCVerifierOptions;
@@ -96,6 +96,7 @@ struct Options {
     public import tagion.services.replicator : ReplicatorOptions;
     public import tagion.services.subscription : SubscriptionServiceOptions;
     public import tagion.services.transcript : TranscriptOptions;
+    public import tagion.services.TRTService : TRTOptions;
     import tagion.utils.JSONCommon;
 
     WaveOptions wave;
@@ -108,6 +109,7 @@ struct Options {
     DARTInterfaceOptions dart_interface;
     SubscriptionServiceOptions subscription;
     LoggerOptions logger;
+    TRTOptions trt;
 
     TaskNames task_names;
     mixin JSONCommon;

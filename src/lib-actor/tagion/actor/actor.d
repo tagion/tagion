@@ -2,6 +2,10 @@
 /// Examles: [tagion.testbench.services]
 module tagion.actor.actor;
 
+@safe:
+
+import std.typecons;
+import core.exception : AssertError;
 import core.thread;
 import core.time;
 import std.exception;
@@ -17,6 +21,9 @@ import tagion.logger;
 import tagion.utils.Result;
 import concurrency = tagion.utils.pretend_safe_concurrency;
 import tagion.utils.pretend_safe_concurrency;
+import tagion.actor.exceptions;
+
+import tagion.hibon.HiBONRecord;
 
 /**
  * Message "Atom" type
@@ -62,8 +69,7 @@ unittest {
     concurrency.spawn(() {
         assert(!(thisActor.task_name = dummy_name), "Should not be able to set the same task name in another tid");
     });
-    assert(locate(thisActor.task_name) == thisTid, "Name not registered");
-
+    assert(locate(thisActor.task_name) is thisTid, "Name not registered");
 }
 
 /* 
@@ -195,8 +201,6 @@ unittest {
 /// Checks if a type has the required members to be an actor
 enum bool isActor(A) = hasMember!(A, "task") && isCallable!(A.task) && isSafe!(A.task);
 
-enum bool isActorHandle(T) = __traits(isSame, TemplateOf!(T), ActorHandle);
-
 enum bool isFailHandler(F)
     = is(F : void function(TaskFailure))
     || is(F : void delegate(TaskFailure));
@@ -224,56 +228,39 @@ template isSpawnable(F, T...) {
 
 /**
  * A "reference" to an actor that may or may not be spawned, we will never know
- * Params:
- *  A = an actor type
  */
-struct ActorHandle(A) {
+struct ActorHandle {
     /// the name of the possibly running task
     string task_name;
 
+    private Tid _tid;
     /// the tid of the spawned task
     Tid tid() {
-        return concurrency.locate(task_name);
+        _tid = concurrency.locate(task_name);
+        return _tid;
     }
 
     // Get the status of the task, asserts if the calling task did not spawn it
-    Ctrl state() @safe nothrow {
+    Ctrl state() nothrow {
         if ((task_name in thisActor.childrenState) !is null) {
             return thisActor.childrenState[task_name];
         }
-        assert(0, "You don't own this task");
+        return Ctrl.UNKNOWN;
     }
-
-    alias Actor = A;
 
     /// Send a message to this task
-    void send(T...)(T args) @safe {
-        if (this.tid is Tid.init) {
-            log("Could not delive message to %s:\n\t%(%s, %)", task_name, args);
-            return;
+    void send(T...)(T args) @trusted {
+        try {
+            concurrency.send(_tid, args);
         }
-        concurrency.send(this.tid, args);
+        catch (AssertError _) {
+            concurrency.send(tid, args).collectException!AssertError;
+        }
     }
 }
 
-/**
- * Create an actorHandle
- * Params:
- *   A = The type of actor you want to create a handle for
- *   task_name = the task name to search for
- * Returns: Actorhandle with type A
- * Examples:
- * ---
- * handle!MyActor("my_task_name");
- * ---
- */
-ActorHandle!A handle(A)(string task_name) @safe if (isActor!A) {
-    return ActorHandle!A(task_name);
-}
-
-ActorHandle!A spawn(A, Args...)(immutable(A) actor, string name, Args args) @safe nothrow
+ActorHandle spawn(A, Args...)(immutable(A) actor, string name, Args args) @safe nothrow
 if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
-    import core.exception : AssertError;
 
     try {
         Tid tid;
@@ -309,46 +296,59 @@ if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
         thisActor.childrenState[name] = Ctrl.UNKNOWN;
         log("spawning %s", name);
         tid.setMaxMailboxSize(int.max, OnCrowding.throwException);
-        return ActorHandle!A(name);
+        return ActorHandle(name);
     }
     catch (Exception e) {
         assert(0, format("Exception: %s", e.msg));
     }
 }
 
-ActorHandle!A spawn(A, Args...)(string name, Args args) @safe nothrow
+ActorHandle _spawn(A, Args...)(string name, Args args) @safe nothrow
+if (isActor!A) {
+    try {
+        Tid tid;
+        tid = concurrency.spawn((string name, Args args) @trusted nothrow{
+            log.register(name);
+            thisActor.stop = false;
+            try {
+                A actor = A(args);
+                setState(Ctrl.STARTING); // Tell the owner that you are starting.
+                actor.task();
+                // If the actor forgets to kill it's children we'll do it anyway
+                if (!statusChildren(Ctrl.END)) {
+                    foreach (child_task_name, ctrl; thisActor.childrenState) {
+                        if (ctrl is Ctrl.ALIVE) {
+                            locate(child_task_name).send(Sig.STOP);
+                        }
+                    }
+                    waitforChildren(Ctrl.END);
+                }
+            }
+            catch (Exception t) {
+                fail(t);
+            } // This is bad but, We catch assert per thread because there is no message otherwise, when runnning multithreaded
+            catch (AssertError e) {
+                import tagion.GlobalSignals;
+
+                log(e);
+                stopsignal.set;
+            }
+            end;
+        }, name, args);
+        thisActor.childrenState[name] = Ctrl.UNKNOWN;
+        log("spawning %s", name);
+        tid.setMaxMailboxSize(int.max, OnCrowding.throwException);
+        return ActorHandle(name);
+    }
+    catch (Exception e) {
+        assert(0, format("Exception: %s", e.msg));
+    }
+}
+
+ActorHandle spawn(A, Args...)(string name, Args args) @safe nothrow
 if (isActor!A) {
     immutable A actor;
     return spawn(actor, name, args);
-}
-
-/**
- * Params:
- *   A = The type of actor you want to create a handle for
- *   task_name = the name it should be started as
- *   args = list of arguments to pass to the task function
- * Returns: An actorHandle with type A
- * Examples:
- * ---
- * spawn!MyActor("my_task_name", 42);
- * ---
- */
-// ActorHandle!A spawn(A, Args...)(string task_name, Args args) @safe nothrow
-// if (isActor!A) {
-//     A actor = A();
-//     return spawn(actor, task_name, args);
-// }
-
-/*
- *
- * Params:
- *   a = an active actorhandle
- */
-A respawn(A)(A actor_handle) @safe if (isActor!(A.Actor)) {
-    actor_handle.send(Sig.STOP);
-    unregister(actor_handle.task_name);
-
-    return spawn!(A.Actor)(actor_handle.task_name);
 }
 
 /// Nullable and nothrow wrapper around ownerTid
@@ -375,6 +375,8 @@ void sendOwner(T...)(T vals) @safe {
     }
 }
 
+static Topic taskfailure = Topic("taskfailure");
+
 /** 
  * Send a TaskFailure up to the owner
  * Silently fails if there is no owner
@@ -385,7 +387,9 @@ void fail(Throwable t) @trusted nothrow {
         debug (actor) {
             log(t);
         }
-        ownerTid.prioritySend(TaskFailure(thisActor.task_name, cast(immutable) t));
+        immutable tf = TaskFailure(thisActor.task_name, cast(immutable) t);
+        log(taskfailure, "taskfailure", tf); // taskfailrue event
+        ownerTid.prioritySend(tf);
     }
     catch (Exception e) {
         log.fatal("Failed to deliver TaskFailure: \n
@@ -414,7 +418,8 @@ void setState(Ctrl ctrl) @safe nothrow {
 }
 
 /// Cleanup and notify the supervisor that you have ended
-void end() nothrow {
+void end() @trusted nothrow {
+    thisActor.stop = true;
     assumeWontThrow(ThreadInfo.thisInfo.cleanup);
     setState(Ctrl.END);
 }

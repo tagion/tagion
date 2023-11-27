@@ -1,4 +1,0 @@
-[submodule "src"]
-	path = src
-	url = git@github.com:tagion/p2pgowrapper.git
-	shallow = true

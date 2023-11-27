@@ -5,6 +5,7 @@ import tagion.utils.JSONCommon;
 @safe
 struct DARTInterfaceOptions {
     import tagion.services.options : contract_sock_addr;
+
     string sock_addr;
     string dart_prefix = "DART_";
     int sendtimeout = 10_000;
@@ -35,22 +36,23 @@ import tagion.logger.Logger;
 import tagion.services.messages;
 import tagion.services.options;
 import tagion.utils.pretend_safe_concurrency;
-
+import tagion.services.TRTService : TRTOptions;
 
 struct DartWorkerContext {
     string dart_task_name;
-    int dart_worker_timeout;
+    int worker_timeout;
+    bool trt_enable;
+    string trt_task_name;
 }
 
 enum InterfaceError {
     Timeout,
     InvalidDoc,
     DARTLocate,
+    TRTLocate,
 }
 
-
-
-void dartHiRPCCallback(NNGMessage *msg, void *ctx) @trusted {
+void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
 
     import std.exception;
     import std.stdio;
@@ -62,9 +64,10 @@ void dartHiRPCCallback(NNGMessage *msg, void *ctx) @trusted {
         msg.length = doc.full_size;
         msg.body_prepend(doc.serialize);
     }
-    
+
     void send_error(InterfaceError err_type, string extra_msg = "") @trusted {
         import std.conv;
+
         hirpc.Error message;
         message.code = err_type;
         message.message = err_type.to!string ~ extra_msg;
@@ -73,10 +76,16 @@ void dartHiRPCCallback(NNGMessage *msg, void *ctx) @trusted {
         send_doc(sender.toDoc);
         // msg.body_append(sender.toDoc.serialize);
     }
+
     void dartHiRPCResponse(dartHiRPCRR.Response res, Document doc) @trusted {
-        writeln("Interface successful response"); 
+        writeln("Interface successful response");
         send_doc(doc);
         // msg.body_append(doc.serialize);
+    }
+
+    void trtHiRPCResponse(trtHiRPCRR.Response res, Document doc) @trusted {
+        writeln("TRT Inteface succesful response");
+        send_doc(doc);
     }
 
     if (msg is null) {
@@ -106,40 +115,65 @@ void dartHiRPCCallback(NNGMessage *msg, void *ctx) @trusted {
     }
     writeln("Kernel received a document");
 
-    auto dart_tid = locate(cnt.dart_task_name);
-    if (dart_tid is Tid.init) {
-        send_error(InterfaceError.DARTLocate, cnt.dart_task_name);
-        return;
+    const empty_hirpc = HiRPC(null);
+
+    immutable receiver = empty_hirpc.receive(doc);
+    if (receiver.method.name == "search" && cnt.trt_enable) {
+        writeln("TRT SEARCH REQUEST");
+        auto trt_tid = locate(cnt.trt_task_name);
+        if (trt_tid is Tid.init) {
+            send_error(InterfaceError.TRTLocate, cnt.trt_task_name);
+            return;
+        }
+        trt_tid.send(trtHiRPCRR(), doc);
+        auto trt_resp = receiveTimeout(cnt.worker_timeout.msecs, &trtHiRPCResponse);
+        if (!trt_resp) {
+            send_error(InterfaceError.Timeout);
+            writeln("Timeout on trt request");
+            return;
+        }
+
     }
-    
-    dart_tid.send(dartHiRPCRR(), doc);
-    auto dart_resp = receiveTimeout(cnt.dart_worker_timeout.msecs, &dartHiRPCResponse);
-    if (!dart_resp) {
-        send_error(InterfaceError.Timeout);
-        writeln("Timeout on dart request");
-        return;
+    else {
+        auto dart_tid = locate(cnt.dart_task_name);
+        if (dart_tid is Tid.init) {
+            send_error(InterfaceError.DARTLocate, cnt.dart_task_name);
+            return;
+        }
+        dart_tid.send(dartHiRPCRR(), doc);
+        auto dart_resp = receiveTimeout(cnt.worker_timeout.msecs, &dartHiRPCResponse);
+        if (!dart_resp) {
+            send_error(InterfaceError.Timeout);
+            writeln("Timeout on dart request");
+            return;
+        }
+
+    }
+}
+
+import tagion.services.exception;
+
+void checkSocketError(int rc) {
+    if (rc != 0) {
+        import std.format;
+
+        throw new ServiceException(format("Failed to dial %s", nng_errstr(rc)));
     }
 }
 
 @safe
 struct DARTInterfaceService {
     immutable(DARTInterfaceOptions) opts;
+    immutable(TRTOptions) trt_opts;
     immutable(TaskNames) task_names;
 
     void task() @trusted {
 
-        void checkSocketError(int rc) {
-            if (rc != 0) {
-                import std.format;
-
-                throw new Exception(format("Failed to dial %s", nng_errstr(rc)));
-            }
-
-        }
-
         DartWorkerContext ctx;
         ctx.dart_task_name = task_names.dart;
-        ctx.dart_worker_timeout = opts.sendtimeout;
+        ctx.worker_timeout = opts.sendtimeout;
+        ctx.trt_task_name = task_names.trt;
+        ctx.trt_enable = trt_opts.enable;
 
         NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_REP);
         sock.sendtimeout = opts.sendtimeout.msecs;
@@ -171,5 +205,3 @@ struct DARTInterfaceService {
     }
 
 }
-
-alias DARTInterfaceServiceHandle = ActorHandle!DARTInterfaceService;

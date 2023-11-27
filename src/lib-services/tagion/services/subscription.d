@@ -13,6 +13,7 @@ import tagion.hibon.HiBON;
 import tagion.hibon.HiBONRecord;
 import tagion.logger;
 import tagion.logger.LogRecords;
+import tagion.services.exception;
 
 struct SubscriptionServiceOptions {
     import tagion.utils.JSONCommon;
@@ -21,6 +22,7 @@ struct SubscriptionServiceOptions {
     string address;
 
     import tagion.services.options : contract_sock_addr;
+
     void setDefault() nothrow {
         address = contract_sock_addr("SUBSCRIPTION_");
     }
@@ -51,11 +53,11 @@ struct SubscriptionService {
     void task(immutable(SubscriptionServiceOptions) opts) @trusted {
         log.registerSubscriptionTask(thisActor.task_name);
         log("Subscribing to tags");
-        foreach (tag; opts.tags.split(':')) {
+        foreach (tag; opts.tags.split(',')) {
             submask.subscribe(tag);
         }
         scope (exit) {
-            foreach (tag; opts.tags.split(':')) {
+            foreach (tag; opts.tags.split(',')) {
                 submask.unsubscribe(tag);
             }
         }
@@ -67,11 +69,8 @@ struct SubscriptionService {
 
         HiRPC hirpc;
 
-        int rc;
-        rc = sock.listen(opts.address);
-        if (rc != 0) {
-            throw new Exception(format("Could not listen to url %s: %s", opts.address, rc.nng_errstr));
-        }
+        int rc = sock.listen(opts.address);
+        check(rc == 0, format("Could not listen to url %s: %s", opts.address, rc.nng_errstr));
 
         log("Publishing on %s", opts.address);
 
@@ -90,5 +89,3 @@ struct SubscriptionService {
         run(&receiveSubscription);
     }
 }
-
-alias SubscriptionServiceHandle = ActorHandle!SubscriptionService;

@@ -5,179 +5,55 @@ targetPath "build/dub/"
 authors "decard"
 copyright "Copyright © 2023, decard"
 license "proprietary"
-excludedSourceFiles "src/lib-behaviour/tagion/behaviour/unitdata/*" "src/lib-betterc/*" "src/lib-wasm/*"
 buildRequirements "allowWarnings"
-sourceFiles "@tub/dub/dheaders.txt" \
-  "build/x86_64-linux/tmp/secp256k1/.libs/libsecp256k1.a" \
-  "build/x86_64-linux/tmp/nng/libnng.a" \
-  platform="linux-x86_64"
+sourceFiles "@tub/dub/dheaders.txt"
 
 libs "secp256k1" "nng"
 dflags "-dip1000" "-preview=inclusiveincontracts"
-versions "REDBLACKTREE_SAFE_PROBLEM" "ONETOOL" 
+versions "REDBLACKTREE_SAFE_PROBLEM" "ONETOOL"
 stringImportPaths "tub/logos/" "/home/lucas/wrk/tagion/build/x86_64-linux"
 
-subPackage {
-    name "basic"
-    sourcePaths "src/lib-basic/"
-    importPaths "src/lib-basic/"
-}
-subPackage {
-    name "utils"
-    stringImportPaths "tub/logos/" "/home/lucas/wrk/tagion/build/x86_64-linux"
-    buildRequirements "allowWarnings"
-    sourcePaths "src/lib-utils/"
-    importPaths "src/lib-utils/"
-    dependency "tagion:basic" version="*"
-}
-subPackage {
-    name "logger"
-    buildRequirements "allowWarnings"
-    sourcePaths "src/lib-logger/"
-    importPaths "src/lib-logger/"
-    dependency "tagion:basic" version="*"
-    dependency "tagion:hibon" version="*"
-}
-subPackage {
-    name "actor"
-    buildRequirements "allowWarnings"
-    sourcePaths "src/lib-actor/"
-    importPaths "src/lib-actor/"
-    dependency "tagion:logger" version="*"
-}
+importPaths "src/lib-basic/"
+importPaths "src/lib-actor/"
+importPaths "src/lib-utils/"
+importPaths "src/lib-logger/"
+importPaths "src/lib-hibon/"
+importPaths "src/lib-phobos/"
+importPaths "src/lib-funnel/"
+importPaths "src/lib-dart/"
+importPaths "src/lib-crypto/"
+importPaths "src/lib-communication/"
+importPaths "src/lib-tools"
+importPaths "src/lib-hashgraph/"
+importPaths "src/lib-hashgraphview/"
+importPaths "src/lib-gossip/"
+importPaths "src/lib-network/"
+importPaths "src/lib-services/"
+importPaths "src/lib-wasm/"
 
-subPackage {
-    name "hibon"
-    buildRequirements "allowWarnings"
-    sourcePaths "src/lib-hibon/"
-    importPaths "src/lib-hibon/"
-    sourcePaths "src/lib-phobos/"
-    importPaths "src/lib-phobos/"
-    dependency "tagion:utils" version="*"
-}
+importPaths "src/bin-blockutil"
+importPaths "src/bin-callstack"
+importPaths "src/bin-dartutil"
+importPaths "src/bin-geldbeutel"
+importPaths "src/bin-graphview"
+importPaths "src/bin-hibonutil"
+importPaths "src/bin-hirep"
+importPaths "src/bin-recorderchain"
+importPaths "src/bin-signs"
+importPaths "src/bin-stiefel"
+importPaths "src/bin-tagionshell"
+importPaths "src/bin-tools"
+importPaths "src/bin-tprofview"
+importPaths "src/bin-wasmutil"
+importPaths "src/bin-wave"
 
-subPackage {
-    name "script"
-    sourcePaths "src/lib-funnel/"
-    importPaths "src/lib-funnel/"
-    // dependency "tagion:options" version="*"
+configuration "tagion" {
+    sourcePaths "src/"
+    excludedSourceFiles "src/lib-behaviour/tagion/behaviour/unitdata/*" "src/lib-betterc/*" "src/bin-collider/*" "*/tests/*"
 }
 
-
-subPackage {
-    name "dart"
-    dflags "-dip1000" "-preview=inclusiveincontracts"
-    sourcePaths "src/lib-dart/"
-    importPaths "src/lib-dart/"
-    dependency "tagion:basic" version="*"
-    dependency "tagion:hibon" version="*"
-    dependency "tagion:logger" version="*"
-    dependency "tagion:crypto" version="*"
-    dependency "tagion:communication" version="*"
-    dependency "tagion:script" version="*"
-}
-
-subPackage {
-    name "crypto"
-    sourcePaths "src/lib-crypto/"
-    sourcePaths "src/lib-pbkdf2/"
-    importPaths "src/lib-crypto/"
-
-    dependency "tagion:basic" version="*"
-    dependency "tagion:hibon" version="*"
-}
-
-subPackage {
-    name "communication"
-    sourcePaths "src/lib-communication/"
-    importPaths "src/lib-communication/"
-
-    dependency "tagion:basic" version="*"
-    dependency "tagion:hibon" version="*"
-    dependency "tagion:crypto" version="*"
-}
-
-subPackage {
-    name "options"
-    sourcePaths "src/lib-options/"
-    importPaths "src/lib-options/"
-}
-
-subPackage {
-    name "tools"
-    sourcePaths "src/lib-tools"
-    importPaths "src/lib-tools"
-}
-
-
-subPackage {
-    name "behaviour"
-    sourcePaths "src/lib-behaviour/"
-    importPaths "src/lib-behaviour/"
-    dependency "tagion:hibon" version="*"
-}
-
-subPackage {
-    name "hashgraph"
-    sourcePaths "src/lib-hashgraph/"
-    importPaths "src/lib-hashgraph/"
-    dependency "tagion:hashgraphview" version="*"
-    dependency "tagion:gossip" version="*"
-}
-
-subPackage {
-    name "hashgraphview"
-    sourcePaths "src/lib-hashgraphview/"
-    importPaths "src/lib-hashgraphview/"
-}
-
-subPackage {
-    name "gossip"
-    sourcePaths "src/lib-gossip/"
-    importPaths "src/lib-gossip/"
-}
-
-subPackage {
-    name "network"
-    sourcePaths "src/lib-network/"
-    importPaths "src/lib-network/"
-}
-
-subPackage {
-    name "prior_services"
-    sourcePaths "src/lib-prior-services/"
-    importPaths "src/lib-prior-services/"
-}
-
-subPackage {
-    name "services"
-    sourcePaths "src/lib-services/"
-    importPaths "src/lib-services/"
-    dependency "tagion:actor" version="*"
-    dependency "tagion:dart" version="*"
-}
-
-subPackage {
-    name "tests"
+configuration "test" {
     sourcePaths "bdd/"
-    importPaths "bdd/"
-    mainSourcePath "bdd/tagion/testbench/testbench.d"
-    excludedSourceFiles "bdd/**.gen.d"
-
-    dependency "tagion:basic" version="*"
-    dependency "tagion:tools" version="*"
-    dependency "tagion:actor" version="*"
-    dependency "tagion:crypto" version="*"
-    dependency "tagion:dart" version="*"
-    dependency "tagion:hashgraph" version="*"
-    dependency "tagion:network" version="*"
+    importPaths "src/lib-behaviour"
+    excludedSourceFiles "*gen.d" "src/bin-tools/tagion/tools/tools.d"
 }
-
-sourcePath "src/bin-tools"
-mainSourcePath "src/bin-tools/tagion/tools/tools.d"
-dependency "tagion:basic" version="*"
-dependency "tagion:actor" version="*"
-dependency "tagion:crypto" version="*"
-dependency "tagion:dart" version="*"
-dependency "tagion:hashgraph" version="*"
-dependency "tagion:network" version="*"

@@ -6,6 +6,7 @@ import tagion.services.options;
 import tagion.utils.JSONCommon;
 import tagion.wallet.KeyRecover : standard_questions;
 
+enum default_wallet_config_filename="wallet".setExtension(FileExtension.json);
 /**
 *
  * struct WalletOptions

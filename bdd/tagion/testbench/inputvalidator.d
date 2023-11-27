@@ -23,7 +23,7 @@ int _main(string[] _) {
     _task_names.hirpc_verifier = input_test;
 
     immutable opts = InputValidatorOptions(sock_path);
-    auto input_handle = spawn!InputValidatorService("input_validator_task", opts, cast(immutable) _task_names);
+    auto input_handle = spawn!InputValidatorService("input_validator_task", opts, _task_names);
     enforce(waitforChildren(Ctrl.ALIVE), "The inputvalidator did not start");
 
     auto inputvalidator_feature = automation!inputvalidator;

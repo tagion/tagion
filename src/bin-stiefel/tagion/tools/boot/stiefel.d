@@ -21,6 +21,8 @@ import tagion.tools.Basic;
 import tagion.tools.boot.genesis;
 import tagion.tools.revision;
 import tagion.utils.Term;
+import tagion.hibon.BigNumber;
+import tagion.hibon.HiBONRecord : isRecord;
 
 alias check = Check!TagionException;
 
@@ -32,6 +34,7 @@ int _main(string[] args) {
     bool standard_output;
     bool standard_input;
     bool account;
+    bool trt;
     string[] nodekeys;
     string output_filename = "dart".setExtension(FileExtension.hibon);
     const net = new StdHashNet;
@@ -43,7 +46,9 @@ int _main(string[] args) {
                 "v|verbose", "Prints more debug information", &__verbose_switch, //"c|stdout", "Print to standard output", &standard_output,
                 "o|output", format("Output filename : Default %s", output_filename), &output_filename, // //        "output_filename|o", format("Sets the output file name: default : %s", output_filenamename), &output_filenamename,
                 "p|nodekey", "Node channel key(Pubkey) ", &nodekeys,
+                "t|trt", "Generate a recorder from a list of bill files for the trt", &trt,
                 "a|account", "Accumulates all bills in the input", &account, //         "bills|b", "Generate bills", &number_of_bills,
+
                 // "value|V", format("Bill value : default: %d", value), &value,
                 // "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase
                 //"initbills|b", "Testing mode", &initbills,
@@ -80,41 +85,55 @@ int _main(string[] args) {
         }
         auto factory = RecordFactory(net);
         auto recorder = factory.recorder;
-        standard_input = (args.length == 1) && (nodekeys.empty);
+        standard_input = (args.length == 1);
         standard_output = output_filename.empty;
         if (standard_output) {
             vout = stderr;
         }
-        if (!nodekeys.empty) {
-            auto genesis_list = createGenesis(nodekeys, Document.init);
-            recorder.insert(genesis_list, Archive.Type.ADD);
-        }
-        if (standard_input) {
+        verbose("standard_input: %s, args %s", standard_input, args);
+        if (!nodekeys.empty && standard_input) {
             auto fin = stdin;
+
+
+            BigNumber total;
+            long start_bills;
+            foreach(doc; HiBONRange(fin)) {
+                if (doc.isRecord!TagionBill) {
+                    const bill = TagionBill(doc);
+                    total += bill.value.units;
+                    start_bills += 1;
+                    recorder.insert(bill, Archive.Type.ADD);
+                }
+            }
+            TagionGlobals genesis_globals;
+            genesis_globals.total = total;
+            genesis_globals.total_burned = 0;
+            genesis_globals.number_of_bills = start_bills;
+            genesis_globals.burnt_bills = 0;
+            verbose("Total %s.%09sTGN", total / TagionCurrency.BASE_UNIT, total % TagionCurrency.BASE_UNIT);
+
+            auto genesis_list = createGenesis(nodekeys, Document.init, genesis_globals);
+            recorder.insert(genesis_list, Archive.Type.ADD);
             TagionHead tagion_head;
-
-            foreach (doc; HiBONRange(fin)) {
-                if (account) {
-                    if (TagionBill.isRecord(doc)) {
-                        const bill = TagionBill(doc);
-                        tagion_head.globals.total += bill.value.units;
-                    }
-                }
-                else {
-
-                    recorder.add(doc);
+            tagion_head.name = TagionDomain;
+            tagion_head.current_epoch = 0;
+            recorder.add(tagion_head);
+        }
+        else if( standard_input && trt) {
+            auto fin = stdin;
+            TagionBill[] bills;
+            foreach(doc; HiBONRange(fin)) {
+                if (doc.isRecord!TagionBill) {
+                    bills ~= TagionBill(doc);
                 }
             }
-            if (!tagion_head.isinit) {
-                tagion_head.name = TagionDomain;
-                const total = tagion_head.globals.total;
-                verbose("Total %s.%09sTGN", total / TagionCurrency.BASE_UNIT, total % TagionCurrency.BASE_UNIT);
-                recorder.add(tagion_head);
-            }
+            import tagion.trt.TRT;
+            genesisTRT(bills, recorder, net);
         }
         else {
             foreach (file; args[1 .. $]) {
                 check(file.exists, format("File %s not found!", file));
+
                 const doc = file.fread;
                 recorder.add(doc);
             }

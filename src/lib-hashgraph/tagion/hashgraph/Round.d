@@ -85,7 +85,7 @@ class Round {
             _previous = previous;
         }
         else {
-            number = -1;
+            number = 0;
         }
         _events = new Event[node_size];
     }

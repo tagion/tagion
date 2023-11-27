@@ -16,6 +16,7 @@ import tagion.testbench.tools.Environment;
 import tagion.tools.Basic;
 import neuewelle = tagion.tools.neuewelle;
 import tagion.utils.pretend_safe_concurrency;
+import tagion.hibon.BigNumber;
 
 mixin Main!(_main);
 
@@ -55,12 +56,12 @@ int _main(string[] args) {
     import tagion.hibon.HiBON;
     import tagion.script.TagionCurrency;
     import tagion.script.common : TagionBill;
-    import tagion.testbench.services.sendcontract;
+    import tagion.testbench.services.genesis_test;
     import tagion.wallet.SecureWallet;
 
     StdSecureWallet[] wallets;
     // create the wallets
-    foreach (i; 0 .. 3) {
+    foreach (i; 0 .. 2) {
         StdSecureWallet secure_wallet;
         secure_wallet = StdSecureWallet(
                 iota(0, 5).map!(n => format("%dquestion%d", i, n)).array,
@@ -80,12 +81,12 @@ int _main(string[] args) {
     }
 
     TagionBill[] bills;
-    long __VERY_UGLY;
+    BigNumber total_start_amount;
     foreach (ref wallet; wallets) {
         foreach (i; 0 .. 3) {
-            bills ~= requestAndForce(wallet, 1000.TGN);
-            __VERY_UGLY += 1000;
-
+            auto bill = requestAndForce(wallet, 1000.TGN);
+            bills ~= bill;
+            total_start_amount += bill.value.units; 
         }
     }
 
@@ -98,7 +99,6 @@ int _main(string[] args) {
 
     // create the tagion head and genesis epoch
     import tagion.crypto.Types;
-    import tagion.hibon.BigNumber;
     import tagion.hibon.HiBON;
     import tagion.hibon.HiBONtoText;
     import tagion.script.common : GenesisEpoch, TagionGlobals, TagionHead;
@@ -106,14 +106,9 @@ int _main(string[] args) {
     import tagion.utils.StdTime;
 
     // const total_amount = BigNumber(bills.map!(b => b.value).sum);
-    const total_amount = BigNumber(__VERY_UGLY);
     const number_of_bills = long(bills.length);
 
 
-    const globals = TagionGlobals(total_amount, const BigNumber(0), number_of_bills, const long(0));
-
-    const tagion_head = TagionHead(TagionDomain, 0, globals);
-    writefln("CREATED TAGION HEAD: %s", tagion_head.toDoc.encodeBase64);
 
     Pubkey[] keys;
     foreach (i; 0 .. local_options.wave.number_of_nodes) {
@@ -127,10 +122,15 @@ int _main(string[] args) {
 
     HiBON testamony = new HiBON;
     testamony["hola"] = "Hallo ich bin philip. VERY OFFICIAL TAGION GENESIS BLOCK; DO NOT ALTER IN ANY WAYS";
-    const genesis_epoch = GenesisEpoch(0, keys, Document(testamony), currentTime);
+
+    auto globals = TagionGlobals(total_start_amount, const BigNumber(0), number_of_bills, const long(0));
+    const genesis_epoch = GenesisEpoch(0, keys, Document(testamony), currentTime, globals);
+    const tagion_head = TagionHead(TagionDomain, 0);
+    writefln("total start_amount: %s, HEAD: %s \n genesis_epoch: %s",total_start_amount, tagion_head.toPretty, genesis_epoch.toPretty);
 
     recorder.add(tagion_head);
     recorder.add(genesis_epoch);
+
 
     foreach (i; 0 .. local_options.wave.number_of_nodes) {
         immutable prefix = format(local_options.wave.prefix_format, i);
@@ -148,7 +148,7 @@ int _main(string[] args) {
 
     Options[] node_opts;
 
-    Thread.sleep(10.seconds);
+    Thread.sleep(5.seconds);
     foreach (i; 0 .. local_options.wave.number_of_nodes) {
         const filename = buildPath(module_path, format(local_options.wave.prefix_format ~ "opts", i).setExtension(FileExtension
                 .json));
@@ -157,17 +157,15 @@ int _main(string[] args) {
         node_opts ~= node_opt;
     }
 
+    Thread.sleep(15.seconds);
     auto name = "genesis_testing";
     register(name, thisTid);
     log.registerSubscriptionTask(name);
 
-    writefln("INPUT SOCKET ADDRESS %s", node_opts[0].inputvalidator.sock_addr);
 
     auto feature = automation!(genesis_test);
+    feature.NetworkRunningWithGenesisBlockAndEpochChain(node_opts, wallets[0], genesis_epoch);
     feature.run;
-
-    feature.run;
-    Thread.sleep(15.seconds);
 
     stopsignal.set;
     Thread.sleep(6.seconds);

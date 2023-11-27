@@ -16,7 +16,6 @@ import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONException;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord;
-import tagion.utils.Miscellaneous : toHexString;
 
 /// HiRPC format exception
 @safe

@@ -74,10 +74,6 @@ $(TESTENV): $(DBIN)
 
 .PHONY: $(TESTENV)
 
-startreporter.sh:
-	$(PRECMD)
-	$(SCRIPTS)/genreporter.sh $@
-
 bddinit: testbench $(BDD_RESULTS)/.way $(BDD_LOG)/.way bddenv
 	$(PRECMD)
 	$(TESTPROGRAM) -f

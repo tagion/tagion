@@ -38,7 +38,7 @@ alias FeatureContext = Tuple!(
 class StoreOfTheRecorderChain {
     immutable(ReplicatorOptions) replicator_opts;
     SecureNet replicator_net;
-    ReplicatorServiceHandle handle;
+    ActorHandle handle;
     Mt19937 gen;
     RandomArchives random_archives;
     RecordFactory.Recorder insert_recorder;

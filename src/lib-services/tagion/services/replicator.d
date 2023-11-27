@@ -34,10 +34,10 @@ enum modify_log = "modify/replicator";
 @safe
 struct ReplicatorService {
     static Topic modify_recorder = Topic(modify_log);
-    
+
     void task(immutable(ReplicatorOptions) opts) {
         HashNet net = new StdHashNet;
-        
+
         RecorderChainStorage storage = new RecorderChainFileStorage(opts.folder_path, net);
         RecorderChain recorder_chain = new RecorderChain(storage);
 
@@ -58,5 +58,3 @@ struct ReplicatorService {
     }
 
 }
-
-alias ReplicatorServiceHandle = ActorHandle!ReplicatorService;
