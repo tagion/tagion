@@ -42,7 +42,7 @@ struct DartWorkerContext {
     string dart_task_name;
     int worker_timeout;
     bool trt_enable;
-    string trt_task_name; 
+    string trt_task_name;
 }
 
 enum InterfaceError {
@@ -82,11 +82,11 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
         send_doc(doc);
         // msg.body_append(doc.serialize);
     }
+
     void trtHiRPCResponse(trtHiRPCRR.Response res, Document doc) @trusted {
         writeln("TRT Inteface succesful response");
         send_doc(doc);
     }
-    
 
     if (msg is null) {
         writeln("no message received");
@@ -115,10 +115,8 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
     }
     writeln("Kernel received a document");
 
+    const empty_hirpc = HiRPC(null);
 
-    HiRPC empty_hirpc = HiRPC(null);
-
-    
     immutable receiver = empty_hirpc.receive(doc);
     if (receiver.method.name == "search" && cnt.trt_enable) {
         writeln("TRT SEARCH REQUEST");
@@ -135,8 +133,8 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
             return;
         }
 
-
-    } else {
+    }
+    else {
         auto dart_tid = locate(cnt.dart_task_name);
         if (dart_tid is Tid.init) {
             send_error(InterfaceError.DARTLocate, cnt.dart_task_name);
