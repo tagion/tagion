@@ -184,10 +184,7 @@ struct TranscriptService {
                         break Finished;
                     }
 
-                    // add the modified epochs to the recorder.
-                    version(INSERT_ALL) {
-                        recorder.insert(v.value.epoch, Archive.Type.ADD);
-                    }
+                    // recorder.insert(v.value.epoch, Archive.Type.ADD);
                 }
 
             }
