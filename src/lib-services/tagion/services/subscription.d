@@ -13,6 +13,7 @@ import tagion.hibon.HiBON;
 import tagion.hibon.HiBONRecord;
 import tagion.logger;
 import tagion.logger.LogRecords;
+import tagion.services.exception;
 
 struct SubscriptionServiceOptions {
     import tagion.utils.JSONCommon;
@@ -68,12 +69,8 @@ struct SubscriptionService {
 
         HiRPC hirpc;
 
-        int rc;
-        rc = sock.listen(opts.address);
-        if (rc != 0) {
-            pragma(msg, "REV: Should it be a TagionException");
-            throw new Exception(format("Could not listen to url %s: %s", opts.address, rc.nng_errstr));
-        }
+        int rc = sock.listen(opts.address);
+        check(rc == 0, format("Could not listen to url %s: %s", opts.address, rc.nng_errstr));
 
         log("Publishing on %s", opts.address);
 

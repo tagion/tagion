@@ -32,8 +32,8 @@ import tagion.script.execute : ContractProduct;
 import tagion.script.standardnames;
 import tagion.services.locator;
 import tagion.services.messages;
-import tagion.services.options;
 import tagion.services.options : TaskNames;
+import tagion.services.exception;
 import tagion.utils.JSONCommon;
 import tagion.utils.StdTime;
 import tagion.utils.pretend_safe_concurrency;
@@ -63,7 +63,6 @@ struct TranscriptService {
 
         struct Votes {
             const(ConsensusVoting)[] votes;
-            bool init_bullseye;
             Epoch epoch;
             LockedArchives locked_archives;
         }
@@ -111,7 +110,7 @@ struct TranscriptService {
 
             });
             if (!received) {
-                throw new Exception("Never received a tagionhead");
+                throw new ServiceException("Never received a tagionhead");
 
             }
 
@@ -135,8 +134,9 @@ struct TranscriptService {
                             log("FOUND A EPOCH");
                         }
                         else {
-                            log("THROWING EXCEPTION");
-                            throw new Exception("The read epoch was not of type Epoch or GenesisEpoch");
+                            import tagion.services.exception;
+
+                            throw new ServiceException("The read epoch was not of type Epoch or GenesisEpoch");
                         }
                         previous_epoch = Fingerprint(net.calcHash(doc));
                     }
@@ -155,10 +155,10 @@ struct TranscriptService {
             /*
                 The vote array is already updated. We must go through all the different vote indices and update the epoch that was stored in the dart if any new votes are found.
             */
-            foreach (v; votes.byKeyValue) {
+
+            Finished: foreach (v; votes.byKeyValue) {
                 // add the new signatures to the epoch. We only want to do it if there are new signatures
-                if ((v.value.init_bullseye && v.value.epoch.bullseye !is Fingerprint.init) || (v.value.epoch.signs.length != v.value.votes.length && v.value.epoch.bullseye !is Fingerprint.init)) {
-                    v.value.init_bullseye = false;
+                if (v.value.epoch.bullseye !is Fingerprint.init) {
                     // add the signatures to the epoch. Only add them if the signature match ours
                     foreach (single_vote; v.value.votes) {
                         // check that we have not already added the signature
@@ -169,29 +169,31 @@ struct TranscriptService {
                             v.value.epoch.signs ~= single_vote.signed_bullseye;
                         }
                         else {
-                            pragma(msg, "throw error or what should we do?");
-                            // throw error or what to do
+                            import tagion.basic.ConsensusExceptions;
+
+                            throw new ConsensusException(format("Bullseyes not the same on epoch %s", v.value.epoch
+                                    .epoch_number));
                         }
                     }
 
                     // if the new length of the epoch is majority then we finish the epoch
-                    if (v.value.epoch.signs.length.isMajority(number_of_nodes) && v.value.epoch.epoch_number == last_consensus_epoch + 1) {
+                    if (v.value.epoch.signs.length == number_of_nodes && v.value.epoch.epoch_number == last_consensus_epoch + 1) {
                         v.value.epoch.previous = previous_epoch;
                         previous_epoch = net.calcHash(v.value.epoch);
                         last_consensus_epoch += 1;
                         recorder.insert(v.value.locked_archives, Archive.Type.REMOVE);
                         votes.remove(v.value.epoch.epoch_number);
+                        break Finished;
                     }
 
-                    // add the modified epochs to the recorder.
-                    recorder.insert(v.value.epoch, Archive.Type.ADD);
+                    // recorder.insert(v.value.epoch, Archive.Type.ADD);
                 }
 
             }
 
             const epoch_contract = epoch_contracts.get(res.id, null);
             if (epoch_contract is null) {
-                throw new Exception(format("unlinked epoch contract %s", res.id));
+                throw new ServiceException(format("unlinked epoch contract %s", res.id));
             }
             scope (exit) {
                 epoch_contracts.remove(res.id);
@@ -321,6 +323,8 @@ struct TranscriptService {
 
             locate(task_names.dart).send(req, RecordFactory.uniqueRecorder(recorder), cast(immutable) res.id);
 
+            log("MEMORY: votes: %s", votes.length);
+
         }
 
         void epoch(consensusEpoch,
@@ -375,12 +379,11 @@ struct TranscriptService {
             const epoch_number = res.id;
 
             votes[epoch_number].epoch.bullseye = bullseye;
-            votes[epoch_number].init_bullseye = true;
 
             ConsensusVoting own_vote = ConsensusVoting(
-                epoch_number,
-                net.pubkey,
-                net.sign(bullseye)
+                    epoch_number,
+                    net.pubkey,
+                    net.sign(bullseye)
             );
 
             locate(task_names.epoch_creator).send(Payload(), own_vote.toDoc);

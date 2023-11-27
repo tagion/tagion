@@ -25,7 +25,9 @@ import tagion.testbench.services.sendcontract;
 import tagion.wallet.SecureWallet;
 import tagion.testbench.services.helper_functions;
 import tagion.behaviour.BehaviourException : check;
+import tagion.tools.wallet.WalletInterface;
 
+enum CONTRACT_TIMEOUT = 40;
 mixin Main!(_main);
 
 void wrap_neuewelle(immutable(string)[] args) {
@@ -45,7 +47,7 @@ int _main(string[] args) {
     local_options.trt.enable = true;
     local_options.replicator.folder_path = buildPath(module_path, "recorders");
     local_options.epoch_creator.timeout = 500;
-    local_options.wave.prefix_format = "TRT TEST Node_%s_";
+    local_options.wave.prefix_format = "TRT_TEST_Node_%s_";
     local_options.subscription.address = contract_sock_addr("TRT_TEST_SUBSCRIPTION");
     local_options.save(config_file);
 
@@ -100,16 +102,22 @@ int _main(string[] args) {
         immutable prefix = format(local_options.wave.prefix_format, i);
         const path = buildPath(local_options.dart.folder_path, prefix ~ local_options.dart.dart_filename);
         const trt_path = buildPath(local_options.trt.folder_path, prefix ~ local_options.trt.trt_filename);
-        writeln(path);
+        // writeln(path);
+        // writeln(trt_path);
         DARTFile.create(path, net);
         DARTFile.create(trt_path, net);
         auto db = new DART(net, path);
-        auto trt_db = new DART(net, path);
+        auto trt_db = new DART(net, trt_path);
         db.modify(recorder);
         trt_db.modify(trt_recorder);
+
+        writefln("%s TRT bullseye: %(%02x%)", trt_path, trt_db.bullseye);
+        writefln("%s DART bullseye: %(%02x%)", path, db.bullseye);
+
         db.close;
         trt_db.close;
     }
+
 
     immutable neuewelle_args = ["trt_test", config_file, "--nodeopts", module_path]; // ~ args;
     auto tid = spawn(&wrap_neuewelle, neuewelle_args);
@@ -187,6 +195,7 @@ class SendAInoiceUsingTheTRT {
 
     @Given("i have a running network with a trt")
     Document trt() {
+        writefln("address to dial %s", opts1.dart_interface.sock_addr);
         auto wallet1_amount = getWalletInvoiceUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
         check(wallet1_amount == start_amount1, "balance should not have changed");
         auto wallet2_amount = getWalletInvoiceUpdateAmount(wallet2, opts1.dart_interface.sock_addr, wallet2_hirpc);
@@ -201,13 +210,27 @@ class SendAInoiceUsingTheTRT {
         auto invoice_to_pay = wallet2.createInvoice("wowo", amount);
         wallet2.registerInvoice(invoice_to_pay);
         wallet1.payment([invoice_to_pay], signed_contract1, fee1);
+        (() @trusted => Thread.sleep(1.seconds))();
         wallet1.payment([invoice_to_pay], signed_contract2, fee2);
+
+        sendSubmitHiRPC(opts1.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract1), wallet1.net);
+        sendSubmitHiRPC(opts1.inputvalidator.sock_addr, wallet1_hirpc.submit(signed_contract2), wallet1.net);
+        (() @trusted => Thread.sleep(CONTRACT_TIMEOUT.seconds))();
         return result_ok;
     }
 
     @When("i update my wallet using the pubkey lookup")
     Document lookup() {
-        return Document();
+        import std.format;
+        auto wallet1_amount = getWalletInvoiceUpdateAmount(wallet1, opts1.dart_interface.sock_addr, wallet1_hirpc);
+        auto wallet2_amount = getWalletInvoiceUpdateAmount(wallet2, opts1.dart_interface.sock_addr, wallet2_hirpc);
+
+        auto wallet1_expected = start_amount1 - fee1 - fee2 - 2*amount;
+        check(wallet1_amount == wallet1_expected, format("should have %s had %s", wallet1_expected, wallet1_amount));
+        auto wallet2_expected = start_amount2 + 2*amount;
+        check(wallet2_amount == wallet2_expected, format("should have %s had %s", wallet2_expected, wallet2_amount));
+
+        return result_ok;
     }
 
     @Then("the transaction should go through")

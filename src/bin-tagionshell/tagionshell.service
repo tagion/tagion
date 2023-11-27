@@ -6,6 +6,7 @@ WorkingDirectory=%h/.local/share/tagion/
 ExecStart=%h/.local/share/bin/tagion shell
 Restart=always
 RestartSec=30
+MemoryMax=50M
 
 [Install]
 WantedBy=default.target
