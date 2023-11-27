@@ -63,7 +63,6 @@ struct TranscriptService {
 
         struct Votes {
             const(ConsensusVoting)[] votes;
-            bool init_bullseye;
             Epoch epoch;
             LockedArchives locked_archives;
         }
@@ -157,11 +156,9 @@ struct TranscriptService {
             */
 
             
-            Wowo: foreach (v; votes.byKeyValue) {
+            Finished: foreach (v; votes.byKeyValue) {
                 // add the new signatures to the epoch. We only want to do it if there are new signatures
                 if (v.value.epoch.bullseye !is Fingerprint.init) {
-                // if ((v.value.init_bullseye && v.value.epoch.bullseye !is Fingerprint.init) || (v.value.epoch.signs.length != v.value.votes.length && v.value.epoch.bullseye !is Fingerprint.init)) {
-                    v.value.init_bullseye = false;
                     // add the signatures to the epoch. Only add them if the signature match ours
                     foreach (single_vote; v.value.votes) {
                         // check that we have not already added the signature
@@ -172,9 +169,8 @@ struct TranscriptService {
                             v.value.epoch.signs ~= single_vote.signed_bullseye;
                         }
                         else {
-                            throw new Exception(format("Bullseyes not the same %s", v.value.epoch.epoch_number));
-                            pragma(msg, "throw error or what should we do?");
-                            // throw error or what to do
+                            import tagion.basic.ConsensusExceptions;
+                            throw new ConsensusException(format("Bullseyes not the same on epoch %s", v.value.epoch.epoch_number));
                         }
                     }
 
@@ -185,7 +181,7 @@ struct TranscriptService {
                         last_consensus_epoch += 1;
                         recorder.insert(v.value.locked_archives, Archive.Type.REMOVE);
                         votes.remove(v.value.epoch.epoch_number);
-                        break Wowo;
+                        break Finished;
                     }
 
                     // add the modified epochs to the recorder.
@@ -386,7 +382,6 @@ struct TranscriptService {
             const epoch_number = res.id;
 
             votes[epoch_number].epoch.bullseye = bullseye;
-            votes[epoch_number].init_bullseye = true;
 
             ConsensusVoting own_vote = ConsensusVoting(
                 epoch_number,
