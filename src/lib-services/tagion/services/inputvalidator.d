@@ -73,8 +73,8 @@ struct InputValidatorService {
             try {
                 hirpc.Error message;
                 message.code = err_type;
-                pragma(msg, "REV: Why do we set message inside the debug");
                 debug {
+                    // Altough it's a bit excessive, we send back the invalid data we received in debug mode.
                     message.message = err_type.to!string;
                     message.data = data;
                 }
