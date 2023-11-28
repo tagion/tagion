@@ -1,3 +1,6 @@
 coverage:
   status:
     project: false
+
+ignore:
+  - "src/lib-betterc"
