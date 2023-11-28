@@ -53,6 +53,7 @@ jobs:
           tar -xzf *.tar.gz
 
       - name: Delete stuff
+        if: ${{ inputs.clean }}
         run: |
           cd ~/.local/share/
           rm -rf tagion || echo "No data to remove"
