@@ -66,20 +66,6 @@ string cutHex(BUF)(BUF buf) pure if (isBufferType!BUF) {
     return format!"%(%02x%)"(buf[0 .. min(LEN, buf.length)]);
 }
 
-@trusted
-protected Buffer _xor(const(ubyte[]) a, const(ubyte[]) b) pure nothrow
-in {
-    assert(a.length == b.length);
-    assert(a.length % ulong.sizeof == 0);
-}
-do {
-    import tagion.utils.Gene : gene_xor;
-
-    const _a = cast(const(ulong[])) a;
-    const _b = cast(const(ulong[])) b;
-    return cast(Buffer) gene_xor(_a, _b);
-}
-
 @safe
 Buffer xor(scope const(ubyte[]) a, scope const(ubyte[]) b) pure nothrow
 in {
