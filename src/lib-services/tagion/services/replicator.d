@@ -16,6 +16,7 @@ import std.path : buildPath, setExtension;
 import std.stdio;
 import std.format;
 import std.file : append, exists, mkdirRecurse;
+import tagion.hibon.HiBONFile;
 
 
 @safe
@@ -47,11 +48,16 @@ struct ReplicatorService {
     void task(immutable(ReplicatorOptions) opts) {
         HashNet net = new StdHashNet;
         RecorderBlock last_block;
-        string filepath;
+
+
+        
+        File file;
+        // auto file = File(filepath, "w");
+
         void receiveRecorder(SendRecorder, immutable(RecordFactory.Recorder) recorder, Fingerprint bullseye, immutable(long) epoch_number) {
-            if (filepath is string.init) {
-                auto filename = format("%010d_recorder", epoch_number).setExtension(FileExtension.hibon);
-                filepath = buildPath(opts.folder_path, filename);
+            if (file is File.init) {
+                const filename = format("%010d_epoch", epoch_number).setExtension(FileExtension.hibon);
+                const filepath = buildPath(opts.folder_path, filename);
                 log.trace("Creating replicator file");
 
                 if (!opts.folder_path.exists) {
@@ -61,16 +67,20 @@ struct ReplicatorService {
                 if (filepath.exists) {
                     throw new TagionException(format("Error: File %s already exists", filepath));
                 }
-                
+                file = File(filepath, "w");
             }
+
             auto block = RecorderBlock(
                 recorder.toDoc,
                 last_block is RecorderBlock.init ? Fingerprint.init : last_block.fingerprint,
                 bullseye,
                 epoch_number,
                 net); 
-            filepath.append(block.toDoc.serialize);
-            // file.flush;
+
+            file.fwrite(block);
+            file.flush;
+            last_block = block;
+
             log.trace("Added recorder chain block with hash '%(%02x%)'", block.fingerprint);
             log(modify_recorder, "modify", recorder);
         }
