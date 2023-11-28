@@ -162,7 +162,7 @@ int _main(string[] args) {
         import tagion.tools.secretinput;
 
         info("Press ctrl-C to break");
-        info("Press ctrl-D to skip pincode");
+        info("Press ctrl-D to skip the wallet");
         info("Press ctrl-A to show the pincode");
         {
             auto wallets = wallet_interfaces[];
@@ -204,7 +204,7 @@ int _main(string[] args) {
                     "The pincode of some of the wallet is not correct");
             check(confidence <= wallet_interfaces.length, format(
                     "Confidence can not be greater than number of wallets %d", wallet_interfaces.length));
-            writefln("Confidence is %d", confidence);
+            verbose("Confidence is %d", confidence);
             Buffer[] answers;
             const(HashNet) hash_net = new StdHashNet;
             foreach (ref wallet; wallet_interfaces) {
@@ -220,8 +220,39 @@ int _main(string[] args) {
             key_recover.createKey(answers, confidence);
             common_wallet_interface.secure_wallet =
                 WalletInterface.StdSecureWallet(DevicePIN.init, key_recover.generator);
+            common_wallet_interface.secure_wallet.recover(answers);
 
-            common_wallet_interface.save(false);
+            verbose("Write wallet %s", common_wallet_interface.secure_wallet.isLoggedin);
+            options.questions = null;
+
+            common_wallet_interface.save(true);
+            options.save(config_file);
+            return 0;
+        }
+        {
+            common_wallet_interface.load;
+            confidence = common_wallet_interface.secure_wallet.wallet.confidence;
+            const number_of_loggins = wallet_interfaces
+                .count!((wallet_iface) => wallet_iface.secure_wallet.isLoggedin);
+            verbose("Loggedin %d", number_of_loggins);
+            check(confidence <= number_of_loggins, format("At least %d wallet need to open the transaction", confidence));
+
+            const(HashNet) hash_net = new StdHashNet;
+            Buffer[] answers;
+            foreach (wallet; wallet_interfaces) {
+                ubyte[] privkey;
+                scope (exit) {
+                    privkey[] = 0;
+                }
+                const __net = cast(StdSecureNet)(wallet.secure_wallet.net);
+                if (__net) {
+                    __net.__expose(privkey);
+                }
+                answers ~= hash_net.rawCalcHash(privkey);
+            }
+            common_wallet_interface.secure_wallet.recover(answers);
+            check(common_wallet_interface.secure_wallet.isLoggedin, "Wallet could not be activated");
+            good("Wallet activated");
         }
         // writefln("pin '%s' %d", pincode, pincode.length);
         /*

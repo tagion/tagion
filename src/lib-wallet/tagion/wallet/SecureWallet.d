@@ -239,6 +239,9 @@ struct SecureWallet(Net : SecureNet) {
         _net = new Net;
         auto recover = KeyRecover(_net, _wallet);
         auto R = new ubyte[_net.hashSize];
+        scope (exit) {
+            R[] = 0;
+        }
         const result = recover.findSecret(R, questions, answers);
         if (result) {
             set_pincode(R, pincode);
@@ -249,6 +252,25 @@ struct SecureWallet(Net : SecureNet) {
         return false;
     }
 
+    bool recover(Buffer[] A, const(char[]) pincode = null) {
+        _net = new Net;
+        auto recover = KeyRecover(_net, _wallet);
+        auto R = new ubyte[_net.hashSize];
+        scope (exit) {
+            R[] = 0;
+        }
+        const result = recover.findSecret(R, A);
+        if (result) {
+            if (!pincode.empty) {
+                set_pincode(R, pincode);
+
+            }
+            _net.createKeyPair(R);
+            return true;
+        }
+        _net = null;
+        return false;
+    }
     /**
      * Checks if the wallet contains a key-pair
      * Returns: true if the wallet is loggin
@@ -630,7 +652,7 @@ struct SecureWallet(Net : SecureNet) {
 
             do {
                 collected_bills.length = 0;
-                const can_pay = collect_bills(amount_to_pay + (-1*(amount_remainder)), collected_bills);
+                const can_pay = collect_bills(amount_to_pay + (-1 * (amount_remainder)), collected_bills);
 
                 if (collected_bills.length == previous_bill_count) {
                     return result(false);
@@ -716,7 +738,7 @@ struct SecureWallet(Net : SecureNet) {
 
             do {
                 collected_bills.length = 0;
-                const can_pay = collect_bills(amount_to_pay + (-1*(amount_remainder)), collected_bills);
+                const can_pay = collect_bills(amount_to_pay + (-1 * (amount_remainder)), collected_bills);
                 if (collected_bills.length == previous_bill_count) {
                     return result(false);
                 }
@@ -1241,10 +1263,10 @@ unittest {
     assert(pkey_before == pkey_after, "public key not the same after login/logout");
 }
 
-
 // fee amount
 unittest {
     import std.stdio;
+
     auto wallet1 = StdSecureWallet("some words", "1234");
     const bill1 = wallet1.requestBill(1000.TGN);
     const bill2 = wallet1.requestBill(1000.TGN);
@@ -1256,9 +1278,8 @@ unittest {
     wallet1.account.add_bill(bill3);
     assert(wallet1.account.bills.length == 3);
 
-
-    const to_pay = [TagionBill(2000.TGN, sdt_t.init, Pubkey([1,2,3,4]), Buffer.init)];
-    const to_pay2 = [TagionBill(1999.TGN, sdt_t.init, Pubkey([1,2,3,4]), Buffer.init)];
+    const to_pay = [TagionBill(2000.TGN, sdt_t.init, Pubkey([1, 2, 3, 4]), Buffer.init)];
+    const to_pay2 = [TagionBill(1999.TGN, sdt_t.init, Pubkey([1, 2, 3, 4]), Buffer.init)];
 
     TagionCurrency fees;
     const res = wallet1.getFee(to_pay, fees);
@@ -1266,8 +1287,6 @@ unittest {
 
     const res2 = wallet1.getFee(to_pay2, fees, true);
     check(res2.value == true, format("Wallet should be able to pay 1999 TGN fee: %s", fees));
-
-
 
     SignedContract signed_contract;
 
