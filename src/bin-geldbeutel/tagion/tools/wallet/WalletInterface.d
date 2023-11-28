@@ -330,13 +330,6 @@ struct WalletInterface {
                         }
                     }
                     while (!ok);
-                    /*    
-                }
-                    else {
-                        writefln("%1$sWrong pin%2$s", GREEN, RESET);
-                        pressKey;
-                    }
-*/
                     return true;
                 }
                 writefln("%1$sPin code is missing. You need to recover you keys%2$s", RED, RESET);
