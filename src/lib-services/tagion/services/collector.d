@@ -11,6 +11,7 @@ import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.SecureNet;
 import tagion.crypto.Types;
 import tagion.dart.Recorder : Archive, RecordFactory;
+import tagion.dart.DARTBasic : DARTIndex;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONException : HiBONRecordException;
 import tagion.hibon.HiBONRecord;
@@ -150,7 +151,7 @@ struct CollectorService {
             immutable collection =
                 ((res.id in reads) !is null)
                 ? new immutable(CollectedSignedContract)(s_contract, inputs, reads[res.id]) : new immutable(
-                    CollectedSignedContract)(s_contract, inputs);
+                        CollectedSignedContract)(s_contract, inputs);
 
             log("sending to tvm");
             if (is_consensus_contract[res.id]) {
@@ -168,16 +169,4 @@ struct CollectorService {
         }
     }
 
-}
-
-// The find funtion in dart.recorder doest not work with an immutable recorder;
-import tagion.dart.DARTBasic : DARTIndex;
-
-private immutable(Archive) find(immutable(RecordFactory.Recorder) rec, const(DARTIndex) index) @safe nothrow pure {
-    foreach (const _archive; rec[]) {
-        if (_archive.dart_index == index) {
-            return _archive;
-        }
-    }
-    return null;
 }
