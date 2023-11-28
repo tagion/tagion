@@ -1,8 +1,8 @@
 module tagion.utils.Miscellaneous;
 
-import std.algorithm : map;
-import std.algorithm.iteration : cumulativeFold, fold;
+import std.algorithm;
 import std.array;
+import std.range;
 import std.exception;
 import std.range.primitives : isInputRange;
 import tagion.basic.Types : Buffer, isBufferType;
@@ -10,8 +10,7 @@ import tagion.basic.tagionexceptions : TagionException;
 
 enum HEX_SEPARATOR = '_';
 
-@safe Buffer decode(const(char[]) hex) pure
- {
+@safe Buffer decode(const(char[]) hex) pure {
     if (hex.replace(HEX_SEPARATOR, "").length % 2 != 0) {
         throw new TagionException("Hex string length not even");
     }
@@ -59,11 +58,12 @@ enum HEX_SEPARATOR = '_';
  +     The 16 first hex digits of the buffer
 +/
 @safe
-string cutHex( BUF)(BUF buf) pure if (isBufferType!BUF) {
+string cutHex(BUF)(BUF buf) pure if (isBufferType!BUF) {
     import std.format;
-import std.algorithm : min;
+    import std.algorithm : min;
+
     enum LEN = ulong.sizeof;
-    return format!"%(%02x%)"(buf[0..min(LEN,buf.length)]);
+    return format!"%(%02x%)"(buf[0 .. min(LEN, buf.length)]);
 }
 
 @trusted
@@ -81,7 +81,7 @@ do {
 }
 
 @safe
-const(ubyte[]) xor(scope const(ubyte[]) a, scope const(ubyte[]) b) pure nothrow
+Buffer xor(scope const(ubyte[]) a, scope const(ubyte[]) b) pure nothrow
 in {
     assert(a.length == b.length);
     assert(a.length % ulong.sizeof == 0);
@@ -91,7 +91,7 @@ do {
 
     const _a = cast(const(ulong[])) a;
     const _b = cast(const(ulong[])) b;
-    return cast(ubyte[]) gene_xor(_a, _b);
+    return (() @trusted => cast(Buffer) gene_xor(_a, _b))();
 }
 
 @nogc @safe
@@ -110,12 +110,15 @@ do {
 }
 
 @safe
-Buffer xor(Range)(scope Range range) pure if (isInputRange!Range && is(ElementType!Range:const(ubyte[]))) {
+Buffer xor(Range)(scope Range range) pure if (isInputRange!Range && is(ElementType!Range : const(ubyte[])))
+in (!range.empty)
+do {
     import std.array : array;
     import std.range : tail;
 
-    return range
-        .cumulativeFold!((a, b) => _xor(a, b))
-        .tail(1)
-        .front;
+    scope result = new ubyte[range.front.length];
+
+    //   scope result=new ubyte[;
+    range.each!((rhs) => xor(result, result, rhs));
+    return result.idup;
 }

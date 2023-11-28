@@ -167,9 +167,8 @@ struct KeyRecover {
      *   confidence = confidence
      */
     void createKey(
-            const(ubyte[][]) A,
-            const uint confidence)
-    {
+            scope const(ubyte[][]) A,
+    const uint confidence) {
         scope R = new ubyte[net.hashSize];
         getRandom(R);
         scope (exit) {
@@ -252,11 +251,16 @@ struct KeyRecover {
                 A.length, generator.confidence));
         const number_of_questions = cast(uint) A.length;
         const seeds = numberOfSeeds(number_of_questions, generator.confidence);
+        import std.traits;
+        import std.range;
 
         bool result;
         void search_for_the_secret(scope const(uint[]) indices) @safe {
             scope list_of_selected_answers_and_the_secret = indexed(A, indices);
             pragma(msg, "review(cbr): Recovery now used Y_a = R x H(A_a) instead of Y_a = R x H(A_a)");
+            alias X = typeof(list_of_selected_answers_and_the_secret);
+            pragma(msg, "list_of_selected_answers_and_the_secret ", ElementType!X);
+            pragma(msg, "X is const(ubyte[]) ", is(ElementType!X : const(ubyte[])));
             const guess = net.rawCalcHash(xor(list_of_selected_answers_and_the_secret));
             scope _R = new ubyte[net.hashSize];
             foreach (y; generator.Y) {
