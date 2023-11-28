@@ -46,9 +46,6 @@ struct ReplicatorService {
 
     void task(immutable(ReplicatorOptions) opts) {
         HashNet net = new StdHashNet;
-
-
-
         RecorderBlock last_block;
         string filepath;
         void receiveRecorder(SendRecorder, immutable(RecordFactory.Recorder) recorder, Fingerprint bullseye, immutable(long) epoch_number) {
