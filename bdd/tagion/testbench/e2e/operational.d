@@ -110,9 +110,6 @@ int _main(string[] args) {
     ConfigAndPin[] configs_and_pins
         = wallet_config_files.zip(wallet_pins).map!(c => ConfigAndPin(c[0], c[1])).array;
 
-    // We only want to make one transaction per wallet pair so we can keep track of the balance changes
-    // const max_concurrent_jobs = (wallet_config_files.length / 2).to!uint;
-    const max_concurrent_jobs = 1;
     Duration max_runtime;
     with (DurationUnit) final switch (duration_unit) {
     case days:
@@ -124,6 +121,23 @@ int _main(string[] args) {
     case minutes:
         max_runtime = duration.minutes;
         break;
+    }
+
+    auto rnd = Random(unpredictableSeed);
+
+    void pickWallets(ref ConfigAndPin[] configs_and_pins, out ConfigAndPin sender, out ConfigAndPin receiver)
+    in (configs_and_pins.length >= 2)
+    out (; sender != receiver)
+    do {
+        ulong index1 = uniform(0, configs_and_pins.length, rnd);
+        ulong index2;
+        do {
+            index2 = uniform(0, configs_and_pins.length, rnd);
+        }
+        while (index1 == index2);
+
+        sender = configs_and_pins[index1];
+        receiver = configs_and_pins[index2];
     }
 
     // Times of the monotomic clock
@@ -146,34 +160,17 @@ int _main(string[] args) {
             start_date, max_runtime,
             predicted_end_date);
 
-    auto rnd = Random(unpredictableSeed);
-
-    void pickWallets(ref ConfigAndPin[] configs_and_pins, out ConfigAndPin sender, out ConfigAndPin receiver)
-    in (configs_and_pins.length >= 2)
-    out (; sender != receiver)
-    do {
-        ulong index1 = uniform(0, configs_and_pins.length, rnd);
-        ulong index2;
-        do {
-            index2 = uniform(0, configs_and_pins.length, rnd);
+    bool stop;
+    while (!stop) {
+        scope (failure) {
+            stop = true;
         }
-        while (index1 == index2);
+        run_counter++;
 
-        sender = configs_and_pins[index1];
-        receiver = configs_and_pins[index2];
-        // configs_and_pins = configs_and_pins.remove(index1).remove(index2);
-    }
-
-    bool new_job(ref ConfigAndPin[] configs_and_pins) {
         ConfigAndPin sender;
         ConfigAndPin receiver;
         pickWallets(configs_and_pins, sender, receiver);
 
-        // spawn((string sender_config, string sender_pin, string receiver_config, string receiver_pin, bool sendkernel) {
-        bool job_success;
-        // scope (exit) {
-        //     ownerTid.send(job_success);
-        // }
         auto sender_interface = createInterface(sender.config, sender.pin);
         auto receiver_interface = createInterface(receiver.config, receiver.pin);
 
@@ -183,54 +180,13 @@ int _main(string[] args) {
         operational_feature.SendNContractsFromwallet1Towallet2(sender_interface, receiver_interface, sendkernel, tx_stats);
         auto feat_group = operational_feature.run;
 
-        // ownerTid.send(ConfigAndPin(sender_config, sender_pin), ConfigAndPin(receiver_config, receiver_pin));
+        bool job_failed;
         if (feat_group.result.hasErrors) {
-            job_success = false;
+            job_failed = true;
+            return 1;
         }
-        else {
-            job_success = true;
-        }
-        // }, sender.config, sender.pin, receiver.config, receiver.pin, sendkernel);
-        return job_success;
-    }
 
-    uint running_jobs;
-    bool stop;
-    writefln("Running with max of %s at a time", max_concurrent_jobs);
-    while (!stop) {
-        scope (failure) {
-            stop = true;
-        }
-        run_counter++;
-
-        // while (running_jobs < max_concurrent_jobs) {
-        //     Thread.sleep(300.msecs);
-        stop = new_job(configs_and_pins);
-        stop = (MonoTime.currTime >= end_clocktime);
-        //     running_jobs++;
-        //     writefln("running jobs %s", running_jobs);
-        // }
-        // scope (exit) {
-        //     running_jobs--;
-        // }
-
-        // bool job_stopped;
-        // while (!job_stopped) {
-        //     receive(
-        //             (ConfigAndPin r, ConfigAndPin s) {
-        //                 configs_and_pins ~= r; configs_and_pins ~= s;
-        //                 writeln(configs_and_pins);
-        //             },
-        //             (bool job_success) {
-        //         if (!job_success) {
-        //             writefln("transaction failed after %s transactions", run_counter);
-        //         }
-        //         stop = (MonoTime.currTime >= end_clocktime || !job_success);
-        //         job_stopped = true;
-        //     },
-        //     );
-
-        // }
+        stop = (MonoTime.currTime >= end_clocktime || job_failed);
     }
     return 0;
 }
