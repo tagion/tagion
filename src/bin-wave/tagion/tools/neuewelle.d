@@ -105,12 +105,6 @@ int _main(string[] args) {
     bool version_switch;
     bool override_switch;
     bool monitor;
-    debug {
-        bool fail_fast = true;
-    }
-    else {
-        bool fail_fast;
-    }
 
     string mode0_node_opts_path;
     string[] override_options;
@@ -119,7 +113,6 @@ int _main(string[] args) {
             "version", "Print revision information", &version_switch,
             "O|override", "Override the config file", &override_switch,
             "option", "Set an option", &override_options,
-            "fail-fast", "Set the fail strategy, fail-fast=%s".format(fail_fast), &fail_fast,
             "k|keys", "Path to the boot-keys in mode0", &bootkeys_path,
             "v|verbose", "Enable verbose print-out", &__verbose_switch,
             "n|dry", "Check the parameter without staring the network (dry-run)", &__dry_switch,
@@ -141,7 +134,7 @@ int _main(string[] args) {
         return 0;
     }
 
-    enum default_wave_config_filename="tagionwave".setExtension(FileExtension.json);
+    enum default_wave_config_filename = "tagionwave".setExtension(FileExtension.json);
     const user_config_file = args.countUntil!(file => file.hasExtension(FileExtension.json) && file.exists);
     auto config_file = (user_config_file < 0) ? default_wave_config_filename : args[user_config_file];
 
@@ -301,7 +294,7 @@ int _main(string[] args) {
         assert(0, "NetworkMode not supported");
     }
 
-    if (waitforChildren(Ctrl.ALIVE, 30.seconds)) {
+    if (waitforChildren(Ctrl.ALIVE, 50.seconds)) {
         log("alive");
         bool signaled;
         import tagion.utils.pretend_safe_concurrency : receiveTimeout;
@@ -309,7 +302,7 @@ int _main(string[] args) {
         do {
             signaled = stopsignal.wait(100.msecs);
             if (!signaled) {
-                if (fail_fast) {
+                if (local_options.wave.fail_fast) {
                     signaled = receiveTimeout(
                             Duration.zero,
                             (TaskFailure tf) { log.fatal("Stopping because of unhandled taskfailure\n%s", tf); }

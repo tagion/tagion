@@ -31,10 +31,6 @@ import tagion.basic.Debug;
 import tagion.hibon.HiBONJSON;
 import tagion.utils.Miscellaneous : cutHex;
 
-version (unittest) {
-    version = hashgraph_fibertest;
-}
-
 @safe
 class HashGraph {
     enum default_scrap_depth = 10;
@@ -338,9 +334,9 @@ class HashGraph {
      +/
     Event registerEventPackage(
             immutable(EventPackage*) event_pack)
-    in(event_pack.fingerprint !in _event_cache, 
-format("Event %(%02x%) has already been registerd", 
-    event_pack.fingerprint))
+    in (event_pack.fingerprint !in _event_cache,
+        format("Event %(%02x%) has already been registerd",
+            event_pack.fingerprint))
     do {
         if (valid_channel(event_pack.pubkey)) {
             auto event = new Event(event_pack, this);
@@ -975,16 +971,4 @@ format("Event %(%02x%) has already been registerd",
         filename.fwrite(h);
     }
 
-}
-
-version (unittest) {
-    import std.range : dropExactly;
-    import basic = tagion.basic.basic;
-    import tagion.utils.Miscellaneous : cutHex;
-
-    const(basic.FileNames) fileId(T = HashGraph)(string prefix = null) @safe {
-        import basic = tagion.basic.basic;
-
-        return basic.fileId!T("hibon", prefix);
-    }
 }
