@@ -257,10 +257,6 @@ struct KeyRecover {
         bool result;
         void search_for_the_secret(scope const(uint[]) indices) @safe {
             scope list_of_selected_answers_and_the_secret = indexed(A, indices);
-            pragma(msg, "review(cbr): Recovery now used Y_a = R x H(A_a) instead of Y_a = R x H(A_a)");
-            alias X = typeof(list_of_selected_answers_and_the_secret);
-            pragma(msg, "list_of_selected_answers_and_the_secret ", ElementType!X);
-            pragma(msg, "X is const(ubyte[]) ", is(ElementType!X : const(ubyte[])));
             const guess = net.rawCalcHash(xor(list_of_selected_answers_and_the_secret));
             scope _R = new ubyte[net.hashSize];
             foreach (y; generator.Y) {

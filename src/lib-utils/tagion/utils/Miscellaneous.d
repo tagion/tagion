@@ -103,8 +103,6 @@ do {
     import std.range : tail;
 
     scope result = new ubyte[range.front.length];
-
-    //   scope result=new ubyte[;
     range.each!((rhs) => xor(result, result, rhs));
     return result.idup;
 }
