@@ -14,18 +14,18 @@ runs:
         export PATH="/Users/piss/tools/ldc2-1.35.0-osx-universal/bin/:$PATH"
         which ldc2
         make DC=ldc2 PLATFORM=${{ inputs.platform }} libmobile
-        file ./build/arm64-apple-ios/lib/libmobile.dylib
+        file ./build/${{ inputs.platform }}/lib/libmobile.dylib
 
     - name: Check output binaries
       shell: bash
       run: |
-        ! nm build/arm64-apple-ios/lib/libmobile.dylib | grep __dyld_get_image_slide
+        ! nm build/${{ inputs.platform }}/lib/libmobile.dylib | grep __dyld_get_image_slide
 
     - uses: actions/upload-artifact@v3
       if: success()
       with:
         name: libmobile
-        path: ./build/${{ inputs.platform }}/lib/libmobile.dylib
+        path: ./build/*/lib/libmobile.dylib
         if-no-files-found: error
 
     - name: Cleanup

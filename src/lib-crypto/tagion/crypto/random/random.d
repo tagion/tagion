@@ -8,14 +8,13 @@ import tagion.basic.Version;
 static if (ver.USE_BUILD_IN_RANDOM_FOR_MOBILE_SHOULD_BE_REMOVED) {
     enum is_getrandom = "Dummy declaration";
 }
-else static if (ver.linux) {
-    enum is_getrandom = true;
-    extern (C) ptrdiff_t getrandom(void* buf, size_t buflen, uint flags) nothrow;
-}
-// Tecnically netbsd and freebsd also provide getrandom(2), so you could use still use that instead
 else static if (ver.iOS || ver.OSX || ver.BSD || ver.Android) {
     enum is_getrandom = false;
     extern (C) void arc4random_buf(void* buf, size_t buflen) nothrow;
+}
+else static if (ver.linux) {
+    enum is_getrandom = true;
+    extern (C) ptrdiff_t getrandom(void* buf, size_t buflen, uint flags) nothrow;
 }
 else {
     static assert(0, format("Random function not support for %s", os));
