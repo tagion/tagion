@@ -60,16 +60,15 @@ struct TxStats {
 
 int _main(string[] args) {
     const program = args[0];
-    string wallet_configs_path = "~/.local/share/tagion/wallets";
+    string[] wallet_config_files;
     string[] wallet_pins;
     bool sendkernel = false;
     int duration = 3;
     DurationUnit duration_unit = DurationUnit.days;
     TxStats tx_stats;
 
-    arraySep = ",";
     auto main_args = getopt(args,
-            "w", "wallet configs path files", &wallet_configs_path,
+            "w", "wallet config files", &wallet_config_files,
             "x", "wallet pins", &wallet_pins,
             "sendkernel", "Send requests directory to the kernel", &sendkernel,
             "duration", format("The duration the test should run for (current = %s)", duration), &duration,
@@ -87,14 +86,8 @@ int _main(string[] args) {
         return 0;
     }
 
-    import std.process : environment;
-
-    const HOME = environment.get("HOME");
-    string[] wallet_config_files = dirEntries(buildPath(HOME, wallet_configs_path), "wallet*.json", SpanMode
-            .shallow).map!(a => a.name).array.sort.array;
-
-    if (wallet_config_files.empty) {
-        writefln("No wallet configs available in %s", wallet_configs_path);
+    if (!wallet_config_files.length == 2) {
+        writeln("Exactly 2 wallets should be provided");
         return 1;
     }
 
@@ -125,6 +118,7 @@ int _main(string[] args) {
 
     auto rnd = Random(unpredictableSeed);
 
+    // made this for an old version where the test would manage many wallets, but it still works so it'll just stay
     void pickWallets(ref ConfigAndPin[] configs_and_pins, out ConfigAndPin sender, out ConfigAndPin receiver)
     in (configs_and_pins.length >= 2)
     out (; sender != receiver)
@@ -180,13 +174,12 @@ int _main(string[] args) {
         operational_feature.SendNContractsFromwallet1Towallet2(sender_interface, receiver_interface, sendkernel, tx_stats);
         auto feat_group = operational_feature.run;
 
-        bool job_failed;
         if (feat_group.result.hasErrors) {
-            job_failed = true;
+            stop = true;
             return 1;
         }
 
-        stop = (MonoTime.currTime >= end_clocktime || job_failed);
+        stop = (MonoTime.currTime >= end_clocktime);
     }
     return 0;
 }
