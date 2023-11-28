@@ -5,10 +5,7 @@ import std.system : os;
 import std.traits;
 import tagion.basic.Version;
 
-static if (ver.USE_BUILD_IN_RANDOM_FOR_MOBILE_SHOULD_BE_REMOVED) {
-    enum is_getrandom = "Dummy declaration";
-}
-else static if (ver.iOS || ver.OSX || ver.BSD || ver.Android) {
+static if (ver.iOS || ver.OSX || ver.BSD || ver.Android) {
     enum is_getrandom = false;
     extern (C) void arc4random_buf(void* buf, size_t buflen) nothrow;
 }
@@ -23,10 +20,7 @@ else {
 bool isGetRandomAvailable() nothrow {
     import core.stdc.errno;
 
-    static if (ver.USE_BUILD_IN_RANDOM_FOR_MOBILE_SHOULD_BE_REMOVED) {
-        return true;
-    }
-    else static if (is_getrandom) {
+    static if (is_getrandom) {
         enum GRND_NONBLOCK = 0x0001;
         const res = getrandom(null, 0, GRND_NONBLOCK);
         if (res < 0) {
@@ -63,16 +57,7 @@ do {
     if (buf.length == 0) {
         return;
     }
-    static if (ver.USE_BUILD_IN_RANDOM_FOR_MOBILE_SHOULD_BE_REMOVED) {
-        pragma(msg, "fixme(cbr);Insecure random is used. This should be fixed");
-        import std.algorithm;
-        import std.exception : assumeWontThrow;
-        import std.random;
-
-        auto rnd = Random(unpredictableSeed);
-        assumeWontThrow(buf.each!((ref b) => b = uniform!("[]", ubyte, ubyte)(0, ubyte.max, rnd)));
-    }
-    else static if (is_getrandom) {
+    static if (is_getrandom) {
         enum sikkenogetskidt = "Problem with random generation";
         // GRND_NONBLOCK = 0x0001. Don't block and return EAGAIN instead
         enum GRND_RANDOM = 0x0002; // No effect
