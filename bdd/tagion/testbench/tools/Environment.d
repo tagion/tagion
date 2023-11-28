@@ -70,18 +70,23 @@ struct Environment {
     string dbin() const {
         return environment.get("DBIN", buildPath(reporoot, "build", platform, "bin"));
     }
+
     string dlog() const {
         return environment.get("DLOG", buildPath(reporoot, "logs", platform));
     }
+
     string bdd() const {
         return environment.get("BDD", buildPath(reporoot, "bdd"));
     }
+
     string bdd_log() const {
         return environment.get("BDD_LOG", buildPath(dlog, "bdd", test_stage));
     }
+
     string bdd_results() const {
         return environment.get("BDD_RESULTS", buildPath(bdd_log, "results"));
     }
+
     string reporoot() const {
         return environment.get("REPOROOT", getcwd);
     }
@@ -89,6 +94,7 @@ struct Environment {
     string test_stage() const {
         return environment.get("TEST_STAGE", "commit");
     }
+
     string seed() const {
         return environment.get("SEED", "predictable");
     }
@@ -124,18 +130,10 @@ struct Environment {
     }
 }
 
-
 immutable Environment env;
 
 import std.stdio;
 
 shared static this() {
-    // writeln(env.dbin);
-    // writeln(env.dlog);
-    // writeln(env.bdd);
-    // writeln(env.bdd_log);
-    // writeln(env.bdd_results);
-    // writeln(env.reporoot);
-
     reporter = new Reporter;
 }

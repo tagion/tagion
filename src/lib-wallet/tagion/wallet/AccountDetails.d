@@ -59,6 +59,7 @@ struct AccountDetails {
         activated.remove(bills[index].owner);
     }
 
+    pragma(msg, "Don't think this function fits in AccountDetails");
     int check_contract_payment(const(DARTIndex)[] inputs, const(Document[]) outputs) {
         import std.algorithm : countUntil;
         import tagion.crypto.SecureNet : StdHashNet;
@@ -82,6 +83,11 @@ struct AccountDetails {
                 return 1;
             }
         }
+
+        if (bills.length == 0) {
+            return 1;
+        }
+
         return 2;
     }
 

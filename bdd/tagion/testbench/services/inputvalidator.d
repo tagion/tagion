@@ -29,8 +29,8 @@ import tagion.utils.pretend_safe_concurrency;
 enum feature = Feature(
             "Inputvalidator service",
             [
-            "This feature should verify that the inputvalidator accepts valid and rejects invalid LEB128 input over a socket"
-            ]);
+        "This feature should verify that the inputvalidator accepts valid and rejects invalid LEB128 input over a socket"
+]);
 
 alias FeatureContext = Tuple!(
         SendADocumentToTheSocket, "SendADocumentToTheSocket",
@@ -72,9 +72,7 @@ class SendADocumentToTheSocket {
         check(rc == 0, format("Failed to send %s", nng_errstr(rc)));
         Document received = sock.receive!Buffer;
         check(sock.m_errno == 0, format("Failed to receive %s", nng_errstr(sock.m_errno)));
-        check(received.length != 0, "Received empty buffer");
-        pragma(msg, "REV:Why not just received it is already a Document");
-        check(Document(received) !is Document.init, "Received empty document");
+        check(received.length != 0, "Received empty doc");
         auto receiver = hirpc.receive(received);
         check(receiver.isResponse, "Expected an error");
 
@@ -187,8 +185,7 @@ class SendPartialHiBON {
         check(rc == 0, format("Failed to send %s", nng_errstr(rc)));
         Document received = sock.receive!Buffer;
         check(sock.m_errno == 0, format("Failed to receive %s", nng_errstr(sock.m_errno)));
-        check(received.length != 0, "Received empty buffer");
-        check(Document(received) !is Document.init, "Received empty document");
+        check(received.length != 0, "Received empty doc");
         auto receiver = hirpc.receive(received);
         check(receiver.isError, "Expected an error");
 

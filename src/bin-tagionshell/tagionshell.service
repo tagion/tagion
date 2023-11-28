@@ -5,7 +5,8 @@ Description="Test deployment of tagionshell"
 WorkingDirectory=%h/.local/share/tagion/
 ExecStart=%h/.local/share/bin/tagion shell
 Restart=always
-RestartSec=30
+RestartSec=3
+MemoryMax=50M
 
 [Install]
 WantedBy=default.target

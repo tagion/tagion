@@ -19,6 +19,7 @@ import tagion.behaviour;
 import tagion.communication.HiRPC;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONFile;
 import tagion.script.TagionCurrency;
 import tagion.script.common;
 import tagion.testbench.tools.Environment;
@@ -48,6 +49,15 @@ WalletInterface* createInterface(string config, string pin) {
     return wallet_interface;
 }
 
+@recordType("tx_stats")
+struct TxStats {
+    TagionCurrency total_fees;
+    TagionCurrency total_sent;
+    uint transactions;
+
+    mixin HiBONRecord;
+}
+
 int _main(string[] args) {
     const program = args[0];
     string wallet_configs_path = "~/.local/share/tagion/wallets";
@@ -55,6 +65,7 @@ int _main(string[] args) {
     bool sendkernel = false;
     int duration = 3;
     DurationUnit duration_unit = DurationUnit.days;
+    TxStats tx_stats;
 
     arraySep = ",";
     auto main_args = getopt(args,
@@ -128,6 +139,7 @@ int _main(string[] args) {
         const end_date = cast(DateTime)(Clock.currTime);
         writefln("Made %s runs", run_counter);
         writefln("Test ended on %s %s", end_date, end_date);
+        fwrite(buildPath(env.bdd_results, "tx_stats.hibon"), tx_stats);
     }
 
     writefln("Starting operational test now on\n\t%s\nand will end in %s, on\n\t%s",
@@ -152,32 +164,32 @@ int _main(string[] args) {
         // configs_and_pins = configs_and_pins.remove(index1).remove(index2);
     }
 
-    bool  new_job(ref ConfigAndPin[] configs_and_pins) {
+    bool new_job(ref ConfigAndPin[] configs_and_pins) {
         ConfigAndPin sender;
         ConfigAndPin receiver;
         pickWallets(configs_and_pins, sender, receiver);
 
         // spawn((string sender_config, string sender_pin, string receiver_config, string receiver_pin, bool sendkernel) {
-            bool job_success;
-            // scope (exit) {
-            //     ownerTid.send(job_success);
-            // }
-            auto sender_interface = createInterface(sender.config, sender.pin);
-            auto receiver_interface = createInterface(receiver.config, receiver.pin);
+        bool job_success;
+        // scope (exit) {
+        //     ownerTid.send(job_success);
+        // }
+        auto sender_interface = createInterface(sender.config, sender.pin);
+        auto receiver_interface = createInterface(receiver.config, receiver.pin);
 
-            writefln("Making transaction between sender %s and receiver %s", sender.config, receiver.config);
+        writefln("Making transaction between sender %s and receiver %s", sender.config, receiver.config);
 
-            auto operational_feature = automation!operational;
-            operational_feature.SendNContractsFromwallet1Towallet2(sender_interface, receiver_interface, sendkernel);
-            auto feat_group = operational_feature.run;
+        auto operational_feature = automation!operational;
+        operational_feature.SendNContractsFromwallet1Towallet2(sender_interface, receiver_interface, sendkernel, tx_stats);
+        auto feat_group = operational_feature.run;
 
-            // ownerTid.send(ConfigAndPin(sender_config, sender_pin), ConfigAndPin(receiver_config, receiver_pin));
-            if (feat_group.result.hasErrors) {
-                job_success = false;
-            }
-            else {
-                job_success = true;
-            }
+        // ownerTid.send(ConfigAndPin(sender_config, sender_pin), ConfigAndPin(receiver_config, receiver_pin));
+        if (feat_group.result.hasErrors) {
+            job_success = false;
+        }
+        else {
+            job_success = true;
+        }
         // }, sender.config, sender.pin, receiver.config, receiver.pin, sendkernel);
         return job_success;
     }
@@ -193,8 +205,8 @@ int _main(string[] args) {
 
         // while (running_jobs < max_concurrent_jobs) {
         //     Thread.sleep(300.msecs);
-           stop = new_job(configs_and_pins);
-           stop = (MonoTime.currTime >= end_clocktime);
+        stop = new_job(configs_and_pins);
+        stop = (MonoTime.currTime >= end_clocktime);
         //     running_jobs++;
         //     writefln("running jobs %s", running_jobs);
         // }
@@ -240,12 +252,14 @@ class SendNContractsFromwallet1Towallet2 {
     bool send;
 
     TagionCurrency[] wallet_amounts;
+    TxStats tx_stats;
 
-    this(ref WalletInterface* sender, WalletInterface* receiver, bool sendkernel) {
+    this(ref WalletInterface* sender, WalletInterface* receiver, bool sendkernel, ref TxStats tx_stats) {
         this.wallets ~= sender;
         this.wallets ~= receiver;
         this.sendkernel = sendkernel;
         this.send = !sendkernel;
+        this.tx_stats = tx_stats;
     }
 
     @Given("i have a network")
@@ -336,6 +350,9 @@ class SendNContractsFromwallet1Towallet2 {
             check(available_balance == expected,
                     format("wallet 1 amount incorrect, expected %s got %s", expected, available_balance));
         }
+
+        tx_stats.total_fees += fees;
+        tx_stats.total_sent += invoice.amount;
 
 
         return result_ok;

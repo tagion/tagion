@@ -1,3 +1,18 @@
+# Changelog for week 47/48
+
+**Transcript bug**
+Our operational tests found a bug where because the order of operations when iterating a hash-map is not guranteed we could end up in a scenario where the nodes would have the same state, but write different archives in different epochs regarding the consensus voting. This has now been fixed.
+
+**Crypto tape-out**
+We have had a final review of our secure-modules and they are now in the process of being externally reviewed one more time before go-live.
+
+**Wallet bug**
+We have fixed a bug in the wallet where the fee would be calculated incorrectly. This was due to a bug in the `createPayment` function that gathers the bills which are neccesary for creating the transaction.
+
+**NNG memory leak**
+We encountered a problem with the NNG-http server where it would leak memory when passing a `char*` to a c-function. This only happens when the string is concatenated with another string, which is a lazy operation. When then taking the pointer of this new variable it only points to the "first" part of the string meaning the other part leaks in memory. This problem has now been mitigated by manually allocating the memory using a static buffer which makes sure it is properly cleaned afterwards and creates a fully monolithic pointer.
+
+
 # Changelog for week 46/47
 
 **Boot from passkeys**

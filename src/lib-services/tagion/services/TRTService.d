@@ -33,6 +33,7 @@ import tagion.basic.Types;
 import tagion.trt.TRT;
 import tagion.hibon.HiBON;
 import tagion.script.standardnames;
+import tagion.script.common : TagionBill;
 
 @safe
 struct TRTOptions {
@@ -67,6 +68,8 @@ struct TRTService {
         auto hirpc = HiRPC(net);
         ActorHandle dart_handle = ActorHandle(task_names.dart);
 
+
+        log("TRT PATH FOR DATABASE=%s", opts.trt_path);
         trt_db = new DART(net, opts.trt_path);
         if (dart_exception !is null) {
             throw dart_exception;
@@ -85,8 +88,11 @@ struct TRTService {
         TRTRequest[uint] requests;
         
 
+        log("%s, starting trt with %(%02x%)", opts.trt_path, trt_db.bullseye);
+
         
         void receive_recorder(dartReadRR.Response res, immutable(RecordFactory.Recorder) recorder){
+            log("received recorder from dartread");
             if (!(res.id in requests)) {
                 return;
             }
@@ -112,24 +118,40 @@ struct TRTService {
             if (!doc.isRecord!(HiRPC.Sender)) {
                 return;
             }
+            log("before hirpc");
             immutable receiver = hirpc.receive(doc);
             if (receiver.method.name != "search") {
+                log("not a HIRPC");
                 // return hirpc error instead;
                 return;
             }
+            log("before owner doc");
             auto owner_doc = receiver.method.params;
             if (owner_doc[].empty) {
+                log("the owner doc was empty");
                 // return hirpc error instead;
                 return;
             }
 
+            log("before creating indexes");
             auto owner_indexes = owner_doc[]
-                .map!(owner => net.dartKey(TRTLabel, Pubkey(owner.get!Buffer)));
+                .map!(owner => net.dartKey(TRTLabel, Pubkey(owner.get!Buffer)))
+                .array;
+
+            import std.algorithm;
+            owner_indexes.each!(o => writefln("%(%02x%)", o));
 
 
             auto trt_read_recorder = trt_db.loads(owner_indexes);
-            immutable(DARTIndex)[] indexes = trt_read_recorder[]
-                .map!(a => cast(immutable) DARTIndex(TRTArchive(a.filed).idx)).array;
+            // log("loaded recorder %s", trt_read_recorder.toPretty);
+            // immutable(DARTIndex)[] indexes = trt_read_recorder[]
+            //     .map!(a => cast(immutable) DARTIndex(TRTArchive(a.filed).idx)).array;
+            immutable(DARTIndex)[] indexes;
+            foreach(a; trt_read_recorder[]) {
+                indexes ~= TRTArchive(a.filed).idx.map!(d => cast(immutable) DARTIndex(d)).array;
+
+
+            }
 
             if (indexes.empty) {
                 // return hirpc error instead;
@@ -137,6 +159,7 @@ struct TRTService {
             }
 
             
+            log("sending dartread request");
             auto dart_req = dartReadRR();
             requests[dart_req.id] = TRTRequest(client_req, doc);
 
@@ -144,8 +167,19 @@ struct TRTService {
         }
 
         void modify(trtModify, immutable(RecordFactory.Recorder) dart_recorder) {
+            log("received modify request from dart");
             auto trt_recorder = rec_factory.recorder;
-            createUpdateRecorder(dart_recorder, trt_recorder, net);
+
+            // get a recorder from all the dartkeys already in the db for the function
+            auto index_lookup = dart_recorder[]
+                .filter!(a => a.filed.isRecord!TagionBill)
+                .map!(a => TagionBill(a.filed))
+                .map!(t => net.dartKey(TRTLabel, Pubkey(t.owner)));
+
+            auto already_in_dart = trt_db.loads(index_lookup);
+            
+            createUpdateRecorder(dart_recorder, already_in_dart, trt_recorder, net);
+            log("trt recorder modify %s", trt_recorder.toPretty);
             trt_db.modify(trt_recorder);
         }
         

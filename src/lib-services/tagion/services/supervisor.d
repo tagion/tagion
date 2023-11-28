@@ -28,6 +28,7 @@ import tagion.services.transcript;
 import tagion.services.TRTService;
 import tagion.utils.JSONCommon;
 import tagion.utils.pretend_safe_concurrency : locate, send;
+import core.memory;
 
 @safe
 struct Supervisor {
@@ -66,8 +67,16 @@ struct Supervisor {
 
         auto services = tuple(dart_handle, replicator_handle, hirpc_verifier_handle, inputvalidator_handle, epoch_creator_handle, collector_handle, tvm_handle, dart_interface_handle, transcript_handle);
 
+
+        
+        // void timeout() @trusted {
+        //     import core.memory;
+        //     GC.collect;
+        // }
+        
         if (waitforChildren(Ctrl.ALIVE, 20.seconds)) {
-            run;
+            // runTimeout(10.seconds, &timeout);
+            run();
         }
         else {
             log.error("Not all children became Alive");
