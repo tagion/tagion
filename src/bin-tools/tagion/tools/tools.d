@@ -20,6 +20,7 @@ int main(string[] args) {
     import tprofview = tagion.tools.tprofview;
     import geldbeutel = tagion.tools.wallet.geldbeutel;
     import wasmutil = tagion.tools.wasmutil.wasmutil;
+    import kette = tagion.tools.kette;
 
     alias alltools = AliasSeq!(
             subscribe,
@@ -38,6 +39,7 @@ int main(string[] args) {
             hirep,
             recorderchain,
             callstack,
+            kette,
     );
     mixin doOneMain!(alltools);
     return do_main(args);
