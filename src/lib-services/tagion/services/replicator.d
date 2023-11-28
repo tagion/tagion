@@ -7,9 +7,16 @@ import tagion.crypto.Types : Fingerprint;
 import tagion.dart.Recorder : RecordFactory;
 import tagion.logger.Logger;
 import tagion.recorderchain.RecorderChain;
-import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock;
+import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock, RecorderBlock;
 import tagion.services.messages;
 import tagion.utils.Miscellaneous : cutHex;
+import tagion.basic.Types : FileExtension;
+import tagion.basic.tagionexceptions;
+import std.path : buildPath, setExtension;
+import std.stdio;
+import std.format;
+import std.file : append, exists, mkdirRecurse;
+
 
 @safe
 struct ReplicatorOptions {
@@ -28,8 +35,63 @@ struct ReplicatorOptions {
 
     mixin JSONCommon;
 }
-
 enum modify_log = "modify/replicator";
+
+
+version(NEW_REPLICATOR) {
+
+@safe
+struct ReplicatorService {
+    static Topic modify_recorder = Topic(modify_log);
+
+    void task(immutable(ReplicatorOptions) opts) {
+        HashNet net = new StdHashNet;
+        RecorderBlock last_block;
+        string filepath;
+        void receiveRecorder(SendRecorder, immutable(RecordFactory.Recorder) recorder, Fingerprint bullseye, immutable(long) epoch_number) {
+            if (filepath is string.init) {
+                auto filename = format("%010d_recorder", epoch_number).setExtension(FileExtension.hibon);
+                filepath = buildPath(opts.folder_path, filename);
+                log.trace("Creating replicator file");
+
+                if (!opts.folder_path.exists) {
+                    mkdirRecurse(opts.folder_path);
+                }
+
+                if (filepath.exists) {
+                    throw new TagionException(format("Error: File %s already exists", filepath));
+                }
+                
+            }
+            auto block = RecorderBlock(
+                recorder.toDoc,
+                last_block is RecorderBlock.init ? Fingerprint.init : last_block.fingerprint,
+                bullseye,
+                epoch_number,
+                net); 
+            filepath.append(block.toDoc.serialize);
+            // file.flush;
+            log.trace("Added recorder chain block with hash '%(%02x%)'", block.fingerprint);
+            log(modify_recorder, "modify", recorder);
+        }
+
+        run(&receiveRecorder);
+
+
+
+    }
+
+
+
+}
+
+
+
+
+
+
+} else {
+
 
 @safe
 struct ReplicatorService {
@@ -58,3 +120,7 @@ struct ReplicatorService {
     }
 
 }
+
+
+}
+

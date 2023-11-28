@@ -60,17 +60,16 @@ struct Element {
     uint dataPos;
     string key;
     mixin HiBONRecord!(q{
-            this(const(Document.Element) elm, const uint offset) {
-                 type=elm.type;
-                keyPos=elm.keyPos+offset;
-              keyLen=elm.keyLen;
-    valuePos=elm.valuePos+offset;
-                dataPos=elm.dataPos+offset;
-                dataSize=elm.dataSize;
-                key=elm.key; 
-            }
-        });
-
+        this(const(Document.Element) elm, const uint offset) {
+            type=elm.type;
+            keyPos=elm.keyPos+offset;
+            keyLen=elm.keyLen;
+            valuePos=elm.valuePos+offset;
+            dataPos=elm.dataPos+offset;
+            dataSize=elm.dataSize;
+            key=elm.key; 
+        }
+    });
 }
 
 version (none) Document.Element.ErrorCode check_document(const(Document) doc, out Document error_doc) {
