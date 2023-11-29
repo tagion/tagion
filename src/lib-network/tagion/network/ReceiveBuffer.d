@@ -11,7 +11,8 @@ struct ReceiveBuffer {
     size_t total_size; /// Buffer size
     size_t pos;
     enum LEN_MAX = LEB128.calc_size(uint.max);
-    enum START_SIZE = 0x400;
+    pragma(msg, "ReceiveBuffer size FIXME VERY IMPORTANT");
+    enum START_SIZE = 0x4000;
     static size_t max_size = 0x4000;
     alias Receive = ptrdiff_t delegate(void[] buf);
     alias ResultBuffer = Tuple!(ptrdiff_t, "size", ubyte[], "data");
