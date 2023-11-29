@@ -2,13 +2,14 @@ module tagion.tools.auszahlung.auszahlung;
 import core.thread;
 import std.algorithm;
 import std.array;
-import std.file : exists, mkdir, mkdirRecurse;
+import std.file : exists, mkdir, mkdirRecurse, setAttributes;
 import std.format;
 import std.getopt;
 import std.path;
 import std.range;
 import std.stdio;
 import std.typecons;
+import std.conv : to, octal;
 import tagion.basic.Message;
 import tagion.basic.Types : FileExtension, hasExtension;
 import tagion.basic.tagionexceptions;
@@ -31,9 +32,16 @@ import tagion.basic.Types : encodeBase64, Buffer;
 import tagion.basic.range : eatOne;
 import tagion.basic.basic : isinit;
 import tagion.crypto.SecureNet;
+import tagion.crypto.Types;
 import tagion.wallet.SecureWallet;
 import tagion.hibon.BigNumber;
+import tagion.hibon.HiBONtoText;
 import tagion.script.common;
+import tagion.crypto.random.random;
+import tagion.utils.StdTime;
+import tagion.communication.HiRPC;
+import std.csv;
+import std.string : representation;
 
 mixin Main!(_main, "payout");
 
@@ -50,6 +58,7 @@ static void set_path(ref string file, string path) {
     file = buildPath(path, file.baseName);
 }
 
+enum file_protect = octal!444;
 enum MIN_WALLETS = 3;
 int _main(string[] args) {
     import tagion.wallet.SecureWallet : check;
@@ -59,6 +68,8 @@ int _main(string[] args) {
     bool list;
     bool sum;
     bool force;
+    bool update;
+    string response_name;
     string path;
     uint confidence;
     double amount;
@@ -89,6 +100,8 @@ int _main(string[] args) {
                 "s|sum", "Sum of the wallet", &sum,
                 "amount", "Create an payment request in tagion", &amount,
                 "path", "File path", &path,
+                "update", "Update wallet", &update,
+                "response", "Response from update (response.hibon)", &response_name,
                 "force", "Force input bill", &force,
 
         );
@@ -109,7 +122,7 @@ int _main(string[] args) {
                 "Documentation: https://tagion.org/",
                 "",
                 "Usage:",
-                format("%s [<option>...] <wallet.json> ... ", program),
+                format("%s [<option>...] <wallet.json> [<bill.hibon> ...] ", program),
                 "",
 
                 "<option>:",
@@ -187,6 +200,16 @@ int _main(string[] args) {
                 }
             }
         }
+        if (!response_name.empty) {
+            scope (success) {
+                if (!dry_switch) {
+                    common_wallet_interface.save(false);
+                }
+            }
+            const received = response_name.fread!(HiRPC.Receiver);
+            common_wallet_interface.secure_wallet.setResponseCheckRead(received);
+            return 0;
+        }
         if (!confidence.isinit) {
             check(common_wallet_interface.secure_wallet.wallet.isinit,
                     "Common wallet has already been created");
@@ -243,9 +266,12 @@ int _main(string[] args) {
             check(common_wallet_interface.secure_wallet.isLoggedin, "Wallet could not be activated");
             good("Wallet activated");
         }
-        // if (wallet_interface.total.value
-        //        if (
         if (amount > 0) {
+            scope (success) {
+                if (!dry_switch) {
+                    common_wallet_interface.save(false);
+                }
+            }
             check(wallet_interfaces.all!(wiface => wiface.secure_wallet.isLoggedin),
                     "All wallets must be loggedin to add amount");
             const amount_tgn = TagionCurrency(amount);
@@ -255,29 +281,19 @@ int _main(string[] args) {
             const filename = buildPath(bill_path, format("bill_%s", common_wallet_interface.secure_wallet.account.name))
                 .setExtension(FileExtension.hibon);
             filename.fwrite(bill);
-            /*
-            BigNumber total_amount = BigNumber(cast(ulong) amount);
-            total_amount *= TagionCurrency.BASE_UNIT;
-            const MAX_TGN = (TagionCurrency.UNIT_MAX / TagionCurrency.BASE_UNIT).TGN;
-            const whole_bills = cast(uint)(total_amount / TagionCurrency.UNIT_MAX);
-            TagionBill[] bills;
-            foreach (i; iota(whole_bills)) {
-                bills ~= common_wallet_interface.secure_wallet.requestBill(MAX_TGN);
+            scope (success) {
+                if (!dry_switch) {
+                    filename.setAttributes(file_protect);
+                }
             }
-            const rest = (cast(long)((total_amount % TagionCurrency.UNIT_MAX) / TagionCurrency.BASE_UNIT)).TGN;
-            writefln("rest %s", rest);
-            bills ~= common_wallet_interface.secure_wallet.requestBill(rest);
-            bills.each!((bill) => writefln("%s", bill.toPretty));
-            string bill_path = buildPath(path, "bills");
-            mkdirRecurse(bill_path);
-            foreach (i, bill; bills) {
-                const filename = buildPath(bill_path, format("bill_%02d", i)).setExtension(FileExtension.hibon);
-                filename.fwrite(bill);
-            }
-            */
-            //writefln("account %s", common_wallet_interface.secure_wallet.account.toPretty);
+            return 0;
         }
         if (force) {
+            scope (success) {
+                if (!dry_switch) {
+                    common_wallet_interface.save(false);
+                }
+            }
             check(wallet_interfaces.all!(wiface => wiface.secure_wallet.isLoggedin),
                     "All wallets must be loggedin to force the bill");
             foreach (arg; args[1 .. $].filter!(file => file.hasExtension(FileExtension.hibon))) {
@@ -285,134 +301,80 @@ int _main(string[] args) {
                 with (common_wallet_interface) {
                     good("%s", toText(hash_net, bill));
                     verbose("%s", show(bill));
-                    const added=secure_wallet.addBill(bill);
+                    const added = secure_wallet.addBill(bill);
                     check(added, "Bill was not found");
                 }
             }
             common_wallet_interface.listAccount(stdout, hash_net);
             common_wallet_interface.listInvoices(stdout);
-             
-        }
-        common_wallet_interface.save(false);
-        // writefln("pin '%s' %d", pincode, pincode.length);
-        /*
-        verbose("Config file %s", config_file);
-        const new_config = (!config_file.exists || overwrite_switch);
-        if (path) {
-            if (!new_config) {
-                writefln("To change the path you need to use the overwrite switch -O");
-                return 10;
-            }
-            options.walletfile.set_path(path);
-            options.quizfile.set_path(path);
-            options.devicefile.set_path(path);
-            options.accountfile.set_path(path);
-            options.billsfile.set_path(path);
-            options.paymentrequestsfile.set_path(path);
-            const dir = options.walletfile.dirName;
-            if (!dir.exists) {
-                dir.mkdir;
-            }
-        }
-        if (new_config) {
-            const new_config_file = args
-                .countUntil!(file => file.tasExtension(FileExtension.json) && !file.exists);
-            config_file = (new_config_file < 0) ? config_file : args[new_config_file];
-            options.save(config_file);
-            if (overwrite_switch) {
-                return 0;
-            }
-        }
-        auto wallet_interface = WalletInterface(options);
-        if (bip39 > 0) {
-            import tagion.wallet.bip39_english : words;
 
-            const number_of_words = [12, 24];
-            check(number_of_words.canFind(bip39), format("Invalid number of word %d should be (%(%d, %))", bip39, number_of_words));
-            const wordlist = WordList(words);
-            passphrase = wordlist.passphrase(bip39);
-
-            printf("%.*s\n", cast(int) passphrase.length, &passphrase[0]); 
-        }
-        else {
-            (() @trusted { passphrase = cast(char[]) _passphrase; }());
-        }
-        if (!_salt.empty) {
-            auto salt_tmp = (() @trusted => cast(char[]) _salt)();
-            scope (exit) {
-                salt_tmp[]=0;
-            }
-            salt ~= WordList.presalt ~ _salt;
-        }
-        if (!passphrase.empty) {
-            check(!pincode.empty, "Missing pincode");
-            wallet_interface.generateSeedFromPassphrase(passphrase, pincode);
-            wallet_interface.save(false);
             return 0;
         }
-        if (!wallet_interface.load) {
-            create_account = true;
-            writefln("Wallet dont't exists");
-            WalletInterface.pressKey;
+        auto csv_files = args[1 .. $].filter!(file => file.hasExtension(FileExtension.csv));
+        const contracts = buildPath(path, "contracts");
+        if (!csv_files.empty) {
+            mkdirRecurse(contracts);
         }
-        bool info_only;
-        if (info) {
-            if (wallet_interface.secure_wallet.account.name.empty) {
-            writefln("%sAccount name has not been set (use --name)%s", YELLOW, RESET);
-                return 0;
-            }
-            writefln("%s,%s", 
-            wallet_interface.secure_wallet.account.name, 
-            wallet_interface.secure_wallet.account.owner.encodeBase64);
-            info_only=true;
-        }
-        if (pubkey_info) {
-            if (wallet_interface.secure_wallet.account.owner.empty) {
-            writefln("%sAccount pubkey has not been set (use --name)%s", YELLOW, RESET);
-                return 0;
-            }
-             writefln("%s", 
-            wallet_interface.secure_wallet.account.owner.encodeBase64);
-             info_only=true;
-        }
-        if (info_only) {
-            return 0;
-        }
-        change_pin = change_pin && !pincode.empty;
-
-        if (create_account) {
-            wallet_interface.generateSeed(wallet_interface.quiz.questions, false);
-            return 0;
-        }
-        else if (change_pin) {
-            wallet_interface.loginPincode(Yes.ChangePin);
-            return 0;
-        }
-
-        if (wallet_interface.secure_wallet !is WalletInterface.StdSecureWallet.init) {
-            if (!pincode.empty) {
-                const flag = wallet_interface.secure_wallet.login(pincode);
-
-                if (!flag) {
-                    stderr.writefln("%sWrong pincode%s", RED, RESET);
-                    return 3;
+        foreach (filename; csv_files) {
+            scope (success) {
+                if (!dry_switch) {
+                    common_wallet_interface.save(false);
                 }
-                verbose("%1$sLoggedin%2$s", GREEN, RESET);
             }
-            else if (!wallet_interface.loginPincode(No.ChangePin)) {
-                wallet_ui = true;
-                writefln("%1$sWallet not loggedin%2$s", YELLOW, RESET);
-                return 4;
+            verbose("CVS %s", filename);
+            auto fin = File(filename, "r");
+            scope (exit) {
+                fin.close;
+            }
+            enum pubkey_name = "PUBKey";
+            enum amount_name = "Amount";
+            TagionBill[] to_pay;
+            TagionCurrency total_amount;
+            foreach (record; csvReader!(string[string])(fin.byLine.joiner("\n"), null, ';')) {
+                const pubkey = Pubkey(format("@%s", record[pubkey_name]).decode);
+                const amount_tgn = record[amount_name].to!double.TGN;
+                total_amount += amount_tgn;
+                auto nonce = new ubyte[4];
+                getRandom(nonce);
+                to_pay ~= TagionBill(amount_tgn, currentTime, pubkey, nonce.idup);
+            }
+            SignedContract signed_contract;
+            TagionCurrency fees;
+            with (common_wallet_interface) {
+                secure_wallet.createPayment(to_pay, signed_contract, fees);
+                const contract_filename = buildPath(contracts, baseName(filename)).setExtension(FileExtension.hibon);
+                const message = secure_wallet.net.calcHash(signed_contract);
+                const contract_net = secure_wallet.net.derive(message);
+                const hirpc = HiRPC(contract_net);
+                const hirpc_submit = hirpc.submit(signed_contract);
+                verbose("submit\n%s", show(hirpc_submit));
+                secure_wallet.account.hirpcs ~= hirpc_submit.toDoc;
+                contract_filename.fwrite(hirpc_submit);
+                scope (success) {
+                    if (!dry_switch) {
+                        contract_filename.setAttributes(file_protect);
+                    }
+                }
+            }
+            good("Total %sTGN", total_amount);
+
+        }
+        if (update) {
+            verbose("Update");
+            with (common_wallet_interface) {
+                const message = secure_wallet.net.calcHash(WalletInterface.update_tag.representation);
+                const update_net = secure_wallet.net.derive(message);
+                const hirpc = HiRPC(update_net);
+                const req = secure_wallet.getRequestCheckWallet(hirpc);
+                const update_req = buildPath(path, update_tag).setExtension(FileExtension.hibon);
+                update_req.fwrite(req);
+                scope (success) {
+                    if (!dry_switch) {
+                        update_req.setAttributes(file_protect);
+                    }
+                }
             }
         }
-        if (!account_name.empty) {
-            wallet_interface.secure_wallet.account.name=account_name;
-            wallet_interface.secure_wallet.account.owner=wallet_interface.secure_wallet.net.pubkey;
-            wallet_switch.save_wallet=true;
-            
-        }
-        wallet_interface.operate(wallet_switch, args);
-        */
     }
     catch (Exception e) {
         error("%s", e.msg);

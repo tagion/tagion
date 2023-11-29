@@ -65,7 +65,6 @@ enum Control {
 
 private import std.range;
 
-
 enum FileExtension {
     json = ".json", /// JSON File format
     hibon = ".hibon", /// HiBON file format
@@ -79,6 +78,7 @@ enum FileExtension {
     dsrc = ".d", /// DART data-base
     epochdumpblock = ".epdmp", /// Epoch dump chain block file format
     text = ".txt",
+    csv = ".csv", /// Comma-separated values
 }
 
 enum DOT = '.'; /// File extension separator
