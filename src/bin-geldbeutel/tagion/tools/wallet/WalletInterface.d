@@ -554,7 +554,7 @@ struct WalletInterface {
         import tagion.hibon.HiBONtoText;
         import tagion.utils.StdTime : toText;
 
-        return format("%2$s%3$27-s %4$s %5$13.6fTGN%1$s",
+        return format("%2$s%3$27-s %4$s %5$17.6fTGN%1$s",
                 RESET, mark,
                 bill.time.toText,
                 hash_net.calcHash(bill)
@@ -607,9 +607,9 @@ struct WalletInterface {
 
     void sumAccount(File fout) {
         with (secure_wallet.account) {
-            fout.writefln("Available : %13.6fTGN", available.value);
-            fout.writefln("Locked    : %13.6fTGN", locked.value);
-            fout.writefln("Total     : %13.6fTGN", total.value);
+            fout.writefln("Available : %17.6fTGN", available.value);
+            fout.writefln("Locked    : %17.6fTGN", locked.value);
+            fout.writefln("Total     : %17.6fTGN", total.value);
 
         }
     }
