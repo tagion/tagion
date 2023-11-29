@@ -145,9 +145,10 @@ int _main(string[] args) {
     scope (exit) {
         const end_date = cast(DateTime)(Clock.currTime);
         writefln("Made %s runs", run_counter);
-        writefln("Test ended on %s %s", end_date, end_date);
-        mkdirRecurse(dirName(env.bdd_results));
-        fwrite(buildPath(env.bdd_results, "tx_stats.hibon"), tx_stats);
+        writefln("Test ended on %s", end_date);
+        const tx_file = buildPath(env.dlog, "tx_stats.hibon");
+        mkdirRecurse(dirName(tx_file));
+        fwrite(tx_file, tx_stats);
     }
 
     writefln("Starting operational test now on\n\t%s\nand will end in %s, on\n\t%s",
@@ -173,6 +174,10 @@ int _main(string[] args) {
         auto operational_feature = automation!operational;
         operational_feature.SendNContractsFromwallet1Towallet2(sender_interface, receiver_interface, sendkernel, tx_stats);
         auto feat_group = operational_feature.run;
+
+        auto run_file = File(buildPath(env.dlog, "runs.txt"), "w");
+        run_file.writeln(run_counter);
+        run_file.close;
 
         if (feat_group.result.hasErrors) {
             stop = true;
