@@ -110,8 +110,8 @@ int _main(string[] args) {
                 "trt-update", "Request a update on all derivers", &wallet_switch.trt_update,
                 
                 "address", format(
-                    "Sets the address default: %s", options.contract_address), &options
-                    .addr,
+                    "Sets the address default: %s", options.contract_address), 
+                    &options.addr,
                 "faucet", "request money from the faucet", &wallet_switch.faucet,
                 "bip39", "Generate bip39 set the number of words", &bip39,
                 "name", "Sets the account name", &account_name,

@@ -32,6 +32,8 @@ import tagion.basic.range : eatOne;
 import tagion.basic.basic : isinit;
 import tagion.crypto.SecureNet;
 import tagion.wallet.SecureWallet;
+import tagion.hibon.BigNumber;
+import tagion.script.common;
 
 mixin Main!(_main, "payout");
 
@@ -54,7 +56,10 @@ int _main(string[] args) {
 
     immutable program = args[0];
     bool version_switch;
+    bool list;
+    bool sum;
     uint confidence;
+double amount;
     GetoptResult main_args;
     WalletOptions options;
     WalletInterface[] wallet_interfaces;
@@ -77,8 +82,14 @@ int _main(string[] args) {
                 "version", "display the version", &version_switch,
                 "v|verbose", "Enable verbose print-out", &__verbose_switch,
                 "dry", "Dry-run this will not save the wallet", &__dry_switch,
-                "C|create", "Create the wallet an set the confidence", &confidence, /*
-        "pay", "Creates a payment contract", &wallet_switch.pay,
+                "C|create", "Create the wallet an set the confidence", &confidence,
+                "l|list", "List wallet content", &list,
+                "s|sum", "Sum of the wallet", &sum, 
+                "amount", "Create an payment request in tagion", &amount,
+        //"questions", "Questions for wallet creation", &questions_str,
+                //"questions", "Questions for wallet creation", &questions_str,
+                /*        
+"pay", "Creates a payment contract", &wallet_switch.pay,
                 "O|overwrite", "Overwrite the config file and exits", &overwrite_switch,
                 "path", format("Set the path for the wallet files : default %s", path), &path,
                 "wallet", format("Wallet file : default %s", options.walletfile), &options.walletfile,
@@ -144,6 +155,20 @@ int _main(string[] args) {
     }
     try {
         WalletOptions[] all_options;
+        auto common_wallet_interface = WalletInterface(options);
+        common_wallet_interface.load;
+        if (list) {
+            common_wallet_interface.listAccount(stdout);
+            common_wallet_interface.listInvoices(stdout);
+            sum = true;
+        }
+        if (sum) {
+            common_wallet_interface.sumAccount(stdout);
+        }
+            verbose("amount %s", amount);
+        if (config_files.empty) {
+            return 0;
+        }
         foreach (file; config_files) {
             verbose("file %s", file);
             check(file.hasExtension(FileExtension.json), format("%s is not a %s file", file, FileExtension.json));
@@ -195,7 +220,6 @@ int _main(string[] args) {
                 }
             }
         }
-        auto common_wallet_interface = WalletInterface(options);
         if (!confidence.isinit) {
             check(common_wallet_interface.secure_wallet.wallet.isinit,
                     "Common wallet has already been created");
@@ -253,6 +277,25 @@ int _main(string[] args) {
             common_wallet_interface.secure_wallet.recover(answers);
             check(common_wallet_interface.secure_wallet.isLoggedin, "Wallet could not be activated");
             good("Wallet activated");
+        }
+
+        if (amount >0) {
+            BigNumber total=BigNumber(cast(ulong)amount);
+            total*=TagionCurrency.BASE_UNIT;
+            const MAX_TGN=(TagionCurrency.UNIT_MAX/TagionCurrency.BASE_UNIT).TGN;
+            writefln("Total %s", total);
+            writefln("Rest  %s", total % TagionCurrency.UNIT_MAX);
+            writefln("Store %s", total/TagionCurrency.UNIT_MAX);
+            const whole_bills=cast(uint)(total/TagionCurrency.UNIT_MAX);
+            //BigNumber paid;
+            TagionBill[] bills;
+            foreach(i; iota(whole_bills)) {
+                bills~=common_wallet_interface.secure_wallet.requestBill(MAX_TGN);
+            }
+                const rest=(cast(long)((total % TagionCurrency.UNIT_MAX)/TagionCurrency.BASE_UNIT)).TGN;
+            writefln("rest %s", rest);
+                bills~=common_wallet_interface.secure_wallet.requestBill(rest);
+            bills.each!((bill) => writefln("%s", bill.toPretty));
         }
         // writefln("pin '%s' %d", pincode, pincode.length);
         /*
