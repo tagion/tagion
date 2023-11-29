@@ -207,39 +207,23 @@ struct TranscriptService {
             }
 
 
-            // if (shutdown !is long.init) {
-            //     auto req = dartModifyRR();
-            //     req.id = res.id;
+            if (shutdown !is long.init && last_consensus_epoch >= shutdown) {
+                auto req = dartModifyRR();
+                req.id = res.id;
 
-            //     if (last_consensus_epoch >= shutdown) {
-            //         import core.atomic;
-            //         dart_handle.send(req, RecordFactory.uniqueRecorder(recorder), cast(immutable) res.id);
-            //         graceful_shutdown.atomicOp!"+="(1);
-            //         thisActor.stop = true;
-            //         return;
-            //     }
-            //     if (res.id > shutdown) {
-            //         dart_handle.send(req, RecordFactory.uniqueRecorder(recorder), cast(immutable) res.id);
-            //         return;
-            //     }
-            // }
+                TagionHead new_head = TagionHead(
+                        TagionDomain,
+                        shutdown,
+                );
+                recorder.insert(new_head, Archive.Type.ADD);
+
+                import core.atomic;
+                dart_handle.send(req, RecordFactory.uniqueRecorder(recorder), cast(immutable) res.id);
+                graceful_shutdown.atomicOp!"+="(1);
+                thisActor.stop = true;
+                return;
+            }
             
-            // if (shutdown !is long.init && last_consensus_epoch >= shutdown) {
-            //     auto req = dartModifyRR();
-            //     req.id = res.id;
-            //     dart_handle.send(req, RecordFactory.uniqueRecorder(recorder), cast(immutable) res.id);
-
-            //     import core.atomic;
-            //     graceful_shutdown.atomicOp!"+="(1);
-            //     thisActor.stop = true;
-            // }
-            // if (shutdown !is long.init && res.id > shutdown) {
-            //     auto req = dartModifyRR();
-            //     req.id = res.id;
-            //     dart_handle.send(req, RecordFactory.uniqueRecorder(recorder), cast(immutable) res.id);
-            //     return;
-            // }
-
             
             const epoch_contract = epoch_contracts.get(res.id, null);
             if (epoch_contract is null) {
@@ -348,17 +332,21 @@ struct TranscriptService {
                     TagionDomain,
                     res.id,
             );
-
-            recorder.insert(new_head, Archive.Type.ADD);
-            recorder.insert(non_voted_epoch, Archive.Type.ADD);
-
             immutable(DARTIndex)[] locked_indexes = recorder[]
                 .filter!(a => a.type == Archive.Type.ADD)
                 .map!(a => net.dartIndex(a.filed))
                 .array;
 
             LockedArchives outputs = LockedArchives(res.id, locked_indexes);
-            recorder.insert(outputs, Archive.Type.ADD);
+
+
+            if (shutdown is long.init || res.id < shutdown) {
+                log("inserting head and other archives for epoch %s", new_head.current_epoch);
+                recorder.insert(new_head, Archive.Type.ADD);
+                recorder.insert(non_voted_epoch, Archive.Type.ADD);
+                recorder.insert(outputs, Archive.Type.ADD);
+            }
+
 
             last_head = new_head;
             last_globals = new_globals;
