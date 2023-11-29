@@ -2,14 +2,14 @@ module tagion.tools.auszahlung.auszahlung;
 import core.thread;
 import std.algorithm;
 import std.array;
-import std.file : exists, mkdir, mkdirRecurse;
+import std.file : exists, mkdir, mkdirRecurse, setAttributes;
 import std.format;
 import std.getopt;
 import std.path;
 import std.range;
 import std.stdio;
 import std.typecons;
-import std.conv : to;
+import std.conv : to, octal;
 import tagion.basic.Message;
 import tagion.basic.Types : FileExtension, hasExtension;
 import tagion.basic.tagionexceptions;
@@ -58,6 +58,7 @@ static void set_path(ref string file, string path) {
     file = buildPath(path, file.baseName);
 }
 
+enum file_protect=octal!444;
 enum MIN_WALLETS = 3;
 int _main(string[] args) {
     import tagion.wallet.SecureWallet : check;
@@ -322,6 +323,9 @@ int _main(string[] args) {
                 verbose("submit\n%s", show(hirpc_submit));
                 secure_wallet.account.hirpcs ~= hirpc_submit.toDoc;
                 contract_filename.fwrite(hirpc_submit);
+                scope(success) {
+                    contract_filename.setAttributes(file_protect);
+                }
             }
             good("Total %sTGN", total_amount);
 
@@ -335,6 +339,9 @@ int _main(string[] args) {
                 const req=secure_wallet.getRequestCheckWallet(hirpc);
                 const update_req=buildPath(path, update_tag).setExtension(FileExtension.hibon);
                 update_req.fwrite(req);
+                scope(success) {
+                    update_req.setAttributes(file_protect);
+                }
             }
         }
     }
