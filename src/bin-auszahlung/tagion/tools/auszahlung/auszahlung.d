@@ -2,7 +2,7 @@ module tagion.tools.auszahlung.auszahlung;
 import core.thread;
 import std.algorithm;
 import std.array;
-import std.file : exists, mkdir;
+import std.file : exists, mkdir, mkdirRecurse;
 import std.format;
 import std.getopt;
 import std.path;
@@ -58,8 +58,10 @@ int _main(string[] args) {
     bool version_switch;
     bool list;
     bool sum;
+    bool force;
+    string path;
     uint confidence;
-double amount;
+    double amount;
     GetoptResult main_args;
     WalletOptions options;
     WalletInterface[] wallet_interfaces;
@@ -84,45 +86,10 @@ double amount;
                 "dry", "Dry-run this will not save the wallet", &__dry_switch,
                 "C|create", "Create the wallet an set the confidence", &confidence,
                 "l|list", "List wallet content", &list,
-                "s|sum", "Sum of the wallet", &sum, 
+                "s|sum", "Sum of the wallet", &sum,
                 "amount", "Create an payment request in tagion", &amount,
-        //"questions", "Questions for wallet creation", &questions_str,
-                //"questions", "Questions for wallet creation", &questions_str,
-                /*        
-"pay", "Creates a payment contract", &wallet_switch.pay,
-                "O|overwrite", "Overwrite the config file and exits", &overwrite_switch,
-                "path", format("Set the path for the wallet files : default %s", path), &path,
-                "wallet", format("Wallet file : default %s", options.walletfile), &options.walletfile,
-                "device", format("Device file : default %s", options.devicefile), &options.devicefile,
-                "quiz", format("Quiz file : default %s", options.quizfile), &options.quizfile,
-                "C|create", "Create a new account", &create_account,
-                "c|changepin", "Change pin-code", &change_pin,
-                "o|output", "Output filename", &wallet_switch.output_filename,
-                "l|list", "List wallet content", &wallet_switch.list, //"questions", "Questions for wallet creation", &questions_str,
-                "s|sum", "Sum of the wallet", &wallet_switch.sum, //"questions", "Questions for wallet creation", &questions_str,
-                "send", "Send a contract to the shell", &wallet_switch.send, //"answers", "Answers for wallet creation", &answers_str,
-                "sendkernel", "Send a contract to the kernel", &wallet_switch.sendkernel, //"answers", "Answers for wallet creation", &answers_str,
-                "P|passphrase", "Set the wallet passphrase", &_passphrase,
-                "create-invoice", "Create invoice by format LABEL:PRICE. Example: Foreign_invoice:1000", &wallet_switch
-                    .invoice, 
-                "x|pin", "Pincode", &pincode,
-                "amount", "Create an payment request in tagion", &wallet_switch.amount,
-                "force", "Force input bill", &wallet_switch.force,
-                "dry", "Dry-run this will not save the wallet", &__dry_switch,
-                "req", "List all requested bills", &wallet_switch.request,
-                "update", "Request a wallet updated", &wallet_switch.update,
-                "trt-update", "Request a update on all derivers", &wallet_switch.trt_update,
-                
-                "address", format(
-                    "Sets the address default: %s", options.contract_address), &options
-                    .addr,
-                "faucet", "request money from the faucet", &wallet_switch.faucet,
-                    // "dart-addr", format("Sets the dart address default: %s", options.dart_address), &options.dart_address,
-                "bip39", "Generate bip39 set the number of words", &bip39,
-                "name", "Sets the account name", &account_name,
-                "info", "Prints the public key and the name of the account", &info,
-                "pubkey", "Prints the public key", &pubkey_info,
-*/
+                "path", "File path", &path,
+                "force", "Force input bill", &force,
 
         
 
@@ -154,18 +121,19 @@ double amount;
         return 0;
     }
     try {
+        const(HashNet) hash_net = new StdHashNet;
         WalletOptions[] all_options;
         auto common_wallet_interface = WalletInterface(options);
         common_wallet_interface.load;
         if (list) {
-            common_wallet_interface.listAccount(stdout);
+            common_wallet_interface.listAccount(stdout, hash_net);
             common_wallet_interface.listInvoices(stdout);
             sum = true;
         }
         if (sum) {
             common_wallet_interface.sumAccount(stdout);
         }
-            verbose("amount %s", amount);
+        verbose("amount %s", amount);
         if (config_files.empty) {
             return 0;
         }
@@ -230,7 +198,6 @@ double amount;
                     "Confidence can not be greater than number of wallets %d", wallet_interfaces.length));
             verbose("Confidence is %d", confidence);
             Buffer[] answers;
-            const(HashNet) hash_net = new StdHashNet;
             foreach (ref wallet; wallet_interfaces) {
                 ubyte[] privkey;
                 scope (exit) {
@@ -261,7 +228,6 @@ double amount;
             verbose("Loggedin %d", number_of_loggins);
             check(confidence <= number_of_loggins, format("At least %d wallet need to open the transaction", confidence));
 
-            const(HashNet) hash_net = new StdHashNet;
             Buffer[] answers;
             foreach (wallet; wallet_interfaces) {
                 ubyte[] privkey;
@@ -279,24 +245,40 @@ double amount;
             good("Wallet activated");
         }
 
-        if (amount >0) {
-            BigNumber total=BigNumber(cast(ulong)amount);
-            total*=TagionCurrency.BASE_UNIT;
-            const MAX_TGN=(TagionCurrency.UNIT_MAX/TagionCurrency.BASE_UNIT).TGN;
+        if (amount > 0) {
+            BigNumber total = BigNumber(cast(ulong) amount);
+            total *= TagionCurrency.BASE_UNIT;
+            const MAX_TGN = (TagionCurrency.UNIT_MAX / TagionCurrency.BASE_UNIT).TGN;
             writefln("Total %s", total);
             writefln("Rest  %s", total % TagionCurrency.UNIT_MAX);
-            writefln("Store %s", total/TagionCurrency.UNIT_MAX);
-            const whole_bills=cast(uint)(total/TagionCurrency.UNIT_MAX);
+            writefln("Store %s", total / TagionCurrency.UNIT_MAX);
+            const whole_bills = cast(uint)(total / TagionCurrency.UNIT_MAX);
             //BigNumber paid;
             TagionBill[] bills;
-            foreach(i; iota(whole_bills)) {
-                bills~=common_wallet_interface.secure_wallet.requestBill(MAX_TGN);
+            foreach (i; iota(whole_bills)) {
+                bills ~= common_wallet_interface.secure_wallet.requestBill(MAX_TGN);
             }
-                const rest=(cast(long)((total % TagionCurrency.UNIT_MAX)/TagionCurrency.BASE_UNIT)).TGN;
+            const rest = (cast(long)((total % TagionCurrency.UNIT_MAX) / TagionCurrency.BASE_UNIT)).TGN;
             writefln("rest %s", rest);
-                bills~=common_wallet_interface.secure_wallet.requestBill(rest);
+            bills ~= common_wallet_interface.secure_wallet.requestBill(rest);
             bills.each!((bill) => writefln("%s", bill.toPretty));
+            string bill_path = buildPath(path, "bills");
+            mkdirRecurse(bill_path);
+            foreach (i, bill; bills) {
+                const filename = buildPath(bill_path, format("bill_%02d", i)).setExtension(FileExtension.hibon);
+                filename.fwrite(bill);
+            }
+            //writefln("account %s", common_wallet_interface.secure_wallet.account.toPretty);
         }
+        if (force) {
+            foreach(arg; args[1..$].filter!(file => file.hasExtension(FileExtension.hibon))) {
+               const bill=arg.fread!TagionBill;
+                //writefln("%s", toText(bill));
+               // verbose("%s", show(bill));
+               // secure_wallet.addBill(bill);
+            }
+        }
+                common_wallet_interface.save(false);
         // writefln("pin '%s' %d", pincode, pincode.length);
         /*
         verbose("Config file %s", config_file);

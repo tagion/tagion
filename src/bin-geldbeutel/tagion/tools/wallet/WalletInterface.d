@@ -28,7 +28,7 @@ import tagion.wallet.WalletRecords;
 import std.range;
 import std.typecons;
 import tagion.communication.HiRPC;
-import tagion.crypto.Types : Pubkey;
+import tagion.crypto.Types : Pubkey, Fingerprint;
 import tagion.dart.DARTBasic;
 import tagion.dart.DARTcrud;
 import tagion.hibon.Document;
@@ -546,26 +546,49 @@ struct WalletInterface {
         return show(rec.toDoc);
     }
 
-    string toText(const TagionBill bill, string mark = null) {
+    string _toText(const TagionBill bill, string mark = null) {
         import std.format;
         import tagion.hibon.HiBONtoText;
         import tagion.utils.StdTime : toText;
 
+        Fingerprint bill_print;
+        if (secure_wallet.net) {
+            bill_print = secure_wallet.net.calcHash(bill);
+        }
+        else {
+            const(HashNet) hash_net = new StdHashNet;
+            bill_print = hash_net.calcHash(bill);
+
+        }
         const value = format("%10.3f", bill.value.value);
         return format("%2$s%3$27-s %4$s %5$13.6fTGN%1$s",
                 RESET, mark,
                 bill.time.toText,
-                secure_wallet.net.calcHash(bill)
-                .encodeBase64,
+                bill_print.encodeBase64,
+                bill.value.value);
+    }
+    static string toText(
+const(HashNet) hash_net, 
+const TagionBill bill, 
+string mark = null) {
+        import std.format;
+        import tagion.hibon.HiBONtoText;
+        import tagion.utils.StdTime : toText;
+
+        return format("%2$s%3$27-s %4$s %5$13.6fTGN%1$s",
+                RESET, mark,
+                bill.time.toText,
+                hash_net.calcHash(bill).encodeBase64,
                 bill.value.value);
     }
 
-    void listAccount(File fout) {
+
+    void listAccount(File fout, const(HashNet) hash_net=null) {
+        void innerAccount(const(HashNet) _hash_net) {
         const line = format("%-(%s%)", "- ".repeat(40));
         fout.writefln("%-5s %-27s %-45s %-40s", "No", "Date", "Fingerprint", "Value");
         fout.writeln(line);
         auto bills = secure_wallet.account.bills ~ secure_wallet.account.requested.values;
-
         bills.sort!(q{a.time < b.time});
         foreach (i, bill; bills) {
             string mark = GREEN;
@@ -575,10 +598,16 @@ struct WalletInterface {
             else if (bill.owner in secure_wallet.account.activated) {
                 mark = YELLOW;
             }
-            writefln("%4s] %s", i, toText(bill, mark));
+            writefln("%4s] %s", i, toText(_hash_net, bill, mark));
             verbose("%s", show(bill));
         }
         fout.writeln(line);
+    }
+        if (hash_net) {
+        innerAccount(hash_net);
+        return;
+    }
+        innerAccount(secure_wallet.net);
     }
 
     void listInvoices(File fout) {
@@ -682,7 +711,7 @@ struct WalletInterface {
 
                         }
                         if (bill !is TagionBill.init) {
-                            writefln("%s", toText(bill));
+                            writefln("%s", toText(secure_wallet.net, bill));
                             verbose("%s", show(bill));
                             secure_wallet.addBill(bill);
                             save_wallet = true;
