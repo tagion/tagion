@@ -37,7 +37,6 @@ import tagion.services.supervisor;
 import tagion.tools.Basic;
 import tagion.tools.revision;
 import tagion.utils.JSONCommon;
-import tagion.utils.getopt;
 import tagion.tools.toolsexception;
 import tagion.tools.wallet.WalletInterface;
 import tagion.tools.wallet.WalletOptions;
@@ -134,7 +133,7 @@ int _neuewelle(string[] args) {
     );
 
     if (main_args.helpWanted) {
-        tagionGetoptPrinter(
+        defaultGetoptPrinter(
                 "Help information for tagion wave program\n" ~
                 format("Usage: %s <tagionwave.json>\n", program),
                 main_args.options

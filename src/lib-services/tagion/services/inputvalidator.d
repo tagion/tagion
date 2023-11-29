@@ -100,7 +100,8 @@ struct InputValidatorService {
         ReceiveBuffer buf;
         buf.max_size = opts.sock_recv_buf;
 
-        const listening = sock.listen(opts.sock_addr);
+        const listening = sock.listen(opts.sock_addr, nonblock:
+                true);
         if (listening == 0) {
             log("listening on addr: %s", opts.sock_addr);
         }

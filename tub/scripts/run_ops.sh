@@ -2,18 +2,19 @@
 #
 # Runs operational tests
 #
-set -ex
 
-HOST=x86_64-linux
-bdir=$(realpath -m ./build/$HOST/bin)
-TMP_DIR=$(mktemp -d /tmp/tagion_opsXXXX)
+platform="x86_64-linux"
+bdir=$(realpath -m ./build/$platform/bin)
+# TMP_DIR=$(mktemp -d /tmp/tagion_opsXXXX)
+TMP_DIR="$HOME/.local/share/tagion"
 
-"$bdir"/tagion -s || echo "";
+"$bdir"/tagion -s || echo "Soft links already exists";
+make ci-files || echo "Not in source dir"
 
 wdir=$TMP_DIR/wallets
-net_dir="$TMP_DIR"/net
+net_dir="$TMP_DIR"/wave
 amount=1000000
-keyfile="$net_dir"/keys
+keyfile="$wdir/keys.txt"
 mkdir -p "$wdir" "$net_dir"
 
 create_wallet_and_bills() {
@@ -79,23 +80,47 @@ do
   "$bdir/dartutil" "$dartfilename" "$wdir"/dart_recorder.hibon -m
 done
 
-cd "$net_dir"
-"$bdir"/neuewelle -O \
-    --option=wave.number_of_nodes:$nodes \
-    --option=wave.fail_fast:true \
-    --option=subscription.tags:taskfailure
-cd -
+(
+    cd "$net_dir" || return 1
+    "$bdir"/neuewelle -O \
+        --option=wave.number_of_nodes:$nodes \
+        --option=wave.fail_fast:true \
+        --option=subscription.tags:taskfailure
+)
 
-"$bdir"/neuewelle "$TMP_DIR"/net/tagionwave.json --verbose --keys "$wdir" < "$keyfile" > "$net_dir"/wave.log &
+systemctl stop --user neuewelle.service || echo "No wave service was running"
+systemctl stop --user tagionshell.service || echo "No shell service was running"
+mkdir -p ~/.local/bin ~/.config/systemd/user ~/.local/share/tagion/wave 
+cp "$bdir/run_network.sh" ~/.local/share/tagion/wave/
+cp "$bdir/tagion" ~/.local/bin/
+cp "$bdir/tagionshell.service" "$bdir/neuewelle.service" ~/.config/systemd/user
 
-WAVE_PID=$!
+systemctl --user daemon-reload
+systemctl restart --user neuewelle.service
+systemctl restart --user tagionshell.service
+
+# "$bdir"/neuewelle "$TMP_DIR"/net/tagionwave.json --verbose --keys "$wdir" < "$keyfile" > "$net_dir"/wave.log &
+
 echo "waiting for network to start!"
 sleep 20;
 
+set -ex
 
-"$bdir"/bddenv.sh "$bdir"/testbench operational -w "$wdir"/wallet1.json -x "$pincode" -w "$wdir"/wallet2.json -x "$pincode"
+op_pids="";
+log_dir="$PWD/logs/ops"
+mv "$log_dir" "$log_dir.old" || echo "no old logs"
+mkdir -p "$log_dir"
+for ((i = 1; i <= wallets/2; i++)); 
+do
+    export DLOG="$log_dir/$i"
+    mkdir -p "$DLOG"
+    "$bdir"/testbench operational -w "$wdir"/wallet$i.json -x "$pincode" -w "$wdir"/wallet$((i*2)).json -x "$pincode" > "$DLOG/test.log" 2>&1 &
+    op_pids+=${!}
+    sleep 0.2s
+done
 
-kill -s SIGINT "$WAVE_PID"
-wait "$WAVE_PID"
+echo "Running $((wallets/2)) test clients"
+
+wait
 
 echo "data files in $TMP_DIR"
