@@ -269,7 +269,11 @@ int _main(string[] args) {
         if (!recorder.empty) {
             const head = TagionHead(recorder[].front.filed);
             writefln("Found head: %s", head.toPretty);
-            DARTIndex epoch_index = __net.dartKey(StdNames.epoch, head.current_epoch);
+
+
+            pragma(msg, "fixme(phr): count the keys up hardcoded to be genesis atm");
+            DARTIndex epoch_index = __net.dartKey(StdNames.epoch, long(0));
+            writefln("epoch index is %(%02x%)", epoch_index);
 
             const _sender = CRUD.dartRead([epoch_index], hirpc);
             const _receiver = hirpc.receive(_sender);
@@ -426,6 +430,7 @@ int network_mode0(
     else {
         Pubkey[] keys;
         if (epoch_head.isRecord!Epoch) {
+            assert(0, "not supported to boot from epoch yet");
             keys = Epoch(epoch_head).active;
         }
         else {
