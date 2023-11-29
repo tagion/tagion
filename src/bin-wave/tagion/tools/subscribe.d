@@ -6,6 +6,7 @@ import std.algorithm : countUntil;
 import std.conv;
 import std.format;
 import std.stdio;
+import std.getopt;
 import tagion.basic.Types;
 import tagion.basic.Version;
 import tagion.hibon.Document;
@@ -13,7 +14,6 @@ import tagion.hibon.HiBONJSON;
 import tagion.services.subscription : SubscriptionServiceOptions;
 import tagion.tools.Basic : Main;
 import tagion.tools.revision;
-import tagion.utils.getopt;
 
 import std.exception;
 import tagion.crypto.SecureInterfaceNet;
@@ -123,7 +123,7 @@ int _main(string[] args) {
     );
 
     if (main_args.helpWanted) {
-        tagionGetoptPrinter(
+        defaultGetoptPrinter(
                 format("Help information for %s\n", program),
                 main_args.options
         );
