@@ -45,7 +45,6 @@ import tagion.wallet.Basic : saltHash;
 import tagion.wallet.KeyRecover;
 import tagion.wallet.WalletException : WalletException;
 import tagion.wallet.WalletRecords : DevicePIN, RecoverGenerator;
-
 alias check = Check!(WalletException);
 alias CiphDoc = Cipher.CipherDocument;
 
@@ -828,7 +827,7 @@ struct SecureWallet(Net : SecureNet) {
         return account.add_bill(doc);
     }
 
-    void addBill(TagionBill bill) {
+    bool addBill(TagionBill bill) {
         return account.add_bill(bill);
     }
 
@@ -842,7 +841,7 @@ struct SecureWallet(Net : SecureNet) {
 
     void setEncrDerivers(const(CiphDoc) cipher_doc) {
         Cipher cipher;
-        const derive_state_doc = cipher.decrypt(this._net, cipher_doc); //this._net, getEncrderiversList(
+        const derive_state_doc = cipher.decrypt(this._net, cipher_doc); 
         DeriverState derive_state = DeriverState(derive_state_doc);
         this.account.derivers = derive_state.derivers;
         this.account.derive_state = derive_state.derive_state;
