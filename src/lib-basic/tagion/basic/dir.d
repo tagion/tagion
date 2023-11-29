@@ -6,7 +6,6 @@
 module tagion.basic.dir;
 
 @safe:
-nothrow:
 
 import core.sys.posix.unistd;
 
@@ -73,7 +72,7 @@ struct Dir {
     private string _config;
     /// static program config files
     string config() {
-        set_val(_config, root_dir("etc"), xdg_dir("XDG_DATA_HOME", ".local/share"));
+        set_val(_config, root_dir("etc"), xdg_dir("XDG_CONFIG_HOME", ".config/"));
         return _config;
     }
 
@@ -81,7 +80,7 @@ struct Dir {
     /// Cached data, data that is a result expensive computation or I/O. 
     /// The cached files can be deleted without loss of data. 
     string cache() {
-        set_val(_cache, root_dir(buildPath("var", "cache")), xdg_dir("XDG_CACHE_HOME", ".local/cache"));
+        set_val(_cache, root_dir("/var/cache"), xdg_dir("XDG_CACHE_HOME", ".cache"));
         return _cache;
     }
 
@@ -98,7 +97,7 @@ struct Dir {
     private string _log;
     /// Log files
     string log() {
-        set_val(_log, root_dir(buildPath("var", "log")), xdg_dir("XDG_STATE_HOME", ".local/state"));
+        set_val(_log, root_dir("/var/log"), xdg_dir("XDG_STATE_HOME", ".local/state"));
         return _log;
     }
 }
@@ -106,4 +105,19 @@ struct Dir {
 static Dir base_dir;
 static this() {
     base_dir = Dir(geteuid);
+}
+
+unittest {
+    auto my_dirs = Dir(1000); // A normal user
+    enum homeless = "/home/less/";
+    environment["HOME"] = homeless;
+    environment["XDG_CACHE_HOME"] = homeless ~ ".cache";
+
+    assert(my_dirs.run == "/run/user/1000/tagion");
+
+    environment.remove("data");
+    assert(my_dirs.data == buildPath(homeless ~ ".local/share/tagion"));
+
+    auto root_dirs = Dir(0);
+    assert(root_dirs.run == "/run/tagion");
 }
