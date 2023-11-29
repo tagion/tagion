@@ -18,6 +18,9 @@ import std.file : copy, exists;
 import std.range;
 import tagion.dart.DARTException;
 import tagion.hibon.HiBONRecord: isRecord;
+import tagion.hibon.HiBONJSON : toPretty;
+import tagion.hibon.HiBONtoText;
+import std.format;
 
 
 
@@ -99,6 +102,8 @@ int _main(string[] args) {
 
         RecorderBlock prev_block;
         foreach(inputfilename; args[1 ..$]) {
+            writeln("going through the blocks");
+
             switch(inputfilename.extension) {
                 case FileExtension.hibon:
                     auto fin = File(inputfilename, "r");
@@ -113,25 +118,30 @@ int _main(string[] args) {
                             return 1;
                         }
                         const _block = RecorderBlock(doc);
+                        verbose("block %s", _block.toPretty);
 
-                        if (!(prev_block is RecorderBlock.init && _block.previous is prev_block.fingerprint)) {
-                            error("The chain is not valid");
-                            return 1;
+                        if (prev_block !is RecorderBlock.init) {
+                            const hash_of_prev = hash_net.calcHash(prev_block.toDoc);
+                            if (hash_of_prev != _block.previous) {
+                                error("The chain is not valid. fingerprint of previous %s=%s block %s expected %s", prev_block.epoch_number, hash_of_prev.encodeBase64, _block.epoch_number, _block.previous.encodeBase64); 
+
+                            }
                         }
 
                         
                         const _recorder = factory.recorder(_block.recorder_doc);
-                        verbose("epoch: %s, eye %(%02x), recorder length %s", _block.epoch_number, _block.bullseye, _recorder.length); 
+                        verbose("epoch: %s, eye %(%02x%), recorder length %s", _block.epoch_number, _block.bullseye, _recorder.length); 
 
-                        if (dry_run) {
-                            continue;
-                        }
 
-                        dart.modify(_recorder);
-                        const new_bullseye = dart.bullseye;
-                        if (_block.bullseye !is new_bullseye) {
-                            error("Bullseye not correct after applying recorder");
+                        const new_bullseye = dart.modify(_recorder);
+                        if (_block.bullseye != new_bullseye) {
+                            error(format("ERROR: expected bullseye: %(%02x%) \ngot %(%02x%)", 
+                                _block.bullseye, 
+                                new_bullseye));
+                            return 1;
                         }
+                        verbose("succesfully added block");
+                        prev_block = _block;
                     }
                     break;
                 default:
