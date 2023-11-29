@@ -142,7 +142,13 @@ struct InputValidatorService {
                 continue;
             }
 
-            Document doc = Document(assumeUnique(result_buf.data));
+
+            Document doc = Document(result_buf.data.idup);
+
+            if (!doc.isInorder) {
+                reject(ResponseError.InvalidBuf);
+            }
+            
             if (!doc.isRecord!(HiRPC.Sender)) {
                 reject(ResponseError.NotHiRPCSender, doc);
                 continue;
