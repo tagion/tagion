@@ -40,10 +40,12 @@ int _main(string[] args) {
     auto factory = RecordFactory(hash_net);
     string genesis_dart;
     string dart_file;
-    bool dry_run;
 
     string passphrase = "verysecret";
     secure_net.generateKeyPair(passphrase);
+
+
+    bool replay;
     
     GetoptResult main_args;
     try {
@@ -54,7 +56,7 @@ int _main(string[] args) {
         "v|verbose", "Prints more debug information", &__verbose_switch,
         "genesisdart|g", "Path to genesis dart file", &genesis_dart,
         "dartfile|d", "Path to dart file", &dart_file,
-        "dry-run", "dry run the changes", &dry_run,
+        "replay|r", "Replay the recorder", &replay,
         );
 
         if (version_switch) {
@@ -100,6 +102,7 @@ int _main(string[] args) {
         import tagion.hibon.HiBONFile : HiBONRange;
 
 
+        if (replay) {
         RecorderBlock prev_block;
         foreach(inputfilename; args[1 ..$]) {
             writeln("going through the blocks");
@@ -151,6 +154,7 @@ int _main(string[] args) {
 
             } 
         }
+    }
 
 
     } catch (Exception e) {
