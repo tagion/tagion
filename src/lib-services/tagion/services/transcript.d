@@ -44,6 +44,7 @@ import std.conv : to;
 
 @safe:
 
+shared static size_t graceful_shutdown;
 enum BUFFER_TIME_SECONDS = 30;
 
 struct TranscriptOptions {
@@ -63,22 +64,26 @@ struct TranscriptService {
             shared(StdSecureNet) shared_net,
             immutable(TaskNames) task_names) {
         const(SecureNet) net = new StdSecureNet(shared_net);
+        auto rec_factory = RecordFactory(net);
+
+        ActorHandle dart_handle = ActorHandle(task_names.dart);
+        ActorHandle epoch_creator_handle = ActorHandle(task_names.epoch_creator);
+        
 
         immutable(ContractProduct)*[DARTIndex] products;
-        auto rec_factory = RecordFactory(net);
 
         struct Votes {
             const(ConsensusVoting)[] votes;
             Epoch epoch;
             LockedArchives locked_archives;
         }
-
         Votes[long] votes;
 
         struct EpochContracts {
             const(SignedContract)[] signed_contracts;
             sdt_t epoch_time;
         }
+        const(EpochContracts)*[long] epoch_contracts;
 
         
         const process_file_name = format("%s%d", opts.shutdown_file_prefix, thisProcessID());
@@ -86,7 +91,6 @@ struct TranscriptService {
         log("PROCESS FILE PATH %s", process_file_path);
         long shutdown;
 
-        const(EpochContracts)*[long] epoch_contracts;
 
         /** 
          * Get the current head and epoch
@@ -197,11 +201,23 @@ struct TranscriptService {
                         break Finished;
                     }
 
-                    // recorder.insert(v.value.epoch, Archive.Type.ADD);
                 }
 
             }
 
+            if (shutdown !is long.init && last_consensus_epoch >= shutdown) {
+                import core.atomic;
+                graceful_shutdown.atomicOp!"+="(1);
+                thisActor.stop = true;
+            }
+            if (shutdown !is long.init && res.id > shutdown) {
+                auto req = dartModifyRR();
+                req.id = res.id;
+                dart_handle.send(req, RecordFactory.uniqueRecorder(recorder), cast(immutable) res.id);
+                return;
+            }
+
+            
             const epoch_contract = epoch_contracts.get(res.id, null);
             if (epoch_contract is null) {
                 throw new ServiceException(format("unlinked epoch contract %s", res.id));
@@ -332,7 +348,7 @@ struct TranscriptService {
             auto req = dartModifyRR();
             req.id = res.id;
 
-            locate(task_names.dart).send(req, RecordFactory.uniqueRecorder(recorder), cast(immutable) res.id);
+            dart_handle.send(req, RecordFactory.uniqueRecorder(recorder), cast(immutable) res.id);
 
             log("MEMORY: votes: %s", votes.length);
 
@@ -346,7 +362,7 @@ struct TranscriptService {
             log("Epoch round: %d time %s", last_epoch_number, epoch_time);
 
 
-            if (process_file_path.exists) {
+            if (process_file_path.exists && shutdown is long.init) {
                 // open the file and set the shutdown sig
                 auto f = File(process_file_path, "r");
                 scope(exit) {
@@ -364,6 +380,7 @@ struct TranscriptService {
 
             // add them to the vote array
             foreach (v; received_votes) {
+                // only add them if the voting is smaller than the specified time of shutdown.
                 if (votes.get(v.epoch, Votes.init) !is Votes.init) {
                     votes[v.epoch].votes ~= v;
                 }
@@ -393,13 +410,11 @@ struct TranscriptService {
                 return;
             }
 
-            (() @trusted => locate(task_names.dart).send(req, inputs))();
-
+            dart_handle.send(req, inputs);
         }
 
         void receiveBullseye(dartModifyRR.Response res, Fingerprint bullseye) {
             import tagion.utils.Miscellaneous : cutHex;
-
             const epoch_number = res.id;
 
             votes[epoch_number].epoch.bullseye = bullseye;
@@ -410,7 +425,7 @@ struct TranscriptService {
                     net.sign(bullseye)
             );
 
-            locate(task_names.epoch_creator).send(Payload(), own_vote.toDoc);
+            epoch_creator_handle.send(Payload(), own_vote.toDoc);
         }
 
         void produceContract(producedContract, immutable(ContractProduct)* product) {

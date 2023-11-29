@@ -44,6 +44,9 @@ import tagion.tools.wallet.WalletOptions;
 import tagion.utils.Term;
 
 static abort = false;
+import tagion.services.transcript : graceful_shutdown;
+
+
 private extern (C)
 void signal_handler(int signal) nothrow {
     try {
@@ -302,6 +305,7 @@ int _main(string[] args) {
         log("alive");
         bool signaled;
         import tagion.utils.pretend_safe_concurrency : receiveTimeout;
+        import core.atomic;
 
         do {
             signaled = stopsignal.wait(100.msecs);
@@ -320,7 +324,7 @@ int _main(string[] args) {
                 }
             }
         }
-        while (!signaled);
+        while (!signaled && graceful_shutdown.atomicLoad() != local_options.wave.number_of_nodes);
     }
     else {
         log("Program did not start");
