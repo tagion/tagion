@@ -255,6 +255,9 @@ int _main(string[] args) {
             good("Wallet activated");
         }
         if (amount > 0) {
+            scope(success) {
+            common_wallet_interface.save(false);
+            }
             check(wallet_interfaces.all!(wiface => wiface.secure_wallet.isLoggedin),
                     "All wallets must be loggedin to add amount");
             const amount_tgn = TagionCurrency(amount);
@@ -264,10 +267,15 @@ int _main(string[] args) {
             const filename = buildPath(bill_path, format("bill_%s", common_wallet_interface.secure_wallet.account.name))
                 .setExtension(FileExtension.hibon);
             filename.fwrite(bill);
-            common_wallet_interface.save(false);
+                scope(success) {
+                    filename.setAttributes(file_protect);
+                }
             return 0;
         }
         if (force) {
+            scope(success) {
+            common_wallet_interface.save(false);
+            }
             check(wallet_interfaces.all!(wiface => wiface.secure_wallet.isLoggedin),
                     "All wallets must be loggedin to force the bill");
             foreach (arg; args[1 .. $].filter!(file => file.hasExtension(FileExtension.hibon))) {
@@ -282,7 +290,6 @@ int _main(string[] args) {
             common_wallet_interface.listAccount(stdout, hash_net);
             common_wallet_interface.listInvoices(stdout);
 
-            common_wallet_interface.save(false);
             return 0;
         }
         auto csv_files = args[1 .. $].filter!(file => file.hasExtension(FileExtension.csv));
@@ -291,6 +298,9 @@ int _main(string[] args) {
             mkdirRecurse(contracts);
         }
         foreach (filename; csv_files) {
+            scope(success) {
+            common_wallet_interface.save(false);
+            }
             verbose("CVS %s", filename);
             auto fin = File(filename, "r");
             scope (exit) {
