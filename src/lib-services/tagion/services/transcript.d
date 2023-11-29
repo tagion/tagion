@@ -172,8 +172,10 @@ struct TranscriptService {
             */
 
             Finished: foreach (v; votes.byKeyValue) {
+                log("GOING THROUGH THE VOTES");
                 // add the new signatures to the epoch. We only want to do it if there are new signatures
                 if (v.value.epoch.bullseye !is Fingerprint.init) {
+                    log("BULLSEYE IS SET");
                     // add the signatures to the epoch. Only add them if the signature match ours
                     foreach (single_vote; v.value.votes) {
                         // check that we have not already added the signature
@@ -181,6 +183,7 @@ struct TranscriptService {
                             continue;
                         }
                         if (single_vote.verifyBullseye(net, v.value.epoch.bullseye)) {
+                            log("VERIFYING BULLSEYE");
                             v.value.epoch.signs ~= single_vote.signed_bullseye;
                         }
                         else {
@@ -193,9 +196,11 @@ struct TranscriptService {
 
                     // if the new length of the epoch is majority then we finish the epoch
                     if (v.value.epoch.signs.length == number_of_nodes && v.value.epoch.epoch_number == last_consensus_epoch + 1) {
+                        log("FINISHING THE EPOCH");
                         v.value.epoch.previous = previous_epoch;
                         previous_epoch = net.calcHash(v.value.epoch);
                         last_consensus_epoch += 1;
+                        recorder.insert(v.value.epoch, Archive.Type.ADD);
                         recorder.insert(v.value.locked_archives, Archive.Type.REMOVE);
                         votes.remove(v.value.epoch.epoch_number);
                         break Finished;
@@ -205,17 +210,39 @@ struct TranscriptService {
 
             }
 
-            if (shutdown !is long.init && last_consensus_epoch >= shutdown) {
-                import core.atomic;
-                graceful_shutdown.atomicOp!"+="(1);
-                thisActor.stop = true;
-            }
-            if (shutdown !is long.init && res.id > shutdown) {
-                auto req = dartModifyRR();
-                req.id = res.id;
-                dart_handle.send(req, RecordFactory.uniqueRecorder(recorder), cast(immutable) res.id);
-                return;
-            }
+
+            // if (shutdown !is long.init) {
+            //     auto req = dartModifyRR();
+            //     req.id = res.id;
+
+            //     if (last_consensus_epoch >= shutdown) {
+            //         import core.atomic;
+            //         dart_handle.send(req, RecordFactory.uniqueRecorder(recorder), cast(immutable) res.id);
+            //         graceful_shutdown.atomicOp!"+="(1);
+            //         thisActor.stop = true;
+            //         return;
+            //     }
+            //     if (res.id > shutdown) {
+            //         dart_handle.send(req, RecordFactory.uniqueRecorder(recorder), cast(immutable) res.id);
+            //         return;
+            //     }
+            // }
+            
+            // if (shutdown !is long.init && last_consensus_epoch >= shutdown) {
+            //     auto req = dartModifyRR();
+            //     req.id = res.id;
+            //     dart_handle.send(req, RecordFactory.uniqueRecorder(recorder), cast(immutable) res.id);
+
+            //     import core.atomic;
+            //     graceful_shutdown.atomicOp!"+="(1);
+            //     thisActor.stop = true;
+            // }
+            // if (shutdown !is long.init && res.id > shutdown) {
+            //     auto req = dartModifyRR();
+            //     req.id = res.id;
+            //     dart_handle.send(req, RecordFactory.uniqueRecorder(recorder), cast(immutable) res.id);
+            //     return;
+            // }
 
             
             const epoch_contract = epoch_contracts.get(res.id, null);
@@ -362,6 +389,7 @@ struct TranscriptService {
             log("Epoch round: %d time %s", last_epoch_number, epoch_time);
 
 
+
             if (process_file_path.exists && shutdown is long.init) {
                 // open the file and set the shutdown sig
                 auto f = File(process_file_path, "r");
@@ -369,7 +397,10 @@ struct TranscriptService {
                     f.close;
                 }
                 shutdown = (() @trusted => f.byLine.front.to!long)();
-                log("SHUTDOWN DOWN SIGNAL EPOCH %d", shutdown);
+            }
+            if (shutdown !is long.init) {
+                log("Shutdown is scheduled for epoch %d", shutdown);
+
             }
             
 
@@ -380,7 +411,6 @@ struct TranscriptService {
 
             // add them to the vote array
             foreach (v; received_votes) {
-                // only add them if the voting is smaller than the specified time of shutdown.
                 if (votes.get(v.epoch, Votes.init) !is Votes.init) {
                     votes[v.epoch].votes ~= v;
                 }
@@ -418,6 +448,7 @@ struct TranscriptService {
             const epoch_number = res.id;
 
             votes[epoch_number].epoch.bullseye = bullseye;
+
 
             ConsensusVoting own_vote = ConsensusVoting(
                     epoch_number,
