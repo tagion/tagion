@@ -44,6 +44,9 @@ import tagion.tools.wallet.WalletOptions;
 import tagion.utils.Term;
 
 static abort = false;
+import tagion.services.transcript : graceful_shutdown;
+
+
 private extern (C)
 void signal_handler(int signal) nothrow {
     try {
@@ -279,7 +282,11 @@ int _neuewelle(string[] args) {
         if (!recorder.empty) {
             const head = TagionHead(recorder[].front.filed);
             writefln("Found head: %s", head.toPretty);
-            DARTIndex epoch_index = __net.dartKey(StdNames.epoch, head.current_epoch);
+
+
+            pragma(msg, "fixme(phr): count the keys up hardcoded to be genesis atm");
+            DARTIndex epoch_index = __net.dartKey(StdNames.epoch, long(0));
+            writefln("epoch index is %(%02x%)", epoch_index);
 
             const _sender = CRUD.dartRead([epoch_index], hirpc);
             const _receiver = hirpc.receive(_sender);
@@ -309,6 +316,7 @@ int _neuewelle(string[] args) {
         log("alive");
         bool signaled;
         import tagion.utils.pretend_safe_concurrency : receiveTimeout;
+        import core.atomic;
 
         do {
             signaled = stopsignal.wait(100.msecs);
@@ -327,7 +335,7 @@ int _neuewelle(string[] args) {
                 }
             }
         }
-        while (!signaled);
+        while (!signaled && graceful_shutdown.atomicLoad() != local_options.wave.number_of_nodes);
     }
     else {
         log("Program did not start");
@@ -436,6 +444,7 @@ int network_mode0(
     else {
         Pubkey[] keys;
         if (epoch_head.isRecord!Epoch) {
+            assert(0, "not supported to boot from epoch yet");
             keys = Epoch(epoch_head).active;
         }
         else {
