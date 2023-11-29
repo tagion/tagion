@@ -90,7 +90,11 @@ class StdRefinement : Refinement {
         immutable(EventPackage*)[] epacks = events
             .map!((e) => e.event_package)
             .array;
-        locate(task_names.transcript).send(consensusEpoch(), epacks, cast(immutable(long)) decided_round.number, epoch_time);
+
+        auto transcript_tid = locate(task_names.transcript);
+        if (transcript_tid !is Tid.init) {
+            transcript_tid.send(consensusEpoch(), epacks, cast(immutable(long)) decided_round.number, epoch_time);
+        }
     }
 
     void excludedNodes(ref BitMask excluded_mask) {
