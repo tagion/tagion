@@ -39,7 +39,8 @@ import tagion.utils.StdTime;
 import tagion.utils.pretend_safe_concurrency;
 import std.process : thisProcessID;
 import std.path : buildPath;
-import std.file;
+import std.file : exists;
+import std.conv : to;
 
 @safe:
 
@@ -343,6 +344,18 @@ struct TranscriptService {
                 const(sdt_t) epoch_time) @safe {
             last_epoch_number += 1;
             log("Epoch round: %d time %s", last_epoch_number, epoch_time);
+
+
+            if (process_file_path.exists) {
+                // open the file and set the shutdown sig
+                auto f = File(process_file_path, "r");
+                scope(exit) {
+                    f.close;
+                }
+                shutdown = (() @trusted => f.byLine.front.to!long)();
+                log("SHUTDOWN DOWN SIGNAL EPOCH %d", shutdown);
+            }
+            
 
             immutable(ConsensusVoting)[] received_votes = epacks
                 .filter!(epack => epack.event_body.payload.isRecord!ConsensusVoting)
