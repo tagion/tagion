@@ -454,7 +454,6 @@ const(Options)[] get_mode_0_options(const(Options) options, bool monitor = false
     foreach (node_n; 0 .. number_of_nodes) {
         auto opt = Options(options);
         opt.setPrefix(format(prefix_f, node_n));
-        opt.epoch_creator.timeout = 250;
         all_opts ~= opt;
     }
 
