@@ -37,12 +37,17 @@ import tagion.services.exception;
 import tagion.utils.JSONCommon;
 import tagion.utils.StdTime;
 import tagion.utils.pretend_safe_concurrency;
+import std.process : thisProcessID;
+import std.path : buildPath;
+import std.file;
 
 @safe:
 
 enum BUFFER_TIME_SECONDS = 30;
 
 struct TranscriptOptions {
+    string shutdown_folder = "/tmp/";
+    string shutdown_file_prefix = "epoch_shutdown_";
     mixin JSONCommon;
 }
 
@@ -72,9 +77,13 @@ struct TranscriptService {
         struct EpochContracts {
             const(SignedContract)[] signed_contracts;
             sdt_t epoch_time;
-
-            // Votes[] previous_votes;
         }
+
+        
+        const process_file_name = format("%s%d", opts.shutdown_file_prefix, thisProcessID());
+        const process_file_path = buildPath(opts.shutdown_folder, process_file_name);
+        log("PROCESS FILE PATH %s", process_file_path);
+        long shutdown;
 
         const(EpochContracts)*[long] epoch_contracts;
 
@@ -122,6 +131,7 @@ struct TranscriptService {
                     if (!epoch_recorder.empty) {
                         auto doc = epoch_recorder[].front.filed;
                         if (doc.isRecord!Epoch) {
+                            log("FOUND A EPOCH");
                             auto epoch = Epoch(doc);
                             last_epoch_number = epoch.epoch_number;
                             last_consensus_epoch = epoch.epoch_number;
@@ -332,6 +342,7 @@ struct TranscriptService {
                 immutable(long) epoch_number,
                 const(sdt_t) epoch_time) @safe {
             last_epoch_number += 1;
+            log("Epoch round: %d time %s", last_epoch_number, epoch_time);
 
             immutable(ConsensusVoting)[] received_votes = epacks
                 .filter!(epack => epack.event_body.payload.isRecord!ConsensusVoting)
