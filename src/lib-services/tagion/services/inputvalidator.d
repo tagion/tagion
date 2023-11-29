@@ -32,7 +32,7 @@ import tagion.utils.pretend_safe_concurrency;
 struct InputValidatorOptions {
     string sock_addr;
     uint sock_recv_timeout = 1000;
-    uint sock_recv_buf = 4096;
+    uint sock_recv_buf = 0x4000;
     uint sock_send_timeout = 200;
     uint sock_send_buf = 1024;
 
