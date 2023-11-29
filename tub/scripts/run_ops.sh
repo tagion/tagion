@@ -112,14 +112,14 @@ mv "$log_dir" "$log_dir.old" || echo "no old logs"
 mkdir -p "$log_dir"
 for ((i = 1; i <= wallets/2; i++)); 
 do
-    export BDD_RESULTS="$log_dir/$i"
-    mkdir -p "$BDD_RESULTS"
-    "$bdir"/bddenv.sh "$bdir"/testbench operational --duration 5 --unit minutes -w "$wdir"/wallet$i.json -x "$pincode" -w "$wdir"/wallet$((i*2)).json -x "$pincode" > "$BDD_RESULTS/test.log" 2>&1 &
+    export DLOG="$log_dir/$i"
+    mkdir -p "$DLOG"
+    "$bdir"/bddenv.sh "$bdir"/testbench operational --duration 5 --unit minutes -w "$wdir"/wallet$i.json -x "$pincode" -w "$wdir"/wallet$((i*2)).json -x "$pincode" > "$DLOG/test.log" 2>&1 &
     op_pids+=${!}
     sleep 0.2s
 done
 
-echo "Running test $((wallets/2)) clients"
+echo "Running $((wallets/2)) test clients"
 
 wait
 
