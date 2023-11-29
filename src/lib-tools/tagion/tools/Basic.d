@@ -77,7 +77,7 @@ void error(Args...)(string fmt, lazy Args args) @trusted {
 void warn(Args...)(string fmt, lazy Args args) @trusted {
     import std.format;
 
-    vout.writefln("%s%s%s", YELLOW, format(fmt, args), RESET);
+    vout.writefln("%sWarning:%s%s", YELLOW, format(fmt, args), RESET);
 }
 
 void info(Args...)(string fmt, lazy Args args) @trusted {

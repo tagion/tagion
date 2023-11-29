@@ -202,7 +202,9 @@ int _main(string[] args) {
         }
         if (!response_name.empty) {
             scope (success) {
-                common_wallet_interface.save(false);
+                if (!dry_switch) {
+                    common_wallet_interface.save(false);
+                }
             }
             const received = response_name.fread!(HiRPC.Receiver);
             common_wallet_interface.secure_wallet.setResponseCheckRead(received);
@@ -266,7 +268,9 @@ int _main(string[] args) {
         }
         if (amount > 0) {
             scope (success) {
-                common_wallet_interface.save(false);
+                if (!dry_switch) {
+                    common_wallet_interface.save(false);
+                }
             }
             check(wallet_interfaces.all!(wiface => wiface.secure_wallet.isLoggedin),
                     "All wallets must be loggedin to add amount");
@@ -278,13 +282,17 @@ int _main(string[] args) {
                 .setExtension(FileExtension.hibon);
             filename.fwrite(bill);
             scope (success) {
-                filename.setAttributes(file_protect);
+                if (!dry_switch) {
+                    filename.setAttributes(file_protect);
+                }
             }
             return 0;
         }
         if (force) {
             scope (success) {
-                common_wallet_interface.save(false);
+                if (!dry_switch) {
+                    common_wallet_interface.save(false);
+                }
             }
             check(wallet_interfaces.all!(wiface => wiface.secure_wallet.isLoggedin),
                     "All wallets must be loggedin to force the bill");
@@ -309,7 +317,9 @@ int _main(string[] args) {
         }
         foreach (filename; csv_files) {
             scope (success) {
-                common_wallet_interface.save(false);
+                if (!dry_switch) {
+                    common_wallet_interface.save(false);
+                }
             }
             verbose("CVS %s", filename);
             auto fin = File(filename, "r");
@@ -327,9 +337,6 @@ int _main(string[] args) {
                 auto nonce = new ubyte[4];
                 getRandom(nonce);
                 to_pay ~= TagionBill(amount_tgn, currentTime, pubkey, nonce.idup);
-                //writefln("pubkey %s amount %s", record[pubkey_name], record[amount_name]);
-
-                //writefln("%s", bills[$-1].toPretty);
             }
             SignedContract signed_contract;
             TagionCurrency fees;
@@ -344,7 +351,9 @@ int _main(string[] args) {
                 secure_wallet.account.hirpcs ~= hirpc_submit.toDoc;
                 contract_filename.fwrite(hirpc_submit);
                 scope (success) {
-                    contract_filename.setAttributes(file_protect);
+                    if (!dry_switch) {
+                        contract_filename.setAttributes(file_protect);
+                    }
                 }
             }
             good("Total %sTGN", total_amount);
@@ -360,7 +369,9 @@ int _main(string[] args) {
                 const update_req = buildPath(path, update_tag).setExtension(FileExtension.hibon);
                 update_req.fwrite(req);
                 scope (success) {
-                    update_req.setAttributes(file_protect);
+                    if (!dry_switch) {
+                        update_req.setAttributes(file_protect);
+                    }
                 }
             }
         }
