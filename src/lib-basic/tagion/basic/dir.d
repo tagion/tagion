@@ -1,3 +1,8 @@
+/** 
+ * Provides simple getters for XDG base directories and FHS
+ * Apropiate directoies a choosen based on whether the program is run as root or not.
+ * All directories are namespaced with tagion.
+**/
 module tagion.basic.dir;
 
 @safe:
@@ -7,7 +12,6 @@ import core.sys.posix.unistd;
 
 import std.process : environment;
 import std.path;
-import std.file : mkdirRecurse;
 import std.conv;
 
 import tagion.basic.basic : isinit;
@@ -24,6 +28,8 @@ struct Dir {
     }
 
     string _home;
+
+    /// the home directory
     string home() {
         if (_home.isinit) {
             _home = environment.get("HOME");
@@ -54,29 +60,33 @@ struct Dir {
             else {
                 var = user_val;
             }
-            // mkdirRecurse(var);
         }
     }
 
     private string _data;
+    /// Site specific data
     string data() {
         set_val(_data, root_dir("srv"), xdg_dir("XDG_DATA_HOME", ".local/share"));
         return _data;
     }
 
     private string _config;
+    /// static program config files
     string config() {
         set_val(_config, root_dir("etc"), xdg_dir("XDG_DATA_HOME", ".local/share"));
         return _config;
     }
 
     private string _cache;
+    /// Cached data, data that is a result expensive computation or I/O. 
+    /// The cached files can be deleted without loss of data. 
     string cache() {
         set_val(_cache, root_dir(buildPath("var", "cache")), xdg_dir("XDG_CACHE_HOME", ".local/cache"));
         return _cache;
     }
 
     private string _run;
+    /// This directory contains system information data describing the system since it was booted
     string run() {
         set_val(_run,
                 root_dir("run"),
@@ -86,6 +96,7 @@ struct Dir {
     }
 
     private string _log;
+    /// Log files
     string log() {
         set_val(_log, root_dir(buildPath("var", "log")), xdg_dir("XDG_STATE_HOME", ".local/state"));
         return _log;
