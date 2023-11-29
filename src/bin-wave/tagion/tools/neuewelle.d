@@ -7,7 +7,7 @@ import core.sys.posix.signal;
 import core.sys.posix.unistd;
 import core.thread;
 import core.time;
-import std.algorithm : countUntil, map;
+import std.algorithm : countUntil, map, uniq, equal;
 import std.array;
 import std.file : chdir, exists;
 import std.format;
@@ -67,6 +67,16 @@ void signal_handler(int signal) nothrow {
 mixin Main!(_main, "wave");
 
 int _main(string[] args) {
+    try {
+        return _neuewelle(args);
+    }
+    catch (Exception e) {
+        error(e);
+        return 1;
+    }
+}
+
+int _neuewelle(string[] args) {
     immutable program = args[0];
     string bootkeys_path;
     /*
@@ -115,7 +125,7 @@ int _main(string[] args) {
             "option", "Set an option", &override_options,
             "k|keys", "Path to the boot-keys in mode0", &bootkeys_path,
             "v|verbose", "Enable verbose print-out", &__verbose_switch,
-            "n|dry", "Check the parameter without staring the network (dry-run)", &__dry_switch,
+            "n|dry", "Check the parameter without starting the network (dry-run)", &__dry_switch,
             "nodeopts", "Generate single node opts files for mode0", &mode0_node_opts_path,
             "m|monitor", "Enable the monitor", &monitor,
     );
@@ -281,6 +291,7 @@ int _main(string[] args) {
 
         db.close;
         network_mode0(node_options, supervisor_handles, bootkeys_path, fin, doc);
+        log("started mode 0 net");
 
         if (mode0_node_opts_path) {
             foreach (i, opt; node_options) {
@@ -372,7 +383,7 @@ int network_mode0(
             WalletOptions wallet_options;
             LoopTry: foreach (tries; 1 .. number_of_retry + 1) {
                 verbose("Input boot key %d as nodename:pincode", i);
-                const args = by_line.front.split(":");
+                const args = (by_line.front.empty) ? string[].init : by_line.front.split(":");
                 by_line.popFront;
                 if (args.length != 2) {
                     writefln("%1$sBad format %3$s expected nodename:pincode%2$s", RED, RESET, args.front);
@@ -402,8 +413,7 @@ int network_mode0(
                         writefln("%1$sWrong pincode bootkey %3$s node %4$s%2$s", RED, RESET, i, args[0]);
                     }
                 }
-                check(tries < number_of_retry, format("Max number of reties is %d", number_of_retry));
-
+                check(tries < number_of_retry, format("Max number of retries is %d", number_of_retry));
             }
         }
         if (dry_switch && !bootkeys_path.empty) {
@@ -432,15 +442,19 @@ int network_mode0(
             auto genesis = GenesisEpoch(epoch_head);
 
             keys = genesis.nodes;
+            check(equal(keys, keys.uniq), "Duplicate node public keys in the genesis epoch");
+            check(keys.length == node_options.length, "There was not the same amount of configured nodes as in the genesis epoch");
         }
 
         foreach (node_info; zip(keys, node_options)) {
+            verbose("adding addressbook ", node_info[0]);
             addressbook[node_info[0]] = NodeAddress(node_info[1].task_names.epoch_creator);
         }
     }
 
     /// spawn the nodes
     foreach (n; nodes) {
+        verbose("spawning supervisor ", n.opts.task_names.supervisor);
         supervisor_handles ~= spawn!Supervisor(n.opts.task_names.supervisor, n.opts, n.net);
     }
 
