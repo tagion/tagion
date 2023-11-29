@@ -58,7 +58,7 @@ static void set_path(ref string file, string path) {
     file = buildPath(path, file.baseName);
 }
 
-enum file_protect=octal!444;
+enum file_protect = octal!444;
 enum MIN_WALLETS = 3;
 int _main(string[] args) {
     import tagion.wallet.SecureWallet : check;
@@ -69,6 +69,7 @@ int _main(string[] args) {
     bool sum;
     bool force;
     bool update;
+    string response_name;
     string path;
     uint confidence;
     double amount;
@@ -100,6 +101,7 @@ int _main(string[] args) {
                 "amount", "Create an payment request in tagion", &amount,
                 "path", "File path", &path,
                 "update", "Update wallet", &update,
+                "response", "Response from update (response.hibon)", &response_name,
                 "force", "Force input bill", &force,
 
         );
@@ -120,7 +122,7 @@ int _main(string[] args) {
                 "Documentation: https://tagion.org/",
                 "",
                 "Usage:",
-                format("%s [<option>...] <wallet.json> ... ", program),
+                format("%s [<option>...] <wallet.json> [<bill.hibon> ...] ", program),
                 "",
 
                 "<option>:",
@@ -198,6 +200,14 @@ int _main(string[] args) {
                 }
             }
         }
+        if (!response_name.empty) {
+            scope (success) {
+                common_wallet_interface.save(false);
+            }
+            const received = response_name.fread!(HiRPC.Receiver);
+            common_wallet_interface.secure_wallet.setResponseCheckRead(received);
+            return 0;
+        }
         if (!confidence.isinit) {
             check(common_wallet_interface.secure_wallet.wallet.isinit,
                     "Common wallet has already been created");
@@ -255,8 +265,8 @@ int _main(string[] args) {
             good("Wallet activated");
         }
         if (amount > 0) {
-            scope(success) {
-            common_wallet_interface.save(false);
+            scope (success) {
+                common_wallet_interface.save(false);
             }
             check(wallet_interfaces.all!(wiface => wiface.secure_wallet.isLoggedin),
                     "All wallets must be loggedin to add amount");
@@ -267,14 +277,14 @@ int _main(string[] args) {
             const filename = buildPath(bill_path, format("bill_%s", common_wallet_interface.secure_wallet.account.name))
                 .setExtension(FileExtension.hibon);
             filename.fwrite(bill);
-                scope(success) {
-                    filename.setAttributes(file_protect);
-                }
+            scope (success) {
+                filename.setAttributes(file_protect);
+            }
             return 0;
         }
         if (force) {
-            scope(success) {
-            common_wallet_interface.save(false);
+            scope (success) {
+                common_wallet_interface.save(false);
             }
             check(wallet_interfaces.all!(wiface => wiface.secure_wallet.isLoggedin),
                     "All wallets must be loggedin to force the bill");
@@ -298,8 +308,8 @@ int _main(string[] args) {
             mkdirRecurse(contracts);
         }
         foreach (filename; csv_files) {
-            scope(success) {
-            common_wallet_interface.save(false);
+            scope (success) {
+                common_wallet_interface.save(false);
             }
             verbose("CVS %s", filename);
             auto fin = File(filename, "r");
@@ -333,7 +343,7 @@ int _main(string[] args) {
                 verbose("submit\n%s", show(hirpc_submit));
                 secure_wallet.account.hirpcs ~= hirpc_submit.toDoc;
                 contract_filename.fwrite(hirpc_submit);
-                scope(success) {
+                scope (success) {
                     contract_filename.setAttributes(file_protect);
                 }
             }
@@ -342,14 +352,14 @@ int _main(string[] args) {
         }
         if (update) {
             verbose("Update");
-           with (common_wallet_interface) {
-            const message=secure_wallet.net.calcHash(WalletInterface.update_tag.representation);
-                const update_net= secure_wallet.net.derive(message);
-                const hirpc=HiRPC(update_net);
-                const req=secure_wallet.getRequestCheckWallet(hirpc);
-                const update_req=buildPath(path, update_tag).setExtension(FileExtension.hibon);
+            with (common_wallet_interface) {
+                const message = secure_wallet.net.calcHash(WalletInterface.update_tag.representation);
+                const update_net = secure_wallet.net.derive(message);
+                const hirpc = HiRPC(update_net);
+                const req = secure_wallet.getRequestCheckWallet(hirpc);
+                const update_req = buildPath(path, update_tag).setExtension(FileExtension.hibon);
                 update_req.fwrite(req);
-                scope(success) {
+                scope (success) {
                     update_req.setAttributes(file_protect);
                 }
             }
