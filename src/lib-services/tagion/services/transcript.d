@@ -172,10 +172,8 @@ struct TranscriptService {
             */
 
             Finished: foreach (v; votes.byKeyValue) {
-                log("GOING THROUGH THE VOTES");
                 // add the new signatures to the epoch. We only want to do it if there are new signatures
                 if (v.value.epoch.bullseye !is Fingerprint.init) {
-                    log("BULLSEYE IS SET");
                     // add the signatures to the epoch. Only add them if the signature match ours
                     foreach (single_vote; v.value.votes) {
                         // check that we have not already added the signature
@@ -183,7 +181,6 @@ struct TranscriptService {
                             continue;
                         }
                         if (single_vote.verifyBullseye(net, v.value.epoch.bullseye)) {
-                            log("VERIFYING BULLSEYE");
                             v.value.epoch.signs ~= single_vote.signed_bullseye;
                         }
                         else {
@@ -196,7 +193,6 @@ struct TranscriptService {
 
                     // if the new length of the epoch is majority then we finish the epoch
                     if (v.value.epoch.signs.length == number_of_nodes && v.value.epoch.epoch_number == last_consensus_epoch + 1) {
-                        log("FINISHING THE EPOCH");
                         v.value.epoch.previous = previous_epoch;
                         previous_epoch = net.calcHash(v.value.epoch);
                         last_consensus_epoch += 1;
