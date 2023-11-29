@@ -89,7 +89,7 @@ struct Dir {
     string run() {
         set_val(_run,
                 root_dir("run"),
-                xdg_dir("XDG_RUNTIME_DIR", buildPath("run", euid.to!string, program_name)
+                environment.get("XDG_RUNTIME_DIR", buildPath("/run", "user", euid.to!string, program_name)
         ));
         return _run;
     }
@@ -112,12 +112,14 @@ unittest {
     enum homeless = "/home/less/";
     environment["HOME"] = homeless;
     environment["XDG_CACHE_HOME"] = homeless ~ ".cache";
+    assert(my_dirs.cache == "/home/less/.cache/tagion", my_dirs.cache);
 
-    assert(my_dirs.run == "/run/user/1000/tagion");
+    environment.remove("XDG_RUNTIME_DIR");
+    assert(my_dirs.run == "/run/user/1000/tagion", my_dirs.run);
 
-    environment.remove("data");
-    assert(my_dirs.data == buildPath(homeless ~ ".local/share/tagion"));
+    environment.remove("XDG_DATA_HOME");
+    assert(my_dirs.data == buildPath(homeless ~ ".local/share/tagion"), my_dirs.data);
 
     auto root_dirs = Dir(0);
-    assert(root_dirs.run == "/run/tagion");
+    assert(root_dirs.run == "/run/tagion", root_dirs.run);
 }
