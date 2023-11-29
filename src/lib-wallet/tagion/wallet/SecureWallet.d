@@ -650,11 +650,13 @@ struct SecureWallet(Net : SecureNet) {
             const amount_to_pay = pay_script.outputs
                 .map!(bill => bill.value)
                 .totalAmount;
+            const available_wallet_amount = available_balance();
 
             do {
                 collected_bills.length = 0;
 
                 const amount_to_collect = amount_to_pay + (-1 * (amount_remainder)) + fees;
+                check(amount_to_collect < available_wallet_amount, "Amount is too big with fees");
 
                 const can_pay = collect_bills(amount_to_collect, collected_bills);
 
@@ -1319,18 +1321,16 @@ unittest {
 
 
     const to_pay = [TagionBill(19949.TGN, sdt_t.init, Pubkey([1, 2, 3, 4]), Buffer.init)];
-    const to_pay2 = [TagionBill(19901.TGN, sdt_t.init, Pubkey([1, 2, 3, 4]), Buffer.init)];
+    const to_pay2 = [TagionBill(30000.TGN, sdt_t.init, Pubkey([1, 2, 3, 4]), Buffer.init)];
 
 
     TagionCurrency fees;
-    writeln("BEFORE CREATE FEE");
     const res = wallet1.getFee(to_pay, fees, true);
     check(res.value == true, format("Wallet should be able to pay Amount: %s", res.msg));
     const res2 = wallet1.getFee(to_pay2, fees, true);
-    check(res2.value == true, format("Wallet should be able to pay Amount: %s", res2.msg));
+    check(res2.value == false, format("Wallet should not be able to pay Amount"));
 
     SignedContract signed_contract;
-    writeln("BEFORE CREATE PAYMENT");
     const can_pay = wallet1.createPayment(to_pay, signed_contract, fees, true);
     check(can_pay.value == true, format("got error: %s", res.msg));
 }
