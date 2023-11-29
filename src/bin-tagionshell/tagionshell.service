@@ -3,7 +3,7 @@ Description="Test deployment of tagionshell"
 
 [Service]
 WorkingDirectory=%h/.local/share/tagion/
-ExecStart=%h/.local/share/bin/tagion shell
+ExecStart=%h/.local/bin/tagion shell
 Restart=always
 RestartSec=3
 MemoryMax=50M
