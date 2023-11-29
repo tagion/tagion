@@ -91,8 +91,6 @@ int _main(string[] args) {
                 "path", "File path", &path,
                 "force", "Force input bill", &force,
 
-        
-
         );
     }
     catch (GetOptException e) {
@@ -132,6 +130,7 @@ int _main(string[] args) {
         }
         if (sum) {
             common_wallet_interface.sumAccount(stdout);
+            return 0;
         }
         verbose("amount %s", amount);
         if (config_files.empty) {
@@ -244,21 +243,28 @@ int _main(string[] args) {
             check(common_wallet_interface.secure_wallet.isLoggedin, "Wallet could not be activated");
             good("Wallet activated");
         }
-
+        // if (wallet_interface.total.value
+        //        if (
         if (amount > 0) {
-            BigNumber total = BigNumber(cast(ulong) amount);
-            total *= TagionCurrency.BASE_UNIT;
+            check(wallet_interfaces.all!(wiface => wiface.secure_wallet.isLoggedin),
+                    "All wallets must be loggedin to add amount");
+            const amount_tgn = TagionCurrency(amount);
+            const bill = common_wallet_interface.secure_wallet.requestBill(amount_tgn);
+            string bill_path = buildPath(path, "bills");
+            mkdirRecurse(bill_path);
+            const filename = buildPath(bill_path, format("bill_%s", common_wallet_interface.secure_wallet.account.name))
+                .setExtension(FileExtension.hibon);
+            filename.fwrite(bill);
+            /*
+            BigNumber total_amount = BigNumber(cast(ulong) amount);
+            total_amount *= TagionCurrency.BASE_UNIT;
             const MAX_TGN = (TagionCurrency.UNIT_MAX / TagionCurrency.BASE_UNIT).TGN;
-            writefln("Total %s", total);
-            writefln("Rest  %s", total % TagionCurrency.UNIT_MAX);
-            writefln("Store %s", total / TagionCurrency.UNIT_MAX);
-            const whole_bills = cast(uint)(total / TagionCurrency.UNIT_MAX);
-            //BigNumber paid;
+            const whole_bills = cast(uint)(total_amount / TagionCurrency.UNIT_MAX);
             TagionBill[] bills;
             foreach (i; iota(whole_bills)) {
                 bills ~= common_wallet_interface.secure_wallet.requestBill(MAX_TGN);
             }
-            const rest = (cast(long)((total % TagionCurrency.UNIT_MAX) / TagionCurrency.BASE_UNIT)).TGN;
+            const rest = (cast(long)((total_amount % TagionCurrency.UNIT_MAX) / TagionCurrency.BASE_UNIT)).TGN;
             writefln("rest %s", rest);
             bills ~= common_wallet_interface.secure_wallet.requestBill(rest);
             bills.each!((bill) => writefln("%s", bill.toPretty));
@@ -268,17 +274,26 @@ int _main(string[] args) {
                 const filename = buildPath(bill_path, format("bill_%02d", i)).setExtension(FileExtension.hibon);
                 filename.fwrite(bill);
             }
+            */
             //writefln("account %s", common_wallet_interface.secure_wallet.account.toPretty);
         }
         if (force) {
-            foreach(arg; args[1..$].filter!(file => file.hasExtension(FileExtension.hibon))) {
-               const bill=arg.fread!TagionBill;
-                //writefln("%s", toText(bill));
-               // verbose("%s", show(bill));
-               // secure_wallet.addBill(bill);
+            check(wallet_interfaces.all!(wiface => wiface.secure_wallet.isLoggedin),
+                    "All wallets must be loggedin to force the bill");
+            foreach (arg; args[1 .. $].filter!(file => file.hasExtension(FileExtension.hibon))) {
+                const bill = arg.fread!TagionBill;
+                with (common_wallet_interface) {
+                    good("%s", toText(hash_net, bill));
+                    verbose("%s", show(bill));
+                    const added=secure_wallet.addBill(bill);
+                    check(added, "Bill was not found");
+                }
             }
+            common_wallet_interface.listAccount(stdout, hash_net);
+            common_wallet_interface.listInvoices(stdout);
+             
         }
-                common_wallet_interface.save(false);
+        common_wallet_interface.save(false);
         // writefln("pin '%s' %d", pincode, pincode.length);
         /*
         verbose("Config file %s", config_file);

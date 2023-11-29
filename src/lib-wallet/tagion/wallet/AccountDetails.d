@@ -102,18 +102,22 @@ struct AccountDetails {
         return false;
     }
 
-    void add_bill(TagionBill bill) {
+    bool add_bill(TagionBill bill) {
         if (bill.owner in requested) {
             bills ~= requested[bill.owner];
             requested.remove(bill.owner);
-
+            return true;
         }
+        return false;
     }
 
     TagionBill add_bill(const Document doc) {
         auto bill = TagionBill(doc);
-        add_bill(bill);
+        const added=add_bill(bill);
+        if (added) {
         return bill;
+    }
+        return TagionBill.init;
     }
 
     void requestBill(TagionBill bill, Buffer derive) {

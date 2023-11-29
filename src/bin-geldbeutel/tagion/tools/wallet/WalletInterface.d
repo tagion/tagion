@@ -546,31 +546,10 @@ struct WalletInterface {
         return show(rec.toDoc);
     }
 
-    string _toText(const TagionBill bill, string mark = null) {
-        import std.format;
-        import tagion.hibon.HiBONtoText;
-        import tagion.utils.StdTime : toText;
-
-        Fingerprint bill_print;
-        if (secure_wallet.net) {
-            bill_print = secure_wallet.net.calcHash(bill);
-        }
-        else {
-            const(HashNet) hash_net = new StdHashNet;
-            bill_print = hash_net.calcHash(bill);
-
-        }
-        const value = format("%10.3f", bill.value.value);
-        return format("%2$s%3$27-s %4$s %5$13.6fTGN%1$s",
-                RESET, mark,
-                bill.time.toText,
-                bill_print.encodeBase64,
-                bill.value.value);
-    }
     static string toText(
-const(HashNet) hash_net, 
-const TagionBill bill, 
-string mark = null) {
+            const(HashNet) hash_net,
+            const TagionBill bill,
+            string mark = null) {
         import std.format;
         import tagion.hibon.HiBONtoText;
         import tagion.utils.StdTime : toText;
@@ -578,35 +557,36 @@ string mark = null) {
         return format("%2$s%3$27-s %4$s %5$13.6fTGN%1$s",
                 RESET, mark,
                 bill.time.toText,
-                hash_net.calcHash(bill).encodeBase64,
+                hash_net.calcHash(bill)
+                .encodeBase64,
                 bill.value.value);
     }
 
-
-    void listAccount(File fout, const(HashNet) hash_net=null) {
+    void listAccount(File fout, const(HashNet) hash_net = null) {
         void innerAccount(const(HashNet) _hash_net) {
-        const line = format("%-(%s%)", "- ".repeat(40));
-        fout.writefln("%-5s %-27s %-45s %-40s", "No", "Date", "Fingerprint", "Value");
-        fout.writeln(line);
-        auto bills = secure_wallet.account.bills ~ secure_wallet.account.requested.values;
-        bills.sort!(q{a.time < b.time});
-        foreach (i, bill; bills) {
-            string mark = GREEN;
-            if (bill.owner in secure_wallet.account.requested) {
-                mark = RED;
+            const line = format("%-(%s%)", "- ".repeat(40));
+            fout.writefln("%-5s %-27s %-45s %-40s", "No", "Date", "Fingerprint", "Value");
+            fout.writeln(line);
+            auto bills = secure_wallet.account.bills ~ secure_wallet.account.requested.values;
+            bills.sort!(q{a.time < b.time});
+            foreach (i, bill; bills) {
+                string mark = GREEN;
+                if (bill.owner in secure_wallet.account.requested) {
+                    mark = RED;
+                }
+                else if (bill.owner in secure_wallet.account.activated) {
+                    mark = YELLOW;
+                }
+                writefln("%4s] %s", i, toText(_hash_net, bill, mark));
+                verbose("%s", show(bill));
             }
-            else if (bill.owner in secure_wallet.account.activated) {
-                mark = YELLOW;
-            }
-            writefln("%4s] %s", i, toText(_hash_net, bill, mark));
-            verbose("%s", show(bill));
+            fout.writeln(line);
         }
-        fout.writeln(line);
-    }
+
         if (hash_net) {
-        innerAccount(hash_net);
-        return;
-    }
+            innerAccount(hash_net);
+            return;
+        }
         innerAccount(secure_wallet.net);
     }
 

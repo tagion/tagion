@@ -8,50 +8,94 @@ HOST=x86_64-linux
 bdir=$(realpath -m ./build/$HOST/bin)
 TMP_DIR=$(mktemp -d /tmp/tagion_opsXXXX)
 
-$BIN_DIR/tagion -s || echo soft links already exists
+"$bdir"/tagion -s || echo "";
 
-wallet_dir=$TMP_DIR/wallets
+wdir=$TMP_DIR/wallets
+net_dir="$TMP_DIR"/net
+amount=1000000
+keyfile="$net_dir"/keys
+mkdir -p "$wdir" "$net_dir"
 
-create_net_wallets() {
-    wallets=$1
-    wdir=$2
-    # Create the wallets in a loop
-    for ((i = 1; i <= wallets; i++)); 
+create_wallet_and_bills() {
+    _name=$1
+    i=$_name
+    _bills=$2
+    _wdir=$3
+    _pincode=$4
+
+    wallet_dir=$(readlink -m  "${_wdir}/wallet$i")
+    mkdir -p "$wallet_dir"
+    wallet_config=$(readlink -m  "${_wdir}/wallet$i.json")
+    password="password$i"
+
+    # Step 1: Create wallet directory and config file
+    "$bdir"/geldbeutel -O --path "$wallet_dir" "$wallet_config"
+
+    # Step 2: Generate wallet passphrase and pincode
+    "$bdir"/geldbeutel "$wallet_config" -P "$password" -x "$_pincode"
+    echo "Created wallet $i in $wallet_dir with passphrase: $password and pincode: $_pincode"
+
+    for (( b=1; b <= _bills; b++)); 
     do
-      wallet_dir=$(readlink -m  "${wdir}/wallet$i")
-      mkdir -p $wallet_dir
-      wallet_config=$(readlink -m  "${wdir}/wallet$i.json")
-      password="password$i"
-      pincode=0000
+      bill_name=$(readlink -m "$_wdir/bill$i-$b.hibon")
+      "$bdir"/geldbeutel "$wallet_config" -x "$_pincode" --amount "$amount" -o "$bill_name" 
+      echo "Created bill $bill_name"
+      "$bdir"/geldbeutel "$wallet_config" -x "$_pincode" --force "$bill_name"
+      echo "Forced bill into wallet $bill_name"
+    done 
 
-      # Step 1: Create wallet directory and config file
-      $bdir/geldbeutel -O --path "$wallet_dir" "$wallet_config"
-
-      # Step 2: Generate wallet passphrase and pincode
-      $bdir/geldbeutel "$wallet_config" -P "$password" -x "$pincode"
-      echo "Created wallet $i in $wallet_dir with passphrase: $password and pincode: $pincode"
-      # Step 3: Generate a node name and insert into all infos
-      name="node_$i"
-      $bdir/geldbeutel "$wallet_config" -x "$pincode" --name "$name"
-      address=$($bdir/geldbeutel "$wallet_config" --info) 
-      all_infos+=" -p $address,$name"
-      echo "wallet$i:$pincode" >> "$keyfile"
-    done
 }
 
-# This file is copied over by the ci flow, if you're running this in the source repo then you need to copy it over as well
-$BIN_DIR/create_wallets.sh -b $BIN_DIR -k $TMP_DIR/net -t $wallet_dir -u $TMP_DIR/net/keys -w100
+pincode=0000
+bills=1
+wallets=100
+nodes=5
+for ((i = 1; i <= wallets; i++ ));
+do
+    create_wallet_and_bills $i $bills $wdir $pincode;
+done
 
-$BIN_DIR/tagion wave $TMP_DIR/net/tagionwave.json --keys $wallet_dir < $TMP_DIR/net/keys > $TMP_DIR/net/wave.log &
+all_infos=""
+# Generate a node name and insert into all infos
+for ((i = 1; i <= nodes; i++ ));
+do
+    name="node_$i"
+    wallet_config=$(readlink -m  "${wdir}/wallet$i.json")
+    "$bdir"/geldbeutel "$wallet_config" -x "$pincode" --name "$name"
+    address=$("$bdir"/geldbeutel "$wallet_config" --info) 
+    all_infos+=" -p $address,$name"
+    echo "wallet$i:$pincode" >> "$keyfile"
+done
 
+echo $all_infos
+# bill_files=$(ls $wdir/bill*.hibon)
+cat "$wdir"/bill*.hibon | "${bdir}/stiefel" -a $all_infos -o "$wdir"/dart_recorder.hibon
+
+for ((i = 0; i <= nodes-1; i++)); 
+do
+  dartfilename="${net_dir}/Node_${i}_dart.drt"
+  echo "$dartfilename"
+  "$bdir/dartutil" --initialize "$dartfilename"
+  "$bdir/dartutil" "$dartfilename" "$wdir"/dart_recorder.hibon -m
+done
+
+cd "$net_dir"
+"$bdir"/neuewelle -O \
+    --option=wave.number_of_nodes:$nodes \
+    --option=wave.fail_fast:true \
+    --option=subscription.tags:taskfailure
+cd -
+
+"$bdir"/neuewelle "$TMP_DIR"/net/tagionwave.json --verbose --keys "$wdir" < "$keyfile" > "$net_dir"/wave.log &
+
+WAVE_PID=$!
 echo "waiting for network to start!"
 sleep 20;
 
-WAVE_PID=$!
 
-$BIN_DIR/bddenv.sh $BIN_DIR/testbench operational -w $wallet_dir/wallet1.json -x 0001 -w $wallet_dir/wallet2.json -x 0002
+"$bdir"/bddenv.sh "$bdir"/testbench operational -w "$wdir"/wallet1.json -x "$pincode" -w "$wdir"/wallet2.json -x "$pincode"
 
-kill -s SIGINT $WAVE_PID
-wait $WAVE_PID
+kill -s SIGINT "$WAVE_PID"
+wait "$WAVE_PID"
 
 echo "data files in $TMP_DIR"
