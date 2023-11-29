@@ -32,7 +32,7 @@ import tagion.utils.pretend_safe_concurrency;
 struct InputValidatorOptions {
     string sock_addr;
     uint sock_recv_timeout = 1000;
-    uint sock_recv_buf = 4096;
+    uint sock_recv_buf = 0x4000;
     uint sock_send_timeout = 200;
     uint sock_send_buf = 1024;
 
@@ -143,7 +143,13 @@ struct InputValidatorService {
                 continue;
             }
 
-            Document doc = Document(assumeUnique(result_buf.data));
+
+            Document doc = Document(result_buf.data.idup);
+
+            if (!doc.isInorder) {
+                reject(ResponseError.InvalidBuf);
+            }
+            
             if (!doc.isRecord!(HiRPC.Sender)) {
                 reject(ResponseError.NotHiRPCSender, doc);
                 continue;

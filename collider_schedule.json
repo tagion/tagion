@@ -258,6 +258,14 @@
                 "trt"
             ],
             "timeout": 0.0
+        },
+        "big_contract": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "acceptance", "big_contract"
+            ],
+            "timeout": 0.0
         }
 
     }

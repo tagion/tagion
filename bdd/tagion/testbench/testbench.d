@@ -30,6 +30,7 @@ int main(string[] args) {
     import operational = tagion.testbench.e2e.operational;
     import genesis_test = tagion.testbench.genesis_test;
     import trt_service = tagion.testbench.services.trt_service;
+    import big_contract = tagion.testbench.services.big_contract;
 
     alias alltools = AliasSeq!(
             collector,
@@ -58,6 +59,7 @@ int main(string[] args) {
             operational,
             genesis_test,
             trt_service,
+            big_contract,
     );
     mixin doOneMain!(alltools);
     return do_main(args);
