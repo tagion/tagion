@@ -98,7 +98,7 @@ HiRPC.Receiver sendSubmitHiRPC(string address, HiRPC.Sender contract, const(Secu
         throw new Exception(format("Could not dial address %s: %s", address, nng_errstr(rc)));
     }
     sock.sendtimeout = 1000.msecs;
-    sock.sendbuf = 4096;
+    sock.sendbuf = 0x4000;
 
     rc = sock.send(contract.toDoc.serialize);
     if (rc != 0) {
