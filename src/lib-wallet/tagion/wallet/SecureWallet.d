@@ -638,6 +638,7 @@ struct SecureWallet(Net : SecureNet) {
     Result!bool getFee(const(TagionBill)[] to_pay, out TagionCurrency fees, bool print = false) nothrow {
         import tagion.script.Currency : totalAmount;
         import tagion.script.execute;
+        import tagion.basic.Debug;
 
         try {
             PayScript pay_script;
@@ -652,7 +653,10 @@ struct SecureWallet(Net : SecureNet) {
 
             do {
                 collected_bills.length = 0;
-                const can_pay = collect_bills(amount_to_pay + (-1 * (amount_remainder)), collected_bills);
+
+                const amount_to_collect = amount_to_pay + (-1 * (amount_remainder)) + fees;
+
+                const can_pay = collect_bills(amount_to_collect, collected_bills);
 
                 if (collected_bills.length == previous_bill_count) {
                     return result(false);
@@ -665,6 +669,8 @@ struct SecureWallet(Net : SecureNet) {
                     .totalAmount;
                 fees = ContractExecution.billFees(collected_bills.length, pay_script.outputs.length + 1);
                 amount_remainder = total_collected_amount - amount_to_pay - fees;
+
+                
                 previous_bill_count = collected_bills.length;
             }
             while (amount_remainder < 0);
@@ -718,8 +724,8 @@ struct SecureWallet(Net : SecureNet) {
         return result(true);
     }
 
-    Result!bool createPayment(const(TagionBill)[] to_pay, ref SignedContract signed_contract, out TagionCurrency fees) nothrow {
-        import std.stdio;
+    Result!bool createPayment(const(TagionBill)[] to_pay, ref SignedContract signed_contract, out TagionCurrency fees, bool print = false) nothrow {
+        import tagion.basic.Debug;
         import tagion.hibon.HiBONtoText;
         import tagion.script.Currency : totalAmount;
         import tagion.script.execute;
@@ -738,7 +744,8 @@ struct SecureWallet(Net : SecureNet) {
 
             do {
                 collected_bills.length = 0;
-                const can_pay = collect_bills(amount_to_pay + (-1 * (amount_remainder)), collected_bills);
+                const amount_to_collect = amount_to_pay + (-1 * (amount_remainder)) + fees;
+                const can_pay = collect_bills(amount_to_collect, collected_bills);
                 if (collected_bills.length == previous_bill_count) {
                     return result(false);
                 }
@@ -1218,7 +1225,6 @@ unittest {
 
         SignedContract signed_contract;
         TagionCurrency fees;
-        writefln("WALLET 1 total balance %s", wallet1.total_balance);
         const can_pay = wallet1.createPayment([w2_bill1], signed_contract, fees);
 
         const expected_fees = ContractExecution.billFees(2, 2);
@@ -1294,6 +1300,37 @@ unittest {
     check(can_pay.value == true, "should be able to create payment");
 
     auto pay_script = PayScript(signed_contract.contract.script);
-    writefln("pay_script = %s", pay_script.toPretty);
     check(pay_script.outputs.length < signed_contract.contract.inputs.length, "should have fewer outputs than inputs");
+}
+
+// amount test
+unittest {
+    import std.stdio;
+    auto wallet1 = StdSecureWallet("some words", "1234");
+    const bill1 = wallet1.requestBill(10000.TGN);
+    const bill2 = wallet1.requestBill(10000.TGN);
+    const bill3 = wallet1.requestBill(10000.TGN);
+    assert(wallet1.account.requested.length == 3);
+    assert(wallet1.account.bills.length == 0);
+    wallet1.account.add_bill(bill1);
+    wallet1.account.add_bill(bill2);
+    wallet1.account.add_bill(bill3);
+    assert(wallet1.account.bills.length == 3);
+
+
+    const to_pay = [TagionBill(19949.TGN, sdt_t.init, Pubkey([1, 2, 3, 4]), Buffer.init)];
+    const to_pay2 = [TagionBill(19901.TGN, sdt_t.init, Pubkey([1, 2, 3, 4]), Buffer.init)];
+
+
+    TagionCurrency fees;
+    writeln("BEFORE CREATE FEE");
+    const res = wallet1.getFee(to_pay, fees, true);
+    check(res.value == true, format("Wallet should be able to pay Amount: %s", res.msg));
+    const res2 = wallet1.getFee(to_pay2, fees, true);
+    check(res2.value == true, format("Wallet should be able to pay Amount: %s", res2.msg));
+
+    SignedContract signed_contract;
+    writeln("BEFORE CREATE PAYMENT");
+    const can_pay = wallet1.createPayment(to_pay, signed_contract, fees, true);
+    check(can_pay.value == true, format("got error: %s", res.msg));
 }
