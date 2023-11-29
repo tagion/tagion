@@ -80,12 +80,13 @@ do
   "$bdir/dartutil" "$dartfilename" "$wdir"/dart_recorder.hibon -m
 done
 
-cd "$net_dir"
-"$bdir"/neuewelle -O \
-    --option=wave.number_of_nodes:$nodes \
-    --option=wave.fail_fast:true \
-    --option=subscription.tags:taskfailure
-cd -
+(
+    cd "$net_dir" || return 1
+    "$bdir"/neuewelle -O \
+        --option=wave.number_of_nodes:$nodes \
+        --option=wave.fail_fast:true \
+        --option=subscription.tags:taskfailure
+)
 
 systemctl stop --user neuewelle.service || echo "No wave service was running"
 systemctl stop --user tagionshell.service || echo "No shell service was running"
@@ -103,8 +104,23 @@ systemctl restart --user tagionshell.service
 echo "waiting for network to start!"
 sleep 20;
 
-"$bdir"/bddenv.sh "$bdir"/testbench operational -w "$wdir"/wallet1.json -x "$pincode" -w "$wdir"/wallet2.json -x "$pincode"
+set -ex
 
-wait "$WAVE_PID"
+op_pids="";
+log_dir="$PWD/logs/ops"
+mv "$log_dir" "$log_dir.old" || echo "no old logs"
+mkdir -p "$log_dir"
+for ((i = 1; i <= wallets/2; i++)); 
+do
+    export BDD_RESULTS="$log_dir/$i"
+    mkdir -p "$BDD_RESULTS"
+    "$bdir"/bddenv.sh "$bdir"/testbench operational --duration 5 --unit minutes -w "$wdir"/wallet$i.json -x "$pincode" -w "$wdir"/wallet$((i*2)).json -x "$pincode" > "$BDD_RESULTS/test.log" 2>&1 &
+    op_pids+=${!}
+    sleep 0.2s
+done
+
+echo "Running test $((wallets/2)) clients"
+
+wait
 
 echo "data files in $TMP_DIR"

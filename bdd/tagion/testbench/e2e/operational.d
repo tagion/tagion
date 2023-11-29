@@ -14,7 +14,6 @@ import std.datetime;
 import std.stdio;
 import std.random;
 import std.typecons : Tuple;
-import std.concurrency : ownerTid, receiveOnly, send, thisTid, spawn, receive;
 import tagion.behaviour;
 import tagion.communication.HiRPC;
 import tagion.hibon.Document;
@@ -147,6 +146,7 @@ int _main(string[] args) {
         const end_date = cast(DateTime)(Clock.currTime);
         writefln("Made %s runs", run_counter);
         writefln("Test ended on %s %s", end_date, end_date);
+        mkdirRecurse(dirName(env.bdd_results));
         fwrite(buildPath(env.bdd_results, "tx_stats.hibon"), tx_stats);
     }
 
