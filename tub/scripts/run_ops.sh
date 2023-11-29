@@ -114,7 +114,7 @@ for ((i = 1; i <= wallets/2; i++));
 do
     export DLOG="$log_dir/$i"
     mkdir -p "$DLOG"
-    "$bdir"/testbench operational --duration 5 --unit minutes -w "$wdir"/wallet$i.json -x "$pincode" -w "$wdir"/wallet$((i*2)).json -x "$pincode" > "$DLOG/test.log" 2>&1 &
+    "$bdir"/testbench operational -w "$wdir"/wallet$i.json -x "$pincode" -w "$wdir"/wallet$((i*2)).json -x "$pincode" > "$DLOG/test.log" 2>&1 &
     op_pids+=${!}
     sleep 0.2s
 done
