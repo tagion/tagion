@@ -4,16 +4,17 @@
 #
 set -ex
 
-HOST=x86_64-linux
-bdir=$(realpath -m ./build/$HOST/bin)
-TMP_DIR=$(mktemp -d /tmp/tagion_opsXXXX)
+platform="x86_64-linux"
+bdir=$(realpath -m ./build/$platform/bin)
+# TMP_DIR=$(mktemp -d /tmp/tagion_opsXXXX)
+TMP_DIR="$HOME/.local/share/tagion"
 
 "$bdir"/tagion -s || echo "";
 
 wdir=$TMP_DIR/wallets
 net_dir="$TMP_DIR"/net
 amount=1000000
-keyfile="$net_dir"/keys
+keyfile="$wdir/keys.txt"
 mkdir -p "$wdir" "$net_dir"
 
 create_wallet_and_bills() {
@@ -86,7 +87,17 @@ cd "$net_dir"
     --option=subscription.tags:taskfailure
 cd -
 
-"$bdir"/neuewelle "$TMP_DIR"/net/tagionwave.json --verbose --keys "$wdir" < "$keyfile" > "$net_dir"/wave.log &
+systemctl stop --user neuewelle.service || echo "No wave service was running"
+systemctl stop --user tagionshell.service || echo "No shell service was running"
+mkdir -p ~/.local/share/bin ~/.config/systemd/user
+cp "$bdir/tagion" ~/.local/share/bin/
+cp "$bdir/tagionshell.service" "$bdir/neuewelle.service" ~/.config/systemd/user
+
+systemctl --user daemon-reload
+systemctl restart --user neuewelle.service
+systemctl restart --user tagionshell.service
+
+# "$bdir"/neuewelle "$TMP_DIR"/net/tagionwave.json --verbose --keys "$wdir" < "$keyfile" > "$net_dir"/wave.log &
 
 WAVE_PID=$!
 echo "waiting for network to start!"
