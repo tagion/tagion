@@ -9,21 +9,16 @@ import tagion.basic.Types : Buffer, isBufferType;
 import tagion.basic.basic : EnumText, basename, buf_idup;
 import tagion.crypto.Types : Pubkey;
 
-//import tagion.TagionExceptions : convertEnum, consensusCheck, consensusCheckArguments;
 import tagion.utils.Miscellaneous : cutHex;
 
-// import tagion.utils.Random;
 import tagion.utils.LRU;
 import tagion.utils.Queue;
 
-//import tagion.Keywords;
 
 import tagion.gossip.InterfaceNet;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 
-// import tagion.gossip.GossipNet;
-//import tagion.hashgraph.HashGraph;
 import tagion.basic.ConsensusExceptions;
 import tagion.communication.HiRPC;
 import tagion.hashgraph.Event;

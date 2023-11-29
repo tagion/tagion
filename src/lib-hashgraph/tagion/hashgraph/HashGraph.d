@@ -351,10 +351,6 @@ class HashGraph {
     class Register {
         private EventPackageCache event_package_cache;
 
-        // bool isNewer(immutable(EventPackage*) event_package) const pure nothrow {
-        //     const node = assumeWontThrow(_nodes.get(event_package.pubkey, Node.init));
-        //     return (node !is Node.init) && higher(event_package.event_body.altitude, node.event.event_package.event_body.altitude);
-        // }
         this(const Wavefront received_wave) pure nothrow {
             uint count_events;
             scope (exit) {
@@ -415,11 +411,6 @@ class HashGraph {
         }
 
         return _event_cache.get(fingerprint, null);
-        // scope event_ptr = fingerprint in _event_cache;
-        // if (event_ptr) {
-        //     return *event_ptr;
-        // }
-        // return null;
     }
 
     /++
@@ -570,29 +561,6 @@ class HashGraph {
         const state = ExchangeState.RIPPLE;
         return Wavefront(result, Tides.init, state);
 
-        // foreach (epack; received_wave.epacks) {
-        //     if (getNode(epack.pubkey).event is null) {
-        //         writefln("epack time: %s", epack.event_body.time);
-        //         auto first_event = new Event(epack, this);
-        //         writefln("foreach event %s", first_event.event_package.event_body.time);
-        //         check(first_event.isEva, ConsensusFailCode.GOSSIPNET_FIRST_EVENT_MUST_BE_EVA);
-        //         _event_cache[first_event.fingerprint] = first_event;
-        //         front_seat(first_event);
-        //     }
-        // }
-        // auto result = _nodes.byValue
-        //     .filter!((n) => (n._event !is null))
-        //     .map!((n) => cast(immutable(EventPackage)*) n._event.event_package)
-        //     .array;
-
-        // const contain_all =
-        //     _nodes
-        //         .byValue
-        //         .all!((n) => n._event !is null);
-
-        // const state = (_nodes.length is node_size && contain_all) ? ExchangeState.COHERENT : ExchangeState.RIPPLE;
-
-        // return Wavefront(result, null, state);
     }
 
     /** 

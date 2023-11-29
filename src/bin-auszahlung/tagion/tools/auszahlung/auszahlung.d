@@ -200,16 +200,6 @@ int _main(string[] args) {
                 }
             }
         }
-        if (!response_name.empty) {
-            scope (success) {
-                if (!dry_switch) {
-                    common_wallet_interface.save(false);
-                }
-            }
-            const received = response_name.fread!(HiRPC.Receiver);
-            common_wallet_interface.secure_wallet.setResponseCheckRead(received);
-            return 0;
-        }
         if (!confidence.isinit) {
             check(common_wallet_interface.secure_wallet.wallet.isinit,
                     "Common wallet has already been created");
@@ -265,6 +255,17 @@ int _main(string[] args) {
             common_wallet_interface.secure_wallet.recover(answers);
             check(common_wallet_interface.secure_wallet.isLoggedin, "Wallet could not be activated");
             good("Wallet activated");
+        }
+        if (!response_name.empty) {
+            verbose("Response %s", response_name);
+            scope (success) {
+                if (!dry_switch) {
+                    common_wallet_interface.save(false);
+                }
+            }
+            const received = response_name.fread!(HiRPC.Receiver);
+            common_wallet_interface.secure_wallet.setResponseCheckRead(received);
+            return 0;
         }
         if (amount > 0) {
             scope (success) {
@@ -359,9 +360,11 @@ int _main(string[] args) {
             good("Total %sTGN", total_amount);
 
         }
+            verbose("!!!!");
         if (update) {
             verbose("Update");
             with (common_wallet_interface) {
+                writefln("secure_wallet.net %s", secure_wallet.net !is null);
                 const message = secure_wallet.net.calcHash(WalletInterface.update_tag.representation);
                 const update_net = secure_wallet.net.derive(message);
                 const hirpc = HiRPC(update_net);
