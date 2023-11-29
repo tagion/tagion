@@ -88,11 +88,11 @@ jobs:
           export XDG_RUNTIME_DIR=/run/user/1001
           systemctl stop --user neuewelle.service || echo "No wave service was running"
           systemctl stop --user tagionshell.service || echo "No shell service was running"
-          mkdir -p ~/.local/share/bin
-          mkdir -p ~/.config/systemd/user
-          cp tagion ~/.local/share/bin/
+          mkdir -p ~/.local/bin ~/.local/share/tagion ~/.config/systemd/user
+          cp run_network.sh ~/.local/share/tagion/
+          cp tagion ~/.local/bin/
           echo "Deploying revision" >> $GITHUB_STEP_SUMMARY
-          ~/.local/share/bin/tagion --version >> $GITHUB_STEP_SUMMARY
+          ~/.local/bin/tagion --version >> $GITHUB_STEP_SUMMARY
           cp tagionshell.service neuewelle.service ~/.config/systemd/user
           systemctl --user daemon-reload
           systemctl restart --user neuewelle.service

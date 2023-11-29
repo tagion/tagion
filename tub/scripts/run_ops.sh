@@ -9,7 +9,8 @@ bdir=$(realpath -m ./build/$platform/bin)
 # TMP_DIR=$(mktemp -d /tmp/tagion_opsXXXX)
 TMP_DIR="$HOME/.local/share/tagion"
 
-"$bdir"/tagion -s || echo "";
+"$bdir"/tagion -s || echo "Soft links already exists";
+make ci-files || echo "Not in source dir"
 
 wdir=$TMP_DIR/wallets
 net_dir="$TMP_DIR"/net
@@ -89,8 +90,9 @@ cd -
 
 systemctl stop --user neuewelle.service || echo "No wave service was running"
 systemctl stop --user tagionshell.service || echo "No shell service was running"
-mkdir -p ~/.local/share/bin ~/.config/systemd/user
-cp "$bdir/tagion" ~/.local/share/bin/
+mkdir -p ~/.local/bin ~/.config/systemd/user ~/.local/share/tagion/wave 
+cp "$bdir/run_network.sh" ~/.local/share/tagion/wave/
+cp "$bdir/tagion" ~/.local/bin/
 cp "$bdir/tagionshell.service" "$bdir/neuewelle.service" ~/.config/systemd/user
 
 systemctl --user daemon-reload
@@ -99,14 +101,11 @@ systemctl restart --user tagionshell.service
 
 # "$bdir"/neuewelle "$TMP_DIR"/net/tagionwave.json --verbose --keys "$wdir" < "$keyfile" > "$net_dir"/wave.log &
 
-WAVE_PID=$!
 echo "waiting for network to start!"
 sleep 20;
 
-
 "$bdir"/bddenv.sh "$bdir"/testbench operational -w "$wdir"/wallet1.json -x "$pincode" -w "$wdir"/wallet2.json -x "$pincode"
 
-kill -s SIGINT "$WAVE_PID"
 wait "$WAVE_PID"
 
 echo "data files in $TMP_DIR"

@@ -3,7 +3,7 @@ Description="Test deployment of tagionwave"
 
 [Service]
 WorkingDirectory=%h/.local/share/tagion/wave
-ExecStart=/%h/actions-runner/_work/tagion/tagion/build/x86_64-linux/bin/run_network.sh
+ExecStart=/%h/.local/share/tagion/wave/run_network.sh
 Restart=no
 RestartSec=30
 
