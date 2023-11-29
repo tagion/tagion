@@ -2,7 +2,6 @@
 #
 # Runs operational tests
 #
-set -ex
 
 platform="x86_64-linux"
 bdir=$(realpath -m ./build/$platform/bin)
@@ -13,7 +12,7 @@ TMP_DIR="$HOME/.local/share/tagion"
 make ci-files || echo "Not in source dir"
 
 wdir=$TMP_DIR/wallets
-net_dir="$TMP_DIR"/net
+net_dir="$TMP_DIR"/wave
 amount=1000000
 keyfile="$wdir/keys.txt"
 mkdir -p "$wdir" "$net_dir"
