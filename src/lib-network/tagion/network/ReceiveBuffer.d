@@ -3,6 +3,7 @@ module tagion.network.ReceiveBuffer;
 import std.typecons : Tuple;
 
 import LEB128 = tagion.utils.LEB128;
+import tagion.basic.Debug;
 
 @safe:
 
@@ -23,30 +24,41 @@ struct ReceiveBuffer {
             buffer = new ubyte[START_SIZE];
         }
         size_t _pos;
-        size_t total_size;
-        for (;;) {
+        ptrdiff_t total_size = -1;
+        scope (exit) {
+            __write("Return %d total_size=%d", _pos, total_size);
+        }
+        while (total_size < 0 || _pos <= total_size) {
             const len = receive(buffer[_pos .. $]);
+            __write("pos=%d len=%d total_size=%d", _pos, len, total_size);
             if (len == 0) {
-                return ResultBuffer(len, buffer[0 .. _pos]);
+                return ResultBuffer(_pos, buffer[0 .. _pos]);
             }
             if (len < 0) {
-                return ResultBuffer(len, buffer[0 .. _pos]);
-            }
-
-            if (total_size == 0) {
-                if (LEB128.isCompleat(buffer[0.._pos])) {
-                    const leb128_len = LEB128.decode!size_t(buffer);
-                    total_size = leb128_len.value + leb128_len.size;
-
-                    if (buffer.length <= total_size) {
-                        buffer.length = total_size;
-                    }
-                }
+                return ResultBuffer(len, buffer[0.._pos]);
             }
             _pos += len;
 
+            if (total_size < 0) {
+                __write("isCompleat %s", LEB128.isCompleat(buffer[0 .. _pos]));
+                __write("buffer %(%02x %)", buffer[0 .. _pos]);
+                if (LEB128.isCompleat(buffer[0 .. _pos])) {
+                    const leb128_len = LEB128.decode!size_t(buffer);
+                    total_size = leb128_len.value + leb128_len.size;
+                    if (total_size > max_size) {
+                        return ResultBuffer(-2, null);
+                    }
+                    if (buffer.length <= total_size) {
+                        buffer.length = total_size;
+                    }
+                    if (_pos >= total_size) {
+                        break;
+                    }
+                }
+            }
+
         }
-        assert(0);
+        return ResultBuffer(_pos, buffer[0 .. total_size]);
     }
 
     const(ResultBuffer) append(const Receive receive) {
@@ -115,9 +127,7 @@ version (unittest) {
             count++;
             const len = (() @trusted => cast(ptrdiff_t) min(_chunck, buf.length, buffer.length))();
             if (len >= 0) {
-                (() @trusted {
-                    buf[0 .. len] = buffer[0 .. len];
-                })();
+                (() @trusted { buf[0 .. len] = buffer[0 .. len]; })();
                 buffer = buffer[len .. $];
                 return len;
             }
@@ -147,8 +157,8 @@ unittest {
     testdata.texts = iota(120).map!((i) => format("Some text %d", i)).array;
     teststream = TestStream(testdata.serialize);
     teststream.chunck = 0x100;
-        assert(testdata.serialize.length > receive_buffer.START_SIZE,
-                "Test data should large than START_SIZE");
+    assert(testdata.serialize.length > receive_buffer.START_SIZE,
+            "Test data should large than START_SIZE");
     {
         const result_buffer = receive_buffer(&teststream.receive);
         assert(result_buffer.data == testdata.serialize);
