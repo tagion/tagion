@@ -3,17 +3,12 @@ module tagion.network.ReceiveBuffer;
 import std.typecons : Tuple;
 
 import LEB128 = tagion.utils.LEB128;
-import tagion.basic.Debug;
 
 @safe:
 
 struct ReceiveBuffer {
     ubyte[] buffer; /// Allocated buffer
-    ptrdiff_t size; /// Buffer size
-    size_t total_size; /// Buffer size
-    size_t pos;
     enum LEN_MAX = LEB128.calc_size(uint.max);
-    pragma(msg, "ReceiveBuffer size FIXME VERY IMPORTANT");
     enum START_SIZE = 0x400;
     static size_t max_size = 0x4000;
     alias Receive = ptrdiff_t delegate(scope void[] buf) nothrow @safe;
@@ -26,11 +21,9 @@ struct ReceiveBuffer {
         size_t _pos;
         ptrdiff_t total_size = -1;
         scope (exit) {
-            __write("Return %d total_size=%d", _pos, total_size);
         }
         while (total_size < 0 || _pos <= total_size) {
             const len = receive(buffer[_pos .. $]);
-            __write("pos=%d len=%d total_size=%d", _pos, len, total_size);
             if (len == 0) {
                 return ResultBuffer(_pos, buffer[0 .. _pos]);
             }
@@ -40,8 +33,6 @@ struct ReceiveBuffer {
             _pos += len;
 
             if (total_size < 0) {
-                __write("isCompleat %s", LEB128.isCompleat(buffer[0 .. _pos]));
-                __write("buffer %(%02x %)", buffer[0 .. _pos]);
                 if (LEB128.isCompleat(buffer[0 .. _pos])) {
                     const leb128_len = LEB128.decode!size_t(buffer);
                     total_size = leb128_len.value + leb128_len.size;
@@ -61,49 +52,7 @@ struct ReceiveBuffer {
         return ResultBuffer(_pos, buffer[0 .. total_size]);
     }
 
-    const(ResultBuffer) append(const Receive receive) {
-        if (buffer is null) {
-            buffer = new ubyte[START_SIZE];
-        }
-        if (pos == 0) {
-            /// Buffer start
-            const len = receive(buffer);
-            if (len <= 0) {
-                // Connection closed
-                return ResultBuffer(len, null);
-            }
-            const leb128_len = LEB128.decode!uint(buffer);
-            total_size = leb128_len.value + leb128_len.size;
-            if (total_size >= buffer.length) {
-                if (total_size > max_size) {
-                    /// Buffer size excees the max allowed size
-                    return ResultBuffer(-1, null);
-                }
-                buffer.length = total_size;
-            }
-            if (total_size == len) {
-                /// Received the whole buffer in one go 
-                size = 0;
-                pos = 0;
-                return ResultBuffer(len, buffer[0 .. len]);
-            }
-            pos = size = len;
-            return ResultBuffer(len, null);
-        }
-        const len = receive(buffer[pos .. $]);
-        if (len <= 0) {
-            return ResultBuffer(-1, null);
-        }
-        size += len;
-        if (size >= total_size) {
-            scope (exit) {
-                pos = size = total_size = 0;
-            }
-            return ResultBuffer(0, buffer[0 .. total_size]);
-        }
-        return ResultBuffer(0, null);
-    }
-}
+} 
 
 version (unittest) {
     import tagion.hibon.Document;

@@ -133,7 +133,6 @@ struct InputValidatorService {
                 reject(ResponseError.Internal);
             }
 
-            __write("sock error %s", sock.m_errno);
             if(sock.m_errno == nng_errno.NNG_ETIMEDOUT ) {
                 __write("result_buf.data.length=%d", result_buf.data.length);
                 if(result_buf.data.length > 0) {
@@ -150,9 +149,6 @@ struct InputValidatorService {
             }
 
             // Fixme ReceiveBuffer .size doesn't always return correct lenght
-            import tagion.basic.Debug;
-
-            __write("------ result_buf.size=%d", result_buf.size);
             if (result_buf.size <= 0) {
                 reject(ResponseError.InvalidBuf);
                 continue;
