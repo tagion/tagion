@@ -1682,20 +1682,21 @@ struct WebApp {
     void webprocess( WebData *req, WebData *rep ) {
         int rc;
     
-
         rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
         rep.type = "text/plain";
         rep.text = "Test result";
 
         nng_url *u;
-        auto sbuf = "http://localhost"~req.uri;
-        rc = nng_url_parse(&u,sbuf.toStringz);
+        string ss = ("http://localhost"~req.uri~"\0");
+        char[] buf = ss.dup;
+        rc = nng_url_parse(&u,buf.ptr);
         enforce(rc == 0);
-        req.route = cast(immutable)(fromStringz(u.u_path));
-        req.path ~= req.route.split("/");
+        req.route = cast(immutable)(fromStringz(u.u_path)).dup;
+        req.path = req.route.split("/");
         if(req.path.length > 1 && req.path[0] == "")
             req.path = req.path[1..$];
-        foreach(p; cast(immutable)(fromStringz(u.u_query)).split("&")){
+        string query = cast(immutable)(fromStringz(u.u_query)).dup;
+        foreach(p; query.split("&")){
             auto a = p.split("=");
             if(a[0] != "")
                 req.param[a[0]] = a[1];
@@ -1716,11 +1717,11 @@ struct WebApp {
             req.text = cast(immutable)(fromStringz(cast(char*)req.rawdata));
         }
         
-        
         // TODO: implement full CEF parser for routes
-        webhandler handler = null;    
-        foreach(r; sort(routes.keys)){
-            if(r.startsWith(req.method~":"~req.route)){
+        webhandler handler = null;   
+        string rkey = req.method~":"~req.route;
+        foreach(r; sort!("a > b")(routes.keys)){
+            if(rkey.startsWith(r)){
                 handler = routes[r];
                 break;
             }                
@@ -1761,10 +1762,6 @@ struct WebApp {
         rep.text = "Default reponse";
         rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
     }
-
-
-
-
 } // struct WebApp
 
 // for user defined result handlers
