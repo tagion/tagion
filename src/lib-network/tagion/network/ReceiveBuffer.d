@@ -26,9 +26,7 @@ struct ReceiveBuffer {
         size_t total_size;
         for (;;) {
             const len = receive(buffer[_pos .. $]);
-            __write("len = %d pos=%d", len, _pos);
             if (len == 0) {
-                __write("result pos=%d", _pos);
                 return ResultBuffer(len, buffer[0 .. _pos]);
             }
             if (len < 0) {
@@ -36,16 +34,13 @@ struct ReceiveBuffer {
             }
 
             if (total_size == 0) {
-                __write("isCompleat %s", LEB128.isCompleat(buffer));
                 if (LEB128.isCompleat(buffer[0.._pos])) {
-                    __write("%(%02x %)", buffer[0..10]);
                     const leb128_len = LEB128.decode!size_t(buffer);
                     total_size = leb128_len.value + leb128_len.size;
 
                     if (buffer.length <= total_size) {
                         buffer.length = total_size;
                     }
-                __write("total_size=%d", total_size);
                 }
             }
             _pos += len;
