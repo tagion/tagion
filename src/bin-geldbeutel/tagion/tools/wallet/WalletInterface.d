@@ -93,12 +93,13 @@ HiRPC.Receiver sendSubmitHiRPC(string address, HiRPC.Sender contract, const(Secu
 
     int rc;
     NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
+    sock.sendtimeout = 1000.msecs;
+    sock.sendbuf = 0x4000;
+
     rc = sock.dial(address);
     if (rc != 0) {
         throw new Exception(format("Could not dial address %s: %s", address, nng_errstr(rc)));
     }
-    sock.sendtimeout = 1000.msecs;
-    sock.sendbuf = 0x4000;
 
     rc = sock.send(contract.toDoc.serialize);
     if (rc != 0) {
@@ -733,6 +734,8 @@ struct WalletInterface {
                         HiRPC.Receiver received = sendkernel ?
                             sendDARTHiRPC(options.dart_address, req, hirpc) : sendShellHiRPC(
                                     options.addr ~ options.dart_shell_endpoint, req, hirpc);
+
+                        verbose("Received response", received.toPretty);
 
                         auto res = trt_update ? secure_wallet.setResponseUpdateWallet(
                                 received) : secure_wallet.setResponseCheckRead(received);
