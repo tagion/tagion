@@ -593,6 +593,14 @@ struct SecureWallet(Net : SecureNet) {
                 .map!(e => TagionBill(e.get!Document))
                 .array);
 
+        foreach(b; found_bills) {
+            if (b.owner !in account.derivers) {
+                import std.stdio;
+                assumeWontThrow(writefln("Error, could not pubkey %(%02x%) in derivers", b.owner));
+                return false;
+            }
+        }
+
         foreach (found; found_bills) {
             if (!account.bills.canFind(found)) {
                 account.bills ~= found;
