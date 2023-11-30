@@ -1,7 +1,8 @@
 module tagion.tools.tagionshell;
 
 import core.time;
-import std.array : join;
+import std.algorithm;
+import std.array;
 import std.concurrency;
 import std.conv;
 import std.exception;
@@ -9,7 +10,7 @@ import std.file : exists;
 import std.format;
 import std.getopt;
 import std.json;
-import std.stdio : stderr, stdout, writefln, writeln;
+import std.stdio : File, stderr, stdout, writefln, writeln;
 import tagion.basic.Types : Buffer, FileExtension, hasExtension;
 import tagion.basic.range : doFront;
 import tagion.communication.HiRPC;
@@ -18,6 +19,7 @@ import tagion.crypto.SecureNet;
 import tagion.hibon.Document;
 import tagion.hibon.HiBON;
 import tagion.hibon.HiBONFile : fread, fwrite;
+import tagion.hibon.HiBONRecord : isRecord;
 import tagion.script.TagionCurrency;
 import tagion.script.common;
 import tagion.tools.Basic;
@@ -35,12 +37,23 @@ import nngd.nngd;
 
 mixin Main!(_main, "shell");
 
+static long getmemstatus(){
+    long sz = -1;
+    auto f = File("/proc/self/status","rt");
+    foreach (line ; f.byLine) {
+        if(line.startsWith("VmRSS")){
+            sz = to!long(line.split()[1]);
+            break;
+        }
+    }
+    f.close();
+    return sz;
+}
+
 static void writeit(A...)(A a){
     writeln(a);
     stdout.flush();
 }
-
-
 
 void dart_worker( ShellOptions opt ){
     int rc;
@@ -100,8 +113,118 @@ WebData contract_handler ( WebData req, void* ctx ){
     return res;
 }
 
-WebData dart_handler ( WebData req, void* ctx ){
+WebData dartcache_handler ( WebData req, void* ctx ){
+    
+    thread_attachThis();
+    rt_moduleTlsCtor();
+
+    scope(exit){
+        thread_detachThis();
+        rt_moduleTlsDtor();
+    }
+
     int rc;
+    const size_t buflen = 1048576;
+    ubyte[1048576] buf;
+    ubyte[] docbuf;
+    
+    ShellOptions* opt = cast(ShellOptions*) ctx;
+    if(req.type != "application/octet-stream"){
+        WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "invalid data type" };    
+        return res;
+    }
+    
+    SecureNet net = new StdSecureNet();
+    net.generateKeyPair("very_secret");
+    HiRPC hirpc = HiRPC(net);
+    Document doc = Document(cast(immutable(ubyte[]))req.rawdata);
+    immutable receiver = hirpc.receive(doc);
+    auto pkey_doc = receiver.method.params;
+    Buffer[] owner_pkeys;
+    foreach (owner; pkey_doc[]) {
+        owner_pkeys ~= owner.get!Buffer;
+    }
+
+    TagionBill[] found_bills;
+
+    // to chache
+
+    if(!found_bills.empty){
+        foreach(bill; found_bills){
+            remove!(x => x == bill.owner)(owner_pkeys);
+        }
+    }
+
+    if (!owner_pkeys.empty) {
+        auto dreq = new HiBON;
+        dreq = owner_pkeys;
+
+        NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
+        s.recvtimeout = msecs(60000);
+        while(true){
+            rc = s.dial(opt.tagion_dart_sock_addr);
+            if(rc == 0)
+                break;
+        }
+
+        rc = s.send(cast(ubyte[])(hirpc.search(dreq).toDoc.serialize));
+        
+        if(rc != 0){
+            writeit("dart_handler: send: ", nng_errstr(rc));
+            WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "socket error" };
+            return res;
+        }        
+        
+        
+        size_t len = 0, doclen = 0; 
+        do { 
+            len = s.receivebuf(buf, buflen);
+            if(len == size_t.max && s.errno != 0){
+                writeit("dart_handler: recv: ", nng_errstr(s.errno));
+                WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "socket error" };
+                return res;
+            }
+            if(len > buflen){
+                writeit("dart_handler: recv wrong size: ", len);
+                WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "socket error" };
+                return res;
+            }
+            writeit(format("WH: dart: received %d bytes",len));
+            docbuf ~= buf[0..len];
+            doclen += len;
+        }while(len > buflen - 1);    
+        s.close(); 
+        
+        Document repdoc = Document(cast(immutable(ubyte[]))docbuf);
+        immutable repreceiver = hirpc.receive(repdoc);
+        found_bills ~= repreceiver.response.result[]
+            .map!(e => TagionBill(e.get!Document))
+            .array;
+
+    } 
+
+    HiBON params = new HiBON;
+
+    foreach(i, bill; found_bills){
+        params[i] = bill.toHiBON;
+    }
+
+    Document response = hirpc.result(receiver, params).toDoc;
+
+    WebData res = {
+        status: (found_bills.length > 0) ? nng_http_status.NNG_HTTP_STATUS_OK : nng_http_status.NNG_HTTP_STATUS_NO_CONTENT, 
+        type: "applicaion/octet-stream", rawdata: (found_bills.length > 0) ? cast(ubyte[])(response.serialize) : null 
+    };
+    writeit("WH: dart: res ",response.toPretty);
+    return res;
+}
+
+WebData dart_handler ( WebData req, void* ctx ){
+    
+    int rc;
+    const size_t buflen = 1048576;
+    ubyte[1048576] buf;
+    ubyte[] docbuf;
     ShellOptions* opt = cast(ShellOptions*) ctx;
     if(req.type != "application/octet-stream"){
         WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "invalid data type" };    
@@ -110,7 +233,6 @@ WebData dart_handler ( WebData req, void* ctx ){
     writeit(format("WH: dart: with %d bytes for %s",req.rawdata.length, opt.tagion_dart_sock_addr));
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
     s.recvtimeout = msecs(60000);
-    writeit(format("WH: dart: trying to dial %s", opt.tagion_dart_sock_addr));
     while(true){
         rc = s.dial(opt.tagion_dart_sock_addr);
         if(rc == 0)
@@ -118,31 +240,33 @@ WebData dart_handler ( WebData req, void* ctx ){
     }
     rc = s.send(req.rawdata);
     if(rc != 0){
-        writeit("dart_handler: send: ", nng_errstr(rc));
+        writeit("dart_handler: error on send: ", nng_errstr(rc));
         WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "socket error" };
         return res;
     }        
     writeit(format("WH: dart: sent %d bytes",req.rawdata.length));
-    ubyte[4096] buf;
-    ubyte[] docbuf;
     size_t len = 0, doclen = 0; 
     do { 
-        len = s.receivebuf(buf, 4096);
+        len = s.receivebuf(buf, buflen);
         if(len == size_t.max && s.errno != 0){
-            writeit("dart_handler: recv: ", nng_errstr(s.errno));
+            writeit("dart_handler: error on recv: ", nng_errstr(s.errno));
+            WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "socket error" };
+            return res;
+        }
+        if(len > buflen){
+            writeit("dart_handler: recv wrong size: ", len);
             WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "socket error" };
             return res;
         }
         writeit(format("WH: dart: received %d bytes",len));
         docbuf ~= buf[0..len];
         doclen += len;
-    }while(len > 4095);    
+    }while(len > buflen - 1);    
     s.close(); 
     WebData res = {
         status: (doclen>0) ? nng_http_status.NNG_HTTP_STATUS_OK : nng_http_status.NNG_HTTP_STATUS_NO_CONTENT, 
         type: "applicaion/octet-stream", rawdata: (doclen>0) ? docbuf[0..doclen] : null 
     };
-    writeit("WH: dart: res ",res);
     return res;
 }
 
@@ -260,6 +384,8 @@ int _main(string[] args) {
 
     ShellOptions options;
 
+    long sz, isz;
+
     auto config_file = "shell.json";
     if (config_file.exists) {
         options.load(config_file);
@@ -310,13 +436,6 @@ int _main(string[] args) {
     //auto ds_tid = spawn(&dart_worker, options);
 
 
-    WebApp app = WebApp("ShellApp", options.shell_uri, parseJSON("{}"), &options);
-
-    app.route(options.shell_api_prefix~options.contract_endpoint, &contract_handler, ["POST"]);
-    app.route(options.shell_api_prefix~options.dart_endpoint, &dart_handler, ["POST"]);
-    app.route(options.shell_api_prefix~options.i2p_endpoint, &i2p_handler, ["POST"]);
-
-    app.start();
 
     writeit("\nTagionShell web service\nListening at "
         ~options.shell_uri~"\n\t"
@@ -332,21 +451,33 @@ int _main(string[] args) {
 
     );
 
-    while(true)
-        nng_sleep(1000.msecs);
+    isz = getmemstatus();
+
+appoint:
+
+    WebApp app = WebApp("ShellApp", options.shell_uri, parseJSON("{}"), &options);
+
+    app.route(options.shell_api_prefix~options.contract_endpoint, &contract_handler, ["POST"]);
+    app.route(options.shell_api_prefix~options.dart_endpoint, &dart_handler, ["POST"]);
+    app.route(options.shell_api_prefix~options.dartcache_endpoint, &dartcache_handler, ["POST"]);
+    app.route(options.shell_api_prefix~options.i2p_endpoint, &i2p_handler, ["POST"]);
+
+    app.start();
+    
+    while(true){
+        nng_sleep(2000.msecs);
+        sz = getmemstatus();
+        writeln("mem: ", sz);
+        if( sz > isz * 2 ){
+            writeln("Reset app!");
+            app.stop;
+            destroy(app);
+            goto appoint;
+        }
+
+    }        
 
 
-    // NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_PUSH);
-    // sock.sendtimeout = msecs(1000);
-    // sock.sendbuf = 4096;
-    // int rc = sock.dial(options.tagion_sock_addr);
-    // assert(rc == 0, format("Failed to dial %s", rc));
-    // auto hibon = new HiBON();
-    // hibon["$test"] = 5;
-    // writefln("Buf lenght %s %s", hibon.serialize.length, Document(hibon.serialize).valid);
-
-    // rc = sock.send(hibon.serialize);
-    // assert(rc == 0, format("Failed to send %s", rc));
 
     return 0;
 }
