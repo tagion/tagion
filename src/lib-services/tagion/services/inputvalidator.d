@@ -110,10 +110,7 @@ struct InputValidatorService {
 
             check(false, format("Failed to listen on addr: %s, %s", opts.sock_addr, nng_errstr(listening)));
         }
-        const recv = (scope void[] b) @trusted {
-            size_t ret = sock.receivebuf(cast(ubyte[]) b);
-            return (ret < 0) ? 0 : cast(ptrdiff_t) ret;
-        };
+        const recv = (scope void[] b) @trusted { return cast(ptrdiff_t) sock.receivebuf(cast(ubyte[]) b); };
         setState(Ctrl.ALIVE);
         while (!thisActor.stop) {
             // Check for control signal
@@ -143,13 +140,12 @@ struct InputValidatorService {
                 continue;
             }
 
-
             Document doc = Document(result_buf.data.idup);
 
             if (!doc.isInorder) {
                 reject(ResponseError.InvalidBuf);
             }
-            
+
             if (!doc.isRecord!(HiRPC.Sender)) {
                 reject(ResponseError.NotHiRPCSender, doc);
                 continue;

@@ -4,7 +4,8 @@ import std.typecons : Tuple;
 
 import LEB128 = tagion.utils.LEB128;
 
-@safe
+@safe:
+
 struct ReceiveBuffer {
     ubyte[] buffer; /// Allocated buffer
     ptrdiff_t size; /// Buffer size
@@ -12,10 +13,46 @@ struct ReceiveBuffer {
     size_t pos;
     enum LEN_MAX = LEB128.calc_size(uint.max);
     pragma(msg, "ReceiveBuffer size FIXME VERY IMPORTANT");
-    enum START_SIZE = 0x4000;
+    enum START_SIZE = 0x400;
     static size_t max_size = 0x4000;
-    alias Receive = ptrdiff_t delegate(void[] buf);
+    alias Receive = ptrdiff_t delegate(scope void[] buf) nothrow @safe;
     alias ResultBuffer = Tuple!(ptrdiff_t, "size", ubyte[], "data");
+
+    const(ResultBuffer) opCall(const Receive receive) nothrow {
+        if (buffer is null) {
+            buffer = new ubyte[START_SIZE];
+        }
+        size_t _pos;
+        size_t total_size;
+        for (;;) {
+            const len = receive(buffer[_pos .. $]);
+            __write("len = %d pos=%d", len, _pos);
+            if (len == 0) {
+                __write("result pos=%d", _pos);
+                return ResultBuffer(len, buffer[0 .. _pos]);
+            }
+            if (len < 0) {
+                return ResultBuffer(len, buffer[0 .. _pos]);
+            }
+
+            if (total_size == 0) {
+                __write("isCompleat %s", LEB128.isCompleat(buffer));
+                if (LEB128.isCompleat(buffer[0.._pos])) {
+                    __write("%(%02x %)", buffer[0..10]);
+                    const leb128_len = LEB128.decode!size_t(buffer);
+                    total_size = leb128_len.value + leb128_len.size;
+
+                    if (buffer.length <= total_size) {
+                        buffer.length = total_size;
+                    }
+                __write("total_size=%d", total_size);
+                }
+            }
+            _pos += len;
+
+        }
+        assert(0);
+    }
 
     const(ResultBuffer) append(const Receive receive) {
         if (buffer is null) {
@@ -58,5 +95,78 @@ struct ReceiveBuffer {
             return ResultBuffer(0, buffer[0 .. total_size]);
         }
         return ResultBuffer(0, null);
+    }
+}
+
+version (unittest) {
+    import tagion.hibon.Document;
+    import std.algorithm;
+    import tagion.hibon.HiBONRecord;
+    import std.array;
+    import std.range;
+    import std.format;
+    import tagion.basic.Debug;
+
+    @safe
+    struct TestStream {
+        const(void)[] buffer;
+        size_t chunck;
+        uint count;
+        this(const(ubyte[]) buf) {
+            buffer = buf;
+        }
+
+        ptrdiff_t receive(scope void[] buf) nothrow {
+            const _chunck = (count < 3) ? 1 : chunck;
+            count++;
+            const len = (() @trusted => cast(ptrdiff_t) min(_chunck, buf.length, buffer.length))();
+            if (len >= 0) {
+                (() @trusted {
+                    __write("len=%d count=%d chunck=%d buf.length=%d buffer.length=%d",
+                        len, count, chunck, buf.length, buffer.length);
+                    buf[0 .. len] = buffer[0 .. len];
+                })();
+                buffer = buffer[len .. $];
+                return len;
+            }
+            return -1;
+        }
+    }
+
+    @safe
+    struct TestData {
+        string[] texts;
+        mixin HiBONRecord;
+    }
+}
+unittest {
+    import std.stdio;
+
+    static TestStream teststream;
+    TestData testdata;
+    testdata.texts = iota(17).map!((i) => format("Some text %d", i)).array;
+
+    teststream = TestStream(testdata.serialize);
+    teststream.chunck = 0x100;
+    ReceiveBuffer receive_buffer;
+    {
+        const result_buffer = receive_buffer(&teststream.receive);
+        writefln("result_buffer %(%02x %)", result_buffer.data);
+        writefln("testdata      %(%02x %)", testdata.serialize);
+        assert(result_buffer.data == testdata.serialize);
+    }
+
+    testdata.texts = iota(120).map!((i) => format("Some text %d", i)).array;
+    teststream = TestStream(testdata.serialize);
+    teststream.chunck = 0x100;
+    writefln("teststream.buffer.length = %d", teststream.buffer.length);
+    writefln("testdata.length          = %d", testdata.serialize.length);
+        assert(testdata.serialize.length > receive_buffer.START_SIZE,
+                "Test data should large than START_SIZE");
+    {
+        const result_buffer = receive_buffer(&teststream.receive);
+        writefln("result_buffer %(%02x %)", result_buffer.data);
+        writefln("testdata      %(%02x %)", testdata.serialize);
+        assert(result_buffer.data == testdata.serialize);
     }
 }

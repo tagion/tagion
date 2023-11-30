@@ -721,6 +721,10 @@ mixin template HiBONRecord(string CTOR = "") {
         }
     }
 
+    @safe final immutable(ubyte[]) serialize() const {
+        return toHiBON.serialize;
+    }
+
     @safe final const(Document) toDoc() const {
         return Document(toHiBON.serialize);
     }
@@ -1519,7 +1523,3 @@ unittest { /// Reseved keys and types
     }
 
 }
-
-
-
-
