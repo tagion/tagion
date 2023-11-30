@@ -458,13 +458,15 @@ appoint:
     
     while(true){
         nng_sleep(2000.msecs);
-        sz = getmemstatus();
-        writeln("mem: ", sz);
-        if( sz > isz * 2 ){
-            writeln("Reset app!");
-            app.stop;
-            destroy(app);
-            goto appoint;
+        version(none) {
+            sz = getmemstatus();
+            writeln("mem: ", sz);
+            if( sz > isz * 2 ){
+                writeln("Reset app!");
+                app.stop;
+                destroy(app);
+                goto appoint;
+            }
         }
 
     }        
