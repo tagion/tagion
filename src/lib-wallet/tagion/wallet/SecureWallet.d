@@ -588,8 +588,6 @@ struct SecureWallet(Net : SecureNet) {
             return false;
         }
 
-        // __write("%s", assumeWontThrow(receiver.toPretty));
-
         auto found_bills = assumeWontThrow(receiver.response
                 .result[]
                 .map!(e => TagionBill(e.get!Document))
@@ -1054,6 +1052,53 @@ unittest {
     assertThrown(wallet.createPayment([bill_to_pay], signed_contract1, fees1).get);
 }
 
+unittest {
+    import std.range;
+
+    //pay invoice to yourself with multiple bills as outputs
+    auto wallet = StdSecureWallet("secret", "1234");
+    const bill1 = wallet.requestBill(1000.TGN);
+    wallet.addBill(bill1);
+
+    auto invoice_to_pay = wallet.createInvoice("wowo", 10.TGN);
+    auto invoice_to_pay2 = wallet.createInvoice("wowo2", 10.TGN);
+    wallet.registerInvoice(invoice_to_pay);
+    wallet.registerInvoice(invoice_to_pay2);
+
+    SignedContract signed_contract;
+    TagionCurrency fees;
+
+    TagionBill[] bills = wallet.invoices_to_bills([invoice_to_pay, invoice_to_pay2]);
+    wallet.createPayment(bills, signed_contract, fees);
+    HiRPC hirpc = HiRPC(null);
+
+    assert(wallet.account.activated.byValue.filter!(b => b == true).walkLength == 1, "should have one locked bill");
+    assert(wallet.locked_balance == 1000.TGN);
+    const req = wallet.getRequestUpdateWallet;
+    const receiver = hirpc.receive(req.toDoc);
+
+    const number_of_bills = receiver.method.params[].array.length;
+    assert(number_of_bills == 4, format("should contain three public keys had %s", number_of_bills));
+
+    // create the response containing the two output bills without the original locked bill.
+    HiBON params = new HiBON;
+
+    import std.stdio;
+    import tagion.hibon.HiBONJSON;
+
+    TagionBill[] bills_in_dart = bills ~ wallet.account.requested.byValue.array;
+    foreach (i, bill; bills_in_dart) {
+        params[i] = bill.toHiBON;
+    }
+    auto dart_response = hirpc.result(receiver, Document(params)).toDoc;
+    const received = hirpc.receive(dart_response);
+
+    wallet.setResponseUpdateWallet(received);
+
+    auto should_have = wallet.calcTotal(bills_in_dart);
+    assert(should_have == wallet.total_balance, format("should have %s had %s", should_have, wallet.total_balance));
+
+}
 unittest {
     import std.range;
 
