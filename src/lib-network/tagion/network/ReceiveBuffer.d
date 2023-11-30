@@ -100,7 +100,6 @@ version (unittest) {
     import std.array;
     import std.range;
     import std.format;
-    import tagion.basic.Debug;
 
     @safe
     struct TestStream {
@@ -117,8 +116,6 @@ version (unittest) {
             const len = (() @trusted => cast(ptrdiff_t) min(_chunck, buf.length, buffer.length))();
             if (len >= 0) {
                 (() @trusted {
-                    __write("len=%d count=%d chunck=%d buf.length=%d buffer.length=%d",
-                        len, count, chunck, buf.length, buffer.length);
                     buf[0 .. len] = buffer[0 .. len];
                 })();
                 buffer = buffer[len .. $];
@@ -135,8 +132,6 @@ version (unittest) {
     }
 }
 unittest {
-    import std.stdio;
-
     static TestStream teststream;
     TestData testdata;
     testdata.texts = iota(17).map!((i) => format("Some text %d", i)).array;
@@ -146,22 +141,16 @@ unittest {
     ReceiveBuffer receive_buffer;
     {
         const result_buffer = receive_buffer(&teststream.receive);
-        writefln("result_buffer %(%02x %)", result_buffer.data);
-        writefln("testdata      %(%02x %)", testdata.serialize);
         assert(result_buffer.data == testdata.serialize);
     }
 
     testdata.texts = iota(120).map!((i) => format("Some text %d", i)).array;
     teststream = TestStream(testdata.serialize);
     teststream.chunck = 0x100;
-    writefln("teststream.buffer.length = %d", teststream.buffer.length);
-    writefln("testdata.length          = %d", testdata.serialize.length);
         assert(testdata.serialize.length > receive_buffer.START_SIZE,
                 "Test data should large than START_SIZE");
     {
         const result_buffer = receive_buffer(&teststream.receive);
-        writefln("result_buffer %(%02x %)", result_buffer.data);
-        writefln("testdata      %(%02x %)", testdata.serialize);
         assert(result_buffer.data == testdata.serialize);
     }
 }
