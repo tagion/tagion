@@ -22,7 +22,7 @@ import tagion.hibon.HiBONFile;
 import tagion.script.TagionCurrency;
 import tagion.script.common;
 import tagion.testbench.tools.Environment;
-import tagion.tools.Basic : Main;
+import tagion.tools.Basic : Main, __verbose_switch;
 import tagion.tools.wallet.WalletInterface;
 import tagion.tools.wallet.WalletOptions : WalletOptions;
 import tagion.utils.JSONCommon;
@@ -64,6 +64,9 @@ int _main(string[] args) {
     bool sendkernel = false;
     int duration = 3;
     DurationUnit duration_unit = DurationUnit.days;
+
+    __verbose_switch = true;
+
     auto tx_stats = new TxStats;
 
     auto main_args = getopt(args,

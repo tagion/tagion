@@ -734,6 +734,8 @@ struct WalletInterface {
                             sendDARTHiRPC(options.dart_address, req, hirpc) : sendShellHiRPC(
                                     options.addr ~ options.dart_shell_endpoint, req, hirpc);
 
+                        verbose("Received response", received.toPretty);
+
                         auto res = trt_update ? secure_wallet.setResponseUpdateWallet(
                                 received) : secure_wallet.setResponseCheckRead(received);
                         writeln(res ? "wallet updated succesfully" : "wallet not updated succesfully");
