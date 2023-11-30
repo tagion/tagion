@@ -54,6 +54,7 @@ enum ResponseError {
     InvalidBuf,
     InvalidDoc,
     NotHiRPCSender,
+    Timeout,
 }
 
 /** 
@@ -110,7 +111,10 @@ struct InputValidatorService {
 
             check(false, format("Failed to listen on addr: %s, %s", opts.sock_addr, nng_errstr(listening)));
         }
-        const recv = (scope void[] b) @trusted { return cast(ptrdiff_t) sock.receivebuf(cast(ubyte[]) b); };
+        const recv = (scope void[] b) @trusted {
+            // 
+            return cast(ptrdiff_t) sock.receivebuf(cast(ubyte[]) b, 0, false);
+        };
         setState(Ctrl.ALIVE);
         while (!thisActor.stop) {
             // Check for control signal
@@ -124,9 +128,19 @@ struct InputValidatorService {
                 continue;
             }
 
-            auto result_buf = buf.append(recv);
+            auto result_buf = buf(recv);
             scope (failure) {
                 reject(ResponseError.Internal);
+            }
+
+            if(sock.m_errno == nng_errno.NNG_ETIMEDOUT ) {
+                __write("result_buf.data.length=%d", result_buf.data.length);
+                if(result_buf.data.length > 0) {
+                    reject(ResponseError.Timeout);
+                }
+                else {
+                    continue;
+                }
             }
 
             if (sock.m_errno != nng_errno.NNG_OK) {
@@ -135,7 +149,7 @@ struct InputValidatorService {
             }
 
             // Fixme ReceiveBuffer .size doesn't always return correct lenght
-            if (result_buf.data.length <= 0) {
+            if (result_buf.size <= 0) {
                 reject(ResponseError.InvalidBuf);
                 continue;
             }

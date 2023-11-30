@@ -29,8 +29,8 @@ import tagion.utils.pretend_safe_concurrency;
 enum feature = Feature(
             "Inputvalidator service",
             [
-        "This feature should verify that the inputvalidator accepts valid and rejects invalid LEB128 input over a socket"
-]);
+            "This feature should verify that the inputvalidator accepts valid and rejects invalid LEB128 input over a socket"
+            ]);
 
 alias FeatureContext = Tuple!(
         SendADocumentToTheSocket, "SendADocumentToTheSocket",
@@ -120,7 +120,7 @@ class SendNoneHiRPC {
 
         auto hibon = new HiBON();
         hibon["$test"] = 5;
-        writefln("Buf lenght %s %s", hibon.serialize.length, Document(hibon.serialize).valid);
+        writefln("Buf length %s %s", hibon.serialize.length, Document(hibon.serialize).valid);
 
         rc = sock.send(hibon.serialize);
         check(rc == 0, format("Failed to send %s", rc));
@@ -180,7 +180,7 @@ class SendPartialHiBON {
         const sender = hirpc.act(hibon);
         Document doc = sender.toDoc;
         immutable partial_buf = doc.serialize[0 .. 26].dup;
-        writefln("Buf lenght %s %s", partial_buf.length, Document(partial_buf).valid);
+        writefln("Buf length %s %s", partial_buf.length, Document(partial_buf).valid);
         rc = sock.send(partial_buf);
         check(rc == 0, format("Failed to send %s", nng_errstr(rc)));
         Document received = sock.receive!Buffer;
