@@ -194,18 +194,16 @@ alias FeatureContext = Tuple!(
 @safe @Scenario("send N contracts from `wallet1` to `wallet2`",
         [])
 class SendNContractsFromwallet1Towallet2 {
-    WalletInterface*[] wallets;
     WalletInterface* sender;
     WalletInterface* receiver;
     bool sendkernel;
     bool send;
 
-    TagionCurrency[] wallet_amounts;
+    TagionCurrency receiver_amount;
+    TagionCurrency sender_amount;
     TxStats* tx_stats;
 
     this(ref WalletInterface* sender, WalletInterface* receiver, bool sendkernel, TxStats* tx_stats) {
-        this.wallets ~= sender;
-        this.wallets ~= receiver;
         this.sender = sender;
         this.receiver = receiver;
         this.sendkernel = sendkernel;
@@ -224,10 +222,16 @@ class SendNContractsFromwallet1Towallet2 {
                 send: send);
         // dfmt on
 
-        foreach (ref w; wallets[0 .. 2]) {
-            check(w.secure_wallet.isLoggedin, "the wallet must be logged in!!!");
-            w.operate(wallet_switch, []);
-            wallet_amounts ~= w.secure_wallet.available_balance;
+        with (receiver) {
+            check(secure_wallet.isLoggedin, "the wallet must be logged in!!!");
+            operate(wallet_switch, []);
+            receiver_amount = secure_wallet.available_balance;
+        }
+
+        with (sender) {
+            check(secure_wallet.isLoggedin, "the wallet must be logged in!!!");
+            operate(wallet_switch, []);
+            sender_amount = secure_wallet.available_balance;
         }
 
         return result_ok;
@@ -283,23 +287,22 @@ class SendNContractsFromwallet1Towallet2 {
             sendkernel: sendkernel,
             send: send);
 
-        foreach (i, ref w; wallets[0 .. 2]) {
-            writefln("Checking Wallet_%s", i);
-            check(w.secure_wallet.isLoggedin, "the wallet must be logged in!!!");
-            w.operate(wallet_switch, []);
-            check(wallet_amounts[i] != w.secure_wallet.available_balance, "Wallet amount did not change");
+        with(receiver) {
+            check(secure_wallet.isLoggedin, "the wallet must be logged in!!!");
+            operate(wallet_switch, []);
+
+            const expected = receiver_amount + invoice.amount;
+            check(secure_wallet.available_balance == expected, 
+                    format("wallet 0 amount incorrect, expected %s got %s", expected, secure_wallet.available_balance));
         }
 
-        with(receiver.secure_wallet) {
-            auto expected = wallet_amounts[0] + invoice.amount;
-            check(available_balance == expected, 
-                    format("wallet 0 amount incorrect, expected %s got %s", expected, available_balance));
-        }
+        with(sender) {
+            check(secure_wallet.isLoggedin, "the wallet must be logged in!!!");
+            operate(wallet_switch, []);
 
-        with(sender.secure_wallet) {
-            auto expected = wallet_amounts[1] - (invoice.amount + fees);
-            check(available_balance == expected,
-                    format("wallet 1 amount incorrect, expected %s got %s", expected, available_balance));
+            const expected = sender_amount - (invoice.amount + fees);
+            check(secure_wallet.available_balance == expected,
+                    format("wallet 1 amount incorrect, expected %s got %s", expected, secure_wallet.available_balance));
         }
 
         tx_stats.total_fees += fees;
