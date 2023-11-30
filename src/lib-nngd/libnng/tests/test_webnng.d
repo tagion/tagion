@@ -106,20 +106,16 @@ int main()
 
     nng_http_server  *s;
 
-    nng_aio *aio;
     nng_url *url;
 
     rc = nng_url_parse(&url, uri.toStringz());
     if( rc < 0 ) { log("H ",nng_errstr(rc)); exit(1); };
 
-    rc = nng_aio_alloc(&aio, null, null);
-    if( rc < 0 ) { log("H ",nng_errstr(rc)); exit(1); };
 
     rc = nng_http_server_hold(&s, url);
     if( rc < 0 ) { log("H ",nng_errstr(rc)); exit(1); };
     
     scope(exit){
-        nng_aio_free(aio);
         nng_http_server_release(s);
         nng_url_free(url);
     }
@@ -132,6 +128,7 @@ int main()
     if( rc < 0 ) { log("H ",nng_errstr(rc)); exit(1); };
 
     // handle REST API
+/*    
     nng_http_handler *h2;
     rc = nng_http_handler_alloc(&h2, toStringz(prefix~"/api/v1"), &rest_handler);
     if( rc < 0 ) { log("H ",nng_errstr(rc)); exit(1); };
@@ -141,6 +138,7 @@ int main()
     if( rc < 0 ) { log("H ",nng_errstr(rc)); exit(1); };
     rc = nng_http_server_add_handler(s, h2);
     if( rc < 0 ) { log("H ",nng_errstr(rc)); exit(1); };
+*/
 
     // run server
     rc = nng_http_server_start(s);
