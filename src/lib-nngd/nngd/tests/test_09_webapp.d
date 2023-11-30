@@ -11,42 +11,35 @@ import std.stdio;
 import std.string;
 import std.uuid;
 
-static WebData api_handler1 ( WebData req, void* ctx ){
-    WebData rep = {
-        text: "REPLY TO: "~to!string(req),
-        type: "text/plain",
-        status: nng_http_status.NNG_HTTP_STATUS_OK
-    };
-    return rep;
+static void api_handler1 ( WebData *req, WebData *rep, void* ctx ){
+    rep.text =  "REPLY TO: "~to!string(*req);
+    rep.type =  "text/plain";
+    rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
 }
 
-static WebData api_handler2 ( WebData req, void* ctx ){
+static void api_handler2 ( WebData *req, WebData *rep, void* ctx ){
     JSONValue data = parseJSON("{}");
     if(req.method == "GET"){
         data["replyto"] = "REPLY TO: "~to!string(req);
-        WebData rep = {
-            json: data,
-            type: "application/json",
-            status: nng_http_status.NNG_HTTP_STATUS_OK
-        };
-        return rep;
+        rep.json = data;
+        rep.type = "application/json";
+        rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
+        return;
     }
     if(req.method == "POST"){
         if(req.type == "application/octet-stream"){
             data["datalength"] = req.rawdata.length;
             data["datatype"] = req.type;
-            WebData rep = {
-                json: data,
-                type: "application/json",
-                status: nng_http_status.NNG_HTTP_STATUS_OK
-            };
-            return rep;
+            rep.json = data,
+            rep.type = "application/json",
+            rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
+            return;
         }else{
-            WebData rep = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "Invalid request"};
-            return rep;
+            rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+            rep.msg = "Invalid request";
+            return;
         }
     }
-    return WebData();
 }
 
 

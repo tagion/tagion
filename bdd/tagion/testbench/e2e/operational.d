@@ -64,7 +64,7 @@ int _main(string[] args) {
     bool sendkernel = false;
     int duration = 3;
     DurationUnit duration_unit = DurationUnit.days;
-    TxStats tx_stats;
+    auto tx_stats = new TxStats;
 
     auto main_args = getopt(args,
             "w", "wallet config files", &wallet_config_files,
@@ -115,22 +115,12 @@ int _main(string[] args) {
         break;
     }
 
-    auto rnd = Random(unpredictableSeed);
-
-    // made this for an old version where the test would manage many wallets, but it still works so it'll just stay
-    void pickWallets(ref ConfigAndPin[] configs_and_pins, out ConfigAndPin sender, out ConfigAndPin receiver)
+    void pickWallets(ref ConfigAndPin[] configs_and_pins, out ConfigAndPin sender, out ConfigAndPin receiver, uint run)
     in (configs_and_pins.length >= 2)
     out (; sender != receiver)
     do {
-        ulong index1 = uniform(0, configs_and_pins.length, rnd);
-        ulong index2;
-        do {
-            index2 = uniform(0, configs_and_pins.length, rnd);
-        }
-        while (index1 == index2);
-
-        sender = configs_and_pins[index1];
-        receiver = configs_and_pins[index2];
+        sender = configs_and_pins[!(run & 1)];
+        receiver = configs_and_pins[(run & 1)];
     }
 
     // Times of the monotomic clock
@@ -148,7 +138,7 @@ int _main(string[] args) {
         writefln("Test ended on %s", end_date);
         const tx_file = buildPath(env.dlog, "tx_stats.hibon");
         mkdirRecurse(dirName(tx_file));
-        fwrite(tx_file, tx_stats);
+        fwrite(tx_file, *tx_stats);
     }
 
     writefln("Starting operational test now on\n\t%s\nand will end in %s, on\n\t%s",
@@ -164,7 +154,7 @@ int _main(string[] args) {
 
         ConfigAndPin sender;
         ConfigAndPin receiver;
-        pickWallets(configs_and_pins, sender, receiver);
+        pickWallets(configs_and_pins, sender, receiver, run_counter);
 
         auto sender_interface = createInterface(sender.config, sender.pin);
         auto receiver_interface = createInterface(receiver.config, receiver.pin);
@@ -202,15 +192,19 @@ alias FeatureContext = Tuple!(
         [])
 class SendNContractsFromwallet1Towallet2 {
     WalletInterface*[] wallets;
+    WalletInterface* sender;
+    WalletInterface* receiver;
     bool sendkernel;
     bool send;
 
     TagionCurrency[] wallet_amounts;
-    TxStats tx_stats;
+    TxStats* tx_stats;
 
-    this(ref WalletInterface* sender, WalletInterface* receiver, bool sendkernel, ref TxStats tx_stats) {
+    this(ref WalletInterface* sender, WalletInterface* receiver, bool sendkernel, TxStats* tx_stats) {
         this.wallets ~= sender;
         this.wallets ~= receiver;
+        this.sender = sender;
+        this.receiver = receiver;
         this.sendkernel = sendkernel;
         this.send = !sendkernel;
         this.tx_stats = tx_stats;
@@ -240,14 +234,14 @@ class SendNContractsFromwallet1Towallet2 {
     TagionCurrency fees;
     @When("i send a valid contract from `wallet1` to `wallet2`")
     Document wallet2() @trusted {
-        with (wallets[0].secure_wallet) {
+        with (receiver.secure_wallet) {
             invoice = createInvoice("Invoice", 800.TGN);
             registerInvoice(invoice);
         }
 
         SignedContract signed_contract;
 
-        with (wallets[1]) {
+        with (sender) {
             check(secure_wallet.isLoggedin, "the wallet must be logged in!!!");
             auto result = secure_wallet.payment([invoice], signed_contract, fees);
 
@@ -293,13 +287,13 @@ class SendNContractsFromwallet1Towallet2 {
             check(wallet_amounts[i] != w.secure_wallet.available_balance, "Wallet amount did not change");
         }
 
-        with(wallets[0].secure_wallet) {
+        with(receiver.secure_wallet) {
             auto expected = wallet_amounts[0] + invoice.amount;
             check(available_balance == expected, 
                     format("wallet 0 amount incorrect, expected %s got %s", expected, available_balance));
         }
 
-        with(wallets[1].secure_wallet) {
+        with(sender.secure_wallet) {
             auto expected = wallet_amounts[1] - (invoice.amount + fees);
             check(available_balance == expected,
                     format("wallet 1 amount incorrect, expected %s got %s", expected, available_balance));
