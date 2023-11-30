@@ -115,22 +115,12 @@ int _main(string[] args) {
         break;
     }
 
-    auto rnd = Random(unpredictableSeed);
-
-    // made this for an old version where the test would manage many wallets, but it still works so it'll just stay
-    void pickWallets(ref ConfigAndPin[] configs_and_pins, out ConfigAndPin sender, out ConfigAndPin receiver)
+    void pickWallets(ref ConfigAndPin[] configs_and_pins, out ConfigAndPin sender, out ConfigAndPin receiver, uint run)
     in (configs_and_pins.length >= 2)
     out (; sender != receiver)
     do {
-        ulong index1 = uniform(0, configs_and_pins.length, rnd);
-        ulong index2;
-        do {
-            index2 = uniform(0, configs_and_pins.length, rnd);
-        }
-        while (index1 == index2);
-
-        sender = configs_and_pins[index1];
-        receiver = configs_and_pins[index2];
+        sender = configs_and_pins[!(run & 1)];
+        receiver = configs_and_pins[(run & 1)];
     }
 
     // Times of the monotomic clock
@@ -164,7 +154,7 @@ int _main(string[] args) {
 
         ConfigAndPin sender;
         ConfigAndPin receiver;
-        pickWallets(configs_and_pins, sender, receiver);
+        pickWallets(configs_and_pins, sender, receiver, run_counter);
 
         auto sender_interface = createInterface(sender.config, sender.pin);
         auto receiver_interface = createInterface(receiver.config, receiver.pin);
