@@ -75,12 +75,12 @@ void dart_worker( ShellOptions opt ){
 }
 
 
-WebData contract_handler ( WebData req, void* ctx ){
+static void contract_handler ( WebData *req, WebData *rep, void* ctx ){
     int rc;
     ShellOptions* opt = cast(ShellOptions*) ctx;
     if(req.type != "application/octet-stream"){
-        WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "invalid data type" };    
-        return res;
+        rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;  rep.msg = "invalid data type";    
+        return;
     }
     writeit(format("WH: contract: with %d bytes for %s",req.rawdata.length, opt.tagion_sock_addr));
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
@@ -94,26 +94,24 @@ WebData contract_handler ( WebData req, void* ctx ){
     rc = s.send(req.rawdata);
     if(rc != 0){
         writeit("contract_handler: send: ", nng_errstr(s.errno));
-        WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "socket error" };
-        return res;
+        rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST; rep.msg = "socket error";
+        return;
     }        
     ubyte[4096] buf;
     size_t len = s.receivebuf(buf, 4096);
     if(len == size_t.max && s.errno != 0){
         writeit("contract_handler: recv: ", nng_errstr(s.errno));
-        WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "socket error" };
-        return res;
+        rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST; rep.msg = "socket error";
+        return;
     }
     writeit(format("WH: dart: received %d bytes",len));
     s.close(); 
-    WebData res = {
-        status: (len>0) ? nng_http_status.NNG_HTTP_STATUS_OK : nng_http_status.NNG_HTTP_STATUS_NO_CONTENT, 
-        type: "applicaion/octet-stream", rawdata: (len>0) ? buf[0..len] : null 
-    };
-    return res;
+    rep.status = (len>0) ? nng_http_status.NNG_HTTP_STATUS_OK : nng_http_status.NNG_HTTP_STATUS_NO_CONTENT;
+    rep.type = "applicaion/octet-stream";
+    rep.rawdata = (len>0) ? buf[0..len] : null;
 }
 
-WebData dartcache_handler ( WebData req, void* ctx ){
+static void dartcache_handler ( WebData *req, WebData *rep, void* ctx ){
     
     thread_attachThis();
     rt_moduleTlsCtor();
@@ -130,8 +128,8 @@ WebData dartcache_handler ( WebData req, void* ctx ){
     
     ShellOptions* opt = cast(ShellOptions*) ctx;
     if(req.type != "application/octet-stream"){
-        WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "invalid data type" };    
-        return res;
+        rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST; rep.msg = "invalid data type";    
+        return;
     }
     
     SecureNet net = new StdSecureNet();
@@ -171,8 +169,8 @@ WebData dartcache_handler ( WebData req, void* ctx ){
         
         if(rc != 0){
             writeit("dart_handler: send: ", nng_errstr(rc));
-            WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "socket error" };
-            return res;
+            rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST; rep.msg = "socket error";
+            return;
         }        
         
         
@@ -181,13 +179,13 @@ WebData dartcache_handler ( WebData req, void* ctx ){
             len = s.receivebuf(buf, buflen);
             if(len == size_t.max && s.errno != 0){
                 writeit("dart_handler: recv: ", nng_errstr(s.errno));
-                WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "socket error" };
-                return res;
+                rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST; rep.msg = "socket error";
+                return;
             }
             if(len > buflen){
                 writeit("dart_handler: recv wrong size: ", len);
-                WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "socket error" };
-                return res;
+                rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST; rep.msg = "socket error";
+                return;
             }
             writeit(format("WH: dart: received %d bytes",len));
             docbuf ~= buf[0..len];
@@ -211,15 +209,14 @@ WebData dartcache_handler ( WebData req, void* ctx ){
 
     Document response = hirpc.result(receiver, params).toDoc;
 
-    WebData res = {
-        status: (found_bills.length > 0) ? nng_http_status.NNG_HTTP_STATUS_OK : nng_http_status.NNG_HTTP_STATUS_NO_CONTENT, 
-        type: "applicaion/octet-stream", rawdata: (found_bills.length > 0) ? cast(ubyte[])(response.serialize) : null 
-    };
+    rep.status = (found_bills.length > 0) ? nng_http_status.NNG_HTTP_STATUS_OK : nng_http_status.NNG_HTTP_STATUS_NO_CONTENT;
+    rep.type = "applicaion/octet-stream";
+    rep.rawdata = (found_bills.length > 0) ? cast(ubyte[])(response.serialize) : null;
+
     writeit("WH: dart: res ",response.toPretty);
-    return res;
 }
 
-WebData dart_handler ( WebData req, void* ctx ){
+static void dart_handler ( WebData *req, WebData *rep, void* ctx ){
     
     int rc;
     const size_t buflen = 1048576;
@@ -227,8 +224,8 @@ WebData dart_handler ( WebData req, void* ctx ){
     ubyte[] docbuf;
     ShellOptions* opt = cast(ShellOptions*) ctx;
     if(req.type != "application/octet-stream"){
-        WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "invalid data type" };    
-        return res;
+        rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST; rep.msg = "invalid data type";    
+        return;
     }
     writeit(format("WH: dart: with %d bytes for %s",req.rawdata.length, opt.tagion_dart_sock_addr));
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
@@ -241,8 +238,8 @@ WebData dart_handler ( WebData req, void* ctx ){
     rc = s.send(req.rawdata);
     if(rc != 0){
         writeit("dart_handler: error on send: ", nng_errstr(rc));
-        WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "socket error" };
-        return res;
+        rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST; rep.msg = "socket error";
+        return;
     }        
     writeit(format("WH: dart: sent %d bytes",req.rawdata.length));
     size_t len = 0, doclen = 0; 
@@ -250,27 +247,25 @@ WebData dart_handler ( WebData req, void* ctx ){
         len = s.receivebuf(buf, buflen);
         if(len == size_t.max && s.errno != 0){
             writeit("dart_handler: error on recv: ", nng_errstr(s.errno));
-            WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "socket error" };
-            return res;
+            rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;  rep.msg = "socket error";
+            return;
         }
         if(len > buflen){
             writeit("dart_handler: recv wrong size: ", len);
-            WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "socket error" };
-            return res;
+            rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST; rep.msg = "socket error";
+            return;
         }
         writeit(format("WH: dart: received %d bytes",len));
         docbuf ~= buf[0..len];
         doclen += len;
     }while(len > buflen - 1);    
     s.close(); 
-    WebData res = {
-        status: (doclen>0) ? nng_http_status.NNG_HTTP_STATUS_OK : nng_http_status.NNG_HTTP_STATUS_NO_CONTENT, 
-        type: "applicaion/octet-stream", rawdata: (doclen>0) ? docbuf[0..doclen] : null 
-    };
-    return res;
+    rep.status = (doclen>0) ? nng_http_status.NNG_HTTP_STATUS_OK : nng_http_status.NNG_HTTP_STATUS_NO_CONTENT;
+    rep.type = "applicaion/octet-stream";
+    rep.rawdata = (doclen>0) ? docbuf[0..doclen] : null; 
 }
 
-WebData i2p_handler ( WebData req, void* ctx ){
+static void i2p_handler ( WebData *req, WebData *rep, void* ctx ){
 
     thread_attachThis();
     rt_moduleTlsCtor();
@@ -283,8 +278,8 @@ WebData i2p_handler ( WebData req, void* ctx ){
     int rc;
     ShellOptions* opt = cast(ShellOptions*) ctx;
     if(req.type != "application/octet-stream"){
-        WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "invalid data type" };    
-        return res;
+        rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST; rep.msg = "invalid data type";    
+        return;
     }
     writeit(format("WH: invoice2pay: with %d bytes",req.rawdata.length));
  
@@ -294,27 +289,27 @@ WebData i2p_handler ( WebData req, void* ctx ){
         options.load(wallet_config_file);
     }else{
         writeit("i2p: invalid wallet config: " ~ opt.default_i2p_wallet);
-        WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "invalid wallet config" };    
-        return res;
+        rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST; rep.msg = "invalid wallet config";    
+        return;
     }
     auto wallet_interface = WalletInterface(options);
 
     if (!wallet_interface.load) {
         writeit("i2p: Wallet does not exist");
-        WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "wallet does not exist" };    
-        return res;
+        rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST; rep.msg = "wallet does not exist";    
+        return;
     }
     const flag = wallet_interface.secure_wallet.login(opt.default_i2p_wallet_pin);
     if (!flag) {
         writeit("i2p: Wallet wrong pincode");
-        WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "Faucet invalid pin code" };    
-        return res;
+        rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST; rep.msg = "Faucet invalid pin code";    
+        return;
     }
 
     if(!wallet_interface.secure_wallet.isLoggedin){
         writeit("i2p: invalid wallet login");
-        WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "invalid wallet login" };    
-        return res;
+        rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST; rep.msg = "invalid wallet login";    
+        return;
     }
     
     writeit("Before creating of invoices");
@@ -326,9 +321,9 @@ WebData i2p_handler ( WebData req, void* ctx ){
     
     foreach (doc; requests_to_pay) {
         if (doc.valid != Document.Element.ErrorCode.NONE){
-            WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "invalid document: " };    
+            rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST; rep.msg = "invalid document: ";    
             writeln("i2p: invalid document");
-            return res;
+            return;
         }
         if (doc.isRecord!TagionBill) {
             to_pay ~= TagionBill(doc);
@@ -340,8 +335,8 @@ WebData i2p_handler ( WebData req, void* ctx ){
             to_pay ~= TagionBill(read_invoice.amount, currentTime, read_invoice.pkey, Buffer.init);
         }
         else {
-            WebData res = { status: nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST, msg: "invalid faucet request" };    
-            return res;
+            rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST; rep.msg = "invalid faucet request";    
+            return;
         }
     }
 
@@ -352,8 +347,8 @@ WebData i2p_handler ( WebData req, void* ctx ){
     const payment_status = wallet_interface.secure_wallet.createPayment(to_pay, signed_contract, fees);
     if (!payment_status.value) {
         writeit("i2p: faucet is empty");
-        WebData res = { status: nng_http_status.NNG_HTTP_STATUS_INTERNAL_SERVER_ERROR, msg: format("faucet createPayment error: %s", payment_status.msg)};
-        return res;
+        rep.status = nng_http_status.NNG_HTTP_STATUS_INTERNAL_SERVER_ERROR; rep.msg = format("faucet createPayment error: %s", payment_status.msg);
+        return;
     }
 
     writeit(signed_contract.toPretty);
@@ -368,12 +363,9 @@ WebData i2p_handler ( WebData req, void* ctx ){
     wallet_interface.save(false);
 
     writeit("i2p: payment sent");   
-    WebData res = {
-        status: nng_http_status.NNG_HTTP_STATUS_OK, 
-        type: "applicaion/octet-stream", rawdata: cast(ubyte[])(receiver.toDoc.serialize)
-    };
-    
-    return res;
+    rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
+    rep.type = "applicaion/octet-stream"; 
+    rep.rawdata = cast(ubyte[])(receiver.toDoc.serialize);
 }
 
 
