@@ -6,7 +6,6 @@ module tagion.wallet.SecureWallet;
 import core.time : MonoTime;
 import std.algorithm : all, cache, canFind, countUntil, each, filter, find, joiner, map, max, min, remove, sum, until;
 import std.array;
-import std.exception : assumeUnique;
 import std.format;
 import std.range : tee;
 import std.string : representation;
@@ -45,6 +44,7 @@ import tagion.wallet.Basic : saltHash;
 import tagion.wallet.KeyRecover;
 import tagion.wallet.WalletException : WalletException;
 import tagion.wallet.WalletRecords : DevicePIN, RecoverGenerator;
+
 alias check = Check!(WalletException);
 alias CiphDoc = Cipher.CipherDocument;
 
@@ -130,9 +130,9 @@ struct SecureWallet(Net : SecureNet) {
      */
     this(
             scope const(string[]) questions,
-    scope const(char[][]) answers,
-    uint confidence,
-    const(char[]) pincode)
+            scope const(char[][]) answers,
+            uint confidence,
+            const(char[]) pincode)
     in (questions.length is answers.length, "Amount of questions should be same as answers")
     do {
         check(questions.length > 3, "Minimal amount of answers is 4");
@@ -180,8 +180,8 @@ struct SecureWallet(Net : SecureNet) {
 
     this(
             scope const(char[]) passphrase,
-    scope const(char[]) pincode,
-    scope const(char[]) salt = null) {
+            scope const(char[]) pincode,
+            scope const(char[]) salt = null) {
         _net = new Net;
         enum size_of_privkey = 32;
         ubyte[] R;
@@ -195,7 +195,7 @@ struct SecureWallet(Net : SecureNet) {
 
     protected void set_pincode(
             scope const(ubyte[]) R,
-    scope const(char[]) pincode) scope
+            scope const(char[]) pincode) scope
     in (!_net.isinit)
     do {
         auto seed = new ubyte[_net.hashSize];
@@ -231,8 +231,8 @@ struct SecureWallet(Net : SecureNet) {
      */
     bool recover(
             const(string[]) questions,
-    const(char[][]) answers,
-    const(char[]) pincode)
+            const(char[][]) answers,
+            const(char[]) pincode)
     in (questions.length is answers.length, "Amount of questions should be same as answers")
     do {
         _net = new Net;
@@ -593,9 +593,10 @@ struct SecureWallet(Net : SecureNet) {
                 .map!(e => TagionBill(e.get!Document))
                 .array);
 
-        foreach(b; found_bills) {
+        foreach (b; found_bills) {
             if (b.owner !in account.derivers) {
                 import std.stdio;
+
                 assumeWontThrow(writefln("Error, could not pubkey %(%02x%) in derivers", b.owner));
                 return false;
             }
@@ -677,7 +678,6 @@ struct SecureWallet(Net : SecureNet) {
                 fees = ContractExecution.billFees(collected_bills.length, pay_script.outputs.length + 1);
                 amount_remainder = total_collected_amount - amount_to_pay - fees;
 
-                
                 previous_bill_count = collected_bills.length;
             }
             while (amount_remainder < 0);
@@ -856,7 +856,7 @@ struct SecureWallet(Net : SecureNet) {
 
     void setEncrDerivers(const(CiphDoc) cipher_doc) {
         Cipher cipher;
-        const derive_state_doc = cipher.decrypt(this._net, cipher_doc); 
+        const derive_state_doc = cipher.decrypt(this._net, cipher_doc);
         DeriverState derive_state = DeriverState(derive_state_doc);
         this.account.derivers = derive_state.derivers;
         this.account.derive_state = derive_state.derive_state;
@@ -1107,6 +1107,7 @@ unittest {
     assert(should_have == wallet.total_balance, format("should have %s had %s", should_have, wallet.total_balance));
 
 }
+
 unittest {
     import std.range;
 
@@ -1360,6 +1361,7 @@ unittest {
 // amount test
 unittest {
     import std.stdio;
+
     auto wallet1 = StdSecureWallet("some words", "1234");
     const bill1 = wallet1.requestBill(10000.TGN);
     const bill2 = wallet1.requestBill(10000.TGN);
@@ -1371,10 +1373,8 @@ unittest {
     wallet1.account.add_bill(bill3);
     assert(wallet1.account.bills.length == 3);
 
-
     const to_pay = [TagionBill(19949.TGN, sdt_t.init, Pubkey([1, 2, 3, 4]), Buffer.init)];
     const to_pay2 = [TagionBill(30000.TGN, sdt_t.init, Pubkey([1, 2, 3, 4]), Buffer.init)];
-
 
     TagionCurrency fees;
     const res = wallet1.getFee(to_pay, fees, true);

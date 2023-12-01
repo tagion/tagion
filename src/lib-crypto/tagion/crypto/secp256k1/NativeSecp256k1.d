@@ -8,7 +8,6 @@ private import tagion.crypto.secp256k1.c.secp256k1_extrakeys;
 import tagion.crypto.random.random;
 import std.algorithm;
 import std.array;
-import std.exception : assumeUnique;
 import tagion.basic.ConsensusExceptions;
 
 enum SECP256K1 : uint {
@@ -95,8 +94,8 @@ class NativeSecp256k1 {
     @trusted
     final void privTweak(
             scope const(ubyte[]) keypair,
-    scope const(ubyte[]) tweak,
-    out ubyte[] tweakked_keypair) const
+            scope const(ubyte[]) tweak,
+            out ubyte[] tweakked_keypair) const
     in (keypair.length == secp256k1_keypair.data.length)
     in (tweak.length == TWEAK_SIZE)
     do {
@@ -114,8 +113,7 @@ class NativeSecp256k1 {
     }
 
     @trusted
-    final immutable(ubyte[]) pubTweak(scope const(ubyte[]) pubkey, scope const(ubyte[]) tweak) const
-    //in (pubkey.length == PUBKEY_SIZE)
+    final immutable(ubyte[]) pubTweak(scope const(ubyte[]) pubkey, scope const(ubyte[]) tweak) const//in (pubkey.length == PUBKEY_SIZE)
     in (tweak.length == TWEAK_SIZE)
     do {
         secp256k1_pubkey xy_pubkey;
@@ -123,7 +121,7 @@ class NativeSecp256k1 {
             const ret = secp256k1_ec_pubkey_parse(_ctx, &xy_pubkey, &pubkey[0], pubkey.length);
             check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_SERIALIZE);
 
-    }
+        }
         secp256k1_xonly_pubkey xonly_pubkey;
         {
             const ret = secp256k1_xonly_pubkey_from_pubkey(_ctx, &xonly_pubkey, null, &xy_pubkey);
@@ -138,8 +136,9 @@ class NativeSecp256k1 {
         ubyte[PUBKEY_SIZE] pubkey_result;
 
         {
-            size_t len=PUBKEY_SIZE; 
-            const ret = secp256k1_ec_pubkey_serialize(_ctx, &pubkey_result[0], &len, &output_pubkey, SECP256K1.EC_COMPRESSED);
+            size_t len = PUBKEY_SIZE;
+            const ret = secp256k1_ec_pubkey_serialize(_ctx, &pubkey_result[0], &len, &output_pubkey, SECP256K1
+                    .EC_COMPRESSED);
             check(ret == 1, ConsensusFailCode.SECURITY_PUBLIC_KEY_PARSE_FAULT);
 
         }
@@ -155,7 +154,7 @@ class NativeSecp256k1 {
     @trusted
     final immutable(ubyte[]) createECDHSecret(
             scope const(ubyte[]) seckey,
-    const(ubyte[]) pubkey) const
+            const(ubyte[]) pubkey) const
     in (seckey.length == SECKEY_SIZE)
     do {
         scope (exit) {
@@ -193,7 +192,7 @@ class NativeSecp256k1 {
     @trusted
     final void createKeyPair(
             scope const(ubyte[]) seckey,
-    ref secp256k1_keypair keypair) const
+            ref secp256k1_keypair keypair) const
     in (seckey.length == SECKEY_SIZE)
 
     do {
@@ -208,7 +207,7 @@ class NativeSecp256k1 {
     @trusted
     final void createKeyPair(
             const(ubyte[]) seckey,
-    out ubyte[] keypair) const
+            out ubyte[] keypair) const
     in (seckey.length == SECKEY_SIZE || seckey.length == secp256k1_keypair.data.length)
     do {
         if (seckey.length == secp256k1_keypair.data.length) {
@@ -223,7 +222,7 @@ class NativeSecp256k1 {
     @trusted
     final void getSecretKey(
             ref scope const(ubyte[]) keypair,
-    out ubyte[] seckey) nothrow const
+            out ubyte[] seckey) nothrow const
     in (keypair.length == secp256k1_keypair.data.length)
 
     do {
@@ -272,7 +271,7 @@ class NativeSecp256k1 {
         }
         ubyte[PUBKEY_SIZE] pubkey;
         {
-            size_t len=PUBKEY_SIZE;
+            size_t len = PUBKEY_SIZE;
             const rt = secp256k1_ec_pubkey_serialize(_ctx, &pubkey[0], &len, &xy_pubkey, SECP256K1.EC_COMPRESSED);
             check(rt == 1, ConsensusFailCode.SECURITY_FAILD_PUBKEY_FROM_KEYPAIR);
         }
@@ -292,8 +291,8 @@ class NativeSecp256k1 {
     @trusted
     final immutable(ubyte[]) sign(
             const(ubyte[]) msg,
-    ref scope const(secp256k1_keypair) keypair,
-    scope const(ubyte[]) aux_random) const
+            ref scope const(secp256k1_keypair) keypair,
+            scope const(ubyte[]) aux_random) const
     in (msg.length == MESSAGE_SIZE)
     in (aux_random.length == MESSAGE_SIZE || aux_random.length == 0)
 
@@ -310,8 +309,8 @@ class NativeSecp256k1 {
     @trusted
     final immutable(ubyte[]) sign(
             const(ubyte[]) msg,
-    scope const(ubyte[]) keypair,
-    scope const(ubyte[]) aux_random) const
+            scope const(ubyte[]) keypair,
+            scope const(ubyte[]) aux_random) const
     in (keypair.length == secp256k1_keypair.data.length)
     do {
         const _keypair = cast(secp256k1_keypair*)(&keypair[0]);
@@ -320,7 +319,7 @@ class NativeSecp256k1 {
 
     final immutable(ubyte[]) sign(
             const(ubyte[]) msg,
-    scope const(ubyte[]) keypair) const {
+            scope const(ubyte[]) keypair) const {
         ubyte[MESSAGE_SIZE] _aux_random;
         ubyte[] aux_random = _aux_random;
         getRandom(aux_random);
@@ -339,8 +338,8 @@ class NativeSecp256k1 {
     @trusted
     final bool verify(
             const(ubyte[]) msg,
-    const(ubyte[]) signature,
-    const(ubyte[]) pubkey) const nothrow
+            const(ubyte[]) signature,
+            const(ubyte[]) pubkey) const nothrow
     in (pubkey.length == PUBKEY_SIZE)
 
     do {
@@ -352,18 +351,18 @@ class NativeSecp256k1 {
     @trusted
     final bool verify(
             const(ubyte[]) signature,
-    const(ubyte[]) msg,
-    ref scope const(secp256k1_pubkey) pubkey) const nothrow
+            const(ubyte[]) msg,
+            ref scope const(secp256k1_pubkey) pubkey) const nothrow
     in (signature.length == SIGNATURE_SIZE)
     in (msg.length == MESSAGE_SIZE)
 
     do {
         secp256k1_xonly_pubkey xonly_pubkey;
         int ret = secp256k1_xonly_pubkey_from_pubkey(_ctx, &xonly_pubkey, null, &pubkey);
-        
-    if (ret != 0) {      
-        ret = secp256k1_schnorrsig_verify(_ctx, &signature[0], &msg[0], MESSAGE_SIZE, &xonly_pubkey);
-    }
+
+        if (ret != 0) {
+            ret = secp256k1_schnorrsig_verify(_ctx, &signature[0], &msg[0], MESSAGE_SIZE, &xonly_pubkey);
+        }
         return ret != 0;
 
     }
@@ -396,7 +395,7 @@ unittest { /// Schnorr test generated from the secp256k1/examples/schnorr.c
     assert(keypair == expected_keypair);
     const signature = crypt.sign(msg_hash, keypair, aux_random);
     assert(signature == expected_signature);
-    const pubkey = crypt.getPubkey(keypair); 
+    const pubkey = crypt.getPubkey(keypair);
     assert(pubkey == expected_pubkey);
     const signature_ok = crypt.verify(msg_hash, signature, pubkey);
     assert(signature_ok, "Schnorr signing failded");
@@ -405,7 +404,7 @@ unittest { /// Schnorr test generated from the secp256k1/examples/schnorr.c
 
 unittest { /// Schnorr tweak
     const aux_random = "b0d8d9a460ddcea7ae5dc37a1b5511eb2ab829abe9f2999e490beba20ff3509a".decode;
-    const msg_hash   = "1bd69c075dd7b78c4f20a698b22a3fb9d7461525c39827d6aaf7a1628be0a283".decode;
+    const msg_hash = "1bd69c075dd7b78c4f20a698b22a3fb9d7461525c39827d6aaf7a1628be0a283".decode;
     const secret_key = "e46b4b2b99674889342c851f890862264a872d4ac53a039fbdab91fd68ed4e71".decode;
     auto crypt = new NativeSecp256k1;
     //secp256k1_keypair keypair;
@@ -422,7 +421,7 @@ unittest { /// Schnorr tweak
     assert(tweakked_pubkey != pubkey);
 
     const tweakked_pubkey_from_keypair = crypt.getPubkey(tweakked_keypair);
-   
+
     assert(tweakked_pubkey == tweakked_pubkey_from_keypair, "The tweakked pubkey should be the same as the keypair tweakked pubkey");
 
     const signature = crypt.sign(msg_hash, keypair, aux_random);

@@ -242,8 +242,6 @@ synchronized class AddressBook {
      * @return active node channels
      */
     Pubkey[] activeNodeChannels() @trusted const pure nothrow {
-        import std.exception : assumeUnique;
-
         auto channels = (cast(NodeAddresses) addresses).keys;
         return channels;
     }

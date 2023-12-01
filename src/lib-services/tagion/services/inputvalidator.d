@@ -8,7 +8,6 @@ import core.time;
 import nngd;
 import std.algorithm : remove;
 import std.conv : to;
-import std.exception : assumeUnique;
 import std.format;
 import std.socket;
 import std.stdio;
