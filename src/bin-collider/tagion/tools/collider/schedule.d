@@ -210,7 +210,7 @@ struct ScheduleRunner {
         }
 
         uint count;
-        enum progress_meter = [
+        static immutable progress_meter = [
             "|",
             "/",
             "-",
@@ -218,8 +218,8 @@ struct ScheduleRunner {
         ];
 
         const cov_enable = (environment.get("COV") !is null);
-        const cov_path = "./" ~ buildPath(environment.get(BDD_LOG, "logs"), "cov").relativePath;
-        const cov_flags = (cov_enable) ? format("--DRT-covopt=\"dstpath:%s merge:1\"", cov_path) : "";
+        const cov_path = buildPath(environment.get(BDD_LOG, "logs"), "cov").relativePath;
+        const cov_flags = (cov_enable) ? [format("--DRT-covopt=\"dstpath:%s merge:1\"", cov_path)] : string[].init;
         if (cov_enable) {
             mkdirRecurse(cov_path);
         }
