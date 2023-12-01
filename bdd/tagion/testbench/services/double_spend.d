@@ -82,7 +82,7 @@ class SameInputsSpendOnOneContract {
         pay_script.outputs = [payment_request];
         
         TagionBill[] collected_bills = [wallet1_bill, wallet1_bill];
-        const fees = ContractExecution.billFees(collected_bills.length, pay_script.outputs.length+1);
+        const fees = ContractExecution.billFees(collected_bills.map!(b=> b.toDoc), pay_script.outputs.map!(b => b.toDoc), 20);
 
         const total_collected_amount = collected_bills
             .map!(bill => bill.value)
@@ -160,7 +160,7 @@ class OneContractWhereSomeBillsAreUsedTwice {
         pay_script.outputs = [payment_request];
         
         TagionBill[] collected_bills = [wallet1_bill, wallet1_bill, wallet2_bill];
-        const fees = ContractExecution.billFees(collected_bills.length, pay_script.outputs.length+1);
+        const fees = ContractExecution.billFees(collected_bills.map!(b=> b.toDoc), pay_script.outputs.map!(b=> b.toDoc),100);
 
         const total_collected_amount = collected_bills
             .map!(bill => bill.value)
