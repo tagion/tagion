@@ -274,7 +274,7 @@ class SendNContractsFromwallet1Towallet2 {
 
     @When("the contract has been executed")
     Document executed() @trusted {
-        Thread.sleep(25.seconds);
+        Thread.sleep(20.seconds);
         return result_ok;
     }
 
@@ -287,23 +287,28 @@ class SendNContractsFromwallet1Towallet2 {
             sendkernel: sendkernel,
             send: send);
 
-        with(receiver) {
-            check(secure_wallet.isLoggedin, "the wallet must be logged in!!!");
-            operate(wallet_switch, []);
+        enum update_retries = 5;
+        enum retry_delay = 5.seconds;
 
-            const expected = receiver_amount + invoice.amount;
-            check(secure_wallet.available_balance == expected, 
-                    format("wallet 0 amount incorrect, expected %s got %s", expected, secure_wallet.available_balance));
+        void check_balance(WalletInterface* wallet, const TagionCurrency expected) {
+            with(wallet) {
+                check(secure_wallet.isLoggedin, "the wallet must be logged in!!!");
+                foreach(i; 0 .. update_retries) {
+                    writefln("wallet try update %s of %s", i+1, update_retries);
+                    operate(wallet_switch, []);
+                        if(secure_wallet.available_balance == expected) {
+                            return;
+                        }
+                        Thread.sleep(retry_delay);
+                    }
+                check(secure_wallet.available_balance == expected, 
+                        format("wallet amount incorrect, expected %s got %s",
+                        expected, secure_wallet.available_balance));
+            }
         }
 
-        with(sender) {
-            check(secure_wallet.isLoggedin, "the wallet must be logged in!!!");
-            operate(wallet_switch, []);
-
-            const expected = sender_amount - (invoice.amount + fees);
-            check(secure_wallet.available_balance == expected,
-                    format("wallet 1 amount incorrect, expected %s got %s", expected, secure_wallet.available_balance));
-        }
+        check_balance(receiver, (receiver_amount + invoice.amount));
+        check_balance(sender, (sender_amount - (invoice.amount + fees)));
 
         tx_stats.total_fees += fees;
         tx_stats.total_sent += invoice.amount;
