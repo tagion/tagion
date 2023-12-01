@@ -14,7 +14,7 @@ do
 done
 
 bills=1
-wallets=8
+wallets=100
 nodes=5
 
 platform="x86_64-linux"
