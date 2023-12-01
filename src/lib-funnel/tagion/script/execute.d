@@ -2,7 +2,7 @@ module tagion.script.execute;
 import std.algorithm;
 import std.array;
 import std.format;
-import std.range : tee;
+import std.range;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord : getType, isRecord;
 import tagion.logger.Logger;
@@ -80,7 +80,6 @@ class StdCheckContract : CheckContract {
 struct ContractExecution {
     static StdCheckContract check_contract;
     enum pay_gas = 1000;
-    enum bill_price = 200;
     ContractProductResult opCall(immutable(CollectedSignedContract)* exec_contract) nothrow {
         const script_doc = exec_contract.sign_contract.contract.script;
         try {
@@ -94,12 +93,22 @@ struct ContractExecution {
         }
     }
 
-    static TagionCurrency billFees(const size_t number_of_input_bills, const size_t number_of_output_bills) {
-        const output_fee = check_contract.calcFees(GasUse(pay_gas, number_of_output_bills * bill_price)); 
-        const input_fee = check_contract.calcFees(GasUse(0, number_of_input_bills * bill_price));
+    static TagionCurrency _billFees(const size_t number_of_input_bytes, const size_t number_of_output_bytes) {
+        const output_fee = check_contract.calcFees(GasUse(pay_gas, number_of_output_bytes)); 
+        const input_fee = check_contract.calcFees(GasUse(0, number_of_input_bytes));
+    __write("inputs_bytes %s output_bytes %s", number_of_input_bytes, number_of_output_bytes);
+    __write("inputs_fee %s output_fee %s", input_fee, output_fee);
         return output_fee - input_fee;
     }
 
+    static TagionCurrency billFees(R1,R2)(R1 inputs, R2 outputs, const ulong extra)  
+    if (isInputRange!R1 && isInputRange!R2 && 
+is(ElementType!R1:const(Document)) && is(ElementType!R2:const(Document))) { 
+    return _billFees(
+    inputs.map!(doc => doc.full_size).sum, 
+    outputs.map!(doc => doc.full_size).sum+extra); 
+    
+}
     immutable(ContractProduct)* pay(immutable(CollectedSignedContract)* exec_contract) {
         import std.exception;
 
@@ -113,16 +122,23 @@ struct ContractExecution {
             .tee!(value => check(value > 0.TGN, "Output with 0 TGN not allowed"))
             .totalAmount;
 
+        const output_docs=pay_script.outputs.map!(v => v.toDoc).array;
         const result = new immutable(ContractProduct)(
                 exec_contract,
-                pay_script.outputs.map!(v => v.toDoc).array);
+                output_docs);
 
-        const bill_fees = billFees(exec_contract.inputs.length, pay_script.outputs.length);
-
+        pragma(msg, typeof(exec_contract.inputs.front.full_size));
+        pragma(msg, typeof(output_docs.front.full_size));
+        const x=exec_contract.inputs.map!(doc => doc.full_size).sum;
+    const y = output_docs.map!(doc => doc.full_size).sum;
+        const bill_fees = billFees(exec_contract.inputs, output_docs, 0);
+        __write("exec_contract %s output_docs %s", exec_contract.inputs.map!(doc => doc.full_size),
+    output_docs.map!(doc => doc.full_size));
         check(input_amount >= (output_amount + bill_fees), "Invalid amount");
         return result;
     }
 }
+import tagion.basic.Debug;
 
 static this() {
     ContractExecution.check_contract = new StdCheckContract;

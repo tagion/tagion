@@ -18,22 +18,22 @@ struct ReceiveBuffer {
         if (buffer is null) {
             buffer = new ubyte[START_SIZE];
         }
-        size_t _pos;
+        size_t pos;
         ptrdiff_t total_size = -1;
         scope (exit) {
         }
-        while (total_size < 0 || _pos <= total_size) {
-            const len = receive(buffer[_pos .. $]);
+        while (total_size < 0 || pos <= total_size) {
+            const len = receive(buffer[pos .. $]);
             if (len == 0) {
-                return ResultBuffer(_pos, buffer[0 .. _pos]);
+                return ResultBuffer(pos, buffer[0 .. pos]);
             }
             if (len < 0) {
-                return ResultBuffer(len, buffer[0.._pos]);
+                return ResultBuffer(len, buffer[0..pos]);
             }
-            _pos += len;
+            pos += len;
 
             if (total_size < 0) {
-                if (LEB128.isCompleat(buffer[0 .. _pos])) {
+                if (LEB128.isCompleat(buffer[0 .. pos])) {
                     const leb128_len = LEB128.decode!size_t(buffer);
                     total_size = leb128_len.value + leb128_len.size;
                     if (total_size > max_size) {
@@ -42,14 +42,14 @@ struct ReceiveBuffer {
                     if (buffer.length <= total_size) {
                         buffer.length = total_size;
                     }
-                    if (_pos >= total_size) {
+                    if (pos >= total_size) {
                         break;
                     }
                 }
             }
 
         }
-        return ResultBuffer(_pos, buffer[0 .. total_size]);
+        return ResultBuffer(pos, buffer[0 .. total_size]);
     }
 
 } 
