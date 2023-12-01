@@ -95,6 +95,7 @@ HiRPC.Receiver sendSubmitHiRPC(string address, HiRPC.Sender contract, const(Secu
     NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
     sock.sendtimeout = 1000.msecs;
     sock.sendbuf = 0x4000;
+    sock.recvtimeout = 3000.msecs;
 
     rc = sock.dial(address);
     if (rc != 0) {
@@ -110,7 +111,7 @@ HiRPC.Receiver sendSubmitHiRPC(string address, HiRPC.Sender contract, const(Secu
     auto response_doc = Document(response_data);
     // We should probably change these exceptions so it always returns a HiRPC.Response error instead?
     if (!response_doc.isRecord!(HiRPC.Receiver) || sock.m_errno != 0) {
-        throw new Exception("Error response when sending bill");
+        throw new Exception(format("Error response when sending bill %s", response_doc.toPretty));
     }
 
     HiRPC hirpc = HiRPC(net);
