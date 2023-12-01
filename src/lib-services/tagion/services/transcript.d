@@ -341,7 +341,6 @@ struct TranscriptService {
 
 
             if (shutdown is long.init || res.id < shutdown) {
-                log("inserting head and other archives for epoch %s", new_head.current_epoch);
                 recorder.insert(new_head, Archive.Type.ADD);
                 recorder.insert(non_voted_epoch, Archive.Type.ADD);
                 recorder.insert(outputs, Archive.Type.ADD);
