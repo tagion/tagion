@@ -133,9 +133,8 @@ struct InputValidatorService {
                 reject(ResponseError.Internal);
             }
 
-            if(sock.m_errno == nng_errno.NNG_ETIMEDOUT ) {
-                __write("result_buf.data.length=%d", result_buf.data.length);
-                if(result_buf.data.length > 0) {
+            if (sock.m_errno == nng_errno.NNG_ETIMEDOUT) {
+                if (result_buf.data.length > 0) {
                     reject(ResponseError.Timeout);
                 }
                 else {
@@ -171,7 +170,6 @@ struct InputValidatorService {
                 auto receiver = hirpc.receive(doc);
                 auto response_ok = hirpc.result(receiver, ResultOk());
                 sock.send(response_ok.toDoc.serialize);
-                log("LGTM");
             }
             catch (HiBONException _) {
                 reject(ResponseError.InvalidDoc, doc);
