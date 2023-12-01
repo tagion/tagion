@@ -1,12 +1,9 @@
 /// Basic functions used in the tagion project
 module tagion.basic.basic;
 
-private import std.string : format, join, strip;
+private import std.string : join;
 private import std.traits;
-private import std.exception : assumeUnique;
-import std.bitmanip : BitArray;
 import std.meta : AliasSeq;
-import std.range.primitives : isInputRange;
 
 enum this_dot = "this.";
 import std.conv;

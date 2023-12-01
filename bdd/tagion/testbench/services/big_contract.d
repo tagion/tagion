@@ -162,21 +162,15 @@ class SendASingleTransactionFromAWalletToAnotherWalletWithManyOutputs {
     TagionBill[] bills;
 
     this(Options opts1, ref StdSecureWallet wallet1, ref StdSecureWallet wallet2) {
-        writefln("INSIDE CTOR1");
         this.wallet1 = wallet1;
         this.wallet2 = wallet2;
         this.opts1 = opts1;
 
-        writefln("INSIDE CTOR2");
         wallet1_hirpc = HiRPC(wallet1.net);
         wallet2_hirpc = HiRPC(wallet2.net);
-        writefln("INSIDE CTOR3");
         writefln("bills length: %s", wallet1.account.bills.length);
         start_amount1 = wallet1.calcTotal(wallet1.account.bills);
-        writefln("INSIDE CTOR4");
         start_amount2 = wallet2.calcTotal(wallet2.account.bills);
-        // (() @trusted => Thread.sleep(10.seconds))();
-        writefln("INSIDE CTOR5");
     }
     
 

@@ -8,7 +8,6 @@ import core.time;
 import nngd;
 import std.algorithm : remove;
 import std.conv : to;
-import std.exception : assumeUnique;
 import std.format;
 import std.socket;
 import std.stdio;
@@ -82,7 +81,7 @@ struct InputValidatorService {
                 const sender = hirpc.Sender(net, message);
                 int rc = sock.send(sender.toDoc.serialize);
                 if (rc != 0) {
-                    log.error("Failed to responsd with rejection %s: %s", rc.to!string, nng_errstr(rc));
+                    log.error("Failed to responsd with rejection %s, because %s", err_type, nng_errstr(rc));
                 }
                 log(rejected, err_type.to!string, data);
             }
@@ -128,36 +127,63 @@ struct InputValidatorService {
                 continue;
             }
 
-            auto result_buf = buf(recv);
-            scope (failure) {
-                reject(ResponseError.Internal);
-            }
 
-            if(sock.m_errno == nng_errno.NNG_ETIMEDOUT ) {
-                __write("result_buf.data.length=%d", result_buf.data.length);
-                if(result_buf.data.length > 0) {
-                    reject(ResponseError.Timeout);
-                }
-                else {
+            version(BLOCKING) {
+                auto result_buf = sock.receive!Buffer;
+                if (sock.m_errno != nng_errno.NNG_OK) {
+                    log(rejected, "NNG_ERRNO", cast(int) sock.m_errno);
                     continue;
                 }
+                if (sock.m_errno == nng_errno.NNG_ETIMEDOUT) {
+                    if (result_buf.length > 0) {
+                        reject(ResponseError.Timeout);
+                    }
+                    else {
+                        continue;
+                    }
+                }
+                if (sock.m_errno != nng_errno.NNG_OK) {
+                    log(rejected, "NNG_ERRNO", cast(int) sock.m_errno);
+                    continue;
+                }
+                if (result_buf.length <= 0) {
+                    reject(ResponseError.InvalidBuf);
+                    continue;
+                }
+
+                Document doc = Document(result_buf.idup);
+            } else {
+                scope (failure) {
+                    reject(ResponseError.Internal);
+                }
+                auto result_buf = buf(recv);
+                if (sock.m_errno == nng_errno.NNG_ETIMEDOUT) {
+                    if (result_buf.data.length > 0) {
+                        reject(ResponseError.Timeout);
+                    }
+                    else {
+                        continue;
+                    }
+                }
+                if (sock.m_errno != nng_errno.NNG_OK) {
+                    log(rejected, "NNG_ERRNO", cast(int) sock.m_errno);
+                    continue;
+                }
+
+                // Fixme ReceiveBuffer .size doesn't always return correct lenght
+                if (result_buf.data.size <= 0) {
+                    reject(ResponseError.InvalidBuf);
+                    continue;
+                }
+
+                Document doc = Document(result_buf.data.idup);
             }
 
-            if (sock.m_errno != nng_errno.NNG_OK) {
-                log(rejected, "NNG_ERRNO", cast(int) sock.m_errno);
-                continue;
-            }
 
-            // Fixme ReceiveBuffer .size doesn't always return correct lenght
-            if (result_buf.size <= 0) {
-                reject(ResponseError.InvalidBuf);
-                continue;
-            }
-
-            Document doc = Document(result_buf.data.idup);
 
             if (!doc.isInorder) {
                 reject(ResponseError.InvalidBuf);
+                continue;
             }
 
             if (!doc.isRecord!(HiRPC.Sender)) {
@@ -171,7 +197,6 @@ struct InputValidatorService {
                 auto receiver = hirpc.receive(doc);
                 auto response_ok = hirpc.result(receiver, ResultOk());
                 sock.send(response_ok.toDoc.serialize);
-                log("LGTM");
             }
             catch (HiBONException _) {
                 reject(ResponseError.InvalidDoc, doc);

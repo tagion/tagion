@@ -81,7 +81,6 @@ class StdRefinement : Refinement {
 
 
         log(epoch_created, "epoch_succesful", event_payload);
-        writeln("SENT EPOCH LOG");
 
         if (task_names is TaskNames.init) {
             return;
