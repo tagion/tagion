@@ -3,18 +3,44 @@
 # Runs operational tests
 #
 
+_init=false
+
+while getopts "i:" opt
+do
+    case $opt in
+        i) _init=true ;;
+        *) ;;
+    esac
+done
+
+bills=1
+wallets=100
+nodes=5
+
 platform="x86_64-linux"
 bdir=$(realpath -m ./build/$platform/bin)
 # TMP_DIR=$(mktemp -d /tmp/tagion_opsXXXX)
 TMP_DIR="$HOME/.local/share/tagion"
 
-"$bdir"/tagion -s || echo "Soft links already exists";
-make ci-files || echo "Not in source dir"
-
 wdir=$TMP_DIR/wallets
 net_dir="$TMP_DIR"/wave
 amount=1000000
 keyfile="$wdir/keys.txt"
+
+# pincode=0000
+set_pin() {
+    pincode="$(printf "%04d" $i)"
+}
+
+if $_init; then
+
+systemctl stop --user neuewelle.service || echo "No wave service was running"
+systemctl stop --user tagionshell.service || echo "No shell service was running"
+
+
+"$bdir"/tagion -s || echo "Soft links already exists";
+make ci-files || echo "Not in source dir"
+
 mkdir -p "$wdir" "$net_dir"
 
 create_wallet_and_bills() {
@@ -47,19 +73,17 @@ create_wallet_and_bills() {
 
 }
 
-pincode=0000
-bills=1
-wallets=100
-nodes=5
 for ((i = 1; i <= wallets; i++ ));
 do
-    create_wallet_and_bills $i $bills $wdir $pincode;
+    set_pin
+    create_wallet_and_bills $i "$bills" "$wdir" "$pincode";
 done
 
 all_infos=""
 # Generate a node name and insert into all infos
 for ((i = 1; i <= nodes; i++ ));
 do
+    set_pin
     name="node_$i"
     wallet_config=$(readlink -m  "${wdir}/wallet$i.json")
     "$bdir"/geldbeutel "$wallet_config" -x "$pincode" --name "$name"
@@ -68,7 +92,7 @@ do
     echo "wallet$i:$pincode" >> "$keyfile"
 done
 
-echo $all_infos
+echo "$all_infos"
 # bill_files=$(ls $wdir/bill*.hibon)
 cat "$wdir"/bill*.hibon | "${bdir}/stiefel" -a $all_infos -o "$wdir"/dart_recorder.hibon
 
@@ -88,8 +112,6 @@ done
         --option=subscription.tags:taskfailure
 )
 
-systemctl stop --user neuewelle.service || echo "No wave service was running"
-systemctl stop --user tagionshell.service || echo "No shell service was running"
 mkdir -p ~/.local/bin ~/.config/systemd/user ~/.local/share/tagion/wave 
 cp "$bdir/run_network.sh" ~/.local/share/tagion/wave/
 cp "$bdir/tagion" ~/.local/bin/
@@ -104,19 +126,25 @@ systemctl restart --user tagionshell.service
 echo "waiting for network to start!"
 sleep 20;
 
+fi # End _init
+
 set -ex
 
 op_pids="";
 log_dir="$PWD/logs/ops"
 mv "$log_dir" "$log_dir.old" || echo "no old logs"
 mkdir -p "$log_dir"
-for ((i = 1; i <= wallets/2; i++)); 
+for ((i = 1; i <= wallets; i+=2)); 
 do
+    set_pin
+    j=$((i+1))
     export DLOG="$log_dir/$i"
     mkdir -p "$DLOG"
-    "$bdir"/testbench operational -w "$wdir"/wallet$i.json -x "$pincode" -w "$wdir"/wallet$((i*2)).json -x "$pincode" > "$DLOG/test.log" 2>&1 &
+    "$bdir"/testbench operational --sendkernel \
+        -w "$wdir"/wallet$i.json -x "$pincode" \
+        -w "$wdir"/wallet"$j".json -x "$(printf "%04d" $j)" > "$DLOG/test.log" 2>&1 &
     op_pids+=${!}
-    sleep 0.2s
+    sleep 0.5s
 done
 
 echo "Running $((wallets/2)) test clients"

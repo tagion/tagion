@@ -1,7 +1,6 @@
 module tagion.utils.Gene;
 
 import std.algorithm.iteration : fold;
-import std.exception : assumeUnique;
 import std.range : lockstep;
 
 @nogc @safe
@@ -50,7 +49,7 @@ uint gene_count(scope const(ulong[]) bitstream) pure nothrow {
         .fold!((a, b) => a + gene_count(b))(uint(0));
 }
 
-    @safe
+@safe
 ulong[] gene_xor(scope const(ulong[]) a, scope const(ulong[]) b) pure nothrow {
     auto result = new ulong[a.length];
     gene_xor(result, a, b);

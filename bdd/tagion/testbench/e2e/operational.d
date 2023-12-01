@@ -194,18 +194,16 @@ alias FeatureContext = Tuple!(
 @safe @Scenario("send N contracts from `wallet1` to `wallet2`",
         [])
 class SendNContractsFromwallet1Towallet2 {
-    WalletInterface*[] wallets;
     WalletInterface* sender;
     WalletInterface* receiver;
     bool sendkernel;
     bool send;
 
-    TagionCurrency[] wallet_amounts;
+    TagionCurrency receiver_amount;
+    TagionCurrency sender_amount;
     TxStats* tx_stats;
 
     this(ref WalletInterface* sender, WalletInterface* receiver, bool sendkernel, TxStats* tx_stats) {
-        this.wallets ~= sender;
-        this.wallets ~= receiver;
         this.sender = sender;
         this.receiver = receiver;
         this.sendkernel = sendkernel;
@@ -224,10 +222,16 @@ class SendNContractsFromwallet1Towallet2 {
                 send: send);
         // dfmt on
 
-        foreach (ref w; wallets[0 .. 2]) {
-            check(w.secure_wallet.isLoggedin, "the wallet must be logged in!!!");
-            w.operate(wallet_switch, []);
-            wallet_amounts ~= w.secure_wallet.available_balance;
+        with (receiver) {
+            check(secure_wallet.isLoggedin, "the wallet must be logged in!!!");
+            operate(wallet_switch, []);
+            receiver_amount = secure_wallet.available_balance;
+        }
+
+        with (sender) {
+            check(secure_wallet.isLoggedin, "the wallet must be logged in!!!");
+            operate(wallet_switch, []);
+            sender_amount = secure_wallet.available_balance;
         }
 
         return result_ok;
@@ -270,7 +274,7 @@ class SendNContractsFromwallet1Towallet2 {
 
     @When("the contract has been executed")
     Document executed() @trusted {
-        Thread.sleep(25.seconds);
+        Thread.sleep(20.seconds);
         return result_ok;
     }
 
@@ -283,24 +287,28 @@ class SendNContractsFromwallet1Towallet2 {
             sendkernel: sendkernel,
             send: send);
 
-        foreach (i, ref w; wallets[0 .. 2]) {
-            writefln("Checking Wallet_%s", i);
-            check(w.secure_wallet.isLoggedin, "the wallet must be logged in!!!");
-            w.operate(wallet_switch, []);
-            check(wallet_amounts[i] != w.secure_wallet.available_balance, "Wallet amount did not change");
+        enum update_retries = 5;
+        enum retry_delay = 5.seconds;
+
+        void check_balance(WalletInterface* wallet, const TagionCurrency expected) {
+            with(wallet) {
+                check(secure_wallet.isLoggedin, "the wallet must be logged in!!!");
+                foreach(i; 0 .. update_retries) {
+                    writefln("wallet try update %s of %s", i+1, update_retries);
+                    operate(wallet_switch, []);
+                        if(secure_wallet.available_balance == expected) {
+                            return;
+                        }
+                        Thread.sleep(retry_delay);
+                    }
+                check(secure_wallet.available_balance == expected, 
+                        format("wallet amount incorrect, expected %s got %s",
+                        expected, secure_wallet.available_balance));
+            }
         }
 
-        with(receiver.secure_wallet) {
-            auto expected = wallet_amounts[0] + invoice.amount;
-            check(available_balance == expected, 
-                    format("wallet 0 amount incorrect, expected %s got %s", expected, available_balance));
-        }
-
-        with(sender.secure_wallet) {
-            auto expected = wallet_amounts[1] - (invoice.amount + fees);
-            check(available_balance == expected,
-                    format("wallet 1 amount incorrect, expected %s got %s", expected, available_balance));
-        }
+        check_balance(receiver, (receiver_amount + invoice.amount));
+        check_balance(sender, (sender_amount - (invoice.amount + fees)));
 
         tx_stats.total_fees += fees;
         tx_stats.total_sent += invoice.amount;

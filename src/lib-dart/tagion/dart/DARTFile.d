@@ -785,7 +785,6 @@ class DARTFile {
 
     DARTIndex[] checkload(Range)(Range dart_indices) if (isInputRange!Range && isBufferType!(ElementType!Range)) {
         import std.algorithm : canFind;
-        import std.exception : assumeUnique;
 
         auto result = loads(dart_indices)[]
             .map!(a => a.dart_index);
@@ -795,7 +794,6 @@ class DARTFile {
             .map!(f => cast(DARTIndex) f)
             .array;
 
-        // return (() @trusted => assumeUnique(not_found))();
         return not_found;
     }
 
