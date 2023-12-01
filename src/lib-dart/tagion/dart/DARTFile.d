@@ -17,7 +17,6 @@ private {
     import std.traits;
     import std.typecons : Flag, No, Yes;
     import std.typecons;
-    import tagion.Keywords;
     import tagion.basic.Debug : __write;
     import tagion.basic.Types : Buffer, isBufferType, isTypedef, mut;
     import tagion.basic.basic : EnumText, assumeTrusted, isinit;

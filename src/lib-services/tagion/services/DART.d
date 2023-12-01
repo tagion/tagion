@@ -89,7 +89,6 @@ struct DARTService {
         log("Starting dart with %(%02x%)", db.bullseye);
 
         auto hirpc = HiRPC(net);
-        import tagion.Keywords;
 
         void dartHiRPC(dartHiRPCRR req, Document doc) {
             import tagion.hibon.HiBONJSON;
