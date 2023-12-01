@@ -3,21 +3,44 @@
 # Runs operational tests
 #
 
-systemctl stop --user neuewelle.service || echo "No wave service was running"
-systemctl stop --user tagionshell.service || echo "No shell service was running"
+_init=false
+
+while getopts "i:" opt
+do
+    case $opt in
+        i) _init=true ;;
+        *) ;;
+    esac
+done
+
+bills=1
+wallets=8
+nodes=5
 
 platform="x86_64-linux"
 bdir=$(realpath -m ./build/$platform/bin)
 # TMP_DIR=$(mktemp -d /tmp/tagion_opsXXXX)
 TMP_DIR="$HOME/.local/share/tagion"
 
-"$bdir"/tagion -s || echo "Soft links already exists";
-make ci-files || echo "Not in source dir"
-
 wdir=$TMP_DIR/wallets
 net_dir="$TMP_DIR"/wave
 amount=1000000
 keyfile="$wdir/keys.txt"
+
+# pincode=0000
+set_pin() {
+    pincode="$(printf "%04d" $i)"
+}
+
+if $_init; then
+
+systemctl stop --user neuewelle.service || echo "No wave service was running"
+systemctl stop --user tagionshell.service || echo "No shell service was running"
+
+
+"$bdir"/tagion -s || echo "Soft links already exists";
+make ci-files || echo "Not in source dir"
+
 mkdir -p "$wdir" "$net_dir"
 
 create_wallet_and_bills() {
@@ -50,14 +73,6 @@ create_wallet_and_bills() {
 
 }
 
-# pincode=0000
-set_pin() {
-    pincode="$(printf "%04d" $i)"
-}
-
-bills=1
-wallets=8
-nodes=5
 for ((i = 1; i <= wallets; i++ ));
 do
     set_pin
@@ -111,6 +126,8 @@ systemctl restart --user tagionshell.service
 echo "waiting for network to start!"
 sleep 20;
 
+fi # End _init
+
 set -ex
 
 op_pids="";
@@ -127,7 +144,7 @@ do
         -w "$wdir"/wallet$i.json -x "$pincode" \
         -w "$wdir"/wallet"$j".json -x "$(printf "%04d" $j)" > "$DLOG/test.log" 2>&1 &
     op_pids+=${!}
-    sleep 8s
+    sleep 0.5s
 done
 
 echo "Running $((wallets/2)) test clients"
