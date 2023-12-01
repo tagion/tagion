@@ -361,7 +361,6 @@ struct TranscriptService {
 
             dart_handle.send(req, RecordFactory.uniqueRecorder(recorder), cast(immutable) res.id);
 
-            log("MEMORY: votes: %s", votes.length);
 
         }
 
@@ -370,7 +369,10 @@ struct TranscriptService {
                 immutable(long) epoch_number,
                 const(sdt_t) epoch_time) @safe {
             last_epoch_number += 1;
-            log("Epoch round: %d time %s", last_epoch_number, epoch_time);
+            import tagion.utils.Term;
+
+
+            log("%sEpoch round: %d time %s%s", BLUE, last_epoch_number, epoch_time, RESET);
 
 
 
@@ -383,7 +385,7 @@ struct TranscriptService {
                 shutdown = (() @trusted => f.byLine.front.to!long)();
             }
             if (shutdown !is long.init) {
-                log("Shutdown is scheduled for epoch %d", shutdown);
+                log("%sShutdown is scheduled for epoch %d%s", YELLOW, shutdown, RESET);
 
             }
             
@@ -412,8 +414,6 @@ struct TranscriptService {
                 .map!(signed_contract => signed_contract.contract.inputs)
                 .join
                 .array;
-
-            pragma(msg, "fixme(pr): add outputs to checkread");
 
             auto req = dartCheckReadRR();
             req.id = last_epoch_number;
