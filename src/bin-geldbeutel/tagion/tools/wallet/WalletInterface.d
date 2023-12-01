@@ -103,16 +103,13 @@ HiRPC.Receiver sendSubmitHiRPC(string address, HiRPC.Sender contract, const(Secu
     }
 
     rc = sock.send(contract.toDoc.serialize);
-    if (rc != 0) {
-        throw new Exception(format("Could not send bill to network %s", nng_errstr(rc)));
-    }
+    check(sock.m_errno == nng_errno.NNG_OK,format("NNG_ERRNO %d", cast(int) sock.m_errno));
+    check(rc == 0, format("Could not send bill to network %s", nng_errstr(rc)));
 
     auto response_data = sock.receive!Buffer;
     auto response_doc = Document(response_data);
     // We should probably change these exceptions so it always returns a HiRPC.Response error instead?
-    if (!response_doc.isRecord!(HiRPC.Receiver) || sock.m_errno != 0) {
-        throw new Exception(format("Error response when sending bill %s", response_doc.toPretty));
-    }
+    check(response_doc.isRecord!(HiRPC.Receiver), format("Error in response when sending bill %s", response_doc.toPretty));
 
     HiRPC hirpc = HiRPC(net);
     return hirpc.receive(response_doc);

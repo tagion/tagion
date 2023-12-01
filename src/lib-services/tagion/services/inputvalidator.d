@@ -127,32 +127,55 @@ struct InputValidatorService {
                 continue;
             }
 
-            auto result_buf = buf(recv);
-            scope (failure) {
-                reject(ResponseError.Internal);
-            }
 
-            if (sock.m_errno == nng_errno.NNG_ETIMEDOUT) {
-                if (result_buf.data.length > 0) {
-                    reject(ResponseError.Timeout);
-                }
-                else {
+            version(BLOCKING) {
+                auto result_buf = sock.receive!Buffer;
+                if (sock.m_errno != nng_errno.NNG_OK) {
+                    log(rejected, "NNG_ERRNO", cast(int) sock.m_errno);
                     continue;
                 }
+                if (sock.m_errno == nng_errno.NNG_ETIMEDOUT) {
+                    if (result_buf.length > 0) {
+                        reject(ResponseError.Timeout);
+                    }
+                    else {
+                        continue;
+                    }
+                }
+                if (result_buf.length <= 0) {
+                    reject(ResponseError.InvalidBuf);
+                    continue;
+                }
+
+                Document doc = Document(result_buf.idup);
+            } else {
+                scope (failure) {
+                    reject(ResponseError.Internal);
+                }
+                auto result_buf = buf(recv);
+                if (sock.m_errno == nng_errno.NNG_ETIMEDOUT) {
+                    if (result_buf.data.length > 0) {
+                        reject(ResponseError.Timeout);
+                    }
+                    else {
+                        continue;
+                    }
+                }
+                if (sock.m_errno != nng_errno.NNG_OK) {
+                    log(rejected, "NNG_ERRNO", cast(int) sock.m_errno);
+                    continue;
+                }
+
+                // Fixme ReceiveBuffer .size doesn't always return correct lenght
+                if (result_buf.data.size <= 0) {
+                    reject(ResponseError.InvalidBuf);
+                    continue;
+                }
+
+                Document doc = Document(result_buf.data.idup);
             }
 
-            if (sock.m_errno != nng_errno.NNG_OK) {
-                log(rejected, "NNG_ERRNO", cast(int) sock.m_errno);
-                continue;
-            }
 
-            // Fixme ReceiveBuffer .size doesn't always return correct lenght
-            if (result_buf.size <= 0) {
-                reject(ResponseError.InvalidBuf);
-                continue;
-            }
-
-            Document doc = Document(result_buf.data.idup);
 
             if (!doc.isInorder) {
                 reject(ResponseError.InvalidBuf);
