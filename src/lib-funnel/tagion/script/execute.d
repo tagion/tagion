@@ -101,7 +101,7 @@ struct ContractExecution {
         return output_fee - input_fee;
     }
 
-    static TagionCurrency billFees(R1,R2)(R1 inputs, R2 outputs, const ulong extra)  
+    static TagionCurrency billFees(R1,R2)(R1 inputs, R2 outputs, const size_t extra)  
     if (isInputRange!R1 && isInputRange!R2 && 
 is(ElementType!R1:const(Document)) && is(ElementType!R2:const(Document))) { 
     return _billFees(
