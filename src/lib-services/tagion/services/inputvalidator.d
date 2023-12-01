@@ -81,7 +81,7 @@ struct InputValidatorService {
                 const sender = hirpc.Sender(net, message);
                 int rc = sock.send(sender.toDoc.serialize);
                 if (rc != 0) {
-                    log.error("Failed to responsd with rejection %s: %s", rc.to!string, nng_errstr(rc));
+                    log.error("Failed to responsd with rejection %s, because %s", err_type, nng_errstr(rc));
                 }
                 log(rejected, err_type.to!string, data);
             }
