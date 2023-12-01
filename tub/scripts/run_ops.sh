@@ -3,6 +3,9 @@
 # Runs operational tests
 #
 
+systemctl stop --user neuewelle.service || echo "No wave service was running"
+systemctl stop --user tagionshell.service || echo "No shell service was running"
+
 platform="x86_64-linux"
 bdir=$(realpath -m ./build/$platform/bin)
 # TMP_DIR=$(mktemp -d /tmp/tagion_opsXXXX)
@@ -47,19 +50,25 @@ create_wallet_and_bills() {
 
 }
 
-pincode=0000
+# pincode=0000
+set_pin() {
+    pincode="$(printf "%04d" $i)"
+}
+
 bills=1
-wallets=100
+wallets=8
 nodes=5
 for ((i = 1; i <= wallets; i++ ));
 do
-    create_wallet_and_bills $i $bills $wdir $pincode;
+    set_pin
+    create_wallet_and_bills $i "$bills" "$wdir" "$pincode";
 done
 
 all_infos=""
 # Generate a node name and insert into all infos
 for ((i = 1; i <= nodes; i++ ));
 do
+    set_pin
     name="node_$i"
     wallet_config=$(readlink -m  "${wdir}/wallet$i.json")
     "$bdir"/geldbeutel "$wallet_config" -x "$pincode" --name "$name"
@@ -68,7 +77,7 @@ do
     echo "wallet$i:$pincode" >> "$keyfile"
 done
 
-echo $all_infos
+echo "$all_infos"
 # bill_files=$(ls $wdir/bill*.hibon)
 cat "$wdir"/bill*.hibon | "${bdir}/stiefel" -a $all_infos -o "$wdir"/dart_recorder.hibon
 
@@ -88,8 +97,6 @@ done
         --option=subscription.tags:taskfailure
 )
 
-systemctl stop --user neuewelle.service || echo "No wave service was running"
-systemctl stop --user tagionshell.service || echo "No shell service was running"
 mkdir -p ~/.local/bin ~/.config/systemd/user ~/.local/share/tagion/wave 
 cp "$bdir/run_network.sh" ~/.local/share/tagion/wave/
 cp "$bdir/tagion" ~/.local/bin/
@@ -110,13 +117,17 @@ op_pids="";
 log_dir="$PWD/logs/ops"
 mv "$log_dir" "$log_dir.old" || echo "no old logs"
 mkdir -p "$log_dir"
-for ((i = 1; i <= wallets/2; i++)); 
+for ((i = 1; i <= wallets; i+=2)); 
 do
+    set_pin
+    j=$((i+1))
     export DLOG="$log_dir/$i"
     mkdir -p "$DLOG"
-    "$bdir"/testbench operational -w "$wdir"/wallet$i.json -x "$pincode" -w "$wdir"/wallet$((i*2)).json -x "$pincode" > "$DLOG/test.log" 2>&1 &
+    "$bdir"/testbench operational --sendkernel \
+        -w "$wdir"/wallet$i.json -x "$pincode" \
+        -w "$wdir"/wallet"$j".json -x "$(printf "%04d" $j)" > "$DLOG/test.log" 2>&1 &
     op_pids+=${!}
-    sleep 0.2s
+    sleep 8s
 done
 
 echo "Running $((wallets/2)) test clients"

@@ -6,7 +6,6 @@ module tagion.wallet.KeyRecover;
 import std.algorithm.iteration : filter, map;
 import std.algorithm.mutation : copy;
 import std.array : array;
-import std.exception : assumeUnique;
 import std.range : StoppingPolicy, indexed, iota, lockstep;
 import std.string : representation;
 import tagion.basic.Message;
@@ -135,7 +134,7 @@ struct KeyRecover {
                     include[index]++;
                     local_search(index, size);
                 }
-            else if (index > 0) {
+                else if (index > 0) {
                     include[index - 1]++;
                     local_search(index - 1, size - 1);
                 }
@@ -154,8 +153,8 @@ struct KeyRecover {
      */
     void createKey(
             scope const(string[]) questions,
-    scope const(char[][]) answers,
-    const uint confidence) {
+            scope const(char[][]) answers,
+            const uint confidence) {
         createKey(quiz(questions, answers), confidence);
     }
 
@@ -168,7 +167,7 @@ struct KeyRecover {
      */
     void createKey(
             scope const(ubyte[][]) A,
-    const uint confidence) {
+            const uint confidence) {
         scope R = new ubyte[net.hashSize];
         getRandom(R);
         scope (exit) {
@@ -186,8 +185,8 @@ struct KeyRecover {
      *   confidence = number of minimum correct answern
      */
     void quizSeed(scope ref const(ubyte[]) R,
-    scope const(ubyte[][]) A,
-    const uint confidence) {
+            scope const(ubyte[][]) A,
+            const uint confidence) {
         scope (success) {
             generator.confidence = confidence;
             generator.S = net.saltHash(R);
@@ -232,7 +231,7 @@ struct KeyRecover {
     bool findSecret(
             scope ref ubyte[] R,
             scope const(string[]) questions,
-    scope const(char[][]) answers) const {
+            scope const(char[][]) answers) const {
         return findSecret(R, quiz(questions, answers));
     }
 
