@@ -142,6 +142,10 @@ struct InputValidatorService {
                         continue;
                     }
                 }
+                if (sock.m_errno != nng_errno.NNG_OK) {
+                    log(rejected, "NNG_ERRNO", cast(int) sock.m_errno);
+                    continue;
+                }
                 if (result_buf.length <= 0) {
                     reject(ResponseError.InvalidBuf);
                     continue;
@@ -179,6 +183,7 @@ struct InputValidatorService {
 
             if (!doc.isInorder) {
                 reject(ResponseError.InvalidBuf);
+                continue;
             }
 
             if (!doc.isRecord!(HiRPC.Sender)) {
