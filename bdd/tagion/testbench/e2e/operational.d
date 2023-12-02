@@ -302,12 +302,17 @@ class SendNContractsFromwallet1Towallet2 {
                 check(secure_wallet.isLoggedin, "the wallet must be logged in!!!");
                 foreach(i; 0 .. update_retries) {
                     writefln("wallet try update %s of %s", i+1, update_retries);
-                    operate(wallet_switch, []);
-                        if(secure_wallet.available_balance == expected) {
-                            return;
-                        }
-                        Thread.sleep(retry_delay);
+                    try {
+                        operate(wallet_switch, []);
                     }
+                    catch(TagionException e) {
+                        writeln(e);
+                    }
+                    if(secure_wallet.available_balance == expected) {
+                        return;
+                    }
+                    Thread.sleep(retry_delay);
+                }
                 check(secure_wallet.available_balance == expected, 
                         format("wallet amount incorrect, expected %s got %s",
                         expected, secure_wallet.available_balance));
