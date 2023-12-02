@@ -31,7 +31,7 @@ void monitorServiceTask(immutable(MonitorOptions) opts) @trusted nothrow {
         //     setState(Ctrl.END);
         // }
 
-        log.register(opts.taskname);
+        log.task_name = opts.taskname;
 
         log("SockectThread port=%d addresss=%s", opts.port, opts.url);
         auto listener_socket = ListenerSocket(opts.url,
