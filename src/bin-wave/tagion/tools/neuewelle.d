@@ -45,7 +45,6 @@ import tagion.utils.Term;
 static abort = false;
 import tagion.services.transcript : graceful_shutdown;
 
-
 private extern (C)
 void signal_handler(int signal) nothrow {
     try {
@@ -220,7 +219,7 @@ int _neuewelle(string[] args) {
         log.registerSubscriptionTask("logger_sub");
     }
 
-    log.register(baseName(program));
+    log.task_name = baseName(program);
 
     locator_options = new immutable(LocatorOptions)(20, 5);
     ActorHandle[] supervisor_handles;
@@ -281,7 +280,6 @@ int _neuewelle(string[] args) {
         if (!recorder.empty) {
             const head = TagionHead(recorder[].front.filed);
             writefln("Found head: %s", head.toPretty);
-
 
             pragma(msg, "fixme(phr): count the keys up hardcoded to be genesis atm");
             DARTIndex epoch_index = __net.dartKey(StdNames.epoch, long(0));
