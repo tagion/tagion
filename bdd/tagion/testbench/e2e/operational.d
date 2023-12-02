@@ -22,11 +22,13 @@ import tagion.hibon.HiBONFile;
 import tagion.script.TagionCurrency;
 import tagion.script.common;
 import tagion.basic.Types : FileExtension;
+import tagion.basic.tagionexceptions;
 import tagion.testbench.tools.Environment;
 import tagion.tools.Basic : Main, __verbose_switch;
 import tagion.tools.wallet.WalletInterface;
 import tagion.tools.wallet.WalletOptions : WalletOptions;
 import tagion.utils.JSONCommon;
+import tagion.utils.StdTime;
 import tagion.wallet.AccountDetails;
 
 alias operational = tagion.testbench.e2e.operational;
@@ -54,6 +56,9 @@ struct TxStats {
     TagionCurrency total_fees;
     TagionCurrency total_sent;
     uint transactions;
+    uint failed_runs;
+    sdt_t start;
+    sdt_t end;
 
     mixin HiBONRecord;
 }
@@ -134,6 +139,7 @@ int _main(string[] args) {
     // Date for pretty reporting
     const start_date = cast(DateTime) Clock.currTime;
     const predicted_end_date = start_date + max_runtime;
+    sdt_t start_sdt_time = currentTime();
 
     int run_counter;
     int failed_runs_counter;
@@ -141,6 +147,11 @@ int _main(string[] args) {
         const end_date = cast(DateTime)(Clock.currTime);
         writefln("Made %s runs", run_counter);
         writefln("Test ended on %s", end_date);
+        tx_stats.transactions = run_counter - failed_runs_counter;
+        tx_stats.failed_runs = failed_runs_counter;
+        tx_stats.start = start_sdt_time;
+        tx_stats.end = currentTime(); // sdt time
+
         const tx_file = buildPath(env.dlog, "tx_stats".setExtension(FileExtension.hibon));
         mkdirRecurse(dirName(tx_file));
         fwrite(tx_file, *tx_stats);
