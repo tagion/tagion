@@ -21,6 +21,7 @@ import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONFile;
 import tagion.script.TagionCurrency;
 import tagion.script.common;
+import tagion.basic.Types : FileExtension;
 import tagion.testbench.tools.Environment;
 import tagion.tools.Basic : Main, __verbose_switch;
 import tagion.tools.wallet.WalletInterface;
@@ -135,11 +136,12 @@ int _main(string[] args) {
     const predicted_end_date = start_date + max_runtime;
 
     int run_counter;
+    int failed_runs_counter;
     scope (exit) {
         const end_date = cast(DateTime)(Clock.currTime);
         writefln("Made %s runs", run_counter);
         writefln("Test ended on %s", end_date);
-        const tx_file = buildPath(env.dlog, "tx_stats.hibon");
+        const tx_file = buildPath(env.dlog, "tx_stats".setExtension(FileExtension.hibon));
         mkdirRecurse(dirName(tx_file));
         fwrite(tx_file, *tx_stats);
     }
@@ -168,12 +170,16 @@ int _main(string[] args) {
         operational_feature.SendNContractsFromwallet1Towallet2(sender_interface, receiver_interface, sendkernel, tx_stats);
         auto feat_group = operational_feature.run;
 
-        auto run_file = File(buildPath(env.dlog, "runs.txt"), "w");
-        run_file.writeln(run_counter);
-        run_file.close;
+        auto runs_file = File(buildPath(env.dlog, "runs.txt"), "w");
+        runs_file.writeln(run_counter);
+        runs_file.close;
 
         if (feat_group.result.hasErrors) {
             stop = true;
+            auto failed_run_file = buildPath(env.dlog, format("failed_%s", failed_runs_counter).setExtension(FileExtension
+                    .hibon));
+            fwrite(failed_run_file, *(feat_group.result));
+            failed_runs_counter++;
             return 1;
         }
 
