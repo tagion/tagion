@@ -122,7 +122,7 @@ struct DARTService {
                 req.respond(response);
                 return;
             }
-            if (!(receiver.method.name == DART.Queries.dartRead || receiver.method.name == DART.Queries.dartBullseye || receiver
+            if (!(receiver.method.name == DART.Queries.dartRead || receiver.method.name == DART.Queries.dartRim || receiver.method.name == DART.Queries.dartBullseye || receiver
                     .method.name == DART.Queries.dartCheckRead)) {
                 log("unsupported request");
                 return;
