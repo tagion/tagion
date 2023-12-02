@@ -96,8 +96,6 @@ struct ContractExecution {
     static TagionCurrency _billFees(const size_t number_of_input_bytes, const size_t number_of_output_bytes) {
         const output_fee = check_contract.calcFees(GasUse(pay_gas, number_of_output_bytes)); 
         const input_fee = check_contract.calcFees(GasUse(0, number_of_input_bytes));
-    __write("inputs_bytes %s output_bytes %s", number_of_input_bytes, number_of_output_bytes);
-    __write("inputs_fee %s output_fee %s", input_fee, output_fee);
         return output_fee - input_fee;
     }
 
