@@ -33,28 +33,32 @@ static struct Logger {
     import std.format;
 
     protected {
-        string _task_name; /// Logger task name
+        string _task_name; /// The name of the task using the logger
         uint[] masks; /// Logger mask stack
         __gshared string logger_task_name; /// Logger task name
         __gshared Tid logger_subscription_tid;
 
     }
 
+    /// Get task_name
     @property
     string task_name() @nogc @safe nothrow const {
         return _task_name;
     }
 
+    /* 
+     * Sets the actor/log task_name
+     * Returns: false the task_name could not be set
+     */
     @property
     bool task_name(const string name) @safe nothrow {
         try {
+            findLoggerTask();
+
             const registered = locate(name);
             const i_am_the_registered = (() @trusted => registered == thisTid)();
             if (registered is Tid.init) {
-
-                
-
-                    .register(name, thisTid);
+                register(name, thisTid);
                 _task_name = name;
                 setThreadName(name);
                 return true;
@@ -73,40 +77,6 @@ static struct Logger {
     }
 
     shared bool silent; /// If true the log is silened (no logs is process from any tasks)
-
-    /**
-    Register the task logger name.
-    Should be done when the task starts
-    */
-    pragma(msg, "TODO: Remove log register when prior services are removed");
-    @trusted
-    void register(string task_name) nothrow
-    in (logger_tid is logger_tid.init)
-    do {
-        push(LogLevel.ALL);
-        scope (exit) {
-            pop;
-        }
-        try {
-            logger_tid = locate(logger_task_name);
-
-            const registered = this.task_name = task_name;
-
-            if (!registered) {
-                log.error("%s logger not register", _task_name);
-            }
-
-            import std.stdio : stderr;
-
-            static if (ver.not_unittest) {
-                stderr.writefln("Register: %s logger\n", _task_name);
-                log("Register: %s logger", _task_name);
-            }
-        }
-        catch (Exception e) {
-            log.error("%s logger not register", _task_name);
-        }
-    }
 
     /**
     Sets the task name of the logger for the whole program
@@ -130,6 +100,12 @@ is ready and has been started correctly
         import std.exception : assumeWontThrow;
 
         return assumeWontThrow(logger_tid != logger_tid.init);
+    }
+
+    private void findLoggerTask() @trusted const {
+        if (!isLoggerServiceRegistered) {
+            logger_tid = locate(logger_task_name);
+        }
     }
 
     @trusted

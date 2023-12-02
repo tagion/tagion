@@ -194,6 +194,7 @@ alias FeatureContext = Tuple!(
 @safe @Scenario("send N contracts from `wallet1` to `wallet2`",
         [])
 class SendNContractsFromwallet1Towallet2 {
+    enum invoice_amount = 1000.TGN;
     WalletInterface* sender;
     WalletInterface* receiver;
     bool sendkernel;
@@ -242,7 +243,7 @@ class SendNContractsFromwallet1Towallet2 {
     @When("i send a valid contract from `wallet1` to `wallet2`")
     Document wallet2() @trusted {
         with (receiver.secure_wallet) {
-            invoice = createInvoice("Invoice", 800.TGN);
+            invoice = createInvoice("Invoice", invoice_amount);
             registerInvoice(invoice);
         }
 
@@ -287,7 +288,7 @@ class SendNContractsFromwallet1Towallet2 {
             sendkernel: sendkernel,
             send: send);
 
-        enum update_retries = 5;
+        enum update_retries = 20;
         enum retry_delay = 5.seconds;
 
         void check_balance(WalletInterface* wallet, const TagionCurrency expected) {

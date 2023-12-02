@@ -10,7 +10,7 @@ import tagion.hibon.HiBONRecord;
 @safe
 struct Cipher {
     import tagion.crypto.secp256k1.NativeSecp256k1;
-    import std.digest.crc : crc32Of;
+    import std.digest.crc : crc64ECMAOf;
     import tagion.basic.ConsensusExceptions : ConsensusException, ConsensusFailCode, SecurityConsensusException;
     import tagion.crypto.SecureInterfaceNet : SecureNet;
     import tagion.crypto.SecureNet : check;
@@ -18,7 +18,7 @@ struct Cipher {
     import tagion.crypto.aes.AESCrypto : AESCrypto;
 
     alias AES = AESCrypto!256;
-    enum CRC_SIZE = crc32Of.length;
+    enum CRC_SIZE = crc64ECMAOf.length;
 
     @recordType("TCD")
     struct CipherDocument {
@@ -49,8 +49,8 @@ struct Cipher {
         // Put random padding to in the last block
         auto last_block = ciphermsg[$ - AES.BLOCK_SIZE + CRC_SIZE .. $];
         getRandom(last_block);
+        const crc = msg.data.crc64ECMAOf;
         ciphermsg[0 .. msg.data.length] = msg.data;
-        const crc = msg.data.crc32Of;
         ciphermsg[msg.data.length .. msg.data.length + CRC_SIZE] = crc;
 
         scope sharedECCKey = net.ECDHSecret(secret_key, pubkey);
@@ -71,19 +71,14 @@ struct Cipher {
         scope sharedECCKey = net.ECDHSecret(cipher_doc.cipherPubkey);
         auto clearmsg = new ubyte[cipher_doc.ciphermsg.length];
         AES.decrypt(sharedECCKey, cipher_doc.nonce, cipher_doc.ciphermsg, clearmsg);
-        Buffer get_clearmsg() @trusted {
-            return assumeUnique(clearmsg);
-        }
-        immutable data = get_clearmsg;
+        Buffer data = (() @trusted => assumeUnique(clearmsg))();
         const result = Document(data);
         immutable full_size = result.full_size;
-        check(full_size + CRC_SIZE <= data.length && full_size !is 0, ConsensusFailCode
-                .CIPHER_DECRYPT_ERROR);
-
-        pragma(msg, "FIXME crc size check");
-        const crc = data[0 .. full_size].crc32Of;
-
-        check(data[0 .. full_size].crc32Of == crc, ConsensusFailCode.CIPHER_DECRYPT_CRC_ERROR);
+        check(full_size + CRC_SIZE <= data.length && full_size !is 0,
+                ConsensusFailCode.CIPHER_DECRYPT_ERROR);
+        const crc = data[full_size .. full_size + CRC_SIZE];
+        check(data[0 .. full_size].crc64ECMAOf == crc, 
+                ConsensusFailCode.CIPHER_DECRYPT_CRC_ERROR);
         return result;
     }
 
@@ -119,13 +114,20 @@ struct Cipher {
             auto wrong_net = new StdSecureNet;
             immutable wrong_passphrase = "wrong word";
             wrong_net.generateKeyPair(wrong_passphrase);
-            for (;;) {
+            bool cipher_decrypt_error;
+            bool cipher_decrypt_crc_error;
+            while (!cipher_decrypt_error || !cipher_decrypt_crc_error) {
                 const secret_cipher_doc = Cipher.encrypt(dummy_net, wrong_net.pubkey, secret_doc);
-                const encrypted_doc = Cipher.decrypt(net, secret_cipher_doc)
-                    .ifThrown!ConsensusException(Document());
-                assert(secret_doc != encrypted_doc);
-                if (!encrypted_doc.empty) {
-                    break; /// Run the loop until the decrypt does not fail
+                try {
+                    const encrypted_doc = Cipher.decrypt(net, secret_cipher_doc);
+                    assert(secret_doc != encrypted_doc);
+                    if (!encrypted_doc.empty) {
+                        break; /// Run the loop until the decrypt does not fail
+                    }
+                }
+                catch (ConsensusException e) {
+                    cipher_decrypt_error |= (e.code == ConsensusFailCode.CIPHER_DECRYPT_ERROR);
+                    cipher_decrypt_crc_error |= (e.code == ConsensusFailCode.CIPHER_DECRYPT_CRC_ERROR);
                 }
             }
         }

@@ -45,6 +45,7 @@ import tagion.script.NameCardScripts : readStandardRecord;
 import tagion.tools.Basic;
 import tagion.tools.revision;
 import tagion.dart.BlockFile : Index;
+
 /**
  * @brief tool for working with local DART database
  */
@@ -234,12 +235,13 @@ int _main(string[] args) {
         }
         else if (dump) {
             File fout;
-            fout=stdout;
+            fout = stdout;
             bool dartTraverse(const(Document) doc, const Index index, const uint rim, Buffer rim_path) {
-               fout.rawWrite(doc.serialize); 
+                fout.rawWrite(doc.serialize);
                 return false;
             }
-            db.traverse(&dartTraverse, sectors, depth); 
+
+            db.traverse(&dartTraverse, sectors, depth);
             return 0;
         }
 
@@ -275,13 +277,6 @@ int _main(string[] args) {
             const sender = CRUD.dartRead(dart_indices, hirpc);
             auto receiver = hirpc.receive(sender);
             auto response = db(receiver, false);
-            //pragma(msg, "Response ", typeof(response));
-            //writefln("response_sender\n%s", response_sender.toPretty);
-            //auto response = hirpc.receiver(db(receiver, false));
-            // writefln("response\n%J", response);
-            //const result=response.result;
-            //auto tosend = hirpc.toHiBON(result);
-            //const recorder_doc = tosend.method.params;
 
             if (!outputfilename.empty) {
                 fout = File(outputfilename, "w");

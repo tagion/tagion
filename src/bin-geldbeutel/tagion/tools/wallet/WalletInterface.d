@@ -103,7 +103,7 @@ HiRPC.Receiver sendSubmitHiRPC(string address, HiRPC.Sender contract, const(Secu
     }
 
     rc = sock.send(contract.toDoc.serialize);
-    check(sock.m_errno == nng_errno.NNG_OK,format("NNG_ERRNO %d", cast(int) sock.m_errno));
+    check(sock.m_errno == nng_errno.NNG_OK, format("NNG_ERRNO %d", cast(int) sock.m_errno));
     check(rc == 0, format("Could not send bill to network %s", nng_errstr(rc)));
 
     auto response_data = sock.receive!Buffer;
@@ -129,7 +129,6 @@ HiRPC.Receiver sendShellSubmitHiRPC(string address, HiRPC.Sender contract, const
 
     Document response_doc = Document(cast(immutable) rep.rawdata);
     HiRPC hirpc = HiRPC(net);
-    writefln("%s", response_doc.toPretty);
     return hirpc.receive(response_doc);
 }
 
@@ -155,8 +154,6 @@ HiRPC.Receiver sendShellHiRPC(string address, Document dart_req, HiRPC hirpc) {
     WebData rep = WebClient.post(address, cast(ubyte[]) dart_req.serialize, ["Content-type": "application/octet-stream"]);
 
     Document response_doc = Document(cast(immutable) rep.rawdata);
-    writefln("%s", response_doc.toPretty);
-
     return hirpc.receive(response_doc);
 }
 
