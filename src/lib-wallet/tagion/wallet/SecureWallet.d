@@ -130,9 +130,9 @@ struct SecureWallet(Net : SecureNet) {
      */
     this(
             scope const(string[]) questions,
-            scope const(char[][]) answers,
-            uint confidence,
-            const(char[]) pincode)
+    scope const(char[][]) answers,
+    uint confidence,
+    const(char[]) pincode)
     in (questions.length is answers.length, "Amount of questions should be same as answers")
     do {
         check(questions.length > 3, "Minimal amount of answers is 4");
@@ -180,8 +180,8 @@ struct SecureWallet(Net : SecureNet) {
 
     this(
             scope const(char[]) passphrase,
-            scope const(char[]) pincode,
-            scope const(char[]) salt = null) {
+    scope const(char[]) pincode,
+    scope const(char[]) salt = null) {
         _net = new Net;
         enum size_of_privkey = 32;
         ubyte[] R;
@@ -195,7 +195,7 @@ struct SecureWallet(Net : SecureNet) {
 
     protected void set_pincode(
             scope const(ubyte[]) R,
-            scope const(char[]) pincode) scope
+    scope const(char[]) pincode) scope
     in (!_net.isinit)
     do {
         auto seed = new ubyte[_net.hashSize];
@@ -231,8 +231,8 @@ struct SecureWallet(Net : SecureNet) {
      */
     bool recover(
             const(string[]) questions,
-            const(char[][]) answers,
-            const(char[]) pincode)
+    const(char[][]) answers,
+    const(char[]) pincode)
     in (questions.length is answers.length, "Amount of questions should be same as answers")
     do {
         _net = new Net;
@@ -581,7 +581,6 @@ struct SecureWallet(Net : SecureNet) {
     @trusted
     bool setResponseUpdateWallet(const(HiRPC.Receiver) receiver) nothrow {
         import std.exception : assumeWontThrow;
-        import tagion.basic.Debug;
         import tagion.hibon.HiBONtoText;
 
         if (!receiver.isResponse) {
@@ -644,7 +643,6 @@ struct SecureWallet(Net : SecureNet) {
     Result!bool getFee(const(TagionBill)[] to_pay, out TagionCurrency fees, bool print = false) nothrow {
         import tagion.script.Currency : totalAmount;
         import tagion.script.execute;
-        import tagion.basic.Debug;
 
         try {
             PayScript pay_script;
@@ -675,12 +673,10 @@ struct SecureWallet(Net : SecureNet) {
                 const total_collected_amount = collected_bills
                     .map!(bill => bill.value)
                     .totalAmount;
-            pragma(msg, "------ ", typeof(pay_script.outputs.front.toDoc));
-            pragma(msg, "------ ", typeof(collected_bills.front.toDoc));
                 fees = ContractExecution.billFees(
-            collected_bills.map!(bill => bill.toDoc), 
-            pay_script.outputs.map!(bill => bill.toDoc),
-            snavs_byte_fee);
+                        collected_bills.map!(bill => bill.toDoc),
+                        pay_script.outputs.map!(bill => bill.toDoc),
+                        snavs_byte_fee);
                 amount_remainder = total_collected_amount - amount_to_pay - fees;
 
                 previous_bill_count = collected_bills.length;
@@ -736,9 +732,8 @@ struct SecureWallet(Net : SecureNet) {
         return result(true);
     }
 
-    enum long snavs_byte_fee=100;
+    enum long snavs_byte_fee = 100;
     Result!bool createPayment(const(TagionBill)[] to_pay, ref SignedContract signed_contract, out TagionCurrency fees, bool print = false) nothrow {
-        import tagion.basic.Debug;
         import tagion.hibon.HiBONtoText;
         import tagion.script.Currency : totalAmount;
         import tagion.script.execute;
@@ -762,24 +757,16 @@ struct SecureWallet(Net : SecureNet) {
                 if (collected_bills.length == previous_bill_count) {
                     return result(false);
                 }
-
-                import tagion.basic.Debug;
-
-                check(can_pay, format("Is unable to pay the amount %10.6fTGN available %10.6fTGN", amount_to_pay.value, available_balance
-                        .value));
+                check(can_pay, format("Is unable to pay the amount %10.6fTGN available %10.6fTGN",
+                        amount_to_pay.value,
+                        available_balance.value));
                 const total_collected_amount = collected_bills
                     .map!(bill => bill.value)
                     .totalAmount;
-            pragma(msg, "!------ ", typeof(pay_script.outputs.front.toDoc));
-            pragma(msg, "!------ ", typeof(collected_bills.front.toDoc));
-
                 fees = ContractExecution.billFees(
-            collected_bills.map!(bill => bill.toDoc), 
-            pay_script.outputs.map!(bill => bill.toDoc), 
-           snavs_byte_fee);
-    __write("collected_bills %s pay_script %s", collected_bills.map!(bill => bill.toDoc.full_size),
-            pay_script.outputs.map!(bill => bill.toDoc.full_size));
-            __write("fees %s", fees);
+                        collected_bills.map!(bill => bill.toDoc),
+                        pay_script.outputs.map!(bill => bill.toDoc),
+                        snavs_byte_fee);
                 amount_remainder = total_collected_amount - amount_to_pay - fees;
                 previous_bill_count = collected_bills.length;
 
@@ -1032,8 +1019,8 @@ struct SecureWallet(Net : SecureNet) {
 
             sender_wallet.payment([invoice], contract_1, fees);
             pragma(msg, "fixme: fix snavs for this to work");
-            version(none) {
-            assert(expected_fee == fees, "fee for get fee and expected fee should be the same");
+            version (none) {
+                assert(expected_fee == fees, "fee for get fee and expected fee should be the same");
             }
         }
 
@@ -1291,32 +1278,31 @@ unittest {
     wallet1.account.add_bill(bill2);
     assert(wallet1.available_balance == 3000.TGN);
 
-
     pragma(msg, "fixme: remove snavs_byte_fee for this to work");
-    version(none) { /// succces payment
+    version (none) { /// succces payment
 
         import std.stdio;
 
         SignedContract signed_contract;
         TagionCurrency fees;
-        const bills_to_pay=[w2_bill1];
+        const bills_to_pay = [w2_bill1];
         writefln("PAY ===");
         const can_pay = wallet1.createPayment(bills_to_pay, signed_contract, fees);
 
-        const pay_script=PayScript(signed_contract.contract.script);
+        const pay_script = PayScript(signed_contract.contract.script);
         writefln("----- -----");
-
 
         auto input_docs = [bill1, bill2].map!(bill => bill.toDoc);
         auto output_docs = pay_script.outputs.map!(bill => bill.toDoc);
 
         const expected_fees = ContractExecution.billFees(
-            input_docs,
-            output_docs,
-            0
+                input_docs,
+                output_docs,
+                0
         );
-        
-        writefln("%s %s", bills_to_pay.map!(bill => bill.toDoc.full_size), pay_script.outputs.map!(bill => bill.toDoc.full_size));
+
+        writefln("%s %s", bills_to_pay.map!(bill => bill.toDoc.full_size), pay_script.outputs.map!(bill => bill.toDoc
+                .full_size));
         writefln("fees=%s expected_fees=%s", fees, expected_fees);
         assert(fees == expected_fees);
         assert(wallet1.total_balance == 3000.TGN);
@@ -1361,8 +1347,6 @@ unittest {
 
 // fee amount
 unittest {
-    import std.stdio;
-
     auto wallet1 = StdSecureWallet("some words", "1234");
     const bill1 = wallet1.requestBill(1000.TGN);
     const bill2 = wallet1.requestBill(1000.TGN);
@@ -1380,7 +1364,6 @@ unittest {
     TagionCurrency fees;
     const res = wallet1.getFee(to_pay, fees);
     check(res.value == true, "Wallet should be able to pay 2000 TGN");
-writefln("fee=%s", fees);
     const res2 = wallet1.getFee(to_pay2, fees, true);
     check(res2.value == true, format("Wallet should be able to pay 1999 TGN fee: %s", fees));
 
@@ -1388,27 +1371,22 @@ writefln("fee=%s", fees);
 
     const can_pay = wallet1.createPayment(to_pay2, signed_contract, fees);
     check(can_pay.value == true, "should be able to create payment");
-
-
-    //auto pay_script = PayScript(signed_contract.contract.script);
-    //check(pay_script.outputs.length < signed_contract.contract.inputs.length, "should have fewer outputs than inputs");
 }
 
 unittest {
     auto wallet1 = StdSecureWallet("some words", "1234");
-    foreach(i; 0..20) {
+    foreach (i; 0 .. 20) {
         const bill = wallet1.requestBill(1000.TGN);
         wallet1.account.add_bill(bill);
     }
     // we pay 10000 should produce negative fee
     const to_pay = [TagionBill(10_000.TGN, sdt_t.init, Pubkey([1, 2, 3, 4]), Buffer.init)];
-    
 
     TagionCurrency get_fees;
     const res = wallet1.getFee(to_pay, get_fees);
     check(res.value == true, "should be able to pay 10000 tgn");
     TagionCurrency actual_fees;
-    
+
     SignedContract signed_contract;
     const can_pay = wallet1.createPayment(to_pay, signed_contract, actual_fees, true);
     check(can_pay.value == true, "should be able to create payment");
