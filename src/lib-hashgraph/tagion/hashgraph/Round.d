@@ -20,7 +20,6 @@ import std.traits : ReturnType, Unqual;
 import std.traits;
 import std.typecons;
 import std.typecons : No;
-import tagion.Keywords : Keywords;
 import tagion.basic.Debug;
 import tagion.basic.Types : Buffer;
 import tagion.basic.basic : EnumText, basename, buf_idup, this_dot;
@@ -140,7 +139,7 @@ class Round {
     package void remove(const(Event) event) nothrow
     in {
         assert(event.isEva || _events[event.node_id] is event,
-        "This event does not exist in round at the current node so it can not be remove from this round");
+                "This event does not exist in round at the current node so it can not be remove from this round");
         assert(event.isEva || !empty, "No events exists in this round");
     }
     do {
@@ -458,8 +457,9 @@ class Round {
                 }
             }
 
-            auto consensus_tide = consensus_son_tide.filter!(e => e !is null).map!(e => e[].retro.until!(e => !famous_witnesses.all!(w => w.sees(e)))
-                .array.back);
+            auto consensus_tide = consensus_son_tide.filter!(e => e !is null)
+                .map!(e => e[].retro.until!(e => !famous_witnesses.all!(w => w.sees(e)))
+                        .array.back);
 
             auto event_collection = consensus_tide
                 .map!(e => e[].until!(e => e._round_received !is null))

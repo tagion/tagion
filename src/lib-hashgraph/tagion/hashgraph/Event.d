@@ -18,8 +18,6 @@ import std.stdio;
 import std.traits : ReturnType, Unqual;
 import std.traits;
 import std.typecons;
-import std.typecons : No;
-import tagion.Keywords : Keywords;
 import tagion.basic.Debug;
 import tagion.basic.Types : Buffer;
 import tagion.basic.basic : EnumText, basename, buf_idup, this_dot;
@@ -322,7 +320,7 @@ class Event {
         iota(hashgraph.node_size)
             .filter!(node_id => _father._youngest_son_ancestors[node_id]!is null)
             .filter!(node_id => _youngest_son_ancestors[node_id] is null || _father._youngest_son_ancestors[node_id]
-            .order > _youngest_son_ancestors[node_id].order)
+                    .order > _youngest_son_ancestors[node_id].order)
             .each!(node_id => _youngest_son_ancestors[node_id] = _father._youngest_son_ancestors[node_id]);
     }
 

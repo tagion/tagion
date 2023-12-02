@@ -6,7 +6,6 @@ import std.format : format;
 import std.range;
 import std.stdio : writefln;
 import std.typecons : Tuple;
-import tagion.Keywords;
 import tagion.basic.Types : Buffer, mut;
 import tagion.behaviour;
 import tagion.communication.HiRPC;
@@ -28,8 +27,8 @@ import tagion.testbench.tools.Environment;
 enum feature = Feature(
             "Dart snap middle branch",
             [
-            "All test in this bdd should use dart fakenet. This test covers after a archive has been removed, if when adding a new archive on top, that the branch snaps back."
-            ]);
+        "All test in this bdd should use dart fakenet. This test covers after a archive has been removed, if when adding a new archive on top, that the branch snaps back."
+]);
 
 alias FeatureContext = Tuple!(
         AddOneArchiveAndSnap, "AddOneArchiveAndSnap",
