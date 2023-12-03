@@ -190,18 +190,8 @@ struct DARTInterfaceService {
 
         setState(Ctrl.ALIVE);
 
-        while (!thisActor.stop) {
-            const received = receiveTimeout(
-                    Duration.zero,
-                    &signal,
-                    &ownerTerminated,
-                    &unknown
-            );
-            if (received) {
-                continue;
-            }
-        }
-
+        // Receive actor signals
+        run();
     }
 
 }
