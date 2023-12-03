@@ -105,7 +105,7 @@ int _main(string[] args) {
         if (replay) {
         RecorderBlock prev_block;
         foreach(inputfilename; args[1 ..$]) {
-            writeln("going through the blocks");
+            writefln("going through the blocks of %s", inputfilename);
 
             switch(inputfilename.extension) {
                 case FileExtension.hibon:
@@ -113,7 +113,6 @@ int _main(string[] args) {
                     scope(exit) {
                         fin.close;
                     }
-
                     foreach(no, doc; HiBONRange(fin).enumerate) {
                         // add the blocks
                         if (!doc.isRecord!RecorderBlock) {
