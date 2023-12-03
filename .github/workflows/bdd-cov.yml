@@ -1,0 +1,47 @@
+name: BDD code coverage
+on:
+  workflow_dispatch:
+
+env:
+  DC: dmd
+  TARGET: x86_64-linux
+
+jobs:
+  commit_stage:
+    runs-on: CI
+    timeout-minutes: 5
+
+    steps:
+      - name: get repository
+        run: |
+          cd ..
+          git clone git@github.com:tagion/tagion.git || echo "repo already exists"
+
+      - name: pull
+        run: |
+          git fetch
+          git checkout ${{ github.sha }}
+          git clean -f && git restore . 
+
+      - name: Run commit stage tests
+        run: |
+          export DC=${{ env.DC }}
+          export TEST_STAGE=commit
+          export TESTBENCH_FLAGS=--silent 
+          export COV=1
+          make bddtest -j || make proper bddtest
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./logs/${{ env.TARGET }}/bdd/commit/cov/
+          fail_ci_if_error: true
+          flags: commit
+          verbose: true
+
+      - name: Post run
+        if: always()
+        run: |
+          make clean
+          rm -r *.callstack logs/ || echo "no logs"
