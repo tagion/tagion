@@ -4,3 +4,4 @@ coverage:
 
 ignore:
   - "src/lib-betterc"
+  - "bdd"

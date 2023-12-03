@@ -193,7 +193,7 @@ int _main(string[] args) {
                 stop = true;
             }
 
-            auto failed_run_file = buildPath(env.dlog, format("failed_%s", failed_runs_counter).setExtension(FileExtension
+            auto failed_run_file = buildPath(env.dlog, format("failed_%s", run_counter).setExtension(FileExtension
                     .hibon));
             fwrite(failed_run_file, *(feat_group.result));
             failed_runs_counter++;
