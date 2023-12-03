@@ -4,7 +4,7 @@ import core.time;
 import std.algorithm.iteration : map;
 import std.array;
 import std.exception;
-import std.file : exists, mkdirRecurse, remove;
+import std.file : exists, mkdirRecurse, remove, rmdirRecurse;
 import std.format : format;
 import std.path : buildPath, dirName, setExtension;
 import std.range : iota, take, zip;
@@ -87,14 +87,19 @@ class ItWork {
 
         immutable task_names = TaskNames();
         { // Start dart service
+            auto module_path = env.bdd_log.buildPath(__MODULE__);
             immutable opts = DARTOptions(
-                    buildPath(env.bdd_log, __MODULE__),
+                    module_path,
                     "dart".setExtension(FileExtension.dart),
             );
-            immutable replicator_folder = buildPath(opts.dart_path.dirName, "replicator");
-            immutable replicator_opts = ReplicatorOptions(replicator_folder);
 
-            mkdirRecurse(replicator_folder);
+            auto replicator_path = buildPath(module_path, "replicator");
+            immutable replicator_opts = ReplicatorOptions(replicator_path);
+
+            mkdirRecurse(replicator_path);
+            if (replicator_path.exists) {
+                rmdirRecurse(replicator_path);
+            }
             mkdirRecurse(opts.dart_filename.dirName);
 
             if (opts.dart_path.exists) {
