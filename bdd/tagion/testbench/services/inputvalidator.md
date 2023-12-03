@@ -27,3 +27,11 @@ Given a inputvalidator
 When we send a `partial_hibon` on a socket
 
 Then the inputvalidator rejects
+
+## Scenario send Big Contract
+
+Given a inputvalidator
+
+When we send a `huge contract` on a socket
+
+Then we should receive response ok

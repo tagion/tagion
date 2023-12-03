@@ -129,6 +129,9 @@ struct InputValidatorService {
 
 
             version(BLOCKING) {
+                scope (failure) {
+                    reject(ResponseError.Internal);
+                }
                 auto result_buf = sock.receive!Buffer;
                 if (sock.m_errno != nng_errno.NNG_OK) {
                     log(rejected, "NNG_ERRNO", cast(int) sock.m_errno);

@@ -258,11 +258,6 @@ int _neuewelle(string[] args) {
             // check that all bullseyes are the same before boot
             assert(bullseyes.all!(b => b == bullseyes[0]), "DATABASES must be booted with same bullseye - Abort");
             db.close();
-
-            const new_filename = buildPath(dirName(node_opt.dart.dart_path), format("boot-%s", baseName(
-                    node_opt.dart.dart_path)));
-            writefln("copying file %s to %s", db.filename, new_filename);
-            node_opt.dart.dart_path.copy(new_filename);
         }
 
         // we only need to read one head since all bullseyes are the same:

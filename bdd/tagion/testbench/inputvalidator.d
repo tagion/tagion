@@ -30,6 +30,7 @@ int _main(string[] _) {
     inputvalidator_feature.SendADocumentToTheSocket(sock_path);
     inputvalidator_feature.SendNoneHiRPC(sock_path);
     inputvalidator_feature.SendPartialHiBON(sock_path);
+    inputvalidator_feature.SendBigContract(sock_path);
     inputvalidator_feature.run;
 
     // automation!inputvalidator.run;

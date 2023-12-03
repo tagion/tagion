@@ -25,6 +25,7 @@ struct ReplicatorOptions {
     import tagion.utils.JSONCommon;
 
     string folder_path = "./recorder";
+    int new_file_interval = 10_000;
 
     void setPrefix(string prefix) nothrow {
         import std.exception;
@@ -52,13 +53,19 @@ struct ReplicatorService {
 
         
         File file;
-        // auto file = File(filepath, "w");
+        scope(exit) {
+            file.close;
+        }
 
         void receiveRecorder(SendRecorder, immutable(RecordFactory.Recorder) recorder, Fingerprint bullseye, immutable(long) epoch_number) {
-            if (file is File.init) {
+            if (file is File.init || epoch_number % opts.new_file_interval == 0) {
+                log("going to create new file");
+                if (file !is File.init) {
+                    file.close;
+                }
                 const filename = format("%010d_epoch", epoch_number).setExtension(FileExtension.hibon);
                 const filepath = buildPath(opts.folder_path, filename);
-                log.trace("Creating replicator file");
+                log.trace("Creating new replicator file %s", filepath);
 
                 if (!opts.folder_path.exists) {
                     mkdirRecurse(opts.folder_path);
@@ -69,17 +76,19 @@ struct ReplicatorService {
                 }
                 file = File(filepath, "w");
             }
+            RecorderBlock block;
+            scope(success) {
+                file.fwrite(block);
+                file.flush;
+                last_block = block;
+            }
 
-            auto block = RecorderBlock(
+            block = RecorderBlock(
                 recorder.toDoc,
                 last_block is RecorderBlock.init ? Fingerprint.init : last_block.fingerprint,
                 bullseye,
                 epoch_number,
                 net); 
-
-            file.fwrite(block);
-            file.flush;
-            last_block = block;
 
             log.trace("Added recorder chain block with hash '%(%02x%)'", block.fingerprint);
             log(modify_recorder, "modify", recorder);

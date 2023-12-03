@@ -140,7 +140,7 @@ do
     j=$((i+1))
     export DLOG="$log_dir/$i"
     mkdir -p "$DLOG"
-    "$bdir"/testbench operational --sendkernel \
+    "$bdir"/testbench operational \
         -w "$wdir"/wallet$i.json -x "$pincode" \
         -w "$wdir"/wallet"$j".json -x "$(printf "%04d" $j)" > "$DLOG/test.log" 2>&1 &
     op_pids+=${!}
