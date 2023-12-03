@@ -168,6 +168,7 @@ struct DARTInterfaceService {
     immutable(TaskNames) task_names;
 
     void task() @trusted {
+        setState(Ctrl.STARTING);
 
         DartWorkerContext ctx;
         ctx.dart_task_name = task_names.dart;
@@ -187,8 +188,6 @@ struct DARTInterfaceService {
         pool.init();
         auto rc = sock.listen(opts.sock_addr);
         checkSocketError(rc);
-
-        setState(Ctrl.ALIVE);
 
         // Receive actor signals
         run();
