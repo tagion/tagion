@@ -52,7 +52,13 @@ static struct Logger {
      * Returns: false the task_name could not be set
      */
     @property
-    bool task_name(const string name) @safe nothrow {
+    bool task_name(const string name) @safe nothrow
+    // in (!isLoggerServiceRegistered) 
+    do {
+        push(LogLevel.ALL);
+        scope (exit) {
+            pop();
+        }
         try {
             locateLoggerTask();
 
@@ -96,11 +102,9 @@ is ready and has been started correctly
     /**
         Returns: true if the task_name has been register by the logger
     */
-    @property @trusted
+    @safe
     bool isLoggerServiceRegistered() const nothrow {
-        import std.exception : assumeWontThrow;
-
-        return assumeWontThrow(logger_tid != logger_tid.init);
+        return logger_tid !is Tid.init;
     }
 
     private void locateLoggerTask() @trusted const {
