@@ -362,7 +362,7 @@ int main(string[] args) {
                 "c|check", "Check the bdd reports in give list of directories", &check_reports_switch,
                 "C", "Same as check but the program will return a nozero exit-code if the check fails", &Check_reports_switch,
                 "s|schedule", format(
-                    "Execution schedule Default: '%s'", options.schedule_file), &options.schedule_file,
+                "Execution schedule Default: '%s'", options.schedule_file), &options.schedule_file,
                 "r|run", "Runs the test in the schedule", &run_stages,
                 "S", "Rewrite the schedule file", &schedule_rewrite,
                 "j|jobs", format(
@@ -422,7 +422,8 @@ int main(string[] args) {
             Schedule schedule;
             schedule.load(options.schedule_file);
             schedule_jobs = (schedule_jobs == 0) ? coresPerCPU : schedule_jobs;
-            auto schedule_runner = ScheduleRunner(schedule, run_stages, schedule_jobs, options);
+            const cov_enable = (environment.get("COV") !is null);
+            auto schedule_runner = ScheduleRunner(schedule, run_stages, schedule_jobs, options, cov_enable);
             schedule_runner.run([testbench]);
             if (schedule_rewrite) {
                 schedule.save(options.schedule_file);

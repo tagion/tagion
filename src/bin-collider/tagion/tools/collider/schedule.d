@@ -2,8 +2,6 @@ module tagion.tools.collider.schedule;
 
 import core.thread;
 import std.algorithm;
-import std.algorithm;
-import std.array;
 import std.array;
 import std.datetime.systime;
 import std.file : exists, mkdirRecurse;
@@ -71,12 +69,14 @@ struct ScheduleRunner {
     const uint jobs;
     ScheduleTrace report;
     const BehaviourOptions opts;
+    const bool cov_enable;
     @disable this();
     this(
             ref Schedule schedule,
             const(string[]) stages,
             const uint jobs,
             const BehaviourOptions opts,
+            const bool cov_enable,
             ScheduleTrace report = null) pure nothrow
     in (jobs > 0)
     in (stages.length > 0)
@@ -86,6 +86,7 @@ struct ScheduleRunner {
         this.jobs = jobs;
         this.opts = opts;
         this.report = report;
+        this.cov_enable = cov_enable;
     }
 
     static void sleep(Duration val) nothrow @nogc @trusted {
@@ -187,8 +188,20 @@ struct ScheduleRunner {
             else {
                 auto fout = File(log_filename, "w");
                 auto _stdin = (() @trusted => stdin)();
-                auto pid = spawnProcess(
-                        cmd, _stdin, fout, fout, env);
+
+                Pid pid;
+                if (!cov_enable) {
+                    pid = spawnProcess(cmd, _stdin, fout, fout, env);
+                }
+                else {
+                    const cov_path = buildPath(environment.get(BDD_LOG, "logs"), "cov").relativePath;
+                    const cov_flags = format(" --DRT-covopt=\"dstpath:%s merge:1\"", cov_path);
+                    mkdirRecurse(cov_path);
+                    // For some reason the drt cov flags don't work when spawned as a process 
+                    // so we just run it in a shell
+                    pid = spawnShell(cmd.join(" ") ~ cov_flags, _stdin, fout, fout, env);
+                }
+
                 writefln("%d] %-(%s %) # pid=%d", job_index, cmd,
                         pid.processID);
                 runners[job_index] = Runner(
@@ -217,13 +230,6 @@ struct ScheduleRunner {
             "\\",
         ];
 
-        const cov_enable = (environment.get("COV") !is null);
-        const cov_path = buildPath(environment.get(BDD_LOG, "logs"), "cov").relativePath;
-        const cov_flags = (cov_enable) ? [format("--DRT-covopt=\"dstpath:%s merge:1\"", cov_path)] : string[].init;
-        if (cov_enable) {
-            mkdirRecurse(cov_path);
-        }
-
         while (!schedule_list.empty || runners.any!(r => r.pid !is r.pid.init)) {
             if (!schedule_list.empty) {
                 const job_index = runners.countUntil!(r => r.pid is r.pid.init);
@@ -235,7 +241,6 @@ struct ScheduleRunner {
                             .each!(e => env[e.key] = envExpand(e.value, env));
                         const cmd = args ~
                             schedule_list.front.name ~
-                            cov_flags ~
                             schedule_list.front.unit.args
                                 .map!(arg => envExpand(arg, env))
                                 .array;
