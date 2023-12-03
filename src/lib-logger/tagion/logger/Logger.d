@@ -52,9 +52,7 @@ static struct Logger {
      * Returns: false the task_name could not be set
      */
     @property
-    bool task_name(const string name) @safe nothrow
-    // in (!isLoggerServiceRegistered) 
-    do {
+    bool task_name(const string name) @safe nothrow {
         push(LogLevel.ALL);
         scope (exit) {
             pop();
