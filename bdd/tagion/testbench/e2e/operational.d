@@ -21,11 +21,14 @@ import tagion.hibon.HiBONRecord;
 import tagion.hibon.HiBONFile;
 import tagion.script.TagionCurrency;
 import tagion.script.common;
+import tagion.basic.Types : FileExtension;
+import tagion.basic.tagionexceptions;
 import tagion.testbench.tools.Environment;
 import tagion.tools.Basic : Main, __verbose_switch;
 import tagion.tools.wallet.WalletInterface;
 import tagion.tools.wallet.WalletOptions : WalletOptions;
 import tagion.utils.JSONCommon;
+import tagion.utils.StdTime;
 import tagion.wallet.AccountDetails;
 
 alias operational = tagion.testbench.e2e.operational;
@@ -53,6 +56,9 @@ struct TxStats {
     TagionCurrency total_fees;
     TagionCurrency total_sent;
     uint transactions;
+    uint failed_runs;
+    sdt_t start;
+    sdt_t end;
 
     mixin HiBONRecord;
 }
@@ -133,13 +139,20 @@ int _main(string[] args) {
     // Date for pretty reporting
     const start_date = cast(DateTime) Clock.currTime;
     const predicted_end_date = start_date + max_runtime;
+    sdt_t start_sdt_time = currentTime();
 
     int run_counter;
+    int failed_runs_counter;
     scope (exit) {
         const end_date = cast(DateTime)(Clock.currTime);
         writefln("Made %s runs", run_counter);
         writefln("Test ended on %s", end_date);
-        const tx_file = buildPath(env.dlog, "tx_stats.hibon");
+        tx_stats.transactions = run_counter - failed_runs_counter;
+        tx_stats.failed_runs = failed_runs_counter;
+        tx_stats.start = start_sdt_time;
+        tx_stats.end = currentTime(); // sdt time
+
+        const tx_file = buildPath(env.dlog, "tx_stats".setExtension(FileExtension.hibon));
         mkdirRecurse(dirName(tx_file));
         fwrite(tx_file, *tx_stats);
     }
@@ -168,12 +181,16 @@ int _main(string[] args) {
         operational_feature.SendNContractsFromwallet1Towallet2(sender_interface, receiver_interface, sendkernel, tx_stats);
         auto feat_group = operational_feature.run;
 
-        auto run_file = File(buildPath(env.dlog, "runs.txt"), "w");
-        run_file.writeln(run_counter);
-        run_file.close;
+        auto runs_file = File(buildPath(env.dlog, "runs.txt"), "w");
+        runs_file.writeln(run_counter);
+        runs_file.close;
 
         if (feat_group.result.hasErrors) {
             stop = true;
+            auto failed_run_file = buildPath(env.dlog, format("failed_%s", failed_runs_counter).setExtension(FileExtension
+                    .hibon));
+            fwrite(failed_run_file, *(feat_group.result));
+            failed_runs_counter++;
             return 1;
         }
 
@@ -296,12 +313,17 @@ class SendNContractsFromwallet1Towallet2 {
                 check(secure_wallet.isLoggedin, "the wallet must be logged in!!!");
                 foreach(i; 0 .. update_retries) {
                     writefln("wallet try update %s of %s", i+1, update_retries);
-                    operate(wallet_switch, []);
-                        if(secure_wallet.available_balance == expected) {
-                            return;
-                        }
-                        Thread.sleep(retry_delay);
+                    try {
+                        operate(wallet_switch, []);
                     }
+                    catch(TagionException e) {
+                        writeln(e);
+                    }
+                    if(secure_wallet.available_balance == expected) {
+                        return;
+                    }
+                    Thread.sleep(retry_delay);
+                }
                 check(secure_wallet.available_balance == expected, 
                         format("wallet amount incorrect, expected %s got %s",
                         expected, secure_wallet.available_balance));

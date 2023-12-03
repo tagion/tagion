@@ -1,7 +1,7 @@
 module tagion.script.common;
 @safe:
 
-import std.algorithm;
+// import std.algorithm;
 import std.array;
 import std.range;
 import tagion.basic.Types;
@@ -35,7 +35,7 @@ import tagion.utils.StdTime;
 
 @recordType("SMC") struct Contract {
     @label("$in") const(DARTIndex)[] inputs; /// Hash pointer to input (DART)
-    @label("$read") @optional const(DARTIndex)[] reads; /// Hash pointer to read-only input (DART)
+    @label("$read") @optional @(filter.Initialized) const(DARTIndex)[] reads; /// Hash pointer to read-only input (DART)
     @label("$run") Document script; // Smart contract 
     bool verify() {
         return (inputs.length > 0);
@@ -89,6 +89,7 @@ struct PayScript {
 }
 
 Signature[] sign(const(SecureNet[]) nets, const(Contract) contract) {
+    import std.algorithm : map;
     const message = nets[0].calcHash(contract);
     return nets
         .map!(net => net.sign(message))
@@ -96,6 +97,7 @@ Signature[] sign(const(SecureNet[]) nets, const(Contract) contract) {
 }
 
 const(SignedContract) sign(const(SecureNet[]) nets, const(Document[]) inputs, const(Document[]) reads, const(Document) script) {
+    import std.algorithm : map, sort;
     check(nets.length > 0, "At least one input contract");
     check(nets.length == inputs.length, "Number of signature does not match the number of inputs");
     const net = nets[0];
@@ -117,6 +119,7 @@ const(SignedContract) sign(const(SecureNet[]) nets, const(Document[]) inputs, co
 }
 
 bool verify(const(SecureNet) net, const(SignedContract*) signed_contract, const(Pubkey[]) owners) nothrow {
+    import std.algorithm : all;
     try {
         if (signed_contract.contract.inputs.length == owners.length) {
             const message = net.calcHash(signed_contract.contract);
@@ -131,6 +134,7 @@ bool verify(const(SecureNet) net, const(SignedContract*) signed_contract, const(
 }
 
 bool verify(const(SecureNet) net, const(SignedContract*) signed_contract, const(Document[]) inputs) nothrow {
+    import std.algorithm : map;
     try {
         return verify(net, signed_contract, inputs.map!(doc => doc[StdNames.owner].get!Pubkey).array);
     }
@@ -165,9 +169,9 @@ struct Epoch {
     @label(StdNames.bullseye) Fingerprint bullseye;
     @label(StdNames.previous) Fingerprint previous;
     @label("$signs") const(Signature)[] signs; /// Signature of all inputs
-    @optional Pubkey[] active; /// Sorted keys
-    @optional Pubkey[] deactive;
-    TagionGlobals globals;
+    @optional @(filter.Initialized) Pubkey[] active; /// Sorted keys
+    @optional @(filter.Initialized) Pubkey[] deactive;
+    @optional @(filter.Initialized) TagionGlobals globals;
 
     mixin HiBONRecord!(q{
         this(long epoch_number,
