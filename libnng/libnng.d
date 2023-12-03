@@ -1,5 +1,7 @@
 module libnng.libnng;
 
+@safe:
+
 import std.meta : Alias;
 import core.stdc.config;
 import std.traits;
@@ -74,7 +76,6 @@ enum nng_flag {
     ,NNG_FLAG_NONBLOCK = 2
 }
 
-@safe:
 T* ptr(T)(T[] arr) { return arr.length == 0 ? null : &arr[0]; }
 
 
