@@ -68,7 +68,8 @@ int _main(string[] args) {
     string[] wallet_config_files;
     string[] wallet_pins;
     bool sendkernel = false;
-    int duration = 3;
+    uint duration = 3;
+    int max_failed_runs = 5;
     DurationUnit duration_unit = DurationUnit.days;
 
     __verbose_switch = true;
@@ -81,6 +82,7 @@ int _main(string[] args) {
             "sendkernel", "Send requests directory to the kernel", &sendkernel,
             "duration", format("The duration the test should run for (current = %s)", duration), &duration,
             "unit", format("The duration unit on of %s (current = %s)", [EnumMembers!DurationUnit], duration_unit), &duration_unit,
+            "max_failed_runs", format("The maximum amount of failed runs, before the process exits (current = %s)", max_failed_runs), &duration_unit,
     );
 
     if (main_args.helpWanted) {
@@ -186,7 +188,11 @@ int _main(string[] args) {
         runs_file.close;
 
         if (feat_group.result.hasErrors) {
-            stop = true;
+            /// Never if max_failed_runs -1
+            if (failed_runs_counter == max_failed_runs) {
+                stop = true;
+            }
+
             auto failed_run_file = buildPath(env.dlog, format("failed_%s", failed_runs_counter).setExtension(FileExtension
                     .hibon));
             fwrite(failed_run_file, *(feat_group.result));
