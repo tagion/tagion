@@ -1,8 +1,10 @@
+/// Service which exposes dart reads over a socket
 module tagion.services.DARTInterface;
+
+@safe:
 
 import tagion.utils.JSONCommon;
 
-@safe
 struct DARTInterfaceOptions {
     import tagion.services.options : contract_sock_addr;
 
@@ -161,12 +163,12 @@ void checkSocketError(int rc) {
     }
 }
 
-@safe
 struct DARTInterfaceService {
     immutable(DARTInterfaceOptions) opts;
     immutable(TRTOptions) trt_opts;
     immutable(TaskNames) task_names;
 
+    pragma(msg, "FIXME: make dart interface @safe when nng is");
     void task() @trusted {
         setState(Ctrl.STARTING);
 
