@@ -74,7 +74,7 @@ jobs:
       - name: Upload code coverage results
         run: |
           cp logs/${{env.TARGET}}/cov/* .      
-          bash <(curl -s https://codecov.io/bash) -t ${{ env.CODECOV_TOKEN }} -f "!*/cov/*"
+          bash <(curl -s https://codecov.io/bash) -F unittest -t ${{ env.CODECOV_TOKEN }} -f "!*/cov/*"
           rm -- *.lst
 
       - name: Post run
