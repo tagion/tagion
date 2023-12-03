@@ -108,7 +108,6 @@ int _main(string[] args) {
 
 
         if (replay) {
-            RecorderBlock prev_block;
             foreach(inputfilename; args[1 ..$]) {
                 writefln("going through the blocks of %s", inputfilename);
                 if (inputfilename.extension != FileExtension.hibon) {
@@ -122,6 +121,7 @@ int _main(string[] args) {
                     fin.close;
                 }
 
+                RecorderBlock prev_block;
                 foreach(no, doc; HiBONRange(fin).enumerate) {
                     // add the blocks
                     if (!doc.isRecord!RecorderBlock) {
@@ -161,7 +161,6 @@ int _main(string[] args) {
         if (replay_and_find) {
             bool match;
 
-            RecorderBlock prev_block;
             const init_eye = dart.bullseye;
             verbose("searching for eye %(%02x%)", init_eye);
             foreach(inputfilename; args[1 ..$]) {
@@ -176,6 +175,7 @@ int _main(string[] args) {
                     fin.close;
                 }
 
+                RecorderBlock prev_block;
                 Blocks: foreach(no, doc; HiBONRange(fin).enumerate) {
                     // add the blocks
                     if (!doc.isRecord!RecorderBlock) {
