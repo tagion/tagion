@@ -36,6 +36,7 @@ alias FeatureContext = Tuple!(
         SendADocumentToTheSocket, "SendADocumentToTheSocket",
         SendNoneHiRPC, "SendNoneHiRPC",
         SendPartialHiBON, "SendPartialHiBON",
+        SendBigContract, "SendBigContract",
         FeatureGroup*, "result"
 );
 
@@ -196,6 +197,66 @@ class SendPartialHiBON {
     Document rejects() {
         check(!concurrency.receiveTimeout(100.msecs, (inputDoc _, Document __) {}), "should not have received a doc");
         receiveOnlyTimeout!(LogInfo, const(Document)); // Subscribed rejected data
+        return result_ok;
+    }
+
+}
+
+@safe @Scenario("send Big Contract",
+        [])
+class SendBigContract {
+
+    NNGSocket sock;
+    const string sock_path;
+    this(string _sock_path) @trusted {
+        sock = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
+        sock_path = _sock_path;
+        sock.sendtimeout = msecs(1000);
+        sock.sendbuf = 0x4000;
+    }
+
+
+    @Given("a inputvalidator")
+    Document inputvalidator() {
+        check(waitforChildren(Ctrl.ALIVE), "waitforChildren");
+
+        register("inputvalidator_tester", thisTid);
+        log.registerSubscriptionTask("inputvalidator_tester");
+        submask.subscribe(InputValidatorService.rejected);
+        return result_ok;
+    }
+
+    @When("we send a `huge contract` on a socket")
+    Document socket() @trusted {
+        import std.range;
+        import std.algorithm;
+
+        HiRPC hirpc;
+        int rc = sock.dial(sock_path);
+        check(rc == 0, format("Failed to dial %s", nng_errstr(rc)));
+        auto hibon = new HiBON();
+
+        string long_string = iota(0,10_000).map!(i => format("%d", i)).join;
+        // writefln(long_string);
+        hibon["$test"] = long_string;
+        const sender = hirpc.act(hibon);
+        auto to_send = sender.toDoc.serialize;
+        writefln("long_hibon length=%skb", to_send.length/1000, Document(to_send).valid);
+        rc = sock.send(to_send);
+        check(rc == 0, format("Failed to send %s", nng_errstr(rc)));
+        Document received = sock.receive!Buffer;
+        check(sock.m_errno == 0, format("Failed to receive %s", nng_errstr(sock.m_errno)));
+        check(received.length != 0, "Received empty doc");
+        auto receiver = hirpc.receive(received);
+        writefln(receiver.toPretty);
+        check(!receiver.isError, "Did not expect an error");
+        
+        return result_ok;
+    }
+
+    @Then("we should receive response ok")
+    Document ok() {
+        check(concurrency.receiveTimeout(200.msecs, (inputDoc _, Document __) {}), "should have received a doc");
         return result_ok;
     }
 
