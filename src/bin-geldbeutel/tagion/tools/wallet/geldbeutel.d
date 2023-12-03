@@ -184,6 +184,17 @@ int _main(string[] args) {
             }
             salt ~= WordList.presalt ~ _salt;
         }
+        if (!passphrase.empty) {
+            check(!pincode.empty, "Missing pincode");
+            wallet_interface.generateSeedFromPassphrase(passphrase, pincode);
+            wallet_interface.save(false);
+            return 0;
+        }
+        if (!wallet_interface.load) {
+            create_account = true;
+            writefln("Wallet dont't exists");
+            WalletInterface.pressKey;
+        }
         if (bip39 > 0 || bip39_recover) {
             import std.uni;
             import tagion.tools.secretinput;
@@ -235,23 +246,14 @@ int _main(string[] args) {
                 printf("%.*s\n", cast(int) passphrase.length, &passphrase[0]);
                 good("Write them down");
             }
-            wallet_interface.generateSeedFromPassphrase(passphrase, pincode_1, _salt);
+            const recovered=wallet_interface.generateSeedFromPassphrase(passphrase, pincode_1, _salt);
+            check(recovered, "Wallet was not recovered");
+            good("Wallet was recovered");
             wallet_interface.save(false);
             return 0;
         }
         else {
             (() @trusted { passphrase = cast(char[]) _passphrase; }());
-        }
-        if (!passphrase.empty) {
-            check(!pincode.empty, "Missing pincode");
-            wallet_interface.generateSeedFromPassphrase(passphrase, pincode);
-            wallet_interface.save(false);
-            return 0;
-        }
-        if (!wallet_interface.load) {
-            create_account = true;
-            writefln("Wallet dont't exists");
-            WalletInterface.pressKey;
         }
         bool info_only;
         if (show_info) {
