@@ -11,6 +11,7 @@ import std.stdio;
 import std.string : representation;
 import tagion.basic.Message;
 import tagion.basic.Types : Buffer, FileExtension, hasExtension;
+import tagion.basic.basic : isinit;
 import tagion.basic.range : doFront;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.SecureNet;
@@ -335,8 +336,13 @@ struct WalletInterface {
         return false;
     }
 
-    void generateSeedFromPassphrase(const(char[]) passphrase, const(char[]) pincode, const(char[]) salt = null) {
-        secure_wallet = StdSecureWallet(passphrase, pincode, salt);
+    bool generateSeedFromPassphrase(const(char[]) passphrase, const(char[]) pincode, const(char[]) salt = null) {
+        auto tmp_secure_wallet = StdSecureWallet(passphrase, pincode, salt);
+        if (!secure_wallet.wallet.isinit && secure_wallet.wallet.S != tmp_secure_wallet.wallet.S) {
+            return false;
+        }
+        secure_wallet=tmp_secure_wallet;
+        return true;
     }
 
     /**

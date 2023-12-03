@@ -186,12 +186,15 @@ struct SecureWallet(Net : SecureNet) {
         enum size_of_privkey = 32;
         ubyte[] R;
         scope (exit) {
+            _wallet.S=_net.saltHash(R);
             set_pincode(R, pincode);
             R[] = 0;
         }
         _net.generateKeyPair(passphrase, salt,
                 (scope const(ubyte[]) data) { R = data[0 .. size_of_privkey].dup; });
     }
+
+    
 
     protected void set_pincode(
             scope const(ubyte[]) R,
