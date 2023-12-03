@@ -39,6 +39,7 @@ import tagion.script.execute : ContractExecution;
 import tagion.script.standardnames;
 import tagion.tools.Basic;
 import tagion.wallet.SecureWallet : check;
+import tagion.wallet.WalletException;
 
 //import tagion.wallet.WalletException : check;
 /**
@@ -99,7 +100,7 @@ HiRPC.Receiver sendSubmitHiRPC(string address, HiRPC.Sender contract, const(Secu
 
     rc = sock.dial(address);
     if (rc != 0) {
-        throw new Exception(format("Could not dial address %s: %s", address, nng_errstr(rc)));
+        throw new WalletException(format("Could not dial address %s: %s", address, nng_errstr(rc)));
     }
 
     rc = sock.send(contract.toDoc.serialize);
@@ -124,7 +125,7 @@ HiRPC.Receiver sendShellSubmitHiRPC(string address, HiRPC.Sender contract, const
     ]);
 
     if (rep.status != http_status.NNG_HTTP_STATUS_OK) {
-        throw new Exception(format("Send shell submit error(%d): %s", rep.status, rep.msg));
+        throw new WalletException(format("Send shell submit error(%d): %s", rep.status, rep.msg));
     }
 
     Document response_doc = Document(cast(immutable) rep.rawdata);
@@ -140,7 +141,7 @@ HiRPC.Receiver sendShellHiRPC(string address, HiRPC.Sender dart_req, HiRPC hirpc
     ]);
 
     if (rep.status != http_status.NNG_HTTP_STATUS_OK) {
-        throw new Exception(format("send shell submit error(%d): %s", rep.status, rep.msg));
+        throw new WalletException(format("send shell submit error(%d): %s", rep.status, rep.msg));
     }
 
     Document response_doc = Document(cast(immutable) rep.rawdata);
@@ -180,16 +181,16 @@ HiRPC.Receiver sendDARTHiRPC(string address, HiRPC.Sender dart_req, HiRPC hirpc,
             nng_sleep(100.msecs);
         }
         if (rc != 0) {
-            throw new Exception(format("Could not dial kernel %s, %s", address, nng_errstr(rc)));
+            throw new WalletException(format("Could not dial kernel %s, %s", address, nng_errstr(rc)));
         }
     }
     rc = s.send(dart_req.toDoc.serialize);
     if (s.errno != 0) {
-        throw new Exception(format("error in send of darthirpc: %s", s.errno));
+        throw new WalletException(format("error in send of darthirpc: %s", s.errno));
     }
     Document received_doc = s.receive!Buffer;
     if (s.errno != 0) {
-        throw new Exception(format("REQ Socket error after receive: %s", s.errno));
+        throw new WalletException(format("REQ Socket error after receive: %s", s.errno));
     }
 
     try {
