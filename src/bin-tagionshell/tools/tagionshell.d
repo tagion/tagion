@@ -82,12 +82,15 @@ static void contract_handler ( WebData *req, WebData *rep, void* ctx ){
         rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;  rep.msg = "invalid data type";    
         return;
     }
-    writeit(format("WH: contract: with %d bytes for %s",req.rawdata.length, opt.tagion_sock_addr));
+
+    const contract_addr = opt.getRndAddress(opt.contract_sock_prefix);
+
+    writeit(format("WH: contract: with %d bytes for %s",req.rawdata.length, contract_addr));
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
     s.recvtimeout = msecs(10000);
-    writeit(format("WH: contract: trying to dial %s", opt.tagion_sock_addr));
+    writeit(format("WH: contract: trying to dial %s", contract_addr));
     while(true){
-        rc = s.dial(opt.tagion_sock_addr);
+        rc = s.dial(contract_addr);
         if(rc == 0)
             break;
     }
@@ -228,7 +231,7 @@ static void dart_handler ( WebData *req, WebData *rep, void* ctx ){
         return;
     }
 
-    const dart_addr = opt.getRndDARTAddress();
+    const dart_addr = opt.getRndAddress(opt.dart_sock_prefix);
 
     
     writeit(format("WH: dart: with %d bytes for %s",req.rawdata.length, dart_addr));
