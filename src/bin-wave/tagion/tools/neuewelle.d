@@ -7,7 +7,7 @@ import core.sys.posix.signal;
 import core.sys.posix.unistd;
 import core.thread;
 import core.time;
-import std.algorithm : countUntil, map;
+import std.algorithm : countUntil, map, uniq, equal;
 import std.array;
 import std.file : chdir, exists;
 import std.format;
@@ -37,13 +37,14 @@ import tagion.services.supervisor;
 import tagion.tools.Basic;
 import tagion.tools.revision;
 import tagion.utils.JSONCommon;
-import tagion.utils.getopt;
 import tagion.tools.toolsexception;
 import tagion.tools.wallet.WalletInterface;
 import tagion.tools.wallet.WalletOptions;
 import tagion.utils.Term;
 
 static abort = false;
+import tagion.services.transcript : graceful_shutdown;
+
 private extern (C)
 void signal_handler(int signal) nothrow {
     try {
@@ -67,6 +68,16 @@ void signal_handler(int signal) nothrow {
 mixin Main!(_main, "wave");
 
 int _main(string[] args) {
+    try {
+        return _neuewelle(args);
+    }
+    catch (Exception e) {
+        error(e);
+        return 1;
+    }
+}
+
+int _neuewelle(string[] args) {
     immutable program = args[0];
     string bootkeys_path;
     /*
@@ -105,12 +116,6 @@ int _main(string[] args) {
     bool version_switch;
     bool override_switch;
     bool monitor;
-    debug {
-        bool fail_fast = true;
-    }
-    else {
-        bool fail_fast;
-    }
 
     string mode0_node_opts_path;
     string[] override_options;
@@ -119,16 +124,15 @@ int _main(string[] args) {
             "version", "Print revision information", &version_switch,
             "O|override", "Override the config file", &override_switch,
             "option", "Set an option", &override_options,
-            "fail-fast", "Set the fail strategy, fail-fast=%s".format(fail_fast), &fail_fast,
             "k|keys", "Path to the boot-keys in mode0", &bootkeys_path,
             "v|verbose", "Enable verbose print-out", &__verbose_switch,
-            "n|dry", "Check the parameter without staring the network (dry-run)", &__dry_switch,
+            "n|dry", "Check the parameter without starting the network (dry-run)", &__dry_switch,
             "nodeopts", "Generate single node opts files for mode0", &mode0_node_opts_path,
             "m|monitor", "Enable the monitor", &monitor,
     );
 
     if (main_args.helpWanted) {
-        tagionGetoptPrinter(
+        defaultGetoptPrinter(
                 "Help information for tagion wave program\n" ~
                 format("Usage: %s <tagionwave.json>\n", program),
                 main_args.options
@@ -141,7 +145,7 @@ int _main(string[] args) {
         return 0;
     }
 
-    enum default_wave_config_filename="tagionwave".setExtension(FileExtension.json);
+    enum default_wave_config_filename = "tagionwave".setExtension(FileExtension.json);
     const user_config_file = args.countUntil!(file => file.hasExtension(FileExtension.json) && file.exists);
     auto config_file = (user_config_file < 0) ? default_wave_config_filename : args[user_config_file];
 
@@ -203,9 +207,6 @@ int _main(string[] args) {
     auto logger_service = spawn(logger, "logger");
     log.set_logger_task(logger_service.task_name);
     writeln("logger started: ", waitforChildren(Ctrl.ALIVE));
-    scope (exit) {
-        logger_service.send(Sig.STOP);
-    }
 
     ActorHandle sub_handle;
     { // Spawn logger subscription service
@@ -215,7 +216,7 @@ int _main(string[] args) {
         log.registerSubscriptionTask("logger_sub");
     }
 
-    log.register(baseName(program));
+    log.task_name = baseName(program);
 
     locator_options = new immutable(LocatorOptions)(20, 5);
     ActorHandle[] supervisor_handles;
@@ -254,11 +255,6 @@ int _main(string[] args) {
             // check that all bullseyes are the same before boot
             assert(bullseyes.all!(b => b == bullseyes[0]), "DATABASES must be booted with same bullseye - Abort");
             db.close();
-
-            const new_filename = buildPath(dirName(node_opt.dart.dart_path), format("boot-%s", baseName(
-                    node_opt.dart.dart_path)));
-            writefln("copying file %s to %s", db.filename, new_filename);
-            node_opt.dart.dart_path.copy(new_filename);
         }
 
         // we only need to read one head since all bullseyes are the same:
@@ -276,7 +272,10 @@ int _main(string[] args) {
         if (!recorder.empty) {
             const head = TagionHead(recorder[].front.filed);
             writefln("Found head: %s", head.toPretty);
-            DARTIndex epoch_index = __net.dartKey(StdNames.epoch, head.current_epoch);
+
+            pragma(msg, "fixme(phr): count the keys up hardcoded to be genesis atm");
+            DARTIndex epoch_index = __net.dartKey(StdNames.epoch, long(0));
+            writefln("epoch index is %(%02x%)", epoch_index);
 
             const _sender = CRUD.dartRead([epoch_index], hirpc);
             const _receiver = hirpc.receive(_sender);
@@ -288,6 +287,7 @@ int _main(string[] args) {
 
         db.close;
         network_mode0(node_options, supervisor_handles, bootkeys_path, fin, doc);
+        log("started mode 0 net");
 
         if (mode0_node_opts_path) {
             foreach (i, opt; node_options) {
@@ -301,15 +301,16 @@ int _main(string[] args) {
         assert(0, "NetworkMode not supported");
     }
 
-    if (waitforChildren(Ctrl.ALIVE, 30.seconds)) {
+    if (waitforChildren(Ctrl.ALIVE, 50.seconds)) {
         log("alive");
         bool signaled;
         import tagion.utils.pretend_safe_concurrency : receiveTimeout;
+        import core.atomic;
 
         do {
             signaled = stopsignal.wait(100.msecs);
             if (!signaled) {
-                if (fail_fast) {
+                if (local_options.wave.fail_fast) {
                     signaled = receiveTimeout(
                             Duration.zero,
                             (TaskFailure tf) { log.fatal("Stopping because of unhandled taskfailure\n%s", tf); }
@@ -323,7 +324,7 @@ int _main(string[] args) {
                 }
             }
         }
-        while (!signaled);
+        while (!signaled && graceful_shutdown.atomicLoad() != local_options.wave.number_of_nodes);
     }
     else {
         log("Program did not start");
@@ -335,6 +336,8 @@ int _main(string[] args) {
     foreach (supervisor; supervisor_handles) {
         supervisor.send(Sig.STOP);
     }
+    logger_service.send(Sig.STOP);
+
     // supervisor_handle.send(Sig.STOP);
     if (!waitforChildren(Ctrl.END, 5.seconds)) {
         log("Timed out before all services stopped");
@@ -379,7 +382,7 @@ int network_mode0(
             WalletOptions wallet_options;
             LoopTry: foreach (tries; 1 .. number_of_retry + 1) {
                 verbose("Input boot key %d as nodename:pincode", i);
-                const args = by_line.front.split(":");
+                const args = (by_line.front.empty) ? string[].init : by_line.front.split(":");
                 by_line.popFront;
                 if (args.length != 2) {
                     writefln("%1$sBad format %3$s expected nodename:pincode%2$s", RED, RESET, args.front);
@@ -409,8 +412,7 @@ int network_mode0(
                         writefln("%1$sWrong pincode bootkey %3$s node %4$s%2$s", RED, RESET, i, args[0]);
                     }
                 }
-                check(tries < number_of_retry, format("Max number of reties is %d", number_of_retry));
-
+                check(tries < number_of_retry, format("Max number of retries is %d", number_of_retry));
             }
         }
         if (dry_switch && !bootkeys_path.empty) {
@@ -433,21 +435,26 @@ int network_mode0(
     else {
         Pubkey[] keys;
         if (epoch_head.isRecord!Epoch) {
+            assert(0, "not supported to boot from epoch yet");
             keys = Epoch(epoch_head).active;
         }
         else {
             auto genesis = GenesisEpoch(epoch_head);
 
             keys = genesis.nodes;
+            check(equal(keys, keys.uniq), "Duplicate node public keys in the genesis epoch");
+            check(keys.length == node_options.length, "There was not the same amount of configured nodes as in the genesis epoch");
         }
 
         foreach (node_info; zip(keys, node_options)) {
+            verbose("adding addressbook ", node_info[0]);
             addressbook[node_info[0]] = NodeAddress(node_info[1].task_names.epoch_creator);
         }
     }
 
     /// spawn the nodes
     foreach (n; nodes) {
+        verbose("spawning supervisor ", n.opts.task_names.supervisor);
         supervisor_handles ~= spawn!Supervisor(n.opts.task_names.supervisor, n.opts, n.net);
     }
 
@@ -461,7 +468,6 @@ const(Options)[] get_mode_0_options(const(Options) options, bool monitor = false
     foreach (node_n; 0 .. number_of_nodes) {
         auto opt = Options(options);
         opt.setPrefix(format(prefix_f, node_n));
-        opt.epoch_creator.timeout = 250;
         all_opts ~= opt;
     }
 

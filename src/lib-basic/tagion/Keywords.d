@@ -3,16 +3,15 @@ module tagion.Keywords;
 private import tagion.basic.basic : EnumText;
 
 // Keyword list for the HiBON packages
-protected enum _keywords = [
-    // dfmt off
-    "pubkey",       // Pubkey
-    "signature",        // signature of the block
-//    "altitude",   // altitude
+protected static immutable _keywords = [
+    "pubkey",
+    "signature", // signature of the block
+    //    "altitude",
     "order",
     // "tidewave",
     // "wavefront",  // Wave front is the list of events hashs
-//    "ebody",      // Event body
-//    "event",      // Event including the eventbody
+    // "ebody",      // Event body
+    // "event",      // Event including the eventbody
 
     // HashGraph
     "message",
@@ -30,8 +29,8 @@ protected enum _keywords = [
     "coin",
     "decided",
     "decided_count",
-//    "total",
-//    "decided_mask",
+    // "total",
+    // "decided_mask",
     "famous",
     "famous_votes",
     "round",
@@ -42,7 +41,7 @@ protected enum _keywords = [
     "strong_votes",
     "strong_mask",
     "iterations",
-//    "altenative",
+    //    "altenative",
     "looked_at_mask",
     "looked_at_count",
     "seeing_completed",
@@ -50,9 +49,9 @@ protected enum _keywords = [
     "epoch",
     "list",
     "time",
-    "events",     // List of event
-    "type",       // Package type
-//    "block",     // block
+    "events", // List of event
+    "type", // Package type
+    //    "block",     // block
 
     "rim",
     "buckets",
@@ -60,7 +59,7 @@ protected enum _keywords = [
     "transaction_id",
     "output",
     "signatures",
-//    "signatur",
+    //    "signatur",
     "transaction_object",
     "transaction_scripting_object",
     "payers",
@@ -83,9 +82,9 @@ protected enum _keywords = [
     "source",
 
     // DART
-//    "indices",
+    // "indices",
     "fingerprint",
-//    "fingerprints",
+    // "fingerprints",
     "archives",
     "branches",
     "read",
@@ -93,25 +92,19 @@ protected enum _keywords = [
     "keys",
 
     // HiRPC (Similar to JSON-RPC 2.0)
-//    "rev",
+    // "rev",
     "method",
     "params",
     "error", // error_code
     "result",
-    "id", //
+    "id",
     "data",
     "hirpc"
-    // dfmt on
 ];
 
 // Generated the Keywords and enum string list
 mixin(EnumText!("Keywords", _keywords));
 
-// protected enum _network_modes = ["internal", "local", "pub"];
-import std.array : join;
-
-// enum ValidNetwrokModes = join(_network_modes, ",");
-// mixin(EnumText!("NetworkMode", _network_modes));
 /++
  Check if the CTE string $(LREF word) belongs to $(LREF K) string enum
 +/

@@ -89,7 +89,6 @@ struct DARTService {
         log("Starting dart with %(%02x%)", db.bullseye);
 
         auto hirpc = HiRPC(net);
-        import tagion.Keywords;
 
         void dartHiRPC(dartHiRPCRR req, Document doc) {
             import tagion.hibon.HiBONJSON;
@@ -122,7 +121,7 @@ struct DARTService {
                 req.respond(response);
                 return;
             }
-            if (!(receiver.method.name == DART.Queries.dartRead || receiver.method.name == DART.Queries.dartBullseye || receiver
+            if (!(receiver.method.name == DART.Queries.dartRead || receiver.method.name == DART.Queries.dartRim || receiver.method.name == DART.Queries.dartBullseye || receiver
                     .method.name == DART.Queries.dartCheckRead)) {
                 log("unsupported request");
                 return;
@@ -167,7 +166,7 @@ struct DARTService {
             req.respond(eye);
         }
 
-        run(&read, &checkRead, &modify, &bullseye, &dartHiRPC);
+        run(&modify, &read, &checkRead, &bullseye, &dartHiRPC);
 
     }
 }

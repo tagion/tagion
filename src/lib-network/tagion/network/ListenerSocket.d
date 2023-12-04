@@ -227,7 +227,7 @@ struct ListenerSocket {
     protected shared(SharedClients) shared_clients;
 
     void run() {
-        log.register(listen_task_name);
+        log.task_name = listen_task_name;
         log("Listener opened");
 
         try {

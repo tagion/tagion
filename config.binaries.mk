@@ -110,6 +110,11 @@ ${call DO_BIN,signs,$(LIB_DFILES) ${call BIN_DEPS,signs},tagion}
 #
 target-recorderchain: LIBS+=  $(LIBSECP256K1) 
 ${call DO_BIN,recorderchain,$(LIB_DFILES) ${call BIN_DEPS,recorderchain},tagion}
+#
+# kette recorderchain utility
+#
+target-kette: LIBS+=  $(LIBSECP256K1) 
+${call DO_BIN,kette,$(LIB_DFILES) ${call BIN_DEPS,kette},tagion}
 
 
 #

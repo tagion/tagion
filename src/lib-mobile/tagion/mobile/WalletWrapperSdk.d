@@ -419,6 +419,12 @@ extern (C) {
         return balance.value;
     }
 
+    @safe
+    export double get_total_balance() {
+        const balance = __wallet_storage.wallet.total_balance();
+        return balance.value;
+    }
+
     export uint get_public_key(uint8_t* pubkeyPtr) {
         if (__wallet_storage.wallet.isLoggedin()) {
             const pubkey = __wallet_storage.wallet.getPublicKey();

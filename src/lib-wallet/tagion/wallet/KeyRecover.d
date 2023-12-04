@@ -6,7 +6,6 @@ module tagion.wallet.KeyRecover;
 import std.algorithm.iteration : filter, map;
 import std.algorithm.mutation : copy;
 import std.array : array;
-import std.exception : assumeUnique;
 import std.range : StoppingPolicy, indexed, iota, lockstep;
 import std.string : representation;
 import tagion.basic.Message;
@@ -32,7 +31,7 @@ struct KeyRecover {
     enum MAX_QUESTION = 10;
     enum MAX_SEEDS = 64;
     const HashNet net;
-     RecoverGenerator generator;
+    RecoverGenerator generator;
 
     /**
      * 
@@ -83,7 +82,7 @@ struct KeyRecover {
      *   answers = List for answers
      * Returns: List of common hashs of question and answers
      */
-    Buffer[] quiz(scope const(string[]) questions, scope const(char[][]) answers) const @trusted
+    immutable(ubyte)[][] quiz(scope const(string[]) questions, scope const(char[][]) answers) const @trusted
     in {
         assert(questions.length is answers.length);
     }
@@ -135,7 +134,7 @@ struct KeyRecover {
                     include[index]++;
                     local_search(index, size);
                 }
-            else if (index > 0) {
+                else if (index > 0) {
                     include[index - 1]++;
                     local_search(index - 1, size - 1);
                 }
@@ -154,8 +153,8 @@ struct KeyRecover {
      */
     void createKey(
             scope const(string[]) questions,
-    scope const(char[][]) answers,
-    const uint confidence) {
+            scope const(char[][]) answers,
+            const uint confidence) {
         createKey(quiz(questions, answers), confidence);
     }
 
@@ -167,9 +166,8 @@ struct KeyRecover {
      *   confidence = confidence
      */
     void createKey(
-            Buffer[] A,
-            const uint confidence)
-    {
+            scope const(ubyte[][]) A,
+            const uint confidence) {
         scope R = new ubyte[net.hashSize];
         getRandom(R);
         scope (exit) {
@@ -187,8 +185,8 @@ struct KeyRecover {
      *   confidence = number of minimum correct answern
      */
     void quizSeed(scope ref const(ubyte[]) R,
-    scope Buffer[] A,
-    const uint confidence) {
+            scope const(ubyte[][]) A,
+            const uint confidence) {
         scope (success) {
             generator.confidence = confidence;
             generator.S = net.saltHash(R);
@@ -233,7 +231,7 @@ struct KeyRecover {
     bool findSecret(
             scope ref ubyte[] R,
             scope const(string[]) questions,
-    scope const(char[][]) answers) const {
+            scope const(char[][]) answers) const {
         return findSecret(R, quiz(questions, answers));
     }
 
@@ -252,11 +250,12 @@ struct KeyRecover {
                 A.length, generator.confidence));
         const number_of_questions = cast(uint) A.length;
         const seeds = numberOfSeeds(number_of_questions, generator.confidence);
+        import std.traits;
+        import std.range;
 
         bool result;
         void search_for_the_secret(scope const(uint[]) indices) @safe {
             scope list_of_selected_answers_and_the_secret = indexed(A, indices);
-            pragma(msg, "review(cbr): Recovery now used Y_a = R x H(A_a) instead of Y_a = R x H(A_a)");
             const guess = net.rawCalcHash(xor(list_of_selected_answers_and_the_secret));
             scope _R = new ubyte[net.hashSize];
             foreach (y; generator.Y) {

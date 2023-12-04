@@ -8,7 +8,6 @@ import core.time;
 import nngd;
 import std.algorithm : remove;
 import std.conv : to;
-import std.exception : assumeUnique;
 import std.format;
 import std.socket;
 import std.stdio;
@@ -32,7 +31,7 @@ import tagion.utils.pretend_safe_concurrency;
 struct InputValidatorOptions {
     string sock_addr;
     uint sock_recv_timeout = 1000;
-    uint sock_recv_buf = 4096;
+    uint sock_recv_buf = 0x4000;
     uint sock_send_timeout = 200;
     uint sock_send_buf = 1024;
 
@@ -54,6 +53,7 @@ enum ResponseError {
     InvalidBuf,
     InvalidDoc,
     NotHiRPCSender,
+    Timeout,
 }
 
 /** 
@@ -81,7 +81,7 @@ struct InputValidatorService {
                 const sender = hirpc.Sender(net, message);
                 int rc = sock.send(sender.toDoc.serialize);
                 if (rc != 0) {
-                    log.error("Failed to responsd with rejection %s: %s", rc.to!string, nng_errstr(rc));
+                    log.error("Failed to responsd with rejection %s, because %s", err_type, nng_errstr(rc));
                 }
                 log(rejected, err_type.to!string, data);
             }
@@ -100,7 +100,8 @@ struct InputValidatorService {
         ReceiveBuffer buf;
         buf.max_size = opts.sock_recv_buf;
 
-        const listening = sock.listen(opts.sock_addr);
+        const listening = sock.listen(opts.sock_addr, nonblock:
+                true);
         if (listening == 0) {
             log("listening on addr: %s", opts.sock_addr);
         }
@@ -110,8 +111,8 @@ struct InputValidatorService {
             check(false, format("Failed to listen on addr: %s, %s", opts.sock_addr, nng_errstr(listening)));
         }
         const recv = (scope void[] b) @trusted {
-            size_t ret = sock.receivebuf(cast(ubyte[]) b);
-            return (ret < 0) ? 0 : cast(ptrdiff_t) ret;
+            // 
+            return cast(ptrdiff_t) sock.receivebuf(cast(ubyte[]) b, 0, false);
         };
         setState(Ctrl.ALIVE);
         while (!thisActor.stop) {
@@ -126,23 +127,68 @@ struct InputValidatorService {
                 continue;
             }
 
-            auto result_buf = buf.append(recv);
-            scope (failure) {
-                reject(ResponseError.Internal);
+
+            version(BLOCKING) {
+                scope (failure) {
+                    reject(ResponseError.Internal);
+                }
+                auto result_buf = sock.receive!Buffer;
+                if (sock.m_errno != nng_errno.NNG_OK) {
+                    log(rejected, "NNG_ERRNO", cast(int) sock.m_errno);
+                    continue;
+                }
+                if (sock.m_errno == nng_errno.NNG_ETIMEDOUT) {
+                    if (result_buf.length > 0) {
+                        reject(ResponseError.Timeout);
+                    }
+                    else {
+                        continue;
+                    }
+                }
+                if (sock.m_errno != nng_errno.NNG_OK) {
+                    log(rejected, "NNG_ERRNO", cast(int) sock.m_errno);
+                    continue;
+                }
+                if (result_buf.length <= 0) {
+                    reject(ResponseError.InvalidBuf);
+                    continue;
+                }
+
+                Document doc = Document(result_buf.idup);
+            } else {
+                scope (failure) {
+                    reject(ResponseError.Internal);
+                }
+                auto result_buf = buf(recv);
+                if (sock.m_errno == nng_errno.NNG_ETIMEDOUT) {
+                    if (result_buf.data.length > 0) {
+                        reject(ResponseError.Timeout);
+                    }
+                    else {
+                        continue;
+                    }
+                }
+                if (sock.m_errno != nng_errno.NNG_OK) {
+                    log(rejected, "NNG_ERRNO", cast(int) sock.m_errno);
+                    continue;
+                }
+
+                // Fixme ReceiveBuffer .size doesn't always return correct lenght
+                if (result_buf.data.size <= 0) {
+                    reject(ResponseError.InvalidBuf);
+                    continue;
+                }
+
+                Document doc = Document(result_buf.data.idup);
             }
 
-            if (sock.m_errno != nng_errno.NNG_OK) {
-                log(rejected, "NNG_ERRNO", cast(int) sock.m_errno);
-                continue;
-            }
 
-            // Fixme ReceiveBuffer .size doesn't always return correct lenght
-            if (result_buf.data.length <= 0) {
+
+            if (!doc.isInorder) {
                 reject(ResponseError.InvalidBuf);
                 continue;
             }
 
-            Document doc = Document(assumeUnique(result_buf.data));
             if (!doc.isRecord!(HiRPC.Sender)) {
                 reject(ResponseError.NotHiRPCSender, doc);
                 continue;
@@ -154,7 +200,6 @@ struct InputValidatorService {
                 auto receiver = hirpc.receive(doc);
                 auto response_ok = hirpc.result(receiver, ResultOk());
                 sock.send(response_ok.toDoc.serialize);
-                log("LGTM");
             }
             catch (HiBONException _) {
                 reject(ResponseError.InvalidDoc, doc);

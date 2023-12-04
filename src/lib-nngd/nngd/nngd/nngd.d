@@ -3,6 +3,8 @@ module nngd.nngd;
 
 import core.memory;
 import core.time;
+import core.stdc.string;
+import core.stdc.stdlib;
 import std.conv;
 import std.string;
 import std.typecons;
@@ -13,6 +15,8 @@ import std.json;
 import std.file;
 import std.path;
 import std.exception;
+import std.array;
+import std.utf;
 
 private import libnng;
 
@@ -30,6 +34,8 @@ alias toString=nng_errstr;
 void nng_sleep(Duration val) nothrow {
     nng_msleep(cast(nng_duration)val.total!"msecs");
 }
+
+
 
 string toString(nng_sockaddr a){
     string s = "<ADDR:UNKNOWN>";
@@ -1370,7 +1376,8 @@ struct WebData {
         json = null;
     }
 
-    string toString(){
+    string toString() nothrow {
+        try{
         return format(`
         <Webdata>
             route:      %s    
@@ -1404,6 +1411,10 @@ struct WebData {
         ,to!string(text)     
         ,json.toString()     
         );
+        }catch(Exception e){
+            perror("WD: toString error");
+            return null;
+        }
     }
 
     void parse_req ( nng_http_req *req ){
@@ -1467,24 +1478,35 @@ struct WebData {
     }
 
     nng_http_res* export_res(){
+        char *buf = cast(char*)alloca(512);
         nng_http_res *res;
         int rc;
         rc = nng_http_res_alloc( &res );
         enforce(rc==0);
         rc = nng_http_res_set_status( res, cast(ushort)status );
         enforce(rc==0);
-        if (status != nng_http_status.NNG_HTTP_STATUS_OK)
+        if (status != nng_http_status.NNG_HTTP_STATUS_OK){
+            nng_http_res_reset(res);
+            rc = nng_http_res_alloc_error( &res, cast(ushort)status );
+            enforce(rc==0);
+            rc = nng_http_res_set_reason(res, msg.toStringz);
+            enforce(rc==0);
             return res;
-        rc = nng_http_res_set_header(res, "Content-type", type.toStringz());
-        enforce(rc==0);
+        }           
+        {
+            memcpy(buf,type.ptr,type.length); buf[type.length] = 0;
+            rc = nng_http_res_set_header(res, "Content-type", buf);
+            enforce(rc==0);
+        }
         if(type.startsWith("application/json")){
-            string buf = json.toString();
-            rc = nng_http_res_copy_data(res, buf.toStringz(), buf.length);
-            length = buf.length;
+            scope string sbuf = json.toString();
+            memcpy(buf,sbuf.ptr,sbuf.length);
+            rc = nng_http_res_copy_data(res, buf, sbuf.length);
+            length = sbuf.length;
             enforce(rc==0, "webdata: copy json rep");
         }
         else if(type.startsWith("text")){
-            rc = nng_http_res_copy_data(res, text.toStringz(), text.length);
+            rc = nng_http_res_copy_data(res, text.ptr, text.length);
             length = text.length;
             enforce(rc==0, "webdata: copy text rep");
         }else{
@@ -1492,13 +1514,92 @@ struct WebData {
             length = rawdata.length;
             enforce(rc==0, "webdata: copy data rep");
         }
-        rc = nng_http_res_set_header(res, "Content-length", to!string(length).toStringz());
-        enforce(rc==0);
+
         return res;
     }
 }   
 
-alias webhandler = WebData function ( WebData, void* );
+alias webhandler = void function ( WebData*, WebData*, void* );
+
+
+//----------------
+static extern(C) void webrouter (nng_aio* aio) {
+
+    int rc;
+    nng_http_res *res;
+    nng_http_req *req;
+    nng_http_handler *h;
+    
+    void *reqbody;
+    size_t reqbodylen;
+
+    WebData sreq =  WebData.init;
+    WebData srep =  WebData.init;
+    WebApp  *app;
+
+    char *sbuf = cast(char*)nng_alloc(4096);;
+
+    string errstr = "";
+        
+        const char* t1 = "NODATA";
+
+    // TODO: invite something for proper default response for no handlers, maybe 100 or 204 ? To discuss.
+
+    srep.type = "text/plain";
+    srep.text = "No result";
+    srep.status = nng_http_status.NNG_HTTP_STATUS_OK;
+    
+    
+    req = cast(nng_http_req*)nng_aio_get_input(aio, 0);
+    if(req is null){
+        errstr = "WR: get request";
+        goto failure;
+    }
+    
+    h = cast(nng_http_handler*)nng_aio_get_input(aio, 1);
+    if(req is null){
+        errstr = "WR: get handler";
+        goto failure;
+    }
+    
+    app = cast(WebApp*)nng_http_handler_get_data(h);
+    if(app is null){
+        errstr = "WR: get handler data";
+        goto failure;
+    }
+    
+    nng_http_req_get_data(req, &reqbody, &reqbodylen);
+
+    sreq.method = cast(immutable)(fromStringz(nng_http_req_get_method(req)));
+    
+    sprintf(sbuf,"Content-type");
+    sreq.type = cast(immutable)(fromStringz(nng_http_req_get_header(req, sbuf)));
+    if(sreq.type.empty) 
+        sreq.type = "text/plain";
+
+    sreq.uri = cast(immutable)(fromStringz(nng_http_req_get_uri(req)));
+    
+    sreq.rawdata = cast(ubyte[])(reqbody[0..reqbodylen]);
+    
+    app.webprocess(&sreq, &srep);
+    
+    res = srep.export_res;
+
+    
+    nng_free(sbuf,4096);
+    nng_aio_set_output(aio, 0, res);
+    nng_aio_finish(aio, 0);
+
+    return;
+
+failure:
+    writeln("ERROR: "~errstr);
+    nng_free(sbuf,4096);
+    nng_http_res_free(res);
+    nng_aio_finish(aio, rc);
+} // router handler
+
+
 
 struct WebApp {
     string name;
@@ -1554,7 +1655,7 @@ struct WebApp {
             }
             routes[m~":"~path] = handler;
             nng_http_handler *hr;
-            rc = nng_http_handler_alloc(&hr, toStringz(config.prefix_url~path), &router);
+            rc = nng_http_handler_alloc(&hr, toStringz(config.prefix_url~path), &webrouter);
             enforce(rc==0,"route handler alloc");
             rc = nng_http_handler_set_method(hr, m.toStringz());
             enforce(rc==0,"route handler set method");
@@ -1572,6 +1673,64 @@ struct WebApp {
     void start(){
         auto rc = nng_http_server_start(server);
         enforce(rc==0, "server start");
+    }
+
+    void stop(){
+        nng_http_server_stop(server);
+    }
+
+    void webprocess( WebData *req, WebData *rep ) {
+        int rc;
+    
+        rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
+        rep.type = "text/plain";
+        rep.text = "Test result";
+
+        nng_url *u;
+        string ss = ("http://localhost"~req.uri~"\0");
+        char[] buf = ss.dup;
+        rc = nng_url_parse(&u,buf.ptr);
+        enforce(rc == 0);
+        req.route = cast(immutable)(fromStringz(u.u_path)).dup;
+        req.path = req.route.split("/");
+        if(req.path.length > 1 && req.path[0] == "")
+            req.path = req.path[1..$];
+        string query = cast(immutable)(fromStringz(u.u_query)).dup;
+        foreach(p; query.split("&")){
+            auto a = p.split("=");
+            if(a[0] != "")
+                req.param[a[0]] = a[1];
+        }
+        nng_url_free(u);
+        
+        if(req.type.startsWith("application/json")){
+            try{
+                req.json = parseJSON(cast(immutable)(fromStringz(cast(char*)req.rawdata)));
+            }catch(JSONException e){
+                rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
+                rep.msg = "Invalid json";
+                return;
+            }    
+        }
+
+        if(req.type.startsWith("text/")){
+            req.text = cast(immutable)(fromStringz(cast(char*)req.rawdata));
+        }
+        
+        // TODO: implement full CEF parser for routes
+        webhandler handler = null;   
+        string rkey = req.method~":"~req.route;
+        foreach(r; sort!("a > b")(routes.keys)){
+            if(rkey.startsWith(r)){
+                handler = routes[r];
+                break;
+            }                
+        }
+        if(handler == null)
+            handler = &default_handler;
+
+        handler(req, rep, context);
+
     }
 
     private:
@@ -1598,120 +1757,10 @@ struct WebApp {
 
     }
 
-    static WebData default_handler ( WebData req, void* ctx ){
-        WebData rep = { 
-            type : "application/json",
-            json : parseJSON("{\"response\": 200}"),
-            status : nng_http_status.NNG_HTTP_STATUS_OK
-        };
-        return rep;
-    }
-        
-    extern(C) static void router (nng_aio* aio) {
-        int rc;
-        nng_http_res *res;
-        nng_http_req *req;
-        nng_http_handler *h;
-        void *reqbody;
-        size_t reqbodylen;
-        
-        WebData sreq, srep;
-        WebApp *app;
-
-        rc = nng_http_res_alloc(&res);
-        enforce(rc == 0, "router: res alloc");
-
-        scope(failure){
-            nng_http_res_free(res);
-            nng_aio_finish(aio, rc);
-        }
-
-        scope(exit){
-            nng_aio_set_output(aio, 0, res);
-            nng_aio_finish(aio, 0);
-        }
-        
-        req = cast(nng_http_req*)nng_aio_get_input(aio, 0);
-        enforce(req != null, "router: req extract");
-        
-        h = cast(nng_http_handler*)nng_aio_get_input(aio, 1);
-        enforce(req != null, "router: handler extract");
-        
-        app = cast(WebApp*)nng_http_handler_get_data(h);
-        enforce(app != null, "router: app extract");
-
-        nng_http_req_get_data(req, &reqbody, &reqbodylen);
-
-        sreq.method = to!string(nng_http_req_get_method(req));
-        sreq.type = to!string(nng_http_req_get_header(req, toStringz("Content-type")));
-        sreq.uri = to!string(nng_http_req_get_uri(req));
-        nng_url *u;
-        rc = nng_url_parse(&u,("http://localhost"~sreq.uri).toStringz());
-        enforce(rc==0, "router: url parse");
-        sreq.route = to!string(u.u_path);
-        sreq.path = to!string(u.u_path).split("/");
-        if(sreq.path.length > 1 && sreq.path[0] == "")
-            sreq.path = sreq.path[1..$];
-        foreach(p; to!string(u.u_query).split("&")){
-            auto a = p.split("=");
-            if(a[0] != "")
-                sreq.param[a[0]] = a[1];
-        }
-
-        sreq.rawdata = cast(ubyte[])(reqbody[0..reqbodylen].idup);
-        
-        if(sreq.type.startsWith("application/json")){
-            try{
-                sreq.json = parseJSON(to!string(cast(char*)reqbody[0..reqbodylen].idup));
-            }catch(JSONException e){
-                nng_http_res_reset(res);
-                rc = nng_http_res_alloc_error( &res, cast(ushort)nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST);
-                enforce(rc==0, "router: set json error");
-                rc = nng_http_res_set_reason(res, toStringz("Invalid json"));
-                enforce(rc==0, "router: set json error reason");
-                return;
-            }    
-        }
-
-        if(sreq.type.startsWith("text/")){
-            sreq.text = to!string(cast(char*)reqbody[0..reqbodylen].idup);
-        }
-        
-        // TODO: implement full CEF parser for routes
-        webhandler handler = null;    
-        foreach(r; sort(app.routes.keys)){
-            if(r.startsWith(sreq.method~":"~sreq.route)){
-                handler = app.routes[r];
-                break;
-            }                
-        }
-        if(handler == null)
-            handler = &app.default_handler;
-
-        srep = handler(sreq, app.context);
-
-        if(srep.status != nng_http_status.NNG_HTTP_STATUS_OK){
-            nng_http_res_reset(res);
-            rc = nng_http_res_alloc_error( &res, cast(ushort)srep.status );
-            enforce(rc==0, "router: res set error");
-            rc = nng_http_res_set_reason(res, srep.msg.toStringz());
-            enforce(rc==0, "router: res set message");
-        }else{
-            rc = nng_http_res_set_status(res, cast(ushort)srep.status);
-            enforce(rc==0, "router: res set satus");
-            if(srep.type.startsWith("application/json")){
-                string buf = srep.json.toString();
-                rc = nng_http_res_copy_data(res, buf.toStringz(), buf.length);
-                enforce(rc==0, "router: copy json rep");
-            }
-            else if(srep.type.startsWith("text")){
-                rc = nng_http_res_copy_data(res, srep.text.toStringz(), srep.text.length);
-                enforce(rc==0, "router: copy text rep");
-            }else{
-                rc = nng_http_res_copy_data(res, srep.rawdata.ptr, srep.rawdata.length);
-                enforce(rc==0, "router: copy data rep");
-            }
-        }
+    static void default_handler ( WebData* req, WebData* rep, void* ctx ){
+        rep.type = "text/plain";
+        rep.text = "Default reponse";
+        rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
     }
 } // struct WebApp
 

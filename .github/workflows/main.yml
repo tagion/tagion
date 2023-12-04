@@ -74,7 +74,7 @@ jobs:
       - name: Upload code coverage results
         run: |
           cp logs/${{env.TARGET}}/cov/* .      
-          bash <(curl -s https://codecov.io/bash) -t ${{ env.CODECOV_TOKEN }} -f "!*/cov/*"
+          bash <(curl -s https://codecov.io/bash) -F unittest -t ${{ env.CODECOV_TOKEN }} -f "!*/cov/*"
           rm -- *.lst
 
       - name: Post run
@@ -170,23 +170,11 @@ jobs:
           cp -r --parents logs/ $stacks ${{ env.ARTIFACT_DIR }}
           find . -mindepth 1 -delete
 
-  create_artifact:
+  add_logs:
     runs-on: CI
+    if: failure()
     needs: acceptance_stage
-    if: always()
     steps:
-      - name: Create tar ball
-        run: |
-          cd /mnt/nfs/artifacts
-          artifact=${{ github.sha }}-${{ github.run_attempt }}
-          tar czf $artifact.tar.gz --directory=$artifact/ .
-        
-      - uses: actions/upload-artifact@v3
-        with:
-          name: successful_artifact
-          path: ${{ env.ARTIFACT_DIR }}.tar.gz
-          if-no-files-found: error
-
       - name: Add logs
         run: |
           cd ${{ env.ARTIFACT_DIR }}
@@ -206,6 +194,22 @@ jobs:
             echo "[$(basename $file)]($url)" >> $GITHUB_STEP_SUMMARY
           done
 
+  create_artifact:
+    runs-on: CI
+    needs: [acceptance_stage, add_logs]
+    if: always()
+    steps:
+      - name: Create tar ball
+        run: |
+          cd /mnt/nfs/artifacts
+          artifact=${{ github.sha }}-${{ github.run_attempt }}
+          tar czf $artifact.tar.gz --directory=$artifact/ .
+        
+      - uses: actions/upload-artifact@v3
+        with:
+          name: successful_artifact
+          path: ${{ env.ARTIFACT_DIR }}.tar.gz
+          if-no-files-found: error
 
       - name: Post run
         run: |

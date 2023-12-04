@@ -37,12 +37,19 @@ import tagion.services.exception;
 import tagion.utils.JSONCommon;
 import tagion.utils.StdTime;
 import tagion.utils.pretend_safe_concurrency;
+import std.process : thisProcessID;
+import std.path : buildPath;
+import std.file : exists;
+import std.conv : to;
 
 @safe:
 
+shared static size_t graceful_shutdown;
 enum BUFFER_TIME_SECONDS = 30;
 
 struct TranscriptOptions {
+    string shutdown_folder = "/tmp/";
+    string shutdown_file_prefix = "epoch_shutdown_";
     mixin JSONCommon;
 }
 
@@ -57,26 +64,33 @@ struct TranscriptService {
             shared(StdSecureNet) shared_net,
             immutable(TaskNames) task_names) {
         const(SecureNet) net = new StdSecureNet(shared_net);
+        auto rec_factory = RecordFactory(net);
+
+        ActorHandle dart_handle = ActorHandle(task_names.dart);
+        ActorHandle epoch_creator_handle = ActorHandle(task_names.epoch_creator);
+        
 
         immutable(ContractProduct)*[DARTIndex] products;
-        auto rec_factory = RecordFactory(net);
 
         struct Votes {
             const(ConsensusVoting)[] votes;
             Epoch epoch;
             LockedArchives locked_archives;
         }
-
         Votes[long] votes;
 
         struct EpochContracts {
             const(SignedContract)[] signed_contracts;
             sdt_t epoch_time;
-
-            // Votes[] previous_votes;
         }
-
         const(EpochContracts)*[long] epoch_contracts;
+
+        
+        const process_file_name = format("%s%d", opts.shutdown_file_prefix, thisProcessID());
+        const process_file_path = buildPath(opts.shutdown_folder, process_file_name);
+        log("PROCESS FILE PATH %s", process_file_path);
+        long shutdown;
+
 
         /** 
          * Get the current head and epoch
@@ -122,6 +136,7 @@ struct TranscriptService {
                     if (!epoch_recorder.empty) {
                         auto doc = epoch_recorder[].front.filed;
                         if (doc.isRecord!Epoch) {
+                            log("FOUND A EPOCH");
                             auto epoch = Epoch(doc);
                             last_epoch_number = epoch.epoch_number;
                             last_consensus_epoch = epoch.epoch_number;
@@ -181,16 +196,35 @@ struct TranscriptService {
                         v.value.epoch.previous = previous_epoch;
                         previous_epoch = net.calcHash(v.value.epoch);
                         last_consensus_epoch += 1;
+                        recorder.insert(v.value.epoch, Archive.Type.ADD);
                         recorder.insert(v.value.locked_archives, Archive.Type.REMOVE);
                         votes.remove(v.value.epoch.epoch_number);
                         break Finished;
                     }
 
-                    // recorder.insert(v.value.epoch, Archive.Type.ADD);
                 }
 
             }
 
+
+            if (shutdown !is long.init && last_consensus_epoch >= shutdown) {
+                auto req = dartModifyRR();
+                req.id = res.id;
+
+                TagionHead new_head = TagionHead(
+                        TagionDomain,
+                        shutdown,
+                );
+                recorder.insert(new_head, Archive.Type.ADD);
+
+                import core.atomic;
+                dart_handle.send(req, RecordFactory.uniqueRecorder(recorder), cast(immutable) res.id);
+                graceful_shutdown.atomicOp!"+="(1);
+                thisActor.stop = true;
+                return;
+            }
+            
+            
             const epoch_contract = epoch_contracts.get(res.id, null);
             if (epoch_contract is null) {
                 throw new ServiceException(format("unlinked epoch contract %s", res.id));
@@ -298,17 +332,20 @@ struct TranscriptService {
                     TagionDomain,
                     res.id,
             );
-
-            recorder.insert(new_head, Archive.Type.ADD);
-            recorder.insert(non_voted_epoch, Archive.Type.ADD);
-
             immutable(DARTIndex)[] locked_indexes = recorder[]
                 .filter!(a => a.type == Archive.Type.ADD)
                 .map!(a => net.dartIndex(a.filed))
                 .array;
 
             LockedArchives outputs = LockedArchives(res.id, locked_indexes);
-            recorder.insert(outputs, Archive.Type.ADD);
+
+
+            if (shutdown is long.init || res.id < shutdown) {
+                recorder.insert(new_head, Archive.Type.ADD);
+                recorder.insert(non_voted_epoch, Archive.Type.ADD);
+                recorder.insert(outputs, Archive.Type.ADD);
+            }
+
 
             last_head = new_head;
             last_globals = new_globals;
@@ -321,10 +358,7 @@ struct TranscriptService {
             auto req = dartModifyRR();
             req.id = res.id;
 
-            locate(task_names.dart).send(req, RecordFactory.uniqueRecorder(recorder), cast(immutable) res.id);
-
-            log("MEMORY: votes: %s", votes.length);
-
+            dart_handle.send(req, RecordFactory.uniqueRecorder(recorder), cast(immutable) res.id);
         }
 
         void epoch(consensusEpoch,
@@ -332,6 +366,26 @@ struct TranscriptService {
                 immutable(long) epoch_number,
                 const(sdt_t) epoch_time) @safe {
             last_epoch_number += 1;
+            import tagion.utils.Term;
+
+
+            log("%sEpoch round: %d time %s%s", BLUE, last_epoch_number, epoch_time, RESET);
+
+
+
+            if (process_file_path.exists && shutdown is long.init) {
+                // open the file and set the shutdown sig
+                auto f = File(process_file_path, "r");
+                scope(exit) {
+                    f.close;
+                }
+                shutdown = (() @trusted => f.byLine.front.to!long)();
+            }
+            if (shutdown !is long.init) {
+                log("%sShutdown is scheduled for epoch %d%s", YELLOW, shutdown, RESET);
+
+            }
+            
 
             immutable(ConsensusVoting)[] received_votes = epacks
                 .filter!(epack => epack.event_body.payload.isRecord!ConsensusVoting)
@@ -358,8 +412,6 @@ struct TranscriptService {
                 .join
                 .array;
 
-            pragma(msg, "fixme(pr): add outputs to checkread");
-
             auto req = dartCheckReadRR();
             req.id = last_epoch_number;
             epoch_contracts[req.id] = new const EpochContracts(signed_contracts, epoch_time);
@@ -369,16 +421,15 @@ struct TranscriptService {
                 return;
             }
 
-            (() @trusted => locate(task_names.dart).send(req, inputs))();
-
+            dart_handle.send(req, inputs);
         }
 
         void receiveBullseye(dartModifyRR.Response res, Fingerprint bullseye) {
             import tagion.utils.Miscellaneous : cutHex;
-
             const epoch_number = res.id;
 
             votes[epoch_number].epoch.bullseye = bullseye;
+
 
             ConsensusVoting own_vote = ConsensusVoting(
                     epoch_number,
@@ -386,7 +437,7 @@ struct TranscriptService {
                     net.sign(bullseye)
             );
 
-            locate(task_names.epoch_creator).send(Payload(), own_vote.toDoc);
+            epoch_creator_handle.send(Payload(), own_vote.toDoc);
         }
 
         void produceContract(producedContract, immutable(ContractProduct)* product) {

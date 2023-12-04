@@ -29,10 +29,6 @@ struct TRTArchive {
 
 
 
-/// Create a recorder for the trt
-/// Params:
-///   dart_recorder = The recorder that modified the database
-/// Returns: Recorder for the trt
 void createUpdateRecorder(
         immutable(RecordFactory.Recorder) dart_recorder, 
         const(RecordFactory.Recorder) read_recorder, 

@@ -14,13 +14,11 @@ NNG_CINCS+=$(DSRC_NNG)/src/platform/posix
 NNG_CINCS+=$(DSRC_NNG)/src/supplemental/http
 NNG_CINCS+=$(DSRC_NNG)/src/supplemental/websocket
 NNG_CINCS+=$(DSRC_NNG)/src/supplemental/base64
+NNG_CINCS+=$(DSRC_NNG)/src/supplemental/sha1
 NNG_CFLAGS+=-DNNG_PLATFORM_POSIX
 NNG_CFLAGS+=-DNNG_ENABLE_TLS=OFF
 TMP_SCRIPT:=$(shell mktemp -q /tmp/make.XXXXXXXX.sh)
 
-
-test35:
-	@echo $(NNG_IMPORTC_SRC)
 
 copy-nng: $(NNG_IMPORTC_SRC)/.way
 	$(PRECMD)
@@ -32,7 +30,7 @@ env-nng-importc:
 	$(PRECMD)
 	$(call log.header, $@ :: env)
 	$(call log.env, NNG_CFILES, $(NNG_CFILES))
-	$(call log.env, NNG_INCS, $(NNG_INCS))
+	$(call log.env, NNG_CINCS, $(NNG_CINCS))
 	$(call log.close)
 
 

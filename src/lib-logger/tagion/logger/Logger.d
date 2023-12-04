@@ -2,6 +2,7 @@
 module tagion.logger.Logger;
 
 import core.sys.posix.pthread;
+import syslog = core.sys.posix.syslog;
 import std.format;
 import std.string;
 import tagion.basic.Types : Control;
@@ -33,28 +34,36 @@ static struct Logger {
     import std.format;
 
     protected {
-        string _task_name; /// Logger task name
+        string _task_name; /// The name of the task using the logger
         uint[] masks; /// Logger mask stack
         __gshared string logger_task_name; /// Logger task name
         __gshared Tid logger_subscription_tid;
 
     }
 
+    /// Get task_name
     @property
     string task_name() @nogc @safe nothrow const {
         return _task_name;
     }
 
+    /* 
+     * Sets the actor/log task_name
+     * Returns: false the task_name could not be set
+     */
     @property
     bool task_name(const string name) @safe nothrow {
+        push(LogLevel.ALL);
+        scope (exit) {
+            pop();
+        }
         try {
+            locateLoggerTask();
+
             const registered = locate(name);
-            const i_am_the_registered = (() @trusted => registered == thisTid)();
+            const i_am_the_registered = registered is thisTid;
             if (registered is Tid.init) {
-
-                
-
-                    .register(name, thisTid);
+                register(name, thisTid);
                 _task_name = name;
                 setThreadName(name);
                 return true;
@@ -75,40 +84,6 @@ static struct Logger {
     shared bool silent; /// If true the log is silened (no logs is process from any tasks)
 
     /**
-    Register the task logger name.
-    Should be done when the task starts
-    */
-    pragma(msg, "TODO: Remove log register when prior services are removed");
-    @trusted
-    void register(string task_name) nothrow
-    in (logger_tid is logger_tid.init)
-    do {
-        push(LogLevel.ALL);
-        scope (exit) {
-            pop;
-        }
-        try {
-            logger_tid = locate(logger_task_name);
-
-            const registered = this.task_name = task_name;
-
-            if (!registered) {
-                log.error("%s logger not register", _task_name);
-            }
-
-            import std.stdio : stderr;
-
-            static if (ver.not_unittest) {
-                stderr.writefln("Register: %s logger\n", _task_name);
-                log("Register: %s logger", _task_name);
-            }
-        }
-        catch (Exception e) {
-            log.error("%s logger not register", _task_name);
-        }
-    }
-
-    /**
     Sets the task name of the logger for the whole program
     Note should be set in the logger task when the logger task 
 is ready and has been started correctly
@@ -125,11 +100,15 @@ is ready and has been started correctly
     /**
         Returns: true if the task_name has been register by the logger
     */
-    @property @trusted
+    @safe
     bool isLoggerServiceRegistered() const nothrow {
-        import std.exception : assumeWontThrow;
+        return logger_tid !is Tid.init;
+    }
 
-        return assumeWontThrow(logger_tid != logger_tid.init);
+    private void locateLoggerTask() @trusted const {
+        if (!isLoggerServiceRegistered) {
+            logger_tid = locate(logger_task_name);
+        }
     }
 
     @trusted
@@ -177,7 +156,7 @@ is ready and has been started correctly
                 import core.stdc.stdio;
 
                 scope const _level = assumeWontThrow(level.to!string);
-                scope const _text = assumeWontThrow(toStringz(text));
+                scope const _text = toStringz(assumeWontThrow(text));
                 stderr.fprintf("%.*s:%.*s: %s\n",
                         cast(int) _task_name.length, _task_name.ptr,
                         cast(int) _level.length, _level.ptr,
@@ -188,7 +167,7 @@ is ready and has been started correctly
                 import core.stdc.stdio;
 
                 scope const _level = assumeWontThrow(level.to!string);
-                scope const _text = assumeWontThrow(toStringz(text));
+                scope const _text = toStringz(assumeWontThrow(text));
                 if (_task_name.length > 0) {
                     // printf("ERROR: Logger not register for '%.*s'\n", cast(int) _task_name.length, _task_name
                     //         .ptr);
@@ -383,9 +362,6 @@ shared struct SubscriptionMask {
     @trusted
     void subscribe(string topic) {
         if (thisTid == log.logger_subscription_tid) {
-            import std.stdio;
-
-            writeln("SUBSCRIBED TO topic: ", topic);
             _registered_topics[topic] = Subscribed.yes;
             return;
         }
@@ -431,21 +407,41 @@ unittest {
 
 version (Posix) {
     import core.sys.posix.pthread;
-    import std.string : toStringz;
 
+    /* 
+     * Note: non portable
+     * Altough implemented on most platforms, it might behave differently
+     */
     extern (C) int pthread_setname_np(pthread_t, const char*) nothrow;
 
+    // The max task name lenght is set when you compile your kernel,
+    // You might have set it differently
+    enum TASK_COMM_LEN = 16;
+
     /**
-    Set the thread name to the same as the task name
-    Note. Makes it easier to debug because pthread name is the same as th task name
-    */
+     * Set the thread name to the same as the task name
+     * Note. Makes it easier to debug because pthread name is the same as th task name
+     * Cuts of the name if longer than length allowed by the kernel
+    **/
     @trusted
-    void setThreadName(string name) nothrow {
-        pthread_setname_np(pthread_self(), toStringz(name));
+    int setThreadName(string _name) nothrow {
+        // dfmt off
+        string name = (_name.length < TASK_COMM_LEN)
+            ? _name ~ '\0'
+            : _name[0 .. TASK_COMM_LEN - 1] ~ '\0';
+        // dfmt on
+        assert(name.length <= TASK_COMM_LEN);
+        return pthread_setname_np(pthread_self(), &name[0]);
+    }
+
+    @safe
+    unittest {
+        assert(setThreadName("antonio") == 0, "Could not set short thread name");
+        assert(setThreadName("antoniofernandesthe3rd") == 0, "Could not set long thread name");
     }
 }
 else {
-    @trusted
-    void setThreadName(string _) nothrow {
+    int setThreadName(string _) @safe nothrow {
+        return 0;
     }
 }

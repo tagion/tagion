@@ -6,7 +6,6 @@ module tagion.communication.HiRPC;
 import std.exception : assumeWontThrow;
 import std.format;
 import std.traits : EnumMembers;
-import tagion.Keywords;
 import tagion.basic.Types : Buffer;
 import tagion.basic.tagionexceptions : Check;
 import tagion.crypto.SecureInterfaceNet : SecureNet;

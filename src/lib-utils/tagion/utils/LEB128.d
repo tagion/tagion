@@ -322,3 +322,15 @@ unittest {
 
     }
 }
+
+bool isCompleat(const(ubyte[]) data) pure nothrow @nogc {
+    import std.algorithm;
+
+    return data.countUntil!((b) => (b & 0x80) == 0) >= 0;
+}
+
+unittest {
+    assert(isCompleat([0x07]));
+    assert(!isCompleat([0x87]));
+    assert(isCompleat([0x87, 0x07]));
+}

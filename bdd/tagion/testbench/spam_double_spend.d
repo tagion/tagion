@@ -33,7 +33,7 @@ int _main(string[] args) {
     scope Options local_options = Options.defaultOptions;
     local_options.dart.folder_path = buildPath(module_path);
     local_options.replicator.folder_path = buildPath(module_path, "recorders");
-    local_options.wave.prefix_format = "Spam DoubleSpend Node_%s_";
+    local_options.wave.prefix_format = "Spam_DoubleSpend_Node_%s_";
     local_options.subscription.address = contract_sock_addr("SPAM_SUBSCRIPTION");
 
     local_options.save(config_file);

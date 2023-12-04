@@ -257,6 +257,15 @@ struct ActorHandle {
             concurrency.send(tid, args).collectException!AssertError;
         }
     }
+    /// Send a message to this task
+    void prioritySend(T...)(T args) @trusted {
+        try {
+            concurrency.prioritySend(_tid, args);
+        }
+        catch (AssertError _) {
+            concurrency.prioritySend(tid, args).collectException!AssertError;
+        }
+    }
 }
 
 ActorHandle spawn(A, Args...)(immutable(A) actor, string name, Args args) @safe nothrow
@@ -265,8 +274,8 @@ if (isActor!A && isSpawnable!(typeof(A.task), Args)) {
     try {
         Tid tid;
         tid = concurrency.spawn((immutable(A) _actor, string name, Args args) @trusted nothrow{
-            log.register(name);
-            // thisActor.task_name(name);
+            // log.register(name);
+            thisActor.task_name = name;
             thisActor.stop = false;
             A actor = cast(A) _actor;
             setState(Ctrl.STARTING); // Tell the owner that you are starting.
@@ -308,7 +317,7 @@ if (isActor!A) {
     try {
         Tid tid;
         tid = concurrency.spawn((string name, Args args) @trusted nothrow{
-            log.register(name);
+            thisActor.task_name = name;
             thisActor.stop = false;
             try {
                 A actor = A(args);

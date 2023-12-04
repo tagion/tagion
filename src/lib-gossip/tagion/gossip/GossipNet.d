@@ -2,7 +2,6 @@ module tagion.gossip.GossipNet;
 
 import core.time : MonoTime;
 import std.concurrency;
-import std.exception : assumeUnique;
 import std.format;
 import std.string : representation;
 import tagion.basic.ConsensusExceptions;

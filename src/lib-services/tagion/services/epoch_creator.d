@@ -45,8 +45,8 @@ alias PayloadQueue = Queue!Document;
 
 @safe
 struct EpochCreatorOptions {
-    uint timeout = 15; // timeout in msecs 
-    uint scrap_depth = 5;
+    uint timeout = 250; // timeout in msecs 
+    uint scrap_depth = 10;
     mixin JSONCommon;
 }
 
@@ -102,17 +102,21 @@ struct EpochCreatorService {
             hashgraph.createEvaEvent(gossip_net.time, nonce);
         }
 
+        int counter = 0;
         const(Document) payload() {
+            if (counter > 0) {
+                log.trace("Payloads in queue=%d", counter);
+            }
             if (payload_queue.empty) {
                 return Document();
             }
+            counter--;
             return payload_queue.read;
         }
 
         void receivePayload(Payload, const(Document) pload) {
-            // log.trace("Received Payload");
             payload_queue.write(pload);
-            // hashgraph.init_tide(&gossip_net.gossip, &payload, currentTime);
+            counter++;
         }
 
         void receiveWavefront(ReceivedWavefront, const(Document) wave_doc) {
@@ -148,10 +152,10 @@ struct EpochCreatorService {
                 log.fatal("WAVEFRONT\n%s\n", receiver.toPretty);
             }
             hashgraph.wavefront(
-                    receiver,
-                    currentTime,
-                    (const(HiRPC.Sender) return_wavefront) { gossip_net.send(receiver.pubkey, return_wavefront); },
-                    &payload);
+                receiver,
+                currentTime,
+                (const(HiRPC.Sender) return_wavefront) { gossip_net.send(receiver.pubkey, return_wavefront); },
+                &payload);
         }
 
         void timeout() {

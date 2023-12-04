@@ -4,9 +4,9 @@ module tagion.tools.hibonutil;
 import std.array : join;
 import std.conv;
 import std.encoding : BOM, BOMSeq;
-import std.exception : assumeUnique, assumeWontThrow;
+import std.exception : assumeWontThrow;
 import std.exception : ifThrown;
-import std.file : exists, fread = read, readText, fwrite = write;
+import std.file : exists, readText, fwrite = write;
 import std.format;
 import std.getopt;
 import std.json;
@@ -20,6 +20,7 @@ import tagion.hibon.Document : Document;
 import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONFile : fread;
 import tagion.hibon.HiBONtoText : decodeBase64, encodeBase64;
 import tagion.tools.Basic;
 import tagion.tools.revision;
@@ -60,17 +61,16 @@ struct Element {
     uint dataPos;
     string key;
     mixin HiBONRecord!(q{
-            this(const(Document.Element) elm, const uint offset) {
-                 type=elm.type;
-                keyPos=elm.keyPos+offset;
-              keyLen=elm.keyLen;
-    valuePos=elm.valuePos+offset;
-                dataPos=elm.dataPos+offset;
-                dataSize=elm.dataSize;
-                key=elm.key; 
-            }
-        });
-
+        this(const(Document.Element) elm, const uint offset) {
+            type=elm.type;
+            keyPos=elm.keyPos+offset;
+            keyLen=elm.keyLen;
+            valuePos=elm.valuePos+offset;
+            dataPos=elm.dataPos+offset;
+            dataSize=elm.dataSize;
+            key=elm.key; 
+        }
+    });
 }
 
 version (none) Document.Element.ErrorCode check_document(const(Document) doc, out Document error_doc) {
@@ -164,18 +164,18 @@ int _main(string[] args) {
             writeln(logo);
             defaultGetoptPrinter(
                     [
-                    "Documentation: https://tagion.org/",
-                    "",
-                    "Usage:",
-                    format("%s [<option>...] <in-file>", program),
-                    "",
-                    "Where:",
-                    "<in-file>           Is an input file in .json or .hibon format",
-                    "",
+                "Documentation: https://tagion.org/",
+                "",
+                "Usage:",
+                format("%s [<option>...] <in-file>", program),
+                "",
+                "Where:",
+                "<in-file>           Is an input file in .json or .hibon format",
+                "",
 
-                    "<option>:",
+                "<option>:",
 
-                    ].join("\n"),
+            ].join("\n"),
                     main_args.options);
             return 0;
         }
@@ -269,8 +269,7 @@ int _main(string[] args) {
             }
             switch (inputfilename.extension) {
             case FileExtension.hibon:
-                immutable data = assumeUnique(cast(ubyte[]) fread(inputfilename));
-                const doc = Document(data);
+                Document doc = fread(inputfilename);
 
                 if (!ignore) {
                     const error_code = doc.valid(

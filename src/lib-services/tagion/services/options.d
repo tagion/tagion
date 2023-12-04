@@ -37,6 +37,7 @@ struct WaveOptions {
     NetworkMode network_mode = NetworkMode.INTERNAL;
     uint number_of_nodes = 5;
     string prefix_format = "Node_%s_";
+    bool fail_fast = false;
     mixin JSONCommon;
 }
 

@@ -61,8 +61,6 @@ struct HiRPCVerifierService {
         }
 
         void contract(inputDoc, Document doc) @safe {
-            debug log("Received document \n%s", doc.toPretty);
-
             if (!doc.isRecord!(HiRPC.Sender)) {
                 reject(RejectReason.notAHiRPC, doc);
                 return;
@@ -85,11 +83,6 @@ struct HiRPCVerifierService {
                 else {
                     reject(RejectReason.notSigned, doc);
                 }
-                break;
-            case DART.Queries.dartRead, DART.Queries.dartBullseye, DART.Queries.dartCheckRead:
-                auto dart_hirpc = dartHiRPCRR();
-                pragma(msg, "TODO(pr): relay to shell service?");
-                // locate(dart_task_name).send(dart_hirpc, doc);
                 break;
             default:
                 reject(RejectReason.invalidMethod, doc);

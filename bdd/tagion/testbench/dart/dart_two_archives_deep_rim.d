@@ -7,7 +7,6 @@ import std.path : buildPath, setExtension;
 import std.range;
 import std.stdio : writefln;
 import std.typecons : Tuple;
-import tagion.Keywords;
 import tagion.basic.Types : Buffer, mut;
 import tagion.basic.basic : forceRemove;
 import tagion.behaviour;
@@ -170,7 +169,7 @@ class AddAnotherArchive {
     @Then("check the _bullseye.")
     Document _bullseye() {
         check(bullseye == info.net.binaryHash(fingerprints[0], fingerprints[1]),
-        "Bullseye not equal to the hash of the two archives");
+                "Bullseye not equal to the hash of the two archives");
         db.close();
         return result_ok;
     }

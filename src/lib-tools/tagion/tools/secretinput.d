@@ -8,12 +8,12 @@ import std.format;
 import std.range;
 import std.array;
 
-void getSecret(string text, out char[] passwd) {
+KeyStroke.KeyCode getSecret(string text, out char[] passwd) {
     enum NUL = char(0);
     char[] result;
     KeyStroke key;
     KeyStroke.KeyCode keycode;
-    enum MAX_SIZE = 8; //0x100;
+    enum MAX_SIZE = 0x100;
     char[MAX_SIZE] password;
     scope (exit) {
         password[] = 0;
@@ -74,8 +74,11 @@ void getSecret(string text, out char[] passwd) {
 
                 break;
             case CTRL_A:
-                show_password=!show_password;
+                show_password = !show_password;
                 break;
+            case CTRL_C, CTRL_D:
+                return keycode;
+
             case NONE:
                 if (ch > 0x20 && ch < 127 && pos < password.length) {
                     password[pos] = cast(char) ch;
@@ -86,8 +89,9 @@ void getSecret(string text, out char[] passwd) {
             }
         }
     }
-        show_password=false;
+    show_password = false;
     display;
     writeln;
     passwd = password[0 .. passwordSize].dup;
+    return KeyStroke.KeyCode.NONE;
 }

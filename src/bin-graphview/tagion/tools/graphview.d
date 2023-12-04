@@ -2,8 +2,7 @@ module tagion.tools.graphview;
 import std.algorithm : min;
 import std.array : join;
 import std.conv : to;
-import std.exception : assumeUnique;
-import std.file : exists, fread = read, fwrite = write;
+import std.file : exists, fwrite = write;
 import std.format;
 import std.functional : toDelegate;
 import std.getopt;
@@ -16,6 +15,7 @@ import tagion.hashgraphview.EventView : EventView;
 import tagion.hibon.Document : Document;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONValid : error_callback;
+import tagion.hibon.HiBONFile : fread;
 import tagion.tools.revision;
 import tagion.utils.BitMask;
 
@@ -320,8 +320,7 @@ int _main(string[] args) {
     const input_extension = inputfilename.extension;
     switch (input_extension) {
     case fileextensions.HIBON:
-        immutable data = assumeUnique(cast(ubyte[]) fread(inputfilename));
-        const doc = Document(data);
+        Document doc = fread(inputfilename);
         const error_code = doc.valid(toDelegate(&error_callback));
         if (error_code !is Document.Element.ErrorCode.NONE) {
             writeln("Document format error");

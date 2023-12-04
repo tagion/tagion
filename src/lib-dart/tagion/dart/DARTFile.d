@@ -17,7 +17,6 @@ private {
     import std.traits;
     import std.typecons : Flag, No, Yes;
     import std.typecons;
-    import tagion.Keywords;
     import tagion.basic.Debug : __write;
     import tagion.basic.Types : Buffer, isBufferType, isTypedef, mut;
     import tagion.basic.basic : EnumText, assumeTrusted, isinit;
@@ -37,16 +36,6 @@ private {
     import tagion.dart.DARTRim;
     import tagion.dart.RimKeyRange : rimKeyRange;
     import tagion.hibon.HiBONRecord;
-}
-
-/// Hash null definition (all zero values)
-immutable(Buffer) hash_null;
-shared static this() @trusted {
-    import std.exception : assumeUnique;
-    import tagion.crypto.SecureNet : StdHashNet;
-
-    auto _null = new ubyte[StdHashNet.HASH_SIZE];
-    hash_null = assumeUnique(_null);
 }
 
 /++
@@ -94,9 +83,9 @@ class DARTFile {
     }
 
     protected enum _params = [
-            "dart_indices",
-            "bullseye",
-        ];
+        "dart_indices",
+        "bullseye",
+    ];
 
     mixin(EnumText!("Params", _params));
 
@@ -397,7 +386,7 @@ class DARTFile {
                         
 
                         .check(!_fingerprints[key].isinit,
-                        format("Fingerprint key=%02X at index=%d is not defined", key, index));
+                                format("Fingerprint key=%02X at index=%d is not defined", key, index));
                         indices_set = true;
                     }
                 }
@@ -795,7 +784,6 @@ class DARTFile {
 
     DARTIndex[] checkload(Range)(Range dart_indices) if (isInputRange!Range && isBufferType!(ElementType!Range)) {
         import std.algorithm : canFind;
-        import std.exception : assumeUnique;
 
         auto result = loads(dart_indices)[]
             .map!(a => a.dart_index);
@@ -805,7 +793,6 @@ class DARTFile {
             .map!(f => cast(DARTIndex) f)
             .array;
 
-        // return (() @trusted => assumeUnique(not_found))();
         return not_found;
     }
 
@@ -844,10 +831,10 @@ class DARTFile {
      * If the function executes succesfully then the DART is updated or else it does not affect the DART
      * The function returns the bullseye of the dart
      */
-    Fingerprint modify(Flag!"undo" undo)(const(RecordFactory.Recorder) modifyrecords) 
-    in(blockfile.cache_empty, format("IN: THE CACHE MUST BE EMPTY WHEN PERFORMING NEW MODIFY len=%s", blockfile.cache_len))
-    do 
-    {
+    Fingerprint modify(Flag!"undo" undo)(const(RecordFactory.Recorder) modifyrecords)
+    in (blockfile.cache_empty, format("IN: THE CACHE MUST BE EMPTY WHEN PERFORMING NEW MODIFY len=%s", blockfile
+            .cache_len))
+    do {
         /** 
          * Inner function for the modify function.
          * Note that this function is recursive and called from itself. 
@@ -1007,7 +994,7 @@ class DARTFile {
                         .slide(2)
                         .map!(a => a.front.dart_index == a.dropOne.front.dart_index)
                         .any,
-                        "cannot have multiple operations on same dart-index in one modify");
+                    "cannot have multiple operations on same dart-index in one modify");
 
         auto range = rimKeyRange!undo(modifyrecords);
         auto new_root = traverse_dart(range, blockfile.masterBlock.root_index);
@@ -1245,7 +1232,7 @@ class DARTFile {
             }
 
             bool validate(DARTFile dart, const(ulong[]) table, out RecordFactory
-                .Recorder recorder) {
+                    .Recorder recorder) {
                 write(dart, table, recorder);
                 auto _dart_indices = dart_indices(recorder);
                 auto find_recorder = dart.loads(_dart_indices);
@@ -2570,13 +2557,13 @@ unittest {
         const hashdoc = HashDoc("hugo", 42);
         recorder_add.add(hashdoc);
         assert(recorder_add[].front.dart_index != recorder_add[].front.fingerprint,
-        "The dart_index and the fingerprint of a archive should not be the same for a # archive");
+                "The dart_index and the fingerprint of a archive should not be the same for a # archive");
         auto bullseye = dart_A.modify(recorder_add);
         // dart_A.dump;
         // writefln("bullseye   =%(%02x%)", bullseye);
         // writefln("fingerprint=%(%02x%)", recorder_add[].front.fingerprint);
         assert(bullseye == recorder_add[].front.fingerprint,
-        "The bullseye for a DART with a single #key archive should be the same as the fingerprint of the archive");
+                "The bullseye for a DART with a single #key archive should be the same as the fingerprint of the archive");
         const hashdoc_change = HashDoc("hugo", 17);
         auto recorder_B = dart_A.recorder;
         recorder_B.remove(hashdoc_change);
@@ -2591,7 +2578,7 @@ unittest {
         // writefln("fingerprint=%(%02x%)", recorder_change[].front.fingerprint);
         assert(recorder_add[].front.dart_index == recorder_change[].front.dart_index);
         assert(bullseye == recorder_change[].front.fingerprint,
-        "The bullseye for a DART with a single #key archive should be the same as the fingerprint of the archive");
+                "The bullseye for a DART with a single #key archive should be the same as the fingerprint of the archive");
         { // read the dart_index from the dart and check the dart_index 
             auto load_recorder = dart_A.loads(recorder_change[].map!(a => a.dart_index));
             //writefln("load_recorder=%(%02x%)", load_recorder[].front.dart_index);
@@ -2615,5 +2602,4 @@ unittest {
 
     }
 
-    
 }

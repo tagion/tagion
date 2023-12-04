@@ -159,6 +159,7 @@ class NetworkRunningWithGenesisBlockAndEpochChain {
         // since we need to ref to the previous element we use a for loop over the epochs since we know that there must be fewer epochs than heads.
 
         Epoch[] ref_epochs = sorted_histories.byValue.front.epochs.array;
+        check(ref_epochs.length > 0, "did not create any finished epochs");
 
         // we first check that the epoch for the first is node created correctly. Then we compare the different epochs afterwards
         for (int i = 1; i < ref_epochs.length; i++) {

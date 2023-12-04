@@ -8,7 +8,6 @@ import std.random : MinstdRand0, randomSample, randomShuffle;
 import std.range;
 import std.stdio;
 import std.typecons : Tuple;
-import tagion.Keywords;
 import tagion.basic.basic : forceRemove;
 import tagion.behaviour;
 import tagion.communication.HiRPC;
