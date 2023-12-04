@@ -227,11 +227,15 @@ static void dart_handler ( WebData *req, WebData *rep, void* ctx ){
         rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST; rep.msg = "invalid data type";    
         return;
     }
-    writeit(format("WH: dart: with %d bytes for %s",req.rawdata.length, opt.tagion_dart_sock_addr));
+
+    const dart_addr = opt.getRndDARTAddress();
+
+    
+    writeit(format("WH: dart: with %d bytes for %s",req.rawdata.length, dart_addr));
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
     s.recvtimeout = msecs(60000);
     while(true){
-        rc = s.dial(opt.tagion_dart_sock_addr);
+        rc = s.dial(dart_addr);
         if(rc == 0)
             break;
     }
