@@ -358,7 +358,7 @@ struct TranscriptService {
             auto req = dartModifyRR();
             req.id = res.id;
 
-            dart_handle.prioritySend(req, RecordFactory.uniqueRecorder(recorder), cast(immutable) res.id);
+            dart_handle.send(req, RecordFactory.uniqueRecorder(recorder), cast(immutable) res.id);
         }
 
         void epoch(consensusEpoch,

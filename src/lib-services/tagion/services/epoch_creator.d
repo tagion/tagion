@@ -102,7 +102,7 @@ struct EpochCreatorService {
             hashgraph.createEvaEvent(gossip_net.time, nonce);
         }
 
-        int counter;
+        int counter = 0;
         const(Document) payload() {
             if (counter > 0) {
                 log.trace("Payloads in queue=%d", counter);

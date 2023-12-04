@@ -165,7 +165,9 @@ module tagion.utils.Queue;
         assert(!q.empty);
 
         assert(q.read == elm1);
+        assert(!q.empty);
         assert(q.read == elm2);
+        assert(!q.empty);
         assert(q.read == elm3);
         assert(q.empty);
     }
