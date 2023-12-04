@@ -13,7 +13,7 @@ KeyStroke.KeyCode getSecret(string text, out char[] passwd) {
     char[] result;
     KeyStroke key;
     KeyStroke.KeyCode keycode;
-    enum MAX_SIZE = 8; //0x100;
+    enum MAX_SIZE = 0x100;
     char[MAX_SIZE] password;
     scope (exit) {
         password[] = 0;

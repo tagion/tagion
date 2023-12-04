@@ -206,28 +206,30 @@ int _main(string[] args) {
                 pincode_2[] = 0;
             }
 
-            info("Press ctrl-C to break");
-            info("Press ctrl-A to show the pincode");
-            while (pincode_1.length == 0) {
-                const keycode = getSecret("Pincode: ", pincode_1);
-                if (keycode == KeyStroke.KeyCode.CTRL_C) {
-                    error("Wallet has not been created");
-                    return 1;
+            if (!dry_switch) {
+                info("Press ctrl-C to break");
+                info("Press ctrl-A to show the pincode");
+                while (pincode_1.length == 0) {
+                    const keycode = getSecret("Pincode: ", pincode_1);
+                    if (keycode == KeyStroke.KeyCode.CTRL_C) {
+                        error("Wallet has not been created");
+                        return 1;
+                    }
                 }
+                info("Repeat the pincode");
+                for (;;) {
+                    const keycode = getSecret("Pincode: ", pincode_2);
+                    if (keycode == KeyStroke.KeyCode.CTRL_C) {
+                        error("Wallet has not been created");
+                        return 1;
+                    }
+                    if (pincode_1 == pincode_2) {
+                        break;
+                    }
+                    error("Pincode did not match");
+                }
+                good("Pin-codes matches");
             }
-            info("Repeat the pincode");
-            for (;;) {
-                const keycode = getSecret("Pincode: ", pincode_2);
-                if (keycode == KeyStroke.KeyCode.CTRL_C) {
-                    error("Wallet has not been created");
-                    return 1;
-                }
-                if (pincode_1 == pincode_2) {
-                    break;
-                }
-                error("Pincode did not match");
-            }
-            good("Pin-codes matches");
             if (!bip39_recover) {
                 const wordlist = WordList(words);
                 passphrase = wordlist.passphrase(bip39);
@@ -236,10 +238,12 @@ int _main(string[] args) {
                 printf("%.*s\n", cast(int) passphrase.length, &passphrase[0]);
                 good("Write them down");
             }
-            const recovered=wallet_interface.generateSeedFromPassphrase(passphrase, pincode_1, _salt);
+            const recovered = wallet_interface.generateSeedFromPassphrase(passphrase, pincode_1, _salt);
             check(recovered, "Wallet was not recovered");
             good("Wallet was recovered");
-            wallet_interface.save(false);
+            if (!dry_switch) {
+                wallet_interface.save(false);
+            }
             return 0;
         }
         else {
@@ -286,6 +290,8 @@ int _main(string[] args) {
         }
         else if (change_pin) {
             wallet_interface.loginPincode(changepin : true);
+            check(wallet_interface.secure_wallet.isLoggedin, "Failed to login");
+            good("Pincode correct");
             return 0;
         }
 
@@ -294,7 +300,7 @@ int _main(string[] args) {
                 const flag = wallet_interface.secure_wallet.login(pincode);
 
                 if (!flag) {
-                    stderr.writefln("%sWrong pincode%s", RED, RESET);
+                    error("%sWrong pincode%s", RED, RESET);
                     return 3;
                 }
                 verbose("%1$sLoggedin%2$s", GREEN, RESET);
