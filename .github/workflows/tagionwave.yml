@@ -89,7 +89,7 @@ jobs:
           systemctl stop --user neuewelle.service || echo "No wave service was running"
           systemctl stop --user tagionshell.service || echo "No shell service was running"
           mkdir -p ~/.local/bin ~/.local/share/tagion ~/.config/systemd/user
-          cp run_network.sh ~/.local/share/tagion/
+          cp run_network.sh ~/.local/share/tagion/wave/
           cp tagion ~/.local/bin/
           echo "Deploying revision" >> $GITHUB_STEP_SUMMARY
           ~/.local/bin/tagion --version >> $GITHUB_STEP_SUMMARY
