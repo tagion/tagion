@@ -124,7 +124,6 @@ struct AccountDetails {
         check((bill.owner in derivers) is null, format("Bill %(%x%) already exists", bill.owner));
         derivers[bill.owner] = derive;
         requested[bill.owner] = bill;
-
     }
     /++
          Clear up the Account

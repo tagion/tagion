@@ -166,7 +166,7 @@ struct DARTService {
             req.respond(eye);
         }
 
-        run(&read, &checkRead, &modify, &bullseye, &dartHiRPC);
+        run(&modify, &read, &checkRead, &bullseye, &dartHiRPC);
 
     }
 }

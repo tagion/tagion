@@ -257,6 +257,15 @@ struct ActorHandle {
             concurrency.send(tid, args).collectException!AssertError;
         }
     }
+    /// Send a message to this task
+    void prioritySend(T...)(T args) @trusted {
+        try {
+            concurrency.prioritySend(_tid, args);
+        }
+        catch (AssertError _) {
+            concurrency.prioritySend(tid, args).collectException!AssertError;
+        }
+    }
 }
 
 ActorHandle spawn(A, Args...)(immutable(A) actor, string name, Args args) @safe nothrow
