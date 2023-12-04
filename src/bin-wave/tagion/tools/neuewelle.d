@@ -207,9 +207,6 @@ int _neuewelle(string[] args) {
     auto logger_service = spawn(logger, "logger");
     log.set_logger_task(logger_service.task_name);
     writeln("logger started: ", waitforChildren(Ctrl.ALIVE));
-    scope (exit) {
-        logger_service.send(Sig.STOP);
-    }
 
     ActorHandle sub_handle;
     { // Spawn logger subscription service
@@ -339,6 +336,8 @@ int _neuewelle(string[] args) {
     foreach (supervisor; supervisor_handles) {
         supervisor.send(Sig.STOP);
     }
+    logger_service.send(Sig.STOP);
+
     // supervisor_handle.send(Sig.STOP);
     if (!waitforChildren(Ctrl.END, 5.seconds)) {
         log("Timed out before all services stopped");
