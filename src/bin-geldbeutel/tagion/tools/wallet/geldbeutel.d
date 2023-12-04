@@ -185,6 +185,7 @@ int _main(string[] args) {
             salt ~= WordList.presalt ~ _salt;
         }
         if (bip39 > 0 || bip39_recover) {
+            wallet_interface.load;
             import std.uni;
             import tagion.tools.secretinput;
             import tagion.wallet.bip39_english : words;

@@ -41,6 +41,7 @@ import tagion.script.standardnames;
 import tagion.tools.Basic;
 import tagion.wallet.SecureWallet : check;
 import tagion.wallet.WalletException;
+            import tagion.tools.secretinput;
 
 //import tagion.wallet.WalletException : check;
 /**
@@ -265,7 +266,7 @@ struct WalletInterface {
     * @brief change pin code interface
     */
     bool loginPincode(const bool changepin) {
-        CLEARSCREEN.write;
+        //CLEARSCREEN.write;
         char[] old_pincode;
         char[] new_pincode1;
         char[] new_pincode2;
@@ -276,14 +277,16 @@ struct WalletInterface {
             new_pincode2[] = 0;
         }
         foreach (i; 0 .. retry) {
-            HOME.write;
+            //HOME.write;
             writefln("%1$sAccess code required%2$s", GREEN, RESET);
             writefln("%1$sEnter empty pincode to proceed recovery%2$s", YELLOW, RESET);
-            writefln("pincode:");
+            //writefln("pincode:");
             scope (exit) {
                 old_pincode[] = 0;
             }
-            readln(old_pincode);
+            info("Press ctrl-C to break");
+            info("Press ctrl-A to show the pincode");
+            getSecret("pincode: ",old_pincode);
             old_pincode.word_strip;
             if (old_pincode.length) {
                 secure_wallet.login(old_pincode);
@@ -293,28 +296,28 @@ struct WalletInterface {
                     }
                     break;
                 }
-                writefln("%1$sWrong pincode%2$s", RED, RESET);
+                error("Wrong pincode");
             }
         }
-        CLEARSCREEN.write;
+        //CLEARSCREEN.write;
         if (changepin && secure_wallet.isLoggedin) {
             foreach (i; 0 .. retry) {
-                HOME.write;
-                CLEARSCREEN.write;
+                //HOME.write;
+                //CLEARSCREEN.write;
                 scope (success) {
                     CLEARSCREEN.write;
                 }
                 LINE.writeln;
-                writefln("%1$sChange you pin code%2$s", YELLOW, RESET);
+                info("Change you pin code");
                 LINE.writeln;
                 if (secure_wallet.pin.D) {
                     bool ok;
                     do {
-                        writefln("New pincode:%s", CLEARDOWN);
-                        readln(new_pincode1);
+                        info("New pincode:%s", CLEARDOWN);
+                        getSecret("pincode: ",new_pincode1);
                         new_pincode1.word_strip;
-                        writefln("Repeaté:");
-                        readln(new_pincode2);
+                        info("Repeaté:");
+                        getSecret("pincode: ", new_pincode2);
                         new_pincode2.word_strip;
                         ok = (new_pincode1.length >= 4);
                         if (ok && (ok = (new_pincode1 == new_pincode2)) is true) {
