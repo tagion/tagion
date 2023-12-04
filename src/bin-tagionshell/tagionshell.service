@@ -1,11 +1,13 @@
 [Unit]
 Description="Test deployment of tagionshell"
+After=multi-user.target
 
 [Service]
 WorkingDirectory=%h/.local/share/tagion/
 ExecStart=%h/.local/bin/tagion shell
 Restart=always
 RestartSec=3
+MemoryHigh=25M
 MemoryMax=50M
 
 [Install]
