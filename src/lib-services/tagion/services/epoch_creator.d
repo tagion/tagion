@@ -102,15 +102,21 @@ struct EpochCreatorService {
             hashgraph.createEvaEvent(gossip_net.time, nonce);
         }
 
+        int counter;
         const(Document) payload() {
+            if (counter > 0) {
+                log.trace("Payloads in queue=%d", counter);
+            }
             if (payload_queue.empty) {
                 return Document();
             }
+            counter--;
             return payload_queue.read;
         }
 
         void receivePayload(Payload, const(Document) pload) {
             payload_queue.write(pload);
+            counter++;
         }
 
         void receiveWavefront(ReceivedWavefront, const(Document) wave_doc) {
@@ -146,10 +152,10 @@ struct EpochCreatorService {
                 log.fatal("WAVEFRONT\n%s\n", receiver.toPretty);
             }
             hashgraph.wavefront(
-                    receiver,
-                    currentTime,
-                    (const(HiRPC.Sender) return_wavefront) { gossip_net.send(receiver.pubkey, return_wavefront); },
-                    &payload);
+                receiver,
+                currentTime,
+                (const(HiRPC.Sender) return_wavefront) { gossip_net.send(receiver.pubkey, return_wavefront); },
+                &payload);
         }
 
         void timeout() {
