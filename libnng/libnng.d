@@ -1,11 +1,17 @@
 module libnng.libnng;
 
-@safe:
 
 import std.meta : Alias;
 import core.stdc.config;
 import std.traits;
 import core.stdc.stdio: printf;
+
+alias nng_cb = void function (void*);
+alias nng_aio_cancel_cb = void function(nng_aio *, void *, int);
+alias nng_pipe_notify_cb = void function(nng_pipe, nng_pipe_ev, void *) nothrow;
+alias nng_http_cb = void function (nng_aio*);
+
+@safe:
 
 @nogc nothrow extern (C)
 {
@@ -202,7 +208,7 @@ struct nng_cv {};
 
 nng_time nng_clock();
 void nng_msleep(nng_duration);
-int nng_thread_create(nng_thread **, void function(void *), void *);
+int nng_thread_create(nng_thread **, nng_cb, void *);
 void nng_thread_set_name(nng_thread *, const char *);
 void nng_thread_destroy(nng_thread *);
 int nng_mtx_alloc(nng_mtx **);
@@ -278,7 +284,7 @@ int nng_opts_parse(int argc, const char **argv,
 
 // ------------------------------------- aio functions:
 
-int nng_aio_alloc(nng_aio **, void function(void *), void *);
+int nng_aio_alloc(nng_aio **, nng_cb, void *);
 void nng_aio_free(nng_aio *);
 void nng_aio_reap(nng_aio *);
 void nng_aio_stop(nng_aio *);
@@ -298,7 +304,7 @@ void nng_aio_set_timeout(nng_aio *, nng_duration);
 int nng_aio_set_iov(nng_aio *, uint, const nng_iov *);
 bool nng_aio_begin(nng_aio *);
 void nng_aio_finish(nng_aio *, int);
-void nng_aio_defer(nng_aio *, void function(nng_aio *, void *, int), void *);
+void nng_aio_defer(nng_aio *, nng_aio_cancel_cb, void *);
 void nng_sleep_aio(nng_duration, nng_aio *);
 
 
@@ -371,7 +377,7 @@ enum nng_pipe_ev {
     NNG_PIPE_EV_REM_POST, // Called just after pipe removed from socket
     NNG_PIPE_EV_NUM,      // Used internally, must be last.
 }
-int nng_pipe_notify(nng_socket, nng_pipe_ev, void function(nng_pipe, nng_pipe_ev, void *) nothrow, void *);
+int nng_pipe_notify(nng_socket, nng_pipe_ev, nng_pipe_notify_cb, void *);
 
 int nng_dial(nng_socket, const char *, nng_dialer *, int);
 int nng_dialer_create(nng_dialer *, nng_socket, const char *);
@@ -710,8 +716,9 @@ void nng_http_conn_read_req(nng_http_conn *, nng_http_req *, nng_aio *);
 void nng_http_conn_read_res(nng_http_conn *, nng_http_res *, nng_aio *);
 void nng_http_conn_transact(nng_http_conn *, nng_http_req *, nng_http_res *, nng_aio *);
 
+
 // http handler api
-int nng_http_handler_alloc(nng_http_handler **, const char *, void function (nng_aio *));
+int nng_http_handler_alloc(nng_http_handler **, const char *, nng_http_cb);
 int nng_http_handler_alloc_file(nng_http_handler **, const char *, const char *);
 int nng_http_handler_alloc_static(nng_http_handler **, const char *, const void *, size_t, const char *);
 int nng_http_handler_alloc_redirect(nng_http_handler **, const char *, ushort, const char *);
@@ -722,7 +729,7 @@ int nng_http_handler_set_host(nng_http_handler *, const char *);
 int nng_http_handler_collect_body(nng_http_handler *, bool, size_t);
 int nng_http_handler_set_tree(nng_http_handler *);
 int nng_http_handler_set_tree_exclusive(nng_http_handler *);
-int nng_http_handler_set_data(nng_http_handler *, void *, void function (void *));
+int nng_http_handler_set_data(nng_http_handler *, void *, nng_cb);
 void *nng_http_handler_get_data(nng_http_handler *);
 
 // http server api

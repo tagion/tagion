@@ -8,6 +8,7 @@ import std.concurrency;
 import std.exception;
 import core.thread;
 import std.datetime.systime;
+import core.stdc.string;
 import core.stdc.stdlib : exit;
 
 import libnng;
@@ -40,11 +41,29 @@ static JSONValue scandir(string path){
     return j;
 }
 
-void rest_handler(nng_aio* aio){
+
+int reprocess( char **buf, size_t *sz ){
+    
+    JSONValue jr = parseJSON("{}");
+    jr["time"] = Clock.currTime().toSimpleString();
+    string rstr = jr.toString();
+    
+    *sz = rstr.length;
+    *buf = cast(char*)nng_alloc(rstr.length);
+    
+    memcpy(*buf, rstr.ptr, rstr.length);
+
+    return 0;
+}
+
+void time_handler(nng_aio* aio) {
     int rc = 0;
     nng_http_res *res;
     void *reqbody;
     size_t reqbodylen;
+
+    char *buf;
+    size_t buflen;
 
     scope(failure){
         nng_http_res_free(res);
@@ -55,34 +74,38 @@ void rest_handler(nng_aio* aio){
 
     nng_http_req *req = cast(nng_http_req*)nng_aio_get_input(aio, 0);
         enforce(req != null);
+    
     nng_http_req_get_data(req, &reqbody, &reqbodylen);
+    
     rc = nng_http_res_alloc(&res);
         enforce(rc == 0);
-    rc = nng_http_res_set_header(res,toStringz("Content-type"),toStringz("application/json; charset=UTF-8"));
-        enforce(rc == 0);
-    
+
+//    rc = nng_http_res_set_header(res,"Content-type","application/json; charset=UTF-8");
+//        enforce(rc == 0);
+
+/*    
     auto s1 = nng_http_req_get_uri(req);
     string ruri = to!string(s1);
-    auto s2 = nng_http_req_get_header(req, toStringz("Content-type"));
+    auto s2 = nng_http_req_get_header(req, "Content-type");
     string rtype = to!string(s2);
-    log("REQ: ", rtype, ruri);
-    JSONValue jd = parseJSON(to!string(cast(char*)reqbody[0..reqbodylen].idup));
-    JSONValue jr = parseJSON("{}");
-    log("REQDATA: ",jd);
+*/
 
-    if(jd["todo"].str == "time"){
-        jr["time"] = Clock.currTime().toSimpleString();
-    }
+//    reprocess(&buf, &buflen);
 
-    if(jd["todo"].str == "dir"){
-        jr["dir"] = buildPath(_WD,"htdocs");
-        jr["tree"] = scandir(buildPath(_WD,"htdocs"));
-    }
+    string lala = "asdcjkascpoasidjfvopiasdjvopsidfvjasiodfvjaopidfvjopsidfvjospidfjvsoidfvj sdofv sdopifvjsodifv sodifjvosdifjvosidfjv osidjv osdivj sodifvj sodifvj sodifvj sdof";
+
+    immutable(char)*labuf = lala.toStringz;
     
-    string rstr = jr.toString();
+    const char* istr = "{\"this\":\"is\"}";
 
-    rc = nng_http_res_copy_data(res, rstr.toStringz(), rstr.length);
+   
+    rc = nng_http_res_copy_data(res, istr, strlen(istr));
         enforce(rc == 0);
+    
+    //rc = nng_http_res_copy_data(res, buf, buflen);
+    //    enforce(rc == 0);
+
+//    nng_free(buf, buflen);
 
     nng_http_res_set_status(res, nng_http_status.NNG_HTTP_STATUS_OK);
     nng_aio_set_output(aio, 0, res);
@@ -120,23 +143,12 @@ int main()
         nng_url_free(url);
     }
 
-    // handle static dir 
-    nng_http_handler *h1;
-    rc = nng_http_handler_alloc_directory(&h1, toStringz(prefix~"/"), buildPath(wd,"htdocs/").toStringz());
-    if( rc < 0 ) { log("H ",nng_errstr(rc)); exit(1); };
-    rc = nng_http_server_add_handler(s, h1);
-    if( rc < 0 ) { log("H ",nng_errstr(rc)); exit(1); };
-
     // handle REST API
     
-    nng_http_handler *h2;
-    rc = nng_http_handler_alloc(&h2, toStringz(prefix~"/api/v1"), &rest_handler);
+    nng_http_handler *h;
+    rc = nng_http_handler_alloc(&h, toStringz(prefix~"/api/v1/time"), &time_handler);
     if( rc < 0 ) { log("H ",nng_errstr(rc)); exit(1); };
-    rc = nng_http_handler_set_tree_exclusive(h2);
-    if( rc < 0 ) { log("H ",nng_errstr(rc)); exit(1); };
-    rc = nng_http_handler_set_method(h2, "POST");
-    if( rc < 0 ) { log("H ",nng_errstr(rc)); exit(1); };
-    rc = nng_http_server_add_handler(s, h2);
+    rc = nng_http_server_add_handler(s, h);
     if( rc < 0 ) { log("H ",nng_errstr(rc)); exit(1); };
 
 
@@ -148,3 +160,19 @@ int main()
 
     return 0;
 }
+
+
+
+
+
+/*
+
+    if(jd["todo"].str == "time"){
+    }
+
+    if(jd["todo"].str == "dir"){
+        jr["dir"] = buildPath(_WD,"htdocs");
+        jr["tree"] = scandir(buildPath(_WD,"htdocs"));
+    }
+  
+*/  
