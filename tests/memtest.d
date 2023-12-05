@@ -42,28 +42,37 @@ static JSONValue scandir(string path){
 }
 
 
-int reprocess( char **buf, size_t *sz ){
-    
-    JSONValue jr = parseJSON("{}");
-    jr["time"] = Clock.currTime().toSimpleString();
-    string rstr = jr.toString();
-    
-    *sz = rstr.length;
-    *buf = cast(char*)nng_alloc(rstr.length);
-    
-    memcpy(*buf, rstr.ptr, rstr.length);
+struct webdata {
 
-    return 0;
+    string uri;
+    string type;
+    nng_http_status status;
+    string msg;
+    char[] data;
+
 }
 
-void time_handler(nng_aio* aio) {
+static void webprocess( webdata *req, webdata *rep ){
+
+    rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
+    rep.type = "application/json; charset=UTF-8";
+    
+    scope JSONValue jr = parseJSON("{}");
+
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! leakage on any to-string with internal duplicate 
+    jr["time"] = Clock.currTime().toSimpleString();
+
+    //auto s = jr.toString();
+    //rep.data = s.dup;
+
+}
+
+
+static void time_handler(nng_aio* aio) {
     int rc = 0;
     nng_http_res *res;
     void *reqbody;
     size_t reqbodylen;
-
-    char *buf;
-    size_t buflen;
 
     scope(failure){
         nng_http_res_free(res);
@@ -79,33 +88,38 @@ void time_handler(nng_aio* aio) {
     
     rc = nng_http_res_alloc(&res);
         enforce(rc == 0);
-
-//    rc = nng_http_res_set_header(res,"Content-type","application/json; charset=UTF-8");
-//        enforce(rc == 0);
-
-/*    
-    auto s1 = nng_http_req_get_uri(req);
-    string ruri = to!string(s1);
-    auto s2 = nng_http_req_get_header(req, "Content-type");
-    string rtype = to!string(s2);
-*/
-
-//    reprocess(&buf, &buflen);
-
-    string lala = "asdcjkascpoasidjfvopiasdjvopsidfvjasiodfvjaopidfvjopsidfvjospidfjvsoidfvj sdofv sdopifvjsodifv sodifjvosdifjvosidfjv osidjv osdivj sodifvj sodifvj sodifvj sdof";
-
-    immutable(char)*labuf = lala.toStringz;
     
-    const char* istr = "{\"this\":\"is\"}";
+    webdata wreq, wrep;
 
+    wreq.data = cast(char[])reqbody[0..reqbodylen].dup;
+
+    {
+        scope auto buf = fromStringz(nng_http_req_get_uri(req));
+        wreq.uri = cast(immutable)buf[0..buf.length];
+    }        
+
+    {
+        scope auto buf = fromStringz(nng_http_req_get_header(req, "Content-type"));
+        wreq.type = cast(immutable)buf[0..buf.length];
+    }                
+
+    webprocess( &wreq, &wrep );
+
+    rc = nng_http_res_set_header(res,"Content-type","application/json; charset=UTF-8");
+        enforce(rc == 0);
+
+
+    const char* istr = "{\"this\":\"is\"}";
    
     rc = nng_http_res_copy_data(res, istr, strlen(istr));
         enforce(rc == 0);
+
+    //rc = nng_http_res_copy_data(res, wrep.data.ptr, wrep.data.length);
+    //    enforce(rc == 0);
     
     //rc = nng_http_res_copy_data(res, buf, buflen);
     //    enforce(rc == 0);
 
-//    nng_free(buf, buflen);
 
     nng_http_res_set_status(res, nng_http_status.NNG_HTTP_STATUS_OK);
     nng_aio_set_output(aio, 0, res);
