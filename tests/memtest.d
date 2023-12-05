@@ -52,18 +52,24 @@ struct webdata {
 
 }
 
+
 static void webprocess( webdata *req, webdata *rep ){
 
     rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
     rep.type = "application/json; charset=UTF-8";
     
-    scope JSONValue jr = parseJSON("{}");
+    //scope JSONValue jr = parseJSON("{}");
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! leakage on any to-string with internal duplicate 
-    jr["time"] = Clock.currTime().toSimpleString();
+    //jr["time"] = Clock.currTime().toSimpleString();
 
-    //auto s = jr.toString();
+    //to s = jr.toString();
     //rep.data = s.dup;
+
+    static string s1 = "asdcsdcasdcas";
+    static string s2 = "asvsdfvfdgbdefgbdfb";
+
+    printf("%p\n", s1.ptr);
 
 }
 
@@ -74,6 +80,14 @@ static void time_handler(nng_aio* aio) {
     void *reqbody;
     size_t reqbodylen;
 
+    thread_attachThis();
+    rt_moduleTlsCtor();
+
+    scope(exit){
+//        thread_detachThis();
+//        rt_moduleTlsDtor();
+    }
+    
     scope(failure){
         nng_http_res_free(res);
         nng_aio_finish(aio, rc);
