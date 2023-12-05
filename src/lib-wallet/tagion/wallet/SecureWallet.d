@@ -701,8 +701,16 @@ struct SecureWallet(Net : SecureNet) {
         return getFee(bills, fees);
     }
 
+    static immutable dummy_pubkey = Pubkey(new ubyte[33]);
+    static immutable dummy_nonce = new ubyte[4];
+    import tagion.utils.StdTime;
+    static immutable(sdt_t) dummy_time;
+    shared static this() {
+        dummy_time = currentTime;
+    }
+
     Result!bool getFee(TagionCurrency amount, out TagionCurrency fees) nothrow {
-        auto bill = TagionBill(amount, sdt_t.init, Pubkey.init, Buffer.init);
+        auto bill = TagionBill(amount, dummy_time, dummy_pubkey, dummy_nonce);
         return getFee([bill], fees);
     }
 
@@ -757,7 +765,7 @@ struct SecureWallet(Net : SecureNet) {
                 collected_bills.length = 0;
                 const amount_to_collect = amount_to_pay + (-1 * (amount_remainder)) + fees;
                 const can_pay = collect_bills(amount_to_collect, collected_bills);
-                if (collected_bills.length == previous_bill_count) {
+                if (collected_bills.length == previous_bill_count || collected_bills.length == 0) {
                     return result(false);
                 }
                 check(can_pay, format("Is unable to pay the amount %10.6fTGN available %10.6fTGN",
@@ -766,6 +774,15 @@ struct SecureWallet(Net : SecureNet) {
                 const total_collected_amount = collected_bills
                     .map!(bill => bill.value)
                     .totalAmount;
+
+                if (print) {
+                    import std.stdio;
+                    writefln("calculated fee=%s", ContractExecution.billFees(
+                        collected_bills.map!(bill => bill.toDoc),
+                        pay_script.outputs.map!(bill => bill.toDoc),
+                        snavs_byte_fee)
+                    );
+                }
                 fees = ContractExecution.billFees(
                         collected_bills.map!(bill => bill.toDoc),
                         pay_script.outputs.map!(bill => bill.toDoc),
@@ -1424,4 +1441,42 @@ unittest {
     SignedContract signed_contract;
     const can_pay = wallet1.createPayment(to_pay, signed_contract, fees, true);
     check(can_pay.value == true, format("got error: %s", res.msg));
+}
+
+
+//get fee from amount
+unittest {
+    import tagion.script.execute;
+    auto wallet1 = StdSecureWallet("some words", "1234");
+    const bill1 = wallet1.requestBill(1400.TGN);
+    const to_pay = wallet1.requestBill(500.TGN);
+    wallet1.account.add_bill(bill1);
+
+    TagionCurrency fee_amount;
+    TagionCurrency fee_bill_amount;
+
+    const res = wallet1.getFee(500.TGN, fee_amount);
+    const res1 = wallet1.getFee([to_pay], fee_bill_amount);
+    assert(res.value);
+    assert(res1.value);
+    assert(fee_amount == fee_bill_amount, format("not the same bill_fee=%s, amount_fee=%s", fee_bill_amount, fee_amount));
+    // create the payment 
+    SignedContract contract;
+    TagionCurrency actual_fee;
+
+    
+    
+    const payment = wallet1.createPayment([to_pay], contract, actual_fee);
+    assert(payment.value);
+
+    // const pay_script = PayScript(contract.contract.script);
+    const calc_fees = ContractExecution.billFees(
+        [bill1.toDoc], 
+        [to_pay.toDoc],
+        wallet1.snavs_byte_fee,
+    );
+    assert(actual_fee == calc_fees, format("fees not the same actualFee=%s, calculatedFee=%s", actual_fee, calc_fees));
+
+    
+    assert(fee_amount == actual_fee, format("fees not the same getFee=%s, actualFee=%s", fee_amount, actual_fee));
 }
