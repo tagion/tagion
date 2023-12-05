@@ -11,7 +11,7 @@ CC_VERSION:=${shell ${CC} --version | head -1}
 DC_VERSION:=${shell ${DC} --version | head -1}
 
 # This is the git tag
-VERSION_REF:=v1.0.0
+VERSION_REF:=v1.0.1
 VERSION_HASH:=${shell git rev-parse $(VERSION_REF)}
 
 ifneq ($(VERSION_HASH),$(GIT_HASH))
