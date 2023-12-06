@@ -136,6 +136,13 @@ target-callstack:
 ${call DO_BIN,callstack,$(LIB_DFILES) ${call BIN_DEPS,callstack},tagion}
 
 #
+#  callstack
+#
+target-ifiler:  
+${call DO_BIN,ifiler,$(LIB_DFILES) ${call BIN_DEPS,ifiler},tagion}
+
+
+#
 # Tagion onetool
 #
 TAGION_TOOLS+=wave # New wave
@@ -155,6 +162,7 @@ TAGION_TOOLS+=stiefel
 TAGION_TOOLS+=auszahlung
 TAGION_TOOLS+=hirep
 TAGION_TOOLS+=callstack
+TAGION_TOOLS+=ifiler
 
 TAGION_BINS=$(foreach tools,$(TAGION_TOOLS), ${call BIN_DEPS,$(tools)} )
 

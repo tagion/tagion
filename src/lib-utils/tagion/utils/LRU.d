@@ -9,6 +9,7 @@ import std.format;
 import std.traits;
 import tagion.utils.DList;
 import tagion.utils.Result;
+
 @safe:
 // LRU implements a non-thread safe fixed size LRU cache
 class LRU(K, V) {
@@ -99,7 +100,7 @@ class LRU(K, V) {
             V opIndex(scope const(K) key) {
                 static if (does_not_have_immutable_members) {
                     V value;
-                    const found=get(key, value);
+                    const found = get(key, value);
                     static if (hasMember!(V, "undefined")) {
                         if (!found) {
                             return V.undefined;
@@ -118,7 +119,7 @@ class LRU(K, V) {
                 }
             }
 
-            void opIndexAssign(ref V value,  const(K) key) {
+            void opIndexAssign(ref V value, const(K) key) {
                 add(key, value);
             }
 
@@ -224,254 +225,275 @@ class LRU(K, V) {
             invariant {
                 assert(items.length == evictList.length);
             }
-}
-unittest {
-    alias LRU!(int, int) TestLRU;
-    uint evictCounter;
-
-    void onEvicted(scope const(int) i, TestLRU.Element* e) @safe {
-        assert(e.entry.key == e.entry.value);
-        evictCounter++;
-    }
-
-    enum amount = 8;
-    auto l = new TestLRU(&onEvicted, amount);
-    foreach (i; 0 .. amount) {
-        l.add(i, i);
-    }
-}
-
-unittest {
-    alias LRU!(int, int) TestLRU;
-    uint evictCounter;
-
-    void onEvicted(scope const(int) i, TestLRU.Element* e) @safe {
-        assert(e.entry.key == e.entry.value);
-        evictCounter++;
-    }
-
-    enum amount = 8;
-    auto l = new TestLRU(&onEvicted, amount);
-    foreach (i; 0 .. amount * 2) {
-        l.add(i, i);
-        if (i < amount) {
-            assert(i + 1 == l.length);
         }
-        else {
-            assert(amount == l.length);
+
+    unittest {
+        alias LRU!(int, int) TestLRU;
+        uint evictCounter;
+
+        void onEvicted(scope const(int) i, TestLRU.Element* e) @safe {
+            assert(e.entry.key == e.entry.value);
+            evictCounter++;
+        }
+
+        enum amount = 8;
+        auto l = new TestLRU(&onEvicted, amount);
+        foreach (i; 0 .. amount) {
+            l.add(i, i);
         }
     }
-    assert(l.length == amount);
-    assert(evictCounter == amount);
-    int v;
-    bool ok;
-    import std.range : enumerate;
 
-    foreach (i, k; l.keys.enumerate) {
-        ok = l.get(k, v);
+    unittest {
+        alias LRU!(int, int) TestLRU;
+        uint evictCounter;
+
+        void onEvicted(scope const(int) i, TestLRU.Element* e) @safe {
+            assert(e.entry.key == e.entry.value);
+            evictCounter++;
+        }
+
+        enum amount = 8;
+        auto l = new TestLRU(&onEvicted, amount);
+        foreach (i; 0 .. amount * 2) {
+            l.add(i, i);
+            if (i < amount) {
+                assert(i + 1 == l.length);
+            }
+            else {
+                assert(amount == l.length);
+            }
+        }
+        assert(l.length == amount);
+        assert(evictCounter == amount);
+        int v;
+        bool ok;
+        import std.range : enumerate;
+
+        foreach (i, k; l.keys.enumerate) {
+            ok = l.get(k, v);
+            assert(ok);
+            assert(k == v);
+            assert(v == i + amount);
+        }
+        foreach (j; 0 .. amount) {
+            ok = l.get(j, v);
+            assert(!ok, "should be evicted");
+        }
+
+        foreach (j; amount .. amount * 2) {
+            ok = l.get(j, v);
+            assert(ok, "should not be evicted");
+        }
+        enum amount2 = (amount + amount / 2);
+        foreach (j; amount .. amount2) {
+            ok = l.remove(j);
+            assert(ok, "should contain j");
+            ok = l.remove(j);
+            assert(!ok, "should not be contained");
+            ok = l.get(j, v);
+            assert(!ok, "should be deleted");
+        }
+
+        l.get(amount2, v); // expect amount2 to be last key in l.Keys()
+
+        foreach (i, k; l.keys.enumerate) {
+            enum amount_i = amount / 2 - 1;
+            bool not_good = ((i < amount_i) && (k != i + amount2 + 1)) || ((i == amount_i) && (
+                    k != amount2));
+            assert(!not_good, "out of order key: " ~ to!string(k));
+        }
+
+        l.purge();
+        assert(l.length == 0);
+
+        ok = l.get(200, v);
+        assert(!ok, "should contain nothing");
+    }
+
+    unittest { // getOldest removeOldest
+        alias LRU!(int, int) TestLRU;
+        uint evictCounter;
+        void onEvicted(scope const(int) i, TestLRU.Element* e) @safe {
+            assert(e.entry.key == e.entry.value);
+            evictCounter++;
+        }
+
+        enum amount = 8;
+        auto l = new TestLRU(&onEvicted, amount);
+        bool ok;
+        foreach (i; 0 .. amount * 2) {
+            l.add(i, i);
+        }
+        auto e = l.getOldest();
+        assert(e !is null, "missing");
+        assert(e.value == amount, "bad value " ~ to!string(e.key));
+        e = l.removeOldest.value;
+        assert(e !is null, "missing");
+        assert(e.value == amount, "bad value " ~ to!string(e.key));
+        e = l.removeOldest.value;
+        assert(e !is null, "missing");
+        assert(e.value == amount + 1, "bad value " ~ to!string(e.value));
+    }
+
+    // Test that Add returns true/false if an eviction occurred
+    unittest { // add
+        alias LRU!(int, int) TestLRU;
+        uint evictCounter;
+        void onEvicted(scope const(int) i, TestLRU.Element* e) @safe {
+            assert(e.entry.key == e.entry.value);
+            evictCounter++;
+        }
+
+        bool ok;
+        auto l = new TestLRU(&onEvicted, 1);
+        // evictCounter := 0
+        // onEvicted := func(k interface{}, v interface{}) {
+        // 	evictCounter += 1
+        // }
+
+        // l := NewLRU(1, onEvicted)
+        int x = 1;
+        ok = l.add(1, x);
+        assert(!ok);
+        assert(evictCounter == 0, "should not have an eviction");
+        x++;
+        ok = l.add(2, x);
         assert(ok);
-        assert(k == v);
-        assert(v == i + amount);
-    }
-    foreach (j; 0 .. amount) {
-        ok = l.get(j, v);
-        assert(!ok, "should be evicted");
+        assert(evictCounter == 1, "should have an eviction");
     }
 
-    foreach (j; amount .. amount * 2) {
-        ok = l.get(j, v);
-        assert(ok, "should not be evicted");
-    }
-    enum amount2 = (amount + amount / 2);
-    foreach (j; amount .. amount2) {
-        ok = l.remove(j);
-        assert(ok, "should contain j");
-        ok = l.remove(j);
-        assert(!ok, "should not be contained");
-        ok = l.get(j, v);
-        assert(!ok, "should be deleted");
-    }
+    // Test that Contains doesn't update recent-ness
+    //func TestLRU_Contains(t *testing.T) {
+    unittest {
+        alias LRU!(int, int) TestLRU;
+        void onEvicted(scope const(int) i, TestLRU.Element* e) @safe {
+            assert(e.entry.key == e.entry.value);
+        }
 
-    l.get(amount2, v); // expect amount2 to be last key in l.Keys()
+        auto l = new TestLRU(&onEvicted, 2);
+        // l := NewLRU(2, nil)
 
-    foreach (i, k; l.keys.enumerate) {
-        enum amount_i = amount / 2 - 1;
-        bool not_good = ((i < amount_i) && (k != i + amount2 + 1)) || ((i == amount_i) && (
-                k != amount2));
-        assert(!not_good, "out of order key: " ~ to!string(k));
-    }
+        int x = 1;
 
-    l.purge();
-    assert(l.length == 0);
+        l.add(1, x);
+        x++;
+        l.add(2, x);
+        x++;
+        assert(l.contains(1), "1 should be contained");
+        l.add(3, x);
+        assert(!l.contains(1), "Contains should not have updated recent-ness of 1");
 
-    ok = l.get(200, v);
-    assert(!ok, "should contain nothing");
-}
-
-unittest { // getOldest removeOldest
-    alias LRU!(int, int) TestLRU;
-    uint evictCounter;
-    void onEvicted(scope const(int) i, TestLRU.Element* e) @safe {
-        assert(e.entry.key == e.entry.value);
-        evictCounter++;
     }
 
-    enum amount = 8;
-    auto l = new TestLRU(&onEvicted, amount);
-    bool ok;
-    foreach (i; 0 .. amount * 2) {
-        l.add(i, i);
-    }
-    auto e = l.getOldest();
-    assert(e !is null, "missing");
-    assert(e.value == amount, "bad value " ~ to!string(e.key));
-    e = l.removeOldest.value;
-    assert(e !is null, "missing");
-    assert(e.value == amount, "bad value " ~ to!string(e.key));
-    e = l.removeOldest.value;
-    assert(e !is null, "missing");
-    assert(e.value == amount + 1, "bad value " ~ to!string(e.value));
-}
+    // Test that Peek doesn't update recent-ness
+    //func TestLRU_Peek(t *testing.T) {
+    unittest {
+        alias LRU!(int, int) TestLRU;
+        void onEvicted(scope const(int) i, TestLRU.Element* e) @safe {
+            assert(e.entry.key == e.entry.value);
+        }
 
-// Test that Add returns true/false if an eviction occurred
-unittest { // add
-    alias LRU!(int, int) TestLRU;
-    uint evictCounter;
-    void onEvicted(scope const(int) i, TestLRU.Element* e) @safe {
-        assert(e.entry.key == e.entry.value);
-        evictCounter++;
-    }
+        auto l = new TestLRU(&onEvicted, 2);
+        //	l := NewLRU(2, nil)
+        int x = 1;
 
-    bool ok;
-    auto l = new TestLRU(&onEvicted, 1);
-    // evictCounter := 0
-    // onEvicted := func(k interface{}, v interface{}) {
-    // 	evictCounter += 1
-    // }
-
-    // l := NewLRU(1, onEvicted)
-    int x = 1;
-    ok = l.add(1, x);
-    assert(!ok);
-    assert(evictCounter == 0, "should not have an eviction");
-    x++;
-    ok = l.add(2, x);
-    assert(ok);
-    assert(evictCounter == 1, "should have an eviction");
-}
-
-// Test that Contains doesn't update recent-ness
-//func TestLRU_Contains(t *testing.T) {
-unittest {
-    alias LRU!(int, int) TestLRU;
-    void onEvicted(scope const(int) i, TestLRU.Element* e) @safe {
-        assert(e.entry.key == e.entry.value);
+        l.add(1, x);
+        x++;
+        l.add(2, x);
+        x++;
+        int v;
+        bool ok;
+        ok = l.peek(1, v);
+        assert(ok);
+        assert(v == 1, "1 should be set to 1 not " ~ to!string(v));
+        l.add(3, x);
+        assert(!l.contains(1), "should not have updated recent-ness of 1");
     }
 
-    auto l = new TestLRU(&onEvicted, 2);
-    // l := NewLRU(2, nil)
+    unittest { // Test undefined
+        @safe struct E {
+            string x;
+            static E undefined() {
+                return E("Not found");
+            }
+        }
 
-    int x = 1;
+        alias TestLRU = LRU!(int, E);
+        uint count;
 
-    l.add(1, x);
-    x++;
-    l.add(2, x);
-    x++;
-    assert(l.contains(1), "1 should be contained");
-    l.add(3, x);
-    assert(!l.contains(1), "Contains should not have updated recent-ness of 1");
+        void onEvicted(scope const(int) i, TestLRU.Element* e) @safe {
+            count++;
+        }
 
-}
+        auto l = new TestLRU(&onEvicted);
 
-// Test that Peek doesn't update recent-ness
-//func TestLRU_Peek(t *testing.T) {
-unittest {
-    alias LRU!(int, int) TestLRU;
-    void onEvicted(scope const(int) i, TestLRU.Element* e) @safe {
-        assert(e.entry.key == e.entry.value);
+        enum N = 4;
+        foreach (int i; 0 .. N) {
+            auto e = E(i.to!string);
+            l[i] = e;
+        }
+
+        assert(l[N] == E.undefined);
+        assert(l[N - 1] != E.undefined);
+        assert(l.length == N);
+        assert(l.remove(2));
+        assert(count == 1);
+        assert(l.length == N - 1);
+        assert(l[2] == E.undefined);
     }
 
-    auto l = new TestLRU(&onEvicted, 2);
-    //	l := NewLRU(2, nil)
-    int x = 1;
+    /// Test with a key which is not an atomic value
+    unittest {
+        import std.string : representation;
 
-    l.add(1, x);
-    x++;
-    l.add(2, x);
-    x++;
-    int v;
-    bool ok;
-    ok = l.peek(1, v);
-    assert(ok);
-    assert(v == 1, "1 should be set to 1 not " ~ to!string(v));
-    l.add(3, x);
-    assert(!l.contains(1), "should not have updated recent-ness of 1");
-}
+        alias Key = immutable(ubyte[]);
+        static struct E {
+            string x;
+            static E undefined() {
+                return E("Not found");
+            }
 
-unittest { // Test undefined
-    @safe  struct E {
-        string x;
-        static E undefined() {
-            return E("Not found");
+        }
+
+        alias TestLRU = LRU!(Key, E);
+        uint count;
+
+        void onEvicted(scope const(Key) key, TestLRU.Element* e) @safe {
+            count++;
+        }
+
+        auto l = new TestLRU(&onEvicted);
+
+        Key make_key(size_t num) {
+            return format("data %d", num).representation;
+        }
+
+        enum N = 4;
+        foreach (i; 0 .. N) {
+            auto key = make_key(i);
+            auto e = E(i.to!string);
+            l[key] = e;
+        }
+
+        assert(l[make_key(N)] == E.undefined);
+        assert(l[make_key(N - 1)] != E.undefined);
+        assert(l.length == N);
+        assert(l.remove(make_key(2)));
+        assert(count == 1);
+        assert(l.length == N - 1);
+        assert(l[make_key(2)] == E.undefined);
+        alias TestSyncLRU = SyncLRU!(Key, E);
+    }
+
+    synchronized
+    class SyncLRU(K, V) {
+        alias LRU_t = LRU!(K, V);
+        protected LRU!(K, V) _lru;
+
+        void opIndexAssign(ref V value, const(K) key) @trusted {
+            pragma(msg, "LRU ", typeof(_lru));
+            pragma(msg, "LRU_t ", LRU_t);
+            auto tmp_lru = cast(LRU_t) _lru;
+            tmp_lru.add(key, value);
         }
     }
-
-    alias TestLRU = LRU!(int, E);
-    uint count;
-
-    void onEvicted(scope const(int) i, TestLRU.Element* e) @safe {
-        count++;
-    }
-
-    auto l = new TestLRU(&onEvicted);
-
-    enum N = 4;
-    foreach (int i; 0 .. N) {
-        auto e = E(i.to!string);
-        l[i] = e;
-    }
-
-    assert(l[N] == E.undefined);
-    assert(l[N - 1] != E.undefined);
-    assert(l.length == N);
-    assert(l.remove(2));
-    assert(count == 1);
-    assert(l.length == N - 1);
-    assert(l[2] == E.undefined);
-}
-
-/// Test with a key which is not an atomic value
-unittest {
-    import std.string : representation;
-    alias Key=immutable(ubyte[]);
-    static struct E {
-        string x;
-        static E undefined() {
-            return E("Not found");
-        }
-        
-    }
-    alias TestLRU=LRU!(Key, E);
-    uint count;
-
-    void onEvicted(scope const(Key) key, TestLRU.Element* e) @safe {
-        count++;
-    }
-    auto l = new TestLRU(&onEvicted);
-
-    Key make_key(size_t num) { return format("data %d", num).representation; } 
-    enum N=4;
-    foreach(i; 0..N) {
-        auto key=make_key(i);
-        auto e = E(i.to!string);
-        l[key]=e;
-    }
-
-    assert(l[make_key(N)] == E.undefined);
-    assert(l[make_key(N - 1)] != E.undefined);
-    assert(l.length == N);
-    assert(l.remove(make_key(2)));
-    assert(count == 1);
-    assert(l.length == N - 1);
-    assert(l[make_key(2)] == E.undefined);
-}
