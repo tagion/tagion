@@ -463,14 +463,8 @@ unittest {
     enum N=4;
     foreach(i; 0..N) {
         auto key=make_key(i);
-       pragma(msg, "Key ", typeof(key));
-        //l[key]=E(i.to!string);
-       // l[key]=E(i.to!string);
-        auto e=E.init;
-        l.add(key, e);
+        auto e = E(i.to!string);
         l[key]=e;
-    const x=l[key];
-       // l.add(key, E.init);
     }
 
     assert(l[make_key(N)] == E.undefined);
