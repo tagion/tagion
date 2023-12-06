@@ -1,3 +1,27 @@
+# Changelog for week 49/50
+
+**getFee(amount, fee) patch**
+There was a bug in the getFee function from amount because the bill used for getting the size was using null values for the pubkey, nonce etc. This has been fixed by setting the sizes statically ensuring the fee is calculated to be the same as the `createPayment` function.
+
+
+# Changelog for week 48/49
+
+**Graceful shutdown**
+We have implemented a mechanism for nodes to execute a graceful shutdown, ensuring that their states are saved before the shutdown process. This feature is particularly valuable during software upgrades.
+**ReceiveBuffer bug**
+We had a bug in our implementation of our non-blocking socket against the shell. This has been fixed. This issue was found by sending very large transactions with over 100 outputs through.
+
+**Fee change**
+The fee is now not dependent on the number of bills but rather the amount of bytes they fill. The simple calculation for a transaction is therefore the following.
+(output_bytes - input_bytes)*FEE_PER_BYTE + BASE_FEE. The quick one will spot that it is possible to produce a transaction with multiple inputs to one output resulting in a negative fee. This is on purpose in order to incentivize clients to decrease the amount of information that there is located in the database. A simple way to think about it is that it is like a deposit to the network, and the money will be returned to you if you decide to decrease your number of bytes in the database.
+
+**The classic bug: while(true)**
+Our DARTInterface that sends forwards requests from the shell had a while(true) loop without a sleep. This caused the system to utilize 5cpu cores to the max. This has been fixed meaning that a node uses around 500% less cpu.
+
+**General Update from Core**
+We are getting extremely close to going live now and we are looking so much forward to you who have been following these changelogs to be able to use and see what we have created and talked so much about.
+
+
 # Changelog for week 47/48
 
 **Transcript bug**

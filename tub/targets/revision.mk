@@ -2,12 +2,12 @@
 
 $(REVISION_FILE): $(DBUILD)/.way
 	$(PRECMD)
-	${call log.header, revision :: $(GIT_DATE)}
-	echo '$(GIT_INFO)' > $@
+	# ${call log.header, revision :: $(shell date +'%F %H:%M')}
+	echo '$(VERSION_STRING)' > $@
+	echo '$(GIT_INFO)' >> $@
 	echo '$(GIT_BRANCH)' >> $@
 	echo '$(GIT_HASH)' >> $@
 	echo '$(GIT_REVNO)' >> $@
-	echo '$(GIT_DATE)' >> $@
 	echo '$(GIT_USER)' >> $@
 	echo '$(GIT_EMAIL)' >> $@
 	echo '$(CC_VERSION)' >> $@

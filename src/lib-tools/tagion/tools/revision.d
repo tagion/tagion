@@ -17,6 +17,7 @@ enum revision_info = import("revision.mixin").splitLines;
 // import std.array : join;
 enum revision_text = zip(
             [
+        "version: %s",
         "git: %s",
         "branch: %s",
         "hash: %s",
