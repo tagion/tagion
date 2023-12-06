@@ -44,11 +44,10 @@ export XDG_RUNTIME_DIR=/run/user/1001
 cp run_network.sh ~/.local/share/tagion/wave/
 cp failed.sh ~/.local/share/tagion/wave/
 cp tagion ~/.local/bin/
+~/.local/bin/tagion -s
 cp tagionshell.service neuewelle.service ~/.config/systemd/user
 echo "Deploying revision" 
 ~/.local/bin/tagion --version
 
 systemctl --user daemon-reload
-# systemctl restart --user neuewelle.service
-# systemctl restart --user tagionshell.service
 
