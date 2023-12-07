@@ -79,17 +79,18 @@ int _main(string[] args) {
     auto config_files = args
         .filter!(file => file.hasExtension(FileExtension.json));
     auto config_file = default_wallet_config_filename;
-    if (!config_files.empty) {
-        config_file = config_files.eatOne;
-    }
-    if (config_file.exists) {
-        options.load(config_file);
-    }
-    else {
-        options.setDefault;
-    }
-
     try {
+        if (!config_files.empty) {
+            config_file = config_files.eatOne;
+        }
+        check(config_file.exists, format("Wallet config %s not found", config_file));
+        if (config_file.exists) {
+            options.load(config_file);
+        }
+        else {
+            options.setDefault;
+        }
+
         main_args = getopt(args, std.getopt.config.caseSensitive,
                 std.getopt.config.bundling,
                 "version", "display the version", &version_switch,
@@ -105,33 +106,27 @@ int _main(string[] args) {
                 "force", "Force input bill", &force,
 
         );
-    }
-    catch (GetOptException e) {
-        error(e.msg);
-        return 1;
-    }
-    if (version_switch) {
-        revision_text.writeln;
-        return 0;
-    }
-    if (main_args.helpWanted) {
-        //            writeln(logo);
-        defaultGetoptPrinter(
-                [
-                // format("%s version %s", program, REVNO),
-                "Documentation: https://tagion.org/",
-                "",
-                "Usage:",
-                format("%s [<option>...] <wallet.json> [<bill.hibon> ...] ", program),
-                "",
+        if (version_switch) {
+            revision_text.writeln;
+            return 0;
+        }
+        if (main_args.helpWanted) {
+            //            writeln(logo);
+            defaultGetoptPrinter(
+                    [
+                    // format("%s version %s", program, REVNO),
+                    "Documentation: https://tagion.org/",
+                    "",
+                    "Usage:",
+                    format("%s [<option>...] <wallet.json> [<bill.hibon> ...] ", program),
+                    "",
 
-                "<option>:",
+                    "<option>:",
 
-                ].join("\n"),
-                main_args.options);
-        return 0;
-    }
-    try {
+                    ].join("\n"),
+                    main_args.options);
+            return 0;
+        }
         const(HashNet) hash_net = new StdHashNet;
         WalletOptions[] all_options;
         auto common_wallet_interface = WalletInterface(options);
@@ -379,6 +374,11 @@ int _main(string[] args) {
                 }
             }
         }
+    }
+
+    catch (GetOptException e) {
+        error(e.msg);
+        return 1;
     }
     catch (Exception e) {
         error("%s", e.msg);

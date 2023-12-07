@@ -83,7 +83,7 @@ void icopy(string src, string dest, const size_t block_size) {
         fout.close;
         fin.close;
     }
-    enum one_MiB = 1<<20;
+    enum one_MiB = 1 << 20;
 
     size_t block_count;
     ubyte[] fin_buf;
@@ -112,38 +112,27 @@ void icopy(string src, string dest, const size_t block_size) {
     }
     while (!fin.eof) {
         verbose("Update block %d %f.6MiB", block_count, double(fin.tell) / one_MiB);
-        const fin_tell=fin.tell;
-        const fout_tell=fout.tell;
+        const fin_tell = fin.tell;
+        const fout_tell = fout.tell;
         const fin_current = fin.rawRead(fin_buf);
-        writefln("%(%02x %) %d -> %d", fin_current, fin_tell, fout_tell);
-        
         fout.rawWrite(fin_current);
         block_count++;
     }
     fout.flush;
     auto inotify = Inotify(src, IN_CLOSE_WRITE | IN_MODIFY);
-    bool reopened;
-    const fin_start_tell=fin.tell;
     for (;;) {
         const event = inotify.wait;
-        const fin_tell=fin.tell;
-        //if (!reopened) {
-          //  const 
-            fin.reopen(null, "r");
-            fin.seek(fin_tell);
-            verbose("Reopen %s %d", src, fin.tell);
-         //   reopened=true;
-       // }
-while(!fin.eof) {
-        verbose("Copy block %d %f.6MiB", block_count, double(fin.tell) / one_MiB);
-        writefln("fin.eof %s", fin.eof);
-        const fout_tell=fout.tell;
-        const fin_current = fin.rawRead(fin_buf);
-        writefln("%(%02x %)", fin_current);
-        fout.rawWrite(fin_current);
-        fout.flush;
-        writefln("fin_tell=%d fout_tell=%d", fin_tell, fout_tell);
-        block_count++;
+        const fin_tell = fin.tell;
+        fin.reopen(null, "r");
+        fin.seek(fin_tell);
+        verbose("Reopen %s %d", src, fin.tell);
+        while (!fin.eof) {
+            verbose("Copy block %d %f.6MiB", block_count, double(fin.tell) / one_MiB);
+            const fout_tell = fout.tell;
+            const fin_current = fin.rawRead(fin_buf);
+            fout.rawWrite(fin_current);
+            fout.flush;
+            block_count++;
         }
         if ((event.mask & IN_MODIFY) == 0) {
             verbose("CLosed");
