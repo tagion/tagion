@@ -4,7 +4,6 @@ NO_UNITDATA=-a -not -path "*/unitdata/*"
 EXCLUDED_DIRS+=-a -not -path "*/lib-betterc/*"
 EXCLUDED_DIRS+=-a -not -path "*/tests/*"
 EXCLUDED_DIRS+=-a -not -path "*/.dub/*"
-EXCLUDED_DIRS+=-a -not -path "*/lib-p2pgowrapper/*"
 
 LIB_DFILES:=${shell find $(DSRC) -name "*.d" -a -path "*/lib-*" $(EXCLUDED_DIRS) $(NO_UNITDATA) }
 
@@ -163,6 +162,7 @@ TAGION_TOOLS+=auszahlung
 TAGION_TOOLS+=hirep
 TAGION_TOOLS+=callstack
 TAGION_TOOLS+=ifiler
+TAGION_TOOLS+=devutils
 
 TAGION_BINS=$(foreach tools,$(TAGION_TOOLS), ${call BIN_DEPS,$(tools)} )
 
