@@ -34,6 +34,7 @@ int _main(string[] args) {
     bool standard_output;
     bool standard_input;
     bool account;
+    string genesis;
     bool trt;
     string[] nodekeys;
     string output_filename = "dart".setExtension(FileExtension.hibon);
@@ -48,14 +49,12 @@ int _main(string[] args) {
                 "p|nodekey", "Node channel key(Pubkey) ", &nodekeys,
                 "t|trt", "Generate a recorder from a list of bill files for the trt", &trt,
                 "a|account", "Accumulates all bills in the input", &account, //         "bills|b", "Generate bills", &number_of_bills,
+                "g|genesis", "Genesis document", &genesis,
 
                 // "value|V", format("Bill value : default: %d", value), &value,
                 // "passphrase|P", format("Passphrase of the keypair : default: %s", passphrase), &passphrase
                 //"initbills|b", "Testing mode", &initbills,
                 //"nnc", "Initialize NetworkNameCard with given name", &nnc_name,
-
-                
-
         );
 
         if (version_switch) {
@@ -112,7 +111,12 @@ int _main(string[] args) {
             genesis_globals.burnt_bills = 0;
             verbose("Total %s.%09sTGN", total / TagionCurrency.BASE_UNIT, total % TagionCurrency.BASE_UNIT);
 
-            auto genesis_list = createGenesis(nodekeys, Document.init, genesis_globals);
+            Document testamony;
+            if (genesis) {
+                check(genesis.exists, format("File %s not found!", genesis));
+                testamony = genesis.fread;
+            }
+            auto genesis_list = createGenesis(nodekeys, testamony, genesis_globals);
             recorder.insert(genesis_list, Archive.Type.ADD);
             TagionHead tagion_head;
             tagion_head.name = TagionDomain;

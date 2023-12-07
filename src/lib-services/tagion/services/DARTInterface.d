@@ -120,6 +120,11 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
     const empty_hirpc = HiRPC(null);
 
     immutable receiver = empty_hirpc.receive(doc);
+    if (!receiver.isMethod) {
+        send_error(InterfaceError.InvalidDoc);
+        return;
+    }
+  
     if (receiver.method.name == "search" && cnt.trt_enable) {
         writeln("TRT SEARCH REQUEST");
         auto trt_tid = locate(cnt.trt_task_name);

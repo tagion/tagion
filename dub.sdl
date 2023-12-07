@@ -5,8 +5,9 @@ targetPath "build/dub/"
 authors "decard"
 copyright "Copyright © 2023, decard"
 license "proprietary"
-buildRequirements "allowWarnings"
+buildRequirements "allowWarnings" "silenceWarnings"
 sourceFiles "@tub/dub/dheaders.txt"
+preGenerateCommands `echo -e "\e[31mbuilding with dub is not supported this recipe exclusively exists to aid the language server\e[0m"`
 
 libs "secp256k1" "nng"
 dflags "-dip1000" "-preview=inclusiveincontracts"
@@ -30,6 +31,8 @@ importPaths "src/lib-gossip/"
 importPaths "src/lib-network/"
 importPaths "src/lib-services/"
 importPaths "src/lib-wasm/"
+importPaths "src/lib-trt/"
+importPaths "src/lib-nngd/"
 
 importPaths "src/bin-blockutil"
 importPaths "src/bin-callstack"
@@ -46,6 +49,8 @@ importPaths "src/bin-tools"
 importPaths "src/bin-tprofview"
 importPaths "src/bin-wasmutil"
 importPaths "src/bin-wave"
+importPaths "src/bin-auszahlung"
+importPaths "src/bin-devutils"
 
 configuration "tagion" {
     sourcePaths "src/"
