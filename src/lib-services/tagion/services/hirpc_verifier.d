@@ -35,7 +35,7 @@ enum RejectReason {
     notAHiRPC, // The Document received was not a vald HiRPC
     invalidMethod, // The method was not one of the accepted methods
     notSigned, // The rpc was not signed when it should have been
-    invalidType, // the rpc was not a SignedContract record 
+    invalidType, // the rpc was not a method or fit the criteria for any of the available contracts
 }
 
 /**
@@ -69,6 +69,7 @@ struct HiRPCVerifierService {
             const receiver = hirpc.receive(doc);
             if (!receiver.isMethod) {
                 reject(RejectReason.invalidType, doc);
+                return;
             }
 
             import tagion.dart.DART;
