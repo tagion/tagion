@@ -67,6 +67,9 @@ struct HiRPCVerifierService {
             }
 
             const receiver = hirpc.receive(doc);
+            if (!receiver.isMethod) {
+                reject(RejectReason.invalidType, doc);
+            }
 
             import tagion.dart.DART;
 
