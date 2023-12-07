@@ -48,7 +48,9 @@ struct Inotify {
 
     void close() nothrow @nogc {
         inotify_rm_watch(fd, wd);
+
         
+
         .close(fd);
     }
 
@@ -61,6 +63,8 @@ struct Inotify {
         }
     }
 }
+
+import tagion.dart.BlockFile : truncate;
 
 void icopy(string src, string dest, const size_t block_size) {
     import std.file;
@@ -75,22 +79,25 @@ void icopy(string src, string dest, const size_t block_size) {
     }
     File fin, fout;
     scope (exit) {
-        fin.close;
+        fout.flush;
         fout.close;
+        fin.close;
     }
-    enum one_KiB = 0x400;
-        size_t block_count;
-        ubyte[] fin_buf;
-        ubyte[] fout_buf;
-        fin_buf.length = fout_buf.length = block_size;
-        fin = File(src, "r");
+    enum one_MiB = 1<<20;
+
+    size_t block_count;
+    ubyte[] fin_buf;
+    ubyte[] fout_buf;
+    fin_buf.length = fout_buf.length = block_size;
+    fin = File(src, "r");
     if (dest.exists) {
 
         fout = File(dest, "r+");
         while (!fin.eof) {
-            verbose("Verify block %d %dKiB", block_count, fin.tell / one_KiB);
+            verbose("Verify block %d %f.6MiB", block_count, double(fin.tell) / one_MiB);
             const fin_tell = fin.tell;
             const fin_current = fin.rawRead(fin_buf);
+            const fout_tell = fout.tell;
             const fout_current = fout.rawRead(fout_buf);
             if (fin_current != fout_current) {
                 fin.seek(fin_tell);
@@ -103,21 +110,41 @@ void icopy(string src, string dest, const size_t block_size) {
     else {
         fout = File(dest, "w");
     }
-        while (!fin.eof) {
-            verbose("Update block %d %dKiB", block_count, fin.tell / one_KiB);
-            const fin_current = fin.rawRead(fin_buf);
-            fout.rawWrite(fin_current);
-            block_count++;
-        }
-        fout.flush;
-    auto inotify = Inotify(src, IN_CLOSE_WRITE | IN_CLOSE_NOWRITE | IN_MODIFY);
+    while (!fin.eof) {
+        verbose("Update block %d %f.6MiB", block_count, double(fin.tell) / one_MiB);
+        const fin_tell=fin.tell;
+        const fout_tell=fout.tell;
+        const fin_current = fin.rawRead(fin_buf);
+        writefln("%(%02x %) %d -> %d", fin_current, fin_tell, fout_tell);
+        
+        fout.rawWrite(fin_current);
+        block_count++;
+    }
+    fout.flush;
+    auto inotify = Inotify(src, IN_CLOSE_WRITE | IN_MODIFY);
+    bool reopened;
+    const fin_start_tell=fin.tell;
     for (;;) {
         const event = inotify.wait;
-        verbose("Copy block %d %dKiB", block_count, fin.tell / one_KiB);
+        const fin_tell=fin.tell;
+        //if (!reopened) {
+          //  const 
+            fin.reopen(null, "r");
+            fin.seek(fin_tell);
+            verbose("Reopen %s %d", src, fin.tell);
+         //   reopened=true;
+       // }
+while(!fin.eof) {
+        verbose("Copy block %d %f.6MiB", block_count, double(fin.tell) / one_MiB);
+        writefln("fin.eof %s", fin.eof);
+        const fout_tell=fout.tell;
         const fin_current = fin.rawRead(fin_buf);
+        writefln("%(%02x %)", fin_current);
         fout.rawWrite(fin_current);
         fout.flush;
+        writefln("fin_tell=%d fout_tell=%d", fin_tell, fout_tell);
         block_count++;
+        }
         if ((event.mask & IN_MODIFY) == 0) {
             verbose("CLosed");
             break;
@@ -166,7 +193,6 @@ int _main(string[] args) {
     }
     catch (Exception e) {
         error(e);
-
         return 1;
     }
     return 0;
