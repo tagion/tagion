@@ -1113,10 +1113,12 @@ struct NNGPoolWorker {
     nng_mtx *mtx;
     nng_ctx ctx;
     void *context;
+    File *logfile;
     nng_pool_callback cb;
-    this(int iid, void *icontext){
+    this(int iid, void *icontext, File *ilog){
         this.id = iid;
         this.context = icontext;
+        this.logfile = ilog;
         this.state = nng_worker_state.NONE;
         this.msg = NNGMessage(0);
         this.aio = NNGAio(null, null);
@@ -1168,10 +1170,20 @@ extern (C) void nng_pool_stateful ( void* p ){
             w.aio.sleep(w.delay);
             break;
         case nng_worker_state.WAIT:
-            w.cb(&w.msg, w.context);
-            w.aio.set_msg(w.msg);
-            w.state = nng_worker_state.SEND;
-            nng_ctx_send(w.ctx, w.aio.aio);
+            try{
+                w.cb(&w.msg, w.context);
+            } catch ( Exception e ) {
+                if(w.logfile !is null){
+                    auto f = *(w.logfile);
+                    f.write(format("Error in pool callback: [%d:%s] %s\n",e.line,e.file,e.msg));
+                    f.flush();
+                }
+                w.msg.clear();
+            }finally{
+                w.aio.set_msg(w.msg);
+                w.state = nng_worker_state.SEND;
+                nng_ctx_send(w.ctx, w.aio.aio);                
+            }    
             break;
         case nng_worker_state.SEND:
             rc = w.aio.result;
@@ -1192,21 +1204,30 @@ extern (C) void nng_pool_stateful ( void* p ){
 struct NNGPool {
     NNGSocket *sock;
     void *context;
+    File  _logfile;
+    File* logfile;
     size_t nworkers;
 
     NNGPoolWorker*[] workers;
 
     @disable this();
 
-    this(NNGSocket *isock, nng_pool_callback cb, size_t n, void* icontext ){
+    this(NNGSocket *isock, nng_pool_callback cb, size_t n, void* icontext, int logfd = -1  ){
         enforce(isock.state == nng_socket_state.NNG_STATE_CREATED || isock.state == nng_socket_state.NNG_STATE_CONNECTED);
         enforce(isock.type == nng_socket_type.NNG_SOCKET_REP); // TODO: extend to surveyou
         enforce(cb != null);
         sock = isock;
         context = icontext;
+        if(logfd == -1){
+            logfile = null;
+        }else{
+            _logfile = File("/dev/null","wt");
+            _logfile.fdopen(logfd, "wt");
+            logfile = &_logfile;
+        }            
         nworkers = n;
         for(auto i=0; i<n; i++){
-            NNGPoolWorker* w = new NNGPoolWorker(i, icontext);
+            NNGPoolWorker* w = new NNGPoolWorker(i, context, logfile);
             w.aio.realloc(cast(nng_aio_cb)(&nng_pool_stateful), cast(void*)w);
             w.cb = cb;
             auto rc = nng_ctx_open(&w.ctx, sock.m_socket);
@@ -1537,7 +1558,7 @@ static extern(C) void webrouter (nng_aio* aio) {
     WebData srep =  WebData.init;
     WebApp  *app;
 
-    char *sbuf = cast(char*)nng_alloc(4096);;
+    char *sbuf = cast(char*)nng_alloc(4096);
 
     string errstr = "";
         
