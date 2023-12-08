@@ -11,7 +11,7 @@ env:
   RETENTION_DAYS_BINS: 3
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   UNITTEST_COV: unittest-cov
-  GITBOT_TOKEN: ${{ secrets.GITBOT_TOKEN }}
+  GH_TOKEN: ${{ secrets.GITBOT_TOKEN }}
   ARTIFACT_DIR: /mnt/nfs/artifacts/${{ github.sha }}-${{ github.run_attempt }}
 
 permissions:
@@ -276,8 +276,6 @@ jobs:
     if: ${{ github.ref == 'refs/heads/current' }}
     needs: acceptance_stage
     uses: ./.github/workflows/ddoc.yml
-    env:
-      GH_TOKEN: ${{ secrets.GITBOT_TOKEN }}
  
   docs_build:
     if: ${{ github.ref == 'refs/heads/current' }}
