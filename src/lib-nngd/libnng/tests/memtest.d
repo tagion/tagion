@@ -1,15 +1,17 @@
-import core.stdc.stdlib : exit;
-import core.thread;
-import libnng;
-import std.concurrency;
-import std.conv;
-import std.datetime.systime;
-import std.exception;
-import std.file;
-import std.json;
-import std.path;
 import std.stdio;
+import std.conv;
+import std.file;
+import std.path;
 import std.string;
+import std.json;
+import std.concurrency;
+import std.exception;
+import core.thread;
+import std.datetime.systime;
+import core.stdc.string;
+import core.stdc.stdlib : exit;
+
+import libnng;
 
 shared string _WD;
 
@@ -39,11 +41,49 @@ static JSONValue scandir(string path) {
     return j;
 }
 
-void rest_handler(nng_aio* aio) {
+struct webdata {
+
+    string uri;
+    string type;
+    nng_http_status status;
+    string msg;
+    char[] data;
+
+}
+
+static void webprocess(webdata* req, webdata* rep) {
+
+    rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
+    rep.type = "application/json; charset=UTF-8";
+
+    //scope JSONValue jr = parseJSON("{}");
+
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! leakage on any to-string with internal duplicate 
+    //jr["time"] = Clock.currTime().toSimpleString();
+
+    //to s = jr.toString();
+    //rep.data = s.dup;
+
+    static string s1 = "asdcsdcasdcas";
+    static string s2 = "asvsdfvfdgbdefgbdfb";
+
+    printf("%p\n", s1.ptr);
+
+}
+
+static void time_handler(nng_aio* aio) {
     int rc = 0;
     nng_http_res* res;
     void* reqbody;
     size_t reqbodylen;
+
+    thread_attachThis();
+    rt_moduleTlsCtor();
+
+    scope (exit) {
+        //        thread_detachThis();
+        //        rt_moduleTlsDtor();
+    }
 
     scope (failure) {
         nng_http_res_free(res);
@@ -54,34 +94,41 @@ void rest_handler(nng_aio* aio) {
 
     nng_http_req* req = cast(nng_http_req*) nng_aio_get_input(aio, 0);
     enforce(req != null);
+
     nng_http_req_get_data(req, &reqbody, &reqbodylen);
+
     rc = nng_http_res_alloc(&res);
     enforce(rc == 0);
-    rc = nng_http_res_set_header(res, toStringz("Content-type"), toStringz("application/json; charset=UTF-8"));
-    enforce(rc == 0);
 
-    auto s1 = nng_http_req_get_uri(req);
-    string ruri = to!string(s1);
-    auto s2 = nng_http_req_get_header(req, toStringz("Content-type"));
-    string rtype = to!string(s2);
-    log("REQ: ", rtype, ruri);
-    JSONValue jd = parseJSON(to!string(cast(char*) reqbody[0 .. reqbodylen].idup));
-    JSONValue jr = parseJSON("{}");
-    log("REQDATA: ", jd);
+    webdata wreq, wrep;
 
-    if (jd["todo"].str == "time") {
-        jr["time"] = Clock.currTime().toSimpleString();
+    wreq.data = cast(char[]) reqbody[0 .. reqbodylen].dup;
+
+    {
+        scope auto buf = fromStringz(nng_http_req_get_uri(req));
+        wreq.uri = cast(immutable) buf[0 .. buf.length];
     }
 
-    if (jd["todo"].str == "dir") {
-        jr["dir"] = buildPath(_WD, "htdocs");
-        jr["tree"] = scandir(buildPath(_WD, "htdocs"));
+    {
+        scope auto buf = fromStringz(nng_http_req_get_header(req, "Content-type"));
+        wreq.type = cast(immutable) buf[0 .. buf.length];
     }
 
-    string rstr = jr.toString();
+    webprocess(&wreq, &wrep);
 
-    rc = nng_http_res_copy_data(res, rstr.toStringz(), rstr.length);
+    rc = nng_http_res_set_header(res, "Content-type", "application/json; charset=UTF-8");
     enforce(rc == 0);
+
+    const char* istr = "{\"this\":\"is\"}";
+
+    rc = nng_http_res_copy_data(res, istr, strlen(istr));
+    enforce(rc == 0);
+
+    //rc = nng_http_res_copy_data(res, wrep.data.ptr, wrep.data.length);
+    //    enforce(rc == 0);
+
+    //rc = nng_http_res_copy_data(res, buf, buflen);
+    //    enforce(rc == 0);
 
     nng_http_res_set_status(res, nng_http_status.NNG_HTTP_STATUS_OK);
     nng_aio_set_output(aio, 0, res);
@@ -121,38 +168,15 @@ int main() {
         nng_url_free(url);
     }
 
-    // handle static dir 
-    nng_http_handler* h1;
-    rc = nng_http_handler_alloc_directory(&h1, toStringz(prefix ~ "/"), buildPath(wd, "htdocs/").toStringz());
-    if (rc < 0) {
-        log("H ", nng_errstr(rc));
-        exit(1);
-    };
-    rc = nng_http_server_add_handler(s, h1);
-    if (rc < 0) {
-        log("H ", nng_errstr(rc));
-        exit(1);
-    };
-
     // handle REST API
 
-    nng_http_handler* h2;
-    rc = nng_http_handler_alloc(&h2, toStringz(prefix ~ "/api/v1"), &rest_handler);
+    nng_http_handler* h;
+    rc = nng_http_handler_alloc(&h, toStringz(prefix ~ "/api/v1/time"), &time_handler);
     if (rc < 0) {
         log("H ", nng_errstr(rc));
         exit(1);
     };
-    rc = nng_http_handler_set_tree_exclusive(h2);
-    if (rc < 0) {
-        log("H ", nng_errstr(rc));
-        exit(1);
-    };
-    rc = nng_http_handler_set_method(h2, "POST");
-    if (rc < 0) {
-        log("H ", nng_errstr(rc));
-        exit(1);
-    };
-    rc = nng_http_server_add_handler(s, h2);
+    rc = nng_http_server_add_handler(s, h);
     if (rc < 0) {
         log("H ", nng_errstr(rc));
         exit(1);
@@ -170,3 +194,15 @@ int main() {
 
     return 0;
 }
+
+/*
+
+    if(jd["todo"].str == "time"){
+    }
+
+    if(jd["todo"].str == "dir"){
+        jr["dir"] = buildPath(_WD,"htdocs");
+        jr["tree"] = scandir(buildPath(_WD,"htdocs"));
+    }
+  
+*/
