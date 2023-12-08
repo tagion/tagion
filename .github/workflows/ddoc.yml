@@ -12,7 +12,8 @@ jobs:
         env: 
           GITHUB_TOKEN: ${{ secrets.GITBOT_TOKEN }}
         run: |
-          gh repo clone tagion/ddoc -- --depth=1
+          gh auth setup-git
+          gh repo clone https://github.com/cli/cli
 
 
       - uses: actions/checkout@v4
@@ -34,7 +35,6 @@ jobs:
         run: |
           cp -r ./tagion/build/ddoc/ ddoc/
           cd ddoc
-          gh auth setup-git
           git config user.email "gitbot@decard.io"
           git config user.name "gitbot"
           git add .
