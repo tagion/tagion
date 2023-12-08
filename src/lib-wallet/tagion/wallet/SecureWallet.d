@@ -11,6 +11,7 @@ import std.range;
 import std.string : representation;
 import tagion.utils.Miscellaneous;
 import tagion.utils.Result;
+import std.exception : assumeWontThrow;
 
 //import std.stdio;
 import tagion.basic.Types : Buffer;
@@ -692,10 +693,9 @@ struct SecureWallet(Net : SecureNet) {
     }
 
     Result!bool getFee(const(Invoice[]) orders, out TagionCurrency fees) nothrow {
-        import std.exception;
-        import tagion.utils.StdTime;
 
-        auto bills = orders.map!((order) => TagionBill(order.amount, currentTime, order.pkey, Buffer.init))
+        auto bills = orders.map!((order) => TagionBill(order.amount, assumeWontThrow(currentTime), order.pkey, Buffer
+                .init))
             .array;
         return getFee(bills, fees);
     }
@@ -704,7 +704,7 @@ struct SecureWallet(Net : SecureNet) {
     static immutable dummy_nonce = new ubyte[4];
 
     Result!bool getFee(TagionCurrency amount, out TagionCurrency fees) nothrow {
-        auto bill = TagionBill(amount, currentTime, dummy_pubkey, dummy_nonce);
+        auto bill = TagionBill(amount, assumeWontThrow(currentTime), dummy_pubkey, dummy_nonce);
         return getFee([bill], fees);
     }
 
