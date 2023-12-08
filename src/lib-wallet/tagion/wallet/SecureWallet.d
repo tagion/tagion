@@ -22,6 +22,7 @@ import tagion.hibon.HiBON : HiBON;
 import tagion.hibon.HiBONException : HiBONRecordException;
 import tagion.hibon.HiBONJSON;
 import tagion.hibon.HiBONRecord : HiBONRecord;
+import tagion.utils.StdTime;
 
 // import tagion.script.prior.StandardRecords : SignedContract, globals, Script;
 //import PriorStandardRecords = tagion.script.prior.StandardRecords;
@@ -130,9 +131,9 @@ struct SecureWallet(Net : SecureNet) {
      */
     this(
             scope const(string[]) questions,
-    scope const(char[][]) answers,
-    uint confidence,
-    const(char[]) pincode)
+            scope const(char[][]) answers,
+            uint confidence,
+            const(char[]) pincode)
     in (questions.length is answers.length, "Amount of questions should be same as answers")
     do {
         check(questions.length > 3, "Minimal amount of answers is 4");
@@ -180,13 +181,13 @@ struct SecureWallet(Net : SecureNet) {
 
     this(
             scope const(char[]) passphrase,
-    scope const(char[]) pincode,
-    scope const(char[]) salt = null) {
+            scope const(char[]) pincode,
+            scope const(char[]) salt = null) {
         _net = new Net;
         enum size_of_privkey = 32;
         ubyte[] R;
         scope (exit) {
-            _wallet.S=_net.saltHash(R);
+            _wallet.S = _net.saltHash(R);
             set_pincode(R, pincode);
             R[] = 0;
         }
@@ -194,11 +195,9 @@ struct SecureWallet(Net : SecureNet) {
                 (scope const(ubyte[]) data) { R = data[0 .. size_of_privkey].dup; });
     }
 
-    
-
     protected void set_pincode(
             scope const(ubyte[]) R,
-    scope const(char[]) pincode) scope
+            scope const(char[]) pincode) scope
     in (!_net.isinit)
     do {
         auto seed = new ubyte[_net.hashSize];
@@ -234,8 +233,8 @@ struct SecureWallet(Net : SecureNet) {
      */
     bool recover(
             const(string[]) questions,
-    const(char[][]) answers,
-    const(char[]) pincode)
+            const(char[][]) answers,
+            const(char[]) pincode)
     in (questions.length is answers.length, "Amount of questions should be same as answers")
     do {
         _net = new Net;
@@ -703,11 +702,7 @@ struct SecureWallet(Net : SecureNet) {
 
     static immutable dummy_pubkey = Pubkey(new ubyte[33]);
     static immutable dummy_nonce = new ubyte[4];
-    import tagion.utils.StdTime;
-    static immutable(sdt_t) dummy_time;
-    shared static this() {
-        dummy_time = currentTime;
-    }
+    static immutable dummy_time = sdt_t(long.max);
 
     Result!bool getFee(TagionCurrency amount, out TagionCurrency fees) nothrow {
         auto bill = TagionBill(amount, dummy_time, dummy_pubkey, dummy_nonce);
@@ -777,10 +772,11 @@ struct SecureWallet(Net : SecureNet) {
 
                 if (print) {
                     import std.stdio;
+
                     writefln("calculated fee=%s", ContractExecution.billFees(
-                        collected_bills.map!(bill => bill.toDoc),
-                        pay_script.outputs.map!(bill => bill.toDoc),
-                        snavs_byte_fee)
+                            collected_bills.map!(bill => bill.toDoc),
+                            pay_script.outputs.map!(bill => bill.toDoc),
+                            snavs_byte_fee)
                     );
                 }
                 fees = ContractExecution.billFees(
@@ -1443,10 +1439,10 @@ unittest {
     check(can_pay.value == true, format("got error: %s", res.msg));
 }
 
-
 //get fee from amount
 unittest {
     import tagion.script.execute;
+
     auto wallet1 = StdSecureWallet("some words", "1234");
     const bill1 = wallet1.requestBill(1400.TGN);
     const to_pay = wallet1.requestBill(500.TGN);
@@ -1464,19 +1460,16 @@ unittest {
     SignedContract contract;
     TagionCurrency actual_fee;
 
-    
-    
     const payment = wallet1.createPayment([to_pay], contract, actual_fee);
     assert(payment.value);
 
     // const pay_script = PayScript(contract.contract.script);
     const calc_fees = ContractExecution.billFees(
-        [bill1.toDoc], 
-        [to_pay.toDoc],
-        wallet1.snavs_byte_fee,
+            [bill1.toDoc],
+            [to_pay.toDoc],
+            wallet1.snavs_byte_fee,
     );
     assert(actual_fee == calc_fees, format("fees not the same actualFee=%s, calculatedFee=%s", actual_fee, calc_fees));
 
-    
     assert(fee_amount == actual_fee, format("fees not the same getFee=%s, actualFee=%s", fee_amount, actual_fee));
 }
