@@ -186,6 +186,8 @@ The [Tagion Node Architecture](https://docs.tagion.org)
 ## Maintainers
 
 - [@cbleser](https://github.com/cbleser)
+- [@lucasnethaj](https://github.com/lucasnethaj)
+- [@imrying](https://github.com/imrying)
 
 ## License
 The files in this repository is distributed under the [DECARD Services GmbH free and grant back license](LICENSE.md)  
