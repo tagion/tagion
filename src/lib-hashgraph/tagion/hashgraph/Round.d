@@ -10,7 +10,6 @@ import std.algorithm.searching : all, any, canFind, count, until;
 import std.algorithm.sorting : sort;
 import std.array : array;
 import std.conv;
-import std.exception : assumeWontThrow;
 import std.format;
 import std.range;
 import std.range : enumerate, tee;
@@ -457,28 +456,28 @@ class Round {
                 }
             }
 
-            version(EPOCH_FIX) {
+            version (EPOCH_FIX) {
                 auto consensus_tide = consensus_son_tide
                     .filter!(e => e !is null)
-                    .filter!(e => 
-                        !(e[].retro
-                            .until!(e => !famous_witnesses.all!(w => w.sees(e)))
-                            .empty)
-                    )
-                    .map!(e => 
-                        e[].retro
-                            .until!(e => !famous_witnesses.all!(w => w.sees(e)))
-                            .array.back
-                    );
-            } else {
+                    .filter!(e =>
+                            !(e[].retro
+                                .until!(e => !famous_witnesses.all!(w => w.sees(e)))
+                                .empty)
+                )
+                    .map!(e =>
+                            e[].retro
+                                .until!(e => !famous_witnesses.all!(w => w.sees(e)))
+                                .array.back
+                );
+            }
+            else {
                 auto consensus_tide = consensus_son_tide
                     .filter!(e => e !is null)
-                    .map!(e => 
-                        e[].retro
-                            .until!(e => !famous_witnesses.all!(w => w.sees(e)))
-                            .array.back
-                    );
-
+                    .map!(e =>
+                            e[].retro
+                                .until!(e => !famous_witnesses.all!(w => w.sees(e)))
+                                .array.back
+                );
 
             }
 
