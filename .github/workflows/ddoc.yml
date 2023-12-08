@@ -39,4 +39,4 @@ jobs:
           git config user.name "gitbot"
           git add .
           git commit -m "ddocs updated" || echo "nothing to commit"
-          git push
+          git push https://tagion-bot:${{ secrets.GITBOT_TOKEN }}@github.com/tagion/ddoc.git master
