@@ -1,7 +1,5 @@
 module libnng.libnng;
 
-@safe:
-
 import std.meta : Alias;
 import core.stdc.config;
 import std.traits;
