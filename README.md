@@ -1,6 +1,5 @@
 [![codecov](https://codecov.io/gh/tagion/tagion/branch/current/graph/badge.svg?token=TM12EX8GSB)](https://codecov.io/gh/tagion/tagion)
 [![CI](https://github.com/tagion/tagion/actions/workflows/main.yml/badge.svg?branch=current)](https://github.com/tagion/tagion/actions/workflows/main.yml)
-[![Devnet running](https://img.shields.io/badge/Devnet-blue?logo=circle&logoColor=aqua)](https://pulse.tagion.org/tagion/)
 
 # Tagion
 
