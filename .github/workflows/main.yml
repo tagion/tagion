@@ -276,6 +276,8 @@ jobs:
     if: ${{ github.ref == 'refs/heads/current' }}
     needs: acceptance_stage
     uses: ./.github/workflows/ddoc.yml
+    env:
+      GH_TOKEN: ${{ secrets.GITBOT_TOKEN }}
  
   docs_build:
     if: ${{ github.ref == 'refs/heads/current' }}
