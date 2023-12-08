@@ -10,7 +10,7 @@ jobs:
 
       - name: Checkout ddoc
         env: 
-          GITHUB_TOKEN: ${{ secrets.GITBOT_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITBOT_TOKEN }}
         run: |
           gh repo clone https://github.com/tagion/ddoc
 
@@ -30,7 +30,7 @@ jobs:
 
       - name: update ddoc repo
         env: 
-          GITHUB_TOKEN: ${{ secrets.GITBOT_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITBOT_TOKEN }}
         run: |
           cp -r ./tagion/build/ddoc/ ddoc/
           cd ddoc
