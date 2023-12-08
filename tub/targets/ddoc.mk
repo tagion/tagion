@@ -31,7 +31,7 @@ help: help-ddoc
 ddoc: $(BUILDDOC)/.way
 	$(PRECMD) 
 	echo "making ddoc"
-	$(ADRDOX) --document-undocumented --skeleton $(DTUB)/docs_template/skeleton.html -o $(BUILDDOC) $(DSRC)/lib-*/tagion $(DSRC)/bin-*/tagion $(BDD)/tagion
+	$(ADRDOX) --skeleton $(DTUB)/docs_template/skeleton.html -o $(BUILDDOC) $(DSRC)/lib-*/tagion $(DSRC)/bin-*/tagion $(BDD)/tagion
 
 .PHONY: ddoc
 
