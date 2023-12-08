@@ -187,3 +187,9 @@ The [Tagion Node Architecture](https://docs.tagion.org)
 ## Maintainers
 
 - [@cbleser](https://github.com/cbleser)
+
+## License
+The files in this repository is distributed under the [DECARD Services GmbH free and grant back license](LICENSE.md)  
+unless otherwise specified.  
+The parts which are distributed under other licenses include, but are not limited to the 
+[pbkdf2](src/lib-crypto/tagion/crypto/pbkdf2.d) module and the translated [secp256k1 headers](src/lib-crypto/tagion/crypto/secp256k1/c/README.md)  
