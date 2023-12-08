@@ -12,8 +12,6 @@ jobs:
         env: 
           GITHUB_TOKEN: ${{ secrets.GITBOT_TOKEN }}
         run: |
-          gh auth login
-          gh auth setup-git
           gh repo clone https://github.com/tagion/ddoc
 
 
