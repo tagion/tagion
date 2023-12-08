@@ -13,8 +13,8 @@ jobs:
 
       - name: Checkout ddoc
         run: |
-          gh repo clone https://github.com/tagion/ddoc
-
+          git clone 
+          git push https://tagion-bot:${{ secrets.GITBOT_TOKEN }}@github.com/tagion/ddoc.git master
 
       - uses: actions/checkout@v4
         with: 
