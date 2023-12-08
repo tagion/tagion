@@ -1,5 +1,3 @@
-/// \file dartutil.d
-
 module tagion.tools.dartutil.dartutil;
 
 import std.algorithm;
@@ -68,6 +66,7 @@ int _main(string[] args) {
     bool standard_output;
     string[] dartread_args;
     string angle_range;
+    string exec;
     uint depth;
     bool strip;
     bool dartmodify;
@@ -89,7 +88,7 @@ int _main(string[] args) {
                 std.getopt.config.caseSensitive,
                 std.getopt.config.bundling,
                 "version", "display the version", &version_switch, //   "dartfilename|d", format("Sets the dartfile: default %s", dartfilename), &dartfilename,
-                //                "i|inputfile", "Sets the HiBON input file name", &inputfilename,
+                "verbose|v", "Prints verbose information to console", &__verbose_switch,
                 "I|initialize", "Create a dart file", &initialize,
                 "o|outputfile", "Sets the output file name", &outputfilename,
                 "r|read", "Excutes a DART read sequency", &dartread_args,
@@ -102,10 +101,11 @@ int _main(string[] args) {
                 "dump", "Dumps all the archives with in the given angle", &dump,
                 "eye", "Prints the bullseye", &eye,
                 "sync", "Synchronize src.drt to dest.drt", &sync,
+                "e|exec", "Execute string to be used for remote access", &exec,
                 "P|passphrase", format("Passphrase of the keypair : default: %s", passphrase), &passphrase,
                 "R|range", "Sets angle range from:to (Default is full range)", &angle_range,
                 "depth", "Set limit on dart rim depth", &depth,
-                "verbose|v", "Prints verbose information to console", &__verbose_switch,
+
                 "fake", format(
                     "Use fakenet instead of real hashes : default :%s", fake), &fake,
         );
@@ -139,6 +139,10 @@ int _main(string[] args) {
             return 0;
         }
 
+        if (!exec.empty) {
+            writeln("%s", exec);
+            writefln(exec,"hirpc.hibon", "response.hibon");
+        }
         if (!angle_range.empty) {
             ushort _from, _to;
             const fields =

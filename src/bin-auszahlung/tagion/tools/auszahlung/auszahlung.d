@@ -353,9 +353,8 @@ int _main(string[] args) {
                 }
             }
             good("Total %sTGN", total_amount);
-
+            update=true;
         }
-        verbose("!!!!");
         if (update) {
             verbose("Update");
             check(common_wallet_interface.secure_wallet.isLoggedin, "Wallet should be loggedin");
