@@ -457,9 +457,30 @@ class Round {
                 }
             }
 
-            auto consensus_tide = consensus_son_tide.filter!(e => e !is null)
-                .map!(e => e[].retro.until!(e => !famous_witnesses.all!(w => w.sees(e)))
-                        .array.back);
+            version(EPOCH_FIX) {
+                auto consensus_tide = consensus_son_tide
+                    .filter!(e => e !is null)
+                    .filter!(e => 
+                        !(e[].retro
+                            .until!(e => !famous_witnesses.all!(w => w.sees(e)))
+                            .empty)
+                    )
+                    .map!(e => 
+                        e[].retro
+                            .until!(e => !famous_witnesses.all!(w => w.sees(e)))
+                            .array.back
+                    );
+            } else {
+                auto consensus_tide = consensus_son_tide
+                    .filter!(e => e !is null)
+                    .map!(e => 
+                        e[].retro
+                            .until!(e => !famous_witnesses.all!(w => w.sees(e)))
+                            .array.back
+                    );
+
+
+            }
 
             auto event_collection = consensus_tide
                 .map!(e => e[].until!(e => e._round_received !is null))
