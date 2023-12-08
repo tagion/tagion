@@ -13,7 +13,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITBOT_TOKEN }}
         run: |
           gh auth setup-git
-          gh repo clone https://github.com/tagion/tagion
+          gh repo clone https://github.com/tagion/ddoc
 
 
       - uses: actions/checkout@v4
