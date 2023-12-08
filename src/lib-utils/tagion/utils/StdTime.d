@@ -8,7 +8,7 @@ enum SDT = "SDT";
 alias sdt_t = Typedef!(long, long.init, SDT);
 
 @safe
-sdt_t currentTime() {
+sdt_t currentTime() nothrow {
     return sdt_t(Clock.currStdTime);
 }
 

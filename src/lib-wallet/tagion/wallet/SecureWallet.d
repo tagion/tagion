@@ -695,17 +695,16 @@ struct SecureWallet(Net : SecureNet) {
         import std.exception;
         import tagion.utils.StdTime;
 
-        auto bills = assumeWontThrow(orders.map!((order) => TagionBill(order.amount, currentTime, order.pkey, Buffer.init))
-                .array);
+        auto bills = orders.map!((order) => TagionBill(order.amount, currentTime, order.pkey, Buffer.init))
+            .array;
         return getFee(bills, fees);
     }
 
     static immutable dummy_pubkey = Pubkey(new ubyte[33]);
     static immutable dummy_nonce = new ubyte[4];
-    static immutable dummy_time = sdt_t(long.max);
 
     Result!bool getFee(TagionCurrency amount, out TagionCurrency fees) nothrow {
-        auto bill = TagionBill(amount, dummy_time, dummy_pubkey, dummy_nonce);
+        auto bill = TagionBill(amount, currentTime, dummy_pubkey, dummy_nonce);
         return getFee([bill], fees);
     }
 
