@@ -3,14 +3,15 @@ on:
   workflow_dispatch:
   workflow_call:
 
+env:
+  GH_TOKEN: ${{ secrets.GITBOT_TOKEN }}
+
 jobs:
   ddoc:
     runs-on: ubuntu-latest
     steps:
 
       - name: Checkout ddoc
-        env: 
-          GH_TOKEN: ${{ secrets.GITBOT_TOKEN }}
         run: |
           gh repo clone https://github.com/tagion/ddoc
 
@@ -29,8 +30,6 @@ jobs:
           make ddoc
 
       - name: update ddoc repo
-        env: 
-          GH_TOKEN: ${{ secrets.GITBOT_TOKEN }}
         run: |
           cp -r ./tagion/build/ddoc/ ddoc/
           cd ddoc
