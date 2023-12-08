@@ -457,6 +457,9 @@ int network_mode0(
         verbose("spawning supervisor ", n.opts.task_names.supervisor);
         supervisor_handles ~= spawn!Supervisor(n.opts.task_names.supervisor, n.opts, n.net);
     }
+    import tagion.services.epoch_creator : notStarted;
+    Thread.sleep(1.seconds);
+    notStarted = false;
 
     return 0;
 }

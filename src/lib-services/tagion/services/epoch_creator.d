@@ -50,6 +50,8 @@ struct EpochCreatorOptions {
     mixin JSONCommon;
 }
 
+shared static bool notStarted = true;
+
 @safe
 struct EpochCreatorService {
 
@@ -164,6 +166,11 @@ struct EpochCreatorService {
                 return;
             }
             hashgraph.init_tide(&gossip_net.gossip, &payload, currentTime);
+        }
+
+        while(notStarted) {
+            import core.thread;
+            (() @trusted => Thread.sleep(5.msecs))();
         }
 
         while (!thisActor.stop && !hashgraph.areWeInGraph) {

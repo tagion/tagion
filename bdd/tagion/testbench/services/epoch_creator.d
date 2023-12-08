@@ -97,6 +97,7 @@ class SendPayloadAndCreateEpoch {
             );
         }
 
+        notStarted = false;
         waitforChildren(Ctrl.ALIVE, 15.seconds);
 
         return result_ok;
