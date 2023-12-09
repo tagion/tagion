@@ -1,6 +1,5 @@
 [![codecov](https://codecov.io/gh/tagion/tagion/branch/current/graph/badge.svg?token=TM12EX8GSB)](https://codecov.io/gh/tagion/tagion)
 [![CI](https://github.com/tagion/tagion/actions/workflows/main.yml/badge.svg?branch=current)](https://github.com/tagion/tagion/actions/workflows/main.yml)
-[![Devnet running](https://img.shields.io/badge/Devnet-blue?logo=circle&logoColor=aqua)](https://pulse.tagion.org/tagion/)
 
 # Tagion
 
@@ -187,6 +186,8 @@ The [Tagion Node Architecture](https://docs.tagion.org)
 ## Maintainers
 
 - [@cbleser](https://github.com/cbleser)
+- [@lucasnethaj](https://github.com/lucasnethaj)
+- [@imrying](https://github.com/imrying)
 
 ## License
 The files in this repository is distributed under the [DECARD Services GmbH free and grant back license](LICENSE.md)  
