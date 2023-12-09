@@ -276,9 +276,6 @@ int _main(string[] args) {
             }
 
             const sender = CRUD.dartRead(dart_indices, hirpc);
-            auto receiver = hirpc.receive(sender);
-            auto response = db(receiver, false);
-
             if (!outputfilename.empty) {
                 fout = File(outputfilename, "w");
             }
@@ -287,6 +284,12 @@ int _main(string[] args) {
                     fout.close;
                 }
             }
+            if (dry_switch) {
+                fout.rawWrite(sender.serialize);
+            }
+            auto receiver = hirpc.receive(sender);
+            auto response = db(receiver, false);
+
             if (strip) {
 
                 auto recorder = db.recorder(response.result);
@@ -303,6 +306,12 @@ int _main(string[] args) {
             fout=stdout;
             Rims rims;
             if (dartrim != "root") {
+                auto rim_decimals=dartrim.split(",");
+                if (!rim_decimals.empty && rim_decimals.length > 1) {
+                    dartrim=format("%(%02x%)",rim_decimals
+                    .until!(key => key.empty)
+                    .map!(key => key.to!ubyte));
+                }
                 rims=Rims(dartrim.decode); 
             }
             verbose("Rim : %(%02x %)", rims.rims);
@@ -328,36 +337,6 @@ int _main(string[] args) {
             }
             fout.rawWrite(response.toDoc.serialize);
             return 0; 
-            version (none) {
-                if (!inputfile_switch) {
-                    writeln("No input file provided. Use -i to specify input file");
-                }
-                else {
-                    // Buffer root_rims;
-                    // auto params=new HiBON;
-                    // if(!inputfilename.exists) {
-                    //     writefln("Input file: %s not exists", inputfilename);
-                    //     root_rims = [];
-                    // }else{
-                    //     auto inputBuffer = cast(immutable(char)[])fread(inputfilename);
-                    //     if(inputBuffer.length){
-                    //         root_rims = decode(inputBuffer);
-                    //         writeln(root_rims);
-                    //     }else{
-                    //         root_rims = [];
-                    //     }
-                    // }
-                    // params[DARTFile.Params.rims]=root_rims;
-                    // auto sended = hirpc.dartRim(params).toHiBON(net).serialize;
-                    // auto doc = Document(sended);
-                    // auto received = hirpc.receive(doc);
-                    // auto result = db(received);
-                    // auto tosend = hirpc.toHiBON(result);
-                    // auto tosendResult = (tosend[Keywords.message].get!Document)[Keywords.result].get!Document;
-                    // writeResponse(tosendResult.serialize);
-                }
-            }
-            return 1;
         }
         if (dartmodify) {
             tools.check(!inputfilename.empty, "Missing input file DART-modify");
