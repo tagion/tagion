@@ -70,7 +70,7 @@ int _main(string[] args) {
     uint depth;
     bool strip;
     bool dartmodify;
-    bool dartrim;
+    string dartrim;
     bool dartrpc;
     bool sync;
     bool eye;
@@ -89,6 +89,7 @@ int _main(string[] args) {
                 std.getopt.config.bundling,
                 "version", "display the version", &version_switch, //   "dartfilename|d", format("Sets the dartfile: default %s", dartfilename), &dartfilename,
                 "verbose|v", "Prints verbose information to console", &__verbose_switch,
+                "dry", "Dry-run this will not save the wallet", &__dry_switch,
                 "I|initialize", "Create a dart file", &initialize,
                 "o|outputfile", "Sets the output file name", &outputfilename,
                 "r|read", "Excutes a DART read sequency", &dartread_args,
@@ -105,7 +106,6 @@ int _main(string[] args) {
                 "P|passphrase", format("Passphrase of the keypair : default: %s", passphrase), &passphrase,
                 "R|range", "Sets angle range from:to (Default is full range)", &angle_range,
                 "depth", "Set limit on dart rim depth", &depth,
-
                 "fake", format(
                     "Use fakenet instead of real hashes : default :%s", fake), &fake,
         );
@@ -250,7 +250,7 @@ int _main(string[] args) {
         }
 
         const dartread = dartread_args.length > 0;
-        const onehot = dartrpc + dartread + dartrim + dartmodify;
+        const onehot = dartrpc + dartread + !dartrim.empty + dartmodify;
 
         tools.check(onehot <= 1,
                 "Only one of the dartrpc, dartread, dartrim, dartmodify switched alowed");
@@ -268,11 +268,8 @@ int _main(string[] args) {
             File fout;
             fout = stdout;
             DARTIndex[] dart_indices;
-            //("%s", dartread_args);
             foreach (read_arg; dartread_args) {
                 import tagion.tools.dartutil.dartindex : dartIndexDecode;
-
-                //   writefln("read %s", read_arg);
                 auto dart_index = net.dartIndexDecode(read_arg);
                 verbose("%s\n%s\n%(%02x%)", read_arg, dart_index.encodeBase64, dart_index);
                 dart_indices ~= dart_index;
@@ -301,7 +298,36 @@ int _main(string[] args) {
             fout.rawWrite(response.toDoc.serialize);
             return 0;
         }
-        if (dartrim) {
+        if (!dartrim.empty) {
+            File fout;
+            fout=stdout;
+            Rims rims;
+            if (dartrim != "root") {
+                rims=Rims(dartrim.decode); 
+            }
+            verbose("Rim : %(%02x %)", rims.rims);
+            const sender=CRUD.dartRim(rims, hirpc);
+            if (!outputfilename.empty) {
+                fout = File(outputfilename, "w");
+            }
+            scope (exit) {
+                if (fout !is stdout) {
+                    fout.close;
+                }
+            }
+            if (dry_switch) {
+                fout.rawWrite(sender.serialize);
+                return 0;
+            }
+            auto receiver=hirpc.receive(sender);
+            auto response = db(receiver, false);
+            
+            if (strip) {
+                fout.rawWrite(response.result.serialize);
+                return 0;
+            }
+            fout.rawWrite(response.toDoc.serialize);
+            return 0; 
             version (none) {
                 if (!inputfile_switch) {
                     writeln("No input file provided. Use -i to specify input file");
