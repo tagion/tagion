@@ -28,6 +28,7 @@ alias FeatureContext = Tuple!(
         TheDocumentIsNotAHiRPC, "TheDocumentIsNotAHiRPC",
         CorrectHiRPCFormatAndPermission, "CorrectHiRPCFormatAndPermission",
         CorrectHiRPCWithPermissionDenied, "CorrectHiRPCWithPermissionDenied",
+        HIRPCWithIllegalMethod, "HIRPCWithIllegalMethod",
         FeatureGroup*, "result"
 );
 
@@ -209,10 +210,85 @@ class CorrectHiRPCWithPermissionDenied {
                 (inputHiRPC _, HiRPC.Sender __) { check(false, "Should not have received a doc"); },
         );
 
+        return result_ok;
+    }
+
+}
+
+@safe @Scenario("A hirpc with an illegal type", [])
+class HIRPCWithIllegalMethod {
+    ActorHandle hirpc_verifier_handle;
+    string contract_success;
+    string contract_reject;
+    HiRPC hirpc;
+    SecureNet net;
+    this(ActorHandle _hirpc_verifier_handle, string _success, string _reject) {
+        hirpc_verifier_handle = _hirpc_verifier_handle;
+        contract_success = _success; // The name of the service which successfull documents are sent to
+        contract_reject = _reject; // The name of the service which rejected documents are sent to
+
+        net = new HiRPCNet("someObscurePassphrase");
+        hirpc = HiRPC(net);
+    }
+
+    class HiRPCNet : StdSecureNet {
+        this(string passphrase) {
+            super();
+            generateKeyPair(passphrase);
+        }
+    }
+
+    Document invalid_doc;
+
+    @Given("i send HiRPC receiver")
+    Document transaction() {
+        import std.algorithm : map;
+        import std.array;
+        import std.range : iota;
+        import tagion.basic.Types : Buffer;
+        import tagion.crypto.Types;
+        import tagion.script.TagionCurrency;
+        import tagion.script.common;
+        import tagion.utils.StdTime;
+
+        writeln(thisTid);
+        check(waitforChildren(Ctrl.ALIVE), "ContractService never alived");
+        check(hirpc_verifier_handle.tid !is Tid.init, "Contract thread is not running");
+
+        Document[] in_bills;
+        in_bills ~= iota(0, 10).map!(_ => TagionBill(10.TGN, sdt_t.init, Pubkey.init, Buffer.init).toDoc).array;
+        TagionBill[] out_bills;
+        out_bills ~= iota(0, 10).map!(_ => TagionBill(5.TGN, sdt_t.init, Pubkey.init, Buffer.init)).array;
+        auto contract = Contract(null, null, PayScript(out_bills).toDoc);
+        SignedContract signed_contract = SignedContract(null, contract);
+
+        const sender = hirpc.submit(signed_contract);
+
+        HiRPC.Response message;
+        message.id = sender.method.id;
+        message.result = sender.toDoc;
+        const result = HiRPC.Sender(net, message);
+        invalid_doc = result.toDoc;
+
+        hirpc_verifier_handle.send(inputDoc(), invalid_doc);
+
+        return result_ok;
+    }
+
+    @Then("Then it should be rejected")
+    Document contract() {
+        receiveTimeout(
+                Duration.zero,
+                (inputHiRPC _, HiRPC.Sender __) { check(false, "Should not have received a doc"); },
+        );
+
+        const receiveTuple = receiveOnlyTimeout!(RejectReason, Document);
+        check(receiveTuple[0] == RejectReason.invalidType, "The docuemnt was not rejected for the correct reason");
+        check(receiveTuple[1] == invalid_doc, "The rejected doc was not the same as was sent");
+
         hirpc_verifier_handle.send(Sig.STOP);
         check(waitforChildren(Ctrl.END), "hirpc verifier service Never ended");
 
         return result_ok;
     }
-
 }

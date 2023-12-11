@@ -5,6 +5,7 @@ After=multi-user.target
 [Service]
 WorkingDirectory=%h/.local/share/tagion/
 ExecStart=%h/.local/bin/tagion shell
+ExecStopPost=%h/.local/share/tagion/wave/failed.sh
 Restart=always
 RestartSec=3
 MemoryHigh=25M

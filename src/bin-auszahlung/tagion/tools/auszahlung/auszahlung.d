@@ -332,7 +332,7 @@ int _main(string[] args) {
             TagionBill[] to_pay;
             TagionCurrency total_amount;
             foreach (record; csvReader!(string[string])(fin.byLine.joiner("\n"), null, ';')) {
-                const pubkey = Pubkey(format("@%s", record[pubkey_name]).decode);
+                const pubkey = Pubkey(record[pubkey_name].decode);
                 const amount_tgn = record[amount_name].to!double.TGN;
                 total_amount += amount_tgn;
                 auto nonce = new ubyte[4];
@@ -360,16 +360,17 @@ int _main(string[] args) {
             good("Total %sTGN", total_amount);
 
         }
-            verbose("!!!!");
+        verbose("!!!!");
         if (update) {
             verbose("Update");
+            check(common_wallet_interface.secure_wallet.isLoggedin, "Wallet should be loggedin");
             with (common_wallet_interface) {
-                writefln("secure_wallet.net %s", secure_wallet.net !is null);
                 const message = secure_wallet.net.calcHash(WalletInterface.update_tag.representation);
                 const update_net = secure_wallet.net.derive(message);
                 const hirpc = HiRPC(update_net);
                 const req = secure_wallet.getRequestCheckWallet(hirpc);
                 const update_req = buildPath(path, update_tag).setExtension(FileExtension.hibon);
+
                 update_req.fwrite(req);
                 scope (success) {
                     if (!dry_switch) {

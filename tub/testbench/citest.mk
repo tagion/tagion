@@ -6,6 +6,7 @@ ci-files:
 	cp $(DTUB)/scripts/create_wallets.sh $(DBIN)
 	cp $(DTUB)/scripts/run_ops.sh $(DBIN)
 	cp $(DTUB)/scripts/run_network.sh $(DBIN)
+	cp $(DTUB)/scripts/failed.sh $(DBIN)
 
 ci: ci-files
 	$(MAKE) -S clean-trunk -f$(DTUB)/main.mk

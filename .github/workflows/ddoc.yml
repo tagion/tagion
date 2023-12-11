@@ -3,16 +3,17 @@ on:
   workflow_dispatch:
   workflow_call:
 
+env:
+  GH_TOKEN: ${{ secrets.GITBOT_TOKEN }}
+
 jobs:
   ddoc:
     runs-on: ubuntu-latest
     steps:
 
       - name: Checkout ddoc
-        env: 
-          GITHUB_TOKEN: ${{ secrets.GITBOT_TOKEN }}
         run: |
-          gh repo clone tagion/ddoc -- --depth=1
+          gh repo clone https://github.com/tagion/ddoc
 
 
       - uses: actions/checkout@v4
@@ -29,14 +30,11 @@ jobs:
           make ddoc
 
       - name: update ddoc repo
-        env: 
-          GITHUB_TOKEN: ${{ secrets.GITBOT_TOKEN }}
         run: |
           cp -r ./tagion/build/ddoc/ ddoc/
           cd ddoc
-          gh auth setup-git
           git config user.email "gitbot@decard.io"
           git config user.name "gitbot"
           git add .
           git commit -m "ddocs updated" || echo "nothing to commit"
-          git push
+          git push https://tagion-bot:${{ secrets.GITBOT_TOKEN }}@github.com/tagion/ddoc.git master
