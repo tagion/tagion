@@ -272,33 +272,10 @@ jobs:
         with:
           platform: ${{ matrix.arch }}-${{ matrix.target }}
 
-  ddoc_push:
-    if: false
-      # if: ${{ github.ref == 'refs/heads/current' }}
-    runs-on: CD
+  ddoc:
+    if: ${{ github.ref == 'refs/heads/current' }}
     needs: acceptance_stage
-    steps:
-      - name: Copy Artifact to local machine
-        run: |
-          rm -rf *
-          cp /mnt/nfs/${{ env.ARTIFACT_DIR }} .
-          echo $(ls build/)
-      - name: Send ddoc to repository
-        run: |
-          ls logs
-          git clone https://${{ secrets.API_TOKEN_GITHUB }}@github.com/tagion/ddoc.git
-          cp -R build/ddoc/* ddoc/          
-          cd ddoc
-          git config user.email "gitbot@decard.io"
-          git config user.name "gitbot"
-          git add .
-          git commit -m "ddocs updated" || echo "nothing to commit"
-          git push https://${{ secrets.API_TOKEN_GITHUB }}@github.com/tagion/ddoc.git || echo "repo already up to date"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITBOT_TOKEN }}
-
-      - name: clean up
-        run: rm -rf *
+    uses: ./.github/workflows/ddoc.yml
  
   docs_build:
     if: ${{ github.ref == 'refs/heads/current' }}
