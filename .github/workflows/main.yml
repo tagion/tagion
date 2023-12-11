@@ -20,42 +20,6 @@ permissions:
   id-token: write 
 
 jobs:
-  # ddoc:
-  #   if: ${{ github.ref == 'refs/heads/current' }}
-  #   # needs: acceptance_stage
-  #   uses: ./.github/workflows/ddoc.yml
-  #   secrets:
-  #     GITBOT_TOKEN: ${{ secrets.GITBOT_TOKEN }}
- 
-  ddoc:
-    if: ${{ github.ref == 'refs/heads/current' }}
-    runs-on: ubuntu-latest
-    # needs: acceptance_stage
-    steps:
-      - uses: dlang-community/setup-dlang@v1
-        with:
-          compiler: dmd-latest
-
-      - uses: actions/checkout@v4
-
-      - name: Build docmentation
-        run: |
-          make ddoc
-          rm -rf .git
-
-      - name: Push ddoc to repository
-        run: |
-          git clone https://${{ secrets.GITBOT_TOKEN }}@github.com/tagion/ddoc.git
-          cp -R build/ddoc/* ddoc/          
-          cd ddoc
-          git config user.email "gitbot@decard.io"
-          git config user.name "gitbot"
-          git add .
-          git commit -m "ddocs updated" || echo "nothing to commit"
-          git push https://${{ secrets.GITBOT_TOKEN }}@github.com/tagion/ddoc.git || echo "repo already up to date"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITBOT_TOKEN }}
-
   build:
     runs-on: CI
     timeout-minutes: 5
@@ -229,6 +193,34 @@ jobs:
             url=$(gh gist create $file.unstack) || echo could not create gist
             echo "[$(basename $file)]($url)" >> $GITHUB_STEP_SUMMARY
           done
+
+  ddoc:
+    if: ${{ github.ref == 'refs/heads/current' }}
+    runs-on: ubuntu-latest
+    needs: acceptance_stage
+    steps:
+      - uses: dlang-community/setup-dlang@v1
+        with:
+          compiler: dmd-latest
+
+      - uses: actions/checkout@v4
+
+      - name: Build docmentation
+        run: |
+          make ddoc
+          rm -rf .git
+
+      - name: Push ddoc to repository
+        run: |
+          git clone https://${{ secrets.GITBOT_TOKEN }}@github.com/tagion/ddoc.git
+          cp -R build/ddoc/* ddoc/          
+          cd ddoc
+          git config user.email "gitbot@decard.io"
+          git config user.name "gitbot"
+          git add .
+          git commit -m "ddocs updated" || echo "nothing to commit"
+          git push https://${{ secrets.GITBOT_TOKEN }}@github.com/tagion/ddoc.git || echo "repo already up to date"
+
 
   create_artifact:
     runs-on: CI
