@@ -132,9 +132,9 @@ struct SecureWallet(Net : SecureNet) {
      */
     this(
             scope const(string[]) questions,
-            scope const(char[][]) answers,
-            uint confidence,
-            const(char[]) pincode)
+    scope const(char[][]) answers,
+    uint confidence,
+    const(char[]) pincode)
     in (questions.length is answers.length, "Amount of questions should be same as answers")
     do {
         check(questions.length > 3, "Minimal amount of answers is 4");
@@ -182,8 +182,8 @@ struct SecureWallet(Net : SecureNet) {
 
     this(
             scope const(char[]) passphrase,
-            scope const(char[]) pincode,
-            scope const(char[]) salt = null) {
+    scope const(char[]) pincode,
+    scope const(char[]) salt = null) {
         _net = new Net;
         enum size_of_privkey = 32;
         ubyte[] R;
@@ -198,7 +198,7 @@ struct SecureWallet(Net : SecureNet) {
 
     protected void set_pincode(
             scope const(ubyte[]) R,
-            scope const(char[]) pincode) scope
+    scope const(char[]) pincode) scope
     in (!_net.isinit)
     do {
         auto seed = new ubyte[_net.hashSize];
@@ -234,8 +234,8 @@ struct SecureWallet(Net : SecureNet) {
      */
     bool recover(
             const(string[]) questions,
-            const(char[][]) answers,
-            const(char[]) pincode)
+    const(char[][]) answers,
+    const(char[]) pincode)
     in (questions.length is answers.length, "Amount of questions should be same as answers")
     do {
         _net = new Net;
@@ -582,24 +582,23 @@ struct SecureWallet(Net : SecureNet) {
      * Returns: ture if the wallet was updated
      */
     @trusted
-    bool setResponseUpdateWallet(const(HiRPC.Receiver) receiver) nothrow {
-        import std.exception : assumeWontThrow;
+    bool setResponseUpdateWallet(const(HiRPC.Receiver) receiver) {
         import tagion.hibon.HiBONtoText;
 
         if (!receiver.isResponse) {
             return false;
         }
 
-        auto found_bills = assumeWontThrow(receiver.response
-                .result[]
-                .map!(e => TagionBill(e.get!Document))
-                .array);
+        auto found_bills = receiver.response
+            .result[]
+            .map!(e => TagionBill(e.get!Document))
+            .array;
 
         foreach (b; found_bills) {
             if (b.owner !in account.derivers) {
                 import std.stdio;
 
-                assumeWontThrow(writefln("Error, could not pubkey %(%02x%) in derivers", b.owner));
+                writefln("Error, could not pubkey %(%02x%) in derivers", b.owner);
                 return false;
             }
         }

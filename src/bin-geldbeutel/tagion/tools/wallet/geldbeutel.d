@@ -9,6 +9,7 @@ import std.path;
 import std.range;
 import std.stdio;
 import std.typecons;
+import std.exception : ifThrown;
 import core.stdc.stdio : printf;
 import tagion.basic.Message;
 import tagion.basic.Types : FileExtension, hasExtension;
@@ -30,6 +31,7 @@ import tagion.wallet.SecureWallet;
 import tagion.wallet.WalletRecords;
 import tagion.wallet.BIP39;
 import tagion.basic.Types : encodeBase64;
+import tagion.hibon.HiBONException;
 
 mixin Main!(_main, "wallet");
 
@@ -280,7 +282,8 @@ int _main(string[] args) {
             info_only = true;
         }
         if (list) {
-            wallet_interface.listAccount(vout);
+            const hash_net = new StdHashNet;
+            wallet_interface.listAccount(vout, hash_net);
             wallet_interface.listInvoices(vout);
             sum = true;
         }
@@ -319,11 +322,17 @@ int _main(string[] args) {
                 return 4;
             }
         }
-        foreach(file; args.filter!(file => file.hasExtension(FileExtension.hibon))) {
+        foreach (file; args.filter!(file => file.hasExtension(FileExtension.hibon))) {
             check(file.exists, format("File %s not found", file));
             pragma(msg, "HiRPC ", isHiBONRecord!(HiRPC.Receiver));
-            const hirpc_response=file.fread!(HiRPC.Receiver);
-            writefln("File %s %s", file, hirpc_response.toPretty);  
+            const hirpc_response = file.fread!(HiRPC.Receiver);
+            writefln("File %s %s", file, hirpc_response.toPretty);
+            const ok = wallet_interface.secure_wallet.setResponseUpdateWallet(hirpc_response)
+                .ifThrown!HiBONException(
+                        wallet_interface.secure_wallet.setResponseCheckRead(hirpc_response)
+            );
+
+            check(ok, format("HiPRC %s is not a valid response", file));
             wallet_switch.save_wallet = true;
         }
         if (!account_name.empty) {
@@ -332,7 +341,7 @@ int _main(string[] args) {
             wallet_switch.save_wallet = true;
 
         }
-        
+
         wallet_interface.operate(wallet_switch, args);
     }
     catch (GetOptException e) {
