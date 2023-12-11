@@ -1,8 +1,35 @@
-# Changelog for week 49/50
+# Changelog for epoch 0 to 50000
 
 **getFee(amount, fee) patch**
 There was a bug in the getFee function from amount because the bill used for getting the size was using null values for the pubkey, nonce etc. This has been fixed by setting the sizes statically ensuring the fee is calculated to be the same as the `createPayment` function.
 
+**LRU support for none atomic key-value**
+Our least recently used class has been upgraded so that it is possible to use none-atomic key-values.
+
+**Versioning**
+We have updated our revision to include the latest tag. The revision for example looks like the following now.
+
+version: v1.0.1+dev+dirty
+git: git@github.com:tagion/tagion.git
+branch: current
+hash: 6258adbd9a805a16edb0f748553de00f69bcb76f
+revno: 12834
+build_date: imrying
+builder_name: philiprying@gmail.com
+builder_email: gcc (GCC) 12.3.0
+CC: DMD64 D Compiler v2.105.2
+
+As it can be seen it shows that the binary is on top of v1.0.1 with develop and the working tree is dirty when it was compiled.
+
+**.isMethod patch**
+We had a problem if you send a hirpc response as a input the service would throw an error. This has been mitigated so that it does not fail now.
+
+**HashGraph startup problem**
+We have had a problem with the hashgraph, where it sometimes would not produce any epochs and create an assert on a wavefront. This was because some empty events where not filtered out. This has been fixed so that the startup is completely stable now allowing our pipeline to be more trustworthy.
+
+**Open sourcing**
+Regarding open-sourcing the licenses have been updated as well as the CONTRIBUTING.md file.
+The github action for creating the ddoc documentaton has also been fixed so that it now runs.
 
 # Changelog for week 48/49
 
