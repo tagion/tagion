@@ -41,7 +41,7 @@ import tagion.script.standardnames;
 import tagion.tools.Basic;
 import tagion.wallet.SecureWallet : check;
 import tagion.wallet.WalletException;
-            import tagion.tools.secretinput;
+import tagion.tools.secretinput;
 
 //import tagion.wallet.WalletException : check;
 /**
@@ -286,7 +286,7 @@ struct WalletInterface {
             }
             info("Press ctrl-C to break");
             info("Press ctrl-A to show the pincode");
-            getSecret("pincode: ",old_pincode);
+            getSecret("pincode: ", old_pincode);
             old_pincode.word_strip;
             if (old_pincode.length) {
                 secure_wallet.login(old_pincode);
@@ -314,7 +314,7 @@ struct WalletInterface {
                     bool ok;
                     do {
                         info("New pincode:%s", CLEARDOWN);
-                        getSecret("pincode: ",new_pincode1);
+                        getSecret("pincode: ", new_pincode1);
                         new_pincode1.word_strip;
                         info("Repeaté:");
                         getSecret("pincode: ", new_pincode2);
@@ -344,7 +344,7 @@ struct WalletInterface {
         if (!secure_wallet.wallet.isinit && secure_wallet.wallet.S != tmp_secure_wallet.wallet.S) {
             return false;
         }
-        secure_wallet=tmp_secure_wallet;
+        secure_wallet = tmp_secure_wallet;
         return true;
     }
 
@@ -622,8 +622,8 @@ struct WalletInterface {
 
     struct Switch {
         bool force;
-        bool list;
-        bool sum;
+        //        bool list;
+        //        bool sum;
         bool send;
         bool sendkernel;
         bool pay;
@@ -703,14 +703,6 @@ struct WalletInterface {
                             save_wallet = true;
                         }
                     }
-                }
-                if (list) {
-                    listAccount(stdout);
-                    listInvoices(stdout);
-                    sum = true;
-                }
-                if (sum) {
-                    sumAccount(stdout);
                 }
                 if (request) {
                     secure_wallet.account.requested.byValue
