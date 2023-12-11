@@ -77,7 +77,7 @@ int _main(string[] args) {
     bool fake;
     bool force;
     bool dump;
-
+    bool dump_branches;
     bool initialize;
     string passphrase = "verysecret";
 
@@ -93,13 +93,14 @@ int _main(string[] args) {
                 "I|initialize", "Create a dart file", &initialize,
                 "o|outputfile", "Sets the output file name", &outputfilename,
                 "r|read", "Excutes a DART read sequency", &dartread_args,
-                "strip", "Strips the dart-recoder dumps archives", &strip,
                 "rim", "Performs DART rim read", &dartrim,
                 "m|modify", "Excutes a DART modify sequency", &dartmodify,
-                "f|force", "Force erase and create journal and destination DART", &force,
                 "rpc", "Excutes a HiPRC on the DART", &dartrpc,
+                "strip", "Strips the dart-recoder dumps archives", &strip,
+                "f|force", "Force erase and create journal and destination DART", &force,
                 "print", "prints all the archives with in the given angle", &print,
                 "dump", "Dumps all the archives with in the given angle", &dump,
+                "dump-branches", "Dumps all the archives and branches with in the given angle", &dump_branches,
                 "eye", "Prints the bullseye", &eye,
                 "sync", "Synchronize src.drt to dest.drt", &sync,
                 "e|exec", "Execute string to be used for remote access", &exec,
@@ -144,6 +145,8 @@ int _main(string[] args) {
             writefln(exec,"hirpc.hibon", "response.hibon");
         }
         if (!angle_range.empty) {
+            import std.bitmanip;
+
             ushort _from, _to;
             const fields =
                 angle_range.formattedRead("%x:%x", _from, _to)
@@ -237,10 +240,13 @@ int _main(string[] args) {
         else if (eye) {
             writefln("EYE: %(%02x%)", db.fingerprint);
         }
-        else if (dump) {
+        else if (dump || dump_branches) {
             File fout;
             fout = stdout;
             bool dartTraverse(const(Document) doc, const Index index, const uint rim, Buffer rim_path) {
+                if (dump && DARTFile.Branches.isRecord(doc)) {
+                    return false;
+                }
                 fout.rawWrite(doc.serialize);
                 return false;
             }

@@ -122,11 +122,6 @@ int _main(string[] args) {
                 "pubkey", "Prints the public key", &pubkey_info,
 
         );
-    }
-    catch (GetOptException e) {
-        stderr.writeln(e.msg);
-        return 1;
-    }
     if (version_switch) {
         revision_text.writeln;
         return 0;
@@ -148,7 +143,6 @@ int _main(string[] args) {
                 main_args.options);
         return 0;
     }
-    try {
         verbose("Config file %s", config_file);
         const new_config = (!config_file.exists || overwrite_switch);
         if (path) {
@@ -318,6 +312,10 @@ int _main(string[] args) {
 
         }
         wallet_interface.operate(wallet_switch, args);
+    }
+    catch (GetOptException e) {
+        stderr.writeln(e.msg);
+        return 1;
     }
     catch (Exception e) {
         writefln("%1$sError: %3$s%2$s", RED, RESET, e.msg);

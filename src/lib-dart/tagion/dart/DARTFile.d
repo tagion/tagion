@@ -36,6 +36,7 @@ private {
     import tagion.dart.DARTRim;
     import tagion.dart.RimKeyRange : rimKeyRange;
     import tagion.hibon.HiBONRecord;
+    import std.bitmanip;
 }
 
 /++
@@ -578,8 +579,6 @@ class DARTFile {
             if (rim_paths.length == ubyte.sizeof) {
                 return ushort(rim_paths[0] << 8);
             }
-            import std.bitmanip : bigEndianToNative;
-
             return bigEndianToNative!ushort(rim_paths[0 .. ushort.sizeof]);
         }
         /** 
@@ -1071,13 +1070,15 @@ class DARTFile {
         import std.stdio;
 
         writefln("EYE: %(%02X%)", _fingerprint);
+        const from_rim=sectors.from_sector.nativeToBigEndian;
+        const to_rim=sectors.to_sector.nativeToBigEndian;
+
         void local_dump(const Index branch_index,
                 const ubyte rim_key = 0,
                 const uint rim = 0,
                 Buffer rim_path = null,
                 string indent = null) @safe {
             if (!branch_index.isinit &&
-                     //        sectors.inRange(Rims(rim_path)) &&
                     ((depth == 0) || (rim <= depth))) {
                 immutable data = blockfile.load(branch_index);
                 const doc = Document(data);
@@ -1087,13 +1088,13 @@ class DARTFile {
                     if (rim > 0) {
                         rim_path ~= rim_key;
                         if (!sectors.inRange(Rims(rim_path))) {
-                            return;
+                               return;
                         }
                         writefln("%s| %02X [%d]", indent, rim_key, branch_index);
                         _indent = indent ~ indent_tab;
                     }
                     foreach (key, index; branches._indices) {
-                        local_dump(index, cast(ubyte) key, rim + 1, rim_path, _indent);
+                       local_dump(index, cast(ubyte) key, rim + 1, rim_path, _indent);
                     }
                 }
                 else {
@@ -1109,8 +1110,6 @@ class DARTFile {
         Index index = blockfile.masterBlock.root_index;
         if (!sectors.isinit) {
             Buffer start_rims = Rims(sectors.from_sector).rims;
-            branches(start_rims[0 .. 1], &index);
-
             local_dump(index, start_rims[0], 0, null);
             return;
         }
@@ -1127,7 +1126,8 @@ class DARTFile {
     void traverse(
             const TraverseCallback dg,
             const SectorRange sectors = SectorRange.init,
-            const uint depth = 0) {
+            const uint depth = 0,
+            const bool branches=true) {
         void local_traverse(
                 const Index branch_index,
                 const ubyte rim_key = 0,
@@ -1142,7 +1142,6 @@ class DARTFile {
                 }
                 if (Branches.isRecord(doc)) {
                     auto branches = Branches(doc);
-                    string _indent;
                     if (rim > 0) {
                         rim_path ~= rim_key;
                         if (!sectors.inRange(Rims(rim_path))) {
@@ -1159,8 +1158,6 @@ class DARTFile {
         Index index = blockfile.masterBlock.root_index;
         if (!sectors.isinit) {
             Buffer start_rims = Rims(sectors.from_sector).rims;
-            branches(start_rims[0 .. 1], &index);
-
             local_traverse(index, start_rims[0], 0, null);
             return;
         }

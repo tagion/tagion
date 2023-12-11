@@ -1,4 +1,4 @@
-# bin-dartutil
+# DART database tool `dartutil`
 
 > Dartutil is tool read/inspect and manimulate the data store in a DART file (.drt)
 
@@ -8,27 +8,31 @@ Usage:
 dartutil [<option>...] file.drt <files>
 
 Example synchronizing src.drt on to dst.drt
-dartutil --sync src.drt dst.drt]
+dartutil --sync src.drt dst.drt
 
 <option>:
-        --version display the version
--d --dartfilename Sets the dartfile: default 
-     --initialize Create a dart file
--i    --inputfile Sets the HiBON input file name
--o   --outputfile Sets the output file name
--r         --read Excutes a DART read sequency
-            --rim Performs DART rim read
--m       --modify Excutes a DART modify sequency
-            --rpc Excutes a HiPRC on the DART: default %s
-           --dump Dumps all the arcvives with in the given angle
-            --eye Prints the bullseye
-           --sync Synchronize src.drt to dest.drt
--P   --passphrase Passphrase of the keypair : default: verysecret
--v      --verbose Print output to console
-           --fake Use fakenet instead of real hashes : default :false
--h         --help This help information.``
+      --version display the version
+-v    --verbose Prints verbose information to console
+          --dry Dry-run this will not save the wallet
+-I --initialize Create a dart file
+-o --outputfile Sets the output file name
+-r       --read Excutes a DART read sequency
+          --rim Performs DART rim read
+-m     --modify Excutes a DART modify sequency
+          --rpc Excutes a HiPRC on the DART
+        --strip Strips the dart-recoder dumps archives
+-f      --force Force erase and create journal and destination DART
+        --print prints all the archives with in the given angle
+         --dump Dumps all the archives with in the given angle
+          --eye Prints the bullseye
+         --sync Synchronize src.drt to dest.drt
+-e       --exec Execute string to be used for remote access
+-P --passphrase Passphrase of the keypair : default: verysecret
+-R      --range Sets angle range from:to (Default is full range)
+        --depth Set limit on dart rim depth
+         --fake Use fakenet instead of real hashes : default :false
+-h       --help This help information.
 ```
-
 
 ## Create an empty dart
 ```
@@ -36,9 +40,46 @@ dartutil --initialize database.drt
 ```
 The DART can also be created with to use the fake hash with the  `--fake` option.
 
-## List the dart 
-## Exclusive functions
-You can call only one function from this list at a time
+## Display an inspect the a DART file
+The .drt file is a block-file so thei [blockutil](/src/bin-blockutil/README.md) can also be used to inspect the file.
+
+- The bullseye of the DART can be display with the `--eye` switch.
+```
+dartutil Node_0_dart.drt --eye
+EYE: 301a9c0710033e4e24ca6cfc0f3b96e0c2f0e5760abdd2071ec1c427316be00e
+```
+- The DART map can be listed with the `--print` switch.
+```
+dartutil genesis.drt --print
+EYE: 2069C3E00C031294AE45945D45FA20E0F0F09E036CA1153BB66DA94D9BC369A8
+| 04 [3]
+| .. | 62 [2]
+| .. | .. 046274d40b1eff9e71841a89993ddb8ecd239fb8daabafac8899b768577be172 [1]
+| 11 [6]
+| .. | 75 [5]
+| .. | .. 11753b22fc264c9479d1c5dc895211524ebf1b7872833db9363095f4a47c176c [4] #
+| 1B [9]
+| .. | 2A [8]
+| .. | .. 1b2a5ae6ba6101826e0aeebcd517dd6c75e94562a0a17ca4c6647d4b3a5cb55e [7] #
+| 27 [12]
+| .. | 56 [11]
+| .. | .. 27569ae10bf14338809efaafd51657e20c716e0aa381ab2386d03a7a2fc15516 [10] #
+| 33 [15]
+| .. | C5 [14]
+| .. | .. 33c5338e20ae3409042fbf11990ebeb54670d92ecfe254c5e4f52f8e1694adaa [13] #
+| 36 [18]
+| .. | 2D [17]
+| .. | .. 362d3cbab4e6f1f7624c0c95adc9874fb00af0a9b2a06a1f0d87a474497120f4 [16]
+| 38 [21]
+.... continued
+```
+- If the DART is big the map print out can be limited with the `--angle` and `--depth`.
+```
+
+```
+
+## DART Crud commands
+You can call only one of the CRUD command at a time
 - [--read](#read)
 - [--rim](#rim)
 - [--modify](#modify)
@@ -68,8 +109,6 @@ Example of using:
 [--verbose](#verbose) **optional**
 
 [--outputfile](#outputfile) **optional**
-
-[--dartfilename](#dartfilename) **optional**
 
 [--dump](#dump) **optional**
 
