@@ -194,6 +194,34 @@ jobs:
             echo "[$(basename $file)]($url)" >> $GITHUB_STEP_SUMMARY
           done
 
+  ddoc:
+    if: ${{ github.ref == 'refs/heads/current' }}
+    runs-on: ubuntu-latest
+    needs: acceptance_stage
+    steps:
+      - uses: dlang-community/setup-dlang@v1
+        with:
+          compiler: dmd-latest
+
+      - uses: actions/checkout@v4
+
+      - name: Build docmentation
+        run: |
+          make ddoc
+          rm -rf .git
+
+      - name: Push ddoc to repository
+        run: |
+          git clone https://${{ secrets.GITBOT_TOKEN }}@github.com/tagion/ddoc.git
+          cp -R build/ddoc/ ddoc/
+          cd ddoc
+          git config user.email "gitbot@decard.io"
+          git config user.name "gitbot"
+          git add .
+          git commit -m "ddocs updated" || echo "nothing to commit"
+          git push https://${{ secrets.GITBOT_TOKEN }}@github.com/tagion/ddoc.git || echo "repo already up to date"
+
+
   create_artifact:
     runs-on: CI
     needs: [acceptance_stage, add_logs]
@@ -272,11 +300,6 @@ jobs:
         with:
           platform: ${{ matrix.arch }}-${{ matrix.target }}
 
-  ddoc:
-    if: ${{ github.ref == 'refs/heads/current' }}
-    needs: acceptance_stage
-    uses: ./.github/workflows/ddoc.yml
- 
   docs_build:
     if: ${{ github.ref == 'refs/heads/current' }}
     environment:
