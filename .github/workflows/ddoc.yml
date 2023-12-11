@@ -2,6 +2,9 @@ name: Build D code docmentation
 on:
   workflow_dispatch:
   workflow_call:
+    secrets:
+      GITBOT_TOKEN:
+        required: true
 
 env:
   GH_TOKEN: ${{ secrets.GITBOT_TOKEN }}
