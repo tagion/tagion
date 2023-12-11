@@ -1,3 +1,9 @@
+# Changelog for week 49/50
+
+**getFee(amount, fee) patch**
+There was a bug in the getFee function from amount because the bill used for getting the size was using null values for the pubkey, nonce etc. This has been fixed by setting the sizes statically ensuring the fee is calculated to be the same as the `createPayment` function.
+
+
 # Changelog for week 48/49
 
 **Graceful shutdown**

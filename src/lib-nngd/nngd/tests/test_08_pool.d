@@ -11,7 +11,6 @@ import std.stdio;
 import std.string;
 import std.uuid;
 import std.base64;
-
 import nngd;
 import nngtestutil;
 
@@ -57,6 +56,9 @@ void server_callback(NNGMessage *msg, void *ctx)
         msg.length = bsz + 32;
         msg.body_prepend(cast(ubyte[])("BIG DATA: " ~ buf));
         log("SERVER: BData set");
+    }else if(indexOf(s,"Break!") == 0){
+        log("SERVER: Let's fool around!");
+        throw new Exception("Error condition emulated!");
     }else{
         log("Going to stop sender");
         msg.body_append(cast(ubyte[])"END");
@@ -89,6 +91,8 @@ void client_worker(string url, string tag)
             line = "Maybe that's enough?";
         } else if(k % 16 == 0) {
             line = "Swamp me!";
+        } else if(k % 21 == 0) {
+            line = "Break!";
         } else {    
             line = format("What time is it? :: from(%s)[%d]", tag,k);            
         }    
@@ -128,7 +132,7 @@ int main()
     s.recvtimeout = msecs(5000);
     s.sendbuf = 65536;
 
-    NNGPool pool = NNGPool(&s, &server_callback, 8, &ctx);
+    NNGPool pool = NNGPool(&s, &server_callback, 8, &ctx, stderr.fileno());
     pool.init();
 
     auto rc = s.listen(uri);

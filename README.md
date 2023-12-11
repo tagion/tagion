@@ -1,6 +1,5 @@
 [![codecov](https://codecov.io/gh/tagion/tagion/branch/current/graph/badge.svg?token=TM12EX8GSB)](https://codecov.io/gh/tagion/tagion)
 [![CI](https://github.com/tagion/tagion/actions/workflows/main.yml/badge.svg?branch=current)](https://github.com/tagion/tagion/actions/workflows/main.yml)
-[![Devnet running](https://img.shields.io/badge/Devnet-blue?logo=circle&logoColor=aqua)](https://pulse.tagion.org/tagion/)
 
 # Tagion
 
@@ -20,26 +19,20 @@ This repository is a home for all core units, also containing scripts for cross-
 
 1. Make sure that you have add your ssh keys to your github profile
 
-Follow this guide:  
+The project uses git submodules over ssh, so you need to be able to connect to github over ssh.
+You can follow this guide here:  
 https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent
 
 2. First of all please be sure that you have everything, command
 You can run the following commands, if you are using arch, nix or ubuntu
     
+- **Ubuntu**
+
 ```bash
-# Ubuntu
 apt-get install git autoconf build-essential libtool dub cmake
-# Arch
-pacman -Syu git make autoconf gcc libtool dub cmake
-# nix
-nix develop
 ```
+Download a D compiler ldc or dmd
 
-You can skip the next step if you installed with nix.  
-
-    
-3. Choose a D compiler ldc2 or dmd
-        
 - LLVM D compiler - ldc2 (latest working version is 1.35)
 ```bash
 wget https://github.com/ldc-developers/ldc/releases/download/v1.35.0/ldc2-1.35.0-linux-x86_64.tar.xz
@@ -54,24 +47,26 @@ tar xf dmd.2.105.2.linux.tar.xz
 export PATH="path-to-dmd2/dmd2/linux/bin64:$PATH"
 ```
 
-4. Install dstep if you need to be able to update c headers to d interface
-Download release binaries (or follow build instruction from https://github.com/jacob-carlborg/dstep)
-    
+- **Arch**
+
 ```bash
-wget https://github.com/jacob-carlborg/dstep/releases/download/v1.0.0/dstep-1.0.0-linux-x86_64.tar.xz
-tar xf dstep-1.0.0-linux-x86_64.tar.xz
-# Then copy the executable to a directory searched by your path, like the path you added when you set up your compiler
+pacman -Syu git make autoconf gcc libtool dub cmake
 ```
-    
-5. Verify that the binaries are available and check their version (comments showing versions used as of writing)
+
+- **Nix**
+
+```bash
+nix develop
+```
+
+3. Verify that the binaries are available and check their version (comments showing versions used as of writing)
     
 ```bash
-dstep --version # 1.0.0
 ldc2 --version # LDC - the LLVM D compiler (1.35.0): ...
 dmd --version # v2.105.2
 ```
 
-6. Cloning tagion repo
+4. Cloning tagion repo
 
 ```bash
 git clone git@github.com:tagion/tagion.git
@@ -110,6 +105,8 @@ make env-<topic>
 ```
 
 4. Compilation options, can be specified on the commandline or in a `local.mk` in the project root
+
+Notice that if you choose to compile with ldc there is a bug which means that the unittests wont run.
 
 ```bash
 # Showing the default values
@@ -189,3 +186,11 @@ The [Tagion Node Architecture](https://docs.tagion.org)
 ## Maintainers
 
 - [@cbleser](https://github.com/cbleser)
+- [@lucasnethaj](https://github.com/lucasnethaj)
+- [@imrying](https://github.com/imrying)
+
+## License
+The files in this repository is distributed under the [DECARD Services GmbH free and grant back license](LICENSE.md)  
+unless otherwise specified.  
+The parts which are distributed under other licenses include, but are not limited to the 
+[pbkdf2](src/lib-crypto/tagion/crypto/pbkdf2.d) module and the translated [secp256k1 headers](src/lib-crypto/tagion/crypto/secp256k1/c/README.md)  

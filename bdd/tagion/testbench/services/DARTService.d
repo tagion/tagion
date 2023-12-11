@@ -39,6 +39,7 @@ import tagion.services.TRTService;
 import tagion.services.replicator;
 import tagion.services.replicator : modify_log;
 import tagion.testbench.actor.util;
+import std.format;
 
 enum feature = Feature(
             "see if we can read and write trough the dartservice",
@@ -51,7 +52,7 @@ alias FeatureContext = Tuple!(
 
 @safe
 struct DARTWorker {
-    void task(string sock_addr, Document doc) @trusted {
+    void task(string sock_addr, Document doc, bool shouldError) @trusted {
         import nngd;
 
         int rc;
@@ -91,14 +92,20 @@ struct DARTWorker {
             check(rc == 0, "NNG error");
             writefln("sent req");
             Document received_doc = s.receive!(immutable(ubyte[]))();
-            if (s.errno == 0) {
-                writefln("RECEIVED RESPONSE: %s", received_doc.toPretty);
-                thisActor.stop = true;
+            thisActor.stop = true;
+            check(s.errno == 0, format("Received not valid response from nng", s.errno));
+
+            HiRPC hirpc = HiRPC(null);
+            auto received_hirpc = hirpc.receive(received_doc);
+            if (!shouldError) {
+                check(!received_hirpc.isError, format("received hirpc error: %s", received_doc.toPretty));
             }
             else {
-                writefln("ERROR %s", s.errno);
-                thisActor.stop = true;
+                check(received_hirpc.isError, format("Should have thrown error got: %s", received_doc.toPretty));
             }
+
+
+
         }
     }
 }
@@ -272,9 +279,12 @@ class WriteAndReadFromDartDb {
 
         check(equal(check_dart_indices, dummy_indexes), "error in hirpc checkread");
 
-        auto t1 = spawn!DARTWorker("dartworker1", interface_opts.sock_addr, check_read_sender);
-        auto t2 = spawn!DARTWorker("dartworker2", interface_opts.sock_addr, check_read_sender);
-        auto t3 = spawn!DARTWorker("dartworker3", interface_opts.sock_addr, check_read_sender);
+        auto t1 = spawn!DARTWorker("dartworker1", interface_opts.sock_addr, check_read_sender, false);
+        auto t2 = spawn!DARTWorker("dartworker2", interface_opts.sock_addr, check_read_sender, false);
+        auto t3 = spawn!DARTWorker("dartworker3", interface_opts.sock_addr, check_read_sender, false);
+
+        // send a message that should fail
+        auto t4 = spawn!DARTWorker("dartworker4", interface_opts.sock_addr, read_check_tuple[1], true);
 
         import core.thread;
 

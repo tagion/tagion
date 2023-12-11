@@ -20,14 +20,17 @@ DTARGETS=$(basename $(DTESTS))
 all: lib test
 	@echo "All done!"
 
-test: extern $(DTESTS)
+test: extern $(DTESTS) asset
 
 extern:
 	git submodule update --init --recursive && \
 	$(MAKE) -C extern/
 
 $(DTESTS):
-	$(DC) $(DCFLAGS) -of=$(basename $@) ${addprefix -I,$(DINC)} ${addprefix -L,$(DLFLAGS)} $@
+	$(DC) $(DCFLAGS) -od=build/tests -of=build/$(basename $@) ${addprefix -I,$(DINC)} ${addprefix -L,$(DLFLAGS)} $@
+
+asset:
+	cp -r tests/htdocs build/tests/
 
 lib:
 	$(DC) $(DCFLAGS) -lib -od=build/ -H -Hd=build/ ${addprefix -I,$(DINC)} ${addprefix -L,$(DLFLAGS)} libnng/libnng.d

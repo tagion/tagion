@@ -120,8 +120,8 @@ static void dartcache_handler ( WebData *req, WebData *rep, void* ctx ){
     rt_moduleTlsCtor();
 
     scope(exit){
-        thread_detachThis();
         rt_moduleTlsDtor();
+        thread_detachThis();
     }
 
     int rc;
@@ -278,8 +278,8 @@ static void i2p_handler ( WebData *req, WebData *rep, void* ctx ){
     rt_moduleTlsCtor();
 
     scope(exit){
-        thread_detachThis();
         rt_moduleTlsDtor();
+        thread_detachThis();
     }
     
     int rc;
