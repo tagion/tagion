@@ -37,17 +37,14 @@ jobs:
           compiler: dmd-latest
 
       - uses: actions/checkout@v4
-        with: 
-          path: ./tagion
 
       - name: Build docmentation
         run: |
-          cd tagion
           make ddoc
+          rm -rf .git
 
-      - name: Send ddoc to repository
+      - name: Push ddoc to repository
         run: |
-          ls logs
           git clone https://${{ secrets.GITBOT_TOKEN }}@github.com/tagion/ddoc.git
           cp -R build/ddoc/* ddoc/          
           cd ddoc
