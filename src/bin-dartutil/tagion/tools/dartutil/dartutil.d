@@ -311,16 +311,32 @@ int _main(string[] args) {
             File fout;
             fout=stdout;
             Rims rims;
+            Buffer keys;
             if (dartrim != "root") {
-                auto rim_decimals=dartrim.split(",");
+                auto rim_and_keys=dartrim.split(":");
+                auto rim_path=rim_and_keys.front;
+                rim_and_keys.popFront;
+                auto rim_decimals=rim_path.split(",");
                 if (!rim_decimals.empty && rim_decimals.length > 1) {
-                    dartrim=format("%(%02x%)",rim_decimals
+                    rim_path=format("%(%02x%)",rim_decimals
                     .until!(key => key.empty)
                     .map!(key => key.to!ubyte));
                 }
-                rims=Rims(dartrim.decode); 
+                rims=Rims(rim_path.decode);
+                if (!rim_and_keys.empty) {
+                    string keys_hex=rim_and_keys.front; 
+                    auto keys_decimals=keys_hex.split(",");
+                    if (keys_decimals.length > 1) {
+                            
+                        keys_hex=format("%(%02x%)", keys_decimals
+                        .until!(key => key.empty)
+                        .map!(key => key.to!ubyte));
+                        
+                    }
+                    keys=keys_hex.decode;
+                }
             }
-            verbose("Rim : %(%02x %)", rims.rims);
+            verbose("Rim : %(%02x %):%(%02x %)", rims.rims, keys);
             const sender=CRUD.dartRim(rims, hirpc);
             if (!outputfilename.empty) {
                 fout = File(outputfilename, "w");

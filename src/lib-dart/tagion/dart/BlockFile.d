@@ -114,15 +114,15 @@ class BlockFile {
         else {
             _file.open(filename, "r+");
         }
-        this(_file, SIZE, !read_only);
+        this(_file, SIZE, read_only);
     }
 
-    protected this(File file, immutable uint SIZE, const bool set_lock = true) {
+    protected this(File file, immutable uint SIZE, const bool read_only = false) {
         block_chains = new BlockChain;
         scope (failure) {
             file.close;
         }
-        if (set_lock) {
+        if (!read_only) {
             const lock = (() @trusted => file.tryLock(LockType.read))();
 
             check(lock, "Error: BlockFile in use (LOCKED)");
