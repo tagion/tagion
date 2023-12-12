@@ -61,7 +61,7 @@ void dart_worker(ShellOptions opt) {
     s.subscribe("");
     writeit("DS: subscribed");
     while (true) {
-        rc = s.dial(opt.tagion_subscription);
+        rc = s.dial(opt.tagion_subscription_addr);
         if (rc == 0)
             break;
         nng_sleep(100.msecs);
@@ -85,7 +85,7 @@ static void contract_handler(WebData* req, WebData* rep, void* ctx) {
         return;
     }
 
-    const contract_addr = opt.getRndAddress(opt.contract_sock_prefix);
+    const contract_addr = opt.node_contract_addr;
 
     writeit(format("WH: contract: with %d bytes for %s", req.rawdata.length, contract_addr));
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
@@ -160,9 +160,9 @@ static void dartcache_handler(WebData* req, WebData* rep, void* ctx) {
         dreq = owner_pkeys;
 
         NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
-        s.recvtimeout = msecs(60000);
+        s.recvtimeout = 60_000.msecs;
         while (true) {
-            rc = s.dial(opt.tagion_dart_sock_addr);
+            rc = s.dial(opt.node_dart_addr);
             if (rc == 0)
                 break;
         }
@@ -237,11 +237,11 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
         return;
     }
 
-    const dart_addr = opt.getRndAddress(opt.dart_sock_prefix);
+    const dart_addr = opt.node_dart_addr;
 
     writeit(format("WH: dart: with %d bytes for %s", req.rawdata.length, dart_addr));
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
-    s.recvtimeout = msecs(60000);
+    s.recvtimeout = 60_000.msecs;
     while (true) {
         rc = s.dial(dart_addr);
         if (rc == 0)

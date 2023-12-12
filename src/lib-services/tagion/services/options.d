@@ -7,6 +7,8 @@ import std.traits;
 
 import tagion.basic.dir;
 
+/// This function should be renamed
+/// Initially there it was only intended to be used for the contract address for the inputvalidator
 static immutable(string) contract_sock_addr(const string prefix = "") @safe nothrow {
     import std.exception : assumeWontThrow;
 

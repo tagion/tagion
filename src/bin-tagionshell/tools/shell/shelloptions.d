@@ -1,4 +1,7 @@
 module tagion.tools.shell.shelloptions;
+
+@safe:
+
 import tagion.services.options : contract_sock_addr;
 import tagion.utils.JSONCommon;
 import std.format;
@@ -7,35 +10,25 @@ enum mode0_prefix = "Node_%d_";
 
 import std.exception;
 
-shared static size_t counter = 0;
-
-
-@safe
 struct ShellOptions {
     string shell_uri;
     string shell_api_prefix;
     string contract_endpoint;
     string dart_endpoint;
     string dartcache_endpoint;
-    string tagion_sock_addr;
-    string tagion_dart_sock_addr;
-    string tagion_subscription;
+    string tagion_subscription_addr;
     string i2p_endpoint;
     string default_i2p_wallet;
     string default_i2p_wallet_pin;
-    size_t number_of_nodes;
-
-
-    string contract_sock_prefix;
-    string dart_sock_prefix;
+    uint number_of_nodes;
+    string contract_addr_prefix;
+    string dart_addr_prefix;
 
     void setDefault() nothrow {
-        contract_sock_prefix = "CONTRACT_";
-        dart_sock_prefix = "DART_";
-        tagion_sock_addr = contract_sock_addr(assumeWontThrow(format(mode0_prefix, 1))~contract_sock_prefix);
-        tagion_dart_sock_addr = contract_sock_addr(mode0_prefix~dart_sock_prefix);
-        tagion_subscription = contract_sock_addr("SUBSCRIPTION_");
+        contract_addr_prefix = "CONTRACT_";
+        dart_addr_prefix = "DART_";
         shell_uri = "http://0.0.0.0:8080";
+        tagion_subscription_addr = contract_sock_addr("SUBSCRIPTION_");
         shell_api_prefix = "/api/v1";
         contract_endpoint = "/contract";
         dart_endpoint = "/dart";
@@ -46,25 +39,40 @@ struct ShellOptions {
         number_of_nodes = 5;
     }
 
+    /// Gives a new node address each time it is called
+    string node_contract_addr() nothrow {
+        uint node_number = contract_robin.next(number_of_nodes);
+        return contract_sock_addr(assumeWontThrow(format(mode0_prefix, node_number)) ~ contract_addr_prefix);
+    }
 
-
-    string getRndAddress(string prefix) nothrow {
-        import core.atomic;
-
-        size_t loaded_count = counter.atomicLoad();
-        if (loaded_count == number_of_nodes-1) {
-            counter.atomicOp!"-="(4);
-        } else {
-            counter.atomicOp!"+="(1);
-        }
-        
-        try {
-            return contract_sock_addr(format(mode0_prefix, loaded_count)~prefix);
-        } catch(Exception e) {
-            assert(false);
-        }
+    /// Gives a new node address each time it is called
+    string node_dart_addr() nothrow {
+        uint node_number = dart_robin.next(number_of_nodes);
+        return contract_sock_addr(assumeWontThrow(format(mode0_prefix, node_number)) ~ dart_addr_prefix);
     }
 
     mixin JSONCommon;
     mixin JSONConfig;
+}
+
+synchronized class RoundRobin {
+    import core.atomic;
+
+    protected shared uint counter;
+    uint next(const uint number_of_nodes) nothrow {
+        if ((counter.atomicLoad + 1) >= number_of_nodes) {
+            counter.atomicStore(0);
+        }
+        else {
+            counter.atomicOp!"+="(1);
+        }
+        return counter;
+    }
+}
+
+shared RoundRobin contract_robin;
+shared RoundRobin dart_robin;
+shared static this() {
+    contract_robin = new RoundRobin();
+    dart_robin = new RoundRobin();
 }
