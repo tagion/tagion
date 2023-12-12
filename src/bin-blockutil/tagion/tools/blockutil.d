@@ -206,7 +206,7 @@ int _main(string[] args) {
             vout = stderr;
         }
         filename = args[1]; /// First argument is the blockfile name
-        analyzer.blockfile = BlockFile(filename);
+        analyzer.blockfile = BlockFile(filename, true);
         size_t index_from, index_to;
         if (!index_range.empty) {
             const fields =
@@ -217,8 +217,6 @@ int _main(string[] args) {
             verbose("Angle from [%d:%d]", index_from, index_to);
             analyzer.index_from = index_from;
             analyzer.index_to = index_to;
-            //return 0;
-
         }
 
         if (dump) {

@@ -240,7 +240,6 @@ class BlockFile {
         headerblock.write(file);
         _last_block_index = 1;
         masterblock.write(file, BLOCK_SIZE);
-        // hasheader = true;
     }
 
     /** 
@@ -258,7 +257,9 @@ class BlockFile {
             readMasterBlock;
             readStatistic;
             readRecyclerStatistic;
-            recycler.read(masterblock.recycle_header_index);
+            if (!read_only) {
+                recycler.read(masterblock.recycle_header_index);
+            }
         }
     }
 
@@ -801,7 +802,7 @@ class BlockFile {
         }
         while (index != Index.init) {
             auto add_segment = RecycleSegment(this, index);
-            fout.writefln("Index(%s), size(%s), next(%s)", add_segment.index, add_segment
+            fout.writefln("[%d], size=%d -> [%d]", add_segment.index, add_segment
                     .size, add_segment.next);
             index = add_segment.next;
         }
