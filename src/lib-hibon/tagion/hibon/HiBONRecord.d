@@ -1,6 +1,6 @@
 module tagion.hibon.HiBONRecord;
 
-import std.exception : assumeUnique, assumeWontThrow;
+import std.exception : assumeWontThrow;
 import std.stdio;
 import std.traits;
 import std.typecons : No, Tuple, Yes;
@@ -632,7 +632,7 @@ mixin template HiBONRecord(string CTOR = "") {
                                     basename!(this.tupleof[i])));
                         }
                     }
-                else {
+                    else {
                         enum name = default_name;
                     }
                     static assert(name.length > 0,
@@ -719,6 +719,10 @@ mixin template HiBONRecord(string CTOR = "") {
                 }
             }
         }
+    }
+
+    @safe final immutable(ubyte[]) serialize() const {
+        return toHiBON.serialize;
     }
 
     @safe final const(Document) toDoc() const {
@@ -1519,7 +1523,3 @@ unittest { /// Reseved keys and types
     }
 
 }
-
-
-
-

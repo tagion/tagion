@@ -1,3 +1,69 @@
+# Changelog for epoch 0 to 50000
+
+**getFee(amount, fee) patch**
+There was a bug in the getFee function from amount because the bill used for getting the size was using null values for the pubkey, nonce etc. This has been fixed by setting the sizes statically ensuring the fee is calculated to be the same as the `createPayment` function.
+
+**LRU support for none atomic key-value**
+Our least recently used class has been upgraded so that it is possible to use none-atomic key-values.
+
+**Versioning**
+We have updated our revision to include the latest tag. The revision for example looks like the following now.
+
+version: v1.0.1+dev+dirty
+git: git@github.com:tagion/tagion.git
+branch: current
+hash: 6258adbd9a805a16edb0f748553de00f69bcb76f
+revno: 12834
+build_date: imrying
+builder_name: philiprying@gmail.com
+builder_email: gcc (GCC) 12.3.0
+CC: DMD64 D Compiler v2.105.2
+
+As it can be seen it shows that the binary is on top of v1.0.1 with develop and the working tree is dirty when it was compiled.
+
+**.isMethod patch**
+We had a problem if you send a hirpc response as a input the service would throw an error. This has been mitigated so that it does not fail now.
+
+**HashGraph startup problem**
+We have had a problem with the hashgraph, where it sometimes would not produce any epochs and create an assert on a wavefront. This was because some empty events where not filtered out. This has been fixed so that the startup is completely stable now allowing our pipeline to be more trustworthy.
+
+**Open sourcing**
+Regarding open-sourcing the licenses have been updated as well as the CONTRIBUTING.md file.
+The github action for creating the ddoc documentaton has also been fixed so that it now runs.
+
+# Changelog for week 48/49
+
+**Graceful shutdown**
+We have implemented a mechanism for nodes to execute a graceful shutdown, ensuring that their states are saved before the shutdown process. This feature is particularly valuable during software upgrades.
+**ReceiveBuffer bug**
+We had a bug in our implementation of our non-blocking socket against the shell. This has been fixed. This issue was found by sending very large transactions with over 100 outputs through.
+
+**Fee change**
+The fee is now not dependent on the number of bills but rather the amount of bytes they fill. The simple calculation for a transaction is therefore the following.
+(output_bytes - input_bytes)*FEE_PER_BYTE + BASE_FEE. The quick one will spot that it is possible to produce a transaction with multiple inputs to one output resulting in a negative fee. This is on purpose in order to incentivize clients to decrease the amount of information that there is located in the database. A simple way to think about it is that it is like a deposit to the network, and the money will be returned to you if you decide to decrease your number of bytes in the database.
+
+**The classic bug: while(true)**
+Our DARTInterface that sends forwards requests from the shell had a while(true) loop without a sleep. This caused the system to utilize 5cpu cores to the max. This has been fixed meaning that a node uses around 500% less cpu.
+
+**General Update from Core**
+We are getting extremely close to going live now and we are looking so much forward to you who have been following these changelogs to be able to use and see what we have created and talked so much about.
+
+
+# Changelog for week 47/48
+
+**Transcript bug**
+Our operational tests found a bug where because the order of operations when iterating a hash-map is not guranteed we could end up in a scenario where the nodes would have the same state, but write different archives in different epochs regarding the consensus voting. This has now been fixed.
+
+**Crypto tape-out**
+We have had a final review of our secure-modules and they are now in the process of being externally reviewed one more time before go-live.
+
+**Wallet bug**
+We have fixed a bug in the wallet where the fee would be calculated incorrectly. This was due to a bug in the `createPayment` function that gathers the bills which are neccesary for creating the transaction.
+
+**NNG memory leak**
+We encountered a problem with the NNG-http server where it would leak memory when passing a `char*` to a c-function. This only happens when the string is concatenated with another string, which is a lazy operation. When then taking the pointer of this new variable it only points to the "first" part of the string meaning the other part leaks in memory. This problem has now been mitigated by manually allocating the memory using a static buffer which makes sure it is properly cleaned afterwards and creates a fully monolithic pointer.
+
+
 # Changelog for week 46/47
 
 **Boot from passkeys**

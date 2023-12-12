@@ -2,8 +2,7 @@ module tagion.tools.signs;
 import core.time;
 import std.array : join;
 import std.datetime;
-import std.exception : assumeUnique;
-import std.file : exists, fread = read, readText, fwrite = write;
+import std.file : exists, readText, fwrite = write;
 import std.format;
 import std.getopt;
 import std.path : extension, setExtension;
@@ -17,6 +16,7 @@ import tagion.dart.DARTBasic;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON : toPretty;
 import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONFile : fread;
 import tagion.hibon.HiBONtoText : decode, encodeBase64;
 import tagion.script.TagionCurrency;
 import tagion.script.standardnames;
@@ -135,18 +135,18 @@ int _main(string[] args) {
         writeln(logo);
         defaultGetoptPrinter(
                 [
-                "Documentation: https://tagion.org/",
-                "",
-                "Usage:",
-                format("%s [<option>...] <in-file>", program),
-                "",
-                "Where:",
-                "<in-file>           Is an input file in .json or .hibon format",
-                "",
+            "Documentation: https://tagion.org/",
+            "",
+            "Usage:",
+            format("%s [<option>...] <in-file>", program),
+            "",
+            "Where:",
+            "<in-file>           Is an input file in .json or .hibon format",
+            "",
 
-                "<option>:",
+            "<option>:",
 
-                ].join("\n"),
+        ].join("\n"),
                 main_args.options);
         return 0;
     }
@@ -211,8 +211,7 @@ int _main(string[] args) {
         return 1;
     }
 
-    immutable data = assumeUnique(cast(ubyte[]) fread(inputfilename));
-    const doc = Document(data);
+    Document doc = fread(inputfilename);
 
     if (!(DeliveryOrder.isRecord(doc) || DeliveryEvent.isRecord(doc))) {
         stderr.writefln("Error: inputfilename not correct type. Must be DeliveryOrder or DeliveryEvent");

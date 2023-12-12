@@ -204,12 +204,10 @@ synchronized class AddressBook {
      */
     void opIndexAssign(const NodeAddress addr, const Pubkey pkey)
     in ((pkey in addresses) is null, format("Address %s has already been set", pkey.cutHex))
-
     do {
         import std.stdio;
         import tagion.utils.Miscellaneous : cutHex;
 
-        log.trace("AddressBook.opIndexAssign %s:%d", pkey.cutHex, pkey.length);
         addresses[pkey] = addr;
     }
 
@@ -244,8 +242,6 @@ synchronized class AddressBook {
      * @return active node channels
      */
     Pubkey[] activeNodeChannels() @trusted const pure nothrow {
-        import std.exception : assumeUnique;
-
         auto channels = (cast(NodeAddresses) addresses).keys;
         return channels;
     }

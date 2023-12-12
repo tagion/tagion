@@ -31,11 +31,10 @@ void monitorServiceTask(immutable(MonitorOptions) opts) @trusted nothrow {
         //     setState(Ctrl.END);
         // }
 
-        log.register(opts.taskname);
+        log.task_name = opts.taskname;
 
         log("SockectThread port=%d addresss=%s", opts.port, opts.url);
-        pragma(msg, "REV: Why is the IP addresss not using the opts.url");
-        auto listener_socket = ListenerSocket("127.0.0.1",
+        auto listener_socket = ListenerSocket(opts.url,
                 opts.port, opts.timeout, opts.taskname);
         auto listener_socket_thread = listener_socket.start;
 
@@ -55,16 +54,14 @@ void monitorServiceTask(immutable(MonitorOptions) opts) @trusted nothrow {
                     &ownerTerminated,
                     (string json) @trusted { listener_socket.broadcast(json); },
                     (immutable(ubyte)[] hibon_bytes) @trusted { listener_socket.broadcast(hibon_bytes); },
-            (Document doc) @trusted { listener_socket.broadcast(doc); },
-            &taskfailure
+                    (Document doc) @trusted { listener_socket.broadcast(doc); },
+                    &taskfailure
             );
         }
     }
     catch (Throwable t) {
         import std.stdio;
 
-        pragma(msg, "REV: Is this not double doesn't fail write out the t");
-        log("%s", t);
         fail(t);
     }
 }

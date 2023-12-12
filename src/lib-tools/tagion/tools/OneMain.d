@@ -129,15 +129,15 @@ mixin template doOneMain(alltools...) {
             if (main_args.helpWanted) {
                 defaultGetoptPrinter(
                         [
-                        revision_text,
-                        "Documentation: https://tagion.org/",
-                        "Usage:",
-                        format("%s <program> [<option>...]", program),
-                        format("Tool programs %-(%s, %)", toolnames),
-                        "",
-                        "<option>:",
+                    revision_text,
+                    "Documentation: https://tagion.org/",
+                    "Usage:",
+                    format("%s <program> [<option>...]", program),
+                    format("Tool programs %-(%s, %)", toolnames),
+                    "",
+                    "<option>:",
 
-                        ].join("\n"),
+                ].join("\n"),
                         main_args.options);
                 return Result(0, true);
             }
@@ -175,7 +175,7 @@ mixin template doOneMain(alltools...) {
         if (!result.executed) {
             result = onetool_main(args);
             if (!result.executed) {
-                stderr.writefln("Error: Invalid tool %s, available tools are %-(%s, %)", tool, toolnames);
+                stderr.writefln("Error: Invalid tool %s, available tools are\n%-(%s\n%)", tool, toolnames);
             }
         }
 

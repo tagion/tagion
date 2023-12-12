@@ -81,7 +81,6 @@ class StdRefinement : Refinement {
 
 
         log(epoch_created, "epoch_succesful", event_payload);
-        writeln("SENT EPOCH LOG");
 
         if (task_names is TaskNames.init) {
             return;
@@ -90,7 +89,11 @@ class StdRefinement : Refinement {
         immutable(EventPackage*)[] epacks = events
             .map!((e) => e.event_package)
             .array;
-        locate(task_names.transcript).send(consensusEpoch(), epacks, cast(immutable(long)) decided_round.number, epoch_time);
+
+        auto transcript_tid = locate(task_names.transcript);
+        if (transcript_tid !is Tid.init) {
+            transcript_tid.send(consensusEpoch(), epacks, cast(immutable(long)) decided_round.number, epoch_time);
+        }
     }
 
     void excludedNodes(ref BitMask excluded_mask) {
@@ -186,11 +189,12 @@ class StdRefinement : Refinement {
         times.sort;
         const epoch_time = times[times.length / 2];
 
-        // version(EPOCH_LOG) {
+        version(EPOCH_LOG) {
         log.trace("%s Epoch round %d event.count=%d witness.count=%d event in epoch=%d time=%s",
                 hashgraph.name, decided_round.number,
                 Event.count, Event.Witness.count, events.length, epoch_time);
-        // }
+        }
+        log.trace("event.count=%d witness.count=%d event in epoch=%d", Event.count, Event.Witness.count, events.length);
 
         finishedEpoch(events, epoch_time, decided_round);
 

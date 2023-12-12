@@ -198,14 +198,7 @@ Fingerprint binaryHash(const(HashNet) net, scope const(Fingerprint) h1, scope co
  *  The Merkle root
  */
 Buffer sparsed_merkletree(const HashNet net, const(Buffer[]) table)
-in {
-    import std.stdio;
-
-    if (table.length != KEY_SPAN) {
-        writefln("table_length: %s", table.length);
-    }
-    assert(table.length == KEY_SPAN);
-}
+    in(table.length == KEY_SPAN)
 do {
     immutable(Buffer) merkletree(
             const(Buffer[]) left,

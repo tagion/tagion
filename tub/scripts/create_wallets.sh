@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-usage() { echo "Usage: $0 -b <bindir> [-n <nodes=5>] [-w <wallets=5>] [-k <network dir = ./network>] [-t <wallets dir = ./wallets>] [-u <key filename=./keys>]" 1>&2; exit 1; }
+usage() { echo "Usage: $0 -b <bindir> [-n <nodes=5>] [-w <wallets=5>] [-q <bills=50>] [-k <network dir = ./network>] [-t <wallets dir = ./wallets>] [-u <key filename=./keys>]" 1>&2; exit 1; }
 
 bdir=""
 nodes=5
@@ -10,7 +10,7 @@ ndir=$(readlink -m "./network")
 wdir=$(readlink -m "./wallets")
 keyfile=$(readlink -m "keys")
 
-while getopts "n:w:b:k:t:h:u:" opt
+while getopts "n:w:b:k:t:h:u:q:" opt
 do
     case $opt in
         h)  usage ;;
@@ -20,6 +20,7 @@ do
         k)  ndir=$(readlink -m "$OPTARG") ;;
         t)  wdir=$(readlink -m "$OPTARG") ;;
         u)  keyfile=$(readlink -m "$OPTARG") ;;
+        q)  bills=$OPTARG ;;
         *)  usage ;;
     esac
 done

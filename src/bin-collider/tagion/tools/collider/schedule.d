@@ -2,8 +2,6 @@ module tagion.tools.collider.schedule;
 
 import core.thread;
 import std.algorithm;
-import std.algorithm;
-import std.array;
 import std.array;
 import std.datetime.systime;
 import std.file : exists, mkdirRecurse;
@@ -13,6 +11,7 @@ import std.process;
 import std.range;
 import std.stdio;
 import std.traits;
+import std.path;
 import std.typecons : Tuple, tuple;
 import tagion.hibon.HiBONJSON;
 import tagion.tools.Basic : dry_switch, verbose_switch;
@@ -70,13 +69,15 @@ struct ScheduleRunner {
     const uint jobs;
     ScheduleTrace report;
     const BehaviourOptions opts;
+    const bool cov_enable;
     @disable this();
     this(
             ref Schedule schedule,
             const(string[]) stages,
-    const uint jobs,
-    const BehaviourOptions opts,
-    ScheduleTrace report = null) pure nothrow
+            const uint jobs,
+            const BehaviourOptions opts,
+            const bool cov_enable,
+            ScheduleTrace report = null) pure nothrow
     in (jobs > 0)
     in (stages.length > 0)
     do {
@@ -85,6 +86,7 @@ struct ScheduleRunner {
         this.jobs = jobs;
         this.opts = opts;
         this.report = report;
+        this.cov_enable = cov_enable;
     }
 
     static void sleep(Duration val) nothrow @nogc @trusted {
@@ -170,8 +172,8 @@ struct ScheduleRunner {
                 const ptrdiff_t job_index,
                 const SysTime time,
                 const(char[][]) cmd,
-        const(string) log_filename,
-        const(string[string]) env) {
+                const(string) log_filename,
+                const(string[string]) env) {
             static uint job_count;
             scope (exit) {
                 job_count++;
@@ -186,8 +188,20 @@ struct ScheduleRunner {
             else {
                 auto fout = File(log_filename, "w");
                 auto _stdin = (() @trusted => stdin)();
-                auto pid = spawnProcess(
-                        cmd, _stdin, fout, fout, env);
+
+                Pid pid;
+                if (!cov_enable) {
+                    pid = spawnProcess(cmd, _stdin, fout, fout, env);
+                }
+                else {
+                    const cov_path = buildPath(environment.get(BDD_LOG, "logs"), "cov").relativePath;
+                    const cov_flags = format(" --DRT-covopt=\"dstpath:%s merge:1\"", cov_path);
+                    mkdirRecurse(cov_path);
+                    // For some reason the drt cov flags don't work when spawned as a process 
+                    // so we just run it in a shell
+                    pid = spawnShell(cmd.join(" ") ~ cov_flags, _stdin, fout, fout, env);
+                }
+
                 writefln("%d] %-(%s %) # pid=%d", job_index, cmd,
                         pid.processID);
                 runners[job_index] = Runner(
@@ -209,12 +223,12 @@ struct ScheduleRunner {
         }
 
         uint count;
-        enum progress_meter = [
-                "|",
-                "/",
-                "-",
-                "\\",
-            ];
+        static immutable progress_meter = [
+            "|",
+            "/",
+            "-",
+            "\\",
+        ];
 
         while (!schedule_list.empty || runners.any!(r => r.pid !is r.pid.init)) {
             if (!schedule_list.empty) {
@@ -225,7 +239,8 @@ struct ScheduleRunner {
                         auto env = environment.toAA;
                         schedule_list.front.unit.envs.byKeyValue
                             .each!(e => env[e.key] = envExpand(e.value, env));
-                        const cmd = args ~ schedule_list.front.name ~
+                        const cmd = args ~
+                            schedule_list.front.name ~
                             schedule_list.front.unit.args
                                 .map!(arg => envExpand(arg, env))
                                 .array;
@@ -234,7 +249,7 @@ struct ScheduleRunner {
                         check((BDD_RESULTS in env) !is null,
                                 format("Environment variable %s or %s must be defined", BDD_RESULTS, COLLIDER_ROOT));
                         const log_filename = buildNormalizedPath(env[BDD_RESULTS],
-                        schedule_list.front.name).setExtension("log");
+                                schedule_list.front.name).setExtension("log");
                         batch(job_index, time, cmd, log_filename, env);
                         schedule_list.popFront;
                     }

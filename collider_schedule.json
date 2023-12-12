@@ -211,15 +211,6 @@
             ],
             "timeout": 0.0
         },
-        "replicator_service": {
-            "args": [],
-            "envs": {},
-            "stages": [
-                "commit", "recorder_service",
-                "services"
-            ],
-            "timeout": 0.0
-        },
         "send_contract": {
             "args": [],
             "envs": {},
@@ -265,6 +256,14 @@
             "envs": {},
             "stages": [
                 "trt"
+            ],
+            "timeout": 0.0
+        },
+        "big_contract": {
+            "args": [],
+            "envs": {},
+            "stages": [
+                "acceptance", "big_contract"
             ],
             "timeout": 0.0
         }

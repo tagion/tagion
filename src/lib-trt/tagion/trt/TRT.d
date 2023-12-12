@@ -27,16 +27,12 @@ struct TRTArchive {
     });
 }
 
-/// Create a recorder for the trt
-/// Params:
-///   dart_recorder = The recorder that modified the database
-/// Returns: Recorder for the trt
 void createTRTUpdateRecorder(
     immutable(RecordFactory.Recorder) dart_recorder,
     const(RecordFactory.Recorder) read_recorder,
     ref RecordFactory.Recorder trt_recorder,
     const HashNet net) {
-
+    // get a range of all the bills
     auto archive_bills = dart_recorder[]
         .filter!(a => a.filed.isRecord!TagionBill);
 

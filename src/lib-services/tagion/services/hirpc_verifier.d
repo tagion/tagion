@@ -35,7 +35,7 @@ enum RejectReason {
     notAHiRPC, // The Document received was not a vald HiRPC
     invalidMethod, // The method was not one of the accepted methods
     notSigned, // The rpc was not signed when it should have been
-    invalidType, // the rpc was not a SignedContract record 
+    invalidType, // the rpc was not a method or fit the criteria for any of the available contracts
 }
 
 /**
@@ -61,14 +61,16 @@ struct HiRPCVerifierService {
         }
 
         void contract(inputDoc, Document doc) @safe {
-            debug log("Received document \n%s", doc.toPretty);
-
             if (!doc.isRecord!(HiRPC.Sender)) {
                 reject(RejectReason.notAHiRPC, doc);
                 return;
             }
 
             const receiver = hirpc.receive(doc);
+            if (!receiver.isMethod) {
+                reject(RejectReason.invalidType, doc);
+                return;
+            }
 
             import tagion.dart.DART;
 
@@ -85,11 +87,6 @@ struct HiRPCVerifierService {
                 else {
                     reject(RejectReason.notSigned, doc);
                 }
-                break;
-            case DART.Queries.dartRead, DART.Queries.dartBullseye, DART.Queries.dartCheckRead:
-                auto dart_hirpc = dartHiRPCRR();
-                pragma(msg, "TODO(pr): relay to shell service?");
-                // locate(dart_task_name).send(dart_hirpc, doc);
                 break;
             default:
                 reject(RejectReason.invalidMethod, doc);

@@ -1,9 +1,10 @@
 module tagion.basic.ConsensusExceptions;
 
+@safe:
+
 import std.format : format;
 import tagion.basic.tagionexceptions : TagionException;
 
-@safe
 void Check(E)(bool flag, ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure
 if (is(E : ConsensusException)) {
     if (!flag) {
@@ -106,7 +107,6 @@ enum ConsensusFailCode {
 
 }
 
-@safe
 class ConsensusException : TagionException {
     immutable ConsensusFailCode code;
     this(string msg, ConsensusFailCode code = ConsensusFailCode.NONE,
@@ -121,21 +121,18 @@ class ConsensusException : TagionException {
     }
 }
 
-@safe
 class EventConsensusException : GossipConsensusException {
     this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         super(code, file, line);
     }
 }
 
-@safe
 class SecurityConsensusException : ConsensusException {
     this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         super(code, file, line);
     }
 }
 
-@safe
 class GossipConsensusException : ConsensusException {
     this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         super(code, file, line);
@@ -146,52 +143,46 @@ class GossipConsensusException : ConsensusException {
     }
 }
 
-@safe
 class HashGraphConsensusException : EventConsensusException {
     this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         super(code, file, line);
     }
 }
 
-@safe
 class DARTConsensusException : ConsensusException {
     this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         super(code, file, line);
     }
 }
 
-@safe
 class ScriptingEngineConsensusException : ConsensusException {
     this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         super(code, file, line);
     }
 }
 
-@safe
 class SSLSocketFiberConsensusException : ConsensusException {
     this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         super(code, file, line);
     }
 }
 
-@safe
 class SocketFiberConsensusException : ConsensusException {
     this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         super(code, file, line);
     }
 }
 
-@safe
 class SmartScriptException : ConsensusException {
     this(ConsensusFailCode code, string file = __FILE__, size_t line = __LINE__) pure {
         super(code, file, line);
     }
 }
 
-@trusted shared static this() {
+shared static this() {
     with (ConsensusFailCode) {
         // dfmt off
-        string[ConsensusFailCode] _consensus_error_messages=[
+        consensus_error_messages = [
             NONE                                        : "None",
             NO_MOTHER                                   : "If an event has no mother it can not have a father",
             MOTHER_AND_FATHER_SAME_SIZE                 : "Mother and Father must user the same hash function",
@@ -282,15 +273,10 @@ class SmartScriptException : ConsensusException {
             SMARTSCRIPT_INVALID_OUTPUT                  : "Input currency value is less then output value"
             ];
         // dfmt on
-        import std.exception : assumeUnique;
-
-        consensus_error_messages = assumeUnique(_consensus_error_messages);
-        assert(ConsensusFailCode.max + 1 == consensus_error_messages.length,
-                "Some error messages in " ~ consensus_error_messages.stringof ~ " is missing");
     }
 }
 
-static public immutable(string[ConsensusFailCode]) consensus_error_messages;
+static immutable(string[ConsensusFailCode]) consensus_error_messages;
 
 @safe template consensusCheck(Consensus) {
     static if (is(Consensus : ConsensusException)) {

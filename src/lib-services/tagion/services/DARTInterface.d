@@ -1,8 +1,10 @@
+/// Service which exposes dart reads over a socket
 module tagion.services.DARTInterface;
+
+@safe:
 
 import tagion.utils.JSONCommon;
 
-@safe
 struct DARTInterfaceOptions {
     import tagion.services.options : contract_sock_addr;
 
@@ -42,7 +44,7 @@ struct DartWorkerContext {
     string dart_task_name;
     int worker_timeout;
     bool trt_enable;
-    string trt_task_name; 
+    string trt_task_name;
 }
 
 enum InterfaceError {
@@ -82,11 +84,11 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
         send_doc(doc);
         // msg.body_append(doc.serialize);
     }
+
     void trtHiRPCResponse(trtHiRPCRR.Response res, Document doc) @trusted {
         writeln("TRT Inteface succesful response");
         send_doc(doc);
     }
-    
 
     if (msg is null) {
         writeln("no message received");
@@ -115,11 +117,14 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
     }
     writeln("Kernel received a document");
 
+    const empty_hirpc = HiRPC(null);
 
-    HiRPC empty_hirpc = HiRPC(null);
-
-    
     immutable receiver = empty_hirpc.receive(doc);
+    if (!receiver.isMethod) {
+        send_error(InterfaceError.InvalidDoc);
+        return;
+    }
+  
     if (receiver.method.name == "search" && cnt.trt_enable) {
         writeln("TRT SEARCH REQUEST");
         auto trt_tid = locate(cnt.trt_task_name);
@@ -135,8 +140,8 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
             return;
         }
 
-
-    } else {
+    }
+    else {
         auto dart_tid = locate(cnt.dart_task_name);
         if (dart_tid is Tid.init) {
             send_error(InterfaceError.DARTLocate, cnt.dart_task_name);
@@ -153,22 +158,24 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
     }
 }
 
-@safe
+import tagion.services.exception;
+
+void checkSocketError(int rc) {
+    if (rc != 0) {
+        import std.format;
+
+        throw new ServiceException(format("Failed to dial %s", nng_errstr(rc)));
+    }
+}
+
 struct DARTInterfaceService {
     immutable(DARTInterfaceOptions) opts;
     immutable(TRTOptions) trt_opts;
     immutable(TaskNames) task_names;
 
+    pragma(msg, "FIXME: make dart interface @safe when nng is");
     void task() @trusted {
-
-        void checkSocketError(int rc) {
-            if (rc != 0) {
-                import std.format;
-
-                throw new Exception(format("Failed to dial %s", nng_errstr(rc)));
-            }
-
-        }
+        setState(Ctrl.STARTING);
 
         DartWorkerContext ctx;
         ctx.dart_task_name = task_names.dart;
@@ -189,20 +196,8 @@ struct DARTInterfaceService {
         auto rc = sock.listen(opts.sock_addr);
         checkSocketError(rc);
 
-        setState(Ctrl.ALIVE);
-
-        while (!thisActor.stop) {
-            const received = receiveTimeout(
-                    Duration.zero,
-                    &signal,
-                    &ownerTerminated,
-                    &unknown
-            );
-            if (received) {
-                continue;
-            }
-        }
-
+        // Receive actor signals
+        run();
     }
 
 }

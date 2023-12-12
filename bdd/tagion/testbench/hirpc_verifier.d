@@ -34,6 +34,7 @@ int _main(string[] _) {
     hirpc_verifier_feature.TheDocumentIsNotAHiRPC(hirpc_verifier_handle, hirpc_verifier_success, hirpc_verifier_rejected);
     hirpc_verifier_feature.CorrectHiRPCFormatAndPermission(hirpc_verifier_handle, hirpc_verifier_success, hirpc_verifier_rejected);
     hirpc_verifier_feature.CorrectHiRPCWithPermissionDenied(hirpc_verifier_handle, hirpc_verifier_success, hirpc_verifier_rejected);
+    hirpc_verifier_feature.HIRPCWithIllegalMethod(hirpc_verifier_handle, hirpc_verifier_success, hirpc_verifier_rejected);
     hirpc_verifier_feature.run;
 
     waitforChildren(Ctrl.END);

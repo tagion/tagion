@@ -10,8 +10,8 @@ import std.traits;
 import tagion.utils.DList;
 import tagion.utils.Result;
 
+@safe:
 // LRU implements a non-thread safe fixed size LRU cache
-@safe
 class LRU(K, V) {
     enum does_not_have_immutable_members = __traits(compiles, { V v; void f(ref V _v) {
             _v = v;} });
@@ -58,8 +58,7 @@ class LRU(K, V) {
             }
 
             // add adds a value to the cache.  Returns true if an eviction occurred.
-            //    @trusted // <--- only in debug
-            bool add(scope const(K) key, ref V value) {
+            bool add(const(K) key, ref V value) {
                 // Check for existing item
                 auto ent = key in items;
                 if (ent !is null) {
@@ -95,16 +94,18 @@ class LRU(K, V) {
                         return true;
                     }
                     return false;
-                    // }
-                    // assert(0,
-                    //     format("%s has immutable members, use %s instead", V.stringof, opIndex(key).stringof));
                 }
             }
 
             V opIndex(scope const(K) key) {
                 static if (does_not_have_immutable_members) {
                     V value;
-                    get(key, value);
+                    const found = get(key, value);
+                    static if (hasMember!(V, "undefined")) {
+                        if (!found) {
+                            return V.undefined;
+                        }
+                    }
                     return value;
                 }
                 else {
@@ -118,7 +119,7 @@ class LRU(K, V) {
                 }
             }
 
-            void opIndexAssign(ref V value, scope const(K) key) {
+            void opIndexAssign(ref V value, const(K) key) {
                 add(key, value);
             }
 
@@ -411,7 +412,7 @@ class LRU(K, V) {
 
     unittest { // Test undefined
         @safe struct E {
-            immutable(char[]) x;
+            string x;
             static E undefined() {
                 return E("Not found");
             }
@@ -419,7 +420,6 @@ class LRU(K, V) {
 
         alias TestLRU = LRU!(int, E);
         uint count;
-        import std.stdio;
 
         void onEvicted(scope const(int) i, TestLRU.Element* e) @safe {
             count++;
@@ -440,4 +440,60 @@ class LRU(K, V) {
         assert(count == 1);
         assert(l.length == N - 1);
         assert(l[2] == E.undefined);
+    }
+
+    /// Test with a key which is not an atomic value
+    unittest {
+        import std.string : representation;
+
+        alias Key = immutable(ubyte[]);
+        static struct E {
+            string x;
+            static E undefined() {
+                return E("Not found");
+            }
+
+        }
+
+        alias TestLRU = LRU!(Key, E);
+        uint count;
+
+        void onEvicted(scope const(Key) key, TestLRU.Element* e) @safe {
+            count++;
+        }
+
+        auto l = new TestLRU(&onEvicted);
+
+        Key make_key(size_t num) {
+            return format("data %d", num).representation;
+        }
+
+        enum N = 4;
+        foreach (i; 0 .. N) {
+            auto key = make_key(i);
+            auto e = E(i.to!string);
+            l[key] = e;
+        }
+
+        assert(l[make_key(N)] == E.undefined);
+        assert(l[make_key(N - 1)] != E.undefined);
+        assert(l.length == N);
+        assert(l.remove(make_key(2)));
+        assert(count == 1);
+        assert(l.length == N - 1);
+        assert(l[make_key(2)] == E.undefined);
+        alias TestSyncLRU = SyncLRU!(Key, E);
+    }
+
+    synchronized
+    class SyncLRU(K, V) {
+        alias LRU_t = LRU!(K, V);
+        protected LRU!(K, V) _lru;
+
+        void opIndexAssign(ref V value, const(K) key) @trusted {
+            pragma(msg, "LRU ", typeof(_lru));
+            pragma(msg, "LRU_t ", LRU_t);
+            auto tmp_lru = cast(LRU_t) _lru;
+            tmp_lru.add(key, value);
+        }
     }

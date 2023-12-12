@@ -258,12 +258,9 @@ JSONValue toJSONType(string str, JSONType type) @safe pure {
         return JSONValue(str.to!uint);
     case null_:
         return JSONValue(null);
-    case object:
-    case array: //best guess
-    case string:
+    case object, array, string: //best guess
         return JSONValue(str);
-    case false_:
-    case true_:
+    case false_, true_:
         return JSONValue(str.to!bool);
     }
 }

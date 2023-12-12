@@ -1,11 +1,14 @@
 [Unit]
 Description="Test deployment of tagionshell"
+After=multi-user.target
 
 [Service]
 WorkingDirectory=%h/.local/share/tagion/
-ExecStart=%h/.local/share/bin/tagion shell
+ExecStart=%h/.local/bin/tagion shell
+ExecStopPost=%h/.local/share/tagion/wave/failed.sh
 Restart=always
-RestartSec=30
+RestartSec=3
+MemoryHigh=25M
 MemoryMax=50M
 
 [Install]

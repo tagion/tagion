@@ -28,14 +28,14 @@ interface Synchronizer {
         */
     void record(RecordFactory.Recorder recorder);
     /**
-        * This function is call when hole branches doesn't exist in the foreign DART
+        * This function is called when whole branches doesn't exist in the foreign DART
         * and need to be removed in the local DART
         * Params:
         *   rims = path to the selected rim
         */
-    void remove_recursive(const Rims rims);
+    void removeRecursive(const Rims rims);
     /**
-        * This function is called when the SynchronizationFiber run function finishes
+        * This function is called when the SynchronizationFiber run-function finishes
         */
     void finish();
     /**
@@ -71,20 +71,7 @@ abstract class StdSynchronizer : Synchronizer {
         //        Index index; /// Current block index
         HiRPC hirpc;
     }
-    /**
-        * 
-        * Params:
-        *     journal_filename = Name of blockfile used for recording the modification journal
-        *                        Must be created by BlockFile.create method
-        *     chunck_size = Set the max number of archives removed per chuck
-        */
-    version (none) this(string journal_filename, const uint chunck_size = 0x400) {
-        journalfile = BlockFile(journal_filename);
-        this.chunck_size = chunck_size;
-    }
-
     this(const uint chunck_size = 0x400) {
-        //       this.journalfile = journalfile;
         this.chunck_size = chunck_size;
     }
 
@@ -93,7 +80,8 @@ abstract class StdSynchronizer : Synchronizer {
         * Params:
         *   selected_rims = selected rims to be removed
         */
-    void remove_recursive(const Rims selected_rims) {
+    void removeRecursive(const Rims selected_rims) {
+
         auto rim_walker = owner.rimWalkerRange(selected_rims.rims);
         uint count = 0;
         auto recorder_worker = owner.recorder;
@@ -163,7 +151,7 @@ abstract class StdSynchronizer : Synchronizer {
 @safe
 class JournalSynchronizer : StdSynchronizer {
     protected {
-        BlockFile journalfile; /// The actives is stored in this journal file. Which late can be run via the replay function
+        BlockFile journalfile; /// The actives is stored in this journal file. Which later can be run via the replay function
         Index index; /// Current block index
     }
     this(BlockFile journalfile, const uint chunck_size = 0x400) {
@@ -172,7 +160,7 @@ class JournalSynchronizer : StdSynchronizer {
     }
 
     /** 
-        * Update the add the recorder to the journal and store it
+        * Update and adds the recorder to the journal and store it
         * Params:
         *   recorder = DART recorder
         */

@@ -59,6 +59,7 @@ struct AccountDetails {
         activated.remove(bills[index].owner);
     }
 
+    pragma(msg, "Don't think this function fits in AccountDetails");
     int check_contract_payment(const(DARTIndex)[] inputs, const(Document[]) outputs) {
         import std.algorithm : countUntil;
         import tagion.crypto.SecureNet : StdHashNet;
@@ -83,7 +84,7 @@ struct AccountDetails {
             }
         }
 
-        if(bills.length == 0){
+        if (bills.length == 0) {
             return 1;
         }
 
@@ -101,25 +102,28 @@ struct AccountDetails {
         return false;
     }
 
-    void add_bill(TagionBill bill) {
+    bool add_bill(TagionBill bill) {
         if (bill.owner in requested) {
             bills ~= requested[bill.owner];
             requested.remove(bill.owner);
-
+            return true;
         }
+        return false;
     }
 
     TagionBill add_bill(const Document doc) {
         auto bill = TagionBill(doc);
-        add_bill(bill);
+        const added=add_bill(bill);
+        if (added) {
         return bill;
+    }
+        return TagionBill.init;
     }
 
     void requestBill(TagionBill bill, Buffer derive) {
         check((bill.owner in derivers) is null, format("Bill %(%x%) already exists", bill.owner));
         derivers[bill.owner] = derive;
         requested[bill.owner] = bill;
-
     }
     /++
          Clear up the Account

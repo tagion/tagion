@@ -74,7 +74,7 @@ struct Supervisor {
         //     GC.collect;
         // }
         
-        if (waitforChildren(Ctrl.ALIVE, 20.seconds)) {
+        if (waitforChildren(Ctrl.ALIVE, 40.seconds)) {
             // runTimeout(10.seconds, &timeout);
             run();
         }

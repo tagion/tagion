@@ -11,6 +11,7 @@ import std.stdio;
 import std.string : representation;
 import tagion.basic.Message;
 import tagion.basic.Types : Buffer, FileExtension, hasExtension;
+import tagion.basic.basic : isinit;
 import tagion.basic.range : doFront;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.SecureNet;
@@ -28,7 +29,7 @@ import tagion.wallet.WalletRecords;
 import std.range;
 import std.typecons;
 import tagion.communication.HiRPC;
-import tagion.crypto.Types : Pubkey;
+import tagion.crypto.Types : Pubkey, Fingerprint;
 import tagion.dart.DARTBasic;
 import tagion.dart.DARTcrud;
 import tagion.hibon.Document;
@@ -39,6 +40,8 @@ import tagion.script.execute : ContractExecution;
 import tagion.script.standardnames;
 import tagion.tools.Basic;
 import tagion.wallet.SecureWallet : check;
+import tagion.wallet.WalletException;
+import tagion.tools.secretinput;
 
 //import tagion.wallet.WalletException : check;
 /**
@@ -93,24 +96,23 @@ HiRPC.Receiver sendSubmitHiRPC(string address, HiRPC.Sender contract, const(Secu
 
     int rc;
     NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
+    sock.sendtimeout = 1000.msecs;
+    sock.sendbuf = 0x4000;
+    sock.recvtimeout = 3000.msecs;
+
     rc = sock.dial(address);
     if (rc != 0) {
-        throw new Exception(format("Could not dial address %s: %s", address, nng_errstr(rc)));
+        throw new WalletException(format("Could not dial address %s: %s", address, nng_errstr(rc)));
     }
-    sock.sendtimeout = 1000.msecs;
-    sock.sendbuf = 4096;
 
     rc = sock.send(contract.toDoc.serialize);
-    if (rc != 0) {
-        throw new Exception(format("Could not send bill to network %s", nng_errstr(rc)));
-    }
+    check(sock.m_errno == nng_errno.NNG_OK, format("NNG_ERRNO %d", cast(int) sock.m_errno));
+    check(rc == 0, format("Could not send bill to network %s", nng_errstr(rc)));
 
     auto response_data = sock.receive!Buffer;
     auto response_doc = Document(response_data);
     // We should probably change these exceptions so it always returns a HiRPC.Response error instead?
-    if (!response_doc.isRecord!(HiRPC.Receiver) || sock.m_errno != 0) {
-        throw new Exception("Error response when sending bill");
-    }
+    check(response_doc.isRecord!(HiRPC.Receiver), format("Error in response when sending bill %s", response_doc.toPretty));
 
     HiRPC hirpc = HiRPC(net);
     return hirpc.receive(response_doc);
@@ -125,12 +127,11 @@ HiRPC.Receiver sendShellSubmitHiRPC(string address, HiRPC.Sender contract, const
     ]);
 
     if (rep.status != http_status.NNG_HTTP_STATUS_OK) {
-        throw new Exception(format("Send shell submit error(%d): %s", rep.status, rep.msg));
+        throw new WalletException(format("Send shell submit error(%d): %s", rep.status, rep.msg));
     }
 
     Document response_doc = Document(cast(immutable) rep.rawdata);
     HiRPC hirpc = HiRPC(net);
-    writefln("%s", response_doc.toPretty);
     return hirpc.receive(response_doc);
 }
 
@@ -142,7 +143,7 @@ HiRPC.Receiver sendShellHiRPC(string address, HiRPC.Sender dart_req, HiRPC hirpc
     ]);
 
     if (rep.status != http_status.NNG_HTTP_STATUS_OK) {
-        throw new Exception(format("send shell submit error(%d): %s", rep.status, rep.msg));
+        throw new WalletException(format("send shell submit error(%d): %s", rep.status, rep.msg));
     }
 
     Document response_doc = Document(cast(immutable) rep.rawdata);
@@ -156,8 +157,6 @@ HiRPC.Receiver sendShellHiRPC(string address, Document dart_req, HiRPC hirpc) {
     WebData rep = WebClient.post(address, cast(ubyte[]) dart_req.serialize, ["Content-type": "application/octet-stream"]);
 
     Document response_doc = Document(cast(immutable) rep.rawdata);
-    writefln("%s", response_doc.toPretty);
-
     return hirpc.receive(response_doc);
 }
 
@@ -184,16 +183,16 @@ HiRPC.Receiver sendDARTHiRPC(string address, HiRPC.Sender dart_req, HiRPC hirpc,
             nng_sleep(100.msecs);
         }
         if (rc != 0) {
-            throw new Exception(format("Could not dial kernel %s, %s", address, nng_errstr(rc)));
+            throw new WalletException(format("Could not dial kernel %s, %s", address, nng_errstr(rc)));
         }
     }
     rc = s.send(dart_req.toDoc.serialize);
     if (s.errno != 0) {
-        throw new Exception(format("error in send of darthirpc: %s", s.errno));
+        throw new WalletException(format("error in send of darthirpc: %s", s.errno));
     }
     Document received_doc = s.receive!Buffer;
     if (s.errno != 0) {
-        throw new Exception(format("REQ Socket error after receive: %s", s.errno));
+        throw new WalletException(format("REQ Socket error after receive: %s", s.errno));
     }
 
     try {
@@ -267,7 +266,7 @@ struct WalletInterface {
     * @brief change pin code interface
     */
     bool loginPincode(const bool changepin) {
-        CLEARSCREEN.write;
+        //CLEARSCREEN.write;
         char[] old_pincode;
         char[] new_pincode1;
         char[] new_pincode2;
@@ -278,14 +277,16 @@ struct WalletInterface {
             new_pincode2[] = 0;
         }
         foreach (i; 0 .. retry) {
-            HOME.write;
+            //HOME.write;
             writefln("%1$sAccess code required%2$s", GREEN, RESET);
             writefln("%1$sEnter empty pincode to proceed recovery%2$s", YELLOW, RESET);
-            writefln("pincode:");
+            //writefln("pincode:");
             scope (exit) {
                 old_pincode[] = 0;
             }
-            readln(old_pincode);
+            info("Press ctrl-C to break");
+            info("Press ctrl-A to show the pincode");
+            getSecret("pincode: ", old_pincode);
             old_pincode.word_strip;
             if (old_pincode.length) {
                 secure_wallet.login(old_pincode);
@@ -295,28 +296,28 @@ struct WalletInterface {
                     }
                     break;
                 }
-                writefln("%1$sWrong pincode%2$s", RED, RESET);
+                error("Wrong pincode");
             }
         }
-        CLEARSCREEN.write;
+        //CLEARSCREEN.write;
         if (changepin && secure_wallet.isLoggedin) {
             foreach (i; 0 .. retry) {
-                HOME.write;
-                CLEARSCREEN.write;
+                //HOME.write;
+                //CLEARSCREEN.write;
                 scope (success) {
                     CLEARSCREEN.write;
                 }
                 LINE.writeln;
-                writefln("%1$sChange you pin code%2$s", YELLOW, RESET);
+                info("Change you pin code");
                 LINE.writeln;
                 if (secure_wallet.pin.D) {
                     bool ok;
                     do {
-                        writefln("New pincode:%s", CLEARDOWN);
-                        readln(new_pincode1);
+                        info("New pincode:%s", CLEARDOWN);
+                        getSecret("pincode: ", new_pincode1);
                         new_pincode1.word_strip;
-                        writefln("Repeaté:");
-                        readln(new_pincode2);
+                        info("Repeaté:");
+                        getSecret("pincode: ", new_pincode2);
                         new_pincode2.word_strip;
                         ok = (new_pincode1.length >= 4);
                         if (ok && (ok = (new_pincode1 == new_pincode2)) is true) {
@@ -330,13 +331,6 @@ struct WalletInterface {
                         }
                     }
                     while (!ok);
-                    /*    
-                }
-                    else {
-                        writefln("%1$sWrong pin%2$s", GREEN, RESET);
-                        pressKey;
-                    }
-*/
                     return true;
                 }
                 writefln("%1$sPin code is missing. You need to recover you keys%2$s", RED, RESET);
@@ -345,8 +339,13 @@ struct WalletInterface {
         return false;
     }
 
-    void generateSeedFromPassphrase(const(char[]) passphrase, const(char[]) pincode, const(char[]) salt = null) {
-        secure_wallet = StdSecureWallet(passphrase, pincode, salt);
+    bool generateSeedFromPassphrase(const(char[]) passphrase, const(char[]) pincode, const(char[]) salt = null) {
+        auto tmp_secure_wallet = StdSecureWallet(passphrase, pincode, salt);
+        if (!secure_wallet.wallet.isinit && secure_wallet.wallet.S != tmp_secure_wallet.wallet.S) {
+            return false;
+        }
+        secure_wallet = tmp_secure_wallet;
+        return true;
     }
 
     /**
@@ -553,39 +552,48 @@ struct WalletInterface {
         return show(rec.toDoc);
     }
 
-    string toText(const TagionBill bill, string mark = null) {
+    static string toText(
+            const(HashNet) hash_net,
+            const TagionBill bill,
+            string mark = null) {
         import std.format;
         import tagion.hibon.HiBONtoText;
         import tagion.utils.StdTime : toText;
 
-        const value = format("%10.3f", bill.value.value);
-        return format("%2$s%3$27-s %4$s %5$13.6fTGN%1$s",
+        return format("%2$s%3$27-s %4$s %5$17.6fTGN%1$s",
                 RESET, mark,
                 bill.time.toText,
-                secure_wallet.net.calcHash(bill)
+                hash_net.calcHash(bill)
                 .encodeBase64,
                 bill.value.value);
     }
 
-    void listAccount(File fout) {
-        const line = format("%-(%s%)", "- ".repeat(40));
-        fout.writefln("%-5s %-27s %-45s %-40s", "No", "Date", "Fingerprint", "Value");
-        fout.writeln(line);
-        auto bills = secure_wallet.account.bills ~ secure_wallet.account.requested.values;
-
-        bills.sort!(q{a.time < b.time});
-        foreach (i, bill; bills) {
-            string mark = GREEN;
-            if (bill.owner in secure_wallet.account.requested) {
-                mark = RED;
+    void listAccount(File fout, const(HashNet) hash_net = null) {
+        void innerAccount(const(HashNet) _hash_net) {
+            const line = format("%-(%s%)", "- ".repeat(40));
+            fout.writefln("%-5s %-27s %-45s %-40s", "No", "Date", "Fingerprint", "Value");
+            fout.writeln(line);
+            auto bills = secure_wallet.account.bills ~ secure_wallet.account.requested.values;
+            bills.sort!(q{a.time < b.time});
+            foreach (i, bill; bills) {
+                string mark = GREEN;
+                if (bill.owner in secure_wallet.account.requested) {
+                    mark = RED;
+                }
+                else if (bill.owner in secure_wallet.account.activated) {
+                    mark = YELLOW;
+                }
+                writefln("%4s] %s", i, toText(_hash_net, bill, mark));
+                verbose("%s", show(bill));
             }
-            else if (bill.owner in secure_wallet.account.activated) {
-                mark = YELLOW;
-            }
-            writefln("%4s] %s", i, toText(bill, mark));
-            verbose("%s", show(bill));
+            fout.writeln(line);
         }
-        fout.writeln(line);
+
+        if (hash_net) {
+            innerAccount(hash_net);
+            return;
+        }
+        innerAccount(secure_wallet.net);
     }
 
     void listInvoices(File fout) {
@@ -605,17 +613,17 @@ struct WalletInterface {
 
     void sumAccount(File fout) {
         with (secure_wallet.account) {
-            fout.writefln("Available : %13.6fTGN", available.value);
-            fout.writefln("Locked    : %13.6fTGN", locked.value);
-            fout.writefln("Total     : %13.6fTGN", total.value);
+            fout.writefln("Available : %17.6fTGN", available.value);
+            fout.writefln("Locked    : %17.6fTGN", locked.value);
+            fout.writefln("Total     : %17.6fTGN", total.value);
 
         }
     }
 
     struct Switch {
         bool force;
-        bool list;
-        bool sum;
+        //        bool list;
+        //        bool sum;
         bool send;
         bool sendkernel;
         bool pay;
@@ -689,20 +697,12 @@ struct WalletInterface {
 
                         }
                         if (bill !is TagionBill.init) {
-                            writefln("%s", toText(bill));
+                            writefln("%s", toText(secure_wallet.net, bill));
                             verbose("%s", show(bill));
                             secure_wallet.addBill(bill);
                             save_wallet = true;
                         }
                     }
-                }
-                if (list) {
-                    listAccount(stdout);
-                    listInvoices(stdout);
-                    sum = true;
-                }
-                if (sum) {
-                    sumAccount(stdout);
                 }
                 if (request) {
                     secure_wallet.account.requested.byValue
@@ -731,6 +731,8 @@ struct WalletInterface {
                         HiRPC.Receiver received = sendkernel ?
                             sendDARTHiRPC(options.dart_address, req, hirpc) : sendShellHiRPC(
                                     options.addr ~ options.dart_shell_endpoint, req, hirpc);
+
+                        verbose("Received response", received.toPretty);
 
                         auto res = trt_update ? secure_wallet.setResponseUpdateWallet(
                                 received) : secure_wallet.setResponseCheckRead(received);

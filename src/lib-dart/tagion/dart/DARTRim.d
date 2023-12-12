@@ -21,7 +21,7 @@ static struct SectorRange {
         * The start start sector
         * Returns: start angle
         */
-    @property ushort from_sector() inout {
+    @property ushort from_sector() const {
         return _from_sector;
     }
 
@@ -29,9 +29,10 @@ static struct SectorRange {
          * The end sector
          * Returns: end angle 
          */
-    @property ushort to_sector() inout {
+    @property ushort to_sector() const {
         return _to_sector;
     }
+
 
     @exclude protected bool flag;
     mixin HiBONRecord!(q{
@@ -67,6 +68,9 @@ static struct SectorRange {
          * Returns: 
          */
     bool inRange(const Rims rims) const pure nothrow {
+        if (rims.rims.length ==1 ) {
+            return sectorInRange(rims.rims[0] << 8, _from_sector & 0xFF00, _to_sector);
+        }
         return (rims.rims.length == 0) || sectorInRange(rims.sector, _from_sector, _to_sector);
     }
 
@@ -91,6 +95,8 @@ static struct SectorRange {
             return (sector_origin < to_origin);
         }
     }
+
+
 
     /**
          * Check if current sector has reached the end

@@ -19,6 +19,9 @@ int _main(string[] args) {
     mkdirRecurse(module_path);
     auto opts = DARTOptions(module_path, "dart".setExtension(FileExtension.dart));
     auto replicator_path = buildPath(module_path, "replicator");
+    if (replicator_path.exists) {
+        rmdirRecurse(replicator_path);
+    }
     mkdirRecurse(replicator_path);
     auto replicator_opts = ReplicatorOptions(replicator_path);
     TRTOptions trt_options;

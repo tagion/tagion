@@ -14,18 +14,21 @@ import std.datetime;
 import std.stdio;
 import std.random;
 import std.typecons : Tuple;
-import std.concurrency : ownerTid, receiveOnly, send, thisTid, spawn, receive;
 import tagion.behaviour;
 import tagion.communication.HiRPC;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONRecord;
+import tagion.hibon.HiBONFile;
 import tagion.script.TagionCurrency;
 import tagion.script.common;
+import tagion.basic.Types : FileExtension;
+import tagion.basic.tagionexceptions;
 import tagion.testbench.tools.Environment;
-import tagion.tools.Basic : Main;
+import tagion.tools.Basic : Main, __verbose_switch;
 import tagion.tools.wallet.WalletInterface;
 import tagion.tools.wallet.WalletOptions : WalletOptions;
 import tagion.utils.JSONCommon;
+import tagion.utils.StdTime;
 import tagion.wallet.AccountDetails;
 
 alias operational = tagion.testbench.e2e.operational;
@@ -48,42 +51,53 @@ WalletInterface* createInterface(string config, string pin) {
     return wallet_interface;
 }
 
+@recordType("tx_stats")
+struct TxStats {
+    TagionCurrency total_fees;
+    TagionCurrency total_sent;
+    uint transactions;
+    uint failed_runs;
+    sdt_t start;
+    sdt_t end;
+
+    mixin HiBONRecord;
+}
+
 int _main(string[] args) {
     const program = args[0];
-    string wallet_configs_path = "~/.local/share/tagion/wallets";
+    string[] wallet_config_files;
     string[] wallet_pins;
     bool sendkernel = false;
-    int duration = 3;
+    uint duration = 3;
+    int max_failed_runs = 5;
     DurationUnit duration_unit = DurationUnit.days;
 
-    arraySep = ",";
+    __verbose_switch = true;
+
+    auto tx_stats = new TxStats;
+
     auto main_args = getopt(args,
-            "w", "wallet configs path files", &wallet_configs_path,
+            "w", "wallet config files", &wallet_config_files,
             "x", "wallet pins", &wallet_pins,
             "sendkernel", "Send requests directory to the kernel", &sendkernel,
             "duration", format("The duration the test should run for (current = %s)", duration), &duration,
             "unit", format("The duration unit on of %s (current = %s)", [EnumMembers!DurationUnit], duration_unit), &duration_unit,
+    "max_failed_runs", format("The maximum amount of failed runs, before the process exits (current = %s)", max_failed_runs), &duration_unit,
     );
 
     if (main_args.helpWanted) {
         defaultGetoptPrinter(
                 [
-            "Usage:",
-            format("%s [<option>...] <config.json> <files>", program),
-            "<option>:",
-        ].join("\n"),
+                "Usage:",
+                format("%s [<option>...] <config.json> <files>", program),
+                "<option>:",
+                ].join("\n"),
                 main_args.options);
         return 0;
     }
 
-    import std.process : environment;
-
-    const HOME = environment.get("HOME");
-    string[] wallet_config_files = dirEntries(buildPath(HOME, wallet_configs_path), "wallet*.json", SpanMode
-            .shallow).map!(a => a.name).array.sort.array;
-
-    if (wallet_config_files.empty) {
-        writefln("No wallet configs available in %s", wallet_configs_path);
+    if (!wallet_config_files.length == 2) {
+        writeln("Exactly 2 wallets should be provided");
         return 1;
     }
 
@@ -99,9 +113,6 @@ int _main(string[] args) {
     ConfigAndPin[] configs_and_pins
         = wallet_config_files.zip(wallet_pins).map!(c => ConfigAndPin(c[0], c[1])).array;
 
-    // We only want to make one transaction per wallet pair so we can keep track of the balance changes
-    // const max_concurrent_jobs = (wallet_config_files.length / 2).to!uint;
-    const max_concurrent_jobs = 1;
     Duration max_runtime;
     with (DurationUnit) final switch (duration_unit) {
     case days:
@@ -115,6 +126,14 @@ int _main(string[] args) {
         break;
     }
 
+    void pickWallets(ref ConfigAndPin[] configs_and_pins, out ConfigAndPin sender, out ConfigAndPin receiver, uint run)
+    in (configs_and_pins.length >= 2)
+    out (; sender != receiver)
+    do {
+        sender = configs_and_pins[!(run & 1)];
+        receiver = configs_and_pins[(run & 1)];
+    }
+
     // Times of the monotomic clock
     const start_clocktime = MonoTime.currTime;
     const end_clocktime = start_clocktime + max_runtime;
@@ -122,103 +141,66 @@ int _main(string[] args) {
     // Date for pretty reporting
     const start_date = cast(DateTime) Clock.currTime;
     const predicted_end_date = start_date + max_runtime;
+    sdt_t start_sdt_time = currentTime();
 
     int run_counter;
+    int failed_runs_counter;
     scope (exit) {
         const end_date = cast(DateTime)(Clock.currTime);
         writefln("Made %s runs", run_counter);
-        writefln("Test ended on %s %s", end_date, end_date);
+        writefln("Test ended on %s", end_date);
+        tx_stats.transactions = run_counter - failed_runs_counter;
+        tx_stats.failed_runs = failed_runs_counter;
+        tx_stats.start = start_sdt_time;
+        tx_stats.end = currentTime(); // sdt time
+
+        const tx_file = buildPath(env.dlog, "tx_stats".setExtension(FileExtension.hibon));
+        mkdirRecurse(dirName(tx_file));
+        fwrite(tx_file, *tx_stats);
     }
 
     writefln("Starting operational test now on\n\t%s\nand will end in %s, on\n\t%s",
             start_date, max_runtime,
             predicted_end_date);
 
-    auto rnd = Random(unpredictableSeed);
-
-    void pickWallets(ref ConfigAndPin[] configs_and_pins, out ConfigAndPin sender, out ConfigAndPin receiver)
-    in (configs_and_pins.length >= 2)
-    out (; sender != receiver)
-    do {
-        ulong index1 = uniform(0, configs_and_pins.length, rnd);
-        ulong index2;
-        do {
-            index2 = uniform(0, configs_and_pins.length, rnd);
-        }
-        while (index1 == index2);
-
-        sender = configs_and_pins[index1];
-        receiver = configs_and_pins[index2];
-        // configs_and_pins = configs_and_pins.remove(index1).remove(index2);
-    }
-
-    bool  new_job(ref ConfigAndPin[] configs_and_pins) {
-        ConfigAndPin sender;
-        ConfigAndPin receiver;
-        pickWallets(configs_and_pins, sender, receiver);
-
-        // spawn((string sender_config, string sender_pin, string receiver_config, string receiver_pin, bool sendkernel) {
-            bool job_success;
-            // scope (exit) {
-            //     ownerTid.send(job_success);
-            // }
-            auto sender_interface = createInterface(sender.config, sender.pin);
-            auto receiver_interface = createInterface(receiver.config, receiver.pin);
-
-            writefln("Making transaction between sender %s and receiver %s", sender.config, receiver.config);
-
-            auto operational_feature = automation!operational;
-            operational_feature.SendNContractsFromwallet1Towallet2(sender_interface, receiver_interface, sendkernel);
-            auto feat_group = operational_feature.run;
-
-            // ownerTid.send(ConfigAndPin(sender_config, sender_pin), ConfigAndPin(receiver_config, receiver_pin));
-            if (feat_group.result.hasErrors) {
-                job_success = false;
-            }
-            else {
-                job_success = true;
-            }
-        // }, sender.config, sender.pin, receiver.config, receiver.pin, sendkernel);
-        return job_success;
-    }
-
-    uint running_jobs;
     bool stop;
-    writefln("Running with max of %s at a time", max_concurrent_jobs);
     while (!stop) {
         scope (failure) {
             stop = true;
         }
         run_counter++;
 
-        // while (running_jobs < max_concurrent_jobs) {
-        //     Thread.sleep(300.msecs);
-           stop = new_job(configs_and_pins);
-           stop = (MonoTime.currTime >= end_clocktime);
-        //     running_jobs++;
-        //     writefln("running jobs %s", running_jobs);
-        // }
-        // scope (exit) {
-        //     running_jobs--;
-        // }
+        ConfigAndPin sender;
+        ConfigAndPin receiver;
+        pickWallets(configs_and_pins, sender, receiver, run_counter);
 
-        // bool job_stopped;
-        // while (!job_stopped) {
-        //     receive(
-        //             (ConfigAndPin r, ConfigAndPin s) {
-        //                 configs_and_pins ~= r; configs_and_pins ~= s;
-        //                 writeln(configs_and_pins);
-        //             },
-        //             (bool job_success) {
-        //         if (!job_success) {
-        //             writefln("transaction failed after %s transactions", run_counter);
-        //         }
-        //         stop = (MonoTime.currTime >= end_clocktime || !job_success);
-        //         job_stopped = true;
-        //     },
-        //     );
+        auto sender_interface = createInterface(sender.config, sender.pin);
+        auto receiver_interface = createInterface(receiver.config, receiver.pin);
 
-        // }
+        writefln("Making transaction between sender %s and receiver %s", sender.config, receiver.config);
+
+        auto operational_feature = automation!operational;
+        operational_feature.SendNContractsFromwallet1Towallet2(sender_interface, receiver_interface, sendkernel, tx_stats);
+        auto feat_group = operational_feature.run;
+
+        auto runs_file = File(buildPath(env.dlog, "runs.txt"), "w");
+        runs_file.writeln(run_counter);
+        runs_file.close;
+
+        if (feat_group.result.hasErrors) {
+            /// Never if max_failed_runs -1
+            if (failed_runs_counter == max_failed_runs) {
+                stop = true;
+            }
+
+            auto failed_run_file = buildPath(env.dlog, format("failed_%s", run_counter).setExtension(FileExtension
+                    .hibon));
+            fwrite(failed_run_file, *(feat_group.result));
+            failed_runs_counter++;
+            return 1;
+        }
+
+        stop = (MonoTime.currTime >= end_clocktime);
     }
     return 0;
 }
@@ -235,17 +217,22 @@ alias FeatureContext = Tuple!(
 @safe @Scenario("send N contracts from `wallet1` to `wallet2`",
         [])
 class SendNContractsFromwallet1Towallet2 {
-    WalletInterface*[] wallets;
+    enum invoice_amount = 1000.TGN;
+    WalletInterface* sender;
+    WalletInterface* receiver;
     bool sendkernel;
     bool send;
 
-    TagionCurrency[] wallet_amounts;
+    TagionCurrency receiver_amount;
+    TagionCurrency sender_amount;
+    TxStats* tx_stats;
 
-    this(ref WalletInterface* sender, WalletInterface* receiver, bool sendkernel) {
-        this.wallets ~= sender;
-        this.wallets ~= receiver;
+    this(ref WalletInterface* sender, WalletInterface* receiver, bool sendkernel, TxStats* tx_stats) {
+        this.sender = sender;
+        this.receiver = receiver;
         this.sendkernel = sendkernel;
         this.send = !sendkernel;
+        this.tx_stats = tx_stats;
     }
 
     @Given("i have a network")
@@ -254,15 +241,20 @@ class SendNContractsFromwallet1Towallet2 {
         // dfmt off
         const wallet_switch = WalletInterface.Switch(
                 update: true, 
-                sum: true,
                 sendkernel: sendkernel,
                 send: send);
         // dfmt on
 
-        foreach (ref w; wallets[0 .. 2]) {
-            check(w.secure_wallet.isLoggedin, "the wallet must be logged in!!!");
-            w.operate(wallet_switch, []);
-            wallet_amounts ~= w.secure_wallet.available_balance;
+        with (receiver) {
+            check(secure_wallet.isLoggedin, "the wallet must be logged in!!!");
+            operate(wallet_switch, []);
+            receiver_amount = secure_wallet.available_balance;
+        }
+
+        with (sender) {
+            check(secure_wallet.isLoggedin, "the wallet must be logged in!!!");
+            operate(wallet_switch, []);
+            sender_amount = secure_wallet.available_balance;
         }
 
         return result_ok;
@@ -272,14 +264,14 @@ class SendNContractsFromwallet1Towallet2 {
     TagionCurrency fees;
     @When("i send a valid contract from `wallet1` to `wallet2`")
     Document wallet2() @trusted {
-        with (wallets[0].secure_wallet) {
-            invoice = createInvoice("Invoice", 800.TGN);
+        with (receiver.secure_wallet) {
+            invoice = createInvoice("Invoice", invoice_amount);
             registerInvoice(invoice);
         }
 
         SignedContract signed_contract;
 
-        with (wallets[1]) {
+        with (sender) {
             check(secure_wallet.isLoggedin, "the wallet must be logged in!!!");
             auto result = secure_wallet.payment([invoice], signed_contract, fees);
 
@@ -305,7 +297,7 @@ class SendNContractsFromwallet1Towallet2 {
 
     @When("the contract has been executed")
     Document executed() @trusted {
-        Thread.sleep(25.seconds);
+        Thread.sleep(20.seconds);
         return result_ok;
     }
 
@@ -314,28 +306,39 @@ class SendNContractsFromwallet1Towallet2 {
         //dfmt off
         const wallet_switch = WalletInterface.Switch(
             trt_update : true,
-            sum: true,
             sendkernel: sendkernel,
             send: send);
 
-        foreach (i, ref w; wallets[0 .. 2]) {
-            writefln("Checking Wallet_%s", i);
-            check(w.secure_wallet.isLoggedin, "the wallet must be logged in!!!");
-            w.operate(wallet_switch, []);
-            check(wallet_amounts[i] != w.secure_wallet.available_balance, "Wallet amount did not change");
+        enum update_retries = 20;
+        enum retry_delay = 5.seconds;
+
+        void check_balance(WalletInterface* wallet, const TagionCurrency expected) {
+            with(wallet) {
+                check(secure_wallet.isLoggedin, "the wallet must be logged in!!!");
+                foreach(i; 0 .. update_retries) {
+                    writefln("wallet try update %s of %s", i+1, update_retries);
+                    try {
+                        operate(wallet_switch, []);
+                    }
+                    catch(TagionException e) {
+                        writeln(e);
+                    }
+                    if(secure_wallet.available_balance == expected) {
+                        return;
+                    }
+                    Thread.sleep(retry_delay);
+                }
+                check(secure_wallet.available_balance == expected, 
+                        format("wallet amount incorrect, expected %s got %s",
+                        expected, secure_wallet.available_balance));
+            }
         }
 
-        with(wallets[0].secure_wallet) {
-            auto expected = wallet_amounts[0] + invoice.amount;
-            check(available_balance == expected, 
-                    format("wallet 0 amount incorrect, expected %s got %s", expected, available_balance));
-        }
+        check_balance(receiver, (receiver_amount + invoice.amount));
+        check_balance(sender, (sender_amount - (invoice.amount + fees)));
 
-        with(wallets[1].secure_wallet) {
-            auto expected = wallet_amounts[1] - (invoice.amount + fees);
-            check(available_balance == expected,
-                    format("wallet 1 amount incorrect, expected %s got %s", expected, available_balance));
-        }
+        tx_stats.total_fees += fees;
+        tx_stats.total_sent += invoice.amount;
 
 
         return result_ok;

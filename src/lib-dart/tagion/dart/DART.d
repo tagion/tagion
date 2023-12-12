@@ -12,8 +12,6 @@ import std.algorithm.iteration : filter, map;
 import std.format : format;
 import std.range;
 import std.traits : EnumMembers;
-import tagion.Keywords;
-import tagion.Keywords : isValid;
 import tagion.basic.Debug : __format, debugwrite = __write;
 import tagion.basic.Types : Buffer;
 import tagion.basic.basic : FUNCTION_NAME;
@@ -522,7 +520,7 @@ received = the HiRPC received package
                         if (foreign_archive) {
                             if (local_print != foreign_print) {
                                 local_recorder.insert(foreign_archive);
-                                sync.remove_recursive(sub_rims);
+                                sync.removeRecursive(sub_rims);
                             }
                         }
                         else if (!foreign_print.isinit) {
@@ -538,7 +536,7 @@ received = the HiRPC received package
                             iterate(sub_rims);
                         }
                         else if (!local_print.empty) {
-                            sync.remove_recursive(sub_rims);
+                            sync.removeRecursive(sub_rims);
                         }
                     }
                 }
@@ -550,7 +548,7 @@ received = the HiRPC received package
                     //
                     // The foreign DART does not contain data at the rims
                     //
-                    sync.remove_recursive(params);
+                    sync.removeRecursive(params);
                 }
             }
 
