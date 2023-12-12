@@ -61,6 +61,7 @@ alias BlockChain = RedBlackTree!(const(BlockSegment*), (a, b) => a.index < b.ind
 class BlockFile {
     enum FILE_LABEL = "BLOCK:0.0";
     enum DEFAULT_BLOCK_SIZE = 0x40;
+    const bool read_only;
     immutable uint BLOCK_SIZE;
     //immutable uint DATA_SIZE;
     alias BlockFileStatistic = Statistic!(ulong, Yes.histogram);
@@ -96,8 +97,10 @@ class BlockFile {
     }
 
     protected this() {
+        read_only=true;
         BLOCK_SIZE = DEFAULT_BLOCK_SIZE;
-        recycler = Recycler(this);
+        recycler=Recycler.init;   
+    //recycler = Recycler(this);
         block_chains = new BlockChain;
         //empty
     }
@@ -118,6 +121,7 @@ class BlockFile {
     }
 
     protected this(File file, immutable uint SIZE, const bool read_only = false) {
+        this.read_only=read_only;
         block_chains = new BlockChain;
         scope (failure) {
             file.close;
