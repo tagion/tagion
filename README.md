@@ -50,7 +50,7 @@ export PATH="path-to-dmd2/dmd2/linux/bin64:$PATH"
 - **Arch**
 
 ```bash
-pacman -Syu git make autoconf gcc libtool dub cmake
+pacman -Syu git make autoconf gcc libtool dlang cmake
 ```
 
 - **Nix**
