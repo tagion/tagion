@@ -5,19 +5,18 @@ import std.format;
 import std.range;
 import std.traits;
 
+import tagion.basic.dir;
+
 static immutable(string) contract_sock_addr(const string prefix = "") @safe nothrow {
-    import std.exception;
+    import std.exception : assumeWontThrow;
 
     version (linux) {
         return assumeWontThrow(format("abstract://%sNEUEWELLE", prefix));
     }
     else version (Posix) {
-        import core.sys.posix.unistd : getuid;
-        import std.conv;
         import std.path;
 
-        const uid = assumeWontThrow(getuid.to!string);
-        return "ipc://" ~ buildPath("/", "run", "user", uid, assumeWontThrow(format("%stagionwave_contract.sock", prefix)));
+        return "ipc://" ~ buildPath(base_dir.run, assumeWontThrow(format("%stagionwave_contract.sock", prefix)));
     }
     else {
         assert(0, "Unsupported platform");
@@ -86,19 +85,20 @@ struct TaskNames {
 @safe
 struct Options {
     import std.json;
-    public import tagion.logger.LoggerOptions : LoggerOptions;
-    public import tagion.services.DART : DARTOptions;
-    public import tagion.services.DARTInterface : DARTInterfaceOptions;
-    public import tagion.services.collector : CollectorOptions;
-    public import tagion.services.epoch_creator : EpochCreatorOptions;
-    public import tagion.services.hirpc_verifier : HiRPCVerifierOptions;
-    public import tagion.services.inputvalidator : InputValidatorOptions;
-    public import tagion.services.monitor : MonitorOptions;
-    public import tagion.services.replicator : ReplicatorOptions;
-    public import tagion.services.subscription : SubscriptionServiceOptions;
-    public import tagion.services.transcript : TranscriptOptions;
-    public import tagion.services.TRTService : TRTOptions;
     import tagion.utils.JSONCommon;
+
+    import tagion.logger.LoggerOptions : LoggerOptions;
+    import tagion.services.DART : DARTOptions;
+    import tagion.services.DARTInterface : DARTInterfaceOptions;
+    import tagion.services.collector : CollectorOptions;
+    import tagion.services.epoch_creator : EpochCreatorOptions;
+    import tagion.services.hirpc_verifier : HiRPCVerifierOptions;
+    import tagion.services.inputvalidator : InputValidatorOptions;
+    import tagion.services.monitor : MonitorOptions;
+    import tagion.services.replicator : ReplicatorOptions;
+    import tagion.services.subscription : SubscriptionServiceOptions;
+    import tagion.services.transcript : TranscriptOptions;
+    import tagion.services.TRTService : TRTOptions;
 
     WaveOptions wave;
     InputValidatorOptions inputvalidator;
