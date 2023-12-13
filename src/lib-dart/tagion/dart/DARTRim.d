@@ -33,7 +33,6 @@ static struct SectorRange {
         return _to_sector;
     }
 
-
     @exclude protected bool flag;
     mixin HiBONRecord!(q{
                 this(const ushort from_sector, const ushort to_sector) pure nothrow @nogc {
@@ -68,7 +67,7 @@ static struct SectorRange {
          * Returns: 
          */
     bool inRange(const Rims rims) const pure nothrow {
-        if (rims.path.length ==1 ) {
+        if (rims.path.length == 1) {
             return sectorInRange(rims.path[0] << 8, _from_sector & 0xFF00, _to_sector);
         }
         return (rims.path.length == 0) || sectorInRange(rims.sector, _from_sector, _to_sector);
@@ -95,8 +94,6 @@ static struct SectorRange {
             return (sector_origin < to_origin);
         }
     }
-
-
 
     /**
          * Check if current sector has reached the end
@@ -194,9 +191,9 @@ struct Rims {
 
     mixin HiBONRecord!(
             q{
-                this(Buffer r) {
+                this(Buffer r, Buffer key_leaves=null) {
                     this.path=r;
-                    this.key_leaves=null;
+                    this.key_leaves=key_leaves;
                 }
 
                 this(const ushort sector)
@@ -212,7 +209,7 @@ struct Rims {
                 do {
 
                     path = rim.path ~ cast(ubyte) key;
-                    this.key_leaves= null; //rim.key_leaves.idup; 
+                    this.key_leaves= rim.key_leaves.idup; 
                 }
             });
 
@@ -221,7 +218,8 @@ struct Rims {
          * Returns: hex string
          */
     string toString() const pure nothrow {
-    import std.exception : assumeWontThrow;
+        import std.exception : assumeWontThrow;
+
         if (path.length == 0) {
             return "XXXX";
         }

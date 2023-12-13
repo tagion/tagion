@@ -312,7 +312,7 @@ int _main(string[] args) {
             File fout;
             fout = stdout;
             Rims rims;
-            Buffer keys;
+            //Buffer rim_keys;
             if (dartrim != "root") {
                 auto rim_and_keys = dartrim.split(":");
                 auto rim_path = rim_and_keys.front;
@@ -323,9 +323,9 @@ int _main(string[] args) {
                             .until!(key => key.empty)
                             .map!(key => key.to!ubyte));
                 }
-                rims = Rims(rim_path.decode);
+                string keys_hex;
                 if (!rim_and_keys.empty) {
-                    string keys_hex = rim_and_keys.front;
+                    keys_hex = rim_and_keys.front;
                     auto keys_decimals = keys_hex.split(",");
                     if (keys_decimals.length > 1) {
 
@@ -334,10 +334,11 @@ int _main(string[] args) {
                                 .map!(key => key.to!ubyte));
 
                     }
-                    keys = keys_hex.decode;
+                    //         rim_keys = keys_hex.decode;
                 }
+                rims = Rims(rim_path.decode, keys_hex.decode);
             }
-            verbose("Rim : %(%02x %):%(%02x %)", rims.path, keys);
+            verbose("Rim : %(%02x %):%(%02x %)", rims.path, rims.key_leaves);
             const sender = CRUD.dartRim(rims, hirpc);
             if (!outputfilename.empty) {
                 fout = File(outputfilename, "w");

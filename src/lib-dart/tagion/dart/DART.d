@@ -298,23 +298,41 @@ received = the HiRPC received package
         }
         else if (params.path.length > ushort.sizeof) {
             hibon_params = new HiBON;
- //           if (params.keys.empty) {
-            // It not branches so maybe it is an archive
-            immutable key = params.path[$ - 1];
-            const super_branches = branches(params.path[0 .. $ - 1]);
-            if (!super_branches.empty) {
-                const index = super_branches.indices[key];
-                if (index != Index.init) {
-                    // The archive is added to a recorder
-                    immutable data = blockfile.load(index);
-                    const doc = Document(data);
+            if (params.key_leaves.empty) {
+                // It not branches so maybe it is an archive
+                immutable key = params.path[$ - 1];
+                const super_branches = branches(params.path[0 .. $ - 1]);
+                if (!super_branches.empty) {
+                    const index = super_branches.indices[key];
+                    if (index != Index.init) {
+                        // The archive is added to a recorder
+                        immutable data = blockfile.load(index);
+                        const doc = Document(data);
+                        auto super_recorder = recorder;
+                        super_recorder.add(doc);
+                        return hirpc.result(received, super_recorder);
+                    }
+                }
+
+            }
+            else {
+                const super_branches = branches(params.path);
+                if (!super_branches.empty) {
                     auto super_recorder = recorder;
-                    super_recorder.add(doc);
+                    foreach (index; params.key_leaves.map!(key => super_branches.indices[key])) {
+                        if (index.isinit) {
+                            super_recorder.add(Document());
+                            continue;
+                        }
+                        immutable data = blockfile.load(index);
+                        const doc = Document(data);
+                        super_recorder.add(doc);
+
+                    }
                     return hirpc.result(received, super_recorder);
                 }
             }
         }
- //       }
         return hirpc.result(received, hibon_params);
     }
 
@@ -494,7 +512,9 @@ received = the HiRPC received package
                 // Request Branches or Recorder at rims from the foreign DART.
                 //
                 const local_branches = branches(params.path);
-                const request_branches = CRUD.dartRim(rims : params, hirpc:hirpc, id:id);
+                const request_branches = CRUD.dartRim(rims : params, hirpc:
+                        hirpc, id:
+                        id);
                 const result_branches = sync.query(request_branches);
                 if (Branches.isRecord(result_branches.response.result)) {
                     const foreign_branches = result_branches.result!Branches;
