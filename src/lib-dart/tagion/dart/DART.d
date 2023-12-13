@@ -293,45 +293,46 @@ received = the HiRPC received package
 
         const rim_branches = branches(params.path);
         HiBON hibon_params;
-        if (!rim_branches.empty) {
+        
+        if (!params.key_leaves.empty) {
+            if (!rim_branches.empty) {
+                auto super_recorder = recorder;
+                foreach (key; params.key_leaves) {
+                    const index=rim_branches.indices[key];  
+                    if (index.isinit) {
+                        HiRPC.Error not_found;
+                        not_found.message=format("No archive found on %(%02x %):%02x", params.path, key); 
+                        super_recorder.add(not_found);
+                        continue;
+                    }
+                    immutable data = blockfile.load(index);
+                    const doc = Document(data);
+                    super_recorder.add(doc);
+
+                }
+                return hirpc.result(received, super_recorder);
+            }
+        }
+        else if (!rim_branches.empty) {
             hibon_params = rim_branches.toHiBON(true);
         }
-        else if (params.path.length > ushort.sizeof) {
+        else if (params.path.length > ushort.sizeof || !params.key_leaves.empty) {
             hibon_params = new HiBON;
-            if (params.key_leaves.empty) {
-                // It not branches so maybe it is an archive
-                immutable key = params.path[$ - 1];
-                const super_branches = branches(params.path[0 .. $ - 1]);
-                if (!super_branches.empty) {
-                    const index = super_branches.indices[key];
-                    if (index != Index.init) {
-                        // The archive is added to a recorder
-                        immutable data = blockfile.load(index);
-                        const doc = Document(data);
-                        auto super_recorder = recorder;
-                        super_recorder.add(doc);
-                        return hirpc.result(received, super_recorder);
-                    }
-                }
-
-            }
-            else {
-                const super_branches = branches(params.path);
-                if (!super_branches.empty) {
+            // It not branches so maybe it is an archive
+            immutable key = params.path[$ - 1];
+            const super_branches = branches(params.path[0 .. $ - 1]);
+            if (!super_branches.empty) {
+                const index = super_branches.indices[key];
+                if (index != Index.init) {
+                    // The archive is added to a recorder
+                    immutable data = blockfile.load(index);
+                    const doc = Document(data);
                     auto super_recorder = recorder;
-                    foreach (index; params.key_leaves.map!(key => super_branches.indices[key])) {
-                        if (index.isinit) {
-                            super_recorder.add(Document());
-                            continue;
-                        }
-                        immutable data = blockfile.load(index);
-                        const doc = Document(data);
-                        super_recorder.add(doc);
-
-                    }
+                    super_recorder.add(doc);
                     return hirpc.result(received, super_recorder);
                 }
             }
+
         }
         return hirpc.result(received, hibon_params);
     }

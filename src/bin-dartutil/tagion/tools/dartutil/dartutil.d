@@ -340,6 +340,7 @@ int _main(string[] args) {
             }
             verbose("Rim : %(%02x %):%(%02x %)", rims.path, rims.key_leaves);
             const sender = CRUD.dartRim(rims, hirpc);
+            verbose("sender %s", sender.toPretty);
             if (!outputfilename.empty) {
                 fout = File(outputfilename, "w");
             }

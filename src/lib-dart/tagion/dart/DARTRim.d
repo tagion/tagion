@@ -202,6 +202,7 @@ struct Rims {
                 }
                 do  {
                     path=[sector >> 8*ubyte.sizeof, sector & ubyte.max];
+                    key_leaves=null;
                 }
 
                 this(I)(const Rims rim, const I key) if (isIntegral!I) 
