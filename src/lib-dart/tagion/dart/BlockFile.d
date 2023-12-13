@@ -61,6 +61,7 @@ alias BlockChain = RedBlackTree!(const(BlockSegment*), (a, b) => a.index < b.ind
 class BlockFile {
     enum FILE_LABEL = "BLOCK:0.0";
     enum DEFAULT_BLOCK_SIZE = 0x40;
+    const Flag!"read_only" read_only;
     immutable uint BLOCK_SIZE;
     //immutable uint DATA_SIZE;
     alias BlockFileStatistic = Statistic!(ulong, Yes.histogram);
@@ -71,7 +72,6 @@ class BlockFile {
         Index _last_block_index;
         Recycler recycler;
     }
-
 
     protected {
 
@@ -96,8 +96,10 @@ class BlockFile {
     }
 
     protected this() {
+        read_only = Yes.read_only;
         BLOCK_SIZE = DEFAULT_BLOCK_SIZE;
-        recycler = Recycler(this);
+        recycler = Recycler.init;
+        //recycler = Recycler(this);
         block_chains = new BlockChain;
         //empty
     }
@@ -105,7 +107,7 @@ class BlockFile {
     protected this(
             string filename,
             immutable uint SIZE,
-            const bool read_only = false) {
+            const Flag!"read_only" read_only = No.read_only) {
         File _file;
 
         if (read_only) {
@@ -114,15 +116,16 @@ class BlockFile {
         else {
             _file.open(filename, "r+");
         }
-        this(_file, SIZE, !read_only);
+        this(_file, SIZE, read_only);
     }
 
-    protected this(File file, immutable uint SIZE, const bool set_lock = true) {
+    protected this(File file, immutable uint SIZE, const Flag!"read_only" read_only = No.read_only) {
+        this.read_only = read_only;
         block_chains = new BlockChain;
         scope (failure) {
             file.close;
         }
-        if (set_lock) {
+        if (!read_only) {
             const lock = (() @trusted => file.tryLock(LockType.read))();
 
             check(lock, "Error: BlockFile in use (LOCKED)");
@@ -180,7 +183,7 @@ class BlockFile {
      *   read_only = If `true` the file is opened as read-only
      * Returns: 
      */
-    static BlockFile opCall(string filename, const bool read_only = false) {
+    static BlockFile opCall(string filename, const Flag!"read_only" read_only = No.read_only) {
         auto temp_file = new BlockFile();
         temp_file.file = File(filename, "r");
         temp_file.readHeaderBlock;
@@ -236,7 +239,6 @@ class BlockFile {
         headerblock.write(file);
         _last_block_index = 1;
         masterblock.write(file, BLOCK_SIZE);
-        // hasheader = true;
     }
 
     /** 
@@ -254,7 +256,9 @@ class BlockFile {
             readMasterBlock;
             readStatistic;
             readRecyclerStatistic;
-            recycler.read(masterblock.recycle_header_index);
+            if (!read_only) {
+                recycler.read(masterblock.recycle_header_index);
+            }
         }
     }
 
@@ -624,10 +628,10 @@ class BlockFile {
         return save(rec.toDoc);
     }
 
-    
     bool cache_empty() {
         return block_chains.empty;
     }
+
     const(size_t) cache_len() {
         return block_chains.length;
     }
@@ -788,8 +792,6 @@ class BlockFile {
     void recycleDump(File fout = stdout) {
         import tagion.dart.Recycler : RecycleSegment;
 
-        // writefln("recycle dump from blockfile");
-
         Index index = masterblock.recycle_header_index;
 
         if (index == Index(0)) {
@@ -797,20 +799,20 @@ class BlockFile {
         }
         while (index != Index.init) {
             auto add_segment = RecycleSegment(this, index);
-            fout.writefln("Index(%s), size(%s), next(%s)", add_segment.index, add_segment
+            fout.writefln("[%d], size=%d -> [%d]", add_segment.index, add_segment
                     .size, add_segment.next);
             index = add_segment.next;
         }
     }
 
-    void statisticDump(File fout = stdout) const {
+    void statisticDump(File fout = stdout, const bool logscale=false) const {
         fout.writeln(_statistic.toString);
-        fout.writeln(_statistic.histogramString);
+        fout.writeln(_statistic.histogramString(logscale));
     }
 
-    void recycleStatisticDump(File fout = stdout) const {
+    void recycleStatisticDump(File fout = stdout, const bool logscale=false) const {
         fout.writeln(_recycler_statistic.toString);
-        fout.writeln(_recycler_statistic.histogramString);
+        fout.writeln(_recycler_statistic.histogramString(logscale));
     }
 
     // Block index 0 is means null

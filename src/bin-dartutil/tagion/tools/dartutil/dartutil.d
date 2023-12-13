@@ -142,7 +142,7 @@ int _main(string[] args) {
 
         if (!exec.empty) {
             writeln("%s", exec);
-            writefln(exec,"hirpc.hibon", "response.hibon");
+            writefln(exec, "hirpc.hibon", "response.hibon");
         }
         if (!angle_range.empty) {
             import std.bitmanip;
@@ -179,7 +179,7 @@ int _main(string[] args) {
         tools.check(!dartfilename.empty, "Missing dart file");
 
         if (dartfilename.exists) {
-            auto blockfile = BlockFile(dartfilename);
+            auto blockfile = BlockFile(dartfilename, Yes.read_only);
             scope (exit) {
                 blockfile.close;
             }
@@ -201,7 +201,7 @@ int _main(string[] args) {
         }
 
         Exception dart_exception;
-        auto db = new DART(net, dartfilename, dart_exception);
+        auto db = new DART(net, dartfilename, dart_exception, Yes.read_only);
         if (dart_exception !is null) {
             stderr.writefln("Fail to open DART: %s. Abort.", dartfilename);
             error(dart_exception);
@@ -276,6 +276,7 @@ int _main(string[] args) {
             DARTIndex[] dart_indices;
             foreach (read_arg; dartread_args) {
                 import tagion.tools.dartutil.dartindex : dartIndexDecode;
+
                 auto dart_index = net.dartIndexDecode(read_arg);
                 verbose("%s\n%s\n%(%02x%)", read_arg, dart_index.encodeBase64, dart_index);
                 dart_indices ~= dart_index;
@@ -309,19 +310,35 @@ int _main(string[] args) {
         }
         if (!dartrim.empty) {
             File fout;
-            fout=stdout;
+            fout = stdout;
             Rims rims;
+            Buffer keys;
             if (dartrim != "root") {
-                auto rim_decimals=dartrim.split(",");
+                auto rim_and_keys = dartrim.split(":");
+                auto rim_path = rim_and_keys.front;
+                rim_and_keys.popFront;
+                auto rim_decimals = rim_path.split(",");
                 if (!rim_decimals.empty && rim_decimals.length > 1) {
-                    dartrim=format("%(%02x%)",rim_decimals
-                    .until!(key => key.empty)
-                    .map!(key => key.to!ubyte));
+                    rim_path = format("%(%02x%)", rim_decimals
+                            .until!(key => key.empty)
+                            .map!(key => key.to!ubyte));
                 }
-                rims=Rims(dartrim.decode); 
+                rims = Rims(rim_path.decode);
+                if (!rim_and_keys.empty) {
+                    string keys_hex = rim_and_keys.front;
+                    auto keys_decimals = keys_hex.split(",");
+                    if (keys_decimals.length > 1) {
+
+                        keys_hex = format("%(%02x%)", keys_decimals
+                                .until!(key => key.empty)
+                                .map!(key => key.to!ubyte));
+
+                    }
+                    keys = keys_hex.decode;
+                }
             }
-            verbose("Rim : %(%02x %)", rims.rims);
-            const sender=CRUD.dartRim(rims, hirpc);
+            verbose("Rim : %(%02x %):%(%02x %)", rims.rims, keys);
+            const sender = CRUD.dartRim(rims, hirpc);
             if (!outputfilename.empty) {
                 fout = File(outputfilename, "w");
             }
@@ -334,17 +351,19 @@ int _main(string[] args) {
                 fout.rawWrite(sender.serialize);
                 return 0;
             }
-            auto receiver=hirpc.receive(sender);
+            auto receiver = hirpc.receive(sender);
             auto response = db(receiver, false);
-            
+
             if (strip) {
                 fout.rawWrite(response.result.serialize);
                 return 0;
             }
             fout.rawWrite(response.toDoc.serialize);
-            return 0; 
+            return 0;
         }
         if (dartmodify) {
+            db.close;
+            db = new DART(net, dartfilename);
             tools.check(!inputfilename.empty, "Missing input file DART-modify");
             const doc = inputfilename.fread;
             auto factory = RecordFactory(net);
