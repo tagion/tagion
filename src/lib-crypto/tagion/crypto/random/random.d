@@ -46,14 +46,12 @@ unittest {
 }
 
 /++
-     + getRandom - runs platform specific random function.
-     +/
++ getRandom - runs platform specific random function.
++/
 @trusted
 void getRandom(ref scope ubyte[] buf) nothrow
 in (buf.length <= 256)
 do {
-    import std.exception : assumeWontThrow;
-
     if (buf.length == 0) {
         return;
     }
@@ -67,7 +65,7 @@ do {
     }
     else {
         arc4random_buf(&buf[0], buf.length);
-    } // TODO: add other platforms
+    }
 }
 
 @trusted
