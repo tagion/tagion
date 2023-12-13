@@ -324,8 +324,9 @@ int _main(string[] args) {
         }
         foreach (file; args.filter!(file => file.hasExtension(FileExtension.hibon))) {
             check(file.exists, format("File %s not found", file));
-            pragma(msg, "HiRPC ", isHiBONRecord!(HiRPC.Receiver));
-            const hirpc_response = file.fread!(HiRPC.Receiver);
+
+            const hirpc_response = file.fread!(HiRPC.Receiver).ifThrown!HiBONException(HiRPC.Receiver.init);
+            if (hirpc_response is HiRPC.Receiver.init) { continue; }
             writefln("File %s %s", file, hirpc_response.toPretty);
             const ok = wallet_interface.secure_wallet.setResponseUpdateWallet(hirpc_response)
                 .ifThrown!HiBONException(

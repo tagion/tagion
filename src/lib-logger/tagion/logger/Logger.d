@@ -346,7 +346,7 @@ struct Topic {
 alias Subscribed = shared(Flag!"subscribed");
 
 @safe
-synchronized class SubscriptionMask {
+final synchronized class SubscriptionMask {
     //      yes|no     topic
     private Subscribed[string] _registered_topics;
 

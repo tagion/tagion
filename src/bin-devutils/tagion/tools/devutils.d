@@ -5,6 +5,7 @@ import std.typetuple;
 import std.traits;
 import std.array;
 import std.range;
+import std.algorithm : remove;
 
 import tagion.tools.Basic;
 
@@ -26,7 +27,7 @@ int _main(string[] args) {
         return 1;
     }
     const util = args[1];
-    auto utilargs = args[1 .. $ - 1];
+    auto utilargs = args.remove(0);
 
     switch (util) {
         static foreach (utilname; allutils) {
