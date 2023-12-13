@@ -289,17 +289,16 @@ received = the HiRPC received package
         assert(received.method.name == __FUNCTION_NAME__);
     }
     do {
-        //HiRPC.check_element!Buffer(received.params, Params.rims);
         immutable params = received.params!Rims;
 
         const rim_branches = branches(params.rims);
         HiBON hibon_params;
         if (!rim_branches.empty) {
-            //            hibon_params=new HiBON;
             hibon_params = rim_branches.toHiBON(true);
         }
         else if (params.rims.length > ushort.sizeof) {
             hibon_params = new HiBON;
+ //           if (params.keys.empty) {
             // It not branches so maybe it is an archive
             immutable key = params.rims[$ - 1];
             const super_branches = branches(params.rims[0 .. $ - 1]);
@@ -315,6 +314,7 @@ received = the HiRPC received package
                 }
             }
         }
+ //       }
         return hirpc.result(received, hibon_params);
     }
 
@@ -494,7 +494,7 @@ received = the HiRPC received package
                 // Request Branches or Recorder at rims from the foreign DART.
                 //
                 const local_branches = branches(params.rims);
-                const request_branches = CRUD.dartRim(params, hirpc, id);
+                const request_branches = CRUD.dartRim(rims : params, hirpc:hirpc, id:id);
                 const result_branches = sync.query(request_branches);
                 if (Branches.isRecord(result_branches.response.result)) {
                     const foreign_branches = result_branches.result!Branches;

@@ -179,6 +179,7 @@ static struct SectorRange {
 @recordType("Rims")
 struct Rims {
     Buffer rims;
+    @label("keys") @optional @(filter.Initialized) Buffer key_leaves;
     protected enum root_rim = [];
     static immutable root = Rims(root_rim);
     /**
@@ -204,7 +205,8 @@ struct Rims {
     mixin HiBONRecord!(
             q{
                 this(Buffer r) {
-                    rims=r;
+                    this.rims=r;
+                    this.key_leaves=null;
                 }
 
                 this(const ushort sector)
@@ -214,11 +216,13 @@ struct Rims {
                 do  {
                     rims=[sector >> 8*ubyte.sizeof, sector & ubyte.max];
                 }
+
                 this(I)(const Rims rim, const I key) if (isIntegral!I) 
                 in (key >= 0 && key <= ubyte.max) 
                 do {
 
                     rims = rim.rims ~ cast(ubyte) key;
+                    this.key_leaves= null; //rim.key_leaves.idup; 
                 }
             });
 
