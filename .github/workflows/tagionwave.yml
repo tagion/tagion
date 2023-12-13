@@ -79,7 +79,7 @@ jobs:
         run: |
           cd build/x86_64-linux/bin
           ./tagion -s
-          mkdir ~/.local/share/tagion/wallets/ || "folder already exists"
+          mkdir -p ~/.local/share/tagion/wallets/ || "folder already exists"
           wget --output-document=~/.local/share/tagion/wallets/bill-auzahlung.hibon https://raw.githubusercontent.com/tagion/qa_payout_test/master/wallet1/bills/bill_0.hibon
           ./create_wallets.sh -b $PWD -k ~/.local/share/tagion/wave -t ~/.local/share/tagion/wallets -w ${{ inputs.wallets }} -n ${{ inputs.nodes }} -u ~/.local/share/tagion/wallets/keys.txt
 

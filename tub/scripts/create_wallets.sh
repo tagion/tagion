@@ -42,8 +42,8 @@ if [ $wallets -lt 3 -o $wallets -gt 7 ]; then
     usage
 fi
 
-mkdir -p $ndir
-mkdir -p $wdir
+mkdir -p $ndir | "folder already exists"
+mkdir -p $wdir | "folder already exists"
 rm "$keyfile" | echo "No key file to delete"
 touch $keyfile
 
@@ -88,7 +88,7 @@ echo "$all_infos"
 
 bill_files=$(ls $wdir/bill*.hibon)
 cat $wdir/bill*.hibon |"${bdir}/stiefel" -a $all_infos -o $wdir/dart_recorder.hibon
-mkdir -p $ndir
+mkdir -p $ndir | "folder already exists"
 
 for ((i = 0; i <= nodes-1; i++)); 
 do
