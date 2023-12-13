@@ -293,6 +293,7 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
 static void i2p_handler(WebData* req, WebData* rep, void* ctx) {
 
     thread_attachThis();
+    rt_moduleTlsCtor();
 
     int rc;
     ShellOptions* opt = cast(ShellOptions*) ctx;
