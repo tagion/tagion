@@ -578,7 +578,7 @@ received = the HiRPC received package
      *     The function will throw an exception if something went wrong in the process.
      */
     void replay(const(string) journal_filename) {
-        auto journalfile = BlockFile(journal_filename, true);
+        auto journalfile = BlockFile(journal_filename, Yes.read_only);
         scope (exit) {
             journalfile.close;
         }

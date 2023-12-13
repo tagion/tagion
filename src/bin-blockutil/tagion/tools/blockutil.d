@@ -10,6 +10,7 @@ import std.getopt;
 import std.range;
 import std.stdio;
 import std.traits : EnumMembers;
+import std.typecons;
 import tagion.dart.BlockFile;
 import tagion.dart.DARTException : BlockFileException;
 import tagion.hibon.Document;
@@ -34,6 +35,7 @@ struct BlockFileAnalyzer {
     private BlockFile blockfile;
     uint inspect_iterations = uint.max;
     uint max_block_iteration = 1000;
+    bool logscale;
     Index index_from;
     Index index_to;
     ~this() {
@@ -42,26 +44,29 @@ struct BlockFileAnalyzer {
         }
     }
 
-    void print() {
-        writeln("Block map");
+    void print(File fout) {
+        fout.writeln("Block map");
         blockfile.dump(from : index_from, to:
-                index_to);
+                index_to, fout:
+                fout);
     }
 
-    void recyclePrint() {
-        writeln("Recycler map");
-        blockfile.recycleDump;
+    void recyclePrint(File fout) {
+        fout.writeln("Recycler map");
+        blockfile.recycleDump(fout);
     }
 
-    void recycleStatisticPrint() {
-        blockfile.recycleStatisticDump;
+    void recycleStatisticPrint(File fout) {
+        fout.writefln("Number of recycler fragments | Number of times |");
+        blockfile.recycleStatisticDump(fout, logscale);
     }
 
-    void printStatistic() {
-        blockfile.statisticDump;
+    void printStatistic(File fout) {
+        fout.writeln("Block size | number of times this block size has been claimed |");
+        blockfile.statisticDump(fout, logscale);
     }
 
-    void dumpGraph() {
+    void dumpGraph(File fout) {
         import std.algorithm;
         import std.range;
 
@@ -110,19 +115,19 @@ struct BlockFileAnalyzer {
         text ~= "}";
         text ~= "```";
         // add the end
-        text.each!writeln;
+        text.each!((s) => fout.writeln(s));
     }
 
     const(Document) dumpIndexDoc(const(Index) index) {
         return blockfile.load(index);
     }
 
-    void printHeader() {
-        writefln("%s", blockfile.headerBlock);
+    void printHeader(File fout) {
+        fout.writefln("%s", blockfile.headerBlock);
     }
 
-    void printMaster() {
-        writefln("%s", blockfile.masterBlock);
+    void printMaster(File fout) {
+        fout.writefln("%s", blockfile.masterBlock);
     }
 }
 
@@ -168,7 +173,7 @@ int _main(string[] args) {
                 "i|index", "the index to dump the document from", &indices,
                 "o|output", "Output filename (Default stdout)", &output_filename,
                 "dump", "Dumps the blocks as a HiBON sequency to stdout or a file", &dump,
-
+                "log", "Sets logscale on statistics", &analyzer.logscale,
         );
 
         if (version_switch) {
@@ -206,7 +211,7 @@ int _main(string[] args) {
             vout = stderr;
         }
         filename = args[1]; /// First argument is the blockfile name
-        analyzer.blockfile = BlockFile(filename, true);
+        analyzer.blockfile = BlockFile(filename, Yes.read_only);
         size_t index_from, index_to;
         if (!index_range.empty) {
             const fields =
@@ -235,30 +240,30 @@ int _main(string[] args) {
             return 0;
         }
         if (print) {
-            analyzer.print;
+            analyzer.print(vout);
         }
 
         if (print_header) {
-            analyzer.printHeader;
+            analyzer.printHeader(vout);
         }
         if (print_master) {
-            analyzer.printMaster;
+            analyzer.printMaster(vout);
         }
 
         if (print_recycler) {
-            analyzer.recyclePrint;
+            analyzer.recyclePrint(vout);
         }
 
         if (print_recycler_statistic) {
-            analyzer.recycleStatisticPrint;
+            analyzer.recycleStatisticPrint(vout);
         }
 
         if (print_statistic) {
-            analyzer.printStatistic;
+            analyzer.printStatistic(vout);
         }
 
         if (print_graph) {
-            analyzer.dumpGraph;
+            analyzer.dumpGraph(vout);
         }
 
         if (!indices.empty) {
