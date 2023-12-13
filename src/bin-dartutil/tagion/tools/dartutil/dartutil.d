@@ -201,7 +201,7 @@ int _main(string[] args) {
         }
 
         Exception dart_exception;
-        auto db = new DART(net, dartfilename, dart_exception);
+        auto db = new DART(net, dartfilename, dart_exception, Yes.read_only);
         if (dart_exception !is null) {
             stderr.writefln("Fail to open DART: %s. Abort.", dartfilename);
             error(dart_exception);
@@ -362,6 +362,8 @@ int _main(string[] args) {
             return 0;
         }
         if (dartmodify) {
+            db.close;
+            db = new DART(net, dartfilename);
             tools.check(!inputfilename.empty, "Missing input file DART-modify");
             const doc = inputfilename.fread;
             auto factory = RecordFactory(net);

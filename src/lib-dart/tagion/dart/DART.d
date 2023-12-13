@@ -97,9 +97,10 @@ class DART : DARTFile {
     */
     this(const SecureNet net,
             string filename,
+            Flag!"read_only" read_only = No.read_only,
             const ushort from_sector = 0,
             const ushort to_sector = 0) @safe {
-        super(net, filename);
+        super(net, filename, read_only);
         this.from_sector = from_sector;
         this.to_sector = to_sector;
         this.hirpc = HiRPC(net);
@@ -117,10 +118,11 @@ class DART : DARTFile {
     this(const SecureNet net,
             string filename,
             out Exception exception,
+            Flag!"read_only" read_only = No.read_only,
             const ushort from_sector = 0,
             const ushort to_sector = 0) @safe {
         try {
-            this(net, filename, from_sector, to_sector);
+            this(net, filename, read_only, from_sector, to_sector);
         }
         catch (Exception e) {
             exception = e;
@@ -689,8 +691,8 @@ received = the HiRPC received package
                     RecordFactory.Recorder recorder_B;
                     RecordFactory.Recorder recorder_A;
                     // Recorder recorder_B;
-                    auto dart_A = new DART(net, filename_A, from, to);
-                    auto dart_B = new DART(net, filename_B, from, to);
+                    auto dart_A = new DART(net, filename_A, No.read_only, from, to);
+                    auto dart_B = new DART(net, filename_B, No.read_only, from, to);
                     string[] journal_filenames;
                     scope (success) {
                         // writefln("Exit scope");
@@ -767,8 +769,8 @@ received = the HiRPC received package
                 RecordFactory.Recorder recorder_B;
                 RecordFactory.Recorder recorder_A;
                 // Recorder recorder_B;
-                auto dart_A = new DART(net, filename_A, from, to);
-                auto dart_B = new DART(net, filename_B, from, to);
+                auto dart_A = new DART(net, filename_A, No.read_only, from, to);
+                auto dart_B = new DART(net, filename_B, No.read_only, from, to);
                 string[] journal_filenames;
                 scope (success) {
                     // writefln("Exit scope");
@@ -816,8 +818,8 @@ received = the HiRPC received package
                 DARTFile.create(filename_B, net);
                 RecordFactory.Recorder recorder_B;
                 // Recorder recorder_B;
-                auto dart_A = new DART(net, filename_A, from, to);
-                auto dart_B = new DART(net, filename_B, from, to);
+                auto dart_A = new DART(net, filename_A, No.read_only, from, to);
+                auto dart_B = new DART(net, filename_B, No.read_only, from, to);
                 //
                 string[] journal_filenames;
                 scope (success) {
@@ -872,8 +874,8 @@ received = the HiRPC received package
                 DARTFile.create(filename_B, net);
                 RecordFactory.Recorder recorder_B;
                 // Recorder recorder_B;
-                auto dart_A = new DART(net, filename_A, from, to);
-                auto dart_B = new DART(net, filename_B, from, to);
+                auto dart_A = new DART(net, filename_A, No.read_only, from, to);
+                auto dart_B = new DART(net, filename_B, No.read_only, from, to);
                 //
                 string[] journal_filenames;
                 scope (success) {
@@ -928,8 +930,8 @@ received = the HiRPC received package
                 DARTFile.create(filename_B, net);
                 RecordFactory.Recorder recorder_A;
                 RecordFactory.Recorder recorder_B;
-                auto dart_A = new DART(net, filename_A, from, to);
-                auto dart_B = new DART(net, filename_B, from, to);
+                auto dart_A = new DART(net, filename_A, No.read_only, from, to);
+                auto dart_B = new DART(net, filename_B, No.read_only, from, to);
                 //
                 string[] journal_filenames;
                 scope (success) {
@@ -981,8 +983,8 @@ received = the HiRPC received package
                 DARTFile.create(filename_B, net);
                 RecordFactory.Recorder recorder_A;
                 RecordFactory.Recorder recorder_B;
-                auto dart_A = new DART(net, filename_A, from, to);
-                auto dart_B = new DART(net, filename_B, from, to);
+                auto dart_A = new DART(net, filename_A, No.read_only, from, to);
+                auto dart_B = new DART(net, filename_B, No.read_only, from, to);
                 //
                 string[] journal_filenames;
                 scope (success) {
@@ -1035,8 +1037,8 @@ received = the HiRPC received package
                 DARTFile.create(filename_B, net);
                 RecordFactory.Recorder recorder_A;
                 RecordFactory.Recorder recorder_B;
-                auto dart_A = new DART(net, filename_A, from, to);
-                auto dart_B = new DART(net, filename_B, from, to);
+                auto dart_A = new DART(net, filename_A, No.read_only, from, to);
+                auto dart_B = new DART(net, filename_B, No.read_only, from, to);
                 //
                 string[] journal_filenames;
                 scope (success) {
@@ -1089,8 +1091,8 @@ received = the HiRPC received package
                 DARTFile.create(filename_B, net);
                 RecordFactory.Recorder recorder_A;
                 RecordFactory.Recorder recorder_B;
-                auto dart_A = new DART(net, filename_A, from, to);
-                auto dart_B = new DART(net, filename_B, from, to);
+                auto dart_A = new DART(net, filename_A, No.read_only, from, to);
+                auto dart_B = new DART(net, filename_B, No.read_only, from, to);
                 //
                 string[] journal_filenames;
                 scope (success) {

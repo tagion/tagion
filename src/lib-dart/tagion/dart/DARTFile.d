@@ -84,9 +84,9 @@ class DARTFile {
     }
 
     protected enum _params = [
-        "dart_indices",
-        "bullseye",
-    ];
+            "dart_indices",
+            "bullseye",
+        ];
 
     mixin(EnumText!("Params", _params));
 
@@ -117,20 +117,16 @@ class DARTFile {
      auto dartfile=new DARTFile(net, filename);
      ---
      +/
-    this(const HashNet net, string filename) {
-        blockfile = BlockFile(filename);
+    this(const HashNet net, string filename, const Flag!"read_only" read_only = No.read_only) {
+        blockfile = BlockFile(filename, read_only);
         this.manufactor = RecordFactory(net);
         this.filename = filename;
-
         
-
         .check(blockfile.headerBlock.checkLabel(DARTFile.stringof),
                 format("Wrong label %s expected %s for %s",
                 blockfile.headerBlock.Label,
                 DARTFile.stringof, filename));
-
         
-
         .check(blockfile.headerBlock.checkId(net.multihash),
                 format("Wrong hash type %s expected %s for %s",
                 net.multihash, blockfile.headerBlock.Id, filename));
@@ -387,7 +383,7 @@ class DARTFile {
                         
 
                         .check(!_fingerprints[key].isinit,
-                                format("Fingerprint key=%02X at index=%d is not defined", key, index));
+                        format("Fingerprint key=%02X at index=%d is not defined", key, index));
                         indices_set = true;
                     }
                 }
@@ -845,6 +841,7 @@ class DARTFile {
          *   branch_index = The branch index to modify.
          * Returns: 
          */
+            .check(!blockfile.read_only, format("Can not call a %s on a read-only DART", __FUNCTION__));
         Leave traverse_dart(Range)(Range range, const Index branch_index) @safe if (isInputRange!Range)
         out {
             assert(range.empty, "Must have been through the whole range and therefore empty on return");
@@ -993,7 +990,7 @@ class DARTFile {
                         .slide(2)
                         .map!(a => a.front.dart_index == a.dropOne.front.dart_index)
                         .any,
-                    "cannot have multiple operations on same dart-index in one modify");
+                        "cannot have multiple operations on same dart-index in one modify");
 
         auto range = rimKeyRange!undo(modifyrecords);
         auto new_root = traverse_dart(range, blockfile.masterBlock.root_index);
@@ -1070,8 +1067,8 @@ class DARTFile {
         import std.stdio;
 
         writefln("EYE: %(%02X%)", _fingerprint);
-        const from_rim=sectors.from_sector.nativeToBigEndian;
-        const to_rim=sectors.to_sector.nativeToBigEndian;
+        const from_rim = sectors.from_sector.nativeToBigEndian;
+        const to_rim = sectors.to_sector.nativeToBigEndian;
 
         void local_dump(const Index branch_index,
                 const ubyte rim_key = 0,
@@ -1088,13 +1085,13 @@ class DARTFile {
                     if (rim > 0) {
                         rim_path ~= rim_key;
                         if (!sectors.inRange(Rims(rim_path))) {
-                               return;
+                            return;
                         }
                         writefln("%s| %02X [%d]", indent, rim_key, branch_index);
                         _indent = indent ~ indent_tab;
                     }
                     foreach (key, index; branches._indices) {
-                       local_dump(index, cast(ubyte) key, rim + 1, rim_path, _indent);
+                        local_dump(index, cast(ubyte) key, rim + 1, rim_path, _indent);
                     }
                 }
                 else {
@@ -1127,7 +1124,7 @@ class DARTFile {
             const TraverseCallback dg,
             const SectorRange sectors = SectorRange.init,
             const uint depth = 0,
-            const bool branches=true) {
+            const bool branches = true) {
         void local_traverse(
                 const Index branch_index,
                 const ubyte rim_key = 0,
@@ -1229,7 +1226,7 @@ class DARTFile {
             }
 
             bool validate(DARTFile dart, const(ulong[]) table, out RecordFactory
-                    .Recorder recorder) {
+                .Recorder recorder) {
                 write(dart, table, recorder);
                 auto _dart_indices = dart_indices(recorder);
                 auto find_recorder = dart.loads(_dart_indices);
@@ -2554,13 +2551,13 @@ unittest {
         const hashdoc = HashDoc("hugo", 42);
         recorder_add.add(hashdoc);
         assert(recorder_add[].front.dart_index != recorder_add[].front.fingerprint,
-                "The dart_index and the fingerprint of a archive should not be the same for a # archive");
+        "The dart_index and the fingerprint of a archive should not be the same for a # archive");
         auto bullseye = dart_A.modify(recorder_add);
         // dart_A.dump;
         // writefln("bullseye   =%(%02x%)", bullseye);
         // writefln("fingerprint=%(%02x%)", recorder_add[].front.fingerprint);
         assert(bullseye == recorder_add[].front.fingerprint,
-                "The bullseye for a DART with a single #key archive should be the same as the fingerprint of the archive");
+        "The bullseye for a DART with a single #key archive should be the same as the fingerprint of the archive");
         const hashdoc_change = HashDoc("hugo", 17);
         auto recorder_B = dart_A.recorder;
         recorder_B.remove(hashdoc_change);
@@ -2575,7 +2572,7 @@ unittest {
         // writefln("fingerprint=%(%02x%)", recorder_change[].front.fingerprint);
         assert(recorder_add[].front.dart_index == recorder_change[].front.dart_index);
         assert(bullseye == recorder_change[].front.fingerprint,
-                "The bullseye for a DART with a single #key archive should be the same as the fingerprint of the archive");
+        "The bullseye for a DART with a single #key archive should be the same as the fingerprint of the archive");
         { // read the dart_index from the dart and check the dart_index 
             auto load_recorder = dart_A.loads(recorder_change[].map!(a => a.dart_index));
             //writefln("load_recorder=%(%02x%)", load_recorder[].front.dart_index);
