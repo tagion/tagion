@@ -42,8 +42,8 @@ if [ $wallets -lt 3 -o $wallets -gt 7 ]; then
     usage
 fi
 
-mkdir -p $ndir | "folder already exists"
-mkdir -p $wdir | "folder already exists"
+mkdir -p $ndir | echo "folder already exists"
+mkdir -p $wdir | echo "folder already exists"
 rm "$keyfile" | echo "No key file to delete"
 touch $keyfile
 
@@ -77,6 +77,7 @@ do
     bill_name=$(readlink -m "$wdir/bill$i-$b.hibon")
     $bdir/geldbeutel "$wallet_config" -x "$pincode" --amount 10000 -o "$bill_name" 
     echo "Created bill $bill_name"
+    echo "$bdir/geldbeutel $wallet_config -x $pincode --force $bill_name"
     $bdir/geldbeutel "$wallet_config" -x "$pincode" --force "$bill_name"
     echo "Forced bill into wallet $bill_name"
   done 
@@ -88,7 +89,7 @@ echo "$all_infos"
 
 bill_files=$(ls $wdir/bill*.hibon)
 cat $wdir/bill*.hibon |"${bdir}/stiefel" -a $all_infos -o $wdir/dart_recorder.hibon
-mkdir -p $ndir | "folder already exists"
+mkdir -p $ndir | echo "folder already exists"
 
 for ((i = 0; i <= nodes-1; i++)); 
 do
