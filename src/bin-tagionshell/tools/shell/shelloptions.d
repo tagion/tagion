@@ -55,7 +55,7 @@ struct ShellOptions {
     mixin JSONConfig;
 }
 
-synchronized class RoundRobin {
+final synchronized class RoundRobin {
     import core.atomic;
 
     protected shared uint counter;
