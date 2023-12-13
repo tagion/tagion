@@ -337,7 +337,7 @@ int _main(string[] args) {
                     keys = keys_hex.decode;
                 }
             }
-            verbose("Rim : %(%02x %):%(%02x %)", rims.rims, keys);
+            verbose("Rim : %(%02x %):%(%02x %)", rims.path, keys);
             const sender = CRUD.dartRim(rims, hirpc);
             if (!outputfilename.empty) {
                 fout = File(outputfilename, "w");

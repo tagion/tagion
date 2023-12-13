@@ -68,10 +68,10 @@ static struct SectorRange {
          * Returns: 
          */
     bool inRange(const Rims rims) const pure nothrow {
-        if (rims.rims.length ==1 ) {
-            return sectorInRange(rims.rims[0] << 8, _from_sector & 0xFF00, _to_sector);
+        if (rims.path.length ==1 ) {
+            return sectorInRange(rims.path[0] << 8, _from_sector & 0xFF00, _to_sector);
         }
-        return (rims.rims.length == 0) || sectorInRange(rims.sector, _from_sector, _to_sector);
+        return (rims.path.length == 0) || sectorInRange(rims.sector, _from_sector, _to_sector);
     }
 
     /**
@@ -178,64 +178,54 @@ static struct SectorRange {
      */
 @recordType("Rims")
 struct Rims {
-    Buffer rims;
+    Buffer path;
     @label("keys") @optional @(filter.Initialized) Buffer key_leaves;
-    protected enum root_rim = [];
-    static immutable root = Rims(root_rim);
+    protected enum root_rim_path = [];
+    static immutable root = Rims(root_rim_path);
     /**
-         * Returns: sector of the selected rims
+         * Returns: sector of the selected path
          */
-    ushort sector() const pure nothrow
-    in {
-        pragma(msg, "fixme(vp) have to be check: rims is root_rim");
-
-        version (none)
-            assert(rims.length >= ushort.sizeof || rims.length == 0,
-                    __format(
-                    "Rims size must be %d or more ubytes contain a sector but contains %d",
-                    ushort.sizeof, rims.length));
-    }
-    do {
-        if (rims.length == 0) {
+    ushort sector() const pure nothrow {
+        if (path.length == 0) {
             return ushort.init;
         }
-        return .sector(rims);
+        return .sector(path);
     }
 
     mixin HiBONRecord!(
             q{
                 this(Buffer r) {
-                    this.rims=r;
+                    this.path=r;
                     this.key_leaves=null;
                 }
 
                 this(const ushort sector)
                 out {
-                    assert(rims.length is ushort.sizeof);
+                    assert(path.length is ushort.sizeof);
                 }
                 do  {
-                    rims=[sector >> 8*ubyte.sizeof, sector & ubyte.max];
+                    path=[sector >> 8*ubyte.sizeof, sector & ubyte.max];
                 }
 
                 this(I)(const Rims rim, const I key) if (isIntegral!I) 
                 in (key >= 0 && key <= ubyte.max) 
                 do {
 
-                    rims = rim.rims ~ cast(ubyte) key;
+                    path = rim.path ~ cast(ubyte) key;
                     this.key_leaves= null; //rim.key_leaves.idup; 
                 }
             });
 
     /**
-         * Rims as hex value
+         * rim-path as hex value
          * Returns: hex string
          */
     string toString() const pure nothrow {
     import std.exception : assumeWontThrow;
-        if (rims.length == 0) {
+        if (path.length == 0) {
             return "XXXX";
         }
-        return assumeWontThrow(format!"%(%02x%)"(rims));
+        return assumeWontThrow(format!"%(%02x%)"(path));
     }
 }
 

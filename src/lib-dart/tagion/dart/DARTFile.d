@@ -1106,8 +1106,8 @@ class DARTFile {
 
         Index index = blockfile.masterBlock.root_index;
         if (!sectors.isinit) {
-            Buffer start_rims = Rims(sectors.from_sector).rims;
-            local_dump(index, start_rims[0], 0, null);
+            Buffer start_path = Rims(sectors.from_sector).path;
+            local_dump(index, start_path[0], 0, null);
             return;
         }
 
@@ -1154,8 +1154,8 @@ class DARTFile {
 
         Index index = blockfile.masterBlock.root_index;
         if (!sectors.isinit) {
-            Buffer start_rims = Rims(sectors.from_sector).rims;
-            local_traverse(index, start_rims[0], 0, null);
+            Buffer start_path = Rims(sectors.from_sector).path;
+            local_traverse(index, start_path[0], 0, null);
             return;
         }
 

@@ -291,17 +291,17 @@ received = the HiRPC received package
     do {
         immutable params = received.params!Rims;
 
-        const rim_branches = branches(params.rims);
+        const rim_branches = branches(params.path);
         HiBON hibon_params;
         if (!rim_branches.empty) {
             hibon_params = rim_branches.toHiBON(true);
         }
-        else if (params.rims.length > ushort.sizeof) {
+        else if (params.path.length > ushort.sizeof) {
             hibon_params = new HiBON;
  //           if (params.keys.empty) {
             // It not branches so maybe it is an archive
-            immutable key = params.rims[$ - 1];
-            const super_branches = branches(params.rims[0 .. $ - 1]);
+            immutable key = params.path[$ - 1];
+            const super_branches = branches(params.path[0 .. $ - 1]);
             if (!super_branches.empty) {
                 const index = super_branches.indices[key];
                 if (index != Index.init) {
@@ -493,7 +493,7 @@ received = the HiRPC received package
                 //
                 // Request Branches or Recorder at rims from the foreign DART.
                 //
-                const local_branches = branches(params.rims);
+                const local_branches = branches(params.path);
                 const request_branches = CRUD.dartRim(rims : params, hirpc:hirpc, id:id);
                 const result_branches = sync.query(request_branches);
                 if (Branches.isRecord(result_branches.response.result)) {
@@ -515,7 +515,7 @@ received = the HiRPC received package
                         sync.record(local_recorder);
                     }
                     foreach (const ubyte key; 0 .. KEY_SPAN) {
-                        const sub_rims = Rims(params.rims ~ key);
+                        const sub_rims = Rims(params.path ~ key);
                         const local_print = local_branches.dart_index(key);
                         const foreign_print = foreign_branches.dart_index(key);
                         auto foreign_archive = foreign_recoder.find(foreign_print);
