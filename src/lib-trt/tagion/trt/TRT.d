@@ -56,7 +56,7 @@ void createTRTUpdateRecorder(
         else if (a_bill.type == Archive.Type.REMOVE) {
             auto to_remove_index = archive.indexes.countUntil!(idx => idx == bill_index);
             if (to_remove_index >= 0) {
-                archive.indexes.remove(to_remove_index);
+                archive.indexes = archive.indexes.remove(to_remove_index);
             }
             else {
                 log.error("Index to remove not exists in DART: %s", bill_index[].toHexString);
@@ -78,19 +78,9 @@ void createTRTUpdateRecorder(
 
 /// Create the recorder for boot
 void genesisTRT(TagionBill[] bills, ref RecordFactory.Recorder recorder, const HashNet net) {
-
-    TRTArchive[Pubkey] to_insert;
-
-    foreach (bill; bills) {
-        auto archive = to_insert.require(bill.owner, TRTArchive(bill.owner, DARTIndex[].init));
-
-        archive.indexes ~= DARTIndex(net.dartIndex(bill));
-        to_insert[bill.owner] = archive;
-    }
-
-    foreach (archive; to_insert.byValue) {
-        recorder.insert(archive, Archive.Type.ADD);
-    }
+    auto factory = RecordFactory(net);
+    auto dart_recorder = factory.recorder(bills, Archive.Type.ADD);
+    createTRTUpdateRecorder(factory.uniqueRecorder(dart_recorder), factory.recorder, recorder, net);
 }
 
 unittest {
@@ -103,8 +93,6 @@ unittest {
     import tagion.script.TagionCurrency;
     import std.algorithm : map;
     import std.algorithm.iteration : reduce, map;
-
-    writeln("**********************************************");
 
     ulong countTRTRecorderIndexes(const ref RecordFactory.Recorder recorder) {
         return recorder[].map!(a => new TRTArchive(a.filed)
@@ -237,44 +225,143 @@ unittest {
 
     // Test recorder with duplicating owner field
     {
+        auto trt_recorder = factory.recorder;
+        auto empty_recorder = factory.recorder;
+
+        auto num_of_bills = 5;
+
+        TagionBill[] dup_bills;
+        foreach (i; 0 .. num_of_bills) {
+            auto b = w.requestBill(1000.TGN);
+            w.addBill(b);
+            b.owner = bills[i].owner;
+
+            dup_bills ~= b;
+        }
+
+        auto dart_recorder = factory.recorder;
+        dart_recorder.insert(bills, Archive.Type.ADD);
+        dart_recorder.insert(dup_bills, Archive.Type.ADD);
+        immutable im_dart_recorder_dup = factory.uniqueRecorder(dart_recorder);
+
+        createTRTUpdateRecorder(im_dart_recorder_dup, empty_recorder, trt_recorder, net);
+
+        assert(countTRTRecorderIndexes(trt_recorder) == im_dart_recorder_dup.length,
+            "Number of entries in recorders differs");
+
+        auto dart_archives = im_dart_recorder_dup[]
+            .map!(a => TagionBill(a.filed))
+            .map!(b => TRTArchive(b.owner, [net.dartIndex(b)]));
+
+        auto trt_archives = trt_recorder[]
+            .map!(b => TRTArchive(b.filed));
+
+        foreach (a; dart_archives.array) {
+            assert(trt_archives.canFind!(trt_arch => trt_arch.indexes.canFind(a.indexes.front)),
+                "Some bills are missing");
+        }
     }
 
     // Test recorder with REMOVE archives
     {
+        auto trt_recorder = factory.recorder;
+
+        auto read_recorder = factory.recorder;
+        read_recorder.insert(bills.map!(b => TRTArchive(b.owner, [
+                    net.dartIndex(b)
+                ])), Archive.Type.ADD);
+
+        auto index_of_remove_bill = 2;
+        auto dart_recorder = factory.recorder;
+        dart_recorder.insert(bills[0 .. index_of_remove_bill], Archive.Type.ADD);
+        dart_recorder.insert(bills[index_of_remove_bill .. $], Archive.Type.REMOVE);
+        immutable im_dart_recorder_rem = factory.uniqueRecorder(dart_recorder);
+
+        createTRTUpdateRecorder(im_dart_recorder_rem, read_recorder, trt_recorder, net);
+
+        assert(countTRTRecorderIndexes(trt_recorder) == index_of_remove_bill,
+            "Number of entries in recorders differs");
+
+        auto trt_archives = trt_recorder[]
+            .map!(b => TRTArchive(b.filed));
+
+        foreach (b; bills[0 .. index_of_remove_bill]) {
+            // Find added indexes
+            assert(trt_archives.canFind!(arch => (arch.owner == b.owner && arch.indexes.front == net.dartIndex(
+                    b))));
+
+            // Check archives for ADD
+            assert(trt_recorder[]
+                    .canFind!(arch => (TRTArchive(arch.filed).owner == b.owner
+                        && arch.type == Archive.Type.ADD)));
+        }
+
+        foreach (b; bills[index_of_remove_bill .. $]) {
+            // Find empty lists with removed indexes
+            assert(trt_archives.canFind!(arch => (arch.owner == b.owner && arch.indexes.empty)));
+
+            // Check archives for REMOVE
+            assert(trt_recorder[]
+                    .canFind!(arch => (TRTArchive(arch.filed).owner == b.owner
+                        && arch.type == Archive.Type.REMOVE)));
+        }
     }
 
-    // Test recorder with other than bills archives
+    // Test recorder with other docs inside
     {
+        auto trt_recorder = factory.recorder;
+        auto empty_recorder = factory.recorder;
+
+        int fake_docs_count = 5;
+        auto fake_docs = iota(0, fake_docs_count).map!(i => DARTFakeNet.fake_doc(i));
+
+        auto dart_recorder = factory.recorder;
+        dart_recorder.insert(bills, Archive.Type.ADD);
+        dart_recorder.insert(fake_docs, Archive.Type.ADD);
+        immutable im_dart_recorder_dirty = factory.uniqueRecorder(dart_recorder);
+
+        createTRTUpdateRecorder(im_dart_recorder_dirty, empty_recorder, trt_recorder, net);
+
+        assert(countTRTRecorderIndexes(trt_recorder) == im_dart_recorder_dirty.length - fake_docs_count,
+            "Number of entries in recorders differs");
+
+        auto dart_archives = im_dart_recorder_dirty[]
+            .filter!(a => a.filed.isRecord!TagionBill)
+            .map!(a => TagionBill(a.filed))
+            .map!(b => TRTArchive(b.owner, [net.dartIndex(b)]));
+
+        auto trt_archives = trt_recorder[]
+            .map!(b => TRTArchive(b.filed));
+
+        foreach (a; dart_archives.array) {
+            assert(trt_archives.canFind!(trt_arch => trt_arch.indexes.canFind(a.indexes.front)),
+                "Some bills are missing");
+        }
     }
 
-    // Test duplicationg gegnesisTRT bills
-    version (none) {
-        TagionBill createDuplicatingOwners() {
-            auto b = w.requestBill(1000.TGN);
-            w.addBill(b);
-            b.owner = genesis_bills[0].owner;
+    // Test genesisTRT empty recorder input
+    {
+        auto trt_recorder = factory.recorder;
 
-            writefln("Dup owner %s", b.owner[].toHexString);
-            return b;
-        }
+        genesisTRT(TagionBill[].init, trt_recorder, net);
 
-        TagionBill[] bills = iota(3).map!(i => createDuplicatingOwners()).array;
-
-        auto result_recorder = factory.recorder;
-        genesisTRT(bills, result_recorder, net);
-
-        auto index_count = result_recorder[].map!(a => new TRTArchive(a.filed)
-                .indexes.length).sum;
-        assert(index_count == bills.length, "Some indices are missed in genesisTRT");
-
-        auto bill_idx = bills.map!(b => net.dartIndex(b));
-        foreach (archive; result_recorder) {
-            auto trt_archive = TRTArchive(archive.filed);
-            foreach (idx; trt_archive.indexes) {
-                assert(canFind(bill_idx, idx));
-            }
-        }
+        assert(trt_recorder.length == 0, "Result recorder should be empty");
     }
 
-    writeln("**********************************************");
+    // Test genesisTRT with bills
+    {
+        auto trt_recorder = factory.recorder;
+
+        genesisTRT(bills, trt_recorder, net);
+
+        assert(countTRTRecorderIndexes(trt_recorder) == im_dart_recorder.length,
+            "Number of entries in recorders differs");
+
+        auto trt_archives = trt_recorder[]
+            .map!(b => TRTArchive(b.filed));
+
+        foreach (b; bills) {
+            assert(trt_archives.canFind(TRTArchive(b.owner, [net.dartIndex(b)])), "Some bills are missing");
+        }
+    }
 }
