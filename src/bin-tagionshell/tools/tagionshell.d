@@ -57,6 +57,9 @@ static void writeit(A...)(A a) {
 void dart_worker(ShellOptions opt) {
     int rc;
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_SUB);
+    scope (exit) {
+        s.close;
+    }
     s.recvtimeout = msecs(1000);
     s.subscribe("");
     writeit("DS: subscribed");
@@ -89,6 +92,9 @@ static void contract_handler(WebData* req, WebData* rep, void* ctx) {
 
     writeit(format("WH: contract: with %d bytes for %s", req.rawdata.length, contract_addr));
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
+    scope (exit) {
+        s.close();
+    }
     s.recvtimeout = msecs(10000);
     writeit(format("WH: contract: trying to dial %s", contract_addr));
     while (true) {
@@ -112,7 +118,6 @@ static void contract_handler(WebData* req, WebData* rep, void* ctx) {
         return;
     }
     writeit(format("WH: dart: received %d bytes", len));
-    s.close();
     rep.status = (len > 0) ? nng_http_status.NNG_HTTP_STATUS_OK : nng_http_status.NNG_HTTP_STATUS_NO_CONTENT;
     rep.type = "applicaion/octet-stream";
     rep.rawdata = (len > 0) ? buf[0 .. len] : null;
@@ -160,6 +165,9 @@ static void dartcache_handler(WebData* req, WebData* rep, void* ctx) {
         dreq = owner_pkeys;
 
         NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
+        scope (exit) {
+            s.close();
+        }
         s.recvtimeout = 60_000.msecs;
         while (true) {
             rc = s.dial(opt.node_dart_addr);
@@ -196,7 +204,6 @@ static void dartcache_handler(WebData* req, WebData* rep, void* ctx) {
             doclen += len;
         }
         while (len > buflen - 1);
-        s.close();
 
         Document repdoc = Document(cast(immutable(ubyte[])) docbuf);
         immutable repreceiver = hirpc.receive(repdoc);
@@ -241,6 +248,9 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
 
     writeit(format("WH: dart: with %d bytes for %s", req.rawdata.length, dart_addr));
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
+    scope (exit) {
+        s.close();
+    }
     s.recvtimeout = 60_000.msecs;
     while (true) {
         rc = s.dial(dart_addr);
@@ -275,7 +285,6 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
         doclen += len;
     }
     while (len > buflen - 1);
-    s.close();
     rep.status = (doclen > 0) ? nng_http_status.NNG_HTTP_STATUS_OK : nng_http_status.NNG_HTTP_STATUS_NO_CONTENT;
     rep.type = "applicaion/octet-stream";
     rep.rawdata = (doclen > 0) ? docbuf[0 .. doclen] : null;
