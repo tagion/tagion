@@ -401,7 +401,7 @@ struct NNGMessage {
     }            
 } // struct NNGMessage
 
-extern (C) alias nng_aio_cb = void function (void *);
+alias nng_aio_cb = void function (void *);
 
 struct NNGAio {
     nng_aio* aio;
@@ -490,7 +490,7 @@ struct NNGAio {
         nng_aio_finish(aio, cast(int) err);
     }
 
-    extern (C) alias nng_aio_ccb = void function (nng_aio *, void*, int);
+    alias nng_aio_ccb = void function (nng_aio *, void*, int);
     void defer ( nng_aio_ccb cancelcb, void *arg ){
         nng_aio_defer ( aio, cancelcb, arg );
     }
@@ -1544,7 +1544,7 @@ alias webhandler = void function ( WebData*, WebData*, void* );
 
 
 //----------------
-static extern(C) void webrouter (nng_aio* aio) {
+void webrouter (nng_aio* aio) {
 
     int rc;
     nng_http_res *res;
@@ -1800,7 +1800,7 @@ extern (C) struct WebClientAsync {
 }
 
 // common async client router
-extern (C) static void webclientrouter ( void* p ){
+static void webclientrouter ( void* p ){
     if(p == null) return;
     WebClientAsync *a = cast(WebClientAsync*)(p);
     WebData rep = WebData();
