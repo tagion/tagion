@@ -91,6 +91,9 @@ struct InputValidatorService {
         }
 
         NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_REP);
+        scope (exit) {
+            sock.close();
+        }
 
         sock.sendtimeout = opts.sock_send_timeout.msecs;
         sock.recvtimeout = opts.sock_recv_timeout.msecs;
@@ -127,8 +130,7 @@ struct InputValidatorService {
                 continue;
             }
 
-
-            version(BLOCKING) {
+            version (BLOCKING) {
                 scope (failure) {
                     reject(ResponseError.Internal);
                 }
@@ -155,7 +157,8 @@ struct InputValidatorService {
                 }
 
                 Document doc = Document(result_buf.idup);
-            } else {
+            }
+            else {
                 scope (failure) {
                     reject(ResponseError.Internal);
                 }
@@ -181,8 +184,6 @@ struct InputValidatorService {
 
                 Document doc = Document(result_buf.data.idup);
             }
-
-
 
             if (!doc.isInorder) {
                 reject(ResponseError.InvalidBuf);
