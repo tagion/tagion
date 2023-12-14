@@ -11,27 +11,30 @@ Example synchronizing src.drt on to dst.drt
 dartutil --sync src.drt dst.drt
 
 <option>:
-      --version display the version
--v    --verbose Prints verbose information to console
-          --dry Dry-run this will not save the wallet
--I --initialize Create a dart file
--o --outputfile Sets the output file name
--r       --read Excutes a DART read sequency
-          --rim Performs DART rim read
--m     --modify Excutes a DART modify sequency
-          --rpc Excutes a HiPRC on the DART
-        --strip Strips the dart-recoder dumps archives
--f      --force Force erase and create journal and destination DART
-        --print prints all the archives with in the given angle
-         --dump Dumps all the archives with in the given angle
-          --eye Prints the bullseye
-         --sync Synchronize src.drt to dest.drt
--e       --exec Execute string to be used for remote access
--P --passphrase Passphrase of the keypair : default: verysecret
--R      --range Sets angle range from:to (Default is full range)
-        --depth Set limit on dart rim depth
-         --fake Use fakenet instead of real hashes : default :false
--h       --help This help information.
+         --version display the version
+-v       --verbose Prints verbose information to console
+             --dry Dry-run this will not save the wallet
+-I    --initialize Create a dart file
+-o    --outputfile Sets the output file name
+-r          --read Excutes a DART read sequency
+             --rim Performs DART rim read
+-m        --modify Excutes a DART modify sequency
+             --rpc Excutes a HiPRC on the DART
+           --strip Strips the dart-recoder dumps archives
+-f         --force Force erase and create journal and destination DART
+           --print prints all the archives with in the given angle
+            --dump Dumps all the archives with in the given angle
+   --dump-branches Dumps all the archives and branches with in the given angle
+             --eye Prints the bullseye
+            --sync Synchronize src.drt to dest.drt
+-e          --exec Execute string to be used for remote access
+-P    --passphrase Passphrase of the keypair : default: verysecret
+-A         --angle Sets angle range from:to (Default is full range)
+           --depth Set limit on dart rim depth
+            --fake Use fakenet instead of real hashes : default :false
+-h          --help This help information.sage:
+dartutil [<option>...] file.drt <files>
+
 ```
 
 ## Create an empty dart
@@ -40,15 +43,15 @@ dartutil --initialize database.drt
 ```
 The DART can also be created with to use the fake hash with the  `--fake` option.
 
-## Display an inspect the a DART file
+## Display an inspect the DART file
 The .drt file is a block-file so thei [blockutil](/src/bin-blockutil/README.md) can also be used to inspect the file.
 
-- The bullseye of the DART can be display with the `--eye` switch.
+#### The bullseye of the DART can be display with the `--eye` switch.
 ```
-dartutil Node_0_dart.drt --eye
-EYE: 301a9c0710033e4e24ca6cfc0f3b96e0c2f0e5760abdd2071ec1c427316be00e
+dartutil genesis.drt --eye
+EYE: 2069c3e00c031294ae45945d45fa20e0f0f09e036ca1153bb66da94d9bc369a8artutil 
 ```
-- The DART map can be listed with the `--print` switch.
+#### The DART map can be listed with the `--print` switch.
 ```
 dartutil genesis.drt --print
 EYE: 2069C3E00C031294AE45945D45FA20E0F0F09E036CA1153BB66DA94D9BC369A8
@@ -73,10 +76,163 @@ EYE: 2069C3E00C031294AE45945D45FA20E0F0F09E036CA1153BB66DA94D9BC369A8
 | 38 [21]
 .... continued
 ```
-- If the DART is big the map print out can be limited with the `--angle` and `--depth`.
-```
+
+The numbers in `[<number>]` is the blockfile index (in decimal) which can be read via the [blockutil](/src/bin-blockutil/README.md).
+
+The rim-key are shown as `| XX` and rim-key (in hexadecimal).
+
+The `--angle` selects the angle range and `--depth` selects the rim depth in the DART.
+
+The long hexadecimal number is the dart-index of the archive.
+
+The `#` at the end of the dart-index indicates that the archive is a dart-key.
+
+#### If the DART is big the map print out can be limited with the `--angle` and `--depth`.
+
+
 
 ```
+dartutil genesis.drt --angle C034:C670 --print --depth 3
+EYE: 2069C3E00C031294AE45945D45FA20E0F0F09E036CA1153BB66DA94D9BC369A8
+| C0 [66]
+| .. | 34 [65]
+| .. | .. c034d68fe76c4ca96315e44fc0bac330e56ee46a68b11cb49877af9073dfabf9 [64]
+| C6 [69]
+| .. | 53 [68]
+| .. | .. c653fcf92e4bc1ccf4e41acd85876f62a1e2422a1fe7d849b65cd8e75cf298c3 [67]
+```
+
+## Read an inspect data in the DART.
+
+In the following section it's shown how information can be read out of the DART.
+
+#### Raw data can be read out of the DART with the `--dump`
+
+The data read out is stream out as a *HiBON* stream and by default is stream to `stdout`.
+The output can be redirected via the `-o filename.hibon` switch.
+
+```
+dartutil genesis.drt --angle C034:C670 --dump --depth 3|hibonutil -pc
+{
+    "$@": "TGN",
+    "$V": {
+        "$": [
+            "i64",
+            "0xde0b6b3a7640000"
+        ]
+    },
+    "$Y": [
+        "*",
+        "@A6MNNwTp0c88kgIvkVSGve_GQOmu1lgdTMrVH_8RsLQQ"
+    ],
+    "$t": [
+        "time",
+        "2023-12-04T16:09:33.1522481"
+    ],
+    "$x": [
+        "*",
+        "@0kD6FQ=="
+    ]
+}
+{
+    "$@": "TGN",
+    "$V": {
+        "$": [
+            "i64",
+            "0xde0b6b3a7640000"
+        ]
+    },
+    "$Y": [
+        "*",
+        "@ApvreSMnipDHPVrz2YprVc63hGqpLsidQ0c-eT5VXAvS"
+    ],
+    "$t": [
+        "time",
+        "2023-12-04T16:10:35.4239432"
+    ],
+    "$x": [
+        "*",
+        "@pZtmng=="
+    ]
+}
+```
+With the `--dump-branches` the branches in the DART are also streamed.
+```
+dartutil genesis.drt --angle 1175:1B2A --dump-branches --depth 3 |hibonutil -pc 
+{
+    "$@": "$@B",
+    "$idx": {
+        "113": [
+            "u64",
+            "0x27"
+        ],
+        "152": [
+            "u64",
+            "0x2a"
+...
+---- cut
+...
+ {
+    "$@": "$@B",
+    "$idx": {
+        "89": [
+            "u64",
+            "0x63"
+        ]
+    },
+    "$prints": {
+        "89": [
+            "*",
+            "@tUpjU37nzEYfttwiGSYQcb4lCuq0uh8q5f-15julbJw="
+        ]
+    }
+}
+```
+
+#### The rim-path can be selected via `--rim` switch
+
+By default the `--rim` returns the `HiRPC` response (rim-path as hex-string).
+
+The rim-path can also be set in decimal by separating the number with a comman.
+
+```
+dartutil genesis.drt --rim C034 |hibonutil -pc
+{
+    "$@": "HiRPC",
+    "$Y": [
+        "*",
+        "@Av2fcgwMGh3blxvHL9mnVz81SZ9AC_-zVhNK1MD2Asea"
+    ],
+    "$msg": {
+        "result": {
+            "$@": "$@B",
+            "$prints": {
+                "214": [
+                    "*",
+                    "@wDTWj-dsTKljFeRPwLrDMOVu5GposRy0mHevkHPfq_k="
+                ]
+            }
+        }
+    },
+    "$sign": [
+        "*",
+        "@tPZjBvIi1qIXulGf2z__REIHJHrH6N4PDABQwbtJVzO9ZowylrSJxnOrO6WVRTJRJ1skeS3K9jGQ0EUpVBo4dg=="
+    ]
+}
+```
+`Note. Select the same rim-path with decimal rim keys.`
+```
+dartutil genesis.drt --rim 192,52, |hibonutil -pc
+
+```
+
+The `HiRPC` encapsulation can be stripped with the `--strip` switch.
+```
+dartutil genesis.drt --rim 1175 --strip |hibonutil -pc
+
+```
+
+
 
 ## DART Crud commands
 You can call only one of the CRUD command at a time

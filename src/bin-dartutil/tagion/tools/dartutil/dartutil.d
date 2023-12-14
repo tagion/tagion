@@ -105,7 +105,7 @@ int _main(string[] args) {
                 "sync", "Synchronize src.drt to dest.drt", &sync,
                 "e|exec", "Execute string to be used for remote access", &exec,
                 "P|passphrase", format("Passphrase of the keypair : default: %s", passphrase), &passphrase,
-                "R|range", "Sets angle range from:to (Default is full range)", &angle_range,
+                "A|angle", "Sets angle range from:to (Default is full range)", &angle_range,
                 "depth", "Set limit on dart rim depth", &depth,
                 "fake", format(
                     "Use fakenet instead of real hashes : default :%s", fake), &fake,
@@ -203,7 +203,7 @@ int _main(string[] args) {
         Exception dart_exception;
         auto db = new DART(net, dartfilename, dart_exception, Yes.read_only);
         if (dart_exception !is null) {
-            stderr.writefln("Fail to open DART: %s. Abort.", dartfilename);
+            error("Fail to open DART: %s. Abort.", dartfilename);
             error(dart_exception);
             return 1;
         }
@@ -234,6 +234,17 @@ int _main(string[] args) {
             return 0;
         }
 
+        File fout;
+        fout = stdout;
+        if (!outputfilename.empty) {
+            fout = File(outputfilename, "w");
+            verbose("Output file %s", outputfilename);
+        }
+        scope (exit) {
+            if (fout !is stdout) {
+                fout.close;
+            }
+        }
         if (print) {
             db.dump(sectors, Yes.full, depth);
         }
@@ -241,8 +252,6 @@ int _main(string[] args) {
             writefln("EYE: %(%02x%)", db.fingerprint);
         }
         else if (dump || dump_branches) {
-            File fout;
-            fout = stdout;
             bool dartTraverse(const(Document) doc, const Index index, const uint rim, Buffer rim_path) {
                 if (dump && DARTFile.Branches.isRecord(doc)) {
                     return false;
@@ -271,8 +280,6 @@ int _main(string[] args) {
             return 0;
         }
         if (dartread) {
-            File fout;
-            fout = stdout;
             DARTIndex[] dart_indices;
             foreach (read_arg; dartread_args) {
                 import tagion.tools.dartutil.dartindex : dartIndexDecode;
@@ -283,14 +290,6 @@ int _main(string[] args) {
             }
 
             const sender = CRUD.dartRead(dart_indices, hirpc);
-            if (!outputfilename.empty) {
-                fout = File(outputfilename, "w");
-            }
-            scope (exit) {
-                if (fout !is stdout) {
-                    fout.close;
-                }
-            }
             if (dry_switch) {
                 fout.rawWrite(sender.serialize);
             }
@@ -309,10 +308,7 @@ int _main(string[] args) {
             return 0;
         }
         if (!dartrim.empty) {
-            File fout;
-            fout = stdout;
             Rims rims;
-            //Buffer rim_keys;
             if (dartrim != "root") {
                 auto rim_and_keys = dartrim.split(":");
                 auto rim_path = rim_and_keys.front;
@@ -341,14 +337,6 @@ int _main(string[] args) {
             verbose("Rim : %(%02x %):%(%02x %)", rims.path, rims.key_leaves);
             const sender = CRUD.dartRim(rims, hirpc);
             verbose("sender %s", sender.toPretty);
-            if (!outputfilename.empty) {
-                fout = File(outputfilename, "w");
-            }
-            scope (exit) {
-                if (fout !is stdout) {
-                    fout.close;
-                }
-            }
             if (dry_switch) {
                 fout.rawWrite(sender.serialize);
                 return 0;
@@ -375,8 +363,8 @@ int _main(string[] args) {
             auto result = db(received, false);
             auto tosend = hirpc.toHiBON(result);
             auto tosendResult = tosend.method.params;
-            if (!outputfilename.empty) {
-                outputfilename.fwrite(tosendResult);
+            if (fout != stdout) {
+                fout.rawWrite(tosendResult.serialize);
             }
             return 0;
         }

@@ -13,6 +13,7 @@ import std.traits : EnumMembers;
 import std.typecons;
 import tagion.dart.BlockFile;
 import tagion.dart.DARTException : BlockFileException;
+import tagion.dart.Recycler;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONJSON : toPretty;
 import tagion.tools.Basic;
@@ -54,6 +55,25 @@ struct BlockFileAnalyzer {
     void recyclePrint(File fout) {
         fout.writeln("Recycler map");
         blockfile.recycleDump(fout);
+    }
+    
+    void recyclerCurrentPrint(File fout) {
+        import tagion.logger.Statistic;
+
+
+        Index index = blockfile.masterBlock.recycle_header_index;
+
+        if (index == Index(0)) {
+            return;
+        }
+        Statistic!(ulong, Yes.histogram) stat;
+        while (index != Index.init) {
+            auto add_segment = RecycleSegment(blockfile, index);
+            stat(add_segment.size);
+        pragma(msg, "add_segment ", typeof(add_segment.next));
+            index = add_segment.next;
+        }
+        fout.writeln(stat.histogramString(logscale));
     }
 
     void recycleStatisticPrint(File fout) {
@@ -129,6 +149,46 @@ struct BlockFileAnalyzer {
     void printMaster(File fout) {
         fout.writefln("%s", blockfile.masterBlock);
     }
+
+
+    void printUtilisation(File fout) {
+        auto seg_range = blockfile[index_from .. index_to];
+        uint pos = 0;
+        size_t recycler_size;
+        size_t total;
+        size_t doc_size;
+        size_t data_size;
+        foreach (seg; seg_range) {
+            total+=seg.size;
+            if (RecycleSegment.isRecord(seg.doc)) {
+                recycler_size+=seg.size;
+                continue;
+            }
+            doc_size+=seg.doc.full_size;
+            data_size+=seg.size;
+        }
+        // Converts from number of blocks to number of bytes
+        total+=1; /// 1 for header-block 
+        total*=blockfile.BLOCK_SIZE;
+        recycler_size*=blockfile.BLOCK_SIZE;
+        data_size*=blockfile.BLOCK_SIZE;
+        string unit_name="KiB";
+        uint unit=1 << 10; // KiB
+        if (total > 1<< 24) {
+           unit_name="MiB";
+            unit=1 << 20;
+        }
+        fout.writefln("Total     %9.3f%s", double(total)/unit, unit_name);
+        fout.writefln("Data      %9.3f%s %5.2f%%", double(data_size)/unit, unit_name, 
+            100.0*data_size/total);
+        fout.writefln("Documents %9.3f%s %5.2f%%", double(doc_size)/unit, unit_name,
+            100.0*doc_size/total);
+        fout.writefln("Recycler  %9.3f%s %5.2f%%", double(recycler_size)/unit, unit_name,
+            100.0*recycler_size/total);
+        fout.writefln("Data utilisation       %5.2f%%",  100.0*doc_size/data_size);
+
+        
+    }
 }
 
 BlockFileAnalyzer analyzer;
@@ -143,11 +203,13 @@ int _main(string[] args) {
     bool sequency; /// Prints the sequency on the next header
     bool print_recycler;
     bool print_recycler_statistic;
+    bool print_recycler_current;
     bool print_statistic;
     bool print_graph;
     bool dump_doc;
     bool print_header;
     bool print_master;
+    bool print_utilisation;
     ulong[] indices;
     bool dump;
     string index_range;
@@ -165,6 +227,7 @@ int _main(string[] args) {
                 "print", "Prints the entire blockfile", &print,
                 "print-recycler", "Dumps the recycler", &print_recycler,
                 "r|recyclerstatistic", "Dumps the recycler statistic block", &print_recycler_statistic,
+                "t|recyclercurrentstat", "Dumps the current statistic in the file", &print_recycler_current,
                 "s|statistic", "Dumps the statistic block", &print_statistic,
                 "g|print-graph", "Dump the blockfile in graphviz format", &print_graph,
                 "d|dumpdoc", "Dump the document located at an specific index", &dump_doc,
@@ -172,6 +235,7 @@ int _main(string[] args) {
                 "M|master", "Dump the master block", &print_master,
                 "i|index", "the index to dump the document from", &indices,
                 "o|output", "Output filename (Default stdout)", &output_filename,
+                "U|utilised", "Dumps the utalisation of the blockfile", &print_utilisation,
                 "dump", "Dumps the blocks as a HiBON sequency to stdout or a file", &dump,
                 "log", "Sets logscale on statistics", &analyzer.logscale,
         );
@@ -258,12 +322,19 @@ int _main(string[] args) {
             analyzer.recycleStatisticPrint(vout);
         }
 
+        if (print_recycler_current) {
+            analyzer.recyclerCurrentPrint(vout);
+        }
         if (print_statistic) {
             analyzer.printStatistic(vout);
         }
 
         if (print_graph) {
             analyzer.dumpGraph(vout);
+        }
+
+        if (print_utilisation) {
+            analyzer.printUtilisation(vout);
         }
 
         if (!indices.empty) {
