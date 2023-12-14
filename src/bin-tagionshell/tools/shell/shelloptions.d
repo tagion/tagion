@@ -17,6 +17,7 @@ struct ShellOptions {
     string dart_endpoint;
     string dartcache_endpoint;
     string tagion_subscription_addr;
+    string bullseye_endpoint;
     string i2p_endpoint;
     string default_i2p_wallet;
     string default_i2p_wallet_pin;
@@ -33,6 +34,7 @@ struct ShellOptions {
         contract_endpoint = "/contract";
         dart_endpoint = "/dart";
         dartcache_endpoint = "/dartcache";
+        bullseye_endpoint = "/bullseye";
         i2p_endpoint = "/invoice2pay";
         default_i2p_wallet = "./wallets/wallet1.json";
         default_i2p_wallet_pin = "0001";
