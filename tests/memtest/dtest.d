@@ -2,11 +2,12 @@
 import std.stdio;
 import std.string;
 import std.json;
-
+import core.thread.osthread;
 import dfunctions;
 
 static extern (C) void handler (cdata *d)
 {
+     thread_attachThis();
     nng_url *u;
     string uri;
     string route;
