@@ -64,6 +64,7 @@ int _main(string[] args) {
     bool print;
 
     bool standard_output;
+    ulong test_dart;
     string[] dartread_args;
     string angle_range;
     string exec;
@@ -109,6 +110,7 @@ int _main(string[] args) {
                 "depth", "Set limit on dart rim depth", &depth,
                 "fake", format(
                     "Use fakenet instead of real hashes : default :%s", fake), &fake,
+                "test", "Generate a test dart with specified number of archives", &test_dart,
         );
         if (version_switch) {
             revision_text.writeln;
@@ -198,6 +200,26 @@ int _main(string[] args) {
         if (initialize) {
             DART.create(dartfilename, net);
             return 0;
+        }
+        if (test_dart>0) {
+            auto test_db=new DART(net, dartfilename);
+            scope(exit) {
+                test_db.close;
+            }
+            static struct TestDoc {
+                string text;
+                mixin HiBONRecord;
+            }
+            static const(Document) test_doc(const ulong x) {
+                TestDoc _test_doc;
+                _test_doc.text=format("Test document %d", x);
+                return _test_doc.toDoc;
+            }
+            const(Document) function(const ulong) doc_gen=&test_doc;
+            if (fake) {
+                doc_gen=&DARTFakeNet.fake_doc;
+            }
+            return 0; 
         }
 
         Exception dart_exception;
