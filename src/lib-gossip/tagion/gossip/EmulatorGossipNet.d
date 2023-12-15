@@ -10,10 +10,7 @@ import tagion.basic.basic : EnumText, basename, buf_idup;
 import tagion.crypto.Types : Pubkey;
 
 import tagion.utils.Miscellaneous : cutHex;
-
-import tagion.utils.LRU;
 import tagion.utils.Queue;
-
 
 import tagion.gossip.InterfaceNet;
 import tagion.hibon.Document : Document;
@@ -106,7 +103,7 @@ class EmulatorGossipNet : GossipNet {
             const(ChannelFilter) channel_filter,
             const(SenderCallBack) sender) {
         const send_channel = select_channel(channel_filter);
-        version(EPOCH_LOG) {
+        version (EPOCH_LOG) {
             log.trace("Selected channel: %s", send_channel.cutHex);
         }
         if (send_channel.length) {
@@ -120,18 +117,17 @@ class EmulatorGossipNet : GossipNet {
         import std.algorithm.searching : countUntil;
         import tagion.hibon.HiBONJSON;
 
-
         Thread.sleep(duration);
 
         auto node_tid = locate(task_names[channel]);
         if (node_tid is Tid.init) {
             return;
         }
-        
+
         node_tid.send(ReceivedWavefront(), sender.toDoc);
-        version(EPOCH_LOG) {
-        log.trace("Successfully sent to %s (Node_%s) %d bytes", channel.cutHex, _pkeys.countUntil(channel), sender
-                .toDoc.serialize.length);
+        version (EPOCH_LOG) {
+            log.trace("Successfully sent to %s (Node_%s) %d bytes", channel.cutHex, _pkeys.countUntil(channel), sender
+                    .toDoc.serialize.length);
         }
     }
 
