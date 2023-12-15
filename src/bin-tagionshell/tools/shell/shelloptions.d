@@ -60,7 +60,7 @@ struct ShellOptions {
 final synchronized class RoundRobin {
     import core.atomic;
 
-    protected shared uint counter;
+    protected uint counter;
     uint next(const uint number_of_nodes) nothrow {
         if ((counter.atomicLoad + 1) >= number_of_nodes) {
             counter.atomicStore(0);
