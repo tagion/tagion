@@ -43,6 +43,9 @@ import tagion.script.NameCardScripts : readStandardRecord;
 import tagion.tools.Basic;
 import tagion.tools.revision;
 import tagion.dart.BlockFile : Index;
+import tagion.utils.Term;
+import std.range;
+import tagion.basic.range;
 
 /**
  * @brief tool for working with local DART database
@@ -64,7 +67,7 @@ int _main(string[] args) {
     bool print;
 
     bool standard_output;
-    ulong test_dart;
+    string test_dart;
     string[] dartread_args;
     string angle_range;
     string exec;
@@ -80,6 +83,7 @@ int _main(string[] args) {
     bool dump;
     bool dump_branches;
     bool initialize;
+    bool flat_enable;
     string passphrase = "verysecret";
 
     GetoptResult main_args;
@@ -110,7 +114,8 @@ int _main(string[] args) {
                 "depth", "Set limit on dart rim depth", &depth,
                 "fake", format(
                     "Use fakenet instead of real hashes : default :%s", fake), &fake,
-                "test", "Generate a test dart with specified number of archives", &test_dart,
+                "test", "Generate a test dart with specified number of archives total:bundle", &test_dart,
+                "flat", "Enable flat branch hash", &flat_enable,
         );
         if (version_switch) {
             revision_text.writeln;
@@ -198,28 +203,79 @@ int _main(string[] args) {
         const hirpc = HiRPC(net);
 
         if (initialize) {
-            DART.create(dartfilename, net);
+            const flat = (flat_enable) ? Yes.flat : No.flat;
+            DART.create(filename : dartfilename, net:
+                    net, flat:
+                    flat);
             return 0;
         }
-        if (test_dart>0) {
-            auto test_db=new DART(net, dartfilename);
-            scope(exit) {
+        if (!test_dart.empty) {
+            import std.random;
+            import std.datetime.stopwatch;
+
+            auto test_params = test_dart.split(':').map!(param => param.to!ulong);
+            pragma(msg, "test_params ", typeof(test_params.front));
+            const number_of_archives = test_params.eatOne;
+            const bundle_size = test_params.eatOne(ulong(1000));
+            auto test_db = new DART(net, dartfilename);
+            scope (exit) {
                 test_db.close;
             }
             static struct TestDoc {
                 string text;
                 mixin HiBONRecord;
             }
+
             static const(Document) test_doc(const ulong x) {
                 TestDoc _test_doc;
-                _test_doc.text=format("Test document %d", x);
+                _test_doc.text = format("Test document %d", x);
                 return _test_doc.toDoc;
             }
-            const(Document) function(const ulong) doc_gen=&test_doc;
+
+            const(Document) function(const ulong) doc_gen = &test_doc;
             if (fake) {
-                doc_gen=&DARTFakeNet.fake_doc;
+                doc_gen = &DARTFakeNet.fake_doc;
             }
-            return 0; 
+            //enum bundle_size = 1000;
+            size_t count;
+            auto rnd = Random(unpredictableSeed);
+
+            enum line_length = 40;
+            void progress(const size_t s, const(char[]) color) {
+                nobose("\r%s%-(%s%)%s%s%s", GREEN, '#'.repeat(s % line_length), color, "#", RESET);
+            }
+
+            auto rec_time = StopWatch(AutoStart.no);
+            auto dart_time = StopWatch(AutoStart.no);
+            long prev_dart_time;
+            foreach (no; 0 .. (number_of_archives / bundle_size) + 1) {
+                count += bundle_size;
+                const N = (number_of_archives < count) ? number_of_archives % bundle_size : bundle_size;
+                auto rec = test_db.recorder;
+                progress(no, RED);
+                rec_time.start;
+                foreach (i; 0 .. N) {
+                    const random_doc_no = uniform(ulong.min, ulong.max, rnd);
+                    rec.add(doc_gen(random_doc_no));
+                }
+                rec_time.stop;
+                progress(no, YELLOW);
+                dart_time.start;
+                test_db.modify(rec);
+                dart_time.stop;
+                progress(no, GREEN);
+                if ((no + 1) % line_length == 0) {
+                    const current_dart_time = dart_time.peek.total!"usecs";
+                    const delta_dart_time = current_dart_time - prev_dart_time;
+                    prev_dart_time = current_dart_time;
+                    nobose(" dart %.3fmsec per archive %.3fmsec blocks %d",
+                            double(delta_dart_time) / 1000.0,
+                            double(delta_dart_time) / (1000.0 * line_length * bundle_size),
+                            count);
+                    vout.writeln;
+                }
+            }
+            return 0;
         }
 
         Exception dart_exception;

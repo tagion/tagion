@@ -1,7 +1,7 @@
 module tagion.basic.range;
-import std.range.primitives : isInputRange;
-import std.traits : ForeachType;
+import std.range;
 
+@safe:
 /**
 * Tries to do a front but it is empty it return T.init 
 * Returns:
@@ -9,20 +9,14 @@ import std.traits : ForeachType;
 * else the .init value of the range element type is return
 * The first element is returned
 */
-template doFront(Range) if (isInputRange!Range) {
-    alias T = ForeachType!Range;
-    import std.range;
-
-    T doFront(Range r) @safe {
-        if (r.empty || r is Range.init) {
-            return T.init;
-        }
-        return r.front;
+T doFront(Range, T = ElementType!Range)(Range r, T default_value = T.init) if (isInputRange!Range) {
+    if (r.empty || r is Range.init) {
+        return default_value;
     }
+    return r.front;
 }
 
 ///
-@safe
 unittest {
     {
         int[] a;
@@ -42,9 +36,11 @@ unittest {
  *   r =range
  * Returns: r.front
  */
-auto eatOne(R)(ref R r) if (isInputRange!R) {
-    import std.range;
+T eatOne(Range, T = ElementType!Range)(ref Range r, T default_value = T.init) if (isInputRange!Range) {
 
+    if (r.empty) {
+        return default_value;
+    }
     scope (exit) {
         if (!r.empty) {
             r.popFront;
@@ -53,52 +49,13 @@ auto eatOne(R)(ref R r) if (isInputRange!R) {
     return r.front;
 }
 
-///
+////
 unittest {
     const(int)[] a = [1, 2, 3];
     assert(eatOne(a) == 1);
     assert(eatOne(a) == 2);
     assert(eatOne(a) == 3);
-}
-
-/** 
- * Returns the first element in the range r and pops the element. 
- * If the range is empty then it returns T.init.
- * Params:
- *   Range = range 
- */
-template doEatFront(Range) if (isInputRange!Range) {
-    alias T = ForeachType!Range;
-    import std.range;
-
-    T doEatFront(ref Range r) @safe {
-        if (r.empty) {
-            return T.init;
-        }
-        scope (exit) {
-            r.popFront;
-        }
-        return r.front;
-    }
-
-}
-
-@safe
-unittest {
-    {
-        int[] a;
-        static assert(isInputRange!(typeof(a)));
-        assert(a.doEatFront is int.init);
-    }
-    {
-        int[] a = [1, 2, 3];
-
-        assert(a.doEatFront == 1);
-        assert(a.length == 2);
-        assert(a.doEatFront == 2);
-        assert(a.length == 1);
-        assert(a.doEatFront == 3);
-        assert(a.length == 0);
-        assert(a.doEatFront is int.init);
-    }
+    assert(a.empty);
+    assert(eatOne(a, -1) == -1);
+    assert(eatOne(a) == int.init);
 }

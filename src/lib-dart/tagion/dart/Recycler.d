@@ -321,8 +321,6 @@ struct Recycler {
 
     }
     do {
-        import tagion.basic.range : doEatFront;
-
         try {
             // First we check the to_be_recycled. 
             auto seg_index = to_be_recycled.countUntil!(seg => seg.size == segment_size);

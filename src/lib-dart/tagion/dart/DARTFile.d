@@ -7,7 +7,7 @@ private {
     import std.algorithm.iteration : each, filter;
     import std.algorithm.searching : all, count, maxElement;
     import std.algorithm.sorting : sort;
-    import std.array : array;
+    import std.array;
     import std.conv : to;
     import std.exception : assumeWontThrow;
     import std.format;
@@ -72,10 +72,16 @@ enum KEY_SPAN = ubyte.max + 1;
  +/
 class DARTFile {
 
+    version (FLAT_DART) {
+        enum default_flat = Yes.flat;
+    }
+    else {
+        enum default_flat = No.flat;
+    }
     import tagion.dart.BlockFile : Index;
 
     immutable(string) filename;
-
+    const Flag!"flat" flat;
     protected RecordFactory manufactor;
 
     protected {
@@ -90,14 +96,20 @@ class DARTFile {
 
     mixin(EnumText!("Params", _params));
 
+    enum flat_marker = "flat";
     enum MIN_BLOCK_SIZE = 0x80;
-    static create(string filename, const HashNet net, const uint block_size = MIN_BLOCK_SIZE, const uint max_size = 0x80_000)
+    static create(string filename, const HashNet net, const uint block_size = MIN_BLOCK_SIZE, const uint max_size = 0x80_000, const Flag!"flat" flat = default_flat)
     in {
         assert(block_size >= MIN_BLOCK_SIZE,
                 format("Block size is too small for %s, %d must be langer than %d", filename, block_size, MIN_BLOCK_SIZE));
     }
     do {
-        BlockFile.create(filename, net.multihash, block_size, DARTFile.stringof, max_size);
+        auto id_name = net.multihash;
+        if (flat) {
+            id_name ~= ":" ~ flat_marker;
+        }
+        writefln("Created %s", id_name);
+        BlockFile.create(filename, id_name, block_size, DARTFile.stringof, max_size);
     }
     /++
      + A file set by filename should be create by the BlockFile
@@ -121,15 +133,30 @@ class DARTFile {
         blockfile = BlockFile(filename, read_only);
         this.manufactor = RecordFactory(net);
         this.filename = filename;
+
         
+
         .check(blockfile.headerBlock.checkLabel(DARTFile.stringof),
                 format("Wrong label %s expected %s for %s",
                 blockfile.headerBlock.Label,
                 DARTFile.stringof, filename));
-        
-        .check(blockfile.headerBlock.checkId(net.multihash),
-                format("Wrong hash type %s expected %s for %s",
-                net.multihash, blockfile.headerBlock.Id, filename));
+
+        Flag!"flat" checkId() {
+            if (blockfile.headerBlock.checkId(net.multihash)) {
+                return No.flat;
+            }
+
+            if (blockfile.headerBlock.checkId(net.multihash ~ ":" ~ flat_marker)) {
+                return Yes.flat;
+            }
+            
+            .check(false,
+                    format("Wrong hash type %s expected %s for %s",
+                    net.multihash, blockfile.headerBlock.Id, filename));
+
+            assert(0);
+        }
+        flat=checkId;
         if (blockfile.root_index) {
             const data = blockfile.load(blockfile.root_index);
             const doc = Document(data);
@@ -507,7 +534,7 @@ class DARTFile {
         private Fingerprint fingerprint(
                 DARTFile dartfile) {
             if (merkleroot.isinit) {
-                merkleroot = Fingerprint(sparsed_merkletree(dartfile.manufactor.net, _fingerprints));
+                merkleroot = Fingerprint(sparsed_merkletree(dartfile.manufactor.net, _fingerprints, dartfile.flat));
             }
             return merkleroot;
         }
@@ -803,6 +830,11 @@ class DARTFile {
 
         }
     }
+
+    import core.demangle;
+    import std.traits;
+
+    pragma(msg, "modify ", mangle!(FunctionTypeOf!(DARTFile.modify!(No.undo)))("modify"));
     /**
      * $(SMALL_TABLE
      * Sample of the DART Map
