@@ -57,9 +57,6 @@ static void writeit(A...)(A a) {
 void dart_worker(ShellOptions opt) {
     int rc;
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_SUB);
-    scope (exit) {
-        s.close;
-    }
     s.recvtimeout = msecs(1000);
     s.subscribe("");
     writeit("DS: subscribed");
@@ -68,6 +65,9 @@ void dart_worker(ShellOptions opt) {
         if (rc == 0)
             break;
         nng_sleep(100.msecs);
+    }
+    scope (exit) {
+        s.close;
     }
     writeit("DS: connected");
     while (true) {
@@ -92,15 +92,15 @@ static void contract_handler(WebData* req, WebData* rep, void* ctx) {
 
     writeit(format("WH: contract: with %d bytes for %s", req.rawdata.length, contract_addr));
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
-    scope (exit) {
-        s.close();
-    }
     s.recvtimeout = msecs(10000);
     writeit(format("WH: contract: trying to dial %s", contract_addr));
     while (true) {
         rc = s.dial(contract_addr);
         if (rc == 0)
             break;
+    }
+    scope (exit) {
+        s.close();
     }
     rc = s.send(req.rawdata);
     if (rc != 0) {
@@ -209,14 +209,14 @@ static void dartcache_handler(WebData* req, WebData* rep, void* ctx) {
         dreq = owner_pkeys;
 
         NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
-        scope (exit) {
-            s.close();
-        }
         s.recvtimeout = 60_000.msecs;
         while (true) {
             rc = s.dial(opt.node_dart_addr);
             if (rc == 0)
                 break;
+        }
+        scope (exit) {
+            s.close();
         }
 
         rc = s.send(cast(ubyte[])(hirpc.search(dreq).toDoc.serialize));
@@ -292,14 +292,14 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
 
     writeit(format("WH: dart: with %d bytes for %s", req.rawdata.length, dart_addr));
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
-    scope (exit) {
-        s.close();
-    }
     s.recvtimeout = 60_000.msecs;
     while (true) {
         rc = s.dial(dart_addr);
         if (rc == 0)
             break;
+    }
+    scope (exit) {
+        s.close();
     }
     rc = s.send(req.rawdata);
     if (rc != 0) {
@@ -509,10 +509,11 @@ int _main(string[] args) {
             ~ "\t\t= POST dart request hibon\n\t"
             ~ options.shell_api_prefix
             ~ options.i2p_endpoint
-            ~ "\t= POST invoice-to-pay hibon\n\t"
-            ~ options.shell_api_prefix
-            ~ options.bullseye_endpoint
-            ~ "\t= GET dart bullseye hibon\n\t"
+            ~ "\t= POST invoice-to-pay hibon\n\t"// ~ options.shell_api_prefix
+            // ~ options.bullseye_endpoint
+            // ~ "\t= GET dart bullseye hibon\n\t"
+
+            
 
     );
 
@@ -522,7 +523,7 @@ appoint:
 
     WebApp app = WebApp("ShellApp", options.shell_uri, parseJSON("{}"), &options);
 
-    app.route(options.shell_api_prefix ~ options.bullseye_endpoint, &bullseye_handler, ["GET"]);
+    // app.route(options.shell_api_prefix ~ options.bullseye_endpoint, &bullseye_handler, ["GET"]);
     app.route(options.shell_api_prefix ~ options.contract_endpoint, &contract_handler, ["POST"]);
     app.route(options.shell_api_prefix ~ options.dart_endpoint, &dart_handler, ["POST"]);
     app.route(options.shell_api_prefix ~ options.dartcache_endpoint, &dartcache_handler, ["POST"]);
