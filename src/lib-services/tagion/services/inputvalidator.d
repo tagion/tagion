@@ -81,7 +81,8 @@ struct InputValidatorService {
                 const sender = hirpc.Sender(net, message);
                 int rc = sock.send(sender.toDoc.serialize);
                 if (rc != 0) {
-                    log.error("Failed to responsd with rejection %s, because %s", err_type, nng_errstr(rc));
+                    log.error("Failed to responsd with rejection %s, because %s", err_type, nng_errstr(
+                            rc));
                 }
                 log(rejected, err_type.to!string, data);
             }
@@ -91,7 +92,6 @@ struct InputValidatorService {
         }
 
         NNGSocket sock = NNGSocket(nng_socket_type.NNG_SOCKET_REP);
-
         sock.sendtimeout = opts.sock_send_timeout.msecs;
         sock.recvtimeout = opts.sock_recv_timeout.msecs;
         sock.recvbuf = opts.sock_recv_buf;
@@ -102,13 +102,19 @@ struct InputValidatorService {
 
         const listening = sock.listen(opts.sock_addr, nonblock:
                 true);
+        scope (exit) {
+            sock.close();
+        }
+
         if (listening == 0) {
             log("listening on addr: %s", opts.sock_addr);
         }
         else {
             import tagion.services.exception;
 
-            check(false, format("Failed to listen on addr: %s, %s", opts.sock_addr, nng_errstr(listening)));
+            throw new ServiceException(
+                    format("Failed to listen on addr: %s, %s", opts.sock_addr, nng_errstr(listening))
+            );
         }
         const recv = (scope void[] b) @trusted {
             // 
@@ -127,8 +133,7 @@ struct InputValidatorService {
                 continue;
             }
 
-
-            version(BLOCKING) {
+            version (BLOCKING) {
                 scope (failure) {
                     reject(ResponseError.Internal);
                 }
@@ -155,7 +160,8 @@ struct InputValidatorService {
                 }
 
                 Document doc = Document(result_buf.idup);
-            } else {
+            }
+            else {
                 scope (failure) {
                     reject(ResponseError.Internal);
                 }
@@ -181,8 +187,6 @@ struct InputValidatorService {
 
                 Document doc = Document(result_buf.data.idup);
             }
-
-
 
             if (!doc.isInorder) {
                 reject(ResponseError.InvalidBuf);
