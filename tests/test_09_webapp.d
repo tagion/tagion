@@ -13,12 +13,14 @@ import nngd;
 import nngtestutil;
 
 static void api_handler1 ( WebData *req, WebData *rep, void* ctx ){
+    thread_attachThis();
     rep.text =  "REPLY TO: "~to!string(*req);
     rep.type =  "text/plain";
     rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
 }
 
 static void api_handler2 ( WebData *req, WebData *rep, void* ctx ){
+    thread_attachThis();
     JSONValue data = parseJSON("{}");
     if(req.method == "GET"){
         data["replyto"] = "REPLY TO: "~to!string(req);
@@ -52,7 +54,7 @@ main()
 
     WebApp app = WebApp("myapp", "http://localhost:8081", parseJSON(`{"root_path":"/home/yv/work/repo/nng/tests/webapp","static_path":"static"}`), null);
     
-    app.route("/api/v1/test1",&api_handler1);
+    app.route("/api/v1/test1",&api_handler1,["GET"]);
     app.route("/api/v1/test2/*",&api_handler2,["GET","POST"]);
 
     app.start();
