@@ -10,7 +10,7 @@ export BDD_LOG=$(DLOG)/bdd/$(TEST_STAGE)/
 export BDD_RESULTS=$(BDD_LOG)/results/
 
 BDD_DFILES+=${shell find $(BDD) -name "*.d" -a -not -name "*.gen.d" -a -path "*/testbench/*" -a -not -path "*/unitdata/*" -a -not -path "*/backlog/*" }
-testbench: DFILES+=$(DSRC)/bin-wave/tagion/tools/neuewelle.d
+testbench: DFILES+=${shell find $(DSRC)/bin-wave/ -name "*.d"}
 testbench: DFILES+=${shell find $(DSRC)/bin-geldbeutel/ -name "*.d"}
 
 testbench: DINC+=$(DSRC)/bin-wave/

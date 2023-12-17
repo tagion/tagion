@@ -1,4 +1,6 @@
-/// New wave implementation of the tagion node
+/** 
+ * New wave implementation of the tagion node
+**/
 module tagion.tools.neuewelle;
 
 import core.stdc.stdlib : exit;
@@ -15,32 +17,25 @@ import std.getopt;
 import std.path;
 import std.path : baseName, dirName;
 import std.range : iota;
-import std.socket;
 import std.stdio;
 import std.typecons;
 
-// import tagion.utils.pretend_safe_concurrency : send;
 import tagion.GlobalSignals : segment_fault, stopsignal;
 import tagion.actor;
 import tagion.actor.exceptions;
 import tagion.basic.Types : FileExtension, hasExtension;
-import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.SecureNet;
-import tagion.gossip.AddressBook : NodeAddress, addressbook;
 import tagion.hibon.Document;
-import tagion.logger.Logger;
+import tagion.logger;
 import tagion.services.locator;
 import tagion.services.logger;
 import tagion.services.options;
 import tagion.services.subscription;
-import tagion.services.supervisor;
 import tagion.tools.Basic;
 import tagion.tools.revision;
-import tagion.utils.JSONCommon;
 import tagion.tools.toolsexception;
-import tagion.tools.wallet.WalletInterface;
-import tagion.tools.wallet.WalletOptions;
 import tagion.utils.Term;
+import tagion.wave.common;
 
 static abort = false;
 import tagion.services.transcript : graceful_shutdown;
@@ -221,72 +216,26 @@ int _neuewelle(string[] args) {
     locator_options = new immutable(LocatorOptions)(20, 5);
     ActorHandle[] supervisor_handles;
 
-    if (local_options.wave.network_mode == NetworkMode.INTERNAL) {
-        auto node_options = get_mode_0_options(local_options, monitor);
+    switch (local_options.wave.network_mode) {
+    case NetworkMode.INTERNAL:
+        import tagion.wave.mode0;
 
-        import std.algorithm : all;
-        import std.file : copy;
-        import std.path : baseName, dirName;
-        import std.stdio : File;
-        import tagion.communication.HiRPC;
-        import tagion.crypto.Types : Fingerprint;
-        import tagion.dart.DART;
-        import tagion.dart.DARTBasic;
-        import CRUD = tagion.dart.DARTcrud;
-        import tagion.hibon.HiBONRecord : isRecord;
-        import tagion.script.common : Epoch, GenesisEpoch, TagionHead;
-        import tagion.script.standardnames;
-
+        auto node_options = getMode0Options(local_options, monitor);
         auto __net = new StdSecureNet();
-        __net.generateKeyPair("wowo");
+        __net.generateKeyPair("dart_read_pin");
 
-        // extra check for mode0
-        // Check bullseyes
-        Fingerprint[] bullseyes;
-        foreach (node_opt; node_options) {
-            if (!node_opt.dart.dart_path.exists) {
-                stderr.writefln("Missing dartfile %s", node_opt.dart.dart_path);
-                return 1;
-            }
-            DART db = new DART(__net, node_opt.dart.dart_path);
-            auto b = Fingerprint(db.bullseye);
-            bullseyes ~= b;
-
-            // check that all bullseyes are the same before boot
-            assert(bullseyes.all!(b => b == bullseyes[0]), "DATABASES must be booted with same bullseye - Abort");
-            db.close();
+        if (!isMode0BullseyeSame(node_options, __net)) {
+            assert(0, "DATABASES must be booted with same bullseye - Abort");
         }
 
+        auto nodes = inputKeys(fin, node_options, bootkeys_path);
+        if (nodes is Node[].init) {
+            return 0;
+        }
+
+        Document doc = getHead(node_options, __net);
         // we only need to read one head since all bullseyes are the same:
-        DART db = new DART(__net, node_options[0].dart.dart_path);
-
-        // read the databases TAGIONHEAD
-        DARTIndex tagion_index = __net.dartKey(StdNames.name, TagionDomain);
-        auto hirpc = HiRPC(__net);
-        const sender = CRUD.dartRead([tagion_index], hirpc);
-        const receiver = hirpc.receive(sender);
-        auto response = db(receiver, false);
-        auto recorder = db.recorder(response.result);
-
-        Document doc;
-        if (!recorder.empty) {
-            const head = TagionHead(recorder[].front.filed);
-            writefln("Found head: %s", head.toPretty);
-
-            pragma(msg, "fixme(phr): count the keys up hardcoded to be genesis atm");
-            DARTIndex epoch_index = __net.dartKey(StdNames.epoch, long(0));
-            writefln("epoch index is %(%02x%)", epoch_index);
-
-            const _sender = CRUD.dartRead([epoch_index], hirpc);
-            const _receiver = hirpc.receive(_sender);
-            auto epoch_response = db(_receiver, false);
-            auto epoch_recorder = db.recorder(epoch_response.result);
-            doc = epoch_recorder[].front.filed;
-            writefln("Epoch_found: %s", doc.toPretty);
-        }
-
-        db.close;
-        network_mode0(node_options, supervisor_handles, bootkeys_path, fin, doc);
+        spawnMode0(node_options, supervisor_handles, nodes, doc);
         log("started mode 0 net");
 
         if (mode0_node_opts_path) {
@@ -296,8 +245,8 @@ int _neuewelle(string[] args) {
                         .json)));
             }
         }
-    }
-    else {
+        break;
+    default:
         assert(0, "NetworkMode not supported");
     }
 
@@ -347,27 +296,15 @@ int _neuewelle(string[] args) {
     return 0;
 }
 
-int network_mode0(
-        const(Options)[] node_options,
-        ref ActorHandle[] supervisor_handles,
-        string bootkeys_path,
-        File fin,
-        Document epoch_head = Document.init) {
+import tagion.wave.mode0 : Node;
+import tagion.tools.wallet.WalletOptions;
+import tagion.tools.wallet.WalletInterface;
 
-    import std.range : zip;
-    import tagion.crypto.Types;
-    import tagion.hibon.HiBONRecord;
-    import tagion.script.common : Epoch, GenesisEpoch;
-
-    struct Node {
-        immutable(Options) opts;
-        shared(StdSecureNet) net;
-        Pubkey pkey;
-    }
-
-    Node[] nodes;
+Node[] inputKeys(File fin, const(Options[]) node_options, string bootkeys_path) {
     auto by_line = fin.byLine;
     enum number_of_retry = 3;
+
+    Node[] nodes;
     foreach (i, opts; node_options) {
         StdSecureNet net;
         scope (exit) {
@@ -422,58 +359,9 @@ int network_mode0(
 
         nodes ~= Node(opts, shared_net, net.pubkey);
     }
+
     if (dry_switch) {
-        return 0;
+        return Node[].init;
     }
-    import tagion.hibon.HiBONtoText;
-
-    if (epoch_head is Document.init) {
-        foreach (n; zip(nodes, node_options)) {
-            addressbook[n[0].pkey] = NodeAddress(n[1].task_names.epoch_creator);
-        }
-    }
-    else {
-        Pubkey[] keys;
-        if (epoch_head.isRecord!Epoch) {
-            assert(0, "not supported to boot from epoch yet");
-            keys = Epoch(epoch_head).active;
-        }
-        else {
-            auto genesis = GenesisEpoch(epoch_head);
-
-            keys = genesis.nodes;
-            check(equal(keys, keys.uniq), "Duplicate node public keys in the genesis epoch");
-            check(keys.length == node_options.length, "There was not the same amount of configured nodes as in the genesis epoch");
-        }
-
-        foreach (node_info; zip(keys, node_options)) {
-            verbose("adding addressbook ", node_info[0]);
-            addressbook[node_info[0]] = NodeAddress(node_info[1].task_names.epoch_creator);
-        }
-    }
-
-    /// spawn the nodes
-    foreach (n; nodes) {
-        verbose("spawning supervisor ", n.opts.task_names.supervisor);
-        supervisor_handles ~= spawn!Supervisor(n.opts.task_names.supervisor, n.opts, n.net);
-    }
-
-    return 0;
-}
-
-const(Options)[] get_mode_0_options(const(Options) options, bool monitor = false) {
-    const number_of_nodes = options.wave.number_of_nodes;
-    const prefix_f = options.wave.prefix_format;
-    Options[] all_opts;
-    foreach (node_n; 0 .. number_of_nodes) {
-        auto opt = Options(options);
-        opt.setPrefix(format(prefix_f, node_n));
-        all_opts ~= opt;
-    }
-
-    if (monitor) {
-        all_opts[0].monitor.enable = true;
-    }
-
-    return all_opts;
+    return nodes;
 }
