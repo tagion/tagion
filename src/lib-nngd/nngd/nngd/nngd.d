@@ -1714,7 +1714,7 @@ struct WebData {
 alias webhandler = void function(WebData*, WebData*, void*);
 
 //----------------
-static void webrouter(nng_aio* aio) {
+void webrouter (nng_aio* aio) {
 
     int rc;
     nng_http_res* res;
