@@ -92,7 +92,6 @@ class LRU(K, V) {
             // Get looks up a key's value from the cache.
             static if (does_not_have_immutable_members) {
                 bool get(scope const(K) key, ref V value) nothrow {
-
                     auto ent = key in items;
                     if (ent !is null) {
                         auto element = *ent;
@@ -526,11 +525,15 @@ class LRU(K, V) {
         x = 7;
         ok = l.update(1,x);
         assert(ok);
-        assert(l.get(1) == 7, "check updates");
+        ok = l.get(1, x);
+        assert(ok);
+        assert(x == 7, "check updates");
         x = 3;
         ok = l.update(3,x,true);
         assert(ok);
-        assert(l.get(3) == 3, "check upsert");
+        ok = l.get(3, x);
+        assert(ok);
+        assert(x == 3, "check upsert");
     }
 
 /*
