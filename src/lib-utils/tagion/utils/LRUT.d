@@ -39,7 +39,7 @@ class LRUT(K,V) {
     private immutable double maxage;
     private double[K] ctime;
 
-    this(EvictCallback onEvict = null, immutable uint size = 0, immutable double maxage = 0) nothrow {
+    this(shared EvictCallback onEvict = null, immutable uint size = 0, immutable double maxage = 0) @trusted nothrow {
         _lru = new LRU_t(null,size);
         auto tmp_lru=(() @trusted => cast(LRU_t)_lru)();
         tmp_lru.setEvict(cast(EvictCallback)onEvict);
@@ -210,12 +210,11 @@ unittest {
         core.atomic.atomicOp!"+="(evictCounter, 1);
     }
 
-    shared enum amount = 8;
-    shared double ttl = 0.5; // max age in seconds
+    enum amount = 8;
+    double ttl = 0.5; // max age in seconds
 
     shared TestLRU l = new TestLRU(&onEvicted, amount, ttl);
 
-    int i;
 
     foreach (i; 0 .. amount) {
         l.add(i, i);
@@ -223,9 +222,8 @@ unittest {
     
     (() @trusted => Thread.sleep(500.msecs))();
 
-    i = 999;
-
-    l.add(999,i);
+    int x  = 999;
+    l.add(999,x);
 
     assert(l.expired(1));
     assert(!l.expired(999));
