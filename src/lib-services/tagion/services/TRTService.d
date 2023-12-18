@@ -2,7 +2,6 @@
 module tagion.services.TRTService;
 import tagion.services.options : TaskNames;
 
-
 import std.algorithm : map, filter;
 import std.array;
 import std.exception;
@@ -11,6 +10,7 @@ import std.format : format;
 import std.path : isValidPath;
 import std.path;
 import std.stdio;
+import std.range : enumerate;
 import tagion.actor;
 import tagion.basic.Types : FileExtension;
 import tagion.communication.HiRPC;
@@ -47,15 +47,14 @@ struct TRTOptions {
         this.trt_filename = trt_filename;
         trt_path = buildPath(folder_path, trt_filename);
     }
+
     void setPrefix(string prefix) nothrow {
         trt_filename = prefix ~ trt_filename;
         trt_path = buildPath(folder_path, trt_filename);
     }
+
     mixin JSONCommon;
 }
-
-
-
 
 @safe
 struct TRTService {
@@ -68,7 +67,6 @@ struct TRTService {
         auto hirpc = HiRPC(net);
         ActorHandle dart_handle = ActorHandle(task_names.dart);
 
-
         log("TRT PATH FOR DATABASE=%s", opts.trt_path);
         trt_db = new DART(net, opts.trt_path);
         if (dart_exception !is null) {
@@ -79,39 +77,35 @@ struct TRTService {
             trt_db.close();
         }
 
-
         struct TRTRequest {
             trtHiRPCRR req;
             Document doc;
         }
 
         TRTRequest[uint] requests;
-        
 
         log("%s, starting trt with %(%02x%)", opts.trt_path, trt_db.bullseye);
 
-        
-        void receive_recorder(dartReadRR.Response res, immutable(RecordFactory.Recorder) recorder){
+        void receive_recorder(dartReadRR.Response res, immutable(RecordFactory.Recorder) recorder) {
             log("received recorder from dartread");
             if (!(res.id in requests)) {
                 return;
             }
             HiBON params = new HiBON;
-            foreach(i, bill; recorder[].array) {
+            foreach (i, bill; recorder[].enumerate) {
                 params[i] = bill.filed;
             }
 
             auto client_request = requests[res.id];
-            scope(exit) {
+            scope (exit) {
                 requests.remove(res.id);
             }
 
             immutable receiver = hirpc.receive(client_request.doc);
-            
+
             Document response = hirpc.result(receiver, params).toDoc;
             client_request.req.respond(response);
         }
-
 
         void trt_read(trtHiRPCRR client_req, Document doc) {
             log("received trt request");
@@ -133,37 +127,27 @@ struct TRTService {
                 return;
             }
 
-            log("before creating indexes");
-            auto owner_indexes = owner_doc[]
+            log("before creating indices");
+            auto owner_indices = owner_doc[]
                 .map!(owner => net.dartKey(TRTLabel, Pubkey(owner.get!Buffer)))
                 .array;
 
             import std.algorithm;
-            owner_indexes.each!(o => writefln("%(%02x%)", o));
 
+            owner_indices.each!(o => writefln("%(%02x%)", o));
 
-            auto trt_read_recorder = trt_db.loads(owner_indexes);
-            // log("loaded recorder %s", trt_read_recorder.toPretty);
-            // immutable(DARTIndex)[] indexes = trt_read_recorder[]
-            //     .map!(a => cast(immutable) DARTIndex(TRTArchive(a.filed).idx)).array;
-            immutable(DARTIndex)[] indexes;
-            foreach(a; trt_read_recorder[]) {
-                indexes ~= TRTArchive(a.filed).idx.map!(d => cast(immutable) DARTIndex(d)).array;
-
-
-            }
-
-            if (indexes.empty) {
+            auto trt_read_recorder = trt_db.loads(owner_indices);
+            immutable indices = trt_read_recorder[].map!(a => cast(immutable)(a.dart_index)).array;
+            if (indices.empty) {
                 // return hirpc error instead;
                 return;
             }
 
-            
             log("sending dartread request");
             auto dart_req = dartReadRR();
             requests[dart_req.id] = TRTRequest(client_req, doc);
 
-            dart_handle.send(dart_req, indexes);
+            dart_handle.send(dart_req, indices);
         }
 
         void modify(trtModify, immutable(RecordFactory.Recorder) dart_recorder) {
@@ -177,23 +161,14 @@ struct TRTService {
                 .map!(t => net.dartKey(TRTLabel, Pubkey(t.owner)));
 
             auto already_in_dart = trt_db.loads(index_lookup);
-            
-            createUpdateRecorder(dart_recorder, already_in_dart, trt_recorder, net);
+
+            createTRTUpdateRecorder(dart_recorder, already_in_dart, trt_recorder, net);
             log("trt recorder modify %s", trt_recorder.toPretty);
             trt_db.modify(trt_recorder);
         }
-        
+
         run(&modify, &trt_read, &receive_recorder);
-
-
 
     }
 
-
-
-
-
 }
-
-
-

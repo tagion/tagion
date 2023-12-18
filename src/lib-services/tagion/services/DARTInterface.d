@@ -28,7 +28,9 @@ struct DARTInterfaceOptions {
 }
 
 import core.time;
+import core.thread;
 import nngd;
+import std.stdio;
 import std.format;
 import tagion.actor;
 import tagion.communication.HiRPC;
@@ -56,9 +58,7 @@ enum InterfaceError {
 
 void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
 
-    import std.exception;
-    import std.stdio;
-    import tagion.communication.HiRPC;
+    thread_attachThis();
 
     HiRPC hirpc = HiRPC(null);
 
@@ -124,7 +124,7 @@ void dartHiRPCCallback(NNGMessage* msg, void* ctx) @trusted {
         send_error(InterfaceError.InvalidDoc);
         return;
     }
-  
+
     if (receiver.method.name == "search" && cnt.trt_enable) {
         writeln("TRT SEARCH REQUEST");
         auto trt_tid = locate(cnt.trt_task_name);

@@ -97,9 +97,10 @@ class DART : DARTFile {
     */
     this(const SecureNet net,
             string filename,
+            Flag!"read_only" read_only = No.read_only,
             const ushort from_sector = 0,
             const ushort to_sector = 0) @safe {
-        super(net, filename);
+        super(net, filename, read_only);
         this.from_sector = from_sector;
         this.to_sector = to_sector;
         this.hirpc = HiRPC(net);
@@ -117,10 +118,11 @@ class DART : DARTFile {
     this(const SecureNet net,
             string filename,
             out Exception exception,
+            Flag!"read_only" read_only = No.read_only,
             const ushort from_sector = 0,
             const ushort to_sector = 0) @safe {
         try {
-            this(net, filename, from_sector, to_sector);
+            this(net, filename, read_only, from_sector, to_sector);
         }
         catch (Exception e) {
             exception = e;
@@ -287,20 +289,38 @@ received = the HiRPC received package
         assert(received.method.name == __FUNCTION_NAME__);
     }
     do {
-        //HiRPC.check_element!Buffer(received.params, Params.rims);
         immutable params = received.params!Rims;
 
-        const rim_branches = branches(params.rims);
+        const rim_branches = branches(params.path);
         HiBON hibon_params;
-        if (!rim_branches.empty) {
-            //            hibon_params=new HiBON;
+        
+        if (!params.key_leaves.empty) {
+            if (!rim_branches.empty) {
+                auto super_recorder = recorder;
+                foreach (key; params.key_leaves) {
+                    const index=rim_branches.indices[key];  
+                    if (index.isinit) {
+                        HiRPC.Error not_found;
+                        not_found.message=format("No archive found on %(%02x %):%02x", params.path, key); 
+                        super_recorder.add(not_found);
+                        continue;
+                    }
+                    immutable data = blockfile.load(index);
+                    const doc = Document(data);
+                    super_recorder.add(doc);
+
+                }
+                return hirpc.result(received, super_recorder);
+            }
+        }
+        else if (!rim_branches.empty) {
             hibon_params = rim_branches.toHiBON(true);
         }
-        else if (params.rims.length > ushort.sizeof) {
+        else if (params.path.length > ushort.sizeof || !params.key_leaves.empty) {
             hibon_params = new HiBON;
             // It not branches so maybe it is an archive
-            immutable key = params.rims[$ - 1];
-            const super_branches = branches(params.rims[0 .. $ - 1]);
+            immutable key = params.path[$ - 1];
+            const super_branches = branches(params.path[0 .. $ - 1]);
             if (!super_branches.empty) {
                 const index = super_branches.indices[key];
                 if (index != Index.init) {
@@ -312,6 +332,7 @@ received = the HiRPC received package
                     return hirpc.result(received, super_recorder);
                 }
             }
+
         }
         return hirpc.result(received, hibon_params);
     }
@@ -491,8 +512,10 @@ received = the HiRPC received package
                 //
                 // Request Branches or Recorder at rims from the foreign DART.
                 //
-                const local_branches = branches(params.rims);
-                const request_branches = CRUD.dartRim(params, hirpc, id);
+                const local_branches = branches(params.path);
+                const request_branches = CRUD.dartRim(rims : params, hirpc:
+                        hirpc, id:
+                        id);
                 const result_branches = sync.query(request_branches);
                 if (Branches.isRecord(result_branches.response.result)) {
                     const foreign_branches = result_branches.result!Branches;
@@ -513,7 +536,7 @@ received = the HiRPC received package
                         sync.record(local_recorder);
                     }
                     foreach (const ubyte key; 0 .. KEY_SPAN) {
-                        const sub_rims = Rims(params.rims ~ key);
+                        const sub_rims = Rims(params.path ~ key);
                         const local_print = local_branches.dart_index(key);
                         const foreign_print = foreign_branches.dart_index(key);
                         auto foreign_archive = foreign_recoder.find(foreign_print);
@@ -578,7 +601,7 @@ received = the HiRPC received package
      *     The function will throw an exception if something went wrong in the process.
      */
     void replay(const(string) journal_filename) {
-        auto journalfile = BlockFile(journal_filename, true);
+        auto journalfile = BlockFile(journal_filename, Yes.read_only);
         scope (exit) {
             journalfile.close;
         }
@@ -689,8 +712,8 @@ received = the HiRPC received package
                     RecordFactory.Recorder recorder_B;
                     RecordFactory.Recorder recorder_A;
                     // Recorder recorder_B;
-                    auto dart_A = new DART(net, filename_A, from, to);
-                    auto dart_B = new DART(net, filename_B, from, to);
+                    auto dart_A = new DART(net, filename_A, No.read_only, from, to);
+                    auto dart_B = new DART(net, filename_B, No.read_only, from, to);
                     string[] journal_filenames;
                     scope (success) {
                         // writefln("Exit scope");
@@ -767,8 +790,8 @@ received = the HiRPC received package
                 RecordFactory.Recorder recorder_B;
                 RecordFactory.Recorder recorder_A;
                 // Recorder recorder_B;
-                auto dart_A = new DART(net, filename_A, from, to);
-                auto dart_B = new DART(net, filename_B, from, to);
+                auto dart_A = new DART(net, filename_A, No.read_only, from, to);
+                auto dart_B = new DART(net, filename_B, No.read_only, from, to);
                 string[] journal_filenames;
                 scope (success) {
                     // writefln("Exit scope");
@@ -816,8 +839,8 @@ received = the HiRPC received package
                 DARTFile.create(filename_B, net);
                 RecordFactory.Recorder recorder_B;
                 // Recorder recorder_B;
-                auto dart_A = new DART(net, filename_A, from, to);
-                auto dart_B = new DART(net, filename_B, from, to);
+                auto dart_A = new DART(net, filename_A, No.read_only, from, to);
+                auto dart_B = new DART(net, filename_B, No.read_only, from, to);
                 //
                 string[] journal_filenames;
                 scope (success) {
@@ -872,8 +895,8 @@ received = the HiRPC received package
                 DARTFile.create(filename_B, net);
                 RecordFactory.Recorder recorder_B;
                 // Recorder recorder_B;
-                auto dart_A = new DART(net, filename_A, from, to);
-                auto dart_B = new DART(net, filename_B, from, to);
+                auto dart_A = new DART(net, filename_A, No.read_only, from, to);
+                auto dart_B = new DART(net, filename_B, No.read_only, from, to);
                 //
                 string[] journal_filenames;
                 scope (success) {
@@ -928,8 +951,8 @@ received = the HiRPC received package
                 DARTFile.create(filename_B, net);
                 RecordFactory.Recorder recorder_A;
                 RecordFactory.Recorder recorder_B;
-                auto dart_A = new DART(net, filename_A, from, to);
-                auto dart_B = new DART(net, filename_B, from, to);
+                auto dart_A = new DART(net, filename_A, No.read_only, from, to);
+                auto dart_B = new DART(net, filename_B, No.read_only, from, to);
                 //
                 string[] journal_filenames;
                 scope (success) {
@@ -981,8 +1004,8 @@ received = the HiRPC received package
                 DARTFile.create(filename_B, net);
                 RecordFactory.Recorder recorder_A;
                 RecordFactory.Recorder recorder_B;
-                auto dart_A = new DART(net, filename_A, from, to);
-                auto dart_B = new DART(net, filename_B, from, to);
+                auto dart_A = new DART(net, filename_A, No.read_only, from, to);
+                auto dart_B = new DART(net, filename_B, No.read_only, from, to);
                 //
                 string[] journal_filenames;
                 scope (success) {
@@ -1035,8 +1058,8 @@ received = the HiRPC received package
                 DARTFile.create(filename_B, net);
                 RecordFactory.Recorder recorder_A;
                 RecordFactory.Recorder recorder_B;
-                auto dart_A = new DART(net, filename_A, from, to);
-                auto dart_B = new DART(net, filename_B, from, to);
+                auto dart_A = new DART(net, filename_A, No.read_only, from, to);
+                auto dart_B = new DART(net, filename_B, No.read_only, from, to);
                 //
                 string[] journal_filenames;
                 scope (success) {
@@ -1089,8 +1112,8 @@ received = the HiRPC received package
                 DARTFile.create(filename_B, net);
                 RecordFactory.Recorder recorder_A;
                 RecordFactory.Recorder recorder_B;
-                auto dart_A = new DART(net, filename_A, from, to);
-                auto dart_B = new DART(net, filename_B, from, to);
+                auto dart_A = new DART(net, filename_A, No.read_only, from, to);
+                auto dart_B = new DART(net, filename_B, No.read_only, from, to);
                 //
                 string[] journal_filenames;
                 scope (success) {

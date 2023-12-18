@@ -10,7 +10,7 @@ import std.path : isValidPath;
 import std.path;
 import std.stdio;
 import tagion.actor;
-import tagion.basic.Types : FileExtension;
+import tagion.basic.Types;
 import tagion.communication.HiRPC;
 import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.SecureNet;
@@ -96,8 +96,6 @@ struct DARTService {
             log("Received HiRPC request");
 
             if (!doc.isRecord!(HiRPC.Sender)) {
-                import tagion.hibon.HiBONJSON;
-
                 log("wrong request sent to dartservice. Expected HiRPC.Sender got %s", doc.toPretty);
                 return;
             }
@@ -106,9 +104,6 @@ struct DARTService {
 
             if (receiver.method.name == "search") {
                 log("SEARCH REQUEST");
-                // log("%s", receiver.method.params.toPretty);
-
-                import tagion.basic.Types;
 
                 auto owner_doc = receiver.method.params;
                 Buffer[] owner_pkeys;
@@ -121,8 +116,10 @@ struct DARTService {
                 req.respond(response);
                 return;
             }
-            if (!(receiver.method.name == DART.Queries.dartRead || receiver.method.name == DART.Queries.dartRim || receiver.method.name == DART.Queries.dartBullseye || receiver
-                    .method.name == DART.Queries.dartCheckRead)) {
+            if (!(receiver.method.name == DART.Queries.dartRead
+                    || receiver.method.name == DART.Queries.dartRim
+                    || receiver.method.name == DART.Queries.dartBullseye
+                    || receiver.method.name == DART.Queries.dartCheckRead)) {
                 log("unsupported request");
                 return;
             }

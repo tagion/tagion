@@ -28,8 +28,12 @@ amount=1000000
 keyfile="$wdir/keys.txt"
 
 # pincode=0000
+#
 set_pin() {
-    pincode="$(printf "%04d" $i)"
+    # pincode="$(printf "%04d" $i)"
+    # pincode_two="$(printf "%04d" $j)"
+    pincode=0000
+    pincode_two=0000
 }
 
 if $_init; then
@@ -142,7 +146,7 @@ do
     mkdir -p "$DLOG"
     "$bdir"/testbench operational \
         -w "$wdir"/wallet$i.json -x "$pincode" \
-        -w "$wdir"/wallet"$j".json -x "$(printf "%04d" $j)" > "$DLOG/test.log" 2>&1 &
+        -w "$wdir"/wallet"$j".json -x "$pincode_two" > "$DLOG/test.log" 2>&1 &
     op_pids+=${!}
     sleep 0.5s
 done

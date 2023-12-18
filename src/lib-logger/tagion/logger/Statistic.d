@@ -65,16 +65,34 @@ struct Statistic(T, Flag!"histogram" flag = No.histogram) {
 
     static if (flag == Yes.histogram) {
 
-        string histogramString() pure const nothrow {
-            import std.algorithm : min, sort;
+        string histogramString(const bool logscale = false,const uint axis_scale = 100) pure const nothrow {
+            import std.algorithm;
             import std.format;
             import std.range : repeat;
+            import std.math : round, log10;
 
+            double max_value;
+            if (logscale) {
+                 max_value = log10(double(_histogram.byValue.maxPos.front));
+
+            }
+            else {
+                 max_value = double(_histogram.byValue.maxPos.front);
+            }
+            uint height(const T size) {
+                 if (logscale) {
+                    return cast(uint)(round(axis_scale * log10(double(size)) / max_value));
+                }
+                    return cast(uint)(round(axis_scale * double(size) / max_value));
+            }
             string[] result;
+            result~=assumeWontThrow(format("%4s|%-(%s%)| %-(%9d|%)|", 
+            (logscale)?"log":"lin", ' '.repeat(8),
+            iota(1,axis_scale/10+1).map!(a => 10*a)));
             foreach (keypair; _histogram.byKeyValue.array.sort!((a, b) => a.key < b.key)) {
                 const number = keypair.key;
                 const size = keypair.value;
-                result ~= assumeWontThrow(format("%4d|%4d| %s", number, size, "#".repeat(min(size, 100)).join));
+                result ~= assumeWontThrow(format("%4d|%8d| %s", number, size, "#".repeat(height(size)).join));
             }
 
             return result.join("\n");

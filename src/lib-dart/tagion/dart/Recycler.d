@@ -77,13 +77,6 @@ alias Indices = RedBlackTree!(RecycleSegment*, (a, b) => a.index < b.index); // 
  */
 @safe
 struct Recycler {
-    static bool print;
-
-    void __write(Args...)(string fmt, Args args) nothrow @trusted {
-        if (print) {
-            assumeWontThrow(writefln(fmt, args));
-        }
-    }
     /** 
      * Checks if the recycler has overlapping segments.
      */
@@ -328,8 +321,6 @@ struct Recycler {
 
     }
     do {
-        import tagion.basic.range : doEatFront;
-
         try {
             // First we check the to_be_recycled. 
             auto seg_index = to_be_recycled.countUntil!(seg => seg.size == segment_size);
@@ -734,10 +725,6 @@ version (unittest) {
 @safe
 unittest {
     {
-        Recycler.print = false;
-        scope (exit) {
-            Recycler.print = false;
-        }
         // try to read / load indices.
         immutable filename = fileId("recycle").fullpath;
         filename.forceRemove;
@@ -800,11 +787,6 @@ unittest {
 @safe
 unittest {
     /// saving to empty an empty blockfile.
-    Recycler.print = false;
-
-    scope (exit) {
-        Recycler.print = false;
-    }
     // try to read / load indices.
     immutable filename = fileId("recycle").fullpath;
     filename.forceRemove;
@@ -835,11 +817,6 @@ unittest {
 
 @safe
 unittest {
-    Recycler.print = false;
-    scope (exit) {
-        Recycler.print = false;
-    }
-
     immutable filename = fileId("recycle").fullpath;
     filename.forceRemove;
 
@@ -890,12 +867,6 @@ unittest {
 @safe
 unittest {
     // save claim save on same segment.
-    // writefln("save claim save on same segment");
-    Recycler.print = false;
-    scope (exit) {
-        Recycler.print = false;
-    }
-
     immutable filename = fileId("recycle").fullpath;
     filename.forceRemove;
 
@@ -921,12 +892,6 @@ unittest {
 @safe
 unittest {
     // pseudo random add remove blocks.
-    // writefln("pseudo random add");
-    Recycler.print = false;
-    scope (exit) {
-        Recycler.print = false;
-    }
-
     immutable filename = fileId("recycle").fullpath;
     filename.forceRemove;
 
@@ -976,10 +941,6 @@ unittest {
 @safe
 unittest {
     // blocksegment range test.
-    scope (exit) {
-        Recycler.print = false;
-    }
-
     immutable filename = fileId("recycle").fullpath;
     filename.forceRemove;
 

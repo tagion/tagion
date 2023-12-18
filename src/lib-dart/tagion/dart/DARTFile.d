@@ -7,7 +7,7 @@ private {
     import std.algorithm.iteration : each, filter;
     import std.algorithm.searching : all, count, maxElement;
     import std.algorithm.sorting : sort;
-    import std.array : array;
+    import std.array;
     import std.conv : to;
     import std.exception : assumeWontThrow;
     import std.format;
@@ -31,11 +31,12 @@ private {
     import tagion.hibon.HiBONRecord : GetLabel, exclude, record_filter = filter, label, recordType;
 
     //import tagion.basic.basic;
-    import std.stdio : writefln, writeln;
+//    import std.stdio : writefln, writeln;
     import tagion.basic.tagionexceptions : Check;
     import tagion.dart.DARTRim;
     import tagion.dart.RimKeyRange : rimKeyRange;
     import tagion.hibon.HiBONRecord;
+    import std.bitmanip;
 }
 
 /++
@@ -71,10 +72,16 @@ enum KEY_SPAN = ubyte.max + 1;
  +/
 class DARTFile {
 
+    version (FLAT_DART) {
+        enum default_flat = Yes.flat;
+    }
+    else {
+        enum default_flat = No.flat;
+    }
     import tagion.dart.BlockFile : Index;
 
     immutable(string) filename;
-
+    const Flag!"flat" flat;
     protected RecordFactory manufactor;
 
     protected {
@@ -83,20 +90,25 @@ class DARTFile {
     }
 
     protected enum _params = [
-        "dart_indices",
-        "bullseye",
-    ];
+            "dart_indices",
+            "bullseye",
+        ];
 
     mixin(EnumText!("Params", _params));
 
+    enum flat_marker = "flat";
     enum MIN_BLOCK_SIZE = 0x80;
-    static create(string filename, const HashNet net, const uint block_size = MIN_BLOCK_SIZE, const uint max_size = 0x80_000)
+    static create(string filename, const HashNet net, const uint block_size = MIN_BLOCK_SIZE, const uint max_size = 0x80_000, const Flag!"flat" flat = default_flat)
     in {
         assert(block_size >= MIN_BLOCK_SIZE,
                 format("Block size is too small for %s, %d must be langer than %d", filename, block_size, MIN_BLOCK_SIZE));
     }
     do {
-        BlockFile.create(filename, net.multihash, block_size, DARTFile.stringof, max_size);
+        auto id_name = net.multihash;
+        if (flat) {
+            id_name ~= ":" ~ flat_marker;
+        }
+        BlockFile.create(filename, id_name, block_size, DARTFile.stringof, max_size);
     }
     /++
      + A file set by filename should be create by the BlockFile
@@ -116,8 +128,8 @@ class DARTFile {
      auto dartfile=new DARTFile(net, filename);
      ---
      +/
-    this(const HashNet net, string filename) {
-        blockfile = BlockFile(filename);
+    this(const HashNet net, string filename, const Flag!"read_only" read_only = No.read_only) {
+        blockfile = BlockFile(filename, read_only);
         this.manufactor = RecordFactory(net);
         this.filename = filename;
 
@@ -128,11 +140,22 @@ class DARTFile {
                 blockfile.headerBlock.Label,
                 DARTFile.stringof, filename));
 
-        
+        Flag!"flat" checkId() {
+            if (blockfile.headerBlock.checkId(net.multihash)) {
+                return No.flat;
+            }
 
-        .check(blockfile.headerBlock.checkId(net.multihash),
-                format("Wrong hash type %s expected %s for %s",
-                net.multihash, blockfile.headerBlock.Id, filename));
+            if (blockfile.headerBlock.checkId(net.multihash ~ ":" ~ flat_marker)) {
+                return Yes.flat;
+            }
+            
+            .check(false,
+                    format("Wrong hash type %s expected %s for %s",
+                    net.multihash, blockfile.headerBlock.Id, filename));
+
+            assert(0);
+        }
+        flat=checkId;
         if (blockfile.root_index) {
             const data = blockfile.load(blockfile.root_index);
             const doc = Document(data);
@@ -386,7 +409,7 @@ class DARTFile {
                         
 
                         .check(!_fingerprints[key].isinit,
-                                format("Fingerprint key=%02X at index=%d is not defined", key, index));
+                        format("Fingerprint key=%02X at index=%d is not defined", key, index));
                         indices_set = true;
                     }
                 }
@@ -510,7 +533,7 @@ class DARTFile {
         private Fingerprint fingerprint(
                 DARTFile dartfile) {
             if (merkleroot.isinit) {
-                merkleroot = Fingerprint(sparsed_merkletree(dartfile.manufactor.net, _fingerprints));
+                merkleroot = Fingerprint(sparsed_merkletree(dartfile.manufactor.net, _fingerprints, dartfile.flat));
             }
             return merkleroot;
         }
@@ -578,8 +601,6 @@ class DARTFile {
             if (rim_paths.length == ubyte.sizeof) {
                 return ushort(rim_paths[0] << 8);
             }
-            import std.bitmanip : bigEndianToNative;
-
             return bigEndianToNative!ushort(rim_paths[0 .. ushort.sizeof]);
         }
         /** 
@@ -808,6 +829,11 @@ class DARTFile {
 
         }
     }
+
+    import core.demangle;
+    import std.traits;
+
+    pragma(msg, "modify ", mangle!(FunctionTypeOf!(DARTFile.modify!(No.undo)))("modify"));
     /**
      * $(SMALL_TABLE
      * Sample of the DART Map
@@ -846,6 +872,7 @@ class DARTFile {
          *   branch_index = The branch index to modify.
          * Returns: 
          */
+            .check(!blockfile.read_only, format("Can not call a %s on a read-only DART", __FUNCTION__));
         Leave traverse_dart(Range)(Range range, const Index branch_index) @safe if (isInputRange!Range)
         out {
             assert(range.empty, "Must have been through the whole range and therefore empty on return");
@@ -865,19 +892,12 @@ class DARTFile {
             if (range.rim < RIMS_IN_SECTOR) {
                 if (branch_index !is Index.init) {
                     branches = blockfile.load!Branches(branch_index);
-
-                    
-
                     .check(branches.hasIndices,
                             "DART failure within the sector rims the DART should contain a branch");
                 }
 
                 while (!range.empty) {
                     auto sub_range = range.nextRim;
-                    if (sub_range.front.dart_index.empty) {
-                        writefln("fingerprint %(%02X%) dart_index=%(%02X%)",
-                                sub_range.front.fingerprint, sub_range.front.dart_index);
-                    }
                     immutable rim_key = sub_range.front.dart_index.rim_key(sub_range.rim);
                     branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key));
                 }
@@ -994,7 +1014,7 @@ class DARTFile {
                         .slide(2)
                         .map!(a => a.front.dart_index == a.dropOne.front.dart_index)
                         .any,
-                    "cannot have multiple operations on same dart-index in one modify");
+                        "cannot have multiple operations on same dart-index in one modify");
 
         auto range = rimKeyRange!undo(modifyrecords);
         auto new_root = traverse_dart(range, blockfile.masterBlock.root_index);
@@ -1071,13 +1091,15 @@ class DARTFile {
         import std.stdio;
 
         writefln("EYE: %(%02X%)", _fingerprint);
+        const from_rim = sectors.from_sector.nativeToBigEndian;
+        const to_rim = sectors.to_sector.nativeToBigEndian;
+
         void local_dump(const Index branch_index,
                 const ubyte rim_key = 0,
                 const uint rim = 0,
                 Buffer rim_path = null,
                 string indent = null) @safe {
             if (!branch_index.isinit &&
-                     //        sectors.inRange(Rims(rim_path)) &&
                     ((depth == 0) || (rim <= depth))) {
                 immutable data = blockfile.load(branch_index);
                 const doc = Document(data);
@@ -1108,10 +1130,8 @@ class DARTFile {
 
         Index index = blockfile.masterBlock.root_index;
         if (!sectors.isinit) {
-            Buffer start_rims = Rims(sectors.from_sector).rims;
-            branches(start_rims[0 .. 1], &index);
-
-            local_dump(index, start_rims[0], 0, null);
+            Buffer start_path = Rims(sectors.from_sector).path;
+            local_dump(index, start_path[0], 0, null);
             return;
         }
 
@@ -1127,7 +1147,8 @@ class DARTFile {
     void traverse(
             const TraverseCallback dg,
             const SectorRange sectors = SectorRange.init,
-            const uint depth = 0) {
+            const uint depth = 0,
+            const bool branches = true) {
         void local_traverse(
                 const Index branch_index,
                 const ubyte rim_key = 0,
@@ -1142,7 +1163,6 @@ class DARTFile {
                 }
                 if (Branches.isRecord(doc)) {
                     auto branches = Branches(doc);
-                    string _indent;
                     if (rim > 0) {
                         rim_path ~= rim_key;
                         if (!sectors.inRange(Rims(rim_path))) {
@@ -1158,10 +1178,8 @@ class DARTFile {
 
         Index index = blockfile.masterBlock.root_index;
         if (!sectors.isinit) {
-            Buffer start_rims = Rims(sectors.from_sector).rims;
-            branches(start_rims[0 .. 1], &index);
-
-            local_traverse(index, start_rims[0], 0, null);
+            Buffer start_path = Rims(sectors.from_sector).path;
+            local_traverse(index, start_path[0], 0, null);
             return;
         }
 
@@ -1232,7 +1250,7 @@ class DARTFile {
             }
 
             bool validate(DARTFile dart, const(ulong[]) table, out RecordFactory
-                    .Recorder recorder) {
+                .Recorder recorder) {
                 write(dart, table, recorder);
                 auto _dart_indices = dart_indices(recorder);
                 auto find_recorder = dart.loads(_dart_indices);
@@ -2557,13 +2575,13 @@ unittest {
         const hashdoc = HashDoc("hugo", 42);
         recorder_add.add(hashdoc);
         assert(recorder_add[].front.dart_index != recorder_add[].front.fingerprint,
-                "The dart_index and the fingerprint of a archive should not be the same for a # archive");
+        "The dart_index and the fingerprint of a archive should not be the same for a # archive");
         auto bullseye = dart_A.modify(recorder_add);
         // dart_A.dump;
         // writefln("bullseye   =%(%02x%)", bullseye);
         // writefln("fingerprint=%(%02x%)", recorder_add[].front.fingerprint);
         assert(bullseye == recorder_add[].front.fingerprint,
-                "The bullseye for a DART with a single #key archive should be the same as the fingerprint of the archive");
+        "The bullseye for a DART with a single #key archive should be the same as the fingerprint of the archive");
         const hashdoc_change = HashDoc("hugo", 17);
         auto recorder_B = dart_A.recorder;
         recorder_B.remove(hashdoc_change);
@@ -2578,7 +2596,7 @@ unittest {
         // writefln("fingerprint=%(%02x%)", recorder_change[].front.fingerprint);
         assert(recorder_add[].front.dart_index == recorder_change[].front.dart_index);
         assert(bullseye == recorder_change[].front.fingerprint,
-                "The bullseye for a DART with a single #key archive should be the same as the fingerprint of the archive");
+        "The bullseye for a DART with a single #key archive should be the same as the fingerprint of the archive");
         { // read the dart_index from the dart and check the dart_index 
             auto load_recorder = dart_A.loads(recorder_change[].map!(a => a.dart_index));
             //writefln("load_recorder=%(%02x%)", load_recorder[].front.dart_index);

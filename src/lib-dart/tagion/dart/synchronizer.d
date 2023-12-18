@@ -82,7 +82,7 @@ abstract class StdSynchronizer : Synchronizer {
         */
     void removeRecursive(const Rims selected_rims) {
 
-        auto rim_walker = owner.rimWalkerRange(selected_rims.rims);
+        auto rim_walker = owner.rimWalkerRange(selected_rims.path);
         uint count = 0;
         auto recorder_worker = owner.recorder;
         foreach (archive_data; rim_walker) {
