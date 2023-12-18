@@ -4,13 +4,11 @@ module tagion.services.supervisor;
 import core.time;
 import std.file;
 import std.path;
-import std.socket;
 import std.stdio;
 import std.typecons;
 import tagion.GlobalSignals : stopsignal;
 import tagion.actor;
 import tagion.actor.exceptions;
-import tagion.crypto.SecureInterfaceNet;
 import tagion.crypto.SecureNet;
 import tagion.dart.DARTBasic : DARTIndex;
 import tagion.dart.DARTFile;
@@ -26,8 +24,6 @@ import tagion.services.options;
 import tagion.services.replicator;
 import tagion.services.transcript;
 import tagion.services.TRTService;
-import tagion.utils.JSONCommon;
-import tagion.utils.pretend_safe_concurrency : locate, send;
 import core.memory;
 
 @safe
@@ -63,19 +59,12 @@ struct Supervisor {
         // signs data
         auto transcript_handle = spawn!TranscriptService(tn.transcript, TranscriptOptions.init, opts.wave.number_of_nodes, shared_net, tn);
 
-        auto dart_interface_handle = spawn(immutable(DARTInterfaceService)(opts.dart_interface, opts.trt, tn), tn.dart_interface);
+        auto dart_interface_handle = spawn(immutable(DARTInterfaceService)(opts.dart_interface, opts.trt, tn), tn
+                .dart_interface);
 
         auto services = tuple(dart_handle, replicator_handle, hirpc_verifier_handle, inputvalidator_handle, epoch_creator_handle, collector_handle, tvm_handle, dart_interface_handle, transcript_handle);
 
-
-        
-        // void timeout() @trusted {
-        //     import core.memory;
-        //     GC.collect;
-        // }
-        
-        if (waitforChildren(Ctrl.ALIVE, 40.seconds)) {
-            // runTimeout(10.seconds, &timeout);
+        if (waitforChildren(Ctrl.ALIVE, Duration.max)) {
             run();
         }
         else {

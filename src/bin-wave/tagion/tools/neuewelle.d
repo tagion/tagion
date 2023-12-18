@@ -250,7 +250,7 @@ int _neuewelle(string[] args) {
         assert(0, "NetworkMode not supported");
     }
 
-    if (waitforChildren(Ctrl.ALIVE, 50.seconds)) {
+    if (waitforChildren(Ctrl.ALIVE, Duration.max)) {
         log("alive");
         bool signaled;
         import tagion.utils.pretend_safe_concurrency : receiveTimeout;
