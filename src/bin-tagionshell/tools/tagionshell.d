@@ -30,13 +30,16 @@ import tagion.tools.wallet.WalletOptions;
 import tagion.utils.StdTime : currentTime;
 import tagion.wallet.AccountDetails;
 import tagion.wallet.SecureWallet;
+import tagion.utils.LRUT;
 
 import core.thread;
 import nngd.nngd;
 
 mixin Main!(_main, "shell");
 
-static long getmemstatus() {
+alias DartCache = LRUT!(Buffer, TagionBill);
+
+long getmemstatus() {
     long sz = -1;
     auto f = File("/proc/self/status", "rt");
     foreach (line; f.byLine) {
@@ -49,7 +52,7 @@ static long getmemstatus() {
     return sz;
 }
 
-static void writeit(A...)(A a) {
+void writeit(A...)(A a) {
     writeln(a);
     stdout.flush();
 }
@@ -76,7 +79,7 @@ void dart_worker(ShellOptions opt) {
     }
 }
 
-static void contract_handler(WebData* req, WebData* rep, void* ctx) {
+void contract_handler(WebData* req, WebData* rep, void* ctx) {
 
     thread_attachThis();
 
@@ -124,7 +127,6 @@ static void contract_handler(WebData* req, WebData* rep, void* ctx) {
 }
 
 import crud = tagion.dart.DARTcrud;
-import tagion.dart.DARTBasic;
 
 static void bullseye_handler(WebData* req, WebData* rep, void* ctx) {
 
@@ -154,17 +156,17 @@ static void bullseye_handler(WebData* req, WebData* rep, void* ctx) {
     }
 
     const receiver = HiRPC(null).receive(Document(buf.idup));
-    if (receiver.isResponse) {
+    if (!receiver.isResponse) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
         rep.msg = "response error";
         return;
     }
 
-    const dartindex = receiver.response.result["bullseye"].get!DARTIndex;
+    const dartindex = parseJSON(receiver.response.toPretty);
 
     rep.status = (len > 0) ? nng_http_status.NNG_HTTP_STATUS_OK : nng_http_status.NNG_HTTP_STATUS_NO_CONTENT;
-    rep.type = "text/plain";
-    rep.text = imported!"tagion.basic.Types".encodeBase64(dartindex);
+    rep.type = "application/json";
+    rep.json = dartindex;
 }
 
 static void dartcache_handler(WebData* req, WebData* rep, void* ctx) {
@@ -441,6 +443,15 @@ static void i2p_handler(WebData* req, WebData* rep, void* ctx) {
     rep.rawdata = cast(ubyte[])(receiver.toDoc.serialize);
 }
 
+static void sysinfo_handler(WebData* req, WebData* rep, void* ctx) {
+    thread_attachThis();
+    JSONValue data = parseJSON("{}");
+    data["memsize"] = getmemstatus();
+    rep.status = nng_http_status.NNG_HTTP_STATUS_OK;
+    rep.type = "application/json";
+    rep.json = data;
+}
+
 int _main(string[] args) {
     immutable program = args[0];
     bool version_switch;
@@ -509,11 +520,14 @@ int _main(string[] args) {
             ~ "\t\t= POST dart request hibon\n\t"
             ~ options.shell_api_prefix
             ~ options.i2p_endpoint
-            ~ "\t= POST invoice-to-pay hibon\n\t"// ~ options.shell_api_prefix
-            // ~ options.bullseye_endpoint
-            // ~ "\t= GET dart bullseye hibon\n\t"
-
-            
+            ~ "\t= POST invoice-to-pay hibon\n\t"
+            ~ options
+                .shell_api_prefix
+                ~ options.bullseye_endpoint
+                ~ "\t= GET dart bullseye hibon\n\t"
+                ~ options.shell_api_prefix
+                ~ options.sysinfo_endpoint
+                ~ "\t\t= GET system info\n\t"
 
     );
 
@@ -521,9 +535,10 @@ int _main(string[] args) {
 
 appoint:
 
-    WebApp app = WebApp("ShellApp", options.shell_uri, parseJSON("{}"), &options);
+    WebApp app = WebApp("ShellApp", options.shell_uri, parseJSON(`{"root_path":"/tmp/webapp","static_path":"static"}`), &options);
 
-    // app.route(options.shell_api_prefix ~ options.bullseye_endpoint, &bullseye_handler, ["GET"]);
+    app.route(options.shell_api_prefix ~ options.sysinfo_endpoint, &sysinfo_handler, ["GET"]);
+    app.route(options.shell_api_prefix ~ options.bullseye_endpoint, &bullseye_handler, ["GET"]);
     app.route(options.shell_api_prefix ~ options.contract_endpoint, &contract_handler, ["POST"]);
     app.route(options.shell_api_prefix ~ options.dart_endpoint, &dart_handler, ["POST"]);
     app.route(options.shell_api_prefix ~ options.dartcache_endpoint, &dartcache_handler, ["POST"]);
