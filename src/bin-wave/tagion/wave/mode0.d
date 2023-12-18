@@ -27,6 +27,7 @@ import tagion.actor;
 
 // Checks if all nodes bullseyes are the same
 bool isMode0BullseyeSame(const(Options[]) node_options, SecureNet __net) {
+    import std.typecons;
     // extra check for mode0
     // Check bullseyes
     Fingerprint[] bullseyes;
