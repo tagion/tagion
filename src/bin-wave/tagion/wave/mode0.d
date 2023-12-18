@@ -27,6 +27,7 @@ import tagion.actor;
 
 // Checks if all nodes bullseyes are the same
 bool isMode0BullseyeSame(const(Options[]) node_options, SecureNet __net) {
+    import std.typecons;
     // extra check for mode0
     // Check bullseyes
     Fingerprint[] bullseyes;
@@ -35,7 +36,11 @@ bool isMode0BullseyeSame(const(Options[]) node_options, SecureNet __net) {
             stderr.writefln("Missing dartfile %s", node_opt.dart.dart_path);
             return false;
         }
-        DART db = new DART(__net, node_opt.dart.dart_path);
+        Exception dart_exception;
+        DART db = new DART(__net, node_opt.dart.dart_path, dart_exception, Yes.read_only);
+        if (dart_exception !is null) {
+            throw dart_exception;
+        }
         scope (exit) {
             db.close();
         }
