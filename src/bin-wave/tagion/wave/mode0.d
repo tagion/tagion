@@ -35,7 +35,8 @@ bool isMode0BullseyeSame(const(Options[]) node_options, SecureNet __net) {
             stderr.writefln("Missing dartfile %s", node_opt.dart.dart_path);
             return false;
         }
-        DART db = new DART(__net, node_opt.dart.dart_path);
+        Exception dart_exception;
+        DART db = new DART(__net, node_opt.dart.dart_path, dart_exception, Yes.read_only);
         scope (exit) {
             db.close();
         }
