@@ -333,12 +333,23 @@ int _main(string[] args) {
                 fin.close;
             }
             enum payee_name = "Name";
-            enum pubkey_name = "PUBKey";
+            version (AUSZAHLUNG_PUBKEY) {
+                enum pubkey_name = "PUBKey";
+            }
+            else {
+                enum invoice_name = "Invoice";
+            }
             enum amount_name = "Amount";
             TagionBill[] to_pay;
             TagionCurrency total_amount;
             foreach (record; csvReader!(string[string])(fin.byLine.joiner("\n"), null, ';')) {
-                const pubkey = Pubkey(record[pubkey_name].decode);
+                version (AUSZAHLUNG_PUBKEY) {
+                    const pubkey = Pubkey(record[pubkey_name].decode);
+                }
+                else {
+                    const invoice_doc = Document(record[invoice_name].decode);
+                    const pubkey = Invoice(invoice_doc).pkey;
+                }
                 const amount_tgn = record[amount_name].to!double.TGN;
                 total_amount += amount_tgn;
                 auto nonce = new ubyte[4];
@@ -357,7 +368,10 @@ int _main(string[] args) {
                 const hirpc_submit = hirpc.submit(signed_contract);
                 verbose("submit\n%s", show(hirpc_submit));
                 secure_wallet.account.hirpcs ~= hirpc_submit.toDoc;
-                contract_filename.fwrite(hirpc_submit);
+                verbose("Contract %s", contract_filename);    
+                if (!dry_switch) {
+                    contract_filename.fwrite(hirpc_submit);
+                }
                 scope (success) {
                     if (!dry_switch) {
                         contract_filename.setAttributes(file_protect);
@@ -372,17 +386,20 @@ int _main(string[] args) {
             check(common_wallet_interface.secure_wallet.isLoggedin, "Wallet should be loggedin");
             auto basename = "update";
             if (!csv_files.empty) {
-                basename = csv_files.front.baseName;
+                basename = csv_files.front.baseName.stripExtension;
+
             }
+            const update_file = buildPath(contracts, [basename, WalletInterface.update_tag].join("_"));
             with (common_wallet_interface) {
                 const message = secure_wallet.net.calcHash(WalletInterface.update_tag.representation);
                 const update_net = secure_wallet.net.derive(message);
                 const hirpc = HiRPC(update_net);
                 const req = secure_wallet.getRequestCheckWallet(hirpc);
-                const update_file = [basename, update_tag].join("_");
                 const update_req = update_file.setExtension(FileExtension.hibon);
-
-                update_req.fwrite(req);
+                verbose("Update %s", update_req);
+                if (!dry_switch) {
+                    update_req.fwrite(req);
+                }
                 scope (success) {
                     if (!dry_switch) {
                         update_req.setAttributes(file_protect);
