@@ -523,10 +523,12 @@ class LRU(K, V) {
         ok = l.add(2, x);
         assert(ok);
         assert(evictCounter == 1, "should have an eviction");
-        ok = l.update(1,7);
+        x = 7;
+        ok = l.update(1,x);
         assert(ok);
         assert(l.get(1) == 7, "check updates");
-        ok = l.update(3,3,true);
+        x = 3;
+        ok = l.update(3,x,true);
         assert(ok);
         assert(l.get(3) == 3, "check upsert");
     }
