@@ -230,7 +230,7 @@ unittest {
     assert(!ok);
 
     ok = l.get(999,v);
-    assert(ok)
+    assert(ok);
     assert(v == 999);
 
 }
