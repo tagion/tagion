@@ -31,7 +31,7 @@ private {
     import tagion.hibon.HiBONRecord : GetLabel, exclude, record_filter = filter, label, recordType;
 
     //import tagion.basic.basic;
-    import std.stdio : writefln, writeln;
+//    import std.stdio : writefln, writeln;
     import tagion.basic.tagionexceptions : Check;
     import tagion.dart.DARTRim;
     import tagion.dart.RimKeyRange : rimKeyRange;
@@ -108,7 +108,6 @@ class DARTFile {
         if (flat) {
             id_name ~= ":" ~ flat_marker;
         }
-        writefln("Created %s", id_name);
         BlockFile.create(filename, id_name, block_size, DARTFile.stringof, max_size);
     }
     /++
@@ -893,19 +892,12 @@ class DARTFile {
             if (range.rim < RIMS_IN_SECTOR) {
                 if (branch_index !is Index.init) {
                     branches = blockfile.load!Branches(branch_index);
-
-                    
-
                     .check(branches.hasIndices,
                             "DART failure within the sector rims the DART should contain a branch");
                 }
 
                 while (!range.empty) {
                     auto sub_range = range.nextRim;
-                    if (sub_range.front.dart_index.empty) {
-                        writefln("fingerprint %(%02X%) dart_index=%(%02X%)",
-                                sub_range.front.fingerprint, sub_range.front.dart_index);
-                    }
                     immutable rim_key = sub_range.front.dart_index.rim_key(sub_range.rim);
                     branches[rim_key] = traverse_dart(sub_range, branches.index(rim_key));
                 }

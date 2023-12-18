@@ -141,8 +141,8 @@ struct TRTService {
             //     .map!(a => cast(immutable) DARTIndex(TRTArchive(a.filed).indexes)).array;
             immutable(DARTIndex)[] indexes;
             foreach (a; trt_read_recorder[]) {
-                indexes ~= TRTArchive(a.filed).indexes.map!(d => cast(immutable) DARTIndex(d))
-                    .array;
+                indexes ~= TRTArchive(a.filed).indexes.map!(d => cast(immutable) DARTIndex(d));
+                    
 
             }
 
