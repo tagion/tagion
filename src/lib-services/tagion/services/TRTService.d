@@ -126,27 +126,18 @@ struct TRTService {
                 return;
             }
 
-            log("before creating indexes");
-            auto owner_indexes = owner_doc[]
+            log("before creating indices");
+            auto owner_indices = owner_doc[]
                 .map!(owner => net.dartKey(TRTLabel, Pubkey(owner.get!Buffer)))
                 .array;
 
             import std.algorithm;
 
-            owner_indexes.each!(o => writefln("%(%02x%)", o));
+            owner_indices.each!(o => writefln("%(%02x%)", o));
 
-            auto trt_read_recorder = trt_db.loads(owner_indexes);
-            // log("loaded recorder %s", trt_read_recorder.toPretty);
-            // immutable(DARTIndex)[] indexes = trt_read_recorder[]
-            //     .map!(a => cast(immutable) DARTIndex(TRTArchive(a.filed).indexes)).array;
-            immutable(DARTIndex)[] indexes;
-            foreach (a; trt_read_recorder[]) {
-                indexes ~= TRTArchive(a.filed).indexes.map!(d => cast(immutable) DARTIndex(d));
-                    
-
-            }
-
-            if (indexes.empty) {
+            auto trt_read_recorder = trt_db.loads(owner_indices);
+            immutable indices=trt_read_recorder[].map!(a => cast(immutable)(a.dart_index)).array;
+            if (indices.empty) {
                 // return hirpc error instead;
                 return;
             }
@@ -155,7 +146,7 @@ struct TRTService {
             auto dart_req = dartReadRR();
             requests[dart_req.id] = TRTRequest(client_req, doc);
 
-            dart_handle.send(dart_req, indexes);
+            dart_handle.send(dart_req, indices);
         }
 
         void modify(trtModify, immutable(RecordFactory.Recorder) dart_recorder) {
