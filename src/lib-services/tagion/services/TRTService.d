@@ -137,7 +137,13 @@ struct TRTService {
             owner_indices.each!(o => writefln("%(%02x%)", o));
 
             auto trt_read_recorder = trt_db.loads(owner_indices);
-            immutable indices = trt_read_recorder[].map!(a => cast(immutable)(a.dart_index)).array;
+            immutable(DARTIndex)[] indices;
+            foreach (a; trt_read_recorder[]) {
+                indices ~= TRTArchive(a.filed).indices.map!(d => cast(immutable) DARTIndex(d))
+                    .array;
+
+            }
+
             if (indices.empty) {
                 // return hirpc error instead;
                 return;
