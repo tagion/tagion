@@ -159,7 +159,7 @@ struct InputValidatorService {
                     continue;
                 }
 
-                Document doc = Document(result_buf.idup);
+                Document doc = result_buf;
             }
             else {
                 scope (failure) {
@@ -185,7 +185,7 @@ struct InputValidatorService {
                     continue;
                 }
 
-                Document doc = Document(result_buf.data.idup);
+                Document doc = result_buf.data.idup;
             }
 
             if (!doc.isInorder) {
