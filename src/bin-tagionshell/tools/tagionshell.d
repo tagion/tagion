@@ -37,7 +37,7 @@ import nngd.nngd;
 
 mixin Main!(_main, "shell");
 
-alias DartCache = LRUT!(Buffer,TagionBill);
+alias DartCache = LRUT!(Buffer, TagionBill);
 
 long getmemstatus() {
     long sz = -1;
@@ -127,7 +127,6 @@ void contract_handler(WebData* req, WebData* rep, void* ctx) {
 }
 
 import crud = tagion.dart.DARTcrud;
-import tagion.dart.DARTBasic;
 
 static void bullseye_handler(WebData* req, WebData* rep, void* ctx) {
 
@@ -157,17 +156,17 @@ static void bullseye_handler(WebData* req, WebData* rep, void* ctx) {
     }
 
     const receiver = HiRPC(null).receive(Document(buf.idup));
-    if (receiver.isResponse) {
+    if (!receiver.isResponse) {
         rep.status = nng_http_status.NNG_HTTP_STATUS_BAD_REQUEST;
         rep.msg = "response error";
         return;
     }
 
-    const dartindex = receiver.response.result["bullseye"].get!DARTIndex;
+    const dartindex = parseJSON(receiver.response.toPretty);
 
     rep.status = (len > 0) ? nng_http_status.NNG_HTTP_STATUS_OK : nng_http_status.NNG_HTTP_STATUS_NO_CONTENT;
-    rep.type = "text/plain";
-    rep.text = imported!"tagion.basic.Types".encodeBase64(dartindex);
+    rep.type = "application/json";
+    rep.json = dartindex;
 }
 
 static void dartcache_handler(WebData* req, WebData* rep, void* ctx) {
@@ -444,8 +443,7 @@ static void i2p_handler(WebData* req, WebData* rep, void* ctx) {
     rep.rawdata = cast(ubyte[])(receiver.toDoc.serialize);
 }
 
-
-static void sysinfo_handler(WebData* req, WebData* rep, void* ctx){
+static void sysinfo_handler(WebData* req, WebData* rep, void* ctx) {
     thread_attachThis();
     JSONValue data = parseJSON("{}");
     data["memsize"] = getmemstatus();
@@ -453,10 +451,6 @@ static void sysinfo_handler(WebData* req, WebData* rep, void* ctx){
     rep.type = "application/json";
     rep.json = data;
 }
-
-
-
-
 
 int _main(string[] args) {
     immutable program = args[0];
@@ -527,14 +521,13 @@ int _main(string[] args) {
             ~ options.shell_api_prefix
             ~ options.i2p_endpoint
             ~ "\t= POST invoice-to-pay hibon\n\t"
-            ~ options.shell_api_prefix
-            ~ options.bullseye_endpoint
-            ~ "\t= GET dart bullseye hibon\n\t"
-            ~ options.shell_api_prefix
-            ~ options.sysinfo_endpoint
-            ~ "\t\t= GET system info\n\t"
-
-            
+            ~ options
+                .shell_api_prefix
+                ~ options.bullseye_endpoint
+                ~ "\t= GET dart bullseye hibon\n\t"
+                ~ options.shell_api_prefix
+                ~ options.sysinfo_endpoint
+                ~ "\t\t= GET system info\n\t"
 
     );
 
