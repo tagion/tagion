@@ -67,7 +67,6 @@ void dart_worker(ShellOptions opt) {
         rc = s.dial(opt.tagion_subscription_addr);
         if (rc == 0)
             break;
-        nng_sleep(100.msecs);
     }
     scope (exit) {
         s.close;
@@ -176,7 +175,7 @@ static void dartcache_handler(WebData* req, WebData* rep, void* ctx) {
     int rc;
     const size_t buflen = 1048576;
     ubyte[1048576] buf;
-    ubyte[] docbuf;
+    immutable(ubyte)[] docbuf;
 
     ShellOptions* opt = cast(ShellOptions*) ctx;
     if (req.type != "application/octet-stream") {
@@ -251,7 +250,7 @@ static void dartcache_handler(WebData* req, WebData* rep, void* ctx) {
         }
         while (len > buflen - 1);
 
-        Document repdoc = Document(cast(immutable(ubyte[])) docbuf);
+        const repdoc = Document(docbuf);
         immutable repreceiver = hirpc.receive(repdoc);
         found_bills ~= repreceiver.response.result[]
             .map!(e => TagionBill(e.get!Document))

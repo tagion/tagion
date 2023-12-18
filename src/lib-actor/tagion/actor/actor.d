@@ -166,13 +166,18 @@ bool statusChildren(Ctrl ctrl) @safe nothrow {
  * Returns: true if all of the get in Ctrl state before the timeout
  */
 bool waitforChildren(Ctrl state, Duration timeout = 1.seconds) @safe nothrow {
-    auto limit = MonoTime.currTime + timeout;
-    // Topic event_children_state = submask.register("children_state");
+    const begin_time = MonoTime.currTime;
     try {
-        while (!statusChildren(state) && MonoTime.currTime <= limit) {
+        while (!statusChildren(state) && MonoTime.currTime - begin_time <= timeout) {
+            if (thisActor.stop && state !is Ctrl.END) {
+                return false;
+            }
             receiveTimeout(
                     timeout / thisActor.childrenState.length,
-                    (CtrlMsg msg) { thisActor.childrenState[msg.task_name] = msg.ctrl; },
+                    &control,
+                    &signal,
+                    &ownerTerminated
+
             );
         }
         log("%s", thisActor.childrenState);

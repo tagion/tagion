@@ -1,3 +1,22 @@
+# Changelog for epoch 50000 to 131000
+**Wallet update on existing response**
+The wallet can now take an existing HiRPC.Result and modify itself based on that. This allows you to send your requests with curl and later modify your wallet with the responses.
+
+**TRT Improvements**
+We now have a working prototype on our TRT, which will allow much faster and efficient lookups based on public keys. We are now beginning the testing phase for this feature.
+
+**NNG Tagionshell memory leak**
+We have had a small memory leak in the shell due NNG spawning pthreads from c, which were not properly attached. This was resolved by calling: `thread_attachThis` in the threads.
+
+**BlockFile and DART readonly mode**
+When opening the DART in RO-mode we do not load the recycler which allows for faster loadtime.
+
+**Synchronized LRUT**
+We have created the initial synchronized LRUT class (Least-recently-used-threaded) which will be used in the shell for caching.
+
+**Neuewelle refactor**
+The main binary for spawning a node / network has been refactored so that it is much easier to understand now.
+
 # Changelog for epoch 0 to 50000
 
 **getFee(amount, fee) patch**
