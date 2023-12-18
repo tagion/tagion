@@ -76,7 +76,14 @@ class LRUT(K,V) {
         ctime[key] = timestamp;
         return tmp_lru.add(key,value);
     }
-    
+
+    // updates the value if exists or inserts if flag pecified
+    bool update(const(K) key, ref V value, bool upsert = false){
+        auto tmp_lru=(() @trusted => cast(LRU_t)_lru)();
+        ctime[key] = timestamp;
+        return tmp_lru.update(key, value, upsert);
+    }
+
     // Get looks up a key's value from the cache.
     static if (does_not_have_immutable_members) {
         bool get( K key, ref V value) {
@@ -198,7 +205,6 @@ class LRUT(K,V) {
 
 
 unittest {
-
     import core.thread;
 
     alias LRUT!(int, int) TestLRU;
@@ -238,7 +244,83 @@ unittest {
     ok = l.get(999,v);
     assert(ok);
     assert(v == 999);
-
 }
 
+unittest {
+    import core.thread;
+    import std.random;
+    import std.range;
+    
+    pragma(msg, "LRUT() to start");
 
+    alias LRUT!(int, int) TestLRU;
+    
+    enum amount = 8;
+    enum repeat = 4;
+    double ttl = 0.5; // max age in seconds
+
+    auto l = new shared(TestLRU)(null, amount, ttl);
+    
+    foreach (i; 0 .. amount) {
+        l.add(i, i);
+    }
+
+    void cache_check_yes(){
+        bool ok;
+        int v;
+        auto rnd = Random(41);
+        foreach(j; 0..repeat)            
+            foreach(i; 0..amount){
+                (() @trusted => Thread.sleep((10.iota.choice(rnd)).msecs))();
+                ok = l.get(i,v);    
+                assert(ok);
+                assert(v == i, "check YES failed");
+            }
+    }
+    
+    void cache_check_no(){
+        bool ok;
+        int v;
+        auto rnd = Random(42);
+        foreach(j; 0..repeat)            
+            foreach(i; 0..amount){
+                (() @trusted => Thread.sleep((10.iota.choice(rnd)).msecs))();
+                ok = l.get(i,v);    
+                assert(!ok, "check NO failed");
+            }
+    }
+    
+    void cache_update(){
+        bool ok;
+        auto rnd = Random(43);
+        foreach(j; 0..repeat)            
+            foreach(i; 0..amount){
+                (() @trusted => Thread.sleep((10.iota.choice(rnd)).msecs))();
+                ok = l.update(i,i);    
+                assert(ok, "update failed");
+            }
+    }
+
+    auto t1 = new Thread(&cache_check_yes);
+    auto t2 = new Thread(&cache_update);
+    auto t3 = new Thread(&cache_check_yes);
+    
+    pragma(msg, "LRUT() threads to start");
+    
+    (() @trusted => t1.start() )();
+    (() @trusted => t2.start() )();
+    (() @trusted => t3.start() )();
+    
+    (() @trusted => t3.join() )();
+    (() @trusted => t2.join() )();
+    (() @trusted => t1.join() )();
+
+    pragma(msg, "LRUT() threads joined");
+    
+    (() @trusted => Thread.sleep(500.msecs))();
+
+    cache_check_no();
+
+    pragma(msg, "LRUT() passed");
+
+}
