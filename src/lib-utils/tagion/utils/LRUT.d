@@ -39,7 +39,7 @@ class LRUT(K,V) {
     private immutable double maxage;
     private double[K] ctime;
 
-    this(shared EvictCallback onEvict = null, immutable uint size = 0, immutable double maxage = 0) @trusted nothrow {
+    this(EvictCallback onEvict = null, immutable uint size = 0, immutable double maxage = 0) nothrow {
         _lru = new LRU_t(null,size);
         auto tmp_lru=(() @trusted => cast(LRU_t)_lru)();
         tmp_lru.setEvict(cast(EvictCallback)onEvict);
@@ -205,9 +205,10 @@ unittest {
     shared uint evictCounter;
     
     
-    shared void onEvicted(scope const(int) i, TestLRU.Element* e) @safe {
+    void onEvicted(scope const(int) i, TestLRU.Element* e) @safe {
         assert(e.entry.key == e.entry.value);
         core.atomic.atomicOp!"+="(evictCounter, 1);
+        //evictCounter++;
     }
 
     enum amount = 8;
