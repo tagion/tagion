@@ -213,7 +213,7 @@ unittest {
     enum amount = 8;
     double ttl = 0.5; // max age in seconds
 
-    shared TestLRU l = new TestLRU(&onEvicted, amount, ttl);
+    auto l = new shared(TestLRU)(&onEvicted, amount, ttl);
 
 
     foreach (i; 0 .. amount) {
