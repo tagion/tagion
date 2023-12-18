@@ -1,5 +1,6 @@
 module tagion.utils.LRUT;
 
+import core.atomic;
 import std.algorithm : map;
 import std.conv;
 import std.format;
@@ -201,24 +202,30 @@ unittest {
     import core.thread;
 
     alias LRUT!(int, int) TestLRU;
-    uint evictCounter;
-
-    void onEvicted(scope const(int) i, TestLRU.Element* e) @safe {
+    shared uint evictCounter;
+    
+    
+    shared void onEvicted(scope const(int) i, TestLRU.Element* e) @safe {
         assert(e.entry.key == e.entry.value);
-        evictCounter++;
+        core.atomic.atomicOp!"+="(evictCounter, 1);
     }
 
-    enum amount = 8;
-    double ttl = 0.5; // max age in seconds
+    shared enum amount = 8;
+    shared double ttl = 0.5; // max age in seconds
 
-    auto l = new TestLRU(&onEvicted, amount, ttl);
+    shared TestLRU l = new TestLRU(&onEvicted, amount, ttl);
+
+    int i;
+
     foreach (i; 0 .. amount) {
         l.add(i, i);
     }
     
-    Thread.sleep(500.msecs);
+    (() @trusted => Thread.sleep(500.msecs))();
 
-    l.add(999,999);
+    i = 999;
+
+    l.add(999,i);
 
     assert(l.expired(1));
     assert(!l.expired(999));
