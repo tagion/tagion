@@ -33,36 +33,33 @@ struct Supervisor {
     void task(immutable(Options) opts, shared(StdSecureNet) shared_net) @safe {
         immutable tn = opts.task_names;
 
-        auto replicator_handle = spawn!ReplicatorService(tn.replicator, opts.replicator);
+        ActorHandle[] handles;
 
-        // signs data for hirpc response
-        auto dart_handle = spawn!DARTService(tn.dart, opts.dart, tn, shared_net, opts.trt.enable);
+        handles ~= spawn!ReplicatorService(tn.replicator, opts.replicator);
+        handles ~= spawn!DARTService(tn.dart, opts.dart, tn, shared_net, opts.trt.enable);
 
-        ActorHandle trt_handle;
         if (opts.trt.enable) {
-            trt_handle = spawn!TRTService(tn.trt, opts.trt, tn, shared_net);
+            handles ~= spawn!TRTService(tn.trt, opts.trt, tn, shared_net);
         }
 
-        auto hirpc_verifier_handle = spawn!HiRPCVerifierService(tn.hirpc_verifier, opts.hirpc_verifier, tn);
+        handles ~= spawn!HiRPCVerifierService(tn.hirpc_verifier, opts.hirpc_verifier, tn);
 
-        auto inputvalidator_handle = spawn!InputValidatorService(tn.inputvalidator, opts.inputvalidator, tn);
+        handles ~= spawn!InputValidatorService(tn.inputvalidator, opts.inputvalidator, tn);
 
         // signs data
-        auto epoch_creator_handle = spawn!EpochCreatorService(tn.epoch_creator, opts.epoch_creator, opts.wave
+        handles ~= spawn!EpochCreatorService(tn.epoch_creator, opts.epoch_creator, opts.wave
                 .network_mode, opts.wave.number_of_nodes, shared_net, opts.monitor, tn);
 
         // verifies signature
-        auto collector_handle = _spawn!CollectorService(tn.collector, tn);
+        handles ~= _spawn!CollectorService(tn.collector, tn);
 
-        auto tvm_handle = _spawn!TVMService(tn.tvm, tn);
+        handles ~= _spawn!TVMService(tn.tvm, tn);
 
         // signs data
-        auto transcript_handle = spawn!TranscriptService(tn.transcript, TranscriptOptions.init, opts.wave.number_of_nodes, shared_net, tn);
+        handles ~= spawn!TranscriptService(tn.transcript, TranscriptOptions.init, opts.wave.number_of_nodes, shared_net, tn);
 
-        auto dart_interface_handle = spawn(immutable(DARTInterfaceService)(opts.dart_interface, opts.trt, tn), tn
+        handles ~= spawn(immutable(DARTInterfaceService)(opts.dart_interface, opts.trt, tn), tn
                 .dart_interface);
-
-        auto services = tuple(dart_handle, replicator_handle, hirpc_verifier_handle, inputvalidator_handle, epoch_creator_handle, collector_handle, tvm_handle, dart_interface_handle, transcript_handle);
 
         if (waitforChildren(Ctrl.ALIVE, Duration.max)) {
             run();
@@ -72,15 +69,12 @@ struct Supervisor {
         }
 
         log("Supervisor stopping services");
-        if (opts.trt.enable) {
-            trt_handle.send(Sig.STOP);
-        }
-        foreach (service; services) {
-            if (service.state is Ctrl.ALIVE) {
-                service.send(Sig.STOP);
+        foreach (handle; handles) {
+            if (handle.state is Ctrl.ALIVE) {
+                handle.send(Sig.STOP);
             }
-
         }
+
         (() @trusted { // NNG shoould be safe
             import core.time;
             import nngd;
