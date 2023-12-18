@@ -502,7 +502,7 @@ class LRU(K, V) {
         assert(count == 1);
         assert(l.length == N - 1);
         assert(l[make_key(2)] == E.undefined);
-        alias TestSyncLRU = SyncLRU!(Key, E);
+//        alias TestSyncLRU = SyncLRU!(Key, E);
     }
 
     /// update/upsert test
