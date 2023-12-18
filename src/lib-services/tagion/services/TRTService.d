@@ -10,6 +10,7 @@ import std.format : format;
 import std.path : isValidPath;
 import std.path;
 import std.stdio;
+import std.range : enumerate;
 import tagion.actor;
 import tagion.basic.Types : FileExtension;
 import tagion.communication.HiRPC;
@@ -91,7 +92,7 @@ struct TRTService {
                 return;
             }
             HiBON params = new HiBON;
-            foreach (i, bill; recorder[].array) {
+            foreach (i, bill; recorder[].enumerate) {
                 params[i] = bill.filed;
             }
 
@@ -136,7 +137,7 @@ struct TRTService {
             owner_indices.each!(o => writefln("%(%02x%)", o));
 
             auto trt_read_recorder = trt_db.loads(owner_indices);
-            immutable indices=trt_read_recorder[].map!(a => cast(immutable)(a.dart_index)).array;
+            immutable indices = trt_read_recorder[].map!(a => cast(immutable)(a.dart_index)).array;
             if (indices.empty) {
                 // return hirpc error instead;
                 return;
