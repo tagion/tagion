@@ -626,9 +626,9 @@ struct SecureWallet(Net : SecureNet) {
             .map!(a => a.key)
             .array;
 
-        auto found_indexes = found_bills.map!(found => net.dartIndex(found)).array;
+        auto found_indices = found_bills.map!(found => net.dartIndex(found)).array;
         foreach (idx; locked_indexes) {
-            if (!(found_indexes.canFind(idx))) {
+            if (!(found_indices.canFind(idx))) {
                 account.activated.remove(idx);
                 auto bill_index = account.bills.countUntil!(b => net.dartIndex(b) == idx);
                 if (bill_index >= 0) {
