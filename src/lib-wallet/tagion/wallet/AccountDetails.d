@@ -119,6 +119,7 @@ struct AccountDetails {
          Clear up the Account
          Remove used bills
          +/
+    version(none)
     void clearup() {
         bills
             .filter!(b => b.owner in derivers)
