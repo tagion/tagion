@@ -9,12 +9,15 @@ import std.path;
 import std.range;
 import std.stdio;
 import std.typecons;
+import std.exception : ifThrown;
 import core.stdc.stdio : printf;
 import tagion.basic.Message;
 import tagion.basic.Types : FileExtension, hasExtension;
 import tagion.basic.tagionexceptions;
 import tagion.hibon.Document;
 import tagion.hibon.HiBONFile : fread, fwrite;
+import tagion.hibon.HiBONRecord : isHiBONRecord;
+import tagion.communication.HiRPC;
 import tagion.network.ReceiveBuffer;
 import tagion.script.TagionCurrency;
 import tagion.tools.Basic;
@@ -28,6 +31,7 @@ import tagion.wallet.SecureWallet;
 import tagion.wallet.WalletRecords;
 import tagion.wallet.BIP39;
 import tagion.basic.Types : encodeBase64;
+import tagion.hibon.HiBONException;
 
 mixin Main!(_main, "wallet");
 
@@ -60,6 +64,8 @@ int _main(string[] args) {
     bool wallet_ui;
     bool show_info;
     bool pubkey_info;
+    bool list;
+    bool sum;
     string _passphrase;
     string _salt;
     char[] passphrase;
@@ -95,24 +101,24 @@ int _main(string[] args) {
                 "C|create", "Create a new account", &create_account,
                 "c|changepin", "Change pin-code", &change_pin,
                 "o|output", "Output filename", &wallet_switch.output_filename,
-                "l|list", "List wallet content", &wallet_switch.list, //"questions", "Questions for wallet creation", &questions_str,
-                "s|sum", "Sum of the wallet", &wallet_switch.sum, //"questions", "Questions for wallet creation", &questions_str,
-                "send", "Send a contract to the shell", &wallet_switch.send, //"answers", "Answers for wallet creation", &answers_str,
-                "sendkernel", "Send a contract to the kernel", &wallet_switch.sendkernel, //"answers", "Answers for wallet creation", &answers_str,
+                "l|list", "List wallet content", &list,
+                "s|sum", "Sum of the wallet", &sum,
+                "send", "Send a contract to the shell", &wallet_switch.send,
+                "sendkernel", "Send a contract to the kernel", &wallet_switch.sendkernel,
                 "P|passphrase", "Set the wallet passphrase", &_passphrase,
                 "create-invoice", "Create invoice by format LABEL:PRICE. Example: Foreign_invoice:1000", &wallet_switch
-                    .invoice,
-                    "x|pin", "Pincode", &pincode,
-                    "amount", "Create an payment request in tagion", &wallet_switch.amount,
-                    "force", "Force input bill", &wallet_switch.force,
-                    "pay", "Creates a payment contract", &wallet_switch.pay,
-                    "dry", "Dry-run this will not save the wallet", &__dry_switch,
-                    "req", "List all requested bills", &wallet_switch.request,
-                    "update", "Request a wallet updated", &wallet_switch.update,
-                    "trt-update", "Request a update on all derivers", &wallet_switch.trt_update,
+                .invoice,
+                "x|pin", "Pincode", &pincode,
+                "amount", "Create an payment request in tagion", &wallet_switch.amount,
+                "force", "Force input bill", &wallet_switch.force,
+                "pay", "Creates a payment contract", &wallet_switch.pay,
+                "dry", "Dry-run this will not save the wallet", &__dry_switch,
+                "req", "List all requested bills", &wallet_switch.request,
+                "update", "Request a wallet updated", &wallet_switch.update,
+                "trt-update", "Request a update on all derivers", &wallet_switch.trt_update,
 
-                    "address", format(
-                        "Sets the address default: %s", options.contract_address),
+                "address", format(
+                    "Sets the address default: %s", options.contract_address),
                 &options.addr,
                 "faucet", "request money from the faucet", &wallet_switch.faucet,
                 "bip39", "Generate bip39 set the number of words", &bip39,
@@ -122,33 +128,28 @@ int _main(string[] args) {
                 "pubkey", "Prints the public key", &pubkey_info,
 
         );
-    }
-    catch (GetOptException e) {
-        stderr.writeln(e.msg);
-        return 1;
-    }
-    if (version_switch) {
-        revision_text.writeln;
-        return 0;
-    }
-    if (main_args.helpWanted) {
-        //            writeln(logo);
-        defaultGetoptPrinter(
-                [
-                // format("%s version %s", program, REVNO),
-                "Documentation: https://tagion.org/",
-                "",
-                "Usage:",
-                format("%s [<option>...] <config.json> <files>", program),
-                "",
+        if (version_switch) {
+            revision_text.writeln;
+            return 0;
+        }
+        if (main_args.helpWanted) {
+            //            writeln(logo);
+            defaultGetoptPrinter(
+                    [
+                    // format("%s version %s", program, REVNO),
+                    "Documentation: https://tagion.org/",
+                    "",
+                    "Usage:",
+                    format("%s [<option>...] <config.json> <files>", program),
+                    "",
 
-                "<option>:",
+                    "<option>:",
 
-                ].join("\n"),
-                main_args.options);
-        return 0;
-    }
-    try {
+                    ].join("\n"),
+                    main_args.options);
+            return 0;
+        }
+
         verbose("Config file %s", config_file);
         const new_config = (!config_file.exists || overwrite_switch);
         if (path) {
@@ -273,11 +274,21 @@ int _main(string[] args) {
         }
         if (pubkey_info) {
             if (wallet_interface.secure_wallet.account.owner.empty) {
-                writefln("%sAccount pubkey has not been set (use --name)%s", YELLOW, RESET);
+                warn("Account pubkey has not been set (use --name)");
                 return 0;
             }
             writefln("%s",
                     wallet_interface.secure_wallet.account.owner.encodeBase64);
+            info_only = true;
+        }
+        if (list) {
+            const hash_net = new StdHashNet;
+            wallet_interface.listAccount(vout, hash_net);
+            wallet_interface.listInvoices(vout);
+            sum = true;
+        }
+        if (sum) {
+            wallet_interface.sumAccount(vout);
             info_only = true;
         }
         if (info_only) {
@@ -300,16 +311,30 @@ int _main(string[] args) {
                 const flag = wallet_interface.secure_wallet.login(pincode);
 
                 if (!flag) {
-                    error("%sWrong pincode%s", RED, RESET);
+                    error("Wrong pincode");
                     return 3;
                 }
-                verbose("%1$sLoggedin%2$s", GREEN, RESET);
+                good("Loggedin");
             }
             else if (!wallet_interface.loginPincode(changepin : false)) {
                 wallet_ui = true;
-                writefln("%1$sWallet not loggedin%2$s", YELLOW, RESET);
+                warn("Wallet not loggedin");
                 return 4;
             }
+        }
+        foreach (file; args.filter!(file => file.hasExtension(FileExtension.hibon))) {
+            check(file.exists, format("File %s not found", file));
+
+            const hirpc_response = file.fread!(HiRPC.Receiver).ifThrown!HiBONException(HiRPC.Receiver.init);
+            if (hirpc_response is HiRPC.Receiver.init) { continue; }
+            writefln("File %s %s", file, hirpc_response.toPretty);
+            const ok = wallet_interface.secure_wallet.setResponseUpdateWallet(hirpc_response)
+                .ifThrown!HiBONException(
+                        wallet_interface.secure_wallet.setResponseCheckRead(hirpc_response)
+            );
+
+            check(ok, format("HiPRC %s is not a valid response", file));
+            wallet_switch.save_wallet = true;
         }
         if (!account_name.empty) {
             wallet_interface.secure_wallet.account.name = account_name;
@@ -317,11 +342,15 @@ int _main(string[] args) {
             wallet_switch.save_wallet = true;
 
         }
+
         wallet_interface.operate(wallet_switch, args);
     }
+    catch (GetOptException e) {
+        error(e.msg);
+        return 1;
+    }
     catch (Exception e) {
-        writefln("%1$sError: %3$s%2$s", RED, RESET, e.msg);
-        verbose("%s", e.toString);
+        error(e);
         return 1;
     }
     return 0;
