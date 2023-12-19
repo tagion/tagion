@@ -41,6 +41,9 @@ import tagion.script.common;
 import tagion.crypto.random.random;
 import tagion.utils.StdTime;
 import tagion.communication.HiRPC;
+import tagion.dart.DARTBasic;
+import CRUD = tagion.dart.DARTcrud;
+import tagion.dart.Recorder;
 import std.csv;
 import std.string : representation;
 
@@ -250,6 +253,18 @@ int _main(string[] args) {
             check(common_wallet_interface.secure_wallet.isLoggedin, "Wallet could not be activated");
             good("Wallet activated");
         }
+        auto csv_files = args[1 .. $].filter!(file => file.hasExtension(FileExtension.csv));
+        enum payee_name = "Name";
+        version (AUSZAHLUNG_PUBKEY) {
+            enum pubkey_name = "PUBKey";
+        }
+        else {
+            enum invoice_name = "Invoice";
+        }
+            enum success_name = "Success";
+            enum paid_name = "Paid";
+        enum amount_name = "Amount";
+        enum bill_name = "BillNumber";
         if (!response_name.empty) {
             verbose("Response %s", response_name);
             scope (success) {
@@ -258,6 +273,53 @@ int _main(string[] args) {
                 }
             }
             const received = response_name.fread!(HiRPC.Receiver);
+            verbose("received %s", received.toPretty);
+            verbose("isRecord %s", received.result.toPretty);
+            if (RecordFactory.Recorder.isRecord(received.result)) {
+                auto factory = RecordFactory(hash_net);
+                const rec = factory.recorder(received.result);
+                check(!csv_files.empty, ".csv file missing");
+                auto fin = File(csv_files.front, "r");
+                string[] header;
+                auto csv_output = csvReader!(string[string])(fin.byLine.joiner("\n"), header, ';').array;
+                fin.close;
+                foreach (ref record; csv_output) {
+                version (AUSZAHLUNG_PUBKEY) {
+                    const pubkey = Pubkey(record[pubkey_name].decode);
+                }
+                else {
+                    const invoice_doc = Document(record[invoice_name].decode);
+                    const pubkey = Invoice(invoice_doc).pkey;
+                }
+                        vout.writefln("owner %s", pubkey.encodeBase64);
+                    auto found_bill=rec[]
+                    .map!(a => TagionBill(a.filed))
+                    .filter!(bill => bill.owner == pubkey);
+                    if (!found_bill.empty) {
+                        record[success_name]=1.to!string;
+                        vout.writefln("Bill %s found", pubkey.encodeBase64);
+                        record[paid_name]=found_bill.front.value.toString;
+                        record[bill_name]=hash_net.dartIndex(found_bill.front).encodeBase64;
+                    }
+                    
+                    vout.writefln("%s", record);
+                    vout.writefln("%s %s", record[invoice_name], record[amount_name].to!double);
+                }
+
+                good("Recorder !!");
+                const csv_output_filename = [csv_files.front.stripExtension, "payment"].join("_")
+                .setExtension(FileExtension.csv);
+                verbose("new csv %s", csv_output_filename);
+                auto fout = File(csv_output_filename, "w");
+                scope (exit) {
+                    fout.close;
+                }
+                fout.writefln("%-(%s;%)", csv_output.front.byKey);
+                foreach (record; csv_output) {
+                    fout.writefln("%-(%s;%)", csv_output.front.byKey.map!(key => record[key]));
+                }
+                return 0;
+            }
             common_wallet_interface.secure_wallet.setResponseCheckRead(received);
             return 0;
         }
@@ -316,7 +378,6 @@ int _main(string[] args) {
 
             return 0;
         }
-        auto csv_files = args[1 .. $].filter!(file => file.hasExtension(FileExtension.csv));
         const contracts = buildPath(options.accountfile.dirName, "contracts");
         if (!csv_files.empty) {
             mkdirRecurse(contracts);
@@ -332,15 +393,8 @@ int _main(string[] args) {
             scope (exit) {
                 fin.close;
             }
-            enum payee_name = "Name";
-            version (AUSZAHLUNG_PUBKEY) {
-                enum pubkey_name = "PUBKey";
-            }
-            else {
-                enum invoice_name = "Invoice";
-            }
-            enum amount_name = "Amount";
             TagionBill[] to_pay;
+            DARTIndex[] bill_indices;
             TagionCurrency total_amount;
             foreach (record; csvReader!(string[string])(fin.byLine.joiner("\n"), null, ';')) {
                 version (AUSZAHLUNG_PUBKEY) {
@@ -354,7 +408,9 @@ int _main(string[] args) {
                 total_amount += amount_tgn;
                 auto nonce = new ubyte[4];
                 getRandom(nonce);
-                to_pay ~= TagionBill(amount_tgn, currentTime, pubkey, nonce.idup);
+                auto bill = TagionBill(amount_tgn, currentTime, pubkey, nonce.idup);
+                to_pay ~= bill;
+                bill_indices ~= hash_net.dartIndex(bill);
                 info("%10s %37s %-14sTGN", record[payee_name], pubkey.encodeBase64, amount_tgn);
             }
             SignedContract signed_contract;
@@ -368,13 +424,19 @@ int _main(string[] args) {
                 const hirpc_submit = hirpc.submit(signed_contract);
                 verbose("submit\n%s", show(hirpc_submit));
                 secure_wallet.account.hirpcs ~= hirpc_submit.toDoc;
-                verbose("Contract %s", contract_filename);    
+                verbose("Contract %s", contract_filename);
+                const bill_update_filename = [contract_filename.stripExtension, "bill_update"].join("_")
+                .setExtension(FileExtension.hibon);
+                const hirpc_dartread = CRUD.dartRead(bill_indices);
+                verbose("Bill update %s", bill_update_filename);
                 if (!dry_switch) {
                     contract_filename.fwrite(hirpc_submit);
+                    bill_update_filename.fwrite(hirpc_dartread);
                 }
                 scope (success) {
                     if (!dry_switch) {
                         contract_filename.setAttributes(file_protect);
+                        bill_update_filename.setAttributes(file_protect);
                     }
                 }
             }
@@ -382,6 +444,7 @@ int _main(string[] args) {
             update = true;
         }
         if (update) {
+
             verbose("Update");
             check(common_wallet_interface.secure_wallet.isLoggedin, "Wallet should be loggedin");
             auto basename = "update";
@@ -414,8 +477,7 @@ int _main(string[] args) {
         return 1;
     }
     catch (Exception e) {
-        error("%s", e.msg);
-        verbose("%s", e.toString);
+        error(e);
         return 1;
     }
     return 0;
