@@ -519,16 +519,7 @@ extern (C) {
         return 0;
     }
 
-    export uint remove_bill(uint8_t* pubKeyPtr, uint32_t pubKeyLen) {
-        immutable(ubyte)[] pubKey = cast(immutable(ubyte)[])(pubKeyPtr[0 .. pubKeyLen]);
-
-        if (__wallet_storage.wallet.isLoggedin()) {
-            const result = __wallet_storage.wallet.account.remove_bill(Pubkey(pubKey));
-            return result;
-        }
-        return 0;
-    }
-
+    version(none)
     export uint remove_bills_by_contract(const uint8_t* contractPtr, const uint32_t contractLen) {
         // Collect input and output keys from the contract.
         // Iterate them and call remove on each.
@@ -897,6 +888,8 @@ unittest {
         assert(result == 1, "Expected result to be 1");
         assert(status == 0, "Expected status to be 0");
     }
+
+    version(none)
     { // Remove bills by contract.
 
         uint result = remove_bills_by_contract(contract.ptr, contractLen);
