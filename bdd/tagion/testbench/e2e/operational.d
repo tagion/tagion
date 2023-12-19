@@ -241,7 +241,6 @@ class SendNContractsFromwallet1Towallet2 {
         // dfmt off
         const wallet_switch = WalletInterface.Switch(
                 update: true, 
-                sum: true,
                 sendkernel: sendkernel,
                 send: send);
         // dfmt on
@@ -307,7 +306,6 @@ class SendNContractsFromwallet1Towallet2 {
         //dfmt off
         const wallet_switch = WalletInterface.Switch(
             trt_update : true,
-            sum: true,
             sendkernel: sendkernel,
             send: send);
 
