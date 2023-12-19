@@ -27,12 +27,7 @@
 		- [Shell cache](/documents/architecture/DARTCache.md)
 
 - Protocols
-	- [HiBON](documents/protocols/hibon/README.md)
-		- [Hash_invariant_Binary_Object_Notation](documents/protocols/hibon/Hash_invariant_Binary_Object_Notation.md)
-		- [Hash_invariant_Remote_Procedure_Call](documents/protocols/hibon/Hash_invariant_Remote_Procedure_Call.md)
-		- [HiBON_JSON_format](/documents/protocols/hibon/HiBON_JSON_format.md)
-		- [HiBON_LEB128](/documents/protocols/hibon/HiBON_LEB128.md)
-		- [HiBON_Record](/documents/protocols/hibon/HiBON_Record.md)
+	- [HiBON](documents/protocols/hibon.md)
     - [Contract](/documents/protocols/contract/Contract.md)
         - [Methods](/documents/protocols/contract/hirpcmethods.md)
 	    - [Bill](/documents/protocols/contract/Bill.md)

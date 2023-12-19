@@ -7,10 +7,13 @@
 
 👋 Welcome to the Tagion project! 
 
-This repository is a home for all core units, also containing scripts for cross-compilation, testing and docs generation.
+Tagion is a decentralized ledger for creating high volume transaction.
+It differs from blockchain based ledgers in that it uses a hashgraph as the consensus mechanism and a database based on a merkletree (DART) to store the bills of the system.
+Thus it does not need to record the entire transaction history to maintain integrity, only the state of world is recorded.
 
-[Documentation](https://docs.tagion.org)
-[DDOC](https://ddoc.tagion.org)
+General system documentation https://docs.tagion.org  
+Code documentation https://ddoc.tagion.org  
+Whitepaper https://www.tagion.org/resources/tagion-whitepaper.pdf  
 
 ## Installation
 *Installation tested on ubuntu 22.04, nixos-unstable*
@@ -33,14 +36,14 @@ apt-get install git autoconf build-essential libtool dub cmake
 ```
 Download a D compiler ldc or dmd
 
-- LLVM D compiler - ldc2 (latest working version is 1.35)
+- LLVM D compiler - ldc2 (v1.35.0)
 ```bash
 wget https://github.com/ldc-developers/ldc/releases/download/v1.35.0/ldc2-1.35.0-linux-x86_64.tar.xz
 tar xf ldc2-1.35.0-linux-x86_64.tar.xz
 export PATH="path-to-ldc2/ldc2-1.34.0-linux-x86_64/bin:$PATH"
 ```
         
-- Reference D compiler - dmd
+- Reference D compiler - dmd (v2.105.2)
 ```bash
 wget https://downloads.dlang.org/releases/2.x/2.105.2/dmd.2.105.2.linux.tar.xz
 tar xf dmd.2.105.2.linux.tar.xz
