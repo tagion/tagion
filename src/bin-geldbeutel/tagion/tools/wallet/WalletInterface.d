@@ -577,10 +577,11 @@ struct WalletInterface {
             bills.sort!(q{a.time < b.time});
             foreach (i, bill; bills) {
                 string mark = GREEN;
-                if (bill.owner in secure_wallet.account.requested) {
+                const bill_index = hash_net.dartIndex(bill);
+                if (bill_index in secure_wallet.account.requested) {
                     mark = RED;
                 }
-                else if (bill.owner in secure_wallet.account.activated) {
+                else if (bill_index in secure_wallet.account.activated) {
                     mark = YELLOW;
                 }
                 writefln("%4s] %s", i, toText(_hash_net, bill, mark));
@@ -685,7 +686,7 @@ struct WalletInterface {
                             verbose("index %s", arg);
                             const index = arg.decode.ifThrown(Buffer.init);
                             check(index !is Buffer.init, format("Illegal fingerprint %s", arg));
-                            bill = secure_wallet.account.requested.get(Pubkey(index), TagionBill.init); /// Find bill by owner key     
+                            bill = secure_wallet.account.requested.get(DARTIndex(index), TagionBill.init); /// Find bill by owner key     
 
                             if (bill is TagionBill.init) {
                                 // Find bill by fingerprint 

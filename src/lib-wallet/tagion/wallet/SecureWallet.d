@@ -425,7 +425,7 @@ struct SecureWallet(Net : SecureNet) {
      * Calculates the amount which can be activate
      * Returns: the amount of available amount
      */
-    TagionCurrency available_balance() const pure {
+    TagionCurrency available_balance() const {
         return account.available;
     }
 
@@ -433,7 +433,7 @@ struct SecureWallet(Net : SecureNet) {
      * Calcutales the locked amount in the network
      * Returns: the locked amount
      */
-    TagionCurrency locked_balance() const pure {
+    TagionCurrency locked_balance() const {
         return account.locked;
     }
 
@@ -441,7 +441,7 @@ struct SecureWallet(Net : SecureNet) {
      * Calcutales the total amount
      * Returns: total amount
      */
-    TagionCurrency total_balance() const pure {
+    TagionCurrency total_balance() const {
         return account.total;
     }
 
@@ -508,7 +508,7 @@ struct SecureWallet(Net : SecureNet) {
         }
 
         // Select all bills not in use
-        auto none_locked = account.bills.filter!(b => !(b.owner in account.activated)).array;
+        auto none_locked = account.bills.filter!(b => !(net.dartIndex(b) in account.activated)).array;
 
         const enough = !none_locked
             .map!(b => b.value)
@@ -541,7 +541,7 @@ struct SecureWallet(Net : SecureNet) {
     }
 
     void lock_bills(const(TagionBill[]) locked_bills) {
-        locked_bills.each!(b => account.activated[b.owner] = true);
+        locked_bills.each!(b => account.activated[net.dartIndex(b)] = true);
     }
 
     bool setResponseCheckRead(const(HiRPC.Receiver) receiver) {
@@ -562,15 +562,17 @@ struct SecureWallet(Net : SecureNet) {
                 auto used_bill = account.bills[bill_index];
                 account.used_bills ~= used_bill;
                 account.bills = account.bills.remove(bill_index);
-                if (used_bill.owner in account.activated) {
-                    account.activated.remove(used_bill.owner);
+                auto dart_bill_index = net.dartIndex(used_bill);
+                if (dart_bill_index in account.activated) {
+                    account.activated.remove(dart_bill_index);
                 }
             }
         }
         foreach (request_bill; account.requested.byValue.array.dup) {
-            if (!not_in_dart.canFind(net.dartIndex(request_bill))) {
+            auto request_bill_index = net.dartIndex(request_bill);
+            if (!not_in_dart.canFind(request_bill_index)) {
                 account.bills ~= request_bill;
-                account.requested.remove(request_bill.owner);
+                account.requested.remove(request_bill_index);
             }
         }
         return true;
@@ -607,7 +609,7 @@ struct SecureWallet(Net : SecureNet) {
             if (!account.bills.canFind(found)) {
                 account.bills ~= found;
             }
-            account.requested.remove(found.owner);
+            account.requested.remove(net.dartIndex(found));
 
             const invoice_index = account.requested_invoices
                 .countUntil!(invoice => invoice.pkey == found.owner);
@@ -618,26 +620,22 @@ struct SecureWallet(Net : SecureNet) {
 
         }
 
-        auto locked_pkeys = account.activated
+        auto locked_indexes = account.activated
             .byKeyValue
             .filter!(a => a.value == true)
             .map!(a => a.key)
             .array;
 
-        auto found_owners = found_bills.map!(found => found.owner).array;
-        foreach (pkey; locked_pkeys) {
-            if (!(found_owners.canFind(pkey))) {
-                account.activated.remove(pkey);
-                auto bill_index = account.bills.countUntil!(b => b.owner == pkey);
+        auto found_indices = found_bills.map!(found => net.dartIndex(found)).array;
+        foreach (idx; locked_indexes) {
+            if (!(found_indices.canFind(idx))) {
+                account.activated.remove(idx);
+                auto bill_index = account.bills.countUntil!(b => net.dartIndex(b) == idx);
                 if (bill_index >= 0) {
                     account.bills = account.bills.remove(bill_index);
                 }
             }
         }
-
-        // account.activated = new_activated;
-
-        // go through the locked bills
 
         return true;
     }
@@ -1118,6 +1116,7 @@ unittest {
     auto dart_response = hirpc.result(receiver, Document(params)).toDoc;
     const received = hirpc.receive(dart_response);
 
+    writefln("received: %s", received.toPretty);
     wallet.setResponseUpdateWallet(received);
 
     auto should_have = wallet.calcTotal(bills_in_dart);
@@ -1470,4 +1469,106 @@ unittest {
     assert(actual_fee == calc_fees, format("fees not the same actualFee=%s, calculatedFee=%s", actual_fee, calc_fees));
 
     assert(fee_amount == actual_fee, format("fees not the same getFee=%s, actualFee=%s", fee_amount, actual_fee));
+}
+
+// pay same invoice twice
+unittest {
+    import std.stdio;
+
+    import tagion.dart.DART;
+    import tagion.dart.DARTFile;
+    import tagion.dart.Recorder;
+    import std.file;
+    import tagion.basic.basic;
+
+    auto wallet1 = StdSecureWallet("some words", "1234");
+    // create an empty invoice
+    auto invoice = wallet1.createInvoice("wowo", 0.TGN);
+    // register the invoice
+    wallet1.registerInvoice(invoice);
+    
+    auto factory = RecordFactory(wallet1.net);
+
+    immutable dart_file= fileId!DARTFile("updatereq").fullpath;
+    DARTFile.create(dart_file, wallet1.net);
+    auto dart = new DART(wallet1.net, dart_file, No.read_only);
+    scope(exit) {
+        dart.close;
+        dart_file.remove;
+    }
+    // get the public key out of the invoice and pay it some tagions
+
+    const req = wallet1.getRequestUpdateWallet.toDoc;
+    writefln("REQUEST=%s", req.toPretty);
+
+    auto bill1 = TagionBill(1234.TGN, currentTime, invoice.pkey, Buffer.init);
+    auto bill2 = TagionBill(4321.TGN, currentTime, invoice.pkey, Buffer.init);
+
+    auto initial_recorder = factory.recorder;
+    initial_recorder.insert([bill1, bill2], Archive.Type.ADD);
+    dart.modify(initial_recorder);
+    
+    HiRPC hirpc = HiRPC(wallet1.net);
+    
+    const dart_receiver = hirpc.receive(req);
+
+    HiBON searchDB(Document owner_doc) {
+        Buffer[] owner_pkeys;
+        foreach(owner; owner_doc[]) {
+            owner_pkeys ~= owner.get!Buffer;
+        }
+        return dart.search(owner_pkeys, wallet1.net);
+
+    }
+    auto search_res = searchDB(dart_receiver.method.params);
+    auto res = hirpc.result(dart_receiver, Document(search_res)).toDoc;
+
+    auto receiver = hirpc.receive(res);
+    writefln("RESULT=%s", res.toPretty);
+
+    assert(wallet1.setResponseUpdateWallet(receiver));
+    assert(wallet1.account.bills.length == 2, "should have two bills");
+    const wallet_balance_before = wallet1.total_balance;
+    const amount_to_pay = 100.TGN;
+
+    // create a payment
+    auto wallet2 = StdSecureWallet("wowo", "4321");
+    auto invoice_to_pay = wallet2.createInvoice("test", amount_to_pay);
+    wallet2.registerInvoice(invoice_to_pay);
+
+    // pay it
+    SignedContract signed_contract;
+    TagionCurrency fees;
+    auto payment_res = wallet1.payment([invoice_to_pay], signed_contract, fees);
+    assert(payment_res.value);
+
+    // add the outputs to the dart
+    auto next_recorder = factory.recorder;
+    next_recorder.insert(PayScript(signed_contract.contract.script).outputs, Archive.Type.ADD);
+    foreach(idx; signed_contract.contract.inputs) {
+        next_recorder.remove(idx);
+    }
+    dart.modify(next_recorder);
+    writefln("SIGNED CONTRACT %s", signed_contract.toPretty);
+
+    writefln("ACCOUNT HIBON before modify=\n%s", wallet1.account.toPretty);
+
+    // create the next update request
+    const update_req = wallet1.getRequestUpdateWallet;
+    writefln("NEXT DART REQ %s", update_req.toPretty);
+    const next_dart_receiver = hirpc.receive(update_req);
+    auto next_search_res = searchDB(next_dart_receiver.method.params);
+    auto next_res = hirpc.result(next_dart_receiver, Document(next_search_res)).toDoc;
+    auto next_receiver = hirpc.receive(next_res);
+    writefln("NEXT UPDATE RESULT = %s", next_receiver.toPretty);
+
+    assert(wallet1.setResponseUpdateWallet(next_receiver));
+
+    writefln("ACCOUNT HIBON=\n%s", wallet1.account.toPretty);
+    writefln("WALLET AVAILABLE=%s", wallet1.available_balance);
+    writefln("wallet total =%s", wallet1.total_balance);
+
+    assert(wallet_balance_before - fees - amount_to_pay == wallet1.total_balance);
+
+    assert(wallet1.account.bills.length == 2, "should have sent and received a bill");
 }
