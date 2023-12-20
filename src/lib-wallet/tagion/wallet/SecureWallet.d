@@ -1479,6 +1479,7 @@ unittest {
     import tagion.dart.DARTFile;
     import tagion.dart.Recorder;
     import std.file;
+    import tagion.basic.basic;
 
     auto wallet1 = StdSecureWallet("some words", "1234");
     // create an empty invoice
@@ -1487,7 +1488,8 @@ unittest {
     wallet1.registerInvoice(invoice);
     
     auto factory = RecordFactory(wallet1.net);
-    const dart_file = "/tmp/wowo.drt";
+
+    immutable dart_file= fileId!DARTFile("updatereq").fullpath;
     DARTFile.create(dart_file, wallet1.net);
     auto dart = new DART(wallet1.net, dart_file, No.read_only);
     scope(exit) {
