@@ -73,13 +73,14 @@ int _main(string[] args) {
     bool sum;
     bool force;
     bool update;
+    bool migrate;
     string response_name;
-    //   string path;
     uint confidence;
     double amount;
     GetoptResult main_args;
     WalletOptions options;
     WalletInterface[] wallet_interfaces;
+    
     auto config_files = args
         .filter!(file => file.hasExtension(FileExtension.json));
     auto config_file = default_wallet_config_filename;
@@ -106,6 +107,7 @@ int _main(string[] args) {
                 "update", "Update wallet", &update,
                 "response", "Response from update (response.hibon)", &response_name,
                 "force", "Force input bill", &force,
+                "migrate", "Migrate from old account to dart-index account", &migrate,
 
         );
         if (version_switch) {
@@ -131,6 +133,39 @@ int _main(string[] args) {
         }
         check(config_file.exists, format("Wallet config %s not found", config_file));
         const(HashNet) hash_net = new StdHashNet;
+        if (migrate) {
+            //auto config_files=args[1..$].filter!(file => file.hasExtension(FileExtension.json));
+            const account_doc = options.accountfile.fread;
+            import tagion.wallet.prior.AccountDetails : PriorAccountDetails=AccountDetails;
+            import tagion.wallet.AccountDetails : AccountDetails;
+            if (AccountDetails.isRecord(account_doc)) {
+                warn("Account for %s has already been migrated", config_file);
+                return 0;
+            }
+            auto prior_account= PriorAccountDetails(account_doc);
+            AccountDetails new_account;
+            new_account.owner=prior_account.owner;
+            new_account.derivers=prior_account.derivers;
+            new_account.bills = prior_account.bills;
+            new_account.used_bills= prior_account.used_bills;
+            new_account.derive_state= prior_account.derive_state;
+            new_account.requested_invoices=prior_account.requested_invoices.dup;
+            new_account.hirpcs=prior_account.hirpcs;
+            prior_account.requested.byValue.each!(bill => new_account.requested[net.dartIndex(bill)] = bill);  
+            prior_account.activated.byKeyValue.each!(pair => new_account.activated[net.dartIndex(prior_account.requested[pair.key])] = pair.value); 
+            verbose("new account\n%s", new_account.toPretty);
+            if (dry_switch) {
+                return 0;
+            }
+            const prior_account_filename=[options.accountfile.stripExtension, "prior"].join("_")
+            .setExtension(FileExtension.hibon);
+            rename(options.accountfile, prior_account_filename);
+            options.accountfile.fwrite(new_account);
+            return 0;
+
+        }
+
+
         WalletOptions[] all_options;
         auto common_wallet_interface = WalletInterface(options);
         common_wallet_interface.load;

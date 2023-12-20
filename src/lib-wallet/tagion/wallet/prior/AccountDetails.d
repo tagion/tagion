@@ -10,7 +10,7 @@ import tagion.hibon.HiBONRecord;
 import tagion.script.TagionCurrency;
 import tagion.script.common;
 import tagion.script.standardnames;
-
+import tagion.wallet.AccountDetails : Invoice;
 @safe
 struct AccountDetails {
     @optional string name;
@@ -177,21 +177,5 @@ struct AccountDetails {
                 .sum;
         }
     }
-    mixin HiBONRecord;
-}
-
-@safe
-@recordType("Invoice")
-struct Invoice {
-    string name; /// Name of the invoice
-    TagionCurrency amount; /// Amount to be payed
-    @label(StdNames.owner) Pubkey pkey; /// Key to the payee
-    @optional Document info; /// Information about the invoice
-    mixin HiBONRecord;
-}
-
-@safe
-struct Invoices {
-    Invoice[] list; /// List of invoice (store in the wallet)
     mixin HiBONRecord;
 }
