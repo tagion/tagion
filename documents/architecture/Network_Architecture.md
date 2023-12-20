@@ -14,6 +14,8 @@ A node consist of the following services.
 	- [Transcript](/documents/architecture/Transcript.md) service is responsible for producing a Recorder ensuring correct inputs and output archives including no double input and output in the same Epoch and sending it to the DART.
 	- [Epoch Creator](/documents/architecture/EpochCreator.md) service is responsible for resolving the Hashgraph and producing a consensus ordered list of events, an Epoch. 
 	- [DART](/documents/architecture/DART.md "Distributed Archive of Random Transactions") service is reponsible for executing data-base instruction and read/write to the physical file system.
+	- DART Interface handles outsite read requests to the dart
+    - TRT "Transaction reverse table" stores a copy of the owner to bill relationship.
 	- [Replicator](/documents/architecture/Replicator.md) service is responsible for keeping record of the database instructions both to undo, replay and publish the instructions sequantially.
 	- [Node Interface](/documents/architecture/NodeInterface.md) service is responsible for handling and routing requests to and from the p2p node network.
 
@@ -33,7 +35,6 @@ digraph Message_flow {
   node [style=filled]
   node [ shape = "rect"];
   Input [href="#/documents/architecture/InputValidator.md" label="Input\nValidator" style=filled fillcolor=green ]
-  Output 
   DART [href="#/documents/architecture/DART.md" shape = cylinder];
   P2P [ style=filled fillcolor=red]
   HiRPCVerifier [href="#/documents/architecture/HiRPCVerifier.md"  label="HiRPC\nVerifier"]
@@ -47,7 +48,7 @@ digraph Message_flow {
   Replicator [href="#/documents/architecture/Replicator.md"]
 
   HiRPCVerifier -> Collector [label="contract" color=green];
-  HiRPCVerifier -> DART [label="DART(ro)" color=green];
+  HiRPCVerifier -> DART [color=white];
   Collector -> DART [label=dartRead color=blue]
   Collector -> TVM [label="contract-S\ninputs" color=green];
   Collector -> TVM [label="contract-C\ninputs" color=green];
@@ -59,6 +60,8 @@ digraph Message_flow {
   DART -> Replicator [label=recorder color=red dir=both];
   DART -> NodeInterface [label="DART(ro)\nrecorder" dir=both color=magenta];
   DART -> Collector [label="recorder" color=red];
+  DART -> TRT [label="recorder" color=red];
+  DartInterface -> DART [color=green];
   NodeInterface -> P2P [label=Document dir=both];
   EpochCreator -> NodeInterface [label=wavefront dir=both color=cyan4];
   Transcript -> DART [label=dartModify color=blue];
