@@ -151,6 +151,7 @@ int _main(string[] args) {
             new_account.derive_state= prior_account.derive_state;
             new_account.requested_invoices=prior_account.requested_invoices.dup;
             new_account.hirpcs=prior_account.hirpcs;
+            new_account.name = prior_account.name;
             prior_account.requested.byValue.each!(bill => new_account.requested[net.dartIndex(bill)] = bill);  
             prior_account.activated.byKeyValue.each!(pair => new_account.activated[net.dartIndex(prior_account.requested[pair.key])] = pair.value); 
             verbose("new account\n%s", new_account.toPretty);
