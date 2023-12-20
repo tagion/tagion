@@ -16,7 +16,7 @@ import tagion.script.standardnames;
 import tagion.crypto.SecureNet : StdHashNet;
 const net = new StdHashNet;
 
-@recordType("$Accout")
+@recordType("$Account")
 struct AccountDetails {
     @optional string name;
     @label(StdNames.owner) @optional Pubkey owner;
