@@ -2,7 +2,7 @@ module tagion.tools.auszahlung.auszahlung;
 import core.thread;
 import std.algorithm;
 import std.array;
-import std.file : exists, mkdir, mkdirRecurse, setAttributes;
+import std.file : exists, mkdir, mkdirRecurse, setAttributes, rename;
 import std.format;
 import std.getopt;
 import std.path;
@@ -261,10 +261,11 @@ int _main(string[] args) {
         else {
             enum invoice_name = "Invoice";
         }
-            enum success_name = "Success";
-            enum paid_name = "Paid";
+        enum success_name = "Success";
+        enum paid_name = "Paid";
         enum amount_name = "Amount";
         enum bill_name = "BillNumber";
+        enum id_name = "Name";
         if (!response_name.empty) {
             verbose("Response %s", response_name);
             scope (success) {
@@ -284,35 +285,34 @@ int _main(string[] args) {
                 auto csv_output = csvReader!(string[string])(fin.byLine.joiner("\n"), header, ';').array;
                 fin.close;
                 foreach (ref record; csv_output) {
-                version (AUSZAHLUNG_PUBKEY) {
-                    const pubkey = Pubkey(record[pubkey_name].decode);
-                }
-                else {
-                    const invoice_doc = Document(record[invoice_name].decode);
-                    const pubkey = Invoice(invoice_doc).pkey;
-                }
-                        vout.writefln("owner %s", pubkey.encodeBase64);
-                    auto found_bill=rec[]
-                    .map!(a => TagionBill(a.filed))
-                    .filter!(bill => bill.owner == pubkey);
-                    if (!found_bill.empty) {
-                        record[success_name]=1.to!string;
-                        vout.writefln("Bill %s found", pubkey.encodeBase64);
-                        record[paid_name]=found_bill.front.value.toString;
-                        record[bill_name]=hash_net.dartIndex(found_bill.front).encodeBase64;
+                    version (AUSZAHLUNG_PUBKEY) {
+                        const pubkey = Pubkey(record[pubkey_name].decode);
                     }
-                    
-                    vout.writefln("%s", record);
-                    vout.writefln("%s %s", record[invoice_name], record[amount_name].to!double);
+                    else {
+                        const invoice_doc = Document(record[invoice_name].decode);
+                        const pubkey = Invoice(invoice_doc).pkey;
+                    }
+
+                    auto found_bill = rec[]
+                        .map!(a => TagionBill(a.filed))
+                        .filter!(bill => bill.owner == pubkey);
+                    if (!found_bill.empty) {
+                        record[success_name] = 1.to!string;
+                        record[paid_name] = found_bill.front.value.toString;
+                        record[bill_name] = hash_net.dartIndex(found_bill.front).encodeBase64;
+                    }
                 }
 
-                good("Recorder !!");
-                const csv_output_filename = [csv_files.front.stripExtension, "payment"].join("_")
-                .setExtension(FileExtension.csv);
-                verbose("new csv %s", csv_output_filename);
-                auto fout = File(csv_output_filename, "w");
+                const csv_backup_filename = [csv_files.front.stripExtension, "backup"].join("_")
+                    .setExtension(FileExtension.csv);
+                rename(csv_files.front, csv_backup_filename);
+                auto fout = File(csv_files.front, "w");
                 scope (exit) {
                     fout.close;
+                    if (!dry_switch) {
+                        csv_files.front.setAttributes(file_protect);
+                        csv_backup_filename.setAttributes(file_protect);
+                    }
                 }
                 fout.writefln("%-(%s;%)", csv_output.front.byKey);
                 foreach (record; csv_output) {
@@ -343,10 +343,6 @@ int _main(string[] args) {
                 bill_no++;
             }
             while (filename.exists);
-            /*
-            const filename = buildPath(bill_path, format("bill_%s", common_wallet_interface.secure_wallet.account.name))
-                .setExtension(FileExtension.hibon);
-            */
             good("bill file %s", filename);
             filename.fwrite(bill);
             scope (success) {
@@ -405,13 +401,18 @@ int _main(string[] args) {
                     const pubkey = Invoice(invoice_doc).pkey;
                 }
                 const amount_tgn = record[amount_name].to!double.TGN;
-                total_amount += amount_tgn;
                 auto nonce = new ubyte[4];
                 getRandom(nonce);
                 auto bill = TagionBill(amount_tgn, currentTime, pubkey, nonce.idup);
-                to_pay ~= bill;
+                if (record[success_name].to!uint == 0) {
+                    total_amount += amount_tgn;
+                    to_pay ~= bill;
+                }
+                else {
+                    warn("%s has already been paid", record[id_name]);
+                }
                 bill_indices ~= hash_net.dartIndex(bill);
-                info("%10s %37s %-14sTGN", record[payee_name], pubkey.encodeBase64, amount_tgn);
+                info("%-16s %37s %20sTGN", record[payee_name], pubkey.encodeBase64, amount_tgn.toString);
             }
             SignedContract signed_contract;
             TagionCurrency fees;
@@ -426,7 +427,7 @@ int _main(string[] args) {
                 secure_wallet.account.hirpcs ~= hirpc_submit.toDoc;
                 verbose("Contract %s", contract_filename);
                 const bill_update_filename = [contract_filename.stripExtension, "bill_update"].join("_")
-                .setExtension(FileExtension.hibon);
+                    .setExtension(FileExtension.hibon);
                 const hirpc_dartread = CRUD.dartRead(bill_indices);
                 verbose("Bill update %s", bill_update_filename);
                 if (!dry_switch) {
