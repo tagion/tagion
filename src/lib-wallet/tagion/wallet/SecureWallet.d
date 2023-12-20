@@ -706,31 +706,28 @@ struct SecureWallet(Net : SecureNet) {
         auto bill = TagionBill(amount, assumeWontThrow(currentTime), dummy_pubkey, dummy_nonce);
         return getFee([bill], fees);
     }
-
-    // stupid function for testing
-    Result!bool createNFT(
-            Document nft_data,
-            ref SignedContract signed_contract) {
+    Result!bool createNFT(Document nft_doc, ref SignedContract signed_contract) {
         import tagion.script.execute;
-        import tagion.script.standardnames;
-
         try {
-            HiBON dummy_input = new HiBON;
-            dummy_input[StdNames.owner] = net.pubkey;
-            dummy_input["NFT"] = nft_data;
-            Document[] inputs;
+            auto none_locked = account.bills.filter!(b=> !(b.owner in account.activated)).array;
 
-            inputs ~= Document(dummy_input);
-            SecureNet[] nets;
-            nets ~= (() @trusted => cast(SecureNet) net)();
+            TagionBill[] collected_bills = none_locked;
+
+            const nets = collectNets(collected_bills);
+            check(nets.all!(net => net !is net.init), format("Missing deriver of some of the bills length=%s", collected_bills
+                    .length));
+            lock_bills(collected_bills);
+            check(nets.length == collected_bills.length, 
+                format("number of bills does not match number of signatures nets %s, collected_bills %s", nets.length, collected_bills.length));
 
             signed_contract = sign(
-                    nets,
-                    inputs,
-                    null,
-                    Document.init);
-        }
-        catch (Exception e) {
+                nets,
+                collected_bills.map!(bill => bill.toDoc)
+                .array,
+                null,
+                nft_doc);
+            
+        } catch(Exception e) {
             return Result!bool(e);
         }
         return result(true);
