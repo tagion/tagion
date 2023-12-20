@@ -1,4 +1,4 @@
-module tagion.wallet.AccountDetails;
+module tagion.wallet.prior.AccountDetails;
 import std.format;
 import tagion.basic.Types;
 import tagion.crypto.Types;
@@ -11,12 +11,7 @@ import tagion.script.TagionCurrency;
 import tagion.script.common;
 import tagion.script.standardnames;
 
-@safe:
-
-import tagion.crypto.SecureNet : StdHashNet;
-const net = new StdHashNet;
-
-@recordType("$Accout")
+@safe
 struct AccountDetails {
     @optional string name;
     @label(StdNames.owner) @optional Pubkey owner;
@@ -24,13 +19,12 @@ struct AccountDetails {
     @label("$bills") TagionBill[] bills;
     @label("$used") TagionBill[] used_bills;
     @label("$state") Buffer derive_state;
-    @label("$locked") bool[DARTIndex] activated; /// locked bills
-    @label("$requested") TagionBill[DARTIndex] requested; /// Requested bills
+    @label("$locked") bool[Pubkey] activated; /// locked bills
+    @label("$requested") TagionBill[Pubkey] requested; /// Requested bills
     @label("$requested_invoices") Invoice[] requested_invoices;
     @label("$hirpc") Document[] hirpcs; /// HiRPC request    
     import std.algorithm : any, each, filter, map, sum;
 
-    version(none)
     bool remove_bill(Pubkey pk) {
         import std.algorithm : countUntil, remove;
 
@@ -43,18 +37,34 @@ struct AccountDetails {
     }
 
     void remove_bill_by_hash(const(DARTIndex) billHash) {
-        import std.algorithm : remove;
-        bills = bills.remove(billHash);
+        import std.algorithm : countUntil, remove;
+        import tagion.crypto.SecureNet : StdHashNet;
+
+        const net = new StdHashNet;
+
+        auto billsHashes = bills.map!(b => cast(Buffer) net.calcHash(b.toDoc.serialize)).array;
+        const index = billsHashes.countUntil(billHash);
+        bills = bills.remove(index);
     }
 
     void unlock_bill_by_hash(const(DARTIndex) billHash) {
-        import std.algorithm : remove;
-        activated.remove(billHash);
+        import std.algorithm : countUntil, remove;
+        import tagion.crypto.SecureNet : StdHashNet;
+
+        const net = new StdHashNet;
+
+        auto billsHashes = bills.map!(b => cast(Buffer) net.calcHash(b.toDoc.serialize)).array;
+        const index = billsHashes.countUntil(billHash);
+
+        activated.remove(bills[index].owner);
     }
 
     pragma(msg, "Don't think this function fits in AccountDetails");
     int check_contract_payment(const(DARTIndex)[] inputs, const(Document[]) outputs) {
         import std.algorithm : countUntil;
+        import tagion.crypto.SecureNet : StdHashNet;
+
+        const net = new StdHashNet;
 
         auto billsHashes = bills.map!(b => cast(Buffer) net.calcHash(b.toDoc.serialize)).array;
 
@@ -93,12 +103,11 @@ struct AccountDetails {
     }
 
     bool add_bill(TagionBill bill) {
-        auto index = net.dartIndex(bill);
-        if (index in requested) {
-            bills ~= requested[index];
-            requested.remove(index);
+        if (bill.owner in requested) {
+            bills ~= requested[bill.owner];
+            requested.remove(bill.owner);
             return true;
-        }  
+        }
         return false;
     }
 
@@ -114,30 +123,37 @@ struct AccountDetails {
     void requestBill(TagionBill bill, Buffer derive) {
         check((bill.owner in derivers) is null, format("Bill %(%x%) already exists", bill.owner));
         derivers[bill.owner] = derive;
-        requested[net.dartIndex(bill)] = bill;
+        requested[bill.owner] = bill;
     }
     /++
          Clear up the Account
          Remove used bills
          +/
-    version(none)
-    void clearup() {
+    void clearup() pure {
         bills
             .filter!(b => b.owner in derivers)
             .each!(b => derivers.remove(b.owner));
         bills
-            .filter!(b => net.dartIndex(b) in activated)
-            .each!(b => activated.remove(net.dartIndex(b)));
+            .filter!(b => b.owner in activated)
+            .each!(b => activated.remove(b.owner));
     }
 
-    const {
+    const pure {
+        /++
+         Returns:
+         true if the all transaction has been registered as processed
+         +/
+        bool processed() nothrow {
+            return bills
+                .any!(b => (b.owner in activated));
+        }
         /++
          Returns:
          The available balance
          +/
         TagionCurrency available() {
             return bills
-                .filter!(b => !(net.dartIndex(b) in activated))
+                .filter!(b => !(b.owner in activated))
                 .map!(b => b.value)
                 .sum;
         }
@@ -147,7 +163,7 @@ struct AccountDetails {
          +/
         TagionCurrency locked() {
             return bills
-                .filter!(b => net.dartIndex(b) in activated)
+                .filter!(b => b.owner in activated)
                 .map!(b => b.value)
                 .sum;
         }
