@@ -14,6 +14,7 @@ import tagion.script.standardnames;
 @safe:
 
 import tagion.crypto.SecureNet : StdHashNet;
+
 const net = new StdHashNet;
 
 @recordType("$Account")
@@ -30,8 +31,7 @@ struct AccountDetails {
     @label("$hirpc") Document[] hirpcs; /// HiRPC request    
     import std.algorithm : any, each, filter, map, sum;
 
-    version(none)
-    bool remove_bill(Pubkey pk) {
+    version (none) bool remove_bill(Pubkey pk) {
         import std.algorithm : countUntil, remove;
 
         const index = countUntil!"a.owner == b"(bills, pk);
@@ -44,11 +44,13 @@ struct AccountDetails {
 
     void remove_bill_by_hash(const(DARTIndex) billHash) {
         import std.algorithm : remove;
+
         bills = bills.remove(billHash);
     }
 
     void unlock_bill_by_hash(const(DARTIndex) billHash) {
         import std.algorithm : remove;
+
         activated.remove(billHash);
     }
 
@@ -98,16 +100,16 @@ struct AccountDetails {
             bills ~= requested[index];
             requested.remove(index);
             return true;
-        }  
+        }
         return false;
     }
 
     TagionBill add_bill(const Document doc) {
         auto bill = TagionBill(doc);
-        const added=add_bill(bill);
+        const added = add_bill(bill);
         if (added) {
-        return bill;
-    }
+            return bill;
+        }
         return TagionBill.init;
     }
 
@@ -120,8 +122,7 @@ struct AccountDetails {
          Clear up the Account
          Remove used bills
          +/
-    version(none)
-    void clearup() {
+    version (none) void clearup() {
         bills
             .filter!(b => b.owner in derivers)
             .each!(b => derivers.remove(b.owner));
