@@ -6,8 +6,7 @@ A node consist of the following services.
 
 * [tagionwave](/src/bin-wave/README.md) is the main task responsible all the service
 - Main services
-	- [Tagion](/documents/architecture/Tagion.md) is the service which handles the all the services related to the rest of the services (And run the HashGraph).
-	- [Tagion Factory](/documents/architecture/TagionFactory.md) This services takes care of the *mode* in which the network is started.
+	- Supervisor manages all the other services
     - [Input Validator](/documents/architecture/InputValidator.md) This service handle the data-stream input to the network.
     - [HiRPC Verifier](/documents/architecture/HiRPCVerifier.md) service is responsible for receiving contracts, ensuring a valid data format of HiRPC requests and compliance with the HiRPC protocol before it is executed in the system. 
 	- [Collector](/documents/architecture/Collector.md) service is responsible for collecting input data for a Contract and ensuring the data is valid and signed before the contract is executed by the TVM.
@@ -22,7 +21,6 @@ A node consist of the following services.
 	- [Logger](/documents/architecture/Logger.md) takes care of handling the logger information for all the services.
 	- [Logger Subscription](/documents/architecture/LoggerSubscription.md) The logger subscript take care of handling remote logger and event logging.
 	- [Monitor](/documents/architecture/Monitor.md) Monitor interface to display the state of the HashGraph.
-	- [Epoch Dump](/documents/architecture/EpochDump.md) Service is responsible for writing the Epoch to a file as a backup.
 
 
 ## Data Message flow
@@ -83,9 +81,7 @@ digraph tagion_hierarchy {
     size="8,5"
    node [style=filled shape=rect]
    Input [href="#/documents/architecture/InputValidator.md" label="Input\nValidator" color=green ]
-   Tagion [href="#/documents/architecture/Tagion.md"]
    Tagionwave [color=blue]
-   TagionFactory [href="#/documents/architecture/Collector.md" label="Tagion\nFactory"]
    TVM [href="#/documents/architecture/TVM.md"] 
    DART [href="#/documents/architecture/DART.md" shape = cylinder]
    Replicator [href="#/documents/architecture/Replicator.md"] 
@@ -101,11 +97,10 @@ digraph tagion_hierarchy {
    Monitor [href="#/documents/architecture/Monitor.md"] 
    node [shape = rect];
 	Tagionwave -> Logger -> LoggerSubscription [label="(1)"];
-	Tagionwave -> TagionFactory [label="(2)"];
-	TagionFactory -> Tagion [label="(2)"];
-	Tagion -> NodeInterface -> P2P [label="(3)"];
-	Tagion -> DART -> Replicator [label="(4)"];
-    Tagion -> Collector -> TVM [label="(5)"];
+	Tagionwave -> Supervisor [label="(2)"];
+	Supervisor -> NodeInterface -> P2P [label="(3)"];
+	Supervisor -> DART -> Replicator [label="(4)"];
+    Supervisor -> Collector -> TVM [label="(5)"];
     Collector -> EpochCreator [label="(6)"];
 	EpochCreator -> Transcript -> EpochDump [label="(7)"];
 	EpochCreator -> Monitor [label="(6)"];
