@@ -62,3 +62,14 @@ configuration "test" {
     importPaths "src/lib-behaviour"
     excludedSourceFiles "*gen.d" "src/bin-tools/tagion/tools/tools.d"
 }
+
+subPackage {
+    name "hibon" 
+    targetType "library"
+    // Disable Unusable "Warning: statement is not reachable" in template functions
+    buildRequirements "allowWarnings" "silenceWarnings" 
+    sourcePaths "src/lib-hibon"
+    importPaths "src/lib-hibon"
+    sourcePaths "src/lib-basic"
+    sourcePaths "src/lib-utils"
+}
