@@ -83,7 +83,7 @@ int _main(string[] args) {
     bool dump;
     bool dump_branches;
     bool initialize;
-    bool flat_enable;
+    bool flat_disable;
     string passphrase = "verysecret";
 
     GetoptResult main_args;
@@ -115,7 +115,7 @@ int _main(string[] args) {
                 "fake", format(
                     "Use fakenet instead of real hashes : default :%s", fake), &fake,
                 "test", "Generate a test dart with specified number of archives total:bundle", &test_dart,
-                "flat", "Enable flat branch hash", &flat_enable,
+                "flat-disable", "Disable flat branch hash", &flat_disable,
         );
         if (version_switch) {
             revision_text.writeln;
@@ -203,7 +203,7 @@ int _main(string[] args) {
         const hirpc = HiRPC(net);
 
         if (initialize) {
-            const flat = (flat_enable) ? Yes.flat : No.flat;
+            const flat = (flat_disable) ? No.flat : Yes.flat;
             DART.create(filename : dartfilename, net:
                     net, flat:
                     flat);

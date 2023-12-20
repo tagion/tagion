@@ -31,7 +31,7 @@ private {
     import tagion.hibon.HiBONRecord : GetLabel, exclude, record_filter = filter, label, recordType;
 
     //import tagion.basic.basic;
-//    import std.stdio : writefln, writeln;
+    //    import std.stdio : writefln, writeln;
     import tagion.basic.tagionexceptions : Check;
     import tagion.dart.DARTRim;
     import tagion.dart.RimKeyRange : rimKeyRange;
@@ -71,13 +71,7 @@ enum KEY_SPAN = ubyte.max + 1;
  +
  +/
 class DARTFile {
-
-    version (FLAT_DART) {
-        enum default_flat = Yes.flat;
-    }
-    else {
-        enum default_flat = No.flat;
-    }
+    enum default_flat = Yes.flat;
     import tagion.dart.BlockFile : Index;
 
     immutable(string) filename;
@@ -148,14 +142,17 @@ class DARTFile {
             if (blockfile.headerBlock.checkId(net.multihash ~ ":" ~ flat_marker)) {
                 return Yes.flat;
             }
+
             
+
             .check(false,
                     format("Wrong hash type %s expected %s for %s",
                     net.multihash, blockfile.headerBlock.Id, filename));
 
             assert(0);
         }
-        flat=checkId;
+
+        flat = checkId;
         if (blockfile.root_index) {
             const data = blockfile.load(blockfile.root_index);
             const doc = Document(data);
@@ -892,6 +889,7 @@ class DARTFile {
             if (range.rim < RIMS_IN_SECTOR) {
                 if (branch_index !is Index.init) {
                     branches = blockfile.load!Branches(branch_index);
+                    
                     .check(branches.hasIndices,
                             "DART failure within the sector rims the DART should contain a branch");
                 }
@@ -1826,7 +1824,6 @@ unittest {
             auto recorder = dart_A.recorder();
 
             recorder.add(doc);
-
             auto fingerprint = recorder[].front.fingerprint;
             dart_A.modify(recorder);
 
