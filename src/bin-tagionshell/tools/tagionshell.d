@@ -37,7 +37,9 @@ import nngd.nngd;
 
 mixin Main!(_main, "shell");
 
-alias DartCache = LRUT!(Buffer, TagionBill);
+alias LRUT!(Buffer, TagionBill) DartCache;
+
+shared DartCache dcache;
 
 long getmemstatus() {
     long sz = -1;
@@ -79,7 +81,6 @@ void dart_worker(ShellOptions opt) {
 }
 
 void contract_handler(WebData* req, WebData* rep, void* ctx) {
-
     thread_attachThis();
 
     int rc;
@@ -128,7 +129,6 @@ void contract_handler(WebData* req, WebData* rep, void* ctx) {
 import crud = tagion.dart.DARTcrud;
 
 static void bullseye_handler(WebData* req, WebData* rep, void* ctx) {
-
     thread_attachThis();
 
     NNGSocket s = NNGSocket(nng_socket_type.NNG_SOCKET_REQ);
@@ -169,7 +169,6 @@ static void bullseye_handler(WebData* req, WebData* rep, void* ctx) {
 }
 
 static void dartcache_handler(WebData* req, WebData* rep, void* ctx) {
-
     thread_attachThis();
 
     int rc;
@@ -197,8 +196,14 @@ static void dartcache_handler(WebData* req, WebData* rep, void* ctx) {
 
     TagionBill[] found_bills;
 
-    // to chache
-
+    TagionBill fnd;
+    foreach(owner; owner_pkeys){
+        if(dcache.get(owner, fnd)){
+            found_bills ~= fnd;
+        }
+    }
+    
+    // TODO: merge with previous, check array reducing in foreach
     if (!found_bills.empty) {
         foreach (bill; found_bills) {
             remove!(x => x == bill.owner)(owner_pkeys);
@@ -252,10 +257,15 @@ static void dartcache_handler(WebData* req, WebData* rep, void* ctx) {
 
         const repdoc = Document(docbuf);
         immutable repreceiver = hirpc.receive(repdoc);
-        found_bills ~= repreceiver.response.result[]
+        TagionBill[] received_bills = repreceiver.response.result[]
             .map!(e => TagionBill(e.get!Document))
             .array;
 
+        foreach(bill; received_bills){
+            dcache.update(cast(Buffer)bill.owner, bill, true);
+        }
+
+        found_bills ~= received_bills;            
     }
 
     HiBON params = new HiBON;
@@ -275,7 +285,6 @@ static void dartcache_handler(WebData* req, WebData* rep, void* ctx) {
 }
 
 static void dart_handler(WebData* req, WebData* rep, void* ctx) {
-
     thread_attachThis();
 
     int rc;
@@ -336,7 +345,6 @@ static void dart_handler(WebData* req, WebData* rep, void* ctx) {
 }
 
 static void i2p_handler(WebData* req, WebData* rep, void* ctx) {
-
     thread_attachThis();
     rt_moduleTlsCtor();
 
@@ -506,6 +514,12 @@ int _main(string[] args) {
                 main_args.options);
         return 0;
     }
+
+    // hardcode just for test - TODO: move to options
+    immutable uint dcache_size = 4096;
+    immutable double dcache_ttl = 30.0;
+    
+    dcache = new shared(DartCache)(null,dcache_size,dcache_ttl); 
 
     //auto ds_tid = spawn(&dart_worker, options);
 
