@@ -311,6 +311,7 @@ jobs:
         run: |
           rm -r build/docs/ || echo 'no files to remove'
           mkdir -p build/docs/
+          cp src/**/*.md --parents build/docs
           cp -r index.html _sidebar.md README.md documents/ build/docs/
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
