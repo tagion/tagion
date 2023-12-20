@@ -1,13 +1,13 @@
 name "tagion"
-description "Configuration exists to allow language server to do proper static analasys, compilation is not supported"
+description "Decentralised network for high volume transactions and distributed cases"
 targetType "executable"
 targetPath "build/dub/"
 authors "decard"
 copyright "Copyright © 2023, decard"
-license "proprietary"
+license "DECARD Services GmbH free and grant back license"
 buildRequirements "allowWarnings" "silenceWarnings"
 sourceFiles "@tub/dub/dheaders.txt"
-preGenerateCommands `echo -e "\e[31mbuilding with dub is not supported this recipe exclusively exists to aid the language server\e[0m"`
+preGenerateCommands `echo -e "\e[31mOnly the :hibon subPackage is supported by dub, otherwise this recipe exclusively exists to aid the language server\e[0m"`
 
 libs "secp256k1" "nng"
 dflags "-dip1000" "-preview=inclusiveincontracts"
@@ -61,4 +61,15 @@ configuration "test" {
     sourcePaths "bdd/"
     importPaths "src/lib-behaviour"
     excludedSourceFiles "*gen.d" "src/bin-tools/tagion/tools/tools.d"
+}
+
+subPackage {
+    name "hibon" 
+    targetType "library"
+    // Disable Unusable "Warning: statement is not reachable" in template functions
+    buildRequirements "allowWarnings" "silenceWarnings" 
+    sourcePaths "src/lib-hibon"
+    importPaths "src/lib-hibon"
+    sourcePaths "src/lib-basic"
+    sourcePaths "src/lib-utils"
 }
