@@ -41,7 +41,7 @@ import tagion.script.standardnames;
 import tagion.tools.Basic;
 import tagion.wallet.SecureWallet : check;
 import tagion.wallet.WalletException;
-            import tagion.tools.secretinput;
+import tagion.tools.secretinput;
 
 //import tagion.wallet.WalletException : check;
 /**
@@ -286,7 +286,7 @@ struct WalletInterface {
             }
             info("Press ctrl-C to break");
             info("Press ctrl-A to show the pincode");
-            getSecret("pincode: ",old_pincode);
+            getSecret("pincode: ", old_pincode);
             old_pincode.word_strip;
             if (old_pincode.length) {
                 secure_wallet.login(old_pincode);
@@ -314,7 +314,7 @@ struct WalletInterface {
                     bool ok;
                     do {
                         info("New pincode:%s", CLEARDOWN);
-                        getSecret("pincode: ",new_pincode1);
+                        getSecret("pincode: ", new_pincode1);
                         new_pincode1.word_strip;
                         info("Repeaté:");
                         getSecret("pincode: ", new_pincode2);
@@ -344,7 +344,7 @@ struct WalletInterface {
         if (!secure_wallet.wallet.isinit && secure_wallet.wallet.S != tmp_secure_wallet.wallet.S) {
             return false;
         }
-        secure_wallet=tmp_secure_wallet;
+        secure_wallet = tmp_secure_wallet;
         return true;
     }
 
@@ -577,10 +577,11 @@ struct WalletInterface {
             bills.sort!(q{a.time < b.time});
             foreach (i, bill; bills) {
                 string mark = GREEN;
-                if (bill.owner in secure_wallet.account.requested) {
+                const bill_index = hash_net.dartIndex(bill);
+                if (bill_index in secure_wallet.account.requested) {
                     mark = RED;
                 }
-                else if (bill.owner in secure_wallet.account.activated) {
+                else if (bill_index in secure_wallet.account.activated) {
                     mark = YELLOW;
                 }
                 writefln("%4s] %s", i, toText(_hash_net, bill, mark));
@@ -622,8 +623,8 @@ struct WalletInterface {
 
     struct Switch {
         bool force;
-        bool list;
-        bool sum;
+        //        bool list;
+        //        bool sum;
         bool send;
         bool sendkernel;
         bool pay;
@@ -685,7 +686,7 @@ struct WalletInterface {
                             verbose("index %s", arg);
                             const index = arg.decode.ifThrown(Buffer.init);
                             check(index !is Buffer.init, format("Illegal fingerprint %s", arg));
-                            bill = secure_wallet.account.requested.get(Pubkey(index), TagionBill.init); /// Find bill by owner key     
+                            bill = secure_wallet.account.requested.get(DARTIndex(index), TagionBill.init); /// Find bill by owner key     
 
                             if (bill is TagionBill.init) {
                                 // Find bill by fingerprint 
@@ -703,14 +704,6 @@ struct WalletInterface {
                             save_wallet = true;
                         }
                     }
-                }
-                if (list) {
-                    listAccount(stdout);
-                    listInvoices(stdout);
-                    sum = true;
-                }
-                if (sum) {
-                    sumAccount(stdout);
                 }
                 if (request) {
                     secure_wallet.account.requested.byValue
