@@ -307,16 +307,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: actions/configure-pages@v3
-      - name: Copy md files
-        run: |
-          rm -r build/docs/ || echo 'no files to remove'
-          mkdir -p build/docs/
-          cp src/**/*.md --parents build/docs
-          cp -r index.html _sidebar.md README.md documents/ build/docs/
-      - name: Upload artifact
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v1
         with:
-          path: "build/docs/"
+          path: "."
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v1
