@@ -161,7 +161,7 @@ static void bullseye_handler(WebData* req, WebData* rep, void* ctx) {
         return;
     }
 
-    const dartindex = parseJSON(receiver.response.toPretty);
+    const dartindex = parseJSON(receiver.toPretty);
 
     rep.status = (len > 0) ? nng_http_status.NNG_HTTP_STATUS_OK : nng_http_status.NNG_HTTP_STATUS_NO_CONTENT;
     rep.type = "application/json";
@@ -197,12 +197,12 @@ static void dartcache_handler(WebData* req, WebData* rep, void* ctx) {
     TagionBill[] found_bills;
 
     TagionBill fnd;
-    foreach(owner; owner_pkeys){
-        if(dcache.get(owner, fnd)){
+    foreach (owner; owner_pkeys) {
+        if (dcache.get(owner, fnd)) {
             found_bills ~= fnd;
         }
     }
-    
+
     // TODO: merge with previous, check array reducing in foreach
     if (!found_bills.empty) {
         foreach (bill; found_bills) {
@@ -261,11 +261,11 @@ static void dartcache_handler(WebData* req, WebData* rep, void* ctx) {
             .map!(e => TagionBill(e.get!Document))
             .array;
 
-        foreach(bill; received_bills){
-            dcache.update(cast(Buffer)bill.owner, bill, true);
+        foreach (bill; received_bills) {
+            dcache.update(cast(Buffer) bill.owner, bill, true);
         }
 
-        found_bills ~= received_bills;            
+        found_bills ~= received_bills;
     }
 
     HiBON params = new HiBON;
@@ -518,8 +518,8 @@ int _main(string[] args) {
     // hardcode just for test - TODO: move to options
     immutable uint dcache_size = 4096;
     immutable double dcache_ttl = 30.0;
-    
-    dcache = new shared(DartCache)(null,dcache_size,dcache_ttl); 
+
+    dcache = new shared(DartCache)(null, dcache_size, dcache_ttl);
 
     //auto ds_tid = spawn(&dart_worker, options);
 
