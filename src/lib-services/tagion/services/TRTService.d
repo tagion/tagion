@@ -68,7 +68,7 @@ struct TRTService {
         ActorHandle dart_handle = ActorHandle(task_names.dart);
 
         log("TRT PATH FOR DATABASE=%s", opts.trt_path);
-        trt_db = new DART(net, opts.trt_path);
+        trt_db = new DART(net, opts.trt_path, dart_exception);
         if (dart_exception !is null) {
             throw dart_exception;
         }
@@ -87,7 +87,7 @@ struct TRTService {
         log("%s, starting trt with %(%02x%)", opts.trt_path, trt_db.bullseye);
 
         void receive_recorder(dartReadRR.Response res, immutable(RecordFactory.Recorder) recorder) {
-            log("received recorder from dartread");
+            log("receive_recorder from dartread");
             if (!(res.id in requests)) {
                 return;
             }
@@ -108,7 +108,7 @@ struct TRTService {
         }
 
         void trt_read(trtHiRPCRR client_req, Document doc) {
-            log("received trt request");
+            log("trt_read request");
             if (!doc.isRecord!(HiRPC.Sender)) {
                 return;
             }
@@ -157,7 +157,7 @@ struct TRTService {
         }
 
         void modify(trtModify, immutable(RecordFactory.Recorder) dart_recorder) {
-            log("received modify request from dart");
+            log("modify request from dart");
             auto trt_recorder = rec_factory.recorder;
 
             // get a recorder from all the dartkeys already in the db for the function
