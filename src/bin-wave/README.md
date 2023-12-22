@@ -59,9 +59,21 @@ pass node_keys | neuewelle ...
 ```
 
 
-### Stopping the mode0 network
+### Synchronized mode0 network stop 
 
 For a synchronized mode0 stop you can specify a future epoch where the nodes should stopp by putting the epoch number in a file in `/tmp/epoch_shutdown_PID`
 ```
 echo 10000 > /tmp/epoch_shutdown$(pgrep neuewelle)
 ```
+
+## Common Errors
+
+
+### Missing dartfile ./Node_0_dart.drt
+This mean that the nodes nodes could not find a dart database. 
+For testing the database should be created with the boot tool [Initialize DART](documents/network_setup/initialize_dart.md) or with the helper script `create_wallets.sh`
+
+
+### DATABASES must be booted with same bullseye - Abort
+This means that the databases were not synchronized. Mode0 does not automatically syncronize the databases on startup. It can be syncronized with [dartutil](src/bin-dartutil/README).  
+To prevent this from happening, you can make sure that the network is stopped synchronously by setting the epoch number as explained above.
