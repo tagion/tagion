@@ -220,6 +220,7 @@ mixin template HiBONRecord(string CTOR = "") {
         label, exclude, optional, GetLabel, filter, fixed, inspect;
     import tagion.hibon.HiBONBase : TypedefBase;
     import HiBONRecord = tagion.hibon.HiBONRecord;
+    import tagion.hibon.HiBONSerialize;
 
     protected alias check = Check!(HiBONRecordException);
 
@@ -229,6 +230,9 @@ mixin template HiBONRecord(string CTOR = "") {
     mixin JSONString;
 
     mixin HiBONRecordType;
+
+    mixin Serialize;
+
     alias isRecord = HiBONRecord.isRecord!ThisType;
 
     enum HAS_TYPE = hasMember!(ThisType, "type_name");
@@ -407,8 +411,6 @@ mixin template HiBONRecord(string CTOR = "") {
         mixin(CTOR);
     }
 
-    //    import std.traits : FieldNameTuple, Fields;
-
     template GetKeyName(uint i) {
         static if (hasUDA!(this.tupleof[i], label)) {
             alias label = GetLabel!(this.tupleof[i]);
@@ -433,20 +435,6 @@ mixin template HiBONRecord(string CTOR = "") {
     }
 
     enum keys = _keys;
-
-    // version(none) {
-    //     alias KeyType = Tuple!(string, "key", string, "type");
-
-    //     static auto getKeyType() {
-    //         alias ThisTuple = typeof(ThisType.tupleof);
-
-    //     }
-
-    //     static bool isValid() pure nothrow {
-
-    //         return 
-    //     }
-    // }
 
     static if (!NO_DEFAULT_CTOR) {
         @safe this(const HiBON hibon) {
@@ -777,6 +765,7 @@ unittest {
 
             assert(isRecord!Simpel(docS));
             assert(!isRecord!SimpelLabel(docS));
+            s._serialize;
         }
 
         {

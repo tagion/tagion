@@ -29,9 +29,15 @@ string getType(const Document doc) pure {
     return string.init;
 }
 
-mixin template Serialize() { 
-Buffer _serialize() const pure nothrow {
-     
-    return Buffer.init;
-}
+mixin template Serialize() {
+    import tagion.basic.Types;
+
+    size_t _full_size() const pure nothrow {
+        return 0;
+    }
+
+    Buffer _serialize() const pure nothrow {
+
+        return Buffer.init;
+    }
 }
