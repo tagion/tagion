@@ -42,16 +42,6 @@ bool isRecord(T)(const Document doc) nothrow pure {
     }
 }
 
-enum STUB = HiBONPrefix.HASH ~ "";
-@safe bool isStub(const Document doc) pure {
-    return !doc.empty && doc.keys.front == STUB;
-}
-
-enum HiBONPrefix {
-    HASH = '#',
-    PARAM = '$',
-}
-
 @safe
 bool hasHashKey(T)(T doc) if (is(T : const(HiBON)) || is(T : const(Document))) {
     return !doc.empty && doc.keys.front[0] is HiBONPrefix.HASH && doc.keys.front != STUB;
@@ -144,20 +134,12 @@ template GetLabel(alias member) {
 
     static if (hasUDA!(member, label)) {
         enum _label = getUDAs!(member, label)[0];
-        static if (_label.name == VOID) {
-            enum GetLabel = label(basename!(member));
-        }
-        else {
-            enum GetLabel = _label;
-        }
+        enum GetLabel = _label;
     }
     else {
         enum GetLabel = label(basename!(member));
     }
 }
-
-enum TYPENAME = HiBONPrefix.PARAM ~ "@";
-enum VOID = "*";
 
 mixin template HiBONRecordType() {
     import std.traits : getUDAs, hasUDA, isIntegral, isUnsigned;
@@ -239,7 +221,7 @@ mixin template HiBONRecord(string CTOR = "") {
     import tagion.basic.tagionexceptions : Check;
     import tagion.hibon.HiBONException : HiBONRecordException;
     import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType, isSpecialKeyType,
-        label, exclude, optional, GetLabel, filter, fixed, inspect, VOID;
+        label, exclude, optional, GetLabel, filter, fixed, inspect;
     import tagion.hibon.HiBONBase : TypedefBase;
     import HiBONRecord = tagion.hibon.HiBONRecord;
 
@@ -439,7 +421,7 @@ mixin template HiBONRecord(string CTOR = "") {
         enum default_name = basename!(this.tupleof[i]);
         static if (hasUDA!(this.tupleof[i], label)) {
             alias label = GetLabel!(this.tupleof[i]);
-            enum GetKeyName = (label.name == VOID) ? default_name : label.name;
+            enum GetKeyName = label.name;
         }
         else {
             enum GetKeyName = default_name;
@@ -606,7 +588,7 @@ mixin template HiBONRecord(string CTOR = "") {
                     enum exclude_flag = hasUDA!(this.tupleof[i], exclude);
                     static if (hasUDA!(this.tupleof[i], label)) {
                         alias label = GetLabel!(this.tupleof[i]);
-                        enum name = (label.name == VOID) ? default_name : label.name;
+                        enum name = label.name;
                         //enum optional_flag = label.optional || hasUDA!(this.tupleof[i], optional);
                         static if (optional_flag) {
                             if (!doc.hasMember(name)) {
@@ -620,7 +602,7 @@ mixin template HiBONRecord(string CTOR = "") {
                                     basename!(this.tupleof[i])));
                         }
                     }
-                    else {
+                else {
                         enum name = default_name;
                     }
                     static assert(name.length > 0,

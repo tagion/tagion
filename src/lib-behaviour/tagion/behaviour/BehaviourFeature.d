@@ -20,7 +20,7 @@ import tagion.hibon.HiBONRecord;
 @safe:
 mixin template Property() {
     string description;
-    @label(VOID) @optional string[] comments;
+    @optional @(filter.Initialized) string[] comments;
     mixin HiBONRecord!(q{
             this(string description, string[] comments=null ) pure nothrow {
                 this.description = description;
