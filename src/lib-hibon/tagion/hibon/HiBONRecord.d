@@ -1,5 +1,7 @@
 module tagion.hibon.HiBONRecord;
 
+public import tagion.hibon.HiBONStream;
+
 import std.exception : assumeWontThrow;
 import std.stdio;
 import std.traits;
@@ -38,20 +40,6 @@ bool isRecord(T)(const Document doc) nothrow pure {
     else {
         return false;
     }
-}
-
-/** 
- * Gets the doc[TYPENAME] from the document.
- * Params:
- *   doc = Document containing typename
- * Returns: TYPENAME or string.init
- */
-@safe
-string getType(const Document doc) pure {
-    if (doc.hasMember(TYPENAME)) {
-        return doc[TYPENAME].get!string;
-    }
-    return string.init;
 }
 
 enum STUB = HiBONPrefix.HASH ~ "";
