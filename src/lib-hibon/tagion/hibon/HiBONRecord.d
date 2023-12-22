@@ -1,6 +1,7 @@
 module tagion.hibon.HiBONRecord;
 
-public import tagion.hibon.HiBONStream;
+@safe:
+public import tagion.hibon.HiBONSerialize;
 
 import std.exception : assumeWontThrow;
 import std.stdio;
@@ -31,7 +32,6 @@ enum isHiBONTypeArray(T) = isArray!T && isHiBONRecord!(ForeachType!T);
 Param: doc 
 	Returns: true if the doc has the correct Recorder type 
 */
-@safe
 bool isRecord(T)(const Document doc) nothrow pure {
     static if (hasUDA!(T, recordType)) {
         enum record_type = getUDAs!(T, recordType)[0].name;
@@ -42,12 +42,10 @@ bool isRecord(T)(const Document doc) nothrow pure {
     }
 }
 
-@safe
 bool hasHashKey(T)(T doc) if (is(T : const(HiBON)) || is(T : const(Document))) {
     return !doc.empty && doc.keys.front[0] is HiBONPrefix.HASH && doc.keys.front != STUB;
 }
 
-@safe
 unittest {
     import std.array : array;
     import std.range : iota;
@@ -202,9 +200,7 @@ pragma(msg, "fixme(cbr): The less_than function in this mixin is used for none s
 
 mixin template HiBONRecord(string CTOR = "") {
 
-    import std.traits : getUDAs, hasUDA, getSymbolsByUDA, OriginalType,
-        Unqual, hasMember, isCallable,
-        EnumMembers, ForeachType, isArray, isAssociativeArray, KeyType, ValueType;
+    import std.traits;
     import std.algorithm.iteration : map;
     import std.array : array, assocArray, join;
     import std.format;
@@ -327,10 +323,6 @@ mixin template HiBONRecord(string CTOR = "") {
                 enum exclude_flag = hasUDA!(this.tupleof[i], exclude);
                 alias label = GetLabel!(this.tupleof[i]);
                 enum name = label.name;
-                // }
-                // else {
-                //     enum name=basename!(this.tupleof[i]);
-                // }
                 static if (hasUDA!(this.tupleof[i], filter)) {
                     alias filters = getUDAs!(this.tupleof[i], filter);
                     static foreach (F; filters) {
@@ -418,13 +410,12 @@ mixin template HiBONRecord(string CTOR = "") {
     //    import std.traits : FieldNameTuple, Fields;
 
     template GetKeyName(uint i) {
-        enum default_name = basename!(this.tupleof[i]);
         static if (hasUDA!(this.tupleof[i], label)) {
             alias label = GetLabel!(this.tupleof[i]);
             enum GetKeyName = label.name;
         }
         else {
-            enum GetKeyName = default_name;
+            enum GetKeyName = FieldNameTuple!ThisType[i];
         }
     }
 
@@ -700,7 +691,7 @@ mixin template HiBONRecord(string CTOR = "") {
     }
 }
 
-@safe unittest {
+unittest {
     import std.algorithm.comparison : equal;
     import std.exception : assertNotThrown, assertThrown;
     import std.format;
@@ -1435,7 +1426,6 @@ mixin template HiBONRecord(string CTOR = "") {
     }
 }
 
-@safe
 unittest {
     import tagion.utils.StdTime;
 
@@ -1467,7 +1457,6 @@ unittest {
 }
 
 ///
-@safe
 unittest { /// Reseved keys and types
 
 { /// Check for reseved HiBON types

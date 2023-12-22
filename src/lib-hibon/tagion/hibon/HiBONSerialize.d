@@ -1,4 +1,4 @@
-module tagion.hibon.HiBONStream;
+module tagion.hibon.HiBONSerialize;
 
 import tagion.basic.Types : Buffer;
 import tagion.hibon.Document;
@@ -13,6 +13,7 @@ enum HiBONPrefix {
     HASH = '#',
     PARAM = '$',
 }
+
 enum TYPENAME = HiBONPrefix.PARAM ~ "@";
 
 /** 
@@ -28,6 +29,9 @@ string getType(const Document doc) pure {
     return string.init;
 }
 
-Buffer serialize(T)(const T h) if (is(T == struct) || is(T == class)) {
-    
+mixin template Serialize() { 
+Buffer _serialize() const pure nothrow {
+     
+    return Buffer.init;
+}
 }
