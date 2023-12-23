@@ -599,10 +599,8 @@ alias u64 = decode!ulong;
 alias i32 = decode!int;
 alias i64 = decode!long;
 
-string secname(immutable Section s) @safe {
-    import std.exception : assumeUnique;
-
-    return assumeUnique(format("%s_sec", toLower(s.to!string)));
+string secname(immutable Section s) @safe pure {
+    return format("%s_sec", toLower(s.to!string));
 }
 
 alias SectionsT(SectionType) = AliasSeq!(
