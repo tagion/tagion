@@ -83,24 +83,24 @@ struct TaskNames {
     }
 }
 
+public import tagion.logger.LoggerOptions : LoggerOptions;
+public import tagion.services.DART : DARTOptions;
+public import tagion.services.DARTInterface : DARTInterfaceOptions;
+public import tagion.services.collector : CollectorOptions;
+public import tagion.services.epoch_creator : EpochCreatorOptions;
+public import tagion.services.hirpc_verifier : HiRPCVerifierOptions;
+public import tagion.services.inputvalidator : InputValidatorOptions;
+public import tagion.services.monitor : MonitorOptions;
+public import tagion.services.replicator : ReplicatorOptions;
+public import tagion.services.subscription : SubscriptionServiceOptions;
+public import tagion.services.transcript : TranscriptOptions;
+public import tagion.services.TRTService : TRTOptions;
+
 /// All options for neuewelle
 @safe
 struct Options {
     import std.json;
     import tagion.utils.JSONCommon;
-
-    import tagion.logger.LoggerOptions : LoggerOptions;
-    import tagion.services.DART : DARTOptions;
-    import tagion.services.DARTInterface : DARTInterfaceOptions;
-    import tagion.services.collector : CollectorOptions;
-    import tagion.services.epoch_creator : EpochCreatorOptions;
-    import tagion.services.hirpc_verifier : HiRPCVerifierOptions;
-    import tagion.services.inputvalidator : InputValidatorOptions;
-    import tagion.services.monitor : MonitorOptions;
-    import tagion.services.replicator : ReplicatorOptions;
-    import tagion.services.subscription : SubscriptionServiceOptions;
-    import tagion.services.transcript : TranscriptOptions;
-    import tagion.services.TRTService : TRTOptions;
 
     WaveOptions wave;
     InputValidatorOptions inputvalidator;
