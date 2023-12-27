@@ -22,7 +22,6 @@ private import libnng;
 
 import std.stdio;
 
-
 @safe
 T* ptr(T)(T[] arr, size_t off = 0) pure nothrow { return arr.length == 0 ? null : &arr[off]; }
 
