@@ -322,7 +322,7 @@ mixin template HiBONRecord(string CTOR = "") {
 
         MemberLoop: foreach (i, m; this.tupleof) {
             static if (__traits(compiles, typeof(m))) {
-                enum default_name = basename!(this.tupleof[i]);
+                enum default_name = FieldNameTuple!ThisType[i];
                 enum optional_flag = hasUDA!(this.tupleof[i], optional);
                 enum exclude_flag = hasUDA!(this.tupleof[i], exclude);
                 alias label = GetLabel!(this.tupleof[i]);
@@ -344,8 +344,6 @@ mixin template HiBONRecord(string CTOR = "") {
                     alias MemberT = typeof(m);
                     alias BaseT = TypedefBase!MemberT;
                     alias UnqualT = Unqual!BaseT;
-                    // writefln("name=%s BaseT=%s isInputRange!BaseT=%s isInputRange!UnqualT=%s",
-                    //     name, BaseT.stringof, isInputRange!BaseT, isInputRange!UnqualT);
                     static if (HiBON.Value.hasType!UnqualT) {
                         hibon[name] = cast(BaseT) m;
                     }
@@ -562,7 +560,7 @@ mixin template HiBONRecord(string CTOR = "") {
             alias ThisTuple = typeof(ThisType.tupleof);
             ForeachTuple: foreach (i, ref m; this.tupleof) {
                 static if (__traits(compiles, typeof(m))) {
-                    enum default_name = basename!(this.tupleof[i]);
+                    enum default_name = FieldNameTuple!ThisType[i];
                     enum optional_flag = hasUDA!(this.tupleof[i], optional);
                     enum exclude_flag = hasUDA!(this.tupleof[i], exclude);
                     static if (hasUDA!(this.tupleof[i], label)) {
@@ -766,6 +764,7 @@ unittest {
             assert(isRecord!Simpel(docS));
             assert(!isRecord!SimpelLabel(docS));
             s._serialize;
+            writefln("full_size=%d", s._full_size);
         }
 
         {

@@ -86,7 +86,6 @@ static size_t size(U)(const(U[]) array) pure {
      +/
     size_t size() const pure {
         size_t result;
-        //= uint.sizeof+Type.sizeof;
         if (!_members[].empty) {
             result += _members[].map!(a => a.size)
                 .fold!((a, b) => a + b);
@@ -1128,9 +1127,7 @@ static size_t size(U)(const(U[]) array) pure {
         }
     }
 
-
 }
-
 
 @safe
 unittest {
@@ -1155,7 +1152,6 @@ unittest {
     inner.inner_string = "wowo";
     test.name = "tagion";
     test.inner_hibon = inner;
-
 
     const base64 = test.toDoc.encodeBase64;
     auto serialized = test.toDoc.serialize;
