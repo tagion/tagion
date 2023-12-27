@@ -43,18 +43,24 @@ struct AccountDetails {
     }
 
     void remove_bill_by_hash(const(DARTIndex) billHash) {
-        import std.algorithm : remove;
+        import std.algorithm : remove, countUntil;
 
-        bills = bills.remove(billHash);
+        version (REMOVE_BILL_HASH) {
+            const billsHashes = bills.map!(b => cast(Buffer) net.calcHash(b.toDoc.serialize)).array;
+            const index = billsHashes.countUntil(billHash);
+            bills = bills.remove(index);
+        }
+        else {
+            pragma(msg, "This should not work, as algorithm.remove expects an Offset, and other data types are just converted to one");
+            bills = bills.remove(billHash);
+        }
     }
 
     void unlock_bill_by_hash(const(DARTIndex) billHash) {
-        import std.algorithm : remove;
-
         activated.remove(billHash);
     }
 
-    pragma(msg, "Don't think this function fits in AccountDetails");
+    pragma(msg, "I don't think this function belongs in AccountDetails");
     int check_contract_payment(const(DARTIndex)[] inputs, const(Document[]) outputs) {
         import std.algorithm : countUntil;
 
