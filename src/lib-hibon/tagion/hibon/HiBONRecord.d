@@ -763,8 +763,8 @@ unittest {
 
             assert(isRecord!Simpel(docS));
             assert(!isRecord!SimpelLabel(docS));
-            s._serialize;
-            writefln("full_size=%d", s._full_size);
+            //       s._serialize;
+            //     writefln("full_size=%d", s._full_size);
         }
 
         {

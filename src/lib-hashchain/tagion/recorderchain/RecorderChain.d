@@ -5,6 +5,8 @@ import tagion.hashchain.HashChain : HashChain;
 import tagion.hashchain.HashChainFileStorage : HashChainFileStorage;
 import tagion.hashchain.HashChainStorage : HashChainStorage;
 import tagion.recorderchain.RecorderChainBlock : RecorderChainBlock;
+import tagion.crypto.Types : Fingerprint;
+import tagion.hashchain.HashChainBlock : HashChainBlock;
 
 /** @brief File contains class RecorderChain
  */
@@ -26,13 +28,13 @@ unittest {
     import tagion.basic.basic : fileId, tempfile;
     import tagion.crypto.SecureInterfaceNet : SecureNet;
     import tagion.crypto.SecureNet : StdSecureNet;
-    import tagion.crypto.Types : Fingerprint;
     import tagion.dart.DART : DART;
     import tagion.dart.Recorder;
     import tagion.script.TagionCurrency : TGN;
     import tagion.script.common : TagionBill;
     import tagion.utils.StdTime;
-import std.format;
+    import std.format;
+
     const temp_folder = tempfile ~ "/";
 
     const dart_filename = fileId!RecorderChain(FileExtension.dart, "dart").fullpath;
@@ -303,7 +305,7 @@ import std.format;
         assert(dart_exception is null);
 
         pragma(msg, "fixme(phr): figure out why recorderchain replay breaks");
-        version(none) {
+        version (none) {
             // Replay blocks
             {
                 recorder_chain.replay((RecorderChainBlock block) {
@@ -318,5 +320,46 @@ import std.format;
         rmdirRecurse(temp_folder);
         remove(dart_filename);
         remove(dart_recovered_filename);
+    }
+}
+
+version (unittest) {
+    import tagion.crypto.SecureInterfaceNet : HashNet;
+    import tagion.hibon.HiBONRecord : HiBONRecord, exclude, label, recordType;
+
+    @safe class DummyBlock : HashChainBlock {
+        @exclude Fingerprint hash;
+        @label("prev") Fingerprint previous;
+        @label("dummy") int dummy;
+
+        mixin HiBONRecord!(
+                q{
+             this(
+                Fingerprint previous,
+                const(HashNet) net,
+                int dummy = 0)
+            {
+                this.previous = previous;
+                this.dummy = dummy;
+
+                this.hash = net.calcHash(toDoc);
+            }
+
+            this(
+                const(Document) doc,
+                const(HashNet) net)
+            {
+                this(doc);
+                this.hash = net.calcHash(toDoc);
+            }
+        });
+
+        Fingerprint getHash() const {
+            return hash;
+        }
+
+        Fingerprint getPrevious() const {
+            return previous;
+        }
     }
 }

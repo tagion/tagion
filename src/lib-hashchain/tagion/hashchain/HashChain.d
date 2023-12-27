@@ -161,47 +161,6 @@ import tagion.utils.Miscellaneous : decode;
     }
 }
 
-version (unittest) {
-    import tagion.crypto.SecureInterfaceNet : HashNet;
-    import tagion.hibon.HiBONRecord : HiBONRecord, exclude, label, recordType;
-
-    @safe class DummyBlock : HashChainBlock {
-        @exclude Fingerprint hash;
-        @label("prev") Fingerprint previous;
-        @label("dummy") int dummy;
-
-        mixin HiBONRecord!(
-                q{
-            private this(
-                Fingerprint previous,
-                const(HashNet) net,
-                int dummy = 0)
-            {
-                this.previous = previous;
-                this.dummy = dummy;
-
-                this.hash = net.calcHash(toDoc);
-            }
-
-            private this(
-                const(Document) doc,
-                const(HashNet) net)
-            {
-                this(doc);
-                this.hash = net.calcHash(toDoc);
-            }
-        });
-
-        Fingerprint getHash() const {
-            return hash;
-        }
-
-        Fingerprint getPrevious() const {
-            return previous;
-        }
-    }
-}
-
 unittest {
     import std.file : rmdirRecurse;
     import std.path : extension, stripExtension;
@@ -212,6 +171,7 @@ unittest {
     import tagion.crypto.SecureNet : StdHashNet;
     import tagion.dart.Recorder : RecordFactory;
     import tagion.hashchain.HashChainFileStorage;
+    import tagion.crypto.SecureInterfaceNet : HashNet;
 
     HashNet net = new StdHashNet;
 
@@ -338,4 +298,8 @@ unittest {
 
         rmdirRecurse(temp_folder);
     }
+}
+
+version (unittest) {
+    import tagion.recorderchain.RecorderChain : DummyBlock;
 }

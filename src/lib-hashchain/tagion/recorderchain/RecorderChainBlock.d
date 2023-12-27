@@ -24,7 +24,6 @@ import tagion.hibon.HiBONRecord : GetLabel, HiBONRecord, exclude, label, recordT
     /** Recorder with database changes of this block */
     @label("recorder") Document recorder_doc;
 
-
     /** Ctor creates block from recorder, previous hash and bullseye.
      *      @param recorder_doc - Document with recorder for block
      *      @param previous - fingerprint of the previous block
@@ -32,7 +31,7 @@ import tagion.hibon.HiBONRecord : GetLabel, HiBONRecord, exclude, label, recordT
      *      @param net - hash net
      */
     mixin HiBONRecord!(
-        q{
+            q{
         this(
             Document recorder_doc,
             Fingerprint previous,
@@ -87,7 +86,7 @@ import tagion.hibon.HiBONRecord : GetLabel, HiBONRecord, exclude, label, recordT
      */
     mixin HiBONRecord!(
             q{
-            private this(
+             this(
                 Document recorder_doc,
                 Fingerprint previous,
                 Fingerprint bullseye,
@@ -102,7 +101,7 @@ import tagion.hibon.HiBONRecord : GetLabel, HiBONRecord, exclude, label, recordT
                 this.fingerprint = net.calcHash(toDoc);
             }
 
-            private this(
+             this(
                 const(Document) doc,
                 const(HashNet) net)
             {
@@ -187,4 +186,8 @@ unittest {
         catch (TagionException e) {
         }
     }
+}
+
+version (unittest) {
+    import tagion.recorderchain.RecorderChain : DummyBlock;
 }
