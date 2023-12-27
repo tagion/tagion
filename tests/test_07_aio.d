@@ -11,7 +11,7 @@ import std.exception;
 import nngd;
 import nngtestutil;
 
-extern (C) void scb ( void* p ){
+void scb ( void* p ){
     NNGAio* aio = cast(NNGAio*)p;
     log("Send callback");
     writeln("Send callback fired pointer: ", p);
@@ -20,7 +20,7 @@ extern (C) void scb ( void* p ){
     writeln("Send callback fired with result: ", res, " : ", cnt );
 }
 
-extern (C) void rcb ( void* p ){
+void rcb ( void* p ){
     NNGAio* aio = cast(NNGAio*)p;
     log("Receive callback");
     writeln("Receive callback fired pointer: ", p);

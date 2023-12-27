@@ -1512,6 +1512,10 @@ struct WebData {
             enforce(rc==0);
             rc = nng_http_res_set_reason(res, msg.toStringz);
             enforce(rc==0);
+            if(text.length > 0){
+                rc = nng_http_res_copy_data(res, text.ptr, text.length);
+                enforce(rc==0, "webdata: copy text rep");
+            }
             return res;
         }           
         {
@@ -1531,9 +1535,11 @@ struct WebData {
             length = text.length;
             enforce(rc==0, "webdata: copy text rep");
         }else{
-            rc = nng_http_res_copy_data(res, rawdata.ptr, rawdata.length);
-            length = rawdata.length;
-            enforce(rc==0, "webdata: copy data rep");
+            if(rawdata.length > 0){
+                rc = nng_http_res_copy_data(res, rawdata.ptr, rawdata.length);
+                length = rawdata.length;
+                enforce(rc==0, "webdata: copy data rep");
+            }
         }
 
         return res;
