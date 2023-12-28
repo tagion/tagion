@@ -421,14 +421,18 @@ mixin template HiBONRecord(string CTOR = "") {
 
     /++
      Returns:
-     The a list of Record keys
+     A sorted list of Record keys
      +/
     protected static string[] _keys() pure nothrow {
+        import std.algorithm;
+        import tagion.hibon.HiBONBase : less_than;
+
         string[] result;
         alias ThisTuple = typeof(ThisType.tupleof);
         static foreach (i; 0 .. ThisTuple.length) {
             result ~= GetKeyName!i;
         }
+        result.sort!((a, b) => less_than(a, b));
         return result;
     }
 
@@ -763,8 +767,10 @@ unittest {
 
             assert(isRecord!Simpel(docS));
             assert(!isRecord!SimpelLabel(docS));
+            writefln("%J", s);
             //       s._serialize;
-            //     writefln("full_size=%d", s._full_size);
+                 writefln("full_size=%d docS.full_size=%d", s.full_size, docS.full_size);
+            assert(docS.full_size == s.full_size);
         }
 
         {
