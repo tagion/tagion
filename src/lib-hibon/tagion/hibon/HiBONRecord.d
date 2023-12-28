@@ -891,7 +891,11 @@ unittest {
         const s_filter_y_doc = s_filter_y.toDoc;
         const s_dont_filter_doc = s_dont_filter.toDoc;
         const s_dont_filter_xy_doc = s_dont_filter_xy.toDoc;
-
+{    
+        writefln("%J", s);
+            writefln("full_size=%d docS.full_size=%d", s_filter_x.full_size, s_filter_x_doc.full_size);
+            assert(s_filter_x_doc.full_size == s_filter_x.full_size);
+        }
         // writefln("docS=\n%s", s_filter_x.toDoc.toJSON(true).toPrettyString);
         // writefln("docS=\n%s", s_filter_y.toDoc.toJSON(true).toPrettyString);
         {
