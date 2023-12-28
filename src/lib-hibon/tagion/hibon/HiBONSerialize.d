@@ -135,7 +135,8 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
                             return type_key_size + LEB128.calc_size(cast(ulong) x);
                         }
                         else static if (only(FLOAT32, FLOAT64, BOOLEAN).canFind(type)) {
-                            return type_key_size + T.sizeof;
+                                __write("%s type_key_size=%d U.sizeof=%d %d", E, type_key_size, U.sizeof, type_key_size+U.sizeof);
+                            return type_key_size + U.sizeof;
                         }
                         else static if (only(STRING, BINARY).canFind(type)) {
                             return type_key_size + LEB128.calc_size(x.length) + x.length;

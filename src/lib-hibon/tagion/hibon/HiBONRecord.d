@@ -767,9 +767,6 @@ unittest {
 
             assert(isRecord!Simpel(docS));
             assert(!isRecord!SimpelLabel(docS));
-            writefln("%J", s);
-            //       s._serialize;
-                 writefln("full_size=%d docS.full_size=%d", s.full_size, docS.full_size);
             assert(docS.full_size == s.full_size);
         }
 
@@ -786,6 +783,7 @@ unittest {
 
             immutable s_imut = SimpelLabel(docS);
             assert(s_imut == s_check);
+            assert(docS.full_size == s.full_size);
         }
 
         {
@@ -798,6 +796,9 @@ unittest {
             assert(s == s_check);
             immutable s_imut = BasicData(docS);
             assert(s_imut == s_check);
+            writefln("%J", s);
+            writefln("full_size=%d docS.full_size=%d", s.full_size, docS.full_size);
+            assert(docS.full_size == s.full_size);
         }
     }
 
