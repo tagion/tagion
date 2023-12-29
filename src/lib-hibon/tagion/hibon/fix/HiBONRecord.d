@@ -995,7 +995,7 @@ unittest {
 
     { // Base type array
         static struct Array {
-            int[] a;
+            @label("i32_a") int[] a;
             mixin HiBONRecord;
         }
 
@@ -1011,8 +1011,10 @@ unittest {
             writefln("%s", doc.serialize);
             writefln("%s", s.toPretty);
 
+            auto h = s.toHiBON;
             const s_full_size = s.full_size;
-            writefln("--- s.full_size=%d doc.full_size=%d doc.isInorder=%s", s_full_size, doc.full_size, doc.valid);
+            writefln("--- s.full_size=%d doc.full_size=%d doc.isInorder=%s hibon.size=%d h.serialize_size=%d", s_full_size, doc
+                    .full_size, doc.valid, h.size, h.serialize_size);
             assert(s_full_size == doc.full_size);
         }
         {

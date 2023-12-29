@@ -1,4 +1,5 @@
 /**
+
  * Implements HiBON
  * Hash-invariant Binary Object Notation
  * Is inspired by BSON but us not compatible
@@ -85,17 +86,13 @@ static size_t size(U)(const(U[]) array) pure {
      the size in bytes
      +/
     size_t size() const pure {
-        size_t result;
         if (!_members[].empty) {
-            result += _members[].map!(a => a.size)
-                .fold!((a, b) => a + b);
+            return _members[]
+                .map!(a => a.size)
+                .sum;
+            //            __write("HiBON.size = %d", result);
         }
-        if (result > 0) {
-            return result;
-        }
-        else {
-            return ubyte.sizeof;
-        }
+        return ubyte.sizeof;
     }
 
     bool empty() const pure {
@@ -131,12 +128,11 @@ static size_t size(U)(const(U[]) array) pure {
     @trusted private void append(ref ubyte[] buffer, ref size_t index) const pure {
         if (_members[].empty) {
             buffer.binwrite(ubyte(0), &index);
+            return;
         }
-        else {
-            uint size = cast(uint) _members[].map!(a => a.size).sum;
-            buffer.array_write(LEB128.encode(size), index);
-            _members[].each!(a => a.append(buffer, index));
-        }
+        uint size = cast(uint) _members[].map!(a => a.size).sum;
+        buffer.array_write(LEB128.encode(size), index);
+        _members[].each!(a => a.append(buffer, index));
     }
 
     /++
@@ -1127,40 +1123,4 @@ static size_t size(U)(const(U[]) array) pure {
         }
     }
 
-}
-
-@safe
-unittest {
-    import tagion.hibon.fix.HiBONRecord;
-    import tagion.hibon.fix.HiBONtoText;
-
-    static struct InnerTest {
-        string inner_string;
-        mixin HiBONRecord;
-    }
-
-    static struct TestName {
-        @label("#name") string name; // Default name should always be "tagion"
-        @label("inner") InnerTest inner_hibon;
-
-        mixin HiBONRecord;
-    }
-
-    TestName test;
-    InnerTest inner;
-
-    inner.inner_string = "wowo";
-    test.name = "tagion";
-    test.inner_hibon = inner;
-
-    const base64 = test.toDoc.encodeBase64;
-    auto serialized = test.toDoc.serialize;
-    const new_doc = Document(serialized);
-    const valid = new_doc.valid;
-
-    const after_base64 = new_doc.encodeBase64;
-
-    assert(base64 == after_base64);
-
-    assert(valid is Document.Element.ErrorCode.NONE);
 }

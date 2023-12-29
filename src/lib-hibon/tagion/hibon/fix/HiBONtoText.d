@@ -64,3 +64,40 @@ immutable(ubyte[]) decode(const(char[]) str) pure {
 Document decodeBase64(const(char[]) str) pure {
     return Document(decode(str));
 }
+
+unittest {
+    import tagion.hibon.fix.HiBONRecord;
+    import tagion.hibon.fix.HiBONtoText;
+    import tagion.basic.Debug;
+
+    static struct InnerTest {
+        string inner_string;
+        mixin HiBONRecord;
+    }
+
+    static struct TestName {
+        @label("#name") string name; // Default name should always be "tagion"
+        @label("inner") InnerTest inner_hibon;
+
+        mixin HiBONRecord;
+    }
+
+    TestName test;
+    InnerTest inner;
+
+    inner.inner_string = "wowo";
+    test.name = "tagion";
+    test.inner_hibon = inner;
+
+    const base64 = test.toDoc.encodeBase64;
+    auto serialized = test.toDoc.serialize;
+    __write("serialized=%s", serialized);
+    const new_doc = Document(serialized);
+    const valid = new_doc.valid;
+
+    const after_base64 = new_doc.encodeBase64;
+
+    assert(base64 == after_base64);
+    __write("valid = %s", valid);
+    assert(valid is Document.Element.ErrorCode.NONE);
+}

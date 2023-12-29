@@ -227,19 +227,24 @@ static assert(uint.sizeof == 4);
                 ErrorCallback error_callback = null) const nothrow {
             import tagion.basic.Debug;
             import tagion.basic.tagionexceptions : TagionException;
-            const doc_size = doc.full_size; //LEB128.decode!uint(_data);
+
+            //const doc_full_size = doc.full_size; //LEB128.decode!uint(_data);
             bool checkElementBoundary(const ref Element elm) {
-                __write("checkElementBoundary key=%s size=%s %d doc.length=%d", elm.key, elm.size, &elm.data[0]-&doc._data[0], doc.size);
-                return &elm.data[0]-&doc._data[0]+elm.size <= doc.size; 
+                __write("checkElementBoundary key=%s size=%s offset=%d doc.length=%d %d", elm.key, elm.size, &elm
+                        .data[0] - &doc._data[0], doc._data.length, &elm.data[0] - &doc._data[0] + elm.size);
+                return &elm.data[0] - &doc._data[0] + elm.size <= doc.full_size;
             }
+
             bool checkDocumentBoundary(const Document sub_doc) {
-                __write("checkDocumentBoundary sub_doc.size=%d doc.size=%d %d doc.length=%d", sub_doc.full_size, doc_size, &sub_doc.data[0]-&doc._data[0], doc.size);
-                return &sub_doc._data[0]-&doc._data[0]+sub_doc.full_size <= doc.size;    
-        }
+                __write("checkDocumentBoundary sub_doc.size=%d doc.size=%d %d doc.length=%d", sub_doc.full_size, doc
+                        .full_size, &sub_doc.data[0] - &doc._data[0], doc.size);
+                return &sub_doc._data[0] - &doc._data[0] + sub_doc.full_size <= doc.full_size;
+            }
+
             auto previous = doc[];
             bool not_first;
             Element.ErrorCode error_code;
-            if (doc_size > _data.length) {
+            if (doc.full_size > _data.length) {
                 error_code = Element.ErrorCode.DOCUMENT_OVERFLOW;
                 if (!error_callback || error_callback(this, error_code,
                         Element(), doc.opSlice.front)) {
@@ -267,12 +272,12 @@ static assert(uint.sizeof == 4);
                     not_first = true;
                 }
                 if (error_code.isinit && !checkElementBoundary(e)) {
-                    error_code=Element.ErrorCode.ELEMENT_OUT_OF_DOCUMENT_BOUNDARY;
+                    error_code = Element.ErrorCode.ELEMENT_OUT_OF_DOCUMENT_BOUNDARY;
                 }
                 if (error_code.isinit) {
                     if (e.type is Type.DOCUMENT) {
                         try {
-                            const sub_doc=e.get!Document;       
+                            const sub_doc = e.get!Document;
                             error_code = inner_valid(sub_doc, error_callback);
                             if (error_code.isinit && !checkDocumentBoundary(sub_doc)) {
                                 error_code = Element.ErrorCode.CHILD_DOCUMENT_OUT_OF_BOUNDARY;
@@ -495,7 +500,7 @@ static assert(uint.sizeof == 4);
         return Type.sizeof + LEB128.calc_size(key.length) + key.length;
     }
 
-    @nogc static size_t sizeKey(uint key) pure nothrow {
+    @nogc static size_t sizeKey(size_t key) pure nothrow {
         return Type.sizeof + ubyte.sizeof + LEB128.calc_size(key);
     }
 
