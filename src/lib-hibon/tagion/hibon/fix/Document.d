@@ -2,7 +2,7 @@
  * HiBON Document
  *
  */
-module tagion.hibon.Document;
+module tagion.hibon.fix.Document;
 
 //import std.format;
 import std.meta : AliasSeq, Filter;
@@ -23,11 +23,11 @@ import tagion.basic.basic : EnumContinuousSequency, isOneOf;
 import tagion.hibon.BigNumber;
 import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException : HiBONException, check;
-import tagion.hibon.HiBONRecord : TYPENAME, isHiBONRecord, isHiBONTypeArray;
+import tagion.hibon.fix.HiBONRecord : TYPENAME, isHiBONRecord, isHiBONTypeArray;
 import tagion.utils.StdTime;
 import tagion.basic.basic : isinit;
 import LEB128 = tagion.utils.LEB128;
-public import tagion.hibon.HiBONJSON;
+public import tagion.hibon.fix.HiBONJSON;
 
 //import tagion.utils.LEB128 : isIntegral=isLEB128Integral;
 
@@ -74,7 +74,7 @@ static assert(uint.sizeof == 4);
         this._data = doc._data;
     }
 
-    import tagion.hibon.HiBON : HiBON;
+    import tagion.hibon.fix.HiBON : HiBON;
 
     this(const HiBON hibon) {
         if (hibon) {
@@ -83,7 +83,7 @@ static assert(uint.sizeof == 4);
     }
 
     bool hasHashKey() pure const nothrow {
-        import tagion.hibon.HiBONRecord : HiBONPrefix;
+        import tagion.hibon.fix.HiBONRecord : HiBONPrefix;
 
         return !empty &&
             keys.front[0] is HiBONPrefix.HASH;
@@ -176,7 +176,7 @@ static assert(uint.sizeof == 4);
 
     unittest { // Document with residual data
         import std.algorithm.comparison : equal;
-        import tagion.hibon.HiBON;
+        import tagion.hibon.fix.HiBON;
 
         auto h = new HiBON;
         h["test"] = 42;

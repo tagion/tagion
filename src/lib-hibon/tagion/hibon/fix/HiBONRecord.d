@@ -1,18 +1,18 @@
-module tagion.hibon.HiBONRecord;
+module tagion.hibon.fix.HiBONRecord;
 
 @safe:
-public import tagion.hibon.HiBONSerialize;
+public import tagion.hibon.fix.HiBONSerialize;
 
 import std.exception : assumeWontThrow;
 import std.stdio;
 import std.traits;
 import std.typecons : No, Tuple, Yes;
 import tagion.basic.basic : EnumContinuousSequency, basename;
-import tagion.hibon.Document : Document;
-import tagion.hibon.HiBON : HiBON;
+import tagion.hibon.fix.Document : Document;
+import tagion.hibon.fix.HiBON : HiBON;
 import tagion.hibon.HiBONBase : ValueT;
 import tagion.hibon.HiBONException : HiBONRecordException;
-import tagion.hibon.HiBONJSON;
+import tagion.hibon.fix.HiBONJSON;
 
 alias DocResult = Tuple!(Document.Element.ErrorCode, "error", string, "key");
 
@@ -141,8 +141,8 @@ template GetLabel(alias member) {
 
 mixin template HiBONRecordType() {
     import std.traits : getUDAs, hasUDA, isIntegral, isUnsigned;
-    import tagion.hibon.Document : Document;
-    import tagion.hibon.HiBONRecord : TYPENAME, recordType;
+    import tagion.hibon.fix.Document : Document;
+    import tagion.hibon.fix.HiBONRecord : TYPENAME, recordType;
 
     alias ThisType = typeof(this);
 
@@ -151,7 +151,7 @@ mixin template HiBONRecordType() {
         static assert(record_types.length is 1, "Only one recordType UDA allowed");
         static if (record_types[0].name.length) {
             enum type_name = record_types[0].name;
-            import tagion.hibon.HiBONRecord : isRecordT = isRecord;
+            import tagion.hibon.fix.HiBONRecord : isRecordT = isRecord;
 
             alias isRecord = isRecordT!ThisType;
             version (none) static bool isRecord(const Document doc) nothrow {
@@ -216,16 +216,16 @@ mixin template HiBONRecord(string CTOR = "") {
     import tagion.basic.basic : CastTo, basename;
     import tagion.basic.tagionexceptions : Check;
     import tagion.hibon.HiBONException : HiBONRecordException;
-    import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType, isSpecialKeyType,
+    import tagion.hibon.fix.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType, isSpecialKeyType,
         label, exclude, optional, GetLabel, filter, fixed, inspect;
     import tagion.hibon.HiBONBase : TypedefBase;
-    import HiBONRecord = tagion.hibon.HiBONRecord;
-    import tagion.hibon.HiBONSerialize;
+    import HiBONRecord = tagion.hibon.fix.HiBONRecord;
+    import tagion.hibon.fix.HiBONSerialize;
 
     protected alias check = Check!(HiBONRecordException);
 
-    import tagion.hibon.HiBON : HiBON;
-    import tagion.hibon.HiBONJSON : JSONString;
+    import tagion.hibon.fix.HiBON : HiBON;
+    import tagion.hibon.fix.HiBONJSON : JSONString;
 
     mixin JSONString;
 

@@ -7,7 +7,7 @@
  *  $(LINK2 http://bsonspec.org/, BSON - Binary JSON)
  *
  */
-module tagion.hibon.HiBON;
+module tagion.hibon.fix.HiBON;
 
 version (REDBLACKTREE_SAFE_PROBLEM) {
     /// dmd v2.100+ has problem with rbtree
@@ -32,12 +32,12 @@ import tagion.basic.Message : message;
 import tagion.basic.Types : Buffer, isTypedef;
 import tagion.basic.basic : CastTo;
 import tagion.hibon.BigNumber;
-import tagion.hibon.Document;
+import tagion.hibon.fix.Document;
 import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException;
-import tagion.hibon.HiBONRecord : isHiBON, isHiBONRecord, isHiBONTypeArray;
+import tagion.hibon.fix.HiBONRecord : isHiBON, isHiBONRecord, isHiBONTypeArray;
 import LEB128 = tagion.utils.LEB128;
-public import tagion.hibon.HiBONJSON;
+public import tagion.hibon.fix.HiBONJSON;
 
 //import std.stdio;
 
@@ -1131,8 +1131,8 @@ static size_t size(U)(const(U[]) array) pure {
 
 @safe
 unittest {
-    import tagion.hibon.HiBONRecord;
-    import tagion.hibon.HiBONtoText;
+    import tagion.hibon.fix.HiBONRecord;
+    import tagion.hibon.fix.HiBONtoText;
 
     static struct InnerTest {
         string inner_string;

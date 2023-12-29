@@ -1,7 +1,7 @@
-module tagion.hibon.HiBONSerialize;
+module tagion.hibon.fix.HiBONSerialize;
 
 import tagion.basic.Types : Buffer;
-import tagion.hibon.Document;
+import tagion.hibon.fix.Document;
 import tagion.hibon.HiBONBase;
 import std.traits;
 import std.format;
@@ -38,7 +38,7 @@ string getType(const Document doc) pure {
 template isHiBONArray(T) {
     import tagion.hibon.HiBONBase;
     import traits = std.traits;
-    import tagion.hibon.HiBONRecord : isHiBONRecord;
+    import tagion.hibon.fix.HiBONRecord : isHiBONRecord;
     import std.traits;
 
     alias BaseT = TypedefBase!T;
@@ -55,7 +55,7 @@ template isHiBONArray(T) {
 template isHiBONAssociativeArray(T) {
     import tagion.hibon.HiBONBase;
     import traits = std.traits;
-    import tagion.hibon.HiBONRecord : isHiBONRecord;
+    import tagion.hibon.fix.HiBONRecord : isHiBONRecord;
     import std.traits;
 
     alias BaseT = TypedefBase!T;
@@ -70,11 +70,11 @@ template isHiBONAssociativeArray(T) {
 }
 
 template SupportingFullSizeFunction(T, size_t i = 0) {
-    import tagion.hibon.HiBONRecord : exclude, optional, isHiBONRecord;
+    import tagion.hibon.fix.HiBONRecord : exclude, optional, isHiBONRecord;
     import std.traits;
 
     template InnerSupportFullSize(T) {
-        import tagion.hibon.HiBONRecord : exclude, optional, isHiBONRecord;
+        import tagion.hibon.fix.HiBONRecord : exclude, optional, isHiBONRecord;
         import tagion.hibon.HiBONBase : isHiBONBaseType;
 
         enum type = Document.Value.asType!T;
@@ -118,7 +118,7 @@ import tagion.basic.Debug;
 
 size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
     import std.functional : unaryFun;
-    import tagion.hibon.HiBONRecord : exclude, optional, filter, isHiBONRecord, GetLabel, recordType;
+    import tagion.hibon.fix.HiBONRecord : exclude, optional, filter, isHiBONRecord, GetLabel, recordType;
 
     static size_t calcSize(U)(U x, const size_t key_size) {
         __write("key_size=%d U=%s", key_size, x);
@@ -286,7 +286,7 @@ mixin template Serialize() {
 
     //import tagion.hibon.HiBONBase;
     import tagion.hibon.HiBONBase : HiBONType = Type, isHiBONBaseType, is_index;
-    import tagion.hibon.HiBONSerialize : isHiBONAssociativeArray;
+    import tagion.hibon.fix.HiBONSerialize : isHiBONAssociativeArray;
     import tagion.basic.Debug;
     import traits = std.traits;
 
