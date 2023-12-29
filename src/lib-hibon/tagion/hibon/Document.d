@@ -25,7 +25,6 @@ import tagion.hibon.HiBONBase;
 import tagion.hibon.HiBONException : HiBONException, check;
 import tagion.hibon.HiBONRecord : TYPENAME, isHiBONRecord, isHiBONTypeArray;
 import tagion.utils.StdTime;
-import tagion.basic.basic : isinit;
 import LEB128 = tagion.utils.LEB128;
 public import tagion.hibon.HiBONJSON;
 
@@ -223,33 +222,25 @@ static assert(uint.sizeof == 4);
      +/
     Element.ErrorCode valid(ErrorCallback error_callback = null,
             const Reserved reserved = Yes.Reserved) const nothrow {
-        Element.ErrorCode inner_valid(const Document doc,
+        Element.ErrorCode inner_valid(const Document sub_doc,
                 ErrorCallback error_callback = null) const nothrow {
-            import tagion.basic.Debug;
             import tagion.basic.tagionexceptions : TagionException;
-            const doc_size = doc.full_size; //LEB128.decode!uint(_data);
-            bool checkElementBoundary(const ref Element elm) {
-                __write("checkElementBoundary key=%s size=%s %d doc.length=%d", elm.key, elm.size, &elm.data[0]-&doc._data[0], doc.size);
-                return &elm.data[0]-&doc._data[0]+elm.size <= doc.size; 
-            }
-            bool checkDocumentBoundary(const Document sub_doc) {
-                __write("checkDocumentBoundary sub_doc.size=%d doc.size=%d %d doc.length=%d", sub_doc.full_size, doc_size, &sub_doc.data[0]-&doc._data[0], doc.size);
-                return &sub_doc._data[0]-&doc._data[0]+sub_doc.full_size <= doc.size;    
-        }
-            auto previous = doc[];
+
+            auto previous = sub_doc[];
             bool not_first;
             Element.ErrorCode error_code;
+            const doc_size = sub_doc.full_size; //LEB128.decode!uint(_data);
             if (doc_size > _data.length) {
                 error_code = Element.ErrorCode.DOCUMENT_OVERFLOW;
                 if (!error_callback || error_callback(this, error_code,
-                        Element(), doc.opSlice.front)) {
+                        Element(), sub_doc.opSlice.front)) {
                     return error_code;
                 }
             }
             if (!LEB128.isInvariant!size_t(data)) {
                 return Element.ErrorCode.DOCUMENT_SIZE_INVALID_LEB128;
             }
-            foreach (ref e; doc[]) {
+            foreach (ref e; sub_doc[]) {
                 error_code = e.valid(reserved);
                 if (not_first) {
                     if (e.data is previous.data) {
@@ -266,17 +257,10 @@ static assert(uint.sizeof == 4);
                 else {
                     not_first = true;
                 }
-                if (error_code.isinit && !checkElementBoundary(e)) {
-                    error_code=Element.ErrorCode.ELEMENT_OUT_OF_DOCUMENT_BOUNDARY;
-                }
-                if (error_code.isinit) {
+                if (error_code is Element.ErrorCode.NONE) {
                     if (e.type is Type.DOCUMENT) {
                         try {
-                            const sub_doc=e.get!Document;       
-                            error_code = inner_valid(sub_doc, error_callback);
-                            if (error_code.isinit && !checkDocumentBoundary(sub_doc)) {
-                                error_code = Element.ErrorCode.CHILD_DOCUMENT_OUT_OF_BOUNDARY;
-                            }
+                            error_code = inner_valid(e.get!(Document), error_callback);
                         }
                         catch (HiBONException e) {
                             error_code = Element.ErrorCode.BAD_SUB_DOCUMENT;
@@ -1330,8 +1314,6 @@ static assert(uint.sizeof == 4);
                 DOCUMENT_OVERFLOW, /// Document length extends the length of the buffer
                 DOCUMENT_ITERATION, /// Document can not be iterated because of a Document format fail
                 DOCUMENT_SIZE_INVALID_LEB128, /// The size of the document is not leb128 minimum invarinat
-                CHILD_DOCUMENT_OUT_OF_BOUNDARY, /// Child document exceeds the parent document size
-                ELEMENT_OUT_OF_DOCUMENT_BOUNDARY, /// Element size exceeds the document size
                 VALUE_POS_OVERFLOW, /// Start position of the a value extends the length of the buffer
                 TOO_SMALL, /// Data stream is too small to contain valid data
                 ILLEGAL_TYPE, /// Use of internal types is illegal
@@ -1397,7 +1379,6 @@ static assert(uint.sizeof == 4);
                 }
                 if (!key.is_key_valid) {
                     import tagion.basic.Debug;
-
                     __write("KEY INVALID %s", key);
                     return KEY_INVALID;
                 }
@@ -1473,15 +1454,6 @@ unittest { // Bugfix (Fails in isInorder);
         assert(!doc.isInorder);
         assert(doc.valid is Document.Element.ErrorCode.DOCUMENT_OVERFLOW);
     }
-}
-
-@safe
-unittest { // Bugfix (Length of document should fail) document length error
-    import std.stdio;
-
-    immutable(ubyte[]) data = [16, 2, 1, 97, 12, 17, 0, 0, 111, 17, 0, 1, 42, 17, 0, 2, 17];
-    const doc = Document(data);
-    writefln("Fail code %s", doc.valid);
 }
 
 @safe

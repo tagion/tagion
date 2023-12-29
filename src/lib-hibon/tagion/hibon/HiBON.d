@@ -85,6 +85,7 @@ static size_t size(U)(const(U[]) array) pure {
      +/
     size_t size() const pure {
         size_t result;
+        //= uint.sizeof+Type.sizeof;
         if (!_members[].empty) {
             result += _members[].map!(a => a.size)
                 .fold!((a, b) => a + b);
