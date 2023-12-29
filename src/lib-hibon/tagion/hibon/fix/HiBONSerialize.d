@@ -261,21 +261,6 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
     result += LEB128.calc_size(result);
     return result;
 }
-
-version (none) size_t keySize(const size_t index) @nogc pure nothrow {
-    return Type.sizeof + LEB128.calc_size(index);
-}
-
-version (none) size_t keySize(string key) @nogc pure nothrow {
-    import tagion.hibon.HiBONBase : is_index;
-
-    uint index;
-    if (is_index(key, index)) {
-        return LEB128.calc_size(index) + ubyte.sizeof;
-    }
-    return LEB128.calc_size(key.length) + key.length;
-}
-
 mixin template Serialize() {
     import std.algorithm;
     import std.range;
