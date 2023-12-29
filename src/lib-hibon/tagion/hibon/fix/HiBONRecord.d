@@ -677,7 +677,7 @@ mixin template HiBONRecord(string CTOR = "") {
     }
 
     @safe final const(Document) toDoc() const {
-        return Document(toHiBON.serialize);
+        return Document(serialize);
     }
 }
 
@@ -1026,6 +1026,7 @@ unittest {
             assert(doc.toJSON.toString == format("%j", result));
 
             const s_full_size = s.full_size;
+            assert(s_full_size == doc.full_size);
         }
     }
 
