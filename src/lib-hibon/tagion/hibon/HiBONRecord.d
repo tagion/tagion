@@ -796,8 +796,6 @@ unittest {
             assert(s == s_check);
             immutable s_imut = BasicData(docS);
             assert(s_imut == s_check);
-            writefln("%J", s);
-            writefln("full_size=%d docS.full_size=%d", s.full_size, docS.full_size);
             assert(docS.full_size == s.full_size);
         }
     }
@@ -891,12 +889,12 @@ unittest {
         const s_filter_y_doc = s_filter_y.toDoc;
         const s_dont_filter_doc = s_dont_filter.toDoc;
         const s_dont_filter_xy_doc = s_dont_filter_xy.toDoc;
-{    
-        writefln("%J", s);
-            writefln("full_size=%d docS.full_size=%d", s_filter_x.full_size, s_filter_x_doc.full_size);
-            assert(s_filter_x_doc.full_size == s_filter_x.full_size);
-        }
-        // writefln("docS=\n%s", s_filter_x.toDoc.toJSON(true).toPrettyString);
+        assert(s_filter_x_doc.full_size == s_filter_x.full_size);
+        assert(s_filter_y_doc.full_size == s_filter_y.full_size);
+        assert(s_dont_filter_doc.full_size == s_dont_filter.full_size);
+        assert(s_dont_filter_xy_doc.full_size == s_dont_filter_xy.full_size);
+
+        // writefln("docS=\n%s", s_dont_filter_y.toDoc.toJSON(true).toPrettyString);
         // writefln("docS=\n%s", s_filter_y.toDoc.toJSON(true).toPrettyString);
         {
             const check_s_filter_x = NotBothFilter(s_filter_x_doc);
@@ -951,6 +949,7 @@ unittest {
         assert(s == s_converted);
         assert(doc.toJSON.toString == format("%j", s_converted));
         assert(doc.toJSON.toPrettyString == format("%J", s_converted));
+        assert(s.full_size == doc.full_size);
     }
 
     {
@@ -969,6 +968,7 @@ unittest {
         const doc = s.toDoc;
         const s_converted = new SuperClass(doc);
         assert(doc == s_converted.toDoc);
+        assert(s.full_size == doc.full_size);
 
         // For some reason SuperClass because is a class format is not @safe
         (() @trusted {
@@ -1000,13 +1000,31 @@ unittest {
         }
 
         Array s;
-        s.a = [17, 42, 17];
+        {
+            s.a = [-17, 42, 17];
 
-        const doc = s.toDoc;
-        const result = Array(doc);
-        assert(s == result);
-        assert(doc.toJSON.toString == format("%j", result));
+            const doc = s.toDoc;
+            const result = Array(doc);
+            assert(s == result);
+            assert(doc.toJSON.toString == format("%j", result));
+            writeln("--- --- --- --- --- --- ---");
+            writefln("%s", doc.serialize);
+            writefln("%s", s.toPretty);
 
+            const s_full_size = s.full_size;
+            writefln("--- s.full_size=%d doc.full_size=%d doc.isInorder=%s", s_full_size, doc.full_size, doc.valid);
+            assert(s_full_size == doc.full_size);
+        }
+        {
+            s.a = [17, int.init, 42];
+
+            const doc = s.toDoc;
+            const result = Array(doc);
+            assert(s == result);
+            assert(doc.toJSON.toString == format("%j", result));
+
+            const s_full_size = s.full_size;
+        }
     }
 
     { // String array
@@ -1022,6 +1040,12 @@ unittest {
         const result = StringArray(doc);
         assert(s == result);
         assert(doc.toJSON.toString == format("%j", result));
+        writeln("--- --- --- --- --- --- ---");
+        writefln("%s", doc.serialize);
+        writefln("%s", s.toPretty);
+        const s_full_size = s.full_size;
+        writefln("--- s.full_size=%d doc.full_size=%d", s_full_size, doc.full_size);
+        assert(s_full_size == doc.full_size);
     }
 
     { // Element as range

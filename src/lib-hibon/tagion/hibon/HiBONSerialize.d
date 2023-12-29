@@ -113,9 +113,13 @@ template SupportingFullSizeFunction(T, size_t i = 0) {
     }
 
 }
+
 import tagion.basic.Debug;
+
 size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
-    import tagion.hibon.HiBONRecord : exclude, optional, isHiBONRecord, GetLabel, recordType;
+    import std.functional : unaryFun;
+    import tagion.hibon.HiBONRecord : exclude, optional, filter, isHiBONRecord, GetLabel, recordType;
+
     static size_t calcSize(U)(U x, const size_t key_size) {
         __write("key_size=%d U=%s", key_size, x);
         enum error_text = format("%s not supported", T.stringof);
@@ -135,7 +139,8 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
                             return type_key_size + LEB128.calc_size(cast(ulong) x);
                         }
                         else static if (only(FLOAT32, FLOAT64, BOOLEAN).canFind(type)) {
-                                __write("%s type_key_size=%d U.sizeof=%d %d", E, type_key_size, U.sizeof, type_key_size+U.sizeof);
+                            __write("%s type_key_size=%d U.sizeof=%d %d", E, type_key_size, U.sizeof, type_key_size + U
+                                    .sizeof);
                             return type_key_size + U.sizeof;
                         }
                         else static if (only(STRING, BINARY).canFind(type)) {
@@ -158,23 +163,29 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
                     static if (isHiBONArray!BaseT) {
                         import std.algorithm : filter;
 
-                        return x.enumerate
+                        foreach (i, v; x) {
+                            __write("### %d %s size=%d", i, v, calcSize(v, keySize(i)));
+                        }
+                        const array_size = x.enumerate
                             .filter!(pair => pair.value !is pair.value.init)
-                            .map!(pair => calcSize(pair.value, LEB128.calc_size(pair.index)))
+                            .map!(pair => calcSize(pair.value, keySize(pair.index)))
                             .sum;
+                        __write("array_size =%d leb128=%d type_key_size=%d", array_size, LEB128.calc_size(array_size), type_key_size);
+                        return type_key_size + array_size + LEB128.calc_size(array_size);
                         //pragma(msg, "isHiBONArray ", BaseT);
                     }
                     else static if (isHiBONAssociativeArray!BaseT && !isSpecialKeyType!BaseT) {
 
-                            
-                        return x.byKeyValue
+                        const array_size = x.byKeyValue
                             .filter!(pair => pair.value !is pair.value.init)
                             .map!(pair => calcSize(pair.value, keySize(pair.key)))
-                        .sum;
-                        
+                            .sum;
+                        return array_size + LEB128.calc_size(array_size);
+
                         pragma(msg, "isHiBONAssociativeArray ", BaseT, " ", typeof(x.byKeyValue.front));
                     }
                     else static if (isHiBONRecord!BaseT) {
+                        return type_key_size + x.full_size;
                         pragma(msg, "HiBONRecord ", BaseT.stringof);
                     }
                     else static if (isIntegral!BaseT) {
@@ -211,38 +222,60 @@ size_t full_size(T)(const T x) pure nothrow if (SupportingFullSizeFunction!T) {
     static if (hasUDA!(T, recordType)) {
         enum record = getUDAs!(T, recordType)[0];
         __write("TYPENAME=%s", TYPENAME);
-        result+=calcSize(record.name, keySize(TYPENAME)); 
+        result += calcSize(record.name, keySize(TYPENAME));
     }
     static foreach (i; 0 .. T.tupleof.length) {
         {
 
             enum optional_flag = hasUDA!(T.tupleof[i], optional);
             enum exclude_flag = hasUDA!(T.tupleof[i], exclude);
+            enum filter_flag = hasUDA!(T.tupleof[i], filter);
             static if (!exclude_flag) {
                 enum label = GetLabel!(T.tupleof[i]);
                 //__write("lable = %s", label.name);
                 const key_size = keySize(label.name);
-        __write("label=%s key_size=%d", label.name, key_size);
+                __write("label=%s key_size=%d", label.name, key_size);
                 version (none) static if (T.tupleof[i].sizeof == 2) {
                     pragma(msg, "With short ", ThisType);
                 }
-                result += calcSize(x.tupleof[i], key_size);
+                bool include_size = true;
+                static if (filter_flag) {
+                    alias filters = getUDAs!(T.tupleof[i], filter);
+                    static foreach (F; filters) {
+                        {
+                            alias filterFun = unaryFun!(F.code);
+                            if (include_size && !filterFun(x.tupleof[i])) {
+                                include_size = false;
+                            }
+                        }
+                    }
+                }
+                if (include_size) {
+                    result += calcSize(x.tupleof[i], key_size);
+                    __write("result=%d", result);
+                }
             }
         }
     }
 
-        result+= LEB128.calc_size(result);
+    __write("before final=%d", result);
+    result += LEB128.calc_size(result);
     return result;
 }
-     size_t keySize(string key) @nogc pure nothrow {
-import tagion.hibon.HiBONBase : is_index;
-    uint index;
-        if (is_index(key, index)) {
-            return LEB128.calc_size(index) + ubyte.sizeof;
-        }
-        return LEB128.calc_size(key.length) + key.length;
-    }
 
+size_t keySize(const size_t index) @nogc pure nothrow {
+    return Type.sizeof + ubyte.sizeof + LEB128.calc_size(index);
+}
+
+size_t keySize(string key) @nogc pure nothrow {
+    import tagion.hibon.HiBONBase : is_index;
+
+    uint index;
+    if (is_index(key, index)) {
+        return LEB128.calc_size(index) + ubyte.sizeof;
+    }
+    return LEB128.calc_size(key.length) + key.length;
+}
 
 mixin template Serialize() {
     import std.algorithm;

@@ -225,11 +225,13 @@ static assert(uint.sizeof == 4);
         Element.ErrorCode inner_valid(const Document sub_doc,
                 ErrorCallback error_callback = null) const nothrow {
             import tagion.basic.tagionexceptions : TagionException;
-
+            const doc_size = sub_doc.full_size; //LEB128.decode!uint(_data);
+            bool checkBoundary(const ref Element elm) {
+                return &elm.data[0]-&sub_doc._data[0]+elm.size <= doc_size; 
+            }
             auto previous = sub_doc[];
             bool not_first;
             Element.ErrorCode error_code;
-            const doc_size = sub_doc.full_size; //LEB128.decode!uint(_data);
             if (doc_size > _data.length) {
                 error_code = Element.ErrorCode.DOCUMENT_OVERFLOW;
                 if (!error_callback || error_callback(this, error_code,
@@ -256,6 +258,9 @@ static assert(uint.sizeof == 4);
                 }
                 else {
                     not_first = true;
+                }
+                if (checkBoundary(e)) {
+                    error_code=Element.ErrorCode.ELEMENT_OUT_OF_DOCUMENT_BOUNDARY;
                 }
                 if (error_code is Element.ErrorCode.NONE) {
                     if (e.type is Type.DOCUMENT) {
@@ -1314,6 +1319,7 @@ static assert(uint.sizeof == 4);
                 DOCUMENT_OVERFLOW, /// Document length extends the length of the buffer
                 DOCUMENT_ITERATION, /// Document can not be iterated because of a Document format fail
                 DOCUMENT_SIZE_INVALID_LEB128, /// The size of the document is not leb128 minimum invarinat
+                ELEMENT_OUT_OF_DOCUMENT_BOUNDARY, /// Element size extends the Document size
                 VALUE_POS_OVERFLOW, /// Start position of the a value extends the length of the buffer
                 TOO_SMALL, /// Data stream is too small to contain valid data
                 ILLEGAL_TYPE, /// Use of internal types is illegal
@@ -1379,6 +1385,7 @@ static assert(uint.sizeof == 4);
                 }
                 if (!key.is_key_valid) {
                     import tagion.basic.Debug;
+
                     __write("KEY INVALID %s", key);
                     return KEY_INVALID;
                 }
@@ -1454,6 +1461,15 @@ unittest { // Bugfix (Fails in isInorder);
         assert(!doc.isInorder);
         assert(doc.valid is Document.Element.ErrorCode.DOCUMENT_OVERFLOW);
     }
+}
+
+@safe
+unittest { // Bugfix (Length of document should fail) document length error
+    import std.stdio;
+
+    immutable(ubyte[]) data = [16, 2, 1, 97, 12, 17, 0, 0, 111, 17, 0, 1, 42, 17, 0, 2, 17];
+    const doc = Document(data);
+    writefln("Fail code %s", doc.valid);
 }
 
 @safe
