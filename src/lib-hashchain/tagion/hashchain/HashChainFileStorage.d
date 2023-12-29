@@ -12,7 +12,9 @@ import tagion.crypto.Types : Fingerprint;
 import tagion.hashchain.HashChainStorage : HashChainStorage;
 import tagion.hibon.HiBONFile : fread, fwrite;
 import tagion.utils.Miscellaneous : decode;
-
+import tagion.basic.basic : isinit;
+import tagion.hibon.HiBONException;
+import std.format;
 /** @brief File contains class HashChainFileStorage
  */
 
@@ -52,6 +54,8 @@ import tagion.utils.Miscellaneous : decode;
     Block read(const Fingerprint fingerprint) {
         try {
             auto doc = fread(makePath(fingerprint));
+            const error_code=doc.valid;
+            check(error_code.isinit, format("Document error %s in %s", error_code, makePath(fingerprint)));
             // TODO: bad decision, redesign to have automatic set hash from only doc
             return new Block(doc, net);
         }

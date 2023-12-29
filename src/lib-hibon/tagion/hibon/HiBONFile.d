@@ -7,7 +7,7 @@ import LEB128 = tagion.utils.LEB128;
 import std.exception : assumeUnique;
 import std.stdio : File;
 import std.typecons : No;
-
+import tagion.basic.basic : isinit;
 /++
  Serialize the hibon and writes it a file
  Params:
@@ -46,6 +46,11 @@ import std.typecons : No;
     immutable data = assumeUnique(cast(ubyte[]) file.read(filename));
     const doc = Document(data);
     const error_code = doc.valid(null, No.Reserved);
+    if (!error_code.isinit) {
+        import tagion.hibon.HiBONJSON;
+        import tagion.basic.Debug;
+            __write("Error %s doc=%s", error_code, doc.toPretty);
+    }
     check(error_code is Document.Element.ErrorCode.NONE, format("HiBON Document format %s failed in %s", error_code, filename));
     return doc;
 }
