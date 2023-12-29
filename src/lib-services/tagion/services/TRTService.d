@@ -37,7 +37,7 @@ import tagion.script.common : TagionBill;
 
 @safe
 struct TRTOptions {
-    bool enable = false;
+    bool enable = true;
     string folder_path = buildPath(".");
     string trt_filename = "trt".setExtension(FileExtension.dart);
     string trt_path;

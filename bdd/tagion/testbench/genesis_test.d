@@ -36,6 +36,7 @@ int _main(string[] args) {
 
     scope Options local_options = Options.defaultOptions;
     local_options.dart.folder_path = buildPath(module_path);
+    local_options.trt.folder_path = buildPath(module_path);
     local_options.replicator.folder_path = buildPath(module_path, "recorders");
     local_options.wave.prefix_format = "Genesis Node_%s_";
     local_options.subscription.address = contract_sock_addr("GENESIS_SUBSCRIPTION");
@@ -57,6 +58,7 @@ int _main(string[] args) {
     import tagion.script.TagionCurrency;
     import tagion.script.common : TagionBill;
     import tagion.testbench.services.genesis_test;
+    import tagion.trt.TRT;
     import tagion.wallet.SecureWallet;
 
     StdSecureWallet[] wallets;
@@ -64,8 +66,10 @@ int _main(string[] args) {
     foreach (i; 0 .. 2) {
         StdSecureWallet secure_wallet;
         secure_wallet = StdSecureWallet(
-                iota(0, 5).map!(n => format("%dquestion%d", i, n)).array,
-                iota(0, 5).map!(n => format("%danswer%d", i, n)).array,
+            iota(0, 5)
+                .map!(n => format("%dquestion%d", i, n)).array,
+                iota(0, 5)
+                .map!(n => format("%danswer%d", i, n)).array,
                 4,
                 format("%04d", i),
         );
@@ -86,7 +90,7 @@ int _main(string[] args) {
         foreach (i; 0 .. 3) {
             auto bill = requestAndForce(wallet, 1000.TGN);
             bills ~= bill;
-            total_start_amount += bill.value.units; 
+            total_start_amount += bill.value.units;
         }
     }
 
@@ -108,8 +112,6 @@ int _main(string[] args) {
     // const total_amount = BigNumber(bills.map!(b => b.value).sum);
     const number_of_bills = long(bills.length);
 
-
-
     Pubkey[] keys;
     foreach (i; 0 .. local_options.wave.number_of_nodes) {
         auto _net = new StdSecureNet();
@@ -123,25 +125,46 @@ int _main(string[] args) {
     HiBON testamony = new HiBON;
     testamony["hola"] = "Hallo ich bin philip. VERY OFFICIAL TAGION GENESIS BLOCK; DO NOT ALTER IN ANY WAYS";
 
-    auto globals = TagionGlobals(total_start_amount, const BigNumber(0), number_of_bills, const long(0));
+    auto globals = TagionGlobals(total_start_amount, const BigNumber(0), number_of_bills, const long(
+            0));
     const genesis_epoch = GenesisEpoch(0, keys, Document(testamony), currentTime, globals);
     const tagion_head = TagionHead(TagionDomain, 0);
-    writefln("total start_amount: %s, HEAD: %s \n genesis_epoch: %s",total_start_amount, tagion_head.toPretty, genesis_epoch.toPretty);
+    writefln("total start_amount: %s, HEAD: %s \n genesis_epoch: %s", total_start_amount, tagion_head.toPretty, genesis_epoch
+            .toPretty);
 
     recorder.add(tagion_head);
     recorder.add(genesis_epoch);
 
-
     foreach (i; 0 .. local_options.wave.number_of_nodes) {
         immutable prefix = format(local_options.wave.prefix_format, i);
-        const path = buildPath(local_options.dart.folder_path, prefix ~ local_options.dart.dart_filename);
-        writeln(path);
+        const path = buildPath(local_options.dart.folder_path, prefix ~ local_options
+                .dart.dart_filename);
+        writeln("DART path: ", path);
         DARTFile.create(path, net);
         auto db = new DART(net, path);
         db.modify(recorder);
     }
 
-    immutable neuewelle_args = ["genesis_test", config_file, "--nodeopts", module_path]; // ~ args;
+    // Inisialize genesis TRT
+    if (local_options.trt.enable) {
+        auto trt_recorder = factory.recorder;
+        genesisTRT(bills, trt_recorder, net);
+
+        foreach (i; 0 .. local_options.wave.number_of_nodes) {
+            immutable prefix = format(local_options.wave.prefix_format, i);
+
+            const trt_path = buildPath(local_options.trt.folder_path, prefix ~ local_options
+                    .trt.trt_filename);
+            writeln("TRT path: ", trt_path);
+            DARTFile.create(trt_path, net);
+            auto trt_db = new DART(net, trt_path);
+            trt_db.modify(trt_recorder);
+        }
+    }
+
+    immutable neuewelle_args = [
+        "genesis_test", config_file, "--nodeopts", module_path
+    ]; // ~ args;
     auto tid = spawn(&wrap_neuewelle, neuewelle_args);
 
     import tagion.utils.JSONCommon : load;
@@ -150,7 +173,8 @@ int _main(string[] args) {
 
     Thread.sleep(5.seconds);
     foreach (i; 0 .. local_options.wave.number_of_nodes) {
-        const filename = buildPath(module_path, format(local_options.wave.prefix_format ~ "opts", i).setExtension(FileExtension
+        const filename = buildPath(module_path, format(local_options.wave.prefix_format ~ "opts", i).setExtension(
+                FileExtension
                 .json));
         writeln(filename);
         Options node_opt = load!(Options)(filename);
@@ -161,7 +185,6 @@ int _main(string[] args) {
     auto name = "genesis_testing";
     register(name, thisTid);
     log.registerSubscriptionTask(name);
-
 
     auto feature = automation!(genesis_test);
     feature.NetworkRunningWithGenesisBlockAndEpochChain(node_opts, wallets[0], genesis_epoch);

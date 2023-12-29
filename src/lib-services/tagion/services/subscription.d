@@ -1,3 +1,4 @@
+/// Service for publishing event subscription
 module tagion.services.subscription;
 @safe:
 
@@ -15,15 +16,16 @@ import tagion.logger;
 import tagion.logger.LogRecords;
 import tagion.services.exception;
 
+/// Options for the subscription service
 struct SubscriptionServiceOptions {
     import tagion.utils.JSONCommon;
 
-    string tags;
-    string address;
-
-    import tagion.services.options : contract_sock_addr;
+    string tags; /// List of tags that should be enabled seperated by a ','
+    string address; /// The address which the service should pubish events on
 
     void setDefault() nothrow {
+        import tagion.services.options : contract_sock_addr;
+
         address = contract_sock_addr("SUBSCRIPTION_");
     }
 
@@ -32,6 +34,7 @@ struct SubscriptionServiceOptions {
     mixin JSONCommon;
 }
 
+/// The package which is published over the subscription socket
 @recordType("sub_payload")
 struct SubscriptionPayload {
     @label("topic") string topic_name;
@@ -49,6 +52,7 @@ struct SubscriptionPayload {
     });
 }
 
+///
 struct SubscriptionService {
     void task(immutable(SubscriptionServiceOptions) opts) @trusted {
         log.registerSubscriptionTask(thisActor.task_name);

@@ -24,7 +24,6 @@ import std.meta : staticIndexOf;
 import std.traits : EnumMembers, ForeachType, Unqual, isMutable, isBasicType,
     isIntegral, OriginalType, ReturnType, hasMember, isAssociativeArray;
 import std.conv : to;
-import std.exception : assumeUnique;
 import std.meta : AliasSeq;
 import std.range : enumerate, isInputRange;
 import std.typecons : TypedefType;
@@ -122,7 +121,7 @@ static size_t size(U)(const(U[]) array) pure {
         auto buffer = new ubyte[serialize_size];
         size_t index;
         append(buffer, index);
-        return assumeUnique(buffer);
+        return buffer;
     }
 
     // /++

@@ -50,6 +50,7 @@ int _main(string[] args) {
 
     scope Options local_options = Options.defaultOptions;
     local_options.dart.folder_path = buildPath(module_path);
+    local_options.trt.folder_path = buildPath(module_path);
     local_options.replicator.folder_path = buildPath(module_path, "recorders");
     local_options.wave.prefix_format = "BigContract_Node_%s_";
     local_options.subscription.address = contract_sock_addr("BIG_CONTRACT_SUBSCRIPTION");
@@ -67,14 +68,17 @@ int _main(string[] args) {
     import tagion.dart.DARTFile;
     import tagion.dart.Recorder;
     import tagion.hibon.HiBON;
+    import tagion.trt.TRT;
 
     StdSecureWallet[] wallets;
     // create the wallets
     foreach (i; 0 .. 2) {
         StdSecureWallet secure_wallet;
         secure_wallet = StdSecureWallet(
-                iota(0, 5).map!(n => format("%dquestion%d", i, n)).array,
-                iota(0, 5).map!(n => format("%danswer%d", i, n)).array,
+            iota(0, 5)
+                .map!(n => format("%dquestion%d", i, n)).array,
+                iota(0, 5)
+                .map!(n => format("%danswer%d", i, n)).array,
                 4,
                 format("%04d", i),
         );
@@ -86,6 +90,7 @@ int _main(string[] args) {
         w.addBill(b);
         return b;
     }
+
     TagionBill[] bills;
     auto bill = requestAndForce(wallets[0], 1000_000_000.TGN);
     bills ~= bill;
@@ -99,14 +104,34 @@ int _main(string[] args) {
 
     foreach (i; 0 .. local_options.wave.number_of_nodes) {
         immutable prefix = format(local_options.wave.prefix_format, i);
-        const path = buildPath(local_options.dart.folder_path, prefix ~ local_options.dart.dart_filename);
-        writeln(path);
+        const path = buildPath(local_options.dart.folder_path, prefix ~ local_options
+                .dart.dart_filename);
+        writeln("DART path: ", path);
         DARTFile.create(path, net);
         auto db = new DART(net, path);
         db.modify(recorder);
     }
 
-    immutable neuewelle_args = ["big_contract", config_file, "--nodeopts", module_path]; // ~ args;
+    // Inisialize genesis TRT
+    if (local_options.trt.enable) {
+        auto trt_recorder = factory.recorder;
+        genesisTRT(bills, trt_recorder, net);
+
+        foreach (i; 0 .. local_options.wave.number_of_nodes) {
+            immutable prefix = format(local_options.wave.prefix_format, i);
+
+            const trt_path = buildPath(local_options.trt.folder_path, prefix ~ local_options
+                    .trt.trt_filename);
+            writeln("TRT path: ", trt_path);
+            DARTFile.create(trt_path, net);
+            auto trt_db = new DART(net, trt_path);
+            trt_db.modify(trt_recorder);
+        }
+    }
+
+    immutable neuewelle_args = [
+        "big_contract", config_file, "--nodeopts", module_path
+    ]; // ~ args;
     auto tid = spawn(&wrap_neuewelle, neuewelle_args);
     import tagion.utils.JSONCommon : load;
 
@@ -114,7 +139,8 @@ int _main(string[] args) {
 
     Thread.sleep(5.seconds);
     foreach (i; 0 .. local_options.wave.number_of_nodes) {
-        const filename = buildPath(module_path, format(local_options.wave.prefix_format ~ "opts", i).setExtension(FileExtension
+        const filename = buildPath(module_path, format(local_options.wave.prefix_format ~ "opts", i).setExtension(
+                FileExtension
                 .json));
         writeln(filename);
         Options node_opt = load!(Options)(filename);
@@ -127,7 +153,8 @@ int _main(string[] args) {
 
     writefln("BEFORE RUNNING TESTS");
     auto feature = automation!(big_contract);
-    feature.SendASingleTransactionFromAWalletToAnotherWalletWithManyOutputs(node_opts[0], wallets[0], wallets[1]);
+    feature.SendASingleTransactionFromAWalletToAnotherWalletWithManyOutputs(
+        node_opts[0], wallets[0], wallets[1]);
     feature.run;
     stopsignal.set;
     Thread.sleep(6.seconds);
@@ -136,16 +163,16 @@ int _main(string[] args) {
 }
 
 enum feature = Feature(
-            "send a contract with many outputs to the network.",
-            []);
+        "send a contract with many outputs to the network.",
+        []);
 
 alias FeatureContext = Tuple!(
-        SendASingleTransactionFromAWalletToAnotherWalletWithManyOutputs, "SendASingleTransactionFromAWalletToAnotherWalletWithManyOutputs",
-        FeatureGroup*, "result"
+    SendASingleTransactionFromAWalletToAnotherWalletWithManyOutputs, "SendASingleTransactionFromAWalletToAnotherWalletWithManyOutputs",
+    FeatureGroup*, "result"
 );
 
 @safe @Scenario("send a single transaction from a wallet to another wallet with many outputs.",
-        [])
+    [])
 class SendASingleTransactionFromAWalletToAnotherWalletWithManyOutputs {
     Options opts1;
     StdSecureWallet wallet1;
@@ -172,7 +199,6 @@ class SendASingleTransactionFromAWalletToAnotherWalletWithManyOutputs {
         start_amount1 = wallet1.calcTotal(wallet1.account.bills);
         start_amount2 = wallet2.calcTotal(wallet2.account.bills);
     }
-    
 
     @Given("i have a dart database with already existing bills liked to wallet1")
     Document _wallet1() {
@@ -186,7 +212,7 @@ class SendASingleTransactionFromAWalletToAnotherWalletWithManyOutputs {
         writeln("requesting bill");
         (() @trusted => stdout.flush)();
 
-        foreach(i; 0..69) {
+        foreach (i; 0 .. 69) {
             auto payment_request = wallet2.requestBill(req_amount);
             bills ~= payment_request;
         }
