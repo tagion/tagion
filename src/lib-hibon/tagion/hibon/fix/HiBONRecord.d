@@ -201,7 +201,7 @@ pragma(msg, "fixme(cbr): The less_than function in this mixin is used for none s
 mixin template HiBONRecord(string CTOR = "") {
 
     import std.traits;
-    import std.algorithm.iteration : map;
+    import std.algorithm: map, all;
     import std.array : array, assocArray, join;
     import std.format;
     import std.functional : unaryFun;
@@ -218,9 +218,10 @@ mixin template HiBONRecord(string CTOR = "") {
     import tagion.hibon.HiBONException : HiBONRecordException;
     import tagion.hibon.fix.HiBONRecord : isHiBON, isHiBONRecord, HiBONRecordType, isSpecialKeyType,
         label, exclude, optional, GetLabel, filter, fixed, inspect;
-    import tagion.hibon.HiBONBase : TypedefBase;
+    import tagion.hibon.HiBONBase : TypedefBase, is_index;
     import HiBONRecord = tagion.hibon.fix.HiBONRecord;
     import tagion.hibon.fix.HiBONSerialize;
+    import tagion.basic.Debug;
 
     protected alias check = Check!(HiBONRecordException);
 
@@ -276,6 +277,7 @@ mixin template HiBONRecord(string CTOR = "") {
                         .map!(a => tuple(a.elm.key, a.elm.value));
                 }
                 else {
+                    __write("list = %s", list);
                     auto range = list;
                 }
             }
@@ -300,7 +302,10 @@ mixin template HiBONRecord(string CTOR = "") {
                         result[list_index++] = element;
                     }
                     else {
-                        result[index] = value;
+                        __write("index=%s value=%s", index, Value.stringof);
+                        if (!value.isinit) {
+                            result[index] = value;
+                        }
                     }
                 }
 
@@ -462,10 +467,21 @@ mixin template HiBONRecord(string CTOR = "") {
                 alias BaseU = TypedefBase!MemberU;
                 static if (isArray!R) {
                     alias UnqualU = Unqual!MemberU;
-                    check(doc.isArray, format("Document is expected to be an array"));
                     MemberU[] result;
-                    result.length = doc.length;
-                    result = doc[].map!(e => e.get!MemberU).array;
+                    if (doc.isArray) {
+                        result.length = doc.length;
+                        result = doc[].map!(e => e.get!MemberU).array;
+                    }
+                    else {
+                        uint index;
+                        const is_indices = doc.keys.all!((key) => is_index(key, index));
+                        check(is_indices, format("Document is expected to be an array"));
+                        result.length = index + 1;
+                        foreach (e; doc[]) {
+                            is_index(e.key, index);
+                            result[index] = e.get!MemberU;
+                        }
+                    }
                     enum do_foreach = false;
                 }
                 else static if (isSpecialKeyType!R) {
@@ -680,6 +696,8 @@ mixin template HiBONRecord(string CTOR = "") {
         return Document(serialize);
     }
 }
+
+import tagion.basic.Debug;
 
 unittest {
     import std.algorithm.comparison : equal;
@@ -1022,11 +1040,14 @@ unittest {
 
             const doc = s.toDoc;
             const result = Array(doc);
+            __write("doc=%s", doc.toPretty);
+            __write("result=%s", result.toPretty);
             assert(s == result);
             assert(doc.toJSON.toString == format("%j", result));
 
             const s_full_size = s.full_size;
             assert(s_full_size == doc.full_size);
+
         }
     }
 
