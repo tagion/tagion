@@ -58,6 +58,7 @@ struct TaskNames {
     string replicator = "replicator";
     string dart_interface = "dartinterface";
     string trt = "trt";
+    string node_interface = "node_interface";
 
     mixin JSONCommon;
 
@@ -95,6 +96,7 @@ public import tagion.services.replicator : ReplicatorOptions;
 public import tagion.services.subscription : SubscriptionServiceOptions;
 public import tagion.services.transcript : TranscriptOptions;
 public import tagion.services.TRTService : TRTOptions;
+public import tagion.services.nodeInterface : NodeInterfaceOptions;
 
 /// All options for neuewelle
 @safe
@@ -113,6 +115,7 @@ struct Options {
     SubscriptionServiceOptions subscription;
     LoggerOptions logger;
     TRTOptions trt;
+    NodeInterfaceOptions node_interface;
 
     TaskNames task_names;
     mixin JSONCommon;

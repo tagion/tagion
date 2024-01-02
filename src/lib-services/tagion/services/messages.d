@@ -41,3 +41,5 @@ alias HiRPCOutput = Msg!"OutputPush";
 // TRT
 alias trtModify = Msg!"trtModify";
 alias trtHiRPCRR = Request!"trtRead";
+
+alias NodeSend = Msg!"nodeSend";

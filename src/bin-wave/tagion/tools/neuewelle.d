@@ -216,7 +216,7 @@ int _neuewelle(string[] args) {
     locator_options = new immutable(LocatorOptions)(20, 5);
     ActorHandle[] supervisor_handles;
 
-    switch (local_options.wave.network_mode) {
+    final switch (local_options.wave.network_mode) {
     case NetworkMode.INTERNAL:
         import tagion.wave.mode0;
 
@@ -233,7 +233,7 @@ int _neuewelle(string[] args) {
             return 0;
         }
 
-        Document doc = getHead(node_options, __net);
+        Document doc = getHead(node_options[0], __net);
         // we only need to read one head since all bullseyes are the same:
         spawnMode0(node_options, supervisor_handles, nodes, doc);
         log("started mode 0 net");
@@ -246,7 +246,20 @@ int _neuewelle(string[] args) {
             }
         }
         break;
-    default:
+    case NetworkMode.LOCAL:
+        import tagion.services.supervisor;
+
+        auto __net = new StdSecureNet();
+        scope (exit) {
+            destroy(__net);
+        }
+        Document doc = getHead(local_options, __net);
+        auto net = cast(shared(StdSecureNet))(__net.clone);
+        immutable opts = Options(local_options);
+        spawn!Supervisor(local_options.task_names.supervisor, opts, net);
+
+        break;
+    case NetworkMode.PUB:
         assert(0, "NetworkMode not supported");
     }
 
