@@ -137,9 +137,9 @@ extern (C) {
 
             auto salt = cast(char[]) saltPtr[0 .. saltLen];
             scope (exit) {
-            pincode[]=0;
-            mnemonic[]=0;
-            salt[]=0;
+                pincode[] = 0;
+                mnemonic[] = 0;
+                salt[] = 0;
             }
             // Create a wallet from inputs.
             __wallet_storage.wallet = StdSecureWallet(
@@ -162,9 +162,9 @@ extern (C) {
         try {
             auto pincode = cast(char[])(pincodePtr[0 .. pincodeLen]);
             scope (exit) {
-                pincode[]=0;
+                pincode[] = 0;
             }
-        
+
             __wallet_storage.read;
             return __wallet_storage.wallet.login(pincode);
         }
@@ -222,8 +222,8 @@ extern (C) {
         if (__wallet_storage.wallet.isLoggedin()) {
             if (__wallet_storage.wallet.changePincode(pincode, newPincode)) {
                 __wallet_storage.write;
-                version(NET_HACK) {
-                __wallet_storage.read;
+                version (NET_HACK) {
+                    __wallet_storage.read;
                 }
                 // Since secure_wallet do logout after pincode change
                 // we need to perform a login manualy.
@@ -277,7 +277,7 @@ extern (C) {
             double* fees,
             uint32_t errorLen,
             uint8_t* errorPtr,
-        ) {
+    ) {
 
         immutable invoiceBuff = cast(immutable)(invoicePtr[0 .. invoiceLen]);
         TagionCurrency tgn_fees;
@@ -288,7 +288,7 @@ extern (C) {
 
         if (!__wallet_storage.wallet.isLoggedin()) {
             return NOT_LOGGED_IN;
-        }   
+        }
 
         auto invoice = Invoice(Document(invoiceBuff));
         invoice.amount = TagionCurrency(amount);
@@ -303,8 +303,8 @@ extern (C) {
             const contractDocId = recyclerDoc.create(contract.toDoc);
             // Save wallet state to file.
             __wallet_storage.write;
-            version(NET_HACK) {
-            __wallet_storage.read;
+            version (NET_HACK) {
+                __wallet_storage.read;
             }
 
             *contractPtr = contractDocId;
@@ -313,7 +313,8 @@ extern (C) {
         auto error_result = new HiBON();
         if (can_pay.msg is null) {
             error_result["error"] = "error is null?";
-        } else {
+        }
+        else {
             error_result["error"] = can_pay.msg;
         }
         const errorDocId = recyclerDoc.create(Document(error_result));
@@ -338,8 +339,8 @@ extern (C) {
             const invoiceDocId = recyclerDoc.create(invoice.toDoc);
             // Save wallet state to file.
             __wallet_storage.write;
-            version(NET_HACK) {
-            __wallet_storage.read;
+            version (NET_HACK) {
+                __wallet_storage.read;
             }
 
             *invoicePtr = cast(uint8_t) invoiceDocId;
@@ -377,8 +378,8 @@ extern (C) {
             if (result) {
                 // Save wallet state to file.
                 __wallet_storage.write;
-                version(NET_HACK) {
-                __wallet_storage.read;
+                version (NET_HACK) {
+                    __wallet_storage.read;
                 }
                 return 1;
             }
@@ -459,7 +460,7 @@ extern (C) {
 
     export uint get_account(uint8_t* accountPtr) {
         if (__wallet_storage.wallet.isLoggedin()) {
-            
+
             const accountDocId = recyclerDoc.create(__wallet_storage.wallet.account.toDoc);
 
             *accountPtr = cast(uint8_t) accountDocId;
@@ -499,8 +500,8 @@ extern (C) {
         if (__wallet_storage.wallet.isLoggedin()) {
             __wallet_storage.wallet.setEncrAccount(Cipher.CipherDocument(Document(account)));
             __wallet_storage.write;
-            version(NET_HACK) {
-            __wallet_storage.read;
+            version (NET_HACK) {
+                __wallet_storage.read;
             }
             return 1;
         }
@@ -519,8 +520,7 @@ extern (C) {
         return 0;
     }
 
-    version(none)
-    export uint remove_bills_by_contract(const uint8_t* contractPtr, const uint32_t contractLen) {
+    version (none) export uint remove_bills_by_contract(const uint8_t* contractPtr, const uint32_t contractLen) {
         // Collect input and output keys from the contract.
         // Iterate them and call remove on each.
 
@@ -851,7 +851,7 @@ unittest {
         assert(deriversDocId != 0, "Expected non-zero deriversDocId");
     }
 
-    {   // Get Account
+    { // Get Account
         uint8_t accountDocId;
         uint getAResult = get_account(&accountDocId);
 
@@ -889,8 +889,7 @@ unittest {
         assert(status == 0, "Expected status to be 0");
     }
 
-    version(none)
-    { // Remove bills by contract.
+    version (none) { // Remove bills by contract.
 
         uint result = remove_bills_by_contract(contract.ptr, contractLen);
 
@@ -913,7 +912,6 @@ struct WalletStorage {
         import std.stdio;
 
         wallet_data_path = walletDataPath.idup;
-        writefln("CREATE %s", walletDataPath);
         import std.file;
 
         if (!wallet_data_path.exists) {
@@ -945,14 +943,14 @@ struct WalletStorage {
 
     void read() {
 
-        version(NET_HACK) {
+        version (NET_HACK) {
             auto _pin = path(devicefile).fread!DevicePIN;
             auto _wallet = path(walletfile).fread!RecoverGenerator;
             auto _account = path(accountfile).fread!AccountDetails;
 
             if (wallet.net !is null) {
                 auto __net = cast(shared(StdSecureNet)) wallet.net;
-                scope(exit) {
+                scope (exit) {
                     __net = null;
                 }
                 auto copied_net = new StdSecureNet(__net);
@@ -963,7 +961,7 @@ struct WalletStorage {
             else {
                 wallet = StdSecureWallet(_pin, _wallet, _account);
             }
-        } 
+        }
         else {
             auto _pin = path(devicefile).fread!DevicePIN;
             auto _wallet = path(walletfile).fread!RecoverGenerator;

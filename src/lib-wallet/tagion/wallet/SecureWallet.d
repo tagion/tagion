@@ -132,9 +132,9 @@ struct SecureWallet(Net : SecureNet) {
      */
     this(
             scope const(string[]) questions,
-    scope const(char[][]) answers,
-    uint confidence,
-    const(char[]) pincode)
+            scope const(char[][]) answers,
+            uint confidence,
+            const(char[]) pincode)
     in (questions.length is answers.length, "Amount of questions should be same as answers")
     do {
         check(questions.length > 3, "Minimal amount of answers is 4");
@@ -182,8 +182,8 @@ struct SecureWallet(Net : SecureNet) {
 
     this(
             scope const(char[]) passphrase,
-    scope const(char[]) pincode,
-    scope const(char[]) salt = null) {
+            scope const(char[]) pincode,
+            scope const(char[]) salt = null) {
         _net = new Net;
         enum size_of_privkey = 32;
         ubyte[] R;
@@ -198,7 +198,7 @@ struct SecureWallet(Net : SecureNet) {
 
     protected void set_pincode(
             scope const(ubyte[]) R,
-    scope const(char[]) pincode) scope
+            scope const(char[]) pincode) scope
     in (!_net.isinit)
     do {
         auto seed = new ubyte[_net.hashSize];
@@ -234,8 +234,8 @@ struct SecureWallet(Net : SecureNet) {
      */
     bool recover(
             const(string[]) questions,
-    const(char[][]) answers,
-    const(char[]) pincode)
+            const(char[][]) answers,
+            const(char[]) pincode)
     in (questions.length is answers.length, "Amount of questions should be same as answers")
     do {
         _net = new Net;
@@ -1401,7 +1401,7 @@ unittest {
     TagionCurrency actual_fees;
 
     SignedContract signed_contract;
-    const can_pay = wallet1.createPayment(to_pay, signed_contract, actual_fees, true);
+    const can_pay = wallet1.createPayment(to_pay, signed_contract, actual_fees);
     check(can_pay.value == true, "should be able to create payment");
     check(get_fees == actual_fees, "the fee should be the same");
     check(actual_fees < 0, "should be a negatvie fee due to the contract being positive");
@@ -1432,7 +1432,7 @@ unittest {
     check(res2.value == false, format("Wallet should not be able to pay Amount"));
 
     SignedContract signed_contract;
-    const can_pay = wallet1.createPayment(to_pay, signed_contract, fees, true);
+    const can_pay = wallet1.createPayment(to_pay, signed_contract, fees);
     check(can_pay.value == true, format("got error: %s", res.msg));
 }
 
@@ -1486,13 +1486,13 @@ unittest {
     auto invoice = wallet1.createInvoice("wowo", 0.TGN);
     // register the invoice
     wallet1.registerInvoice(invoice);
-    
+
     auto factory = RecordFactory(wallet1.net);
 
-    immutable dart_file= fileId!DARTFile("updatereq").fullpath;
+    immutable dart_file = fileId!DARTFile("updatereq").fullpath;
     DARTFile.create(dart_file, wallet1.net);
     auto dart = new DART(wallet1.net, dart_file, No.read_only);
-    scope(exit) {
+    scope (exit) {
         dart.close;
         dart_file.remove;
     }
@@ -1507,19 +1507,20 @@ unittest {
     auto initial_recorder = factory.recorder;
     initial_recorder.insert([bill1, bill2], Archive.Type.ADD);
     dart.modify(initial_recorder);
-    
+
     HiRPC hirpc = HiRPC(wallet1.net);
-    
+
     const dart_receiver = hirpc.receive(req);
 
     HiBON searchDB(Document owner_doc) {
         Buffer[] owner_pkeys;
-        foreach(owner; owner_doc[]) {
+        foreach (owner; owner_doc[]) {
             owner_pkeys ~= owner.get!Buffer;
         }
         return dart.search(owner_pkeys, wallet1.net);
 
     }
+
     auto search_res = searchDB(dart_receiver.method.params);
     auto res = hirpc.result(dart_receiver, Document(search_res)).toDoc;
 
@@ -1545,7 +1546,7 @@ unittest {
     // add the outputs to the dart
     auto next_recorder = factory.recorder;
     next_recorder.insert(PayScript(signed_contract.contract.script).outputs, Archive.Type.ADD);
-    foreach(idx; signed_contract.contract.inputs) {
+    foreach (idx; signed_contract.contract.inputs) {
         next_recorder.remove(idx);
     }
     dart.modify(next_recorder);
