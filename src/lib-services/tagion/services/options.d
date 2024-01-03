@@ -9,16 +9,14 @@ import tagion.basic.dir;
 
 /// This function should be renamed
 /// Initially there it was only intended to be used for the contract address for the inputvalidator
-static immutable(string) contract_sock_addr(const string prefix = "") @safe nothrow {
-    import std.exception : assumeWontThrow;
-
+immutable(string) contract_sock_addr(const string prefix = "") @safe nothrow {
     version (linux) {
-        return assumeWontThrow(format("abstract://%sNEUEWELLE", prefix));
+        return "abstract://" ~ prefix ~ "NEUEWELLE";
     }
     else version (Posix) {
         import std.path;
 
-        return "ipc://" ~ buildPath(base_dir.run, assumeWontThrow(format("%stagionwave_contract.sock", prefix)));
+        return "ipc://" ~ buildPath(base_dir.run, prefix ~ "tagionwave_contract.sock");
     }
     else {
         assert(0, "Unsupported platform");
@@ -72,13 +70,11 @@ struct TaskNames {
         This function is used in mode 0.
     */
     void setPrefix(const string prefix) pure nothrow {
-        import std.exception;
-
         alias This = typeof(this);
         alias FieldsNames = FieldNameTuple!This;
         static foreach (i, T; Fields!This) {
             static if (is(T == string)) {
-                this.tupleof[i] = assumeWontThrow(format("%s%s", prefix, this.tupleof[i]));
+                this.tupleof[i] = prefix ~ this.tupleof[i];
             }
         }
     }
