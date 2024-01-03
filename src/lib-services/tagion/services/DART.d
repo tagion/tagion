@@ -101,6 +101,10 @@ struct DARTService {
             }
 
             immutable receiver = hirpc.receive(doc);
+            if (!receiver.isMethod) {
+                log("dart hirpc request was not a method");
+                return;
+            }
 
             if (receiver.method.name == "search") {
                 log("SEARCH REQUEST");
