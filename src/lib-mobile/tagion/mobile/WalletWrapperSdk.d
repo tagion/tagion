@@ -37,7 +37,7 @@ import Wallet = tagion.wallet.SecureWallet;
 import tagion.wallet.WalletException;
 import tagion.wallet.WalletRecords : DevicePIN, RecoverGenerator;
 
-enum TAGION_HASH = import("revision.mixin").splitLines[2];
+extern (C) export immutable string TAGION_HASH = import("revision.mixin").splitLines[2];
 
 /// Used for describing the d-runtime status
 enum DrtStatus {
