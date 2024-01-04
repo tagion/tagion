@@ -201,7 +201,7 @@ pragma(msg, "fixme(cbr): The less_than function in this mixin is used for none s
 mixin template HiBONRecord(string CTOR = "") {
 
     import std.traits;
-    import std.algorithm: map, all;
+    import std.algorithm : map, all;
     import std.array : array, assocArray, join;
     import std.format;
     import std.functional : unaryFun;
@@ -424,10 +424,25 @@ mixin template HiBONRecord(string CTOR = "") {
         }
     }
 
+    template GetKeyIndex(string name, size_t index = 0) {
+        static if (index == ThisType.tupleof.length) {
+            enum GetKeyIndex = -1;
+        }
+        else static if (name == GetKeyName!index) {
+            enum GetKeyIndex = index;
+        }
+        else {
+            enum GetKeyIndex = GetKeyIndex!(name, index + 1);
+        }
+    }
     /++
      Returns:
      A sorted list of Record keys
      +/
+    //alias KeyNameIndex=Tuple!(size_t, "index", string, "name");
+    //static struct KeyNameIndex {
+
+    //}
     protected static string[] _keys() pure nothrow {
         import std.algorithm;
         import tagion.hibon.HiBONBase : less_than;
@@ -438,6 +453,7 @@ mixin template HiBONRecord(string CTOR = "") {
             result ~= GetKeyName!i;
         }
         result.sort!((a, b) => less_than(a, b));
+
         return result;
     }
 
@@ -1130,8 +1146,8 @@ unittest {
             assert(s_doc == s);
             assert(doc.toJSON.toString == format("%j", s));
             pragma(msg, "isArray ", isArray!ResultT, " isHiBONArray ", isHiBONArray!ResultT);
-            pragma(msg, "1 SupportingFullSize ",SupportingFullSizeFunction!(ResultT,0,true));
-            pragma(msg, "2 SupportingFullSize ",SupportingFullSizeFunction!(typeof(s),0,true));
+            pragma(msg, "1 SupportingFullSize ", SupportingFullSizeFunction!(ResultT, 0, true));
+            pragma(msg, "2 SupportingFullSize ", SupportingFullSizeFunction!(typeof(s), 0, true));
             //static assert(!s.supportingFullSize); 
         }
 
@@ -1338,6 +1354,7 @@ unittest {
                 tabel[Bytes(buffer.idup)] = i;
             }
 
+            pragma(msg, "!!!!!!!!!!!!!!! StructBytes.supportingFullSize ", SupportingFullSizeFunction!(StructBytes, 0, true));
             StructBytes s;
             s.tabel = tabel;
             const s_doc = s.toDoc;

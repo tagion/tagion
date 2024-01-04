@@ -1,5 +1,5 @@
 module tagion.hibon.HiBONBase;
-
+import std.array;
 import std.format;
 import std.meta : AliasSeq, allSatisfy;
 import tagion.basic.basic : isOneOf;
@@ -17,6 +17,7 @@ import LEB128 = tagion.utils.LEB128;
 alias binread(T, R) = bin.read!(T, Endian.littleEndian, R);
 enum HIBON_VERSION = 0;
 
+alias AppendBuffer=Appender!(ubyte[]);
 /++
  Helper function to serialize a HiBON
 +/
@@ -26,7 +27,6 @@ void binwrite(T, R, I)(R range, const T value, I index) pure {
     alias BaseT = TypedefType!(T);
     bin.write!(BaseT, Endian.littleEndian, R)(range, cast(BaseT) value, index);
 }
-
 /++
  Helper function to serialize an array of the type T of a HiBON
 +/
