@@ -45,7 +45,7 @@ template isHiBONArray(T) {
     static if (traits.isArray!BaseT) {
         alias ElementBaseT = TypedefBase!(ForeachType!(BaseT));
         enum isHiBONArray = (Document.Value.hasType!(ElementBaseT) || isHiBONRecord!ElementBaseT);
-        //pragma(msg, "isHiBONArray! ", T, " ", isHiBONArray, " ElementBaseT ", ElementBaseT);
+        pragma(msg, "isHiBONArray! ", T, " ", isHiBONArray, " ElementBaseT ", ElementBaseT);
     }
     else {
         enum isHiBONArray = false;
@@ -69,7 +69,7 @@ template isHiBONAssociativeArray(T) {
     }
 }
 
-template SupportingFullSizeFunction(T, size_t i = 0) {
+template SupportingFullSizeFunction(T, size_t i = 0, bool _print=false) {
     import tagion.hibon.fix.HiBONRecord : exclude, optional, isHiBONRecord;
     import std.traits;
 
@@ -79,19 +79,20 @@ template SupportingFullSizeFunction(T, size_t i = 0) {
 
         enum type = Document.Value.asType!T;
         static if (isHiBONBaseType(type)) {
+            static if (_print) pragma(msg, "isHiBONBaseType ", type, " T ", T);
             enum InnerSupportFullSize = true;
         }
         else static if (isHiBONRecord!T) {
-
-            // return true;
+            static if (_print) pragma(msg, "isHiBONRecord ", type, " T ", T);
             enum InnerSupportFullSize = false;
-            //        return hasMember!(T, "supported_full_size");
         }
         else static if (isHiBONAssociativeArray!T) {
+            static if (_print) pragma(msg, "isHiBONAssociativeArray ", type, " T ", T);
             alias KeyT = KeyType!T;
             enum InnerSupportFullSize = isIntegral!KeyT || is(KeyT : const(char[]));
         }
         else {
+            static if (_print) pragma(msg, "InnerSupportFullSize ", type, " T ", T, " ---- isHiBONArray (", isHiBONArray!T, ")");
             enum InnerSupportFullSize = isHiBONArray!T ||
                 isIntegral!T;
         }
@@ -274,6 +275,9 @@ mixin template Serialize() {
     import tagion.basic.Debug;
     import traits = std.traits;
 
+    static bool supportingFullSize() @nogc pure nothrow { 
+    return SupportingFullSizeFunction!(ThisType);
+}
     Buffer _serialize() const pure nothrow {
         static if (SupportingFullSizeFunction!(ThisType)) {
             return Buffer.init;

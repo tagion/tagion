@@ -1040,8 +1040,6 @@ unittest {
 
             const doc = s.toDoc;
             const result = Array(doc);
-            __write("doc=%s", doc.toPretty);
-            __write("result=%s", result.toPretty);
             assert(s == result);
             assert(doc.toJSON.toString == format("%j", result));
 
@@ -1105,7 +1103,7 @@ unittest {
             }
         }
 
-        @safe auto StructWithRangeTest(T)(T[] array) {
+        @safe auto structWithRangeTest(T)(T[] array) {
             alias R = Range!T;
             @safe static struct StructWithRange {
                 R range;
@@ -1122,7 +1120,7 @@ unittest {
 
         { // Simple Range
             const(int)[] array = [-42, 3, 17];
-            const s = StructWithRangeTest(array);
+            const s = structWithRangeTest(array);
 
             const doc = s.toDoc;
             alias ResultT = typeof(s);
@@ -1131,6 +1129,10 @@ unittest {
 
             assert(s_doc == s);
             assert(doc.toJSON.toString == format("%j", s));
+            pragma(msg, "isArray ", isArray!ResultT, " isHiBONArray ", isHiBONArray!ResultT);
+            pragma(msg, "1 SupportingFullSize ",SupportingFullSizeFunction!(ResultT,0,true));
+            pragma(msg, "2 SupportingFullSize ",SupportingFullSizeFunction!(typeof(s),0,true));
+            //static assert(!s.supportingFullSize); 
         }
 
         { // Range of structs
@@ -1139,7 +1141,7 @@ unittest {
             simpels ~= Simpel(2, "two");
             simpels ~= Simpel(3, "three");
             {
-                auto s = StructWithRangeTest(simpels);
+                auto s = structWithRangeTest(simpels);
                 alias StructWithRange = typeof(s);
                 {
                     auto h = new HiBON;
