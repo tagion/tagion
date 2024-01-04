@@ -110,7 +110,7 @@ struct TranscriptService {
             dart_tid.send(dartReadRR(), [tagion_index]);
             log("SENDING HEAD REQUEST TO DART");
 
-            auto received = receiveTimeout(1.seconds, (dartReadRR.Response _, immutable(RecordFactory.Recorder) head_recorder) {
+            receive((dartReadRR.Response _, immutable(RecordFactory.Recorder) head_recorder) {
                 if (!head_recorder.empty) {
                     log("FOUND A TAGIONHEAD");
                     // yay we found a head!
@@ -123,16 +123,12 @@ struct TranscriptService {
                 }
 
             });
-            if (!received) {
-                throw new ServiceException("Never received a tagionhead");
-
-            }
 
             if (head_found) {
                 // now we locate the epoch
                 immutable epoch_index = net.dartKey(StdNames.epoch, last_head.current_epoch);
                 dart_tid.send(dartReadRR(), [epoch_index]);
-                receiveTimeout(1.seconds, (dartReadRR.Response _, immutable(RecordFactory.Recorder) epoch_recorder) {
+                receive((dartReadRR.Response _, immutable(RecordFactory.Recorder) epoch_recorder) {
                     if (!epoch_recorder.empty) {
                         auto doc = epoch_recorder[].front.filed;
                         if (doc.isRecord!Epoch) {
