@@ -15,8 +15,6 @@ import std.conv : emplace, to;
 import std.range;
 import std.typecons : TypedefType;
 
-//import std.stdio;
-
 import tagion.basic.Message : message;
 import tagion.basic.Types : isTypedef;
 import tagion.basic.basic : EnumContinuousSequency, isOneOf;
@@ -29,9 +27,6 @@ import tagion.basic.basic : isinit;
 import LEB128 = tagion.utils.LEB128;
 public import tagion.hibon.fix.HiBONJSON;
 
-//import tagion.utils.LEB128 : isIntegral=isLEB128Integral;
-
-//import std.stdio;
 import std.exception;
 
 static assert(uint.sizeof == 4);
@@ -225,19 +220,14 @@ static assert(uint.sizeof == 4);
             const Reserved reserved = Yes.Reserved) const nothrow {
         Element.ErrorCode inner_valid(const Document doc,
                 ErrorCallback error_callback = null) const nothrow {
-            import tagion.basic.Debug;
             import tagion.basic.tagionexceptions : TagionException;
 
             //const doc_full_size = doc.full_size; //LEB128.decode!uint(_data);
             bool checkElementBoundary(const ref Element elm) {
-                __write("checkElementBoundary key=%s size=%s offset=%d doc.length=%d %d", elm.key, elm.size, &elm
-                        .data[0] - &doc._data[0], doc._data.length, &elm.data[0] - &doc._data[0] + elm.size);
                 return &elm.data[0] - &doc._data[0] + elm.size <= doc.full_size;
             }
 
             bool checkDocumentBoundary(const Document sub_doc) {
-                __write("checkDocumentBoundary sub_doc.size=%d doc.size=%d %d doc.length=%d", sub_doc.full_size, doc
-                        .full_size, &sub_doc.data[0] - &doc._data[0], doc.size);
                 return &sub_doc._data[0] - &doc._data[0] + sub_doc.full_size <= doc.full_size;
             }
 
@@ -652,9 +642,7 @@ static assert(uint.sizeof == 4);
     version (unittest) {
         import std.typecons : Tuple, isTuple;
         import tagion.hibon.HiBONBase;
-import std.stdio;
         static private void make(R)(ref scope AppendBuffer buffer, R range, size_t count = size_t.max) if (isTuple!R) {
-            size_t temp_index;
             AppendBuffer temp_buffer;
             foreach (i, t; range) {
                 if (i is count) {
@@ -669,13 +657,10 @@ import std.stdio;
                 else {
                     _build(temp_buffer, E, name, t);
                 }
-                writefln(">%d] %s %s", temp_buffer.data.length, E, temp_buffer.data);
             }
             auto leb128_size_buffer = LEB128.encode(temp_buffer.data.length);
-            //size_t index;
             buffer ~= leb128_size_buffer;
             buffer ~= temp_buffer.data; ///[0 .. temp_index], index);
-            //return index;
         }
     }
 
@@ -684,12 +669,6 @@ import std.stdio;
         AppendBuffer buffer;
         buffer.reserve(0x200);
 
-        size_t index;
-        @trusted size_t* index_ptr() {
-            return &index;
-        }
-
-        //import std.stdio;
         { // Test of null document
             const doc = Document();
             assert(doc.length is 0);
@@ -742,17 +721,12 @@ import std.stdio;
         test_table_array.STRING = "Text";
 
         { // Document with simple types
-            index = 0;
-
             { // Document with a single value
             buffer.clear;
                 make(buffer, test_table, 1);
                 immutable data = buffer.data.idup;
-                writefln("buffer.data=%s len=%d", buffer.data, buffer.data.length);
-                writefln("data=%s", data);
                 const doc = Document(data);
                 assert(doc.length is 1);
-                // assert(doc[Type.FLOAT32.stringof].get!float == test_table[0]);
             }
 
             { // Document including basic types
@@ -788,12 +762,9 @@ import std.stdio;
             { // Document which includes basic arrays and string
                 buffer.clear;
                 make(buffer, test_table_array);
-                writefln("test_table_array=%s", test_table_array);
                 immutable data = buffer.data.idup;
                 const doc = Document(data);
                 assert(doc.keys.is_key_ordered);
-                writefln(">data    =%s", buffer.data);
-                writefln(">doc.keys=%s", doc[].map!(e => e.key));
                 foreach (i, t; test_table_array) {
                     enum name = test_table_array.fieldNames[i];
                     alias U = test_table_array.Types[i];
@@ -813,8 +784,6 @@ import std.stdio;
                 immutable data_sub_doc = buffer_subdoc.data.idup;
                 const sub_doc = Document(data_sub_doc);
 
-                index = 0;
-
                 enum size_guess = 151;
                 uint size;
                 buffer~=LEB128.encode(size_guess);
@@ -829,8 +798,6 @@ import std.stdio;
                 _build(buffer, Type.STRING, Type.STRING.stringof, "Text");
 
                 size = cast(uint)(buffer.data.length - start_index);
-                writefln("start_index=%d size=%d size_guess=%d buffer.data.length=%d", start_index,size, size_guess, buffer.data.length);
-                assert(size == size_guess);
 
                 size_t dummy_index = 0;
                 buffer~=LEB128.encode(size);
@@ -884,12 +851,6 @@ import std.stdio;
 
                 { // Check opEqual
                     const data_int32_e = Element(data_int32);
-                    writefln("data_int32              =%s %d", data_int32, data_int32.length);
-                    writefln("data_int32_e            =%s %d", data_int32_e.data, data_int32_e.size);
-                    writefln("doc[Type.INT32.stringof]=%s %d", doc[Type.INT32.stringof].data, doc[Type.INT32.stringof].size);
-                    writefln("doc.data    = %s", doc[Type.INT32.stringof].data[0..doc[Type.INT32.stringof].size]);
-                    writefln("data_int32_e =%s", data_int32_e.data[0..data_int32_e.size]);
-                    //assert(doc[Type.INT32.stringof].opEquals(data_int32_e));
                     assert(doc[Type.INT32.stringof] == data_int32_e);
                 }
             }
@@ -897,7 +858,6 @@ import std.stdio;
             { // Test opCall!(string[])
                 enum size_guess = 27;
                 buffer.clear;
-                index = 0;
                 uint size;
                 buffer~=LEB128.encode(size_guess);
                 const start_index = buffer.data.length;
@@ -1419,9 +1379,6 @@ import std.stdio;
                     return KEY_INDEX_INVALID_LEB128;
                 }
                 if (!key.is_key_valid) {
-                    import tagion.basic.Debug;
-
-                    __write("KEY INVALID %s", key);
                     return KEY_INVALID;
                 }
 

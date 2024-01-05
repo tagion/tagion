@@ -13,7 +13,6 @@ import std.typecons : TypedefType, tuple;
 import tagion.hibon.BigNumber;
 import tagion.hibon.HiBONException;
 import LEB128 = tagion.utils.LEB128;
-import tagion.basic.Debug;
 alias binread(T, R) = bin.read!(T, Endian.littleEndian, R);
 enum HIBON_VERSION = 0;
 
@@ -94,14 +93,12 @@ if (is(Key : const(char[])) || is(Key == uint)) {
         }
     }
     else static if (is(T : const Document)) {
-        buffer ~= x.data; //._binwrite(x.data, index);
+        buffer ~= x.data; 
     }
     else static if (is(T : const BigNumber)) {
-        __write(">before %s %d", buffer.data, buffer.data.length); 
-        buffer ~= x.serialize; //.array_write(x.serialize, index);
+        buffer ~= x.serialize; 
     }
     else static if (isIntegral!BaseT) {
-        //buffer.array_write(LEB128.encode(cast(BaseT) x), index);
         buffer ~= LEB128.encode(cast(BaseT) x);
     }
     else {
